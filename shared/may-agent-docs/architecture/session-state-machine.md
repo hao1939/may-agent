@@ -5,10 +5,10 @@
 Every session has a **status** field. Statuses fall into two categories:
 
 - **Live** (`running`, `idle`) — session is in `activeSessions` in memory
-- **Terminal** (`done`, `error`, `interrupted`) — session is archived to disk and removed from memory
+- **Terminal** (`done`, `error`, `interrupted`) — session is completed and removed from active memory (stays on disk)
 
 Sessions are distinguished by `autoClose`:
-- `"immediate"` (default) — archive on completion. Used by `kind: "job"` and `kind: "call"`.
+- `"immediate"` (default) — complete and remove from active memory. Used by `kind: "job"` and `kind: "call"`.
 - `"never"` — go idle on completion. Used by `kind: "chat"`.
 
 ## Statuses
@@ -17,9 +17,9 @@ Sessions are distinguished by `autoClose`:
 |---|---|---|---|
 | `running` | Agent loop is executing | yes | yes |
 | `idle` | Waiting for input | yes | yes |
-| `done` | Completed normally | no | yes (history/) |
-| `error` | Completed with error | no | yes (history/) |
-| `interrupted` | Stopped externally | no | yes (history/) |
+| `done` | Completed normally | no | stays in sessions/ |
+| `error` | Completed with error | no | stays in sessions/ |
+| `interrupted` | Stopped externally | no | stays in sessions/ |
 
 ## Events
 
@@ -53,14 +53,14 @@ Used for `kind: "job"` and `kind: "call"`. Linear lifecycle.
         │          │          │
         └──────────┴──────────┘
                    │
-          archive + remove from memory
+          remove from active memory
 ```
 
 | Current | Event | Next | Actions |
 |---|---|---|---|
-| `running` | `loop_end` | `done` | archive, remove, notify |
-| `running` | `loop_error` | `error` | archive, remove, notify |
-| `running` | `loop_abort` | `interrupted` | archive, remove, notify |
+| `running` | `loop_end` | `done` | remove from memory, notify |
+| `running` | `loop_error` | `error` | remove from memory, notify |
+| `running` | `loop_abort` | `interrupted` | remove from memory, notify |
 | `running` | `cancel()` | — | calls `agent.abort()` → triggers `loop_abort` |
 | `running` | `crash` | — | on restart: `resumeStaleSessions` marks interrupted or resumes |
 
@@ -79,7 +79,7 @@ Used for `kind: "chat"`. Cycles between `running` and `idle`.
        │      │  idle   │──────────────►│ interrupted │
        └──────┤         │               └──────┬──────┘
               └─────────┘                      │
-                                       archive + remove
+                                       remove from memory
 ```
 
 | Current | Event | Next | Actions |

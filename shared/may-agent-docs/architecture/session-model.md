@@ -10,7 +10,7 @@ Two session types: **Chat** (user interface) and **Task** (worker).
 |---|---|---|
 | **Role** | Interface to human | Unit of work |
 | **Count** | One per process (interface agent) | Unlimited |
-| **Lifecycle** | Long-lived, stays idle between messages | Spawn → work → finish → archive |
+| **Lifecycle** | Long-lived, stays idle between messages | Spawn → work → finish |
 | **Config** | `autoClose: "never"` | `autoClose: "immediate"` |
 | **Kind** | `"chat"` | `"job"` or `"call"` |
 
@@ -23,7 +23,7 @@ Two session types: **Chat** (user interface) and **Task** (worker).
 
 ### Task Sessions (The Workers)
 - **Who**: Sub-agents, cron jobs, CLI one-offs, `@agent` prefix.
-- **Lifecycle**: Spawns, runs to completion/failure, archives. No idle state.
+- **Lifecycle**: Spawns, runs to completion/failure. No idle state. Session dir stays on disk.
 - **Context**: Convention files (SOUL.md, DOMAIN.md, etc.) + task description. Fresh every run.
 
 ## Session Kinds

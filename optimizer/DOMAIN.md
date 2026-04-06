@@ -10,7 +10,7 @@ Your bash tool's working directory is the project root.
 
 - **Your workspace**: `agents/optimizer/workspace/`
 - **Evaluations**: `.state/evaluations/` — per-session JSON with agent name, scores, failure chains
-- **Session history**: `.state/sessions/history/` — archived session transcripts (JSONL)
+- **Session data: `.state/sessions/<id>/` — session transcripts (JSONL)
 - **Agent configs**: `agents/*/knowledge/` — domain.md, lessons.md per agent
 
 To confirm the project root, run `pwd` once. Do not guess or search.

@@ -1,5 +1,36 @@
 # Journal
 
+## 2026-04-05 19:55 — May C1.1 Read-Before-Edit Regression: Skill Deployed
+
+### Pending Task Processed
+- [req:019b10db] Convention regression: May C1.1 dropped from 95.8% to 90% (from convention-check)
+
+### Analysis
+- **Reported**: 95.8% → 90% overall
+- **Actual recent**: Last 5 sessions = **40%** (2/5 pass), previous 15 = 80%
+- **Primary offender**: `dispatch-board.md` (12x violations across 6+ sessions) — May edits it every heartbeat without reading first
+- **Secondary**: `EXP-034-log.md` (2x), `EXP-035/design.md` (1x)
+- **Root cause**: May treats workspace files as "known" and guesses oldText without reading
+- May had verify-after-edit and verify-before-finish skills but NOT read-before-edit
+
+### Intervention Deployed
+1. **L3 skill**: `agents/may/skills/read-before-edit.md` — tailored to May's violation pattern (dispatch-board.md, EXP logs)
+2. **L4 context nudge**: Added to `agents/may/context.md` — one-liner C1.1 warning pointing to skill
+3. **LIBRARY.md**: Added deployment #8 (read-before-edit → may)
+4. **Brief**: `agents/coach/workspace/briefs/may-c11-read-before-edit-regression.md`
+
+### Classification
+Process skill (add read step before edit) — HIGH effectiveness per KE-021. Same intervention deployed to scout, bob, tech-lead for same pattern. Expected: 40% → 90%+ within 24h.
+
+### Also This Session: scout-library-update Scenario Completed (from previous session)
+Previous session created and validated scout-library-update scenario testing C1.1 compliance. 11/11 checks passed on baseline. Includes duplicate detection trap (paper already in papers.md).
+
+### Files Modified
+- `agents/may/skills/read-before-edit.md` (new)
+- `agents/may/context.md` (added C1.1 nudge)
+- `agents/shared/skills/LIBRARY.md` (added deployment #8)
+- `agents/coach/workspace/briefs/may-c11-read-before-edit-regression.md` (new)
+
 ## 2026-04-05 17:55 — EXP-035: Scenario Built + Baseline CEILING (6/6 × 3)
 
 ### Task

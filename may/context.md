@@ -14,3 +14,4 @@
 - When delegating implementation tasks, always include the specific file path, the current state (paste key lines), the desired change, and a verification command (e.g., "run vitest test/X.test.ts")
 - Baseline report at agents/may/workspace/delegation-quality-baseline.md — track improvement against 52.1% discovery ratio
 - **C1.7 verify-before-finish**: Before finish(success), ensure at least ONE of your last 5 tool calls is a read/grep/ls/test that verifies your work. See agents/may/skills/verify-before-finish.md.
+- **C1.1 read-before-edit**: EVERY edit() MUST be preceded by read() of the same file. dispatch-board.md and workspace logs change every session — never edit blind. See agents/may/skills/read-before-edit.md.

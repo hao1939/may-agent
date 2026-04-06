@@ -75,6 +75,7 @@ Each skill has ONE status:
 5. **read-before-edit** → 📦 tech-lead (Deployed 2026-04-05, targeting C1.1 at 80% compliance. Adapted from coder-edit-discipline. Process skill — high confidence.)
 6. **read-before-edit** → 📦 bob (Deployed 2026-04-05, targeting C1.1 regression 84.3%. Bob edits PRIORITY-TRACKER.md, hypotheses, synthesis docs without reading. L3 skill + L4 context nudge.)
 7. **verify-before-finish** → 📦 may (Deployed 2026-04-05, targeting C1.7 regression 92.6%→62.5%. May calls finish(success) without verification. L3 skill + L4 context nudge.)
+8. **read-before-edit** → 📦 may (Deployed 2026-04-05, targeting C1.1 regression 95.8%→90% (last 5: 40%). Primary offender: dispatch-board.md (12x), EXP logs (2x). L3 skill + L4 context nudge.)
 
 **Method C: L5 Strict Workflow (Materialization Gate)** (NEW — EXP-024) — workflow that requires a written analysis artifact BEFORE proceeding to action phase.
 - ✅ Works for: judgment tasks where the agent knows the right answer but overrides it (sycophancy: 0%→100%)
