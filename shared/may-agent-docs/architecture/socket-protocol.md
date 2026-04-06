@@ -267,7 +267,7 @@ Closes the interface agent's chat session and initiates graceful shutdown.
 { "type": "restart" }
 ```
 
-Exits with code 100. The launcher (`run/launcher.ts`) interprets this as
+Exits the process. supervisord
 a restart request and re-spawns the process.
 
 ## Fire-and-Forget Client (`src/lib/socket-client.ts`)

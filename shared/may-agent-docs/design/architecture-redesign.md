@@ -135,9 +135,9 @@ type AgentEvent =
   | { type: "steer"; sessionId: string; text: string }
   | { type: "cancel"; sessionId: string }
 
-  // Management commands (to core / launcher)
+  // Management commands (to core / supervisord)
   | { type: "reload" }                    // core reloads agent configs from disk
-  | { type: "restart" }                   // launcher kills process, restarts
+  | { type: "restart" }                   // process exits, supervisord restarts
   | { type: "shutdown" }                  // graceful shutdown, close all sessions
 
   // Observations (from core)

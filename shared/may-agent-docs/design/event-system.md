@@ -176,7 +176,7 @@ detached agent control — all unchanged.
 - `fork` / `run` — start a new agent session
 - `resume` — resume an interrupted/errored session by sessionId
 - `reload_agents` — hot-reload agent configs
-- `restart` — exit 100 (hot-reload via launcher)
+- `restart` — process exits, supervisord restarts
 - `close` — shutdown
 
 ## Web UI
