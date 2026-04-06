@@ -1039,6 +1039,10 @@ export function computeHeuristicScores(
     issues.push("finish_unparseable");
   } else if (session.status === "done" && assistantTurns > 2) {
     issues.push("no_finish_call");
+  } else if (session.status === "interrupted") {
+    // Session was killed/aborted before the agent could finish.
+    // Not the agent's fault — don't penalize, but note it.
+    issues.push("session_interrupted");
   }
 
   // 5. Successful session with reasonable tool usage
