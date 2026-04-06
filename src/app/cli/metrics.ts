@@ -184,8 +184,13 @@ try {
     }
     const stats = agentStats.get(agent)!;
     stats.sessions++;
-    stats.avgEfficiency += data.efficiency;
-    stats.avgQuality += data.quality;
+    // Exclude interrupted sessions from quality/efficiency averages
+    // (the session was killed externally, not a reflection of agent quality)
+    const isInterrupted = data.issues.includes("session_interrupted");
+    if (!isInterrupted) {
+      stats.avgEfficiency += data.efficiency;
+      stats.avgQuality += data.quality;
+    }
     stats.totalWasted += data.wastedCalls;
     stats.totalProductive += data.productiveCalls;
     stats.totalCost += data.cost;
@@ -195,11 +200,13 @@ try {
     if (data.lessons.length) stats.lessons.push(...data.lessons);
   }
 
-  // Compute averages
+  // Compute averages (denominator excludes interrupted sessions)
   for (const stats of agentStats.values()) {
-    if (stats.sessions > 0) {
-      stats.avgEfficiency = Math.round((stats.avgEfficiency / stats.sessions) * 100) / 100;
-      stats.avgQuality = Math.round((stats.avgQuality / stats.sessions) * 100) / 100;
+    const interruptedCount = stats.issues.filter((i) => i === "session_interrupted").length;
+    const scoredSessions = stats.sessions - interruptedCount;
+    if (scoredSessions > 0) {
+      stats.avgEfficiency = Math.round((stats.avgEfficiency / scoredSessions) * 100) / 100;
+      stats.avgQuality = Math.round((stats.avgQuality / scoredSessions) * 100) / 100;
     }
   }
 
