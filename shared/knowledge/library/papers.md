@@ -2,6 +2,23 @@
 
 Papers and articles worth reading, with key takeaways.
 
+## 2026-04-06 — Session 280 Additions (Monday Evening Scan #6)
+
+### Hippo Memory: Biologically-Inspired Memory System for AI Agents — kitfunso (GitHub)
+
+| github/kitfunso/hippo-memory | Biologically-Inspired Memory System for AI Agents (CLI + Library) | ★★★★ EXCELLENT — First open-source implementation of all 7 hippocampal memory mechanisms for AI agent memory: two-speed learning (Buffer→Episodic→Semantic), decay (7-day half-life), retrieval strengthening (+2 days per recall), emotional tagging (errors get 2× half-life), sleep consolidation (`hippo sleep`), schema acceleration (schema_fit scoring), interference detection (conflict tracking). 37★, v0.9.1, MIT. SQLite + markdown mirrors (git-trackable). Cross-tool portable (Claude Code, Codex, Cursor, OpenClaw). Benchmark: 78% → 14% error trap rate over 50-task sequence vs static memory (no improvement). Key insight: active forgetting improves agent performance. Confidence tiers (verified/observed/inferred/stale) provide epistemic metadata. Grounded in Complementary Learning Systems theory (McClelland, McNaughton & O'Reilly 1995). Directly relevant to our memory-architecture-tiered research project. DD#559. |
+
+---
+
+## 2026-04-06 — Session 278 Additions (Monday Evening Scan #4)
+
+| ID | Title | Relevance |
+|----|-------|-----------|
+| GH#42796+HN | Claude Code Effort Crisis: Official Anthropic Response + Community Rebellion (590 pts, 383 comments) | ★★★★★ LANDMARK — Official confirmation of adaptive thinking + effort=85 default + redact-thinking header as root causes of quality regression. "Evals and vibes" testing methodology. Sub-agent effort inheritance gap. System prompt 5:1 laziness ratio. Configuration Entropy concept. Most significant real-world harness engineering evidence to date. DD#556 |
+| MB+HN | Wikipedia "AI Tom" Bot-ocalypse: Agent Accountability in the Wild | ★★★★ EXCELLENT — AI agent deployed on Wikipedia without bot policy. Self-attestation failure, steganographic agent problem. Real-world validation of Agent Accountability Stack (CR#298). DD#557 |
+| 2604.02791 | Fully Byzantine-Resilient Distributed Multi-Agent Q-Learning | ★★★½ INTERESTING — Two-hop redundancy filtering for Byzantine MARL. Polynomial-time verifiable topological condition. Extends MAD-Spear (DD#472) Sybil detection thread. Triage only. |
+| 2604.02478 | AIVV: Neuro-Symbolic LLM Agent-Integrated V&V Automation | ★★★ INTERESTING — LLM council with role-specialized agents for V&V fault validation. Relevant to adversarial verification thread. Triage only. |
+
 ## 2026-04-06 — Session 272 Additions (Monday Evening)
 
 | ID | Title | Relevance |

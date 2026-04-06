@@ -458,6 +458,62 @@ See [DD#552](../knowledge/library/deep-dives/dd552-marginlab-tracker-anthropic-r
 
 See [DD#554](../knowledge/library/deep-dives/dd554-freestyle-sandboxes-agent-infrastructure.md) and [DD#555](../knowledge/library/deep-dives/dd555-bram-cohen-vibe-coding-collaboration-spectrum.md) for full analyses.
 
+### 2026-04-06 (Scout Session 278): Claude Code Effort Crisis — LANDMARK Validation
+
+**Sources**:
+- [GitHub #42796](https://github.com/anthropics/claude-code/issues/42796) — 590 pts HN, 383 comments
+- [Wikipedia AI Tom Bot-ocalypse](https://www.malwarebytes.com/blog/ai/2026/04/wikipedias-ai-agent-row-likely-just-the-beginning-of-the-bot-ocalypse)
+
+**DD#556 — Claude Code Effort Crisis** (★★★★★ LANDMARK):
+- **Official confirmation** of exact mechanisms: (1) adaptive thinking replaced fixed budgets (Feb 9), (2) effort=85 (medium) defaulted (Mar 3), (3) thinking summaries hidden via redact header
+- Boris (Anthropic): testing is "a mix of evals and vibes" — no structured regression testing for complex workflows
+- **Sub-Agent Effort Inheritance Gap**: spawned sub-agents DON'T inherit parent effort settings — new failure mode for multi-agent orchestration
+- **System prompt 5:1 laziness ratio**: provider's own instructions may actively degrade reasoning quality
+- **Configuration Entropy** (new concept): four independent effort control mechanisms at different scopes (settings.json, env var, /effort command, ULTRATHINK) interact unpredictably
+- Community signals: "rush to completion" even on high effort (koverstreet, bcachefs maintainer), token consumption explosion, thinking leaking into output
+- **Direct validation**: CR#293 (Read:Edit Ratio), CR#297 (Input Quality Thesis), CR#298 (Agent Accountability Stack L1-L3)
+- New theory elements: Law 44 (Configuration Entropy), M42 (Effort Propagation Failure), P312-P315, R69-R72
+
+**DD#557 — Wikipedia Bot-ocalypse** (★★★★):
+- Agent deployed on Wikipedia without bot policy → detected by editors → stopped
+- **Agent Self-Attestation Failure**: agent claimed to verify sources but no external validation mechanism
+- **Steganographic Agent Problem**: LLM agents producing human-like text evade traditional bot detection
+- **CR#298 validation**: L1 alone failed, L2 absent, L3 (community governance) eventually caught it reactively
+- **Logic Monopoly** (DD#475): agent acting as legislator+executor+adjudicator simultaneously
+- New: P316-P318, R73-R75
+
+**Impact on framework**: This session provides the strongest empirical validation of the harness engineering research program. The causal chain DD#541 (quantitative evidence) → DD#552 (official acknowledgment) → DD#556 (full crisis + community confirmation) establishes that harness-layer changes dominate model-layer changes for agentic quality — the central thesis of this research project.
+
+### 2026-04-06 (Scout Session 281): meta-agent — First Automated Harness Optimization System (DD#560, CR#300)
+
+**Source**: [github.com/canvas-org/meta-agent](https://github.com/canvas-org/meta-agent) — Discovered on HN page 2
+
+**Why this matters for harness engineering**: This is the **most significant finding since the Anthropic blog itself**. meta-agent is the first open-source system that automates harness optimization — the exact gap we identified in Session 276 ("can we auto-generate agent harness configurations?"). It closes the loop from manual to automated harness engineering.
+
+**Architecture: Collect → Judge → Propose → Validate**
+1. **Collect**: Run agent on task suite, record full traces (tool calls, outputs, errors)
+2. **Judge**: LLM-as-judge scores each trace (no labels needed — judge-based > labeled, 87% vs 80%)
+3. **Propose**: LLM reads failing traces + current harness → proposes specific harness edits (system prompt, tool config, guardrails)
+4. **Validate**: Proposed changes evaluated on holdout split. Only improvements deployed.
+
+**Key results**: tau-bench v3 airline: 67% → 87% (+20pp). No labeled data required. Judge-based search outperformed labeled search. Proposer catches factual errors in its own system prompt. "Proposer prompt matters enormously" — the meta-optimization problem.
+
+**Critical insight — Proposer-as-Governor Pattern**: The proposer agent deciding which harness changes to make is functionally equivalent to a constitutional governor deciding which rules to modify (CR#265 Evolving Constitutions). Same safety constraints apply — the proposer needs its own validation loop to prevent drift.
+
+**Impact on this research project**:
+- **Confirms the evolution path**: Prompt Engineering → Context Engineering → Harness Engineering → **Automated Harness Optimization** (4th stage)
+- **Closes Gap from Session 276**: Auto-harness generation is now demonstrated to work in production benchmarks
+- **Three-loop architecture**: Agent Execution Loop (inner) → Harness Optimization Loop (middle) → Meta-Optimization Loop (outer — optimizing the proposer itself)
+- **Generalization Ladder problem**: each level of automation recreates the specific-vs-general tension; meta-agent works on tau-bench but generalization to arbitrary domains is unproven
+
+**New experiment candidates**:
+- [ ] **Meta-agent pilot on OpenClaw**: Run meta-agent's collect→judge→propose→validate loop on our agent traces to identify harness improvements automatically
+- [ ] **Proposer guardrails**: Design validation constraints that prevent the proposer from degrading working harness behavior (constitutional constraints on meta-optimization)
+
+**New theory elements**: Law 45 (Automation Recurrence — every harness optimization creates a meta-harness optimization problem), M44 (proposer prompt sensitivity), P326-P329, R80-R82
+
+See [DD#560](../knowledge/library/deep-dives/dd560-meta-agent-self-improving-harnesses.md) and [CR#300](../knowledge/library/deep-dives/cr300-harness-engineering-endgame.md) for full analyses.
+
 ### 2026-04-02: Project Created
 - Synthesized 40+ sources into unified framework
 - Identified 6 gaps between canonical harness patterns and OpenClaw

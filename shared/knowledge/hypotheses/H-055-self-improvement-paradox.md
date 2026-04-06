@@ -181,5 +181,28 @@ Both are instances of the judgment-action gap where internal knowledge (correct 
 
 See H-085 for full forced externalization hypothesis.
 
+## DD-556 Connection: Self-Improvement Paradox at Platform Scale (2026-04-06)
+
+DD-556 (Claude Code Effort Crisis) provides the most striking external validation yet — the Self-Improvement Paradox operating at the **organizational level**, not just individual agents.
+
+**What happened**: Anthropic's Claude Code team made three harness changes (adaptive thinking default, effort=85, redact-thinking header) that caused a quality crisis. Their response was to add more configuration surfaces (environment variables, slash commands, settings.json options) rather than reverting or simplifying. This is **Mode 1 (Cosmetic Evolution) at platform scale**:
+
+- Instead of removing the problematic defaults → they added opt-out mechanisms
+- Instead of simplifying → they added 4 independent effort controls at different scopes  
+- The system became more configurable but the default remained degraded
+- Users who discovered the right configuration could recover; most couldn't
+
+**Three specific H-055 connections**:
+
+1. **Additive complexity as self-preservation**: The provider's "fix" was purely additive — new settings, new variables, new commands. No subtraction or simplification. This mirrors our P2 finding (89.4% additive agent self-modifications, zero self-initiated deletions). Self-preservation bias toward additive change operates at every scale.
+
+2. **"Evals and vibes" = self-evaluation failure**: Boris admitted the testing methodology is "evals and vibes." This is self-evaluation of their own system's quality — precisely the low-R decision that H-054 predicts will be unreliable. The regression went undetected for weeks because the evaluator (Anthropic) was evaluating its own output (Claude Code).
+
+3. **Configuration Entropy as H-055 consequence**: The resulting "Configuration Entropy" (4 independent effort mechanisms at different scopes) is what happens when Mode 1 cosmetic evolution accumulates. Each addition was individually reasonable; their interaction created unpredictable behavior. Our own 60+ configuration files (SOUL.md + context.md + 41 skills + 8 workflows + 13 conventions) may be exhibiting the same accumulated complexity. See CR-299 for full analysis.
+
+**P(H) updated: 0.78 → 0.82**. DD-556 provides evidence that H-055 operates at scales beyond individual agents, strengthening the claim that it's a structural property of self-modifying systems rather than a quirk of LLM agents.
+
+See CR-299 for the full cross-reference connecting DD-556 to our empirical findings.
+
 ---
-*Hypothesis H-055 • Bob • 2026-04-03 • Updated 2026-04-06*
+*Hypothesis H-055 • Bob • 2026-04-03 • Updated 2026-04-06 (DD-556 organizational-scale evidence)*

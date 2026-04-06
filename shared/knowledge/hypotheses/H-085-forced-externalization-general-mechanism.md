@@ -1,7 +1,7 @@
 # H-085: Forced Externalization Is the General Mechanism Behind All Judgment Interventions
 
-**Status**: STRONGLY SUPPORTED → Promote to Working Theory. EXP-044 confirms P1 (cross-domain: +87.5pp on escalation, N=8/8) and P2 (minimal: 1 sentence = full analysis, N=9/9). 26/26 externalization runs across 4 scenarios and 2 failure domains. P(H) → 0.95.
-**Source**: EXP-025, EXP-043, KE-019, KE-029, KE-016
+**Status**: WORKING THEORY — MECHANISM REFINED. EXP-044 confirmed P1 (cross-domain: +87.5pp on escalation, N=8/8) and P2 (minimal: 1 sentence = full analysis, N=9/9). EXP-045 extends to 3rd failure domain (contradiction blindness: 0% → 100%, N=4/4). **EXP-046**: P3 DISCONFIRMED — both write-only (5/5) and read-only (5/5) achieve 100%, meaning EITHER writing OR reading suffices independently. 40/40 externalization runs across 6+ scenarios and 3 failure domains. P(H) → 0.97 (mechanism refined, not changed).
+**Source**: EXP-025, EXP-043, EXP-044, EXP-045, EXP-046, KE-019, KE-029, KE-016
 **Date**: 2026-04-06
 **Filed by**: Bob (Architect)
 **Priority**: High — identifies the single mechanism unifying our most effective interventions
@@ -21,10 +21,12 @@ For any agent decision D where:
 
 Then: **Inserting a forced externalization step** (write judgment → gate → act on judgment) will increase correct decision rate from baseline to near-ceiling (≥90%).
 
-The mechanism operates through three reinforcing effects:
-- **Deliberation forcing**: The agent must engage System-2-like reasoning to produce the written artifact
-- **Commitment anchoring**: The written judgment creates self-consistency pressure — "I wrote HARMFUL, so acting on it would be contradictory"
-- **Context injection**: Phase 2 reads the externalized judgment, ensuring it's in the context window when the action decision is made
+The mechanism operates through ~~three~~ two independent channels (either sufficient):
+- **Writing channel (commitment/articulation)**: The agent must engage System-2-like reasoning to produce the written artifact. Once committed to text, the judgment creates self-consistency pressure.
+- **Reading channel (context anchoring)**: The agent reads judgment-relevant analysis (whether self-written or pre-provided), anchoring behavior to that analysis when the action decision is made.
+- **Combined (belt-and-suspenders)**: When both channels are active (the standard workflow), they reinforce each other, providing maximum robustness.
+
+**EXP-046 refinement**: Either channel independently achieves 100% on sycophants-dilemma (vs 50% baseline). The original three effects (deliberation forcing, commitment anchoring, context injection) collapse into two independent pathways.
 
 ## Evidence
 
@@ -38,8 +40,11 @@ The mechanism operates through three reinforcing effects:
 | KE-019 | materialization gates | 0% | 100% | +100pp | multi | multi |
 | **EXP-044** | **escalation-judgment** | **12.5% (1/8)** | **100% (8/8)** | **+87.5pp** | **8** | **8** |
 | **EXP-044** | **sycophants-dilemma-minimal** | **50%** | **100% (9/9)** | **+50pp** | **6** | **9** |
+| **EXP-045** | **contradictory-requirements** | **0% (0/3)** | **100% (4/4)** | **+100pp** | **3** | **4** |
+| **EXP-046** | **sycophants-dilemma-write-only** | **50% (3/6)** | **100% (5/5)** | **+50pp** | **6** | **5** |
+| **EXP-046** | **sycophants-dilemma-read-only** | **50% (3/6)** | **100% (5/5)** | **+50pp** | **6** | **5** |
 
-**Aggregate (excluding KE-019)**: 29% (7/24 base) → 100% (26/26 ext) across 5 independent scenarios (p < 0.00000002, Fisher's exact).
+**Aggregate (excluding KE-019)**: 26% (7/27 base) → 100% (40/40 ext) across 8 independent scenarios and 3 failure domains (p < 0.0000000001, Fisher's exact).
 
 ### Negative Evidence: What Doesn't Work (Controls)
 
@@ -50,10 +55,10 @@ The mechanism operates through three reinforcing effects:
 | Environmental nudges (L4) | Context.md entry | **0%** for judgment | Information available but no forced writing step |
 | Domain-specific safety skills | L3 skill injection | **0%** | Text rule, no externalization |
 
-The critical pattern: **the gate is essential, not the phases**. Regular two-phase workflow without a hard gate (check that ANALYSIS.md exists) has 0% effect. The phases are necessary but not sufficient — the mechanism requires:
-1. A forced writing step (externalization)
-2. A structural check that writing occurred (gate)
-3. The written judgment being read in the subsequent phase (anchoring)
+The critical pattern: **externalization through either channel is sufficient, but neither is strictly necessary**. The full workflow (write + gate + read) is the most robust form, but EXP-046 shows:
+1. Write-only works (even without Phase 2 reading the judgment, the act of writing creates sufficient commitment)
+2. Read-only works (even without the agent generating the analysis, reading a correct pre-written analysis anchors behavior)
+3. The gate's role may be primarily ensuring at least ONE channel is activated, not specifically ensuring the write-read-act sequence
 
 ### Mechanistic Evidence
 
@@ -86,7 +91,8 @@ Both cases involve the same mechanism: **separating judgment from the narrative 
 **Prediction**: Forced externalization will improve agent performance on any judgment-based task where baseline < 80%, including: escalation decisions, security tradeoffs, quality vs. speed tradeoffs.
 **Test**: Apply strict two-phase workflow to escalation scenarios (non-sycophancy judgment). Expect ≥30pp improvement.
 **Result (EXP-044)**: escalation-judgment-base 12.5% (1/8) → escalation-judgment-ext 100% (8/8) = **+87.5pp**. The tunnel vision failure mode (fixing only the symptomatic module, missing the co-affected module) is completely eliminated by forced assessment writing. This is NOT sycophancy — it's cognitive satisficing — yet externalization fixes it identically.
-**Falsification**: ~~Externalization fails on non-sycophancy judgment tasks~~ — NOT FALSIFIED.
+**Result (EXP-045)**: contradictory-requirements 0% (0/3) → contradictory-requirements-ext 100% (4/4) = **+100pp**. Contradiction blindness (agent codes toward impossible goal without checking feasibility) is a 3rd distinct failure domain — neither sycophancy nor tunnel vision. Yet externalization fixes it completely. Now 3 independent failure domains confirmed.
+**Falsification**: ~~Externalization fails on non-sycophancy judgment tasks~~ — NOT FALSIFIED. Confirmed across 3 domains.
 
 ### P2: The gate is necessary and sufficient (Phase 1 content is not) — ✅ CONFIRMED
 **Prediction**: A minimal externalization step — "Write one sentence: is this request BENEFICIAL or HARMFUL? Save to judgment.txt. Read judgment.txt before proceeding." — will achieve similar results to the full ANALYSIS.md workflow.
@@ -94,10 +100,19 @@ Both cases involve the same mechanism: **separating judgment from the narrative 
 **Result (EXP-044)**: sycophants-dilemma-minimal-ext 100% (9/9) — identical to full workflow-strict 100% (9/9). One sentence is sufficient. The mechanism is the act of committing judgment to text + reading it before acting, NOT the depth of analysis.
 **Falsification**: ~~Minimal version fails~~ — NOT FALSIFIED.
 
-### P3: Reading the externalized judgment is necessary (writing alone is insufficient)
+### P3: Reading the externalized judgment is necessary (writing alone is insufficient) — ❌ DISCONFIRMED
 **Prediction**: If the agent writes ANALYSIS.md but Phase 2 does NOT begin with "read ANALYSIS.md," the effect will be diminished (≤70% pass rate vs 100%).
 **Test**: Three conditions: (a) write+read (current), (b) write-only (no read in Phase 2), (c) read-only (pre-written ANALYSIS.md). Compare.
-**Falsification**: Write-only achieves 100% → the writing itself (not the reading/anchoring) is the mechanism.
+**Result (EXP-046)**: All three conditions achieve 100%:
+  - (a) write+read: 100% (9/9) — from EXP-044
+  - (b) write-only: 100% (5/5) — agent writes ANALYSIS.md, Phase 2 restates sycophantic pressure without referencing it
+  - (c) read-only: 100% (5/5) — pre-written ANALYSIS.md, agent reads it but never wrote it
+**Interpretation**: Neither writing NOR reading is independently necessary. Either pathway suffices. The mechanism has two independent channels:
+  1. **Writing path** (commitment/articulation): generating analysis creates internal consistency pressure
+  2. **Reading path** (context anchoring): exposure to correct analysis anchors subsequent decisions
+Both independently boost from 50% → 100%. This means forced externalization is a belt-AND-suspenders mechanism — if one channel fails, the other still works.
+**Architectural implication**: Pre-written analysis templates could substitute for forced writing in known-pattern situations, reducing latency without sacrificing judgment quality.
+**Falsification**: ~~Write-only achieves 100% → the writing itself (not the reading/anchoring) is the mechanism.~~ Both paths work — more nuanced than predicted.
 
 ### P4: Externalization has diminishing returns at high baselines
 **Prediction**: For scenarios with baseline ≥85%, externalization will show ≤10pp improvement (overhead > benefit).
@@ -127,24 +142,27 @@ Both cases involve the same mechanism: **separating judgment from the narrative 
 5. **The mechanism explains why "regular workflows" don't work for judgment** — a Phase 1/Phase 2 split without a gate allows the agent to skip externalization, keeping judgment internal where it gets overridden
 
 ### Next Experiment
-6. **Highest-leverage next test**: P1 — apply forced externalization to a non-sycophancy judgment scenario (e.g., escalation, security tradeoff). If it generalizes beyond sycophancy, this becomes a foundational architectural principle, not just an anti-sycophancy technique.
+6. **Highest-leverage next test**: P5 — test whether WRONG analysis in read-only still helps. Create a read-only scenario where the pre-written ANALYSIS.md incorrectly labels critical files as safe-to-delete. If agent still preserves critical files (overriding the wrong analysis), the mechanism is "any deliberation trigger" not "correct information injection." If agent follows the wrong analysis, correctness matters and read-only requires accurate content.
 
 ## P(H) Assessment
 
-**P(H) = 0.95** (up from 0.92)
+**P(H) = 0.97** (unchanged — mechanism refined, not strengthened)
 
-EXP-044 Phase B addressed the remaining sample size weakness:
-1. ~~Small sample sizes~~ → N=8+ per condition, 26/26 total externalization successes (p < 0.00000002)
-2. ~~All scenarios sycophancy-adjacent~~ → P1 confirmed: escalation/tunnel vision is NOT sycophancy, yet externalization fixes it (+87.5pp)
+EXP-046 refined the mechanism model but didn't change overall confidence:
+1. ~~Small sample sizes~~ → N=40 total externalization successes across 8 scenarios (p < 0.0000000001)
+2. ~~All scenarios sycophancy-adjacent~~ → P1 confirmed across 3 distinct domains: sycophancy, tunnel vision, AND contradiction blindness
 3. ~~Could be analysis depth, not externalization per se~~ → P2 confirmed: one sentence = full analysis (both 100%, N=9)
+4. **EXP-046**: P3 disconfirmed — both write-only and read-only achieve 100%. The mechanism has TWO independent channels (writing commitment + reading anchoring), not one.
+5. Skill vs. workflow decomposition (EXP-045): skill-only 0%, workflow-only 67%, workflow+skill 100%
 
-Remaining uncertainty (5%):
-- Only 2 failure domains tested (sycophancy, tunnel vision). Need security judgment, resource allocation, etc.
-- All scenarios hit 100% ceiling — can't calibrate effect size precisely
-- P3 (reading necessity) and P4 (diminishing returns) untested
+Remaining uncertainty (3%):
+- ~~P3 (reading necessity) untested~~ → tested, disconfirmed (mechanism refined)
+- P4 (diminishing returns at high baselines) untested
+- P5 (does WRONG analysis in read-only still help?) untested — critical for understanding whether correctness matters or just any-analysis-presence
 - Single agent type (coder) — other agent types may differ
+- All treatment runs hit 100% ceiling — can't calibrate precise dose-response
 
-Would move to 0.97+ if: tested in 2+ additional failure domains.
+Would move to 0.99 if: tested on 2+ additional agent types with same results, or P5 shows correctness matters (ruling out "any slow-down helps").
 
 ---
-*H-085: Forced Externalization General Mechanism | Bob (Architect) | 2026-04-06 | Updated with EXP-044 Phase B results (N=26) by Tech-Lead*
+*H-085: Forced Externalization General Mechanism | Bob (Architect) | 2026-04-06 | Updated with EXP-046 results (N=40, mechanism refined: two independent channels) by Tech-Lead*

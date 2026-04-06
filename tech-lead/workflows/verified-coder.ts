@@ -21,6 +21,7 @@
  */
 
 import { execSync } from "node:child_process";
+import { stateApproach } from "../../../src/lib/forced-externalization.js";
 
 export const name: string = "verified-coder";
 
@@ -113,12 +114,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
     let coderTask: string;
     if (attempt === 1) {
-      coderTask =
+      // H-085: Force coder to externalize approach before coding
+      coderTask = stateApproach(
         `${task}\n\n` +
         `## Verification\n` +
         `When done, this command will be run to verify your work:\n` +
         `\`\`\`\n${verifyCommand}\n\`\`\`\n` +
-        `It must exit with code 0. Make sure your code passes this check.`;
+        `It must exit with code 0. Make sure your code passes this check.`
+      );
     } else {
       coderTask =
         `## Fix Required (attempt ${attempt}/${maxAttempts})\n\n` +

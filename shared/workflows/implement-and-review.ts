@@ -1,5 +1,7 @@
 /// <reference path="../../../src/workflow-defs.d.ts" />
 
+import { stateApproach } from "../../../src/lib/forced-externalization.js";
+
 export const name: string = "implement-and-review";
 
 export const description: string =
@@ -9,11 +11,15 @@ export const description: string =
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   // Step 1: Coder implements (with one retry on session error)
-  let coder = await ctx.runAgent("coder", ctx.task);
+  // H-085 (forced externalization): Require the coder to state its approach
+  // before implementing. EXP-044 showed even 1 sentence of externalization
+  // eliminates common judgment failures.
+  const coderTask = stateApproach(ctx.task);
+  let coder = await ctx.runAgent("coder", coderTask);
   if (coder.status === "error") {
     // 34% of historical escalations were coder session errors (timeouts,
     // interruptions). Retry once before escalating — many are transient.
-    coder = await ctx.runAgent("coder", ctx.task);
+    coder = await ctx.runAgent("coder", coderTask);
     if (coder.status === "error") {
       return ctx.escalate("coder failed after retry", { error: coder.error });
     }
@@ -24,7 +30,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   // QA must read files and run checks itself — never trust the summary.
   const reviewTask =
     `Phase 1: DIAGNOSE — gather evidence before any verdict.\n` +
-    `Read the changed files yourself and run checks yourself.\n\n` +
+    `Read the changed files yourself and run checks yourself.\n` +
+    `Before forming ANY verdict, list what you checked and what you found.\n\n` +
     `## Task Description\n${ctx.task}\n\n` +
     `## Coder's Summary (claims to verify — do NOT trust without checking)\n${coder.lastAssistantText}\n\n` +
     `Your job: verify the coder's claims by reading the actual files and running tsc/tests yourself.\n` +

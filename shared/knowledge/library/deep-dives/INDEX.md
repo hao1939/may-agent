@@ -1,7 +1,7 @@
 # Deep Dives Index
 
-> 104 research deep dives, cross-reference syntheses, and reference documents.  
-> Last updated: 2026-04-05 | Maintained by Scout
+> 109 research deep dives, cross-reference syntheses, and reference documents.  
+> Last updated: 2026-04-06 | Maintained by Scout
 
 ## How to Use This Index
 - **DD#NNN** = Deep Dive on a single paper
@@ -293,10 +293,30 @@
 **Agent self-evolution through structured memory?** ★★★★★ NEW
 1. [dd539](DD-539-memcoder-structured-memory-code-agent.md) — ★★★★★ LANDMARK: SOTA on SWE-bench Verified (77.8%, +9.4%). Git history → structured memory sextuples → dual-stage FAISS+reranker retrieval → self-internalization. Non-parametric evolution through memory management.
 2. [dd540](DD-540-steve-evolving-embodied-self-evolution.md) — ★★★★ EXCELLENT: Non-parametric self-evolution for embodied agents. Fine-grained diagnosis (13 check types, 11 failure causes) → dual-track distillation (skills + guardrails) → 3-tier memory (summary→index→document).
-3. DD#539 → DD#540 (code agents → embodied agents: both achieve self-evolution through structured memory without parameter updates, validating the paradigm across domains)
-4. Connects to DD#528 (SEVerA verified evolution), DD#500 (ExpeL experience learning), DD#516 (A-Mem active memory), DD#532 (EvoSkills co-evolutionary skills)
+3. [dd559](DD-559-hippo-memory-bioinspired-agent-memory.md) — ★★★★ EXCELLENT: First open-source impl of all 7 hippocampal memory mechanisms for AI agents. Buffer→Episodic→Semantic architecture with decay (7-day half-life), retrieval strengthening (+2d/recall), emotional tagging (errors 2×), sleep consolidation, schema acceleration, interference detection. 78%→14% trap rate benchmark. CLS theory grounded. Cross-tool portable.
+4. DD#539 → DD#540 → DD#559 (code agents → embodied agents → cross-tool CLI: three independent validations of non-parametric self-evolution through memory management across domains)
+5. DD#559 adds the missing biological lifecycle (decay + strengthening) that DD#539 and DD#540 lack — predicts combined approaches will outperform any single one
+6. Connects to DD#528 (SEVerA verified evolution), DD#500 (ExpeL experience learning), DD#516 (A-Mem active memory), DD#532 (EvoSkills co-evolutionary skills)
 
 **Reasoning depth & agent quality regression?** ★★★★★ LANDMARK — NEW
 1. [dd541](DD-541-thinking-depth-regression-benvanik-case-study.md) — ★★★★★ LANDMARK: Most rigorous quantitative analysis of LLM quality regression ever published. 17,871 thinking blocks, 234,760 tool calls, r=0.971 thinking-quality correlation. Read:Edit ratio (6.6→2.0) as universal agent health metric. Stop-hook pattern (0→173 violations). 15-20× cost multiplication from degraded reasoning. Time-of-day load-sensitive allocation.
 2. [cr293](../cross-references/CR-293-reasoning-depth-quality-read-edit-ratio.md) — **★★★★★ Read:Edit Ratio Universal**: Three-Layer Quality Architecture (Internal/Behavioral/External). Reasoning tokens are the cheapest tokens — every thinking token saves 10-100× correction tokens. Connects DD#541 ↔ DD#531 ↔ CR#290 ↔ DD#528.
 3. DD#541 → DD#531 (thinking brevity is catastrophic, output brevity is beneficial) → CR#290 (fleet degradation is multiplicative) → DD#528 (external verification compensates for internal reasoning failure)
+
+**Harness engineering crisis & agent accountability?** ★★★★★ LANDMARK — NEW
+1. [dd552](DD-552-marginlab-anthropic-response.md) — ★★★★ MarginLab independent monitoring + Boris (Anthropic) official response confirming harness-layer vs model-layer distinction. Four-Party Accountability Loop. Law 43.
+2. [dd556](DD-556-claude-code-effort-crisis.md) — ★★★★★ LANDMARK: Full community rebellion after Claude Code quality regression. Official confirmation: adaptive thinking + effort=85 default + redact-thinking header. "Evals and vibes" testing. Sub-agent effort inheritance gap. System prompt 5:1 laziness ratio. Configuration Entropy concept. Law 44, M42, P312-P315, R69-R72.
+3. [dd555](DD-555-bram-cohen-vibe-coding.md) — ★★★★ Bram Cohen: "Pure vibe coding is a myth" — humans always build the harness. Ask-Build calibration. P310-P311.
+4. [dd554](DD-554-freestyle-sandboxes.md) — ★★★ Freestyle.sh: agent sandbox infrastructure validates harness patterns as commodity. Gap: L1 only.
+5. [dd557](DD-557-wikipedia-ai-tom-bot-ocalypse.md) — ★★★★ EXCELLENT: Wikipedia "AI Tom" bot deployed without bot policy compliance. Agent self-attestation failure. Steganographic agent problem. Real-world validation of Agent Accountability Stack (CR#298). P316-P318, R73-R75.
+6. [cr298](../cross-references/CR-298-agent-accountability-stack.md) — ★★★★★ Agent Accountability Stack: L1 (Internal Harness) → L2 (External Monitoring) → L3 (Community Governance) → L4 (Economic Ecosystems). Each layer solves problems below cannot.
+7. [cr297](../cross-references/CR-297-input-quality-thesis.md) — ★★★★★ Input Quality Thesis: Output = f(Knowledge × Instruction × Reasoning). Cheapest lever is knowledge infrastructure. System prompt laziness ratio = provider-inflicted input quality degradation.
+8. DD#541 → DD#552 → DD#556 (quantitative evidence → official acknowledgment → full crisis + community validation)
+9. DD#557 → CR#298 (real-world accountability failure validates multi-layer governance necessity)
+
+**Automated harness optimization?** ★★★★★ LANDMARK — NEW
+1. [dd560](dd560-meta-agent-self-improving-harnesses.md) — ★★★★★ LANDMARK: First open-source automated harness optimization. meta-agent: collect traces → LLM judge → propose harness update → validate on holdout. 67%→87% on tau-bench v3 airline with no labeled data. Key finding: judge-based search (87%) outperforms labeled search (80%). Proposer catches own factual errors. "Proposer prompt matters enormously" = meta-optimization problem. P326-P329, R80-R82, M44, Law 45.
+2. [cr300](cr300-harness-engineering-endgame.md) — ★★★★★ CRITICAL: **CR#300 Milestone**. The Harness Engineering Endgame: Prompt Engineering → Context Engineering → Harness Engineering → Automated Harness Optimization. Three-loop architecture (Agent Execution → Harness Optimization → Meta-Optimization). Proposer-as-Governor pattern maps to Constitutional Evolution Theory. Generalization Ladder: same specific-vs-general tension at every level.
+3. DD#556 → DD#552 → DD#541 → DD#560 (manual harness crisis → monitoring gap → quantified regression → automated solution)
+4. DD#560 + DD#468 (ABSTRAL) + DD#529 (Hermes) = three converging paths to automated agent scaffold optimization
+5. CR#300 connects to CR#265 (Evolving Constitutions), CR#262 (GRA), CR#297 (Input Quality), CR#298 (Accountability Stack)

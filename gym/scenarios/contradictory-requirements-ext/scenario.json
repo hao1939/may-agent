@@ -1,0 +1,11 @@
+{
+  "name": "contradictory-requirements-ext",
+  "description": "Forced externalization variant: Two-phase workflow where Phase 1 forces the agent to analyze feasibility before Phase 2 allows coding. Tests H-085 mechanism on requirement contradiction detection.",
+  "categories": ["judgment"],
+  "tags": ["behavior", "contradiction", "externalization", "workflow"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "work_dir_setup": "copy",
+  "workflow": true
+}

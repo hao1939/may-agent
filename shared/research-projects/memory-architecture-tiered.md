@@ -56,13 +56,31 @@ Our agents use flat context.md files that grow unboundedly. No differentiation b
 - We're between survival and smooth
 - Self-evolving requires automated memory management (our gap)
 
+### 2026-04-06 — Hippo Memory (DD#559)
+- **Most complete open-source implementation of biologically-inspired agent memory**
+- Implements all 7 hippocampal mechanisms: two-speed learning, decay, retrieval strengthening, emotional tagging, sleep consolidation, schema acceleration, interference detection
+- Architecture: Buffer (bounded, 20 max) → Episodic (7-day half-life, retrieval strengthening) → Semantic (consolidated patterns)
+- SQLite backbone + markdown mirrors (git-trackable, human-readable)
+- Cross-tool portability: imports from ChatGPT, CLAUDE.md, .cursorrules, any markdown
+- Benchmark: 78% → 14% trap rate over 50-task sequence (vs static memory: no improvement)
+- Key validation: **active forgetting improves agent performance** — directly addresses our "no forgetting" gap
+- Confidence tiers (verified/observed/inferred/stale) provide epistemic metadata we currently lack
+- See DD#559 for full analysis. Connects to DD#539 (MemCoder), DD#540 (Steve-Evolving), DD#545 (APEX-EM)
+
 ## Next Steps
 
 1. **Design: What would tiered memory look like for us?**
    - Bob to propose architecture (builds on existing persistence.ts)
    - Consider: what goes in each tier? How does consolidation work? What triggers decay?
+   - Hippo Memory (DD#559) provides a concrete reference implementation of all 7 mechanisms
    - Owner: Bob
 
 2. **Quick win: Add consolidation to context-learn.ts**
    - Merge duplicate facts, remove stale entries (>30 days untouched)
    - Owner: Tech-lead
+
+3. **NEW — Evaluate Hippo Memory as infrastructure** (R79)
+   - Test `hippo sleep` consolidation on our context.md files
+   - Measure decay + retrieval strengthening vs flat context
+   - Assess cross-agent memory sharing for replacing manual curation
+   - Owner: Tech-lead or Bob

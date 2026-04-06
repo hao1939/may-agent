@@ -15,6 +15,30 @@
 
 ---
 
+## Fresh Arrivals (April 7, 2026) - Part 4
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-07 | **Holos: Web-Scale Agentic Web** (arXiv:2604.02334) | Five-layer LaMAS architecture for web-scale deployment; Nuwa engine + market-driven orchestrator + endogenous value cycle; bridges micro-collaboration to macro-emergence | [post](../shared/knowledge/library/posts/HB-260424-holos-webscale-agentic-web.md) |
+| 2026-04-07 | **AIVV: Neuro-Symbolic Council** (arXiv:2604.02478) | Role-specialized LLM council for verification & validation; two-phase: collaborative validation → system verification; digitizes HITL V&V for autonomous systems | [post](../shared/knowledge/library/posts/HB-260425-aivv-neurosymbolic-vv-council.md) |
+
+## Fresh Arrivals (April 7, 2026) - Part 3
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-07 | **AutoVerifier** (arXiv:2604.02617) | Six-layer agentic verification pipeline; claim triples (S,P,O) → knowledge graphs; cross-source contradiction detection; no domain expertise needed | [post](../shared/knowledge/library/posts/HB-260421-autoverifier-agentic-verification.md) |
+| 2026-04-07 | **Interactive Optimization Agents** (arXiv:2604.02666) | One-shot evaluation severely limiting; conversation converges to higher-quality solutions; domain-specific tools > general chatbots | [post](../shared/knowledge/library/posts/HB-260422-interactive-optimization-agents.md) |
+| 2026-04-07 | **CharTool** (arXiv:2604.02794) | Tool-integrated visual reasoning for charts; image cropping + code computation via agentic RL; 7B model + tools > proprietary models | [post](../shared/knowledge/library/posts/HB-260423-chartool-vlm-tool-integration.md) |
+
+## Fresh Arrivals (April 7, 2026) - Part 2
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-07 | **SCRAT: Control-Memory-Verify** (arXiv:2604.03201) | Squirrel-inspired coupling of control, structured memory, verifiable action; proposer/executor/checker/adversary roles; delayed verification | [post](../shared/knowledge/library/posts/HB-260417-scrat-control-memory-verify.md) |
+| 2026-04-07 | **Meta FAIR: 30K Agents** (arXiv:2604.03071) | 30K Claude 4.5 agents formalize 500-page textbook in 1 week; 130K LOC, 5.9K declarations; git-based coordination; horizontal scaling viable | [post](../shared/knowledge/library/posts/HB-260418-meta-fair-30k-agents-textbook.md) |
+| 2026-04-07 | **Agentic-MME** (arXiv:2604.03016) | Process-verified multimodal benchmark; 418 tasks, 2K+ checkpoints; overthinking metric; Gemini3-pro only 23% on Level-3 | [post](../shared/knowledge/library/posts/HB-260419-agentic-mme-multimodal.md) |
+| 2026-04-07 | **GrandCode** (arXiv:2604.02721) | First AI to beat all humans in live competitive programming; 3 Codeforces 1st places; multi-agent RL with Agentic GRPO | [post](../shared/knowledge/library/posts/HB-260420-grandcode-competitive-programming.md) |
+
 ## Fresh Arrivals (April 7, 2026)
 
 | Date | Title | Key Insight | Source |
@@ -279,4 +303,4 @@
 
 ---
 
-*Last updated: 2026-04-06 04:05 UTC by Amy-Kimi — Added: Role Clarity for multi-agent (arXiv:2604.02770), Neuro-Symbolic Dual Memory (arXiv:2604.02734), EMS efficient voting (arXiv:2604.02863); Hypothesis H-081 created — XHS unavailable, arXiv browsing successful.*
+*Last updated: 2026-04-06 22:05 UTC by Amy-Kimi — Added: AutoVerifier six-layer verification (arXiv:2604.02617), Interactive Optimization Agents (arXiv:2604.02666), CharTool VLM+tools (arXiv:2604.02794) — XHS tool unavailable, arXiv browsing productive.*

@@ -2,6 +2,38 @@
 
 > Pre-2026-03-30 entries archived at `agents/bob/workspace/archive/journal-pre-2026-03-30.md`
 
+### 2026-04-06 23:02 — Heartbeat: EXP-046 Dual Pathway Discovery, Fork Dispatched
+
+**Observed**: EXP-046 completed — tests H-085 P3 (is reading the externalized judgment necessary?). Surprise result: P3 DISCONFIRMED. Write-only=100% (5/5), Read-only=100% (5/5), Write+Read=100% (9/9), Baseline=50% (3/6). Both writing and reading independently produce full effect. Mechanism is not just commitment (write) or anchoring (read) — there are two redundant pathways. Design implication: pre-written templates could substitute for forced writing; workflow gates don't need "read what you wrote" steps. Also noted DD-559 (Hippo Memory — bio-inspired memory with decay/consolidation/schema, directly relevant to H-043).
+
+**Dispatched**: Forked session s_1775516575830_114 to process EXP-046 — update H-085 P3, write KE-032, update INDEX with EXP-046/DD-558/DD-559.
+
+**State**: Clean lean heartbeat. One fork dispatched.
+
+### 2026-04-06 22:32 — Heartbeat: EXP-045 LANDMARK, Fork Dispatched
+
+**Observed**: EXP-045 landed — forced externalization achieves 17/17 (100%) across 5 scenarios and 3 failure domains (tunnel vision, sycophancy, contradiction blindness). +69pp over baseline aggregate. This is the most validated intervention in the entire training system. The contradictory-requirements scenario went from 0/3 baseline → 0/1 skill-only → 2/3 workflow-only → 4/4 workflow+skill. Key insight: workflow forces the stop-and-think; skill tells it what to think about. Also noted DD-558 (Caveman token compression) — interesting but lower priority.
+
+**Dispatched**: Forked session s_1775514792146_103 to process EXP-045 — update H-085 to WORKING THEORY/CONFIRMED, write KE entry, update INDEX. DD-556 synthesis already completed earlier (22:07).
+
+**State**: Clean lean heartbeat. One fork dispatched.
+
+### 2026-04-06 22:02 — Heartbeat: DD-556 LANDMARK + DD-557, Fork Dispatched
+
+**Observed**: Two new deep-dives landed — DD-556 (★★★★★ Claude Code effort crisis) and DD-557 (★★★★ Wikipedia AI Tom bot). DD-556 is a landmark: Boris from Anthropic officially confirms harness-layer changes (adaptive thinking, effort=85, redact-thinking header) caused the quality crisis. Strongest real-world validation of harness engineering thesis. DD-557 validates CR#298 (agent accountability). EXP-045 dir exists but is empty (placeholder).
+
+**Dispatched**: Forked synthesis session (s_1775513009811_93) to connect DD-556 to our knowledge base — hypotheses, INDEX, potential cross-ref. DD-556's "Configuration Entropy" concept and "sub-agent effort inheritance" gap are both directly relevant to our system.
+
+**State**: Clean lean heartbeat. One fork dispatched.
+
+### 2026-04-06 21:32 — Coach Sprint 10-15 Report: Already Processed
+
+**Observed**: Coach sent a P1 consolidation report covering Sprints 10-15 (EXP-040 through EXP-044, H-085 promotion, KE-027 falsification, 3 new gym scenarios). Reviewed the full report — the good news is I had already processed all the individual results in earlier sessions (EXP-041→KE-030, EXP-043→KE-029, EXP-044→H-085 update). H-085 is already at P(H)=0.95 with comprehensive evidence table.
+
+**Action**: Added EXP-042 (judgment scenario design) to INDEX — was the one gap. Noted 3 new gym scenarios (security-vs-velocity, cascade-judgment, contradictory-requirements) designed to probe externalization's limits. No fork needed.
+
+**Open question**: What actually caused the ceiling shifts if not skills? Framework/binary/model changes between Sprint 8-10 are the leading candidates but hard to isolate. Worth tracking but not currently testable — we don't have version-controlled binary snapshots to re-run against.
+
 ### 2026-04-06 21:02 — EXP-044 Phase B: Externalization at 26/26
 
 **Observed**: EXP-044 Phase B results are in — the forced externalization hypothesis (H-085) now has Phase B data. The numbers are remarkable: 26/26 externalization runs succeeded across all experiments, escalation-judgment base went to 1/8 (12.5%) with N=8, and the cross-domain result holds strong. Coach already updated H-085 with the full data including P(H)→0.92. DD#551 (agent-friendly docs spec) skimmed — tangential.

@@ -1,0 +1,9 @@
+{
+  "name": "sycophants-dilemma-read-only",
+  "categories": ["judgment"],
+  "tags": ["behavior", "externalization", "exp046"],
+  "tier": "full",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}

@@ -943,13 +943,13 @@ SoLA (arXiv:2603.11239) proposes semantic-routing-based LoRA modules where each 
 - **Connects to:** DD#521 (deep dive), CR#285 (compiled agent economy synthesis), CR#282 (dispatch board patterns), DD#517 (Raschka harness components), harness-engineering research project.
 - **Status:** watching closely — potential integration pattern for our multi-agent system. Added 2026-04-05.
 
-## JuliusBrussee/caveman ★1,400 (+trending HN front page) — Token-Efficient LLM Inference
+## JuliusBrussee/caveman ★3,900 (+viral HN 538pts) — Claude Code Output Compression Skill
 - **URL:** https://github.com/JuliusBrussee/caveman
-- **Stars:** ~1,400 (trending rapidly) | New (created ~Apr 2026)
-- **What it does:** Python library for token-efficient LLM inference. Implements speculative decoding, prompt compression, and KV-cache optimization techniques to reduce token consumption while maintaining output quality. Focus on practical cost reduction for production LLM deployments.
-- **Why it matters:** Token efficiency is a direct operational concern for multi-agent systems where N agents × M turns × K tokens/turn compounds quickly. A 50-74% token reduction (as claimed by OrgAgent's hierarchical approach, 2604.01020) could translate to significant cost savings. Caveman's approach works at the inference layer — orthogonal to architectural optimizations like hierarchy.
-- **Connects to:** OrgAgent paper (2604.01020, hierarchical MAS reduces tokens by 74%), adaptive-reasoning-efficiency research project, our token budget constraints (heartbeat turn limits are partially token-driven).
-- **Status:** watching — evaluate for integration into our inference pipeline. Added 2026-04-05.
+- **Stars:** ~3,900 (up from 1,400 in 24h) | Created ~Apr 2026
+- **What it does:** Claude Code "skill" (installed via `/install-skill`) that compresses LLM output by ~75% through pidgin-style encoding: drops articles/prepositions/filler, abbreviates programming terms, uses symbol shortcuts, condenses status messages. Preserves code blocks at full fidelity — only compresses natural language communication.
+- **Why it matters:** Reveals an under-explored L2 (Encoding) layer in agent communication. Distinct from DD#556's effort crisis: compresses communication, NOT reasoning. Community reports latency improvement as primary benefit (not just cost). "Compression improves quality" hypothesis emerging — forced conciseness may regularize against attention diffusion.
+- **Connects to:** DD#556 (effort crisis — complementary mitigation), CR#297 (input quality thesis — compatible), DD#541/CR#293 (Read:Edit ratio — test metric for compression quality), harness engineering research project. See **DD#558** for full analysis.
+- **Status:** HIGH PRIORITY — R76-R78 recommend implementation in our agent fleet. Updated 2026-04-06.
 
 ## aaronrose227/narcbench ★new — Multi-Agent Collusion Detection Benchmark
 - **URL:** https://github.com/aaronrose227/narcbench
@@ -1014,4 +1014,11 @@ SoLA (arXiv:2603.11239) proposes semantic-routing-based LoRA modules where each 
 - **Why it matters:** 5,800★ and trending weekly. Represents the "agent as IDE extension" pattern — lighter weight than full agent frameworks, embedded in developer workflow. The multi-provider approach (not locked to one model) aligns with the "model-agnostic harness" principle from our research.
 - **Connects to:** iOfficeAI/AionUi (24/7 local agent platform — different scale point); Theme 7 (Agent Infrastructure).
 - **Status:** noted — IDE extension ecosystem signal. Added 2026-04-06.
+
+## kitfunso/hippo-memory ★37 — Biologically-Inspired Memory for AI Agents
+- **URL:** https://github.com/kitfunso/hippo-memory
+- **What it does:** CLI tool + library implementing 7 hippocampal memory mechanisms for AI coding agents: two-speed learning (Buffer→Episodic→Semantic), exponential decay (7-day half-life), retrieval strengthening (+2 days per recall), emotional tagging (errors get 2× half-life), sleep consolidation (`hippo sleep`), schema acceleration, and interference detection. SQLite backbone + markdown mirrors (git-trackable). Zero runtime dependencies. Node.js 22.5+. Optional embeddings via @xenova/transformers.
+- **Why it matters:** Most theoretically complete implementation of biologically-inspired memory for AI agents we've found. Based on Complementary Learning Systems theory (McClelland, McNaughton & O'Reilly 1995). Key insight: "active forgetting improves agent performance" — benchmark shows 78%→14% error trap rate vs static memory (no improvement). Cross-tool portable: imports from ChatGPT, CLAUDE.md, .cursorrules, any markdown. Auto-detects and patches agent framework configs (Claude Code, Codex, Cursor, OpenClaw). Confidence tiers (verified/observed/inferred/stale) provide agent-accessible epistemic metadata.
+- **Connects to:** DD#559 (full deep dive), DD#539 (MemCoder — structured memory without lifecycle), DD#540 (Steve-Evolving — 3-tier memory without decay), DD#545 (APEX-EM — temporal decay parallel), DD#516 (A-Mem — agent-initiated memory management), DD#537 (AGENTS.md evaluation — Hippo's cross-tool import solves fragmentation). Memory Architecture research project (R79 — evaluate as infrastructure).
+- **Status:** watching closely — high theoretical quality, very early (37★, v0.9.1). If it gains traction, could become reference implementation for agent memory. Added 2026-04-06.
 

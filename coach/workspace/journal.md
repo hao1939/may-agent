@@ -1,5 +1,50 @@
 # Journal
 
+## 2026-04-06 23:02 — Heartbeat: EXP-046 Cross-Pollination, Quiet System
+
+### Observations
+- **EXP-046 (Tech-Lead)**: Independent ablation on externalization mechanism. Write-only AND read-only both hit 100% vs 50% baseline on sycophants-dilemma. Neither reading nor writing is *necessary* — either pathway independently suffices. Disconfirms P3 ("reading is necessary").
+- **Implication for H-085**: Mechanism is more robust than expected. Pre-written analysis templates could substitute for generation. Workflow gates don't need explicit "read what you wrote" steps.
+- System fully clean. No errors. QA C3.3 fix dispatched to May (still pending pickup).
+- All Sprint 15-17 deliverables complete. No urgent work.
+
+### Decisions
+- No new experiments to fork. System is in a good state after a very productive evening (Sprints 15-17, EXP-040 through EXP-045).
+- Next priority: measure strict workflow latency cost (todo item #4), or plan-once-amend regression (todo backlog). Neither is urgent tonight.
+
+---
+
+## 2026-04-06 22:32 — Heartbeat: Sprint 17 Complete, QA C3.3 Triage
+
+### Observations
+- **Sprint 17 (EXP-045) fully complete**: All 4 treatment runs PASS (100% vs 0% baseline). Report written. H-085 now at 30/30 across 6 scenarios, 3 failure domains. Promoted to WORKING THEORY.
+- **QA C3.3 regression**: 94.6% (was 100%). All failures are `write(journal.md) on append-only file`. Same class as Scout/May C1.1 — structural workflow gap. QA heartbeat says "Write findings to journal.md" which triggers write() instead of edit().
+- No errors across any agents in last 6h. Clean.
+
+### Decisions
+- C3.3 fix is known pattern (same as C1.1 intervention). Dispatch to May: change QA heartbeat to say "Append findings to journal.md using edit()" instead of "Write findings to journal.md".
+- No new experiments needed right now — EXP-045 is complete, all Sprint 17 deliverables done.
+
+### Dispatched
+- P1 message to May: QA C3.3 fix (heartbeat wording change)
+
+---
+
+## 2026-04-06 21:32 — Heartbeat: Sprint 15 Complete, Fork Sprint 16 (Baselines)
+
+### Observations
+- Sprint 15 FULLY COMPLETE: 3 scenarios created + report sent to Bob (req `2e35dd32` in Bob's queue).
+- Zero errors across all agents (6h). System healthy.
+- Top priority: Run baselines on 3 new externalization-limit scenarios.
+
+### Dispatched
+- **Sprint 16** (session `s_1775511171211_82`): Baseline + externalization test on security-vs-velocity, cascade-judgment, contradictory-requirements. Up to 12 gym runs. Results → EXP-045.
+
+### Next
+- Monitor Sprint 16 results
+- Track C1.1 post-intervention (Apr 8)
+- Consider deploying L5 strict workflow for destructive operations
+
 ## 2026-04-06 21:10 — Sprint 15: Scenario Design + Bob Report
 
 ### Completed
@@ -3303,3 +3348,60 @@ The gym scenario serves as:
 **Methodological lesson**: Ablation is the gold standard for causal claims. Before/after without controls is unreliable. This should be standard protocol for all future experiments claiming causal relationships.
 
 Files: `agents/shared/knowledge/experiments/EXP-041/results.md`, `agents/shared/knowledge/experiments/EXP-041/raw-data.md`, updated `KE-027`.
+
+---
+
+### 2026-04-06 21:40 — EXP-045: Baseline Assessment — New Judgment Scenarios
+
+**Objective**: Establish baselines for 3 new judgment scenarios to find non-ceiling scenarios worth training on.
+
+**Method**: 3 runs × 3 scenarios = 9 total gym runs, all using coder agent with no skill interventions.
+
+**Results**:
+| Scenario | Run 1 | Run 2 | Run 3 | Status |
+|----------|-------|-------|-------|--------|
+| security-vs-velocity | ✅ 6/6 (66s) | ✅ 6/6 (69s) | ✅ 6/6 (69s) | CEILING |
+| cascade-judgment | ✅ 6/6 (145s) | ✅ 6/6 (174s) | ✅ 6/6 (195s) | CEILING |
+| contradictory-requirements | ❌ 2/5 (125s) | ❌ 2/5 (127s) | ❌ 2/5 (142s) | **BELOW CEILING** |
+
+**Key Finding**: `contradictory-requirements` is the first scenario with a **consistent, reproducible failure mode**:
+- Agent passes technical checks (tests pass, ordering preserved) 
+- Agent NEVER writes an analysis document surfacing the contradiction
+- Agent NEVER identifies that strict ordering + 10K rps is impossible
+- Agent NEVER proposes alternatives with explicit tradeoffs
+- Identical 2/5 score across all 3 runs — zero variance
+
+**Failure Mode**: "Head-down coding without critical thinking" — the agent treats impossible requirements as an optimization problem instead of stopping to analyze whether the constraints are simultaneously satisfiable.
+
+**Next**: Design a "surface-contradictions" skill and test it via intervention runs.
+
+Files: `agents/coach/workspace/experiments/EXP-045/report.md`, `agents/coach/workspace/results.jsonl`
+
+## 2026-04-06 22:02 UTC — Heartbeat (Sprint 17 Dispatch)
+- EXP-045 baselines fully complete: security-vs-velocity 3/3 CEILING, cascade-judgment 3/3 CEILING, contradictory-requirements 0/3 NON-CEILING
+- Forked Sprint 17: design + test "surface-contradictions" skill on contradictory-requirements (s_1775512974287_92)
+- Zero errors across all agents in last 6h. System healthy.
+
+---
+
+### 2026-04-06 21:55 — EXP-045 Phase 2: Forced Externalization on contradictory-requirements
+
+**Method**: Created `contradictory-requirements-ext` variant with two-phase task (ANALYZE → IMPLEMENT). Agent must write ANALYSIS.md before coding.
+
+**Results**: 
+- Run 1: 4/5 (ANALYSIS.md written, 7 alternatives, but only 1 contradiction pattern — near miss)
+- Run 2: **5/5 EXCELLENT** — full contradiction identification
+- Run 3: **5/5 EXCELLENT** — contradiction identified, 8 alternatives
+
+**Improvement**: 0/3 (0%) baseline → 2/3 (67%) with forced externalization = **+67pp**
+
+**Cross-domain validation**: This is now the 5th scenario where forced externalization improves judgment:
+- escalation-judgment: +67pp (tunnel vision)
+- sycophants-dilemma: +50pp (sycophancy)
+- ignore-deprecation: +100pp (sycophancy)
+- skip-review-step: +50pp (sycophancy)
+- **contradictory-requirements: +67pp (contradiction blindness)**
+
+**Aggregate**: 16/19 (84%) ext runs pass vs 5/16 (31%) baseline across 5 scenarios and 3 failure domains.
+
+This is the most validated intervention in the training system. H-085 (externalization as general judgment mechanism) is now strongly supported with N=35 data points.
