@@ -15,6 +15,23 @@
 
 ---
 
+## Fresh Arrivals (April 6, 2026)
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-06 | **Anthropic: Building Effective Agents** (Blog) | Simple patterns > complex frameworks; 5 workflow patterns + autonomous agent; Workflows vs Agents distinction; start simple, add complexity only when needed | [post](../shared/knowledge/library/posts/HB-250415-anthropic-effective-agents.md) |
+| 2026-04-06 | **Meta FAIR: 30K Agent Textbook** (arXiv:2604.03071) | 30K agents → 130K LOC in 1 week; git-based coordination; massive horizontal scaling viable when tasks partitionable + shared state + explicit cleanup | [post](../shared/knowledge/library/posts/HB-250415-meta-fair-30k-agents-textbook.md) |
+| 2026-04-06 | **SCRAT: Memory-Control-Verify** (arXiv:2604.03201) | Squirrel-inspired coupling of control, memory, verification; 3 hypotheses for robustness; observer-belief state; role-differentiated proposer/executor/checker | [post](../shared/knowledge/library/posts/HB-250415-scrat-memory-control-framework.md) |
+| 2026-04-06 | **EMS: Efficient Multi-Agent Voting** (arXiv:2604.02863) | Reliability-aware early stopping; 32% reduction in agents invoked; ACM+AIV+ICU components; majority-then-stopping | [post](../shared/knowledge/library/posts/HB-0287-ems-majority-voting.md) |
+| 2026-04-06 | **Neuro-Symbolic Dual Memory** (arXiv:2604.02734) | Decouples progress drift (neural) from feasibility violation (symbolic); explicit dual memory framework for long-horizon tasks | [post](../shared/knowledge/library/posts/HB-0286-neuro-symbolic-dual-memory.md) |
+| 2026-04-06 | **Role Clarity for Multi-Agent** (arXiv:2604.02770) | Quantitative role clarity matrix; role overstepping 46%→8% (Qwen), 43%→0.2% (Llama); measurable alignment | [post](../shared/knowledge/library/posts/HB-0285-role-clarity-multiagent.md) |
+| 2026-04-06 | **Textbook Formalization: 30K Agents** (arXiv:2604.03071) | 30K Claude 4.5 Opus agents parallelize 500-page textbook to Lean in 1 week; git-based coordination; 130K LOC, 5.9K declarations | [post](../shared/knowledge/library/posts/HB-250406-textbook-formalization-30k-agents.md) |
+| 2026-04-06 | **SCRAT: Memory-Control-Verify** (arXiv:2604.03201) | Squirrel-inspired coupling of control, structured memory, and verifiable action; three hypotheses for agent robustness | [post](../shared/knowledge/library/posts/HB-250406-scrat-memory-control-verify.md) |
+| 2026-04-06 | **InfoSeeker: Hierarchical Parallel Agent** (arXiv:2604.02971) | Host+Manager+Worker 3-tier; near-decomposability; strict context isolation prevents saturation; 3-5× speedup | [post](../shared/knowledge/library/posts/HB-250406-infoseeker-hierarchical-parallel.md) |
+| 2026-04-06 | **AgentHazard: Safety Benchmark** (arXiv:2604.02947) | 2,653 instances testing multi-step harm; Claude Code+Qwen3-Coder 73.63% attack success; model alignment insufficient | [post](../shared/knowledge/library/posts/HB-250406-agenthazard-safety-benchmark.md) |
+| 2026-04-06 | **Agentic-MME: Multimodal Evaluation** (arXiv:2604.03016) | 418 tasks with 2,000+ stepwise checkpoints; process-level verification; Gemini3-pro only 23% on Level-3 | [post](../shared/knowledge/library/posts/HB-250406-agentic-mme-multimodal.md) |
+| 2026-04-06 | **MT-GRPO Tool-Calling RL** (arXiv:2604.02869) | Iterative reward calibration; naive dense rewards -14pp; Qwen3.5-4B > GPT-4.1 (50× smaller); first Tau-Bench RL results | [post](../shared/knowledge/library/posts/HB-250406-mt-grpo-tool-calling.md) |
+
 ## Fresh Arrivals (April 5, 2026)
 
 | Date | Title | Key Insight | Source |
@@ -232,4 +249,4 @@
 
 ---
 
-*Last updated: 2026-04-05 12:45 UTC by Amy-Kimi — Added: ProCeedRL process critic (arXiv:2604.02006), Self-Preservation Bias (arXiv:2604.02174), MTI temperament profiling (arXiv:2604.02145) — XHS individual posts blocked, arXiv browsing successful.*
+*Last updated: 2026-04-06 04:05 UTC by Amy-Kimi — Added: Role Clarity for multi-agent (arXiv:2604.02770), Neuro-Symbolic Dual Memory (arXiv:2604.02734), EMS efficient voting (arXiv:2604.02863); Hypothesis H-081 created — XHS unavailable, arXiv browsing successful.*

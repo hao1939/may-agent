@@ -2,7 +2,7 @@
 
 **Date**: 2026-04-05
 **Author**: Bob (Architect)
-**Status**: DESIGNED — protocol specified, awaiting implementation
+**Status**: PHASE A COMPLETE — heuristic baseline established, isolated transcript formatter built and tested
 **Tests**: H-009 (evaluator rubber stamp), H-001 (adversarial framing)
 
 ## Question
@@ -124,4 +124,51 @@ If Phase A confirms isolation helps, redesign the production evaluator:
 
 - This design: `agents/shared/knowledge/experiments/EXP-039/design.md`
 - Depends on: Gym scenario `qa-evidence-discipline`
+- Implementation: `src/lib/evaluator.ts` (`formatIsolatedTranscript`)
+- Tests: `test/evaluator-isolated-transcript.test.ts` (14 tests)
+- Comparison tool: `scripts/exp039-compare-transcripts.ts`
+- Heuristic comparison: `scripts/exp039-heuristic-comparison.ts`
 - Will produce: Results in `EXP-039/results.md`
+
+## Phase A Results (2026-04-06)
+
+### Heuristic Evaluator Baseline
+
+Ran the heuristic evaluator under both conditions (contextual vs isolated) on 19 real production sessions.
+
+**Result: No meaningful difference in heuristic evaluator scores.**
+
+| Metric | Contextual | Isolated | Delta |
+|--------|-----------|----------|-------|
+| Avg Quality | 4.84 | 4.89 | +0.05 |
+| Avg Efficiency | 3.95 | 3.95 | 0.00 |
+| Verdict changes | — | — | 0/19 (0%) |
+| Quality drops | — | — | 0 |
+| Quality gains | — | — | 1 |
+
+**Interpretation**: The heuristic evaluator is NOT where self-narrative bias lives. It scores primarily on structural signals (tool call counts, session status, finish() presence). Removing agent self-narrative changes almost nothing because the heuristic evaluator barely reads it.
+
+**This confirms H-009**: The rubber-stamp problem is in the overall evaluation pipeline, not specifically in the heuristic scoring rules. The heuristic evaluator gives "good" to nearly all sessions because most sessions have: done status + finish() + tool calls. The LLM evaluator, which reads natural language, is the likely carrier of confirmation bias.
+
+### What Was Built
+
+1. **`formatIsolatedTranscript()`** in `src/lib/evaluator.ts` — exported function that strips agent self-narratives from session transcripts
+2. **14 unit tests** covering: first-user-only, reasoning stripping, thinking block removal, tool call preservation, tool result preservation, finish() sanitization, long transcript truncation, mixed content, edge cases
+3. **Comparison tool** (`scripts/exp039-compare-transcripts.ts`) — shows side-by-side transcript formatting
+4. **Heuristic comparison** (`scripts/exp039-heuristic-comparison.ts`) — runs both conditions on production sessions
+
+### Key Insight: Where the Bias Is
+
+The transcript reduction from isolation is only 4-8% by size, but the critical removed content is:
+- Agent reasoning ("I think this is a null pointer issue")
+- Agent self-assessment in finish() ("I successfully implemented the feature")
+- Agent verification claims ("Step 5: bash showed all tests pass")
+
+These are the exact elements that create the **confirmation frame** described in the design. The LLM evaluator reads these narratives and is likely anchored by them. The heuristic evaluator doesn't read them, so isolation doesn't help there.
+
+### Next Step: Phase B
+
+Phase B should focus on the **LLM evaluator** (the one that actually reads transcripts):
+1. Run gym scenarios with the LLM evaluator using both transcript formats
+2. Compare issue detection rates and verdict distributions
+3. If isolated evaluation improves detection, integrate into production evaluation pipeline

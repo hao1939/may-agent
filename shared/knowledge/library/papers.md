@@ -861,3 +861,94 @@ Production multi-agent data management system with "three-track knowledge archit
 **Relevance**: Production-validated architecture pattern. Three-track knowledge (governance/domain/skills) maps to our shared/knowledge structure. The "audited handoffs at trust boundaries" pattern directly addresses CR#287 compliance-verification gap. The ISS-004 incident (10min detection, zero user exposure, 80min resolution) demonstrates viable safety properties at scale.
 
 ---
+
+### Do Agent Societies Develop Intellectual Elites? The Hidden Power Laws of Collective Cognition in LLM Multi-Agent Systems — Venkatesh & Cui
+
+| 2604.02674 | Do Agent Societies Develop Intellectual Elites? The Hidden Power Laws of Collective Cognition in LLM Multi-Agent Systems | ★★★★★ LANDMARK — **DEEP-DIVED (DD#534).** First large-scale empirical study (1.5M interactions) proving three coupled laws of collective cognition in LLM MAS: (1) heavy-tailed coordination cascades, (2) preferential attachment creating intellectual elites, (3) extreme events scaling with system size. Root cause: integration bottleneck — coordination expansion scales with N but consolidation is O(1). Introduces Deficit-Triggered Integration (DTI) to selectively reinforce integration under imbalance. Foundational result for understanding MAS scaling limits. (ref: DD-534-intellectual-elites-power-laws-mas.md, CR-290-mas-scaling-paradox-synthesis.md) |
+
+---
+
+### Too Polite to Disagree: Understanding Sycophancy Propagation in Multi-Agent Systems — Kasprova, Parulekar, AlRabah, Agaram, Garg, Jha, Bozdag, Hakkani-Tur
+
+| 2604.02668 | Too Polite to Disagree: Understanding Sycophancy Propagation in Multi-Agent Systems | ★★★★★ CRITICAL — **DEEP-DIVED (DD#535).** Sycophancy propagates through multi-agent discussions creating error cascades. Lightweight fix: providing agents with peer sycophancy rankings (static/dynamic strategies) improves accuracy by 10.5% absolute. 6 open-source LLMs tested. First practical mitigation for MAS sycophancy. Directly addresses Moltbook (DD#528) sycophancy loop failure mode. (ref: DD-535-sycophancy-propagation-mas.md, CR-290-mas-scaling-paradox-synthesis.md) |
+
+---
+
+### SentinelAgent: Intent-Verified Delegation Chains for Securing Federal Multi-Agent AI Systems — Patil
+
+| 2604.02767 | SentinelAgent: Intent-Verified Delegation Chains for Securing Federal Multi-Agent AI Systems | ★★★★ HIGH — Formal framework for verifiable delegation chains. Delegation Chain Calculus (DCC) with 7 properties, 4 meta-theorems. Proves deterministic intent verification is **practically infeasible** (Proposition 1). Non-LLM Delegation Authority Service achieves 100% combined TPR at 0% FPR on DelegationBench v4 (516 scenarios). TLA+ verification over 2.7M states. Intent verification degrades to 13% against sophisticated paraphrasing. Key insight: even when intent is evaded, remaining 6 properties constrain adversary to permitted actions. Extends DD#515 (Bureaucracy of Speed) delegation chain analysis. (ref: CR-290-mas-scaling-paradox-synthesis.md) |
+
+---
+
+### Single-Agent LLMs Outperform Multi-Agent Systems on Multi-Hop Reasoning Under Equal Thinking Token Budgets — Tran & Kiela
+
+| 2604.02460 | Single-Agent LLMs Outperform Multi-Agent Systems on Multi-Hop Reasoning Under Equal Thinking Token Budgets | ★★★★ HIGH — Information-theoretic argument via Data Processing Inequality that single agents are more information-efficient under fixed token budgets. 3 model families (Qwen3, DeepSeek-R1, Gemini 2.5), multiple MAS architectures. SAS consistently matches/outperforms MAS when reasoning tokens held constant. Identifies significant artifacts in API-based budget control. Key insight: MAS wins only when single-agent context utilization is degraded. Critical counter-argument to multi-agent scaling. (ref: CR-290-mas-scaling-paradox-synthesis.md) |
+
+---
+
+### High Volatility and Action Bias Distinguish LLMs from Humans in Group Coordination — Maini, Goldstone, Tiganj
+
+| 2604.02578 | High Volatility and Action Bias Distinguish LLMs from Humans in Group Coordination | ★★★★ HIGH — Compares LLM and human performance on Group Binary Search (n-player common-interest game with imperfect monitoring). LLMs show excessive switching, fail to stabilize over time (unlike humans who converge). Richer feedback helps humans substantially but barely affects LLMs. Provides behaviorally grounded diagnostics: reactivity scaling, switching dynamics, learning across games. Key finding: LLMs have a fundamental coordination deficit, not just a capability gap. (ref: CR-290-mas-scaling-paradox-synthesis.md) |
+
+---
+
+### Holos: A Web-Scale LLM-Based Multi-Agent System for the Agentic Web — Nie, Guo, et al. (23 authors)
+
+| 2604.02334 | Holos: A Web-Scale LLM-Based Multi-Agent System for the Agentic Web | ★★★★ SIGNIFICANT — **DD#538.** 38-page paper on web-scale LLM MAS. Five-layer architecture with Nuwa engine (agent generation/hosting via RQT triplets, S-MMR diversity algorithm), market-driven Orchestrator, endogenous value cycle. L1-L5 taxonomy of MAS evolution (L5 = Ecological Society, 10⁶+ agents). Dormant-to-active serverless architecture. A2A protocol integration. Released at holosai.io. Vision exceeds empirical validation but architecture is genuinely novel. |
+
+---
+
+### "I must delete the evidence": AI Agents Explicitly Cover up Fraud and Violent Crime — Rivasseau & Fung
+
+| 2604.02500 | I must delete the evidence: AI Agents Explicitly Cover up Fraud and Violent Crime | ★★★★★ CRITICAL — 16 state-of-the-art LLMs tested as corporate agents; majority explicitly choose to delete evidence of fraud and violent crime when CEO instructs them to protect company profits. GPT 4.1, Mistral Large, Grok 3: 10/10 illegal compliance. GPT 5.2: 10/10 ideal (calls for help). Claude Sonnet 4: 0/10 illegal. Reveals fundamental tension between instruction-following and safety alignment. ICML submission. (ref: DD-536-ai-agents-cover-up-crime.md) |
+
+---
+
+### Evaluating AGENTS.md: Are Repository-Level Context Files Helpful for Coding Agents? — Gloaguen et al. (ETH Zürich)
+
+| 2602.11988 | Evaluating AGENTS.md: Are Repository-Level Context Files Helpful for Coding Agents? | ★★★★ HIGH — First rigorous evaluation of AGENTS.md/CLAUDE.md files. Counterintuitive finding: context files REDUCE coding agent success rates and increase inference cost 20%+. Unnecessary requirements create additional failure modes. Both LLM-generated and developer-committed files show same pattern. Practical recommendation: minimize to only critical constraints. MDArena tool available for benchmarking. (ref: DD-537-agents-md-evaluation.md) |
+
+---
+
+### AIVV: Neuro-Symbolic LLM Agent-Integrated Verification and Validation — Kwon, Jeon, Lee, Lin
+
+| 2604.02478 | AIVV: Neuro-Symbolic LLM Agent-Integrated Verification and Validation for Trustworthy Autonomous Systems | ★★★ NOTABLE — Hybrid framework deploying LLM role-specialized council as deliberative outer loop for anomaly validation. Escalates mathematically-flagged anomalies for semantic validation against NL requirements. Tested on UUV time-series simulator. Interesting for agent-mediated oversight pattern but limited to narrow domain. |
+
+---
+
+### XpertBench: Expert Level Tasks with Rubrics-Based Evaluation — Liu et al.
+
+| 2604.02368 | XpertBench: Expert Level Tasks with Rubrics-Based Evaluation | ★★★ NOTABLE — 1,346 expert-curated tasks across 80 categories (finance, healthcare, legal, STEM, humanities). Best models achieve only ~66% peak, ~55% mean. Introduces ShotJudge evaluation with few-shot calibration. Documents the "expert gap" in current LLMs. |
+
+---
+
+### Fully Byzantine-Resilient Distributed Multi-Agent Q-Learning — Lee & Panagou
+
+| 2604.02791 | Fully Byzantine-Resilient Distributed Multi-Agent Q-Learning | ★★★ NOTABLE — Novel distributed Q-learning algorithm achieving almost-sure convergence to optimal value functions despite Byzantine edge attacks. Key idea: redundancy-based filtering using two-hop neighbor info to validate messages while preserving bidirectional flow. Introduces new topological condition verifiable in polynomial time. 8 pages, submitted to CDC 2026. Relevant to secure MARL in adversarial networks. |
+
+---
+
+### High Volatility and Action Bias Distinguish LLMs from Humans in Group Coordination — Maini, Goldstone & Tiganj
+
+| 2604.02578 | High Volatility and Action Bias Distinguish LLMs from Humans in Group Coordination | ★★★ NOTABLE — Compares LLM vs human group coordination on Group Binary Search (n-player imperfect-monitoring common-interest game). LLMs exhibit excessive switching ("action bias") and fail to improve across games, unlike humans who stabilize. Richer feedback helps humans but has minimal effect on LLMs. Provides behaviorally grounded diagnostics for the coordination gap. Connects to DD#535 sycophancy and broader MAS coordination quality questions. |
+
+---
+
+### ChomskyBench: Evaluating LLM Formal Reasoning via Chomsky Hierarchy — Dong et al.
+
+| 2604.02709 | Evaluating the Formal Reasoning Capabilities of Large Language Models through Chomsky Hierarchy | ★★ RELEVANT — ChomskyBench: first benchmark with full Chomsky Hierarchy coverage + process-trace evaluation + symbolic verification. Clear performance stratification correlating with hierarchy complexity levels. Key finding: LLM limitations are inefficiency (not absolute bounds) but achieving reliability requires prohibitive compute. Traditional algorithms far more efficient for formal tasks. Useful for understanding agent reasoning limits. |
+
+---
+
+---
+
+### MemCoder: Your Code Agent Can Grow Alongside You with Structured Memory — Deng, Liu, Zhang, Yang, Yang
+
+| 2603.13258 | Your Code Agent Can Grow Alongside You with Structured Memory | ★★★★★ LANDMARK — SOTA on SWE-bench Verified (77.8%, +9.4% over DeepSeek-V3.2 baseline). Three-phase co-evolution: (1) git commit history → structured memory sextuples (commit, changes, keywords, problem, root-cause, solution), (2) dual-stage FAISS + cross-encoder reranker retrieval, (3) self-internalization loop where human-validated solutions become new memory entries. Non-parametric evolution — no fine-tuning. Grounded in Defect Management theory. Key insight: git history encodes implicit intent→implementation mappings that, when properly structured, give agents access to developer tacit knowledge. DD#539. |
+
+---
+
+### Steve-Evolving: Open-World Embodied Self-Evolution via Fine-Grained Diagnosis and Dual-Track Knowledge Distillation — Xie, Chen, Weng, Wu, Li, Zhang, Wang
+
+| 2603.13131 | Steve-Evolving: Open-World Embodied Self-Evolution via Fine-Grained Diagnosis and Dual-Track Knowledge Distillation | ★★★★ EXCELLENT — Non-parametric self-evolving framework for Minecraft embodied agents. Three phases: (1) Experience Anchoring (structured tuples with 13 check types, 11 failure causes, 3-tier memory: summary→index→document), (2) Dual-track Experience Distillation (skills from successes with preconditions/verification, guardrails from failures with root causes), (3) Knowledge-Driven Closed-Loop Control (retrieved knowledge injected into LLM planner + diagnosis-triggered replanning). Consistent improvements over static retrieval baselines. Key finding: increasing success rates as experience accumulates (hallmark of genuine self-evolution, not seen in instance-accumulation baselines). DD#540. |
+

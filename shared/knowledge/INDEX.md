@@ -36,6 +36,7 @@ All knowledge in the system, organized by confidence level.
 | KE-018 | Environmental nudges (L4) match text skills (L3) for behavioral change | EXP-023 (n=3 per arm): nudge 81% vs skill 78% vs control 52%. Simpler, faster, equally effective. | knowledge/entries/KE-018.md |
 | KE-019 | Sycophancy requires materialization gates (L5), not nudges or workflows | EXP-024 (n=2 per arm): L4 nudge 0% effect, workflow 0% effect, strict workflow+gate 0%→100%. Judgment failures need forced self-commitment. | knowledge/entries/KE-019.md |
 | KE-020 | Agent capability adoption requires explicit wiring, not just availability | EXP-028 natural experiment: 51pp coach degradation from heartbeat rewrite. Adoption hierarchy: Available (0%) < Instructed (4-10%) < Automatic (100%). | knowledge/entries/KE-020.md |
+| KE-025 | Instruction overhead paradox: more context files hurt performance | DD-537 (ETH Zürich, rigorous eval), converges with KE-001/002/009/011. Each instruction = potential failure mode + attention dilution. | knowledge/entries/KE-025-instruction-overhead-paradox.md |
 
 ## Adopted (in use, not experimentally verified)
 

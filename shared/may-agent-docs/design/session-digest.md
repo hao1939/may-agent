@@ -352,9 +352,9 @@ ORDER BY created_at DESC LIMIT 5;
 - **Test:** >95% agreement — monitoring via `[digest-shadow]` log lines
 
 ### Phase 4: Switchover (Day 6+, one at a time)
-- 4a: P62 Recovery → classifier (biggest win: replaces error string matching)
-- 4b: Circuit breaker → classifier
-- 4c: Escalation → classifier
+- 4a: P62 Recovery → classifier ✅ (biggest win: replaces error string matching)
+- 4b: Circuit breaker → classifier ✅
+- 4c: Escalation → classifier ✅ (blocked always escalates; failure only escalates if still_open)
 - 4d: AutoResume → classifier
 - Each: swap, monitor 24h, proceed or revert
 

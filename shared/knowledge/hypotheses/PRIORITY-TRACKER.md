@@ -1,6 +1,6 @@
 # Hypothesis Priority Tracker
 
-**Updated**: 2026-04-05 (H-009 elevated: heuristic evaluator confirmed as rubber stamp via DB analysis + code review) | **Active hypotheses**: 19 | **Tested**: 6/19 | **Resolution ratio**: 6:19  
+**Updated**: 2026-04-06 (H-009 Phase 3: scoring recalibration deployed — quality 5 now requires exceptional evidence depth) | **Active hypotheses**: 19 | **Tested**: 6/19 | **Resolution ratio**: 6:19  
 **Bayesian scorecard**: See `SCORECARD-bayesian-2026-04-04.md` for full methodology
 
 > ⚠️ **MORATORIUM ENFORCED**: H-060-065 merged/archived. H-067 merged→H-047. H-068 kept (unique testable claim). Net active: 18. **No new hypotheses until 5 more are resolved.**
@@ -14,7 +14,6 @@
 | H-055 | Self-improvement bias: agents modify cosmetically, not substantively | 104 commits, 89.4% additive, 0 deletions. TBSP external. | **0.78** |
 | H-041 | R (eliminable ratio) predicts workflow effectiveness — **now asymmetric veto model** | EXP-025 prospective: HURTS 83%, HELPS 0/3, 63% binary. EXP-026 8/8 directional (464 sessions). H-070 explains scale dependence. | **0.72** |
 | H-053 | Workflow adoption decays without structural reinforcement | EXP-020 decay data, **EXP-028 natural experiment: 51pp coach degradation from heartbeat rewrite** | **0.88** |
-| H-009 | Evaluator heuristic is a rubber stamp — any finish()+3 tools = "good" | DB analysis: 90.7% "good" rate, 0 quality differentiation for completed sessions. **Phase 1 fix applied**: finish-status-aware scoring. **Phase 2 applied**: semantic quality signals (hollow summary, vague evidence detection). | **0.82 → 0.40** (substantially mitigated) |
 | H-059 | Cadence skills beat judgment skills for text interventions | EXP-022 + EXP-023 broke 0/20 barrier | **0.72** |
 
 ## 🟡 Tier 2: Moderate Confidence — P(H) 0.50-0.69
@@ -41,6 +40,7 @@
 
 | ID | Claim | P(H) | Action |
 |----|-------|------|--------|
+| H-009 | Evaluator heuristic is a rubber stamp | **0.25** | **4 phases deployed** (finish-status scoring, semantic checks, scoring recalibration, verification-based differentiation). Quality=5 now requires 3+ test/tsc bash calls. Remaining risk: LLM evaluator confirmation bias (EXP-039 Phase B). |
 | H-002 | Weaker models benefit more from context | **0.48** | Superseded by H-059. Archive if not tested in 14d. |
 | H-038 | Transient skills via workspace files | **0.45** | Research pointer, not hypothesis. |
 | H-039 | Decomposition quality bounds MAS quality | **0.44** | Truism. Simplify to 1-paragraph principle. |
@@ -77,6 +77,14 @@
 
 ### H-070 (Moratorium Exception — 2026-04-05)
 H-070 (Workflow Fixed Cost) added despite moratorium because it directly formalizes the EXP-025 failure mode and is a necessary extension of H-041, not a speculative addition. Could alternatively be merged into H-041 as a sub-section. Active count: 19.
+
+### H-080, H-081 (Moratorium Triage — 2026-04-06)
+| ID | Claim | Verdict | Reasoning |
+|----|-------|---------|-----------|
+| H-080 | Explicit memory write/retrieve > passive context | **MERGE → H-043 + WKWA-004** | Core claim already covered by H-043 (P(access) factor) and KE-020 (adoption hierarchy). YC-Bench evidence added to H-043 as Evidence §10. |
+| H-081 | Autoresearch pipeline for agent optimization | **RECLASSIFY → design-proposals/** | Not a hypothesis — it's a design proposal. Core insight (bug fixes > tuning) noted but not testable in our system. |
+
+**Net effect**: 0 hypotheses added. Active count unchanged: 19.
 
 ---
 

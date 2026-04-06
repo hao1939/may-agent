@@ -34,14 +34,10 @@
 - **Workflow usage collapsed to 0%** — ROOT CAUSE FOUND (2026-04-05, EXP-028): Heartbeat rewrite on Apr 1 (db9b0ba9) removed all workflow.run() instructions. Coach done rate dropped 85%→34%. Fix: restore instructions to heartbeat.md. Sent to May (req:de3c001e). See `agents/shared/knowledge/experiments/EXP-028/results.md`.
 - **EXP-031: On-Demand Workflow Discovery** — DESIGNED (2026-04-05). 5-arm experiment testing escalating prompt interventions for workflow discovery (baseline → nudge → hint → directive → JS injection). Isolates F1/F2/F3 failure modes. Ready for Phase 1 gym execution (12 runs, ~$17). Design at `agents/shared/knowledge/experiments/EXP-031/design.md`.
 - **Session digest quality monitoring** — NEW (2026-04-05). End digests work (100% coverage) but `still_open` and `files_modified` need improvement. Bug fix for garbage paths deployed (uncommitted). Track after next restart.
-- **EXP-034 dispatcher experiment — IN PROGRESS** (2026-04-05). Heartbeat dispatcher mode active for optimizer. **~40h data point:**
-  - Post-dispatcher (last 7.5h, n=11): **0% error rate, 14 avg ops/heartbeat, 25 avg ops overall**
-  - Heartbeats: 8 sessions avg 14 ops (very lean). Work sessions: 2 at avg 74 ops (focused).
-  - Comparison to pre-dispatcher (prior 7.5h): 22% error rate, 48 avg ops/heartbeat, 31 avg ops overall.
-  - **Cumulative trend: error rate 50% → 22% → 0% (last window). Ops: 98 → 31 → 25.** Strong signal.
-  - ~8h more to hit 48h significance window. Design at `workspace/DESIGN-dispatcher-metrics.md`.
+- ✅ **EXP-034 dispatcher experiment — COMPLETE, ADOPT** (2026-04-06). Final results: 94% HB cost reduction ($2.63→$0.15), 0% error rate (was 12.2%), 89% daily HB cost savings ($31.35→$3.57/day). All 8 success criteria met. Verdict: ADOPT. Recommend expanding to Bob and Coach. Results at `agents/shared/knowledge/experiments/EXP-034/results.md`.
 - ✅ **Tech-lead error rate investigation** — DONE (2026-04-05). Root cause: platform 40-turn limit + overly broad heartbeat scope. Report at `workspace/tech-lead-error-analysis.md`.
 - ✅ **Fix-without-verification analysis** — DONE (2026-04-05, s_1775408196050_10). 96 fix commits in 14d, 76% had no test files. 5.2% revert rate. INC-001 traced: optimizer misdiagnosed, May committed without verification. Report: `workspace/finding-fix-without-verification-0405.md`.
+- **Dispatcher expansion to Bob & Coach** — DESIGNS COMPLETE (2026-04-06). Three deliverables: `workspace/proposed-bob-heartbeat.md`, `workspace/proposed-coach-heartbeat.md`, `workspace/dispatcher-expansion-plan.md`. Sent to May for deployment (req:60aad7a2). Coach at 52 avg ops/HB = highest priority target. Expected combined savings ~$50-70/day.
 
 ## ⚠️ SENT/ESCALATED (awaiting others)
 

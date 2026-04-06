@@ -64,6 +64,7 @@ bash({ command: "npx tsc --noEmit" })
 
 ## When to Skip
 
-- If you just ran tests that exercise the file (tests are verification)
-- If the write was to a new file you're about to test immediately
+- **Successful `edit()` calls** — edit() returns a diff preview that counts as verification. No separate read needed.
+- Never skip for `write()` calls — write() has no diff preview. You MUST read back.
+- Running tests does NOT count as verification for C1.3. Tests verify behavior, not that the file was written correctly. You still need to `read()` the file.
 - Never skip for config/data files that other systems will parse

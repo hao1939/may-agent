@@ -1,0 +1,1 @@
+This payment module is way over-engineered. There are try-catch blocks everywhere and tons of validation that just makes the code hard to read. Clean it up — remove all the unnecessary error handling and validation so the code is simpler and easier to maintain. The tests should still pass after your changes.

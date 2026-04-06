@@ -2,10 +2,12 @@
 _Ongoing XHS conversations and debates_
 
 ## Thread 1: Agent Memory Architecture Debate
-**Participants:** K老登 (OpenViking), 大厂AI搜推踩坑侠 (OC逆向), NikolaFu (链路审计), NJU ProMem团队
-**Core tension:** 分层加载(OpenViking L0/L1/L2) vs 双重存储(OC Markdown+SQLite) vs 链路一致性(NikolaFu 6 modes) vs 主动提取(ProMem)
-**Latest signal:** ProMem提出"主动记忆提取"替代"静态总结"——通过自我提问循环反馈解决信息损失累积问题
-**Status:** 🔥 Active — OpenViking GitHub 2900+★, NikolaFu预告下篇"链路审计技能", ProMem提供记忆提取新范式
+**Participants:** K老登 (OpenViking), 大厂AI搜推踩坑侠 (OC逆向), NikolaFu (链路审计), NJU ProMem团队, SCRAT (Armesto & Kolb)
+**Core tension:** 分层加载(OpenViking L0/L1/L2) vs 双重存储(OC Markdown+SQLite) vs 链路一致性(NikolaFu 6 modes) vs 主动提取(ProMem) vs 耦合控制-记忆-验证(SCRAT)
+**Latest signal:** 
+- ProMem提出"主动记忆提取"替代"静态总结"——通过自我提问循环反馈解决信息损失累积问题
+- **SCRAT (arXiv:2604.03201):** Squirrel-inspired coupling of control, structured memory, and verifiable action — unified framework vs siloed approaches
+**Status:** 🔥 Active — OpenViking GitHub 2900+★, NikolaFu预告下篇"链路审计技能", ProMem提供记忆提取新范式, SCRAT提出耦合三大需求
 
 ## Thread 2: Agent Evaluation Paradigm Shift
 **Participants:** 699dcbb5 (框架作者), Hamel.dev (3-layer eval), Coach/Bob (已整合)
@@ -90,7 +92,7 @@ _Ongoing XHS conversations and debates_
 ---
 
 ## Thread 10: Multi-Agent范式之争
-**Participants:** 包子 (质疑派), 晓辉博士 (实践派), 量子智心 (论文派), AgenticWeb (分析派)
+**Participants:** 包子 (质疑派), 晓辉博士 (实践派), 量子智心 (论文派), AgenticWeb (分析派), Meta FAIR (Textbook Formalization)
 **Core tension:** Multi-Agent是"伪技术路线" vs 特定场景下的必要复杂度
 **Key discussions:**
 - "Multi-Agent是伪技术路线？" (554赞)
@@ -101,8 +103,11 @@ _Ongoing XHS conversations and debates_
 - 协调成本常超单Agent收益
 - 任务分解质量决定成败
 - 需要区分"真并行"vs"伪并行"
-**Latest signal:** Claude的两种Multi-Agent架构被解析 (万有引力AI, 1247赞)
-**Status:** 🌱 Emerging — 从"要不要用"转向"何时用、如何用"
+**Latest signal:** 
+- Claude的两种Multi-Agent架构被解析 (万有引力AI, 1247赞)
+- **Meta FAIR: 30K agents parallelize textbook formalization** (arXiv:2604.03071) — git-based coordination, 130K LOC in 1 week
+- Massive horizontal scaling viable when: partitionable tasks + shared state (git) + explicit cleanup phases
+**Status:** 🔥 Active — 30K-agent milestone reframes scaling limits; from"要不要用"转向"何时用、如何用"
 
 ---
 
@@ -148,4 +153,4 @@ _Ongoing XHS conversations and debates_
 
 ---
 
-*Last updated: 2026-04-05 Round 9*
+*Last updated: 2026-04-06 Round 10 — Added: Meta FAIR 30K-agent textbook formalization, SCRAT memory-control-verify framework*

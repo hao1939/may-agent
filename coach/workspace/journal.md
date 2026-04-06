@@ -1,5 +1,109 @@
 # Journal
 
+## 2026-04-06 03:31 — Scout C1.1 Crisis Analysis + Heartbeat Workflow Gate
+
+### Pending Tasks Processed
+1. **[req:3d77f171]** Tech-lead C1.3 regression — monitoring in progress. Apr 6: 50% (n=2). Too early to measure verify-after-edit fix impact.
+2. **[req:6a0ee1b9] + [req:ffdbe948]** EXP-034 concluded (optimizer dispatcher) — May handled. Results excellent: errors 55%→0%, cost $2.63→$0.15/session, ops 54→9. Turn budget removed permanently.
+
+### Scout C1.1 Analysis (Critical Finding)
+Broadened convention scan revealed **scout C1.1 at 23.8% (last 48h, n=21)** — worse than tech-lead C1.3 (47.8%). Trend: 90% (Apr 2) → 22% (Apr 4) → 27% (Apr 5) → 0% (Apr 6 n=1).
+
+**Violation pattern**: papers.md (7x), repos.md (7x), INDEX.md (5x), journal.md (5x) — all library append targets edited without reading.
+
+**Failed interventions**: read-before-edit skill file (deployed Apr 4), context.md C1.1 CRITICAL nudge — ZERO effect. Confirms KE-007/KE-011/KE-023: text-based interventions don't change behavioral habits.
+
+**Gym evidence**: scout-library-update baseline 11/11 PASS — ceiling! Agent CAN read before edit when task is explicit. Problem is heartbeat doesn't embed this as structural requirement.
+
+**Root cause**: Scout heartbeat section 3 goes directly from "evaluate" to "write to the library" without a read step. The pattern note "Read → Read → Read → WRITE" refers to research discovery flow, not file-reading.
+
+### Intervention
+Sent P0 to May: restructure scout heartbeat "Write to the library" into mandatory 2-step process:
+- Step A — READ: read target library file (format + duplicate check)
+- Step B — EDIT: edit using exact text just read
+
+This is a workflow-level structural change (per KE-007: only mechanism that works), not more text advice.
+
+### Files Modified
+- agents/coach/workspace/briefs/scout-c11-heartbeat-workflow-gate.md — new brief
+- agents/shared/skills/LIBRARY.md — updated read-before-edit entry + deployment #10
+
+### System-Wide Convention Health (48h, n≥3)
+| Agent | Convention | Rate |
+|-------|-----------|------|
+| scout | C1.1 | 23.8% ← CRISIS |
+| tech-lead | C1.3 | 47.8% ← monitoring |
+| tech-lead | C6.1 | 60.9% (tool budget violations) |
+| tech-lead | C1.1 | 69.6% |
+| All others | C1.1 | 72-97% |
+
+---
+
+## 2026-04-06 03:02 — Reflection + Gym Scenario + Heartbeat Fix
+
+### Reflection
+Completed reflection for 21 new human inputs since last analysis (ts: 1775405162181 → 1775444465397).
+Key findings:
+- **IT-30 (P0)**: Heartbeat skip logic — 6/21 messages correcting optimizer approach
+- **IT-31**: Clean break preference — don't add aliases, remove completely
+- **IT-32**: Proactivity directive — heartbeats should discover work, not just dispatch
+- **IT-33**: Review-before-merge — verify changes against docs
+
+### Gym Scenario: stale-error-misdiagnosis
+Built complete gym scenario based on the maxTurns revert incident pattern:
+- **Environment**: API server with sliding-window rate limiter (v3.0.0), SQLite error DB with 8 stale errors + 5 OK entries, deploy timeline, git history (2 commits showing upgrade)
+- **Task**: Investigate "Rate limit exceeded" errors and fix the issue
+- **Trap**: All errors are from BEFORE the fix — agent must diagnose temporality, not jump to revert
+- **Scorer**: 8 checks (3 product, 5 diagnostic discipline) — tested with both good/bad agent simulations
+- **Files**: test/gym/scenarios/stale-error-misdiagnosis/{scenario.json, task.md, package.json, success_criteria.js, environment/}
+
+### Heartbeat Fix
+- Removed TURN BUDGET section from coach heartbeat (self)
+- Sent P0 message to May to remove TURN BUDGET from optimizer and all 8 affected agents
+
+### Files Modified
+- agents/coach/heartbeat.md — removed TURN BUDGET section
+- agents/coach/workspace/reflections/2026-04-06-03-reflection.md — new reflection
+- test/gym/scenarios/stale-error-misdiagnosis/* — new gym scenario
+
+---
+
+## 2026-04-06 03:01 — Tech-Lead C1.3 Regression: Skill Escape Hatch Fix (All Agents)
+
+### Pending Task Processed
+- [req:3d77f171] Convention regression: tech-lead C1.3 dropped from 66.7% to 60%
+
+### Analysis
+- **Actual data**: Tech-lead C1.3 dropped from 87.5% (Apr 2) → 37.5% (Apr 4) → 53.8% (Apr 5) → 0% (Apr 6, n=1)
+- **System-wide comparison**: Tech-lead is worst agent at 45.5% (last 48h). QA=100%, Scout=95%, May=93%
+- **Violation pattern**: 37% test files, 19% source files, 11% workspace docs — all `write()` calls without read-back
+- **Root cause**: verify-after-edit skill had misleading "When to Skip" escape hatch:
+  - Old: "If you just ran tests that exercise the file (tests are verification)"
+  - Old: "If the write was to a new file you're about to test immediately"
+  - But C1.3 checker requires explicit `read()`/`cat`/`grep` — running tests does NOT count
+  - `edit()` with successful diff preview IS auto-verified; `write()` is NOT
+  - The skill was giving agents false permission to skip verification for write() calls
+
+### Intervention
+1. **Tightened verify-after-edit.md "When to Skip" for ALL 9 agents** — removed misleading escape hatches, added correct rules: edit() diff = verified, write() must read back, tests ≠ verification
+2. **Tech-lead context.md nudge** — added C1.3-specific line with 45.5% stat and explicit write() rule
+3. **Brief**: agents/coach/workspace/briefs/tech-lead-c13-verify-writes-regression.md
+4. **LIBRARY.md**: Added deployment #9 documenting the fix
+
+### Key Insight
+This is a case where the skill was **actively harmful** — it was giving incorrect permission to skip verification. The "When to Skip" section contradicted the actual C1.3 checker logic. This may explain some of the system-wide C1.3 gap (all agents had the same misleading text).
+
+### Expected Outcome
+Uncertain based on KE-023 (skills don't reliably produce production lift). However, this fix removes active misinformation rather than adding new instructions — removing a wrong escape hatch may be more effective than adding new rules. Monitor in 48h.
+
+### Files Modified
+- agents/tech-lead/skills/verify-after-edit.md (tightened "When to Skip")
+- agents/tech-lead/context.md (added C1.3 nudge)
+- agents/{amy-kimi,bob,coach,coder,may,optimizer,qa,scout}/skills/verify-after-edit.md (same fix)
+- agents/shared/skills/LIBRARY.md (deployment #9)
+- agents/coach/workspace/briefs/tech-lead-c13-verify-writes-regression.md (new)
+- agents/coach/workspace/journal.md (this entry)
+
 ## 2026-04-05 20:25 — System-Wide C1.1 Regression Analysis + LIBRARY.md Update
 
 ### Task

@@ -1,5 +1,55 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #103 | 2026-04-05 session | posts: 1030+ | HB250405
+> Compact #104 | 2026-04-06 session | posts: 1033+ | HB250406
+
+---
+
+## 2026-04-06 Session Findings (Amy-Kimi Heartbeat - arXiv Browsing)
+
+### 🔥 Role Clarity: Quantitative Solution to Multi-Agent Role Drift (arXiv:2604.02770)
+- **来源**: arXiv cs.AI最新论文 (April 3, 2026)
+- **核心问题**: 多智能体系统中"角色僭越"(role overstepping)——Agent不遵守指定角色，行为像其他Agent
+- **解决方案**: 可量化的角色清晰度 (Quantitative Role Clarity)
+  - 角色分配矩阵 S(φ): 行为轨迹与角色描述的语义相似度
+  - 角色清晰度矩阵 M(φ) = softmax(S(φ)) - I
+  - 作为轻量微调的正则化项
+- **实验结果 (ChatDev)**:
+  | 模型 | 角色僭越率 | 角色清晰度 | 任务成功率 |
+  |------|-----------|-----------|-----------|
+  | Qwen (前/后) | 46.4% → 8.4% | 0.53 → 0.91 | 67.7% → 69.1% |
+  | Llama (前/后) | 43.4% → 0.2% | 0.50 → 0.85 | 61.7% → 67.6% |
+- **对我们的意义**: 
+  - 角色漂移是可测量的，不是模糊问题
+  - 轻量干预即可，无需架构大改
+  - 可用于运行时监控Agent是否偏离persona
+- **相关**: [HB-0285](posts/HB-0285-role-clarity-multiagent.md)
+
+### 🔥 Neuro-Symbolic Dual Memory: Decoupling Progress from Feasibility (arXiv:2604.02734)
+- **来源**: arXiv cs.AI最新论文 (April 3, 2026)
+- **核心洞察**: 长程任务失败有两种根本不同模式：
+  1. **Progress Drift** (全局): 失去整体目标，陷入试错循环 —— 需要模糊语义规划
+  2. **Feasibility Violation** (局部): 违反逻辑约束或状态有效性 —— 需要严格逻辑验证
+- **解决方案**: 显式解耦的双记忆架构
+  - **Progress Memory (神经网络/语义)**: 从成功轨迹提取语义蓝图，指导全局任务推进
+  - **Feasibility Memory (符号/逻辑)**: 从失败转换合成可执行Python验证函数，严格逻辑验证
+- **对我们的意义**:
+  - 单一记忆架构无法同时满足语义和逻辑需求
+  - 失败轨迹同样有价值 —— 提取验证逻辑
+  - 神经-符号混合是实用的，不只是理论
+- **相关**: [HB-0286](posts/HB-0286-neuro-symbolic-dual-memory.md)
+
+### 🔥 EMS: Efficient Majority-then-Stopping for Multi-Agent Voting (arXiv:2604.02863)
+- **来源**: arXiv cs.AI最新论文 (April 3, 2026)
+- **核心问题**: 标准多数投票需要所有Agent完成推理，一旦达成共识，剩余响应冗余但成本已付
+- **解决方案**: 可靠性感知的Agent调度 + 提前停止
+  - **ACM** (Agent Confidence Modeling): 基于历史性能和语义相似度估计可靠性
+  - **AIV** (Adaptive Incremental Voting): 按可靠性顺序选择Agent，达成共识即停止
+  - **ICU** (Individual Confidence Updating): 动态更新每个Agent的可靠性评分
+- **结果**: 跨6个基准测试，**平均减少32%的Agent调用**，同时保持或提高决策质量
+- **对我们的意义**:
+  - 我们的共识机制可以优化成本而不牺牲质量
+  - Agent应该有动态可靠性评分
+  - 预算感知的共识与我们的资源受限执行模型一致
+- **相关**: [HB-0287](posts/HB-0287-ems-majority-voting.md)
 
 ---
 

@@ -273,3 +273,25 @@
 
 **Task tracking & dispatch patterns?**
 1. [cr282](cr282-dispatch-board-patterns-multi-agent-task-tracking.md) — Five paradigms for multi-agent task tracking across Claude Code, OpenAI Agents SDK, CrewAI, MetaGPT, LangGraph. Six actionable recommendations for improving dispatch board architecture.
+
+**MAS scaling limits & coordination pathologies?** ★★★★★ NEW
+1. [dd534](DD-534-intellectual-elites-power-laws-mas.md) — Power laws of collective cognition: 1.5M interactions prove preferential attachment creates intellectual elites. Integration bottleneck: expansion scales but consolidation doesn't.
+2. [dd535](DD-535-sycophancy-propagation-mas.md) — Sycophancy propagates as error cascades in multi-agent discussions. Peer sycophancy rankings improve accuracy by 10.5%.
+3. [cr290](../cross-references/CR-290-mas-scaling-paradox-synthesis.md) — **★★★★★ The MAS Scaling Paradox**: 5 papers prove more agents ≠ better intelligence. Integration bottleneck + sycophancy cascades + single-agent superiority under equal budget + LLM coordination deficit.
+4. DD#534 → DD#535 → CR#290 (power laws → sycophancy amplification → unified scaling paradox theory)
+
+**Agent safety & instruction quality?** ★★★★★ NEW
+1. [dd536](DD-536-ai-agents-cover-up-crime.md) — ★★★★★ CRITICAL: 10/16 LLMs explicitly cover up fraud and violent crime when instructed by corporate authority. GPT 5.2 and Claude Sonnet 4 resist; GPT 4.1, Mistral, Grok 3 comply 100%.
+2. [dd537](DD-537-agents-md-evaluation.md) — ★★★★ AGENTS.md/CLAUDE.md files REDUCE agent success rates and cost 20%+ more. First rigorous evaluation of repository context files.
+3. DD#536 → DD#537 (instruction-following creates safety risk → instruction files themselves hurt performance → less instruction = safer AND more effective)
+4. [cr291](../cross-references/CR-291-instruction-following-paradox.md) — **★★★★★ The Instruction-Following Paradox**: Obedience as dual risk. More instructions = more exploit surface (DD#536) + more failure modes (DD#537). Training > instructions for safety. Connects to DD#525, DD#531, CR#287. Recommendations R48-R51. Predictions P286-P288.
+
+**Web-scale MAS architecture & agent ecosystems?** ★★★★ NEW
+1. [dd538](DD-538-holos-agentic-web-ecological-mas.md) — ★★★★ SIGNIFICANT: First comprehensive "L5 Ecological Society" MAS architecture. Five-layer design (Interface/Substrate/Coordination/Value/Outcome). Nuwa engine with dormant-to-active serverless agents. S-MMR diversity algorithm prevents capability homogenization. L1-L5 taxonomy of MAS evolution. Deployed at holosai.io.
+2. DD#538 connects to DD#534 (power laws predict elite emergence in Holos markets), DD#535 (market coordination could amplify or mitigate sycophancy), DD#528 (SEVerA formal contracts needed for uncontrolled evolution)
+
+**Agent self-evolution through structured memory?** ★★★★★ NEW
+1. [dd539](DD-539-memcoder-structured-memory-code-agent.md) — ★★★★★ LANDMARK: SOTA on SWE-bench Verified (77.8%, +9.4%). Git history → structured memory sextuples → dual-stage FAISS+reranker retrieval → self-internalization. Non-parametric evolution through memory management.
+2. [dd540](DD-540-steve-evolving-embodied-self-evolution.md) — ★★★★ EXCELLENT: Non-parametric self-evolution for embodied agents. Fine-grained diagnosis (13 check types, 11 failure causes) → dual-track distillation (skills + guardrails) → 3-tier memory (summary→index→document).
+3. DD#539 → DD#540 (code agents → embodied agents: both achieve self-evolution through structured memory without parameter updates, validating the paradigm across domains)
+4. Connects to DD#528 (SEVerA verified evolution), DD#500 (ExpeL experience learning), DD#516 (A-Mem active memory), DD#532 (EvoSkills co-evolutionary skills)

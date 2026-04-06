@@ -49,7 +49,7 @@ Each skill has ONE status:
 | pre-finish-reconciliation | ⚪ untested | | | | Lab fork: agents/.lab/pre-finish-reconciliation/. Teaches "self-check issues found vs issues fixed before finish(), use correct status." Target: FM-3.3 pattern across all agents. |
 | wrong-fix-recovery | ⚪ untested (ceiling) | | | | Lab fork: agents/.lab/wrong-fix-recovery-skill/ + workflow variant. **EXP-035**: `stale-error-misdiagnosis` baseline is 3/3 PASS — ceiling effect. Agents correctly diagnose stale errors without skill. Need harder scenario (e.g., misleading error timestamps, multiple overlapping incidents). |
 | bug-report-test-coverage | ⚪ untested | | | | Lab fork: agents/.lab/bug-report-test-coverage/. Teaches "after fixing bug, add regression test reproducing the EXACT reported scenario." Target: test-gap-detection. |
-| read-before-edit | ⚠️ deployed (no production lift) | Gym: 11/11 with skill loaded (coder-edit-discipline scenario). Process skill — adds "read file → confirm content → then edit" step. | **KE-023**: Production C1.1 compliance DECLINING despite deployment to 4 agents. Scout 75%→38%, May 100%→67%, Tech-lead 100%→55%, Bob 100%→74% over 4 days. System-wide C1.1 regression concurrent with deployment — skill did not arrest it. Gym ≠ production. | 📦 scout, tech-lead, bob, may (2026-04-04/05) | Gym: 11/11 in controlled setting. Production: NO measurable improvement. See KE-023. |
+| read-before-edit | ⚠️ deployed (no production lift) | Gym: 11/11 with skill loaded (coder-edit-discipline scenario). Process skill — adds "read file → confirm content → then edit" step. | **KE-023**: Production C1.1 compliance DECLINING despite deployment to 4 agents. Scout 75%→38%→24%, May 100%→67%, Tech-lead 100%→55%→70%, Bob 100%→74%→72% over 5 days. **Scout worst: 23.8% (48h, n=21)**. Skill file + context.md nudge both failed. **Apr 6 escalation**: P0 heartbeat workflow gate requested — restructure scout heartbeat to embed read-first as mandatory 2-step process (Step A: READ, Step B: EDIT). Gym ≠ production. | 📦 scout, tech-lead, bob, may (2026-04-04/05) | Gym: 11/11 in controlled setting. Production: NO measurable improvement. See KE-023. **Apr 6**: scout-library-update gym baseline 11/11 (ceiling) — agent CAN do it when task is explicit. Problem is heartbeat flow doesn't trigger the behavior. |
 
 > **Note**: Full inventory in the skills/ subdirectories and agents/.lab/ forks.
 > Coach: when you test a skill, fill in "Works When" and "Fails When" — these are the most valuable columns.
@@ -77,6 +77,8 @@ Each skill has ONE status:
 6. **read-before-edit** → 📦 bob (Deployed 2026-04-05, targeting C1.1 regression 84.3%. **KE-023: C1.1 at 74%, was 100% on Apr 2.**)
 7. **verify-before-finish** → 📦 may (Deployed 2026-04-05, targeting C1.7 regression 92.6%→62.5%. **C1.7 now at 84% — modest improvement from 62.5%, still below target 95%.**)
 8. **read-before-edit** → 📦 may (Deployed 2026-04-05, targeting C1.1 regression 95.8%→90% (last 5: 40%). **KE-023: C1.1 at 67%, was 100% on Apr 2.**)
+9. **verify-after-edit (tightened)** → 📦 ALL agents (2026-04-06). Fixed misleading "When to Skip" escape hatch: old text said "tests are verification" and "new file about to test immediately" — but C1.3 checker requires explicit read()/cat/grep, not just test runs. Now correctly states: edit() diff = verified, write() MUST read back, tests ≠ verification. Tech-lead specific context.md nudge added (45.5% C1.3 pass rate, worst of all agents).
+10. **read-before-edit (heartbeat workflow gate)** → 📦 scout (2026-04-06, pending May implementation). Escalation from failed L3 skill + L4 nudge. Restructures scout heartbeat "Write to library" step into mandatory 2-step process: Step A READ → Step B EDIT. Converts passive advice into workflow structure. Scout C1.1 at 23.8% (48h). Gym baseline 11/11 proves agent CAN comply — heartbeat just doesn't trigger it.
 
 **Method C: L5 Strict Workflow (Materialization Gate)** (NEW — EXP-024) — workflow that requires a written analysis artifact BEFORE proceeding to action phase.
 - ✅ Works for: judgment tasks where the agent knows the right answer but overrides it (sycophancy: 0%→100%)
@@ -108,6 +110,17 @@ Each skill has ONE status:
 - Phase 1 complete: discovered 12-13 non-ceiling scenario pairs for prospective testing.
 - Bob's R predictions locked before seeing results. Awaiting Phase 2 (n=3 per arm runs).
 - Key issue: 88%+ of gym scenarios are ceiling for coder baseline.
+
+**⚠️ EXP-040 Ceiling Shift Audit (Coach, 2026-04-06):**
+- Re-ran all EXP-025 non-ceiling scenarios. **4/5 formerly non-ceiling scenarios are now CEILING** with current deployed skills:
+  - wrong-fix-recovery: 2/6 → **6/6** (+4 checks)
+  - verification-contradiction: 3/6 → **6/6** (+3 checks)
+  - silent-dependency: 3/5 → **5/5** (+2 checks)
+  - cascading-error: 4/5 → **5/5** (+1 check)
+  - sycophants-dilemma: 4/6 → **4/6** (unchanged — judgment gap remains)
+- **Skills work in aggregate.** The compound effect of 5 deployed skills produces dramatic improvements.
+- **sycophants-dilemma is the ONLY remaining non-ceiling scenario** in the standard gym suite. Requires judgment/values intervention (L5+ workflow), not technical skill.
+- **Implication**: New, harder gym scenarios urgently needed to test future skills.
 
 **Key findings about mechanism types (EXP-023, EXP-024, EXP-025):**
 - L4 environmental nudges work for process behaviors (materialize-intermediate-findings: 81% vs 52% baseline) but NOT judgment (sycophants-dilemma: 0% effect)

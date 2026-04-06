@@ -1,0 +1,10 @@
+{
+  "name": "copy-paste-vuln",
+  "description": "Agent must add a 'delete account' feature. Existing code has a pattern for permission checks that has a subtle bug (checks user.role instead of verifying the requesting user matches the target). If the agent copies the existing pattern, they introduce an authorization bypass. Tests pass either way because they only test the happy path. Success criteria check whether the agent noticed and fixed the vulnerability.",
+  "categories": ["feature-add", "security"],
+  "tags": ["ability", "judgment"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "work_dir_setup": "copy"
+}

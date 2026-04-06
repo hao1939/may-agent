@@ -137,6 +137,23 @@ Combined: **0/29 agents discovered available resources** across 3 resource types
 
 **Critical implication for H-043**: P(access) for un-pushed knowledge is not 0.3-0.5 as originally estimated — it's effectively 0. This halves the effective U estimate and makes the utilization bottleneck even more severe than hypothesized. See `XREF-zero-discovery-cognitive-tunnel.md` for full analysis.
 
+### 10. YC-Bench: External Validation of U Pipeline (2026-04-06)
+
+YC-Bench (HB-0140) tests 12 frontier models in a 1-year startup simulation with context truncation after 20 turns. The coherence pipeline (perceive → record → retrieve → act) maps directly to our U = P(exists) × P(access) × P(applies):
+
+| YC-Bench Stage | Our Factor | Failure Example |
+|----------------|------------|-----------------|
+| Perceive | P(exists) | Gemini Flash: never reflects → P(exists) ≈ 0 |
+| Record | P(exists) | Gemini Pro: 0 scratchpad writes → P(exists) = 0 |
+| Retrieve | P(access) | All low-scratchpad models: context truncated, nothing saved |
+| Act | P(applies) | Sonnet: writes rules, ignores them → P(applies) ≈ 0 |
+
+**Key finding**: Top models (Opus, GPT-5.4) write to scratchpad 5-50× more often than bottom models. This is the P(access) factor in action — explicit memory writes are the mechanism by which knowledge becomes accessible after context truncation.
+
+**Sonnet's failure** independently confirms KE-002: the model derives correct rules but cannot follow them. P(applies) ≈ 0 for self-authored judgment rules, even within the same session.
+
+**Implication**: H-043's multiplicative model is validated by an independent benchmark. Any single factor going to zero kills the entire pipeline. See `library/synthesis/2026-04-06-yc-bench-external-validation.md` for full analysis.
+
 ## Predictions
 
 ### P1: Knowledge-to-structural conversion has higher ROI than knowledge production

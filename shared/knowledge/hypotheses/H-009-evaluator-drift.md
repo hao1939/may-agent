@@ -161,3 +161,83 @@ The core prediction — that the evaluator cannot detect quality problems in com
 - A session with rich evidence like `["Step 8: bash test exit code 0"]` → no penalty
 
 **Tests**: 6 new test cases in `test/evaluator-heuristic.test.ts` (37 total, all passing)
+
+### EXP-039 Phase A Results (2026-04-06)
+
+**Finding**: Heuristic evaluator shows 0% verdict change between contextual (full self-narrative) and isolated (stripped) conditions across 19 production sessions.
+
+| Metric | Contextual | Isolated | Delta |
+|--------|-----------|----------|-------|
+| Avg Quality | 4.84 | 4.89 | +0.05 |
+| Avg Efficiency | 3.95 | 3.95 | 0.00 |
+| Verdict changes | — | — | 0/19 (0%) |
+
+**Implication**: The heuristic evaluator's rubber-stamp behavior is a structural property (finish() + 3 tool calls = good), NOT caused by reading agent self-narrative. Removing the self-narrative doesn't change scores because the heuristic never looked at it anyway. The confirmation bias from agent self-narrative likely affects the **LLM evaluator** (which reads natural language) — this needs Phase B testing.
+
+**Implementation**: `formatIsolatedTranscript()` function in `src/lib/evaluator.ts` — 14 unit tests passing.
+
+### Phase 3: Scoring Recalibration (2026-04-06)
+
+**Commit**: feat(evaluator): H-009 Phase 3 — scoring recalibration to end rubber-stamping
+
+**Problem**: Despite Phases 1-2, 16.3% of heuristic evaluations still hit quality=5, and most successful sessions score quality=4-5 regardless of actual work quality. The root cause:
+1. `finish(success)` with verified evidence gave +2 quality (too generous — verification is expected, not exceptional)
+2. `session.status === "done" && toolCalls >= 3` gave +1 quality (using tools is baseline behavior, not a bonus)
+3. Combined: base=3 + 2 + 1 = 6 → clamped to 5 for every normal successful session
+
+**Changes**:
+1. **Reduced verified success bonus**: +2 → +1 (verified success is standard good behavior, not exceptional)
+2. **Removed done+tools quality bonus**: Using tools in a session is the minimum expected behavior. Efficiency bonus retained.
+3. **Added exceptional evidence depth bonus**: Quality=5 requires ≥2 specific evidence items + ≥2 deliverables + substantive summary (≥60 chars). This is the ONLY path to quality=5.
+4. **Unverified success gets no quality bonus**: Claiming success without evidence stays at base quality=3
+5. **Unparseable finish calls get no bonus**: Legacy finish calls that can't be parsed don't get the +1 they used to
+
+**New scoring model** (common paths):
+- Exceptional: base=3 + 1 (verified) + 1 (exceptional) = 5 → "good"
+- Standard verified: base=3 + 1 (verified) = 4 → "good"
+- Unverified success: base=3 + 0 = 3 → "acceptable"
+- Partial: base=3 + 0 = 3 → "acceptable"
+- Failure/blocked: base=3 - 1 = 2 → "needs_improvement"
+
+**Before Phase 3**: 16.3% quality=5 (2183/13357 heuristic evals)
+**Expected after**: Only sessions with genuinely rich evidence + deliverables reach quality=5
+
+**Tests**: 41 tests passing (37 updated + 4 new Phase 3 calibration tests).
+
+### Phase 4: Verification-Based Quality Differentiation (2026-04-06)
+
+**Problem**: Phase 3's `exceptional_evidence_depth` bonus was STILL rubber-stamping quality=5. Analysis of 30 recent root sessions showed:
+- 20/30 (67%) scored quality=5 with the `exceptional_evidence_depth` tag
+- The criteria (2+ evidence items, 2+ deliverables, 60+ char summary, specific evidence) are met by every agent that follows the finish() protocol
+- "Exceptional" was actually "normal protocol compliance"
+
+**Root cause**: The bonus rewarded the *format* of finish() params (multiple items, specific language), not the *substance* of the work done. An agent that reads one file and claims success with well-formatted evidence gets the same score as one that makes complex code changes and runs 15 test verifications.
+
+**Changes**:
+1. **Removed `exceptional_evidence_depth` bonus** — protocol compliance is not quality
+2. **Added `verified_with_tests` bonus**: Quality +1 for sessions with 3+ bash calls containing test/tsc/vitest/jest/npm run check/build commands. This rewards agents that actually run verification commands rather than just claiming they did.
+3. **Quality 5 now requires demonstrated verification effort** — not just well-formatted finish() params
+
+**New scoring model** (common paths):
+- Verified + tested: base=3 + 1 (verified finish) + 1 (verified_with_tests) = 5 → "good"
+- Verified (no tests): base=3 + 1 (verified finish) = 4 → "good"
+- Unverified success: base=3 + 0 = 3 → "acceptable"
+- Partial: base=3 + 0 = 3 → "acceptable"
+- Failure/blocked: base=3 - 1 = 2 → "needs_improvement"
+
+**Before Phase 4 (30 recent sessions)**: 20 quality=5, 8 quality=4, 2 quality=3
+**After Phase 4 (same 30 sessions)**: 10 quality=5, 19 quality=4, 1 quality=3
+
+Quality=5 now earned only by agents that actually run tests:
+- qa (runs test suites) ✓
+- tech-lead (runs tsc + vitest) ✓
+- coach (runs gym scenarios) ✓
+- scout (sometimes runs verification) ✓
+
+Quality=4 for agents that do good work but don't run tests:
+- optimizer (writes proposals/plans)
+- bob (research, knowledge management)
+- amy-kimi (web scraping, content)
+- may (orchestration)
+
+**Tests**: 41 tests passing (updated Phase 3→Phase 4 calibration tests).

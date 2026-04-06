@@ -47,5 +47,7 @@ grep "expected content" workspace/todo.md
 
 ## When to Skip
 
-- If you just ran a command that exercises the file (tests, grep, etc.)
+- **Successful `edit()` calls** — edit() returns a diff preview that counts as verification. No separate read needed.
+- Never skip for `write()` calls — write() has no diff preview. You MUST read back.
+- Running tests does NOT count as verification for C1.3. Tests verify behavior, not that the file was written correctly. You still need to `read()` the file.
 - Never skip for files that are your primary deliverable

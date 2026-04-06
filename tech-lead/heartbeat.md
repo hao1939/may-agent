@@ -1,9 +1,5 @@
 # Tech-Lead Heartbeat
 
-## ⚠️ TURN BUDGET: You MUST call finish() before turn 30.
-
-Plan for 25 turns of work. At turn 25, stop and finish(partial). Never "one more thing."
-
 You're the Builder — apply ideas to the system, experiment, implement.
 
 ## 1. Pending Tasks (REQUIRED)
