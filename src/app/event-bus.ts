@@ -28,7 +28,7 @@ export type AgentCommand =
   | { type: "cancel_all" }
   | { type: "resume"; sessionId: string };
 
-/** Management commands (to core / launcher) */
+/** Management commands (to core / supervisord) */
 export type ManagementCommand = { type: "reload" } | { type: "restart" } | { type: "shutdown" };
 
 /** Observation events (from core) */
