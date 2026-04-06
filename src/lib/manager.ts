@@ -1158,18 +1158,14 @@ export class SubagentManager {
       }
     }
 
-    // Phase 2: Archive terminal sessions still in the active directory.
-    // cleanupSession() moves dirs to history/, but if it fails (e.g. race condition,
-    // process crash), terminal sessions accumulate in sessions/ indefinitely.
-    // This phase catches those orphans.
+    // Phase 2: Count terminal sessions still in the active directory.
+    // These are completed sessions that stay in sessions/<id>/ (no archiving).
     for (const sessionId of activeIds) {
       if (this.activeSessions.has(sessionId)) continue;
       const meta = readSessionMeta(persistDir, sessionId);
       if (!meta) continue;
       const terminalStatuses = ["done", "error", "interrupted"];
       if (terminalStatuses.includes(meta.status ?? "")) {
-        // Sessions stay in sessions/<id>/ — no archiving to history/.
-        // Just count them as cleaned (zombie status resolved).
         cleaned++;
       }
     }
