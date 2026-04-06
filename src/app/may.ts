@@ -32,7 +32,7 @@ import {
 import { resolveProjectRoot } from "./bundle-mode.js";
 import { trackRequest } from "../lib/requests.js";
 import { setLogHandler } from "../lib/log.js";
-import { upsertDigest, getLastDigest } from "../lib/session-digest.js";
+import { upsertDigest, getLastDigest, classifyDigest } from "../lib/session-digest.js";
 
 // ── --version / -v: print version + git SHA and exit immediately ────────
 if (process.argv.includes("--version") || process.argv.includes("-v")) {
@@ -470,26 +470,52 @@ bus.subscribe((event) => {
   }, 3000);
 });
 
-// Escalation: blocked sessions → Telegram + request tracking
+// Escalation: blocked/failure sessions → digest classifier decides whether to escalate
 bus.subscribe((event) => {
   if (event.type !== "session_end") return;
   const info = event as any;
   const fp = info.finishParams;
   if (!fp || (fp.status !== "blocked" && fp.status !== "failure")) return;
 
-  bus.emit({ type: "info", message: `[escalation] ${info.agent} session ${info.sessionId} ${fp.status}: ${fp.summary}` });
+  // ── Consult digest classifier ──────────────────────────────────────
+  const trigger = fp.status === "blocked" ? "session_end_blocked" : "session_end_failure";
+  let action = "escalate"; // fallback: always escalate (backward compat)
+  let reason = `${fp.status}: ${fp.summary}`;
+  let source = "fallback";
+
   try {
-    trackRequest(PERSIST_DIR, {
-      fromEntity: info.agent,
-      toAgent: "may",
-      task: `[escalation] ${info.agent} session ${info.sessionId} — ${fp.status}: ${fp.summary}`,
-      method: "message",
-      sessionId: info.sessionId,
-    });
-  } catch {
-    /* best-effort */
+    const digest = getLastDigest(PERSIST_DIR, info.sessionId);
+    if (digest?.what_happened) {
+      const classification = classifyDigest(
+        { outcome: digest.outcome ?? fp.status, still_open: digest.still_open ?? null, what_happened: digest.what_happened },
+        trigger,
+      );
+      action = classification.action;
+      reason = classification.reason;
+      source = "digest";
+    }
+  } catch { /* best-effort — classifier failure falls through to escalate */ }
+
+  bus.emit({
+    type: "info",
+    message: `[escalation] decision=${action} source=${source} session=${info.sessionId} agent=${info.agent} status=${fp.status}`,
+  });
+
+  if (action === "escalate") {
+    try {
+      trackRequest(PERSIST_DIR, {
+        fromEntity: info.agent,
+        toAgent: "may",
+        task: `[escalation] ${info.agent} session ${info.sessionId} — ${fp.status}: ${fp.summary}`,
+        method: "message",
+        sessionId: info.sessionId,
+      });
+    } catch {
+      /* best-effort */
+    }
+    escalateToHuman(info.agent, `${fp.status}: ${fp.summary}`);
   }
-  escalateToHuman(info.agent, `${fp.status}: ${fp.summary}`);
+  // "nothing" / other → session ended cleanly enough, no escalation needed
 });
 
 // Surface errors for completed task sessions

@@ -11,7 +11,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { getDb } from "../src/lib/requests.js";
-import { getLastDigest } from "../src/lib/session-digest.js";
+import { getLastDigest, classifyDigest } from "../src/lib/session-digest.js";
 import { classifyError } from "../src/lib/classify-error.js";
 import { createStuckDetector } from "../src/lib/session-subscribers.js";
 
@@ -400,5 +400,131 @@ describe("getLastDigest integration with switchover", () => {
   it("returns null when no digests exist for session", () => {
     const digest = getLastDigest(persistDir, "s_nonexistent");
     expect(digest).toBeNull();
+  });
+});
+
+// ── Phase 4b: Escalation → Classifier integration ─────────────────────
+
+describe("Phase 4b: Escalation classifier integration", () => {
+  let persistDir: string;
+
+  beforeEach(() => {
+    persistDir = makeTempDir();
+    setupDb(persistDir);
+  });
+
+  afterEach(() => {
+    try { rmSync(persistDir, { recursive: true }); } catch {}
+  });
+
+  /**
+   * Simulates the escalation subscriber logic from may.ts:
+   * 1. Get last digest for the session
+   * 2. If digest has what_happened, run classifyDigest
+   * 3. Return the action and source
+   */
+  function makeEscalationDecision(
+    dir: string, sessionId: string, fpStatus: "blocked" | "failure", fpSummary: string,
+  ): { action: string; reason: string; source: string } {
+    const trigger = fpStatus === "blocked" ? "session_end_blocked" : "session_end_failure";
+    let action = "escalate";
+    let reason = `${fpStatus}: ${fpSummary}`;
+    let source = "fallback";
+
+    try {
+      const digest = getLastDigest(dir, sessionId);
+      if (digest?.what_happened) {
+        const classification = classifyDigest(
+          { outcome: digest.outcome ?? fpStatus, still_open: digest.still_open ?? null, what_happened: digest.what_happened },
+          trigger,
+        );
+        action = classification.action;
+        reason = classification.reason;
+        source = "digest";
+      }
+    } catch { /* fallback */ }
+
+    return { action, reason, source };
+  }
+
+  it("blocked session with digest → escalates with still_open reason", () => {
+    const db = setupDb(persistDir);
+    db.prepare(
+      `INSERT INTO session_digests
+       (sessionId, agent, trigger, step, task, what_happened, outcome, still_open,
+        files_modified, details, action, action_reason, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL, ?)`,
+    ).run("s_blocked", "coder", "end", 1, "fix bug", "Could not access API", "failure", "Need API key from admin", Date.now());
+
+    const result = makeEscalationDecision(persistDir, "s_blocked", "blocked", "Need API key");
+    expect(result.action).toBe("escalate");
+    expect(result.reason).toBe("Need API key from admin");
+    expect(result.source).toBe("digest");
+  });
+
+  it("blocked session without digest → falls back to escalate", () => {
+    const result = makeEscalationDecision(persistDir, "s_no_digest", "blocked", "I'm stuck");
+    expect(result.action).toBe("escalate");
+    expect(result.source).toBe("fallback");
+  });
+
+  it("failure session with open work → escalates", () => {
+    const db = setupDb(persistDir);
+    db.prepare(
+      `INSERT INTO session_digests
+       (sessionId, agent, trigger, step, task, what_happened, outcome, still_open,
+        files_modified, details, action, action_reason, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL, ?)`,
+    ).run("s_fail_open", "tech-lead", "end", 1, "deploy", "Deploy failed mid-way", "failure", "Rollback required", Date.now());
+
+    const result = makeEscalationDecision(persistDir, "s_fail_open", "failure", "Deploy failed");
+    expect(result.action).toBe("escalate");
+    expect(result.reason).toBe("Rollback required");
+    expect(result.source).toBe("digest");
+  });
+
+  it("failure session with no open work → does NOT escalate", () => {
+    const db = setupDb(persistDir);
+    db.prepare(
+      `INSERT INTO session_digests
+       (sessionId, agent, trigger, step, task, what_happened, outcome, still_open,
+        files_modified, details, action, action_reason, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL, ?)`,
+    ).run("s_fail_clean", "coder", "end", 1, "fix lint", "Task not feasible", "failure", null, Date.now());
+
+    const result = makeEscalationDecision(persistDir, "s_fail_clean", "failure", "Not feasible");
+    expect(result.action).toBe("nothing");
+    expect(result.reason).toBe("Failure with no open work — no escalation needed");
+    expect(result.source).toBe("digest");
+  });
+
+  it("failure session with digest but no what_happened → falls back to escalate", () => {
+    const db = setupDb(persistDir);
+    // Insert a start-only digest (no what_happened)
+    db.prepare(
+      `INSERT INTO session_digests
+       (sessionId, agent, trigger, step, task, what_happened, outcome, still_open,
+        files_modified, details, action, action_reason, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL, ?)`,
+    ).run("s_fail_no_wh", "coder", "session_start", 1, "fix lint", null, "in_progress", null, Date.now());
+
+    const result = makeEscalationDecision(persistDir, "s_fail_no_wh", "failure", "Something failed");
+    expect(result.action).toBe("escalate");
+    expect(result.source).toBe("fallback");
+  });
+
+  it("blocked session with no still_open but has what_happened → escalates using what_happened", () => {
+    const db = setupDb(persistDir);
+    db.prepare(
+      `INSERT INTO session_digests
+       (sessionId, agent, trigger, step, task, what_happened, outcome, still_open,
+        files_modified, details, action, action_reason, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL, ?)`,
+    ).run("s_blocked_no_open", "researcher", "end", 1, "research", "Missing access to database", "failure", null, Date.now());
+
+    const result = makeEscalationDecision(persistDir, "s_blocked_no_open", "blocked", "Can't access DB");
+    expect(result.action).toBe("escalate");
+    expect(result.reason).toBe("Missing access to database");
+    expect(result.source).toBe("digest");
   });
 });
