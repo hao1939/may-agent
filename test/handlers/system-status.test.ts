@@ -120,6 +120,47 @@ describe("runSystemStatus", () => {
     expect(result.unevaluated.actionable).toBe(1);
   });
 
+  it("uses loadEvaluatedSessionIds when provided (DB path)", () => {
+    // Create a completed session with a transcript
+    const sid = "s_db_eval_1";
+    const sessionDir = resolve(persistDir, "sessions", sid);
+    mkdirSync(sessionDir, { recursive: true });
+    writeFileSync(
+      resolve(sessionDir, "meta.json"),
+      JSON.stringify({
+        agent: "coder",
+        status: "complete",
+        startedAt: Date.now() - 7200000,
+        task: "implement feature",
+      }),
+    );
+    writeFileSync(resolve(sessionDir, "session.jsonl"), '{"role":"user"}\n');
+
+    // Without the callback → unevaluated (no JSON file on disk)
+    const resultWithout = runSystemStatus({
+      persistDir,
+      projectRoot,
+      agentsRoot,
+      healthLogPath: resolve(dir, "health-log.md"),
+      skipBuildChecks: true,
+      loadAllSessionMetas: makeLoadAllSessionMetas(),
+    });
+    expect(resultWithout.unevaluated.actionable).toBeGreaterThanOrEqual(1);
+
+    // With the callback → evaluated (DB says so)
+    const resultWith = runSystemStatus({
+      persistDir,
+      projectRoot,
+      agentsRoot,
+      healthLogPath: resolve(dir, "health-log.md"),
+      skipBuildChecks: true,
+      loadAllSessionMetas: makeLoadAllSessionMetas(),
+      loadEvaluatedSessionIds: () => new Set([sid]),
+    });
+    expect(resultWith.unevaluated.actionable).toBe(0);
+    expect(resultWith.unevaluated.total).toBe(0);
+  });
+
   it("auto-skips meta-agent sessions", () => {
     // evaluator session — should be auto-skippable
     const sid = "s_eval_1";
