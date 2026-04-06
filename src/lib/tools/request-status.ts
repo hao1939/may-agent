@@ -39,6 +39,7 @@ interface EvalRecord {
   quality: number;
   efficiency: number;
   verdict: string;
+  issues: string[];
   ts: number;
 }
 
@@ -85,6 +86,7 @@ function loadEvals(persistDir: string, sinceMs: number): EvalRecord[] {
     quality: ev.quality,
     efficiency: ev.efficiency,
     verdict: ev.verdict,
+    issues: ev.issues,
     ts: ev.createdAt,
   }));
 }
@@ -241,8 +243,10 @@ function triageItems(
   }
 
   // 4. Quality decline — any agent with avg quality < 2 in last 24h
+  //    Exclude interrupted sessions (not the agent's fault) from quality averages
   const agentQuality = new Map<string, { total: number; count: number }>();
   for (const e of evals24h) {
+    if (e.issues.includes("session_interrupted")) continue;
     const entry = agentQuality.get(e.agent) ?? { total: 0, count: 0 };
     entry.total += e.quality;
     entry.count++;
