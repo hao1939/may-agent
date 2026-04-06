@@ -45,7 +45,7 @@ export function hasFinishToolCall(messages: any[]): boolean {
  * returns true after the first heartbeat — preventing retries on all future
  * empty responses. This variant scopes to the current turn.
  */
-function lastTurnCalledFinish(messages: any[]): boolean {
+export function lastTurnCalledFinish(messages: any[]): boolean {
   // Walk backwards from the end. If we find finish before hitting a user message,
   // it was called in the current turn.
   for (let i = messages.length - 1; i >= 0; i--) {

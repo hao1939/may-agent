@@ -86,6 +86,7 @@ import { hasFinishToolCall, extractFinishParams, runAgentWithRetry } from "./man
 import { createAgentsTool as createAgentsToolFn, type CreateAgentsToolOptions } from "./manager-agents-tool.js";
 import { upsertDigest, logShadowComparison, getRecentDigests, formatDigestContext } from "./session-digest.js";
 import { isOverflowError } from "./overflow.js";
+import { summarizeForHandoff } from "./handoff.js";
 // classifyError is re-exported directly from classify-error.ts (no local import needed)
 
 // Lazy import for requests.ts (uses bun:sqlite, not available in vitest)
@@ -2111,7 +2112,7 @@ export class SubagentManager {
     if (session) {
       try {
         const result = this.buildResultFromSession(session);
-        const { summarizeForHandoff } = require("./handoff.js") as typeof import("./handoff.js");
+        
         return {
           task: session.task,
           summary: summarizeForHandoff(result),
@@ -2124,7 +2125,7 @@ export class SubagentManager {
     // Try archived session
     try {
       const result = this.result(sessionId);
-      const { summarizeForHandoff } = require("./handoff.js") as typeof import("./handoff.js");
+      
       return {
         task: result.messages?.[0]?.content?.toString().slice(0, 200) ?? "",
         summary: summarizeForHandoff(result),
@@ -2137,7 +2138,7 @@ export class SubagentManager {
 
   /** Get completed workflow steps (for agents.context scope: "workflow"). */
   getWorkflowSteps(workflowRunId: string): Array<{ step: string; sessionId: string; summary: string }> {
-    const { readWorkflowRun } = require("./persistence.js") as typeof import("./persistence.js");
+    
     const run = readWorkflowRun(this.registry.persistDir, workflowRunId);
     if (!run) return [];
     return run.steps.map((s) => ({
