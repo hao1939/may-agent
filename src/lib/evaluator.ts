@@ -1007,13 +1007,19 @@ export function computeHeuristicScores(
     const hasDeliverables = Array.isArray(finishParams.deliverables) && finishParams.deliverables.length > 0;
 
     if (finishStatus === "success") {
-      if (hasEvidence) {
-        // Verified success: best possible outcome
-        quality += 2;
+      if (hasEvidence && hasDeliverables) {
+        // Verified success with deliverables: standard good outcome
+        // H-009 Phase 3: +1 (not +2) — verified completion is expected behavior,
+        // not exceptional. Quality 5 should require additional differentiation
+        // (see Phase 2 semantic checks below for further adjustments).
+        quality += 1;
+        issues.push("finish_success_verified");
+      } else if (hasEvidence) {
+        // Has evidence but no deliverables — slightly weaker signal
+        quality += 1;
         issues.push("finish_success_verified");
       } else {
-        // Claimed success without verification evidence
-        quality += 1;
+        // Claimed success without verification evidence — no quality bonus
         issues.push("finish_success_unverified");
       }
       if (hasDeliverables) {
@@ -1029,15 +1035,17 @@ export function computeHeuristicScores(
     }
   } else if (hasFinishCall) {
     // finish() was called but we couldn't parse params (legacy/fallback)
-    quality += 1;
+    // No quality bonus for unparseable finish calls
+    issues.push("finish_unparseable");
   } else if (session.status === "done" && assistantTurns > 2) {
     issues.push("no_finish_call");
   }
 
   // 5. Successful session with reasonable tool usage
+  // H-009 Phase 3: Only give efficiency bonus, not quality bonus.
+  // Using tools in a done session is baseline expected behavior.
   if (session.status === "done" && totalToolCalls >= 3) {
     efficiency += 1;
-    quality += 1;
   }
 
   // 5b. H-009 Phase 2: Semantic quality signals for finish(success)
@@ -1079,6 +1087,25 @@ export function computeHeuristicScores(
       } else if (vagueEvidence.length > evidence.length / 2) {
         issues.push("mostly_vague_evidence");
       }
+    }
+
+    // 5b-iv. H-009 Phase 3: Exceptional quality bonus
+    // Quality 5 requires genuinely excellent work:
+    // - Multiple specific evidence items (not just one)
+    // - Multiple deliverables
+    // - Non-trivial summary
+    // This is the ONLY path to quality=5 in heuristic scoring.
+    if (
+      evidence.length >= 2 &&
+      deliverables.length >= 2 &&
+      summary.length >= 60 &&
+      evidence.some((e: unknown) => {
+        const s = typeof e === "string" ? e : "";
+        return s.length >= 30 && /step|bash|read|edit|write|test|output|exit|pass|fail|confirm/i.test(s);
+      })
+    ) {
+      quality += 1;
+      issues.push("exceptional_evidence_depth");
     }
   }
 
