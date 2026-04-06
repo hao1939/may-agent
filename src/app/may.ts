@@ -679,7 +679,8 @@ function gracefulShutdown() {
 
 function gracefulRestart() {
   if (shuttingDown) {
-    process.exit(0);
+    process.kill(process.pid, "SIGKILL");
+    return;
   }
   shuttingDown = true;
   bus.emit({ type: "info", message: "Restarting..." });
@@ -692,11 +693,11 @@ function gracefulRestart() {
     activeRL.close();
     activeRL = null;
   }
-  // NOTE: Do NOT cancel running sessions here. Leave them as status:"running"
-  // so resumeStaleSessions() picks them up after the process restarts.
-  // gracefulShutdown() (SIGINT/SIGTERM) still cancels — a real shutdown won't restart.
 
-  process.exit(0); // supervisord restarts the process
+  // Don't cancel sessions — leave them as status:"running" for resumeStaleSessions().
+  // Force-kill after 3s. process.exit() hangs in Bun when HTTP streams are open.
+  setTimeout(() => process.kill(process.pid, "SIGKILL"), 3000).unref();
+  process.exit(0);
 }
 
 async function handleReload(): Promise<void> {
