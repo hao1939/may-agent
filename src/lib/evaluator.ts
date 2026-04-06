@@ -330,6 +330,8 @@ export interface EvaluateTaskOptions {
   parentSessionId: string;
   /** Agents to skip (evaluator only — to prevent infinite evaluation loops). */
   skipAgents?: Set<string>;
+  /** EXP-039: Use isolated transcript (strips agent self-narrative). Default: false. */
+  isolatedTranscript?: boolean;
 }
 
 /**
@@ -395,7 +397,7 @@ export { extractErrorCodes, parseIssueToErrorEntry, appendErrorLogs } from "./ev
  * Returns null if there are no unevaluated children.
  */
 export async function evaluateTask(opts: EvaluateTaskOptions): Promise<TaskEvaluationResult | null> {
-  const { manager, persistDir, parentSessionId, skipAgents = new Set(["evaluator"]) } = opts;
+  const { manager, persistDir, parentSessionId, skipAgents = new Set(["evaluator"]), isolatedTranscript = false } = opts;
 
   // Get registry to find child sessions
   const registry = manager.registryStore.getRegistry().sessions;
@@ -432,7 +434,7 @@ export async function evaluateTask(opts: EvaluateTaskOptions): Promise<TaskEvalu
       turns: totalUsage.turns + usage.turns,
     };
 
-    let transcript = formatTranscript(child.messages);
+    let transcript = isolatedTranscript ? formatIsolatedTranscript(child.messages) : formatTranscript(child.messages);
     // Cap per-session transcript to prevent massive eval payloads (P110: tree-eval bloat fix)
     // Reduced from 15KB→10KB (P110b: optimizer cost analysis showed 30-54KB eval tasks)
     // Keeps first 3KB (setup/context) + last 7KB (results/conclusions)
