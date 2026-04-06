@@ -451,7 +451,7 @@ describe("extractFinishCallParams", () => {
 });
 
 describe("computeHeuristicScores - finish status differentiation (H-009)", () => {
-  it("finish(success) with verification_evidence → quality +2", () => {
+  it("finish(success) with verification_evidence → quality +1 (H-009 Phase 3)", () => {
     const messages = [
       assistantMsg(3),
       toolResult("ok"),
@@ -459,7 +459,7 @@ describe("computeHeuristicScores - finish status differentiation (H-009)", () =>
       toolResult("ok"),
       finishMsg({
         status: "success",
-        summary: "All tests pass",
+        summary: "All tests pass after refactoring the scoring module",
         verification_evidence: ["Step 5: vitest exit code 0"],
         deliverables: [{ path: "src/foo.ts", description: "New feature" }],
       }),
@@ -467,14 +467,14 @@ describe("computeHeuristicScores - finish status differentiation (H-009)", () =>
     ];
     const transcript = toTranscript(messages);
     const scores = computeHeuristicScores(makeSession(), transcript, messages);
-    // Base 3 + 2 (finish_success_verified) + 1 (done+3tools) = 6 → clamped to 5
-    expect(scores.quality).toBe(5);
+    // Phase 3: Base 3 + 1 (finish_success_verified) = 4 (no done+tools quality bonus)
+    expect(scores.quality).toBe(4);
     expect(scores.issues).toContain("finish_success_verified");
     expect(scores.issues).toContain("has_deliverables");
     expect(scores.verdict).toBe("good");
   });
 
-  it("finish(success) without evidence → quality +1", () => {
+  it("finish(success) without evidence → no quality bonus (H-009 Phase 3)", () => {
     const messages = [
       assistantMsg(3),
       toolResult("ok"),
@@ -488,8 +488,8 @@ describe("computeHeuristicScores - finish status differentiation (H-009)", () =>
     ];
     const transcript = toTranscript(messages);
     const scores = computeHeuristicScores(makeSession(), transcript, messages);
-    // Base 3 + 1 (finish_success_unverified) + 1 (done+3tools) = 5
-    expect(scores.quality).toBe(5);
+    // Phase 3: Base 3 + 0 (no evidence = no bonus) = 3
+    expect(scores.quality).toBe(3);
     expect(scores.issues).toContain("finish_success_unverified");
     expect(scores.issues).not.toContain("finish_success_verified");
   });
@@ -509,8 +509,8 @@ describe("computeHeuristicScores - finish status differentiation (H-009)", () =>
     ];
     const transcript = toTranscript(messages);
     const scores = computeHeuristicScores(makeSession(), transcript, messages);
-    // Base 3 + 0 (partial = no bonus) + 1 (done+3tools) = 4
-    expect(scores.quality).toBe(4);
+    // Phase 3: Base 3 + 0 (partial = no bonus, no done+tools quality bonus) = 3
+    expect(scores.quality).toBe(3);
     expect(scores.issues).toContain("finish_partial");
   });
 
@@ -529,8 +529,8 @@ describe("computeHeuristicScores - finish status differentiation (H-009)", () =>
     ];
     const transcript = toTranscript(messages);
     const scores = computeHeuristicScores(makeSession(), transcript, messages);
-    // Base 3 - 1 (finish_failure) + 1 (done+3tools) = 3
-    expect(scores.quality).toBe(3);
+    // Phase 3: Base 3 - 1 (finish_failure) = 2
+    expect(scores.quality).toBe(2);
     expect(scores.issues).toContain("finish_failure");
   });
 
@@ -549,8 +549,8 @@ describe("computeHeuristicScores - finish status differentiation (H-009)", () =>
     ];
     const transcript = toTranscript(messages);
     const scores = computeHeuristicScores(makeSession(), transcript, messages);
-    // Base 3 - 1 (finish_blocked) + 1 (done+3tools) = 3
-    expect(scores.quality).toBe(3);
+    // Phase 3: Base 3 - 1 (finish_blocked) = 2
+    expect(scores.quality).toBe(2);
     expect(scores.issues).toContain("finish_blocked");
   });
 
@@ -593,7 +593,7 @@ describe("computeHeuristicScores - finish status differentiation (H-009)", () =>
     expect(unverifiedScores.issues).toContain("finish_success_unverified");
   });
 
-  it("no finish call + no parsed params → legacy behavior (no bonus from finish params branch)", () => {
+  it("no finish call + no parsed params → no quality bonus (H-009 Phase 3)", () => {
     // Use 3 assistant turns so the no_finish_call issue is triggered (requires assistantTurns > 2)
     const messages = [
       assistantMsg(2),
@@ -606,8 +606,8 @@ describe("computeHeuristicScores - finish status differentiation (H-009)", () =>
     ];
     const transcript = toTranscript(messages);
     const scores = computeHeuristicScores(makeSession(), transcript, messages);
-    // Base 3 + 1 (done+3tools) = 4, no finish bonus
-    expect(scores.quality).toBe(4);
+    // Phase 3: Base 3 + 0 (no finish bonus, no done+tools quality bonus) = 3
+    expect(scores.quality).toBe(3);
     expect(scores.issues).toContain("no_finish_call");
     expect(scores.issues).not.toContain("finish_success_verified");
     expect(scores.issues).not.toContain("finish_success_unverified");
@@ -635,8 +635,8 @@ describe("computeHeuristicScores - Phase 2 semantic quality (H-009)", () => {
     const transcript = toTranscript(messages);
     const scores = computeHeuristicScores(makeSession(), transcript, messages);
     expect(scores.issues).toContain("hollow_summary");
-    // Base 3 + 2 (verified) - 1 (hollow_summary) + 1 (done+3tools) = 5
-    expect(scores.quality).toBe(5);
+    // Phase 3: Base 3 + 1 (verified) - 1 (hollow_summary) = 3
+    expect(scores.quality).toBe(3);
   });
 
   it("good summary (≥ 30 chars) → no hollow_summary issue", () => {
@@ -675,8 +675,8 @@ describe("computeHeuristicScores - Phase 2 semantic quality (H-009)", () => {
     const transcript = toTranscript(messages);
     const scores = computeHeuristicScores(makeSession(), transcript, messages);
     expect(scores.issues).toContain("vague_verification_evidence");
-    // Base 3 + 2 (verified — has evidence array) - 1 (vague evidence) + 1 (done+3tools) = 5
-    expect(scores.quality).toBe(5);
+    // Phase 3: Base 3 + 1 (verified) - 1 (vague evidence) = 3
+    expect(scores.quality).toBe(3);
   });
 
   it("mixed evidence (some specific, some vague) → mostly_vague if majority vague", () => {
@@ -741,6 +741,96 @@ describe("computeHeuristicScores - Phase 2 semantic quality (H-009)", () => {
     // Phase 2 checks only apply to success status
     expect(scores.issues).not.toContain("hollow_summary");
     expect(scores.issues).not.toContain("vague_verification_evidence");
+  });
+});
+
+describe("computeHeuristicScores - Phase 3 scoring calibration (H-009)", () => {
+  it("exceptional session → quality 5 (multiple evidence, multiple deliverables, rich summary)", () => {
+    const messages = [
+      assistantMsg(5),
+      toolResult("ok"),
+      toolResult("ok"),
+      toolResult("ok"),
+      toolResult("ok"),
+      toolResult("ok"),
+      finishMsg({
+        status: "success",
+        summary: "Implemented rate limiter with token bucket algorithm, added comprehensive test suite, and verified edge cases",
+        verification_evidence: [
+          "Step 5: bash vitest run returned all 12 tests passing with exit code 0",
+          "Step 8: read src/rate-limiter.ts confirmed correct implementation of token bucket",
+        ],
+        deliverables: [
+          { path: "src/rate-limiter.ts", description: "Token bucket rate limiter" },
+          { path: "test/rate-limiter.test.ts", description: "12 test cases" },
+        ],
+      }),
+      finishResult(),
+    ];
+    const transcript = toTranscript(messages);
+    const scores = computeHeuristicScores(makeSession(), transcript, messages);
+    // Phase 3: Base 3 + 1 (verified) + 1 (exceptional evidence depth) = 5
+    expect(scores.quality).toBe(5);
+    expect(scores.issues).toContain("exceptional_evidence_depth");
+    expect(scores.verdict).toBe("good");
+  });
+
+  it("standard session → quality 4 (verified but not exceptional)", () => {
+    const messages = [
+      assistantMsg(3),
+      toolResult("ok"),
+      toolResult("ok"),
+      toolResult("ok"),
+      finishMsg({
+        status: "success",
+        summary: "Updated the config file to fix the deployment issue",
+        verification_evidence: ["Step 4: bash confirmed service starts correctly"],
+        deliverables: [{ path: "config.yml", description: "Fixed port config" }],
+      }),
+      finishResult(),
+    ];
+    const transcript = toTranscript(messages);
+    const scores = computeHeuristicScores(makeSession(), transcript, messages);
+    // Phase 3: Base 3 + 1 (verified) = 4, not enough for exceptional
+    expect(scores.quality).toBe(4);
+    expect(scores.issues).not.toContain("exceptional_evidence_depth");
+    expect(scores.verdict).toBe("good");
+  });
+
+  it("unverified success → quality 3 (acceptable, not good)", () => {
+    const messages = [
+      assistantMsg(3),
+      toolResult("ok"),
+      toolResult("ok"),
+      toolResult("ok"),
+      finishMsg({
+        status: "success",
+        summary: "Completed the refactoring of the authentication module",
+      }),
+      finishResult(),
+    ];
+    const transcript = toTranscript(messages);
+    const scores = computeHeuristicScores(makeSession(), transcript, messages);
+    // Phase 3: Base 3 + 0 (no evidence) = 3
+    expect(scores.quality).toBe(3);
+    expect(scores.verdict).toBe("acceptable");
+  });
+
+  it("done+tools no longer gives quality bonus (only efficiency)", () => {
+    // Session with tools but no finish call — old behavior would give quality +1
+    const messages = [
+      assistantMsg(2),
+      toolResult("ok"),
+      toolResult("ok"),
+      assistantMsg(1),
+      toolResult("ok"),
+    ];
+    const transcript = toTranscript(messages);
+    const scores = computeHeuristicScores(makeSession(), transcript, messages);
+    // Phase 3: Base 3 quality (no finish bonus, no done+tools quality bonus)
+    expect(scores.quality).toBe(3);
+    // But efficiency still gets the +1
+    expect(scores.efficiency).toBe(4);
   });
 });
 
