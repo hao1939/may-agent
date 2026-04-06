@@ -846,5 +846,93 @@ describe("computeHeuristicScores - Phase 4 scoring calibration (H-009)", () => {
     // But efficiency still gets the +1
     expect(scores.efficiency).toBe(4);
   });
+
+  it("inline scripts with 'test' substring → no false positive (H-009 Phase 4b)", () => {
+    // Bash calls with words like "latest", "attest" or SQL queries mentioning "test"
+    // in inline scripts should NOT count as verification runs
+    function bashInlineScript(command: string): any {
+      return {
+        role: "assistant",
+        content: [{ type: "toolCall", name: "bash", id: "tc_bash", input: { command } }],
+      };
+    }
+
+    const messages = [
+      assistantMsg(5),
+      toolResult("ok"),
+      toolResult("ok"),
+      toolResult("ok"),
+      toolResult("ok"),
+      toolResult("ok"),
+      // 3 bash calls that mention "test" but are NOT test runs
+      bashInlineScript('bun -e "const latest = db.prepare(\'SELECT * FROM evaluations\').all(); console.log(\'Latest evaluations:\', latest)"'),
+      toolResult("ok"),
+      bashInlineScript('bun -e "console.log(\'Latest sessions:\', result)"'),
+      toolResult("ok"),
+      bashInlineScript('grep -n "contested" src/lib/evaluator.ts'),
+      toolResult("ok"),
+      finishMsg({
+        status: "success",
+        summary: "Analyzed the evaluation distribution and confirmed the Phase 4 scoring is deployed correctly",
+        verification_evidence: [
+          "Step 5: bash bun -e query showed latest evaluations in DB",
+          "Step 8: read src/lib/evaluator.ts confirmed Phase 4 code deployed",
+        ],
+        deliverables: [
+          { path: "agents/shared/knowledge/analysis.md", description: "Evaluation distribution analysis" },
+          { path: "agents/shared/knowledge/report.md", description: "Phase 4 deployment report" },
+        ],
+      }),
+      finishResult(),
+    ];
+    const transcript = toTranscript(messages);
+    const scores = computeHeuristicScores(makeSession(), transcript, messages);
+    // Should NOT get verified_with_tests — these are not real test commands
+    expect(scores.quality).toBe(4); // verified finish only
+    expect(scores.issues).not.toContain("verified_with_tests");
+  });
+
+  it("real test file paths match verification (test/ and .test. patterns)", () => {
+    function bashCmd(command: string): any {
+      return {
+        role: "assistant",
+        content: [{ type: "toolCall", name: "bash", id: "tc_bash", input: { command } }],
+      };
+    }
+
+    const messages = [
+      assistantMsg(5),
+      toolResult("ok"),
+      toolResult("ok"),
+      toolResult("ok"),
+      toolResult("ok"),
+      toolResult("ok"),
+      // Real test invocations using file paths
+      bashCmd("cat test/evaluator-heuristic.test.ts | head -20"),
+      toolResult("ok"),
+      bashCmd("node src/foo.test.js"),
+      toolResult("ok"),
+      bashCmd("ls __tests__/unit/"),
+      toolResult("ok"),
+      finishMsg({
+        status: "success",
+        summary: "Ran all tests and verified the implementation works correctly across the board",
+        verification_evidence: [
+          "Step 5: bash showed test file content",
+          "Step 6: bash ran test file",
+        ],
+        deliverables: [
+          { path: "src/lib/impl.ts", description: "Implementation" },
+          { path: "test/impl.test.ts", description: "Tests" },
+        ],
+      }),
+      finishResult(),
+    ];
+    const transcript = toTranscript(messages);
+    const scores = computeHeuristicScores(makeSession(), transcript, messages);
+    // Should get verified_with_tests — test/, .test., __tests__ patterns
+    expect(scores.quality).toBe(5);
+    expect(scores.issues).toContain("verified_with_tests");
+  });
 });
 
