@@ -1093,6 +1093,11 @@ export function computeHeuristicScores(
     // Instead of rewarding protocol compliance (many evidence items + deliverables),
     // reward sessions that actually ran verification commands (test suites, tsc, etc.)
     // This differentiates "I ran tests and they passed" from "I wrote some files".
+    //
+    // H-009 Phase 4b fix: Use the bash command string (not stringified args) and
+    // tighter patterns to avoid false positives. The old regex /test/i matched
+    // substrings like "latest", "attest", etc. in inline scripts, causing ~25%
+    // false positive rate. Now we check for actual test runner invocations.
     if (messages && messages.length > 0) {
       let verificationRuns = 0;
       for (const msg of messages) {
@@ -1101,8 +1106,16 @@ export function computeHeuristicScores(
         if (!Array.isArray(content)) continue;
         for (const block of content) {
           if (block?.type === "toolCall" && block.name === "bash") {
-            const args = JSON.stringify(block.arguments ?? block.input ?? {});
-            if (/vitest|jest|test|tsc|npm run check|npm run build|typecheck/i.test(args)) {
+            const cmd: string =
+              (block as any).arguments?.command ??
+              (block as any).input?.command ??
+              "";
+            if (
+              /\bvitest\b|\bjest\b|\btsc\b|\bnpm run check\b|\bnpm run build\b|\btypecheck\b|\bnpm test\b|\bpnpm test\b|\bbun test\b/i.test(
+                cmd,
+              ) ||
+              /test\/|\.test\.|\.spec\.|__tests__/i.test(cmd)
+            ) {
               verificationRuns++;
             }
           }
