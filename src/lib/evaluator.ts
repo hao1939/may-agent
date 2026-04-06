@@ -1089,23 +1089,29 @@ export function computeHeuristicScores(
       }
     }
 
-    // 5b-iv. H-009 Phase 3: Exceptional quality bonus
-    // Quality 5 requires genuinely excellent work:
-    // - Multiple specific evidence items (not just one)
-    // - Multiple deliverables
-    // - Non-trivial summary
-    // This is the ONLY path to quality=5 in heuristic scoring.
-    if (
-      evidence.length >= 2 &&
-      deliverables.length >= 2 &&
-      summary.length >= 60 &&
-      evidence.some((e: unknown) => {
-        const s = typeof e === "string" ? e : "";
-        return s.length >= 30 && /step|bash|read|edit|write|test|output|exit|pass|fail|confirm/i.test(s);
-      })
-    ) {
-      quality += 1;
-      issues.push("exceptional_evidence_depth");
+    // 5b-iv. H-009 Phase 4: Verification effort bonus
+    // Instead of rewarding protocol compliance (many evidence items + deliverables),
+    // reward sessions that actually ran verification commands (test suites, tsc, etc.)
+    // This differentiates "I ran tests and they passed" from "I wrote some files".
+    if (messages && messages.length > 0) {
+      let verificationRuns = 0;
+      for (const msg of messages) {
+        if ((msg as any).role !== "assistant") continue;
+        const content = (msg as any).content;
+        if (!Array.isArray(content)) continue;
+        for (const block of content) {
+          if (block?.type === "toolCall" && block.name === "bash") {
+            const args = JSON.stringify(block.arguments ?? block.input ?? {});
+            if (/vitest|jest|test|tsc|npm run check|npm run build|typecheck/i.test(args)) {
+              verificationRuns++;
+            }
+          }
+        }
+      }
+      if (verificationRuns >= 3) {
+        quality += 1;
+        issues.push("verified_with_tests");
+      }
     }
   }
 

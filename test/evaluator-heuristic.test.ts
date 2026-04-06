@@ -744,8 +744,16 @@ describe("computeHeuristicScores - Phase 2 semantic quality (H-009)", () => {
   });
 });
 
-describe("computeHeuristicScores - Phase 3 scoring calibration (H-009)", () => {
-  it("exceptional session → quality 5 (multiple evidence, multiple deliverables, rich summary)", () => {
+describe("computeHeuristicScores - Phase 4 scoring calibration (H-009)", () => {
+  // Helper: creates an assistant message with a bash tool call containing a test/tsc command
+  function bashTestCall(command: string): any {
+    return {
+      role: "assistant",
+      content: [{ type: "toolCall", name: "bash", id: "tc_bash", input: { command } }],
+    };
+  }
+
+  it("verified session → quality 5 (3+ test/tsc bash calls)", () => {
     const messages = [
       assistantMsg(5),
       toolResult("ok"),
@@ -753,6 +761,12 @@ describe("computeHeuristicScores - Phase 3 scoring calibration (H-009)", () => {
       toolResult("ok"),
       toolResult("ok"),
       toolResult("ok"),
+      bashTestCall("npx vitest run src/rate-limiter.test.ts"),
+      toolResult("12 tests passed"),
+      bashTestCall("npx tsc --noEmit"),
+      toolResult("no errors"),
+      bashTestCall("npm run check"),
+      toolResult("clean"),
       finishMsg({
         status: "success",
         summary: "Implemented rate limiter with token bucket algorithm, added comprehensive test suite, and verified edge cases",
@@ -769,13 +783,13 @@ describe("computeHeuristicScores - Phase 3 scoring calibration (H-009)", () => {
     ];
     const transcript = toTranscript(messages);
     const scores = computeHeuristicScores(makeSession(), transcript, messages);
-    // Phase 3: Base 3 + 1 (verified) + 1 (exceptional evidence depth) = 5
+    // Phase 4: Base 3 + 1 (verified finish) + 1 (verified_with_tests) = 5
     expect(scores.quality).toBe(5);
-    expect(scores.issues).toContain("exceptional_evidence_depth");
+    expect(scores.issues).toContain("verified_with_tests");
     expect(scores.verdict).toBe("good");
   });
 
-  it("standard session → quality 4 (verified but not exceptional)", () => {
+  it("standard session → quality 4 (verified finish but no test runs)", () => {
     const messages = [
       assistantMsg(3),
       toolResult("ok"),
@@ -791,9 +805,9 @@ describe("computeHeuristicScores - Phase 3 scoring calibration (H-009)", () => {
     ];
     const transcript = toTranscript(messages);
     const scores = computeHeuristicScores(makeSession(), transcript, messages);
-    // Phase 3: Base 3 + 1 (verified) = 4, not enough for exceptional
+    // Phase 4: Base 3 + 1 (verified finish) = 4, no test runs for bonus
     expect(scores.quality).toBe(4);
-    expect(scores.issues).not.toContain("exceptional_evidence_depth");
+    expect(scores.issues).not.toContain("verified_with_tests");
     expect(scores.verdict).toBe("good");
   });
 
