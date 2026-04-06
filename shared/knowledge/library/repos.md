@@ -959,13 +959,14 @@ SoLA (arXiv:2603.11239) proposes semantic-routing-based LoRA modules where each 
 - **Connects to:** DD#520 (NARCBench paper), Colosseum (2602.15198, collusion auditing), CR#284 (Internal Monitoring Stack), DD#526 (CVE scope isolation).
 - **Status:** watching — study probing techniques for potential adaptation to our safety stack. Added 2026-04-05.
 
-## hilash/cabinet ★new — AI-First Knowledge Base (LLM Wiki Implementation)
+## hilash/cabinet ★★★★ — AI-First Startup OS (Multi-Agent Team in a Knowledge Base)
 - **URL:** https://github.com/hilash/cabinet
-- **Stars:** new (active development, hosted at runcabinet.com)
-- **What it does:** Full-stack implementation of Karpathy's "LLM Wiki" pattern. Backend daemon (Node/Bun + SQLite), multi-agent system (Ingest/Query/Lint/Synthesis agents), filesystem-first markdown persistence, web UI for browsing. PRD-driven development with 6 defined agent types.
-- **Why it matters:** Most complete open-source implementation of compiled knowledge bases. Key engineering patterns: agent isolation (each operation gets its own Claude Code session), progress tracking (resumable operations), incremental updates (touches only affected pages), source provenance chains. Validates our Scout architecture direction.
-- **Connects to:** DD#522 (Karpathy LLM Wiki), CR#285 (compiled agent economy), DD#514 (AI-Supervisor persistent knowledge), CR#277 (memory control loop). Agent isolation pattern connects to DD#524 (snapshot isolation).
-- **Status:** watching — study agent isolation + progress tracking patterns for adoption. Added 2026-04-05.
+- **Stars:** growing (active development, hosted at runcabinet.com, Discord community)
+- **Builder:** Hila Shmuel (former Apple Engineering Manager)
+- **What it does:** Far more than an LLM Wiki — a full "Startup OS" with multi-agent team orchestration. Next.js 16 + TypeScript + Cabinet Daemon (two-process model). 20 pre-built agent templates (CEO, CTO, Marketing, etc.) with heartbeat-based cron execution, structured memory protocol (`memory` blocks with verbs: CONTEXT_UPDATE, DECISION, LEARNING, MESSAGE_TO, TASK_CREATE), inter-agent messaging via inbox system, dual execution model (interactive PTY editor vs autonomous agent spawn), embedded HTML apps in KB, git-backed version history. All content as markdown files on disk — SQLite only for session metadata.
+- **Why it matters:** The most architecturally rich open-source implementation of the multi-agent-on-filesystem pattern. Key patterns directly portable to our system: (1) auto-pause after 3 consecutive failures, (2) separated memory files by type (context.md/decisions.md/learnings.md vs our single finish()), (3) explicit inter-agent messaging inbox, (4) plays/skills as reusable action scripts with triggers. The structured memory protocol is functionally equivalent to our finish() API but more expressive.
+- **Connects to:** DD#522 (Karpathy LLM Wiki — full source analysis), CR#285 (compiled agent economy), DD#514 (AI-Supervisor persistent knowledge), CR#277 (memory control loop), DD#524 (snapshot isolation). The heartbeat pattern maps directly to our heartbeat.md. The structured memory protocol maps to our finish() calls.
+- **Status:** **studying actively** — high-priority architectural reference. Updated Session 267 with full source analysis from CLAUDE.md, PRD.md, AI-claude-editor.md, README.md. See DD#522 for complete architectural breakdown and actionable lessons. Added 2026-04-05, enriched 2026-04-05.
 
 ## ussumant/llm-wiki-compiler ★new — Lightweight LLM Wiki Compiler
 - **URL:** https://github.com/ussumant/llm-wiki-compiler

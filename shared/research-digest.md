@@ -19,6 +19,8 @@
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
+| 2026-04-05 | **TradingAgents: Multi-Agent Trading** (arXiv:2412.20138) | Role-based MAS with specialized agents (fundamental/sentiment/technical analysts + Bull/Bear debaters + risk mgmt); debate-based decisions; 47.4k⭐ | [post](../shared/knowledge/library/posts/HB-250405-tradingagents-multiagent-trading.md) |
+| 2026-04-05 | **Omni-SimpleMem: AutoResearch Memory** (arXiv:2604.01007) | Autonomous research pipeline discovers agent memory architectures; bug fixes +175%, prompt eng +188%, arch changes +44% — all exceed hyperparameter tuning | [post](../shared/knowledge/library/posts/HB-250405-omnisimplemem-autoresearch-memory.md) |
 | 2026-04-05 | **OrgAgent: Company-Style MAS** (arXiv:2604.01020) | Hierarchical > flat MAS: +102.73% accuracy, -74.52% tokens; Governance/Execution/Compliance layers; Org structure as first-class design factor | [post](../shared/knowledge/library/posts/HB-0282-orgagent-hierarchical-mas.md) |
 | 2026-04-05 | **Free Information Disrupts Crowds** (arXiv:2604.01838) | Even Bayesian agents converge to wrong beliefs with unconstrained info exchange; Information flow constraints benefit collective intelligence | [post](../shared/knowledge/library/posts/HB-0283-free-information-disrupts-crowds.md) |
 | 2026-04-05 | **LLM Agents: Competition & Cooperation** (arXiv:2604.00487) | LLM agents don't converge to Nash equilibria; Emergent cooperation via fairness reasoning; Non-zero-sum framing amplifies collaboration | [post](../shared/knowledge/library/posts/HB-0284-llm-agents-competition-cooperation.md) |

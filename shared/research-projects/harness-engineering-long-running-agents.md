@@ -132,12 +132,19 @@ Prompt Engineering  →  Context Engineering  →  Harness Engineering
 - [ ] **Dual-version context pilot**: For one agent, create both `context.md` (human) and `context-agent.md` (agent-optimized)
 - [ ] **Skill discovery optimization**: Ensure skill triggers are in system prompt without full body
 - [ ] **Memory trust tiers**: Tag knowledge entries with trust level (human-curated > agent-synthesized > session-extracted)
+- [ ] **Auto-pause on consecutive failures**: Halt agent after 3+ consecutive failures and inject strategic reassessment prompt (from DD#522/Cabinet, CR#286/CORAL)
+- [ ] **Stagnation detection**: Track new DD/CR/hypothesis count per session. Alert if 3 consecutive sessions produce 0 new insights (from CR#286/CORAL)
+- [ ] **Brevity constraints pilot**: Add output length constraints to agent-to-agent messages. Measure token savings and quality impact (from DD#531/Caveman)
 
 ### Phase 3: Architecture Changes (Adopt)
 - [ ] **Initializer pattern**: Formalize agent bootstrap sequence — what context is loaded, in what order, with what trust
 - [ ] **Reactive compaction**: Implement context compression triggers when window usage exceeds threshold
 - [ ] **State bridge protocol**: Define formal cross-session handoff format with required sections
 - [ ] **Fail-closed tools**: Default deny for new tools, require explicit permission elevation
+- [ ] **Integrator agent pattern**: Support fan-out/fan-in parallel execution with a merge agent (from DD#521/mngr)
+- [ ] **Lifecycle hooks**: Implement PreToolUse/PostToolUse hooks for monitoring and guardrails (from DD#530/OpenHarness)
+- [ ] **Formal output contracts**: TypeScript type contracts on agent outputs with rejection sampling (from DD#528/SEVerA)
+- [ ] **Information-isolated evaluation**: Evaluation agent that never sees generator reasoning chain (from DD#532/EvoSkills)
 
 ### Phase 4: Validate
 - [ ] Measure session success rate before/after changes
@@ -337,6 +344,36 @@ See [CR#282: Dispatch Board Patterns](../knowledge/library/deep-dives/cr282-disp
 **New predictions**: P224 (time-remaining framing affects quality), P225 (quality gap compounds with difficulty), P226 (permission to leave incomplete reduces hacks), P227 (transcript reduction reduces context exhaustion), P228 (two-layer memory improves resumption), P229 (mini-coding-agent → 1000+ stars within 2 weeks)
 
 **Updated convergent property count**: 5 (CR#282) → 6 (+context reduction from DD#517) → 7 (+emotional state management from DD#516)
+
+### 2026-04-05 (Scout Sessions 261-268): Agent OS Stack — 16 Deep Dives Crystallize into 5-Layer Architecture
+
+**Source**: Weekend synthesis CR#289, drawing on DD#518-533 and CR#283-288.
+
+**Why this matters for harness engineering**: The weekend's 16 deep dives, spanning independent academic and industry sources, converge on a **5-layer Agent Operating System** that maps directly onto and extends our harness framework:
+
+| Layer | Content | Key Sources | Harness Mapping |
+|-------|---------|-------------|-----------------|
+| L5: Economic | Token compression, cost management | DD#531 (65% savings), DD#524 | Context Engineering (Layer 4 of 6) |
+| L4: Verification | Formal contracts, co-evolutionary testing, monitoring | DD#528, DD#532, DD#533, DD#520, DD#525, CR#288 | Tools & Safety (Layer 3) + NEW |
+| L3: Evolution | Skill creation, knowledge compilation, self-improvement | DD#529, DD#532, DD#522, DD#523, CR#285, CR#286 | Skills Runtime (Layer 2) |
+| L2: Execution | Parallel orchestration, heartbeat, lifecycle hooks | DD#521, DD#524, DD#530, DD#522 | Core Harness (Layers 1-2) |
+| L1: Security | Vulnerability, alignment, attack surfaces | DD#518, DD#519, DD#526, DD#525, CR#284 | NEW: Security baseline |
+
+**Five convergences identified**:
+1. **Architecture beats capability** — formal contracts on Qwen3-8B > heuristics on Claude Sonnet 4.5 (DD#528). Brevity constraints improve accuracy (DD#531). CORAL's simple design > complex baselines (DD#523). Our harness investment IS the right strategy.
+2. **Isolation enables trust** — information-isolated verifiers prevent confirmation bias (DD#532), git snapshots improve pass rates (DD#521), value-context separation reveals drift (DD#525). Separation is architecture, not overhead.
+3. **Knowledge compilation is the moat** — O(1) compiled > O(n) RAG (DD#522), CORAL knowledge reuse drives improvement (DD#523), portable skills standard (DD#529). Our Scout→Library→DD→CR pipeline is the first two stages of this.
+4. **Self-evolution requires external anchoring** — no safe self-improvement without external ground truth (DD#532 isolated verifier, DD#528 formal specs, CR#287 self-QA bias). Extends L5 Inter-Agent Sycophancy monitoring.
+5. **Agent infrastructure is attack surface** — agents find real 0-days (DD#518), agent infrastructure has CVEs (DD#526), eval-reality gap is 8.5× (DD#519). Security is Layer 0, not Layer N.
+
+**Three new patterns adopted into gap analysis**:
+- **Auto-pause after 3 consecutive failures** (from DD#522/Cabinet) — Zero cost, prevents resource waste. Added to Phase 2.
+- **Stagnation detection** (from CR#286/CORAL) — Track insight output rate per session. Added to Phase 2.
+- **Integrator agent for fan-out/fan-in** (from DD#521/mngr) — Missing parallel execution pattern. Added to Phase 3.
+
+**Updated harness model count**: Our 6-layer harness model + emotional state management (7th component from CR#283) now maps onto a 5-layer Agent OS. The agent OS model is a higher-level abstraction that encompasses the 7-component harness model as its execution layer.
+
+See [CR#289: Weekend Synthesis](../knowledge/library/deep-dives/CR-289-weekend-synthesis-agent-operating-system-emerges.md) for the complete analysis.
 
 ### 2026-04-02: Project Created
 - Synthesized 40+ sources into unified framework

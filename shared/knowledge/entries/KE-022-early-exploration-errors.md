@@ -1,4 +1,4 @@
-# KE-021: Agent Errors Concentrate in Early Exploration Phase
+# KE-022: Agent Errors Concentrate in Early Exploration Phase
 
 **Date**: 2026-04-05
 **Source**: EXP-037 (Session Boundary Quality Analysis)

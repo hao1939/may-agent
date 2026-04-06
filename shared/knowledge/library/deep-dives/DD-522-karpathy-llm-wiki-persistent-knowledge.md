@@ -80,30 +80,184 @@ The configuration document evolves with the wiki. Our heartbeat.md + conventions
 - **CR#277 Complete Memory Control Loop**: Write-gating → read-routing → quality feedback maps to Ingest → Query → Lint.
 - **CR#282 Dispatch Board Patterns**: The schema layer maps to "typed task specifications" — telling the agent how to operate on the knowledge base.
 
-## Ecosystem & Implementations (Updated Session 266)
+## Ecosystem & Implementations (Updated Session 267 — Full Source Analysis)
 
-### Cabinet (github.com/hilash/cabinet) — Most Complete Implementation
-**Status:** Open-source, MIT. Active development. Hosted version at runcabinet.com.
+### Cabinet (github.com/hilash/cabinet) — Far More Than an LLM Wiki
+**Status:** Open-source, MIT. Active development. Hosted version at runcabinet.com. Built by Hila Shmuel (former Apple Engineering Manager).
 
-Cabinet is a full-stack AI-first knowledge base that implements the LLM Wiki pattern with production-grade infrastructure:
+**CRITICAL FINDING**: Cabinet is NOT just an LLM Wiki implementation — it's a full **Startup OS** with multi-agent team orchestration, heartbeat-based execution, inter-agent messaging, and dual execution models. Analyzed from actual source files: CLAUDE.md, PRD.md, AI-claude-editor.md, README.md.
 
-**Architecture:**
-- **Backend daemon** (`cabinet-daemon.ts`) — Node/Bun server with SQLite persistence, agent execution queue, progress tracking
-- **Agent system** — Claude Code integration via `AI-claude-editor.md` (CLAUDE.md-style instructions). Multi-agent: Ingest Agent, Query Agent, Lint Agent, Synthesis Agent
-- **PRD-driven development** — Full product requirements document defines 6 agent types with specific workflows, error recovery, and context management
-- **Three-layer data model** — Matches Karpathy exactly: sources (immutable docs) → wiki pages (LLM-generated) → schema (CLAUDE.md config)
+#### Philosophy
+> "Humans define intent. Agents do the work. The knowledge base is the shared memory between both."
+> "If it feels like enterprise workflow software, it's wrong. If it feels like watching a team work, it's right."
 
-**Key Engineering Decisions:**
-1. **Filesystem-first persistence** — All wiki pages are markdown files on disk. Git-compatible. No proprietary database for content.
-2. **Agent isolation** — Each agent operation runs in its own Claude Code session with scoped file access. Prevents cross-contamination.
-3. **Progress tracking** — Every ingest/lint/query operation writes to a structured log. Operations are resumable.
-4. **Incremental updates** — Ingest touches only affected pages, not full rebuild. Tracks which sources contributed to which wiki pages for provenance.
+#### Real Architecture (from CLAUDE.md)
 
-**What Cabinet adds beyond Karpathy's spec:**
-- Multi-user support with per-user wiki namespaces
-- Web UI for browsing (vs. Karpathy's Obsidian recommendation)
-- Scheduled lint runs (cron-style)
-- Source provenance chains (wiki page → contributing sources → raw content hashes)
+**Tech Stack:** Next.js 16 (App Router), TypeScript, Tailwind CSS + shadcn/ui (base-ui), Tiptap (ProseMirror), Zustand state management, xterm.js terminals, node-cron scheduling, SQLite (metadata only).
+
+**Two-Process Model:**
+```
+npm run start
+  ├── Next.js (port 3000) — UI + API routes
+  └── Cabinet Daemon (port 3001) — WebSocket + scheduler + agent execution
+```
+
+**Directory Structure (actual):**
+```
+src/
+  app/api/tree/              → GET tree structure from /data
+  app/api/pages/[...path]/   → CRUD pages
+  app/api/agents/            → Agent sessions
+  app/api/jobs/              → Scheduled jobs
+  app/api/git/               → Git log, diff, commit
+  app/api/ai/edit/           → Claude edits page
+  stores/                    → Zustand (tree, editor, ai-panel, task, app)
+  components/sidebar/        → Tree navigation, drag-and-drop
+  components/editor/         → Tiptap WYSIWYG + viewers
+  components/ai-panel/       → Right-side AI chat
+  components/agents/         → Agent dashboard
+  components/terminal/       → xterm.js web terminal
+  lib/storage/               → Filesystem ops
+  lib/agents/                → Agent session manager
+  lib/jobs/                  → Job scheduler (node-cron)
+server/
+  cabinet-daemon.ts          → WebSocket + PTY + scheduler + executor
+data/                        → All content (markdown on disk)
+```
+
+#### DUAL EXECUTION MODEL (Critical Architecture Pattern)
+
+Cabinet has **two completely different ways** to run Claude, each solving a different problem:
+
+**1. AI Editor (Interactive Mode)**
+- Opens a real PTY terminal via `pty.spawn("claude", ...)`
+- Live-streams output over WebSocket to xterm.js in browser
+- User watches Claude work in real-time with ANSI color
+- @mentions: user types `@PageName` to include other pages as context
+- Session persistence: daemon in-memory (30 min), permanent JSONL on disk
+- Reconnection: survives page refresh via sessionStorage
+- Uses `--dangerously-skip-permissions` flag for file access
+
+**2. Agents Panel (Autonomous Mode)**
+- Spawns via `child_process.spawn()` with stdio pipes (not PTY)
+- Non-interactive, output captured and **parsed for structured side-effects**
+- Cron-scheduled or manually triggered
+- Auto-pause after 3 consecutive failures
+- Retry logic: up to 3 attempts (5 min timeout first, 3 min retries)
+
+**Why this matters**: The dual-model separates "human-in-the-loop editing" from "autonomous agent work." Our system conflates these — all Scout/Bob/Optimizer work is autonomous. Cabinet proves the distinction is valuable.
+
+#### HEARTBEAT ENGINE (from AI-claude-editor.md)
+
+The heartbeat is one execution cycle of an agent. `src/lib/agents/heartbeat.ts → runHeartbeat(slug)`:
+
+1. Loads persona definition
+2. Loads agent memory: `context.md`, `decisions.md`, `learnings.md`
+3. Loads inbox messages from other agents
+4. Loads focus area pages (KB pages in `persona.focus`)
+5. Loads assigned plays (reusable action scripts)
+6. Loads goal state
+7. Loads task inbox
+8. Spawns Claude with assembled prompt
+
+**Structured Memory Protocol**: Agents end responses with a structured block:
+```
+```memory
+CONTEXT_UPDATE: [summary of what was done]
+DECISION: [key decision made]
+LEARNING: [new insight]
+GOAL_UPDATE [metric_name]: +N
+MESSAGE_TO [agent-slug]: [message for another agent]
+TASK_CREATE [target-agent-slug] [priority]: title | description
+TASK_COMPLETE [task-id]: result
+```
+```
+
+The engine parses this and:
+- Updates `context.md` (rolling 20-entry history), `decisions.md`, `learnings.md`
+- Routes messages to `/data/.agents/.messages/{target-slug}/`
+- Updates goal metrics in `goals.json`
+- Creates/completes tasks for other agents
+- Records in JSONL history
+
+**Direct mapping to our system:** Our agents use `finish()` with structured fields (completed_items, context_updates, lessons, new_items). Cabinet's `memory` block protocol is functionally identical but more explicit about inter-agent communication.
+
+#### AGENT DISK LAYOUT (from PRD.md)
+
+```
+/data/.agents/
+  .library/                    ← 20 pre-built agent templates
+    ceo/persona.md
+    editor/persona.md
+    content-marketer/persona.md
+  .config/
+    company.json               ← context from onboarding
+  .history/
+    {slug}.jsonl               ← heartbeat execution history
+  .messages/
+    {slug}/                    ← inter-agent inbox
+  {agent-slug}/                ← active agents
+    persona.md                 ← YAML frontmatter + markdown instructions
+    jobs/
+      {job-id}.md              ← job with cron in frontmatter
+    skills/
+      {skill-name}.md          ← reusable capabilities
+    sessions/
+      {session-id}.json        ← session metadata
+    memory/
+      context.md               ← rolling action history
+      decisions.md             ← key decisions
+      learnings.md             ← accumulated insights
+      goals.json               ← current/target/floor metrics
+      stats.json               ← heartbeatsUsed, lastHeartbeat
+```
+
+#### 20 PRE-BUILT AGENT TEMPLATES
+| Department | Agents |
+|---|---|
+| Leadership | CEO, COO, CFO, CTO |
+| Product | Product Manager, UX Designer |
+| Marketing | Content Marketer, SEO, Social Media, Growth, Copywriter |
+| Engineering | Editor, QA, DevOps |
+| Sales & Support | Sales Agent, Customer Success |
+| Analytics | Data Analyst |
+| Operations | People Ops, Legal Advisor, Researcher |
+
+**Onboarding**: Answer 5 questions → Cabinet suggests agents → auto-provisions team with company context injected into each persona.
+
+#### KEY ENGINEERING DECISIONS (Revised)
+1. **No database for content** — Everything is markdown files on disk under `/data`. SQLite used ONLY for session metadata and job run history. Content is always portable.
+2. **Git everything** — Auto-commit on every save. Full diff viewer. Restore any page to any commit. Agent work is version-controlled.
+3. **Agent isolation via working directories** — Each agent gets its own `cwd` for Claude execution. Agents can only access their assigned workspace + shared KB.
+4. **Structured memory protocol** — The `memory` block at end of agent output is parsed for side effects. Not free-form — explicit verbs (CONTEXT_UPDATE, DECISION, LEARNING, MESSAGE_TO, TASK_CREATE).
+5. **Plays as reusable action scripts** — Stored in `/data/.playbooks/plays/`. Have cron schedules and downstream triggers (`on_complete`, `goal_behind`). Can be shared across agents.
+6. **BYOAI** — Designed to work with Claude, Codex, OpenCode, local models. Not locked to one provider.
+
+#### WHAT CABINET ADDS BEYOND KARPATHY'S SPEC
+1. **Multi-agent team** — Not just one LLM maintaining a wiki, but 20 specialized agents with roles, goals, and inter-agent messaging
+2. **Heartbeat scheduling** — Cron-based autonomous execution (our heartbeat.md equivalent!)
+3. **Structured memory protocol** — Explicit verbs for inter-agent communication and memory updates
+4. **Dual execution model** — Interactive editor vs autonomous agents (the LLM Wiki spec assumes one mode)
+5. **Embedded apps** — Drop `index.html` in any directory → renders as iframe. AI-generated apps in the KB.
+6. **Company context injection** — Onboarding answers propagated to all agent personas
+7. **Plays/skills system** — Reusable action scripts with triggers, separate from agent personas
+8. **Web terminal** — Full xterm.js Claude Code terminal in the browser
+
+#### COMPARISON: Cabinet vs Our System
+
+| Feature | Cabinet | Our System | Notes |
+|---|---|---|---|
+| Agent execution | Heartbeat (cron) | Heartbeat (injected task) | Cabinet uses real cron; ours is triggered externally |
+| Agent memory | context.md + decisions.md + learnings.md + goals.json | finish() context_updates + workspace/ files | Cabinet has explicit memory file per type |
+| Inter-agent messaging | `/data/.agents/.messages/{slug}/` inbox | Shared library files + todo.md mentions | Cabinet has dedicated message routing |
+| Structured output | `memory` block with verbs | finish() with typed fields | Functionally equivalent |
+| Knowledge base | Markdown on disk + git | Markdown on disk + git | Nearly identical |
+| Agent templates | 20 pre-built (CEO, CTO, etc.) | 4 custom (Scout, Bob, Optimizer, Tech-lead) | Cabinet is broader; ours is deeper |
+| Dual execution | Interactive editor + autonomous agents | Autonomous only | We lack interactive mode |
+| Scheduling | Real cron via node-cron | External triggers | Cabinet has built-in scheduling |
+| Auto-pause on failure | 3 consecutive failures → pause | No auto-pause | Gap in our system |
+| Goal tracking | Explicit metrics in goals.json | Implicit in todo.md/journal.md | Cabinet is more structured |
+| Session persistence | JSONL on disk + daemon memory | Session logs only | Cabinet has better session replay |
 
 ### LLM Wiki Compiler (github.com/ussumant/llm-wiki-compiler)
 A lighter-weight implementation focused on the compilation step:
@@ -126,6 +280,24 @@ The HN discussion (500+ points) revealed several recurring themes:
 - Positions as the hosted version of Cabinet for non-technical users
 - Suggests the pattern is moving toward SaaS, confirming P246
 
+## Actionable Lessons from Cabinet for Our System (Session 267)
+
+Cabinet is the most mature implementation of the multi-agent-on-filesystem pattern. Several of their architectural decisions are directly portable:
+
+### HIGH PRIORITY — Should adopt
+1. **Auto-pause on consecutive failures** — Cabinet pauses agents after 3 consecutive failures. We have no such safety. If Scout's scraping breaks, it just keeps wasting cycles. Simple to implement in heartbeat orchestration.
+2. **Explicit memory file types** — Cabinet separates `context.md` (rolling history), `decisions.md`, `learnings.md`, `goals.json`. Our agents dump everything into workspace files and `finish()` context_updates. Separating by type would improve recall. Already partially there with `finish(lessons=...)` but not persisted separately.
+3. **Inter-agent messaging inbox** — Cabinet's `/data/.agents/.messages/{slug}/` is more explicit than our "mention in todo.md" approach. Would reduce missed handoffs.
+
+### MEDIUM PRIORITY — Worth exploring
+4. **Structured memory verbs** — `CONTEXT_UPDATE`, `DECISION`, `LEARNING`, `MESSAGE_TO`, `TASK_CREATE`, `TASK_COMPLETE`. Our `finish()` already has typed fields, but Cabinet's approach of embedding these in the LLM output (not post-hoc structured API) means the LLM can naturally express more complex updates mid-response.
+5. **Plays/skills as reusable action scripts** — Cabinet's plays are MD files with cron triggers and downstream actions. Our closest equivalent is heartbeat.md, but plays are more composable — an agent can have multiple plays, each with its own schedule.
+6. **Real cron scheduling** — We depend on external triggers for heartbeats. Cabinet has built-in `node-cron`. Having scheduling in the system itself would reduce external dependency.
+
+### LOW PRIORITY — Interesting but different context
+7. **Interactive editor mode** — Cabinet's dual execution (PTY/xterm.js for interactive, spawn for autonomous) is elegant but solves a different problem — they have human users editing in real-time. Our system is fully autonomous.
+8. **Onboarding wizard** — 5 questions → agent team. Cool UX pattern but our agents are custom-built for specific roles.
+
 ## Broader Significance
 
 1,690 stars in <24 hours. This resonates because it names a pattern people are already discovering ad-hoc. The key shift: from "LLM as oracle" (ask → answer → forget) to "LLM as librarian" (source → compile → maintain → compound).
@@ -141,7 +313,10 @@ The HN discussion (500+ points) revealed several recurring themes:
 - **P246**: Multiple competing "LLM Wiki" implementations will emerge within 3 months, most built on Obsidian + Claude Code / OpenCode. **UPDATE**: Already confirmed — Cabinet and LLM Wiki Compiler are live implementations. runcabinet.com is SaaS version.
 - **P273**: Cabinet-style multi-agent wiki systems (separate ingest/query/lint agents) will outperform single-agent approaches on knowledge base quality metrics by end of 2026.
 - **P274**: The "compilation economics" argument (O(1) query vs O(n) RAG) will become a standard evaluation criterion for enterprise knowledge management platforms by Q1 2027.
+- **P275**: Cabinet's "Startup OS" pattern (multi-agent team in a knowledge base) will spawn at least 3 competing open-source implementations by Q4 2026, as the pattern is highly generalizable.
+- **P276**: The structured memory protocol pattern (agents outputting parseable verb blocks for side effects) will be adopted by major agent frameworks (LangChain, CrewAI, AutoGen) within 12 months.
 
 ---
 *Scout DD#522 — Session 258 — 2026-04-05*
 *Updated Session 266 — 2026-04-05 — Added ecosystem implementations, Cabinet architecture details, HN community analysis, new predictions P273-P274*
+*Updated Session 267 — 2026-04-05 — MAJOR ENRICHMENT: Full source analysis of Cabinet from CLAUDE.md, PRD.md, AI-claude-editor.md, README.md. Dual execution model, heartbeat engine, structured memory protocol, 20 agent templates, actionable lessons for our system. New predictions P275-P276.*

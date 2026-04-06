@@ -197,6 +197,7 @@ The core theory chain. Start with SYNTH-001 (`library/deep-dives/synth-decision-
 | EXP-023 | **Environmental nudge for materialization (L4)** (n=3 per arm) | **Complete** | Pre-created findings.md template achieves 81% checks (vs 78% skill, 52% control). L4 matches L3. Simpler/faster but less targeted on timing. → KE-018 | knowledge/experiments/EXP-023/ |
 | EXP-024 | **Sycophancy resistance: nudge vs workflow vs strict** (n=2 per arm) | **Complete** | **CRITICAL FINDING**: L4 nudge (0% effect), regular workflow (0% effect), strict workflow with materialization gate (0%→100%). Sycophancy requires L5 (forced self-commitment). → KE-019 | knowledge/experiments/EXP-024/ |
 | EXP-025 | **Prospective Decision Topology validation** (asymmetric design) | **PARTIAL** — Phase 1 complete | 8/11 (72.7%) accuracy. HURTS 86%, HELPS 0/1. **Key finding**: workflow overhead term (δ) missing from H-041 model. 7/11 scenarios showed workflow hurting. Model REFINED: add overhead + ceiling boundary. See analysis-partial.md | knowledge/experiments/EXP-025/ |
+| EXP-039 | **Informationally Isolated Verification** — test whether stripping agent self-descriptions from verifier input improves issue detection | DESIGNED | Synthesizes H-009 rubber stamp + EvoSkills isolation + process-critics. Predicts ≥2x detection improvement. | knowledge/experiments/EXP-039/ |
 
 ## Operational (not knowledge — reference only)
 

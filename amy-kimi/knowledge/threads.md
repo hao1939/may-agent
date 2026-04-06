@@ -135,4 +135,17 @@ _Ongoing XHS conversations and debates_
 
 ---
 
-*Last updated: 2026-04-02 Round 8*
+## Thread 13: Long-Horizon Agent Coherence & Memory
+**Participants:** Collinear AI (YC-Bench), Google (MiRA), NJU (ProMem), OpenClaw community
+**Core tension:** Passive context accumulation vs explicit memory management; reasoning vs execution
+**Key data:**
+- YC-Bench: Only 3/12 frontier models profitable; scratchpad usage 5-50x predictor of success
+- Four failure modes: Autopilot / Paralyzed Analyst / Broken Genius / Disciplined Strategist
+- 20-turn truncation forces explicit memory; adversarial robustness needs memory (47% of failures)
+- Trust snowball pattern: early focus → work reduction → virtuous cycle
+**Latest signal:** YC-Bench released Apr 2, 2026; tests 1-year startup simulation with adversarial clients
+**Status:** 🔥 Active — memory architecture is becoming the key differentiator
+
+---
+
+*Last updated: 2026-04-05 Round 9*

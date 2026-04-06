@@ -47,8 +47,9 @@ Each skill has ONE status:
 | prerequisite-detection | ⚪ untested | | | | Lab fork: agents/.lab/prerequisite-detection-skill/. Teaches "verify input files exist before processing, block if missing." Target: build-activation-gap, error-recovery-broken-config. |
 | verify-before-finish-micro | 📦 deployed | C1.7 regression: agents call finish(success) without verification in last 5 tool calls. Micro-skill: "ask what tool output proves work correct before finish." | Untested in gym. Designed 2026-04-04 for tech-lead C1.7 regression (80% → target 95%+). | 📦 may (deployed 2026-04-05, targeting C1.7 92.6%→62.5%) | Based on analysis of 6 C1.7 failures across heartbeat/trivial sessions. See brief: agents/coach/workspace/brief-tech-lead-c17-regression.md |
 | pre-finish-reconciliation | ⚪ untested | | | | Lab fork: agents/.lab/pre-finish-reconciliation/. Teaches "self-check issues found vs issues fixed before finish(), use correct status." Target: FM-3.3 pattern across all agents. |
-| wrong-fix-recovery | ⚪ untested | | | | Lab fork: agents/.lab/wrong-fix-recovery-skill/ + workflow variant. Teaches "diagnose before fixing: state hypothesis as 'Line X in file Y does Z wrong because W' before editing." Target: misdiagnosed-regression, error-cascade-diagnosis. |
+| wrong-fix-recovery | ⚪ untested (ceiling) | | | | Lab fork: agents/.lab/wrong-fix-recovery-skill/ + workflow variant. **EXP-035**: `stale-error-misdiagnosis` baseline is 3/3 PASS — ceiling effect. Agents correctly diagnose stale errors without skill. Need harder scenario (e.g., misleading error timestamps, multiple overlapping incidents). |
 | bug-report-test-coverage | ⚪ untested | | | | Lab fork: agents/.lab/bug-report-test-coverage/. Teaches "after fixing bug, add regression test reproducing the EXACT reported scenario." Target: test-gap-detection. |
+| read-before-edit | ⚠️ deployed (no production lift) | Gym: 11/11 with skill loaded (coder-edit-discipline scenario). Process skill — adds "read file → confirm content → then edit" step. | **KE-023**: Production C1.1 compliance DECLINING despite deployment to 4 agents. Scout 75%→38%, May 100%→67%, Tech-lead 100%→55%, Bob 100%→74% over 4 days. System-wide C1.1 regression concurrent with deployment — skill did not arrest it. Gym ≠ production. | 📦 scout, tech-lead, bob, may (2026-04-04/05) | Gym: 11/11 in controlled setting. Production: NO measurable improvement. See KE-023. |
 
 > **Note**: Full inventory in the skills/ subdirectories and agents/.lab/ forks.
 > Coach: when you test a skill, fill in "Works When" and "Fails When" — these are the most valuable columns.
@@ -71,11 +72,11 @@ Each skill has ONE status:
 1. **efficient-file-reading** → coder (exp-018: 6/8→8/8, 2/2 runs)
 2. **structured-plan-writing** → coder (exp-019: 7/8→8/8, 2/2 runs)
 3. **materialize-findings-concise** → 📦 scout (EXP-022: 52%→78% total checks, +67pp early-materialization, 44% faster. Deployed 2026-04-04)
-4. **read-before-edit** → 📦 scout (Deployed 2026-04-04, targeting C1.1 regression 90%→33%. L3 skill + L4 context nudge. Pending verification.)
-5. **read-before-edit** → 📦 tech-lead (Deployed 2026-04-05, targeting C1.1 at 80% compliance. Adapted from coder-edit-discipline. Process skill — high confidence.)
-6. **read-before-edit** → 📦 bob (Deployed 2026-04-05, targeting C1.1 regression 84.3%. Bob edits PRIORITY-TRACKER.md, hypotheses, synthesis docs without reading. L3 skill + L4 context nudge.)
-7. **verify-before-finish** → 📦 may (Deployed 2026-04-05, targeting C1.7 regression 92.6%→62.5%. May calls finish(success) without verification. L3 skill + L4 context nudge.)
-8. **read-before-edit** → 📦 may (Deployed 2026-04-05, targeting C1.1 regression 95.8%→90% (last 5: 40%). Primary offender: dispatch-board.md (12x), EXP logs (2x). L3 skill + L4 context nudge.)
+4. **read-before-edit** → 📦 scout (Deployed 2026-04-04, targeting C1.1 regression 90%→33%. L3 skill + L4 context nudge. **KE-023: No production improvement — C1.1 at 38% as of Apr 5.**)
+5. **read-before-edit** → 📦 tech-lead (Deployed 2026-04-05, targeting C1.1 at 80% compliance. **KE-023: C1.1 dropped to 55% post-deployment.**)
+6. **read-before-edit** → 📦 bob (Deployed 2026-04-05, targeting C1.1 regression 84.3%. **KE-023: C1.1 at 74%, was 100% on Apr 2.**)
+7. **verify-before-finish** → 📦 may (Deployed 2026-04-05, targeting C1.7 regression 92.6%→62.5%. **C1.7 now at 84% — modest improvement from 62.5%, still below target 95%.**)
+8. **read-before-edit** → 📦 may (Deployed 2026-04-05, targeting C1.1 regression 95.8%→90% (last 5: 40%). **KE-023: C1.1 at 67%, was 100% on Apr 2.**)
 
 **Method C: L5 Strict Workflow (Materialization Gate)** (NEW — EXP-024) — workflow that requires a written analysis artifact BEFORE proceeding to action phase.
 - ✅ Works for: judgment tasks where the agent knows the right answer but overrides it (sycophancy: 0%→100%)

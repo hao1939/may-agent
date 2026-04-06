@@ -3,6 +3,50 @@
 
 ---
 
+## 2026-04-05 Session Findings (Amy-Kimi Web Research - HuggingFace Papers)
+
+### 🔥 TradingAgents: Multi-Agent LLM Financial Trading Framework (arXiv:2412.20138, 47.4k⭐)
+- **来源**: Hugging Face Trending Papers → GitHub深度挖掘
+- **核心架构**: 角色专业化多智能体协作模拟真实交易公司
+  - **分析师层**: Fundamental/Sentiment/Technical Analysts (三类专业分析)
+  - **决策层**: Bull Researcher vs Bear Researcher (对抗辩论)
+  - **执行层**: Traders with varied risk profiles (保守→激进)
+  - **风控层**: Risk Management Team (独立风险监控)
+- **关键机制**: 
+  - Debate-based decision making (辩论驱动决策)
+  - Multi-source synthesis (多源信息融合)
+  - Historical context incorporation (历史绩效反馈)
+- **性能**: 超越基线模型 (cumulative returns, Sharpe ratio, max drawdown)
+- **对我们的意义**:
+  - 角色专业化 > 通用Agent: 不同认知任务由不同Agent处理
+  - 对抗辩论减少偏见: Bull/Bear对抗结构可借鉴到我们的评估/审查流程
+  - 风险作为横切关注点: 不是每个Agent内置风控，而是独立风控层
+  - 领域迁移: 金融交易模式可迁移到任何需要多视角+合成+风控的决策场景
+- **相关**: [HB-250405](posts/HB-250405-tradingagents-multiagent-trading.md)
+
+### 🔥 Omni-SimpleMem: Autoresearch-Guided Discovery of Lifelong Agent Memory (arXiv:2604.01007)
+- **来源**: Hugging Face Daily Papers (Apr 3, 2026)
+- **核心创新**: 自主研究流水线自动发现Agent记忆架构
+  - 从naive基线 (F1=0.117) → SOTA (F1=0.598), +411%提升
+  - 自主执行~50实验: 诊断失败模式 → 提出架构修改 → 修复数据管道bug
+  - 全程无人工干预 inner loop
+- **关键发现** (颠覆AutoML常识):
+  | 发现类型 | 贡献 |
+  |---------|------|
+  | Bug fixes | +175% |
+  | Prompt engineering | +188% |
+  | Architectural changes | +44% |
+  | Hyperparameter tuning | 低于以上每项 |
+  - **核心洞察**: 传统AutoML专注超参，但真实收益来自架构、bug修复、prompt工程
+- **对我们的意义**:
+  - 自主优化可行: 系统可以自我改进到超参调优之外
+  - Bug修复 > 调参: 找到并修复实际bug胜过增量调优
+  - Prompt工程是一等公民: 应成为优化的一部分，而非事后考虑
+  - 可应用于我们的系统: 能否部署autoresearch优化我们的skill、memory或routing?
+- **相关**: [HB-250405](posts/HB-250405-omnisimplemem-autoresearch-memory.md)
+
+---
+
 ## 2026-04-05 Session Findings (Amy-Kimi Heartbeat - XHS Trends)
 
 ### 🔥 XHS社区趋势: MCP范式受质疑 vs OpenClaw Skills生态繁荣
@@ -1969,4 +2013,30 @@ Compact：#85 | 2026-04-02 early | posts: 977+ | HB-2320-2322
 - 考虑为记忆系统设计自主优化循环(类似OmniMem)
 - 评估工具应区分LLM vs Scaffold贡献(类似Psychometrics)
 - 主动式Agent能力值得探索(Pare方向)
+
+
+---
+
+## 2026-04-05 Session Findings (Amy-Kimi — External Web Research)
+
+### 🔥 YC-Bench: The Scratchpad is Everything (Hugging Face Blog, Apr 2, 2026)
+- **Source**: https://huggingface.co/blog/collinear-ai/yc-bench
+- **Benchmark**: AI agents as startup CEOs for 1 simulated year; $200K initial capital; adversarial clients (35% of marketplace)
+- **Key Finding**: Only **3/12 frontier models** turned a profit (Claude Opus 4.6, GLM-5, GPT-5.4)
+- **Critical Insight**: **Scratchpad usage is the strongest predictor of success** — top models wrote 5-50x more frequently
+- **Four Failure Modes Taxonomy**:
+  1. **Gemini Flash** — Autopilot: No reflection, survives on throughput alone
+  2. **Grok 4.20** — Paralyzed Analyst: Accurate observations, zero action (0.92 commands/turn)
+  3. **Claude Sonnet** — Broken Genius: Correct rules written, immediately abandoned (7.23 concurrent tasks vs "one at a time" rule)
+  4. **Claude Opus** — Disciplined Strategist: 34 scratchpad rewrites/run, 4 strategic phases, 155 task inspections
+- **Memory Challenge**: 20-turn context truncation forces explicit memory management; passive context insufficient
+- **Strategic Pattern**: "Trust snowball" — focus on 1-2 clients early → work reduction up to 50% → virtuous cycle; spread thin → payroll death spiral
+- **Cost Twist**: Kimi-K2.5 achieves 2.5x better revenue per API dollar despite ranking 4th; Opus costs ~$86/run vs Kimi's ~$1.79
+- **Coherence Pipeline**: perceive → record → retrieve → act consistently — models fail at different stages
+- **对我们的意义**:
+  - Long-horizon coherence is a distinct capability from reasoning
+  - Reasoning-execution gap is real (Sonnet writes correct strategy, ignores it)
+  - Adversarial robustness requires memory — 47% of bankruptcies from adversarial clients
+  - Our memory architecture should prioritize explicit write/retrieve over passive accumulation
+- **相关**: [HB-0140](posts/HB-0140-yc-bench-long-horizon-coherence.md)
 

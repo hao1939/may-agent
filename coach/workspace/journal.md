@@ -1,5 +1,52 @@
 # Journal
 
+## 2026-04-05 20:25 — System-Wide C1.1 Regression Analysis + LIBRARY.md Update
+
+### Task
+Review experiment results + analyze production compliance data for deployed skills.
+
+### Critical Finding: KE-023 — Read-Before-Edit Skill Shows No Production Improvement
+
+Analyzed 4-day compliance trend for C1.1 across all agents with deployed read-before-edit skill:
+
+| Agent | Apr 2 | Apr 3 | Apr 4 (scout deploy) | Apr 5 (others deploy) |
+|-------|-------|-------|---------------------|----------------------|
+| Scout | 75% | 40% | 18% | 38% |
+| May | 100% | 100% | 81% | 67% |
+| Tech-lead | 86% | 100% | 100% | 55% |
+| Bob | 100% | 88% | 70% | 74% |
+| **C1.7 (control)** | **99%** | **98%** | **97%** | **97%** |
+
+**Key conclusions:**
+1. **System-wide C1.1 regression started Apr 3** — BEFORE any skill deployment
+2. **C1.7 stable at 97-99%** — regression is C1.1-specific, not systemic
+3. **Skill deployment did NOT cause regression** but also **did NOT fix it**
+4. **Gym results ≠ production results** — skill scored 11/11 in gym but 0% production lift
+5. **Something external changed around Apr 3** — need to investigate root cause
+
+### Root Cause Hypotheses
+- System/prompt change around Apr 3 affecting edit behavior?
+- Increasing task complexity as the system evolves?
+- Skill file adding context length that displaces attention from C1.1 convention?
+- Coincidence (small daily samples, 5-30 checks per agent)?
+
+### Updates Made
+1. **Created KE-023** — `agents/shared/knowledge/entries/KE-023-read-before-edit-deployment-ineffective.md`
+2. **Updated LIBRARY.md** — read-before-edit entry added to skill registry with "⚠️ deployed (no production lift)" status
+3. **Updated LIBRARY.md** — deployment notes #4-8 updated with production compliance data
+4. **Updated LIBRARY.md** — wrong-fix-recovery marked as "untested (ceiling)" with EXP-035 baseline results
+
+### Implications for Coaching Strategy
+- **Stop deploying read-before-edit to more agents** until the C1.1 regression is understood
+- **Investigate the Apr 3 trigger** — what changed in prompts, SOUL.md, or context that could cause C1.1 drops?
+- **Consider L5 workflow enforcement** for C1.1 — if L3 skills can't fix it, may need structural intervention
+- **Need a production monitoring protocol** — deploy skill → measure in production → iterate (not just gym-test → deploy)
+
+### Files Modified
+- `agents/shared/knowledge/entries/KE-023-read-before-edit-deployment-ineffective.md` (new)
+- `agents/shared/skills/LIBRARY.md` (3 edits: skill registry, deployment notes, wrong-fix-recovery)
+- `agents/coach/workspace/journal.md` (this entry)
+
 ## 2026-04-05 19:55 — May C1.1 Read-Before-Edit Regression: Skill Deployed
 
 ### Pending Task Processed

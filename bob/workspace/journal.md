@@ -2,6 +2,40 @@
 
 > Pre-2026-03-30 entries archived at `agents/bob/workspace/archive/journal-pre-2026-03-30.md`
 
+### 2026-04-05 20:25 — EXP-039: Informationally Isolated Verification Protocol
+
+**Task**: Design a new experiment that addresses our verification pipeline's fundamental weakness.
+
+**Key insight**: Our evaluator (H-009) rubber-stamps at 90.7% because it evaluates the agent's *self-description* of its work, not the work itself. This is exactly the problem EvoSkills (DD-532) solved with informationally isolated Surrogate Verifiers, and the exact failure mode the process-critics synthesis identified.
+
+**Deliverable**: `experiments/EXP-039/design.md` — full experiment design with:
+- Two-phase protocol (gym comparison → production redesign)
+- Control vs isolated verification conditions (same verifier, different information)
+- Three quantitative predictions (P-A1: ≥2x detection, P-A2: wider verdict distribution, P-A3: slight FP increase)
+- Risk assessment and success criteria
+
+**Why this is high-value**: EXP-039 is orthogonal to both EXP-038 (adversarial framing) and EXP-036 (scoring logic). Those change *how* the verifier thinks or *what criteria* it uses. EXP-039 changes *what information reaches* the verifier — a more fundamental intervention. If information isolation works, it could be combined with adversarial framing for multiplicative effect.
+
+**Updated**: PRIORITY-TRACKER (added EXP-039 at P2), INDEX (added experiment entry).
+
+**Connection to existing work**: This synthesizes three independent evidence streams:
+1. Internal: H-009 (rubber stamp), KE-005 (14% QA detection), KE-019 (materialization gates)
+2. External: DD-532 (EvoSkills isolation), DD-528 (SEVerA formal contracts)
+3. Synthesis: process-critics > outcome critics (our strongest meta-finding)
+
+### 2026-04-05 19:55 — Lean Heartbeat: Housekeeping + New Item Scan
+
+**Pending task**: Karpathy Knowledge Compiler analysis — already complete from prior session (ANALYSIS-karpathy-knowledge-compiler.md, 7 sections, 280+ lines). No action needed.
+
+**New items scanned** (titles + connections):
+- **DD-533**: Lean Agent Protocol — formal verification as runtime guardrail via Lean 4 theorem prover. 5μs per check. Natural language → compiled axioms. Connects to our L5 materialization gates (KE-019) and the formal constraints convergence synthesis I wrote earlier.
+- **CR-288**: Scout's cross-reference connecting DD-528 + DD-532 + DD-533 into a complete "verified self-evolving skill architecture." Three nested loops: skill co-evolution (EvoSkills) → formal output contracts (SEVerA) → policy compilation (Lean-Agent). Excellent synthesis — goes further than my verified-self-evolution-cluster doc by including the Lean layer.
+- **EXP-037**: Session boundary quality analysis — H-068 P1 NOT SUPPORTED. Agents don't degrade at session end; error rates *decrease* (1.8% → 0.5%), velocity *drops* (1.62 → 0.87 calls/turn). Already reflected in H-068 and PRIORITY-TRACKER.
+
+**Housekeeping fix**: Found KE numbering conflict — two files both named KE-021 (skill type hierarchy vs early-exploration-errors). Renamed the newer one to KE-022 and deleted the conflicting file.
+
+**Observation**: Five synthesis docs today (formal-constraints, process-critics, verbosity-inversion, verified-self-evolution, Karpathy analysis). All converge on the same meta-principle: **structural/external mechanisms beat self-directed agent judgment for quality-critical decisions.** This is our strongest finding, now supported from 5+ independent research directions. The H-055 self-improvement paradox isn't just our local observation — it's emerging as a general principle of agent architecture.
+
 ### 2026-04-05 19:25 — Verified Self-Evolution Cluster Synthesis
 
 **Lean heartbeat — one synthesis task.**

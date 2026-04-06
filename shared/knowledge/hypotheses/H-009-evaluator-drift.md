@@ -139,3 +139,25 @@ The core prediction — that the evaluator cannot detect quality problems in com
 - A session that calls `finish(partial)` → quality=4 (was 5)
 
 **Status**: H-009 partially addressed. The heuristic evaluator can now distinguish completion status. Remaining gap: still no semantic evaluation of deliverable quality (content analysis). That requires either LLM-based evaluation (expensive) or more sophisticated heuristics.
+
+### Phase 2: Semantic Quality Signals (2026-04-05)
+
+**Commit**: (pending) — feat(evaluator): H-009 Phase 2 — semantic quality heuristics
+
+**What changed**: `computeHeuristicScores()` now checks three semantic quality signals when `finish(success)` is claimed:
+
+| Check | Trigger | Effect | Rationale |
+|-------|---------|--------|-----------|
+| Hollow summary | `summary.length < 30` on success | quality -1 | Trivial summary suggests superficial completion |
+| Vague evidence | ALL evidence items are < 20 chars or don't reference tools/steps | quality -1 | Evidence without specifics is theater |
+| No deliverables | `deliverables.length === 0` with 5+ tool calls | info-only (tracked) | Measure prevalence before penalizing |
+| Mostly vague evidence | > 50% of evidence items are vague | info-only (tracked) | Alert signal without penalty |
+
+**New issues tracked**: `hollow_summary`, `vague_verification_evidence`, `mostly_vague_evidence`, `success_no_deliverables`
+
+**Impact**: Sessions that previously all scored the same now get differentiated:
+- A session with `finish(success, summary: "Done")` → quality -1 penalty
+- A session with vague evidence like `["verified", "looks good"]` → quality -1 penalty
+- A session with rich evidence like `["Step 8: bash test exit code 0"]` → no penalty
+
+**Tests**: 6 new test cases in `test/evaluator-heuristic.test.ts` (37 total, all passing)

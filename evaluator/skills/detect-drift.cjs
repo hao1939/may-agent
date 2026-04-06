@@ -101,9 +101,14 @@ if (require.main === module) {
         process.exit(0);
       }
 
+            // Read only the tail of the receipts file to avoid over-weighting ancient history
+      // and to keep runtime bounded (large JSONL files can be MBs).
       const content = fs.readFileSync(RECEIPTS_FILE, 'utf8');
-      const lines = content.split('\n').filter(line => line.trim());
-      
+      const allLines = content.split('\n').filter(line => line.trim());
+
+      // Keep last 500 lines (enough for baseline/recent windows in most repos).
+      const lines = allLines.slice(-500);
+
       const receipts = [];
       for (const line of lines) {
         try {

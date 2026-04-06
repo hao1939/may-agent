@@ -262,6 +262,7 @@
 1. [dd530](DD-530-openharness-open-agent-harness.md) — OpenHarness: 10-subsystem agent harness reference implementation (tools, skills, memory, permissions, multi-agent)
 2. [dd531](DD-531-caveman-brevity-constraints-token-compression.md) — 65% output token savings + paper proving brevity improves accuracy
 3. [dd517](DD-517-raschka-coding-agent-components.md) → [dd530](DD-530-openharness-open-agent-harness.md) (component taxonomy → full implementation)
+4. [cr289](CR-289-weekend-synthesis-agent-operating-system-emerges.md) — **★★★★★ Weekend Synthesis**: 16 deep dives crystallize into 5-layer Agent OS (Security → Execution → Evolution → Verification → Economics). Five convergences. Connects DD#518-533 + CR#283-288.
 
 **Self-evolving agents & verified evolution?**
 1. [dd528](DD-528-severa-verified-self-evolving-agents.md) — SEVerA: formal output contracts on every generative call, zero constraint violations
