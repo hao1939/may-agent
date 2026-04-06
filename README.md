@@ -57,7 +57,7 @@ The **SubagentManager** is the central hub. It owns the agent registry, spawns s
 
 Sessions have two modes:
 
-**Ephemeral** sessions are the default. They run a task, produce a result, archive to the history directory, and are removed from memory. Good for one-off tasks delegated by a supervisor.
+**Ephemeral** sessions are the default. They run a task, produce a result, and are removed from active memory. Session data stays on disk. Good for one-off tasks delegated by a supervisor.
 
 **Persistent** sessions stay alive after completing a task. They transition to an idle state and can be woken with new messages, maintaining conversational continuity across tasks. Used for supervisor agents that need to remember what happened across multiple delegations.
 
@@ -201,7 +201,7 @@ run/
   registry.json              Agent definitions + session metadata
   memory/<agent>.jsonl        Per-agent task history
   sessions/<id>/session.jsonl Conversation messages (append-only)
-  sessions/history/<id>/      Archived completed sessions
+  # sessions stay in sessions/<id>/ after completion (no archiving)
   workflows/<runId>.json      Workflow execution records
 ```
 
