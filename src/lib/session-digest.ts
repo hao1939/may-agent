@@ -60,6 +60,8 @@ const CLASSIFY_TRIGGERS = new Set([
   "zombie_cleanup",
   "resume_exhausted",
   "overflow",
+  "session_end_blocked",
+  "session_end_failure",
 ]);
 
 // ── DB Operations ──────────────────────────────────────────────────────
@@ -473,6 +475,16 @@ export function classifyDigest(
       return digest.still_open
         ? { action: "escalate", reason: `Context overflow: ${digest.still_open}` }
         : { action: "nothing", reason: "Overflow, no critical work left" };
+
+    case "session_end_blocked":
+      // Blocked sessions almost always need human attention
+      return { action: "escalate", reason: digest.still_open ?? digest.what_happened };
+
+    case "session_end_failure":
+      // Failure with open work → escalate; clean failure → nothing
+      return digest.still_open
+        ? { action: "escalate", reason: digest.still_open }
+        : { action: "nothing", reason: "Failure with no open work — no escalation needed" };
 
     default:
       return { action: "nothing", reason: "Informational trigger" };

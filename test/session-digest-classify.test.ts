@@ -173,6 +173,65 @@ describe("classifyDigest", () => {
     });
   });
 
+  // ── session_end_blocked (Phase 4b) ─────────────────────────────────────
+  describe("session_end_blocked", () => {
+    it("escalates with still_open as reason", () => {
+      const result = classifyDigest(
+        { outcome: "failure", still_open: "Need API credentials from admin", what_happened: "Could not access external API" },
+        "session_end_blocked",
+      );
+      expect(result.action).toBe("escalate");
+      expect(result.reason).toBe("Need API credentials from admin");
+    });
+
+    it("escalates with what_happened when no still_open", () => {
+      const result = classifyDigest(
+        { outcome: "failure", still_open: null, what_happened: "Blocked on missing config file" },
+        "session_end_blocked",
+      );
+      expect(result.action).toBe("escalate");
+      expect(result.reason).toBe("Blocked on missing config file");
+    });
+
+    it("always escalates regardless of outcome", () => {
+      const result = classifyDigest(
+        { outcome: "success", still_open: "Minor cleanup needed", what_happened: "Mostly done but stuck on permissions" },
+        "session_end_blocked",
+      );
+      expect(result.action).toBe("escalate");
+    });
+  });
+
+  // ── session_end_failure (Phase 4b) ────────────────────────────────────
+  describe("session_end_failure", () => {
+    it("escalates when there is still_open work", () => {
+      const result = classifyDigest(
+        { outcome: "failure", still_open: "Tests still broken, needs investigation", what_happened: "Could not fix test failures" },
+        "session_end_failure",
+      );
+      expect(result.action).toBe("escalate");
+      expect(result.reason).toBe("Tests still broken, needs investigation");
+    });
+
+    it("does nothing when failure has no open work", () => {
+      const result = classifyDigest(
+        { outcome: "failure", still_open: null, what_happened: "Task was not feasible" },
+        "session_end_failure",
+      );
+      expect(result.action).toBe("nothing");
+      expect(result.reason).toBe("Failure with no open work — no escalation needed");
+    });
+
+    it("does nothing when still_open is empty string", () => {
+      const result = classifyDigest(
+        { outcome: "failure", still_open: "", what_happened: "Failed cleanly" },
+        "session_end_failure",
+      );
+      // empty string is falsy → nothing
+      expect(result.action).toBe("nothing");
+    });
+  });
+
   // ── Non-classify triggers ─────────────────────────────────────────────
   describe("non-classify triggers (default case)", () => {
     it("returns nothing for checkpoint trigger", () => {
