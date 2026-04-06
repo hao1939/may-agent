@@ -141,6 +141,103 @@ function formatTranscript(messages: AgentMessage[]): string {
   return lines.join("\n");
 }
 
+// ── Isolated transcript formatting (EXP-039) ──────────────────────────
+
+/**
+ * EXP-039: Format a transcript with agent self-narratives REMOVED.
+ *
+ * The hypothesis: agent self-descriptions (summary, deliverables,
+ * verification_evidence) create confirmation bias in the verifier.
+ * An informationally isolated verifier — one that sees only the task,
+ * tool calls, and tool results — may detect more issues.
+ *
+ * This function strips:
+ * - Agent "thinking" blocks (internal reasoning)
+ * - Agent free-text reasoning between tool calls (assistant text blocks)
+ * - finish() tool call arguments (summary, evidence, deliverables — all self-narrative)
+ *
+ * This function KEEPS:
+ * - The first user message (task specification)
+ * - All tool calls (what was done) — names + arguments
+ * - All tool results (what happened) — actual outputs
+ * - finish() call existence (but strips its self-narrative arguments)
+ */
+export function formatIsolatedTranscript(messages: AgentMessage[]): string {
+  const lines: string[] = [];
+  let isFirstUser = true;
+
+  for (const msg of messages) {
+    if (!("role" in msg)) continue;
+
+    if (msg.role === "user") {
+      // Only include the first user message (task specification)
+      if (isFirstUser) {
+        lines.push(`## task_specification`);
+        if (typeof msg.content === "string") {
+          lines.push(msg.content);
+        } else if (Array.isArray(msg.content)) {
+          for (const block of msg.content) {
+            if (typeof block === "string") {
+              lines.push(block);
+            } else if ((block as any).type === "text") {
+              lines.push((block as any).text);
+            }
+          }
+        }
+        lines.push("");
+        isFirstUser = false;
+      }
+      // Subsequent user messages (system prompts, heartbeat injections) are skipped
+      continue;
+    }
+
+    if (msg.role === "toolResult") {
+      // Tool results are KEPT — these are objective outputs
+      const fullText =
+        (msg as any).content?.map((c: { type: string; text?: string }) => (c.type === "text" ? c.text : "")).join("") ?? "";
+      const truncated = fullText.length > 2000;
+      const text = fullText.slice(0, 2000);
+      const suffix = truncated
+        ? ` [truncated from ${fullText.length} chars]`
+        : "";
+      lines.push(`## tool_result: ${(msg as any).toolName}`);
+      lines.push(`${text}${suffix}`);
+      lines.push("");
+      continue;
+    }
+
+    if (msg.role === "assistant") {
+      // From assistant messages, ONLY keep tool calls (what was done)
+      // Strip: text blocks (reasoning), thinking blocks (internal)
+      if (!Array.isArray((msg as any).content)) continue;
+
+      for (const block of (msg as any).content) {
+        if (block?.type === "toolCall") {
+          // Special handling for finish() — strip self-narrative args
+          if (block.name === "finish") {
+            const args = block.arguments ?? block.input ?? {};
+            const sanitized: Record<string, unknown> = {};
+            // Only keep status (objective) — strip summary, evidence, deliverables
+            if (args.status) sanitized.status = args.status;
+            if (args.blockers) sanitized.has_blockers = true;
+            lines.push(`## tool_call: finish`);
+            lines.push(JSON.stringify(sanitized));
+          } else {
+            const args = JSON.stringify(block.arguments ?? block.input ?? {}).slice(0, 500);
+            lines.push(`## tool_call: ${block.name}`);
+            lines.push(args);
+          }
+          lines.push("");
+        }
+        // text blocks and thinking blocks are STRIPPED (agent self-narrative)
+      }
+      continue;
+    }
+  }
+
+  return lines.join("\n");
+}
+
 // ── Response parsing ───────────────────────────────────────────────────
 
 /** Parse per-agent task evaluation response from evaluator. */
