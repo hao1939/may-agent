@@ -1115,7 +1115,7 @@ export function computeHeuristicScores(
               (block as any).input?.command ??
               "";
             if (
-              /\bvitest\b|\bjest\b|\btsc\b|\bnpm run check\b|\bnpm run build\b|\btypecheck\b|\bnpm test\b|\bpnpm test\b|\bbun test\b/i.test(
+              /\bvitest\b|\bjest\b|\btsc\b|\bnpm run check\b|\bbun run check\b|\bnpm run build\b|\bbun run build\b|\btypecheck\b|\bnpm test\b|\bpnpm test\b|\bbun test\b/i.test(
                 cmd,
               ) ||
               /test\/|\.test\.|\.spec\.|__tests__/i.test(cmd)

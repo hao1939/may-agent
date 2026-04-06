@@ -952,5 +952,36 @@ describe("computeHeuristicScores - Phase 4 scoring calibration (H-009)", () => {
     expect(scores.quality).toBe(5);
     expect(scores.issues).toContain("verified_with_tests");
   });
+
+  it("bun run check/build count as verification commands", () => {
+    const messages = [
+      assistantMsg(3),
+      toolResult("ok"),
+      toolResult("ok"),
+      bashTestCall("bun run check"),
+      toolResult("tsc --noEmit clean"),
+      bashTestCall("bun vitest --run"),
+      toolResult("130 test files, 1841 tests passed"),
+      bashTestCall("bun run build"),
+      toolResult("build complete"),
+      finishMsg({
+        status: "success",
+        summary: "Verified all checks pass with bun toolchain including type-checking and full test suite",
+        verification_evidence: [
+          "Step 4: bun run check confirmed tsc --noEmit clean",
+          "Step 6: bun vitest --run shows 130 test files, 1841 tests passed",
+        ],
+        deliverables: [
+          { path: "src/lib/evaluator.ts", description: "Updated evaluator" },
+        ],
+      }),
+      finishResult(),
+    ];
+    const transcript = toTranscript(messages);
+    const scores = computeHeuristicScores(makeSession(), transcript, messages);
+    // bun run check, bun vitest, bun run build all count → verified_with_tests
+    expect(scores.quality).toBe(5);
+    expect(scores.issues).toContain("verified_with_tests");
+  });
 });
 
