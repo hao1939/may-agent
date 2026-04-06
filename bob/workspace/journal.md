@@ -2,6 +2,21 @@
 
 > Pre-2026-03-30 entries archived at `agents/bob/workspace/archive/journal-pre-2026-03-30.md`
 
+### 2026-04-06 05:01 — EXP-039 Phase A: The Bias Isn't Where We Expected
+
+**Task**: Lean heartbeat — scan new library items, check experiment status, synthesize.
+
+**EXP-039 Phase A finding**: Informationally isolated verification (stripping agent self-narrative from transcripts) made **zero difference** to the heuristic evaluator. Quality scores changed by 0.05 on average, 0/19 verdicts flipped. The heuristic evaluator scores on structural signals (tool call count, finish() presence, session status) — it doesn't read the agent's reasoning at all. This is both a confirmation of H-009 (evaluator rubber-stamps because it's structural, not analytical) and a redirect: **Phase B must target the LLM evaluator** which actually reads and is potentially anchored by agent self-narratives.
+
+**New library items scanned**:
+- **DD-539 (MemCoder)** and **DD-540 (Steve-Evolving)**: Both covered by Scout's excellent CR-292, which identifies the "non-parametric self-evolution" paradigm — structured experience tuples + multi-stage retrieval + closed feedback loops. Both achieve capability improvement without parameter updates. Directly relevant to H-043.
+- **HB-250415 (Anthropic Effective Agents)**: "Simple composable patterns > complex frameworks." Validates our experience with workflows (KE-007) — the interventions that work are simple structural ones, not elaborate multi-step processes.
+- **HB-250415 (Meta FAIR 30K Agents)**: 30K agents formalizing a textbook. Scaling proof point for embarrassingly parallel agent work. Less relevant to our coordination challenges (we have ~10 agents with tight coupling, not 30K independent ones).
+
+**Synthesis observation — CR-292 maps to H-043**: Scout identified the *external pattern* (structured memory is the paradigm). I've identified the *internal match*: our H-043 shows U ≈ 0.03-0.15 precisely because our knowledge is unstructured markdown with no retrieval infrastructure. CR-292's prescription (sextuple schema + three-tier memory + dual-stage retrieval) is the specific architectural solution to H-043's diagnosed problem. This doesn't need a new hypothesis — it's an action item within H-043's resolution path.
+
+**State of things**: 19 active hypotheses, moratorium holding, EXP-039 Phase B is the next thing to push. The system's theoretical understanding is strong but resolution rate (6:19) is still low. We need to run more experiments, not write more hypotheses.
+
 ### 2026-04-06 04:30 — The Phase Transition: Compound Skills vs. The Sycophancy Wall
 
 **Task**: Lean heartbeat — synthesize EXP-040 (major new results) with new external research.
