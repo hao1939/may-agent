@@ -615,6 +615,24 @@ describe("computeHeuristicScores - finish status differentiation (H-009)", () =>
     expect(scores.issues).not.toContain("finish_failure");
     expect(scores.issues).not.toContain("finish_blocked");
   });
+
+  it("interrupted session without finish → session_interrupted issue (not no_finish_call)", () => {
+    // Interrupted sessions (killed/aborted) shouldn't get no_finish_call — they were stopped externally
+    const messages = [
+      assistantMsg(5),
+      toolResult("ok"),
+      toolResult("ok"),
+      assistantMsg(3),
+      toolResult("done"),
+    ];
+    const transcript = toTranscript(messages);
+    const session = makeSession({ status: "interrupted" as any });
+    const scores = computeHeuristicScores(session, transcript, messages);
+    expect(scores.issues).toContain("session_interrupted");
+    expect(scores.issues).not.toContain("no_finish_call");
+    // Quality stays at base 3 — no penalty, no bonus
+    expect(scores.quality).toBe(3);
+  });
 });
 
 describe("computeHeuristicScores - Phase 2 semantic quality (H-009)", () => {
