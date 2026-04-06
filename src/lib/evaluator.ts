@@ -611,11 +611,13 @@ export async function evaluateTask(opts: EvaluateTaskOptions): Promise<TaskEvalu
   }
 
   // ── EXP-039 Phase C: Isolated re-evaluation for weak sessions ──────────
-  // When overall quality < 0.6 AND we used contextual transcripts, re-run with
+  // When overall quality is weak AND we used contextual transcripts, re-run with
   // isolated transcripts. If isolated evaluation scores lower, the contextual
   // evaluation was inflated by agent self-narrative (confirmation bias).
   // Use the lower (more skeptical) scores. See EXP-039/design.md Phase B findings.
-  const ISOLATION_THRESHOLD = 0.6;
+  // NOTE: Scale is 1-5 (clamped by heuristic evaluator and LLM prompt). Threshold 3
+  // targets "acceptable but weak" sessions where confirmation bias is most likely.
+  const ISOLATION_THRESHOLD = 3;
   if (
     !isolatedTranscript &&
     result.overall.quality > 0 &&
