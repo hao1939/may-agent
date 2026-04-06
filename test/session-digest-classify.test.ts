@@ -232,6 +232,43 @@ describe("classifyDigest", () => {
     });
   });
 
+  // ── auto_resume (Phase 4c) ────────────────────────────────────────────
+  describe("auto_resume", () => {
+    it("resumes when in_progress with work still open", () => {
+      const result = classifyDigest(
+        { outcome: "in_progress", still_open: "Fixing auth bug", what_happened: "Was debugging auth" },
+        "auto_resume",
+      );
+      expect(result.action).toBe("resume");
+      expect(result.reason).toContain("Fixing auth bug");
+    });
+
+    it("does nothing when no work still open", () => {
+      const result = classifyDigest(
+        { outcome: "in_progress", still_open: null, what_happened: "Working on something" },
+        "auto_resume",
+      );
+      expect(result.action).toBe("nothing");
+      expect(result.reason).toBe("No recoverable work worth resuming");
+    });
+
+    it("does nothing when outcome is failure", () => {
+      const result = classifyDigest(
+        { outcome: "failure", still_open: "Incomplete", what_happened: "Failed" },
+        "auto_resume",
+      );
+      expect(result.action).toBe("nothing");
+    });
+
+    it("does nothing when outcome is success", () => {
+      const result = classifyDigest(
+        { outcome: "success", still_open: null, what_happened: "Completed task" },
+        "auto_resume",
+      );
+      expect(result.action).toBe("nothing");
+    });
+  });
+
   // ── Non-classify triggers ─────────────────────────────────────────────
   describe("non-classify triggers (default case)", () => {
     it("returns nothing for checkpoint trigger", () => {
@@ -423,6 +460,22 @@ describe("shadow comparison expected outcomes", () => {
       trigger: "overflow",
       digest: { outcome: "success", still_open: null, what_happened: "Completed before overflow" },
       existingAction: "kill",
+      expectedClassifierAction: "nothing",
+      expectMatch: false,
+    },
+    {
+      name: "auto_resume with work → existing=resume, classifier=resume (AGREE)",
+      trigger: "auto_resume",
+      digest: { outcome: "in_progress", still_open: "Deploy step remaining", what_happened: "Was deploying" },
+      existingAction: "resume",
+      expectedClassifierAction: "resume",
+      expectMatch: true,
+    },
+    {
+      name: "auto_resume no work → existing=resume, classifier=nothing (DISAGREE)",
+      trigger: "auto_resume",
+      digest: { outcome: "failure", still_open: null, what_happened: "Failed completely" },
+      existingAction: "resume",
       expectedClassifierAction: "nothing",
       expectMatch: false,
     },

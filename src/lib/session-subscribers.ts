@@ -411,10 +411,17 @@ export function createAutoResume(
     const delay = 10_000 * (prev + 1); // 10s, 20s backoff
     log(
       "info",
-      `[resume] ${event.agent} (${event.sessionId}) interrupted after ${event.turnCount ?? 0} turns — resuming in ${delay / 1000}s (attempt ${prev + 1}/${MAX_RESUME_ATTEMPTS})`,
+      `[resume] ${event.agent} (${event.sessionId}) interrupted after ${event.turnCount ?? 0} turns — evaluating via digest classifier (attempt ${prev + 1}/${MAX_RESUME_ATTEMPTS})`,
     );
 
-    // Digest: auto_resume
+    // Phase 4c: Use digest classifier to decide whether to resume
+    const fallbackResume = () => {
+      log("info", `[resume] decision=resume source=fallback session=${event.sessionId} agent=${event.agent}`);
+      setTimeout(() => {
+        emitResume(event.sessionId, event.agent, prev + 1);
+      }, delay);
+    };
+
     if (persistDir) {
       upsertDigest(persistDir, {
         sessionId: event.sessionId,
@@ -422,12 +429,29 @@ export function createAutoResume(
         trigger: "auto_resume",
         what_happened: `Auto-resume attempt ${prev + 1}/${MAX_RESUME_ATTEMPTS} after ${delay}ms delay: ${(event.error ?? "unknown error").slice(0, 200)}`,
         details: { attempt: prev + 1, maxAttempts: MAX_RESUME_ATTEMPTS, delayMs: delay, error: event.error?.slice(0, 200), turnCount: event.turnCount },
-      }).catch(err => log("warn", `[digest] auto_resume failed: ${err}`));
+      }, getManager()).then(digest => {
+        const action = digest?.action ?? "resume";
+        log("info", `[resume] decision=${action} source=digest session=${event.sessionId} agent=${event.agent} reason=${digest?.action_reason ?? "no_digest"}`);
+        if (action === "resume" || action === "requeue") {
+          setTimeout(() => {
+            emitResume(event.sessionId, event.agent, prev + 1);
+          }, delay);
+        } else if (action === "escalate") {
+          // Don't resume — escalate instead
+          attempts.delete(event.sessionId);
+          emitEscalate(event.agent, event.sessionId, `Digest classifier rejected resume: ${digest?.action_reason ?? "unknown"}`);
+        } else {
+          // "kill" or "nothing" — skip resume, clean up attempts
+          log("info", `[resume] skipping resume: classifier says ${action} for ${event.sessionId}`);
+          attempts.delete(event.sessionId);
+        }
+      }).catch(err => {
+        log("warn", `[digest] auto_resume failed: ${err}`);
+        fallbackResume();
+      });
+    } else {
+      fallbackResume();
     }
-
-    setTimeout(() => {
-      emitResume(event.sessionId, event.agent, prev + 1);
-    }, delay);
   };
 }
 
