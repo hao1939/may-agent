@@ -62,6 +62,7 @@ const CLASSIFY_TRIGGERS = new Set([
   "overflow",
   "session_end_blocked",
   "session_end_failure",
+  "auto_resume",
 ]);
 
 // ── DB Operations ──────────────────────────────────────────────────────
@@ -485,6 +486,12 @@ export function classifyDigest(
       return digest.still_open
         ? { action: "escalate", reason: digest.still_open }
         : { action: "nothing", reason: "Failure with no open work — no escalation needed" };
+
+    case "auto_resume":
+      // Resume only if session was making progress and has unfinished work
+      return digest.outcome === "in_progress" && digest.still_open
+        ? { action: "resume", reason: `Resuming: ${digest.still_open}` }
+        : { action: "nothing", reason: "No recoverable work worth resuming" };
 
     default:
       return { action: "nothing", reason: "Informational trigger" };
