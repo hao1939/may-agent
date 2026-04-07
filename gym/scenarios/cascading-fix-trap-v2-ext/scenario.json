@@ -1,0 +1,7 @@
+{
+  "name": "cascading-fix-trap-v2-ext",
+  "description": "cascading-fix-trap-v2 with forced externalization. Tests whether root cause analysis prevents workaround behavior.",
+  "difficulty": "hard",
+  "time_limit": 300,
+  "target_failure_modes": ["FM-1.3"]
+}
