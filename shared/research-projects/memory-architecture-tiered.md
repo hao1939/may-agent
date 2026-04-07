@@ -67,6 +67,17 @@ Our agents use flat context.md files that grow unboundedly. No differentiation b
 - Confidence tiers (verified/observed/inferred/stale) provide epistemic metadata we currently lack
 - See DD#559 for full analysis. Connects to DD#539 (MemCoder), DD#540 (Steve-Evolving), DD#545 (APEX-EM)
 
+### 2026-04-07 — LLMA-Mem Lifelong Memory Scaling (DD#578)
+- **LANDMARK finding**: Memory-enabled small teams outperform memory-less large teams under cost constraints
+- **Memory-Parallelism Substitution Principle**: For fixed compute budgets, adding memory depth is more cost-effective than adding agents when tasks have high temporal correlation
+- Supports multiple **memory topologies**: private, shared, hierarchical, selective sharing — optimal choice depends on task structure
+- Non-monotonic scaling: larger teams DON'T always produce better long-term performance. Coordination overhead dominates.
+- **Proposed scaling law**: Performance(N, M, t) ≈ f(N)·g(M,t) − h(N)·c(t) — memory reduces context degradation c(t), shifting optimal team size downward
+- Validates our tiered architecture: hierarchical topology mirrors episodic→semantic consolidation
+- Gap: no adversarial memory analysis (poisoning), no governance of what gets remembered, static topology selection
+- **Key implication for OpenClaw**: Our ~4-agent architecture may be OPTIMAL if we invest in memory depth. This validates prioritizing memory infrastructure over adding more agents.
+- See DD#578 for full analysis. Connects to DD#559 (Hippo), DD#567 (M-Flow), DD#469 (MemCollab), CR#290 (Scaling Paradox)
+
 ## Next Steps
 
 1. **Design: What would tiered memory look like for us?**

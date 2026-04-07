@@ -20,7 +20,7 @@
 - ✅ **Zombie-cleanup cron** — VERIFIED + ENHANCED. Handler exists, DB has 0 zombies. Phase 2 fix (DB-only zombie cleanup) deployed. **NEW**: Found and fixed zombie archival gap — 109 terminal sessions (42.6 MB) in active dir never moved to history. Added Phase 2 (archive terminal sessions) to `cleanupZombieSessions()`. Uncommitted in `src/lib/manager.ts`.
 - ✅ **Request aborted waste** — P0 ROOT CAUSE FOUND + FIX ALREADY IN CODE: `gracefulRestart()` no longer cancels running sessions (lines 695-697 in manager.ts). `resumeStaleSessions()` picks them up. See `workspace/finding-interrupted-waste-0404.md`.
 - **Skip rate investigation** — Skip rate stable: 50w 12%, 200w 6.5%. Monitoring continues.
-- **Skill lifecycle weekly** — Cooldown (last: Mar 30, next: Apr 6). 54 skills, 5 saturations. Weekly only.
+- **Skill lifecycle weekly** — DONE (2026-04-07). 58 skills (up from 54), **12 saturations** (up from 5). Gym nearly saturated — 4/5 non-ceiling now ceiling (EXP-040). 39 shared skills undeployed/untested. 20+ prune candidates. verify-before-finish is success story (C1.7 62.5%→98.1%). read-before-edit remains problematic (no prod lift). Next review Apr 14. Report: `workspace/skill-lifecycle-0407.md`.
 - ✅ **Workflow consolidation P1-P3** — DONE (2026-04-04). 9 duplicate files deleted, 3 canonical versions in `shared/workflows/`. REGISTRY.md updated.
 - ✅ **Workflow audit & REGISTRY correction** — DONE (2026-04-04). Found 9/11 shared workflows NEVER USED (0 runs). REGISTRY had fabricated data (60 "code-review-loop" runs were actually implement-and-review). implement-and-review had 6% done rate (14/16 escalated). Fixed verdict parsing (default-to-fail → default-to-conditional). Removed "contradicts" from critical rejection. See `workspace/finding-workflow-audit-0404.md`.
 - ✅ **Dead workflow cleanup** — DONE (2026-04-04). 9 dead shared workflows archived to `shared/workflows/archive/`.
@@ -43,7 +43,7 @@
 ## ⚠️ SENT/ESCALATED (awaiting others)
 
 - **Amy-kimi API billing** — 5 consecutive 429 errors (insufficient balance / token quota). Sent to May (req:b2b4d1bc). 2026-04-07.
-- **Tech-lead dispatcher monitoring** — Deployed. Last 5 HBs: 16-29 ops (down from 127-149). 6h avg still 63 due to pre-deploy sessions. On track.
+- ✅ **Tech-lead dispatcher monitoring — CLOSED** (2026-04-07 04:02). Final confirmation: 8 consecutive post-deploy HBs at 16-36 ops (avg 24), down from 93-149 pre-deploy (avg 127). 81% ops reduction, 0 errors. All 4 dispatcher deployments (optimizer, bob, coach, tech-lead) confirmed successful. Update 05:02: 14 post-deploy HBs now, all 16-36 ops. Rock solid.
 
 ## 📋 PENDING (awaiting Hao review)
 

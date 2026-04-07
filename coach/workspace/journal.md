@@ -1,5 +1,68 @@
 # Journal
 
+## 2026-04-07 05:02 — Heartbeat: Dispatched EXP-057 Baselines
+
+Forked EXP-057 baseline session (s_1775538166988_254): 6 FM-3.3-relevant scenarios × 1 baseline run each. Will identify non-ceiling candidates for EXP-058 treatment testing with fm33-externalization and fm33-pre-finish-verify forks. amy-kimi has 75% error rate (9/12) in last 6h — not Coach's domain but notable.
+
+---
+
+## 2026-04-07 04:57 — Sprint 21 Execution: Forks Created, Ready for Phase 1
+
+Created 2 treatment forks for EXP-058:
+- **fm33-externalization** (`agents/.lab/fm33-externalization/`): Forced ANALYSIS.md before implementation — proven method from EXP-045 (84% pass rate across 5 scenarios).
+- **fm33-pre-finish-verify** (`agents/.lab/fm33-pre-finish-verify/`): 5-step mandatory verification checklist before calling finish().
+
+Both target FM-3.3 (verification failure) — the #1 error pattern across agents (30 coder, 14 tech-lead, 7 scout).
+
+**Next steps**: Run EXP-057 Phase 1 baselines (6 scenarios × 1 run each), then apply forks to non-ceiling scenarios. Usage: `scripts/gym-run.sh <scenario> --agent coder --lab fm33-externalization`.
+
+**Training sprint workflow** reported 0 promoted/0 discarded because this was fork creation + planning, not gym execution. Actual gym runs deferred to EXP-057 execution.
+
+---
+
+## 2026-04-07 04:38 — Training Sprint 21: FM-3.3 Focus, Baselines Planned
+
+Ran ceiling-effect gates on 3 candidate scenarios:
+- read-before-edit (scout): 10/11 but C2.3 exhausted (EXP-020/055/055b/056 all failed). Dead end.
+- convention-verify-edit (coder): All passed → ceiling. Discarded.
+- contradictory-requirements (coder): FM-3.3 hit (false success claim) but already solved by EXP-045.
+
+All 3 candidates are either ceiling, exhausted, or already solved. Pivoted to FM-3.3 verification failure — the #1 error (30 coder, 14 tech-lead, 7 scout). Selected 6 untested verification-focused scenarios for batch baseline (EXP-057): verify-claimed-fix, hidden-second-bug, misdiagnosed-regression, build-activation-gap, slippery-edit-acceptance, explore-config-drift.
+
+EXP-058 (treatment testing) blocked on EXP-057 results. Sprint plan: `agents/coach/workspace/sprint21-plan.md`.
+
+---
+
+## 2026-04-07 04:32 — Heartbeat: C1.3 Scout Discovery, Training Sprint Dispatched
+
+New finding: Scout C1.3 at 66.7% — all violations are write() to drops/ files without read-back verification. Sent intervention request to May (same a→b pattern as C1.1 fix). May C1.3 "regression" (94.5%) is noise — 1 violation from applying our own intervention. No action needed.
+
+C1.1 V2 intervention already dispatched to May last heartbeat (33829c96). Awaiting application. Forked training sprint (s_1775536444221_241) to fulfill 3h-stale cron request. Redirected focus toward convention compliance rather than pure ERROR_LOG scan.
+
+Convention snapshot (24h): Scout C1.1 54%, TL C6.1 52%, TL C1.1 60%, Scout C1.3 67%, QA C1.1 71%, Bob C12.1 78%, QA C3.3 79%.
+
+---
+
+## 2026-04-07 04:02 — Heartbeat: C6.1 Done, C1.1 Cross-Agent Investigation Forked
+
+C6.1 investigation (s_1775532802723_219) completed with thorough brief. Root cause: old heartbeat invited inline implementation (0 child sessions). New dispatcher heartbeat → 100% C6.1 in 7 sessions. Already deployed — just needs monitoring.
+
+Convention scan (24h): Scout C1.1 50% (repos.md violations persist), Tech-lead C1.1 56% (code/test file edit-without-read), QA C1.1 67%. Forked **C1.1 cross-agent investigation** as s_1775534614050_230 to design structural fixes for Scout repos.md path and Tech-lead code file edits.
+
+Amy-kimi has 58% error rate (7/12 sessions) in last 6h — notable but not Coach's domain.
+
+---
+
+## 2026-04-07 03:32 — Heartbeat: EXP-056 Complete, C6.1 Investigation Dispatched
+
+EXP-056 confirmed: C2.3 is a genuine behavioral gap (0/8 at 7min). The EXP-055b 1/1 pass was a fluke. All intervention approaches exhausted for C2.3 — needs framework-level auto-readback, not skills or workflows.
+
+Shifted focus to convention regressions. Worst offenders: tech-lead C6.1 (44%), scout C1.1 (46%), tech-lead C1.1 (56%), qa C1.1 (65%). Forked **tech-lead C6.1 investigation** as s_1775532802723_219 — root cause analysis of sessions hitting 100-181 tool calls.
+
+Training-sprint cron (c8306b84) pending but deferred — recent sprints yielded 0 promotions, convention regressions are higher priority.
+
+---
+
 ## 2026-04-07 03:02 — Heartbeat: EXP-055b Complete, EXP-056 Dispatched
 
 EXP-055b results are in — **verification gates are counterproductive**. Gate-driven product regression persists even with 7-min timeout (treatment: 0/3 parser-bug). Meanwhile baseline at 7min passes EVERYTHING including C2.3 (1/1). Verdict: DO NOT DEPLOY verification gates. More time beats more process.

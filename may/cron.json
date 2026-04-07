@@ -611,13 +611,6 @@
     "offsetMs": 10800000
   },
   {
-    "name": "digest-phase4-review",
-    "intervalMs": 86400000,
-    "message": "[cron:digest-phase4-review] Shadow classifier 24h review. Query: SELECT trigger,action,COUNT(*) FROM session_digests WHERE action IS NOT NULL GROUP BY trigger,action. If agreement>95% dispatch tech-lead Phase 4. If <95% send disagreements to bob. Then cron.remove('digest-phase4-review').",
-    "enabled": true,
-    "description": "24h review of shadow classifier data for Phase 4 switchover decision. REMOVE after acting."
-  },
-  {
     "name": "exp034-monitor",
     "intervalMs": 21600000,
     "message": "[EXP-034 MONITOR] Check optimizer dispatcher experiment. Treatment start: epoch 1775396460000. Query optimizer sessions since start, compare vs baseline (22.6% err, 52.6 ops). Check abort criteria. Update agents/may/workspace/EXP-034-log.md. After 24h: compile final results, decide rollout or rollback.",

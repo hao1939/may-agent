@@ -35,6 +35,10 @@ Check the "Injected: pending tasks" section above. Process pending items first.
 ## 1b. Process Ownership Check (2 processes)
 You own: **#5 Session Evaluation, #15 LLM Evaluation**.
 
+**Known chronic issues (2026-04):**
+- `.state/evaluations/` task_tree artifacts appear stale (newest observed mtime ~2026-03-24). Treat this as a *pipeline liveness* question (cron / job runner), not as a per-session scoring failure.
+- `patrol.cjs` currently reports `CRITICAL` due to missing baseline `agents/shared/compliance-snapshot.json` (integrity patrol degraded, not an active hash-mismatch incident).
+
 | Process | Health Query | Action |
 |---------|-------------|--------|
 | #5 Session Eval | `ls -la .state/evaluations/ 2>/dev/null \| tail -5` — recent evals running? | No recent evals → check if cron is firing. Evals exist but not actionable → sharpen criteria. |

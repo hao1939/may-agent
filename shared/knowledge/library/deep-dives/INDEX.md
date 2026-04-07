@@ -1,6 +1,6 @@
 # Deep Dives Index
 
-> 110 research deep dives, cross-reference syntheses, and reference documents.  
+> 114 research deep dives, cross-reference syntheses, and reference documents.  
 > Last updated: 2026-04-07 | Maintained by Scout
 
 ## How to Use This Index
@@ -349,3 +349,26 @@
 4. [cr302-constitutional-meta-engineering](../cross-references/cr302-constitutional-meta-engineering.md) — ★★★★★ LANDMARK synthesis. Three Laws of Constitutional Meta-Engineering: (A) Bounded Autonomy Principle, (B) Simplicity Conservation, (C) Anti-Overfitting as Constitutional Requirement. Connects six convergent systems into unified constitutional governance framework. Predicts meta-level recursion must bottom out at human agency.
 5. DD#575 is the SIXTH signal after DD#560 + DD#562 + DD#568 + DD#569 + DD#563 — autonomous harness engineering is now a mature, converged pattern
 6. DD#576 + DD#577: Knowledge capture (nuwa-skill, graphify) and knowledge retention (anti-distill) form an ecosystem with adversarial dynamics in the first week
+
+**Skill taxonomy, representational collapse, & delegation provenance?** ★★★★½ — NEW
+1. [dd584](../../scout/drops/dd584-skillx-automatic-skill-knowledge-bases.md) — ★★★★½ LANDMARK: SkillX (ZJU NLP): First automated hierarchical skill KB construction. Three-tiered hierarchy (strategic→functional→atomic). Skills built by strong agent transfer to weak agents. Exploratory expansion generates novel skills beyond training data. SEVENTH convergence signal for SKILL.md ecosystem (after DD#537, DD#558, DD#560, DD#566, DD#577, DD#576). Missing provenance layer. P364-P365, R97.
+2. [dd585](../../scout/drops/dd585-representational-collapse-llm-committees.md) — ★★★★ First quantitative measurement of representational collapse: 0.888 cosine similarity, effective rank 2.17/3.0 in same-model committees. DALC diversity-aware consensus: 87% vs 84% self-consistency at 26% lower token cost. Collapse worsens on harder tasks. Embedding model choice modulates severity. Empirical foundation for Conformity Paradox (DD#472). Law 48 candidate (Representational Collapse). P366-P367, R98.
+3. [dd586](../../scout/drops/dd586-hdp-human-delegation-provenance.md) — ★★★★ HDP: First IETF-level cryptographic protocol for human delegation provenance in MAS. Append-only Ed25519-signed delegation chains. Fully offline verifiable. IETF Internet-Draft with TS SDK + Python. Fills L0 provenance gap in Accountability Stack (CR#298). P368-P369, R99.
+4. [cr304](../cross-references/cr304-representational-collapse-conformity-numbers.md) — ★★★★ Synthesis: Conformity Paradox (DD#472) gets quantitative empirical backing. Three mechanisms of collapse: representational (DD#585), coordination volatility (DD#573), knowledge homogenization (DD#576). Updated Conformity Paradox statement with numbers. Effective rank as operational diversity metric. R100-R102.
+5. DD#584 → DD#537 + DD#558 + DD#560 + DD#566 + DD#577 + DD#576 (SEVENTH skill ecosystem convergence — now with academic rigor for the hierarchical taxonomy)
+6. DD#585 → DD#472 + DD#573 + DD#580 (representational collapse quantifies conformity paradox, links to coordination volatility and disagreement-as-signal)
+7. DD#586 → CR#298 + DD#576 (HDP fills L0 provenance layer; complements Anti-Distill knowledge integrity with authorization integrity)
+
+**Agent memory convergence & memory-intelligence stack?** ★★★★★ LANDMARK — NEW
+1. [dd587](DD-587-disagreement-as-reasoning-trace-empirics.md) — ★★★★★ LANDMARK: When AI Agents Disagree Like Humans. Empirical evidence that LLM disagreement traces mirror human cognitive patterns. ICLR 2026 Workshop.
+2. [dd588](DD-588-ai-agents-eu-law-regulatory-mapping.md) — ★★★★ First systematic mapping of AI agents to EU regulatory framework. Legal grounding for agent governance.
+3. [dd589](DD-589-cmadf-causal-multi-agent-cyber-defense.md) — ★★★★ C-MADF: Causal reasoning for autonomous cyber defense in multi-agent settings.
+4. [dd590](DD-590-llma-mem-lifelong-memory-scaling.md) — ★★★★★ LANDMARK: LLMA-Mem proves non-monotonic scaling: small team + good memory > large team + no memory. Memory as primary scaling axis. MultiAgentBench across coding/research/DB. Lifelong learning framework with flexible memory topologies. P370+.
+5. [dd591](DD-591-cognitive-fabric-nodes-active-middleware.md) — ★★★★ Cognitive Fabric Nodes: Active intelligent middleware for MAS. Memory as "active functional substrate." RL-governed topology/grounding/security/prompt functions. 10%+ on HotPotQA/MuSiQue.
+6. [dd592](DD-592-mia-memory-intelligence-agent.md) — ★★★★ Memory Intelligence Agent: Bidirectional parametric/non-parametric memory conversion loop. Test-time learning updates Planner during inference. Manager-Planner-Executor architecture. 11 benchmarks.
+7. [dd593](DD-593-svaf-mesh-memory-protocol.md) — ★★★★ SVAF Mesh Memory Protocol: 7-field semantic fusion gate for inter-agent signals. CfC neural networks with per-neuron τ time constants. Mood emerges as highest-weight field. Live 7-node deployment.
+8. [cr305](../cross-references/cr305-memory-intelligence-convergence.md) — ★★★★★ LANDMARK SYNTHESIS: The Memory-Intelligence Convergence. Four papers map complete memory stack: signal evaluation (SVAF) → communication (CFN) → evolution (MIA) → scaling strategy (LLMA-Mem). Three emerging Laws of Agent Memory.
+9. DD#590 → DD#567 + DD#586 + DD#592 (memory scaling: lifelong topology + cognitive engine + ground-truth preservation + bidirectional evolution)
+10. DD#593 → DD#472 + CR#304 (mood-as-highest-weight connects to representational collapse — affective alignment precedes cognitive alignment)
+11. DD#591 + DD#593: Two approaches to inter-agent communication quality — middleware (CFN) vs. fusion gates (SVAF)
+12. [dd594](DD-594-ledger-state-stigmergy-blockchain-coordination.md) — ★★★½ Ledger-State Stigmergy: Formal mapping of biological stigmergy to blockchain coordination. Three base patterns (marker/sematectonic/self-organizing). Theoretical but connects DD#475/DD#476/CR#265.

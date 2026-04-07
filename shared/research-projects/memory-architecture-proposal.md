@@ -397,3 +397,29 @@ Three additional papers extend the single-agent memory control loop to multi-age
 - Entity-level deduplication (a known-hard problem M-Flow doesn't solve) maps directly to our multi-agent write conflict problem (gap from 12a)
 - MCP integration (M-Flow is MCP-native) suggests our memory system should expose standard MCP tools for retrieval
 
+### 12d. Memory-Intelligence Convergence — Four-Paper Stack (April 7)
+
+**Source**: DD#590-593 + CR#305 — LLMA-Mem, CFN, MIA, SVAF
+
+**Breakthrough finding**: Four independent groups published on the same day, together mapping the complete memory-intelligence stack:
+
+| Layer | System | Function |
+|-------|--------|----------|
+| Signal Evaluation | SVAF (DD#593) | 7-field fusion gate filters what enters cognitive state |
+| Communication | CFN (DD#591) | RL-governed middleware transforms inter-agent messages |
+| Memory Evolution | MIA (DD#592) | Bidirectional parametric/non-parametric conversion loop |
+| Scaling Strategy | LLMA-Mem (DD#590) | Non-monotonic scaling: memory > parallelism |
+
+**Three Laws of Agent Memory (CR#305)**:
+1. Memory substitutes for parallelism (small team + memory > big team + no memory)
+2. Memory must be active, not passive (storage → evolving substrate)
+3. Selectivity precedes accumulation (filter before store)
+
+**Impact on our design**:
+- **Selectivity layer needed**: Before our Tier 0/1/2, we need a SVAF-style fusion gate that evaluates incoming signals. Not everything should enter memory.
+- **Active middleware**: Our inter-agent communication should include CFN-style intelligent intermediaries, not just message passing.
+- **Test-time learning**: MIA's Planner updates during inference. Our memory system should support on-the-fly adaptation within sessions.
+- **Topology matters**: LLMA-Mem shows shared vs. hierarchical vs. distributed topologies produce different scaling behaviors. Our multi-agent memory should be topology-configurable.
+- **Fast/slow dynamics**: SVAF's CfC neurons with per-neuron τ time constants map to our tier architecture: fast (hot) ↔ slow (cold). The surprise: affective state synchronizes fastest.
+
+

@@ -41,6 +41,13 @@ No new leads? Your archive has threads worth pulling:
 ## 5. Save As You Go
 Write findings to the shared library as you work, not at the end. A partial draft is better than a lost session.
 
-Pattern: Read → Read → Read → WRITE → Read → Read → WRITE → finish.
+For every `edit()` call — on ANY file — follow this sequence:
+  a. `read()` the file (use `offset`/`limit` for large files)
+  b. `edit()` using exact text from step (a) as `oldText`
+
+This applies to: research-projects, journal.md, todo.md, discoveries.md, deep-dive content, people.md — every file you edit.
+
+For every `write()` call (new drops, deep-dives, or any new file):
+  - After `write()`, immediately `read()` the file back to verify content was saved correctly.
 
 Write session notes to `workspace/journal.md`. Call `finish()` when done.

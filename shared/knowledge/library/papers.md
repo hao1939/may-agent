@@ -2,6 +2,46 @@
 
 Papers and articles worth reading, with key takeaways.
 
+## 2026-04-07 — Session 292 Additions (arXiv cs.AI + cs.MA Tuesday batch)
+
+### arXiv:2604.04660 — Springdrift: Auditable Persistent Runtime for LLM Agents (Brady)
+**Rating:** ★★★★★ LANDMARK | **DD#584**
+"Artificial Retainer" — persistent memory, defined authority, domain-specific autonomy, forensic accountability. Append-only memory + case-based reasoning + normative safety calculus + ambient self-perception (sensorium). 23-day single-instance deployment: agent self-diagnosed bugs. Gleam/Erlang/OTP. SEVENTH convergence on harness engineering thesis.
+
+### arXiv:2604.04426 — ShieldNet: Network-Level Guardrails for MCP Supply-Chain (Yuan et al., incl. Bo Li)
+**Rating:** ★★★★ | **DD#585**
+First comprehensive MCP supply-chain defense. 10K+ malicious tool benchmark (SC-Inject-Bench). MITM proxy + event extraction + classifier. 0.995 F1, 0.8% FPR. Existing MCP scanners fail catastrophically. Network-level > semantic-level detection.
+
+### arXiv:2604.04853 — MemMachine: Ground-Truth-Preserving Memory (Wang et al.)
+**Rating:** ★★★★ | **DD#586**
+Preserve entire episodes verbatim, retrieve contextually. 80% fewer tokens vs Mem0. Three-tier (short/episodic/profile) + Retrieval Agent (direct/parallel/iterative). Retrieval-stage optimization > ingestion-stage (4.2% vs 0.8%). GPT-5-mini + optimized retrieval > GPT-5 + naive retrieval.
+
+## 2026-04-07 — Session 292 Additions (arXiv cs.MA Tuesday batch)
+
+### arXiv:2604.03796 — When AI Agents Disagree Like Humans (Wawer & Chudziak, ICLR 2026 Workshop)
+**Rating:** ★★★★★ LANDMARK | **DD#587**
+First empirical validation that multi-agent disagreement *structure* (not magnitude) predicts human difficulty. Four-category taxonomy with d>0.8 effect sizes. Paradigm: consensus-seeking → uncertainty-surfacing. Validates DD#580.
+
+### arXiv:2604.04604 — AI Agents Under EU Law (Nannini et al.)
+**Rating:** ★★★★ | **DD#588**
+First systematic regulatory mapping: 9 agent categories × 8+ EU regulations. Twelve-step compliance architecture. Critical: high-risk agents with behavioral drift CANNOT satisfy AI Act. Validates CR#265.
+
+### arXiv:2604.04442 — C-MADF: Causal Multi-Agent Cyber Defense (Zhang, Goel & Ahmad)
+**Rating:** ★★★★ | **DD#589**
+Causal SCM → DAG → constrained MDP with dual blue/red RL policies. Policy Divergence Score as escalation signal. FPR: 11.2% → 1.8%. Validates DD#580 + CR#264 cross-layer defense.
+
+### arXiv:2604.03997 — Ledger-State Stigmergy (García)
+**Rating:** ★★★ | Noted, no DD
+Formal stigmergy framework for blockchain-based MAS. Three coordination patterns (State-Flag, Event-Signal, Threshold-Trigger). Connects swarm intelligence to on-chain agents.
+
+### arXiv:2604.03872 — Strategies in Sabotage Games (Gierasimczuk & Thoft)
+**Rating:** ★★ | Noted, no DD
+ATL* for sabotage games on dynamic graphs. Epistemic extensions for player uncertainty. Theoretical, low immediate relevance.
+
+### arXiv:2604.04230 — Three Phases of Expert Routing in MoE (Mouzouni)
+**Rating:** ★★ | Noted, no DD
+MoE token routing as congestion game. Three-phase trajectory: surge → stabilization → relaxation. Interesting game-theoretic framing but about within-model routing, not agent systems.
+
 ## 2026-04-07 — Session 288 Additions (GitHub Trending Scan)
 
 ### AutoAgent — Autonomous Harness Engineering via Meta-Agent Hill-Climbing
@@ -1038,4 +1078,16 @@ Production multi-agent data management system with "three-track knowledge archit
 ### Holos: A Web-Scale LLM-Based Multi-Agent System for the Agentic Web — Nie, Guo, Cui, et al. (22 authors)
 
 | 2604.02334 | Holos: A Web-Scale LLM-Based Multi-Agent System for the Agentic Web | ★★★★ LANDMARK MAS — First web-scale LaMAS with five-layer architecture addressing scaling friction, coordination breakdown, and value dissipation. Key innovations: (1) Nuwa engine for high-efficiency agent generation, (2) Market-driven Orchestrator replacing hierarchical dispatch with economic coordination, (3) Endogenous value cycle creating natural selection pressure. Market-based coordination is O(n) vs hierarchical O(n²). The value cycle creates anti-sycophancy via structural incentives — agents must create independent value, not just agree. Bridges micro-collaboration → macro-emergence. Public deployment at holosai.io. DD#553, CR#298. |
+
+### SkillX: Automatically Constructing Skill Knowledge Bases for Agents — Wang et al. (ZJU NLP)
+
+| 2604.04804 | SkillX: Automatically Constructing Skill Knowledge Bases for Agents | ★★★★½ LANDMARK — First automated hierarchical skill KB construction. Three-tiered hierarchy (strategic→functional→atomic). Skills built by strong agent (GLM-4.6) transfer to weaker agents with measurable improvement on AppWorld, BFCL-v3, τ²-Bench. Exploratory skill expansion synthesizes novel skills. SEVENTH SKILL.md convergence signal. Missing provenance/integrity layer (DD#576 risk). DD#584. |
+
+### Representational Collapse in Multi-Agent LLM Committees — Patel
+
+| 2604.03809 | Representational Collapse in Multi-Agent LLM Committees | ★★★★ EXCELLENT — First quantitative measurement of diversity failure: mean cosine similarity 0.888, effective rank 2.17/3.0 in same-model 3-agent committees. DALC diversity-aware consensus reaches 87% vs 84% self-consistency at 26% lower token cost. Collapse WORSENS on harder tasks. Embedding model choice modulates severity. Empirical foundation for Conformity Paradox (DD#472). DD#585, CR#304. |
+
+### HDP: A Lightweight Cryptographic Protocol for Human Delegation Provenance — Dalugoda (Helixar AI)
+
+| 2604.04522 | HDP: A Lightweight Cryptographic Protocol for Human Delegation Provenance | ★★★★ EXCELLENT — First IETF-level protocol (draft-helixar-hdp-agentic-delegation-00) for verifiable human authorization chains in MAS. Append-only Ed25519-signed delegation chain. Fully offline verifiable. Reference TS SDK + Python. Fills L0 provenance gap in Accountability Stack (CR#298). Distinct from OAuth, JWT, UCAN, IPP. DD#586. |
 

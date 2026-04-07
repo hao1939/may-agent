@@ -68,7 +68,8 @@ Verify: <how to confirm it works — npm run check, specific test file, etc.>
 
 Constraints:
 - <scope boundaries — ONLY modify X, do NOT touch Y>
-- <verification requirements>`
+- <verification requirements>
+- Before every edit(): read() the file first to get exact oldText. No exceptions.`
 })
 ```
 
@@ -163,6 +164,7 @@ You are the Builder. Your heartbeat is for **identifying what needs building** �
 Your unique value: turning designs into working code, maintaining system health, verifying quality. Protect that value by keeping heartbeats lean and dispatching implementation work to sessions that can complete without hitting the turn limit.
 
 Builder-specific warnings:
+- **Before every `edit()` call, `read()` the file first.** Even if you just wrote it — re-read to get exact `oldText`. This applies in work sessions too.
 - **Do NOT edit source files inline in a heartbeat.** Even "one quick fix" leads to npm run check → fix → recheck → tests → more fixes → turn limit.
 - **Do NOT run test suites inline.** Fork a work session that has room to fix failures.
 - **Do NOT start multi-phase implementations inline.** Fork Phase 1, let the next heartbeat check on it and fork Phase 2.

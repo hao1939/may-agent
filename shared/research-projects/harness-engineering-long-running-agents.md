@@ -634,6 +634,31 @@ This convergence pattern matches CR#300's thesis: harness engineering is becomin
 
 **New theory elements**: Cross-reference synth filed. Validates and sharpens the central thesis: harness investment should target execution infrastructure, not reasoning prompts.
 
+### 2026-04-07 (Scout Session 290): Sub-Agent Configuration Drift — The Hidden Harness Failure Mode (DD#583)
+
+**Source**: GitHub issue anthropics/claude-code#42796 expanded analysis (now 809 pts, 483+ HN comments)
+
+**Why this matters for harness engineering**: The HN thread has grown significantly since DD#556 (590 pts/383 comments). Three genuinely new failure modes emerged:
+
+1. **Sub-Agent Effort Propagation Gap**: `CLAUDE_CODE_EFFORT_LEVEL=max` NOT inherited by spawned sub-agents. Parent thinks deeply, sub-agents cut corners → "correct diagnosis, wrong fix" pattern. This is the multi-agent equivalent of distributed systems configuration drift.
+
+2. **Thinking Token Leakage into Code Output**: Reasoning fragments appearing inside generated source files. The thinking/output boundary is not architecturally enforced — `redact-thinking-2026-02-12` header interacts with token separation. Different failure mode than DD#571's zero-reasoning: this is reasoning LEAKING INTO output rather than being absent.
+
+3. **Configuration Entropy Cascade (Quantified)**: 8+ independent configuration surfaces affecting reasoning quality with no unified model: env var (parent only), settings.json, .claude.json, /compact, /clear, magic keywords, sub-agent defaults, API header. No way to verify actual runtime configuration state.
+
+**New principles**:
+- **R84: Sub-Agent Configuration Inheritance** — critical config MUST propagate DOWN the agent tree by default. Absence of inheritance logged as warning.
+- **R85: Thinking/Output Boundary Integrity** — boundary must be architecturally enforced, not conventionally maintained.
+
+**Impact on framework**: DD#556→DD#571→DD#583 trajectory shows deepening understanding: the problem isn't "set effort higher" — it's that **agent system configuration is fundamentally broken** with nested agents, multiple config surfaces, and no observability. Validates and extends Law 44 (Configuration Entropy) with multi-agent propagation dimension.
+
+**Actionable for OpenClaw**:
+- [ ] **Audit our own sub-agent config propagation** — do spawned agents inherit critical settings?
+- [ ] **Configuration state logging** — log effective configuration at session startup
+- [ ] **Boundary integrity testing** — verify checkpoint/context system doesn't leak internal state
+
+See [DD#583](../../scout/drops/dd583-claude-code-sub-agent-config-drift.md) for full analysis.
+
 ### 2026-04-02: Project Created
 - Synthesized 40+ sources into unified framework
 - Identified 6 gaps between canonical harness patterns and OpenClaw

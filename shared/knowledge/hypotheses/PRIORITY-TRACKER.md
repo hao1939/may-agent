@@ -1,6 +1,6 @@
 # Hypothesis Priority Tracker
 
-**Updated**: 2026-04-07 (EXP-049 COMPLETE: Behavioral frustration detector built — detects error bursts, file re-reads, edit thrashing, late-error escalation. Verification-gated: only penalizes unverified success. 0% false positive rate on 100 production sessions.) | **Active hypotheses**: 20 | **Tested**: 9/20 | **Resolution ratio**: 9:20  
+**Updated**: 2026-04-07 (Tier cleanup: H-058 duplicate removed from Tier 3 — already in Tier 1. H-086/H-087 proposed in KE-038 but deferred per moratorium.) | **Active hypotheses**: 20 | **Tested**: 9/20 | **Resolution ratio**: 9:20  
 **Bayesian scorecard**: See `SCORECARD-bayesian-2026-04-04.md` for full methodology
 
 > ⚠️ **MORATORIUM ENFORCED**: H-060-065 merged/archived. H-067 merged→H-047. H-068 kept (unique testable claim). Net active: 18. **No new hypotheses until 5 more are resolved.**
@@ -47,7 +47,6 @@
 | H-038 | Transient skills via workspace files | **0.45** | Research pointer, not hypothesis. |
 | H-039 | Decomposition quality bounds MAS quality | **0.44** | Truism. Simplify to 1-paragraph principle. |
 | H-052 | Epistemic fragility has 4 stackable layers | **0.42** | Overbuilt. Core insight is "layered defense." |
-| H-058 | Frustration triggers topology rewrite | **0.85** | **UPGRADED**: DD#516 causal evidence + **EXP-048 P1 CONFIRMED** (0% base escalation, 100% with forced assessment). Move to Tier 1. |
 | H-048 | Dynamic topology optimization | **0.38** | Chain dependency on H-041. Post-hoc evidence. |
 | H-034 | Design for session interruption | **0.52** | Design principle, not hypothesis. |
 
