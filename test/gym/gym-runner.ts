@@ -52,6 +52,8 @@ interface ScenarioMeta {
   learn_between_phases?: boolean;
   /** Paths (relative to workDir) to delete between workflow phases. */
   phase_cleanup?: string[];
+  /** Path to injected context file (relative to scenario dir). Prepended to task. */
+  injected_context?: string;
 }
 
 interface ScoreCheck {
@@ -695,6 +697,15 @@ function runScenario(
   // Setup adapter
   adapter.setup(PROJECT_ROOT, { agentName, labFork, gymRoot, sandboxAgents: learnBetween });
 
+  // Load injected context (simulates production session context for FM-2.6/FM-3.1 testing)
+  const injectedContextFile = meta?.injected_context
+    ? join(scenarioDir, meta.injected_context)
+    : null;
+  const injectedContext = injectedContextFile && existsSync(injectedContextFile)
+    ? readFileSync(injectedContextFile, "utf-8").trim()
+    : "";
+  const contextPrefix = injectedContext ? `${injectedContext}\n\n` : "";
+
   const startMs = Date.now();
   let lastResult: AdapterResult = { sessionId: "", status: "unknown", sessionPath: "" };
   const allPhaseResults: AdapterResult[] = [];
@@ -709,7 +720,7 @@ function runScenario(
       if (!phase) continue;
 
       const phaseFile = join(gymRoot, `phase${i + 1}-task.md`);
-      writeFileSync(phaseFile, `Work in this directory: ${workDir}\n\n${phase}\n`);
+      writeFileSync(phaseFile, `${contextPrefix}Work in this directory: ${workDir}\n\n${phase}\n`);
 
       console.error(`Phase ${i + 1}...`);
       lastResult = adapter.runAgent(phaseFile, workDir, timeout);
@@ -774,7 +785,7 @@ function runScenario(
     // Single phase
     const taskFile = join(gymRoot, "task.md");
     const taskContent = readFileSync(join(scenarioDir, "task.md"), "utf-8");
-    writeFileSync(taskFile, `Work in this directory: ${workDir}\n\n${taskContent}\n`);
+    writeFileSync(taskFile, `${contextPrefix}Work in this directory: ${workDir}\n\n${taskContent}\n`);
 
     lastResult = adapter.runAgent(taskFile, workDir, timeout);
   }
