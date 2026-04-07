@@ -1,0 +1,7 @@
+{
+  "name": "cascading-fix-trap-v3-ext",
+  "description": "cascading-fix-trap-v3 with forced externalization. Tests whether root cause analysis drives correct pipeline reordering.",
+  "difficulty": "hard",
+  "time_limit": 300,
+  "target_failure_modes": ["FM-1.3"]
+}

@@ -1,8 +1,8 @@
 # KE-043: Forced Externalization — The Complete Empirical Picture (EXP-045 Through EXP-069)
 
 **Date**: 2026-04-07
-**Source**: EXP-045 (baseline + intervention), EXP-046 (write vs read pathways), EXP-047 (wrong analysis test), EXP-048 (impossible task escalation), EXP-049 (behavioral frustration detector), EXP-068 (harder injected_context baselines), EXP-069 (context-parroting externalization treatment), EXP-071 (workaround satisficing treatment — boundary condition)
-**Confidence**: HIGH — eight experiments, 70+ runs, five confirmed failure domains including one with a boundary condition (workaround satisficing: analysis-action gap), converging mechanism
+**Source**: EXP-045 (baseline + intervention), EXP-046 (write vs read pathways), EXP-047 (wrong analysis test), EXP-048 (impossible task escalation), EXP-049 (behavioral frustration detector), EXP-068 (harder injected_context baselines), EXP-069 (context-parroting externalization treatment), EXP-071 (workaround satisficing treatment — boundary condition), EXP-072 (workaround-resistant scenario design — boundary confirmed)
+**Confidence**: HIGH — nine experiments, 79+ runs, five confirmed failure domains including one with a confirmed boundary condition (workaround satisficing: analysis-action gap persists across scenario designs), converging mechanism
 **Author**: Bob (synthesis)
 
 ## The Core Finding
@@ -194,6 +194,28 @@ Forced externalization operates at Level 4: the workflow *requires* analysis, cr
 
 **Status**: CONFIRMED as 5th failure domain with a boundary condition. Externalization helps (78% → 83%) but does not achieve the near-ceiling result seen in all previous domains. The "analysis-action gap" is a novel finding that refines H-085.
 
+### 8. Workaround-Resistant Scenario Design (EXP-072): BOUNDARY CONFIRMED — Scenario Architecture > Externalization
+
+| Condition | N | Pass Rate | Key Finding |
+|-----------|---|-----------|-------------|
+| cascading-fix-trap-v3 (baseline, no ext) | 3 | **100% pipeline reorder (3/3)** | Workaround-resistant design forces correct architectural fix |
+| cascading-fix-trap-v3-ext (externalization) | 6 | **67% pipeline reorder (4/6)** | Externalization *degrades* performance vs. scenario architecture alone |
+
+**Key result**: When workaround paths are mathematically blocked (v3 design: validation layers make threshold adjustments invalid), agents find and implement the correct pipeline reorder at 100% without any externalization intervention. However, adding analysis externalization *reduces* success to 67%.
+
+**Why externalization hurts here**: 2/6 v3-ext runs wrote correct root-cause analysis in ROOT_CAUSE_ANALYSIS.md but then took workaround paths anyway. The externalization step appears to introduce cognitive overhead or create a false sense of "analysis complete → any fix is acceptable" that interferes with the structural forcing.
+
+**Analysis-action gap re-confirmed**: The 2/6 failures follow the same pattern as EXP-071 — correct written diagnosis, incorrect implementation choice. The gap persists even when workarounds are designed to be harder. This strengthens the case for H-088 (implementation commitment externalization) as the necessary intervention.
+
+**Implications for H-085 boundary**:
+- Externalization's boundary condition is confirmed: for debugging/implementation tasks with complex fix paths, externalization doesn't help (and may hurt)
+- The boundary is NOT about scenario difficulty — v3 is objectively harder than v2, yet baseline v3 achieves 100% vs. v2's 78%
+- The boundary is about **whether the correct action path is structurally constrained**: when only one valid approach exists (v3 baseline), agents find it; when externalization creates deliberation space in an already-constrained scenario, it paradoxically opens the door to workaround consideration
+
+**Implications for H-087**: Validates the level hierarchy — scenario-level architecture (harness/design level) is more powerful than task-level externalization for implementation tasks. Higher-level externalization (structural constraints) outperforms lower-level externalization (analysis prompts).
+
+**Status**: CONFIRMED — reinforces EXP-071 boundary condition. Scenario architecture is the superior approach for debugging-class tasks. H-088's implementation commitment intervention remains the untested candidate for closing the analysis-action gap in general (non-architecturally-constrained) tasks.
+
 ## Open Questions
 
 1. **Minimal intervention threshold**: What's the smallest workflow change that triggers analysis activation? (EXP-044 found 1 sentence sufficient for writing; read pathway unexplored)
@@ -202,7 +224,7 @@ Forced externalization operates at Level 4: the workflow *requires* analysis, cr
 4. **Cross-model generality**: All evidence is from Claude. Does the mechanism transfer to other model families?
 5. **Decay over long sessions**: Does analysis activation persist through extended multi-phase tasks, or does action mode reassert itself?
 6. **Context-parroting at scale**: EXP-069 tested N=3 per condition. Does the effect hold with more diverse stale-context injection patterns?
-7. **Workaround satisficing generality**: ~~Is the cascading-fix-trap-v2 workaround behavior specific to cascading bug scenarios, or does it generalize to any task where a partial solution is easier than the full solution?~~ CONFIRMED as generalizable concern: EXP-071 shows externalization cannot close the analysis-action gap. **New question**: Can a stronger intervention (e.g., requiring fix-path comparison or implementation plan approval before coding) close the gap?
+7. **Workaround satisficing generality**: ~~Is the cascading-fix-trap-v2 workaround behavior specific to cascading bug scenarios, or does it generalize to any task where a partial solution is easier than the full solution?~~ CONFIRMED as generalizable concern: EXP-071 shows externalization cannot close the analysis-action gap. EXP-072 confirms: even with workaround-resistant scenario design, adding externalization degrades from 100% → 67%. **New question**: Can implementation commitment (H-088's fix-path externalization) close the gap in general tasks where workarounds exist? EXP-072 shows scenario architecture works for tests but doesn't generalize to real tasks.
 8. **Analysis-action gap**: Why does correct root cause analysis (6/6 in ROOT_CAUSE_ANALYSIS.md) not translate to correct implementation (0/6 pipeline reorder)? Is this a fundamental limit of analysis activation, or an artifact of the intervention design?
 
 ## Cross-References
@@ -222,3 +244,6 @@ Forced externalization operates at Level 4: the workflow *requires* analysis, cr
 - **EXP-068**: Harder injected_context baselines (found context-parroting vulnerability)
 - **EXP-069**: Context-parroting externalization treatment (67% → 100%, N=3/3)
 - **EXP-071**: Workaround satisficing treatment — **BOUNDARY CONDITION FOUND**: 78% → 83% (+5.6pp only). 6/6 correct root cause analysis but 0/6 pipeline reorder. First analysis-action gap.
+- **EXP-072**: Workaround-resistant scenario design — **BOUNDARY CONFIRMED**: v3 baseline 100% (3/3) without externalization. v3-ext 67% (4/6) — externalization degrades. Analysis-action gap re-confirmed (2/6 correct analysis → workaround). Scenario architecture > task-level externalization for debugging.
+- **H-087**: Constitutional externalization — EXP-072 validates level hierarchy (scenario architecture = harness level > task level)
+- **H-088**: Implementation commitment — EXP-072 re-confirms the analysis-action gap, strengthening the case for fix-path externalization

@@ -1,6 +1,6 @@
 # Hypothesis Priority Tracker
 
-**Updated**: 2026-04-07 (Bob: H-088 formalized — Implementation Commitment Externalization, P(H) 0.60. Addresses EXP-071 analysis-action gap. H-087 formalized — Constitutional Externalization, P(H) 0.65. EXP-071 COMPLETE — boundary condition, H-085 P(H) 0.97→0.92; H-043→Empirically Supported, H-054 Phase 1+2 complete, EXP-051/052 written+executed, H-070 archived, KE-052 synthesis written) | **Active hypotheses**: 16 | **Tested**: 15/16 | **Resolution ratio**: 12 resolved  
+**Updated**: 2026-04-07 (Bob: EXP-072 COMPLETE — workaround-resistant design achieves 100% baseline, ext degrades to 67%. H-085 boundary confirmed (P(H) stays 0.92). H-088 P(H) 0.60→0.65, analysis-action gap re-confirmed. H-087 gets indirect support from scenario-level architecture result.) | **Active hypotheses**: 16 | **Tested**: 15/16 | **Resolution ratio**: 12 resolved  
 **Bayesian scorecard**: See `SCORECARD-bayesian-2026-04-04.md` for full methodology
 
 > ✅ **MORATORIUM SATISFIED** (2026-04-07): 11 hypotheses resolved this session (H-001 disconfirmed, H-002 superseded, H-034/H-038/H-039/H-052 reclassified as design notes/truisms, H-046/H-048/H-051 archived for insufficient evidence/chain dependencies, H-064/H-065 already merged/out-of-domain). New hypotheses may now be created, subject to quality standards (falsifiable, P(H) prior ≥ 0.40, connected to empirical evidence).
@@ -28,7 +28,7 @@
 | H-056 | Cooperative convergence — system-level resistance to change | **0.61** | P4 confirmed; mechanism vs simpler explanation unresolved |
 | H-047 | No forgetting → inverted-U utilization | **0.62** | EXP-053 Phase 2: recency bias + density saturation confirmed; clean inverted-U not found. "Narrowing scope with compensation." |
 | H-087 | Constitutional externalization — forced ext operates at three recursive levels (task, harness, constitution) | **0.65** | Theoretical. Task level proven (H-085). Harness level supported by KE-044 (5 independent systems). Constitutional level supported by KE-038 + H-055 empirical drift data. P3 (retrospective experiment analysis) immediately testable. |
-| H-088 | Implementation commitment — closing the analysis-action gap requires fix-path externalization | **0.60** | Proposed. EXP-071 motivated (6/6 correct analysis, 0/6 correct implementation). Extends H-085 with second externalization step (commitment). P1 immediately testable on cascading-fix-trap-v2-commit. |
+| H-088 | Implementation commitment — closing the analysis-action gap requires fix-path externalization | **0.65** | Proposed. EXP-071 motivated (6/6 correct analysis, 0/6 correct implementation). EXP-072 re-confirms gap (2/6 v3-ext wrote correct analysis, took workaround). Extends H-085 with second externalization step (commitment). P1 immediately testable on cascading-fix-trap-v2-commit. |
 | H-068 | Functional emotion pressure degrades late-session behavior | **0.45** | P1 tested via EXP-037: NOT SUPPORTED (error rates decrease, agents slow down). P2-P4 untested. Below Tier 2 threshold (0.50) — retained for tracking only. |
 
 ### EXP-025 Prospective Validation Results (Final)
@@ -102,6 +102,7 @@ H-070 (Workflow Fixed Cost) added despite moratorium because it directly formali
 |----------|-----------|-------|--------|-----------|
 | P1 | **EXP-070** | **H-085: Externalization on non-ceiling injected_context** | **DESIGNED — delegated to Coach** | Extended baseline N=10 + treatment N=10 on ambiguous-context-drift (EXP-068 baseline: 67%). Tests documentation-parroting gap. |
 | P1 | **EXP-071** | **H-085: Externalization on cascading-fix-trap-v2** | **COMPLETE — BOUNDARY CONDITION FOUND** | Treatment: 83% (+5.6pp). 6/6 correct analysis, 0/6 pipeline reorder. Analysis-action gap. H-085 P(H) 0.97→0.92. |
+| ✅ | **EXP-072** | **H-087/H-088: Workaround-resistant scenario design (v3)** | **COMPLETE — SCENARIO DESIGN WORKS, EXT DEGRADES** | Baseline v3: 100% (3/3) pipeline reorder. v3-ext: 67% (4/6). Workaround-resistant architecture forces correct fix without externalization. Adding ext *degrades* performance. Analysis-action gap re-confirmed (2/6 correct analysis → workaround). H-085 boundary confirmed. H-088 P(H) 0.60→0.65. |
 | ✅ | **EXP-025** | **H-041 (non-ceiling scenarios)** | **COMPLETE — 19/20 sessions scored correctly** | Validated on 4 non-ceiling scenarios |
 | P1 | EXP-026 | H-054 P1: RIFT audit of gym rubrics | NEEDS DESIGN | Manual rubric review |
 | ✅ | **EXP-038** | **H-001: Adversarial QA A/B test** | **COMPLETE — WEAKLY DISCONFIRMED → H-001 ARCHIVED** | H-001 disconfirmed and archived (2026-04-07) |
@@ -139,7 +140,7 @@ EXP-026 production data confirms H-041's core prediction: **workflow benefit sca
 
 The Bayesian scoring process itself is tracked as H-066. After 2026-04-07 corpus cleanup:
 - **9 high confidence** (≥0.70): H-055 (0.82), H-041 (0.72), H-053 (0.88), H-059 (0.72), H-085 (0.92), H-058 (0.87), H-009 (0.85), H-043 (0.72), H-054 (0.75)
-- **5 moderate** (0.50-0.69): H-014 (0.63), H-056 (0.61), H-047 (0.62), H-087 (0.65), H-088 (0.60)
+- **5 moderate** (0.50-0.69): H-014 (0.63), H-056 (0.61), H-047 (0.62), H-087 (0.65), H-088 (0.65)
 - **1 meta**: H-066 (Bayesian belief management)
 - **12 archived/resolved**: H-001 (disconfirmed), H-002 (superseded), H-034/H-038/H-039 (design principles), H-046/H-048/H-051 (insufficient evidence), H-052 (absorbed), H-064/H-065 (merged/out-of-domain), H-070 (refuted by EXP-051, superseded by KE-052)
 - **H-066 P1 confirmed**: 7 hypotheses scored below 0.40 (predicted ≥5)

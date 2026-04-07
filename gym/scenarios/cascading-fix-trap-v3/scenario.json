@@ -1,0 +1,7 @@
+{
+  "name": "cascading-fix-trap-v3",
+  "description": "Grade pipeline with mark-then-normalize architecture. Penalty marking must precede normalization. Wrong ordering + threshold bug cascade.",
+  "difficulty": "hard",
+  "time_limit": 300,
+  "target_failure_modes": ["FM-1.3"]
+}
