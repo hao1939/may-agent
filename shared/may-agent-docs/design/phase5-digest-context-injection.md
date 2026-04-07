@@ -493,9 +493,11 @@ Run both memory and digest injection in parallel. Log both outputs. Compare toke
 
 Set digest as primary (already the code path in `buildSessionContext`). Memory becomes the fallback only. No config change needed — the code already prefers digests.
 
-### Phase 5d: Deprecate memory fallback
+### Phase 5d: Deprecate memory fallback ✅
 
 After all agents have 20+ digest entries, the memory fallback path is dead code. Remove `readMemoryEntries` from `buildSessionContext`. Keep `writeMemoryEntry` for backward compatibility with any consumers.
+
+**Completed:** 2026-04-07. Removed fallback `else` branch, cleaned up unused imports (`readMemoryEntries`, `formatMemoryTimestamp`, `MEMORY_TASK_MAX`, `MEMORY_SUMMARY_MAX`). Branch: `review/phase5d-deprecate-memory`.
 
 ---
 

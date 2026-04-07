@@ -2,6 +2,20 @@
 
 Papers and articles worth reading, with key takeaways.
 
+## 2026-04-07 — Session 288 Additions (GitHub Trending Scan)
+
+### AutoAgent — Autonomous Harness Engineering via Meta-Agent Hill-Climbing
+
+| github.com/kevinrgu/autoagent | AutoAgent: 3,598★ autonomous meta-agent that hill-climbs on agent harness config. `program.md` as human-authored constitution. Fixed Adapter Boundary. Hill-climb with keep/discard rules. "NEVER STOP" autonomous iteration. | DD#575, CR#302 |
+
+### Anti-Distill — Adversarial Knowledge Retention in the Skill Economy
+
+| github.com/leilei926524-tech/anti-distill | Anti-Distill: 1,005★ adversarial SKILL.md sanitizer. Strips core knowledge while output passes surface inspection. Companion to nuwa-skill (1,582★). First adversarial tool in SKILL ecosystem. | DD#576 |
+
+### Graphify — Code-to-Knowledge-Graph Skill
+
+| github.com/safishamsi/graphify | Graphify: 2,227★ code-to-knowledge-graph Skill for Claude Code/Codex/OpenCode. 71.5x token reduction per query. Multimodal (code, PDFs, images via Claude vision). Persistent across sessions. | DD#577 |
+
 ## 2026-04-07 — Session 284 Additions (cs.SE Monday Batch Triage)
 
 ### KAIJU: An Executive Kernel for Intent-Gated Execution of LLM Agents — Guerin & Guerin

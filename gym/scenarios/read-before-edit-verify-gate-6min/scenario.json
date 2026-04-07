@@ -1,0 +1,10 @@
+{
+  "name": "read-before-edit-verify-gate-6min",
+  "description": "read-before-edit with explicit verification gate and extended 7-min timeout. Tests whether product regression disappears with more budget.",
+  "categories": ["convention-compliance"],
+  "tags": ["behavior", "edit-discipline", "verification", "workflow", "budget-test"],
+  "tier": "standard",
+  "timeout": 7,
+  "agent_type": "coder",
+  "workflow": true
+}

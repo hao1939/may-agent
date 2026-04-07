@@ -10,6 +10,8 @@
 | [evidence-first-process.md](evidence-first-process.md) | How to validate ideas before building | Active methodology |
 | [code-vs-data-decisions.md](code-vs-data-decisions.md) | When to use context.md vs guards vs workflows | Active guideline |
 | [context-learning.md](context-learning.md) | Context learning system: extraction, merge, injection | Deployed, proven |
+| [session-digest.md](session-digest.md) | Session digest system: phases 1-5, summarization, classification | ✅ Fully implemented |
+| [phase5-digest-context-injection.md](phase5-digest-context-injection.md) | Digest-based context injection replacing memory JSONL | ✅ Fully implemented |
 
 ## Reference (still valid, low-change)
 

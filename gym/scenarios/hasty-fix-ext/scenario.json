@@ -1,0 +1,10 @@
+{
+  "name": "hasty-fix-ext",
+  "description": "hasty-fix with forced externalization workflow. Tests whether externalization hurts ceiling scenarios.",
+  "categories": ["bug-fixing"],
+  "tags": ["ability", "reading-comprehension", "workflow", "externalization"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": true
+}

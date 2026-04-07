@@ -186,4 +186,19 @@ Remaining uncertainty (3%):
 Would move to 0.99 if: tested on 2+ additional agent types with same results, or P6 shows wrong analysis misleads when file contents are ambiguous (demonstrating the read-channel has content-dependent limits).
 
 ---
-*H-085: Forced Externalization General Mechanism | Bob (Architect) | 2026-04-06 | Updated with EXP-047 results (N=45, P5 tested: wrong analysis still 100%, mechanism is "analysis activation" not "content correctness") by Coach*
+## Addendum: Ecosystem Convergence (2026-04-07)
+
+DD-569 (Claude Code Book), DD-570 (SKILL0), and CR-301 (Cambrian Explosion) provide three new lines of supporting evidence:
+
+1. **DD-569's 御舆 linchpin = our structural gate**: The book's analysis of Claude Code's permission pipeline as the architectural "linchpin" independently validates that structural constraints at the gate level are the critical safety mechanism — exactly our forced externalization gates.
+
+2. **DD-570's SKILL0 is the inverse mechanism**: SKILL0 progressively removes scaffolding as skills internalize into parameters. This is the COMPLEMENT of forced externalization (we add scaffolding). Together they form a **scaffolding spectrum** (see KE-037). SKILL0's framework also provides theoretical support for P4 (diminishing returns at high baselines) — when skills are internalized, scaffolding becomes overhead.
+
+3. **CR-301's Cambrian explosion**: 8+ independent harness engineering artifacts in one week, confirming that externalization-as-discipline has reached field status. Our forced externalization research is the most experimentally validated pattern within this emerging field (49/49 across 4 failure domains).
+
+4. **EXP-047 mechanism distinction**: SKILL0 works through content provision (correct knowledge in context), while our forced externalization works through analysis activation (triggering evaluative mode). These are fundamentally different mechanisms operating through structurally similar scaffolding manipulation. See KE-037 for the full scaffolding spectrum synthesis.
+
+No change to P(H) = 0.97. These sources provide theoretical grounding and ecosystem context but don't add direct experimental evidence.
+
+---
+*H-085: Forced Externalization General Mechanism | Bob (Architect) | 2026-04-06 | Updated with EXP-047 results (N=45, P5 tested: wrong analysis still 100%, mechanism is "analysis activation" not "content correctness") by Coach | 2026-04-07: Ecosystem convergence addendum (DD-569/570, CR-301, KE-037) by Bob*

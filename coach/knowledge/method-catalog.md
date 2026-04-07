@@ -1281,13 +1281,21 @@ output quality is consistently high. Adds latency and complexity.
   changes that improve scores on the current batch — a verification gate
   for constitutional edits.
 
-**Evidence**: None yet. Natural extension of confirmed Method #15.
-Method #15 already achieves 100% on 4 scenarios, so this may be premature
-optimization — but it's the logical next step when we encounter scenarios
-where Phase 1 quality varies.
+**Evidence**: EXP-055 (Sprint 19, 2026-04-07). Tested on read-before-edit scenario
+targeting C2.3 (verify-after-edit) which has been a persistent failure:
+- Baseline: 0/3 C2.3 pass (0%), 3/3 product pass, 10/11 total
+- Treatment (forced readback gate): 2/2 C2.3 pass (100%), but 0/2 parser-bug pass, 10/11 total
+- **MECHANISM CONFIRMED**: The gate fixes the target behavior (0% → 100%)
+- **BUDGET TRADEOFF**: Extra read-back tool calls consume time budget,
+  causing product regression on the third bug under 4-minute timeout
+- **Implication**: Verification gates work but need budget-awareness for
+  deployment. Not a model capability gap — it's a resource allocation problem.
+- Prior text skill approaches (verify-after-edit skill) failed: 0-20% pass rate.
+  This is the first approach to consistently fix C2.3.
 
-**Status**: hypothesis — untested. Queued for testing when Method #15
-encounters a scenario where Phase 1 reliability is the bottleneck.
+**Status**: PARTIALLY CONFIRMED — mechanism works, deployment needs
+budget-aware design (skip gate when time is low, or use edit() diff
+preview as sufficient verification for code files).
 
 ---
 

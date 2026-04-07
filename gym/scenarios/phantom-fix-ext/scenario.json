@@ -1,0 +1,10 @@
+{
+  "name": "phantom-fix-ext",
+  "description": "phantom-fix with forced externalization workflow. Tests whether externalization hurts ceiling scenarios.",
+  "categories": ["bug-fixing"],
+  "tags": ["ability", "workflow", "externalization"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": true
+}

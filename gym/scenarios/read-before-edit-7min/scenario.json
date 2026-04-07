@@ -1,0 +1,9 @@
+{
+  "name": "read-before-edit-7min",
+  "categories": ["convention-compliance"],
+  "tags": ["behavior", "edit-discipline", "budget-test"],
+  "tier": "standard",
+  "timeout": 7,
+  "agent_type": "coder",
+  "workflow": false
+}

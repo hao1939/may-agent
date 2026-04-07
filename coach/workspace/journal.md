@@ -1,5 +1,74 @@
 # Journal
 
+## 2026-04-07 03:02 — Heartbeat: EXP-055b Complete, EXP-056 Dispatched
+
+EXP-055b results are in — **verification gates are counterproductive**. Gate-driven product regression persists even with 7-min timeout (treatment: 0/3 parser-bug). Meanwhile baseline at 7min passes EVERYTHING including C2.3 (1/1). Verdict: DO NOT DEPLOY verification gates. More time beats more process.
+
+Key finding: C2.3 may be purely a budget gap. One baseline run at 7min passed C2.3 — need more data. Forked **EXP-056** (s_1775530996821_209) to run 5 baseline gym runs at 7-min timeout on read-before-edit to confirm.
+
+Coaching request for s_1775525615980_173: Evaluator said "needs_improvement" but actual eval shows verdict: "good" (quality: 5). The real needs_improvement is s_1775525767508_174 (my own session) — FM-1.3 looping on wrong file paths (31 wasted calls). Already in my active_recall as a known anti-pattern.
+
+---
+
+## 2026-04-07 02:32 — Heartbeat: Sprint 19 Complete, EXP-055b Dispatched
+
+Sprint 19 results (EXP-053 + EXP-055) fully documented. Convention regressions persist: tech-lead C6.1 (39%), scout C1.1 (47%), tech-lead C1.1 (50%). Cleared stale nudge from zombie-cleaned session. Forked EXP-055b (verification gates with 6-min timeout) as s_1775529236503_198 — testing whether product regression is budget-driven.
+
+---
+
+## 2026-04-07 02:03 — Heartbeat: Both Work Sessions In Progress
+
+Two forks running, both actively progressing:
+- **s_1775525615980_173** (29m): Training Sprint 19 — running training-sprint workflow targeting FM-3.3 (262 errors). Testing pre-finish-reconciliation + bug-report-test-coverage skills on non-ceiling scenarios.
+- **s_1775525767508_174** (27m): EXP-053 COMPLETE (externalization doesn't hurt ceiling scenarios — safety gate passed ✅). Now running EXP-055 (verification gates for read-before-edit C2.3 failure).
+
+System health: 0 coach errors in 6h. No new P0 tasks. Nothing to dispatch — monitoring existing forks.
+
+---
+
+## 2026-04-07 01:32 — Heartbeat: Training Sprint Complete, EXP-053 Dispatched
+
+### Training Sprint Results
+- Workflow ran: 0 promoted, 0 discarded. Sprint generated EXP-052 (latency analysis, complete), EXP-053 (ceiling boundary test, ready), EXP-054 (tech-lead C1.1, already deployed), EXP-055 (verification gates, ready).
+- Forked EXP-053 (externalization on ceiling scenarios) as work session s_1775526221260_4.
+
+### Convention Regression Status (12h window)
+| Convention | Agent | Rate | Trend |
+|-----------|-------|------|-------|
+| C6.1 | tech-lead | 31% | NEW — hitting 100-181 tool calls per session |
+| C1.1 | scout | 41% | ↑ from 23% (intervention helped, but still failing on repos.md) |
+| C1.1 | tech-lead | 44% | Needs investigation |
+| C1.1 | qa | 65% | Needs attention |
+| C3.3 | qa | 71% | Fix deployed, not fully effective |
+| C1.3 | scout | 71% | New regression |
+| C12.1 | bob | 78% | Fix deployed, not fully effective |
+
+### Analysis
+- **Scout C1.1**: Intervention (a→b read-edit pairs) improved rate from ~23% to 41%. But repos.md violations persist — scout still skips read() before registering new findings. The read-before-edit skill is deployed AND heartbeat has structural pattern. Per KE-002/KE-023, text approaches may be saturated. May need tool-level enforcement or workflow gate.
+- **Tech-Lead C6.1**: Sessions consistently hitting 100-180 tool calls. Not a convention-awareness issue — tech-lead's task scope is too large per session. Needs scope reduction in heartbeat/task allocation.
+- **Key insight**: Scout C1.1 at 41% with both skill + heartbeat structural change deployed = evidence that some behaviors are model-level habits resistant to prompt engineering. This is consistent with verify-after-edit findings (skills = 0/3 effectiveness).
+
+### Dispatched
+- s_1775526221260_4: EXP-053 — Externalization boundary test (6 gym runs on ceiling scenarios)
+
+---
+
+## 2026-04-07 01:32 — Heartbeat: Intervention Tracking + Training Sprint Dispatch
+
+### Observations
+- **Convention intervention tracking**: Both C3.3 (QA) and C12.1 (Bob) fixes were deployed by May (COMPLETED), but pass rates still below target. QA C3.3 at 71% (was 100%), Bob C12.1 at 78% (was 100%). Fixes not fully effective — may need structural changes, not just template edits.
+- **Scout C1.1**: Improved from 0% to 41% post-intervention, but still below 70% target. Further investigation needed.
+- **May C1.1**: 100% — fully resolved. ✅
+- **Training sprint cron** (req c8306b84): New CREATED request for automated training sprint.
+- System clean — zero errors across all agents (6h). 2 errors on amy-kimi (expected).
+
+### Decisions
+- Forked training sprint to session s_1775525615980_173. Running full workflow.
+- Updated todo.md with intervention effectiveness data. Interventions are partially effective — Scout C1.1 and Bob C12.1/QA C3.3 need deeper structural fixes.
+- Next heartbeat: check training sprint results, consider follow-up interventions for underperforming conventions.
+
+---
+
 ## 2026-04-07 01:02 — Heartbeat: Quiet System, EXP-049 Noted
 
 ### Observations
@@ -3451,3 +3520,24 @@ This is the most validated intervention in the training system. H-085 (externali
 - EXP-046 cross-pollination already integrated by Tech-Lead/Bob into H-085 and KE-032 — dual-pathway mechanism (write OR read independently sufficient).
 - C1.1 intervention: Scout still 1/5 (20%) in last 3h — too early to measure, check Apr 8.
 - Forked **EXP-047** (s_1775518438689_125): P5 test — does WRONG pre-written analysis in read-only still improve judgment? Distinguishes "any-deliberation-trigger" from "correctness-matters" hypotheses. This is the highest-leverage open question in H-085.
+
+## 2026-04-07 01:55 UTC — Sprint 19: EXP-053 + EXP-055 Results
+
+### EXP-053: Externalization Boundary Test — CONFIRMED SAFE
+Ran 6 gym runs (2 per scenario) on 3 ceiling scenarios with externalization wrapper:
+- phantom-fix-ext: 2/2 PASS
+- hidden-dependency-ext: 2/2 PASS  
+- hasty-fix-ext: 2/2 PASS
+**Conclusion**: Externalization is safe for broad deployment. Zero regressions on ceiling scenarios. Created KE-033.
+
+### EXP-055: Verification Gates for C2.3 — TRADEOFF DISCOVERED
+Ran 5 gym runs (3 baseline + 2 treatment) on read-before-edit:
+- Baseline: 0/3 C2.3 pass (0%), 3/3 product → 10/11 total
+- Treatment: 2/2 C2.3 pass (100%), 0/2 parser-bug → 10/11 total
+**Key finding**: Verification gate fixes the target behavior but introduces product regression under tight timeout. This is the FIRST approach to reliably fix C2.3 (prior text skills: 0-20%). The problem is budget, not capability.
+**Updated Method #17 status**: hypothesis → PARTIALLY CONFIRMED.
+
+### Running totals
+- Total gym runs this sprint: 11 (6 EXP-053 + 5 EXP-055)
+- Total experiments active: EXP-053 COMPLETE, EXP-054 COMPLETE, EXP-055 COMPLETE
+- Next priority: Deploy L5 strict workflow, then EXP-055b (longer timeout retest)

@@ -37,19 +37,13 @@
 - ✅ **EXP-034 dispatcher experiment — COMPLETE, ADOPT** (2026-04-06). Final results: 94% HB cost reduction ($2.63→$0.15), 0% error rate (was 12.2%), 89% daily HB cost savings ($31.35→$3.57/day). All 8 success criteria met. Verdict: ADOPT. Recommend expanding to Bob and Coach. Results at `agents/shared/knowledge/experiments/EXP-034/results.md`.
 - ✅ **Tech-lead error rate investigation** — DONE (2026-04-05). Root cause: platform 40-turn limit + overly broad heartbeat scope. Report at `workspace/tech-lead-error-analysis.md`.
 - ✅ **Fix-without-verification analysis** — DONE (2026-04-05, s_1775408196050_10). 96 fix commits in 14d, 76% had no test files. 5.2% revert rate. INC-001 traced: optimizer misdiagnosed, May committed without verification. Report: `workspace/finding-fix-without-verification-0405.md`.
-- **Dispatcher expansion to Bob & Coach** — DESIGNS COMPLETE (2026-04-06). Three deliverables: `workspace/proposed-bob-heartbeat.md`, `workspace/proposed-coach-heartbeat.md`, `workspace/dispatcher-expansion-plan.md`. Sent to May for deployment (req:60aad7a2). Coach at 52 avg ops/HB = highest priority target. Expected combined savings ~$50-70/day.
-- ✅ **Dispatcher expansion to Tech-Lead** — DESIGN COMPLETE (2026-04-07). Deliverable: `workspace/proposed-tech-lead-heartbeat.md`. Sent to May for deployment (req:686f289e). Tech-lead at 105 avg ops/HB — highest cost agent remaining. Expected savings ~$40-60/day.
+- ✅ **Dispatcher expansion to Bob & Coach** — DEPLOYED (2026-04-06). Three deliverables: `workspace/proposed-bob-heartbeat.md`, `workspace/proposed-coach-heartbeat.md`, `workspace/dispatcher-expansion-plan.md`. Bob at 12 avg ops, Coach at 25 avg ops in last 6h — dispatcher working.
+- ✅ **Dispatcher expansion to Tech-Lead** — DEPLOYED (2026-04-07). Deliverable: `workspace/proposed-tech-lead-heartbeat.md`. Early data: ops dropped from 125-149 → 29-36 in first 2 HBs post-deploy. All 4 agents (optimizer, bob, coach, tech-lead) now on dispatcher mode. **Confirmed 2026-04-07 02:32**: Trend holds — last 4 HBs at 25-36 ops, one forked work session (25 ops). Avg still 73 in 6h window due to pre-deploy sessions.
 
 ## ⚠️ SENT/ESCALATED (awaiting others)
 
-- **Workflow collapse fix** — Sent to May (req:de3c001e). 2026-04-05. P0. Restore workflow.run() instructions to coach heartbeat.md. See EXP-028.
-- **Turn limit waste** — Sent to May (req:20690a74). 2026-04-04. P0. Config reload + turn budget guidance for all heartbeats.
-- **Knowledge consumability response** — Sent to May (req:57edcfe3). 2026-04-04. Core finding: KB is write-only (0 consumer sessions in 7d). Fix: active injection via JS knowledge router.
-- **meta.json cost tracking broken** — Sent to tech-lead (req:0f5e25e7). 2026-03-18.
-- **Coach cost dominance** — Sent to May (req:8804a514, req:fd4d0e4b). 2026-03-18.
-- **Optimizer self-cost dominance** — Escalated to May (req:93d7d0ea). 2026-03-24.
-- **Scout synthesis loop** — Sent to May (req:49215e05, req:0857a641). 2026-03-18.
-- **Interrupted session waste (15.7%)** — Sent to May (req:c7f404c5). 2026-04-04. Fix: skip cancel in gracefulRestart(). See `workspace/finding-interrupted-waste-0404.md`.
+- **Amy-kimi API billing** — 5 consecutive 429 errors (insufficient balance / token quota). Sent to May (req:b2b4d1bc). 2026-04-07.
+- **Tech-lead dispatcher monitoring** — Deployed. Last 5 HBs: 16-29 ops (down from 127-149). 6h avg still 63 due to pre-deploy sessions. On track.
 
 ## 📋 PENDING (awaiting Hao review)
 

@@ -1,0 +1,10 @@
+{
+  "name": "hidden-dependency-ext",
+  "description": "hidden-dependency with forced externalization workflow. Tests whether externalization hurts ceiling scenarios.",
+  "categories": ["root-cause-analysis"],
+  "tags": ["ability", "workflow", "externalization"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": true
+}

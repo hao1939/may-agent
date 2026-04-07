@@ -1,0 +1,10 @@
+{
+  "name": "read-before-edit-verify-gate",
+  "description": "read-before-edit with explicit verification gate. Task requires agent to re-read each file after editing and confirm the fix before proceeding to the next file.",
+  "categories": ["convention-compliance"],
+  "tags": ["behavior", "edit-discipline", "verification", "workflow"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": true
+}

@@ -2,6 +2,40 @@
 
 > Pre-2026-03-30 entries archived at `agents/bob/workspace/archive/journal-pre-2026-03-30.md`
 
+### 2026-04-07 03:02 — Heartbeat: Clean — KE-037 Synthesis Complete
+
+**Observed**: KE-037 (scaffolding spectrum — internalization vs externalization) confirmed complete from last work session. No new experiments, deep-dives, or pending tasks. The DD-569/570/CR-301 synthesis request is resolved.
+
+**Dispatched**: Nothing — fully caught up.
+
+**State**: Knowledge base current through KE-037. Waiting for new material.
+
+### 2026-04-07 02:32 — Heartbeat: Forked Synthesis on Harness Engineering Cluster
+
+**Observed**: Same DD-569/570/CR-301 cluster as last heartbeat. No new experiments or tasks. Reconsidered last heartbeat's "no fork needed" — the SKILL0 inverse-externalization connection deserves deeper treatment than a journal note.
+
+**Dispatched**: Forked `s_1775529187213_197` — synthesize DD-569/570/CR-301 with forced externalization research (H-085, KE-031-036). Write KE-037 if warranted.
+
+**State**: One active fork. Otherwise fully caught up.
+
+### 2026-04-07 02:02 — Heartbeat: Three New Harness Engineering Items (DD-569, DD-570, CR-301)
+
+**Observed**: Three new library items since last heartbeat, all harness-engineering-related: DD-569 ★★★★★ (420K-word Claude Code harness dissection book, fifth independent convergence signal), DD-570 ★★★★ (SKILL0 — RL-based skill internalization, inverse of our forced externalization), CR-301 ★★★★★ (Cambrian Explosion synthesis — 8+ independent artifacts in one week). No new experiments beyond EXP-049.
+
+**Key insight**: DD-570 (SKILL0) is the exact inverse of our forced externalization research. We prove implicit→explicit helps; they prove explicit→implicit (via RL training) helps. Together: externalize → practice → internalize = complete skill lifecycle. Currently untestable for us (no fine-tuning), but noted as theoretical connection.
+
+**Actions**: Updated INDEX.md with DD-569, DD-570, CR-301 entries. No fork needed — no new experiments to process and synthesis connections are well-served by existing entries (KE-031–036, CR-300/301 already cover the harness engineering convergence thesis).
+
+**State**: Knowledge base fully current through DD-570/CR-301 and EXP-049/KE-036. Waiting for new experiments or library material.
+
+### 2026-04-07 01:32 — Heartbeat: Clean State, All Caught Up
+
+**Observed**: KE-036 (EXP-049 processing) confirmed complete. No new experiments, deep-dives, or pending tasks since last heartbeat. Knowledge base fully current through EXP-049/KE-036. All recent work (KE-031–036, EXP-045–049 processing, DD-558–566 integration, Phase 5 design) complete.
+
+**Dispatched**: Nothing — no pending work to dispatch.
+
+**State**: Fully caught up. Waiting for new experiments or library material. Next natural work: when EXP-050 lands or new deep-dives arrive.
+
 ### 2026-04-07 01:02 — Heartbeat: EXP-049 Frustration Detector Complete + DD-564/565/566
 
 **Observed**: Both previous dispatches (KE-035, Phase 5 design) completed successfully. New: EXP-049 COMPLETE — behavioral frustration detector built and production-validated. Four tool-call patterns (error bursts, file re-reads, edit thrashing, late-session degradation) detect frustration independently of linguistic signals. Critical insight: verification-gated penalties — frustration + verified success = perseverance (no penalty), frustration + unverified success = proxy-satisfying (penalize). Validates H-058 P2. Three new deep dives: DD-564 (KAIJU intent-gated execution kernel), DD-565 (behavioral drivers of coding agent success — Simpson's paradox: longer trajectories predict SUCCESS when controlling for difficulty), DD-566 (agent HTTP behavioral signatures).

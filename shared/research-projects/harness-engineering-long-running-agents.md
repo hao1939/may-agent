@@ -514,6 +514,65 @@ See [DD#554](../knowledge/library/deep-dives/dd554-freestyle-sandboxes-agent-inf
 
 See [DD#560](../knowledge/library/deep-dives/dd560-meta-agent-self-improving-harnesses.md) and [CR#300](../knowledge/library/deep-dives/cr300-harness-engineering-endgame.md) for full analyses.
 
+### 2026-04-07 (Scout Session 286): The Cambrian Explosion — Field Reaches Maturity Level 3-4
+
+**Sources**: DD#569 (御舆 Claude Code Book), DD#570 (SKILL0 In-Context RL), CR#301 (Cambrian Explosion synthesis)
+
+**This session documents the most significant week in harness engineering history.** Eight independent artifacts from different communities, countries, and domains all converged on harness engineering principles in a single week:
+
+| # | Artifact | Stars/Impact | Contribution | Maturity Level |
+|---|----------|-------------|--------------|----------------|
+| 1 | MarginLab (DD#552) | Production tracker | External monitoring | L2 → L3 |
+| 2 | DD#556 Effort Crisis | 590 pts HN | Failure analysis | L2 |
+| 3 | meta-agent (DD#560) | 178★ | Auto-optimization | L4 |
+| 4 | Prompt Patcher (DD#563) | Community tool | Config reverse-engineering | L2 |
+| 5 | DD#565 Beyond Resolution | 9,374 trajectories | Empirical benchmarks | L3 |
+| 6 | 御舆 (DD#569) | 2,188★ | 420K-word textbook | L3 |
+| 7 | agentic-harness-patterns-skill | Pattern library | Reusable patterns | L3 |
+| 8 | Cersei (pacifio/cersei) | Rust SDK | Type-safe harness SDK | L4 |
+
+**Key findings from DD#569 (御舆)**:
+- 420,000-word, 15-chapter book systematically reverse-engineers Claude Code's harness architecture
+- Ancient carriage (御舆) metaphor maps precisely: driver=LLM, frame=harness, wheels=tools, reins=governance
+- 2,188★ in first week — fastest growth in harness engineering space
+- Written in Chinese (Tsinghua community) — second major Chinese contribution after OpenHarness (DD#568)
+- Validates our 6-layer model by independently discovering equivalent layering from source code analysis
+- **FIFTH independent convergence signal** (MarginLab, meta-agent, Prompt Patcher, OpenHarness, 御舆)
+
+**Key findings from DD#570 (SKILL0)**:
+- Progressive skill withdrawal during RL training: full context → selective retention → zero-shot
+- Dynamic curriculum evaluates per-skill on-policy helpfulness, removes mastered skills
+- ALFWorld +9.7%, Search-QA +6.6%, <0.5k tokens per step
+- **Complementary paradigm**: instead of making scaffolding smarter (harness engineering), remove it through training (skill internalization)
+- Maps to semantic→procedural transition in tiered memory architecture
+- Implies eventual convergence: harness patterns become training data for internalization
+
+**CR#301 Synthesis — Cambrian Explosion**:
+The field jumped from Maturity L2 (Measured) to L3/L4 (Systematic/Automated) in a single week. Signals:
+1. **Textbook publication** (420K words) — knowledge is being systematized
+2. **Pattern libraries** — reusable abstractions emerging
+3. **Type-safe SDKs** (Cersei, Rust) — industrial-grade tooling
+4. **Automated optimization** (meta-agent) — meta-level tooling
+5. **Vendor acknowledgment** (Boris HN response) — official recognition
+
+**Boris's HN response details** (from DD#556 thread, 746 pts):
+- Confirmed adaptive thinking replaced fixed budgets (Feb 9, 2026)
+- Revealed effort=85 (medium) is the default — not maximum
+- Acknowledged sub-agent effort inheritance gap (new multi-agent failure mode)
+- Described testing as "a mix of evals and vibes" — no formal regression framework
+- This vendor transparency itself is a L3 maturity signal
+
+**New theory elements**:
+- **Maturity acceleration**: CR#300's 5-level model predicted gradual progression; instead we see discontinuous jumps driven by viral community artifacts
+- **Chinese community leadership**: 3 of 8 artifacts from Chinese community (御舆, OpenHarness, agentic-harness-patterns-skill) — geographic diversification signal
+- P343-P352 (predictions), R89-R92 (recommendations)
+
+**Also found**:
+- **paper2code** (564★): Citation-anchored arXiv→code agent. Automatically grounds implementation decisions in specific paper passages. Relevant to our DD verification pipeline.
+- **openedclaude/claude-reviews-claude** (1216★): Claude reading and reviewing its own source code. Meta-agentic pattern — agent introspection as development methodology.
+
+**Impact on this research project**: The Cambrian Explosion validates the entire research program. Our investment in tracking, analyzing, and synthesizing harness engineering patterns has been vindicated by the field's rapid maturation. The next phase should shift from discovery to experimentation — applying these patterns to OpenClaw.
+
 ### 2026-04-07 (Scout Session 285): OpenHarness — Academic Validation of Harness Engineering
 
 **Sources**: DD#567 (M-Flow Cognitive Memory Engine), DD#568 (OpenHarness — Tsinghua), synth-agent-documentation-standard-convergence
