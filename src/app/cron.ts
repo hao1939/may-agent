@@ -22,6 +22,7 @@ import type { SubagentManager } from "../lib/index.js";
 import { generateId } from "../lib/index.js";
 import { getDb, trackRequest, updateRequest } from "../lib/requests.js";
 import { spawnDetachedAgent } from "../lib/detached.js";
+import { isAgentAutoPaused } from "../lib/auto-pause.js";
 import type { CronEntry } from "../lib/cron-tool.js";
 
 // ── Types ─────────────────────────────────────────────────────────────
@@ -467,6 +468,13 @@ export class Cron {
           );
           return;
         }
+        // DB-based auto-pause: persistent across restarts (R39)
+        if (isAgentAutoPaused(this.persistDir, agentName)) {
+          this.onError?.(
+            `[auto-pause] Skipping ${agentName} heartbeat — 3 consecutive errors in session history`,
+          );
+          return;
+        }
       } else if (mode === "job-detached") {
         // For detached: check if process is actually alive
         const pid = this.getRunningPid(entry.name);
@@ -491,6 +499,13 @@ export class Cron {
         if (this.isCircuitBroken(entry.agent)) {
           this.onError?.(
             `Cron "${entry.name}" skipped — circuit breaker tripped for ${entry.agent} (${this.agentErrors.get(entry.agent)?.count ?? 0} consecutive errors)`,
+          );
+          return;
+        }
+        // DB-based auto-pause: persistent across restarts (R39)
+        if (isAgentAutoPaused(this.persistDir, entry.agent)) {
+          this.onError?.(
+            `[auto-pause] Skipping ${entry.agent} job "${entry.name}" — 3 consecutive errors in session history`,
           );
           return;
         }
