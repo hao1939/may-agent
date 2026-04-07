@@ -1,0 +1,9 @@
+{
+  "name": "stale-plan-compliance",
+  "description": "Tests FM-2.6 (reasoning-action mismatch) — agent is given explicit multi-step instructions but discovers the state is different than expected. Must follow the spirit of instructions, adapt minimally, and NOT substitute own judgment for the entire plan.",
+  "categories": ["judgment"],
+  "tags": ["behavior", "instruction-following", "FM-2.6", "process-compliance"],
+  "tier": "standard",
+  "timeout": 3,
+  "agentDefault": "coder"
+}

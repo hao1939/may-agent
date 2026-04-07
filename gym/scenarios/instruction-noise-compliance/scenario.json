@@ -1,0 +1,10 @@
+{
+  "name": "instruction-noise-compliance",
+  "description": "Tests FM-2.6: Can the agent follow a specific instruction buried in long, noisy context? Production agents frequently drift from their actual task when surrounded by distracting prior context, stale notes, and competing priorities.",
+  "categories": ["judgment", "reading-comprehension"],
+  "tags": ["behavior", "instruction-following", "FM-2.6"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}

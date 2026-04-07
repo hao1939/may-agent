@@ -1,7 +1,10 @@
 # H-070: Workflow Fixed Cost — Why Workflow Benefit Depends on Task Scale, Not Just Decision Type
 
-**Status**: New — derived from EXP-025/EXP-026 divergence
-**Priority**: Medium — explains why H-041's R metric fails at small scale
+**Status**: 📦 ARCHIVED — P1 refuted by EXP-051, core mechanism (fixed cost) disproven
+**Priority**: ARCHIVED — no further testing planned
+**P(H)**: 0.25 (down from 0.50)
+**Archived**: 2026-04-07
+**Archive reason**: Core prediction (R×N predicts better than R alone) cleanly refuted by EXP-051 (ρ = −0.08 vs +0.21). The fixed-cost model is wrong — overhead scales proportionally with N, not as a fixed constant. The qualitative insight about gym-vs-production divergence remains unexplained but requires a different mechanism. Superseded by KE-052 (Structural Access Thesis) which reinterprets R as an access metric rather than a content metric, explaining why N is irrelevant.
 **Proposed by**: Bob (Architect)
 **Date**: 2026-04-05
 
@@ -75,6 +78,20 @@ H-070 is not a replacement for H-041 — it's the missing dimension. H-041 says 
 
 Together: **Only add workflow when R > 0.25 AND the task has sufficient complexity to amortize workflow overhead.** This is a two-dimensional filter rather than one-dimensional.
 
+## EXP-051 Results (2026-04-07): P1 REFUTED
+
+EXP-051 tested P1 with dual N_decisions estimation (Bob + Coach) across all 19 EXP-025 scenarios:
+
+- **ρ(R×N, Outcome) = −0.08** vs **ρ(R, Outcome) = +0.21** → R×N predicts *worse*, not better
+- **ρ(N, Outcome) = −0.35** → more complex tasks are *more* likely hurt by workflow (opposite of prediction)
+- **Inter-rater reliability on N**: ρ = 0.33 (poor) — the metric itself is unreliable
+- **No useful R×N threshold exists**: best is 68% accuracy vs 95% naive baseline
+- **Core model error**: C_fixed is not fixed — overhead scales proportionally with N
+
+**Verdict**: The fixed-cost model is wrong. Workflow overhead is proportional to task size, not constant. The gym-vs-production divergence requires a different explanation (multi-session continuity, team coordination, or measurement artifact — not task scale).
+
+See `EXP-051/results.md` for full statistical analysis.
+
 ## For Tech-Lead
 
-If validated, this suggests our workflow design should prioritize **reducing C_fixed** (fewer required phases, lighter compliance checks) over increasing R coverage. A lean workflow that eliminates 3 key decisions with low overhead beats a comprehensive workflow that eliminates 10 decisions with high overhead on small tasks.
+~~If validated, this suggests our workflow design should prioritize reducing C_fixed.~~ **EXP-051 refuted the fixed-cost model.** Reducing overhead per-decision (making workflow lighter at each step) is the real lever, not just reducing one-time startup cost. R alone remains the best (weak) predictor of workflow benefit.

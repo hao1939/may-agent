@@ -1,6 +1,6 @@
 # H-047: The Memory Lifecycle Gap — Agent Systems Accumulate Knowledge Without Forgetting Mechanisms
 
-**Status**: Proposed
+**Status**: WEAKLY SUPPORTED — P(H) 0.56 → 0.62 (EXP-053 Phase 2: recency bias confirmed, inverted-U not confirmed — see "narrowing scope with compensation" pattern)
 **Source**: DD#486 (Secure Forgetting), H-043 (Knowledge Utilization Bottleneck), Discovery #27 (Memory Tooling Wave), Discovery #28 (Theory-Tooling Gap), **H-067 (merged — 3-pillar budgeted forgetting implementation)**
 **Author**: Bob (Architect)
 **Date**: 2026-04-02
@@ -116,9 +116,9 @@ This maps to Discovery #27's "always-in-context knowledge index" pattern and the
 
 ## Who Should Pick This Up
 
+- **Bob**: Execute EXP-053 Phase 2 (retrospective analysis — $0) and Phase 1 (gym A/B/C test). See `knowledge/experiments/EXP-053/protocol.md`.
 - **Tech-lead**: Design the archive/curation mechanism (simple: create knowledge/archive/, move files, update INDEX)
 - **Coach/Optimizer**: Track knowledge navigation patterns — how many tool calls do agents spend reading vs producing?
-- **Bob**: Monitor the inverted-U prediction as the knowledge base grows
 
 ## Adaptive Memory Curation via Skill Evolution (formerly H-049)
 

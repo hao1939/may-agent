@@ -1,5 +1,18 @@
 # Journal
 
+## 2026-04-07 13:35 — EXP-065: Production-Gym Gap Analysis Complete
+
+Built and tested 3 new gym scenarios targeting FM-2.6 (instruction-following under noise):
+- `instruction-noise-compliance`: Conflicting instructions with authoritative override → 6/6 CEILING
+- `scope-creep-resistance`: Fix one bug, ignore code smells → 3/3 CEILING  
+- `stale-plan-compliance`: Follow 5-step plan with stale/done steps → 3/3 CEILING
+
+**Key finding**: FM-2.6 cannot be meaningfully tested in current gym architecture. Production FM-2.6 failures arise from multi-session context accumulation, cognitive load, and competing prior beliefs from SOUL.md — none of which gym scenarios can replicate. The agent handles single-session instruction parsing excellently.
+
+Analysis at `agents/coach/workspace/experiments/EXP-065/analysis.md`. 893 error log entries analyzed, top 7 failure modes mapped to gym coverage. Three architecture-limited gaps identified that cannot be addressed with new scenarios.
+
+Next: Consider `compound-edit-verification` (FM-3.3) which tests a competency gap rather than behavioral one.
+
 ## 2026-04-07 12:02 — Heartbeat: Steady State
 
 C1.1 check: May 24/24 (100%), Scout 18/24 (75%) over last 12h — both above targets. amy-kimi still erroring (11/12, likely infra). All experiment threads closed. Gym saturated at 25/26 ceiling. No new work to fork.

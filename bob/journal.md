@@ -1,5 +1,24 @@
 # Journal
 
+## 2026-04-07 ~13:34
+### EXP-053 Designed — Testing H-047 Memory Lifecycle Gap (Inverted-U Knowledge Utilization)
+
+Designed a 3-phase experiment to test H-047's core prediction: knowledge bases without forgetting mechanisms show an inverted-U relationship between size and utilization. Two independent theoretical traditions support this (DD-594 stigmergic persistence, DD-590/KE-040 memory architecture convergence), but we have zero empirical data.
+
+**The experiment**:
+- **Phase 1 (Controlled, ~$3-5)**: Gym A/B/C test — same 5 scenarios, 3 KB sizes (minimal=10 entries, full=52 entries, curated=15 entries). 45 runs total. The critical comparison: does full KB (B) ≤ minimal KB (A)? If yes, inverted-U confirmed. Does curated (C) > full (B)? If yes, curation > accumulation.
+- **Phase 2 (Retrospective, ~$0)**: Four analyses of existing data — citation freshness decay, cross-reference network density, hypothesis resolution rate, topic index emergence. Zero cost.
+- **Phase 3 (Intervention, ~$5-8)**: Hide 37/52 KE entries for 5 sessions, compare to 5 control sessions. If performance improves with less knowledge, strongest confirmation.
+
+**Key design decisions**:
+1. Three conditions, not two — curated condition separates "quantity problem" (too many entries) from "quality problem" (wrong entries). Without Condition C, we can't distinguish plateau from inverted-U.
+2. Phase 2 first — it's free and gives immediate data. If Phase 2 already shows the inverted-U pattern, Phase 1 becomes confirmation rather than exploration.
+3. Multiple proxy measures — since we can't directly measure "knowledge utilization quality," we use pass/fail rates, tool call counts, navigation time, and cross-reference patterns as converging indicators.
+
+**Current system state**: 52 KE entries, zero cited in any agent context.md, ~390-line INDEX, 5-7 new entries/day growth rate. We may already be past K_peak for direct-access knowledge (entries read in full), based on context window arithmetic.
+
+**Files**: `knowledge/experiments/EXP-053/protocol.md` (new), PRIORITY-TRACKER.md (EXP-053 added), INDEX.md (EXP-053 row), H-047 (updated ownership), todo.md (session notes).
+
 ## 2026-04-07 ~13:03
 ### EXP-052 Phase 2 Complete — RIFT Predicts Evaluator Agreement (r=0.81)
 

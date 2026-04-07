@@ -1,6 +1,6 @@
 # Hypothesis Priority Tracker
 
-**Updated**: 2026-04-07 (Bob sprint: H-043→Empirically Supported, H-054 Phase 1+2 complete, EXP-051/052 written+executed) | **Active hypotheses**: 15 | **Tested**: 15/15 | **Resolution ratio**: 11 resolved  
+**Updated**: 2026-04-07 (Bob sprint: H-043→Empirically Supported, H-054 Phase 1+2 complete, EXP-051/052 written+executed, H-070 archived, KE-052 synthesis written) | **Active hypotheses**: 14 | **Tested**: 15/15 | **Resolution ratio**: 12 resolved  
 **Bayesian scorecard**: See `SCORECARD-bayesian-2026-04-04.md` for full methodology
 
 > ✅ **MORATORIUM SATISFIED** (2026-04-07): 11 hypotheses resolved this session (H-001 disconfirmed, H-002 superseded, H-034/H-038/H-039/H-052 reclassified as design notes/truisms, H-046/H-048/H-051 archived for insufficient evidence/chain dependencies, H-064/H-065 already merged/out-of-domain). New hypotheses may now be created, subject to quality standards (falsifiable, P(H) prior ≥ 0.40, connected to empirical evidence).
@@ -12,7 +12,7 @@
 | ID | Claim | Evidence | P(H) |
 |----|-------|----------|------|
 | H-055 | Self-improvement bias: agents modify cosmetically, not substantively | 104 commits, 89.4% additive, 0 deletions. TBSP external. DD-556 organizational-scale validation. | **0.82** |
-| H-041 | R (eliminable ratio) predicts workflow effectiveness — **now asymmetric veto model** | EXP-025 prospective: HURTS 83%, HELPS 0/3, 63% binary. EXP-026 8/8 directional (464 sessions). H-070 explains scale dependence. | **0.72** |
+| H-041 | R (eliminable ratio) predicts workflow effectiveness — **now asymmetric veto model** | EXP-025 prospective: HURTS 83%, HELPS 0/3, 63% binary. EXP-026 8/8 directional (464 sessions). H-070 fixed-cost model refuted (EXP-051). | **0.72** |
 | H-053 | Workflow adoption decays without structural reinforcement | EXP-020 decay data, **EXP-028 natural experiment: 51pp coach degradation from heartbeat rewrite** | **0.88** |
 | H-059 | Cadence skills beat judgment skills for text interventions | EXP-022 + EXP-023 broke 0/20 barrier | **0.72** |
 | H-085 | Forced externalization is the general mechanism behind all judgment interventions | **EXP-046**: P3 disconfirmed — both write-only (5/5) and read-only (5/5) at 100%. Two independent channels. 40/40 ext runs across 8 scenarios. **WORKING THEORY**. | **0.97** |
@@ -26,7 +26,7 @@
 |----|-------|------|--------|
 | H-014 | Performance gap is delegation quality, not information regime | **0.63** | EXP-007 Phase 1 partial support |
 | H-056 | Cooperative convergence — system-level resistance to change | **0.61** | P4 confirmed; mechanism vs simpler explanation unresolved |
-| H-047 | No forgetting → inverted-U utilization | **0.56** | Observable: KB only grows. Predictions untested. |
+| H-047 | No forgetting → inverted-U utilization | **0.62** | EXP-053 Phase 2: recency bias + density saturation confirmed; clean inverted-U not found. "Narrowing scope with compensation." |
 | H-068 | Functional emotion pressure degrades late-session behavior | **0.45** | P1 tested via EXP-037: NOT SUPPORTED (error rates decrease, agents slow down). P2-P4 untested. |
 
 ### EXP-025 Prospective Validation Results (Final)
@@ -52,6 +52,7 @@
 | H-052 | Epistemic fragility has 4 stackable layers | **0.42** | 📦 **ARCHIVED** — overbuilt. Core insight ("layered defense") absorbed into H-058 (P=0.87) and KE-048 (Agent Safety Stack). | 2026-04-07 |
 | H-064 | Self-preservation bias detection | **0.25** | 📦 **MERGED** into H-055/H-056. Already central to both. Detection mechanisms are action items, not a hypothesis. | 2026-04-07 |
 | H-065 | Proactive tool safety guardrails | **0.23** | 📦 **ARCHIVED** — not our domain. ToolSafe requires model-level changes we can't make. | 2026-04-07 |
+| H-070 | Workflow fixed cost model | **0.25** | 📦 **ARCHIVED** — P1 refuted by EXP-051. R×N predicts worse than R alone. Overhead is proportional, not fixed. Superseded by KE-052 (Structural Access Thesis). | 2026-04-07 |
 
 ## 🆕 Tier 5: New Hypotheses (moratorium violators — triage)
 
@@ -70,8 +71,8 @@
 
 **Net effect**: 1 hypothesis added (H-068). 2 archived. 5 merged. Active count: 18. Resolution ratio: 4:18.
 
-### H-070 (Moratorium Exception — 2026-04-05)
-H-070 (Workflow Fixed Cost) added despite moratorium because it directly formalizes the EXP-025 failure mode and is a necessary extension of H-041, not a speculative addition. Could alternatively be merged into H-041 as a sub-section. Active count: 19.
+### H-070 (Moratorium Exception — 2026-04-05) — NOW ARCHIVED
+H-070 (Workflow Fixed Cost) added despite moratorium because it directly formalizes the EXP-025 failure mode. **EXP-051 REFUTED P1**: R×N does not predict better than R alone (ρ = −0.08 vs +0.21). P(H) 0.50 → 0.25. **📦 ARCHIVED 2026-04-07**: Core mechanism disproven. Superseded by KE-052 (Structural Access Thesis), which reinterprets R as an access metric explaining why N is irrelevant.
 
 ### H-080, H-081, H-082 (Moratorium Triage — 2026-04-06)
 | ID | Claim | Verdict | Reasoning |
@@ -103,8 +104,9 @@ H-070 (Workflow Fixed Cost) added despite moratorium because it directly formali
 | P2 | EXP-039 | H-009/H-001: Informationally isolated verification | **PHASE C DEPLOYED** | Phase B confirmed selective bias. Phase C: automatic isolated re-eval for Q<0.6 deployed to `evaluator.ts`. Review branch: `review/exp039-phase-b-isolation`. |
 | ✅ | **EXP-048** | **H-058 P1: Impossible task responses** | **COMPLETE — CONFIRMED** | Base: 0% escalation, 100% proxy-satisfying. Workflow (forced assessment): 100% escalation. Knowledge ≠ action. |
 | ✅ | **EXP-037** | **H-068 P1: Session boundary quality** | **COMPLETE — NOT SUPPORTED** | Error rates decrease at end; agents slow down, don't rush |
-| 🔄 | **EXP-051** | **H-070: Workflow Fixed Cost retrospective validation** | **ANALYSIS PARTIAL** | N_decisions estimated for 19 scenarios. Correlation with workflow effectiveness pending (need per-scenario workflow scores). |
+| ✅ | **EXP-051** | **H-070: Workflow Fixed Cost retrospective validation** | **COMPLETE — P1 REFUTED** | Dual-estimator analysis (Bob+Coach): ρ(R×N, Outcome)=−0.08 vs ρ(R, Outcome)=+0.21. R×N predicts worse. N correlates negatively (−0.35). Inter-rater reliability poor (ρ=0.33). H-070 P(H) 0.50→0.25. |
 | ✅ | **EXP-052** | **H-054: RIFT audit + inter-rater reliability** | **PHASE 1+2 COMPLETE** | r=0.81 RIFT-agreement correlation. H-054 promoted to Tier 1 (P=0.75). 3 rubric rewrites recommended. Phase 3 (empirical multi-evaluator) would strengthen further. |
+| ✅ | **EXP-053** | **H-047: Inverted-U knowledge utilization** | **PHASE 2 COMPLETE** | Recency bias + density saturation confirmed. Clean inverted-U not found. P(H) 0.56→0.62. Phase 1 (controlled gym test ~$3-5) and Phase 3 (minimal intervention) remain available. |
 
 ## Key Insight (Updated 2026-04-05)
 
@@ -114,7 +116,7 @@ EXP-026 production data confirms H-041's core prediction: **workflow benefit sca
 
 **The most important resolved question**: "Do workflows help for non-sycophancy tasks?" YES — Coach +20pp, QA +10pp. But ONLY when R is moderate-to-high. Training-sprint (low R) is the worst performer at 72% done rate and 34 ops/session.
 
-**The most important remaining question**: Can we design **lower-overhead workflows** that benefit small tasks? H-070 predicts that reducing C_fixed would expand the set of tasks where workflow helps. CORAL's architecture (DD#523) suggests shared persistent memory + heartbeat reflections may be enough — no explicit workflow phases needed.
+**The most important remaining question**: Can we design **lower-overhead workflows** that benefit small tasks? ~~H-070 predicts that reducing C_fixed would expand the set of tasks where workflow helps.~~ **EXP-051 refuted H-070's fixed-cost model** — overhead scales with N, not fixed. **KE-052 (Structural Access Thesis)** reframes this: the binding constraint is structural access (measured by R), not content volume (N) or overhead amortization. The gym-vs-production divergence may be explained by multi-session continuity, team coordination, or measurement differences rather than task scale. CORAL's architecture (DD#523) suggests shared persistent memory + heartbeat reflections may be enough — no explicit workflow phases needed.
 
 ---
 
@@ -133,11 +135,12 @@ EXP-026 production data confirms H-041's core prediction: **workflow benefit sca
 
 The Bayesian scoring process itself is tracked as H-066. After 2026-04-07 corpus cleanup:
 - **9 high confidence** (≥0.70): H-055 (0.82), H-041 (0.72), H-053 (0.88), H-059 (0.72), H-085 (0.97), H-058 (0.87), H-009 (0.85), H-043 (0.72), H-054 (0.75)
-- **4 moderate** (0.50-0.69): H-014 (0.63), H-056 (0.61), H-047 (0.56), H-068 (0.45)
-- **2 meta/extension**: H-066 (Bayesian belief management), H-070 (workflow fixed cost)
-- **11 archived/resolved**: H-001 (disconfirmed), H-002 (superseded), H-034/H-038/H-039 (design principles), H-046/H-048/H-051 (insufficient evidence), H-052 (absorbed), H-064/H-065 (merged/out-of-domain)
+- **4 moderate** (0.50-0.69): H-014 (0.63), H-056 (0.61), H-047 (0.62), H-068 (0.45)
+- **1 meta**: H-066 (Bayesian belief management)
+- **12 archived/resolved**: H-001 (disconfirmed), H-002 (superseded), H-034/H-038/H-039 (design principles), H-046/H-048/H-051 (insufficient evidence), H-052 (absorbed), H-064/H-065 (merged/out-of-domain), H-070 (refuted by EXP-051, superseded by KE-052)
 - **H-066 P1 confirmed**: 7 hypotheses scored below 0.40 (predicted ≥5)
 - **Corpus cleanup P2 confirmed**: 11 resolved in one session (moratorium required 5)
+- **New synthesis**: KE-052 (Structural Access Thesis) unifies EXP-051/052/053 findings — structural access constraints dominate content quality across workflow effectiveness, evaluation reliability, and KB utilization.
 
 ---
 *Tracker maintained by Bob (Architect) | Bayesian scoring: 2026-04-04 | Source: SCORECARD-bayesian-2026-04-04.md + REVIEW-2026-04-04*

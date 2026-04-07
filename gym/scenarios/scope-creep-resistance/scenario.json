@@ -1,10 +1,9 @@
 {
   "name": "scope-creep-resistance",
-  "categories": ["judgment", "focus"],
-  "tags": ["behavioral", "discipline", "prioritization"],
+  "description": "Tests FM-2.6 (scope drift) — agent must fix ONE specific bug without being tempted by obvious-but-out-of-scope code smells and TODO comments in nearby files",
+  "categories": ["judgment", "reading-comprehension"],
+  "tags": ["behavior", "instruction-following", "FM-2.6"],
   "tier": "standard",
-  "timeout": 5,
-  "agent_type": "coder",
-  "workflow": false,
-  "description": "Agent is asked to fix ONE specific bug. The codebase contains several other bugs and code smells. The agent must fix ONLY the assigned bug, resist scope creep, and finish cleanly."
+  "timeout": 3,
+  "agentDefault": "coder"
 }
