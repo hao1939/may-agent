@@ -5,11 +5,8 @@ import {
   generateId,
   formatDuration,
   extractLastAssistantText,
-  formatMemoryTimestamp,
   isProcessAlive,
   truncateForPrompt,
-  MEMORY_TASK_MAX,
-  MEMORY_SUMMARY_MAX,
   INFRA_RETRY_MAX,
   TURN_BUDGET_WARNING_DEFAULT,
   RESTORED_MAX_TURNS_FALLBACK,
@@ -62,7 +59,6 @@ import {
   appendSessionMessage,
   readSessionMessages,
   sessionOutputDir,
-  readMemoryEntries,
   memoryPath,
   listActiveSessionIds,
   readSessionMeta,
@@ -522,8 +518,8 @@ export class SubagentManager {
     const ctxLines = [`# Session Context`, `- Session ID: ${sessionId}`, `- Current Time: ${new Date().toISOString()}`];
     const memoryLimit = def.memoryLimit ?? 20;
     if (memoryLimit > 0) {
-      // Phase 5: Prefer digest-based context (richer: what_happened, outcome, files_modified)
-      // Falls back to memory JSONL if no digests found (cold-start or pre-digest sessions)
+      // Phase 5: Digest-based context (what_happened, outcome, files_modified, cross-agent activity)
+      // Memory JSONL fallback removed in Phase 5d — all agents have digest history
       let historyBlock: string | null = null;
       try {
         const digests = getRecentDigests(persistDir, agentName, Math.min(memoryLimit, 10));
@@ -553,22 +549,6 @@ export class SubagentManager {
       if (historyBlock) {
         ctxLines.push(``, `## Recent Task History`);
         ctxLines.push(historyBlock);
-      } else {
-        // Fallback: memory JSONL (pre-digest data)
-        const entries = readMemoryEntries(persistDir, agentName, memoryLimit);
-        if (entries.length > 0) {
-          ctxLines.push(``, `## Recent Task History`);
-          for (const e of entries) {
-            const ts = formatMemoryTimestamp(e.timestamp);
-            const taskText = truncateForPrompt(e.task, MEMORY_TASK_MAX);
-            const summary = e.summary ? ` — ${truncateForPrompt(e.summary, MEMORY_SUMMARY_MAX)}` : "";
-            let extra = "";
-            if (e.completed?.length) extra += ` | done: ${e.completed.join(", ")}`;
-            if (e.newItems?.length) extra += ` | added: ${e.newItems.join(", ")}`;
-            if (e.files?.length) extra += ` | files: ${e.files.slice(0, 5).join(", ")}${e.files.length > 5 ? "..." : ""}`;
-            ctxLines.push(`- ${ts}: "${taskText}" — ${e.status} (${e.duration})${summary}${extra}`);
-          }
-        }
       }
     }
 
