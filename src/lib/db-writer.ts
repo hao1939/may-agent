@@ -28,10 +28,13 @@ export class DbWriter {
           upsertSession(this.persistDir, {
             sessionId: event.sessionId,
             agent: event.agent,
-            task: (event as any).task ?? "",
+            task: event.task ?? "",
             status: "running",
-            kind: (event as any).kind,
+            kind: event.kind,
+            source: event.source,
             parentSessionId: event.parentSessionId,
+            workflowRunId: event.workflowRunId,
+            requestId: event.requestId,
             startedAt: Date.now(),
           });
           break;

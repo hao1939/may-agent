@@ -923,6 +923,8 @@ export class SubagentManager {
       parentSessionId: opts?.parentSessionId ?? existingMeta?.parentSessionId,
       workflowRunId: opts?.workflowRunId ?? existingMeta?.workflowRunId,
       stepLabel: opts?.stepLabel ?? existingMeta?.stepLabel,
+      source: opts?.source ?? existingMeta?.source,
+      requestId: opts?.requestId ?? existingMeta?.requestId,
       kind: session.kind,
       autoClose: session.autoClose,
       orderId: session.orderId,
@@ -944,6 +946,10 @@ export class SubagentManager {
       agent: name,
       task: meta?.task ?? task,
       parentSessionId: opts?.parentSessionId,
+      workflowRunId: opts?.workflowRunId,
+      source: opts?.source,
+      kind: session.kind,
+      requestId: opts?.requestId,
     });
     // Legacy callback (deprecated — use bus instead)
     this.onSessionStart?.(name, sessionId);
@@ -1298,6 +1304,10 @@ export class SubagentManager {
       agent: persisted.agent,
       task: persisted.task,
       parentSessionId: persisted.parentSessionId,
+      workflowRunId: persisted.workflowRunId,
+      source: persisted.source,
+      kind: persisted.kind,
+      requestId: persisted.requestId,
     });
     // Legacy callback (deprecated — use bus instead)
     this.onSessionStart?.(persisted.agent, sessionId);

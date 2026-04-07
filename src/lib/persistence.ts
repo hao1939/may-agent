@@ -47,6 +47,10 @@ export interface PersistedSession {
   parentSessionId?: string;
   workflowRunId?: string;
   stepLabel?: string;
+  /** Source tag indicating how this session was created (e.g. "callAgent", "workflow", "fork"). */
+  source?: string;
+  /** Request ID linking this session to the unified request tracker. */
+  requestId?: string;
   detached?: boolean;
   pid?: number;
   instance?: string;
