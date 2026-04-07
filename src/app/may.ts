@@ -78,12 +78,10 @@ const PROCESS_START_TIME = Date.now();
 function writeIdentity(data: Partial<InstanceIdentity>): void {
   const dir = resolve(INSTANCES_DIR, INSTANCE_LABEL);
   mkdirSync(dir, { recursive: true });
-  let existing: Partial<InstanceIdentity> = {};
-  try {
-    existing = JSON.parse(readFileSync(IDENTITY_PATH, "utf-8"));
-  } catch {}
-  const merged = { ...existing, ...data };
-  writeFileSync(IDENTITY_PATH, JSON.stringify(merged, null, 2));
+  // Overwrite completely — don't merge with previous process's state.
+  // Merging causes stale status (e.g., previous process wrote "error",
+  // new process startup writes "running" but other fields leak through).
+  writeFileSync(IDENTITY_PATH, JSON.stringify(data, null, 2));
 }
 
 function formatDurationMs(ms: number): string {
