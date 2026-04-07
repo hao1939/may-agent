@@ -243,3 +243,110 @@ describe("write tool shrink guard", () => {
     expect(readFileSync(filePath, "utf-8")).toBe(newContent);
   });
 });
+
+describe("write tool diff preview", () => {
+  const testDir = join(tmpdir(), `write-diff-test-${Date.now()}`);
+
+  beforeAll(() => {
+    mkdirSync(testDir, { recursive: true });
+  });
+
+  afterAll(() => {
+    rmSync(testDir, { recursive: true, force: true });
+  });
+
+  it("shows unified diff when overwriting an existing file", async () => {
+    const filePath = join(testDir, "overwrite-diff.ts");
+    writeFileSync(filePath, "const x = 1;\nconst y = 2;\n");
+
+    const tool = createWriteTool(testDir);
+    const result = await tool.execute("test-id", {
+      path: "overwrite-diff.ts",
+      content: "const x = 1;\nconst y = 99;\n",
+    });
+
+    const text = result.content[0].text;
+    expect(text).toContain("overwrite");
+    expect(text).toContain("```diff");
+    // Should show removed and added lines
+    expect(text).toMatch(/-.*const y = 2/);
+    expect(text).toMatch(/\+.*const y = 99/);
+    expect(text).toContain("Verify the diff above");
+  });
+
+  it("shows content preview for new files (not diff)", async () => {
+    const tool = createWriteTool(testDir);
+    const result = await tool.execute("test-id", {
+      path: "brand-new.ts",
+      content: "const hello = 'world';\n",
+    });
+
+    const text = result.content[0].text;
+    // Should NOT say "overwrite"
+    expect(text).not.toContain("overwrite");
+    // Should show content preview, not diff
+    expect(text).not.toContain("```diff");
+    expect(text).toContain("```");
+    expect(text).toContain("const hello = 'world'");
+    expect(text).toContain("Verify the content above matches your intent");
+  });
+
+  it("truncates large diffs at 60 lines", async () => {
+    const filePath = join(testDir, "large-diff.ts");
+    // Create a file with many lines
+    const oldLines = Array.from({ length: 100 }, (_, i) => `const line${i} = ${i};`);
+    writeFileSync(filePath, oldLines.join("\n") + "\n");
+
+    const tool = createWriteTool(testDir);
+    // Change every line to trigger a large diff
+    const newLines = Array.from({ length: 100 }, (_, i) => `const line${i} = ${i * 10};`);
+    const result = await tool.execute("test-id", {
+      path: "large-diff.ts",
+      content: newLines.join("\n") + "\n",
+    });
+
+    const text = result.content[0].text;
+    expect(text).toContain("overwrite");
+    expect(text).toContain("```diff");
+    expect(text).toContain("diff truncated");
+    expect(text).toContain("Diff truncated. Verify the changes above");
+  });
+
+  it("shows diff with correct + and - markers for overwrites", async () => {
+    const filePath = join(testDir, "markers.ts");
+    writeFileSync(filePath, "line1\nline2\nline3\n");
+
+    const tool = createWriteTool(testDir);
+    const result = await tool.execute("test-id", {
+      path: "markers.ts",
+      content: "line1\nmodified\nline3\n",
+    });
+
+    const text = result.content[0].text;
+    // Should have - for removed line and + for added line
+    expect(text).toMatch(/-.*line2/);
+    expect(text).toMatch(/\+.*modified/);
+    // Unchanged lines should be present as context
+    expect(text).toContain("line1");
+    expect(text).toContain("line3");
+  });
+
+  it("overwrite of identical content shows empty diff", async () => {
+    const filePath = join(testDir, "identical.ts");
+    const content = "const same = true;\n";
+    writeFileSync(filePath, content);
+
+    const tool = createWriteTool(testDir);
+    const result = await tool.execute("test-id", {
+      path: "identical.ts",
+      content: content,
+    });
+
+    const text = result.content[0].text;
+    // Still an overwrite (file existed)
+    expect(text).toContain("overwrite");
+    expect(text).toContain("```diff");
+    // But diff should be essentially empty (no + or - lines)
+    expect(text).not.toMatch(/^[-+]\s*\d+/m);
+  });
+});
