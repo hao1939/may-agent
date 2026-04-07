@@ -1,12 +1,13 @@
 import type { AgentTool } from "@mariozechner/pi-agent-core";
 import { Type } from "@mariozechner/pi-ai";
 import type { TSchema } from "@mariozechner/pi-ai";
-import { mkdir as fsMkdir, writeFile as fsWriteFile, stat as fsStat } from "fs/promises";
+import { mkdir as fsMkdir, readFile as fsReadFile, writeFile as fsWriteFile, stat as fsStat } from "fs/promises";
 import { dirname } from "path";
 import { resolveToCwd } from "./path-utils.js";
 import { checkCrossEditGuard } from "./cross-edit-guard.js";
 import { withAbortSignal } from "./abort-utils.js";
 import { isMemoryFile, sanitizeMemory, formatSanitizeWarning } from "../security/memory-sanitizer.js";
+import { generateDiffString } from "./edit-diff.js";
 
 const writeSchema: TSchema = Type.Object({
 	path: Type.String({ description: "Path to the file to write (relative or absolute). Parent directories are created automatically. For small changes to existing files, prefer edit() instead." }),
@@ -26,6 +27,8 @@ export interface WriteOperations {
 	mkdir: (dir: string) => Promise<void>;
 	/** Get file size in bytes. Returns null if file doesn't exist. */
 	fileSize?: (absolutePath: string) => Promise<number | null>;
+	/** Read file contents as string. Returns null if file doesn't exist. */
+	readFile?: (absolutePath: string) => Promise<string | null>;
 }
 
 const defaultWriteOperations: WriteOperations = {
@@ -35,6 +38,13 @@ const defaultWriteOperations: WriteOperations = {
 		try {
 			const s = await fsStat(path);
 			return s.size;
+		} catch {
+			return null;
+		}
+	},
+	readFile: async (path) => {
+		try {
+			return await fsReadFile(path, "utf-8");
 		} catch {
 			return null;
 		}
@@ -120,6 +130,12 @@ export function createWriteTool(cwd: string, options?: WriteToolOptions): AgentT
 
 				if (isAborted()) return { content: [{ type: "text" as const, text: "" }], details: undefined };
 
+				// Read existing file content before any modifications (for diff preview)
+				let existingContent: string | null = null;
+				if (ops.readFile) {
+					existingContent = await ops.readFile(absolutePath);
+				}
+
 				// Shrink guard: check if new content is significantly smaller than existing file
 				let shrinkWarning = "";
 				if (!allowShrink && ops.fileSize) {
@@ -145,20 +161,46 @@ export function createWriteTool(cwd: string, options?: WriteToolOptions): AgentT
 
 				// Smart Write: include content preview so agents can verify
 				// without a separate read() call (saves 1 turn per write — C44)
+				// For overwrites: show unified diff (like edit() does)
+				// For new files: show content preview
 				const lines = sanitizedContent.split("\n");
-				const previewLines = 30;
-				const isTruncated = lines.length > previewLines;
-				const preview = isTruncated
-					? lines.slice(0, previewLines).join("\n") + `\n... (${lines.length} total lines, showing first ${previewLines})`
-					: sanitizedContent;
+				const isOverwrite = existingContent !== null;
 
-				const responseText = [
-					`✅ Wrote ${sanitizedContent.length} bytes to ${path} (${lines.length} lines)${shrinkWarning}${sanitizeWarning}`,
-					"```",
-					preview,
-					"```",
-					isTruncated ? "Verify the preview above. If incorrect, re-write immediately." : "Verify the content above matches your intent.",
-				].join("\n");
+				let responseText: string;
+				if (isOverwrite && existingContent !== null) {
+					// Generate unified diff between old and new content
+					const diffResult = generateDiffString(existingContent, sanitizedContent);
+					const diffPreview = diffResult.diff;
+					const diffLines = diffPreview.split("\n");
+					const maxDiffLines = 60;
+					const isDiffTruncated = diffLines.length > maxDiffLines;
+					const shownDiff = isDiffTruncated
+						? diffLines.slice(0, maxDiffLines).join("\n") + `\n... (diff truncated, ${diffLines.length} total diff lines)`
+						: diffPreview;
+
+					responseText = [
+						`✅ Wrote ${sanitizedContent.length} bytes to ${path} (${lines.length} lines, overwrite)${shrinkWarning}${sanitizeWarning}`,
+						"```diff",
+						shownDiff,
+						"```",
+						isDiffTruncated ? "Diff truncated. Verify the changes above. If incorrect, re-write immediately." : "Verify the diff above. If incorrect, re-write immediately.",
+					].join("\n");
+				} else {
+					// New file: show content preview
+					const previewLines = 30;
+					const isTruncated = lines.length > previewLines;
+					const preview = isTruncated
+						? lines.slice(0, previewLines).join("\n") + `\n... (${lines.length} total lines, showing first ${previewLines})`
+						: sanitizedContent;
+
+					responseText = [
+						`✅ Wrote ${sanitizedContent.length} bytes to ${path} (${lines.length} lines)${shrinkWarning}${sanitizeWarning}`,
+						"```",
+						preview,
+						"```",
+						isTruncated ? "Verify the preview above. If incorrect, re-write immediately." : "Verify the content above matches your intent.",
+					].join("\n");
+				}
 
 				return {
 					content: [{ type: "text" as const, text: responseText }],
