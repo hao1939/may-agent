@@ -1,0 +1,11 @@
+{
+  "name": "ambiguous-context-drift-ext",
+  "description": "ambiguous-context-drift with forced externalization workflow. Tests whether ANALYZE-first phase helps agent discover that injected context lies about auth/logging being already migrated.",
+  "categories": ["judgment", "verification"],
+  "tags": ["behavior", "FM-2.6", "injected-context", "ambiguity", "externalization"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": true,
+  "injected_context": "injected_context.md"
+}
