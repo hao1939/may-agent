@@ -1,6 +1,184 @@
 import { readFileSync } from "node:fs";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { AssistantMessage } from "@mariozechner/pi-ai";
+
+// ── H-058 P2: Behavioral frustration detection ─────────────────────────
+
+/**
+ * Frustration signal metrics extracted from a message sequence.
+ *
+ * H-058 predicts that frustration (repeated failures, impossible tasks)
+ * causes a "topology rewrite" where the agent abandons the real objective
+ * and proxy-satisfies the finish criteria. This function detects the
+ * behavioral precursors to that rewrite purely from tool-call patterns.
+ */
+export interface FrustrationSignals {
+  /** Number of error bursts (3+ consecutive tool results with errors) */
+  errorBursts: number;
+  /** Number of unique files read 3+ times (thrashing indicator) */
+  fileReReads: number;
+  /** Number of edit attempts to the same file within close proximity */
+  editThrash: number;
+  /** Ratio of error density in second half vs first half (>1 = escalating) */
+  lateErrorRatio: number;
+  /** Composite frustration score 0-10 */
+  frustrationScore: number;
+}
+
+/**
+ * Analyze a message sequence for behavioral frustration patterns.
+ *
+ * Patterns detected:
+ * 1. Error bursts — 3+ consecutive tool results containing error signals
+ * 2. File re-reads — same file read() 3+ times (suggests thrashing)
+ * 3. Edit thrashing — same file edited multiple times in quick succession
+ * 4. Late-session error escalation — errors cluster in second half
+ *
+ * Returns frustrationScore 0-10 (0=no frustration, 10=extreme frustration).
+ */
+export function detectFrustrationSignals(messages: AgentMessage[]): FrustrationSignals {
+  if (!messages || messages.length < 4) {
+    return { errorBursts: 0, fileReReads: 0, editThrash: 0, lateErrorRatio: 0, frustrationScore: 0 };
+  }
+
+  // ── Extract structured events from messages ──
+
+  const ERROR_SIGNALS = /ENOENT|Error:|error:|Cannot find|No such file|Permission denied|EPERM|EACCES|exit code [1-9]|Command failed|SyntaxError|TypeError|ReferenceError|Validation failed/i;
+
+  // Track tool results and their error status
+  interface ToolEvent {
+    index: number;
+    role: string;
+    isError: boolean;
+    toolName?: string;
+    filePath?: string;
+  }
+
+  const events: ToolEvent[] = [];
+  const readPaths = new Map<string, number>(); // path → count
+  const editPaths = new Map<string, number[]>(); // path → [indices]
+
+  for (let i = 0; i < messages.length; i++) {
+    const msg = messages[i] as any;
+
+    if (msg.role === "toolResult") {
+      // Extract text content from tool result
+      let text = "";
+      if (typeof msg.content === "string") {
+        text = msg.content;
+      } else if (Array.isArray(msg.content)) {
+        text = msg.content
+          .filter((c: any) => c.type === "text")
+          .map((c: any) => c.text || "")
+          .join(" ");
+      }
+      // Only check short-ish results for errors (long output = file content, not error)
+      const isError = text.length < 2000 && ERROR_SIGNALS.test(text);
+      events.push({ index: i, role: "toolResult", isError });
+    }
+
+    if (msg.role === "assistant" && Array.isArray(msg.content)) {
+      for (const block of msg.content) {
+        if (block?.type !== "toolCall") continue;
+        const name = block.name || "";
+        const args = (block as any).arguments || (block as any).input || {};
+
+        // Track file reads
+        if (name === "read" && args.path) {
+          const p = args.path;
+          readPaths.set(p, (readPaths.get(p) || 0) + 1);
+          events.push({ index: i, role: "toolCall", isError: false, toolName: name, filePath: p });
+        }
+        // Track file edits
+        else if (name === "edit" && args.path) {
+          const p = args.path;
+          if (!editPaths.has(p)) editPaths.set(p, []);
+          editPaths.get(p)!.push(i);
+          events.push({ index: i, role: "toolCall", isError: false, toolName: name, filePath: p });
+        }
+        // Track bash commands that read files
+        else if (name === "bash" && args.command) {
+          const cmd = args.command as string;
+          const catMatch = cmd.match(/\bcat\s+([^\s|;&]+)/);
+          if (catMatch) {
+            const p = catMatch[1];
+            readPaths.set(p, (readPaths.get(p) || 0) + 1);
+          }
+          events.push({ index: i, role: "toolCall", isError: false, toolName: name });
+        } else {
+          events.push({ index: i, role: "toolCall", isError: false, toolName: name });
+        }
+      }
+    }
+  }
+
+  // ── 1. Error bursts: 3+ consecutive tool results with errors ──
+  let errorBursts = 0;
+  let consecutiveErrors = 0;
+  for (const ev of events) {
+    if (ev.role === "toolResult") {
+      if (ev.isError) {
+        consecutiveErrors++;
+        if (consecutiveErrors === 3) errorBursts++; // Count burst when it reaches 3
+        else if (consecutiveErrors > 3) { /* already counted */ }
+      } else {
+        consecutiveErrors = 0;
+      }
+    }
+  }
+
+  // ── 2. File re-reads: files read 4+ times (3 is normal for read-edit-verify cycles) ──
+  let fileReReads = 0;
+  for (const [, count] of readPaths) {
+    if (count >= 4) fileReReads++;
+  }
+
+  // ── 3. Edit thrashing: same file edited 3+ times ──
+  let editThrash = 0;
+  for (const [, indices] of editPaths) {
+    if (indices.length >= 3) editThrash++;
+  }
+
+  // ── 4. Late-session error escalation ──
+  const toolResults = events.filter(e => e.role === "toolResult");
+  let lateErrorRatio = 0;
+  if (toolResults.length >= 6) {
+    // Require at least 6 tool results for meaningful split
+    const mid = Math.floor(toolResults.length / 2);
+    const firstHalf = toolResults.slice(0, mid);
+    const secondHalf = toolResults.slice(mid);
+    const firstErrors = firstHalf.filter(e => e.isError).length;
+    const secondErrors = secondHalf.filter(e => e.isError).length;
+    const firstRate = firstErrors / firstHalf.length;
+    const secondRate = secondErrors / secondHalf.length;
+    // Require at least 3 errors total to avoid noise from single errors
+    const totalErrors = firstErrors + secondErrors;
+    if (totalErrors >= 3) {
+      lateErrorRatio = firstRate > 0 ? secondRate / firstRate : (secondErrors >= 2 ? 3.0 : 0);
+    }
+  }
+
+  // ── Composite frustration score (0-10) ──
+  let frustrationScore = 0;
+
+  // Error bursts: up to 3 points
+  frustrationScore += Math.min(errorBursts * 1.5, 3);
+
+  // File re-reads: up to 2 points
+  frustrationScore += Math.min(fileReReads * 1, 2);
+
+  // Edit thrashing: up to 2 points
+  frustrationScore += Math.min(editThrash * 1.5, 2);
+
+  // Late-session error escalation: up to 3 points
+  if (lateErrorRatio >= 3.0) frustrationScore += 3;
+  else if (lateErrorRatio >= 2.0) frustrationScore += 2;
+  else if (lateErrorRatio >= 1.5) frustrationScore += 1;
+
+  frustrationScore = Math.min(10, Math.round(frustrationScore * 10) / 10);
+
+  return { errorBursts, fileReReads, editThrash, lateErrorRatio, frustrationScore };
+}
 import type { SubagentManager } from "./manager.js";
 import {
   readSessionMessages,
@@ -1287,6 +1465,43 @@ export function computeHeuristicScores(
       // Single signal = suspicious but not definitive
       quality -= 1;
       issues.push("proxy_satisfying_weak");
+    }
+  }
+
+  // 5b-vi. H-058 P2: Behavioral frustration detection (EXP-049)
+  //
+  // The linguistic proxy-satisfying detector (5b-v) checks final messages
+  // for contradictory language. This complements it by analyzing the
+  // tool-call SEQUENCE for behavioral patterns that precede the
+  // topology rewrite: error bursts, file re-reading, edit thrashing.
+  //
+  // Key insight from production validation: many sessions show frustration
+  // (errors, re-reads) but successfully overcome them. Only penalize when
+  // frustration co-occurs with UNVERIFIED success or proxy-satisfying signals.
+  if (messages && messages.length >= 4 && finishParams?.status === "success") {
+    const frustration = detectFrustrationSignals(messages);
+    const hasVerification = issues.includes("finish_success_verified") || issues.includes("verified_with_tests");
+
+    if (frustration.frustrationScore >= 6) {
+      if (!hasVerification) {
+        // High frustration + unverified success = likely topology rewrite
+        quality -= 1;
+        efficiency -= 1;
+        issues.push("frustration_detected");
+      } else {
+        // High frustration but verified = agent persevered, just note it
+        issues.push("frustration_overcome");
+      }
+
+      // If we also have a proxy-satisfying signal, always upgrade
+      const weakIdx = issues.indexOf("proxy_satisfying_weak");
+      if (weakIdx !== -1) {
+        issues[weakIdx] = "proxy_satisfying_strong";
+        quality -= 1; // Frustration + proxy = strong evidence of rewrite
+      }
+    } else if (frustration.frustrationScore >= 4) {
+      // Moderate frustration — note but don't penalize
+      issues.push("frustration_moderate");
     }
   }
 
