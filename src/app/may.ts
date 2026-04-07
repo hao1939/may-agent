@@ -647,7 +647,8 @@ let chatSession: ChatSession | undefined;
 
 function gracefulShutdown() {
   if (shuttingDown) {
-    process.exit(1);
+    process.kill(process.pid, "SIGKILL");
+    return;
   }
   shuttingDown = true;
   bus.emit({ type: "info", message: `Shutting down...` });
@@ -671,14 +672,19 @@ function gracefulShutdown() {
     }
   }
 
+  // Give 2s for sessions to cancel, then exit.
+  // SIGKILL at 5s guarantees exit if process.exit hangs (Bun + open HTTP streams).
   setTimeout(() => process.exit(0), 2000);
+  setTimeout(() => process.kill(process.pid, "SIGKILL"), 5000).unref();
 }
 
 
 function gracefulRestart() {
-  // Restart = shutdown + supervisord brings us back.
-  // No special exit codes, no SIGKILL hacks, no identity corruption.
-  gracefulShutdown();
+  // Let supervisord handle it: stop this process (SIGTERM → SIGKILL), start fresh.
+  // Fire-and-forget — supervisord kills us, we don't need to wait.
+  const { exec } = require("node:child_process") as typeof import("node:child_process");
+  exec("supervisorctl restart may-agent", { timeout: 10000 });
+  // Don't call gracefulShutdown — supervisord sends SIGTERM which triggers it.
 }
 
 async function handleReload(): Promise<void> {
