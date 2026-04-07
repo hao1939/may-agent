@@ -676,27 +676,9 @@ function gracefulShutdown() {
 
 
 function gracefulRestart() {
-  if (shuttingDown) {
-    process.kill(process.pid, "SIGKILL");
-    return;
-  }
-  shuttingDown = true;
-  bus.emit({ type: "info", message: "Restarting..." });
-
-  for (const cron of getAgentCrons().values()) {
-    cron.stop();
-  }
-  telegramBot.close();
-  if (activeRL) {
-    activeRL.close();
-    activeRL = null;
-  }
-
-  // Don't cancel sessions — leave them as status:"running" for resumeStaleSessions().
-  // Exit 0 — supervisord restarts the process automatically.
-  // Force-kill after 3s. process.exit() hangs in Bun when HTTP streams are open.
-  setTimeout(() => process.kill(process.pid, "SIGKILL"), 3000).unref();
-  process.exit(0);
+  // Restart = shutdown + supervisord brings us back.
+  // No special exit codes, no SIGKILL hacks, no identity corruption.
+  gracefulShutdown();
 }
 
 async function handleReload(): Promise<void> {
