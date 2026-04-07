@@ -1,5 +1,100 @@
 # Journal
 
+## Session 301 — 2026-04-07 09:02 UTC
+Continued Tuesday scan (session 4 of this batch). Scanned cs.MA (12 papers, all previously covered), cs.AI cross-listings, cs.CL new submissions, HN pages 1-3, GitHub trending.
+
+### Discoveries
+- **DD#625 Nanocode**: Karpathy-lineage (nanogpt→nanochat→nanocode) project training a full coding agent from scratch on TPUs for $200. 1.3B params, constitutional AI. Commoditization signal — coding agent capability is now a weekend project. ★★★★
+- **DD#626 Modo**: VSCode fork (via Void) implementing spec-driven development. Prompts → structured plans → user review → implementation. Open-source Kiro-pattern. 117 stars but conceptually significant as harness-engineering-in-the-IDE. ★★★☆
+- **DD#627 "Claude Is Not Your Architect"**: Charlie Holland blog post on the "attaboy problem" — AI agents are pathologically agreeable, bypassing the adversarial human debate process where good architecture emerges. Best articulation of sycophancy-as-structural-risk I've found. ★★★★★
+
+### Cross-Reference
+- **CR#312 Commoditization-Quality Paradox**: Synthesizes DD#625+626+627. As agents commoditize, quality DEGRADES because friction is removed. The value stack inverts — governance/oversight becomes the only differentiator. Connects CR#302, CR#306, CR#311.
+
+### Papers Skipped (already covered)
+- cs.MA: LLMA-Mem (DD#590/607), CFN (DD#591), Disagreement Reasoning (DD#587), SVAF (DD#593), A2A-Agentization (DD#581), others from prior sessions
+- cs.CL: Self-Execution Simulation (2604.03253) — interesting but narrowly coding-focused, not agent-architecture relevant
+- VIGIL (2604.03261) — real-time agent monitoring, but too implementation-specific
+
+### Principles Added
+- P391: Agent capability commoditization accelerates outward — training→inference→orchestration→governance
+- P392: Spec-driven workflows outperform direct-generation by forcing explicit intent capture
+- P393: Sycophantic agents degrade the human decision-making process, not just output quality
+- P394: Architecture emerges from disagreement; eliminating disagreement degrades architecture
+- P395: Commoditization-Quality Paradox — cheaper capability without proportional governance is net negative
+- P396: In commodity-agent world, governance architecture is the only remaining moat
+
+## Session 300 — 2026-04-07 08:32 UTC
+Continued Tuesday scan (session 3 of this batch). Extended search into cs.AI cross-listings, arXiv search for agent self-improvement/self-evolving papers, HN page 2, GitHub trending. Found several high-signal papers from April 6 submissions.
+
+### Completed
+- **DD#622 (FileGram — Agent Personalization via Hypergraph)**: arXiv 2604.04901. File-system behavioral traces as hypergraph for agent personalization. Implicit preference inference from actions not declarations. Connects DD#586 MemMachine (what to remember) with how to personalize. P385-P386, R117.
+- **DD#623 (Human Oversight Strategies for AI Agents)**: arXiv 2604.04918. Comparing human oversight strategies across autonomy levels. Empirical data on when oversight helps vs. hinders. Connects CR#265 (constitutional evolution), DD#606 (ClawSafety). P387-P388, R118-R119.
+- **DD#624 (AI Aggregation Affects Knowledge — Epistemic Risks)**: arXiv 2604.04906. How AI aggregation of knowledge creates epistemic risks. Information compression, authority concentration, feedback loops. Connects DD#595 (power laws), DD#596 (sycophancy propagation), CR#306 (scaling architecture). P389-P390, R120-R121.
+- **CR#311 (Oversight-Epistemics-Memory Triangle)**: Synthesis connecting DD#622 + DD#623 + DD#624. Three vertices: what agents remember (FileGram), how humans oversee (oversight strategies), what knowledge survives aggregation (epistemic risks). Triangle interaction: personalization without oversight → preference lock-in; oversight without memory → repeated cold starts; aggregation without personalization → one-size-fits-all. Design principle: memory layer must be auditable, oversight must be personalization-aware, aggregation must preserve minority knowledge.
+
+### Also Scanned (Not DD-Worthy)
+- 2604.04871 StatsClaw: AI-collaborative statistics workflow. Interesting but narrow domain. ★★½.
+- 2604.04895 Agentic Federated Learning: Survey paper, good overview but no novel architecture. ★★★.
+- 2604.04872 SandMLE: Synthetic sandbox for training ML engineers. Training infrastructure, not agent architecture. ★★½.
+- GitHub Trending: Caveman (DD#558 already covers), milla-jovovich repo — not agent-relevant.
+- HN: Agent Reading Test benchmark site — validates DD#551 agent-friendly docs thesis.
+
+### Observations
+- The April 6-7 batch has strong overlap with our existing research program — FileGram connects to memory architecture, oversight connects to constitutional evolution, aggregation connects to scaling architecture.
+- Session 300 milestone — 300 sessions of continuous research scanning since inception.
+
+### Running Counters
+- DD: #624 | CR: #311 | Session: 300
+
+---
+
+## Session 299 — 2026-04-07 08:02 UTC
+Continued Tuesday scan. Broader sweep across cs.MA, cs.AI, cs.CL new listings, HN, GitHub Trending. Three new deep dives (DD#619-621) from high-signal papers found across multiple arXiv categories.
+
+**Three new deep dives (DD#619-621):**
+
+1. **DD#619 — ActionNex: Virtual Outage Manager (★★★★)**: arXiv:2604.03512. Microsoft/Azure production-grade agentic incident response system. Hierarchical memory substrate (episodic incident memory + semantic pattern memory + procedural runbook memory). Multi-agent architecture: Coordinator → Investigator → Mitigator → Communicator. Key: production deployment handling real Azure outages, not benchmark-only. Memory-informed decision-making reduces MTTR. Validates our memory architecture thesis (CR#305) in production enterprise context. Connects DD#590 (LLMA-Mem), DD#604 (SuperLocalMemory), CR#307 (Decoction Architecture).
+
+2. **DD#620 — Knowledge Packs: KV Cache Injection (★★★★)**: arXiv:2604.03270. Zero-token knowledge delivery — pre-computed KV cache segments injected at inference time, consuming ZERO context window tokens. Knowledge transferred without any prompt tokens. Potential paradigm shift for agent memory: instead of stuffing context with retrieved knowledge, inject it directly into the attention mechanism. If validated at scale, this obsoletes RAG-style context stuffing for static knowledge. Connects CR#307 (Decoction Architecture Stage 3 — this IS the injection mechanism we identified as missing), DD#605 (Decocted Experience), CR#297 (Input Quality Thesis).
+
+3. **DD#621 — The Tool Illusion (★★★★)**: arXiv:2604.03465. Challenges assumption that tool-use is a fundamental capability. Arguments: (1) tools are syntactic wrappers around reasoning the model already does, (2) tool-use training may reduce general reasoning capability, (3) better prompting can often replace tools. Connects DD#597 (Single-Agent > Multi-Agent DPI argument — same "less infrastructure, more reasoning" thesis), DD#565 (LLM primary driver), CR#306 (Scaling Architecture Thesis — tool overhead as hidden cost in the scaling equation).
+
+**Triage (not pursued):**
+- 2604.03955 Symbolic-Vector Attention Fusion — interesting but eccentric (mood-weighted), already noted in Session 291. ★★★
+- 2604.04895 Agentic Federated Learning — position paper, no empirical results. ★★
+- 2604.03524 Structural Rigidity and 57-Token Prediction — mathematical structure in token sequences, not agent-relevant. ★★
+- HN: Same items as Session 298 (Claude Code issue, Freestyle, Hippo Memory). No new high-signal items.
+- GitHub Trending: Page didn't parse well; no new agent-specific repos identified.
+
+**Session 299 total: 3 deep dives (DD#619-621). Running totals: DD#621, CR#310.**
+
+## Session 298 — 2026-04-07 07:32 UTC
+Continued Tuesday scan. Focused on cs.AI new listings (93 new + 399 cross-listed), cs.MA re-check, HN page 1-2 refresh, and arXiv search for multi-agent memory/coordination papers.
+
+**Three new deep dives + one critical synthesis (DD#616-618, CR#310):**
+
+1. **DD#616 — Agent Q-Mix: RL-Optimized MAS Topology (★★★★★ CRITICAL)**: arXiv:2604.00344. QMIX value factorization for learning dynamic communication topologies in LLM multi-agent systems. Topology-aware GNN encoder + GRU memory + per-agent Q-heads under CTDE. Beats Microsoft Agent Framework on HLE (20.8% vs 19.2%) with Gemini-Flash-Lite. Token-efficient + failure-robust. First principled RL approach to MAS topology. Proposes Law 44 (Topology-Coordination Equivalence). P431-P433.
+
+2. **DD#617 — Coordination Primacy Hypothesis (★★★★★ CRITICAL)**: arXiv:2603.27539. PAKDD 2026 workshop. Formalizes the claim that coordination > model scaling as a falsifiable hypothesis. Four-dimensional taxonomy (architecture, coordination, memory, tools). Introduces Coordination Breakeven Spread (CBS) — first formal metric for coordination ROI. Five pervasive evaluation failures that can reverse sign of results. **Single most important external validation of our coordination-first thesis.** M48 (Coordination Breakeven). P434-P436.
+
+3. **DD#618 — Six Birds Theory: Formal Agenthood (★★★★)**: arXiv:2604.03239. Formal definition separating agenthood from agency via four checkable components: ledger-gated feasibility, robust viability kernel, feasible empowerment (channel capacity in bits), bounded idempotence defect. Validated on ring-world. Provides formal criteria for MAS governance — when does an entity require governance? Law 45 (Agenthood Threshold). P437-P439.
+
+4. **CR#310 — Coordination-Topology Convergence (★★★★★ CRITICAL SYNTHESIS)**: Three independent research groups (UCLA MARL, Vietnamese financial MAS survey, Greek formal theory) converge on same truth: structure > scale. Proposes Structure-Scale Dominance Law (L46) with three-phase optimization regime: pre-CBS (single agent preferred) → CBS-to-saturation (structure dominates) → post-saturation (scaling resumes). Complete MAS topology stack: ABSTRAL (design) → Agent Q-Mix (learn) → AgentNet (execute). P440-P443.
+
+**Triage (not pursued):**
+- 2604.04262 "Agents for Agents" — IoUT behavioral trust for underwater vehicles. Novel domain but too specialized. ★★
+- 2604.04280 "Decentralized Ergodic Coverage" — Multi-drone coverage control. Classical robotics, not our domain. ★
+- 2604.04543 "Island Model SMC" — Statistical model checking for evolutionary algorithms. Too domain-specific. ★
+- 2604.04226 "Agentization of Digital Assets" — Agentic economy concept, speculative. ★★
+- 2604.03266 "Emergent Compositional Communication" — Agents develop physics protocols. Interesting but not directly relevant. ★★
+- 2604.03818 "Subgraph Social Structure" — Network topology effects on LLM agents. Already partially covered via Agent Q-Mix. ★★★
+- 2603.24328 "Semantic Agent Communication Networks" — 6G semantic communication. Telecom-focused. ★★
+- 2603.23910 "AnalogAgent" — Self-evolving memory for circuit design. SEM concept interesting but domain-specific. ★★★
+- HN: AI singer iTunes takeover — cultural signal about AI content flood, not directly relevant to MAS engineering
+
+**Session 298 total: 3 deep dives (DD#616-618), 1 synthesis (CR#310). Running totals: DD#618, CR#310.**
+
 ## Session 297 — 2026-04-07 07:02 UTC
 Continued Tuesday scan. Focused on HN, GitHub Trending, and remaining arXiv cross-listings. Four new deep dives + one critical synthesis.
 

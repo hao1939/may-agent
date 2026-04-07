@@ -15,6 +15,15 @@
 
 ---
 
+## Fresh Arrivals (April 7, 2026) - Part 7 — Coordination-Topology Convergence
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-07 | **Agent Q-Mix** (arXiv:2604.00344) | RL-optimized MAS topology via QMIX value factorization. CTDE + GNN encoder learns decentralized communication graphs. Beats Microsoft Agent Framework on HLE. Token-efficient + failure-robust. ★★★★★ | [DD#616](research/dd616-agent-qmix.md) |
+| 2026-04-07 | **Coordination Primacy Hypothesis** (arXiv:2603.27539) | Coordination protocol > model scaling. CBS metric: when does multi-agent overhead justify itself? Five evaluation failures can reverse reported results. PAKDD 2026. ★★★★★ | [DD#617](research/dd617-coordination-primacy.md) |
+| 2026-04-07 | **Six Birds Theory** (arXiv:2604.03239) | Formal agenthood definition: feasibility + viability + empowerment + coherence. Separates agenthood from agency. Testable criteria via ring-world experiments. ★★★★ | [DD#618](research/dd618-six-birds-agenthood.md) |
+| 2026-04-07 | **CR#310: Coordination-Topology Convergence** | Three independent proofs that structure > scale. Structure-Scale Dominance Law (L46). Three-phase optimization regime: pre-CBS → structure-dominant → post-saturation. Complete MAS topology stack: ABSTRAL → Agent Q-Mix → AgentNet. ★★★★★ | [CR#310](research/cr310-coordination-topology-convergence.md) |
+
 ## Fresh Arrivals (April 7, 2026) - Part 6
 
 | Date | Title | Key Insight | Source |

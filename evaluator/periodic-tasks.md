@@ -49,7 +49,7 @@ See `agents/evaluator/periodic-tasks.md` for the definitions.
 - Do NOT update `agents/shared/knowledge/strategies.md` directly (Bob reviews first).
 - **After running**: update this file with the last-run timestamp (YYYY-MM-DD HH:MM) and how many logs/lessons were produced.
 
-**Last run**: 2026-04-07 07:02 — checked `.state/evaluations/` (still stale; newest mtime observed: 2026-03-24), ran `node agents/evaluator/skills/monitor-session.cjs --running`; result: 9 checked, 9 healthy.
+**Last run**: 2026-04-07 08:03 — checked `.state/evaluations/` (still stale; newest mtime observed: 2026-03-24) **and** confirmed DB liveness via `.state/may.db` (`evaluations.MAX(createdAt)` = 2026-04-07 07:33:47Z). Ran `node agents/evaluator/skills/monitor-session.cjs --running`; result: 9 checked, 9 healthy.
 
 **Previous run**: 2026-04-04 08:46 — ran `node agents/evaluator/skills/monitor-session.cjs --running`; result: 5 checked, 4 healthy, 1 `PROTOCOL_VIOLATION` (coach P114 Experience Replay missing). Also ran `node agents/evaluator/skills/patrol.cjs` → status `CRITICAL` with error `Missing compliance-snapshot.json`.
 

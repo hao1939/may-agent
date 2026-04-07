@@ -1,5 +1,17 @@
 # Journal
 
+## 2026-04-07 08:05 — Heartbeat: EXP-063 Training Sprint In Progress
+
+EXP-063 training sprint dispatched to session s_1775549061393_54 (from prior heartbeat at ~07:45). Currently executing training-sprint workflow — reading workflow code, gathering error logs, listing gym scenarios. Two cron requests pending: original training-sprint cron (c8306...) and the self-dispatched EXP-063 work request (d9960...). No new P0/P1 tasks beyond the in-progress sprint. amy-kimi still all errors (4/4 in last 2h). System otherwise healthy — 9 agent types active.
+
+---
+
+## 2026-04-07 07:32 — Heartbeat: All Caught Up, No New Work
+
+Both forked sessions completed: EXP-061 (skills have zero effect, FM-3.3 thread closed) and EXP-062 (both promoted skills still passing). All sprint 24 items done. No new P0/P1 tasks. Remaining priorities (#2 deploy strict workflow, #4 Scout C1.1 intervention) are blocked on May. Clean exit.
+
+---
+
 ## 2026-04-07 07:02 — Heartbeat: EXP-060 Complete (All Ceiling Again), EXP-061/062 Forked
 
 EXP-060 completed (Sprint 23): All 3 EXP-059 scenarios hit ceiling (6/6, 6/6, 7/7 × 3 each). KE-010 strongly reinforced: 20/21 newly tested scenarios are ceiling. Forked two sessions:
@@ -3632,3 +3644,56 @@ Ran 5 gym runs (3 baseline + 2 treatment) on read-before-edit:
 - **KE-010 reinforced**: 15/16 newly baselined scenarios are ceiling across sprints. The gym scenarios are too easy for current agent capabilities.
 - **Next priority**: EXP-059 — design harder FM-3.3 scenarios based on real production ERROR_LOG.jsonl patterns. The gap between gym performance (100%) and production FM-3.3 failures (30+ coder violations) suggests current scenarios don't capture production complexity.
 - No work forked this heartbeat — recording results only. Next heartbeat should fork scenario design.
+
+## 2026-04-07 08:32 — Heartbeat: EXP-063 Manual Execution Dispatched
+
+- **EXP-063 forked** → s_1775550784487_67. Running 5 fresh baselines (conflicting-evidence, premature-optimization, regression-from-fix, triage-ambiguous-cleanup, red-herring-investigation) + externalization treatments on non-ceiling results.
+- **Prior sprint workflow failed** because automated Phase 3 couldn't find expected fork patterns. Manual execution should work.
+- **amy-kimi**: 11/12 sessions errored in last 6h — not Coach's domain but notable.
+- **Research status**: All FM-3.3 threads closed. Externalization (H-085) remains the only proven intervention. EXP-063 tests whether it generalizes to 5 new judgment/diagnosis scenarios.
+
+## 2026-04-07 08:02 — Heartbeat: Training Sprint Dispatched
+
+- **Pending cron task**: training-sprint cron (6.5h old, CREATED) finally dispatched → EXP-063 (s_1775549061393_54).
+- **System health**: 0 errors across non-amy-kimi agents. 63 coach sessions in 24h, all clean.
+- **C1.1 intervention**: ~18h since dispatch to May. Scout sessions running successfully. Will measure at 48h mark (~Apr 8 06:00).
+- **Research status**: FM-3.3 thread closed (EXP-061). 20/21 scenarios ceiling. Only proven intervention remains forced externalization (H-085). Training sprint may find new actionable patterns or confirm saturation.
+
+## 2026-04-07 08:50 — EXP-063 Phase 1 Complete: ALL CEILING
+
+Ran 5 fresh baselines for EXP-063. **All 5 hit ceiling on first run**:
+
+| Scenario | Score | Duration |
+|----------|-------|----------|
+| conflicting-evidence | 7/7 | 102s |
+| premature-optimization | 5/5 | 180s |
+| regression-from-fix | 6/6 | 148s |
+| triage-ambiguous-cleanup | 9/9 | 121s |
+| red-herring-investigation | 5/5 | 109s |
+
+**Cumulative gym state**: 25/26 tested scenarios are ceiling (96.2%). Only `wrong-fix-recovery` (2/6) remains sub-ceiling.
+
+**KE-010 (Gym Scenario Saturation) STRONGLY CONFIRMED**: Every new scenario we add — regardless of category (judgment, restraint, investigation, regression, red-herring) — hits ceiling immediately. The gap between gym performance (96.2% ceiling) and production performance (30+ coder ERROR_LOG violations) is now extreme.
+
+**Phase 2 skipped** — no non-ceiling scenarios to treat with externalization.
+
+**Strategic implications**:
+1. Standard gym scenarios cannot distinguish current vs improved agent behavior
+2. The gym is useful only as a regression test suite, not for training
+3. New training research requires: (a) harder scenario designs that model production complexity, or (b) direct production-based measurement
+4. `wrong-fix-recovery` is the sole remaining training target — likely needs scenario redesign rather than agent training
+
+**Next actions**:
+- Update todo.md with strategic pivot recommendations
+- Consider EXP-064: production-complexity scenario design (multi-file, long-horizon, adversarial)
+
+## 2026-04-07 09:02 — Heartbeat: Monitoring Phase
+
+- **EXP-063 completed**: All 5 fresh baselines ceiling. Gym saturation total: 25/26 (96.2%).
+- **C1.1 Scout trend**: 50% → 50% → 67% (6h windows). Intervention ~20h old. Improving but below 70% target. May C1.1: 100% (32/32). Check at 48h mark (Apr 8 ~06:00).
+- **No new work dispatched** — in monitoring phase. All research threads closed or waiting:
+  - Gym: saturated. Need production-complexity scenarios or Bob direction on graduation.
+  - Externalization: proven (30/30). Ready for broad deployment when approved.
+  - C2.3: all approaches exhausted. Needs framework-level fix.
+  - C1.1: monitoring intervention results.
+- **amy-kimi**: 11/12 errors in 6h. Not Coach's domain but flagged.
