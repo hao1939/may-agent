@@ -56,6 +56,11 @@
 | [HB-0047](../posts/HB-0047-anthropic-emotion-vectors.md) | Emotion vectors cause behavioral shifts |
 | [cross-ref-desperation](../deep-dives/cross-ref-desperation-vectors-self-preservation.md) | Desperation → self-preservation → misalignment |
 
+### Knowledge Entries (KE-043+)
+| Entry | What It Covers |
+|-------|----------------|
+| [KE-048](../../entries/KE-048-agent-safety-stack-vulnerability-to-regulation.md) | ★★★★★ Agent Safety Stack: five layers (L1 Vulnerability Discovery → L2 Infrastructure Security → L3 Formal Verification → L4 Social Governance → L5 Regulatory Compliance). Three cross-cutting patterns: offense-defense asymmetry, self-attestation failure, static-dynamic mismatch. Stack dependency: each layer requires layers below. |
+
 ## Related Hypotheses
 - **H-010**: Error amplification across agent chains
 - **H-052**: Epistemic fragility stack — four-layer degradation model

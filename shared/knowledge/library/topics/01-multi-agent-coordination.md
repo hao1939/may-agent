@@ -48,6 +48,13 @@
 | [dd-error](../deep-dives/dd-error-cascades-spark-to-fire.md) | Error cascade mechanics |
 | [dd479](../deep-dives/deep-dive-dd479-reliability-limits-mas.md) | ★★★★★ MIT proof: multi-agent ≤ centralized Bayes |
 
+### Knowledge Entries (KE-043+)
+| Entry | What It Covers |
+|-------|----------------|
+| [KE-043](../../entries/KE-043-forced-externalization-complete-picture.md) | Forced externalization: 60+ runs, 100% ext pass across 4 failure domains. Workflow hierarchy: reward shaping (0%) < text skills (0%) < hard workflow (100%). Multi-agent implication: structural intervention > individual capability. |
+| [KE-045](../../entries/KE-045-multi-agent-social-pathology-emergence.md) | ★★★★★ Four structural diseases in MAS: power concentration, sycophancy cascades, covert collusion, ecological fragility. Root cause: coordination expansion outpaces consolidation. Four-layer defense. |
+| [KE-050](../../entries/KE-050-robustness-architecture-nexus.md) | Topology shapes behavior more than prompting — dense subgraphs amplify conformity, structural holes enable independent reasoning. Robustness Stack: Topology (L1) > Harness (L2) > Evaluation (L3) > Model (L4). |
+
 ## Related Hypotheses
 - **H-007**: Heartbeat coordination tax
 - **H-011**: Coordination phase transition — coordination cost spikes non-linearly with agent count

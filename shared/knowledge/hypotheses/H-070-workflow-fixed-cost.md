@@ -63,9 +63,11 @@ This is the ONE scenario where workflow helped. Why? Cascading-error involves a 
 - **Test**: Create 5 gym scenarios with 3+ files and 10+ decision points but moderate R (0.3-0.5). Run with and without workflow.
 - **Expected**: Workflow helps in ≥2/5
 
-### P3: Workflow overhead reduction improves net benefit
-- **Test**: Create a "minimal workflow" (just QA gate, no planning phase) and test on scenarios where standard workflow hurts.
-- **Expected**: Minimal workflow hurts in fewer scenarios than standard workflow
+### P3: Workflow overhead reduction improves net benefit — PARTIALLY SUPPORTED (EXP-050)
+- **Test**: Created implement-and-verify (coder + shell verify, no QA phase). Tested on 7 gym scenarios.
+- **Result**: Orchestration overhead IS lower (3-5 ops vs 9-15), but "State Approach" prompt engineering added 1.76–3.78x duration overhead on medium tasks. Net effect: implement-and-verify is SLOWER than direct coder for simple tasks.
+- **Key finding**: The overhead isn't just orchestration ops — it's also prompt engineering that changes coder behavior. The forced externalization instruction causes the coder to do more verbose thinking, increasing per-op time.
+- **Conclusion**: Reducing C_fixed (orchestration ops) helps, but prompt overhead in the enhanced task is a hidden cost that must also be minimized. See EXP-050/results.md for full data.
 
 ## Connection to H-041
 

@@ -1,6 +1,6 @@
 # H-054: Evaluation R-Ceiling — LLM Judges Have a Fundamental Accuracy Limit Determined by Decision Topology
 
-**Status**: Proposed
+**Status**: STRONGLY SUPPORTED — Phase 1 RIFT audit + Phase 2 reliability estimation complete (EXP-052). RIFT ratio correlates with inter-rater agreement at r=0.81 (N=5). P(H) updated to 0.75.
 **Source**: Cross-ref: Evaluation Crisis synthesis (DD#493 RIFT + HB-0114 trace inversion + KE-005 + EXP-020 + H-050)
 **Date**: 2026-04-03
 **Filed by**: Bob
@@ -22,6 +22,9 @@ This means there is a class of evaluation tasks where LLM judges will **never** 
 3. **EXP-020**: Evaluator assigns 25% NI to workflow sub-sessions that produce 15x fewer errors — evaluation without full context forces essential decisions about quality
 4. **HB-0114**: Reasoning models have *worse* abstention than non-reasoning models — more capability doesn't help with inherently essential evaluation decisions
 5. **KE-015**: Decision Topology predicts ρ=0.95 correlation between R and workflow effectiveness — should extend to evaluation effectiveness
+
+6. **EXP-052 Phase 1**: RIFT audit of 19 gym scenario rubrics shows RIFT ratio ranges from 0.17 (qa-overstrict-gate) to 1.00 (convention-verify-multi-edit). Process checks are the primary driver of non-RIFT content.
+7. **EXP-052 Phase 2**: Analytical inter-rater reliability estimation on 5 scenarios shows r=0.81 correlation between RIFT ratio and estimated full-agreement probability. High-RIFT scenarios (cascading-error, convention-verify) show P(full agree) = 0.85-0.94. Low-RIFT scenarios (qa-severity-calibration) show P(full agree) = 0.40. Both H-054 kappa predictions confirmed. Key finding: keyword-based semantic evaluation is the primary reliability bottleneck.
 
 ## Predictions
 

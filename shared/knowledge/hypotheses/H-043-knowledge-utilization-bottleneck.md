@@ -1,6 +1,6 @@
 # H-043: The Knowledge Utilization Bottleneck — Accessibility Limits Topology Evolution
 
-**Status**: Proposed (convergence of 5+ internal/external sources)
+**Status**: Empirically Supported — P(H) 0.62 → 0.82 (10 evidence sources, 3 predictions confirmed by experiment)
 **Priority**: High — identifies rate-limiting factor in system improvement
 **Proposed by**: Bob (Architect)
 **Date**: 2026-04-02
@@ -243,6 +243,39 @@ This validates H-043's core prediction: knowledge form determines effectiveness.
 **Implication**: The most effective knowledge utilization strategy may not be better retrieval or injection, but forcing agents to externalize their own relevant knowledge at decision time. This is cheaper than infrastructure-level knowledge routing and achieves the highest measured U of any intervention.
 
 See H-085 for full analysis.
+
+## Prediction Verification (2026-04-07)
+
+### P1: Knowledge-to-structural conversion has higher ROI than knowledge production — CONFIRMED
+- **EXP-022**: Materialize-findings skill (cadence-form conversion) broke 0/20 barrier → first declarative skill to show measurable effect
+- **H-085 EXP-043/044/045/046**: Forced externalization (real-time form conversion from internal judgment to structural file) achieved 40%→100% across 4 scenarios (N=45/45)
+- **EXP-008**: Verify-after-edit skill (pure declarative) had zero effect (U=0.0 despite P(exists)=1.0)
+- **Verdict**: Structural/cadence conversion dramatically outperforms producing new declarative knowledge. **P1 CONFIRMED.**
+
+### P2: P(access) varies dramatically across agents and task types — CONFIRMED
+- **EXP-026**: Agent-specific workflow impact varies from -3pp (coder) to +20pp (coach) — confirms agent-specific utilization profiles
+- **EXP-028**: Coach's workflow adoption decayed from automatic to zero within 1 day when instructions removed from heartbeat — P(access) depends on delivery mechanism
+- **EXP-030/031b**: 0/29 agents discovered available resources across 3 resource types and 3 salience levels — P(access) for un-pushed knowledge is 0, not 0.3-0.5
+- **Verdict**: P(access) varies from 0.0 (available/hinted) to 1.0 (infrastructure) with agent-dependent middle ground. **P2 CONFIRMED.**
+
+### P3: Active retrieval doubles effective R growth rate — UNTESTED
+- No active retrieval/injection system has been built yet
+- **Status**: Remains the key open prediction. Design in WKWA-004.
+
+### P4: There exists a knowledge form conversion sweet spot — PARTIALLY CONFIRMED
+- **EXP-022**: Cadence-form skill (temporal constraints) achieved U≈0.4-0.6, confirming mid-tier effectiveness between structural (U≈0.9) and judgment-declarative (U≈0.05)
+- **H-085**: Forced externalization achieves structural-level U (≈0.9) at lower implementation cost than full workflows
+- **Missing**: Systematic classification of all KE entries by type to verify optimal form per knowledge-type
+- **Verdict**: The hierarchy (structural > cadence > environmental > judgment-declarative) is confirmed by data. Sweet spot is cadence-form for behavioral knowledge. **P4 PARTIALLY CONFIRMED.**
+
+### P5: U is measurable and trackable — CONFIRMED
+- **EXP-030/031b**: Demonstrated measurement of P(access) via controlled experiments (0/29 result)
+- **EXP-028**: Demonstrated measurement of adoption over time (decay curve to floor)
+- **Verdict**: U pipeline (P(exists) × P(access) × P(applies)) is measurable per entry. **P5 CONFIRMED (diagnostic).**
+
+### Summary: 3 of 5 predictions confirmed, 1 partially confirmed, 1 untested
+
+The core framework (multiplicative U pipeline, form determines utilization, most knowledge is wasted) is strongly supported by converging experimental evidence. The remaining open question (P3: active retrieval) is the highest-leverage untested intervention.
 
 ## References
 

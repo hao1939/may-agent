@@ -43,6 +43,12 @@
 | [EXP-215](../../hypotheses/) | Prerequisite detection skill (CONCLUDED) |
 | [cross-ref-self-evolving](../deep-dives/cr257-self-evolving-agent-systems-convergence.md) | Self-evolving architecture three loops |
 
+### Knowledge Entries (KE-043+)
+| Entry | What It Covers |
+|-------|----------------|
+| [KE-044](../../entries/KE-044-self-evolution-verification-separation-thesis.md) | ★★★★★ Verification Separation Thesis: five independent self-evolving systems (CORAL, SEVerA, Hermes, EvoSkills, Steve-Evolving) converge — self-evolution reliable IFF verification architecturally separated. Four separation mechanisms. Meta-insight: verification separation IS forced externalization at evolution level. |
+| [KE-051](../../entries/KE-051-self-governance-stack.md) | Self-Governance Stack: three layers (L1 Self-Verification, L2 Diversity Enforcement, L3 Meta-Verification). Our system: L1 partial, L2 absent (biggest gap), L3 human-dependent. Proposes Law 50 (Self-Governance Necessity). |
+
 ## Related Hypotheses
 - **H-038**: Transient skill — capabilities decay without reinforcement
 - **H-049**: Adaptive memory curation + skill evolution are coupled

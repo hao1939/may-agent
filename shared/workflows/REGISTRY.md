@@ -8,7 +8,7 @@
 | Name | File | Lines | Purpose |
 |------|------|-------|---------|
 | `implement-and-review` | `shared/workflows/implement-and-review.ts` | 150 | Code changes: coder implements → QA reviews → one retry → escalate. Fixed verdict parsing (defaults to conditional-pass). Phase 1 DIAGNOSE / Phase 2 VERDICT QA prompts. Consolidated from tech-lead (2026-04-04). |
-| `implement-and-verify` | `shared/workflows/implement-and-verify.ts` | 195 | Lightweight code workflow (H-070 P3): coder implements → shell verification (tsc+vitest) → one retry → escalate. No QA agent. Target C_fixed ~3-5 ops. For EXP-050 comparison with implement-and-review. |
+| `implement-and-verify` | `shared/workflows/implement-and-verify.ts` | 197 | Lightweight code workflow (H-070 P3): coder implements → shell verification (tsc+vitest) → one retry → escalate. No QA agent. Target C_fixed ~3-5 ops. EXP-050 tested: removed stateApproach (added 1.76-3.78x overhead with zero quality benefit). |
 | `skill-lifecycle` | `shared/workflows/skill-lifecycle.ts` | 246 | Full lifecycle: propose → test → measure → promote/retire a skill |
 
 ## Archived Shared Workflows (moved to `shared/workflows/archive/` on 2026-04-04)
@@ -155,6 +155,17 @@ because agents don't know the workflows exist (not in SOUL.md, not in context).
 - System-wide: workflow sessions = 83.9% done, 0% error vs 73.9%/10%
 - **Key insight**: LLMs will NOT spontaneously discover workflows. Explicit heartbeat instructions required.
 - Fix: Restore `workflow.run()` instructions to heartbeats (sent to May, req:de3c001e).
+
+### EXP-050: implement-and-verify Overhead Analysis (2026-04-07)
+Full report: `agents/shared/knowledge/experiments/EXP-050/results.md`
+
+**Headline**: implement-and-verify as designed INCREASES overhead vs direct coder for simple tasks.
+- "State Approach" forced externalization adds 1.76–3.78x duration overhead on medium-complexity tasks
+- Verification info alone adds zero overhead (coder already runs tests)
+- Shell verification takes ~130ms — negligible, but usually redundant
+- Most gym scenarios have no executable verification available (1/7 had test command)
+- **Action taken**: Removed stateApproach() from implement-and-verify workflow
+- **New hypothesis**: H-085 (Prompt Overhead) — forced externalization hurts well-scoped tasks
 
 ### Key Findings (corrected 2026-04-04)
 1. **Coach pipelines are excellent** — growth-cycle (100%), training-sprint (100%), skill-lifecycle (100%)

@@ -25,6 +25,13 @@
 | [HB-0052](../posts/HB-0052-claude-multiagent-paradigms.md) | Claude's subagent vs. team paradigms |
 | [dd484](../deep-dives/dd484-orgagent-company-hierarchy-mas.md) | ★★★★★ 3-layer organizational workflow |
 
+### Knowledge Entries (KE-043+)
+| Entry | What It Covers |
+|-------|----------------|
+| [KE-043](../../entries/KE-043-forced-externalization-complete-picture.md) | ★★★★★ Forced externalization complete picture: 60+ runs, 100% pass vs 0-50% baselines. Mechanism is "analysis activation" (behavioral mode shift). Dual pathways (write OR read). Workflow hierarchy: reward shaping (0%) < text skills (0%) < hard workflow (100%). |
+| [KE-047](../../entries/KE-047-agent-harness-architecture-convergence.md) | Harness Architecture Convergence: 10 structural subsystems including tool registry, context assembly, lifecycle hooks. Snapshot isolation (+22pp), on-demand knowledge loading. Context drift dominant failure at 34%. |
+| [KE-049](../../entries/KE-049-agent-environment-interface-formalization-ceiling.md) | Interface Formalization Ceiling: schema-first tool APIs reduce interface misuse but have zero impact on semantic misuse and zero task success improvement (DD-543). Agent HTTP behavioral signatures compress to 1-2 requests (DD-566). |
+
 ## Related Hypotheses
 - **H-036**: Claude harness patterns — optimal tool use configurations
 - **H-0180**: MCP vs CLI architecture comparison

@@ -35,6 +35,11 @@
 | [dd483](../deep-dives/dd483-ai-scientist-v2-agentic-treesearch.md) | ★★★★ Agentic tree search for scientific discovery |
 | [dd470](../deep-dives/dd470-etd-mappo-epistemic-time-dilation.md) | Epistemic time dilation for async multi-agent RL |
 
+### Knowledge Entries (KE-043+)
+| Entry | What It Covers |
+|-------|----------------|
+| [KE-046](../../entries/KE-046-reasoning-depth-crisis-thinking-budget-collapse.md) | ★★★★★ Reasoning Depth Crisis: 75% thinking reduction → 70% research reduction → 5.4× editing-without-reading → 15-20× cost multiplication. Pearson r=0.971 (17,871 thinking blocks). Inspectability removal hides regression. Stop-hook architecture as structural countermeasure. |
+
 ## Related Hypotheses
 - **H-032**: Triadic cognitive architecture — three-mode reasoning
 - **H-033**: Adaptive reasoning framework

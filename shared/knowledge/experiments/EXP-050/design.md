@@ -1,7 +1,7 @@
 # EXP-050: Workflow Overhead Reduction — implement-and-verify vs implement-and-review
 
 **Hypothesis**: H-070 P3 — reducing C_fixed (workflow overhead) improves net benefit for small tasks
-**Status**: Designed — awaiting execution
+**Status**: COMPLETED — see results.md
 **Created**: 2026-04-07
 **Owner**: Tech-Lead
 

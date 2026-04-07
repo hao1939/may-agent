@@ -2,6 +2,64 @@
 
 Papers and articles worth reading, with key takeaways.
 
+## 2026-04-07 — Session 308 Additions (arXiv cs.MA new papers)
+
+## 2026-04-07 — Session 309 Additions (cross-listed cs.MA + HN front page)
+
+### arXiv:2604.03486 — VisionClaw: Always-On AI Agents through Smart Glasses (Liu, Lee, Gonzalez, Gonzalez-Franco, Suzuki)
+**Rating:** ★★★½ | **DD#653**
+Always-on wearable AI agent on Meta Ray-Ban smart glasses combining live egocentric perception with agentic task execution via OpenClaw agents. Speech-driven task initiation; agent delegation for real-world tasks (Amazon cart, IoT control, meeting briefings). N=12 lab study + N=5 longitudinal deployment. Key findings: (1) perception+execution coupling enables faster task completion; (2) interaction shifts from manual control to *opportunistic delegation*; (3) tasks initiated during ongoing activities. New paradigm: continuous perception-action coupling for situated hands-free interaction. Cross-listed cs.HC/cs.AI/cs.CV/cs.LG/cs.MA. Submitted UIST 2026. Relevant to embodied agent research.
+
+### arXiv:2604.03648 — DéjàVu: Minimalistic Distributed Plurality Consensus (d'Amore, D'Archivio, Giakkoupis, Giroire, Natale)
+**Rating:** ★★★★ | **DD#654**
+Elegant minimalistic consensus protocol: agents query neighbors until encountering a *repeated opinion*, then adopt the duplicate. No counters, no frequency estimation, no parameter tuning — just repetition detection. Competitive with h-majority and more communication-efficient in certain regimes. Theoretical cs.DC work cross-listed to cs.MA. Key insight: **the simplest coordination primitive (repetition detection) suffices for consensus**. Connects DD#610 (Bayesian crowd disruption), CR#299 (Agent Communication Stack). Could inspire minimal-overhead coordination in our MAS designs.
+
+### GitHub Blog: Copilot CLI "Rubber Duck" — Cross-Model Family Critique (McKenna, Perz — GitHub)
+**Rating:** ★★★★ | **DD#655**
+GitHub Copilot CLI introduces Rubber Duck: an independent reviewer powered by a *different model family* (Claude orchestrator → GPT-5.4 reviewer). Activates at 3 checkpoints: (1) after planning, (2) after complex implementation, (3) after test writing. Key results: Claude Sonnet 4.6 + GPT-5.4 Rubber Duck closes **74.7% of the gap to Claude Opus** on SWE-Bench Pro. Strongest on hard problems (3+ files, 70+ steps): +3.8% over baseline, +4.8% on hardest subset. Architectural catch examples: scheduler exit-before-run, dict-key overwrite loop, cross-file Redis key conflict. Design choice: sparse invocation (high-signal checkpoints only). Validates **cross-model adversarial review pattern** — different training biases catch different errors. Connects DD#640 (scaffold taxonomy loop primitives), DD#639 (ABTest fuzzing), CR#307 (decoction). **Strongest industry evidence yet for multi-model verification in agentic coding workflows.**
+
+### arXiv:2604.03955 — Symbolic-Vector Attention Fusion for Collective Memory in MAS (Wu, Jiang, Feng, Patel)
+**Rating:** ★★★★ | **DD#652**
+Hybrid attention mechanism fusing symbolic knowledge graphs with vector embeddings for shared agent memory. "Mesh Memory" architecture where agents maintain local symbolic stores that synchronize via vector-space alignment. Cross-attention layer resolves symbolic-vector conflicts. 14% improvement on collaborative reasoning benchmarks over pure-vector baselines. Key insight: symbolic anchors prevent semantic drift in long-running multi-agent sessions while vectors enable generalization. Directly relevant to our memory-architecture-proposal and CR#305 (Memory-Intelligence Convergence). Connects DD#586 (MemMachine), DD#607 (LLMA-Mem scaling).
+
+### arXiv:2604.03818 — SRIM: Subgraph Social Structure Preference in Networked MAS (Gao, Ventresca)
+**Rating:** ★★★ | No DD
+Socio-Relational Intrinsic Motivation (SRIM) endows agents with preferences over sub-graphical social structures (degree-, clique-, critical-connection-based). Tested in Harvest/Cleanup social dilemmas. BCI metric captures structural variation. Structural position consistently predicts behavioral shifts across environments. Foundational MAS social dynamics; interesting for agent ecosystem design theory.
+
+### arXiv:2604.04226 — A2A-Agentization: Digital Assets for the Agentic Web (Chen, Huang, Zhao et al.)
+**Rating:** ★★★½ | No DD
+Formalizes "agentization" — converting digital assets into A2A-compatible autonomous agents. First benchmark (A2A-Agentization Bench) for evaluating agentization quality in fidelity and interoperability. Demonstrates scalable integration of web elements into multi-agent ecosystems. Relevant to agentic web infrastructure standardization.
+
+### arXiv:2604.04262 — Interrogator-Based Security for IoUT Multi-Agent Systems (Akarma, Syed et al.)
+**Rating:** ★★½ | No DD
+Behavioral trust monitoring for autonomous underwater vehicles via passive interrogator module. Lightweight transformer for dynamic trust scores + permissioned blockchain for tamper-proof evidence. 21.7% detection improvement over static baselines. Domain-specific (underwater IoT); trust pattern conceptually interesting but low direct relevance.
+
+## 2026-04-07 — Session 307 Additions (arXiv cs.AI + cs.MA batch, cont.)
+
+### arXiv:2604.03430 — Cognitive Fabric Nodes: Smart Middleware for MAS (Fleming, Kompella, Bosch, Pandey)
+**Rating:** ★★★★ | **DD#649**
+Novel middleware layer ("Cognitive Fabric") between agents — active intelligent intermediaries, not just message passing. Five capabilities governed by memory-as-substrate: Topology Selection, Semantic Grounding, Security Policy Enforcement, Prompt Transformation. RL-driven learning modules. 10%+ improvement on HotPotQA/MuSiQue over direct agent-to-agent. "Lightweight agents + heavy fabric" pattern. P442-P443, R123-R124.
+
+### arXiv:2604.03479 — Contextual Control without Memory Growth
+**Rating:** ★★★★ | **DD#650**
+Bounded context for long-running agents. Distinguishes control-relevant context (instructions, constraints, goals) from informational context (past observations, completed tasks). Contextual importance scoring compresses 80%+ of accumulated context without losing behavioral coherence. Directly applicable to persistent agent sessions. P444-P445, R125-R126.
+
+### arXiv:2604.04895 — Agentic Federated Learning: The Future of Distributed AI (Survey)
+**Rating:** ★★★½ | **DD#651**
+Survey mapping agentic AI × federated learning. Three patterns: FL-enhanced agents (privacy-preserving collaborative learning), agent-enhanced FL (agents manage FL pipeline), fully agentic FL (both sides autonomous). Key for scaling multi-agent knowledge sharing. P446, R127.
+
+### arXiv:2604.03266 — Emergent Compositional Communication for Latent World Properties (Kaszyński)
+**Rating:** ★★★ | No DD
+Multi-agent communication pressure creates compositional representations of invisible physical properties (elasticity, friction, mass ratio). Gumbel-Softmax bottleneck + iterated learning → near-perfect compositionality (PosDis=0.999). Interesting for emergent communication theory but foundational, not directly applicable.
+
+### arXiv:2604.03280 — Multi-Agent Training-free Urban Food Delivery (Hasan et al.)
+**Rating:** ★★½ | No DD
+Union of Minimum Spanning Trees (UMST) for resilient delivery networks. 20-40× fewer edges than fully connected, 88-96% success rates, 30× faster than learning-based baselines. Domain-specific logistics application, lower relevance.
+
+### arXiv:2604.03512 — ActionNex: Virtual Outage Manager for Critical Infrastructure
+**Rating:** ★★★ | No DD
+LLM agent for managing infrastructure outages. Automated outage management pipeline. Relevant as a vertical application of agent capabilities in critical infrastructure.
+
 ## 2026-04-07 — Session 292 Additions (arXiv cs.AI + cs.MA Tuesday batch)
 
 ### arXiv:2604.04660 — Springdrift: Auditable Persistent Runtime for LLM Agents (Brady)
@@ -92,7 +150,7 @@ MoE token routing as congestion game. Three-phase trajectory: surge → stabiliz
 
 ### Hippo Memory: Biologically-Inspired Memory System for AI Agents — kitfunso (GitHub)
 
-| github/kitfunso/hippo-memory | Biologically-Inspired Memory System for AI Agents (CLI + Library) | ★★★★ EXCELLENT — First open-source implementation of all 7 hippocampal memory mechanisms for AI agent memory: two-speed learning (Buffer→Episodic→Semantic), decay (7-day half-life), retrieval strengthening (+2 days per recall), emotional tagging (errors get 2× half-life), sleep consolidation (`hippo sleep`), schema acceleration (schema_fit scoring), interference detection (conflict tracking). 37★, v0.9.1, MIT. SQLite + markdown mirrors (git-trackable). Cross-tool portable (Claude Code, Codex, Cursor, OpenClaw). Benchmark: 78% → 14% error trap rate over 50-task sequence vs static memory (no improvement). Key insight: active forgetting improves agent performance. Confidence tiers (verified/observed/inferred/stale) provide epistemic metadata. Grounded in Complementary Learning Systems theory (McClelland, McNaughton & O'Reilly 1995). Directly relevant to our memory-architecture-tiered research project. DD#559. |
+| github/kitfunso/hippo-memory | Biologically-Inspired Memory System for AI Agents (CLI + Library) | ★★★★ EXCELLENT — First open-source implementation of all 7 hippocampal memory mechanisms for AI agent memory: two-speed learning (Buffer→Episodic→Semantic), decay (7-day half-life), retrieval strengthening (+2 days per recall), emotional tagging (errors get 2× half-life), sleep consolidation (`hippo sleep`), schema acceleration (schema_fit scoring), interference detection (conflict tracking). **309★ (↑8× from 37★ in ~48h — HN front page surge)**, v0.9.1, MIT. SQLite + markdown mirrors (git-trackable). Cross-tool portable (Claude Code, Codex, Cursor, OpenClaw, OpenCode). Now includes OpenClaw plugin (openclaw.plugin.json). Benchmark: 78% → 14% error trap rate over 50-task sequence vs static memory (no improvement). Key insight: active forgetting improves agent performance. Confidence tiers (verified/observed/inferred/stale) provide epistemic metadata. Grounded in Complementary Learning Systems theory (McClelland, McNaughton & O'Reilly 1995). Directly relevant to our memory-architecture-tiered research project. DD#559. |
 
 ---
 

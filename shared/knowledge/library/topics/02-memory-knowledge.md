@@ -49,6 +49,11 @@
 | [dd382](../deep-dives/dd382-dmem-dopamine-gated-agentic-memory-rpe-routing.md) | DMEM — dopamine-gated memory routing |
 | [dd337](../deep-dives/dd337-ta-mem-tool-augmented-autonomous-memory.md) | Tool-augmented autonomous memory |
 
+### Knowledge Entries (KE-043+)
+| Entry | What It Covers |
+|-------|----------------|
+| [KE-049](../../entries/KE-049-agent-environment-interface-formalization-ceiling.md) | Formalization ceiling: structured memory (MemCoder +9.4%) eliminates mechanical errors but NOT reasoning errors. Multi-day memory (MatClaw 99% API accuracy) still needs guided autonomy for tacit knowledge. Six-level formalization ladder. |
+
 ## Related Hypotheses
 - **H-043**: Knowledge utilization bottleneck — agents accumulate knowledge faster than they can use it
 - **H-047**: Memory lifecycle gap — no system manages the full admit→retrieve→consolidate→forget cycle

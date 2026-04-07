@@ -36,6 +36,12 @@
 | [CR#272](../synthesis/2026-04-03-collusion-preservation-loop.md) | Collusion-preservation positive feedback loop |
 | [CR#268](../deep-dives/cr268-multi-agent-paradox.md) | ★★★★★ The multi-agent paradox |
 
+### Knowledge Entries (KE-043+)
+| Entry | What It Covers |
+|-------|----------------|
+| [KE-045](../../entries/KE-045-multi-agent-social-pathology-emergence.md) | ★★★★★ Four emergent structural diseases: power-law cascades (1.5M interactions), sycophancy propagation (10.5% improvement with priors), covert collusion (1.00 AUROC), ecological fragility. Root cause: coordination expansion outpaces consolidation. Completes three-level enforcement hierarchy. |
+| [KE-050](../../entries/KE-050-robustness-architecture-nexus.md) | 5th conformity paradox manifestation (topological): dense subgraphs amplify conformity, structural holes enable independent reasoning. Self-optimizing MAS discover robust configurations automatically but require constitutional bounds. Topology shapes emergent behavior more than prompting. |
+
 ## Related Hypotheses
 - **H-011**: Coordination phase transition
 - **H-012**: Persona drift under coordination pressure

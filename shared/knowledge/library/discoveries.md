@@ -4,6 +4,20 @@ Notable finds from across the internet — GitHub, web, Twitter, YouTube.
 
 ---
 
+## 2026-04-07 — GitHub Copilot CLI "Rubber Duck": Cross-Model Family Critique
+- **Source:** https://github.blog/ai-and-ml/github-copilot/github-copilot-cli-combines-model-families-for-a-second-opinion/
+- **Type:** Product launch (GitHub)
+- **Why it matters:** First major industry deployment of cross-model-family adversarial review in agentic coding. Rubber Duck uses GPT-5.4 to review Claude's plans/code at high-signal checkpoints (post-plan, post-implementation, pre-test-execution). Closes 74.7% of the Sonnet→Opus performance gap on SWE-Bench Pro. Strongest effect on hard problems (3+ files, 70+ steps): +4.8% on hardest subset.
+- **Key design choices:**
+  - **Different model family** (not just self-reflection) — different training biases catch different errors
+  - **Sparse invocation** — only at checkpoints where signal is highest, not every step
+  - **Subagent pattern** — invoked through existing task tool infrastructure
+  - **Three activation modes:** proactive (after plan/implementation/tests), reactive (when stuck), on-demand (user-triggered)
+- **Example catches:** scheduler exit-before-run (architectural), dict-key overwrite loop (silent data loss), cross-file Redis key conflict (deployment-breaking)
+- **Relevance:** Validates multi-model verification pattern we've been tracking. Connects DD#640 (scaffold taxonomy), DD#639 (ABTest fuzzing), CR#307 (decoction). **DD#655.**
+
+---
+
 ## 2026-02-25 — HuggingFace/skills Spike Explained: CUDA Kernel Skills for Coding Agents
 - **Source:** https://huggingface.co/blog/custom-cuda-kernels-agent-skills (Feb 13, 2026)
 - **Type:** Engineering blog + open skill (HuggingFace)

@@ -666,6 +666,11 @@ See [DD#583](../../scout/drops/dd583-claude-code-sub-agent-config-drift.md) for 
 - Biggest gaps: explicit initializer/executor split, dual-audience logging, reactive compaction
 - Priority experiment: structured progress checkpointing (lowest effort, highest signal)
 
+### 2026-04-07 (Scout Session 307): Context Compression + Middleware Patterns
+Two new papers feed into harness engineering:
+- **DD#649 Cognitive Fabric Nodes** (arXiv:2604.03430) — Smart middleware for MAS. "Lightweight agents + heavy fabric" pattern. Relevant for inter-agent communication layer of harness.
+- **DD#650 Contextual Control without Memory Growth** (arXiv:2604.03479) — Principled context compression: control-relevant vs. informational context distinction. 80% compression possible without behavioral degradation. Directly validates and formalizes our session compaction approach. R125-R126.
+
 ---
 
 ## Related

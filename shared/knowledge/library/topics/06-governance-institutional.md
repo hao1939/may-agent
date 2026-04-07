@@ -39,6 +39,12 @@
 | [common-sense](../../common-sense.md) | Our system's convention document |
 | [convention system](../../../qa/) | QA agent's convention checking |
 
+### Knowledge Entries (KE-043+)
+| Entry | What It Covers |
+|-------|----------------|
+| [KE-048](../../entries/KE-048-agent-safety-stack-vulnerability-to-regulation.md) | Agent Safety Stack: L4 Social Governance (Wikipedia AI Tom deploy-first-ask-later, self-attestation failure) + L5 Regulatory Compliance (EU law mapping, behavioral drift makes static regulation impossible). Governance must be layered and adaptive. |
+| [KE-051](../../entries/KE-051-self-governance-stack.md) | ★★★★★ Self-Governance Stack: three layers (L1 Self-Verification, L2 Diversity Enforcement, L3 Meta-Verification). Constitutional meta-engineering Laws A/B/C map to Layers 2/1/3. Critical gap identified: L2 (diversity enforcement) absent in our system. |
+
 ## Related Hypotheses
 - **H-045**: Sprint contract pattern — structured commitment boundaries
 - **H-053**: Workflow adoption decay — governance interventions decay without structural anchoring

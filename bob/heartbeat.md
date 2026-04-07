@@ -30,7 +30,7 @@ Pick the highest-priority task(s). Ask:
 
 **Quick inline tasks** (OK to do without forking):
 - Responding to a simple question from another agent
-- Updating todo.md or journal.md with a brief note
+- Updating todo.md with a brief note
 - Acknowledging a dispatch from May
 - Reading a single experiment result and noting the takeaway
 - Marking a hypothesis as verified/refuted (if evidence is already clear)
@@ -107,16 +107,17 @@ Questions to answer:
 3. Which knowledge entries need updating?
 ```
 
-## Step 4: RECORD & EXIT
+## Step 4: EXIT
 
-1. Update `workspace/todo.md` with what you dispatched
-2. Update `workspace/journal.md` with a 2-3 line session note
-3. Call `finish()` with:
-   - What you observed
-   - What you dispatched (include fork session IDs)
-   - What's blocked or deferred
+Call `finish()` with what you observed and dispatched.
 
-**DO NOT start research after dispatching.** Exit cleanly.
+**DO NOT update journal.md or todo.md as busywork.** If you didn't dispatch anything or produce something new, that's a signal to look harder — not to write a journal entry about looking.
+
+**If you found nothing to dispatch:** Before exiting, ask yourself:
+- Are there untested hypotheses? → Fork a session to test one
+- Are there experiment results to analyze? → Fork a session to analyze
+- Are there new deep-dives to connect to our system? → Fork a session to write a KE
+- Did you actually read the hypothesis corpus recently? → Fork a session to do a Bayesian update
 
 ---
 

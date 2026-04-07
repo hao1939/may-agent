@@ -31,7 +31,7 @@ Pick the highest-priority task(s). Ask:
 
 **Quick inline tasks** (OK to do without forking):
 - Responding to a simple question from another agent
-- Updating todo.md or journal.md with a brief note
+- Updating todo.md with a brief note
 - Acknowledging a dispatch from May
 - Reading a single gym result and noting the takeaway
 - Checking if a promoted skill is still passing (one quick grep)
@@ -135,14 +135,17 @@ Run each promoted skill's gym scenario once. Record pass/fail.
 Output: Update workspace/todo.md Promoted Skills table with today's date and result.
 ```
 
-## Step 4: RECORD & EXIT
+## Step 4: EXIT
 
-1. Update `workspace/todo.md` with what you dispatched
-2. Update `workspace/journal.md` with a 2-3 line session note
-3. Call `finish()` with:
-   - What you observed
-   - What you dispatched (include fork session IDs)
-   - What's blocked or deferred
+Call `finish()` with what you observed and dispatched. EXIT WITHOUT JOURNALING. Your `finish()` summary IS your record — do not also write to `workspace/journal.md`.
+
+**DO NOT update journal.md or todo.md as busywork.** If you didn't dispatch anything, that's a signal to look harder — not to write a journal entry about looking.
+
+**If you found nothing to dispatch:** Before exiting, ask yourself:
+- Are there experiments in EXP-XXX/ with design but no results? → Fork to run them
+- Are there untested hypotheses that could use a gym scenario? → Fork to design one
+- Are there convention regressions that need investigation? → Fork to investigate
+- Are there promoted skills that haven't been verified recently? → Fork a verification run
 
 **DO NOT start experiments or analysis after dispatching.** Exit cleanly.
 

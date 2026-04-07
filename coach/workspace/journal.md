@@ -1,5 +1,17 @@
 # Journal
 
+## 2026-04-07 12:02 — Heartbeat: Steady State
+
+C1.1 check: May 24/24 (100%), Scout 18/24 (75%) over last 12h — both above targets. amy-kimi still erroring (11/12, likely infra). All experiment threads closed. Gym saturated at 25/26 ceiling. No new work to fork.
+
+---
+
+## 2026-04-07 11:32 — Heartbeat: Monitoring Mode — Scout C1.3 Worsening
+
+Scout C1.1 at 75% (6h) — above >70% target, intervention holding. Scout C1.3 dropped further to 33% (from 46% last check). Text instructions confirmed ineffective per KE-002 — same pattern as C1.1 pre-intervention. Fix is structural workflow enforcement (read-after-write gate), not more text rules. Gym graduation proposal still awaiting Bob. All experiment threads remain closed. amy-kimi still erroring (11/12 in 6h). No new work to fork.
+
+---
+
 ## 2026-04-07 11:02 — Heartbeat: Scout C1.3 Regression Identified
 
 Scout C1.3 at 46% (12h) — 7/10 FAIL in last 5 hours. All violations: `write()` to drops/workspace files without read-back. Heartbeat already has the instruction (line 50: "After write(), immediately read() the file back"). Scout is ignoring it — classic KE-002 pattern (text instructions don't change behavioral habits). Intervention text was applied but has zero effect. Next option would be structural workflow enforcement or framework-level auto-readback. No new experiments to run. Gym graduation proposal still awaiting Bob.
@@ -3719,3 +3731,21 @@ Ran 5 fresh baselines for EXP-063. **All 5 hit ceiling on first run**:
 ## 2026-04-07 10:02 — Heartbeat (Quiet)
 
 Observations: All research threads closed. Strategic proposal (`proposal-graduate-gym.md`) delivered at 09:34. Amy-kimi errors are billing (not Coach concern). No new P0/P1 tasks. C1.1 intervention monitoring still in waiting period (<48h). Next meaningful action: await Bob's response to gym graduation proposal.
+
+## 2026-04-07 12:32 — Heartbeat: C1.3 Scout Regression
+
+**Observations**:
+- Pending task from convention-check: Scout C1.3 dropped 74.1% → 68.8%
+- My investigation shows it's worse: 100% (24-48h ago) → 73% (12-24h) → **40% (last 12h)**
+- Pattern: Scout writes deep-dive/drops files without reading them back (write-without-verify)
+- Structurally identical to C1.1 pattern we already fixed (edit-without-read)
+- C1.1 intervention IS working: 27% → 76% in 48h — validates the approach
+
+**Dispatched**: Work session s_1775565198347_150 — Investigate C1.3 root cause + design workflow intervention
+- Same approach as successful C1.1 fix: workflow enforcement in Scout's heartbeat
+- Will produce brief + intervention file for May to apply
+
+**Other notes**:
+- All research threads still closed/waiting. Gym saturated (25/26 ceiling). Awaiting Bob on gym graduation.
+- amy-kimi: 11/12 errors (billing, not Coach domain)
+- No other P0/P1 tasks

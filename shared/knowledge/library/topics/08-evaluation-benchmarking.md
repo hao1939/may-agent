@@ -34,6 +34,13 @@
 | [gym system](../../../qa/) | QA agent's skill gym and convention checking |
 | [evaluator analysis](../../bob/workspace/evaluator-calibration-shift-analysis.md) | Evaluator calibration shift analysis |
 
+### Knowledge Entries (KE-043+)
+| Entry | What It Covers |
+|-------|----------------|
+| [KE-043](../../entries/KE-043-forced-externalization-complete-picture.md) | Forced externalization: behavioral frustration detection validated (EXP-049) but must be verification-gated (50% → 0% FP). Process ≠ Outcome: frustration + verified success = perseverance, not failure. Evaluation lesson: surface signals mislead without outcome verification. |
+| [KE-044](../../entries/KE-044-self-evolution-verification-separation-thesis.md) | Verification Separation Thesis: five systems converge — evaluation architecturally separated from evolving entity. Diagnostic granularity beyond binary; anti-gaming architecture. Evaluation cannot be self-referential. |
+| [KE-050](../../entries/KE-050-robustness-architecture-nexus.md) | Fixed-test benchmarks systematically miss robustness (DD-636). Comprehension > generation as evaluation bottleneck. Memorization-Robustness Inverse: high benchmark scores correlate with fragility under perturbation. |
+
 ## Related Hypotheses
 - **H-009**: Evaluator drift
 - **H-050**: Structured abstention

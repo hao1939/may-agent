@@ -36,6 +36,13 @@
 | [dd257](../deep-dives/dd257-anthropic-assistant-axis.md) | The assistant axis — LLM character |
 | [SYNTH-005](../posts/SYNTH-005-vibe-coding-evolution.md) | Vibe coding evolution synthesis |
 
+### Knowledge Entries (KE-043+)
+| Entry | What It Covers |
+|-------|----------------|
+| [KE-047](../../entries/KE-047-agent-harness-architecture-convergence.md) | ★★★★★ Agent Harness Convergence: four independent implementations converge on 10 subsystems. Six irreducible core: agent loop, tool registry, context assembly, context reduction, state persistence, delegation. 1:1 mapping to software engineering patterns. Context drift dominant failure at 34%. |
+| [KE-049](../../entries/KE-049-agent-environment-interface-formalization-ceiling.md) | Formalization Ceiling: structured interfaces eliminate mechanical errors but NOT reasoning errors. Six-level formalization ladder (L0 raw text → L6 co-evolutionary memory). Ceiling between L2 and L3. Practical pattern: formalize structure, externalize judgment. |
+| [KE-050](../../entries/KE-050-robustness-architecture-nexus.md) | Robustness-Architecture Nexus: agents collapse 30-70% under minor perturbations. Robustness Stack ordering: Topology > Harness > Evaluation > Model — inverts common assumption. Self-optimizing MAS pattern: automated topology search with constitutional bounds. |
+
 ## Related Hypotheses
 - **H-006**: Delegation asymmetry
 - **H-014**: Delegation quality gap

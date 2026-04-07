@@ -8,7 +8,7 @@
  * strips out the QA agent entirely and uses shell verification only.
  *
  * Flow:
- *   1. Coder implements (with forced externalization)
+ *   1. Coder implements (with verification info in prompt)
  *   2. Run verification command (tsc + vitest) — hard gate, no LLM
  *   3. If verify passes → done
  *   4. If verify fails → ONE retry with error output
@@ -26,7 +26,9 @@
  */
 
 import { execSync } from "node:child_process";
-import { stateApproach } from "../../../src/lib/forced-externalization.js";
+// NOTE: stateApproach removed — EXP-050 showed it adds 1.76-3.78x overhead
+// with zero quality improvement on well-scoped tasks. See H-085.
+// import { stateApproach } from "../../../src/lib/forced-externalization.js";
 
 export const name: string = "implement-and-verify";
 
@@ -126,14 +128,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
     let coderTask: string;
     if (attempt === 1) {
-      // H-085: Force externalization (lightweight — just state approach)
-      coderTask = stateApproach(
+      // EXP-050: Removed stateApproach() wrapping — it added 1.76-3.78x
+      // overhead with zero quality benefit. See H-085.
+      coderTask =
         `${task}\n\n` +
-          `## Verification\n` +
-          `Your code will be verified with:\n` +
-          `\`\`\`\n${verifyCommand}\n\`\`\`\n` +
-          `Make sure your changes pass this check.`
-      );
+        `## Verification\n` +
+        `Your code will be verified with:\n` +
+        `\`\`\`\n${verifyCommand}\n\`\`\`\n` +
+        `Make sure your changes pass this check.`;
     } else {
       coderTask =
         `## Fix Required (attempt ${attempt}/${maxAttempts})\n\n` +
