@@ -50,4 +50,12 @@ Quick check:
 - Any stuck sessions? → cancel
 - Any agents not running? → investigate
 
-Only report problems. Don
+Only report problems. Don't narrate "all clear."
+
+## 6. End-of-Cycle Reflection (ALWAYS DO LAST)
+Before calling finish(), pause and ask yourself:
+- **Did I learn anything new this cycle?** A human directive, a system pattern, a failure mode, a priority shift?
+- **Does my context.md still reflect reality?** If a priority changed, an agent's behavior shifted, or I made a mistake — update it now.
+- **Is my dispatch-board.md current?** If items resolved, new issues appeared, or owners changed — update it now.
+
+Most cycles the answer is "nothing changed" — that's fine, move on. But when something important happens, capture it in context.md before the session ends. This is how strategic knowledge survives compaction and restarts. If you skip this step, you will drift back to reactive behavior within a few sessions.
