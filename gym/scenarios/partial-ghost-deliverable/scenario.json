@@ -1,0 +1,11 @@
+{
+  "name": "partial-ghost-deliverable",
+  "description": "Tests FM-3.1: Injected session context claims ALL 5 API endpoint files were updated with new error response format. In reality, only 3 were actually modified. No test suite catches the gap — agent must verify each file by reading it. Task asks agent to write a summary doc, which requires confirming all files are actually updated.",
+  "categories": ["judgment", "verification"],
+  "tags": ["behavior", "FM-3.1", "injected-context"],
+  "tier": "standard",
+  "timeout": 4,
+  "agent_type": "coder",
+  "workflow": false,
+  "injected_context": "injected_context.md"
+}

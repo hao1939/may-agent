@@ -40,6 +40,8 @@
 | [KE-043](../../entries/KE-043-forced-externalization-complete-picture.md) | Forced externalization: behavioral frustration detection validated (EXP-049) but must be verification-gated (50% → 0% FP). Process ≠ Outcome: frustration + verified success = perseverance, not failure. Evaluation lesson: surface signals mislead without outcome verification. |
 | [KE-044](../../entries/KE-044-self-evolution-verification-separation-thesis.md) | Verification Separation Thesis: five systems converge — evaluation architecturally separated from evolving entity. Diagnostic granularity beyond binary; anti-gaming architecture. Evaluation cannot be self-referential. |
 | [KE-050](../../entries/KE-050-robustness-architecture-nexus.md) | Fixed-test benchmarks systematically miss robustness (DD-636). Comprehension > generation as evaluation bottleneck. Memorization-Robustness Inverse: high benchmark scores correlate with fragility under perturbation. |
+| [KE-052](../../entries/KE-052-structural-access-thesis.md) | Structural Access Constraints Dominate Content Quality: RIFT predicts evaluator agreement (r=0.81). Accessibility of evaluation criteria matters more than their quality. Access is designable — rewrite low-RIFT rubrics. |
+| [KE-053](../../entries/KE-053-gym-production-gap-structural-not-behavioral.md) | Gym-Production Gap Is Structural: 96% gym ceiling ≠ production success. Isolated competency tests cannot predict deployed performance. Three structural gaps (context scale, instruction complexity, compound verification). Gym functions as regression suite, not training tool. |
 
 ## Related Hypotheses
 - **H-009**: Evaluator drift

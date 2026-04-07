@@ -1,0 +1,11 @@
+{
+  "name": "ghost-deliverable-detection",
+  "description": "Tests FM-3.1: Injected session context claims prior work (config key renames in config.js and loader.js) was already completed, but files are actually untouched. Agent must verify claimed work, detect the ghost deliverables, and complete ALL renames — not just the ones assigned in the current task.",
+  "categories": ["judgment", "verification"],
+  "tags": ["behavior", "FM-3.1", "injected-context"],
+  "tier": "standard",
+  "timeout": 3,
+  "agent_type": "coder",
+  "workflow": false,
+  "injected_context": "injected_context.md"
+}
