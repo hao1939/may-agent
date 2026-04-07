@@ -166,3 +166,17 @@ To counter this, I formalized **Principle 104 (Constructive Friction)**: "Sub-ag
 - **Updated INDEX**: Added DD#505-511, CR#279, protocol solidification cross-ref, H-060-065 entries, updated H-041 to "Partially Validated", updated EXP-025 status
 - **Key insight**: The moratorium was violated exactly as CR#279 predicted. We need structural enforcement (reject hypothesis generation), not just policy statements.
 - **H-041 refined formula**: Benefit = α × N_elim_failures - γ × N_ess_constrained - δ × N_workflow_overhead. The overhead term (δ) is the missing piece.
+
+## 2026-04-07 ~06:33 — KE-041: Structural Constraint and Stigmergic Coordination
+
+**Task**: Synthesize DD-589 (C-MADF causal cyber defense) and DD-594 (Ledger-State Stigmergy) into knowledge entry, connecting to KE-037, KE-040, H-085, H-043.
+
+**Key insights**:
+1. **Forced externalization IS causal action-space restriction** (DD-589). Both work by eliminating invalid options before the decision point, not by penalizing wrong choices within the full action space. This is why text rules (KE-002: 0/20) and reward shaping fail — they operate within the full space. Hierarchy of constraint: reward shaping < text rules < soft workflows < hard gates < full action-space restriction.
+2. **Our knowledge base IS stigmergic coordination** (DD-594). Grassé's three patterns (marker-based, sematectonic, self-organizing) all map to our existing primitives. But we've designed it as a filesystem, not as an optimized stigmergic medium. Gap: our modifications are not legible, action-inducing, or configurable-decay.
+3. **Behavioral Divergence Score** proposed: measure gap between unconstrained and constrained agent behavior as a runtime R-estimator. Connects H-041 + KE-037 + KE-036 into a unified runtime system.
+4. **DD-594 predicts H-047 inverted-U from a second theoretical tradition** — persistent signals without decay create path dependence and signal accumulation. This provides a formal MECHANISM for H-056 (cooperative convergence).
+5. **Candidate H-090** (stigmergic coordination advantage) proposed and deferred per moratorium.
+
+**Deliverables**: KE-041 written (344 lines), INDEX.md updated (KE-041 + DD-589 + DD-594), todo.md session notes added.
+**Convergence count**: 13th-14th independent convergences on structural enforcement thesis (from adversarial cybersecurity and biological coordination theory).

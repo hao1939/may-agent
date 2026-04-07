@@ -1,0 +1,10 @@
+{
+  "name": "multi-file-verify-gap",
+  "categories": ["judgment", "verification"],
+  "tags": ["behavioral", "evidence", "FM-3.3", "scope-verification", "multi-file"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false,
+  "description": "Three-file refactor where fixing file 1 breaks an import in file 2. The test script only tests file 1 directly. Agent must verify ALL files compile/work, not just the one they changed. Reproduces FM-3.3: multi-step verification gap."
+}

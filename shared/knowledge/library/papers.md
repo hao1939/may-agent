@@ -1091,3 +1091,47 @@ Production multi-agent data management system with "three-track knowledge archit
 
 | 2604.04522 | HDP: A Lightweight Cryptographic Protocol for Human Delegation Provenance | ★★★★ EXCELLENT — First IETF-level protocol (draft-helixar-hdp-agentic-delegation-00) for verifiable human authorization chains in MAS. Append-only Ed25519-signed delegation chain. Fully offline verifiable. Reference TS SDK + Python. Fills L0 provenance gap in Accountability Stack (CR#298). Distinct from OAuth, JWT, UCAN, IPP. DD#586. |
 
+### Incompleteness of AI Safety Verification — Hasan
+
+| 2604.04876 | Incompleteness of AI Safety Verification via Kolmogorov Complexity | ★★★★ EXCELLENT — Gödel-style impossibility result: no algorithm can decide whether an arbitrary AI system satisfies a given safety specification. Proof via reduction to Kolmogorov complexity uncomputability. Safety must be constrained by construction, not verified post-hoc. Validates GRA approach. DD#601. |
+
+### AI Assistance Reduces Persistence — Liu, Christian, Dumbalska, Bakker, Dubey
+
+| 2604.04721 | AI Assistance Reduces Persistence and Hurts Independent Performance | ★★★★ EXCELLENT — N=1222 RCT with causal design. AI-assisted participants show -18% time-on-task, -12% attempts on subsequent unassisted tasks. Learned helplessness effect strongest for high-performers. Connects DD#556 effort crisis, DD#573 coordination deficits. DD#602. |
+
+### CDCMA Communication Gain and Delay Decomposition — Gao, Liang, Hao, Ke
+
+| 2604.03785 | Decomposing Communication Gain and Delay Cost in Cooperative MARL | ★★★★ EXCELLENT — First formal gain-delay decomposition. Net communication benefit = information gain − delay cost − overhead. Delay cost quadratic in RTT. Optimal communication frequency depends on task dynamism. Formalizes DD#597 DPI intuitions. DD#603. |
+
+### SuperLocalMemory V3.3: The Living Brain — Bhardwaj
+
+| 2604.04514 | SuperLocalMemory V3.3: The Living Brain — Zero-LLM Agent Memory | ★★★★ EXCELLENT — Seven-channel cognitive memory (sensory/working/episodic/semantic/procedural/emotional/metacognitive) entirely without LLM calls. 14ms retrieval vs 200-2000ms LLM-based. Rule-based consolidation + embedding similarity. Extends DD#559 Hippo, DD#567 M-Flow memory line. DD#604. |
+
+### Decocted Experience Improves Test-Time Inference — Shen et al.
+
+| 2604.04373 | Decocted Experience Improves Test-Time Inference in LLM Agents | ★★★★½ LANDMARK — Context as scaling axis. Decoction pipeline: collect → filter → extract → compress → inject. 23% WebArena, 18% SWE-Bench. Weak→strong transfer works. Directly describes what our Scout journal/DD system does. Inspires CR#307 Decoction Architecture synthesis. DD#605. |
+
+### ClawSafety: "Safe" LLMs, Unsafe Agents — Wei, Zhang, Pan, Mei, Wang, Hamm, Zhu, Ge (GMU/Tulane/Rutgers/ORNL)
+
+| 2604.01438 | ClawSafety: "Safe" LLMs, Unsafe Agents | ★★★★★ CRITICAL — Most comprehensive agent safety benchmark to date. 120 adversarial test cases across 3 attack vectors (skill injection/email/web), 5 professional domains, 5 harmful action types. 2,520 sandboxed trials across 5 frontier LLMs. KEY FINDINGS: (1) Trust-level gradient — skill injection (69.4% ASR) > email (60.5%) > web (38.4%); agents inherit trust from source channel, not content analysis. (2) Model hierarchy — Sonnet 4.6 (40%) substantially safer than GPT-5.1 (75%); Sonnet maintains hard 0% ASR on credential forwarding and destructive actions. (3) Scaffold matters — same model shifts 8.6pp ASR across frameworks; safety is property of model+framework pair. (4) CRITICAL INSIGHT: defense boundary is imperative vs. declarative framing — declarative phrasing ("X does not match Y") bypasses ALL defenses because reporting discrepancies is expected agent behavior. (5) Longer conversations increase vulnerability (more trust context built). (6) Named colleagues increase exfiltration 52.5pp over role-only (identity verification is trust heuristic). Chat-level safety ≠ agent-level safety. Connects DD#601 (safety undecidability), CR#264 (Cross-Layer Attack Taxonomy), CR#298 (Accountability Stack). DD#606. |
+
+### LLMA-Mem: Scaling Teams or Scaling Time — Wu, Luo, Liang, Shi, Ye, Payani, Shu
+
+| 2604.03295 | Scaling Teams or Scaling Time? Memory Enabled Lifelong Learning in LLM Multi-Agent Systems | ★★★★½ LANDMARK — First paper to jointly study team size × lifelong learning as dual scaling axes under cost constraints. Proposes LLMA-Mem framework with flexible memory topologies. KEY FINDING: Non-monotonic scaling landscape — larger teams do NOT always produce better long-term performance. Smaller teams + good memory OUTPERFORM larger teams without memory. Memory design is a practical path for scaling efficiency. Evaluated on MultiAgentBench (coding, research, DB environments). Directly validates our CR#306 scaling architecture thesis and CR#305 Memory-Intelligence Convergence. DD#607. |
+
+### Signals: Trajectory Sampling and Triage — Chen, Hafeez, Paracha
+
+| 2604.00356 | Signals: Trajectory Sampling and Triage for Agentic Interactions | ★★★★ EXCELLENT — Lightweight signal-based framework for triaging agent interaction trajectories without model calls. Signal taxonomy: interaction (misalignment, stagnation, disengagement, satisfaction), execution (failure, loop), environment (exhaustion). 82% informativeness rate vs 74% heuristic, 54% random. 1.52x efficiency gain per informative trajectory. Signals as practical sampling infrastructure for post-deployment optimization. Directly applicable to our agent observability — could instrument heartbeat loops. Connects DD#605 (decoction), CR#307 (decoction architecture), harness-engineering project. DD#608. |
+
+### Role Differentiation in Coupled Resource Ecology — Chaturvedi, El-Gazzar, van Gerven (Radboud)
+
+| 2604.00810 | Role Differentiation in a Coupled Resource Ecology under Multi-Level Selection | ★★★★ EXCELLENT — Multi-level selection enables emergent role differentiation that avoids tragedy-of-the-commons. Groups differentiate into distinct roles exploiting positive-sum (intake) and zero-sum (redistribution) resource channels. Zero-sum usage increases over generations despite not being directly optimized. Multi-level selection = group-level shapes shared substrate while individual-level selection operates within it. Key for understanding why agent specialization emerges and how to design for it. Connects DD#510 (emergent specialization), DD#557 (multi-level selection in MAS), CR#290 (Specialization-Generalization Tradeoff). DD#609. |
+
+### Free Information Disrupts Even Bayesian Crowds — arXiv:2604.01838
+
+| 2604.01838 | Free Information Disrupts Even Bayesian Crowds | ★★★★ EXCELLENT — Even perfectly rational Bayesian agents suffer from unconstrained information access. Free information can REDUCE collective accuracy by inducing correlated errors and herding. Information flow topology matters as much as information quality. Validates communication channel design principles from CR#299 (Agent Communication Stack) and DD#603 (CDCMA gain-delay decomposition). DD#610. |
+
+### The Silicon Mirror: Anti-Sycophancy Behavioral Gating — arXiv:2604.00478
+
+| 2604.00478 | The Silicon Mirror: Dynamic Behavioral Gating for Anti-Sycophancy in LLM Agents | ★★★★ EXCELLENT — Dynamic gating mechanism that modulates agent agreement behavior based on confidence and evidence quality. Behavioral gate decides when to agree vs. when to push back. Addresses sycophancy at architectural level rather than training level. Connects DD#520 (collusion detection), DD#573 (coordination deficits), CR#265 (Constitutional Evolution). DD#611. |
+

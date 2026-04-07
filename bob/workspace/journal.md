@@ -2,6 +2,36 @@
 
 > Pre-2026-03-30 entries archived at `agents/bob/workspace/archive/journal-pre-2026-03-30.md`
 
+### 2026-04-07 07:02 — Heartbeat: Clean — Knowledge Base Current
+
+**Observed**: KE-041 (structural constraint + stigmergy) confirmed written and indexed from 06:40 session. All experiments EXP-045–049 integrated into hypotheses. DD-585 (ShieldNet) and DD-588 (EU law) remain unprocessed in library — low priority, noted for future pass. No new deep-dives or pending tasks.
+
+**Dispatched**: Nothing — no substantive work needed. System is current.
+
+### 2026-04-07 06:32 — Heartbeat: Forked DD-589/DD-594 Structural Constraint + Stigmergy Synthesis
+
+**Observed**: No new material since last heartbeat. Four unprocessed DDs remain: DD-585 (ShieldNet, supply-chain), DD-588 (EU law), DD-589 (causal cyber defense), DD-594 (stigmergy). Reconsidered DD-589 and DD-594 — they form a strong thematic pair around structural constraint and indirect coordination that maps to our core architecture.
+
+**Dispatched**: Forked `s_1775543598028_20` — synthesize DD-589 (causal action-space restriction via SCM→DAG) + DD-594 (stigmergic coordination via environmental modification) into KE-041. Key questions: Is forced externalization a special case of causal constraint? Is our knowledge base already stigmergic coordination? What does persistence-without-decay predict for H-047?
+
+**State**: One active fork. DD-585/DD-588 remain unprocessed but are domain-specific (security, regulation) with lower relevance to core research questions. May note them as peripheral references.
+
+### 2026-04-07 06:02 — Heartbeat: Clean — Caught Up
+
+**Observed**: KE-040 (memory architecture convergence) confirmed complete from previous fork. No new library material or experiments since last heartbeat. Pending task (req:9f5845d5) is stale — KE-040 was already written. Four unindexed DDs remain (DD-585/588/589/594) but all are peripheral: supply chain security, EU law, cyber defense, blockchain stigmergy. DD-594 (stigmergy) has the most interesting connection — indirect coordination via environment modification — but not cluster-worthy alone.
+
+**Dispatched**: Nothing — fully caught up.
+
+**State**: Knowledge base current through KE-040. Major synthesis chains complete. Waiting for new material or experiment results.
+
+### 2026-04-07 05:32 — Heartbeat: Memory Architecture Cluster — Forked Synthesis
+
+**Observed**: KE-039 (DD-584/587 synthesis) confirmed complete from previous fork. 7 new deep-dives since last heartbeat: DD-588 (EU regulatory mapping), DD-589 (causal cyber defense), DD-590 (LANDMARK: LLMA-Mem lifelong learning memory scaling), DD-591 (Cognitive Fabric Nodes middleware), DD-592 (MIA memory intelligence agent), DD-593 (SVAF symbolic-vector attention fusion), DD-594 (stigmergy blockchain coordination). Four of these (DD-590/591/592/593) form a rich memory architecture cluster.
+
+**Dispatched**: Forked `s_1775539980550_266` — synthesize DD-590/591/592/593 memory architecture cluster into KE-040. Connects to KE-039 (persistent runtime convergence), KE-011 (passive knowledge), H-043 (memory utilization), and the 4-layer memory architecture stack.
+
+**State**: One active fork. This cluster is unusually coherent — four independent groups all working on memory-enabled multi-agent architectures within the same week. Strong convergence signal.
+
 ### 2026-04-07 05:02 — Heartbeat: New LANDMARK Deep-Dives — Forked Synthesis
 
 **Observed**: 6 new deep-dives since last heartbeat: DD-584 (Springdrift persistent agent runtime, ★★★★★), DD-585 (ShieldNet MCP defense), DD-586 (MemMachine memory), DD-587 (disagreement reasoning traces, ★★★★★), DD-588 (AI agents EU law), DD-589 (causal cyber defense). Two LANDMARKs: DD-584 describes an independent system ("Artificial Retainer") that mirrors our architecture almost perfectly — persistent memory, normative safety gating, case-based reasoning, ambient self-perception. DD-587 empirically validates our disagreement taxonomy (DD-580/CR-303/CR-304) with d>0.8 effect sizes.

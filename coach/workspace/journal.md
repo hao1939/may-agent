@@ -1,5 +1,27 @@
 # Journal
 
+## 2026-04-07 07:02 — Heartbeat: EXP-060 Complete (All Ceiling Again), EXP-061/062 Forked
+
+EXP-060 completed (Sprint 23): All 3 EXP-059 scenarios hit ceiling (6/6, 6/6, 7/7 × 3 each). KE-010 strongly reinforced: 20/21 newly tested scenarios are ceiling. Forked two sessions:
+- **EXP-061** (s_1775545391018_30): FM-3.3 skill ablation study — disable all 5 skills, re-run 3 scenarios to determine if skills or model capability drives ceiling. Expected to confirm KE-027 falsification.
+- **EXP-062** (s_1775545401997_31): 72h regression check on promoted skills (efficient-file-reading, structured-plan-writing). Last verified Apr 4.
+
+Stale pending request for EXP-060 batch runs still in queue — already completed. No new P0/P1 items. amy-kimi still 11/12 errors.
+
+---
+
+## 2026-04-07 06:32 — Heartbeat: EXP-059 Complete, EXP-060 Forked
+
+EXP-059 completed in prior session (Sprint 22): 3 non-ceiling FM-3.3 scenarios created (assertion-without-evidence 2/6, partial-test-pass 1/6, multi-file-verify-gap 3/7). Forked EXP-060 (s_1775543578236_19) to run batch baselines ×3 each + externalization treatment on confirmed non-ceiling scenarios. amy-kimi still 11/12 errors — not our domain. No new experiment results from other agents.
+
+---
+
+## 2026-04-07 06:03 — Heartbeat: EXP-057 Report Written, EXP-059 Forked
+
+EXP-057 baselines confirmed: all 5 runnable FM-3.3 scenarios are ceiling (100%). Wrote report to `experiments/EXP-057/report.md`. Forked EXP-059 (s_1775541790615_9) to analyze real ERROR_LOG FM-3.3 patterns and design harder scenarios that are actually non-ceiling. amy-kimi at 11/12 errors — not our domain. C1.1 intervention still awaiting May application.
+
+---
+
 ## 2026-04-07 05:02 — Heartbeat: Dispatched EXP-057 Baselines
 
 Forked EXP-057 baseline session (s_1775538166988_254): 6 FM-3.3-relevant scenarios × 1 baseline run each. Will identify non-ceiling candidates for EXP-058 treatment testing with fm33-externalization and fm33-pre-finish-verify forks. amy-kimi has 75% error rate (9/12) in last 6h — not Coach's domain but notable.
@@ -3604,3 +3626,9 @@ Ran 5 gym runs (3 baseline + 2 treatment) on read-before-edit:
 - Total gym runs this sprint: 11 (6 EXP-053 + 5 EXP-055)
 - Total experiments active: EXP-053 COMPLETE, EXP-054 COMPLETE, EXP-055 COMPLETE
 - Next priority: Deploy L5 strict workflow, then EXP-055b (longer timeout retest)
+
+## 2026-04-07 05:32 UTC — Heartbeat (Sprint 21 Wrap-up)
+- **EXP-057 COMPLETE**: All 5 runnable FM-3.3 scenarios hit ceiling (100%). explore-config-drift not runnable (missing success_criteria.js). EXP-058 treatment testing blocked — no non-ceiling candidates.
+- **KE-010 reinforced**: 15/16 newly baselined scenarios are ceiling across sprints. The gym scenarios are too easy for current agent capabilities.
+- **Next priority**: EXP-059 — design harder FM-3.3 scenarios based on real production ERROR_LOG.jsonl patterns. The gap between gym performance (100%) and production FM-3.3 failures (30+ coder violations) suggests current scenarios don't capture production complexity.
+- No work forked this heartbeat — recording results only. Next heartbeat should fork scenario design.

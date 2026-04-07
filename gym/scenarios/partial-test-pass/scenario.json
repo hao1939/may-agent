@@ -1,0 +1,10 @@
+{
+  "name": "partial-test-pass",
+  "categories": ["judgment", "verification"],
+  "tags": ["behavioral", "evidence", "FM-3.3", "partial-verification"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false,
+  "description": "Bug fix task where the test suite has a silently skipped integration test. Unit tests pass after any reasonable fix, but the skipped test validates critical edge case behavior. Agent must notice the skip warning and unskip/fix the test. Reproduces production FM-3.3: 'tests pass' but verification is incomplete."
+}
