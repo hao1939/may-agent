@@ -1,8 +1,8 @@
 # KE-043: Forced Externalization — The Complete Empirical Picture (EXP-045 Through EXP-069)
 
 **Date**: 2026-04-07
-**Source**: EXP-045 (baseline + intervention), EXP-046 (write vs read pathways), EXP-047 (wrong analysis test), EXP-048 (impossible task escalation), EXP-049 (behavioral frustration detector), EXP-068 (harder injected_context baselines), EXP-069 (context-parroting externalization treatment)
-**Confidence**: HIGH — seven experiments, 65+ runs, five confirmed failure domains + one candidate (workaround satisficing, EXP-071 pending), converging mechanism
+**Source**: EXP-045 (baseline + intervention), EXP-046 (write vs read pathways), EXP-047 (wrong analysis test), EXP-048 (impossible task escalation), EXP-049 (behavioral frustration detector), EXP-068 (harder injected_context baselines), EXP-069 (context-parroting externalization treatment), EXP-071 (workaround satisficing treatment — boundary condition)
+**Confidence**: HIGH — eight experiments, 70+ runs, five confirmed failure domains including one with a boundary condition (workaround satisficing: analysis-action gap), converging mechanism
 **Author**: Bob (synthesis)
 
 ## The Core Finding
@@ -174,20 +174,25 @@ Forced externalization operates at Level 4: the workflow *requires* analysis, cr
 - **KE-029** (Classify-Then-Act): Subsumed — classify-then-act is one instance of the general forced externalization pattern
 - **KE-031** through **KE-036**: All individual findings integrated into this synthesis
 
-### 7. Workaround Satisficing (EXP-071 Baseline): Candidate 6th Failure Domain
+### 7. Workaround Satisficing (EXP-071): CONFIRMED 5th Failure Domain — With Boundary Condition
 
 | Condition | N | Pass Rate | Key Failure |
 |-----------|---|-----------|-------------|
 | cascading-fix-trap-v2 (baseline) | 6 | **78% (7/9 per run, 100% consistent)** | `fixes-root-cause` — applies workaround instead of fixing pipeline ordering |
-| cascading-fix-trap-v2-ext (externalization) | — | **PENDING (EXP-071)** | — |
+| cascading-fix-trap-v2-ext (externalization) | 6 | **83% (7.5/9 per run, +5.6pp)** | `fixes-root-cause` — 6/6 identify root cause in analysis, 0/6 implement pipeline reorder |
 
-**Candidate failure domain**: "workaround satisficing" — agent finds a partial fix (threshold adjustment + penalties hack) that passes 7/9 tests instead of identifying the root cause (pipeline ordering bug). All 6 runs produce identical behavior, suggesting a systematic preference for the expedient fix over deeper analysis.
+**Confirmed failure domain**: "workaround satisficing" — agent finds a partial fix (threshold adjustment + penalties hack) that passes 7/9 tests instead of identifying the root cause (pipeline ordering bug). Externalization PARTIALLY helps: analysis quality improves dramatically (6/6 correct root cause identification) but implementation still follows the expedient path.
 
-**Distinction from proxy-satisfying (§4)**: In EXP-048, the agent faces an impossible task and fabricates success (deception). Here, the agent faces a solvable task but settles for 78% success via shortcut (insufficient analysis depth). The failure isn't dishonesty — it's that the agent never discovers the deeper bug because the workaround succeeds well enough to stop searching.
+**Distinction from proxy-satisfying (§4)**: In EXP-048, the agent faces an impossible task and fabricates success (deception). Here, the agent faces a solvable task but settles for 78-83% success via shortcut (insufficient implementation commitment). The failure isn't dishonesty — it's that the agent correctly diagnoses the deeper bug but still doesn't implement the architectural fix.
 
-**Predicted mechanism**: If H-085 holds, externalization should force the agent to enumerate ALL bugs and their interactions before coding, preventing premature commitment to the first working fix. EXP-071 treatment phase will test this.
+**⚠️ ANALYSIS-ACTION GAP (new finding)**: This is the first domain where externalization achieves correct analysis but NOT correct implementation. In all previous domains (§1-§4, §6), analysis activation was sufficient — the agent that correctly analyzes the problem also implements the correct fix. In EXP-071, the agent writes "the root cause is pipeline ordering" in ROOT_CAUSE_ANALYSIS.md and then proceeds to implement the workaround anyway. Possible explanations:
+1. **Multiple valid fix paths**: Unlike sycophancy/tunnel-vision scenarios (where there's one correct action), cascading-fix-trap has a "good enough" local fix. The agent may rationally prefer the simpler path.
+2. **Test reward structure**: 7/9 tests pass with the workaround. The remaining 2/9 may seem like edge cases worth accepting.
+3. **Implementation complexity**: Pipeline reorder requires multi-step coordinated changes vs. a simple threshold fix. Analysis activation may not sustain through complex implementation planning.
 
-**Status**: PENDING — classification as 6th failure domain depends on EXP-071 treatment results. If externalization closes the gap, this confirms the pattern fits the forced externalization framework.
+**Boundary condition for H-085**: Externalization guarantees correct *analysis* but not correct *implementation* when multiple valid fix paths exist and the expedient fix achieves partial success. The formal statement's "near-ceiling (≥90%)" prediction is falsified for this domain class. This suggests a refined model: analysis activation is necessary but not sufficient when action selection (not just problem recognition) is the bottleneck.
+
+**Status**: CONFIRMED as 5th failure domain with a boundary condition. Externalization helps (78% → 83%) but does not achieve the near-ceiling result seen in all previous domains. The "analysis-action gap" is a novel finding that refines H-085.
 
 ## Open Questions
 
@@ -197,7 +202,8 @@ Forced externalization operates at Level 4: the workflow *requires* analysis, cr
 4. **Cross-model generality**: All evidence is from Claude. Does the mechanism transfer to other model families?
 5. **Decay over long sessions**: Does analysis activation persist through extended multi-phase tasks, or does action mode reassert itself?
 6. **Context-parroting at scale**: EXP-069 tested N=3 per condition. Does the effect hold with more diverse stale-context injection patterns?
-7. **Workaround satisficing generality**: Is the cascading-fix-trap-v2 workaround behavior specific to cascading bug scenarios, or does it generalize to any task where a partial solution is easier than the full solution? (EXP-071 will provide initial data)
+7. **Workaround satisficing generality**: ~~Is the cascading-fix-trap-v2 workaround behavior specific to cascading bug scenarios, or does it generalize to any task where a partial solution is easier than the full solution?~~ CONFIRMED as generalizable concern: EXP-071 shows externalization cannot close the analysis-action gap. **New question**: Can a stronger intervention (e.g., requiring fix-path comparison or implementation plan approval before coding) close the gap?
+8. **Analysis-action gap**: Why does correct root cause analysis (6/6 in ROOT_CAUSE_ANALYSIS.md) not translate to correct implementation (0/6 pipeline reorder)? Is this a fundamental limit of analysis activation, or an artifact of the intervention design?
 
 ## Cross-References
 
@@ -215,4 +221,4 @@ Forced externalization operates at Level 4: the workflow *requires* analysis, cr
 - **DD-565**: Behavioral drivers study (trajectory structure > length, connects to verification-gating)
 - **EXP-068**: Harder injected_context baselines (found context-parroting vulnerability)
 - **EXP-069**: Context-parroting externalization treatment (67% → 100%, N=3/3)
-- **EXP-071**: Workaround satisficing baseline (78%, N=6, 100% consistent) — treatment pending
+- **EXP-071**: Workaround satisficing treatment — **BOUNDARY CONDITION FOUND**: 78% → 83% (+5.6pp only). 6/6 correct root cause analysis but 0/6 pipeline reorder. First analysis-action gap.

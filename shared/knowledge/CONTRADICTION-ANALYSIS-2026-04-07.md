@@ -147,15 +147,17 @@ All findings are specific to Claude Sonnet 4. Multiple entries note this, but th
 
 ## RECOMMENDED ACTIONS (Priority Order)
 
-1. **Update KE-007** to accommodate forced externalization evidence (C1) — HIGH
-2. **Note KE-027 falsification gap** in H-043 theory chain (C3) — MEDIUM
-3. **Update KE-015** to note asymmetric validation (C5) — MEDIUM
-4. **Add cross-reference** between H-047 and H-055 noting the pruning deadlock (T3) — MEDIUM
-5. **Resolve T1** by adding explicit scope boundaries to KE-052 and KE-034 — MEDIUM
-6. **Update KE-010** to scope to coding scenarios (C4) — LOW
-7. **Fix KE-050 filename** in INDEX.md (U2) — LOW
-8. **Update KE-011** with stronger evidence base (U1) — LOW
-9. **Add H-043 caveat** about KE-025 overhead risk (C2) — LOW
+1. **Update KE-007** to accommodate forced externalization evidence (C1) — HIGH ✅ DONE 2026-04-07
+2. **Note KE-027 falsification gap** in H-043 theory chain (C3) — MEDIUM ✅ DONE 2026-04-07
+3. **Update KE-015** to note asymmetric validation (C5) — MEDIUM ✅ DONE 2026-04-07
+4. **Add cross-reference** between H-047 and H-055 noting the pruning deadlock (T3) — MEDIUM ✅ DONE 2026-04-07
+5. **Resolve T1** by adding explicit scope boundaries to KE-052 and KE-034 — MEDIUM ✅ DONE 2026-04-07
+6. **Update KE-010** to scope to coding scenarios (C4) — LOW ✅ DONE 2026-04-07
+7. **Fix KE-050 filename** in INDEX.md (U2) — LOW ✅ N/A — INDEX.md already has correct filename
+8. **Update KE-011** with stronger evidence base (U1) — LOW ✅ DONE 2026-04-07
+9. **Add H-043 caveat** about KE-025 overhead risk (C2) — LOW ✅ DONE 2026-04-07
+
+**All 9 recommended actions resolved.**
 
 ---
 

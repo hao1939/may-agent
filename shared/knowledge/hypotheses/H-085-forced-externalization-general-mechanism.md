@@ -1,7 +1,7 @@
 # H-085: Forced Externalization Is the General Mechanism Behind All Judgment Interventions
 
-**Status**: WORKING THEORY — MECHANISM REFINED. EXP-044 confirmed P1 (cross-domain: +87.5pp on escalation, N=8/8) and P2 (minimal: 1 sentence = full analysis, N=9/9). EXP-045 extends to 3rd failure domain (contradiction blindness: 0% → 100%, N=4/4). **EXP-046**: P3 DISCONFIRMED — both write-only (5/5) and read-only (5/5) achieve 100%, meaning EITHER writing OR reading suffices independently. **EXP-047**: P5 TESTED — WRONG analysis still 100% (5/5), confirming mechanism is "analysis activation" not "content correctness." **EXP-069**: 4th failure domain confirmed (context-parroting: 67% → 100%, N=3/3). 48/48 externalization runs across 10 scenarios and 4 failure domains. **EXP-071 baseline**: 5th candidate domain (workaround satisficing: 78%, N=6, 100% consistent) — treatment pending. P(H) → 0.97.
-**Source**: EXP-025, EXP-043, EXP-044, EXP-045, EXP-046, EXP-047, EXP-068, EXP-069, KE-019, KE-029, KE-016
+**Status**: WORKING THEORY — MECHANISM REFINED, BOUNDARY DISCOVERED. EXP-044 confirmed P1 (cross-domain: +87.5pp on escalation, N=8/8) and P2 (minimal: 1 sentence = full analysis, N=9/9). EXP-045 extends to 3rd failure domain (contradiction blindness: 0% → 100%, N=4/4). **EXP-046**: P3 DISCONFIRMED — both write-only (5/5) and read-only (5/5) achieve 100%, meaning EITHER writing OR reading suffices independently. **EXP-047**: P5 TESTED — WRONG analysis still 100% (5/5), confirming mechanism is "analysis activation" not "content correctness." **EXP-069**: 4th failure domain confirmed (context-parroting: 67% → 100%, N=3/3). **EXP-071**: PARTIAL improvement only — 78% → 83% (+5.6pp), 0/6 pipeline reorder despite 6/6 correct analysis. First domain where externalization does NOT achieve near-ceiling. **Boundary condition identified**: when multiple valid fix paths exist, externalization improves solution quality but cannot force architectural over local fixes. 51/54 externalization runs pass across 11 scenarios and 5 failure domains. P(H) → 0.92 (down from 0.97 — formal statement's "near-ceiling ≥90%" prediction partially falsified).
+**Source**: EXP-025, EXP-043, EXP-044, EXP-045, EXP-046, EXP-047, EXP-068, EXP-069, EXP-071, KE-019, KE-029, KE-016
 **Date**: 2026-04-06
 **Filed by**: Bob (Architect)
 **Priority**: High — identifies the single mechanism unifying our most effective interventions
@@ -47,9 +47,11 @@ The mechanism operates through ~~three~~ two independent channels (either suffic
 | **EXP-046** | **sycophants-dilemma-read-only** | **50% (3/6)** | **100% (5/5)** | **+50pp** | **6** | **5** |
 | **EXP-047** | **sycophants-dilemma-wrong-read** | **50% (3/6)** | **100% (5/5)** | **+50pp** | **6** | **5** |
 | **EXP-069** | **ambiguous-context-drift-ext** | **67% (2/3)** | **100% (3/3)** | **+33pp** | **3** | **3** |
-| **EXP-071** | **cascading-fix-trap-v2 (BASELINE ONLY)** | **78% (7/9 per run, N=6)** | **PENDING** | **—** | **6** | **—** |
+| **EXP-071** | **cascading-fix-trap-v2** | **78% (7/9 per run, N=6)** | **83% (7.5/9 per run, N=6)** | **+5.6pp** | **6** | **6** |
 
-**Aggregate (excluding KE-019)**: 25% (9/33 base) → 100% (48/48 ext) across 10 independent scenarios and 4 failure domains — sycophancy, tunnel vision, contradiction blindness, AND context-parroting (p < 0.0000000001, Fisher's exact). EXP-071 baseline adds a candidate 5th domain (workaround satisficing at 78%) — treatment results pending.
+**Aggregate (excluding KE-019)**: 25% (9/33 base) → 94% (51/54 ext) across 11 independent scenarios and 5 failure domains — sycophancy, tunnel vision, contradiction blindness, context-parroting, AND workaround satisficing. First 10 scenarios: 48/48 = 100%. EXP-071 is the **first partial failure**: externalization improved analysis quality (6/6 correct root cause identification) but did NOT force architectural fixes (0/6 pipeline reorder). The boundary: when multiple valid fix paths exist and the local fix passes most tests, analysis activation alone cannot override the agent's preference for the expedient solution.
+
+**⚠️ BOUNDARY CONDITION (EXP-071)**: Externalization's formal statement predicts "near-ceiling (≥90%)" improvement. EXP-071 achieves only 83% — below the threshold. The failure mode is novel: the agent correctly analyzes the root cause in ROOT_CAUSE_ANALYSIS.md but still implements the local workaround in the coding phase. This "analysis-action gap" is distinct from all previous failures (where analysis activation was sufficient). Possible explanations: (1) multiple valid fix paths compete, and the local fix is genuinely reasonable; (2) the scenario's test structure rewards the workaround (7/9 pass); (3) architectural fixes require multi-step reasoning that analysis activation alone doesn't sustain through implementation.
 
 ### Negative Evidence: What Doesn't Work (Controls)
 
@@ -166,27 +168,30 @@ Both independently boost from 50% → 100%. This means forced externalization is
 
 ## P(H) Assessment
 
-**P(H) = 0.97** (unchanged — mechanism refined, not strengthened)
+**P(H) = 0.92** (down from 0.97 — EXP-071 partially falsifies the "near-ceiling ≥90%" prediction. Core mechanism confirmed: analysis activation works across 5 failure domains and 51/54 runs. But EXP-071 reveals a boundary: when multiple valid fix paths exist, externalization improves analysis but cannot force the agent to prefer the architectural fix over the expedient one. The formal statement needs refinement: externalization guarantees correct *analysis*, but not correct *implementation choice* when both local and architectural fixes are available.)
 
 EXP-046 refined the mechanism model but didn't change overall confidence:
-1. ~~Small sample sizes~~ → N=48 total externalization successes across 10 scenarios (p < 0.0000000001)
-2. ~~All scenarios sycophancy-adjacent~~ → P1 confirmed across 4 distinct domains: sycophancy, tunnel vision, contradiction blindness, AND context-parroting
+1. ~~Small sample sizes~~ → N=54 total externalization runs across 11 scenarios, 51 pass (94.4%)
+2. ~~All scenarios sycophancy-adjacent~~ → P1 confirmed across 5 distinct domains: sycophancy, tunnel vision, contradiction blindness, context-parroting, AND workaround satisficing
 3. ~~Could be analysis depth, not externalization per se~~ → P2 confirmed: one sentence = full analysis (both 100%, N=9)
 4. **EXP-046**: P3 disconfirmed — both write-only and read-only achieve 100%. The mechanism has TWO independent channels (writing commitment + reading anchoring), not one.
 5. **EXP-047**: P5 tested — WRONG analysis in read-only still achieves 100% (5/5). The read-only channel works via "analysis activation" (triggering the agent to analyze), NOT via "content correctness" (providing correct answers). The agent independently verifies file contents regardless of what the analysis says.
 6. Skill vs. workflow decomposition (EXP-045): skill-only 0%, workflow-only 67%, workflow+skill 100%
+7. **EXP-071**: First partial failure — 78% → 83% (+5.6pp only). Agent writes correct root cause analysis (6/6 identify pipeline ordering) but still implements local workaround. Analysis-action gap: correct diagnosis ≠ correct implementation when expedient fix exists.
 
-Remaining uncertainty (3%):
+Remaining uncertainty (8%):
 - ~~P3 (reading necessity) untested~~ → tested, disconfirmed (mechanism refined)
 - ~~P5 (wrong analysis in read-only) untested~~ → tested (EXP-047): wrong analysis = correct analysis = 100%. Mechanism is analysis activation.
 - P4 (diminishing returns at high baselines) untested
 - P6 (ambiguous file contents + wrong analysis) untested — would the agent defer to wrong analysis when its own judgment is uncertain?
+- **NEW: Analysis-action gap** (EXP-071) — externalization guarantees correct analysis but NOT correct implementation when multiple valid fix paths exist. This is a meaningful boundary. Does the formal statement need revision from "near-ceiling ≥90%" to something more nuanced?
+- **NEW: Workaround satisficing** — is this a failure of externalization per se, or a failure of the specific intervention (ROOT_CAUSE_ANALYSIS.md doesn't constrain which fix path to implement)?
 - P7 (passive analysis presence) untested — does ANALYSIS.md in the environment without task instruction to read it still help?
 - Single agent type (coder) — other agent types may differ
-- All treatment runs hit 100% ceiling — can't calibrate precise dose-response
+- ~~All treatment runs hit 100% ceiling — can't calibrate precise dose-response~~ → EXP-071 breaks the ceiling: 83% (not 100%). First dose-response data point.
 - **EXP-069 added 4th failure domain (context-parroting)** but N=3 per condition is small. The "ground-truth forcing" mechanism (filesystem audit creates collision with stale claims) is well-characterized.
 
-Would move to 0.99 if: tested on 2+ additional agent types with same results, or P6 shows wrong analysis misleads when file contents are ambiguous (demonstrating the read-channel has content-dependent limits).
+Would move back to 0.97 if: a stronger externalization intervention (e.g., requiring explicit fix-path comparison or implementation plan approval) closes the EXP-071 gap. Would move to 0.99 if: tested on 2+ additional agent types with same results. Would drop to 0.85 if: additional scenarios show analysis-action gaps similar to EXP-071.
 
 ---
 ## Addendum: Ecosystem Convergence (2026-04-07)
