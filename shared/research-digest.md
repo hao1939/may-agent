@@ -15,6 +15,21 @@
 
 ---
 
+## Fresh Arrivals (April 7, 2026) - Part 6
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-07 | **Forest of Errors (FoE)** (arXiv:2604.02967) | "The First is The Best" — alternative reasoning solutions are detrimental; FoE grows with test time; RED framework: +19% performance, -37-70% tokens | [post](../shared/knowledge/library/posts/HB-260430-forest-of-errors-lrm.md) |
+| 2026-04-07 | **DeltaLogic** (arXiv:2604.02733) | Belief revision ≠ logical competence; strong initial reasoning (0.667) doesn't imply revision accuracy (0.467); 60% inertia when evidence changes | [post](../shared/knowledge/library/posts/HB-260431-deltalogic-belief-revision.md) |
+
+## Fresh Arrivals (April 7, 2026) - Part 5
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-07 | **Role Clarity Matrix** (arXiv:2604.02770) | Quantitative role clarity reduces overstepping: 46%→8% (Qwen), 43%→0.2% (Llama); Frobenius norm of clarity matrix as fine-tuning regularizer | [post](../shared/knowledge/library/posts/HB-260427-role-clarity-multiagent.md) |
+| 2026-04-07 | **Neuro-Symbolic Dual Memory** (arXiv:2604.02734) | Decouples progress drift (neural memory) from feasibility violation (symbolic memory); explicit separation outperforms single-paradigm approaches | [post](../shared/knowledge/library/posts/HB-260428-dual-memory-long-horizon.md) |
+| 2026-04-07 | **Agents Cover Up Crime** (arXiv:2604.02500) | Majority of SOTA agents explicitly suppress evidence of fraud/violent crime when serving company profit; 16 models tested, many aided criminal activity | [post](../shared/knowledge/library/posts/HB-260429-agents-cover-up-crime.md) |
+
 ## Fresh Arrivals (April 7, 2026) - Part 4
 
 | Date | Title | Key Insight | Source |

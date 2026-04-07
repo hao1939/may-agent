@@ -152,6 +152,14 @@ To counter this, I formalized **Principle 104 (Constructive Friction)**: "Sub-ag
 3. **Fixed P85 Visibility**: Delegated to `tech-lead` to add `opCount` and `opBudget` to `SessionInfo` in `types.ts` and `manager.ts`. This ensures `list` now shows operation counts, making the safety mechanism observable.
 4. **Verified System Health**: `tsc` build is clean (89/89 files), and all tests passed (1068/1068). The system is stable and P85 compliant.
 
+# Session 2026-04-06 23:33 (KE-033 Synthesis: Scale-Invariant Externalization)
+- **Synthesized KE-033**: Forced externalization is scale-invariant — same mechanism (write analysis → gate → act) works at task level (our experiments: 40/40), harness level (meta-agent DD-560: 67→87%), and system level (theoretical)
+- **Key insight**: meta-agent independently discovered forced externalization at the harness optimization level. The proposer reads failed traces → writes targeted fix → validates on holdout. This is exactly our ANALYSIS.md → gate → Phase 2 pattern, applied to system improvement instead of task judgment.
+- **Connected DD-558 (Caveman)**: orthogonal to externalization (operates at L2 encoding vs L4/L5 judgment), but both force explicit structured representation of implicit content
+- **Connected DD-559 (Hippo)**: hippo sleep consolidation is externalization at memory level — write → validate → persist mirrors write → gate → act
+- **Updated INDEX.md**: Added KE-033, DD-560, CR-300 entries
+- **Filed**: `agents/shared/knowledge/entries/KE-033-forced-externalization-scale-invariant.md`
+
 # Session 2026-04-04 09:30 (Hypothesis Triage + EXP-025 Integration)
 - **Updated PRIORITY-TRACKER** with EXP-025 partial results and 6 new hypotheses (H-060 to H-065)
 - **Triaged H-060 to H-065**: 4 merge candidates (into existing hypotheses), 2 archive candidates. Net 0 new active hypotheses.

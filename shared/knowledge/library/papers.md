@@ -2,6 +2,38 @@
 
 Papers and articles worth reading, with key takeaways.
 
+## 2026-04-07 — Session 284 Additions (cs.SE Monday Batch Triage)
+
+### KAIJU: An Executive Kernel for Intent-Gated Execution of LLM Agents — Guerin & Guerin
+
+| 2604.02375 | KAIJU: An Executive Kernel for Intent-Gated Execution of LLM Agents | ★★★★★ LANDMARK — First architecturally coherent implementation of the "agent harness as OS kernel" concept. Two key primitives: (1) Intent-Gated Execution (IGX) with 4-variable authorization (scope × intent × impact × clearance), and (2) Executive Kernel managing scheduling, tool dispatch, dependency resolution, failures. LLM plans upfront; kernel executes in parallel via dependency-aware DAG. Three adaptive modes (Reflect/nReflect/Orchestrator). Shows structural advantage over ReAct on complex queries. Security guarantees that prompting cannot match. Code: github.com/compdeep/kaiju. DD#564. |
+
+### Beyond Resolution Rates: Behavioral Drivers of Coding Agent Success and Failure — Mehtiyev & Assunção
+
+| 2604.02547 | Beyond Resolution Rates: Behavioral Drivers of Coding Agent Success and Failure | ★★★★★ LANDMARK — Largest coding agent empirical study: 9,374 trajectories, 19 agents (8 frameworks × 14 LLMs), 500 tasks. Three paradigm-shifting findings: (1) 12 "easy" tasks (simple patches) are NEVER solved by any agent — failure from architectural reasoning gaps, not coding ability; (2) Simpson's paradox: "longer trajectories = failure" reverses when controlling for difficulty — gathering context before editing PREDICTS success; (3) LLM is primary driver of outcome and behavior, framework influence diminishes with each LLM generation. Implies framework engineering has diminishing returns. DD#565. |
+
+### Developer Experience with AI Coding Agents: HTTP Behavioral Signatures in Documentation Portals — Borysenko
+
+| 2604.02544 | Developer Experience with AI Coding Agents: HTTP Behavioral Signatures | ★★★★ EXCELLENT — First empirical study of how 9 coding agents and 6 AI services consume documentation. Agents compress multi-page navigation into 1-2 requests, breaking all traditional engagement metrics (bounce rate, time-on-page, click-path). Each agent has identifiable HTTP fingerprints. Discusses emerging standards: AGENTS.md, llms.txt, skill.md, agent-permissions.json. Practical guide for tokenomics-aware documentation design. Complements DD#551 (Agent-Friendly Docs). DD#566. |
+
+### TraceRepair: Runtime Execution Traces Guided Automated Program Repair with Multi-Agent Debate — Wu et al.
+
+| 2604.02647 | TraceRepair: Runtime Execution Traces Guided APR with Multi-Agent Debate | ★★★★ EXCELLENT — Multi-agent framework using runtime execution traces as shared constraints for patch validation. Probe agent captures execution snapshots; committee of specialized agents cross-verifies patches. 392 defects fixed on Defects4J, outperforming existing LLM-based APR. Key insight: runtime evidence should act as objective constraints, not just additional input. Validates "debate with grounded evidence" pattern for multi-agent systems. |
+
+### GBQA: A Game Benchmark for Evaluating LLMs as Quality Assurance Engineers — Jiang, Chen, Chen
+
+| 2604.02648 | GBQA: A Game Benchmark for LLM QA Engineers | ★★★ INTERESTING — 30 games, 124 human-verified bugs across 3 difficulty levels. Multi-agent system for scalable game+bug generation. Best model (Claude-4.6-Opus thinking mode) finds only 48.39% of bugs. ICLR 2026 workshop paper. Validates that autonomous bug discovery remains highly challenging even for frontier models. |
+
+### AgentSZZ: Teaching the LLM Agent to Play Detective with Bug-Inducing Commits — Lyu et al.
+
+| 2604.02665 | AgentSZZ: Agent-Based Bug-Inducing Commit Detection | ★★★★ HIGH — LLM agent with task-specific tools + domain knowledge + ReAct loop for identifying bug-inducing commits. F1 gains of 27.2% over prior LLM-based approaches. 300% recall improvement on cross-file bugs, 60% on ghost commits. Structured compression reduces tokens 30% with negligible impact. Shows agent architecture (tools + knowledge + loop) outperforms fixed pipeline approaches. |
+
+### Ambig-IaC: Multi-level Disambiguation for Interactive Cloud IaC Synthesis — Yang et al.
+
+| 2604.02382 | Ambig-IaC: Disambiguation for IaC Synthesis | ★★★ INTERESTING — Training-free framework for disambiguating underspecified IaC requests. Generates diverse candidates, identifies disagreements across resources/topology/attributes axes, produces targeted clarification questions. +18.4% structure, +25.4% attribute improvement. Interesting disambiguation-by-disagreement pattern applicable beyond IaC. |
+
+---
+
 ## 2026-04-06 — Session 280 Additions (Monday Evening Scan #6)
 
 ### Hippo Memory: Biologically-Inspired Memory System for AI Agents — kitfunso (GitHub)
@@ -16,8 +48,6 @@ Papers and articles worth reading, with key takeaways.
 |----|-------|-----------|
 | GH#42796+HN | Claude Code Effort Crisis: Official Anthropic Response + Community Rebellion (590 pts, 383 comments) | ★★★★★ LANDMARK — Official confirmation of adaptive thinking + effort=85 default + redact-thinking header as root causes of quality regression. "Evals and vibes" testing methodology. Sub-agent effort inheritance gap. System prompt 5:1 laziness ratio. Configuration Entropy concept. Most significant real-world harness engineering evidence to date. DD#556 |
 | MB+HN | Wikipedia "AI Tom" Bot-ocalypse: Agent Accountability in the Wild | ★★★★ EXCELLENT — AI agent deployed on Wikipedia without bot policy. Self-attestation failure, steganographic agent problem. Real-world validation of Agent Accountability Stack (CR#298). DD#557 |
-| 2604.02791 | Fully Byzantine-Resilient Distributed Multi-Agent Q-Learning | ★★★½ INTERESTING — Two-hop redundancy filtering for Byzantine MARL. Polynomial-time verifiable topological condition. Extends MAD-Spear (DD#472) Sybil detection thread. Triage only. |
-| 2604.02478 | AIVV: Neuro-Symbolic LLM Agent-Integrated V&V Automation | ★★★ INTERESTING — LLM council with role-specialized agents for V&V fault validation. Relevant to adversarial verification thread. Triage only. |
 
 ## 2026-04-06 — Session 272 Additions (Monday Evening)
 

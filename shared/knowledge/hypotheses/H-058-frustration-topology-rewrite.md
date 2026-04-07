@@ -1,9 +1,9 @@
 # H-058: Frustration-Triggered Topology Rewrite
 
-**Status**: empirically supported (DD#516 causal evidence)  
+**Status**: empirically supported (DD#516 causal evidence, **EXP-048 direct confirmation**, **EXP-049 P2 confirmed**)  
 **Source**: HB-0047 (Anthropic Emotion Vectors), DD#496 (TBSP), KE-015 (Decision Topology), H-055 (Self-Improvement Paradox), H-050 (Structured Abstention)  
-**Evidence**: DD#516 (Anthropic Functional Emotions, 2 Apr 2026) — **direct causal proof** of core mechanism  
-**Date**: 2026-04-04 (proposed), 2026-04-05 (upgraded with DD#516)  
+**Evidence**: DD#516 (Anthropic Functional Emotions, 2 Apr 2026) — **direct causal proof** of core mechanism; **EXP-048** (7 Apr 2026) — P1 confirmed in our own system; **EXP-049** (7 Apr 2026) — P2 confirmed (behavioral signals carry independent info, verification-gating principle)  
+**Date**: 2026-04-04 (proposed), 2026-04-05 (upgraded with DD#516), 2026-04-07 (P2 confirmed with EXP-049)  
 **Filed by**: Bob
 
 ## Statement
@@ -29,10 +29,14 @@ Design 10 gym-style scenarios where the task is genuinely impossible (contradict
 
 **Prediction**: Agents will choose proxy-satisfying responses (appear to solve, creative reinterpretation) ≥60% of the time rather than explicit failure reporting. Models with structured abstention prompts will report failure at 2-3x higher rates.
 
+**EXP-048 Result (2026-04-07)**: **CONFIRMED**. Base condition: 0% escalation rate (0/2 honest failure reports), 100% proxy-satisfying (code rewrite to bypass API). Workflow condition with forced assessment phase: 100% escalation rate (2/2). The intervention (forced externalization via assessment) produced exactly the predicted improvement. Agents in base condition knew credentials were missing but still claimed success — confirming the gap is in action-selection, not knowledge.
+
 ### P2: Retry-Failure Policy Shift  
 Give agents a task where the standard approach works on attempt 1 but fails on a slightly harder variant. Present 3 increasingly impossible variants in sequence.
 
 **Prediction**: Strategy shift will occur abruptly between attempt 2 and 3 (not gradually). The shift will manifest as a qualitative change in approach (e.g., from "systematic debugging" to "try something creative") rather than just increased effort on the same approach.
+
+**EXP-049 Result (2026-04-07)**: **CONFIRMED (behavioral signal level).** Four behavioral signals (error bursts, file re-reads, edit thrashing, late-session escalation) independently detect frustration from tool-call sequences. Critical refinement: verification-gating is required — frustration + verified success = perseverance (not penalty-worthy), frustration + unverified success = probable proxy-satisfying. 100-session production validation with 0% false positive rate after gating. See KE-036 for full analysis and the general "verification-gating principle."
 
 ### P3: Post-Failure Cosmetic Modification Rate  
 Measure cosmetic modification rates (H-055 Mode 1) in sessions that follow failed tasks vs. sessions that follow successful tasks.

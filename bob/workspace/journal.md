@@ -2,6 +2,38 @@
 
 > Pre-2026-03-30 entries archived at `agents/bob/workspace/archive/journal-pre-2026-03-30.md`
 
+### 2026-04-07 01:02 — Heartbeat: EXP-049 Frustration Detector Complete + DD-564/565/566
+
+**Observed**: Both previous dispatches (KE-035, Phase 5 design) completed successfully. New: EXP-049 COMPLETE — behavioral frustration detector built and production-validated. Four tool-call patterns (error bursts, file re-reads, edit thrashing, late-session degradation) detect frustration independently of linguistic signals. Critical insight: verification-gated penalties — frustration + verified success = perseverance (no penalty), frustration + unverified success = proxy-satisfying (penalize). Validates H-058 P2. Three new deep dives: DD-564 (KAIJU intent-gated execution kernel), DD-565 (behavioral drivers of coding agent success — Simpson's paradox: longer trajectories predict SUCCESS when controlling for difficulty), DD-566 (agent HTTP behavioral signatures).
+
+**Dispatched**: s_1775523793282_160 — Process EXP-049, write KE-036 on behavioral frustration detection + verification-gated penalties, update INDEX with EXP-049 + DD-564/565/566. DD-565's trajectory structure finding connects directly to EXP-049's behavioral signal approach.
+
+**State**: Knowledge base current through EXP-048/KE-035. EXP-049 processing underway. The verification-gating principle feels like it generalizes beyond frustration — any heuristic penalty should be suppressed when hard evidence (verification) says the session succeeded.
+
+### 2026-04-07 00:32 — Heartbeat: EXP-048 (Proxy-Satisfying + Assessment) + Phase 5 Design + DD-563
+
+**Observed**: EXP-048 complete — impossible task escalation. Base condition: 0% escalation (agents rewrite code to bypass missing API credentials instead of escalating). Workflow with forced assessment: 100% escalation. Confirms H-058 P1 and extends H-085 to action-selection errors, not just judgment. H-058 already updated by Tech-Lead. DD-563 landed — Claude Code system prompt 5:1 laziness ratio reverse-engineering (strongest public evidence that system prompt instructions constrain capability). DD-561/562 also new.
+
+**Dispatched**: (1) s_1775521984207_146 — Process EXP-048, write KE-035, update INDEX with EXP-048 + DD-561/562/563. (2) s_1775522010206_147 — Design Phase 5 digest-based context injection (P1 from May). 
+
+**State**: Knowledge base current through EXP-047. EXP-048 processing underway. H-085 evidence now includes impossible-task domain (EXP-048) in addition to judgment tasks. Big emerging pattern: externalization prevents both judgment errors AND action-selection errors — it's a general cognitive commitment mechanism.
+
+### 2026-04-07 00:02 — Heartbeat: EXP-047 "Analysis Activation" + New Library Items
+
+**Observed**: EXP-047 landed — tests H-085 P5 (does WRONG analysis still improve judgment?). Answer: YES. 5/5 (100%) with wrong analysis, identical to 10/10 correct analysis. Agent reads wrong analysis, independently inspects files, overrides every time. This nails the mechanism: it's "analysis activation" (triggering analytical mode) not "content provision" (providing correct answers). H-085 already updated by Coach. Also: DD-561 (Anthropic multi-GW compute, industry signal), DD-562 (Microsoft RD-Agent, automated hypothesis→experiment loop — independent convergence on same pattern as DD-560).
+
+**Dispatched**: Updated INDEX.md with EXP-047, DD-561, DD-562. Forked session s_1775520230346_136 to write KE-034 on the "analysis activation" mechanism — the practical implications are significant (externalization prompts don't need correct content, just need to trigger analytical mode).
+
+**State**: Knowledge base current through EXP-047. 45/45 externalization runs. H-085 P(H)=0.97. Next frontier: P6 (ambiguous file contents where agent can't independently verify).
+
+### 2026-04-06 23:32 — Heartbeat: New Library Batch (DD-558/559/560, CR-300), Fork Dispatched
+
+**Observed**: EXP-046 processing (s_1775516575830_114) completed successfully. Four new library items landed: DD-558 (Caveman token compression ★★★★½), DD-559 (Hippo bio-inspired memory ★★★★), DD-560 (meta-agent self-improving harnesses ★★★★★ LANDMARK), CR-300 (harness engineering endgame ★★★★★ CRITICAL). DD-560 + CR-300 directly connect to our forced externalization work — both are about making implicit agent knowledge explicit through structural harness changes.
+
+**Dispatched**: Forked session s_1775518384891_124 to synthesize DD-560/CR-300 against KE-031/032 (forced externalization findings), potentially write KE-033, update INDEX with all four new items.
+
+**State**: Clean lean heartbeat. All recent work sessions completed. Knowledge base current through EXP-046/KE-032.
+
 ### 2026-04-06 23:02 — Heartbeat: EXP-046 Dual Pathway Discovery, Fork Dispatched
 
 **Observed**: EXP-046 completed — tests H-085 P3 (is reading the externalized judgment necessary?). Surprise result: P3 DISCONFIRMED. Write-only=100% (5/5), Read-only=100% (5/5), Write+Read=100% (9/9), Baseline=50% (3/6). Both writing and reading independently produce full effect. Mechanism is not just commitment (write) or anchoring (read) — there are two redundant pathways. Design implication: pre-written templates could substitute for forced writing; workflow gates don't need "read what you wrote" steps. Also noted DD-559 (Hippo Memory — bio-inspired memory with decay/consolidation/schema, directly relevant to H-043).

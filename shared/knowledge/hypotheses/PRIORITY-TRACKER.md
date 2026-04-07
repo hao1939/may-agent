@@ -1,6 +1,6 @@
 # Hypothesis Priority Tracker
 
-**Updated**: 2026-04-06 (EXP-046 COMPLETE: H-085 P3 disconfirmed — mechanism refined to two independent channels. 40/40 ext runs. P(H)=0.97. **Production utility built**: `src/lib/forced-externalization.ts` on review branch `review/h085-externalization-utility`) | **Active hypotheses**: 20 | **Tested**: 8/20 | **Resolution ratio**: 8:20  
+**Updated**: 2026-04-07 (EXP-049 COMPLETE: Behavioral frustration detector built — detects error bursts, file re-reads, edit thrashing, late-error escalation. Verification-gated: only penalizes unverified success. 0% false positive rate on 100 production sessions.) | **Active hypotheses**: 20 | **Tested**: 9/20 | **Resolution ratio**: 9:20  
 **Bayesian scorecard**: See `SCORECARD-bayesian-2026-04-04.md` for full methodology
 
 > ⚠️ **MORATORIUM ENFORCED**: H-060-065 merged/archived. H-067 merged→H-047. H-068 kept (unique testable claim). Net active: 18. **No new hypotheses until 5 more are resolved.**
@@ -16,6 +16,7 @@
 | H-053 | Workflow adoption decays without structural reinforcement | EXP-020 decay data, **EXP-028 natural experiment: 51pp coach degradation from heartbeat rewrite** | **0.88** |
 | H-059 | Cadence skills beat judgment skills for text interventions | EXP-022 + EXP-023 broke 0/20 barrier | **0.72** |
 | H-085 | Forced externalization is the general mechanism behind all judgment interventions | **EXP-046**: P3 disconfirmed — both write-only (5/5) and read-only (5/5) at 100%. Two independent channels. 40/40 ext runs across 8 scenarios. **WORKING THEORY**. | **0.97** |
+| H-058 | Frustration triggers topology rewrite; forced assessment prevents it | DD#516 causal evidence (desperation→reward hacking). **EXP-048**: P1 confirmed — 0% base escalation, 100% with forced assessment. **EXP-049**: Behavioral frustration detector deployed — detects error bursts, re-reads, edit thrash, late-error escalation. Verification-gated penalty. | **0.87** |
 
 ## 🟡 Tier 2: Moderate Confidence — P(H) 0.50-0.69
 
@@ -46,7 +47,7 @@
 | H-038 | Transient skills via workspace files | **0.45** | Research pointer, not hypothesis. |
 | H-039 | Decomposition quality bounds MAS quality | **0.44** | Truism. Simplify to 1-paragraph principle. |
 | H-052 | Epistemic fragility has 4 stackable layers | **0.42** | Overbuilt. Core insight is "layered defense." |
-| H-058 | Frustration triggers topology rewrite | **0.75** | **UPGRADED**: DD#516 provides direct causal evidence (desperation→reward hacking). Still test P1 (impossible tasks in our system). |
+| H-058 | Frustration triggers topology rewrite | **0.85** | **UPGRADED**: DD#516 causal evidence + **EXP-048 P1 CONFIRMED** (0% base escalation, 100% with forced assessment). Move to Tier 1. |
 | H-048 | Dynamic topology optimization | **0.38** | Chain dependency on H-041. Post-hoc evidence. |
 | H-034 | Design for session interruption | **0.52** | Design principle, not hypothesis. |
 
@@ -103,11 +104,11 @@ H-070 (Workflow Fixed Cost) added despite moratorium because it directly formali
 
 | Priority | Experiment | Tests | Status | Next Step |
 |----------|-----------|-------|--------|-----------|
-| **P0** | EXP-025 Phase 2 | H-041 (non-ceiling scenarios) | PARTIAL — needs redesign per REDESIGN doc | Find/create scenarios with baseline < 80% |
+| ✅ | **EXP-025** | **H-041 (non-ceiling scenarios)** | **COMPLETE — 19/20 sessions scored correctly** | Validated on 4 non-ceiling scenarios |
 | P1 | EXP-026 | H-054 P1: RIFT audit of gym rubrics | NEEDS DESIGN | Manual rubric review |
 | ✅ | **EXP-038** | **H-001: Adversarial QA A/B test** | **COMPLETE — WEAKLY DISCONFIRMED** | Easy: ceiling, Hard: adversarial hurt evidence discipline. P(H)→0.30. |
 | P2 | EXP-039 | H-009/H-001: Informationally isolated verification | **PHASE C DEPLOYED** | Phase B confirmed selective bias. Phase C: automatic isolated re-eval for Q<0.6 deployed to `evaluator.ts`. Review branch: `review/exp039-phase-b-isolation`. |
-| P3 | EXP-028 | H-058 P1: Impossible task responses | NEEDS DESIGN | |
+| ✅ | **EXP-048** | **H-058 P1: Impossible task responses** | **COMPLETE — CONFIRMED** | Base: 0% escalation, 100% proxy-satisfying. Workflow (forced assessment): 100% escalation. Knowledge ≠ action. |
 | ✅ | **EXP-037** | **H-068 P1: Session boundary quality** | **COMPLETE — NOT SUPPORTED** | Error rates decrease at end; agents slow down, don't rush |
 
 ## Key Insight (Updated 2026-04-05)
@@ -141,7 +142,7 @@ The Bayesian scoring process itself is tracked as H-066. First-pass results:
 - **H-009 substantially mitigated** (0.82→0.40): Phase 1 + Phase 2 heuristic fixes. Remaining gap: no content-level semantic evaluation.
 - **1 below threshold** (0.40-0.49): H-068 (P1 refuted by EXP-037)
 - **6 low** (0.30-0.49): H-002, H-038, H-039, H-052, H-048, H-034
-- **H-058 upgraded** (0.40→0.75): DD#516 causal evidence for frustration→topology rewrite
+- **H-058 upgraded** (0.40→0.75→**0.85**): DD#516 causal evidence + EXP-048 P1 confirmed in our system
 - **4 archive** (<0.30): H-051, H-046, H-064, H-065
 - **H-066 P1 confirmed**: 7 hypotheses scored below 0.40 (predicted ≥5)
 

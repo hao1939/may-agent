@@ -1,7 +1,7 @@
 # Deep Dives Index
 
-> 109 research deep dives, cross-reference syntheses, and reference documents.  
-> Last updated: 2026-04-06 | Maintained by Scout
+> 110 research deep dives, cross-reference syntheses, and reference documents.  
+> Last updated: 2026-04-07 | Maintained by Scout
 
 ## How to Use This Index
 - **DD#NNN** = Deep Dive on a single paper
@@ -311,8 +311,9 @@
 5. [dd557](DD-557-wikipedia-ai-tom-bot-ocalypse.md) — ★★★★ EXCELLENT: Wikipedia "AI Tom" bot deployed without bot policy compliance. Agent self-attestation failure. Steganographic agent problem. Real-world validation of Agent Accountability Stack (CR#298). P316-P318, R73-R75.
 6. [cr298](../cross-references/CR-298-agent-accountability-stack.md) — ★★★★★ Agent Accountability Stack: L1 (Internal Harness) → L2 (External Monitoring) → L3 (Community Governance) → L4 (Economic Ecosystems). Each layer solves problems below cannot.
 7. [cr297](../cross-references/CR-297-input-quality-thesis.md) — ★★★★★ Input Quality Thesis: Output = f(Knowledge × Instruction × Reasoning). Cheapest lever is knowledge infrastructure. System prompt laziness ratio = provider-inflicted input quality degradation.
-8. DD#541 → DD#552 → DD#556 (quantitative evidence → official acknowledgment → full crisis + community validation)
-9. DD#557 → CR#298 (real-world accountability failure validates multi-layer governance necessity)
+8. [dd563](dd563-claude-code-prompt-patcher-laziness-ratio.md) — ★★★★½ Community reverse-engineering of system prompt: 15-20 minimize-output instructions vs 3-4 thoroughness instructions (5:1 ratio). 11 targeted patches. A/B test: box2d port quality jumps +33% code, dynamic AABB tree, sub-stepping, soft contacts. Communication/work quality conflation anti-pattern. Validates Law 44 (Configuration Entropy), Law 45 (Automation Recurrence Stage 2). P333-P335, R84-R85.
+9. DD#541 → DD#552 → DD#556 → DD#563 (quantitative evidence → official acknowledgment → full crisis → community countermeasure)
+10. DD#557 → CR#298 (real-world accountability failure validates multi-layer governance necessity)
 
 **Automated harness optimization?** ★★★★★ LANDMARK — NEW
 1. [dd560](dd560-meta-agent-self-improving-harnesses.md) — ★★★★★ LANDMARK: First open-source automated harness optimization. meta-agent: collect traces → LLM judge → propose harness update → validate on holdout. 67%→87% on tau-bench v3 airline with no labeled data. Key finding: judge-based search (87%) outperforms labeled search (80%). Proposer catches own factual errors. "Proposer prompt matters enormously" = meta-optimization problem. P326-P329, R80-R82, M44, Law 45.
@@ -320,3 +321,15 @@
 3. DD#556 → DD#552 → DD#541 → DD#560 (manual harness crisis → monitoring gap → quantified regression → automated solution)
 4. DD#560 + DD#468 (ABSTRAL) + DD#529 (Hermes) = three converging paths to automated agent scaffold optimization
 5. CR#300 connects to CR#265 (Evolving Constitutions), CR#262 (GRA), CR#297 (Input Quality), CR#298 (Accountability Stack)
+
+**Infrastructure scaling & automated R&D?** ★★★★ NEW
+1. [dd561](dd561-anthropic-multi-gw-compute-partnership.md) — ★★★½ Anthropic-Google-Broadcom multi-GW compute partnership. $30B ARR, 1000+ $1M customers. Validates compute governance (CR#258) at industrial scale. Reveals L0 governance gap below GRA L1. P330, R83.
+2. [dd562](dd562-microsoft-rd-agent.md) — ★★★★ microsoft/RD-Agent: 12.3K★ automated R&D agent for quant finance/ML. Observe→Hypothesize→Implement→Evaluate→Refine loop. Third convergent implementation of meta-design pattern (alongside ABSTRAL DD#468 + meta-agent DD#560). Confirms Law 45 (Automation Recurrence) at industrial scale. P331-P332.
+3. DD#560 + DD#562 + DD#468 = three independent validations of automated scaffold optimization: harness optimization (meta-agent) + R&D pipelines (RD-Agent) + MAS topology (ABSTRAL)
+
+**Execution kernel vs framework primacy?** ★★★★★ LANDMARK — NEW
+1. [dd564](DD-564-kaiju-executive-kernel-intent-gated-execution.md) — ★★★★★ LANDMARK: First "agent harness as OS kernel." Intent-Gated Execution (IGX) with 4-variable authorization (scope × intent × impact × clearance). Executive Kernel manages scheduling, tool dispatch, dependency resolution via DAG. LLM plans upfront; kernel executes in parallel. Three adaptive modes (kernel-only, hybrid, agent-driven). Security guarantees prompting cannot match. Implements execution layer from 5-layer Agent OS (CR#289).
+2. [dd565](DD-565-beyond-resolution-rates-behavioral-drivers-coding-agents.md) — ★★★★★ LANDMARK: Largest coding agent empirical study: 9,374 trajectories, 19 agents (8 frameworks × 14 LLMs), 500 tasks. Three paradigm-shifting findings: (a) 12 "easy" tasks NEVER solved by any agent — failure is architectural reasoning; (b) Simpson's paradox — "longer trajectories = failure" reverses when controlling for difficulty, context-gathering PREDICTS success; (c) LLM is primary outcome driver, framework influence diminishes per generation. Framework engineering has diminishing returns at reasoning layer but NOT execution layer.
+3. [dd566](DD-566-agent-http-behavioral-signatures-documentation.md) — ★★★★ First empirical study of 9 coding agents consuming documentation. Agents compress multi-page navigation into 1-2 requests, breaking traditional engagement metrics. Each agent has identifiable HTTP fingerprint. Emerging standards: AGENTS.md, llms.txt, skill.md, agent-permissions.json. Extends DD#551 and CR#297.
+4. [synth-execution-kernel-vs-framework-primacy-tension](../cross-references/synth-execution-kernel-vs-framework-primacy-tension.md) — ★★★★★ Resolves the productive tension: Reasoning layer = LLM dominates (DD#565), Execution layer = framework dominates (DD#564), Input layer = standards-based (DD#566). Sharpens Three-Loop Architecture (CR#300): inner loop = don't over-engineer prompts; middle loop = build execution kernels.
+5. DD#564 → CR#289 (Agent OS execution layer), DD#565 → CR#300 (framework diminishing returns validates execution-focused investment), DD#566 → CR#297 + DD#551 (input quality → agent-readable standards)

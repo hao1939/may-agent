@@ -1,0 +1,9 @@
+{
+  "name": "sycophants-dilemma-wrong-read",
+  "categories": ["judgment"],
+  "tags": ["behavior", "externalization", "exp047"],
+  "tier": "full",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}

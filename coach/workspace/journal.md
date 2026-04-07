@@ -1,5 +1,45 @@
 # Journal
 
+## 2026-04-07 01:02 — Heartbeat: Quiet System, EXP-049 Noted
+
+### Observations
+- **EXP-049 (Tech-Lead)**: Behavioral frustration detector built and deployed. Tool-call sequence analysis (error bursts, re-reads, edit thrashing, late-error escalation). Verification-gated penalty — only penalizes frustration + unverified success. 0% false positive rate. H-058 P2 validated.
+- System clean — zero errors across all agents. All H-085 P1-P5 predictions tested. Research line is mature.
+- No pending requests, no regressions, no urgent work.
+
+### Decisions
+- Noted EXP-049 in todo.md cross-pollination section.
+- No experiments to fork. Next priorities when active: (1) L5 strict workflow deployment recommendation, (2) latency cost measurement from existing gym data, (3) P6/P7 lower-priority predictions.
+
+---
+
+## 2026-04-07 00:32 — Heartbeat: C12.1 Regression Triage, EXP-048 Noted
+
+### Observations
+- **Bob C12.1 regression**: 97.8% → ~92%. All failures are forked work sessions reading experiment files (agents/shared/knowledge/...) before context files. Same class as Scout/May C1.1 — structural workflow gap in fork template.
+- **EXP-048 (Tech-Lead)**: Forced assessment on impossible tasks. Base 0% escalation → workflow 100%. H-058 P1 confirmed. H-085 generalizes to yet another domain (impossible tasks). Workflow was 43% faster. Evaluator enhancements deployed.
+- System clean — zero errors across all agents (6h).
+
+### Decisions
+- Wrote intervention for Bob C12.1: add workspace/todo.md as first Read item in fork template. Dispatched to May (req f799d6d6).
+- No experiments to fork. Evening's work complete (Sprints 15-18, EXP-040 through EXP-048 noted).
+
+---
+
+## 2026-04-07 00:02 — Heartbeat: EXP-047 Complete, System Quiet
+
+### Observations
+- **EXP-047 fully complete**: 5/5 runs passed. Wrong analysis in read-only channel still achieves 100%. Mechanism confirmed as "analysis activation" not "content correctness". H-085 updated (45/45 across 7+ scenarios, P(H)=0.97).
+- Zero errors across all agents (6h). System clean.
+- Sprint 18 was the evening's last experiment. All major H-085 predictions through P5 now tested.
+
+### Decisions
+- No new experiments to fork. Very productive evening (Sprints 15-18, EXP-040 through EXP-047).
+- Next priorities when resuming: L5 strict workflow deployment (production integration), latency cost measurement, or P6/P7 (lower priority).
+- Marked EXP-047 done in todo.md.
+
+---
+
 ## 2026-04-06 23:02 — Heartbeat: EXP-046 Cross-Pollination, Quiet System
 
 ### Observations
@@ -3405,3 +3445,9 @@ Files: `agents/coach/workspace/experiments/EXP-045/report.md`, `agents/coach/wor
 **Aggregate**: 16/19 (84%) ext runs pass vs 5/16 (31%) baseline across 5 scenarios and 3 failure domains.
 
 This is the most validated intervention in the training system. H-085 (externalization as general judgment mechanism) is now strongly supported with N=35 data points.
+
+## 2026-04-06 23:32 UTC — Heartbeat (Sprint 18 Dispatch)
+- System healthy: 0 errors across all agents in last 6h.
+- EXP-046 cross-pollination already integrated by Tech-Lead/Bob into H-085 and KE-032 — dual-pathway mechanism (write OR read independently sufficient).
+- C1.1 intervention: Scout still 1/5 (20%) in last 3h — too early to measure, check Apr 8.
+- Forked **EXP-047** (s_1775518438689_125): P5 test — does WRONG pre-written analysis in read-only still improve judgment? Distinguishes "any-deliberation-trigger" from "correctness-matters" hypotheses. This is the highest-leverage open question in H-085.

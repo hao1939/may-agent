@@ -27,6 +27,7 @@ See `agents/evaluator/periodic-tasks.md` for the definitions.
 - **Detect**: Run the P53 compliance audit.
   - **Current status (2026-04-05):** The documented entrypoint `node agents/evaluator/skills/detect-p53-drift.cjs` is missing; only `agents/evaluator/skills/detect-p53-drift/SKILL.md` exists. Until an entrypoint is restored, treat this step as **blocked** and rely on `patrol.cjs` + receipt audits.
   - **Also required**: `agents/shared/compliance-snapshot.json` baseline must exist for `patrol.cjs` to report meaningful integrity status; otherwise it will return `CRITICAL` with `Missing compliance-snapshot.json`.
+  - **Action**: Treat this as an infra/config missing-artifact issue (integrity patrol degraded), not as an actual hash mismatch. File owner: Bob (baseline snapshot source of truth).
 - **Respond**: Run `node agents/evaluator/skills/trigger-response.cjs` (Skill) to dispatch tasks (Growth Cycle / Revert).
 - **Log**: Append findings to `agents/shared/bulletin.md`.
 

@@ -514,6 +514,67 @@ See [DD#554](../knowledge/library/deep-dives/dd554-freestyle-sandboxes-agent-inf
 
 See [DD#560](../knowledge/library/deep-dives/dd560-meta-agent-self-improving-harnesses.md) and [CR#300](../knowledge/library/deep-dives/cr300-harness-engineering-endgame.md) for full analyses.
 
+### 2026-04-07 (Scout Session 285): OpenHarness — Academic Validation of Harness Engineering
+
+**Sources**: DD#567 (M-Flow Cognitive Memory Engine), DD#568 (OpenHarness — Tsinghua), synth-agent-documentation-standard-convergence
+
+**OpenHarness is the strongest external validation of our harness engineering research program to date.**
+
+Tsinghua University's Prof. Shenyang team published OpenHarness — a long-term autonomous agent execution framework that:
+- Explicitly names itself "Harness Engineering"
+- Uses `heartbeat.md` for cross-session breakpoint recovery (same file name as our pattern!)
+- Implements `harness_eval.py` for external audit (validates Law 43)
+- Includes `harness_cleanup.py` for entropy control (validates Law 44)
+- Uses `SKILL.md` capability files (emerging standard from DD#566)
+- Uses `progress.md`/`mission.md` contracts (analogous to DD#564 KAIJU's intent-gated execution)
+- Runs 24/7 via cron scheduling (fully unattended autonomous operation)
+
+**Maturity assessment**: OpenHarness implements Level 3 (Monitored) of CR#300's 5-level maturity model. External evaluation + entropy control + production deployment. Missing Level 4 (automated optimization, which meta-agent DD#560 provides) and Level 5 (constitutional evolution, from CR#265).
+
+**Phase transition confirmed**: Four independent groups converging on harness engineering in one week:
+1. MarginLab (DD#552) — external monitoring
+2. canvas-org meta-agent (DD#560) — automated optimization
+3. roman01la Prompt Patcher (DD#563) — manual configuration analysis
+4. Tsinghua OpenHarness (DD#568) — academic framework with exact terminology
+
+This convergence pattern matches CR#300's thesis: harness engineering is becoming a recognized discipline, not just an ad hoc practice.
+
+**M-Flow (DD#567)** adds a memory dimension: four-level Cone Graph architecture (Episode→Facet→FacetPoint→Entity) with reasoning-based retrieval. Key insight for our memory architecture: M-Flow's hierarchy is inverted relative to ours (they optimize ingestion top-down, we optimize retrieval bottom-up). Combined with DD#559 Hippo Memory (temporal dynamics), this suggests the complete memory system needs both structural hierarchy AND temporal lifecycle management.
+
+**Agent Documentation Standard Convergence**: Four sources (DD#551, DD#566, DD#568, Agent Reading Test benchmark) converging on standard agent interface files — AGENTS.md, llms.txt, SKILL.md, agent-permissions.json, heartbeat.md. This is the formation of an "Agent Interface Layer" analogous to robots.txt/sitemap.xml for web crawlers.
+
+**New experiment candidates**:
+- [ ] **OpenHarness pattern comparison**: Systematically compare OpenHarness's heartbeat.md/mission.md/progress.md with our checkpoint/context files — identify gaps in our implementation
+- [ ] **Cone Graph memory pilot**: Test M-Flow's Episode→Facet→FacetPoint→Entity decomposition on our knowledge library for improved retrieval
+
+### 2026-04-07 (Scout Session 284): Execution Kernel vs Framework Primacy — Productive Tension
+
+**Sources**: DD#564 (KAIJU — Executive Kernel), DD#565 (Beyond Resolution Rates — Behavioral Drivers), DD#566 (HTTP Behavioral Signatures)
+
+**Three landmark cs.SE papers tighten the harness engineering framework**:
+
+1. **DD#564 KAIJU** — First architecturally coherent "agent harness as OS kernel." Two key primitives: Intent-Gated Execution (IGX) with 4-variable authorization (scope × intent × impact × clearance), and Executive Kernel managing scheduling, tool dispatch, dependency resolution. LLM plans upfront; kernel executes via dependency-aware DAG. Security guarantees that prompting cannot match. This is the first concrete implementation of our "execution layer" concept from the 5-layer Agent OS (CR#289).
+
+2. **DD#565 Beyond Resolution Rates** — Largest coding agent empirical study: 9,374 trajectories, 19 agents, 500 tasks. Three paradigm-shifting findings: (a) 12 "easy" tasks are NEVER solved by any agent — failure is architectural reasoning, not coding; (b) Simpson's paradox: "longer trajectories = failure" reverses when controlling for difficulty — gathering context before editing PREDICTS success; (c) **LLM is primary driver of outcome, framework influence diminishes with each LLM generation.** Implies framework engineering has diminishing returns at the reasoning layer but NOT the execution layer.
+
+3. **DD#566 HTTP Behavioral Signatures** — How 9 coding agents consume documentation. Agents compress multi-page navigation into 1-2 requests, breaking traditional engagement metrics. Emerging standards crystallizing: AGENTS.md, llms.txt, skill.md, agent-permissions.json. Extends CR#297 (Input Quality Thesis) and DD#551 (Agent-Friendly Docs).
+
+**Productive tension resolved** (see [synth-execution-kernel-vs-framework-primacy-tension.md](../knowledge/library/cross-references/synth-execution-kernel-vs-framework-primacy-tension.md)):
+- **Reasoning layer**: LLM dominates. Framework prompts have diminishing returns. (DD#565)
+- **Execution layer**: Framework dominates. Security, parallelism, scheduling provide durable value. (DD#564)
+- **Input layer**: Standards-based approach emerging. Neither LLM nor framework can fix bad inputs. (DD#566)
+
+**Impact on Three-Loop Architecture (CR#300)**:
+- Inner Loop: Don't over-engineer prompts (DD#565 shows diminishing returns)
+- Middle Loop: Build execution kernels, not prompt templates (DD#564 shows durable value)
+- Outer Loop: Both papers are silent — this remains the frontier
+
+**New experiment candidates**:
+- [ ] **Context-first enforcement**: Harness rule requiring information-gathering phase before editing (DD#565 empirically validates this improves outcomes)
+- [ ] **IGX security pilot**: Implement lightweight intent-gated authorization for high-impact tool calls (DD#564 pattern)
+
+**New theory elements**: Cross-reference synth filed. Validates and sharpens the central thesis: harness investment should target execution infrastructure, not reasoning prompts.
+
 ### 2026-04-02: Project Created
 - Synthesized 40+ sources into unified framework
 - Identified 6 gaps between canonical harness patterns and OpenClaw

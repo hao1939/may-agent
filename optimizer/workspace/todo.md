@@ -38,6 +38,7 @@
 - ✅ **Tech-lead error rate investigation** — DONE (2026-04-05). Root cause: platform 40-turn limit + overly broad heartbeat scope. Report at `workspace/tech-lead-error-analysis.md`.
 - ✅ **Fix-without-verification analysis** — DONE (2026-04-05, s_1775408196050_10). 96 fix commits in 14d, 76% had no test files. 5.2% revert rate. INC-001 traced: optimizer misdiagnosed, May committed without verification. Report: `workspace/finding-fix-without-verification-0405.md`.
 - **Dispatcher expansion to Bob & Coach** — DESIGNS COMPLETE (2026-04-06). Three deliverables: `workspace/proposed-bob-heartbeat.md`, `workspace/proposed-coach-heartbeat.md`, `workspace/dispatcher-expansion-plan.md`. Sent to May for deployment (req:60aad7a2). Coach at 52 avg ops/HB = highest priority target. Expected combined savings ~$50-70/day.
+- ✅ **Dispatcher expansion to Tech-Lead** — DESIGN COMPLETE (2026-04-07). Deliverable: `workspace/proposed-tech-lead-heartbeat.md`. Sent to May for deployment (req:686f289e). Tech-lead at 105 avg ops/HB — highest cost agent remaining. Expected savings ~$40-60/day.
 
 ## ⚠️ SENT/ESCALATED (awaiting others)
 

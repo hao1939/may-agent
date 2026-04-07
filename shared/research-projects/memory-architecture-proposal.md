@@ -371,3 +371,29 @@ Three additional papers extend the single-agent memory control loop to multi-age
 - Create a "browse by contradiction" view — show hypotheses that conflict, not just those that confirm
 - Build per-agent "memory views" that are filtered subtrees (Scout sees different INDEX sections than Bob)
 
+### 12c. M-Flow Cognitive Memory Engine — Cone Graph Architecture (April 7)
+
+**Source**: DD#567 — M-Flow (FlowElement-ai/m_flow, 175★, Apache 2.0)
+
+**Key insight**: M-Flow introduces a four-level "Cone Graph" hierarchy: Episode→Facet→FacetPoint→Entity. This is NOT another RAG system — retrieval follows graph edges (association traversal) rather than embedding similarity. The hierarchy enables queries at any granularity to find an anchor and expand bidirectionally (up for context, down for detail, across for association).
+
+**Bidirectional cone insight**: M-Flow's hierarchy is inverted relative to our three-tier architecture:
+- M-Flow optimizes for **ingestion** (top-down: decompose incoming knowledge into finer levels)
+- Our design optimizes for **retrieval** (bottom-up: hot/warm/cold tiers based on access frequency)
+- A complete system needs BOTH directions — a "bidirectional cone" where ingestion decomposes top-down while retrieval assembles bottom-up
+
+**Mapping to our tiers**:
+| M-Flow Level | Our Tier | Key Observation |
+|-------------|----------|----------------|
+| Entity | Tier 0 (Hot) | Named entities = always-accessible reference points |
+| FacetPoint | Tier 1 (Warm) | Atomic facts = indexed, on-demand retrieval |
+| Facet | Tier 1-2 boundary | Topical groupings = consolidation candidates |
+| Episode | Tier 2 (Cold) | Full narrative context = archived by need |
+
+**Complementary with DD#559 Hippo Memory**: Hippo provides temporal dynamics (decay, consolidation, retrieval strengthening). M-Flow provides structural hierarchy (decomposition, cross-entity linking). Together they address: temporal + structural + associative memory — the three missing pieces from our current flat filesystem approach.
+
+**What this suggests for our design**:
+- Our Tier 1 (Warm) should have internal structure: not just "indexed facts" but hierarchically decomposed knowledge with cross-links
+- Entity-level deduplication (a known-hard problem M-Flow doesn't solve) maps directly to our multi-agent write conflict problem (gap from 12a)
+- MCP integration (M-Flow is MCP-native) suggests our memory system should expose standard MCP tools for retrieval
+

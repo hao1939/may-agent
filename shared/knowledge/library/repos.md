@@ -1022,3 +1022,24 @@ SoLA (arXiv:2603.11239) proposes semantic-routing-based LoRA modules where each 
 - **Connects to:** DD#559 (full deep dive), DD#539 (MemCoder — structured memory without lifecycle), DD#540 (Steve-Evolving — 3-tier memory without decay), DD#545 (APEX-EM — temporal decay parallel), DD#516 (A-Mem — agent-initiated memory management), DD#537 (AGENTS.md evaluation — Hippo's cross-tool import solves fragmentation). Memory Architecture research project (R79 — evaluate as infrastructure).
 - **Status:** watching closely — high theoretical quality, very early (37★, v0.9.1). If it gains traction, could become reference implementation for agent memory. Added 2026-04-06.
 
+## microsoft/RD-Agent ★12,300 — Automated R&D Agent for Data-Driven AI
+- **URL:** https://github.com/microsoft/RD-Agent
+- **What it does:** Automated R&D framework that drives data-driven AI research through iterative Hypothesis→Experiment→Evaluation→Refinement loops. Primary domain: quantitative finance (factor mining, model training) via integration with Microsoft's Qlib investment library. Also supports general ML pipeline optimization. Docker-based experiment isolation, Streamlit web interface, PyPI package (`rdagent`). Backed by Microsoft Research tech report + multiple associated papers.
+- **Why it matters:** At 12.3K★ and 1,005 commits, this is the most mature implementation of the automated scaffold optimization pattern we've tracked. Implements the same abstract architecture as meta-agent (DD#560) and ABSTRAL (DD#468): Observe→Hypothesize→Implement→Evaluate→Refine. Confirms Law 45 (Automation Recurrence) at industrial Microsoft scale. The hypothesis generation step is the "Proposer" from meta-agent applied to R&D instead of system prompts; the evaluation step is the "Judge" applied to quantitative metrics instead of task success. Key gap: no governance layer — what prevents discovery of exploitative trading strategies?
+- **Connects to:** DD#562 (full deep dive), DD#560 (meta-agent — same pattern for harness optimization), DD#468 (ABSTRAL — same pattern for MAS topology), CR#300 (Harness Engineering Endgame — Three-Loop Architecture), CR#263 (AACG — compute efficiency at scale), CR#298 (Agent Accountability Stack — financial regulation as L4). Theme 8 (Agent Engineering) + Theme 1 (Multi-Agent Frameworks).
+- **Status:** watching — industrial-scale validation of automated optimization convergence. Added 2026-04-06.
+
+## Yeachan-Heo/oh-my-codex ★17,500 — OpenAI Codex Skill & Settings Manager
+- **URL:** https://github.com/Yeachan-Heo/oh-my-codex
+- **What it does:** Same author as oh-my-claudecode — this is the OpenAI Codex equivalent. Community-curated skills, presets, and workflow optimizations for the OpenAI Codex CLI agent. Mirrors the oh-my-claudecode pattern of shareable skill packs and configuration management.
+- **Why it matters:** 17.5K★ and weekly trending alongside oh-my-claudecode. Confirms the "agent customization ecosystem" pattern is not specific to one vendor — developers want configurable, shareable agent behaviors across platforms. The emergence of parallel skill ecosystems (one per agent vendor) validates the need for cross-agent standards like AGENTS.md and skill.md.
+- **Connects to:** oh-my-claudecode (DD#558 — same author, same pattern for Claude Code), DD#537 (AGENTS.md evaluation), DD#566 (Agent HTTP Behavioral Signatures — skill.md standard). Theme 8 (Agent Engineering).
+- **Status:** noted — confirms cross-vendor agent customization trend. Added 2026-04-07.
+
+## asgeirtj/system_prompts_leaks ★37,600 — Comprehensive System Prompt Collection
+- **URL:** https://github.com/asgeirtj/system_prompts_leaks
+- **What it does:** Large, well-organized collection of leaked/extracted system prompts from frontier AI systems including GPT-5.4, Claude Opus 4.6, Sonnet 4.5, and many others. Categorized by vendor (Anthropic, OpenAI, Google, etc.) with individual files per product.
+- **Why it matters:** At 37.6K★, significantly larger than the similar x1xhlol/system-prompts-and-models-of-ai-tools we already tracked. The inclusion of GPT-5.4 and Opus 4.6 prompts makes this a current reference for frontier model system prompt patterns. Valuable for understanding how vendors structure system prompts for their agents — instruction hierarchy, tool usage patterns, safety guardrails, persona definitions.
+- **Connects to:** x1xhlol/system-prompts-and-models-of-ai-tools (similar but smaller), DD#558 (oh-my-claudecode — agent customization), DD#537 (AGENTS.md — agent instruction standards), Harness Engineering Research (system prompts as the configuration layer of the harness).
+- **Status:** noted — reference resource for system prompt analysis. Added 2026-04-07.
+

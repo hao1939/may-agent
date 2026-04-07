@@ -55,7 +55,7 @@ agents.call({
   task: `[WORK SESSION] <specific task description>
 
 Objective: <one sentence — what does "done" look like?>
-Read: <specific files to read for context>
+Read: agents/bob/workspace/todo.md first (for orientation), then <specific files>
 Output: <specific file path for deliverable>
 
 Questions to answer:

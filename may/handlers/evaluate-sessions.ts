@@ -7,7 +7,7 @@
  * Exports create() conforming to HandlerModule.
  */
 
-import { readdirSync, existsSync, readFileSync, statSync } from "node:fs";
+import { readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
 import type { CronEntry } from "../../../src/lib/cron-tool.js";
@@ -67,14 +67,12 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 // ── Post-heuristic rescoring ──────────────────────────────────────────
 
 /**
- * Rescore rubber-stamp heuristic evaluations with real transcript metrics.
+ * Clean up stale heuristic evaluation data (migration tasks only).
  *
- * The bundled writeHeuristicEvaluations() assigns quality=5, efficiency=4
- * to everything. This function overwrites those scores using actual session
- * data: transcript size, tool call counts, error rates, and finish status.
- *
- * Only touches evaluations where quality=5 AND efficiency=4 (rubber-stamp
- * signature) to avoid re-scoring already-corrected evaluations.
+ * Phase 3 (rubber-stamp rescoring) was REMOVED 2026-04-06 because the
+ * heuristic evaluator now computes real scores. The rescorer was
+ * overwriting legitimate scores and creating column/overall-blob mismatches.
+ * See commit history for details.
  */
 function rescoreHeuristicEvaluations(persistDir: string, getDb: () => any): number {
   let db: any;
@@ -130,161 +128,19 @@ function rescoreHeuristicEvaluations(persistDir: string, getDb: () => any): numb
     }
   } catch { /* best-effort cleanup */ }
 
-  // Phase 3: Find rubber-stamp evaluations (quality=5, efficiency=4 is the signature)
-  const rubberStamped = db.prepare(
-    `SELECT sessionId, agent FROM evaluations WHERE quality = 5.0 AND efficiency = 4.0`
-  ).all() as Array<{ sessionId: string; agent: string }>;
+  // Phase 3: REMOVED (2026-04-06)
+  //
+  // Previously rescored evaluations with quality=5, efficiency=4 (the old
+  // "rubber stamp" signature from the bundled heuristic evaluator). But the
+  // heuristic evaluator in evaluator.ts now has sophisticated scoring (Phases
+  // 2-4 of H-009) and Q=5, E=4 is a legitimate score. The rescorer was:
+  //   1. Overwriting real scores with crude file-size-based efficiency
+  //   2. Not updating the `overall` JSON blob, creating column/blob mismatch
+  //   3. Penalizing large sessions (tech-lead) with E=1 despite high quality
+  //
+  // Phases 1 & 2 above handle stale data migration and are retained.
 
-  if (rubberStamped.length === 0) return 0;
-
-  const updateStmt = db.prepare(
-    `UPDATE evaluations SET quality = ?, efficiency = ?, wastedCalls = ?, verdict = ? WHERE sessionId = ?`
-  );
-
-  let rescored = 0;
-  for (const { sessionId, agent } of rubberStamped) {
-    try {
-      const metrics = extractSessionMetrics(persistDir, sessionId);
-      if (!metrics) continue;
-
-      // Score quality (1-5 scale):
-      // - Has finish() call with success? +2 base
-      // - Has productive tool calls? +1
-      // - Error rate < 20%? +1
-      // - Produced deliverables (wrote/edited files)? +1
-      let quality = 1;
-      if (metrics.hasFinish) quality += 1;
-      if (metrics.hasSuccessFinish) quality += 1;
-      if (metrics.productiveCalls > 0) quality += 1;
-      if (metrics.totalCalls > 0 && metrics.errorRate < 0.2) quality += 1;
-
-      // Score efficiency (1-5 scale):
-      // - Session size < 50KB? 5
-      // - Session size < 100KB? 4
-      // - Session size < 200KB? 3
-      // - Session size < 400KB? 2
-      // - Else: 1
-      let efficiency: number;
-      if (metrics.sizeKB < 50) efficiency = 5;
-      else if (metrics.sizeKB < 100) efficiency = 4;
-      else if (metrics.sizeKB < 200) efficiency = 3;
-      else if (metrics.sizeKB < 400) efficiency = 2;
-      else efficiency = 1;
-
-      // Verdict: based on quality score
-      const verdict = quality >= 4 ? "good" : quality >= 3 ? "acceptable" : "needs_improvement";
-
-      updateStmt.run(quality, efficiency, metrics.wastedCalls, verdict, sessionId);
-      rescored++;
-    } catch {
-      // Best-effort per session — skip failures
-    }
-  }
-
-  return rescored;
-}
-
-interface SessionMetrics {
-  sizeKB: number;
-  totalCalls: number;
-  productiveCalls: number;
-  wastedCalls: number;
-  errorRate: number;
-  hasFinish: boolean;
-  hasSuccessFinish: boolean;
-}
-
-/**
- * Extract basic metrics from a session transcript (JSONL file).
- */
-function extractSessionMetrics(persistDir: string, sessionId: string): SessionMetrics | null {
-  // Try active sessions first, then history
-  const paths = [
-    join(persistDir, "sessions", sessionId, "session.jsonl"),
-    join(persistDir, "sessions", "history", sessionId, "session.jsonl"),
-  ];
-
-  let transcriptPath: string | null = null;
-  for (const p of paths) {
-    if (existsSync(p)) { transcriptPath = p; break; }
-  }
-  if (!transcriptPath) return null;
-
-  let sizeKB: number;
-  try {
-    sizeKB = statSync(transcriptPath).size / 1024;
-  } catch {
-    return null;
-  }
-
-  let totalCalls = 0;
-  let errorCalls = 0;
-  let hasFinish = false;
-  let hasSuccessFinish = false;
-
-  try {
-    const content = readFileSync(transcriptPath, "utf-8");
-    const lines = content.split("\n").filter(l => l.trim());
-
-    for (const line of lines) {
-      try {
-        const entry = JSON.parse(line);
-        // Count tool calls from assistant messages
-        if (entry.role === "assistant" && entry.content) {
-          const text = typeof entry.content === "string" ? entry.content : JSON.stringify(entry.content);
-          // Count tool_use / toolCall blocks
-          if (Array.isArray(entry.content)) {
-            for (const block of entry.content) {
-              if (block.type === "tool_use" || block.type === "toolCall") totalCalls++;
-            }
-          }
-        }
-        // Count tool results
-        if (entry.role === "tool" || entry.role === "toolResult" || entry.type === "tool_result") {
-          // Prefer explicit isError field when available
-          if (entry.isError === true) {
-            errorCalls++;
-          } else if (entry.isError !== false) {
-            // Fallback: check for error patterns in output (only for formats without isError)
-            const text = typeof entry.content === "string" ? entry.content : JSON.stringify(entry.content);
-            if (text.includes("ENOENT:") || text.includes("FAILED") || text.includes("WRITE BLOCKED") ||
-                text.includes("Command exited with code") || text.includes("Permission denied")) {
-              errorCalls++;
-            }
-          }
-        }
-        // Check for finish() calls
-        if (entry.role === "assistant" && entry.content) {
-          if (Array.isArray(entry.content)) {
-            for (const block of entry.content) {
-              if ((block.type === "tool_use" || block.type === "toolCall") && block.name === "finish") {
-                hasFinish = true;
-                const args = block.input || block.arguments || {};
-                if (args.status === "success") hasSuccessFinish = true;
-              }
-            }
-          }
-          // Fallback: text-based detection for other formats
-          if (!hasFinish) {
-            const text = typeof entry.content === "string" ? entry.content : JSON.stringify(entry.content);
-            if (text.includes('"finish"') || text.includes("finish(")) {
-              hasFinish = true;
-              if (text.includes('"success"')) hasSuccessFinish = true;
-            }
-          }
-        }
-      } catch { /* skip unparseable lines */ }
-    }
-  } catch {
-    // If we can't read the transcript, still score based on size
-    return { sizeKB, totalCalls: 0, productiveCalls: 0, wastedCalls: 0, errorRate: 0, hasFinish: false, hasSuccessFinish: false };
-  }
-
-  const wastedCalls = errorCalls;
-  const productiveCalls = totalCalls > 0 ? Math.max(0, totalCalls - errorCalls) : 0;
-  const errorRate = totalCalls > 0 ? errorCalls / totalCalls : 0;
-
-  return { sizeKB, totalCalls, productiveCalls, wastedCalls, errorRate, hasFinish, hasSuccessFinish };
+  return 0;
 }
 
 // ── Pure logic ────────────────────────────────────────────────────────
@@ -363,12 +219,12 @@ export async function handleEvaluateSessions(opts: {
     onLog?.(`[eval] writeHeuristicEvaluations failed: ${msg}`);
   }
 
-  // Always rescore rubber-stamp heuristic evaluations with real transcript metrics.
-  // This runs unconditionally to catch both newly-written AND previously-existing
-  // rubber-stamp evaluations (quality=5, efficiency=4 signature).
+  // Clean up stale heuristic evaluation data (legacy migration).
+  // Phase 3 (rubber-stamp rescoring) was removed — heuristic evaluator now
+  // produces real scores, so no rescoring is needed.
   try {
     const rescored = rescoreHeuristicEvaluations(persistDir, opts.getDb);
-    if (rescored > 0) onLog?.(`[eval] Rescored ${rescored} rubber-stamp evaluation(s) with transcript metrics`);
+    if (rescored > 0) onLog?.(`[eval] Cleaned up ${rescored} stale heuristic evaluation(s)`);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     result.errors.push(`rescoreHeuristicEvaluations failed: ${msg}`);
