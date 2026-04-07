@@ -18,7 +18,8 @@
  */
 
 import { execSync, type ExecSyncOptions } from "node:child_process";
-import { resolve } from "node:path";
+import { resolve, join } from "node:path";
+import { writeFileSync, unlinkSync } from "node:fs";
 import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
 import type { CronEntry } from "../../../src/lib/cron-tool.js";
 
@@ -79,33 +80,51 @@ interface AgentChanges {
 }
 
 function buildCommitMessage(changes: AgentChanges[]): string {
-  const parts: string[] = [];
+  // Build per-agent detail lines (used for both single-line and multi-line)
+  const perAgent: string[] = [];
 
   for (const ac of changes) {
-    // Sort categories by count descending, take top 2
     const sorted = [...ac.categories.entries()].sort((a, b) => b[1] - a[1]);
     const descs = sorted.slice(0, 2).map(([cat, cnt]) => describeCategory(cat, cnt));
 
-    // For single-file changes, be specific
     if (ac.files.length === 1) {
       const filename = ac.files[0].split("/").pop() ?? ac.files[0];
-      parts.push(`${ac.agent}: update ${filename}`);
+      perAgent.push(`${ac.agent}: update ${filename}`);
     } else {
-      parts.push(`${ac.agent}: ${descs.join(", ")}`);
+      perAgent.push(`${ac.agent}: ${descs.join(", ")}`);
     }
   }
 
-  let msg = parts.join(" | ");
+  // Try single-line first (ideal for ≤2 agents)
+  const oneLine = perAgent.join(" | ");
+  if (oneLine.length <= 120) return oneLine;
 
-  // Git commit messages should be under ~72 chars for the first line
-  // If too long, summarize
-  if (msg.length > 120) {
-    const agentNames = changes.map(c => c.agent).join(", ");
-    const totalFiles = changes.reduce((s, c) => s + c.files.length, 0);
-    msg = `${agentNames}: ${totalFiles} uncommitted files`;
+  // Multi-line: summary first line + per-agent body
+  // Build a summary from top categories across ALL agents
+  const globalCats = new Map<string, number>();
+  for (const ac of changes) {
+    for (const [cat, cnt] of ac.categories) {
+      globalCats.set(cat, (globalCats.get(cat) ?? 0) + cnt);
+    }
+  }
+  const topCats = [...globalCats.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([cat, cnt]) => describeCategory(cat, cnt));
+
+  const totalFiles = changes.reduce((s, c) => s + c.files.length, 0);
+  const agentNames = changes.map(c => c.agent);
+
+  // First line: concise summary (under 72 chars ideally)
+  let subject = `${agentNames.length} agents, ${totalFiles} files: ${topCats.join(", ")}`;
+  if (subject.length > 72) {
+    subject = `${agentNames.length} agents, ${totalFiles} files: ${topCats[0]}`;
   }
 
-  return msg;
+  // Body: per-agent breakdown
+  const body = perAgent.map(line => `- ${line}`).join("\n");
+
+  return `${subject}\n\n${body}`;
 }
 
 function groupByAgent(files: string[]): AgentChanges[] {
@@ -131,6 +150,17 @@ function groupByAgent(files: string[]): AgentChanges[] {
 }
 
 // ── Git remote helpers ────────────────────────────────────────────────
+
+/** Commit with a message that may contain newlines. Uses a temp file to avoid shell escaping. */
+function gitCommit(agentsDir: string, message: string): void {
+  const msgFile = join(agentsDir, ".git", "AUTOCOMMIT_MSG");
+  try {
+    writeFileSync(msgFile, `chore(auto): ${message}`, "utf-8");
+    git(`git commit -F "${msgFile}" --no-verify`, { cwd: agentsDir, timeout: 15_000 });
+  } finally {
+    try { unlinkSync(msgFile); } catch {}
+  }
+}
 
 /** Returns the name of the first configured remote, or null. */
 function getRemote(agentsDir: string): string | null {
@@ -275,10 +305,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
             if (!staged) continue;
 
             const msg = buildCommitMessage([group]);
-            git(
-              `git commit -m "chore(auto): ${msg}" --no-verify`,
-              { cwd: agentsDir, timeout: 15_000 },
-            );
+            gitCommit(agentsDir, msg);
             ctx.log(`[agents-auto-commit] ${msg}`);
             committed = true;
           } catch (err) {
@@ -296,10 +323,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         });
 
         const msg = buildCommitMessage(groups);
-        git(
-          `git commit -m "chore(auto): ${msg}" --no-verify`,
-          { cwd: agentsDir, timeout: 15_000 },
-        );
+        gitCommit(agentsDir, msg);
         ctx.log(`[agents-auto-commit] ${msg}`);
         committed = true;
       }

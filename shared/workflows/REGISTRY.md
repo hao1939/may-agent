@@ -8,6 +8,7 @@
 | Name | File | Lines | Purpose |
 |------|------|-------|---------|
 | `implement-and-review` | `shared/workflows/implement-and-review.ts` | 150 | Code changes: coder implements → QA reviews → one retry → escalate. Fixed verdict parsing (defaults to conditional-pass). Phase 1 DIAGNOSE / Phase 2 VERDICT QA prompts. Consolidated from tech-lead (2026-04-04). |
+| `implement-and-verify` | `shared/workflows/implement-and-verify.ts` | 195 | Lightweight code workflow (H-070 P3): coder implements → shell verification (tsc+vitest) → one retry → escalate. No QA agent. Target C_fixed ~3-5 ops. For EXP-050 comparison with implement-and-review. |
 | `skill-lifecycle` | `shared/workflows/skill-lifecycle.ts` | 246 | Full lifecycle: propose → test → measure → promote/retire a skill |
 
 ## Archived Shared Workflows (moved to `shared/workflows/archive/` on 2026-04-04)
