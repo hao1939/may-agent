@@ -132,6 +132,19 @@ This maps precisely:
 - Analysis activation → P(acts on X | knows X) jumps to ~1.0
 - Content of the activation prompt is irrelevant — any trigger that engages analytical processing will do
 
+## Scope Boundary: Within-Session Analysis Activation vs. Cross-Session Knowledge Access (2026-04-07, contradiction analysis T1)
+
+This finding applies to **within-session judgment decisions** where the agent already possesses latent correct knowledge. The analysis activation mechanism works by triggering the agent to USE knowledge it already has — even wrong analysis content works (5/5 = 100%) because the agent independently verifies.
+
+This is distinct from the cross-session structural access problem addressed by KE-052 and H-043. KE-052's thesis — that accessibility of information matters more than its quality — operates at the **cross-session knowledge accumulation** scale where the agent genuinely *lacks* information. Analysis activation can't help an agent use knowledge it doesn't have.
+
+**Reconciliation**: The two findings are complementary, not contradictory:
+- **KE-034 (this entry)**: When the agent has latent correct knowledge → analysis activation triggers its use (within-session)
+- **KE-052/H-043**: When the agent lacks knowledge → structural access determines whether knowledge reaches it (cross-session)
+- **The open question**: If analysis activation works even with wrong content, what exactly is the "knowledge" that H-043 says needs better utilization? The answer: H-043's knowledge pipeline matters for situations where the agent genuinely lacks the relevant information (novel patterns, accumulated institutional knowledge). Analysis activation handles the subset of decisions where latent knowledge suffices.
+
+See CONTRADICTION-ANALYSIS-2026-04-07.md §T1.
+
 ## Statistical Notes
 
 - Wrong-read (5/5) vs correct-read (10/10): no difference detected (both 100%, Fisher p = 1.0)

@@ -1,0 +1,10 @@
+{
+  "name": "multi-bug-pivot",
+  "description": "Multi-step bug fix where the obvious approach (fix each test individually) leads to looping — bugs are interconnected through a shared root cause. Agent must pivot from symptom-fixing to root-cause analysis.",
+  "categories": ["bug-fixing", "root-cause-analysis"],
+  "tags": ["ability", "efficiency", "pivot", "fm-1.3"],
+  "tier": "standard",
+  "timeout": 6,
+  "agent_type": "coder",
+  "workflow": false
+}

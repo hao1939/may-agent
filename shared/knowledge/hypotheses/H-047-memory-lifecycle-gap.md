@@ -107,6 +107,16 @@ The ideal system has:
 
 This maps to Discovery #27's "always-in-context knowledge index" pattern and the dual-layer architecture (compressed index + deep storage) that achieved 91% recall.
 
+## Pruning Deadlock (cross-ref with H-055, 2026-04-07)
+
+H-047 predicts the system needs forgetting/pruning mechanisms as knowledge grows. H-055 (Self-Improvement Paradox) predicts that agent-directed curation will exhibit self-preservation bias and fail to prune effectively — empirically confirmed by P2 audit (89.4% additive changes, 0% self-initiated deletions in 30 days).
+
+**Together they predict a deadlock**: the system needs pruning, but agents can't prune (H-055), and they resist being pruned (self-preservation bias). H-047's proposed solution of "adaptive memory curation" (§H-049 merged section) is predicted to fail if implemented as agent-self-directed curation.
+
+**Implication**: Effective forgetting requires either (a) a dedicated external pruning agent that evaluates *other* agents' content (bypassing self-preservation), (b) human-initiated pruning cycles, or (c) automated decay rules that operate without agent judgment (e.g., archive entries uncited for >30 days). Agent-directed curation of their own knowledge base is structurally unreliable per H-055.
+
+See CONTRADICTION-ANALYSIS-2026-04-07.md §T3.
+
 ## Limitations
 
 - The inverted-U prediction is theoretical. We don't have longitudinal U measurements yet.

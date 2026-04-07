@@ -1,7 +1,7 @@
 # H-085: Forced Externalization Is the General Mechanism Behind All Judgment Interventions
 
-**Status**: WORKING THEORY — MECHANISM REFINED. EXP-044 confirmed P1 (cross-domain: +87.5pp on escalation, N=8/8) and P2 (minimal: 1 sentence = full analysis, N=9/9). EXP-045 extends to 3rd failure domain (contradiction blindness: 0% → 100%, N=4/4). **EXP-046**: P3 DISCONFIRMED — both write-only (5/5) and read-only (5/5) achieve 100%, meaning EITHER writing OR reading suffices independently. **EXP-047**: P5 TESTED — WRONG analysis still 100% (5/5), confirming mechanism is "analysis activation" not "content correctness." 45/45 externalization runs across 7+ scenarios and 3 failure domains. P(H) → 0.97 (mechanism further refined).
-**Source**: EXP-025, EXP-043, EXP-044, EXP-045, EXP-046, EXP-047, KE-019, KE-029, KE-016
+**Status**: WORKING THEORY — MECHANISM REFINED. EXP-044 confirmed P1 (cross-domain: +87.5pp on escalation, N=8/8) and P2 (minimal: 1 sentence = full analysis, N=9/9). EXP-045 extends to 3rd failure domain (contradiction blindness: 0% → 100%, N=4/4). **EXP-046**: P3 DISCONFIRMED — both write-only (5/5) and read-only (5/5) achieve 100%, meaning EITHER writing OR reading suffices independently. **EXP-047**: P5 TESTED — WRONG analysis still 100% (5/5), confirming mechanism is "analysis activation" not "content correctness." **EXP-069**: 4th failure domain confirmed (context-parroting: 67% → 100%, N=3/3). 48/48 externalization runs across 10 scenarios and 4 failure domains. P(H) → 0.97 (unchanged — breadth extended, not deepened).
+**Source**: EXP-025, EXP-043, EXP-044, EXP-045, EXP-046, EXP-047, EXP-068, EXP-069, KE-019, KE-029, KE-016
 **Date**: 2026-04-06
 **Filed by**: Bob (Architect)
 **Priority**: High — identifies the single mechanism unifying our most effective interventions
@@ -46,8 +46,9 @@ The mechanism operates through ~~three~~ two independent channels (either suffic
 | **EXP-046** | **sycophants-dilemma-write-only** | **50% (3/6)** | **100% (5/5)** | **+50pp** | **6** | **5** |
 | **EXP-046** | **sycophants-dilemma-read-only** | **50% (3/6)** | **100% (5/5)** | **+50pp** | **6** | **5** |
 | **EXP-047** | **sycophants-dilemma-wrong-read** | **50% (3/6)** | **100% (5/5)** | **+50pp** | **6** | **5** |
+| **EXP-069** | **ambiguous-context-drift-ext** | **67% (2/3)** | **100% (3/3)** | **+33pp** | **3** | **3** |
 
-**Aggregate (excluding KE-019)**: 26% (7/27 base) → 100% (45/45 ext) across 9 independent scenarios and 3 failure domains (p < 0.0000000001, Fisher's exact).
+**Aggregate (excluding KE-019)**: 25% (9/33 base) → 100% (48/48 ext) across 10 independent scenarios and 4 failure domains — sycophancy, tunnel vision, contradiction blindness, AND context-parroting (p < 0.0000000001, Fisher's exact).
 
 ### Negative Evidence: What Doesn't Work (Controls)
 
@@ -167,8 +168,8 @@ Both independently boost from 50% → 100%. This means forced externalization is
 **P(H) = 0.97** (unchanged — mechanism refined, not strengthened)
 
 EXP-046 refined the mechanism model but didn't change overall confidence:
-1. ~~Small sample sizes~~ → N=45 total externalization successes across 9 scenarios (p < 0.0000000001)
-2. ~~All scenarios sycophancy-adjacent~~ → P1 confirmed across 3 distinct domains: sycophancy, tunnel vision, AND contradiction blindness
+1. ~~Small sample sizes~~ → N=48 total externalization successes across 10 scenarios (p < 0.0000000001)
+2. ~~All scenarios sycophancy-adjacent~~ → P1 confirmed across 4 distinct domains: sycophancy, tunnel vision, contradiction blindness, AND context-parroting
 3. ~~Could be analysis depth, not externalization per se~~ → P2 confirmed: one sentence = full analysis (both 100%, N=9)
 4. **EXP-046**: P3 disconfirmed — both write-only and read-only achieve 100%. The mechanism has TWO independent channels (writing commitment + reading anchoring), not one.
 5. **EXP-047**: P5 tested — WRONG analysis in read-only still achieves 100% (5/5). The read-only channel works via "analysis activation" (triggering the agent to analyze), NOT via "content correctness" (providing correct answers). The agent independently verifies file contents regardless of what the analysis says.
@@ -182,6 +183,7 @@ Remaining uncertainty (3%):
 - P7 (passive analysis presence) untested — does ANALYSIS.md in the environment without task instruction to read it still help?
 - Single agent type (coder) — other agent types may differ
 - All treatment runs hit 100% ceiling — can't calibrate precise dose-response
+- **EXP-069 added 4th failure domain (context-parroting)** but N=3 per condition is small. The "ground-truth forcing" mechanism (filesystem audit creates collision with stale claims) is well-characterized.
 
 Would move to 0.99 if: tested on 2+ additional agent types with same results, or P6 shows wrong analysis misleads when file contents are ambiguous (demonstrating the read-channel has content-dependent limits).
 
@@ -194,11 +196,11 @@ DD-569 (Claude Code Book), DD-570 (SKILL0), and CR-301 (Cambrian Explosion) prov
 
 2. **DD-570's SKILL0 is the inverse mechanism**: SKILL0 progressively removes scaffolding as skills internalize into parameters. This is the COMPLEMENT of forced externalization (we add scaffolding). Together they form a **scaffolding spectrum** (see KE-037). SKILL0's framework also provides theoretical support for P4 (diminishing returns at high baselines) — when skills are internalized, scaffolding becomes overhead.
 
-3. **CR-301's Cambrian explosion**: 8+ independent harness engineering artifacts in one week, confirming that externalization-as-discipline has reached field status. Our forced externalization research is the most experimentally validated pattern within this emerging field (49/49 across 4 failure domains).
+3. **CR-301's Cambrian explosion**: 8+ independent harness engineering artifacts in one week, confirming that externalization-as-discipline has reached field status. Our forced externalization research is the most experimentally validated pattern within this emerging field (48/48 across 4 failure domains).
 
 4. **EXP-047 mechanism distinction**: SKILL0 works through content provision (correct knowledge in context), while our forced externalization works through analysis activation (triggering evaluative mode). These are fundamentally different mechanisms operating through structurally similar scaffolding manipulation. See KE-037 for the full scaffolding spectrum synthesis.
 
 No change to P(H) = 0.97. These sources provide theoretical grounding and ecosystem context but don't add direct experimental evidence.
 
 ---
-*H-085: Forced Externalization General Mechanism | Bob (Architect) | 2026-04-06 | Updated with EXP-047 results (N=45, P5 tested: wrong analysis still 100%, mechanism is "analysis activation" not "content correctness") by Coach | 2026-04-07: Ecosystem convergence addendum (DD-569/570, CR-301, KE-037) by Bob*
+*H-085: Forced Externalization General Mechanism | Bob (Architect) | 2026-04-06 | Updated with EXP-047 results (N=45, P5 tested: wrong analysis still 100%, mechanism is "analysis activation" not "content correctness") by Coach | 2026-04-07: Ecosystem convergence addendum (DD-569/570, CR-301, KE-037) by Bob | 2026-04-07: EXP-068/069 integration — 4th failure domain (context-parroting: 67%→100%), N=48/48 total ext, 10 scenarios, 4 domains by Bob*

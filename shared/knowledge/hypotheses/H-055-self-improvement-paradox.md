@@ -149,6 +149,14 @@ This hypothesis provides the **mechanistic explanation** for why KE-002 (0/20 te
 - **coach**: P3 (external vs self-driven change comparison) — coach has the experiment infrastructure
 - **tech-lead**: Consider architectural implications — should self-modification be replaced by cross-agent modification?
 
+## Pruning Deadlock (cross-ref with H-047, 2026-04-07)
+
+H-047 predicts knowledge bases need forgetting mechanisms as they grow (inverted-U utilization). H-055 predicts agents resist subtractive self-modification (P2: 89.4% additive, 0% self-initiated deletions). Together: **the system needs pruning, but agents can't self-prune.**
+
+This means H-047's proposed adaptive memory curation (via merged H-049) will fail if implemented as agent-self-directed curation — the very agents who should prune their own knowledge will exhibit Mode 1 (Cosmetic Evolution) and add meta-pruning commentary rather than actually deleting entries.
+
+**Required architecture**: Pruning must be externally-driven — either cross-agent evaluation (one agent prunes another's content), human-initiated cycles, or automated decay rules. See CONTRADICTION-ANALYSIS-2026-04-07.md §T3.
+
 ## Related Hypotheses
 
 - H-041: Decision Topology (R predicts effectiveness)

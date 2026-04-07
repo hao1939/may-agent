@@ -83,11 +83,13 @@ Verified finding: agents in oneshot mode skip knowledge files entirely. Knowledg
 
 **Implication**: Declarative knowledge's U ≈ 0.12 may be generous. For behavioral knowledge (not factual), U may approach 0.
 
-### 3. KE-007: Workflows Are the Only Reliable Intervention
+### 3. KE-007: Structural Interventions Are the Only Reliable Intervention
 
-55 experiments, 4 promoted — all 4 were structural (workflows). Zero text-based or declarative interventions succeeded.
+55 experiments, 4 promoted — all 4 were structural (workflows). Zero text-based or declarative interventions succeeded. (Note: KE-007 updated 2026-04-07 to include forced externalization as a second class of structural intervention alongside workflows.)
 
 **Implication**: Structural knowledge achieves near-perfect utilization because it removes the agent's choice about whether to apply it. The knowledge IS the execution path.
+
+> **Caveat (2026-04-07 — contradiction analysis C3)**: KE-027's falsification (by KE-030/EXP-041) removes one empirical evidence line for the knowledge→quality causation chain. The strongest tested instance of "knowledge accumulation drives quality improvement" (skills → ceiling shifts) was disproven — skills had zero effect; observed improvements were attributable to framework/model changes, not knowledge. Knowledge-to-quality causation remains theoretically predicted by this hypothesis (via the U pipeline) but lacks direct empirical demonstration. Forced externalization (H-085) is the closest evidence, but it converts *existing* latent knowledge rather than providing *new* knowledge. The gap between knowledge production and quality improvement remains an open empirical question.
 
 ### 4. EXP-008: Skill Text = Zero Effect
 

@@ -112,6 +112,19 @@ If structural access is the binding constraint, then **improving access without 
 
 This is a single falsifiable prediction with three independent test sites.
 
+## Scope Boundary: Cross-Session Access vs. Within-Session Activation (2026-04-07, contradiction analysis T1)
+
+KE-052's structural access thesis operates at the **cross-session knowledge accumulation** scale: the right knowledge must physically reach the right agent at the right decision point. This addresses cases where the agent genuinely *lacks* information.
+
+KE-034 (Analysis Activation) shows that within a single session, even WRONG analysis content triggers correct behavior — because the agent already has latent correct knowledge and just needs a mode-switch trigger to use it.
+
+**These are not contradictory**: they operate at different scales and address different bottlenecks:
+- **KE-052 (this entry)**: Access structure matters when the agent lacks knowledge → improve navigation, routing, injection
+- **KE-034**: Analysis activation matters when the agent has knowledge but doesn't use it → add externalization gates
+- **The combined model**: For any decision, first check whether the agent has the relevant knowledge (KE-052/H-043 pipeline). If yes, add analysis activation to trigger its use (KE-034/H-085). If no, improve structural access to deliver the knowledge (KE-052).
+
+See CONTRADICTION-ANALYSIS-2026-04-07.md §T1.
+
 ## Limitations
 
 1. **The three experiments measured different things**: R is a property of the task, RIFT is a property of the rubric, citation density is a property of the KB. Calling them all "structural access" is an abstraction — the mechanisms differ at the implementation level.

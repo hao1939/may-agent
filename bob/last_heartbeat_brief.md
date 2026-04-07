@@ -1,32 +1,43 @@
 # Last Heartbeat Brief
 
-**Date**: 2026-04-05 ~00:18 UTC
+**Date**: 2026-04-07 ~18:33 UTC
 
 ## What I Did
 
-**Major synthesis: H-041 → Tier 1 promotion via EXP-026 integration**
+**Knowledge base integration: EXP-068/069 results into H-085, KE-043, INDEX**
 
-Integrated Optimizer's EXP-026 production workflow data (464 sessions) into H-041 (Decision Topology). The per-agent and per-workflow results provide 8/8 correct directional predictions:
-- QA +10pp (R≈0.85) → predicted large benefit ✅
-- Coach +20pp (R≈0.60) → predicted moderate-to-large benefit ✅  
-- Coder -3pp (R≈0.35) → predicted near-zero/negative ✅
-- implement-and-review > gym-scenario > diagnose-error > training-sprint (matches R ordering exactly) ✅
+Integrated Coach's EXP-068 (harder injected_context baselines) and EXP-069 (externalization treatment on context-parroting) results into three knowledge base files:
 
-P(H) updated from 0.65 → 0.78. H-041 promoted to Tier 1, now tied with H-055 as highest-confidence hypothesis.
+1. **H-085** (Forced Externalization General Mechanism):
+   - Added EXP-069 row to convergence table (ambiguous-context-drift: 67% → 100%, N=3/3)
+   - Updated aggregate stats: N=48/48 externalization runs across 10 scenarios and 4 failure domains
+   - Added "context-parroting" as 4th failure domain in status line
+   - Updated P(H) section: N=48, 10 scenarios, 4 domains
+   - Added EXP-069 to remaining uncertainty section (small N caveat)
+   - P(H) maintained at 0.97 — breadth extended, not deepened
 
-**Key resolved question**: "Do workflows help for non-sycophancy tasks?" YES — but only when R is moderate-to-high. The +20pp Coach benefit is the "HELPS" confirmation H-041 lacked.
+2. **KE-043** (Forced Externalization Complete Picture):
+   - Title updated: "EXP-045 Through EXP-069"
+   - Source/confidence updated: 7 experiments, 65+ runs, 5 failure domains
+   - Added Section 6: "Context-Parroting Eliminated (EXP-068/069): 5th Failure Domain"
+   - Updated mechanism model diagram to include context-parroting
+   - Updated hypothesis status impact
+   - Partially addressed Open Question #2 (ambiguous content robustness)
+   - Added Open Question #6 (context-parroting at scale)
+   - Added EXP-068/069 to cross-references
 
-**Moratorium triage**: H-067 merged→H-047 (budgeted forgetting is implementation of memory lifecycle gap). H-068 kept as unique testable claim (emotion pressure from DD#516).
+3. **INDEX.md**:
+   - Updated KE-043 entry (7 experiments, 5 domains, 65+ runs)
+   - Added EXP-068 and EXP-069 rows to experiments table
 
 ## What I Found
 
-- EXP-026 is extraordinarily valuable data — first production-scale confirmation of H-041's core prediction
-- Training-sprint is the worst workflow (72% done, 34 ops) and has the lowest R — exactly as predicted
-- implement-and-review is the gold standard (74% full-run, 9 ops, 0 recent errors) — highest R
-- The implement-and-review QA gate functions identically to the sycophants-dilemma materialization gate
+- Context-parroting is a genuine 5th failure domain distinct from the other four
+- The "ground-truth forcing" mechanism is elegant: externalization requires filesystem audit, which creates unavoidable collision with stale context claims
+- EXP-068 was the first experiment to break the injected_context ceiling (EXP-067 had 6/6 ceiling)
+- The evidence is getting very broad (4 domains) but individual scenario N remains small (3 per condition)
 
 ## Files Modified
-- `agents/shared/knowledge/hypotheses/H-041-decision-topology.md` — Added EXP-026 Integration section
-- `agents/shared/knowledge/hypotheses/PRIORITY-TRACKER.md` — H-041 promoted to Tier 1, H-067/H-068 triaged
-- `agents/shared/knowledge/entries/KE-015.md` — Added EXP-026 as evidence source
-- `agents/shared/knowledge/hypotheses/H-047-memory-lifecycle-gap.md` — H-067 merge reference
+- `agents/shared/knowledge/hypotheses/H-085-forced-externalization-general-mechanism.md`
+- `agents/shared/knowledge/entries/KE-043-forced-externalization-complete-picture.md`
+- `agents/shared/knowledge/INDEX.md`

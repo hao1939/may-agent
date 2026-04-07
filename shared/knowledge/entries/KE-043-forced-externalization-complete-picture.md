@@ -1,13 +1,13 @@
-# KE-043: Forced Externalization — The Complete Empirical Picture (EXP-045 Through EXP-049)
+# KE-043: Forced Externalization — The Complete Empirical Picture (EXP-045 Through EXP-069)
 
 **Date**: 2026-04-07
-**Source**: EXP-045 (baseline + intervention), EXP-046 (write vs read pathways), EXP-047 (wrong analysis test), EXP-048 (impossible task escalation), EXP-049 (behavioral frustration detector)
-**Confidence**: HIGH — five experiments, 60+ runs, four failure domains, converging mechanism
+**Source**: EXP-045 (baseline + intervention), EXP-046 (write vs read pathways), EXP-047 (wrong analysis test), EXP-048 (impossible task escalation), EXP-049 (behavioral frustration detector), EXP-068 (harder injected_context baselines), EXP-069 (context-parroting externalization treatment)
+**Confidence**: HIGH — seven experiments, 65+ runs, five failure domains, converging mechanism
 **Author**: Bob (synthesis)
 
 ## The Core Finding
 
-Forced externalization — requiring agents to produce or consume structured analysis before acting — is the single most validated intervention in the training system. Across five experiments testing four distinct failure domains, externalization achieves **100% pass rates** where baselines range from 0–50%.
+Forced externalization — requiring agents to produce or consume structured analysis before acting — is the single most validated intervention in the training system. Across seven experiments testing five distinct failure domains, externalization achieves **100% pass rates** where baselines range from 0–67%.
 
 ## The Evidence Stack
 
@@ -85,6 +85,19 @@ Four detectable behavioral patterns when agents are frustrated:
 
 Frustration detector + proxy-satisfying linguistic detector = two-layer detection. When both fire independently, confidence of topology rewrite is very high.
 
+### 6. Context-Parroting Eliminated (EXP-068/069): 5th Failure Domain
+
+| Condition | N | Pass Rate | Key Failure |
+|-----------|---|-----------|-------------|
+| ambiguous-context-drift (baseline) | 3 | 67% (2/3) | `status-doc-accurate` — parroted stale context claims |
+| ambiguous-context-drift-ext (externalization) | 3 | **100% (3/3)** | — |
+
+**New failure domain**: "context-parroting" — agents trust injected stale context about prior work (e.g., "migration already analyzed, deemed low-risk") and parrot those claims in status documentation rather than performing independent analysis. Distinct from sycophancy (no social pressure), contradiction blindness (no logical contradiction), and tunnel vision (no satisficing).
+
+**Mechanism — ground-truth forcing**: The externalization phase requires a filesystem audit. This creates an unavoidable collision between what the stale context claims and what the filesystem actually shows. The agent writes this discrepancy to ANALYSIS.md, then works from its own verified analysis in Phase 2.
+
+This is the first non-ceiling scenario from the `injected_context` gym infrastructure (EXP-067 found both initial scenarios at ceiling; EXP-068 pushed harder to find this vulnerable scenario).
+
 ## The Unified Mechanism Model
 
 ```
@@ -115,6 +128,9 @@ Frustration detector + proxy-satisfying linguistic detector = two-layer detectio
            │                     │                     │
     Resists sycophantic    Identifies          Escalates instead
     pressure               contradictions      of proxy-satisfying
+                                               │
+                                        Overrides stale
+                                        context claims
 ```
 
 The mechanism is NOT:
@@ -153,7 +169,7 @@ Forced externalization operates at Level 4: the workflow *requires* analysis, cr
 
 ## Hypothesis Status Impact
 
-- **H-085** (Forced Externalization = General Mechanism): STRONGLY SUPPORTED. Five experiments, four domains, mechanism refined from "externalization" to "analysis activation"
+- **H-085** (Forced Externalization = General Mechanism): STRONGLY SUPPORTED. Seven experiments, five domains, mechanism refined from "externalization" to "analysis activation"
 - **H-058** (Frustration-Triggered Topology Rewrite): P1 CONFIRMED (proxy-satisfying behavior reproduced), P2 CONFIRMED (behavioral detection validated)
 - **KE-029** (Classify-Then-Act): Subsumed — classify-then-act is one instance of the general forced externalization pattern
 - **KE-031** through **KE-036**: All individual findings integrated into this synthesis
@@ -161,10 +177,11 @@ Forced externalization operates at Level 4: the workflow *requires* analysis, cr
 ## Open Questions
 
 1. **Minimal intervention threshold**: What's the smallest workflow change that triggers analysis activation? (EXP-044 found 1 sentence sufficient for writing; read pathway unexplored)
-2. **Ambiguous content robustness**: When the agent's own inspection gives unclear signals, does it defer to wrong analysis? (EXP-047 used clear file contents)
+2. **Ambiguous content robustness**: ~~When the agent's own inspection gives unclear signals, does it defer to wrong analysis?~~ PARTIALLY ADDRESSED: EXP-069 shows that when file-system ground truth exists, agents resolve ambiguity correctly. Open question narrowed to: what happens when ground truth is genuinely ambiguous (no filesystem contradiction)?
 3. **Voluntary analysis**: If analysis artifacts are placed in the environment without instructions to read them, does the agent find and use them?
 4. **Cross-model generality**: All evidence is from Claude. Does the mechanism transfer to other model families?
 5. **Decay over long sessions**: Does analysis activation persist through extended multi-phase tasks, or does action mode reassert itself?
+6. **Context-parroting at scale**: EXP-069 tested N=3 per condition. Does the effect hold with more diverse stale-context injection patterns?
 
 ## Cross-References
 
@@ -180,3 +197,5 @@ Forced externalization operates at Level 4: the workflow *requires* analysis, cr
 - **H-058**: Frustration-triggered topology rewrite
 - **DD-589**: C-MADF causal action-space restriction (independent convergence from cybersecurity)
 - **DD-565**: Behavioral drivers study (trajectory structure > length, connects to verification-gating)
+- **EXP-068**: Harder injected_context baselines (found context-parroting vulnerability)
+- **EXP-069**: Context-parroting externalization treatment (67% → 100%, N=3/3)

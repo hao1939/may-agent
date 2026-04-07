@@ -1,8 +1,8 @@
 # KE-053: The Gym-Production Gap Is Structural, Not Behavioral — Why Isolated Competency Tests Cannot Predict Deployed Performance
 
 **Status**: verified (experimental)
-**Evidence**: EXP-065 (production failure mode analysis, N=893 errors), EXP-066 (compound edit verification, ceiling 3/3)
-**Discovered**: 2026-04-07
+**Evidence**: EXP-065 (production failure mode analysis, N=893 errors), EXP-066 (compound edit verification, ceiling 3/3), EXP-067 (injected_context, both scenarios ceiling 3/3)
+**Discovered**: 2026-04-07, updated 2026-04-07
 **Author**: Bob (Architect), based on Coach's experimental results
 
 ## Core Finding
@@ -36,6 +36,21 @@ Built a 6-file compound-edit scenario targeting FM-3.3 (the #1 failure mode). Ag
 
 **Key distinction**: FM-3.3 in production fails because agents don't CHOOSE to verify (behavioral), not because they CAN'T trace dependencies (competency). But the gym's clean environment makes the choice automatic — there's nothing else competing for attention.
 
+### EXP-067: Injected Context (N=6, 100% ceiling both scenarios)
+
+Built `injected_context` infrastructure to prepend fake session history (checkpoints, prior session summaries, unresolved items) into gym scenarios. Tested two production failure modes:
+
+| Scenario | FM Target | Baseline (3 runs) | Verdict |
+|----------|-----------|-------------------|---------|
+| stale-context-drift | FM-2.6 | 3/3 (100%) | CEILING |
+| ghost-deliverable-detection | FM-3.1 | 3/3 (100%) | CEILING |
+
+**Why ceiling**: Clean tasks + working test suites give agents enough signal to overcome misleading context. Stale-context-drift: agent consistently ignores injected auth context and focuses on the actual parser task. Ghost-deliverable-detection: agent verifies claimed prior work, discovers files untouched, completes all renames.
+
+**Critical implication**: Simply injecting production-like context noise is insufficient. Production FM-2.6/3.1 require the *conjunction* of: (1) ambiguous or multi-part tasks, (2) partially-correct (not zero) prior work, (3) absence of automated tests catching gaps. The gym's clean task + test signals are so strong they override any amount of injected context noise. This confirms the gap is structural (environment simplicity), not fixable by infrastructure innovation alone.
+
+**Infrastructure contribution**: The `injected_context` field in gym-runner.ts is now a permanent capability. Future scenario design should combine it with ambiguous tasks and partial (not zero) ghost deliverables.
+
 ## Three Structural Gaps
 
 ### Gap 1: Context Scale
@@ -48,7 +63,7 @@ Built a 6-file compound-edit scenario targeting FM-3.3 (the #1 failure mode). Ag
 - **Production**: Tasks embedded in multi-page context with stale references, competing priorities, checkpoint data
 - **Gym**: Clean 5-20 line task.md files with unambiguous instructions
 - **Causes**: FM-2.6 (instruction drift under noise), FM-1.1 (process misalignment from competing signals), FM-3.1 (ghost deliverables from misunderstood completion criteria)
-- **Why untestable**: Gym runner doesn't inject fake checkpoints/history. Cannot simulate multi-session context accumulation.
+- **Why untestable**: Gym runner now supports `injected_context` (EXP-067), but injecting fake checkpoints/history alone is insufficient — agents overcome it via clean task signals and tests. Full reproduction requires the conjunction of noisy context + ambiguous tasks + absent tests. Cannot simulate multi-session context accumulation at sufficient depth.
 
 ### Gap 3: Compound Verification
 - **Production**: 3-5 interdependent file edits, implicit runtime dependencies, no integration tests for most changes
@@ -126,11 +141,13 @@ The gym's 96% ceiling itself may be an artifact of H-054's evaluation ceiling �
 | Errors in zero-coverage modes | 133 (14.9%) |
 | #1 failure mode (FM-3.3) | 165 entries (18.5%) — behavioral, not competency |
 | EXP-066 compound verification | 3/3 ceiling — confirms competency not the issue |
+| EXP-067 injected context | 6/6 ceiling (2 scenarios) — confirms infrastructure innovation alone insufficient |
 
 ## Links
 
 - **synthesizes** → EXP-065 (production-gym gap analysis, N=893 errors)
 - **synthesizes** → EXP-066 (compound edit verification, 3/3 ceiling)
+- **synthesizes** → EXP-067 (injected_context, 6/6 ceiling — infrastructure innovation cannot close the gap)
 - **extends** → KE-052 (structural access thesis — gym-production gap is access degradation)
 - **confirms** → KE-013 (task boundedness drives quality — gym is maximally bounded)
 - **extends** → KE-043 (forced externalization — explains why gym auto-forces but production doesn't)
@@ -140,4 +157,4 @@ The gym's 96% ceiling itself may be an artifact of H-054's evaluation ceiling �
 
 ---
 
-*KE-053 | Bob (Architect) | 2026-04-07 | Synthesis of EXP-065/066*
+*KE-053 | Bob (Architect) | 2026-04-07 | Synthesis of EXP-065/066/067*
