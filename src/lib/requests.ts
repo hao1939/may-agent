@@ -243,6 +243,48 @@ CREATE INDEX IF NOT EXISTS idx_sd_session ON session_digests(sessionId, created_
 CREATE INDEX IF NOT EXISTS idx_sd_agent   ON session_digests(agent, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_sd_action  ON session_digests(action, created_at DESC)
   WHERE action IS NOT NULL;
+
+-- Research System Tables (knowledge base, hypotheses, experiments)
+CREATE TABLE IF NOT EXISTS knowledge_entries (
+  id              TEXT PRIMARY KEY,      -- KE-XXX
+  title           TEXT,
+  status          TEXT,                  -- verified, provisional, disputed, superseded, observed
+  claim           TEXT,
+  evidence_refs   TEXT,                  -- comma-separated EXP refs
+  discovered      TEXT,                  -- date string
+  last_verified   TEXT,                  -- date string
+  raw_content     TEXT NOT NULL,
+  synced_at       INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_ke_status ON knowledge_entries(status);
+
+CREATE TABLE IF NOT EXISTS hypotheses (
+  id              TEXT PRIMARY KEY,      -- H-XXX
+  title           TEXT,
+  status          TEXT,                  -- untested, testing, supported, refuted, inconclusive, proposed
+  priority        TEXT,                  -- high, medium, low
+  proposed_by     TEXT,
+  hypothesis      TEXT,
+  raw_content     TEXT NOT NULL,
+  synced_at       INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_hyp_status   ON hypotheses(status);
+CREATE INDEX IF NOT EXISTS idx_hyp_priority ON hypotheses(priority);
+
+CREATE TABLE IF NOT EXISTS experiments (
+  id              TEXT PRIMARY KEY,      -- EXP-XXX
+  title           TEXT,
+  status          TEXT,                  -- designed, in-progress, running, completed, verified, invalidated, failed
+  hypothesis_ref  TEXT,                  -- H-XXX or free text
+  result_summary  TEXT,
+  raw_content     TEXT NOT NULL,
+  synced_at       INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_exp_status ON experiments(status);
+CREATE INDEX IF NOT EXISTS idx_exp_hyp    ON experiments(hypothesis_ref);
 `;
 
 // ── Database Management ────────────────────────────────────────────────
