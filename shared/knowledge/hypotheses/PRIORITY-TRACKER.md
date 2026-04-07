@@ -98,6 +98,8 @@ H-070 (Workflow Fixed Cost) added despite moratorium because it directly formali
 
 | Priority | Experiment | Tests | Status | Next Step |
 |----------|-----------|-------|--------|-----------|
+| P1 | **EXP-070** | **H-085: Externalization on non-ceiling injected_context** | **DESIGNED — delegated to Coach** | Extended baseline N=10 + treatment N=10 on ambiguous-context-drift (EXP-068 baseline: 67%). Tests documentation-parroting gap. |
+| P1 | **EXP-071** | **H-085: Externalization on cascading-fix-trap-v2** | **IN PROGRESS — Coach running treatment** | Baseline: 78% (7/9), N=6, 100% consistent. New failure pattern: workaround satisficing. Treatment phase testing whether externalization forces root-cause discovery. |
 | ✅ | **EXP-025** | **H-041 (non-ceiling scenarios)** | **COMPLETE — 19/20 sessions scored correctly** | Validated on 4 non-ceiling scenarios |
 | P1 | EXP-026 | H-054 P1: RIFT audit of gym rubrics | NEEDS DESIGN | Manual rubric review |
 | ✅ | **EXP-038** | **H-001: Adversarial QA A/B test** | **COMPLETE — WEAKLY DISCONFIRMED → H-001 ARCHIVED** | H-001 disconfirmed and archived (2026-04-07) |

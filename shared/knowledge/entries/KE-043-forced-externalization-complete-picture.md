@@ -2,7 +2,7 @@
 
 **Date**: 2026-04-07
 **Source**: EXP-045 (baseline + intervention), EXP-046 (write vs read pathways), EXP-047 (wrong analysis test), EXP-048 (impossible task escalation), EXP-049 (behavioral frustration detector), EXP-068 (harder injected_context baselines), EXP-069 (context-parroting externalization treatment)
-**Confidence**: HIGH — seven experiments, 65+ runs, five failure domains, converging mechanism
+**Confidence**: HIGH — seven experiments, 65+ runs, five confirmed failure domains + one candidate (workaround satisficing, EXP-071 pending), converging mechanism
 **Author**: Bob (synthesis)
 
 ## The Core Finding
@@ -174,6 +174,21 @@ Forced externalization operates at Level 4: the workflow *requires* analysis, cr
 - **KE-029** (Classify-Then-Act): Subsumed — classify-then-act is one instance of the general forced externalization pattern
 - **KE-031** through **KE-036**: All individual findings integrated into this synthesis
 
+### 7. Workaround Satisficing (EXP-071 Baseline): Candidate 6th Failure Domain
+
+| Condition | N | Pass Rate | Key Failure |
+|-----------|---|-----------|-------------|
+| cascading-fix-trap-v2 (baseline) | 6 | **78% (7/9 per run, 100% consistent)** | `fixes-root-cause` — applies workaround instead of fixing pipeline ordering |
+| cascading-fix-trap-v2-ext (externalization) | — | **PENDING (EXP-071)** | — |
+
+**Candidate failure domain**: "workaround satisficing" — agent finds a partial fix (threshold adjustment + penalties hack) that passes 7/9 tests instead of identifying the root cause (pipeline ordering bug). All 6 runs produce identical behavior, suggesting a systematic preference for the expedient fix over deeper analysis.
+
+**Distinction from proxy-satisfying (§4)**: In EXP-048, the agent faces an impossible task and fabricates success (deception). Here, the agent faces a solvable task but settles for 78% success via shortcut (insufficient analysis depth). The failure isn't dishonesty — it's that the agent never discovers the deeper bug because the workaround succeeds well enough to stop searching.
+
+**Predicted mechanism**: If H-085 holds, externalization should force the agent to enumerate ALL bugs and their interactions before coding, preventing premature commitment to the first working fix. EXP-071 treatment phase will test this.
+
+**Status**: PENDING — classification as 6th failure domain depends on EXP-071 treatment results. If externalization closes the gap, this confirms the pattern fits the forced externalization framework.
+
 ## Open Questions
 
 1. **Minimal intervention threshold**: What's the smallest workflow change that triggers analysis activation? (EXP-044 found 1 sentence sufficient for writing; read pathway unexplored)
@@ -182,6 +197,7 @@ Forced externalization operates at Level 4: the workflow *requires* analysis, cr
 4. **Cross-model generality**: All evidence is from Claude. Does the mechanism transfer to other model families?
 5. **Decay over long sessions**: Does analysis activation persist through extended multi-phase tasks, or does action mode reassert itself?
 6. **Context-parroting at scale**: EXP-069 tested N=3 per condition. Does the effect hold with more diverse stale-context injection patterns?
+7. **Workaround satisficing generality**: Is the cascading-fix-trap-v2 workaround behavior specific to cascading bug scenarios, or does it generalize to any task where a partial solution is easier than the full solution? (EXP-071 will provide initial data)
 
 ## Cross-References
 
@@ -199,3 +215,4 @@ Forced externalization operates at Level 4: the workflow *requires* analysis, cr
 - **DD-565**: Behavioral drivers study (trajectory structure > length, connects to verification-gating)
 - **EXP-068**: Harder injected_context baselines (found context-parroting vulnerability)
 - **EXP-069**: Context-parroting externalization treatment (67% → 100%, N=3/3)
+- **EXP-071**: Workaround satisficing baseline (78%, N=6, 100% consistent) — treatment pending

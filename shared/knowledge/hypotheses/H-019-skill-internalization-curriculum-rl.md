@@ -55,9 +55,10 @@
  
  ## Related Work
  
- - SKILL0 (Zhejiang University, Apr 2026): Direct precedent
+ - SKILL0 (Zhejiang University, Apr 2026): Direct precedent — see DD#570 for full analysis
  - Trace2Skill: Skill distillation from trajectories (complementary)
  - CBRL: Context-bootstrapped RL (can combine)
+ - DD#570 (2026-04-07): Confirms SKILL0 maps to our tiered memory architecture (working → episodic → semantic → procedural). Dynamic curriculum = automated consolidation scheduler. Challenges harness-only optimization — some problems require parameter-level learning.
  
  ## Strategic Implication
  

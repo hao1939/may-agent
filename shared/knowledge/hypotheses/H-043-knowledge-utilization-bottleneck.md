@@ -172,6 +172,7 @@ YC-Bench (HB-0140) tests 12 frontier models in a 1-year startup simulation with 
 - **Prediction**: A system where relevant knowledge entries are automatically injected into agent prompts based on task classification will show 2× faster R increase than passive file-based knowledge.
 - **Test**: Build a knowledge injection layer that identifies relevant entries from task description and prepends them to agent prompt. Compare R evolution rate vs. current system.
 - **Falsification**: Active injection doesn't change quality → knowledge content, not delivery, is the bottleneck.
+- **⚠️ Caveat (2026-04-07, contradiction analysis C2 — KE-025 overhead risk)**: KE-025 (Instruction Overhead Paradox) shows that adding *irrelevant or marginally-relevant* context files **degrades** performance. Active injection must be **narrowly targeted** to the current decision point. Broad injection of "potentially relevant" knowledge is predicted to hurt, not help. The resolution: relevance × form determines whether more knowledge helps or hurts. Only inject knowledge that directly maps to the current task's essential decisions.
 
 ### P4: There exists a knowledge form conversion sweet spot
 - **Prediction**: Not all knowledge needs to be structural (expensive to create, inflexible). The optimal strategy is: behavioral knowledge → structural (workflows), factual knowledge → environmental (context.md), theoretical knowledge → declarative (acceptable loss of utilization).

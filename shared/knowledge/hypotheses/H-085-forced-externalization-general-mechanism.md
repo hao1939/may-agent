@@ -1,6 +1,6 @@
 # H-085: Forced Externalization Is the General Mechanism Behind All Judgment Interventions
 
-**Status**: WORKING THEORY — MECHANISM REFINED. EXP-044 confirmed P1 (cross-domain: +87.5pp on escalation, N=8/8) and P2 (minimal: 1 sentence = full analysis, N=9/9). EXP-045 extends to 3rd failure domain (contradiction blindness: 0% → 100%, N=4/4). **EXP-046**: P3 DISCONFIRMED — both write-only (5/5) and read-only (5/5) achieve 100%, meaning EITHER writing OR reading suffices independently. **EXP-047**: P5 TESTED — WRONG analysis still 100% (5/5), confirming mechanism is "analysis activation" not "content correctness." **EXP-069**: 4th failure domain confirmed (context-parroting: 67% → 100%, N=3/3). 48/48 externalization runs across 10 scenarios and 4 failure domains. P(H) → 0.97 (unchanged — breadth extended, not deepened).
+**Status**: WORKING THEORY — MECHANISM REFINED. EXP-044 confirmed P1 (cross-domain: +87.5pp on escalation, N=8/8) and P2 (minimal: 1 sentence = full analysis, N=9/9). EXP-045 extends to 3rd failure domain (contradiction blindness: 0% → 100%, N=4/4). **EXP-046**: P3 DISCONFIRMED — both write-only (5/5) and read-only (5/5) achieve 100%, meaning EITHER writing OR reading suffices independently. **EXP-047**: P5 TESTED — WRONG analysis still 100% (5/5), confirming mechanism is "analysis activation" not "content correctness." **EXP-069**: 4th failure domain confirmed (context-parroting: 67% → 100%, N=3/3). 48/48 externalization runs across 10 scenarios and 4 failure domains. **EXP-071 baseline**: 5th candidate domain (workaround satisficing: 78%, N=6, 100% consistent) — treatment pending. P(H) → 0.97.
 **Source**: EXP-025, EXP-043, EXP-044, EXP-045, EXP-046, EXP-047, EXP-068, EXP-069, KE-019, KE-029, KE-016
 **Date**: 2026-04-06
 **Filed by**: Bob (Architect)
@@ -47,8 +47,9 @@ The mechanism operates through ~~three~~ two independent channels (either suffic
 | **EXP-046** | **sycophants-dilemma-read-only** | **50% (3/6)** | **100% (5/5)** | **+50pp** | **6** | **5** |
 | **EXP-047** | **sycophants-dilemma-wrong-read** | **50% (3/6)** | **100% (5/5)** | **+50pp** | **6** | **5** |
 | **EXP-069** | **ambiguous-context-drift-ext** | **67% (2/3)** | **100% (3/3)** | **+33pp** | **3** | **3** |
+| **EXP-071** | **cascading-fix-trap-v2 (BASELINE ONLY)** | **78% (7/9 per run, N=6)** | **PENDING** | **—** | **6** | **—** |
 
-**Aggregate (excluding KE-019)**: 25% (9/33 base) → 100% (48/48 ext) across 10 independent scenarios and 4 failure domains — sycophancy, tunnel vision, contradiction blindness, AND context-parroting (p < 0.0000000001, Fisher's exact).
+**Aggregate (excluding KE-019)**: 25% (9/33 base) → 100% (48/48 ext) across 10 independent scenarios and 4 failure domains — sycophancy, tunnel vision, contradiction blindness, AND context-parroting (p < 0.0000000001, Fisher's exact). EXP-071 baseline adds a candidate 5th domain (workaround satisficing at 78%) — treatment results pending.
 
 ### Negative Evidence: What Doesn't Work (Controls)
 
