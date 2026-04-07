@@ -110,4 +110,124 @@ describe("formatDigestContext", () => {
     expect(result).toBeTruthy();
     expect(result).not.toContain("files:");
   });
+
+  it("accepts cross-agent digests parameter", () => {
+    const own = [makeDigest({ what_happened: "Fixed auth bug" })];
+    const cross = [
+      makeDigest({
+        id: 10,
+        agent: "coach",
+        what_happened: "Updated H-085 hypothesis",
+        files_modified: JSON.stringify(["knowledge/hypotheses/H-085.md"]),
+        created_at: 1775400060000,
+      }),
+    ];
+    const result = formatDigestContext(own, cross);
+    expect(result).toContain("### Cross-Agent Activity");
+    expect(result).toContain("coach");
+    expect(result).toContain("Updated H-085 hypothesis");
+  });
+
+  it("accepts unresolved digests parameter", () => {
+    const own = [makeDigest({ what_happened: "Fixed auth bug" })];
+    const unresolved = [
+      makeDigest({
+        id: 20,
+        sessionId: "s_old",
+        outcome: "partial",
+        what_happened: "Started refactoring",
+        still_open: "Need to update 3 more files",
+        created_at: 1775380000000,
+      }),
+    ];
+    const result = formatDigestContext(own, [], unresolved);
+    expect(result).toContain("### Unresolved Items");
+    expect(result).toContain("Need to update 3 more files");
+  });
+
+  it("deduplicates unresolved items that are also in main digests", () => {
+    const own = [makeDigest({ sessionId: "s_123", still_open: "Some work" })];
+    const unresolved = [makeDigest({ sessionId: "s_123", still_open: "Some work" })];
+    const result = formatDigestContext(own, [], unresolved);
+    expect(result).not.toContain("### Unresolved Items");
+  });
+
+  it("uses cleanTaskText fallback when what_happened is null", () => {
+    const result = formatDigestContext([
+      makeDigest({
+        what_happened: null,
+        task: "[heartbeat] Read agents/tech-lead/heartbeat.md and work through each section...\n---\nInjected content here",
+      }),
+    ]);
+    // Should clean the task text: strip [heartbeat] prefix, strip after ---
+    expect(result).toContain("Heartbeat");
+    expect(result).not.toContain("[heartbeat]");
+    expect(result).not.toContain("Injected content");
+  });
+
+  it("cleans [WORK SESSION] prefix", () => {
+    const result = formatDigestContext([
+      makeDigest({
+        what_happened: null,
+        task: "[WORK SESSION] Process EXP-046 results",
+      }),
+    ]);
+    expect(result).toContain("Process EXP-046 results");
+    expect(result).not.toContain("[WORK SESSION]");
+  });
+
+  it("applies overflow protection for large context", () => {
+    // Generate 25 digests with long content — need total > 10,000 chars
+    const digests = Array.from({ length: 25 }, (_, i) =>
+      makeDigest({
+        id: i,
+        sessionId: `s_${i}`,
+        what_happened: "A".repeat(600),
+        files_modified: JSON.stringify(["a.ts", "b.ts", "c.ts", "d.ts", "e.ts"]),
+        still_open: "B".repeat(100),
+        task: "Long task description that adds to the total character count of each entry item",
+        created_at: 1775400000000 + i * 60000,
+      }),
+    );
+    const cross = [
+      makeDigest({
+        id: 100, agent: "coach", what_happened: "C".repeat(200),
+        files_modified: JSON.stringify(["x.ts"]),
+      }),
+    ];
+    const result = formatDigestContext(digests, cross);
+    // After overflow protection, should trim to 5 entries and drop cross-agent
+    // Cross-agent should be dropped in overflow
+    expect(result).not.toContain("### Cross-Agent Activity");
+    // Should only have 5 entries (the most recent 5)
+    expect(result!.length).toBeLessThan(12000);
+  });
+
+  it("shows cross-agent entry with compact format", () => {
+    const cross = [
+      makeDigest({
+        id: 10,
+        agent: "tech-lead",
+        what_happened: "Deployed new evaluator",
+        files_modified: JSON.stringify(["src/lib/evaluator.ts"]),
+        created_at: 1775400000000, // 2026-04-05 14:40 UTC
+      }),
+    ];
+    const result = formatDigestContext([makeDigest({})], cross);
+    // Cross-agent should show "agent HH:MM: what"
+    expect(result).toContain("tech-lead 14:40:");
+    expect(result).toContain("Deployed new evaluator");
+  });
+
+  it("returns content when only cross-agent digests provided", () => {
+    const cross = [
+      makeDigest({
+        agent: "coach",
+        what_happened: "Updated hypothesis",
+      }),
+    ];
+    const result = formatDigestContext([], cross, []);
+    expect(result).toContain("### Cross-Agent Activity");
+    expect(result).toContain("Updated hypothesis");
+  });
 });

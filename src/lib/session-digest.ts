@@ -90,76 +90,225 @@ export function getDigestTimeline(persistDir: string, sessionId: string): Digest
 
 /**
  * Get recent digests for an agent (for context injection).
+ * Deduplicates — returns only the latest row per session.
  */
 export function getRecentDigests(
   persistDir: string,
   agent: string,
-  limit = 5,
+  limit = 10,
 ): DigestRow[] {
   const db = getDb(persistDir);
   return db
     .prepare(
-      `SELECT * FROM session_digests
-       WHERE agent = ? AND trigger IN ('end', 'checkpoint')
-       ORDER BY created_at DESC LIMIT ?`,
+      `SELECT d.* FROM session_digests d
+       INNER JOIN (
+         SELECT sessionId, MAX(step) as maxStep
+         FROM session_digests 
+         WHERE agent = ? AND trigger IN ('end', 'checkpoint')
+         GROUP BY sessionId
+       ) latest ON d.sessionId = latest.sessionId AND d.step = latest.maxStep
+       ORDER BY d.created_at DESC LIMIT ?`,
     )
     .all(agent, limit) as unknown as DigestRow[];
 }
 
 /**
- * Format recent digests into a context block for injection into agent sessions.
- * Replaces the memory-based "Recent Task History" with richer digest data.
+ * Get recent digests from OTHER agents that modified files the current agent also recently touched.
+ * This provides cross-agent awareness: "someone else changed something you care about."
+ */
+export function getCrossAgentDigests(
+  persistDir: string,
+  excludeAgent: string,
+  recentFiles: Set<string>,
+  windowMs = 2 * 60 * 60 * 1000,
+  limit = 3,
+): DigestRow[] {
+  if (recentFiles.size === 0) return [];
+  const db = getDb(persistDir);
+  const cutoff = Date.now() - windowMs;
+  const candidates = db
+    .prepare(
+      `SELECT * FROM session_digests
+       WHERE agent != ? AND trigger = 'end' AND files_modified IS NOT NULL
+         AND created_at > ?
+       ORDER BY created_at DESC LIMIT 20`,
+    )
+    .all(excludeAgent, cutoff) as unknown as DigestRow[];
+
+  return candidates
+    .filter((d) => {
+      try {
+        const files = JSON.parse(d.files_modified!) as string[];
+        return files.some((f) => recentFiles.has(f));
+      } catch {
+        return false;
+      }
+    })
+    .slice(0, limit);
+}
+
+/**
+ * Get digests with unresolved `still_open` items — sessions that ended partial/in_progress/interrupted
+ * and were never followed by a success in the same session. Surfaced regardless of recency (within 24h).
+ */
+export function getUnresolvedDigests(
+  persistDir: string,
+  agent: string,
+  windowMs = 24 * 60 * 60 * 1000,
+  limit = 3,
+): DigestRow[] {
+  const db = getDb(persistDir);
+  const cutoff = Date.now() - windowMs;
+  return db
+    .prepare(
+      `SELECT * FROM session_digests
+       WHERE agent = ? AND still_open IS NOT NULL
+         AND outcome IN ('partial', 'in_progress', 'interrupted')
+         AND created_at > ?
+         AND sessionId NOT IN (
+           SELECT sessionId FROM session_digests
+           WHERE outcome = 'success' AND created_at > ?
+         )
+       ORDER BY created_at DESC LIMIT ?`,
+    )
+    .all(agent, cutoff, cutoff, limit) as unknown as DigestRow[];
+}
+
+/**
+ * Format digest data into a context block for injection into agent sessions.
+ * Supports same-agent history, cross-agent activity, and unresolved items.
  *
- * Output format per entry:
- *   - YYYY-MM-DD HH:MM: "task summary" — status (duration) — what happened
- *     [files: a.ts, b.ts] [open: still unfinished work]
+ * Output format:
+ *   - YYYY-MM-DD HH:MM: Description — outcome (duration) — what happened
+ *     [files: a.ts, b.ts] [open: unfinished work]
+ *   ### Cross-Agent Activity (last 2h)
+ *   - agent HH:MM: What happened
+ *     [files: ...]
+ *   ### Unresolved Items
+ *   - YYYY-MM-DD HH:MM: Description — outcome — what happened
+ *     [open: ...]
  */
 export function formatDigestContext(
   digests: DigestRow[],
+  crossAgentDigests?: DigestRow[],
+  unresolvedDigests?: DigestRow[],
 ): string | null {
-  if (digests.length === 0) return null;
-
-  // Reverse so oldest is first (digests come in DESC order from getRecentDigests)
-  const ordered = [...digests].reverse();
+  if (digests.length === 0 && !crossAgentDigests?.length && !unresolvedDigests?.length) return null;
 
   const lines: string[] = [];
+
+  // Same-agent recent history (oldest first)
+  const ordered = [...digests].reverse();
   for (const d of ordered) {
-    const ts = formatDigestTimestamp(d.created_at);
-    const taskStr = truncateStr(d.task ?? "unknown task", 120);
-    const details: Record<string, unknown> = d.details ? JSON.parse(d.details) : {};
-    const duration = (details.duration as string) ?? "";
-    const outcome = d.outcome ?? d.trigger;
-    const durationStr = duration ? ` (${duration})` : "";
+    lines.push(...formatDigestEntry(d));
+  }
 
-    // Main line: timestamp, task, outcome, duration
-    let line = `- ${ts}: "${taskStr}" — ${outcome}${durationStr}`;
-
-    // what_happened gives the real substance
-    if (d.what_happened) {
-      line += ` — ${truncateStr(d.what_happened, 200)}`;
-    }
-
-    lines.push(line);
-
-    // Sub-details on next lines if present
-    const extras: string[] = [];
-    if (d.files_modified) {
-      try {
-        const files = JSON.parse(d.files_modified) as string[];
-        if (files.length > 0) {
-          extras.push(`files: ${files.slice(0, 5).join(", ")}${files.length > 5 ? "..." : ""}`);
-        }
-      } catch { /* skip */ }
-    }
-    if (d.still_open) {
-      extras.push(`open: ${truncateStr(d.still_open, 100)}`);
-    }
-    if (extras.length > 0) {
-      lines.push(`  [${extras.join("] [")}]`);
+  // Unresolved items section — sessions with open items that were never resolved
+  if (unresolvedDigests && unresolvedDigests.length > 0) {
+    // Filter out any that are already in the main digests list
+    const mainSessionIds = new Set(digests.map((d) => d.sessionId));
+    const unique = unresolvedDigests.filter((d) => !mainSessionIds.has(d.sessionId));
+    if (unique.length > 0) {
+      lines.push("", "### Unresolved Items");
+      for (const d of unique) {
+        lines.push(...formatDigestEntry(d));
+      }
     }
   }
 
-  return lines.join("\n");
+  // Cross-agent section
+  if (crossAgentDigests && crossAgentDigests.length > 0) {
+    lines.push("", "### Cross-Agent Activity (last 2h)");
+    for (const d of crossAgentDigests) {
+      lines.push(...formatCrossAgentEntry(d));
+    }
+  }
+
+  // Overflow protection: if total chars > 10,000 (~2,500 tokens), trim
+  let result = lines.join("\n");
+  if (result.length > 10000) {
+    // Rebuild without cross-agent, limit to 5 same-agent entries
+    const trimLines: string[] = [];
+    const trimmed = ordered.slice(-5); // keep most recent 5
+    for (const d of trimmed) {
+      trimLines.push(...formatDigestEntry(d, 100)); // shorter what_happened
+    }
+    result = trimLines.join("\n");
+  }
+
+  return result || null;
+}
+
+/**
+ * Format a single digest entry for same-agent history.
+ */
+function formatDigestEntry(d: DigestRow, whatHappenedMaxLen = 200): string[] {
+  const ts = formatDigestTimestamp(d.created_at);
+  const details: Record<string, unknown> = d.details ? JSON.parse(d.details) : {};
+  const duration = (details.duration as string) ?? "";
+  const outcome = d.outcome ?? d.trigger;
+  const durationStr = duration ? ` (${duration})` : "";
+
+  // Use what_happened as primary description; fall back to cleaned task text
+  const description = d.what_happened
+    ? truncateStr(d.task ?? "unknown task", 80)
+    : cleanTaskText(d.task) ?? "unknown task";
+
+  let line = `- ${ts}: ${description} — ${outcome}${durationStr}`;
+
+  if (d.what_happened) {
+    line += ` — ${truncateStr(d.what_happened, whatHappenedMaxLen)}`;
+  }
+
+  const result: string[] = [line];
+
+  // Sub-details
+  const extras: string[] = [];
+  if (d.files_modified) {
+    try {
+      const files = JSON.parse(d.files_modified) as string[];
+      if (files.length > 0) {
+        extras.push(`files: ${files.slice(0, 5).join(", ")}${files.length > 5 ? "..." : ""}`);
+      }
+    } catch {
+      /* skip */
+    }
+  }
+  if (d.still_open) {
+    extras.push(`open: ${truncateStr(d.still_open, 100)}`);
+  }
+  if (extras.length > 0) {
+    result.push(`  [${extras.join("] [")}]`);
+  }
+
+  return result;
+}
+
+/**
+ * Format a single digest entry for cross-agent section.
+ * More compact: "- agent HH:MM: What happened [files: ...]"
+ */
+function formatCrossAgentEntry(d: DigestRow): string[] {
+  const ts = formatDigestTimestamp(d.created_at);
+  const timeOnly = ts.split(" ")[1]; // just "HH:MM"
+  const what = d.what_happened
+    ? truncateStr(d.what_happened, 150)
+    : cleanTaskText(d.task) ?? "unknown activity";
+
+  const result: string[] = [`- ${d.agent} ${timeOnly}: ${what}`];
+
+  if (d.files_modified) {
+    try {
+      const files = JSON.parse(d.files_modified) as string[];
+      if (files.length > 0) {
+        result.push(`  [files: ${files.slice(0, 5).join(", ")}${files.length > 5 ? "..." : ""}]`);
+      }
+    } catch {
+      /* skip */
+    }
+  }
+
+  return result;
 }
 
 /** Format epoch ms → "YYYY-MM-DD HH:MM" in UTC. */
@@ -173,6 +322,24 @@ function formatDigestTimestamp(epochMs: number): string {
 function truncateStr(s: string, maxLen: number): string {
   if (s.length <= maxLen) return s;
   return s.slice(0, maxLen - 1) + "…";
+}
+
+/**
+ * Clean task text for display — strip heartbeat boilerplate and injected content.
+ * Used as a fallback when `what_happened` is null.
+ */
+function cleanTaskText(task: string | null): string | null {
+  if (!task) return null;
+  let cleaned = task;
+  if (cleaned.startsWith("[heartbeat]")) {
+    cleaned = "Heartbeat";
+  } else if (cleaned.startsWith("[WORK SESSION] ")) {
+    cleaned = cleaned.replace("[WORK SESSION] ", "");
+  }
+  // Strip injected content after ---
+  const dashIdx = cleaned.indexOf("\n---");
+  if (dashIdx > 0) cleaned = cleaned.slice(0, dashIdx);
+  return truncateStr(cleaned.trim(), 80) || null;
 }
 
 /**
