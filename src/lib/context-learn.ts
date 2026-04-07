@@ -206,15 +206,8 @@ const MERGE_PROMPT = `You maintain a knowledge file (context.md) for an AI agent
 
 You receive the agent's CURRENT context.md and new text to learn from. Output the COMPLETE UPDATED context.md.
 
-**What belongs:**
-- Correct commands, runtime/tooling facts, file locations, gotchas
-- Architectural patterns and design decisions (e.g., "sessions are not archived," "turn limits removed")
-- Human priorities and goals (e.g., "human wants agents to discover skills at runtime")
-- Strategic decisions and their rationale (e.g., "heartbeat-as-dispatcher pattern adopted for efficiency")
-- User preferences and explicit directives (e.g., "DO NOT re-add maxTurns")
-- Agent responsibilities and current focus areas
-
-**What doesn't belong:** session-specific details, obvious truths, opinions, generic advice, transient task status.
+**What belongs:** correct commands, runtime/tooling facts, architectural patterns, file locations, user preferences, gotchas.
+**What doesn't:** session-specific details, obvious truths, opinions, generic advice.
 
 **Merging:** If a new fact updates an existing one, REPLACE (e.g., "Bun 1.0" → "Bun 1.2"). If facts contradict, keep the newer one. Merge related facts into one line. Remove stale facts. Keep UNDER 30 lines.
 
