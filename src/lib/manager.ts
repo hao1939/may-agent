@@ -84,7 +84,7 @@ import { routeKnowledge } from "./knowledge-router.js";
 import { buildTrace } from "./manager-trace.js";
 import { hasFinishToolCall, extractFinishParams, runAgentWithRetry } from "./manager-retry.js";
 import { createAgentsTool as createAgentsToolFn, type CreateAgentsToolOptions } from "./manager-agents-tool.js";
-import { upsertDigest, logShadowComparison, getRecentDigests, formatDigestContext } from "./session-digest.js";
+import { upsertDigest, logShadowComparison, getRecentDigests, formatDigestContext, getCrossAgentDigests, getUnresolvedDigests } from "./session-digest.js";
 import { isOverflowError } from "./overflow.js";
 import { summarizeForHandoff } from "./handoff.js";
 // classifyError is re-exported directly from classify-error.ts (no local import needed)
@@ -526,8 +526,26 @@ export class SubagentManager {
       // Falls back to memory JSONL if no digests found (cold-start or pre-digest sessions)
       let historyBlock: string | null = null;
       try {
-        const digests = getRecentDigests(persistDir, agentName, memoryLimit);
-        historyBlock = formatDigestContext(digests);
+        const digests = getRecentDigests(persistDir, agentName, Math.min(memoryLimit, 10));
+        
+        // Extract files recently touched by this agent (for cross-agent filtering)
+        const recentFiles = new Set<string>();
+        for (const d of digests) {
+          if (d.files_modified) {
+            try {
+              const files = JSON.parse(d.files_modified) as string[];
+              files.forEach((f) => recentFiles.add(f));
+            } catch { /* skip */ }
+          }
+        }
+        
+        // Cross-agent digests: what did other agents change in files I care about?
+        const crossAgentDigests = getCrossAgentDigests(persistDir, agentName, recentFiles);
+        
+        // Unresolved items: sessions that left things open
+        const unresolvedDigests = getUnresolvedDigests(persistDir, agentName);
+        
+        historyBlock = formatDigestContext(digests, crossAgentDigests, unresolvedDigests);
       } catch {
         // DB not available (e.g., vitest) — fall through to memory
       }
