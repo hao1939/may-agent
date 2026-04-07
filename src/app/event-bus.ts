@@ -77,6 +77,13 @@ export type SystemEvent =
       task?: string;
     }
   | {
+      type: "research_sync";
+      knowledgeEntries: number;
+      hypotheses: number;
+      experiments: number;
+      errors: number;
+    }
+  | {
       type: "eval";
       verdict: string;
       efficiency: number;
