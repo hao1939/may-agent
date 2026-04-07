@@ -338,7 +338,7 @@ CREATE TABLE knowledge_entries (
 ### What's NOT built (from original design)
 - Phase 3: Thin startup (under 100 lines) — may.ts is ~780 lines, not 100
 - Advocate + Skeptic agents
-- Research events + DB tables
+- ~~Research events + DB tables~~ ✅ DONE (research-db.ts, research_sync event type, cron handler)
 - `info` → `log` + `notification` migration (info events still used extensively)
 
 ## Summary

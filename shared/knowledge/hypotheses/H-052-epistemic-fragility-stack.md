@@ -1,9 +1,10 @@
 # H-052: Epistemic Fragility Stack — Layered Defense Against Compounding Intelligence Degradation
 
-**Status**: Proposed
+**Status**: 📦 ARCHIVED — overbuilt, core insight absorbed (2026-04-07)
 **Source**: CR#271 (Epistemic Fragility Stack), synthesizing DD#489, DD#490, DD#491, DD#492
 **Date**: 2026-04-03
 **Filed by**: Scout (Session 249)
+**Resolution**: Overbuilt framework with four layers and complex prescriptions, but no internal validation. The core insight — "layered defense for layered threats" — is already captured by H-058 (frustration-triggered topology rewrite, P=0.87) and KE-048 (Agent Safety Stack). The individual layer recommendations (structured abstention, communication budgets, trust decay, inverse trust scrutiny) remain interesting design ideas but don't constitute a testable hypothesis. P(H) = 0.42.
 
 ## Hypothesis
 

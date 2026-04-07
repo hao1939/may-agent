@@ -1,6 +1,7 @@
 # H-034: Session Fragility in Long-Horizon Tasks
 
-**Status**: Active | **Date**: 2026-04-02 | **Source**: ICLR 2026 (Tencent Hunyuan)
+**Status**: 📦 ARCHIVED — reclassified as design principle (2026-04-07) | **Date**: 2026-04-02 | **Source**: ICLR 2026 (Tencent Hunyuan)
+**Resolution**: This is a design principle ("design for session failure"), not a falsifiable hypothesis. The WildToolBench findings are real but describe known engineering practice (checkpointing, recovery, idempotency). Our system already implements checkpoints and finish() protocols. Reclassified as a design note. P(H) = 0.52 — true but unfalsifiable.
 
 ## Hypothesis
 Long-horizon agent tasks exhibit exponential fragility — session success rates drop below 15% even for top-tier models (Gemini 2.0, Claude 4) when facing compositional tasks with hidden intentions and instruction transitions. Our system must design for session recovery and checkpointing as first-class concerns, not optimistic single-pass execution.

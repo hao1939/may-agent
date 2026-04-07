@@ -1135,3 +1135,23 @@ Production multi-agent data management system with "three-track knowledge archit
 
 | 2604.00478 | The Silicon Mirror: Dynamic Behavioral Gating for Anti-Sycophancy in LLM Agents | ★★★★ EXCELLENT — Dynamic gating mechanism that modulates agent agreement behavior based on confidence and evidence quality. Behavioral gate decides when to agree vs. when to push back. Addresses sycophancy at architectural level rather than training level. Connects DD#520 (collusion detection), DD#573 (coordination deficits), CR#265 (Constitutional Evolution). DD#611. |
 
+
+### ABTest: Behavior-Driven Fuzzing for AI Coding Agents — arXiv:2604.03362
+
+| 2604.03362 | ABTest: Behavior-Driven Fuzzing Framework for AI Coding Agents | ★★★★★ CRITICAL — First systematic behavioral fuzzing framework for AI coding agents. Mines 400 user-reported failures → 47 Interaction Patterns + 128 Action Types → 647 repository-grounded fuzzing cases → 1,573 behavioral anomalies (642 confirmed new). Tests across Claude Code, Codex CLI, Gemini CLI. Creates a BDD language for agent testing. Connects DD#635 (brittleness), DD#634 (Claude regression), CR#301 (harness engineering). DD#639. |
+
+### Inside the Scaffold: Source-Code Taxonomy of Coding Agent Architectures — arXiv:2604.03515
+
+| 2604.03515 | Inside the Scaffold: Source-Code Taxonomy of Coding Agent Architectures | ★★★★★ CRITICAL — First rigorous source-code-level architectural taxonomy of 13 open-source coding agent scaffolds across 12 dimensions in 3 layers. Identifies 5 composable loop primitives (ReAct, generate-test-repair, plan-execute, multi-attempt, tree search). 11/13 agents compose multiple primitives. 7 distinct context compaction strategies. Convergent (tools/edits/isolation) vs divergent (compaction/state/routing) design spaces. Connects CR#307 (decoction), CR#314 (three-channel), Law 44. DD#640. |
+
+### AgenticFlict: Merge Conflicts in AI Coding Agent Pull Requests — arXiv:2604.03551
+
+| 2604.03551 | AgenticFlict: Merge Conflicts in AI Coding Agent Pull Requests | ★★★★ EXCELLENT — First large-scale dataset of merge conflicts in AI agent PRs. 142K+ agent PRs from 59K+ repos; 27.67% conflict rate producing 336K+ fine-grained conflict regions. Quantifies coordination cost for multi-agent coding workflows. Connects CR#314 (Three-Channel Design), DD#615 (Freestyle Sandboxes), DD#637 (Self-Optimizing MAS). DD#641. |
+
+### TRACE: Trust Allocation Across Conflicting Software Artifacts — arXiv:2604.03447
+
+| 2604.03447 | TRACE: LLM Trust Allocation Across Conflicting Software Artifacts | ★★★★ EXCELLENT — 22,339 trust traces from 7 models on 456 Java bundles. LLMs systematically over-trust natural language specs vs code. Documentation bugs detected well (67-94%), but code drift with intact docs missed (7-42pp detection drop). "Plausible documentation" as attack surface. Connects CR#307 (decoction), DD#621 (Tool Illusion), CR#309 (Agent Capability Boundary), Law 33. DD#642. |
+
+### DebugHarness: Emulating Human Dynamic Debugging for Autonomous Repair — arXiv:2604.03610
+
+| 2604.03610 | DebugHarness: Emulating Human Dynamic Debugging for Autonomous Repair | ★★★★ EXCELLENT — LLM agent emulating human dynamic debugging via runtime probing, hypothesis testing, closed-loop validation. ~90% patch rate on SEC-bench C/C++ security vulnerabilities, 30%+ improvement over static-only baselines. Adds 6th loop primitive (hypothesis-probe-validate). Connects DD#628 (self-execution), CR#301 (harness engineering), DD#640 (scaffold taxonomy). DD#643. |

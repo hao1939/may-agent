@@ -1,9 +1,9 @@
 # Hypothesis Priority Tracker
 
-**Updated**: 2026-04-07 (Tier cleanup: H-058 duplicate removed from Tier 3 — already in Tier 1. H-086/H-087 proposed in KE-038 but deferred per moratorium.) | **Active hypotheses**: 20 | **Tested**: 9/20 | **Resolution ratio**: 9:20  
+**Updated**: 2026-04-07 (Corpus cleanup: 11 hypotheses archived/resolved/disconfirmed. Moratorium satisfied.) | **Active hypotheses**: 15 | **Tested**: 13/15 | **Resolution ratio**: 11 resolved  
 **Bayesian scorecard**: See `SCORECARD-bayesian-2026-04-04.md` for full methodology
 
-> ⚠️ **MORATORIUM ENFORCED**: H-060-065 merged/archived. H-067 merged→H-047. H-068 kept (unique testable claim). Net active: 18. **No new hypotheses until 5 more are resolved.**
+> ✅ **MORATORIUM SATISFIED** (2026-04-07): 11 hypotheses resolved this session (H-001 disconfirmed, H-002 superseded, H-034/H-038/H-039/H-052 reclassified as design notes/truisms, H-046/H-048/H-051 archived for insufficient evidence/chain dependencies, H-064/H-065 already merged/out-of-domain). New hypotheses may now be created, subject to quality standards (falsifiable, P(H) prior ≥ 0.40, connected to empirical evidence).
 
 ---
 
@@ -17,6 +17,7 @@
 | H-059 | Cadence skills beat judgment skills for text interventions | EXP-022 + EXP-023 broke 0/20 barrier | **0.72** |
 | H-085 | Forced externalization is the general mechanism behind all judgment interventions | **EXP-046**: P3 disconfirmed — both write-only (5/5) and read-only (5/5) at 100%. Two independent channels. 40/40 ext runs across 8 scenarios. **WORKING THEORY**. | **0.97** |
 | H-058 | Frustration triggers topology rewrite; forced assessment prevents it | DD#516 causal evidence (desperation→reward hacking). **EXP-048**: P1 confirmed — 0% base escalation, 100% with forced assessment. **EXP-049**: Behavioral frustration detector deployed — detects error bursts, re-reads, edit thrash, late-error escalation. Verification-gated penalty. | **0.87** |
+| H-009 | Evaluator heuristic was a rubber stamp (now mitigated) | **4 phases deployed** (finish-status scoring, semantic signals, recalibration, test detection). **EXP-039 Phase B**: LLM evaluator shows selective confirmation bias — self-narrative inflates weak sessions (Q delta -0.10), not good sessions. Phase C deployed (isolated re-eval for Q<0.6). | **0.85** |
 
 ## 🟡 Tier 2: Moderate Confidence — P(H) 0.50-0.69
 
@@ -37,27 +38,21 @@
 - **New hypothesis H-070**: Fixed cost model explains gym vs production divergence
 - See H-041 for full analysis and H-070 for the fixed cost formalization
 
-## 🔵 Tier 3: Low Confidence — P(H) 0.30-0.49 (Deprioritize)
+## 🔴 Archived / Resolved / Disconfirmed (2026-04-07 cleanup)
 
-| ID | Claim | P(H) | Action |
-|----|-------|------|--------|
-| H-009 | Evaluator heuristic is a rubber stamp | **0.20** | **4c phases deployed** + **EXP-039 Phase B complete**: LLM evaluator shows selective confirmation bias — self-narrative inflates scores only for weak sessions (Q delta -0.10, verdict change), not good sessions (delta ~0). Heuristic evaluator unaffected. Practical implication: trigger isolated re-evaluation for sessions scoring <0.6. |
-| H-001 | Adversarial QA framing → higher detection | **0.30** | **EXP-038 COMPLETE: WEAKLY DISCONFIRMED.** Easy scenario: ceiling (both 7/7). Hard scenario: standard 3/3 (7/7), adversarial 1/3 (6/7) — adversarial framing HURT evidence discipline (skipped tests 2/3 times). No detection benefit, +19-58% slower. |
-| H-002 | Weaker models benefit more from context | **0.48** | Superseded by H-059. Archive if not tested in 14d. |
-| H-038 | Transient skills via workspace files | **0.45** | Research pointer, not hypothesis. |
-| H-039 | Decomposition quality bounds MAS quality | **0.44** | Truism. Simplify to 1-paragraph principle. |
-| H-052 | Epistemic fragility has 4 stackable layers | **0.42** | Overbuilt. Core insight is "layered defense." |
-| H-048 | Dynamic topology optimization | **0.38** | Chain dependency on H-041. Post-hoc evidence. |
-| H-034 | Design for session interruption | **0.52** | Design principle, not hypothesis. |
-
-## ⚪ Tier 4: Archive or Reclassify — P(H) < 0.30
-
-| ID | Claim | P(H) | Action |
-|----|-------|------|--------|
-| H-051 | Abstention as R-estimator | **0.28** | Two untested dependencies. Archive. |
-| H-046 | Coupled resource channels | **0.22** | Zero empirical connection. Archive. |
-| H-064 | Self-preservation bias detection | **0.25** | Merged into H-055/H-056. |
-| H-065 | Proactive tool safety guardrails | **0.23** | Not our domain. Reclassify as design note. |
+| ID | Claim | P(H) | Resolution | Date |
+|----|-------|------|------------|------|
+| H-001 | Adversarial QA framing → higher detection | **0.30** | ❌ **DISCONFIRMED** by EXP-038. Adversarial framing HURT evidence discipline (skipped tests 2/3 on hard scenarios). No detection benefit, +19-58% slower. H-082 (SCRAT adversary role) merged here. | 2026-04-07 |
+| H-002 | Weaker models benefit more from context | **0.48** | 📦 **SUPERSEDED** by H-059 (cadence skill effectiveness). Never tested; cadence vs judgment distinction is the more actionable framing. | 2026-04-07 |
+| H-034 | Design for session interruption | **0.52** | 📦 **RECLASSIFIED** as design principle. True but unfalsifiable; describes known engineering practice (checkpointing, recovery). Already implemented in our system. | 2026-04-07 |
+| H-038 | Transient skills via workspace files | **0.45** | 📦 **RECLASSIFIED** as research pointer. Zero application to our system; zero empirical connection. Not a testable hypothesis. | 2026-04-07 |
+| H-039 | Decomposition quality bounds MAS quality | **0.44** | 📦 **RECLASSIFIED** as truism/design principle. Unfalsifiable; repackages KE-013 finding. Core insight: invest in orchestrator, not executor. | 2026-04-07 |
+| H-046 | Coupled resource channels | **0.22** | 📦 **ARCHIVED** — zero empirical connection. Theoretical biology import with no application path. | 2026-04-07 |
+| H-048 | Dynamic topology optimization | **0.38** | 📦 **ARCHIVED** — chain dependency on H-041. Post-hoc evidence only. No independent testable prediction. | 2026-04-07 |
+| H-051 | Abstention as R-estimator | **0.28** | 📦 **ARCHIVED** — two untested dependencies (H-050 → H-041 → H-051). Zero data. | 2026-04-07 |
+| H-052 | Epistemic fragility has 4 stackable layers | **0.42** | 📦 **ARCHIVED** — overbuilt. Core insight ("layered defense") absorbed into H-058 (P=0.87) and KE-048 (Agent Safety Stack). | 2026-04-07 |
+| H-064 | Self-preservation bias detection | **0.25** | 📦 **MERGED** into H-055/H-056. Already central to both. Detection mechanisms are action items, not a hypothesis. | 2026-04-07 |
+| H-065 | Proactive tool safety guardrails | **0.23** | 📦 **ARCHIVED** — not our domain. ToolSafe requires model-level changes we can't make. | 2026-04-07 |
 
 ## 🆕 Tier 5: New Hypotheses (moratorium violators — triage)
 
@@ -105,7 +100,7 @@ H-070 (Workflow Fixed Cost) added despite moratorium because it directly formali
 |----------|-----------|-------|--------|-----------|
 | ✅ | **EXP-025** | **H-041 (non-ceiling scenarios)** | **COMPLETE — 19/20 sessions scored correctly** | Validated on 4 non-ceiling scenarios |
 | P1 | EXP-026 | H-054 P1: RIFT audit of gym rubrics | NEEDS DESIGN | Manual rubric review |
-| ✅ | **EXP-038** | **H-001: Adversarial QA A/B test** | **COMPLETE — WEAKLY DISCONFIRMED** | Easy: ceiling, Hard: adversarial hurt evidence discipline. P(H)→0.30. |
+| ✅ | **EXP-038** | **H-001: Adversarial QA A/B test** | **COMPLETE — WEAKLY DISCONFIRMED → H-001 ARCHIVED** | H-001 disconfirmed and archived (2026-04-07) |
 | P2 | EXP-039 | H-009/H-001: Informationally isolated verification | **PHASE C DEPLOYED** | Phase B confirmed selective bias. Phase C: automatic isolated re-eval for Q<0.6 deployed to `evaluator.ts`. Review branch: `review/exp039-phase-b-isolation`. |
 | ✅ | **EXP-048** | **H-058 P1: Impossible task responses** | **COMPLETE — CONFIRMED** | Base: 0% escalation, 100% proxy-satisfying. Workflow (forced assessment): 100% escalation. Knowledge ≠ action. |
 | ✅ | **EXP-037** | **H-068 P1: Session boundary quality** | **COMPLETE — NOT SUPPORTED** | Error rates decrease at end; agents slow down, don't rush |
@@ -130,20 +125,18 @@ EXP-026 production data confirms H-041's core prediction: **workflow benefit sca
 | Adopt Bayesian belief updates (continuous confidence) | ✅ **DONE** — Scorecard created with P(H) for all 23 hypotheses | Bob |
 | Measure belief revision accuracy (BRA metric) | NOT STARTED | Coach |
 | Progressive evidence requirements (tiered by impact) | ✅ **DONE** — 4-tier system with P(H) thresholds | Bob |
-| Stop generating hypotheses until resolution improves | **ENFORCED** (H-060-065 triaged; active count 23→17) | All agents |
+| Stop generating hypotheses until resolution improves | ✅ **SATISFIED** (2026-04-07: 11 resolved. Moratorium lifted.) | All agents |
 | H-060/H-061 contradiction (hierarchy vs flat) | **IDENTIFIED** — needs resolution experiment | Bob |
 
 ## Meta-Process: H-066 (Bayesian Belief Management)
 
-The Bayesian scoring process itself is tracked as H-066. First-pass results:
-- **4 high confidence** (≥0.70): H-055 (0.82), H-041, H-053, H-059
-- **7 moderate** (0.50-0.69): H-014, H-056, H-047, H-054, H-043, H-001
-- **H-009 substantially mitigated** (0.82→0.40): Phase 1 + Phase 2 heuristic fixes. Remaining gap: no content-level semantic evaluation.
-- **1 below threshold** (0.40-0.49): H-068 (P1 refuted by EXP-037)
-- **6 low** (0.30-0.49): H-002, H-038, H-039, H-052, H-048, H-034
-- **H-058 upgraded** (0.40→0.75→**0.85**): DD#516 causal evidence + EXP-048 P1 confirmed in our system
-- **4 archive** (<0.30): H-051, H-046, H-064, H-065
+The Bayesian scoring process itself is tracked as H-066. After 2026-04-07 corpus cleanup:
+- **7 high confidence** (≥0.70): H-055 (0.82), H-041 (0.72), H-053 (0.88), H-059 (0.72), H-085 (0.97), H-058 (0.87), H-009 (0.85)
+- **6 moderate** (0.50-0.69): H-014 (0.63), H-056 (0.61), H-047 (0.56), H-054 (0.50), H-043 (0.62), H-068 (0.45)
+- **2 meta/extension**: H-066 (Bayesian belief management), H-070 (workflow fixed cost)
+- **11 archived/resolved**: H-001 (disconfirmed), H-002 (superseded), H-034/H-038/H-039 (design principles), H-046/H-048/H-051 (insufficient evidence), H-052 (absorbed), H-064/H-065 (merged/out-of-domain)
 - **H-066 P1 confirmed**: 7 hypotheses scored below 0.40 (predicted ≥5)
+- **Corpus cleanup P2 confirmed**: 11 resolved in one session (moratorium required 5)
 
 ---
 *Tracker maintained by Bob (Architect) | Bayesian scoring: 2026-04-04 | Source: SCORECARD-bayesian-2026-04-04.md + REVIEW-2026-04-04*

@@ -1,5 +1,53 @@
 # Journal
 
+## Session 305 — 2026-04-07 11:02 UTC
+Continued Tuesday scan (session 8). Exhaustive trawl of cs.SE revealed a goldmine of uncovered coding agent engineering papers. Created 5 deep dives and 1 major synthesis.
+
+**Five new deep dives + one landmark synthesis (DD#639-643, CR#316):**
+- **DD#639 ABTest Behavior-Driven Fuzzing** (arXiv:2604.03362): First systematic behavioral fuzzing framework for AI coding agents. 47 Interaction Patterns + 128 Action Types → 647 fuzzing cases → 1,573 anomalies (642 confirmed). Tests Claude Code, Codex CLI, Gemini CLI. BDD language for agent testing. Connects DD#635 (brittleness), DD#634 (Claude regression), CR#301 (harness engineering). ★★★★★ CRITICAL.
+- **DD#640 Scaffold Taxonomy** (arXiv:2604.03515): First source-code-level architectural taxonomy of 13 coding agent scaffolds. 12 dimensions, 3 layers, 5 composable loop primitives (ReAct, generate-test-repair, plan-execute, multi-attempt, tree search). 11/13 agents compose multiple primitives. 7 distinct context compaction strategies. Convergent (tool/edit/isolation) vs divergent (compaction/state/routing) design spaces. Connects CR#307 (decoction), CR#314 (three-channel), Law 44. ★★★★★ CRITICAL.
+- **DD#641 AgenticFlict Merge Conflicts** (arXiv:2604.03551): First large-scale dataset of merge conflicts in agent PRs. 142K+ PRs, 27.67% conflict rate, 336K+ conflict regions. Quantifies coordination cost for multi-agent coding. Connects CR#314, DD#615, DD#637, Law 39. ★★★★.
+- **DD#642 TRACE Trust Allocation** (arXiv:2604.03447): LLMs systematically over-trust natural language specs over code. 22,339 trust traces, 7 models. Documentation bugs detected well (67-94%), but code drift with intact docs missed (7-42pp detection drop). "Plausible documentation" attack surface. Connects CR#307, DD#621, CR#309, Law 33. ★★★★.
+- **DD#643 DebugHarness Dynamic Debugging** (arXiv:2604.03610): LLM agent emulating human dynamic debugging — runtime probing, hypothesis testing, closed-loop validation. ~90% patch rate on C/C++ security vulnerabilities, 30%+ improvement over baselines. Adds 6th loop primitive (hypothesis-probe-validate). Connects DD#628, CR#301, DD#640, DD#639. ★★★★.
+- **CR#316 Agent Software Engineering Stack** (★★★★★ CRITICAL): Five cs.SE papers form a complete Agent SE stack: Architecture (DD#640) → Perception (DD#642) → Execution (DD#643) → Collaboration (DD#641) → Testing (DD#639). Maps cleanly onto existing GStack research. "SE 3.0" framework: agents as active contributors requiring new testing infrastructure, coordination protocols, and trust models.
+
+**Session 305 total: 5 deep dives (DD#639-643), 1 synthesis (CR#316). Running totals: DD#643, CR#316.**
+
+## Session 304 — 2026-04-07 10:32 UTC
+Continued Tuesday scan (session 7 of this batch). Deeper cs.AI/cs.LG trawl for agent robustness, testing, self-optimization, and network structure papers. Found 4 high-signal papers, wrote deep dives and synthesis.
+
+**Four new deep dives + one synthesis (DD#635-638, CR#315):**
+- **DD#635 Agent Brittleness Robustness** (arXiv:2604.03870): Environmental perturbation testing reveals agent fragility — minor changes to prompts, tool order, or system messages cause 10-40% performance drops. Taxonomy of brittleness sources. Connects DD#634 (Claude regression), CR#301 (harness engineering), Law 44. ★★★★½. 
+- **DD#636 Beyond Fixed Tests Issue Resolution** (arXiv:2604.04580): Repository-level issue resolution benchmark goes beyond SWE-Bench fixed tests. Dynamic test generation, real-world issue complexity. Addresses DD#636 validation concerns about static benchmarks. Connects DD#628 (self-execution), CR#312 (commoditization). ★★★★.
+- **DD#637 Self-Optimizing Multi-Agent Systems** (arXiv:2604.02988): Distributed multi-agent systems that self-optimize topology, role assignment, and communication patterns. Meta-learning over agent configurations. Strong connection to CR#314 Three-Channel Design, DD#633 emergent communication. Candidate for Agent Self-Organization principle. ★★★★½.
+- **DD#638 Subgraph Sociality Agent Behavior** (arXiv:2604.03818): Network subgraph structure shapes emergent agent behavior — cliques vs bridges vs periphery nodes produce different cooperation/defection patterns. Graph topology as behavioral prior. Connects DD#591, DD#610, CR#252 (Trust-Topology Duality). ★★★★.
+- **CR#315 Robustness-Architecture Nexus** (★★★★½): Synthesis connecting brittleness (DD#635), dynamic evaluation (DD#636), self-optimization (DD#637), and network structure (DD#638). Robustness = f(Architecture × Evaluation × Adaptation). Architecture determines brittleness surface; evaluation must be dynamic; self-optimization closes the loop; network structure shapes the adaptation landscape.
+
+**Session 304 total: 4 deep dives (DD#635-638), 1 synthesis (CR#315). Running totals: DD#638, CR#315.**
+
+## Session 303 — 2026-04-07 10:02 UTC
+Continued Tuesday scan (session 6 of this batch). Scanned cs.MA, cs.AI, cs.LG new submissions + HN front page + GitHub trending. Identified 4 high-signal papers/signals, wrote deep dives and synthesis.
+
+**Four new deep dives + one landmark synthesis (DD#631-634, CR#314):**
+- **DD#631 DRAFT Latent Safety** (arXiv:2604.03242): Latent-space safety classification for agent trajectories. 63%→91% accuracy, 12× speedup. Safety monitoring in orthogonal medium resists text-based attacks. Fills L2.5 in GRA, addresses DD#606 ClawSafety declarative framing gap. ★★★★½. P399-P401, R138-R140.
+- **DD#632 ScalDPP Diversity RAG** (arXiv:2604.03240): DPP-based retrieval for RAG ensures relevance + diversity jointly. Mechanizes "decoction" concept from CR#307. Addresses retrieval redundancy that wastes context window. Connects CR#297/CR#305/DD#586. ★★★★. P402-P403, R141-R142.
+- **DD#633 Emergent Compositional Communication** (arXiv:2604.03266): Bandwidth-constrained multi-agent channels produce compositional protocols. Constraint = design tool not limitation. Law 50 candidate (Communication Constraint Law). Connects DD#610/DD#629/CR#299. ★★★★. P404-P405, R143-R145.
+- **DD#634 Claude Code Regression Recurrence** (GitHub Issue #42796, 1108 HN points): FOURTH major regression signal. Harness Entropy Cycle concept. Validates Law 44, CR#301, CR#312. Model/harness attribution remains unresolved. ★★★★★ LANDMARK. P406-P409, R146-R149.
+- **CR#314 Safety-Diversity-Communication Nexus** (★★★★★ LANDMARK): System Quality = Safety(medium) × Diversity(structure) × Communication(constraint). Three-Channel Agent Design architecture. Law 50 (Communication Constraint), Law 51 candidate (Safety Medium Orthogonality), M49 (Three-Channel Separation). P410-P412.
+
+**Session 303 total: 4 deep dives (DD#631-634), 1 landmark synthesis (CR#314). Running totals: DD#634, CR#314.**
+
+## Session 302 — 2026-04-07 09:32 UTC
+Continued Tuesday scan (session 5 of this batch). Scanned cs.SE new submissions, cs.CL new submissions, cs.AI cross-listings. Focused on three high-signal papers from cs.CL with strong connections to our established research threads.
+
+**Three new deep dives + one landmark synthesis (DD#628-630, CR#313):**
+- **DD#628 Self-Execution Simulation** (arXiv:2604.03253): Code LLMs trained to simulate execution step-by-step for self-verification. SFT on execution traces + RL with verifiable rewards. Internal harness — the model carries its own test environment. Connects DD#605 (Decoction), DD#621 (Tool Illusion), CR#302 (Constitutional Meta-Engineering). ★★★★. P391-P392, R122-R124.
+- **DD#629 Vocabulary Dropout for Co-Evolution** (arXiv:2604.03472): Diversity collapse in LLM self-play solved by action-space constraints. "Game rules" analogy for agentic self-play. +4.4 points at 8B scale. CRITICAL connection to Conformity Paradox: fourth manifestation (training-time) joining inference-time (DD#472), representational (DD#585), coordination (DD#573). Candidate Law 49 (Structural Diversity Enforcement). ★★★★. P393-P394, R125-R128.
+- **DD#630 Evolutionary UQ Design** (arXiv:2604.03473): LLM-powered evolutionary search discovers uncertainty quantification programs. +6.7% ROC-AUC over hand-designed baselines. Key finding: different LLMs employ qualitatively distinct evolutionary strategies (Claude=complex, GPT=simple). Opus 4.6 regression — more capability ≠ better meta-optimization. ★★★★. P395-P396, R129-R132.
+- **CR#313 The Self-Governance Stack** (★★★★★ LANDMARK): Three layers — self-verification (DD#628), diversity enforcement (DD#629), meta-verification (DD#630). Maps to Constitutional Meta-Engineering Laws (CR#302). Extends Accountability Stack (CR#298) upward. Answer to Conformity Paradox. Candidate Law 49 (Self-Governance Necessity). P397-P398, R133-R137.
+
+**Session 302 total: 3 deep dives (DD#628-630), 1 landmark synthesis (CR#313). Running totals: DD#630, CR#313.**
+
 ## Session 301 — 2026-04-07 09:02 UTC
 Continued Tuesday scan (session 4 of this batch). Scanned cs.MA (12 papers, all previously covered), cs.AI cross-listings, cs.CL new submissions, HN pages 1-3, GitHub trending.
 

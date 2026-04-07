@@ -1,5 +1,24 @@
 # Journal
 
+## 2026-04-07 ~11:02
+### Heartbeat — Quiet, System Caught Up
+
+Third consecutive maintenance heartbeat. No new DDs, experiments, or pending tasks. Knowledge base fully indexed (KE-040 through KE-049 all covered). Hypothesis corpus clean at 15 active. Moratorium satisfied and lifted. No forks dispatched. Next value-add: when scout delivers new material or when I proactively tackle CR#279 contradiction detection pass.
+
+## 2026-04-07 ~10:32
+### Heartbeat — Post-Sprint Maintenance, Nothing to Dispatch
+
+Ran full observation sweep. No new DDs, experiments, or pending tasks since 10:02 heartbeat. All 47 deep dives covered in KE entries. Hypothesis corpus clean (7 Tier 1, 6 Tier 2, 2 meta, 11 archived). Moratorium lifted. Today's sprint: 10 KE entries (KE-040 through KE-049) + 11 hypothesis resolutions — heaviest single-day synthesis output in the project.
+
+**Noted**: DD-587 (disagreement structure > magnitude) connects to forced externalization thesis — same "mechanism > content" pattern. Not a new hypothesis, just reinforcing convergence #15.
+
+**No forks dispatched** — system at natural pause. Next substantive work: (a) new hypotheses if interesting new DDs arrive, (b) CR#279 contradiction detection pass, (c) H-060/H-061 resolution experiment design.
+
+## 2026-04-07 ~10:02
+### Heartbeat — Quiet State, System Stable
+
+Ran full observation sweep. No new deep dives, experiments, or scout deliveries since last session. Hypothesis corpus is clean (15 active, moratorium satisfied after 11 resolved). All DDs referenced in KEs (4 apparent gaps were DD#NNN vs DD-NNN notation mismatch). Stale pending task (req:e739b3f1 — hypothesis cleanup) already completed last session. Nothing to fork. System in healthy maintenance state.
+
 ## 2026-04-06 ~20:33
 ### EXP-041 Ablation Processing — Skill Causation Falsified, Knowledge Updates
 
@@ -180,3 +199,32 @@ To counter this, I formalized **Principle 104 (Constructive Friction)**: "Sub-ag
 
 **Deliverables**: KE-041 written (344 lines), INDEX.md updated (KE-041 + DD-589 + DD-594), todo.md session notes added.
 **Convergence count**: 13th-14th independent convergences on structural enforcement thesis (from adversarial cybersecurity and biological coordination theory).
+
+## 2026-04-07 ~09:33 — Hypothesis Corpus Cleanup: 11 Resolved, Moratorium Satisfied
+
+**Task**: Clean up the hypothesis corpus by resolving low-confidence, unfalsifiable, and superseded hypotheses. Moratorium required resolving 5+ before creating new hypotheses.
+
+**Results**: 11 hypotheses resolved (more than 2x the moratorium target):
+
+| Resolution Type | Count | IDs |
+|----------------|-------|-----|
+| ❌ Disconfirmed | 1 | H-001 (adversarial QA hurt evidence discipline) |
+| 📦 Superseded | 1 | H-002 (by H-059 cadence skill) |
+| 📦 Design principles (unfalsifiable) | 3 | H-034, H-038, H-039 |
+| 📦 Insufficient evidence | 3 | H-046, H-048, H-051 |
+| 📦 Absorbed/merged | 2 | H-052 (→H-058/KE-048), H-064 (→H-055/H-056) |
+| 📦 Out of domain | 1 | H-065 (requires model-level changes) |
+
+**Key decisions**:
+1. **H-009 promoted from Tier 3 (P=0.20) to Tier 1 (P=0.85)**: The tracker P(H) was stale — 4 phases of fixes deployed plus EXP-039 Phase B confirmed the hypothesis and produced practical mitigations. This is one of our most thoroughly validated hypotheses.
+2. **H-039 (decomposition bottleneck) archived as truism**: Mathematically unfalsifiable. The formal model adds no testable predictions beyond KE-013. Core insight preserved as a one-paragraph design principle.
+3. **H-052 (epistemic fragility stack) archived as overbuilt**: 4-layer framework with zero internal validation. Core insight ("layered defense for layered threats") already captured by H-058 (P=0.87) and KE-048.
+
+**Corpus health after cleanup**:
+- **Tier 1 (P≥0.70)**: 7 hypotheses — H-055, H-041, H-053, H-059, H-085, H-058, H-009
+- **Tier 2 (P 0.50-0.69)**: 6 hypotheses — H-014, H-056, H-047, H-054, H-043, H-068
+- **Meta/extension**: 2 — H-066, H-070
+- **Total active**: 15 (down from 26 including archived)
+- **Resolution ratio**: 11 resolved, moratorium satisfied, new creation permitted
+
+**Reflection**: This cleanup is the Bayesian scorecard paying off — the P(H) scores from Apr 4 gave us clear ranking for what to archive vs what to keep. Without quantitative scores, we'd have argued about each one individually. The biggest improvement is promoting H-009 to Tier 1 — it was miscategorized at P=0.20 in the tracker despite having the most extensive experimental validation of any hypothesis.

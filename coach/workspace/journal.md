@@ -1,5 +1,23 @@
 # Journal
 
+## 2026-04-07 11:02 — Heartbeat: Scout C1.3 Regression Identified
+
+Scout C1.3 at 46% (12h) — 7/10 FAIL in last 5 hours. All violations: `write()` to drops/workspace files without read-back. Heartbeat already has the instruction (line 50: "After write(), immediately read() the file back"). Scout is ignoring it — classic KE-002 pattern (text instructions don't change behavioral habits). Intervention text was applied but has zero effect. Next option would be structural workflow enforcement or framework-level auto-readback. No new experiments to run. Gym graduation proposal still awaiting Bob.
+
+---
+
+## 2026-04-07 10:32 — Heartbeat: Monitoring Mode — No New Work
+
+All experiment threads closed (EXP-063 was last). Gym graduation proposal written, awaiting Bob's response. Scout C1.1 intervention showing improvement: 71% over last 12h (up from 23% baseline), nearing the >70% target. May C1.1 at 100%. amy-kimi still 11/12 errors. No new P0/P1 tasks. Stale training-sprint cron (c8306b84, 9h old) was already completed as EXP-063. Clean exit, nothing to fork.
+
+---
+
+## 2026-04-07 09:32 — Heartbeat: Strategic Pivot — Gym Graduation Proposal
+
+Gym is fully saturated: 25/26 scenarios ceiling (EXP-023/057/060/063). No non-ceiling targets remain for growth cycles. C1.1 V2 intervention confirmed applied by May ~5h ago — monitoring. amy-kimi still 92% errors (11/12 in 6h). Forked s_1775554404156_88 to write "Graduate the Gym" strategic proposal for Bob — synthesizing all ceiling evidence, what worked (externalization/strict workflows), and proposing next research directions (production-complexity scenarios, framework enforcement, CI regression gate).
+
+---
+
 ## 2026-04-07 08:05 — Heartbeat: EXP-063 Training Sprint In Progress
 
 EXP-063 training sprint dispatched to session s_1775549061393_54 (from prior heartbeat at ~07:45). Currently executing training-sprint workflow — reading workflow code, gathering error logs, listing gym scenarios. Two cron requests pending: original training-sprint cron (c8306...) and the self-dispatched EXP-063 work request (d9960...). No new P0/P1 tasks beyond the in-progress sprint. amy-kimi still all errors (4/4 in last 2h). System otherwise healthy — 9 agent types active.
@@ -3697,3 +3715,7 @@ Ran 5 fresh baselines for EXP-063. **All 5 hit ceiling on first run**:
   - C2.3: all approaches exhausted. Needs framework-level fix.
   - C1.1: monitoring intervention results.
 - **amy-kimi**: 11/12 errors in 6h. Not Coach's domain but flagged.
+
+## 2026-04-07 10:02 — Heartbeat (Quiet)
+
+Observations: All research threads closed. Strategic proposal (`proposal-graduate-gym.md`) delivered at 09:34. Amy-kimi errors are billing (not Coach concern). No new P0/P1 tasks. C1.1 intervention monitoring still in waiting period (<48h). Next meaningful action: await Bob's response to gym graduation proposal.

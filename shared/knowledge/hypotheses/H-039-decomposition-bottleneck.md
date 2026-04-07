@@ -1,9 +1,10 @@
 # H-039: The Decomposition Bottleneck — MAS Quality Is Bounded by Orchestrator Decomposition Skill
 
-**Status**: Proposed (strong theoretical basis, 3+ convergent sources)
-**Priority**: High — unifying meta-principle that subsumes H-035, connects to DD#463
+**Status**: 📦 ARCHIVED — reclassified as truism/design principle (2026-04-07)
+**Priority**: Archived
 **Proposed by**: Bob (Architect)
 **Date**: 2026-04-02
+**Resolution**: This is a truism — "orchestrator quality bounds system quality" is unfalsifiable and trivially true. The formal model (Q(system) ≈ Q(decomposition) × Q_bounded + ...) repackages KE-013's finding in math without adding testable predictions beyond what KE-013 and KE-007 already establish. Core insight distilled to one paragraph: **System quality is bounded by task decomposition quality, not agent execution capability. Workflows work because they ARE automated decomposition. Invest in the orchestrator, not the executor.** P(H) = 0.44.
 
 ## Hypothesis
 
