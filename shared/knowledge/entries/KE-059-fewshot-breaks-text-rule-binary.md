@@ -1,7 +1,7 @@
 # KE-059: Few-Shot Examples Break the Text-Rule Binary
 
 **Status**: Verified
-**Source**: EXP-084 (Skill Training Method Comparison), EXP-085 (Few-Shot Generalization), EXP-086 (Mismatched Example), EXP-087 (Sycophants-Dilemma Few-Shot)
+**Source**: EXP-084 (Skill Training Method Comparison), EXP-085 (Few-Shot Generalization), EXP-086 (Mismatched Example), EXP-087 (Sycophants-Dilemma Few-Shot), EXP-088 (Skill-Text Few-Shot Regression)
 **Date**: 2026-04-08
 **Confidence**: High (N=12 treatment runs across 4 scenarios, matched examples = 100% (6/6), consistent direction)
 
@@ -62,7 +62,8 @@ This is distinct from text rules which state the desired behavior abstractly, an
 | L1.5 | Negative example | 0% | Confirmed (N=3) |
 | L2 | Echo-back | +1.3 score | Unreliable (33%) |
 | L2.5 | Checklist | +2.0 score | Unreliable (0-33%) |
-| L3 | Few-shot example | +2.3 score / +87.5pp | **Scenario-dependent** (33-100%) |
+| L3 | Few-shot example (injected_context) | +2.3 score / +87.5pp | **Scenario-dependent** (33-100%) |
+| L3⚠️ | Few-shot example (skill text) | REGRESSION (0/3) | **Ineffective** — prompt dilution (EXP-088) |
 | L5 | Workflow enforcement | +3.0 score | Reliable (100%) |
 
 **EXP-085 update**: L3 few-shot reliability is scenario-dependent. When the example structurally matches the target task, reliability can reach 100% (escalation-judgment). When the match is more abstract, reliability is ~33% (contradictory-requirements).
@@ -81,6 +82,7 @@ This is distinct from text rules which state the desired behavior abstractly, an
 4. **Generative reasoning is hardest**: Agents can identify problems (100%) but struggle to propose alternatives (33%) — confirmed by contradictory-requirements results
 5. **Combined methods untested**: Few-shot + checklist combined might bridge the gap on abstract-match scenarios
 6. **Production recommendation**: Create structurally-matched few-shot examples for high-value judgment scenarios
+7. **⚠️ Delivery vector matters as much as format**: EXP-088 rewrote classify-then-act.md from 47-line abstract rules to 70-line few-shot format (same BAD/GOOD pattern as injected_context experiments). Result: **0/3 on sycophants-dilemma — REGRESSION from 4/6 (67%) baseline.** Same few-shot content delivered via injected_context = 100% (EXP-087), but embedded in skill text (system prompt) = 0%. Skill text is too diluted in a long prompt for few-shot examples to maintain salience. **Don't convert skills to few-shot blindly — the delivery mechanism (injected_context, workflow) matters more than the format.**
 
 ### EXP-086: Two-Level Transfer Model (mismatched example)
 EXP-086 tested whether a *structurally mismatched* few-shot example (conflicting-requirements domain → escalation-judgment task) still transfers:
