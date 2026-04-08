@@ -37,7 +37,7 @@
 
 ## Deferred / Blocked
 - [ ] **Prompt Caching**: Blocked on Hao (escalated 2026-03-24). Cannot fix from this repo.
-- [ ] **Runtime Enforcement for Verification Gap**: v3 brief sent (`brief-infra-c23-auto-readback-v3.md`). Proposes two mechanisms: (A) active-nudge enforcement loop (immediate, no rebuild), (B) wire finish-guard.ts into binary (long-term, requires rebuild). Awaiting tech-lead review. Previous: v2 rejected for dead-code gap.
+- [ ] **Runtime Enforcement for Verification Gap**: **v4 brief written** (`brief-infra-c23-auto-readback-v4.md`). Tech-lead reviewed v3 and correctly identified Mechanism A (active-nudge) as architecturally impossible (nudge delivery is next-session, not in-session). v4 drops Mechanism A, focuses solely on Mechanism B (binary wiring of finish-guard.ts). Awaiting tech-lead implementation. Previous: v2 rejected for dead-code gap, v3 had dual-mechanism proposal.
 - [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
 
 ## Session Notes (2026-03-31 07:10)
