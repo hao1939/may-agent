@@ -1,7 +1,7 @@
 # EXP-090: Few-Shot Skill Conversion Sprint 1 — Design
 
 **Date**: 2026-04-08
-**Status**: IN PROGRESS
+**Status**: COMPLETE — See results.md
 **Hypothesis**: H-091 (P(H)=0.92) — matched few-shot examples improve judgment skill performance
 **Based on**: EXP-084/085/086/087 results, KE-059, Bob's conversion plan
 
