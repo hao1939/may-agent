@@ -39,6 +39,7 @@ export function isMetaRecursionCommand(command: string): boolean {
     /\bts-node\s+.*src\/cli/,
     /\btsx\s+.*src\/cli/,
     /\bbun\s+src\/app\/(may|launcher)\.ts\b/,
+    /\bsupervisorctl\b/,  // kills/restarts the agent process — use the restart socket command instead
   ];
   return patterns.some((p) => p.test(command));
 }
