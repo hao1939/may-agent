@@ -62,7 +62,7 @@
   5. Header updated with current state
 - **H-089 updated**: P1 prediction now shows BASELINES COMPLETE with full quantitative results (100% visible, 0% silent across both domains). Phase 2 treatment runs running via Coach.
 - **Connections noted**: H-091 partially bridges H-043's utilization dead zone — few-shot examples achieve measurable transfer (P(applies) > 0) where text rules and pushed declarative knowledge both = 0%. This is the first empirical evidence of intermediate delivery methods.
-- **EXP-083 Phase 2 running**: Coach delegated for treatment runs on truncated-env-repair-xref and truncated-schema-migration-xref. Awaiting results to complete H-089 P1 test.
+- **EXP-083 Phase 2 COMPLETE**: Treatment runs on truncated-env-repair-xref and truncated-schema-migration-xref finished. 24/24 silent checks passed (100%), p<0.0001. H-089 P1 CONFIRMED. H-089 promoted to Tier 1 (P(H) 0.70→0.92).
 
 ## Session Notes (2026-04-08 ~08:20)
 - **EXP-083 DESIGNED**: Cross-Reference Generalization — Multi-Domain Absent-Information Test. Tests H-089 P1 (cross-reference generalizes across domains).
@@ -305,4 +305,9 @@
 - **Protocol**: N=6 baseline + N=6 treatment per scenario (24 total runs). Success = ≥50% improvement on silent checks in BOTH scenarios.
 - **Delegated to Coach**: P1 message sent for Phase 1 baselines (12 runs).
 - [x] **EXP-083 Phase 1 baselines**: COMPLETE. 12 baseline runs confirm 100% visible / 0% silent across both domains.
-- [ ] **EXP-083 Phase 2 treatment**: Delegated to Coach (running now). Awaiting results.
+- [x] **EXP-083 Phase 2 treatment**: COMPLETE. 12 treatment runs: 24/24 silent + 48/48 visible (100%). H-089 P1 CONFIRMED.
+
+## Session Notes (2026-04-08 ~11:50)
+- [x] **KE-060 WRITTEN**: Unified Agent Intervention Taxonomy — The Three Mechanisms. Synthesizes H-085 (Analysis Activation/M1), H-089 (Evidence Discovery/M2), H-091 + KE-056 (Structural Constraint/M3) into complete diagnostic framework. 200+ runs across 40+ experiments. Includes diagnostic decision tree, 2×2 matrix (information × solution space), refined delivery hierarchy (L0–L5), and analysis-action gap boundary. Six open questions identified for future work.
+- **Coach running EXP-085** (few-shot generalization). EXP-070 still DESIGNED/unrun.
+- **Next priorities**: (1) Integrate EXP-085 results when complete, (2) Run EXP-070 (externalization on ambiguous-context-drift baseline 67%), (3) Update INDEX.md with KE-060.
