@@ -1,12 +1,12 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-08 ~21:47 UTC
+Updated: 2026-04-08 ~22:20 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Running — Fresh heartbeat cycle. Recent sessions are gym exercises (EXP-092 Arm A subjects).
-- **Coach**: 🟢 Running — EXP-092 gym trials active (s_1775681296741_192, 59min). **Arm A: 7/7 status_doc_accurate=True** (100%), running 8-10. Contamination fixed, clean re-run progressing well.
-- **Tech-lead**: 🟢 Running — **C2.3 gate SHIPPED** (commit 8f94b61d, 56 tests passing). Fresh heartbeat.
+- **Bob**: 🟢 Running — Heartbeat + gym exercise (EXP-092 Arm B subject). EXP-093 KB integration done.
+- **Coach**: 🟡 EXP-092 session watchdog-interrupted (89min). Arm B run 4 aborted mid-execution. Message sent with priorities: finish Arm B, deploy investigate-and-fix skill, FM-1.3 retry.
+- **Tech-lead**: 🟢 Running — C2.3 gate SHIPPED. Self-dispatched C2.3 v3 brief review.
 - **Scout**: 🟢 Running — Fresh heartbeat cycle.
 - **Optimizer/QA/Evaluator**: 🟢 Running — Heartbeats firing.
 - **All agents**: 🟢 All 7 heartbeats firing (Amy-kimi still down).
@@ -46,9 +46,11 @@ Updated: 2026-04-08 ~21:47 UTC
 | EXP-070 Extended Baseline | ❌ INTERRUPTED | coach | 99min watchdog timeout. Was debugging gym runner scoring bug (0/0 results from cleanup timing). Needs retry. |
 | EXP-070 KB Integration | ✅ COMPLETE | bob | Externalization NOT significant on ambiguous-context-drift. Integrated null result. |
 | EXP-092 Design | ✅ DESIGNED | bob | Forced analysis-to-documentation transfer. 2 arms: forced citation + post-check. Addresses EXP-070 transfer gap (10/10 analysis correct but only 6/10 transferred). |
-| EXP-092 Gym Trials | ⏳ RUNNING | coach | Contamination fixed. **Arm A: 7/7 status_doc_accurate=True (100%)**, runs 8-10 in progress. Arm B not started. Session s_1775681296741_192 (59min, active). |
+| EXP-092 Gym Trials | ⏳ PARTIAL | coach | **Arm A: 10/10 complete** (status_doc 100% on first 7, runs 8-10 need verification). **Arm B: 3/10 complete** (2/3 status_doc=True, 67%). Session watchdog-interrupted at 89min during Arm B run 4. Coach messaged to resume. |
 | EXP-093 Design (Sprint 3) | ✅ COMPLETE | bob | **Pivoted**: Original targets (read-before-edit 91%, verify-before-finish 100%) at ceiling. Redirected to verify-after-edit (0% on convention-verify-edit). 2 gym scenarios created. 16-run 2-arm design. Protocol at `EXP-093/protocol.md`. Delegated to Coach. |
 | EXP-093 Gym Trials | ✅ COMPLETE | coach | **Mixed results**: C3 validation +40pp (40%→80%), but C2.3 verify-after-edit -20pp. Few-shot teaches "what" not "when". Product quality +40pp. H-091 P(H) 0.99→0.95. |
+| EXP-093 KB Integration | ✅ COMPLETE | bob | All 12 checks pass. H-091/KE-059/KE-060/INDEX/PRIORITY-TRACKER updated with "what vs when" finding. |
+| Investigate-and-fix Skill Deploy | ⏳ PENDING | coach | Proven 100% in EXP-091 Sprint 2. Needs deployment to `agents/coder/skills/` with matched few-shot. Dispatched to Coach (req:c8bf94e7). |
 | Bob FM-1.3 Growth Cycle | ❌ INTERRUPTED | coach | Session s_1775679553637_184 interrupted. Needs retry next cycle. |
 | C2.3 Auto-Readback v2 Brief | ✅ COMPLETE | bob | Revised after tech-lead feedback. Proposes finish-time verification gate in finish-guard.ts. |
 | **C2.3 Finish-Time Gate** | ✅ **SHIPPED** | tech-lead | **Commit 8f94b61d**. 238 lines in finish-guard.ts, 428 lines tests. 56 tests all passing. Enforces write→read verification before finish(success). edit() with diff preview exempt. |
@@ -84,20 +86,20 @@ Updated: 2026-04-08 ~21:47 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (21:47)
-- **EXP-092: ⏳ RUNNING (strong progress)** — Arm A: 7/7 status_doc_accurate=True (100%). Runs 8-10 in progress. Contamination issue resolved. Arm B not yet started.
-- **C2.3 Finish-Time Gate: ✅ SHIPPED** — Tech-lead implemented (commit 8f94b61d). 238 lines in finish-guard.ts, 56 tests all passing.
-- **System anomalies triaged** — Coach session (59min) is legitimate batch work, not stuck. Bob "missing file" is gym scenario output. tsc --noEmit N/A (no TS project).
-- **All agents healthy** — 8 running sessions (coach EXP-092, 5 heartbeats, 2 evaluator tasks). Amy-kimi still down.
+## Latest Cycle Summary (22:20)
+- **EXP-092: ⏳ PARTIAL** — Arm A: 10/10 complete (status_doc 100% on first 7). Arm B: 3/10 complete (67% status_doc). Session watchdog-interrupted at 89min during Arm B run 4. Coach messaged to resume.
+- **EXP-093 KB integration: ✅ COMPLETE** — Bob integrated (12/12 checks pass). "What vs when" finding captured.
+- **investigate-and-fix skill: ⏳ DISPATCHED** — Coach messaged to deploy proven skill to coder/skills/.
+- **Stale request cleanup** — Cleaned 105 orphaned gym scenario requests from DB (68 coder + 37 mixed).
+- **All agents healthy** — Bob/Scout/Tech-lead/Optimizer/QA/Evaluator heartbeats firing. Coach will resume on next cycle. Amy-kimi still down.
 
 ## Next Actions
-- **P1**: **C2.3 gate gym validation** — Run convention-verify-edit scenarios to prove the gate works. Coach/Bob to design.
-- **P1**: **EXP-092 completion** — Coach's clean re-run in progress. Monitor next cycle.
-- **P1**: **EXP-093 KB integration** — Dispatched to Bob. Results need knowledge base updates.
-- **P1**: **Bob FM-1.3 growth cycle retry** — Dispatched to Coach (P2, after EXP-092).
-- **P1**: **Deploy investigate-and-fix skill** — Coach needs to promote to coder/skills/ with few-shot (from EXP-091 Sprint 2).
+- **P1**: **EXP-092 Arm B completion** — Coach to resume runs 4-10. Dispatched (req:c8bf94e7).
+- **P1**: **investigate-and-fix skill deployment** — Coach to deploy to coder/skills/. Dispatched (req:c8bf94e7).
+- **P1**: **C2.3 gate gym validation** — Run convention-verify-edit scenarios to prove the gate works. Tech-lead self-dispatched v3 brief review.
 - **P1**: **Resolve EXP-088 naming conflict** — Coach's EXP-088 (skill format test) vs Bob's EXP-088 (workaround gradient). Need to renumber one.
 - **P1**: **Present auto-loop decision brief to Hao** — at `agents/may/workspace/auto-loop-decision-brief.md`.
 - **P1**: Federation design ready for Hao review — present summary when available
+- **P2**: Bob FM-1.3 growth cycle retry — Dispatched to Coach (P2, after P1s).
 - **P2**: Pre-merge review gate Phase 2 (auto-review) — needs design
 - **P2**: EXP-070 extended baseline retry — still interrupted from gym runner scoring bug
