@@ -5,7 +5,7 @@ Updated: 2026-04-08 ~11:20 UTC
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
 - **Bob**: 🟡 1 transient error (JSON Parse EOF at 10:44) — self-healed, currently running fine
-- **Coach**: 🟡 EXP-083 Phase 2 interrupted for the 4th time (11:15 abort). Treatment runs keep getting killed by session lifecycle.
+- **Coach**: 🟢 EXP-083 completed successfully despite earlier interruptions (results committed at 11:13).
 - **All other agents**: 🟢 Running normally
 
 ## Active Priorities (from Hao)
