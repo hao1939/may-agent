@@ -674,6 +674,16 @@ export class SubagentManager {
     // ── Pipeline: detect and classify errors ──────────────────────────
     detectErrors(session);
     clearPostFinishErrors(session);
+
+    // Copy agent-level error to session BEFORE overflow detection.
+    // The LLM stores overflow errors in agent.state.errorMessage, but
+    // determineOutcome() (which normally copies it) runs AFTER the
+    // idle-return for chat sessions. Without this, overflow errors on
+    // chat sessions are invisible → session goes idle → crash loop on restart.
+    if (!session.error && session.agent.state.errorMessage) {
+      session.error = session.agent.state.errorMessage;
+    }
+
     handleOverflow(session, this.agents);
 
     // Digest: overflow (after handleOverflow detects it) — pass manager for LLM synthesis + classification
@@ -1220,9 +1230,14 @@ export class SubagentManager {
     ensureSessionDir(persistDir, sessionId);
 
     const compactedMessages = readCompactedMessages(persistDir, sessionId);
-    const savedMessages = compactedMessages ?? readSessionMessages(persistDir, sessionId);
+    let savedMessages = compactedMessages ?? readSessionMessages(persistDir, sessionId);
     const outputDir = sessionOutputDir(persistDir, sessionId);
 
+    // Note: Overflow crash loop prevention is handled in chat-session.ts
+    // (resumeExistingSession skips sessions with overflow errors) and in
+    // handleCompletion (overflow on chat sessions → auto-archive instead of idle).
+    // Compaction persistence (buildTransformContext wraps saveCompactedMessages)
+    // ensures resumed sessions load compact state, not full JSONL.
     const compactionTransform = this.buildTransformContext(def, undefined, sessionId);
     const agent = this.createAgent(def, sessionId, { messages: savedMessages, compactionTransform });
 
