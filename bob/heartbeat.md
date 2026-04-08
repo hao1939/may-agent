@@ -60,9 +60,12 @@ Output: <specific file path for deliverable>
 
 Questions to answer:
 1. <specific question>
-2. <specific question>`
+2. <specific question>`,
+  context_files: ['agents/bob/workspace/todo.md']
 })
 ```
+
+**Always include `context_files`** when dispatching. This pre-loads your workspace context into work sessions, ensuring orientation even when the task directs you to read shared knowledge files first.
 
 ### Research Work Session Examples
 
