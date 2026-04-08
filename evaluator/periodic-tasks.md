@@ -49,7 +49,7 @@ See `agents/evaluator/periodic-tasks.md` for the definitions.
 - Do NOT update `agents/shared/knowledge/strategies.md` directly (Bob reviews first).
 - **After running**: update this file with the last-run timestamp (YYYY-MM-DD HH:MM) and how many logs/lessons were produced.
 
-**Last run**: 2026-04-08 04:32 — DB canonical check: `.state/may.db` `evaluations MAX(createdAt)=2026-04-08T04:03:02Z` (pipeline live). Legacy `.state/evaluations/` artifacts still stale (newest mtime observed: 2026-03-24). Ran `node agents/evaluator/skills/monitor-session.cjs --running`; result: 7 checked, 7 healthy. Ran `node agents/evaluator/skills/patrol.cjs` → status `CRITICAL` with error `Missing compliance-snapshot.json` (baseline missing; patrol degraded, not a mismatch event).
+**Last run**: 2026-04-08 05:32 — DB canonical check: `.state/may.db` `evaluations MAX(createdAt)=2026-04-08T05:04:08Z` (pipeline live; `MAX(createdAt)=1775624647947`). Legacy `.state/evaluations/` artifacts still stale (newest mtime observed: 2026-03-24). Ran `node agents/evaluator/skills/monitor-session.cjs --running`; result: 9 checked, 9 healthy. Ran `node agents/evaluator/skills/patrol.cjs` → status `CRITICAL` with error `Missing compliance-snapshot.json` (baseline missing; patrol degraded, not a mismatch event).
 
 **Previous run**: 2026-04-07 23:02 — checked `.state/evaluations/` (still stale; newest mtime observed: 2026-03-24). Ran `node agents/evaluator/skills/monitor-session.cjs --running`; result: 8 checked, 8 healthy. Ran `node agents/evaluator/skills/patrol.cjs` → status `CRITICAL` with error `Missing compliance-snapshot.json` (baseline missing; patrol degraded, not a mismatch event).
 
