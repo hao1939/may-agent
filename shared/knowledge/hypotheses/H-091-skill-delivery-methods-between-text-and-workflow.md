@@ -1,8 +1,8 @@
 # H-091: Skill Delivery Methods Exist Between Text-Rules and Workflow Enforcement
 
-**Status**: Strongly Supported (EXP-084, EXP-085, EXP-086, EXP-087, EXP-089, EXP-090, EXP-091)
+**Status**: Strongly Supported (EXP-084, EXP-085, EXP-086, EXP-087, EXP-089, EXP-090, EXP-091, EXP-093)
 **Date**: 2026-04-08
-**P(H)**: 0.99
+**P(H)**: 0.95
 
 ## Statement
 
@@ -111,3 +111,20 @@ L5: Workflow enforcement → +3.0 score (EXP-045)
 - **Text rules comparison**: investigate-and-fix text skill had 0/7 on reproduce-first (4 from EXP-019 + 3 control here). Few-shot: 3/3. Workflow: 2/2 (EXP-019).
 - **Posterior update**: H-091 P(H) 0.98→0.99
 - **Implication**: Few-shot scope expands beyond judgment to include process discipline. Cumulative Sprint 1+2: 9/9 treatment (100%) vs 0/9 control (0%) across 3 skills.
+
+### EXP-093: Few-Shot Sprint 3 — Verify-After-Edit Discipline
+- **Skill**: verify-after-edit (convention-verify-edit scenario) + read-before-edit (at ceiling)
+- **ARM 1 (convention-verify-edit, N=5+5)**:
+  - C3 (explicit validation): Control 40% → Treatment 80% (+40pp) — few-shot taught *what* to validate
+  - C2.3 (read-after-write): Control 40% → Treatment 20% (-20pp) — few-shot did NOT teach *when* to verify
+  - Product quality: Control 60% → Treatment 100% (+40pp) — improved thoroughness
+  - Scenario pass: Control 40% → Treatment 20% (ns) — C2.3 failure dominates scenario score
+- **ARM 2 (read-before-edit, N=3+3)**: Both conditions 100% — baseline at ceiling, no signal
+- **Key finding**: Few-shot teaches "what to do" (validation commands, field preservation) but NOT "when to do it" (temporal tool-call sequencing). C3 vs C2.3 divergence reveals a boundary.
+- **Posterior update**: H-091 P(H) 0.99→0.95 — first partial failure for matched few-shot
+- **Updated scope model**:
+  - ✅ Judgment skills (know-when-blocked, evidence-over-narrative) — EXP-090
+  - ✅ Process knowledge (reproduce-first debugging) — EXP-091
+  - ✅ Validation knowledge (what checks to run) — EXP-093 C3
+  - ✅ Product quality (thoroughness) — EXP-093 product
+  - ❌ Temporal discipline (read-after-write sequencing) — EXP-093 C2.3

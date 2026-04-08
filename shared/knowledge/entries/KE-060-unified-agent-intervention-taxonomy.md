@@ -141,7 +141,7 @@ KE-056 established a constraint hierarchy. KE-059 broke the text-rule binary. Th
 | **L2** | Echo-back self-prompting | +1.3 score (~33%) | Untested | Weak M1 |
 | **L2** | Instructional binding | N/A | 0% (v2-commit) | None when workarounds exist |
 | **L2.5** | Checklist injection | +2.0 score (~0% pass) | Untested | Weak M1 |
-| **L3** | Few-shot worked example | +2.3 score (33-100% pass). **EXP-091: extends to process discipline** — reproduce-first 0%→100%. 15/15 matched across 6 scenarios. | Untested | Moderate M1 |
+| **L3** | Few-shot worked example | +2.3 score (33-100% pass). **EXP-091: extends to process discipline** — reproduce-first 0%→100%. 15/15 matched across 6 scenarios. **EXP-093: "what vs when" boundary** — C3 validation +40pp but C2.3 temporal sequencing -20pp. | Untested | Moderate M1 |
 | **L3** | Task instruction (xref) | +100pp on absent-info | Untested | M2 |
 | **L4** | Forced externalization (gate) | +55pp median (~90%) | 0% on pipeline fix | M1 (strong) |
 | **L4** | Mechanical enforcement | N/A | 100% (workarounds blocked) | M3 |
@@ -195,7 +195,7 @@ The taxonomy provides a principled method for designing interventions:
 ## Remaining Gaps in the Taxonomy
 
 ### 1. The L3–L4 Gap for Judgment Tasks
-Few-shot examples (L3) achieve 33% on contradictory-requirements (EXP-084) but **100% on escalation-judgment** (EXP-085) — suggesting structural match between example and task is a key variable. Workflow externalization (L4) achieves ~90%. The L3–L4 gap may be scenario-dependent: structurally-matched few-shot examples may approach L4 reliability. **EXP-091 confirms L3 few-shot extends beyond judgment to process discipline** — reproduce-first 0%→100% with matched example. Cumulative matched few-shot: 15/15 (100%) across 6 scenarios spanning both judgment and process skills. Next: test with structurally dissimilar examples to map the boundary.
+Few-shot examples (L3) achieve 33% on contradictory-requirements (EXP-084) but **100% on escalation-judgment** (EXP-085) — suggesting structural match between example and task is a key variable. Workflow externalization (L4) achieves ~90%. The L3–L4 gap may be scenario-dependent: structurally-matched few-shot examples may approach L4 reliability. **EXP-091 confirms L3 few-shot extends beyond judgment to process discipline** — reproduce-first 0%→100% with matched example. Cumulative matched few-shot: 15/15 (100%) across 6 scenarios spanning both judgment and process skills. **EXP-093 reveals a boundary**: few-shot teaches "what to validate" (C3: +40pp) but NOT "when to verify" (C2.3: -20pp) — temporal tool-call sequencing may require L4 workflow enforcement. P(H) adjusted 0.99→0.95. Next: test with structurally dissimilar examples to map the boundary.
 
 ### 2. M2 Delivery Level
 Evidence discovery has been tested primarily at L3 (task instruction). Can L4 (automated pre-grepping by the harness, injecting cross-references into context) achieve even higher reliability? Can L2 (skill file with cross-reference instruction) be made reliable?
@@ -273,3 +273,13 @@ The total empirical base: 200+ experimental runs across 40+ experiments, with co
 - Cumulative matched few-shot: 12/12 (100%) across 5 scenarios — L3 few-shot is now the most reliable non-workflow intervention
 - H-091 P(H) 0.92→0.98 — few-shot delivery method is production-ready for judgment skills
 - Strengthens L3 position in delivery hierarchy: L3 matched few-shot approaches L4 workflow effectiveness for judgment tasks
+
+### EXP-093 Update: Few-Shot "What vs When" Boundary
+- Verify-after-edit discipline tested with domain-matched few-shot (N=5+5 on convention-verify-edit)
+- C3 (explicit validation): 40%→80% (+40pp) — few-shot successfully taught *what* checks to run
+- C2.3 (read-after-write): 40%→20% (-20pp) — few-shot did NOT teach *when* to read back the file
+- Product quality: 60%→100% (+40pp) — thoroughness and field preservation improved
+- **Key boundary discovered**: L3 few-shot works for knowledge transfer ("what to do") but NOT for temporal behavioral discipline ("when to do it")
+- Temporal tool-call sequencing (read-after-write habit) likely requires L4 workflow enforcement with explicit step gates
+- H-091 P(H) 0.99→0.95 — first partial failure narrows the scope model
+- L3 few-shot scope: ✅ judgment, ✅ process knowledge, ✅ validation knowledge, ✅ product quality, ❌ temporal discipline

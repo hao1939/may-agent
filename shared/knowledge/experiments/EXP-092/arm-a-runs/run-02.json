@@ -41,12 +41,12 @@
     },
     {
       "name": "status-doc-accurate",
-      "passed": false,
-      "message": "docs/migration-status.md not created"
+      "passed": true,
+      "message": "Migration status doc shows awareness that auth/logging needed migration (not already done)"
     }
   ],
-  "summary": "Failed key checks: auth-migrated, logging-migrated, api-migrated, storage-migrated, loader-updated, status-doc-accurate",
+  "summary": "Failed key checks: auth-migrated, logging-migrated, api-migrated, storage-migrated, loader-updated",
   "agent_status": "completed",
-  "duration": "106.7s",
+  "duration": "253.3s",
   "gym_root": "/app/agents/gym/scenarios"
 }
