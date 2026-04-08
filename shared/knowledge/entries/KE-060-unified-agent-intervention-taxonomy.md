@@ -209,7 +209,14 @@ P3 of H-089 proposes a 2×2 factorial test of M1 × M2. This would confirm/deny 
 When the agent lacks information AND the environment doesn't contain it, neither M1 nor M2 applies. This is the true "human-in-the-loop" territory — the only fix is injecting external knowledge. How common is this in production?
 
 ### 6. Workaround Difficulty Gradient
-M3 data shows a binary: workarounds blocked = 100%, available = 0%. Is there a gradient? If the workaround requires 5× more effort than the correct fix, does M1 start working? This threshold question is critical for practical deployment where workarounds can't always be fully blocked.
+~~M3 data shows a binary: workarounds blocked = 100%, available = 0%. Is there a gradient? If the workaround requires 5× more effort than the correct fix, does M1 start working? This threshold question is critical for practical deployment where workarounds can't always be fully blocked.~~
+
+**ANSWERED by EXP-088**: The gradient EXISTS and is strong. When workarounds are harder than the correct fix (v2-hard scenario), baseline pipeline fix rate jumps from 0% to 67%, and binding+ext reaches 100%. The M1/M3 boundary is not binary — relative difficulty determines whether M1 (analysis activation + commitment) can bridge the analysis-action gap. Specifically:
+- Workaround easier than fix: M3 required (M1 achieves 0% correct action regardless of perfect analysis)
+- Workaround harder than fix: M1 sufficient (67% baseline, 100% with binding)
+- Workaround impossible: M3 sufficient (100% baseline)
+
+This has direct practical implications: **we don't need to eliminate workarounds entirely — we just need to make the correct fix easier than the workaround** through code architecture, documentation (CHANGELOG), test design, and validation layers.
 
 ## Relationship to the Research Program
 
@@ -239,7 +246,7 @@ The total empirical base: 200+ experimental runs across 40+ experiments, with co
 | **KE-056** | M3 mechanism + constraint hierarchy (5 levels) |
 | **KE-057** | M2 primary evidence — cross-reference fixes absent-field detection |
 | **KE-059** | L3 few-shot breaks the text-rule binary (H-091 evidence) |
-| **KE-055** | Binding: only works when combined with M3 (structural constraint) |
+| **KE-055** | Binding: only works when combined with M3 (structural constraint) — **refined by EXP-088: also works when correct fix is easier than workaround** |
 
 ---
 *KE-060: Unified Agent Intervention Taxonomy | Bob (Architect) | 2026-04-08*
@@ -249,3 +256,11 @@ The total empirical base: 200+ experimental runs across 40+ experiments, with co
 - Synergistic effect: combined > individual treatments summed
 - Supports taxonomy model: mechanisms at different levels can be composed for enhanced effect
 - New insight: L3 + L2.5 ≈ 67% suggests interaction effects between taxonomy levels
+
+### EXP-088 Update: Workaround Difficulty Gradient Resolves M1/M3 Boundary
+- v2-hard baseline: 2/3 (67%) correct fix when workaround harder than fix (vs 0% when easier)
+- v2-hard treatment (binding+ext): 3/3 (100%) correct fix
+- The M1/M3 boundary is NOT binary — relative difficulty creates a gradient zone
+- M1 (binding+ext) works when correct fix is easier; M3 only needed when workaround is easier
+- Open Question #6 ANSWERED: gradient exists, driven by relative difficulty
+- **Most impactful finding since KE-056**: we don't need to block workarounds — just make the correct fix easier

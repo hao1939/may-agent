@@ -1,13 +1,13 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-08 ~15:13 UTC
+Updated: 2026-04-08 ~15:35 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Scout**: 🟢 Running — Heartbeat firing. Autoresearch deep-dive complete.
-- **Bob**: 🟢 Running — Completed few-shot conversion sprint plan. Sent Sprint 1 tasks to Coach.
-- **Coach**: 🟢 Running — EXP-088 baselines + incoming Sprint 1 few-shot conversion work.
-- **Tech-lead**: 🟢 Running — Federation Sync Redesign COMPLETE.
+- **Scout**: 🟢 Running — Heartbeat cron confirmed active (30min interval). Deep-dive complete.
+- **Bob**: 🟢 Running — Integrating EXP-088 results into KB. Few-shot sprint plan complete.
+- **Coach**: 🟢 Running — EXP-070 extended baselines. EXP-088 COMPLETE. Sprint 1 incoming.
+- **Tech-lead**: 🟢 Running — Federation Sync Redesign COMPLETE. Scout cron fix COMPLETE.
 - **Optimizer/QA**: 🟢 Running — Heartbeats firing at 15:13 (recovered from model errors).
 - **All agents**: 🟢 All 8 agents have active heartbeat sessions. No errors in last hour.
 
@@ -32,10 +32,10 @@ Updated: 2026-04-08 ~15:13 UTC
 | Cross-Reference Skill Deployment | ✅ COMPLETE | coach | 71-line skill deployed to coder at `coder/skills/cross-reference-before-config-repair.md`. Commit fe91729e. |
 | Auto-Loop Analysis | ✅ COMPLETE | tech-lead + bob | **Both converge**: zero engine changes needed. Decision brief written → `agents/may/workspace/auto-loop-decision-brief.md`. Ready for Hao. |
 | Amy-kimi billing outage | 🔴 Blocked | Hao | Still 429, needs balance refill |
-| Scout autoresearch deep-dive | ✅ COMPLETE | scout | 445-line report on karpathy/autoresearch. 3-tier trust architecture pattern (immutable eval → untrusted experiment → human governance). Journal committed (Session 310). Still no heartbeat-scout cron. |
+| Scout autoresearch deep-dive | ✅ COMPLETE | scout | 445-line report on karpathy/autoresearch. 3-tier trust architecture pattern. Heartbeat-scout cron now active (30min). |
 | EXP-088 naming conflict | ⚠️ | may | Bob designed EXP-088 (workaround difficulty gradient) AND Coach ran EXP-088 (skill format test). Need to renumber one. |
 | EXP-088 Skill Format Test (Coach) | ✅ COMPLETE | coach | **REGRESSION**: 0/3 (0%) vs 67% baseline on sycophants-dilemma. Key finding: delivery mechanism > format. Few-shot in skill text = diluted. Reverted. |
-| EXP-088 Workaround Difficulty Gradient (Bob) | 🏃 SCENARIO BUILT + RUNNING | coach | Scenario `cascading-fix-trap-v2-hard-workaround` built (10-check scorer). Coach running baselines now (session s_1775660615812_50). |
+| EXP-088 Workaround Difficulty Gradient (Bob) | ✅ COMPLETE | coach | **MAJOR**: Baseline 2/3 (67%), Treatment 3/3 (100%) vs v2 0/18 (0%). Difficulty gradient confirmed (H-088). Making correct fix easier > any training intervention. Bob integrating into KB. |
 | Pre-merge review gate | ✅ Phase 1 done | - | Hook installed, needs Phase 2 (auto-review) |
 | **Federation Sync Redesign** | ✅ COMPLETE | tech-lead | **P0 from Hao**. Ownership-aware conflict resolution in agents-auto-commit.ts (348→692 lines). Instance config, heartbeat writing, federation dirs. TSC clean. Auto-committed and pushed. Session `s_1775659647453_55`. |
 | Few-Shot Conversion Sprint Plan | ✅ COMPLETE | bob | Plan at `agents/bob/workspace/few-shot-conversion-plan.md`. Top 5: know-when-blocked (#1), evidence-over-narrative (#2), investigate-and-fix (#3), obstacle-pivot (#4), read-before-edit (#5). Sprint 1 dispatched to coach. |
@@ -72,18 +72,19 @@ Updated: 2026-04-08 ~15:13 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (15:13)
-- **Federation Sync Redesign: ✅ COMPLETE** — Tech-lead finished P0 task. 348→692 line handler rewrite with ownership-aware conflict resolution. TSC clean, auto-committed, heartbeat auto-generated.
-- **Few-shot conversion sprint plan: ✅ COMPLETE** — Bob ranked top 5 candidates. Sprint 1 dispatched to Coach (know-when-blocked + evidence-over-narrative).
-- **EXP-089**: Combined few-shot + checklist → 67% (vs 0% baseline). Synergistic effect. KB integrated.
-- **All 8 agents running** — optimizer/QA recovered from model errors. Scout heartbeat firing.
-- **No failures** in last hour. System healthy.
+## Latest Cycle Summary (15:35)
+- **EXP-088 Workaround Difficulty Gradient: ✅ COMPLETE** — **MAJOR RESULT**: Baseline 67%, treatment 100% vs v2 0%. Difficulty gradient confirmed. Making correct fix easier than workaround > any training intervention. H-088 confirmed.
+- **Scout heartbeat cron: ✅ FIXED** — Tech-lead confirmed cron active at 30min interval. No longer going dormant.
+- **DB cleanup**: Marked 26 stale coder requests + 1 old autoresearch task as completed. Tracking DB clean.
+- **EXP-070 extended baselines**: Coach self-forked new work session (ambiguous-context-drift).
+- **EXP-088 KB integration**: Bob self-forked, integrating results into knowledge base.
+- **All 8 agents running** — No failures in last hour. System healthy and productive.
 
 ## Next Actions
-- **P1**: **Monitor Few-Shot Sprint 1** — Coach should be starting know-when-blocked + evidence-over-narrative conversion. Watch for duplicate message issues.
-- **P1**: **Monitor EXP-088 baselines** — Coach running `cascading-fix-trap-v2-hard-workaround` baselines.
-- **P1**: **Resolve EXP-088 naming conflict** — Coach's experiment (skill format test) needs renumbering. Bob's EXP-088 is in canonical experiments path.
+- **P1**: **Monitor EXP-088 KB integration** — Bob integrating difficulty gradient findings. H-088 needs P(H) update.
+- **P1**: **Monitor EXP-070 extended baselines** — Coach running ambiguous-context-drift experiment.
+- **P1**: **Monitor Few-Shot Sprint 1** — Coach should pick up know-when-blocked + evidence-over-narrative conversion.
+- **P1**: **Resolve EXP-088 naming conflict** — Coach's EXP-088 (skill format test) vs Bob's EXP-088 (workaround gradient). Need to renumber coach's to EXP-088b or similar.
 - **P1**: **Present auto-loop decision brief to Hao** — at `agents/may/workspace/auto-loop-decision-brief.md`.
 - **P1**: Federation design ready for Hao review — present summary when available
-- **P2**: Clean up stale coder requests in tracking DB
 - **P2**: Pre-merge review gate Phase 2 (auto-review) — needs design

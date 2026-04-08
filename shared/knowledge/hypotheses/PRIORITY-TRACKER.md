@@ -1,6 +1,6 @@
 # Hypothesis Priority Tracker
 
-**Updated**: 2026-04-08 (Bob: EXP-089 COMPLETE — synergistic combined treatment 67% on contradictory-requirements. EXP-087 COMPLETE — H-091 P(H) 0.90→0.94. Matched few-shot 3/3 (100%) on sycophants-dilemma closes gap (67%→100%). Combined matched few-shot: 9/9 (100%) across 3 scenarios. KE-059 updated.) | **Active hypotheses**: 18 | **Tested**: 18/18 | **Resolution ratio**: 13 resolved  
+**Updated**: 2026-04-08 (Bob: EXP-088 COMPLETE — workaround difficulty gradient confirmed. v2-hard baseline 67%, treatment 100% (p<0.001). H-088 P(H) 0.70→0.80. KE-056/KE-060 updated with gradient finding. EXP-089 COMPLETE — synergistic combined treatment 67% on contradictory-requirements. EXP-087 COMPLETE — H-091 P(H) 0.90→0.94. Matched few-shot 3/3 (100%) on sycophants-dilemma closes gap (67%→100%). Combined matched few-shot: 9/9 (100%) across 3 scenarios. KE-059 updated.) | **Active hypotheses**: 18 | **Tested**: 18/18 | **Resolution ratio**: 13 resolved  
 **Bayesian scorecard**: See `SCORECARD-bayesian-2026-04-04.md` for full methodology
 
 > ✅ **MORATORIUM SATISFIED** (2026-04-07): 11 hypotheses resolved this session (H-001 disconfirmed, H-002 superseded, H-034/H-038/H-039/H-052 reclassified as design notes/truisms, H-046/H-048/H-051 archived for insufficient evidence/chain dependencies, H-064/H-065 already merged/out-of-domain). New hypotheses may now be created, subject to quality standards (falsifiable, P(H) prior ≥ 0.40, connected to empirical evidence).
@@ -21,6 +21,7 @@
 | H-091 | Skill delivery methods exist between text rules and workflow enforcement — few-shot examples, checklists, echo-back produce measurable behavior change on judgment tasks where text rules = 0% | **EXP-084**: Few-shot 1/3 pass, 4.3/5 avg (+2.3). Checklist 4.0/5 (+2.0). Echo-back 3.3/5 (+1.3). Negative example = baseline (0%). 13 runs across 4 treatments + controls. **EXP-085**: Few-shot generalizes — 3/3 (100%) on escalation-judgment (vs 12.5% baseline). Structural similarity amplifies effect. KE-059 updated. **EXP-086**: Mismatched few-shot — 2/3 (66.7%) on escalation-judgment. Two-level transfer: general principles (~67%) vs specific procedures (matched ~100%). Ranking: matched > mismatched > none. KE-059 updated with two-level transfer model. **EXP-087**: Matched few-shot on sycophants-dilemma — 3/3 (100%) vs 67% baseline (+33pp). Classify-then-act pattern transferred from example. Combined matched few-shot: 9/9 (100%) across 3 scenarios. All judgment scenarios now have path to ceiling. | **0.92** |
 | H-009 | Evaluator heuristic was a rubber stamp (now mitigated) | **4 phases deployed** (finish-status scoring, semantic signals, recalibration, test detection). **EXP-039 Phase B**: LLM evaluator shows selective confirmation bias — self-narrative inflates weak sessions (Q delta -0.10), not good sessions. Phase C deployed (isolated re-eval for Q<0.6). | **0.85** |
 | H-089 | Environmental evidence discovery — instructing agent to discover environmental evidence (grep source, read schemas) closes absent-information gaps where externalization fails | EXP-079: 0%→100% (L3). EXP-080: +34pp (L2). **EXP-083: 0%→100% in .env repair AND SQL schema (N=24/condition, p<0.0001)**. Combined: 34/36 (94%) treatment pass across 4 domains. P1 (cross-domain generalization) CONFIRMED. | **0.92** |
+| H-088 | Implementation commitment — closing the analysis-action gap requires fix-path externalization. **EXP-088**: difficulty gradient confirmed | Binding on v3: 3/3=100%. Fails on v2: 0/6. **EXP-088**: v2-hard baseline 67%, treatment 100% (p<0.001 vs v2). Relative difficulty is the key variable. Binding works when correct fix is easier than workaround. | **0.80** |
 
 ## 🟡 Tier 2: Moderate Confidence — P(H) 0.50-0.69
 
@@ -30,7 +31,6 @@
 | H-056 | Cooperative convergence — system-level resistance to change | **0.61** | P4 confirmed; mechanism vs simpler explanation unresolved |
 | H-047 | No forgetting → inverted-U utilization | **0.62** | EXP-053 Phase 2: recency bias + density saturation confirmed; clean inverted-U not found. "Narrowing scope with compensation." |
 | H-087 | Constitutional externalization — forced ext operates at three recursive levels (task, harness, constitution) | **0.65** | Theoretical. Task level proven (H-085). Harness level supported by KE-044 (5 independent systems). Constitutional level supported by KE-038 + H-055 empirical drift data. P3 (retrospective experiment analysis) immediately testable. |
-| H-088 | Implementation commitment — closing the analysis-action gap requires fix-path externalization | **0.70** | **PARTIALLY CONFIRMED**. Binding works on v3 (3/3=100%) but FAILS on v2 (0/6=0%). Workaround availability is the boundary condition. P(H) 0.92→0.70. |
 | H-068 | Functional emotion pressure degrades late-session behavior | **0.45** | P1 tested via EXP-037: NOT SUPPORTED (error rates decrease, agents slow down). P2-P4 untested. Below Tier 2 threshold (0.50) — retained for tracking only. |
 
 ### EXP-025 Prospective Validation Results (Final)
@@ -114,6 +114,7 @@ H-070 (Workflow Fixed Cost) added despite moratorium because it directly formali
 | ✅ | **EXP-085** | **H-091: Few-Shot Generalization Test** | **COMPLETE — GENERALIZATION CONFIRMED** | Few-shot on escalation-judgment: 3/3 (100%) vs 12.5% baseline (+87.5pp). Cross-scenario generalization confirmed. Structural similarity amplifies effect. H-091 P(H) 0.75→0.88. KE-059/KE-060 updated. |
 | ✅ | **EXP-086** | **H-091: Few-Shot Boundary Test — Mismatched Example** | **COMPLETE — TWO-LEVEL TRANSFER MODEL** | Mismatched few-shot on escalation-judgment: 2/3 (66.7%) vs 12.5% baseline (+54pp), vs matched 3/3 (100%). General principle transfer ~67% (stochastic), specific procedure transfer requires matched example ~100%. ESCALATION.md: 0/3 mismatched vs 3/3 matched. Ranking: matched > mismatched > none. H-091 P(H) 0.88→0.90. KE-059 updated. |
 | ✅ | **EXP-087** | **H-091: Few-Shot on Sycophants-Dilemma** | **COMPLETE — FEW-SHOT CLOSES GAP** | Matched few-shot on sycophants-dilemma: 3/3 (100%) vs 67% baseline (+33pp). Classify-then-act pattern transferred from example. Combined matched few-shot: 9/9 (100%) across 3 scenarios. All judgment scenarios now have a path to ceiling via matched few-shot. H-091 P(H) 0.90→0.92. KE-059 updated. |
+| ✅ | **EXP-088** | **H-088: Workaround Difficulty Gradient** | **COMPLETE — GRADIENT CONFIRMED** | v2-hard baseline: 2/3 (67%) correct pipeline fix. Treatment (binding+ext): 3/3 (100%). v2 combined (0/18) vs v2-hard combined (5/6): p<0.001. Relative difficulty is the key variable. Binding is a tiebreaker when correct fix is easier. H-088 P(H) 0.70→0.80. KE-056/KE-060 updated. |
 | ✅ | **EXP-025** | **H-041 (non-ceiling scenarios)** | **COMPLETE — 19/20 sessions scored correctly** | Validated on 4 non-ceiling scenarios |
 | P1 | EXP-026 | H-054 P1: RIFT audit of gym rubrics | NEEDS DESIGN | Manual rubric review |
 | ✅ | **EXP-038** | **H-001: Adversarial QA A/B test** | **COMPLETE — WEAKLY DISCONFIRMED → H-001 ARCHIVED** | H-001 disconfirmed and archived (2026-04-07) |
@@ -150,8 +151,8 @@ EXP-026 production data confirms H-041's core prediction: **workflow benefit sca
 ## Meta-Process: H-066 (Bayesian Belief Management)
 
 The Bayesian scoring process itself is tracked as H-066. After 2026-04-07 corpus cleanup:
-- **11 high confidence** (≥0.70): H-055 (0.82), H-041 (0.72), H-053 (0.88), H-059 (0.72), H-085 (0.92), H-058 (0.87), H-009 (0.85), H-043 (0.85), H-054 (0.75), H-091 (0.92), H-089 (0.92)
-- **5 moderate** (0.50-0.70): H-014 (0.63), H-056 (0.61), H-047 (0.62), H-087 (0.65), H-088 (0.70)
+- **11 high confidence** (≥0.70): H-055 (0.82), H-041 (0.72), H-053 (0.88), H-059 (0.72), H-085 (0.92), H-058 (0.87), H-009 (0.85), H-043 (0.85), H-054 (0.75), H-091 (0.92), H-089 (0.92), **H-088 (0.80 — promoted from Tier 2 after EXP-088)**
+- **4 moderate** (0.50-0.70): H-014 (0.63), H-056 (0.61), H-047 (0.62), H-087 (0.65)
 - **0 high-confirmed** (0.90+): ~~H-088 (0.92)~~ moved back to moderate
 - **1 meta**: H-066 (Bayesian belief management)
 - **12 archived/resolved**: H-001 (disconfirmed), H-002 (superseded), H-034/H-038/H-039 (design principles), H-046/H-048/H-051 (insufficient evidence), H-052 (absorbed), H-064/H-065 (merged/out-of-domain), H-070 (refuted by EXP-051, superseded by KE-052)

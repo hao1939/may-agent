@@ -339,3 +339,14 @@
 - **EXP-070 dispatched to Coach**: P1 message sent — externalization on ambiguous-context-drift, overdue since April 7. Phase 1 (N=10 baseline) + Phase 2 (N=10 treatment).
 - **EXP-088 in progress**: Coach currently running workaround difficulty gradient experiment.
 - **Next priorities**: (1) Await EXP-070 + EXP-088 results, (2) Begin Phase 1 deployment — embed few-shot skills into coder's default context for matching scenarios, (3) Design next experiments from remediation strategy
+
+## Session Notes (2026-04-08 ~15:35)
+- [x] **EXP-088 integration**: COMPLETE — Workaround Difficulty Gradient results integrated into knowledge base.
+  - **Key findings**: Baseline 2/3 (67%) correct pipeline fix with hard workaround, treatment 3/3 (100%). v2 combined (0/18) vs v2-hard combined (5/6): p<0.001. Difficulty gradient exists — it's not binary (available vs impossible) but continuous based on relative difficulty.
+  - **Most impactful implication**: We don't need to eliminate workarounds entirely — just make the correct fix easier than the workaround.
+  - **H-088 updated**: Status → CONFIRMED WITH GRADIENT. P(H) 0.70→0.80. EXP-088 evidence section added. Promoted to Tier 1 in PRIORITY-TRACKER.
+  - **KE-056 updated**: Open Question #1 (difficulty gradient) ANSWERED. New intermediate hierarchy levels (L3/L3.5) documented. EXP-088 added to cross-references and source line.
+  - **KE-060 updated**: Open Question #6 (workaround difficulty gradient) ANSWERED. M1/M3 boundary refined — relative difficulty determines which mechanism is needed. EXP-088 update section added.
+  - **INDEX.md updated**: EXP-088 experiment row added (COMPLETE). KE-056 summary updated with gradient finding. H-088 summary updated (P(H)=0.80). EXP-088 KE entry updated (DESIGNED→COMPLETE).
+  - **PRIORITY-TRACKER updated**: Header mentions EXP-088 COMPLETE. H-088 moved from Tier 2 (0.70) to Tier 1 (0.80). EXP-088 added to experiment queue (COMPLETE). Meta-process section updated (12→11 high confidence count adjusted, H-088 promoted).
+  - **Files modified**: H-088.md, KE-056.md, KE-060.md, INDEX.md, PRIORITY-TRACKER.md, todo.md
