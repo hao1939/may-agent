@@ -1,19 +1,19 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-08 ~13:32 UTC
+Updated: 2026-04-08 ~14:03 UTC
 
 ## System Health
 - **Bob**: 🟢 Running heartbeat — looking to delegate EXP-070 to coach once current experiments complete.
-- **Coach**: 🟢 Running heartbeat + common-sense verify. EXP-087 COMPLETE (results written). EXP-086 resume FAILED (GYM_AGENT_BIN not set). Growth trigger received for Bob FM-3.3 errors.
+- **Coach**: 🟢 Running heartbeat. EXP-087 COMPLETE. EXP-086 queued for retry (req:1780170e, 28min). Growth trigger for Bob FM-3.3 received (should SKIP — EXP-057 showed FM-3.3 at ceiling).
 - **Tech-lead**: 🟢 Running heartbeat — confirmed model routing is infra/proxy issue, not agent config.
 - **May**: 🟢 Running (this session).
-- **Scout**: 🔴 **DOWN 16 DAYS** — model `claude-opus-4.6` invalid for scout's API key. Last success: Mar 23. NOT the temporary outage — persistent config issue. Blocked on Hao.
-- **Optimizer**: 🔴 **DOWN 16 DAYS** — same `claude-opus-4.6` model name error. Last success: Mar 23. Blocked on Hao.
-- **Evaluator**: 🔴 **DOWN 16 DAYS** — model `gpt-5.2` invalid. Last success: Mar 23. Blocked on Hao.
-- **QA**: 🔴 **DOWN 16 DAYS** — model `gpt-5.2` invalid. Last success: Mar 23. Blocked on Hao.
-- **Amy-kimi**: 🔴 DOWN — 429 errors (billing). Blocked on Hao.
+- **Evaluator**: 🟢 **BACK UP!** Last 3 sessions succeeded (13:34, 14:02, 14:02). Model `gpt52` now resolving correctly. Was down since ~Mar 23.
+- **Scout**: 🔴 **DOWN 16 DAYS** — model `claude-opus-4.6` invalid. Last attempt 09:34 (error). Heartbeat appears stopped (circuit-breaker?). Blocked on Hao.
+- **Optimizer**: 🔴 **DOWN 16 DAYS** — same `claude-opus-4.6` error. Last attempt 10:34. Heartbeat appears stopped. Blocked on Hao.
+- **QA**: 🔴 **DOWN 16 DAYS** — model `gpt-5.2` invalid. Last attempt 10:34. Heartbeat appears stopped. Blocked on Hao.
+- **Amy-kimi**: 🔴 DOWN — No API key for provider: openai. Last attempt Apr 7 19:06. Blocked on Hao.
 - **Amy**: ⚪ Disabled (heartbeat off).
-- **⚠️ 5 of 11 agents are DOWN. Only may/bob/coach/tech-lead/coder operational. Hao needs to fix model routing/API keys.**
+- **⚠️ 4 of 11 agents are DOWN (was 5 — evaluator recovered!). Scout/optimizer/QA/amy-kimi still broken. Hao needs to fix model routing/API keys.**
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -30,11 +30,11 @@ Updated: 2026-04-08 ~13:32 UTC
 | EXP-085 Few-Shot Generalization | ✅ COMPLETE | coach | **MAJOR**: 3/3 pass (100%) on escalation-judgment vs 12.5% baseline. Few-shot generalizes across judgment scenarios. H-091 promoted to Tier 1 (P(H)≥0.90). |
 | KE-060 Intervention Taxonomy | ✅ COMPLETE | bob | Unified taxonomy: 3 mechanisms (M1: Analysis Activation, M2: Evidence Discovery, M3: Structural Constraint). Diagnostic decision tree. Written and verified. |
 | EXP-085 Knowledge Integration | ✅ DONE | bob | Bob completed integration — all 6 files verified and committed (12:40 UTC). |
-| EXP-086 Combined Treatment | ⚠️ FAILED RESUME | coach | Resume session failed — GYM_AGENT_BIN env var not set. Had partial results from interrupted session (runs 3-4). **Needs coach to re-run properly.** |
+| EXP-086 Combined Treatment | ⏳ QUEUED RETRY | coach | 3 sessions so far (interrupted × 2, GYM_AGENT_BIN fail × 1). Had partial runs (some 5/5 PASS). Coach has active request (req:1780170e) to retry. |
 | EXP-087 Boundary Test | ✅ COMPLETE | coach | **KEY FINDING**: Few-shot transfer is asymmetric. Mismatched examples can HARM (escalation: 0/3 vs 12.5% baseline) or HELP (contradictory: 2/3=67% vs 0% baseline, p=0.018). Behavioral template compatibility matters more than domain match. Results at `EXP-087/results.md`. |
 | Autoresearch Investigation | 🔴 BLOCKED | scout | Hao req from Mar 20 (req:1c42f66e). **Scout DOWN** — model routing broken since Mar 23. Cannot execute. |
 | Model routing: scout/optimizer | 🔴 BLOCKED 16 DAYS | Hao | `claude-opus-4.6` not in available models for these agents' API keys. Silently failing since Mar 23. |
-| Model routing: evaluator/qa | 🔴 BLOCKED 16 DAYS | Hao | `gpt-5.2` not in available models for these agents' API keys. Silently failing since Mar 23. |
+| Model routing: evaluator/qa | ✅ EVALUATOR FIXED / 🔴 QA STILL DOWN | Hao | Evaluator's `gpt52` model now resolves (3 successful sessions since 13:34). **QA still failing** with `gpt-5.2` — different model name? QA heartbeat appears stopped. |
 | Amy-kimi billing outage | 🔴 Blocked | Hao | Still 429, needs balance refill |
 | Pre-merge review gate | ✅ Phase 1 done | - | Hook installed, needs Phase 2 (auto-review) |
 
@@ -68,19 +68,19 @@ Updated: 2026-04-08 ~13:32 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (13:32)
-- **🔴 CRITICAL: 5 agents DOWN for 16 days.** Scout, optimizer, evaluator, QA have model name errors. Amy-kimi billing. **Only may/bob/coach/tech-lead/coder operational.**
-- **EXP-087 COMPLETE** — Major finding: few-shot behavioral template compatibility > domain match. Mismatched examples can actively harm (imposed wrong output format on escalation, 0/3) or surprisingly help (contradictory, 67% vs 0% baseline, p=0.018). Asymmetric transfer. Results written to `EXP-087/results.md`.
-- **EXP-086 FAILED RESUME** — GYM_AGENT_BIN env var not set in resumed session. Had partial data from before interruption. Needs retry.
-- **Bob**: Planning to delegate EXP-070 to coach. EXP-085 integration complete.
-- **Coach**: Running heartbeat + common-sense verify. Also received growth trigger for Bob FM-3.3.
-- **Tech-lead**: Confirmed model routing is proxy/infra issue — not fixable by agents.
-- **EXP-087 integration needed** — Bob should integrate findings into knowledge base (KE for few-shot template compatibility).
+## Latest Cycle Summary (14:03)
+- **🟢 Evaluator BACK UP!** Model `gpt52` now resolving. 3 successful sessions since 13:34. Down count: 5→4 agents.
+- **🔴 STILL DOWN: Scout, Optimizer, QA, Amy-kimi.** Scout/optimizer: `claude-opus-4.6` invalid. QA: `gpt-5.2` invalid. Amy-kimi: no OpenAI API key. All heartbeats appear stopped (circuit-breaker from repeated errors).
+- **EXP-086**: Queued for retry by coach (req:1780170e). 3 prior sessions produced partial data (some 5/5 PASS runs) but all interrupted. Coach is in heartbeat now and should pick this up.
+- **EXP-087**: COMPLETE and integrated by Bob. ✅
+- **Coder s_1775655522855_0**: Active gym trial (24min), working normally — reading files, tests pass, writing results. Not stuck.
+- **Bob FM-3.3 growth trigger**: Coach received this (req:34ff8d58) but should SKIP — EXP-057 showed all FM-3.3 scenarios at ceiling (5/5). No training opportunity.
+- **tsc --noEmit**: False alarm — no tsconfig.json at project root.
 
 ## Next Actions
-- **P0**: **🔴 ESCALATE TO HAO: Model routing broken for 4 agents since Mar 23.** Scout/optimizer need `claude-opus-4.6`, evaluator/qa need `gpt-5.2` — both model names return 400 "Invalid model name" on their API keys. These agents have been silently failing for 16 days.
+- **P0**: **🔴 ESCALATE TO HAO: Model routing still broken for 3 agents.** Scout/optimizer need `claude-opus-4.6`, QA needs `gpt-5.2`. Evaluator fixed itself — suggest Hao check what changed and apply similar fix to QA. Amy-kimi needs OpenAI API key.
+- **P1**: **EXP-086 retry** — Coach should pick up req:1780170e this heartbeat. Combined few-shot + checklist is the key next experiment.
 - **P1**: **EXP-087 integration** — Bob should create KE for few-shot template compatibility findings and update the mechanism hierarchy.
-- **P1**: **EXP-086 retry** — Coach needs to re-run with correct env setup (not just resume). Combined few-shot + checklist is the next step in the intervention ladder.
 - **P1**: **Convert text-rule skills to few-shot format** — EXP-085 confirmed generalization. Coach should start converting highest-impact text-rule skills to few-shot.
 - **P1**: **Deploy cross-reference skill to production** — EXP-083 confirmed 100% generalization, M2 mechanism validated.
 - **P1**: Federation design ready for Hao review — present summary when Hao is available
