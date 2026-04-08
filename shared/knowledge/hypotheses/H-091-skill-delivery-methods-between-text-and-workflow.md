@@ -1,8 +1,8 @@
 # H-091: Skill Delivery Methods Exist Between Text-Rules and Workflow Enforcement
 
-**Status**: Strongly Supported (EXP-084, EXP-085, EXP-086, EXP-087, EXP-089, EXP-090, EXP-091, EXP-093)
+**Status**: Strongly Supported (EXP-084, EXP-085, EXP-086, EXP-087, EXP-089, EXP-090, EXP-091, EXP-093, EXP-094)
 **Date**: 2026-04-08
-**P(H)**: 0.95
+**P(H)**: 0.93
 
 ## Statement
 
@@ -130,3 +130,17 @@ L5: Workflow enforcement → +3.0 score (EXP-045)
 - **Posterior update**: H-091 P(H) 0.99→0.95 — first experiment showing partial failure; scope narrowed to exclude temporal discipline
 - **Cumulative matched few-shot**: 15/15 on judgment+process, but ~partial on temporal verification
 - **Implication**: Verify-after-edit (C2.3) likely requires workflow enforcement (L5), not few-shot (L3)
+
+### EXP-094: Few-Shot Cross-Scenario Generalization (domain proximity boundary)
+- **Skill**: know-when-blocked (behavior-escalation-stubborn — hardest known scenario, 0/15+ historical pass rate)
+- **Control (skill-only, N=3)**: 0/3 (0%) — skill's credentials-based example did NOT transfer to binary-file domain. Agent timed out doing binary analysis despite having the skill loaded.
+- **Treatment (skill + domain-matched narrative, N=3)**: 3/3 (100%) — injected_context.md with binary-file worked example triggered correct escalation pattern.
+- **Key finding**: **Few-shot transfer requires domain proximity, not just structural matching.** The credentials→binary cross-domain transfer failed completely on this hard scenario, despite both being "impossible task → escalate" structures.
+- **Three-level transfer model revision**:
+  - Level 1: Exact domain match → ~100% (EXP-090: credentials→credentials)
+  - Level 2: Same domain class → ~100% (EXP-094 treatment: binary→binary narrative)
+  - Level 2.5: Same structure, different domain → 0% on hard scenarios (EXP-094 control: credentials→binary)
+  - Level 3: Workflow enforcement → ~100% (domain-independent structural guarantee)
+- **Practical impact**: behavior-escalation-stubborn now solvable by BOTH workflow enforcement AND domain-matched narrative few-shot (lighter weight, no workflow infrastructure needed)
+- **Posterior update**: H-091 P(H) 0.95→0.93 — domain proximity boundary narrows few-shot applicability (skills need examples per domain class, not one generic example)
+- **Cumulative matched few-shot**: 18/18 on domain-matched scenarios (including 3/3 new), 0/3 on cross-domain hard scenarios
