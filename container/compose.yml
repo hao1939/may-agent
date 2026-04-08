@@ -6,6 +6,8 @@ services:
     container_name: may-agent-litellm
     hostname: litellm
     restart: unless-stopped
+    logging:
+      driver: k8s-file
     ports:
       - "${LITELLM_PORT:-4000}:4000"
     volumes:
@@ -30,6 +32,8 @@ services:
     container_name: may-agent
     hostname: may-agent
     restart: unless-stopped
+    logging:
+      driver: k8s-file
     env_file: ../.env
     extra_hosts:
       - "host.docker.internal:host-gateway"
