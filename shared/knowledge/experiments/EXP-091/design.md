@@ -1,7 +1,7 @@
 # EXP-091: Few-Shot Skill Conversion Sprint 2 — investigate-and-fix
 
 **Date**: 2026-04-08
-**Status**: IN PROGRESS
+**Status**: COMPLETE — See results.md
 **Hypothesis**: H-091 (P(H)=0.98) — matched few-shot examples improve judgment/process skill performance
 **Based on**: EXP-090 results (0%→100% on two judgment skills), EXP-019 (text injection = 0%), Bob's conversion plan
 
