@@ -1,7 +1,7 @@
 # EXP-075: Deploy Classify-Then-Act to Bob's Heartbeat Dispatch
 
 **Date**: 2026-04-08
-**Status**: BASELINE-COMPLETE
+**Status**: CLOSED — BASELINE AT CEILING (3/3 pass, 6/6 checks). Treatment skipped — no improvement possible on classification accuracy. See Baseline Results below.
 **Sprint**: 31
 **Tags**: knowledge-deployment, KE-029, structural, production
 **Gym budget**: 6 runs (3 baseline + 3 treatment) — gym validation before production deploy
