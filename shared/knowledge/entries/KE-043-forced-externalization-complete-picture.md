@@ -247,3 +247,4 @@ Forced externalization operates at Level 4: the workflow *requires* analysis, cr
 - **EXP-072**: Workaround-resistant scenario design — **BOUNDARY CONFIRMED**: v3 baseline 100% (3/3) without externalization. v3-ext 67% (4/6) — externalization degrades. Analysis-action gap re-confirmed (2/6 correct analysis → workaround). Scenario architecture > task-level externalization for debugging.
 - **H-087**: Constitutional externalization — EXP-072 validates level hierarchy (scenario architecture = harness level > task level)
 - **H-088**: Implementation commitment — EXP-072 re-confirms the analysis-action gap, strengthening the case for fix-path externalization
+- **KE-056**: Constraint Hierarchy synthesis — formalizes the intervention hierarchy from EXP-070→073 with workaround availability as dominant variable

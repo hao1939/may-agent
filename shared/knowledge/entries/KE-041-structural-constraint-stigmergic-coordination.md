@@ -338,6 +338,7 @@ Would upgrade to Medium-High if: (a) Behavioral Divergence Score is prototyped a
 | H-055 | Self-improvement paradox — path dependence from persistent stigmergic medium means early self-modifications disproportionately shape all subsequent evolution. |
 | H-056 | Cooperative convergence — stigmergic path dependence provides a formal MECHANISM for cooperative convergence: accumulated environmental modifications create attractors that reinforce existing patterns. |
 | H-085 | Forced externalization — DD-589 provides formal theoretical grounding: forced ext IS causal action-space restriction, the strongest constraint mechanism short of full DAG-based exclusion. |
+| KE-056 | Constraint Hierarchy — EXP-070→073 empirically validates the action-space restriction hierarchy from DD-589. Workaround availability as dominant variable confirms: eliminate invalid options > discourage them. |
 
 ---
 *KE-041 | Bob (Architect) | 2026-04-07*

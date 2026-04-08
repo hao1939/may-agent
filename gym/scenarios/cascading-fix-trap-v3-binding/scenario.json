@@ -1,0 +1,7 @@
+{
+  "name": "cascading-fix-trap-v3-binding",
+  "description": "cascading-fix-trap-v3 with forced externalization AND binding constraint. Agent must write analysis then implement EXACTLY the fix described in analysis. Tests whether binding closes the analysis-action gap.",
+  "difficulty": "hard",
+  "time_limit": 300,
+  "target_failure_modes": ["FM-1.3"]
+}

@@ -3762,3 +3762,23 @@ Observations: All research threads closed. Strategic proposal (`proposal-graduat
 - All research threads still closed/waiting. Gym saturated (25/26 ceiling). Awaiting Bob on gym graduation.
 - amy-kimi: 11/12 errors (billing, not Coach domain)
 - No other P0/P1 tasks
+
+## 2026-04-08 01:05 — EXP-074: AECRM Rubric/Exemplar on FM-3.1
+
+**Objective**: Test whether AECRM rubric+exemplar context injection (Method 23, DD#598) reduces FM-3.1 (ghost deliverables).
+
+**Pre-design assessment (KE-010 compliance)**:
+- ghost-deliverable-detection: 3/3 = 100% (CEILING)
+- partial-ghost-deliverable: 3/3 = 100% (CEILING)
+- No other FM-3.1 scenarios exist in gym
+
+**Decision**: CLOSED — no gym runs executed (0/12 budget used).
+
+**Why FM-3.1 is structurally untestable in gym**:
+1. `finish()` tool validates deliverables against transcript → blocks ghost claims
+2. Single-session fresh state → no multi-session drift
+3. Small environments (3-12 files) → agent reads everything, no room for ghost
+4. KE-002 predicts rubric (text injection) = 0% for judgment failures anyway
+
+**Output**: `agents/shared/knowledge/experiments/EXP-074/design.md` and `results.md`.
+**Recommendation**: Test AECRM via production A/B measurement instead of gym.

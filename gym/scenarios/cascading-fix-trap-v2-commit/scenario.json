@@ -1,0 +1,7 @@
+{
+  "name": "cascading-fix-trap-v2-commit",
+  "description": "cascading-fix-trap-v2 with forced analysis AND implementation commitment externalization. Tests H-088: does a FIX_PLAN.md commitment step close the analysis-action gap discovered in EXP-071?",
+  "difficulty": "hard",
+  "time_limit": 300,
+  "target_failure_modes": ["FM-1.3"]
+}

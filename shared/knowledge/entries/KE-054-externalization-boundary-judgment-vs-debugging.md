@@ -95,8 +95,8 @@ EXP-072 demonstrated that **blocking workaround paths** (via mathematical constr
 ## Open Questions
 
 1. **Where is the boundary between "judgment" and "debugging"?** Some tasks involve both recognition and implementation. Does externalization help the recognition phase without hurting the implementation phase within a single task?
-2. **Can binding analysis fix the gap?** If the analysis phase produced an implementation PLAN (not just diagnosis), and the agent was constrained to follow it, would that close the analysis-action gap?
-3. **Is the debugging degradation proportional to workaround availability?** v3 (fewer workarounds) showed smaller degradation than v2 (many workarounds). Is there a monotonic relationship?
+2. ~~**Can binding analysis fix the gap?**~~ **PARTIALLY ANSWERED by EXP-073**: Binding works on v3 (workarounds blocked, 3/3=100%) but FAILS on v2 (workarounds available, 0/6=0%). The answer is: binding only helps when workarounds are mechanically blocked. See KE-055 (needs update).
+3. **Is the debugging degradation proportional to workaround availability?** v3 (fewer workarounds) showed smaller degradation than v2 (many workarounds). EXP-073 Phase 2 confirms: with many workarounds, even binding cannot force the correct fix.
 
 ## Cross-References
 
@@ -104,10 +104,14 @@ EXP-072 demonstrated that **blocking workaround paths** (via mathematical constr
 - **KE-032**: Dual pathway (write OR read) — applies to judgment domain only
 - **KE-034**: Analysis activation mechanism — works for recognition, not implementation
 - **KE-043**: Complete empirical picture — this entry updates the boundary condition noted there
+- **KE-055**: Binding and the analysis-action gap — partially effective (v3 only, not v2)
 - **H-085**: General mechanism hypothesis — now bounded to judgment domain
+- **H-088**: Implementation commitment — **PARTIALLY CONFIRMED** (v3 only, fails on v2)
 - **EXP-070**: v2 baseline (78%, 6 runs)
 - **EXP-071**: v2-ext treatment (83% overall, 0% pipeline fix, 6 runs)
 - **EXP-072**: v3 baseline (100%, 3 runs) + v3-ext treatment (67%, 6 runs)
+- **EXP-073**: Phase 1: v3-binding (100%, 3/3) — binding closes gap. Phase 2: v2-commit (0%, 0/6) — binding fails when workarounds available.
+- **KE-056**: Constraint Hierarchy — synthesizes EXP-070→073 into five-level hierarchy with workaround availability as dominant variable. Reframes this boundary as convergent vs divergent solution spaces.
 
 ---
-*KE-054 | Coach | 2026-04-07*
+*KE-054 | Coach | 2026-04-07 | Updated 2026-04-08 (Coach): EXP-073 Phase 2 shows binding fails on v2 — workaround availability is the boundary*
