@@ -304,6 +304,36 @@ function tryPull(agentsDir: string, remote: string, log: (msg: string) => void):
 }
 
 /**
+ * Write an instance heartbeat file for federation health monitoring.
+ * Each instance writes to shared/federation/heartbeats/{instanceId}.json.
+ * Other instances check staleness to detect downtime.
+ */
+function writeInstanceHeartbeat(
+  agentsDir: string,
+  instanceId: "local" | "k3s" | "unknown",
+  config: InstanceConfig,
+): void {
+  if (instanceId === "unknown") return;
+
+  const heartbeatDir = join(agentsDir, "shared", "federation", "heartbeats");
+  const heartbeatPath = join(heartbeatDir, `${instanceId}.json`);
+
+  try {
+    if (!existsSync(heartbeatDir)) mkdirSync(heartbeatDir, { recursive: true });
+
+    const heartbeat = {
+      instance: instanceId,
+      last_seen: new Date().toISOString(),
+      agents: config[instanceId].agents,
+    };
+
+    writeFileSync(heartbeatPath, JSON.stringify(heartbeat, null, 2) + "\n", "utf-8");
+  } catch {
+    // Non-fatal — heartbeat is informational
+  }
+}
+
+/**
  * Push local commits to remote. Best-effort — if the push fails, the
  * commits are still local and will be pushed next run.
  */
@@ -332,6 +362,9 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     // Load federation config for ownership-aware conflict resolution
     const config = loadInstanceConfig(agentsDir);
     const instanceId = detectInstance(agentsDir, config);
+
+    // Write instance heartbeat (federation liveness signal)
+    writeInstanceHeartbeat(agentsDir, instanceId, config);
 
     // Pull from remote to pick up changes from other instances
     if (remote) tryPull(agentsDir, remote, ctx.log, instanceId, config);
