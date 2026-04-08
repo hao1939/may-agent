@@ -269,18 +269,21 @@
   - H-085 boundary updated: domain-specific mechanism, not universal
 
 ### Next (Priority Order)
-0. **🔴 IT-46: KE-002 Reexamination Experiment** (P0, from Hao via reflection-2026-04-08-05)
-   - Hao challenged KE-002 ("text rules don't work"): text rules ARE the primary method for guiding agents. The finding may be oversimplified.
-   - Design experiment testing CATEGORIES of text rules: (a) identity/role, (b) procedural compliance, (c) preference, (d) skill/technique
-   - Use broader gym scenarios + new metrics (compliance vs quality vs guidance)
-   - Track as EXP-077 in knowledge/experiments/
-0. **🟡 IT-47: Knowledge Application Pipeline** (P0, from Hao via reflection-2026-04-08-05)
-   - Hao: "experiment the knowledge and try to make use of it, or it's dead knowledge"
-   - **EXP-082 Test 1 COMPLETE**: KE-054 injected into debugging task → 0/3 application rate. P(applies|pushed) ≈ 0.
-   - **Created KE-058**: Injected declarative knowledge has no effect on agent behavior
-   - Remaining: Test 2 (KE-010 ceiling effect) and Test 3 (KE-002 text rules) — need meta-task scenarios
-   - Key finding: Even with perfect delivery, agents don't USE knowledge. Must encode as structural constraints.
-1. **Deploy L5 strict workflow for destructive operations** — Proven across 3 scenarios. Only mechanism for sycophancy (EXP-025: 3/6→9/9, EXP-043: 0%→100%, 50%→100%).
+0. ~~**🔴 IT-46: KE-002 Reexamination Experiment**~~ ✅ COMPLETE (EXP-081 + EXP-084)
+   - EXP-081: 0/12 pass across all 4 text rule categories → KE-002 confirmed for declarative rules
+   - EXP-084: Skill training method comparison → few-shot (33%), checklist (0-33%), echo (33%), negative (0%)
+   - **Key refinement**: Declarative text rules = 0%, but structural text (few-shot/checklist/echo) = ~33%. KE-002 scope narrowed.
+   - Created KE-059 (H-091 findings), updated mechanism hierarchy L1-L5
+0. ~~**🟡 IT-47: Knowledge Application Pipeline**~~ ✅ COMPLETE (EXP-082)
+   - EXP-082: KE-054 injected into debugging task → 0/3 application rate. P(applies|pushed) ≈ 0.
+   - Created KE-058: Injected declarative knowledge has no effect on agent behavior
+   - **Conclusion**: Agents don't USE injected knowledge. Must encode as structural constraints (workflow/environmental).
+   - Tests 2-3 deprioritized: the finding is strong enough with N=3 + prior evidence (KE-011, KE-026).
+1. **EXP-085: Few-Shot Generalization Test** (IN PROGRESS, forked s_1775646946134_21)
+   - Test few-shot method (EXP-084's strongest sub-workflow treatment) on escalation-judgment-base
+   - If few-shot works here too → validates few-shot as general skill format for judgment tasks
+   - If it fails → few-shot may be scenario-specific to contradictory-requirements
+2. **Deploy L5 strict workflow for destructive operations** — Proven across 3 scenarios. Only mechanism for sycophancy (EXP-025: 3/6→9/9, EXP-043: 0%→100%, 50%→100%).
 2. ~~**EXP-073: Binding Analysis for Debugging**~~ **COMPLETE** — Phase 1 (v3-binding): 3/3=100% gap closed. Phase 2 (v2-commit): 0/6=0% binding fails when workarounds available. Binding only works on constrained scenarios. H-088 P(H) 0.92→0.70. Workaround availability is the critical boundary condition.
 3. ~~**Method 23: AECRM context audit**~~ **CLOSED (EXP-074)** — FM-3.1 is ceiling in gym (100% on both scenarios). Structurally untestable: finish() infra + single-session + small env prevent ghost deliverables. KE-002 predicts rubric (text injection) = 0% anyway. Recommend production A/B instead.
 4. **C2.3 framework-level enforcement** — All text/skill/gate approaches exhausted (EXP-020/055/055b/056). Needs auto-readback or similar structural fix.
