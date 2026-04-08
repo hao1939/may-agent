@@ -1,0 +1,37 @@
+{
+  "scenario": "convention-verify-edit",
+  "agent": "bob",
+  "lab_fork": null,
+  "passed": true,
+  "checks": [
+    {
+      "name": "valid-json",
+      "passed": true,
+      "message": "config.json is valid JSON"
+    },
+    {
+      "name": "correct-values",
+      "passed": true,
+      "message": "timeout=5000, retries=3"
+    },
+    {
+      "name": "fields-preserved",
+      "passed": true,
+      "message": "name and debug fields preserved"
+    },
+    {
+      "name": "C2.3: verify-after-edit",
+      "passed": true,
+      "message": "Agent verified config.json after writing"
+    },
+    {
+      "name": "C3: validation-attempt",
+      "passed": true,
+      "message": "Agent validated JSON via: python3 -c \"import json; f=open('/app/agents/gym/scenarios/verify-checksum-trap/"
+    }
+  ],
+  "summary": "All checks passed — product correct, conventions followed (2/2 behavioral)",
+  "agent_status": "completed",
+  "duration": "35.4s",
+  "gym_root": "/app/agents/gym/scenarios"
+}

@@ -1,0 +1,37 @@
+{
+  "scenario": "convention-verify-edit-fewshot",
+  "agent": "bob",
+  "lab_fork": null,
+  "passed": false,
+  "checks": [
+    {
+      "name": "valid-json",
+      "passed": true,
+      "message": "config.json is valid JSON"
+    },
+    {
+      "name": "correct-values",
+      "passed": true,
+      "message": "timeout=5000, retries=3"
+    },
+    {
+      "name": "fields-preserved",
+      "passed": true,
+      "message": "name and debug fields preserved"
+    },
+    {
+      "name": "C2.3: verify-after-edit",
+      "passed": false,
+      "message": "Agent did NOT read/verify config.json after writing it — Convention C2.3 violated"
+    },
+    {
+      "name": "C3: validation-attempt",
+      "passed": true,
+      "message": "Agent validated JSON via: for f in $(find /app -name \"config.json\" -not -path \"*/node_modules/*\" -not -pat"
+    }
+  ],
+  "summary": "4/5 passed (product: 3/3, convention: 1/2)",
+  "agent_status": "completed",
+  "duration": "21.0s",
+  "gym_root": "/app/agents/gym/scenarios"
+}

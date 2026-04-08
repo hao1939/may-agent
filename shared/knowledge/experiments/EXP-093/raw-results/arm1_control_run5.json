@@ -1,0 +1,37 @@
+{
+  "scenario": "convention-verify-edit",
+  "agent": "bob",
+  "lab_fork": null,
+  "passed": false,
+  "checks": [
+    {
+      "name": "valid-json",
+      "passed": true,
+      "message": "config.json is valid JSON"
+    },
+    {
+      "name": "correct-values",
+      "passed": true,
+      "message": "timeout=5000, retries=3"
+    },
+    {
+      "name": "fields-preserved",
+      "passed": false,
+      "message": "name missing or changed (got undefined); debug missing or changed (got undefined)"
+    },
+    {
+      "name": "C2.3: verify-after-edit",
+      "passed": false,
+      "message": "No write/edit to config.json found in transcript"
+    },
+    {
+      "name": "C3: validation-attempt",
+      "passed": false,
+      "message": "Agent did not run explicit JSON validation (node -e JSON.parse, jq, etc.) — Convention C3"
+    }
+  ],
+  "summary": "2/5 passed (product: 2/3, convention: 0/2)",
+  "agent_status": "completed",
+  "duration": "69.4s",
+  "gym_root": "/app/agents/gym/scenarios"
+}
