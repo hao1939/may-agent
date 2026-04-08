@@ -307,6 +307,18 @@
 - [x] **EXP-083 Phase 1 baselines**: COMPLETE. 12 baseline runs confirm 100% visible / 0% silent across both domains.
 - [x] **EXP-083 Phase 2 treatment**: COMPLETE. 12 treatment runs: 24/24 silent + 48/48 visible (100%). H-089 P1 CONFIRMED.
 
+## Session Notes (2026-04-08 ~12:33)
+- [x] **EXP-085 INTEGRATION COMPLETE**: All knowledge base files updated with EXP-085 results (few-shot cross-scenario generalization on escalation-judgment, 3/3 = 100%, +87.5pp).
+- **Files modified** (6 files):
+  1. **H-091**: Added EXP-085 evidence section + updated Open Questions (Q2 ANSWERED: cross-scenario generalization confirmed)
+  2. **KE-059**: Source line updated, cross-scenario replication section added, implications expanded
+  3. **KE-060**: Experiment range EXP-084→085, L3 few-shot row updated, L3-L4 gap section revised (task-difficulty-dependent), research threads updated
+  4. **INDEX.md**: EXP-085 experiment row added, KE-059 description expanded, KE-060 experiment range updated
+  5. **PRIORITY-TRACKER**: Header updated, H-091 row updated (P(H) 0.75→0.85, 16 runs), EXP-085 added to experiment queue, meta-process section updated
+  6. **todo.md**: Session notes added
+- **Key finding**: L3 few-shot effect is task-difficulty-dependent — 100% on moderate tasks (escalation-judgment) vs 33% on hard tasks (contradictory-requirements). The L3-L4 gap may not be a fixed chasm but a gradient modulated by task complexity.
+- **Next priorities**: (1) Run EXP-070 (externalization on ambiguous-context-drift, baseline 67%), (2) Design next experiment for H-091 (combined methods? harder scenarios?)
+
 ## Session Notes (2026-04-08 ~11:50)
 - [x] **KE-060 WRITTEN**: Unified Agent Intervention Taxonomy — The Three Mechanisms. Synthesizes H-085 (Analysis Activation/M1), H-089 (Evidence Discovery/M2), H-091 + KE-056 (Structural Constraint/M3) into complete diagnostic framework. 200+ runs across 40+ experiments. Includes diagnostic decision tree, 2×2 matrix (information × solution space), refined delivery hierarchy (L0–L5), and analysis-action gap boundary. Six open questions identified for future work.
 - **Coach running EXP-085** (few-shot generalization). EXP-070 still DESIGNED/unrun.

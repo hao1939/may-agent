@@ -1,9 +1,9 @@
 # KE-059: Few-Shot Examples Break the Text-Rule Binary
 
 **Status**: Verified
-**Source**: EXP-084 (Skill Training Method Comparison)
+**Source**: EXP-084 (Skill Training Method Comparison), EXP-085 (Few-Shot Cross-Scenario Generalization)
 **Date**: 2026-04-08
-**Confidence**: Medium (N=3 per treatment, consistent direction)
+**Confidence**: Medium-High (N=16 across 2 scenarios, consistent direction, cross-scenario replication)
 
 ## Finding
 
@@ -27,6 +27,17 @@ Few-shot was the strongest lightweight method:
 - Only "alternatives-proposed" was inconsistent
 - +2.3 average score improvement over baseline
 
+### Cross-Scenario Replication (EXP-085)
+
+EXP-085 tested few-shot delivery on a DIFFERENT scenario — escalation-judgment (12.5% baseline from EXP-044):
+
+| Condition | Pass Rate | Key Effect |
+|-----------|-----------|------------|
+| Baseline (EXP-044) | 1/8 (12.5%) | Rarely detects escalation pattern |
+| **Few-shot treatment** | **3/3 (100%)** | **Fixed both affected files + created ESCALATION.md** |
+
+Cross-scenario effect: +87.5pp over baseline. The worked example from contradictory-requirements transferred successfully to escalation-judgment — agents learned the pattern (analyze → identify issue → document findings) from a different domain and applied it correctly.
+
 ## Mechanism
 
 A worked example provides a template for HOW to reason, not just WHAT to do. The agent learns the pattern (analyze → identify tension → propose alternatives) from seeing it applied to a different domain, then transfers it.
@@ -47,9 +58,10 @@ This is distinct from text rules which state the desired behavior abstractly, an
 ## Implications
 
 1. **Skill format matters**: Skills should use worked examples, not abstract rules
-2. **Judgment gap persists**: Even the best lightweight method is only 33% reliable for judgment tasks
-3. **Generative reasoning is hardest**: Agents can identify problems (100%) but struggle to propose alternatives (33%)
-4. **Combined methods untested**: Few-shot + checklist combined might bridge the 33%→100% gap
+2. **Cross-scenario transfer confirmed**: Few-shot examples generalize — a worked example from one domain transfers to different judgment scenarios (EXP-085: 100% on escalation-judgment using contradictory-requirements example)
+3. **Judgment gap persists**: Even the best lightweight method varies (33% on original scenario, 100% on simpler scenario) — task difficulty modulates effectiveness
+4. **Generative reasoning is hardest**: Agents can identify problems (100%) but struggle to propose alternatives (33%)
+5. **Combined methods untested**: Few-shot + checklist combined might bridge remaining gaps
 
 ## Cross-References
 
