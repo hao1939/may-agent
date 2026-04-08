@@ -108,6 +108,7 @@ H-070 (Workflow Fixed Cost) added despite moratorium because it directly formali
 | ✅ | **EXP-077** | **Fidelity Ladder — L1/L2/L3 structural gap analysis** | **COMPLETE — CASCADING STATE IS PRIMARY GAP** | L1=67%, L2=100%/0%, L3=0%. Information loss from failed sessions defeats agent. |
 | ✅ | **EXP-078** | **H-085: Externalization on L3 absent-field detection** | **COMPLETE — RECOGNITION SUB-BOUNDARY** | 0/3 pass. Externalization doesn't help when agent lacks schema for what should exist. |
 | ✅ | **EXP-079** | **Cross-reference intervention on L3 absent-field** | **COMPLETE — 100% (3/3)** | Cross-referencing source code solves absent-field detection. +100pp over baseline/externalization. KE-057 written. Largest single-intervention effect. |
+| **P1** | **EXP-083** | **H-089 P1: Cross-reference generalization — multi-domain** | **DESIGNED — Scenarios built** | Two new scenarios: truncated-env-repair (env vars) and truncated-schema-migration (SQL columns). Both have visible/silent check separation. N=6 baseline + N=6 treatment each. Tests whether cross-ref generalizes beyond config repair. |
 | ✅ | **EXP-025** | **H-041 (non-ceiling scenarios)** | **COMPLETE — 19/20 sessions scored correctly** | Validated on 4 non-ceiling scenarios |
 | P1 | EXP-026 | H-054 P1: RIFT audit of gym rubrics | NEEDS DESIGN | Manual rubric review |
 | ✅ | **EXP-038** | **H-001: Adversarial QA A/B test** | **COMPLETE — WEAKLY DISCONFIRMED → H-001 ARCHIVED** | H-001 disconfirmed and archived (2026-04-07) |

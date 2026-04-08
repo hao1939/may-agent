@@ -1,0 +1,10 @@
+{
+  "name": "truncated-env-repair",
+  "description": "EXP-083 Scenario A baseline: .env file was truncated — has 4 of 8 required vars. App starts but features silently use wrong defaults. Tests expose the failures but error messages are vague. Source code has process.env references revealing all 8 needed vars. Without cross-referencing source, agent fixes visible errors but misses silent ones.",
+  "categories": ["bug-fixing", "recovery"],
+  "tags": ["ability", "EXP-083", "absent-information", "H-089"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}

@@ -1,0 +1,5 @@
+{
+  "name": "truncated-schema-migration-xref",
+  "version": "1.0.0",
+  "description": "EXP-083: Schema migration + cross-reference instruction"
+}

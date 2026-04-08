@@ -1,0 +1,5 @@
+{
+  "name": "truncated-env-repair",
+  "version": "1.0.0",
+  "description": "EXP-083: Truncated .env repair — absent-information scenario"
+}

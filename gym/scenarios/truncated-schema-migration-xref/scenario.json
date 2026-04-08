@@ -1,0 +1,10 @@
+{
+  "name": "truncated-schema-migration-xref",
+  "description": "EXP-083 Scenario B + cross-reference instruction: Same as truncated-schema-migration but with injected_context telling agent to cross-reference model file. Tests H-089 cross-reference intervention.",
+  "categories": ["bug-fixing", "recovery"],
+  "tags": ["ability", "EXP-083", "absent-information", "H-089", "cross-reference"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}
