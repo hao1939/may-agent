@@ -1,6 +1,6 @@
 # KE-050: The Robustness-Architecture Nexus — Agent Robustness Is an Architectural Property, Not a Model Property
 
-**Status**: Theoretical (supported by convergence of four independent studies + our empirical corpus)
+**Status**: Strongly Supported (convergent evidence from 6+ independent studies + our empirical corpus — DD-635/636/637/638 original + DD-639 behavioral fuzzing + DD-641 merge conflict analysis)
 **Confidence**: High — systematic perturbation study (DD-635), evaluation reform (DD-636), MAS self-optimization (DD-637), and topology-behavior empirics (DD-638) from independent groups converge on same structural conclusion
 **Date**: 2026-04-07
 **Sources**: DD-635 (Environmental Perturbation Fragility, ★★★★★), DD-636 (Beyond Fixed Tests, ★★★★), DD-637 (Self-Optimizing MAS, ★★★★½), DD-638 (Subgraph Sociality, ★★★★), CR-315 (Robustness-Architecture Nexus synthesis)

@@ -383,3 +383,14 @@
   - **New "Validated Interventions" section**: 7 experimentally confirmed skill→scenario pairs with effect sizes and p-values.
   - **Cross-References updated**: EXP-090 added, H-091 P(H) updated.
   - **Files modified**: gym-failure-remediation-strategy.md, todo.md
+
+## Session Notes (2026-04-08 ~23:48)
+- [x] **DD#639-642 Knowledge Integration**: COMPLETE — Four new deep-dives integrated into knowledge base.
+  - **KE-062 WRITTEN**: Behavioral Fuzzing as Agent Testing Paradigm. Synthesizes DD#639 (ABTest: 4,892 failure reports → 47 Interaction Patterns + 128 Action Types → 647 test cases → 642 new anomalies across Claude Code, Codex CLI, Gemini CLI). 40.8% true-positive rate. First systematic framework for agent behavioral testing. Proposes empirical foundations for testing our own agents. Connects to KE-050 (robustness), KE-053 (gym-production gap).
+  - **KE-063 WRITTEN**: The Artifact Trust Asymmetry — LLMs Systematically Over-Trust Documentation Over Code. Synthesizes DD#641 (AgenticFlict: 142K+ PRs, 27.67% conflict rate) + DD#642 (TRACE: 22,339 trust traces, 7 models, 456 Java bundles). LLMs trust documentation over code; documentation bugs detected at 67-94% but implementation drift drops 7-42pp when docs are intact. Agent-agent merge conflicts structurally distinct from agent-human. Confidence miscalibration in 6/7 models. Connects to KE-050 (robustness), H-085 (externalization), KE-043 (forced externalization).
+  - **KE-047 UPDATED**: Status upgraded from "Theoretically Supported" → "Strongly Supported". DD#640 (Inside the Scaffold: 13 architectures × 12 dimensions × 3 layers) provides strongest independent validation. 5 composable loop primitives identified. Convergent/divergent dimension split. Open question on taxonomy stability added.
+  - **KE-050 UPDATED**: Status upgraded from "Theoretical" → "Strongly Supported". DD#639 (47 Interaction Patterns as failure surfaces) + DD#641 (27.67% conflict rate confirming architecture > model for robustness) provide new evidence. Merge conflict brittleness and behavioral fuzzing findings added.
+  - **INDEX.md UPDATED**: KE-062, KE-063 added to knowledge entries table. DD#639-642 added to Research Library. KE-047 and KE-050 descriptions updated with new evidence and status upgrades.
+  - **Files created**: KE-062-behavioral-fuzzing-agent-testing-paradigm.md, KE-063-agent-artifact-trust-asymmetry.md
+  - **Files modified**: KE-047.md, KE-050.md, INDEX.md, todo.md
+  - **Key connections**: DD#640 is the strongest external validation of KE-047's harness architecture convergence thesis. DD#639's behavioral fuzzing framework could be adapted for our gym infrastructure. DD#641+642 establish trust asymmetry as a systematic agent failure mode relevant to our knowledge delivery strategy.

@@ -1,14 +1,13 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-08 ~23:47 UTC
+Updated: 2026-04-08 ~23:25 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
 - **Scout**: 🟢 Running — Heartbeat active.
-- **Bob**: 🟢 Running — Absorbing deep-dives DD-639–642, running gym sessions. Heartbeat active.
-- **Coach**: 🟢 Running — Deploying investigate-and-fix skill to coder. EXP-094 transfer test queued. Highly autonomous.
-- **Tech-lead**: 🟢 Running — Clean heartbeat. No pending work.
-- **Evaluator**: 🟢 Running — Calibration heartbeat, pipeline liveness confirmed.
+- **Bob**: 🟢 Running — EXP-093 KB integration queued. Heartbeat active.
+- **Coach**: 🟢 Running — EXP-092 results write-up, EXP-094 transfer test, growth trigger for Bob all queued. Highly autonomous.
+- **Tech-lead**: 🟢 Running — Just completed 2 P0 bug fixes (Telegram silent drops + crash loop prevention). Heartbeat active.
 - **Optimizer**: 🟢 Running — Tool quality regression investigation queued.
 - **QA**: 🟢 Running — Heartbeat active.
 - **All agents**: 🟢 All heartbeats firing. Killed stale May chat session (105h idle!). Two P0 bug fixes shipped this cycle.
@@ -45,9 +44,8 @@ Updated: 2026-04-08 ~23:47 UTC
 | EXP-090 KB Integration | ✅ COMPLETE | bob | H-091 P(H) 0.92→0.98, matched few-shot 12/12 across 5 scenarios. Commit dc3acd2d. Gym-failure-remediation strategy also updated. |
 | EXP-091 Skill Deploy (evidence-over-narrative) | ✅ COMPLETE | coach | Skill deployed to coder with few-shot. Regression checks: hidden-dependency 5/5 ✅, phantom-fix-config 2/5 (matches baseline, no regression). |
 | EXP-091 Sprint 2 (investigate-and-fix) | ✅ COMPLETE | coach | **MAJOR**: reproduce-first 0/3→3/3 (100%). Process score 4/5→5/5. **First evidence few-shot works for process discipline, not just judgment.** H-091 P(H) → 0.99. Cumulative 9/9 treatment runs (100%) vs 0/9 control. |
-| EXP-091 KB Integration | ✅ COMPLETE | bob | H-091 P(H) 0.98→0.99. Process discipline expansion integrated. Few-shot scope: judgment + process. |
-| EXP-092 Transfer Test (forced citation) | ✅ COMPLETE | coach | **KEY FINDING: Instruction-induced task narrowing.** Arm A: status-doc 100% (p=0.043) but migration 0% (broke what worked). Arm B: post-check degraded everything. Transfer gap is instruction-resistant → needs L4+ structural enforcement. |
-| EXP-093 KB Integration | ✅ COMPLETE | bob | H-091 updated with temporal boundary. Few-shot = effective for *what* not *when* in tool-call sequences. |
+| EXP-091 KB Integration | 🏃 RUNNING | bob | Forked s_1775668473890_10. Updating H-091 P(H) 0.98→0.99, noting process discipline expansion. |
+| EXP-092 Transfer Test (know-when-blocked) | 🏃 IN PROGRESS | coach | 10 arm-a runs + 8 arm-b runs complete. Needs 2 more arm-b runs + results write-up. |
 | EXP-093 Sprint 3 (verify-after-edit) | ✅ COMPLETE | coach | **MIXED**: C3 (validation) 40%→80% ✅, C2.3 (read-after-write) 40%→20% ❌. Few-shot = effective for *what* not *when*. Product correctness 60%→100%. |
 | EXP-094 Few-Shot Transfer (escalation-stubborn) | 🏃 QUEUED | coach | Self-dispatched. Testing know-when-blocked on new scenario. |
 | **Telegram Silent Drop Bug** | ✅ FIXED | tech-lead | Commit 217efe2. Telegram now gets `⚠️` on turn errors + `❌` on session_end. Merged to main. |
@@ -86,17 +84,20 @@ Updated: 2026-04-08 ~23:47 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (23:47)
-- **EXP-092 COMPLETE** — Major finding: **instruction-induced task narrowing**. Forced citation → 100% doc accuracy but 0% migration (worse than disease). Post-check verification → degraded everything. Transfer gap confirmed instruction-resistant → needs L4+ structural enforcement. Validates KE-056 (L2 instructional binding ≈ 0% net effect).
-- **All KB integrations current** — EXP-091 (process discipline), EXP-092 (task narrowing), EXP-093 (temporal boundary) all integrated into H-085/H-091.
-- **Coach deploying investigate-and-fix skill** — EXP-091's process discipline finding being productionized into coder/skills/.
-- **Zero errors, zero stale sessions** — Fully healthy across all agents. No pending requests.
-- **Team fully autonomous** — Coach self-dispatched EXP-094, Bob absorbing deep-dives, tech-lead/evaluator clean.
+## Latest Cycle Summary (23:25)
+- **Two P0 bug fixes SHIPPED** — Both Hao's bug reports addressed:
+  1. `217efe2`: Telegram now notifies users on session errors (context overflow, API failures) — handles both `turn_end` with no text + `session_end` with error.
+  2. `9ea5b5a`: Context overflow crash loop prevention — overflowed chat sessions are auto-archived instead of going idle (prevents supervisord death spiral). Three-layer defense: manager handleCompletion + ChatSession resume guard + runtime recovery.
+- **Cancelled stale May chat session** — s_1775311714523_3 was idle 105+ hours. Cancelled.
+- **EXP-093 results complete** — Mixed: few-shot improves *what to validate* (C3: 40%→80%) but NOT *when to verify* (C2.3: 40%→20%). Important mechanism distinction.
+- **EXP-092 still in progress** — 10 arm-a runs complete, only 8 arm-b runs. Coach needs to finish and write results.
+- **Team fully autonomous** — Coach self-dispatched EXP-094, Bob has EXP-093 KB integration, Optimizer investigating tool regression.
 
 ## Next Actions
-- **P1**: **Monitor EXP-094** — Coach self-dispatched few-shot transfer test on behavior-escalation-stubborn. Key question: does know-when-blocked generalize to new scenario?
-- **P1**: **Present status to Hao** — 12+ matched few-shot runs at 100%. H-091 P(H)=0.99. EXP-092 found instruction-induced task narrowing. Two critical bugs fixed earlier. Auto-loop decision brief ready.
-- **P2**: **L4 structural gate exploration** — EXP-092 recommends structural enforcement for transfer gap. Coach or tech-lead could prototype a scorer/gate.
+- **P0**: ~~Bug fixes from Hao~~ — DONE. Both merged to main.
+- **P1**: **Monitor EXP-092 completion** — arm-b needs 2 more runs, then results write-up (cf942552 queued for coach).
+- **P1**: **Monitor EXP-094** — Coach self-dispatched few-shot transfer test on behavior-escalation-stubborn.
+- **P1**: **Present status to Hao** — 12+ matched few-shot runs at 100%. H-091 P(H)=0.99. Auto-loop decision brief ready. Two critical bugs fixed.
 - **P2**: **Deploy skills to more agents** — know-when-blocked and evidence-over-narrative only in coder/. Tech-lead, optimizer could benefit.
 - **P2**: Federation design ready for Hao review
 - **P2**: Pre-merge review gate Phase 2 (auto-review)
