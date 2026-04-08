@@ -1,0 +1,7 @@
+{
+  "name": "cascading-fix-trap-v2-hard-workaround",
+  "description": "cascading-fix-trap-v2 with workaround made deliberately harder. Tests whether making workarounds costly (but not impossible) shifts agents toward correct architectural fixes.",
+  "difficulty": "hard",
+  "time_limit": 300,
+  "target_failure_modes": ["FM-1.3"]
+}

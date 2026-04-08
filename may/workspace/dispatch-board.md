@@ -1,12 +1,13 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-08 ~14:13 UTC
+Updated: 2026-04-08 ~14:35 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Running — heartbeat cycle. EXP-087 integration complete (commit 7fc481e2).
-- **Coach**: 🟢 Running — heartbeat cycle. Cross-reference skill deployed to coder (commit fe91729e).
-- **All other agents**: 🟢 Heartbeats fired at 14:13, running normally. No errors in last hour.
+- **Scout**: 🟡 RECOVERING — Was DOWN for 5h+ (model errors + no heartbeat cron). Manually forked at 14:38 — session running, scraping autoresearch repo. Model issue appears resolved. Still needs heartbeat cron. **71 model errors across 4 agents in 24h** (bob:20, coach:25, optimizer:19, scout:7). Errors stopped ~10:34 UTC.
+- **Bob**: 🟢 Running — heartbeat cycle. Designed EXP-088 (workaround difficulty gradient).
+- **Coach**: 🟢 Running — heartbeat cycle. Ran EXP-088 (skill format test: 0/3 REGRESSION) + EXP-086 combined.
+- **All other agents**: 🟢 Heartbeats fired at 14:32, no errors in last 4h.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -29,6 +30,10 @@ Updated: 2026-04-08 ~14:13 UTC
 | Cross-Reference Skill Deployment | ✅ COMPLETE | coach | 71-line skill deployed to coder at `coder/skills/cross-reference-before-config-repair.md`. Commit fe91729e. |
 | Auto-Loop Analysis | ✅ COMPLETE | tech-lead + bob | **Both converge**: zero engine changes needed. Decision brief written → `agents/may/workspace/auto-loop-decision-brief.md`. Ready for Hao. |
 | Amy-kimi billing outage | 🔴 Blocked | Hao | Still 429, needs balance refill |
+| Scout down (no heartbeat cron) | 🔴 DOWN | Hao/tech-lead | `claude-opus-4.6` model errors. No heartbeat-scout cron = won't retry. Autoresearch req (1259fbec) blocked. |
+| EXP-088 naming conflict | ⚠️ | may | Bob designed EXP-088 (workaround difficulty gradient) AND Coach ran EXP-088 (skill format test). Need to renumber one. |
+| EXP-088 Skill Format Test (Coach) | ✅ COMPLETE | coach | **REGRESSION**: 0/3 (0%) vs 67% baseline on sycophants-dilemma. Key finding: delivery mechanism > format. Few-shot in skill text = diluted. Reverted. |
+| EXP-088 Workaround Difficulty Gradient (Bob) | ⏳ DESIGNED | bob | 12.6KB design doc ready. Tests L2↔L4 transition — is the workaround threshold binary or gradient? Not yet run. |
 | Pre-merge review gate | ✅ Phase 1 done | - | Hook installed, needs Phase 2 (auto-review) |
 
 ## Completed/Archived
@@ -61,17 +66,18 @@ Updated: 2026-04-08 ~14:13 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (14:13)
-- **ALL ACTIVE ITEMS RESOLVED**: Zero running/pending items on the board. Everything is ✅ or blocked on Hao.
-- **EXP-087 INTEGRATION COMPLETE**: Bob committed H-091 P(H) 0.90→0.92 (9/9 matched few-shot across 3 scenarios).
-- **CROSS-REFERENCE SKILL DEPLOYED**: Coach deployed 71-line skill to coder (cross-reference-before-config-repair.md).
-- **Research sprint complete**: EXP-083→087 all done. Few-shot (L3) is the validated intervention for judgment failures. H-091 at Tier 1 (P(H)=0.92).
-- **System clean**: All heartbeats fired, no errors in last hour, no pending requests.
+## Latest Cycle Summary (14:35)
+- **SCOUT DOWN**: `claude-opus-4.6` model errors + no heartbeat cron = dead for 5h+. 71 total model errors in 24h across 4 agents, stopped ~10:34 for bob/coach.
+- **EXP-088 results**: Coach's skill format test REGRESSED (0/3 vs 67% baseline). Key insight: **delivery mechanism matters more than format** — few-shot in skill text is diluted, only works in injected_context.
+- **Bob designed EXP-088** (workaround difficulty gradient) — ready to run. Tests if there's a continuous L2↔L4 transition.
+- **EXP-088 naming conflict**: Bob and Coach independently used the same experiment number for different things.
+- **Coder heavily loaded**: ~20 CREATED tasks from human — Hao actively working with coder.
 
 ## Next Actions
+- **P0**: **Scout recovery** — ✅ DONE. Forked scout session s_1775659088836_38 — model issue resolved, scout running. Also dispatched autoresearch investigation (Hao's req:1c42f66e from 19 days ago).
 - **P0**: **Present auto-loop decision brief to Hao** — Decision brief at `agents/may/workspace/auto-loop-decision-brief.md`. Need approval + implementation assignment.
-- **P1**: **Plan few-shot skill conversion sprint** — H-091 confirmed (P(H)=0.92). Identify top text-rule skills to convert to matched few-shot format. Dispatch to Coach.
+- **P1**: **Resolve EXP-088 naming conflict** — Coach's experiment should be renumbered (it completed first, but Bob's design is in the canonical shared/knowledge/experiments/ path).
+- **P1**: **Plan few-shot skill conversion sprint** — But Coach's EXP-088 result says: don't convert skill text to few-shot, focus on injected_context delivery instead. Rethink this approach.
 - **P1**: Federation design ready for Hao review — present summary when Hao is available
 - **P2**: Bob analysis refresh (last was Apr 4, 4 days old) — lower priority since system is healthy
-- **P2**: Scout C1.3 laggard intervention (76.3% vs 90%+ for others)
 - **P2**: Pre-merge review gate Phase 2 (auto-review) — needs design
