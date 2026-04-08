@@ -1,7 +1,7 @@
 # EXP-092: Forced Analysis-to-Documentation Transfer
 
 **Date**: 2026-04-08
-**Status**: DESIGNED
+**Status**: COMPLETE — CITATION CLOSES TRANSFER GAP BUT CREATES ANALYSIS TRAP
 **Designer**: Bob (Architect)
 **Priority**: High — directly addresses the largest remaining gap in H-085 (forced externalization)
 
@@ -198,3 +198,34 @@ Create by copying `ambiguous-context-drift-ext` with modified task.md only:
 
 ---
 *EXP-092: Forced Analysis-to-Documentation Transfer | Bob (Architect) | 2026-04-08*
+
+## Results (Added 2026-04-08)
+
+### Raw Data
+
+| Metric | Arm A (Forced Citation, ext-v2, n=10) | Arm B (No Citation, ext-v3, n=9) |
+|---|---|---|
+| `status-doc-accurate` | **10/10 (100%)** | **4/9 (44%)** |
+| `analysis-written` | 10/10 (100%) | 7/9 (78%) |
+| Overall `passed` | 0/10 (0%) | 1/9 (11%) |
+
+*Arm B: 9 of planned 10 runs completed*
+
+### Primary Finding: Forced Citation Closes the Transfer Gap
+
+Arm A's forced citation instruction — requiring the agent to explicitly reference ANALYSIS.md findings when writing migration-status.md — achieves **100% documentation accuracy** (10/10), compared to **44% without citation** (4/9). This is a **+56pp improvement** on the exact metric that EXP-070 identified as the transfer gap.
+
+This confirms that the analysis-to-documentation transfer gap (EXP-070: analysis correct in 10/10 but documentation correct in only 6/10) is addressable through **explicit cross-reference requirements**. The agent CAN transfer its analysis to downstream documents — it just doesn't do so automatically.
+
+### Secondary Finding: The Analysis Trap
+
+However, Arm A reveals an unexpected cost: **0/10 runs complete the actual migration tasks** (auth-migrated, logging-migrated, config-migrated all False). By contrast, Arm B achieves 1/9 overall pass, with several runs completing some migration checks.
+
+The forced citation intervention makes the agent so focused on accurate documentation that it never proceeds to execution. This "analysis trap" is a novel failure mode: **the intervention that fixes documentation accuracy simultaneously prevents task completion**.
+
+### Interpretation
+
+1. **Transfer gap is real and fixable**: Forced citation confirms EXP-070's gap and resolves it (+56pp). P(H) recovery from 0.85 → 0.88.
+2. **Citation creates a new tradeoff**: Fixes documentation accuracy but kills task completion. Agent needs citation + explicit "proceed to implement" instruction.
+3. **Execution crowding**: Chaining externalization steps consumes the agent's attention budget, preventing actual task execution. New boundary condition for H-085.
+4. **Proposed next experiment**: Combined forced citation + explicit execution instruction to test whether the analysis trap is inherent or a prompt artifact.

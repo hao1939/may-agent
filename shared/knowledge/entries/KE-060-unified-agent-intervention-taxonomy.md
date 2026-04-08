@@ -15,7 +15,7 @@ Across 40+ experiments and 200+ experimental runs, three distinct mechanisms exp
 
 | # | Mechanism | Bottleneck Addressed | When It Applies | Key Evidence |
 |---|-----------|---------------------|-----------------|--------------|
-| **M1** | **Analysis Activation** (H-085) | Agent has information but doesn't engage it | Present-but-overlooked problems; judgment tasks with convergent solution spaces | 57/67 runs pass (85%), 13 scenarios, 5 failure domains. ⚠️ P(H) revised to 0.85 after EXP-070 transfer gap |
+| **M1** | **Analysis Activation** (H-085) | Agent has information but doesn't engage it | Present-but-overlooked problems; judgment tasks with convergent solution spaces | 67/77 runs pass (87%), 14 scenarios, 5 failure domains. P(H) = 0.88 (EXP-092: citation fixes transfer gap but reveals analysis trap) |
 | **M2** | **Evidence Discovery** (H-089) | Agent lacks information that exists in the environment | Absent-information problems; environmental artifacts contain implicit schemas | 34/36 runs pass (94%), 4 domains, 0% baseline → 100% treatment |
 | **M3** | **Structural Constraint** (KE-056) | Agent takes expedient path over correct path | Divergent solution spaces where workarounds exist; implementation tasks | 100% when workarounds blocked, 0% when available regardless of M1/M2 |
 
@@ -53,11 +53,11 @@ Agent fails on task T. Why?
 **Empirical profile**:
 - Effect size: +33pp to +100pp (median ~+55pp) on judgment tasks; ⚠️ only +10pp (NS) on context-parroting at N=10 (EXP-070)
 - Domain: 5 confirmed failure domains — sycophancy, tunnel vision, contradiction blindness, context-parroting, workaround satisficing
-- Boundary: Does NOT help when (a) information is absent (see M2), (b) expedient workarounds exist (see M3), or (c) analysis-to-documentation transfer is required (EXP-070: correct analysis 100% but correct deliverable only 60%)
+- Boundary: Does NOT help when (a) information is absent (see M2), (b) expedient workarounds exist (see M3), (c) analysis-to-documentation transfer is required without explicit citation (EXP-070: 60% transfer; EXP-092: citation fixes to 100% but causes analysis trap — 0% task completion), or (d) chained externalization steps crowd out execution (EXP-092)
 - Minimal viable form: One sentence of judgment + gate + read = full effect (EXP-044)
-- Aggregate: 57/67 = 85% across 13 scenarios (vs ~25% baseline)
+- Aggregate: 67/77 = 87% across 14 scenarios (vs ~25% baseline)
 
-**Key experiments**: EXP-025, EXP-043–047, EXP-068–070, EXP-071–072, EXP-078
+**Key experiments**: EXP-025, EXP-043–047, EXP-068–070, EXP-071–072, EXP-078, EXP-092
 
 ### M2: Evidence Discovery (Environmental Cross-Reference)
 
@@ -170,7 +170,7 @@ M1 (externalization) achieves **perfect analysis but imperfect downstream action
 Two sub-types of the gap exist:
 - **Drift gap** (M3 with minor M1 support fixes it): Agent drifts from correct path due to overhead. Binding (L2) + blocked workarounds (L4) = 100% recovery.
 - **Attraction gap** (only M3 fixes it): Agent is actively pulled toward simpler working alternative. No instructional intervention helps. Must block the alternative.
-- **Transfer gap** (EXP-070, new): Agent correctly analyzes in ANALYSIS.md but treats downstream deliverable documents as independent writing tasks. Analysis in one artifact doesn't automatically propagate to separate deliverables. 60% transfer rate at N=10 vs 50% baseline (NS). This variant may require explicit cross-referencing between analysis and deliverable phases.
+- **Transfer gap** (EXP-070, partially resolved by EXP-092): Agent correctly analyzes in ANALYSIS.md but treats downstream deliverable documents as independent writing tasks. 60% transfer rate at N=10 vs 50% baseline (NS). **EXP-092 fix**: forced citation (explicit cross-reference requirement) restores transfer to 100% (10/10), but creates "analysis trap" — 0/10 task completion. Citation fixes documentation accuracy at the cost of execution. This introduces a fourth boundary: "execution crowding" where chained externalization steps consume the agent's attention budget.
 
 ## What This Taxonomy Predicts
 
