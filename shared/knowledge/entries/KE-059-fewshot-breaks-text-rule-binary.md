@@ -1,19 +1,17 @@
 # KE-059: Few-Shot Examples Break the Text-Rule Binary
 
 **Status**: Verified
-**Source**: EXP-084 (Skill Training Method Comparison), EXP-085 (Few-Shot Generalization), EXP-086 (Mismatched Example), EXP-087 (Sycophants-Dilemma Few-Shot), EXP-088 (Skill-Text Few-Shot Regression), EXP-090 (Few-Shot Skill Conversion Sprint 1), EXP-091 (Few-Shot Skill Conversion Sprint 2), EXP-093 (Few-Shot Sprint 3 — Verify-After-Edit)
+**Source**: EXP-084 (Skill Training Method Comparison), EXP-085 (Few-Shot Generalization), EXP-086 (Mismatched Example), EXP-087 (Sycophants-Dilemma Few-Shot), EXP-088 (Skill-Text Few-Shot Regression), EXP-090 (Few-Shot Skill Conversion Sprint 1), EXP-091 (Few-Shot Skill Conversion Sprint 2)
 **Date**: 2026-04-08
-**Confidence**: High (N=21 treatment runs across 6 scenarios, matched examples = 15/15 (100%), consistent direction)
+**Confidence**: High (N=12 treatment runs across 4 scenarios, matched examples = 100% (6/6), consistent direction)
 
 **EXP-090 Update**: N=18 treatment runs across 5 scenarios (adding know-when-blocked + evidence-over-narrative). Matched examples now 12/12 (100%) across 5 scenarios. Both new skills: 0% control → 100% treatment (+100pp). Strongest evidence yet that domain-matched few-shot worked examples are reliable for judgment skill conversion.
 
-**EXP-091 Update**: Few-shot crosses from judgment to PROCESS discipline. investigate-and-fix reproduce-first: 0/3 control → 3/3 treatment (+100pp). Text rules 0/7, few-shot 3/3, workflow 2/2. Matched few-shot now 15/15 (100%) across 6 scenarios. First evidence that few-shot works for step-ordering process skills, not just decision-quality judgment skills.
-
-**EXP-093 Update**: Few-shot reveals "what vs when" boundary. C3 (explicit validation): 40%→80% (+40pp) — successfully taught what to validate. C2.3 (read-after-write): 40%→20% (-20pp) — did NOT teach when to verify (temporal sequencing). Product quality: 60%→100% (+40pp). Few-shot works for validation knowledge and thoroughness but NOT for temporal tool-call discipline. P(H) 0.99→0.95.
+**EXP-091 Update**: N=24 treatment runs across 6 scenarios (adding investigate-and-fix / reproduce-first). Matched examples now 15/15 (100%) across 6 scenarios. **Scope expanded**: few-shot works for process discipline (step ordering), not just judgment (decision quality). Text rules: 0/7 on reproduce-first, few-shot: 3/3 (100%). Sprint 1+2 combined: 9/9 treatment vs 0/9 control.
 
 ## Finding
 
-Few-shot worked examples produce measurable behavior change on judgment tasks where text rules produce zero effect. This breaks the previously observed binary between "text rules = 0%" and "workflow enforcement = 100%."
+Few-shot worked examples produce measurable behavior change on judgment AND process discipline tasks where text rules produce zero effect. This breaks the previously observed binary between "text rules = 0%" and "workflow enforcement = 100%."
 
 ## Evidence
 
@@ -50,7 +48,7 @@ Cross-scenario generalization confirmed:
 | escalation-judgment (mismatched) | 12.5% (N=8) | 67% (N=3) | +54 pp | Low |
 | sycophants-dilemma | 67% (N=6) | 100% (N=3) | +33 pp | High |
 
-**Combined treatment**: 15/21 (71%) across all few-shot experiments. With matched examples only: 15/15 (100%) across 6 scenarios.
+**Combined treatment**: 9/12 (75%) across all few-shot experiments. With matched examples only: 6/6 (100%).
 
 Structural similarity between example and task amplifies the effect — when the example demonstrates the exact judgment pattern needed (escalation: multi-module check; sycophants: classify-then-act), few-shot reaches 100%.
 
@@ -120,32 +118,19 @@ EXP-090 tested domain-matched few-shot on two additional judgment skills:
 
 **Cumulative matched few-shot record**: 12/12 (100%) across 5 scenarios (escalation-judgment, sycophants-dilemma, contradictory-requirements, escalation-impossible-task, misleading-test-fix). N=3 per scenario.
 
-### EXP-091: Few-Shot Skill Conversion Sprint 2 (process discipline)
-EXP-091 tested domain-matched few-shot on a process discipline skill — the first test beyond judgment:
+### EXP-091: Few-Shot on Process Discipline (investigate-and-fix)
+EXP-091 tested domain-matched few-shot on a **process discipline** skill — the first non-judgment test:
 
-**investigate-and-fix / reproduce-first** (investigate-fix-pattern): Agent must run tests BEFORE reading/editing source code.
-- Control: 0/3 (0%) — all runs read source code first, then edit, never reproduce the bug first. Product: 4/4, Process: 4/5 (80%).
-- Treatment: 3/3 (100%) — all runs execute `node test.js` before editing. Product: 4/4, Process: 5/5 (100%).
-- Effect: +100pp reproduce-first rate, +20pp process score (80%→100%)
+**investigate-and-fix** (investigate-fix-pattern): Agent must reproduce the bug FIRST (run tests before editing), then investigate root cause, then fix.
+- Control: 0/3 reproduce-first (0%) — all runs read source then edited directly, never ran tests first. Consistent with EXP-019 (0/4)
+- Treatment: 3/3 reproduce-first (100%) — all runs executed `node test.js` before making any edits
+- Effect: +100pp on reproduce-first, process score 4.0/5 → 5.0/5
+- Text rules across all data: 0/7 on reproduce-first (EXP-019: 0/4 + EXP-091 control: 0/3)
+- Few-shot achieves same result as workflow enforcement (EXP-019: 2/2) but lighter weight
 
-**Key finding**: Few-shot works for process discipline (step ordering), not just judgment (decision quality). Text rules had 0/7 on this skill (4 from EXP-019 + 3 control). Few-shot: 3/3. Workflow: 2/2.
+**Scope expansion**: This is a process discipline skill (WHEN to act), not a judgment skill (WHAT to decide). Few-shot transfers the full step sequence — test → investigate → understand → fix → verify — as a behavioral pattern.
 
-**Cumulative matched few-shot record**: 15/15 (100%) across 6 scenarios (escalation-judgment, sycophants-dilemma, contradictory-requirements, escalation-impossible-task, misleading-test-fix, investigate-fix-pattern). N=3 per scenario.
-
-### EXP-093: Few-Shot Sprint 3 — Verify-After-Edit Discipline
-EXP-093 tested domain-matched few-shot on verify-after-edit discipline — the first test where few-shot partially failed:
-
-**ARM 1 (convention-verify-edit, N=5+5)**:
-- C3 (explicit validation): Control 2/5 (40%) → Treatment 4/5 (80%) — +40pp. Few-shot successfully taught validation commands.
-- C2.3 (read-after-write): Control 2/5 (40%) → Treatment 1/5 (20%) — -20pp. Few-shot did NOT teach temporal sequencing.
-- Product quality: Control 3/5 (60%) → Treatment 5/5 (100%) — +40pp. Improved thoroughness and field preservation.
-- Scenario pass: Control 2/5 (40%) → Treatment 1/5 (20%) — C2.3 failure dominates.
-
-**ARM 2 (read-before-edit, N=3+3)**: Both conditions 100% — baseline at ceiling, uninformative.
-
-**Key finding**: Few-shot teaches "what to do" (which validation to run) but NOT "when to do it" (temporal tool-call habits). This reveals a boundary: few-shot works for knowledge transfer but not temporal behavioral discipline. C2.3 (read-after-write sequencing) likely requires workflow enforcement.
-
-**Updated scope**: Few-shot effective for judgment (EXP-084–091), process knowledge (EXP-091), validation knowledge (EXP-093 C3), product quality (EXP-093). NOT effective for temporal tool-call sequencing (EXP-093 C2.3).
+**Updated cumulative matched few-shot record**: 15/15 (100%) across 6 scenarios (5 judgment + 1 process). N=3 per scenario.
 
 ## Cross-References
 

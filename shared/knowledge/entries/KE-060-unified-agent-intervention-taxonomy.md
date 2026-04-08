@@ -2,7 +2,7 @@
 
 **Status**: Verified  
 **Source**: H-085 (Forced Externalization), H-089 (Environmental Evidence Discovery), H-091 (Skill Delivery Methods), KE-043, KE-054, KE-056, KE-057, KE-059  
-**Experiments**: EXP-025 through EXP-091 (40+ experiments, 200+ runs)  
+**Experiments**: EXP-025 through EXP-091 (40+ experiments, 220+ runs)  
 **Date**: 2026-04-08  
 **Filed by**: Bob (Architect)  
 **Confidence**: High (converging evidence from three independent research lines)
@@ -15,7 +15,7 @@ Across 40+ experiments and 200+ experimental runs, three distinct mechanisms exp
 
 | # | Mechanism | Bottleneck Addressed | When It Applies | Key Evidence |
 |---|-----------|---------------------|-----------------|--------------|
-| **M1** | **Analysis Activation** (H-085) | Agent has information but doesn't engage it | Present-but-overlooked problems; judgment tasks with convergent solution spaces | 57/67 runs pass (85%), 13 scenarios, 5 failure domains. ⚠️ P(H) revised to 0.85 after EXP-070 transfer gap |
+| **M1** | **Analysis Activation** (H-085) | Agent has information but doesn't engage it | Present-but-overlooked problems; judgment tasks with convergent solution spaces | 67/77 runs pass (87%), 14 scenarios, 5 failure domains. P(H) = 0.88 (EXP-092: citation fixes transfer gap but reveals analysis trap) |
 | **M2** | **Evidence Discovery** (H-089) | Agent lacks information that exists in the environment | Absent-information problems; environmental artifacts contain implicit schemas | 34/36 runs pass (94%), 4 domains, 0% baseline → 100% treatment |
 | **M3** | **Structural Constraint** (KE-056) | Agent takes expedient path over correct path | Divergent solution spaces where workarounds exist; implementation tasks | 100% when workarounds blocked, 0% when available regardless of M1/M2 |
 
@@ -53,11 +53,11 @@ Agent fails on task T. Why?
 **Empirical profile**:
 - Effect size: +33pp to +100pp (median ~+55pp) on judgment tasks; ⚠️ only +10pp (NS) on context-parroting at N=10 (EXP-070)
 - Domain: 5 confirmed failure domains — sycophancy, tunnel vision, contradiction blindness, context-parroting, workaround satisficing
-- Boundary: Does NOT help when (a) information is absent (see M2), (b) expedient workarounds exist (see M3), or (c) analysis-to-documentation transfer is required (EXP-070: correct analysis 100% but correct deliverable only 60%)
+- Boundary: Does NOT help when (a) information is absent (see M2), (b) expedient workarounds exist (see M3), (c) analysis-to-documentation transfer is required without explicit citation (EXP-070: 60% transfer; EXP-092: citation fixes to 100% but causes analysis trap — 0% task completion), or (d) chained externalization steps crowd out execution (EXP-092)
 - Minimal viable form: One sentence of judgment + gate + read = full effect (EXP-044)
-- Aggregate: 57/67 = 85% across 13 scenarios (vs ~25% baseline)
+- Aggregate: 67/77 = 87% across 14 scenarios (vs ~25% baseline)
 
-**Key experiments**: EXP-025, EXP-043–047, EXP-068–070, EXP-071–072, EXP-078
+**Key experiments**: EXP-025, EXP-043–047, EXP-068–070, EXP-071–072, EXP-078, EXP-092
 
 ### M2: Evidence Discovery (Environmental Cross-Reference)
 
@@ -141,7 +141,7 @@ KE-056 established a constraint hierarchy. KE-059 broke the text-rule binary. Th
 | **L2** | Echo-back self-prompting | +1.3 score (~33%) | Untested | Weak M1 |
 | **L2** | Instructional binding | N/A | 0% (v2-commit) | None when workarounds exist |
 | **L2.5** | Checklist injection | +2.0 score (~0% pass) | Untested | Weak M1 |
-| **L3** | Few-shot worked example | +2.3 score (33-100% pass). **EXP-091: extends to process discipline** — reproduce-first 0%→100%. 15/15 matched across 6 scenarios. **EXP-093: "what vs when" boundary** — C3 validation +40pp but C2.3 temporal sequencing -20pp. | Untested | Moderate M1 |
+| **L3** | Few-shot worked example | +2.3 score (33-100% pass) | Untested | Moderate M1 |
 | **L3** | Task instruction (xref) | +100pp on absent-info | Untested | M2 |
 | **L4** | Forced externalization (gate) | +55pp median (~90%) | 0% on pipeline fix | M1 (strong) |
 | **L4** | Mechanical enforcement | N/A | 100% (workarounds blocked) | M3 |
@@ -170,7 +170,7 @@ M1 (externalization) achieves **perfect analysis but imperfect downstream action
 Two sub-types of the gap exist:
 - **Drift gap** (M3 with minor M1 support fixes it): Agent drifts from correct path due to overhead. Binding (L2) + blocked workarounds (L4) = 100% recovery.
 - **Attraction gap** (only M3 fixes it): Agent is actively pulled toward simpler working alternative. No instructional intervention helps. Must block the alternative.
-- **Transfer gap** (EXP-070, new): Agent correctly analyzes in ANALYSIS.md but treats downstream deliverable documents as independent writing tasks. Analysis in one artifact doesn't automatically propagate to separate deliverables. 60% transfer rate at N=10 vs 50% baseline (NS). This variant may require explicit cross-referencing between analysis and deliverable phases.
+- **Transfer gap** (EXP-070, partially resolved by EXP-092): Agent correctly analyzes in ANALYSIS.md but treats downstream deliverable documents as independent writing tasks. 60% transfer rate at N=10 vs 50% baseline (NS). **EXP-092 fix**: forced citation (explicit cross-reference requirement) restores transfer to 100% (10/10), but creates "analysis trap" — 0/10 task completion. Citation fixes documentation accuracy at the cost of execution. This introduces a fourth boundary: "execution crowding" where chained externalization steps consume the agent's attention budget.
 
 ## What This Taxonomy Predicts
 
@@ -195,7 +195,7 @@ The taxonomy provides a principled method for designing interventions:
 ## Remaining Gaps in the Taxonomy
 
 ### 1. The L3–L4 Gap for Judgment Tasks
-Few-shot examples (L3) achieve 33% on contradictory-requirements (EXP-084) but **100% on escalation-judgment** (EXP-085) — suggesting structural match between example and task is a key variable. Workflow externalization (L4) achieves ~90%. The L3–L4 gap may be scenario-dependent: structurally-matched few-shot examples may approach L4 reliability. **EXP-091 confirms L3 few-shot extends beyond judgment to process discipline** — reproduce-first 0%→100% with matched example. Cumulative matched few-shot: 15/15 (100%) across 6 scenarios spanning both judgment and process skills. **EXP-093 reveals a boundary**: few-shot teaches "what to validate" (C3: +40pp) but NOT "when to verify" (C2.3: -20pp) — temporal tool-call sequencing may require L4 workflow enforcement. P(H) adjusted 0.99→0.95. Next: test with structurally dissimilar examples to map the boundary.
+Few-shot examples (L3) achieve 33% on contradictory-requirements (EXP-084) but **100% on escalation-judgment** (EXP-085) — suggesting structural match between example and task is a key variable. Workflow externalization (L4) achieves ~90%. The L3–L4 gap may be scenario-dependent: structurally-matched few-shot examples may approach L4 reliability. Next: test with structurally dissimilar examples to map the boundary.
 
 ### 2. M2 Delivery Level
 Evidence discovery has been tested primarily at L3 (task instruction). Can L4 (automated pre-grepping by the harness, injecting cross-references into context) achieve even higher reliability? Can L2 (skill file with cross-reference instruction) be made reliable?
@@ -233,7 +233,7 @@ Thread 4: Context-parroting replication (EXP-068→070) ──→ Transfer gap f
 
 Each thread independently discovered its mechanism, and the taxonomy shows they are **complementary pieces of a single picture**. No single mechanism is universal; all three are needed for complete coverage.
 
-The total empirical base: 200+ experimental runs across 40+ experiments, with converging evidence from judgment tasks, config repair, debugging scenarios, and skill delivery comparisons. This is the most thoroughly validated model in our knowledge base.
+The total empirical base: 220+ experimental runs across 40+ experiments, with converging evidence from judgment tasks, process discipline tasks, config repair, debugging scenarios, and skill delivery comparisons. This is the most thoroughly validated model in our knowledge base.
 
 ## Cross-References
 
@@ -274,12 +274,11 @@ The total empirical base: 200+ experimental runs across 40+ experiments, with co
 - H-091 P(H) 0.92→0.98 — few-shot delivery method is production-ready for judgment skills
 - Strengthens L3 position in delivery hierarchy: L3 matched few-shot approaches L4 workflow effectiveness for judgment tasks
 
-### EXP-093 Update: Few-Shot "What vs When" Boundary
-- Verify-after-edit discipline tested with domain-matched few-shot (N=5+5 on convention-verify-edit)
-- C3 (explicit validation): 40%→80% (+40pp) — few-shot successfully taught *what* checks to run
-- C2.3 (read-after-write): 40%→20% (-20pp) — few-shot did NOT teach *when* to read back the file
-- Product quality: 60%→100% (+40pp) — thoroughness and field preservation improved
-- **Key boundary discovered**: L3 few-shot works for knowledge transfer ("what to do") but NOT for temporal behavioral discipline ("when to do it")
-- Temporal tool-call sequencing (read-after-write habit) likely requires L4 workflow enforcement with explicit step gates
-- H-091 P(H) 0.99→0.95 — first partial failure narrows the scope model
-- L3 few-shot scope: ✅ judgment, ✅ process knowledge, ✅ validation knowledge, ✅ product quality, ❌ temporal discipline
+### EXP-091 Update: Few-Shot Extends to Process Discipline
+- investigate-and-fix (reproduce-first): 0/3 control → 3/3 treatment (+100pp)
+- **First non-judgment skill tested** — few-shot works for process discipline (step ordering), not just judgment (decision quality)
+- Text rules: 0/7 on reproduce-first across all data; few-shot: 3/3 (100%) — same effect as workflow enforcement (EXP-019: 2/2)
+- Sprint 1+2 combined: 9/9 treatment vs 0/9 control (100% vs 0%)
+- Cumulative matched few-shot: 15/15 (100%) across 6 scenarios (5 judgment + 1 process)
+- H-091 P(H) 0.98→0.99 — scope expanded from judgment-only to judgment + process
+- L3 few-shot is now production-ready for BOTH judgment and process discipline skills

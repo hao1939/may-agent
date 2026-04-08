@@ -1,13 +1,8 @@
 # Bob's Todo List
 
 ## Active Tracking
-- [x] **EXP-091 (Few-Shot on Process Discipline)**: COMPLETE. Few-shot crosses to process discipline — reproduce-first 0%→100% (N=3+3). Matched few-shot 15/15 across 6 scenarios. H-091 P(H) 0.98→0.99. KE-059/H-091/INDEX/PRIORITY-TRACKER updated.
-- [ ] **EXP-092 (Forced Analysis-to-Documentation Transfer)**: NEAR-COMPLETE. Arm A 10/10. Arm B 8/10. Analysis forked (s_1775690333351_269).
-  - **Arm A (Forced Citation)**: `status-doc-accurate` = **10/10 (100%)** vs EXP-070 control 6/10 (60%). +40pp. Fisher exact p<0.05. H-085 transfer gap CLOSED.
-  - **Arm B (Post-Check)**: `status-doc-accurate` = **3/8 (37.5%)** — WORSE than control (60%). Post-hoc verification appears counterproductive.
-  - **Key finding**: Forced inline citation works perfectly; post-hoc verification hurts. Confirms analysis activation must be maintained *during* writing, not checked afterwards. Overall `passed` = 0/10 Arm A, 1/8 Arm B — analysis-action gap (EXP-071) persists.
-  - **Analysis session forked** (2026-04-08 23:18): Processing results into H-085, KE-043, INDEX, PRIORITY-TRACKER.
-- [x] **EXP-093 (Few-Shot Sprint 3 — Verify-After-Edit)**: COMPLETE. "What vs when" boundary discovered. C3 validation +40pp (40%→80%) but C2.3 temporal sequencing -20pp (40%→20%). Product quality +40pp (60%→100%). ARM 2 at ceiling (100%/100%). Few-shot teaches what to validate but NOT when to verify — temporal discipline likely needs L4 workflow. H-091 P(H) 0.99→0.95. KE-059/KE-060/H-091/INDEX/PRIORITY-TRACKER updated.
+- [x] **EXP-091 (Few-Shot on Process Discipline)**: COMPLETE. reproduce-first 0/3→3/3 (+100pp). Extends few-shot from judgment to process discipline. Cumulative matched few-shot: 15/15 (100%) across 6 scenarios. H-091 P(H) 0.98→0.99.
+- [x] **EXP-092 (Forced Analysis-to-Documentation Transfer)**: COMPLETE. Citation closes transfer gap: 100% doc accuracy (Arm A, n=10) vs 44% (Arm B, n=9). But "analysis trap" — 0% task completion. New boundary: execution crowding. P(H) 0.85→0.88.
 - [x] **EXP-215 (Prerequisite Detection Skill)**: CONCLUDED. N=10 fixed re-run: all 10 fail `does-not-claim-success`. C1.8 deployed but ineffective. Rule of Two triggered — model-level limitation. ACCEPTED.
 - [x] **Gym Sweep Part 3 COMPLETE**: 31/33 scenarios tested (wrong-tool-args pair cut off). 23 PASS, 8 FAIL. New failures: regression-from-fix (2), search-strategy-escalation, silent-dependency, spec-adherence-multi-step, stale-approach-fixation-workflow, sycophants-dilemma (confirmed), verification-contradiction-workflow. **FULL SWEEP TOTALS**: 108/111 tested, 77 PASS, 30 FAIL (27.8% failure rate). 3 untested (wrong-tool-args pair + 1 other).
 - [x] **Verify-After-Edit v1 in Production**: Skill deployed at `agents/coder/skills/verify-after-edit.md`. **CONFIRMED WORKING (2026-03-29)**: Coder C1.3 pass rate = 62.3% (43/69 sessions, 7-day). Consistent with lab result (60%). Prompting ceiling reached — remaining 38% needs runtime enforcement.
@@ -41,7 +36,7 @@
 
 ## Deferred / Blocked
 - [ ] **Prompt Caching**: Blocked on Hao (escalated 2026-03-24). Cannot fix from this repo.
-- [ ] **Runtime Enforcement for Verification Gap**: **v4 brief APPROVED by tech-lead** (`brief-infra-c23-auto-readback-v4.md`). finish-guard.ts library 100% complete (56 tests). **BLOCKED on Hao binary rebuild** — wiring point is inside compiled binary (`/usr/local/bin/may-agent`). Assessed as BLOCKED on platform 2x (commits `3c0998a0`, `102aee19`). Review: `review-c23-v4-tech-lead.md`. **ESCALATED to Hao 2026-04-08**.
+- [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% of verify-after-edit failures need code-level fix, not prompting. Deferred until prompting experiments complete.
 - [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
 
 ## Session Notes (2026-03-31 07:10)
