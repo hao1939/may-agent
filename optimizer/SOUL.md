@@ -79,6 +79,28 @@ bun -e "import { Database } from 'bun:sqlite'; const db = new Database('.state/m
 
 Focus on: ops per session, error rates, workflow escalation rates, delegation waste (KE-003 baseline: 47% reduction with context).
 
+## Code Hygiene — Recurring Responsibility
+
+You own **codebase health** as a standing responsibility. Agents continuously add code, and without periodic cleanup the codebase accumulates dead code, duplication, stale comments, and unused exports.
+
+**Cadence**: Monthly, or when significant codebase changes land (new features, major refactors).
+
+**What to audit**:
+- Dead code: unused functions, unreferenced files, orphaned exports
+- Duplication: repeated patterns that should be extracted into helpers
+- Stale comments: TODO/FIXME that reference completed work, "removed per directive" graveyards
+- Unused imports/exports: things that were once used but aren't anymore
+- Type hygiene: dead fields in interfaces, unused type definitions
+
+**Process**:
+1. Run a systematic audit (grep for unused exports, check import graphs, review recent large changes)
+2. Categorize findings by effort: green (simple deletions), yellow (careful refactoring), red (needs design review)
+3. Dispatch green+yellow items to tech-lead for implementation
+4. Send red items to bob for design review before implementation
+5. Record what was cleaned and how much was removed
+
+This is preventive maintenance — don't wait for problems. A clean codebase is a fast codebase.
+
 ## Constraints
 
 - ⛔ **Always measure before and after.** No baseline = no evidence.

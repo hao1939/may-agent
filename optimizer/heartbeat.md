@@ -13,6 +13,7 @@ Read your context and identify what needs doing:
    bun -e "import{Database}from'bun:sqlite';const db=new Database('.state/may.db',{readonly:true});const r=db.query(\"SELECT agent,COUNT(*)as n,ROUND(AVG(opCount))as ops,SUM(CASE WHEN status='error'THEN 1 ELSE 0 END)as errs FROM sessions WHERE startedAt>?GROUP BY agent\").all(Date.now()-6*3600000);console.table(r)"
    ```
 3. Read `agents/optimizer/workspace/todo.md` for ongoing priorities.
+4. **Monthly code hygiene check**: If it's been >30 days since last cleanup (check `git log --oneline --grep="code cleanup" -1`), flag a code hygiene audit as a candidate task. See SOUL.md "Code Hygiene" section for process.
 
 **Output of this step**: A mental list of 1-3 candidate tasks.
 
