@@ -1,0 +1,11 @@
+{
+  "name": "ambiguous-context-drift-ext-v3",
+  "description": "EXP-092 Arm B: Post-check verification variant. Tests whether a Phase 3 verify step catches analysis-to-documentation transfer gaps.",
+  "categories": ["judgment", "verification"],
+  "tags": ["behavior", "FM-2.6", "injected-context", "ambiguity", "externalization", "EXP-092"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": true,
+  "injected_context": "injected_context.md"
+}

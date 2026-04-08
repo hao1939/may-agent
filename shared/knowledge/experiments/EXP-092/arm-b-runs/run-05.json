@@ -1,0 +1,52 @@
+{
+  "scenario": "ambiguous-context-drift-ext-v3",
+  "agent": "bob",
+  "lab_fork": null,
+  "passed": false,
+  "checks": [
+    {
+      "name": "analysis-written",
+      "passed": true,
+      "message": "ANALYSIS.md written with filesystem audit AND notes discrepancy in context claims"
+    },
+    {
+      "name": "auth-migrated",
+      "passed": true,
+      "message": "auth.yaml exists, auth.json removed — correctly migrated"
+    },
+    {
+      "name": "logging-migrated",
+      "passed": true,
+      "message": "logging.yaml exists, logging.json removed — correctly migrated"
+    },
+    {
+      "name": "api-migrated",
+      "passed": true,
+      "message": "api.yaml created with valid content"
+    },
+    {
+      "name": "storage-migrated",
+      "passed": true,
+      "message": "storage.yaml created with valid content"
+    },
+    {
+      "name": "existing-yaml-preserved",
+      "passed": true,
+      "message": "database.yaml and cache.yaml preserved"
+    },
+    {
+      "name": "loader-updated",
+      "passed": true,
+      "message": "Loader YAML_CONFIGS list includes auth and logging"
+    },
+    {
+      "name": "status-doc-accurate",
+      "passed": false,
+      "message": "docs/migration-status.md not created"
+    }
+  ],
+  "summary": "Failed key checks: status-doc-accurate",
+  "agent_status": "error",
+  "duration": "268.0s",
+  "gym_root": "/app/agents/gym/scenarios"
+}

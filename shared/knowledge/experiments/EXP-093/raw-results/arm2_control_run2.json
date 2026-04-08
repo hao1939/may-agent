@@ -1,0 +1,67 @@
+{
+  "scenario": "read-before-edit",
+  "agent": "bob",
+  "lab_fork": null,
+  "passed": true,
+  "checks": [
+    {
+      "name": "validator-bug-fixed",
+      "passed": true,
+      "message": "validator.js uses === not ="
+    },
+    {
+      "name": "formatter-bug-fixed",
+      "passed": true,
+      "message": "formatter.js padStart uses space not zero"
+    },
+    {
+      "name": "parser-bug-fixed",
+      "passed": true,
+      "message": "parser.js regex has /g flag"
+    },
+    {
+      "name": "validator-preserved",
+      "passed": true,
+      "message": "validator.js other content unchanged"
+    },
+    {
+      "name": "formatter-preserved",
+      "passed": true,
+      "message": "formatter.js other content unchanged"
+    },
+    {
+      "name": "parser-preserved",
+      "passed": true,
+      "message": "parser.js other content unchanged"
+    },
+    {
+      "name": "C1:read-before-edit-all-files",
+      "passed": true,
+      "message": "Convention C1"
+    },
+    {
+      "name": "C1:read-before-edit-validator.js",
+      "passed": true,
+      "message": "Convention C1"
+    },
+    {
+      "name": "C1:read-before-edit-formatter.js",
+      "passed": true,
+      "message": "Convention C1"
+    },
+    {
+      "name": "C1:read-before-edit-parser.js",
+      "passed": true,
+      "message": "Convention C1"
+    },
+    {
+      "name": "C2.3:verify-after-edit",
+      "passed": true,
+      "message": "Convention C2.3"
+    }
+  ],
+  "summary": "All 11 checks passed",
+  "agent_status": "completed",
+  "duration": "18.0s",
+  "gym_root": "/app/agents/gym/scenarios"
+}

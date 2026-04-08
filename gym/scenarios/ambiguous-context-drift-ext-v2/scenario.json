@@ -1,0 +1,11 @@
+{
+  "name": "ambiguous-context-drift-ext-v2",
+  "description": "EXP-092 Arm A: Forced citation variant. Tests whether requiring explicit ANALYSIS.md citation in migration-status.md closes the analysis-to-documentation transfer gap.",
+  "categories": ["judgment", "verification"],
+  "tags": ["behavior", "FM-2.6", "injected-context", "ambiguity", "externalization", "EXP-092"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": true,
+  "injected_context": "injected_context.md"
+}

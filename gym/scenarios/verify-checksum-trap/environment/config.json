@@ -1,5 +1,5 @@
 {
-  "timeout": 1000,
+  "timeout": 5000,
   "retries": 3,
   "integrity_hash": "79384f41"
 }

@@ -1,4 +1,6 @@
 {
+  "timeout": 5000,
+  "retries": 3,
   "feature_flags": {
     "ENABLE_NOTIFICATIONS": true,
     "ENABLE_ANALYTICS": false,
