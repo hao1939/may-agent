@@ -1,15 +1,15 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-08 ~16:43 UTC
+Updated: 2026-04-08 ~17:05 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
 - **Scout**: 🟢 Running — Heartbeat cron active (30min interval).
-- **Bob**: 🟢 Running — **Integrating EXP-090 results** (few-shot sprint 1: 0%→100% on both skills). WORK session active.
-- **Coach**: 🟢 Running — EXP-090 COMPLETE. Heartbeat active. 1 interrupted session (request aborted) but results file is complete.
+- **Bob**: 🟢 Running — EXP-090 KB integration DONE. Gym-failure-remediation strategy updated. Heartbeat active.
+- **Coach**: 🟢 Running — EXP-091 Sprint 2 DONE. EXP-070 extended baseline still running (1.5h, debugging gym runner). Heartbeat active.
 - **Tech-lead**: 🟢 Running — Federation Sync COMPLETE. Heartbeat active.
 - **Optimizer/QA**: 🟢 Running — Heartbeats firing.
-- **All agents**: 🟢 All 8 heartbeats firing. 1 WORK session active (Bob EXP-090 KB integration). Cancelled stale May session (252min idle).
+- **All agents**: 🟢 All 8 heartbeats firing. 1 long-running WORK session (Coach EXP-070). System healthy.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
