@@ -1,15 +1,15 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-08 ~16:13 UTC
+Updated: 2026-04-08 ~16:43 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
 - **Scout**: 🟢 Running — Heartbeat cron active (30min interval).
-- **Bob**: 🟢 Running — Integrating EXP-070 results (externalization NOT significant on ambiguous-context-drift). WORK session active.
-- **Coach**: 🟢 Running — **EXP-090 treatment runs ACTIVE** (know-when-blocked + evidence-over-narrative few-shot). EXP-070 extended COMPLETE.
+- **Bob**: 🟢 Running — **Integrating EXP-090 results** (few-shot sprint 1: 0%→100% on both skills). WORK session active.
+- **Coach**: 🟢 Running — EXP-090 COMPLETE. Heartbeat active. 1 interrupted session (request aborted) but results file is complete.
 - **Tech-lead**: 🟢 Running — Federation Sync COMPLETE. Heartbeat active.
 - **Optimizer/QA**: 🟢 Running — Heartbeats firing.
-- **All agents**: 🟢 All 8 heartbeats firing. 2 WORK sessions active (Bob EXP-070 KB, Coach EXP-090). No errors in last hour.
+- **All agents**: 🟢 All 8 heartbeats firing. 1 WORK session active (Bob EXP-090 KB integration). Cancelled stale May session (252min idle).
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -39,7 +39,9 @@ Updated: 2026-04-08 ~16:13 UTC
 | Pre-merge review gate | ✅ Phase 1 done | - | Hook installed, needs Phase 2 (auto-review) |
 | **Federation Sync Redesign** | ✅ COMPLETE | tech-lead | **P0 from Hao**. Ownership-aware conflict resolution in agents-auto-commit.ts (348→692 lines). Instance config, heartbeat writing, federation dirs. TSC clean. Auto-committed and pushed. Session `s_1775659647453_55`. |
 | Few-Shot Conversion Sprint Plan | ✅ COMPLETE | bob | Plan at `agents/bob/workspace/few-shot-conversion-plan.md`. Top 5: know-when-blocked (#1), evidence-over-narrative (#2), investigate-and-fix (#3), obstacle-pivot (#4), read-before-edit (#5). Sprint 1 dispatched to coach. |
-| Few-Shot Sprint 1 | 🏃 RUNNING | coach | Now **EXP-090**. Previous runs: `escalation-impossible-task-fewshot` 4/5 x3 (vs 2/5 baseline = +100%). `misleading-test-fix-fewshot` **8/8** on run 2 (vs 4/8 baseline). EXP-090 treatment runs just forked. |
+| Few-Shot Sprint 1 (EXP-090) | ✅ COMPLETE | coach | **MAJOR**: Both skills 0%→100%. know-when-blocked 0/3→3/3 (5/5 checks). evidence-over-narrative 0/3→3/3 (8/8 checks). H-091 P(H) → 0.98. Results at `agents/shared/knowledge/experiments/EXP-090/results.md`. |
+| EXP-090 KB Integration | 🏃 RUNNING | bob | Forked just now. Updating H-091 to P(H)=0.98, integrating Sprint 1 results. |
+| EXP-070 KB Integration | ✅ COMPLETE | bob | Externalization NOT significant on ambiguous-context-drift. Integrated null result. |
 | EXP-087 KB Integration | ✅ COMPLETE | bob | Bob session completed. EXP-089 results also integrated. |
 
 ## Completed/Archived
@@ -72,16 +74,18 @@ Updated: 2026-04-08 ~16:13 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (16:33)
-- **EXP-090: ✅ COMPLETE** — **MAJOR RESULT**: Both few-shot skills hit 100% (vs 0% baseline). know-when-blocked: 0/3→3/3. evidence-over-narrative: 0/3→3/3. H-091 P(H) now 0.98. Bob integrating into KB.
-- **EXP-070 Extended: 🏃 RUNNING** — Coach running 20 gym runs (10 baseline + 10 treatment) on ambiguous-context-drift. ~60min in, expected to finish soon.
-- **System: All healthy** — No errors, no failures, all 8 heartbeats firing. Productive cycle.
+## Latest Cycle Summary (16:43)
+- **EXP-090 COMPLETE — MAJOR RESULT**: Both few-shot converted skills hit **100% pass rate** (vs 0% baseline). know-when-blocked: 0/3→3/3 (5/5 checks). evidence-over-narrative: 0/3→3/3 (8/8 checks). H-091 P(H) updated to 0.98. This is the strongest evidence yet that matched few-shot examples are the key intervention for judgment skills.
+- **Bob EXP-090 KB Integration: 🏃 RUNNING** — Just forked. Integrating Sprint 1 results, updating H-091.
+- **EXP-070 KB Integration: ✅ COMPLETE** — Null result (externalization NOT significant) integrated.
+- **Cancelled stale May session** — s_1775311714523_3 was idle 252min.
+- **System: All healthy** — All 8 heartbeats firing. 1 failure in last hour (Coach EXP-090 session interrupted by request abort, but results were already written).
 
 ## Next Actions
-- **P1**: **Monitor EXP-070 Extended completion** — When done, review results and have Bob integrate. Tests whether externalization helps on ambiguous-context-drift (N=10 per group).
-- **P1**: **Monitor EXP-090 KB integration** — Bob forking soon. Verify H-091 updated to 0.98, KE-059 updated.
+- **P1**: **Monitor EXP-090 KB integration** — Bob session running. Verify H-091 updated to 0.98, KE-059 updated.
+- **P1**: **Deploy few-shot skills to production** — know-when-blocked and evidence-over-narrative both validated at 100%. Need to promote to coder/other agent skill files. Dispatch to coach.
+- **P1**: **Few-Shot Sprint 2** — Bob's conversion plan has 3 more skills: investigate-and-fix (#3), obstacle-pivot (#4), read-before-edit (#5). Dispatch to coach when Sprint 1 deployment is done.
 - **P1**: **Present auto-loop decision brief to Hao** — at `agents/may/workspace/auto-loop-decision-brief.md`.
 - **P1**: **Resolve EXP-088 naming conflict** — Coach's EXP-088 (skill format test) vs Bob's EXP-088 (workaround gradient). Need to renumber one.
 - **P1**: Federation design ready for Hao review — present summary when available
 - **P2**: Pre-merge review gate Phase 2 (auto-review) — needs design
-- **P2**: Deploy few-shot skills to production — know-when-blocked and evidence-over-narrative now validated at 100%. Promote to coder skill files.

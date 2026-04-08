@@ -91,6 +91,35 @@ bash("npx tsc --noEmit")      → Zero type errors
 **Anti-pattern**: Claiming "done" based on the edit alone. An edit that compiles but
 doesn't fix the issue is worse than no edit — it gives false confidence.
 
+## Worked Example: Debugging an API Endpoint Crash
+
+An engineer was asked to fix a `/api/products/:id` endpoint that returned 500 errors for some product IDs. The error was `TypeError: Cannot read properties of undefined (reading 'price')`.
+
+**Step 1 — Reproduce first (before touching any code):**
+```
+$ node test.js
+  ✅ standard product returns correctly
+  ❌ imported product with nested pricing fails: Cannot read properties of undefined (reading 'price')
+  ❌ product with missing price crashes
+  ✅ invalid product ID returns 404
+2 passed, 2 failed out of 4 tests
+```
+The engineer ran tests FIRST to see the actual failure pattern. This revealed that 2 products failed (not just 1), pointing toward the data layer.
+
+**Step 2 — Read the data layer (not just the API handler):**
+The engineer read `products-db.js` and found product #2 used `pricing.amount` instead of `price` — an imported format. This was the ROOT CAUSE, not just a null check issue. Without reading the data file, the fix would have been incomplete.
+
+**Step 3 — Fix with full understanding:**
+Updated the handler to handle all three cases: standard `price`, imported `pricing.amount`, and null/missing. One surgical edit addressing the real root cause.
+
+**Step 4 — Verify:**
+```
+$ node test.js
+4 passed, 0 failed out of 4 tests
+```
+
+**Key insight**: Running tests before editing revealed the failure pattern that pointed to the data layer. Without reproduce-first, the engineer would have guessed "null check" and missed the imported format entirely.
+
 ## Evidence From Real Sessions
 
 ### Pattern Match: Tech-lead fixing convention-check handler (s_1773924664831_95)
