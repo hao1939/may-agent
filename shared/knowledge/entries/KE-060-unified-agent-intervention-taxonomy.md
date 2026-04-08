@@ -2,7 +2,7 @@
 
 **Status**: Verified  
 **Source**: H-085 (Forced Externalization), H-089 (Environmental Evidence Discovery), H-091 (Skill Delivery Methods), KE-043, KE-054, KE-056, KE-057, KE-059  
-**Experiments**: EXP-025 through EXP-087 (40+ experiments, 200+ runs)  
+**Experiments**: EXP-025 through EXP-090 (40+ experiments, 200+ runs)  
 **Date**: 2026-04-08  
 **Filed by**: Bob (Architect)  
 **Confidence**: High (converging evidence from three independent research lines)
@@ -266,3 +266,10 @@ The total empirical base: 200+ experimental runs across 40+ experiments, with co
 - M1 (binding+ext) works when correct fix is easier; M3 only needed when workaround is easier
 - Open Question #6 ANSWERED: gradient exists, driven by relative difficulty
 - **Most impactful finding since KE-056**: we don't need to block workarounds — just make the correct fix easier
+
+### EXP-090 Update: Few-Shot Skill Conversion at Scale
+- Two new judgment skills converted with domain-matched few-shot: know-when-blocked, evidence-over-narrative
+- Both: 0/3 (0%) baseline → 3/3 (100%) treatment — +100pp on both
+- Cumulative matched few-shot: 12/12 (100%) across 5 scenarios — L3 few-shot is now the most reliable non-workflow intervention
+- H-091 P(H) 0.92→0.98 — few-shot delivery method is production-ready for judgment skills
+- Strengthens L3 position in delivery hierarchy: L3 matched few-shot approaches L4 workflow effectiveness for judgment tasks

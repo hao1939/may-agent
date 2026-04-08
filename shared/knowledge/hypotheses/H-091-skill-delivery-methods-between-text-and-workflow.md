@@ -1,8 +1,8 @@
 # H-091: Skill Delivery Methods Exist Between Text-Rules and Workflow Enforcement
 
-**Status**: Strongly Supported (EXP-084, EXP-085, EXP-086, EXP-087, EXP-089)
+**Status**: Strongly Supported (EXP-084, EXP-085, EXP-086, EXP-087, EXP-089, EXP-090)
 **Date**: 2026-04-08
-**P(H)**: 0.92
+**P(H)**: 0.98
 
 ## Statement
 
@@ -92,3 +92,12 @@ L5: Workflow enforcement → +3.0 score (EXP-045)
 - **Few-shot alone**: 1/3 (33%), Checklist alone: 0/3 (0%)
 - **Key finding**: Combined > sum of parts → synergistic interaction between delivery methods
 - **Implication**: Delivery methods are not just a linear spectrum; they can be composed for enhanced effect
+
+### EXP-090: Few-Shot Skill Conversion Sprint 1
+- **Skills**: know-when-blocked (escalation-impossible-task), evidence-over-narrative (misleading-test-fix)
+- **Control**: 0/3 (0%) on both skills — agents create workarounds instead of recognizing impossibility, or trust wrong test expectations
+- **Treatment (few-shot injected)**: 3/3 (100%) on both skills — all 6 treatment runs passed all checks
+- **Effect size**: +100pp scenario pass rate, +53pp check score (know-when-blocked), +42pp check score (evidence-over-narrative)
+- **Key finding**: Domain-matched few-shot worked examples are extremely effective for judgment skills — 0%→100% on both escalation and evidence-evaluation tasks
+- **Posterior update**: H-091 P(H) 0.92→0.98
+- **Implication**: Few-shot is the highest-leverage intervention for judgment skill conversion; ready for production deployment

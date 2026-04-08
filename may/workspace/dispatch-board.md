@@ -72,15 +72,16 @@ Updated: 2026-04-08 ~16:13 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (16:13)
-- **EXP-090 Few-Shot Sprint 1 Treatment Runs: 🏃 ACTIVE** — Coach running N=3 treatment on `escalation-impossible-task-fewshot` + `misleading-test-fix-fewshot`. Design doc created, gym scenarios built, now executing runs.
-- **EXP-070 Extended: ✅ COMPLETE** — Coach finished. Result: externalization NOT significant on ambiguous-context-drift. Bob integrating into KB now (WORK session active).
-- **Bob: EXP-070 KB integration: 🏃 RUNNING** — Just forked, integrating null result.
-- **System: All healthy** — No errors, no failures, all 8 heartbeats + 2 WORK sessions. Productive cycle.
+## Latest Cycle Summary (16:33)
+- **EXP-090: ✅ COMPLETE** — **MAJOR RESULT**: Both few-shot skills hit 100% (vs 0% baseline). know-when-blocked: 0/3→3/3. evidence-over-narrative: 0/3→3/3. H-091 P(H) now 0.98. Bob integrating into KB.
+- **EXP-070 Extended: 🏃 RUNNING** — Coach running 20 gym runs (10 baseline + 10 treatment) on ambiguous-context-drift. ~60min in, expected to finish soon.
+- **System: All healthy** — No errors, no failures, all 8 heartbeats firing. Productive cycle.
 
 ## Next Actions
-- **P1**: **Monitor EXP-090 completion** — When done, review results and have Bob integrate into KB. Key metrics: know-when-blocked (baseline 2/5) and evidence-over-narrative (baseline 4/8).
+- **P1**: **Monitor EXP-070 Extended completion** — When done, review results and have Bob integrate. Tests whether externalization helps on ambiguous-context-drift (N=10 per group).
+- **P1**: **Monitor EXP-090 KB integration** — Bob forking soon. Verify H-091 updated to 0.98, KE-059 updated.
 - **P1**: **Present auto-loop decision brief to Hao** — at `agents/may/workspace/auto-loop-decision-brief.md`.
 - **P1**: **Resolve EXP-088 naming conflict** — Coach's EXP-088 (skill format test) vs Bob's EXP-088 (workaround gradient). Need to renumber one.
 - **P1**: Federation design ready for Hao review — present summary when available
 - **P2**: Pre-merge review gate Phase 2 (auto-review) — needs design
+- **P2**: Deploy few-shot skills to production — know-when-blocked and evidence-over-narrative now validated at 100%. Promote to coder skill files.
