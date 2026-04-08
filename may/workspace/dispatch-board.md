@@ -1,15 +1,15 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-08 ~17:30 UTC
+Updated: 2026-04-08 ~20:17 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Scout**: 🟢 Running — Heartbeat cron active (30min interval).
-- **Bob**: 🟢 Running — EXP-092 designed. EXP-091 Sprint 2 KB integration pending (H-091 0.98→0.99). Heartbeat active.
-- **Coach**: 🟢 Running — EXP-070 INTERRUPTED (99min watchdog). Sprint 3 next. Heartbeat active.
-- **Tech-lead**: 🟢 Running — Federation Sync COMPLETE. Heartbeat active.
+- **Scout**: 🟢 Running — Heartbeat complete. Session 313 triage gap noted, re-dispatch as Session 316.
+- **Bob**: 🟢 Running — Designing EXP-093 (Sprint 3: read-before-edit + verify-before-finish). EXP-091+070 KB integration DONE.
+- **Coach**: 🟢 Running — Forked EXP-092 gym trials (s_1775679537672_183) + Bob FM-1.3 growth cycle (s_1775679553637_184).
+- **Tech-lead**: 🟢 Running — Reviewing C2.3 Auto-Readback design brief (s_1775679506847_182).
 - **Optimizer/QA**: 🟢 Running — Heartbeats firing.
-- **All agents**: 🟢 All 8 heartbeats firing. No long-running sessions. System healthy.
+- **All agents**: 🟢 All 8 heartbeats firing. 30 coder zombie sessions cleaned up from ~2.5h outage. System recovered.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -46,6 +46,10 @@ Updated: 2026-04-08 ~17:30 UTC
 | EXP-070 Extended Baseline | ❌ INTERRUPTED | coach | 99min watchdog timeout. Was debugging gym runner scoring bug (0/0 results from cleanup timing). Needs retry. |
 | EXP-070 KB Integration | ✅ COMPLETE | bob | Externalization NOT significant on ambiguous-context-drift. Integrated null result. |
 | EXP-092 Design | ✅ DESIGNED | bob | Forced analysis-to-documentation transfer. 2 arms: forced citation + post-check. Addresses EXP-070 transfer gap (10/10 analysis correct but only 6/10 transferred). |
+| EXP-092 Gym Trials | ⏳ RUNNING | coach | Session s_1775679537672_183. N=10 per arm on ambiguous-context-drift variants. Prior attempts errored during ~2.5h outage. |
+| EXP-093 Design (Sprint 3) | ⏳ IN PROGRESS | bob | Bob designing few-shot for read-before-edit + verify-before-finish. Builds on EXP-091 process discipline success. |
+| Bob FM-1.3 Growth Cycle | ⏳ RUNNING | coach | Session s_1775679553637_184. Targeting path-guessing/flailing (up to 29 wasted calls per incident). |
+| C2.3 Auto-Readback Review | ⏳ RUNNING | tech-lead | Session s_1775679506847_182. Reviewing Bob's design brief for auto-readback after write/edit. |
 | EXP-087 KB Integration | ✅ COMPLETE | bob | Bob session completed. EXP-089 results also integrated. |
 
 ## Completed/Archived
@@ -78,19 +82,21 @@ Updated: 2026-04-08 ~17:30 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (17:30)
-- **EXP-070 Extended Baseline: ❌ INTERRUPTED** — Watchdog timeout at 99min. Coach was debugging gym runner scoring bug. Needs retry in a fresh session.
-- **EXP-092 DESIGNED** — Bob designed forced analysis-to-documentation transfer experiment. 2 arms (forced citation + post-check). Ready for coach to run.
-- **EXP-091 Sprint 2 KB Integration: ⏳ PENDING** — Bob needs to update H-091 P(H) 0.98→0.99. Bob currently in heartbeat, should pick up.
-- **1 coach interruption** — EXP-091 Sprint 2 work session aborted at 6min (s_1775667823001_108). Sprint 2 results already captured, so no data loss.
-- **System: All healthy** — All 8 heartbeats firing. No long-running sessions.
+## Latest Cycle Summary (20:17)
+- **System recovered** — ~2.5h outage (connection errors ~17:30-20:00). 30 coder zombie sessions cleaned up by evaluator digest system. All agents restarted successfully.
+- **EXP-091 KB Integration: ✅ DONE** — Bob completed H-091 P(H) 0.98→0.99 update before outage.
+- **EXP-070 KB Integration: ✅ DONE** — Bob completed null result integration before outage.
+- **EXP-092: ⏳ RUNNING** — Coach forked gym trials session (s_1775679537672_183). Prior attempts errored during outage.
+- **EXP-093 Design: ⏳ IN PROGRESS** — Bob designing Sprint 3 (read-before-edit + verify-before-finish few-shot).
+- **Bob FM-1.3 Growth Cycle: ⏳ RUNNING** — Coach forked (s_1775679553637_184). Targeting Bob's path-guessing/flailing pattern.
+- **C2.3 Auto-Readback Review: ⏳ RUNNING** — Tech-lead reviewing Bob's design brief (s_1775679506847_182).
+- **Team self-dispatching well** — Coach, Bob, Tech-lead all found productive work autonomously this cycle.
 
 ## Next Actions
-- **P1**: **EXP-091 KB Integration** — Bob needs to update H-091 P(H) 0.98→0.99 with Sprint 2 process discipline evidence. Currently running heartbeat — should pick up.
-- **P1**: **Few-Shot Sprint 3** — Next skills: read-before-edit, verify-before-finish. Coach should design+run.
-- **P1**: **Deploy investigate-and-fix skill** — Coach needs to promote to coder/skills/ with few-shot.
-- **P1**: **EXP-092 ready to run** — Designed by Bob. Coach can run after Sprint 3 or interleave.
-- **P1**: **EXP-070 retry** — Extended baseline interrupted at 99min. Gym runner scoring bug still open. Coach needs fresh session.
+- **P1**: **Monitor EXP-092 + Bob FM-1.3** — Both running in coach work sessions. Check results next cycle.
+- **P1**: **Monitor EXP-093 design** — Bob designing. Once complete, coach should run Sprint 3 trials.
+- **P1**: **Deploy investigate-and-fix skill** — Coach needs to promote to coder/skills/ with few-shot (from EXP-091 Sprint 2).
+- **P1**: **EXP-070 retry** — Extended baseline still interrupted. Gym runner scoring bug unresolved. Coach needs fresh session after current work.
 - **P1**: **Present auto-loop decision brief to Hao** — at `agents/may/workspace/auto-loop-decision-brief.md`.
 - **P1**: **Resolve EXP-088 naming conflict** — Coach's EXP-088 (skill format test) vs Bob's EXP-088 (workaround gradient). Need to renumber one.
 - **P1**: Federation design ready for Hao review — present summary when available
