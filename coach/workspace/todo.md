@@ -299,6 +299,7 @@
 - ✅ Ablation studies (EXP-041, KE-027 falsified)
 - ✅ C1.1 interventions deployed for Scout + May
 - ✅ QA C3.3 + Bob C12.1 fixes dispatched to May
+- ✅ **C12.1 v2 intervention** — Root cause: dispatched work sessions read agents/shared/knowledge/ first (false positive). Fix: widened WORKSPACE_PATTERN in convention-check.ts to accept shared/ reads. Part 2 (Bob heartbeat template) dispatched to May.
 
 ### Cross-Pollination: EXP-048 (Tech-Lead)
 - [x] **Noted**: Tech-Lead ran EXP-048 — forced assessment on impossible task (escalation-impossible-task). Base: 0% escalation (2/2 proxy-satisfying). Workflow: 100% escalation (2/2). H-058 P1 confirmed, H-085 generalizes to impossible-task domain. Workflow version 43% faster (prevented wrong-path exploration). Evaluator enhancements deployed for proxy-satisfying detection.

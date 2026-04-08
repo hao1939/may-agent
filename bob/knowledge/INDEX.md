@@ -47,98 +47,17 @@ Read `agents/shared/philosophy.md` for the full 50+ principles.
 - `test/` — test files
 - `docs/` → symlink to `agents/shared/may-agent-docs/`
 
-## Available References
-Read on demand when relevant:
-- `knowledge/coaching.md` — coaching session notes
-- `knowledge/l3-collective-defense.md` — L3 Defense (OpBudget, Red Team, Monitor)
-- `knowledge/library/context-engineering.md` — context engineering research
-- `knowledge/library/archives/` — archives of old synthesis documents
+## Intervention Design Gate (KE-056)
+Before proposing ANY behavioral intervention, check the constraint hierarchy:
+- L5 action-space restriction (100%) — can we remove the wrong option entirely?
+- L4 mechanical enforcement (100%) — can code/workflow force the right behavior?
+- L3 experiential feedback (67%) — can we provide immediate error signals?
+- **L1-L2 text/instructions have 0% effectiveness. Do not use unless L3+ is infeasible.**
+
+## References (read on demand)
+- `agents/shared/skills/` — all skill guides (read specific ones when needed)
+- `agents/shared/knowledge/KNOWLEDGE-APPLICATION-AUDIT.md` — deployment gap analysis
+- `agents/shared/knowledge/summaries/KE-SUMMARIES.md` — one-liner KE summaries
+- `knowledge/library/` — research notes, context engineering, archives
 - `agents/shared/philosophy.md` — full design philosophy
-- `agents/shared/best-practices.md` — operational best practices
-- `agents/shared/skills/` — full skill guides
-- `agents/shared/skills/agent-gym/SKILL.md` — gym scenario format, how to
-  design scenarios for specific failure modes (you design, Coach runs)
-- `agents/shared/team.md` — full team roster with tools and models
-- `agents/shared/roadmap.md` — system roadmap
-- `agents/shared/skills/error-handling/SKILL.md` — error recovery patterns:
-  tool grounding (only call tools that exist — no fork_agent/verify_agent),
-  retry loop, validation. Anti-patterns: reasoning-action mismatch (FM-2.6,
-  11 occurrences in your sessions — fabrication, substitution, requirement drift).
-- `agents/shared/skills/obstacle-pivot/SKILL.md` — structured fallback strategy
-  when a tool call fails: classify obstacle → select from fallback ladder →
-  execute immediately (same turn). Covers: missing tool (exit 127), missing
-  path (ENOENT), edit mismatch, output overflow, guardrail blocks. Max 3
-  attempts then move on. Key anti-pattern for you: "silent proceed" — when
-  a tool errors, acknowledge it and try a fallback, don't just continue.
-- `agents/shared/skills/state-check-before-action/SKILL.md` — before every
-  state-mutating operation (edit, write, destructive bash), verify preconditions
-  with a read-only tool call. Read before every edit (copy exact oldText from
-  tool output), verify paths before referencing, re-read after sequential edits.
-  Critical for you: your sessions show the worst-case anti-pattern (89/92 edit
-  failures from stale mental models). This skill prevents that cascade.
-- `agents/shared/skills/budget-before-act/SKILL.md` — estimate turn budget
-  upfront, create deliverable skeletons early, checkpoint at 50%/75% marks.
-  Targets FM-3.1 (premature termination) — you have 4 FM-3.1 cases (13% of total).
-  Key anti-pattern for you: "silent proceed" after errors eats your turn budget.
-  Budget upfront so you know when to stop exploring and start writing output.
-- `agents/shared/skills/delegation-verification/SKILL.md` — verify delegated
-  work is registered before closing your session. After every `agents({ action:
-  "send" })`, confirm the request appears in `agents({ action: "requests" })`
-  before calling `finish()`. Document delegations as "delegated to [agent]", not
-  as completed work. You delegate the most (3/5 unverified in evidence window) —
-  this skill closes that gap with a SEND → RECORD → VERIFY → DOCUMENT pattern.
-- `agents/shared/skills/idempotent-work-detection/SKILL.md` — before starting
-  any task, check if the work is already done. Quick state check in turn 1,
-  decide in turn 2. Prevents 3-8 wasted turns per incident.
-- `agents/shared/skills/evidence-over-narrative/SKILL.md` — when narrative
-  cues (heartbeat checklists, task descriptions, prior beliefs) conflict with
-  runtime evidence (file timestamps, system state, actual contents), trust the
-  evidence. Check if files have changed BEFORE re-reading them. You read
-  focus-tasks.md (19KB) in 100% of sessions and pending-decisions.md (26KB)
-  in 71% — even when unchanged. ~77KB/session of boilerplate reads. Before
-  processing a large file, verify it has new content (check modified time or
-  diff against last known state). If nothing changed, skip and note why.
-- `agents/shared/skills/incremental-context-loading/SKILL.md` — gate context
-  file reads on change detection before loading. You are the #1 beneficiary:
-  you read focus-tasks.md (19KB) in 5/5 sessions with 0/5 having changes
-  (95KB wasted), and pending-decisions.md (26KB) in 71% of sessions unchanged
-  (91KB wasted). ~77KB/session of boilerplate reads. The protocol: at session
-  start, run `stat -c '%Y %n'` on your standard context files and compare
-  against stored timestamps from your last checkpoint. If unchanged, skip the
-  read and state what you remember about the file. If changed, read normally.
-  Store timestamps at session end for the next session.
-- `agents/shared/skills/task-adherence/SKILL.md` — follow task instructions
-  precisely: extract a checklist BEFORE starting, execute steps in order,
-  write to the exact files named, and verify every claim with in-session
-  tool evidence. Prevents goal drift, wrong deliverables, skipping prerequisites,
-  and overclaiming. Your architecture sessions involve multi-step plans and
-  named output files — this skill ensures you produce the specified deliverable
-  rather than an adjacent-but-wrong artifact. Protocol: Parse → Checklist →
-  Execute in order → Verify before finish.
-- `agents/shared/skills/scope-discipline/SKILL.md` — finish what you started.
-  Your heartbeat sessions show the pattern: start Task A, discover Task B during
-  file reads, switch to Task B, finish neither. The fix: DECLARE scope in your
-  first response, LOG discoveries as TODOs instead of acting on them, COMPLETE
-  primary task before expanding. Exception: if a discovery blocks your current
-  task and can be resolved in 1 turn, fix it. Otherwise, log and continue.
-  Gym tested: 3/3 pass on scope-creep-trap scenario.
-- `agents/shared/skills/verification-consistency/SKILL.md` — maintain read-back
-  verification at a consistent rate throughout your entire session, not just for
-  the first few edits. You have a 0% verification rate across 30 edits in 10
-  sessions — the worst of any agent. Every edit must get a read-back within 3
-  tool calls, regardless of position in the session. This is a companion to the
-  verification skill — it addresses WHEN verification is skipped (later edits,
-  same-file edits, end-of-session), not what or how to verify. Anti-patterns:
-  first-edit-only verification, end-of-session rush, "the edit tool works fine"
-  trust. Gym tested: 3/3 pass on convention-verify-multi-edit scenario.
-- `agents/shared/skills/progressive-work-persistence/SKILL.md` — save
-  intermediate work products to disk as each deliverable completes, rather than
-  buffering all output in context until the end. Your architecture sessions
-  involve multi-step plans with named output files — if the session ends
-  unexpectedly, any unwritten deliverables are lost. Write each deliverable
-  immediately after completion, checkpoint after major state changes (15-20 ops
-  between checkpoints max), and save before risky operations (complex edits,
-  delegations). Anti-patterns: delayed batch (completing 3+ deliverables then
-  writing all at end), checkpoint-free long sessions (40+ ops with zero saves),
-  context-only analysis (findings exist only in conversation). Gym tested: 3/3
-  pass on progressive-work-persistence scenario.
+- `agents/shared/team.md` — team roster

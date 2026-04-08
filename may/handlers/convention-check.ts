@@ -806,7 +806,9 @@ function checkC12_1_sessionStart(toolCalls: ToolCall[], agent: string): CheckRes
 
   // Agent workspace reads also count as orientation (e.g., QA reading
   // last-reviewed-commit.txt, Coach reading diagnosis-*.md)
-  const WORKSPACE_PATTERN = new RegExp(`agents/${agent}/(workspace|knowledge)/`);
+  // Also accept agents/shared/ reads — reading shared knowledge IS orientation.
+  // (Fixes false positives on dispatched work sessions that read shared knowledge first.)
+  const WORKSPACE_PATTERN = new RegExp(`agents/(${agent}|shared)/(workspace|knowledge|skills)/`);
 
   // Orientation tools that aren't read() but still show the agent is
   // getting context before acting

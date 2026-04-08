@@ -1,6 +1,6 @@
 # H-087: Constitutional Externalization — Forced Externalization Operates at Three Recursive Levels
 
-**Status**: Proposed — Theoretical. Supported by structural argument (KE-038) and indirect evidence (KE-043, KE-044, KE-033). EXP-072 provides indirect support: scenario-level architecture (blocking workarounds mathematically) forces correct fixes at 100% — validating that structural constraints at higher levels (scenario design ≈ harness level) are more powerful than task-level externalization.
+**Status**: P3 SUPPORTED (retrospective). Designed experiments produce KE entries 2.05x more often than ad-hoc ones (78.9% vs 38.5%, p≈0.013, N=51). Correlational, not causal — temporal/ambition/author confounds present. P(H) updated 0.65→0.72. Also supported by structural argument (KE-038) and indirect evidence (KE-043, KE-044, KE-033). EXP-072 provides indirect support at harness level.
 **Source**: KE-038 (Constitutional Bounded Self-Improvement), KE-043 (Forced Externalization Complete Picture), KE-044 (Verification Separation), KE-033 (Scale Invariance), H-085 (General Mechanism), H-055 (Self-Improvement Paradox), EXP-072 (workaround-resistant scenario design)
 **Date**: 2026-04-07
 **Filed by**: Bob (Architect)
@@ -123,22 +123,23 @@ EFFECTIVENESS:  L8 > L7 > L5-L6 > L3-L4 > L1-L2
 
 ## P(H) Assessment
 
-**P(H) = 0.65**
+**P(H) = 0.72** (updated from 0.65 after P3 retrospective analysis)
 
 Supporting factors:
 - Task-level mechanism is proven (H-085 P(H) = 0.92) and the structural pattern clearly repeats
 - Five independent research systems converge on harness-level externalization (KE-044)
 - KE-033 already demonstrated scale-invariance across two levels
 - H-055's empirical findings (additive drift) are consistent with the prediction about constitutional necessity
+- **P3 CONFIRMED**: Designed experiments produce KE entries 2.05x more often than ad-hoc (78.9% vs 38.5%, p≈0.013, N=51). Hypothesis resolution 1.82x, named hypothesis testing 2.39x, actionability 1.61x. See: experiments/H087-P3-retrospective-analysis.md
 
 Limiting factors:
-- No direct experimental test at harness or constitutional level yet
+- No direct experimental test at harness or constitutional level yet (P3 is correlational)
 - The "three levels" may be an arbitrary categorization — there could be more or fewer effective levels
 - P1 and P2 are testable but haven't been tested
+- P3 confounds: temporal (early experiments all designed + novel territory), ambition (designed = more deliberate hypothesis selection), author maturation (Coach's experiments evolved over time)
 - The analogy between task-level externalization (agent writes file) and constitutional-level externalization (human writes program.md) may be superficially similar but mechanistically different
-- Risk of theoretical overextension — H-085's strength comes from empirical grounding; H-087 extrapolates beyond data
 
-Would move to 0.80 if: P3 confirmed (retrospective shows designed experiments produce better knowledge) AND P1 confirmed (program.md removal → measurable drift). Would move to 0.90 if: P2 confirmed (self-modification of program.md shows systematic scope expansion). Would drop to 0.45 if: P3 disconfirmed (no difference between designed and ad-hoc experiments — harness-level externalization doesn't help). Would drop to 0.30 if: P1 disconfirmed (agents without program.md are equally stable).
+Would move to 0.80 if: P1 confirmed (program.md removal → measurable drift). Would move to 0.90 if: P2 confirmed (self-modification of program.md shows systematic scope expansion). Would drop to 0.45 if: P1 disconfirmed (agents without program.md are equally stable). Would drop to 0.55 if: prospective A/B on same hypothesis shows no design-document advantage (confounds explain P3).
 
 ---
 *H-087: Constitutional Externalization | Bob (Architect) | 2026-04-07 | Formalized from KE-038 §Q5 proposal*
