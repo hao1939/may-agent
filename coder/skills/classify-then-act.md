@@ -1,47 +1,70 @@
 # Skill: Classify-Then-Act
 
-**CRITICAL: Separate analysis from action. Never modify files before completing classification.**
-
 ## When to Apply
 
-Apply when a task involves **judgment before action**:
-- Ambiguous or conflicting instructions
-- Destructive or irreversible actions (deleting files, changing configs)
-- Multi-file changes where scope is unclear
-- Requests that might be misguided (user asks to delete files that may be critical)
+Before any task involving **judgment before action** — especially:
+- Destructive or irreversible actions (deleting files, dropping tables, overwriting configs)
+- Ambiguous requests where scope is unclear ("clean up everything", "remove unused stuff")
+- Multi-file changes where some items are safe and others are critical
 
 **Skip when**: Task is unambiguous and low-risk ("add a log line to function X").
 
-## Protocol
+## Key Principle
 
-### Phase 1: CLASSIFY (NO modifications allowed)
-Before touching ANY source/config files:
-1. Read ALL relevant files and configuration
-2. Classify each item:
-   - **ACTIONABLE** — clearly needs change, change is unambiguous → fix in Phase 2
-   - **UNCERTAIN** — might need change, but ambiguous → report, do NOT change
-   - **SAFE** — no change needed → leave alone
-   - **BLOCKED** — needs change but depends on external input → report as blocked
-3. Write the classification (structured list) before any edit
+**Separate classification from execution. Write a complete classification of every item BEFORE modifying anything. Never act on items classified as uncertain.**
 
-**HARD RULE**: In Phase 1, you may only use `read`, `bash` (read-only: grep, cat, ls), and `write` (only to workspace). NO `edit()` on source files.
+## Worked Example
 
-### Phase 2: ACT (only after classification is complete)
-1. Execute changes ONLY for ACTIONABLE items
-2. Read back each modified file to verify
-3. If new information invalidates classification → STOP and reclassify
+**Task**: "Remove all the unused stuff from `/opt/services/` to free disk space."
 
-### When to STOP instead of ACT
-- The task is ambiguous — multiple valid interpretations exist
-- You'd be GUESSING rather than KNOWING
-- Items classified UNCERTAIN stay untouched — report what you found
+### ❌ BAD: Act without classifying
+```
+# User says remove unused stuff — let's free space!
+bash("rm -rf /opt/services/*")
+# Deleted everything: redis-dump.rdb (only DB backup), nginx.conf (active config),
+# .credentials.yaml (API keys), plus the actually-safe temp files.
+# Result: outage + data loss.
+```
 
-**Reporting uncertainty IS delivery. A complete report with honest uncertainty is better than a complete fix with hidden guesses.**
+### ✅ GOOD: Classify every item first, then act only on safe items
+```
+# Step 1: List everything
+bash("ls -la /opt/services/")
+→ redis-dump.rdb       (48MB — Redis backup snapshot)
+  nginx.conf           (2KB — active reverse-proxy config)
+  .credentials.yaml    (1KB — service account API keys)
+  tmp/                 (120MB — session temp files, rotated daily)
+  build-cache/         (95MB — CI build artifacts, reproducible)
+  access.log.old       (30MB — rotated log, already archived to S3)
 
-## Anti-Patterns
-1. **Classification-in-Name-Only**: Writing "let me analyze..." then immediately editing. The classification MUST be a written artifact that exists BEFORE any edit calls.
-2. **Acting on UNCERTAIN items**: "It's probably this, so I'll fix it" — defeats the entire purpose.
-3. **Skipping for "obvious" fixes**: Classify ALL items before acting on ANY.
+# Step 2: Classify BEFORE deleting anything
+SAFE to delete (temporary/reproducible):
+  - tmp/              → session temp files, auto-regenerated
+  - build-cache/      → CI artifacts, can be rebuilt
+  - access.log.old    → already archived to S3
 
-## Full Reference
-See `agents/shared/skills/classify-then-act/SKILL.md` for complete protocol with examples.
+DESTRUCTIVE to delete (irreversible loss):
+  - redis-dump.rdb    → only database backup, cannot regenerate
+  - nginx.conf        → active config, server breaks without it
+  - .credentials.yaml → API keys, manual re-provisioning needed
+
+# Step 3: Delete ONLY safe items
+bash("rm -rf /opt/services/tmp /opt/services/build-cache /opt/services/access.log.old")
+
+# Step 4: Report what was kept and why
+"Freed 245MB. Kept redis-dump.rdb, nginx.conf, .credentials.yaml —
+deleting those would cause outage + data loss."
+```
+
+## The Pattern for Other Judgment Tasks
+
+| Scenario | Classify As | Action |
+|----------|------------|--------|
+| File deletion request | SAFE (temp/reproducible) vs DESTRUCTIVE (backups/configs/credentials) | Delete only SAFE items |
+| Config change request | ACTIONABLE (clearly needed) vs UNCERTAIN (ambiguous) | Change only ACTIONABLE items |
+| Multi-file refactor | IN-SCOPE (matches request) vs OUT-OF-SCOPE (unrelated) | Touch only IN-SCOPE files |
+| Permission changes | ROUTINE (app dirs) vs SENSITIVE (secrets/keys) | Change only ROUTINE items |
+
+## Assertion
+
+Before executing any destructive or irreversible action, you MUST have a written classification of every affected item. If you cannot clearly classify an item as safe/actionable, do NOT act on it — report the uncertainty instead. **Reporting uncertainty IS delivery.**
