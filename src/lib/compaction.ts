@@ -33,7 +33,7 @@ function messageTokens(msg: AgentMessage): number {
   return 0;
 }
 
-function totalTokens(messages: AgentMessage[]): number {
+export function totalTokens(messages: AgentMessage[]): number {
   let total = 0;
   for (const msg of messages) {
     total += messageTokens(msg);
