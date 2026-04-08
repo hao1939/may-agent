@@ -68,6 +68,7 @@ import {
   listWorkflowRuns,
   saveWorkflowRun,
   readCompactedMessages,
+  saveCompactedMessages,
   readArchivedSessionMessages,
   historyDir,
 } from "./persistence.js";
@@ -289,15 +290,59 @@ export class SubagentManager {
     });
   }
 
-  /** Build a transformContext function if compaction is enabled for this agent. */
+  /** Build a transformContext function if compaction is enabled for this agent.
+   *  When sessionId is provided, compacted messages are persisted to disk
+   *  after each compaction so that resumed sessions start from the compact
+   *  snapshot instead of replaying the full (potentially overflowing) history.
+   */
   private buildTransformContext(
     def: SubagentDefinition,
     compactionOverride?: boolean | CompactionOptions,
+    sessionId?: string,
   ): ((messages: AgentMessage[], signal?: AbortSignal) => Promise<AgentMessage[]>) | undefined {
     const compaction = compactionOverride ?? def.compaction;
     if (!compaction) return undefined;
     const compactionOpts: CompactionOptions = typeof compaction === "object" ? compaction : {};
-    return createCompactionTransform(def.model, compactionOpts);
+
+    const persistDir = this.registry.persistDir;
+    const innerOnCompact = compactionOpts.onCompact;
+    const bus = this.bus;
+
+    // Wrap onCompact to persist the compacted snapshot to disk.
+    // This ensures resumed sessions load the compact state, preventing
+    // the "168K token crash loop" where full JSONL always overflows.
+    const transform = createCompactionTransform(def.model, {
+      ...compactionOpts,
+      onCompact: (info) => {
+        innerOnCompact?.(info);
+        if (sessionId) {
+          bus?.emit({
+            type: "info",
+            message: `[compaction] Session ${sessionId}: ${info.messagesCompacted} msgs compacted, ${info.messagesKept} kept (${info.tokensBefore}→${info.tokensAfter} tokens, round ${info.compactionCount})`,
+          });
+        }
+      },
+    });
+
+    if (!sessionId) return transform;
+
+    // Wrap the transform to persist compacted messages after each compaction
+    return async (messages: AgentMessage[], signal?: AbortSignal): Promise<AgentMessage[]> => {
+      const result = await transform(messages, signal);
+      // If compaction occurred, the result will be shorter than the input
+      if (result.length < messages.length) {
+        try {
+          saveCompactedMessages(persistDir, sessionId, result);
+        } catch (err) {
+          // Non-fatal: persistence failure shouldn't break the agent loop
+          bus?.emit({
+            type: "warning",
+            message: `[compaction] Failed to persist compact snapshot for ${sessionId}: ${err instanceof Error ? err.message : String(err)}`,
+          });
+        }
+      }
+      return result;
+    };
   }
 
   /**
@@ -345,7 +390,7 @@ export class SubagentManager {
         }),
         ...(opts?.messages ? { messages: opts.messages } : {}),
       },
-      transformContext: opts?.compactionTransform ?? this.buildTransformContext(def),
+      transformContext: opts?.compactionTransform ?? this.buildTransformContext(def, undefined, sessionId),
       getApiKey: def.apiKey ? () => def.apiKey : undefined,
     });
   }
@@ -816,7 +861,7 @@ export class SubagentManager {
     ensureSessionDir(persistDir, sessionId);
     mkdirSync(outputDir, { recursive: true });
 
-    const compactionTransform = this.buildTransformContext(def, opts?.compaction);
+    const compactionTransform = this.buildTransformContext(def, opts?.compaction, sessionId);
     const agent = this.createAgent(def, sessionId, { compactionTransform });
 
     const session: ActiveSession = {
@@ -1178,7 +1223,7 @@ export class SubagentManager {
     const savedMessages = compactedMessages ?? readSessionMessages(persistDir, sessionId);
     const outputDir = sessionOutputDir(persistDir, sessionId);
 
-    const compactionTransform = this.buildTransformContext(def);
+    const compactionTransform = this.buildTransformContext(def, undefined, sessionId);
     const agent = this.createAgent(def, sessionId, { messages: savedMessages, compactionTransform });
 
     // Repair broken message sequences (mid-tool-call crash).
