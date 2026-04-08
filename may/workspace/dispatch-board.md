@@ -40,7 +40,10 @@ Updated: 2026-04-08 ~16:43 UTC
 | **Federation Sync Redesign** | ✅ COMPLETE | tech-lead | **P0 from Hao**. Ownership-aware conflict resolution in agents-auto-commit.ts (348→692 lines). Instance config, heartbeat writing, federation dirs. TSC clean. Auto-committed and pushed. Session `s_1775659647453_55`. |
 | Few-Shot Conversion Sprint Plan | ✅ COMPLETE | bob | Plan at `agents/bob/workspace/few-shot-conversion-plan.md`. Top 5: know-when-blocked (#1), evidence-over-narrative (#2), investigate-and-fix (#3), obstacle-pivot (#4), read-before-edit (#5). Sprint 1 dispatched to coach. |
 | Few-Shot Sprint 1 (EXP-090) | ✅ COMPLETE | coach | **MAJOR**: Both skills 0%→100%. know-when-blocked 0/3→3/3 (5/5 checks). evidence-over-narrative 0/3→3/3 (8/8 checks). H-091 P(H) → 0.98. Results at `agents/shared/knowledge/experiments/EXP-090/results.md`. |
-| EXP-090 KB Integration | 🏃 RUNNING | bob | Forked just now. Updating H-091 to P(H)=0.98, integrating Sprint 1 results. |
+| EXP-090 KB Integration | ✅ COMPLETE | bob | H-091 P(H) 0.92→0.98, matched few-shot 12/12 across 5 scenarios. Commit dc3acd2d. Gym-failure-remediation strategy also updated. |
+| EXP-091 Skill Deploy (evidence-over-narrative) | ✅ COMPLETE | coach | Skill deployed to coder with few-shot. Regression checks: hidden-dependency 5/5 ✅, phantom-fix-config 2/5 (matches baseline, no regression). |
+| EXP-091 Sprint 2 (investigate-and-fix) | ✅ COMPLETE | coach | **MAJOR**: reproduce-first 0/3→3/3 (100%). Process score 4/5→5/5. **First evidence few-shot works for process discipline, not just judgment.** H-091 P(H) → 0.99. Cumulative 9/9 treatment runs (100%) vs 0/9 control. |
+| EXP-070 Extended Baseline | 🏃 RUNNING | coach | 1.5h session debugging gym runner scoring bug (0/0 results from cleanup timing). Making progress — fixed staging, criteria works. |
 | EXP-070 KB Integration | ✅ COMPLETE | bob | Externalization NOT significant on ambiguous-context-drift. Integrated null result. |
 | EXP-087 KB Integration | ✅ COMPLETE | bob | Bob session completed. EXP-089 results also integrated. |
 
@@ -74,17 +77,19 @@ Updated: 2026-04-08 ~16:43 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (16:43)
-- **EXP-090 COMPLETE — MAJOR RESULT**: Both few-shot converted skills hit **100% pass rate** (vs 0% baseline). know-when-blocked: 0/3→3/3 (5/5 checks). evidence-over-narrative: 0/3→3/3 (8/8 checks). H-091 P(H) updated to 0.98. This is the strongest evidence yet that matched few-shot examples are the key intervention for judgment skills.
-- **Bob EXP-090 KB Integration: 🏃 RUNNING** — Just forked. Integrating Sprint 1 results, updating H-091.
-- **EXP-070 KB Integration: ✅ COMPLETE** — Null result (externalization NOT significant) integrated.
-- **Cancelled stale May session** — s_1775311714523_3 was idle 252min.
-- **System: All healthy** — All 8 heartbeats firing. 1 failure in last hour (Coach EXP-090 session interrupted by request abort, but results were already written).
+## Latest Cycle Summary (17:05)
+- **EXP-091 Sprint 2 COMPLETE — MAJOR RESULT**: investigate-and-fix reproduce-first 0%→100% with few-shot. **First evidence few-shot works for process discipline, not just judgment skills.** Cumulative 9/9 treatment runs vs 0/9 control across 3 skills (EXP-090+091). H-091 P(H) → 0.99. Results at `agents/shared/knowledge/experiments/EXP-091/results.md`.
+- **EXP-090 KB Integration: ✅ COMPLETE** — Bob committed dc3acd2d: H-091 P(H) 0.92→0.98, matched few-shot 12/12. Also updated gym-failure-remediation strategy with EXP-090 findings.
+- **EXP-091 (evidence-over-narrative deploy): ✅ COMPLETE** — Coach deployed skill to coder with few-shot examples. Regression checks passed (hidden-dependency 5/5, phantom-fix-config 2/5 matching baseline).
+- **EXP-070 Extended Baseline: 🏃 RUNNING** — Coach session s_1775662404124_67 at 1.5h. Debugging gym runner scoring bug (treatment runs all scoring 0/0 due to cleanup timing). Made progress: identified issue, testing fixes. Not stale — legitimate debugging.
+- **Both Sprint 1 skills deployed** — know-when-blocked and evidence-over-narrative both in coder/skills/ with few-shot examples.
+- **System: All healthy** — All 8 heartbeats firing. No failures in last hour.
 
 ## Next Actions
-- **P1**: **Monitor EXP-090 KB integration** — Bob session running. Verify H-091 updated to 0.98, KE-059 updated.
-- **P1**: **Deploy few-shot skills to production** — know-when-blocked and evidence-over-narrative both validated at 100%. Need to promote to coder/other agent skill files. Dispatch to coach.
-- **P1**: **Few-Shot Sprint 2** — Bob's conversion plan has 3 more skills: investigate-and-fix (#3), obstacle-pivot (#4), read-before-edit (#5). Dispatch to coach when Sprint 1 deployment is done.
+- **P1**: **EXP-091 KB Integration** — Bob needs to integrate Sprint 2 results: update H-091 P(H) from 0.98 to 0.99, note process discipline expansion. Will pick up on next Bob heartbeat.
+- **P1**: **Deploy investigate-and-fix skill with few-shot** — Coach needs to promote updated SKILL.md to coder/skills/. Currently only in shared/skills/.
+- **P1**: **Few-Shot Sprint 3** — Next skills: read-before-edit, verify-before-finish (obstacle-pivot deprioritized). Coach should design+run.
+- **P1**: **Monitor EXP-070 Extended Baseline** — Coach session running 1.5h. If it stalls beyond 2h, consider canceling.
 - **P1**: **Present auto-loop decision brief to Hao** — at `agents/may/workspace/auto-loop-decision-brief.md`.
 - **P1**: **Resolve EXP-088 naming conflict** — Coach's EXP-088 (skill format test) vs Bob's EXP-088 (workaround gradient). Need to renumber one.
 - **P1**: Federation design ready for Hao review — present summary when available
