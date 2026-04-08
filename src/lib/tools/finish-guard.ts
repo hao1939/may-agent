@@ -20,6 +20,9 @@ const WRITE_TOOL_NAMES = new Set(["write", "edit"]);
 /** Tool names whose args may indicate file creation (e.g., bash with redirects). */
 const BASH_TOOL_NAME = "bash";
 
+/** Patterns in bash commands that indicate file-writing activity (redirects, copies, etc.). */
+const BASH_WRITE_PATTERNS = /(?:>\s|>>\s|\btee\b|\bcp\b|\bmv\b|\bmkdir\b|\btouch\b|\bgit\s+commit)/;
+
 /** Patterns in bash commands that indicate verification activity. */
 const BASH_VERIFY_PATTERNS =
   /\b(?:vitest|jest|tsc|node\s+-c|npx\s+tsc|npx\s+vitest|grep|diff|wc\b|ls\s+-[la]|test\s+-[fde]|cat\b|head\b|tail\b)/;
@@ -51,7 +54,6 @@ function extractToolCallNames(messages: BeforeToolCallContext["context"]["messag
  * This is a heuristic — it catches common file-creation patterns from bash.
  */
 function hasBashWriteEvidence(messages: BeforeToolCallContext["context"]["messages"]): boolean {
-  const writePatterns = /(?:>\s|>>\s|\btee\b|\bcp\b|\bmv\b|\bmkdir\b|\btouch\b|\bgit\s+commit)/;
   for (const msg of messages) {
     if (msg.role === "assistant" && Array.isArray(msg.content)) {
       for (const block of msg.content) {
@@ -65,7 +67,7 @@ function hasBashWriteEvidence(messages: BeforeToolCallContext["context"]["messag
           "arguments" in block
         ) {
           const args = (block as { arguments: Record<string, unknown> }).arguments;
-          if (args && typeof args.command === "string" && writePatterns.test(args.command)) {
+          if (args && typeof args.command === "string" && BASH_WRITE_PATTERNS.test(args.command)) {
             return true;
           }
         }
@@ -112,8 +114,7 @@ function hasVerificationAfterLastWrite(messages: BeforeToolCallContext["context"
         const args = (block as { arguments: Record<string, unknown> }).arguments;
         if (args && typeof args.command === "string") {
           const cmd = args.command;
-          const bashWritePatterns = /(?:>\s|>>\s|\btee\b|\bcp\b|\bmv\b|\bmkdir\b|\btouch\b|\bgit\s+commit)/;
-          if (bashWritePatterns.test(cmd)) {
+          if (BASH_WRITE_PATTERNS.test(cmd)) {
             lastWriteIdx = i;
             hasVerifyAfterWrite = false;
             continue;

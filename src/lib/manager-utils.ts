@@ -5,6 +5,7 @@
  * These have zero coupling to SubagentManager — they are standalone helpers.
  */
 import { createHash } from "node:crypto";
+import { dirname } from "node:path";
 import type { AgentMessage, Agent } from "@mariozechner/pi-agent-core";
 import type { SubagentDefinition, SessionInfo } from "./types.js";
 import type { CompactionOptions } from "./compaction.js";
@@ -42,6 +43,16 @@ export function formatDuration(ms: number): string {
   const minutes = Math.floor(seconds / 60);
   const remaining = seconds % 60;
   return `${minutes}m${remaining}s`;
+}
+
+/**
+ * Derive the agent's root directory from its definition.
+ * Convention: agentDir = dirname(knowledgeDir ?? workspace).
+ * Returns undefined if neither knowledgeDir nor workspace is set.
+ */
+export function getAgentDir(def: Pick<SubagentDefinition, "knowledgeDir" | "workspace">): string | undefined {
+  const base = def.knowledgeDir ?? def.workspace;
+  return base ? dirname(base) : undefined;
 }
 
 export function extractLastAssistantText(messages: AgentMessage[]): string | null {
