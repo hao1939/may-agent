@@ -1,11 +1,11 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-08 ~13:05 UTC
+Updated: 2026-04-08 ~13:32 UTC
 
 ## System Health
-- **Bob**: 🟢 Running heartbeat — EXP-085 integration DONE (committed). Now on new heartbeat cycle.
-- **Coach**: 🟢 Running — forked EXP-087 writeup (s_1775653398151_11) and EXP-086 resume (s_1775653407915_12). EXP-087 has results: mismatched few-shot 0/3 on escalation (matched=100%), 2/3 on contradictory-req (matched=33%).
-- **Tech-lead**: 🟢 Running heartbeat.
+- **Bob**: 🟢 Running heartbeat — looking to delegate EXP-070 to coach once current experiments complete.
+- **Coach**: 🟢 Running heartbeat + common-sense verify. EXP-087 COMPLETE (results written). EXP-086 resume FAILED (GYM_AGENT_BIN not set). Growth trigger received for Bob FM-3.3 errors.
+- **Tech-lead**: 🟢 Running heartbeat — confirmed model routing is infra/proxy issue, not agent config.
 - **May**: 🟢 Running (this session).
 - **Scout**: 🔴 **DOWN 16 DAYS** — model `claude-opus-4.6` invalid for scout's API key. Last success: Mar 23. NOT the temporary outage — persistent config issue. Blocked on Hao.
 - **Optimizer**: 🔴 **DOWN 16 DAYS** — same `claude-opus-4.6` model name error. Last success: Mar 23. Blocked on Hao.
@@ -30,8 +30,8 @@ Updated: 2026-04-08 ~13:05 UTC
 | EXP-085 Few-Shot Generalization | ✅ COMPLETE | coach | **MAJOR**: 3/3 pass (100%) on escalation-judgment vs 12.5% baseline. Few-shot generalizes across judgment scenarios. H-091 promoted to Tier 1 (P(H)≥0.90). |
 | KE-060 Intervention Taxonomy | ✅ COMPLETE | bob | Unified taxonomy: 3 mechanisms (M1: Analysis Activation, M2: Evidence Discovery, M3: Structural Constraint). Diagnostic decision tree. Written and verified. |
 | EXP-085 Knowledge Integration | ✅ DONE | bob | Bob completed integration — all 6 files verified and committed (12:40 UTC). |
-| EXP-086 Combined Treatment | 🔄 RESUMED | coach | Was interrupted; coach re-forked as s_1775653407915_12. Running remaining trials. |
-| EXP-087 Boundary Test | 🔄 WRITING UP | coach | **RESULTS IN**: Mismatched few-shot on escalation-judgment: **0/3** (matched=100%). Mismatched on contradictory-req: **2/3** (matched=33%). Domain match matters for escalation; structural pattern helps for contradictory-req. Coach writing results doc (s_1775653398151_11). |
+| EXP-086 Combined Treatment | ⚠️ FAILED RESUME | coach | Resume session failed — GYM_AGENT_BIN env var not set. Had partial results from interrupted session (runs 3-4). **Needs coach to re-run properly.** |
+| EXP-087 Boundary Test | ✅ COMPLETE | coach | **KEY FINDING**: Few-shot transfer is asymmetric. Mismatched examples can HARM (escalation: 0/3 vs 12.5% baseline) or HELP (contradictory: 2/3=67% vs 0% baseline, p=0.018). Behavioral template compatibility matters more than domain match. Results at `EXP-087/results.md`. |
 | Autoresearch Investigation | 🔴 BLOCKED | scout | Hao req from Mar 20 (req:1c42f66e). **Scout DOWN** — model routing broken since Mar 23. Cannot execute. |
 | Model routing: scout/optimizer | 🔴 BLOCKED 16 DAYS | Hao | `claude-opus-4.6` not in available models for these agents' API keys. Silently failing since Mar 23. |
 | Model routing: evaluator/qa | 🔴 BLOCKED 16 DAYS | Hao | `gpt-5.2` not in available models for these agents' API keys. Silently failing since Mar 23. |
@@ -68,16 +68,20 @@ Updated: 2026-04-08 ~13:05 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (13:05)
-- **🔴 CRITICAL: 5 agents DOWN for 16 days.** Scout, optimizer, evaluator, and QA have been failing since Mar 23 with model name errors (`claude-opus-4.6` and `gpt-5.2` not available on their API keys). This was masked by the temporary model routing outage today but is a separate, persistent config issue. Amy-kimi also down (billing). **Only may/bob/coach/tech-lead/coder are operational.**
-- **Bob**: EXP-085 knowledge integration DONE and committed. Now on fresh heartbeat cycle.
-- **Coach**: EXP-087 complete with interesting results — mismatched few-shot degrades escalation-judgment from 100%→0% but improves contradictory-req from 33%→67%. Domain match critical for complex scenarios, structural pattern alone helps simpler ones. Coach also re-forked interrupted EXP-086.
-- **Autoresearch** (Hao req, 19 days overdue): Blocked on scout model routing fix.
-- **EXP-086** (few-shot+checklist combined): Resumed by coach after interruption.
+## Latest Cycle Summary (13:32)
+- **🔴 CRITICAL: 5 agents DOWN for 16 days.** Scout, optimizer, evaluator, QA have model name errors. Amy-kimi billing. **Only may/bob/coach/tech-lead/coder operational.**
+- **EXP-087 COMPLETE** — Major finding: few-shot behavioral template compatibility > domain match. Mismatched examples can actively harm (imposed wrong output format on escalation, 0/3) or surprisingly help (contradictory, 67% vs 0% baseline, p=0.018). Asymmetric transfer. Results written to `EXP-087/results.md`.
+- **EXP-086 FAILED RESUME** — GYM_AGENT_BIN env var not set in resumed session. Had partial data from before interruption. Needs retry.
+- **Bob**: Planning to delegate EXP-070 to coach. EXP-085 integration complete.
+- **Coach**: Running heartbeat + common-sense verify. Also received growth trigger for Bob FM-3.3.
+- **Tech-lead**: Confirmed model routing is proxy/infra issue — not fixable by agents.
+- **EXP-087 integration needed** — Bob should integrate findings into knowledge base (KE for few-shot template compatibility).
 
 ## Next Actions
-- **P0**: **🔴 ESCALATE TO HAO: Model routing broken for 4 agents since Mar 23.** Scout/optimizer need `claude-opus-4.6`, evaluator/qa need `gpt-5.2` — both model names return 400 "Invalid model name" on their API keys. These agents have been silently failing for 16 days. All heartbeat attempts result in immediate error. Fix: either update model names to valid ones, or fix proxy routing for these keys.
-- **P1**: **Convert text-rule skills to few-shot format** — EXP-085 confirmed generalization. Coach should start converting highest-impact text-rule skills to few-shot. This is the Knowledge APPLICATION priority.
+- **P0**: **🔴 ESCALATE TO HAO: Model routing broken for 4 agents since Mar 23.** Scout/optimizer need `claude-opus-4.6`, evaluator/qa need `gpt-5.2` — both model names return 400 "Invalid model name" on their API keys. These agents have been silently failing for 16 days.
+- **P1**: **EXP-087 integration** — Bob should create KE for few-shot template compatibility findings and update the mechanism hierarchy.
+- **P1**: **EXP-086 retry** — Coach needs to re-run with correct env setup (not just resume). Combined few-shot + checklist is the next step in the intervention ladder.
+- **P1**: **Convert text-rule skills to few-shot format** — EXP-085 confirmed generalization. Coach should start converting highest-impact text-rule skills to few-shot.
 - **P1**: **Deploy cross-reference skill to production** — EXP-083 confirmed 100% generalization, M2 mechanism validated.
 - **P1**: Federation design ready for Hao review — present summary when Hao is available
 - **P2**: Scout C1.3 laggard intervention (76.3% vs 90%+ for others) — BLOCKED on scout model fix
