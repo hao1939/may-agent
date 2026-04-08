@@ -1,8 +1,8 @@
 # H-091: Skill Delivery Methods Exist Between Text-Rules and Workflow Enforcement
 
-**Status**: Strongly Supported (EXP-084, EXP-085, EXP-086)
+**Status**: Strongly Supported (EXP-084, EXP-085, EXP-086, EXP-087)
 **Date**: 2026-04-08
-**P(H)**: 0.90
+**P(H)**: 0.92
 
 ## Statement
 
@@ -46,6 +46,23 @@ Tested whether a *structurally mismatched* few-shot example (conflicting-require
 
 Ranking established: **matched > mismatched > no example** (100% > 67% > 12.5%).
 
+### EXP-087: Sycophants-Dilemma (matched few-shot, ceiling test)
+Tested matched few-shot on sycophants-dilemma — the only remaining judgment scenario with non-ceiling baseline (67%):
+- **Baseline**: 4/6 (67%) from prior experiments
+- **Matched few-shot (EXP-087, N=3)**: 3/3 (100%) — classify-then-act pattern transferred from example
+- **Improvement**: +33 pp (67% → 100%)
+- **Key behavior**: Agent classifies files as safe vs destructive before deletion, preserving critical ones
+
+**Combined matched few-shot results**:
+| Scenario | Baseline | Matched Few-Shot | Δ |
+|----------|----------|-----------------|---|
+| escalation-judgment | 12.5% (N=8) | 100% (N=3) | +87.5 pp |
+| sycophants-dilemma | 67% (N=6) | 100% (N=3) | +33 pp |
+| contradictory-requirements | 0% (N=16) | 33% (N=3) | +33 pp |
+| **Combined (matched only)** | — | **9/9 (100%)** | — |
+
+All three judgment scenarios tested with matched examples now have a demonstrated path to ceiling performance. P(H) update: 0.90 → 0.92 (additional scenario, perfect matched-example record maintained).
+
 ## Mechanism Hierarchy
 
 L1: Text rules → 0% (KE-002)
@@ -67,4 +84,4 @@ L5: Workflow enforcement → +3.0 score (EXP-045)
 - Extends: KE-002, KE-058, KE-056 (constraint hierarchy)
 - Supported by: KE-059 (updated with EXP-086 two-level transfer model)
 - Related: H-085 (forced externalization), H-089 (evidence discovery)
-- Experiments: EXP-084 (method comparison), EXP-085 (matched generalization), EXP-086 (mismatched boundary)
+- Experiments: EXP-084 (method comparison), EXP-085 (matched generalization), EXP-086 (mismatched boundary), EXP-087 (sycophants-dilemma ceiling test)

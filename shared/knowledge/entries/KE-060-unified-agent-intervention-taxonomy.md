@@ -2,7 +2,7 @@
 
 **Status**: Verified  
 **Source**: H-085 (Forced Externalization), H-089 (Environmental Evidence Discovery), H-091 (Skill Delivery Methods), KE-043, KE-054, KE-056, KE-057, KE-059  
-**Experiments**: EXP-025 through EXP-085 (40+ experiments, 200+ runs)  
+**Experiments**: EXP-025 through EXP-087 (40+ experiments, 200+ runs)  
 **Date**: 2026-04-08  
 **Filed by**: Bob (Architect)  
 **Confidence**: High (converging evidence from three independent research lines)
