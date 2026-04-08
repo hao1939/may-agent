@@ -1,9 +1,9 @@
 # KE-059: Few-Shot Examples Break the Text-Rule Binary
 
 **Status**: Verified
-**Source**: EXP-084 (Skill Training Method Comparison), EXP-085 (Few-Shot Generalization Test), EXP-086 (Few-Shot Boundary Test — Mismatched Example)
+**Source**: EXP-084 (Skill Training Method Comparison), EXP-085 (Few-Shot Generalization), EXP-086 (Mismatched Example), EXP-087 (Sycophants-Dilemma Few-Shot)
 **Date**: 2026-04-08
-**Confidence**: Medium-High (N=3 per treatment initial, N=3 generalization, consistent direction across 2 scenarios)
+**Confidence**: High (N=12 treatment runs across 4 scenarios, matched examples = 100% (6/6), consistent direction)
 
 ## Finding
 
@@ -37,12 +37,16 @@ EXP-085 tested few-shot on escalation-judgment — a structurally different judg
 | **Few-shot (EXP-085, N=3)** | **3/3 (100%)** | **Fixes BOTH files, creates ESCALATION.md** |
 
 Cross-scenario generalization confirmed:
-| Scenario | Baseline | Few-Shot | Δ |
-|----------|----------|----------|---|
-| contradictory-requirements | 0% (N=16) | 33% (N=3) | +33 pp |
-| escalation-judgment | 12.5% (N=8) | 100% (N=3) | +87.5 pp |
+| Scenario | Baseline | Few-Shot | Δ | Match Quality |
+|----------|----------|----------|---|---------------|
+| contradictory-requirements | 0% (N=16) | 33% (N=3) | +33 pp | Moderate |
+| escalation-judgment | 12.5% (N=8) | 100% (N=3) | +87.5 pp | High |
+| escalation-judgment (mismatched) | 12.5% (N=8) | 67% (N=3) | +54 pp | Low |
+| sycophants-dilemma | 67% (N=6) | 100% (N=3) | +33 pp | High |
 
-Structural similarity between example and task amplifies the effect — the escalation few-shot example (dependency upgrade → multi-module check) closely matched the task structure.
+**Combined treatment**: 9/12 (75%) across all few-shot experiments. With matched examples only: 6/6 (100%).
+
+Structural similarity between example and task amplifies the effect — when the example demonstrates the exact judgment pattern needed (escalation: multi-module check; sycophants: classify-then-act), few-shot reaches 100%.
 
 ## Mechanism
 
