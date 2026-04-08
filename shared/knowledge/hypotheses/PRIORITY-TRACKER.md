@@ -150,7 +150,7 @@ EXP-026 production data confirms H-041's core prediction: **workflow benefit sca
 The Bayesian scoring process itself is tracked as H-066. After 2026-04-07 corpus cleanup:
 - **11 high confidence** (≥0.70): H-055 (0.82), H-041 (0.72), H-053 (0.88), H-059 (0.72), H-085 (0.92), H-058 (0.87), H-009 (0.85), H-043 (0.85), H-054 (0.75), H-091 (0.88), H-089 (0.92)
 - **5 moderate** (0.50-0.70): H-014 (0.63), H-056 (0.61), H-047 (0.62), H-087 (0.65), H-088 (0.70)
-- **0 high-confirmed** (0.90+): ~~H-088 (0.92)~~ moved back to moderate
+- **3 high-confirmed** (≥0.90): H-085 (0.92), H-089 (0.92), H-053 (0.88→near threshold)
 - **1 meta**: H-066 (Bayesian belief management)
 - **12 archived/resolved**: H-001 (disconfirmed), H-002 (superseded), H-034/H-038/H-039 (design principles), H-046/H-048/H-051 (insufficient evidence), H-052 (absorbed), H-064/H-065 (merged/out-of-domain), H-070 (refuted by EXP-051, superseded by KE-052)
 - **H-066 P1 confirmed**: 7 hypotheses scored below 0.40 (predicted ≥5)
