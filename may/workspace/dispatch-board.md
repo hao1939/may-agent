@@ -1,12 +1,12 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-08 ~11:20 UTC
+Updated: 2026-04-08 ~11:45 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟡 1 transient error (JSON Parse EOF at 10:44) — self-healed, currently running fine
-- **Coach**: 🟢 EXP-083 completed successfully despite earlier interruptions (results committed at 11:13).
-- **All other agents**: 🟢 Running normally
+- **Bob**: 🟢 Running — forked KE-060 (Intervention Taxonomy) synthesis work. 2 transient JSON Parse EOF errors on DD-586/587 (will self-retry).
+- **Coach**: 🟢 Running EXP-085 (few-shot generalization on escalation-judgment). Autonomous.
+- **All other agents**: 🟢 Running normally — just fired heartbeats at 11:43
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -20,17 +20,18 @@ Updated: 2026-04-08 ~11:20 UTC
 |-------|--------|-------|-------|
 | EXP-083 Cross-Reference Generalization | ✅ COMPLETE | coach/bob | **MAJOR**: 100% treatment vs 0% baseline across 2 new domains (env-repair + schema-migration). Cross-reference skill generalizes perfectly. H-089 promoted to Tier 1 (P(H)=0.92). Bob integrated. |
 | Federation Design (Local ↔ K3s) | ✅ DESIGN COMPLETE | bob | Bob produced 558-line design doc at `agents/shared/research-projects/federation-design.md`. Recommends Enhanced Git Federation (no new infra). 5-phase migration. Ready for Hao review. |
-| Structural knowledge enforcement | 🔄 ACTIVE | coach/bob | EXP-084 complete — few-shot breaks the binary (33% vs 0% baseline). KE-059 created. Next: combined treatment test? |
-| EXP-076 Workflow audit | ✅ Phase 3 TRACKING | may | Bob now forking 5+ WORK sessions in 6h (was 0/24h). Workflow adoption improving. |
+| EXP-085 Few-Shot Generalization | 🔄 RUNNING | coach | Testing few-shot on escalation-judgment. Follow-up from EXP-084. Running now. |
+| KE-060 Intervention Taxonomy | 🔄 RUNNING | bob | Synthesizing H-085 + H-089 + H-091 into unified intervention decision framework. Forked from heartbeat. |
 | Amy-kimi billing outage | 🔴 Blocked | Hao | Still 429, needs balance refill |
 | Pre-merge review gate | ✅ Phase 1 done | - | Hook installed, needs Phase 2 (auto-review) |
 
 ## Completed/Archived
 | Item | When | Notes |
 |------|------|-------|
+| EXP-084 Skill Training Method Comparison | Apr 8 | **MAJOR**: Few-shot breaks the binary! 33% pass, avg 4.3/5 (+2.3). H-091 filed (P(H)=0.75). KE-059 created. Mechanism hierarchy L1→L5 established. |
+| EXP-076 Workflow Audit | Apr 8 | Bob forking 5+ WORK sessions/6h (was 0/24h). Workflow adoption validated. |
 | Federation Design (Local ↔ K3s) | Apr 8 | Bob produced 558-line design doc. Recommends Enhanced Git Federation, no new infra, 5-phase migration. Ready for Hao review. |
 | EXP-083 Cross-Reference Generalization | Apr 8 | **MAJOR**: 100% treatment vs 0% baseline across 2 new domains. Cross-reference skill generalizes perfectly. H-089 → Tier 1 (P(H)=0.92). |
-| EXP-084 Skill Training Method Comparison | Apr 8 | **MAJOR**: Few-shot breaks the binary! 33% pass, avg 4.3/5 (+2.3 from baseline 2.0/5). Checklist +2.0, Echo +1.3, Negative 0. Mechanism hierarchy L1→L5 established. KE-059 created. |
 | C1.3 Write-Diff Impact Analysis | Apr 8 | **COMPLETE**: 47.3%→85.1%→94.1% across 3 phases. Write-diff is the single biggest convention compliance intervention. Scout laggard at 76.3%. |
 | Knowledge Application Audit | Apr 8 | Bob: 3 major gaps identified (KE-025, KE-029, KE-056) |
 | KE-025 Skill Pruning | Apr 8 | Coach: 20→4 files (84%), Evaluator: 13→6 files (33%) — 90KB removed |
@@ -54,16 +55,17 @@ Updated: 2026-04-08 ~11:20 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (11:20)
-- **Federation Design DONE**: Hao requested federation design for Local ↔ K3s coordination. Dispatched to Bob → completed 558-line design doc (`agents/shared/research-projects/federation-design.md`). Recommends Enhanced Git Federation with 5-phase migration, no new infra needed. Duplicate request cleaned up.
-- **EXP-083 COMPLETE — MAJOR RESULT**: Cross-reference generalization confirmed! 24/24 (100%) treatment vs 0/24 (0%) baseline across 2 new domains (env-repair + schema-migration). H-089 promoted to Tier 1 (P(H)=0.92). Bob already integrated results.
-- **Bob transient error**: JSON Parse EOF at 10:44, self-healed. Currently running normally.
-- **System overall**: All 8 active agents running. Amy-kimi still DOWN.
+## Latest Cycle Summary (11:45)
+- **EXP-085 RUNNING**: Coach autonomously forked few-shot generalization test on escalation-judgment. Follow-up from EXP-084's breakthrough finding.
+- **KE-060 RUNNING**: Bob forked intervention taxonomy synthesis (H-085 + H-089 + H-091 → unified decision framework).
+- **System autonomous**: All agents firing heartbeats independently. No pending requests. No intervention needed.
+- **Bob DD-586/587 synthesis**: Failed 2x with transient JSON Parse EOF. Will self-retry next heartbeat.
+- **Amy-kimi still DOWN**: 429 errors, blocked on Hao for billing fix.
 
 ## Next Actions
-- **P1**: Federation design ready for Hao review — present summary and ask about truncated task description
-- **P1**: Deploy cross-reference skill to production — EXP-083 confirmed 100% generalization, this is the highest-confidence intervention we have
-- **P1**: Apply EXP-084 findings — convert existing text-rule skills to few-shot format (highest-impact change)
-- **P1**: Scout intervention for C1.3 laggard behavior (76.3% vs 90%+ for others)
-- **P2**: Propose combined treatment (few-shot + checklist) follow-up experiment
+- **P1**: Federation design ready for Hao review — present summary when Hao is available
+- **P1**: Deploy cross-reference skill to production — EXP-083 confirmed 100% generalization, highest-confidence intervention
+- **P1**: Apply EXP-084 findings — convert existing text-rule skills to few-shot format (after EXP-085 confirms generalization)
+- **P2**: Scout C1.3 laggard intervention (76.3% vs 90%+ for others)
 - **P2**: Pre-merge review gate Phase 2 (auto-review) — needs design
+- **P2**: EXP-070 (externalization on ambiguous-context-drift) — Coach considers it done as part of EXP-070/071/072 arc; verify completeness
