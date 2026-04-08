@@ -66,17 +66,6 @@ export interface SubagentDefinition {
    * allowed per session. 0 or undefined = unlimited.
    */
   opBudget?: number;
-
-  /**
-   * Turn budget warning threshold: when the session's assistant turn count
-   * reaches this value, a system warning is injected into the next tool result
-   * telling the agent to wrap up. 0 or undefined = no warning.
-   * Default: 40 (set via TURN_BUDGET_WARNING_DEFAULT in manager.ts).
-   */
-  turnBudgetWarningAt?: number;
-
-  // archetypeDir — REMOVED per Hao directive. _archetypes/ stay as reference only.
-  // archetypeDir?: string;
 }
 
 /** Runtime info about a session. */

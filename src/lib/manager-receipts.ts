@@ -23,8 +23,6 @@ import {
 } from "./manager-utils.js";
 import type { ActiveSession } from "./manager-utils.js";
 import { sessionDir, readSessionMeta, writeSessionMeta } from "./persistence.js";
-// ConcurrencyGate removed — P162 was causing more gate timeouts than resource issues.
-// If resource contention becomes a problem, reintroduce with higher maxConcurrent.
 import type { BeforeToolCallContext, BeforeToolCallResult } from "./tools/compose-guards.js";
 import { log } from "./log.js";
 
@@ -334,8 +332,6 @@ export function wrapToolsWithReceipts(tools: AgentTool[], sessionId: string, ctx
       if (guardWarning) {
         contentBlocks.push({ type: "text" as const, text: `\n\n${guardWarning}` });
       }
-
-      // Turn Budget Warning: removed — turnBudgetWarningAt is always 0 now.
 
       // Stuck Detection Warning: inject once when consecutive error turns hit threshold
       if (session && session.consecutiveErrorTurns >= STUCK_WARNING_THRESHOLD && !session.stuckWarningInjected) {

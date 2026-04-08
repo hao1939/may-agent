@@ -8,7 +8,6 @@ import {
   isProcessAlive,
   truncateForPrompt,
   INFRA_RETRY_MAX,
-  TURN_BUDGET_WARNING_DEFAULT,
   RESTORED_MAX_TURNS_FALLBACK,
 } from "./manager-utils.js";
 import type { RegisteredAgent, ActiveSession, RunOptions, SubagentManagerOptions } from "./manager-utils.js";
@@ -37,7 +36,6 @@ export {
   STATE_CHANGING_TOOLS,
   INFRA_RETRY_MAX,
   TOOL_PIVOT_LIMIT,
-  TURN_BUDGET_WARNING_DEFAULT,
 } from "./manager-utils.js";
 export type { RegisteredAgent, ActiveSession, RunOptions, SubagentManagerOptions } from "./manager-utils.js";
 import type {
@@ -121,7 +119,6 @@ export {
 } from "./manager-receipts.js";
 
 import { log } from "./log.js";
-// ConcurrencyGate removed — see manager-receipts.ts comment.
 
 /**
  * P93 Infrastructure Resilience — Automatic Retry for Transient Errors
@@ -389,34 +386,14 @@ export class SubagentManager {
       return content || undefined;
     };
 
-    // ── System prompt: SOUL.md + common-sense.md + generated sections ──
+    // ── System prompt: SOUL.md + common-sense.md + skills + generated sections ──
     //
     // SOUL.md: agent identity, role, methodology, curated skills, constraints (~2-4KB)
     // common-sense.md: shared behavioral rules for all agents (~5-8KB)
-    //
-    // Files NO LONGER loaded (removed as part of prompt simplification):
-    //   DOMAIN.md — removed per Hao directive (prompt simplification)
-    //   Archetype SOUL.md — removed per Hao directive (prompt simplification)
-    //   LESSONS.md — removed per prompt simplification (Hao directive)
-    //   shared/LESSONS.md — removed per prompt simplification (Hao directive)
-    //   TOOLS.md — redundant with tool schema descriptions
-    //   knowledge/INDEX.md — agent reads on-demand, not preloaded
-    //   shared/INDEX.md — same
 
     // 1. SOUL.md — agent identity, role, methodology, curated skills
     const soul = loadFile(agentDir ? join(agentDir, "SOUL.md") : undefined);
-
-    // 0. Archetype SOUL.md — REMOVED per Hao directive.
-    // _archetypes/ directory can stay as reference but is NOT loaded into prompts.
-
     if (soul) sections.push(soul);
-
-    // 1b. DOMAIN.md — REMOVED per Hao directive (prompt simplification).
-    // Domain content belongs in SOUL.md or knowledge/ files, NOT auto-loaded into prompts.
-
-    // 1c/1d. LESSONS.md — REMOVED per Hao directive (prompt simplification).
-    // Previously loaded agent LESSONS.md + shared/LESSONS.md here.
-    // Agents should use skills and heartbeat guards for behavioral patches.
 
     // 2. common-sense.md — shared behavioral rules
     const commonSense = loadFile(
@@ -438,13 +415,6 @@ export class SubagentManager {
         }
       }
     }
-    // Note: shared skills (agents/shared/skills/) are a reference library,
-    // NOT auto-loaded into every agent's prompt. Agents adopt specific skills
-    // by copying them into their own skills/ directory (e.g., via growth-cycle).
-
-    // 5c. context_files — moved to buildSessionContext() (P147 KV-Cache Discipline).
-    // These files (e.g., conversation-state.md) change between sessions, so
-    // loading them here would invalidate the KV-cache prefix every time.
 
     // ── Generated sections (per-agent stable — safe for KV-cache) ──
     // These are deterministic per agent config; same agent produces the
@@ -888,8 +858,6 @@ export class SubagentManager {
       infraRetryCount: 0,
       toolErrorHistory: new Map(),
       toolErrorCount: 0,
-      turnBudgetWarningAt: def.turnBudgetWarningAt ?? TURN_BUDGET_WARNING_DEFAULT,
-      turnBudgetWarned: false,
       filesModified: new Set(),
       orderId: opts?.orderId,
       requestId: opts?.requestId,
@@ -1281,8 +1249,6 @@ export class SubagentManager {
       infraRetryCount: 0,
       toolErrorHistory: new Map(),
       toolErrorCount: 0,
-      turnBudgetWarningAt: def.turnBudgetWarningAt ?? TURN_BUDGET_WARNING_DEFAULT,
-      turnBudgetWarned: false,
       filesModified: new Set(),
       orderId: persisted.orderId,
       consecutiveErrorTurns: 0,

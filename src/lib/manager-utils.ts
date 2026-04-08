@@ -58,16 +58,6 @@ export function extractLastAssistantText(messages: AgentMessage[]): string | nul
   return null;
 }
 
-export function formatMemoryTimestamp(ts: number): string {
-  const d = new Date(ts);
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  const hh = String(d.getHours()).padStart(2, "0");
-  const min = String(d.getMinutes()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd} ${hh}:${min}`;
-}
-
 /** Truncate text to maxLen chars for prompt injection.
  *  Strips newlines (compact single-line) and appends "…" if truncated. */
 export function truncateForPrompt(text: string, maxLen: number): string {
@@ -135,11 +125,6 @@ export function computeToolArgsKey(toolName: string, params: any): string {
 
 // ── Constants ──────────────────────────────────────────────────────────
 
-/** Maximum characters for task/summary text in the system-prompt memory section.
- *  Full data is preserved in the JSONL — this only affects the prompt injection. */
-export const MEMORY_TASK_MAX = 200;
-export const MEMORY_SUMMARY_MAX = 500;
-
 /**
  * Set of tool names that count as state-changing operations for P85 operation budgets.
  * read/agents/workflow are free; bash/write/edit/commit mutate state.
@@ -157,9 +142,6 @@ export const INFRA_RETRY_BASE_DELAY_MS = 1000;
 
 /** Maximum identical failed tool calls before blocking. */
 export const TOOL_PIVOT_LIMIT = 3;
-
-/** @deprecated Turn budget removed — always 0 (disabled). */
-export const TURN_BUDGET_WARNING_DEFAULT = 0;
 
 /** @deprecated Turn limits removed — always 0 (unlimited). Watchdog handles runaway sessions. */
 export const RESTORED_MAX_TURNS_FALLBACK = 0;
@@ -219,10 +201,6 @@ export interface ActiveSession {
   toolErrorHistory: Map<string, number>;
   /** Total number of tool calls that returned errors in this session (P20 Tainted Handoffs). */
   toolErrorCount: number;
-  /** Turn count at which a budget warning is injected. 0 = disabled. */
-  turnBudgetWarningAt: number;
-  /** Whether the turn budget warning has already been injected (avoids spam). */
-  turnBudgetWarned: boolean;
   /** File paths modified (write/edit) during this session, for activity tracking. */
   filesModified: Set<string>;
   /** Order ID linking this session to a persisted human order (P209). */
