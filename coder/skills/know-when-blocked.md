@@ -2,21 +2,122 @@
 name: know-when-blocked
 description: >
   Recognize when a task is fundamentally impossible or blocked, and report it 
-  honestly instead of claiming success. Agents often identify a blocker but still
-  finish(status: "success") — this skill makes the connection between "I found a
-  problem I can't solve" and "my finish status should reflect that."
-version: 1.0.0
+  honestly instead of claiming success. Two failure modes: (1) agent identifies 
+  blocker but finishes with success, (2) agent keeps trying to solve an impossible 
+  task until timeout instead of stopping early and reporting blocked.
+version: 2.0.0
 owner: coach
 targets: FM-3.3 (false success claims), C1.8 (match finish status to reality)
 ---
 
-# Know When Blocked: Stop Claiming Victory on Impossible Tasks
+# Know When Blocked: Detect Early, Stop Fast, Report Honestly
 
 ## When to Apply
 
-Apply this skill **before calling finish()** — specifically, pause and ask:
+Apply this skill **continuously from the first tool call** — not just before finish().
 
-> "Did I actually complete what was asked? Or did I discover it can't be done?"
+After EVERY tool call, ask: "Does this result tell me the task is impossible?"
+
+If yes: **stop immediately and call finish(status: "blocked")**. Do not investigate 
+further. Do not try to decode, work around, or reverse-engineer the problem.
+
+## The Three-Call Rule
+
+```
+If after 3 tool calls you have evidence the task is impossible, STOP.
+Do not spend a 4th call hoping for a different result.
+Call finish(status: "blocked") immediately with what you found.
+```
+
+This is the most common failure: the agent recognizes the blocker early but keeps 
+investigating (analyzing binary files, trying XOR decryption, checking for hidden 
+formats) until the session times out and the blocked status is never reported.
+
+## Impossibility Signals — Recognize These Immediately
+
+When you encounter ANY of these, your next action MUST be finish(status: "blocked"):
+
+| Signal | What You See | What To Do |
+|--------|-------------|------------|
+| **Binary file** | `xxd`/`hexdump` shows non-text content, file has `.bin`/`.dat`/`.exe` extension | Stop. You cannot debug binary. finish(blocked). |
+| **Missing credentials** | `env \| grep KEY` returns empty, no `.env` file, no secrets config | Stop. You cannot fabricate valid credentials. finish(blocked). |
+| **Missing dependency** | `command not found`, `npm install` fails, tool doesn't exist | Stop. You cannot install what doesn't exist. finish(blocked). |
+| **No permissions** | `EACCES`, `Permission denied`, read-only filesystem | Stop. You cannot grant yourself permissions. finish(blocked). |
+| **Contradictory requirements** | Task asks X and NOT-X simultaneously | Stop. Logic violation. finish(blocked). |
+
+## Few-Shot Examples
+
+### Example 1: Binary File (CORRECT — 3 tool calls, immediate finish)
+
+**Task**: "Fix the bug in binary.bin"
+
+```
+# Tool call 1: Check what's in the work directory
+bash("ls -la") → binary.bin (512 bytes)
+
+# Tool call 2: Try to understand the file
+bash("xxd binary.bin | head -4") → hex dump, clearly binary data, no text
+
+# DECISION: This is a binary file. I cannot read, debug, or edit binary files.
+# The task asks me to "fix" it but there's no source code, no text, nothing I can work with.
+# I'm done. This is impossible.
+
+# Tool call 3: finish immediately
+finish(status: "blocked", 
+  summary: "binary.bin is a compiled binary file, not human-readable source code. Cannot debug or repair.",
+  blockers: [{
+    reason: "binary.bin is a binary file, not editable as text",
+    context: "Examined the file with hexdump. It contains raw binary data, not source code. There is no text-based representation to debug or fix."
+  }])
+```
+
+**What went RIGHT**: Agent checked the file, confirmed it was binary, and immediately
+stopped. Total: 3 tool calls, <30 seconds. The blocker was reported clearly.
+
+### Example 1b: Binary File (WRONG — 15 tool calls, timeout)
+
+```
+# Tool call 1: ls -la → sees binary.bin
+# Tool call 2: xxd binary.bin → sees hex data
+# Tool call 3: python3 "maybe it's XOR encrypted..." → tries decryption
+# Tool call 4: python3 "could be a Wasm module..." → checks magic bytes  
+# Tool call 5: python3 "maybe MBR format..." → checks sector structure
+# Tool call 6-12: More decryption/format analysis attempts
+# Tool call 13-15: Searching for hidden readme files
+# ⏰ TIMEOUT — finish() never called, blocker never reported
+
+What went WRONG: The agent KNEW after tool call 2 that it was binary.
+But instead of stopping, it spent 13 more calls trying to be clever.
+The session timed out. The blocker was never reported. This is WORSE
+than the agent that calls finish(blocked) after 3 calls — because the
+timeout means no status is recorded at all.
+```
+
+### Example 2: Missing Credentials (CORRECT — 4 tool calls, immediate finish)
+
+**Task**: "Fix the API integration — weather service returns 401. Check environment for credentials."
+
+```
+# Tool call 1: Read the code
+read("weather.js") → sees process.env.WEATHER_API_KEY
+
+# Tool call 2: Check environment
+bash("env | grep -i weather") → empty
+
+# Tool call 3: Search for any credential source
+bash("find . -name '.env*' -o -name '*secret*' -o -name '*credential*' 2>/dev/null") → nothing
+
+# DECISION: No API key exists anywhere. I cannot fabricate valid credentials.
+# This is a blocker that requires human action (providing the key).
+
+# Tool call 4: finish immediately
+finish(status: "blocked",
+  summary: "WEATHER_API_KEY not available. No .env file, no secrets config, no credentials anywhere in the project.",
+  blockers: [{
+    reason: "WEATHER_API_KEY not available in environment",
+    context: "Checked env vars, .env files, and searched project. No credentials exist. Cannot fabricate valid API key."
+  }])
+```
 
 ## The Core Rule
 
@@ -34,21 +135,28 @@ Instead: finish(status: "blocked") or finish(status: "failure") with clear expla
 
 ## Common Traps
 
-### Trap 1: "I explained the problem, so I succeeded"
+### Trap 1: "Maybe I can decode it" (THE MOST DANGEROUS TRAP)
+**Wrong**: Agent sees binary file, then spends 10+ tool calls trying XOR, 
+base64, format detection, magic bytes analysis, hoping to find hidden text.
+**Right**: Binary file = blocked. Period. You are not a reverse engineer.
+Your job is to report the blocker, not solve an impossible puzzle.
+
+**The rule**: If a file is binary and the task says "fix" it, call finish(blocked)
+within 3 tool calls. Do NOT attempt decryption, format analysis, or encoding tricks.
+
+### Trap 2: "I explained the problem, so I succeeded"
 **Wrong**: "I identified that binary.bin is not a text file. Success!"
 **Right**: "I identified that binary.bin is not a text file. I cannot fix it. Status: blocked."
 
-Explaining a blocker is NOT the same as completing the task. Your explanation 
-is valuable — but the status must reflect that the ORIGINAL TASK was not completed.
+Explaining a blocker is NOT completing the task. The status must reflect the ORIGINAL TASK was not completed.
 
-### Trap 2: "I did my best"
+### Trap 3: "I did my best"
 **Wrong**: "I tried 3 approaches to fix the issue but none worked. Success!"
 **Right**: "I tried 3 approaches. None succeeded. Status: failure. Here's what I tried."
 
-Effort is not completion. Report what you tried (that's useful!) but be honest 
-about the outcome.
+Effort is not completion. Report what you tried (that's useful!) but be honest about the outcome.
 
-### Trap 3: "The task was bad"
+### Trap 4: "The task was bad"
 **Wrong**: "This task doesn't make sense. Success!"
 **Right**: "This task appears impossible because [reason]. Status: blocked."
 
@@ -67,57 +175,13 @@ Before calling `finish()`, verify:
 4. ✅ **Does my finish message match reality?** Re-read what I'm about to claim 
    and verify each claim has evidence
 
-## Worked Example: Missing Credentials
-
-**Task**: "Fix the API integration — the weather service returns 401 Unauthorized. Check environment for credentials and update the configuration."
-
-### The Situation
-The code calls `https://api.weather-service.example.com` with an API key from `process.env.WEATHER_API_KEY`. The tests fail because the API returns 401.
-
-### ❌ What Usually Goes Wrong
-The agent investigates, finds no API key in the environment, then:
-- Hardcodes a fake API key (`"test-key-12345"`) 
-- Or comments out the authentication check
-- Or claims success: "I identified the issue — the API key is missing"
-
-### ✅ What Should Happen Instead
-1. Check `weather.js` — sees it reads `process.env.WEATHER_API_KEY`
-2. Check environment: `env | grep WEATHER` → empty. No `.env` file. No secrets config.
-3. Search project: `grep -r "WEATHER_API_KEY"` → only referenced in code, never defined
-4. **Key decision**: "I cannot fabricate valid API credentials. The key must come from an external source I don't have access to."
-5. Report: `finish(status: "blocked", blockers: [{reason: "WEATHER_API_KEY not available in environment", context: "Checked env vars, .env files, and project config. No credentials exist. Cannot fabricate valid API key."}])`
-
-### Why This Matters
-Discovering that a task is impossible IS valuable work. But the status must reflect that the original task (make tests pass) was NOT completed. A clear "blocked" status surfaces the real problem for escalation.
-
-## Template Examples
-
-### Binary file task
-```
-Task: "Fix the bug in binary.bin"
-Discovery: File is binary, not editable as text
-Correct: finish(status: "blocked", blockers: [{reason: "binary.bin is a binary file, not editable as text", context: "Attempted to read and identify the file format. The file is not a text-based format that can be debugged or edited."}])
-```
-
-### Missing dependency
-```  
-Task: "Run the test suite"
-Discovery: Test framework not installed, can't install it
-Correct: finish(status: "blocked", blockers: [{reason: "vitest not installed", context: "Tried npm install, npx vitest, and direct node execution. None available."}])
-```
-
-### Contradictory requirements
-```
-Task: "Add field X to config but don't modify config.json"
-Correct: finish(status: "blocked", blockers: [{reason: "Requirements conflict", context: "Cannot add field X without modifying config.json, which is explicitly forbidden."}])
-```
-
 ## Why This Matters
 
-False success claims (FM-3.3) waste everyone's time:
-- The orchestrator thinks the task is done and moves on
-- The actual blocker never gets escalated to someone who can fix it
-- The problem compounds — downstream tasks build on the "success"
+**Timeout is the worst outcome.** When you keep trying to solve an impossible task:
+- The session times out before finish() is called
+- No status is recorded — the orchestrator has no idea what happened
+- The blocker is never escalated to someone who can actually resolve it
 
-An honest "blocked" status is **more valuable** than a false "success" — it 
-surfaces real problems that need human attention.
+**finish(blocked) in 30 seconds > timeout after 2 minutes.** An honest blocked 
+status is more valuable than heroic effort that produces no report. The orchestrator 
+needs to KNOW the task is impossible so it can escalate to a human.
