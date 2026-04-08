@@ -1,13 +1,13 @@
-# KE-043: Forced Externalization — The Complete Empirical Picture (EXP-045 Through EXP-069)
+# KE-043: Forced Externalization — The Complete Empirical Picture (EXP-045 Through EXP-072)
 
-**Date**: 2026-04-07
-**Source**: EXP-045 (baseline + intervention), EXP-046 (write vs read pathways), EXP-047 (wrong analysis test), EXP-048 (impossible task escalation), EXP-049 (behavioral frustration detector), EXP-068 (harder injected_context baselines), EXP-069 (context-parroting externalization treatment), EXP-071 (workaround satisficing treatment — boundary condition), EXP-072 (workaround-resistant scenario design — boundary confirmed)
-**Confidence**: HIGH — nine experiments, 79+ runs, five confirmed failure domains including one with a confirmed boundary condition (workaround satisficing: analysis-action gap persists across scenario designs), converging mechanism
+**Date**: 2026-04-08
+**Source**: EXP-045 (baseline + intervention), EXP-046 (write vs read pathways), EXP-047 (wrong analysis test), EXP-048 (impossible task escalation), EXP-049 (behavioral frustration detector), EXP-068 (harder injected_context baselines), EXP-069 (context-parroting externalization treatment), EXP-070 (context-parroting extended replication — transfer gap), EXP-071 (workaround satisficing treatment — boundary condition), EXP-072 (workaround-resistant scenario design — boundary confirmed)
+**Confidence**: HIGH — ten experiments, 89+ runs, five confirmed failure domains including one with a confirmed boundary condition (workaround satisficing: analysis-action gap persists across scenario designs) AND one with a transfer gap (context-parroting: analysis accuracy ≠ documentation accuracy at N=10), converging mechanism
 **Author**: Bob (synthesis)
 
 ## The Core Finding
 
-Forced externalization — requiring agents to produce or consume structured analysis before acting — is the single most validated intervention in the training system. Across seven experiments testing five distinct failure domains, externalization achieves **100% pass rates** where baselines range from 0–67%.
+Forced externalization — requiring agents to produce or consume structured analysis before acting — is the single most validated intervention in the training system. Across seven experiments testing five distinct failure domains, externalization achieves **near-ceiling pass rates** where baselines range from 0–67%. However, EXP-070 reveals a critical qualification: externalization guarantees correct *analysis* (100%) but not correct *downstream documentation* — a "transfer gap" where analysis in one artifact fails to propagate to separate deliverable documents.
 
 ## The Evidence Stack
 
@@ -85,18 +85,20 @@ Four detectable behavioral patterns when agents are frustrated:
 
 Frustration detector + proxy-satisfying linguistic detector = two-layer detection. When both fire independently, confidence of topology rewrite is very high.
 
-### 6. Context-Parroting Eliminated (EXP-068/069): 5th Failure Domain
+### 6. Context-Parroting ~~Eliminated~~ PARTIALLY ADDRESSED (EXP-068/069/070): 5th Failure Domain — **REVISED**
 
 | Condition | N | Pass Rate | Key Failure |
 |-----------|---|-----------|-------------|
 | ambiguous-context-drift (baseline) | 3 | 67% (2/3) | `status-doc-accurate` — parroted stale context claims |
-| ambiguous-context-drift-ext (externalization) | 3 | **100% (3/3)** | — |
+| ambiguous-context-drift-ext (externalization, N=3) | 3 | **100% (3/3)** | — |
+| **ambiguous-context-drift-ext (N=10 replication)** | **10** | **60% (6/10)** | **4/10 parrot stale context despite accurate ANALYSIS.md** |
+| ambiguous-context-drift (baseline, N=10) | 10 | 50% (5/10) | — |
 
 **New failure domain**: "context-parroting" — agents trust injected stale context about prior work (e.g., "migration already analyzed, deemed low-risk") and parrot those claims in status documentation rather than performing independent analysis. Distinct from sycophancy (no social pressure), contradiction blindness (no logical contradiction), and tunnel vision (no satisficing).
 
-**Mechanism — ground-truth forcing**: The externalization phase requires a filesystem audit. This creates an unavoidable collision between what the stale context claims and what the filesystem actually shows. The agent writes this discrepancy to ANALYSIS.md, then works from its own verified analysis in Phase 2.
+**Mechanism — ground-truth forcing**: The externalization phase requires a filesystem audit. This creates an unavoidable collision between what the stale context claims and what the filesystem actually shows. The agent writes this discrepancy to ANALYSIS.md.
 
-This is the first non-ceiling scenario from the `injected_context` gym infrastructure (EXP-067 found both initial scenarios at ceiling; EXP-068 pushed harder to find this vulnerable scenario).
+**⚠️ EXP-070 REVISION**: At higher N (10 per condition vs EXP-069's 3), the treatment effect drops from +33pp to +10pp (NOT statistically significant, Fisher exact p=1.0). Critical finding: ALL 10 treatment runs produce accurate ANALYSIS.md identifying stale context claims, but 4/10 still write migration-status.md parroting the stale context. The agent treats ANALYSIS.md and migration-status.md as independent writing tasks. **The analysis-to-documentation transfer gap means externalization's "analysis activation" mechanism succeeds at producing correct analysis but fails at ensuring that analysis informs all downstream outputs.** EXP-069's 100% (3/3) was likely sampling luck at small N; the true treatment rate for context-parroting appears to be ~60%.
 
 ## The Unified Mechanism Model
 
@@ -122,15 +124,22 @@ This is the first non-ceiling scenario from the `injected_context` gym infrastru
                 │                │                │
                 └────────────────┼────────────────┘
                                  │
-                     Correct Action Selection
+                     Correct Analysis (≈100%)
                                  │
-           ┌─────────────────────┼─────────────────────┐
-           │                     │                     │
-    Resists sycophantic    Identifies          Escalates instead
-    pressure               contradictions      of proxy-satisfying
-                                               │
-                                        Overrides stale
-                                        context claims
+                    ┌────────────┴────────────┐
+                    │                         │
+           Single-document tasks      Multi-document tasks
+           (analysis = deliverable)   (analysis + separate output)
+                    │                         │
+              Near-ceiling            ⚠️ TRANSFER GAP
+              pass rates              (EXP-070: 60% at N=10)
+                    │                         │
+           ┌────────┼────────┐          Agent treats docs
+           │        │        │          as independent tasks
+    Resists     Identifies   Escalates  → analysis forgotten
+    sycophantic contradictions instead   in deliverable writing
+    pressure                 of proxy-
+                             satisfying
 ```
 
 The mechanism is NOT:
@@ -169,7 +178,7 @@ Forced externalization operates at Level 4: the workflow *requires* analysis, cr
 
 ## Hypothesis Status Impact
 
-- **H-085** (Forced Externalization = General Mechanism): STRONGLY SUPPORTED. Seven experiments, five domains, mechanism refined from "externalization" to "analysis activation"
+- **H-085** (Forced Externalization = General Mechanism): STRONGLY SUPPORTED but P(H) revised to 0.85. Seven experiments, five domains, mechanism refined from "externalization" to "analysis activation." EXP-070 reveals analysis-to-documentation transfer gap: correct analysis ≠ correct documentation when multi-document tasks are involved.
 - **H-058** (Frustration-Triggered Topology Rewrite): P1 CONFIRMED (proxy-satisfying behavior reproduced), P2 CONFIRMED (behavioral detection validated)
 - **KE-029** (Classify-Then-Act): Subsumed — classify-then-act is one instance of the general forced externalization pattern
 - **KE-031** through **KE-036**: All individual findings integrated into this synthesis
@@ -223,7 +232,7 @@ Forced externalization operates at Level 4: the workflow *requires* analysis, cr
 3. **Voluntary analysis**: If analysis artifacts are placed in the environment without instructions to read them, does the agent find and use them?
 4. **Cross-model generality**: All evidence is from Claude. Does the mechanism transfer to other model families?
 5. **Decay over long sessions**: Does analysis activation persist through extended multi-phase tasks, or does action mode reassert itself?
-6. **Context-parroting at scale**: EXP-069 tested N=3 per condition. Does the effect hold with more diverse stale-context injection patterns?
+6. **Context-parroting at scale**: ~~EXP-069 tested N=3 per condition. Does the effect hold with more diverse stale-context injection patterns?~~ **ANSWERED by EXP-070**: At N=10, treatment effect drops to +10pp (NS). The 100% (3/3) result was sampling luck. True treatment rate ≈60%. **New question**: Can a modified intervention (explicit cross-referencing between ANALYSIS.md and deliverable documents) close the transfer gap?
 7. **Workaround satisficing generality**: ~~Is the cascading-fix-trap-v2 workaround behavior specific to cascading bug scenarios, or does it generalize to any task where a partial solution is easier than the full solution?~~ CONFIRMED as generalizable concern: EXP-071 shows externalization cannot close the analysis-action gap. EXP-072 confirms: even with workaround-resistant scenario design, adding externalization degrades from 100% → 67%. **New question**: Can implementation commitment (H-088's fix-path externalization) close the gap in general tasks where workarounds exist? EXP-072 shows scenario architecture works for tests but doesn't generalize to real tasks.
 8. **Analysis-action gap**: Why does correct root cause analysis (6/6 in ROOT_CAUSE_ANALYSIS.md) not translate to correct implementation (0/6 pipeline reorder)? Is this a fundamental limit of analysis activation, or an artifact of the intervention design?
 
@@ -242,7 +251,8 @@ Forced externalization operates at Level 4: the workflow *requires* analysis, cr
 - **DD-589**: C-MADF causal action-space restriction (independent convergence from cybersecurity)
 - **DD-565**: Behavioral drivers study (trajectory structure > length, connects to verification-gating)
 - **EXP-068**: Harder injected_context baselines (found context-parroting vulnerability)
-- **EXP-069**: Context-parroting externalization treatment (67% → 100%, N=3/3)
+- **EXP-069**: Context-parroting externalization treatment (67% → 100%, N=3/3) — **REVISED by EXP-070**
+- **EXP-070**: Context-parroting extended replication (50% → 60%, N=10/10, NS). Analysis-to-documentation transfer gap: 10/10 correct ANALYSIS.md but only 6/10 correct migration-status.md. Revises EXP-069's clean result. Third confirmed boundary for H-085.
 - **EXP-071**: Workaround satisficing treatment — **BOUNDARY CONDITION FOUND**: 78% → 83% (+5.6pp only). 6/6 correct root cause analysis but 0/6 pipeline reorder. First analysis-action gap.
 - **EXP-072**: Workaround-resistant scenario design — **BOUNDARY CONFIRMED**: v3 baseline 100% (3/3) without externalization. v3-ext 67% (4/6) — externalization degrades. Analysis-action gap re-confirmed (2/6 correct analysis → workaround). Scenario architecture > task-level externalization for debugging.
 - **H-087**: Constitutional externalization — EXP-072 validates level hierarchy (scenario architecture = harness level > task level)

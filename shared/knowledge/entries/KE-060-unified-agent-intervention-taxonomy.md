@@ -15,7 +15,7 @@ Across 40+ experiments and 200+ experimental runs, three distinct mechanisms exp
 
 | # | Mechanism | Bottleneck Addressed | When It Applies | Key Evidence |
 |---|-----------|---------------------|-----------------|--------------|
-| **M1** | **Analysis Activation** (H-085) | Agent has information but doesn't engage it | Present-but-overlooked problems; judgment tasks with convergent solution spaces | 51/57 runs pass (89%), 12 scenarios, 5 failure domains |
+| **M1** | **Analysis Activation** (H-085) | Agent has information but doesn't engage it | Present-but-overlooked problems; judgment tasks with convergent solution spaces | 57/67 runs pass (85%), 13 scenarios, 5 failure domains. ⚠️ P(H) revised to 0.85 after EXP-070 transfer gap |
 | **M2** | **Evidence Discovery** (H-089) | Agent lacks information that exists in the environment | Absent-information problems; environmental artifacts contain implicit schemas | 34/36 runs pass (94%), 4 domains, 0% baseline → 100% treatment |
 | **M3** | **Structural Constraint** (KE-056) | Agent takes expedient path over correct path | Divergent solution spaces where workarounds exist; implementation tasks | 100% when workarounds blocked, 0% when available regardless of M1/M2 |
 
@@ -51,13 +51,13 @@ Agent fails on task T. Why?
 - **Reading channel**: Even reading pre-written analysis (including WRONG analysis) activates analytical mode — the agent independently verifies rather than acting on instinct
 
 **Empirical profile**:
-- Effect size: +33pp to +100pp (median ~+55pp) on judgment tasks
+- Effect size: +33pp to +100pp (median ~+55pp) on judgment tasks; ⚠️ only +10pp (NS) on context-parroting at N=10 (EXP-070)
 - Domain: 5 confirmed failure domains — sycophancy, tunnel vision, contradiction blindness, context-parroting, workaround satisficing
-- Boundary: Does NOT help when (a) information is absent (see M2), or (b) expedient workarounds exist (see M3)
+- Boundary: Does NOT help when (a) information is absent (see M2), (b) expedient workarounds exist (see M3), or (c) analysis-to-documentation transfer is required (EXP-070: correct analysis 100% but correct deliverable only 60%)
 - Minimal viable form: One sentence of judgment + gate + read = full effect (EXP-044)
-- Aggregate: 51/57 = 89% across 12 scenarios (vs 25% baseline)
+- Aggregate: 57/67 = 85% across 13 scenarios (vs ~25% baseline)
 
-**Key experiments**: EXP-025, EXP-043–047, EXP-068–069, EXP-071–072, EXP-078
+**Key experiments**: EXP-025, EXP-043–047, EXP-068–070, EXP-071–072, EXP-078
 
 ### M2: Evidence Discovery (Environmental Cross-Reference)
 
@@ -151,14 +151,14 @@ KE-056 established a constraint hierarchy. KE-059 broke the text-rule binary. Th
 
 ## The "Analysis-Action Gap" — Where M1 Fails and M3 Takes Over
 
-The most important finding is the **analysis-action gap** discovered in EXP-071:
+The most important finding is the **analysis-action gap** discovered in EXP-071 and confirmed in EXP-070:
 
-| Metric | EXP-071 (v2-ext) | 
-|--------|-------------------|
-| Correct root cause analysis | 6/6 (100%) |
-| Correct implementation (pipeline reorder) | 0/6 (0%) |
+| Metric | EXP-071 (v2-ext) | EXP-070 (context-parroting, N=10) |
+|--------|-------------------|----------------------------------|
+| Correct root cause analysis | 6/6 (100%) | 10/10 (100%) |
+| Correct implementation/deliverable | 0/6 (0%) | 6/10 (60%) |
 
-M1 (externalization) achieves **perfect analysis but zero correct action** when workarounds exist. This is because:
+M1 (externalization) achieves **perfect analysis but imperfect downstream action** when either workarounds exist (EXP-071) or when the deliverable is a separate document from the analysis (EXP-070). Two variants of the gap:
 
 1. The agent writes correct analysis in ROOT_CAUSE_ANALYSIS.md
 2. During implementation, it discovers a simpler fix that makes tests pass
@@ -170,6 +170,7 @@ M1 (externalization) achieves **perfect analysis but zero correct action** when 
 Two sub-types of the gap exist:
 - **Drift gap** (M3 with minor M1 support fixes it): Agent drifts from correct path due to overhead. Binding (L2) + blocked workarounds (L4) = 100% recovery.
 - **Attraction gap** (only M3 fixes it): Agent is actively pulled toward simpler working alternative. No instructional intervention helps. Must block the alternative.
+- **Transfer gap** (EXP-070, new): Agent correctly analyzes in ANALYSIS.md but treats downstream deliverable documents as independent writing tasks. Analysis in one artifact doesn't automatically propagate to separate deliverables. 60% transfer rate at N=10 vs 50% baseline (NS). This variant may require explicit cross-referencing between analysis and deliverable phases.
 
 ## What This Taxonomy Predicts
 
@@ -225,7 +226,8 @@ This taxonomy represents the **convergence point** of three independent research
 ```
 Thread 1: Sycophancy interventions (EXP-025→044)    ──→ M1 discovered
 Thread 2: Config repair failures (EXP-077→083)       ──→ M2 discovered  
-Thread 3: Debugging/implementation (EXP-070→073)     ──→ M3 discovered
+Thread 3: Debugging/implementation (EXP-071→073)     ──→ M3 discovered
+Thread 4: Context-parroting replication (EXP-068→070) ──→ Transfer gap found (M1 boundary)
          + Skill delivery methods (EXP-084→085)      ──→ L1–L5 refined + cross-scenario generalization
 ```
 
