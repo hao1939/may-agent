@@ -1,11 +1,13 @@
 # KE-059: Few-Shot Examples Break the Text-Rule Binary
 
 **Status**: Verified
-**Source**: EXP-084 (Skill Training Method Comparison), EXP-085 (Few-Shot Generalization), EXP-086 (Mismatched Example), EXP-087 (Sycophants-Dilemma Few-Shot), EXP-088 (Skill-Text Few-Shot Regression), EXP-090 (Few-Shot Skill Conversion Sprint 1)
+**Source**: EXP-084 (Skill Training Method Comparison), EXP-085 (Few-Shot Generalization), EXP-086 (Mismatched Example), EXP-087 (Sycophants-Dilemma Few-Shot), EXP-088 (Skill-Text Few-Shot Regression), EXP-090 (Few-Shot Skill Conversion Sprint 1), EXP-091 (Few-Shot Skill Conversion Sprint 2)
 **Date**: 2026-04-08
-**Confidence**: High (N=12 treatment runs across 4 scenarios, matched examples = 100% (6/6), consistent direction)
+**Confidence**: High (N=21 treatment runs across 6 scenarios, matched examples = 15/15 (100%), consistent direction)
 
 **EXP-090 Update**: N=18 treatment runs across 5 scenarios (adding know-when-blocked + evidence-over-narrative). Matched examples now 12/12 (100%) across 5 scenarios. Both new skills: 0% control → 100% treatment (+100pp). Strongest evidence yet that domain-matched few-shot worked examples are reliable for judgment skill conversion.
+
+**EXP-091 Update**: Few-shot crosses from judgment to PROCESS discipline. investigate-and-fix reproduce-first: 0/3 control → 3/3 treatment (+100pp). Text rules 0/7, few-shot 3/3, workflow 2/2. Matched few-shot now 15/15 (100%) across 6 scenarios. First evidence that few-shot works for step-ordering process skills, not just decision-quality judgment skills.
 
 ## Finding
 
@@ -46,7 +48,7 @@ Cross-scenario generalization confirmed:
 | escalation-judgment (mismatched) | 12.5% (N=8) | 67% (N=3) | +54 pp | Low |
 | sycophants-dilemma | 67% (N=6) | 100% (N=3) | +33 pp | High |
 
-**Combined treatment**: 9/12 (75%) across all few-shot experiments. With matched examples only: 6/6 (100%).
+**Combined treatment**: 15/21 (71%) across all few-shot experiments. With matched examples only: 15/15 (100%) across 6 scenarios.
 
 Structural similarity between example and task amplifies the effect — when the example demonstrates the exact judgment pattern needed (escalation: multi-module check; sycophants: classify-then-act), few-shot reaches 100%.
 
@@ -115,6 +117,18 @@ EXP-090 tested domain-matched few-shot on two additional judgment skills:
 - Effect: +100pp pass rate, +42pp check score (58%→100%)
 
 **Cumulative matched few-shot record**: 12/12 (100%) across 5 scenarios (escalation-judgment, sycophants-dilemma, contradictory-requirements, escalation-impossible-task, misleading-test-fix). N=3 per scenario.
+
+### EXP-091: Few-Shot Skill Conversion Sprint 2 (process discipline)
+EXP-091 tested domain-matched few-shot on a process discipline skill — the first test beyond judgment:
+
+**investigate-and-fix / reproduce-first** (investigate-fix-pattern): Agent must run tests BEFORE reading/editing source code.
+- Control: 0/3 (0%) — all runs read source code first, then edit, never reproduce the bug first. Product: 4/4, Process: 4/5 (80%).
+- Treatment: 3/3 (100%) — all runs execute `node test.js` before editing. Product: 4/4, Process: 5/5 (100%).
+- Effect: +100pp reproduce-first rate, +20pp process score (80%→100%)
+
+**Key finding**: Few-shot works for process discipline (step ordering), not just judgment (decision quality). Text rules had 0/7 on this skill (4 from EXP-019 + 3 control). Few-shot: 3/3. Workflow: 2/2.
+
+**Cumulative matched few-shot record**: 15/15 (100%) across 6 scenarios (escalation-judgment, sycophants-dilemma, contradictory-requirements, escalation-impossible-task, misleading-test-fix, investigate-fix-pattern). N=3 per scenario.
 
 ## Cross-References
 
