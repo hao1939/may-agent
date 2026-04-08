@@ -2,7 +2,7 @@
 
 **Status**: Verified  
 **Source**: H-085 (Forced Externalization), H-089 (Environmental Evidence Discovery), H-091 (Skill Delivery Methods), KE-043, KE-054, KE-056, KE-057, KE-059  
-**Experiments**: EXP-025 through EXP-090 (40+ experiments, 200+ runs)  
+**Experiments**: EXP-025 through EXP-091 (40+ experiments, 220+ runs)  
 **Date**: 2026-04-08  
 **Filed by**: Bob (Architect)  
 **Confidence**: High (converging evidence from three independent research lines)
@@ -233,7 +233,7 @@ Thread 4: Context-parroting replication (EXP-068→070) ──→ Transfer gap f
 
 Each thread independently discovered its mechanism, and the taxonomy shows they are **complementary pieces of a single picture**. No single mechanism is universal; all three are needed for complete coverage.
 
-The total empirical base: 200+ experimental runs across 40+ experiments, with converging evidence from judgment tasks, config repair, debugging scenarios, and skill delivery comparisons. This is the most thoroughly validated model in our knowledge base.
+The total empirical base: 220+ experimental runs across 40+ experiments, with converging evidence from judgment tasks, process discipline tasks, config repair, debugging scenarios, and skill delivery comparisons. This is the most thoroughly validated model in our knowledge base.
 
 ## Cross-References
 
@@ -273,3 +273,12 @@ The total empirical base: 200+ experimental runs across 40+ experiments, with co
 - Cumulative matched few-shot: 12/12 (100%) across 5 scenarios — L3 few-shot is now the most reliable non-workflow intervention
 - H-091 P(H) 0.92→0.98 — few-shot delivery method is production-ready for judgment skills
 - Strengthens L3 position in delivery hierarchy: L3 matched few-shot approaches L4 workflow effectiveness for judgment tasks
+
+### EXP-091 Update: Few-Shot Extends to Process Discipline
+- investigate-and-fix (reproduce-first): 0/3 control → 3/3 treatment (+100pp)
+- **First non-judgment skill tested** — few-shot works for process discipline (step ordering), not just judgment (decision quality)
+- Text rules: 0/7 on reproduce-first across all data; few-shot: 3/3 (100%) — same effect as workflow enforcement (EXP-019: 2/2)
+- Sprint 1+2 combined: 9/9 treatment vs 0/9 control (100% vs 0%)
+- Cumulative matched few-shot: 15/15 (100%) across 6 scenarios (5 judgment + 1 process)
+- H-091 P(H) 0.98→0.99 — scope expanded from judgment-only to judgment + process
+- L3 few-shot is now production-ready for BOTH judgment and process discipline skills

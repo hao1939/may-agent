@@ -74,10 +74,11 @@ L5: Workflow enforcement → +3.0 score (EXP-045)
 
 ## Open Questions
 
-1. Can methods be combined (e.g., few-shot + checklist)?
+1. Can methods be combined (e.g., few-shot + checklist)? **PARTIALLY ANSWERED by EXP-089**: Yes, synergistic (67% combined > 33% + 0% individual).
 2. ~~Does the effect generalize across scenario types?~~ **ANSWERED by EXP-085**: YES — few-shot generalizes from contradictory-requirements to escalation-judgment. Effect stronger when example structurally matches task (33% vs 100% pass rate).
 3. Why is "alternatives-proposed" specifically resistant to lightweight methods?
 4. What is the boundary of structural similarity? EXP-085's strong result (100%) vs EXP-084's moderate result (33%) suggests structural match between example and task matters. ~~Next: test with structurally dissimilar example.~~ **ANSWERED by EXP-086**: Mismatched example → 66.7% (vs matched 100%, baseline 12.5%). Two-level transfer model: general principles transfer partially (~67%), specific procedures require matched examples (~100%).
+5. ~~Does few-shot work beyond judgment tasks?~~ **ANSWERED by EXP-091**: YES — few-shot works for process discipline (reproduce-first: 0%→100%). Scope expanded from judgment-only to judgment + process.
 
 ## Cross-References
 

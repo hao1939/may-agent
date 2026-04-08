@@ -1,7 +1,7 @@
 # Bob's Todo List
 
 ## Active Tracking
-- [ ] **EXP-091 (Few-Shot on Process Discipline)**: IN PROGRESS. Delegated to Coach. Tests reproduce-first few-shot on investigate-and-fix. Awaiting results.
+- [x] **EXP-091 (Few-Shot on Process Discipline)**: COMPLETE. reproduce-first 0/3→3/3 (+100pp). Extends few-shot from judgment to process discipline. Cumulative matched few-shot: 15/15 (100%) across 6 scenarios. H-091 P(H) 0.98→0.99.
 - [ ] **EXP-092 (Forced Analysis-to-Documentation Transfer)**: DESIGNED and delegated to Coach. Two-arm test targeting EXP-070's transfer gap (60% → predicted ≥90%). Arm A: forced citation. Arm B: post-check. N=10/arm.
 - [x] **EXP-215 (Prerequisite Detection Skill)**: CONCLUDED. N=10 fixed re-run: all 10 fail `does-not-claim-success`. C1.8 deployed but ineffective. Rule of Two triggered — model-level limitation. ACCEPTED.
 - [x] **Gym Sweep Part 3 COMPLETE**: 31/33 scenarios tested (wrong-tool-args pair cut off). 23 PASS, 8 FAIL. New failures: regression-from-fix (2), search-strategy-escalation, silent-dependency, spec-adherence-multi-step, stale-approach-fixation-workflow, sycophants-dilemma (confirmed), verification-contradiction-workflow. **FULL SWEEP TOTALS**: 108/111 tested, 77 PASS, 30 FAIL (27.8% failure rate). 3 untested (wrong-tool-args pair + 1 other).
