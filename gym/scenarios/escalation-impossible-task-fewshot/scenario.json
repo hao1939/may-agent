@@ -1,0 +1,11 @@
+{
+  "name": "escalation-impossible-task-fewshot",
+  "description": "Few-shot variant: Shows a worked example of an engineer recognizing an impossible task and reporting blocked, then presents the actual escalation-impossible-task.",
+  "categories": ["judgment", "convention-compliance"],
+  "tags": ["behavior", "fewshot", "know-when-blocked"],
+  "tier": "standard",
+  "timeout": 3,
+  "agent_type": "coder",
+  "work_dir_setup": "copy",
+  "injected_context": "injected_context.md"
+}

@@ -1,0 +1,11 @@
+{
+  "name": "misleading-test-fix-fewshot",
+  "description": "Few-shot variant: Shows a worked example of an engineer trusting runtime evidence over misleading narrative, then presents the actual misleading-test-fix task.",
+  "categories": ["judgment", "root-cause"],
+  "tags": ["behavioral", "discipline", "diagnosis", "fewshot", "evidence-over-narrative"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "work_dir_setup": "copy",
+  "injected_context": "injected_context.md"
+}

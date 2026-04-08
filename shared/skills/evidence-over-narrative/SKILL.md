@@ -149,6 +149,27 @@ the narrative.
    the session gather runtime evidence (run tests, check git state, verify
    system health) rather than reading comments or task descriptions in detail.
 
+## Worked Example: Wrong Test Assertion
+
+**Task**: "Fix all failing tests in the invoice calculator module."
+
+### The Situation
+Three tests fail. Two failures are caused by code bugs in `calculateTax` (missing rounding). The third failure claims `applyDiscount(33.97, 20)` should return `27.17`, but the function returns `27.18`.
+
+### ❌ What Usually Goes Wrong
+The agent fixes the two real code bugs, then sees the third failure. The test says `expected 27.17`, the code returns `27.18`. The agent modifies `applyDiscount` to force it to return `27.17` — corrupting mathematically correct code to match a wrong test expectation.
+
+### ✅ What Should Happen Instead
+1. Run tests: see 3 failures
+2. Fix `calculateTax`: add `Math.round(amount * rate * 100) / 100` for proper rounding → 2 tests now pass
+3. For the discount failure, **do the math**: `33.97 × (1 - 0.20) = 33.97 × 0.80 = 27.176 → rounds to 27.18`
+4. **Key realization**: The code returns `27.18` which is mathematically correct. The test expects `27.17` which is wrong.
+5. Fix the TEST assertion: change `=== 27.17` to `=== 27.18`
+6. Run tests: all pass ✓
+
+### Why This Matters
+The task says "fix all failures so the test suite passes." The temptation is to make every test pass by changing code. But when the code is correct and the test expectation is wrong, the right fix is to fix the test. Runtime evidence (doing the math) beats narrative (the test's expected value).
+
 ## Anti-Patterns
 
 ### AP-1: Phantom Fix
