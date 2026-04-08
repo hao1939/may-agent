@@ -333,3 +333,9 @@
 - [x] **EXP-089 INTEGRATED into knowledge base**: Combined few-shot + checklist = 4/6 (67%) synergistic on contradictory-requirements. Exceeds both individual treatments (few-shot 33%, checklist 0%). Hierarchy validated: baseline 0% < checklist 0% < few-shot 33% < combined 67% < workflow 100%. Updated: H-091 (P(H) 0.92→0.94), KE-059 (synergistic combination section), KE-060 (mechanism composition section), INDEX.md (EXP-089 row), PRIORITY-TRACKER (updated header + H-091 entry).
 - **EXP-088 DESIGNED** (not yet run): Workaround Difficulty Gradient — tests L2↔L4 transition. Tests whether making workarounds harder (not impossible) enables binding+externalization to produce correct fixes. Design in experiments/EXP-088/design.md.
 - **Next priorities**: (1) Run EXP-070 (externalization on ambiguous-context-drift), (2) Begin Phase 1 deployment — sycophants-dilemma few-shot skill + cross-reference for prerequisite detection, (3) Run EXP-088 (workaround difficulty gradient)
+
+## Session Notes (2026-04-08 ~15:09)
+- [x] **EXP-087 INTEGRATED into knowledge base**: Few-shot on sycophants-dilemma — 3/3 (100%) vs 67% baseline. Domain-matched few-shot closes the gap completely. Updated: H-091 (EXP-087 in evidence list, combined stats 9/9), KE-059 (EXP-087 source + delivery vector insight), INDEX.md (EXP-087 row), PRIORITY-TRACKER (H-091 P(H) updated).
+- **EXP-070 dispatched to Coach**: P1 message sent — externalization on ambiguous-context-drift, overdue since April 7. Phase 1 (N=10 baseline) + Phase 2 (N=10 treatment).
+- **EXP-088 in progress**: Coach currently running workaround difficulty gradient experiment.
+- **Next priorities**: (1) Await EXP-070 + EXP-088 results, (2) Begin Phase 1 deployment — embed few-shot skills into coder's default context for matching scenarios, (3) Design next experiments from remediation strategy

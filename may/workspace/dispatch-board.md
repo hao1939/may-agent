@@ -1,13 +1,15 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-08 ~14:43 UTC
+Updated: 2026-04-08 ~15:03 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Scout**: 🟡 RECOVERING — Was DOWN for 5h+ (model errors + no heartbeat cron). Manually forked at 14:38 — session running, scraping autoresearch repo. Model issue appears resolved. Still needs heartbeat cron. **71 model errors across 4 agents in 24h** (bob:20, coach:25, optimizer:19, scout:7). Errors stopped ~10:34 UTC.
-- **Bob**: 🟢 Running — heartbeat cycle. Designed EXP-088 (workaround difficulty gradient).
-- **Coach**: 🟢 Running — heartbeat cycle. Ran EXP-088 (skill format test: 0/3 REGRESSION) + EXP-086 combined.
-- **All other agents**: 🟢 Heartbeats fired at 14:32, no errors in last 4h.
+- **Scout**: 🟢 RECOVERED — Completed autoresearch deep-dive (445-line report). No heartbeat-scout cron though, so won't auto-fire.
+- **Bob**: 🟢 Running — heartbeat + WORK session (EXP-087 KB integration).
+- **Coach**: 🟢 Running — heartbeat + WORK session (EXP-088 baselines on new scenario).
+- **Tech-lead**: 🟢 Running — heartbeat (observational). Available for work.
+- **Optimizer/QA**: 🔴 Persistent model errors (100% error rate). Known issue.
+- **All other agents**: 🟢 Heartbeats fired at 15:02, no errors/interrupts in last hour.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -30,14 +32,14 @@ Updated: 2026-04-08 ~14:43 UTC
 | Cross-Reference Skill Deployment | ✅ COMPLETE | coach | 71-line skill deployed to coder at `coder/skills/cross-reference-before-config-repair.md`. Commit fe91729e. |
 | Auto-Loop Analysis | ✅ COMPLETE | tech-lead + bob | **Both converge**: zero engine changes needed. Decision brief written → `agents/may/workspace/auto-loop-decision-brief.md`. Ready for Hao. |
 | Amy-kimi billing outage | 🔴 Blocked | Hao | Still 429, needs balance refill |
-| Scout down (no heartbeat cron) | 🔴 DOWN | Hao/tech-lead | `claude-opus-4.6` model errors. No heartbeat-scout cron = won't retry. Autoresearch req (1259fbec) blocked. |
+| Scout autoresearch deep-dive | ✅ COMPLETE | scout | 445-line report on karpathy/autoresearch. 3-tier trust architecture pattern (immutable eval → untrusted experiment → human governance). Journal committed (Session 310). Still no heartbeat-scout cron. |
 | EXP-088 naming conflict | ⚠️ | may | Bob designed EXP-088 (workaround difficulty gradient) AND Coach ran EXP-088 (skill format test). Need to renumber one. |
 | EXP-088 Skill Format Test (Coach) | ✅ COMPLETE | coach | **REGRESSION**: 0/3 (0%) vs 67% baseline on sycophants-dilemma. Key finding: delivery mechanism > format. Few-shot in skill text = diluted. Reverted. |
-| EXP-088 Workaround Difficulty Gradient (Bob) | ⏳ DESIGNED | bob | 12.6KB design doc ready. Tests L2↔L4 transition — is the workaround threshold binary or gradient? Not yet run. |
+| EXP-088 Workaround Difficulty Gradient (Bob) | 🏃 SCENARIO BUILT + RUNNING | coach | Scenario `cascading-fix-trap-v2-hard-workaround` built (10-check scorer). Coach running baselines now (session s_1775660615812_50). |
 | Pre-merge review gate | ✅ Phase 1 done | - | Hook installed, needs Phase 2 (auto-review) |
-| **Federation Sync Redesign** | ⏳ IN PROGRESS | tech-lead | **P0 from Hao**. Redesign agents-auto-commit handler for multi-instance federation. Session `s_1775659647453_55`. Brief at `agents/may/workspace/federation-sync-redesign-brief.md`. Phase 1: fix tryPull() to prevent data loss. |
-| Few-Shot Conversion Sprint Plan | ⏳ IN PROGRESS | bob | Bob forked WORK session to plan top candidates for few-shot skill conversion (req:0f615825). |
-| EXP-088 Few-Shot Skill Upgrade | ⏳ IN PROGRESS | coach | Coach forked WORK session for EXP-088 upgrade + regression test (req:0e1f9e8f). |
+| **Federation Sync Redesign** | ⚠️ NOT YET DISPATCHED | tech-lead | Was marked P0 but never actually dispatched (phantom session reference). Need to write brief and dispatch properly. |
+| EXP-089 KB Integration | ✅ COMPLETE | bob | All 6 KB files updated with EXP-089 results. H-091 shows all experiments. Commit f5fac67c. |
+| EXP-087 KB Integration | 🏃 IN PROGRESS | bob | Bob WORK session running (s_1775660610233_49). |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -69,16 +71,21 @@ Updated: 2026-04-08 ~14:43 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (14:43)
-- **NEW P0 FROM HAO**: Federation sync redesign — fix agents/ repo sync for multi-instance federation. Dispatched to tech-lead (session `s_1775659647453_55`). Implementation brief written at `agents/may/workspace/federation-sync-redesign-brief.md`.
-- **Active WORK sessions**: Bob planning few-shot conversion sprint, Coach running EXP-088 upgrade, Tech-lead implementing federation sync fix.
-- **System health**: All heartbeats fired, no errors in last hour, Scout recovered.
+## Latest Cycle Summary (15:03)
+- **No failures in last hour**. All agents healthy. 0 errors/interrupts.
+- **Scout autoresearch complete**: 445-line deep-dive on karpathy/autoresearch. 3-tier trust architecture pattern identified as transferable insight.
+- **EXP-089 KB integration complete**: Bob updated all 6 knowledge base files.
+- **EXP-088 scenario built**: Coach built `cascading-fix-trap-v2-hard-workaround` (10-check scorer). Now running baselines.
+- **EXP-087 KB integration**: Bob WORK session in progress.
+- **Federation sync**: Dashboard correction — was marked P0 IN PROGRESS but never actually dispatched (phantom session ID). Tech-lead available.
+- **Coder**: 20+ gym task requests in tracking DB (CHECKLIST.md / conflicting-requirements patterns). All from human. Sessions completed but DB shows CREATED.
 
 ## Next Actions
-- **P0**: **Monitor federation sync implementation** — Tech-lead session `s_1775659647453_55`. Check output next cycle.
-- **P0**: **Present auto-loop decision brief to Hao** — Decision brief at `agents/may/workspace/auto-loop-decision-brief.md`. Need approval + implementation assignment.
-- **P1**: **Resolve EXP-088 naming conflict** — Coach's experiment should be renumbered (it completed first, but Bob's design is in the canonical shared/knowledge/experiments/ path).
-- **P1**: **Review few-shot conversion sprint plan** — Bob's WORK session (req:0f615825) should produce candidates.
-- **P1**: Federation design ready for Hao review — present summary when Hao is available
-- **P2**: Bob analysis refresh (last was Apr 4, 4 days old) — lower priority since system is healthy
+- **P1**: **Dispatch federation sync to tech-lead** — If this is truly P0, need to write a real brief and fork to tech-lead. But the original Hao directive may be stale (from compacted context). Wait for Hao confirmation before dispatching.
+- **P1**: **Monitor EXP-088 baselines** — Coach session s_1775660615812_50. Check results next cycle.
+- **P1**: **Review EXP-087 KB integration** — Bob session s_1775660610233_49. Should complete this cycle.
+- **P1**: **Resolve EXP-088 naming conflict** — Coach's experiment should be renumbered since Bob's EXP-088 is in the canonical experiments path.
+- **P1**: **Set up heartbeat-scout cron** — ✅ DISPATCHED to tech-lead (session s_1775660771859_53). Should add matching cron for scout.
+- **P2**: Clean up stale coder requests in tracking DB (20+ CREATED entries for completed sessions)
 - **P2**: Pre-merge review gate Phase 2 (auto-review) — needs design
+- **P2**: Federation design ready for Hao review — present summary when Hao is available
