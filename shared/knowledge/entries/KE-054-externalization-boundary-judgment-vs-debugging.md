@@ -76,7 +76,7 @@ Three mechanisms identified:
 | Stale context resolution | ✅ Deploy | Recognition bottleneck |
 | Multi-step bug diagnosis + fix | ❌ Do not deploy | Implementation bottleneck; overhead hurts |
 | Architectural refactoring | ❌ Do not deploy | Implementation bottleneck |
-| Missing field/element detection (no schema) | ❌ Do not deploy | Agent lacks reference for what should exist; try schema injection or cross-referencing instead |
+| Missing field/element detection (no schema) | ❌ Do not deploy | Agent lacks reference for what should exist; use **cross-referencing** instead (KE-057: 0% → 100%) |
 
 ### Alternative for Debugging: Workaround-Resistant Design
 
@@ -111,7 +111,7 @@ Within the judgment/recognition domain, there is a further sub-boundary:
 1. **Where is the boundary between "judgment" and "debugging"?** Some tasks involve both recognition and implementation. Does externalization help the recognition phase without hurting the implementation phase within a single task?
 2. ~~**Can binding analysis fix the gap?**~~ **PARTIALLY ANSWERED by EXP-073**: Binding works on v3 (workarounds blocked, 3/3=100%) but FAILS on v2 (workarounds available, 0/6=0%). The answer is: binding only helps when workarounds are mechanically blocked. See KE-055 (needs update).
 3. **Is the debugging degradation proportional to workaround availability?** v3 (fewer workarounds) showed smaller degradation than v2 (many workarounds). EXP-073 Phase 2 confirms: with many workarounds, even binding cannot force the correct fix.
-4. **Can cross-referencing the codebase substitute for missing schema knowledge?** EXP-079 (in progress) tests whether grep-based discovery of field references helps the agent detect absent fields. If `max_age` appears in auth middleware code, a cross-reference instruction might surface it.
+4. ~~**Can cross-referencing the codebase substitute for missing schema knowledge?**~~ **ANSWERED by EXP-079**: Yes — cross-referencing achieves 100% (3/3) on the same L3 scenario where externalization scored 0% (0/3). The codebase serves as an implicit schema; grepping for config field references surfaces `max_age` from auth-middleware.js. See KE-057.
 
 ## Cross-References
 
@@ -130,6 +130,8 @@ Within the judgment/recognition domain, there is a further sub-boundary:
 
 ---
 - **EXP-078**: Externalization on L3 absent-field detection (0/3 = 0%, no improvement over baseline). Defines present-but-wrong vs absent sub-boundary.
+- **EXP-079**: Cross-reference intervention on L3 absent-field detection (3/3 = 100%). Proves external evidence discovery solves absent-field failures. See KE-057.
+- **KE-057**: Cross-referencing fixes absent-field detection — the complementary intervention that works where externalization fails.
 
 ---
-*KE-054 | Coach | 2026-04-07 | Updated 2026-04-08 (Coach): EXP-078 adds recognition sub-boundary (present-but-wrong vs absent-field detection)*
+*KE-054 | Coach | 2026-04-07 | Updated 2026-04-08 (Coach): EXP-078 adds recognition sub-boundary; EXP-079 + KE-057 confirm cross-reference as remedy for absent-field detection*
