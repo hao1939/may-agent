@@ -19,7 +19,7 @@
 
 import { execSync, type ExecSyncOptions } from "node:child_process";
 import { resolve, join } from "node:path";
-import { writeFileSync, unlinkSync } from "node:fs";
+import { writeFileSync, readFileSync, unlinkSync, existsSync, mkdirSync, copyFileSync, renameSync } from "node:fs";
 import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
 import type { CronEntry } from "../../../src/lib/cron-tool.js";
 
@@ -30,6 +30,73 @@ import type { CronEntry } from "../../../src/lib/cron-tool.js";
 function git(command: string, opts: ExecSyncOptions): string {
   const result = execSync(command, { ...opts, stdio: ["ignore", "pipe", "pipe"] });
   return typeof result === "string" ? result : result?.toString("utf-8") ?? "";
+}
+
+// ── Instance config (federation file ownership) ──────────────────────
+
+interface InstanceConfig {
+  local: { agents: string[] };
+  k3s: { agents: string[] };
+}
+
+/** Default ownership when no config file exists. */
+const DEFAULT_CONFIG: InstanceConfig = {
+  local: { agents: ["may", "bob", "tech-lead", "coder", "optimizer", "qa", "evaluator"] },
+  k3s: { agents: ["scout", "coach", "amy", "amy-kimi"] },
+};
+
+/**
+ * Load instance config from agents/shared/federation/instance-config.json.
+ * Falls back to hardcoded defaults if the file doesn't exist.
+ */
+function loadInstanceConfig(agentsDir: string): InstanceConfig {
+  const configPath = join(agentsDir, "shared", "federation", "instance-config.json");
+  try {
+    if (existsSync(configPath)) {
+      return JSON.parse(readFileSync(configPath, "utf-8")) as InstanceConfig;
+    }
+  } catch {
+    // Malformed config — fall back to defaults
+  }
+  return DEFAULT_CONFIG;
+}
+
+/**
+ * Determine which instance this is by checking which agents exist locally
+ * in cron.json files (agents that are actively scheduled here).
+ */
+function detectInstance(agentsDir: string, config: InstanceConfig): "local" | "k3s" | "unknown" {
+  // Check which instance's agents have cron.json files here
+  let localScore = 0;
+  let k3sScore = 0;
+
+  for (const agent of config.local.agents) {
+    if (existsSync(join(agentsDir, agent, "cron.json"))) localScore++;
+  }
+  for (const agent of config.k3s.agents) {
+    if (existsSync(join(agentsDir, agent, "cron.json"))) k3sScore++;
+  }
+
+  // The instance that owns MORE of its expected agents is likely where we're running
+  if (localScore > k3sScore) return "local";
+  if (k3sScore > localScore) return "k3s";
+  return "unknown";
+}
+
+/**
+ * Determine the owning instance for a file path.
+ * Returns "local", "k3s", or "shared" (jointly owned).
+ */
+function getFileOwner(filePath: string, config: InstanceConfig): "local" | "k3s" | "shared" {
+  const topDir = filePath.split("/")[0];
+  if (!topDir) return "shared";
+
+  // Check if top directory is an agent name owned by an instance
+  if (config.local.agents.includes(topDir)) return "local";
+  if (config.k3s.agents.includes(topDir)) return "k3s";
+
+  // shared/, gym/, scripts/, etc. are jointly owned
+  return "shared";
 }
 
 // ── File classification ───────────────────────────────────────────────
@@ -176,11 +243,27 @@ function getRemote(agentsDir: string): string | null {
 }
 
 /**
- * Pull from remote. Commit any local changes first (including untracked)
- * to avoid conflicts with incoming files, then rebase onto remote.
- * Best-effort — failures are logged but don't block.
+ * Pull from remote with ownership-aware conflict resolution.
+ *
+ * Strategy:
+ * 1. Commit all local changes (including untracked) BEFORE pull
+ * 2. Fetch + rebase onto remote/main
+ * 3. On conflict:
+ *    - Files in OUR agent dirs → keep ours
+ *    - Files in THEIR agent dirs → keep theirs
+ *    - Files in shared/ → attempt auto-merge; if fails → keep both (rename conflict file)
+ * 4. If rebase still fails after resolution → abort, try merge with same strategy
+ * 5. If all else fails → abort, log error, don't lose data, retry next cycle
+ *
+ * NEVER uses `-X ours` on shared files (that's how data loss happened before).
  */
-function tryPull(agentsDir: string, remote: string, log: (msg: string) => void): void {
+function tryPull(
+  agentsDir: string,
+  remote: string,
+  log: (msg: string) => void,
+  instanceId: "local" | "k3s" | "unknown",
+  config: InstanceConfig,
+): void {
   try {
     git(`git fetch ${remote} main`, {
       cwd: agentsDir,
@@ -208,11 +291,11 @@ function tryPull(agentsDir: string, remote: string, log: (msg: string) => void):
           timeout: 15_000,
         });
       } catch {
-        // nothing to commit
+        // nothing to commit (all changes already committed)
       }
     }
 
-    // Rebase onto remote — keeps history linear
+    // Try rebase onto remote — keeps history linear
     try {
       git(`git rebase ${remote}/main`, {
         cwd: agentsDir,
@@ -220,19 +303,273 @@ function tryPull(agentsDir: string, remote: string, log: (msg: string) => void):
       });
       log(`[agents-auto-commit] rebased onto ${remote} (${behind} commits)`);
     } catch {
-      // Rebase conflict — abort and fall back to merge
-      try { git("git rebase --abort", { cwd: agentsDir, timeout: 5_000 }); } catch {}
-      try {
-        git(`git merge -X ours ${remote}/main --no-edit`, { cwd: agentsDir, timeout: 30_000 });
-        log(`[agents-auto-commit] rebase conflict, fell back to merge`);
-      } catch {
-        try { git("git merge --abort", { cwd: agentsDir, timeout: 5_000 }); } catch {}
-        log(`[agents-auto-commit] sync failed — will retry next cycle`);
+      // Rebase conflict — try ownership-aware resolution
+      const resolved = resolveConflicts(agentsDir, instanceId, config, log);
+
+      if (resolved) {
+        log(`[agents-auto-commit] rebased with ownership-aware conflict resolution`);
+      } else {
+        // Rebase couldn't be resolved — abort and try merge
+        try { git("git rebase --abort", { cwd: agentsDir, timeout: 5_000 }); } catch {}
+
+        try {
+          git(`git merge ${remote}/main --no-edit --no-ff`, { cwd: agentsDir, timeout: 30_000 });
+          log(`[agents-auto-commit] rebase failed, merged instead`);
+        } catch {
+          // Merge also has conflicts — try ownership-aware resolution on merge
+          const mergeResolved = resolveConflicts(agentsDir, instanceId, config, log);
+          if (mergeResolved) {
+            log(`[agents-auto-commit] merged with ownership-aware conflict resolution`);
+          } else {
+            // Give up — abort merge, don't lose data, retry next cycle
+            try { git("git merge --abort", { cwd: agentsDir, timeout: 5_000 }); } catch {}
+            log(`[agents-auto-commit] ⚠️ sync failed — conflicts unresolvable, will retry next cycle`);
+          }
+        }
       }
     }
   } catch (err) {
     const errMsg = err instanceof Error ? err.message : String(err);
     log(`[agents-auto-commit] pull failed (non-fatal): ${errMsg.split("\n")[0]}`);
+  }
+}
+
+/**
+ * Resolve git conflicts using file ownership rules.
+ *
+ * For each conflicted file:
+ * - If it's in our agent directory → keep ours (we're the owner)
+ * - If it's in their agent directory → keep theirs (they're the owner)
+ * - If it's in shared/ → try auto-merge; if fails → keep both versions
+ *
+ * Returns true if all conflicts were resolved, false if resolution failed.
+ */
+function resolveConflicts(
+  agentsDir: string,
+  instanceId: "local" | "k3s" | "unknown",
+  config: InstanceConfig,
+  log: (msg: string) => void,
+): boolean {
+  try {
+    // Get list of conflicted files
+    const conflictOutput = git("git diff --name-only --diff-filter=U", {
+      cwd: agentsDir,
+      timeout: 5_000,
+    }).trim();
+
+    if (!conflictOutput) {
+      // No conflicts (maybe the rebase failed for another reason)
+      return false;
+    }
+
+    const conflictedFiles = conflictOutput.split("\n").filter(f => f.trim());
+    let allResolved = true;
+
+    for (const file of conflictedFiles) {
+      const owner = getFileOwner(file, config);
+
+      if (owner === instanceId) {
+        // We own this file — keep ours
+        git(`git checkout --ours -- "${file}"`, { cwd: agentsDir, timeout: 5_000 });
+        git(`git add -- "${file}"`, { cwd: agentsDir, timeout: 5_000 });
+        log(`[agents-auto-commit] conflict: ${file} → kept ours (owned)`);
+      } else if (owner !== "shared") {
+        // They own this file — keep theirs
+        git(`git checkout --theirs -- "${file}"`, { cwd: agentsDir, timeout: 5_000 });
+        git(`git add -- "${file}"`, { cwd: agentsDir, timeout: 5_000 });
+        log(`[agents-auto-commit] conflict: ${file} → kept theirs (their dir)`);
+      } else {
+        // Shared file — try to keep both versions
+        const resolved = resolveSharedConflict(agentsDir, file, instanceId, log);
+        if (!resolved) {
+          allResolved = false;
+        }
+      }
+    }
+
+    if (!allResolved) return false;
+
+    // Try to continue the rebase/merge
+    try {
+      // Check if we're in a rebase
+      const rebaseDir = join(agentsDir, ".git", "rebase-merge");
+      const rebaseApplyDir = join(agentsDir, ".git", "rebase-apply");
+      if (existsSync(rebaseDir) || existsSync(rebaseApplyDir)) {
+        git("git rebase --continue", { cwd: agentsDir, timeout: 30_000 });
+      } else {
+        // We're in a merge — commit the resolution
+        git('git commit --no-edit --no-verify', { cwd: agentsDir, timeout: 15_000 });
+      }
+      return true;
+    } catch {
+      // Continuing failed (maybe more conflicts in subsequent rebase steps)
+      // Try resolving again recursively (rebase may have multiple steps)
+      try {
+        const moreConflicts = git("git diff --name-only --diff-filter=U", {
+          cwd: agentsDir,
+          timeout: 5_000,
+        }).trim();
+        if (moreConflicts) {
+          return resolveConflicts(agentsDir, instanceId, config, log);
+        }
+      } catch {}
+      return false;
+    }
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Resolve a conflict in a shared file (agents/shared/ or agents/gym/ etc).
+ *
+ * Strategy:
+ * - Try git's built-in merge (it may auto-resolve after --ours/--theirs on other files)
+ * - If still conflicted: keep BOTH versions (ours + rename conflict copy)
+ * - Never silently discard either side
+ *
+ * Returns true if resolved, false if not.
+ */
+function resolveSharedConflict(
+  agentsDir: string,
+  file: string,
+  instanceId: string,
+  log: (msg: string) => void,
+): boolean {
+  try {
+    const absFile = join(agentsDir, file);
+
+    // Try to get both versions
+    let oursContent: string | null = null;
+    let theirsContent: string | null = null;
+
+    try {
+      oursContent = git(`git show :2:"${file}"`, { cwd: agentsDir, timeout: 5_000 });
+    } catch {}
+    try {
+      theirsContent = git(`git show :3:"${file}"`, { cwd: agentsDir, timeout: 5_000 });
+    } catch {}
+
+    if (oursContent === null && theirsContent === null) {
+      // Can't get either version — can't resolve
+      return false;
+    }
+
+    if (oursContent !== null && theirsContent !== null) {
+      // Both versions exist — check if they're identical
+      if (oursContent === theirsContent) {
+        writeFileSync(absFile, oursContent, "utf-8");
+        git(`git add -- "${file}"`, { cwd: agentsDir, timeout: 5_000 });
+        log(`[agents-auto-commit] conflict: ${file} → identical content, resolved`);
+        return true;
+      }
+
+      // For append-only files (.jsonl, INDEX.md, bulletin.md), try concatenation
+      if (isAppendOnlyFile(file)) {
+        // Attempt to get the base version for a smarter merge
+        let baseContent = "";
+        try {
+          baseContent = git(`git show :1:"${file}"`, { cwd: agentsDir, timeout: 5_000 });
+        } catch {}
+
+        const merged = mergeAppendOnly(baseContent, oursContent, theirsContent);
+        writeFileSync(absFile, merged, "utf-8");
+        git(`git add -- "${file}"`, { cwd: agentsDir, timeout: 5_000 });
+        log(`[agents-auto-commit] conflict: ${file} → append-only merge`);
+        return true;
+      }
+
+      // Non-append-only shared file: keep ours as the main file, save theirs as .conflict-{instance}
+      const otherInstance = instanceId === "local" ? "k3s" : "local";
+      const conflictPath = `${file}.conflict-${otherInstance}`;
+      const absConflictPath = join(agentsDir, conflictPath);
+
+      // Ensure parent directory exists
+      const parentDir = resolve(absConflictPath, "..");
+      if (!existsSync(parentDir)) mkdirSync(parentDir, { recursive: true });
+
+      writeFileSync(absFile, oursContent, "utf-8");
+      writeFileSync(absConflictPath, theirsContent, "utf-8");
+      git(`git add -- "${file}" "${conflictPath}"`, { cwd: agentsDir, timeout: 5_000 });
+      log(`[agents-auto-commit] ⚠️ conflict: ${file} → kept both versions (${conflictPath} created)`);
+      return true;
+    }
+
+    // Only one version exists — use whatever we have
+    const content = oursContent ?? theirsContent!;
+    writeFileSync(absFile, content, "utf-8");
+    git(`git add -- "${file}"`, { cwd: agentsDir, timeout: 5_000 });
+    log(`[agents-auto-commit] conflict: ${file} → used available version`);
+    return true;
+  } catch (err) {
+    const errMsg = err instanceof Error ? err.message : String(err);
+    log(`[agents-auto-commit] ⚠️ failed to resolve shared conflict: ${file}: ${errMsg.split("\n")[0]}`);
+    return false;
+  }
+}
+
+/**
+ * Check if a file uses append-only protocol (safe to concatenate on conflict).
+ */
+function isAppendOnlyFile(filePath: string): boolean {
+  return (
+    filePath.endsWith(".jsonl") ||
+    filePath.endsWith("bulletin.md") ||
+    filePath.endsWith("INDEX.md") ||
+    filePath.includes("federation/claims") ||
+    filePath.includes("federation/notifications")
+  );
+}
+
+/**
+ * Merge two versions of an append-only file.
+ * Uses base content to find the new lines in each version,
+ * then combines them (base + ours_new + theirs_new).
+ */
+function mergeAppendOnly(base: string, ours: string, theirs: string): string {
+  const baseLines = new Set(base.split("\n").map(l => l.trim()).filter(Boolean));
+
+  // Find lines added by each side (not in base)
+  const oursNew = ours.split("\n").filter(l => l.trim() && !baseLines.has(l.trim()));
+  const theirsNew = theirs.split("\n").filter(l => l.trim() && !baseLines.has(l.trim()));
+
+  // Combine: base content + ours new + theirs new
+  const result = base.trimEnd();
+  const additions = [...oursNew, ...theirsNew].filter(Boolean);
+
+  if (!result && additions.length === 0) return "";
+  if (!result) return additions.join("\n") + "\n";
+  if (additions.length === 0) return result + "\n";
+  return result + "\n" + additions.join("\n") + "\n";
+}
+
+/**
+ * Write an instance heartbeat file for federation health monitoring.
+ * Each instance writes to shared/federation/heartbeats/{instanceId}.json.
+ * Other instances check staleness to detect downtime.
+ */
+function writeInstanceHeartbeat(
+  agentsDir: string,
+  instanceId: "local" | "k3s" | "unknown",
+  config: InstanceConfig,
+): void {
+  if (instanceId === "unknown") return;
+
+  const heartbeatDir = join(agentsDir, "shared", "federation", "heartbeats");
+  const heartbeatPath = join(heartbeatDir, `${instanceId}.json`);
+
+  try {
+    if (!existsSync(heartbeatDir)) mkdirSync(heartbeatDir, { recursive: true });
+
+    const heartbeat = {
+      instance: instanceId,
+      last_seen: new Date().toISOString(),
+      agents: config[instanceId].agents,
+    };
+
+    writeFileSync(heartbeatPath, JSON.stringify(heartbeat, null, 2) + "\n", "utf-8");
+  } catch {
+    // Non-fatal — heartbeat is informational
   }
 }
 
@@ -262,8 +599,15 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     const remote = getRemote(agentsDir);
     let committed = false;
 
+    // Load federation config for ownership-aware conflict resolution
+    const config = loadInstanceConfig(agentsDir);
+    const instanceId = detectInstance(agentsDir, config);
+
+    // Write instance heartbeat (federation liveness signal)
+    writeInstanceHeartbeat(agentsDir, instanceId, config);
+
     // Pull from remote to pick up changes from other instances
-    if (remote) tryPull(agentsDir, remote, ctx.log);
+    if (remote) tryPull(agentsDir, remote, ctx.log, instanceId, config);
 
     try {
       // Check for changes (tracked + untracked)

@@ -1,0 +1,8 @@
+{
+  "local": {
+    "agents": ["may", "bob", "tech-lead", "coder", "optimizer", "qa", "evaluator"]
+  },
+  "k3s": {
+    "agents": ["scout", "coach", "amy", "amy-kimi"]
+  }
+}
