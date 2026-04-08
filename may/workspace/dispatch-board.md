@@ -1,12 +1,12 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-08 ~11:45 UTC
+Updated: 2026-04-08 ~12:15 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Running — forked KE-060 (Intervention Taxonomy) synthesis work. 2 transient JSON Parse EOF errors on DD-586/587 (will self-retry).
-- **Coach**: 🟢 Running EXP-085 (few-shot generalization on escalation-judgment). Autonomous.
-- **All other agents**: 🟢 Running normally — just fired heartbeats at 11:43
+- **Bob**: 🟢 Running — integrating EXP-085 results into knowledge base (forked work session s_1775650481772_10).
+- **Coach**: 🟢 Running — EXP-085 complete, awaiting next experiment design.
+- **All other agents**: 🟢 Running normally — all fired heartbeats at 12:13
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -20,8 +20,10 @@ Updated: 2026-04-08 ~11:45 UTC
 |-------|--------|-------|-------|
 | EXP-083 Cross-Reference Generalization | ✅ COMPLETE | coach/bob | **MAJOR**: 100% treatment vs 0% baseline across 2 new domains (env-repair + schema-migration). Cross-reference skill generalizes perfectly. H-089 promoted to Tier 1 (P(H)=0.92). Bob integrated. |
 | Federation Design (Local ↔ K3s) | ✅ DESIGN COMPLETE | bob | Bob produced 558-line design doc at `agents/shared/research-projects/federation-design.md`. Recommends Enhanced Git Federation (no new infra). 5-phase migration. Ready for Hao review. |
-| EXP-085 Few-Shot Generalization | 🔄 RUNNING | coach | Testing few-shot on escalation-judgment. Follow-up from EXP-084. Running now. |
-| KE-060 Intervention Taxonomy | 🔄 RUNNING | bob | Synthesizing H-085 + H-089 + H-091 into unified intervention decision framework. Forked from heartbeat. |
+| EXP-085 Few-Shot Generalization | ✅ COMPLETE | coach | **MAJOR**: 3/3 pass (100%) on escalation-judgment vs 12.5% baseline. Few-shot generalizes across judgment scenarios. H-091 promoted to Tier 1 (P(H)≥0.90). |
+| KE-060 Intervention Taxonomy | ✅ COMPLETE | bob | Unified taxonomy: 3 mechanisms (M1: Analysis Activation, M2: Evidence Discovery, M3: Structural Constraint). Diagnostic decision tree. Written and verified. |
+| EXP-085 Knowledge Integration | 🔄 RUNNING | bob | Bob integrating EXP-085 results into H-091, KE-059, KE-060 and related files. |
+| EXP-086 Few-Shot Boundary Test | 🔄 RUNNING | coach | Testing few-shot with structurally mismatched example on escalation-judgment. Session s_1775650543298_11. |
 | Amy-kimi billing outage | 🔴 Blocked | Hao | Still 429, needs balance refill |
 | Pre-merge review gate | ✅ Phase 1 done | - | Hook installed, needs Phase 2 (auto-review) |
 
@@ -55,17 +57,18 @@ Updated: 2026-04-08 ~11:45 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (11:45)
-- **EXP-085 RUNNING**: Coach autonomously forked few-shot generalization test on escalation-judgment. Follow-up from EXP-084's breakthrough finding.
-- **KE-060 RUNNING**: Bob forked intervention taxonomy synthesis (H-085 + H-089 + H-091 → unified decision framework).
-- **System autonomous**: All agents firing heartbeats independently. No pending requests. No intervention needed.
-- **Bob DD-586/587 synthesis**: Failed 2x with transient JSON Parse EOF. Will self-retry next heartbeat.
+## Latest Cycle Summary (12:15)
+- **EXP-085 COMPLETE**: 3/3 pass (100%) on escalation-judgment with few-shot (vs 12.5% baseline). **Few-shot confirmed as generalizable skill delivery method.** 3rd major finding today.
+- **KE-060 COMPLETE**: Unified Intervention Taxonomy written — 3 mechanisms. Committed by Bob (448e411f).
+- **EXP-086 FORKED**: Coach autonomously forked boundary test — mismatched few-shot example on escalation-judgment to find generalization limits.
+- **Bob integrating**: Currently running work session to update H-091, KE-059, KE-060 with EXP-085 results.
+- **All agents autonomous**: Heartbeats firing. No stuck sessions. Cancelled stale may session.
 - **Amy-kimi still DOWN**: 429 errors, blocked on Hao for billing fix.
 
 ## Next Actions
+- **P1**: **Convert text-rule skills to few-shot format** — EXP-085 confirmed generalization. Coach should start converting highest-impact text-rule skills to few-shot. This is the Knowledge APPLICATION priority.
+- **P1**: **Deploy cross-reference skill to production** — EXP-083 confirmed 100% generalization, M2 mechanism validated.
 - **P1**: Federation design ready for Hao review — present summary when Hao is available
-- **P1**: Deploy cross-reference skill to production — EXP-083 confirmed 100% generalization, highest-confidence intervention
-- **P1**: Apply EXP-084 findings — convert existing text-rule skills to few-shot format (after EXP-085 confirms generalization)
 - **P2**: Scout C1.3 laggard intervention (76.3% vs 90%+ for others)
 - **P2**: Pre-merge review gate Phase 2 (auto-review) — needs design
-- **P2**: EXP-070 (externalization on ambiguous-context-drift) — Coach considers it done as part of EXP-070/071/072 arc; verify completeness
+- **P2**: Design next experiment — what skill/scenario to apply few-shot to next?
