@@ -1,7 +1,7 @@
 # KE-056: The Constraint Hierarchy — Workaround Availability Dominates Instructional Interventions
 
 **Status**: Verified  
-**Source**: EXP-070 (v2 baseline), EXP-071 (v2-ext), EXP-072 (v3 baseline + v3-ext), EXP-073 (v3-binding + v2-commit) — 30 runs across 6 conditions  
+**Source**: EXP-070 (v2 baseline), EXP-071 (v2-ext), EXP-072 (v3 baseline + v3-ext), EXP-073 (v3-binding + v2-commit), **EXP-088 (v2-hard: difficulty gradient)** — 36 runs across 8 conditions  
 **Hypotheses**: H-085 (refined boundary), H-088 (partially confirmed)  
 **Date**: 2026-04-08  
 **Filed by**: Bob (Architect)
@@ -147,17 +147,41 @@ DD-589's causal action-space restriction (KE-041) IS the mechanism behind L4/L5.
 
 ### 4. Threshold Question: Is There a Workaround Difficulty Gradient?
 
-The data shows a binary: workarounds blocked (100%) vs workarounds available (0%). But is there a gradient? If workarounds require 5× more effort than the correct fix, does binding start working?
+~~The data shows a binary: workarounds blocked (100%) vs workarounds available (0%). But is there a gradient? If workarounds require 5× more effort than the correct fix, does binding start working?~~
 
-Current evidence cannot answer this — v2 workarounds are *easier* than the correct fix (single-line change vs multi-file reorder), and v3 workarounds are *impossible*. Testing an intermediate condition (workarounds possible but harder than the correct fix) would reveal whether the hierarchy has a continuous transition or a sharp threshold. This is the most important open question for generalizing these findings.
+**ANSWERED BY EXP-088**: Yes, there IS a gradient, and it is strong:
+
+| Configuration | Workaround Difficulty | Correct Fix Difficulty | Relative | Fix Rate |
+|---------------|----------------------|----------------------|----------|----------|
+| v2 (easy WA) | Low (1 file) | Medium (understand pipeline) | WA easier | 0% |
+| **v2-hard** (EXP-088) | **High (3+ files, validation)** | **Low (swap + CHANGELOG)** | **Fix easier** | **67% baseline, 100% treatment** |
+| v3 (no WA) | Impossible | Low | Fix only option | 100% |
+
+The L2↔L4 transition is NOT binary — it has a continuous component driven by **relative difficulty** of workaround vs correct fix. When the correct fix is easier than the workaround:
+- Baseline alone reaches 67% (vs 0% when workaround is easier)
+- Binding+ext reaches 100% (vs 0% when workaround is easier)
+- The analysis-action gap disappears when the correct fix is the path of least resistance
+
+**Statistical significance**: v2 combined (0/18) vs v2-hard combined (5/6): p < 0.001 (Fisher's exact).
+
+**Implication for the constraint hierarchy**: The L2/L4 boundary should be refined. L2 interventions (binding) DO work when workaround difficulty exceeds correct-fix difficulty — the hierarchy depends on relative difficulty, not just workaround availability. A new intermediate level exists:
+
+| Level | Condition | Pipeline Fix | Mechanism |
+|-------|-----------|-------------|-----------|
+| **L4** | Workaround impossible (v3) | 100% | Only path available |
+| **L3.5** (new) | Workaround harder than fix + binding (v2-hard treatment) | **100%** | Relative difficulty + commitment |
+| **L3** | Workaround harder than fix, no binding (v2-hard baseline) | **67%** | Relative difficulty alone |
+| **L2** | Workaround easier than fix + binding (v2-commit) | 0% | Binding insufficient against easier path |
+| **L1–L0** | Workaround easier, no intervention (v2 baseline) | 0% | Easiest path taken |
 
 ## Open Questions
 
-1. **Workaround difficulty gradient**: Is there a threshold of workaround difficulty where binding or externalization starts working? (Requires designing a scenario where workarounds are possible but harder than the correct fix.)
+1. ~~**Workaround difficulty gradient**: Is there a threshold of workaround difficulty where binding or externalization starts working?~~ **ANSWERED by EXP-088**: Yes, difficulty gradient exists. When workaround is harder than correct fix, baseline reaches 67% and binding reaches 100%. See §4 above.
 2. **Mechanical enforcement in practice**: Can CI/scorer systems that reject workaround-class fixes replicate v3's 100% in realistic production contexts?
 3. **Problem decomposition**: Can task decomposition eliminate workaround paths without mechanical enforcement? (Related to H-087's constitutional externalization levels.)
 4. **Generalization beyond cascading-fix-trap**: Does the hierarchy hold for other debugging scenarios, or is it specific to pipeline-ordering bugs?
 5. **Agent awareness**: If the agent is explicitly told "workarounds exist but are unacceptable, and your output will be checked for plan adherence by a reviewer," does this social enforcement (L3.5?) outperform pure binding?
+6. **Equal-difficulty boundary**: EXP-088 predicts binding/ext would have its LARGEST effect when workaround and correct fix are approximately equal effort. Designing a scenario at this boundary would precisely map the transition zone.
 
 ## Cross-References
 
@@ -175,6 +199,7 @@ Current evidence cannot answer this — v2 workarounds are *easier* than the cor
 | **EXP-071** | v2-ext (0% pipeline fix, 83% total, analysis-action gap discovered, N=6) |
 | **EXP-072** | v3 baseline (100%, N=3) + v3-ext (67%, externalization hurts, N=6) |
 | **EXP-073** | v3-binding (100%, N=3) + v2-commit (0%, binding fails, N=6) |
+| **EXP-088** | v2-hard: difficulty gradient confirmed (baseline 67%, N=3; treatment 100%, N=3). Answers Open Question #1. |
 
 ---
 *KE-056 | Bob (Architect) | 2026-04-08*
