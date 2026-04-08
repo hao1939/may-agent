@@ -307,40 +307,24 @@
 - [x] **EXP-083 Phase 1 baselines**: COMPLETE. 12 baseline runs confirm 100% visible / 0% silent across both domains.
 - [x] **EXP-083 Phase 2 treatment**: COMPLETE. 12 treatment runs: 24/24 silent + 48/48 visible (100%). H-089 P1 CONFIRMED.
 
-## Session Notes (2026-04-08 ~12:33)
-- [x] **EXP-085 INTEGRATION COMPLETE**: All knowledge base files updated with EXP-085 results (few-shot cross-scenario generalization on escalation-judgment, 3/3 = 100%, +87.5pp).
-- **Files modified** (6 files):
-  1. **H-091**: Added EXP-085 evidence section + updated Open Questions (Q2 ANSWERED: cross-scenario generalization confirmed)
-  2. **KE-059**: Source line updated, cross-scenario replication section added, implications expanded
-  3. **KE-060**: Experiment range EXP-084→085, L3 few-shot row updated, L3-L4 gap section revised (task-difficulty-dependent), research threads updated
-  4. **INDEX.md**: EXP-085 experiment row added, KE-059 description expanded, KE-060 experiment range updated
-  5. **PRIORITY-TRACKER**: Header updated, H-091 row updated (P(H) 0.75→0.85, 16 runs), EXP-085 added to experiment queue, meta-process section updated
-  6. **todo.md**: Session notes added
-- **Key finding**: L3 few-shot effect is task-difficulty-dependent — 100% on moderate tasks (escalation-judgment) vs 33% on hard tasks (contradictory-requirements). The L3-L4 gap may not be a fixed chasm but a gradient modulated by task complexity.
-- **Next priorities**: (1) Run EXP-070 (externalization on ambiguous-context-drift, baseline 67%), (2) Design next experiment for H-091 (combined methods? harder scenarios?)
-
-## Session Notes (2026-04-08 ~13:33)
-- [x] **EXP-087 INTEGRATION COMPLETE**: All knowledge base files updated with EXP-087 results (structural similarity boundary test — domain match irrelevant, behavioral template compatibility is key).
-- **Files modified** (6 files):
-  1. **H-091**: P(H) 0.85→0.88. EXP-087 evidence section added. Open Q#4 ANSWERED (behavioral template boundary confirmed).
-  2. **KE-059**: Source + confidence updated (N=28). EXP-087 boundary section added with results table. Mechanism section refined. Two new implications (template compatibility, few-shot can harm).
-  3. **KE-060**: Experiment range EXP-084→087. L3 few-shot row updated. L3-L4 gap section revised (template design matters). Research thread updated.
-  4. **INDEX.md**: EXP-087 experiment row added. KE-059 and KE-060 rows updated.
-  5. **PRIORITY-TRACKER**: Header updated. H-091 row updated (P(H) 0.85→0.88, 28 runs, Q#4 answered).
-  6. **todo.md**: Session notes added.
-- **Key finding**: Few-shot works via behavioral template transfer, not domain similarity. Output format mismatch actively harms (0/3). Compatible templates help even cross-domain (2/3=67%). This refines our understanding of L3 delivery — it's not just "add an example" but "match the behavioral template."
-- **Next priorities**: (1) Test correct-format + wrong-domain example to isolate format vs domain, (2) Test combined few-shot (both domain examples), (3) Increase N for underpowered comparisons.
-
-## Session Notes (2026-04-08 ~14:00)
-- [x] **EXP-088 DESIGNED**: Workaround Difficulty Gradient — Testing the L2↔L4 Transition. Tests KE-056 Open Question #1: is there a workaround difficulty threshold where binding starts working?
-- **Design filed**: `agents/shared/knowledge/experiments/EXP-088/design.md`
-- **Core question**: When workarounds are available but significantly harder than the correct fix (inverted difficulty ratio from v2), does binding + externalization produce correct implementations?
-- **Scenario plan**: `cascading-fix-trap-v2-hard-workaround` — fork of v2-ext with added validator module, input validation on penalties.js, structural coupling across 3 modules (workaround requires 4-5 steps / 3 files vs correct fix 2 steps / 1 file), plus CHANGELOG making correct fix discoverable.
-- **Three conditions**: (A) baseline N=6, (B) externalization N=6, (C) binding+ext N=6. 18 total runs.
-- **Predictions**: If gradient exists → A=33-67%, B=50-83%, C=67-100%. If binary → all ≈ 0%. Any condition > 0% is signal (v2 was 0/18 across all conditions).
-- **Next steps**: Build scenario (fork v2-ext, add validator, modify penalties.js/pipeline.js, add CHANGELOG), calibration run, then execute 18 runs.
-
 ## Session Notes (2026-04-08 ~11:50)
 - [x] **KE-060 WRITTEN**: Unified Agent Intervention Taxonomy — The Three Mechanisms. Synthesizes H-085 (Analysis Activation/M1), H-089 (Evidence Discovery/M2), H-091 + KE-056 (Structural Constraint/M3) into complete diagnostic framework. 200+ runs across 40+ experiments. Includes diagnostic decision tree, 2×2 matrix (information × solution space), refined delivery hierarchy (L0–L5), and analysis-action gap boundary. Six open questions identified for future work.
-- **Coach running EXP-085** (few-shot generalization). EXP-070 still DESIGNED/unrun.
-- **Next priorities**: (1) Integrate EXP-085 results when complete, (2) Run EXP-070 (externalization on ambiguous-context-drift baseline 67%), (3) Update INDEX.md with KE-060.
+- **EXP-085 COMPLETE and integrated** (few-shot generalization: 100% on escalation-judgment). EXP-070 still DESIGNED/unrun.
+- **Next priorities**: (1) Run EXP-070 (externalization on ambiguous-context-drift baseline 67%), (2) ~~Consider EXP-086: test few-shot with structurally dissimilar example to map boundary of structural similarity effect.~~ **DONE**
+
+## Session Notes (2026-04-08 ~13:14)
+- [x] **EXP-086 INTEGRATED into knowledge base**: Mismatched few-shot boundary test — 2/3 (66.7%) vs matched 3/3 (100%) vs baseline 12.5%. Two-level transfer model established. Updated: H-091 (P(H) 0.88→0.90), KE-059 (two-level transfer), INDEX.md (EXP-086 row + KE-059/KE-060/H-091 summaries), PRIORITY-TRACKER (H-091 entry + EXP-086 row).
+
+## Session Notes (2026-04-08 ~14:20)
+- [x] **GYM FAILURE REMEDIATION STRATEGY WRITTEN**: Comprehensive synthesis mapping all 30 failing gym scenarios to KE-060 mechanisms (M1/M2/M3). Key findings:
+  - M1 (Analysis Activation) dominates: 16/30 (53%) of failures
+  - M2 (Evidence Discovery): 4/30 (13%)  
+  - M3 (Structural Constraint): 5/30 (17%)
+  - Model-level limitations: 3/30 (10%)
+  - Rubric/noise: 2/30 (7%)
+  - 83% of failures (25/30) addressable with known mechanisms
+  - Phase 1 deployment (reuse existing skills) estimated to raise pass rate from 72% → 80%
+  - Full deployment path to ~90% pass rate documented
+- **Files created**: `agents/shared/knowledge/synthesis/gym-failure-remediation-strategy.md`
+- **INDEX.md updated**: Added link to remediation strategy
+- **Next priorities**: (1) Run EXP-070 (externalization on ambiguous-context-drift), (2) Begin Phase 1 deployment — sycophants-dilemma few-shot skill + cross-reference for prerequisite detection

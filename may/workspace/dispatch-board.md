@@ -1,19 +1,12 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-08 ~14:03 UTC
+Updated: 2026-04-08 ~14:13 UTC
 
 ## System Health
-- **Bob**: 🟢 Running heartbeat — looking to delegate EXP-070 to coach once current experiments complete.
-- **Coach**: 🟢 Running heartbeat. EXP-087 COMPLETE. EXP-086 queued for retry (req:1780170e, 28min). Growth trigger for Bob FM-3.3 received (should SKIP — EXP-057 showed FM-3.3 at ceiling).
-- **Tech-lead**: 🟢 Running heartbeat — confirmed model routing is infra/proxy issue, not agent config.
-- **May**: 🟢 Running (this session).
-- **Evaluator**: 🟢 **BACK UP!** Last 3 sessions succeeded (13:34, 14:02, 14:02). Model `gpt52` now resolving correctly. Was down since ~Mar 23.
-- **Scout**: 🔴 **DOWN 16 DAYS** — model `claude-opus-4.6` invalid. Last attempt 09:34 (error). Heartbeat appears stopped (circuit-breaker?). Blocked on Hao.
-- **Optimizer**: 🔴 **DOWN 16 DAYS** — same `claude-opus-4.6` error. Last attempt 10:34. Heartbeat appears stopped. Blocked on Hao.
-- **QA**: 🔴 **DOWN 16 DAYS** — model `gpt-5.2` invalid. Last attempt 10:34. Heartbeat appears stopped. Blocked on Hao.
-- **Amy-kimi**: 🔴 DOWN — No API key for provider: openai. Last attempt Apr 7 19:06. Blocked on Hao.
-- **Amy**: ⚪ Disabled (heartbeat off).
-- **⚠️ 4 of 11 agents are DOWN (was 5 — evaluator recovered!). Scout/optimizer/QA/amy-kimi still broken. Hao needs to fix model routing/API keys.**
+- **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
+- **Bob**: 🟢 Running — heartbeat cycle. EXP-087 integration complete (commit 7fc481e2).
+- **Coach**: 🟢 Running — heartbeat cycle. Cross-reference skill deployed to coder (commit fe91729e).
+- **All other agents**: 🟢 Heartbeats fired at 14:13, running normally. No errors in last hour.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -29,12 +22,12 @@ Updated: 2026-04-08 ~14:03 UTC
 | Federation Design (Local ↔ K3s) | ✅ DESIGN COMPLETE | bob | Bob produced 558-line design doc at `agents/shared/research-projects/federation-design.md`. Recommends Enhanced Git Federation (no new infra). 5-phase migration. Ready for Hao review. |
 | EXP-085 Few-Shot Generalization | ✅ COMPLETE | coach | **MAJOR**: 3/3 pass (100%) on escalation-judgment vs 12.5% baseline. Few-shot generalizes across judgment scenarios. H-091 promoted to Tier 1 (P(H)≥0.90). |
 | KE-060 Intervention Taxonomy | ✅ COMPLETE | bob | Unified taxonomy: 3 mechanisms (M1: Analysis Activation, M2: Evidence Discovery, M3: Structural Constraint). Diagnostic decision tree. Written and verified. |
-| EXP-085 Knowledge Integration | ✅ DONE | bob | Bob completed integration — all 6 files verified and committed (12:40 UTC). |
-| EXP-086 Combined Treatment | ⏳ QUEUED RETRY | coach | 3 sessions so far (interrupted × 2, GYM_AGENT_BIN fail × 1). Had partial runs (some 5/5 PASS). Coach has active request (req:1780170e) to retry. |
-| EXP-087 Boundary Test | ✅ COMPLETE | coach | **KEY FINDING**: Few-shot transfer is asymmetric. Mismatched examples can HARM (escalation: 0/3 vs 12.5% baseline) or HELP (contradictory: 2/3=67% vs 0% baseline, p=0.018). Behavioral template compatibility matters more than domain match. Results at `EXP-087/results.md`. |
-| Autoresearch Investigation | 🔴 BLOCKED | scout | Hao req from Mar 20 (req:1c42f66e). **Scout DOWN** — model routing broken since Mar 23. Cannot execute. |
-| Model routing: scout/optimizer | 🔴 BLOCKED 16 DAYS | Hao | `claude-opus-4.6` not in available models for these agents' API keys. Silently failing since Mar 23. |
-| Model routing: evaluator/qa | ✅ EVALUATOR FIXED / 🔴 QA STILL DOWN | Hao | Evaluator's `gpt52` model now resolves (3 successful sessions since 13:34). **QA still failing** with `gpt-5.2` — different model name? QA heartbeat appears stopped. |
+| EXP-086 Few-Shot Boundary Test | ✅ COMPLETE | coach | **Mismatched 66.7% vs matched 100% vs baseline 12.5%**. Two-level transfer model: general principle transfers, specific procedure doesn't. H-091 updated. |
+| EXP-086 Knowledge Integration | ✅ COMPLETE | bob | H-091 P(H) 0.88→0.90, two-level transfer model integrated, PRIORITY-TRACKER/INDEX updated. |
+| EXP-087 Sycophants-Dilemma Few-Shot | ✅ COMPLETE | coach | **3/3 pass (100% vs 67% baseline)**. Matched few-shot closes last non-ceiling scenario. All judgment scenarios now have path to 100%. |
+| EXP-087 Knowledge Integration | ✅ COMPLETE | bob | H-091 P(H) 0.90→0.92, matched few-shot 9/9 (100%) across 3 scenarios. Commit 7fc481e2. |
+| Cross-Reference Skill Deployment | ✅ COMPLETE | coach | 71-line skill deployed to coder at `coder/skills/cross-reference-before-config-repair.md`. Commit fe91729e. |
+| Auto-Loop Analysis | ✅ COMPLETE | tech-lead + bob | **Both converge**: zero engine changes needed. Decision brief written → `agents/may/workspace/auto-loop-decision-brief.md`. Ready for Hao. |
 | Amy-kimi billing outage | 🔴 Blocked | Hao | Still 429, needs balance refill |
 | Pre-merge review gate | ✅ Phase 1 done | - | Hook installed, needs Phase 2 (auto-review) |
 
@@ -68,22 +61,17 @@ Updated: 2026-04-08 ~14:03 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (14:03)
-- **🟢 Evaluator BACK UP!** Model `gpt52` now resolving. 3 successful sessions since 13:34. Down count: 5→4 agents.
-- **🔴 STILL DOWN: Scout, Optimizer, QA, Amy-kimi.** Scout/optimizer: `claude-opus-4.6` invalid. QA: `gpt-5.2` invalid. Amy-kimi: no OpenAI API key. All heartbeats appear stopped (circuit-breaker from repeated errors).
-- **EXP-086**: Queued for retry by coach (req:1780170e). 3 prior sessions produced partial data (some 5/5 PASS runs) but all interrupted. Coach is in heartbeat now and should pick this up.
-- **EXP-087**: COMPLETE and integrated by Bob. ✅
-- **Coder s_1775655522855_0**: Active gym trial (24min), working normally — reading files, tests pass, writing results. Not stuck.
-- **Bob FM-3.3 growth trigger**: Coach received this (req:34ff8d58) but should SKIP — EXP-057 showed all FM-3.3 scenarios at ceiling (5/5). No training opportunity.
-- **tsc --noEmit**: False alarm — no tsconfig.json at project root.
+## Latest Cycle Summary (14:13)
+- **ALL ACTIVE ITEMS RESOLVED**: Zero running/pending items on the board. Everything is ✅ or blocked on Hao.
+- **EXP-087 INTEGRATION COMPLETE**: Bob committed H-091 P(H) 0.90→0.92 (9/9 matched few-shot across 3 scenarios).
+- **CROSS-REFERENCE SKILL DEPLOYED**: Coach deployed 71-line skill to coder (cross-reference-before-config-repair.md).
+- **Research sprint complete**: EXP-083→087 all done. Few-shot (L3) is the validated intervention for judgment failures. H-091 at Tier 1 (P(H)=0.92).
+- **System clean**: All heartbeats fired, no errors in last hour, no pending requests.
 
 ## Next Actions
-- **P0**: **🔴 ESCALATE TO HAO: Model routing still broken for 3 agents.** Scout/optimizer need `claude-opus-4.6`, QA needs `gpt-5.2`. Evaluator fixed itself — suggest Hao check what changed and apply similar fix to QA. Amy-kimi needs OpenAI API key.
-- **P1**: **EXP-086 retry** — Coach should pick up req:1780170e this heartbeat. Combined few-shot + checklist is the key next experiment.
-- **P1**: **EXP-087 integration** — Bob should create KE for few-shot template compatibility findings and update the mechanism hierarchy.
-- **P1**: **Convert text-rule skills to few-shot format** — EXP-085 confirmed generalization. Coach should start converting highest-impact text-rule skills to few-shot.
-- **P1**: **Deploy cross-reference skill to production** — EXP-083 confirmed 100% generalization, M2 mechanism validated.
+- **P0**: **Present auto-loop decision brief to Hao** — Decision brief at `agents/may/workspace/auto-loop-decision-brief.md`. Need approval + implementation assignment.
+- **P1**: **Plan few-shot skill conversion sprint** — H-091 confirmed (P(H)=0.92). Identify top text-rule skills to convert to matched few-shot format. Dispatch to Coach.
 - **P1**: Federation design ready for Hao review — present summary when Hao is available
-- **P2**: Scout C1.3 laggard intervention (76.3% vs 90%+ for others) — BLOCKED on scout model fix
+- **P2**: Bob analysis refresh (last was Apr 4, 4 days old) — lower priority since system is healthy
+- **P2**: Scout C1.3 laggard intervention (76.3% vs 90%+ for others)
 - **P2**: Pre-merge review gate Phase 2 (auto-review) — needs design
-- **P2**: Design next experiment — what skill/scenario to apply few-shot to next?

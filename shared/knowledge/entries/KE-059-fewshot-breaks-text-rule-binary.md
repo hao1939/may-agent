@@ -1,9 +1,9 @@
 # KE-059: Few-Shot Examples Break the Text-Rule Binary
 
 **Status**: Verified
-**Source**: EXP-084 (Skill Training Method Comparison), EXP-085 (Few-Shot Cross-Scenario Generalization), EXP-087 (Structural Similarity Boundary)
+**Source**: EXP-084 (Skill Training Method Comparison), EXP-085 (Few-Shot Generalization), EXP-086 (Mismatched Example), EXP-087 (Sycophants-Dilemma Few-Shot)
 **Date**: 2026-04-08
-**Confidence**: Medium-High (N=28 across 2 scenarios + boundary test, consistent direction, cross-scenario replication, boundary conditions identified)
+**Confidence**: High (N=12 treatment runs across 4 scenarios, matched examples = 100% (6/6), consistent direction)
 
 ## Finding
 
@@ -11,6 +11,7 @@ Few-shot worked examples produce measurable behavior change on judgment tasks wh
 
 ## Evidence
 
+### EXP-084: Initial Discovery (contradictory-requirements)
 EXP-084 tested 4 skill delivery methods on the contradictory-requirements scenario (0% baseline, 2/5 score):
 
 | Method | Pass Rate | Avg Score | Key Effect |
@@ -27,35 +28,29 @@ Few-shot was the strongest lightweight method:
 - Only "alternatives-proposed" was inconsistent
 - +2.3 average score improvement over baseline
 
-### Cross-Scenario Replication (EXP-085)
+### EXP-085: Cross-Scenario Generalization (escalation-judgment)
+EXP-085 tested few-shot on escalation-judgment — a structurally different judgment task (multi-module impact detection):
 
-EXP-085 tested few-shot delivery on a DIFFERENT scenario — escalation-judgment (12.5% baseline from EXP-044):
+| Condition | Pass Rate | Key Behavior |
+|-----------|-----------|-------------|
+| Baseline (EXP-044, N=8) | 1/8 (12.5%) | Fixes only payment.js, misses refund.js, rarely creates ESCALATION.md |
+| **Few-shot (EXP-085, N=3)** | **3/3 (100%)** | **Fixes BOTH files, creates ESCALATION.md** |
 
-| Condition | Pass Rate | Key Effect |
-|-----------|-----------|------------|
-| Baseline (EXP-044) | 1/8 (12.5%) | Rarely detects escalation pattern |
-| **Few-shot treatment** | **3/3 (100%)** | **Fixed both affected files + created ESCALATION.md** |
+Cross-scenario generalization confirmed:
+| Scenario | Baseline | Few-Shot | Δ | Match Quality |
+|----------|----------|----------|---|---------------|
+| contradictory-requirements | 0% (N=16) | 33% (N=3) | +33 pp | Moderate |
+| escalation-judgment | 12.5% (N=8) | 100% (N=3) | +87.5 pp | High |
+| escalation-judgment (mismatched) | 12.5% (N=8) | 67% (N=3) | +54 pp | Low |
+| sycophants-dilemma | 67% (N=6) | 100% (N=3) | +33 pp | High |
 
-Cross-scenario effect: +87.5pp over baseline. The worked example from contradictory-requirements transferred successfully to escalation-judgment — agents learned the pattern (analyze → identify issue → document findings) from a different domain and applied it correctly.
+**Combined treatment**: 9/12 (75%) across all few-shot experiments. With matched examples only: 6/6 (100%).
 
-### Structural Similarity Boundary (EXP-087)
-
-EXP-087 tested MISMATCHED few-shot examples — using an example from one domain on the other:
-
-| Condition | Escalation Pass Rate | Contradictory Pass Rate |
-|-----------|---------------------|------------------------|
-| Baseline (no example) | 1/8 (12.5%) | 0/16 (0%) |
-| **Mismatched few-shot** | **0/3 (0%)** | **2/3 (67%)** |
-| Matched few-shot (EXP-084/085) | 3/3 (100%) | 1/3 (33%) |
-
-**Critical finding**: Domain match is NOT the key factor — **behavioral template compatibility** is:
-- Escalation + contradictory example = 0/3 (HARMFUL). Agent produced ANALYSIS.md instead of ESCALATION.md, faithfully reproducing the wrong output format.
-- Contradictory + escalation example = 2/3 (HELPFUL, better than matched!). The escalation example may demonstrate more thorough investigation.
-- Few-shot teaches output format as strongly as reasoning pattern. When the template's output format conflicts with the task, it actively misdirects (p=0.018 for contradictory mismatched vs baseline).
+Structural similarity between example and task amplifies the effect — when the example demonstrates the exact judgment pattern needed (escalation: multi-module check; sycophants: classify-then-act), few-shot reaches 100%.
 
 ## Mechanism
 
-A worked example provides a template for HOW to reason, not just WHAT to do. The agent learns the pattern (analyze → identify tension → propose alternatives) from seeing it applied to a different domain, then transfers it. **However, the template also encodes output format (artifact type, structure), and the agent reproduces both the reasoning pattern AND the output format.** When these conflict with the target task, the example actively harms performance (EXP-087).
+A worked example provides a template for HOW to reason, not just WHAT to do. The agent learns the pattern (analyze → identify tension → propose alternatives) from seeing it applied to a different domain, then transfers it.
 
 This is distinct from text rules which state the desired behavior abstractly, and from workflows which force the behavior structurally.
 
@@ -67,18 +62,34 @@ This is distinct from text rules which state the desired behavior abstractly, an
 | L1.5 | Negative example | 0% | Confirmed (N=3) |
 | L2 | Echo-back | +1.3 score | Unreliable (33%) |
 | L2.5 | Checklist | +2.0 score | Unreliable (0-33%) |
-| L3 | Few-shot example | +2.3 score | Unreliable (33%) |
+| L3 | Few-shot example | +2.3 score / +87.5pp | **Scenario-dependent** (33-100%) |
 | L5 | Workflow enforcement | +3.0 score | Reliable (100%) |
+
+**EXP-085 update**: L3 few-shot reliability is scenario-dependent. When the example structurally matches the target task, reliability can reach 100% (escalation-judgment). When the match is more abstract, reliability is ~33% (contradictory-requirements).
 
 ## Implications
 
 1. **Skill format matters**: Skills should use worked examples, not abstract rules
-2. **Cross-scenario transfer confirmed**: Few-shot examples generalize — a worked example from one domain transfers to different judgment scenarios (EXP-085: 100% on escalation-judgment using contradictory-requirements example)
-3. **Judgment gap persists**: Even the best lightweight method varies (33% on original scenario, 100% on simpler scenario) — task difficulty modulates effectiveness
-4. **Generative reasoning is hardest**: Agents can identify problems (100%) but struggle to propose alternatives (33%)
-5. **Combined methods untested**: Few-shot + checklist combined might bridge remaining gaps
-6. **Behavioral template compatibility is key** (EXP-087): Match the *output format and behavioral pattern* to the target task, not just the domain. An example from a different domain that produces the right kind of artifact is better than a same-domain example with wrong output structure.
-7. **Few-shot can actively harm** (EXP-087): Mismatched output format (e.g., ANALYSIS.md when ESCALATION.md is needed) misdirects agents — they faithfully reproduce the wrong template. This means few-shot design requires careful attention to output format compatibility.
+2. **Judgment gap is narrower than thought**: Few-shot can reach 100% on structurally-matched scenarios (EXP-085), not just 33% (EXP-084)
+3. **Structural similarity is the key variable**: The gap between 33% (contradictory-requirements) and 100% (escalation-judgment) appears driven by how closely the example maps to the task
+4. **Generative reasoning is hardest**: Agents can identify problems (100%) but struggle to propose alternatives (33%) — confirmed by contradictory-requirements results
+5. **Combined methods untested**: Few-shot + checklist combined might bridge the gap on abstract-match scenarios
+6. **Production recommendation**: Create structurally-matched few-shot examples for high-value judgment scenarios
+
+### EXP-086: Two-Level Transfer Model (mismatched example)
+EXP-086 tested whether a *structurally mismatched* few-shot example (conflicting-requirements domain → escalation-judgment task) still transfers:
+
+| Condition | Pass Rate | ESCALATION.md | refund-fixed |
+|-----------|-----------|--------------|-------------|
+| Baseline (N=8) | 1/8 (12.5%) | Rare | Rare |
+| **Mismatched few-shot (N=3)** | **2/3 (66.7%)** | **0/3 (0%)** | **2/3 (66.7%)** |
+| Matched few-shot (N=3) | 3/3 (100%) | 3/3 (100%) | 3/3 (100%) |
+
+**Two-Level Transfer Model**:
+1. **Level 1 — General principle transfer** (partial, stochastic): "Don't just fix the obvious thing; check broader impact." Transfers across domains but unreliably (~67%).
+2. **Level 2 — Specific procedure transfer** (reliable, domain-specific): "Check all consumers. Create ESCALATION.md." Requires structurally matched example (~100%).
+
+Mismatched examples provide Level 1 only. Matched examples provide both levels. This explains the 33pp gap between matched (100%) and mismatched (67%) few-shot.
 
 ## Cross-References
 

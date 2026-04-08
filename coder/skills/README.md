@@ -9,3 +9,4 @@ Reusable skills for the Coder agent. Each file describes a protocol for a specif
 - **efficient-file-reading** — Size-check → grep → targeted read. Never full-read large files.
 - **structured-plan-writing** — Decompose → order → risk → checkpoint → execute. For multi-step tasks.
 - **experience-replay** — Search error logs before attempting known-tricky work.
+- **cross-reference-before-config-repair** — Grep source code for all references before repairing config/schema files. Discovers missing fields that tests don't check.

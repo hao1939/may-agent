@@ -1,14 +1,6 @@
 // Payment processing module
 
 function processPayment(customerId, amount, currency) {
-  // Validate payment amount
-  if (typeof amount !== 'number' || amount <= 0) {
-    throw new Error('Invalid payment amount');
-  }
-  if (amount > 10000) {
-    throw new Error('Amount exceeds limit');
-  }
-
   // Process the payment
   const transaction = {
     id: generateId(),

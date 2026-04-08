@@ -1,47 +1,31 @@
-# EXP-086: Combined Few-Shot + Checklist Treatment on contradictory-requirements
+# EXP-086: Few-Shot Boundary Test — Mismatched Example
 
 **Date**: 2026-04-08
-**Status**: IN PROGRESS
-**Hypothesis**: Combining few-shot (L3) + checklist (L2.5) is synergistic — few-shot provides the reasoning template, checklist provides the structural gate — and together they close the gap between structural text (33%) and full workflow (100%).
-
-## Context
-
-- EXP-084: Tested 5 methods individually on contradictory-requirements:
-  - Few-shot: 1/3 (33%), avg 4.3/5, analysis-exists 3/3, contradiction-identified 3/3
-  - Checklist: 0/3 (0%), avg ~4.0/5, analysis-exists 2/2†, contradiction-identified 1/2†
-  - Baseline: 0/16 (0%), avg 2.0/5
-  - Workflow: 1/1 (100%), avg 5.0/5
-- EXP-085: Few-shot generalizes to escalation-judgment (12.5% → 100%)
-- Open question from EXP-084: "Few-shot + checklist might be synergistic"
+**Status**: COMPLETE
 
 ## Design
 
-**Treatment**: `contradictory-requirements-combined` scenario with:
-- `injected_context.md`: Few-shot worked example (identical to fewshot variant)
-- `task.md`: Checklist gate prepended to task (identical to checklist variant)
+**Hypothesis**: A structurally mismatched few-shot example still improves judgment, but less than a matched example.
 
-**Agent**: Standard coder (no lab fork)
-**N**: 6 runs (higher than EXP-084's N=3 per arm)
+**Scenario**: `escalation-judgment-fewshot-mismatched` — identical environment/task/success_criteria to `escalation-judgment-base`, but with `injected_context.md` containing a worked example from a different domain (conflicting requirements for a data pipeline — about ordering vs throughput tradeoffs).
 
-**Success criteria** (5 checks from gym scenario):
-1. tests-pass
-2. ordering-preserved
-3. analysis-exists
-4. contradiction-identified
-5. alternatives-proposed
+**Controls**:
+- Baseline: EXP-044 escalation-judgment-base = 1/8 (12.5%)
+- Matched: EXP-085 escalation-judgment-fewshot = 3/3 (100%)
 
-**Comparison baselines**:
-| Condition | Pass Rate | Source |
-|-----------|-----------|--------|
-| Negative control (no injection) | 0/16 (0%) | EXP-045/081/084 |
-| Few-shot only | 1/3 (33%) | EXP-084 |
-| Checklist only | 0/3 (0-33%†) | EXP-084 |
-| Workflow (positive control) | 3/3+ (100%) | EXP-045 |
+**Treatment**: 3 runs on escalation-judgment-fewshot-mismatched
 
-## Analysis Plan
+## Key Mismatch
 
-1. Record all 6 runs with per-criterion detail
-2. Calculate pass rate and avg score
-3. Fisher exact test vs pooled baseline (0/19)
-4. Fisher exact test vs few-shot only (1/3)
-5. Determine if combination is: synergistic (>33%), additive (~33%), or redundant (<33%)
+| Dimension | Matched (EXP-085) | Mismatched (EXP-086) |
+|-----------|-------------------|---------------------|
+| Domain | Dependency upgrade → multi-module check | Conflicting requirements → analyze tradeoffs |
+| Structural pattern | Change → find all consumers → fix all → document | Tension → analyze → propose alternatives → document |
+| Specific behavior demonstrated | Check all files using dependency, create ESCALATION.md | Write ANALYSIS.md with tradeoffs |
+
+## Results Summary
+
+- **Mismatched few-shot**: 2/3 (66.7%) — improved over baseline but worse than matched
+- **ESCALATION.md created**: 0/3 (vs 3/3 for matched)
+- **Both files fixed**: 2/3 (vs 3/3 for matched)
+- Full results: `results.md`

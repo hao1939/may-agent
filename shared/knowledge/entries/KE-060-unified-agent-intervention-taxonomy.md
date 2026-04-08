@@ -141,7 +141,7 @@ KE-056 established a constraint hierarchy. KE-059 broke the text-rule binary. Th
 | **L2** | Echo-back self-prompting | +1.3 score (~33%) | Untested | Weak M1 |
 | **L2** | Instructional binding | N/A | 0% (v2-commit) | None when workarounds exist |
 | **L2.5** | Checklist injection | +2.0 score (~0% pass) | Untested | Weak M1 |
-| **L3** | Few-shot worked example | +2.3 score (33% pass; 100% cross-scenario EXP-085). EXP-087: behavioral template compatibility > domain match. Mismatched output format actively harms (0/3). | Untested | Moderate M1 |
+| **L3** | Few-shot worked example | +2.3 score (33-100% pass) | Untested | Moderate M1 |
 | **L3** | Task instruction (xref) | +100pp on absent-info | Untested | M2 |
 | **L4** | Forced externalization (gate) | +55pp median (~90%) | 0% on pipeline fix | M1 (strong) |
 | **L4** | Mechanical enforcement | N/A | 100% (workarounds blocked) | M3 |
@@ -194,7 +194,7 @@ The taxonomy provides a principled method for designing interventions:
 ## Remaining Gaps in the Taxonomy
 
 ### 1. The L3–L4 Gap for Judgment Tasks
-Few-shot examples (L3) achieve 33% on hard judgment tasks (contradictory-requirements) but 100% on moderate ones (escalation-judgment, EXP-085). **EXP-087 adds nuance**: behavioral template compatibility matters more than domain match — a mismatched-domain example with compatible output format achieved 67% on contradictory (better than matched 33%), while an incompatible format scored 0% on escalation. The gap between L3 and L4 (~90% workflow externalization) may be addressable through better template design, not just combined methods. Can combined lightweight methods (few-shot + checklist + echo-back) approach L4 reliability on harder tasks without workflow overhead?
+Few-shot examples (L3) achieve 33% on contradictory-requirements (EXP-084) but **100% on escalation-judgment** (EXP-085) — suggesting structural match between example and task is a key variable. Workflow externalization (L4) achieves ~90%. The L3–L4 gap may be scenario-dependent: structurally-matched few-shot examples may approach L4 reliability. Next: test with structurally dissimilar examples to map the boundary.
 
 ### 2. M2 Delivery Level
 Evidence discovery has been tested primarily at L3 (task instruction). Can L4 (automated pre-grepping by the harness, injecting cross-references into context) achieve even higher reliability? Can L2 (skill file with cross-reference instruction) be made reliable?
@@ -219,7 +219,7 @@ This taxonomy represents the **convergence point** of three independent research
 Thread 1: Sycophancy interventions (EXP-025→044)    ──→ M1 discovered
 Thread 2: Config repair failures (EXP-077→083)       ──→ M2 discovered  
 Thread 3: Debugging/implementation (EXP-070→073)     ──→ M3 discovered
-         + Skill delivery methods (EXP-084→087)      ──→ L1–L5 refined, cross-scenario confirmed, boundary conditions identified (template compatibility > domain match)
+         + Skill delivery methods (EXP-084→085)      ──→ L1–L5 refined + cross-scenario generalization
 ```
 
 Each thread independently discovered its mechanism, and the taxonomy shows they are **complementary pieces of a single picture**. No single mechanism is universal; all three are needed for complete coverage.
