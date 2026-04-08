@@ -19,7 +19,7 @@
 
 import { execSync, type ExecSyncOptions } from "node:child_process";
 import { resolve, join } from "node:path";
-import { writeFileSync, unlinkSync } from "node:fs";
+import { writeFileSync, readFileSync, unlinkSync, existsSync, mkdirSync, copyFileSync, renameSync } from "node:fs";
 import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
 import type { CronEntry } from "../../../src/lib/cron-tool.js";
 
@@ -30,6 +30,73 @@ import type { CronEntry } from "../../../src/lib/cron-tool.js";
 function git(command: string, opts: ExecSyncOptions): string {
   const result = execSync(command, { ...opts, stdio: ["ignore", "pipe", "pipe"] });
   return typeof result === "string" ? result : result?.toString("utf-8") ?? "";
+}
+
+// ── Instance config (federation file ownership) ──────────────────────
+
+interface InstanceConfig {
+  local: { agents: string[] };
+  k3s: { agents: string[] };
+}
+
+/** Default ownership when no config file exists. */
+const DEFAULT_CONFIG: InstanceConfig = {
+  local: { agents: ["may", "bob", "tech-lead", "coder", "optimizer", "qa", "evaluator"] },
+  k3s: { agents: ["scout", "coach", "amy", "amy-kimi"] },
+};
+
+/**
+ * Load instance config from agents/shared/federation/instance-config.json.
+ * Falls back to hardcoded defaults if the file doesn't exist.
+ */
+function loadInstanceConfig(agentsDir: string): InstanceConfig {
+  const configPath = join(agentsDir, "shared", "federation", "instance-config.json");
+  try {
+    if (existsSync(configPath)) {
+      return JSON.parse(readFileSync(configPath, "utf-8")) as InstanceConfig;
+    }
+  } catch {
+    // Malformed config — fall back to defaults
+  }
+  return DEFAULT_CONFIG;
+}
+
+/**
+ * Determine which instance this is by checking which agents exist locally
+ * in cron.json files (agents that are actively scheduled here).
+ */
+function detectInstance(agentsDir: string, config: InstanceConfig): "local" | "k3s" | "unknown" {
+  // Check which instance's agents have cron.json files here
+  let localScore = 0;
+  let k3sScore = 0;
+
+  for (const agent of config.local.agents) {
+    if (existsSync(join(agentsDir, agent, "cron.json"))) localScore++;
+  }
+  for (const agent of config.k3s.agents) {
+    if (existsSync(join(agentsDir, agent, "cron.json"))) k3sScore++;
+  }
+
+  // The instance that owns MORE of its expected agents is likely where we're running
+  if (localScore > k3sScore) return "local";
+  if (k3sScore > localScore) return "k3s";
+  return "unknown";
+}
+
+/**
+ * Determine the owning instance for a file path.
+ * Returns "local", "k3s", or "shared" (jointly owned).
+ */
+function getFileOwner(filePath: string, config: InstanceConfig): "local" | "k3s" | "shared" {
+  const topDir = filePath.split("/")[0];
+  if (!topDir) return "shared";
+
+  // Check if top directory is an agent name owned by an instance
+  if (config.local.agents.includes(topDir)) return "local";
+  if (config.k3s.agents.includes(topDir)) return "k3s";
+
+  // shared/, gym/, scripts/, etc. are jointly owned
+  return "shared";
 }
 
 // ── File classification ───────────────────────────────────────────────
@@ -262,8 +329,12 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     const remote = getRemote(agentsDir);
     let committed = false;
 
+    // Load federation config for ownership-aware conflict resolution
+    const config = loadInstanceConfig(agentsDir);
+    const instanceId = detectInstance(agentsDir, config);
+
     // Pull from remote to pick up changes from other instances
-    if (remote) tryPull(agentsDir, remote, ctx.log);
+    if (remote) tryPull(agentsDir, remote, ctx.log, instanceId, config);
 
     try {
       // Check for changes (tracked + untracked)
