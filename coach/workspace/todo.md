@@ -279,10 +279,11 @@
    - Created KE-058: Injected declarative knowledge has no effect on agent behavior
    - **Conclusion**: Agents don't USE injected knowledge. Must encode as structural constraints (workflow/environmental).
    - Tests 2-3 deprioritized: the finding is strong enough with N=3 + prior evidence (KE-011, KE-026).
-1. **EXP-085: Few-Shot Generalization Test** (IN PROGRESS, forked s_1775646946134_21)
-   - Test few-shot method (EXP-084's strongest sub-workflow treatment) on escalation-judgment-base
-   - If few-shot works here too → validates few-shot as general skill format for judgment tasks
-   - If it fails → few-shot may be scenario-specific to contradictory-requirements
+1. ~~**EXP-085: Few-Shot Generalization Test**~~ ✅ COMPLETE
+   - escalation-judgment-fewshot: **3/3 = 100% pass** (vs baseline 1/8 = 12.5%)
+   - Few-shot generalizes across judgment scenarios: +87.5pp on escalation, +33pp on contradictory-requirements (EXP-084)
+   - Agent consistently fixed BOTH payment.js and refund.js + created ESCALATION.md in all 3 runs
+   - **Conclusion**: Few-shot is the recommended sub-workflow skill delivery method for judgment tasks
 2. **Deploy L5 strict workflow for destructive operations** — Proven across 3 scenarios. Only mechanism for sycophancy (EXP-025: 3/6→9/9, EXP-043: 0%→100%, 50%→100%).
 2. ~~**EXP-073: Binding Analysis for Debugging**~~ **COMPLETE** — Phase 1 (v3-binding): 3/3=100% gap closed. Phase 2 (v2-commit): 0/6=0% binding fails when workarounds available. Binding only works on constrained scenarios. H-088 P(H) 0.92→0.70. Workaround availability is the critical boundary condition.
 3. ~~**Method 23: AECRM context audit**~~ **CLOSED (EXP-074)** — FM-3.1 is ceiling in gym (100% on both scenarios). Structurally untestable: finish() infra + single-session + small env prevent ghost deliverables. KE-002 predicts rubric (text injection) = 0% anyway. Recommend production A/B instead.
