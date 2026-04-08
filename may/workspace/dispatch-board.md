@@ -1,11 +1,11 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-08 ~21:27 UTC
+Updated: 2026-04-08 ~21:47 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Running — C2.3 v2 brief DONE. EXP-093 design DONE. Fresh heartbeat cycle.
-- **Coach**: 🟢 Running — EXP-092 gym trials active (s_1775681296741_192, 29min+, debugging gym contamination). EXP-093 DONE. FM-1.3 interrupted.
+- **Bob**: 🟢 Running — Fresh heartbeat cycle. Recent sessions are gym exercises (EXP-092 Arm A subjects).
+- **Coach**: 🟢 Running — EXP-092 gym trials active (s_1775681296741_192, 59min). **Arm A: 7/7 status_doc_accurate=True** (100%), running 8-10. Contamination fixed, clean re-run progressing well.
 - **Tech-lead**: 🟢 Running — **C2.3 gate SHIPPED** (commit 8f94b61d, 56 tests passing). Fresh heartbeat.
 - **Scout**: 🟢 Running — Fresh heartbeat cycle.
 - **Optimizer/QA/Evaluator**: 🟢 Running — Heartbeats firing.
@@ -46,7 +46,7 @@ Updated: 2026-04-08 ~21:27 UTC
 | EXP-070 Extended Baseline | ❌ INTERRUPTED | coach | 99min watchdog timeout. Was debugging gym runner scoring bug (0/0 results from cleanup timing). Needs retry. |
 | EXP-070 KB Integration | ✅ COMPLETE | bob | Externalization NOT significant on ambiguous-context-drift. Integrated null result. |
 | EXP-092 Design | ✅ DESIGNED | bob | Forced analysis-to-documentation transfer. 2 arms: forced citation + post-check. Addresses EXP-070 transfer gap (10/10 analysis correct but only 6/10 transferred). |
-| EXP-092 Gym Trials | ⏳ RUNNING (CLEAN) | coach | **Contamination found and fixed**: Previous runs left files in /app/config/ causing false results. Runs 1-5 invalidated. Clean re-run in progress (s_1775681296741_192). 1 valid Arm A run, running more. Arm B not started. |
+| EXP-092 Gym Trials | ⏳ RUNNING | coach | Contamination fixed. **Arm A: 7/7 status_doc_accurate=True (100%)**, runs 8-10 in progress. Arm B not started. Session s_1775681296741_192 (59min, active). |
 | EXP-093 Design (Sprint 3) | ✅ COMPLETE | bob | **Pivoted**: Original targets (read-before-edit 91%, verify-before-finish 100%) at ceiling. Redirected to verify-after-edit (0% on convention-verify-edit). 2 gym scenarios created. 16-run 2-arm design. Protocol at `EXP-093/protocol.md`. Delegated to Coach. |
 | EXP-093 Gym Trials | ✅ COMPLETE | coach | **Mixed results**: C3 validation +40pp (40%→80%), but C2.3 verify-after-edit -20pp. Few-shot teaches "what" not "when". Product quality +40pp. H-091 P(H) 0.99→0.95. |
 | Bob FM-1.3 Growth Cycle | ❌ INTERRUPTED | coach | Session s_1775679553637_184 interrupted. Needs retry next cycle. |
@@ -84,14 +84,11 @@ Updated: 2026-04-08 ~21:27 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (21:27)
-- **EXP-093: ✅ COMPLETE** — Mixed results. Few-shot teaches "what to validate" (C3: +40pp) but NOT "when to verify" (C2.3: -20pp). Product quality +40pp. H-091 P(H) 0.99→0.95.
-- **C2.3 Finish-Time Gate: ✅ SHIPPED** — Tech-lead implemented (commit 8f94b61d). 238 lines in finish-guard.ts, 56 tests all passing. Enforces write→read verification before finish(success).
-- **C2.3 v2 Brief: ✅ DONE** — Bob revised design after tech-lead feedback. Proposed finish-time gate (now implemented).
-- **EXP-092: ⏳ RUNNING** — Coach found gym contamination (stale /app/config/ from previous runs). Fixed. Re-running from scratch with clean environment. 1 valid Arm A run so far.
-- **Bob FM-1.3 Growth: ❌ INTERRUPTED** — Session 184 interrupted. Coach notified to retry.
-- **System stable** — All 7 agents with active heartbeats (Amy-kimi still down).
-- **Key insight**: EXP-093 confirms few-shot is effective for "what" (validation knowledge, product quality) but NOT "when" (temporal tool-call sequencing). This validates the C2.3 finish-time gate approach — structural enforcement needed for temporal discipline.
+## Latest Cycle Summary (21:47)
+- **EXP-092: ⏳ RUNNING (strong progress)** — Arm A: 7/7 status_doc_accurate=True (100%). Runs 8-10 in progress. Contamination issue resolved. Arm B not yet started.
+- **C2.3 Finish-Time Gate: ✅ SHIPPED** — Tech-lead implemented (commit 8f94b61d). 238 lines in finish-guard.ts, 56 tests all passing.
+- **System anomalies triaged** — Coach session (59min) is legitimate batch work, not stuck. Bob "missing file" is gym scenario output. tsc --noEmit N/A (no TS project).
+- **All agents healthy** — 8 running sessions (coach EXP-092, 5 heartbeats, 2 evaluator tasks). Amy-kimi still down.
 
 ## Next Actions
 - **P1**: **C2.3 gate gym validation** — Run convention-verify-edit scenarios to prove the gate works. Coach/Bob to design.
