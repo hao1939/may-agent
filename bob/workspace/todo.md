@@ -310,4 +310,7 @@
 ## Session Notes (2026-04-08 ~11:50)
 - [x] **KE-060 WRITTEN**: Unified Agent Intervention Taxonomy — The Three Mechanisms. Synthesizes H-085 (Analysis Activation/M1), H-089 (Evidence Discovery/M2), H-091 + KE-056 (Structural Constraint/M3) into complete diagnostic framework. 200+ runs across 40+ experiments. Includes diagnostic decision tree, 2×2 matrix (information × solution space), refined delivery hierarchy (L0–L5), and analysis-action gap boundary. Six open questions identified for future work.
 - **EXP-085 COMPLETE and integrated** (few-shot generalization: 100% on escalation-judgment). EXP-070 still DESIGNED/unrun.
-- **Next priorities**: (1) Run EXP-070 (externalization on ambiguous-context-drift baseline 67%), (2) Consider EXP-086: test few-shot with structurally dissimilar example to map boundary of structural similarity effect.
+- **Next priorities**: (1) Run EXP-070 (externalization on ambiguous-context-drift baseline 67%), (2) ~~Consider EXP-086: test few-shot with structurally dissimilar example to map boundary of structural similarity effect.~~ **DONE**
+
+## Session Notes (2026-04-08 ~13:14)
+- [x] **EXP-086 INTEGRATED into knowledge base**: Mismatched few-shot boundary test — 2/3 (66.7%) vs matched 3/3 (100%) vs baseline 12.5%. Two-level transfer model established. Updated: H-091 (P(H) 0.88→0.90), KE-059 (two-level transfer), INDEX.md (EXP-086 row + KE-059/KE-060/H-091 summaries), PRIORITY-TRACKER (H-091 entry + EXP-086 row).

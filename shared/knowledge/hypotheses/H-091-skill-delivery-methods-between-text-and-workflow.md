@@ -1,8 +1,8 @@
 # H-091: Skill Delivery Methods Exist Between Text-Rules and Workflow Enforcement
 
-**Status**: Strongly Supported (EXP-084, EXP-085)
+**Status**: Strongly Supported (EXP-084, EXP-085, EXP-086)
 **Date**: 2026-04-08
-**P(H)**: 0.88
+**P(H)**: 0.90
 
 ## Statement
 
@@ -34,6 +34,18 @@ Cross-scenario comparison:
 
 Few-shot generalizes, with stronger effect when the example is structurally similar to the target task.
 
+### EXP-086: Few-Shot Boundary Test (mismatched example)
+Tested whether a *structurally mismatched* few-shot example (conflicting-requirements domain → escalation-judgment task) still transfers:
+- **Mismatched few-shot**: 2/3 (66.7%) vs 12.5% baseline (+54 pp)
+- **Matched few-shot (EXP-085)**: 3/3 (100%) — still clearly superior (+33 pp over mismatched)
+- **ESCALATION.md**: 0/3 with mismatched (vs 3/3 with matched) — specific procedural behaviors require domain-matched examples
+
+**Two-Level Transfer Model**:
+1. **Level 1 — General principle transfer** (partial, stochastic ~67%): "Think beyond the immediate fix." Transfers across domains but unreliably.
+2. **Level 2 — Specific procedure transfer** (reliable ~100%): "Check all consumers, create ESCALATION.md." Requires structurally matched example.
+
+Ranking established: **matched > mismatched > no example** (100% > 67% > 12.5%).
+
 ## Mechanism Hierarchy
 
 L1: Text rules → 0% (KE-002)
@@ -48,10 +60,11 @@ L5: Workflow enforcement → +3.0 score (EXP-045)
 1. Can methods be combined (e.g., few-shot + checklist)?
 2. ~~Does the effect generalize across scenario types?~~ **ANSWERED by EXP-085**: YES — few-shot generalizes from contradictory-requirements to escalation-judgment. Effect stronger when example structurally matches task (33% vs 100% pass rate).
 3. Why is "alternatives-proposed" specifically resistant to lightweight methods?
-4. What is the boundary of structural similarity? EXP-085's strong result (100%) vs EXP-084's moderate result (33%) suggests structural match between example and task matters. Next: test with structurally dissimilar example.
+4. What is the boundary of structural similarity? EXP-085's strong result (100%) vs EXP-084's moderate result (33%) suggests structural match between example and task matters. ~~Next: test with structurally dissimilar example.~~ **ANSWERED by EXP-086**: Mismatched example → 66.7% (vs matched 100%, baseline 12.5%). Two-level transfer model: general principles transfer partially (~67%), specific procedures require matched examples (~100%).
 
 ## Cross-References
 
 - Extends: KE-002, KE-058, KE-056 (constraint hierarchy)
-- Supported by: KE-059 (new)
+- Supported by: KE-059 (updated with EXP-086 two-level transfer model)
 - Related: H-085 (forced externalization), H-089 (evidence discovery)
+- Experiments: EXP-084 (method comparison), EXP-085 (matched generalization), EXP-086 (mismatched boundary)
