@@ -14,6 +14,7 @@
 import { appendFileSync } from "node:fs";
 import { join } from "node:path";
 import type { SubagentManager } from "../lib/manager.js";
+import { isOverflowError } from "../lib/overflow.js";
 
 import { trackRequest } from "../lib/requests.js";
 
@@ -84,6 +85,16 @@ export class ChatSession {
     const sessions = this.manager.status();
     const existing = sessions.find((s) => s.agent === this.agentName && s.kind === "chat");
     if (existing) {
+      // Don't attach to a session that died from context overflow —
+      // it would just hit the same error on the next input, causing a crash loop.
+      if (existing.error && isOverflowError(existing.error)) {
+        this.manager.close(existing.sessionId);
+        this.bus.emit({
+          type: "info",
+          message: `[chat] Closed overflowed session ${existing.sessionId}. Ready for fresh conversation.`,
+        });
+        return;
+      }
       this.sessionId = existing.sessionId;
       this.trackCompletion(this.sessionId);
     }
@@ -228,6 +239,11 @@ export class ChatSession {
         // (e.g., empty model response, stream errors on idle sessions)
         const session = this.manager.status().find((s) => s.sessionId === sessionId);
         if (session?.error) {
+          // If the session overflowed, it was already archived by handleCompletion.
+          // Clear our reference so the next message creates a fresh session.
+          if (isOverflowError(session.error)) {
+            this.sessionId = null;
+          }
           this.bus.emit({ type: "info", message: `[${this.agentName}] ⚠️ ${session.error}` });
         }
         this.onDone?.();

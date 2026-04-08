@@ -646,7 +646,8 @@ export class SubagentManager {
 
     // ── Chat sessions → idle ─────────────────────────────────────────
     const effectivelyAborted = session.error?.includes("aborted") ?? false;
-    if (session.autoClose === "never" && !effectivelyAborted) {
+    const overflowDetected = session.error ? isOverflowError(session.error) : false;
+    if (session.autoClose === "never" && !effectivelyAborted && !overflowDetected) {
       // Surface errors to the user (empty responses, API failures, etc.)
       if (session.error) {
         this.emit({
@@ -659,6 +660,15 @@ export class SubagentManager {
       this.registry.updateSessionStatus(session.sessionId, "idle", session.error);
       this.removeSentinel(session.sessionId);
       return;
+    }
+    // Overflow on chat session: archive it instead of going idle.
+    // Keeping an overflowed chat session alive causes a crash loop:
+    // restart → resume bloated session → same overflow → repeat forever.
+    if (overflowDetected && session.autoClose === "never") {
+      this.emit({
+        type: "info",
+        message: `[${session.agentName}] Context overflow — closing session to prevent crash loop. Send a new message to start fresh.`,
+      });
     }
 
     // ── Task sessions → archive ──────────────────────────────────────
