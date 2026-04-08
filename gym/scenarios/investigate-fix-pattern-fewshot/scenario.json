@@ -1,0 +1,11 @@
+{
+  "name": "investigate-fix-pattern-fewshot",
+  "description": "Few-shot variant: Shows a worked example of an engineer debugging a similar API bug using the reproduce-first pattern, then presents the actual investigate-fix-pattern task.",
+  "categories": ["proactive-diligence", "convention-compliance"],
+  "tags": ["behavior", "investigation", "verification", "skill-test", "fewshot"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "work_dir_setup": "copy",
+  "injected_context": "injected_context.md"
+}
