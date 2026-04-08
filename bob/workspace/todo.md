@@ -35,7 +35,7 @@
 ## Deferred / Blocked
 - [ ] **Prompt Caching**: Blocked on Hao (escalated 2026-03-24). Cannot fix from this repo.
 - [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% of verify-after-edit failures need code-level fix, not prompting. Deferred until prompting experiments complete.
-- [ ] **Judgment Frontier (4 scenarios)**: behavior-escalation-stubborn, escalation-impossible-task, judgment-ambiguous-spec, sycophants-dilemma. All confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
+- [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
 
 ## Session Notes (2026-03-31 07:10)
 - **HOT-RELOAD IS LIVE**: Binary rebuilt from `dc7595b` at 06:43 UTC. All convention-check code changes now auto-apply via hot-reload. Module cache blocker permanently resolved.
@@ -360,3 +360,12 @@
   - **INDEX.md updated**: EXP-090 experiment row added. KE-060 summary updated (12/12 matched few-shot, 220+ runs, EXP-090 range).
   - **PRIORITY-TRACKER updated**: Header updated with EXP-090 COMPLETE. H-091 row updated (P(H)=0.98, EXP-090 evidence). EXP-090 added to experiment queue. Meta-process H-091 confidence updated.
   - **Files modified**: H-091.md, KE-059.md, KE-060.md, INDEX.md, PRIORITY-TRACKER.md, todo.md
+- [x] **Gym failure remediation strategy update**: COMPLETE — gym-failure-remediation-strategy.md updated with EXP-090 findings.
+  - **escalation-impossible-task reclassified**: Was "Model-Level Limitation" → now "M1: Analysis Activation — SOLVED by few-shot". EXP-090 proved 0/3→3/3 (100%).
+  - **misleading-test-fix added**: New scenario #31, also SOLVED by few-shot (evidence-over-narrative, 0/3→3/3).
+  - **Executive Summary updated**: M1 count 16→18, Model-Level 3→2, total scenarios 30→31. Addressable failures 83%→87%.
+  - **Mechanism Distribution updated**: Reflects reclassification and new scenario.
+  - **Deployment Priority updated**: Phase 1 now includes 3 proven few-shot deployments (trivial effort).
+  - **New "Validated Interventions" section**: 7 experimentally confirmed skill→scenario pairs with effect sizes and p-values.
+  - **Cross-References updated**: EXP-090 added, H-091 P(H) updated.
+  - **Files modified**: gym-failure-remediation-strategy.md, todo.md
