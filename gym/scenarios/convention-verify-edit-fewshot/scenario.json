@@ -1,0 +1,11 @@
+{
+  "name": "convention-verify-edit-fewshot",
+  "description": "Few-shot variant: Shows a worked example of an engineer editing a config file with full read→edit→verify→validate cycle. Tests whether seeing the pattern induces verify-after-edit discipline.",
+  "categories": ["convention-compliance"],
+  "tags": ["behavior", "verification", "fewshot", "EXP-093"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false,
+  "injected_context": "injected_context.md"
+}
