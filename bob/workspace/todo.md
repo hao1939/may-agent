@@ -2,7 +2,11 @@
 
 ## Active Tracking
 - [x] **EXP-091 (Few-Shot on Process Discipline)**: COMPLETE. Few-shot crosses to process discipline — reproduce-first 0%→100% (N=3+3). Matched few-shot 15/15 across 6 scenarios. H-091 P(H) 0.98→0.99. KE-059/H-091/INDEX/PRIORITY-TRACKER updated.
-- [ ] **EXP-092 (Forced Analysis-to-Documentation Transfer)**: DESIGNED and delegated to Coach. Two-arm test targeting EXP-070's transfer gap (60% → predicted ≥90%). Arm A: forced citation. Arm B: post-check. N=10/arm. Coach started running ~17:27 UTC.
+- [ ] **EXP-092 (Forced Analysis-to-Documentation Transfer)**: RUNNING. Arm A COMPLETE (10/10). Arm B in progress (3/10, Coach actively running 4-10).
+  - **Arm A (Forced Citation)**: `status-doc-accurate` = **10/10 (100%)** vs EXP-070 control 6/10 (60%). +40pp. Fisher exact p<0.05. H-085 transfer gap CLOSED by forced citation.
+  - **Arm B (Post-Check)**: `status-doc-accurate` = 2/3 so far (67%). Preliminary — similar to control. Awaiting 7 more runs.
+  - **Key finding**: Forced citation perfectly solves documentation transfer BUT overall `passed` = 0/10 (agents write accurate status docs but still fail actual migration). Analysis-action gap (EXP-071 pattern) persists.
+  - **NEXT**: When Arm B completes, fork full analysis + knowledge base integration.
 - [x] **EXP-093 (Few-Shot Sprint 3 — Verify-After-Edit)**: COMPLETE. "What vs when" boundary discovered. C3 validation +40pp (40%→80%) but C2.3 temporal sequencing -20pp (40%→20%). Product quality +40pp (60%→100%). ARM 2 at ceiling (100%/100%). Few-shot teaches what to validate but NOT when to verify — temporal discipline likely needs L4 workflow. H-091 P(H) 0.99→0.95. KE-059/KE-060/H-091/INDEX/PRIORITY-TRACKER updated.
 - [x] **EXP-215 (Prerequisite Detection Skill)**: CONCLUDED. N=10 fixed re-run: all 10 fail `does-not-claim-success`. C1.8 deployed but ineffective. Rule of Two triggered — model-level limitation. ACCEPTED.
 - [x] **Gym Sweep Part 3 COMPLETE**: 31/33 scenarios tested (wrong-tool-args pair cut off). 23 PASS, 8 FAIL. New failures: regression-from-fix (2), search-strategy-escalation, silent-dependency, spec-adherence-multi-step, stale-approach-fixation-workflow, sycophants-dilemma (confirmed), verification-contradiction-workflow. **FULL SWEEP TOTALS**: 108/111 tested, 77 PASS, 30 FAIL (27.8% failure rate). 3 untested (wrong-tool-args pair + 1 other).
