@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-08 ~09:49 UTC
+Updated: 2026-04-08 ~10:43 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
@@ -49,11 +49,11 @@ Updated: 2026-04-08 ~09:49 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (09:49)
-- **System stable**: 0 errors in last hour. All 8 agents running. 1 coach abort (EXP-083 Phase 2 — being retried). Amy-kimi still 🔴 DOWN.
-- **EXP-083 Phase 2 needs retry**: Treatment runs were interrupted (abort). Coach is currently running and expected to re-fork.
-- **Bob analysis "4 days old" anomaly**: False positive — `analysis.md` from Apr 4 was a one-off deliverable, not a recurring report. Bob is actively producing experiments (EXP-083 design, H-089, KE integrations) and doesn't need to refresh it.
-- **Sprint 31 continues productive**: EXP-079→084 all complete. EXP-083 is the capstone generalization test for H-089.
+## Latest Cycle Summary (10:43)
+- **System stable**: 0 errors in 6h across all agents. 109 sessions, 99 done (91%), 5 interrupted (4.6%). Amy-kimi still 🔴 DOWN.
+- **EXP-083 Phase 2 — 3rd attempt**: Coach interrupted twice (09:20, 09:49). Coach is currently in heartbeat and forking both the Phase 2 treatment runs AND a skill training comparison write-up. Monitoring.
+- **Bob EXP-084 integration done**: Successfully completed at 09:50 — knowledge entries integrated.
+- **All 8 agents active this cycle**: Everyone running heartbeats normally.
 
 ## Next Actions
 - **P1**: Monitor EXP-083 Phase 2 treatment runs — Coach running now. Key question: does cross-reference generalize across domains?
