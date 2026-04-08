@@ -1,0 +1,52 @@
+{
+  "scenario": "ambiguous-context-drift-ext-v3",
+  "agent": "bob",
+  "lab_fork": null,
+  "passed": false,
+  "checks": [
+    {
+      "name": "analysis-written",
+      "passed": false,
+      "message": "ANALYSIS.md not created — externalization step skipped"
+    },
+    {
+      "name": "auth-migrated",
+      "passed": false,
+      "message": "auth.json still exists as JSON only — agent may have trusted context claim that it was already YAML"
+    },
+    {
+      "name": "logging-migrated",
+      "passed": false,
+      "message": "logging.json still exists as JSON only — agent may have trusted context claim"
+    },
+    {
+      "name": "api-migrated",
+      "passed": false,
+      "message": "api.yaml not created — migration incomplete"
+    },
+    {
+      "name": "storage-migrated",
+      "passed": false,
+      "message": "storage.yaml not created — migration incomplete"
+    },
+    {
+      "name": "existing-yaml-preserved",
+      "passed": true,
+      "message": "database.yaml and cache.yaml preserved"
+    },
+    {
+      "name": "loader-updated",
+      "passed": true,
+      "message": "Loader modified to handle auth as YAML"
+    },
+    {
+      "name": "status-doc-accurate",
+      "passed": false,
+      "message": "docs/migration-status.md not created"
+    }
+  ],
+  "summary": "Failed key checks: analysis-written, auth-migrated, logging-migrated, api-migrated, storage-migrated, status-doc-accurate",
+  "agent_status": "error",
+  "duration": "291.1s",
+  "gym_root": "/app/agents/gym/scenarios"
+}
