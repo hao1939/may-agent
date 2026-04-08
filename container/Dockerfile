@@ -22,8 +22,7 @@ COPY src/ src/
 COPY tsconfig.json ./
 
 # Compile standalone binary
-RUN bun build --compile src/app/binary-entry.ts --outfile /build/may-agent && \
-    bun build --compile src/app/ui/web.ts --outfile /build/may-agent-web
+RUN bun build --compile src/app/binary-entry.ts --outfile /build/may-agent
 
 # ── Runtime stage: minimal image with Chrome + GUI ────────────────────────
 FROM debian:bookworm-slim
@@ -70,11 +69,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# Copy compiled binaries from builder
+# Copy compiled binary from builder
 COPY --from=builder /build/may-agent /usr/local/bin/may-agent
-
-# Compile web UI as standalone binary (runs independently of may-agent)
-COPY --from=builder /build/may-agent-web /usr/local/bin/may-agent-web
 
 # Copy web UI static files (not embedded in compiled binary)
 COPY src/app/ui/web-static/ /usr/local/share/may-agent-web/web-static/
@@ -83,8 +79,8 @@ COPY src/app/ui/web-static/ /usr/local/share/may-agent-web/web-static/
 COPY container/supervisord.conf /etc/supervisord.conf
 
 # Copy entrypoints and helpers
-COPY container/entrypoint.sh container/entrypoint-console.sh container/restart-may.sh container/wait-for-web.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/entrypoint-console.sh /usr/local/bin/restart-may.sh /usr/local/bin/wait-for-web.sh
+COPY container/entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
 # Create user for uid 1000 (SSH requires a passwd entry)
 RUN useradd -u 1000 -d /app/.state -s /bin/bash mayagent 2>/dev/null || true
@@ -108,7 +104,4 @@ EXPOSE 6080
 # Web UI dashboard
 EXPOSE 8080
 
-# Restart agent without restarting container:
-#   docker exec <container> restart-may.sh
-#   docker exec <container> restart-may.sh --force  # skip socket, kill directly
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

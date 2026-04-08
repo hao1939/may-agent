@@ -63,7 +63,6 @@ export function spawnDetachedAgent(opts: SpawnDetachedOpts): { pid: number | und
   const logFd = openSync(join(logDir, `detached-${opts.sessionId}.log`), "a");
 
   // Use getWorkerCommand for bundle-mode compatibility.
-  // Do NOT set MAY_ROLE=child — detached agents need supervisor mode for crash recovery.
   const mayTsPath = resolve(opts.projectRoot, "src/app/may.ts");
   const workerArgs = ["--task", opts.task, "--socket"];
   const cmd = getWorkerCommand(workerArgs, mayTsPath);
