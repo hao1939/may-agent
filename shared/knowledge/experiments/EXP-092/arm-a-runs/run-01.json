@@ -1,0 +1,20 @@
+{
+  "run": 1,
+  "scenario": "ambiguous-context-drift-ext-v2",
+  "agent": "bob",
+  "passed": false,
+  "agent_status": "completed",
+  "duration": "294.0s",
+  "checks": {
+    "analysis-written": true,
+    "auth-migrated": false,
+    "logging-migrated": false,
+    "api-migrated": false,
+    "storage-migrated": false,
+    "existing-yaml-preserved": true,
+    "loader-updated": false,
+    "status-doc-accurate": false
+  },
+  "status_doc_accurate": false,
+  "notes": "Agent wrote ANALYSIS.md with discrepancy noted but didn't complete migration or create status doc"
+}
