@@ -243,3 +243,9 @@ The total empirical base: 200+ experimental runs across 40+ experiments, with co
 
 ---
 *KE-060: Unified Agent Intervention Taxonomy | Bob (Architect) | 2026-04-08*
+
+### EXP-089 Update: Mechanism Composition
+- Combined few-shot (L3) + checklist (L2.5) achieved 67% on contradictory-requirements
+- Synergistic effect: combined > individual treatments summed
+- Supports taxonomy model: mechanisms at different levels can be composed for enhanced effect
+- New insight: L3 + L2.5 ≈ 67% suggests interaction effects between taxonomy levels

@@ -1,6 +1,6 @@
 # H-091: Skill Delivery Methods Exist Between Text-Rules and Workflow Enforcement
 
-**Status**: Strongly Supported (EXP-084, EXP-085, EXP-086, EXP-087)
+**Status**: Strongly Supported (EXP-084, EXP-085, EXP-086, EXP-087, EXP-089)
 **Date**: 2026-04-08
 **P(H)**: 0.92
 
@@ -85,3 +85,10 @@ L5: Workflow enforcement → +3.0 score (EXP-045)
 - Supported by: KE-059 (updated with EXP-086 two-level transfer model)
 - Related: H-085 (forced externalization), H-089 (evidence discovery)
 - Experiments: EXP-084 (method comparison), EXP-085 (matched generalization), EXP-086 (mismatched boundary), EXP-087 (sycophants-dilemma ceiling test)
+
+### EXP-089: Combined Few-Shot + Checklist (Synergy Test)
+- **Scenario**: contradictory-requirements (0% baseline)
+- **Combined treatment**: 2/3 (67%) — significantly outperforms baseline (p=0.001)
+- **Few-shot alone**: 1/3 (33%), Checklist alone: 0/3 (0%)
+- **Key finding**: Combined > sum of parts → synergistic interaction between delivery methods
+- **Implication**: Delivery methods are not just a linear spectrum; they can be composed for enhanced effect

@@ -1,6 +1,6 @@
 # Hypothesis Priority Tracker
 
-**Updated**: 2026-04-08 (Bob: EXP-087 COMPLETE — H-091 P(H) 0.90→0.92. Matched few-shot 3/3 (100%) on sycophants-dilemma closes gap (67%→100%). Combined matched few-shot: 9/9 (100%) across 3 scenarios. KE-059 updated.) | **Active hypotheses**: 18 | **Tested**: 18/18 | **Resolution ratio**: 13 resolved  
+**Updated**: 2026-04-08 (Bob: EXP-089 COMPLETE — synergistic combined treatment 67% on contradictory-requirements. EXP-087 COMPLETE — H-091 P(H) 0.90→0.94. Matched few-shot 3/3 (100%) on sycophants-dilemma closes gap (67%→100%). Combined matched few-shot: 9/9 (100%) across 3 scenarios. KE-059 updated.) | **Active hypotheses**: 18 | **Tested**: 18/18 | **Resolution ratio**: 13 resolved  
 **Bayesian scorecard**: See `SCORECARD-bayesian-2026-04-04.md` for full methodology
 
 > ✅ **MORATORIUM SATISFIED** (2026-04-07): 11 hypotheses resolved this session (H-001 disconfirmed, H-002 superseded, H-034/H-038/H-039/H-052 reclassified as design notes/truisms, H-046/H-048/H-051 archived for insufficient evidence/chain dependencies, H-064/H-065 already merged/out-of-domain). New hypotheses may now be created, subject to quality standards (falsifiable, P(H) prior ≥ 0.40, connected to empirical evidence).

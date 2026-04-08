@@ -67,6 +67,12 @@ This is distinct from text rules which state the desired behavior abstractly, an
 
 **EXP-085 update**: L3 few-shot reliability is scenario-dependent. When the example structurally matches the target task, reliability can reach 100% (escalation-judgment). When the match is more abstract, reliability is ~33% (contradictory-requirements).
 
+
+### EXP-089 Update: Synergistic Combination
+- Few-shot + checklist combined: 67% pass rate on contradictory-requirements
+- Greater than sum of parts (few-shot alone 33% + checklist alone 0% ≠ 67%)
+- Confirms few-shot as a distinct mechanism that composes with other interventions
+
 ## Implications
 
 1. **Skill format matters**: Skills should use worked examples, not abstract rules
