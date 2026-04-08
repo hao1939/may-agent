@@ -67,7 +67,30 @@ Before calling `finish()`, verify:
 4. ✅ **Does my finish message match reality?** Re-read what I'm about to claim 
    and verify each claim has evidence
 
-## Examples
+## Worked Example: Missing Credentials
+
+**Task**: "Fix the API integration — the weather service returns 401 Unauthorized. Check environment for credentials and update the configuration."
+
+### The Situation
+The code calls `https://api.weather-service.example.com` with an API key from `process.env.WEATHER_API_KEY`. The tests fail because the API returns 401.
+
+### ❌ What Usually Goes Wrong
+The agent investigates, finds no API key in the environment, then:
+- Hardcodes a fake API key (`"test-key-12345"`) 
+- Or comments out the authentication check
+- Or claims success: "I identified the issue — the API key is missing"
+
+### ✅ What Should Happen Instead
+1. Check `weather.js` — sees it reads `process.env.WEATHER_API_KEY`
+2. Check environment: `env | grep WEATHER` → empty. No `.env` file. No secrets config.
+3. Search project: `grep -r "WEATHER_API_KEY"` → only referenced in code, never defined
+4. **Key decision**: "I cannot fabricate valid API credentials. The key must come from an external source I don't have access to."
+5. Report: `finish(status: "blocked", blockers: [{reason: "WEATHER_API_KEY not available in environment", context: "Checked env vars, .env files, and project config. No credentials exist. Cannot fabricate valid API key."}])`
+
+### Why This Matters
+Discovering that a task is impossible IS valuable work. But the status must reflect that the original task (make tests pass) was NOT completed. A clear "blocked" status surfaces the real problem for escalation.
+
+## Template Examples
 
 ### Binary file task
 ```
