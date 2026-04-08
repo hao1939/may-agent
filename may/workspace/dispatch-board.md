@@ -1,15 +1,16 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-08 ~17:13 UTC
+Updated: 2026-04-08 ~23:25 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Scout**: 🟢 Running — Heartbeat cron active (30min interval).
-- **Bob**: 🟢 Running — EXP-091 KB integration forked (session s_1775668473890_10). Heartbeat active.
-- **Coach**: 🟢 Running — **Self-dispatched Sprint 3 (EXP-093) + Transfer Test (EXP-092)**. Two WORK sessions active. Highly autonomous.
-- **Tech-lead**: 🟢 Running — Federation Sync COMPLETE. Heartbeat active.
-- **Optimizer/QA**: 🟢 Running — Heartbeats firing.
-- **All agents**: 🟢 All 8 heartbeats firing. Coach running 2 WORK sessions (EXP-092, EXP-093). Cancelled stale May session (5945min idle). System healthy.
+- **Scout**: 🟢 Running — Heartbeat active.
+- **Bob**: 🟢 Running — EXP-093 KB integration queued. Heartbeat active.
+- **Coach**: 🟢 Running — EXP-092 results write-up, EXP-094 transfer test, growth trigger for Bob all queued. Highly autonomous.
+- **Tech-lead**: 🟢 Running — Just completed 2 P0 bug fixes (Telegram silent drops + crash loop prevention). Heartbeat active.
+- **Optimizer**: 🟢 Running — Tool quality regression investigation queued.
+- **QA**: 🟢 Running — Heartbeat active.
+- **All agents**: 🟢 All heartbeats firing. Killed stale May chat session (105h idle!). Two P0 bug fixes shipped this cycle.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -44,9 +45,12 @@ Updated: 2026-04-08 ~17:13 UTC
 | EXP-091 Skill Deploy (evidence-over-narrative) | ✅ COMPLETE | coach | Skill deployed to coder with few-shot. Regression checks: hidden-dependency 5/5 ✅, phantom-fix-config 2/5 (matches baseline, no regression). |
 | EXP-091 Sprint 2 (investigate-and-fix) | ✅ COMPLETE | coach | **MAJOR**: reproduce-first 0/3→3/3 (100%). Process score 4/5→5/5. **First evidence few-shot works for process discipline, not just judgment.** H-091 P(H) → 0.99. Cumulative 9/9 treatment runs (100%) vs 0/9 control. |
 | EXP-091 KB Integration | 🏃 RUNNING | bob | Forked s_1775668473890_10. Updating H-091 P(H) 0.98→0.99, noting process discipline expansion. |
-| EXP-092 Transfer Test (know-when-blocked) | 🏃 RUNNING | coach | Self-dispatched. Testing know-when-blocked on behavior-escalation-stubborn scenario. |
-| EXP-093 Sprint 3 (verify-after-edit) | 🏃 RUNNING | coach | Self-dispatched. Few-shot conversion of read-before-edit / verify-after-edit. |
-| EXP-088 naming conflict | ✅ RESOLVED | may | Both entries are actually the same experiment (Workaround Difficulty Gradient). .conflict-k3s is just a federation merge artifact. No actual collision. |
+| EXP-092 Transfer Test (know-when-blocked) | 🏃 IN PROGRESS | coach | 10 arm-a runs + 8 arm-b runs complete. Needs 2 more arm-b runs + results write-up. |
+| EXP-093 Sprint 3 (verify-after-edit) | ✅ COMPLETE | coach | **MIXED**: C3 (validation) 40%→80% ✅, C2.3 (read-after-write) 40%→20% ❌. Few-shot = effective for *what* not *when*. Product correctness 60%→100%. |
+| EXP-094 Few-Shot Transfer (escalation-stubborn) | 🏃 QUEUED | coach | Self-dispatched. Testing know-when-blocked on new scenario. |
+| **Telegram Silent Drop Bug** | ✅ FIXED | tech-lead | Commit 217efe2. Telegram now gets `⚠️` on turn errors + `❌` on session_end. Merged to main. |
+| **Context Overflow Crash Loop** | ✅ FIXED | tech-lead | Commit 9ea5b5a. Three-layer defense: manager archives overflow sessions, ChatSession skips them on resume, runtime nulls sessionId on overflow. Merged to main. |
+| EXP-088 naming conflict | ✅ RESOLVED | may | Only one experiment in directory (Workaround Difficulty Gradient). `.conflict-k3s` is federation artifact. |
 | EXP-070 KB Integration | ✅ COMPLETE | bob | Externalization NOT significant on ambiguous-context-drift. Integrated null result. |
 | EXP-087 KB Integration | ✅ COMPLETE | bob | Bob session completed. EXP-089 results also integrated. |
 
@@ -80,19 +84,20 @@ Updated: 2026-04-08 ~17:13 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (17:13)
-- **Coach is highly autonomous** — self-dispatched EXP-092 (transfer test) and EXP-093 (Sprint 3: verify-after-edit) without needing my dispatch. Both running now.
-- **EXP-091 KB Integration dispatched** — Forked to Bob (s_1775668473890_10): H-091 P(H) 0.98→0.99, process discipline domain confirmed.
-- **EXP-088 naming conflict resolved** — Only one experiment in the directory (Workaround Difficulty Gradient). The `.conflict-k3s` file is a federation artifact, not a real collision.
-- **Cancelled stale May session** — s_1775311714523_3 was idle 5945min (99h!). Finally killed.
-- **Skill deployment check** — know-when-blocked and evidence-over-narrative deployed to coder with few-shot. investigate-and-fix in shared/skills/ with few-shot. Broader deployment (tech-lead, optimizer) is a P2.
-- **System: All healthy** — All 8 heartbeats firing. No errors in last hour.
+## Latest Cycle Summary (23:25)
+- **Two P0 bug fixes SHIPPED** — Both Hao's bug reports addressed:
+  1. `217efe2`: Telegram now notifies users on session errors (context overflow, API failures) — handles both `turn_end` with no text + `session_end` with error.
+  2. `9ea5b5a`: Context overflow crash loop prevention — overflowed chat sessions are auto-archived instead of going idle (prevents supervisord death spiral). Three-layer defense: manager handleCompletion + ChatSession resume guard + runtime recovery.
+- **Cancelled stale May chat session** — s_1775311714523_3 was idle 105+ hours. Cancelled.
+- **EXP-093 results complete** — Mixed: few-shot improves *what to validate* (C3: 40%→80%) but NOT *when to verify* (C2.3: 40%→20%). Important mechanism distinction.
+- **EXP-092 still in progress** — 10 arm-a runs complete, only 8 arm-b runs. Coach needs to finish and write results.
+- **Team fully autonomous** — Coach self-dispatched EXP-094, Bob has EXP-093 KB integration, Optimizer investigating tool regression.
 
 ## Next Actions
-- **P1**: **Monitor EXP-091 KB Integration** — Bob session s_1775668473890_10 running. Verify H-091 → 0.99.
-- **P1**: **Monitor EXP-092 + EXP-093** — Coach self-dispatched. Check results next cycle.
-- **P1**: **Present auto-loop decision brief to Hao** — at `agents/may/workspace/auto-loop-decision-brief.md`.
-- **P1**: **Present research sprint summary to Hao** — 12/12 matched few-shot runs at 100%. H-091 is the strongest finding. Worth a status report.
+- **P0**: ~~Bug fixes from Hao~~ — DONE. Both merged to main.
+- **P1**: **Monitor EXP-092 completion** — arm-b needs 2 more runs, then results write-up (cf942552 queued for coach).
+- **P1**: **Monitor EXP-094** — Coach self-dispatched few-shot transfer test on behavior-escalation-stubborn.
+- **P1**: **Present status to Hao** — 12+ matched few-shot runs at 100%. H-091 P(H)=0.99. Auto-loop decision brief ready. Two critical bugs fixed.
 - **P2**: **Deploy skills to more agents** — know-when-blocked and evidence-over-narrative only in coder/. Tech-lead, optimizer could benefit.
-- **P2**: Federation design ready for Hao review — present summary when available
-- **P2**: Pre-merge review gate Phase 2 (auto-review) — needs design
+- **P2**: Federation design ready for Hao review
+- **P2**: Pre-merge review gate Phase 2 (auto-review)
