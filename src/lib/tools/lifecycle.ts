@@ -27,19 +27,7 @@ import type { TSchema } from "@mariozechner/pi-ai";
 import { existsSync, appendFileSync } from "fs";
 import { resolve } from "path";
 
-// Lazy import for requests.ts (uses bun:sqlite, not available in vitest)
-let _updateRequestFn: ((dir: string, id: string, update: any) => void) | null = null;
-async function getUpdateRequest() {
-  if (!_updateRequestFn) {
-    try {
-      const mod = await import("../requests.js");
-      _updateRequestFn = mod.updateRequest;
-    } catch {
-      /* bun:sqlite not available */
-    }
-  }
-  return _updateRequestFn;
-}
+import { updateRequest } from "../requests.js";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -275,19 +263,16 @@ export function createFinishTool(options: FinishToolOptions): AgentTool<TSchema>
 
       // ── Update unified request tracker (if requestId available) ──
       if (options.requestId && stateDir) {
-        getUpdateRequest().then((updateReq) => {
-          if (!updateReq) return;
-          try {
-            const requestStatus = status === "success" ? "COMPLETED" : status === "failure" ? "FAILED" : "BLOCKED";
-            updateReq(stateDir, options.requestId!, {
-              status: requestStatus,
-              summary,
-              completedAt: Date.now(),
-            });
-          } catch {
-            /* non-fatal */
-          }
-        });
+        try {
+          const requestStatus = status === "success" ? "COMPLETED" : status === "failure" ? "FAILED" : "BLOCKED";
+          updateRequest(stateDir, options.requestId!, {
+            status: requestStatus,
+            summary,
+            completedAt: Date.now(),
+          });
+        } catch {
+          /* non-fatal */
+        }
       }
 
       // ── Persist lessons to memory-stream.jsonl ─────────────────

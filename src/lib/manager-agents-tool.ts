@@ -11,19 +11,8 @@ import { Type, StringEnum } from "@mariozechner/pi-ai";
 import type { ActiveSession, RegisteredAgent } from "./manager-utils.js";
 import type { SessionInfo, TaskResult } from "./types.js";
 import type { PersistedSession } from "./persistence.js";
+import { trackRequest, updateRequest, classifyError, isDuplicate, getDb, getActiveRequests, getRequestsByAgent, getRequestsByAgentAndStatus, getStaleRequests } from "./requests.js";
 import type { RequestRecord } from "./requests.js";
-
-// ── Lazy-loaded request tracking ───────────────────────────────────────
-// Loaded lazily to avoid pulling bun:sqlite at module level (vitest compat).
-
-let _requestsModule: typeof import("./requests.js") | undefined;
-
-async function getRequestsModule() {
-  if (!_requestsModule) {
-    _requestsModule = await import("./requests.js");
-  }
-  return _requestsModule;
-}
 
 // ── Manager interface ──────────────────────────────────────────────────
 // Instead of importing the full SubagentManager class (circular dependency),
@@ -259,8 +248,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
             const startTime = Date.now();
             let requestId: string | undefined;
             try {
-              const req = await getRequestsModule();
-              requestId = req.trackRequest(manager.registry.persistDir, {
+              requestId = trackRequest(manager.registry.persistDir, {
                 fromEntity: callerName,
                 toAgent: params.agent,
                 task: params.task,
@@ -281,14 +269,13 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
             // Update request with outcome
             if (requestId) {
               try {
-                const req = await getRequestsModule();
                 const durationMs = Date.now() - startTime;
                 const hasError = result.status === "error" || result.status === "interrupted";
-                req.updateRequest(manager.registry.persistDir, requestId, {
+                updateRequest(manager.registry.persistDir, requestId, {
                   status: hasError ? "FAILED" : "COMPLETED",
                   sessionId: result.sessionId,
                   error: hasError ? result.error : undefined,
-                  errorClass: hasError ? req.classifyError(result.error) : undefined,
+                  errorClass: hasError ? classifyError(result.error) : undefined,
                   durationMs,
                   completedAt: Date.now(),
                 });
@@ -338,8 +325,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
             // Track the request in SQLite
             let runRequestId: string | undefined;
             try {
-              const req = await getRequestsModule();
-              runRequestId = req.trackRequest(manager.registry.persistDir, {
+              runRequestId = trackRequest(manager.registry.persistDir, {
                 fromEntity: callerNameRun,
                 toAgent: params.agent,
                 task: forkTask,
@@ -436,8 +422,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
             // Dedup check: skip if identical active request exists
             if (!params.force) {
               try {
-                const req = await getRequestsModule();
-                const existingReqId = req.isDuplicate(
+                const existingReqId = isDuplicate(
                   manager.registry.persistDir,
                   caller,
                   params.agent,
@@ -476,8 +461,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
             // Track the request in SQLite
             let requestId: string | undefined;
             try {
-              const req = await getRequestsModule();
-              requestId = req.trackRequest(manager.registry.persistDir, {
+              requestId = trackRequest(manager.registry.persistDir, {
                 fromEntity: caller,
                 toAgent: params.agent,
                 task: structuredMessage,
@@ -618,7 +602,6 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
 
           case "requests": {
             try {
-              const req = await getRequestsModule();
               const persistDir = manager.registry.persistDir;
               const filter = params.filter ?? "active";
               const limit = params.limit ?? 50;
@@ -627,18 +610,18 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
               switch (filter) {
                 case "active":
                   requests = params.agent
-                    ? req.getRequestsByAgentAndStatus(persistDir, params.agent, ["CREATED", "IN_PROGRESS"], limit)
-                    : req.getActiveRequests(persistDir);
+                    ? getRequestsByAgentAndStatus(persistDir, params.agent, ["CREATED", "IN_PROGRESS"], limit)
+                    : getActiveRequests(persistDir);
                   if (!params.agent) requests = requests.slice(0, limit);
                   break;
                 case "stale":
-                  requests = req.getStaleRequests(persistDir, 2 * 60 * 60 * 1000); // 2h
+                  requests = getStaleRequests(persistDir, 2 * 60 * 60 * 1000); // 2h
                   if (params.agent) requests = requests.filter((r) => r.toAgent === params.agent);
                   requests = requests.slice(0, limit);
                   break;
                 case "failed": {
                   // getActiveRequests only returns active — need direct query for failed
-                  const db = req.getDb(persistDir);
+                  const db = getDb(persistDir);
                   const query = params.agent
                     ? `SELECT * FROM requests WHERE status = 'FAILED' AND toAgent = ? ORDER BY createdAt DESC LIMIT ${limit}`
                     : `SELECT * FROM requests WHERE status = 'FAILED' ORDER BY createdAt DESC LIMIT ${limit}`;
@@ -649,11 +632,11 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
                 }
                 case "all":
                   requests = params.agent
-                    ? req.getRequestsByAgent(persistDir, params.agent)
-                    : req.getActiveRequests(persistDir);
+                    ? getRequestsByAgent(persistDir, params.agent)
+                    : getActiveRequests(persistDir);
                   if (!params.agent) {
                     // For "all" without agent filter, get everything (limited)
-                    const db = req.getDb(persistDir);
+                    const db = getDb(persistDir);
                     requests = db
                       .prepare(`SELECT * FROM requests ORDER BY createdAt DESC LIMIT ${limit}`)
                       .all() as unknown as RequestRecord[];
