@@ -1,15 +1,15 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-08 ~15:44 UTC
+Updated: 2026-04-08 ~16:03 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Scout**: 🟢 Running — Heartbeat cron confirmed active (30min interval). Deep-dive complete.
-- **Bob**: 🟢 Running — Integrating EXP-088 results into KB. Few-shot sprint plan complete.
-- **Coach**: 🟢 Running — **Few-Shot Sprint 1 ACTIVE** with excellent results. EXP-088 COMPLETE. EXP-070 extended baselines.
-- **Tech-lead**: 🟢 Running — Federation Sync Redesign COMPLETE. Scout cron fix COMPLETE.
-- **Optimizer/QA**: 🟢 Running — Heartbeats firing at 15:13 (recovered from model errors).
-- **All agents**: 🟢 All 8 agents have active heartbeat sessions. No errors in last hour.
+- **Scout**: 🟢 Running — Heartbeat cron active (30min interval).
+- **Bob**: 🟢 Running — EXP-088 KB integration COMPLETE. Heartbeat active.
+- **Coach**: 🟢 Running — **EXP-090 (Sprint 1 treatment runs) ACTIVE**. EXP-070 extended (10B+10T runs) ACTIVE. Two concurrent WORK sessions.
+- **Tech-lead**: 🟢 Running — Federation Sync COMPLETE. Heartbeat active.
+- **Optimizer/QA**: 🟢 Running — Heartbeats firing.
+- **All agents**: 🟢 6 active sessions (2 coach WORK + heartbeats). No errors in last hour.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -39,7 +39,7 @@ Updated: 2026-04-08 ~15:44 UTC
 | Pre-merge review gate | ✅ Phase 1 done | - | Hook installed, needs Phase 2 (auto-review) |
 | **Federation Sync Redesign** | ✅ COMPLETE | tech-lead | **P0 from Hao**. Ownership-aware conflict resolution in agents-auto-commit.ts (348→692 lines). Instance config, heartbeat writing, federation dirs. TSC clean. Auto-committed and pushed. Session `s_1775659647453_55`. |
 | Few-Shot Conversion Sprint Plan | ✅ COMPLETE | bob | Plan at `agents/bob/workspace/few-shot-conversion-plan.md`. Top 5: know-when-blocked (#1), evidence-over-narrative (#2), investigate-and-fix (#3), obstacle-pivot (#4), read-before-edit (#5). Sprint 1 dispatched to coach. |
-| Few-Shot Sprint 1 | 🏃 RUNNING | coach | **3 runs complete** (session s_1775661323064_65). `escalation-impossible-task-fewshot`: 4/5 x3 (vs 2/5 baseline). `misleading-test-fix-fewshot`: 5/8, **8/8**, **8/8** (vs 4/8 baseline). Now running additional baselines for comparison. |
+| Few-Shot Sprint 1 | 🏃 RUNNING | coach | Now **EXP-090**. Previous runs: `escalation-impossible-task-fewshot` 4/5 x3 (vs 2/5 baseline = +100%). `misleading-test-fix-fewshot` **8/8** on run 2 (vs 4/8 baseline). EXP-090 treatment runs just forked. |
 | EXP-087 KB Integration | ✅ COMPLETE | bob | Bob session completed. EXP-089 results also integrated. |
 
 ## Completed/Archived
@@ -72,16 +72,16 @@ Updated: 2026-04-08 ~15:44 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (15:44)
-- **Few-Shot Sprint 1: 🏃 ACTIVELY RUNNING** — Coach running know-when-blocked + evidence-over-narrative conversions. **Outstanding results**: `escalation-impossible-task-fewshot` 4/5 consistently (vs 2/5 baseline = +100% on behavioral checks). `misleading-test-fix-fewshot` hit **8/8 PERFECT** on run 2 (vs 4/8 baseline = +100%). 3rd round in progress.
-- **EXP-088 Workaround Difficulty Gradient: ✅ COMPLETE** — MAJOR RESULT confirmed last cycle.
-- **System: All healthy** — 8 agents running, no failures. Productive cycle.
-- **EXP-070 duplicate messages**: Bob sent 2 identical messages (3692797e, d1071ea7) to coach. Not blocking but wasteful.
+## Latest Cycle Summary (16:03)
+- **EXP-090 Few-Shot Sprint 1 Treatment Runs: 🏃 JUST FORKED** — Coach running N=3 treatment on `escalation-impossible-task-fewshot` + `misleading-test-fix-fewshot`. Previous preliminary results excellent (4/5 vs 2/5 baseline, 8/8 vs 4/8 baseline).
+- **EXP-070 Extended: 🏃 RUNNING** — Coach running 10 baseline + 10 treatment runs on ambiguous-context-drift. ~30min in, will run ~1h.
+- **Bob: EXP-088 KB integration done** — completed in 10min (605s). Heartbeat active.
+- **System: All healthy** — No errors, no failures, 6 active sessions. Productive cycle.
 
 ## Next Actions
-- **P1**: **Monitor Few-Shot Sprint 1 completion** — Coach producing excellent results. When done, have Bob integrate into KB and plan Sprint 2.
-- **P1**: **Resolve EXP-088 naming conflict** — Coach's EXP-088 (skill format test) vs Bob's EXP-088 (workaround gradient). Need to renumber coach's to EXP-088b or similar.
+- **P1**: **Monitor EXP-090 completion** — When done, review results and have Bob integrate into KB.
+- **P1**: **Monitor EXP-070 completion** — Extended baseline/treatment comparison (10+10 runs). Review results when done.
 - **P1**: **Present auto-loop decision brief to Hao** — at `agents/may/workspace/auto-loop-decision-brief.md`.
+- **P1**: **Resolve EXP-088 naming conflict** — Coach's EXP-088 (skill format test) vs Bob's EXP-088 (workaround gradient). Need to renumber one.
 - **P1**: Federation design ready for Hao review — present summary when available
-- **P2**: Clean up duplicate EXP-070 message (d1071ea7)
 - **P2**: Pre-merge review gate Phase 2 (auto-review) — needs design

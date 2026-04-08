@@ -22,6 +22,7 @@
 | H-009 | Evaluator heuristic was a rubber stamp (now mitigated) | **4 phases deployed** (finish-status scoring, semantic signals, recalibration, test detection). **EXP-039 Phase B**: LLM evaluator shows selective confirmation bias — self-narrative inflates weak sessions (Q delta -0.10), not good sessions. Phase C deployed (isolated re-eval for Q<0.6). | **0.85** |
 | H-089 | Environmental evidence discovery — instructing agent to discover environmental evidence (grep source, read schemas) closes absent-information gaps where externalization fails | EXP-079: 0%→100% (L3). EXP-080: +34pp (L2). **EXP-083: 0%→100% in .env repair AND SQL schema (N=24/condition, p<0.0001)**. Combined: 34/36 (94%) treatment pass across 4 domains. P1 (cross-domain generalization) CONFIRMED. | **0.92** |
 | H-088 | Implementation commitment — closing the analysis-action gap requires fix-path externalization. **EXP-088**: difficulty gradient confirmed | Binding on v3: 3/3=100%. Fails on v2: 0/6. **EXP-088**: v2-hard baseline 67%, treatment 100% (p<0.001 vs v2). Relative difficulty is the key variable. Binding works when correct fix is easier than workaround. | **0.80** |
+| H-043 | Knowledge utilization bottleneck — U = P(access) × P(applies) × P(helps) | 11 evidence sources: P(access)≈0 for pull, P(applies)≈0 for pushed declarative. Only structural form conversion achieves non-zero U. Few-shot breaks text-rule binary (EXP-084). EXP-082: P(applies\|pushed)≈0. | **0.85** |
 
 ## 🟡 Tier 2: Moderate Confidence — P(H) 0.50-0.69
 
@@ -151,9 +152,8 @@ EXP-026 production data confirms H-041's core prediction: **workflow benefit sca
 ## Meta-Process: H-066 (Bayesian Belief Management)
 
 The Bayesian scoring process itself is tracked as H-066. After 2026-04-07 corpus cleanup:
-- **12 high confidence** (≥0.70): H-055 (0.82), H-041 (0.72), H-053 (0.88), H-059 (0.72), H-085 (0.92), H-058 (0.87), H-009 (0.85), H-043 (0.85), H-054 (0.75), H-091 (0.92), H-089 (0.92), **H-088 (0.80 — promoted from Tier 2 after EXP-088)**
+- **12 high confidence** (≥0.70): H-055 (0.82), H-041 (0.72), H-053 (0.88), H-059 (0.72), H-085 (0.92), H-058 (0.87), H-009 (0.85), H-043 (0.85), H-054 (0.75), H-091 (0.92), H-089 (0.92), H-088 (0.80)
 - **4 moderate** (0.50-0.70): H-014 (0.63), H-056 (0.61), H-047 (0.62), H-087 (0.65)
-- **0 high-confirmed** (0.90+): ~~H-088 (0.92)~~ moved back to moderate
 - **1 meta**: H-066 (Bayesian belief management)
 - **12 archived/resolved**: H-001 (disconfirmed), H-002 (superseded), H-034/H-038/H-039 (design principles), H-046/H-048/H-051 (insufficient evidence), H-052 (absorbed), H-064/H-065 (merged/out-of-domain), H-070 (refuted by EXP-051, superseded by KE-052)
 - **H-066 P1 confirmed**: 7 hypotheses scored below 0.40 (predicted ≥5)
