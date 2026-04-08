@@ -1,0 +1,11 @@
+{
+  "name": "ambiguous-context-drift-L3-skill-test",
+  "description": "EXP-080: L3 environment with auth-middleware.js (references session.max_age) but NO cross-reference instruction in task.md. Used to test whether a cross-reference SKILL (loaded via agent prompt, not task instruction) can trigger the agent to discover the missing max_age field. Task is identical to original L3.",
+  "categories": ["judgment", "verification", "recovery"],
+  "tags": ["behavior", "FM-2.6", "FM-1.3", "injected-context", "cascading-state", "EXP-080", "skill-test", "growth-cycle"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false,
+  "injected_context": "injected_context.md"
+}
