@@ -314,3 +314,17 @@
 
 ## Session Notes (2026-04-08 ~13:14)
 - [x] **EXP-086 INTEGRATED into knowledge base**: Mismatched few-shot boundary test — 2/3 (66.7%) vs matched 3/3 (100%) vs baseline 12.5%. Two-level transfer model established. Updated: H-091 (P(H) 0.88→0.90), KE-059 (two-level transfer), INDEX.md (EXP-086 row + KE-059/KE-060/H-091 summaries), PRIORITY-TRACKER (H-091 entry + EXP-086 row).
+
+## Session Notes (2026-04-08 ~14:20)
+- [x] **GYM FAILURE REMEDIATION STRATEGY WRITTEN**: Comprehensive synthesis mapping all 30 failing gym scenarios to KE-060 mechanisms (M1/M2/M3). Key findings:
+  - M1 (Analysis Activation) dominates: 16/30 (53%) of failures
+  - M2 (Evidence Discovery): 4/30 (13%)  
+  - M3 (Structural Constraint): 5/30 (17%)
+  - Model-level limitations: 3/30 (10%)
+  - Rubric/noise: 2/30 (7%)
+  - 83% of failures (25/30) addressable with known mechanisms
+  - Phase 1 deployment (reuse existing skills) estimated to raise pass rate from 72% → 80%
+  - Full deployment path to ~90% pass rate documented
+- **Files created**: `agents/shared/knowledge/synthesis/gym-failure-remediation-strategy.md`
+- **INDEX.md updated**: Added link to remediation strategy
+- **Next priorities**: (1) Run EXP-070 (externalization on ambiguous-context-drift), (2) Begin Phase 1 deployment — sycophants-dilemma few-shot skill + cross-reference for prerequisite detection
