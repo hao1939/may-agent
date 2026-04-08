@@ -1,15 +1,15 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-08 ~20:47 UTC
+Updated: 2026-04-08 ~21:27 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Running — EXP-093 design DONE (pivoted to verify-after-edit). Fresh heartbeat cycle.
-- **Coach**: 🟢 Running — Bob FM-1.3 growth cycle active (s_1775679553637_184, 28min, making progress). EXP-092 interrupted (needs retry). Fresh heartbeat also starting.
-- **Tech-lead**: 🟢 Running — C2.3 review DONE (infeasible — sent 3 alternatives to Bob). Fresh heartbeat cycle.
+- **Bob**: 🟢 Running — C2.3 v2 brief DONE. EXP-093 design DONE. Fresh heartbeat cycle.
+- **Coach**: 🟢 Running — EXP-092 gym trials active (s_1775681296741_192, 29min+, debugging gym contamination). EXP-093 DONE. FM-1.3 interrupted.
+- **Tech-lead**: 🟢 Running — **C2.3 gate SHIPPED** (commit 8f94b61d, 56 tests passing). Fresh heartbeat.
 - **Scout**: 🟢 Running — Fresh heartbeat cycle.
 - **Optimizer/QA/Evaluator**: 🟢 Running — Heartbeats firing.
-- **All agents**: 🟢 All 7 heartbeats firing (Amy-kimi still down). 3 zombie Bob "research synthesis" sessions in DB (not actually running).
+- **All agents**: 🟢 All 7 heartbeats firing (Amy-kimi still down).
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -46,11 +46,12 @@ Updated: 2026-04-08 ~20:47 UTC
 | EXP-070 Extended Baseline | ❌ INTERRUPTED | coach | 99min watchdog timeout. Was debugging gym runner scoring bug (0/0 results from cleanup timing). Needs retry. |
 | EXP-070 KB Integration | ✅ COMPLETE | bob | Externalization NOT significant on ambiguous-context-drift. Integrated null result. |
 | EXP-092 Design | ✅ DESIGNED | bob | Forced analysis-to-documentation transfer. 2 arms: forced citation + post-check. Addresses EXP-070 transfer gap (10/10 analysis correct but only 6/10 transferred). |
-| EXP-092 Gym Trials | ❌ INTERRUPTED | coach | Session s_1775679537672_183 interrupted (14min). Needs retry — coach's next heartbeat should pick this up. |
+| EXP-092 Gym Trials | ⏳ RUNNING (CLEAN) | coach | **Contamination found and fixed**: Previous runs left files in /app/config/ causing false results. Runs 1-5 invalidated. Clean re-run in progress (s_1775681296741_192). 1 valid Arm A run, running more. Arm B not started. |
 | EXP-093 Design (Sprint 3) | ✅ COMPLETE | bob | **Pivoted**: Original targets (read-before-edit 91%, verify-before-finish 100%) at ceiling. Redirected to verify-after-edit (0% on convention-verify-edit). 2 gym scenarios created. 16-run 2-arm design. Protocol at `EXP-093/protocol.md`. Delegated to Coach. |
-| EXP-093 Gym Trials | ⏳ PENDING | coach | Sprint 3 execution. N=5+5 convention-verify-edit + N=3+3 read-before-edit. Waiting for coach to pick up. |
-| Bob FM-1.3 Growth Cycle | ⏳ RUNNING | coach | Session s_1775679553637_184 (28min+). Coach deep in gym runner code, making progress. |
-| C2.3 Auto-Readback Review | ✅ COMPLETE | tech-lead | **Infeasible**: Tools are framework-level, not in our codebase. Auto-readback in response wouldn't satisfy C2.3 gym checker (needs separate read()). 3 alternatives sent to Bob: (A) context.md instruction, (B) workflow enforcement, (C) convention checker + active nudge. |
+| EXP-093 Gym Trials | ✅ COMPLETE | coach | **Mixed results**: C3 validation +40pp (40%→80%), but C2.3 verify-after-edit -20pp. Few-shot teaches "what" not "when". Product quality +40pp. H-091 P(H) 0.99→0.95. |
+| Bob FM-1.3 Growth Cycle | ❌ INTERRUPTED | coach | Session s_1775679553637_184 interrupted. Needs retry next cycle. |
+| C2.3 Auto-Readback v2 Brief | ✅ COMPLETE | bob | Revised after tech-lead feedback. Proposes finish-time verification gate in finish-guard.ts. |
+| **C2.3 Finish-Time Gate** | ✅ **SHIPPED** | tech-lead | **Commit 8f94b61d**. 238 lines in finish-guard.ts, 428 lines tests. 56 tests all passing. Enforces write→read verification before finish(success). edit() with diff preview exempt. |
 | EXP-087 KB Integration | ✅ COMPLETE | bob | Bob session completed. EXP-089 results also integrated. |
 
 ## Completed/Archived
@@ -83,23 +84,23 @@ Updated: 2026-04-08 ~20:47 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (20:47)
-- **EXP-093 Design: ✅ DONE** — Bob pivoted Sprint 3 from original targets (at ceiling) to verify-after-edit (0% baseline). 2 gym scenarios created, 16-run protocol, delegated to Coach.
-- **C2.3 Auto-Readback: ✅ REVIEWED** — Tech-lead found proposal infeasible (tools are framework-level). 3 implementable alternatives sent to Bob.
-- **EXP-092: ❌ INTERRUPTED** — Session 183 cut short (14min). Coach needs retry.
-- **Bob FM-1.3 Growth: ⏳ RUNNING** — Coach session 184 still active (28min+), making progress in gym runner code.
-- **EXP-093 Gym Trials: ⏳ PENDING** — Coach should pick this up after current work.
-- **System stable** — All 7 agents with active heartbeats (Amy-kimi still down). 3 zombie Bob research-synthesis sessions in DB but not actually running.
-- **Key insight from Bob's EXP-093**: Check baseline pass rates before designing experiments. Original Sprint 3 targets were already at 91%/100% — no room for improvement. The real gap was verify-after-edit at 0%.
+## Latest Cycle Summary (21:27)
+- **EXP-093: ✅ COMPLETE** — Mixed results. Few-shot teaches "what to validate" (C3: +40pp) but NOT "when to verify" (C2.3: -20pp). Product quality +40pp. H-091 P(H) 0.99→0.95.
+- **C2.3 Finish-Time Gate: ✅ SHIPPED** — Tech-lead implemented (commit 8f94b61d). 238 lines in finish-guard.ts, 56 tests all passing. Enforces write→read verification before finish(success).
+- **C2.3 v2 Brief: ✅ DONE** — Bob revised design after tech-lead feedback. Proposed finish-time gate (now implemented).
+- **EXP-092: ⏳ RUNNING** — Coach found gym contamination (stale /app/config/ from previous runs). Fixed. Re-running from scratch with clean environment. 1 valid Arm A run so far.
+- **Bob FM-1.3 Growth: ❌ INTERRUPTED** — Session 184 interrupted. Coach notified to retry.
+- **System stable** — All 7 agents with active heartbeats (Amy-kimi still down).
+- **Key insight**: EXP-093 confirms few-shot is effective for "what" (validation knowledge, product quality) but NOT "when" (temporal tool-call sequencing). This validates the C2.3 finish-time gate approach — structural enforcement needed for temporal discipline.
 
 ## Next Actions
-- **P1**: **Monitor Bob FM-1.3 growth cycle** — Coach session still running. Check result next cycle.
-- **P1**: **EXP-092 retry** — Coach needs to re-run gym trials. Coach heartbeat should auto-detect.
-- **P1**: **EXP-093 Sprint 3 execution** — Coach should run trials once EXP-092 retry done.
+- **P1**: **C2.3 gate gym validation** — Run convention-verify-edit scenarios to prove the gate works. Coach/Bob to design.
+- **P1**: **EXP-092 completion** — Coach's clean re-run in progress. Monitor next cycle.
+- **P1**: **EXP-093 KB integration** — Dispatched to Bob. Results need knowledge base updates.
+- **P1**: **Bob FM-1.3 growth cycle retry** — Dispatched to Coach (P2, after EXP-092).
 - **P1**: **Deploy investigate-and-fix skill** — Coach needs to promote to coder/skills/ with few-shot (from EXP-091 Sprint 2).
-- **P1**: **EXP-070 retry** — Extended baseline still interrupted. Gym runner scoring bug unresolved.
-- **P1**: **C2.3 redesign** — Bob needs to revise approach based on tech-lead's feedback (3 alternatives).
-- **P1**: **Present auto-loop decision brief to Hao** — at `agents/may/workspace/auto-loop-decision-brief.md`.
 - **P1**: **Resolve EXP-088 naming conflict** — Coach's EXP-088 (skill format test) vs Bob's EXP-088 (workaround gradient). Need to renumber one.
+- **P1**: **Present auto-loop decision brief to Hao** — at `agents/may/workspace/auto-loop-decision-brief.md`.
 - **P1**: Federation design ready for Hao review — present summary when available
 - **P2**: Pre-merge review gate Phase 2 (auto-review) — needs design
+- **P2**: EXP-070 extended baseline retry — still interrupted from gym runner scoring bug
