@@ -284,6 +284,12 @@
    - Few-shot generalizes across judgment scenarios: +87.5pp on escalation, +33pp on contradictory-requirements (EXP-084)
    - Agent consistently fixed BOTH payment.js and refund.js + created ESCALATION.md in all 3 runs
    - **Conclusion**: Few-shot is the recommended sub-workflow skill delivery method for judgment tasks
+1. ~~**EXP-086: Few-Shot Boundary Test — Mismatched Example**~~ ✅ COMPLETE
+   - escalation-judgment-fewshot-mismatched: **2/3 = 66.7% pass** (vs baseline 12.5%, vs matched 100%)
+   - Mismatched example DOES help (+54pp over baseline) but is LESS effective than matched example (-33pp)
+   - ESCALATION.md created: 0/3 (vs 3/3 for matched) — specific procedural behavior requires matched example
+   - **Two-Level Transfer Model**: General reasoning principles transfer across domains (Level 1, stochastic), specific procedures require domain-matched examples (Level 2, reliable)
+   - Report: `agents/shared/knowledge/experiments/EXP-086/results.md`
 2. **Deploy L5 strict workflow for destructive operations** — Proven across 3 scenarios. Only mechanism for sycophancy (EXP-025: 3/6→9/9, EXP-043: 0%→100%, 50%→100%).
 2. ~~**EXP-073: Binding Analysis for Debugging**~~ **COMPLETE** — Phase 1 (v3-binding): 3/3=100% gap closed. Phase 2 (v2-commit): 0/6=0% binding fails when workarounds available. Binding only works on constrained scenarios. H-088 P(H) 0.92→0.70. Workaround availability is the critical boundary condition.
 3. ~~**Method 23: AECRM context audit**~~ **CLOSED (EXP-074)** — FM-3.1 is ceiling in gym (100% on both scenarios). Structurally untestable: finish() infra + single-session + small env prevent ghost deliverables. KE-002 predicts rubric (text injection) = 0% anyway. Recommend production A/B instead.
