@@ -31,11 +31,14 @@
 | [KE-043](../../entries/KE-043-forced-externalization-complete-picture.md) | ★★★★★ Forced externalization complete picture: 60+ runs, 100% pass vs 0-50% baselines. Mechanism is "analysis activation" (behavioral mode shift). Dual pathways (write OR read). Workflow hierarchy: reward shaping (0%) < text skills (0%) < hard workflow (100%). |
 | [KE-047](../../entries/KE-047-agent-harness-architecture-convergence.md) | Harness Architecture Convergence: 10 structural subsystems including tool registry, context assembly, lifecycle hooks. Snapshot isolation (+22pp), on-demand knowledge loading. Context drift dominant failure at 34%. |
 | [KE-049](../../entries/KE-049-agent-environment-interface-formalization-ceiling.md) | Interface Formalization Ceiling: schema-first tool APIs reduce interface misuse but have zero impact on semantic misuse and zero task success improvement (DD-543). Agent HTTP behavioral signatures compress to 1-2 requests (DD-566). |
+| [KE-056](../../entries/KE-056-constraint-hierarchy-workaround-availability.md) | Constraint Hierarchy: L5 action-space > L4 mechanical (100%) > L3 experiential (67%) > L2 binding (0%) > L1 text (0%). Workaround availability is the dominant variable. |
+| [KE-059](../../entries/KE-059-fewshot-breaks-text-rule-binary.md) | ★★★★ Few-Shot Breaks Text-Rule Binary: Worked examples produce +2.3 score improvement and 100% analysis creation on judgment tasks where text rules = 0%. Checklists (+2.0) and echo-back (+1.3) also effective. First evidence of intermediate skill delivery methods between L1 text (0%) and L5 workflow (100%). |
 
 ## Related Hypotheses
 - **H-036**: Claude harness patterns — optimal tool use configurations
 - **H-0180**: MCP vs CLI architecture comparison
 - **H-039**: Decomposition bottleneck — task decomposition quality limits delegation
+- **H-091**: Skill delivery methods between text rules and workflow enforcement — few-shot, checklists, echo-back are intermediate mechanisms (P(H)=0.75)
 
 ## Open Questions
 1. What's the optimal tool selection strategy when multiple tools could work?

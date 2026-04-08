@@ -42,6 +42,7 @@
 | [KE-050](../../entries/KE-050-robustness-architecture-nexus.md) | Fixed-test benchmarks systematically miss robustness (DD-636). Comprehension > generation as evaluation bottleneck. Memorization-Robustness Inverse: high benchmark scores correlate with fragility under perturbation. |
 | [KE-052](../../entries/KE-052-structural-access-thesis.md) | Structural Access Constraints Dominate Content Quality: RIFT predicts evaluator agreement (r=0.81). Accessibility of evaluation criteria matters more than their quality. Access is designable — rewrite low-RIFT rubrics. |
 | [KE-053](../../entries/KE-053-gym-production-gap-structural-not-behavioral.md) | Gym-Production Gap Is Structural: 96% gym ceiling ≠ production success. Isolated competency tests cannot predict deployed performance. Three structural gaps (context scale, instruction complexity, compound verification). Gym functions as regression suite, not training tool. |
+| [KE-059](../../entries/KE-059-fewshot-breaks-text-rule-binary.md) | Few-Shot Breaks Text-Rule Binary: EXP-084 (N=30) — worked examples, checklists, and echo-back produce measurable improvement on judgment tasks where text rules show 0% effect. Intermediate delivery methods exist between text and workflow. Evaluation method: 7-point rubric scoring across 5 training methods. |
 
 ## Related Hypotheses
 - **H-009**: Evaluator drift

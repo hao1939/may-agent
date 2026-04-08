@@ -33,7 +33,8 @@ Where U = P(relevant_knowledge_exists) × P(agent_accesses_it) × P(agent_applie
 - P(applies correctly) varies by knowledge type:
   - **Structural (workflows)**: ≈ 0.9 (agent has no choice)
   - **Factual/environmental**: ≈ 0.5-0.8 (KE-001 works)
-  - **Judgment-declarative (pushed)**: ≈ 0.0 (EXP-082: 0/3 applied injected knowledge; KE-002: 0/32 text rules)
+  - **Judgment-declarative (pushed, text rules)**: ≈ 0.0 (EXP-082: 0/3 applied injected knowledge; KE-002: 0/32 text rules)
+  - **Judgment-declarative (pushed, few-shot)**: ≈ 0.3-0.5 (EXP-084: worked examples produce measurable behavioral change; see KE-059, H-091)
   - **Judgment-declarative (available)**: ≈ 0.0 (not accessed, so moot)
 - **U ≈ 0.03-0.15** (revised down from 0.10-0.28) — most knowledge is in "available" form with P(access) ≈ 0
 
@@ -48,9 +49,12 @@ Not all knowledge representations are equal at converting decisions. EXP-022 rev
 | **Structural** (workflow, code) | ~1.0 | ~0.9 | **~0.9** | code-review-loop forces review phase |
 | **Declarative — cadence** (temporal/frequency constraints) | ~0.7 | ~0.6 | **~0.4-0.6** | "Write within first 3 tool calls" — agent counts and complies |
 | **Environmental** (context.md, SOUL.md) | ~0.8 | ~0.6 | **~0.5** | "sqlite3 not available" prevents wrong tool choice |
+| **Declarative — few-shot** (worked examples, checklists) | ~1.0 | ~0.3-0.5 | **~0.3-0.5** | Worked example in injected_context — agent pattern-matches |
 | **Declarative — judgment** (cognitive/evaluative constraints) | ~0.3 | ~0.1 | **~0.03-0.05** | "verify after edit" skill — agent reads but doesn't follow |
 
 **Key refinement (H-059)**: Declarative knowledge splits into cadence skills (targeting when/how-often, U ≈ 0.4-0.6) and judgment skills (targeting what/how-to-think, U ≈ 0.03-0.05). The mechanism: cadence compliance decisions have high R (self-verifiable by counting), while judgment compliance decisions have low R (require self-evaluation). See H-059 for full analysis.
+
+**Key refinement (H-091, EXP-084)**: Judgment-type knowledge can be partially rescued by delivery format. Few-shot worked examples (U ≈ 0.3-0.5) and checklists (U ≈ 0.3) dramatically outperform text rules (U ≈ 0.03-0.05) for judgment tasks. The mechanism: behavioral templates allow pattern-matching rather than rule interpretation. See KE-059 and H-091 for full analysis.
 
 **Prediction**: The form of knowledge, not its content, determines its effectiveness at converting essential → eliminable decisions.
 
@@ -175,6 +179,21 @@ EXP-082 tested whether **pushing** knowledge to agents (not just making it avail
 
 See KE-058 for full analysis. → H-043 updated: P(H) 0.82 → 0.85.
 
+### 12. EXP-084: Few-Shot Examples Break the Utilization Dead Zone (2026-04-08)
+
+EXP-084 tested five different skill training methods (text rules, worked examples, checklists, echo-back, and combined) on judgment tasks. **Result: Worked examples (+2.3 score improvement, 100% analysis creation) and checklists (+2.0) achieve measurable behavioral change where text rules show 0% effect.**
+
+**Critical U pipeline update**: This partially challenges the "utilization dead zone" conclusion from Evidence §11. While *declarative text rules* have P(applies) ≈ 0, *worked examples* (few-shot) demonstrate P(applies) > 0. The mechanism is different: few-shot provides a behavioral template the agent can pattern-match, not a rule it must interpret and choose to apply. This creates a new row in the utilization table:
+
+| Form | P(access) | P(applies) | U | Example |
+|------|-----------|------------|---|---------|
+| **Few-shot examples** (injected) | ~1.0 | ~0.3-0.5 | ~0.3-0.5 | Worked examples in injected_context |
+| **Checklists** (injected) | ~1.0 | ~0.3 | ~0.3 | Checklist format in injected_context |
+
+**Implication**: The binary view (text rules = 0% vs workflow = 100%) has intermediate mechanisms. H-091 formalizes this as a delivery method spectrum. The dead zone exists for *pure declarative rules* but not for *structured examples*. This opens a practical intervention path: convert declarative knowledge to worked-example format rather than full workflow enforcement.
+
+See KE-059 for full analysis. See H-091 for the intermediate delivery methods hypothesis.
+
 ## Predictions
 
 ### P1: Knowledge-to-structural conversion has higher ROI than knowledge production
@@ -287,8 +306,9 @@ See H-085 for full analysis.
 ### P4: There exists a knowledge form conversion sweet spot — PARTIALLY CONFIRMED
 - **EXP-022**: Cadence-form skill (temporal constraints) achieved U≈0.4-0.6, confirming mid-tier effectiveness between structural (U≈0.9) and judgment-declarative (U≈0.05)
 - **H-085**: Forced externalization achieves structural-level U (≈0.9) at lower implementation cost than full workflows
+- **EXP-084/H-091**: Few-shot worked examples achieve U≈0.3-0.5 for *judgment* tasks, breaking the binary (text=0%, workflow=100%). Checklists also effective (U≈0.3). This refines the hierarchy: structural > forced-ext > cadence > few-shot > environmental > text-rules.
 - **Missing**: Systematic classification of all KE entries by type to verify optimal form per knowledge-type
-- **Verdict**: The hierarchy (structural > cadence > environmental > judgment-declarative) is confirmed by data. Sweet spot is cadence-form for behavioral knowledge. **P4 PARTIALLY CONFIRMED.**
+- **Verdict**: The hierarchy is more nuanced than originally proposed — 6 tiers confirmed, not 4. Sweet spot depends on knowledge type: cadence for behavioral frequency, few-shot for behavioral judgment. **P4 PARTIALLY CONFIRMED (refined).**
 
 ### P5: U is measurable and trackable — CONFIRMED
 - **EXP-030/031b**: Demonstrated measurement of P(access) via controlled experiments (0/29 result)
@@ -311,6 +331,8 @@ The core framework (multiplicative U pipeline, form determines utilization, most
 - KE-002: Text rules don't fix judgment (declarative U ≈ 0 for behavioral)
 - KE-007: Workflows are the only reliable intervention (structural U ≈ 0.9)
 - KE-058: Injected declarative knowledge has no effect (P(applies|pushed) ≈ 0)
+- KE-059: Few-shot examples break the text-rule binary (P(applies|few-shot) > 0)
+- H-091: Skill delivery methods between text rules and workflow enforcement
 - EXP-022: Materialize-findings skill breaks the 0/20 barrier
 - EXP-008: Verify-after-edit null result (U = 0 despite knowledge present)
 - EXP-082: Knowledge application pipeline — injected knowledge ignored (0/3)

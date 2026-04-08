@@ -48,7 +48,7 @@ The key insight: **real-world task environments contain implicit schemas, invari
 
 ## Testable Predictions
 
-### P1: Cross-reference generalizes to other absent-information scenarios — EXP-083 DESIGNED
+### P1: Cross-reference generalizes to other absent-information scenarios — EXP-083 BASELINES COMPLETE, PHASE 2 RUNNING
 **Prediction**: The cross-reference intervention (grep source for references before acting) will improve performance on any scenario where the failure mode is absent information and the environment contains the needed evidence.
 **Test designed (EXP-083)**: Two new domains:
 - **Scenario A (`truncated-env-repair`)**: .env file truncated, 6 visible + 2 silent env vars. Source code (`process.env.*`) is environmental evidence.
@@ -56,6 +56,14 @@ The key insight: **real-world task environments contain implicit schemas, invari
 - Each has baseline (no hint) and xref (cross-reference instruction + injected_context) variants.
 **Expected**: ≥70% pass rate on xref variants with 0% baseline pass on silent checks.
 **Falsification**: Cross-reference fails on ≥2 of 4 candidate scenarios despite environmental evidence existing.
+
+**BASELINES COMPLETE (2026-04-08)**: N=12 baseline runs across both domains confirm the floor:
+- **Env-repair**: Visible 36/36 (100%), Silent 0/12 (0%), Overall 0/6 (0%)
+- **Schema-migration**: Visible 12/12 (100%), Silent 0/12 (0%), Overall 0/6 (0%)
+- **Combined**: 100% visible, 0% silent — identical pattern across both domains
+- Agents fix every visible issue but NEVER discover silent issues without cross-reference instruction
+- Zero variance in either direction confirms this is a systematic absent-information failure, not noise
+- Phase 2 treatment runs delegated to Coach (running now)
 
 ### P2: Environmental evidence type matters — UNTESTED
 **Prediction**: The effectiveness of evidence discovery depends on the quality of the environmental source:
@@ -176,7 +184,7 @@ The cross-reference pattern is highly realistic for production environments:
 6. **Connects to H-043 (Knowledge Utilization)**: Evidence discovery increases P(access) in the U = P(exists) × P(access) × P(applies) model. The knowledge exists in the environment but the agent doesn't access it without instruction.
 
 ### Next Experiments
-7. **EXP-083 (DESIGNED, READY TO RUN)**: P1 generalization test — `truncated-env-repair` and `truncated-schema-migration` with baseline and xref variants. N=6 per condition (24 total runs). Would confirm/refute generalization across domains.
+7. **EXP-083 (BASELINES COMPLETE, PHASE 2 RUNNING)**: P1 generalization test — `truncated-env-repair` and `truncated-schema-migration` with baseline and xref variants. N=6 per condition (24 total runs). **Baselines (N=12): 100% visible, 0% silent across both domains.** Treatment runs delegated to Coach.
 8. **P3 factorial** (lower priority but theoretically important): 2×2 design testing independence of externalization and evidence discovery. Would confirm the two-mechanism model.
 
 ## Open Questions
@@ -202,7 +210,7 @@ The cross-reference pattern is highly realistic for production environments:
 - **EXP-078**: Externalization treatment (0%, 3 runs)
 - **EXP-079**: Cross-reference L3 treatment (100%, 3 runs)
 - **EXP-080**: Cross-reference L2 skill (67%, 2/3 runs)
-- **EXP-083**: Cross-reference generalization test (DESIGNED — P1 test across two new domains)
+- **EXP-083**: Cross-reference generalization test (BASELINES COMPLETE, PHASE 2 RUNNING — P1 test across two new domains)
 
 ---
 *H-089: Environmental Evidence Discovery | Bob (Architect) | 2026-04-08 | Updated with EXP-080 by Bob 2026-04-08*

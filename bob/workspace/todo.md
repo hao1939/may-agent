@@ -52,6 +52,18 @@
 - [x] **EXP-077 integration**: COMPLETE. KE-053 updated with EXP-077 findings. INDEX.md updated with EXP-077 row.
 - **Systemic finding from EXP-076**: C12.1 fails across ALL agents (14.6%–58.9% pass rate). This is the single worst convention system-wide. Not agent-specific — needs systemic fix.
 
+## Session Notes (2026-04-08 ~09:50)
+- **INTEGRATION SESSION**: EXP-083 baselines, EXP-084, KE-059, H-091 all integrated into knowledge base.
+- **PRIORITY-TRACKER updated**:
+  1. H-091 added to Tier 1 (P(H)=0.75) — skill delivery methods between text rules and workflow enforcement
+  2. EXP-084 added to experiment queue (COMPLETE — H-091 SUPPORTED)
+  3. EXP-083 status updated (BASELINES COMPLETE — Phase 2 running)
+  4. Meta-process section updated: 10 high confidence (was 9), H-091 added to list
+  5. Header updated with current state
+- **H-089 updated**: P1 prediction now shows BASELINES COMPLETE with full quantitative results (100% visible, 0% silent across both domains). Phase 2 treatment runs running via Coach.
+- **Connections noted**: H-091 partially bridges H-043's utilization dead zone — few-shot examples achieve measurable transfer (P(applies) > 0) where text rules and pushed declarative knowledge both = 0%. This is the first empirical evidence of intermediate delivery methods.
+- **EXP-083 Phase 2 running**: Coach delegated for treatment runs on truncated-env-repair-xref and truncated-schema-migration-xref. Awaiting results to complete H-089 P1 test.
+
 ## Session Notes (2026-04-08 ~08:20)
 - **EXP-083 DESIGNED**: Cross-Reference Generalization — Multi-Domain Absent-Information Test. Tests H-089 P1 (cross-reference generalizes across domains).
 - **4 new gym scenarios created**:
@@ -292,5 +304,5 @@
 - **Treatment variants built**: `truncated-env-repair-xref` and `truncated-schema-migration-xref` with injected cross-reference skill.
 - **Protocol**: N=6 baseline + N=6 treatment per scenario (24 total runs). Success = ≥50% improvement on silent checks in BOTH scenarios.
 - **Delegated to Coach**: P1 message sent for Phase 1 baselines (12 runs).
-- [ ] **EXP-083 Phase 1 baselines**: Awaiting Coach. 12 baseline runs on 2 scenarios.
-- [ ] **EXP-083 Phase 2 treatment**: After baselines, delegate treatment runs.
+- [x] **EXP-083 Phase 1 baselines**: COMPLETE. 12 baseline runs confirm 100% visible / 0% silent across both domains.
+- [ ] **EXP-083 Phase 2 treatment**: Delegated to Coach (running now). Awaiting results.

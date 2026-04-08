@@ -1,6 +1,6 @@
 # Hypothesis Priority Tracker
 
-**Updated**: 2026-04-08 (Bob: H-043 updated with EXP-082 — P(applies|pushed) ≈ 0 confirms utilization dead zone. P(H) 0.82→0.85. 11 evidence sources.) | **Active hypotheses**: 17 | **Tested**: 17/17 | **Resolution ratio**: 13 resolved  
+**Updated**: 2026-04-08 (Bob: H-091 added — few-shot breaks text-rule binary, P(H)=0.75. EXP-084 complete. EXP-083 baselines done, Phase 2 running.) | **Active hypotheses**: 18 | **Tested**: 18/18 | **Resolution ratio**: 13 resolved  
 **Bayesian scorecard**: See `SCORECARD-bayesian-2026-04-04.md` for full methodology
 
 > ✅ **MORATORIUM SATISFIED** (2026-04-07): 11 hypotheses resolved this session (H-001 disconfirmed, H-002 superseded, H-034/H-038/H-039/H-052 reclassified as design notes/truisms, H-046/H-048/H-051 archived for insufficient evidence/chain dependencies, H-064/H-065 already merged/out-of-domain). New hypotheses may now be created, subject to quality standards (falsifiable, P(H) prior ≥ 0.40, connected to empirical evidence).
@@ -18,6 +18,7 @@
 | H-085 | Forced externalization is the general mechanism behind all judgment interventions | **EXP-071**: BOUNDARY DISCOVERED — 78%→83% (+5.6pp), analysis-action gap. **EXP-078**: RECOGNITION SUB-BOUNDARY — 0/3 on absent-field. **EXP-079**: CROSS-REFERENCE COMPLEMENT — 100% (3/3) on absent-field via codebase-as-schema (KE-057). 51/57 ext runs across 12 scenarios and 5 failure domains. **WORKING THEORY — BOUNDARY + SUB-BOUNDARY CONFIRMED**. | **0.92** |
 | H-058 | Frustration triggers topology rewrite; forced assessment prevents it | DD#516 causal evidence (desperation→reward hacking). **EXP-048**: P1 confirmed — 0% base escalation, 100% with forced assessment. **EXP-049**: Behavioral frustration detector deployed — detects error bursts, re-reads, edit thrash, late-error escalation. Verification-gated penalty. | **0.87** |
 | H-054 | LLM judges have fundamental accuracy limits by task type | EXP-052 Phase 1+2: r=0.81 RIFT-agreement correlation (N=5). Both kappa thresholds confirmed. 19 rubrics classified (RIFT 0.17-1.00). | **0.75** |
+| H-091 | Skill delivery methods exist between text rules and workflow enforcement — few-shot examples, checklists, echo-back produce measurable behavior change on judgment tasks where text rules = 0% | **EXP-084**: Few-shot 1/3 pass, 4.3/5 avg (+2.3). Checklist 4.0/5 (+2.0). Echo-back 3.3/5 (+1.3). Negative example = baseline (0%). 13 runs across 4 treatments + controls. Breaks the binary between L1 text (0%) and L5 workflow (100%). KE-059 filed. | **0.75** |
 | H-009 | Evaluator heuristic was a rubber stamp (now mitigated) | **4 phases deployed** (finish-status scoring, semantic signals, recalibration, test detection). **EXP-039 Phase B**: LLM evaluator shows selective confirmation bias — self-narrative inflates weak sessions (Q delta -0.10), not good sessions. Phase C deployed (isolated re-eval for Q<0.6). | **0.85** |
 
 ## 🟡 Tier 2: Moderate Confidence — P(H) 0.50-0.69
@@ -108,7 +109,8 @@ H-070 (Workflow Fixed Cost) added despite moratorium because it directly formali
 | ✅ | **EXP-077** | **Fidelity Ladder — L1/L2/L3 structural gap analysis** | **COMPLETE — CASCADING STATE IS PRIMARY GAP** | L1=67%, L2=100%/0%, L3=0%. Information loss from failed sessions defeats agent. |
 | ✅ | **EXP-078** | **H-085: Externalization on L3 absent-field detection** | **COMPLETE — RECOGNITION SUB-BOUNDARY** | 0/3 pass. Externalization doesn't help when agent lacks schema for what should exist. |
 | ✅ | **EXP-079** | **Cross-reference intervention on L3 absent-field** | **COMPLETE — 100% (3/3)** | Cross-referencing source code solves absent-field detection. +100pp over baseline/externalization. KE-057 written. Largest single-intervention effect. |
-| **P1** | **EXP-083** | **H-089 P1: Cross-reference generalization — multi-domain** | **DESIGNED — Scenarios built** | Two new scenarios: truncated-env-repair (env vars) and truncated-schema-migration (SQL columns). Both have visible/silent check separation. N=6 baseline + N=6 treatment each. Tests whether cross-ref generalizes beyond config repair. |
+| **P1** | **EXP-083** | **H-089 P1: Cross-reference generalization — multi-domain** | **BASELINES COMPLETE — Phase 2 running** | Two new scenarios: truncated-env-repair (env vars) and truncated-schema-migration (SQL columns). **Baselines (N=12): 100% visible, 0% silent across both domains.** Clean floor for treatment measurement. Phase 2 treatment runs delegated to Coach. |
+| ✅ | **EXP-084** | **H-091: Skill Training Method Comparison** | **COMPLETE — H-091 SUPPORTED** | 4 treatments × 3 runs + 1 positive control. Few-shot: 1/3 pass, 4.3/5 (+2.3). Checklist: 4.0/5 (+2.0). Echo-back: 3.3/5 (+1.3). Negative example: 0/3 (=baseline). Text-rule binary IS broken. KE-059 filed. |
 | ✅ | **EXP-025** | **H-041 (non-ceiling scenarios)** | **COMPLETE — 19/20 sessions scored correctly** | Validated on 4 non-ceiling scenarios |
 | P1 | EXP-026 | H-054 P1: RIFT audit of gym rubrics | NEEDS DESIGN | Manual rubric review |
 | ✅ | **EXP-038** | **H-001: Adversarial QA A/B test** | **COMPLETE — WEAKLY DISCONFIRMED → H-001 ARCHIVED** | H-001 disconfirmed and archived (2026-04-07) |
@@ -145,7 +147,7 @@ EXP-026 production data confirms H-041's core prediction: **workflow benefit sca
 ## Meta-Process: H-066 (Bayesian Belief Management)
 
 The Bayesian scoring process itself is tracked as H-066. After 2026-04-07 corpus cleanup:
-- **9 high confidence** (≥0.70): H-055 (0.82), H-041 (0.72), H-053 (0.88), H-059 (0.72), H-085 (0.92), H-058 (0.87), H-009 (0.85), H-043 (0.85), H-054 (0.75)
+- **10 high confidence** (≥0.70): H-055 (0.82), H-041 (0.72), H-053 (0.88), H-059 (0.72), H-085 (0.92), H-058 (0.87), H-009 (0.85), H-043 (0.85), H-054 (0.75), H-091 (0.75)
 - **5 moderate** (0.50-0.69): H-014 (0.63), H-056 (0.61), H-047 (0.62), H-087 (0.65), H-088 (0.70)
 - **0 high-confirmed** (0.90+): ~~H-088 (0.92)~~ moved back to moderate
 - **1 meta**: H-066 (Bayesian belief management)
