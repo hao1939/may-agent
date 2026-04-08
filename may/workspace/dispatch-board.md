@@ -1,12 +1,12 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-08 ~13:43 UTC
+Updated: 2026-04-08 ~14:13 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Running — EXP-087 knowledge integration (WORK SESSION, integrating sycophants-dilemma few-shot results).
-- **Coach**: 🟢 Running — heartbeat cycle. Updating KE-059 with EXP-087 results. Cross-reference skill deployment pending.
-- **All other agents**: 🟢 Heartbeats fired at 13:43, running normally. No errors in last hour.
+- **Bob**: 🟢 Running — heartbeat cycle. EXP-087 integration complete (commit 7fc481e2).
+- **Coach**: 🟢 Running — heartbeat cycle. Cross-reference skill deployed to coder (commit fe91729e).
+- **All other agents**: 🟢 Heartbeats fired at 14:13, running normally. No errors in last hour.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -25,8 +25,8 @@ Updated: 2026-04-08 ~13:43 UTC
 | EXP-086 Few-Shot Boundary Test | ✅ COMPLETE | coach | **Mismatched 66.7% vs matched 100% vs baseline 12.5%**. Two-level transfer model: general principle transfers, specific procedure doesn't. H-091 updated. |
 | EXP-086 Knowledge Integration | ✅ COMPLETE | bob | H-091 P(H) 0.88→0.90, two-level transfer model integrated, PRIORITY-TRACKER/INDEX updated. |
 | EXP-087 Sycophants-Dilemma Few-Shot | ✅ COMPLETE | coach | **3/3 pass (100% vs 67% baseline)**. Matched few-shot closes last non-ceiling scenario. All judgment scenarios now have path to 100%. |
-| EXP-087 Knowledge Integration | 🔄 RUNNING | bob | WORK SESSION — integrating EXP-087 results into H-091, KE-059, PRIORITY-TRACKER, INDEX. |
-| Cross-Reference Skill Deployment | 🔄 PENDING | coach | P1 — Coach updating KE-059 first, will fork skill deployment next. |
+| EXP-087 Knowledge Integration | ✅ COMPLETE | bob | H-091 P(H) 0.90→0.92, matched few-shot 9/9 (100%) across 3 scenarios. Commit 7fc481e2. |
+| Cross-Reference Skill Deployment | ✅ COMPLETE | coach | 71-line skill deployed to coder at `coder/skills/cross-reference-before-config-repair.md`. Commit fe91729e. |
 | Auto-Loop Analysis | ✅ COMPLETE | tech-lead + bob | **Both converge**: zero engine changes needed. Decision brief written → `agents/may/workspace/auto-loop-decision-brief.md`. Ready for Hao. |
 | Amy-kimi billing outage | 🔴 Blocked | Hao | Still 429, needs balance refill |
 | Pre-merge review gate | ✅ Phase 1 done | - | Hook installed, needs Phase 2 (auto-review) |
@@ -61,19 +61,16 @@ Updated: 2026-04-08 ~13:43 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (13:43)
-- **EXP-087 COMPLETE**: 3/3 pass (100% vs 67% baseline). Matched few-shot closes sycophants-dilemma — ALL judgment scenarios now have a path to 100% via few-shot (L3).
-- **EXP-086 INTEGRATION COMPLETE**: Bob finished — H-091 P(H) 0.88→0.90, two-level transfer model added to knowledge base.
-- **EXP-087 INTEGRATION RUNNING**: Bob forked immediately to integrate EXP-087.
-- **COACH UPDATING KE-059**: Adding EXP-087 results, confidence upgraded Medium-High → High (12 runs, 4 scenarios). Cross-reference skill deployment next.
-- **AUTO-LOOP BRIEF READY**: At `agents/may/workspace/auto-loop-decision-brief.md`. Waiting for Hao.
-- **All agents healthy**: All heartbeats fired at 13:43. Only Amy-kimi still down (billing).
+## Latest Cycle Summary (14:13)
+- **ALL ACTIVE ITEMS RESOLVED**: Zero running/pending items on the board. Everything is ✅ or blocked on Hao.
+- **EXP-087 INTEGRATION COMPLETE**: Bob committed H-091 P(H) 0.90→0.92 (9/9 matched few-shot across 3 scenarios).
+- **CROSS-REFERENCE SKILL DEPLOYED**: Coach deployed 71-line skill to coder (cross-reference-before-config-repair.md).
+- **Research sprint complete**: EXP-083→087 all done. Few-shot (L3) is the validated intervention for judgment failures. H-091 at Tier 1 (P(H)=0.92).
+- **System clean**: All heartbeats fired, no errors in last hour, no pending requests.
 
 ## Next Actions
 - **P0**: **Present auto-loop decision brief to Hao** — Decision brief at `agents/may/workspace/auto-loop-decision-brief.md`. Need approval + implementation assignment.
-- **P1**: **Monitor cross-reference skill deployment** — Coach should fork this after KE-059 update. Verify skill created with few-shot delivery + committed.
-- **P1**: **Monitor EXP-087 integration** — Bob running now. Verify H-091/KE-059/PRIORITY-TRACKER/INDEX updates.
-- **P1**: **Plan few-shot skill conversion** — EXP-087 confirms matched few-shot = 100% across 2 scenarios. Identify top text-rule skills to convert to few-shot format. (After integrations complete.)
+- **P1**: **Plan few-shot skill conversion sprint** — H-091 confirmed (P(H)=0.92). Identify top text-rule skills to convert to matched few-shot format. Dispatch to Coach.
 - **P1**: Federation design ready for Hao review — present summary when Hao is available
 - **P2**: Bob analysis refresh (last was Apr 4, 4 days old) — lower priority since system is healthy
 - **P2**: Scout C1.3 laggard intervention (76.3% vs 90%+ for others)
