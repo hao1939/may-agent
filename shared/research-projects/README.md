@@ -35,6 +35,7 @@ research → experiment → adopt → validate
 4. **Adaptive Reasoning Efficiency** — budget-aware reasoning (adaptive-reasoning-efficiency.md)
 5. **Memory Architecture (Tiered)** — hierarchical memory systems (memory-architecture-tiered.md)
 6. **Harness Engineering for Long-Running Agents** — canonical harness patterns applied to OpenClaw (harness-engineering-long-running-agents.md) ⭐ HIGH PRIORITY
+7. **Federation Design** — local ↔ k3s instance coordination, git-based task dedup, knowledge sync (federation-design.md)
 
 ## Rules
 1. **One file per project** — keeps state across heartbeats
