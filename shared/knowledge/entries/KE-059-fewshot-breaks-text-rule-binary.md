@@ -58,15 +58,19 @@ This is distinct from text rules which state the desired behavior abstractly, an
 | L1.5 | Negative example | 0% | Confirmed (N=3) |
 | L2 | Echo-back | +1.3 score | Unreliable (33%) |
 | L2.5 | Checklist | +2.0 score | Unreliable (0-33%) |
-| L3 | Few-shot example | +2.3 score | Unreliable (33%) |
+| L3 | Few-shot example | +2.3 score / +87.5pp | **Scenario-dependent** (33-100%) |
 | L5 | Workflow enforcement | +3.0 score | Reliable (100%) |
+
+**EXP-085 update**: L3 few-shot reliability is scenario-dependent. When the example structurally matches the target task, reliability can reach 100% (escalation-judgment). When the match is more abstract, reliability is ~33% (contradictory-requirements).
 
 ## Implications
 
 1. **Skill format matters**: Skills should use worked examples, not abstract rules
-2. **Judgment gap persists**: Even the best lightweight method is only 33% reliable for judgment tasks
-3. **Generative reasoning is hardest**: Agents can identify problems (100%) but struggle to propose alternatives (33%)
-4. **Combined methods untested**: Few-shot + checklist combined might bridge the 33%→100% gap
+2. **Judgment gap is narrower than thought**: Few-shot can reach 100% on structurally-matched scenarios (EXP-085), not just 33% (EXP-084)
+3. **Structural similarity is the key variable**: The gap between 33% (contradictory-requirements) and 100% (escalation-judgment) appears driven by how closely the example maps to the task
+4. **Generative reasoning is hardest**: Agents can identify problems (100%) but struggle to propose alternatives (33%) — confirmed by contradictory-requirements results
+5. **Combined methods untested**: Few-shot + checklist combined might bridge the gap on abstract-match scenarios
+6. **Production recommendation**: Create structurally-matched few-shot examples for high-value judgment scenarios
 
 ## Cross-References
 
