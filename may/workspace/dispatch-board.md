@@ -1,15 +1,15 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-08 ~17:05 UTC
+Updated: 2026-04-08 ~17:30 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
 - **Scout**: 🟢 Running — Heartbeat cron active (30min interval).
-- **Bob**: 🟢 Running — EXP-090 KB integration DONE. Gym-failure-remediation strategy updated. Heartbeat active.
-- **Coach**: 🟢 Running — EXP-091 Sprint 2 DONE. EXP-070 extended baseline still running (1.5h, debugging gym runner). Heartbeat active.
+- **Bob**: 🟢 Running — EXP-092 designed. EXP-091 Sprint 2 KB integration pending (H-091 0.98→0.99). Heartbeat active.
+- **Coach**: 🟢 Running — EXP-070 INTERRUPTED (99min watchdog). Sprint 3 next. Heartbeat active.
 - **Tech-lead**: 🟢 Running — Federation Sync COMPLETE. Heartbeat active.
 - **Optimizer/QA**: 🟢 Running — Heartbeats firing.
-- **All agents**: 🟢 All 8 heartbeats firing. 1 long-running WORK session (Coach EXP-070). System healthy.
+- **All agents**: 🟢 All 8 heartbeats firing. No long-running sessions. System healthy.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -43,8 +43,9 @@ Updated: 2026-04-08 ~17:05 UTC
 | EXP-090 KB Integration | ✅ COMPLETE | bob | H-091 P(H) 0.92→0.98, matched few-shot 12/12 across 5 scenarios. Commit dc3acd2d. Gym-failure-remediation strategy also updated. |
 | EXP-091 Skill Deploy (evidence-over-narrative) | ✅ COMPLETE | coach | Skill deployed to coder with few-shot. Regression checks: hidden-dependency 5/5 ✅, phantom-fix-config 2/5 (matches baseline, no regression). |
 | EXP-091 Sprint 2 (investigate-and-fix) | ✅ COMPLETE | coach | **MAJOR**: reproduce-first 0/3→3/3 (100%). Process score 4/5→5/5. **First evidence few-shot works for process discipline, not just judgment.** H-091 P(H) → 0.99. Cumulative 9/9 treatment runs (100%) vs 0/9 control. |
-| EXP-070 Extended Baseline | 🏃 RUNNING | coach | 1.5h session debugging gym runner scoring bug (0/0 results from cleanup timing). Making progress — fixed staging, criteria works. |
+| EXP-070 Extended Baseline | ❌ INTERRUPTED | coach | 99min watchdog timeout. Was debugging gym runner scoring bug (0/0 results from cleanup timing). Needs retry. |
 | EXP-070 KB Integration | ✅ COMPLETE | bob | Externalization NOT significant on ambiguous-context-drift. Integrated null result. |
+| EXP-092 Design | ✅ DESIGNED | bob | Forced analysis-to-documentation transfer. 2 arms: forced citation + post-check. Addresses EXP-070 transfer gap (10/10 analysis correct but only 6/10 transferred). |
 | EXP-087 KB Integration | ✅ COMPLETE | bob | Bob session completed. EXP-089 results also integrated. |
 
 ## Completed/Archived
@@ -77,19 +78,19 @@ Updated: 2026-04-08 ~17:05 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (17:05)
-- **EXP-091 Sprint 2 COMPLETE — MAJOR RESULT**: investigate-and-fix reproduce-first 0%→100% with few-shot. **First evidence few-shot works for process discipline, not just judgment skills.** Cumulative 9/9 treatment runs vs 0/9 control across 3 skills (EXP-090+091). H-091 P(H) → 0.99. Results at `agents/shared/knowledge/experiments/EXP-091/results.md`.
-- **EXP-090 KB Integration: ✅ COMPLETE** — Bob committed dc3acd2d: H-091 P(H) 0.92→0.98, matched few-shot 12/12. Also updated gym-failure-remediation strategy with EXP-090 findings.
-- **EXP-091 (evidence-over-narrative deploy): ✅ COMPLETE** — Coach deployed skill to coder with few-shot examples. Regression checks passed (hidden-dependency 5/5, phantom-fix-config 2/5 matching baseline).
-- **EXP-070 Extended Baseline: 🏃 RUNNING** — Coach session s_1775662404124_67 at 1.5h. Debugging gym runner scoring bug (treatment runs all scoring 0/0 due to cleanup timing). Made progress: identified issue, testing fixes. Not stale — legitimate debugging.
-- **Both Sprint 1 skills deployed** — know-when-blocked and evidence-over-narrative both in coder/skills/ with few-shot examples.
-- **System: All healthy** — All 8 heartbeats firing. No failures in last hour.
+## Latest Cycle Summary (17:30)
+- **EXP-070 Extended Baseline: ❌ INTERRUPTED** — Watchdog timeout at 99min. Coach was debugging gym runner scoring bug. Needs retry in a fresh session.
+- **EXP-092 DESIGNED** — Bob designed forced analysis-to-documentation transfer experiment. 2 arms (forced citation + post-check). Ready for coach to run.
+- **EXP-091 Sprint 2 KB Integration: ⏳ PENDING** — Bob needs to update H-091 P(H) 0.98→0.99. Bob currently in heartbeat, should pick up.
+- **1 coach interruption** — EXP-091 Sprint 2 work session aborted at 6min (s_1775667823001_108). Sprint 2 results already captured, so no data loss.
+- **System: All healthy** — All 8 heartbeats firing. No long-running sessions.
 
 ## Next Actions
-- **P1**: **EXP-091 KB Integration** — Bob needs to integrate Sprint 2 results: update H-091 P(H) from 0.98 to 0.99, note process discipline expansion. Will pick up on next Bob heartbeat.
-- **P1**: **Deploy investigate-and-fix skill with few-shot** — Coach needs to promote updated SKILL.md to coder/skills/. Currently only in shared/skills/.
-- **P1**: **Few-Shot Sprint 3** — Next skills: read-before-edit, verify-before-finish (obstacle-pivot deprioritized). Coach should design+run.
-- **P1**: **Monitor EXP-070 Extended Baseline** — Coach session running 1.5h. If it stalls beyond 2h, consider canceling.
+- **P1**: **EXP-091 KB Integration** — Bob needs to update H-091 P(H) 0.98→0.99 with Sprint 2 process discipline evidence. Currently running heartbeat — should pick up.
+- **P1**: **Few-Shot Sprint 3** — Next skills: read-before-edit, verify-before-finish. Coach should design+run.
+- **P1**: **Deploy investigate-and-fix skill** — Coach needs to promote to coder/skills/ with few-shot.
+- **P1**: **EXP-092 ready to run** — Designed by Bob. Coach can run after Sprint 3 or interleave.
+- **P1**: **EXP-070 retry** — Extended baseline interrupted at 99min. Gym runner scoring bug still open. Coach needs fresh session.
 - **P1**: **Present auto-loop decision brief to Hao** — at `agents/may/workspace/auto-loop-decision-brief.md`.
 - **P1**: **Resolve EXP-088 naming conflict** — Coach's EXP-088 (skill format test) vs Bob's EXP-088 (workaround gradient). Need to renumber one.
 - **P1**: Federation design ready for Hao review — present summary when available
