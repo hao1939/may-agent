@@ -1,0 +1,5 @@
+{
+  "name": "ambiguous-context-drift-L3-ext",
+  "version": "1.0.0",
+  "description": "EXP-078: L3 + forced externalization (analysis phase before repair)"
+}

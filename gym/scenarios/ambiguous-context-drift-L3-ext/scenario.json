@@ -1,0 +1,11 @@
+{
+  "name": "ambiguous-context-drift-L3-ext",
+  "description": "EXP-078: L3 + forced externalization (analysis phase before repair). Same cascading state/budget pressure as L3, but task requires writing ANALYSIS.md listing expected fields, actual state, and discrepancies BEFORE making any changes. Tests whether forced recognition phase helps agent detect partial corruption (missing max_age in truncated auth.yaml).",
+  "categories": ["judgment", "verification", "recovery"],
+  "tags": ["behavior", "FM-2.6", "FM-1.3", "injected-context", "cascading-state", "EXP-078", "externalization"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false,
+  "injected_context": "injected_context.md"
+}
