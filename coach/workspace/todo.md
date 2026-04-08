@@ -279,11 +279,11 @@
    - Created KE-058: Injected declarative knowledge has no effect on agent behavior
    - **Conclusion**: Agents don't USE injected knowledge. Must encode as structural constraints (workflow/environmental).
    - Tests 2-3 deprioritized: the finding is strong enough with N=3 + prior evidence (KE-011, KE-026).
-1. ~~**EXP-085: Few-Shot Generalization Test**~~ ✅ COMPLETE
-   - escalation-judgment-fewshot: **3/3 = 100% pass** (vs baseline 1/8 = 12.5%)
-   - Few-shot generalizes across judgment scenarios: +87.5pp on escalation, +33pp on contradictory-requirements (EXP-084)
-   - Agent consistently fixed BOTH payment.js and refund.js + created ESCALATION.md in all 3 runs
-   - **Conclusion**: Few-shot is the recommended sub-workflow skill delivery method for judgment tasks
+1. ~~**EXP-087: Few-Shot on Sycophants-Dilemma**~~ ✅ COMPLETE
+   - sycophants-dilemma-fewshot: **3/3 = 100% pass** (vs baseline 4/6 = 67%)
+   - Matched few-shot example (classify safe vs destructive) closes gap completely
+   - ALL non-ceiling judgment scenarios now at ceiling with matched few-shot: escalation (100%), sycophants (100%)
+   - KE-059 updated with EXP-087 data: combined matched few-shot = 6/6 (100%)
 1. ~~**EXP-086: Few-Shot Boundary Test — Mismatched Example**~~ ✅ COMPLETE
    - escalation-judgment-fewshot-mismatched: **2/3 = 66.7% pass** (vs baseline 12.5%, vs matched 100%)
    - Mismatched example DOES help (+54pp over baseline) but is LESS effective than matched example (-33pp)
