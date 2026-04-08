@@ -1,10 +1,16 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-08 ~10:43 UTC
+Updated: 2026-04-08 ~12:35 UTC
 
 ## System Health
-- **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **All other 8 agents**: 🟢 Running normally (0 errors in last 6h)
+- **System restarted** at 12:04 UTC after 2h model routing outage (09:02–11:02). Outage hit all agents: `claude-opus-4.6` and `gpt-5.2` unavailable on proxy. Now resolved.
+- **Bob**: 🟢 Running — integrating EXP-085 results into KE-059, H-091 (forked work session s_1775651603919_4).
+- **Coach**: 🟢 Running — forked EXP-086 (combined few-shot+checklist) and EXP-087 (mismatched few-shot boundary test).
+- **May**: 🟢 Running (this session).
+- **Tech-lead**: ✅ Done — completed heartbeat, noted model routing issue.
+- **Evaluator/Optimizer/Scout/QA**: ⏳ Waiting — heartbeats scheduled to fire over next 25 min (normal post-restart stagger).
+- **Amy-kimi**: 🔴 DOWN — 429 errors (billing). Blocked on Hao.
+- **Amy**: ⚪ Disabled (heartbeat off).
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -16,16 +22,24 @@ Updated: 2026-04-08 ~10:43 UTC
 ## What I'm Watching
 | Issue | Status | Owner | Notes |
 |-------|--------|-------|-------|
-| EXP-083 Cross-Reference Generalization | 🔄 PHASE 2 (retry) | coach | Phase 1 baselines done (0/24 silent = 0%). Phase 2 interrupted (s_1775640028465_8 aborted). Coach re-dispatching in current heartbeat. |
-| Structural knowledge enforcement | 🔄 ACTIVE | coach/bob | EXP-084 complete — few-shot breaks the binary (33% vs 0% baseline). KE-059 created. Next: combined treatment test? |
-| EXP-076 Workflow audit | ✅ Phase 3 TRACKING | may | Bob now forking 5+ WORK sessions in 6h (was 0/24h). Workflow adoption improving. |
+| EXP-083 Cross-Reference Generalization | ✅ COMPLETE | coach/bob | **MAJOR**: 100% treatment vs 0% baseline across 2 new domains (env-repair + schema-migration). Cross-reference skill generalizes perfectly. H-089 promoted to Tier 1 (P(H)=0.92). Bob integrated. |
+| Federation Design (Local ↔ K3s) | ✅ DESIGN COMPLETE | bob | Bob produced 558-line design doc at `agents/shared/research-projects/federation-design.md`. Recommends Enhanced Git Federation (no new infra). 5-phase migration. Ready for Hao review. |
+| EXP-085 Few-Shot Generalization | ✅ COMPLETE | coach | **MAJOR**: 3/3 pass (100%) on escalation-judgment vs 12.5% baseline. Few-shot generalizes across judgment scenarios. H-091 promoted to Tier 1 (P(H)≥0.90). |
+| KE-060 Intervention Taxonomy | ✅ COMPLETE | bob | Unified taxonomy: 3 mechanisms (M1: Analysis Activation, M2: Evidence Discovery, M3: Structural Constraint). Diagnostic decision tree. Written and verified. |
+| EXP-085 Knowledge Integration | 🔄 RUNNING | bob | Bob updating KE-059 with cross-scenario replication data, updating H-091 and index. Session s_1775651603919_4. |
+| EXP-086 Combined Treatment | 🔄 RUNNING | coach | Few-shot + checklist synergy test on contradictory-requirements (N=6). Session s_1775651645741_5. |
+| EXP-087 Boundary Test | 🔄 RUNNING | coach | Mismatched few-shot structural similarity test — does domain-mismatched example still work? Session s_1775651660950_6. |
+| Autoresearch Investigation | ⏳ DISPATCHED | scout | Hao req from Mar 20 (req:1c42f66e). Dispatched to scout last cycle (req:1259fbec). Scout heartbeat fires ~12:55. |
 | Amy-kimi billing outage | 🔴 Blocked | Hao | Still 429, needs balance refill |
 | Pre-merge review gate | ✅ Phase 1 done | - | Hook installed, needs Phase 2 (auto-review) |
 
 ## Completed/Archived
 | Item | When | Notes |
 |------|------|-------|
-| EXP-084 Skill Training Method Comparison | Apr 8 | **MAJOR**: Few-shot breaks the binary! 33% pass, avg 4.3/5 (+2.3 from baseline 2.0/5). Checklist +2.0, Echo +1.3, Negative 0. Mechanism hierarchy L1→L5 established. KE-059 created. |
+| EXP-084 Skill Training Method Comparison | Apr 8 | **MAJOR**: Few-shot breaks the binary! 33% pass, avg 4.3/5 (+2.3). H-091 filed (P(H)=0.75). KE-059 created. Mechanism hierarchy L1→L5 established. |
+| EXP-076 Workflow Audit | Apr 8 | Bob forking 5+ WORK sessions/6h (was 0/24h). Workflow adoption validated. |
+| Federation Design (Local ↔ K3s) | Apr 8 | Bob produced 558-line design doc. Recommends Enhanced Git Federation, no new infra, 5-phase migration. Ready for Hao review. |
+| EXP-083 Cross-Reference Generalization | Apr 8 | **MAJOR**: 100% treatment vs 0% baseline across 2 new domains. Cross-reference skill generalizes perfectly. H-089 → Tier 1 (P(H)=0.92). |
 | C1.3 Write-Diff Impact Analysis | Apr 8 | **COMPLETE**: 47.3%→85.1%→94.1% across 3 phases. Write-diff is the single biggest convention compliance intervention. Scout laggard at 76.3%. |
 | Knowledge Application Audit | Apr 8 | Bob: 3 major gaps identified (KE-025, KE-029, KE-056) |
 | KE-025 Skill Pruning | Apr 8 | Coach: 20→4 files (84%), Evaluator: 13→6 files (33%) — 90KB removed |
@@ -49,15 +63,17 @@ Updated: 2026-04-08 ~10:43 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (10:43)
-- **System stable**: 0 errors in 6h across all agents. 109 sessions, 99 done (91%), 5 interrupted (4.6%). Amy-kimi still 🔴 DOWN.
-- **EXP-083 Phase 2 — 3rd attempt**: Coach interrupted twice (09:20, 09:49). Coach is currently in heartbeat and forking both the Phase 2 treatment runs AND a skill training comparison write-up. Monitoring.
-- **Bob EXP-084 integration done**: Successfully completed at 09:50 — knowledge entries integrated.
-- **All 8 agents active this cycle**: Everyone running heartbeats normally.
+## Latest Cycle Summary (12:35)
+- **Post-outage recovery**: System restarted at 12:04 after 2h model routing outage. Core agents (may, bob, coach, tech-lead) recovered. Evaluator/optimizer/scout/qa will fire over next 25 min.
+- **Bob integrating EXP-085**: Updating KE-059 with cross-scenario replication evidence (escalation-judgment 100% vs 12.5% baseline).
+- **Coach running 2 new experiments**: EXP-086 (combined few-shot+checklist on contradictory-requirements) and EXP-087 (mismatched domain few-shot boundary test). Both autonomously designed and forked.
+- **16 error sessions** during outage (09:02–11:02) — all from model routing. No agent bugs.
+- **Amy-kimi still DOWN**: 429 errors, blocked on Hao for billing fix.
 
 ## Next Actions
-- **P1**: Monitor EXP-083 Phase 2 treatment runs — Coach running now. Key question: does cross-reference generalize across domains?
-- **P1**: Apply EXP-084 findings — convert existing text-rule skills to few-shot format (highest-impact change for skill effectiveness)
-- **P1**: Scout intervention for C1.3 laggard behavior (76.3% vs 90%+ for others) — consider Coach training or heartbeat edit
-- **P2**: Propose combined treatment (few-shot + checklist) follow-up experiment — could close the 33%→100% gap
+- **P1**: **Convert text-rule skills to few-shot format** — EXP-085 confirmed generalization. Coach should start converting highest-impact text-rule skills to few-shot. This is the Knowledge APPLICATION priority.
+- **P1**: **Deploy cross-reference skill to production** — EXP-083 confirmed 100% generalization, M2 mechanism validated.
+- **P1**: Federation design ready for Hao review — present summary when Hao is available
+- **P2**: Scout C1.3 laggard intervention (76.3% vs 90%+ for others)
 - **P2**: Pre-merge review gate Phase 2 (auto-review) — needs design
+- **P2**: Design next experiment — what skill/scenario to apply few-shot to next?
