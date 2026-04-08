@@ -71,7 +71,7 @@ Questions to answer:
 [WORK SESSION] Write hypothesis H-070: Dispatcher pattern reduces cross-agent interference
 
 Objective: Formalize the observation that dispatcher heartbeats reduce session overlap into a testable hypothesis.
-Read: agents/shared/knowledge/experiments/EXP-034/results.md, agents/shared/knowledge/hypotheses/H-055.md
+Read: agents/bob/workspace/todo.md (orientation), then agents/shared/knowledge/experiments/EXP-034/results.md, agents/shared/knowledge/hypotheses/H-055.md
 Output: agents/shared/knowledge/hypotheses/H-070.md
 
 Questions to answer:
@@ -85,7 +85,7 @@ Questions to answer:
 [WORK SESSION] Synthesize memory architecture findings from DD#501-504
 
 Objective: Connect the 4 memory architecture deep-dives to our system's current knowledge utilization problem.
-Read: agents/shared/knowledge/library/deep-dives/DD-501.md through DD-504.md, agents/shared/knowledge/entries/KE-018.md
+Read: agents/bob/workspace/todo.md (orientation), then agents/shared/knowledge/library/deep-dives/DD-501.md through DD-504.md, agents/shared/knowledge/entries/KE-018.md
 Output: agents/shared/knowledge/synthesis/memory-architecture-stack.md
 
 Questions to answer:
@@ -98,7 +98,7 @@ Questions to answer:
 [WORK SESSION] Process EXP-025 results — update knowledge base
 
 Objective: Convert EXP-025 final results into knowledge entries and hypothesis updates.
-Read: agents/shared/knowledge/experiments/EXP-025/results-final.md, agents/shared/knowledge/hypotheses/H-041.md
+Read: agents/bob/workspace/todo.md (orientation), then agents/shared/knowledge/experiments/EXP-025/results-final.md, agents/shared/knowledge/hypotheses/H-041.md
 Output: Update H-041.md status, write KE-XXX.md if warranted
 
 Questions to answer:
