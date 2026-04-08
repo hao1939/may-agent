@@ -1,11 +1,12 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-08 ~12:15 UTC
+Updated: 2026-04-08 ~12:39 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Running — integrating EXP-085 results into knowledge base (forked work session s_1775650481772_10).
-- **Coach**: 🟢 Running — EXP-085 complete, awaiting next experiment design.
+- **Tech-lead**: 🟢 Running — workflow auto-loop analysis session (s_1775651605086_1), ~7min in.
+- **Bob**: 🟢 Idle — completed auto-loop design doc (DESIGN-auto-loop.md) + heartbeat at 12:33.
+- **Coach**: 🟡 EXP-086 interrupted at 12:15 — boundary test incomplete. Needs re-dispatch.
 - **All other agents**: 🟢 Running normally — all fired heartbeats at 12:13
 
 ## Active Priorities (from Hao)
@@ -22,8 +23,9 @@ Updated: 2026-04-08 ~12:15 UTC
 | Federation Design (Local ↔ K3s) | ✅ DESIGN COMPLETE | bob | Bob produced 558-line design doc at `agents/shared/research-projects/federation-design.md`. Recommends Enhanced Git Federation (no new infra). 5-phase migration. Ready for Hao review. |
 | EXP-085 Few-Shot Generalization | ✅ COMPLETE | coach | **MAJOR**: 3/3 pass (100%) on escalation-judgment vs 12.5% baseline. Few-shot generalizes across judgment scenarios. H-091 promoted to Tier 1 (P(H)≥0.90). |
 | KE-060 Intervention Taxonomy | ✅ COMPLETE | bob | Unified taxonomy: 3 mechanisms (M1: Analysis Activation, M2: Evidence Discovery, M3: Structural Constraint). Diagnostic decision tree. Written and verified. |
-| EXP-085 Knowledge Integration | 🔄 RUNNING | bob | Bob integrating EXP-085 results into H-091, KE-059, KE-060 and related files. |
-| EXP-086 Few-Shot Boundary Test | 🔄 RUNNING | coach | Testing few-shot with structurally mismatched example on escalation-judgment. Session s_1775650543298_11. |
+| EXP-085 Knowledge Integration | ⚠️ INTERRUPTED | bob | Session interrupted at 12:14. Needs re-dispatch. |
+| EXP-086 Few-Shot Boundary Test | ⚠️ INTERRUPTED | coach | Session interrupted at 12:15. Boundary test incomplete. Needs re-dispatch. |
+| Auto-Loop Analysis | ✅ COMPLETE | tech-lead + bob | **Both converge**: zero engine changes needed. Tech-lead: ~100-line workflow wrapper. Bob: YAML state-file + dispatch table. See synthesis below. |
 | Amy-kimi billing outage | 🔴 Blocked | Hao | Still 429, needs balance refill |
 | Pre-merge review gate | ✅ Phase 1 done | - | Hook installed, needs Phase 2 (auto-review) |
 
@@ -57,18 +59,21 @@ Updated: 2026-04-08 ~12:15 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (12:15)
-- **EXP-085 COMPLETE**: 3/3 pass (100%) on escalation-judgment with few-shot (vs 12.5% baseline). **Few-shot confirmed as generalizable skill delivery method.** 3rd major finding today.
-- **KE-060 COMPLETE**: Unified Intervention Taxonomy written — 3 mechanisms. Committed by Bob (448e411f).
-- **EXP-086 FORKED**: Coach autonomously forked boundary test — mismatched few-shot example on escalation-judgment to find generalization limits.
-- **Bob integrating**: Currently running work session to update H-091, KE-059, KE-060 with EXP-085 results.
-- **All agents autonomous**: Heartbeats firing. No stuck sessions. Cancelled stale may session.
+## Latest Cycle Summary (12:39)
+- **AUTO-LOOP ANALYSIS COMPLETE**: Both tech-lead and Bob delivered comprehensive analyses:
+  - **Tech-lead** (`agents/tech-lead/workspace/analysis-workflow-autoloop.md`): Engine already supports loops, composition, resume, steering. 229 workflow runs in production. Missing: ~100-line auto-loop workflow + "done?" gate design. Recommends "Auto-Task" workflow (Option A).
+  - **Bob** (`agents/bob/workspace/DESIGN-auto-loop.md`): YAML state-file driven approach. Four phases (plan/execute/evaluate/done) + dispatch table + stuck detection. Two modes: heartbeat-driven (one cycle/beat) or workflow-driven (all at once). ~4 hours agent time, 0 infra changes.
+  - **Convergence**: Zero engine changes. The gap is an orchestrator layer, not a capability gap.
+- **EXP-086 INTERRUPTED**: Coach boundary test (mismatched few-shot) was cut short. Needs re-dispatch.
+- **EXP-085 integration INTERRUPTED**: Bob's knowledge base update was cut short. Needs re-dispatch.
 - **Amy-kimi still DOWN**: 429 errors, blocked on Hao for billing fix.
 
 ## Next Actions
-- **P1**: **Convert text-rule skills to few-shot format** — EXP-085 confirmed generalization. Coach should start converting highest-impact text-rule skills to few-shot. This is the Knowledge APPLICATION priority.
+- **P0**: **Synthesize auto-loop proposal for Hao** — Merge tech-lead + Bob analysis into a decision brief. Recommend Option A (auto-task workflow) + Bob's YAML state file convention.
+- **P1**: **Re-dispatch EXP-085 integration** — Bob needs to resume updating H-091, KE-059, KE-060 with EXP-085 results.
+- **P1**: **Re-dispatch EXP-086** — Coach needs to resume boundary test (mismatched few-shot on escalation-judgment).
+- **P1**: **Convert text-rule skills to few-shot format** — EXP-085 confirmed generalization. Coach should start converting highest-impact text-rule skills.
 - **P1**: **Deploy cross-reference skill to production** — EXP-083 confirmed 100% generalization, M2 mechanism validated.
 - **P1**: Federation design ready for Hao review — present summary when Hao is available
 - **P2**: Scout C1.3 laggard intervention (76.3% vs 90%+ for others)
 - **P2**: Pre-merge review gate Phase 2 (auto-review) — needs design
-- **P2**: Design next experiment — what skill/scenario to apply few-shot to next?
