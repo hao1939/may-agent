@@ -100,6 +100,7 @@ const CRON_ENABLED = process.argv.includes("--cron");
 const TELEGRAM_ENABLED = process.argv.includes("--telegram");
 const CONSOLE_ENABLED = process.argv.includes("--console") || process.argv.includes("--chat");
 const SOCKET_ENABLED = process.argv.includes("--socket");
+const WEB_ENABLED = process.argv.includes("--web");
 const CHAT_MODE = process.argv.includes("--chat");
 const ONESHOT_MODE = process.argv.includes("--oneshot");
 const STATUS_MODE = process.argv.includes("--status");
@@ -265,8 +266,13 @@ setLogHandler((level, message) => {
 });
 if (CONSOLE_ENABLED) attachConsoleUI(bus, () => taskSessionId ?? chatSession?.getSessionId() ?? null, CHAT_MODE);
 
-// Web UI runs as a separate process under supervisord (container/supervisord.conf).
-// Decoupled from may.ts so web dashboard stays up even when the agent crashes.
+// Web UI — runs in-process when --web is passed
+if (WEB_ENABLED) {
+  const webPort = parseInt(process.env.WEB_PORT || "8080", 10);
+  const { startWebUI } = await import("./ui/web.js");
+  const { port } = startWebUI({ stateDir: PERSIST_DIR, port: webPort });
+  bus.emit({ type: "info", message: `[web] Dashboard running on http://localhost:${port}` });
+}
 
 bus.emit({
   type: "info",

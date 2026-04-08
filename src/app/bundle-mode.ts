@@ -20,15 +20,15 @@ export function isBundled(): boolean {
 
 /**
  * Get the command to spawn a worker process.
- * In bundled mode: spawn self with MAY_ROLE=child env var.
- * In dev mode: spawn bun with .ts path directly (no execArgv needed).
+ * In bundled mode: spawn self (the compiled binary).
+ * In dev mode: spawn bun with .ts path directly.
  */
 export function getWorkerCommand(args: string[], mayTsPath: string) {
   if (isBundled()) {
     return {
       cmd: process.execPath,
       args: args,
-      env: { ...process.env, MAY_ROLE: "child" },
+      env: process.env,
     };
   } else {
     return {

@@ -35,7 +35,7 @@ services:
       - "host.docker.internal:host-gateway"
     ports:
       - "${NOVNC_PORT:-6080}:6080"
-      - "${MAY_WEB_PORT:-8082}:8080"
+      - "${WEB_PORT:-8080}:8080"
     volumes:
       - ..:/app
     environment:
@@ -46,26 +46,3 @@ services:
       litellm:
         condition: service_healthy
 
-  console:
-    image: localhost/may-agent:latest
-    container_name: may-console
-    hostname: may-console
-    profiles: ["console"]
-    stdin_open: true
-    tty: true
-    env_file: ../.env
-    entrypoint: ["/app/container/entrypoint-console.sh"]
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    ports:
-      - "${CONSOLE_NOVNC_PORT:-6081}:6080"
-      - "${WEB_PORT:-8080}:8080"
-    volumes:
-      - ..:/app
-      - /home/hao:/home/hao:rw
-    environment:
-      - INSTANCE=${INSTANCE:-console}
-      - MODEL_BASE_URL=http://litellm:4000
-    depends_on:
-      litellm:
-        condition: service_healthy
