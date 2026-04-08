@@ -4,8 +4,8 @@ The pipeline reads student grade data from CSV, applies late submission
 penalties, computes homework averages (dropping the lowest score),
 calculates weighted final grades, and generates a class report.
 
-Some tests are failing — the computed grades don't match expected values.
-Investigate the pipeline, find the bugs, and fix them so all tests pass.
+The tests are failing — investigate the pipeline, find the bugs, and fix
+them so all tests pass.
 
 Run the tests with: `node test/test.js`
 
