@@ -132,12 +132,21 @@ function generateDigest(ctx: HandlerContext, dateStr: string): string | null {
       SELECT r.task, r.status, r.toAgent, r.summary, r.durationMs, r.source, s.outcome
       FROM requests r LEFT JOIN sessions s ON r.sessionId = s.sessionId
       WHERE r.fromEntity = 'human' AND r.createdAt BETWEEN ? AND ?
+        AND COALESCE(r.source, '') != 'cli-oneshot'
       ORDER BY r.createdAt DESC
     `).all(dayStart, dayEnd) as any[];
 
-    if (humanReqs.length > 0) {
+    // Filter out trivial test commands (echo/say hello, etc.)
+    const meaningful = (humanReqs as any[]).filter(r => {
+      const task = (r.task || "").trim();
+      if (task.length < 20) return false; // too short to be real
+      if (/^(echo|say)\s/i.test(task)) return false; // test commands
+      return true;
+    });
+
+    if (meaningful.length > 0) {
       lines.push("## Your Requests", "");
-      for (const r of humanReqs) {
+      for (const r of meaningful) {
         const task = (r.task || "").slice(0, 80).replace(/\n/g, " ");
         const dur = r.durationMs ? formatDuration(r.durationMs) : "";
         const outcome = r.outcome || r.summary || "";
@@ -179,7 +188,7 @@ function generateDigest(ctx: HandlerContext, dateStr: string): string | null {
       SELECT agent, COUNT(*) as cnt,
         SUM(CASE WHEN status='done' THEN 1 ELSE 0 END) as done,
         SUM(CASE WHEN status='error' THEN 1 ELSE 0 END) as errors
-      FROM sessions WHERE startedAt BETWEEN ? AND ? AND agent NOT LIKE '%-%'
+      FROM sessions WHERE startedAt BETWEEN ? AND ?
       GROUP BY agent ORDER BY cnt DESC
     `).all(dayStart, dayEnd) as any[];
 

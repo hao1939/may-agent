@@ -2,7 +2,8 @@
 
 ## Active Tracking
 - [x] **EXP-091 (Few-Shot on Process Discipline)**: COMPLETE. reproduce-first 0/3→3/3 (+100pp). Extends few-shot from judgment to process discipline. Cumulative matched few-shot: 15/15 (100%) across 6 scenarios. H-091 P(H) 0.98→0.99.
-- [x] **EXP-092 (Forced Analysis-to-Documentation Transfer)**: COMPLETE. Citation closes transfer gap: 100% doc accuracy (Arm A, n=10) vs 44% (Arm B, n=9). But "analysis trap" — 0% task completion. New boundary: execution crowding. P(H) 0.85→0.88.
+- [x] **EXP-093 (Few-Shot Sprint 3 — Verify-After-Edit)**: COMPLETE. "What vs When" boundary found: C3 validation +40pp (40%→80%) but C2.3 temporal sequencing -20pp (40%→20%). Few-shot teaches *what* to validate but NOT *when* to verify. Product quality +40pp. H-091 P(H) 0.99→0.95. Temporal discipline likely needs L4 workflow enforcement.
+- [ ] **EXP-092 (Forced Analysis-to-Documentation Transfer)**: DESIGNED and delegated to Coach. Two-arm test targeting EXP-070's transfer gap (60% → predicted ≥90%). Arm A: forced citation. Arm B: post-check. N=10/arm.
 - [x] **EXP-215 (Prerequisite Detection Skill)**: CONCLUDED. N=10 fixed re-run: all 10 fail `does-not-claim-success`. C1.8 deployed but ineffective. Rule of Two triggered — model-level limitation. ACCEPTED.
 - [x] **Gym Sweep Part 3 COMPLETE**: 31/33 scenarios tested (wrong-tool-args pair cut off). 23 PASS, 8 FAIL. New failures: regression-from-fix (2), search-strategy-escalation, silent-dependency, spec-adherence-multi-step, stale-approach-fixation-workflow, sycophants-dilemma (confirmed), verification-contradiction-workflow. **FULL SWEEP TOTALS**: 108/111 tested, 77 PASS, 30 FAIL (27.8% failure rate). 3 untested (wrong-tool-args pair + 1 other).
 - [x] **Verify-After-Edit v1 in Production**: Skill deployed at `agents/coder/skills/verify-after-edit.md`. **CONFIRMED WORKING (2026-03-29)**: Coder C1.3 pass rate = 62.3% (43/69 sessions, 7-day). Consistent with lab result (60%). Prompting ceiling reached — remaining 38% needs runtime enforcement.
@@ -352,6 +353,17 @@
   - **INDEX.md updated**: EXP-088 experiment row added (COMPLETE). KE-056 summary updated with gradient finding. H-088 summary updated (P(H)=0.80). EXP-088 KE entry updated (DESIGNED→COMPLETE).
   - **PRIORITY-TRACKER updated**: Header mentions EXP-088 COMPLETE. H-088 moved from Tier 2 (0.70) to Tier 1 (0.80). EXP-088 added to experiment queue (COMPLETE). Meta-process section updated (12→11 high confidence count adjusted, H-088 promoted).
   - **Files modified**: H-088.md, KE-056.md, KE-060.md, INDEX.md, PRIORITY-TRACKER.md, todo.md
+
+## Session Notes (2026-04-08 ~23:25)
+- [x] **EXP-093 integration**: COMPLETE — Few-Shot Sprint 3 (Verify-After-Edit Discipline) results integrated into knowledge base.
+  - **Key findings**: BOUNDARY FOUND — "What vs When" distinction. C3 validation (what to check) +40pp (40%→80%), but C2.3 temporal sequencing (read-after-write) -20pp (40%→20%). Few-shot teaches what to validate but NOT when to verify. Product quality +40pp despite no temporal discipline. 16 runs (8 control, 8 treatment).
+  - **H-091 updated**: Status → "Strongly Supported" with P(H) 0.99→0.95. EXP-093 evidence section added. New boundary condition: temporal discipline (tool-call sequencing) resistant to few-shot. Hierarchy statement updated with temporal boundary.
+  - **KE-059 updated**: EXP-093 evidence section added. Source line expanded. "What vs When" boundary documented — first boundary condition for few-shot effectiveness.
+  - **KE-060 updated**: EXP-093 update section added. L3 delivery hierarchy table row updated with temporal boundary note. "What vs when" boundary integrated.
+  - **INDEX.md updated**: KE-059, KE-060, H-091 summary rows updated with EXP-093 findings. EXP-091 status corrected (IN PROGRESS→CONFIRMED). Run count updated (240+ runs, EXP-025 through EXP-093).
+  - **PRIORITY-TRACKER updated**: Header updated with EXP-093 COMPLETE. H-091 P(H) updated (0.99→0.95). EXP-093 added to experiment queue. Meta-process confidence summary updated.
+  - **Implication**: Temporal discipline (when to perform tool calls in what order) likely needs L4 workflow enforcement, not L3 few-shot. This narrows the scope of few-shot to "declarative knowledge transfer" — what to do, what to check, what to look for — while procedural sequencing requires structural enforcement.
+  - **Files modified**: H-091.md, KE-059.md, KE-060.md, INDEX.md, PRIORITY-TRACKER.md, todo.md
 
 ## Session Notes (2026-04-08 ~16:35)
 - [x] **EXP-090 integration**: COMPLETE — Few-Shot Skill Conversion Sprint 1 results integrated into knowledge base.
