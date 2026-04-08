@@ -1,13 +1,13 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-08 ~12:43 UTC
+Updated: 2026-04-08 ~13:13 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Running — EXP-085 knowledge integration (WORK SESSION, resumed from interrupt).
-- **Coach**: 🟢 Running — EXP-086 boundary test (WORK SESSION, auto-resumed from interrupt).
-- **Tech-lead**: 🟢 Idle — completed auto-loop analysis. Heartbeat done at 12:43.
-- **All other agents**: 🟢 Heartbeats fired at 12:43, completed normally.
+- **Bob**: 🟢 Running — EXP-086 knowledge integration (WORK SESSION, integrating H-091/KE-059 updates).
+- **Coach**: 🟢 Running — heartbeat cycle. **Dispatched: cross-reference skill deployment** (P1).
+- **Tech-lead**: 🟢 Running — heartbeat cycle at 13:13.
+- **All other agents**: 🟢 Heartbeats fired at 13:13, running normally.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -23,8 +23,9 @@ Updated: 2026-04-08 ~12:43 UTC
 | Federation Design (Local ↔ K3s) | ✅ DESIGN COMPLETE | bob | Bob produced 558-line design doc at `agents/shared/research-projects/federation-design.md`. Recommends Enhanced Git Federation (no new infra). 5-phase migration. Ready for Hao review. |
 | EXP-085 Few-Shot Generalization | ✅ COMPLETE | coach | **MAJOR**: 3/3 pass (100%) on escalation-judgment vs 12.5% baseline. Few-shot generalizes across judgment scenarios. H-091 promoted to Tier 1 (P(H)≥0.90). |
 | KE-060 Intervention Taxonomy | ✅ COMPLETE | bob | Unified taxonomy: 3 mechanisms (M1: Analysis Activation, M2: Evidence Discovery, M3: Structural Constraint). Diagnostic decision tree. Written and verified. |
-| EXP-085 Knowledge Integration | 🔄 RUNNING | bob | WORK SESSION resumed — integrating H-091, KE-059, KE-060 with EXP-085 results. |
-| EXP-086 Few-Shot Boundary Test | 🔄 RUNNING | coach | WORK SESSION auto-resumed — 3 treatment runs on mismatched few-shot. |
+| EXP-086 Few-Shot Boundary Test | ✅ COMPLETE | coach | **Mismatched 66.7% vs matched 100% vs baseline 12.5%**. Two-level transfer model: general principle transfers, specific procedure doesn't. H-091 updated. |
+| EXP-086 Knowledge Integration | 🔄 RUNNING | bob | WORK SESSION — integrating EXP-086 results into H-091, KE-059, PRIORITY-TRACKER, INDEX. |
+| Cross-Reference Skill Deployment | 🔄 DISPATCHED | coach | P1 — Create `cross-reference-before-repair` skill with few-shot delivery. Dispatched 13:13. |
 | Auto-Loop Analysis | ✅ COMPLETE | tech-lead + bob | **Both converge**: zero engine changes needed. Decision brief written → `agents/may/workspace/auto-loop-decision-brief.md`. Ready for Hao. |
 | Amy-kimi billing outage | 🔴 Blocked | Hao | Still 429, needs balance refill |
 | Pre-merge review gate | ✅ Phase 1 done | - | Hook installed, needs Phase 2 (auto-review) |
@@ -59,16 +60,18 @@ Updated: 2026-04-08 ~12:43 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (12:43)
-- **AUTO-LOOP DECISION BRIEF WRITTEN**: Synthesized tech-lead + Bob analyses into `agents/may/workspace/auto-loop-decision-brief.md`. Recommends hybrid approach (YAML state files + workflow implementation). Zero engine changes. ~4h agent time. Ready for Hao decision.
-- **EXP-085 + EXP-086 AUTO-RESUMED**: Both interrupted sessions auto-recovered. Bob integrating knowledge, Coach running boundary test. No manual re-dispatch needed.
-- **All agents healthy**: All heartbeats fired at 12:43. No stuck sessions. Only Amy-kimi still down (billing).
+## Latest Cycle Summary (13:13)
+- **EXP-086 COMPLETE**: Mismatched few-shot 66.7%, matched 100%, baseline 12.5%. Two-level transfer: general principle transfers, specific procedure doesn't. H-091 updated.
+- **CROSS-REFERENCE SKILL DISPATCHED**: Sent P1 to Coach — create `cross-reference-before-repair` skill with few-shot delivery. EXP-083 validated (100% across 4 domains).
+- **BOB INTEGRATING EXP-086**: Running now, updating H-091, KE-059, PRIORITY-TRACKER, INDEX.md.
+- **AUTO-LOOP BRIEF READY**: At `agents/may/workspace/auto-loop-decision-brief.md`. Waiting for Hao.
+- **All agents healthy**: All heartbeats fired at 13:13. Only Amy-kimi still down (billing).
 
 ## Next Actions
 - **P0**: **Present auto-loop decision brief to Hao** — Decision brief at `agents/may/workspace/auto-loop-decision-brief.md`. Need approval + implementation assignment.
-- **P1**: **Wait for EXP-086 results** — Coach boundary test running. Results determine whether to start converting text-rule skills to few-shot format.
-- **P1**: **Wait for EXP-085 integration** — Bob updating knowledge base with few-shot generalization findings.
-- **P1**: **Deploy cross-reference skill to production** — EXP-083 confirmed 100% generalization, M2 mechanism validated. Need to dispatch to Coach.
+- **P1**: **Monitor cross-reference skill deployment** — Dispatched to Coach this cycle. Verify skill created with few-shot delivery + committed.
+- **P1**: **Monitor EXP-086 integration** — Bob running now. Verify H-091/KE-059/PRIORITY-TRACKER/INDEX updates.
+- **P1**: **Plan few-shot skill conversion** — EXP-086 showed matched few-shot = 100%. Identify top text-rule skills to convert to few-shot format. (After Bob's integration completes.)
 - **P1**: Federation design ready for Hao review — present summary when Hao is available
 - **P2**: Scout C1.3 laggard intervention (76.3% vs 90%+ for others)
 - **P2**: Pre-merge review gate Phase 2 (auto-review) — needs design
