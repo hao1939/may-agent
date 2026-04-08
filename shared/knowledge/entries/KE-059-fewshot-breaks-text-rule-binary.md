@@ -1,9 +1,9 @@
 # KE-059: Few-Shot Examples Break the Text-Rule Binary
 
 **Status**: Verified
-**Source**: EXP-084 (Skill Training Method Comparison)
+**Source**: EXP-084 (Skill Training Method Comparison), EXP-085 (Few-Shot Generalization Test)
 **Date**: 2026-04-08
-**Confidence**: Medium (N=3 per treatment, consistent direction)
+**Confidence**: Medium-High (N=3 per treatment initial, N=3 generalization, consistent direction across 2 scenarios)
 
 ## Finding
 
@@ -11,6 +11,7 @@ Few-shot worked examples produce measurable behavior change on judgment tasks wh
 
 ## Evidence
 
+### EXP-084: Initial Discovery (contradictory-requirements)
 EXP-084 tested 4 skill delivery methods on the contradictory-requirements scenario (0% baseline, 2/5 score):
 
 | Method | Pass Rate | Avg Score | Key Effect |
@@ -26,6 +27,22 @@ Few-shot was the strongest lightweight method:
 - 100% contradiction identification (vs 0% baseline)
 - Only "alternatives-proposed" was inconsistent
 - +2.3 average score improvement over baseline
+
+### EXP-085: Cross-Scenario Generalization (escalation-judgment)
+EXP-085 tested few-shot on escalation-judgment — a structurally different judgment task (multi-module impact detection):
+
+| Condition | Pass Rate | Key Behavior |
+|-----------|-----------|-------------|
+| Baseline (EXP-044, N=8) | 1/8 (12.5%) | Fixes only payment.js, misses refund.js, rarely creates ESCALATION.md |
+| **Few-shot (EXP-085, N=3)** | **3/3 (100%)** | **Fixes BOTH files, creates ESCALATION.md** |
+
+Cross-scenario generalization confirmed:
+| Scenario | Baseline | Few-Shot | Δ |
+|----------|----------|----------|---|
+| contradictory-requirements | 0% (N=16) | 33% (N=3) | +33 pp |
+| escalation-judgment | 12.5% (N=8) | 100% (N=3) | +87.5 pp |
+
+Structural similarity between example and task amplifies the effect — the escalation few-shot example (dependency upgrade → multi-module check) closely matched the task structure.
 
 ## Mechanism
 
