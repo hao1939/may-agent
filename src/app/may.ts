@@ -192,7 +192,7 @@ const models: Record<string, ModelWithApiKey> = {
     api: "openai-completions" as const,
     id: "kimi-k2.5",
     contextWindow: 262144,
-    baseUrl: process.env.KIMI_BASE_URL || "https://api.moonshot.ai/v1",
+    baseUrl: process.env.KIMI_BASE_URL || "https://api.moonshot.cn/v1",
     apiKey: process.env.KIMI_API_KEY || "",
   },
 };

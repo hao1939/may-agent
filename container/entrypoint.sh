@@ -1,8 +1,9 @@
 #!/bin/bash
 set -e
 
-# Source env file
-[ -f ${PROJECT_ROOT:-.}/.env ] && export $(grep -v "^#" ${PROJECT_ROOT:-.}/.env | xargs)
+# NOTE: .env is NOT sourced here. Each program sources it via its own wrapper
+# (e.g. run-may-agent.sh) so that .env changes take effect on process restart
+# without requiring a full container restart.
 
 # Default to "background" instance name to avoid conflict with interactive "default" sessions
 export INSTANCE="${INSTANCE:-background}"
