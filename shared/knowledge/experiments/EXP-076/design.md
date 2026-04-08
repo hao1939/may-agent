@@ -1,6 +1,6 @@
 # EXP-076: Workflow Access Expansion — Structural Coverage Audit
 
-**Status**: DESIGNED
+**Status**: PHASE_1_COMPLETE
 **Owner**: Coach
 **Sprint**: 31
 **Full design**: agents/coach/workspace/experiments/EXP-076/design.md
