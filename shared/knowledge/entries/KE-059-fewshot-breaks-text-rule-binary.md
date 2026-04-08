@@ -1,7 +1,7 @@
 # KE-059: Few-Shot Examples Break the Text-Rule Binary
 
 **Status**: Verified
-**Source**: EXP-084 (Skill Training Method Comparison), EXP-085 (Few-Shot Generalization Test)
+**Source**: EXP-084 (Skill Training Method Comparison), EXP-085 (Few-Shot Generalization Test), EXP-086 (Few-Shot Boundary Test — Mismatched Example)
 **Date**: 2026-04-08
 **Confidence**: Medium-High (N=3 per treatment initial, N=3 generalization, consistent direction across 2 scenarios)
 
@@ -71,6 +71,21 @@ This is distinct from text rules which state the desired behavior abstractly, an
 4. **Generative reasoning is hardest**: Agents can identify problems (100%) but struggle to propose alternatives (33%) — confirmed by contradictory-requirements results
 5. **Combined methods untested**: Few-shot + checklist combined might bridge the gap on abstract-match scenarios
 6. **Production recommendation**: Create structurally-matched few-shot examples for high-value judgment scenarios
+
+### EXP-086: Two-Level Transfer Model (mismatched example)
+EXP-086 tested whether a *structurally mismatched* few-shot example (conflicting-requirements domain → escalation-judgment task) still transfers:
+
+| Condition | Pass Rate | ESCALATION.md | refund-fixed |
+|-----------|-----------|--------------|-------------|
+| Baseline (N=8) | 1/8 (12.5%) | Rare | Rare |
+| **Mismatched few-shot (N=3)** | **2/3 (66.7%)** | **0/3 (0%)** | **2/3 (66.7%)** |
+| Matched few-shot (N=3) | 3/3 (100%) | 3/3 (100%) | 3/3 (100%) |
+
+**Two-Level Transfer Model**:
+1. **Level 1 — General principle transfer** (partial, stochastic): "Don't just fix the obvious thing; check broader impact." Transfers across domains but unreliably (~67%).
+2. **Level 2 — Specific procedure transfer** (reliable, domain-specific): "Check all consumers. Create ESCALATION.md." Requires structurally matched example (~100%).
+
+Mismatched examples provide Level 1 only. Matched examples provide both levels. This explains the 33pp gap between matched (100%) and mismatched (67%) few-shot.
 
 ## Cross-References
 
