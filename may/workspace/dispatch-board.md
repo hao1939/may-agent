@@ -1,15 +1,15 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-08 ~16:03 UTC
+Updated: 2026-04-08 ~16:13 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
 - **Scout**: 🟢 Running — Heartbeat cron active (30min interval).
-- **Bob**: 🟢 Running — EXP-088 KB integration COMPLETE. Heartbeat active.
-- **Coach**: 🟢 Running — **EXP-090 (Sprint 1 treatment runs) ACTIVE**. EXP-070 extended (10B+10T runs) ACTIVE. Two concurrent WORK sessions.
+- **Bob**: 🟢 Running — Integrating EXP-070 results (externalization NOT significant on ambiguous-context-drift). WORK session active.
+- **Coach**: 🟢 Running — **EXP-090 treatment runs ACTIVE** (know-when-blocked + evidence-over-narrative few-shot). EXP-070 extended COMPLETE.
 - **Tech-lead**: 🟢 Running — Federation Sync COMPLETE. Heartbeat active.
 - **Optimizer/QA**: 🟢 Running — Heartbeats firing.
-- **All agents**: 🟢 6 active sessions (2 coach WORK + heartbeats). No errors in last hour.
+- **All agents**: 🟢 All 8 heartbeats firing. 2 WORK sessions active (Bob EXP-070 KB, Coach EXP-090). No errors in last hour.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -72,15 +72,14 @@ Updated: 2026-04-08 ~16:03 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (16:03)
-- **EXP-090 Few-Shot Sprint 1 Treatment Runs: 🏃 JUST FORKED** — Coach running N=3 treatment on `escalation-impossible-task-fewshot` + `misleading-test-fix-fewshot`. Previous preliminary results excellent (4/5 vs 2/5 baseline, 8/8 vs 4/8 baseline).
-- **EXP-070 Extended: 🏃 RUNNING** — Coach running 10 baseline + 10 treatment runs on ambiguous-context-drift. ~30min in, will run ~1h.
-- **Bob: EXP-088 KB integration done** — completed in 10min (605s). Heartbeat active.
-- **System: All healthy** — No errors, no failures, 6 active sessions. Productive cycle.
+## Latest Cycle Summary (16:13)
+- **EXP-090 Few-Shot Sprint 1 Treatment Runs: 🏃 ACTIVE** — Coach running N=3 treatment on `escalation-impossible-task-fewshot` + `misleading-test-fix-fewshot`. Design doc created, gym scenarios built, now executing runs.
+- **EXP-070 Extended: ✅ COMPLETE** — Coach finished. Result: externalization NOT significant on ambiguous-context-drift. Bob integrating into KB now (WORK session active).
+- **Bob: EXP-070 KB integration: 🏃 RUNNING** — Just forked, integrating null result.
+- **System: All healthy** — No errors, no failures, all 8 heartbeats + 2 WORK sessions. Productive cycle.
 
 ## Next Actions
-- **P1**: **Monitor EXP-090 completion** — When done, review results and have Bob integrate into KB.
-- **P1**: **Monitor EXP-070 completion** — Extended baseline/treatment comparison (10+10 runs). Review results when done.
+- **P1**: **Monitor EXP-090 completion** — When done, review results and have Bob integrate into KB. Key metrics: know-when-blocked (baseline 2/5) and evidence-over-narrative (baseline 4/8).
 - **P1**: **Present auto-loop decision brief to Hao** — at `agents/may/workspace/auto-loop-decision-brief.md`.
 - **P1**: **Resolve EXP-088 naming conflict** — Coach's EXP-088 (skill format test) vs Bob's EXP-088 (workaround gradient). Need to renumber one.
 - **P1**: Federation design ready for Hao review — present summary when available
