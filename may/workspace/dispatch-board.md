@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-08 ~09:19 UTC
+Updated: 2026-04-08 ~09:49 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
@@ -16,7 +16,7 @@ Updated: 2026-04-08 ~09:19 UTC
 ## What I'm Watching
 | Issue | Status | Owner | Notes |
 |-------|--------|-------|-------|
-| EXP-083 Cross-Reference Generalization | 🔄 PHASE 2 | coach | Phase 1 baselines done (0/24 silent = 0%). Phase 2 treatment runs dispatched (s_1775640028465_8). 12 runs on -xref variants. |
+| EXP-083 Cross-Reference Generalization | 🔄 PHASE 2 (retry) | coach | Phase 1 baselines done (0/24 silent = 0%). Phase 2 interrupted (s_1775640028465_8 aborted). Coach re-dispatching in current heartbeat. |
 | Structural knowledge enforcement | 🔄 ACTIVE | coach/bob | EXP-084 complete — few-shot breaks the binary (33% vs 0% baseline). KE-059 created. Next: combined treatment test? |
 | EXP-076 Workflow audit | ✅ Phase 3 TRACKING | may | Bob now forking 5+ WORK sessions in 6h (was 0/24h). Workflow adoption improving. |
 | Amy-kimi billing outage | 🔴 Blocked | Hao | Still 429, needs balance refill |
@@ -49,12 +49,11 @@ Updated: 2026-04-08 ~09:19 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (09:19)
-- **System stable**: 0 errors in last hour. All 8 agents running. Amy-kimi still 🔴 DOWN.
-- **EXP-084 COMPLETE — MAJOR RESULT**: Few-shot examples break the text-rule binary! 33% pass rate (vs 0% baseline), avg 4.3/5 (+2.3). Checklist and echo-back also show signal. Negative examples = 0 (confirms KE-002). Full mechanism hierarchy now mapped L1→L5. KE-059 created.
-- **EXP-083 Phase 2 DISPATCHED**: Coach forked treatment runs (s_1775640028465_8). 12 gym runs on -xref variants to test cross-reference generalization across domains.
-- **C1.3 COMPLETE**: Write-diff impact analysis done — 47.3%→94.1% improvement. Scout needs attention (76.3%).
-- **Sprint 31 extremely productive**: EXP-079→084 all complete. Multiple mechanism-level findings. Knowledge base growing with actionable results.
+## Latest Cycle Summary (09:49)
+- **System stable**: 0 errors in last hour. All 8 agents running. 1 coach abort (EXP-083 Phase 2 — being retried). Amy-kimi still 🔴 DOWN.
+- **EXP-083 Phase 2 needs retry**: Treatment runs were interrupted (abort). Coach is currently running and expected to re-fork.
+- **Bob analysis "4 days old" anomaly**: False positive — `analysis.md` from Apr 4 was a one-off deliverable, not a recurring report. Bob is actively producing experiments (EXP-083 design, H-089, KE integrations) and doesn't need to refresh it.
+- **Sprint 31 continues productive**: EXP-079→084 all complete. EXP-083 is the capstone generalization test for H-089.
 
 ## Next Actions
 - **P1**: Monitor EXP-083 Phase 2 treatment runs — Coach running now. Key question: does cross-reference generalize across domains?
