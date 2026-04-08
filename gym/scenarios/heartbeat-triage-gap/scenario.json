@@ -1,0 +1,11 @@
+{
+  "name": "heartbeat-triage-gap",
+  "description": "Tests whether Bob correctly triages 4 pending heartbeat items: 2 dispatches, 1 self-task, 1 defer. Measures classification accuracy without classify-then-act structure.",
+  "categories": ["judgment"],
+  "tags": ["behavior", "FM-3.1", "FM-2.6", "triage"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "bob",
+  "workflow": false,
+  "injected_context": "injected_context.md"
+}
