@@ -14,6 +14,7 @@ import { appendActivity, truncateSummary } from "./activity.js";
 import { appendMemoryEntry } from "./persistence.js";
 import { log } from "./log.js";
 import { createStartDigest, createEndDigest, upsertDigest, logShadowComparison } from "./session-digest.js";
+import { trackRequest, updateRequest, getDb } from "./requests.js";
 import type { SubagentManager } from "./manager.js";
 
 // ── Activity Writer ─────────────────────────────────────────────────────
@@ -137,65 +138,61 @@ export function createRequestTracker(persistDir: string): (event: AgentEvent) =>
 
     // Track new items from finish()
     if (Array.isArray(finishParams.new_items) && finishParams.new_items.length > 0) {
-      import("./requests.js")
-        .then((mod) => {
-          for (const item of finishParams.new_items) {
-            try {
-              mod.trackRequest(persistDir, {
-                fromEntity: event.agent,
-                toAgent: event.agent,
-                task: String(item).slice(0, 500),
-                method: "message",
-                source: "finish",
-              });
-            } catch {
-              /* best-effort */
-            }
+      try {
+        for (const item of finishParams.new_items) {
+          try {
+            trackRequest(persistDir, {
+              fromEntity: event.agent,
+              toAgent: event.agent,
+              task: String(item).slice(0, 500),
+              method: "message",
+              source: "finish",
+            });
+          } catch {
+            /* best-effort */
           }
-        })
-        .catch(() => {});
+        }
+      } catch {
+        /* best-effort */
+      }
     }
 
     // Mark completed items — fuzzy-match against pending requests
     if (Array.isArray(finishParams.completed_items) && finishParams.completed_items.length > 0) {
-      import("./requests.js")
-        .then((mod) => {
-          try {
-            const db = mod.getDb(persistDir);
-            const pending = db
-              .prepare(
-                `SELECT requestId, task FROM requests
-                 WHERE toAgent = ? AND status IN ('CREATED', 'IN_PROGRESS') AND method IN ('message', 'send', 'fork', 'run')`,
-              )
-              .all(event.agent) as { requestId: string; task: string }[];
+      try {
+        const db = getDb(persistDir);
+        const pending = db
+          .prepare(
+            `SELECT requestId, task FROM requests
+             WHERE toAgent = ? AND status IN ('CREATED', 'IN_PROGRESS') AND method IN ('message', 'send', 'fork', 'run')`,
+          )
+          .all(event.agent) as { requestId: string; task: string }[];
 
-            for (const item of finishParams.completed_items) {
-              const needle = String(item).trim().toLowerCase();
-              let bestId: string | null = null;
-              let bestScore = 0;
-              for (const req of pending) {
-                const reqText = req.task.toLowerCase();
-                // Simple overlap scoring
-                const words = needle.split(/\s+/);
-                const score = words.filter((w) => reqText.includes(w)).length / Math.max(words.length, 1);
-                if (score > bestScore && score > 0.3) {
-                  bestScore = score;
-                  bestId = req.requestId;
-                }
-              }
-              if (bestId) {
-                mod.updateRequest(persistDir, bestId, {
-                  status: "COMPLETED",
-                  completedAt: Date.now(),
-                  summary: `Completed by ${event.agent} in session ${event.sessionId}`,
-                });
-              }
+        for (const item of finishParams.completed_items) {
+          const needle = String(item).trim().toLowerCase();
+          let bestId: string | null = null;
+          let bestScore = 0;
+          for (const req of pending) {
+            const reqText = req.task.toLowerCase();
+            // Simple overlap scoring
+            const words = needle.split(/\s+/);
+            const score = words.filter((w) => reqText.includes(w)).length / Math.max(words.length, 1);
+            if (score > bestScore && score > 0.3) {
+              bestScore = score;
+              bestId = req.requestId;
             }
-          } catch {
-            /* best-effort */
           }
-        })
-        .catch(() => {});
+          if (bestId) {
+            updateRequest(persistDir, bestId, {
+              status: "COMPLETED",
+              completedAt: Date.now(),
+              summary: `Completed by ${event.agent} in session ${event.sessionId}`,
+            });
+          }
+        }
+      } catch {
+        /* best-effort */
+      }
     }
   };
 }

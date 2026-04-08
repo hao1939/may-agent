@@ -52,7 +52,7 @@ import type {
 } from "./types.js";
 import { createCompactionTransform } from "./compaction.js";
 import type { CompactionOptions } from "./compaction.js";
-import { getDb, updateSessionDb } from "./requests.js";
+import { getDb, updateSessionDb, trackRequest } from "./requests.js";
 import {
   RegistryStore,
   sessionDir,
@@ -85,20 +85,6 @@ import { upsertDigest, logShadowComparison, getRecentDigests, formatDigestContex
 import { isOverflowError } from "./overflow.js";
 import { summarizeForHandoff } from "./handoff.js";
 // classifyError is re-exported directly from classify-error.ts (no local import needed)
-
-// Lazy import for requests.ts (uses bun:sqlite, not available in vitest)
-let _requestsMod: typeof import("./requests.js") | null = null;
-async function getRequestFns() {
-  if (!_requestsMod) {
-    try {
-      const mod = await import("./requests.js");
-      _requestsMod = mod;
-    } catch {
-      /* bun:sqlite not available (e.g., vitest) */
-    }
-  }
-  return _requestsMod;
-}
 
 export { isRetryableInfraError, runAgentWithRetry } from "./manager-retry.js";
 // classifyError is pure string-matching — imported from classify-error.ts (no bun:sqlite deps)
@@ -441,10 +427,7 @@ export class SubagentManager {
         envLines.push(`- Knowledge: ${relPath(def.knowledgeDir)}`);
       }
       // List which convention files are already in this prompt
-      const loaded: string[] = ["SOUL.md"];
-      if (loaded.length > 0) {
-        envLines.push(`- Already in context (do NOT re-read): ${loaded.join(", ")}, common-sense.md, skills/*.md`);
-      }
+      envLines.push(`- Already in context (do NOT re-read): SOUL.md, common-sense.md, skills/*.md`);
       envLines.push(
         `- Knowledge index: knowledge/INDEX.md (read when you need references)`,
         ``,
@@ -766,20 +749,17 @@ export class SubagentManager {
 
     const parentName = session.parentAgentName;
     if (parentName) {
-      getRequestFns().then((mod) => {
-        if (!mod) return;
-        try {
-          mod.trackRequest(this.registry.persistDir, {
-            fromEntity: session.agentName,
-            toAgent: parentName,
-            task: escalationTask,
-            method: "message",
-            sessionId: session.sessionId,
-          });
-        } catch {
-          /* best-effort */
-        }
-      });
+      try {
+        trackRequest(this.registry.persistDir, {
+          fromEntity: session.agentName,
+          toAgent: parentName,
+          task: escalationTask,
+          method: "message",
+          sessionId: session.sessionId,
+        });
+      } catch {
+        /* best-effort */
+      }
     }
 
     if (this.onSessionBlocked) {
