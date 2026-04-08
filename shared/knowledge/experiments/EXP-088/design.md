@@ -1,7 +1,7 @@
 # EXP-088 Design: Workaround Difficulty Gradient — Testing the L2↔L4 Transition
 
 **Date**: 2026-04-08
-**Status**: SCENARIO BUILT (baseline variant ready, ext/commit variants not yet built)
+**Status**: COMPLETE — See results.md
 **Hypothesis**: H-088 (extended) — The analysis-action gap is modulated by workaround difficulty, not just workaround availability (binary). There exists a difficulty threshold above which binding + externalization starts producing correct implementations even when workarounds are technically available.
 
 ## Motivation
