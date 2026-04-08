@@ -5,6 +5,7 @@ import {
   generateId,
   formatDuration,
   extractLastAssistantText,
+  getAgentDir,
   isProcessAlive,
   truncateForPrompt,
   INFRA_RETRY_MAX,
@@ -33,6 +34,7 @@ export {
   truncateForPrompt,
   computeToolArgsKey,
   isToolError,
+  getAgentDir,
   STATE_CHANGING_TOOLS,
   INFRA_RETRY_MAX,
   TOOL_PIVOT_LIMIT,
@@ -377,7 +379,7 @@ export class SubagentManager {
     if (def.systemPrompt) return def.systemPrompt;
 
     const sections: string[] = [];
-    const agentDir = def.knowledgeDir ? dirname(def.knowledgeDir) : def.workspace ? dirname(def.workspace) : undefined;
+    const agentDir = getAgentDir(def);
 
     // Helper: read a file if it exists, return trimmed content or undefined
     const loadFile = (path: string | undefined): string | undefined => {
@@ -562,11 +564,7 @@ export class SubagentManager {
     // Context learning: load agents/<name>/context.md if it exists.
     // Auto-maintained by finish(context_updates) — accumulated project knowledge.
     {
-      const ctxAgentDir = def.knowledgeDir
-        ? dirname(def.knowledgeDir)
-        : def.workspace
-          ? dirname(def.workspace)
-          : undefined;
+      const ctxAgentDir = getAgentDir(def);
       if (ctxAgentDir) {
         const ctxPath = join(ctxAgentDir, "context.md");
         if (existsSync(ctxPath)) {
@@ -806,7 +804,7 @@ export class SubagentManager {
     // Hot-reload mutable config (memoryLimit) from agent.json on disk.
     // Agent configs are loaded once at startup and cached. Without this, changes
     // to agent.json don't take effect until restart.
-    const agentDir = def.knowledgeDir ? dirname(def.knowledgeDir) : def.workspace ? dirname(def.workspace) : undefined;
+    const agentDir = getAgentDir(def);
     if (agentDir) {
       try {
         const freshConfig = JSON.parse(readFileSync(join(agentDir, "agent.json"), "utf-8"));
@@ -1772,14 +1770,7 @@ export class SubagentManager {
       outcome = (finishParams as any)?.summary;
     }
     if (!outcome) {
-      const msgs = session.agent.state.messages;
-      for (let i = msgs.length - 1; i >= 0; i--) {
-        if (msgs[i].role === "assistant") {
-          const parts = (msgs[i].content as Array<{ type: string; text?: string }>)
-            .filter((c) => c.type === "text" && c.text).map((c) => c.text!);
-          if (parts.length > 0) { outcome = parts.join(" ").slice(0, 500); break; }
-        }
-      }
+      outcome = extractLastAssistantText(session.agent.state.messages)?.slice(0, 500) ?? undefined;
     }
 
     this.cleanupSession(session);
