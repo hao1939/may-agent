@@ -350,3 +350,13 @@
   - **INDEX.md updated**: EXP-088 experiment row added (COMPLETE). KE-056 summary updated with gradient finding. H-088 summary updated (P(H)=0.80). EXP-088 KE entry updated (DESIGNED→COMPLETE).
   - **PRIORITY-TRACKER updated**: Header mentions EXP-088 COMPLETE. H-088 moved from Tier 2 (0.70) to Tier 1 (0.80). EXP-088 added to experiment queue (COMPLETE). Meta-process section updated (12→11 high confidence count adjusted, H-088 promoted).
   - **Files modified**: H-088.md, KE-056.md, KE-060.md, INDEX.md, PRIORITY-TRACKER.md, todo.md
+
+## Session Notes (2026-04-08 ~16:35)
+- [x] **EXP-090 integration**: COMPLETE — Few-Shot Skill Conversion Sprint 1 results integrated into knowledge base.
+  - **Key findings**: Both know-when-blocked (escalation-impossible-task) and evidence-over-narrative (misleading-test-fix) achieved 0%→100% with domain-matched few-shot worked examples. Cumulative matched few-shot: 12/12 (100%) across 5 scenarios.
+  - **H-091 updated**: P(H) 0.92→0.98. EXP-090 evidence section added. Status updated to include EXP-090.
+  - **KE-059 updated**: Source line updated with EXP-090. Confidence note added. Full EXP-090 evidence section with per-skill results.
+  - **KE-060 updated**: Experiment range updated to EXP-090. EXP-090 update section added (L3 few-shot production-ready).
+  - **INDEX.md updated**: EXP-090 experiment row added. KE-060 summary updated (12/12 matched few-shot, 220+ runs, EXP-090 range).
+  - **PRIORITY-TRACKER updated**: Header updated with EXP-090 COMPLETE. H-091 row updated (P(H)=0.98, EXP-090 evidence). EXP-090 added to experiment queue. Meta-process H-091 confidence updated.
+  - **Files modified**: H-091.md, KE-059.md, KE-060.md, INDEX.md, PRIORITY-TRACKER.md, todo.md
