@@ -39,8 +39,6 @@ function mockSession(overrides: {
     infraRetryCount: 0,
     toolErrorHistory: new Map(),
     toolErrorCount: 0,
-    turnBudgetWarningAt: 0,
-    turnBudgetWarned: false,
     filesModified: new Set(),
   } as ActiveSession;
 }
