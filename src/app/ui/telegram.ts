@@ -237,7 +237,20 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
 
     // When a turn ends in the chat session tree, flush
     if (event.type === "turn_end" && "sessionId" in event) {
+      const hadText = pendingText.trim().length > 0;
       flushPendingText();
+
+      // If no text was accumulated but errors occurred, notify user
+      // (e.g., context overflow — LLM returned empty content, user gets silence)
+      if (!hadText && event.errorCount && event.errorCount > 0 && pendingChatId) {
+        sendMessage(pendingChatId, `⚠️ Session error (${event.agent}): response failed with ${event.errorCount} error(s). The session may need to be restarted.`).catch(() => {});
+      }
+    }
+
+    // When a watched session ends with an error, notify user
+    if (event.type === "session_end" && "sessionId" in event && event.error && pendingChatId) {
+      const errMsg = event.error.length > 200 ? event.error.slice(0, 200) + "…" : event.error;
+      sendMessage(pendingChatId, `❌ Session ended (${event.agent}): ${errMsg}`).catch(() => {});
     }
 
     // Notifications (heartbeat briefs, alerts) → push immediately
