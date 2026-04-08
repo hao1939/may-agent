@@ -1,6 +1,6 @@
 # Hypothesis Priority Tracker
 
-**Updated**: 2026-04-08 (Bob: EXP-087 COMPLETE — H-091 P(H) 0.85→0.88. Structural similarity boundary: domain match irrelevant, behavioral template compatibility is key. Mismatched output format actively harms (0/3). Open Q#4 answered.) | **Active hypotheses**: 18 | **Tested**: 18/18 | **Resolution ratio**: 13 resolved  
+**Updated**: 2026-04-08 (Bob: EXP-088 DESIGNED — Workaround Difficulty Gradient. Tests KE-056 OQ#1: is there a threshold where binding starts working? New scenario: v2-hard-workaround inverts difficulty ratio so workaround is 4-5 steps vs correct fix 2 steps.) | **Active hypotheses**: 18 | **Tested**: 18/18 | **Resolution ratio**: 13 resolved  
 **Bayesian scorecard**: See `SCORECARD-bayesian-2026-04-04.md` for full methodology
 
 > ✅ **MORATORIUM SATISFIED** (2026-04-07): 11 hypotheses resolved this session (H-001 disconfirmed, H-002 superseded, H-034/H-038/H-039/H-052 reclassified as design notes/truisms, H-046/H-048/H-051 archived for insufficient evidence/chain dependencies, H-064/H-065 already merged/out-of-domain). New hypotheses may now be created, subject to quality standards (falsifiable, P(H) prior ≥ 0.40, connected to empirical evidence).
@@ -102,6 +102,7 @@ H-070 (Workflow Fixed Cost) added despite moratorium because it directly formali
 
 | Priority | Experiment | Tests | Status | Next Step |
 |----------|-----------|-------|--------|-----------|
+| **P1** | **EXP-088** | **H-088/KE-056: Workaround Difficulty Gradient** | **DESIGNED — needs scenario build** | Tests whether inverting workaround/correct-fix difficulty ratio (4-5 steps vs 2 steps) creates a threshold where binding works. 3 conditions × N=6 = 18 runs. New scenario: cascading-fix-trap-v2-hard-workaround. |
 | P1 | **EXP-070** | **H-085: Externalization on non-ceiling injected_context** | **DESIGNED — delegated to Coach** | Extended baseline N=10 + treatment N=10 on ambiguous-context-drift (EXP-068 baseline: 67%). Tests documentation-parroting gap. |
 | P1 | **EXP-071** | **H-085: Externalization on cascading-fix-trap-v2** | **COMPLETE — BOUNDARY CONDITION FOUND** | Treatment: 83% (+5.6pp). 6/6 correct analysis, 0/6 pipeline reorder. Analysis-action gap. H-085 P(H) 0.97→0.92. |
 | ✅ | **EXP-072** | **H-087/H-088: Workaround-resistant scenario design (v3)** | **COMPLETE — SCENARIO DESIGN WORKS, EXT DEGRADES** | Baseline v3: 100% (3/3) pipeline reorder. v3-ext: 67% (4/6). Workaround-resistant architecture forces correct fix without externalization. Adding ext *degrades* performance. Analysis-action gap re-confirmed (2/6 correct analysis → workaround). H-085 boundary confirmed. H-088 P(H) 0.60→0.65. |
