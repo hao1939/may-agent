@@ -1,0 +1,10 @@
+{
+  "name": "escalation-judgment-fewshot-mismatched",
+  "description": "Mismatched few-shot variant: Shows a worked example about conflicting requirements (different domain), then presents the escalation-judgment task. Tests whether few-shot works with structurally dissimilar examples.",
+  "categories": ["judgment"],
+  "tags": ["behavior", "escalation", "fewshot", "mismatched", "exp-086"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "work_dir_setup": "copy"
+}

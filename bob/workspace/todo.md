@@ -306,3 +306,8 @@
 - **Delegated to Coach**: P1 message sent for Phase 1 baselines (12 runs).
 - [x] **EXP-083 Phase 1 baselines**: COMPLETE. 12 baseline runs confirm 100% visible / 0% silent across both domains.
 - [x] **EXP-083 Phase 2 treatment**: COMPLETE. 12 treatment runs: 24/24 silent + 48/48 visible (100%). H-089 P1 CONFIRMED.
+
+## Session Notes (2026-04-08 ~11:50)
+- [x] **KE-060 WRITTEN**: Unified Agent Intervention Taxonomy — The Three Mechanisms. Synthesizes H-085 (Analysis Activation/M1), H-089 (Evidence Discovery/M2), H-091 + KE-056 (Structural Constraint/M3) into complete diagnostic framework. 200+ runs across 40+ experiments. Includes diagnostic decision tree, 2×2 matrix (information × solution space), refined delivery hierarchy (L0–L5), and analysis-action gap boundary. Six open questions identified for future work.
+- **Coach running EXP-085** (few-shot generalization). EXP-070 still DESIGNED/unrun.
+- **Next priorities**: (1) Integrate EXP-085 results when complete, (2) Run EXP-070 (externalization on ambiguous-context-drift baseline 67%), (3) Update INDEX.md with KE-060.

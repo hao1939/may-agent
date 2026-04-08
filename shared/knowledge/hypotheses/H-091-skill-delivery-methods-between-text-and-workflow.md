@@ -1,8 +1,8 @@
 # H-091: Skill Delivery Methods Exist Between Text-Rules and Workflow Enforcement
 
-**Status**: Supported (EXP-084)
+**Status**: Strongly Supported (EXP-084, EXP-085)
 **Date**: 2026-04-08
-**P(H)**: 0.75
+**P(H)**: 0.85
 
 ## Statement
 
