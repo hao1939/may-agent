@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-08 ~14:35 UTC
+Updated: 2026-04-08 ~14:43 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
@@ -35,6 +35,9 @@ Updated: 2026-04-08 ~14:35 UTC
 | EXP-088 Skill Format Test (Coach) | ✅ COMPLETE | coach | **REGRESSION**: 0/3 (0%) vs 67% baseline on sycophants-dilemma. Key finding: delivery mechanism > format. Few-shot in skill text = diluted. Reverted. |
 | EXP-088 Workaround Difficulty Gradient (Bob) | ⏳ DESIGNED | bob | 12.6KB design doc ready. Tests L2↔L4 transition — is the workaround threshold binary or gradient? Not yet run. |
 | Pre-merge review gate | ✅ Phase 1 done | - | Hook installed, needs Phase 2 (auto-review) |
+| **Federation Sync Redesign** | ⏳ IN PROGRESS | tech-lead | **P0 from Hao**. Redesign agents-auto-commit handler for multi-instance federation. Session `s_1775659647453_55`. Brief at `agents/may/workspace/federation-sync-redesign-brief.md`. Phase 1: fix tryPull() to prevent data loss. |
+| Few-Shot Conversion Sprint Plan | ⏳ IN PROGRESS | bob | Bob forked WORK session to plan top candidates for few-shot skill conversion (req:0f615825). |
+| EXP-088 Few-Shot Skill Upgrade | ⏳ IN PROGRESS | coach | Coach forked WORK session for EXP-088 upgrade + regression test (req:0e1f9e8f). |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -66,18 +69,16 @@ Updated: 2026-04-08 ~14:35 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (14:35)
-- **SCOUT DOWN**: `claude-opus-4.6` model errors + no heartbeat cron = dead for 5h+. 71 total model errors in 24h across 4 agents, stopped ~10:34 for bob/coach.
-- **EXP-088 results**: Coach's skill format test REGRESSED (0/3 vs 67% baseline). Key insight: **delivery mechanism matters more than format** — few-shot in skill text is diluted, only works in injected_context.
-- **Bob designed EXP-088** (workaround difficulty gradient) — ready to run. Tests if there's a continuous L2↔L4 transition.
-- **EXP-088 naming conflict**: Bob and Coach independently used the same experiment number for different things.
-- **Coder heavily loaded**: ~20 CREATED tasks from human — Hao actively working with coder.
+## Latest Cycle Summary (14:43)
+- **NEW P0 FROM HAO**: Federation sync redesign — fix agents/ repo sync for multi-instance federation. Dispatched to tech-lead (session `s_1775659647453_55`). Implementation brief written at `agents/may/workspace/federation-sync-redesign-brief.md`.
+- **Active WORK sessions**: Bob planning few-shot conversion sprint, Coach running EXP-088 upgrade, Tech-lead implementing federation sync fix.
+- **System health**: All heartbeats fired, no errors in last hour, Scout recovered.
 
 ## Next Actions
-- **P0**: **Scout recovery** — ✅ DONE. Forked scout session s_1775659088836_38 — model issue resolved, scout running. Also dispatched autoresearch investigation (Hao's req:1c42f66e from 19 days ago).
+- **P0**: **Monitor federation sync implementation** — Tech-lead session `s_1775659647453_55`. Check output next cycle.
 - **P0**: **Present auto-loop decision brief to Hao** — Decision brief at `agents/may/workspace/auto-loop-decision-brief.md`. Need approval + implementation assignment.
 - **P1**: **Resolve EXP-088 naming conflict** — Coach's experiment should be renumbered (it completed first, but Bob's design is in the canonical shared/knowledge/experiments/ path).
-- **P1**: **Plan few-shot skill conversion sprint** — But Coach's EXP-088 result says: don't convert skill text to few-shot, focus on injected_context delivery instead. Rethink this approach.
+- **P1**: **Review few-shot conversion sprint plan** — Bob's WORK session (req:0f615825) should produce candidates.
 - **P1**: Federation design ready for Hao review — present summary when Hao is available
 - **P2**: Bob analysis refresh (last was Apr 4, 4 days old) — lower priority since system is healthy
 - **P2**: Pre-merge review gate Phase 2 (auto-review) — needs design
