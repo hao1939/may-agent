@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-08 ~08:19 UTC
+Updated: 2026-04-08 ~08:49 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
@@ -16,11 +16,13 @@ Updated: 2026-04-08 ~08:19 UTC
 ## What I'm Watching
 | Issue | Status | Owner | Notes |
 |-------|--------|-------|-------|
-| EXP-083 Skill Training Method Comparison | ⏳ Design complete | coach | Tests B-E (few-shot, checklist, self-prompting, negative example) on contradictory-requirements. 13 gym runs. Design interrupted last cycle — Coach should pick up execution this cycle. |
+| EXP-083 Skill Training Method Comparison | 🔄 RUNNING | coach | Gym runs active — fewshot, checklist, echo, negative all being tested (s_1775636414524_8). Currently on negative control runs. |
+| EXP-083b Cross-Reference Generalization | 🔄 RUNNING | coach | Bob designed, Coach executing baselines (s_1775638193922_20). Should be renumbered EXP-084. |
+| C1.3 Write-Diff Impact Analysis | 🔄 RUNNING | tech-lead | Analyzing write-diff deployment effect: 47.3%→85.1%→94.1% across 3 phases. Tech-lead +28pp improvement! |
 | EXP-076 Workflow audit | ✅ Phase 3 TRACKING | may | Bob now forking 5+ WORK sessions in 6h (was 0/24h). Workflow adoption improving. |
 | Amy-kimi billing outage | 🔴 Blocked | Hao | Still 429, needs balance refill |
 | Pre-merge review gate | ✅ Phase 1 done | - | Hook installed, needs Phase 2 (auto-review) |
-| Structural knowledge enforcement | ⏳ Pending | coach/bob | EXP-082 showed declarative knowledge has 0% effect. Next step: encode knowledge as workflows/skills instead of declarations. EXP-083 is the first test of intermediate methods. |
+| Structural knowledge enforcement | ⏳ Pending | coach/bob | EXP-082 showed declarations don't work. EXP-083 (in progress) tests intermediate methods. |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -47,16 +49,15 @@ Updated: 2026-04-08 ~08:19 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (08:19)
-- **System stable**: 0 errors across all agents in last 6h. All 8 agents running. Amy-kimi still 🔴 DOWN.
-- **EXP-083 DESIGNED**: Coach created comprehensive design testing 4 intermediate skill delivery methods (B-E) on contradictory-requirements scenario. Session was interrupted — execution pending this cycle.
-- **Bob integration done**: EXP-081 + EXP-082 results published to shared knowledge.
-- **Sprint 31 highly productive**: 8 experiments completed (EXP-075-082), 3 KEs created (KE-056, KE-057, KE-058), 2 hypotheses filed (H-087, H-089). All autonomous.
-- **Dashboard cleaned**: Moved 13 completed items from "What I'm Watching" to archive.
+## Latest Cycle Summary (08:49)
+- **System stable**: 0 errors in last hour. All 8 agents running. Amy-kimi still 🔴 DOWN.
+- **EXP-083 EXECUTING**: Coach running two concurrent experiments — Skill Training Method Comparison (original, on negative controls) and Cross-Reference Generalization (Bob-designed, baselines). Naming collision — the latter should be EXP-084.
+- **C1.3 improvement verified**: Tech-lead analyzing write-diff impact — 47.3%→85.1%→94.1% across three phases. Scout is the laggard (76.3%).
+- **Sprint 31 continues productive**: Autonomous execution of experiments + infra analysis.
 
 ## Next Actions
-- **P1**: EXP-083 execution — Coach should fork this (design ready, 13 gym runs). Key question: is there anything between "text rules (0%)" and "full workflow (100%)"?
-- **P1**: Structural knowledge enforcement — EXP-082 showed declarations don't work. Need to convert verified KEs into workflows/skills. Coach/Bob should drive.
-- **P1**: Monitor Bob's workflow adoption (EXP-076 Phase 3) — continued tracking
-- **P2**: EXP-082 Test 2 (KE-010 ceiling) and Test 3 (KE-002 text rules) if Coach has bandwidth after EXP-083
+- **P1**: Wait for EXP-083 results — Coach running gym scenarios now. Key question: is there anything between text rules (0%) and full workflow (100%)?
+- **P1**: Renumber Bob's cross-ref generalization to EXP-084 once Coach completes current runs
+- **P1**: Review C1.3 analysis results when tech-lead finishes — Scout needs intervention (76.3% vs 90%+ for others)
 - **P2**: Pre-merge review gate Phase 2 (auto-review) — needs design
+- **P2**: EXP-082 Test 2/3 if Coach has bandwidth after EXP-083
