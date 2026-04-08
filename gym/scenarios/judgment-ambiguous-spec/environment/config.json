@@ -1,4 +1,6 @@
 {
+  "timeout": 5000,
+  "retries": 3,
   "name": "webapp",
   "version": "2.1.0",
   "port": 8080,
