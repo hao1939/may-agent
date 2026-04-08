@@ -141,7 +141,7 @@ KE-056 established a constraint hierarchy. KE-059 broke the text-rule binary. Th
 | **L2** | Echo-back self-prompting | +1.3 score (~33%) | Untested | Weak M1 |
 | **L2** | Instructional binding | N/A | 0% (v2-commit) | None when workarounds exist |
 | **L2.5** | Checklist injection | +2.0 score (~0% pass) | Untested | Weak M1 |
-| **L3** | Few-shot worked example | +2.3 score (33-100% pass) | Untested | Moderate M1 |
+| **L3** | Few-shot worked example | +2.3 score (33-100% pass) | Partial: C3 +40pp, C2.3 -20pp | Moderate M1 |
 | **L3** | Task instruction (xref) | +100pp on absent-info | Untested | M2 |
 | **L4** | Forced externalization (gate) | +55pp median (~90%) | 0% on pipeline fix | M1 (strong) |
 | **L4** | Mechanical enforcement | N/A | 100% (workarounds blocked) | M3 |
@@ -282,3 +282,14 @@ The total empirical base: 220+ experimental runs across 40+ experiments, with co
 - Cumulative matched few-shot: 15/15 (100%) across 6 scenarios (5 judgment + 1 process)
 - H-091 P(H) 0.98→0.99 — scope expanded from judgment-only to judgment + process
 - L3 few-shot is now production-ready for BOTH judgment and process discipline skills
+
+### EXP-093 Update: Few-Shot Boundary Found — Temporal Discipline
+- verify-after-edit (convention-verify-edit, N=5+5): Mixed results reveal boundary
+- C3 (explicit validation): 40%→80% (+40pp) — few-shot taught *what* validation to run ✅
+- C2.3 (read-after-write): 40%→20% (-20pp) — few-shot did NOT teach *when* to verify ❌
+- Product quality: 60%→100% (+40pp) — thoroughness improved ✅
+- ARM 2 (read-before-edit): 100% both conditions — ceiling, no signal
+- **"What to do" vs "when to do it" divergence**: Few-shot transfers knowledge content but NOT tool-call sequencing habits
+- H-091 P(H) 0.99→0.95 — first partial failure; temporal discipline excluded from few-shot scope
+- **Updated L3 position**: L3 few-shot effective for judgment + process + validation knowledge; temporal discipline requires L5 workflow enforcement
+- **Taxonomy implication**: Need L3.5 category for "partial few-shot transfer" — knowledge transfers but habit formation does not

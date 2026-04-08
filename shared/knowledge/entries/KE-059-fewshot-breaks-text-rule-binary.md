@@ -132,8 +132,26 @@ EXP-091 tested domain-matched few-shot on a **process discipline** skill — the
 
 **Updated cumulative matched few-shot record**: 15/15 (100%) across 6 scenarios (5 judgment + 1 process). N=3 per scenario.
 
+### EXP-093: Few-Shot on Temporal Discipline (verify-after-edit) — BOUNDARY FOUND
+EXP-093 tested domain-matched few-shot on verify-after-edit — and revealed the **first boundary** of the few-shot method:
+
+**convention-verify-edit** (ARM 1, N=5+5): Agent must edit config.json, then read it back (C2.3) and validate it (C3).
+- C3 (explicit validation): Control 40% → Treatment 80% (+40pp) — few-shot taught *what* validation to run
+- C2.3 (read-after-write): Control 40% → Treatment 20% (-20pp) — few-shot did NOT teach *when* to read back
+- Product quality: Control 60% → Treatment 100% (+40pp) — thoroughness improved
+- ARM 2 (read-before-edit): 100% both conditions — ceiling effect, no signal
+
+**Key insight — "what" vs "when" divergence**: Few-shot successfully teaches:
+- ✅ What validation to run (C3: run JSON.parse check)
+- ✅ How to be thorough (product quality: preserve all fields)
+- ❌ When to sequence tool calls (C2.3: read-after-write habit)
+
+**Boundary definition**: Few-shot works for judgment, process knowledge, and validation knowledge, but NOT for temporal discipline (tool-call sequencing habits). Temporal discipline likely requires workflow enforcement (L5).
+
+**Updated scope**: Few-shot effective for judgment + process + validation knowledge. Temporal discipline excluded.
+
 ## Cross-References
 
 - Extends: KE-002 (text rules don't work), KE-058 (injected knowledge no effect)
 - Related: KE-054 (externalization boundary), KE-055 (binding closes gap)
-- Hypothesis: H-091 (SUPPORTED)
+- Hypothesis: H-091 (SUPPORTED with boundary — P(H) 0.99→0.95 after EXP-093)

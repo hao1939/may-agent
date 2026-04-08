@@ -1,12 +1,12 @@
 # H-091: Skill Delivery Methods Exist Between Text-Rules and Workflow Enforcement
 
-**Status**: Strongly Supported (EXP-084, EXP-085, EXP-086, EXP-087, EXP-089, EXP-090, EXP-091)
+**Status**: Strongly Supported (EXP-084, EXP-085, EXP-086, EXP-087, EXP-089, EXP-090, EXP-091, EXP-093)
 **Date**: 2026-04-08
-**P(H)**: 0.99
+**P(H)**: 0.95
 
 ## Statement
 
-There exist skill delivery methods between "text in context" (0% effect) and "full workflow enforcement" (100% effect) that produce measurable behavior change on judgment AND process discipline tasks. Specifically, few-shot examples, checklist injection, and echo-back self-prompting each independently improve task scores above the 0% text-rule baseline.
+There exist skill delivery methods between "text in context" (0% effect) and "full workflow enforcement" (100% effect) that produce measurable behavior change on judgment AND process discipline tasks. Specifically, few-shot examples, checklist injection, and echo-back self-prompting each independently improve task scores above the 0% text-rule baseline. However, few-shot has a **boundary at temporal discipline** — it teaches *what* to do but not *when* to do it in a tool-call sequence (EXP-093).
 
 ## Evidence
 
@@ -70,6 +70,7 @@ L1.5: Negative example → 0% (EXP-084)
 L2: Echo-back → +1.3 score (EXP-084)
 L2.5: Checklist → +2.0 score (EXP-084)
 L3: Few-shot example → +2.3 score (EXP-084)
+L3.5: Few-shot for temporal discipline → partial effect (EXP-093: C3 +40pp but C2.3 -20pp)
 L5: Workflow enforcement → +3.0 score (EXP-045)
 
 ## Open Questions
@@ -85,7 +86,7 @@ L5: Workflow enforcement → +3.0 score (EXP-045)
 - Extends: KE-002, KE-058, KE-056 (constraint hierarchy)
 - Supported by: KE-059 (updated with EXP-086 two-level transfer model)
 - Related: H-085 (forced externalization), H-089 (evidence discovery)
-- Experiments: EXP-084 (method comparison), EXP-085 (matched generalization), EXP-086 (mismatched boundary), EXP-087 (sycophants-dilemma ceiling test), EXP-091 (process discipline)
+- Experiments: EXP-084 (method comparison), EXP-085 (matched generalization), EXP-086 (mismatched boundary), EXP-087 (sycophants-dilemma ceiling test), EXP-091 (process discipline), EXP-093 (verify-after-edit temporal boundary)
 
 ### EXP-089: Combined Few-Shot + Checklist (Synergy Test)
 - **Scenario**: contradictory-requirements (0% baseline)
@@ -115,3 +116,17 @@ L5: Workflow enforcement → +3.0 score (EXP-045)
 - **Sprint 1+2 combined**: 9/9 treatment runs passed target checks (100%) vs 0/9 control (0%)
 - **Posterior update**: H-091 P(H) 0.98→0.99 — scope expanded from judgment-only to judgment + process discipline
 - **Cumulative matched few-shot**: 15/15 (100%) across 6 scenarios (5 judgment + 1 process)
+
+### EXP-093: Few-Shot Sprint 3 (verify-after-edit temporal discipline)
+- **Skill**: verify-after-edit (convention-verify-edit scenario)
+- **ARM 1 (convention-verify-edit, N=5+5)**: Mixed results
+  - C3 (explicit validation): 40%→80% (+40pp) — few-shot taught *what* to validate
+  - C2.3 (read-after-write): 40%→20% (-20pp) — few-shot did NOT teach *when* to verify
+  - Product quality: 60%→100% (+40pp) — thoroughness improved
+- **ARM 2 (read-before-edit, N=3+3)**: Ceiling effect — both control and treatment 100%, no signal
+- **Key finding**: **Few-shot has a boundary — it teaches "what to do" but not temporal discipline ("when to do it")**
+- **C3 vs C2.3 divergence**: Validation knowledge (what checks to run) transfers; tool-call sequencing habits do not
+- **Baseline shift**: Control was 40% (predicted 0%) — Bob's behavior improved since earlier measurements
+- **Posterior update**: H-091 P(H) 0.99→0.95 — first experiment showing partial failure; scope narrowed to exclude temporal discipline
+- **Cumulative matched few-shot**: 15/15 on judgment+process, but ~partial on temporal verification
+- **Implication**: Verify-after-edit (C2.3) likely requires workflow enforcement (L5), not few-shot (L3)
