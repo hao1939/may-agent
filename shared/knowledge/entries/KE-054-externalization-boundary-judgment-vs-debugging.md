@@ -76,6 +76,7 @@ Three mechanisms identified:
 | Stale context resolution | ✅ Deploy | Recognition bottleneck |
 | Multi-step bug diagnosis + fix | ❌ Do not deploy | Implementation bottleneck; overhead hurts |
 | Architectural refactoring | ❌ Do not deploy | Implementation bottleneck |
+| Missing field/element detection (no schema) | ❌ Do not deploy | Agent lacks reference for what should exist; try schema injection or cross-referencing instead |
 
 ### Alternative for Debugging: Workaround-Resistant Design
 

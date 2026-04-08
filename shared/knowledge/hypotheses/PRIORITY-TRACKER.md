@@ -1,6 +1,6 @@
 # Hypothesis Priority Tracker
 
-**Updated**: 2026-04-08 (Coach: EXP-073 Phase 2 v2-commit COMPLETE — H-088 PARTIALLY DISCONFIRMED. Binding works on v3 (3/3=100%) but FAILS on v2 (0/6=0%). Workaround availability is the critical boundary condition. P(H) 0.92→0.70.) | **Active hypotheses**: 16 | **Tested**: 16/16 | **Resolution ratio**: 13 resolved  
+**Updated**: 2026-04-08 (Bob: EXP-078 integrated — externalization recognition sub-boundary confirmed. H-085 unchanged at 0.92. Absent-field detection is a new "do not deploy" category.) | **Active hypotheses**: 16 | **Tested**: 16/16 | **Resolution ratio**: 13 resolved  
 **Bayesian scorecard**: See `SCORECARD-bayesian-2026-04-04.md` for full methodology
 
 > ✅ **MORATORIUM SATISFIED** (2026-04-07): 11 hypotheses resolved this session (H-001 disconfirmed, H-002 superseded, H-034/H-038/H-039/H-052 reclassified as design notes/truisms, H-046/H-048/H-051 archived for insufficient evidence/chain dependencies, H-064/H-065 already merged/out-of-domain). New hypotheses may now be created, subject to quality standards (falsifiable, P(H) prior ≥ 0.40, connected to empirical evidence).
@@ -15,7 +15,7 @@
 | H-041 | R (eliminable ratio) predicts workflow effectiveness — **now asymmetric veto model** | EXP-025 prospective: HURTS 83%, HELPS 0/3, 63% binary. EXP-026 8/8 directional (464 sessions). H-070 fixed-cost model refuted (EXP-051). | **0.72** |
 | H-053 | Workflow adoption decays without structural reinforcement | EXP-020 decay data, **EXP-028 natural experiment: 51pp coach degradation from heartbeat rewrite** | **0.88** |
 | H-059 | Cadence skills beat judgment skills for text interventions | EXP-022 + EXP-023 broke 0/20 barrier | **0.72** |
-| H-085 | Forced externalization is the general mechanism behind all judgment interventions | **EXP-071**: BOUNDARY DISCOVERED — 78%→83% (+5.6pp), analysis-action gap. 51/54 ext runs across 11 scenarios and 5 failure domains. **WORKING THEORY — BOUNDARY DISCOVERED**. | **0.92** |
+| H-085 | Forced externalization is the general mechanism behind all judgment interventions | **EXP-071**: BOUNDARY DISCOVERED — 78%→83% (+5.6pp), analysis-action gap. **EXP-078**: RECOGNITION SUB-BOUNDARY — 0/3 on absent-field. 51/57 ext runs across 12 scenarios and 5 failure domains. **WORKING THEORY — BOUNDARY + SUB-BOUNDARY CONFIRMED**. | **0.92** |
 | H-058 | Frustration triggers topology rewrite; forced assessment prevents it | DD#516 causal evidence (desperation→reward hacking). **EXP-048**: P1 confirmed — 0% base escalation, 100% with forced assessment. **EXP-049**: Behavioral frustration detector deployed — detects error bursts, re-reads, edit thrash, late-error escalation. Verification-gated penalty. | **0.87** |
 | H-054 | LLM judges have fundamental accuracy limits by task type | EXP-052 Phase 1+2: r=0.81 RIFT-agreement correlation (N=5). Both kappa thresholds confirmed. 19 rubrics classified (RIFT 0.17-1.00). | **0.75** |
 | H-009 | Evaluator heuristic was a rubber stamp (now mitigated) | **4 phases deployed** (finish-status scoring, semantic signals, recalibration, test detection). **EXP-039 Phase B**: LLM evaluator shows selective confirmation bias — self-narrative inflates weak sessions (Q delta -0.10), not good sessions. Phase C deployed (isolated re-eval for Q<0.6). | **0.85** |

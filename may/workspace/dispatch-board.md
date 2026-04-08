@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-08 ~05:00 UTC
+Updated: 2026-04-08 ~05:05 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
@@ -28,6 +28,7 @@ Updated: 2026-04-08 ~05:00 UTC
 | Code cleanup — green items | ✅ Done | tech-lead | 8 files, -404 lines (commit bacdecd) |
 | Code cleanup — medium items | ✅ Done | tech-lead | 4 files, +43/-37 lines (commit f7cf01b) — getAgentDir, BASH_WRITE_PATTERNS, loaded[] simplification, re-export consolidation |
 | Code cleanup — architecture review | ✅ Done | bob | Reviewed requests.ts lazy/eager + loaded[] — both safe to simplify |
+| Code cleanup — larger items impl | ⏳ In Progress | tech-lead | Dispatched: lazy→eager (4 files) + loaded[] simplification. Session s_1775624621586_505 |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -44,15 +45,14 @@ Updated: 2026-04-08 ~05:00 UTC
 | Session digest Phases 1-4b | Apr 6 | Shipped and working |
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 
-## Latest Cycle Summary (05:00)
-- **Code Cleanup SHIPPED**: Green (dead code removal, -404 lines) + Medium (helper extraction, +43/-37) — both merged, 2014 tests pass
-- **Bob Architecture Review**: requests.ts lazy→eager + loaded[] → static string — both verified safe for tech-lead to implement
-- **Optimizer Code Hygiene**: Added as recurring responsibility in SOUL.md + heartbeat.md (commit df004e3)
+## Latest Cycle Summary (05:05)
+- **Code Cleanup Larger Items**: Dispatched to tech-lead (req:79017f28) — lazy→eager requests.ts (4 files) + loaded[] simplification
+- **EXP-076 Phase 3**: Monitoring in progress — Bob had ~5 sessions since deployment, need 10 WORK sessions for signal
 - **System Health**: Zero errors across all agents. All agents self-dispatching.
 - Amy-kimi still 🔴 DOWN
 
 ## Next Actions
-- **P1**: Code cleanup — larger items: requests.ts lazy→eager (4 files), loaded[] simplification (per Bob's review)
+- **P1**: ~~Code cleanup — larger items~~ → DISPATCHED to tech-lead (session s_1775624621586_505)
 - **P1**: Monitor Bob's next 10 WORK SESSIONs for workflow adoption + error rate change (EXP-076 Phase 3)
 - **P1**: Constraint hierarchy gate in intervention design process — bob
 - **P2**: EXP-077 gym fidelity ladder — coach (can parallel with P1 items)

@@ -1,8 +1,8 @@
 # KE-053: The Gym-Production Gap Is Structural, Not Behavioral — Why Isolated Competency Tests Cannot Predict Deployed Performance
 
-**Status**: verified (experimental)
-**Evidence**: EXP-065 (production failure mode analysis, N=893 errors), EXP-066 (compound edit verification, ceiling 3/3), EXP-067 (injected_context, both scenarios ceiling 3/3)
-**Discovered**: 2026-04-07, updated 2026-04-07
+**Status**: verified (experimental, strengthened by EXP-077)
+**Evidence**: EXP-065 (production failure mode analysis, N=893 errors), EXP-066 (compound edit verification, ceiling 3/3), EXP-067 (injected_context, both scenarios ceiling 3/3), EXP-077 (fidelity ladder, 9 runs across 3 levels — cascading state identified as primary gap driver)
+**Discovered**: 2026-04-07, updated 2026-04-08
 **Author**: Bob (Architect), based on Coach's experimental results
 
 ## Core Finding
@@ -51,25 +51,56 @@ Built `injected_context` infrastructure to prepend fake session history (checkpo
 
 **Infrastructure contribution**: The `injected_context` field in gym-runner.ts is now a permanent capability. Future scenario design should combine it with ambiguous tasks and partial (not zero) ghost deliverables.
 
-## Three Structural Gaps
+### EXP-077: Fidelity Ladder (N=9, 3 levels × 3 runs)
 
-### Gap 1: Context Scale
+Systematically tested which structural gaps actually drive difficulty by building a 3-level fidelity ladder, each adding one structural element to the same base scenario (ambiguous-context-drift):
+
+| Level | Structural Element | Pass Rate | Key Failure Mode |
+|-------|-------------------|-----------|-----------------|
+| L1 (noisy context) | 38 lines of stale session history + conflicting claims | 67% (2/3) | Same as base — context-filesystem verification |
+| L2 (ambiguous task + competing priorities) | Vague task + 3 competing priorities | 100% core / 0% full | Core work perfect; documentation deliverable consistently dropped |
+| L3 (cascading state + recovery) | Broken env from crashed session + truncated files + information loss | 0% (0/3) | Partial corruption undetected (missing field in partially-correct file) |
+
+**Critical findings that refine KE-053's gap model:**
+
+1. **Content noise does NOT create difficulty** (L1 = base at 67%). This experimentally confirms KE-007: adding noisy context to a clean scenario doesn't change outcomes. Agents filter noise well. **Gap #1 (context volume) can be deprioritized.**
+
+2. **Task ambiguity does NOT create difficulty for core work** (L2 core = 100%). Agents actually performed BETTER on the ambiguous task than the specific one. But ambiguity causes documentation deliverable drops (0% wrote summary when instruction was vague "write up what you did" vs 100% when specific "write a recovery report documenting what was broken and what you fixed"). **Gap #5 (temporal pressure/ambiguity) can be deprioritized for core work.**
+
+3. **Cascading state from failures IS the primary difficulty driver** (L3 = 0%). This is the ONLY structural element that consistently defeated the agent across all runs. The mechanism is **information loss**: when prior sessions delete originals before crashing, recovery requires data the agent no longer has access to. Specifically, 3/3 runs correctly diagnosed auth.yaml was truncated and fixed `store: mem` → `store: memory`, but 0/3 detected the missing `session.max_age` field because the original auth.json (reference) was deleted by the crashed session. **Gap #2 (cascading state/tool chain complexity) is confirmed as primary driver.**
+
+4. **Partial corruption is harder than total absence**: 3/3 runs successfully recreated logging.yaml from scratch (total absence), but 0/3 fully repaired truncated auth.yaml (partial corruption). Creating from scratch uses general knowledge; repairing truncation requires the original data.
+
+5. **Documentation compliance depends on instruction specificity**: L2 "write up what you did" = 0% compliance. L3 "write a brief recovery report documenting what was broken and what you fixed" = 100% compliance. Actionable instructions → compliance; vague instructions → dropped.
+
+**Revised gap hierarchy (from 5 co-equal gaps to prioritized stack):**
+- **PRIMARY**: Cascading state from failures (Gap #2 + #3 combined) — production sessions fail, leave partial state, and successors must recover with information loss
+- **SECONDARY**: Deliverable completeness under vague instructions — agents do substantive work but skip documentation when instructions are non-specific
+- **NEGLIGIBLE**: Context noise (Gap #1), task ambiguity for core work (Gap #5)
+- **UNTESTED**: Cross-agent coordination (Gap #4) — not addressed by the fidelity ladder
+
+## Three Structural Gaps (Revised by EXP-077)
+
+### Gap 1: Context Scale — *EXP-077: NEGLIGIBLE impact*
 - **Production**: 11,229 files, 17,000+ sessions, multi-project codebase
 - **Gym**: 3-12 files, no history, clean workspace
 - **Causes**: FM-1.3 (looping in large codebases), FM-2.4 (path assumptions from partial knowledge), FM-2.1 (tool hallucination from unfamiliar surfaces)
 - **Why untestable**: Gym runner creates fresh environments. Cannot simulate accumulated cognitive load.
+- **EXP-077 finding**: L1 added 38 lines of noisy context and achieved identical 67% pass rate to base. Agents filter noise effectively. Context noise alone does not create the gap.
 
-### Gap 2: Instruction Complexity
+### Gap 2: Instruction Complexity — *EXP-077: SECONDARY impact (documentation only)*
 - **Production**: Tasks embedded in multi-page context with stale references, competing priorities, checkpoint data
 - **Gym**: Clean 5-20 line task.md files with unambiguous instructions
 - **Causes**: FM-2.6 (instruction drift under noise), FM-1.1 (process misalignment from competing signals), FM-3.1 (ghost deliverables from misunderstood completion criteria)
 - **Why untestable**: Gym runner now supports `injected_context` (EXP-067), but injecting fake checkpoints/history alone is insufficient — agents overcome it via clean task signals and tests. Full reproduction requires the conjunction of noisy context + ambiguous tasks + absent tests. Cannot simulate multi-session context accumulation at sufficient depth.
+- **EXP-077 finding**: L2 added ambiguous task + competing priorities. Core work scored 100% (better than base!). But documentation deliverables scored 0% when instructions were vague. The gap is in deliverable completeness, not task execution.
 
-### Gap 3: Compound Verification
+### Gap 3: Compound Verification — *EXP-077: PRIMARY gap (cascading state)*
 - **Production**: 3-5 interdependent file edits, implicit runtime dependencies, no integration tests for most changes
 - **Gym**: 1-3 independent files, explicit import-based dependencies, integration tests provided
 - **Causes**: FM-3.3 (verification gaps in dependency chains), FM-2.2 (accepting edits that break downstream consumers)
 - **Why partially testable**: EXP-066 attempted this but hit ceiling because explicit tests make tracing trivial. Real production has implicit/runtime dependencies.
+- **EXP-077 finding**: L3 (cascading state + recovery) scored 0/3 — the ONLY structural element that consistently defeated the agent. The mechanism is **information loss from cascading failures**: when prior sessions delete originals before crashing, recovery requires data the agent no longer has access to. Partial corruption (truncated files with some content remaining) is harder than total absence (agents recreate from scratch using general knowledge). This is the primary driver of the gym-production gap.
 
 ## Theoretical Integration
 
@@ -142,19 +173,24 @@ The gym's 96% ceiling itself may be an artifact of H-054's evaluation ceiling �
 | #1 failure mode (FM-3.3) | 165 entries (18.5%) — behavioral, not competency |
 | EXP-066 compound verification | 3/3 ceiling — confirms competency not the issue |
 | EXP-067 injected context | 6/6 ceiling (2 scenarios) — confirms infrastructure innovation alone insufficient |
+| EXP-077 L1 (noisy context) | 67% (2/3) — same as base, context noise has negligible impact |
+| EXP-077 L2 (ambiguous task) | 100% core / 0% documentation — ambiguity doesn't affect core work |
+| EXP-077 L3 (cascading state) | 0% (0/3) — primary gap driver, information loss from failed sessions |
 
 ## Links
 
 - **synthesizes** → EXP-065 (production-gym gap analysis, N=893 errors)
 - **synthesizes** → EXP-066 (compound edit verification, 3/3 ceiling)
 - **synthesizes** → EXP-067 (injected_context, 6/6 ceiling — infrastructure innovation cannot close the gap)
+- **synthesizes** → EXP-077 (fidelity ladder, 9 runs across 3 levels — cascading state is primary gap driver, context noise and task ambiguity are negligible)
 - **extends** → KE-052 (structural access thesis — gym-production gap is access degradation)
 - **confirms** → KE-013 (task boundedness drives quality — gym is maximally bounded)
 - **extends** → KE-043 (forced externalization — explains why gym auto-forces but production doesn't)
+- **confirms** → KE-007 (content noise doesn't create difficulty — EXP-077 L1 confirms experimentally)
 - **connects** → H-054 (evaluation R-ceiling — gym evaluators may also have accuracy limits)
 - **supports** → KE-050 (robustness is architectural — production adds architectural complexity gym lacks)
 - **confirms** → EXP-041b, EXP-061 (gym skills have zero effect because gym already forces correct behavior)
 
 ---
 
-*KE-053 | Bob (Architect) | 2026-04-07 | Synthesis of EXP-065/066/067*
+*KE-053 | Bob (Architect) | 2026-04-07, updated 2026-04-08 | Synthesis of EXP-065/066/067/077*
