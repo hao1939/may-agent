@@ -176,9 +176,9 @@ function getRemote(agentsDir: string): string | null {
 }
 
 /**
- * Pull from remote before committing. Picks up changes pushed from other
- * instances (e.g. local dev machine). Uses stash + rebase to stay linear.
- * Best-effort — failures are logged but don't block the commit.
+ * Pull from remote. Commit any local changes first (including untracked)
+ * to avoid conflicts with incoming files, then rebase onto remote.
+ * Best-effort — failures are logged but don't block.
  */
 function tryPull(agentsDir: string, remote: string, log: (msg: string) => void): void {
   try {
@@ -194,34 +194,40 @@ function tryPull(agentsDir: string, remote: string, log: (msg: string) => void):
 
     if (behind === "0") return;
 
+    // Commit everything first — prevents untracked file conflicts during rebase
     const hasChanges = git("git status --porcelain", {
       cwd: agentsDir,
       timeout: 5_000,
     }).trim();
 
     if (hasChanges) {
-      git("git stash --include-untracked", { cwd: agentsDir, timeout: 10_000 });
+      git("git add -A", { cwd: agentsDir, timeout: 10_000 });
+      try {
+        git('git commit -m "chore(auto): commit before sync" --no-verify', {
+          cwd: agentsDir,
+          timeout: 15_000,
+        });
+      } catch {
+        // nothing to commit
+      }
     }
 
+    // Rebase onto remote — keeps history linear
     try {
       git(`git rebase ${remote}/main`, {
         cwd: agentsDir,
         timeout: 30_000,
       });
-      log(`[agents-auto-commit] pulled ${behind} commit(s) from ${remote}`);
+      log(`[agents-auto-commit] rebased onto ${remote} (${behind} commits)`);
     } catch {
-      git("git rebase --abort", { cwd: agentsDir, timeout: 5_000 });
-      log(`[agents-auto-commit] rebase conflict during pull — skipped`);
-    }
-
-    if (hasChanges) {
+      // Rebase conflict — abort and fall back to merge
+      try { git("git rebase --abort", { cwd: agentsDir, timeout: 5_000 }); } catch {}
       try {
-        git("git stash pop", { cwd: agentsDir, timeout: 10_000 });
+        git(`git merge -X ours ${remote}/main --no-edit`, { cwd: agentsDir, timeout: 30_000 });
+        log(`[agents-auto-commit] rebase conflict, fell back to merge`);
       } catch {
-        // Stash pop conflict — drop it, the files are already on disk
-        git("git checkout -- .", { cwd: agentsDir, timeout: 5_000 });
-        git("git stash drop", { cwd: agentsDir, timeout: 5_000 });
-        log(`[agents-auto-commit] stash pop conflict — dropped stash`);
+        try { git("git merge --abort", { cwd: agentsDir, timeout: 5_000 }); } catch {}
+        log(`[agents-auto-commit] sync failed — will retry next cycle`);
       }
     }
   } catch (err) {
