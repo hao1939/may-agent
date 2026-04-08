@@ -1,0 +1,8 @@
+{
+  "name": "cascading-fix-trap-v3-ke054",
+  "description": "cascading-fix-trap-v3 with externalization task AND KE-054 knowledge injected. Tests whether agent applies domain-boundary knowledge to skip/minimize analysis on a debugging task.",
+  "difficulty": "hard",
+  "time_limit": 300,
+  "target_failure_modes": ["FM-1.3"],
+  "injected_context": "injected_context.md"
+}

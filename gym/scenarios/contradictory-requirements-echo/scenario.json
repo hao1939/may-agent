@@ -1,0 +1,10 @@
+{
+  "name": "contradictory-requirements-echo",
+  "description": "Self-prompting variant: Agent must write a brief understanding document before starting work, creating a micro-externalization moment.",
+  "categories": ["judgment"],
+  "tags": ["behavior", "contradiction", "self-prompting", "exp-083"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "work_dir_setup": "copy"
+}

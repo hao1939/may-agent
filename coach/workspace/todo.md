@@ -269,6 +269,17 @@
   - H-085 boundary updated: domain-specific mechanism, not universal
 
 ### Next (Priority Order)
+0. **🔴 IT-46: KE-002 Reexamination Experiment** (P0, from Hao via reflection-2026-04-08-05)
+   - Hao challenged KE-002 ("text rules don't work"): text rules ARE the primary method for guiding agents. The finding may be oversimplified.
+   - Design experiment testing CATEGORIES of text rules: (a) identity/role, (b) procedural compliance, (c) preference, (d) skill/technique
+   - Use broader gym scenarios + new metrics (compliance vs quality vs guidance)
+   - Track as EXP-077 in knowledge/experiments/
+0. **🟡 IT-47: Knowledge Application Pipeline** (P0, from Hao via reflection-2026-04-08-05)
+   - Hao: "experiment the knowledge and try to make use of it, or it's dead knowledge"
+   - **EXP-082 Test 1 COMPLETE**: KE-054 injected into debugging task → 0/3 application rate. P(applies|pushed) ≈ 0.
+   - **Created KE-058**: Injected declarative knowledge has no effect on agent behavior
+   - Remaining: Test 2 (KE-010 ceiling effect) and Test 3 (KE-002 text rules) — need meta-task scenarios
+   - Key finding: Even with perfect delivery, agents don't USE knowledge. Must encode as structural constraints.
 1. **Deploy L5 strict workflow for destructive operations** — Proven across 3 scenarios. Only mechanism for sycophancy (EXP-025: 3/6→9/9, EXP-043: 0%→100%, 50%→100%).
 2. ~~**EXP-073: Binding Analysis for Debugging**~~ **COMPLETE** — Phase 1 (v3-binding): 3/3=100% gap closed. Phase 2 (v2-commit): 0/6=0% binding fails when workarounds available. Binding only works on constrained scenarios. H-088 P(H) 0.92→0.70. Workaround availability is the critical boundary condition.
 3. ~~**Method 23: AECRM context audit**~~ **CLOSED (EXP-074)** — FM-3.1 is ceiling in gym (100% on both scenarios). Structurally untestable: finish() infra + single-session + small env prevent ghost deliverables. KE-002 predicts rubric (text injection) = 0% anyway. Recommend production A/B instead.

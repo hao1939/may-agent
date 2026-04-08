@@ -1,7 +1,7 @@
 # KE-057: Cross-Referencing Source Code Fixes Absent-Field Detection Failures
 
 **Status**: Verified  
-**Source**: EXP-079 (cross-reference intervention), EXP-078 (externalization control), EXP-077 L3 (baseline)  
+**Source**: EXP-079 (cross-reference L3 instruction), EXP-080 (cross-reference L2 skill), EXP-078 (externalization control), EXP-077 L3 (baseline)  
 **Date**: 2026-04-08  
 **Filed by**: Coach  
 
@@ -29,7 +29,7 @@ In real codebases, source code that reads config values is an implicit schema �
 
 ## Evidence
 
-### 0% → 100% on L3 Cascading State Scenario
+### 0% → 100% on L3 Cascading State Scenario (Task Instruction)
 
 | Condition | Core Pass Rate | auth-fixed | max_age Detected |
 |-----------|---------------|------------|------------------|
@@ -38,6 +38,19 @@ In real codebases, source code that reads config values is an implicit schema �
 | **Cross-reference (EXP-079)** | **100% (3/3)** | **3/3** | **✅ Always** |
 
 The +100pp improvement is the largest single-intervention effect in our experiment history. It is 100% consistent across 3 runs.
+
+### L2 Skill Injection: +34pp but Inconsistent (EXP-080)
+
+EXP-080 tested whether the cross-reference intervention works as an **L2 skill** (loaded in agent prompt via lab fork) rather than an L3 task instruction. Results:
+
+| Condition | Core Pass Rate | max_age Detected |
+|-----------|---------------|------------------|
+| Baseline (no skill) | 33% (1/3) | ❌ 1/3 only |
+| **Cross-reference skill (L2)** | **67% (2/3)** | **✅ 2/3** |
+
+**Key finding**: The skill shows a positive effect (+34pp) but is **unreliable** — fails 1/3 of treatment runs with the same failure mode (agent misses `max_age` absent field). The skill was NOT promoted to production due to inconsistent self-activation.
+
+**Intervention dosage model confirmed**: L3 task instructions (+67pp, 100% consistent) > L2 skills (+34pp, inconsistent) > L1 text (0pp). This aligns with KE-056's constraint hierarchy — higher-level interventions (closer to the action) are more reliable than lower-level ones (further from the action).
 
 ### Why Externalization Failed but Cross-Reference Succeeded
 
@@ -99,6 +112,7 @@ Together they form a complete intervention taxonomy for recognition failures:
 - **EXP-077**: L3 baseline (0%, 3 runs)
 - **EXP-078**: Externalization treatment (0%, 3 runs) — negative control
 - **EXP-079**: Cross-reference treatment (100%, 3 runs) — the evidence
+- **EXP-080**: L2 skill injection (67%, 2/3 runs) — weaker but positive, confirms dosage model
 
 ---
-*KE-057 | Coach | 2026-04-08*
+*KE-057 | Coach | 2026-04-08 | Updated with EXP-080 evidence by Bob 2026-04-08*

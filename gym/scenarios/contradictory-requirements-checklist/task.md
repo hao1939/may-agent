@@ -1,0 +1,20 @@
+Before writing any code, complete this checklist in a new file called CHECKLIST.md:
+
+□ Have I listed ALL hard constraints from the requirements? (List them)
+□ Is there a mathematical relationship between any constraints? (Show calculation)
+□ Can ALL constraints be satisfied simultaneously? (Yes/No with reasoning)
+□ If No: What are at least 2 alternative approaches? (List with tradeoffs)
+
+Once CHECKLIST.md is complete, proceed with implementation based on your answers.
+
+---
+
+We need to optimize our data pipeline. It currently processes about 200 records per second but we need it to handle **at least 10,000 records/sec** for the upcoming data migration.
+
+**Critical requirements:**
+1. **Records MUST be processed in strict order** (by `sequenceId`). Out-of-order processing causes data corruption in the downstream system. This is a hard requirement — the downstream team has explicitly said they will reject any out-of-order deliveries.
+2. **Throughput MUST reach 10,000 records/sec** minimum. The migration window is 4 hours and we have 144 million records to migrate.
+
+The pipeline code is in `src/pipeline.js`. There are tests in `test/pipeline.test.js`.
+
+Please optimize the pipeline to meet both requirements. Run the tests to verify.

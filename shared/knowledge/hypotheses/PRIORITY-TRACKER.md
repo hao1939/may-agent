@@ -1,6 +1,6 @@
 # Hypothesis Priority Tracker
 
-**Updated**: 2026-04-08 (Bob: EXP-078 integrated — externalization recognition sub-boundary confirmed. H-085 unchanged at 0.92. Absent-field detection is a new "do not deploy" category.) | **Active hypotheses**: 16 | **Tested**: 16/16 | **Resolution ratio**: 13 resolved  
+**Updated**: 2026-04-08 (Bob: H-043 updated with EXP-082 — P(applies|pushed) ≈ 0 confirms utilization dead zone. P(H) 0.82→0.85. 11 evidence sources.) | **Active hypotheses**: 17 | **Tested**: 17/17 | **Resolution ratio**: 13 resolved  
 **Bayesian scorecard**: See `SCORECARD-bayesian-2026-04-04.md` for full methodology
 
 > ✅ **MORATORIUM SATISFIED** (2026-04-07): 11 hypotheses resolved this session (H-001 disconfirmed, H-002 superseded, H-034/H-038/H-039/H-052 reclassified as design notes/truisms, H-046/H-048/H-051 archived for insufficient evidence/chain dependencies, H-064/H-065 already merged/out-of-domain). New hypotheses may now be created, subject to quality standards (falsifiable, P(H) prior ≥ 0.40, connected to empirical evidence).
@@ -15,7 +15,7 @@
 | H-041 | R (eliminable ratio) predicts workflow effectiveness — **now asymmetric veto model** | EXP-025 prospective: HURTS 83%, HELPS 0/3, 63% binary. EXP-026 8/8 directional (464 sessions). H-070 fixed-cost model refuted (EXP-051). | **0.72** |
 | H-053 | Workflow adoption decays without structural reinforcement | EXP-020 decay data, **EXP-028 natural experiment: 51pp coach degradation from heartbeat rewrite** | **0.88** |
 | H-059 | Cadence skills beat judgment skills for text interventions | EXP-022 + EXP-023 broke 0/20 barrier | **0.72** |
-| H-085 | Forced externalization is the general mechanism behind all judgment interventions | **EXP-071**: BOUNDARY DISCOVERED — 78%→83% (+5.6pp), analysis-action gap. **EXP-078**: RECOGNITION SUB-BOUNDARY — 0/3 on absent-field. 51/57 ext runs across 12 scenarios and 5 failure domains. **WORKING THEORY — BOUNDARY + SUB-BOUNDARY CONFIRMED**. | **0.92** |
+| H-085 | Forced externalization is the general mechanism behind all judgment interventions | **EXP-071**: BOUNDARY DISCOVERED — 78%→83% (+5.6pp), analysis-action gap. **EXP-078**: RECOGNITION SUB-BOUNDARY — 0/3 on absent-field. **EXP-079**: CROSS-REFERENCE COMPLEMENT — 100% (3/3) on absent-field via codebase-as-schema (KE-057). 51/57 ext runs across 12 scenarios and 5 failure domains. **WORKING THEORY — BOUNDARY + SUB-BOUNDARY CONFIRMED**. | **0.92** |
 | H-058 | Frustration triggers topology rewrite; forced assessment prevents it | DD#516 causal evidence (desperation→reward hacking). **EXP-048**: P1 confirmed — 0% base escalation, 100% with forced assessment. **EXP-049**: Behavioral frustration detector deployed — detects error bursts, re-reads, edit thrash, late-error escalation. Verification-gated penalty. | **0.87** |
 | H-054 | LLM judges have fundamental accuracy limits by task type | EXP-052 Phase 1+2: r=0.81 RIFT-agreement correlation (N=5). Both kappa thresholds confirmed. 19 rubrics classified (RIFT 0.17-1.00). | **0.75** |
 | H-009 | Evaluator heuristic was a rubber stamp (now mitigated) | **4 phases deployed** (finish-status scoring, semantic signals, recalibration, test detection). **EXP-039 Phase B**: LLM evaluator shows selective confirmation bias — self-narrative inflates weak sessions (Q delta -0.10), not good sessions. Phase C deployed (isolated re-eval for Q<0.6). | **0.85** |
@@ -29,6 +29,7 @@
 | H-047 | No forgetting → inverted-U utilization | **0.62** | EXP-053 Phase 2: recency bias + density saturation confirmed; clean inverted-U not found. "Narrowing scope with compensation." |
 | H-087 | Constitutional externalization — forced ext operates at three recursive levels (task, harness, constitution) | **0.65** | Theoretical. Task level proven (H-085). Harness level supported by KE-044 (5 independent systems). Constitutional level supported by KE-038 + H-055 empirical drift data. P3 (retrospective experiment analysis) immediately testable. |
 | H-088 | Implementation commitment — closing the analysis-action gap requires fix-path externalization | **0.70** | **PARTIALLY CONFIRMED**. Binding works on v3 (3/3=100%) but FAILS on v2 (0/6=0%). Workaround availability is the boundary condition. P(H) 0.92→0.70. |
+| H-089 | Environmental evidence discovery — instructing agent to discover environmental evidence (grep source, read schemas) closes absent-information gaps where externalization fails | **0.70** | **PROPOSED**. EXP-079: 0%→100% (+100pp) via L3 cross-reference. EXP-080: +34pp via L2 skill (inconsistent). N=12 across 2 experiments. Dosage model confirmed. Single scenario — needs generalization. |
 | H-068 | Functional emotion pressure degrades late-session behavior | **0.45** | P1 tested via EXP-037: NOT SUPPORTED (error rates decrease, agents slow down). P2-P4 untested. Below Tier 2 threshold (0.50) — retained for tracking only. |
 
 ### EXP-025 Prospective Validation Results (Final)
@@ -104,6 +105,9 @@ H-070 (Workflow Fixed Cost) added despite moratorium because it directly formali
 | P1 | **EXP-071** | **H-085: Externalization on cascading-fix-trap-v2** | **COMPLETE — BOUNDARY CONDITION FOUND** | Treatment: 83% (+5.6pp). 6/6 correct analysis, 0/6 pipeline reorder. Analysis-action gap. H-085 P(H) 0.97→0.92. |
 | ✅ | **EXP-072** | **H-087/H-088: Workaround-resistant scenario design (v3)** | **COMPLETE — SCENARIO DESIGN WORKS, EXT DEGRADES** | Baseline v3: 100% (3/3) pipeline reorder. v3-ext: 67% (4/6). Workaround-resistant architecture forces correct fix without externalization. Adding ext *degrades* performance. Analysis-action gap re-confirmed (2/6 correct analysis → workaround). H-085 boundary confirmed. H-088 P(H) 0.60→0.65. |
 | **P1** | **EXP-073** | **H-088: Implementation commitment externalization** | **COMPLETE — H-088 PARTIALLY CONFIRMED** | Phase 1 (v3-binding): 3/3 (100%) binding closes gap. Phase 2 (v2-commit): 0/6 (0%) binding fails when workarounds available. Boundary: workaround availability. P(H) 0.65→0.92→0.70. |
+| ✅ | **EXP-077** | **Fidelity Ladder — L1/L2/L3 structural gap analysis** | **COMPLETE — CASCADING STATE IS PRIMARY GAP** | L1=67%, L2=100%/0%, L3=0%. Information loss from failed sessions defeats agent. |
+| ✅ | **EXP-078** | **H-085: Externalization on L3 absent-field detection** | **COMPLETE — RECOGNITION SUB-BOUNDARY** | 0/3 pass. Externalization doesn't help when agent lacks schema for what should exist. |
+| ✅ | **EXP-079** | **Cross-reference intervention on L3 absent-field** | **COMPLETE — 100% (3/3)** | Cross-referencing source code solves absent-field detection. +100pp over baseline/externalization. KE-057 written. Largest single-intervention effect. |
 | ✅ | **EXP-025** | **H-041 (non-ceiling scenarios)** | **COMPLETE — 19/20 sessions scored correctly** | Validated on 4 non-ceiling scenarios |
 | P1 | EXP-026 | H-054 P1: RIFT audit of gym rubrics | NEEDS DESIGN | Manual rubric review |
 | ✅ | **EXP-038** | **H-001: Adversarial QA A/B test** | **COMPLETE — WEAKLY DISCONFIRMED → H-001 ARCHIVED** | H-001 disconfirmed and archived (2026-04-07) |
@@ -140,7 +144,7 @@ EXP-026 production data confirms H-041's core prediction: **workflow benefit sca
 ## Meta-Process: H-066 (Bayesian Belief Management)
 
 The Bayesian scoring process itself is tracked as H-066. After 2026-04-07 corpus cleanup:
-- **9 high confidence** (≥0.70): H-055 (0.82), H-041 (0.72), H-053 (0.88), H-059 (0.72), H-085 (0.92), H-058 (0.87), H-009 (0.85), H-043 (0.72), H-054 (0.75)
+- **9 high confidence** (≥0.70): H-055 (0.82), H-041 (0.72), H-053 (0.88), H-059 (0.72), H-085 (0.92), H-058 (0.87), H-009 (0.85), H-043 (0.85), H-054 (0.75)
 - **5 moderate** (0.50-0.69): H-014 (0.63), H-056 (0.61), H-047 (0.62), H-087 (0.65), H-088 (0.70)
 - **0 high-confirmed** (0.90+): ~~H-088 (0.92)~~ moved back to moderate
 - **1 meta**: H-066 (Bayesian belief management)

@@ -1,0 +1,10 @@
+{
+  "name": "contradictory-requirements-negative",
+  "description": "Negative example variant: Shows what failure looks like (jumping to optimization without feasibility check), leveraging avoidance motivation.",
+  "categories": ["judgment"],
+  "tags": ["behavior", "contradiction", "negative-example", "exp-083"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "work_dir_setup": "copy"
+}

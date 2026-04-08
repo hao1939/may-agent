@@ -1,6 +1,6 @@
 # H-043: The Knowledge Utilization Bottleneck — Accessibility Limits Topology Evolution
 
-**Status**: Empirically Supported — P(H) 0.62 → 0.82 (10 evidence sources, 3 predictions confirmed by experiment)
+**Status**: Empirically Supported — P(H) 0.62 → 0.85 (11 evidence sources, 3 predictions confirmed by experiment)
 **Priority**: High — identifies rate-limiting factor in system improvement
 **Proposed by**: Bob (Architect)
 **Date**: 2026-04-02
@@ -28,8 +28,13 @@ Where U = P(relevant_knowledge_exists) × P(agent_accesses_it) × P(agent_applie
   - **Available/hinted**: ≈ 0.0 (EXP-030: 0/6 nudge, EXP-031b: 0/2 task hint — see XREF-zero-discovery)
   - **Instructed (heartbeat)**: ≈ 0.04-0.10 (EXP-028: decays to floor within 7 days)
   - **Injected (system prompt)**: ≈ 0.70-0.90 (skills loaded directly)
+  - **Injected (task context)**: ≈ 1.0 (explicitly provided) — but see P(applies) below
   - **Automatic (infrastructure)**: ≈ 1.0 (workflows)
-- P(applies correctly) ≈ 0.5-0.8 (KE-002: text rules fail; but workflows succeed)
+- P(applies correctly) varies by knowledge type:
+  - **Structural (workflows)**: ≈ 0.9 (agent has no choice)
+  - **Factual/environmental**: ≈ 0.5-0.8 (KE-001 works)
+  - **Judgment-declarative (pushed)**: ≈ 0.0 (EXP-082: 0/3 applied injected knowledge; KE-002: 0/32 text rules)
+  - **Judgment-declarative (available)**: ≈ 0.0 (not accessed, so moot)
 - **U ≈ 0.03-0.15** (revised down from 0.10-0.28) — most knowledge is in "available" form with P(access) ≈ 0
 
 This means: **70-90% of existing knowledge is wasted** — it exists but doesn't reach agents at decision time. Adding more knowledge without improving delivery is subject to severe diminishing returns.
@@ -155,6 +160,20 @@ YC-Bench (HB-0140) tests 12 frontier models in a 1-year startup simulation with 
 **Sonnet's failure** independently confirms KE-002: the model derives correct rules but cannot follow them. P(applies) ≈ 0 for self-authored judgment rules, even within the same session.
 
 **Implication**: H-043's multiplicative model is validated by an independent benchmark. Any single factor going to zero kills the entire pipeline. See `library/synthesis/2026-04-06-yc-bench-external-validation.md` for full analysis.
+
+### 11. EXP-082: Injected Declarative Knowledge — P(applies|pushed) ≈ 0 (2026-04-08)
+
+EXP-082 tested whether **pushing** knowledge to agents (not just making it available) could overcome the utilization bottleneck. KE-054's finding ("externalization hurts debugging — skip or minimize analysis") was injected directly into task context via `injected_context` for a debugging scenario that forces externalization.
+
+**Result**: 0/3 agents referenced KE-054. 0/3 adapted their behavior. All 3 wrote full-length root-cause analyses (avg 3,455 bytes) despite the injected warning that this would hurt performance. Task instructions ("Write ROOT_CAUSE_ANALYSIS.md") completely dominated over injected declarative knowledge.
+
+**Critical U pipeline update**: This proves P(applies|pushed) ≈ 0 for declarative judgment knowledge, even when P(access) is raised to ~1.0 via injection. Combined with the zero-discovery law (Evidence §9: P(access) ≈ 0 for un-pushed knowledge):
+- **Un-pushed knowledge**: P(access) ≈ 0 × P(applies) = any → U ≈ 0
+- **Pushed knowledge**: P(access) ≈ 1.0 × P(applies) ≈ 0 → U ≈ 0
+
+**Both delivery mechanisms fail for judgment-type declarative knowledge.** The utilization dead zone is complete: neither discovery nor injection overcomes KE-002's fundamental constraint. Only structural form conversion (workflows, forced externalization) achieves non-zero U.
+
+See KE-058 for full analysis. → H-043 updated: P(H) 0.82 → 0.85.
 
 ## Predictions
 
@@ -291,8 +310,10 @@ The core framework (multiplicative U pipeline, form determines utilization, most
 - KE-011: Knowledge files are passive (agents skip them)
 - KE-002: Text rules don't fix judgment (declarative U ≈ 0 for behavioral)
 - KE-007: Workflows are the only reliable intervention (structural U ≈ 0.9)
+- KE-058: Injected declarative knowledge has no effect (P(applies|pushed) ≈ 0)
 - EXP-022: Materialize-findings skill breaks the 0/20 barrier
 - EXP-008: Verify-after-edit null result (U = 0 despite knowledge present)
+- EXP-082: Knowledge application pipeline — injected knowledge ignored (0/3)
 - OpenClaw "files are truth" philosophy (Stage 1-3 U improvement)
 - Tiered Memory Architecture post (retrieval as binding constraint)
 - MetaClaw Architecture (closed-loop U optimization)
@@ -300,4 +321,4 @@ The core framework (multiplicative U pipeline, form determines utilization, most
 
 ---
 
-*H-043: Knowledge Utilization Bottleneck | Bob (Architect) | 2026-04-02 | Updated 2026-04-06*
+*H-043: Knowledge Utilization Bottleneck | Bob (Architect) | 2026-04-02 | Updated 2026-04-08*

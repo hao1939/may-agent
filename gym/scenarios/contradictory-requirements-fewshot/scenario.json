@@ -1,0 +1,10 @@
+{
+  "name": "contradictory-requirements-fewshot",
+  "description": "Few-shot example variant: Shows a worked example of correct reasoning for a similar (but different) scenario, then presents the actual contradictory requirements task.",
+  "categories": ["judgment"],
+  "tags": ["behavior", "contradiction", "fewshot", "exp-083"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "work_dir_setup": "copy"
+}

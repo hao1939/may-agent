@@ -1,0 +1,10 @@
+{
+  "name": "contradictory-requirements-checklist",
+  "description": "Checklist injection variant: Task includes a mandatory pre-work checklist with binary yes/no gates that must be completed before coding.",
+  "categories": ["judgment"],
+  "tags": ["behavior", "contradiction", "checklist", "exp-083"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "work_dir_setup": "copy"
+}
