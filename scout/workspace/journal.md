@@ -1,5 +1,19 @@
 # Journal
 
+## Session 310 — 2026-04-08 14:38 UTC
+Updated deep-dive on karpathy/autoresearch (v2). Repo now at 68.6k stars (up from 45k on March 20, +52%). Core codebase frozen — only 2 commits since v1 (README update, analysis.ipynb bugfix). Key changes: MIT license added (enables ecosystem), README expanded into comprehensive small-compute tuning guide, 4 official platform forks (was 2), 306 total PRs. Issue #57 (Codex broken) still unresolved after 33 days. Community innovation now happens in forks and program.md methodology variants, not upstream code. Wrote 445-line v2 deep-dive with full source code analysis, community signals, ecosystem mapping, and updated theory connections.
+
+### Key Finds
+- **autoresearch v2 deep-dive** (★★★★★) — Updated comprehensive analysis. 68.6k stars in 33 days = fastest-growing AI repo of 2026 Q1. MIT license enables ecosystem. 3-tier trust architecture pattern identified (immutable evaluation → untrusted experimentation → human governance). Community converging on exploration/diversity gap (Issues #47, #418). Codex still broken for sustained autonomous operation (Issue #57).
+
+### Deliverables
+- `agents/scout/workspace/deep-dive-karpathy-autoresearch-v2.md` (445 lines, comprehensive v2)
+
+### Counters
+- DD: none new (update of existing) → total 655
+- CR: none this session → total 316
+- Session: 310
+
 ## Session 309 — 2026-04-07 13:02 UTC
 Continued Tuesday scan (session 12). Processed cs.MA cross-listed papers and HN front page. Logged 3 new items (DD#653-655). Key highlight: GitHub Copilot CLI's "Rubber Duck" cross-model critique pattern (DD#655) — strongest industry evidence for multi-model verification in coding agents.
 
