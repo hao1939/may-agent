@@ -1,9 +1,9 @@
 # KE-059: Few-Shot Examples Break the Text-Rule Binary
 
 **Status**: Verified
-**Source**: EXP-084 (Skill Training Method Comparison), EXP-085 (Few-Shot Cross-Scenario Generalization)
+**Source**: EXP-084 (Skill Training Method Comparison), EXP-085 (Few-Shot Cross-Scenario Generalization), EXP-087 (Structural Similarity Boundary)
 **Date**: 2026-04-08
-**Confidence**: Medium-High (N=16 across 2 scenarios, consistent direction, cross-scenario replication)
+**Confidence**: Medium-High (N=28 across 2 scenarios + boundary test, consistent direction, cross-scenario replication, boundary conditions identified)
 
 ## Finding
 
@@ -38,9 +38,24 @@ EXP-085 tested few-shot delivery on a DIFFERENT scenario — escalation-judgment
 
 Cross-scenario effect: +87.5pp over baseline. The worked example from contradictory-requirements transferred successfully to escalation-judgment — agents learned the pattern (analyze → identify issue → document findings) from a different domain and applied it correctly.
 
+### Structural Similarity Boundary (EXP-087)
+
+EXP-087 tested MISMATCHED few-shot examples — using an example from one domain on the other:
+
+| Condition | Escalation Pass Rate | Contradictory Pass Rate |
+|-----------|---------------------|------------------------|
+| Baseline (no example) | 1/8 (12.5%) | 0/16 (0%) |
+| **Mismatched few-shot** | **0/3 (0%)** | **2/3 (67%)** |
+| Matched few-shot (EXP-084/085) | 3/3 (100%) | 1/3 (33%) |
+
+**Critical finding**: Domain match is NOT the key factor — **behavioral template compatibility** is:
+- Escalation + contradictory example = 0/3 (HARMFUL). Agent produced ANALYSIS.md instead of ESCALATION.md, faithfully reproducing the wrong output format.
+- Contradictory + escalation example = 2/3 (HELPFUL, better than matched!). The escalation example may demonstrate more thorough investigation.
+- Few-shot teaches output format as strongly as reasoning pattern. When the template's output format conflicts with the task, it actively misdirects (p=0.018 for contradictory mismatched vs baseline).
+
 ## Mechanism
 
-A worked example provides a template for HOW to reason, not just WHAT to do. The agent learns the pattern (analyze → identify tension → propose alternatives) from seeing it applied to a different domain, then transfers it.
+A worked example provides a template for HOW to reason, not just WHAT to do. The agent learns the pattern (analyze → identify tension → propose alternatives) from seeing it applied to a different domain, then transfers it. **However, the template also encodes output format (artifact type, structure), and the agent reproduces both the reasoning pattern AND the output format.** When these conflict with the target task, the example actively harms performance (EXP-087).
 
 This is distinct from text rules which state the desired behavior abstractly, and from workflows which force the behavior structurally.
 
@@ -62,6 +77,8 @@ This is distinct from text rules which state the desired behavior abstractly, an
 3. **Judgment gap persists**: Even the best lightweight method varies (33% on original scenario, 100% on simpler scenario) — task difficulty modulates effectiveness
 4. **Generative reasoning is hardest**: Agents can identify problems (100%) but struggle to propose alternatives (33%)
 5. **Combined methods untested**: Few-shot + checklist combined might bridge remaining gaps
+6. **Behavioral template compatibility is key** (EXP-087): Match the *output format and behavioral pattern* to the target task, not just the domain. An example from a different domain that produces the right kind of artifact is better than a same-domain example with wrong output structure.
+7. **Few-shot can actively harm** (EXP-087): Mismatched output format (e.g., ANALYSIS.md when ESCALATION.md is needed) misdirects agents — they faithfully reproduce the wrong template. This means few-shot design requires careful attention to output format compatibility.
 
 ## Cross-References
 

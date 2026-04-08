@@ -319,6 +319,18 @@
 - **Key finding**: L3 few-shot effect is task-difficulty-dependent — 100% on moderate tasks (escalation-judgment) vs 33% on hard tasks (contradictory-requirements). The L3-L4 gap may not be a fixed chasm but a gradient modulated by task complexity.
 - **Next priorities**: (1) Run EXP-070 (externalization on ambiguous-context-drift, baseline 67%), (2) Design next experiment for H-091 (combined methods? harder scenarios?)
 
+## Session Notes (2026-04-08 ~13:33)
+- [x] **EXP-087 INTEGRATION COMPLETE**: All knowledge base files updated with EXP-087 results (structural similarity boundary test — domain match irrelevant, behavioral template compatibility is key).
+- **Files modified** (6 files):
+  1. **H-091**: P(H) 0.85→0.88. EXP-087 evidence section added. Open Q#4 ANSWERED (behavioral template boundary confirmed).
+  2. **KE-059**: Source + confidence updated (N=28). EXP-087 boundary section added with results table. Mechanism section refined. Two new implications (template compatibility, few-shot can harm).
+  3. **KE-060**: Experiment range EXP-084→087. L3 few-shot row updated. L3-L4 gap section revised (template design matters). Research thread updated.
+  4. **INDEX.md**: EXP-087 experiment row added. KE-059 and KE-060 rows updated.
+  5. **PRIORITY-TRACKER**: Header updated. H-091 row updated (P(H) 0.85→0.88, 28 runs, Q#4 answered).
+  6. **todo.md**: Session notes added.
+- **Key finding**: Few-shot works via behavioral template transfer, not domain similarity. Output format mismatch actively harms (0/3). Compatible templates help even cross-domain (2/3=67%). This refines our understanding of L3 delivery — it's not just "add an example" but "match the behavioral template."
+- **Next priorities**: (1) Test correct-format + wrong-domain example to isolate format vs domain, (2) Test combined few-shot (both domain examples), (3) Increase N for underpowered comparisons.
+
 ## Session Notes (2026-04-08 ~11:50)
 - [x] **KE-060 WRITTEN**: Unified Agent Intervention Taxonomy — The Three Mechanisms. Synthesizes H-085 (Analysis Activation/M1), H-089 (Evidence Discovery/M2), H-091 + KE-056 (Structural Constraint/M3) into complete diagnostic framework. 200+ runs across 40+ experiments. Includes diagnostic decision tree, 2×2 matrix (information × solution space), refined delivery hierarchy (L0–L5), and analysis-action gap boundary. Six open questions identified for future work.
 - **Coach running EXP-085** (few-shot generalization). EXP-070 still DESIGNED/unrun.
