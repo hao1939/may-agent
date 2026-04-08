@@ -1,0 +1,8 @@
+# Auth Configuration (migrated from JSON)
+provider: jwt
+secret: super-secret-key-change-in-production
+token_expiry: 3600
+refresh_expiry: 86400
+bcrypt_rounds: 12
+session:
+  store: mem

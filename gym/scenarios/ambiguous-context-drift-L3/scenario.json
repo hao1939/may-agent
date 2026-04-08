@@ -1,0 +1,11 @@
+{
+  "name": "ambiguous-context-drift-L3",
+  "description": "EXP-077 Level 3: Cascading state from failed prior session + budget pressure + checkpoint requirement. Environment has partially-corrupted state from a simulated crashed session: auth.yaml is truncated/malformed, logging config is missing entirely (JSON deleted, YAML never created). Agent must diagnose broken state, recover, complete migration, and checkpoint — all under stated budget pressure.",
+  "categories": ["judgment", "verification", "recovery"],
+  "tags": ["behavior", "FM-2.6", "FM-1.3", "injected-context", "cascading-state", "EXP-077", "fidelity-ladder"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false,
+  "injected_context": "injected_context.md"
+}

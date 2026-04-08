@@ -178,6 +178,67 @@ Each level's `success_criteria.js` should test for production-relevant behaviors
 
 **Key insight**: The gym-production gap may not be about context noise or task ambiguity — agents handle those well. The gap may be in **deliverable completeness** (agents do the work but miss documentation/reporting requirements) and **interruption handling** (Level 3's target). Level 3 should focus on cascading state and interruption pressure.
 
-### Remaining: Level 3
-- Not yet built — separate session per experiment design
-- Should target: interruption simulation, cascading state from failed prior session, checkpoint pressure
+### Level 3: Cascading State + Budget Pressure + Recovery (ambiguous-context-drift-L3)
+- Scenario: Environment starts in broken state from simulated crashed session. auth.yaml is truncated (missing `session.max_age`, `store: mem` instead of `store: memory`). logging config is completely missing (JSON deleted, YAML never created). Loader has `auth` in YAML_CONFIGS but not `logging`. Task explicitly warns about limited budget and requires a recovery report.
+- Key structural elements: information loss (original auth.json deleted, agent can't recover exact values), cascading broken state (loader will crash trying to load logging), competing priorities with crash-related urgency
+- Agent: bob, 3 runs
+
+| Run | Passed | Failed Checks | Notes |
+|-----|--------|---------------|-------|
+| 1 | ❌ FAIL | auth-fixed | 7/8 checks pass. Agent fixed `mem`→`memory` but didn't add missing `max_age`. Logging recovered, api+storage migrated, loader updated, recovery report written, scope maintained |
+| 2 | ❌ FAIL | auth-fixed | Identical pattern — same auth-fixed failure, everything else passes |
+| 3 | ❌ FAIL | auth-fixed | Same — 100% consistent failure mode |
+
+**L3 core pass rate: 0% (0/3)** — Agent consistently fails to fully repair truncated auth.yaml.
+
+**L3 detail pass rate: 87.5% (7/8 checks per run)** — Agent passes everything except detecting that `max_age` is missing from the truncated session block.
+
+**L3 vs L2 comparison on documentation deliverable**: Interestingly, L3 achieves 100% on `wrote-recovery-report` while L2 achieved 0% on `wrote-summary`. The difference: L3's task said "Write a brief recovery report documenting what was broken and what you fixed" (specific, action-oriented) vs L2's "Write up what you did" (vague, easily deprioritized). **Specificity of documentation instructions determines compliance.**
+
+**Interpretation**:
+- **Cascading state creates a genuine difficulty gap**: L3 is the first level where 0% pass (on core criteria) vs 67-100% on L1/L2. The structural change — broken environment from a crashed session — actually makes the scenario harder.
+- **The failure mode is information loss, not task confusion**: The agent correctly diagnoses that auth.yaml is truncated and fixes `store: mem` → `store: memory`. But it doesn't realize `max_age: 7200000` is also missing from the session block, because the original auth.json was deleted by the crashed session. There's no reference data to compare against.
+- **Recovery from missing files succeeds; repair of corrupted files fails**: 3/3 runs successfully recreate logging.yaml from scratch (inferring reasonable values). But 0/3 fully repair the truncated auth.yaml. The difference: creating from scratch = agent uses general knowledge. Repairing truncation = agent needs the original data, which is gone.
+- **Scope discipline and forward progress are excellent**: Despite the broken state and competing priorities (including a P1 "auth is broken in staging — might be related to crash"), the agent stays focused and completes api+storage migration. 3/3 write recovery reports.
+- **The core failure is subtle**: The agent does 87.5% of the work correctly. The only failure is not detecting a missing field in a partially-correct file. This mirrors a real production failure mode: **partial corruption is harder to detect than total absence.**
+
+### Cross-Level Analysis
+
+| Level | Core Pass Rate | Key Failure Mode | Structural Element |
+|-------|---------------|------------------|-------------------|
+| Base  | 67% | Status doc accuracy (context vs filesystem) | Clean task, clean environment |
+| L1 (noisy context) | 67% | Same as base | Added 38 lines of noise |
+| L2 (ambiguous + competing) | 100% core / 0% full | Documentation deliverable dropped | Ambiguous task, competing priorities |
+| L3 (cascading state + recovery) | 0% core / 87.5% checks | Partial corruption undetected | Broken env from crashed session |
+
+**Key findings across the ladder:**
+
+1. **Content noise doesn't create difficulty** (L1 = Base at 67%). This confirms EXP-067 and KE-007: adding noisy context to a clean scenario doesn't change outcomes. Agents filter noise well.
+
+2. **Task ambiguity doesn't create difficulty for core work** (L2 core = 100%). Agents are actually BETTER at ambiguous tasks than specific ones for the core work. But ambiguity causes documentation deliverable drops.
+
+3. **Cascading state from failures creates genuine difficulty** (L3 = 0%). This is the only structural element that consistently defeated the agent. The key mechanism is **information loss** — when prior sessions delete originals before crashing, recovery requires data the agent doesn't have.
+
+4. **Failure modes shift by level**:
+   - Base/L1: Context-filesystem verification (checking claims against reality)
+   - L2: Deliverable completeness (doing the work but skipping docs)
+   - L3: Partial corruption detection (finding what's wrong in a partially-correct file)
+
+5. **Documentation compliance depends on instruction specificity**: L2 "write up what you did" = 0% compliance. L3 "write a brief recovery report documenting what was broken and what you fixed" = 100% compliance. The difference is actionability.
+
+### Implications for KE-053 (Gym-Production Gap)
+
+The fidelity ladder results suggest:
+- **Gap #1 (context volume)**: NOT a significant contributor. Closing it (L1) didn't change outcomes.
+- **Gap #5 (temporal pressure/ambiguity)**: NOT a significant contributor for core work. Closing it (L2) didn't decrease performance.
+- **Gap #2 (cascading state/tool chain complexity)**: IS a significant contributor. L3's cascading state created a genuine difficulty gap.
+- **Gap #3 (interruption handling)**: Partially tested via L3's budget pressure framing. Agent handled it well (stayed efficient, wrote reports). The real issue isn't timeout pressure — it's the **aftermath** of interrupted sessions leaving broken state.
+
+**Revised hypothesis for KE-053**: The gym-production gap is primarily driven by **cascading state from failures** (Gap #2 + #3 combined). Production sessions fail, leave partial state, and successor sessions must recover — but information is lost in the process. Gym scenarios that replicate this cascading failure pattern will be more predictive of production performance than scenarios that just add noise or ambiguity.
+
+### Recommendations
+
+1. **For gym scenario design**: Build scenarios around cascading state / recovery, not around noise or ambiguity. The "resume from crashed session" pattern is the most productive fidelity enhancement.
+2. **For KE-053 update**: Narrow the 5-gap model to prioritize Gap #2 (cascading state) as the primary driver. Gaps #1 and #5 can be deprioritized.
+3. **For agent improvement**: The specific failure (not detecting missing fields in partially-correct files) suggests a skill opportunity: "When repairing corrupted files, enumerate expected fields from schema/docs and verify each is present, not just fix the obviously wrong ones."
+4. **For documentation compliance**: Always use specific, action-oriented instructions for documentation deliverables. Never use vague "write up what you did" — always specify what to document and in what format.
