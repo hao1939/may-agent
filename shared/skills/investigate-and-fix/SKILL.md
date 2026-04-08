@@ -5,13 +5,13 @@ description: >
   Covers the full cycle: understand context → reproduce/confirm issue → identify root cause →
   implement fix → verify fix → report. This is the most frequently used pattern across
   tech-lead, optimizer, and coder agents — observed in 70%+ of their sessions.
-version: 1.0.0
+version: 1.1.0
 tools: [read, bash, edit, write, finish]
 agents: [tech-lead, optimizer, coder]
 tested: true
-gym_scenarios: [investigate-fix-pattern]
-gym_results: "EXP-019: Text injection 0/4 reproduce-first (zero delta). Workflow enforcement 2/2 reproduce-first (0%→100%). Text=4/4 product, 4/5 process. Workflow=4/4 product, 5/5 process."
-verdict: disproven (text) / proven (workflow)
+gym_scenarios: [investigate-fix-pattern, investigate-fix-pattern-fewshot]
+gym_results: "EXP-019: Text injection 0/4 reproduce-first (zero delta). Workflow 2/2 (0%→100%). EXP-091: Few-shot 3/3 reproduce-first (0%→100%), 5/5 process. Control 0/3 reproduce-first, 4/5 process."
+verdict: disproven (text) / proven (workflow, few-shot)
 ---
 
 # Skill: Investigate and Fix
