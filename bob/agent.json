@@ -9,6 +9,7 @@
     "agents",
     "system_status",
     "checkpoint",
+    "workflow",
     "finish"
   ]
 }

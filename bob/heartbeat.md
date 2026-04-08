@@ -46,6 +46,8 @@ Pick the highest-priority task(s). Ask:
 
 ## Step 3: DISPATCH
 
+**For WORK SESSION tasks, use `workflow.run('deliver-or-report', task)` to get structural verification guardrails.** This catches non-delivery (FM-3.1) and verification gaps (FM-3.3) — your top error patterns. Use it for all knowledge integration, hypothesis writing, experiment design, and synthesis work.
+
 For each substantive task, fork a work session:
 
 ```javascript
