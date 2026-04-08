@@ -1,12 +1,12 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-08 ~22:20 UTC
+Updated: 2026-04-08 ~22:47 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Running — Heartbeat + gym exercise (EXP-092 Arm B subject). EXP-093 KB integration done.
-- **Coach**: 🟡 EXP-092 session watchdog-interrupted (89min). Arm B run 4 aborted mid-execution. Message sent with priorities: finish Arm B, deploy investigate-and-fix skill, FM-1.3 retry.
-- **Tech-lead**: 🟢 Running — C2.3 gate SHIPPED. Self-dispatched C2.3 v3 brief review.
+- **Bob**: 🟢 Running — Heartbeat cycle active. Processing EXP-092 data.
+- **Coach**: 🟢 Running — Heartbeat cycle active. EXP-092 Arm B fork in progress (runs 4-10). EXP-092 Arm A data: 10/10 status_doc=true (100%).
+- **Tech-lead**: 🟢 Running — Heartbeat cycle active. C2.3 v4 brief review forked (s_1775688456767_260).
 - **Scout**: 🟢 Running — Fresh heartbeat cycle.
 - **Optimizer/QA/Evaluator**: 🟢 Running — Heartbeats firing.
 - **All agents**: 🟢 All 7 heartbeats firing (Amy-kimi still down).
@@ -90,13 +90,15 @@ Updated: 2026-04-08 ~22:20 UTC
 - **EXP-092: ⏳ PARTIAL** — Arm A: 10/10 complete (status_doc 100% on first 7). Arm B: 3/10 complete (67% status_doc). Session watchdog-interrupted at 89min during Arm B run 4. Coach messaged to resume.
 - **EXP-093 KB integration: ✅ COMPLETE** — Bob integrated (12/12 checks pass). "What vs when" finding captured.
 - **investigate-and-fix skill: ⏳ DISPATCHED** — Coach messaged to deploy proven skill to coder/skills/.
-- **Stale request cleanup** — Cleaned 105 orphaned gym scenario requests from DB (68 coder + 37 mixed).
-- **All agents healthy** — Bob/Scout/Tech-lead/Optimizer/QA/Evaluator heartbeats firing. Coach will resume on next cycle. Amy-kimi still down.
+- **Stale request cleanup** — Cleaned 109 orphaned gym scenario requests from DB (88 + 21 second batch) + 2 duplicate messages.
+- **All agents healthy** — All 6 agents (Bob/Scout/Tech-lead/Coach/Optimizer/QA/Evaluator) heartbeats firing. Amy-kimi still down.
+- **EXP-092 Arm A confirmed**: 10/10 status_doc_accurate=true (100%). Arm B 3/10 (67%). Coach forking remaining runs.
+- **C2.3 v4 brief**: Tech-lead forked review+implementation session.
 
 ## Next Actions
-- **P1**: **EXP-092 Arm B completion** — Coach to resume runs 4-10. Dispatched (req:c8bf94e7).
-- **P1**: **investigate-and-fix skill deployment** — Coach to deploy to coder/skills/. Dispatched (req:c8bf94e7).
-- **P1**: **C2.3 gate gym validation** — Run convention-verify-edit scenarios to prove the gate works. Tech-lead self-dispatched v3 brief review.
+- **P1**: **EXP-092 Arm B completion** — Coach forked (ec66e91b). Runs 4-10 remaining.
+- **P1**: **investigate-and-fix skill deployment** — Coach to deploy to coder/skills/ (req:c8bf94e7).
+- **P1**: **C2.3 v4 brief → implementation** — Tech-lead forked (fca51a5a). Review + wire finish-guard.
 - **P1**: **Resolve EXP-088 naming conflict** — Coach's EXP-088 (skill format test) vs Bob's EXP-088 (workaround gradient). Need to renumber one.
 - **P1**: **Present auto-loop decision brief to Hao** — at `agents/may/workspace/auto-loop-decision-brief.md`.
 - **P1**: Federation design ready for Hao review — present summary when available
