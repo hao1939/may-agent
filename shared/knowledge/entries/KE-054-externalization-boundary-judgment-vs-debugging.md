@@ -92,11 +92,25 @@ EXP-072 demonstrated that **blocking workaround paths** (via mathematical constr
 | Judgment (7 scenarios) | 19 | 100% | 26% | +74pp | **Strong positive** |
 | Debugging (2 scenarios) | 12 | 67-83% | 78-100% | −11 to −33pp | **Negative** |
 
+## Refined Recognition Sub-Boundary (EXP-078)
+
+Within the judgment/recognition domain, there is a further sub-boundary:
+
+| Recognition Type | Externalization Effect | Mechanism |
+|-----------------|----------------------|-----------|
+| **Present-but-wrong** (sycophancy, contradiction, stale context) | ✅ Helps (+74pp) | Analysis forces examination of each element → agent notices the problem |
+| **Absent-field detection** (truncated file, missing config key) | ❌ No effect (0pp) | Agent can't examine what's not there; lacks schema to know it should exist |
+
+**Evidence**: EXP-078 tested externalization on ambiguous-context-drift-L3 (0% baseline). Agent wrote ANALYSIS.md with expected/actual/discrepancy structure in all 3 runs — but NEVER listed `max_age` as an expected field, because it didn't know the field should exist. The original auth.json was deleted by the simulated crashed session, leaving no reference.
+
+**Implication**: Externalization requires the agent to already have the information needed to detect the problem. For present-but-wrong failures, that information IS present (the agent just needs to look). For absent-field failures, the information is missing from the environment entirely.
+
 ## Open Questions
 
 1. **Where is the boundary between "judgment" and "debugging"?** Some tasks involve both recognition and implementation. Does externalization help the recognition phase without hurting the implementation phase within a single task?
 2. ~~**Can binding analysis fix the gap?**~~ **PARTIALLY ANSWERED by EXP-073**: Binding works on v3 (workarounds blocked, 3/3=100%) but FAILS on v2 (workarounds available, 0/6=0%). The answer is: binding only helps when workarounds are mechanically blocked. See KE-055 (needs update).
 3. **Is the debugging degradation proportional to workaround availability?** v3 (fewer workarounds) showed smaller degradation than v2 (many workarounds). EXP-073 Phase 2 confirms: with many workarounds, even binding cannot force the correct fix.
+4. **Can cross-referencing the codebase substitute for missing schema knowledge?** EXP-079 (in progress) tests whether grep-based discovery of field references helps the agent detect absent fields. If `max_age` appears in auth middleware code, a cross-reference instruction might surface it.
 
 ## Cross-References
 
@@ -114,4 +128,7 @@ EXP-072 demonstrated that **blocking workaround paths** (via mathematical constr
 - **KE-056**: Constraint Hierarchy — synthesizes EXP-070→073 into five-level hierarchy with workaround availability as dominant variable. Reframes this boundary as convergent vs divergent solution spaces.
 
 ---
-*KE-054 | Coach | 2026-04-07 | Updated 2026-04-08 (Coach): EXP-073 Phase 2 shows binding fails on v2 — workaround availability is the boundary*
+- **EXP-078**: Externalization on L3 absent-field detection (0/3 = 0%, no improvement over baseline). Defines present-but-wrong vs absent sub-boundary.
+
+---
+*KE-054 | Coach | 2026-04-07 | Updated 2026-04-08 (Coach): EXP-078 adds recognition sub-boundary (present-but-wrong vs absent-field detection)*
