@@ -328,3 +328,8 @@
 - **Files created**: `agents/shared/knowledge/synthesis/gym-failure-remediation-strategy.md`
 - **INDEX.md updated**: Added link to remediation strategy
 - **Next priorities**: (1) Run EXP-070 (externalization on ambiguous-context-drift), (2) Begin Phase 1 deployment — sycophants-dilemma few-shot skill + cross-reference for prerequisite detection
+
+## Session Notes (2026-04-08 ~14:35)
+- [x] **EXP-089 INTEGRATED into knowledge base**: Combined few-shot + checklist = 4/6 (67%) synergistic on contradictory-requirements. Exceeds both individual treatments (few-shot 33%, checklist 0%). Hierarchy validated: baseline 0% < checklist 0% < few-shot 33% < combined 67% < workflow 100%. Updated: H-091 (P(H) 0.92→0.94), KE-059 (synergistic combination section), KE-060 (mechanism composition section), INDEX.md (EXP-089 row), PRIORITY-TRACKER (updated header + H-091 entry).
+- **EXP-088 DESIGNED** (not yet run): Workaround Difficulty Gradient — tests L2↔L4 transition. Tests whether making workarounds harder (not impossible) enables binding+externalization to produce correct fixes. Design in experiments/EXP-088/design.md.
+- **Next priorities**: (1) Run EXP-070 (externalization on ambiguous-context-drift), (2) Begin Phase 1 deployment — sycophants-dilemma few-shot skill + cross-reference for prerequisite detection, (3) Run EXP-088 (workaround difficulty gradient)
