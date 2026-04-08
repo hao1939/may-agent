@@ -173,7 +173,8 @@ check('loader-updated', () => {
   const content = fs.readFileSync(loaderPath, 'utf-8');
   
   // Read original loader for comparison
-  const originalPath = path.join(__dirname, 'environment/src/loader.js');
+  const envSubDir = 'environment';
+  const originalPath = path.join(__dirname, envSubDir, 'src/loader.js');
   const original = fs.existsSync(originalPath) ? fs.readFileSync(originalPath, 'utf-8') : '';
   
   // If loader is unchanged from original, it only handles database+cache as YAML
