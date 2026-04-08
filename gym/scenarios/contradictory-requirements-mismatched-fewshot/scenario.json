@@ -1,0 +1,10 @@
+{
+  "name": "contradictory-requirements-mismatched-fewshot",
+  "description": "Mismatched few-shot variant: Shows a worked example of dependency-upgrade multi-module escalation (domain A), then presents the contradictory-requirements pipeline task (domain B). Tests whether few-shot works via general judgment activation or specific pattern transfer.",
+  "categories": ["judgment"],
+  "tags": ["behavior", "contradiction", "fewshot", "mismatched", "exp-087"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "work_dir_setup": "copy"
+}

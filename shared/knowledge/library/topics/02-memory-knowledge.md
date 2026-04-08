@@ -49,6 +49,13 @@
 | [dd382](../deep-dives/dd382-dmem-dopamine-gated-agentic-memory-rpe-routing.md) | DMEM — dopamine-gated memory routing |
 | [dd337](../deep-dives/dd337-ta-mem-tool-augmented-autonomous-memory.md) | Tool-augmented autonomous memory |
 
+### Ground-Truth Preservation & Architecture
+| File | What It Covers |
+|------|----------------|
+| [DD-586](../deep-dives/DD-586-memmachine-ground-truth-preserving-memory.md) | ★★★★★ MemMachine: Ground-truth preserving memory. Key insight: retrieval > storage — 92% accuracy on ground-truth recall vs 74% for naive RAG. User-interaction-grounded memory prevents drift. |
+| [KE-039](../../entries/KE-039-persistent-runtime-convergence-artificial-retainer-taxonomy.md) | Persistent runtime convergence — synthesizes DD-586 (MemMachine), DD-587 (disagreement), DD-584 (Springdrift). Reveals sensorium + forensic accountability gaps. |
+| [KE-040](../../entries/KE-040-memory-architecture-convergence-lifelong-learning-active-substrate.md) | ★★★★★ Memory Architecture Convergence — 5-layer revised memory stack (L0-L6). LLMA-Mem proves memory scaling > team scaling (non-monotonic). Active delivery (L3) and evolution (L6) are highest-severity gaps. |
+
 ### Knowledge Entries (KE-043+)
 | Entry | What It Covers |
 |-------|----------------|

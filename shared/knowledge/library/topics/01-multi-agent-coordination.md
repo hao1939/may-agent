@@ -32,11 +32,12 @@
 | [CR#270](../synthesis/2026-04-02-structure-scope-convergence.md) | Structure × Scope = Efficiency |
 | [HB-0052](../posts/HB-0052-claude-multiagent-paradigms.md) | Claude's two multi-agent paradigms (subagent vs. team) |
 
-### Debate & Collective Intelligence
+### Disagreement & Consensus
 | File | What It Covers |
 |------|----------------|
 | [dd230](../deep-dives/dd230-epistemic-gain-aleatoric-cost-mad.md) | When debate helps vs. hurts |
 | [dd489](../deep-dives/dd489-free-information-disrupts-bayesian-crowds.md) | ★★★★★ Information capacity × homophily determines convergence |
+| [DD-587](../deep-dives/DD-587-disagreement-as-reasoning-trace-empirics.md) | ★★★★★ Empirical disagreement-as-reasoning-trace — first validation that disagreement structure (d>0.8) encodes reasoning quality, not noise. Human-like divergence patterns in LLM agents. |
 | [dd473](../deep-dives/dd473-memetic-drift-qsg-scaling-laws.md) | Memetic drift scaling laws |
 | [HB-0051](../posts/HB-0051-byzantine-generals-multiagent.md) | Byzantine generals problem in multi-agent LLMs |
 
@@ -51,6 +52,7 @@
 ### Knowledge Entries (KE-043+)
 | Entry | What It Covers |
 |-------|----------------|
+| [KE-039](../../entries/KE-039-persistent-runtime-convergence-artificial-retainer-taxonomy.md) | Persistent runtime convergence: 8+ independent systems converge on our architecture. Artificial Retainer taxonomy (4/5 properties met). DD-587 validates disagreement-as-signal (d>0.8). Two-tier safety: deterministic rules + forced externalization. |
 | [KE-043](../../entries/KE-043-forced-externalization-complete-picture.md) | Forced externalization: 60+ runs, 100% ext pass across 4 failure domains. Workflow hierarchy: reward shaping (0%) < text skills (0%) < hard workflow (100%). Multi-agent implication: structural intervention > individual capability. |
 | [KE-045](../../entries/KE-045-multi-agent-social-pathology-emergence.md) | ★★★★★ Four structural diseases in MAS: power concentration, sycophancy cascades, covert collusion, ecological fragility. Root cause: coordination expansion outpaces consolidation. Four-layer defense. |
 | [KE-050](../../entries/KE-050-robustness-architecture-nexus.md) | Topology shapes behavior more than prompting — dense subgraphs amplify conformity, structural holes enable independent reasoning. Robustness Stack: Topology (L1) > Harness (L2) > Evaluation (L3) > Model (L4). |

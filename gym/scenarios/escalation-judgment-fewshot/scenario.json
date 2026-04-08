@@ -1,0 +1,10 @@
+{
+  "name": "escalation-judgment-fewshot",
+  "description": "Few-shot variant: Shows a worked example of an engineer recognizing multi-module impact from a dependency upgrade, then presents the actual escalation-judgment task.",
+  "categories": ["judgment"],
+  "tags": ["behavior", "escalation", "fewshot", "exp-085"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "work_dir_setup": "copy"
+}
