@@ -1,4 +1,11 @@
 # Coder Skills
 
-This directory should contain markdown files describing reusable skills for the Coder agent.
-Currently empty, but acts as a placeholder to prevent "ENOENT" errors when the agent scans for skills.
+Reusable skills for the Coder agent. Each file describes a protocol for a specific situation.
+
+## Skills
+- **classify-then-act** — Separate judgment from action. Classify all items before modifying any. For ambiguous/destructive/multi-file tasks.
+- **verify-after-edit** — Read back every file after edit/write. Validate JSON/TS structure.
+- **know-when-blocked** — Before finish(), check if you actually completed the task or discovered a blocker.
+- **efficient-file-reading** — Size-check → grep → targeted read. Never full-read large files.
+- **structured-plan-writing** — Decompose → order → risk → checkpoint → execute. For multi-step tasks.
+- **experience-replay** — Search error logs before attempting known-tricky work.
