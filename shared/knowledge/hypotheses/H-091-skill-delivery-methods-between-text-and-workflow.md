@@ -1,12 +1,12 @@
 # H-091: Skill Delivery Methods Exist Between Text-Rules and Workflow Enforcement
 
-**Status**: Strongly Supported (EXP-084, EXP-085, EXP-086, EXP-087, EXP-089, EXP-090)
+**Status**: Strongly Supported (EXP-084, EXP-085, EXP-086, EXP-087, EXP-089, EXP-090, EXP-091)
 **Date**: 2026-04-08
-**P(H)**: 0.98
+**P(H)**: 0.99
 
 ## Statement
 
-There exist skill delivery methods between "text in context" (0% effect) and "full workflow enforcement" (100% effect) that produce measurable behavior change on judgment tasks. Specifically, few-shot examples, checklist injection, and echo-back self-prompting each independently improve judgment task scores above the 0% text-rule baseline.
+There exist skill delivery methods between "text in context" (0% effect) and "full workflow enforcement" (100% effect) that produce measurable behavior change on judgment AND process discipline tasks. Specifically, few-shot examples, checklist injection, and echo-back self-prompting each independently improve task scores above the 0% text-rule baseline.
 
 ## Evidence
 
@@ -84,7 +84,7 @@ L5: Workflow enforcement → +3.0 score (EXP-045)
 - Extends: KE-002, KE-058, KE-056 (constraint hierarchy)
 - Supported by: KE-059 (updated with EXP-086 two-level transfer model)
 - Related: H-085 (forced externalization), H-089 (evidence discovery)
-- Experiments: EXP-084 (method comparison), EXP-085 (matched generalization), EXP-086 (mismatched boundary), EXP-087 (sycophants-dilemma ceiling test)
+- Experiments: EXP-084 (method comparison), EXP-085 (matched generalization), EXP-086 (mismatched boundary), EXP-087 (sycophants-dilemma ceiling test), EXP-091 (process discipline)
 
 ### EXP-089: Combined Few-Shot + Checklist (Synergy Test)
 - **Scenario**: contradictory-requirements (0% baseline)
@@ -101,3 +101,16 @@ L5: Workflow enforcement → +3.0 score (EXP-045)
 - **Key finding**: Domain-matched few-shot worked examples are extremely effective for judgment skills — 0%→100% on both escalation and evidence-evaluation tasks
 - **Posterior update**: H-091 P(H) 0.92→0.98
 - **Implication**: Few-shot is the highest-leverage intervention for judgment skill conversion; ready for production deployment
+
+### EXP-091: Few-Shot Skill Conversion Sprint 2 (process discipline)
+- **Skill**: investigate-and-fix (reproduce-first process check)
+- **Scenario**: investigate-fix-pattern — API endpoint crashing on some IDs, requires reading db.js to find legacy format
+- **Control**: 0/3 on reproduce-first check (0%) — agents read source then edit directly, never run tests first. Consistent with EXP-019 baseline (0/4)
+- **Treatment (domain-matched few-shot)**: 3/3 on reproduce-first (100%) — all runs executed `node test.js` before editing
+- **Effect**: +100pp on reproduce-first, process score 4.0/5 → 5.0/5
+- **Key finding**: **Few-shot works for process discipline skills, not just judgment** — reproduce-first is a "when to act" problem, not a "what to decide" problem
+- **Text rules: 0/7 on reproduce-first** (4 from EXP-019 + 3 from this control arm)
+- **Few-shot: 3/3 on reproduce-first** — same effect size as workflow enforcement (EXP-019: 2/2) but lighter weight
+- **Sprint 1+2 combined**: 9/9 treatment runs passed target checks (100%) vs 0/9 control (0%)
+- **Posterior update**: H-091 P(H) 0.98→0.99 — scope expanded from judgment-only to judgment + process discipline
+- **Cumulative matched few-shot**: 15/15 (100%) across 6 scenarios (5 judgment + 1 process)
