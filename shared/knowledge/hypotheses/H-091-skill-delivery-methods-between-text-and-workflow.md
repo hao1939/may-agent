@@ -1,8 +1,8 @@
 # H-091: Skill Delivery Methods Exist Between Text-Rules and Workflow Enforcement
 
-**Status**: Strongly Supported (EXP-084, EXP-085, EXP-086, EXP-087, EXP-089, EXP-090)
+**Status**: Strongly Supported (EXP-084, EXP-085, EXP-086, EXP-087, EXP-089, EXP-090, EXP-091)
 **Date**: 2026-04-08
-**P(H)**: 0.98
+**P(H)**: 0.99
 
 ## Statement
 
@@ -101,3 +101,13 @@ L5: Workflow enforcement → +3.0 score (EXP-045)
 - **Key finding**: Domain-matched few-shot worked examples are extremely effective for judgment skills — 0%→100% on both escalation and evidence-evaluation tasks
 - **Posterior update**: H-091 P(H) 0.92→0.98
 - **Implication**: Few-shot is the highest-leverage intervention for judgment skill conversion; ready for production deployment
+
+### EXP-091: Few-Shot Skill Conversion Sprint 2 (process discipline)
+- **Skill**: investigate-and-fix / reproduce-first (investigate-fix-pattern scenario)
+- **Control**: 0/3 reproduce-first (0%) — agent reads source then edits directly, never runs tests first. Product 4/4, process 4/5.
+- **Treatment (few-shot injected)**: 3/3 reproduce-first (100%) — agent runs `node test.js` BEFORE editing in every run. Product 4/4, process 5/5.
+- **Effect size**: +100pp on reproduce-first, +20pp on average process score (80%→100%)
+- **Key finding**: Few-shot works for PROCESS discipline (step ordering), not just judgment skills (decision quality). This is the first evidence of few-shot crossing from judgment to process domain.
+- **Text rules comparison**: investigate-and-fix text skill had 0/7 on reproduce-first (4 from EXP-019 + 3 control here). Few-shot: 3/3. Workflow: 2/2 (EXP-019).
+- **Posterior update**: H-091 P(H) 0.98→0.99
+- **Implication**: Few-shot scope expands beyond judgment to include process discipline. Cumulative Sprint 1+2: 9/9 treatment (100%) vs 0/9 control (0%) across 3 skills.
