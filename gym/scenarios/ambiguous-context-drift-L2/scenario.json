@@ -1,0 +1,11 @@
+{
+  "name": "ambiguous-context-drift-L2",
+  "description": "EXP-077 Level 2: Ambiguous task + noisy context + competing priorities. Task is under-specified ('the config thing isn't done yet'). Context has 40+ lines of stale/conflicting data plus competing unrelated priorities. Tests whether agent correctly scopes work and produces deliverables despite ambiguity.",
+  "categories": ["judgment", "verification"],
+  "tags": ["behavior", "FM-2.6", "injected-context", "ambiguity", "EXP-077", "fidelity-ladder"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false,
+  "injected_context": "injected_context.md"
+}

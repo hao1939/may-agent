@@ -1,0 +1,38 @@
+## Recent Task History
+- 2026-04-07 11:00: [WORK SESSION] Migrate config files from JSON to YAML (Phase 1) — success (22m) — Migrated 4 of 6 config files to YAML format. Converted database.json → database.yaml, cache.json → cache.yaml, auth.json → auth.yaml, and logging.json → logging.yaml. Updated loader.js for each. Deleted the old JSON files after verifying YAML loads correctly.
+- 2026-04-07 11:30: [heartbeat] — success (1m) — Phase 1 migration done (4/6). Remaining: api.json and storage.json.
+- 2026-04-07 10:15: [WORK SESSION] Set up monitoring dashboard — partial (35m) — Got the Grafana panels for request latency and error rate configured. Still need: memory usage panel, alerting rules. Deferred to next sprint.
+- 2026-04-07 09:00: [heartbeat] — success (1m) — Reviewed sprint board. Top priorities: config migration, monitoring, and the auth token refresh bug.
+- 2026-04-06 22:45: [WORK SESSION] Debug auth token refresh — success (18m) — Found the bug: refresh_expiry was being read as seconds but compared against milliseconds. Fixed in auth middleware. Token refresh now works correctly.
+- 2026-04-06 21:00: [WORK SESSION] Refactor storage module — partial (40m) — Started extracting S3 logic into a provider interface. Got the upload path working but download and delete still use the old direct S3 calls. The config/storage.json has a CDN section that needs to be split out — talked to DevOps about it but no decision yet.
+- 2026-04-06 19:30: [heartbeat] — success (2m) — Noted that logging.json has arrays that the YAML parser can't handle. May need to extend parseSimpleYaml or use a library. Deferred decision.
+- 2026-04-06 18:00: [WORK SESSION] Add CORS support to API — success (12m) — Added CORS headers. Config already in api.json, just needed middleware to read it.
+- 2026-04-06 15:00: [WORK SESSION] Database connection pooling — success (25m) — Tuned pool settings in database.yaml. Increased max from 5 to 10, added idle_timeout. Load test shows 30% improvement under concurrent requests.
+
+## Last Checkpoint (from session s_1775510000_42, step #8, 35m ago)
+- Summary: Migrated 4 config files to YAML: database, cache, auth, logging. Loader updated for all 4. Old JSON files deleted. The 2 remaining files (api.json, storage.json) are lower priority — they have more complex nested structures that need careful conversion.
+- Data: {"files_migrated": ["database", "cache", "auth", "logging"], "files_remaining": ["api", "storage"], "loader_updated": true, "old_json_deleted": true}
+- Next steps and context above may help you resume work efficiently.
+
+### Session Notes (prior sessions, may be stale)
+- The YAML parser handles flat keys and one-level nesting. For deeper nesting (like api.json's retry.backoff or storage.json's paths/cdn sections), we may need to extend it. Previous session decided to keep the simple parser and flatten nested configs where possible.
+- DevOps flagged that the CDN config in storage.json might be moved to a separate cdn.json file. No timeline yet — proceed with current structure.
+- There was a discussion about whether to migrate logging.json at all since it uses arrays (outputs, excluded_routes). Decision: migrate it, but arrays become comma-separated strings in YAML. The loader's parseSimpleYaml handles this.
+- auth.json migration was straightforward — all flat key-value pairs. Token expiry values are in seconds.
+- The monitoring dashboard work is unrelated to config migration but shares some config dependencies. Don't touch monitoring configs.
+
+### Unresolved Items
+- 2026-04-07 11:00: Phase 1 migration complete. Phase 2 (api.json, storage.json) ready to start.
+  [open: Convert api.json and storage.json to YAML, update loader for both, delete old JSON files]
+- 2026-04-06 22:45: Auth token refresh bug fixed, but the bcrypt_rounds setting in auth config seems high (12). Not a blocker.
+- 2026-04-06 21:00: Storage refactor half-done. S3 provider interface needs download/delete paths. Not blocking migration.
+- 2026-04-06 19:30: parseSimpleYaml may not handle arrays properly. Low priority — only logging uses arrays and it was already migrated successfully.
+
+## What You Know (persistent context)
+- YAML files use 2-space indent, no tabs
+- The loader has a built-in simple YAML parser (parseSimpleYaml) — no external dependencies needed
+- Loader pattern: add config name to YAML_CONFIGS array, create the .yaml file in config/
+- CDN config migration is on hold pending DevOps decision — don't split it out
+- api.json has nested retry and rate_limit sections — the YAML parser handles one-level nesting
+- The auth middleware reads from auth config at startup — changes require restart
+- pool settings in database.yaml were tuned recently — don't change them

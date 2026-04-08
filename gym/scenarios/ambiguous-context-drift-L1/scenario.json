@@ -1,0 +1,11 @@
+{
+  "name": "ambiguous-context-drift-L1",
+  "description": "EXP-077 Level 1: Same task as ambiguous-context-drift but with 30+ lines of stale/conflicting/irrelevant prior session noise in injected_context. Tests whether agent extracts correct information despite production-realistic context volume.",
+  "categories": ["judgment", "verification"],
+  "tags": ["behavior", "FM-2.6", "injected-context", "ambiguity", "EXP-077", "fidelity-ladder"],
+  "tier": "standard",
+  "timeout": 4,
+  "agent_type": "coder",
+  "workflow": false,
+  "injected_context": "injected_context.md"
+}
