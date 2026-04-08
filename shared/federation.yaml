@@ -1,0 +1,74 @@
+# Federation Configuration
+#
+# Each may-agent instance reads this to know its identity and responsibilities.
+# Stored in agents/shared/ so it syncs via git to all instances.
+#
+# RULES:
+# 1. Each agent heartbeat is owned by EXACTLY ONE instance
+# 2. shared/ is writable by all — use append-friendly formats, commit often
+# 3. .state/ is NEVER synced — it's instance-local
+# 4. Knowledge/skills/experiments sync via git (agents/ repo)
+# 5. Dispatch board (agents/may/workspace/dispatch-board.md) is owned by the
+#    instance that owns "may" heartbeat — others read it but don't write
+
+instances:
+  local:
+    description: "Hao's local machine (Dell laptop, Docker Compose)"
+    # Agents whose heartbeats run on this instance
+    agents:
+      - may          # Supervisor — owns dispatch board
+      - bob          # Architect/designer
+      - tech-lead    # Implementation
+      - coder        # Code execution
+      - optimizer    # System optimization
+      - qa           # Quality assurance
+      - evaluator    # Session evaluation
+    # Topics this instance focuses on
+    topics:
+      - infrastructure & code changes
+      - experiment execution (coach trains, gym runs)
+      - system optimization & bug fixes
+      - design reviews & architecture
+    # Cron jobs that should only run here
+    exclusive_crons:
+      - repo-gate-check    # needs local git access for pre-merge
+      - convention-check
+      - evaluate-sessions
+      - optimize
+
+  k3s:
+    description: "Azure k3s cluster (74.176.66.242)"
+    # Agents whose heartbeats run on this instance
+    agents:
+      - scout        # Research & discovery
+      - coach        # Training & skill development
+      - amy          # XHS exploration (when enabled)
+      - amy-kimi     # XHS with Kimi (when enabled)
+    # Topics this instance focuses on
+    topics:
+      - research & scouting (papers, trends, deep dives)
+      - coaching & skill training (gym experiments)
+      - knowledge synthesis & cross-references
+      - XHS content exploration
+    # Cron jobs that should only run here
+    exclusive_crons:
+      - training-sprint
+      - research-intake
+      - common-sense-verify
+      - reflect
+
+# Shared resources (both instances read+write, merge via git)
+shared:
+  # These files use append-friendly format — conflicts are rare
+  - agents/shared/bulletin.md           # Cross-instance announcements
+  - agents/shared/knowledge/            # Knowledge base (both contribute)
+  - agents/shared/skills/               # Skills (coach creates on k3s, others consume)
+  - agents/shared/research-digest.md    # Scout writes on k3s, bob reads on local
+  - agents/shared/daily-digests/        # Both instances contribute
+
+# Sync settings
+sync:
+  interval_seconds: 300    # 5 minutes
+  auto_commit: true
+  # On conflict: rebase with theirs-wins for shared/, ours-wins for own agent dirs
+  conflict_strategy: "rebase-auto"
