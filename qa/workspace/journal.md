@@ -910,6 +910,31 @@ PASS (with note above)
 
 ---
 
+## 2026-04-09T18:55Z
+
+### Summary
+Heartbeat QA at HEAD **7e6bc59** (“skip few-shot injection for heartbeat sessions”). Reviewed `src/lib/fewshot-router.ts` and verified the new heartbeat guard: `routeFewShotExamples()` early-returns when `taskText.startsWith("[heartbeat]")`.
+
+### Files reviewed
+- `src/lib/fewshot-router.ts` (full file)
+
+### Mandatory gates (re-run)
+- `./node_modules/.bin/tsc --noEmit`: PASS (no output)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2082 passed (2103)**
+  - `test/launcher.test.ts`: 7 failed — missing `/app/src/app/launcher.ts` (existsSync false / ENOENT)
+  - `test/context-learn.test.ts`: 7 failed — `rmSync(..., { recursive: true })` fails `EACCES` under `/app/test-workspace/context-learn-test/*`
+  - `test/context-learning.test.ts`: 6 failed — same `EACCES` cleanup failure under `/app/test-workspace/context-learning-test/*`
+  - `test/research-db.test.ts`: 1 failed — integration test `syncs the actual knowledge base without errors` timed out at 5000ms
+
+### Issues
+- IMPORTANT (code robustness): `parseTriggerPattern()` uses a regex-literal parser `/\/(.*?)\/(...)` which will fail on patterns containing an unescaped `/` in the example file. If examples ever need to match paths/URLs, consider supporting escaped slashes or a different encoding.
+- IMPORTANT (repo health): test suite remains red due to missing `src/app/launcher.ts`, permission issues under `/app/test-workspace`, and a tight 5s timeout in a research-db integration test.
+
+### Verdict
+CONDITIONAL — the heartbeat skip change looks correct and typechecks; repo cannot be considered green until the above test/environment issues are resolved.
+
+---
+
 ## 2026-04-08T01:34Z
 
 ### Summary
