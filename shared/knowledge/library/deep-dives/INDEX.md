@@ -525,3 +525,11 @@
 4. DD#685 → DD#682-684 (Dip-and-recovery implies detection systems need burn-in periods before stable anomaly signals)
 5. DD#686 → DD#667 (AgentGate adaptive gating — MedRoute is medical instantiation of same pattern with RL training)
 6. DD#685 generates predictions P-685a/b/c re: intervention dip-recovery, capability-dependent pattern extraction, safety-reasoning tradeoff
+
+**Agent policy optimization, multi-agent distillation & strategic interaction** ★★★★ — NEW (2026-04-09 Session 392)
+1. [dd688](DD-688-tstar-cognitive-tree-agent-policy-optimization.md) — ★★★★★ T-STAR: Cognitive tree-structured agent policy optimization. Solves sparse reward / uniform credit problem by consolidating trajectories into cognitive trees, back-propagating step-level advantages, and grafting corrective reasoning at divergence points. Critical for step-level credit assignment in multi-turn agents.
+2. [dd689](DD-689-kd-marl-resource-aware-knowledge-distillation.md) — ★★★★ KD-MARL: Resource-aware knowledge distillation for cooperative multi-agent RL. Teacher-student MARL with heterogeneous compute budgets. Distillation preserves inter-agent coordination structure. Connects to compute governance thread.
+3. [dd690](DD-690-strategic-persuasion-trait-conditioned-agents.md) — ★★★★ Strategic Persuasion with Trait-Conditioned Agents: LLM agents adapt persuasion strategy based on target personality traits. Strategic theory-of-mind modeling. Connects to persuasion/deception thread.
+4. DD#688 → DD#682 (T-STAR's divergence-point analysis complements Trajectory Guard's anomaly detection — both identify critical steps in agent trajectories)
+5. DD#688 → DD#685 (T-STAR's thought grafting is a form of intervention at critical points; dip-and-recovery from DD#685 may apply to grafting effectiveness)
+6. DD#689 → CR#258 (KD-MARL extends compute governance with practical distillation mechanism for multi-agent deployment)
