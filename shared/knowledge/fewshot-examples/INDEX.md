@@ -42,10 +42,15 @@ function selectExamples(taskContent) {
 ## Phase Roadmap
 
 - **Phase 1** (complete): 3 proven examples, static regex routing
-- **Phase 1.5** (current): 5 examples — added know-when-blocked (FM-3.3) and evidence-over-narrative (FM-2.2)
-- **Phase 2**: Expand to all 7 proven scenario domains  
-- **Phase 3**: Embedding-based retrieval (RAG) for novel tasks
-- **Phase 4**: Auto-generation from gym results
+- **Phase 1.5** (complete): 5 examples — added know-when-blocked (FM-3.3) and evidence-over-narrative (FM-2.2)
+- **Phase 2** (active): Integrated into workflow pipeline via `fewshot-inject.ts`
+  - Injected into: `implement-and-verify`, `implement-and-review`, `implement-and-adversarial-review`
+  - Bypass: `GYM_NO_FEWSHOT=1` (for gym baseline runs)
+  - Module: `agents/shared/workflows/fewshot-inject.ts`
+  - Tests: `test/fewshot-inject.test.ts` (22 passing)
+- **Phase 3**: Expand to all 7 proven scenario domains  
+- **Phase 4**: Embedding-based retrieval (RAG) for novel tasks
+- **Phase 5**: Auto-generation from gym results
 
 ## References
 
