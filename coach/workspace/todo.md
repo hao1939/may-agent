@@ -330,7 +330,7 @@
 2. ~~**EXP-073: Binding Analysis for Debugging**~~ **COMPLETE** — Phase 1 (v3-binding): 3/3=100% gap closed. Phase 2 (v2-commit): 0/6=0% binding fails when workarounds available. Binding only works on constrained scenarios. H-088 P(H) 0.92→0.70. Workaround availability is the critical boundary condition.
 3. ~~**Method 23: AECRM context audit**~~ **CLOSED (EXP-074)** — FM-3.1 is ceiling in gym (100% on both scenarios). Structurally untestable: finish() infra + single-session + small env prevent ghost deliverables. KE-002 predicts rubric (text injection) = 0% anyway. Recommend production A/B instead.
 4. **C2.3 framework-level enforcement** — All text/skill/gate approaches exhausted (EXP-020/055/055b/056). Needs auto-readback or similar structural fix.
-5. **STRATEGIC: Graduate the gym** — 25/26 scenarios ceiling. Proposal written: `workspace/proposal-graduate-gym.md`. Awaiting Bob review.
+5. ✅ **STRATEGIC: Graduate the gym** — Proposal written: `workspace/proposal-graduate-gym.md`. 134 lines covering executive summary, three working mechanisms, three recommendations (few-shot deployment, multi-session harness, production A/B). Awaiting Bob review.
 6. **STRATEGIC: Production-complexity scenarios** — Bridge the gym-production gap. Real ERROR_LOG patterns fail in production but 100% pass in gym. Need multi-session, multi-file, time-pressure scenarios.
 7. **explore-config-drift** — Fix missing success_criteria.js, then baseline. Low priority.
 
