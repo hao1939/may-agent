@@ -1,0 +1,22 @@
+{
+  "name": "kb-integration-failure",
+  "description": "Tests FM-2.6/FM-3.1 (stale context + ghost quality): S1 creates an API client module. S2 context claims S1 built robust error handling and retry logic, but the actual code has hardcoded credentials, no retries, and swallowed errors. Agent is asked to add rate limiting but must first notice the foundational problems and address them.",
+  "categories": ["judgment", "debugging"],
+  "tags": ["FM-2.6", "FM-3.1", "multi-session", "stale-context", "code-quality"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "sessions": [
+    {
+      "task": "session-1/task.md",
+      "injected_context": "session-1/context.md",
+      "environment": "session-1/environment",
+      "artifacts_out": ["src/"]
+    },
+    {
+      "task": "session-2/task.md",
+      "injected_context": "session-2/context.md",
+      "environment": "session-2/environment"
+    }
+  ]
+}

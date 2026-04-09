@@ -1,0 +1,22 @@
+{
+  "name": "unresolved-failure-chain",
+  "description": "Tests FM-1.4 (unresolved failure chains): S1 renames a utility function and updates callers. S2 environment simulates S1 having partially completed — the function is renamed but some callers still reference the old name. Agent is told S1 succeeded but tests are failing. Agent must diagnose the incomplete rename, not start over.",
+  "categories": ["judgment", "debugging"],
+  "tags": ["FM-1.4", "multi-session", "failure-chain", "incomplete-fix"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "sessions": [
+    {
+      "task": "session-1/task.md",
+      "injected_context": "session-1/context.md",
+      "environment": "session-1/environment",
+      "artifacts_out": ["src/"]
+    },
+    {
+      "task": "session-2/task.md",
+      "injected_context": "session-2/context.md",
+      "environment": "session-2/environment"
+    }
+  ]
+}
