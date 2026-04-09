@@ -1,17 +1,18 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~22:55 UTC
+Updated: 2026-04-09 ~23:25 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Running — All knowledge through KE-107 indexed. Clean heartbeat, self-directing.
-- **Coach**: 🟢 Running — **EXP-108 DESIGNED** (adversarial self-review skill). Self-initiated after EXP-107 closure. Design at `agents/shared/knowledge/experiments/EXP-108/design.md`. Ready for Phase 1 (skill authoring + scenario selection).
+- **Bob**: 🟢 Running — EXP-108 Phase 1 complete (skill authored + lab fork). Heartbeat cycling.
+- **Coach**: 🟢 **ACTIVE** — EXP-108 Phase 1 continuation. Running control baselines on multi-session scenarios. **FINDING: ceiling effects** — nearly all scenarios at 100% for control arm (IOD 10/10, UFC 8/8, GDC 8/8, CFV 14/14). Testing stale-plan-drift now. Session `s_1775773485236_576` (~60min, making steady progress).
 - **Scout**: 🟢 Running — Heartbeat cycling, reprioritizing toward gym-production gap research.
-- **Tech-lead**: 🟡 IDLE — Heartbeat has `skipIfIdle`, no dispatched work so not cycling.
+- **Tech-lead**: 🟢 **ACTIVE** — Self-dispatched to fix gym-runner ENOENT bug (req `b2f0039c`). Addresses the transcript export crash blocking EXP-108.
 - **Optimizer**: 🟡 IDLE — Heartbeat cycling but minimal productive output.
 - **Evaluator**: 🟡 IDLE — Running auto-evals but minimal activity.
 - **QA**: 🟡 IDLE — Minimal activity.
-- **All agents**: 🟢 7/8 running (tech-lead skipped). **3 agents effectively idle** (tech-lead, optimizer, QA). Zero errors in last hour.
+- **All agents**: 🟢 8/8 running (tech-lead now active). **2 agents effectively idle** (optimizer, QA). Zero errors in last hour.
+- **⚠️ Cron bug**: `analyze-failures` cron keeps failing (`db.query is not a function`). Low priority — doesn't affect operations.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -103,7 +104,7 @@ Updated: 2026-04-09 ~22:55 UTC
 | **FM-3.3 Bob Concentration Analysis** | ✅ COMPLETE | coach | **NOT a real regression** — measurement artifact. 1.9x inflation from eval duplication + LLM eval selection bias. Bob's true FM-3.3 rate (13.6%) is *lowest* of agents with volume. At `agents/coach/workspace/briefs/bob-fm33-concentration-analysis.md`. |
 
 | **EXP-107 Adversarial Self-Check** | ✅ BLOCKED | coach | Control arm: 6.25% FM-3.3 rate (1/16 finish calls), far below 30% viability threshold. **KEY FINDING**: Gym-production gap for FM-3.3 is ~10× (6% gym vs 50-70% production). Cannot run treatment arms. Recommends harder scenarios or production A/B testing. Bob integrating findings. Results at `agents/shared/knowledge/experiments/EXP-107/results.md`. |
-| **EXP-108 Adversarial Self-Review Skill** | 🔄 Phase 2 pilot done | coach | Pilot results: instruction-override-drift + unresolved-failure-chain both passed in control AND treatment (baseline improvements detected). phase-boundary-violation gym crash (ENOENT on transcript export). Need 10 more runs for statistical signal + gym bug fix for phase-boundary-violation. Coach session `s_1775773485236_576` actively running Phase 1 continuation. |
+| **EXP-108 Adversarial Self-Review Skill** | 🔄 Phase 1 cont. — CEILING PROBLEM | coach | **MAJOR FINDING**: Control arm baselines nearly all at 100% — IOD 10/10, UFC 8/8, GDC 8/8, CFV 14/14, PBV 10/11. Ceiling effects make A/B testing impossible (can't improve on 100%). Coach currently testing stale-plan-drift. May need harder scenarios or different approach entirely. Gym-runner ENOENT fix in progress (tech-lead). |
 | **EXP-107 Phase 2 Context-Fatigue Baseline** | ✅ CLOSED | coach | **5 runs, 0% FM-3.3** (all 14/14 checks passed). Multi-session + urgency + scope creep still can't trigger FM-3.3 in gym. **Gym-production FM-3.3 gap is structural and confirmed unfixable via scenario design.** Experiment fully closed. |
 | **Fewshot Heartbeat Case-Insensitive Fix** | ✅ MERGED | may | Branch `review/fix-fewshot-heartbeat` merged to main. Regex `/^\[heartbeat\]/i` replaces startsWith. 30/30 tests pass. Branch deleted. |
 | **EXP-105 Few-Shot Production Impact** | ⏳ WAITING | coach | No data — zero coder/optimizer work sessions since deployment (Apr 9). Baselines captured. **BUG FIXED**: heartbeat exclusion merged (commit 7e6bc59 + case-insensitive fix). Token waste eliminated. |
@@ -140,21 +141,23 @@ Updated: 2026-04-09 ~22:55 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (22:55)
-- **All heartbeats firing** (6 sessions running: bob, coach, may, scout, qa). Amy-kimi still 🔴. Zero failures in recent hours.
-- **Stale may session cleaned up**: Cancelled `s_1775311714523_3` (5.4 days idle).
-- **EXP-108 pilot results in**: Both tested scenarios passed in control AND treatment — baseline improvements may obscure skill effects. phase-boundary-violation has gym harness crash (ENOENT on transcript export). Coach actively running Phase 1 continuation (`s_1775773485236_576`, ~30min).
-- **Bob doing heartbeat** (31min, `s_1775773417598_569`).
-- **System stable but underutilized**: Tech-lead, Optimizer have capacity. Multiple P0/P1 items blocked on Hao.
+## Latest Cycle Summary (23:25)
+- **Coach actively running EXP-108**: Session `s_1775773485236_576` (~60min). Finding **ceiling effects** in all multi-session scenarios — control arm at 100% for most. This is a problem: can't measure treatment effect when baseline is already perfect. Testing stale-plan-drift now.
+- **Tech-lead self-dispatched gym-runner ENOENT fix**: Addressing the transcript export crash that blocks some EXP-108 scenarios. Good autonomous behavior.
+- **Bob heartbeat cycling**: EXP-108 Phase 1 complete (skill authored + lab fork at `.lab/exp108-adversarial-skill/`).
+- **System stable**: Zero stale requests, no failures in active sessions.
+- **Cron issue**: `analyze-failures` keeps failing (`db.query is not a function`). Persistent but low-impact — the cron job queries a DB table that doesn't match the expected schema. Could dispatch to tech-lead as a P2 fix.
+- **Amy-kimi still 🔴**: Blocked on Hao for billing.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao since Mar 24**.
-- **P0**: **Address system-wide idle state** — 3+ agents burning cycles with zero output. Options: (a) Hao provides new direction, (b) self-assign from research projects, (c) spin down idle agents to save cost.
-- **P1**: **EXP-108 gym harness bug**: phase-boundary-violation scenario crashes during transcript export (ENOENT on `work/session-2-transcript.jsonl`). Need tech-lead fix in gym-runner.ts ~line 862.
-- **P1**: **EXP-107 CLOSED — next steps for FM-3.3** — Gym can't reproduce production FM-3.3. Options: (a) production A/B testing of adversarial self-check, (b) focus on production-specific FM-3.3 drivers (context complexity, multi-session fatigue), (c) accept gym has solved FM-3.3 and move on.
+- **P0**: **EXP-108 ceiling problem** — Control arm hitting 100% on nearly all multi-session scenarios. Options: (a) coach finds non-ceiling scenarios (stale-plan-drift being tested), (b) design harder scenarios specifically targeting multi-session failures, (c) pivot experiment to single-session or production A/B test. Coach is actively investigating.
+- **P1**: **Address system-wide idle state** — Optimizer + QA burning cycles with zero output. Options: (a) Hao provides new direction, (b) self-assign from research projects, (c) spin down idle agents.
+- **P1**: **EXP-107 CLOSED — next steps for FM-3.3** — Gym can't reproduce production FM-3.3. Options: (a) production A/B testing, (b) focus on production-specific drivers, (c) accept gym has solved FM-3.3 and move on.
 - **P1**: **Present research sprint results to Hao** — KE-101 meta-analysis is the capstone. H-091 (P(H)=0.99), 17+ experiments, gym graduation, EXP-098 landmark, EXP-103/104 confabulation findings, EXP-107 gym-production gap confirmed.
-- **P1**: **Anti-confab brief ready for review** — At `agents/shared/may-agent-docs/design/anti-confabulation-deployment.md`. Revised with EXP-104 confound. Ready for tech-lead + Hao.
+- **P1**: **Anti-confab brief ready for review** — At `agents/shared/may-agent-docs/design/anti-confabulation-deployment.md`. Revised with EXP-104 confound.
+- **P2**: `analyze-failures` cron DB bug — persistent but non-critical. Could dispatch to tech-lead.
 - **P2**: Federation design ready for Hao review
-- **P2**: Pre-merge review gate Phase 2 (auto-review) — could give tech-lead productive work
+- **P2**: Pre-merge review gate Phase 2 (auto-review)
 - **P2**: Amy-kimi still down — blocked on Hao for billing
 - **P2**: EXP-031 (On-Demand Workflow Discovery) designed by optimizer — ready for gym execution
