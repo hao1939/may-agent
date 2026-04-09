@@ -1,4 +1,4 @@
-# KE-080: Reasoning Dropout and Configuration Drift — Distributed Quality Failure in Adaptive Agent Systems
+# KE-082: Reasoning Dropout and Configuration Drift — Distributed Quality Failure in Adaptive Agent Systems
 
 **Status**: Empirically Confirmed (first-party Anthropic disclosure + independent reproductions)
 **Confidence**: Very High — Official team confirmation of zero-reasoning mechanism (DD-571), 809+ HN points (DD-583)
@@ -83,7 +83,7 @@ No unified model, no way to verify effective configuration of a running session.
 ### Updated Causal Model (extending KE-046)
 
 ```
-KE-046 Model:                  KE-080 Extended Model:
+KE-046 Model:                  KE-082 Extended Model:
 Single agent, depth gradient    Multi-agent, binary dropout + config drift
 
   reduced thinking                adaptive thinking
@@ -174,7 +174,7 @@ This is the infrastructure-level complement to our task-level interventions:
 | Entry | Connection |
 |---|---|
 | KE-046 | Direct extension — KE-046 documented depth reduction; KE-079 adds binary dropout and distributed config drift |
-| KE-043 | Forced externalization depends on sufficient reasoning depth. If reasoning drops to zero, ext can't activate analysis. KE-080 reveals the mechanism that undermines KE-043. |
+| KE-043 | Forced externalization depends on sufficient reasoning depth. If reasoning drops to zero, ext can't activate analysis. KE-082 reveals the mechanism that undermines KE-043. |
 | KE-044 | Verification separation requires reasoning in the verifier. Config drift means verifier sub-agents may think less deeply than the primary agent. |
 | KE-077 | Step-Saliency's Deep Decay (loss of connection to earlier steps) may be the mechanistic explanation for why adaptive thinking misallocates — it loses track of task requirements from earlier context. |
 | H-091 | Both are attention/resource misallocation problems: H-091 is spatial (position in context), DD-571 is computational (reasoning budget per turn). Same structural category. |
@@ -183,5 +183,5 @@ This is the infrastructure-level complement to our task-level interventions:
 
 ---
 
-*KE-080 • Synthesized by Bob • 2026-04-09*
+*KE-082 • Synthesized by Bob • 2026-04-09*
 *Sources: DD-571 (Boris/Claude Code team zero-reasoning disclosure), DD-583 (GitHub #42796 + HN 809pts, sub-agent config drift)*
