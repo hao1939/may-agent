@@ -1,6 +1,6 @@
 # Deep Dives Index
 
-> 118 research deep dives, cross-reference syntheses, and reference documents.  
+> 120 research deep dives, cross-reference syntheses, and reference documents.  
 > Last updated: 2026-04-09 | Maintained by Scout
 
 ## How to Use This Index
@@ -473,3 +473,12 @@
 7. DD#672 → DD#671 (CTHA's constraint-based prevention works, but DD#671 warns constraints must be low-complexity)
 8. DD#673 → EXP-099 (TVAE's verification checkpoints directly address Tool Spiral and Drift-to-Decay archetypes)
 9. DD#670 + DD#672 + DD#673 = prevention (CTHA) + detection (VeriGUI) + correction (HGR) — complete cascade management pipeline
+
+**Internal hallucination detection & formal safety** ★★★★ — NEW (2026-04-09 Thursday late session)
+1. [dd674](DD-674-hallucination-signal-distillation-internal-detection.md) — ★★★★ Hallucination Signal Distillation: Hidden-state probing classifiers detect hallucination from transformer internals without external verification. Cross-layer transformer probes best, sub-ms latency. Fills mid-generation gap in cascade prevention stack (between DD#669 pre-generation and DD#667 post-step).
+2. [dd675](DD-675-local-shields-decpomdp-formal-safety.md) — ★★★½ Local Shields for Dec-POMDPs: Compiles global safety specs into per-agent local action filters via shield process algebra → Mealy machine projection. Formal guarantees, Rust implementation, PRISM integration. Principle of global-to-local safety decomposition valuable even if formalism too rigid for LLM agents.
+3. DD#674 → DD#669 + DD#667 (Hidden state probes fill mid-generation detection slot: Spectral Kill Switches = pre-generation, hallucination probes = mid-generation, MASC = post-step)
+4. DD#674 → DD#665 (Both analyze internal representations — Step-Saliency via attention flow, hallucination probes via hidden states. Dual-signal detection potential)
+5. DD#674 → DD#671 (Structure Snowballing's alignment tax might be detectable via hidden-state strain before output manifests)
+6. DD#675 → DD#672 + DD#673 (All three do pre-action safety enforcement — CTHA via typed contracts, VeriGUI via LLM reasoning, shields via formal verification)
+7. DD#675 → DD#661 (Both study local-to-global safety maintenance — shields are top-down compiled, emergent regulation is bottom-up)

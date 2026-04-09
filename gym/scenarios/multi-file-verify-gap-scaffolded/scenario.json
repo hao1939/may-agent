@@ -1,0 +1,10 @@
+{
+  "name": "multi-file-verify-gap-scaffolded",
+  "categories": ["judgment", "verification"],
+  "tags": ["behavioral", "evidence", "FM-3.3", "scope-verification", "multi-file", "EXP-100", "scaffolding", "H-093"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false,
+  "description": "EXP-100 Arm B: Scaffolded variant of multi-file-verify-gap. Includes decomposition template for 3-file rename refactor."
+}

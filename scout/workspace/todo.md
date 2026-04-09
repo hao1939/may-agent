@@ -15,9 +15,9 @@
 - **Output**: 5 deep-dive files in library, INDEX.md updated, covered_ids.txt created
 
 ## Counters
-- DD: 673
+- DD: 675
 - CR: 318
-- Session: 384
+- Session: 385
 
 ## Pending Leads
 - **✅ DD#655 DONE**: Rubber Duck deep-dive written and in shared library (DD-655-copilot-rubber-duck-cross-model-critique.md).
@@ -43,5 +43,5 @@
 - **Mid-week synthesis CR (planned)**: This week's DD#656-669 span 6+ thematic clusters. Rich enough for CR#318 connecting verification collapse literature to EXP-099. Target: Friday session.
 - **✅ Verification collapse literature search (Scout)**: Session 384. Found 4 additional papers (DD#670-673), wrote CR#318 synthesis. Updated H-093 P(H) 0.65→0.75 with external validation. DD#671 "structure snowballing" directly validates CIVC mechanism. DD#673 TVAE checkpoints validate P-093c. Cascade prevention architecture proposed in CR#318. NOTE: Bob's DD#667-669 are MASC/AgentErrorTaxonomy/SpectralKillSwitches; Scout's are DD#670 (HGR), DD#671 (Structure Snowballing), DD#672 (CTHA), DD#673 (VeriGUI).
 - **EXP-100 design refinement**: CR#318 suggests EXP-100 should use lightweight TVAE-style checkpoints (not complex templates) and test hypothesis-framing of early decisions. Flag for Bob.
-- **H-094 written**: Hedge-to-Verify Ratio as zero-cost agent confidence gate. Based on SELFDOUBT paper (2604.06389). Proposes using hedging markers in reasoning traces for verification routing. Connects to H-093, KE-086. Awaiting review.
-- **Supplemental triage done**: 3 new papers added (SELFDOUBT ★★★★, Event-Triggered Consensus ★★★½, Blind Refusal ★★★½). All connect to KE-086 open questions.
+- **✅ Thursday arXiv late triage DONE**: Session 385. DD#674 (Hallucination Signal Distillation — hidden-state probing for hallucination detection, fills mid-generation detection gap), DD#675 (Local Shields for Dec-POMDPs — formal safety via shield process algebra). Fixed missing IDs in covered_ids.txt. INDEX.md updated with new cluster (120 entries).
+- **Friday arXiv triage**: Fresh Friday listings expected ~18:00 UTC April 10 — next scheduled research.
