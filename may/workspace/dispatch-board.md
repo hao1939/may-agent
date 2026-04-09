@@ -1,17 +1,17 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~02:06 UTC
+Updated: 2026-04-09 ~02:22 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
 - **Scout**: 🟢 Running — Heartbeat active.
-- **Bob**: 🟢 Running — Fresh heartbeat cycle.
-- **Coach**: 🟢 Running — Long session (14min+), monitoring.
-- **Tech-lead**: 🟢 Running — Just fixed Optimizer/QA outage.
+- **Bob**: 🟢 Running — Just completed auto-pause recovery design (334 lines). Heartbeat done.
+- **Coach**: 🟢 Running — EXP-096 (System Prompt Length Threshold). Re-running Arm A due to contamination fix.
+- **Tech-lead**: 🟢 Running — Idle after heartbeat. P1 few-shot task-injection design dispatched.
 - **Optimizer**: 🟢 RESTORED — Was down 17 days (Mar 23 - Apr 9). Auto-pause cleared.
 - **QA**: 🟢 RESTORED — Was down 17 days (Mar 23 - Apr 9). Auto-pause cleared.
 - **Evaluator**: 🟢 Running — Heartbeat active.
-- **All agents**: 🟡 7/8 running. Amy-kimi still 🔴. Optimizer + QA just restored after 17-day outage.
+- **All agents**: 🟡 7/8 running. Amy-kimi still 🔴.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -64,10 +64,11 @@ Updated: 2026-04-09 ~02:06 UTC
 | **Crash Loop Bug (req:e750a385)** | ✅ ALREADY FIXED | tech-lead | Commits 9ea5b5a + fcb97c9 + 9c7e549 already merged. Three-layer defense + compaction persistence. |
 | **Token Efficiency Research** | ✅ COMPLETE | bob | **P0 FINDING**: $441/week wasted from zero prompt caching on Claude Opus. LiteLLM proxy strips cache headers. Fix: set ANTHROPIC_API_KEY in .env + restart. Executive brief at `agents/bob/workspace/token-waste-executive-brief.md`. |
 | **Optimizer + QA 17-Day Outage** | ✅ FIXED | tech-lead | Model alias change + auto-pause circuit breaker = 17 days down (Mar 23 - Apr 9). Both restored. Report: `agents/tech-lead/workspace/fix-optimizer-qa-outage.md`. |
-| **Auto-Pause Recovery Design** | ⏳ PENDING | bob | Need probe timer or decay mechanism to prevent permanent lockout. P1 request sent. |
-| **EXP-095 Few-Shot Delivery Mechanism** | ✅ COMPLETE | coach | **DEFINITIVE**: Task-message = 100% (6/6), system-prompt = 0% (3/3). Position is everything. Content quality irrelevant if delivery position wrong. |
-| **Few-Shot Production Deployment Proposal** | ✅ COMPLETE | coach | Comprehensive proposal at `agents/coach/workspace/proposal-fewshot-production-deployment.md`. Phase 1: static routing + 3 proven examples. ~2hr implementation. Needs tech-lead + Bob review. |
-| **Bob Heartbeat System Analysis** | ⏳ IN PROGRESS | bob | Auto-loop workflow analyzing heartbeat/cron system. Session s_1775699416405_85. |
+| **Auto-Pause Recovery Design** | ✅ COMPLETE | bob | 334-line design doc at `agents/shared/may-agent-docs/design/auto-pause-recovery.md`. Probe timer with exponential backoff, 24h TTL, escalation, skipIfIdle. Tech-lead notified. |
+| **EXP-095 Few-Shot Delivery Mechanism** | ✅ COMPLETE | coach | **DEFINITIVE**: Task-message = 100% (6/6), system-prompt = 0% (3/3). Position is everything. |
+| **Few-Shot Task-Injection Design** | ⏳ DISPATCHED | tech-lead | P1: Design + implement few-shot injection into task messages (not system prompt). References KE-065. |
+| **WKWA-007 Intervention Architecture** | ✅ COMPLETE | bob | 508-line capstone synthesis at `agents/shared/knowledge/synthesis/WKWA-007-intervention-architecture.md`. |
+| **EXP-096 System Prompt Length Threshold** | ⏳ IN PROGRESS | coach | Testing if system prompt length affects few-shot. Re-running Arm A. Session s_1775699361246_306. |
 
 ## Completed/Archived
 | Item | When | Notes |
