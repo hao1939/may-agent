@@ -40,6 +40,23 @@ import { learnFromSession } from "../../src/lib/context-learn.js";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
+interface SessionDef {
+  /** Session identifier (e.g. "session-1") */
+  id?: string;
+  /** Relative path to session task.md */
+  task: string;
+  /** Relative path to injected context file */
+  injected_context?: string;
+  /** Relative path to session environment directory */
+  environment?: string;
+  /** Files to collect from workDir after this session completes */
+  artifacts_out?: string[];
+  /** Map of prior artifact name → new name to inject before this session */
+  artifacts_in_rename?: Record<string, string>;
+  /** Per-session timeout override in minutes */
+  timeout?: number;
+}
+
 interface ScenarioMeta {
   name: string;
   categories: string[];
@@ -54,6 +71,8 @@ interface ScenarioMeta {
   phase_cleanup?: string[];
   /** Path to injected context file (relative to scenario dir). Prepended to task. */
   injected_context?: string;
+  /** Multi-session scenario: array of session definitions. */
+  sessions?: SessionDef[];
 }
 
 interface ScoreCheck {
@@ -366,16 +385,35 @@ function loadScenarioMeta(scenarioDir: string): ScenarioMeta | null {
 }
 
 function listScenarios(): string[] {
-  return readdirSync(SCENARIOS_DIR)
-    .filter((name) => {
-      const dir = join(SCENARIOS_DIR, name);
-      return (
-        existsSync(join(dir, "task.md")) &&
-        existsSync(join(dir, "success_criteria.js")) &&
-        existsSync(join(dir, "environment"))
-      );
-    })
-    .sort();
+  const scenarios: string[] = [];
+
+  // Single-session scenarios: direct children of SCENARIOS_DIR
+  for (const name of readdirSync(SCENARIOS_DIR)) {
+    const dir = join(SCENARIOS_DIR, name);
+    if (!statSync(dir).isDirectory()) continue;
+
+    // Standard single-session: has task.md + success_criteria.js + environment
+    if (
+      existsSync(join(dir, "task.md")) &&
+      existsSync(join(dir, "success_criteria.js")) &&
+      existsSync(join(dir, "environment"))
+    ) {
+      scenarios.push(name);
+      continue;
+    }
+
+    // Category directory (e.g. "multi-session/"): look for nested scenarios
+    for (const sub of readdirSync(dir)) {
+      const subDir = join(dir, sub);
+      if (!statSync(subDir).isDirectory()) continue;
+      const meta = loadScenarioMeta(subDir);
+      if (meta?.sessions && existsSync(join(subDir, "success_criteria.js"))) {
+        scenarios.push(`${name}/${sub}`);
+      }
+    }
+  }
+
+  return scenarios.sort();
 }
 
 function matchesFilters(meta: ScenarioMeta | null, tier?: string, category?: string, tag?: string): boolean {
@@ -398,8 +436,8 @@ function matchesFilters(meta: ScenarioMeta | null, tier?: string, category?: str
     }
   }
 
-  if (category && !meta.categories.includes(category)) return false;
-  if (tag && !meta.tags.includes(tag)) return false;
+  if (category && !(meta.categories || []).includes(category)) return false;
+  if (tag && !(meta.tags || []).includes(tag)) return false;
 
   return true;
 }
@@ -661,6 +699,254 @@ function isStale(binaryPath: string): boolean {
   }
 }
 
+// ── Multi-session scenario run ─────────────────────────────────────────
+
+/**
+ * Read a session transcript from a session path and return parsed messages.
+ * Reused by both context-learn and per-session transcript export.
+ */
+function readSessionTranscript(sessionPath: string): { raw: string; messages: unknown[] } {
+  if (!sessionPath || !existsSync(sessionPath)) {
+    return { raw: "", messages: [] };
+  }
+
+  let transcriptContent = "";
+
+  if (sessionPath.endsWith(".jsonl") && existsSync(sessionPath)) {
+    transcriptContent = readFileSync(sessionPath, "utf-8");
+  } else if (statSync(sessionPath).isDirectory()) {
+    const files = readdirSync(sessionPath).filter((f) => f.endsWith(".jsonl"));
+    if (files.length > 0) {
+      let best = files[0];
+      let bestSize = 0;
+      for (const f of files) {
+        const sz = statSync(join(sessionPath, f)).size;
+        if (sz > bestSize) {
+          bestSize = sz;
+          best = f;
+        }
+      }
+      transcriptContent = readFileSync(join(sessionPath, best), "utf-8");
+    }
+  }
+
+  const messages = transcriptContent
+    .split("\n")
+    .filter((l) => l.trim())
+    .map((l) => {
+      try {
+        return JSON.parse(l);
+      } catch {
+        return null;
+      }
+    })
+    .filter(Boolean);
+
+  return { raw: transcriptContent, messages };
+}
+
+/**
+ * Run a multi-session scenario. Each session gets a fresh agent invocation
+ * with its own environment overlay, task, and injected context.
+ *
+ * State carries between sessions ONLY via:
+ *   - The file system (workDir persists)
+ *   - The agent's context.md (via context-learn)
+ *   - Explicitly declared artifacts (artifacts_out / artifacts_in_rename)
+ */
+function runMultiSessionScenario(
+  scenarioName: string,
+  adapter: Adapter,
+  agentName: string,
+  labFork: string,
+  timeoutOverride?: number,
+): RunResult {
+  const scenarioDir = join(SCENARIOS_DIR, scenarioName);
+  const meta = loadScenarioMeta(scenarioDir)!;
+  const sessions = meta.sessions!;
+  const globalTimeout = timeoutOverride ?? meta.timeout ?? 5;
+
+  // Validate multi-session scenario
+  if (!existsSync(join(scenarioDir, "success_criteria.js"))) {
+    throw new Error(`Missing: ${join(scenarioDir, "success_criteria.js")}`);
+  }
+
+  // Set up isolated environment
+  const gymRoot = mkdtempSync(join(tmpdir(), "gym-multi-"));
+  const workDir = join(gymRoot, "work");
+  const stateDir = join(gymRoot, "state");
+  mkdirSync(workDir, { recursive: true });
+  mkdirSync(stateDir, { recursive: true });
+
+  // Copy shared environment if it exists (base files present from the start)
+  const sharedEnv = join(scenarioDir, "shared-environment");
+  if (existsSync(sharedEnv)) {
+    cpSync(sharedEnv, workDir, { recursive: true });
+  }
+
+  // Setup adapter with sandboxed agents (context.md persists between sessions)
+  adapter.setup(PROJECT_ROOT, { agentName, labFork, gymRoot, sandboxAgents: true });
+
+  const startMs = Date.now();
+  const allSessionResults: AdapterResult[] = [];
+  // Artifact store: collected files from prior sessions
+  const artifactStore: Map<string, string> = new Map(); // artifact name → temp file path
+  let lastResult: AdapterResult = { sessionId: "", status: "unknown", sessionPath: "" };
+
+  console.error(`Multi-session scenario: ${scenarioName} (${sessions.length} sessions)`);
+
+  for (let i = 0; i < sessions.length; i++) {
+    const session = sessions[i];
+    const sessionId = session.id ?? `session-${i + 1}`;
+    const sessionTimeout = session.timeout ?? globalTimeout;
+
+    console.error(`  ${sessionId}...`);
+
+    // ── Step A: Overlay session environment onto workDir ──────────
+    if (session.environment) {
+      const envDir = join(scenarioDir, session.environment);
+      if (existsSync(envDir)) {
+        cpSync(envDir, workDir, { recursive: true });
+        console.error(`    Overlaid environment from ${session.environment}`);
+      }
+    }
+
+    // ── Step B: Inject artifacts from prior sessions ──────────────
+    if (session.artifacts_in_rename) {
+      for (const [artifactName, destName] of Object.entries(session.artifacts_in_rename)) {
+        const sourcePath = artifactStore.get(artifactName);
+        if (sourcePath && existsSync(sourcePath)) {
+          const destPath = join(workDir, destName);
+          mkdirSync(join(destPath, ".."), { recursive: true });
+          cpSync(sourcePath, destPath);
+          console.error(`    Injected artifact: ${artifactName} → ${destName}`);
+        } else {
+          // Artifact not available — session runs without it (best-effort)
+          console.error(`    Warning: artifact "${artifactName}" not available from prior sessions`);
+        }
+      }
+    }
+
+    // ── Step C: Compose task with per-session context ─────────────
+    // Load per-session injected context
+    let contextPrefix = "";
+    if (session.injected_context) {
+      const ctxFile = join(scenarioDir, session.injected_context);
+      if (existsSync(ctxFile)) {
+        contextPrefix = readFileSync(ctxFile, "utf-8").trim() + "\n\n";
+      }
+    }
+
+    const taskContent = readFileSync(join(scenarioDir, session.task), "utf-8");
+    const taskFile = join(gymRoot, `${sessionId}-task.md`);
+    writeFileSync(taskFile, `${contextPrefix}Work in this directory: ${workDir}\n\n${taskContent}\n`);
+
+    // ── Step D: Run agent (fresh invocation) ─────────────────────
+    lastResult = adapter.runAgent(taskFile, workDir, sessionTimeout);
+    allSessionResults.push(lastResult);
+    console.error(`    ${sessionId} complete (status: ${lastResult.status}, session: ${lastResult.sessionId})`);
+
+    // ── Step E: Export per-session transcript ─────────────────────
+    const transcriptDest = join(workDir, `${sessionId}-transcript.jsonl`);
+    const { raw: transcriptRaw, messages } = readSessionTranscript(lastResult.sessionPath);
+    if (transcriptRaw) {
+      writeFileSync(transcriptDest, transcriptRaw);
+      console.error(`    Exported transcript → ${sessionId}-transcript.jsonl`);
+    } else {
+      writeFileSync(transcriptDest, JSON.stringify({ note: `no transcript available for ${sessionId}` }) + "\n");
+    }
+
+    // ── Step F: Context learning between sessions ────────────────
+    if (i < sessions.length - 1 && messages.length > 0) {
+      try {
+        const sandboxAgentDir = join(gymRoot, "agents-sandbox", agentName);
+        const workAgentDir = join(workDir, "agents", agentName);
+
+        for (const dir of [sandboxAgentDir, workAgentDir]) {
+          if (existsSync(dir)) {
+            const result = learnFromSession({ agentDir: dir, messages });
+            if (result.added.length > 0) {
+              console.error(`    Context-learn: +${result.added.length} fact(s) → ${dir}/context.md`);
+            }
+          }
+        }
+      } catch (err) {
+        console.error(`    Context-learn error: ${err instanceof Error ? err.message : err}`);
+      }
+    }
+
+    // ── Step G: Collect artifacts for next session ────────────────
+    if (session.artifacts_out) {
+      for (const artifactName of session.artifacts_out) {
+        const artifactPath = join(workDir, artifactName);
+        if (existsSync(artifactPath)) {
+          // Store a copy in temp dir so environment overlays don't clobber it
+          const storePath = join(gymRoot, "artifacts", `${sessionId}--${artifactName.replace(/\//g, "__")}`);
+          mkdirSync(join(storePath, ".."), { recursive: true });
+          cpSync(artifactPath, storePath);
+          artifactStore.set(artifactName, storePath);
+          console.error(`    Collected artifact: ${artifactName}`);
+        } else {
+          console.error(`    Warning: expected artifact "${artifactName}" not found in workDir`);
+        }
+      }
+    }
+  }
+
+  const durationMs = Date.now() - startMs;
+
+  // Export combined transcript (all sessions concatenated) as transcript.jsonl
+  // Individual session transcripts are already at workDir/session-N-transcript.jsonl
+  exportCombinedTranscript(allSessionResults, workDir);
+
+  // Score
+  const score = scoreScenario(scenarioDir, workDir);
+
+  // LLM judge (if rubric exists)
+  // For multi-session, use the last session's task as context for the judge
+  const lastTaskContent = readFileSync(join(scenarioDir, sessions[sessions.length - 1].task), "utf-8");
+  let judgments: Judgment[] = [];
+  if (existsSync(join(scenarioDir, "judge_criteria.md"))) {
+    console.error("  Running LLM judge...");
+    judgments = judgeScenario(scenarioDir, workDir, gymRoot, lastTaskContent);
+    const jPass = judgments.filter((j) => j.verdict === "pass").length;
+    console.error(`  Judge: ${jPass}/${judgments.length} conventions passed`);
+  }
+
+  const judgeSummary =
+    judgments.length > 0 ? ` | judge: ${judgments.filter((j) => j.verdict === "pass").length}/${judgments.length}` : "";
+
+  const effectiveAgentsRoot = labFork ? join(gymRoot, "agents-lab") : join(PROJECT_ROOT, "agents");
+  const frameworkSha = computeFrameworkSha();
+  const model = readAgentModel(effectiveAgentsRoot, agentName);
+  const prompt = assembleEffectivePrompt(effectiveAgentsRoot, agentName);
+
+  return {
+    scenario: scenarioName,
+    adapter: adapter.name,
+    agent: agentName,
+    lab_fork: labFork || null,
+    workflow: false,
+    passed: score.passed,
+    checks: score.checks,
+    judgments,
+    summary: `[multi-session: ${sessions.length}] ${score.summary}${judgeSummary}`,
+    agent_status: lastResult.status,
+    duration_ms: durationMs,
+    session_id: allSessionResults.map((r) => r.sessionId).join(","),
+    session_path: lastResult.sessionPath,
+    work_dir: workDir,
+    gym_root: gymRoot,
+    prompt_hash: prompt?.hash ?? null,
+    prompt_text: prompt?.text ?? null,
+    framework_sha: frameworkSha,
+    model,
+    categories: meta.categories ?? [],
+    tags: meta.tags ?? [],
+    tier: meta.tier ?? null,
+  };
+}
+
 // ── Single scenario run ────────────────────────────────────────────────
 
 function runScenario(
@@ -671,15 +957,20 @@ function runScenario(
   timeoutOverride?: number,
 ): RunResult {
   const scenarioDir = join(SCENARIOS_DIR, scenarioName);
+  const meta = loadScenarioMeta(scenarioDir);
 
-  // Validate
+  // Multi-session scenarios use a separate code path
+  if (meta?.sessions && meta.sessions.length > 0) {
+    return runMultiSessionScenario(scenarioName, adapter, agentName, labFork, timeoutOverride);
+  }
+
+  // Validate single-session scenario
   for (const required of ["task.md", "success_criteria.js", "environment"]) {
     if (!existsSync(join(scenarioDir, required))) {
       throw new Error(`Missing: ${join(scenarioDir, required)}`);
     }
   }
 
-  const meta = loadScenarioMeta(scenarioDir);
   const isWorkflow = meta?.workflow ?? false;
   const learnBetween = meta?.learn_between_phases ?? false;
   const timeout = timeoutOverride ?? meta?.timeout ?? 5;
@@ -1062,7 +1353,7 @@ function main() {
       if (!matchesFilters(meta, args.tier, args.category, args.tag)) continue;
 
       if (meta) {
-        const tier = meta.tier || "unknown";
+        const tier = String(meta.tier || "unknown");
         const cats = (meta.categories || []).join(",");
         console.log(`${name.padEnd(42)} tier=${tier.padEnd(10)} categories=${cats}`);
       } else {
