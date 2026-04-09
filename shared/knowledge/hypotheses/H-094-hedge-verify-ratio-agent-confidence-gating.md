@@ -23,10 +23,10 @@ Agent outputs that contain zero hedging markers in their reasoning traces are co
 
 ## Proposed Experiment
 
-1. Collect 200+ agent reasoning traces from recent sessions (Bob, Scout, May)
-2. Implement simple hedging marker detection (regex + small classifier)
-3. Measure: (a) hedging presence/absence vs. output correctness, (b) HVR score distribution, (c) potential verification budget savings
-4. If validated, integrate as pre-verification filter in agent pipeline
+**EXP-101 DESIGNED** (2026-04-09): Retrospective HVR validation on 1,435 existing agent session traces.
+- Phase 1: $0 analysis of session.jsonl traces — zero-hedge gate precision, HVR→AUROC, FM-3.3 prediction
+- Phase 2 (optional): ~$2-3 prospective gym runs for clean correctness labels
+- See: `knowledge/experiments/EXP-101/design.md`
 
 ## Key Risk
 
