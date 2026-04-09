@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~07:06 UTC
+Updated: 2026-04-09 ~07:25 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
@@ -83,9 +83,9 @@ Updated: 2026-04-09 ~07:06 UTC
 | **Gym Graduation Exit Conditions** | ✅ BOTH MET | - | EXP-098 ✅ (cross-ref 100% on L3) + Wave 2 validation ✅ (5 scenarios done). **Gym can now enter maintenance/regression mode.** |
 | **Wave 3 Regression Validation** | ✅ COMPLETE | coach | 2/3 pass. 16/16 product checks pass. Convention gaps (search efficiency, step ordering) expected on untreated scenarios. No regressions from existing skills. |
 | **Few-Shot Example Sprint 1 Conversion** | ✅ COMPLETE | coach | know-when-blocked + evidence-over-narrative converted to few-shot format. INDEX updated. 5 total examples now. |
-| **Few-Shot Phase 1 Build** | ✅ COMPLETE | tech-lead | `fewshot-inject.ts` (140 lines) + `implement-and-verify.ts` integration + `GYM_NO_FEWSHOT` bypass. 22/22 tests pass (`test/fewshot-inject.test.ts`). Commits: `2dcea699` (tests) + `1f5e7bb3` (agents integration). **On review branch, needs merge to master.** |
+| **Few-Shot Phase 1 Build** | ✅ MERGED | tech-lead | `fewshot-inject.ts` (140 lines) + `implement-and-verify.ts` integration + `GYM_NO_FEWSHOT` bypass. 22/22 tests pass. Merged to main via `review/fewshot-phase1` (commit `6c1ccfa`). |
 | **Bob Workspace Gitignore Fix** | ✅ COMPLETE | may | Added to `agents/bob/context.md`: workspace is gitignored, use shared/knowledge for committed deliverables. Resolves coach reqs 7da65082 + fe1cb6b9. |
-| **Compaction KeyFacts + MemLeak Fix** | ✅ COMPLETE | tech-lead | Commit 0349a21 on `review/compaction-keyfacts-and-memleak`. Enhanced compaction KeyFacts + fixed sessionResults memory leak. **Awaiting merge to main.** |
+| **Compaction KeyFacts + MemLeak Fix** | ✅ MERGED | tech-lead | Commit 0349a21, merged to main. Enhanced compaction KeyFacts + fixed sessionResults memory leak. |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -117,18 +117,21 @@ Updated: 2026-04-09 ~07:06 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (07:06)
-- **✅ Few-Shot Phase 1 BUILT AND VERIFIED** — `fewshot-inject.ts` with static keyword router (5 patterns), integrated into `implement-and-verify.ts` workflow, `GYM_NO_FEWSHOT` bypass. **22/22 tests pass.** On review branch, needs merge to master.
-- **✅ Bob workspace gitignore fix** — Added persistent context to Bob's context.md: workspace is gitignored, commit-worthy deliverables go to shared/knowledge or may-agent-docs. Resolves recurring evaluation failures.
-- **Review branches pending merge**: `review/s_1775702934728_338` has fewshot tests + finish-guard fixes. Tech-lead should merge.
+## Latest Cycle Summary (07:25)
+- **✅ Both review branches MERGED TO MAIN** — `review/fewshot-phase1` (Few-Shot Phase 1) and `review/compaction-keyfacts-and-memleak` both merged. Main HEAD: `6c1ccfa`. Branches can be cleaned up.
+- **✅ Few-Shot Phase 1 now on main** — `fewshot-inject.ts` with static keyword router, integrated into `implement-and-verify.ts`, `GYM_NO_FEWSHOT` bypass. 22/22 tests pass.
+- **✅ Compaction KeyFacts + Memory Leak fix on main** — Enhanced compaction KeyFacts + sessionResults memory leak fix. Commit `0349a21`.
+- **Bob parallel-research session active** — Bob forked work session to implement parallel-research workflow from design doc (31min ago).
+- **Coach growth trigger** — Error scanner flagged Bob has 4 repeated FM-2.6 errors in 7 days. Coach should initiate growth cycle.
+- **Optimizer tool regression alert** — 4 tools regressed (read/bash nonexistent-path up 167-300%). Optimizer to investigate.
 - **Zero errors** — All 7 running agents healthy.
 
 ## Next Actions
-- **P0**: **Merge review branch to master** — `review/s_1775702934728_338` has fewshot tests + finish-guard fixes (5 commits ahead). Tech-lead to merge.
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao**.
+- **P1**: **Auto-pause recovery implementation** — Design complete at `agents/shared/may-agent-docs/design/auto-pause-recovery.md`. Queue for tech-lead now that merges done.
 - **P1**: **Gym maintenance mode transition** — Bob/Coach to coordinate. No more exploratory experiments. Gym becomes regression suite only.
-- **P1**: **Auto-pause recovery implementation** — Design complete. Queue for tech-lead after merges done.
 - **P1**: **Present research sprint results to Hao** — H-091, 17+ experiments, gym graduation, EXP-098 landmark result.
+- **P1**: **Clean up merged review branches** — `review/fewshot-phase1` and `review/compaction-keyfacts-and-memleak` can be deleted.
 - **P2**: Federation design ready for Hao review
 - **P2**: Pre-merge review gate Phase 2 (auto-review)
 - **P2**: Amy-kimi still down — blocked on Hao for billing
