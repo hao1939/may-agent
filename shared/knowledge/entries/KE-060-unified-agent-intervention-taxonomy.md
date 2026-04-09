@@ -2,7 +2,7 @@
 
 **Status**: Verified  
 **Source**: H-085 (Forced Externalization), H-089 (Environmental Evidence Discovery), H-091 (Skill Delivery Methods), KE-043, KE-054, KE-056, KE-057, KE-059  
-**Experiments**: EXP-025 through EXP-097 (40+ experiments, 270+ runs)  
+**Experiments**: EXP-025 through EXP-098 (40+ experiments, 280+ runs)  
 **Date**: 2026-04-09  
 **Filed by**: Bob (Architect)  
 **Confidence**: High (converging evidence from three independent research lines)
@@ -69,12 +69,12 @@ Agent fails on task T. Why?
 
 **Empirical profile**:
 - Effect size: +100pp on absent-information tasks (0% → 100% in 3/4 tested scenarios)
-- Domain: 4 confirmed domains — YAML config repair, YAML skill-based, .env repair, SQL schema migration
+- Domain: 5 confirmed domains — YAML config repair, YAML skill-based, .env repair, SQL schema migration, cascading-state-migration
 - Boundary: Does NOT help on present-but-wrong problems (information already available; see M1)
 - Delivery level matters: L3 task instruction = 100%; L2 skill file = 67% (KE-056 hierarchy applies)
-- Aggregate: 34/36 = 94% across 4 domains (vs 0% baseline)
+- Aggregate: 37/39 = 95% across 5 domains (vs 0% baseline)
 
-**Key experiments**: EXP-077–080, EXP-083
+**Key experiments**: EXP-077–080, EXP-083, EXP-098
 
 ### M3: Structural Constraint (Action-Space Restriction)
 
@@ -336,5 +336,17 @@ The total empirical base: 220+ experimental runs across 40+ experiments, with co
 - **Updated cumulative delivery position data**: task-message 15/15 (100%), system-prompt (no framing) 0/9 (0%), system-prompt (urgency framing) 1/3 (33%) across EXP-094 + EXP-095 + EXP-096 + EXP-097
 - H-091 P(H) stays at 0.93 — refines delivery position gradient without changing scope or confidence
 
+### EXP-098 Update: Cross-Reference Is the Active Ingredient on L3 Cascading-State Tasks
+- Tested 4-arm design on cascading-state-migration scenario (N=3 per arm, 4 arms = 12 runs)
+- Arm A (baseline, no treatment): 0/3 (0%) — confirms scenario is genuinely hard
+- Arm B (externalization only — M1): 0/3 (0%) — **M1 fails when info is absent, not overlooked**
+- Arm C (cross-reference only — M2): 3/3 (100%) — **M2 is the active ingredient**
+- Arm D (combined — M1+M2): 3/3 (100%) — adding M1 to M2 adds zero marginal value
+- **Key finding**: On L3 absent-information tasks, externalization (M1) adds nothing beyond cross-reference (M2). This cleanly validates the 2×2 matrix: information availability determines which mechanism works.
+- **M2 empirical profile updated**: Now 37/39 = 95% across 5 domains (adding cascading-state to YAML config, YAML skill-based, .env repair, SQL schema migration)
+- **H-085 boundary reinforced**: P(H) 0.85→0.97. Externalization fails cleanly when information is absent from context.
+- **H-089 updated**: P(H) 0.82→0.85 (N=36→39). Cross-reference confirmed on cascading-state-migration.
+- **First gym graduation exit condition MET**: cascading-state-migration passes with M2 treatment.
+
 ### Experiment count update
-- **Experiments**: EXP-025 through EXP-097 (40+ experiments, 270+ runs)
+- **Experiments**: EXP-025 through EXP-098 (40+ experiments, 280+ runs)
