@@ -378,6 +378,19 @@
   - **Files modified**: INDEX.md, todo.md
 - **Next priorities**: (1) Phase 1 deployment — expand few-shot example store from 3→7 proven scenarios, (2) Update WKWA-005 with few-shot as delivery mechanism, (3) Consider moving KE-066 to synthesis/ as WKWA-008
 
+## Session Notes (2026-04-09 ~04:50)
+- [x] **KE-066 ID COLLISION FIXED**: Orphan file `KE-066-reasoning-behavior-decoupling-uncertainty-detection.md` renamed to `KE-071-reasoning-behavior-decoupling-uncertainty-detection.md`. Internal header updated from KE-066 to KE-071 references. INDEX.md updated with KE-071 row.
+- [x] **KE-072 WRITTEN**: Positional Privilege Is Architectural — U-shaped attention bias (arXiv:2603.10123) explains 100% vs 0% delivery gap. Present at initialization before training. Validates task-message delivery requirement. Seeds further predictions about deeper models → larger gap.
+  - **Files created**: KE-072-positional-privilege-architectural-theory.md
+  - **Files modified**: KE-071 (renamed from KE-066), INDEX.md (KE-071 row, KE-072 row, DD-660 in library listing)
+- [x] **WAVE 1 DEPLOYMENT COMPLETE**: 3 treatment scenarios created:
+  - `escalation-impossible-task-fewshot/` — know-when-blocked skill via injected_context.md
+  - `misleading-test-fix-fewshot/` — evidence-over-narrative skill via injected_context.md
+  - `sycophants-dilemma-fewshot/` — classify-then-act skill via injected_context.md
+  - All use task-message delivery (injected_context.md) per KE-065/EXP-095 findings
+  - **Awaiting validation**: Need 3 runs each to confirm pass rates match lab results (3/3 expected)
+- **Next priorities**: (1) Validate Wave 1 (3 runs each), (2) Begin Wave 2 cross-reference deployments, (3) Design new skills for Wave 3, (4) Update WKWA-005 with few-shot delivery mechanism
+
 ## Session Notes (2026-04-09 ~04:25)
 - [x] **DEPLOYMENT PLAN WRITTEN**: `agents/shared/knowledge/synthesis/DEPLOYMENT-PLAN-gym-remediation.md`
   - **4-wave deployment plan** for raising gym pass rate from 71.3% (77/108) to target 88% (95/108)

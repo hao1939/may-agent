@@ -1,4 +1,4 @@
-# KE-066: The Reasoning-Behavior Gap — External Uncertainty Detection Meets Internal Reasoning-Action Decoupling
+# KE-071: The Reasoning-Behavior Gap — External Uncertainty Detection Meets Internal Reasoning-Action Decoupling
 
 **Status**: Theoretical (supported by convergence of two independent research groups + strong connections to three existing KEs)
 **Confidence**: High — two independent papers from different subfields (uncertainty quantification, safety alignment) converge on the same structural insight: model reasoning quality ≠ model behavioral quality
@@ -160,7 +160,7 @@ The reasoning-behavior decoupling model predicts:
 
 ## Candidate Principle
 
-> **Principle 66 (Reasoning-Behavior Decoupling)**: In trained language models, correct reasoning does not guarantee correct behavior. The gap between reasoning quality and behavioral output is: (a) systematic — arising from training-induced behavioral defaults that override reasoning; (b) detectable — reasoning traces contain behavioral markers (hedging, verification patterns) whose structure predicts output reliability; (c) architecturally addressable — but only by interventions that operate in the behavioral space (workflow structure, positional delivery, action-space constraints), not the reasoning space (knowledge, skills, analysis prompts). Testing reasoning quality alone is insufficient for predicting system reliability.
+> **Principle 71 (Reasoning-Behavior Decoupling)**: In trained language models, correct reasoning does not guarantee correct behavior. The gap between reasoning quality and behavioral output is: (a) systematic — arising from training-induced behavioral defaults that override reasoning; (b) detectable — reasoning traces contain behavioral markers (hedging, verification patterns) whose structure predicts output reliability; (c) architecturally addressable — but only by interventions that operate in the behavioral space (workflow structure, positional delivery, action-space constraints), not the reasoning space (knowledge, skills, analysis prompts). Testing reasoning quality alone is insufficient for predicting system reliability.
 
 ---
 
