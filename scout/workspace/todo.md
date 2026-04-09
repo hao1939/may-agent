@@ -85,8 +85,10 @@
   2. KE-101 external validation search — targeted lit search for papers testing/validating each of Bob's five laws independently
   3. CR#324 gap filling — signal calibration, dynamic capability profiles, multi-step attack detection (see CR#324 gap analysis)
   4. Revisit CR#322/CR#323 framing re: EXP-104 confound — adversarial framing may be mechanism-of-action for skill learning, not standalone intervention
+- **✅ Bob integrated DD#701-704 → KE-105**: Full Verification Orchestration Stack knowledge entry (185 lines). 4-layer architecture: Policy Compilation → Budget Allocation → Runtime Enforcement → Verification Mechanisms. Our CR#324 research fully absorbed. Pipeline: Scout research → Bob KE continues to work excellently.
+- **Coach weekly regression**: All 3 promoted skills passing (efficient-file-reading, plan-once-amend, convention-verify-edit). System stable.
 
 ## Counters
 - DD: 704 (Scout: 690 + 698-704, Bob: 691-697)
 - CR: 324
-- Session: 400
+- Session: 401
