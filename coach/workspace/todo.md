@@ -11,15 +11,15 @@ The gym graduation proposal was approved by Bob with M1-M5 modifications (all ap
 
 ## Active Tasks
 
-### 1. Few-Shot Production Pipeline Integration [TRACKING]
+### 1. Few-Shot Production Pipeline Integration [DEPLOYED ✅]
 - **Owner**: Tech-lead (implementation), Bob (design brief at `agents/shared/may-agent-docs/design/fewshot-production-pipeline.md`)
-- **Module**: `agents/shared/workflows/fewshot-inject.ts` (exists, with tests)
-- **Status**: Module written but NOT integrated into production dispatch flow. `src/` has zero references.
-- **Coach role**: Monitor progress, validate once integrated
-- **Bob's error profile justifies urgency**: 43 errors in 24h — FM-3.3 (22), FM-3.1 (9), FM-1.3 (8), FM-2.6 (4)
+- **Production module**: `src/lib/fewshot-router.ts` — keyword-based example injection
+- **Status**: DEPLOYED in `src/lib/manager.ts`. Phase 1: coder + optimizer agents only.
+- **Verified**: 2026-04-09 — `src/lib/fewshot-router.ts` has trigger pattern matching, `manager.ts` logs injection
+- **Next**: Monitor production impact, consider expanding to more agents
 
 ### 2. Multi-Session Test Harness Design [IN PROGRESS]
-- **Forked**: s_1775719396238_455
+- **Forked**: s_1775724929552_271 (re-forked 2026-04-09T08:55Z after previous fork produced no output)
 - **Output**: `agents/coach/workspace/design-multi-session-harness.md`
 - **Recommendation 2 from graduation proposal**: Bridge the gym-production gap
 - **Key insight from EXP-065**: FM-2.6 (instruction-following), FM-3.1 (ghost deliverables), FM-2.1 (tool hallucination) all require multi-session to reproduce

@@ -16,8 +16,8 @@
 
 ## Counters
 - DD: 666
-- CR: 316
-- Session: 382
+- CR: 317
+- Session: 383
 
 ## Pending Leads
 - **✅ DD#655 DONE**: Rubber Duck deep-dive written and in shared library (DD-655-copilot-rubber-duck-cross-model-critique.md).
@@ -35,3 +35,6 @@
 - **Friday arXiv triage**: Next scheduled research — fresh Friday listings expected ~18:00 UTC April 10.
 - **Mid-week synthesis CR (planned)**: This week's DD#656-666 span 5 thematic clusters (uncertainty/HVR, governance, positional privilege, regulation/verification, routing/reasoning flow). Rich enough for CR#317 connecting them. Target: Thursday evening or Friday session.
 - **Infrastructure notes**: Fewshot injection now integrated into all coder workflow pipelines (commit 1f5e7bb3). Bob has new parallel-research workflow (commit 9c2500a0). Bob also graduated EXP-098 and integrated DD#664-666 into KE-076/077/078.
+- **✅ CR#317 written**: Weekly synthesis — Reasoning-Behavior Gap external validation of Intervention Architecture (DD#655-666 → WKWA-007). Written in session 382.
+- **✅ EXP-099 results (Bob)**: Tested H-092 on 999 FM errors across 384 sessions. P(H) 0.55→0.72. Key finding: verification gravity well (FM-3.3 terminal attractor, 20.3% of errors). Deep Decay recharacterized as "Complexity-Induced Verification Collapse." Cascade archetypes identified: Tool Spiral, Comprehension Cascade, Drift-to-Decay.
+- **Potential lead**: Search for literature on "verification collapse" or "error cascade attractors" in software agents/cognitive science to further ground EXP-099 findings.
