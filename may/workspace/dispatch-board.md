@@ -1,17 +1,17 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~15:25 UTC
+Updated: 2026-04-09 ~15:55 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Running — Heartbeat active + forked "Anti-Confabulation Production Deployment" design brief (translating EXP-103 to production).
-- **Coach**: 🟢 Running — EXP-103 COMPLETE (12/12 runs, 100% pass). Session may still be running additional work.
+- **Bob**: 🟢 Running — Integrating EXP-103 results. Anti-confab design brief COMPLETE (395 lines, committed). KE-101 Meta-Analysis COMPLETE. Meta-analysis session COMPLETE.
+- **Coach**: 🟢 Running — EXP-104 COMPLETE (18 runs). C1.5 Ghost analysis COMPLETE. Heartbeat active.
 - **Scout**: 🟢 Running — Heartbeat active.
-- **Tech-lead**: 🟢 Idle — No active session.
-- **Optimizer**: 🟢 Idle — No active session.
-- **Evaluator**: 🟢 Idle — No active session.
+- **Tech-lead**: 🟢 Running — Heartbeat active. No dispatched work.
+- **Optimizer**: 🟢 Running — Heartbeat active. Tool quality regression flagged.
+- **Evaluator**: 🟢 Running — Heartbeat active.
 - **QA**: 🟢 Running — Heartbeat active.
-- **All agents**: 🟡 4/8 actively running (bob, coach, scout, qa). Amy-kimi still 🔴. Zero errors in last hour.
+- **All agents**: 🟢 7/8 actively running. Amy-kimi still 🔴. Zero errors in last hour.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -95,10 +95,11 @@ Updated: 2026-04-09 ~15:25 UTC
 | **Telegram Notification Bug (req:88bd4688)** | ✅ ALREADY FIXED | tech-lead | Commit 9de9e58 merged to main. Notifications filtered to interface agent only + dead prompt handler removed. |
 | **EXP-103 Adversarial Framing vs Verification** | ✅ COMPLETE | coach | **LANDMARK**: Both adversarial framing AND machine-verified evidence = 100% pass (12/12 runs). Baselines 11-18%. +75-89pp effect size. Verification confabulation SOLVED. KE-099 + KE-100 created. Bob doing synthesis + production deployment design brief. |
 | **EXP-103 Theory-vs-Experiment Synthesis** | ✅ COMPLETE | bob | Cross-reference synthesis: DD-694/695/696/697 vs EXP-103 empirical results. Objective redirection (adversarial framing) achieves same outcome as information asymmetry (DD-694) through different mechanism. At `agents/bob/workspace/SYNTHESIS-theory-vs-experiment-DD694-697-EXP103.md`. |
-| **Anti-Confabulation Production Deployment Design** | 🔄 IN PROGRESS | bob | Forked session translating EXP-103 findings into production deployment plan. Session `15cfdae6`. |
+| **Anti-Confabulation Production Deployment Design** | ✅ COMPLETE | bob | 395-line design brief at `agents/shared/may-agent-docs/design/anti-confabulation-deployment.md`. Committed. **NOTE: EXP-104 shows evidence-over-narrative skill already fixed confabulation (baseline 100%). Adversarial framing was coincidental in EXP-103, not causal.** Design brief still valid as defense-in-depth but the core fix is already deployed. Ready for tech-lead/Hao review. |
 
-| **EXP-104 Context-Stripped Verification** | 🔄 DESIGNED | coach | MARCH-inspired test: 3-arm × 2-scenario × 3-rep = 18 runs. Tests information asymmetry breaking verification confabulation. Design added to INDEX by Bob. Ready to run. |
-| **Bob C1.5 Convention Regression** | 🔍 INVESTIGATING | coach | C1.5 dropped 100%→94.9%. Ghost deliverables (FM-3.1) identified as root cause — 7 sessions today with ghost deliverables. Coach investigating. |
+| **EXP-104 Context-Stripped Verification** | ✅ COMPLETE | coach | **KEY FINDING**: Evidence-over-narrative skill ALREADY fixed confabulation — baseline 100% (was 18% pre-skill). Context-stripping HURTS (88% vs 100%). Claim-decomposed = 100%. **Retroactively reinterprets EXP-103**: skill deployment, not adversarial framing, was causal. 18 runs, 3 arms × 2 scenarios × 3 reps. Results at `agents/shared/knowledge/experiments/EXP-104/results.md`. |
+| **Bob C1.5 Convention Regression** | ✅ ANALYZED | coach | Root cause: concurrent sessions cause KE/DD ID collisions → renaming → ghost deliverables. 3 RCs identified. Recommends: verify-before-finish skill + finish-guard enhancement + KB coordination. Analysis at `agents/coach/workspace/bob-c15-ghost-analysis.md`. |
+| **KE-101 Meta-Analysis** | ✅ COMPLETE | bob | **LANDMARK**: 104+ experiments synthesized into 5 Laws of Agent Improvement, 4-tier intervention hierarchy, 3 meta-principles. Core finding: structure dominates content (0/32+ text rules on judgment vs 87-100% structural). At `agents/shared/knowledge/entries/KE-101-meta-analysis-theory-of-agent-improvement.md`. |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -130,22 +131,26 @@ Updated: 2026-04-09 ~15:25 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (15:25)
-- **5 agents active** — May, Bob, Coach, Scout, QA all running heartbeat cycles.
+## Latest Cycle Summary (15:55)
+- **7 agents active** — All except Amy-kimi running heartbeat cycles.
 - **Zero recent errors** — System clean.
-- **Bob**: Reviewing hypothesis corpus, doing Bayesian review of PRIORITY-TRACKER. Anti-confabulation design brief still in forked session (29m). Also working on EXP-104 design (context-stripped verification) which Coach added to INDEX.
-- **Coach**: Analyzing Bob's C1.5 convention regression (100%→94.9%) — identified ghost deliverable pattern (FM-3.1) as root cause. 7 sessions with ghost deliverables found today. Also designing/running EXP-104.
-- **Convention regression alert**: Bob C1.5 dropped, routed to coach automatically.
-- **Tool quality regression**: 8 regressions flagged, routed to optimizer automatically.
-- **System anomaly**: "Bob analysis 5 days old" — stale alert, Bob is actively analyzing.
+- **Major completions this cycle**:
+  - **EXP-104** (Coach): Evidence-over-narrative skill already fixed confabulation. Baseline 100% (was 18%). Context-stripping hurts. **This retroactively reinterprets EXP-103**: the adversarial framing was coincidental, not causal. The skill deployed via EXP-090/091 was the actual fix.
+  - **KE-101 Meta-Analysis** (Bob): Landmark synthesis. 5 Laws of Agent Improvement. Structure dominates content at 87-100% vs 0/32+ for text rules.
+  - **Anti-Confabulation Design Brief** (Bob): 395 lines, committed. Ready for review — but EXP-104 findings mean the core fix (skill) is already deployed.
+  - **C1.5 Ghost Analysis** (Coach): Root cause = concurrent KB sessions cause ID collisions → renames → ghost deliverables. 3 intervention options identified.
+- **Bob**: Currently integrating EXP-103 results into KB.
+- **Coach**: Heartbeat cycling. EXP-104 done.
+- **Convention regression alert**: C1.5 root cause identified by coach, intervention options outlined.
 - **No new tasks from Hao** — Nothing to dispatch.
-- **System healthy** — All key agents cycling normally. Amy-kimi still 🔴 (billing). Optimizer, Evaluator, Tech-lead idle.
+- **System healthy** — All key agents cycling normally. Amy-kimi still 🔴 (billing).
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao**.
-- **P1**: **Anti-Confabulation Production Deployment** — Bob writing design brief. When done, dispatch to tech-lead for implementation.
-- **P1**: **Complete Multi-Session Harness Phase 3/4** — Coach continuing. Needs `kb-integration-failure/package.json` + `success_criteria.js` and `instruction-override-drift/success_criteria.js`.
-- **P1**: **Present research sprint results to Hao** — H-091, 17+ experiments, gym graduation, EXP-098 landmark, EXP-103 landmark, EXP-101 null result.
+- **P1**: **Dispatch C1.5 ghost fix** — Coach's analysis recommends verify-before-finish skill. Could dispatch coach to build + test it in gym.
+- **P1**: **Complete Multi-Session Harness Phase 3/4** — Needs `kb-integration-failure/package.json` + `success_criteria.js` and `instruction-override-drift/success_criteria.js`.
+- **P1**: **Present research sprint results to Hao** — KE-101 meta-analysis is the capstone. H-091, 17+ experiments, gym graduation, EXP-098 landmark, EXP-103/104 confabulation findings.
+- **P1**: **Review anti-confab design brief in light of EXP-104** — Brief recommends adversarial framing + machine evidence. EXP-104 shows skill alone is sufficient. Brief is still good defense-in-depth but priority/urgency should be adjusted.
 - **P2**: Federation design ready for Hao review
 - **P2**: Pre-merge review gate Phase 2 (auto-review)
 - **P2**: Amy-kimi still down — blocked on Hao for billing
