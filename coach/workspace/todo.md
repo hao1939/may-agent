@@ -24,7 +24,7 @@ The gym graduation proposal was approved by Bob with M1-M5 modifications (all ap
   - Added SessionDef interface, runMultiSessionScenario(), nested dir discovery
   - 224 scenarios listed (including multi-session/stale-plan-drift), 0 TypeScript errors
   - Also created `multi-session/ghost-deliverable-chain` scenario
-- **Phase 2 — Baseline Validation**: Next up — run stale-plan-drift + ghost-deliverable-chain to validate harness
+- **Phase 2 — Baseline Validation**: COMPLETE ✅ (s_1775728493774_301) — both scenarios execute end-to-end
 - **Phase 3**: FM-targeted scenarios for FM-1.4, FM-3.1 (depends on Phase 2)
 - **Phase 4**: Integration + regression cadence (depends on Phase 3)
 - **Key insight from EXP-065**: FM-2.6 (instruction-following), FM-3.1 (ghost deliverables), FM-2.1 (tool hallucination) all require multi-session to reproduce
