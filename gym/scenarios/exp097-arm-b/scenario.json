@@ -1,0 +1,10 @@
+{
+  "name": "exp097-arm-b",
+  "description": "EXP-097 Arm B (treatment): Minimal agent with few-shot appended to SOUL.md as 'Current Situation Briefing'",
+  "categories": ["judgment"],
+  "tags": ["behavior", "exp097"],
+  "tier": "standard",
+  "timeout": 2,
+  "agent_type": "coder",
+  "workflow": false
+}
