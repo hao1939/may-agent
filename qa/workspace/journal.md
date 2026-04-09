@@ -28,6 +28,31 @@ Heartbeat QA at HEAD **0cf9b17**. I re-ran the mandatory gates and re-read `src/
 ### Verdict
 CONDITIONAL — reviewed heartbeat exclusion behavior appears correct and is type-safe, but vitest is red for the unrelated structural/permission/timeout failures above.
 
+## 2026-04-09T23:55Z
+
+### Summary
+Proactive heartbeat QA at HEAD **e3f53b5** (gym-runner transcript export fix). I inspected `test/gym/gym-runner.ts` around the may-agent adapter changes: it now sandboxes the agent directory into the session workDir (`workDir/agents/<name>`) so agent reads like `read("agents/<name>/heartbeat.md")` work in gym runs.
+
+### Files reviewed (evidence)
+- `test/gym/gym-runner.ts` — may-agent adapter `runAgent()` creates `agentDest = join(_workDir, "agents", agentName)` and copies the agent dir there with `cpSync(..., { recursive: true })`.
+
+### Mandatory gates
+- `./node_modules/.bin/tsc --noEmit`: PASS (exit 0; no output)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2089 passed (2110)**
+  - `test/launcher.test.ts`: 7 failed — `src/app/launcher.ts` missing (`existsSync` false + `ENOENT` reading `/app/src/app/launcher.ts`).
+  - `test/context-learn.test.ts`: 7 failed — `rmSync(..., { recursive: true })` fails with `EACCES` under `/app/test-workspace/context-learn-test/*`.
+  - `test/context-learning.test.ts`: 6 failed — same `EACCES` issue under `/app/test-workspace/context-learning-test/*`.
+  - `test/research-db.test.ts`: 1 failed — integration test times out at 5000ms (`syncs the actual knowledge base without errors`).
+
+### Issues
+- IMPORTANT: `createMayAgentAdapter().runAgent()` swallows exec errors and returns `{ sessionId: "", status: "error" }` if JSON parse is impossible; might hide useful diagnostics for gym runs.
+- CRITICAL (pre-existing): repo test suite is red due to missing `src/app/launcher.ts` required by `test/launcher.test.ts`.
+- IMPORTANT (pre-existing): test environment permission issue prevents cleanup in context-learning tests (`EACCES` on rmdir).
+- IMPORTANT (pre-existing): `test/research-db.test.ts` has a too-tight timeout (5s) for syncing the real knowledge base in this environment.
+
+### Verdict
+CONDITIONAL — the gym-runner change is type-safe, but overall suite is vitest-red for unrelated missing file + env permission + timeout issues.
+
 ## 2026-04-09T22:25Z
 
 ### Summary
