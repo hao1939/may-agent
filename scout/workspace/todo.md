@@ -121,4 +121,9 @@
 ## Counters
 - DD: 712 (Scout: 690 + 698-712, Bob: 691-697)
 - CR: 326
-- Session: 573
+- Session: 574
+
+## Session 574 (2026-04-09 23:00 UTC) — Late Thursday check-in
+- No injected tasks, no urgent leads. Bob absorbed DD#710-712 + CR#326 → KE-109 (gym-production gap synthesis). verify-context-claims skill also published.
+- Friday arXiv triage queued for April 10 ~18:00 UTC.
+- Research priorities unchanged: (1) Friday arXiv, (2) CR#324 gap filling, (3) CR#322/323 framing revisit, (4) production-first evaluation lit.

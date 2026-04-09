@@ -28,6 +28,28 @@ Proactive heartbeat QA at HEAD **0cf9b17** (merge of `review/fix-fewshot-heartbe
 ### Verdict
 CONDITIONAL — reviewed change appears correct and type-safe, but the repo is vitest-red for the unrelated structural/permission/timeout failures above.
 
+---
+
+## 2026-04-09T22:59Z
+
+### Summary
+Proactive scan of latest merge commit **5c84c321** (adds multi-session scenario support in `src/gym/runner.ts` plus finish-guard and gym tests). I verified the new multi-session logic by reading `src/gym/runner.ts` (multi-session section + runScenario dispatch).
+
+### Files reviewed (evidence)
+- `src/gym/runner.ts` — `runMultiSession()` implementation and `runScenario()` dispatch (reads at offsets 520 and 660).
+
+### Mandatory gates (this environment)
+- `./node_modules/.bin/tsc --noEmit`: FAIL to execute — `./node_modules/.bin/tsc: No such file or directory` (exit 127)
+- `./node_modules/.bin/vitest --run`: FAIL to execute — `./node_modules/.bin/vitest: No such file or directory` (exit 127)
+
+### Issues
+- CRITICAL (environment/repo packaging): repo appears to be missing `package.json` and `node_modules/` entirely (`find . -maxdepth 2 -name package.json` returned nothing), so mandatory TypeScript + vitest gates cannot be run.
+- IMPORTANT (correctness risk): `runMultiSession()` always calls `runAgent(adapter, taskContent, tmpDir, agent, timeoutMs)` **without** passing `withHistory`, and `runScenario()` passes `false` into `runMultiSession(...)` regardless of its own `withHistory` parameter. If multi-session scenarios should support history, it is currently ignored.
+- IMPORTANT (artifact spec mismatch): `copyArtifacts()` docstring says it supports "directory prefixes (ending with /)", but implementation treats patterns as exact paths (`path.join(srcDir, pattern)`); a pattern like `dir/` likely won’t match the actual directory `dir`.
+
+### Verdict
+CONDITIONAL — code changes look plausible on inspection, but cannot be fully validated because this checkout lacks the JS/TS toolchain files required to run `tsc`/`vitest`.
+
 ## 2026-04-09T21:25Z
 
 ### Summary
