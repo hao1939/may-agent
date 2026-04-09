@@ -23,7 +23,6 @@
  */
 
 import { stateApproach } from "../../../src/lib/forced-externalization.js";
-import { injectFewShot } from "./fewshot-inject.js";
 
 export const name: string = "implement-and-adversarial-review";
 
@@ -143,9 +142,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   // ═══════════════════════════════════════════════════════════════════
   // Step 1: Coder implements (with one retry on session error)
   // H-085: Force coder to externalize approach before coding
-  // EXP-094/095: Inject domain-matched few-shot examples (task-level).
   // ═══════════════════════════════════════════════════════════════════
-  const coderTask = stateApproach(injectFewShot(ctx.task));
+  const coderTask = stateApproach(ctx.task);
   let coder = await ctx.runAgent("coder", coderTask);
   if (coder.status === "error") {
     coder = await ctx.runAgent("coder", coderTask);
