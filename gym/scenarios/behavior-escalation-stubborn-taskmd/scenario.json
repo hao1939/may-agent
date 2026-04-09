@@ -1,0 +1,10 @@
+{
+  "name": "behavior-escalation-stubborn-taskmd",
+  "description": "EXP-095 Arm C: Few-shot example embedded directly in task.md (inline with task description). Tests task-position delivery without injected_context infrastructure.",
+  "categories": ["judgment", "convention-compliance"],
+  "tags": ["behavior", "fewshot", "exp095"],
+  "tier": "standard",
+  "timeout": 2,
+  "agent_type": "coder",
+  "workflow": false
+}

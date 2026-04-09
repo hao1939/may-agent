@@ -1,12 +1,12 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~00:23 UTC
+Updated: 2026-04-09 ~00:53 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
 - **Scout**: 🟢 Running — Heartbeat active.
-- **Bob**: 🟢 Running — Completed EXP-092/093/094 KB integrations overnight. Now in fresh heartbeat.
-- **Coach**: 🟢 Running — Completed EXP-092 write-up, EXP-094 transfer test, Bob FM-1.3 investigation. Now in fresh heartbeat.
+- **Bob**: 🟢 Running — Fresh heartbeat cycle.
+- **Coach**: 🟢 Running — Completed Sprint Synthesis (KE-065) + Skill Regression Check last cycle. Fresh heartbeat.
 - **Tech-lead**: 🟢 Running — Heartbeat active.
 - **Optimizer**: 🟢 Running — One interruption last cycle, monitoring.
 - **QA**: 🟢 Running — Heartbeat active.
@@ -53,6 +53,8 @@ Updated: 2026-04-09 ~00:23 UTC
 | EXP-094 Few-Shot Transfer (escalation-stubborn) | ✅ COMPLETE | coach | **KEY**: Skill-only 0/3 (domain-distant example doesn't transfer). Skill + matched narrative 3/3 (100%). **Domain proximity required** for few-shot. Not purely structural. |
 | EXP-094 KB Integration | ✅ COMPLETE | bob | Domain proximity boundary integrated. KE-064 created. |
 | Bob FM-1.3 Path-Guessing Investigation | ✅ COMPLETE | coach | 6 FM-1.3 entries analyzed (73+ wasted calls). Path-guessing is dominant pattern (3/6). Recommends Bob-specific navigation skill with ls-before-read protocol. |
+| **Bob Navigation Skill (ls-before-read)** | ✅ DEPLOYED | coach | Skill at `agents/bob/skills/knowledge-base-navigation.md`. Domain-matched example, directory map, anti-patterns. Deployed Apr 9. |
+| **KE-065 Few-Shot Sprint Synthesis** | ✅ COMPLETE | coach | Comprehensive synthesis of EXP-090→094. Transfer model (L1/L2/L2.5/L3), domain matching, practical checklist. H-091 P(H)=0.93. |
 | **Telegram Silent Drop Bug** | ✅ FIXED | tech-lead | Commit 217efe2. Telegram now gets `⚠️` on turn errors + `❌` on session_end. Merged to main. |
 | **Context Overflow Crash Loop** | ✅ FIXED | tech-lead | Commit 9ea5b5a. Three-layer defense: manager archives overflow sessions, ChatSession skips them on resume, runtime nulls sessionId on overflow. Merged to main. |
 | EXP-088 naming conflict | ✅ RESOLVED | may | Only one experiment in directory (Workaround Difficulty Gradient). `.conflict-k3s` is federation artifact. |
@@ -91,18 +93,16 @@ Updated: 2026-04-09 ~00:23 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (00:23)
-- **Overnight: entire experiment pipeline completed** — EXP-092, EXP-093, EXP-094 all finished + KB integrated by Bob. Coach also completed Bob FM-1.3 investigation.
-- **EXP-092 key finding**: Forced citation creates instruction-induced task narrowing — 100% doc accuracy but 0% task completion. Important new failure mode.
-- **EXP-094 key finding**: Few-shot transfer requires domain proximity, not just structural matching. Skill-only 0/3 → skill + matched narrative 3/3.
-- **Bob FM-1.3 diagnosis**: Path-guessing is dominant pattern (3/6 entries, 73+ wasted calls). Coach recommends Bob-specific navigation skill.
-- **All agents restarted fresh** — no errors in last hour, all heartbeats firing.
-- **Research sprint nearing completion** — H-091 P(H)=0.99. Few-shot is proven and boundaries are mapped. Need to shift toward deployment at scale.
+## Latest Cycle Summary (00:53)
+- **Coach completed KE-065**: Comprehensive few-shot sprint synthesis covering EXP-090→094. High-quality deliverable — transfer model, domain matching requirements, practical checklist. Also completed skill regression check + commit guard prep.
+- **H-091 P(H) corrected to 0.93** (was showing 0.99 on board). Updated downward after EXP-093 temporal discipline failure and EXP-094 domain boundary. Still strongly supported.
+- **All agents running fresh cycles** — no errors, 8/8 agents active. Amy-kimi still 🔴.
+- **Research sprint is COMPLETE** — 15 experiments (EXP-083→094), comprehensive synthesis in KE-065. All boundaries mapped. Ready for deployment phase.
+- **Overnight was quiet** — auto-commit federation syncs, evaluator periodic task update. No incidents.
 
 ## Next Actions
-- **P1**: **Present status to Hao** — H-091 P(H)=0.99, 15 experiments complete (EXP-083→094), auto-loop decision brief ready, two critical bugs fixed, git analysis complete. Research sprint is essentially done — need Hao's direction on next priorities.
-- **P1**: **Bob navigation skill** — Coach recommends ls-before-read skill for Bob. Should dispatch Coach to design+deploy it.
-- **P1**: **Deploy skills at scale** — know-when-blocked and evidence-over-narrative only in coder/. With domain proximity constraint (EXP-094), need matched examples per agent. Plan needed.
+- **P1**: **Present status to Hao** — H-091 P(H)=0.93, 15 experiments complete, KE-065 synthesis done, auto-loop decision brief ready, two critical bugs fixed, git analysis complete. Research sprint complete — need Hao's direction on next priorities.
+- **P1**: **Deploy skills at scale** — know-when-blocked and evidence-over-narrative only in coder/. With domain proximity constraint (EXP-094/KE-065), need matched examples per agent. Bob to design scale-out plan.
 - **P2**: Federation design ready for Hao review
 - **P2**: Pre-merge review gate Phase 2 (auto-review)
 - **P2**: Amy-kimi still down — blocked on Hao for billing
