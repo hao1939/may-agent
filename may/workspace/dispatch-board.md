@@ -1,13 +1,13 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~02:23 UTC
+Updated: 2026-04-09 ~02:47 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
 - **Scout**: 🟢 Running — Heartbeat active.
-- **Bob**: 🟢 Running — Heartbeat cycle. EXP-095 KB integration done.
-- **Coach**: 🟢 Running — EXP-096 (System Prompt Length Threshold) in progress.
-- **Tech-lead**: 🟢 Running — Last heartbeat completed cleanly.
+- **Bob**: 🟢 Running — Intervention Architecture synthesis complete. Gym runs active.
+- **Coach**: 🟢 Running — EXP-096 COMPLETE. Found critical gym scoring bugs.
+- **Tech-lead**: 🟢 Running — Reviewing gym bug fixes (forked session).
 - **Optimizer**: 🟢 RESTORED — Was down 17 days (Mar 23 - Apr 9). Auto-pause cleared.
 - **QA**: 🟢 RESTORED — Was down 17 days (Mar 23 - Apr 9). Auto-pause cleared.
 - **Evaluator**: 🟢 Running — Heartbeat active.
@@ -64,11 +64,14 @@ Updated: 2026-04-09 ~02:23 UTC
 | **Crash Loop Bug (req:e750a385)** | ✅ ALREADY FIXED | tech-lead | Commits 9ea5b5a + fcb97c9 + 9c7e549 already merged. Three-layer defense + compaction persistence. |
 | **Token Efficiency Research** | ✅ COMPLETE | bob | **P0 FINDING**: $441/week wasted from zero prompt caching on Claude Opus. LiteLLM proxy strips cache headers. Fix: set ANTHROPIC_API_KEY in .env + restart. Executive brief at `agents/bob/workspace/token-waste-executive-brief.md`. |
 | **Optimizer + QA 17-Day Outage** | ✅ FIXED | tech-lead | Model alias change + auto-pause circuit breaker = 17 days down (Mar 23 - Apr 9). Both restored. Report: `agents/tech-lead/workspace/fix-optimizer-qa-outage.md`. |
-| **Auto-Pause Recovery Design** | ⏳ DISPATCHED | bob | Need probe timer or decay mechanism to prevent permanent lockout. Formal design request sent (req:36f360fa). |
-| **EXP-095 Few-Shot Delivery Mechanism** | ✅ COMPLETE | coach | **DEFINITIVE**: Task-message = 100% (6/6), system-prompt = 0% (3/3). Position is everything. Content quality irrelevant if delivery position wrong. |
+| **Auto-Pause Recovery Design** | ✅ DESIGN COMPLETE | bob | Design at `agents/shared/may-agent-docs/design/auto-pause-recovery.md`. Probe timer + TTL decay + escalation. **Sent to tech-lead for review (req:62df8a8c)**. |
+| **EXP-095 Few-Shot Delivery Mechanism** | ⚠️ INVALIDATED | coach | **EXP-096 proved EXP-095 results were wrong** — driven by gym scoring bugs (transcript mismatch + format incompatibility), not delivery position. System-prompt delivery works, just slower. |
 | **Few-Shot Production Deployment Proposal** | ✅ COMPLETE | coach | Comprehensive proposal at `agents/coach/workspace/proposal-fewshot-production-deployment.md`. Phase 1: static routing + 3 proven examples. ~2hr implementation. Needs tech-lead + Bob review. |
 | **Bob Heartbeat System Analysis** | ✅ COMPLETE | bob | 231-line analysis at `agents/bob/workspace/heartbeat-analysis.md`. 48 cron entries inventoried, ~1,256 fires/day, 7 consolidation recommendations. |
-| **EXP-096 System Prompt Length Threshold** | ⏳ IN PROGRESS | coach | Testing if system prompt length affects few-shot delivery effectiveness. Self-initiated by coach. |
+| **EXP-096 System Prompt Length Threshold** | ✅ COMPLETE | coach | **CRITICAL**: Found 2 gym scoring bugs invalidating EXP-095. After fixes: task-message few-shot 100% (most reliable), system-prompt works but slower. Task history leakage contaminates experiments. |
+| **Gym Scoring Bug Fixes** | ⏳ IN REVIEW | tech-lead | Forked session s_1775702934728_338. Runner transcript name + scorer format parsing. |
+| **EXP-096 KB Integration** | ⏳ DISPATCHED | bob | EXP-095 invalidation + EXP-096 findings integration (req:f50c4dba). |
+| **Intervention Architecture Synthesis** | ✅ COMPLETE | bob | 500+ line capstone: `agents/shared/knowledge/synthesis/WKWA-007-intervention-architecture.md`. 25 experiments, 200+ runs, 3 mechanisms, transfer model, decision tree. |
 
 ## Completed/Archived
 | Item | When | Notes |
