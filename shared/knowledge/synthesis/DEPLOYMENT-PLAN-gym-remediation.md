@@ -70,17 +70,23 @@ Per KE-065 and EXP-095/096: **Skills must be delivered in the task message, not 
 
 ```
 For each of the 3 scenarios above:
-□ mkdir agents/gym/scenarios/{scenario-name}-fewshot
-□ cp -r agents/gym/scenarios/{scenario-name}/environment agents/gym/scenarios/{scenario-name}-fewshot/
-□ cp agents/gym/scenarios/{scenario-name}/task.md agents/gym/scenarios/{scenario-name}-fewshot/
-□ cp agents/gym/scenarios/{scenario-name}/success_criteria.js agents/gym/scenarios/{scenario-name}-fewshot/
-□ cp agents/gym/scenarios/{scenario-name}/package.json agents/gym/scenarios/{scenario-name}-fewshot/
-□ cp agents/gym/scenarios/{scenario-name}/judge_criteria.md agents/gym/scenarios/{scenario-name}-fewshot/ (if exists)
-□ Write injected_context.md with full skill content
-□ Write scenario.json with "injected_context": "injected_context.md" field
-□ Run 3 validation trials
+✅ mkdir agents/gym/scenarios/{scenario-name}-fewshot
+✅ cp -r agents/gym/scenarios/{scenario-name}/environment agents/gym/scenarios/{scenario-name}-fewshot/
+✅ cp agents/gym/scenarios/{scenario-name}/task.md agents/gym/scenarios/{scenario-name}-fewshot/
+✅ cp agents/gym/scenarios/{scenario-name}/success_criteria.js agents/gym/scenarios/{scenario-name}-fewshot/
+✅ cp agents/gym/scenarios/{scenario-name}/package.json agents/gym/scenarios/{scenario-name}-fewshot/
+✅ cp agents/gym/scenarios/{scenario-name}/judge_criteria.md agents/gym/scenarios/{scenario-name}-fewshot/ (if exists)
+✅ Write injected_context.md with worked example content
+✅ Write scenario.json with "injected_context": "injected_context.md" field
+🔄 Run 3 validation trials (Coach s_1775710515505_176 running — escalation 4/5 run 1 done)
 □ Confirm pass rate ≥ 2/3
 ```
+
+**Status (2026-04-09 ~05:00)**: All 3 treatment scenarios exist and are structurally verified:
+- `escalation-impossible-task-fewshot`: ✅ created (EXP-090), environment + judge_criteria.md + injected_context.md all present
+- `misleading-test-fix-fewshot`: ✅ created (EXP-090), environment + injected_context.md present
+- `sycophants-dilemma-fewshot`: ✅ created (EXP-087), environment + injected_context.md present, duplicate inline example removed from task.md
+- Coach validation in progress (session s_1775710515505_176)
 
 ---
 
@@ -89,6 +95,14 @@ For each of the 3 scenarios above:
 **Effort**: Low (skill exists, need new scenario variants)
 **Confidence**: High (M2: 34/36 = 94%; M1 externalization: +55pp median)
 **Expected gain**: +5 scenarios
+
+**Status (2026-04-09 ~05:15)**: 4 of 5 treatment scenarios created and verified:
+- `missing-prerequisite-detection-xref`: ✅ created, xref instruction for prerequisite verification
+- `silent-dependency-xref`: ✅ created, xref instruction for dependency discovery
+- `judgment-ambiguous-spec-ext`: ✅ created, externalization instruction for ambiguity analysis
+- `convention-verify-edit-fewshot`: ✅ already existed (EXP-093), fixed: added missing environment/ and success_criteria.js
+- `context-proof-build-xref`: ⏳ deferred — workflow scenario requires special handling
+- **Awaiting validation runs** (Coach should run next)
 
 ### 2.1: Cross-Reference → `missing-prerequisite-detection` (M2)
 

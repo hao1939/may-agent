@@ -1,13 +1,13 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~04:23 UTC
+Updated: 2026-04-09 ~04:51 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
 - **Scout**: 🟢 Running — Heartbeat active.
-- **Bob**: 🟢 Running — Heartbeat active. Capstone synthesis completed. New heartbeat cycle started.
-- **Coach**: 🟢 Running — Heartbeat active. Few-shot example store DONE (3 examples extracted). FM-3.1 regression analysis DONE.
-- **Tech-lead**: 🟢 Running — Few-shot review COMPLETE (GO for Phase 1). Finish-guard fix dispatched (req:67425d6c).
+- **Bob**: 🟢 Running — Heartbeat active.
+- **Coach**: 🟢 Running — Heartbeat active.
+- **Tech-lead**: 🟢 Running — Finish-guard orchestration fix IN PROGRESS (s_1775710457934_174). Few-shot Phase 1 queued.
 - **Optimizer**: 🟢 Running — Restored Apr 9. Tool quality regression investigation received.
 - **QA**: 🟢 Running — Restored Apr 9.
 - **Evaluator**: 🟢 Running — Heartbeat active.
@@ -105,17 +105,16 @@ Updated: 2026-04-09 ~04:23 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (04:23)
-- **System stable** — All 7/8 agents running. Fresh heartbeat cycle started for all agents.
-- **Few-shot deployment pipeline READY** — Tech-lead reviewed (GO), Coach extracted 3 examples with trigger patterns. Implementation plan: 7 steps, ~2-3hr effort. Tech-lead picks up next cycle.
-- **FM-3.1 false positive root cause found** — Coach's analysis: finish-guard doesn't understand orchestration (workflow/agents tools). 9/9 Bob "regressions" were infrastructure false positives. Fix dispatched to tech-lead (req:67425d6c).
-- **Stale session killed** — s_1775311714523_3 finally cancelled (was 110+ hours old).
-- **Bob capstone synthesis** — Completed. Few-shot research arc fully documented.
+## Latest Cycle Summary (04:51)
+- **System stable** — 7/8 agents running, zero errors in last hour. Zombie session s_1775311714523_3 cancelled.
+- **Finish-guard orchestration fix IN PROGRESS** — Tech-lead forked work session s_1775710457934_174 to implement Fix 1 (orchestration exemption) + Fix 2 (GHOST_KEYWORDS refinement). Irony: tech-lead's own heartbeat got blocked by FM-3.1 while dispatching the fix.
+- **Coach duplicate requests resolved** — req:f70085c7 and req:7a81e4f3 marked completed (duplicates of existing req:67425d6c dispatch).
+- **Duplicate tech-lead request cleaned** — req:494a8999 marked completed (duplicate of req:67425d6c).
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao**.
-- **P1**: **Few-shot Phase 1 implementation** — All prerequisites done (review ✅, examples ✅). Tech-lead implements `routeFewShotExamples()` in manager.ts.
-- **P1**: **Finish-guard orchestration fix** — Dispatched to tech-lead (req:67425d6c). 2-line fix.
+- **P1**: **Finish-guard orchestration fix** — IN PROGRESS (s_1775710457934_174). Monitor next cycle.
+- **P1**: **Few-shot Phase 1 implementation** — All prerequisites done (review ✅, examples ✅). Tech-lead implements after finish-guard fix.
 - **P1**: **Auto-pause recovery implementation** — Design complete. Queue for tech-lead after current items.
 - **P1**: **Present research sprint results to Hao** — H-091 P(H)=0.93, 17 experiments, KE-065 synthesis, token waste analysis, two critical bugs fixed, auto-pause recovery designed.
 - **P2**: Federation design ready for Hao review

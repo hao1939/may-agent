@@ -73,7 +73,7 @@ L3: Few-shot example → +2.3 score (EXP-084)
 L3.5: Few-shot for temporal discipline → partial effect (EXP-093: C3 +40pp but C2.3 -20pp)
 L3⚠️: Few-shot cross-domain (hard scenarios) → 0% (EXP-094: credentials→binary FAILS)
 L3✅: Few-shot domain-matched narrative → 100% even on hardest scenario (EXP-094: binary→binary)
-L3📍: **Delivery position matters**: task-message = 100%, system-prompt = 0% (EXP-095). **Mechanism is positional privilege, NOT attention dilution** — 77% prompt reduction still 0% (EXP-096). Urgency framing at system-prompt end provides weak ~33% boost (EXP-097) but is not viable. All L3 results above assume task-level delivery.
+L3📍: **Delivery position matters**: task-message = 100%, system-prompt = 0% (EXP-095). **Mechanism is positional privilege, NOT attention dilution** — 77% prompt reduction still 0% (EXP-096). Urgency framing at system-prompt end provides weak ~33% boost (EXP-097) but is not viable. **DD-660 provides theoretical grounding**: U-shaped attention bias (primacy + recency, dead middle) is an inherent geometric property of causal decoders per "Lost in the Middle at Birth" (arXiv:2603.10123) — system prompt in primacy zone (decaying), task message in recency zone (O(1) anchor). This is architectural, not a training artifact. All L3 results above assume task-level delivery.
 L5: Workflow enforcement → +3.0 score (EXP-045)
 
 ## Open Questions
@@ -91,6 +91,7 @@ L5: Workflow enforcement → +3.0 score (EXP-045)
 
 - Extends: KE-002, KE-058, KE-056 (constraint hierarchy)
 - Supported by: KE-059 (updated with EXP-086 two-level transfer model)
+- Theoretically grounded by: DD-660 (positional privilege explained by U-shaped attention — architectural property of causal decoders, four papers synthesized)
 - Related: H-085 (forced externalization), H-089 (evidence discovery)
 - Experiments: EXP-084 (method comparison), EXP-085 (matched generalization), EXP-086 (mismatched boundary), EXP-087 (sycophants-dilemma ceiling test), EXP-091 (process discipline), EXP-093 (verify-after-edit temporal boundary), EXP-095 (delivery position effect — task-message vs system-prompt), EXP-096 (attention dilution REJECTED — positional privilege confirmed), EXP-097 (simulated positional privilege — urgency framing 33% vs task-message 100%)
 
