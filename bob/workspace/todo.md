@@ -44,6 +44,16 @@
 - [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% of verify-after-edit failures need code-level fix, not prompting. Deferred until prompting experiments complete.
 - [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
 
+## Session Notes (2026-04-09 ~04:00)
+- **DD-655→DD-659 KNOWLEDGE BASE INTEGRATION**: Created 5 new knowledge entries (KE-066 through KE-070) from deep dives DD-655 through DD-659:
+  - **KE-066**: Cross-model-family critique (Rubber Duck) — 74.7% gap closure with sparse cross-family review. From DD-655.
+  - **KE-067**: Reasoning-behavior decoupling (Blind Refusal) — 75.4% refusal rate despite correct normative reasoning, 57.5% defeat recognition. From DD-659.
+  - **KE-068**: Zero-hedge gate (SELFDOUBT) — 96.1% precision on zero-hedge traces, HVR metric, O(1) uncertainty quantification. From DD-656.
+  - **KE-069**: SFT dip-and-recovery — premature evaluation at the dip, data quality > quantity, capability-dependent transfer. From DD-658.
+  - **KE-070**: Logic Monopoly (AgentCity) — separation of power for multi-agent governance, three-branch architecture. From DD-657.
+- **INDEX updated**: All 5 deep dives added to Research Library section. All 5 KEs added to Knowledge Entries section.
+- **Connections mapped**: Cross-references to KE-060, KE-063, KE-065, H-085, H-091, DD-472, DD-585, DD-637.
+
 ## Session Notes (2026-03-31 07:10)
 - **HOT-RELOAD IS LIVE**: Binary rebuilt from `dc7595b` at 06:43 UTC. All convention-check code changes now auto-apply via hot-reload. Module cache blocker permanently resolved.
 - **Post-restart convention rates (N=2)**: C6.1=100%, C2.1=100%, C1.3=100%, C12.1=0% (claude_code FP → fixed).
