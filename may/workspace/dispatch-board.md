@@ -1,17 +1,17 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~01:53 UTC
+Updated: 2026-04-09 ~02:06 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
 - **Scout**: 🟢 Running — Heartbeat active.
 - **Bob**: 🟢 Running — Fresh heartbeat cycle.
-- **Coach**: 🟢 Running — Completed Sprint Synthesis (KE-065) + Skill Regression Check last cycle. Fresh heartbeat.
-- **Tech-lead**: 🟢 Running — Heartbeat active.
-- **Optimizer**: 🟢 Running — One interruption last cycle, monitoring.
-- **QA**: 🟢 Running — Heartbeat active.
+- **Coach**: 🟢 Running — Long session (14min+), monitoring.
+- **Tech-lead**: 🟢 Running — Just fixed Optimizer/QA outage.
+- **Optimizer**: 🟢 RESTORED — Was down 17 days (Mar 23 - Apr 9). Auto-pause cleared.
+- **QA**: 🟢 RESTORED — Was down 17 days (Mar 23 - Apr 9). Auto-pause cleared.
 - **Evaluator**: 🟢 Running — Heartbeat active.
-- **All agents**: 🟢 All heartbeats firing. System restarted overnight — all agents running fresh cycles.
+- **All agents**: 🟡 7/8 running. Amy-kimi still 🔴. Optimizer + QA just restored after 17-day outage.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
