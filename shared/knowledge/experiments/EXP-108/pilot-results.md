@@ -36,14 +36,23 @@
 - Need to run 3 reps per arm (12 more runs for these two scenarios) to get statistical signal
 - phase-boundary-violation needs a gym-runner fix before it can be used
 
-## Blocker
+## Blockers
 
-- **phase-boundary-violation gym crash**: The gym-runner.ts has a bug in the transcript
-  export logic for multi-session scenarios where the work dir path for session-2 
-  transcript doesn't exist. This affects line ~862 of gym-runner.ts.
+- **Multi-session gym harness instability**: The gym-runner.ts has a bug in the transcript
+  export logic (line ~862) where `writeFileSync` to `workDir/session-N-transcript.jsonl` fails
+  because the `work/` directory sometimes doesn't exist after session completion. This affects
+  ALL multi-session scenarios, not just phase-boundary-violation — subsequent attempts to run
+  instruction-override-drift also crash with the same ENOENT error.
   
+  **Root cause hypothesis**: The agent session's cleanup or the oneshot runner may be deleting
+  or relocating the work directory. The mkdirSync(workDir) at line 779 creates it, but by the
+  time session-1 finishes and transcript export runs, the directory is gone.
+  
+  **Impact**: Cannot complete Phase 2 until this is fixed. The 4 pilot runs above were the
+  only successful runs before the harness became unstable.
+
 ## Next Steps
 
-1. Report phase-boundary-violation gym bug to tech-lead
-2. Run remaining 12 runs (instruction-override-drift + unresolved-failure-chain × 2 arms × 3 reps minus 2 already done = 10 more)
-3. Find a replacement scenario for phase-boundary-violation or get the gym bug fixed
+1. **Report multi-session gym bug to tech-lead** — this blocks all multi-session experiments
+2. Once fixed, run full 18-run matrix (3 scenarios × 2 arms × 3 reps)
+3. Alternatively, find a workaround (e.g., ensure work/ dir exists before transcript write)

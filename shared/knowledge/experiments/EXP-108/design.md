@@ -1,6 +1,6 @@
 # EXP-108: Adversarial Self-Review Skill for Production Deployment
 
-**Status**: PHASE 2 IN PROGRESS — 4 pilot runs complete, 2 scenarios working, phase-boundary-violation blocked (gym harness bug)
+**Status**: PHASE 2 BLOCKED — 4 pilot runs succeeded, then multi-session gym harness became unstable (ENOENT on work dir, gym-runner.ts ~L862). Need gym fix.
 **Date**: 2026-04-09
 **Author**: Coach
 **Type**: Controlled experiment (gym-based, skill deployment A/B)
