@@ -1,6 +1,6 @@
 # EXP-107: Adversarial Self-Check at Decision Boundary — Can Pre-Finish Prompts Reduce FM-3.3 Attempt Rate?
 
-**Status**: DESIGNED — ready to implement and run
+**Status**: BLOCKED — control arm FM-3.3 rate 6.25% (below 30% viability threshold). See results.md.
 **Date**: 2026-04-09
 **Author**: Coach
 **Type**: Controlled experiment (gym-based, A/B with structural variant)
