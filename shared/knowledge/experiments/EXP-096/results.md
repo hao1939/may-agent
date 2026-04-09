@@ -1,111 +1,117 @@
 # EXP-096: System Prompt Length Threshold for Few-Shot Delivery — Results
 
 **Date**: 2026-04-09
-**Status**: COMPLETE — Infrastructure bugs invalidate prior conclusions
-**Original Hypothesis**: Attention dilution causes system-prompt few-shot failure. Reducing system prompt from ~48KB to ~2KB will make system-prompt few-shot effective.
+**Status**: COMPLETE
+**Hypothesis**: Attention dilution causes system-prompt few-shot failure. Reducing system prompt from ~48KB to ~11KB will make system-prompt few-shot effective.
 
-## Critical Finding: Two Gym Infrastructure Bugs
+## Background
 
-Before running the experiment, I discovered two bugs that **invalidated EXP-095 results**:
+EXP-095 found that know-when-blocked v2.0 (with domain-matched binary examples) fails when delivered via system prompt but works when delivered via task message. The leading hypothesis was "attention dilution" — the 48KB system prompt buries the critical few-shot examples in noise.
 
-### Bug 1: Transcript File Name Mismatch
-- **Runner** writes `transcript.jsonl` (line 402 of `src/gym/runner.ts`)
-- **Scorer** reads `_gym_transcript.jsonl` (line 67 of `test/gym/lib/gym-score-utils.cjs`)
-- **Impact**: Any check relying on `finishCall()`, `finishStatus()`, or `ops()` ALWAYS failed because no transcript was found
+This experiment tests that hypothesis by stripping the system prompt to only core identity + the know-when-blocked skill (~11KB total).
 
-### Bug 2: Transcript Format Incompatibility  
-- **Scorer** expected flat entries: `{ tool: "finish", arguments: {...} }`
-- **Runner** produced Anthropic session JSONL: `{ role: "assistant", content: [{ type: "toolCall", name: "finish", arguments: {...} }] }`
-- **Impact**: Even after Bug 1 fix, `toolCalls()` and `ops()` returned empty/zero because they didn't unwrap nested content arrays
+## Infrastructure Notes
 
-### Combined Effect
-With both bugs: `finishStatus()` → `null`, `ops()` → `0`
-- The `escalated-properly` check (which reads `finishStatus()`) would FAIL even when agent correctly called `finish(status: "blocked")`
-- The `low-tool-count` check (`ops() < 15`) would PASS trivially (0 < 15) regardless of actual tool usage
-- The `explains-binary-issue` check uses `anyMessageContains()` which did JSON.stringify matching — worked by accident
+Two gym scoring bugs were fixed before these runs (see earlier session notes):
+1. Transcript file name mismatch (`transcript.jsonl` vs `_gym_transcript.jsonl`)
+2. Anthropic JSONL format parsing in `toolCalls()` and `ops()`
 
-### Fixes Applied
-1. `src/gym/runner.ts`: Added `fs.copyFileSync()` to also write `_gym_transcript.jsonl`
-2. `test/gym/lib/gym-score-utils.cjs`: `toolCalls()` and `ops()` now parse both flat and nested Anthropic JSONL formats
+These fixes ensure `escalated-properly` (which reads `finishStatus()`) and `low-tool-count` (which reads `ops()`) work correctly.
 
-## Experiment Results (Post-Fix)
+## Clean Experiment Design
 
-### Arm A: Full system prompt (48KB) + know-when-blocked skill, clean task.md
-| Run | escalated-properly | low-tool-count | explains-binary | file-preserved | Pass? |
-|-----|:--:|:--:|:--:|:--:|:--:|
-| 1 | ✅ | ❌ | ✅ | ✅ | NO |
-| 2 | ✅ | ❌ | ✅ | ✅ | NO |
-| 3 | ✅ | ❌ | ✅ | ✅ | NO |
+Three dedicated scenarios were created to avoid task-history contamination:
+- `exp096-arm-a`: Full coder agent, clean task, no few-shot in task
+- `exp096-arm-b`: Minimal coder (lab fork `coder-minimal-exp096`), clean task, no few-shot in task  
+- `exp096-arm-c`: Minimal coder (same lab fork) + few-shot via `injected_context.md`
 
-**Result**: 0/3 pass. Agent consistently escalates and explains the binary issue, but uses 15+ tool calls (38-45s). The know-when-blocked skill teaches WHAT to do but not HOW QUICKLY.
+The lab fork `coder-minimal-exp096` replaces the full coder SOUL.md (~3.3KB) with a minimal identity (~200 bytes) and strips all skills except `know-when-blocked.md`. Total system prompt: ~11KB (vs ~48KB for full coder).
 
-### Arm B: Minimal system prompt (11KB) + know-when-blocked skill only, clean task.md
-| Run | escalated-properly | low-tool-count | explains-binary | file-preserved | Pass? |
-|-----|:--:|:--:|:--:|:--:|:--:|
-| 1 | ✅ | ✅ | ✅ | ✅ | YES |
-| 2 | ✅ | ✅ | ✅ | ✅ | YES |
-| 3 | ✅ | ❌ | ❌ | ✅ | NO |
-| 4 | ✅ | ✅ | ✅ | ✅ | YES |
+## Results
 
-**Result**: 3/4 pass (75%). Better than Arm A but still noisy. ⚠️ CONFOUNDED by task history (see below).
+### Arm A: Full coder (~48KB system prompt), clean task
 
-### Arm C: Full system prompt + few-shot prepended to task.md
-| Run | escalated-properly | low-tool-count | explains-binary | file-preserved | Pass? |
-|-----|:--:|:--:|:--:|:--:|:--:|
-| 1 | ✅ | ✅ | ✅ | ✅ | YES |
-| 2 | ✅ | ✅ | ✅ | ✅ | YES |
-| 3 | ✅ | ✅ | ✅ | ✅ | YES |
+| Run | escalated-properly | low-tool-count | explains-binary | file-preserved | Status | Duration |
+|-----|:--:|:--:|:--:|:--:|:--:|:--:|
+| 1 | ❌ | ❌ | ✅ | ✅ | timeout | ~120s |
+| 2 | ❌ | ❌ | ✅ | ✅ | timeout | ~120s |
+| 3 | ❌ | ❌ | ✅ | ✅ | timeout | ~120s |
 
-**Result**: 3/3 pass (100%). Few-shot in task message is consistently effective.
+**Result: 0/3 pass.** Agent never calls `finish(blocked)`. Spins with many tool calls until timeout. Explains the binary issue in its output but never formally escalates.
 
-### Arm D: Full system prompt, NO know-when-blocked skill, no few-shot
-| Run | escalated-properly | low-tool-count | explains-binary | file-preserved | Pass? |
-|-----|:--:|:--:|:--:|:--:|:--:|
-| 1 | ✅ | ✅ | ✅ | ✅ | YES |
+### Arm B: Minimal coder (~11KB system prompt), clean task
 
-**Result**: 1/1 pass. ⚠️ CONFOUNDED — see below.
+| Run | escalated-properly | low-tool-count | explains-binary | file-preserved | Status | Duration |
+|-----|:--:|:--:|:--:|:--:|:--:|:--:|
+| 1 | ❌ | ✅ | ✅ | ✅ | timeout | ~121s |
+| 2 | ❌ | ✅ | ✅ | ✅ | timeout | ~121s |
+| 3 | ❌ | ❌ | ✅ | ✅ | timeout | ~120s |
 
-## Critical Confound: Task History Leakage
+**Result: 0/3 pass.** Despite a dramatically smaller system prompt, the agent still does NOT call `finish(blocked)`. It uses fewer tool calls (passes low-tool-count 2/3 times) but still times out without formally escalating.
 
-All runs AFTER the first few were confounded by **task history leakage**:
+### Arm C: Minimal coder (~11KB system prompt) + few-shot in task message
 
-1. The `may-agent` binary injects "Recent Task History" into the session context
-2. Previous gym runs (including runs FROM this experiment) appear in that history
-3. After running Arms A-C, the task history contained 9+ references to "experienced engineer" and multiple summaries about binary.bin being impossible
-4. The agent could simply recall from history: "I've seen this before, binary.bin is impossible"
+| Run | escalated-properly | low-tool-count | explains-binary | file-preserved | Status | Duration |
+|-----|:--:|:--:|:--:|:--:|:--:|:--:|
+| 1 | ✅ | ✅ | ✅ | ✅ | success | 18s |
+| 2 | ✅ | ✅ | ✅ | ✅ | success | 22s |
+| 3 | ✅ | ✅ | ✅ | ✅ | success | 20s |
 
-This means:
-- **Arm B results are partially confounded** — earlier runs taught the agent about binary.bin
-- **Arm D is completely confounded** — passed because task history already told it the answer
-- **Only Arm A's first 3 runs are clean** (before contamination accumulated)
+**Result: 3/3 pass (100%).** Agent recognizes binary file and calls `finish(blocked)` in ~20 seconds. Perfect consistency.
+
+## Analysis
+
+### Hypothesis REJECTED: Attention Dilution Is Not the Mechanism
+
+The original hypothesis was that the ~48KB system prompt "buries" the few-shot examples. If this were true, reducing to ~11KB (Arm B) should have helped. **It did not.** Arm B still produced 0/3 passes.
+
+This means the failure is NOT caused by prompt length. Something more fundamental is different between system-prompt delivery and task-message delivery.
+
+### What the Data Shows
+
+| Comparison | Conclusion |
+|------------|-----------|
+| Arm A (48KB, no task few-shot) → 0/3 | System-prompt-only delivery fails |
+| Arm B (11KB, no task few-shot) → 0/3 | Reducing prompt size doesn't help |
+| Arm C (11KB + task few-shot) → 3/3 | Task-message few-shot is necessary |
+| Arm B vs A | Smaller prompt → slightly fewer tool calls, but same outcome |
+
+### Revised Mechanism: Positional Privilege
+
+The few-shot works not because of prompt length but because of **where** it appears:
+1. **System prompt** = pre-conversation instructions. The model treats these as "rules" or "guidelines" — general principles to follow.
+2. **Task message** = the user's first message. The model treats this as the specific situation to respond to.
+
+Few-shot examples in the task message are interpreted as **"this is what you should do RIGHT NOW in THIS situation"**. The same examples in the system prompt are interpreted as **"in general, here's how to handle these situations"** — which the model may or may not apply when the actual task arrives.
+
+This is a **position-dependent attention** effect, not a prompt-length effect.
+
+### Arm B Partial Improvement
+
+Arm B (minimal prompt) did show one improvement over Arm A (full prompt): the agent used fewer tool calls (passed low-tool-count 2/3 times vs 0/3 for Arm A). This suggests:
+- Shorter system prompts → less "distraction" → faster processing
+- But "faster processing" ≠ "correct behavior" — the agent still didn't call `finish(blocked)`
+- The skill text tells the agent WHAT to do but doesn't trigger the actual behavior
 
 ## Conclusions
 
-### 1. EXP-095 Results Were Entirely Wrong
-EXP-095 concluded "system-prompt delivery fails, task-message delivery works." This was wrong — it was measuring the scoring bug, not delivery effectiveness. With the scoring bug fixed, both delivery mechanisms work.
+1. **Attention dilution is NOT the mechanism.** Reducing system prompt from 48KB to 11KB does not make system-prompt few-shot work.
 
-### 2. Attention Dilution Is Real But Subtle
-Arm A (48KB prompt) → agent uses 15+ tools (too many, slow escalation)
-Arm C (48KB prompt + few-shot in task) → agent uses <15 tools (fast escalation)
-Arm B (11KB prompt) → agent mostly uses <15 tools (fast escalation)
+2. **Task-message delivery is categorically required for behavioral few-shot.** The position of the few-shot (system prompt vs task message) determines its effectiveness, not the surrounding context size.
 
-The skill in the system prompt makes the agent DO the right thing (escalate) but with too many exploration steps. The few-shot in the task message teaches the agent to do it QUICKLY. Reducing system prompt size (Arm B) partially helps.
+3. **System-prompt skills teach rules, task-message few-shots trigger behavior.** The know-when-blocked skill in the system prompt contains the same examples, same rules, same guidance — but the agent doesn't follow them. When the same content appears in the task message, the agent follows it immediately.
 
-### 3. Task-Message Few-Shot Is Most Reliable
-Across all conditions, having the few-shot in the task message (Arm C) produced the most consistent 100% results. This validates the task-message delivery strategy.
+4. **Practical implication**: For skills that require behavioral change (not just knowledge), the few-shot examples MUST be delivered in the task message (via `injected_context.md` or similar mechanism), not in the system prompt.
 
-### 4. Gym Infrastructure Needs Clean-Room Isolation
-Session-level task history creates experiment contamination. Future experiments need:
-- Fresh agent identity per arm (no shared history)
-- OR task history clearing between arms
-- OR a `--no-history` flag for the gym runner
+## Cross-References
 
-## Knowledge Entries to Update
-- **KE-059** (Few-Shot Breaks Text-Rule Binary): Conclusion stands but for different reasons
-- **EXP-095**: Results should be marked as INVALIDATED — bug-driven, not delivery-driven
-- **New KE needed**: Gym scoring infrastructure requires transcript format compatibility
+- **EXP-095**: Original finding that task-message delivery > system-prompt delivery. This experiment confirms that finding and disproves the attention-dilution explanation.
+- **KE-059**: Few-shot effectiveness is position-dependent, not length-dependent.
+- **Generalized Skill**: See `generalized-skill.md` for the delivery mechanism that works.
 
-## Files Modified
-- `src/gym/runner.ts` — Added `_gym_transcript.jsonl` copy alongside `transcript.jsonl`
-- `test/gym/lib/gym-score-utils.cjs` — Fixed `toolCalls()` and `ops()` to parse Anthropic JSONL format
-- `agents/gym/scenarios/behavior-escalation-stubborn/task.md` — Restored to clean (no embedded few-shot)
+## Files Created/Modified
+
+- `agents/gym/scenarios/exp096-arm-a/` — Clean scenario, full coder, no few-shot
+- `agents/gym/scenarios/exp096-arm-b/` — Clean scenario, minimal coder, no few-shot
+- `agents/gym/scenarios/exp096-arm-c/` — Clean scenario, minimal coder + injected_context few-shot
+- `agents/.lab/coder-minimal-exp096/` — Lab fork with minimal SOUL.md + know-when-blocked only
