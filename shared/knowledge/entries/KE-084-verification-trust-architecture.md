@@ -84,7 +84,7 @@ This is the verification-trust equivalent of the principle of least privilege in
 ## Connections to Our Research
 
 ### KE-044 (Verification Separation Thesis)
-KE-044 established that self-evolution requires architecturally separated verification. KE-083 generalizes this: verification separation is the key to ALL multi-agent coordination, not just self-evolution. The five systems in KE-044 (CORAL, SEVerA, Hermes, EvoSkills, Steve-Evolving) all achieved scaling by moving decisions from trust (Layer 3) to verification (Layer 1).
+KE-044 established that self-evolution requires architecturally separated verification. KE-084 generalizes this: verification separation is the key to ALL multi-agent coordination, not just self-evolution. The five systems in KE-044 (CORAL, SEVerA, Hermes, EvoSkills, Steve-Evolving) all achieved scaling by moving decisions from trust (Layer 3) to verification (Layer 1).
 
 ### KE-074 (Process-Outcome Verification Separation)
 KE-074's Universal Verifier (human-level κ=0.64, FPR~1%) is a Layer 1 component. The insight that "design beats model strength" aligns perfectly: verification architecture > model capability.
