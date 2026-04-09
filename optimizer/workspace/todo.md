@@ -41,3 +41,4 @@
 
 Detailed findings in `workspace/finding-*.md` and `workspace/brief-*.md`.
 Tool quality regressions [1-5] all resolved — waste rate 0.07-2.4%, not actionable.
+Tool quality regression #6 (bash errors ×4 categories) — investigated 2026-04-09. 42/59 bash:other = classifier gap (gym ✓/✗ format). Rest = natural variance from 2 bob sessions. One fix proposed: add ✗ regex to test-failure classifier. See `workspace/finding-tool-quality-regression-6.md`.
