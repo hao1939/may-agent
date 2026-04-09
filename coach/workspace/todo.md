@@ -39,6 +39,17 @@ The gym graduation proposal was approved by Bob with M1-M5 modifications (all ap
 - Needs auto-readback or structural enforcement in the tool layer
 - **Blocked on**: Engineering capacity (tech-lead)
 
+### 5. EXP-100: CIVC Interventional Test [READY TO RUN]
+- **Design**: `agents/shared/knowledge/experiments/EXP-100/design.md`
+- **Status**: All 6 scenarios created, environments verified, run script + analysis script ready
+- **Scenarios**: 
+  - Arm A (baseline): compound-edit-verification, multi-file-verify-gap
+  - Arm B (scaffolding): compound-edit-verification-scaffolded, multi-file-verify-gap-scaffolded  
+  - Arm C (checkpoint): compound-edit-verification-checkpoint, multi-file-verify-gap-checkpoint
+- **Run**: `bash agents/shared/knowledge/experiments/EXP-100/run-exp100.sh`
+- **Budget**: 12 gym runs (3 arms × 2 scenarios × 2 reps)
+- **Tests**: H-093 predictions P-093a (scaffolding reduces FM-3.3) and P-093c (forced checkpoints break Drift-to-Decay)
+
 ---
 
 ## Completed (Recent — see experiment results for details)
