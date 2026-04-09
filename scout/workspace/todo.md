@@ -121,4 +121,4 @@
 ## Counters
 - DD: 712 (Scout: 690 + 698-712, Bob: 691-697)
 - CR: 326
-- Session: 573
+- Session: 408
