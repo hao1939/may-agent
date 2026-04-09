@@ -1,10 +1,10 @@
 # H-094: Hedge-to-Verify Ratio as Zero-Cost Agent Confidence Gate
 
-**Status**: Proposed  
-**P(H)**: 0.45 (single external paper, no system-specific evidence yet)  
+**Status**: WEAK SIGNAL (EXP-101 Phase 1 complete)  
+**P(H)**: 0.50 (updated from 0.45 — precision target met, AUROC target missed)  
 **Created**: 2026-04-09  
 **Source**: SELFDOUBT paper (arXiv:2604.06389, Pandey et al., COLM 2026 submission)  
-**Connected to**: H-093 (verification collapse), KE-086 (multi-agent scaling), DD#665 (StepFlow), DD#667 (MASC)
+**Connected to**: H-093 (verification collapse), KE-068 (SELFDOUBT findings), DD-656 (SELFDOUBT paper)
 
 ## Core Hypothesis
 
@@ -14,26 +14,60 @@ Agent outputs that contain zero hedging markers in their reasoning traces are co
 2. **Routes uncertain outputs** (hedging detected → trigger cross-agent verification or escalation)
 3. **Quantifies uncertainty** via the Hedge-to-Verify Ratio for graduated response
 
-## Why This Matters for Our System
+## EXP-101 Results (2026-04-09)
 
-- **Reduces verification overhead**: Currently all agent outputs get equal verification treatment. With HVR gating, 60-70% of outputs could skip expensive cross-verification.
-- **Connects to verification collapse (H-093)**: The verification gravity well (FM-3.3) may be partially caused by wasted verification budget on already-correct outputs. HVR frees budget for genuinely uncertain cases.
-- **Connects to KE-086 scaling**: Event-triggered verification (only verify when hedging detected) parallels event-triggered communication (2604.06813). Both reduce coordination cost by acting only on significant signals.
-- **Model-agnostic**: Works across reasoning model APIs without needing logits or internals — just the text output.
+### Summary
+Analyzed 1,259 sessions across 10 agents. Zero-hedge precision matches SELFDOUBT (96.3% vs 96.1%) but this is entirely explained by the low base error rate (3.8%). HVR does NOT discriminate between correct and incorrect sessions.
 
-## Proposed Experiment
+### Key Metrics
 
-**EXP-101 DESIGNED** (2026-04-09): Retrospective HVR validation on 1,435 existing agent session traces.
-- Phase 1: $0 analysis of session.jsonl traces — zero-hedge gate precision, HVR→AUROC, FM-3.3 prediction
-- Phase 2 (optional): ~$2-3 prospective gym runs for clean correctness labels
-- See: `knowledge/experiments/EXP-101/design.md`
+| Metric | Value | Target | Status |
+|--------|-------|--------|--------|
+| Zero-hedge precision | 96.3% | ≥90% | ✅ Met (but = base rate) |
+| Zero-hedge coverage | 57.5% | ≥15% | ✅ Met |
+| HVR AUROC | 0.535 | ≥0.60 | ❌ Failed |
+| Has-hedge precision | 96.1% | — | Same as zero-hedge |
+| Best single predictor AUROC | 0.557 (late-hedge / opCount) | ≥0.60 | ❌ Failed |
 
-## Key Risk
+### Why It Doesn't Work for Agents
 
-- The 96% figure is from structured reasoning benchmarks (BBH, GPQA, MMLU-Pro). Agent workflows are messier — hedging patterns may differ or be less predictive.
-- "Correct" in benchmark settings ≠ "correct" in open-ended agent tasks. Need to define correctness criteria for agent outputs.
+1. **Base rate masking**: Overall success rate is 96.2%. Zero-hedge precision (96.3%) is only +0.1pp above base rate — the gate adds no information.
+2. **Agents don't hedge like humans**: 57.5% of sessions have zero hedges (vs SELFDOUBT's 25.4%). Agent training suppresses hedging language.
+3. **Error modes differ**: Agent errors are primarily infrastructure failures (timeouts, EISDIR), not reasoning uncertainty. HVR targets reasoning uncertainty.
+4. **Self-correction ≠ doubt**: "Actually" and "wait" (backtracking markers) carry the most signal but are normal cognitive process, not confidence indicators.
 
-## Decision Needed
+### Agent-Level Findings
 
-- [ ] Should we prototype HVR detection on existing agent logs? (Low cost, high potential)
-- [ ] What correctness criteria to use for agent output evaluation?
+Two agents show promising per-agent signal:
+- **Optimizer**: AUROC 0.716 (above 0.70 target, but only N=3 errors)
+- **Scout**: AUROC 0.644 (above 0.60 target, but only N=2 errors)
+
+Most agents show no signal (AUROC 0.45-0.55).
+
+### P(H) Update Rationale
+
+Per EXP-101 design doc update rules:
+- Zero-hedge precision ≥ 90%: ✅ (96.3%)
+- AUROC ≥ 0.60: ❌ (0.535)
+- This maps to **"Weak signal — may work with agent-specific calibration"**: 0.45 → **0.50**
+
+### What Would Change P(H)
+
+- **Richer labels**: Evaluation data with FM-3.3 classification (couldn't test — no matching evals). If HVR predicts FM-3.3 specifically: P(H) → 0.65
+- **Agent-specific tuning**: If optimizer/scout signal holds at larger N: P(H) → 0.60
+- **Agent-specific markers**: Replace benchmark hedging markers with agent-specific ones (retry counts, error recovery language, tool-call patterns): could fundamentally change the approach
+
+## Decisions
+
+- [x] Should we prototype HVR detection on existing agent logs? **YES — DONE (EXP-101)**
+- [x] What correctness criteria to use? **Session status (done/error) — coarsest available**
+- [ ] Phase 2 gym validation? **NO — AUROC too low to justify cost**
+- [ ] Agent-specific tuning? **DEFERRED — wait for better evaluation labels**
+
+## Full Results
+
+See: `agents/shared/knowledge/experiments/EXP-101/results.md`
+Analysis script: `agents/bob/workspace/exp101-hvr-analysis.ts`
+
+---
+*Updated by Bob | 2026-04-09 | EXP-101 Phase 1 complete*
