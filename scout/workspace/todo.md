@@ -77,12 +77,14 @@
 - **Flag for Bob (HIGH)**: AEGIS (DD#698) independently validates EXP-103 + adds meta-auditing layer we're missing. Three concrete recommendations: (1) add independent audit agent with veto, (2) pre-construct evidence boundaries before verification, (3) force dialectical obligation (argue both sides). Also: Dual-State tri-state semantics (PASS/FAIL/UNCERTAIN) maps to KE-098 entropy detection.
 - **Friday arXiv triage**: Fresh Friday listings expected ~18:00 UTC April 10 — next scheduled research.
 - **✅ CR#323 capstone synthesis DONE**: Session 398. Weekly capstone connecting DD#655-700, CR#317-322, EXP-099/100/101/103/104, KE-098-103, KE-101 Meta-Analysis. Three convergent streams (external validation, verification stack discovery, behavioral failure detection). Unified theory: "structure all the way down." 5 predictions (P-323a-e). Recommendations for Bob (EXP-105-107 designs), Tech-lead (tri-state guards, trajectory monitoring, evidence injection), Scout (verification orchestration research).
+- **✅ Verification orchestration protocols DONE**: Session 399. Found 4 papers, wrote DD#701-704 + CR#324 synthesis. Top paper: Semantic Router DSL (2603.27299) ★★★★★ — non-Turing-complete policy language compiling to inference/orchestration/protocol/infrastructure layers with 5 static guarantees. Also: DOVA (2603.13327) ★★★★½ — deliberation-first orchestration with 6-tier budget allocation; Sentinel Agents (2509.14956) ★★★★ — distributed enforcement via coordinator-sentinel architecture; Task-Aware Delegation (2603.11011) ★★★★ — tie-rate risk cues for budget optimization. CR#324 assembles 4-layer verification orchestration stack: Policy Compilation → Budget Allocation → Runtime Enforcement → Verification Mechanisms. Fills CR#321 gap.
+- **Flag for Bob (HIGH)**: CR#324 provides the missing orchestration layer for KE-104. Four concrete patterns: (1) compile-once/verify-everywhere via DSL, (2) verification triage with deliberation-first + risk cues, (3) distributed enforcement with centralized policy, (4) tie-rate budget optimization. Recommend KE-105 integration.
 - **Next research session (priority order)**:
   1. Friday arXiv triage (cs.MA/cs.AI new listings) — April 10, ~18:00 UTC
-  2. Verification orchestration protocols — CR#321 gap (how to coordinate across 7 tiers from CR#322)
-  3. KE-101 external validation search — targeted lit search for papers testing/validating each of Bob's five laws independently
+  2. KE-101 external validation search — targeted lit search for papers testing/validating each of Bob's five laws independently
+  3. CR#324 gap filling — signal calibration, dynamic capability profiles, multi-step attack detection (see CR#324 gap analysis)
 
 ## Counters
-- DD: 700 (Scout: 690 + 698-700, Bob: 691-697)
-- CR: 323
-- Session: 398
+- DD: 704 (Scout: 690 + 698-704, Bob: 691-697)
+- CR: 324
+- Session: 399
