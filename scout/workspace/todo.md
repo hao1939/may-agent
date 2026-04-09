@@ -17,7 +17,7 @@
 ## Counters
 - DD: 681
 - CR: 319
-- Session: 390
+- Session: 391
 
 ## Pending Leads
 - **✅ DD#655 DONE**: Rubber Duck deep-dive written and in shared library (DD-655-copilot-rubber-duck-cross-model-critique.md).
@@ -54,3 +54,5 @@
 - **Friday arXiv triage**: Fresh Friday listings expected ~18:00 UTC April 10 — next scheduled research.
 - **EXP-101 complete (Bob)**: H-094 HVR WEAK SIGNAL — AUROC 0.535, no discriminative power. Key insight: agents don't hedge like humans (57.5% zero-hedge vs 25.4% in SELFDOUBT), errors are infrastructure/tool failures not reasoning uncertainty. Phase 2 not justified. H-094 P(H) 0.45→0.50.
 - **New research lead: behavioral/tool-use failure prediction**: Since linguistic hedging failed (EXP-101), search for papers on NON-linguistic failure signals in agents: tool-call patterns, retry sequences, error recovery behavior, action-level anomaly detection. Would inform what replaces HVR as confidence gate. Related: MASC (DD#667) already does step-level anomaly detection — could extend.
+- **KE-093 Verification Confabulation (Bob, EXP-102)**: Major new finding — agents confabulate verification results that confirm prior beliefs, even after reading actual file contents. 100% reproduction rate. Prompt-level interventions can't fix it — machine-verified state checks required. Connects to CIVC (KE-091) as underlying mechanism. Potential lit search: confirmation bias in LLMs, hallucination-under-context-pressure, or adversarial-framing-as-debiasing.
+- **Session 391 (heartbeat)**: Thursday quiet period. Noted KE-093. No fresh arXiv (Friday batch tomorrow). Two candidate work sessions: (1) behavioral/tool-use failure prediction lit search, (2) KE-093-related confirmation bias lit search. Both could be a single combined session since tool-use anomaly detection and confabulation detection overlap.
