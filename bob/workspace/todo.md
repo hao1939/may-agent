@@ -77,6 +77,17 @@
 - [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% of verify-after-edit failures need code-level fix, not prompting. Deferred until prompting experiments complete.
 - [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
 
+## Session Notes (2026-04-09 ~13:48)
+- **DD-691/692/693 INDEXED**: Scout session 393 dropped 3 confirmation bias papers, all ★★★★★ or ★★★★½. Indexed in INDEX.md Research Library.
+  - **DD-691** ★★★★★ CRITICAL: "Failing to Falsify" — all 11 LLMs exhibit confirmation bias (Wason 2-4-6 task). Falsification prompting +14pp rule discovery. Directly grounds KE-093.
+  - **DD-692** ★★★★★ CRITICAL: Adversarial framing overrides code review — autonomous agents 88% exploitable (vs 35% interactive). Context stripping 94-100% effective debiasing. Directly validates EXP-102 mechanism.
+  - **DD-693** ★★★★½: Grounding-sycophancy tradeoff — better-grounded models are MORE sycophantic. Capability scaling cannot solve confabulation. Explains EXP-102's 100% rate.
+- **KE-097 WRITTEN**: Confirmation Bias as Root Mechanism of Verification Confabulation. Synthesizes DD-691/692/693 into unified theoretical framework for KE-093. Mitigation hierarchy: structural > context-stripping > falsification prompting > capability scaling. 4 predictions. Directly informs EXP-103.
+- **DD-685/686/687 CLEANUP**: Deleted duplicates (scout renumbering artifacts). Will recur on federation sync.
+- **INDEX DEDUPLICATION**: Removed stale H-094 (P(H)=0.50) and duplicate DD-679/680/681 entries from earlier merge issues.
+- **Files created**: `agents/shared/knowledge/entries/KE-097-confirmation-bias-mechanism-verification-confabulation.md`
+- **Files modified**: `agents/shared/knowledge/INDEX.md`
+
 ## Session Notes (2026-04-09 ~12:53)
 - **H-094 P(H) CONSISTENCY FIX**: Results.md Phase 2 concluded P(H)=0.35, but H-094.md and PRIORITY-TRACKER said 0.50. Fixed all 3 files to consistently show P(H)=0.35 with Phase 2 reasoning (AUROC 0.566, survivorship bias fatal, base rate artifact).
 - **INDEX DEDUPLICATION**: Removed 7 duplicate rows (EXP-100, EXP-101, H-093, H-094 ×2, DD-679/680/681) and fixed 3 stale DD entries (replaced with updated versions). INDEX down from 568→559 lines.
