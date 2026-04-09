@@ -182,6 +182,9 @@ export interface ActiveSession {
   outputDir: string;
   unsubscribe?: () => void;
   timeoutTimer?: ReturnType<typeof setTimeout>;
+  /** Session-level abort controller. Used to cancel API gate waits and other
+   *  pre-agent operations that aren't covered by agent.abort(). */
+  abortController: AbortController;
   parentSessionId?: string;
   /** Agent name of the parent session (cached at creation for notification after parent may be gone). */
   parentAgentName?: string;

@@ -940,6 +940,7 @@ export class SubagentManager {
       startedAt: Date.now(),
       status: "running",
       outputDir,
+      abortController: new AbortController(),
       parentSessionId: opts?.parentSessionId,
       parentAgentName:
         opts?.parentAgentName ??
@@ -1355,6 +1356,7 @@ export class SubagentManager {
       startedAt: persisted.startedAt,
       status: "running",
       outputDir,
+      abortController: new AbortController(),
       parentSessionId: persisted.parentSessionId,
       // Bug 8 fix: Restore parentAgentName so escalation routing works after resume.
       // Try the active session first, then fall back to persisted meta.
@@ -1752,6 +1754,8 @@ export class SubagentManager {
       session.status = "running";
       session.error = undefined; // Clear previous turn's error
       session.infraRetryCount = 0; // Reset retry counter for new turn
+      // Bug 2 fix: fresh abort controller for the new turn (previous may be aborted).
+      session.abortController = new AbortController();
       this.registry.updateSessionStatus(sessionId, "running");
 
       // Write [STARTED] sentinel
@@ -1807,6 +1811,9 @@ export class SubagentManager {
     }
 
     // Running — abort the agent loop. handleCompletion fires when the promise settles.
+    // Bug 2 fix: abort session-level controller FIRST so gate queue waiters
+    // get rejected before releaseAll() removes them.
+    session.abortController.abort();
     session.agent.abort();
     // Release any API gate slot held by this session
     this.apiGate?.releaseAll(sessionId);
@@ -1835,6 +1842,9 @@ export class SubagentManager {
    * Run an LLM call through the API gate.
    * If a gate is configured, acquires a slot before calling and releases after.
    * If no gate, calls directly (zero overhead).
+   *
+   * Bug 2 fix: passes the session's abort signal to apiGate.acquire() so that
+   * cancel() can unblock sessions waiting in the gate queue.
    */
   private gatedPrompt(
     session: ActiveSession,
@@ -1851,7 +1861,7 @@ export class SubagentManager {
     const gateKey = `${model.baseUrl}::${model.provider ?? "unknown"}`;
 
     return this.apiGate
-      .acquire(gateKey, session.sessionId, session.agentName)
+      .acquire(gateKey, session.sessionId, session.agentName, session.abortController.signal)
       .then((release) =>
         callFn().finally(release),
       );
