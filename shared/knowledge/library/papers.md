@@ -5,15 +5,15 @@ Papers and articles worth reading, with key takeaways.
 ## 2026-04-09 — Session 384 Additions (Verification Collapse Literature Search)
 
 ### arXiv:2604.06066 — From Hallucination to Structure Snowballing: The Alignment Tax of Constrained Decoding in LLM Reflection (Zhou)
-**Rating:** ★★★★★ CRITICAL | **DD#667**
+**Rating:** ★★★★★ CRITICAL | **DD#671**
 Constrained decoding triggers "structure snowballing" — models achieve perfect formatting but lose semantic verification capability. The "alignment tax" concept: structural constraints consume reasoning capacity. Direct validation of H-093 CIVC mechanism.
 
 ### arXiv:2601.10738 — CTHA: Constrained Temporal Hierarchical Architecture for Stable Multi-Agent LLM Systems (Jardine)
-**Rating:** ★★★★ | **DD#668**
+**Rating:** ★★★★ | **DD#672**
 47% failure cascade reduction via three constraint types: message contracts, authority manifolds, arbiter resolution. Addresses inter-layer error propagation in hierarchical multi-agent systems.
 
 ### arXiv:2604.05477 — VeriGUI: Robust GUI Automation via Action-Effect Verification and Self-Correction (Zhang et al.)
-**Rating:** ★★★★ | **DD#669** | **ACL 2026 Main**
+**Rating:** ★★★★ | **DD#673** | **ACL 2026 Main**
 TVAE framework (Think-Verify-Act-Expect) prevents catastrophic error accumulation via mandatory pre-action verification and expectation pre-registration. Directly validates H-093 P-093c (forced checkpoints break cascades).
 
 ### arXiv:2604.04108 — Hypothesis Graph Refinement: Cascade Error Correction for Embodied Navigation (Chen et al.)
@@ -21,7 +21,7 @@ TVAE framework (Think-Verify-Act-Expect) prevents catastrophic error accumulatio
 Verification-driven cascade correction via dependency-aware graph memory. Hypothesis nodes can be retracted with all dependents on mismatch. 20% node pruning, 4.5× fewer revisits.
 
 ### Synthesis: CR#318 — Verification Collapse Literature Synthesis
-**Cross-reference**: CR-318 ties DD#667–670 together as external validation of H-093. Recommends P(H) update 0.65→0.75. Proposes cascade prevention architecture: lightweight verification + authority constraints + hypothesis-based memory.
+**Cross-reference**: CR-318 ties DD#670–673 together as external validation of H-093. Recommends P(H) update 0.65→0.75. Proposes cascade prevention architecture: lightweight verification + authority constraints + hypothesis-based memory.
 
 ## 2026-04-07 — Session 308 Additions (arXiv cs.MA new papers)
 

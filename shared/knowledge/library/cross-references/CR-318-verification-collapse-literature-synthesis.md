@@ -3,13 +3,13 @@
 **Cross-Reference ID**: CR-318
 **Date**: 2026-04-09 (Session 384)
 **Scope**: Literature grounding for H-093 (Complexity-Induced Verification Collapse) via targeted paper search
-**Related**: H-093, H-092, EXP-099, DD#667, DD#668, DD#669, DD#670, DD#535
+**Related**: H-093, H-092, EXP-099, DD#670, DD#671, DD#672, DD#673, DD#535
 
 ---
 
 ## Summary
 
-A systematic literature search for external validation of H-093's predictions yielded **4 new high-signal papers** (DD#667–670) plus confirmation that DD#535 (sycophancy cascades) was already captured. Together, these papers provide strong external validation for the CIVC hypothesis and suggest concrete architectural interventions.
+A systematic literature search for external validation of H-093's predictions yielded **4 new high-signal papers** (DD#670–673) plus confirmation that DD#535 (sycophancy cascades) was already captured. Together, these papers provide strong external validation for the CIVC hypothesis and suggest concrete architectural interventions.
 
 ## The Core Thesis Under Test
 
@@ -17,13 +17,13 @@ A systematic literature search for external validation of H-093's predictions yi
 
 ## External Validation Evidence
 
-### 1. Structure Snowballing (DD#667, 2604.06066) — ★★★★★
+### 1. Structure Snowballing (DD#671, 2604.06066) — ★★★★★
 **Validates H-093's core mechanism**. Shows that constrained decoding (a form of added complexity) triggers a failure mode where models achieve perfect formatting but fail at semantic verification. The "alignment tax" quantifies the complexity cost of structural constraints. This directly validates P-093a: "complexity, not length, triggers verification collapse."
 
-### 2. CTHA Cascade Prevention (DD#668, 2601.10738) — ★★★★
-**Validates that constraints can prevent cascades**. 47% reduction in failure cascades via typed message contracts, authority constraints, and arbiter resolution. Supports P-093c: "structured interventions can break cascade patterns." But DD#667 warns that the constraints themselves must be lightweight.
+### 2. CTHA Cascade Prevention (DD#672, 2601.10738) — ★★★★
+**Validates that constraints can prevent cascades**. 47% reduction in failure cascades via typed message contracts, authority constraints, and arbiter resolution. Supports P-093c: "structured interventions can break cascade patterns." But DD#671 warns that the constraints themselves must be lightweight.
 
-### 3. VeriGUI TVAE (DD#669, 2604.05477) — ★★★★
+### 3. VeriGUI TVAE (DD#673, 2604.05477) — ★★★★
 **Validates verification checkpoints as cascade breakers**. TVAE (Think-Verify-Act-Expect) framework demonstrates that mandatory verification before each action prevents error accumulation. Directly supports P-093c and provides an implementable pattern. ACL 2026 Main — peer-reviewed.
 
 ### 4. HGR Cascade Correction (DD#670, 2604.04108) — ★★★★
@@ -39,13 +39,13 @@ Synthesizing across all four papers, a coherent prevention architecture emerges:
 ├─────────────────────────────────────────────┤
 │                                             │
 │  LAYER 1: Lightweight Verification          │
-│  (DD#669/VeriGUI → TVAE checkpoints)        │
+│  (DD#673/VeriGUI → TVAE checkpoints)        │
 │  • Verify previous action before next one   │
 │  • Pre-register expectations                │
 │  • Keep verification cognitively simple      │
 │                                             │
 │  LAYER 2: Authority Constraints             │
-│  (DD#668/CTHA → scope boundaries)           │
+│  (DD#672/CTHA → scope boundaries)           │
 │  • Typed message contracts between agents   │
 │  • Bounded decision authority per layer     │
 │  • Deterministic conflict resolution        │
@@ -57,7 +57,7 @@ Synthesizing across all four papers, a coherent prevention architecture emerges:
 │  • On error: cascade-retract dependents     │
 │                                             │
 │  CONSTRAINT: Minimal Structural Overhead    │
-│  (DD#667/Snowballing → alignment tax)       │
+│  (DD#671/Snowballing → alignment tax)       │
 │  • All interventions must be LOW-complexity  │
 │  • Formatting rules consume reasoning cap   │
 │  • Simple > Structured for verification     │
@@ -69,13 +69,13 @@ Synthesizing across all four papers, a coherent prevention architecture emerges:
 
 ### H-093 P(H) Update
 Based on this literature evidence, recommend updating P(H) from 0.65 → **0.75**:
-- Direct mechanistic validation from DD#667 (structure snowballing = complexity-driven verification failure)
+- Direct mechanistic validation from DD#671 (structure snowballing = complexity-driven verification failure)
 - Three independent papers confirming cascade patterns are preventable via architectural interventions
 - No contradictory evidence found
 
 ### EXP-100 Design Refinements
 The original H-093 proposal for EXP-100 (testing scaffolded vs forced-checkpoint conditions) should be refined:
-- **Test lightweight TVAE-style checkpoints** (not complex templates) — DD#667 shows templates themselves can trigger collapse
+- **Test lightweight TVAE-style checkpoints** (not complex templates) — DD#671 shows templates themselves can trigger collapse
 - **Test hypothesis-framing** — label early decisions as "provisional" and verify them periodically
 - **Test expectation pre-registration** — require agents to state expected outcomes before acting
 - **Measure alignment tax** — track whether verification scaffolding itself degrades reasoning quality

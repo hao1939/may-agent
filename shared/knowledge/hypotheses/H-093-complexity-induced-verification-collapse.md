@@ -62,15 +62,15 @@ Interventional study comparing verification collapse rates under three condition
 **Cross-reference**: CR-318 (Verification Collapse Literature Synthesis)
 
 ### Direct Validation
-- **DD#667 (2604.06066)**: "Structure Snowballing" — Constrained decoding triggers formatting-focused mode that destroys semantic verification. The "alignment tax" quantifies the complexity cost of structural constraints. **Directly validates P-093a**: complexity (including formatting complexity), not length, triggers verification collapse.
-- **DD#669 (2604.05477)**: VeriGUI TVAE framework — Mandatory verification before each action prevents error accumulation. **Directly validates P-093c**: forced checkpoints break cascade patterns. (ACL 2026 Main — peer-reviewed.)
+- **DD#671 (2604.06066)**: "Structure Snowballing" — Constrained decoding triggers formatting-focused mode that destroys semantic verification. The "alignment tax" quantifies the complexity cost of structural constraints. **Directly validates P-093a**: complexity (including formatting complexity), not length, triggers verification collapse.
+- **DD#673 (2604.05477)**: VeriGUI TVAE framework — Mandatory verification before each action prevents error accumulation. **Directly validates P-093c**: forced checkpoints break cascade patterns. (ACL 2026 Main — peer-reviewed.)
 
 ### Architectural Evidence
-- **DD#668 (2601.10738)**: CTHA — 47% failure cascade reduction via typed message contracts, authority manifolds, and arbiter resolution. Supports constraint-based cascade prevention.
+- **DD#672 (2601.10738)**: CTHA — 47% failure cascade reduction via typed message contracts, authority manifolds, and arbiter resolution. Supports constraint-based cascade prevention.
 - **DD#670 (2604.04108)**: HGR — Cascade error correction via hypothesis nodes with dependency tracking. Graph contraction (memory can shrink) eliminates 20% redundant nodes and reduces error revisits 4.5×.
 
-### Critical Nuance from DD#667
+### Critical Nuance from DD#671
 Scaffolding CAN itself trigger verification collapse if it adds too much structural overhead (the "alignment tax"). EXP-100 design should use **lightweight** verification checkpoints, NOT complex structured templates.
 
 ### Updated P(H): 0.65 → 0.75
-Strong external mechanistic validation (DD#667), peer-reviewed intervention evidence (DD#669), and consistent architectural support (DD#668, DD#670). No contradictory evidence found.
+Strong external mechanistic validation (DD#671), peer-reviewed intervention evidence (DD#673), and consistent architectural support (DD#672, DD#670). No contradictory evidence found.

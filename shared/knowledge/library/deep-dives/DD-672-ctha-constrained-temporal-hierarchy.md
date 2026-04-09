@@ -1,4 +1,4 @@
-# DD#668: CTHA — Constrained Temporal Hierarchical Architecture for Stable Multi-Agent LLM Systems
+# DD#672: CTHA — Constrained Temporal Hierarchical Architecture for Stable Multi-Agent LLM Systems
 
 **Paper**: "CTHA: Constrained Temporal Hierarchical Architecture for Stable Multi-Agent LLM Systems"
 **Authors**: Percy Jardine
@@ -47,7 +47,7 @@ Our EXP-099 found that 49.2% of sessions with errors have 3+ error cascades, wit
 - **Arbiter resolution** → When an agent session deviates from its assigned task, there's no conflict resolution mechanism. CTHA suggests this is necessary for cascade prevention.
 
 ### Maps to Our Agent Gradient
-Our agent cascade rates (Scout 6% → Optimizer 73%) suggest that more complex agents need more constraints, not fewer. CTHA's finding that constraints IMPROVE performance aligns with H-093's prediction that scaffolding reduces CIVC — but DD#667 warns the scaffolding itself must be low-complexity.
+Our agent cascade rates (Scout 6% → Optimizer 73%) suggest that more complex agents need more constraints, not fewer. CTHA's finding that constraints IMPROVE performance aligns with H-093's prediction that scaffolding reduces CIVC — but DD#671 warns the scaffolding itself must be low-complexity.
 
 ### Temporal Hierarchy ↔ Our Agent Architecture
 Our system already has implicit temporal hierarchy:
