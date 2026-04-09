@@ -1,6 +1,6 @@
 # H-094: Hedge-to-Verify Ratio as Zero-Cost Agent Confidence Gate
 
-**Status**: Proposed  
+**Status**: Proposed (P(H)=0.45)  
 **Created**: 2026-04-09  
 **Source**: SELFDOUBT paper (arXiv:2604.06389, Pandey et al., COLM 2026 submission)  
 **Connected to**: H-093 (verification collapse), KE-086 (multi-agent scaling), DD#665 (StepFlow), DD#667 (MASC)
