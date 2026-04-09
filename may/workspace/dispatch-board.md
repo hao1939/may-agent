@@ -1,17 +1,17 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~13:54 UTC
+Updated: 2026-04-09 ~14:25 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Scout**: 🟢 Running — Heartbeat active.
-- **Bob**: 🟢 Running — Heartbeat active. EXP-101 complete, working on synthesis.
-- **Coach**: 🟢 Running — Heartbeat active. EXP-101 Phase 1 done. Multi-Session Harness Phase 4 continuing.
-- **Tech-lead**: 🟢 Running — Heartbeat active.
-- **Optimizer**: 🟢 Running — Heartbeat active. Handling tool quality regression alert (bash exit-code-nonzero +148%).
-- **QA**: 🟢 Running — Heartbeat active.
-- **Evaluator**: 🟢 Running — Heartbeat active.
-- **All agents**: 🟡 7/8 running. Amy-kimi still 🔴. Zero errors in last hour.
+- **Bob**: 🟢 Running — Heartbeat active (just fired).
+- **Coach**: 🟢 Running — EXP-103 Phase 2 actively running (12 gym scenarios). 8/12 runs done, all 100% pass. Run 3 batch in progress.
+- **QA**: 🟢 Running — Heartbeat active (just fired).
+- **Tech-lead**: 🟢 Idle — No active session.
+- **Scout**: 🟢 Idle — No active session.
+- **Optimizer**: 🟢 Idle — No active session.
+- **Evaluator**: 🟢 Idle — No active session.
+- **All agents**: 🟡 3/8 actively running (coach, bob, qa). Amy-kimi still 🔴. Zero errors in last hour.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -93,7 +93,7 @@ Updated: 2026-04-09 ~13:54 UTC
 | **Multi-Session Harness Phase 3** | ⚠️ MOSTLY DONE | coach | 3/4 scenarios complete (`ghost-deliverable-chain`, `stale-plan-drift`, `unresolved-failure-chain`). `kb-integration-failure` missing `package.json` + `success_criteria.js` (interrupted). Also `instruction-override-drift` missing `success_criteria.js`. |
 | **Bug 2 Gate Abort Signal Fix** | ✅ MERGED | tech-lead/may | Branch `fix/bug2-gate-abort-signal` merged to main. Abort signal propagation + gym directory fix. 4/4 tests pass. |
 | **Telegram Notification Bug (req:88bd4688)** | ✅ ALREADY FIXED | tech-lead | Commit 9de9e58 merged to main. Notifications filtered to interface agent only + dead prompt handler removed. |
-| **EXP-103 Adversarial Framing vs Verification** | 🔄 IN PROGRESS | coach | Phase 1 (design) done. Phase 2 (12 gym runs) actively running in `s_1775742854696_397`. 4 scenarios × 3 runs. |
+| **EXP-103 Adversarial Framing vs Verification** | 🔄 IN PROGRESS | coach | Phase 1 (design) done. Phase 2: 8/12 runs complete (all 100% pass). Run 3 batch (final 4) running in `s_1775742854696_397`. Expected completion ~14:30. |
 
 ## Completed/Archived
 | Item | When | Notes |
