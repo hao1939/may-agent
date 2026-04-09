@@ -1,15 +1,15 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~03:24 UTC
+Updated: 2026-04-09 ~03:53 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
 - **Scout**: 🟢 Running — Heartbeat active.
-- **Bob**: 🟢 Running — Heartbeat + forked EXP-097 KB integration.
-- **Coach**: 🟢 Running — Heartbeat active. EXP-097 complete. FM-3.1 growth trigger received.
-- **Tech-lead**: 🟢 Running — Heartbeat active. Few-shot deployment review dispatched (req:fdadb5fa).
-- **Optimizer**: 🟢 RESTORED — Was down 17 days (Mar 23 - Apr 9). Auto-pause cleared.
-- **QA**: 🟢 RESTORED — Was down 17 days (Mar 23 - Apr 9). Auto-pause cleared.
+- **Bob**: 🟢 Running — Heartbeat active. EXP-097 KB integration interrupted, self-retried.
+- **Coach**: 🟢 Running — Heartbeat active. Self-forked few-shot example store work session.
+- **Tech-lead**: 🟢 Running — Heartbeat active. Few-shot deployment review work session queued (req:fdadb5fa + c8e44f85).
+- **Optimizer**: 🟢 Running — Restored Apr 9. Tool quality regression investigation received.
+- **QA**: 🟢 Running — Restored Apr 9.
 - **Evaluator**: 🟢 Running — Heartbeat active.
 - **All agents**: 🟡 7/8 running. Amy-kimi still 🔴. Optimizer + QA just restored after 17-day outage.
 
@@ -64,7 +64,7 @@ Updated: 2026-04-09 ~03:24 UTC
 | **Crash Loop Bug (req:e750a385)** | ✅ ALREADY FIXED | tech-lead | Commits 9ea5b5a + fcb97c9 + 9c7e549 already merged. Three-layer defense + compaction persistence. |
 | **Token Efficiency Research** | ✅ COMPLETE | bob | **P0 FINDING**: $441/week wasted from zero prompt caching on Claude Opus. LiteLLM proxy strips cache headers. Fix: set ANTHROPIC_API_KEY in .env + restart. Executive brief at `agents/bob/workspace/token-waste-executive-brief.md`. |
 | **Optimizer + QA 17-Day Outage** | ✅ FIXED | tech-lead | Model alias change + auto-pause circuit breaker = 17 days down (Mar 23 - Apr 9). Both restored. Report: `agents/tech-lead/workspace/fix-optimizer-qa-outage.md`. |
-| **Auto-Pause Recovery Design** | ⏳ DISPATCHED | bob | Need probe timer or decay mechanism to prevent permanent lockout. Formal design request sent (req:36f360fa). |
+| **Auto-Pause Recovery Design** | ✅ COMPLETE | bob | Thorough design at `agents/shared/may-agent-docs/design/auto-pause-recovery.md`. State machine with exponential-backoff probes, 24h TTL, escalation to May. Ready for tech-lead implementation. |
 | **EXP-095 Few-Shot Delivery Mechanism** | ✅ COMPLETE | coach | **DEFINITIVE**: Task-message = 100% (6/6), system-prompt = 0% (3/3). Position is everything. Content quality irrelevant if delivery position wrong. |
 | **Few-Shot Production Deployment Proposal** | ✅ COMPLETE | coach | Comprehensive proposal at `agents/coach/workspace/proposal-fewshot-production-deployment.md`. Phase 1: static routing + 3 proven examples. ~2hr implementation. Needs tech-lead + Bob review. |
 | **Bob Heartbeat System Analysis** | ✅ COMPLETE | bob | 231-line analysis at `agents/bob/workspace/heartbeat-analysis.md`. 48 cron entries inventoried, ~1,256 fires/day, 7 consolidation recommendations. |
@@ -102,20 +102,20 @@ Updated: 2026-04-09 ~03:24 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (03:24)
-- **System stable** — All 7/8 agents running. No errors in past hour. Clean cycle.
-- **EXP-097 COMPLETE**: Simulated positional privilege in system prompt = 33% (vs 100% task-message). Urgency framing at end of SOUL.md is a weak partial fix — NOT viable for production. Confirms task-message injection is mandatory. Bob self-forked KB integration.
-- **Few-shot deployment review dispatched** → tech-lead (req:fdadb5fa). Coach's production proposal ready for technical assessment.
-- **Coach FM-3.1 growth trigger** — Bob has 9 repeated FM-3.1 (path-guessing) errors in 7 days. Coach received auto-trigger to initiate growth cycle. Navigation skill already deployed (Apr 9), so this may be covered.
-- **Tool quality regression** — Optimizer notified of bash/edit regression (+180% bash:other errors). Will investigate.
-- **Cancelled stale session** s_1775311714523_3 (still 109h idle from last cycle).
-- **Research chain complete**: EXP-095→096→097 fully characterize few-shot delivery mechanism. Position > length > framing. Task-message is the only reliable delivery path.
+## Latest Cycle Summary (03:53)
+- **System stable** — All 7/8 agents running. No new errors. Clean cycle.
+- **Auto-pause recovery design COMPLETE** — Bob produced thorough design at `agents/shared/may-agent-docs/design/auto-pause-recovery.md`. State machine (RUNNING→AUTO-PAUSED→PROBING) with exponential-backoff probes (1h→2h→4h→8h cap), 24h TTL, escalation to May. Ready for tech-lead to implement.
+- **Bob EXP-097 KB integration** — Work session interrupted (request aborted), Bob self-retried with new work session. Self-healing, no intervention needed.
+- **Coach self-forked** few-shot example store extraction (Phase 1 examples). Proactive follow-on from deployment proposal.
+- **Tech-lead few-shot review** — Has work session queued (c8e44f85) in addition to message requests. Will pick up during this heartbeat cycle.
+- **Stale session cancelled** s_1775311714523_3 (was 4.5h old "hello fresh session"). Persisted through previous cancel attempts.
+- **System-status anomaly** "Bob analysis 4 days old" — False alarm. Refers to `agents/bob/workspace/analysis.md` from Apr 4. Bob has been producing fresh analyses daily.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao**.
-- **P1**: **Few-shot deployment tech review** — Dispatched to tech-lead (req:fdadb5fa). Awaiting assessment.
-- **P1**: **Auto-pause recovery design** — Bob still hasn't produced this. May need re-dispatch if not done by next cycle.
-- **P1**: **Present research sprint results to Hao** — H-091 P(H)=0.93, 17 experiments, KE-065 synthesis, token waste analysis, two critical bugs fixed.
+- **P1**: **Few-shot deployment tech review** — Tech-lead has work session queued. Should complete this cycle.
+- **P1**: **Auto-pause recovery implementation** — Design complete. Dispatch to tech-lead when few-shot review is done.
+- **P1**: **Present research sprint results to Hao** — H-091 P(H)=0.93, 17 experiments, KE-065 synthesis, token waste analysis, two critical bugs fixed, auto-pause recovery designed.
 - **P2**: Federation design ready for Hao review
 - **P2**: Pre-merge review gate Phase 2 (auto-review)
 - **P2**: Amy-kimi still down — blocked on Hao for billing
