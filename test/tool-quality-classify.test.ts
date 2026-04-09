@@ -19,6 +19,12 @@ describe("classifyFailure", () => {
     expect(classifyFailure(chain("edit", '{"path":"x"}', "", "Could not find exact text"))).toBe("edit-match-fail");
   });
 
+  it("classifies edit ambiguous match (multiple occurrences) as edit-match-fail", () => {
+    expect(classifyFailure(chain("edit", '{"path":"INDEX.md"}',
+      "Found 2 occurrences of the text in INDEX.md. The text must be unique.",
+      "edit failed: Found 2 occurrences of the text in INDEX.md. The text must be unique."))).toBe("edit-match-fail");
+  });
+
   it("classifies command not found", () => {
     expect(classifyFailure(chain("bash", '{"command":"foo"}', "command not found", "command not found"))).toBe("cmd-not-found");
   });
@@ -54,6 +60,30 @@ describe("classifyFailure", () => {
       "bash failed: fatal: options cannot be used together"))).toBe("git-error");
   });
 
+  it("classifies gitignore-blocked paths as git-error", () => {
+    expect(classifyFailure(chain("bash", '{"command":"cd agents && git add file.md && git commit"}',
+      "The following paths are ignored by one of your .gitignore files:\nfile.md\nhint: Use -f if you really want to add them",
+      "exec failed: The following paths are ignored by one of your .gitignore files"))).toBe("git-error");
+  });
+
+  it("classifies review gate blocks as git-error", () => {
+    expect(classifyFailure(chain("bash", '{"command":"git commit -m msg"}',
+      "\n❌ Direct commits to main are blocked by the review gate.\n\n   Commit to a review branch instead:",
+      "exec failed: Direct commits to main are blocked"))).toBe("git-error");
+  });
+
+  it("classifies git push rejected as git-error", () => {
+    expect(classifyFailure(chain("bash", '{"command":"cd agents && git push k3s main"}',
+      "! [rejected]  main -> main (fetch first)\nerror: failed to push some refs to 'server'",
+      "exec failed: failed to push some refs"))).toBe("git-error");
+  });
+
+  it("classifies nothing-to-commit as git-error", () => {
+    expect(classifyFailure(chain("bash", '{"command":"git commit -m msg"}',
+      "On branch main\nnothing to commit, working tree clean",
+      "exec failed: nothing to commit"))).toBe("git-error");
+  });
+
   it("classifies ERR_UNKNOWN_BUILTIN_MODULE as env-mismatch", () => {
     expect(classifyFailure(chain("bash", '{"command":"node -e ..."}',
       "Error [ERR_UNKNOWN_BUILTIN_MODULE]: No such built-in module: node:sqlite",
@@ -70,6 +100,12 @@ describe("classifyFailure", () => {
     expect(classifyFailure(chain("bash", '{"command":"ls nonexistent/ 2>/dev/null"}',
       "env\npackage.json\n---\n\nCommand exited with code 2",
       "exec failed: — env\npackage.json\n---\n\nCommand exited with code 2"))).toBe("exit-code-nonzero");
+  });
+
+  it("classifies exit code 127 as exit-code-nonzero", () => {
+    expect(classifyFailure(chain("bash", '{"command":"ls | nonexistent-cmd"}',
+      "output\n---\n\nCommand exited with code 127",
+      "exec failed: Command exited with code 127"))).toBe("exit-code-nonzero");
   });
 
   it("still classifies genuine others as other", () => {
