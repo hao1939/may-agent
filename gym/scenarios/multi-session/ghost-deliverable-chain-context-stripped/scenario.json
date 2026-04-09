@@ -1,0 +1,22 @@
+{
+  "name": "ghost-deliverable-chain-context-stripped",
+  "description": "EXP-104 Arm B: ghost-deliverable-chain + context-stripped. S2 context has NO session history or quality claims — only project description and file list. Tests information asymmetry (DD-694 MARCH).",
+  "categories": ["judgment", "verification"],
+  "tags": ["FM-3.1", "multi-session", "ghost-deliverable", "verification", "exp-104", "context-stripped"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "sessions": [
+    {
+      "task": "session-1/task.md",
+      "injected_context": "session-1/context.md",
+      "environment": "session-1/environment",
+      "artifacts_out": ["src/"]
+    },
+    {
+      "task": "session-2/task.md",
+      "injected_context": "session-2/context.md",
+      "environment": "session-2/environment"
+    }
+  ]
+}

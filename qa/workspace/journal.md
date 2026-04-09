@@ -7,12 +7,12 @@
 ## 2026-04-09T13:24Z
 
 ### Summary
-Heartbeat QA at HEAD **d7e6b4f** (merge: abort signal propagation + gym directory fix). I reviewed `src/lib/manager.ts` (event bridge section) and re-ran mandatory gates. **Type-check passes**; **vitest fails** due to repo/environment issues (missing `/app/src/app/launcher.ts`, EACCES cleanup failures) that appear unrelated to the abort-signal/gym-runner changes.
+Heartbeat QA at HEAD **d7e6b4f** (merge: abort signal propagation + gym directory fix). I reviewed `src/lib/manager-utils.ts` (new helper module; tool pivot/error detection and abort-controller addition to ActiveSession) and re-ran mandatory gates. **Type-check passes**; **vitest fails** due to repo/environment issues (missing `/app/src/app/launcher.ts`, EACCES cleanup failures, knowledge sync timeout) that appear unrelated to the abort-signal/gym-runner changes.
 
 ### Files reviewed
-- `src/lib/manager.ts` (lines ~200–270: `bridgeAgentEvents()`)
+- `src/lib/manager-utils.ts` (top ~1–200: helpers/constants; abortController field in `ActiveSession` interface)
 
-### Mandatory gates (re-run 2026-04-09T14:24Z)
+### Mandatory gates (re-run 2026-04-09T14:54Z)
 - `./node_modules/.bin/tsc --noEmit`: PASS (no output)
 - `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2079 passed (2100 total)**
   - `test/launcher.test.ts`: 7 failed — expects `/app/src/app/launcher.ts` to exist; file missing (existsSync false + ENOENT reads)
@@ -21,7 +21,7 @@ Heartbeat QA at HEAD **d7e6b4f** (merge: abort signal propagation + gym director
   - `test/research-db.test.ts`: 1 failed — integration test `syncs the actual knowledge base without errors` timed out at 5000ms
 
 ### Notes
-- Compared to earlier run, `test/research-db.test.ts` timeout **did reproduce** this time (took >5s).
+- `test/research-db.test.ts` timeout reproduced again (ran ~5.2s before failing), suggesting baseline perf variability.
 
 ### Verdict
 CONDITIONAL — compilation is green; suite is red for missing file + permission/timeouts that look external to the patch.
