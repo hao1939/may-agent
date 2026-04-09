@@ -1,6 +1,6 @@
 # H-091: Skill Delivery Methods Exist Between Text-Rules and Workflow Enforcement
 
-**Status**: Strongly Supported (EXP-084, EXP-085, EXP-086, EXP-087, EXP-089, EXP-090, EXP-091, EXP-093, EXP-094, EXP-095, EXP-096)
+**Status**: Strongly Supported (EXP-084, EXP-085, EXP-086, EXP-087, EXP-089, EXP-090, EXP-091, EXP-093, EXP-094, EXP-095, EXP-096, EXP-097)
 **Date**: 2026-04-09
 **P(H)**: 0.93
 
@@ -73,7 +73,7 @@ L3: Few-shot example → +2.3 score (EXP-084)
 L3.5: Few-shot for temporal discipline → partial effect (EXP-093: C3 +40pp but C2.3 -20pp)
 L3⚠️: Few-shot cross-domain (hard scenarios) → 0% (EXP-094: credentials→binary FAILS)
 L3✅: Few-shot domain-matched narrative → 100% even on hardest scenario (EXP-094: binary→binary)
-L3📍: **Delivery position matters**: task-message = 100%, system-prompt = 0% (EXP-095). **Mechanism is positional privilege, NOT attention dilution** — 77% prompt reduction still 0% (EXP-096). All L3 results above assume task-level delivery.
+L3📍: **Delivery position matters**: task-message = 100%, system-prompt = 0% (EXP-095). **Mechanism is positional privilege, NOT attention dilution** — 77% prompt reduction still 0% (EXP-096). Urgency framing at system-prompt end provides weak ~33% boost (EXP-097) but is not viable. All L3 results above assume task-level delivery.
 L5: Workflow enforcement → +3.0 score (EXP-045)
 
 ## Open Questions
@@ -92,7 +92,7 @@ L5: Workflow enforcement → +3.0 score (EXP-045)
 - Extends: KE-002, KE-058, KE-056 (constraint hierarchy)
 - Supported by: KE-059 (updated with EXP-086 two-level transfer model)
 - Related: H-085 (forced externalization), H-089 (evidence discovery)
-- Experiments: EXP-084 (method comparison), EXP-085 (matched generalization), EXP-086 (mismatched boundary), EXP-087 (sycophants-dilemma ceiling test), EXP-091 (process discipline), EXP-093 (verify-after-edit temporal boundary), EXP-095 (delivery position effect — task-message vs system-prompt), EXP-096 (attention dilution REJECTED — positional privilege confirmed)
+- Experiments: EXP-084 (method comparison), EXP-085 (matched generalization), EXP-086 (mismatched boundary), EXP-087 (sycophants-dilemma ceiling test), EXP-091 (process discipline), EXP-093 (verify-after-edit temporal boundary), EXP-095 (delivery position effect — task-message vs system-prompt), EXP-096 (attention dilution REJECTED — positional privilege confirmed), EXP-097 (simulated positional privilege — urgency framing 33% vs task-message 100%)
 
 ### EXP-089: Combined Few-Shot + Checklist (Synergy Test)
 - **Scenario**: contradictory-requirements (0% baseline)
@@ -175,3 +175,14 @@ L5: Workflow enforcement → +3.0 score (EXP-045)
 - **Strengthens EXP-095**: Provides mechanistic explanation for the delivery position boundary. The position effect is categorical (system vs task), not a gradient (long vs short prompt).
 - **H-091 P(H) stays at 0.93**: Confirms existing boundary with mechanistic explanation, doesn't discover new boundary or expand scope.
 - **Cumulative delivery position data**: task-message 12/12 (100%), system-prompt 0/9 (0%) across EXP-094 + EXP-095 + EXP-096
+
+### EXP-097: Simulated Positional Privilege — Urgency Framing PARTIALLY WORKS but UNRELIABLE
+- **Scenario**: behavior-escalation-stubborn (binary file). Tests whether "Current Situation Briefing" framing at END of system prompt can simulate task-message positional privilege.
+- **Arm A (control — few-shot in task message, N=3)**: 3/3 (100%) — replicates EXP-096 Arm C. Task-message delivery consistently effective. Avg 20.6s.
+- **Arm B (treatment — few-shot at end of SOUL.md as "Current Situation Briefing", N=3)**: 1/3 (33%) — urgency framing works once (37.9s) but fails twice (both timeout 120s). Better than pure system-prompt 0% but far worse than task-message 100%.
+- **Key finding**: **Simulated positional privilege is unreliable.** Urgency framing improves on no-framing (0%→33%) but falls far short of task-message delivery (100%). The position effect has a gradient — but the gradient is steep and impractical.
+- **Mechanism refined**: System prompt (no framing) ~0% activation → system prompt end (urgency framing) ~33% activation → task message ~100% activation. Not purely binary, but practically binary for production use.
+- **Failure mode identical to EXP-095/096**: Agent recognizes binary issue (explains-binary ✅) but doesn't call finish(blocked). The analysis-action gap persists with system-prompt delivery regardless of framing.
+- **Production implication**: SKILL.md CANNOT replace injected_context for behavioral few-shot, even with urgency framing. Task-message injection infrastructure is mandatory.
+- **H-091 P(H) stays at 0.93**: Refines understanding of delivery position boundary (gradient exists but is steep) without changing scope or confidence.
+- **Cumulative delivery position data**: task-message 15/15 (100%), system-prompt (no framing) 0/9 (0%), system-prompt (urgency framing) 1/3 (33%) across EXP-094 + EXP-095 + EXP-096 + EXP-097
