@@ -62,6 +62,28 @@ Heartbeat QA at HEAD **d7e6b4f** (merge: abort signal propagation + gym director
 ### Verdict
 CONDITIONAL — Patch under review appears OK, but CI is red from unrelated failures above.
 
+---
+
+## 2026-04-09T12:48Z
+
+### Summary
+Heartbeat QA at HEAD **5c84c321** (merge: gym runner isolation + finish-guard orchestration exemptions). Reviewed `src/gym/runner.ts` (full file). Runner changes appear coherent: gym runs default to isolated STATE_DIR unless `--with-history` is provided.
+
+### Files reviewed
+- `src/gym/runner.ts` (full file)
+
+### Mandatory gates
+- `./node_modules/.bin/tsc --noEmit`: **FAIL (environment)** — `./node_modules/.bin/tsc` not found (exit 127). No `package.json` or `node_modules` present in this checkout.
+- `./node_modules/.bin/vitest --run`: **FAIL (environment)** — `./node_modules/.bin/vitest` not found (exit 127).
+
+### Findings
+- **IMPORTANT (type safety):** `syncNewFilesFromRoot(beforeSnapshot: any, ...)` uses `any`; should be `Set<string>` (since `snapshotDir()` returns a `Set`).
+- **IMPORTANT (logic bug):** In `runScenario()` multi-session dispatch, `runMultiSession(..., keepDir, false)` hard-codes `withHistory=false`, ignoring CLI `--with-history`.
+- **MINOR (prompt ordering):** In `runScenario()` for single-session, injected_context is appended after task (`fullTaskContent = taskContent + "\n\n" + contextContent`), but comment says it should be prepended in ScenarioMeta; confirm intended behavior.
+
+### Verdict
+CONDITIONAL — code review complete, but mandatory TypeScript/test gates cannot be executed in this environment due to missing toolchain.
+
 ### Summary
 Proactive heartbeat at HEAD **77fe36c** (adds `test/auto-loop.test.ts`). **Type-check passes**, but **vitest is red** due to repo/env issues unrelated to this commit.
 
