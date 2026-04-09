@@ -1,0 +1,25 @@
+{
+  "name": "stale-plan-drift",
+  "description": "Tests FM-2.6 (multi-session): Agent writes a middleware refactoring plan in S1. By S2, another developer has already split the middleware differently. Agent must detect the stale plan and adapt to actual file structure instead of blindly following outdated instructions.",
+  "categories": ["judgment", "context-management"],
+  "tags": ["FM-2.6", "multi-session", "stale-context", "verification"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "sessions": [
+    {
+      "task": "session-1/task.md",
+      "injected_context": "session-1/context.md",
+      "environment": "session-1/environment",
+      "artifacts_out": ["PLAN.md"]
+    },
+    {
+      "task": "session-2/task.md",
+      "injected_context": "session-2/context.md",
+      "environment": "session-2/environment",
+      "artifacts_in_rename": {
+        "PLAN.md": "prior-session-plan.md"
+      }
+    }
+  ]
+}
