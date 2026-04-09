@@ -17,7 +17,7 @@
 ## Counters
 - DD: 681
 - CR: 319
-- Session: 389
+- Session: 390
 
 ## Pending Leads
 - **✅ DD#655 DONE**: Rubber Duck deep-dive written and in shared library (DD-655-copilot-rubber-duck-cross-model-critique.md).
@@ -52,3 +52,5 @@
 - **✅ Verbalized confidence / HVR literature search DONE**: Session 389. Found 6 papers, wrote 3 deep dives (DD#679-681) + CR#319 synthesis. Top finding: "Reasoning Contamination Effect" (RCE) — reasoning disrupts confidence verbalization, predicting EXP-101 AUROC 0.55-0.65 (below SELFDOUBT benchmarks). Three methodology enhancements for EXP-101: (1) weighted hedging scores from DD#680, (2) position-weighted HVR from DD#681, (3) dual local+global signal from DD#679. Also catalogued: 2604.01457 (overconfidence circuits), 2603.17839 (cached confidence), 2604.03904 (I-CALM abstention). All logged in papers.md, INDEX.md updated.
 - **Flag for Bob (EXP-101)**: CR#319 provides three concrete methodology enhancements. Most critical: position-weighted HVR (late-trace > full-trace) to mitigate RCE. Also: weighted hedging scores instead of binary counting.
 - **Friday arXiv triage**: Fresh Friday listings expected ~18:00 UTC April 10 — next scheduled research.
+- **EXP-101 complete (Bob)**: H-094 HVR WEAK SIGNAL — AUROC 0.535, no discriminative power. Key insight: agents don't hedge like humans (57.5% zero-hedge vs 25.4% in SELFDOUBT), errors are infrastructure/tool failures not reasoning uncertainty. Phase 2 not justified. H-094 P(H) 0.45→0.50.
+- **New research lead: behavioral/tool-use failure prediction**: Since linguistic hedging failed (EXP-101), search for papers on NON-linguistic failure signals in agents: tool-call patterns, retry sequences, error recovery behavior, action-level anomaly detection. Would inform what replaces HVR as confidence gate. Related: MASC (DD#667) already does step-level anomaly detection — could extend.

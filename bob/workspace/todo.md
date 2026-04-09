@@ -87,7 +87,6 @@
   - **Conflict file deleted**: `EXP-101/results.md.conflict-k3s` removed.
 - **Files modified**: `agents/shared/knowledge/INDEX.md`, `agents/shared/knowledge/hypotheses/H-094-hedge-verify-ratio-agent-confidence-gating.md`
 - **Files deleted**: `agents/shared/knowledge/experiments/EXP-101/results.md.conflict-k3s`
-- **SPRINT SUMMARY WRITTEN**: Created `agents/shared/knowledge/synthesis/SPRINT-SUMMARY-2026-04-research.md` (167 lines) — executive summary of 17 experiments (EXP-084→101), 280+ runs, 12-day sprint. Covers H-091 (few-shot delivery), H-089 (cross-reference), H-085 (boundaries), H-092/093 (failure modes), H-094 (HVR), gym graduation, production deployment, open research questions. Added INDEX.md header reference. **Addresses P1: Present research sprint results to Hao.**
 
 ## Session Notes (2026-04-09 ~12:00)
 - **EXP-101 COMPLETE — WEAK SIGNAL**: Retrospective HVR analysis on 1,259 production sessions across 10 agents.
