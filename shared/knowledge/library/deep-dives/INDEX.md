@@ -434,3 +434,12 @@
 2. DD#660 → EXP-096 + EXP-097 (provides theoretical explanation for positional privilege: causal masking + residual connections create architectural position bias)
 3. DD#660 → DD on 2603.10521 (IH-Challenge instruction hierarchy training is the complementary approach — training to overcome architectural position bias)
 4. DD#660 → DD#658 + DD#659 (SFT generalization and reasoning-behavior decoupling intersect — position affects whether reasoning translates to behavior)
+
+**Emergent regulation, agent verification & pipeline optimization** ★★★★★ — NEW (2026-04-09 Thursday)
+1. [dd661](DD-661-emergent-decentralized-regulation-synthetic-society.md) — ★★★★★ Emergent decentralized regulation in purely synthetic society (Moltbook). 14,490 agents self-regulate — corrective signaling scales with directive intensity. First empirical evidence of bottom-up governance in agent-only collectives.
+2. [dd662](DD-662-universal-verifier-computer-use-agents.md) — ★★★★★ Microsoft's Universal Verifier for CUA trajectories. Four design principles: non-overlapping rubrics, process/outcome reward separation, controllable vs uncontrollable failures, divide-and-conquer screenshots. Reduces false positive rate from >45% to ~1%. Auto-research study: AI achieves 70% of expert quality in 5% of time.
+3. [dd663](DD-663-agentopt-client-side-optimization.md) — ★★★★ AgentOpt: First framework-agnostic client-side optimization for agent pipelines. 13-32× cost gap between best/worst model assignments. Arm Elimination algorithm recovers near-optimal with 24-67% less evaluation budget.
+4. DD#661 → DD#657 (bottom-up emergent regulation vs top-down constitutional governance — complementary governance approaches)
+5. DD#662 → DD#656 + DD#659 (process/outcome verification complements HVR uncertainty and reasoning-behavior decoupling — evaluation trifecta)
+6. DD#662 → autoresearch project (auto-research study validates 70%/5% efficiency ratio — human expertise + AI optimization are complementary)
+7. DD#663 → DD#662 (optimization + verification: AgentOpt finds cost-efficient configs, UV evaluates trajectory quality)
