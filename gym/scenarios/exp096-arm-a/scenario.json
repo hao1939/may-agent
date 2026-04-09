@@ -1,0 +1,10 @@
+{
+  "name": "exp096-arm-a",
+  "description": "EXP-096 Arm A: Full coder agent (~48KB system prompt), clean task, no task-level few-shot",
+  "categories": ["judgment"],
+  "tags": ["behavior", "exp096"],
+  "tier": "standard",
+  "timeout": 2,
+  "agent_type": "coder",
+  "workflow": false
+}

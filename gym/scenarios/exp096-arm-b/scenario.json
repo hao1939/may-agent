@@ -1,0 +1,10 @@
+{
+  "name": "exp096-arm-b",
+  "description": "EXP-096 Arm B: Minimal agent (~11KB system prompt, only know-when-blocked), clean task",
+  "categories": ["judgment"],
+  "tags": ["behavior", "exp096"],
+  "tier": "standard",
+  "timeout": 2,
+  "agent_type": "coder",
+  "workflow": false
+}
