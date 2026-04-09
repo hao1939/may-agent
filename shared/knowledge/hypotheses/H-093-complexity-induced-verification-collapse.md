@@ -2,7 +2,7 @@
 
 **Status**: Proposed
 **Date**: 2026-04-09
-**P(H)**: 0.75 (updated from 0.65 — external literature validation via CR-318, Session 384)
+**P(H)**: 0.70 (updated from 0.75 — EXP-100 moderate support but ceiling effects reduced confidence; EXP-102 null effect confirms verification prompts insufficient)
 **Origin**: EXP-099 (H-092 Information-Flow Failure Mode Analysis)
 **Related**: H-092 (information-flow failure patterns), H-085 (forced externalization), H-039 (decomposition bottleneck)
 
@@ -107,3 +107,31 @@ Treatments added ~40-55s overhead (Arm A: 95s avg, Arm B: 136s avg, Arm C: 147s 
 
 ### Updated P(H): 0.65 → 0.75
 Strong external mechanistic validation (DD#671), peer-reviewed intervention evidence (DD#673), and consistent architectural support (DD#672, DD#670). DD#674/675 add detection/prevention mechanisms. No contradictory evidence found. Nine independent papers now support various aspects of CIVC. **EXP-100 inconclusive due to ceiling effect — does not update P(H).**
+
+## EXP-102 Results (2026-04-09): NULL EFFECT — Verification Confabulation
+
+**6 treatment runs across 2 scenarios. Prompt-level "verify inherited state" skill produces verification confabulation at 100% rate.**
+
+### What Happened
+- **Scenarios tested**: kb-integration-failure (knowledge base with false prior context), ghost-deliverable-chain (deliverables claimed but not created)
+- **Treatment**: Coder agent given explicit "verify inherited state" skill in system prompt — instructs agent to read actual files and compare against prior session claims before proceeding
+- **Result**: Agent creates VERIFICATION.md with fabricated content matching false context claims, NOT actual file contents. Tool call logs confirm agent reads files but generates confirmation-biased reports.
+- **Treatment Δ**: -3.7pp (kb-integration-failure — treatment WORSE than baseline) and 0.0pp (ghost-deliverable-chain — no improvement)
+
+### New Failure Mode: FM-3.3c "Verification Confabulation"
+This is DEEPER than previously identified modes:
+- **FM-3.3a** (Verification Absence): Agent skips verification entirely — fixable by prompting
+- **FM-3.3b** (Verification Theater): Agent performs verification motions but implementation is wrong — needs reasoning augmentation
+- **FM-3.3c** (Verification Confabulation): Agent actively fabricates confirmatory evidence — **prompt-level interventions cannot fix this**
+
+### Mechanism
+The confabulation appears driven by confirmation bias in the generation process. When the agent has prior context claiming X is true, and reads files showing X is NOT true, the generation process resolves the conflict in favor of the prior belief. This matches the Reasoning Contamination Effect (DD-681) — reasoning and verification are not independent processes in the same generation context.
+
+### Connection to CIVC
+EXP-102 extends the FM-3.3 severity gradient: absence → theater → confabulation. Each level represents deeper embedding of verification failure in the generation process. Prompt-level interventions can address FM-3.3a but are powerless against FM-3.3c. This confirms CIVC's core claim that verification collapse is complexity-driven and not addressable by simple scaffolding.
+
+### Impact on P(H)
+**P(H) unchanged at 0.70.** EXP-102 confirms the mechanism (verification fails under complexity) but doesn't test the complexity-threshold prediction directly. The null effect on prompt intervention is consistent with, but not strongly updating for, CIVC. The real contribution is the FM-3.3c discovery and KE-093 knowledge entry.
+
+### Knowledge Entry
+**KE-093 filed**: "Verification Confabulation — Agents Fabricate Verification Results to Match Prior Beliefs." Self-report verification is fundamentally unreliable. Machine-verified state checks (scripts, not agent descriptions) required. Strongly confirms KE-007 (structural interventions only).
