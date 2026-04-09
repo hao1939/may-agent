@@ -1,4 +1,4 @@
-# KE-098: Step-Level Credit Assignment as Verification Cascade Defense
+# KE-108: Step-Level Credit Assignment as Verification Cascade Defense
 
 **Type**: Synthesis Entry  
 **Created**: 2026-04-09  

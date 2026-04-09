@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~22:24 UTC
+Updated: 2026-04-09 ~22:29 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
@@ -93,7 +93,7 @@ Updated: 2026-04-09 ~22:24 UTC
 | **Multi-Session Harness Phase 3** | ✅ COMPLETE | coach | All scenarios have `package.json` + `success_criteria.js`. 4/4 base scenarios done + 6 treatment variants created. |
 | **Bug 2 Gate Abort Signal Fix** | ✅ MERGED | tech-lead/may | Branch `fix/bug2-gate-abort-signal` merged to main. Abort signal propagation + gym directory fix. 4/4 tests pass. |
 | **Telegram Notification Bug (req:88bd4688)** | ✅ ALREADY FIXED | tech-lead | Commit 9de9e58 merged to main. Notifications filtered to interface agent only + dead prompt handler removed. |
-| **EXP-103 Adversarial Framing vs Verification** | ✅ COMPLETE | coach | **LANDMARK**: Both adversarial framing AND machine-verified evidence = 100% pass (12/12 runs). Baselines 11-18%. +75-89pp effect size. Verification confabulation SOLVED. KE-099 + KE-100 created. Bob doing synthesis + production deployment design brief. |
+| **EXP-103 Adversarial Framing vs Verification** | ✅ COMPLETE (CONFOUNDED) | coach | 12/12 (100%) all arms BUT **EXP-104 confound**: evidence-over-narrative skill was actual cause, not adversarial framing/MV evidence. KE-099 + KE-100 downgraded to LOW confidence. |
 | **EXP-103 Theory-vs-Experiment Synthesis** | ✅ COMPLETE | bob | Cross-reference synthesis: DD-694/695/696/697 vs EXP-103 empirical results. Objective redirection (adversarial framing) achieves same outcome as information asymmetry (DD-694) through different mechanism. At `agents/bob/workspace/SYNTHESIS-theory-vs-experiment-DD694-697-EXP103.md`. |
 | **Anti-Confabulation Production Deployment Design** | ✅ COMPLETE | bob | 395-line design brief at `agents/shared/may-agent-docs/design/anti-confabulation-deployment.md`. Committed. **NOTE: EXP-104 shows evidence-over-narrative skill already fixed confabulation (baseline 100%). Adversarial framing was coincidental in EXP-103, not causal.** Design brief still valid as defense-in-depth but the core fix is already deployed. Ready for tech-lead/Hao review. |
 
@@ -103,6 +103,7 @@ Updated: 2026-04-09 ~22:24 UTC
 | **FM-3.3 Bob Concentration Analysis** | ✅ COMPLETE | coach | **NOT a real regression** — measurement artifact. 1.9x inflation from eval duplication + LLM eval selection bias. Bob's true FM-3.3 rate (13.6%) is *lowest* of agents with volume. At `agents/coach/workspace/briefs/bob-fm33-concentration-analysis.md`. |
 
 | **EXP-107 Adversarial Self-Check** | ✅ BLOCKED | coach | Control arm: 6.25% FM-3.3 rate (1/16 finish calls), far below 30% viability threshold. **KEY FINDING**: Gym-production gap for FM-3.3 is ~10× (6% gym vs 50-70% production). Cannot run treatment arms. Recommends harder scenarios or production A/B testing. Bob integrating findings. Results at `agents/shared/knowledge/experiments/EXP-107/results.md`. |
+| **EXP-108 Adversarial Self-Review Skill** | 🔄 Phase 1 done | coach | Skill authored, lab fork created. Tests generation-objective redirection beyond confabulation. Ready for Phase 2 (A/B gym runs). Design at `agents/shared/knowledge/experiments/EXP-108/design.md`. |
 | **EXP-107 Phase 2 Context-Fatigue Baseline** | ✅ CLOSED | coach | **5 runs, 0% FM-3.3** (all 14/14 checks passed). Multi-session + urgency + scope creep still can't trigger FM-3.3 in gym. **Gym-production FM-3.3 gap is structural and confirmed unfixable via scenario design.** Experiment fully closed. |
 | **Fewshot Heartbeat Case-Insensitive Fix** | ✅ MERGED | may | Branch `review/fix-fewshot-heartbeat` merged to main. Regex `/^\[heartbeat\]/i` replaces startsWith. 30/30 tests pass. Branch deleted. |
 | **EXP-105 Few-Shot Production Impact** | ⏳ WAITING | coach | No data — zero coder/optimizer work sessions since deployment (Apr 9). Baselines captured. **BUG FIXED**: heartbeat exclusion merged (commit 7e6bc59 + case-insensitive fix). Token waste eliminated. |
@@ -139,12 +140,13 @@ Updated: 2026-04-09 ~22:24 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (22:24)
-- **7/8 agents running heartbeats** (Amy-kimi still down, tech-lead skipped via skipIfIdle). Zero errors.
-- **Coach self-initiated EXP-108**: Adversarial self-review skill experiment designed. Tests whether generation-objective redirection (from "complete task" to "find faults first") generalizes beyond confabulation. Design at `agents/shared/knowledge/experiments/EXP-108/design.md`. Ready for Phase 1.
-- **Bob self-directing**: All knowledge current through KE-107. Clean heartbeat.
-- **3 agents effectively idle**: Tech-lead, Optimizer, QA — no dispatched work. Tech-lead heartbeat skips when idle.
-- **System stable but underutilized**: Tech-lead, Optimizer, QA have capacity for new work. Coach is self-directing well.
+## Latest Cycle Summary (22:29)
+- **All heartbeats firing** (11 sessions running). Amy-kimi still 🔴. Zero failures in recent hours.
+- **Stale anomaly alert resolved**: The 19:29 alert about stuck sessions (coach 299min, may 312min, etc.) is stale — those sessions completed/cleaned up. All current sessions are fresh (<2min).
+- **EXP-104 complete**: Confound confirmed — evidence-over-narrative skill (EXP-090/091) is the actual cause of EXP-103's 100% results. KE-099 + KE-100 downgraded to LOW confidence.
+- **Coach self-initiated EXP-108**: Adversarial self-review skill, ready for Phase 2 A/B gym runs.
+- **Bob doing common-sense-infra cron** (87min, actively working — reviewing finish-guard, convention checking).
+- **System stable but underutilized**: Tech-lead, Optimizer, QA have capacity. Multiple P0/P1 items blocked on Hao.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao since Mar 24**.
