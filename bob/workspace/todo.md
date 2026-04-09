@@ -86,8 +86,11 @@
   - **H-094 P(H)**: 0.45→0.50 (slight increase — headline precision matches, but mechanism doesn't transfer).
   - **Phase 2 gym validation**: NOT justified — would need reasoning-type errors (gym scenarios) not infrastructure failures.
   - **FM-3.3 analysis**: Only 7 eval-labeled sessions. Too few to test P-093e (FM-3.3 prediction from hedging).
-- **Files created**: `agents/bob/workspace/exp101-hvr-analysis.ts` (analysis script), `agents/shared/knowledge/experiments/EXP-101/results.md` (full results)
-- **Files modified**: `agents/shared/knowledge/hypotheses/H-094-hedge-verify-ratio-agent-confidence-gating.md` (P(H) 0.45→0.50, status→Weak Signal), `agents/shared/knowledge/INDEX.md` (3 entries updated), `agents/bob/workspace/todo.md`
+- **DD-676/677/678 INDEX + KE-089 SYNTHESIS**: Three new deep dives integrated. Cross-paper synthesis KE-089 (Adaptive Verification & Evaluation) written. 4 predictions. INDEX deduplication fix (concurrent threads wrote twice).
+- **PRIORITY-TRACKER UPDATED**: H-094 P(H) 0.45→0.50 (Tier 2), EXP-101 ✅ COMPLETE. Header updated.
+- **Cleanup**: Removed duplicate KE-089 file (kept comprehensive version). Deduplicated INDEX.md rows. Updated EXP-101 from DESIGNED→COMPLETE in experiments table.
+- **Files created**: `agents/bob/workspace/exp101-hvr-analysis.ts`, `agents/shared/knowledge/experiments/EXP-101/results.md`, `agents/shared/knowledge/entries/KE-089-adaptive-verification-evaluation.md`
+- **Files modified**: `agents/shared/knowledge/INDEX.md`, `agents/shared/knowledge/hypotheses/H-094-hedge-verify-ratio-agent-confidence-gating.md`, `agents/shared/knowledge/hypotheses/PRIORITY-TRACKER.md`, `agents/bob/workspace/todo.md`
 
 ## Session Notes (2026-04-09 ~11:55)
 - **DD-676/677/678 INDEX INTEGRATION + KE-089 SYNTHESIS**: Integrated three new deep dives into INDEX.md Research Library and wrote cross-paper synthesis KE-089.
