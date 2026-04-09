@@ -7,7 +7,7 @@ All knowledge in the system, organized by confidence level.
 
 > **NEW: "What We Know About" syntheses** — definitive practical guides distilling our experiments into actionable principles.  
 > See [synthesis/](synthesis/) for WKWA-001 (Behavioral Intervention), WKWA-002 (Decision Topology), WKWA-003 (Self-Improvement Limits), WKWA-004 (Memory Control Loop), WKWA-005 (Capability Delivery: Push vs Pull), WKWA-006 (Few-Shot Skill Delivery), **WKWA-007 (The Intervention Architecture — Capstone)**.  
-> **CAPSTONE**: [WKWA-007: The Intervention Architecture](synthesis/WKWA-007-intervention-architecture.md) — What 25 experiments tell us about changing agent behavior. Ties together EXP-070–095, three mechanisms (M1/M2/M3), complete hierarchy (L1–L5), decision tree, six boundaries. Supersedes WKWA-001 as primary reference.  
+> **CAPSTONE**: [WKWA-007: The Intervention Architecture](synthesis/WKWA-007-intervention-architecture.md) — What 25 experiments tell us about changing agent behavior. Ties together EXP-070–096, three mechanisms (M1/M2/M3), complete hierarchy (L1–L5), decision tree, six boundaries. Supersedes WKWA-001 as primary reference. ⚠️ EXP-095 delivery position findings invalidated by EXP-096 — see corrected data.
 > See also: [Gym Failure Remediation Strategy](synthesis/gym-failure-remediation-strategy.md) — Maps all 30 failing gym scenarios to KE-060 mechanisms, prescribes interventions, estimates 72%→90% pass rate achievable.  
 > **Query Compounding Convention**: When you investigate a question, file findings per [CONVENTION-query-compounding.md](synthesis/CONVENTION-query-compounding.md).
 >

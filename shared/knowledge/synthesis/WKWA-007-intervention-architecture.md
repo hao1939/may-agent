@@ -1,22 +1,23 @@
-# The Intervention Architecture — What 25 Experiments Tell Us About Changing Agent Behavior
+# The Intervention Architecture — What 26 Experiments Tell Us About Changing Agent Behavior
 
-> **Capstone synthesis** — the full arc from EXP-070 through EXP-095: how we discovered three mechanisms of agent behavior change, mapped their boundaries, found a breakthrough delivery method, and built an actionable system for fixing any agent failure.
+> **Capstone synthesis** — the full arc from EXP-070 through EXP-096: how we discovered three mechanisms of agent behavior change, mapped their boundaries, found a breakthrough delivery method, and built an actionable system for fixing any agent failure.
+> ⚠️ **EXP-096 Update**: EXP-095's "delivery position is binary" finding was **invalidated** by infrastructure bugs. Corrected: delivery position is a reliability gradient (task-message most reliable, system-prompt works with attention dilution). See EXP-096 results for corrected data.
 > Created: 2026-04-09 | Author: Bob (Architect)
-> Sources: EXP-070–095, KE-002, KE-054–065, H-085, H-088, H-089, H-091, WKWA-001, WKWA-005, WKWA-006, Gym Failure Remediation Strategy
+> Sources: EXP-070–096, KE-002, KE-054–065, H-085, H-088, H-089, H-091, WKWA-001, WKWA-005, WKWA-006, Gym Failure Remediation Strategy
 
 ---
 
 ## Executive Summary
 
-Across 25 controlled experiments (EXP-070 through EXP-095) with 200+ individual runs, we discovered and validated a complete architecture for changing LLM agent behavior. The architecture rests on three findings:
+Across 26 controlled experiments (EXP-070 through EXP-096) with 200+ individual runs, we discovered and validated a complete architecture for changing LLM agent behavior. The architecture rests on three findings:
 
 1. **Three Mechanisms** — Every agent failure is fixable by exactly one of three mechanisms: M1 (Analysis Activation), M2 (Evidence Discovery), or M3 (Structural Constraint). Applying the wrong mechanism produces 0% improvement regardless of effort.
 
 2. **Few-Shot Breakthrough** — Domain-matched worked examples achieve 100% pass rate on judgment and process discipline tasks (18/18 cumulative), breaking the binary between text rules (0/32) and workflow enforcement (~100%). This is the most cost-effective intervention in the system.
 
-3. **Delivery Position Dominance** — The same content that scores 100% when injected in the task message scores 0% in the system prompt. Content quality is necessary but not sufficient; delivery position is the dominant variable.
+3. **Delivery Position is a Reliability Gradient** — ~~EXP-095 claimed task-message=100% vs system-prompt=0%.~~ EXP-096 discovered infrastructure bugs invalidating this. Corrected: task-message delivery is most reliable (100%), system-prompt delivery works but with attention dilution at scale (75% at 11KB, behavioral but not pass-rate success at 48KB). Content quality AND delivery position both matter, but neither is binary.
 
-**The practical bottom line**: When an agent fails, diagnose which mechanism applies (M1/M2/M3), select the matching intervention level (L1–L5), deliver it through the right channel (task message for L3, infrastructure for L5), and expect near-ceiling results. The days of "just add a rule to the prompt" are over — we now have an engineering discipline for behavior change.
+**The practical bottom line**: When an agent fails, diagnose which mechanism applies (M1/M2/M3), select the matching intervention level (L1–L5), deliver it through the right channel (task message preferred for L3, infrastructure for L5), and expect near-ceiling results. The days of "just add a rule to the prompt" are over — we now have an engineering discipline for behavior change.
 
 ---
 
@@ -89,7 +90,8 @@ Then we discovered few-shot worked examples.
 | EXP-092 | Forced analysis-to-documentation transfer | 100% doc accuracy but 0% task completion — execution crowding |
 | EXP-093 | Verify-after-edit discipline | +40pp on "what to check" but -20pp on "when to check" — temporal boundary |
 | EXP-094 | Cross-domain generalization (credentials→binary) | 0% cross-domain on hard tasks; 100% domain-matched — proximity boundary |
-| EXP-095 | Delivery position (task-message vs system-prompt) | Task-message 100% (6/6), system-prompt 0% (3/3) — position is everything |
+| EXP-095 | Delivery position (task-message vs system-prompt) | ⚠️ INVALIDATED — infrastructure bugs caused scoring failures |
+| EXP-096 | System prompt length threshold + infrastructure bugs | Bugs fixed. Task-message 100%, system-prompt 75% (11KB), attention dilution at 48KB |
 
 **Cumulative domain-matched few-shot record: 18/18 (100%)** across 8 scenarios spanning judgment, process discipline, and validation knowledge.
 
@@ -138,7 +140,7 @@ Six levels of intervention, validated across 25 experiments:
 **Key boundaries**:
 - Few-shot fails for temporal discipline (-20pp, EXP-093)
 - Few-shot fails cross-domain on hard tasks (0%, EXP-094)
-- Few-shot fails in system prompt regardless of content quality (0%, EXP-095)
+- ~~Few-shot fails in system prompt regardless of content quality (0%, EXP-095)~~ **CORRECTED by EXP-096**: system-prompt delivery works but with attention dilution; task-message delivery recommended for reliability
 - Externalization produces execution crowding when chained with output requirements (EXP-092)
 
 #### M2: Evidence Discovery — "The agent doesn't have the information it needs"
@@ -221,7 +223,7 @@ Step 4: Is this a judgment or process discipline failure?
 ├── YES → L3: Domain-matched few-shot worked example
 │   Hard scenario (0% baseline)? → MUST be domain-matched
 │   Moderate scenario (30-70%)? → Cross-domain example may suffice (~67%)
-│   Inject via task message (NOT system prompt — 0% in system prompt, EXP-095)
+│   Inject via task message for maximum reliability (system prompt works but with attention dilution, EXP-096)
 │   Expected: 100% domain-matched (18/18, EXP-084–094)
 │   └── DONE
 │
@@ -247,13 +249,15 @@ Text rules — instructions in SOUL.md, skill files, system prompts telling the 
 
 **Implication**: Any proposal to fix a behavioral problem by "adding a rule to the prompt" should be rejected without testing. The burden of proof has shifted — 0/32 means the null hypothesis is "text rules don't work" and any claimed exception requires rigorous evidence.
 
-### Boundary 2: System Prompt vs Task Message (Confidence: High)
+### Boundary 2: System Prompt vs Task Message — Delivery Position as Reliability Gradient (Confidence: Medium — Revised by EXP-096)
 
-**Evidence**: EXP-095 — identical domain-matched content scores 100% (6/6) in task message and 0% (3/3) in system prompt. The content quality was deliberately maximized for system prompt delivery (v2.0 with binary-specific examples, three-call rule, anti-patterns) — still 0%.
+> ⚠️ **EXP-096 Correction**: EXP-095's "0% in system prompt" finding was caused by **infrastructure bugs** (transcript filename mismatch + format parsing failure), not delivery position effects. With bugs fixed, both delivery positions produce correct behavior.
 
-**Why**: System prompt content competes with 8-10KB of other instructions, suffers temporal distance from the task, and requires effortful retrieval. Task message content benefits from proximity (it's the last thing the agent reads before acting), pattern-matching activation (it looks like the task), and recency bias.
+**Corrected evidence (EXP-096)**: Task-message delivery: 3/3 (100%) pass rate, most efficient. System-prompt delivery at 11KB: 3/4 (75%) pass rate, slightly less reliable. System-prompt delivery at 48KB: 0/3 pass rate BUT agent exhibits correct escalation behavior — fails only due to attention dilution (15+ tool calls, slower response). The core behavior is learned; efficiency suffers at scale.
 
-**Implication**: Skills in SKILL.md files serve as reference documentation for humans, not as behavioral interventions for agents. Effective skill deployment requires task-level injection — the skill must arrive alongside or inside the task description.
+**Why task-message is preferred**: Task message content benefits from proximity (it's the last thing the agent reads before acting), pattern-matching activation (it looks like the task), and recency bias. System prompt content competes with other instructions and suffers temporal distance. At large system prompt sizes (48KB+), attention dilution degrades efficiency enough to cause timeouts/tool-call excess.
+
+**Implication**: Task-level injection remains the recommended delivery method for maximum reliability. However, SKILL.md files in system prompts DO work for behavioral guidance — the "system prompt = 0%" claim was wrong. Skills should be delivered via task message when possible, but system-prompt deployment is viable for lightweight system prompts.
 
 ### Boundary 3: Temporal Discipline (Confidence: Medium-High)
 
@@ -309,8 +313,8 @@ Text rules — instructions in SOUL.md, skill files, system prompts telling the 
 | Matched few-shot on judgment/process | 18/18 (100%) | EXP-084–094 |
 | Cross-reference on absent info | 34/36 (94%) | EXP-079, EXP-083 |
 | Structural constraint on workaround | ~100% | EXP-072, EXP-088 |
-| Few-shot in system prompt | 0/3 (0%) | EXP-095 |
-| Few-shot in task message | 9/9 (100%) | EXP-095 |
+| Few-shot in system prompt | ~~0/3 (0%)~~ → 3/4 (75% at 11KB) | EXP-095 ⚠️INVALIDATED, EXP-096 corrected |
+| Few-shot in task message | 9/9 (100%) | EXP-095, EXP-096 |
 | Externalization on analysis quality | ~100% | EXP-070–073 |
 | Externalization → correct implementation (workaround available) | 0/18 (0%) | EXP-071–073 |
 | Externalization → correct implementation (no workaround) | ~90% | EXP-070, general |
@@ -362,7 +366,7 @@ Based on the gym failure remediation strategy (30 failing scenarios analyzed):
 
 2. **N≥3 per arm minimum.** Our smallest reliable experiments used N=3. Below that, individual session variance dominates. For definitive results, N=5-10 per arm.
 
-3. **Control for delivery position.** EXP-095 showed that moving content from system prompt to task message changes results from 0% to 100%. Any experiment testing content effectiveness must control for delivery position.
+3. **Control for delivery position.** EXP-096 (correcting EXP-095) showed that delivery position affects reliability and efficiency. Task-message delivery is most reliable. System-prompt delivery works but with attention dilution at scale. Any experiment testing content effectiveness should prefer task-message delivery for clean results.
 
 4. **Watch for execution crowding.** Multi-arm experiments with complex externalization requirements (EXP-092) can produce zero-sum tradeoffs where improving one metric destroys another. Keep interventions focused.
 
@@ -400,11 +404,11 @@ This research arc tells a story about how wrong our initial mental model was and
 - **Revision**: The unified taxonomy (KE-060) replaced the single "externalization" hypothesis with three orthogonal mechanisms.
 - **Surprise**: A single sentence ("grep source for config references") produced +100pp on a scenario where pages of forced analysis produced 0pp. The simplest intervention was the most effective — because it matched the actual mechanism.
 
-### What EXP-084–095 Taught Us
+### What EXP-084–096 Taught Us
 
-- **New model**: The text-rule binary (0% vs workflow 100%) has a middle ground. Worked examples activate procedural knowledge that text rules can't. But delivery position — not content quality — is the dominant variable.
+- **New model**: The text-rule binary (0% vs workflow 100%) has a middle ground. Worked examples activate procedural knowledge that text rules can't. Delivery position matters for reliability and efficiency — task-message is preferred — but is not a binary gate.
 - **Revision**: The intervention hierarchy gained L3 (few-shot) as a practical tier between "useless" and "expensive." The delivery hierarchy gained T3.5 (few-shot injection) as the sweet spot between T3 (instructed, decaying) and T4 (injected, expensive).
-- **Surprise**: EXP-095's finding that identical content goes from 0% to 100% by changing delivery position was the single most important practical insight. It means we had the right *content* for years — we just had the wrong *delivery*.
+- **Surprise**: EXP-096's discovery that EXP-095's "binary position effect" was actually infrastructure bugs was a critical methodological lesson. Infrastructure validation must precede experimental conclusions. The actual surprise: system prompt delivery works better than we thought — the right content in the right format can work from any position, though task-message remains most efficient.
 
 ### The Meta-Lesson
 
@@ -470,9 +474,10 @@ The hardest lesson was accepting that agents are not students. You cannot teach 
 | EXP-092 | M1 (execution crowding) | 100% doc accuracy but 0% task completion | High (N=19) |
 | EXP-093 | M1 (temporal boundary) | +40pp what-to-check, -20pp when-to-check | High (N=10) |
 | EXP-094 | M1 (domain proximity) | 0% cross-domain on hard, 100% matched | High (N=9) |
-| EXP-095 | M1 (delivery position) | Task-message 100%, system-prompt 0% | High (N=12) |
+| EXP-095 | M1 (delivery position) | ⚠️ INVALIDATED — infrastructure bugs | Low (bugs) |
+| EXP-096 | M1 (delivery position corrected) | Task-message 100%, system-prompt 75% (11KB) | Medium (N=10) |
 
-**Total runs in the arc**: 200+ across 22 experiments (EXP-074 untestable, EXP-077 fidelity ladder)
+**Total runs in the arc**: 210+ across 23 experiments (EXP-074 untestable, EXP-077 fidelity ladder, EXP-095 invalidated)
 
 ---
 
@@ -490,7 +495,7 @@ The hardest lesson was accepting that agents are not students. You cannot teach 
 | **KE-062** | Analysis-to-documentation transfer gap |
 | **KE-063** | Artifact trust asymmetry (doc over code) |
 | **KE-064** | Execution crowding from chained externalization |
-| **KE-065** | Comprehensive few-shot findings + delivery position |
+| **KE-065** | Comprehensive few-shot findings + delivery position (updated with EXP-096 corrections) |
 | **H-085** | Forced externalization — mechanism and boundaries |
 | **H-088** | Implementation commitment — workaround-dependent binding |
 | **H-089** | Environmental evidence discovery (cross-reference) |

@@ -1,0 +1,11 @@
+{
+  "name": "test-injected-context",
+  "description": "Infrastructure test: verifies injected_context from scenario.json is prepended to task.md",
+  "categories": ["infrastructure"],
+  "tags": ["infra-test"],
+  "tier": "smoke",
+  "timeout": 1,
+  "agent_type": "coder",
+  "workflow": false,
+  "injected_context": "context.md"
+}
