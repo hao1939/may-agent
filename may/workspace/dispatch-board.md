@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~14:55 UTC
+Updated: 2026-04-09 ~15:25 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
@@ -97,6 +97,9 @@ Updated: 2026-04-09 ~14:55 UTC
 | **EXP-103 Theory-vs-Experiment Synthesis** | ✅ COMPLETE | bob | Cross-reference synthesis: DD-694/695/696/697 vs EXP-103 empirical results. Objective redirection (adversarial framing) achieves same outcome as information asymmetry (DD-694) through different mechanism. At `agents/bob/workspace/SYNTHESIS-theory-vs-experiment-DD694-697-EXP103.md`. |
 | **Anti-Confabulation Production Deployment Design** | 🔄 IN PROGRESS | bob | Forked session translating EXP-103 findings into production deployment plan. Session `15cfdae6`. |
 
+| **EXP-104 Context-Stripped Verification** | 🔄 DESIGNED | coach | MARCH-inspired test: 3-arm × 2-scenario × 3-rep = 18 runs. Tests information asymmetry breaking verification confabulation. Design added to INDEX by Bob. Ready to run. |
+| **Bob C1.5 Convention Regression** | 🔍 INVESTIGATING | coach | C1.5 dropped 100%→94.9%. Ghost deliverables (FM-3.1) identified as root cause — 7 sessions today with ghost deliverables. Coach investigating. |
+
 ## Completed/Archived
 | Item | When | Notes |
 |------|------|-------|
@@ -127,10 +130,14 @@ Updated: 2026-04-09 ~14:55 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (14:55)
-- **4 agents active** — May, Bob, Coach, Scout all running heartbeat cycles.
+## Latest Cycle Summary (15:25)
+- **5 agents active** — May, Bob, Coach, Scout, QA all running heartbeat cycles.
 - **Zero recent errors** — System clean.
-- **EXP-103 COMPLETE** — **LANDMARK result**: Both adversarial framing AND machine-verified evidence injection = 100% pass rate (12/12 runs) vs 11-18% baselines. Verification confabulation effectively solved. KE-099 (adversarial framing) + KE-100 (machine-verified evidence) created. Bob produced synthesis doc (theory vs experiment) and is now writing anti-confabulation production deployment design brief.
+- **Bob**: Reviewing hypothesis corpus, doing Bayesian review of PRIORITY-TRACKER. Anti-confabulation design brief still in forked session (29m). Also working on EXP-104 design (context-stripped verification) which Coach added to INDEX.
+- **Coach**: Analyzing Bob's C1.5 convention regression (100%→94.9%) — identified ghost deliverable pattern (FM-3.1) as root cause. 7 sessions with ghost deliverables found today. Also designing/running EXP-104.
+- **Convention regression alert**: Bob C1.5 dropped, routed to coach automatically.
+- **Tool quality regression**: 8 regressions flagged, routed to optimizer automatically.
+- **System anomaly**: "Bob analysis 5 days old" — stale alert, Bob is actively analyzing.
 - **No new tasks from Hao** — Nothing to dispatch.
 - **System healthy** — All key agents cycling normally. Amy-kimi still 🔴 (billing). Optimizer, Evaluator, Tech-lead idle.
 
