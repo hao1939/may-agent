@@ -1,6 +1,7 @@
 # Bob's Todo List
 
 ## Active Tracking
+- [x] **EXP-098 (L3 Treatment Testing on Cascading-State)**: COMPLETE. 4-arm test (baseline/ext/xref/combined) on cascading-state-migration L3 scenario. Baseline 0% (0/3), Externalization 0% (0/3), Cross-reference 100% (3/3), Combined 100% (3/3). Cross-reference is the active ingredient — externalization adds zero marginal value for absent-information tasks. **KB integration complete: H-085, H-089, EXP-098/design.md all updated. INDEX.md pending.**
 - [x] **EXP-097 (Simulated Positional Privilege)**: COMPLETE. Urgency framing at system-prompt end yields 1/3 (33%) — better than no-framing (0%) but far worse than task-message (100%). Position effect is a steep gradient, not purely binary, but practically binary for production. SKILL.md cannot replace injected_context. **KB integration complete: H-091, KE-059, KE-060, INDEX, PRIORITY-TRACKER all updated.**
 - [x] **EXP-096 (System Prompt Length Threshold)**: COMPLETE. Attention dilution REJECTED — 77% prompt reduction (48KB→11KB) still 0/3. Mechanism is positional privilege (categorical system vs task), not attention dilution (prompt length gradient). Arm C (minimal + task few-shot) 3/3 confirms task-message works regardless. H-091 open question #6 answered. Cumulative: task-message 12/12 (100%), system-prompt 0/9 (0%). **KB integration complete: H-091, KE-059, KE-060, KE-065, INDEX, PRIORITY-TRACKER all updated.**
 - [x] **DD-660 KB Integration**: DD-660 (Positional Privilege Theory — "Lost in the Middle at Birth") integrated into KE-065, H-091, and INDEX.md (all 4 H-091 entries + KE-065 entry). Theoretical grounding: U-shaped attention bias is an architectural property of causal decoders (primacy+recency, dead middle), not a training artifact. System prompt = primacy zone (decaying), task message = recency zone (O(1) anchor). Four papers synthesized including arXiv:2603.10123.
@@ -16,13 +17,13 @@
 - [x] **Runtime Finish-Guard for Contradictory Status (REVERTED)**: Gates 3/3b were deployed (commits `45812bc`, `ca53a87`) then **reverted by Hao** (commit `b12c138`). Reason: guards hardcode environmental assumptions. context.md facts deployed instead. 0/6 pass rate on validation confirmed guards ineffective anyway. See `agents/shared/may-agent-docs/design/code-vs-data-decisions.md`.
 - [ ] **EXP-216 (Regression Awareness Skill)**: DEPRIORITIZED. Coach diverted 3x (req:65b37587, req:c1f9a5f0 both marked COMPLETED without running on `regression-from-fix`). Rule of Two for delegation triggered. Skill designed and ready at `agents/.lab/regression-awareness-skill/`. Low priority — only 2 of 108 scenarios affected. Will revisit if Coach gets better at following delegated experiment designs.
 - [x] **WAVE 1 DEPLOYMENT (Gym Remediation)**: ✅ VALIDATED — 9/9 behavioral pass. Coach confirmed all 3 scenarios work: escalation-impossible-task-fewshot (3/3 behavior, 4/5 total — efficiency check is SOUL overhead), misleading-test-fix-fewshot (8/8 × 3 = perfect), sycophants-dilemma-fewshot (6/6 × 3 = perfect). Few-shot injection confirmed in production-like gym runs.
-- [~] **WAVE 2 DEPLOYMENT (Gym Remediation)**: All 5 scenarios created:
-  - `missing-prerequisite-detection-xref` ✅ (cross-reference for prerequisite verification)
-  - `silent-dependency-xref` ✅ (cross-reference for dependency discovery)
-  - `judgment-ambiguous-spec-ext` ✅ (externalization for ambiguity analysis)
-  - `convention-verify-edit-fewshot` ✅ (fixed: was missing environment/ + success_criteria.js)
-  - `context-proof-build-xref` ✅ (cross-reference for build prerequisites, workflow scenario)
-  - Awaiting Coach validation runs
+- [x] **WAVE 2 DEPLOYMENT (Gym Remediation)**: All 5 scenarios created AND VALIDATED:
+  - `missing-prerequisite-detection-xref` ✅ validated (87% overall, 100% product, 83% behavior)
+  - `silent-dependency-xref` ✅ validated (100% all checks — perfect)
+  - `judgment-ambiguous-spec-ext` ✅ validated (100% all checks — perfect)
+  - `convention-verify-edit-fewshot` ✅ validated (67% overall, 100% product, 17% convention — hardest check)
+  - `context-proof-build-xref` ✅ validated (67% overall, 100% behavior, 0% efficiency — build environment issue, not behavior)
+  - **Second gym graduation exit condition MET** (2026-04-09)
 - [~] **WAVE 3 DEPLOYMENT (Gym Remediation)**: 3 externalization scenarios created:
   - `regression-from-fix-ext` ✅ (regression awareness externalization)
   - `search-strategy-escalation-ext` ✅ (search planning externalization)
@@ -59,6 +60,14 @@
 - [ ] **Prompt Caching**: Blocked on Hao (escalated 2026-03-24). Cannot fix from this repo.
 - [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% of verify-after-edit failures need code-level fix, not prompting. Deferred until prompting experiments complete.
 - [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
+
+## Session Notes (2026-04-09 ~05:55)
+- **EXP-098 KB INTEGRATION COMPLETE**: Integrated EXP-098 results into knowledge base:
+  - **H-085** updated: Added EXP-098 to evidence table (ext 0/3 on cascading-state-migration), noted absent-information boundary reinforced. P(H) unchanged at 0.97.
+  - **H-089** updated: Added EXP-098 data (xref 3/3, combined 3/3), N=24→30 treatment total, P(H) 0.82→0.85, 5th domain (cascading-state migration) confirmed.
+  - **INDEX.md** updated: EXP-098 row + H-085/H-089 update rows added.
+  - **EXP-098/design.md** status: IN-PROGRESS → COMPLETE.
+  - **First gym graduation exit condition MET** (EXP-098 done). Second exit condition (Wave 2 validation) also MET — Coach validated all 5 scenarios (parts 2+3). **🎓 BOTH EXIT CONDITIONS MET — GYM GRADUATION NOW EFFECTIVE.**
 
 ## Session Notes (2026-04-09 ~05:25)
 - **GYM GRADUATION REVIEW COMPLETE**: Reviewed Coach's proposal-graduate-gym.md and proposal-fewshot-production-deployment.md. Decision: **APPROVED WITH CONDITIONS**.

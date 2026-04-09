@@ -1,7 +1,7 @@
 # EXP-098: Treatment Testing on L3 Cascading-State Scenario
 
 **Date**: 2026-04-09
-**Status**: IN-PROGRESS
+**Status**: COMPLETE
 **Sprint**: 31
 **Tags**: cascading-state, externalization, cross-reference, EXP-077, gym-graduation
 **Gym budget**: 9 runs (3 arms × 3 runs each)
