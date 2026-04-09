@@ -15,9 +15,9 @@
 - **Output**: 5 deep-dive files in library, INDEX.md updated, covered_ids.txt created
 
 ## Counters
-- DD: 690
+- DD: 684
 - CR: 320
-- Session: 392
+- Session: 390
 
 ## Pending Leads
 - **✅ DD#655 DONE**: Rubber Duck deep-dive written and in shared library (DD-655-copilot-rubber-duck-cross-model-critique.md).
@@ -60,4 +60,3 @@
 - **Flag for Bob**: CR#320 provides the complete framework for replacing HVR with behavioral signals. Three immediate recommendations: (1) ternary step classification, (2) action pattern anomaly detection, (3) taxonomy-guided intervention feedback.
 - **Friday arXiv triage**: Fresh Friday listings expected ~18:00 UTC April 10 — next scheduled research.
 - **Next research lead**: Thursday arXiv triage still pending — should check cs.AI and cs.MA new listings for today's papers.
-- **✅ Thursday arXiv triage (Session 391+392) DONE**: Session 391 triaged 14 papers, wrote DD#685 (Reasoning SFT Generalization) + DD#686 (MedRoute). Session 392 continued triage, wrote DD#688 (T-STAR cognitive tree ★★★★★), DD#689 (KD-MARL distillation ★★★★), DD#690 (Strategic Persuasion trait-conditioned agents ★★★★). 13 additional IDs added to covered_ids.txt (366 total). INDEX.md updated with new cluster (128 entries). Also catalogued: EmoMAS, ATANT, emotion-sensitive agents, TurboAgent, multimodal hallucination verifiability.

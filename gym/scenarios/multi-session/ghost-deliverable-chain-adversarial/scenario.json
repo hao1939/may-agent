@@ -1,0 +1,22 @@
+{
+  "name": "ghost-deliverable-chain-adversarial",
+  "description": "EXP-103 Treatment A: ghost-deliverable-chain + adversarial framing. S2 context includes adversarial critique instruction forcing agent to find 3 bugs before extending inherited code.",
+  "categories": ["judgment", "verification"],
+  "tags": ["FM-3.1", "multi-session", "ghost-deliverable", "verification", "exp-103", "adversarial"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "sessions": [
+    {
+      "task": "session-1/task.md",
+      "injected_context": "session-1/context.md",
+      "environment": "session-1/environment",
+      "artifacts_out": ["src/"]
+    },
+    {
+      "task": "session-2/task.md",
+      "injected_context": "session-2/context.md",
+      "environment": "session-2/environment"
+    }
+  ]
+}
