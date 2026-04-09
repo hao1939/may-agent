@@ -4,7 +4,7 @@
  * Schedules and manages recurring tasks with date formatting.
  */
 
-const { formatDate, parseDuration } = require('./utils');
+const { formatTimestamp, parseDuration } = require('./utils');
 
 const tasks = [];
 
@@ -40,16 +40,16 @@ function runDueTasks() {
         results.push({
           taskId: task.id,
           name: task.name,
-          ranAt: formatDate(now, 'iso'),
-          displayTime: formatDate(now, 'full'),
-          nextRun: formatDate(task.nextRun, 'full'),
+          ranAt: formatTimestamp(now, 'iso'),
+          displayTime: formatTimestamp(now, 'full'),
+          nextRun: formatTimestamp(task.nextRun, 'full'),
           result
         });
       } catch (err) {
         results.push({
           taskId: task.id,
           name: task.name,
-          ranAt: formatDate(now, 'iso'),
+          ranAt: formatTimestamp(now, 'iso'),
           error: err.message
         });
       }
@@ -64,9 +64,9 @@ function getTaskStatus() {
     name: t.name,
     status: t.status,
     runCount: t.runCount,
-    lastRun: t.lastRun ? formatDate(t.lastRun, 'relative') : 'never',
-    nextRun: formatDate(t.nextRun, 'full'),
-    created: formatDate(t.createdAt, 'short')
+    lastRun: t.lastRun ? formatTimestamp(t.lastRun, 'relative') : 'never',
+    nextRun: formatTimestamp(t.nextRun, 'full'),
+    created: formatTimestamp(t.createdAt, 'short')
   }));
 }
 
@@ -74,7 +74,7 @@ function cancelTask(taskId) {
   const task = tasks.find(t => t.id === taskId);
   if (task) {
     task.status = 'cancelled';
-    task.cancelledAt = formatDate(new Date(), 'iso');
+    task.cancelledAt = formatTimestamp(new Date(), 'iso');
   }
   return task;
 }
