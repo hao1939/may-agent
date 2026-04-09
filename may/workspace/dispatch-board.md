@@ -1,17 +1,17 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~05:17 UTC
+Updated: 2026-04-09 ~04:51 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Scout**: 🟢 Running — One 401 token expiry this cycle (transient, recovered).
-- **Bob**: 🟢 Running — Reviewing Coach's "Graduate the Gym" proposal (forked by own heartbeat).
-- **Coach**: 🟢 Running — EXP-098 COMPLETE, writing "Graduate the Gym" proposal.
-- **Tech-lead**: 🟢 Running — Finish-guard fix re-dispatched (req:199b1595). Previous dispatch lost (s_1775710457934_174 never started in local DB).
-- **Optimizer**: 🟢 Running — Clean heartbeat, no pending work.
-- **QA**: 🟡 Running but BLOCKED — node_modules missing, can't run tsc/vitest. Found gym runner doc mismatch (injected_context prepend vs append).
+- **Scout**: 🟢 Running — Heartbeat active.
+- **Bob**: 🟢 Running — Heartbeat active.
+- **Coach**: 🟢 Running — Heartbeat active.
+- **Tech-lead**: 🟢 Running — Finish-guard orchestration fix IN PROGRESS (s_1775710457934_174). Few-shot Phase 1 queued.
+- **Optimizer**: 🟢 Running — Restored Apr 9. Tool quality regression investigation received.
+- **QA**: 🟢 Running — Restored Apr 9.
 - **Evaluator**: 🟢 Running — Heartbeat active.
-- **All agents**: 🟡 7/8 running. Amy-kimi still 🔴.
+- **All agents**: 🟡 7/8 running. Amy-kimi still 🔴. Optimizer + QA just restored after 17-day outage.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -73,10 +73,7 @@ Updated: 2026-04-09 ~05:17 UTC
 | **Few-Shot Deployment Tech Review** | ✅ COMPLETE | tech-lead | **GO for Phase 1** with 6 required modifications. Integration point: manager.ts line 978. Coder-only scope for MVP. Bypass flag needed for gym. Review at `agents/tech-lead/workspace/review-fewshot-proposal.md`. |
 | **Few-Shot Example Store (Phase 1)** | ✅ COMPLETE | coach | 3 examples extracted: binary-file-escalation, reproduce-first-debugging, escalation-judgment. INDEX with trigger patterns at `agents/shared/knowledge/fewshot-examples/`. |
 | **FM-3.1 Bob Regression Investigation** | ✅ COMPLETE | coach | **NOT a Bob regression** — finish-guard infrastructure false positive. 9/9 caused by (1) orchestration unawareness + (2) generic GHOST_KEYWORDS. Analysis at `agents/coach/workspace/bob-fm31-regression-analysis.md`. |
-| **Finish-Guard Orchestration Fix** | ⏳ RE-DISPATCHED | tech-lead | Fix false positives: add workflow/agents to write-evidence exemption in finish-guard.ts. Original req:67425d6c lost. Re-dispatched req:199b1595. |
-| **EXP-098 L3 Treatment Test** | ✅ COMPLETE | coach | **STRONGEST RESULT EVER**: Xref 100% (3/3) vs Baseline 0% (0/3) vs Externalization 0% (0/3). Discovery mechanisms >> reflection. |
-| **"Graduate the Gym" Proposal** | 🔄 UNDER REVIEW | coach→bob | Coach's 134-line strategic proposal to stop exploratory gym research. Bob forked review session. Recommends: Few-shot pipeline, multi-session harness, production A/B. |
-| **QA Toolchain Missing** | ⚠️ BLOCKED | QA | node_modules not present — can't run tsc/vitest. Found gym runner doc mismatch (injected_context order). Needs investigation. |
+| **Finish-Guard Orchestration Fix** | ⏳ DISPATCHED | tech-lead | Fix false positives: add workflow/agents to write-evidence exemption in finish-guard.ts. req:67425d6c. |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -108,21 +105,18 @@ Updated: 2026-04-09 ~05:17 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (05:17)
-- **EXP-098 COMPLETE** — Cross-reference 100% (3/3) vs Baseline 0% and Externalization 0%. Strongest treatment effect ever observed. Recognition-without-action pattern confirmed: externalization identified max_age gap but agent didn't fix it.
-- **"Graduate the Gym" proposal** — Coach authored 134-line strategic proposal recommending end of exploratory gym research after 85+ experiments. Three proven mechanisms (externalization, workflow gates, few-shot). Three recommendations: few-shot pipeline, multi-session harness, production A/B. Bob is reviewing.
-- **Finish-guard fix re-dispatched** — Original dispatch s_1775710457934_174 was from a different instance and never ran locally. Re-dispatched to tech-lead as req:199b1595.
-- **QA blocked on toolchain** — QA heartbeat found gym runner doc mismatch but can't run tsc/vitest due to missing node_modules.
-- **System healthy** — 7/8 agents running, only 1 transient scout error (401 token expiry, recovered).
+## Latest Cycle Summary (04:51)
+- **System stable** — 7/8 agents running, zero errors in last hour. Zombie session s_1775311714523_3 cancelled.
+- **Finish-guard orchestration fix IN PROGRESS** — Tech-lead forked work session s_1775710457934_174 to implement Fix 1 (orchestration exemption) + Fix 2 (GHOST_KEYWORDS refinement). Irony: tech-lead's own heartbeat got blocked by FM-3.1 while dispatching the fix.
+- **Coach duplicate requests resolved** — req:f70085c7 and req:7a81e4f3 marked completed (duplicates of existing req:67425d6c dispatch).
+- **Duplicate tech-lead request cleaned** — req:494a8999 marked completed (duplicate of req:67425d6c).
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao**.
-- **P1**: **Finish-guard orchestration fix** — Re-dispatched to tech-lead (req:199b1595). Monitor next cycle.
-- **P1**: **Bob's review of "Graduate the Gym" proposal** — In progress. Will determine strategic direction for gym/research.
+- **P1**: **Finish-guard orchestration fix** — IN PROGRESS (s_1775710457934_174). Monitor next cycle.
 - **P1**: **Few-shot Phase 1 implementation** — All prerequisites done (review ✅, examples ✅). Tech-lead implements after finish-guard fix.
 - **P1**: **Auto-pause recovery implementation** — Design complete. Queue for tech-lead after current items.
-- **P1**: **Present research sprint results to Hao** — H-091 P(H)=0.93→0.98→0.99, 18+ experiments, EXP-098 spectacular result, KE-065 synthesis, token waste analysis, two critical bugs fixed, auto-pause recovery designed, Graduate the Gym proposal.
+- **P1**: **Present research sprint results to Hao** — H-091 P(H)=0.93, 17 experiments, KE-065 synthesis, token waste analysis, two critical bugs fixed, auto-pause recovery designed.
 - **P2**: Federation design ready for Hao review
 - **P2**: Pre-merge review gate Phase 2 (auto-review)
 - **P2**: Amy-kimi still down — blocked on Hao for billing
-- **P2**: QA toolchain investigation — node_modules missing, gym runner doc mismatch
