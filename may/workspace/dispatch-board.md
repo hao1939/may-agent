@@ -1,16 +1,16 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~06:23 UTC
+Updated: 2026-04-09 ~06:53 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
 - **Scout**: 🟢 Running — Heartbeat active.
-- **Bob**: 🟢 Running — EXP-098 KB integration DONE. Processing heartbeat.
-- **Coach**: 🟢 Running — Wave 3 regression DONE (2/3 pass, 16/16 product). Sprint 1 example conversion DONE. Processing heartbeat.
-- **Tech-lead**: 🟢 Running — **Few-shot Phase 1 ACTIVELY BUILDING** (s_1775715855793_208). Reading manager.ts integration point.
+- **Bob**: 🟢 Running — Processing heartbeat.
+- **Coach**: 🟢 Running — Processing heartbeat.
+- **Tech-lead**: 🟢 Running — Processing heartbeat. Noticed 2 review branches pending merge.
 - **Optimizer**: 🟢 Running — Restored Apr 9.
 - **QA**: 🟢 Running — Restored Apr 9.
-- **Evaluator**: 🟢 Running — Heartbeat active.
+- **Evaluator**: 🟢 Running — Heartbeat active, forked evaluation session.
 - **All agents**: 🟡 7/8 running. Amy-kimi still 🔴. Zero errors in last hour.
 
 ## Active Priorities (from Hao)
@@ -83,7 +83,8 @@ Updated: 2026-04-09 ~06:23 UTC
 | **Gym Graduation Exit Conditions** | ✅ BOTH MET | - | EXP-098 ✅ (cross-ref 100% on L3) + Wave 2 validation ✅ (5 scenarios done). **Gym can now enter maintenance/regression mode.** |
 | **Wave 3 Regression Validation** | ✅ COMPLETE | coach | 2/3 pass. 16/16 product checks pass. Convention gaps (search efficiency, step ordering) expected on untreated scenarios. No regressions from existing skills. |
 | **Few-Shot Example Sprint 1 Conversion** | ✅ COMPLETE | coach | know-when-blocked + evidence-over-narrative converted to few-shot format. INDEX updated. 5 total examples now. |
-| **Few-Shot Phase 1 Build** | 🔨 IN PROGRESS | tech-lead | Session s_1775715855793_208. Reading manager.ts, implementing keyword-based injection + bypass flag. |
+| **Few-Shot Phase 1 Build** | ✅ COMPLETE | tech-lead | Commit e2b1948 on `review/fewshot-phase1`. New `fewshot-router.ts`, manager.ts integration, `skipFewShot` bypass. 26 tests pass, TSC clean. **Awaiting merge to main.** |
+| **Compaction KeyFacts + MemLeak Fix** | ✅ COMPLETE | tech-lead | Commit 0349a21 on `review/compaction-keyfacts-and-memleak`. Enhanced compaction KeyFacts + fixed sessionResults memory leak. **Awaiting merge to main.** |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -115,19 +116,17 @@ Updated: 2026-04-09 ~06:23 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (06:23)
-- **🔨 Few-Shot Phase 1 IN PROGRESS** — Tech-lead forked build session (s_1775715855793_208). Actively reading manager.ts to implement keyword-based few-shot injection at prompt assembly. This is the #1 build priority.
-- **Wave 3 regression: 2/3 pass** — 16/16 product checks pass. Convention gaps (search efficiency, step ordering) are expected on untreated scenarios. No regressions from existing skills.
-- **2 new few-shot examples converted** — `know-when-blocked` and `evidence-over-narrative` added to example store (total: 5). INDEX updated.
-- **EXP-098 KB integrated** — Bob completed KB integration in prior cycle.
+## Latest Cycle Summary (06:53)
+- **✅ Few-Shot Phase 1 COMPLETE** — Tech-lead built and committed to `review/fewshot-phase1` (e2b1948). New `fewshot-router.ts` (242 lines), manager.ts integration at prompt assembly, `skipFewShot` bypass flag, 26 tests pass. **Awaiting merge to main.**
+- **✅ Compaction KeyFacts + MemLeak fix COMPLETE** — New review branch `review/compaction-keyfacts-and-memleak` (0349a21). Enhanced compaction KeyFacts + fixed sessionResults memory leak. **Awaiting merge to main.**
 - **Zombie killed again** — s_1775311714523_3 cancelled (4.7 days old, keeps coming back).
-- **Zero errors** — All 7 running agents healthy.
+- **Zero errors** — All 7 running agents healthy. Fresh heartbeat cycle started.
 
 ## Next Actions
+- **P0**: **Merge 2 review branches** — `review/fewshot-phase1` and `review/compaction-keyfacts-and-memleak` both ready. Tech-lead should merge in current heartbeat.
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao**.
-- **P0 IN PROGRESS**: **Few-shot Phase 1 implementation** — Tech-lead actively building. Monitor session s_1775715855793_208.
 - **P1**: **Gym maintenance mode transition** — Bob/Coach to coordinate. No more exploratory experiments. Gym becomes regression suite only.
-- **P1**: **Auto-pause recovery implementation** — Design complete. Queue for tech-lead after few-shot Phase 1.
+- **P1**: **Auto-pause recovery implementation** — Design complete. Queue for tech-lead after merges done.
 - **P1**: **Present research sprint results to Hao** — H-091, 17+ experiments, gym graduation, EXP-098 landmark result.
 - **P2**: Federation design ready for Hao review
 - **P2**: Pre-merge review gate Phase 2 (auto-review)
