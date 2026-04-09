@@ -61,6 +61,11 @@
 - [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% of verify-after-edit failures need code-level fix, not prompting. Deferred until prompting experiments complete.
 - [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
 
+## Session Notes (2026-04-09 ~08:20)
+- **KE-076/077/078 DEDUP FIX**: Found and fixed ID collision where two concurrent sessions created conflicting KE-076/KE-077 files with different topic mappings. Resolution: kept Bob's intentional commit (fb3d2309), deleted conflicting auto-sync files, removed duplicate INDEX.md rows. Commit a84d8d1c.
+- **Scout drops backlog**: 39 unprocessed DDs in `agents/scout/drops/`. Notable: DD-613/DD-634 (Claude Code complexity wall, ★★★★★), DD-602 (AI assistance reduces persistence, ★★★★), DD-605 (decocted experience, ★★★★½). Will triage in future sessions.
+- **State assessment**: Gym graduated ✅, fewshot deployment in progress (tech-lead) ✅, all experiments integrated ✅, KB clean ✅. Research arc is at a natural transition point.
+
 ## Session Notes (2026-04-09 ~05:55)
 - **EXP-098 KB INTEGRATION COMPLETE**: Integrated EXP-098 results into knowledge base:
   - **H-085** updated: Added EXP-098 to evidence table (ext 0/3 on cascading-state-migration), noted absent-information boundary reinforced. P(H) unchanged at 0.97.
