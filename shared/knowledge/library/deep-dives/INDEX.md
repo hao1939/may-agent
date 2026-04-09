@@ -372,3 +372,49 @@
 10. DD#593 → DD#472 + CR#304 (mood-as-highest-weight connects to representational collapse — affective alignment precedes cognitive alignment)
 11. DD#591 + DD#593: Two approaches to inter-agent communication quality — middleware (CFN) vs. fusion gates (SVAF)
 12. [dd594](DD-594-ledger-state-stigmergy-blockchain-coordination.md) — ★★★½ Ledger-State Stigmergy: Formal mapping of biological stigmergy to blockchain coordination. Three base patterns (marker/sematectonic/self-organizing). Theoretical but connects DD#475/DD#476/CR#265.
+
+**Safety verification limits & AI assistance effects?** ★★★★ — NEW (Session 370 batch)
+1. [dd601](DD-601-incompleteness-ai-safety-verification.md) — ★★★★ Formal impossibility result: Kolmogorov complexity proves AI safety verification is fundamentally incomplete. No finite procedure can guarantee safety for all inputs. Implications for our verification architecture.
+2. [dd602](DD-602-ai-assistance-reduces-persistence.md) — ★★★★ Causal evidence (N=1,222): AI assistance reduces human persistence and hurts independent performance. Directly applicable to agent-human collaboration design.
+3. DD#601 + DD#602: Safety can't be fully verified (formal limit) AND human-AI collaboration degrades human capability (empirical finding) — both constrain system design assumptions.
+
+**Communication delay, cognitive memory & experience distillation?** ★★★★½ — NEW
+1. [dd603](DD-603-cdcma-communication-delay-decomposition.md) — ★★★★ CDCMA: Formalizes communication gain vs. delay cost decomposition in cooperative MARL. Quantifies when communication helps vs. hurts.
+2. [dd604](DD-604-superlocalmemory-v33-living-brain.md) — ★★★★ SuperLocalMemory V3.3: Complete cognitive memory taxonomy in production. Zero-LLM agent memory with living brain architecture.
+3. [dd605](DD-605-decocted-experience-test-time-inference.md) — ★★★★½ OUTSTANDING: Decocted experience improves test-time inference. Context as scaling axis — directly relevant to our architecture.
+4. [dd612](DD-612-hippo-memory-bioinspired-agent-memory.md) — ★★★★½ Hippo Memory: Biologically-inspired hippocampal memory for AI agents. Complements DD#559 (same project, different analysis angle).
+5. DD#604 + DD#612 + DD#559: Three bioinspired memory implementations converging on hippocampal architecture as agent memory gold standard.
+6. DD#605 → DD#539 + DD#540 (experience distillation as non-parametric self-evolution, now with test-time inference focus)
+7. DD#603 → DD#573 (communication delay formalization connects to LLM coordination volatility findings)
+
+**Agent complexity wall & production debugging?** ★★★★★ LANDMARK — NEW
+1. [dd613](DD-613-claude-code-complexity-wall.md) — ★★★★★ CRITICAL: "Unusable for Complex Engineering Tasks" — 974-point HN thread documenting Claude Code quality wall. Directly affects our system.
+2. [dd614](DD-614-agent-reading-test-benchmark.md) — ★★★★ Agent Reading Test benchmark for web-reading capability. Directly applicable to our scraping workflows.
+3. [dd615](DD-615-freestyle-agent-sandboxes.md) — ★★★★ Freestyle: Production sandbox infrastructure for coding agents at scale. 255-point HN thread.
+4. [dd634](DD-634-claude-code-regression-recurrence.md) — ★★★★★ LANDMARK: Full analysis of Claude Code regression recurrence tied to Issue #42796. Harness entropy cycle concept. 1108 HN points.
+5. DD#613 → DD#634 → DD#556 → DD#541 (complexity wall → regression recurrence → effort crisis → reasoning depth regression: complete causal chain)
+6. DD#615 → DD#554 (two sandbox infrastructure analyses — commodity execution layer validates Agent OS L1)
+
+**Self-evolution, diversity & reasoning safety?** ★★★★½ — NEW
+1. [dd628](DD-628-self-execution-simulation-coding-models.md) — ★★★★ Self-execution simulation improves coding model accuracy. Models that simulate their own execution catch errors before committing.
+2. [dd629](DD-629-vocabulary-dropout-coevolution-diversity.md) — ★★★★ Vocabulary dropout maintains curriculum diversity in LLM co-evolution. Prevents representational collapse during training.
+3. [dd630](DD-630-evolutionary-uq-hallucination-detection.md) — ★★★★ Evolutionary search for automated UQ/hallucination detection design. Meta-search over detection architectures.
+4. [dd631](DD-631-draft-latent-reasoning-agent-safety.md) — ★★★★½ DRAFT: Task-decoupled latent reasoning for agent safety. Separates safety reasoning from task execution.
+5. [dd632](DD-632-scaldpp-diversity-rag-retrieval.md) — ★★★★ ScalDPP: Diversity-aware RAG retrieval via determinantal point processes. Mathematically principled diversity in retrieval.
+6. [dd633](DD-633-emergent-compositional-communication.md) — ★★★★ Emergent compositional communication for latent world properties. Agents develop structured language for hidden state communication.
+7. DD#629 → DD#585 + DD#472 (vocabulary dropout as training-time countermeasure to representational collapse observed at inference time)
+8. DD#628 → DD#541 (self-execution simulation as internal verification — compensates for reasoning dropout)
+9. DD#631 → DD#571 (latent safety reasoning complements reasoning dropout diagnosis — safety needs its own reasoning channel)
+10. DD#632 → DD#585 (diversity in retrieval parallels diversity in committee — DPP as universal diversity mechanism)
+11. DD#633 → DD#593 (emergent communication connects to SVAF mesh protocol — structured signals emerge from interaction)
+
+**Agent engineering at scale: fuzzing, taxonomy, conflicts & trust?** ★★★★★ CRITICAL — NEW
+1. [dd639](DD-639-abtest-behavior-driven-fuzzing-agents.md) — ★★★★★ CRITICAL: ABTest — first behavior-driven fuzzing framework for AI coding agents. Systematic agent testing.
+2. [dd640](DD-640-scaffold-taxonomy-coding-agents.md) — ★★★★★ CRITICAL: First source-code-level taxonomy of coding agent scaffold architectures. Systematic comparison.
+3. [dd641](DD-641-agenticflict-merge-conflicts-agent-prs.md) — ★★★★ AgenticFlict: First study of merge conflicts in AI coding agent PRs. New failure mode category.
+4. [dd642](DD-642-trace-trust-allocation-conflicting-artifacts.md) — ★★★★ TRACE: LLM trust allocation when software artifacts conflict. How agents resolve contradictory information.
+5. [dd643](DD-643-debugharness-dynamic-debugging-agents.md) — ★★★★ DebugHarness: Emulating human dynamic debugging for autonomous repair agents.
+6. DD#639 + DD#640 + DD#643: Testing infrastructure trilogy — fuzzing (DD#639) + taxonomy (DD#640) + debugging (DD#643) = complete agent engineering lifecycle
+7. DD#640 → DD#565 + DD#564 (scaffold taxonomy complements behavioral study + kernel architecture — structural + empirical + design perspectives)
+8. DD#641 → DD#557 (merge conflicts as coordination failure — agent PRs create new class of multi-agent artifacts)
+9. DD#642 → DD#586 + CR#298 (trust allocation when artifacts conflict connects to provenance chains and accountability stack)

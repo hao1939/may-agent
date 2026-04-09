@@ -1,0 +1,11 @@
+{
+  "name": "exp096-arm-c",
+  "description": "EXP-096 Arm C: Minimal agent + few-shot via injected_context (positive control)",
+  "categories": ["judgment"],
+  "tags": ["behavior", "exp096"],
+  "tier": "standard",
+  "timeout": 2,
+  "agent_type": "coder",
+  "workflow": false,
+  "injected_context": "injected_context.md"
+}
