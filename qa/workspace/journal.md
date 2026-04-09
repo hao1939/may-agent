@@ -4,6 +4,26 @@
 
 # QA Journal — 2026-04-09
 
+## 2026-04-09T23:02Z
+
+### Summary
+Proactive scan of HEAD commit **5c84c321** (multi-session gym runner + finish-guard changes). I focused on `src/gym/runner.ts` and found two correctness issues in multi-session handling. I attempted mandatory gates, but this checkout cannot run them because `./node_modules/.bin/tsc` and `./node_modules/.bin/vitest` are missing.
+
+### Files reviewed (evidence)
+- `src/gym/runner.ts` — multi-session support (`copyArtifacts`, `runMultiSession`, `runScenario` dispatch)
+
+### Mandatory gates (this environment)
+- `./node_modules/.bin/tsc --noEmit`: FAIL to execute — `No such file or directory` (exit 127)
+- `./node_modules/.bin/vitest --run`: FAIL to execute — `No such file or directory` (exit 127)
+
+### Issues
+- **IMPORTANT (logic)**: `runScenario(..., withHistory)` ignores `withHistory` for multi-session scenarios: it calls `runMultiSession(..., keepDir, false)` (hard-coded `false`). Additionally, `runMultiSession()` calls `runAgent(...)` without forwarding `withHistory` at all.
+- **IMPORTANT (spec/behavior mismatch)**: `copyArtifacts()` docstring claims support for “directory prefixes (ending with /)”, but implementation treats patterns as exact paths (`path.join(srcDir, pattern)`); patterns like `dir/` won’t match if the actual directory is `dir`.
+- **CRITICAL (process)**: Missing toolchain (`node_modules/.bin/*`) prevents required type-check and test verification in this environment.
+
+### Verdict
+CONDITIONAL — findings above should be addressed; I cannot independently validate compile/test because the toolchain is absent in this checkout.
+
 ## 2026-04-09T22:25Z
 
 ### Summary

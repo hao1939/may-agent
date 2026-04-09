@@ -1,17 +1,17 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~22:29 UTC
+Updated: 2026-04-09 ~22:59 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Running — All knowledge through KE-107 indexed. Clean heartbeat, self-directing.
-- **Coach**: 🟢 Running — **EXP-108 DESIGNED** (adversarial self-review skill). Self-initiated after EXP-107 closure. Design at `agents/shared/knowledge/experiments/EXP-108/design.md`. Ready for Phase 1 (skill authoring + scenario selection).
+- **Bob**: 🟢 Running — Self-directing. Sent P1 to tech-lead re: few-shot production wiring.
+- **Coach**: 🟢 Running — **3 active WORK sessions**: FM-3.1 ghost deliverable fix (×2), FM-1.3 kb-navigation baseline+treatment. All running gym scenarios (~28min in).
 - **Scout**: 🟢 Running — Heartbeat cycling, reprioritizing toward gym-production gap research.
-- **Tech-lead**: 🟡 IDLE — Heartbeat has `skipIfIdle`, no dispatched work so not cycling.
-- **Optimizer**: 🟡 IDLE — Heartbeat cycling but minimal productive output.
-- **Evaluator**: 🟡 IDLE — Running auto-evals but minimal activity.
+- **Tech-lead**: 🟢 Running — Heartbeat just fired. Has P1 from Bob: wire few-shot injection into production dispatch.
+- **Optimizer**: 🟢 Running — Has WORK session investigating tool quality regression #11.
+- **Evaluator**: 🟡 Running — Heartbeat cycling, auto-evals.
 - **QA**: 🟡 IDLE — Minimal activity.
-- **All agents**: 🟢 7/8 running (tech-lead skipped). **3 agents effectively idle** (tech-lead, optimizer, QA). Zero errors in last hour.
+- **All agents**: 🟢 8/8 running (Amy-kimi still down). **Coach most active** (3 concurrent growth cycles). Zero errors.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -140,17 +140,16 @@ Updated: 2026-04-09 ~22:29 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (22:29)
-- **All heartbeats firing** (11 sessions running). Amy-kimi still 🔴. Zero failures in recent hours.
-- **Stale anomaly alert resolved**: The 19:29 alert about stuck sessions (coach 299min, may 312min, etc.) is stale — those sessions completed/cleaned up. All current sessions are fresh (<2min).
-- **EXP-104 complete**: Confound confirmed — evidence-over-narrative skill (EXP-090/091) is the actual cause of EXP-103's 100% results. KE-099 + KE-100 downgraded to LOW confidence.
-- **Coach self-initiated EXP-108**: Adversarial self-review skill, ready for Phase 2 A/B gym runs.
-- **Bob doing common-sense-infra cron** (87min, actively working — reviewing finish-guard, convention checking).
-- **System stable but underutilized**: Tech-lead, Optimizer, QA have capacity. Multiple P0/P1 items blocked on Hao.
+## Latest Cycle Summary (22:59)
+- **All heartbeats firing** (11 sessions running). Amy-kimi still 🔴. Zero failures.
+- **Coach highly active**: 3 concurrent WORK sessions — FM-3.1 ghost deliverable (2 sessions: one running gym treatment runs, one designing+testing skill), FM-1.3 kb-navigation (baseline+treatment runs with fixed initial conditions). Results mixed so far (ghost: treatment helps detection but path confusion persists; nav: 3-4/5 convention, product always 5/5).
+- **Bob → tech-lead P1**: Bob self-dispatched few-shot production wiring to tech-lead (req:65234b57). Duplicate message also sent (req:eb1476c4). Tech-lead heartbeat just started, should pick up.
+- **Optimizer investigating**: Tool quality regression #11 (bash:nonexistent command errors).
+- **System utilization improved**: Coach + Optimizer + Tech-lead all have productive work. Only QA truly idle.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao since Mar 24**.
-- **P0**: **Address system-wide idle state** — 3+ agents burning cycles with zero output. Options: (a) Hao provides new direction, (b) self-assign from research projects, (c) spin down idle agents to save cost.
+- **P1**: **Few-shot production wiring** — Bob dispatched to tech-lead (req:65234b57). Tech-lead has design review at `agents/tech-lead/workspace/review-fewshot-proposal.md`. Monitor for completion.
 - **P1**: **EXP-107 CLOSED — next steps for FM-3.3** — Gym can't reproduce production FM-3.3. Options: (a) production A/B testing of adversarial self-check, (b) focus on production-specific FM-3.3 drivers (context complexity, multi-session fatigue), (c) accept gym has solved FM-3.3 and move on.
 - **P1**: **Present research sprint results to Hao** — KE-101 meta-analysis is the capstone. H-091 (P(H)=0.99), 17+ experiments, gym graduation, EXP-098 landmark, EXP-103/104 confabulation findings, EXP-107 gym-production gap confirmed.
 - **P1**: **Anti-confab brief ready for review** — At `agents/shared/may-agent-docs/design/anti-confabulation-deployment.md`. Revised with EXP-104 confound. Ready for tech-lead + Hao.
