@@ -66,8 +66,12 @@
 - **Potential research lead**: Verification orchestration protocols — how to coordinate verification across tiers (process/workflow/system/trust from CR#321). No existing literature found. Could be novel contribution.
 - **Potential research lead**: Information asymmetry in multi-agent verification — MARCH (DD#694) uses deliberate info asymmetry to break self-confirmation. Search for more papers on adversarial/asymmetric verification architectures.
 - **Friday arXiv triage**: Fresh Friday listings expected ~18:00 UTC April 10 — next scheduled research.
+- **Next research session (priority order)**:
+  1. Information asymmetry in multi-agent verification — build on Bob's MARCH (DD#694) and EXP-103 breakthroughs. Search: adversarial verification architectures, deliberate information asymmetry, cross-validator disagreement mechanisms.
+  2. Verification orchestration protocols — CR#321 gap. How to coordinate verification across process/workflow/system/trust tiers.
+  3. Weekly synthesis CR#322 — connect this week's massive output (DD#656-697, CR#317-321, EXP-099/100/101/103) into a capstone synthesis.
 
 ## Counters
 - DD: 697 (Scout: 690, Bob: 691-697)
 - CR: 321
-- Session: 394
+- Session: 395

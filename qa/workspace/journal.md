@@ -26,6 +26,26 @@ Heartbeat QA at HEAD **d7e6b4f** (merge: abort signal propagation + gym director
 ### Verdict
 CONDITIONAL — compilation is green; suite is red for missing file + permission/timeouts that look external to the patch.
 
+## 2026-04-09T15:25Z
+
+### Summary
+Heartbeat QA at HEAD **41b5074**. Spot-checked the earlier abort-signal propagation change (commit **3fdf733**) by reading `src/lib/manager.ts` and `src/lib/manager-utils.ts` (ActiveSession now carries an `AbortController`). Re-ran mandatory gates: `tsc` passes; `vitest` still fails due to pre-existing repo/environment issues (missing launcher.ts, EACCES cleanup failures, research-db timeout).
+
+### Files reviewed
+- `src/lib/manager.ts` (partial read; imports/manager skeleton)
+- `src/lib/manager-utils.ts` (ActiveSession interface; abortController addition)
+
+### Mandatory gates (re-run 2026-04-09T15:24Z)
+- `./node_modules/.bin/tsc --noEmit`: PASS (exit 0; no output)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2079 passed (2100)**
+  - `test/launcher.test.ts`: 7 failed — `/app/src/app/launcher.ts` missing (existsSync false + ENOENT)
+  - `test/context-learn.test.ts`: 7 failed — `rmSync` fails `EACCES` on `/app/test-workspace/context-learn-test/*`
+  - `test/context-learning.test.ts`: 6 failed — `rmSync` fails `EACCES` on `/app/test-workspace/context-learning-test/*`
+  - `test/research-db.test.ts`: 1 failed — integration test timed out at 5000ms
+
+### Verdict
+CONDITIONAL — patch appears type-safe; test failures look unrelated to abort-signal propagation and point to missing file + filesystem permissions + a slow integration test.
+
 ---
 
 # QA Journal — 2026-04-06
