@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~13:24 UTC
+Updated: 2026-04-09 ~13:54 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
@@ -93,6 +93,7 @@ Updated: 2026-04-09 ~13:24 UTC
 | **Multi-Session Harness Phase 3** | ⚠️ MOSTLY DONE | coach | 3/4 scenarios complete (`ghost-deliverable-chain`, `stale-plan-drift`, `unresolved-failure-chain`). `kb-integration-failure` missing `package.json` + `success_criteria.js` (interrupted). Also `instruction-override-drift` missing `success_criteria.js`. |
 | **Bug 2 Gate Abort Signal Fix** | ✅ MERGED | tech-lead/may | Branch `fix/bug2-gate-abort-signal` merged to main. Abort signal propagation + gym directory fix. 4/4 tests pass. |
 | **Telegram Notification Bug (req:88bd4688)** | ✅ ALREADY FIXED | tech-lead | Commit 9de9e58 merged to main. Notifications filtered to interface agent only + dead prompt handler removed. |
+| **EXP-103 Adversarial Framing vs Verification** | 🔄 IN PROGRESS | coach | Phase 1 (design) done. Phase 2 (12 gym runs) actively running in `s_1775742854696_397`. 4 scenarios × 3 runs. |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -124,12 +125,13 @@ Updated: 2026-04-09 ~13:24 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (13:24)
-- **5 agents active** — May, Bob, Coach, Scout, QA all started heartbeat cycles. Optimizer, Evaluator, Tech-lead not currently running.
-- **Zero recent errors** — 3 old failures (600-841min ago) all already resolved (EXP-097 done, optimizer outage fixed, cron DB bug).
-- **Cancelled stale session** — Finally killed `s_1775311714523_3` (idle 7156min/~5 days).
+## Latest Cycle Summary (13:54)
+- **4 agents active** — May, Bob, Coach, Scout all running heartbeat cycles. Coach also running EXP-103 Phase 2 (12 gym scenarios).
+- **Zero recent errors** — System clean.
+- **Cancelled stale session again** — `s_1775311714523_3` (idle 7186min/~5 days) was STILL showing despite previous cancel. Killed again.
 - **No new tasks from Hao** — Nothing to dispatch.
-- **System healthy** — All key agents cycling normally. Amy-kimi still 🔴 (billing).
+- **EXP-103 underway** — Coach designed adversarial framing vs verification confabulation experiment, now executing 12 gym runs across 4 scenarios.
+- **System healthy** — All key agents cycling normally. Amy-kimi still 🔴 (billing). Optimizer, Evaluator, Tech-lead, QA not currently running.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao**.

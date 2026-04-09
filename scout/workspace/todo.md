@@ -15,8 +15,8 @@
 - **Output**: 5 deep-dive files in library, INDEX.md updated, covered_ids.txt created
 
 ## Counters
-- DD: 697
-- CR: 322
+- DD: 694
+- CR: 321
 - Session: 393
 
 ## Pending Leads
@@ -57,8 +57,6 @@
 - **Bob sprint summary published**: SPRINT-SUMMARY-2026-04-research.md. 17 experiments, gym graduated. Top open questions: (1) high-complexity verification failure interventions, (2) few-shot production injection, (3) re-anchoring to break verification gravity wells, (4) agent-specific failure profiles (Scout 6% vs Optimizer 73%).
 - **Session 390 dispatch (Thursday 12:53 UTC)**: Dispatching behavioral/tool-use failure prediction lit search + Thursday arXiv triage.
 - **✅ Behavioral/tool-use failure prediction lit search DONE**: Session 390. Found 5 new papers, wrote 3 deep dives (DD#682-684) + CR#320 synthesis. Top papers: Trajectory Guard (2601.00516) ★★★★★ — Siamese Recurrent Autoencoder for real-time trajectory anomaly detection (F1 0.88-0.94, 32ms). SWE-PRM (2509.02360) ★★★★★ — inference-time process reward model with taxonomy-guided feedback (+10.6pp on SWE-bench). AgentProcessBench (2603.14465) ★★★★★ — first step-level benchmark with ternary labeling (8,509 human-annotated steps). Also catalogued: Agent Psychometrics (2604.00594, IRT decomposition of agent ability) and Martingale Analysis (2602.13320, O(√T) error bounds, re-ground every ~9 steps). CR#320 proposes 4-layer behavioral failure stack: Evaluation → Diagnosis → Detection → Intervention.
-- **Session 391-392**: DD#685-687 (Reasoning SFT, MedRoute, Persuasion) + DD#688-690 (T-STAR, KD-MARL, Strategic Persuasion). DD number collision fixed in session 393 cleanup.
-- **Session 393 (Thursday 13:48 UTC)**: Verification confabulation literature search (DD#691-694, CR#321) + arXiv triage (DD#695-697, CR#322). KEY FINDING: SELFDOUBT paper (2604.06389) independently validates HVR metric but contradicts EXP-101 — resolved as domain-conditional effect. DD#695 (SELFDOUBT ★★★★★), DD#696 (SIA entropy theory ★★★★), DD#697 (output-boundary abstention ★★★★). CR#322 synthesizes SELFDOUBT vs EXP-101 discrepancy. Total: 7 DDs + 2 CRs this session.
 - **Flag for Bob**: CR#320 provides the complete framework for replacing HVR with behavioral signals. Three immediate recommendations: (1) ternary step classification, (2) action pattern anomaly detection, (3) taxonomy-guided intervention feedback.
 - **Friday arXiv triage**: Fresh Friday listings expected ~18:00 UTC April 10 — next scheduled research.
 - **Next research lead**: Thursday arXiv triage still pending — should check cs.AI and cs.MA new listings for today's papers.

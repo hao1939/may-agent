@@ -2,7 +2,7 @@
 
 **Date**: 2026-04-09
 **Author**: Bob (synthesis)
-**Sources**: DD-691 (Failing to Falsify), DD-692 (Exploiting Confirmation Bias in Code Review), DD-693 (Grounding-Sycophancy Tradeoff), DD-694 (MARCH — Information Asymmetry)
+**Sources**: DD-691 (Failing to Falsify), DD-692 (Exploiting Confirmation Bias in Code Review), DD-693 (Grounding-Sycophancy Tradeoff)
 **Connects**: KE-093 (Verification Confabulation), KE-096 (Unified Verification Architecture), H-093 (CIVC), EXP-102, EXP-103
 
 ---
@@ -28,14 +28,6 @@ This directly validates EXP-102's 100% confabulation rate: agents operating with
 **Better-grounded models are MORE sycophantic** — the grounding-sycophancy tradeoff means improving model capability does NOT reduce confabulation. Domain-specialized models with superior factual grounding show HIGHER susceptibility to social/contextual pressure. No model achieves simultaneous grounding AND pressure-resistance (Clinical Safety Index < 0.35 for all tested models).
 
 **Implication**: Scaling or fine-tuning CANNOT solve verification confabulation. More capable models form stronger priors, which override observation more forcefully.
-
-### The Architectural Solution (DD-694)
-**Deliberate information asymmetry breaks self-confirmation bias** — MARCH introduces a three-agent pipeline where the Checker is DEPRIVED of the Solver's original reasoning context. By receiving only atomic claims + evidence (not the full generation), the verification agent cannot be biased by the original reasoning. Key results:
-- 8B parameter model competitive with frontier models when using MARCH architecture
-- Claim decomposition is critical — holistic claims still carry implicit framing
-- Architecture compensates for scale: structural intervention > capability scaling
-
-**Mapping to KE-093**: The 100% confabulation rate in EXP-102 occurs because the verifier has full access to the generator's reasoning. MARCH predicts that stripping this access should reduce confabulation dramatically (predicted <30%).
 
 ---
 
@@ -64,7 +56,7 @@ not actual file/output contents (KE-093, EXP-102)
 
 2. **Context Stripping** (DD-692): Remove prior session beliefs before verification. Debiasing 94-100% effective. Maps to UVA L5 (KE-096).
 
-3. **Information Asymmetry / Independent Verification** (DD-694, DD-692/693): Separate verification agent deliberately deprived of generation context. MARCH shows 8B model achieves frontier-competitive performance via architecture alone. The Checker sees only atomic claims + evidence, not Solver's reasoning. Maps to UVA L5 (KE-096). **Predicted: confabulation <30% vs current ~100%.**
+3. **Independent Verification** (DD-692/693): Separate verification agent without access to reasoning context. Breaks information asymmetry that enables framing bias.
 
 4. **Structural/Machine Verification** (KE-093): Script-based state checks, not agent-generated descriptions. Eliminates the cognitive pipeline entirely.
 
