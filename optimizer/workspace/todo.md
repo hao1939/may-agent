@@ -11,7 +11,6 @@
 
 ## 🔴 ACTIVE
 
-- **Tool quality regression #6** — 4 bash categories regressed (other +28%, exit-code-nonzero +22%, git-error +30%, cmd-not-found +100%). Investigation forked: s_1775701073883_323. 2026-04-09.
 - **Skip rate investigation** — Skip rate stable: 50w 12%, 200w 6.5%. Monitoring continues.
 - **LLM-to-JS candidates (next)** — Remaining targets by ops/week: common-sense-verify (680 ops/wk), common-sense-infra (165 ops/wk), reflect (208 ops/wk). All require LLM judgment — no easy mechanical conversions left.
 - **Cost/cache analysis** — $1,409/wk total, top 3 agents have 0% cache hit rate = $1,129/wk (80%). Escalated to May. See `workspace/finding-cost-cache-miss-0404.md`.
@@ -42,3 +41,4 @@
 
 Detailed findings in `workspace/finding-*.md` and `workspace/brief-*.md`.
 Tool quality regressions [1-5] all resolved — waste rate 0.07-2.4%, not actionable.
+Tool quality regression #6 (bash errors ×4 categories) — investigated 2026-04-09. 42/59 bash:other = classifier gap (gym ✓/✗ format). Rest = natural variance from 2 bob sessions. One fix proposed: add ✗ regex to test-failure classifier. See `workspace/finding-tool-quality-regression-6.md`.
