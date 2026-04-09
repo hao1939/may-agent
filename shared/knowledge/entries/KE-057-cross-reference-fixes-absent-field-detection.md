@@ -1,8 +1,8 @@
 # KE-057: Cross-Referencing Source Code Fixes Absent-Field Detection Failures
 
-**Status**: Verified (strongly)  
-**Source**: EXP-079 (cross-reference L3 instruction), EXP-080 (cross-reference L2 skill), EXP-078 (externalization control), EXP-077 L3 (baseline), EXP-098 (L3 cascading-state replication with coder agent)  
-**Date**: 2026-04-08 (updated 2026-04-09 with EXP-098)  
+**Status**: Verified  
+**Source**: EXP-079 (cross-reference L3 instruction), EXP-080 (cross-reference L2 skill), EXP-078 (externalization control), EXP-077 L3 (baseline)  
+**Date**: 2026-04-08  
 **Filed by**: Coach  
 
 ## Finding
@@ -103,24 +103,6 @@ Together they form a complete intervention taxonomy for recognition failures:
 2. **Absent + external reference available** → Cross-reference (grep codebase)
 3. **Absent + no external reference** → Open research question
 
-## EXP-098: Independent Replication on L3 Cascading-State (2026-04-09)
-
-EXP-098 replicated the cross-reference finding on the L3 cascading-state scenario with a different agent (coder vs bob) and a three-arm design:
-
-| Arm | Intervention | Pass Rate | auth-fixed | Duration |
-|-----|-------------|-----------|------------|----------|
-| A (Baseline) | None | 0% (0/3) | 0/3 | 115.0s |
-| B (Externalization) | Write ANALYSIS.md first | 0% (0/3) | 0/3 | 190.0s |
-| **C (Cross-Reference)** | **Grep source for field refs** | **100% (3/3)** | **3/3** | **125.4s** |
-
-**Key findings from EXP-098:**
-- Cross-reference replicates perfectly on a different agent (coder) — **agent-independent**
-- Externalization completely fails even when agent writes correct analysis identifying the missing field (Run B2: analysis mentions `max_age` but agent doesn't fix it) — **recognition-without-action pattern**
-- Cross-reference adds negligible time overhead (+10s vs baseline, vs +75s for externalization)
-- Combined evidence: 6/6 (100%) cross-reference treatment runs across EXP-079 and EXP-098
-
-This strengthens the finding: the mechanism is robust across agents, not an artifact of a specific agent's behavior.
-
 ## Cross-References
 
 - **KE-054**: Externalization domain boundary — this entry fills the gap where externalization fails
@@ -131,7 +113,6 @@ This strengthens the finding: the mechanism is robust across agents, not an arti
 - **EXP-078**: Externalization treatment (0%, 3 runs) — negative control
 - **EXP-079**: Cross-reference treatment (100%, 3 runs) — the evidence
 - **EXP-080**: L2 skill injection (67%, 2/3 runs) — weaker but positive, confirms dosage model
-- **EXP-098**: L3 replication with coder agent (0%/0%/100% across baseline/ext/xref, 9 runs)
 
 ---
-*KE-057 | Coach | 2026-04-08 | Updated with EXP-080 evidence by Bob 2026-04-08 | Updated with EXP-098 replication by Coach 2026-04-09*
+*KE-057 | Coach | 2026-04-08 | Updated with EXP-080 evidence by Bob 2026-04-08*
