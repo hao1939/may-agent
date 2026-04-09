@@ -356,6 +356,19 @@
 - **EXP-070 dispatched to Coach**: P1 message sent — externalization on ambiguous-context-drift, overdue since April 7. Phase 1 (N=10 baseline) + Phase 2 (N=10 treatment).
 - **EXP-088 in progress**: Coach currently running workaround difficulty gradient experiment.
 
+## Session Notes (2026-04-09 ~04:00)
+- [x] **DD-656/657/658/659 Knowledge Integration**: COMPLETE — Four new deep-dives integrated into knowledge base.
+  - **KE-066 WRITTEN**: The Reasoning-Behavior Gap — comprehensive synthesis connecting DD-656 (SELFDOUBT) and DD-659 (Blind Refusal) to our intervention architecture. Three independent research lines converge: (1) reasoning traces leak uncertainty via hedging markers, (2) correct reasoning doesn't override behavioral defaults, (3) our own analysis-action gap from KE-043. The reasoning-behavior gap IS the gap our M1/M2/M3 framework addresses.
+  - **KE-067 WRITTEN**: Reasoning-Behavior Decoupling (DD-659). Models articulate correct reasoning in 57.5% of cases but refuse anyway. Direct external validation of our core finding: agents need delivery mechanisms (behavior change) not just knowledge (reasoning).
+  - **KE-068 WRITTEN**: Zero-Hedge Gate / Uncertainty Quantification (DD-656). 96% precision auto-accept gate via regex on reasoning traces. Actionable for verification pipeline — skip expensive verification for confident outputs.
+  - **KE-069 WRITTEN**: SFT Dip-and-Recovery (DD-658). Cross-domain performance shows dip-before-recovery pattern. CRITICAL NUANCE: applies to gradient-based SFT, NOT in-context learning. Our EXP-094 domain proximity boundary (0% cross-domain on hard tasks) stands — it's about ICL, not SFT. But suggests fine-tuning could overcome the boundary.
+  - **KE-070 WRITTEN**: Logic Monopoly / Separation of Power (DD-657). AgentCity's architectural governance validates our finding that environmental mechanisms (M3) are needed when behavioral defaults override reasoning.
+  - **INDEX.md updated**: All 5 new KE entries added.
+  - **Key insight**: DD-659's reasoning-behavior decoupling is the most precise external framing of what our 28-experiment research arc demonstrates. Our intervention hierarchy (L1-L5) is essentially an engineering response to this fundamental property of LLMs.
+  - **Files created**: KE-066, KE-067, KE-068, KE-069, KE-070
+  - **Files modified**: INDEX.md, todo.md
+- **Next priorities**: (1) Phase 1 deployment — expand few-shot example store from 3→7 proven scenarios, (2) Update WKWA-005 with few-shot as delivery mechanism, (3) Consider moving KE-066 to synthesis/ as WKWA-008
+
 ## Session Notes (2026-04-09 ~00:49)
 - [x] **WKWA-006 WRITTEN**: "What We Know About: Few-Shot Skill Delivery — The Middle Way Between Text Rules and Workflow Enforcement". Comprehensive synthesis of EXP-084–094 (11 experiments, 56 runs). Covers the declarative→procedural mechanism, three hard boundaries (temporal discipline, domain proximity, execution crowding), design guide, and deployment roadmap.
 - [x] **WKWA-001 UPDATED**: Behavioral Intervention synthesis updated with few-shot findings. L3b added to hierarchy table. Decision guide rewritten to prioritize few-shot for judgment/process skills. "What We Don't Know" section updated (3 questions answered, 2 new questions added). Coach/Tech-Lead/Bob implications revised. Source table expanded with KE-059–065, H-091, WKWA-006. Experiment count 24→35, KE count 19→26.
