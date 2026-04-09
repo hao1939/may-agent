@@ -25,11 +25,11 @@ The gym graduation proposal was approved by Bob with M1-M5 modifications (all ap
 - **Cadence**: Monthly regression sweeps
 - **Docs**: design doc, authoring guide, baselines — all in `agents/coach/workspace/`
 
-### 3. Commit Guard 48h Measurement [DUE ~16:00 UTC]
-- **Baseline (2026-04-07T16:32Z)**: 62% auto-commits
-- **32h mark**: 29% overall (−33pp). Window 1: 17%, Window 2: 46% (regression)
-- **Action**: Measure at 48h, write final report
-- **Measurement command**: Count `chore(auto)` vs total commits in 48h window
+### 3. Commit Guard 48h Measurement [COMPLETE ✅]
+- **Baseline**: 58% agent-laziness auto-commits (72% raw)
+- **48h result**: 1.0% agent-laziness (−57pp), 5.5% corrected (−66.5pp)
+- **Report**: `agents/coach/workspace/commit-guard-48h-report.md`
+- **Key finding**: Guard is most successful behavioral intervention deployed. Agent commit volume 14→460 per 48h. Last 20h: 0% laziness auto-commits.
 
 ### 4. C2.3 Framework-Level Enforcement [BLOCKED]
 - All text/skill/gate approaches exhausted (EXP-020/055/055b/056). 0% across all interventions.
@@ -89,6 +89,7 @@ The gym graduation proposal was approved by Bob with M1-M5 modifications (all ap
 | KE-058 | Verified | 2026-04-09 (injected knowledge has no effect) |
 | KE-091 | Active | 2026-04-09 (CIVC alignment tax — forced verification harms high-complexity) |
 | KE-092 | Active | 2026-04-09 (HVR not predictive for agent sessions) |
+| KE-094 | Verified | 2026-04-09 (commit guard −57pp, structural enforcement) |
 
 ---
 
