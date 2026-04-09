@@ -1,0 +1,172 @@
+{
+  "totalSessions": 819,
+  "labeledSessions": 815,
+  "correctCount": 706,
+  "incorrectCount": 109,
+  "baseRate": 0.8662576687116564,
+  "zeroHedge": {
+    "count": 445,
+    "coverage": 0.5460122699386503,
+    "precision": 0.8898876404494382,
+    "ci95": {
+      "lower": 0.8573992231841666,
+      "upper": 0.915702022333183
+    }
+  },
+  "hasHedge": {
+    "count": 370,
+    "correctRate": 0.8378378378378378,
+    "ci95": {
+      "lower": 0.7968401100878951,
+      "upper": 0.871892315623957
+    }
+  },
+  "auroc": {
+    "hvr": 0.5855706006185514,
+    "hedgeRate": 0.5843685838293005,
+    "opCount": 0.5895405047171038,
+    "tokenCount": 0.43501962211191075
+  },
+  "agentStats": [
+    {
+      "agent": "bob",
+      "total": 211,
+      "labeled": 209,
+      "correctRate": "90.9",
+      "meanHvr": "0.135",
+      "medianHvr": "0.091",
+      "meanHedgeRate": "1.94",
+      "meanVerifyRate": "17.07",
+      "zeroHedgeCount": 85,
+      "zeroHedgePrecision": "94.1",
+      "zeroHedgeCoverage": "40.7",
+      "auroc": "0.6252",
+      "fm33Count": 11
+    },
+    {
+      "agent": "coach",
+      "total": 82,
+      "labeled": 81,
+      "correctRate": "86.4",
+      "meanHvr": "0.321",
+      "medianHvr": "0.236",
+      "meanHedgeRate": "3.15",
+      "meanVerifyRate": "11.71",
+      "zeroHedgeCount": 24,
+      "zeroHedgePrecision": "83.3",
+      "zeroHedgeCoverage": "29.6",
+      "auroc": "0.4929",
+      "fm33Count": 0
+    },
+    {
+      "agent": "coder",
+      "total": 205,
+      "labeled": 205,
+      "correctRate": "63.4",
+      "meanHvr": "0.197",
+      "medianHvr": "0.000",
+      "meanHedgeRate": "2.56",
+      "meanVerifyRate": "17.35",
+      "zeroHedgeCount": 119,
+      "zeroHedgePrecision": "68.1",
+      "zeroHedgeCoverage": "58.0",
+      "auroc": "0.5803",
+      "fm33Count": 1
+    },
+    {
+      "agent": "evaluator",
+      "total": 154,
+      "labeled": 154,
+      "correctRate": "100.0",
+      "meanHvr": "0.093",
+      "medianHvr": "0.000",
+      "meanHedgeRate": "1.07",
+      "meanVerifyRate": "6.89",
+      "zeroHedgeCount": 130,
+      "zeroHedgePrecision": "100.0",
+      "zeroHedgeCoverage": "84.4",
+      "auroc": "N/A",
+      "fm33Count": 0
+    },
+    {
+      "agent": "may",
+      "total": 43,
+      "labeled": 42,
+      "correctRate": "100.0",
+      "meanHvr": "0.135",
+      "medianHvr": "0.071",
+      "meanHedgeRate": "1.94",
+      "meanVerifyRate": "13.52",
+      "zeroHedgeCount": 13,
+      "zeroHedgePrecision": "100.0",
+      "zeroHedgeCoverage": "31.0",
+      "auroc": "N/A",
+      "fm33Count": 0
+    },
+    {
+      "agent": "optimizer",
+      "total": 22,
+      "labeled": 22,
+      "correctRate": "100.0",
+      "meanHvr": "0.069",
+      "medianHvr": "0.000",
+      "meanHedgeRate": "0.89",
+      "meanVerifyRate": "5.90",
+      "zeroHedgeCount": 15,
+      "zeroHedgePrecision": "100.0",
+      "zeroHedgeCoverage": "68.2",
+      "auroc": "N/A",
+      "fm33Count": 0
+    },
+    {
+      "agent": "qa",
+      "total": 1,
+      "labeled": 1,
+      "correctRate": "0.0",
+      "meanHvr": "0.000",
+      "medianHvr": "0.000",
+      "meanHedgeRate": "0.00",
+      "meanVerifyRate": "0.00",
+      "zeroHedgeCount": 1,
+      "zeroHedgePrecision": "0.0",
+      "zeroHedgeCoverage": "100.0",
+      "auroc": "N/A",
+      "fm33Count": 1
+    },
+    {
+      "agent": "scout",
+      "total": 39,
+      "labeled": 39,
+      "correctRate": "94.9",
+      "meanHvr": "0.176",
+      "medianHvr": "0.125",
+      "meanHedgeRate": "1.89",
+      "meanVerifyRate": "10.02",
+      "zeroHedgeCount": 16,
+      "zeroHedgePrecision": "93.8",
+      "zeroHedgeCoverage": "41.0",
+      "auroc": "0.3581",
+      "fm33Count": 0
+    },
+    {
+      "agent": "tech-lead",
+      "total": 62,
+      "labeled": 62,
+      "correctRate": "98.4",
+      "meanHvr": "0.134",
+      "medianHvr": "0.000",
+      "meanHedgeRate": "1.90",
+      "meanVerifyRate": "9.62",
+      "zeroHedgeCount": 42,
+      "zeroHedgePrecision": "100.0",
+      "zeroHedgeCoverage": "67.7",
+      "auroc": "0.7049",
+      "fm33Count": 0
+    }
+  ],
+  "fm33": {
+    "count": 13,
+    "meanHvr": 0.12246877054569363,
+    "cleanMeanHvr": 0.1451975933284005
+  }
+}
