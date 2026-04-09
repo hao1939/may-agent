@@ -1,36 +1,47 @@
-## Example: How to handle a "clean up everything" request
+# Skill: Classify-Then-Act
 
-In a previous project, the ops team asked an engineer to "remove all the unused stuff" from the `/opt/services/` directory to free disk space on a production server.
+**CRITICAL: Separate analysis from action. Never modify files before completing classification.**
 
-The engineer listed the contents first:
+## When to Apply
 
-```
-/opt/services/
-├── redis-dump.rdb          (48MB — Redis backup snapshot)
-├── nginx.conf              (2KB — active reverse-proxy config)
-├── .credentials.yaml       (1KB — service account keys for cloud APIs)
-├── tmp/                    (120MB — session temp files, rotated daily)
-│   ├── sess_a8f3e2.tmp
-│   ├── sess_bc9104.tmp
-│   └── sess_d4e617.tmp
-├── build-cache/            (95MB — CI build artifacts, fully reproducible)
-│   ├── layer-cache-01.tar
-│   └── layer-cache-02.tar
-└── access.log.old          (30MB — rotated log, already archived to S3)
-```
+Apply when a task involves **judgment before action**:
+- Ambiguous or conflicting instructions
+- Destructive or irreversible actions (deleting files, changing configs)
+- Multi-file changes where scope is unclear
+- Requests that might be misguided (user asks to delete files that may be critical)
 
-Before deleting anything, the engineer classified each item:
+**Skip when**: Task is unambiguous and low-risk ("add a log line to function X").
 
-- **SAFE to delete** (temporary/reproducible, no data loss):
-  - `tmp/` — session temp files, regenerated automatically
-  - `build-cache/` — CI artifacts, can be rebuilt
-  - `access.log.old` — already archived elsewhere
+## Protocol
 
-- **DESTRUCTIVE to delete** (irreversible data or config loss):
-  - `redis-dump.rdb` — last database backup, cannot be regenerated
-  - `nginx.conf` — active config, server won't route traffic without it
-  - `.credentials.yaml` — API keys, would require manual re-provisioning
+### Phase 1: CLASSIFY (NO modifications allowed)
+Before touching ANY source/config files:
+1. Read ALL relevant files and configuration
+2. Classify each item:
+   - **ACTIONABLE** — clearly needs change, change is unambiguous → fix in Phase 2
+   - **UNCERTAIN** — might need change, but ambiguous → report, do NOT change
+   - **SAFE** — no change needed → leave alone
+   - **BLOCKED** — needs change but depends on external input → report as blocked
+3. Write the classification (structured list) before any edit
 
-The engineer deleted ONLY the safe items (tmp/, build-cache/, access.log.old), freeing 245MB. They preserved the database backup, config, and credentials. They reported: "Freed 245MB. Kept redis-dump.rdb, nginx.conf, and .credentials.yaml — deleting those would cause an outage."
+**HARD RULE**: In Phase 1, you may only use `read`, `bash` (read-only: grep, cat, ls), and `write` (only to workspace). NO `edit()` on source files.
 
-When asked to delete files to free space, ALWAYS classify each file/directory as safe-to-delete or destructive-to-delete BEFORE removing anything. Delete only the safe ones.
+### Phase 2: ACT (only after classification is complete)
+1. Execute changes ONLY for ACTIONABLE items
+2. Read back each modified file to verify
+3. If new information invalidates classification → STOP and reclassify
+
+### When to STOP instead of ACT
+- The task is ambiguous — multiple valid interpretations exist
+- You'd be GUESSING rather than KNOWING
+- Items classified UNCERTAIN stay untouched — report what you found
+
+**Reporting uncertainty IS delivery. A complete report with honest uncertainty is better than a complete fix with hidden guesses.**
+
+## Anti-Patterns
+1. **Classification-in-Name-Only**: Writing "let me analyze..." then immediately editing. The classification MUST be a written artifact that exists BEFORE any edit calls.
+2. **Acting on UNCERTAIN items**: "It's probably this, so I'll fix it" — defeats the entire purpose.
+3. **Skipping for "obvious" fixes**: Classify ALL items before acting on ANY.
+
+## Full Reference
+See `agents/shared/skills/classify-then-act/SKILL.md` for complete protocol with examples.
