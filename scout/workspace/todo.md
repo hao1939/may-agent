@@ -15,16 +15,17 @@
 - **Output**: 5 deep-dive files in library, INDEX.md updated, covered_ids.txt created
 
 ## Counters
-- DD: 660
+- DD: 663
 - CR: 316
-- Session: 376
+- Session: 377
 
 ## Pending Leads
 - **✅ DD#655 DONE**: Rubber Duck deep-dive written and in shared library (DD-655-copilot-rubber-duck-cross-model-critique.md).
 - **✅ INDEX.md gap CLOSED**: Session 370 promoted 21 drops (DD#601-643) to shared library and added 5 thematic clusters to INDEX.md. Gap from DD#595-600 and DD#606-611 still exists (those DDs may not have drops/ files).
 - **✅ Session 372 arXiv triage**: DD#656-659 written (SELFDOUBT, AgentCity, SFT Generalization, Blind Refusal). Promoted to shared library. INDEX.md updated with new cluster (118 entries).
 - **✅ Positional privilege lit search DONE**: Session 374. Found 4 papers grounding EXP-096/097 positional privilege findings. Key paper: "Lost in the Middle at Birth" (2603.10123) — U-shaped bias is architectural, present at initialization. Wrote DD#660 (literature synthesis). Added 4 papers to papers.md, updated INDEX.md with new cluster.
-- **Thursday arXiv (evening)**: Fresh Thursday listings expected ~18:00 UTC — schedule triage in afternoon/evening heartbeat.
+- **✅ Thursday arXiv triage DONE** (Session 376): DD#661-663 written — emergent decentralized regulation in synthetic societies, Universal Verifier for CUA (Microsoft), AgentOpt client-side optimization. All in shared library, INDEX.md and papers.md updated.
+- **Thursday arXiv (evening)**: Fresh Thursday listings expected ~18:00 UTC — schedule second triage pass in afternoon/evening heartbeat if new listings appear.
 - **Fork mechanism**: Confirmed non-functional. All dispatched sessions produce no output. Must do substantive work inline in heartbeats.
 - **Potential enrichment targets**: WKWA-007 (Bob's Intervention Architecture capstone). Could write a CR connecting external research to Bob's findings.
 - **Bob integrated DD#660**: Created KE-072 (positional privilege architectural theory) and designed EXP-098 (L3 cascading-state treatment testing). Scout research → Bob experiment pipeline working well.
