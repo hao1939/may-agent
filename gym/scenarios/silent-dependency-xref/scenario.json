@@ -1,0 +1,11 @@
+{
+  "name": "silent-dependency-xref",
+  "description": "Cross-reference variant: Injects instruction to grep for all import/require statements to discover hidden dependencies before claiming the fix is complete.",
+  "categories": ["bug-fixing"],
+  "tags": ["ability", "xref", "wave-2"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false,
+  "injected_context": "injected_context.md"
+}

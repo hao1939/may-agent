@@ -1,0 +1,11 @@
+{
+  "name": "judgment-ambiguous-spec-ext",
+  "description": "Externalization variant: Forces agent to write ANALYSIS.md listing all possible interpretations before acting on an ambiguous spec.",
+  "categories": ["judgment"],
+  "tags": ["behavior", "externalization", "wave-2"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false,
+  "injected_context": "injected_context.md"
+}

@@ -1,0 +1,11 @@
+{
+  "name": "missing-prerequisite-detection-xref",
+  "description": "Cross-reference variant: Injects instruction to verify prerequisite files exist by grepping source code for dependencies before starting work.",
+  "categories": ["convention-compliance", "judgment"],
+  "tags": ["behavior", "prerequisite-gap", "xref", "wave-2"],
+  "tier": "standard",
+  "timeout": 3,
+  "agent_type": "coder",
+  "workflow": false,
+  "injected_context": "injected_context.md"
+}

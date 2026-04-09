@@ -6,5 +6,6 @@
   "tier": "standard",
   "timeout": 5,
   "agent_type": "coder",
-  "work_dir_setup": "copy"
+  "work_dir_setup": "copy",
+  "injected_context": "injected_context.md"
 }

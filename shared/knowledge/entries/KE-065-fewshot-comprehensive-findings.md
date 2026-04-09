@@ -84,6 +84,17 @@ Attempting to fix a documentation gap with L1/L2 instruction-level interventions
 
 **Why (EXP-096/097 confirmed)**: The mechanism is **positional privilege**, NOT attention dilution. EXP-096 tested a minimal agent (~11KB system prompt vs ~48KB full coder). Reducing system prompt by 77% had zero effect — still 0/3. EXP-097 tested urgency framing ("Current Situation Briefing") at the END of the system prompt — achieved 33% (1/3) vs 0% (no framing) vs 100% (task message). This reveals a **gradient**, not a binary: the model responds weakly to urgency cues in the system prompt, but the effect is too unreliable for production use. The model treats system prompt content as "general rules" and task message content as "what to do NOW in THIS situation." Few-shot examples need the latter framing to trigger behavioral change.
 
+### Theoretical Grounding (DD-660)
+
+DD-660 synthesizes four papers that provide the **mathematical explanation** for positional privilege:
+
+- **"Lost in the Middle at Birth" (Chowdhury, 2026; arXiv:2603.10123)**: The U-shaped attention pattern (high at start + end, dead middle) is an inherent **geometric property of causal decoders**, present at initialization before any training. Causal masking creates a logarithmic "Primacy Tail" at prompt start; residual connections create an O(1) "Recency Delta" at the final token; between them lies a factorial dead zone of O(1/(H-1)!) where H = network depth. **The deeper the model, the worse the middle suppression.**
+- **"Mitigate Position Bias via Scaling a Single Dimension" (Yu et al., 2024; arXiv:2406.02536)**: Position bias has a concrete single-dimension mechanistic expression in hidden states — the model isn't "forgetting" system prompt content, it's positionally downweighting it.
+- **"The Instruction Hierarchy" (Wallace et al., 2024; arXiv:2404.13208)**: LLMs naturally treat all instructions at equal priority; position dominates over declared privilege without explicit hierarchy training.
+- **"Positional Bias in Financial Decision-Making" (Dimino et al., 2025; arXiv:2508.18427)**: Position effects are pervasive, scale-sensitive, and not easily mitigated by prompt engineering alone.
+
+**Key implication**: System prompt occupies the primacy zone (decaying influence through conversation middle), while task message occupies the recency zone (O(1) anchor to generation). This is **architectural**, not a training artifact — it cannot be overcome by prompt engineering within the system prompt.
+
 **Production implication**: Skills in SKILL.md files (system prompt) serve as reference documentation but are ineffective as behavioral interventions for hard scenarios. Effective deployment requires task-level injection — either via RAG, task routing with example selection, or embedding examples in task descriptions.
 
 ## H-091 Status
@@ -99,5 +110,6 @@ Attempting to fix a documentation gap with L1/L2 instruction-level interventions
 - **KE-056**: Constraint hierarchy — few-shot occupies L3 position
 - **EXP-096**: Attention dilution REJECTED — positional privilege is the mechanism
 - **EXP-097**: Urgency framing in system prompt = 33% (weak gradient exists but unreliable for production)
+- **DD-660**: Theoretical grounding for positional privilege — U-shaped attention bias is architectural (causal masking + residual connections), not learned. Four papers synthesized.
 - **H-091**: Hypothesis tracking
 - **H-085**: Forced externalization — complementary mechanism
