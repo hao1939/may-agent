@@ -428,3 +428,9 @@
 6. DD#657 → DD#593 + DD#503 (constitutional governance complements SVAF mesh protocol and governed memory — governance at system, protocol, and memory levels)
 7. DD#658 → KE-065 (SFT dip-recovery directly reframes few-shot skill conversion findings — what looks like failure may be a phase transition)
 8. DD#659 → DD#631 + EXP-096 (reasoning-behavior decoupling confirms need for task-decoupled safety reasoning and connects to positional privilege findings)
+
+**Positional privilege: theoretical grounding for EXP-096/097** ★★★★★ CRITICAL — NEW (2026-04-09)
+1. [dd660](DD-660-positional-privilege-theory-lost-in-the-middle-at-birth.md) — ★★★★★ CRITICAL: Literature synthesis connecting "Lost in the Middle at Birth" (2603.10123) and 3 other papers to our EXP-096/097 experimental findings. U-shaped attention bias is an inherent geometric property of causal decoders — system prompt in primacy zone (decaying), task message in recency zone (O(1) anchor). Explains why task-message few-shot gets 100% compliance vs 0-33% for system prompt.
+2. DD#660 → EXP-096 + EXP-097 (provides theoretical explanation for positional privilege: causal masking + residual connections create architectural position bias)
+3. DD#660 → DD on 2603.10521 (IH-Challenge instruction hierarchy training is the complementary approach — training to overcome architectural position bias)
+4. DD#660 → DD#658 + DD#659 (SFT generalization and reasoning-behavior decoupling intersect — position affects whether reasoning translates to behavior)
