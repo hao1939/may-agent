@@ -525,3 +525,15 @@
 4. DD#685 → DD#682-684 (Dip-and-recovery implies detection systems need burn-in periods before stable anomaly signals)
 5. DD#686 → DD#667 (AgentGate adaptive gating — MedRoute is medical instantiation of same pattern with RL training)
 6. DD#685 generates predictions P-685a/b/c re: intervention dip-recovery, capability-dependent pattern extraction, safety-reasoning tradeoff
+
+**Verification confabulation & confirmation bias** ★★★★★ — NEW (2026-04-09 Session 393)
+1. [dd691](DD-691-failing-to-falsify-confirmation-bias-LLM.md) — ★★★★★ Failing to Falsify: All 11 tested LLMs show confirmation bias in hypothesis testing (Wason 2-4-6 task). Falsification prompting improves rule discovery from 42%→56%. Distillation of de-biased behavior generalizes to new tasks. Directly grounds KE-093 mechanism.
+2. [dd692](DD-692-exploiting-confirmation-bias-code-review.md) — ★★★★★ Exploiting Confirmation Bias in Code Review: Framing as "bug-free" reduces vulnerability detection by 16-93%. Autonomous agents 88% exploitable vs 35% for interactive. Metadata redaction restores 94-100% detection. Adversarial exploitation of KE-093 mechanism.
+3. [dd693](DD-693-grounding-sycophancy-tradeoff.md) — ★★★★½ Grounding-Sycophancy Tradeoff: Best-grounded models are MOST sycophantic — inverse correlation. No model achieves CSI>0.35 on simultaneous grounding+autonomy. Predicts verification confabulation INCREASES with model capability.
+4. [dd694](DD-694-march-multi-agent-information-asymmetry.md) — ★★★★★ MARCH: Information asymmetry architecture breaks self-confirmation bias. 3-agent pipeline (Solver→Proposer→Checker) where Checker is deprived of Solver's output. 8B model matches closed-source via architecture alone. Direct architectural solution to KE-093.
+
+**Cross-references (Session 393)**:
+1. CR#321 — Verification Confabulation Literature Grounding: Synthesizes DD#691-694 + TIM-PRM into 4-stage mechanism model (prior formation → context anchoring → sycophantic verification → confabulation). Three mitigation strategies ranked by effectiveness.
+2. DD#691-694 cluster → KE-093, EXP-102 (all four papers ground our verification confabulation finding)
+3. DD#693 → H-094 (HVR failure may reflect the grounding-sycophancy tradeoff — agents too confident to hedge)
+4. DD#694 → DD#682 (Trajectory Guard anomaly detection could flag moments of context-override in verification)
