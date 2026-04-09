@@ -1,7 +1,7 @@
 # KE-065: Few-Shot Skill Conversion — Comprehensive Findings
 
 **Status**: Verified
-**Source**: EXP-090, EXP-091, EXP-092, EXP-093, EXP-094, EXP-095, EXP-096
+**Source**: EXP-090, EXP-091, EXP-092, EXP-093, EXP-094, EXP-095, EXP-096, EXP-097
 **Date**: 2026-04-09
 **Confidence**: High (N=18 matched treatment runs: 18/18 = 100% on target checks; N=10 per arm on EXP-092; N=5+5 on EXP-093)
 
@@ -65,7 +65,7 @@ Attempting to fix a documentation gap with L1/L2 instruction-level interventions
    - The reasoning process, not just the outcome
    - The key decision point where the wrong choice is tempting
 4. **Match the domain class** of the target scenario. A credentials example won't fix a binary-file task.
-5. **Deliver via task-level message**, not embedded in SKILL.md text. EXP-095 showed system-prompt delivery = 0% (even with domain-matched binary examples in know-when-blocked v2.0), while task-message delivery = 100% regardless of mechanism (injected_context.md prefix or inline in task.md body). The position effect is absolute: across 21 runs (EXP-094+095+096), task-message = 12/12 (100%), system-prompt = 0/9 (0%). EXP-096 confirmed the mechanism is **positional privilege** (categorical system vs task), not attention dilution (prompt length).
+5. **Deliver via task-level message**, not embedded in SKILL.md text. EXP-095 showed system-prompt delivery = 0% (even with domain-matched binary examples in know-when-blocked v2.0), while task-message delivery = 100% regardless of mechanism (injected_context.md prefix or inline in task.md body). Across 24 runs (EXP-094+095+096+097), task-message = 15/15 (100%), system-prompt = 1/12 (8%). EXP-096 confirmed the mechanism is **positional privilege** (categorical system vs task), not attention dilution (prompt length). EXP-097 showed urgency framing in system prompt achieves 33% — a weak gradient exists, but task-message delivery is the only reliable mechanism.
 6. **For multi-domain skills**, include one worked example per domain class.
 7. **Don't add compensating instructions** to fix gaps — they create task narrowing (EXP-092). Fix gaps structurally.
 
@@ -82,7 +82,7 @@ Attempting to fix a documentation gap with L1/L2 instruction-level interventions
 
 **The position effect is binary**: System prompt = 0%, task message = 100%, across all content variations tested. Improving content quality (v1.0 → v2.0 with binary-specific examples, three-call rule, anti-patterns) had zero impact when delivered via system prompt.
 
-**Why (EXP-096 confirmed)**: The mechanism is **positional privilege**, NOT attention dilution. EXP-096 tested a minimal agent (~11KB system prompt vs ~48KB full coder). Reducing system prompt by 77% had zero effect — still 0/3. The model treats system prompt content as "general rules" and task message content as "what to do NOW in THIS situation." Few-shot examples need the latter framing to trigger behavioral change.
+**Why (EXP-096/097 confirmed)**: The mechanism is **positional privilege**, NOT attention dilution. EXP-096 tested a minimal agent (~11KB system prompt vs ~48KB full coder). Reducing system prompt by 77% had zero effect — still 0/3. EXP-097 tested urgency framing ("Current Situation Briefing") at the END of the system prompt — achieved 33% (1/3) vs 0% (no framing) vs 100% (task message). This reveals a **gradient**, not a binary: the model responds weakly to urgency cues in the system prompt, but the effect is too unreliable for production use. The model treats system prompt content as "general rules" and task message content as "what to do NOW in THIS situation." Few-shot examples need the latter framing to trigger behavioral change.
 
 **Production implication**: Skills in SKILL.md files (system prompt) serve as reference documentation but are ineffective as behavioral interventions for hard scenarios. Effective deployment requires task-level injection — either via RAG, task routing with example selection, or embedding examples in task descriptions.
 
@@ -98,5 +98,6 @@ Attempting to fix a documentation gap with L1/L2 instruction-level interventions
 - **KE-054**: Externalization boundary — judgment vs debugging
 - **KE-056**: Constraint hierarchy — few-shot occupies L3 position
 - **EXP-096**: Attention dilution REJECTED — positional privilege is the mechanism
+- **EXP-097**: Urgency framing in system prompt = 33% (weak gradient exists but unreliable for production)
 - **H-091**: Hypothesis tracking
 - **H-085**: Forced externalization — complementary mechanism

@@ -289,6 +289,21 @@
   - Kept generalized skill deployed (strictly better trigger scope, no worse metrics)
   - Report: `agents/shared/knowledge/experiments/EXP-095/results.md`
 
+### Done This Session (Sprint 32 — 2026-04-09)
+- [x] **EXP-096: System Prompt Length Threshold** — Attention dilution REJECTED
+  - Arm A (full 48KB): 0/3. Arm B (minimal 11KB): 0/3. Arm C (11KB + task few-shot): 3/3.
+  - **Positional privilege confirmed**: It's WHERE, not HOW MUCH surrounding context
+  - Report: `agents/shared/knowledge/experiments/EXP-096/results.md`
+- [x] **EXP-097: Simulated Positional Privilege** — Urgency framing partially works but unreliable
+  - Arm A (task message): 3/3 (100%). Arm B (system prompt + "Current Situation Briefing"): 1/3 (33%).
+  - Gradient exists (0% → 33% → 100%) but task-message delivery is the only reliable mechanism
+  - Report: `agents/shared/knowledge/experiments/EXP-097/results.md`
+- [x] **Few-Shot Research Thread COMPLETE** (EXP-084 through EXP-097)
+  - 14 experiments, 100+ gym runs. Key finding: domain-matched few-shot via task-message = 100%
+  - Proposal written: `agents/coach/workspace/proposal-fewshot-production-deployment.md`
+  - KE-065 updated with EXP-097 findings (gradient model replaces binary model)
+- [x] **Forked: Few-Shot Example Store** — Extracting 3 Phase 1 examples for production deployment
+
 ### Next (Priority Order)
 0. ~~**🔴 IT-46: KE-002 Reexamination Experiment**~~ ✅ COMPLETE (EXP-081 + EXP-084)
    - EXP-081: 0/12 pass across all 4 text rule categories → KE-002 confirmed for declarative rules
