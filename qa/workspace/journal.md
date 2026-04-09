@@ -40,6 +40,33 @@ PASS
 
 # QA Journal — 2026-04-09
 
+## 2026-04-09T12:56Z
+
+### Summary
+Proactive scan of recent unreviewed changes and mandatory gates at HEAD **d7e6b4f**. Type-check passes, but **vitest fails** due to (1) missing `src/app/launcher.ts`, (2) permission issues cleaning `/app/test-workspace/*` in context-learning tests, and (3) a research-db integration test timing out.
+
+### Files reviewed
+- `test/gym/gym-runner.ts` (partial; cpSync recursive handling added for directory artifacts)
+
+### Mandatory gates
+- `./node_modules/.bin/tsc --noEmit`: PASS (no output)
+- `./node_modules/.bin/vitest --run`: FAIL — 141 files; 2100 tests; **21 failed**
+  - `test/launcher.test.ts`: 7 failed — expects `/app/src/app/launcher.ts` but file missing
+  - `test/context-learn.test.ts`: 7 failed — EACCES rmdir `/app/test-workspace/context-learn-test/test-agent`
+  - `test/context-learning.test.ts`: 6 failed — EACCES rmdir `/app/test-workspace/context-learning-test/.state`
+  - `test/research-db.test.ts`: 1 failed — timeout 5000ms syncing real knowledge base
+
+### Notes / suspected root causes
+- `/app/test-workspace/context-learn-test/*` is owned by `nobody:nogroup`, so rmSync from tests fails under current user.
+- Launcher tests appear out of sync with repo structure (expects new module `src/app/launcher.ts` that is absent).
+
+### Verdict
+CONDITIONAL (environment/test-suite issues need resolution before CI green)
+
+---
+
+# QA Journal — 2026-04-09
+
 ## 2026-04-09T05:25Z
 
 ## 2026-04-09T12:26Z
