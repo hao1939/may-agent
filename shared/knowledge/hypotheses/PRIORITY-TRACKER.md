@@ -1,6 +1,6 @@
 # Hypothesis Priority Tracker
 
-**Updated**: 2026-04-09 (Bob: EXP-104 COMPLETE — CONFOUNDED BY SKILL DEPLOYMENT. Evidence-over-narrative skill eliminated confabulation pre-experiment (baseline 100% vs expected 11-25%). KE-102 (skill-level fix), KE-103 (context-stripping paradox) filed. H-093 P(H) unchanged at 0.70. Previously: H-094 P(H) corrected 0.50→0.35 per EXP-101 Phase 2 full analysis. EXP-101 COMPLETE — WEAK SIGNAL for H-094. DD-676/677/678 integrated → KE-089 synthesized.) | **Active hypotheses**: 21 | **Tested**: 20/21 | **Resolution ratio**: 13 resolved  
+**Updated**: 2026-04-09 (Bob: KE-098 updated with EXP-104 results — predictions P-098a/e partially disconfirmed by skill deployment confound. Skill > Architecture hierarchy confirmed. Previously: EXP-104 COMPLETE — CONFOUNDED BY SKILL DEPLOYMENT. KE-102 (skill-level fix), KE-103 (context-stripping paradox) filed. H-093 P(H) unchanged at 0.70.) | **Active hypotheses**: 21 | **Tested**: 20/21 | **Resolution ratio**: 13 resolved  
 **Bayesian scorecard**: See `SCORECARD-bayesian-2026-04-04.md` for full methodology
 
 > ✅ **MORATORIUM SATISFIED** (2026-04-07): 11 hypotheses resolved this session (H-001 disconfirmed, H-002 superseded, H-034/H-038/H-039/H-052 reclassified as design notes/truisms, H-046/H-048/H-051 archived for insufficient evidence/chain dependencies, H-064/H-065 already merged/out-of-domain). New hypotheses may now be created, subject to quality standards (falsifiable, P(H) prior ≥ 0.40, connected to empirical evidence).
