@@ -72,5 +72,12 @@ Interventional study comparing verification collapse rates under three condition
 ### Critical Nuance from DD#671
 Scaffolding CAN itself trigger verification collapse if it adds too much structural overhead (the "alignment tax"). EXP-100 design should use **lightweight** verification checkpoints, NOT complex structured templates.
 
+### Detection Stack Evidence (DD#674, DD#675)
+- **DD#674 (2604.06277)**: Hidden-state probing detects hallucination from transformer internal representations with sub-ms latency. Fills the mid-generation detection gap in the cascade defense stack. Cross-layer probes achieve best results, consistent with DD#665's finding that failure modes are layer-specific (shallow lock-in vs. deep decay).
+- **DD#675 (2604.06873)**: Local Shields — global safety specs compiled into per-agent local action filters. Formal methods approach (Dec-POMDPs). Limited direct applicability to LLM agents but the global-to-local compilation principle informs KE-083/KE-084 safety architecture.
+
+### Connected Hypothesis: H-094 (Hedge-to-Verify Ratio)
+H-094 proposes HVR as zero-cost confidence gate. If validated, reduces verification overhead by 60-70% by auto-accepting high-confidence outputs. This transforms the cascade defense stack from always-on to event-triggered. See: SYNTHESIS-cascade-dynamics-verification-defense-stack.md.
+
 ### Updated P(H): 0.65 → 0.75
-Strong external mechanistic validation (DD#671), peer-reviewed intervention evidence (DD#673), and consistent architectural support (DD#672, DD#670). No contradictory evidence found.
+Strong external mechanistic validation (DD#671), peer-reviewed intervention evidence (DD#673), and consistent architectural support (DD#672, DD#670). DD#674/675 add detection/prevention mechanisms. No contradictory evidence found. Nine independent papers now support various aspects of CIVC.

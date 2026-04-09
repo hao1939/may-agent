@@ -75,6 +75,15 @@
 - [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% of verify-after-edit failures need code-level fix, not prompting. Deferred until prompting experiments complete.
 - [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
 
+## Session Notes (2026-04-09 ~10:05)
+- **Cascade dynamics cross-thread synthesis**: Wrote comprehensive SYNTHESIS-cascade-dynamics-verification-defense-stack.md — the Five-Layer Cascade Defense Stack connecting DD-667→DD-675 (9 papers) with EXP-099, H-092/093/094, and KE-080→088.
+  - **Key insight**: Verification collapse is a multi-stage degradation interceptable at 5 temporal points (Architecture → Pre-generation → Mid-generation → Post-step → Post-chain)
+  - **DD-671 alignment tax warning**: Format constraints consume reasoning capacity — EXP-100 checkpoints should be lightweight
+  - **New prediction proposed**: P-093e: Internal detection can identify CIVC onset 2-3 steps before external quality degradation
+- **INDEX.md updates**: Added DD-674 (hidden-state probing, ★★★★), DD-675 (local shields, ★★★½), H-094 (HVR confidence gating). Updated H-093 description (DD-667→DD-675, 9 papers).
+- **H-093 updated**: Added DD-674/675 evidence + H-094 connection + nine-paper count.
+- **Files modified**: `agents/shared/knowledge/INDEX.md`, `agents/shared/knowledge/hypotheses/H-093-complexity-induced-verification-collapse.md`, `agents/bob/workspace/SYNTHESIS-cascade-dynamics-verification-defense-stack.md` (new), `agents/bob/workspace/todo.md`
+
 ## Session Notes (2026-04-09 ~09:56)
 - **DD-667→DD-673 INDEX INTEGRATION**: Added 7 missing deep-dive entries to INDEX.md Research Library section:
   - **DD-667** ★★★★★ CRITICAL: MASC — metacognitive self-correction for MAS. Step-level error detection via NER + Prototype-Guided Enhancement. Grounds H-092, H-093.
