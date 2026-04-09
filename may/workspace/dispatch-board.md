@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~07:06 UTC
+Updated: 2026-04-09 ~07:17 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
@@ -86,6 +86,7 @@ Updated: 2026-04-09 ~07:06 UTC
 | **Few-Shot Phase 1 Build** | ✅ COMPLETE | tech-lead | `fewshot-inject.ts` (140 lines) + `implement-and-verify.ts` integration + `GYM_NO_FEWSHOT` bypass. 22/22 tests pass (`test/fewshot-inject.test.ts`). Commits: `2dcea699` (tests) + `1f5e7bb3` (agents integration). **On review branch, needs merge to master.** |
 | **Bob Workspace Gitignore Fix** | ✅ COMPLETE | may | Added to `agents/bob/context.md`: workspace is gitignored, use shared/knowledge for committed deliverables. Resolves coach reqs 7da65082 + fe1cb6b9. |
 | **Compaction KeyFacts + MemLeak Fix** | ✅ COMPLETE | tech-lead | Commit 0349a21 on `review/compaction-keyfacts-and-memleak`. Enhanced compaction KeyFacts + fixed sessionResults memory leak. **Awaiting merge to main.** |
+| **Few-Shot Production Pipeline Design** | ✅ COMPLETE | bob | 357-line design brief at `agents/shared/may-agent-docs/design/fewshot-production-pipeline.md`. Evidence from 12 experiments. Phase 1 (static) + Phase 2 (dynamic) architecture. Ready for tech-lead. |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -117,15 +118,18 @@ Updated: 2026-04-09 ~07:06 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (07:06)
-- **✅ Few-Shot Phase 1 BUILT AND VERIFIED** — `fewshot-inject.ts` with static keyword router (5 patterns), integrated into `implement-and-verify.ts` workflow, `GYM_NO_FEWSHOT` bypass. **22/22 tests pass.** On review branch, needs merge to master.
-- **✅ Bob workspace gitignore fix** — Added persistent context to Bob's context.md: workspace is gitignored, commit-worthy deliverables go to shared/knowledge or may-agent-docs. Resolves recurring evaluation failures.
-- **Review branches pending merge**: `review/s_1775702934728_338` has fewshot tests + finish-guard fixes. Tech-lead should merge.
+## Latest Cycle Summary (07:17)
+- **✅ Bob completed Few-Shot Production Pipeline design brief** — 357-line design at `agents/shared/may-agent-docs/design/fewshot-production-pipeline.md`. Evidence-backed (12 experiments), Phase 1 static routing, Phase 2 dynamic. Ready for tech-lead implementation.
+- **✅ Few-Shot Phase 1 code BUILT** — `fewshot-inject.ts` with static keyword router (5 patterns), integrated into `implement-and-verify.ts` workflow, `GYM_NO_FEWSHOT` bypass. **22/22 tests pass.** On review branch, needs merge to master.
+- **Review branch still pending merge**: `review/s_1775702934728_338` — 6 commits ahead of master (fewshot tests + finish-guard fixes + gym isolation). Tech-lead has this in their heartbeat cycle.
+- **9 orphaned EXP-098 coder requests** — 146 min old, CREATED status. Experiment already complete (✅). These are stale fork requests that never started.
+- **2 duplicate coach→tech-lead messages** (e8194009, 787baa44) — Both for few-shot pipeline implementation. Coach sent twice.
 - **Zero errors** — All 7 running agents healthy.
 
 ## Next Actions
-- **P0**: **Merge review branch to master** — `review/s_1775702934728_338` has fewshot tests + finish-guard fixes (5 commits ahead). Tech-lead to merge.
+- **P0**: **Merge review branch to master** — `review/s_1775702934728_338` has 6 commits (fewshot tests + finish-guard fixes + gym isolation). Tech-lead to merge.
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao**.
+- **P1**: **Few-shot pipeline Phase 1 implementation** — Design brief done (Bob). Tech review done. Code on branch. Merge → then validate end-to-end in production.
 - **P1**: **Gym maintenance mode transition** — Bob/Coach to coordinate. No more exploratory experiments. Gym becomes regression suite only.
 - **P1**: **Auto-pause recovery implementation** — Design complete. Queue for tech-lead after merges done.
 - **P1**: **Present research sprint results to Hao** — H-091, 17+ experiments, gym graduation, EXP-098 landmark result.
