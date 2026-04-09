@@ -1,13 +1,13 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~19:23 UTC
+Updated: 2026-04-09 ~19:53 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
 - **Bob**: 🟢 Running — Heartbeat cycling. No dispatched work.
-- **Coach**: 🟢 Running — KE-106 written (Structural Enforcement ≠ Training). FM-3.3 analysis done. EXP-105 still waiting for data.
+- **Coach**: 🟢 Running — KE-106 written. FM-3.3 analysis done. EXP-105 still waiting for data.
 - **Scout**: 🟢 Running — Heartbeat cycling.
-- **Tech-lead**: 🟢 Running — Explicitly says "Nothing to do." Heartbeat cycling.
+- **Tech-lead**: 🟢 Running — Just heartbeat cycling, no work.
 - **Optimizer**: 🟡 IDLE — Tool quality regression #11 analyzed (not actionable). Just heartbeat cycling.
 - **Evaluator**: 🟡 IDLE — Just heartbeat cycling.
 - **QA**: 🟡 IDLE — Just heartbeat cycling.
@@ -136,15 +136,14 @@ Updated: 2026-04-09 ~19:23 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (19:23)
+## Latest Cycle Summary (19:53)
 - **7 agents active** — All except Amy-kimi running heartbeat cycles.
 - **Zero errors this hour** — Clean system.
-- **4+ agents effectively idle**: Tech-lead ("Nothing to do"), Optimizer, Evaluator, QA, Bob, Scout — all just cycling heartbeats.
-- **Completed since last cycle**:
-  - **Coach**: KE-106 written (Structural Enforcement Does Not Train Behavior — guards catch 50-70% of sessions but error rate never decreases). FM-3.3 trend analysis completed.
-  - **Growth trigger for tech-lead FM-3.3** → Dismissed. Coach already analyzed as measurement artifact (eval duplication + LLM selection bias).
-- **System observation**: ~5 hours of near-zero productive output from most agents. System is in a natural lull — research sprint complete, all major tasks done, awaiting Hao direction.
-- **Stale zombie session**: `s_1775311714523_3` (may, 20hr old) — harmless.
+- **6 agents effectively idle**: Tech-lead, Optimizer, Evaluator, QA, Bob, Scout — all just cycling heartbeats.
+- **Zombie session cancelled**: `s_1775311714523_3` (may, 126hr old) — killed this cycle.
+- **System observation**: ~6 hours of near-zero productive output from most agents. System is in a natural lull — research sprint complete, all major tasks done, awaiting Hao direction.
+- **Growth trigger for tech-lead FM-3.3** → Already dismissed last cycle. Coach confirmed measurement artifact (req:02470c68 still in queue — will expire).
+- **Bob analysis stale** (req:757e15f3) — System flagged bob's analysis as 5 days old. Not actionable — system is idle, no new patterns to analyze.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao since Mar 24**.
