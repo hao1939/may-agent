@@ -8,16 +8,18 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Mock the requests module to provide a fake DB
-const mockRows: { status: string }[] = [];
+const mockRows: { status: string; startedAt?: number; task?: string }[] = [];
 vi.mock("../src/lib/requests.js", () => ({
   getDb: vi.fn(() => ({
     prepare: vi.fn(() => ({
       all: vi.fn((_agent: string, _limit: number) => mockRows),
+      get: vi.fn(() => null), // No running probes by default
     })),
   })),
 }));
 
 import { isAgentAutoPaused, AUTO_PAUSE_THRESHOLD } from "../src/lib/auto-pause.js";
+import { getDb } from "../src/lib/requests.js";
 
 describe("isAgentAutoPaused", () => {
   beforeEach(() => {
@@ -35,7 +37,12 @@ describe("isAgentAutoPaused", () => {
   });
 
   it("returns true when last 3 sessions are all errors", () => {
-    mockRows.push({ status: "error" }, { status: "error" }, { status: "error" });
+    const now = Date.now();
+    mockRows.push(
+      { status: "error", startedAt: now - 1000 },
+      { status: "error", startedAt: now - 2000 },
+      { status: "error", startedAt: now - 3000 },
+    );
     expect(isAgentAutoPaused("/fake", "failing-agent")).toBe(true);
   });
 
@@ -69,13 +76,22 @@ describe("isAgentAutoPaused", () => {
   it("returns true with more than 3 errors (only checks last N)", () => {
     // The query limits to threshold, so even if there are more errors,
     // only the last 3 are checked
-    mockRows.push({ status: "error" }, { status: "error" }, { status: "error" });
+    const now = Date.now();
+    mockRows.push(
+      { status: "error", startedAt: now - 1000 },
+      { status: "error", startedAt: now - 2000 },
+      { status: "error", startedAt: now - 3000 },
+    );
     expect(isAgentAutoPaused("/fake", "very-broken-agent")).toBe(true);
   });
 
   it("supports custom threshold", () => {
     // With threshold=2, only 2 errors needed
-    mockRows.push({ status: "error" }, { status: "error" });
+    const now = Date.now();
+    mockRows.push(
+      { status: "error", startedAt: now - 1000 },
+      { status: "error", startedAt: now - 2000 },
+    );
     expect(isAgentAutoPaused("/fake", "custom-agent", 2)).toBe(true);
   });
 
@@ -88,11 +104,9 @@ describe("isAgentAutoPaused", () => {
     expect(AUTO_PAUSE_THRESHOLD).toBe(3);
   });
 
-  it("returns false when DB throws (fail-open)", async () => {
-    // Override mock to throw by using vi.mocked on the imported module
-    const requestsMod = await import("../src/lib/requests.js");
-    const mockedGetDb = vi.mocked(requestsMod.getDb);
-    mockedGetDb.mockImplementationOnce(() => {
+  it("returns false when DB throws (fail-open)", () => {
+    // Override mock to throw for one call
+    (getDb as ReturnType<typeof vi.fn>).mockImplementationOnce(() => {
       throw new Error("DB unavailable");
     });
     expect(isAgentAutoPaused("/fake", "any-agent")).toBe(false);
