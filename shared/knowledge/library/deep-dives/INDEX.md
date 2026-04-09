@@ -517,3 +517,11 @@
 8. DD#682 + DD#683 + DD#684 + DD#668 = 4-layer stack: Evaluation (APB) → Diagnosis (ErrorTaxonomy) → Detection (TrajGuard) → Intervention (SWE-PRM). First time all layers exist simultaneously.
 9. Also catalogued but not deep-dived: 2604.00594 (Agent Psychometrics — IRT decomposition of LLM + scaffold ability), 2602.13320 (Martingale Analysis — O(√T) error bounds, re-ground every ~9 steps, AAMAS 2026)
 10. Cross-reference: [CR-320](../../cross-references/CR-320-behavioral-failure-prediction-synthesis.md) — Full synthesis connecting all papers to Sprint S12 open question #1 (high-complexity verification failures)
+
+**Training dynamics & agent orchestration** ★★★★ — NEW (2026-04-09 Session 391)
+1. [dd685](dd685-reasoning-sft-conditional-generalization.md) — ★★★★ Reasoning SFT Generalization: Challenges "SFT memorizes, RL generalizes" narrative. Dip-and-recovery pattern — short-training checkpoints systematically underestimate SFT generalization. Generalization is conditional on optimization dynamics, data quality, and base-model capability. Stronger models internalize transferable procedural patterns (backtracking); weaker ones imitate surface verbosity. Asymmetric: reasoning improves while safety degrades. Key implication for intervention design: don't abandon interventions at first-dip.
+2. [dd686](dd686-medroute-rl-specialist-routing.md) — ★★★½ MedRoute: RL-based dynamic specialist routing in multi-agent diagnosis. GP + RL Router + Specialists + Moderator architecture mirrors clinical workflow. RL router outperforms static/rule-based specialist selection. Relevant to agent orchestration — dynamic routing based on input characteristics rather than fixed task-type mapping.
+3. DD#685 → DD#676 (TraceSafe-Bench safety-reasoning asymmetry found independently)
+4. DD#685 → DD#682-684 (Dip-and-recovery implies detection systems need burn-in periods before stable anomaly signals)
+5. DD#686 → DD#667 (AgentGate adaptive gating — MedRoute is medical instantiation of same pattern with RL training)
+6. DD#685 generates predictions P-685a/b/c re: intervention dip-recovery, capability-dependent pattern extraction, safety-reasoning tradeoff
