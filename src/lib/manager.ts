@@ -751,6 +751,12 @@ export class SubagentManager {
     this.cleanupSession(session);
     this.activeSessions.delete(session.sessionId);
 
+    // Clean up sessionResults after a delay to allow late waitFor() callers.
+    // Without this, sessionResults grows unbounded (memory leak).
+    setTimeout(() => {
+      this.sessionResults.delete(session.sessionId);
+    }, 60_000);
+
     // ── Escalation: blocked/failure → parent or May ──────────────────
     if (outcome.finishParams && (outcome.finishParams.status === "blocked" || outcome.finishParams.status === "failure")) {
       this.escalateBlockedSession(session, outcome.finishParams);

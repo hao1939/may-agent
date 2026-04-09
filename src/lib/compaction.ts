@@ -105,6 +105,8 @@ const ORIGINAL_TASK_MAX_LENGTH = 500;
 export interface KeyFacts {
   filesRead: Set<string>;
   filesWritten: Set<string>;
+  filesEdited: Set<string>;
+  agentCalls: Array<{ agent: string; task: string }>;
   /** Exec commands run, with their outcome. Ordered oldest-first. */
   execCommands: Array<{ command: string; failed: boolean }>;
 }
@@ -117,6 +119,8 @@ export interface KeyFacts {
 export function extractKeyFacts(messages: AgentMessage[]): KeyFacts {
   const filesRead = new Set<string>();
   const filesWritten = new Set<string>();
+  const filesEdited = new Set<string>();
+  const agentCalls: Array<{ agent: string; task: string }> = [];
   const execCommands: Array<{ command: string; failed: boolean }> = [];
 
   // Build a map from toolCall IDs to exec commands so we can pair with results
@@ -132,8 +136,15 @@ export function extractKeyFacts(messages: AgentMessage[]): KeyFacts {
           filesRead.add(args.path);
         } else if (block.name === "write" && args.path) {
           filesWritten.add(args.path);
+        } else if (block.name === "edit" && args.path) {
+          filesEdited.add(args.path);
         } else if (block.name === "exec" && args.command) {
           pendingExecCalls.set(block.id, args.command);
+        } else if (block.name === "agents" && args.action === "call" && args.agent) {
+          agentCalls.push({
+            agent: args.agent,
+            task: (args.task ?? "").slice(0, 120),
+          });
         }
       }
     } else if (msg.role === "toolResult") {
@@ -151,7 +162,7 @@ export function extractKeyFacts(messages: AgentMessage[]): KeyFacts {
     execCommands.push({ command, failed: false });
   }
 
-  return { filesRead, filesWritten, execCommands };
+  return { filesRead, filesWritten, filesEdited, agentCalls, execCommands };
 }
 
 /**
@@ -162,6 +173,17 @@ export function extractKeyFacts(messages: AgentMessage[]): KeyFacts {
 export function mergeKeyFacts(accumulated: KeyFacts, newFacts: KeyFacts): KeyFacts {
   const filesRead = new Set([...accumulated.filesRead, ...newFacts.filesRead]);
   const filesWritten = new Set([...accumulated.filesWritten, ...newFacts.filesWritten]);
+  const filesEdited = new Set([...(accumulated.filesEdited ?? []), ...(newFacts.filesEdited ?? [])]);
+
+  // Merge agent calls (dedupe by agent+task combo, keep latest)
+  const agentCallsSeen = new Map<string, { agent: string; task: string }>();
+  for (const call of accumulated.agentCalls ?? []) {
+    agentCallsSeen.set(`${call.agent}:${call.task}`, call);
+  }
+  for (const call of newFacts.agentCalls ?? []) {
+    agentCallsSeen.set(`${call.agent}:${call.task}`, call);
+  }
+  const agentCalls = [...agentCallsSeen.values()];
 
   // Merge exec commands, deduplicating by command string (keep latest outcome)
   const seen = new Map<string, { command: string; failed: boolean }>();
@@ -179,7 +201,7 @@ export function mergeKeyFacts(accumulated: KeyFacts, newFacts: KeyFacts): KeyFac
     execCommands = execCommands.slice(execCommands.length - MAX_EXEC_COMMANDS_IN_FACTS);
   }
 
-  return { filesRead, filesWritten, execCommands };
+  return { filesRead, filesWritten, filesEdited, agentCalls, execCommands };
 }
 
 /**
@@ -196,6 +218,15 @@ export function formatKeyFacts(facts: KeyFacts): string[] {
   }
   if (facts.filesWritten.size > 0) {
     lines.push(`Files written: ${[...facts.filesWritten].join(", ")}`);
+  }
+  if (facts.filesEdited?.size > 0) {
+    lines.push(`Files edited: ${[...facts.filesEdited].join(", ")}`);
+  }
+  if (facts.agentCalls?.length > 0) {
+    lines.push(`Agent calls made:`);
+    for (const call of facts.agentCalls) {
+      lines.push(`  → ${call.agent}: ${call.task || "(no task)"}`);
+    }
   }
   if (facts.execCommands.length > 0) {
     lines.push(`Exec commands run:`);
@@ -216,7 +247,7 @@ export function formatKeyFacts(facts: KeyFacts): string[] {
  * Create an empty KeyFacts object.
  */
 function emptyKeyFacts(): KeyFacts {
-  return { filesRead: new Set(), filesWritten: new Set(), execCommands: [] };
+  return { filesRead: new Set(), filesWritten: new Set(), filesEdited: new Set(), agentCalls: [], execCommands: [] };
 }
 
 /**
@@ -270,7 +301,7 @@ function summarizeMessages(messages: AgentMessage[]): string {
         parts.push(`[User] ${text.slice(0, 200)}`);
       }
     } else if (msg.role === "assistant") {
-      // Extract text blocks and tool call names
+      // Extract text blocks, thinking blocks, and tool call names
       const texts: string[] = [];
       const tools: string[] = [];
       if (Array.isArray(msg.content)) {
@@ -281,8 +312,22 @@ function summarizeMessages(messages: AgentMessage[]): string {
             if (block.text.trim().length >= SUBSTANTIAL_TEXT_MIN_LENGTH) {
               lastSubstantialText = block.text.trim();
             }
+          } else if (block.type === "thinking" && block.thinking?.trim()) {
+            // Preserve a summary of thinking blocks instead of dropping them
+            const thinking = block.thinking.trim();
+            if (thinking.length > 200) {
+              texts.push(`(thinking: ${thinking.slice(0, 150)}…)`);
+            } else {
+              texts.push(`(thinking: ${thinking})`);
+            }
           } else if (block.type === "toolCall") {
-            tools.push(block.name);
+            // Include the target path/file for read/write/edit calls
+            const args = block.arguments as Record<string, any>;
+            if ((block.name === "read" || block.name === "write" || block.name === "edit") && args?.path) {
+              tools.push(`${block.name}: ${args.path}`);
+            } else {
+              tools.push(block.name);
+            }
           }
         }
       }
