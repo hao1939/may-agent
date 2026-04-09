@@ -1,13 +1,13 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~02:06 UTC
+Updated: 2026-04-09 ~02:23 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
 - **Scout**: 🟢 Running — Heartbeat active.
-- **Bob**: 🟢 Running — Fresh heartbeat cycle.
-- **Coach**: 🟢 Running — Long session (14min+), monitoring.
-- **Tech-lead**: 🟢 Running — Just fixed Optimizer/QA outage.
+- **Bob**: 🟢 Running — Heartbeat cycle. EXP-095 KB integration done.
+- **Coach**: 🟢 Running — EXP-096 (System Prompt Length Threshold) in progress.
+- **Tech-lead**: 🟢 Running — Last heartbeat completed cleanly.
 - **Optimizer**: 🟢 RESTORED — Was down 17 days (Mar 23 - Apr 9). Auto-pause cleared.
 - **QA**: 🟢 RESTORED — Was down 17 days (Mar 23 - Apr 9). Auto-pause cleared.
 - **Evaluator**: 🟢 Running — Heartbeat active.
@@ -64,10 +64,11 @@ Updated: 2026-04-09 ~02:06 UTC
 | **Crash Loop Bug (req:e750a385)** | ✅ ALREADY FIXED | tech-lead | Commits 9ea5b5a + fcb97c9 + 9c7e549 already merged. Three-layer defense + compaction persistence. |
 | **Token Efficiency Research** | ✅ COMPLETE | bob | **P0 FINDING**: $441/week wasted from zero prompt caching on Claude Opus. LiteLLM proxy strips cache headers. Fix: set ANTHROPIC_API_KEY in .env + restart. Executive brief at `agents/bob/workspace/token-waste-executive-brief.md`. |
 | **Optimizer + QA 17-Day Outage** | ✅ FIXED | tech-lead | Model alias change + auto-pause circuit breaker = 17 days down (Mar 23 - Apr 9). Both restored. Report: `agents/tech-lead/workspace/fix-optimizer-qa-outage.md`. |
-| **Auto-Pause Recovery Design** | ⏳ PENDING | bob | Need probe timer or decay mechanism to prevent permanent lockout. P1 request sent. |
+| **Auto-Pause Recovery Design** | ⏳ DISPATCHED | bob | Need probe timer or decay mechanism to prevent permanent lockout. Formal design request sent (req:36f360fa). |
 | **EXP-095 Few-Shot Delivery Mechanism** | ✅ COMPLETE | coach | **DEFINITIVE**: Task-message = 100% (6/6), system-prompt = 0% (3/3). Position is everything. Content quality irrelevant if delivery position wrong. |
 | **Few-Shot Production Deployment Proposal** | ✅ COMPLETE | coach | Comprehensive proposal at `agents/coach/workspace/proposal-fewshot-production-deployment.md`. Phase 1: static routing + 3 proven examples. ~2hr implementation. Needs tech-lead + Bob review. |
-| **Bob Heartbeat System Analysis** | ⏳ IN PROGRESS | bob | Auto-loop workflow analyzing heartbeat/cron system. Session s_1775699416405_85. |
+| **Bob Heartbeat System Analysis** | ✅ COMPLETE | bob | 231-line analysis at `agents/bob/workspace/heartbeat-analysis.md`. 48 cron entries inventoried, ~1,256 fires/day, 7 consolidation recommendations. |
+| **EXP-096 System Prompt Length Threshold** | ⏳ IN PROGRESS | coach | Testing if system prompt length affects few-shot delivery effectiveness. Self-initiated by coach. |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -99,14 +100,13 @@ Updated: 2026-04-09 ~02:06 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (02:03)
-- **🔧 MAJOR FIX: Optimizer + QA restored after 17-day outage** — Root cause: model name resolution change (opus→claude-opus-4.6, gpt52→gpt-5.2) + auto-pause circuit breaker locked both agents out permanently. Tech-lead fixed by calling agents directly to break error streak. Full report: `agents/tech-lead/workspace/fix-optimizer-qa-outage.md`.
-- **Orphaned Bob sessions cleaned** — Two stuck Bob sessions (s_1775696852659_0, s_1775697208091_0) marked as interrupted. Bob running fresh heartbeats fine.
-- **EXP-095 COMPLETE**: Few-shot delivery mechanism test confirms task-message position is everything. 100% at task-level vs 0% at system-prompt.
-- **Token Waste Analysis COMPLETE**: Bob found $441/week (60%) wasted from zero prompt caching. Fix is 5 minutes. Blocked on Hao.
-- **Few-Shot Production Deployment Proposal**: Coach wrote comprehensive plan. Phase 1 = ~2hr. Ready for review.
-- **P1 recommendation**: Add auto-pause recovery mechanism (probe timer or decay). Sent to Bob for design.
-- **All agents active** — 7/8 running. Amy-kimi still 🔴.
+## Latest Cycle Summary (02:23)
+- **System stable** — All 7/8 agents running. No errors in past hour. Optimizer + QA running cleanly since restoration.
+- **Bob Heartbeat Analysis COMPLETE**: 231-line analysis of cron system. 48 entries, ~1,256 fires/day, 7 consolidation recommendations. At `agents/bob/workspace/heartbeat-analysis.md`.
+- **EXP-095 KB Integration COMPLETE**: Bob integrated few-shot delivery mechanism findings.
+- **EXP-096 IN PROGRESS**: Coach self-initiated experiment testing system prompt length threshold for few-shot delivery.
+- **Auto-Pause Recovery Design DISPATCHED**: Formal P1 design request sent to Bob (req:36f360fa) with full context.
+- **Coach active on growth cycles**: Fixed plan-once-amend regression, now running EXP-096.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao**.
