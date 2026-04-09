@@ -77,6 +77,16 @@
 - [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% of verify-after-edit failures need code-level fix, not prompting. Deferred until prompting experiments complete.
 - [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
 
+## Session Notes (2026-04-09 ~14:23)
+- **EXP-103 RESULTS ANALYSIS**: All 12 runs complete. BOTH adversarial framing AND machine-verified evidence achieve 100% pass rate (12/12 runs). Effect size: +75-89pp vs baselines (11-25%). Strongest treatment in EXP-series. Zero variance within arms. Behavioral checks (hardest category) went from 0% to 100% for both treatments. Machine-verified ~11% faster.
+- **KE-098 WRITTEN**: Uncertainty-Aware Verification Signals — synthesizes DD-694 (MARCH information asymmetry), DD-695 (SELFDOUBT HVR), DD-696 (stepwise informativeness/entropy), DD-697 (hallucination as boundary misclassification) into unified signal architecture. Three signal families: generation-level (HVR/entropy), verification-level (information asymmetry), output-level (boundary classification). Maps to UVA layers.
+- **KE-099 WRITTEN**: Adversarial Framing Bypass for Verification Confabulation — reframing verification as criticism ("find 3 bugs") eliminates confabulation. Prompt-level intervention that works by redirecting generation objective (not fighting bias). Revises KE-007.
+- **KE-100 WRITTEN**: Machine-Verified Evidence Injection — automated file analysis (wc -l, grep) in context eliminates confabulation. Requires infrastructure but doesn't depend on agent compliance. Confirms KE-007 framework-level hypothesis.
+- **DD-694/695/696/697 INDEXED**: 4 new deep dives integrated into INDEX.md Research Library.
+- **PRIORITY-TRACKER UPDATED**: EXP-103 added to experiment queue (COMPLETE). H-093 updated with EXP-103 results.
+- **Files created**: `agents/shared/knowledge/entries/KE-098-uncertainty-aware-verification-signals.md`, `agents/shared/knowledge/entries/KE-099-adversarial-framing-bypass-verification-confabulation.md`, `agents/shared/knowledge/entries/KE-100-machine-verified-evidence-injection-confabulation.md`, `agents/shared/knowledge/experiments/EXP-103/results.md`
+- **Files modified**: `agents/shared/knowledge/INDEX.md`, `agents/shared/knowledge/hypotheses/PRIORITY-TRACKER.md`, `agents/bob/workspace/todo.md`
+
 ## Session Notes (2026-04-09 ~13:48)
 - **DD-691/692/693 INDEXED**: Scout session 393 dropped 3 confirmation bias papers, all ★★★★★ or ★★★★½. Indexed in INDEX.md Research Library.
   - **DD-691** ★★★★★ CRITICAL: "Failing to Falsify" — all 11 LLMs exhibit confirmation bias (Wason 2-4-6 task). Falsification prompting +14pp rule discovery. Directly grounds KE-093.
