@@ -1,6 +1,6 @@
 # Deep Dives Index
 
-> 118 research deep dives, cross-reference syntheses, and reference documents.  
+> 119 research deep dives, cross-reference syntheses, and reference documents.  
 > Last updated: 2026-04-09 | Maintained by Scout
 
 ## How to Use This Index
@@ -452,3 +452,7 @@
 5. DD#665 → DD#656 + DD#660 (Step-Saliency information flow complements HVR linguistic hedging and positional privilege attention bias — three levels of reasoning diagnosis)
 6. DD#665 → DD#659 (reasoning-behavior decoupling may relate to Deep Decay — model reasons correctly in middle steps but summary disconnects)
 7. DD#666 → DD#664 (AgentGate handles routing between agents, Qualixar OS handles orchestration of agent teams — complementary layers)
+
+**Weekly Synthesis: Reasoning-Behavior Gap** ★★★★★ — CR#317 (2026-04-09)
+1. [cr317](../cross-references/cr317-reasoning-behavior-gap-external-validation.md) — ★★★★★ Weekly synthesis of DD#655-666. Five threads: (1) Reasoning-behavior decoupling is universal — validates KE-054 analysis-action gap, (2) Information flow predicts intervention success — Step-Saliency maps to M1/M2/M3, (3) Verification architecture converging on structural separation, (4) Governance is emergent + designed, (5) Client-side optimization as infrastructure-level M3. Most externally validated week — 6 independent groups confirm WKWA-007 components. Predictions P-401 to P-403.
+2. CR#317 → WKWA-007 + KE-054 + KE-060 + KE-065 + KE-072 + H-092 (comprehensive external validation of Intervention Architecture)
