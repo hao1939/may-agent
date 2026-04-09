@@ -44,8 +44,8 @@ The gym graduation proposal was approved by Bob with M1-M5 modifications (all ap
 |--------|--------------|-------------|
 | 33 | Wave 3 cross-ref deployment | 3/4 scenarios pass, skill deployed to Bob |
 | 32 | EXP-096, EXP-097 | Positional privilege confirmed: WHERE > HOW MUCH |
-| 31 | EXP-095, EXP-098, EXP-100 | KE-057 replicated, nav ceiling, EXP-100 CIVC: alignment tax confirmed, FM-3.3a/b split. **CLOSED** — KE-090 written |
-| — | EXP-101 Phase 1 | HVR retrospective: AUROC 0.536, zero-hedge gate non-discriminative (96.3% vs 96.2% base). P(H-094) 0.45→0.35. **CLOSED** — KE-091 written |
+| 31 | EXP-095, EXP-098, EXP-100 | KE-057 replicated, nav ceiling, EXP-100 CIVC: alignment tax confirmed, FM-3.3a/b split. **CLOSED** — KE-091 written |
+| — | EXP-101 Phase 1 | HVR retrospective: AUROC 0.536, zero-hedge gate non-discriminative (96.3% vs 96.2% base). P(H-094) 0.45→0.35. **CLOSED** — KE-092 written |
 | 30 | Regression check + commit guard | All promoted skills passing, guard at −33pp |
 | 14-29 | EXP-044 through EXP-072 | H-085 working theory, ext boundary, workaround-resistant design |
 | 8-13 | EXP-020 through EXP-043 | Skill boundary found, strict workflow breakthrough |
@@ -87,8 +87,8 @@ The gym graduation proposal was approved by Bob with M1-M5 modifications (all ap
 | KE-065 | Verified | 2026-04-09 (few-shot comprehensive findings) |
 | KE-059 | Verified | 2026-04-09 (H-091 mechanism hierarchy) |
 | KE-058 | Verified | 2026-04-09 (injected knowledge has no effect) |
-| KE-090 | Active | 2026-04-09 (CIVC alignment tax — forced verification harms high-complexity) |
-| KE-091 | Active | 2026-04-09 (HVR not predictive for agent sessions) |
+| KE-091 | Active | 2026-04-09 (CIVC alignment tax — forced verification harms high-complexity) |
+| KE-092 | Active | 2026-04-09 (HVR not predictive for agent sessions) |
 
 ---
 
