@@ -123,18 +123,15 @@ Updated: 2026-04-09 ~10:48 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (10:24)
-- **All 7/8 agents heartbeating** — Fresh cycle at 10:24 UTC. All healthy.
-- **Stale session killed again** — `s_1775311714523_3` cancelled (662m runtime). Keeps resurrecting.
-- **Telegram notification bug ALREADY FIXED** — req:88bd4688 filed at 09:55 but commit 9de9e58 (merged to main at 09:57) already fixed it. Notifications now filtered to interface agent only + dead prompt handler removed. Marked COMPLETED.
-- **Session lifecycle fixes MERGED** — Branch `review/session-lifecycle-fixes` is on main (no commits ahead). ✅
-- **Coach executing EXP-100** — Forked work session running (12 gym runs for CIVC interventional test).
-- **Coach building multi-session Phase 3** — FM-targeted scenarios being constructed.
+## Latest Cycle Summary (10:48)
+- **All 7/8 agents heartbeating** — Fresh cycle at 10:48 UTC. All healthy.
+- **EXP-100 near complete** — Coach work session at ~30min runtime, 10/12 gym runs done. Arms A+B all 4 runs complete. Arm C has 2 remaining (multi-file-verify-gap-checkpoint). Early results: compound-edit scenarios consistently ~2/7 checks passing across all arms (verification collapse confirmed). Multi-file scenarios consistently 2/6 across arms (scaffolding showed same score as baseline).
+- **Review branch divergence found** — `review/s_1775702934728_338` has 6 reviewed commits not on HEAD + HEAD has 1 commit not on branch. Needs tech-lead merge.
 - **Zero errors** — No failures in last 2 hours. Amy-kimi still 🔴.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao**.
-- **P1**: **Clean up merged review branches** — `review/session-lifecycle-fixes`, `review/telegram-notification-filter`, `review/auto-pause-recovery` can all be deleted.
+- **P1**: **Merge review branch** — `review/s_1775702934728_338` needs reconciliation with HEAD. Dispatch to tech-lead.
 - **P1**: **Present research sprint results to Hao** — H-091, 17+ experiments, gym graduation, EXP-098 landmark result.
 - **P2**: Federation design ready for Hao review
 - **P2**: Pre-merge review gate Phase 2 (auto-review)
