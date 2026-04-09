@@ -49,7 +49,9 @@ See `agents/evaluator/periodic-tasks.md` for the definitions.
 - Do NOT update `agents/shared/knowledge/strategies.md` directly (Bob reviews first).
 - **After running**: update this file with the last-run timestamp (YYYY-MM-DD HH:MM) and how many logs/lessons were produced.
 
-**Last run**: 2026-04-09 13:53 — DB canonical check: `.state/may.db` `max(evaluations.createdAt)=1775741955442` (pipeline live). DB table inventory: includes `evaluations`, `sessions`, `session_digests` and **no `llm_evaluations` table** → treat Process #15 as disabled/unimplemented (or renamed). Legacy `.state/evaluations/` artifacts still stale — newest mtime observed: 2026-03-24. Ran `node agents/evaluator/skills/monitor-session.cjs --running`; result: 10 checked, 9 healthy, 1 `STALL` (coach session `s_1775741109622_382`, idle 12m; recommended action: investigate). Ran `node agents/evaluator/skills/patrol.cjs` → status `CRITICAL` with error `Missing compliance-snapshot.json` (baseline missing; patrol degraded, not a mismatch event).
+**Last run**: 2026-04-09 21:24 — DB canonical check: `.state/may.db` `max(evaluations.createdAt)=1775768385874` (2026-04-09T20:59:45Z; pipeline live). DB table inventory confirms **no `llm_evaluations` table** (Process #15 appears disabled/unimplemented). Legacy `.state/evaluations/` artifacts still stale — newest mtime observed: 2026-03-24. Ran `node agents/evaluator/skills/monitor-session.cjs --running`; result: 7 checked, 7 healthy. Ran `node agents/evaluator/skills/patrol.cjs`; result: CRITICAL due to missing `agents/shared/compliance-snapshot.json` baseline (patrol degraded, not a mismatch event).
+
+**Previous run**: 2026-04-09 13:53 — DB canonical check: `.state/may.db` `max(evaluations.createdAt)=1775741955442` (pipeline live). DB table inventory: includes `evaluations`, `sessions`, `session_digests` and **no `llm_evaluations` table** → treat Process #15 as disabled/unimplemented (or renamed). Legacy `.state/evaluations/` artifacts still stale — newest mtime observed: 2026-03-24. Ran `node agents/evaluator/skills/monitor-session.cjs --running`; result: 10 checked, 9 healthy, 1 `STALL` (coach session `s_1775741109622_382`, idle 12m; recommended action: investigate). Ran `node agents/evaluator/skills/patrol.cjs` → status `CRITICAL` with error `Missing compliance-snapshot.json` (baseline missing; patrol degraded, not a mismatch event).
 
 **Previous run**: 2026-04-09 05:53 — DB canonical check: `.state/may.db` `max(evaluations.createdAt)=1775712356004` (pipeline live). Legacy `.state/evaluations/` artifacts still stale — newest mtime observed: 2026-03-24. Ran `node agents/evaluator/skills/monitor-session.cjs --running`; result: 7 checked, 7 healthy. (Patrol not rerun in this heartbeat; known CRITICAL is baseline-missing `agents/shared/compliance-snapshot.json`.)
 
@@ -76,3 +78,5 @@ See `agents/evaluator/periodic-tasks.md` for the definitions.
 - Canonical source: `.state/may.db` (do not rely on legacy artifact directories).
 - Check for existence of a `llm_evaluations` (or similarly named) table.
 - If missing: treat as "LLM eval disabled or not implemented" and open a tracked item to either (a) add it back, or (b) remove/rename docs that imply it exists.
+
+**Last check**: 2026-04-09 19:23Z — `.state/may.db` tables include `evaluations` but no `llm_evaluations` (LLM eval appears disabled/unimplemented).

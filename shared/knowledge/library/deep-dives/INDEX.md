@@ -1,6 +1,6 @@
 # Deep Dives Index
 
-> 123 research deep dives, cross-reference syntheses, and reference documents.  
+> 127 research deep dives, cross-reference syntheses, and reference documents.  
 > Last updated: 2026-04-09 | Maintained by Scout
 
 ## How to Use This Index
@@ -544,3 +544,45 @@
 2. DD#691-694 cluster → KE-093, EXP-102 (all four papers ground our verification confabulation finding)
 3. DD#693 → H-094 (HVR failure may reflect the grounding-sycophancy tradeoff — agents too confident to hedge)
 4. DD#694 → DD#682 (Trajectory Guard anomaly detection could flag moments of context-override in verification)
+**Verification Grounding & Recovery Architecture** ★★★★★ — NEW (2026-04-09 Session 397)
+1. [dd698](dd698-aegis-forensic-verification-dialectics.md) — ★★★★★ AEGIS: Forensic verification over closed factual substrate with dialectical arguments and independent Audit Agent with veto power. Root cause: "reasoning in ungrounded deliberative space." New SOTA on PrimeVul (122 correct, first >100). 54.4% FP reduction. Independently validates EXP-103 (adversarial framing + machine evidence). Adds meta-auditing layer we're missing.
+2. [dd699](dd699-dual-state-architecture-guard-recovery.md) — ★★★★½ Dual-State Architecture: Formalizes guard functions (deterministic post-condition verification), tri-state semantics (PASS/FAIL/UNCERTAIN), three-level recovery hierarchy with cascade invalidation. Key finding: execution recovery ≠ planning recovery. 66pp reliability gain at 1.2-2.1× cost. 0% end-to-end patch production reveals execution-planning boundary. Explains EXP-100 ceiling effect.
+3. [dd700](dd700-proclaim-courtroom-debate-verification.md) — ★★★★ PROClaim: Courtroom-style multi-agent debate with Progressive RAG (evidence grows during debate), role-switching (argue opposite side), heterogeneous multi-judge. +10pp over standard debate. P-RAG drives +7.5pp. Structural deliberation + model heterogeneity mitigate systematic biases.
+4. Also catalogued: 2510.25595 (Einstein Puzzles — LLM collaboration under info asymmetry, ICML 2025 workshop. Agents without communication achieve high performance but lack rule understanding. Environment verifier enhances comprehension.)
+**Cross-references (Session 397)**:
+1. CR#322 — Verification Grounding Synthesis: Integrates DD#698-700 with DD#691-694 into 5-mechanism solution stack (closed boundary → progressive evidence → deterministic guards → dialectical obligation → meta-auditing). 7-tier verification architecture from T0 (guards) to T7 (planning synthesis). Key insight: verification is an evidence architecture problem, not a reasoning problem.
+2. DD#698 + DD#699 + DD#700 = complementary triad: AEGIS (closed evidence), Dual-State (deterministic gates), PROClaim (progressive evidence + role-switching)
+3. DD#699 → EXP-100 (execution-planning boundary explains ceiling effect), EXP-099 (cascade invalidation prevents verification gravity well)
+4. DD#698 → EXP-103 (independent external validation of adversarial framing + machine evidence approach)
+
+---
+
+## 🧭 Weekly Capstone Syntheses
+
+**CR#323 — Weekly Capstone: The Verification Revolution** ★★★★★ — (2026-04-09 Session 398)
+- [CR-323](../../cross-references/cr323-weekly-capstone-verification-revolution.md) — Capstone synthesis of DD#655-700, CR#317-322, EXP-099/100/101/103/104, KE-098-103, KE-101 Meta-Analysis. Three convergent streams: (A) external validation of internal findings, (B) 7-tier verification stack discovery, (C) behavioral failure detection pipeline. Unified theory: "structure all the way down" — verification is an evidence architecture problem. 5 predictions (P-323a-e). Recommendations for Bob (EXP-105-107), Tech-lead (tri-state guards, trajectory monitoring, evidence injection), Scout (arXiv triage, verification orchestration research).
+**Verification Orchestration Protocols** ★★★★★ — NEW (2026-04-09 Session 399)
+1. [dd701](dd701-semantic-router-dsl-cross-layer-verification.md) — ★★★★★ Semantic Router DSL: Non-Turing-complete policy language compiling single .sr source to 4 target layers (inference routing, orchestration, protocol gates, infrastructure). 5 static guarantees (exhaustiveness, conflict-freedom, dead branch, referential integrity, hash consistency). Structural audit traces generated from same AST as decision logic — impossible for trace to describe different tree. NetKAT lineage. Production-deployed at vLLM.
+2. [dd702](dd702-dova-deliberation-first-orchestration.md) — ★★★★½ DOVA: Deliberation-first orchestration with 3 innovations: (1) meta-reasoning before tool invocation, (2) composable 3-phase pipeline (ensemble→blackboard→iterative refinement), (3) 6-tier adaptive token budget. Bull-vs-Bear adversarial debate with sequential conditioning. +0.14 confidence, +0.25 coverage from collaboration.
+3. [dd703](dd703-sentinel-agents-distributed-verification.md) — ★★★★ Sentinel Agents: Coordinator-sentinel distributed security architecture. Sentinels deployed at boundaries (API gateway, inter-agent, data access, user interface). Independent low-latency enforcement with hot-reload policy updates. Cross-sentinel correlation for distributed attacks.
+4. [dd704](dd704-task-aware-delegation-cues.md) — ★★★★ Task-Aware Delegation Cues: Two novel signals from Chatbot Arena pairwise data — capability profiles (win-rate maps) and coordination-risk cues (tie-rate priors). Tie-rate identifies when routing doesn't matter (saving verification budget). Closed-loop delegation protocol with common-ground verification.
+**Cross-references (Session 399)**:
+1. CR#324 — Verification Orchestration Protocols: 4-layer stack: Policy Compilation (DD-701 DSL) → Budget Allocation (DD-702 DOVA + DD-704 risk cues) → Runtime Enforcement (DD-703 sentinels) → Verification Mechanisms (DD-698/699/700). Fills CR#321 gap. Four novel patterns: compile-once/verify-everywhere, verification triage, distributed enforcement + centralized policy, tie-rate budget optimization. Gap analysis: signal calibration, dynamic profiles, multi-step attack detection, verification of verifiers, cold-start.
+2. DD#701 → DD#698-700 (AEGIS forensic signals as DSL Signal candidates, PROCLAIM audit → structural trace generation)
+3. DD#702 → DD#689 (Sherlock selective verification extended with deliberation-first + budget allocation)
+4. DD#703 → DD#699 (Dual-state guard/recovery ≈ sentinel operational modes)
+5. DD#704 → DD#689 (tie-rate risk cues determine when to verify deeply — principled selective verification)
+6. Complete integration: DD#701-704 + DD#698-700 + DD#688-690 = 7-layer verified verification stack from policy compilation through deep verification mechanisms
+
+**Gym-Production Transfer Gap** ★★★★★ — NEW (2026-04-09 Session 573)
+1. [dd710](dd710-design-aware-bench-pass-rate-illusion.md) — ★★★★★ Design-Aware Issue Resolution (2604.05955): Test pass rates overestimate quality by >50%. <50% of test-passing patches satisfy design constraints. Negligible statistical association between functional correctness and design satisfaction. 495 issues, 1,787 validated design constraints. Directly explains gym-production gap mechanism — gym measures correctness, production demands constraint compliance.
+2. [dd711](dd711-swe-skills-bench-skill-injection-limits.md) — ★★★★★ SWE-Skills-Bench (2603.15401): 39/49 public skills yield zero pass-rate improvement. Average +1.2%. Only 7/49 behavioral skills help (up to +30%). 3 skills degrade performance (-10%). Validates EXP-104 context stripping paradox and evidence-over-narrative as elite behavioral skill.
+3. [dd712](dd712-web-bench-anti-saturation-design.md) — ★★★★½ Web-Bench (2505.07473): Anti-saturation design via sequential dependencies + professional-grade scope. 50 projects × 20 tasks, SOTA only 25.1% Pass@1 (vs SWE-bench 65.4%). Identifies root cause of saturation: isolated, context-free tasks solvable by pattern matching.
+4. Also catalogued: 2604.06126 (Gym-Anything: convert software → 500+ step agent environments), 2604.06742 (CLI-Tool-Bench: 0-to-1 generation <43%), 2604.04580 (Agent-CoEvo: tests need coevolution), 2511.17131 (UI-CUBE: 67-85% simple → 9-19% complex capability cliff), 2602.19320 (Agentic Memory: memory benchmarks also saturating).
+**Cross-references (Session 573)**:
+1. CR#326 — Gym-Production Transfer Gap: Synthesizes DD#710-712 + 5 catalogued papers into 5-dimension gap model (constraint density, temporal structure, context scale, evaluation alignment, agent state). Explains 10-14× discrepancy between gym FM-3.3 rate (4.8%) and production (50-70%). Three paths forward: A) Production observation (immediate), B) Structural gym redesign (medium-term), C) Naturalistic gym via Gym-Anything (long-term). 4 predictions (P-326a-d).
+2. DD#710 → DD#676 (TraceSafe structural bottleneck: design constraints ARE the structural bottleneck that benchmarks miss)
+3. DD#711 → EXP-090/091/104 (skill injection validated — behavioral skills work, informational skills don't)
+4. DD#712 → EXP-100/107 (anti-saturation design principles for next gym iteration)
+5. CR#326 → KE-101 Laws 2+5 (structural interventions > content, structural compatibility required for effectiveness)
+
