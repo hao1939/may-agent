@@ -1,4 +1,4 @@
-# KE-083: Verification-Trust Architecture — Trust as Attack Surface, Disagreement as Sensor, Verification as Scaling Mechanism
+# KE-084: Verification-Trust Architecture — Trust as Attack Surface, Disagreement as Sensor, Verification as Scaling Mechanism
 
 **Status**: Theoretical (supported by convergence of 5 independent papers/syntheses across verification, trust, and disagreement)
 **Confidence**: High — five independent analyses from different research groups converge on complementary structural principles

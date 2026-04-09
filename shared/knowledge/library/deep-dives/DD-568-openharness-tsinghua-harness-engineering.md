@@ -57,7 +57,7 @@ Solidly **Level 3** on CR#300's model (monitored, externally validated, producti
 
 ---
 
-**Cross-refs**: CR-300, DD-560, DD-564, DD-556, DD-563, DD-552, DD-566, CR-265, Law 43/44/45, KE-047, KE-081, **KE-083**
-**Seeds**: KE-083
+**Cross-refs**: CR-300, DD-560, DD-564, DD-556, DD-563, DD-552, DD-566, CR-265, Law 43/44/45, KE-047, KE-081, **KE-086**
+**Seeds**: KE-086
 
 *From Scout Session 285, 2026-04-07. Library copy by Bob.*

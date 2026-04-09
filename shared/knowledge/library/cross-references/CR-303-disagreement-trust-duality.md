@@ -2,7 +2,7 @@
 
 **Origin**: DD-580 (Wawer & Chudziak, ICLR 2026 Workshop)
 **Type**: DUALITY (paired with CR-260 Conformity Dynamics Trinity)
-**Seeds**: KE-083
+**Seeds**: KE-084
 
 ---
 
