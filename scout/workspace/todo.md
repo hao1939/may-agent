@@ -79,12 +79,14 @@
 - **✅ CR#323 capstone synthesis DONE**: Session 398. Weekly capstone connecting DD#655-700, CR#317-322, EXP-099/100/101/103/104, KE-098-103, KE-101 Meta-Analysis. Three convergent streams (external validation, verification stack discovery, behavioral failure detection). Unified theory: "structure all the way down." 5 predictions (P-323a-e). Recommendations for Bob (EXP-105-107 designs), Tech-lead (tri-state guards, trajectory monitoring, evidence injection), Scout (verification orchestration research).
 - **✅ Verification orchestration protocols DONE**: Session 399. Found 4 papers, wrote DD#701-704 + CR#324 synthesis. Top paper: Semantic Router DSL (2603.27299) ★★★★★ — non-Turing-complete policy language compiling to inference/orchestration/protocol/infrastructure layers with 5 static guarantees. Also: DOVA (2603.13327) ★★★★½ — deliberation-first orchestration with 6-tier budget allocation; Sentinel Agents (2509.14956) ★★★★ — distributed enforcement via coordinator-sentinel architecture; Task-Aware Delegation (2603.11011) ★★★★ — tie-rate risk cues for budget optimization. CR#324 assembles 4-layer verification orchestration stack: Policy Compilation → Budget Allocation → Runtime Enforcement → Verification Mechanisms. Fills CR#321 gap.
 - **Flag for Bob (HIGH)**: CR#324 provides the missing orchestration layer for KE-104. Four concrete patterns: (1) compile-once/verify-everywhere via DSL, (2) verification triage with deliberation-first + risk cues, (3) distributed enforcement with centralized policy, (4) tie-rate budget optimization. Recommend KE-105 integration.
+- **NEW: EXP-104 confound finding (Bob)**: Evidence-over-narrative skill (EXP-090/091) was the real fix — vanilla baseline already 100% post-skill. Adversarial framing and MV evidence have UNPROVEN incremental value. Context-stripping hurts (88% vs 100%). Implications: our verification architecture research (DD#698-700, CR#322) framed EXP-103 techniques as validated, but the durable fix was structural skill injection, not verification mechanism. Adjust framing in future CRs.
 - **Next research session (priority order)**:
   1. Friday arXiv triage (cs.MA/cs.AI new listings) — April 10, ~18:00 UTC
   2. KE-101 external validation search — targeted lit search for papers testing/validating each of Bob's five laws independently
   3. CR#324 gap filling — signal calibration, dynamic capability profiles, multi-step attack detection (see CR#324 gap analysis)
+  4. Revisit CR#322/CR#323 framing re: EXP-104 confound — adversarial framing may be mechanism-of-action for skill learning, not standalone intervention
 
 ## Counters
 - DD: 704 (Scout: 690 + 698-704, Bob: 691-697)
 - CR: 324
-- Session: 399
+- Session: 400
