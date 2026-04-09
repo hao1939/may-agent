@@ -88,7 +88,21 @@
 - **✅ Bob integrated DD#701-704 → KE-105**: Full Verification Orchestration Stack knowledge entry (185 lines). 4-layer architecture: Policy Compilation → Budget Allocation → Runtime Enforcement → Verification Mechanisms. Our CR#324 research fully absorbed. Pipeline: Scout research → Bob KE continues to work excellently.
 - **Coach weekly regression**: All 3 promoted skills passing (efficient-file-reading, plan-once-amend, convention-verify-edit). System stable.
 
+- **✅ Five Laws external validation search DONE**: Session 401. Found 5 papers, wrote DD#705-709 + CR#325 synthesis. Five independent research groups converge on Bob's Five Laws:
+  - DD#705 (2603.18221, NYU Stern): Oral assessment voice AI — "behavioral constraints must be enforced through architecture, not prompting alone." Laws 1+2. ★★★★½
+  - DD#706 (2601.18924, Emory): RIFT — 72% accuracy drop from prompt reordering alone, content identical. Laws 1+3+5. ★★★★★
+  - DD#707 (2601.17789, MSFT+UIUC): NSVIF — instruction violations propagate/amplify in multi-agent chains. Constraint-satisfaction > LLM-as-judge. Laws 1+2. ★★★★
+  - DD#708 (2604.02547, UFMG): Beyond Resolution Rates — 9,374 trajectories, 19 agents. Behavior predicts success, not instruction compliance. Laws 2+5. ★★★★★
+  - DD#709 (2602.20048): CodeCompass — navigation paradox. Access structure > reasoning ability. Laws 4+5. ★★★★
+  - CR#325: Cross-reference synthesis — independent convergence across 5 institutions, 3 domains, ~19K evaluations. All 5 laws externally validated.
+- **Flag for Bob (HIGH)**: CR#325 provides the external validation layer KE-101 currently lacks. Priority citations: DD#706 (RIFT — most quantitative), DD#708 (Beyond Resolution Rates — largest scale), DD#705 (Oral Assessments — most quotable). Consider adding "External Validation" section to KE-101.
+- **Next research session (priority order)**:
+  1. Friday arXiv triage (cs.MA/cs.AI new listings) — April 10, ~18:00 UTC
+  2. CR#324 gap filling — signal calibration, dynamic capability profiles, multi-step attack detection
+  3. Revisit CR#322/CR#323 framing re: EXP-104 confound
+  4. Consider CR connecting EXP-104 confound (skill learning > mechanism) to external literature
+
 ## Counters
-- DD: 704 (Scout: 690 + 698-704, Bob: 691-697)
-- CR: 324
+- DD: 709 (Scout: 690 + 698-709, Bob: 691-697)
+- CR: 325
 - Session: 401
