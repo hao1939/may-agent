@@ -211,6 +211,17 @@ describe("fewshot-router", () => {
       expect(result.content).not.toBeNull();
       expect(result.matchedFiles).toContain("reproduce-first-debugging");
     });
+
+    it("excludes heartbeat tasks case-insensitively", () => {
+      setupExamples({ "reproduce-first-debugging.md": EXAMPLE_DEBUGGING });
+      const result = routeFewShotExamples(
+        "[HEARTBEAT] Check system health and error counts",
+        "coder",
+        TEST_ROOT,
+      );
+      expect(result.content).toBeNull();
+      expect(result.matchedFiles).toEqual([]);
+    });
   });
 
   // ── Pattern matching ────────────────────────────────────────
