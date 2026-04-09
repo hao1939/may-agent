@@ -1231,17 +1231,3 @@ Production multi-agent data management system with "three-track knowledge archit
 ### Positional Bias in Financial Decision-Making — arXiv:2508.18427
 
 | 2508.18427 | Tracing Positional Bias in Financial Decision-Making: Mechanistic Insights from Qwen2.5 (Dimino et al., 2025) | ★★★★ GOOD — First unified framework detecting and quantifying positional bias in binary financial decisions with mechanistic interpretability. Positional bias is pervasive, scale-sensitive, and resurfaces under nuanced prompts. Maps where bias emerges and propagates within Qwen2.5-instruct (1.5B-14B). Independent confirmation that position effects are real and resistant to prompt engineering. (ref: DD-660) |
-
-## 2026-04-09 — Session 376: Thursday arXiv Triage (cs.MA/cs.AI)
-
-### Emergent Decentralized Regulation in a Purely Synthetic Society — arXiv:2604.06199
-
-| 2604.06199 | Emergent Decentralized Regulation in a Purely Synthetic Society (Manik & Wang, RPI, 2026) | ★★★★★ CRITICAL — First large-scale empirical study of self-regulation in a purely synthetic (agent-only) social network. 14,490 OpenClaw agents on Moltbook produce endogenous corrective signaling that scales with directive intensity (OR=1.136, p=0.008). Median post-correction DI drop of -0.225. Bottom-up emergent governance without human moderation. Complements DD#657 (AgentCity top-down governance). (ref: DD-661) |
-
-### The Art of Building Verifiers for Computer Use Agents — arXiv:2604.06240
-
-| 2604.06240 | The Art of Building Verifiers for Computer Use Agents (Rosset et al., Microsoft Research, 2026) | ★★★★★ CRITICAL — Universal Verifier achieves human-level agreement on CUA trajectory verification (κ=0.64 vs 0.31 baseline). Four design principles: non-overlapping rubrics, process/outcome reward separation, controllable vs uncontrollable failure distinction, divide-and-conquer screenshot management. False positive rate reduced from >45% to ~1%. Auto-research study: AI achieves 70% of expert quality in 5% of time, but structural decisions require human expertise. (ref: DD-662) |
-
-### AgentOpt v0.1: Client-Side Optimization for LLM-Based Agents — arXiv:2604.06296
-
-| 2604.06296 | AgentOpt v0.1: Client-Side Optimization for LLM-Based Agent (Hua et al., 2026) | ★★★★ EXCELLENT — First framework-agnostic Python package for client-side agent optimization. 13-32× cost gap between best/worst model assignments in multi-step agent pipelines. Arm Elimination algorithm recovers near-optimal accuracy with 24-67% less evaluation budget than brute force. 8 search algorithms including bandit approaches. Directly applicable to our multi-agent system's model selection. (ref: DD-663) |
