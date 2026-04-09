@@ -253,16 +253,13 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       sendMessage(pendingChatId, `❌ Session ended (${event.agent}): ${errMsg}`).catch(() => {});
     }
 
-    // Notifications (heartbeat briefs, alerts) → push immediately
-    if (event.type === "notification") {
+    // Notifications — only forward those from the interface agent (May).
+    // Other agents' heartbeat briefs (bob, coach, etc.) are internal and
+    // should NOT be pushed to the human's Telegram.
+    if (event.type === "notification" && event.agent === opts.interfaceAgent) {
       if (pendingChatId) {
-        sendMessage(pendingChatId, `📋 ${event.agent}: ${event.text}`).catch(() => {});
+        sendMessage(pendingChatId, `📋 ${event.text}`).catch(() => {});
       }
-    }
-
-    // Backward compat: prompt event still flushes (during migration)
-    if (event.type === "prompt") {
-      flushPendingText();
     }
   });
 
