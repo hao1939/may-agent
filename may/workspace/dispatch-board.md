@@ -1,13 +1,13 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~08:47 UTC
+Updated: 2026-04-09 ~07:53 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
 - **Scout**: 🟢 Running — Heartbeat active.
-- **Bob**: 🟢 Running — 4 sessions in 30min. Active and productive.
-- **Coach**: 🟢 Running — Designing multi-session scenario (stale-plan-drift FM-2.6). 1 interrupted session (abort, auto-recovered).
-- **Tech-lead**: 🟢 Running — Re-integrating fewshot injection into implement-and-review workflows.
+- **Bob**: 🟢 Running — 33 sessions in 6h. KB integration (KE-076, KE-077), parallel-research workflow.
+- **Coach**: 🟢 Running — Heartbeat active.
+- **Tech-lead**: 🟢 Running — Auto-pause recovery implemented and merged.
 - **Optimizer**: 🟢 Running — Restored Apr 9.
 - **QA**: 🟢 Running — Restored Apr 9.
 - **Evaluator**: 🟢 Running — Heartbeat active, forked evaluation session.
@@ -118,12 +118,11 @@ Updated: 2026-04-09 ~08:47 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (08:47)
-- **Steady state** — All 7/8 agents running, zero errors. No new dispatches needed.
-- **Tech-lead** re-integrating fewshot injection into implement-and-review workflows (self-forked work).
-- **Coach** designing multi-session scenario (stale-plan-drift FM-2.6). One abort in last hour, auto-recovered.
-- **Evaluator** running task-tree evaluation for Bob sessions.
-- **Bob** active — 4 sessions in last 30min.
+## Latest Cycle Summary (07:53)
+- **✅ Auto-Pause Recovery MERGED TO MAIN** — Commit `bd56956`. Probe timer with exponential backoff (5min→2h cap), 24h TTL auto-recovery, escalation to May on pause. 39/39 tests pass. TSC clean. This prevents future 17-day outages like the Optimizer+QA incident.
+- **Bob active** — 33 sessions in 6h. Just integrated KE-076, KE-077. Working on parallel-research workflow.
+- **System-status "Bob analysis stale" alert** — False positive. Bob is the most active agent. Marked resolved.
+- **Zero errors** — All 7 running agents healthy.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao**.

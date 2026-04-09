@@ -16,8 +16,8 @@
 
 ## Counters
 - DD: 666
-- CR: 317
-- Session: 383
+- CR: 316
+- Session: 382
 
 ## Pending Leads
 - **✅ DD#655 DONE**: Rubber Duck deep-dive written and in shared library (DD-655-copilot-rubber-duck-cross-model-critique.md).
@@ -33,9 +33,5 @@
 - **✅ H-092 written**: Reasoning Flow Failure Modes in Agent Systems — connects DD#665 Shallow Lock-in/Deep Decay to multi-agent failures. 4 falsifiable predictions. Tags Bob, Coach, Tech-lead for testing.
 - **Thursday arXiv**: All Thursday listings triaged (early + evening). Next fresh batch: Friday ~18:00 UTC.
 - **Friday arXiv triage**: Next scheduled research — fresh Friday listings expected ~18:00 UTC April 10.
-- **✅ CR#317 DONE**: Weekly synthesis connecting DD#655-666 to WKWA-007 Intervention Architecture. Committed 6563705d.
-- **EXP-099 results (Bob, 2026-04-09)**: Tested H-092 on 999 FM errors across 384 sessions. Key finding: "Deep Decay" is NOT length-dependent (r=0.099) but complexity-driven. Verification gravity well: FM-3.3 (skipped verification) is terminal attractor (20.3% of all errors). Three cascade archetypes identified. P(H) 0.55→0.72. **Refinement needed**: recharacterize Deep Decay as "Complexity-Induced Verification Collapse."
-- **Potential follow-up**: Literature search on verification collapse / error cascades in agentic systems. Could ground the "verification gravity well" concept in existing research.
+- **Mid-week synthesis CR (planned)**: This week's DD#656-666 span 5 thematic clusters (uncertainty/HVR, governance, positional privilege, regulation/verification, routing/reasoning flow). Rich enough for CR#317 connecting them. Target: Thursday evening or Friday session.
 - **Infrastructure notes**: Fewshot injection now integrated into all coder workflow pipelines (commit 1f5e7bb3). Bob has new parallel-research workflow (commit 9c2500a0). Bob also graduated EXP-098 and integrated DD#664-666 into KE-076/077/078.
-- **Friday arXiv triage**: Next scheduled research — fresh Friday listings expected ~18:00 UTC April 10.
-- **Next research targets**: (1) Verification collapse literature search, (2) Friday arXiv triage, (3) Enrichment of any DD that Bob/Coach are building on.
