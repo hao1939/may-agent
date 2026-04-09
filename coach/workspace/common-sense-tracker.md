@@ -13,7 +13,7 @@ Tracks which rules from `agents/shared/common-sense.md` have been verified, when
 | C1.8 Match finish() status to reality | 2026-04-09 | ⚠️ Mostly pass | bob, qa, may, coach | 5/6 compliant; 1 borderline FM-2.6 overlap |
 | Environment Reality (C50) | - | ❓ Not verified | - | - |
 | Two git repos | - | ❓ Not verified | - | - |
-| Commit before finish() | - | ❓ Not verified | - | - |
+| Commit before finish() | 2026-04-09 | ⚠️ Mostly pass | bob, hao, may, scout, coach, tech-lead | 8/9 compliant; 1 clear violation (bob sub-session) |
 | Simple first | - | ❓ Not verified | - | - |
 | One thing at a time | - | ❓ Not verified | - | - |
 | Cross-agent help | - | ❓ Not verified | - | - |
@@ -114,3 +114,62 @@ Tracks which rules from `agents/shared/common-sense.md` have been verified, when
 - **Verdict: COMPLIANT** — status matches reality
 
 **Overall: ⚠️ 5/6 sessions fully compliant. 1 borderline case (bob Phase 1 s_1775738989157_597) where FM-2.6 phase boundary violation caused the finish(success) to be misleading — the agent completed work it wasn't supposed to do and reported success. This is already tracked as FM-2.6 in EXP-103 scenario design. No separate growth cycle action needed for C1.8 specifically, but the FM-2.6 fix (if effective) should also resolve this C1.8 edge case.**
+
+### Commit before finish() — 2026-04-09
+
+**Rule**: "When you create or significantly change files in agents/, commit them with a descriptive message before calling finish(). Run: `cd /app/agents && git add -A <your-files> && git commit -m "<agent>: <what you did>"`."
+
+**Method**: Identified all sessions from 2026-04-09 with file writes (edit/write calls) AND a finish(success) call. Compared whether git operations (git add/commit) appeared in the session transcript before finish(). Examined 9 sessions across 6 agents.
+
+**Sessions examined (9 sessions with writes + finish, 6 agents):**
+
+**bob (s_1775740864334_611) — Phase 2, DD-682/683/684 integration, 5 ops:**
+- Wrote: KE-095 (write), INDEX.md (edit) — 2 file modifications
+- Git operations: **ZERO** — no git add, no git commit anywhere in session
+- finish() called with status:success, accepted by system (no blocking)
+- ❌ **VIOLATION** — Files written but never committed. This is a Phase 2 sub-session spawned by the orchestrator; the commit guard did NOT block finish() here. The parent session (s_1775740749720_609, Bob heartbeat) presumably committed later, but this sub-session itself violated the rule.
+
+**bob (s_1775739578357_599) — Phase 2, cross-referencing, 28 ops:**
+- Wrote: H-092.md, PRIORITY-TRACKER.md, INDEX.md — multiple edits
+- Git operations: First finish() **blocked** with "uncommitted changes". Agent recovered: ran `git add -A && git commit`. Second finish() succeeded.
+- ✅ **COMPLIANT** (commit guard caught the violation and agent recovered)
+
+**bob (s_1775738989157_597) — Phase 1 (violated phase boundary), 55 ops:**
+- Wrote: 21 file modifications (edits to INDEX.md, PRIORITY-TRACKER.md, H-093.md, etc.)
+- Git operations: 2 git operations found — committed in agents/ dir before finish()
+- ✅ **COMPLIANT** (committed before finish, despite FM-2.6 phase violation)
+
+**hao (s_1775742436284_613) — heartbeat, writes=2:**
+- Git operations: 7 git commits during session
+- ✅ **COMPLIANT** — proactive committer
+
+**may (s_1775767997978_642) — heartbeat:**
+- Git operations: 5 git operations
+- ✅ **COMPLIANT**
+
+**scout (s_1775738899990_595) — research session:**
+- Explicitly committed before finish: `"Good. Now let me commit and exit."` followed by git commit
+- ✅ **COMPLIANT** — proactive
+
+**coach (s_1775739044226_598) — 48h analysis:**
+- Committed before finish: `"The changes are in the agents submodule but not yet committed. Let me commit them:"` followed by git commit
+- ✅ **COMPLIANT** — self-corrected proactively
+
+**tech-lead (s_1775738896886_593) — session with writes:**
+- 1 git commit before finish
+- ✅ **COMPLIANT**
+
+**bob (s_1775733496959_557) — earlier session with writes:**
+- Git commits before finish confirmed
+- ✅ **COMPLIANT**
+
+**Compliance summary:**
+- 8/9 sessions COMPLIANT (89%)
+- 1/9 sessions VIOLATED — bob s_1775740864334_611 (Phase 2 sub-session)
+- 2/9 sessions were caught by commit guard on first finish() attempt and recovered (s_1775739578357_599, and at least one May heartbeat session)
+
+**Key finding**: The commit guard works well for **top-level sessions** (catches violations and forces recovery). However, **Phase 2 sub-sessions** can bypass the commit guard — bob s_1775740864334_611 wrote 2 files and finished successfully without any git commit and without the guard intervening. This suggests the commit guard may not be applied to sub-sessions spawned within orchestrated workflows.
+
+**Recommendation**: The commit guard should be verified to operate on ALL sessions that write files, not just top-level sessions. The Phase 2 sub-session gap means files could be written and never committed if the parent session doesn't explicitly commit them later.
+
+**Overall: ⚠️ 8/9 compliant. 1 clear violation in a Phase 2 sub-session that bypassed the commit guard. The guard itself is effective for top-level sessions (2 caught violations, 100% recovery). Structural gap: sub-session commit enforcement.**
