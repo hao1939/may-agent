@@ -1,6 +1,7 @@
 /// <reference path="../../../src/workflow-defs.d.ts" />
 
 import { stateApproach } from "../../../src/lib/forced-externalization.js";
+import { injectFewShot } from "./fewshot-inject.js";
 
 export const name: string = "implement-and-review";
 
@@ -14,7 +15,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   // H-085 (forced externalization): Require the coder to state its approach
   // before implementing. EXP-044 showed even 1 sentence of externalization
   // eliminates common judgment failures.
-  const coderTask = stateApproach(ctx.task);
+  const coderTask = stateApproach(injectFewShot(ctx.task));
   let coder = await ctx.runAgent("coder", coderTask);
   if (coder.status === "error") {
     // 34% of historical escalations were coder session errors (timeouts,
@@ -166,3 +167,4 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     `"Workflow said PASS" without your own verification = hallucinated success.`
   );
 }
+                                      
