@@ -25,7 +25,11 @@ The gym graduation proposal was approved by Bob with M1-M5 modifications (all ap
   - 224 scenarios listed (including multi-session/stale-plan-drift), 0 TypeScript errors
   - Also created `multi-session/ghost-deliverable-chain` scenario
 - **Phase 2 — Baseline Validation**: COMPLETE ✅ (s_1775728493774_301) — both scenarios execute end-to-end
-- **Phase 3**: FM-targeted scenarios for FM-1.4, FM-3.1 (depends on Phase 2)
+- **Phase 3 — FM-Targeted Scenarios**: COMPLETE ✅ (s_1775732059589_326)
+  - Created `multi-session/kb-integration-failure` scenario (FM-2.6 + FM-3.1: stale context + ghost quality)
+  - Files: session-2/task.md, session-2/context.md, package.json, success_criteria.js (9 checks: 7 product + 2 behavioral)
+  - Validated: 9/9 checks pass, agent detects hardcoded creds / swallowed errors / missing retries, fixes before adding rate limiting
+  - Three multi-session scenarios now complete: ghost-deliverable-chain, unresolved-failure-chain, kb-integration-failure
 - **Phase 4**: Integration + regression cadence (depends on Phase 3)
 - **Key insight from EXP-065**: FM-2.6 (instruction-following), FM-3.1 (ghost deliverables), FM-2.1 (tool hallucination) all require multi-session to reproduce
 
