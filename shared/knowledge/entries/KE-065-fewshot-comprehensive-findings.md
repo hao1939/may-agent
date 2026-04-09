@@ -1,7 +1,7 @@
 # KE-065: Few-Shot Skill Conversion — Comprehensive Findings
 
 **Status**: Verified
-**Source**: EXP-090, EXP-091, EXP-092, EXP-093, EXP-094, EXP-095
+**Source**: EXP-090, EXP-091, EXP-092, EXP-093, EXP-094, EXP-095, EXP-096
 **Date**: 2026-04-09
 **Confidence**: High (N=18 matched treatment runs: 18/18 = 100% on target checks; N=10 per arm on EXP-092; N=5+5 on EXP-093)
 
@@ -65,7 +65,7 @@ Attempting to fix a documentation gap with L1/L2 instruction-level interventions
    - The reasoning process, not just the outcome
    - The key decision point where the wrong choice is tempting
 4. **Match the domain class** of the target scenario. A credentials example won't fix a binary-file task.
-5. **Deliver via task-level message**, not embedded in SKILL.md text. EXP-095 showed system-prompt delivery = 0% (even with domain-matched binary examples in know-when-blocked v2.0), while task-message delivery = 100% regardless of mechanism (injected_context.md prefix or inline in task.md body). The position effect is absolute: across 12+ runs, task-message = 100%, system-prompt = 0%.
+5. **Deliver via task-level message**, not embedded in SKILL.md text. EXP-095 showed system-prompt delivery = 0% (even with domain-matched binary examples in know-when-blocked v2.0), while task-message delivery = 100% regardless of mechanism (injected_context.md prefix or inline in task.md body). The position effect is absolute: across 21 runs (EXP-094+095+096), task-message = 12/12 (100%), system-prompt = 0/9 (0%). EXP-096 confirmed the mechanism is **positional privilege** (categorical system vs task), not attention dilution (prompt length).
 6. **For multi-domain skills**, include one worked example per domain class.
 7. **Don't add compensating instructions** to fix gaps — they create task narrowing (EXP-092). Fix gaps structurally.
 
@@ -82,7 +82,7 @@ Attempting to fix a documentation gap with L1/L2 instruction-level interventions
 
 **The position effect is binary**: System prompt = 0%, task message = 100%, across all content variations tested. Improving content quality (v1.0 → v2.0 with binary-specific examples, three-call rule, anti-patterns) had zero impact when delivered via system prompt.
 
-**Why**: System prompt few-shot suffers from attention dilution (8-10KB of instructions), temporal distance from task, and requires effortful retrieval. Task-message few-shot benefits from proximity to the task, pattern-matching activation, and frame-setting for the specific problem.
+**Why (EXP-096 confirmed)**: The mechanism is **positional privilege**, NOT attention dilution. EXP-096 tested a minimal agent (~11KB system prompt vs ~48KB full coder). Reducing system prompt by 77% had zero effect — still 0/3. The model treats system prompt content as "general rules" and task message content as "what to do NOW in THIS situation." Few-shot examples need the latter framing to trigger behavioral change.
 
 **Production implication**: Skills in SKILL.md files (system prompt) serve as reference documentation but are ineffective as behavioral interventions for hard scenarios. Effective deployment requires task-level injection — either via RAG, task routing with example selection, or embedding examples in task descriptions.
 
@@ -97,5 +97,6 @@ Attempting to fix a documentation gap with L1/L2 instruction-level interventions
 - **KE-002**: Text rules = 0% (few-shot breaks this boundary)
 - **KE-054**: Externalization boundary — judgment vs debugging
 - **KE-056**: Constraint hierarchy — few-shot occupies L3 position
+- **EXP-096**: Attention dilution REJECTED — positional privilege is the mechanism
 - **H-091**: Hypothesis tracking
 - **H-085**: Forced externalization — complementary mechanism

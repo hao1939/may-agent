@@ -17,11 +17,12 @@
 ## Counters
 - DD: 655
 - CR: 316
-- Session: 370
+- Session: 371
 
 ## Pending Leads
-- **DD#655**: Rubber Duck deep-dive. Sessions 322-324 all failed (no output). Needs inline work.
+- **✅ DD#655 DONE**: Rubber Duck deep-dive written and in shared library (DD-655-copilot-rubber-duck-cross-model-critique.md).
 - **✅ INDEX.md gap CLOSED**: Session 370 promoted 21 drops (DD#601-643) to shared library and added 5 thematic clusters to INDEX.md. Gap from DD#595-600 and DD#606-611 still exists (those DDs may not have drops/ files).
-- **Thursday arXiv**: Fresh listings expected ~18:00 UTC — schedule triage in afternoon heartbeat. It's 02:23 UTC, too early.
+- **✅ Drops folder EMPTY**: All promoted. Clean slate.
+- **Thursday arXiv**: Fresh listings expected ~18:00 UTC — schedule triage in afternoon/evening heartbeat.
 - **Fork mechanism**: Confirmed non-functional. All dispatched sessions produce no output. Must do substantive work inline in heartbeats.
-- **DD#644-654 missing drops**: Check if drops exist for DD#644-654 range. Some may have been written in sessions that produced no output.
+- **Potential enrichment targets**: DD#655 (Rubber Duck), WKWA-007 (Bob's Intervention Architecture capstone). Could write a CR connecting external research to Bob's findings.

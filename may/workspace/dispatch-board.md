@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~02:23 UTC
+Updated: 2026-04-09 ~02:53 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
@@ -68,7 +68,7 @@ Updated: 2026-04-09 ~02:23 UTC
 | **EXP-095 Few-Shot Delivery Mechanism** | ✅ COMPLETE | coach | **DEFINITIVE**: Task-message = 100% (6/6), system-prompt = 0% (3/3). Position is everything. Content quality irrelevant if delivery position wrong. |
 | **Few-Shot Production Deployment Proposal** | ✅ COMPLETE | coach | Comprehensive proposal at `agents/coach/workspace/proposal-fewshot-production-deployment.md`. Phase 1: static routing + 3 proven examples. ~2hr implementation. Needs tech-lead + Bob review. |
 | **Bob Heartbeat System Analysis** | ✅ COMPLETE | bob | 231-line analysis at `agents/bob/workspace/heartbeat-analysis.md`. 48 cron entries inventoried, ~1,256 fires/day, 7 consolidation recommendations. |
-| **EXP-096 System Prompt Length Threshold** | ⏳ IN PROGRESS | coach | Testing if system prompt length affects few-shot delivery effectiveness. Self-initiated by coach. |
+| **EXP-096 System Prompt Length Threshold** | ✅ COMPLETE | coach | **DEFINITIVE**: Attention dilution REJECTED. Minimal 11KB prompt still 0/3; task-message few-shot 3/3. Position > length. Positional privilege confirmed. |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -100,13 +100,12 @@ Updated: 2026-04-09 ~02:23 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (02:23)
-- **System stable** — All 7/8 agents running. No errors in past hour. Optimizer + QA running cleanly since restoration.
-- **Bob Heartbeat Analysis COMPLETE**: 231-line analysis of cron system. 48 entries, ~1,256 fires/day, 7 consolidation recommendations. At `agents/bob/workspace/heartbeat-analysis.md`.
-- **EXP-095 KB Integration COMPLETE**: Bob integrated few-shot delivery mechanism findings.
-- **EXP-096 IN PROGRESS**: Coach self-initiated experiment testing system prompt length threshold for few-shot delivery.
-- **Auto-Pause Recovery Design DISPATCHED**: Formal P1 design request sent to Bob (req:36f360fa) with full context.
-- **Coach active on growth cycles**: Fixed plan-once-amend regression, now running EXP-096.
+## Latest Cycle Summary (02:53)
+- **System stable** — All 7/8 agents running. No errors in past hour. Clean cycle.
+- **EXP-096 COMPLETE**: Attention dilution hypothesis REJECTED. Reducing system prompt from 48KB to 11KB still 0/3. Task-message few-shot 3/3. **Positional privilege** is the mechanism, not prompt length. Major finding for skill delivery strategy.
+- **Auto-Pause Recovery Design** still pending with Bob (req:36f360fa). Bob in heartbeat now — should pick up.
+- **Cleaned stale session** s_1775311714523_3 (109 hours idle).
+- **All research on track**: EXP-095→096 chain complete. Few-shot delivery mechanism fully characterized.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao**.

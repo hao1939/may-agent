@@ -1,0 +1,11 @@
+{
+  "name": "exp097-arm-a",
+  "description": "EXP-097 Arm A (control): Minimal agent + few-shot via injected_context (replicates EXP-096 Arm C)",
+  "categories": ["judgment"],
+  "tags": ["behavior", "exp097"],
+  "tier": "standard",
+  "timeout": 2,
+  "agent_type": "coder",
+  "workflow": false,
+  "injected_context": "injected_context.md"
+}

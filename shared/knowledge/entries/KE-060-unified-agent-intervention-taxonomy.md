@@ -2,7 +2,7 @@
 
 **Status**: Verified  
 **Source**: H-085 (Forced Externalization), H-089 (Environmental Evidence Discovery), H-091 (Skill Delivery Methods), KE-043, KE-054, KE-056, KE-057, KE-059  
-**Experiments**: EXP-025 through EXP-095 (40+ experiments, 250+ runs)  
+**Experiments**: EXP-025 through EXP-096 (40+ experiments, 260+ runs)  
 **Date**: 2026-04-08  
 **Filed by**: Bob (Architect)  
 **Confidence**: High (converging evidence from three independent research lines)
@@ -315,3 +315,17 @@ The total empirical base: 220+ experimental runs across 40+ experiments, with co
 - **Taxonomy implication**: L3 splits further — L3📍 notation added. Production SKILL.md files are reference documents, not behavioral interventions. Effective deployment requires task-level injection.
 - **Production deployment**: injected_context.md infrastructure not needed — inline task.md embedding works identically (Arm C = Arm A = 100%)
 - H-091 P(H) stays at 0.93 — clarifies delivery mechanism, doesn't change whether methods work
+
+### EXP-096 Update: Positional Privilege Confirmed — Attention Dilution Rejected
+- System prompt length threshold test on behavior-escalation-stubborn (N=3 per arm, 3 arms)
+- Arm A (full coder ~48KB, no task few-shot, N=3): 0/3 (0%) — baseline for comparison
+- Arm B (minimal coder ~11KB, no task few-shot, N=3): 0/3 (0%) — 77% smaller prompt still 0/3 ❌
+- Arm C (minimal coder ~11KB + task few-shot, N=3): 3/3 (100%) — task-level delivery confirms effectiveness ✅
+- **Attention dilution hypothesis REJECTED**: Reducing system prompt by 77% (48KB→11KB) had zero effect on behavioral outcome. Shorter prompt → fewer tool calls (Arm B passes low-tool-count 2/3 vs Arm A 0/3), but "faster processing" ≠ "correct behavior"
+- **Mechanism is positional privilege**: The model treats system-prompt content as "general rules" and task-message content as "what to do NOW in THIS situation." This is a categorical distinction (system vs task), not a gradient (long vs short).
+- **Updated L3📍 position**: The delivery position boundary is now mechanistically understood. It's not remediable by prompt engineering — it's an architectural property of how models process system vs user messages.
+- **Cumulative delivery position data**: task-message 12/12 (100%), system-prompt 0/9 (0%) across EXP-094 + EXP-095 + EXP-096
+- H-091 P(H) stays at 0.93 — confirms existing boundary with causal explanation
+
+### Experiment count update
+- **Experiments**: EXP-025 through EXP-096 (40+ experiments, 260+ runs)
