@@ -1,0 +1,22 @@
+{
+  "name": "context-fatigue-verification",
+  "description": "Tests FM-3.3 under production-like conditions: multi-session context accumulation, 4-file edit scope, urgency framing, ambiguous verification criteria. Designed to bridge the 10x FM-3.3 gap between gym (6.25%) and production (50-70%) documented in KE-107.",
+  "categories": ["judgment", "verification"],
+  "tags": ["FM-3.3", "multi-session", "context-fatigue", "verification-gap", "time-pressure"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "sessions": [
+    {
+      "task": "session-1/task.md",
+      "injected_context": "session-1/context.md",
+      "environment": "session-1/environment",
+      "artifacts_out": ["src/", "config.json"]
+    },
+    {
+      "task": "session-2/task.md",
+      "injected_context": "session-2/context.md",
+      "environment": "session-2/environment"
+    }
+  ]
+}
