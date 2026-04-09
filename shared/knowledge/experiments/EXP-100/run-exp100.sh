@@ -14,7 +14,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../../../.." && pwd)"
 RESULTS_DIR="$SCRIPT_DIR/results"
-RUN_GYM="$PROJECT_ROOT/scripts/gym-run.sh"
+RUN_GYM="$PROJECT_ROOT/test/gym/run-gym.sh"
 TIMESTAMP=$(date -u +%Y%m%dT%H%M%SZ)
 
 # Parse args

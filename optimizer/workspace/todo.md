@@ -17,7 +17,7 @@
 - **Coach model misconfiguration** — `opus` → `claude-opus-4.6` not available. Needs Hao/May fix. See `workspace/finding-coach-model-misconfig-0404.md`.
 - **LLM evaluations dead since Mar 31** — All evals heuristic-only (no parent-child sessions). See `workspace/finding-eval-heuristic-only-0404.md`.
 - **Session digest quality monitoring** — End digests work (100% coverage) but `still_open` and `files_modified` need improvement. Track after next restart.
-- **EXP-031: On-Demand Workflow Discovery** — Behavioral experiments (EXP-031b) COMPLETED: 0% discovery across all arms. Phase 1 gym validation deprioritized — behavioral results already definitive. Results codified in KE-026. Design at `agents/shared/knowledge/experiments/EXP-031/design.md`.
+- **EXP-031: On-Demand Workflow Discovery** — 5-arm experiment designed. Ready for Phase 1 gym execution (12 runs, ~$17). Design at `agents/shared/knowledge/experiments/EXP-031/design.md`.
 
 ## ⚠️ SENT/ESCALATED (awaiting others)
 

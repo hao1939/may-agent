@@ -17,7 +17,7 @@
 ## Counters
 - DD: 675
 - CR: 318
-- Session: 386
+- Session: 385
 
 ## Pending Leads
 - **✅ DD#655 DONE**: Rubber Duck deep-dive written and in shared library (DD-655-copilot-rubber-duck-cross-model-critique.md).
@@ -44,5 +44,4 @@
 - **✅ Verification collapse literature search (Scout)**: Session 384. Found 4 additional papers (DD#670-673), wrote CR#318 synthesis. Updated H-093 P(H) 0.65→0.75 with external validation. DD#671 "structure snowballing" directly validates CIVC mechanism. DD#673 TVAE checkpoints validate P-093c. Cascade prevention architecture proposed in CR#318. NOTE: Bob's DD#667-669 are MASC/AgentErrorTaxonomy/SpectralKillSwitches; Scout's are DD#670 (HGR), DD#671 (Structure Snowballing), DD#672 (CTHA), DD#673 (VeriGUI).
 - **EXP-100 design refinement**: CR#318 suggests EXP-100 should use lightweight TVAE-style checkpoints (not complex templates) and test hypothesis-framing of early decisions. Flag for Bob.
 - **✅ Thursday arXiv late triage DONE**: Session 385. DD#674 (Hallucination Signal Distillation — hidden-state probing for hallucination detection, fills mid-generation detection gap), DD#675 (Local Shields for Dec-POMDPs — formal safety via shield process algebra). Fixed missing IDs in covered_ids.txt. INDEX.md updated with new cluster (120 entries).
-- **Bob synthesis integration (d66744c1)**: Bob indexed DD#674-675, updated H-093 with new evidence, wrote SYNTHESIS-cascade-dynamics-verification-defense-stack.md (five-layer cascade defense stack). Created H-094 (Hedge-to-Verify Ratio as zero-cost confidence gate — based on SELFDOUBT paper). H-094 is a concrete, testable hypothesis for reducing verification overhead. Scout→Bob pipeline continues strong.
 - **Friday arXiv triage**: Fresh Friday listings expected ~18:00 UTC April 10 — next scheduled research.
