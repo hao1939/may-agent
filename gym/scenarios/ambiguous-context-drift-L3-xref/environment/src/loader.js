@@ -14,7 +14,7 @@ const CONFIG_DIR = path.join(__dirname, '..', 'config');
 
 // Track which configs have been migrated to YAML
 // Updated as migration progresses
-const YAML_CONFIGS = ['database', 'cache', 'auth'];
+const YAML_CONFIGS = ['database', 'cache', 'auth', 'logging', 'api', 'storage'];
 
 /**
  * Simple YAML parser for flat and one-level-nested configs.
