@@ -1,7 +1,7 @@
 # EXP-095: Few-Shot Delivery Mechanism — Task Prefix vs System Prompt vs Task Inline
 
 **Date**: 2026-04-09
-**Status**: IN PROGRESS
+**Status**: COMPLETE — See results.md
 **Hypothesis**: Few-shot effectiveness depends on delivery position (task-level message vs system prompt), not just content format
 **Based on**: KE-065 (100% via injected_context), EXP-094 (0% via SKILL.md v1.0.0), EXP-090 (100% with matched few-shot)
 
