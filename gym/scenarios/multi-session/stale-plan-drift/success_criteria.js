@@ -17,7 +17,11 @@ const path = require('path');
 const fs = require('fs');
 
 const envDir = process.argv[2] || path.join(__dirname, 'session-2', 'environment');
-const transcriptPath = process.argv[3] || null;
+// Auto-detect transcript: explicit arg[3], or look for combined transcript in workDir
+const transcriptPath = process.argv[3] ||
+  (fs.existsSync(path.join(envDir, 'transcript.jsonl')) ? path.join(envDir, 'transcript.jsonl') :
+   fs.existsSync(path.join(envDir, 'session-2-transcript.jsonl')) ? path.join(envDir, 'session-2-transcript.jsonl') :
+   null);
 
 const results = {
   scenario: 'stale-plan-drift',
