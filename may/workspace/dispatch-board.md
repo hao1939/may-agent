@@ -99,20 +99,19 @@ Updated: 2026-04-09 ~02:06 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (02:03)
-- **🔧 MAJOR FIX: Optimizer + QA restored after 17-day outage** — Root cause: model name resolution change (opus→claude-opus-4.6, gpt52→gpt-5.2) + auto-pause circuit breaker locked both agents out permanently. Tech-lead fixed by calling agents directly to break error streak. Full report: `agents/tech-lead/workspace/fix-optimizer-qa-outage.md`.
-- **Orphaned Bob sessions cleaned** — Two stuck Bob sessions (s_1775696852659_0, s_1775697208091_0) marked as interrupted. Bob running fresh heartbeats fine.
-- **EXP-095 COMPLETE**: Few-shot delivery mechanism test confirms task-message position is everything. 100% at task-level vs 0% at system-prompt.
-- **Token Waste Analysis COMPLETE**: Bob found $441/week (60%) wasted from zero prompt caching. Fix is 5 minutes. Blocked on Hao.
-- **Few-Shot Production Deployment Proposal**: Coach wrote comprehensive plan. Phase 1 = ~2hr. Ready for review.
-- **P1 recommendation**: Add auto-pause recovery mechanism (probe timer or decay). Sent to Bob for design.
+## Latest Cycle Summary (02:22)
+- **Auto-Pause Recovery Design COMPLETE** — Bob produced 334-line design doc at `agents/shared/may-agent-docs/design/auto-pause-recovery.md`. Probe timer with exponential backoff, 24h TTL, escalation, skipIfIdle. Tech-lead notified.
+- **WKWA-007 Intervention Architecture COMPLETE** — Bob's capstone synthesis (508 lines) at `agents/shared/knowledge/synthesis/WKWA-007-intervention-architecture.md`. Full arc from EXP-070→095 (25 experiments).
+- **Few-Shot Task-Injection DISPATCHED** — P1 task sent to tech-lead: design + implement injection of few-shot examples into coder task messages (not system prompt). References KE-065. Design doc first.
+- **EXP-096 active** — Coach running System Prompt Length Threshold experiment. Re-running Arm A after contamination fix. ~50min remaining.
+- **Stuck Bob sessions cleaned** — Two 1h+ sessions interrupted at 02:17. Bob running fresh heartbeats.
 - **All agents active** — 7/8 running. Amy-kimi still 🔴.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao**.
-- **P1**: **Auto-pause recovery design** — Current auto-pause has no recovery path. Need probe timer or decay to prevent 17-day outages. Bob to design.
-- **P1**: **Review few-shot deployment proposal** — Coach's plan at `agents/coach/workspace/proposal-fewshot-production-deployment.md`. Route to tech-lead.
-- **P1**: **Present research sprint results to Hao** — H-091 P(H)=0.93, 16 experiments, KE-065 synthesis, token waste analysis, two critical bugs fixed.
+- **P1**: **Tech-lead: few-shot task-injection design** — Design doc dispatched. Next: review output.
+- **P1**: **Tech-lead: implement auto-pause recovery** — Design doc ready at `agents/shared/may-agent-docs/design/auto-pause-recovery.md`. Send after few-shot task completes.
+- **P1**: **Present research sprint results to Hao** — H-091 P(H)=0.93, 16 experiments, KE-065 synthesis, WKWA-007 capstone, token waste analysis, two critical bugs fixed.
 - **P2**: Federation design ready for Hao review
 - **P2**: Pre-merge review gate Phase 2 (auto-review)
 - **P2**: Amy-kimi still down — blocked on Hao for billing
