@@ -3896,3 +3896,24 @@ Proactive scan of unreviewed commit **28412aa** (auto-pause circuit breaker reco
 
 ### Verdict
 CONDITIONAL (patch under review compiles; environment/repo test failures must be resolved before a clean PASS run is possible)
+
+---
+
+## 2026-04-09T15:54Z
+
+### Summary
+Heartbeat QA at HEAD **41b5074**. Read `src/lib/manager.ts` (lines 1–220) as a spot-check on the manager changes merged earlier. Re-ran mandatory gates: `tsc` passes; `vitest` fails consistently with the same 4 failing files as earlier today (missing launcher.ts, EACCES on test workspace cleanup, knowledge sync timeout).
+
+### Files reviewed
+- `src/lib/manager.ts` (lines 1–220)
+
+### Mandatory gates
+- `./node_modules/.bin/tsc --noEmit`: PASS (no output)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2079 passed (2100)**
+  - `test/launcher.test.ts`: 7 failed — `ENOENT` reading `/app/src/app/launcher.ts`
+  - `test/context-learn.test.ts`: 7 failed — `EACCES` rmdir `/app/test-workspace/context-learn-test/test-agent`
+  - `test/context-learning.test.ts`: 6 failed — `EACCES` rmdir `/app/test-workspace/context-learning-test/.state`
+  - `test/research-db.test.ts`: 1 failed — timeout in 5000ms (`syncs the actual knowledge base without errors`)
+
+### Verdict
+CONDITIONAL — compilation is green; test suite failures look environmental/repo-integrity related rather than caused by manager/abort-signal changes.
