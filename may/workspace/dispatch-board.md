@@ -1,12 +1,12 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~08:54 UTC
+Updated: 2026-04-09 ~09:23 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
 - **Scout**: 🟢 Running — Heartbeat active.
-- **Bob**: 🟢 Running — 33 sessions in 6h. KB integration (KE-076, KE-077), parallel-research workflow.
-- **Coach**: 🟢 Running — Heartbeat active.
+- **Bob**: 🟢 Running — H-092, H-093, EXP-099 analysis, DD-639/640 synthesis all completed this hour. Active research production.
+- **Coach**: 🟢 Running — Multi-session test harness design in progress. Commit guard 48h measurement due ~16:00 UTC.
 - **Tech-lead**: 🟢 Running — Auto-pause recovery implemented and merged.
 - **Optimizer**: 🟢 Running — Restored Apr 9.
 - **QA**: 🟢 Running — Restored Apr 9.
@@ -118,11 +118,12 @@ Updated: 2026-04-09 ~08:54 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (08:54)
-- **All agents heartbeating** — Bob, Coach, Scout, QA all have active heartbeat sessions running.
-- **Stale session cleaned** — Cancelled `s_1775311714523_3` (idle "hello fresh session" running 4.8 days).
-- **3 failed requests noted** — (1) Bob EXP-097 KB integration aborted (5.5h ago), (2) Optimizer cron timeout (9.5h ago), (3) May failure-analysis cron db.query error (9.5h ago). All are stale failures, not recurring.
-- **Zero new errors** — No errors in last hour. All 7/8 agents healthy. Amy-kimi still 🔴.
+## Latest Cycle Summary (09:23)
+- **All 7/8 agents heartbeating** — Fresh cycle started at 09:23 UTC. All healthy.
+- **Stale session re-cancelled** — `s_1775311714523_3` was still alive at 6915m runtime. Killed again.
+- **Bob productive** — H-092 (reasoning-flow failure modes, P(H)=0.72), H-093 (complexity-induced verification collapse, P(H)=0.65), EXP-099 analysis, DD-639/640 synthesis with cascade circuit breaker convergence. New KEs: 079-082.
+- **Coach in post-graduation mode** — Multi-session test harness design in progress. Commit guard 48h measurement due ~16:00.
+- **Zero errors** — No failures in last hour. Amy-kimi still 🔴.
 - **No dispatch items** — No inbox, no pending tasks from Hao.
 
 ## Next Actions
