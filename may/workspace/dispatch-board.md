@@ -122,19 +122,18 @@ Updated: 2026-04-09 ~11:17 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (10:53)
-- **All 7/8 agents heartbeating** — Fresh cycle at 10:53 UTC. All healthy.
-- **Zombie session killed (again)** — `s_1775311714523_3` cancelled (7005m runtime). Keeps resurrecting.
-- **EXP-100 COMPLETE** — Ceiling effect. 12/12 (100%) across all 3 arms (baseline, scaffolding, checkpoint). Scenarios too easy. Need harder scenarios to test CIVC interventions.
-- **Multi-Session Harness Phase 3 mostly done** — 3/4 scenarios complete. `kb-integration-failure` needs finishing (interrupted session).
-- **Coach had 1 interrupted session** — "Request was aborted." Not systemic, coach is healthy and heartbeating.
-- **Merged review branches cleaned** — Deleted `review/session-lifecycle-fixes` + `review/telegram-notification-filter`.
-- **Duplicate EXP-100 requests** — Two identical messages (8eae6e3f + 88aae391) to coach. Already complete so no harm.
+## Latest Cycle Summary (11:17)
+- **System quiet** — Only may + evaluator running at 11:17 UTC. All other agents between heartbeats. Zero errors in last hour.
+- **Bob integrating EXP-100** — Self-forked work session (req:724d48bb, 28m). KB integration of ceiling effect finding.
+- **Coach working on Multi-Session Harness Phase 3** — Self-forked (req:d3671348, 28m). Finishing remaining scenarios.
+- **Review branch awaiting merge** — `review/s_1775702934728_338` has 6 commits: finish-guard orchestration fix, fewshot injection tests (22), gym state isolation, GHOST_KEYWORDS regex fix. Two merge requests sent to tech-lead (one duplicate). Will merge on next tech-lead heartbeat.
+- **No failures, no stuck sessions** — Clean cycle.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao**.
-- **P1**: **EXP-100 KB integration** — Bob needs to integrate ceiling effect finding. Coach/Bob need to design harder CIVC scenarios.
-- **P1**: **Complete kb-integration-failure scenario** — Coach needs to finish the incomplete multi-session scenario (add package.json + success_criteria.js).
+- **P1**: **EXP-100 KB integration** — Bob actively working (req:724d48bb). In progress.
+- **P1**: **Complete kb-integration-failure scenario** — Coach actively working on Multi-Session Harness Phase 3 (req:d3671348).
+- **P1**: **Merge review branch** — `review/s_1775702934728_338` (6 commits). Two merge requests sent to tech-lead, awaiting next heartbeat.
 - **P1**: **Present research sprint results to Hao** — H-091, 17+ experiments, gym graduation, EXP-098 landmark result.
 - **P2**: Federation design ready for Hao review
 - **P2**: Pre-merge review gate Phase 2 (auto-review)
