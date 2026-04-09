@@ -1,12 +1,18 @@
 # H-091: Skill Delivery Methods Exist Between Text-Rules and Workflow Enforcement
 
-**Status**: Strongly Supported (EXP-084, EXP-085, EXP-086, EXP-087, EXP-089, EXP-090, EXP-091, EXP-093, EXP-094)
-**Date**: 2026-04-08
+**Status**: Strongly Supported (EXP-084, EXP-085, EXP-086, EXP-087, EXP-089, EXP-090, EXP-091, EXP-092, EXP-093, EXP-094)
+**Date**: 2026-04-09
 **P(H)**: 0.93
 
 ## Statement
 
-There exist skill delivery methods between "text in context" (0% effect) and "full workflow enforcement" (100% effect) that produce measurable behavior change on judgment AND process discipline tasks. Specifically, few-shot examples, checklist injection, and echo-back self-prompting each independently improve task scores above the 0% text-rule baseline. However, few-shot has a **boundary at temporal discipline** — it teaches *what* to do but not *when* to do it in a tool-call sequence (EXP-093).
+There exist skill delivery methods between "text in context" (0% effect) and "full workflow enforcement" (100% effect) that produce measurable behavior change on judgment AND process discipline tasks. Specifically, domain-matched few-shot worked examples achieve ~100% on target checks across three categories: judgment (EXP-090), process knowledge (EXP-091), and validation knowledge (EXP-093 C3).
+
+Two confirmed boundaries:
+1. **Temporal discipline** — few-shot teaches *what* to do but not *when* to do it in a tool-call sequence (EXP-093: C2.3 -20pp)
+2. **Domain proximity** — cross-domain structural matching fails on hard scenarios (EXP-094: 0/3), requiring domain-class-matched examples
+
+Additionally, L1/L2 instruction-level interventions to compensate for gaps create zero-sum tradeoffs (EXP-092: instruction-induced task narrowing).
 
 ## Evidence
 
@@ -146,3 +152,18 @@ L5: Workflow enforcement → +3.0 score (EXP-045)
 - **Practical impact**: behavior-escalation-stubborn now solvable by BOTH workflow enforcement AND domain-matched narrative few-shot (lighter weight, no workflow infrastructure needed)
 - **Posterior update**: H-091 P(H) 0.95→0.93 — domain proximity boundary narrows few-shot applicability (skills need examples per domain class, not one generic example)
 - **Cumulative matched few-shot**: 18/18 on domain-matched scenarios (including 3/3 new), 0/3 on cross-domain hard scenarios
+
+### EXP-092: Instruction-Level Intervention Failure (task narrowing)
+- **Design**: Two arms testing L1/L2 instruction modifications to close analysis-to-documentation transfer gap
+- **Arm A (forced citation, N=10)**: 100% status-doc-accurate (p=0.043 vs 60% baseline) but **0% migration** (all 5 implementation checks failed in all 10 runs). Agent wrote accurate docs but never migrated files.
+- **Arm B (post-check verification, N=8)**: 37.5% status-doc-accurate, 25% migration, 37.5% error rate. Worse than baseline on every dimension.
+- **Key finding**: **Instruction-induced task narrowing** — emphasizing one sub-task (documentation) reoriented the agent's task understanding away from implementation. Agent attention is zero-sum within a session.
+- **Implication for H-091**: L1/L2 instruction-level interventions on multi-objective tasks create tradeoffs, not improvements. Confirms KE-056 prediction. Multi-document consistency gaps need L4+ structural enforcement, not task.md modifications.
+- **Novel failure mode documented**: Instructions have opportunity costs. The fix was worse than the disease (60% overall → 0% overall).
+
+## Cross-References
+
+- Extends: KE-002, KE-058, KE-056 (constraint hierarchy)
+- Supported by: KE-059 (updated with EXP-086 two-level transfer model, EXP-092/093/094 boundaries), KE-065 (comprehensive findings)
+- Related: H-085 (forced externalization), H-089 (evidence discovery)
+- Experiments: EXP-084, EXP-085, EXP-086, EXP-087, EXP-089, EXP-090, EXP-091, EXP-092, EXP-093, EXP-094
