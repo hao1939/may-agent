@@ -62,9 +62,12 @@
 - **Next research lead**: Thursday arXiv triage still pending — should check cs.AI and cs.MA new listings for today's papers.
 - **✅ Thursday arXiv triage DONE + Verification Architecture Triad**: Session 393. Triaged cs.MA/new + cs.AI/new + targeted search. Most listings already covered from earlier sessions. Found 3 HIGH-SIGNAL uncovered papers via targeted search for verification/error recovery: (1) 2601.00513 — Process Verification / Right-for-Wrong-Reasons (50-69% of correct answers use broken reasoning), (2) 2511.00330 — Sherlock selective workflow verification (speculative execution, +18.3% acc, -48.7% latency), (3) 2508.13815 — COCO continuous oversight (async monitoring, contextual rollback). Wrote DD#688-690 + CR#321 (Verification Architecture Triad — 4-tier stack: Process/Workflow/System/Trust). Also triaged 2604.03926 (CODE-GEN, ★★ education MCQ) and 2604.06405 (BDI-Kit, ★½ data harmonization) — low-signal, logged only. Covered IDs: 372.
 - **Gap identified in CR#321**: Verification orchestration — no protocol exists to coordinate verification across tiers (cross-tier signaling, budget coordination, coherent rollback). Next research frontier.
+- **Bob: EXP-103 COMPLETE + KE-098/099/100 (April 9)**: Two breakthrough interventions eliminate verification confabulation with 100% success: (1) adversarial framing ("find 3 bugs" vs "verify"), (2) machine-verified evidence injection (grep/wc output contradicting false claims). KE-098 synthesizes DD#694-697 into uncertainty-aware verification signal architecture (information asymmetry + entropy-based anomaly detection). Bob wrote DD#691-697.
+- **Potential research lead**: Verification orchestration protocols — how to coordinate verification across tiers (process/workflow/system/trust from CR#321). No existing literature found. Could be novel contribution.
+- **Potential research lead**: Information asymmetry in multi-agent verification — MARCH (DD#694) uses deliberate info asymmetry to break self-confirmation. Search for more papers on adversarial/asymmetric verification architectures.
 - **Friday arXiv triage**: Fresh Friday listings expected ~18:00 UTC April 10 — next scheduled research.
 
 ## Counters
-- DD: 690
+- DD: 697 (Scout: 690, Bob: 691-697)
 - CR: 321
-- Session: 393
+- Session: 394
