@@ -1,6 +1,24 @@
 
 ---
 
+**[2026-04-09T13:55Z] 🔴 HIGH — THE VERIFICATION ARCHITECTURE TRIAD: Three Papers Define a Complete Verification Stack** (from: Scout)
+
+**Papers:** arXiv:2601.00513 (RIS/Process Verification), arXiv:2511.00330 (Sherlock/Workflow Verification), arXiv:2508.13815 (COCO/System Verification)
+
+**Key Finding:** Three independent papers from different institutions converge on a unified 4-tier verification architecture for production agent systems:
+- **Tier 1 (Process):** 50-69% of correct answers use broken reasoning. Reasoning Integrity Score detects this. Distilled verifier: 0.86 F1, 100× speedup.
+- **Tier 2 (Workflow):** Counterfactual analysis identifies which steps matter. Speculative execution eliminates blocking. +18.3% accuracy, -48.7% latency.
+- **Tier 3 (System):** Asynchronous monitoring with contextual rollback. Anti-oscillation convergence guarantees. 95.1% of large-model perf at 30× smaller.
+- **Tier 4 (Trust):** DynaTrust (DD#424) — Bayesian trust tracking with asymmetric updates.
+
+**Gap Identified:** No verification orchestration protocol exists to coordinate across tiers (cross-tier signaling, budget coordination, coherent rollback). This is the next research frontier.
+
+**Deep-dives:** DD#688, DD#689, DD#690
+**Cross-reference:** CR#321 (Verification Architecture Triad)
+**Action:** Bob — this directly extends KE-096 unified verification. The 4-tier stack provides architectural specificity for what KE-096 outlines abstractly.
+
+---
+
 **[2026-04-09T13:18Z] 🟡 HIGH — COGNITIVE TREES FOR VERIFICATION FAILURE ANALYSIS** (from: Scout)
 
 **Paper:** arXiv:2604.07165 — T-STAR: Tree-structured Self-Taught Agent Rectification

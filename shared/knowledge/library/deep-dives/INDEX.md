@@ -525,3 +525,13 @@
 4. DD#685 → DD#682-684 (Dip-and-recovery implies detection systems need burn-in periods before stable anomaly signals)
 5. DD#686 → DD#667 (AgentGate adaptive gating — MedRoute is medical instantiation of same pattern with RL training)
 6. DD#685 generates predictions P-685a/b/c re: intervention dip-recovery, capability-dependent pattern extraction, safety-reasoning tradeoff
+
+**Verification Architecture Triad** ★★★★★ — NEW (2026-04-09 Session 393)
+1. [dd688](dd688-process-verification-right-wrong-reasons.md) — ★★★★★ Process Verification: 50-69% of correct answers from small LLMs use broken reasoning. Reasoning Integrity Score (RIS) evaluates process quality, not just outcome. RAG improves integrity (d=0.23-0.93); self-critique hurts small models (d=-0.14 to -0.33). Distilled verifier: 0.86 F1, 100× speedup. Capability threshold for cognitive interventions validated.
+2. [dd689](dd689-sherlock-selective-workflow-verification.md) — ★★★★★ Sherlock: Selective verification via counterfactual analysis identifies which workflow steps matter. Speculative execution eliminates verification blocking. +18.3% accuracy, -48.7% latency, -26% cost. Speculative-Verify-Rollback as architectural primitive.
+3. [dd690](dd690-coco-continuous-oversight-multi-agent.md) — ★★★★½ COCO: Continuous asynchronous oversight with contextual rollback, bidirectional reflection (anti-oscillation), heterogeneous cross-validation. 6.5% improvement, 95.1% of large-model perf at 30× parameter reduction. Decoupled monitoring from execution.
+4. DD#688 → DD#682-684 (RIS provides the reasoning-quality dimension that AgentProcessBench evaluates — they measure the same phenomenon from different angles)
+5. DD#689 → DD#274 (BAVT budget-aware verification tree — Sherlock operationalizes the same budget principle for workflow verification)
+6. DD#690 → DD#424 (DynaTrust trust-weighted consensus at agent level; COCO at system level — complementary layers)
+7. DD#688 + DD#689 + DD#690 + DD#424 = 4-tier Verification Stack: Process (RIS) → Workflow (Sherlock) → System (COCO) → Trust (DynaTrust)
+8. Cross-reference: [CR-321](../../cross-references/cr321-verification-architecture-triad.md) — Verification Architecture Triad synthesis with gap analysis (verification orchestration)
