@@ -76,3 +76,5 @@ See `agents/evaluator/periodic-tasks.md` for the definitions.
 - Canonical source: `.state/may.db` (do not rely on legacy artifact directories).
 - Check for existence of a `llm_evaluations` (or similarly named) table.
 - If missing: treat as "LLM eval disabled or not implemented" and open a tracked item to either (a) add it back, or (b) remove/rename docs that imply it exists.
+
+**Last check**: 2026-04-09 19:23Z — `.state/may.db` tables include `evaluations` but no `llm_evaluations` (LLM eval appears disabled/unimplemented).
