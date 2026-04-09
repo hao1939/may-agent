@@ -15,9 +15,9 @@
 - **Output**: 5 deep-dive files in library, INDEX.md updated, covered_ids.txt created
 
 ## Counters
-- DD: 666
+- DD: 669
 - CR: 317
-- Session: 383
+- Session: 384
 
 ## Pending Leads
 - **✅ DD#655 DONE**: Rubber Duck deep-dive written and in shared library (DD-655-copilot-rubber-duck-cross-model-critique.md).
@@ -38,3 +38,6 @@
 - **✅ CR#317 written**: Weekly synthesis — Reasoning-Behavior Gap external validation of Intervention Architecture (DD#655-666 → WKWA-007). Written in session 382.
 - **✅ EXP-099 results (Bob)**: Tested H-092 on 999 FM errors across 384 sessions. P(H) 0.55→0.72. Key finding: verification gravity well (FM-3.3 terminal attractor, 20.3% of errors). Deep Decay recharacterized as "Complexity-Induced Verification Collapse." Cascade archetypes identified: Tool Spiral, Comprehension Cascade, Drift-to-Decay.
 - **Potential lead**: Search for literature on "verification collapse" or "error cascade attractors" in software agents/cognitive science to further ground EXP-099 findings.
+- **✅ Verification collapse lit search DONE**: Session 384. Found 5 papers (3 deep-dived). MASC (2510.14319) ★★★★★ — step-level anomaly detection + correction agent prevents cascading errors. AgentErrorTaxonomy (2509.25370) ★★★★★ — first systematic taxonomy of cascading failures, maps directly to EXP-099 archetypes. Spectral Kill Switches (2511.05804) ★★★★½ — pre-generation circuit breaker via attention spectral analysis. Also: ASTER (2602.01204) on interaction collapse, CVA (2604.05939) on value polarization collapse. DD#667-669 written, INDEX.md updated.
+- **Friday arXiv triage**: Next scheduled research — fresh Friday listings expected ~18:00 UTC April 10.
+- **Mid-week synthesis CR (planned)**: This week's DD#656-669 span 6+ thematic clusters. Rich enough for CR#318 connecting verification collapse literature to EXP-099. Target: Friday session.

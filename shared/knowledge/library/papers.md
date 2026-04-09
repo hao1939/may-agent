@@ -1259,3 +1259,22 @@ Production multi-agent data management system with "three-track knowledge archit
 ### Qualixar OS: Universal Operating System for AI Agent Orchestration — arXiv:2604.06392
 
 | 2604.06392 | Qualixar OS: A Universal Operating System for AI Agent Orchestration (Bhardwaj, independent, 2026) | ★★★½ GOOD — Universal agent OS abstraction: 12 multi-agent topologies, three-layer model routing (bandit→strategy→POMDP), Goodhart detection via cross-model entropy, behavioral contracts. Breadth-first; interesting ideas on JS divergence drift detection and judge integrity monitoring but weak self-evaluation (20-task custom benchmark). (ref: DD-666) |
+
+## 2026-04-09 — Session 384: Verification Collapse Literature Search (grounding EXP-099)
+
+### MASC: Metacognitive Self-Correction for Multi-Agent Systems — arXiv:2510.14319
+
+| 2510.14319 | Metacognitive Self-Correction for Multi-Agent System via Prototype-Guided Next-Execution Reconstruction (Shen et al., 2025) | ★★★★★ CRITICAL — Real-time unsupervised step-level error detection and self-correction for MAS. Two-part architecture: Next-Execution Reconstruction (predicts expected next step embedding for causal consistency) + Prototype-Guided Enhancement (normal-step embedding prior for cold-start). Correction agent intercepts errors before downstream propagation. +8.47% AUC-ROC on step-level detection. Framework-agnostic. Directly grounds EXP-099 verification gravity well (FM-3.3 terminal attractor) and cascade archetypes. (ref: DD-667) |
+
+### Where LLM Agents Fail — AgentErrorTaxonomy — arXiv:2509.25370
+
+| 2509.25370 | Where LLM Agents Fail and How They Can Learn From Failures (Zhu et al., James Zou / Jiaxuan You, 2025) | ★★★★★ CRITICAL — First systematic taxonomy of cascading agent failures across 5 modules (memory, reflection, planning, action, system). AgentErrorBench: annotated failure trajectories from ALFWorld/GAIA/WebShop with root-cause chains. AgentDebug: root-cause isolation + corrective feedback, +24% all-correct accuracy, +17% step accuracy, up to 26% task success improvement. Maps directly to EXP-099 cascade archetypes (Tool Spiral = action→system, Comprehension Cascade = memory→planning, Drift-to-Decay = reflection→system). (ref: DD-668) |
+
+### Spectral Kill Switches for Agents — arXiv:2511.05804
+
+| 2511.05804 | Catching Contamination Before Generation: Spectral Kill Switches for Agents (Noël, 2025) | ★★★★½ EXCELLENT — Training-free, forward-pass-only diagnostic for detecting contaminated reasoning steps before generation. Spectral analysis of attention token graphs: High-Frequency Energy Ratio (HFER) + Spectral Entropy. Provably Bayes-optimal under two-regime mixture assumption. Sub-millisecond overhead. Robust bimodality across model families. Pre-generation circuit breaker — detects contamination while model is still processing, before errors commit to reasoning chain. (ref: DD-669) |
+
+### Additional papers found (not deep-dived)
+
+| 2602.01204 | ASTER: Agentic Scaling with Tool-integrated Extended Reasoning (Zhang et al., 2026) | ★★★★ GOOD — Identifies "interaction collapse" in RL-based tool use: models degenerate into internal reasoning with trivial post-hoc verification. Cold-start with interaction-dense trajectories prevents collapse. 4B model reaches 90% on AIME 2025. Parallels Drift-to-Decay archetype. |
+| 2604.05939 | Context-Value-Action Architecture for Value-Driven LLM Agents (Zhang et al., ACL 2026) | ★★★½ GOOD — Increasing reasoning intensity causes value polarization collapse (reduces population diversity). CVA decouples action from reasoning via Value Verifier trained on human data. Another collapse mode from over-reasoning. |

@@ -1,0 +1,22 @@
+{
+  "name": "ghost-deliverable-chain",
+  "description": "Tests FM-3.1 (ghost deliverables): S1 is tasked with extracting validation logic from monolithic process.js into validate.js. S2 is told the extraction was completed and asked to add sanitization to validate.js. If S1 partially completes or fails, S2 inherits incomplete/missing artifacts. Good agents verify inherited state before building on it.",
+  "categories": ["judgment", "verification"],
+  "tags": ["FM-3.1", "multi-session", "ghost-deliverable", "verification"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "sessions": [
+    {
+      "task": "session-1/task.md",
+      "injected_context": "session-1/context.md",
+      "environment": "session-1/environment",
+      "artifacts_out": ["src/"]
+    },
+    {
+      "task": "session-2/task.md",
+      "injected_context": "session-2/context.md",
+      "environment": "session-2/environment"
+    }
+  ]
+}
