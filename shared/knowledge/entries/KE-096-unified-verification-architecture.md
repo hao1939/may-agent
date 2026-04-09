@@ -1,8 +1,9 @@
-# KE-095: Unified Verification Architecture — From Literature Stacks to Experimental Constraints
+# KE-096: Unified Verification Architecture — From Literature Stacks to Experimental Constraints
 
 **Created:** 2026-04-09
 **Source:** CR-318 (Cascade Prevention Stack), CR-320 (Behavioral Failure Prediction Stack), DD-682/683/684, EXP-100/101/102, KE-091/092/093, H-093/094
 **Status:** Active — Architectural Synthesis
+**Supersedes/Extends:** KE-095 (Behavioral Failure Prediction Pipeline) — adds experimental constraints, FM-3.3 severity gradient, and EXP-103 design
 **Confidence:** High (grounded in 12+ papers, 3 experiments, 999 classified errors)
 
 ## Executive Summary
