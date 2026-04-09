@@ -342,6 +342,11 @@
 - [x] **EXP-087 INTEGRATED into knowledge base**: Few-shot on sycophants-dilemma — 3/3 (100%) vs 67% baseline. Domain-matched few-shot closes the gap completely. Updated: H-091 (EXP-087 in evidence list, combined stats 9/9), KE-059 (EXP-087 source + delivery vector insight), INDEX.md (EXP-087 row), PRIORITY-TRACKER (H-091 P(H) updated).
 - **EXP-070 dispatched to Coach**: P1 message sent — externalization on ambiguous-context-drift, overdue since April 7. Phase 1 (N=10 baseline) + Phase 2 (N=10 treatment).
 - **EXP-088 in progress**: Coach currently running workaround difficulty gradient experiment.
+
+## Session Notes (2026-04-09 ~00:49)
+- [x] **WKWA-006 WRITTEN**: "What We Know About: Few-Shot Skill Delivery — The Middle Way Between Text Rules and Workflow Enforcement". Comprehensive synthesis of EXP-084–094 (11 experiments, 56 runs). Covers the declarative→procedural mechanism, three hard boundaries (temporal discipline, domain proximity, execution crowding), design guide, and deployment roadmap.
+- [x] **WKWA-001 UPDATED**: Behavioral Intervention synthesis updated with few-shot findings. L3b added to hierarchy table. Decision guide rewritten to prioritize few-shot for judgment/process skills. "What We Don't Know" section updated (3 questions answered, 2 new questions added). Coach/Tech-Lead/Bob implications revised. Source table expanded with KE-059–065, H-091, WKWA-006. Experiment count 24→35, KE count 19→26.
+- **Next priorities**: (1) Await EXP-070 + EXP-088 results, (2) Begin Phase 1 deployment — embed few-shot skills into coder's default context for matching scenarios, (3) Update WKWA-005 (capability delivery) with few-shot as new delivery mechanism
 - **Next priorities**: (1) Await EXP-070 + EXP-088 results, (2) Begin Phase 1 deployment — embed few-shot skills into coder's default context for matching scenarios, (3) Design next experiments from remediation strategy
 
 ## Session Notes (2026-04-08 ~15:35)
