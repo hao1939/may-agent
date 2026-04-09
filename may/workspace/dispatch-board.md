@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~10:48 UTC
+Updated: 2026-04-09 ~10:24 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
@@ -88,10 +88,9 @@ Updated: 2026-04-09 ~10:48 UTC
 | **Compaction KeyFacts + MemLeak Fix** | ✅ MERGED | tech-lead | Commit 0349a21, merged to main. Enhanced compaction KeyFacts + fixed sessionResults memory leak. |
 | **Auto-Pause Recovery Implementation** | ✅ MERGED | tech-lead | Probe timer + exponential backoff (5min→2h cap) + 24h TTL + escalation to May. 39/39 tests pass. Branch `review/auto-pause-recovery` merged commit `bd56956`. |
 | **Session Lifecycle Bug Fixes (3,4,8,10)** | ✅ MERGED | tech-lead | Bob found 10 bugs in manager.ts. Tech-lead fixed 4 HIGH/MED. Tests 6/6. Branch merged to main. |
-| **EXP-100 CIVC Interventional Test** | 🔄 IN PROGRESS | coach | 10/12 runs complete. Arms A+B done, Arm C compound-edit done. Only Arm C multi-file-verify-gap remaining (2 runs). Coach session ~30min runtime. |
+| **EXP-100 CIVC Interventional Test** | 🔄 IN PROGRESS | coach | Forked work session executing 12 gym runs. 3 arms × 2 scenarios × 2 runs. |
 | **Multi-Session Harness Phase 3** | 🔄 IN PROGRESS | coach | FM-targeted scenarios being built. Phase 1 (runner extension) complete. |
 | **Telegram Notification Bug (req:88bd4688)** | ✅ ALREADY FIXED | tech-lead | Commit 9de9e58 merged to main. Notifications filtered to interface agent only + dead prompt handler removed. |
-| **Review Branch Reconciliation** | ⚠️ NEEDS MERGE | tech-lead | `review/s_1775702934728_338` has 6 commits ahead of HEAD (finish-guard orchestration, gym isolation, ghost keywords, fewshot tests, KE updates). HEAD has 1 commit not on branch (multi-session harness). Needs merge/rebase. |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -123,15 +122,18 @@ Updated: 2026-04-09 ~10:48 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (10:48)
-- **All 7/8 agents heartbeating** — Fresh cycle at 10:48 UTC. All healthy.
-- **EXP-100 near complete** — Coach work session at ~30min runtime, 10/12 gym runs done. Arms A+B all 4 runs complete. Arm C has 2 remaining (multi-file-verify-gap-checkpoint). Early results: compound-edit scenarios consistently ~2/7 checks passing across all arms (verification collapse confirmed). Multi-file scenarios consistently 2/6 across arms (scaffolding showed same score as baseline).
-- **Review branch divergence found** — `review/s_1775702934728_338` has 6 reviewed commits not on HEAD + HEAD has 1 commit not on branch. Needs tech-lead merge.
+## Latest Cycle Summary (10:24)
+- **All 7/8 agents heartbeating** — Fresh cycle at 10:24 UTC. All healthy.
+- **Stale session killed again** — `s_1775311714523_3` cancelled (662m runtime). Keeps resurrecting.
+- **Telegram notification bug ALREADY FIXED** — req:88bd4688 filed at 09:55 but commit 9de9e58 (merged to main at 09:57) already fixed it. Notifications now filtered to interface agent only + dead prompt handler removed. Marked COMPLETED.
+- **Session lifecycle fixes MERGED** — Branch `review/session-lifecycle-fixes` is on main (no commits ahead). ✅
+- **Coach executing EXP-100** — Forked work session running (12 gym runs for CIVC interventional test).
+- **Coach building multi-session Phase 3** — FM-targeted scenarios being constructed.
 - **Zero errors** — No failures in last 2 hours. Amy-kimi still 🔴.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao**.
-- **P1**: **Merge review branch** — `review/s_1775702934728_338` needs reconciliation with HEAD. Dispatch to tech-lead.
+- **P1**: **Clean up merged review branches** — `review/session-lifecycle-fixes`, `review/telegram-notification-filter`, `review/auto-pause-recovery` can all be deleted.
 - **P1**: **Present research sprint results to Hao** — H-091, 17+ experiments, gym graduation, EXP-098 landmark result.
 - **P2**: Federation design ready for Hao review
 - **P2**: Pre-merge review gate Phase 2 (auto-review)
