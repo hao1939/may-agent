@@ -2,7 +2,7 @@
 
 **Status**: Proposed
 **Date**: 2026-04-09
-**P(H)**: 0.65 (strong observational evidence from EXP-099, no interventional test yet)
+**P(H)**: 0.75 (updated from 0.65 — external literature validation via CR-318, Session 384)
 **Origin**: EXP-099 (H-092 Information-Flow Failure Mode Analysis)
 **Related**: H-092 (information-flow failure patterns), H-085 (forced externalization), H-039 (decomposition bottleneck)
 
@@ -30,15 +30,19 @@ EXP-099 found quality-opCount correlation r=0.099 — essentially zero. This mea
 - **P-093c**: Forced verification checkpoints (externalized verification steps that must be completed before proceeding) will break the Drift-to-Decay cascade pattern
 - **P-093d**: Task complexity can be operationalized as a composite of: number of files touched, number of cross-references required, number of constraints that must be simultaneously satisfied, and depth of reasoning chain required
 
-## Proposed Test: EXP-100
+## Proposed Test: EXP-100 (DESIGNED)
 
-**Design**: Interventional study comparing verification collapse rates under three conditions:
-1. **Control**: Standard agent task execution (no intervention)
-2. **Scaffolded**: Agent receives complexity-reducing decomposition + intermediate verification prompts
-3. **Forced-checkpoint**: Agent must externalize verification at predefined complexity thresholds
+**Design document**: `agents/shared/knowledge/experiments/EXP-100/design.md`
 
-**Metric**: FM-3.3 rate, cascade rate, task completion quality
-**Expected result**: Scaffolded condition shows 40-60% reduction in FM-3.3; forced-checkpoint shows 60-80% reduction
+Interventional study comparing verification collapse rates under three conditions across two complexity levels:
+1. **Control (Arm A)**: Standard agent task execution (no intervention) on compound-edit-verification (high complexity) and multi-file-verify-gap (medium complexity)
+2. **Scaffolded (Arm B)**: Agent receives decomposition template + per-step verification prompts (PLAN.md)
+3. **Forced-checkpoint (Arm C)**: Agent must externalize verification after every edit (VERIFY.md) and run all tests before finishing
+
+**Scenarios**: compound-edit-verification (4-file tax refactor, hidden dependencies) + multi-file-verify-gap (3-file rename propagation)
+**Budget**: 12 gym runs (3 arms × 2 scenarios × 2 runs)
+**Metric**: Check-level pass rate, FM-3.3 classification, cascade analysis, process compliance
+**Expected result**: Scaffolded ≥40% improvement; forced-checkpoint ≥60% improvement; larger effect on higher-complexity scenario
 
 ## Relationship to Other Hypotheses
 
@@ -52,3 +56,21 @@ EXP-099 found quality-opCount correlation r=0.099 — essentially zero. This mea
 2. **Verification scaffolding**: High-complexity tasks need mandatory verification checkpoints
 3. **Agent-complexity matching**: Route tasks to agents whose collapse threshold exceeds the task's complexity
 4. **Cascade breakers**: Insert verification checkpoints at known cascade entry points (especially after FM-1.1 scope drift events)
+
+## External Literature Evidence (Added 2026-04-09, Session 384)
+
+**Cross-reference**: CR-318 (Verification Collapse Literature Synthesis)
+
+### Direct Validation
+- **DD#667 (2604.06066)**: "Structure Snowballing" — Constrained decoding triggers formatting-focused mode that destroys semantic verification. The "alignment tax" quantifies the complexity cost of structural constraints. **Directly validates P-093a**: complexity (including formatting complexity), not length, triggers verification collapse.
+- **DD#669 (2604.05477)**: VeriGUI TVAE framework — Mandatory verification before each action prevents error accumulation. **Directly validates P-093c**: forced checkpoints break cascade patterns. (ACL 2026 Main — peer-reviewed.)
+
+### Architectural Evidence
+- **DD#668 (2601.10738)**: CTHA — 47% failure cascade reduction via typed message contracts, authority manifolds, and arbiter resolution. Supports constraint-based cascade prevention.
+- **DD#670 (2604.04108)**: HGR — Cascade error correction via hypothesis nodes with dependency tracking. Graph contraction (memory can shrink) eliminates 20% redundant nodes and reduces error revisits 4.5×.
+
+### Critical Nuance from DD#667
+Scaffolding CAN itself trigger verification collapse if it adds too much structural overhead (the "alignment tax"). EXP-100 design should use **lightweight** verification checkpoints, NOT complex structured templates.
+
+### Updated P(H): 0.65 → 0.75
+Strong external mechanistic validation (DD#667), peer-reviewed intervention evidence (DD#669), and consistent architectural support (DD#668, DD#670). No contradictory evidence found.
