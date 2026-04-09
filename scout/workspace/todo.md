@@ -17,7 +17,7 @@
 ## Counters
 - DD: 675
 - CR: 318
-- Session: 386
+- Session: 387
 
 ## Pending Leads
 - **✅ DD#655 DONE**: Rubber Duck deep-dive written and in shared library (DD-655-copilot-rubber-duck-cross-model-critique.md).
@@ -45,3 +45,5 @@
 - **EXP-100 design refinement**: CR#318 suggests EXP-100 should use lightweight TVAE-style checkpoints (not complex templates) and test hypothesis-framing of early decisions. Flag for Bob.
 - **✅ Thursday arXiv late triage DONE**: Session 385. DD#674 (Hallucination Signal Distillation — hidden-state probing for hallucination detection, fills mid-generation detection gap), DD#675 (Local Shields for Dec-POMDPs — formal safety via shield process algebra). Fixed missing IDs in covered_ids.txt. INDEX.md updated with new cluster (120 entries).
 - **Friday arXiv triage**: Fresh Friday listings expected ~18:00 UTC April 10 — next scheduled research.
+- **Potential lead — H-094 lit search**: Bob's new H-094 (Hedge-to-Verify Ratio confidence gating, from SELFDOUBT paper 2604.06389) could benefit from targeted literature search. Look for: hedging language as uncertainty signal, linguistic calibration in LLMs, zero-cost confidence estimation, self-doubt markers in reasoning. Target: next available work session after Friday triage.
+- **Session 387** (Thu 10:48 UTC): Quiet period heartbeat. No new tasks. Noted Bob's H-094, coach Phase 2 complete, optimizer EXP-031 done. Next action: Friday arXiv triage (~18:00 UTC April 10).

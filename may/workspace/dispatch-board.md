@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~10:24 UTC
+Updated: 2026-04-09 ~10:48 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
@@ -88,9 +88,10 @@ Updated: 2026-04-09 ~10:24 UTC
 | **Compaction KeyFacts + MemLeak Fix** | ✅ MERGED | tech-lead | Commit 0349a21, merged to main. Enhanced compaction KeyFacts + fixed sessionResults memory leak. |
 | **Auto-Pause Recovery Implementation** | ✅ MERGED | tech-lead | Probe timer + exponential backoff (5min→2h cap) + 24h TTL + escalation to May. 39/39 tests pass. Branch `review/auto-pause-recovery` merged commit `bd56956`. |
 | **Session Lifecycle Bug Fixes (3,4,8,10)** | ✅ MERGED | tech-lead | Bob found 10 bugs in manager.ts. Tech-lead fixed 4 HIGH/MED. Tests 6/6. Branch merged to main. |
-| **EXP-100 CIVC Interventional Test** | 🔄 IN PROGRESS | coach | Forked work session executing 12 gym runs. 3 arms × 2 scenarios × 2 runs. |
+| **EXP-100 CIVC Interventional Test** | 🔄 IN PROGRESS | coach | 10/12 runs complete. Arms A+B done, Arm C compound-edit done. Only Arm C multi-file-verify-gap remaining (2 runs). Coach session ~30min runtime. |
 | **Multi-Session Harness Phase 3** | 🔄 IN PROGRESS | coach | FM-targeted scenarios being built. Phase 1 (runner extension) complete. |
 | **Telegram Notification Bug (req:88bd4688)** | ✅ ALREADY FIXED | tech-lead | Commit 9de9e58 merged to main. Notifications filtered to interface agent only + dead prompt handler removed. |
+| **Review Branch Reconciliation** | ⚠️ NEEDS MERGE | tech-lead | `review/s_1775702934728_338` has 6 commits ahead of HEAD (finish-guard orchestration, gym isolation, ghost keywords, fewshot tests, KE updates). HEAD has 1 commit not on branch (multi-session harness). Needs merge/rebase. |
 
 ## Completed/Archived
 | Item | When | Notes |
