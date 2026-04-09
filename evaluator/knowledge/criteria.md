@@ -78,6 +78,9 @@ When evaluating an agent, the Evaluator MUST check the target agent's `SOUL.md` 
 ### Meta: Cron/Job Liveness Checks (Heartbeat)
 When a heartbeat is asked to "check eval recency", treat **SQLite DB liveness** as the primary signal.
 
+### Meta: Calibration File Presence (Heartbeat)
+If `workspace/{consistency-flags,human-reviews,re-evaluations}.jsonl` are missing, do **not** treat as a scoring failure by default. First check whether these have moved/been consolidated into another artifact (e.g., `workspace/activity.jsonl`), and only then file an infra issue.
+
 **Primary (current system):** `.state/may.db` → `evaluations` table
 - Query `MAX(createdAt)` from `evaluations` and compare to now.
   - If `sqlite3` CLI is unavailable, use Python (`python3 -c "import sqlite3; ..."`) to run the same query.
