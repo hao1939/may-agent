@@ -1,13 +1,13 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~05:53 UTC
+Updated: 2026-04-09 ~06:23 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
 - **Scout**: 🟢 Running — Heartbeat active.
-- **Bob**: 🟢 Running — Gym graduation review COMPLETE. Processing heartbeat.
-- **Coach**: 🟢 Running — Wave 2 validated (Parts 2+3 done). EXP-098 COMPLETE. Processing graduation results.
-- **Tech-lead**: 🟢 Running — Finish-guard fix MERGED. Few-shot Phase 1 queued.
+- **Bob**: 🟢 Running — EXP-098 KB integration DONE. Processing heartbeat.
+- **Coach**: 🟢 Running — Wave 3 regression DONE (2/3 pass, 16/16 product). Sprint 1 example conversion DONE. Processing heartbeat.
+- **Tech-lead**: 🟢 Running — **Few-shot Phase 1 ACTIVELY BUILDING** (s_1775715855793_208). Reading manager.ts integration point.
 - **Optimizer**: 🟢 Running — Restored Apr 9.
 - **QA**: 🟢 Running — Restored Apr 9.
 - **Evaluator**: 🟢 Running — Heartbeat active.
@@ -81,6 +81,9 @@ Updated: 2026-04-09 ~05:53 UTC
 | **Wave 2 Coach Validation** | ✅ COMPLETE | coach | All 5 scenarios tested 3x each. Part 2: convention-verify 17% convention / context-xref 100% behavior. Part 3: missing-prereq 87% / silent-dep 100% / judgment-ambiguous 100%. Cross-ref consistently strong. |
 | **EXP-098 L3 Treatment Testing** | ✅ COMPLETE | coach | **LANDMARK**: Cross-reference 100% (3/3) on L3 cascading-state. Baseline 0%, externalization 0%. Strongest treatment effect observed in any experiment: 0%→100%. |
 | **Gym Graduation Exit Conditions** | ✅ BOTH MET | - | EXP-098 ✅ (cross-ref 100% on L3) + Wave 2 validation ✅ (5 scenarios done). **Gym can now enter maintenance/regression mode.** |
+| **Wave 3 Regression Validation** | ✅ COMPLETE | coach | 2/3 pass. 16/16 product checks pass. Convention gaps (search efficiency, step ordering) expected on untreated scenarios. No regressions from existing skills. |
+| **Few-Shot Example Sprint 1 Conversion** | ✅ COMPLETE | coach | know-when-blocked + evidence-over-narrative converted to few-shot format. INDEX updated. 5 total examples now. |
+| **Few-Shot Phase 1 Build** | 🔨 IN PROGRESS | tech-lead | Session s_1775715855793_208. Reading manager.ts, implementing keyword-based injection + bypass flag. |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -112,19 +115,18 @@ Updated: 2026-04-09 ~05:53 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (05:53)
-- **🏆 GYM GRADUATION EXIT CONDITIONS MET** — Both conditions from Bob's review are now satisfied:
-  1. EXP-098: Cross-reference 100% on L3 (0% baseline, 0% externalization). Strongest treatment effect ever.
-  2. Wave 2: All 5 scenarios validated. Cross-ref consistently strong (89-100% behavioral), externalization effective for ambiguity (100%).
-- **Bob's Graduation Review complete** — 188-line decision document at `GYM-GRADUATION-REVIEW.md`. Few-shot production pipeline approved with 5 modifications.
-- **Coach processing results** — Reading graduation review, checking Wave 3 scenarios. Will coordinate with Bob on next steps.
-- **Zombie session killed (again)** — s_1775311714523_3 cancelled (4.6 days old).
+## Latest Cycle Summary (06:23)
+- **🔨 Few-Shot Phase 1 IN PROGRESS** — Tech-lead forked build session (s_1775715855793_208). Actively reading manager.ts to implement keyword-based few-shot injection at prompt assembly. This is the #1 build priority.
+- **Wave 3 regression: 2/3 pass** — 16/16 product checks pass. Convention gaps (search efficiency, step ordering) are expected on untreated scenarios. No regressions from existing skills.
+- **2 new few-shot examples converted** — `know-when-blocked` and `evidence-over-narrative` added to example store (total: 5). INDEX updated.
+- **EXP-098 KB integrated** — Bob completed KB integration in prior cycle.
+- **Zombie killed again** — s_1775311714523_3 cancelled (4.7 days old, keeps coming back).
 - **Zero errors** — All 7 running agents healthy.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao**.
-- **P0**: **Gym enters maintenance mode** — Bob/Coach to coordinate transition. No more exploratory experiments. Gym becomes regression suite only.
-- **P1**: **Few-shot Phase 1 implementation** — All prerequisites complete (review ✅, examples ✅, finish-guard fix ✅, graduation approved ✅). Tech-lead implements integration in manager.ts. **This is now the #1 build priority.**
+- **P0 IN PROGRESS**: **Few-shot Phase 1 implementation** — Tech-lead actively building. Monitor session s_1775715855793_208.
+- **P1**: **Gym maintenance mode transition** — Bob/Coach to coordinate. No more exploratory experiments. Gym becomes regression suite only.
 - **P1**: **Auto-pause recovery implementation** — Design complete. Queue for tech-lead after few-shot Phase 1.
 - **P1**: **Present research sprint results to Hao** — H-091, 17+ experiments, gym graduation, EXP-098 landmark result.
 - **P2**: Federation design ready for Hao review
