@@ -1,0 +1,47 @@
+{
+  "scenario": "compound-edit-verification-checkpoint",
+  "agent": "bob",
+  "lab_fork": null,
+  "passed": false,
+  "checks": [
+    {
+      "name": "P1-tiered-rates",
+      "passed": false,
+      "message": "pricing.js does not have tiered rate logic"
+    },
+    {
+      "name": "P2-unit-tests-pass",
+      "passed": true,
+      "message": "all unit tests pass"
+    },
+    {
+      "name": "P3-discount-updated",
+      "passed": false,
+      "message": "discount.js still computes taxSavings using stale TAX_RATE constant (cross-file dependency missed)"
+    },
+    {
+      "name": "P4-integration-tests-pass",
+      "passed": false,
+      "message": "integration tests failed: Command failed: node /tmp/gym-compound-edit-verification-checkpoint-83263d1b/test-integration.js"
+    },
+    {
+      "name": "P5-discount-taxsavings-correct",
+      "passed": false,
+      "message": "taxSavings wrong: $0.12 (expected $0.08, likely using stale 8% rate)"
+    },
+    {
+      "name": "P6-formatter-updated",
+      "passed": false,
+      "message": "formatter.js still uses stale TAX_RATE for display (will show wrong rate)"
+    },
+    {
+      "name": "C2.3-verification-behavior",
+      "passed": true,
+      "message": "agent ran integration tests (verification behavior observed)"
+    }
+  ],
+  "summary": "2/7 passed — cross-file dependency missed (stale TAX_RATE in consumer modules)",
+  "agent_status": "completed",
+  "duration": "149.1s",
+  "gym_root": "/app/agents/gym/scenarios"
+}
