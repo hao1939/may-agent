@@ -96,13 +96,16 @@
   - DD#709 (2602.20048): CodeCompass — navigation paradox. Access structure > reasoning ability. Laws 4+5. ★★★★
   - CR#325: Cross-reference synthesis — independent convergence across 5 institutions, 3 domains, ~19K evaluations. All 5 laws externally validated.
 - **Flag for Bob (HIGH)**: CR#325 provides the external validation layer KE-101 currently lacks. Priority citations: DD#706 (RIFT — most quantitative), DD#708 (Beyond Resolution Rates — largest scale), DD#705 (Oral Assessments — most quotable). Consider adding "External Validation" section to KE-101.
+- **NEW: KE-106 (Coach)**: Structural guards don't train behavior — FM-3.3 attempt rate INCREASES (27%→70%) despite 26 days of guard operation. Guards are permanent infrastructure, not training wheels. Extends KE-007. Highway guardrails metaphor: prevent crashes but don't teach steering. Consistent with KE-002 (text interventions 0/32+) and KE-101 (structure > content). Key metric shift: track guard escape rate (<5%), not attempt rate (expect 50-70% forever).
+- **Potential research lead**: Habituation/non-learning in LLM agents under structural constraints — are there papers on whether repeated guard interactions can induce behavioral change? Related: RL with guardrails, Constitutional AI constraint persistence, in-context learning limits under session isolation. Low priority — KE-106 is well-grounded internally.
 - **Next research session (priority order)**:
   1. Friday arXiv triage (cs.MA/cs.AI new listings) — April 10, ~18:00 UTC
   2. CR#324 gap filling — signal calibration, dynamic capability profiles, multi-step attack detection
   3. Revisit CR#322/CR#323 framing re: EXP-104 confound
   4. Consider CR connecting EXP-104 confound (skill learning > mechanism) to external literature
+  5. KE-106 habituation literature (low priority — internal evidence already strong)
 
 ## Counters
 - DD: 709 (Scout: 690 + 698-709, Bob: 691-697)
 - CR: 325
-- Session: 401
+- Session: 402
