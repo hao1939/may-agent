@@ -802,6 +802,11 @@ function runMultiSessionScenario(
 
     console.error(`  ${sessionId}...`);
 
+    // Guard: ensure workDir exists (may have been deleted by prior session's agent)
+    if (!existsSync(workDir)) {
+      mkdirSync(workDir, { recursive: true });
+    }
+
     // ── Step A: Overlay session environment onto workDir ──────────
     if (session.environment) {
       const envDir = join(scenarioDir, session.environment);
@@ -851,6 +856,13 @@ function runMultiSessionScenario(
     lastResult = adapter.runAgent(taskFile, workDir, sessionTimeout);
     allSessionResults.push(lastResult);
     console.error(`    ${sessionId} complete (status: ${lastResult.status}, session: ${lastResult.sessionId})`);
+
+    // Ensure workDir still exists after agent run — the agent may have
+    // deleted or relocated it (e.g. rm -rf ., cleanup scripts, etc.)
+    if (!existsSync(workDir)) {
+      mkdirSync(workDir, { recursive: true });
+      console.error(`    Warning: workDir was deleted during ${sessionId} — recreated`);
+    }
 
     // ── Step E: Export per-session transcript ─────────────────────
     const transcriptDest = join(workDir, `${sessionId}-transcript.jsonl`);
@@ -906,6 +918,11 @@ function runMultiSessionScenario(
   }
 
   const durationMs = Date.now() - startMs;
+
+  // Final guard: ensure workDir exists before scoring/export
+  if (!existsSync(workDir)) {
+    mkdirSync(workDir, { recursive: true });
+  }
 
   // Export combined transcript (all sessions concatenated) as transcript.jsonl
   // Individual session transcripts are already at workDir/session-N-transcript.jsonl
