@@ -1358,3 +1358,23 @@ Production multi-agent data management system with "three-track knowledge archit
 ### I-CALM: Incentivizing Confidence-Aware Abstention — arXiv:2604.03904
 
 | 2604.03904 | I-CALM: Incentivizing Confidence-Aware Abstention for LLM Hallucination Mitigation (Zong et al., April 2026) | ★★★★ EXCELLENT — Prompt-based framework: elicits verbal confidence + rewards abstention + normative principles (truthfulness, humility). GPT-5 mini on PopQA: reduces false-answer rate by shifting error-prone cases to abstention. Yields abstention-hallucination frontier. No retraining needed. Verbal confidence stable under prompt paraphrasing. Practical agent confidence gating approach. (not deep-dived) |
+
+### Trajectory Guard — Real-Time Anomaly Detection in Agentic AI — arXiv:2601.00516
+
+| 2601.00516 | Trajectory Guard — A Lightweight, Sequence-Aware Model for Real-Time Anomaly Detection in Agentic AI (Advani, AAAI TrustAgent 2026) | ★★★★★ CRITICAL — Siamese Recurrent Autoencoder detects trajectory anomalies in 32ms (17-27× faster than LLM Judge). Hybrid loss: contrastive (task-trajectory alignment) + reconstruction (sequential validity). F1 0.88-0.94 on balanced sets, recall 0.86-0.92 on imbalanced. Two failure modes: "wrong plan for task" and "malformed plan structure." Mean-pooling dilutes anomalous steps; sequence-aware processing essential. Directly applicable to real-time monitoring of verification agent trajectories. (ref: DD-682) |
+
+### SWE-PRM — Course-Correcting SWE Agents with Process Reward Models — arXiv:2509.02360
+
+| 2509.02360 | When Agents go Astray: Course-Correcting SWE Agents with PRMs (Gandhi, Tsay, Ganhotra, Kate, Rizk, Sep 2025) | ★★★★★ CRITICAL — Inference-time PRM intervenes during execution to detect and correct trajectory errors. Taxonomy of inefficiencies: redundant exploration, looping, failure to terminate. On SWE-bench Verified: 40.0% → 50.6% (+10.6pp). Taxonomy-guided feedback > unguided > prescriptive. Added cost as low as $0.2. Key insight: tell agent WHAT CLASS of error, not WHAT ACTION to take. Directly applicable to our verification system. (ref: DD-683) |
+
+### AgentProcessBench — Step-Level Process Quality Benchmark — arXiv:2603.14465
+
+| 2603.14465 | AgentProcessBench: Diagnosing Step-Level Process Quality in Tool-Using Agents (Fan, Ye, Huo, Chen et al., March 2026) | ★★★★★ CRITICAL — First step-level benchmark for tool-augmented trajectories. 1,000 trajectories, 8,509 human-labeled steps, 89.1% IAA. Ternary labeling: Correct/Neutral/Error (captures exploration). Error propagation rule. Key findings: weak models inflate correct-step ratio via early termination; Neutral-vs-Error is hardest classification; process + outcome supervision > either alone. Code/data at github.com/RUCBM/AgentProcessBench. (ref: DD-684) |
+
+### Agent Psychometrics — IRT-Based Task-Level Performance Prediction — arXiv:2604.00594
+
+| 2604.00594 | Agent Psychometrics: Task-Level Performance Prediction in Agentic Coding Benchmarks (Ge, Kryvosheieva, Fried, Girit, Hariharan, April 2026) | ★★★★ EXCELLENT — IRT framework for predicting task-level agent success. Novel decomposition: agent ability = LLM ability + scaffold ability. Enables cross-leaderboard aggregation and prediction for unseen LLM-scaffold combinations. Practical for benchmark calibration without running expensive evaluations. Relevant for understanding which tasks will challenge which scaffold configurations. (not deep-dived) |
+
+### Information Fidelity in Tool-Using Agents — Martingale Analysis — arXiv:2602.13320
+
+| 2602.13320 | Information Fidelity in Tool-Using LLM Agents: A Martingale Analysis of the Model Context Protocol (Fan, Tan, Wattenhofer, Ong, AAMAS 2026) | ★★★★ EXCELLENT — First theoretical framework for error accumulation in MCP agents. Cumulative distortion grows linearly, deviations bounded by O(√T). Concentration property rules out exponential failure modes. Semantic weighting reduces distortion by 80%. Periodic re-grounding every ~9 steps suffices. Validated on Qwen2-7B, Llama-3-8B, Mistral-7B. Provides mechanistic foundation for re-grounding schedule. (not deep-dived) |

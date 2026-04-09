@@ -1,7 +1,7 @@
 # H-094: Hedge-to-Verify Ratio as Zero-Cost Agent Confidence Gate
 
-**Status**: WEAK SIGNAL (EXP-101 Phase 1 complete)  
-**P(H)**: 0.50 (updated from 0.45 — precision target met, AUROC target missed)  
+**Status**: WEAK SIGNAL (EXP-101 Phase 1+2 complete)  
+**P(H)**: 0.35 (updated from 0.45 — Phase 2 AUROC 0.566, zero-hedge gate vacuous due to base rate, survivorship bias fatal)  
 **Created**: 2026-04-09  
 **Source**: SELFDOUBT paper (arXiv:2604.06389, Pandey et al., COLM 2026 submission)  
 **Connected to**: H-093 (verification collapse), KE-068 (SELFDOUBT findings), DD-656 (SELFDOUBT paper)
@@ -46,10 +46,11 @@ Most agents show no signal (AUROC 0.45-0.55).
 
 ### P(H) Update Rationale
 
-Per EXP-101 design doc update rules:
-- Zero-hedge precision ≥ 90%: ✅ (96.3%)
-- AUROC ≥ 0.60: ❌ (0.535)
-- This maps to **"Weak signal — may work with agent-specific calibration"**: 0.45 → **0.50**
+Per EXP-101 Phase 2 results (582 sessions with evals):
+- Zero-hedge precision 98.4%: ✅ but = base rate (99% sessions acceptable+) → vacuous
+- AUROC 0.566: Nominally "weak signal" range but three factors argue for stronger downgrade:
+  (1) Zero-hedge gate is vacuous (base rate artifact), (2) FM-3.3 testing impossible (critical gap), (3) Survivorship bias fatal — crashed sessions have no traces
+- **Final: P(H-094) 0.45 → 0.35** (see EXP-101 results.md Phase 2 for full reasoning)
 
 ### What Would Change P(H)
 

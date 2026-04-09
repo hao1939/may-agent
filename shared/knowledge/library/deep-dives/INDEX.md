@@ -505,3 +505,15 @@
 8. DD#681 → DD#674 (Hidden-state probing avoids RCE entirely — operates below verbalization layer, may be more robust)
 9. DD#679 + DD#680 + DD#681 = validation (HVR is real signal) + methodology (weighted hedging) + calibration warning (RCE limits passive detection) — comprehensive grounding for EXP-101
 10. Also catalogued but not deep-dived: 2604.01457 (Wired for Overconfidence — mechanistic circuits), 2603.17839 (Cached verbal confidence — DeepMind), 2604.03904 (I-CALM — confidence-aware abstention)
+
+**Behavioral failure prediction & process monitoring in agent trajectories** ★★★★★ — NEW (2026-04-09 Session 390)
+1. [dd682](dd682-trajectory-guard-anomaly-detection.md) — ★★★★★ Trajectory Guard: Siamese Recurrent Autoencoder for real-time trajectory anomaly detection. Hybrid loss (contrastive + reconstruction) detects two orthogonal failure modes: wrong plan for task AND malformed plan structure. F1 0.88-0.94, 32ms inference (17-27× faster than LLM Judge). Mean-pooling is fatal — sequence-aware processing essential. Directly applicable to real-time verification monitoring.
+2. [dd683](dd683-swe-prm-course-correction.md) — ★★★★★ SWE-PRM: Inference-time Process Reward Model for SWE agent trajectory correction. Taxonomy of inefficiencies: redundant exploration, looping, failure to terminate. +10.6pp on SWE-bench Verified. Key insight: taxonomy-guided feedback (tell agent WHAT CLASS of error) > prescriptive feedback (tell agent WHAT TO DO). Added cost as low as $0.2. No model retraining needed.
+3. [dd684](dd684-agent-process-bench.md) — ★★★★★ AgentProcessBench: First step-level quality benchmark for tool-augmented trajectories. 1,000 trajectories, 8,509 human-labeled steps, 89.1% IAA. Ternary labeling (Correct/Neutral/Error) captures exploration vs error distinction. Weak models inflate correct-step ratio via early termination. Neutral-vs-Error is hardest classification challenge.
+4. DD#682 → DD#668 (Trajectory Guard provides detection mechanism for AgentErrorTaxonomy's failure categories)
+5. DD#683 → DD#667 (SWE-PRM is inference-time intervention; MASC is metacognitive correction — both are post-detection response)
+6. DD#684 → DD#668 (AgentProcessBench provides evaluation data; AgentErrorTaxonomy provides diagnostic framework)
+7. DD#682 → DD#683 (Detection → Intervention pipeline: Trajectory Guard detects anomaly, SWE-PRM injects categorical feedback)
+8. DD#682 + DD#683 + DD#684 + DD#668 = 4-layer stack: Evaluation (APB) → Diagnosis (ErrorTaxonomy) → Detection (TrajGuard) → Intervention (SWE-PRM). First time all layers exist simultaneously.
+9. Also catalogued but not deep-dived: 2604.00594 (Agent Psychometrics — IRT decomposition of LLM + scaffold ability), 2602.13320 (Martingale Analysis — O(√T) error bounds, re-ground every ~9 steps, AAMAS 2026)
+10. Cross-reference: [CR-320](../../cross-references/CR-320-behavioral-failure-prediction-synthesis.md) — Full synthesis connecting all papers to Sprint S12 open question #1 (high-complexity verification failures)

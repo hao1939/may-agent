@@ -15,8 +15,8 @@
 - **Output**: 5 deep-dive files in library, INDEX.md updated, covered_ids.txt created
 
 ## Counters
-- DD: 681
-- CR: 319
+- DD: 684
+- CR: 320
 - Session: 390
 
 ## Pending Leads
@@ -56,3 +56,7 @@
 - **New research lead: behavioral/tool-use failure prediction**: Since linguistic hedging failed (EXP-101), search for papers on NON-linguistic failure signals in agents: tool-call patterns, retry sequences, error recovery behavior, action-level anomaly detection. Would inform what replaces HVR as confidence gate. Related: MASC (DD#667) already does step-level anomaly detection — could extend.
 - **Bob sprint summary published**: SPRINT-SUMMARY-2026-04-research.md. 17 experiments, gym graduated. Top open questions: (1) high-complexity verification failure interventions, (2) few-shot production injection, (3) re-anchoring to break verification gravity wells, (4) agent-specific failure profiles (Scout 6% vs Optimizer 73%).
 - **Session 390 dispatch (Thursday 12:53 UTC)**: Dispatching behavioral/tool-use failure prediction lit search + Thursday arXiv triage.
+- **✅ Behavioral/tool-use failure prediction lit search DONE**: Session 390. Found 5 new papers, wrote 3 deep dives (DD#682-684) + CR#320 synthesis. Top papers: Trajectory Guard (2601.00516) ★★★★★ — Siamese Recurrent Autoencoder for real-time trajectory anomaly detection (F1 0.88-0.94, 32ms). SWE-PRM (2509.02360) ★★★★★ — inference-time process reward model with taxonomy-guided feedback (+10.6pp on SWE-bench). AgentProcessBench (2603.14465) ★★★★★ — first step-level benchmark with ternary labeling (8,509 human-annotated steps). Also catalogued: Agent Psychometrics (2604.00594, IRT decomposition of agent ability) and Martingale Analysis (2602.13320, O(√T) error bounds, re-ground every ~9 steps). CR#320 proposes 4-layer behavioral failure stack: Evaluation → Diagnosis → Detection → Intervention.
+- **Flag for Bob**: CR#320 provides the complete framework for replacing HVR with behavioral signals. Three immediate recommendations: (1) ternary step classification, (2) action pattern anomaly detection, (3) taxonomy-guided intervention feedback.
+- **Friday arXiv triage**: Fresh Friday listings expected ~18:00 UTC April 10 — next scheduled research.
+- **Next research lead**: Thursday arXiv triage still pending — should check cs.AI and cs.MA new listings for today's papers.
