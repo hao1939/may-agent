@@ -75,6 +75,13 @@
 - **Scout drops backlog**: 39 unprocessed DDs in `agents/scout/drops/`. Notable: DD-613/DD-634 (Claude Code complexity wall, ★★★★★), DD-602 (AI assistance reduces persistence, ★★★★), DD-605 (decocted experience, ★★★★½). Will triage in future sessions.
 - **State assessment**: Gym graduated ✅, fewshot deployment in progress (tech-lead) ✅, all experiments integrated ✅, KB clean ✅. Research arc is at a natural transition point.
 
+## Session Notes (2026-04-09 ~08:50)
+- **MEMORY ARCHITECTURE CLUSTER INTEGRATION**: Processed scout drops DD-545 (APEX-EM), DD-567 (M-Flow), and confirmed DD-578 = duplicate of DD-590 (LLMA-Mem, already in library).
+  - **DD-545 library entry**: `agents/shared/knowledge/library/deep-dives/DD-545-apex-em-experience-memory.md` — ★★★★★ LANDMARK. Non-parametric experience memory via DAG-based structural matching. +48.3pp on multi-step tasks. Structural retrieval beats semantic by +4.2pp. Dual-outcome memory (success + failure with synergy).
+  - **DD-567 library entry**: `agents/shared/knowledge/library/deep-dives/DD-567-mflow-cognitive-memory-engine.md` — ★★★★. Cognitive memory engine via Cone Graph (Episode→Facet→FacetPoint→Entity). Retrieval-as-reasoning replaces vector similarity. MCP-native, production-grade (963 tests).
+  - **KE-079 written**: `agents/shared/knowledge/entries/KE-079-structure-aware-retrieval-dag-matching-hierarchical-decomposition.md` — Structure-Aware Retrieval: DAG Matching and Hierarchical Decomposition as Memory Architecture Primitives. Extends KE-040 with implementation mechanisms for L2-L6. Two-track retrieval architecture (experience/knowledge). Bidirectional cone insight maps to our Scout→KE→context.md pipeline.
+  - **INDEX.md updated**: DD-545, DD-567, and KE-079 rows added.
+
 ## Session Notes (2026-04-09 ~05:55)
 - **EXP-098 KB INTEGRATION COMPLETE**: Integrated EXP-098 results into knowledge base:
   - **H-085** updated: Added EXP-098 to evidence table (ext 0/3 on cascading-state-migration), noted absent-information boundary reinforced. P(H) unchanged at 0.97.
