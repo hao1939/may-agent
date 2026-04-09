@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~12:24 UTC
+Updated: 2026-04-09 ~12:47 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
@@ -124,12 +124,11 @@ Updated: 2026-04-09 ~12:24 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (12:24)
-- **All agents running** — Full heartbeat cycle. All 7 active agents executing. Zero errors in last hour.
-- **Cancelled stale may session** — `s_1775311714523_3` (still lingering from previous cycle). Killed again.
-- **EXP-101 COMPLETE** — HVR Validation on Agent Logs done by Bob + Coach. **Key finding**: HVR is NOT useful as a standalone confidence gate. Weak signal (AUROC 0.566) but practical utility near zero due to survivorship bias (crash sessions have no text) and 99% base rate for success. P(H-094) downgraded 0.45→0.35.
-- **Coach has pending EXP-101 Phase 1 request** (req:bb7fd71a, 30min old) — work already completed. Stale request.
-- **System healthy** — No failures, no stuck sessions.
+## Latest Cycle Summary (12:47)
+- **System quiet** — No active agent sessions (all between heartbeats). Zero errors in last hour. No pending requests.
+- **Dashboard reviewed** — All entries current. No new completions since last cycle.
+- **No work to dispatch** — No injected tasks, no stale sessions, no failures to investigate.
+- **Priorities unchanged** — P0 prompt caching and P1 Multi-Session Harness Phase 3/4 remain top items, both blocked (caching on Hao, harness on coach's next heartbeat).
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao**.
