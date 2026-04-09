@@ -172,6 +172,47 @@ describe("fewshot-router", () => {
     });
   });
 
+  // ── Heartbeat exclusion ─────────────────────────────────────
+
+  describe("heartbeat exclusion", () => {
+    it("returns null for heartbeat tasks even for target agents", () => {
+      setupExamples({ "reproduce-first-debugging.md": EXAMPLE_DEBUGGING });
+      const result = routeFewShotExamples(
+        "[heartbeat] Read agents/tech-lead/heartbeat.md and work through each section to check error counts",
+        "coder",
+        TEST_ROOT,
+      );
+      expect(result.content).toBeNull();
+      expect(result.matchedFiles).toEqual([]);
+      expect(result.tokenEstimate).toBe(0);
+    });
+
+    it("returns null for heartbeat tasks that would match multiple patterns", () => {
+      setupExamples({
+        "reproduce-first-debugging.md": EXAMPLE_DEBUGGING,
+        "binary-file-escalation.md": EXAMPLE_BINARY,
+      });
+      const result = routeFewShotExamples(
+        "[heartbeat] Check for errors and binary output",
+        "optimizer",
+        TEST_ROOT,
+      );
+      expect(result.content).toBeNull();
+      expect(result.matchedFiles).toEqual([]);
+    });
+
+    it("does not exclude non-heartbeat tasks containing 'heartbeat'", () => {
+      setupExamples({ "reproduce-first-debugging.md": EXAMPLE_DEBUGGING });
+      const result = routeFewShotExamples(
+        "Fix the heartbeat error in the monitoring system",
+        "coder",
+        TEST_ROOT,
+      );
+      expect(result.content).not.toBeNull();
+      expect(result.matchedFiles).toContain("reproduce-first-debugging");
+    });
+  });
+
   // ── Pattern matching ────────────────────────────────────────
 
   describe("trigger pattern matching", () => {

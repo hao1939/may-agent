@@ -220,6 +220,12 @@ export function routeFewShotExamples(
   agentName: string,
   projectRoot: string,
 ): FewShotResult {
+  // Skip heartbeat sessions — they match trigger patterns like "error" but
+  // don't benefit from few-shot examples (~500-800 wasted tokens × 48/day)
+  if (taskText.startsWith("[heartbeat]")) {
+    return { content: null, matchedFiles: [], tokenEstimate: 0 };
+  }
+
   // Phase 1 scope restriction: only inject for target agents
   if (!TARGET_AGENTS.has(agentName)) {
     return { content: null, matchedFiles: [], tokenEstimate: 0 };
