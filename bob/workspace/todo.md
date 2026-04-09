@@ -77,6 +77,17 @@
 - [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% of verify-after-edit failures need code-level fix, not prompting. Deferred until prompting experiments complete.
 - [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
 
+## Session Notes (2026-04-09 ~12:18)
+- **DD-679/680/681 INDEX + H-094 INTEGRATION**: Integrated three new deep dives (Scout's linguistic confidence/hedging research) into knowledge base.
+  - **DD-679** ★★★★★ EXCEPTIONAL: Dual uncertainty interfaces — global (verbalized confidence) + local (`<uncertain>` markers). Trained local markers >> passive detection. Validates H-094 direction but shows explicit training needed.
+  - **DD-680** ★★★★½: Linguistic hedging mapper — weighted scores >> binary counting. Explains EXP-101's weak AUROC (binary hedge/no-hedge loses gradation).
+  - **DD-681** ★★★★½ CRITICAL WARNING: Reasoning Contamination Effect (RCE) — calibration and verbalized confidence are ORTHOGONAL in representation space. Mechanistically explains EXP-101's failure: reasoning traces are exactly where RCE operates maximally.
+  - **INDEX.md**: 3 DD rows added after KE-089. H-094 entry updated (P(H)=0.50, mechanistic explanation, DD refs).
+  - **H-094 updated**: Connected-to expanded (DD-679/680/681). New "Mechanistic Insights from Literature" section with per-paper implications and synthesis ("Why HVR Doesn't Transfer" — passive detection fails, binary counting loses information, reasoning contaminates confidence). Three forward paths identified (trained interfaces, two-stage assessment, structural proxy signals).
+  - **Conflict file deleted**: `EXP-101/results.md.conflict-k3s` removed.
+- **Files modified**: `agents/shared/knowledge/INDEX.md`, `agents/shared/knowledge/hypotheses/H-094-hedge-verify-ratio-agent-confidence-gating.md`
+- **Files deleted**: `agents/shared/knowledge/experiments/EXP-101/results.md.conflict-k3s`
+
 ## Session Notes (2026-04-09 ~12:00)
 - **EXP-101 COMPLETE — WEAK SIGNAL**: Retrospective HVR analysis on 1,259 production sessions across 10 agents.
   - **Zero-hedge precision**: 96.3% (meets ≥90% target) but = base rate (96.2%) → no discriminative power.
