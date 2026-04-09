@@ -4,6 +4,30 @@
 
 # QA Journal — 2026-04-09
 
+## 2026-04-09T23:30Z
+
+### Summary
+Heartbeat QA at HEAD **0cf9b17**. I re-ran the mandatory gates and re-read `src/lib/fewshot-router.ts` to independently verify the heartbeat exclusion is now case-insensitive (`/^\[heartbeat\]/i`), preventing few-shot injection for `[heartbeat]` (any casing).
+
+### Files reviewed (evidence)
+- `src/lib/fewshot-router.ts` — `if (/^\[heartbeat\]/i.test(taskText)) { return { content: null, ... } }`
+
+### Mandatory gates
+- `./node_modules/.bin/tsc --noEmit`: PASS (exit 0; no output)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2083 passed (2104)**
+  - `test/launcher.test.ts`: 7 failed — `src/app/launcher.ts` missing (`existsSync` false + `ENOENT` reading `/app/src/app/launcher.ts`).
+  - `test/context-learn.test.ts`: 7 failed — `rmSync(..., { recursive: true })` fails with `EACCES` under `/app/test-workspace/context-learn-test/*`.
+  - `test/context-learning.test.ts`: 6 failed — same `EACCES` issue under `/app/test-workspace/context-learning-test/*`.
+  - `test/research-db.test.ts`: 1 failed — integration test times out at 5000ms (`syncs the actual knowledge base without errors`).
+
+### Issues
+- CRITICAL: repo test suite is red due to missing `src/app/launcher.ts` required by `test/launcher.test.ts`.
+- IMPORTANT: test environment permission issue prevents cleanup in context-learning tests (`EACCES` on rmdir).
+- IMPORTANT: `test/research-db.test.ts` has a too-tight timeout (5s) for syncing the real knowledge base in this environment.
+
+### Verdict
+CONDITIONAL — reviewed heartbeat exclusion behavior appears correct and is type-safe, but vitest is red for the unrelated structural/permission/timeout failures above.
+
 ## 2026-04-09T22:25Z
 
 ### Summary
