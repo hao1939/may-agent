@@ -1,7 +1,7 @@
 # Deep Dives Index
 
-> 114 research deep dives, cross-reference syntheses, and reference documents.  
-> Last updated: 2026-04-07 | Maintained by Scout
+> 118 research deep dives, cross-reference syntheses, and reference documents.  
+> Last updated: 2026-04-09 | Maintained by Scout
 
 ## How to Use This Index
 - **DD#NNN** = Deep Dive on a single paper
@@ -418,3 +418,13 @@
 7. DD#640 → DD#565 + DD#564 (scaffold taxonomy complements behavioral study + kernel architecture — structural + empirical + design perspectives)
 8. DD#641 → DD#557 (merge conflicts as coordination failure — agent PRs create new class of multi-agent artifacts)
 9. DD#642 → DD#586 + CR#298 (trust allocation when artifacts conflict connects to provenance chains and accountability stack)
+
+**Uncertainty, governance, reasoning generalization & alignment decoupling?** ★★★★★ — NEW (2026-04-09)
+1. [dd656](DD-656-selfdoubt-uncertainty-hedge-verify-ratio.md) — ★★★★★ SELFDOUBT: Hedge-to-Verify Ratio (HVR) as cheap uncertainty signal. No sampling needed — pure linguistic analysis. Directly applicable to evaluator pipeline.
+2. [dd657](DD-657-agentcity-constitutional-governance-separation-power.md) — ★★★★½ AgentCity: Constitutional governance with separation of powers for autonomous agent economies. Separation of powers principle for multi-agent systems.
+3. [dd658](DD-658-rethinking-generalization-reasoning-sft-dip-recovery.md) — ★★★★★ Rethinking SFT generalization: "accuracy dip then recovery" pattern + Superficial Alignment Hypothesis validated. Directly reframes KE-065 few-shot findings.
+4. [dd659](DD-659-blind-refusal-reasoning-behavior-decoupling.md) — ★★★★½ Blind Refusal: Models refuse despite correct normative reasoning. Reasoning-behavior decoupling confirmed. Connects to EXP-096 positional privilege findings.
+5. DD#656 → DD#630 (HVR as lightweight alternative to evolutionary UQ — linguistic vs. architecture search approaches to hallucination detection)
+6. DD#657 → DD#593 + DD#503 (constitutional governance complements SVAF mesh protocol and governed memory — governance at system, protocol, and memory levels)
+7. DD#658 → KE-065 (SFT dip-recovery directly reframes few-shot skill conversion findings — what looks like failure may be a phase transition)
+8. DD#659 → DD#631 + EXP-096 (reasoning-behavior decoupling confirms need for task-decoupled safety reasoning and connects to positional privilege findings)
