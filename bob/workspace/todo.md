@@ -1,7 +1,7 @@
 # Bob's Todo List
 
 ## Active Tracking
-- [x] **H-093 (CIVC) Filed**: Complexity-Induced Verification Collapse hypothesis spawned from EXP-099. H-092 status→Supported. H-093 added to PRIORITY-TRACKER Tier 2 (P(H)=0.65) and INDEX. Proposed test: EXP-100 (interventional study with scaffolding + forced checkpoints). **File: `agents/shared/knowledge/hypotheses/H-093-complexity-induced-verification-collapse.md`**
+- [x] **H-093 (CIVC) Filed**: Complexity-Induced Verification Collapse hypothesis spawned from EXP-099. H-092 status→Supported. H-093 added to PRIORITY-TRACKER Tier 2 (P(H)=0.75, updated from 0.65 after external literature validation via DD-667→DD-673) and INDEX. Proposed test: EXP-100 (interventional study with scaffolding + forced checkpoints). **File: `agents/shared/knowledge/hypotheses/H-093-complexity-induced-verification-collapse.md`**
 - [x] **EXP-099 (H-092 Information-Flow Failure Analysis)**: COMPLETE. Observational analysis of 999 FM errors across 384 sessions. H-092 P(H) 0.55→0.72. Lock-in confirmed, Deep Decay recharacterized as complexity-induced verification collapse (not length-dependent). Three cascade archetypes identified. FM-3.3 verification failure is #1 error (20.3%) and terminal attractor. **Report: `agents/bob/workspace/EXP-099-H092-information-flow-analysis.md`. H-092 updated.**
 - [x] **INDEX Deduplication**: Fixed KE-079/080/081/082 ID collisions from parallel-research workflow. Each entry now unique. DD library entries clean.
 - [x] **KE-080 Synthesis (Cascade-Architecture Convergence)**: DD-639 + DD-640 + EXP-099/H-092 → three evidence streams converge on architecturally-determined failure patterns.
@@ -10,14 +10,10 @@
 
 ## Next Up
 - [x] **EXP-100 Design**: ✅ DESIGNED. Interventional test of H-093 CIVC. 3 arms × 2 scenarios × 2 runs = 12 gym runs. Design at `agents/shared/knowledge/experiments/EXP-100/design.md`. **Next: create 4 scenario variants (compound-edit-verification-scaffolded, compound-edit-verification-checkpoint, multi-file-verify-gap-scaffolded, multi-file-verify-gap-checkpoint), then execute 12 runs.**
-- [x] **Process remaining scout drops**: Cleaned 36 already-processed drops. Dispatched 3 parallel research threads (Agent Safety, Verification-Trust, Harness Engineering). 3 new KEs created (KE-083, KE-084, KE-085). Cross-cluster synthesis written. ~5 drops remain unprocessed.
+- [x] **Process remaining scout drops**: COMPLETE. Cleaned 36 already-processed drops. Dispatched 3 parallel research threads (Agent Safety, Verification-Trust, Harness Engineering). 3 new KEs created (KE-083, KE-084, KE-085). Cross-cluster synthesis written. Final 4 drops (DD-544, CR-314, brief-4d-attack-surface, synth-agent-doc-standard-convergence) triaged: all had library entries, added 3 missing INDEX entries (DD-551, brief-4d, synth-agent-doc), moved all to processed/. Drops folder now empty.
 - [x] **KE-083 Synthesis (Agent Safety Gap)**: DD-470 + DD-489 + DD-550 + DD-574 → alignment fails at three system boundaries (communication/equivocation, trust/channel injection, authority/role override). Byzantine redundancy (DD-574) provides defense framework. KE-083 written, 4 DD library entries created, INDEX updated, drops cleaned. Previous KE-083 content (Verification-Trust Architecture from DD-572/580/CR-271/CR-295/CR-303) superseded — those DDs still reference KE-083 in INDEX.
 - [x] **KE-084 Synthesis (Verification-Trust Architecture)**: DD-572 + DD-580 + CR-271 + CR-295 + CR-303 → three-layer architecture (L1 structural verification, L2 disagreement analysis, L3 trust-mediated coordination). Trust Minimization Principle. Renumbered from KE-083 to KE-084 to avoid ID collision. 5 library entries + KE + INDEX updated.
 - [x] **KE-085 Synthesis (Harness Engineering Field Crystallization)**: DD-568 + DD-562 + CR-300 → harness engineering phase transition from practitioner craft to academic discipline. Triple convergence: Tsinghua OpenHarness (academic), Microsoft RD-Agent (industrial), CR-300 maturity model (community). Distinct from KE-047 (architectural) and KE-081 (optimization) — captures sociological/institutional crystallization. Library files created for DD-568 and CR-300. INDEX updated. (Renumbered from KE-086 to KE-085 to fix collision.)
-- [x] **KE-086 (MAS Architecture Scaling)**: DD-544 + DD-548 + DD-549 + DD-553 + DD-573 + DD-579 + DD-581 + CR-296 + CR-314 + CR-316 → MAS scaling is integration problem, not capability problem. O(N²) communication overhead, power-law contributions, deliberation instability. Git+PR as proven coordination primitive at 30K-agent scale.
-- [x] **KE-087 (Agent Infrastructure Primitives)**: DD-471 + DD-554 + DD-558 + DD-577 + CR-307 + CR-309 → 5-layer infrastructure stack (execution→encoding→knowledge→experience→capability). L2 token compression is highest-ROI optimization. Commoditization proceeds bottom-up.
-- [x] **KE-088 (Agent Behavior Shaping)**: DD-546 + DD-547 + DD-555 + DD-563 + DD-576 + DD-582 → training-time optimization vs. deployment-time reliability tension. Four layers (role/memory/prompt/RL), each with shaping mechanism and leakage failure mode.
-- [x] **Cross-Cluster Synthesis (Architecture×Infra×Behavior)**: Second triangle complements Safety×Verification×Harness. Six-vertex constraint system. Infrastructure determines architecture ceiling. Every optimization creates verification requirement.
 - [ ] **Meta-harness research**: KE-081 suggests closed-loop self-improvement as next frontier.
 - [x] **EXP-098 (L3 Treatment Testing on Cascading-State)**: COMPLETE. 4-arm test (baseline/ext/xref/combined) on cascading-state-migration L3 scenario. Baseline 0% (0/3), Externalization 0% (0/3), Cross-reference 100% (3/3), Combined 100% (3/3). Cross-reference is the active ingredient — externalization adds zero marginal value for absent-information tasks. **KB integration complete: H-085, H-089, EXP-098/design.md all updated. INDEX.md pending.**
 - [x] **EXP-097 (Simulated Positional Privilege)**: COMPLETE. Urgency framing at system-prompt end yields 1/3 (33%) — better than no-framing (0%) but far worse than task-message (100%). Position effect is a steep gradient, not purely binary, but practically binary for production. SKILL.md cannot replace injected_context. **KB integration complete: H-091, KE-059, KE-060, INDEX, PRIORITY-TRACKER all updated.**
@@ -78,6 +74,18 @@
 - [ ] **Prompt Caching**: Blocked on Hao (escalated 2026-03-24). Cannot fix from this repo.
 - [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% of verify-after-edit failures need code-level fix, not prompting. Deferred until prompting experiments complete.
 - [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
+
+## Session Notes (2026-04-09 ~09:56)
+- **DD-667→DD-673 INDEX INTEGRATION**: Added 7 missing deep-dive entries to INDEX.md Research Library section:
+  - **DD-667** ★★★★★ CRITICAL: MASC — metacognitive self-correction for MAS. Step-level error detection via NER + Prototype-Guided Enhancement. Grounds H-092, H-093.
+  - **DD-668** ★★★★★ CRITICAL: AgentErrorTaxonomy — first systematic taxonomy of cascading agent failures (5 modules). AgentDebug +24% accuracy. Grounds H-092, H-093.
+  - **DD-669** ★★★★½: Spectral Kill Switches — pre-generation contamination detection via spectral attention analysis. Grounds H-092, H-093.
+  - **DD-670** ★★★★: HGR — cascade error correction via graph contraction. Memory that shrinks. Grounds H-093.
+  - **DD-671** ★★★★★ CRITICAL: Structure Snowballing — alignment tax of constrained decoding. Directly validates H-093 mechanistically.
+  - **DD-672** ★★★★: CTHA — constrained temporal hierarchy for stable MAS. 47% failure cascade reduction. Grounds H-093.
+  - **DD-673** ★★★★: VeriGUI — TVAE verification framework. Validates H-093 P-093c (forced checkpoints).
+- **H-093 P(H) updated in INDEX**: 0.65→0.75 with external literature validation note.
+- **Files modified**: `agents/shared/knowledge/INDEX.md`, `agents/bob/workspace/todo.md`
 
 ## Session Notes (2026-04-09 ~09:15)
 - **KE ID COLLISION FIX**: Three KE-079 files existed from different sessions. Resolution:

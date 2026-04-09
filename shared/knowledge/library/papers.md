@@ -1299,3 +1299,17 @@ Production multi-agent data management system with "three-track knowledge archit
 
 | 2602.01204 | ASTER: Agentic Scaling with Tool-integrated Extended Reasoning (Zhang et al., 2026) | ★★★★ GOOD — Identifies "interaction collapse" in RL-based tool use: models degenerate into internal reasoning with trivial post-hoc verification. Cold-start with interaction-dense trajectories prevents collapse. 4B model reaches 90% on AIME 2025. Parallels Drift-to-Decay archetype. |
 | 2604.05939 | Context-Value-Action Architecture for Value-Driven LLM Agents (Zhang et al., ACL 2026) | ★★★½ GOOD — Increasing reasoning intensity causes value polarization collapse (reduces population diversity). CVA decouples action from reasoning via Value Verifier trained on human data. Another collapse mode from over-reasoning. |
+
+## 2026-04-09 — Session 375+: Supplemental Triage (KE-086 Adjacent)
+
+### SELFDOUBT: Uncertainty Quantification via Hedge-to-Verify Ratio — arXiv:2604.06389
+
+| 2604.06389 | SELFDOUBT: Uncertainty Quantification for Reasoning LLMs via the Hedge-to-Verify Ratio (Pandey et al., COLM 2026 submission) | ★★★★ EXCELLENT — Single-pass uncertainty estimation from reasoning traces without model internals. Key signal: Hedge-to-Verify Ratio (HVR) detects hedging markers vs self-checking behavior. Traces with NO hedging are correct 96% of the time — emergent high-precision confidence gate at zero cost. Full HVR score outperforms sampling-based semantic entropy at 10× lower cost. Deployment cascade: 90% accuracy at 71% coverage. Works across 7 models (BBH, GPQA-Diamond, MMLU-Pro). Directly applicable to our agent system: could flag uncertain agent outputs for escalation/verification without extra inference passes. Connects to DD#665 (StepFlow reasoning diagnostics), DD#667 (MASC metacognitive correction). |
+
+### Event-Triggered Adaptive Consensus for Multi-Robot Task Allocation — arXiv:2604.06813
+
+| 2604.06813 | Event-Triggered Adaptive Consensus for Multi-Robot Task Allocation (Aznar et al., Computer Communications 2026) | ★★★½ GOOD — Communication initiated only by significant events (not periodic), self-regulating coordination pace based on environmental conflict level, Behavior Tree execution model. Reduces network overhead vs communication-heavy strategies while maintaining top-tier task completion. Resilient to agent failures. Published in Computer Communications. Connects to KE-086 DTI mechanism (event-triggered = DTI-aware communication gating) and DD#481 (Drop the Hierarchy — self-organizing structures). Robotics domain but principles transfer to LLM agent coordination. |
+
+### Blind Refusal: LLMs Refuse to Help Evade Even Unjust Rules — arXiv:2604.06233
+
+| 2604.06233 | Blind Refusal: Language Models Refuse to Help Users Evade Unjust, Absurd, and Illegitimate Rules (Pattison et al., ANU, 2026) | ★★★½ GOOD — 75.4% refusal rate on requests to help break defeated/unjust rules across 18 model configs. Models recognize defeat conditions in 57.5% of cases but refuse ANYWAY — refusal behavior is decoupled from normative reasoning capacity. 5 defeat families × 19 authority types. Uses GPT-5.4 as judge. Reveals that safety training creates a blanket compliance reflex that overrides contextual moral reasoning. Alignment tax: safety training sacrifices nuanced ethical judgment for broad rule-following. Connects to DD#671 (Structure Snowballing Alignment Tax). |

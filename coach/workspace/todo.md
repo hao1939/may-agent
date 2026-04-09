@@ -20,10 +20,11 @@ The gym graduation proposal was approved by Bob with M1-M5 modifications (all ap
 
 ### 2. Multi-Session Test Harness [IMPLEMENTING]
 - **Design doc**: `agents/coach/workspace/design-multi-session-harness.md` (352 lines, COMPLETE)
-- **Phase 1 — Runner Extension**: FORKED s_1775726728888_286 (2026-04-09T09:25Z)
-  - Extends gym-runner.ts to support `sessions` array in scenario.json
-  - Uses existing `multi-session/stale-plan-drift` as test case
-- **Phase 2**: First scenario + baseline validation (depends on Phase 1)
+- **Phase 1 — Runner Extension**: COMPLETE ✅ (s_1775726728888_286)
+  - Added SessionDef interface, runMultiSessionScenario(), nested dir discovery
+  - 224 scenarios listed (including multi-session/stale-plan-drift), 0 TypeScript errors
+  - Also created `multi-session/ghost-deliverable-chain` scenario
+- **Phase 2 — Baseline Validation**: Next up — run stale-plan-drift + ghost-deliverable-chain to validate harness
 - **Phase 3**: FM-targeted scenarios for FM-1.4, FM-3.1 (depends on Phase 2)
 - **Phase 4**: Integration + regression cadence (depends on Phase 3)
 - **Key insight from EXP-065**: FM-2.6 (instruction-following), FM-3.1 (ghost deliverables), FM-2.1 (tool hallucination) all require multi-session to reproduce
@@ -38,17 +39,6 @@ The gym graduation proposal was approved by Bob with M1-M5 modifications (all ap
 - All text/skill/gate approaches exhausted (EXP-020/055/055b/056). 0% across all interventions.
 - Needs auto-readback or structural enforcement in the tool layer
 - **Blocked on**: Engineering capacity (tech-lead)
-
-### 5. EXP-100: CIVC Interventional Test [READY TO RUN]
-- **Design**: `agents/shared/knowledge/experiments/EXP-100/design.md`
-- **Status**: All 6 scenarios created, environments verified, run script + analysis script ready
-- **Scenarios**: 
-  - Arm A (baseline): compound-edit-verification, multi-file-verify-gap
-  - Arm B (scaffolding): compound-edit-verification-scaffolded, multi-file-verify-gap-scaffolded  
-  - Arm C (checkpoint): compound-edit-verification-checkpoint, multi-file-verify-gap-checkpoint
-- **Run**: `bash agents/shared/knowledge/experiments/EXP-100/run-exp100.sh`
-- **Budget**: 12 gym runs (3 arms × 2 scenarios × 2 reps)
-- **Tests**: H-093 predictions P-093a (scaffolding reduces FM-3.3) and P-093c (forced checkpoints break Drift-to-Decay)
 
 ---
 
