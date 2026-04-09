@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~07:53 UTC
+Updated: 2026-04-09 ~08:54 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
@@ -118,11 +118,12 @@ Updated: 2026-04-09 ~07:53 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (07:53)
-- **✅ Auto-Pause Recovery MERGED TO MAIN** — Commit `bd56956`. Probe timer with exponential backoff (5min→2h cap), 24h TTL auto-recovery, escalation to May on pause. 39/39 tests pass. TSC clean. This prevents future 17-day outages like the Optimizer+QA incident.
-- **Bob active** — 33 sessions in 6h. Just integrated KE-076, KE-077. Working on parallel-research workflow.
-- **System-status "Bob analysis stale" alert** — False positive. Bob is the most active agent. Marked resolved.
-- **Zero errors** — All 7 running agents healthy.
+## Latest Cycle Summary (08:54)
+- **All agents heartbeating** — Bob, Coach, Scout, QA all have active heartbeat sessions running.
+- **Stale session cleaned** — Cancelled `s_1775311714523_3` (idle "hello fresh session" running 4.8 days).
+- **3 failed requests noted** — (1) Bob EXP-097 KB integration aborted (5.5h ago), (2) Optimizer cron timeout (9.5h ago), (3) May failure-analysis cron db.query error (9.5h ago). All are stale failures, not recurring.
+- **Zero new errors** — No errors in last hour. All 7/8 agents healthy. Amy-kimi still 🔴.
+- **No dispatch items** — No inbox, no pending tasks from Hao.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao**.
