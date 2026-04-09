@@ -70,3 +70,9 @@ See `agents/evaluator/periodic-tasks.md` for the definitions.
 - **Note (2026-04-05):** there is currently no `verify_receipt` tool/entrypoint available in this repo; treat receipt audit as **presence-only** (does the session have a `[SIG: ...]` tag?) until an actual verifier is implemented.
 - If a session claims "Tests Passed" or "File Written" but has no `[SIG:...]`, flag as `[MISSING_RECEIPT]` (HB#389).
 - Log violations to `agents/shared/bulletin.md` with ⚠️ alert.
+
+## 9. LLM Eval Liveness (Process #15)
+**Goal**: Determine whether LLM evaluation is enabled; if disabled, decide revive vs remove.
+- Canonical source: `.state/may.db` (do not rely on legacy artifact directories).
+- Check for existence of a `llm_evaluations` (or similarly named) table.
+- If missing: treat as "LLM eval disabled or not implemented" and open a tracked item to either (a) add it back, or (b) remove/rename docs that imply it exists.
