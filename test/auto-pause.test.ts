@@ -19,6 +19,7 @@ vi.mock("../src/lib/requests.js", () => ({
 }));
 
 import { isAgentAutoPaused, AUTO_PAUSE_THRESHOLD } from "../src/lib/auto-pause.js";
+import { getDb } from "../src/lib/requests.js";
 
 describe("isAgentAutoPaused", () => {
   beforeEach(() => {
@@ -103,11 +104,9 @@ describe("isAgentAutoPaused", () => {
     expect(AUTO_PAUSE_THRESHOLD).toBe(3);
   });
 
-  it("returns false when DB throws (fail-open)", async () => {
-    // Override mock to throw by using vi.mocked on the imported module
-    const requestsMod = await import("../src/lib/requests.js");
-    const mockedGetDb = vi.mocked(requestsMod.getDb);
-    mockedGetDb.mockImplementationOnce(() => {
+  it("returns false when DB throws (fail-open)", () => {
+    // Override mock to throw for one call
+    (getDb as ReturnType<typeof vi.fn>).mockImplementationOnce(() => {
       throw new Error("DB unavailable");
     });
     expect(isAgentAutoPaused("/fake", "any-agent")).toBe(false);
