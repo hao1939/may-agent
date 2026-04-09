@@ -41,4 +41,7 @@
 
 Detailed findings in `workspace/finding-*.md` and `workspace/brief-*.md`.
 Tool quality regressions [1-5] all resolved — waste rate 0.07-2.4%, not actionable.
-Tool quality regressions #6-#9 (2026-04-09) — all traced to gym ✓/✗ classifier gap + development activity. **Fixed**: classifier now catches ✗ marks (commit 19101c35). Future gym-heavy periods should classify correctly.
+Tool quality regression #6 (bash errors ×4 categories) — investigated 2026-04-09. 42/59 bash:other = classifier gap (gym ✓/✗ format). Rest = natural variance from 2 bob sessions. One fix proposed: add ✗ regex to test-failure classifier.
+Tool quality regression #7 (2026-04-09 03:23) — bash:other 28 (+180%), edit:other 2 (+100%), bash:exit-code-nonzero 11 (+267%). Root cause: bob gym scenario dev (27/28 bash:other from bob), tech-lead exploratory greps. Waste rate 2.2% — elevated but not actionable. Same classifier-gap pattern as #6.
+Tool quality regression #8 (2026-04-09 07:23) — bash:exit-code-nonzero 21 (+91%), read:nonexistent-path 8 (+167%), bash:nonexistent-path 8 (+300%), edit:other 5 (+150%). Root cause: bob 104-op gym remediation session + coach wave-2 validation/few-shot deployment. Same development-activity pattern as #6/#7. Not actionable.
+Tool quality regression #9 (2026-04-09 11:23) — bash:exit-code-nonzero 52 (+148%), bash:other 49 (+81%), plus bash:nonexistent-path, edit:other. Root cause: bob heavy research sessions (79-op HB, multiple 40-70 op research/integration sessions), coach multi-session harness phases 1-3, tech-lead manager.ts bug fixes. Same development-activity pattern as #6/#7/#8. Not actionable.

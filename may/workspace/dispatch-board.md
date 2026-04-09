@@ -1,16 +1,16 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~12:17 UTC
+Updated: 2026-04-09 ~11:54 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
 - **Scout**: 🟢 Running — Heartbeat active.
-- **Bob**: 🟢 Running — Heartbeat active. EXP-101 COMPLETE.
-- **Coach**: 🟢 Running — Heartbeat active (in_progress now).
-- **Tech-lead**: 🟢 Running — Heartbeat active (in_progress now).
-- **Optimizer**: 🟢 Running — Heartbeat active.
+- **Bob**: 🟢 Running — Heartbeat active. Designing EXP-101 (HVR Validation on Agent Logs).
+- **Coach**: 🟢 Running — Heartbeat active. Multi-Session Harness Phase 4 (instruction-override-drift + integration).
+- **Tech-lead**: 🟢 Running — Heartbeat active.
+- **Optimizer**: 🟢 Running — Heartbeat active. Handling tool quality regression alert (bash exit-code-nonzero +148%).
 - **QA**: 🟢 Running — Heartbeat active.
-- **Evaluator**: 🟢 Running — Heartbeat active (in_progress now).
+- **Evaluator**: 🟢 Running — Heartbeat active.
 - **All agents**: 🟡 7/8 running. Amy-kimi still 🔴. Zero errors in last hour.
 
 ## Active Priorities (from Hao)
@@ -89,7 +89,6 @@ Updated: 2026-04-09 ~12:17 UTC
 | **Auto-Pause Recovery Implementation** | ✅ MERGED | tech-lead | Probe timer + exponential backoff (5min→2h cap) + 24h TTL + escalation to May. 39/39 tests pass. Branch `review/auto-pause-recovery` merged commit `bd56956`. |
 | **Session Lifecycle Bug Fixes (3,4,8,10)** | ✅ MERGED | tech-lead | Bob found 10 bugs in manager.ts. Tech-lead fixed 4 HIGH/MED. Tests 6/6. Branch merged to main. |
 | **EXP-100 CIVC Interventional Test** | ✅ COMPLETE | coach | **CEILING EFFECT**: 12/12 (100%) all arms. Baseline too easy — no treatment differentiation. Scenarios need harder difficulty. |
-| **EXP-101 HVR Validation** | ✅ COMPLETE | bob | Weak signal (AUROC=0.566, p=0.048) but zero-hedge gate vacuous. P(H-094) 0.45→0.35. NOT viable as standalone gate. Full results at `EXP-101/results.md`. |
 | **Multi-Session Harness Phase 3** | ⚠️ MOSTLY DONE | coach | 3/4 scenarios complete (`ghost-deliverable-chain`, `stale-plan-drift`, `unresolved-failure-chain`). `kb-integration-failure` missing `package.json` + `success_criteria.js` (interrupted). Also `instruction-override-drift` missing `success_criteria.js`. |
 | **Bug 2 Gate Abort Signal Fix** | ✅ MERGED | tech-lead/may | Branch `fix/bug2-gate-abort-signal` merged to main. Abort signal propagation + gym directory fix. 4/4 tests pass. |
 | **Telegram Notification Bug (req:88bd4688)** | ✅ ALREADY FIXED | tech-lead | Commit 9de9e58 merged to main. Notifications filtered to interface agent only + dead prompt handler removed. |
@@ -124,10 +123,13 @@ Updated: 2026-04-09 ~12:17 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (12:17)
-- **All agents running** — 7/8 active. Coach, Tech-lead, Evaluator all have heartbeats in_progress now. Zero errors.
-- **EXP-101 COMPLETE** — HVR Validation on Agent Logs. **Key result**: Weak signal (AUROC=0.566, p=0.048) but practically useless as a gate. Zero-hedge gate vacuous due to 99% base rate. P(H-094) downgraded 0.45→0.35. Recommendation: hedge_rate as one feature in multi-feature model, NOT standalone gate. Full results at `agents/shared/knowledge/experiments/EXP-101/results.md`.
-- **Stale self-fork requests** — Coach req:b5a63fbb (EXP-101 Phase 1, 29m CREATED) and Bob req:ac97e8f2 (EXP-101 Phase 1, 20m CREATED) appear to be stale self-forks. Work already completed in separate sessions.
+## Latest Cycle Summary (11:54)
+- **All agents running** — Full heartbeat cycle in progress. All 7 active agents executing. Zero errors.
+- **Cleaned up stale may session** — `s_1775311714523_3` was idle for ~5 days (7065 min). Cancelled.
+- **Coach on Multi-Session Harness Phase 4** — instruction-override-drift + integration (self-forked req:29a969b6).
+- **Bob designing EXP-101** — HVR (Hedge-to-Verify Ratio) Validation on Agent Logs (self-forked req:8a594f41).
+- **Tool quality regression** — Optimizer handling alert: bash exit-code-nonzero +148%, bash:other +81%.
+- **System-status alert re: Bob analysis** — Flagged "5 days old" but Bob's workspace analysis is from today. Alert likely stale/incorrect. Dismissed.
 - **No failures, no stuck sessions** — Clean cycle.
 
 ## Next Actions
