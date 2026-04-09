@@ -1,17 +1,17 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~02:53 UTC
+Updated: 2026-04-09 ~03:17 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
 - **Scout**: 🟢 Running — Heartbeat active.
-- **Bob**: 🟢 Running — Heartbeat cycle. EXP-095 KB integration done.
-- **Coach**: 🟢 Running — EXP-096 (System Prompt Length Threshold) in progress.
-- **Tech-lead**: 🟢 Running — Last heartbeat completed cleanly.
-- **Optimizer**: 🟢 RESTORED — Was down 17 days (Mar 23 - Apr 9). Auto-pause cleared.
-- **QA**: 🟢 RESTORED — Was down 17 days (Mar 23 - Apr 9). Auto-pause cleared.
+- **Bob**: 🟢 Running — EXP-096 KB integration complete. Positional privilege corrected.
+- **Coach**: 🟢 Running — Heartbeat cycle.
+- **Tech-lead**: 🟢 Running — Gym bug fixes committed (a7341381). Auto-pause review done.
+- **Optimizer**: 🟢 Running — Restored after 17-day outage. Active in heartbeat cycles.
+- **QA**: 🟢 Running — Restored after 17-day outage. Active in heartbeat cycles.
 - **Evaluator**: 🟢 Running — Heartbeat active.
-- **All agents**: 🟡 7/8 running. Amy-kimi still 🔴. Optimizer + QA just restored after 17-day outage.
+- **All agents**: 🟡 7/8 running. Amy-kimi still 🔴. No errors in past hour.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -64,11 +64,13 @@ Updated: 2026-04-09 ~02:53 UTC
 | **Crash Loop Bug (req:e750a385)** | ✅ ALREADY FIXED | tech-lead | Commits 9ea5b5a + fcb97c9 + 9c7e549 already merged. Three-layer defense + compaction persistence. |
 | **Token Efficiency Research** | ✅ COMPLETE | bob | **P0 FINDING**: $441/week wasted from zero prompt caching on Claude Opus. LiteLLM proxy strips cache headers. Fix: set ANTHROPIC_API_KEY in .env + restart. Executive brief at `agents/bob/workspace/token-waste-executive-brief.md`. |
 | **Optimizer + QA 17-Day Outage** | ✅ FIXED | tech-lead | Model alias change + auto-pause circuit breaker = 17 days down (Mar 23 - Apr 9). Both restored. Report: `agents/tech-lead/workspace/fix-optimizer-qa-outage.md`. |
-| **Auto-Pause Recovery Design** | ⏳ DISPATCHED | bob | Need probe timer or decay mechanism to prevent permanent lockout. Formal design request sent (req:36f360fa). |
+| **Auto-Pause Recovery Design** | ✅ DESIGN + REVIEW DONE | bob (design), tech-lead (review) | Design at `agents/shared/may-agent-docs/design/auto-pause-recovery.md`. Review at `agents/tech-lead/workspace/review-auto-pause-recovery.md`. Approved — ready for implementation. |
 | **EXP-095 Few-Shot Delivery Mechanism** | ✅ COMPLETE | coach | **DEFINITIVE**: Task-message = 100% (6/6), system-prompt = 0% (3/3). Position is everything. Content quality irrelevant if delivery position wrong. |
 | **Few-Shot Production Deployment Proposal** | ✅ COMPLETE | coach | Comprehensive proposal at `agents/coach/workspace/proposal-fewshot-production-deployment.md`. Phase 1: static routing + 3 proven examples. ~2hr implementation. Needs tech-lead + Bob review. |
 | **Bob Heartbeat System Analysis** | ✅ COMPLETE | bob | 231-line analysis at `agents/bob/workspace/heartbeat-analysis.md`. 48 cron entries inventoried, ~1,256 fires/day, 7 consolidation recommendations. |
 | **EXP-096 System Prompt Length Threshold** | ✅ COMPLETE | coach | **DEFINITIVE**: Attention dilution REJECTED. Minimal 11KB prompt still 0/3; task-message few-shot 3/3. Position > length. Positional privilege confirmed. |
+| **Gym History Leakage Fix** | ⏳ PENDING | tech-lead | Task history from prior gym runs contaminates A/B comparisons. req:46ec258d. |
+| **Few-Shot Proposal Review** | ✅ REVIEWED | tech-lead | req:98cb74e3 completed. Proposal approved — ready for Phase 1 implementation. |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -100,17 +102,19 @@ Updated: 2026-04-09 ~02:53 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (02:53)
+## Latest Cycle Summary (03:17)
 - **System stable** — All 7/8 agents running. No errors in past hour. Clean cycle.
-- **EXP-096 COMPLETE**: Attention dilution hypothesis REJECTED. Reducing system prompt from 48KB to 11KB still 0/3. Task-message few-shot 3/3. **Positional privilege** is the mechanism, not prompt length. Major finding for skill delivery strategy.
-- **Auto-Pause Recovery Design** still pending with Bob (req:36f360fa). Bob in heartbeat now — should pick up.
-- **Cleaned stale session** s_1775311714523_3 (109 hours idle).
-- **All research on track**: EXP-095→096 chain complete. Few-shot delivery mechanism fully characterized.
+- **EXP-096 VALIDATED post-bugfix**: Gym scoring bugs fixed (a7341381) BEFORE EXP-096 ran. Clean experiment with fresh scenarios confirms: Arm A (48KB) 0/3, Arm B (11KB) 0/3, Arm C (11KB + task few-shot) 3/3. **Positional privilege is real**, not a scoring artifact.
+- **Auto-Pause Recovery Design** ✅ Bob's design DONE + Tech-lead APPROVED with minor feedback. Ready for implementation.
+- **Few-Shot Proposal** ✅ Tech-lead reviewed (req:98cb74e3 completed). Proposal at `agents/coach/workspace/proposal-fewshot-production-deployment.md`.
+- **Gym history leakage fix** still pending (req:46ec258d). Task history from prior runs contaminates A/B comparisons.
+- **Request DB noise**: ~50 stale test entries (JSON-to-YAML migration, "Fix binary.bin", echo/hello) from Hao's testing. Not blocking but cluttered.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao**.
-- **P1**: **Auto-pause recovery design** — Current auto-pause has no recovery path. Need probe timer or decay to prevent 17-day outages. Bob to design.
-- **P1**: **Review few-shot deployment proposal** — Coach's plan at `agents/coach/workspace/proposal-fewshot-production-deployment.md`. Route to tech-lead.
+- **P1**: **Implement auto-pause recovery** — Design approved. Tech-lead to build. Prevents future 17-day outages.
+- **P1**: **Implement few-shot task injection** — Coach proposal reviewed. Tech-lead to build Phase 1 (static routing + 3 proven examples). ~2hr work.
+- **P1**: **Fix gym history leakage** — Task history contaminates A/B comparisons. Pending with tech-lead (req:46ec258d).
 - **P1**: **Present research sprint results to Hao** — H-091 P(H)=0.93, 16 experiments, KE-065 synthesis, token waste analysis, two critical bugs fixed.
 - **P2**: Federation design ready for Hao review
 - **P2**: Pre-merge review gate Phase 2 (auto-review)
