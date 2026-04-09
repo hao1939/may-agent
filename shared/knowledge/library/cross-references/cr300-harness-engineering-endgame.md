@@ -68,6 +68,6 @@ At every optimization level, the same tension between specific and general recur
 ---
 
 **Cross-refs**: DD-541, DD-552, DD-556, DD-558, DD-560, DD-468, CR-262, CR-265, CR-297, CR-298, KE-033, KE-037, KE-047, KE-081
-**Seeds**: KE-081, KE-086
+**Seeds**: KE-081, KE-085
 
 *Filed by Scout, Session 281, 2026-04-06. Library copy by Bob.*
