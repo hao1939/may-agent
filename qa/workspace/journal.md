@@ -4,6 +4,26 @@
 
 # QA Journal — 2026-04-09
 
+## 2026-04-09T19:25Z
+
+### Summary
+Heartbeat QA at HEAD **7e6bc59**. I reviewed the most recent change set (`src/lib/fewshot-router.ts` + `test/fewshot-router.test.ts`) which adds a guard to **skip few-shot injection for heartbeat tasks**. `tsc` is green. `vitest` still fails, but the failures appear **pre-existing/unrelated** to this patch (missing `src/app/launcher.ts`, permissions in `/app/test-workspace/*`, and a research-db timeout). The new fewshot-router tests passed.
+
+### Files reviewed
+- `src/lib/fewshot-router.ts` (routeFewShotExamples heartbeat exclusion; pattern parsing/matching)
+- `test/fewshot-router.test.ts` (new coverage for heartbeat exclusion + existing router behaviors)
+
+### Mandatory gates (re-run)
+- `./node_modules/.bin/tsc --noEmit`: PASS (no output)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2082 passed (2103)**
+  - `test/launcher.test.ts`: 7 failed — expects `/app/src/app/launcher.ts` to exist; file missing (existsSync false / ENOENT)
+  - `test/context-learn.test.ts`: 7 failed — `rmSync(..., { recursive: true })` fails with `EACCES` under `/app/test-workspace/context-learn-test/*`
+  - `test/context-learning.test.ts`: 6 failed — same `EACCES` cleanup failure under `/app/test-workspace/context-learning-test/*`
+  - `test/research-db.test.ts`: 1 failed — `syncs the actual knowledge base without errors` timed out at 5000ms
+
+### Verdict
+CONDITIONAL — The heartbeat exclusion change appears correct and covered by tests; repo still has unrelated failing tests that should be addressed separately.
+
 ## 2026-04-09T17:55Z
 
 ### Summary
