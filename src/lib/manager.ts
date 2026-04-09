@@ -629,6 +629,17 @@ export class SubagentManager {
     }
   }
 
+  /**
+   * Bug 10 fix: Clean up callDepths entry when a root session completes.
+   * callDepths tracks nesting depth per root session for the call depth limit.
+   * If the session IS the root (i.e. has an entry in callDepths), remove it.
+   */
+  private cleanupCallDepths(sessionId: string): void {
+    // Only root sessions have entries in callDepths (keyed by root session ID).
+    // If this session is a root, remove its entry.
+    this.callDepths.delete(sessionId);
+  }
+
   /** Set up a timeout timer for a session if timeoutMs is configured. */
   private setupTimeout(session: ActiveSession, timeoutMs: number | undefined): void {
     if (!timeoutMs || timeoutMs <= 0) return;
@@ -672,6 +683,34 @@ export class SubagentManager {
     // Guard: if close() already archived this session, skip.
     if (session.closed) return;
 
+    try {
+      this.handleCompletionInner(session);
+    } catch (err) {
+      // Bug 3 fix: If the completion pipeline throws, ensure the session is
+      // still cleaned up so it doesn't get stuck in activeSessions forever.
+      log("error", `[handleCompletion] Unexpected error for ${session.sessionId}: ${err}`);
+      try {
+        session.error = session.error ?? `handleCompletion failed: ${err instanceof Error ? err.message : String(err)}`;
+        session.archiveStatus = "error";
+        session.endedAt = Date.now();
+        this.registry.updateSessionStatus(session.sessionId, "error", session.error);
+        session.unsubscribe?.();
+        this.removeSentinel(session.sessionId);
+        this.cleanupSession(session);
+      } catch {
+        /* best-effort cleanup */
+      }
+      this.activeSessions.delete(session.sessionId);
+      // Clean up callDepths for this session's root (Bug 10)
+      this.cleanupCallDepths(session.sessionId);
+      setTimeout(() => {
+        this.sessionResults.delete(session.sessionId);
+      }, 60_000);
+    }
+  }
+
+  /** Inner completion pipeline — separated so handleCompletion can wrap in try/catch. */
+  private handleCompletionInner(session: ActiveSession): void {
     // ── Pipeline: detect and classify errors ──────────────────────────
     detectErrors(session);
     clearPostFinishErrors(session);
@@ -751,6 +790,9 @@ export class SubagentManager {
     this.removeSentinel(session.sessionId);
     this.cleanupSession(session);
     this.activeSessions.delete(session.sessionId);
+
+    // Clean up callDepths for this session's root (Bug 10)
+    this.cleanupCallDepths(session.sessionId);
 
     // Clean up sessionResults after a delay to allow late waitFor() callers.
     // Without this, sessionResults grows unbounded (memory leak).
@@ -869,6 +911,14 @@ export class SubagentManager {
     }
 
     const sessionId = opts?.sessionId ?? generateId(def.sessionIdPrefix);
+
+    // Bug 4 fix: Guard against duplicate session IDs. If a pre-assigned sessionId
+    // is already active (e.g. being resumed by resumeStaleSessions concurrently),
+    // reject to prevent orphaned agent instances.
+    if (this.activeSessions.has(sessionId)) {
+      throw new Error(`Session "${sessionId}" is already active — cannot start a duplicate`);
+    }
+
     const persistDir = this.registry.persistDir;
 
     // Compute output directory
@@ -1306,6 +1356,12 @@ export class SubagentManager {
       status: "running",
       outputDir,
       parentSessionId: persisted.parentSessionId,
+      // Bug 8 fix: Restore parentAgentName so escalation routing works after resume.
+      // Try the active session first, then fall back to persisted meta.
+      parentAgentName: persisted.parentSessionId
+        ? (this.activeSessions.get(persisted.parentSessionId)?.agentName ??
+           readSessionMeta(persistDir, persisted.parentSessionId)?.agent)
+        : undefined,
       turnCount: savedMessages.filter((m) => m.role === "assistant").length,
       compactionTransform,
       closed: false,
@@ -1689,6 +1745,9 @@ export class SubagentManager {
     }
 
     // Case 2: Session is IDLE — wake it up
+    // Note: This is safe against double-wake in single-threaded JS because
+    // we set status synchronously before any yield point. A second input()
+    // call would see "running" and go through the steer path above.
     if (session.status === "idle") {
       session.status = "running";
       session.error = undefined; // Clear previous turn's error
@@ -1844,6 +1903,7 @@ export class SubagentManager {
     }
 
     this.cleanupSession(session);
+    this.cleanupCallDepths(sessionId);
     this.activeSessions.delete(sessionId);
 
     // Emit session_end on bus + legacy callback
