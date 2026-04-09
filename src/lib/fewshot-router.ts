@@ -222,7 +222,7 @@ export function routeFewShotExamples(
 ): FewShotResult {
   // Skip heartbeat sessions — they match trigger patterns like "error" but
   // don't benefit from few-shot examples (~500-800 wasted tokens × 48/day)
-  if (taskText.startsWith("[heartbeat]")) {
+  if (/^\[heartbeat\]/i.test(taskText)) {
     return { content: null, matchedFiles: [], tokenEstimate: 0 };
   }
 
