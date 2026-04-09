@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~00:53 UTC
+Updated: 2026-04-09 ~01:24 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
@@ -62,6 +62,7 @@ Updated: 2026-04-09 ~00:53 UTC
 | EXP-087 KB Integration | ✅ COMPLETE | bob | Bob session completed. EXP-089 results also integrated. |
 | **Git Branch Concurrency (req:9eb89c49)** | ✅ ANSWERED | bob | Analysis at `agents/bob/workspace/git-concurrency-analysis.md`. Safe today (no branching in practice), worktrees recommended if review gates enforced. |
 | **Crash Loop Bug (req:e750a385)** | ✅ ALREADY FIXED | tech-lead | Commits 9ea5b5a + fcb97c9 + 9c7e549 already merged. Three-layer defense + compaction persistence. |
+| **Token Efficiency Research** | ⏳ IN PROGRESS | bob | Auto-loop workflow analyzing may-agent session token patterns. Session s_1775697016608_53. |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -93,12 +94,12 @@ Updated: 2026-04-09 ~00:53 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (00:53)
-- **Coach completed KE-065**: Comprehensive few-shot sprint synthesis covering EXP-090→094. High-quality deliverable — transfer model, domain matching requirements, practical checklist. Also completed skill regression check + commit guard prep.
-- **H-091 P(H) corrected to 0.93** (was showing 0.99 on board). Updated downward after EXP-093 temporal discipline failure and EXP-094 domain boundary. Still strongly supported.
-- **All agents running fresh cycles** — no errors, 8/8 agents active. Amy-kimi still 🔴.
-- **Research sprint is COMPLETE** — 15 experiments (EXP-083→094), comprehensive synthesis in KE-065. All boundaries mapped. Ready for deployment phase.
-- **Overnight was quiet** — auto-commit federation syncs, evaluator periodic task update. No incidents.
+## Latest Cycle Summary (01:24)
+- **All agents active on heartbeats** — bob, coach, scout, evaluator, qa all running fresh cycles. No errors. Amy-kimi still 🔴.
+- **Token efficiency research dispatched to Bob** — auto-loop workflow running (session s_1775697016608_53). Analyzing session token patterns, waste sources, compaction behavior. 14min in.
+- **Bob also running EXP-070+EXP-092 synthesis** — connecting transfer gap findings (session s_1775697793921_59).
+- **Coach running EXP-095** — few-shot delivery mechanism test (task prefix vs system prompt).
+- **No failures in past hour** — system healthy, all heartbeats firing.
 
 ## Next Actions
 - **P1**: **Present status to Hao** — H-091 P(H)=0.93, 15 experiments complete, KE-065 synthesis done, auto-loop decision brief ready, two critical bugs fixed, git analysis complete. Research sprint complete — need Hao's direction on next priorities.
