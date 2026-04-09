@@ -79,5 +79,31 @@ Scaffolding CAN itself trigger verification collapse if it adds too much structu
 ### Connected Hypothesis: H-094 (Hedge-to-Verify Ratio)
 H-094 proposes HVR as zero-cost confidence gate. If validated, reduces verification overhead by 60-70% by auto-accepting high-confidence outputs. This transforms the cascade defense stack from always-on to event-triggered. See: SYNTHESIS-cascade-dynamics-verification-defense-stack.md.
 
+## EXP-100 Results (2026-04-09): INCONCLUSIVE — Ceiling Effect
+
+**12/12 runs passed 7/7 checks across all 3 arms (100%).** No differentiation between baseline and treatments.
+
+### What Happened
+- **Arm A (Baseline)**: 4/4 (100%) — compound-edit-verification + multi-file-verify-gap
+- **Arm B (Scaffolded)**: 4/4 (100%) — same scenarios with decomposition template + verification prompts
+- **Arm C (Forced Checkpoint)**: 4/4 (100%) — same scenarios with mandatory externalized verification
+
+### Duration Effect (Only Observable Signal)
+Treatments added ~40-55s overhead (Arm A: 95s avg, Arm B: 136s avg, Arm C: 147s avg). Interventions increase process time but produced no accuracy improvement since baseline was already 100%.
+
+### Why Inconclusive (Not Contradictory)
+1. **Scenarios too easy**: compound-edit (4 files, 3 tiers) and multi-file (3 files, 1 rename) don't trigger CIVC in current coder agent
+2. **Existing skills already scaffold**: Agent already has `verify-after-edit`, `cross-reference-before-config-repair`, and `evidence-over-narrative` skills — may already serve as implicit CIVC interventions
+3. **Design document predicted this**: Falsification condition identified "Baseline pass rates >80% would mean scenarios don't trigger CIVC"
+4. **H-093 observational evidence unaffected**: The 20.3% FM-3.3 rate from EXP-099 was measured across diverse real-world tasks with much higher complexity
+
+### Next Steps for H-093 Testing
+1. Design harder scenarios (6+ interacting files, deeper dependency chains, subtler cross-file impacts)
+2. Test with "naked" agent (remove existing verification skills) to isolate skill effect
+3. Use observational data from production sessions where FM-3.3 occurred
+
+### Impact on P(H)
+**P(H) unchanged at 0.75.** Inconclusive experiments provide zero Bayesian update — the posterior equals the prior. The strong external literature validation (9 papers) and EXP-099 observational evidence (999 errors, 384 sessions) remain the primary evidence base.
+
 ### Updated P(H): 0.65 → 0.75
-Strong external mechanistic validation (DD#671), peer-reviewed intervention evidence (DD#673), and consistent architectural support (DD#672, DD#670). DD#674/675 add detection/prevention mechanisms. No contradictory evidence found. Nine independent papers now support various aspects of CIVC.
+Strong external mechanistic validation (DD#671), peer-reviewed intervention evidence (DD#673), and consistent architectural support (DD#672, DD#670). DD#674/675 add detection/prevention mechanisms. No contradictory evidence found. Nine independent papers now support various aspects of CIVC. **EXP-100 inconclusive due to ceiling effect — does not update P(H).**
