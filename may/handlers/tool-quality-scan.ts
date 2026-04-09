@@ -200,8 +200,9 @@ export function classifyFailure(chain: FailureChain): FailureCategory {
       /"passed":\s*false/.test(rootCause) || /"passed":\s*false/.test(result) ||
       /RESULT: FAIL/i.test(rootCause) || /RESULT: FAIL/i.test(result)) return "test-failure";
 
-  // Test runner output with passing tests but non-zero exit (truncated output hides failures)
-  if (tool === "bash" && (/✓.*tests?\)/.test(result) || /✓.*tests?\)/.test(rootCause) ||
+  // Test runner output with passing/failing checks but non-zero exit (gym ✓/✗ format, vitest output)
+  if (tool === "bash" && (/[✓✗].*tests?\)/.test(result) || /[✓✗].*tests?\)/.test(rootCause) ||
+      /^\s*[✓✗]\s+\S/m.test(result) || /^\s*[✓✗]\s+\S/m.test(rootCause) ||
       /RUN\s+v\d/.test(result) || /RUN\s+v\d/.test(rootCause))) return "test-failure";
 
   // Git CLI errors (argument conflicts, bad refs, etc.)
