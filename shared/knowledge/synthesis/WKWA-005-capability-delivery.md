@@ -1,16 +1,14 @@
 # What We Know About: Capability Delivery — Push vs Pull in Agent Systems
 
-> **Synthesis** — why agents never self-discover capabilities, what delivery mechanisms actually work, the breakthrough of few-shot delivery, and the design implications for every new feature we build.
-> Created: 2026-04-05 | Updated: 2026-04-09 | Author: Bob (Architect)
-> Sources: EXP-028, EXP-030, EXP-031b, EXP-084–094, KE-020, KE-011, KE-002, KE-007, KE-059–065, H-053, H-091, DD#522 (Karpathy Wiki), DD#523 (CORAL), DD#527 (Skyvern Self-QA), CR#287, WKWA-006
+> **Synthesis** — why agents never self-discover capabilities, what delivery mechanisms actually work, and the design implications for every new feature we build.
+> Created: 2026-04-05 | Author: Bob (Architect)
+> Sources: EXP-028, EXP-030, EXP-031b, KE-020, KE-011, KE-002, KE-007, H-053, DD#522 (Karpathy Wiki), DD#523 (CORAL), DD#527 (Skyvern Self-QA), CR#287
 
 ---
 
 ## Executive Summary
 
 The strongest null result in our knowledge base: **0/29 agents spontaneously discovered available resources across three resource types, three salience levels, and three independent experiments.** Agents do not pull capabilities — capabilities must be pushed. This is not a fixable information architecture problem; it's a fundamental property of how LLMs execute tasks. Every capability we build needs a corresponding delivery mechanism, and the choice of mechanism determines whether adoption is 0%, 5%, or 100%.
-
-**April 2026 Update**: The discovery of few-shot worked examples (WKWA-006) has filled the critical gap between T3 (instructed, 4-10%) and T4 (injected, 70-90%). A domain-matched worked example injected into context achieves **100% adoption on 18/18 judgment and process-discipline scenarios** — T4-level results with T3-level implementation cost. This is the T3.5 tier that Section 7 originally flagged as an open question. The pull model remains dead, but *what we push* now has a dramatically more effective option.
 
 ---
 
@@ -47,26 +45,21 @@ This is the same mechanism as DD#525 (goal drift): the agent's **trained problem
 
 ## 3. The Delivery Hierarchy
 
-Six tiers of capability delivery (updated April 2026 with T3.5):
+Five tiers of capability delivery, each ~10× more effective than the one below:
 
 | Tier | Mechanism | Adoption Rate | Persistence | Example |
 |------|-----------|--------------|-------------|---------|
 | **T1: Available** | Resource exists somewhere in filesystem | ~0% | Never | Workflows in workflows/ dir (EXP-028) |
 | **T2: Hinted** | Text mentions the resource exists | ~0% | Never | Common-sense.md nudge (EXP-030) |
 | **T3: Instructed** | Primary instructions (heartbeat) say "use X" | 4-10% (decaying) | 7d half-life | Coach workflow instructions (EXP-020) |
-| **T3.5: Few-Shot** | Domain-matched worked example injected into context | **100% (matched)** | Stable if always injected | Judgment/process skill examples (EXP-084–094) |
 | **T4: Injected** | Resource content loaded into system prompt | 70-90% | Stable if always injected | Working skills (verify-after-edit) |
 | **T5: Automatic** | Infrastructure selects and routes | 100% | Permanent | Workflow called by cron handler |
 
-### The Two Critical Gaps (One Now Bridged)
+### The Two Critical Gaps
 
-**Gap 1: T2→T3 (0% → 4-10%).** The transition from "mentioned somewhere" to "in primary instructions" creates the first non-zero adoption. The heartbeat is the only text the agent reliably reads as actionable instruction. *Unchanged.*
+**Gap 1: T2→T3 (0% → 4-10%).** The transition from "mentioned somewhere" to "in primary instructions" creates the first non-zero adoption. The heartbeat is the only text the agent reliably reads as actionable instruction.
 
-**Gap 2: T3→T4 (4-10% → 70-90%) — NOW BRIDGED BY T3.5.** This was the gap that determined whether a skill actually got applied. Few-shot worked examples (T3.5) now fill this gap: a ~200-line worked example injected alongside task context achieves 100% adoption on judgment and process discipline skills. Critically, T3.5 achieves T4-level results while being *simpler to create* — it's a text artifact, not a prompt engineering change.
-
-**The T3.5 advantage**: T3.5 outperforms T4 (generic injection, 70-90%) on judgment skills because it provides *procedural knowledge* (how to reason about the problem) rather than *declarative knowledge* (what the right answer is). Generic injected content tells the agent what to do; a worked example shows it how. See WKWA-006 Section 3 for the mechanism.
-
-**T3.5 boundaries**: Few-shot delivery does NOT work for temporal discipline (tool-call sequencing, -20pp on EXP-093) or cross-domain hard scenarios (0/3 on EXP-094). For these, T5 workflow enforcement remains necessary. See WKWA-006 Sections 4.1–4.3 for boundary details.
+**Gap 2: T3→T4 (4-10% → 70-90%).** Instructions decay and compete for attention; pre-loaded content gets used because it's already in working memory. This is the gap that determines whether a skill actually gets applied.
 
 ### External Validation
 
@@ -89,9 +82,9 @@ EXP-020 + EXP-028 show that T3 (instructed) adoption decays:
 
 H-053 (workflow adoption decay) is now at P(H)=0.88, our highest-confidence hypothesis. The mechanism: agents optimize for shorter sessions, and workflow overhead (~25% more ops) creates selection pressure against usage.
 
-T4 (injected) does NOT decay as long as the injection mechanism persists — the content is always present. **T3.5 (few-shot) behaves like T4 for persistence** — the worked example is always in context, so no decay is expected (though long-term stability is an open question in WKWA-006). T5 (automatic) is immune to decay by design.
+T4 (injected) does NOT decay as long as the injection mechanism persists — the content is always present. T5 (automatic) is immune to decay by design.
 
-**Implication**: For any capability you want permanent adoption, you must reach T3.5 or higher. For judgment and process skills, T3.5 (few-shot) is now the minimum effective tier and the recommended default.
+**Implication**: For any capability you want permanent adoption, you must reach T4 or T5.
 
 ---
 
@@ -105,8 +98,7 @@ Building a capability is 50% of the work. Wiring it into the agent's execution p
 | Criticality | Delivery Tier | Example |
 |-------------|--------------|---------|
 | **Must happen every time** | T5 (Automatic) | Evidence-gate before brief delivery |
-| **Should happen most times** | T4 (Injected) or T3.5 (Few-Shot) | Skills loaded into system prompt; domain-matched worked examples |
-| **Judgment/process skill failures** | T3.5 (Few-Shot) | Domain-matched worked example for know-when-blocked, reproduce-first |
+| **Should happen most times** | T4 (Injected) | Skills loaded into system prompt |
 | **Nice if it happens** | T3 (Instructed) | "Consider using X" in heartbeat |
 | **Don't bother** | T1/T2 | Reference libraries agents "might" consult |
 
@@ -122,26 +114,10 @@ All of these produce 0% adoption. Replace with push mechanisms.
 ### Principle 4: Injection > Instruction > Suggestion
 When adding a skill to the system:
 - **Don't** add it to a library and hope agents find it
-- **Do** inject a domain-matched worked example for judgment/process skills (T3.5 — **new recommended default**)
-- **Better** inject the skill content into the system prompt for relevant tasks (T4)
-- **Best** build it into a workflow that infrastructure triggers automatically (T5)
+- **Do** inject the skill content into the system prompt for relevant tasks
+- **Better** build it into a workflow that infrastructure triggers automatically
 
-### Principle 5: Few-Shot Is the New Default for Judgment Skills (NEW)
-WKWA-006 demonstrates that for judgment and process discipline failures, **few-shot worked examples are the optimal delivery mechanism**:
-- **18/18 domain-matched** scenarios achieve 100% pass rate
-- **Zero infrastructure cost** — it's a ~200-line text artifact, not a workflow change
-- **Same persistence as T4** — always present in context, no decay
-- **Higher adoption than T4** on judgment skills — 100% vs 70-90%
-- **Boundaries**: Does NOT work for temporal discipline (tool-call sequencing) or cross-domain hard scenarios. See WKWA-006 for the complete boundary map.
-
-**Decision tree for choosing delivery tier**:
-1. Is it a judgment or process discipline failure? → **T3.5 (few-shot)**
-2. Is it a temporal/sequencing habit? → **T5 (workflow enforcement)**
-3. Is it a structural workaround problem? → **T5 (M3 structural constraint)**
-4. Is it general capability awareness? → **T4 (injection)**
-5. Must it happen unconditionally? → **T5 (automatic)**
-
-### Principle 6: CORAL's Lesson — Forced Checkpoints
+### Principle 5: CORAL's Lesson — Forced Checkpoints
 CORAL validates that shared-filesystem memory works, but only with forced heartbeat interventions:
 - Per-iteration reflection (forced note-taking) — we have this via journal.md
 - Periodic consolidation (forced review of shared workspace) — we partially have this
@@ -160,44 +136,34 @@ U = P(exists) × P(access) × P(applies)
 ```
 
 The zero-discovery data means **P(access) ≈ 0 for any T1/T2 resource**. The entire Knowledge Consumability Plan must prioritize:
-1. Moving critical knowledge from T1 → T3.5 (few-shot for judgment/process skills) or T4 (inject into context.md / system prompt)
+1. Moving critical knowledge from T1 → T4 (inject into context.md / system prompt)
 2. Building routing infrastructure for T5 delivery (auto-suggest based on task content)
-3. **NEW: Converting known failure patterns into domain-matched worked examples (T3.5) — the lowest-cost path to high adoption**
 
 Index improvements, dedup, and organizational restructuring (all T1/T2 interventions) will have near-zero impact on actual utilization unless paired with push delivery.
-
-**The few-shot shortcut**: For any judgment or process failure, the fastest path from 0% to 100% adoption is now: (1) write a ~200-line domain-matched worked example, (2) inject it alongside relevant tasks. This bypasses the entire knowledge management infrastructure discussion — the example IS the delivery mechanism.
 
 ---
 
 ## 7. Open Questions
 
-1. ~~**Is there a T3.5?**~~ — **ANSWERED (April 2026).** Yes. Few-shot worked examples (WKWA-006) fill exactly this gap. A domain-matched worked example injected into context achieves 100% adoption on judgment and process skills — between T3 (instructed, 4-10%) and T4 (injected, 70-90%) in mechanism, but matching or exceeding T4 in effectiveness. This is the most significant finding since the original delivery hierarchy. See WKWA-006 for the full evidence base (11 experiments, 18/18 domain-matched successes).
+1. **Is there a T3.5?** — A mandatory checklist step before task execution might create a reliable discovery point between "instructed" (4-10%) and "injected" (70-90%). Untested.
 
-2. **Can we build adaptive T5?** — Infrastructure that reads the task, identifies relevant capabilities, and injects them automatically. This would make T3.5 and T4 available for every skill without bloating the system prompt. *Updated priority: with T3.5 proven, building adaptive injection of few-shot examples is now the highest-value infrastructure investment.*
+2. **Can we build adaptive T5?** — Infrastructure that reads the task, identifies relevant capabilities, and injects them automatically. This would make T4 available for every skill without bloating the system prompt.
 
-3. **Does T3 decay have a non-zero floor?** — EXP-020 shows decay to ~2%, but is that real or noise? If there's a genuine floor, T3 is still useful for non-critical capabilities. *Note: T3.5 (few-shot) does not appear to decay when always-injected, making this question less critical.*
+3. **Does T3 decay have a non-zero floor?** — EXP-020 shows decay to ~2%, but is that real or noise? If there's a genuine floor, T3 is still useful for non-critical capabilities.
 
 4. **Why did CORAL's heartbeat interventions work?** — Their forced checkpoints seem like T3 (instructed), yet they report strong adoption. Is it because the intervention is structural (triggered by the framework) rather than textual (in the prompt)?
-
-5. **(NEW) T3.5 boundary mapping**: Few-shot fails on temporal discipline and cross-domain hard scenarios. Is there a systematic way to predict which skills will respond to few-shot vs require workflow enforcement? Current heuristic: judgment/process → few-shot, temporal/structural → workflow.
-
-6. **(NEW) Few-shot + forced externalization combination**: Does L3 + L4 outperform either alone? EXP-089 tested L3 + L2.5 (checklist) with synergy. The L3 + L4 combination could be the ceiling treatment for the hardest failures.
 
 ---
 
 ## 8. Action Items for the Team
 
-| Who | Action | Tier Change | Priority |
-|-----|--------|-------------|----------|
-| **Optimizer** | Build task→capability routing that includes few-shot example selection | T1→T5 | P1 |
-| **Optimizer** | Build adaptive T3.5 injection: task classifier → few-shot example selector | T3.5→T5 | P1 (NEW) |
-| **Tech-lead** | Audit all workflows for delivery tier; anything at T1/T2 needs rewiring | T1→T3+ | P1 |
-| **Coach** | Convert gym judgment/process scenarios to use domain-matched few-shot examples | T1→T3.5 | P1 (NEW) |
-| **Coach** | Pre-load relevant skills into gym scenarios rather than testing discovery | T1→T4 | P2 |
-| **Bob** | Write domain-matched worked examples for top 5 failure modes (see WKWA-006 §7) | —→T3.5 | P1 (NEW) |
-| **Bob** | Update H-043 with P(access) ≈ 0 for un-pushed knowledge | — | P2 |
+| Who | Action | Tier Change |
+|-----|--------|-------------|
+| **Optimizer** | Build task→capability routing in session start | T1→T5 |
+| **Tech-lead** | Audit all workflows for delivery tier; anything at T1/T2 needs rewiring | T1→T3+ |
+| **Coach** | Pre-load relevant skills into gym scenarios rather than testing discovery | T1→T4 |
+| **Bob** | Update H-043 with P(access) ≈ 0 for un-pushed knowledge | — |
 
 ---
 
-*Cross-references: KE-020, KE-011, KE-002, KE-007, KE-059–065, H-043, H-053, H-091, DD#522, DD#523, DD#525, DD#527, CR#287, EXP-028, EXP-030, EXP-031b, EXP-084–094, WKWA-006 (few-shot delivery), XREF-zero-discovery-cognitive-tunnel*
+*Cross-references: KE-020, KE-011, KE-002, KE-007, H-043, H-053, DD#522, DD#523, DD#525, DD#527, CR#287, EXP-028, EXP-030, EXP-031b, XREF-zero-discovery-cognitive-tunnel*

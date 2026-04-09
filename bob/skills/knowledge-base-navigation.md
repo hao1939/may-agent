@@ -1,125 +1,109 @@
-# Skill: Knowledge Base Navigation
+# Skill: Directory-First Navigation
 
 ## Trigger
-Before ANY `read()` or `bash("cat ...")` on a path in `agents/shared/knowledge/` that you haven't verified exists this session.
+Before ANY `read()` or `bash("cat ...")` on a path in an **unfamiliar directory** — one you haven't confirmed exists via `ls` in this session. This includes `agents/shared/knowledge/`, `environment/`, or ANY nested directory structure you're exploring for the first time.
+
+## Core Rule: ZERO PATH GUESSING
+**NEVER construct a file path from memory or assumption.** Every path segment must be confirmed by a prior `ls` output in this session. If you haven't listed a directory, you cannot read files from it.
+
+## Tool-Call Budget
+You typically have **fewer than 25 tool calls** for a task. Every wasted call on a wrong path costs 4% of your budget. Plan your navigation: read INDEX.md first, identify exactly which files you need, then ls→read each one.
 
 ## Protocol
-1. **LIST PARENT FIRST** — Before reading a nested path, `ls` its parent directory:
-   - `bash("ls agents/shared/knowledge/experiments/EXP-090/")` before reading `results.md`
+1. **START WITH INDEX.md** — If the directory has an INDEX.md, read it FIRST. It maps the structure and tells you where things are. This one call saves 5-10 wasted exploration calls.
+2. **LIST PARENT BEFORE READING** — Before reading any nested file, `ls` its parent directory:
+   - `bash("ls environment/experiments/RX-031/")` before reading `results.md`
    - `bash("ls agents/shared/knowledge/library/topics/")` before reading a topic file
-2. **USE INDEX.md** — For broad lookups: `read("agents/shared/knowledge/INDEX.md")` has the full directory map
-3. **ls > find** — When a path doesn't exist, `ls` the parent directory (targeted), don't `find` the whole tree (broad)
-4. **NEVER GUESS 3+ SEGMENTS** — The knowledge base has 3-4 nesting levels. Never construct `knowledge/X/Y/Z` from memory. List each level.
+3. **ONE LEVEL AT A TIME** — Never construct paths 3+ segments deep from memory. Verify each directory level.
+4. **AFTER ENOENT: ls PARENT, DON'T find** — If a path fails, `ls` the parent directory (1 call). Never `find . -name '...'` (floods context with irrelevant results).
 
-## Worked Example: Synthesizing Failure-Mode Research
+## Worked Example: Navigating an Unknown Knowledge Base
 
-Bob was asked to write a synthesis connecting failure-mode findings from a recent
-experiment (EXP-090) with the existing deep-dive on agent failure modes. He needed
-three files: the experiment results, the failure-modes topic overview, and a related
-deep-dive.
+You're given a knowledge base in `environment/` and need to synthesize information from experiments, hypotheses, and deep dives. There are ~18 files across multiple directories.
 
-### ❌ The WRONG Approach (14 wasted tool calls — from a real session)
-
-Bob remembered approximately where files lived and started guessing paths:
+### ❌ WRONG: Path-Guessing Cascade (15 tool calls to read 4 files)
 
 ```
-# "I know there's a topics file about failure modes..."
-read("agents/shared/knowledge/topics/failure-modes.md")
-→ ERROR: ENOENT — no such file or directory
+# "I need hypothesis RH-044..."
+read("environment/hypotheses/RH-044.md")
+→ ERROR: ENOENT
 
-# "Hmm, maybe it's under entries?"
-read("agents/shared/knowledge/entries/failure-modes.md")
-→ ERROR: ENOENT — no such file or directory
+# "Maybe it's under research?"
+read("environment/research/hypotheses/RH-044.md")
+→ ERROR: ENOENT
 
 # "Let me search for it..."
-bash("find agents/ -name 'failure-modes.md' -type f")
-→ agents/shared/knowledge/library/topics/failure-modes.md
-   (plus 47 other .md files scrolling past — wasted context)
+bash("find environment/ -name 'RH-044*'")
+→ environment/hypotheses/RH-044.md
+   ... plus 15 other .md files scrolling past (wasted context)
 
-# "OK found it. Now the experiment results..."
-read("agents/shared/knowledge/experiments/EXP-090/results.md")
-→ ERROR: ENOENT (the experiment dir is actually EXP-090/ but maybe
-  results aren't written yet, or the path is slightly different)
+# Wait — it WAS at environment/hypotheses/RH-044.md? Let me try again...
+read("environment/hypotheses/RH-044.md")
+→ SUCCESS (but burned 3 calls for 1 read)
 
-# "Maybe it's named differently?"
-bash("find agents/shared/knowledge/experiments/ -name '*090*'")
-→ agents/shared/knowledge/experiments/EXP-090/
-→ agents/shared/knowledge/experiments/EXP-090/design.md
-→ agents/shared/knowledge/experiments/EXP-090/results.md
+# "Now experiment RX-031 results..."
+read("environment/experiments/RX-031/results.md")
+→ SUCCESS (lucky guess, but won't always work)
 
-# "It does exist! Let me try again..."
-read("agents/shared/knowledge/experiments/EXP-090/results.md")
-→ SUCCESS (finally)
+# "Deep dive about failure modes..."
+read("environment/library/deep-dives/failure-modes.md")
+→ ERROR: ENOENT
+
+# "Hmm..."
+read("environment/deep-dives/failure-modes.md")
+→ ERROR: ENOENT
+
+bash("find environment/ -name '*failure*'")
+→ environment/library/deep-dives/failure-taxonomy-analysis.md
 ```
 
-**Cost**: 6 tool calls just to locate 2 files. Each `find` command dumped dozens of
-irrelevant paths into context. The `topics/` guess was wrong because `topics/` lives
-under `library/`, not directly under `knowledge/` — a 3-level nesting mistake.
+**Cost**: 8 tool calls just to locate 3 files. Multiple ENOENT errors. Context polluted with find output. At this rate, you'll use 40+ tool calls.
 
-### ✅ The RIGHT Approach (3 tool calls for the same 2 files)
-
-Bob lists directories before reading, one level at a time:
+### ✅ RIGHT: Index-Guided, ls-Verified Navigation (8 tool calls to read 4 files)
 
 ```
-# Step 1: "I need the failure-modes topic. Let me check where topics live."
-bash("ls agents/shared/knowledge/library/topics/")
-→ agent-architecture.md  failure-modes.md  skill-effectiveness.md  ...
-# Good — I can see failure-modes.md is here.
+# Step 1: Read the map
+bash("ls environment/")
+→ INDEX.md  entries  experiments  hypotheses  library  synthesis-templates
 
-read("agents/shared/knowledge/library/topics/failure-modes.md")
+read("environment/INDEX.md")
+→ [Shows full directory map with file descriptions]
+→ Key insight: hypotheses are in hypotheses/, experiments in experiments/RX-XXX/,
+   deep dives in library/deep-dives/
+
+# Step 2: Read hypotheses (INDEX told me they're in hypotheses/)
+bash("ls environment/hypotheses/")
+→ PRIORITY-TRACKER.md  RH-044.md  RH-048.md
+read("environment/hypotheses/RH-044.md")
+→ SUCCESS (first try)
+read("environment/hypotheses/RH-048.md")
 → SUCCESS (first try)
 
-# Step 2: "Now the EXP-090 results. Let me verify what's in that directory."
-bash("ls agents/shared/knowledge/experiments/EXP-090/")
+# Step 3: Read experiment (INDEX told me the path format)
+bash("ls environment/experiments/RX-031/")
 → design.md  results.md
-# Both files present. Now I can read confidently.
-
-read("agents/shared/knowledge/experiments/EXP-090/results.md")
+read("environment/experiments/RX-031/results.md")
 → SUCCESS (first try)
 ```
 
-**Cost**: 4 tool calls total (2 `ls` + 2 `read`). Zero errors. Zero wasted context
-from broad `find` output. Each `ls` is tiny (one line of filenames) and confirms the
-exact path before reading.
+**Cost**: 8 tool calls for 4 reads + 3 ls + 1 INDEX. ZERO errors. Every read succeeds on first attempt because we verified the path first.
 
 ### The Key Decision Point
 
-The temptation comes right after an ENOENT. Your instinct says: *"The file must be
-somewhere — let me `find` it."* But `find agents/ -name 'X'` is a **shotgun blast**
-that dumps dozens of paths into your context.
+The temptation comes right after an ENOENT or when you "remember" a path. Instead:
+1. **Stop.** Don't guess another path.
+2. **`ls` the parent** of the path that failed. 
+3. **Read what's actually there.**
 
-**Instead**: After ENOENT, go UP one directory level and `ls`. The knowledge base is
-only 3-4 levels deep. An `ls` of the parent will show you exactly what's there in a
-single line. You'll find the right path in 1 call instead of burning 3-5 calls on
-`find` + retry cycles.
+This costs 1 extra tool call but saves 3-5 from the guess→fail→find→retry cycle.
 
 ## Anti-Patterns (NEVER DO)
-- ❌ `read("agents/shared/knowledge/topics/...")` — `topics/` is under `library/`, not directly under `knowledge/`
-- ❌ `find agents/ -name "*.md" -type f` after one ENOENT — too broad, use `ls` on parent instead
-- ❌ Reading the same knowledge file twice in one session without new information arriving between reads
-
-## Knowledge Base Directory Map (Quick Reference)
-```
-agents/shared/knowledge/
-├── INDEX.md              ← Start here for lookups
-├── entries/              ← KE-001.md, KE-002.md, ...
-├── experiments/          ← EXP-001/, EXP-002/, ... (each has design.md, results.md)
-├── hypotheses/           ← H-001.md, H-002.md, PRIORITY-TRACKER.md
-│   ├── archive/
-│   ├── design-proposals/
-│   └── research-notes/
-├── library/
-│   ├── cross-references/
-│   ├── deep-dives/       ← DD-001.md, DD-002.md, ...
-│   ├── posts/
-│   ├── synthesis/
-│   └── topics/           ← failure-modes.md, agent-architecture.md, ...
-├── findings/
-├── incidents/
-├── conventions/
-├── summaries/
-└── synthesis/
-```
+- ❌ Constructing a 3-level-deep path from memory without ls verification
+- ❌ `find . -name "*.md"` after one ENOENT — too broad, use targeted `ls`
+- ❌ Reading ALL files in a directory "just in case" — use INDEX.md to identify what you need
+- ❌ Reading the same file twice without new information between reads
 
 ## Assertion
-Every first `read()` of a file in `agents/shared/knowledge/` MUST be preceded by an `ls` of its parent directory in the same session, OR by reading `INDEX.md`.
+Every `read()` of a file in an unfamiliar directory MUST be preceded by EITHER:
+- An `ls` of its parent directory in this session, OR
+- A read of INDEX.md that lists the file's path
