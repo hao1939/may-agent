@@ -90,7 +90,7 @@ Updated: 2026-04-09 ~12:53 UTC
 | **Auto-Pause Recovery Implementation** | ✅ MERGED | tech-lead | Probe timer + exponential backoff (5min→2h cap) + 24h TTL + escalation to May. 39/39 tests pass. Branch `review/auto-pause-recovery` merged commit `bd56956`. |
 | **Session Lifecycle Bug Fixes (3,4,8,10)** | ✅ MERGED | tech-lead | Bob found 10 bugs in manager.ts. Tech-lead fixed 4 HIGH/MED. Tests 6/6. Branch merged to main. |
 | **EXP-100 CIVC Interventional Test** | ✅ COMPLETE | coach | **CEILING EFFECT**: 12/12 (100%) all arms. Baseline too easy — no treatment differentiation. Scenarios need harder difficulty. |
-| **Multi-Session Harness Phase 3** | ⚠️ MOSTLY DONE | coach | 3/4 scenarios complete (`ghost-deliverable-chain`, `stale-plan-drift`, `unresolved-failure-chain`). `kb-integration-failure` missing `package.json` + `success_criteria.js` (interrupted). Also `instruction-override-drift` missing `success_criteria.js`. |
+| **Multi-Session Harness Phase 3** | ✅ FILES COMPLETE | coach | All 4 scenarios have `package.json`, `scenario.json`, `success_criteria.js`, and session dirs. Phase 4 (validation runs) can proceed. |
 | **Bug 2 Gate Abort Signal Fix** | ✅ MERGED | tech-lead/may | Branch `fix/bug2-gate-abort-signal` merged to main. Abort signal propagation + gym directory fix. 4/4 tests pass. |
 | **Telegram Notification Bug (req:88bd4688)** | ✅ ALREADY FIXED | tech-lead | Commit 9de9e58 merged to main. Notifications filtered to interface agent only + dead prompt handler removed. |
 
@@ -124,16 +124,16 @@ Updated: 2026-04-09 ~12:53 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (12:53)
-- **All agents active** — All 7 agents (excl. amy-kimi) just started heartbeat cycles simultaneously. Evaluator running a session eval too.
+## Latest Cycle Summary (13:18)
+- **All agents active** — 6/8 running (may, coach, bob, optimizer, scout, qa). Amy-kimi still 🔴, evaluator not in this cycle.
 - **Zero errors** — No failures in last hour. System healthy.
-- **Cleaned up stale session** — Cancelled `s_1775311714523_3` (idle for 7125min, already finished Telegram fix).
-- **Coach work pending** — IT-65/IT-66 work session (multi-session integration plan) queued ~27min, should get picked up this heartbeat cycle.
+- **Multi-Session Harness Phase 3 files complete** — Previously missing `kb-integration-failure/package.json`, `kb-integration-failure/success_criteria.js`, and `instruction-override-drift/success_criteria.js` are now all present. Phase 3 unblocked.
+- **Coach commit guard session** — Running (req `47d489e1`, 27min old).
 - **No new tasks from Hao** — Nothing to dispatch.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao**.
-- **P1**: **Complete Multi-Session Harness Phase 3/4** — Coach continuing. Needs `kb-integration-failure/package.json` + `success_criteria.js` and `instruction-override-drift/success_criteria.js`.
+- **P1**: **Multi-Session Harness Phase 4 (Validation Runs)** — Phase 3 scaffolding complete. Coach can now run validation on all 4 multi-session scenarios.
 - **P1**: **Present research sprint results to Hao** — H-091, 17+ experiments, gym graduation, EXP-098 landmark result, EXP-101 null result.
 - **P2**: Federation design ready for Hao review
 - **P2**: Pre-merge review gate Phase 2 (auto-review)
