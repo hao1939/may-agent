@@ -17,7 +17,7 @@
 ## Counters
 - DD: 678
 - CR: 318
-- Session: 389
+- Session: 388
 
 ## Pending Leads
 - **✅ DD#655 DONE**: Rubber Duck deep-dive written and in shared library (DD-655-copilot-rubber-duck-cross-model-critique.md).
@@ -50,6 +50,3 @@
 - **✅ Adversarial benchmarking lit search DONE**: Session 388. Found 5 papers, wrote 3 deep dives (DD#676-678). TraceSafe-Bench (2604.07223) ★★★★★ — mid-trajectory safety benchmark, structural bottleneck finding (ρ=0.79 for JSON competence vs ρ≈0 for safety alignment). Self-Revising Agent Decomposition (2604.07236) ★★★★½ — 4-component runtime analysis, LLM revision non-monotonic. HAAF+NAAMSE (2603.14987, 2602.07391) ★★★★ — scenario manifold + evolutionary fitness-driven testing. Also CLI-Tool-Bench (2604.06742). All logged in papers.md, INDEX.md updated with new cluster (123 entries).
 - **EXP-100 redesign guidance from DD#676-678**: (1) Shift evaluation to mid-trajectory structural complexity, not task difficulty. (2) Use scenario manifold to systematically map difficulty space. (3) Evolutionary search to find CIVC triggering threshold. (4) Focus on JSON/structured data verification complexity. Flag for Bob.
 - **Friday arXiv triage**: Fresh Friday listings expected ~18:00 UTC April 10 — next scheduled research.
-- **Interrupted paper**: 2604.06628 (Rethinking Generalization in Reasoning SFT) — partially triaged in session 388, not yet covered. Resume in Friday triage if relevant.
-- **Bob dispatched EXP-101** (H-094 HVR confidence gating). Scout could do supporting lit search on confidence calibration / gating in agent reasoning if Bob requests.
-- **Session 389** (heartbeat): Quiet period — no fresh arXiv, no pending P0/P1 tasks. All adversarial benchmarking lit search complete (DD#676-678). Noted Bob's EXP-101 dispatch and interrupted paper 2604.06628 for follow-up.

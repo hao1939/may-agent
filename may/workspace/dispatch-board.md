@@ -1,13 +1,13 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~11:55 UTC
+Updated: 2026-04-09 ~11:24 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
 - **Scout**: 🟢 Running — Heartbeat active.
 - **Bob**: 🟢 Running — Heartbeat active.
-- **Coach**: 🟢 Running — EXP-101 HVR Retrospective Analysis forked. Phase 4a baselines COMPLETE.
-- **Tech-lead**: 🟡 Idle — No pending work, skipIfIdle preventing heartbeat. Last session 08:06 (interrupted).
+- **Coach**: 🟢 Running — Heartbeat active. Multi-Session Harness Phase 3 in progress (kb-integration-failure).
+- **Tech-lead**: 🟢 Running — Heartbeat just completed.
 - **Optimizer**: 🟢 Running — Heartbeat active.
 - **QA**: 🟢 Running — Heartbeat active.
 - **Evaluator**: 🟢 Running — Heartbeat active.
@@ -86,12 +86,10 @@ Updated: 2026-04-09 ~11:55 UTC
 | **Few-Shot Phase 1 Build** | ✅ MERGED | tech-lead | `fewshot-inject.ts` (140 lines) + `implement-and-verify.ts` integration + `GYM_NO_FEWSHOT` bypass. 22/22 tests pass. Merged to main via `review/fewshot-phase1` (commit `6c1ccfa`). |
 | **Bob Workspace Gitignore Fix** | ✅ COMPLETE | may | Added to `agents/bob/context.md`: workspace is gitignored, use shared/knowledge for committed deliverables. Resolves coach reqs 7da65082 + fe1cb6b9. |
 | **Compaction KeyFacts + MemLeak Fix** | ✅ MERGED | tech-lead | Commit 0349a21, merged to main. Enhanced compaction KeyFacts + fixed sessionResults memory leak. |
-| **Multi-Session Harness Phase 4a Baselines** | ✅ COMPLETE | coach | 10 runs across 5 scenarios. ghost-deliverable-chain 25%, kb-integration-failure 11%, unresolved-failure-chain 44%, stale-plan-drift 75%, instruction-override-drift 40%. Behavioral checks 0/20. Commit a2608eaa. |
-| **EXP-101 HVR Retrospective** | ⏳ IN PROGRESS | coach | Phase 1 analysis of hedge-to-verify ratio across 1,435 session traces. Forked just now. |
 | **Auto-Pause Recovery Implementation** | ✅ MERGED | tech-lead | Probe timer + exponential backoff (5min→2h cap) + 24h TTL + escalation to May. 39/39 tests pass. Branch `review/auto-pause-recovery` merged commit `bd56956`. |
 | **Session Lifecycle Bug Fixes (3,4,8,10)** | ✅ MERGED | tech-lead | Bob found 10 bugs in manager.ts. Tech-lead fixed 4 HIGH/MED. Tests 6/6. Branch merged to main. |
 | **EXP-100 CIVC Interventional Test** | ✅ COMPLETE | coach | **CEILING EFFECT**: 12/12 (100%) all arms. Baseline too easy — no treatment differentiation. Scenarios need harder difficulty. |
-| **Multi-Session Harness Phase 3** | ✅ COMPLETE | coach | All 5 scenarios created and validated through Phase 4a baselines. |
+| **Multi-Session Harness Phase 3** | ⚠️ MOSTLY DONE | coach | 3/4 scenarios complete (`ghost-deliverable-chain`, `stale-plan-drift`, `unresolved-failure-chain`). `kb-integration-failure` missing `package.json` + `success_criteria.js` (interrupted). Also `instruction-override-drift` missing `success_criteria.js`. |
 | **Bug 2 Gate Abort Signal Fix** | ✅ MERGED | tech-lead/may | Branch `fix/bug2-gate-abort-signal` merged to main. Abort signal propagation + gym directory fix. 4/4 tests pass. |
 | **Telegram Notification Bug (req:88bd4688)** | ✅ ALREADY FIXED | tech-lead | Commit 9de9e58 merged to main. Notifications filtered to interface agent only + dead prompt handler removed. |
 

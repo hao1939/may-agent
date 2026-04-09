@@ -37,13 +37,6 @@ The gym graduation proposal was approved by Bob with M1-M5 modifications (all ap
   - No `--multi-session` flag needed — runner already dispatches via `meta.sessions` in scenario.json
   - Run with: `scripts/gym-run.sh --run-all --tag multi-session --agent coder`
   - Monthly regression cadence: use `--tag multi-session` filter
-- **Phase 4a — Baseline Runs**: COMPLETE ✅
-  - 2 runs × 5 scenarios = 10 total gym runs
-  - Results: `agents/coach/workspace/multi-session-baselines.md`
-  - All 3 FM-targeted scenarios below 70%: ghost-deliverable-chain (25%), kb-integration-failure (11%), unresolved-failure-chain (44%)
-  - Success criterion met: ≥2/3 FM-targeted below 70% ✅ (actual: 3/3)
-  - Behavioral checks: 0/20 across all runs — zero behavioral detection
-  - Best intervention targets: kb-integration-failure (11%), ghost-deliverable-chain (25%)
 - **Key insight from EXP-065**: FM-2.6 (instruction-following), FM-3.1 (ghost deliverables), FM-2.1 (tool hallucination) all require multi-session to reproduce
 
 ### 3. Commit Guard 48h Measurement [DUE ~16:00 UTC]

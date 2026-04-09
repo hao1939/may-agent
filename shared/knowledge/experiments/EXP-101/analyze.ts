@@ -6,9 +6,9 @@
  * session correctness (binary: correct vs incorrect).
  * 
  * Data sources:
- * - .state/sessions/*/session.jsonl - assistant text for hedge/verify markers
- * - .state/sessions/*/meta.json - agent, status, opCount
- * - agents/*/ERROR_LOG.jsonl - FM error codes per session
+ * - session.jsonl files from .state/sessions/ (assistant text for hedge/verify markers)
+ * - meta.json files from .state/sessions/ (agent, status, opCount)
+ * - ERROR_LOG.jsonl files from agents/ (FM error codes per session)
  */
 
 import { readdir, readFile, writeFile } from "fs/promises";
