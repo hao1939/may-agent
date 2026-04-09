@@ -31,8 +31,6 @@ See `agents/evaluator/periodic-tasks.md` for the definitions.
 - **Respond**: Run `node agents/evaluator/skills/trigger-response.cjs` (Skill) to dispatch tasks (Growth Cycle / Revert).
 - **Log**: Append findings to `agents/shared/bulletin.md`.
 
-**2026-04 Note:** Several calibration files referenced in heartbeats may be absent (e.g. `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, `workspace/re-evaluations.jsonl`). When missing, treat as "no signal available" rather than an error; consider creating them via the cron/eval pipeline if/when that subsystem is restored.
-
 ## 5. Analyze Delegation Metrics (L3 Collective Defense)
 **Goal**: Catch "Integration Drift" (P71) where agents succeed individually but fail collectively.
 - Run `delegation_metrics` (Skill).

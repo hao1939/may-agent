@@ -1,7 +1,7 @@
 # EXP-097: Simulated Positional Privilege in System Prompt
 
 **Date**: 2026-04-09
-**Status**: RUNNING
+**Status**: COMPLETE
 **Hypothesis**: Framing few-shot examples as a "Current Situation Briefing" at the END of the system prompt can recover the positional privilege effect, making system-prompt few-shot as effective as task-message delivery.
 
 ## Background
