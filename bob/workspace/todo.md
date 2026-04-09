@@ -1,6 +1,7 @@
 # Bob's Todo List
 
 ## Active Tracking
+- [x] **H-093 (CIVC) Filed**: Complexity-Induced Verification Collapse hypothesis spawned from EXP-099. H-092 status→Supported. H-093 added to PRIORITY-TRACKER Tier 2 (P(H)=0.65) and INDEX. Proposed test: EXP-100 (interventional study with scaffolding + forced checkpoints). **File: `agents/shared/knowledge/hypotheses/H-093-complexity-induced-verification-collapse.md`**
 - [x] **EXP-099 (H-092 Information-Flow Failure Analysis)**: COMPLETE. Observational analysis of 999 FM errors across 384 sessions. H-092 P(H) 0.55→0.72. Lock-in confirmed, Deep Decay recharacterized as complexity-induced verification collapse (not length-dependent). Three cascade archetypes identified. FM-3.3 verification failure is #1 error (20.3%) and terminal attractor. **Report: `agents/bob/workspace/EXP-099-H092-information-flow-analysis.md`. H-092 updated.**
 - [x] **EXP-098 (L3 Treatment Testing on Cascading-State)**: COMPLETE. 4-arm test (baseline/ext/xref/combined) on cascading-state-migration L3 scenario. Baseline 0% (0/3), Externalization 0% (0/3), Cross-reference 100% (3/3), Combined 100% (3/3). Cross-reference is the active ingredient — externalization adds zero marginal value for absent-information tasks. **KB integration complete: H-085, H-089, EXP-098/design.md all updated. INDEX.md pending.**
 - [x] **EXP-097 (Simulated Positional Privilege)**: COMPLETE. Urgency framing at system-prompt end yields 1/3 (33%) — better than no-framing (0%) but far worse than task-message (100%). Position effect is a steep gradient, not purely binary, but practically binary for production. SKILL.md cannot replace injected_context. **KB integration complete: H-091, KE-059, KE-060, INDEX, PRIORITY-TRACKER all updated.**
@@ -61,6 +62,13 @@
 - [ ] **Prompt Caching**: Blocked on Hao (escalated 2026-03-24). Cannot fix from this repo.
 - [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% of verify-after-edit failures need code-level fix, not prompting. Deferred until prompting experiments complete.
 - [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
+
+## Session Notes (2026-04-09 ~09:00)
+- **KE-079 WRITTEN**: Cascade-Architecture Convergence — synthesizes DD-639 (ABTest behavioral fuzzing), DD-640 (Scaffold Taxonomy), and EXP-099 (H-092 information-flow analysis) into unified framework. Three-way convergence: (1) EXP-099's 3 cascade archetypes + 12× agent gradient, (2) DD-639's 47 Interaction Patterns map onto cascade archetypes, (3) DD-640's loop primitive composition predicts cascade vulnerability. Key insight: each additional composed loop primitive roughly doubles cascade rate. Proposes cascade-aware testing framework and complexity-gated verification (1 verification gate per composed loop primitive).
+- **INDEX.md updated**: KE-079 added to Knowledge Entries table. DD-639/DD-640 library entries updated with "Seeds KE-079" annotations.
+- **Drops cleaned**: Removed redundant dd639/dd640 copies from `agents/scout/drops/` (already in library).
+- **Files created**: `knowledge/entries/KE-079-cascade-architecture-behavioral-testing-convergence.md`
+- **Files modified**: `knowledge/INDEX.md`
 
 ## Session Notes (2026-04-09 ~08:20)
 - **KE-076/077/078 DEDUP FIX**: Found and fixed ID collision where two concurrent sessions created conflicting KE-076/KE-077 files with different topic mappings. Resolution: kept Bob's intentional commit (fb3d2309), deleted conflicting auto-sync files, removed duplicate INDEX.md rows. Commit a84d8d1c.
