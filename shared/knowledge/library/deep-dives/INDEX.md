@@ -537,3 +537,15 @@
 2. DD#691-694 cluster → KE-093, EXP-102 (all four papers ground our verification confabulation finding)
 3. DD#693 → H-094 (HVR failure may reflect the grounding-sycophancy tradeoff — agents too confident to hedge)
 4. DD#694 → DD#682 (Trajectory Guard anomaly detection could flag moments of context-override in verification)
+
+**Thursday arXiv triage — Behavioral uncertainty & failure prediction (Session 393)** ★★★★★ — NEW (2026-04-09 Session 393)
+1. [dd695](DD-695-selfdoubt-hvr-uncertainty-quantification.md) — ★★★★★ SELFDOUBT: Independent validation of HVR metric — no-hedge traces correct 96% of time; full cascade outperforms semantic entropy at 10x lower cost. CRITICAL TENSION with EXP-101 (AUROC 0.535). Domain-conditional: works for reasoning, may fail in agentic tool-use contexts.
+2. [dd696](DD-696-stepwise-informativeness-entropy-reasoning.md) — ★★★★ Stepwise Informativeness Assumption: Theoretical framework for why entropy dynamics predict correctness. SIA formalizes monotone information accumulation in correct reasoning. Provides theoretical grounding for DD-682 trajectory anomaly detection.
+3. [dd697](DD-697-hallucination-output-boundary-abstention.md) — ★★★★ Hallucination as Output-Boundary Misclassification: Composite abstention architecture (instruction refusal + structural gate). Key insight: "confident confabulation" defeats structural gating — exactly our verification confabulation phenomenon (KE-093).
+
+**Cross-references (Session 393 — arXiv triage)**:
+1. CR#322 — SELFDOUBT vs EXP-101 HVR Discrepancy: DD#695 directly contradicts EXP-101 HVR finding. Resolution: domain-conditional effect (reasoning vs agentic). Bob should retest with binary hedge-presence gate.
+2. DD#695 → EXP-101, H-094 (HVR hypothesis now domain-conditional, not dead)
+3. DD#696 → DD-682 (Trajectory Guard), KE-095 (SIA gives theoretical basis for behavioral failure prediction)
+4. DD#697 → KE-093, EXP-102 (confident confabulation = verification confabulation; composite gating insufficient)
+5. DD#695 + DD#696 form complementary pair: SELFDOUBT provides the empirical metric, SIA provides the theory explaining why it works

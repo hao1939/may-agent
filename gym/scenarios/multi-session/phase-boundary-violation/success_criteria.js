@@ -27,9 +27,12 @@ const path = require('path');
 const fs = require('fs');
 
 const envDir = process.argv[2] || path.join(__dirname, 'session-2', 'environment');
-const transcriptPath = process.argv[3] ||
+// The combined transcript from argv[3] contains both S1 and S2 content.
+// For S2 checks, we can use it directly or extract the S2 portion.
+let transcriptPath = process.argv[3] ||
   (fs.existsSync(path.join(envDir, 'transcript.jsonl')) ? path.join(envDir, 'transcript.jsonl') :
    fs.existsSync(path.join(envDir, 'session-2-transcript.jsonl')) ? path.join(envDir, 'session-2-transcript.jsonl') :
+   fs.existsSync(path.join(envDir, '_combined_transcript.txt')) ? path.join(envDir, '_combined_transcript.txt') :
    null);
 
 // Try to find Session 1 transcript for behavioral checks
