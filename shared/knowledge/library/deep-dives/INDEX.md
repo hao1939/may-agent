@@ -1,6 +1,6 @@
 # Deep Dives Index
 
-> 123 research deep dives, cross-reference syntheses, and reference documents.  
+> 128 research deep dives, cross-reference syntheses, and reference documents.  
 > Last updated: 2026-04-09 | Maintained by Scout
 
 ## How to Use This Index
@@ -525,3 +525,14 @@
 4. DD#685 → DD#682-684 (Dip-and-recovery implies detection systems need burn-in periods before stable anomaly signals)
 5. DD#686 → DD#667 (AgentGate adaptive gating — MedRoute is medical instantiation of same pattern with RL training)
 6. DD#685 generates predictions P-685a/b/c re: intervention dip-recovery, capability-dependent pattern extraction, safety-reasoning tradeoff
+
+**Agent training, knowledge distillation & strategic interaction** ★★★★★ — NEW (2026-04-09 Session 392)
+1. [dd688](DD-688-tstar-cognitive-tree-agent-policy-optimization.md) — ★★★★★ CRITICAL: T-STAR — Cognitive Tree-Structured Agent Policy Optimization. Merges multi-turn trajectories into unified tree, enabling step-level credit assignment via Introspective Valuation + In-Context Thought Grafting at critical divergence points. Surgical Policy Optimization concentrates learning on decision-critical steps. Directly applicable to CIVC analysis — tree topology reveals verification gravity well entry points.
+2. [dd689](DD-689-kd-marl-resource-aware-knowledge-distillation.md) — ★★★★ KD-MARL: Resource-aware knowledge distillation for cooperative MARL. Teacher-student distillation preserving inter-agent coordination structure. Adds "distillation governance" as 4th dimension to Compute Governance Triangle (CR#258). Critical for heterogeneous deployment where agents run on different hardware.
+3. [dd690](DD-690-strategic-persuasion-trait-conditioned-agents.md) — ★★★★ Strategic Persuasion with Trait-Conditioned Agents. Personality-trait-based ToM makes persuasion tractable — finite trait space vs infinite mental state space. Dual-use concern: same mechanisms enable adaptive social engineering. Connects to ToM thread (Hanabi, 2603.00142) and safety thread (DynaTrust, MCP).
+4. DD#688 → EXP-099 (Cognitive Tree provides structural analysis for CIVC — critical divergence points = verification gravity well entry)
+5. DD#688 → DD#682 (Tree topology as Trajectory Guard feature — failing branches have characteristic shape)
+6. DD#688 → DD#683 (SWE-PRM feedback + T-STAR Thought Grafting = combined inference-time correction from successful trajectories)
+7. DD#689 → CR#258 (Distillation governance extends Compute Governance Triangle to training-time resource allocation)
+8. DD#690 → DD#424 (Trait-conditioned persuasion as new threat vector against trust-based MAS defenses)
+9. Also triaged but not deep-dived: 2604.06562 (Emotion-Sensitive Agent Decision Making), 2604.07003 (EmoMAS — emotion-aware MAS for negotiation on SLMs), 2604.06710 (ATANT — AI continuity evaluation), 2604.06714 (multimodal hallucination verifiability), 2604.06747 (TurboAgent)
