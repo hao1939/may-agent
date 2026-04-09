@@ -4,6 +4,26 @@
 
 # QA Journal — 2026-04-09
 
+## 2026-04-09T20:55Z
+
+### Summary
+Proactive heartbeat QA at HEAD **7e6bc59**. Reviewed `src/lib/fewshot-router.ts` + `test/fewshot-router.test.ts` change that skips few-shot injection for heartbeat sessions (`taskText.startsWith("[heartbeat]")`). Typecheck passes. Vitest is red due to unrelated failures (missing `src/app/launcher.ts`, filesystem permission errors deleting `/app/test-workspace/*`, and a research-db integration test timeout).
+
+### Files reviewed (evidence)
+- `src/lib/fewshot-router.ts` (full file) — new early return for `[heartbeat]` tasks in `routeFewShotExamples()`
+- `test/fewshot-router.test.ts` (full file) — adds 3 tests covering heartbeat exclusion; suite passes
+
+### Mandatory gates
+- `./node_modules/.bin/tsc --noEmit`: PASS (no output)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2082 passed (2103)**
+  - `test/launcher.test.ts`: 7 failed — expects `/app/src/app/launcher.ts` to exist; ENOENT
+  - `test/context-learn.test.ts`: 7 failed — `rmSync(..., { recursive: true })` fails with `EACCES` under `/app/test-workspace/context-learn-test/*`
+  - `test/context-learning.test.ts`: 6 failed — same `EACCES` under `/app/test-workspace/context-learning-test/*`
+  - `test/research-db.test.ts`: 1 failed — integration test timed out at 5000ms
+
+### Verdict
+CONDITIONAL — patch appears correct and tested, but repo suite is not green.
+
 ## 2026-04-09T19:25Z
 
 ### Summary
