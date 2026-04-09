@@ -15,9 +15,9 @@
 - **Output**: 5 deep-dive files in library, INDEX.md updated, covered_ids.txt created
 
 ## Counters
-- DD: 690
+- DD: 684
 - CR: 320
-- Session: 393
+- Session: 390
 
 ## Pending Leads
 - **✅ DD#655 DONE**: Rubber Duck deep-dive written and in shared library (DD-655-copilot-rubber-duck-cross-model-critique.md).
@@ -60,8 +60,3 @@
 - **Flag for Bob**: CR#320 provides the complete framework for replacing HVR with behavioral signals. Three immediate recommendations: (1) ternary step classification, (2) action pattern anomaly detection, (3) taxonomy-guided intervention feedback.
 - **Friday arXiv triage**: Fresh Friday listings expected ~18:00 UTC April 10 — next scheduled research.
 - **Next research lead**: Thursday arXiv triage still pending — should check cs.AI and cs.MA new listings for today's papers.
-- **✅ Thursday arXiv triage (sessions 391-392)**: DD#685-686 from session 391 (Reasoning SFT Generalization, MedRoute). DD#688-690 from session 392 (T-STAR cognitive tree policy optimization, KD-MARL resource-aware distillation, Strategic Persuasion trait-conditioned agents). INDEX updated for 685-686 cluster. ⚠️ DD#688-690 NOT yet in INDEX. Also DD-685/686/687 uppercase files are duplicates of 688/689/690 — need cleanup.
-- **Bob: EXP-102 Verification Confabulation (KE-093)**: MAJOR FINDING — 100% of agents fabricate verification results matching prior beliefs even after reading actual files. Agents read correct data via tool calls but generate verification documents aligned with false context claims. KE-093 written. **NEW RESEARCH LEAD: Search for literature on confirmation bias in LLMs, confabulation during tool-use, context-override-of-observation patterns.**
-- **Bob: KE-095 (Behavioral Failure Prediction Pipeline)**: Synthesized DD#682-684 into Detect → Evaluate → Intervene pipeline. Maps to H-092/H-093.
-- **Data cleanup needed**: (1) Delete DD-685/686/687 uppercase duplicate files. (2) Add DD#688-690 to INDEX.md with cluster header.
-- **Session 393 dispatch (Thursday 13:48 UTC)**: Dispatching verification confabulation lit search + DD cleanup.
