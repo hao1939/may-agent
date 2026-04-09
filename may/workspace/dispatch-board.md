@@ -1,17 +1,17 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~00:53 UTC
+Updated: 2026-04-09 ~01:17 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
 - **Scout**: 🟢 Running — Heartbeat active.
-- **Bob**: 🟢 Running — Fresh heartbeat cycle.
-- **Coach**: 🟢 Running — Completed Sprint Synthesis (KE-065) + Skill Regression Check last cycle. Fresh heartbeat.
-- **Tech-lead**: 🟢 Running — Heartbeat active.
-- **Optimizer**: 🟢 Running — One interruption last cycle, monitoring.
+- **Bob**: 🟢 Running — Writing "Intervention Architecture" synthesis + handling Hao's direct tasks (research report, YAML migration).
+- **Coach**: 🟢 Running — FM-1.3 growth cycle work session active (~30min).
+- **Tech-lead**: 🟢 Running — Heartbeat active. Correctly diagnosed optimizer bug + escalated.
+- **Optimizer**: 🔴 DOWN 17 DAYS — `claude-opus-4.6` model name rejected by API since Mar 23. Infra-level fix needed. **P0 — Blocked on Hao.**
 - **QA**: 🟢 Running — Heartbeat active.
 - **Evaluator**: 🟢 Running — Heartbeat active.
-- **All agents**: 🟢 All heartbeats firing. System restarted overnight — all agents running fresh cycles.
+- **Overall**: 6/8 agents operational. Two down (amy-kimi: billing, optimizer: model resolution). Both blocked on Hao.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -62,6 +62,7 @@ Updated: 2026-04-09 ~00:53 UTC
 | EXP-087 KB Integration | ✅ COMPLETE | bob | Bob session completed. EXP-089 results also integrated. |
 | **Git Branch Concurrency (req:9eb89c49)** | ✅ ANSWERED | bob | Analysis at `agents/bob/workspace/git-concurrency-analysis.md`. Safe today (no branching in practice), worktrees recommended if review gates enforced. |
 | **Crash Loop Bug (req:e750a385)** | ✅ ALREADY FIXED | tech-lead | Commits 9ea5b5a + fcb97c9 + 9c7e549 already merged. Three-layer defense + compaction persistence. |
+| **Optimizer Model Bug (P0)** | 🔴 BLOCKED | Hao | `claude-opus-4.6` (old LiteLLM name) sent to API. DOWN since Mar 23 (17 days). Same agent.json as tech-lead (`"model": "opus"`). Infra-level model resolution fix needed. Tech-lead diagnosed (req:686a52bb). |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -93,16 +94,17 @@ Updated: 2026-04-09 ~00:53 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (00:53)
-- **Coach completed KE-065**: Comprehensive few-shot sprint synthesis covering EXP-090→094. High-quality deliverable — transfer model, domain matching requirements, practical checklist. Also completed skill regression check + commit guard prep.
-- **H-091 P(H) corrected to 0.93** (was showing 0.99 on board). Updated downward after EXP-093 temporal discipline failure and EXP-094 domain boundary. Still strongly supported.
-- **All agents running fresh cycles** — no errors, 8/8 agents active. Amy-kimi still 🔴.
-- **Research sprint is COMPLETE** — 15 experiments (EXP-083→094), comprehensive synthesis in KE-065. All boundaries mapped. Ready for deployment phase.
-- **Overnight was quiet** — auto-commit federation syncs, evaluator periodic task update. No incidents.
+## Latest Cycle Summary (01:17)
+- **P0 ESCALATION: Optimizer DOWN 17 days** — Tech-lead diagnosed: `claude-opus-4.6` (old LiteLLM proxy model name) rejected by API. Both optimizer and tech-lead have `"model": "opus"` in agent.json, but model resolution differs. Infra-level fix — **blocked on Hao**. Last successful optimizer session: Mar 23.
+- **Bob active** — Writing "The Intervention Architecture" synthesis (25 experiments). Also receiving direct tasks from Hao (research reports, YAML migration — 22 active human→bob requests in DB).
+- **Coach active** — FM-1.3 growth cycle work session running (~30 min, Bob navigation skill gym runs).
+- **No agent errors in last hour** — 0 failures detected. All heartbeats firing for active agents.
+- **Research sprint COMPLETE** — 15 experiments (EXP-083→094), KE-065 synthesis done. Ready for deployment phase.
 
 ## Next Actions
-- **P1**: **Present status to Hao** — H-091 P(H)=0.93, 15 experiments complete, KE-065 synthesis done, auto-loop decision brief ready, two critical bugs fixed, git analysis complete. Research sprint complete — need Hao's direction on next priorities.
-- **P1**: **Deploy skills at scale** — know-when-blocked and evidence-over-narrative only in coder/. With domain proximity constraint (EXP-094/KE-065), need matched examples per agent. Bob to design scale-out plan.
+- **P0**: **Optimizer model fix** — Blocked on Hao. `claude-opus-4.6` → needs correct API model name in LiteLLM/proxy config. 17 days of downtime.
+- **P1**: **Present status to Hao** — H-091 P(H)=0.93, 15 experiments complete, optimizer down 17 days, auto-loop decision brief ready, two critical bugs fixed.
+- **P1**: **Deploy skills at scale** — know-when-blocked and evidence-over-narrative only in coder/. Need domain-matched examples per agent (EXP-094/KE-065).
 - **P2**: Federation design ready for Hao review
 - **P2**: Pre-merge review gate Phase 2 (auto-review)
 - **P2**: Amy-kimi still down — blocked on Hao for billing
