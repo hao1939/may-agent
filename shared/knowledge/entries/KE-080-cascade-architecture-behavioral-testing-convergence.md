@@ -1,4 +1,4 @@
-# KE-079: Cascade-Architecture Convergence — Why Agent Failure Patterns Are Testable and Architecturally Determined
+# KE-080: Cascade-Architecture Convergence — Why Agent Failure Patterns Are Testable and Architecturally Determined
 
 **Status**: Synthesis (three independent evidence streams converge)
 **Confidence**: Medium-High — strong convergent evidence from production data (EXP-099), behavioral fuzzing (DD-639), and architectural taxonomy (DD-640), but no controlled experiment yet

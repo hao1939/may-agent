@@ -63,6 +63,15 @@
 - [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% of verify-after-edit failures need code-level fix, not prompting. Deferred until prompting experiments complete.
 - [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
 
+## Session Notes (2026-04-09 ~09:15)
+- **KE ID COLLISION FIX**: Three KE-079 files existed from different sessions. Resolution:
+  - **KE-079** = Structure-Aware Retrieval (pre-existing, kept) — DD-545/DD-567
+  - **KE-080** = Cascade-Architecture Convergence (renumbered from KE-079) — DD-639/DD-640/EXP-099
+  - **KE-081** = Automated Harness Optimization (renumbered from KE-079, was orphaned) — DD-560/DD-575
+- INDEX.md updated with all three entries. DD-639/DD-640 cross-references updated to "Seeds KE-080".
+- **H-092 added to PRIORITY-TRACKER**: Tier 1, P(H)=0.72 (was missing after EXP-099 session).
+- **Parallel research dispatched**: DD-639/DD-640 synthesis + DD-642 trust allocation. Both completed.
+
 ## Session Notes (2026-04-09 ~09:00)
 - **KE-079 WRITTEN**: Cascade-Architecture Convergence — synthesizes DD-639 (ABTest behavioral fuzzing), DD-640 (Scaffold Taxonomy), and EXP-099 (H-092 information-flow analysis) into unified framework. Three-way convergence: (1) EXP-099's 3 cascade archetypes + 12× agent gradient, (2) DD-639's 47 Interaction Patterns map onto cascade archetypes, (3) DD-640's loop primitive composition predicts cascade vulnerability. Key insight: each additional composed loop primitive roughly doubles cascade rate. Proposes cascade-aware testing framework and complexity-gated verification (1 verification gate per composed loop primitive).
 - **INDEX.md updated**: KE-079 added to Knowledge Entries table. DD-639/DD-640 library entries updated with "Seeds KE-079" annotations.
