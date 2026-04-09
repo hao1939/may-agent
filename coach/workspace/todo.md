@@ -74,7 +74,7 @@ The gym graduation proposal was approved by Bob with M1-M5 modifications (all ap
 - **Weekly**: Run 3-5 promoted skill scenarios, verify no regression
 - **Monthly**: Full sweep of non-ceiling + treatment scenarios (ambiguous-context-drift, sycophants-dilemma, contradictory-requirements)
 - **On-demand**: When new skills deployed or framework changes, run targeted scenarios
-- **Last regression run**: 2026-04-09 (Sprint 30) — all passing
+- **Last regression run**: 2026-04-09 — all 3 promoted scenarios passing (efficient-file-reading, plan-once-amend, convention-verify-edit)
 
 ---
 
@@ -97,9 +97,9 @@ The gym graduation proposal was approved by Bob with M1-M5 modifications (all ap
 
 | Skill | Promoted | Last Verified | Result |
 |-------|----------|--------------|--------|
-| efficient-file-reading | 2026-04-03 | 2026-04-09 | 6/6 ✅ |
-| structured-plan-writing | 2026-04-03 | 2026-04-09 | 8/8 ✅ (EXP-027 RISK patch fixed regression) |
-| convention-verify-edit | 2026-04-03 | 2026-04-09 | ✅ All checks pass |
+| efficient-file-reading | 2026-04-03 | 2026-04-09 | 8/8 ✅ (4/4 product, 4/4 convention) |
+| structured-plan-writing (plan-once-amend) | 2026-04-03 | 2026-04-09 | 8/8 ✅ (all product/behavior/efficiency) |
+| convention-verify-edit | 2026-04-03 | 2026-04-09 | ✅ All checks pass (product + 2/2 behavioral) |
 | cross-reference-source-code | 2026-04-09 | 2026-04-09 | Deployed to Bob, 3/4 scenarios pass |
 
 ---
