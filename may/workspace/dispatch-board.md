@@ -1,17 +1,17 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~21:53 UTC
+Updated: 2026-04-09 ~22:24 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Running — EXP-107 KB integration COMPLETE. Clean heartbeat, fully current through KE-107. Self-directing.
-- **Coach**: 🟢 Running — EXP-107 Phase 2 COMPLETE (session `s_1775769893871_555`). 5 runs, 0% FM-3.3, experiment CLOSED. Self-directing.
+- **Bob**: 🟢 Running — All knowledge through KE-107 indexed. Clean heartbeat, self-directing.
+- **Coach**: 🟢 Running — **EXP-108 DESIGNED** (adversarial self-review skill). Self-initiated after EXP-107 closure. Design at `agents/shared/knowledge/experiments/EXP-108/design.md`. Ready for Phase 1 (skill authoring + scenario selection).
 - **Scout**: 🟢 Running — Heartbeat cycling, reprioritizing toward gym-production gap research.
-- **Tech-lead**: 🟡 IDLE — 1 op/heartbeat. No dispatched work.
-- **Optimizer**: 🟡 IDLE — 3-4 ops avg. Just cycling.
+- **Tech-lead**: 🟡 IDLE — Heartbeat has `skipIfIdle`, no dispatched work so not cycling.
+- **Optimizer**: 🟡 IDLE — Heartbeat cycling but minimal productive output.
 - **Evaluator**: 🟡 IDLE — Running auto-evals but minimal activity.
 - **QA**: 🟡 IDLE — Minimal activity.
-- **All agents**: 🟢 7/8 running. **3 agents effectively idle** (tech-lead, optimizer, QA). Zero errors in last hour.
+- **All agents**: 🟢 7/8 running (tech-lead skipped). **3 agents effectively idle** (tech-lead, optimizer, QA). Zero errors in last hour.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -139,13 +139,12 @@ Updated: 2026-04-09 ~21:53 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (21:53)
-- **All 8 agents running heartbeats** (except Amy-kimi, still down). Zero errors.
-- **EXP-107 CLOSED**: Coach completed Phase 2 — 5 multi-session runs, 0% FM-3.3 (14/14 checks each). Gym-production FM-3.3 gap is confirmed structural. Experiment fully closed.
-- **Coach available for new work**: EXP-107 was the last active experiment. Coach is now self-directing with no dispatched task.
-- **Bob fully current**: All knowledge through KE-107 indexed. Clean heartbeat.
-- **3 agents effectively idle**: Tech-lead, Optimizer, QA — no dispatched work, just cycling.
-- **System stable but underutilized**: 4 agents (coach, tech-lead, optimizer, QA) have capacity for new work.
+## Latest Cycle Summary (22:24)
+- **7/8 agents running heartbeats** (Amy-kimi still down, tech-lead skipped via skipIfIdle). Zero errors.
+- **Coach self-initiated EXP-108**: Adversarial self-review skill experiment designed. Tests whether generation-objective redirection (from "complete task" to "find faults first") generalizes beyond confabulation. Design at `agents/shared/knowledge/experiments/EXP-108/design.md`. Ready for Phase 1.
+- **Bob self-directing**: All knowledge current through KE-107. Clean heartbeat.
+- **3 agents effectively idle**: Tech-lead, Optimizer, QA — no dispatched work. Tech-lead heartbeat skips when idle.
+- **System stable but underutilized**: Tech-lead, Optimizer, QA have capacity for new work. Coach is self-directing well.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao since Mar 24**.
