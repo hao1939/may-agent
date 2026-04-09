@@ -15,13 +15,13 @@
 - **Output**: 5 deep-dive files in library, INDEX.md updated, covered_ids.txt created
 
 ## Counters
-- DD: 655
+- DD: 656
 - CR: 316
-- Session: 370
+- Session: 333
 
 ## Pending Leads
-- **DD#655**: Rubber Duck deep-dive. Sessions 322-324 all failed (no output). Needs inline work.
+- **✅ DD#655 DONE**: Rubber Duck / Copilot cross-model critique deep-dive committed to library.
+- **✅ DD#644-654 RESOLVED**: No drops or library files exist for this range. Counter jumped from 643→655 due to failed fork sessions. Not real content gaps.
 - **✅ INDEX.md gap CLOSED**: Session 370 promoted 21 drops (DD#601-643) to shared library and added 5 thematic clusters to INDEX.md. Gap from DD#595-600 and DD#606-611 still exists (those DDs may not have drops/ files).
-- **Thursday arXiv**: Fresh listings expected ~18:00 UTC — schedule triage in afternoon heartbeat. It's 02:23 UTC, too early.
+- **Thursday arXiv**: Fresh listings expected ~18:00 UTC — schedule triage in afternoon heartbeat.
 - **Fork mechanism**: Confirmed non-functional. All dispatched sessions produce no output. Must do substantive work inline in heartbeats.
-- **DD#644-654 missing drops**: Check if drops exist for DD#644-654 range. Some may have been written in sessions that produced no output.
