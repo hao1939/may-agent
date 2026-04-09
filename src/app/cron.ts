@@ -22,7 +22,19 @@ import type { SubagentManager } from "../lib/index.js";
 import { generateId } from "../lib/index.js";
 import { getDb, trackRequest, updateRequest } from "../lib/requests.js";
 import { spawnDetachedAgent } from "../lib/detached.js";
-import { isAgentAutoPaused } from "../lib/auto-pause.js";
+import {
+  isAgentAutoPaused,
+  getAutoPauseState,
+  shouldFireProbe,
+  buildProbeTaskMessage,
+  createPauseEscalation,
+  createRecoveryNotification,
+  getLastErrors,
+  parseAutoPauseConfig,
+  AUTO_PAUSE_DEFAULTS,
+  type AutoPauseConfig,
+  type AutoPauseStateInfo,
+} from "../lib/auto-pause.js";
 import type { CronEntry } from "../lib/cron-tool.js";
 
 // ── Types ─────────────────────────────────────────────────────────────
@@ -54,6 +66,10 @@ export class Cron {
 
   // ── Circuit breaker: track consecutive errors per agent ──────────────
   private agentErrors = new Map<string, { count: number; lastErrorAt: number }>();
+  /** Track which agents have already had an escalation created (avoid duplicates). */
+  private autoPauseEscalated = new Set<string>();
+  /** Track which agents were in auto-pause state (to detect recovery). */
+  private autoPauseActive = new Map<string, { pausedAt: number; probeCount: number }>();
 
   /** Max consecutive errors before the circuit breaker trips. */
   private static readonly CB_TRIP_THRESHOLD = 3;
@@ -468,12 +484,56 @@ export class Cron {
           );
           return;
         }
-        // DB-based auto-pause: persistent across restarts (R39)
-        if (isAgentAutoPaused(this.persistDir, agentName)) {
+        // DB-based auto-pause with recovery: persistent across restarts
+        const apConfig = parseAutoPauseConfig(entry.handlerConfig);
+        const apState = getAutoPauseState(this.persistDir, agentName, apConfig);
+        if (apState.state === "auto-paused") {
+          if (apState.probeDue) {
+            // Probe is due — fire a probe session instead of normal heartbeat
+            this.fireHeartbeat(entry, { probe: true, apState, apConfig });
+            return;
+          }
+          // Still paused, no probe due — skip
+          const nextProbeIn = apState.nextProbeDelayMs
+            ? `next probe in ~${Math.round(apState.nextProbeDelayMs / 60000)}m`
+            : "calculating";
           this.onError?.(
-            `[auto-pause] Skipping ${agentName} heartbeat — 3 consecutive errors in session history`,
+            `[auto-pause] Skipping ${agentName} heartbeat — paused (${apState.probeFailCount} probe failures, ${nextProbeIn})`,
           );
+          // Create escalation on first detection (idempotent via set check)
+          if (!this.autoPauseEscalated.has(agentName)) {
+            this.autoPauseEscalated.add(agentName);
+            this.autoPauseActive.set(agentName, {
+              pausedAt: apState.pausedAt!,
+              probeCount: apState.probeFailCount,
+            });
+            const errors = getLastErrors(this.persistDir, agentName, apConfig.threshold);
+            createPauseEscalation(this.persistDir, agentName, apConfig, errors);
+            const msg = `[auto-pause] Agent "${agentName}" paused after ${apConfig.threshold} consecutive errors. Probe in ${Math.round(apConfig.initialProbeDelayMs / 60000)}m.`;
+            this.notify?.(msg);
+          }
           return;
+        }
+        if (apState.state === "probing") {
+          // A probe is currently running — don't fire another one
+          this.onError?.(`[auto-pause] Skipping ${agentName} heartbeat — probe in progress`);
+          return;
+        }
+        // state === "running" — check if we just recovered from auto-pause
+        if (this.autoPauseActive.has(agentName)) {
+          const pauseInfo = this.autoPauseActive.get(agentName)!;
+          const pauseDurationMs = Date.now() - pauseInfo.pausedAt;
+          createRecoveryNotification(
+            this.persistDir,
+            agentName,
+            apConfig,
+            pauseInfo.probeCount,
+            pauseDurationMs,
+          );
+          this.autoPauseActive.delete(agentName);
+          this.autoPauseEscalated.delete(agentName);
+          const msg = `[auto-pause] Agent "${agentName}" recovered after ${pauseInfo.probeCount} probes.`;
+          this.notify?.(msg);
         }
       } else if (mode === "job-detached") {
         // For detached: check if process is actually alive
@@ -502,10 +562,12 @@ export class Cron {
           );
           return;
         }
-        // DB-based auto-pause: persistent across restarts (R39)
-        if (isAgentAutoPaused(this.persistDir, entry.agent)) {
+        // DB-based auto-pause: persistent across restarts
+        const jobApConfig = parseAutoPauseConfig(entry.handlerConfig);
+        const jobApState = getAutoPauseState(this.persistDir, entry.agent, jobApConfig);
+        if (jobApState.state === "auto-paused" && !jobApState.probeDue) {
           this.onError?.(
-            `[auto-pause] Skipping ${entry.agent} job "${entry.name}" — 3 consecutive errors in session history`,
+            `[auto-pause] Skipping ${entry.agent} job "${entry.name}" — paused (${jobApState.probeFailCount} probe failures)`,
           );
           return;
         }
@@ -583,9 +645,17 @@ export class Cron {
 
   // ── Heartbeat: spawn fresh task session ─────────────────────────────
 
-  private fireHeartbeat(entry: CronEntry): void {
+  private fireHeartbeat(
+    entry: CronEntry,
+    opts?: { probe?: boolean; apState?: AutoPauseStateInfo; apConfig?: AutoPauseConfig },
+  ): void {
     const agentName = entry.agent || "may";
     this.onJobFire?.(entry, "heartbeat");
+
+    const isProbe = opts?.probe === true;
+    const probeContext = isProbe
+      ? { type: "heartbeat", probe: true, probeNum: (opts?.apState?.probeFailCount ?? 0) + 1 }
+      : { type: "heartbeat" };
 
     // Track as a request
     const requestId = trackRequest(this.persistDir, {
@@ -594,7 +664,7 @@ export class Cron {
       task: (entry.message ?? "").slice(0, 500),
       method: "call",
       artifact: entry.name,
-      context: JSON.stringify({ type: "heartbeat" }),
+      context: JSON.stringify(probeContext),
     });
 
     updateRequest(this.persistDir, requestId, { status: "IN_PROGRESS" });
@@ -693,6 +763,15 @@ export class Cron {
         taskMessage = `${entry.message ?? ""}\n\n---\n${injections.join("\n\n---\n")}`;
       }
 
+      // Probe mode: wrap the task message with the auto-pause-probe marker
+      // so the state machine can identify probe sessions in session history
+      if (isProbe && opts?.apState) {
+        taskMessage = buildProbeTaskMessage(agentName, opts.apState, taskMessage);
+        this.onError?.(
+          `[auto-pause] Firing probe #${(opts.apState.probeFailCount ?? 0) + 1} for ${agentName}`,
+        );
+      }
+
       // DO NOT add maxTurns back. Turn limits were intentionally removed (commit c183312).
       // The watchdog (60-90min timeout) handles runaway sessions.
       // Turn limits killed 36 sessions mid-work with useful progress (up to 198 ops).
@@ -709,10 +788,31 @@ export class Cron {
             status: "COMPLETED",
             completedAt: Date.now(),
             durationMs: Date.now() - startMs,
-            summary: `Heartbeat for ${agentName} completed`,
+            summary: isProbe
+              ? `Probe for ${agentName} succeeded — recovering from auto-pause`
+              : `Heartbeat for ${agentName} completed`,
           });
           // Circuit breaker: reset on success
           this.recordAgentSuccess(agentName);
+
+          // Probe success → agent recovered from auto-pause
+          if (isProbe && this.autoPauseActive.has(agentName)) {
+            const pauseInfo = this.autoPauseActive.get(agentName)!;
+            const apConfig = opts?.apConfig ?? AUTO_PAUSE_DEFAULTS;
+            createRecoveryNotification(
+              this.persistDir,
+              agentName,
+              apConfig,
+              pauseInfo.probeCount + 1, // include this successful probe
+              Date.now() - pauseInfo.pausedAt,
+            );
+            this.autoPauseActive.delete(agentName);
+            this.autoPauseEscalated.delete(agentName);
+            const msg = `[auto-pause] Agent "${agentName}" recovered via probe #${pauseInfo.probeCount + 1}!`;
+            this.notify?.(msg);
+            this.onError?.(msg);
+          }
+
           // Auto-complete injected send() requests that the agent saw
           for (const reqId of injectedRequestIds) {
             try {
@@ -743,6 +843,21 @@ export class Cron {
           });
           // Circuit breaker: track consecutive errors
           this.recordAgentError(agentName);
+
+          // Probe failure → update probe count tracking
+          if (isProbe && this.autoPauseActive.has(agentName)) {
+            const pauseInfo = this.autoPauseActive.get(agentName)!;
+            pauseInfo.probeCount++;
+            const apConfig = opts?.apConfig ?? AUTO_PAUSE_DEFAULTS;
+            const nextDelay = Math.min(
+              apConfig.initialProbeDelayMs * Math.pow(apConfig.probeBackoffMultiplier, pauseInfo.probeCount),
+              apConfig.maxProbeIntervalMs,
+            );
+            this.onError?.(
+              `[auto-pause] Probe #${pauseInfo.probeCount} for ${agentName} failed. Next probe in ~${Math.round(nextDelay / 60000)}m.`,
+            );
+          }
+
           this.onError?.(`Cron heartbeat "${entry.name}" failed: ${errMsg}`);
         });
     } catch (err) {
