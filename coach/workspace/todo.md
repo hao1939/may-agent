@@ -278,6 +278,17 @@
   - Window 1 (24h): 17% — strong effect
   - Window 2 (8h): 46% — partial regression, needs investigation at 48h mark
 
+### Done This Session (Sprint 31 — 2026-04-09)
+- [x] **EXP-095: Skill Generalization — Knowledge Base Navigation**
+  - Fixed critical /app/environment/ contamination bug (stale files from prior gym runs)
+  - Found scenario bug: `nav-no-path-guessing-errors` has 3 false positives per run (matches "ENOENT" in file CONTENT, not actual errors)
+  - Clean baseline: 3/3 PASS (100%) — scenario is AT CEILING for Bob
+  - Treatment (generalized skill): 3/3 PASS (100%) — no improvement possible
+  - Marginal efficiency trend: treatment avg 15.7 tool calls vs baseline 18.0 (-13%), not significant at N=3
+  - **CONCLUSION**: Hypothesis NOT TESTABLE — scenario at ceiling with correct environment setup
+  - Kept generalized skill deployed (strictly better trigger scope, no worse metrics)
+  - Report: `agents/shared/knowledge/experiments/EXP-095/results.md`
+
 ### Next (Priority Order)
 0. ~~**🔴 IT-46: KE-002 Reexamination Experiment**~~ ✅ COMPLETE (EXP-081 + EXP-084)
    - EXP-081: 0/12 pass across all 4 text rule categories → KE-002 confirmed for declarative rules
