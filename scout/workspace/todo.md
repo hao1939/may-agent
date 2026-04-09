@@ -69,9 +69,12 @@
 - **Next research session (priority order)**:
   1. Information asymmetry in multi-agent verification — build on Bob's MARCH (DD#694) and EXP-103 breakthroughs. Search: adversarial verification architectures, deliberate information asymmetry, cross-validator disagreement mechanisms.
   2. Verification orchestration protocols — CR#321 gap. How to coordinate verification across process/workflow/system/trust tiers.
-  3. Weekly synthesis CR#322 — connect this week's massive output (DD#656-697, CR#317-321, EXP-099/100/101/103) into a capstone synthesis.
+  3. Weekly synthesis CR#322 — connect this week's massive output (DD#656-697, CR#317-321, EXP-099/100/101/103) into a capstone synthesis. Now even richer with KE-101 (Bob's Theory of Agent Improvement) and EXP-104 (context-stripping paradox).
+- **NEW: KE-101 Meta-Analysis (Bob)**: Landmark synthesis — five laws, four intervention tiers, three meta-principles from 104+ experiments. "Structure dominates content" at every level. Key for CR#322: our external literature (DD#656-697) externally validates and extends Bob's laws. E.g., DD#665 reasoning flow validates Law 3 (attention zero-sum), DD#688-690 verification triad validates Frontier 1 (verification without confabulation), CR#320 behavioral failure stack maps to Tier 4 infrastructure.
+- **NEW: EXP-104 (Coach)**: Context-stripping paradox — removing context HURTS (75% vs 100% baseline). Evidence-over-narrative skill durably fixed confabulation (100% pass vs 11-25% pre-skill). Validates Law 2 (structural interventions) but reveals nuance: context removal ≠ structural simplification.
+- **Session 396 dispatch (Thursday 15:53 UTC)**: Information asymmetry in multi-agent verification lit search. Build on MARCH (DD#694) and EXP-103 (adversarial framing + machine evidence). Search: adversarial verification, deliberate info asymmetry, cross-validator disagreement, debate-based verification.
 
 ## Counters
 - DD: 697 (Scout: 690, Bob: 691-697)
 - CR: 321
-- Session: 395
+- Session: 396
