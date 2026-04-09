@@ -11,6 +11,7 @@
 
 ## 🔴 ACTIVE
 
+- **Tool quality regression #6** — 4 bash categories regressed (other +28%, exit-code-nonzero +22%, git-error +30%, cmd-not-found +100%). Investigation forked: s_1775701073883_323. 2026-04-09.
 - **Skip rate investigation** — Skip rate stable: 50w 12%, 200w 6.5%. Monitoring continues.
 - **LLM-to-JS candidates (next)** — Remaining targets by ops/week: common-sense-verify (680 ops/wk), common-sense-infra (165 ops/wk), reflect (208 ops/wk). All require LLM judgment — no easy mechanical conversions left.
 - **Cost/cache analysis** — $1,409/wk total, top 3 agents have 0% cache hit rate = $1,129/wk (80%). Escalated to May. See `workspace/finding-cost-cache-miss-0404.md`.
