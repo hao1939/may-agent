@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~04:23 UTC
+Updated: 2026-04-09 ~04:47 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
@@ -73,7 +73,9 @@ Updated: 2026-04-09 ~04:23 UTC
 | **Few-Shot Deployment Tech Review** | ✅ COMPLETE | tech-lead | **GO for Phase 1** with 6 required modifications. Integration point: manager.ts line 978. Coder-only scope for MVP. Bypass flag needed for gym. Review at `agents/tech-lead/workspace/review-fewshot-proposal.md`. |
 | **Few-Shot Example Store (Phase 1)** | ✅ COMPLETE | coach | 3 examples extracted: binary-file-escalation, reproduce-first-debugging, escalation-judgment. INDEX with trigger patterns at `agents/shared/knowledge/fewshot-examples/`. |
 | **FM-3.1 Bob Regression Investigation** | ✅ COMPLETE | coach | **NOT a Bob regression** — finish-guard infrastructure false positive. 9/9 caused by (1) orchestration unawareness + (2) generic GHOST_KEYWORDS. Analysis at `agents/coach/workspace/bob-fm31-regression-analysis.md`. |
-| **Finish-Guard Orchestration Fix** | ⏳ DISPATCHED | tech-lead | Fix false positives: add workflow/agents to write-evidence exemption in finish-guard.ts. req:67425d6c. |
+| **Auto-Pause Recovery Implementation** | ✅ COMPLETE | tech-lead | Handler at `agents/may/handlers/auto-pause-recovery.ts` (19.8KB). State machine with exponential-backoff probes, 24h TTL. Completed Apr 9 04:33. |
+| **Graduate the Gym Proposal** | ✅ COMPLETE | coach | Comprehensive strategic proposal at `agents/coach/workspace/proposal-graduate-gym.md`. Recommends shutting down exploratory gym research, redirecting to production deployment (few-shot pipeline, multi-session harness, production A/B). For Bob review. |
+| **Finish-Guard Orchestration Fix** | ⏳ DISPATCHED | tech-lead | Fix false positives: add workflow/agents to write-evidence exemption in finish-guard.ts. req:67425d6c. NOT YET IMPLEMENTED — still needed. |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -105,19 +107,22 @@ Updated: 2026-04-09 ~04:23 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (04:23)
-- **System stable** — All 7/8 agents running. Fresh heartbeat cycle started for all agents.
-- **Few-shot deployment pipeline READY** — Tech-lead reviewed (GO), Coach extracted 3 examples with trigger patterns. Implementation plan: 7 steps, ~2-3hr effort. Tech-lead picks up next cycle.
-- **FM-3.1 false positive root cause found** — Coach's analysis: finish-guard doesn't understand orchestration (workflow/agents tools). 9/9 Bob "regressions" were infrastructure false positives. Fix dispatched to tech-lead (req:67425d6c).
-- **Stale session killed** — s_1775311714523_3 finally cancelled (was 110+ hours old).
-- **Bob capstone synthesis** — Completed. Few-shot research arc fully documented.
+## Latest Cycle Summary (04:47)
+- **System stable** — All 7/8 agents running. Fresh heartbeat cycle completed for all agents. No errors in last 6 hours.
+- **Auto-pause recovery IMPLEMENTED** — Tech-lead completed handler at `agents/may/handlers/auto-pause-recovery.ts` (19.8KB). State machine, exponential-backoff probes, 24h TTL. Addresses the Optimizer+QA 17-day outage root cause.
+- **"Graduate the Gym" proposal written** — Coach's comprehensive proposal at `agents/coach/workspace/proposal-graduate-gym.md`. Recommends: (1) deploy few-shot pipeline (weeks 1-2), (2) build multi-session test harness (weeks 2-4), (3) production A/B testing (weeks 3-6). Key data: 85 experiments exhausted what gym can teach. 25/26 at ceiling. Three mechanisms proven (externalization +74pp, few-shot 100%, workflow gates 100%). Text rules 0/32+. Strong and well-argued — route to Bob for review.
+- **Few-shot deployment pipeline READY** — Tech-lead reviewed (GO), Coach extracted 3 examples with trigger patterns. Implementation plan ready.
+- **FM-3.1 finish-guard fix still pending** — req:67425d6c dispatched but not yet implemented. Tech-lead spent this cycle on auto-pause recovery.
+- **Patrol integrity degraded** — Evaluator confirmed `compliance-snapshot.json` still missing. CRITICAL but non-blocking.
+- **No pending requests in queue** — All tracked requests resolved.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao**.
 - **P1**: **Few-shot Phase 1 implementation** — All prerequisites done (review ✅, examples ✅). Tech-lead implements `routeFewShotExamples()` in manager.ts.
-- **P1**: **Finish-guard orchestration fix** — Dispatched to tech-lead (req:67425d6c). 2-line fix.
-- **P1**: **Auto-pause recovery implementation** — Design complete. Queue for tech-lead after current items.
-- **P1**: **Present research sprint results to Hao** — H-091 P(H)=0.93, 17 experiments, KE-065 synthesis, token waste analysis, two critical bugs fixed, auto-pause recovery designed.
+- **P1**: **Finish-guard orchestration fix** — Still dispatched to tech-lead (req:67425d6c). 2-line fix to stop FM-3.1 false positives on Bob.
+- **P1**: **Route "Graduate the Gym" proposal to Bob** — Coach's proposal needs Bob's review as research lead. Strong recommendation to shift from exploratory gym work to production deployment.
+- **P1**: **Present research sprint results to Hao** — H-091 P(H)=0.93, 17 experiments, KE-065 synthesis, token waste analysis, two critical bugs fixed, auto-pause recovery built.
 - **P2**: Federation design ready for Hao review
 - **P2**: Pre-merge review gate Phase 2 (auto-review)
 - **P2**: Amy-kimi still down — blocked on Hao for billing
+- **P2**: Restore compliance-snapshot.json for patrol integrity
