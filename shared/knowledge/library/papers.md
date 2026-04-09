@@ -1245,3 +1245,17 @@ Production multi-agent data management system with "three-track knowledge archit
 ### AgentOpt v0.1: Client-Side Optimization for LLM-Based Agents — arXiv:2604.06296
 
 | 2604.06296 | AgentOpt v0.1: Client-Side Optimization for LLM-Based Agent (Hua et al., 2026) | ★★★★ EXCELLENT — First framework-agnostic Python package for client-side agent optimization. 13-32× cost gap between best/worst model assignments in multi-step agent pipelines. Arm Elimination algorithm recovers near-optimal accuracy with 24-67% less evaluation budget than brute force. 8 search algorithms including bandit approaches. Directly applicable to our multi-agent system's model selection. (ref: DD-663) |
+
+## 2026-04-09 — Session 329: Thursday Evening arXiv Triage
+
+### AgentGate: Lightweight Structured Routing Engine — arXiv:2604.06696
+
+| 2604.06696 | AgentGate: A Lightweight Structured Routing Engine for the Internet of Agents (Cheng et al., USTB / China Telecom Research / UCAS, 2026) | ★★★★ EXCELLENT — Two-stage routing: action decision (call/plan/direct/escalate) → structural grounding (agent + schema-conformant args). Confidence-based edge/cloud fallback (γ_eff = min(γ_act, γ_str)). Candidate-aware fine-tuning with hard negatives. 3B-7B models achieve competitive routing under structured supervision. Validates our dispatcher's two-stage approach. (ref: DD-664) |
+
+### Reasoning Fails Where Step Flow Breaks — arXiv:2604.06695
+
+| 2604.06695 | Reasoning Fails Where Step Flow Breaks (Xu et al., SJTU / Fuzhou / Jilin, ACL 2026) | ★★★★½ EXCELLENT — Step-Saliency diagnostic reveals two failure modes: Shallow Lock-in (shallow layers over-focus on current step) and Deep Decay (deep layers lose connection to earlier reasoning). StepFlow test-time intervention (OEB + SMI) repairs information flow without retraining, improving accuracy across 5 backbones on 6 benchmarks. Applicable as reasoning quality signal for agent outputs. (ref: DD-665) |
+
+### Qualixar OS: Universal Operating System for AI Agent Orchestration — arXiv:2604.06392
+
+| 2604.06392 | Qualixar OS: A Universal Operating System for AI Agent Orchestration (Bhardwaj, independent, 2026) | ★★★½ GOOD — Universal agent OS abstraction: 12 multi-agent topologies, three-layer model routing (bandit→strategy→POMDP), Goodhart detection via cross-model entropy, behavioral contracts. Breadth-first; interesting ideas on JS divergence drift detection and judge integrity monitoring but weak self-evaluation (20-task custom benchmark). (ref: DD-666) |
