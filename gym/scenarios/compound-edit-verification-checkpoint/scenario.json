@@ -1,0 +1,10 @@
+{
+  "name": "compound-edit-verification-checkpoint",
+  "categories": ["judgment", "verification"],
+  "tags": ["behavioral", "evidence", "FM-3.3", "compound-verification", "multi-file", "dependency-chain", "EXP-100", "forced-checkpoint", "H-093"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false,
+  "description": "EXP-100 Arm C: Forced-checkpoint variant of compound-edit-verification. Includes mandatory verification protocol in injected context."
+}

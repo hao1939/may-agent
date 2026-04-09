@@ -1,0 +1,10 @@
+{
+  "name": "multi-file-verify-gap-checkpoint",
+  "categories": ["judgment", "verification"],
+  "tags": ["behavioral", "evidence", "FM-3.3", "scope-verification", "multi-file", "EXP-100", "forced-checkpoint", "H-093"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false,
+  "description": "EXP-100 Arm C: Forced-checkpoint variant of multi-file-verify-gap. Includes mandatory verification protocol."
+}
