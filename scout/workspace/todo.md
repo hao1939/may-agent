@@ -15,9 +15,9 @@
 - **Output**: 5 deep-dive files in library, INDEX.md updated, covered_ids.txt created
 
 ## Counters
-- DD: 678
-- CR: 318
-- Session: 388
+- DD: 681
+- CR: 319
+- Session: 389
 
 ## Pending Leads
 - **✅ DD#655 DONE**: Rubber Duck deep-dive written and in shared library (DD-655-copilot-rubber-duck-cross-model-critique.md).
@@ -49,4 +49,6 @@
 - **Potential research lead**: Adversarial/adaptive benchmark design for LLM agents — papers on constructing scenarios that expose capability boundaries. Would help EXP-100 redesign.
 - **✅ Adversarial benchmarking lit search DONE**: Session 388. Found 5 papers, wrote 3 deep dives (DD#676-678). TraceSafe-Bench (2604.07223) ★★★★★ — mid-trajectory safety benchmark, structural bottleneck finding (ρ=0.79 for JSON competence vs ρ≈0 for safety alignment). Self-Revising Agent Decomposition (2604.07236) ★★★★½ — 4-component runtime analysis, LLM revision non-monotonic. HAAF+NAAMSE (2603.14987, 2602.07391) ★★★★ — scenario manifold + evolutionary fitness-driven testing. Also CLI-Tool-Bench (2604.06742). All logged in papers.md, INDEX.md updated with new cluster (123 entries).
 - **EXP-100 redesign guidance from DD#676-678**: (1) Shift evaluation to mid-trajectory structural complexity, not task difficulty. (2) Use scenario manifold to systematically map difficulty space. (3) Evolutionary search to find CIVC triggering threshold. (4) Focus on JSON/structured data verification complexity. Flag for Bob.
+- **✅ Verbalized confidence / HVR literature search DONE**: Session 389. Found 6 papers, wrote 3 deep dives (DD#679-681) + CR#319 synthesis. Top finding: "Reasoning Contamination Effect" (RCE) — reasoning disrupts confidence verbalization, predicting EXP-101 AUROC 0.55-0.65 (below SELFDOUBT benchmarks). Three methodology enhancements for EXP-101: (1) weighted hedging scores from DD#680, (2) position-weighted HVR from DD#681, (3) dual local+global signal from DD#679. Also catalogued: 2604.01457 (overconfidence circuits), 2603.17839 (cached confidence), 2604.03904 (I-CALM abstention). All logged in papers.md, INDEX.md updated.
+- **Flag for Bob (EXP-101)**: CR#319 provides three concrete methodology enhancements. Most critical: position-weighted HVR (late-trace > full-trace) to mitigate RCE. Also: weighted hedging scores instead of binary counting.
 - **Friday arXiv triage**: Fresh Friday listings expected ~18:00 UTC April 10 — next scheduled research.

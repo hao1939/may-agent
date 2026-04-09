@@ -1,14 +1,14 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~11:24 UTC
+Updated: 2026-04-09 ~11:54 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
 - **Scout**: 🟢 Running — Heartbeat active.
-- **Bob**: 🟢 Running — Heartbeat active.
-- **Coach**: 🟢 Running — Heartbeat active. Multi-Session Harness Phase 3 in progress (kb-integration-failure).
-- **Tech-lead**: 🟢 Running — Heartbeat just completed.
-- **Optimizer**: 🟢 Running — Heartbeat active.
+- **Bob**: 🟢 Running — Heartbeat active. Designing EXP-101 (HVR Validation on Agent Logs).
+- **Coach**: 🟢 Running — Heartbeat active. Multi-Session Harness Phase 4 (instruction-override-drift + integration).
+- **Tech-lead**: 🟢 Running — Heartbeat active.
+- **Optimizer**: 🟢 Running — Heartbeat active. Handling tool quality regression alert (bash exit-code-nonzero +148%).
 - **QA**: 🟢 Running — Heartbeat active.
 - **Evaluator**: 🟢 Running — Heartbeat active.
 - **All agents**: 🟡 7/8 running. Amy-kimi still 🔴. Zero errors in last hour.
@@ -123,11 +123,13 @@ Updated: 2026-04-09 ~11:24 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (11:24)
+## Latest Cycle Summary (11:54)
 - **All agents running** — Full heartbeat cycle in progress. All 7 active agents executing. Zero errors.
-- **Merged `fix/bug2-gate-abort-signal`** — 2 commits: abort signal propagation in manager.ts (Bug 2 fix) + gym-runner directory artifact handling. 4/4 tests pass. Merged to main.
-- **Coach completing Multi-Session Harness Phase 3** — kb-integration-failure scenario (self-forked req:c02ba380). Also note: `instruction-override-drift` scenario missing `success_criteria.js`.
-- **Tool quality regression** — Optimizer received alert: bash exit-code-nonzero +148%, bash:other +81%. Optimizer handling.
+- **Cleaned up stale may session** — `s_1775311714523_3` was idle for ~5 days (7065 min). Cancelled.
+- **Coach on Multi-Session Harness Phase 4** — instruction-override-drift + integration (self-forked req:29a969b6).
+- **Bob designing EXP-101** — HVR (Hedge-to-Verify Ratio) Validation on Agent Logs (self-forked req:8a594f41).
+- **Tool quality regression** — Optimizer handling alert: bash exit-code-nonzero +148%, bash:other +81%.
+- **System-status alert re: Bob analysis** — Flagged "5 days old" but Bob's workspace analysis is from today. Alert likely stale/incorrect. Dismissed.
 - **No failures, no stuck sessions** — Clean cycle.
 
 ## Next Actions
