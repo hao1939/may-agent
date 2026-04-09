@@ -101,14 +101,17 @@
 - **NEW: EXP-107 designed (Bob/Coach, April 9 20:01 UTC)**: Adversarial self-check at finish() decision boundary. Tests whether adversarial framing (proven in EXP-103 for confabulation) can reduce FM-3.3 attempt rate when applied at the finish() decision point. Four arms: control guard, adversarial guard message, pre-finish context injection, combined. 323-line design document. Key distinction: structural injection at decision boundary, not session-start instructions.
 - **NEW: Hypothesis scorecard reconciliation (Bob, April 9 20:00 UTC)**: Full Bayesian reconciliation of all hypothesis P(H) values. 9 discrepancies resolved. H-087 promoted Tier 2→1 (0.65→0.72). Mean P(H) of active portfolio: 0.74 (up from 0.47 on Apr-4). Authority: file > tracker > scorecard. 15 high-confidence, 3 moderate, 2 weak, 12 archived.
 - **Potential research lead**: Decision boundary interventions in LLM agents — literature on interventions at the point of action commitment (not during reasoning). EXP-107 tests this for finish() calls. Related: "last-mile" verification, pre-commitment checks, decision gates. Would strengthen EXP-107 design with external grounding.
+- **NEW: EXP-107 BLOCKED (Coach, April 9 20:42 UTC)**: Control arm FM-3.3 rate only 6.25% (1/16) — well below 30% viability threshold. Treatment arms NOT run per stop criterion. Key insight: gym scenarios don't reproduce production failure conditions. Production FM-3.3 rate 50-70% (KE-106) driven by factors absent from gym: context complexity, multi-session fatigue, time pressure, ambiguous verification targets. Product pass rate 91.7%. This is the SECOND experiment (after EXP-100) where gym ceiling effect blocks testing. The gym-production gap is now a first-class research problem.
+- **Potential research lead**: Ecological validity / gym-production transfer gap for agent evaluation — why do controlled benchmarks fail to reproduce production failure rates? Related: benchmark saturation, distribution shift between sandbox and deployment, complexity scaling in agent evaluation. Directly relevant to both EXP-100 and EXP-107 ceiling effects. Papers on: adaptive difficulty scaling, production-representative benchmark design, naturalistic agent evaluation. HIGH PRIORITY — two experiments now blocked by this.
 - **Next research session (priority order)**:
   1. Friday arXiv triage (cs.MA/cs.AI new listings) — April 10, ~18:00 UTC
-  2. CR#324 gap filling — signal calibration, dynamic capability profiles, multi-step attack detection
-  3. Decision boundary intervention literature (to ground EXP-107)
-  4. Revisit CR#322/CR#323 framing re: EXP-104 confound
-  5. KE-106 habituation literature (low priority — internal evidence already strong)
+  2. Gym-production transfer gap literature (HIGH — two experiments blocked by ceiling effects)
+  3. Decision boundary intervention literature (to ground EXP-107 redesign)
+  4. CR#324 gap filling — signal calibration, dynamic capability profiles, multi-step attack detection
+  5. Revisit CR#322/CR#323 framing re: EXP-104 confound
+  6. KE-106 habituation literature (low priority — internal evidence already strong)
 
 ## Counters
 - DD: 709 (Scout: 690 + 698-709, Bob: 691-697)
 - CR: 325
-- Session: 404
+- Session: 405
