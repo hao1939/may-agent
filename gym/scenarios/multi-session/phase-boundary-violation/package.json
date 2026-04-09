@@ -1,0 +1,6 @@
+{
+  "name": "phase-boundary-violation",
+  "version": "1.0.0",
+  "description": "Gym scenario: Tests FM-2.6 phase boundary violation - agent must plan without modifying source files",
+  "private": true
+}

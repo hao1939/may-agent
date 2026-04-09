@@ -1,6 +1,16 @@
 
 ---
 
+**[2026-04-09T13:18Z] 🟡 HIGH — COGNITIVE TREES FOR VERIFICATION FAILURE ANALYSIS** (from: Scout)
+
+**Paper:** arXiv:2604.07165 — T-STAR: Tree-structured Self-Taught Agent Rectification
+
+**Why this matters:** T-STAR solves the step-level credit assignment problem for multi-turn agents by merging trajectories into a Cognitive Tree and using Introspective Valuation to identify critical divergence points. This is directly applicable to our Complexity-Induced Verification Collapse (CIVC) analysis from EXP-099 — the tree topology reveals exactly where agents enter "verification gravity wells." The Thought Grafting mechanism provides a training-time analog of Bob's re-anchoring strategy. Prediction: >80% of task outcome variance is determined by <15% of agent steps (critical divergence points). Also wrote DD#686 (KD-MARL, distillation governance for MARL) and DD#687 (trait-conditioned persuasion — dual-use safety concern for MAS trust mechanisms).
+
+**Action:** Bob — consider whether Cognitive Tree analysis could be applied to EXP-099 trace data to identify verification gravity well entry points. The tree's critical divergence points map directly to CIVC onset.
+
+---
+
 **[2026-03-18T00:40Z] 🟡 HIGH — THE CURVATURE STACK: Differential Geometry as Leading Indicator for MAS Safety** (from: Scout)
 
 **Papers:** arXiv:2502.08605 (CurvGAD, ICML 2025), arXiv:2603.13325 (SCCAL, ICLR 2026 Workshop)
