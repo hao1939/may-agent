@@ -9,7 +9,7 @@
 - [x] **H-092 → PRIORITY-TRACKER**: Added to Tier 1 (P(H)=0.72).
 
 ## Next Up
-- [x] **EXP-100 Design**: ✅ DESIGNED. Interventional test of H-093 CIVC. 3 arms × 2 scenarios × 2 runs = 12 gym runs. Design at `agents/shared/knowledge/experiments/EXP-100/design.md`. **Next: create 4 scenario variants (compound-edit-verification-scaffolded, compound-edit-verification-checkpoint, multi-file-verify-gap-scaffolded, multi-file-verify-gap-checkpoint), then execute 12 runs.**
+- [x] **EXP-100 Design**: ✅ COMPLETE — MODERATE SUPPORT. 12/12 runs. Treatments +100pp on medium-complexity but fail/harm on high-complexity. Alignment tax confirmed (DD-671). FM-3.3 split: FM-3.3a (absence) vs FM-3.3b (verification theater). H-093 P(H) 0.75→0.70. New predictions P-093e/f/g. Full results at `agents/shared/knowledge/experiments/EXP-100/results.md`.
 - [x] **Process remaining scout drops**: COMPLETE. Cleaned 36 already-processed drops. Dispatched 3 parallel research threads (Agent Safety, Verification-Trust, Harness Engineering). 3 new KEs created (KE-083, KE-084, KE-085). Cross-cluster synthesis written. Final 4 drops (DD-544, CR-314, brief-4d-attack-surface, synth-agent-doc-standard-convergence) triaged: all had library entries, added 3 missing INDEX entries (DD-551, brief-4d, synth-agent-doc), moved all to processed/. Drops folder now empty.
 - [x] **KE-083 Synthesis (Agent Safety Gap)**: DD-470 + DD-489 + DD-550 + DD-574 → alignment fails at three system boundaries (communication/equivocation, trust/channel injection, authority/role override). Byzantine redundancy (DD-574) provides defense framework. KE-083 written, 4 DD library entries created, INDEX updated, drops cleaned. Previous KE-083 content (Verification-Trust Architecture from DD-572/580/CR-271/CR-295/CR-303) superseded — those DDs still reference KE-083 in INDEX.
 - [x] **KE-084 Synthesis (Verification-Trust Architecture)**: DD-572 + DD-580 + CR-271 + CR-295 + CR-303 → three-layer architecture (L1 structural verification, L2 disagreement analysis, L3 trust-mediated coordination). Trust Minimization Principle. Renumbered from KE-083 to KE-084 to avoid ID collision. 5 library entries + KE + INDEX updated.
@@ -74,6 +74,21 @@
 - [ ] **Prompt Caching**: Blocked on Hao (escalated 2026-03-24). Cannot fix from this repo.
 - [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% of verify-after-edit failures need code-level fix, not prompting. Deferred until prompting experiments complete.
 - [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
+
+## Session Notes (2026-04-09 ~10:50)
+- **EXP-100 COMPLETE — MODERATE SUPPORT FOR CIVC**: All 12 runs (3 arms × 2 scenarios × 2 reps) collected and analyzed.
+- **Key results by arm**:
+  - **Arm A (Baseline)**: compound-edit 1/2 (50%), multi-file 0/2 (0%) — 25% overall
+  - **Arm B (Scaffolding)**: compound-edit 2/2 (100%), multi-file 1/2 (50%) — 75% overall
+  - **Arm C (Forced Checkpoint)**: compound-edit 2/2 (100%), multi-file 0/2 (0%) — 50% overall
+- **Medium vs High complexity split**: Both treatments achieve +100pp on medium-complexity (compound-edit: 4/4 treatment vs 1/2 baseline). On high-complexity (multi-file): scaffolding matches baseline (50%), forced-checkpoints WORSE (0% vs 50% baseline).
+- **Alignment tax confirmed (DD-671)**: Forced checkpoints add +75% duration overhead. On high-complexity multi-file, this overhead consumed reasoning capacity — agent performed verification steps but implementation was wrong ("Verification Theater").
+- **FM-3.3 SPLIT**: New sub-classification:
+  - FM-3.3a (Verification Absence) — agent skips verification entirely. Fixable by scaffolding/checkpoints.
+  - FM-3.3b (Verification Theater) — agent performs verification but it's vacuous or implementation doesn't match. Needs reasoning augmentation, not just procedure.
+- **Three new predictions added to H-093**: P-093e (internal detection of CIVC onset), P-093f (reasoning-augmented verification outperforms procedural), P-093g (complexity operationalization predicts treatment effectiveness threshold).
+- **H-093 P(H) 0.75→0.70**: Slight decrease — core claim (complexity drives collapse) supported, but treatment predictions only partially confirmed. The failure of forced checkpoints on high-complexity AGAINST prediction P-093c.
+- **Files modified**: `EXP-100/results.md` (written), `EXP-100/design.md` (status updated), `H-093` (P(H), evidence, predictions), `INDEX.md` (EXP-100 + H-093 rows), `PRIORITY-TRACKER.md` (header + H-093 + EXP-100 queue), `todo.md` (this file)
 
 ## Session Notes (2026-04-09 ~10:05)
 - **Cascade dynamics cross-thread synthesis**: Wrote comprehensive SYNTHESIS-cascade-dynamics-verification-defense-stack.md — the Five-Layer Cascade Defense Stack connecting DD-667→DD-675 (9 papers) with EXP-099, H-092/093/094, and KE-080→088.

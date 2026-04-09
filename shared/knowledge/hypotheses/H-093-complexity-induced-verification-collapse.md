@@ -2,7 +2,7 @@
 
 **Status**: Proposed
 **Date**: 2026-04-09
-**P(H)**: 0.75 (updated from 0.65 — external literature validation via CR-318, Session 384)
+**P(H)**: 0.70 (updated from 0.75 — EXP-100 partial support. Previously from 0.65 — external literature validation via CR-318, Session 384)
 **Origin**: EXP-099 (H-092 Information-Flow Failure Mode Analysis)
 **Related**: H-092 (information-flow failure patterns), H-085 (forced externalization), H-039 (decomposition bottleneck)
 
@@ -81,3 +81,39 @@ H-094 proposes HVR as zero-cost confidence gate. If validated, reduces verificat
 
 ### Updated P(H): 0.65 → 0.75
 Strong external mechanistic validation (DD#671), peer-reviewed intervention evidence (DD#673), and consistent architectural support (DD#672, DD#670). DD#674/675 add detection/prevention mechanisms. No contradictory evidence found. Nine independent papers now support various aspects of CIVC.
+
+## EXP-100 Results (2026-04-09)
+
+**Full results**: `agents/shared/knowledge/experiments/EXP-100/results.md`
+
+### Key Findings
+
+12/12 runs completed. **MODERATE SUPPORT for CIVC with critical qualifications.**
+
+| Arm | compound-edit (High) | multi-file (Medium) | Total |
+|-----|---------------------|---------------------|-------|
+| A (Baseline) | 1/2 (50%) | 0/2 (0%) | 1/4 (25%) |
+| B (Scaffolding) | 1/2 (50%) | 2/2 (100%) | 3/4 (75%) |
+| C (Checkpoint) | 0/2 (0%) | 2/2 (100%) | 2/4 (50%) |
+
+1. **Both treatments achieve +100pp on medium-complexity** (4/4 pass vs 0/2 baseline) — interventions work where complexity is moderate
+2. **Neither treatment improves high-complexity** — B matches baseline (50%), C is WORSE (0% vs 50%)
+3. **Alignment tax confirmed (DD-671)**: Forced checkpoints consumed reasoning capacity on compound-edit (avg 183s vs 105s baseline, +75% overhead) and degraded performance
+4. **New failure mode discovered — "Verification Theater" (FM-3.3b)**: Agent performs verification rituals (C2.3=✅) but underlying reasoning is wrong. Distinct from classic FM-3.3a (verification absence)
+
+### Prediction Assessment
+
+| Prediction | Result | Detail |
+|-----------|--------|--------|
+| P-093a (scaffolding reduces FM-3.3) | **Partial** | ✅ on medium-complexity (+100pp), ❌ on high-complexity (0pp) |
+| P-093c (checkpoints break Drift-to-Decay) | **Partial/Against** | ✅ on medium-complexity (+100pp), ❌ HARMFUL on high-complexity (-50pp) |
+| H3 (C beats B) | **Not supported** | B (75%) outperforms C (50%) overall |
+
+### New Predictions
+
+- **P-093e (revised)**: Verification interventions have a complexity threshold — they improve below it but degrade above it by consuming reasoning capacity
+- **P-093f**: "Verification theater" (FM-3.3b) is mechanistically distinct from verification absence (FM-3.3a) and requires reasoning augmentation, not verification augmentation
+- **P-093g**: Lightweight verification (single-sentence check) will outperform heavy verification (structured VERIFY.md) on high-complexity tasks
+
+### P(H) Update: 0.75 → 0.70
+The core CIVC claim holds (complexity-induced, not length-induced; treatments work at moderate complexity). But the causal model needs revision — CIVC isn't just "agent forgets to verify" but "task complexity exhausts reasoning capacity, and adding verification overhead can worsen it." Key predictions (P-093a, P-093c) only partially confirmed. The alignment tax is a real constraint on intervention design.
