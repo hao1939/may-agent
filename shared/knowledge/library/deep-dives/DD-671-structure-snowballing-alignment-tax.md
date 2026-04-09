@@ -1,4 +1,4 @@
-# DD#667: Structure Snowballing — The Alignment Tax of Constrained Decoding in LLM Self-Correction
+# DD#671: Structure Snowballing — The Alignment Tax of Constrained Decoding in LLM Self-Correction
 
 **Paper**: "From Hallucination to Structure Snowballing: The Alignment Tax of Constrained Decoding in LLM Reflection"
 **Authors**: Hongxu Zhou

@@ -38,8 +38,8 @@ Our system's FM-3.3 (verification collapse) is a **terminal attractor** — erro
 ## Connection to Other Work
 
 - **H-093 (CIVC)**: HGR's cascade correction is a concrete implementation of H-093's proposed "cascade breakers"
-- **DD#667 (Structure Snowballing)**: HGR avoids the alignment tax by using lightweight hypothesis verification (mismatch detection) rather than complex structured output
-- **DD#668 (CTHA)**: Both address error propagation in hierarchical/multi-step agent systems, but from different angles — CTHA prevents cascades via constraints, HGR corrects cascades via retraction
+- **DD#671 (Structure Snowballing)**: HGR avoids the alignment tax by using lightweight hypothesis verification (mismatch detection) rather than complex structured output
+- **DD#672 (CTHA)**: Both address error propagation in hierarchical/multi-step agent systems, but from different angles — CTHA prevents cascades via constraints, HGR corrects cascades via retraction
 - **H-092 (Reasoning Flow)**: HGR's dependency graph maps information flow explicitly, enabling targeted correction rather than full restart
 
 ---

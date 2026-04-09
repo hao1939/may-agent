@@ -1,7 +1,7 @@
 # KE-086: Multi-Agent Architecture Scaling — Integration Bottleneck, Coordination Laws, and the Scale-or-Collapse Question
 
 **Created**: 2026-04-09
-**Sources**: DD-548, DD-549, DD-553, DD-573, DD-579, DD-581, CR-296, CR-316
+**Sources**: DD-544, DD-548, DD-549, DD-553, DD-573, DD-579, DD-581, CR-296, CR-314, CR-316
 **Extends**: KE-084 (Verification-Trust Architecture), KE-085 (Harness Engineering Field Crystallization)
 **Status**: Active synthesis
 

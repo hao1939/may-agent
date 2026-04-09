@@ -462,3 +462,14 @@
 6. DD#669 → DD#665 (Spectral Kill Switches + Step-Saliency: both analyze attention patterns but at different levels — pre-generation gating vs post-step diagnosis)
 7. DD#667 + DD#669 = input monitoring + output monitoring: Spectral Kill Switches detect contaminated inputs, MASC detects anomalous outputs. Combined = complete step-level circuit breaker.
 8. DD#668 → DD#662 (AgentErrorTaxonomy's module-attributed failures complement Universal Verifier's process/outcome rubrics — taxonomy for detection, verifier for evaluation)
+
+**Verification collapse: additional external validation (Scout Session 384)** ★★★★★ CRITICAL — NEW (2026-04-09)
+1. [dd670](DD-670-hgr-cascade-error-correction.md) — ★★★★ HGR: Hypothesis Graph Refinement for cascade error correction. Dependency-aware graph memory with hypothesis retraction. 20% node pruning, 4.5× fewer revisits. Contractable memory as cascade breaker.
+2. [dd671](DD-671-structure-snowballing-alignment-tax.md) — ★★★★★ CRITICAL: "Structure Snowballing" — constrained decoding triggers alignment tax, consuming reasoning capacity for formatting. Directly validates H-093 CIVC mechanism (complexity, not length, triggers verification collapse).
+3. [dd672](DD-672-ctha-constrained-temporal-hierarchy.md) — ★★★★ CTHA: Constrained Temporal Hierarchical Architecture. 47% failure cascade reduction via typed contracts + authority manifolds + arbiter resolution. Validates constraint-based cascade prevention.
+4. [dd673](DD-673-verigui-action-effect-verification.md) — ★★★★ VeriGUI: TVAE (Think-Verify-Act-Expect) framework. Mandatory pre-action verification prevents error accumulation. ACL 2026 Main. Validates P-093c (forced checkpoints break cascades).
+5. **CR#318**: [cr318](../../cross-references/CR-318-verification-collapse-literature-synthesis.md) — Synthesis of DD#670-673. Proposes 3-layer cascade prevention stack. Updated H-093 P(H) 0.65→0.75.
+6. DD#670 → DD#671 (HGR avoids alignment tax via lightweight hypothesis verification; structure snowballing warns against heavy scaffolding)
+7. DD#672 → DD#671 (CTHA's constraint-based prevention works, but DD#671 warns constraints must be low-complexity)
+8. DD#673 → EXP-099 (TVAE's verification checkpoints directly address Tool Spiral and Drift-to-Decay archetypes)
+9. DD#670 + DD#672 + DD#673 = prevention (CTHA) + detection (VeriGUI) + correction (HGR) — complete cascade management pipeline

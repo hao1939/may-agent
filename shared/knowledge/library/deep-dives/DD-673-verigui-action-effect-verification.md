@@ -1,4 +1,4 @@
-# DD#669: VeriGUI — Action-Effect Verification and Self-Correction for Robust GUI Automation
+# DD#673: VeriGUI — Action-Effect Verification and Self-Correction for Robust GUI Automation
 
 **Paper**: "Don't Act Blindly: Robust GUI Automation via Action-Effect Verification and Self-Correction"
 **Authors**: Yuzhe Zhang et al.
@@ -37,7 +37,7 @@ H-093's P-093c predicts that "forced verification checkpoints that must be compl
 Our agents currently use Think → Act loops without mandatory verification. Adding a verification step between actions would:
 - Detect tool failures before they cascade (Tool Spiral archetype from EXP-099)
 - Catch scope drift before it leads to verification collapse (Drift-to-Decay archetype)
-- Cost: Additional tokens per step (the "alignment tax" from DD#667 applies — verification must be lightweight)
+- Cost: Additional tokens per step (the "alignment tax" from DD#671 applies — verification must be lightweight)
 
 ### Expectation Registration
 The "Expectation" step is novel and powerful: by pre-registering what the agent expects to see, mismatches become automatically detectable. This is a form of **prediction-error verification** that could be applied to our read-then-verify patterns.
