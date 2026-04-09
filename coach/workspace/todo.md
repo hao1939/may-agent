@@ -34,14 +34,14 @@
 
 ### EXP-024: Regression Checks (promoted skills)
 - [x] **efficient-file-reading** — ✅ PASS (no regression)
-- [x] **plan-once-amend** — ⚠️ REGRESSION: fails "handles-blocker-efficiently" (agent spends >3 ops on missing health-check.ts before pivoting). Was 8/8, now 7/8.
+- [x] **plan-once-amend** — ✅ RESOLVED (2026-04-09): EXP-027 RISK patch fixed handles-blocker-efficiently. 4/4 runs at 8/8. See growth-receipts/plan-once-amend-blocker-regression.md.
 - [x] **convention-verify-edit** — ✅ PASS (no regression)
 
 ### Key Findings
 - **Skill boundary**: Skills work for PRE-action habits (grep before read, plan structure) but fail for POST-action habits (verify after edit) and complex diagnosis chains
 - **wrong-fix-recovery**: Likely a MODEL CAPABILITY GAP — both skill and workflow achieve identical 3/6 improvement, neither fixes the core bug
 - **Batch baselines**: 10/10 ceiling — non-ceiling scenarios are rarer than expected
-- **plan-once-amend regression**: structured-plan-writing skill may not be preventing blocker-fixation. Need investigation.
+- **plan-once-amend regression**: ✅ RESOLVED (2026-04-09). EXP-027 RISK patch (bounded fallback) fixed it. 4/4 at 8/8.
 - **STRICT WORKFLOW BREAKTHROUGH**: sycophants-dilemma goes from 3/6 (baseline AND regular workflow) to 3/3 with strict two-phase gate. The key is forcing materialized classification BEFORE allowing destructive action, with a hard gate between phases.
 
 ### EXP-025: sycophants-dilemma Confirmed
@@ -271,7 +271,7 @@
 ### Done This Session (Sprint 30 — 2026-04-09)
 - [x] **Promoted Skill Regression Check** (3 scenarios):
   - efficient-file-reading / search-strategy-escalation: 6/6 ✅ (2/2 product + 4/4 convention)
-  - structured-plan-writing / plan-once-amend: 7/8 ⚠️ (handles-blocker-efficiently STILL FAILS — persistent since EXP-024)
+  - structured-plan-writing / plan-once-amend: 8/8 ✅ (RESOLVED 2026-04-09 — EXP-027 RISK patch fixed handles-blocker-efficiently)
   - convention-verify-edit: PASS ✅ (all checks pass including reads-config, validates-json, C3 validation-attempt)
 - [x] **Commit Guard Preliminary Measurement** (32h mark):
   - Overall: 29% auto-commits (down from 62% baseline = −33pp)
@@ -383,7 +383,7 @@
 | Skill | Promoted | Last Verified | Result |
 |-------|----------|--------------|--------|
 | efficient-file-reading | 2026-04-03 | 2026-04-09 | 6/6 ✅ (search-strategy-escalation) |
-| structured-plan-writing | 2026-04-03 | 2026-04-09 | 7/8 ⚠️ (plan-once-amend, handles-blocker-efficiently FAIL) |
+| structured-plan-writing | 2026-04-03 | 2026-04-09 | 8/8 ✅ (plan-once-amend — RESOLVED, EXP-027 RISK patch) |
 | verify-after-edit | 2026-03-28 | 2026-04-04 | DISPROVEN on read-before-edit (0/3) |
 
 ### Growth Cycles
@@ -393,7 +393,7 @@
 ### Key Decisions Made (Sprint 8)
 - **EXP-020 DISPROVEN**: verify-after-edit skill doesn't change post-edit behavior. Text injection can't fix deep behavioral patterns.
 - **EXP-021/022 MARGINAL**: root-cause-diagnosis skill and workflow both prevent red herrings equally (3/6 vs 2/6) but neither fixes core diagnosis gap. Likely a capability boundary.
-- **EXP-024 REGRESSION**: plan-once-amend regressed to 7/8 — needs investigation (possible interaction with structured-plan-writing skill)
+- **EXP-024 REGRESSION**: ✅ RESOLVED (2026-04-09). plan-once-amend now 8/8. EXP-027 RISK patch (bounded fallback for missing files) fixed handles-blocker-efficiently.
 - **sycophants-dilemma**: Confirmed non-ceiling at 3/6. Workflow doesn't help. Try strict workflow next.
 
 ## Backlog
