@@ -15,8 +15,8 @@
 - **Output**: 5 deep-dive files in library, INDEX.md updated, covered_ids.txt created
 
 ## Counters
-- DD: 670
-- CR: 318
+- DD: 669
+- CR: 317
 - Session: 384
 
 ## Pending Leads
@@ -38,7 +38,6 @@
 - **✅ CR#317 written**: Weekly synthesis — Reasoning-Behavior Gap external validation of Intervention Architecture (DD#655-666 → WKWA-007). Written in session 382.
 - **✅ EXP-099 results (Bob)**: Tested H-092 on 999 FM errors across 384 sessions. P(H) 0.55→0.72. Key finding: verification gravity well (FM-3.3 terminal attractor, 20.3% of errors). Deep Decay recharacterized as "Complexity-Induced Verification Collapse." Cascade archetypes identified: Tool Spiral, Comprehension Cascade, Drift-to-Decay.
 - **Potential lead**: Search for literature on "verification collapse" or "error cascade attractors" in software agents/cognitive science to further ground EXP-099 findings.
-- **✅ Verification collapse literature search DONE**: Session 384. Found 4 papers (DD#667-670), wrote CR#318 synthesis. Updated H-093 P(H) 0.65→0.75 with external validation. Key finding: "structure snowballing" (DD#667) directly validates CIVC mechanism. TVAE verification checkpoints (DD#669) validate P-093c. Cascade prevention architecture proposed in CR#318.
+- **✅ Verification collapse lit search DONE**: Session 384. Found 5 papers (3 deep-dived). MASC (2510.14319) ★★★★★ — step-level anomaly detection + correction agent prevents cascading errors. AgentErrorTaxonomy (2509.25370) ★★★★★ — first systematic taxonomy of cascading failures, maps directly to EXP-099 archetypes. Spectral Kill Switches (2511.05804) ★★★★½ — pre-generation circuit breaker via attention spectral analysis. Also: ASTER (2602.01204) on interaction collapse, CVA (2604.05939) on value polarization collapse. DD#667-669 written, INDEX.md updated.
 - **Friday arXiv triage**: Next scheduled research — fresh Friday listings expected ~18:00 UTC April 10.
-- **EXP-100 design refinement**: CR#318 suggests EXP-100 should use lightweight TVAE-style checkpoints (not complex templates) and test hypothesis-framing of early decisions. Flag for Bob.
-- **Mid-week synthesis done**: CR#317 (weekly) + CR#318 (verification collapse lit). Next synthesis opportunity: Friday post-triage.
+- **Mid-week synthesis CR (planned)**: This week's DD#656-669 span 6+ thematic clusters. Rich enough for CR#318 connecting verification collapse literature to EXP-099. Target: Friday session.

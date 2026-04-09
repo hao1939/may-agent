@@ -452,3 +452,13 @@
 5. DD#665 → DD#656 + DD#660 (Step-Saliency information flow complements HVR linguistic hedging and positional privilege attention bias — three levels of reasoning diagnosis)
 6. DD#665 → DD#659 (reasoning-behavior decoupling may relate to Deep Decay — model reasons correctly in middle steps but summary disconnects)
 7. DD#666 → DD#664 (AgentGate handles routing between agents, Qualixar OS handles orchestration of agent teams — complementary layers)
+
+**Verification collapse & cascading error literature** ★★★★★ CRITICAL — NEW (2026-04-09 Session 384)
+1. [dd667](DD-667-masc-metacognitive-self-correction-cascading-errors.md) — ★★★★★ MASC: Metacognitive self-correction for MAS. Real-time unsupervised step-level error detection via Next-Execution Reconstruction + Prototype-Guided Enhancement. Correction agent intercepts before downstream propagation. +8.47% AUC-ROC. Directly grounds EXP-099 verification gravity well (FM-3.3 terminal attractor) and cascade archetypes.
+2. [dd668](DD-668-agent-error-taxonomy-where-llm-agents-fail.md) — ★★★★★ AgentErrorTaxonomy: First systematic taxonomy of cascading agent failures across 5 modules. AgentDebug: root-cause isolation + corrective feedback, +24% all-correct accuracy. Maps directly to EXP-099 cascade archetypes (Tool Spiral = action→system, Comprehension Cascade = memory→planning, Drift-to-Decay = reflection→system).
+3. [dd669](DD-669-spectral-kill-switches-pre-generation-contamination.md) — ★★★★½ Spectral Kill Switches: Training-free pre-generation contamination detection via spectral analysis of attention token graphs (HFER + Spectral Entropy). Provably Bayes-optimal. Sub-millisecond. Earliest possible circuit breaker point — detects contamination before errors commit.
+4. DD#667 → EXP-099 (MASC's NER detects approach to verification gravity wells; PGE provides basin boundary between healthy and attractor states)
+5. DD#668 → EXP-099 (AgentErrorTaxonomy's 5-module classification maps to Bob's cascade archetypes; AgentDebug's root-cause traceback validates backward chain analysis)
+6. DD#669 → DD#665 (Spectral Kill Switches + Step-Saliency: both analyze attention patterns but at different levels — pre-generation gating vs post-step diagnosis)
+7. DD#667 + DD#669 = input monitoring + output monitoring: Spectral Kill Switches detect contaminated inputs, MASC detects anomalous outputs. Combined = complete step-level circuit breaker.
+8. DD#668 → DD#662 (AgentErrorTaxonomy's module-attributed failures complement Universal Verifier's process/outcome rubrics — taxonomy for detection, verifier for evaluation)
