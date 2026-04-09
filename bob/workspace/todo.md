@@ -80,6 +80,18 @@
 - **Wave 1 VALIDATED**: 9/9 behavioral pass confirmed by Coach. All 3 treatment scenarios work.
 - **Deliverable**: `agents/shared/knowledge/synthesis/GYM-GRADUATION-REVIEW.md`
 
+## Session Notes (2026-04-09 ~06:50)
+- **FEW-SHOT PRODUCTION PIPELINE DESIGN BRIEF**: Written and committed at `agents/shared/may-agent-docs/design/fewshot-production-pipeline.md`. 10-section design brief covering the full production deployment of few-shot injection. Key architectural decisions:
+  1. **Static regex routing (Phase 1)** — high-precision patterns (5-15% fire rate), NOT Coach's broad patterns (~80% fire rate)
+  2. **Task-message injection** — prepend examples to task with "Reference" framing, max 2 examples
+  3. **3 examples first** (binary-file-escalation, reproduce-first-debugging, escalation-judgment), remaining 2 after 48h validation
+  4. **Audit logging mandatory** — every dispatch logged with matched/injected/skipped fields
+  5. **Feature flag** — `FEWSHOT_INJECTION` env var for instant rollback
+  6. **No RAG/embedding retrieval** — static patterns sufficient for 5-7 examples; RAG only worthwhile at 50+
+  7. **48h production validation gate** before Phase 2 expansion
+- **Deliverable**: Ready for tech-lead / Hao review and coder implementation (est. 2-4h)
+- **Status**: Pending review. This completes the M5 condition from GYM-GRADUATION-REVIEW.
+
 ## Session Notes (2026-04-09 ~06:25)
 - **DD-661→DD-663 KNOWLEDGE BASE INTEGRATION**: Created 3 new knowledge entries (KE-073 through KE-075) from deep dives DD-661 through DD-663:
   - **KE-073**: Emergent Regulation in Agent Collectives — 14,490 OpenClaw agents self-regulate via corrective signaling (β=0.1276, OR=1.136). Complements designed governance (KE-070). From DD-661.
