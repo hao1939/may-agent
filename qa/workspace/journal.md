@@ -3960,3 +3960,26 @@ Heartbeat QA at HEAD **41b5074**. Read `src/lib/manager.ts` (lines 1–220) as a
 
 ### Verdict
 CONDITIONAL — compilation is green; test suite failures look environmental/repo-integrity related rather than caused by manager/abort-signal changes.
+
+## 2026-04-09T17:25Z
+
+### Summary
+Proactive heartbeat QA at HEAD **41b5074**. Reviewed `src/lib/session-subscribers.ts` (event-driven session side effects) and re-ran mandatory gates. **Type-check is green.** **Vitest is red** due to (a) missing `src/app/launcher.ts` expected by `test/launcher.test.ts`, (b) `EACCES` during cleanup under `/app/test-workspace` in context-learning tests, and (c) a 5s timeout syncing the real knowledge base.
+
+### Files reviewed
+- `src/lib/session-subscribers.ts` (lines 1–260)
+- `test/launcher.test.ts` (lines ~90–~175; launcher existence/content assertions)
+
+### Mandatory gates (re-run 2026-04-09T17:24Z)
+- `./node_modules/.bin/tsc --noEmit`: PASS (no output)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2079 passed (2100)**
+  - `test/launcher.test.ts`: 7 failed — asserts `existsSync(/app/src/app/launcher.ts) === true` and reads it (ENOENT)
+  - `test/context-learn.test.ts`: 7 failed — `rmSync(tmpDir, { recursive: true })` throws `EACCES` at `test/context-learn.test.ts:11`
+  - `test/context-learning.test.ts`: 6 failed — same `EACCES` at `test/context-learning.test.ts:43`
+  - `test/research-db.test.ts`: 1 failed — integration test `syncs the actual knowledge base without errors` timed out at 5000ms (observed ~5.2s)
+
+### Code quality notes
+- `src/lib/session-subscribers.ts` contains multiple `catch { /* best-effort */ }` blocks around persistence/workspace updates. This is likely intentional, but in prod these failures will be silent; consider adding minimal debug logging (guarded) for diagnostic visibility.
+
+### Verdict
+CONDITIONAL — code compiles; test suite failures appear unrelated to the subscriber module and look like repo/environment problems (missing launcher module + filesystem permissions + too-tight integration timeout).
