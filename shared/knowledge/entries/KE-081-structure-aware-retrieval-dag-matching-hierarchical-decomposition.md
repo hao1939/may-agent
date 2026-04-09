@@ -1,4 +1,4 @@
-# KE-079: Structure-Aware Retrieval — DAG Matching and Hierarchical Decomposition as Memory Architecture Primitives
+# KE-081: Structure-Aware Retrieval — DAG Matching and Hierarchical Decomposition as Memory Architecture Primitives
 
 **Status**: Theoretical (supported by empirical evidence + convergent design)  
 **Source**: DD-545 (APEX-EM ★★★★★), DD-567 (M-Flow ★★★★), extending KE-040 (Memory Architecture Convergence)  
