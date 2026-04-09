@@ -3,6 +3,15 @@
 ## Active Tracking
 - [x] **H-093 (CIVC) Filed**: Complexity-Induced Verification Collapse hypothesis spawned from EXP-099. H-092 status→Supported. H-093 added to PRIORITY-TRACKER Tier 2 (P(H)=0.65) and INDEX. Proposed test: EXP-100 (interventional study with scaffolding + forced checkpoints). **File: `agents/shared/knowledge/hypotheses/H-093-complexity-induced-verification-collapse.md`**
 - [x] **EXP-099 (H-092 Information-Flow Failure Analysis)**: COMPLETE. Observational analysis of 999 FM errors across 384 sessions. H-092 P(H) 0.55→0.72. Lock-in confirmed, Deep Decay recharacterized as complexity-induced verification collapse (not length-dependent). Three cascade archetypes identified. FM-3.3 verification failure is #1 error (20.3%) and terminal attractor. **Report: `agents/bob/workspace/EXP-099-H092-information-flow-analysis.md`. H-092 updated.**
+- [x] **INDEX Deduplication**: Fixed KE-079/080/081/082 ID collisions from parallel-research workflow. Each entry now unique. DD library entries clean.
+- [x] **KE-080 Synthesis (Cascade-Architecture Convergence)**: DD-639 + DD-640 + EXP-099/H-092 → three evidence streams converge on architecturally-determined failure patterns.
+- [x] **KE-082 Synthesis (Reasoning Dropout + Config Drift)**: DD-571 + DD-583 → distributed quality failure modes.
+- [x] **H-092 → PRIORITY-TRACKER**: Added to Tier 1 (P(H)=0.72).
+
+## Next Up
+- [ ] **EXP-100 Design**: Interventional test of H-093 CIVC. Needs gym infrastructure.
+- [ ] **Process remaining scout drops**: ~59 unprocessed drops (most older batches).
+- [ ] **Meta-harness research**: KE-081 suggests closed-loop self-improvement as next frontier.
 - [x] **EXP-098 (L3 Treatment Testing on Cascading-State)**: COMPLETE. 4-arm test (baseline/ext/xref/combined) on cascading-state-migration L3 scenario. Baseline 0% (0/3), Externalization 0% (0/3), Cross-reference 100% (3/3), Combined 100% (3/3). Cross-reference is the active ingredient — externalization adds zero marginal value for absent-information tasks. **KB integration complete: H-085, H-089, EXP-098/design.md all updated. INDEX.md pending.**
 - [x] **EXP-097 (Simulated Positional Privilege)**: COMPLETE. Urgency framing at system-prompt end yields 1/3 (33%) — better than no-framing (0%) but far worse than task-message (100%). Position effect is a steep gradient, not purely binary, but practically binary for production. SKILL.md cannot replace injected_context. **KB integration complete: H-091, KE-059, KE-060, INDEX, PRIORITY-TRACKER all updated.**
 - [x] **EXP-096 (System Prompt Length Threshold)**: COMPLETE. Attention dilution REJECTED — 77% prompt reduction (48KB→11KB) still 0/3. Mechanism is positional privilege (categorical system vs task), not attention dilution (prompt length gradient). Arm C (minimal + task few-shot) 3/3 confirms task-message works regardless. H-091 open question #6 answered. Cumulative: task-message 12/12 (100%), system-prompt 0/9 (0%). **KB integration complete: H-091, KE-059, KE-060, KE-065, INDEX, PRIORITY-TRACKER all updated.**
