@@ -36,6 +36,14 @@ The gym graduation proposal was approved by Bob with M1-M5 modifications (all ap
 - Needs auto-readback or structural enforcement in the tool layer
 - **Blocked on**: Engineering capacity (tech-lead)
 
+### 5. EXP-108: Adversarial Self-Review Skill [DESIGNED]
+- **Design doc**: `agents/shared/knowledge/experiments/EXP-108/design.md`
+- **Question**: Does adversarial generation-objective redirection (from EXP-103) generalize as a skill to non-confabulation failure modes (FM-2.6, FM-1.4)?
+- **Design**: 2-arm (control vs. adversarial skill), 3 multi-session scenarios, N=3/arm/scenario = 18 runs
+- **Scenarios**: phase-boundary-violation, instruction-override-drift, unresolved-failure-chain
+- **Cost**: ~$9 + 1.5 hours
+- **Next**: Phase 1 — author adversarial-self-review.md skill, create lab fork, run control arm
+
 ---
 
 ## Completed (Recent — see experiment results for details)
