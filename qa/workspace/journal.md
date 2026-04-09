@@ -4,14 +4,13 @@
 
 # QA Journal — 2026-04-09
 
-## 2026-04-09T20:55Z
+## 2026-04-09T21:25Z
 
 ### Summary
-Proactive heartbeat QA at HEAD **7e6bc59**. Reviewed `src/lib/fewshot-router.ts` + `test/fewshot-router.test.ts` change that skips few-shot injection for heartbeat sessions (`taskText.startsWith("[heartbeat]")`). Typecheck passes. Vitest is red due to unrelated failures (missing `src/app/launcher.ts`, filesystem permission errors deleting `/app/test-workspace/*`, and a research-db integration test timeout).
+Proactive heartbeat QA at HEAD **7e6bc59** (`fix: skip few-shot injection for heartbeat sessions`). I read `src/lib/fewshot-router.ts` and verified the new early return in `routeFewShotExamples()` for tasks starting with `[heartbeat]`, preventing wasted example injection tokens.
 
 ### Files reviewed (evidence)
-- `src/lib/fewshot-router.ts` (full file) — new early return for `[heartbeat]` tasks in `routeFewShotExamples()`
-- `test/fewshot-router.test.ts` (full file) — adds 3 tests covering heartbeat exclusion; suite passes
+- `src/lib/fewshot-router.ts` (full file) — `if (taskText.startsWith("[heartbeat]")) return { content: null, ... }`
 
 ### Mandatory gates
 - `./node_modules/.bin/tsc --noEmit`: PASS (no output)
@@ -21,8 +20,13 @@ Proactive heartbeat QA at HEAD **7e6bc59**. Reviewed `src/lib/fewshot-router.ts`
   - `test/context-learning.test.ts`: 6 failed — same `EACCES` under `/app/test-workspace/context-learning-test/*`
   - `test/research-db.test.ts`: 1 failed — integration test timed out at 5000ms
 
+### Issues
+- CRITICAL (repo/test mismatch): `test/launcher.test.ts` requires `src/app/launcher.ts`, but it is missing at HEAD.
+- IMPORTANT (env/permissions): context-learning tests cannot delete `/app/test-workspace/*` (`EACCES` in rmSync).
+- IMPORTANT (test robustness): `test/research-db.test.ts` “sync real knowledge base” occasionally exceeds 5s timeout.
+
 ### Verdict
-CONDITIONAL — patch appears correct and tested, but repo suite is not green.
+CONDITIONAL — change appears correct and type-safe, but repo is vitest-red for the unrelated issues above.
 
 ## 2026-04-09T19:25Z
 
