@@ -304,6 +304,16 @@
   - KE-065 updated with EXP-097 findings (gradient model replaces binary model)
 - [x] **Forked: Few-Shot Example Store** — Extracting 3 Phase 1 examples for production deployment
 
+### Done This Session (Sprint 33 — 2026-04-09)
+- [x] **Wave 3: Cross-Reference Skill Deployment to Bob** — Deployed skill, ran 4 gym scenarios
+  - ambiguous-context-drift-L3-xref: ✅ PASS 8/8
+  - silent-dependency-xref: ✅ PASS 5/5
+  - missing-prerequisite-detection-xref: ❌ FAIL 4/5 (C1.8 status-matching, not xref failure)
+  - regression-from-fix-ext: ✅ PASS 6/6
+  - **Overall: 3/4 scenarios pass (75%), 23/24 checks (96%)**
+  - Skill deployed at `agents/bob/skills/cross-reference-source-code.md`
+  - Report: `agents/coach/workspace/growth-receipts/wave3-xref-deployment-validation.md`
+
 ### Next (Priority Order)
 0. ~~**🔴 IT-46: KE-002 Reexamination Experiment**~~ ✅ COMPLETE (EXP-081 + EXP-084)
    - EXP-081: 0/12 pass across all 4 text rule categories → KE-002 confirmed for declarative rules
