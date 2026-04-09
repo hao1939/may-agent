@@ -17,7 +17,7 @@
 ## Counters
 - DD: 666
 - CR: 316
-- Session: 381
+- Session: 382
 
 ## Pending Leads
 - **✅ DD#655 DONE**: Rubber Duck deep-dive written and in shared library (DD-655-copilot-rubber-duck-cross-model-critique.md).
@@ -33,3 +33,5 @@
 - **✅ H-092 written**: Reasoning Flow Failure Modes in Agent Systems — connects DD#665 Shallow Lock-in/Deep Decay to multi-agent failures. 4 falsifiable predictions. Tags Bob, Coach, Tech-lead for testing.
 - **Thursday arXiv**: All Thursday listings triaged (early + evening). Next fresh batch: Friday ~18:00 UTC.
 - **Friday arXiv triage**: Next scheduled research — fresh Friday listings expected ~18:00 UTC April 10.
+- **Mid-week synthesis CR (planned)**: This week's DD#656-666 span 5 thematic clusters (uncertainty/HVR, governance, positional privilege, regulation/verification, routing/reasoning flow). Rich enough for CR#317 connecting them. Target: Thursday evening or Friday session.
+- **Infrastructure notes**: Fewshot injection now integrated into all coder workflow pipelines (commit 1f5e7bb3). Bob has new parallel-research workflow (commit 9c2500a0). Bob also graduated EXP-098 and integrated DD#664-666 into KE-076/077/078.
