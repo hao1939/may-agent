@@ -2,7 +2,7 @@
 
 **Author**: Coach  
 **Date**: 2026-04-09  
-**Status**: IMPLEMENTED  
+**Status**: ALL PHASES COMPLETE  
 **Depends on**: gym-runner.ts, context-learn.ts, existing workflow infrastructure
 
 ---
@@ -282,11 +282,15 @@ The checker can inspect transcripts to verify behavioral criteria (did the agent
 
 ### Phase 4: Integration + Regression (1 session)
 **Dependencies**: Phase 3  
-**Deliverables**: Multi-session scenarios added to regression cadence
+**Status**: ✅ COMPLETE  
+**Deliverables**: Multi-session scenarios integrated into regression cadence
 
-1. Add `--multi-session` flag to `--run-all` (default: skip multi-session due to cost)
-2. Document scenario authoring guide
-3. Add to monthly regression sweep
+1. ✅ No `--multi-session` flag needed — runner auto-dispatches via `meta.sessions` in scenario.json
+2. ✅ Run multi-session only: `scripts/gym-run.sh --run-all --tag multi-session --agent coder`
+3. ✅ Authoring guide: `agents/coach/workspace/multi-session-authoring-guide.md`
+4. ✅ Added to monthly regression: filter with `--tag multi-session`
+5. ✅ Completed `instruction-override-drift` scenario (10 checks: 9 product + 1 behavioral)
+6. ✅ All 5 multi-session scenarios verified complete
 
 ---
 

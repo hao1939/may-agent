@@ -1,6 +1,6 @@
 # Deep Dives Index
 
-> 120 research deep dives, cross-reference syntheses, and reference documents.  
+> 123 research deep dives, cross-reference syntheses, and reference documents.  
 > Last updated: 2026-04-09 | Maintained by Scout
 
 ## How to Use This Index
@@ -482,3 +482,14 @@
 5. DD#674 → DD#671 (Structure Snowballing's alignment tax might be detectable via hidden-state strain before output manifests)
 6. DD#675 → DD#672 + DD#673 (All three do pre-action safety enforcement — CTHA via typed contracts, VeriGUI via LLM reasoning, shields via formal verification)
 7. DD#675 → DD#661 (Both study local-to-global safety maintenance — shields are top-down compiled, emergent regulation is bottom-up)
+
+**Adversarial & adaptive benchmarking for agent verification** ★★★★★ — NEW (2026-04-09 Session 388)
+1. [dd676](DD-676-tracesafe-mid-trajectory-safety-benchmark.md) — ★★★★★ TraceSafe-Bench: First mid-trajectory safety benchmark for multi-step tool-calling. 12 risk categories, 1000+ instances. Key: guardrail efficacy correlates with structural data competence (ρ=0.79) not safety alignment (ρ≈0). Architecture > Scale. Directly relevant to CIVC — failure surface is in structural reasoning during execution traces.
+2. [dd677](DD-677-self-revising-agent-LLM-decomposition.md) — ★★★★½ Self-Revising Agent Decomposition: 4-component runtime decomposition (posterior tracking, world-model planning, symbolic reflection, LLM revision). World-model planning provides +24.1pp; LLM revision at 4.3% of turns is non-monotonic. Validates explicit structure > implicit LLM reasoning. Externalized state as inspectable runtime.
+3. [dd678](DD-678-adaptive-agent-evaluation-HAAF-NAAMSE.md) — ★★★★ HAAF + NAAMSE combined: Scenario manifold (HAAF) + evolutionary fitness-driven mutation (NAAMSE) for systematic failure boundary discovery. HAAF provides theory (distribution-aware sampling, red/blue team cycles), NAAMSE provides mechanism (genetic prompt mutation, model responses as fitness). Framework for redesigning EXP-100 with adaptive difficulty.
+4. DD#676 → EXP-100 (TraceSafe's structural bottleneck explains why easy scenarios don't trigger CIVC — complexity must be structural, not just task-level)
+5. DD#677 → WKWA-007 (Self-revision decomposition validates intervention architecture — sparse LLM intervention is right approach but selection mechanism is critical)
+6. DD#678 → EXP-100 (HAAF scenario manifold + NAAMSE evolutionary search = systematic method to find CIVC triggering threshold)
+7. DD#676 + DD#677 + DD#678 = detection (mid-trajectory structural monitoring) + architecture (externalized reflection) + evaluation (adaptive scenario generation) — complete framework for next EXP-100 iteration
+8. DD#676 → DD#671 (Structural bottleneck finding connects to Structure Snowballing — both identify structural complexity as the key driver, not semantic difficulty)
+9. DD#677 → DD#667 (Self-revision decomposition complements MASC metacognitive correction — both argue for externalized, inspectable reflection mechanisms)

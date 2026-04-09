@@ -30,7 +30,13 @@ The gym graduation proposal was approved by Bob with M1-M5 modifications (all ap
   - Files: session-2/task.md, session-2/context.md, package.json, success_criteria.js (9 checks: 7 product + 2 behavioral)
   - Validated: 9/9 checks pass, agent detects hardcoded creds / swallowed errors / missing retries, fixes before adding rate limiting
   - Three multi-session scenarios now complete: ghost-deliverable-chain, unresolved-failure-chain, kb-integration-failure
-- **Phase 4**: Integration + regression cadence (depends on Phase 3)
+- **Phase 4 — Integration + Regression**: COMPLETE ✅ (s_1775733856006_338)
+  - Completed `instruction-override-drift` scenario: success_criteria.js (10 checks: 9 product + 1 behavioral), session-1/environment (3 files), session-2/environment (5 files)
+  - All 5 multi-session scenarios verified complete with full file sets
+  - Authoring guide written: `agents/coach/workspace/multi-session-authoring-guide.md`
+  - No `--multi-session` flag needed — runner already dispatches via `meta.sessions` in scenario.json
+  - Run with: `scripts/gym-run.sh --run-all --tag multi-session --agent coder`
+  - Monthly regression cadence: use `--tag multi-session` filter
 - **Key insight from EXP-065**: FM-2.6 (instruction-following), FM-3.1 (ghost deliverables), FM-2.1 (tool hallucination) all require multi-session to reproduce
 
 ### 3. Commit Guard 48h Measurement [DUE ~16:00 UTC]

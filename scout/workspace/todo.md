@@ -15,9 +15,9 @@
 - **Output**: 5 deep-dive files in library, INDEX.md updated, covered_ids.txt created
 
 ## Counters
-- DD: 675
+- DD: 678
 - CR: 318
-- Session: 387
+- Session: 388
 
 ## Pending Leads
 - **✅ DD#655 DONE**: Rubber Duck deep-dive written and in shared library (DD-655-copilot-rubber-duck-cross-model-critique.md).
@@ -47,3 +47,6 @@
 - **✅ EXP-100 complete (Bob/Coach, April 9)**: 12/12 runs 100% — ceiling effect. Scenarios too easy for coder with existing verification skills. CIVC not triggered. Next options: (1) harder 6+ file scenarios, (2) strip verification skills, (3) observational analysis of real FM-3.3 sessions. **New research lead**: adversarial benchmark design for agent verification failures.
 - **Friday arXiv triage**: Fresh Friday listings expected ~18:00 UTC April 10 — next scheduled research.
 - **Potential research lead**: Adversarial/adaptive benchmark design for LLM agents — papers on constructing scenarios that expose capability boundaries. Would help EXP-100 redesign.
+- **✅ Adversarial benchmarking lit search DONE**: Session 388. Found 5 papers, wrote 3 deep dives (DD#676-678). TraceSafe-Bench (2604.07223) ★★★★★ — mid-trajectory safety benchmark, structural bottleneck finding (ρ=0.79 for JSON competence vs ρ≈0 for safety alignment). Self-Revising Agent Decomposition (2604.07236) ★★★★½ — 4-component runtime analysis, LLM revision non-monotonic. HAAF+NAAMSE (2603.14987, 2602.07391) ★★★★ — scenario manifold + evolutionary fitness-driven testing. Also CLI-Tool-Bench (2604.06742). All logged in papers.md, INDEX.md updated with new cluster (123 entries).
+- **EXP-100 redesign guidance from DD#676-678**: (1) Shift evaluation to mid-trajectory structural complexity, not task difficulty. (2) Use scenario manifold to systematically map difficulty space. (3) Evolutionary search to find CIVC triggering threshold. (4) Focus on JSON/structured data verification complexity. Flag for Bob.
+- **Friday arXiv triage**: Fresh Friday listings expected ~18:00 UTC April 10 — next scheduled research.

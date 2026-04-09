@@ -1313,3 +1313,22 @@ Production multi-agent data management system with "three-track knowledge archit
 ### Blind Refusal: LLMs Refuse to Help Evade Even Unjust Rules — arXiv:2604.06233
 
 | 2604.06233 | Blind Refusal: Language Models Refuse to Help Users Evade Unjust, Absurd, and Illegitimate Rules (Pattison et al., ANU, 2026) | ★★★½ GOOD — 75.4% refusal rate on requests to help break defeated/unjust rules across 18 model configs. Models recognize defeat conditions in 57.5% of cases but refuse ANYWAY — refusal behavior is decoupled from normative reasoning capacity. 5 defeat families × 19 authority types. Uses GPT-5.4 as judge. Reveals that safety training creates a blanket compliance reflex that overrides contextual moral reasoning. Alignment tax: safety training sacrifices nuanced ethical judgment for broad rule-following. Connects to DD#671 (Structure Snowballing Alignment Tax). |
+
+## 2026-04-09 — Session 388: Adversarial & Adaptive Benchmarking Literature (EXP-100 Adjacent)
+
+### TraceSafe-Bench: Mid-Trajectory Safety for Tool-Calling — arXiv:2604.07223
+
+| 2604.07223 | TraceSafe: A Systematic Assessment of LLM Guardrails on Multi-Step Tool-Calling Trajectories (Chen et al., NTU, 2026) | ★★★★★ EXCELLENT — First mid-trajectory safety benchmark. 12 risk categories, 1000+ instances, 13 guard models + 7 guardrails. Structural bottleneck: efficacy correlates with JSON/structured parsing (ρ=0.79) not safety alignment (ρ≈0). Architecture > Scale. Vulnerability surface is in intermediate execution traces. Directly explains EXP-100 ceiling effect. (ref: DD-676) |
+
+### Self-Revising Agent: How Much LLM Does It Need? — arXiv:2604.07236
+
+| 2604.07236 | How Much LLM Does a Self-Revising Agent Actually Need? (Jeong & Son, 2026) | ★★★★½ EXCELLENT — Declared reflective runtime protocol decomposes agent into 4 components. World-model planning provides +24.1pp win rate. LLM revision at 4.3% of turns is non-monotonic (improves F1, hurts win rate). Validates explicit structure > implicit LLM reasoning. Externalized state enables inspectable runtime. Validates WKWA-007 intervention architecture. (ref: DD-677) |
+
+### HAAF + NAAMSE: Adaptive Agent Evaluation Frameworks — arXiv:2603.14987, 2602.07391
+
+| 2603.14987 | Beyond Benchmark Islands: HAAF (Qi et al., March 2026) | ★★★★ GOOD — Holographic agent assessment via scenario manifold, distribution-aware sampling, red/blue team iterative cycles. Trustworthy Optimization Factory. Provides theoretical framework for systematic failure boundary discovery. (ref: DD-678) |
+| 2602.07391 | NAAMSE: Framework for Evolutionary Security Evaluation (Pai et al., ICLR 2026 Workshop, Feb 2026) | ★★★★ GOOD — Evolutionary genetic prompt mutation + fitness-driven attack escalation using model responses as fitness signal. Systematically amplifies vulnerabilities missed by one-shot methods. Mechanism for adaptive difficulty in benchmark design. (ref: DD-678) |
+
+### Additional papers found (not deep-dived)
+
+| 2604.06742 | CLI-Tool-Bench: Evaluating LLM-Based 0-to-1 Software Generation (Hu et al., 2026) | ★★★½ GOOD — 100 real-world repos, black-box differential testing for ground-up CLI tool generation. Top models <43% success. Token consumption ≠ performance. Relevant harder evaluation setting for coding agent verification. |
