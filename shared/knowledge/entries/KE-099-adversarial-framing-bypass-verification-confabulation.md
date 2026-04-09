@@ -1,21 +1,34 @@
 # KE-099: Adversarial Framing Bypass for Verification Confabulation
 
-**Date**: 2026-04-09
-**Source**: EXP-103 (Adversarial Framing vs. Verification Confabulation)
-**Confidence**: HIGH (N=6, 100% success rate, effect size +75-89pp)
-**Extends**: KE-093 (Verification Confabulation), KE-097 (Confirmation Bias Mechanism)
+**Date**: 2026-04-09  
+**Updated**: 2026-04-09 (EXP-104 confound identified)  
+**Source**: EXP-103 (Adversarial Framing vs. Verification Confabulation)  
+**Confidence**: ~~HIGH~~ → **LOW** (confounded by skill deployment — see EXP-104)  
+**Extends**: KE-093 (Verification Confabulation), KE-097 (Confirmation Bias Mechanism)  
 **Revises**: KE-007 (prompt-level interventions can work if they redirect generation objective)
 
-## Finding
+## ⚠️ CONFOUND (EXP-104)
+
+**The +75-89pp effect size attributed to adversarial framing is overstated.** EXP-104 revealed that a vanilla baseline (no adversarial framing, no special treatment) also achieves 100% pass rate post-skill-deployment. The evidence-over-narrative skill (deployed via EXP-090/091 on 2026-04-08, before EXP-103 ran) is the more likely cause of the improvement.
+
+- EXP-102 baseline (pre-skill): 11-25%
+- EXP-103 adversarial (post-skill): 100% — **attributed to adversarial framing**
+- EXP-104 vanilla baseline (post-skill): 100% — **proves skill alone is sufficient**
+
+The true causal attribution cannot be determined from these experiments. Adversarial framing may still have value for agents WITHOUT the evidence-over-narrative skill, but the claimed +75-89pp effect size is not attributable to framing alone.
+
+## Original Finding (confidence downgraded)
 
 Reframing multi-session verification from confirmation ("verify this is correct") to criticism ("find at least 3 bugs/problems") completely eliminates verification confabulation. Agents that would otherwise confabulate verification results to match false prior context instead perform genuine code review and detect actual issues.
 
 ## Evidence
 
-- **Baseline**: 11% (kb-integration-failure), 25% (ghost-deliverable-chain)
-- **EXP-102 "Verify" treatment**: 8%, 25% (confabulated verification, no improvement)
-- **Adversarial framing**: 100%, 100% (all 6 runs, zero variance)
-- **Effect size**: +75pp to +89pp vs baseline
+- **Baseline (pre-skill)**: 11% (kb-integration-failure), 25% (ghost-deliverable-chain)
+- **EXP-102 "Verify" treatment (pre-skill)**: 8%, 25% (confabulated verification, no improvement)
+- **EXP-103 Adversarial framing (post-skill)**: 100%, 100% (all 6 runs, zero variance)
+- **EXP-104 Vanilla baseline (post-skill)**: 100%, 100% (all 6 runs, zero variance)
+- **Original claimed effect size**: +75pp to +89pp vs baseline — **CONFOUNDED**
+- **Adjusted effect size**: Unknown (cannot separate skill effect from framing effect)
 
 ## Mechanism
 
