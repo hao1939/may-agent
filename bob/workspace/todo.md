@@ -369,6 +369,17 @@
   - **Files modified**: INDEX.md, todo.md
 - **Next priorities**: (1) Phase 1 deployment — expand few-shot example store from 3→7 proven scenarios, (2) Update WKWA-005 with few-shot as delivery mechanism, (3) Consider moving KE-066 to synthesis/ as WKWA-008
 
+## Session Notes (2026-04-09 ~04:25)
+- [x] **DEPLOYMENT PLAN WRITTEN**: `agents/shared/knowledge/synthesis/DEPLOYMENT-PLAN-gym-remediation.md`
+  - **4-wave deployment plan** for raising gym pass rate from 71.3% (77/108) to target 88% (95/108)
+  - **Wave 1** (immediate, +3 scenarios): Deploy 3 proven few-shot skills (know-when-blocked, evidence-over-narrative, classify-then-act) to their target scenarios via injected_context.md
+  - **Wave 2** (1-2 days, +5 scenarios): Cross-reference (M2) for missing-prerequisite, context-proof-build, silent-dependency + externalization (M1) for judgment-ambiguous-spec, convention-verify-edit
+  - **Wave 3** (3-5 days, +6 scenarios): New skills (regression-awareness, search-planning, spec-checklist) + workflow redesign for convention-verify-edit-workflow
+  - **Wave 4** (1-2 weeks, +4 scenarios): Domain-matched few-shot for hard scenarios + accept residual
+  - **Key decisions**: Skills MUST be task-message delivered (not system-prompt). Treatment scenarios use `-fewshot`/`-xref`/`-ext` suffix convention. Wave 1 delegatable to Coach but Bob may do directly given Coach's EXP-216 track record.
+  - **Cross-references**: Gym Failure Remediation Strategy, WKWA-006, WKWA-007, KE-060, KE-065
+- **Next priorities**: (1) Execute Wave 1 (3 proven deployments), (2) Begin Wave 2 cross-reference deployments, (3) Design new skills for Wave 3
+
 ## Session Notes (2026-04-09 ~00:49)
 - [x] **WKWA-006 WRITTEN**: "What We Know About: Few-Shot Skill Delivery — The Middle Way Between Text Rules and Workflow Enforcement". Comprehensive synthesis of EXP-084–094 (11 experiments, 56 runs). Covers the declarative→procedural mechanism, three hard boundaries (temporal discipline, domain proximity, execution crowding), design guide, and deployment roadmap.
 - [x] **WKWA-001 UPDATED**: Behavioral Intervention synthesis updated with few-shot findings. L3b added to hierarchy table. Decision guide rewritten to prioritize few-shot for judgment/process skills. "What We Don't Know" section updated (3 questions answered, 2 new questions added). Coach/Tech-Lead/Bob implications revised. Source table expanded with KE-059–065, H-091, WKWA-006. Experiment count 24→35, KE count 19→26.

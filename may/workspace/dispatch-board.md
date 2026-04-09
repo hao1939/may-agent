@@ -1,13 +1,13 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~03:53 UTC
+Updated: 2026-04-09 ~04:23 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
 - **Scout**: 🟢 Running — Heartbeat active.
-- **Bob**: 🟢 Running — Heartbeat active. EXP-097 KB integration interrupted, self-retried.
-- **Coach**: 🟢 Running — Heartbeat active. Self-forked few-shot example store work session.
-- **Tech-lead**: 🟢 Running — Heartbeat active. Few-shot deployment review work session queued (req:fdadb5fa + c8e44f85).
+- **Bob**: 🟢 Running — Heartbeat active. Capstone synthesis completed. New heartbeat cycle started.
+- **Coach**: 🟢 Running — Heartbeat active. Few-shot example store DONE (3 examples extracted). FM-3.1 regression analysis DONE.
+- **Tech-lead**: 🟢 Running — Few-shot review COMPLETE (GO for Phase 1). Finish-guard fix dispatched (req:67425d6c).
 - **Optimizer**: 🟢 Running — Restored Apr 9. Tool quality regression investigation received.
 - **QA**: 🟢 Running — Restored Apr 9.
 - **Evaluator**: 🟢 Running — Heartbeat active.
@@ -70,7 +70,10 @@ Updated: 2026-04-09 ~03:53 UTC
 | **Bob Heartbeat System Analysis** | ✅ COMPLETE | bob | 231-line analysis at `agents/bob/workspace/heartbeat-analysis.md`. 48 cron entries inventoried, ~1,256 fires/day, 7 consolidation recommendations. |
 | **EXP-096 System Prompt Length Threshold** | ✅ COMPLETE | coach | **DEFINITIVE**: Attention dilution REJECTED. Minimal 11KB prompt still 0/3; task-message few-shot 3/3. Position > length. Positional privilege confirmed. |
 | **EXP-097 Simulated Positional Privilege** | ✅ COMPLETE | coach | **PARTIAL**: Urgency framing at end of SOUL.md = 33% (vs 100% task-message, 0% plain system prompt). Weak partial fix, NOT viable for production. Task-message injection mandatory. Bob integrating. |
-| **Few-Shot Deployment Tech Review** | ⏳ DISPATCHED | tech-lead | Review Coach's production deployment proposal. Feasibility + effort assessment. req:fdadb5fa. |
+| **Few-Shot Deployment Tech Review** | ✅ COMPLETE | tech-lead | **GO for Phase 1** with 6 required modifications. Integration point: manager.ts line 978. Coder-only scope for MVP. Bypass flag needed for gym. Review at `agents/tech-lead/workspace/review-fewshot-proposal.md`. |
+| **Few-Shot Example Store (Phase 1)** | ✅ COMPLETE | coach | 3 examples extracted: binary-file-escalation, reproduce-first-debugging, escalation-judgment. INDEX with trigger patterns at `agents/shared/knowledge/fewshot-examples/`. |
+| **FM-3.1 Bob Regression Investigation** | ✅ COMPLETE | coach | **NOT a Bob regression** — finish-guard infrastructure false positive. 9/9 caused by (1) orchestration unawareness + (2) generic GHOST_KEYWORDS. Analysis at `agents/coach/workspace/bob-fm31-regression-analysis.md`. |
+| **Finish-Guard Orchestration Fix** | ⏳ DISPATCHED | tech-lead | Fix false positives: add workflow/agents to write-evidence exemption in finish-guard.ts. req:67425d6c. |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -102,19 +105,18 @@ Updated: 2026-04-09 ~03:53 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (03:53)
-- **System stable** — All 7/8 agents running. No new errors. Clean cycle.
-- **Auto-pause recovery design COMPLETE** — Bob produced thorough design at `agents/shared/may-agent-docs/design/auto-pause-recovery.md`. State machine (RUNNING→AUTO-PAUSED→PROBING) with exponential-backoff probes (1h→2h→4h→8h cap), 24h TTL, escalation to May. Ready for tech-lead to implement.
-- **Bob EXP-097 KB integration** — Work session interrupted (request aborted), Bob self-retried with new work session. Self-healing, no intervention needed.
-- **Coach self-forked** few-shot example store extraction (Phase 1 examples). Proactive follow-on from deployment proposal.
-- **Tech-lead few-shot review** — Has work session queued (c8e44f85) in addition to message requests. Will pick up during this heartbeat cycle.
-- **Stale session cancelled** s_1775311714523_3 (was 4.5h old "hello fresh session"). Persisted through previous cancel attempts.
-- **System-status anomaly** "Bob analysis 4 days old" — False alarm. Refers to `agents/bob/workspace/analysis.md` from Apr 4. Bob has been producing fresh analyses daily.
+## Latest Cycle Summary (04:23)
+- **System stable** — All 7/8 agents running. Fresh heartbeat cycle started for all agents.
+- **Few-shot deployment pipeline READY** — Tech-lead reviewed (GO), Coach extracted 3 examples with trigger patterns. Implementation plan: 7 steps, ~2-3hr effort. Tech-lead picks up next cycle.
+- **FM-3.1 false positive root cause found** — Coach's analysis: finish-guard doesn't understand orchestration (workflow/agents tools). 9/9 Bob "regressions" were infrastructure false positives. Fix dispatched to tech-lead (req:67425d6c).
+- **Stale session killed** — s_1775311714523_3 finally cancelled (was 110+ hours old).
+- **Bob capstone synthesis** — Completed. Few-shot research arc fully documented.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao**.
-- **P1**: **Few-shot deployment tech review** — Tech-lead has work session queued. Should complete this cycle.
-- **P1**: **Auto-pause recovery implementation** — Design complete. Dispatch to tech-lead when few-shot review is done.
+- **P1**: **Few-shot Phase 1 implementation** — All prerequisites done (review ✅, examples ✅). Tech-lead implements `routeFewShotExamples()` in manager.ts.
+- **P1**: **Finish-guard orchestration fix** — Dispatched to tech-lead (req:67425d6c). 2-line fix.
+- **P1**: **Auto-pause recovery implementation** — Design complete. Queue for tech-lead after current items.
 - **P1**: **Present research sprint results to Hao** — H-091 P(H)=0.93, 17 experiments, KE-065 synthesis, token waste analysis, two critical bugs fixed, auto-pause recovery designed.
 - **P2**: Federation design ready for Hao review
 - **P2**: Pre-merge review gate Phase 2 (auto-review)

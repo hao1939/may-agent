@@ -1213,3 +1213,21 @@ Production multi-agent data management system with "three-track knowledge archit
 ### DebugHarness: Emulating Human Dynamic Debugging for Autonomous Repair — arXiv:2604.03610
 
 | 2604.03610 | DebugHarness: Emulating Human Dynamic Debugging for Autonomous Repair | ★★★★ EXCELLENT — LLM agent emulating human dynamic debugging via runtime probing, hypothesis testing, closed-loop validation. ~90% patch rate on SEC-bench C/C++ security vulnerabilities, 30%+ improvement over static-only baselines. Adds 6th loop primitive (hypothesis-probe-validate). Connects DD#628 (self-execution), CR#301 (harness engineering), DD#640 (scaffold taxonomy). DD#643. |
+
+## 2026-04-09 — Session 374: Positional Privilege Literature Search
+
+### Lost in the Middle at Birth: Exact Theory of Transformer Position Bias — arXiv:2603.10123
+
+| 2603.10123 | Lost in the Middle at Birth: Exact Theory of Transformer Position Bias (Chowdhury, 2026) | ★★★★★ CRITICAL — Proves the U-shaped attention bias (primacy + recency, dead middle) is an inherent geometric property of causal decoders, present AT INITIALIZATION before any training. Causal masking → log-divergent Primacy Tail; residual connections → O(1) Recency Delta; between them a factorial dead zone O(1/(H-1)!). Validated on untrained Qwen2/GPT-2. Standard pretraining does NOT overcome the topological valley. **Directly explains our EXP-096/097 positional privilege results** — system prompt content lives in the primacy zone with decaying influence, task message lives in the recency zone with maximal influence. (ref: DD-660-positional-privilege-theory-lost-in-the-middle-at-birth.md) |
+
+### Mitigate Position Bias via Scaling a Single Dimension — arXiv:2406.02536
+
+| 2406.02536 | Mitigate Position Bias in LLMs via Scaling a Single Dimension (Yu et al., ACL Findings 2025) | ★★★★ EXCELLENT — Position bias manifests in attention weights; causal attention mask creates position-specific hidden states. A single dimension encodes positional info. Scaling it improves performance by up to 15.2%. Works across RoPE, extended-context, and Alibi models. Provides mechanistic confirmation of position bias at the hidden-state level. (ref: DD-660) |
+
+### The Instruction Hierarchy: Training LLMs to Prioritize Privileged Instructions — arXiv:2404.13208
+
+| 2404.13208 | The Instruction Hierarchy: Training LLMs to Prioritize Privileged Instructions (Wallace et al., OpenAI, 2024) | ★★★★ EXCELLENT — Proposes explicit instruction hierarchy (system > developer > user > tool) with training data to teach hierarchical following. Applied to GPT-3.5, drastically increases robustness to prompt injection. Foundational paper for IH-Challenge (2603.10521). Shows that without explicit hierarchy training, LLMs treat system prompts and user messages at same priority — confirming our positional privilege observations. (ref: DD-660) |
+
+### Positional Bias in Financial Decision-Making — arXiv:2508.18427
+
+| 2508.18427 | Tracing Positional Bias in Financial Decision-Making: Mechanistic Insights from Qwen2.5 (Dimino et al., 2025) | ★★★★ GOOD — First unified framework detecting and quantifying positional bias in binary financial decisions with mechanistic interpretability. Positional bias is pervasive, scale-sensitive, and resurfaces under nuanced prompts. Maps where bias emerges and propagates within Qwen2.5-instruct (1.5B-14B). Independent confirmation that position effects are real and resistant to prompt engineering. (ref: DD-660) |
