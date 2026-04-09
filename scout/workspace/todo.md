@@ -17,7 +17,7 @@
 ## Counters
 - DD: 675
 - CR: 318
-- Session: 386
+- Session: 387
 
 ## Pending Leads
 - **✅ DD#655 DONE**: Rubber Duck deep-dive written and in shared library (DD-655-copilot-rubber-duck-cross-model-critique.md).
@@ -44,4 +44,6 @@
 - **✅ Verification collapse literature search (Scout)**: Session 384. Found 4 additional papers (DD#670-673), wrote CR#318 synthesis. Updated H-093 P(H) 0.65→0.75 with external validation. DD#671 "structure snowballing" directly validates CIVC mechanism. DD#673 TVAE checkpoints validate P-093c. Cascade prevention architecture proposed in CR#318. NOTE: Bob's DD#667-669 are MASC/AgentErrorTaxonomy/SpectralKillSwitches; Scout's are DD#670 (HGR), DD#671 (Structure Snowballing), DD#672 (CTHA), DD#673 (VeriGUI).
 - **EXP-100 design refinement**: CR#318 suggests EXP-100 should use lightweight TVAE-style checkpoints (not complex templates) and test hypothesis-framing of early decisions. Flag for Bob.
 - **✅ Thursday arXiv late triage DONE**: Session 385. DD#674 (Hallucination Signal Distillation — hidden-state probing for hallucination detection, fills mid-generation detection gap), DD#675 (Local Shields for Dec-POMDPs — formal safety via shield process algebra). Fixed missing IDs in covered_ids.txt. INDEX.md updated with new cluster (120 entries).
+- **✅ EXP-100 complete (Bob/Coach, April 9)**: 12/12 runs 100% — ceiling effect. Scenarios too easy for coder with existing verification skills. CIVC not triggered. Next options: (1) harder 6+ file scenarios, (2) strip verification skills, (3) observational analysis of real FM-3.3 sessions. **New research lead**: adversarial benchmark design for agent verification failures.
 - **Friday arXiv triage**: Fresh Friday listings expected ~18:00 UTC April 10 — next scheduled research.
+- **Potential research lead**: Adversarial/adaptive benchmark design for LLM agents — papers on constructing scenarios that expose capability boundaries. Would help EXP-100 redesign.

@@ -1,16 +1,16 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~10:24 UTC
+Updated: 2026-04-09 ~10:53 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Scout**: 🟢 Running — Between heartbeats.
+- **Scout**: 🟢 Running — Heartbeat active.
 - **Bob**: 🟢 Running — Heartbeat active.
-- **Coach**: 🟢 Running — Heartbeat active + 2 forked work sessions (EXP-100 execution, Multi-Session Harness Phase 3).
-- **Tech-lead**: 🟢 Running — Between heartbeats. Session lifecycle fixes merged.
-- **Optimizer**: 🟢 Running — Restored Apr 9.
-- **QA**: 🟢 Running — Restored Apr 9.
-- **Evaluator**: 🟢 Running — Heartbeat active, forked evaluation session.
+- **Coach**: 🟢 Running — Heartbeat active. EXP-100 forked session complete, Multi-Session Harness Phase 3 mostly done (1 incomplete scenario).
+- **Tech-lead**: 🟢 Running — Between heartbeats.
+- **Optimizer**: 🟢 Running — Heartbeat active.
+- **QA**: 🟢 Running — Heartbeat active.
+- **Evaluator**: 🟢 Running — Heartbeat active.
 - **All agents**: 🟡 7/8 running. Amy-kimi still 🔴. Zero errors in last hour.
 
 ## Active Priorities (from Hao)
@@ -88,8 +88,8 @@ Updated: 2026-04-09 ~10:24 UTC
 | **Compaction KeyFacts + MemLeak Fix** | ✅ MERGED | tech-lead | Commit 0349a21, merged to main. Enhanced compaction KeyFacts + fixed sessionResults memory leak. |
 | **Auto-Pause Recovery Implementation** | ✅ MERGED | tech-lead | Probe timer + exponential backoff (5min→2h cap) + 24h TTL + escalation to May. 39/39 tests pass. Branch `review/auto-pause-recovery` merged commit `bd56956`. |
 | **Session Lifecycle Bug Fixes (3,4,8,10)** | ✅ MERGED | tech-lead | Bob found 10 bugs in manager.ts. Tech-lead fixed 4 HIGH/MED. Tests 6/6. Branch merged to main. |
-| **EXP-100 CIVC Interventional Test** | 🔄 IN PROGRESS | coach | Forked work session executing 12 gym runs. 3 arms × 2 scenarios × 2 runs. |
-| **Multi-Session Harness Phase 3** | 🔄 IN PROGRESS | coach | FM-targeted scenarios being built. Phase 1 (runner extension) complete. |
+| **EXP-100 CIVC Interventional Test** | ✅ COMPLETE | coach | **CEILING EFFECT**: 12/12 (100%) all arms. Baseline too easy — no treatment differentiation. Scenarios need harder difficulty. |
+| **Multi-Session Harness Phase 3** | ⚠️ MOSTLY DONE | coach | 3/4 scenarios complete (`ghost-deliverable-chain`, `stale-plan-drift`, `unresolved-failure-chain`). `kb-integration-failure` missing `package.json` + `success_criteria.js` (interrupted). |
 | **Telegram Notification Bug (req:88bd4688)** | ✅ ALREADY FIXED | tech-lead | Commit 9de9e58 merged to main. Notifications filtered to interface agent only + dead prompt handler removed. |
 
 ## Completed/Archived
@@ -122,18 +122,19 @@ Updated: 2026-04-09 ~10:24 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (10:24)
-- **All 7/8 agents heartbeating** — Fresh cycle at 10:24 UTC. All healthy.
-- **Stale session killed again** — `s_1775311714523_3` cancelled (662m runtime). Keeps resurrecting.
-- **Telegram notification bug ALREADY FIXED** — req:88bd4688 filed at 09:55 but commit 9de9e58 (merged to main at 09:57) already fixed it. Notifications now filtered to interface agent only + dead prompt handler removed. Marked COMPLETED.
-- **Session lifecycle fixes MERGED** — Branch `review/session-lifecycle-fixes` is on main (no commits ahead). ✅
-- **Coach executing EXP-100** — Forked work session running (12 gym runs for CIVC interventional test).
-- **Coach building multi-session Phase 3** — FM-targeted scenarios being constructed.
-- **Zero errors** — No failures in last 2 hours. Amy-kimi still 🔴.
+## Latest Cycle Summary (10:53)
+- **All 7/8 agents heartbeating** — Fresh cycle at 10:53 UTC. All healthy.
+- **Zombie session killed (again)** — `s_1775311714523_3` cancelled (7005m runtime). Keeps resurrecting.
+- **EXP-100 COMPLETE** — Ceiling effect. 12/12 (100%) across all 3 arms (baseline, scaffolding, checkpoint). Scenarios too easy. Need harder scenarios to test CIVC interventions.
+- **Multi-Session Harness Phase 3 mostly done** — 3/4 scenarios complete. `kb-integration-failure` needs finishing (interrupted session).
+- **Coach had 1 interrupted session** — "Request was aborted." Not systemic, coach is healthy and heartbeating.
+- **Merged review branches cleaned** — Deleted `review/session-lifecycle-fixes` + `review/telegram-notification-filter`.
+- **Duplicate EXP-100 requests** — Two identical messages (8eae6e3f + 88aae391) to coach. Already complete so no harm.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao**.
-- **P1**: **Clean up merged review branches** — `review/session-lifecycle-fixes`, `review/telegram-notification-filter`, `review/auto-pause-recovery` can all be deleted.
+- **P1**: **EXP-100 KB integration** — Bob needs to integrate ceiling effect finding. Coach/Bob need to design harder CIVC scenarios.
+- **P1**: **Complete kb-integration-failure scenario** — Coach needs to finish the incomplete multi-session scenario (add package.json + success_criteria.js).
 - **P1**: **Present research sprint results to Hao** — H-091, 17+ experiments, gym graduation, EXP-098 landmark result.
 - **P2**: Federation design ready for Hao review
 - **P2**: Pre-merge review gate Phase 2 (auto-review)
