@@ -23,6 +23,13 @@
   - `convention-verify-edit-fewshot` ✅ (fixed: was missing environment/ + success_criteria.js)
   - `context-proof-build-xref` ✅ (cross-reference for build prerequisites, workflow scenario)
   - Awaiting Coach validation runs
+- [~] **WAVE 3 DEPLOYMENT (Gym Remediation)**: 3 externalization scenarios created:
+  - `regression-from-fix-ext` ✅ (regression awareness externalization)
+  - `search-strategy-escalation-ext` ✅ (search planning externalization)
+  - `spec-adherence-multi-step-ext` ✅ (checklist externalization)
+  - `regression-from-fix-workflow` ⏭ skipped (workflow IS the treatment)
+  - 3.4 (convention-verify-edit-workflow) + 3.5 (incremental-context-loading) ⏳ need deeper work
+  - Awaiting Coach validation runs
 - [ ] **Complete remaining 3 scenarios**: wrong-tool-args, wrong-tool-args-workflow (cut off in sweep part 3). Delegate to Coach.
 - [x] **Tech-Lead jsonSchema Blocker**: SELF-RESOLVED (2026-03-29). Was intermittent — 1 error in last 6h, subsequent heartbeats completing normally. No longer blocking.
 - [x] **C12.1 Convention Miscalibration → Module Cache**: Fix deployed in code (2026-03-29 20:43) but NOT LIVE due to Bun module cache. See C12.1 Module Cache (P0) entry above.
