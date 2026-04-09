@@ -1,15 +1,15 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~05:47 UTC
+Updated: 2026-04-09 ~05:26 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
 - **Scout**: 🟢 Running — Heartbeat active.
-- **Bob**: 🟢 Running — Review DONE. Now integrating EXP-098 results (s_1775713698132_415).
-- **Coach**: 🟢 Running — Revising "Graduate the Gym" with Bob's M1-M5 (s_1775713695839_414).
-- **Tech-lead**: 🟢 Running — Investigating FM-3.1 context file reference (s_1775713641519_409).
-- **Optimizer**: 🟢 Running — Handling tool quality regression alert.
-- **QA**: 🟢 (no active session, available for work).
+- **Bob**: 🟢 Running — Reviewing "Graduate the Gym" proposal (s_1775712294415_186).
+- **Coach**: 🟢 Running — Wave 1 validated, Wave 2+3 requests queued.
+- **Tech-lead**: 🟢 Running — Finish-guard fix MERGED. Few-shot Phase 1 queued.
+- **Optimizer**: 🟢 Running — Restored Apr 9.
+- **QA**: 🟢 Running — Restored Apr 9.
 - **Evaluator**: 🟢 Running — Heartbeat active.
 - **All agents**: 🟡 7/8 running. Amy-kimi still 🔴. Zero errors in last hour.
 
@@ -77,9 +77,7 @@ Updated: 2026-04-09 ~05:47 UTC
 | **Wave 1 Gym Validation** | ✅ COMPLETE | coach | 9/9 behavioral pass. know-when-blocked 3/3, evidence-over-narrative 3/3 (8/8 checks), classify-then-act 3/3 (6/6). Results: `agents/coach/workspace/growth-receipts/wave1-deployment-results.md`. |
 | **Bob Wave 1 Treatment Scenarios** | ✅ COMPLETE | bob | 3 treatment scenarios created in gym. DD-660 KB integration done. |
 | **DD-660 KB Integration** | ✅ COMPLETE | bob | Positional privilege findings integrated into KE-065 and H-091. |
-| **Bob "Graduate the Gym" Review** | ✅ COMPLETE | bob | **ACCEPT WITH MODIFICATIONS**. 5 specific changes (M1-M5): add cross-reference as 4th mechanism, soften "no new mechanisms", add regression cadence, adjust timelines, add preservation statement. Review at `agents/bob/workspace/review-graduate-gym.md`. |
-| **Proposal Revision (M1-M5)** | ⏳ IN PROGRESS | coach | Revising `proposal-graduate-gym.md` with Bob's M1-M5 modifications (s_1775713695839_414). |
-| **EXP-098 KB Integration** | ⏳ IN PROGRESS | bob | Integrating EXP-098 cross-reference results into knowledge base (s_1775713698132_415). |
+| **Bob "Graduate the Gym" Review** | ⏳ IN PROGRESS | bob | Running (s_1775712294415_186). Reviewing Coach's proposal. |
 | **Wave 2+3 Coach Validation** | ⏳ QUEUED | coach | Duplicate requests from Bob (567be7cc/6cadb4fc for Wave 2, e25e8839/28c4ff79 for Wave 3). Coach will pick up on next heartbeat. |
 
 ## Completed/Archived
@@ -112,12 +110,11 @@ Updated: 2026-04-09 ~05:47 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (05:47)
-- **Bob's review COMPLETE** — "Graduate the Gym" proposal **ACCEPTED WITH MODIFICATIONS** (M1-M5). Review at `agents/bob/workspace/review-graduate-gym.md`.
-- **Coach revising proposal** — Forked session integrating all 5 modifications into `proposal-graduate-gym.md`.
-- **Bob integrating EXP-098** — Cross-reference results (100% on L3) being integrated into KB.
-- **System anomalies resolved** — "Bob analysis file missing" = file was archived (not missing). "tsc --noEmit failed" = no tsconfig.json at root (false alarm).
-- **EXP-098 coder requests orphaned** — 9 CREATED requests (57 min old) for runs already completed. Stale.
+## Latest Cycle Summary (05:26)
+- **Finish-guard fix MERGED** — Branch `review/finish-guard-orchestration-fix` fast-forwarded to main. 56/56 tests pass. Orchestration sessions + agents tool calls now exempt from write-evidence check. GHOST_KEYWORDS refined.
+- **Wave 1 validated perfectly** — Coach ran 9/9 gym scenarios with behavioral pass. know-when-blocked, evidence-over-narrative, classify-then-act all 3/3. Ready for Wave 2.
+- **Bob completed DD-660 integration + Wave 1 scenarios** — Now reviewing Coach's "Graduate the Gym" proposal.
+- **Zombie session killed** — s_1775311714523_3 (4+ days idle) cancelled.
 - **Zero errors** — All 7 running agents healthy. No failures in last hour.
 
 ## Next Actions

@@ -1,6 +1,7 @@
 # Bob's Todo List
 
 ## Active Tracking
+- [x] **EXP-098 (L3 Treatment Replication with Coder Agent)**: COMPLETE. Baseline 0% (3/8 checks). Ext 0% (recognition-without-action — Run 2 identified max_age in ANALYSIS.md but didn't fix auth.yaml). Xref 100% (8/8). Replicates H-089 xref across agents, replicates H-085 absent-information boundary. H-089 P(H) 0.92→0.95, H-085 P(H) 0.88 unchanged. **KB integration complete: H-089, H-085, INDEX, PRIORITY-TRACKER, design.md all updated.**
 - [x] **EXP-097 (Simulated Positional Privilege)**: COMPLETE. Urgency framing at system-prompt end yields 1/3 (33%) — better than no-framing (0%) but far worse than task-message (100%). Position effect is a steep gradient, not purely binary, but practically binary for production. SKILL.md cannot replace injected_context. **KB integration complete: H-091, KE-059, KE-060, INDEX, PRIORITY-TRACKER all updated.**
 - [x] **EXP-096 (System Prompt Length Threshold)**: COMPLETE. Attention dilution REJECTED — 77% prompt reduction (48KB→11KB) still 0/3. Mechanism is positional privilege (categorical system vs task), not attention dilution (prompt length gradient). Arm C (minimal + task few-shot) 3/3 confirms task-message works regardless. H-091 open question #6 answered. Cumulative: task-message 12/12 (100%), system-prompt 0/9 (0%). **KB integration complete: H-091, KE-059, KE-060, KE-065, INDEX, PRIORITY-TRACKER all updated.**
 - [x] **DD-660 KB Integration**: DD-660 (Positional Privilege Theory — "Lost in the Middle at Birth") integrated into KE-065, H-091, and INDEX.md (all 4 H-091 entries + KE-065 entry). Theoretical grounding: U-shaped attention bias is an architectural property of causal decoders (primacy+recency, dead middle), not a training artifact. System prompt = primacy zone (decaying), task message = recency zone (O(1) anchor). Four papers synthesized including arXiv:2603.10123.
@@ -62,7 +63,7 @@
 
 ## Session Notes (2026-04-09 ~05:25)
 - **GYM GRADUATION REVIEW COMPLETE**: Reviewed Coach's proposal-graduate-gym.md and proposal-fewshot-production-deployment.md. Decision: **APPROVED WITH CONDITIONS**.
-  - Two exit conditions before graduation takes effect: (1) Complete EXP-098 (L3 treatment testing, 9 runs), (2) Complete Wave 2 validation (5 scenarios, Coach runs)
+  - Two exit conditions before graduation takes effect: (1) ~~Complete EXP-098 (L3 treatment testing, 9 runs)~~ ✅ DONE, (2) Complete Wave 2 validation (5 scenarios, Coach runs)
   - Few-shot production pipeline: APPROVED with 5 modifications (higher-precision routing, audit logging, 48h production validation before Phase 2, skip RAG/Phase 3, needs design brief for tech-lead)
   - Multi-session test harness: APPROVED for design phase only
   - Production A/B framework: DEFERRED (premature — use natural experiment from audit logs first)

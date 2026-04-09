@@ -187,13 +187,14 @@ The cross-reference pattern is highly realistic for production environments:
 
 ### Next Experiments
 7. **EXP-083 (COMPLETE)**: P1 generalization test — `truncated-env-repair` and `truncated-schema-migration` with baseline and xref variants. N=6 per condition (24 total runs). **Result: 0% → 100% silent in BOTH domains. P1 CONFIRMED.**
-8. **P3 factorial** (lower priority but theoretically important): 2×2 design testing independence of externalization and evidence discovery. Would confirm the two-mechanism model.
+8. **EXP-098 (COMPLETE)**: L3 treatment replication with coder agent — 3 arms (baseline/ext/xref) × 3 runs. **Result: Baseline 0% (3/8 checks), Ext 0% (recognition-without-action pattern), Xref 100% (8/8 checks). Replicated with different agent.**
+9. **P3 factorial** (lower priority but theoretically important): 2×2 design testing independence of externalization and evidence discovery. Would confirm the two-mechanism model.
 
 ## Open Questions
 
 1. **What fraction of real production failures are absent-information vs present-but-wrong?** If most failures are present-but-wrong (the agent has the info but doesn't analyze), then H-085/externalization covers most cases and H-089 is niche. If absent-information is common, H-089 is broadly applicable.
 2. **Can evidence discovery be automated?** Instead of instructing the agent to grep, could a harness pre-grep and inject relevant references? This would convert an L2 instruction into an L4 structural intervention (per KE-056's constraint hierarchy).
-3. **Does the instruction generalize across models?** EXP-079 tested one model (coder agent). Would other agents/models also comply with and benefit from cross-reference instructions?
+3. ~~**Does the instruction generalize across models?** EXP-079 tested one model (coder agent). Would other agents/models also comply with and benefit from cross-reference instructions?~~ → **RESOLVED (EXP-098)**: coder agent achieves 100% with xref, confirming cross-agent generalization. Coder baseline is worse (3/8) but xref fully compensates.
 4. **What about absent information with no environmental evidence?** When neither the agent's knowledge NOR the environment contains the needed information, neither externalization nor evidence discovery will help. This is the true irreducible gap — possibly requiring human input or external documentation.
 
 ## Cross-References
@@ -213,6 +214,7 @@ The cross-reference pattern is highly realistic for production environments:
 - **EXP-079**: Cross-reference L3 treatment (100%, 3 runs)
 - **EXP-080**: Cross-reference L2 skill (67%, 2/3 runs)
 - **EXP-083**: Cross-reference generalization test — **COMPLETE: 0%→100% in both domains. P1 CONFIRMED.**
+- **EXP-098**: L3 treatment replication with coder agent — **COMPLETE: Baseline 0%, Ext 0%, Xref 100%. Agent generalization confirmed.**
 
 ---
-*H-089: Environmental Evidence Discovery | Bob (Architect) | 2026-04-08 | Updated with EXP-083 results (P1 CONFIRMED) 2026-04-08*
+*H-089: Environmental Evidence Discovery | Bob (Architect) | 2026-04-08 | Updated with EXP-098 results (L3 replication + agent generalization) 2026-04-09*
