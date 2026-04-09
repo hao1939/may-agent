@@ -179,8 +179,20 @@ EXP-094 tested whether the know-when-blocked skill's credentials-based example t
 
 **Implication for skill conversion**: Each skill needs domain-relevant examples per scenario class, not a single generic example. A skill covering multiple domain classes should include multiple worked examples.
 
+## EXP-095: Delivery Position Effect (Third Boundary)
+
+EXP-095 revealed that delivery POSITION is a third boundary condition for few-shot effectiveness:
+
+- **Task-message delivery**: 100% (6/6 across Arms A+C)
+- **System-prompt delivery**: 0% (3/3 Arm B, with domain-matched v2.0 skill including binary examples, three-call rule, anti-patterns)
+- **Position effect is binary**: across 15+ runs (EXP-094 + EXP-095), task-message = 100%, system-prompt = 0%
+
+**Why**: System prompt (8-10KB) suffers from attention dilution and temporal distance from task. Task-message benefits from proximity and automatic pattern matching.
+
+**Production implication**: SKILL.md files in system prompt are reference documentation, not behavioral interventions. Effective deployment requires task-level injection (inline in task.md works identically to injected_context.md infrastructure).
+
 ## Cross-References
 
 - Extends: KE-002 (text rules don't work), KE-058 (injected knowledge no effect)
 - Related: KE-054 (externalization boundary), KE-055 (binding closes gap)
-- Hypothesis: H-091 (SUPPORTED with two boundaries — P(H) 0.95→0.93 after EXP-094; temporal discipline + domain proximity)
+- Hypothesis: H-091 (SUPPORTED with three boundaries — P(H) 0.93; temporal discipline + domain proximity + delivery position)

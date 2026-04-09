@@ -234,17 +234,51 @@ function parseInput(raw: string): ParsedInput {
 // ── Response parsing (extract structured info from agent output) ──────
 
 function extractFiles(text: string): string[] {
-  // Match file paths mentioned in agent output
+  // Match file paths mentioned in agent output — multiple patterns for robustness
   const files: string[] = [];
   const patterns = [
-    /(?:created|wrote|modified|updated|saved)\s+[`"]?([^\s`"]+\.\w+)[`"]?/gi,
-    /(?:file|output):\s*[`"]?([^\s`"]+\.\w+)[`"]?/gi,
+    /(?:created|wrote|modified|updated|saved|generated|produced)\s+[`"]?([^\s`"]+\.\w{1,6})[`"]?/gi,
+    /(?:file|output|report|deliverable|path):\s*[`"]?([^\s`"]+\.\w{1,6})[`"]?/gi,
+    // Backtick-wrapped paths (common in markdown)
+    /`((?:agents|src|test|\.state)\/[^\s`]+\.\w{1,6})`/g,
+    // "path" in finish() deliverables format
+    /"path"\s*:\s*"([^"]+\.\w{1,6})"/g,
   ];
   for (const pattern of patterns) {
     let match;
     while ((match = pattern.exec(text)) !== null) {
       if (match[1] && !files.includes(match[1])) {
         files.push(match[1]);
+      }
+    }
+  }
+  return files;
+}
+
+/** Extract file paths from TaskResult messages (looks at finish() tool calls and write() calls). */
+function extractFilesFromResult(result: { messages?: any[]; lastAssistantText?: string | null }): string[] {
+  const files: string[] = [];
+  const text = result.lastAssistantText ?? "";
+  files.push(...extractFiles(text));
+
+  // Also scan messages for write/edit tool calls and finish deliverables
+  if (result.messages) {
+    for (const msg of result.messages) {
+      if (msg.role === "assistant" && Array.isArray(msg.content)) {
+        for (const block of msg.content) {
+          if (block.type === "tool_use") {
+            // write() and edit() have a "path" parameter
+            if ((block.name === "write" || block.name === "edit") && block.input?.path) {
+              if (!files.includes(block.input.path)) files.push(block.input.path);
+            }
+            // finish() has deliverables array
+            if (block.name === "finish" && block.input?.deliverables) {
+              for (const d of block.input.deliverables) {
+                if (d.path && !files.includes(d.path)) files.push(d.path);
+              }
+            }
+          }
+        }
       }
     }
   }
@@ -268,12 +302,37 @@ function extractDecision(text: string): "continue" | "revise" | "done" {
 
 function extractKeyFindings(text: string): string[] {
   const findings: string[] = [];
-  const match = text.match(/(?:key findings?|main findings?|discovered|found that)[:\s]*(.+?)(?:\n\n|\n#|$)/is);
-  if (match) {
-    // Split by bullet points or newlines
-    const items = match[1].split(/\n[-*•]\s*/).filter(Boolean);
-    findings.push(...items.map(i => i.trim()).filter(i => i.length > 5).slice(0, 5));
+  
+  // Multiple patterns for finding sections
+  const sectionPatterns = [
+    /(?:key findings?|main findings?|discovered|found that|results?|conclusions?)[:\s]*\n((?:[-*•]\s*.+\n?)+)/gi,
+    /(?:key findings?|main findings?|discovered|found that)[:\s]*(.+?)(?:\n\n|\n#|$)/is,
+    // Numbered findings
+    /(?:key findings?|main findings?)[:\s]*\n((?:\d+[.)]\s*.+\n?)+)/gi,
+  ];
+  
+  for (const pattern of sectionPatterns) {
+    const match = text.match(pattern);
+    if (match?.[1]) {
+      const items = match[1]
+        .split(/\n(?:[-*•]\s*|\d+[.)]\s*)/)
+        .filter(Boolean)
+        .map(i => i.trim())
+        .filter(i => i.length > 10)
+        .slice(0, 5);
+      findings.push(...items);
+      if (findings.length > 0) break;
+    }
   }
+  
+  // Fallback: extract from summary/executive sections
+  if (findings.length === 0) {
+    const summaryMatch = text.match(/(?:executive summary|summary|tldr|tl;dr)[:\s]*\n(.+?)(?:\n\n|\n##|$)/is);
+    if (summaryMatch?.[1]) {
+      findings.push(summaryMatch[1].trim().slice(0, 200));
+    }
+  }
+  
   return findings;
 }
 
@@ -374,13 +433,24 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         });
       }
 
-      // Extract plan from agent output
+      // Extract plan from agent output — try multiple formats
       const planText = planResult.lastAssistantText ?? "";
-      const planLines = planText
+      let planLines = planText
         .split("\n")
-        .filter((l) => /^\s*\d+[.)]\s/.test(l))
-        .map((l) => l.replace(/^\s*\d+[.)]\s*/, "").trim())
+        // Match: "1.", "1)", "Step 1:", "**1.", "- Step 1:"
+        .filter((l) => /^\s*(?:\*\*)?(?:step\s+)?\d+[.):\s]/i.test(l))
+        .map((l) => l.replace(/^\s*(?:\*\*)?(?:step\s+)?\d+[.):\s]*\**\s*/i, "").trim())
         .filter(Boolean);
+      
+      // Fallback: try bullet points if no numbered items found
+      if (planLines.length === 0) {
+        planLines = planText
+          .split("\n")
+          .filter((l) => /^\s*[-*•]\s/.test(l))
+          .map((l) => l.replace(/^\s*[-*•]\s*/, "").trim())
+          .filter((l) => l.length > 10)
+          .slice(0, 10);
+      }
 
       if (planLines.length > 0) {
         state.plan = planLines;
@@ -429,7 +499,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       }
 
       const execText = (execResult.status === "error" ? "" : execResult.lastAssistantText) ?? "";
-      const files = extractFiles(execText);
+      const files = extractFilesFromResult(execResult);
       const findings = extractKeyFindings(execText);
       if (findings.length) {
         state.context.keyFindings.push(...findings);
@@ -438,7 +508,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       state.history.push({
         cycle: state.cycle,
         phase: "execute",
-        result: execText.slice(0, 500),
+        result: execText.slice(0, 800),
         files,
         duration: `${Math.round((Date.now() - cycleStart) / 1000)}s`,
       });

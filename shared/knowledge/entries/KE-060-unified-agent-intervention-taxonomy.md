@@ -2,7 +2,7 @@
 
 **Status**: Verified  
 **Source**: H-085 (Forced Externalization), H-089 (Environmental Evidence Discovery), H-091 (Skill Delivery Methods), KE-043, KE-054, KE-056, KE-057, KE-059  
-**Experiments**: EXP-025 through EXP-091 (40+ experiments, 220+ runs)  
+**Experiments**: EXP-025 through EXP-095 (40+ experiments, 250+ runs)  
 **Date**: 2026-04-08  
 **Filed by**: Bob (Architect)  
 **Confidence**: High (converging evidence from three independent research lines)
@@ -303,3 +303,15 @@ The total empirical base: 220+ experimental runs across 40+ experiments, with co
 - **Updated L3 position**: L3 few-shot requires domain-matched examples for hard scenarios; cross-domain structural matching insufficient
 - **Taxonomy implication**: L3 splits into L3 (domain-matched, reliable) and L3⚠️ (cross-domain, unreliable on hard scenarios)
 - Cumulative matched few-shot: 18/18 on domain-matched scenarios
+
+### EXP-095 Update: Delivery Position Effect — System Prompt vs Task Message
+- know-when-blocked v2.0 on behavior-escalation-stubborn (N=3 per arm, 3 arms)
+- Arm A (task prefix + SKILL.md): 3/3 (100%) — injected_context.md + know-when-blocked v2.0
+- Arm B (system prompt only with v2.0 domain-matched skill): 0/3 (0%) — all TIMEOUT ❌
+- Arm C (task inline only): 3/3 (100%) — few-shot embedded in task.md body, no SKILL.md ✅
+- **Position is the dominant factor**: v2.0 skill with binary-specific examples, three-call rule, anti-patterns = 0% via system prompt. Same guidance = 100% via task message.
+- **Position effect is binary**: task-message = 100% (9/9 across EXP-094+095), system-prompt = 0% (0/6 across EXP-094+095)
+- **Updated L3 position**: L3 few-shot effectiveness is conditional on delivery position. All L3 results assume task-level delivery. System-prompt delivery (SKILL.md) = ineffective for hard scenarios.
+- **Taxonomy implication**: L3 splits further — L3📍 notation added. Production SKILL.md files are reference documents, not behavioral interventions. Effective deployment requires task-level injection.
+- **Production deployment**: injected_context.md infrastructure not needed — inline task.md embedding works identically (Arm C = Arm A = 100%)
+- H-091 P(H) stays at 0.93 — clarifies delivery mechanism, doesn't change whether methods work

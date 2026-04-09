@@ -1,6 +1,6 @@
 # H-091: Skill Delivery Methods Exist Between Text-Rules and Workflow Enforcement
 
-**Status**: Strongly Supported (EXP-084, EXP-085, EXP-086, EXP-087, EXP-089, EXP-090, EXP-091, EXP-093, EXP-094)
+**Status**: Strongly Supported (EXP-084, EXP-085, EXP-086, EXP-087, EXP-089, EXP-090, EXP-091, EXP-093, EXP-094, EXP-095)
 **Date**: 2026-04-08
 **P(H)**: 0.93
 
@@ -73,6 +73,7 @@ L3: Few-shot example → +2.3 score (EXP-084)
 L3.5: Few-shot for temporal discipline → partial effect (EXP-093: C3 +40pp but C2.3 -20pp)
 L3⚠️: Few-shot cross-domain (hard scenarios) → 0% (EXP-094: credentials→binary FAILS)
 L3✅: Few-shot domain-matched narrative → 100% even on hardest scenario (EXP-094: binary→binary)
+L3📍: **Delivery position matters**: task-message = 100%, system-prompt = 0% (EXP-095). All L3 results above assume task-level delivery.
 L5: Workflow enforcement → +3.0 score (EXP-045)
 
 ## Open Questions
@@ -82,13 +83,16 @@ L5: Workflow enforcement → +3.0 score (EXP-045)
 3. Why is "alternatives-proposed" specifically resistant to lightweight methods?
 4. What is the boundary of structural similarity? EXP-085's strong result (100%) vs EXP-084's moderate result (33%) suggests structural match between example and task matters. ~~Next: test with structurally dissimilar example.~~ **ANSWERED by EXP-086**: Mismatched example → 66.7% (vs matched 100%, baseline 12.5%). Two-level transfer model: general principles transfer partially (~67%), specific procedures require matched examples (~100%).
 5. ~~Does few-shot work beyond judgment tasks?~~ **ANSWERED by EXP-091**: YES — few-shot works for process discipline (reproduce-first: 0%→100%). Scope expanded from judgment-only to judgment + process.
+6. **NEW (EXP-095)**: Is there a system prompt length threshold where system-prompt few-shot becomes effective? Would a 2-3KB system prompt (vs current 8-10KB) restore pattern-matching? Tests the attention dilution hypothesis.
+7. **NEW (EXP-095)**: Does the position effect generalize beyond the hardest scenario (behavior-escalation-stubborn)? Stubborn scenarios have the strongest "puzzle lure" — softer scenarios might be less position-sensitive.
+8. **NEW (EXP-095)**: Can we build production task-level injection? Requires task classification + example retrieval (RAG for behavioral examples).
 
 ## Cross-References
 
 - Extends: KE-002, KE-058, KE-056 (constraint hierarchy)
 - Supported by: KE-059 (updated with EXP-086 two-level transfer model)
 - Related: H-085 (forced externalization), H-089 (evidence discovery)
-- Experiments: EXP-084 (method comparison), EXP-085 (matched generalization), EXP-086 (mismatched boundary), EXP-087 (sycophants-dilemma ceiling test), EXP-091 (process discipline), EXP-093 (verify-after-edit temporal boundary)
+- Experiments: EXP-084 (method comparison), EXP-085 (matched generalization), EXP-086 (mismatched boundary), EXP-087 (sycophants-dilemma ceiling test), EXP-091 (process discipline), EXP-093 (verify-after-edit temporal boundary), EXP-095 (delivery position effect — task-message vs system-prompt)
 
 ### EXP-089: Combined Few-Shot + Checklist (Synergy Test)
 - **Scenario**: contradictory-requirements (0% baseline)
@@ -146,3 +150,17 @@ L5: Workflow enforcement → +3.0 score (EXP-045)
 - **Practical impact**: behavior-escalation-stubborn now solvable by BOTH workflow enforcement AND domain-matched narrative few-shot (lighter weight, no workflow infrastructure needed)
 - **Posterior update**: H-091 P(H) 0.95→0.93 — domain proximity boundary narrows few-shot applicability (skills need examples per domain class, not one generic example)
 - **Cumulative matched few-shot**: 18/18 on domain-matched scenarios (including 3/3 new), 0/3 on cross-domain hard scenarios
+
+### EXP-095: Few-Shot Delivery Position Effect (task-message vs system-prompt)
+- **Skill**: know-when-blocked v2.0 (with domain-matched binary examples, three-call rule, anti-patterns)
+- **Scenario**: behavior-escalation-stubborn (binary file, 0/15+ historical pass rate)
+- **Arm A (task prefix + skill, N=3)**: 3/3 (100%) — injected_context.md + know-when-blocked v2.0
+- **Arm B (system prompt only, N=3)**: 0/3 (0%) — know-when-blocked v2.0 with domain-matched binary examples, three-call rule, anti-patterns. All 3 TIMEOUT.
+- **Arm C (task inline only, N=3)**: 3/3 (100%) — few-shot embedded directly in task.md body, no SKILL.md
+- **Key finding**: **Delivery POSITION is the dominant factor, not content quality.** v2.0 skill with binary-specific worked examples, three-call rule, and anti-patterns is completely ineffective when delivered via system prompt (0/3). The same behavioral guidance succeeds 100% when placed in the task message.
+- **Position effect is binary**: Across 12+ runs spanning EXP-094 and EXP-095: task-message = 100%, system-prompt = 0%, regardless of content variation (v1.0/v2.0, narrative/structured, injected/inline).
+- **Why system prompt fails**: Attention dilution (8-10KB instructions), temporal distance from task, requires effortful retrieval vs automatic pattern matching.
+- **Production implication**: SKILL.md files serve as reference documentation but are ineffective as behavioral interventions for hard scenarios. Effective deployment requires task-level injection (RAG, task routing with example selection, or embedded in task descriptions).
+- **injected_context.md not needed**: Arm C proves inline task.md embedding works identically to the injected_context.md infrastructure (Arm A). Simplifies deployment.
+- **Posterior update**: H-091 P(H) stays at 0.93 — EXP-095 clarifies HOW to deliver (position), not WHETHER methods work. Does not widen or narrow the core hypothesis.
+- **Cumulative delivery position data**: task-message 9/9 (100%), system-prompt 0/6 (0%) across EXP-094 + EXP-095
