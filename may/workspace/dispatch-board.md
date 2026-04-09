@@ -1,17 +1,17 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~09:23 UTC
+Updated: 2026-04-09 ~09:47 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
+- **Bob**: 🟢 Running — Heartbeat + MAS Architecture Scaling research thread active.
+- **Coach**: 🟢 Running — EXP-100 (Complexity-Induced Verification Collapse) + Multi-Session Harness Phase 1 forked.
 - **Scout**: 🟢 Running — Heartbeat active.
-- **Bob**: 🟢 Running — H-092, H-093, EXP-099 analysis, DD-639/640 synthesis all completed this hour. Active research production.
-- **Coach**: 🟢 Running — Multi-session test harness design in progress. Commit guard 48h measurement due ~16:00 UTC.
-- **Tech-lead**: 🟢 Running — Auto-pause recovery implemented and merged.
-- **Optimizer**: 🟢 Running — Restored Apr 9.
-- **QA**: 🟢 Running — Restored Apr 9.
-- **Evaluator**: 🟢 Running — Heartbeat active, forked evaluation session.
-- **All agents**: 🟡 7/8 running. Amy-kimi still 🔴. Zero errors in last hour.
+- **Optimizer**: 🟢 Running — Heartbeat active.
+- **Tech-lead**: 🟢 Completed this cycle — No pending work, early exit.
+- **QA**: 🟢 Completed this cycle — Heartbeat done.
+- **Evaluator**: 🟢 Completed this cycle — Eval sessions done.
+- **All agents**: 🟡 7/8 healthy. Amy-kimi still 🔴. Zero errors.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -118,13 +118,12 @@ Updated: 2026-04-09 ~09:23 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (09:23)
-- **All 7/8 agents heartbeating** — Fresh cycle started at 09:23 UTC. All healthy.
-- **Stale session re-cancelled** — `s_1775311714523_3` was still alive at 6915m runtime. Killed again.
-- **Bob productive** — H-092 (reasoning-flow failure modes, P(H)=0.72), H-093 (complexity-induced verification collapse, P(H)=0.65), EXP-099 analysis, DD-639/640 synthesis with cascade circuit breaker convergence. New KEs: 079-082.
-- **Coach in post-graduation mode** — Multi-session test harness design in progress. Commit guard 48h measurement due ~16:00.
-- **Zero errors** — No failures in last hour. Amy-kimi still 🔴.
-- **No dispatch items** — No inbox, no pending tasks from Hao.
+## Latest Cycle Summary (09:47)
+- **7/8 agents healthy** — Bob (heartbeat + research), Coach (3 sessions: heartbeat + EXP-100 + harness), Scout, Optimizer all active. Tech-lead/Evaluator/QA completed and exited.
+- **Coach advancing** — EXP-100 (Complexity-Induced Verification Collapse, from H-093) running. Multi-Session Harness Phase 1 also forked. Active experimental work.
+- **Bob doing MAS architecture research** — Processing scout drops on multi-agent architecture and scaling.
+- **System-status anomaly alert triaged** — All 3 false positives: (1) zombie session `s_1774303617649_81` from Mar 23 is filesystem artifact, not running; (2) Bob analysis file not actually missing; (3) tsc --noEmit doesn't apply — binary deployment, no package.json.
+- **Zero errors, zero stale sessions** — System clean.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao**.
