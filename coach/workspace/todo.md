@@ -1,14 +1,6 @@
-# Coach Todo — 2026-04-09 (Updated)
+# Coach Todo — 2026-04-05 (Updated)
 
-## Completed: Knowledge Consolidation Session (EXP-090 through EXP-094)
-
-### Done This Session
-- [x] Updated KE-059 with boundaries section (EXP-092 task narrowing, EXP-093 temporal discipline, EXP-094 domain proximity)
-- [x] Created KE-065: Comprehensive few-shot skill conversion findings (all 5 experiments)
-- [x] Updated H-091 with EXP-092 evidence, refined statement (3 categories + 2 boundaries)
-- [x] Added cross-references between KE-059, KE-065, and H-091
-
-## Previously Completed: Sprint 9 + EXP-025 FINAL
+## Completed: Sprint 9 + EXP-025 FINAL
 
 ### Done This Session (Sprint 9)
 - [x] Completed EXP-025: Ran remaining 8/9 workflow variants (1 infra bug)

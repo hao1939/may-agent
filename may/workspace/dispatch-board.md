@@ -1,16 +1,16 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~00:17 UTC
+Updated: 2026-04-08 ~23:50 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
 - **Scout**: 🟢 Running — Heartbeat active.
-- **Bob**: 🟢 Running — DD-643 deep-dive indexed. Config migration phases complete. Heartbeat active.
-- **Coach**: 🟢 Running — Forked knowledge consolidation session (EXP-090→094). Highly autonomous.
-- **Tech-lead**: 🟢 Running — Heartbeat active. P0 dispatched: optimizer model error.
-- **Optimizer**: 🔴 DOWN 24h+ — `claude-opus-4.6` model error on every heartbeat (11 consecutive errors). Cron stopped firing after 10:34 UTC. P0 dispatched to tech-lead (req:b5942b5a).
+- **Bob**: 🟢 Running — EXP-093 KB integration queued. Heartbeat active.
+- **Coach**: 🟢 Running — EXP-092 results write-up, EXP-094 transfer test, growth trigger for Bob all queued. Highly autonomous.
+- **Tech-lead**: 🟢 Running — Just completed 2 P0 bug fixes (Telegram silent drops + crash loop prevention). Heartbeat active.
+- **Optimizer**: 🟢 Running — Tool quality regression investigation queued.
 - **QA**: 🟢 Running — Heartbeat active.
-- **Evaluator**: 🟢 Running — Heartbeat active.
+- **All agents**: 🟢 All heartbeats firing. Killed stale May chat session (105h idle!). Two P0 bug fixes shipped this cycle.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -44,10 +44,10 @@ Updated: 2026-04-09 ~00:17 UTC
 | EXP-090 KB Integration | ✅ COMPLETE | bob | H-091 P(H) 0.92→0.98, matched few-shot 12/12 across 5 scenarios. Commit dc3acd2d. Gym-failure-remediation strategy also updated. |
 | EXP-091 Skill Deploy (evidence-over-narrative) | ✅ COMPLETE | coach | Skill deployed to coder with few-shot. Regression checks: hidden-dependency 5/5 ✅, phantom-fix-config 2/5 (matches baseline, no regression). |
 | EXP-091 Sprint 2 (investigate-and-fix) | ✅ COMPLETE | coach | **MAJOR**: reproduce-first 0/3→3/3 (100%). Process score 4/5→5/5. **First evidence few-shot works for process discipline, not just judgment.** H-091 P(H) → 0.99. Cumulative 9/9 treatment runs (100%) vs 0/9 control. |
-| EXP-091 KB Integration | ✅ COMPLETE | bob | H-091 P(H) 0.98→0.99, process discipline expansion noted. |
-| EXP-092 Transfer Test (know-when-blocked) | ✅ COMPLETE | coach | **Forced citation 100% doc accuracy but 0% migration** — instruction-induced task narrowing. Post-check also failed (37.5% doc, 12.5% pass). Neither treatment improves overall completion. Novel failure mode discovered. |
+| EXP-091 KB Integration | 🏃 RUNNING | bob | Forked s_1775668473890_10. Updating H-091 P(H) 0.98→0.99, noting process discipline expansion. |
+| EXP-092 Transfer Test (know-when-blocked) | 🏃 IN PROGRESS | coach | 10 arm-a runs + 8 arm-b runs complete. Needs 2 more arm-b runs + results write-up. |
 | EXP-093 Sprint 3 (verify-after-edit) | ✅ COMPLETE | coach | **MIXED**: C3 (validation) 40%→80% ✅, C2.3 (read-after-write) 40%→20% ❌. Few-shot = effective for *what* not *when*. Product correctness 60%→100%. |
-| EXP-094 Few-Shot Transfer (escalation-stubborn) | ✅ COMPLETE | coach | **MAJOR**: Skill-only 0/3 but domain-matched narrative 3/3 (100%). Three-level transfer: exact match ✅, same domain ✅, different domain ❌. Few-shot requires domain proximity, not just structural matching. KE-059 needs revision. |
+| EXP-094 Few-Shot Transfer (escalation-stubborn) | 🏃 QUEUED | coach | Self-dispatched. Testing know-when-blocked on new scenario. |
 | **Telegram Silent Drop Bug** | ✅ FIXED | tech-lead | Commit 217efe2. Telegram now gets `⚠️` on turn errors + `❌` on session_end. Merged to main. |
 | **Context Overflow Crash Loop** | ✅ FIXED | tech-lead | Commit 9ea5b5a. Three-layer defense: manager archives overflow sessions, ChatSession skips them on resume, runtime nulls sessionId on overflow. Merged to main. |
 | EXP-088 naming conflict | ✅ RESOLVED | may | Only one experiment in directory (Workaround Difficulty Gradient). `.conflict-k3s` is federation artifact. |
@@ -86,19 +86,17 @@ Updated: 2026-04-09 ~00:17 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (00:17)
-- **Optimizer DOWN 24h+** — 11 consecutive errors from `claude-opus-4.6` model name issue. Cron stopped firing. P0 dispatched to tech-lead (req:b5942b5a).
-- **EXP-092 COMPLETE** — Forced citation achieves 100% doc accuracy but 0% migration pass. Novel failure: instruction-induced task narrowing. Post-check arm also failed.
-- **EXP-094 COMPLETE** — Skill-only few-shot 0/3 on hard scenario, but domain-matched narrative 3/3 (100%). Three-level transfer model: exact match ✅, same domain ✅, different domain ❌.
-- **Coach consolidating** — Forked knowledge consolidation session for EXP-090→094 findings.
-- **17 orphaned Bob requests** — Config migration tasks from 22:50-23:22, all completed but requests still CREATED status.
-- **All other agents healthy** — Scout, Bob, Tech-lead, Evaluator, Coach all running.
+## Latest Cycle Summary (23:50)
+- **Git concurrency analysis delivered** — Bob wrote `agents/bob/workspace/git-concurrency-analysis.md` for Hao. Answer: Yes, checkout can overwrite uncommitted changes. Currently safe because agents rarely branch (all commit to main with REVIEW_GATE_BYPASS). If review gates enforced → use git worktrees for isolation.
+- **Crash loop bug (req:e750a385) already fixed** — Commits 9ea5b5a + fcb97c9 + 9c7e549 from earlier this cycle. Three-layer defense already merged to main. No new work needed.
+- **Optimizer interrupted** — one abort in last hour. Monitoring.
+- **Team still autonomous** — Coach on EXP-092/094, Bob doing KB integration, Optimizer investigating tool regression.
 
 ## Next Actions
-- **P0**: **Optimizer model error** — dispatched to tech-lead (req:b5942b5a). 24h downtime.
-- **P1**: **EXP-092/094 KB integration** — Coach consolidating findings. Bob should integrate into H-091 and revise KE-059.
-- **P1**: **Present status to Hao** — H-091 P(H)=0.99, two critical bugs fixed, three-level transfer model discovered, optimizer down.
+- **P1**: **Git concurrency answer for Hao** — Analysis ready at `agents/bob/workspace/git-concurrency-analysis.md`. TL;DR: safe today (no branching in practice), use worktrees if review gates enforced.
+- **P1**: **Monitor EXP-092 completion** — arm-b needs 2 more runs, then results write-up.
+- **P1**: **Monitor EXP-094** — Coach self-dispatched few-shot transfer test on behavior-escalation-stubborn.
+- **P1**: **Present status to Hao** — H-091 P(H)=0.99, auto-loop decision brief ready, two critical bugs fixed, git analysis complete.
 - **P2**: **Deploy skills to more agents** — know-when-blocked and evidence-over-narrative only in coder/. Tech-lead, optimizer could benefit.
 - **P2**: Federation design ready for Hao review
 - **P2**: Pre-merge review gate Phase 2 (auto-review)
-- **P2**: Clean up 17 orphaned Bob config migration requests

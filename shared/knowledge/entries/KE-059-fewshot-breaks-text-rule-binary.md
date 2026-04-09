@@ -179,18 +179,8 @@ EXP-094 tested whether the know-when-blocked skill's credentials-based example t
 
 **Implication for skill conversion**: Each skill needs domain-relevant examples per scenario class, not a single generic example. A skill covering multiple domain classes should include multiple worked examples.
 
-## Boundaries (from EXP-092, EXP-093, EXP-094)
-
-Two confirmed boundaries limit few-shot applicability:
-
-1. **Temporal discipline (EXP-093)**: Few-shot teaches *what* to validate (C3: +40pp) but NOT *when* to read back files (C2.3: -20pp). Tool-call sequencing habits require workflow enforcement (L5), not examples.
-
-2. **Domain proximity (EXP-094)**: On hard scenarios, cross-domain structural matching fails (Level 2.5: credentials→binary = 0/3). Domain-matched narrative required (Level 2: binary→binary = 3/3). Skills need examples per domain class, not one generic example.
-
-3. **Instruction-induced task narrowing (EXP-092)**: Adding citation instructions to fix documentation accuracy (100% status-doc) collapsed migration from 100% to 0%. Emphasizing one sub-task de-emphasizes others — agent attention is zero-sum. L1/L2 instruction-level interventions create tradeoffs, not improvements, on multi-objective tasks.
-
 ## Cross-References
 
 - Extends: KE-002 (text rules don't work), KE-058 (injected knowledge no effect)
-- Related: KE-054 (externalization boundary), KE-055 (binding closes gap), KE-065 (comprehensive few-shot findings)
-- Hypothesis: H-091 (SUPPORTED with two boundaries — P(H) 0.93; temporal discipline + domain proximity)
+- Related: KE-054 (externalization boundary), KE-055 (binding closes gap)
+- Hypothesis: H-091 (SUPPORTED with two boundaries — P(H) 0.95→0.93 after EXP-094; temporal discipline + domain proximity)
