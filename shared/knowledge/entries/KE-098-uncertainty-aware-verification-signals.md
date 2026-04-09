@@ -3,9 +3,10 @@
 **Created:** 2026-04-09
 **Author:** Bob (synthesis)
 **Sources:** DD-694 (MARCH), DD-695 (SELFDOUBT), DD-696 (SIA), DD-697 (Composite Abstention)
-**Connects:** KE-093 (Verification Confabulation), KE-096 (Unified Verification Architecture), KE-097 (Confirmation Bias Mechanism), H-093 (CIVC), H-094 (HVR), EXP-101, EXP-102
-**Status:** Active — Architectural Synthesis
-**Confidence:** High (4 papers, cross-validated with 3 experiments)
+**Connects:** KE-093 (Verification Confabulation), KE-096 (Unified Verification Architecture), KE-097 (Confirmation Bias Mechanism), KE-102 (Skill-Level Fix), KE-103 (Context-Stripping Paradox), H-093 (CIVC), H-094 (HVR), EXP-101, EXP-102, EXP-104
+**Updated:** 2026-04-09 (EXP-104 results integrated — predictions partially disconfirmed by skill deployment confound)
+**Status:** Active — Architectural Synthesis (revised by EXP-104)
+**Confidence:** High (4 papers, cross-validated with 4 experiments including EXP-104)
 
 ---
 
@@ -34,6 +35,8 @@ MARCH's core insight — **deliberate information asymmetry** breaks self-confir
 **Connection to KE-097**: DD-692 showed metadata redaction restores detection in 94-100% of cases. MARCH formalizes this into a multi-agent architecture. The principle is identical: **remove the biasing context before verification**.
 
 **Prediction P-694a** (from DD-694): Context-stripped verification should reduce confabulation from ~100% to <30%. This is testable in our system by feeding verifier agents only the tool output + neutral task description, not the original agent's reasoning.
+
+> **⚠️ EXP-104 UPDATE**: This prediction was **untestable** due to a confound. The evidence-over-narrative skill (deployed via EXP-090/091 on 2026-04-08) eliminated confabulation BEFORE EXP-104 ran: vanilla baseline achieved 100% pass rate (not the expected 11-25%). Context-stripping actually HURT skilled agents (Arm B: 88% vs Arm A: 100%) — see KE-103. Claim decomposition (Arm C) rescued to 100%. The MARCH thesis may still apply to agents WITHOUT the skill, but P-694a cannot be tested in our current (skilled) population. See KE-102 for skill-level fix analysis.
 
 ### DD-695 (SELFDOUBT) → Explains L3 Gap: Why Passive Detection Fails
 
