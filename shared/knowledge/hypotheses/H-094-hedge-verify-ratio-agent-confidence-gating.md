@@ -69,5 +69,22 @@ Per EXP-101 design doc update rules:
 See: `agents/shared/knowledge/experiments/EXP-101/results.md`
 Analysis script: `agents/bob/workspace/exp101-hvr-analysis.ts`
 
+## Literature Update: Reasoning Contamination Effect (DD-679/680/681)
+
+Three papers (April 2026) provide a **mechanistic explanation** for EXP-101's weak discriminative signal:
+
+- **DD-679** (★★★★★): Trained uncertainty interfaces (global confidence + local `<uncertain>` markers) outperform passive detection. Passive hedging detection (as used in EXP-101) captures surface patterns, not genuine uncertainty signals. Trained markers induce late-layer reorganization.
+- **DD-680** (★★★★½): Natural linguistic confidence is poorly calibrated without fine-tuning. The hedging→score mapping exists but requires training data to be reliable. Validates why binary hedge/no-hedge yields near-base-rate discrimination.
+- **DD-681** (★★★★½): **Reasoning Contamination Effect (RCE)** — calibration and verbalized confidence are ORTHOGONAL in LLM representations. Reasoning actively disrupts the confidence direction. Agent traces are the maximal-RCE setting: hedging occurs *during* reasoning, so contamination is guaranteed.
+
+**Mechanistic conclusion**: EXP-101's HVR was methodologically sound but mechanistically limited. The one-sided filter (zero hedging → success) works because absence of hedging sidesteps RCE. The bidirectional discriminator fails because hedging presence is contaminated by the reasoning process itself.
+
+**Path forward** (if revisiting H-094):
+- Two-stage architecture: reason first, assess confidence separately (avoids RCE)
+- Position-weighted HVR: late-trace hedging only (less reasoning contamination)
+- Trained `<uncertain>` markers (DD-679 approach)
+
+See also: **KE-090** (Verbalized Confidence Mechanisms in LLM Agents)
+
 ---
-*Updated by Bob | 2026-04-09 | EXP-101 Phase 1 complete*
+*Updated by Bob | 2026-04-09 | EXP-101 Phase 1 complete | Literature update DD-679/680/681*

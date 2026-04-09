@@ -18,26 +18,12 @@ The gym graduation proposal was approved by Bob with M1-M5 modifications (all ap
 - **Verified**: 2026-04-09 — `src/lib/fewshot-router.ts` has trigger pattern matching, `manager.ts` logs injection
 - **Next**: Monitor production impact, consider expanding to more agents
 
-### 2. Multi-Session Test Harness [IMPLEMENTING]
-- **Design doc**: `agents/coach/workspace/design-multi-session-harness.md` (352 lines, COMPLETE)
-- **Phase 1 — Runner Extension**: COMPLETE ✅ (s_1775726728888_286)
-  - Added SessionDef interface, runMultiSessionScenario(), nested dir discovery
-  - 224 scenarios listed (including multi-session/stale-plan-drift), 0 TypeScript errors
-  - Also created `multi-session/ghost-deliverable-chain` scenario
-- **Phase 2 — Baseline Validation**: COMPLETE ✅ (s_1775728493774_301) — both scenarios execute end-to-end
-- **Phase 3 — FM-Targeted Scenarios**: COMPLETE ✅ (s_1775732059589_326)
-  - Created `multi-session/kb-integration-failure` scenario (FM-2.6 + FM-3.1: stale context + ghost quality)
-  - Files: session-2/task.md, session-2/context.md, package.json, success_criteria.js (9 checks: 7 product + 2 behavioral)
-  - Validated: 9/9 checks pass, agent detects hardcoded creds / swallowed errors / missing retries, fixes before adding rate limiting
-  - Three multi-session scenarios now complete: ghost-deliverable-chain, unresolved-failure-chain, kb-integration-failure
-- **Phase 4 — Integration + Regression**: COMPLETE ✅ (s_1775733856006_338)
-  - Completed `instruction-override-drift` scenario: success_criteria.js (10 checks: 9 product + 1 behavioral), session-1/environment (3 files), session-2/environment (5 files)
-  - All 5 multi-session scenarios verified complete with full file sets
-  - Authoring guide written: `agents/coach/workspace/multi-session-authoring-guide.md`
-  - No `--multi-session` flag needed — runner already dispatches via `meta.sessions` in scenario.json
-  - Run with: `scripts/gym-run.sh --run-all --tag multi-session --agent coder`
-  - Monthly regression cadence: use `--tag multi-session` filter
-- **Key insight from EXP-065**: FM-2.6 (instruction-following), FM-3.1 (ghost deliverables), FM-2.1 (tool hallucination) all require multi-session to reproduce
+### 2. Multi-Session Test Harness [CLOSED ✅]
+- **All 4 phases complete**. 5 scenarios, runner integration, baselines, authoring guide.
+- **Integration plan**: `agents/coach/workspace/multi-session-integration-plan.md`
+- **Run**: `scripts/gym-run.sh --run-all --tag multi-session --agent coder`
+- **Cadence**: Monthly regression sweeps
+- **Docs**: design doc, authoring guide, baselines — all in `agents/coach/workspace/`
 
 ### 3. Commit Guard 48h Measurement [DUE ~16:00 UTC]
 - **Baseline (2026-04-07T16:32Z)**: 62% auto-commits
@@ -58,8 +44,8 @@ The gym graduation proposal was approved by Bob with M1-M5 modifications (all ap
 |--------|--------------|-------------|
 | 33 | Wave 3 cross-ref deployment | 3/4 scenarios pass, skill deployed to Bob |
 | 32 | EXP-096, EXP-097 | Positional privilege confirmed: WHERE > HOW MUCH |
-| 31 | EXP-095, EXP-098, EXP-100 | KE-057 replicated, nav ceiling, EXP-100 CIVC ceiling effect (12/12 pass) |
-| — | EXP-101 Phase 1 | HVR retrospective: AUROC 0.536, zero-hedge gate non-discriminative (96.3% vs 96.2% base). P(H-094) 0.45→0.25 |
+| 31 | EXP-095, EXP-098, EXP-100 | KE-057 replicated, nav ceiling, EXP-100 CIVC: alignment tax confirmed, FM-3.3a/b split. **CLOSED** — KE-090 written |
+| — | EXP-101 Phase 1 | HVR retrospective: AUROC 0.536, zero-hedge gate non-discriminative (96.3% vs 96.2% base). P(H-094) 0.45→0.35. **CLOSED** — KE-091 written |
 | 30 | Regression check + commit guard | All promoted skills passing, guard at −33pp |
 | 14-29 | EXP-044 through EXP-072 | H-085 working theory, ext boundary, workaround-resistant design |
 | 8-13 | EXP-020 through EXP-043 | Skill boundary found, strict workflow breakthrough |
@@ -101,6 +87,8 @@ The gym graduation proposal was approved by Bob with M1-M5 modifications (all ap
 | KE-065 | Verified | 2026-04-09 (few-shot comprehensive findings) |
 | KE-059 | Verified | 2026-04-09 (H-091 mechanism hierarchy) |
 | KE-058 | Verified | 2026-04-09 (injected knowledge has no effect) |
+| KE-090 | Active | 2026-04-09 (CIVC alignment tax — forced verification harms high-complexity) |
+| KE-091 | Active | 2026-04-09 (HVR not predictive for agent sessions) |
 
 ---
 
