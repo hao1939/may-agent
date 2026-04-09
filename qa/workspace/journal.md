@@ -24,6 +24,30 @@ Heartbeat QA at HEAD **7e6bc59**. I reviewed the most recent change set (`src/li
 ### Verdict
 CONDITIONAL — The heartbeat exclusion change appears correct and covered by tests; repo still has unrelated failing tests that should be addressed separately.
 
+## 2026-04-09T19:55Z
+
+### Summary
+Heartbeat QA at HEAD **7e6bc59**. Reviewed `src/lib/fewshot-router.ts` (confirmed heartbeat skip guard and overall example matching/formatting behavior) and re-ran mandatory gates.
+
+### Files reviewed
+- `src/lib/fewshot-router.ts` (full file via two reads)
+
+### Mandatory gates
+- `./node_modules/.bin/tsc --noEmit`: PASS (no output)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2082 passed (2103)**
+  - `test/context-learn.test.ts`: 7 failed — `rmSync(tmpDir, { recursive: true })` throws `EACCES` on `/app/test-workspace/context-learn-test/test-agent`
+  - `test/context-learning.test.ts`: 6 failed — same `EACCES` on `/app/test-workspace/context-learning-test/.state`
+  - `test/launcher.test.ts`: 7 failed — asserts `/app/src/app/launcher.ts` exists, then reads it; ENOENT
+  - `test/research-db.test.ts`: 1 failed — integration test `syncs the actual knowledge base without errors` timed out at 5000ms (observed ~5.5s)
+
+### Issues
+- CRITICAL (repo/test mismatch): `test/launcher.test.ts` expects `src/app/launcher.ts`, but it is missing at HEAD.
+- IMPORTANT (env/permissions): tests using `/app/test-workspace/*` cannot cleanup due to ownership/permissions (`EACCES` in rmSync).
+- IMPORTANT (test robustness): research-db real-knowledge sync sometimes exceeds 5s timeout; should raise timeout or reduce workload.
+
+### Verdict
+CONDITIONAL — fewshot-router change appears correct and is covered (`test/fewshot-router.test.ts` passes), but repo remains vitest-red due to the unrelated structural/permission/timeout failures above.
+
 ## 2026-04-09T17:55Z
 
 ### Summary
