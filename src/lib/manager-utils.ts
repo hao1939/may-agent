@@ -264,6 +264,9 @@ export interface RunOptions {
   orderId?: string;
   /** Request ID linking this session to the unified request tracker. */
   requestId?: string;
+  /** Skip few-shot example injection for this session.
+   *  Useful for gym baselines and A/B testing. */
+  skipFewShot?: boolean;
 }
 
 export interface SubagentManagerOptions {
