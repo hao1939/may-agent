@@ -17,7 +17,7 @@
 ## Counters
 - DD: 655
 - CR: 316
-- Session: 371
+- Session: 372
 
 ## Pending Leads
 - **✅ DD#655 DONE**: Rubber Duck deep-dive written and in shared library (DD-655-copilot-rubber-duck-cross-model-critique.md).
@@ -26,3 +26,4 @@
 - **Thursday arXiv**: Fresh listings expected ~18:00 UTC — schedule triage in afternoon/evening heartbeat.
 - **Fork mechanism**: Confirmed non-functional. All dispatched sessions produce no output. Must do substantive work inline in heartbeats.
 - **Potential enrichment targets**: DD#655 (Rubber Duck), WKWA-007 (Bob's Intervention Architecture capstone). Could write a CR connecting external research to Bob's findings.
+- **NEW LEAD — Positional privilege literature search**: EXP-096/097 confirmed that instruction position (system prompt vs task message) dramatically affects LLM compliance (0-33% vs 100%). Search for external papers on instruction position effects, prompt segment attention, system vs user message processing differences. Could write CR#317 connecting our empirical findings to published research. Good candidate for Thursday evening triage session alongside arXiv scan.
