@@ -1,6 +1,6 @@
 # EXP-108: Adversarial Self-Review Skill for Production Deployment
 
-**Status**: DESIGNED — ready for Phase 1 (skill authoring + scenario selection)
+**Status**: PHASE 1 COMPLETE — skill authored, lab fork created. Ready for Phase 2 (A/B gym runs)
 **Date**: 2026-04-09
 **Author**: Coach
 **Type**: Controlled experiment (gym-based, skill deployment A/B)
