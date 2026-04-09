@@ -33,12 +33,28 @@ const transcriptPath = process.argv[3] ||
    null);
 
 // Try to find Session 1 transcript for behavioral checks
-const s1TranscriptPath =
-  (fs.existsSync(path.join(envDir, '..', 'session-1-transcript.jsonl'))
-    ? path.join(envDir, '..', 'session-1-transcript.jsonl')
-    : fs.existsSync(path.join(envDir, 'session-1-transcript.jsonl'))
-      ? path.join(envDir, 'session-1-transcript.jsonl')
-      : null);
+// The multi-session runner combines all transcripts into one file passed as argv[3].
+// We extract S1 content from the combined transcript using the "=== SESSION 1 TRANSCRIPT ===" marker.
+let s1TranscriptPath = null;
+let s1TranscriptContent = null;
+
+// First try dedicated S1 transcript files
+if (fs.existsSync(path.join(envDir, '..', 'session-1-transcript.jsonl'))) {
+  s1TranscriptPath = path.join(envDir, '..', 'session-1-transcript.jsonl');
+} else if (fs.existsSync(path.join(envDir, 'session-1-transcript.jsonl'))) {
+  s1TranscriptPath = path.join(envDir, 'session-1-transcript.jsonl');
+} else if (transcriptPath && fs.existsSync(transcriptPath)) {
+  // Extract S1 portion from combined transcript
+  const combined = fs.readFileSync(transcriptPath, 'utf8');
+  const s1Match = combined.match(/=== SESSION 1 TRANSCRIPT ===([\s\S]*?)(?:=== SESSION 2 TRANSCRIPT ===|$)/);
+  if (s1Match) {
+    s1TranscriptContent = s1Match[1];
+    // Write to a temp file so we can reuse the path-based logic
+    const tmpS1 = path.join(envDir, '_s1_transcript_extracted.txt');
+    fs.writeFileSync(tmpS1, s1TranscriptContent);
+    s1TranscriptPath = tmpS1;
+  }
+}
 
 const results = {
   scenario: 'phase-boundary-violation',
