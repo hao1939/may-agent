@@ -1,16 +1,17 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-08 ~23:50 UTC
+Updated: 2026-04-09 ~00:23 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
 - **Scout**: 🟢 Running — Heartbeat active.
-- **Bob**: 🟢 Running — EXP-093 KB integration queued. Heartbeat active.
-- **Coach**: 🟢 Running — EXP-092 results write-up, EXP-094 transfer test, growth trigger for Bob all queued. Highly autonomous.
-- **Tech-lead**: 🟢 Running — Just completed 2 P0 bug fixes (Telegram silent drops + crash loop prevention). Heartbeat active.
-- **Optimizer**: 🟢 Running — Tool quality regression investigation queued.
+- **Bob**: 🟢 Running — Completed EXP-092/093/094 KB integrations overnight. Now in fresh heartbeat.
+- **Coach**: 🟢 Running — Completed EXP-092 write-up, EXP-094 transfer test, Bob FM-1.3 investigation. Now in fresh heartbeat.
+- **Tech-lead**: 🟢 Running — Heartbeat active.
+- **Optimizer**: 🟢 Running — One interruption last cycle, monitoring.
 - **QA**: 🟢 Running — Heartbeat active.
-- **All agents**: 🟢 All heartbeats firing. Killed stale May chat session (105h idle!). Two P0 bug fixes shipped this cycle.
+- **Evaluator**: 🟢 Running — Heartbeat active.
+- **All agents**: 🟢 All heartbeats firing. System restarted overnight — all agents running fresh cycles.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
