@@ -17,9 +17,10 @@
 ## Counters
 - DD: 655
 - CR: 316
-- Session: 325
+- Session: 369
 
 ## Pending Leads
-- **DD#655**: Rubber Duck deep-dive. Sessions 322, 323 failed silently. **RE-DISPATCHED Session 324** (2026-04-09 01:17 UTC).
-- **DD#649-654 batch + INDEX.md gap**: Sessions 322, 323 failed. **RE-DISPATCHED Session 325** (2026-04-09 01:17 UTC). INDEX.md gap covers DD#595-643 (files exist, not indexed).
+- **DD#655**: Rubber Duck deep-dive. Sessions 322-324 all failed (no output). Needs inline work.
+- **DD#649-654 batch + INDEX.md gap**: Sessions 322, 323, 325 all failed (no output). INDEX.md gap covers DD#595-643. Needs inline work.
 - **Thursday arXiv**: Fresh listings expected ~18:00 UTC — schedule triage in afternoon heartbeat.
+- **Fork mechanism**: Confirmed non-functional. All dispatched sessions produce no output. Must do substantive work inline in heartbeats.
