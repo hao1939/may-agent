@@ -1,7 +1,7 @@
 # H-094: Hedge-to-Verify Ratio as Zero-Cost Agent Confidence Gate
 
-**Status**: WEAK DISCONFIRMATION (EXP-101 Phase 1 + Phase 2 complete)  
-**P(H)**: 0.35 (updated from 0.45 — mechanism doesn't transfer; survivorship bias prevents clean test)  
+**Status**: WEAK SIGNAL (EXP-101 Phase 1 complete)  
+**P(H)**: 0.50 (updated from 0.45 — precision target met, AUROC target missed)  
 **Created**: 2026-04-09  
 **Source**: SELFDOUBT paper (arXiv:2604.06389, Pandey et al., COLM 2026 submission)  
 **Connected to**: H-093 (verification collapse), KE-068 (SELFDOUBT findings), DD-656 (SELFDOUBT paper)
@@ -14,80 +14,60 @@ Agent outputs that contain zero hedging markers in their reasoning traces are co
 2. **Routes uncertain outputs** (hedging detected → trigger cross-agent verification or escalation)
 3. **Quantifies uncertainty** via the Hedge-to-Verify Ratio for graduated response
 
-## EXP-101 Results (2026-04-09) — Phase 2 (Final)
+## EXP-101 Results (2026-04-09)
 
 ### Summary
-Phase 2 analysis used may.db evaluations (3,250 non-skipped evaluations, 582 sessions with both evaluation + text trace). Zero-hedge gate is trivially true (p=0.71) due to 99%+ base rate. HVR shows a weak but statistically significant signal (AUROC=0.566, p=0.048) — low-quality sessions have 60% more hedging. However, a **fatal survivorship bias** makes the test inconclusive: all 5 needs_improvement sessions have 0 tokens (crashed before producing text), meaning the most informative failures are systematically excluded.
+Analyzed 1,259 sessions across 10 agents. Zero-hedge precision matches SELFDOUBT (96.3% vs 96.1%) but this is entirely explained by the low base error rate (3.8%). HVR does NOT discriminate between correct and incorrect sessions.
 
-### Key Metrics (Phase 2 — Refined)
+### Key Metrics
 
 | Metric | Value | Target | Status |
 |--------|-------|--------|--------|
-| Zero-hedge gate significance | p=0.714 | p<0.05 | ❌ Not significant |
-| Zero-hedge precision | 98.4% | ≥90% | ✅ Met (trivially — base rate 99%+) |
-| Zero-hedge coverage | 54.4% | ≥15% | ✅ Met (vacuous — too high to filter) |
-| HVR AUROC (q≥3 vs q≤2) | **0.566** | ≥0.60 | ❌ Below target (but p=0.048) |
-| hedgeRate Mann-Whitney p | **0.048** | <0.05 | ✅ Significant |
-| Low-quality hedge rate | 4.51/1k | — | 60% higher than high-quality (2.80/1k) |
-
-### Phase 1 Results (Superseded)
-*Phase 1 used session status (done/error) as labels. AUROC=0.535, zero-hedge precision=96.3% (=base rate 96.2%). Phase 2 supersedes with richer evaluation labels.*
+| Zero-hedge precision | 96.3% | ≥90% | ✅ Met (but = base rate) |
+| Zero-hedge coverage | 57.5% | ≥15% | ✅ Met |
+| HVR AUROC | 0.535 | ≥0.60 | ❌ Failed |
+| Has-hedge precision | 96.1% | — | Same as zero-hedge |
+| Best single predictor AUROC | 0.557 (late-hedge / opCount) | ≥0.60 | ❌ Failed |
 
 ### Why It Doesn't Work for Agents
 
-1. **Survivorship bias (fatal)**: Sessions that fail catastrophically leave no text trace. All 5 needs_improvement evals have 0 tokens. We can only measure HVR on sessions that succeeded enough to produce text — which are overwhelmingly correct.
-2. **Base rate masking**: 99%+ of sessions with text traces are quality ≥ 3. The zero-hedge gate fires on 54% of sessions but provides zero filtering value.
-3. **Agents don't hedge like humans**: 54.4% zero-hedge coverage vs SELFDOUBT's 25.4%. Agent text is sparse (median 260 tokens) — mostly tool-calling, not reasoning.
-4. **Low-quality ≠ incorrect reasoning**: Quality ≤ 2 sessions have more hedging AND more verification markers — they involve more metacognitive activity, possibly because the agent is struggling with a harder task.
+1. **Base rate masking**: Overall success rate is 96.2%. Zero-hedge precision (96.3%) is only +0.1pp above base rate — the gate adds no information.
+2. **Agents don't hedge like humans**: 57.5% of sessions have zero hedges (vs SELFDOUBT's 25.4%). Agent training suppresses hedging language.
+3. **Error modes differ**: Agent errors are primarily infrastructure failures (timeouts, EISDIR), not reasoning uncertainty. HVR targets reasoning uncertainty.
+4. **Self-correction ≠ doubt**: "Actually" and "wait" (backtracking markers) carry the most signal but are normal cognitive process, not confidence indicators.
 
 ### Agent-Level Findings
 
-| Agent | N | Hedge/1k | Verify/1k | HVR | Zero-H% |
-|-------|---|----------|-----------|-----|---------|
-| coach | 82 | **4.20** | 15.59 | **0.32** | 30% |
-| coder | 205 | 3.43 | 23.21 | 0.20 | 58% |
-| bob | 213 | 2.60 | 22.92 | 0.13 | 40% |
-| evaluator | 154 | 1.43 | 9.21 | 0.09 | 84% |
-| optimizer | 22 | 1.19 | 7.88 | 0.07 | 68% |
+Two agents show promising per-agent signal:
+- **Optimizer**: AUROC 0.716 (above 0.70 target, but only N=3 errors)
+- **Scout**: AUROC 0.644 (above 0.60 target, but only N=2 errors)
 
-Coach hedges the most (deliberative review tasks). Evaluator/optimizer hedge the least (formulaic tasks). No per-agent AUROC computable — insufficient low-quality sessions per agent.
+Most agents show no signal (AUROC 0.45-0.55).
 
 ### P(H) Update Rationale
 
-The original update rule (0.45→0.50 for weak signal) was based on Phase 1's misleading precision match. Phase 2 reveals:
-1. Zero-hedge gate is vacuous (p=0.71, base rate artifact)
-2. AUROC=0.566 is below the 0.60 threshold
-3. FM-3.3 testing impossible (no data)
-4. Survivorship bias prevents the clean test the design required
+Per EXP-101 design doc update rules:
+- Zero-hedge precision ≥ 90%: ✅ (96.3%)
+- AUROC ≥ 0.60: ❌ (0.535)
+- This maps to **"Weak signal — may work with agent-specific calibration"**: 0.45 → **0.50**
 
-**0.45 → 0.35** — downgrade justified by:
-- Null result on the primary metric (zero-hedge gate)
-- Below-threshold AUROC on secondary metric
-- Fundamental data limitation (survivorship bias) that makes the framework inappropriate for agent workflows
-- The p=0.048 signal is at the boundary and could be a multiple-comparisons artifact
+### What Would Change P(H)
 
-### What Would Raise P(H)
-
-- **Prospective gym study**: Force-generate failures with text traces (gym runs with intentional errors), eliminating survivorship bias. If HVR discriminates at AUROC ≥ 0.65: P(H) → 0.55
-- **Agent-specific markers**: Replace benchmark hedging patterns with tool-calling patterns (retry counts, error recovery, repeated tool calls). Fundamentally different approach.
-- **FM-3.3 labels**: If evaluation system propagated FM codes to the evaluations table, could test reasoning-type errors specifically.
+- **Richer labels**: Evaluation data with FM-3.3 classification (couldn't test — no matching evals). If HVR predicts FM-3.3 specifically: P(H) → 0.65
+- **Agent-specific tuning**: If optimizer/scout signal holds at larger N: P(H) → 0.60
+- **Agent-specific markers**: Replace benchmark hedging markers with agent-specific ones (retry counts, error recovery language, tool-call patterns): could fundamentally change the approach
 
 ## Decisions
 
 - [x] Should we prototype HVR detection on existing agent logs? **YES — DONE (EXP-101)**
-- [x] What correctness criteria to use? **Session status (Phase 1) + evaluation quality/verdict (Phase 2)**
-- [x] Phase 2 gym validation? **NO — AUROC too low, survivorship bias too fundamental**
-- [ ] Agent-specific tuning? **DEFERRED — not justified at current signal strength**
-- [x] Deploy as standalone gate? **NO — evidence does not support. Useful only as one feature in multi-feature model.**
-
-## Actionable Finding
-
-Despite disconfirmation as a standalone gate, one finding IS deployable: **hedge_rate correlates with quality** (low-quality sessions have 60% more hedging per 1k tokens). This could be incorporated as one feature in a multi-feature session quality prediction model alongside turn count, tool error rate, finish() status, and token count.
+- [x] What correctness criteria to use? **Session status (done/error) — coarsest available**
+- [ ] Phase 2 gym validation? **NO — AUROC too low to justify cost**
+- [ ] Agent-specific tuning? **DEFERRED — wait for better evaluation labels**
 
 ## Full Results
 
 See: `agents/shared/knowledge/experiments/EXP-101/results.md`
-Analysis scripts: `agents/.lab/exp101-hvr-analysis.ts` (Phase 1), `agents/.lab/exp101-hvr-phase2.ts` (Phase 2)
+Analysis script: `agents/bob/workspace/exp101-hvr-analysis.ts`
 
 ---
-*Updated by Bob | 2026-04-09 | EXP-101 Phase 1 + Phase 2 complete*
+*Updated by Bob | 2026-04-09 | EXP-101 Phase 1 complete*
