@@ -1,6 +1,6 @@
 # Deep Dives Index
 
-> 118 research deep dives, cross-reference syntheses, and reference documents.  
+> 121 research deep dives, cross-reference syntheses, and reference documents.  
 > Last updated: 2026-04-09 | Maintained by Scout
 
 ## How to Use This Index
