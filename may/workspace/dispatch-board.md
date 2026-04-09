@@ -1,16 +1,16 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~07:53 UTC
+Updated: 2026-04-09 ~08:17 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
 - **Scout**: 🟢 Running — Heartbeat active.
-- **Bob**: 🟢 Running — 33 sessions in 6h. KB integration (KE-076, KE-077), parallel-research workflow.
-- **Coach**: 🟢 Running — Heartbeat active.
-- **Tech-lead**: 🟢 Running — Auto-pause recovery implemented and merged.
+- **Bob**: 🟢 Running — KB integration, parallel-research workflow.
+- **Coach**: 🟢 Running — Heartbeat active, multi-session test harness design.
+- **Tech-lead**: 🟢 Running — **Fewshot re-integration work session active** (s_1775722661954_474).
 - **Optimizer**: 🟢 Running — Restored Apr 9.
 - **QA**: 🟢 Running — Restored Apr 9.
-- **Evaluator**: 🟢 Running — Heartbeat active, forked evaluation session.
+- **Evaluator**: 🟢 Running — Heartbeat active.
 - **All agents**: 🟡 7/8 running. Amy-kimi still 🔴. Zero errors in last hour.
 
 ## Active Priorities (from Hao)
@@ -118,14 +118,15 @@ Updated: 2026-04-09 ~07:53 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (07:53)
-- **✅ Auto-Pause Recovery MERGED TO MAIN** — Commit `bd56956`. Probe timer with exponential backoff (5min→2h cap), 24h TTL auto-recovery, escalation to May on pause. 39/39 tests pass. TSC clean. This prevents future 17-day outages like the Optimizer+QA incident.
-- **Bob active** — 33 sessions in 6h. Just integrated KE-076, KE-077. Working on parallel-research workflow.
-- **System-status "Bob analysis stale" alert** — False positive. Bob is the most active agent. Marked resolved.
+## Latest Cycle Summary (08:17)
+- **P0 Fewshot re-integration in progress** — Bob discovered auto-sync reverted fewshot injection from 2/3 coder workflows. Tech-lead already forked fix session (s_1775722661954_474). 4 duplicate P0 requests resolved.
+- **Cleaned 9 stale EXP-098 requests** — Experiment complete, coder fork requests were zombies.
+- **Coach designing multi-session test harness** — New capability for more complex testing.
 - **Zero errors** — All 7 running agents healthy.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao**.
+- **P0**: **Fewshot re-integration** — Tech-lead actively fixing (session s_1775722661954_474). Monitor for completion next cycle.
 - **P1**: **Gym maintenance mode transition** — Bob/Coach to coordinate. No more exploratory experiments. Gym becomes regression suite only.
 - **P1**: **Present research sprint results to Hao** — H-091, 17+ experiments, gym graduation, EXP-098 landmark result.
 - **P1**: **Clean up merged review branches** — `review/auto-pause-recovery` can be deleted.
