@@ -1,12 +1,12 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~11:54 UTC
+Updated: 2026-04-09 ~12:24 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
 - **Scout**: 🟢 Running — Heartbeat active.
-- **Bob**: 🟢 Running — Heartbeat active. Designing EXP-101 (HVR Validation on Agent Logs).
-- **Coach**: 🟢 Running — Heartbeat active. Multi-Session Harness Phase 4 (instruction-override-drift + integration).
+- **Bob**: 🟢 Running — Heartbeat active. EXP-101 complete, working on synthesis.
+- **Coach**: 🟢 Running — Heartbeat active. EXP-101 Phase 1 done. Multi-Session Harness Phase 4 continuing.
 - **Tech-lead**: 🟢 Running — Heartbeat active.
 - **Optimizer**: 🟢 Running — Heartbeat active. Handling tool quality regression alert (bash exit-code-nonzero +148%).
 - **QA**: 🟢 Running — Heartbeat active.
@@ -70,6 +70,7 @@ Updated: 2026-04-09 ~11:54 UTC
 | **Bob Heartbeat System Analysis** | ✅ COMPLETE | bob | 231-line analysis at `agents/bob/workspace/heartbeat-analysis.md`. 48 cron entries inventoried, ~1,256 fires/day, 7 consolidation recommendations. |
 | **EXP-096 System Prompt Length Threshold** | ✅ COMPLETE | coach | **DEFINITIVE**: Attention dilution REJECTED. Minimal 11KB prompt still 0/3; task-message few-shot 3/3. Position > length. Positional privilege confirmed. |
 | **EXP-097 Simulated Positional Privilege** | ✅ COMPLETE | coach | **PARTIAL**: Urgency framing at end of SOUL.md = 33% (vs 100% task-message, 0% plain system prompt). Weak partial fix, NOT viable for production. Task-message injection mandatory. Bob integrating. |
+| **EXP-101 HVR Validation on Agent Logs** | ✅ COMPLETE | bob + coach | **DISCONFIRMING**: HVR shows weak signal (AUROC=0.566, p=0.048) but practical utility near zero. Zero-hedge gate vacuous due to 99% base rate. P(H-094) 0.45→0.35. Survivorship bias = fatal flaw (crash sessions have no text). Do NOT deploy as standalone gate. |
 | **Few-Shot Deployment Tech Review** | ✅ COMPLETE | tech-lead | **GO for Phase 1** with 6 required modifications. Integration point: manager.ts line 978. Coder-only scope for MVP. Bypass flag needed for gym. Review at `agents/tech-lead/workspace/review-fewshot-proposal.md`. |
 | **Few-Shot Example Store (Phase 1)** | ✅ COMPLETE | coach | 3 examples extracted: binary-file-escalation, reproduce-first-debugging, escalation-judgment. INDEX with trigger patterns at `agents/shared/knowledge/fewshot-examples/`. |
 | **FM-3.1 Bob Regression Investigation** | ✅ COMPLETE | coach | **NOT a Bob regression** — finish-guard infrastructure false positive. 9/9 caused by (1) orchestration unawareness + (2) generic GHOST_KEYWORDS. Analysis at `agents/coach/workspace/bob-fm31-regression-analysis.md`. |
@@ -123,19 +124,17 @@ Updated: 2026-04-09 ~11:54 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (11:54)
-- **All agents running** — Full heartbeat cycle in progress. All 7 active agents executing. Zero errors.
-- **Cleaned up stale may session** — `s_1775311714523_3` was idle for ~5 days (7065 min). Cancelled.
-- **Coach on Multi-Session Harness Phase 4** — instruction-override-drift + integration (self-forked req:29a969b6).
-- **Bob designing EXP-101** — HVR (Hedge-to-Verify Ratio) Validation on Agent Logs (self-forked req:8a594f41).
-- **Tool quality regression** — Optimizer handling alert: bash exit-code-nonzero +148%, bash:other +81%.
-- **System-status alert re: Bob analysis** — Flagged "5 days old" but Bob's workspace analysis is from today. Alert likely stale/incorrect. Dismissed.
-- **No failures, no stuck sessions** — Clean cycle.
+## Latest Cycle Summary (12:24)
+- **All agents running** — Full heartbeat cycle. All 7 active agents executing. Zero errors in last hour.
+- **Cancelled stale may session** — `s_1775311714523_3` (still lingering from previous cycle). Killed again.
+- **EXP-101 COMPLETE** — HVR Validation on Agent Logs done by Bob + Coach. **Key finding**: HVR is NOT useful as a standalone confidence gate. Weak signal (AUROC 0.566) but practical utility near zero due to survivorship bias (crash sessions have no text) and 99% base rate for success. P(H-094) downgraded 0.45→0.35.
+- **Coach has pending EXP-101 Phase 1 request** (req:bb7fd71a, 30min old) — work already completed. Stale request.
+- **System healthy** — No failures, no stuck sessions.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao**.
-- **P1**: **Complete Multi-Session Harness Phase 3** — Coach working on kb-integration-failure. Also need `instruction-override-drift/success_criteria.js`.
-- **P1**: **Present research sprint results to Hao** — H-091, 17+ experiments, gym graduation, EXP-098 landmark result.
+- **P1**: **Complete Multi-Session Harness Phase 3/4** — Coach continuing. Needs `kb-integration-failure/package.json` + `success_criteria.js` and `instruction-override-drift/success_criteria.js`.
+- **P1**: **Present research sprint results to Hao** — H-091, 17+ experiments, gym graduation, EXP-098 landmark result, EXP-101 null result.
 - **P2**: Federation design ready for Hao review
 - **P2**: Pre-merge review gate Phase 2 (auto-review)
 - **P2**: Amy-kimi still down — blocked on Hao for billing
