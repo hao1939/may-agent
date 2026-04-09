@@ -110,13 +110,22 @@ s.checkConvention("C40.3", "finish-includes-deliverables", () => {
 });
 
 // Order verification: Steps should be in order (read config before report)
+// Uses structured tool call matching to avoid false positives from checklist
+// content (e.g., writing CHECKLIST.md that mentions "audit-report" in its text).
 s.checkConvention("step-order", "read-inputs-before-writing-outputs", () => {
   if (!s.hasTranscript()) return true;
-  // Check that server-config.json read appears before audit-report.md write
-  const configReadPos = transcriptIndexOf(/read.*server-config|server-config.*json/i);
-  const reportWritePos = transcriptIndexOf(/write.*audit-report|edit.*audit-report/i);
-  if (configReadPos === -1 || reportWritePos === -1) return true; // can't verify
-  return configReadPos < reportWritePos;
+  // Find first read of server-config.json (by path arg)
+  const readCalls = s.toolCalls("read");
+  const configRead = readCalls.find(tc =>
+    typeof tc.arguments.path === "string" && /server-config\.json/i.test(tc.arguments.path)
+  );
+  // Find first write/edit of audit-report.md (by path arg, not content)
+  const writeCalls = s.toolCalls("write").concat(s.toolCalls("edit"));
+  const reportWrite = writeCalls.find(tc =>
+    typeof tc.arguments.path === "string" && /audit-report/i.test(tc.arguments.path)
+  );
+  if (!configRead || !reportWrite) return true; // can't verify
+  return configRead.callIndex < reportWrite.callIndex;
 });
 
 s.report();

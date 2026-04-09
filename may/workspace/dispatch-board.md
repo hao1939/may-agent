@@ -1,13 +1,13 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~07:25 UTC
+Updated: 2026-04-09 ~07:53 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
 - **Scout**: 🟢 Running — Heartbeat active.
-- **Bob**: 🟢 Running — Processing heartbeat.
-- **Coach**: 🟢 Running — Processing heartbeat.
-- **Tech-lead**: 🟢 Running — Processing heartbeat. Noticed 2 review branches pending merge.
+- **Bob**: 🟢 Running — 33 sessions in 6h. KB integration (KE-076, KE-077), parallel-research workflow.
+- **Coach**: 🟢 Running — Heartbeat active.
+- **Tech-lead**: 🟢 Running — Auto-pause recovery implemented and merged.
 - **Optimizer**: 🟢 Running — Restored Apr 9.
 - **QA**: 🟢 Running — Restored Apr 9.
 - **Evaluator**: 🟢 Running — Heartbeat active, forked evaluation session.
@@ -86,6 +86,7 @@ Updated: 2026-04-09 ~07:25 UTC
 | **Few-Shot Phase 1 Build** | ✅ MERGED | tech-lead | `fewshot-inject.ts` (140 lines) + `implement-and-verify.ts` integration + `GYM_NO_FEWSHOT` bypass. 22/22 tests pass. Merged to main via `review/fewshot-phase1` (commit `6c1ccfa`). |
 | **Bob Workspace Gitignore Fix** | ✅ COMPLETE | may | Added to `agents/bob/context.md`: workspace is gitignored, use shared/knowledge for committed deliverables. Resolves coach reqs 7da65082 + fe1cb6b9. |
 | **Compaction KeyFacts + MemLeak Fix** | ✅ MERGED | tech-lead | Commit 0349a21, merged to main. Enhanced compaction KeyFacts + fixed sessionResults memory leak. |
+| **Auto-Pause Recovery Implementation** | ✅ MERGED | tech-lead | Probe timer + exponential backoff (5min→2h cap) + 24h TTL + escalation to May. 39/39 tests pass. Branch `review/auto-pause-recovery` merged commit `bd56956`. |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -117,21 +118,17 @@ Updated: 2026-04-09 ~07:25 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (07:25)
-- **✅ Both review branches MERGED TO MAIN** — `review/fewshot-phase1` (Few-Shot Phase 1) and `review/compaction-keyfacts-and-memleak` both merged. Main HEAD: `6c1ccfa`. Branches can be cleaned up.
-- **✅ Few-Shot Phase 1 now on main** — `fewshot-inject.ts` with static keyword router, integrated into `implement-and-verify.ts`, `GYM_NO_FEWSHOT` bypass. 22/22 tests pass.
-- **✅ Compaction KeyFacts + Memory Leak fix on main** — Enhanced compaction KeyFacts + sessionResults memory leak fix. Commit `0349a21`.
-- **Bob parallel-research session active** — Bob forked work session to implement parallel-research workflow from design doc (31min ago).
-- **Coach growth trigger** — Error scanner flagged Bob has 4 repeated FM-2.6 errors in 7 days. Coach should initiate growth cycle.
-- **Optimizer tool regression alert** — 4 tools regressed (read/bash nonexistent-path up 167-300%). Optimizer to investigate.
+## Latest Cycle Summary (07:53)
+- **✅ Auto-Pause Recovery MERGED TO MAIN** — Commit `bd56956`. Probe timer with exponential backoff (5min→2h cap), 24h TTL auto-recovery, escalation to May on pause. 39/39 tests pass. TSC clean. This prevents future 17-day outages like the Optimizer+QA incident.
+- **Bob active** — 33 sessions in 6h. Just integrated KE-076, KE-077. Working on parallel-research workflow.
+- **System-status "Bob analysis stale" alert** — False positive. Bob is the most active agent. Marked resolved.
 - **Zero errors** — All 7 running agents healthy.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao**.
-- **P1**: **Auto-pause recovery implementation** — Design complete at `agents/shared/may-agent-docs/design/auto-pause-recovery.md`. Queue for tech-lead now that merges done.
 - **P1**: **Gym maintenance mode transition** — Bob/Coach to coordinate. No more exploratory experiments. Gym becomes regression suite only.
 - **P1**: **Present research sprint results to Hao** — H-091, 17+ experiments, gym graduation, EXP-098 landmark result.
-- **P1**: **Clean up merged review branches** — `review/fewshot-phase1` and `review/compaction-keyfacts-and-memleak` can be deleted.
+- **P1**: **Clean up merged review branches** — `review/auto-pause-recovery` can be deleted.
 - **P2**: Federation design ready for Hao review
 - **P2**: Pre-merge review gate Phase 2 (auto-review)
 - **P2**: Amy-kimi still down — blocked on Hao for billing
