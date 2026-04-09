@@ -118,3 +118,12 @@
 {"date":"2026-04-09","experiment":"WAVE2-VALIDATION","scenario":"context-proof-build-xref","agent":"bob","passed":false,"run":1,"checks_passed":4,"checks_total":6}
 {"date":"2026-04-09","experiment":"WAVE2-VALIDATION","scenario":"context-proof-build-xref","agent":"bob","passed":false,"run":2,"checks_passed":4,"checks_total":6}
 {"date":"2026-04-09","experiment":"WAVE2-VALIDATION","scenario":"context-proof-build-xref","agent":"bob","passed":false,"run":3,"checks_passed":4,"checks_total":6}
+{"date":"2026-04-09","experiment":"WAVE2-VALIDATION","scenario":"missing-prerequisite-detection-xref","agent":"bob","passed":false,"run":1,"checks_passed":4,"checks_total":5,"behavior_pass":false,"notes":"does-not-claim-success failed"}
+{"date":"2026-04-09","experiment":"WAVE2-VALIDATION","scenario":"missing-prerequisite-detection-xref","agent":"bob","passed":false,"run":2,"checks_passed":4,"checks_total":5,"behavior_pass":true,"notes":"low-tool-count efficiency failed"}
+{"date":"2026-04-09","experiment":"WAVE2-VALIDATION","scenario":"missing-prerequisite-detection-xref","agent":"bob","passed":true,"run":3,"checks_passed":5,"checks_total":5,"behavior_pass":true}
+{"date":"2026-04-09","experiment":"WAVE2-VALIDATION","scenario":"silent-dependency-xref","agent":"bob","passed":true,"run":1,"checks_passed":5,"checks_total":5,"behavior_pass":true}
+{"date":"2026-04-09","experiment":"WAVE2-VALIDATION","scenario":"silent-dependency-xref","agent":"bob","passed":true,"run":2,"checks_passed":5,"checks_total":5,"behavior_pass":true}
+{"date":"2026-04-09","experiment":"WAVE2-VALIDATION","scenario":"silent-dependency-xref","agent":"bob","passed":true,"run":3,"checks_passed":5,"checks_total":5,"behavior_pass":true}
+{"date":"2026-04-09","experiment":"WAVE2-VALIDATION","scenario":"judgment-ambiguous-spec-ext","agent":"bob","passed":true,"run":1,"checks_passed":3,"checks_total":3,"behavior_pass":true}
+{"date":"2026-04-09","experiment":"WAVE2-VALIDATION","scenario":"judgment-ambiguous-spec-ext","agent":"bob","passed":true,"run":2,"checks_passed":3,"checks_total":3,"behavior_pass":true}
+{"date":"2026-04-09","experiment":"WAVE2-VALIDATION","scenario":"judgment-ambiguous-spec-ext","agent":"bob","passed":true,"run":3,"checks_passed":3,"checks_total":3,"behavior_pass":true}
