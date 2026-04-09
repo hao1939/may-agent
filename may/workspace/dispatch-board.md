@@ -1,17 +1,17 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~19:53 UTC
+Updated: 2026-04-09 ~20:23 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Running — Heartbeat cycling. No dispatched work.
-- **Coach**: 🟢 Running — KE-106 written. FM-3.3 analysis done. EXP-105 still waiting for data.
-- **Scout**: 🟢 Running — Heartbeat cycling.
-- **Tech-lead**: 🟢 Running — Just heartbeat cycling, no work.
-- **Optimizer**: 🟡 IDLE — Tool quality regression #11 analyzed (not actionable). Just heartbeat cycling.
-- **Evaluator**: 🟡 IDLE — Just heartbeat cycling.
-- **QA**: 🟡 IDLE — Just heartbeat cycling.
-- **All agents**: 🟢 7/8 running. **3 agents underutilized** (optimizer, evaluator, QA). Zero errors in last hour.
+- **Bob**: 🟢 Running — Self-directed: Bayesian Scorecard update (29 ops, done). Productive.
+- **Coach**: 🟢 Running — Self-directed: EXP-107 design (24 ops, done), KE-106 written. EXP-105 still waiting for data.
+- **Scout**: 🟢 Running — Heartbeat cycling, moderate activity (6-47 ops).
+- **Tech-lead**: 🟡 IDLE — 1 op/heartbeat for 2+ hours. No dispatched work. 14 commits undeployed (blocked on restart).
+- **Optimizer**: 🟡 IDLE — 1 op/heartbeat. Just cycling.
+- **Evaluator**: 🟡 IDLE — Running auto-evals but minimal activity.
+- **QA**: 🟡 IDLE — Minimal activity, no review branches to check.
+- **All agents**: 🟢 7/8 running. **3 agents effectively idle** (tech-lead, optimizer, QA). Zero errors in last hour.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -136,14 +136,14 @@ Updated: 2026-04-09 ~19:53 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (19:53)
+## Latest Cycle Summary (20:23)
 - **7 agents active** — All except Amy-kimi running heartbeat cycles.
 - **Zero errors this hour** — Clean system.
-- **6 agents effectively idle**: Tech-lead, Optimizer, Evaluator, QA, Bob, Scout — all just cycling heartbeats.
-- **Zombie session cancelled**: `s_1775311714523_3` (may, 126hr old) — killed this cycle.
-- **System observation**: ~6 hours of near-zero productive output from most agents. System is in a natural lull — research sprint complete, all major tasks done, awaiting Hao direction.
-- **Growth trigger for tech-lead FM-3.3** → Already dismissed last cycle. Coach confirmed measurement artifact (req:02470c68 still in queue — will expire).
-- **Bob analysis stale** (req:757e15f3) — System flagged bob's analysis as 5 days old. Not actionable — system is idle, no new patterns to analyze.
+- **Bob + Coach self-directing well**: Bob did Bayesian Scorecard update (29 ops). Coach designed EXP-107 (24 ops). Both proactive.
+- **3 agents effectively idle**: Tech-lead (1 op/hb), Optimizer (1 op/hb), QA (minimal). No dispatched work available.
+- **Zombie session killed again**: `s_1775311714523_3` (may, 126hr+) — keeps reappearing, killed again.
+- **Anti-confab design update**: EXP-104 showed evidence-over-narrative skill already fixed confabulation (100% baseline). Prompt-level treatments are defense-in-depth only — lower priority for implementation.
+- **System in post-sprint lull**: Major research complete (KE-101 meta-analysis, gym graduation, 17+ experiments). Awaiting Hao direction for next work streams.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao since Mar 24**.
