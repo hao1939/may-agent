@@ -4,6 +4,25 @@
 
 # QA Journal — 2026-04-09
 
+## 2026-04-09T17:55Z
+
+### Summary
+Heartbeat QA at HEAD **e5ea46e**. I spot-checked the most recent non-agents change set in `src/lib/manager.ts` (session lifecycle fixes commit ancestry) and re-ran mandatory gates. `tsc` is green; `vitest` remains red due to **pre-existing repo/environment issues** (missing `src/app/launcher.ts`, EACCES when cleaning `/app/test-workspace/*`, and a 5s timeout in a research-db integration test).
+
+### Files reviewed
+- `src/lib/manager.ts` (imports, re-export of manager-utils, SubagentManager fields/constructor docs; read lines ~1–200)
+
+### Mandatory gates (re-run)
+- `./node_modules/.bin/tsc --noEmit`: PASS (no output)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2079 passed (2100)**
+  - `test/launcher.test.ts`: 7 failed — expects `/app/src/app/launcher.ts` to exist; file missing (existsSync false / ENOENT)
+  - `test/context-learn.test.ts`: 7 failed — `rmSync(..., { recursive: true })` fails with `EACCES` under `/app/test-workspace/context-learn-test/*`
+  - `test/context-learning.test.ts`: 6 failed — same `EACCES` cleanup failure under `/app/test-workspace/context-learning-test/*`
+  - `test/research-db.test.ts`: 1 failed — `syncs the actual knowledge base without errors` timed out at 5000ms
+
+### Verdict
+CONDITIONAL — Patch-level changes appear to compile; test failures look unrelated to the code under review and indicate repo/environment drift that should be addressed separately.
+
 ## 2026-04-09T13:24Z
 
 ### Summary
