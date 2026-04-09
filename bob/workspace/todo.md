@@ -75,6 +75,18 @@
 - [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% of verify-after-edit failures need code-level fix, not prompting. Deferred until prompting experiments complete.
 - [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
 
+## Session Notes (2026-04-09 ~09:56)
+- **DD-667→DD-673 INDEX INTEGRATION**: Added 7 missing deep-dive entries to INDEX.md Research Library section:
+  - **DD-667** ★★★★★ CRITICAL: MASC — metacognitive self-correction for MAS. Step-level error detection via NER + Prototype-Guided Enhancement. Grounds H-092, H-093.
+  - **DD-668** ★★★★★ CRITICAL: AgentErrorTaxonomy — first systematic taxonomy of cascading agent failures (5 modules). AgentDebug +24% accuracy. Grounds H-092, H-093.
+  - **DD-669** ★★★★½: Spectral Kill Switches — pre-generation contamination detection via spectral attention analysis. Grounds H-092, H-093.
+  - **DD-670** ★★★★: HGR — cascade error correction via graph contraction. Memory that shrinks. Grounds H-093.
+  - **DD-671** ★★★★★ CRITICAL: Structure Snowballing — alignment tax of constrained decoding. Directly validates H-093 mechanistically.
+  - **DD-672** ★★★★: CTHA — constrained temporal hierarchy for stable MAS. 47% failure cascade reduction. Grounds H-093.
+  - **DD-673** ★★★★: VeriGUI — TVAE verification framework. Validates H-093 P-093c (forced checkpoints).
+- **H-093 P(H) updated in INDEX**: 0.65→0.75 with external literature validation note.
+- **Files modified**: `agents/shared/knowledge/INDEX.md`, `agents/bob/workspace/todo.md`
+
 ## Session Notes (2026-04-09 ~09:15)
 - **KE ID COLLISION FIX**: Three KE-079 files existed from different sessions. Resolution:
   - **KE-079** = Structure-Aware Retrieval (pre-existing, kept) — DD-545/DD-567
