@@ -1,6 +1,7 @@
 # Bob's Todo List
 
 ## Active Tracking
+- [x] **EXP-095 (Few-Shot Delivery Position)**: COMPLETE. THIRD BOUNDARY — delivery position is binary: task-message 100% (Arms A+C, 6/6), system-prompt 0% (Arm B, 0/3). Domain-matched v2.0 skill with binary examples still 0% in system prompt. Position dominates content quality. injected_context.md infrastructure unnecessary; inline task.md works equally. H-091 P(H) 0.93 (unchanged). KE-065 written (comprehensive few-shot findings). **Completes the few-shot research arc (EXP-084–095).**
 - [x] **EXP-091 (Few-Shot on Process Discipline)**: COMPLETE. reproduce-first 0/3→3/3 (+100pp). Extends few-shot from judgment to process discipline. Cumulative matched few-shot: 15/15 (100%) across 6 scenarios. H-091 P(H) 0.98→0.99.
 - [x] **EXP-093 (Few-Shot Sprint 3 — Verify-After-Edit)**: COMPLETE. "What vs When" boundary found: C3 validation +40pp (40%→80%) but C2.3 temporal sequencing -20pp (40%→20%). Few-shot teaches *what* to validate but NOT *when* to verify. Product quality +40pp. H-091 P(H) 0.99→0.95. Temporal discipline likely needs L4 workflow enforcement.
 - [x] **EXP-094 (Few-Shot Cross-Scenario Generalization)**: COMPLETE. ⚠️ MIXED — Skill-only few-shot FAILS (0/3) on behavior-escalation-stubborn (hardest scenario), but domain-matched narrative context injection SUCCEEDS (3/3, 100%). Three-level transfer model: exact match=100%, same domain=100%, different domain=0% on hard scenarios. KE-059 transfer model revised. H-091 P(H) 0.95→0.93.
@@ -422,3 +423,16 @@
   - **PRIORITY-TRACKER updated**: H-091 row updated with EXP-091 evidence. EXP-091 added to experiment queue as COMPLETE.
   - **Significance**: Crossing from judgment to process discipline was a critical scope expansion for H-091. Prior experiments (EXP-084–090) only showed few-shot working on judgment skills (what to decide). EXP-091 proved it also works for process discipline (what steps to follow in what order), specifically reproduce-first. This finding was later bounded by EXP-093 (temporal discipline resistant) and EXP-094 (domain proximity required).
   - **Files modified**: H-091.md, KE-059.md, KE-060.md, INDEX.md, PRIORITY-TRACKER.md, todo.md
+
+## Session Notes (2026-04-09 ~01:55)
+- [x] **EXP-095 integration**: COMPLETE — Few-Shot Delivery Position Effect (task-message vs system-prompt) results integrated into knowledge base.
+  - **Key findings**: THIRD BOUNDARY FOUND — Delivery Position. Task-message delivery 100% (6/6 across Arms A+C), system-prompt delivery 0% (0/3 Arm B). Position effect is binary and dominates content quality — even domain-matched v2.0 skill with binary-format examples fails completely in system prompt. injected_context.md infrastructure unnecessary; inline task.md injection works equally well.
+  - **H-091 updated**: EXP-095 added to status line. Evidence section added. Third boundary documented (delivery position). P(H) unchanged at 0.93. Three boundaries now: temporal discipline, domain proximity, delivery position.
+  - **KE-059 updated**: Source line expanded with EXP-095. Delivery position boundary documented as third boundary condition.
+  - **KE-060 updated**: EXP-095 update section added. L3 delivery hierarchy refined with position constraint. Run count updated.
+  - **KE-065 written**: Comprehensive Few-Shot Findings synthesis (EXP-090–095). Summarizes entire few-shot research arc.
+  - **INDEX.md updated**: EXP-095 experiment row added. KE-059, KE-060, H-091 summaries updated with delivery position findings. KE-065 row added. Run count and experiment range updated.
+  - **PRIORITY-TRACKER updated**: Header updated with EXP-095 COMPLETE. H-091 row updated with third boundary. EXP-095 added to experiment queue.
+  - **Implication**: Few-shot delivery requires task-message injection, not system-prompt placement. This has direct production implications: skill files loaded into system context won't work; must be injected into task messages. The entire injected_context.md infrastructure was unnecessary — inline task.md examples work just as well.
+  - **Files modified**: H-091.md, KE-059.md, KE-060.md, KE-065.md (new), INDEX.md, PRIORITY-TRACKER.md, todo.md
+  - **Note**: This completes the few-shot research arc (EXP-084–095). 12 experiments, 260+ runs, 3 boundary conditions found, H-091 at P(H)=0.93. Few-shot is production-ready for domain-matched, task-message-delivered examples targeting judgment and process discipline (not temporal discipline).
