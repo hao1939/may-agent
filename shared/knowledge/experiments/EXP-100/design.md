@@ -1,7 +1,7 @@
 # EXP-100: Complexity-Induced Verification Collapse — Interventional Test
 
 **Date**: 2026-04-09
-**Status**: DESIGNED
+**Status**: COMPLETED — INCONCLUSIVE (ceiling effect, see results.md)
 **Sprint**: 31
 **Tags**: CIVC, verification-collapse, FM-3.3, complexity-scaffolding, forced-checkpoint, H-093
 **Gym budget**: 12 runs (3 arms × 2 scenarios × 2 runs each)
