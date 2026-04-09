@@ -1,13 +1,13 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~04:17 UTC
+Updated: 2026-04-09 ~03:53 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
 - **Scout**: 🟢 Running — Heartbeat active.
-- **Bob**: 🟢 Running — Heartbeat active. KE-066 synthesis complete (2 entries: cross-model critique + reasoning-behavior gap).
-- **Coach**: 🟢 Running — Heartbeat active. EXP-097 complete last cycle.
-- **Tech-lead**: 🟢 Running — Auto-pause recovery implementation in progress (work session forked). Review of auto-pause design: ✅ APPROVED.
+- **Bob**: 🟢 Running — Heartbeat active. EXP-097 KB integration interrupted, self-retried.
+- **Coach**: 🟢 Running — Heartbeat active. Self-forked few-shot example store work session.
+- **Tech-lead**: 🟢 Running — Heartbeat active. Few-shot deployment review work session queued (req:fdadb5fa + c8e44f85).
 - **Optimizer**: 🟢 Running — Restored Apr 9. Tool quality regression investigation received.
 - **QA**: 🟢 Running — Restored Apr 9.
 - **Evaluator**: 🟢 Running — Heartbeat active.
@@ -71,9 +71,6 @@ Updated: 2026-04-09 ~04:17 UTC
 | **EXP-096 System Prompt Length Threshold** | ✅ COMPLETE | coach | **DEFINITIVE**: Attention dilution REJECTED. Minimal 11KB prompt still 0/3; task-message few-shot 3/3. Position > length. Positional privilege confirmed. |
 | **EXP-097 Simulated Positional Privilege** | ✅ COMPLETE | coach | **PARTIAL**: Urgency framing at end of SOUL.md = 33% (vs 100% task-message, 0% plain system prompt). Weak partial fix, NOT viable for production. Task-message injection mandatory. Bob integrating. |
 | **Few-Shot Deployment Tech Review** | ⏳ DISPATCHED | tech-lead | Review Coach's production deployment proposal. Feasibility + effort assessment. req:fdadb5fa. |
-| **Auto-Pause Recovery Implementation** | ⏳ IN PROGRESS | tech-lead | Design approved (review at `agents/tech-lead/workspace/review-auto-pause-recovery.md`). Work session forked. |
-| **KE-066 Cross-Model Critique** | ✅ COMPLETE | bob | GitHub Copilot "Rubber Duck" — cross-model-family critique closes 74.7% performance gap. Our system uses Claude exclusively → same blind spots. |
-| **KE-066 Reasoning-Behavior Gap** | ✅ COMPLETE | bob | SELFDOUBT HVR + Blind Refusal convergence. Models reason correctly yet behave incorrectly. Extends KE-043 analysis-action gap. |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -105,18 +102,19 @@ Updated: 2026-04-09 ~04:17 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (04:17)
+## Latest Cycle Summary (03:53)
 - **System stable** — All 7/8 agents running. No new errors. Clean cycle.
-- **Auto-pause recovery: APPROVED → IMPLEMENTING** — Tech-lead reviewed design (✅ APPROVED with minor feedback F1-F4), then self-forked work session to implement. Active now.
-- **Bob KE-066 synthesis** — Two new knowledge entries: (1) Cross-Model-Family Critique (74.7% gap closure, GitHub Copilot "Rubber Duck"), (2) Reasoning-Behavior Gap (SELFDOUBT HVR + Blind Refusal convergence). Both from scout DD-655/656/659.
-- **Coach EXP-097 complete** — Simulated positional privilege: urgency framing at end of SOUL.md = 33% (weak). Task-message injection mandatory for few-shot. Consistent with EXP-095/096.
-- **Duplicate auto-pause requests** — bcf37bf3 + 29683f29 are dupes (both CREATED). Tech-lead picked up anyway. No harm, but note for future.
-- **No stale sessions** — All running sessions are current heartbeat cycle.
+- **Auto-pause recovery design COMPLETE** — Bob produced thorough design at `agents/shared/may-agent-docs/design/auto-pause-recovery.md`. State machine (RUNNING→AUTO-PAUSED→PROBING) with exponential-backoff probes (1h→2h→4h→8h cap), 24h TTL, escalation to May. Ready for tech-lead to implement.
+- **Bob EXP-097 KB integration** — Work session interrupted (request aborted), Bob self-retried with new work session. Self-healing, no intervention needed.
+- **Coach self-forked** few-shot example store extraction (Phase 1 examples). Proactive follow-on from deployment proposal.
+- **Tech-lead few-shot review** — Has work session queued (c8e44f85) in addition to message requests. Will pick up during this heartbeat cycle.
+- **Stale session cancelled** s_1775311714523_3 (was 4.5h old "hello fresh session"). Persisted through previous cancel attempts.
+- **System-status anomaly** "Bob analysis 4 days old" — False alarm. Refers to `agents/bob/workspace/analysis.md` from Apr 4. Bob has been producing fresh analyses daily.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao**.
-- **P1**: **Auto-pause implementation** — Tech-lead work session active. Monitor for completion next cycle.
-- **P1**: **Few-shot deployment tech review** — Tech-lead hasn't started yet (prioritized auto-pause). Dispatch reminder if not done next cycle.
+- **P1**: **Few-shot deployment tech review** — Tech-lead has work session queued. Should complete this cycle.
+- **P1**: **Auto-pause recovery implementation** — Design complete. Dispatch to tech-lead when few-shot review is done.
 - **P1**: **Present research sprint results to Hao** — H-091 P(H)=0.93, 17 experiments, KE-065 synthesis, token waste analysis, two critical bugs fixed, auto-pause recovery designed.
 - **P2**: Federation design ready for Hao review
 - **P2**: Pre-merge review gate Phase 2 (auto-review)
