@@ -4,7 +4,7 @@
 **Date**: 2026-04-09
 **P(H)**: 0.70 (updated from 0.75 — EXP-100 moderate support but ceiling effects reduced confidence; EXP-102 null effect confirms verification prompts insufficient)
 **Origin**: EXP-099 (H-092 Information-Flow Failure Mode Analysis)
-**Related**: H-092 (information-flow failure patterns), H-085 (forced externalization), H-039 (decomposition bottleneck)
+**Related**: H-092 (information-flow failure patterns), H-085 (forced externalization), H-039 (decomposition bottleneck), DD-682/683/684, KE-095, KE-096
 
 ## Core Claim
 
@@ -75,6 +75,16 @@ Scaffolding CAN itself trigger verification collapse if it adds too much structu
 ### Detection Stack Evidence (DD#674, DD#675)
 - **DD#674 (2604.06277)**: Hidden-state probing detects hallucination from transformer internal representations with sub-ms latency. Fills the mid-generation detection gap in the cascade defense stack. Cross-layer probes achieve best results, consistent with DD#665's finding that failure modes are layer-specific (shallow lock-in vs. deep decay).
 - **DD#675 (2604.06873)**: Local Shields — global safety specs compiled into per-agent local action filters. Formal methods approach (Dec-POMDPs). Limited direct applicability to LLM agents but the global-to-local compilation principle informs KE-083/KE-084 safety architecture.
+
+### Behavioral Failure Prediction Evidence: DD-682/683/684 (Added 2026-04-09)
+
+Three papers operationalize CIVC detection and intervention:
+
+- **DD-682 (Trajectory Guard)**: Real-time trajectory anomaly detection (≤32ms, F1 0.88-0.94) with dual-objective architecture. **Supports P-093b**: provides a detection mechanism for identifying agent-specific CIVC "collapse points" by monitoring trajectory divergence from expected patterns. Alignment detection maps to FM-1.x cascades; validity detection maps to FM-2.x cascades.
+- **DD-683 (SWE-PRM)**: Process reward model enabling mid-trajectory course correction with +10.6pp improvement. Inefficiency taxonomy independently maps to our FM categories. **Supports P-093a/P-093c**: lightweight step-level feedback can redirect agents before full verification collapse, without triggering the alignment tax (DD-671).
+- **DD-684 (AgentProcessBench)**: Step-level ternary labels (correct/neutral/erroneous) across 8,509 annotations. **Validates CIVC mechanism**: "neutral" steps (omission of expected verification) are predicted to cluster before cascade failures — consistent with CIVC's claim that verification *absence* (FM-3.3a) precedes verification *collapse* (FM-3.3b/c).
+
+**Synthesis**: KE-095 organizes the Detect→Evaluate→Intervene pipeline. KE-096 produces a unified 5-layer verification architecture integrating all literature (12+ papers) with experimental constraints (EXP-100/101/102). Total evidence base now: 12+ papers, 3 experiments, 999 classified errors across 384 sessions.
 
 ### Connected Hypothesis: H-094 (Hedge-to-Verify Ratio)
 H-094 proposes HVR as zero-cost confidence gate. If validated, reduces verification overhead by 60-70% by auto-accepting high-confidence outputs. This transforms the cascade defense stack from always-on to event-triggered. See: SYNTHESIS-cascade-dynamics-verification-defense-stack.md.
