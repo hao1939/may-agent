@@ -1,13 +1,13 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~09:23 UTC
+Updated: 2026-04-09 ~09:53 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
 - **Scout**: 🟢 Running — Heartbeat active.
-- **Bob**: 🟢 Running — H-092, H-093, EXP-099 analysis, DD-639/640 synthesis all completed this hour. Active research production.
-- **Coach**: 🟢 Running — Multi-session test harness design in progress. Commit guard 48h measurement due ~16:00 UTC.
-- **Tech-lead**: 🟢 Running — Auto-pause recovery implemented and merged.
+- **Bob**: 🟢 Running — EXP-100 design complete (CIVC interventional test). Active research production.
+- **Coach**: 🟢 Running — Multi-session harness Phase 1 COMPLETE (runner extension). Phase 2 baseline validation next.
+- **Tech-lead**: 🟢 Running — Session lifecycle bugs fix in progress (Bugs 3,4,8,10). Tests pass 6/6. Committed to review branch.
 - **Optimizer**: 🟢 Running — Restored Apr 9.
 - **QA**: 🟢 Running — Restored Apr 9.
 - **Evaluator**: 🟢 Running — Heartbeat active, forked evaluation session.
@@ -87,6 +87,9 @@ Updated: 2026-04-09 ~09:23 UTC
 | **Bob Workspace Gitignore Fix** | ✅ COMPLETE | may | Added to `agents/bob/context.md`: workspace is gitignored, use shared/knowledge for committed deliverables. Resolves coach reqs 7da65082 + fe1cb6b9. |
 | **Compaction KeyFacts + MemLeak Fix** | ✅ MERGED | tech-lead | Commit 0349a21, merged to main. Enhanced compaction KeyFacts + fixed sessionResults memory leak. |
 | **Auto-Pause Recovery Implementation** | ✅ MERGED | tech-lead | Probe timer + exponential backoff (5min→2h cap) + 24h TTL + escalation to May. 39/39 tests pass. Branch `review/auto-pause-recovery` merged commit `bd56956`. |
+| **Session Lifecycle Bug Fixes (3,4,8,10)** | 🔄 IN REVIEW | tech-lead | Bob found 10 bugs in manager.ts. Tech-lead fixing 4 HIGH/MED: handleCompletion error recovery, duplicate sessionId guard, resumeSession parentAgentName, callDepths cleanup. Tests 6/6, committed to `review/session-lifecycle-fixes` (00005e4). |
+| **EXP-100 CIVC Interventional Test Design** | ✅ DESIGNED | bob | 3 arms (baseline, scaffolding, forced-checkpoint) × 2 scenarios × 2 runs = 12 gym runs. Tests H-093 predictions P-093a and P-093c. Ready for Coach to build scenarios and execute. |
+| **Multi-Session Harness Phase 1** | ✅ COMPLETE | coach | Runner extension done. SessionDef interface, runMultiSessionScenario(), nested dir discovery. 224 scenarios listed. Phase 2 (baseline validation) next. |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -118,17 +121,18 @@ Updated: 2026-04-09 ~09:23 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (09:23)
-- **All 7/8 agents heartbeating** — Fresh cycle started at 09:23 UTC. All healthy.
-- **Stale session re-cancelled** — `s_1775311714523_3` was still alive at 6915m runtime. Killed again.
-- **Bob productive** — H-092 (reasoning-flow failure modes, P(H)=0.72), H-093 (complexity-induced verification collapse, P(H)=0.65), EXP-099 analysis, DD-639/640 synthesis with cascade circuit breaker convergence. New KEs: 079-082.
-- **Coach in post-graduation mode** — Multi-session test harness design in progress. Commit guard 48h measurement due ~16:00.
+## Latest Cycle Summary (09:53)
+- **All 7/8 agents heartbeating** — Fresh cycle at 09:53 UTC. All healthy.
+- **Stale session re-cancelled** — `s_1775311714523_3` killed again (6945m runtime).
+- **Tech-lead fixing session lifecycle bugs** — Bob found 10 bugs in manager.ts. Tech-lead fixing 4 HIGH/MED severity (Bugs 3,4,8,10). Tests 6/6 pass. Committed to `review/session-lifecycle-fixes` (00005e4). Awaiting merge.
+- **Bob designed EXP-100** — Interventional test of H-093 (CIVC). 3 arms × 2 scenarios × 2 runs = 12 gym runs. Ready for Coach to execute.
+- **Coach completed multi-session harness Phase 1** — Runner extension done (224 scenarios listed). Phase 2 baseline validation next.
 - **Zero errors** — No failures in last hour. Amy-kimi still 🔴.
-- **No dispatch items** — No inbox, no pending tasks from Hao.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao**.
-- **P1**: **Gym maintenance mode transition** — Bob/Coach to coordinate. No more exploratory experiments. Gym becomes regression suite only.
+- **P1**: **Merge session lifecycle fixes** — Branch `review/session-lifecycle-fixes` ready. Tech-lead to merge after full test suite verification.
+- **P1**: **Dispatch EXP-100 to Coach** — After harness Phase 2, Coach should build 4 scenario variants and run 12 gym runs. Tests CIVC (#1 error mode at 20.3%).
 - **P1**: **Present research sprint results to Hao** — H-091, 17+ experiments, gym graduation, EXP-098 landmark result.
 - **P1**: **Clean up merged review branches** — `review/auto-pause-recovery` can be deleted.
 - **P2**: Federation design ready for Hao review
