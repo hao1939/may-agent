@@ -1,0 +1,42 @@
+{
+  "scenario": "multi-file-verify-gap-scaffolded",
+  "agent": "bob",
+  "lab_fork": null,
+  "passed": true,
+  "checks": [
+    {
+      "name": "C1-renamed-export",
+      "passed": true,
+      "message": "config-loader.js exports getConfig"
+    },
+    {
+      "name": "C2-server-updated",
+      "passed": true,
+      "message": "server.js updated to use getConfig"
+    },
+    {
+      "name": "C3-health-check-updated",
+      "passed": true,
+      "message": "health-check.js updated to use getConfig"
+    },
+    {
+      "name": "C4-test-updated",
+      "passed": true,
+      "message": "test-config.js updated to use getConfig"
+    },
+    {
+      "name": "C5-tests-pass",
+      "passed": true,
+      "message": "all config tests pass"
+    },
+    {
+      "name": "C6-runtime-verification",
+      "passed": true,
+      "message": "all consumer files work at runtime"
+    }
+  ],
+  "summary": "All 6 checks passed — agent renamed export and updated all consumer files",
+  "agent_status": "completed",
+  "duration": "102.4s",
+  "gym_root": "/app/agents/gym/scenarios"
+}
