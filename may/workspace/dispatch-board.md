@@ -1,13 +1,13 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~16:25 UTC
+Updated: 2026-04-09 ~16:53 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Running — EXP-104 KB integration done (KE-098 updated). Research portfolio at transition point.
-- **Coach**: 🟢 Running — Confabulation synthesis session done. EXP-102/103/104 KE updates complete.
-- **Scout**: 🟢 Running — Heartbeat active. Dispatching info asymmetry lit search.
-- **Tech-lead**: 🟡 IDLE — avg 0.0m/session (3h). No dispatched work.
+- **Bob**: 🟢 Running — Research portfolio at transition point. avg 4.9m/session.
+- **Coach**: 🟢 Running — FM-3.3 concentration analysis done (measurement artifact, not real regression). avg 5.2m/session.
+- **Scout**: 🟢 Running — avg 10.9m/session. Active research.
+- **Tech-lead**: 🟡 IDLE — avg 0.4m/session. No dispatched work.
 - **Optimizer**: 🟡 IDLE — avg 0.3m/session (3h). Tool quality regression #11 logged (not actionable).
 - **Evaluator**: 🟡 IDLE — avg 0.1m/session (3h). Just heartbeat cycling.
 - **QA**: 🟡 IDLE — avg 0.8m/session (3h). Just heartbeat cycling.
@@ -100,6 +100,7 @@ Updated: 2026-04-09 ~16:25 UTC
 | **EXP-104 Context-Stripped Verification** | ✅ COMPLETE | coach | **KEY FINDING**: Evidence-over-narrative skill ALREADY fixed confabulation — baseline 100% (was 18% pre-skill). Context-stripping HURTS (88% vs 100%). Claim-decomposed = 100%. **Retroactively reinterprets EXP-103**: skill deployment, not adversarial framing, was causal. 18 runs, 3 arms × 2 scenarios × 3 reps. Results at `agents/shared/knowledge/experiments/EXP-104/results.md`. |
 | **Bob C1.5 Convention Regression** | ✅ ANALYZED | coach | Root cause: concurrent sessions cause KE/DD ID collisions → renaming → ghost deliverables. 3 RCs identified. Recommends: verify-before-finish skill + finish-guard enhancement + KB coordination. Analysis at `agents/coach/workspace/bob-c15-ghost-analysis.md`. |
 | **KE-101 Meta-Analysis** | ✅ COMPLETE | bob | **LANDMARK**: 104+ experiments synthesized into 5 Laws of Agent Improvement, 4-tier intervention hierarchy, 3 meta-principles. Core finding: structure dominates content (0/32+ text rules on judgment vs 87-100% structural). At `agents/shared/knowledge/entries/KE-101-meta-analysis-theory-of-agent-improvement.md`. |
+| **FM-3.3 Bob Concentration Analysis** | ✅ COMPLETE | coach | **NOT a real regression** — measurement artifact. 1.9x inflation from eval duplication + LLM eval selection bias. Bob's true FM-3.3 rate (13.6%) is *lowest* of agents with volume. At `agents/coach/workspace/briefs/bob-fm33-concentration-analysis.md`. |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -131,16 +132,14 @@ Updated: 2026-04-09 ~16:25 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (16:25)
+## Latest Cycle Summary (16:53)
 - **7 agents active** — All except Amy-kimi running heartbeat cycles.
 - **Zero recent errors** — System clean.
-- **4 agents effectively idle**: Tech-lead (0m avg), Evaluator (0.1m avg), Optimizer (0.3m avg), QA (0.8m avg) — all just cycling heartbeats. System at a transition point after research sprint completion.
+- **4 agents effectively idle**: Tech-lead, Evaluator, Optimizer, QA — all just cycling heartbeats. System at transition point.
 - **Completions since last cycle**:
-  - **Coach**: Confabulation synthesis session done (EXP-102/103/104 series, KE-099/100 confidence downgraded)
-  - **Bob**: KE-098 updated with EXP-104 results, predictions revised, skill>architecture hierarchy confirmed
-  - **Multi-session harness**: NOW COMPLETE — both `kb-integration-failure` and `instruction-override-drift` have `success_criteria.js` + `package.json`
+  - **Coach**: FM-3.3 Bob concentration investigation complete — **measurement artifact**, not real regression. Bob's true FM-3.3 rate (13.6%) is *lowest* of any agent with volume. Inflation from evaluation duplication (1.9x) + LLM eval selection bias. Analysis at `agents/coach/workspace/briefs/bob-fm33-concentration-analysis.md`.
 - **No new tasks from Hao** — Nothing to dispatch.
-- **Key observation**: Research sprint is essentially complete. We need new work streams or Hao direction to keep agents productive.
+- **Key observation**: System stable but idle. Research sprint complete. Need Hao direction for next work streams.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao**.
