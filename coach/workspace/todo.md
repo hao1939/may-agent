@@ -25,7 +25,15 @@ The gym graduation proposal was approved by Bob with M1-M5 modifications (all ap
   - 224 scenarios listed (including multi-session/stale-plan-drift), 0 TypeScript errors
   - Also created `multi-session/ghost-deliverable-chain` scenario
 - **Phase 2 — Baseline Validation**: COMPLETE ✅ (s_1775728493774_301) — both scenarios execute end-to-end
-- **Phase 3**: FM-targeted scenarios for FM-1.4, FM-3.1 (depends on Phase 2)
+- **Phase 3 — FM-Targeted Scenarios**: COMPLETE ✅ (s_1775732059589_326, s_1775731772277_550)
+  - 5 complete multi-session scenarios:
+    1. `ghost-deliverable-chain` (FM-3.1): S1 extracts validation, S2 discovers partial extraction
+    2. `stale-plan-drift` (FM-2.6): S1 writes middleware plan, S2 finds plan stale due to team changes
+    3. `unresolved-failure-chain` (FM-1.4): S1 renames function, S2 discovers partial rename left broken callers
+    4. `instruction-override-drift` (FM-2.6): S1 adds console.log, S2 must convert to structured logger
+    5. `kb-integration-failure` (FM-2.6 + FM-3.1): S1 creates API client, S2 context claims robust but code has hardcoded creds/swallowed errors
+  - All 5 scenarios validated: success_criteria.js runs correctly, unmodified S2 environments fail as expected
+  - Each has: scenario.json, package.json, success_criteria.js, S1/S2 task.md + context.md + environment/
 - **Phase 4**: Integration + regression cadence (depends on Phase 3)
 - **Key insight from EXP-065**: FM-2.6 (instruction-following), FM-3.1 (ghost deliverables), FM-2.1 (tool hallucination) all require multi-session to reproduce
 
@@ -48,13 +56,13 @@ The gym graduation proposal was approved by Bob with M1-M5 modifications (all ap
 |--------|--------------|-------------|
 | 33 | Wave 3 cross-ref deployment | 3/4 scenarios pass, skill deployed to Bob |
 | 32 | EXP-096, EXP-097 | Positional privilege confirmed: WHERE > HOW MUCH |
-| 31 | EXP-095, EXP-098 | KE-057 replicated (cross-ref 0%→100% on coder), nav ceiling |
+| 31 | EXP-095, EXP-098, EXP-100 | KE-057 replicated, nav ceiling, EXP-100 CIVC ceiling effect (12/12 pass) |
 | 30 | Regression check + commit guard | All promoted skills passing, guard at −33pp |
 | 14-29 | EXP-044 through EXP-072 | H-085 working theory, ext boundary, workaround-resistant design |
 | 8-13 | EXP-020 through EXP-043 | Skill boundary found, strict workflow breakthrough |
 | 1-7 | EXP-020 through EXP-025 | Baselines, ceiling effect, skill verification |
 
-### Completed Experiments (85 total: EXP-020 through EXP-098)
+### Completed Experiments (86 total: EXP-020 through EXP-100)
 - Full results in `agents/shared/knowledge/experiments/EXP-{NNN}/results.md`
 - Synthesis documents in `agents/shared/knowledge/synthesis/`
 - Knowledge entries in `agents/shared/knowledge/entries/KE-{NNN}-*.md`
