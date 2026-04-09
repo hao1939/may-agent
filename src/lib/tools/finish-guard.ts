@@ -155,7 +155,7 @@ function hasVerificationAfterLastWrite(messages: BeforeToolCallContext["context"
  * in the transcript, the ghost deliverable guard blocks the call.
  */
 const GHOST_KEYWORDS =
-  /\b(?:fix(?:ed)?|implement(?:ed)?|refactor(?:ed)?|rewrote|rewrite|updat(?:ed?)|deploy(?:ed)?|patch(?:ed)?|add(?:ed)?|creat(?:ed)?|modif(?:ied|y)|chang(?:ed?)|delet(?:ed?)|remov(?:ed?)|migrat(?:ed?)|rewir(?:ed?))\b/i;
+  /\b(?:fix(?:ed)?|implement(?:ed)?|refactor(?:ed)?|rewrote|rewrite|updat(?:ed?)|deploy(?:ed)?|patch(?:ed)?|modif(?:ied|y)|delet(?:ed?)|migrat(?:ed?)|rewir(?:ed?)|wrote)\b/i;
 
 /**
  * Create a beforeToolCall hook that guards finish(status: "success") calls.
@@ -207,6 +207,12 @@ export function createFinishGuard(): (
       !hasWriteEvidence &&
       (toolNames.has("claude_code") || toolNames.has("codex_cli") || toolNames.has("gemini_cli"))
     ) {
+      hasWriteEvidence = true;
+    }
+
+    // Orchestration tools (workflow, agents) delegate work to child sessions
+    // whose writes don't appear in the parent transcript.
+    if (!hasWriteEvidence && (toolNames.has("workflow") || toolNames.has("agents"))) {
       hasWriteEvidence = true;
     }
 
