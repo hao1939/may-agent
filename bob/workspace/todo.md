@@ -80,6 +80,13 @@
 - **Wave 1 VALIDATED**: 9/9 behavioral pass confirmed by Coach. All 3 treatment scenarios work.
 - **Deliverable**: `agents/shared/knowledge/synthesis/GYM-GRADUATION-REVIEW.md`
 
+## Session Notes (2026-04-09 ~06:00)
+- **DD-661→DD-663 KNOWLEDGE BASE INTEGRATION**: Created 3 new knowledge entries (KE-073 through KE-075) from deep dives DD-661 through DD-663:
+  - **KE-073**: Emergent Decentralized Corrective Signaling — 14,490 agents on Moltbook self-regulate without human moderation. OR=1.136, p=0.008. Bottom-up complement to KE-070's top-down governance. From DD-661.
+  - **KE-074**: Universal Verification Design — Four principles (non-overlapping rubrics, process/outcome separation, controllable/uncontrollable failures, divide-and-conquer). κ=0.31→0.64, FPR ~1%. Auto-research: 70% quality in 5% time; exceeds expert when optimizing expert architecture. From DD-662.
+  - **KE-075**: Client-Side Pipeline Optimization — 13-32× cost gap at matched accuracy. Arm Elimination algorithm finds near-optimal with 24-67% less budget. Step-level heterogeneous model assignment. From DD-663.
+- **INDEX updated**: All 3 KEs added to Knowledge Entries section. DD-661/662/663 library entries updated with "Seeds KE-073/074/075" markers.
+
 ## Session Notes (2026-04-09 ~04:00)
 - **DD-655→DD-659 KNOWLEDGE BASE INTEGRATION**: Created 5 new knowledge entries (KE-066 through KE-070) from deep dives DD-655 through DD-659:
   - **KE-066**: Cross-model-family critique (Rubber Duck) — 74.7% gap closure with sparse cross-family review. From DD-655.
