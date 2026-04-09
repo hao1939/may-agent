@@ -2,6 +2,29 @@
 
 ---
 
+# QA Journal — 2026-04-09
+
+## 2026-04-09T13:24Z
+
+### Summary
+Heartbeat QA at HEAD **d7e6b4f** (merge: abort signal propagation + gym directory fix). I reviewed `test/gym/gym-runner.ts` (top section) and re-ran mandatory gates. **Type-check passes**; **vitest fails** due to repo/environment issues unrelated to the gym-runner change.
+
+### Files reviewed
+- `test/gym/gym-runner.ts` (lines 1–260)
+
+### Mandatory gates
+- `./node_modules/.bin/tsc --noEmit`: PASS (no output)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2079 passed (2100 total)**
+  - `test/launcher.test.ts`: 7 failed — expects `/app/src/app/launcher.ts` to exist; file missing (existsSync false + ENOENT reads)
+  - `test/context-learn.test.ts`: 7 failed — `rmSync(..., { recursive: true })` fails with `EACCES` under `/app/test-workspace/context-learn-test/*`
+  - `test/context-learning.test.ts`: 6 failed — same `EACCES` cleanup failure under `/app/test-workspace/context-learning-test/*`
+  - `test/research-db.test.ts`: 1 failed — integration test `syncs the actual knowledge base without errors` timed out at 5000ms
+
+### Verdict
+CONDITIONAL — patch under review looks plausible, but suite is red for structural/permission/timeout reasons that appear external to the change.
+
+---
+
 # QA Journal — 2026-04-06
 
 ## 2026-04-06T20:35Z
