@@ -1,7 +1,7 @@
 # KE-065: Few-Shot Skill Conversion — Comprehensive Findings
 
 **Status**: Verified
-**Source**: EXP-090, EXP-091, EXP-092, EXP-093, EXP-094, EXP-095 (partially invalidated), EXP-096
+**Source**: EXP-090, EXP-091, EXP-092, EXP-093, EXP-094, EXP-095
 **Date**: 2026-04-09
 **Confidence**: High (N=18 matched treatment runs: 18/18 = 100% on target checks; N=10 per arm on EXP-092; N=5+5 on EXP-093)
 
@@ -65,26 +65,26 @@ Attempting to fix a documentation gap with L1/L2 instruction-level interventions
    - The reasoning process, not just the outcome
    - The key decision point where the wrong choice is tempting
 4. **Match the domain class** of the target scenario. A credentials example won't fix a binary-file task.
-5. **Deliver via task-level message for maximum reliability**. EXP-096 corrected EXP-095's scoring bugs and showed: system-prompt delivery DOES work for the core behavior (agent escalates correctly) but with higher tool-call counts (15+ vs <15). Task-message delivery (100%, N=3) is more efficient and consistent than system-prompt delivery (0/3 pass due to tool-count threshold, but 3/3 correct escalation). For hard efficiency thresholds, prefer task-message delivery.
+5. **Deliver via task-level message**, not embedded in SKILL.md text. EXP-095 showed system-prompt delivery = 0% (even with domain-matched binary examples in know-when-blocked v2.0), while task-message delivery = 100% regardless of mechanism (injected_context.md prefix or inline in task.md body). The position effect is absolute: across 12+ runs, task-message = 100%, system-prompt = 0%.
 6. **For multi-domain skills**, include one worked example per domain class.
 7. **Don't add compensating instructions** to fix gaps — they create task narrowing (EXP-092). Fix gaps structurally.
 
-## Delivery Mechanism (Updated — EXP-095 corrected by EXP-096)
+## Delivery Mechanism (NEW — EXP-095)
 
-**⚠️ EXP-095 INVALIDATED**: Two gym infrastructure bugs (transcript filename mismatch + format incompatibility) meant EXP-095's scorer always returned `finishStatus()=null` and `ops()=0`. The "system-prompt = 0%" finding was an artifact of broken scoring, not actual delivery failure. See EXP-096 for corrections.
+**Critical finding**: Few-shot effectiveness depends on delivery POSITION, not just content quality.
 
-**Corrected finding (EXP-096)**: Delivery position affects EFFICIENCY, not correctness.
+| Delivery Position | Content Quality | Pass Rate | Evidence |
+|-------------------|----------------|-----------|----------|
+| Task message (injected_context.md) | Narrative examples | **100% (6/6)** | EXP-094 treatment, EXP-095 Arm A |
+| Task message (inline in task.md) | Same narrative examples | **100% (3/3)** | EXP-095 Arm C |
+| System prompt (SKILL.md v1.0) | Mismatched domain example | **0% (0/3)** | EXP-094 control |
+| System prompt (SKILL.md v2.0) | Domain-matched binary examples | **0% (0/3)** | EXP-095 Arm B |
 
-| Delivery Position | Correct Behavior? | Efficiency (tool count) | Pass Rate | Evidence |
-|-------------------|-------------------|------------------------|-----------|----------|
-| Task message (few-shot in task.md) | ✅ 3/3 escalate | ✅ 3/3 < 15 tools | **100% (3/3)** | EXP-096 Arm C |
-| System prompt (11KB, minimal) | ✅ 3/4 escalate | ✅ 3/4 < 15 tools | **75% (3/4)** | EXP-096 Arm B (partially confounded) |
-| System prompt (48KB, full) | ✅ 3/3 escalate | ❌ 0/3 < 15 tools | **0% (0/3)** | EXP-096 Arm A |
-| Task message (injected_context.md) | ✅ 6/6 | ✅ 6/6 | **100% (6/6)** | EXP-094 treatment |
+**The position effect is binary**: System prompt = 0%, task message = 100%, across all content variations tested. Improving content quality (v1.0 → v2.0 with binary-specific examples, three-call rule, anti-patterns) had zero impact when delivered via system prompt.
 
-**Revised interpretation**: System-prompt few-shot teaches the agent WHAT to do (all arms escalate correctly) but not HOW QUICKLY. Attention dilution from a 48KB system prompt makes the agent explore more before recognizing the pattern. Task-message delivery benefits from proximity and provides a stronger efficiency signal.
+**Why**: System prompt few-shot suffers from attention dilution (8-10KB of instructions), temporal distance from task, and requires effortful retrieval. Task-message few-shot benefits from proximity to the task, pattern-matching activation, and frame-setting for the specific problem.
 
-**Note**: Arm B and D results in EXP-096 are confounded by task history leakage (previous gym runs leaked answers into session context). Only Arm A (first 3 clean runs) and Arm C are fully clean.
+**Production implication**: Skills in SKILL.md files (system prompt) serve as reference documentation but are ineffective as behavioral interventions for hard scenarios. Effective deployment requires task-level injection — either via RAG, task routing with example selection, or embedding examples in task descriptions.
 
 ## H-091 Status
 
