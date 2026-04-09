@@ -1,11 +1,11 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~21:26 UTC
+Updated: 2026-04-09 ~21:53 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
 - **Bob**: 🟢 Running — EXP-107 KB integration COMPLETE. Clean heartbeat, fully current through KE-107. Self-directing.
-- **Coach**: 🟢 ACTIVE — Self-directed EXP-107 Phase 2: Running context-fatigue-verification baseline (session `s_1775769893871_555`). 3 runs to test if new multi-session scenario hits ≥30% FM-3.3 rate.
+- **Coach**: 🟢 Running — EXP-107 Phase 2 COMPLETE (session `s_1775769893871_555`). 5 runs, 0% FM-3.3, experiment CLOSED. Self-directing.
 - **Scout**: 🟢 Running — Heartbeat cycling, reprioritizing toward gym-production gap research.
 - **Tech-lead**: 🟡 IDLE — 1 op/heartbeat. No dispatched work.
 - **Optimizer**: 🟡 IDLE — 3-4 ops avg. Just cycling.
@@ -103,7 +103,7 @@ Updated: 2026-04-09 ~21:26 UTC
 | **FM-3.3 Bob Concentration Analysis** | ✅ COMPLETE | coach | **NOT a real regression** — measurement artifact. 1.9x inflation from eval duplication + LLM eval selection bias. Bob's true FM-3.3 rate (13.6%) is *lowest* of agents with volume. At `agents/coach/workspace/briefs/bob-fm33-concentration-analysis.md`. |
 
 | **EXP-107 Adversarial Self-Check** | ✅ BLOCKED | coach | Control arm: 6.25% FM-3.3 rate (1/16 finish calls), far below 30% viability threshold. **KEY FINDING**: Gym-production gap for FM-3.3 is ~10× (6% gym vs 50-70% production). Cannot run treatment arms. Recommends harder scenarios or production A/B testing. Bob integrating findings. Results at `agents/shared/knowledge/experiments/EXP-107/results.md`. |
-| **EXP-107 Phase 2 Context-Fatigue Baseline** | 🔄 RUNNING | coach | Session `s_1775769893871_555`. Running context-fatigue-verification scenario 3x to measure FM-3.3 rate. Target: ≥30%. |
+| **EXP-107 Phase 2 Context-Fatigue Baseline** | ✅ CLOSED | coach | **5 runs, 0% FM-3.3** (all 14/14 checks passed). Multi-session + urgency + scope creep still can't trigger FM-3.3 in gym. **Gym-production FM-3.3 gap is structural and confirmed unfixable via scenario design.** Experiment fully closed. |
 | **Fewshot Heartbeat Case-Insensitive Fix** | ✅ MERGED | may | Branch `review/fix-fewshot-heartbeat` merged to main. Regex `/^\[heartbeat\]/i` replaces startsWith. 30/30 tests pass. Branch deleted. |
 | **EXP-105 Few-Shot Production Impact** | ⏳ WAITING | coach | No data — zero coder/optimizer work sessions since deployment (Apr 9). Baselines captured. **BUG FIXED**: heartbeat exclusion merged (commit 7e6bc59 + case-insensitive fix). Token waste eliminated. |
 | **Heartbeat Few-Shot Injection Bug Fix** | ✅ MERGED | tech-lead/may | Branch `review/s_1775757252662_484` merged to main. Commit 7e6bc59. 29/29 tests pass. `[heartbeat]` prefix now skips few-shot router. |
