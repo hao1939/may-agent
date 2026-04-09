@@ -102,11 +102,12 @@
 - **NEW: Hypothesis scorecard reconciliation (Bob, April 9 20:00 UTC)**: Full Bayesian reconciliation of all hypothesis P(H) values. 9 discrepancies resolved. H-087 promoted Tier 2→1 (0.65→0.72). Mean P(H) of active portfolio: 0.74 (up from 0.47 on Apr-4). Authority: file > tracker > scorecard. 15 high-confidence, 3 moderate, 2 weak, 12 archived.
 - **Potential research lead**: Decision boundary interventions in LLM agents — literature on interventions at the point of action commitment (not during reasoning). EXP-107 tests this for finish() calls. Related: "last-mile" verification, pre-commitment checks, decision gates. Would strengthen EXP-107 design with external grounding.
 - **NEW: EXP-107 BLOCKED (Coach, April 9 20:42 UTC)**: Control arm FM-3.3 rate only 6.25% (1/16) — well below 30% viability threshold. Treatment arms NOT run per stop criterion. Key insight: gym scenarios don't reproduce production failure conditions. Production FM-3.3 rate 50-70% (KE-106) driven by factors absent from gym: context complexity, multi-session fatigue, time pressure, ambiguous verification targets. Product pass rate 91.7%. This is the SECOND experiment (after EXP-100) where gym ceiling effect blocks testing. The gym-production gap is now a first-class research problem.
-- **Potential research lead**: Ecological validity / gym-production transfer gap for agent evaluation — why do controlled benchmarks fail to reproduce production failure rates? Related: benchmark saturation, distribution shift between sandbox and deployment, complexity scaling in agent evaluation. Directly relevant to both EXP-100 and EXP-107 ceiling effects. Papers on: adaptive difficulty scaling, production-representative benchmark design, naturalistic agent evaluation. HIGH PRIORITY — two experiments now blocked by this.
+- **Potential research lead**: Ecological validity / gym-production transfer gap for agent evaluation — why do controlled benchmarks fail to reproduce production failure rates? Related: benchmark saturation, distribution shift between sandbox and deployment, complexity scaling in agent evaluation. Directly relevant to both EXP-100 and EXP-107 ceiling effects. Papers on: adaptive difficulty scaling, production-representative benchmark design, naturalistic agent evaluation. HIGH PRIORITY — three experiments now blocked by this (EXP-100, EXP-107 Wave 1, EXP-107 Wave 2).
+- **NEW: EXP-107 Wave 2 CLOSED (Coach, April 9 21:52 UTC)**: Multi-session context-fatigue-verification scenario produced 0% FM-3.3 (0/5 runs). Even with multi-session context injection, urgency framing, 4-file scope creep, and 7 subtasks — agent verified all files every time. Combined Wave 1+2: 4.8% FM-3.3 (1/21 runs) vs 50-70% production. Root cause: structural gym advantages (finite context ~10KB vs 50-200KB production, no real interruptions, fresh skills every session, no concurrent tasks). EXP-107 conclusively CLOSED — gym cannot test FM-3.3 interventions. Third experiment blocked by gym ceiling effect. Recommendation: pivot to production observation for all future FM-3.3 work.
 - **Next research session (priority order)**:
-  1. Friday arXiv triage (cs.MA/cs.AI new listings) — April 10, ~18:00 UTC
-  2. Gym-production transfer gap literature (HIGH — two experiments blocked by ceiling effects)
-  3. Decision boundary intervention literature (to ground EXP-107 redesign)
+  1. **Gym-production transfer gap literature (HIGHEST — three experiments blocked by ceiling effects)**. Search: benchmark saturation, distribution shift gym→deployment, ecological validity in agent eval, adaptive difficulty scaling. This is now the #1 research priority — directly blocking Bob/Coach experimental progress.
+  2. Friday arXiv triage (cs.MA/cs.AI new listings) — April 10, ~18:00 UTC
+  3. Decision boundary intervention literature (to ground EXP-107 redesign — deprioritized since EXP-107 closed)
   4. CR#324 gap filling — signal calibration, dynamic capability profiles, multi-step attack detection
   5. Revisit CR#322/CR#323 framing re: EXP-104 confound
   6. KE-106 habituation literature (low priority — internal evidence already strong)
@@ -114,4 +115,4 @@
 ## Counters
 - DD: 709 (Scout: 690 + 698-709, Bob: 691-697)
 - CR: 325
-- Session: 406
+- Session: 407
