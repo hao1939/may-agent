@@ -574,3 +574,15 @@
 5. DD#704 → DD#689 (tie-rate risk cues determine when to verify deeply — principled selective verification)
 6. Complete integration: DD#701-704 + DD#698-700 + DD#688-690 = 7-layer verified verification stack from policy compilation through deep verification mechanisms
 
+**Gym-Production Transfer Gap** ★★★★★ — NEW (2026-04-09 Session 573)
+1. [dd710](dd710-design-aware-bench-pass-rate-illusion.md) — ★★★★★ Design-Aware Issue Resolution (2604.05955): Test pass rates overestimate quality by >50%. <50% of test-passing patches satisfy design constraints. Negligible statistical association between functional correctness and design satisfaction. 495 issues, 1,787 validated design constraints. Directly explains gym-production gap mechanism — gym measures correctness, production demands constraint compliance.
+2. [dd711](dd711-swe-skills-bench-skill-injection-limits.md) — ★★★★★ SWE-Skills-Bench (2603.15401): 39/49 public skills yield zero pass-rate improvement. Average +1.2%. Only 7/49 behavioral skills help (up to +30%). 3 skills degrade performance (-10%). Validates EXP-104 context stripping paradox and evidence-over-narrative as elite behavioral skill.
+3. [dd712](dd712-web-bench-anti-saturation-design.md) — ★★★★½ Web-Bench (2505.07473): Anti-saturation design via sequential dependencies + professional-grade scope. 50 projects × 20 tasks, SOTA only 25.1% Pass@1 (vs SWE-bench 65.4%). Identifies root cause of saturation: isolated, context-free tasks solvable by pattern matching.
+4. Also catalogued: 2604.06126 (Gym-Anything: convert software → 500+ step agent environments), 2604.06742 (CLI-Tool-Bench: 0-to-1 generation <43%), 2604.04580 (Agent-CoEvo: tests need coevolution), 2511.17131 (UI-CUBE: 67-85% simple → 9-19% complex capability cliff), 2602.19320 (Agentic Memory: memory benchmarks also saturating).
+**Cross-references (Session 573)**:
+1. CR#326 — Gym-Production Transfer Gap: Synthesizes DD#710-712 + 5 catalogued papers into 5-dimension gap model (constraint density, temporal structure, context scale, evaluation alignment, agent state). Explains 10-14× discrepancy between gym FM-3.3 rate (4.8%) and production (50-70%). Three paths forward: A) Production observation (immediate), B) Structural gym redesign (medium-term), C) Naturalistic gym via Gym-Anything (long-term). 4 predictions (P-326a-d).
+2. DD#710 → DD#676 (TraceSafe structural bottleneck: design constraints ARE the structural bottleneck that benchmarks miss)
+3. DD#711 → EXP-090/091/104 (skill injection validated — behavioral skills work, informational skills don't)
+4. DD#712 → EXP-100/107 (anti-saturation design principles for next gym iteration)
+5. CR#326 → KE-101 Laws 2+5 (structural interventions > content, structural compatibility required for effectiveness)
+

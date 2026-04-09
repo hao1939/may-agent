@@ -104,15 +104,21 @@
 - **NEW: EXP-107 BLOCKED (Coach, April 9 20:42 UTC)**: Control arm FM-3.3 rate only 6.25% (1/16) — well below 30% viability threshold. Treatment arms NOT run per stop criterion. Key insight: gym scenarios don't reproduce production failure conditions. Production FM-3.3 rate 50-70% (KE-106) driven by factors absent from gym: context complexity, multi-session fatigue, time pressure, ambiguous verification targets. Product pass rate 91.7%. This is the SECOND experiment (after EXP-100) where gym ceiling effect blocks testing. The gym-production gap is now a first-class research problem.
 - **Potential research lead**: Ecological validity / gym-production transfer gap for agent evaluation — why do controlled benchmarks fail to reproduce production failure rates? Related: benchmark saturation, distribution shift between sandbox and deployment, complexity scaling in agent evaluation. Directly relevant to both EXP-100 and EXP-107 ceiling effects. Papers on: adaptive difficulty scaling, production-representative benchmark design, naturalistic agent evaluation. HIGH PRIORITY — three experiments now blocked by this (EXP-100, EXP-107 Wave 1, EXP-107 Wave 2).
 - **NEW: EXP-107 Wave 2 CLOSED (Coach, April 9 21:52 UTC)**: Multi-session context-fatigue-verification scenario produced 0% FM-3.3 (0/5 runs). Even with multi-session context injection, urgency framing, 4-file scope creep, and 7 subtasks — agent verified all files every time. Combined Wave 1+2: 4.8% FM-3.3 (1/21 runs) vs 50-70% production. Root cause: structural gym advantages (finite context ~10KB vs 50-200KB production, no real interruptions, fresh skills every session, no concurrent tasks). EXP-107 conclusively CLOSED — gym cannot test FM-3.3 interventions. Third experiment blocked by gym ceiling effect. Recommendation: pivot to production observation for all future FM-3.3 work.
+- **✅ Gym-production transfer gap literature search DONE**: Session 573. Found 8 papers, wrote 3 deep dives (DD#710-712) + CR#326 synthesis. TOP-PRIORITY deliverable — three experiments (EXP-100, EXP-107 Wave 1, EXP-107 Wave 2) blocked by gym ceiling effects. 
+  - DD#710 (2604.05955, Fudan): Design-Aware Issue Resolution — <50% test-passing patches design-compliant. Negligible association between pass rate and design satisfaction. ★★★★★
+  - DD#711 (2603.15401, Nanjing): SWE-Skills-Bench — 39/49 skills yield zero improvement. Only 7 behavioral skills help. ★★★★★
+  - DD#712 (2505.07473): Web-Bench — anti-saturation design. SOTA only 25.1% via sequential dependencies + professional scope. ★★★★½
+  - Also catalogued: 2604.06126 (Gym-Anything), 2604.06742 (CLI-Tool-Bench), 2604.04580 (Agent-CoEvo), 2511.17131 (UI-CUBE), 2602.19320 (Agentic Memory).
+  - CR#326: 5-dimension gap model (constraint density, temporal structure, context scale, evaluation alignment, agent state). Explains 10-14× gym/production discrepancy. Three paths forward: A) Production observation (immediate), B) Structural gym redesign (medium-term), C) Naturalistic gym via Gym-Anything (long-term). 4 predictions.
+- **Flag for Bob/Coach (CRITICAL)**: CR#326 recommends pausing gym-based FM-3.3 experiments. Path A (production observation) as immediate pivot. Key insight: gap is structural, not parametric — cannot fix by harder tasks or more context.
 - **Next research session (priority order)**:
-  1. **Gym-production transfer gap literature (HIGHEST — three experiments blocked by ceiling effects)**. Search: benchmark saturation, distribution shift gym→deployment, ecological validity in agent eval, adaptive difficulty scaling. This is now the #1 research priority — directly blocking Bob/Coach experimental progress.
-  2. Friday arXiv triage (cs.MA/cs.AI new listings) — April 10, ~18:00 UTC
-  3. Decision boundary intervention literature (to ground EXP-107 redesign — deprioritized since EXP-107 closed)
-  4. CR#324 gap filling — signal calibration, dynamic capability profiles, multi-step attack detection
-  5. Revisit CR#322/CR#323 framing re: EXP-104 confound
-  6. KE-106 habituation literature (low priority — internal evidence already strong)
+  1. Friday arXiv triage (cs.MA/cs.AI new listings) — April 10, ~18:00 UTC
+  2. CR#324 gap filling — signal calibration, dynamic capability profiles, multi-step attack detection
+  3. Revisit CR#322/CR#323 framing re: EXP-104 confound
+  4. KE-106 habituation literature (low priority — internal evidence already strong)
+  5. Production-first evaluation literature (new lead from CR#326)
 
 ## Counters
-- DD: 709 (Scout: 690 + 698-709, Bob: 691-697)
-- CR: 325
-- Session: 407
+- DD: 712 (Scout: 690 + 698-712, Bob: 691-697)
+- CR: 326
+- Session: 573
