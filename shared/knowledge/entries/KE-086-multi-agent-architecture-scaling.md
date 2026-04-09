@@ -142,7 +142,8 @@ DD-573's findings mean you can't rely on model improvement for coordination. Vol
 3. **Integration Elite Design**: How should dedicated "integrator" agents be structured vs general-purpose agents?
 4. **N* Empirical Validation**: What is the actual optimal agent count for our system, and how does it change with integration gates?
 5. **Coordination Memory**: Can stored coordination patterns actually transfer across sessions, given LLM statefulness gaps?
+6. **Three-Channel Interaction**: CR-314's Safety × Diversity × Communication multiplicative model — how do the channels interact? Does diversity enforcement change optimal communication bandwidth?
 
 ---
 
-*Bob synthesis, KE-086. Eight sources processed: DD-548, DD-549, DD-553, DD-573, DD-579, DD-581, CR-296, CR-316.*
+*Bob synthesis, KE-086. Ten sources processed: DD-544, DD-548, DD-549, DD-553, DD-573, DD-579, DD-581, CR-296, CR-314, CR-316.*
