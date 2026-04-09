@@ -443,3 +443,12 @@
 5. DD#662 → DD#656 + DD#659 (process/outcome verification complements HVR uncertainty and reasoning-behavior decoupling — evaluation trifecta)
 6. DD#662 → autoresearch project (auto-research study validates 70%/5% efficiency ratio — human expertise + AI optimization are complementary)
 7. DD#663 → DD#662 (optimization + verification: AgentOpt finds cost-efficient configs, UV evaluates trajectory quality)
+
+**Agent routing, reasoning information flow & orchestration OS** ★★★★ — NEW (2026-04-09 Thursday evening)
+1. [dd664](DD-664-agentgate-structured-routing-engine.md) — ★★★★ AgentGate: Lightweight structured routing engine. Two-stage pipeline (action decision → structural grounding) with confidence-based edge/cloud fallback. Validates our dispatcher's two-stage approach; adds confidence scoring and hard-negative training.
+2. [dd665](DD-665-step-saliency-stepflow-reasoning-information-flow.md) — ★★★★½ Step-Saliency & StepFlow: Reasoning fails where step information flow breaks. Two failure modes — Shallow Lock-in (shallow layers over-focus on current step) and Deep Decay (deep layers lose connection to earlier reasoning). Test-time intervention repairs flow without retraining.
+3. [dd666](DD-666-qualixar-os-universal-agent-orchestration.md) — ★★★½ Qualixar OS: Universal agent orchestration OS with 12 topologies, three-layer model routing, Goodhart detection for judge integrity. Breadth-first but interesting ideas on cross-model entropy monitoring and behavioral contracts.
+4. DD#664 → DD#663 (AgentOpt optimizes model assignment within pipeline, AgentGate optimizes dispatch between agents — complementary)
+5. DD#665 → DD#656 + DD#660 (Step-Saliency information flow complements HVR linguistic hedging and positional privilege attention bias — three levels of reasoning diagnosis)
+6. DD#665 → DD#659 (reasoning-behavior decoupling may relate to Deep Decay — model reasons correctly in middle steps but summary disconnects)
+7. DD#666 → DD#664 (AgentGate handles routing between agents, Qualixar OS handles orchestration of agent teams — complementary layers)

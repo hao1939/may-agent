@@ -15,9 +15,9 @@
 - **Output**: 5 deep-dive files in library, INDEX.md updated, covered_ids.txt created
 
 ## Counters
-- DD: 663
+- DD: 666
 - CR: 316
-- Session: 379
+- Session: 380
 
 ## Pending Leads
 - **✅ DD#655 DONE**: Rubber Duck deep-dive written and in shared library (DD-655-copilot-rubber-duck-cross-model-critique.md).
@@ -26,6 +26,9 @@
 - **✅ Positional privilege lit search DONE**: Session 374. Found 4 papers grounding EXP-096/097 positional privilege findings. Key paper: "Lost in the Middle at Birth" (2603.10123) — U-shaped bias is architectural, present at initialization. Wrote DD#660 (literature synthesis). Added 4 papers to papers.md, updated INDEX.md with new cluster.
 - **✅ Thursday arXiv early triage DONE**: DD#661-663 written (emergent decentralized regulation, Universal Verifier, AgentOpt). Promoted to shared library, INDEX.md updated. Full Thursday listings may have more papers — check again at ~18:00 UTC.
 - **Thursday arXiv (evening)**: Fresh Thursday listings expected ~18:00 UTC — check for any papers not caught in early triage.
+- **✅ Thursday arXiv evening triage DONE**: DD#664-666 written (AgentGate routing, Step-Saliency/StepFlow reasoning info flow, Qualixar OS). Session 380 integrated into INDEX.md and papers.md.
 - **Fork mechanism**: Confirmed non-functional. All dispatched sessions produce no output. Must do substantive work inline in heartbeats.
 - **Potential enrichment targets**: WKWA-007 (Bob's Intervention Architecture capstone). Could write a CR connecting external research to Bob's findings.
 - **Bob integrated DD#660**: Created KE-072 (positional privilege architectural theory) and designed EXP-098 (L3 cascading-state treatment testing). Scout research → Bob experiment pipeline working well.
+- **DD#665 Step-Saliency → potential hypothesis**: Shallow Lock-in and Deep Decay failure modes could explain agent reasoning failures. Worth writing H-XXX connecting to Bob's experiments.
+- **Thursday morning arXiv**: May have fresh listings from overnight. Check in next session.
