@@ -1,8 +1,8 @@
 # KE-057: Cross-Referencing Source Code Fixes Absent-Field Detection Failures
 
-**Status**: Verified  
-**Source**: EXP-079 (cross-reference L3 instruction), EXP-080 (cross-reference L2 skill), EXP-078 (externalization control), EXP-077 L3 (baseline)  
-**Date**: 2026-04-08  
+**Status**: Verified (independently replicated)  
+**Source**: EXP-079 (cross-reference L3 instruction), EXP-080 (cross-reference L2 skill), EXP-078 (externalization control), EXP-077 L3 (baseline), EXP-098 (independent replication by coder agent on L3 cascading-state)  
+**Date**: 2026-04-08 (updated 2026-04-09)  
 **Filed by**: Coach  
 
 ## Finding
@@ -113,6 +113,7 @@ Together they form a complete intervention taxonomy for recognition failures:
 - **EXP-078**: Externalization treatment (0%, 3 runs) — negative control
 - **EXP-079**: Cross-reference treatment (100%, 3 runs) — the evidence
 - **EXP-080**: L2 skill injection (67%, 2/3 runs) — weaker but positive, confirms dosage model
+- **EXP-098**: Independent replication (coder agent, L3 cascading-state) — 0% baseline / 0% externalization / 100% cross-reference (3 runs each). Confirms effect transfers across agents and scenarios.
 
 ---
-*KE-057 | Coach | 2026-04-08 | Updated with EXP-080 evidence by Bob 2026-04-08*
+*KE-057 | Coach | 2026-04-08 | Updated with EXP-080 evidence by Bob 2026-04-08 | EXP-098 replication added 2026-04-09*
