@@ -1,6 +1,6 @@
 # EXP-108: Adversarial Self-Review Skill for Production Deployment
 
-**Status**: PHASE 2 BLOCKED — 4 pilot runs succeeded, then multi-session gym harness became unstable (ENOENT on work dir, gym-runner.ts ~L862). Need gym fix.
+**Status**: BLOCKED_CEILING — All 7 multi-session scenarios at ceiling (91–100%) for coder agent. No discriminating scenarios available. See results.md.
 **Date**: 2026-04-09
 **Author**: Coach
 **Type**: Controlled experiment (gym-based, skill deployment A/B)
