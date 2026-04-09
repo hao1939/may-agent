@@ -25,9 +25,11 @@ import { existsSync } from "node:fs";
 export const name: string = "deliver-or-report";
 
 export const description: string =
-  "Two-phase delivery workflow. Phase 1: analyze and plan (identify " +
-  "deliverables). Phase 2: write deliverables to disk. Retries on " +
-  "write failure. Prevents non-delivery (FM-3.1).";
+  "Multi-phase delivery workflow. Phase 1: analyze and plan (identify " +
+  "deliverables). Phase 2: write deliverables to disk. Phase 2b: " +
+  "retry any missing deliverables (auto-triggered when Phase 2 misses " +
+  "planned files). Phase 3: verify ALL planned files exist. Prevents " +
+  "non-delivery (FM-3.1) and partial-delivery (FM-2.6).";
 
 // ── Helpers ────────────────────────────────────────────────────────────
 
@@ -156,19 +158,72 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   ctx.emit({ type: "step_done", step: "phase3-verify" } as any);
 
   // ═══════════════════════════════════════════════════════════════════
+  // PHASE 2b: Retry missing files (if any)
+  // ═══════════════════════════════════════════════════════════════════
+  let finalVerified = [...verified];
+  let finalMissing = [...missing];
+
+  if (verified.length > 0 && missing.length > 0) {
+    ctx.emit({ type: "step_start", step: "phase2b-complete-missing" });
+
+    const phase2bPrompt =
+      `## Phase 2b: Complete Missing Deliverables\n\n` +
+      `### Original Task\n${ctx.task}\n\n` +
+      `### Plan from Phase 1\n${planText}\n\n` +
+      `### Status: INCOMPLETE — ${missing.length} of ${uniqueFiles.length} deliverables missing\n\n` +
+      `### ✅ Already completed:\n` +
+      verified.map(f => `- ${f}`).join("\n") + "\n\n" +
+      `### ❌ Still missing — YOU MUST COMPLETE THESE:\n` +
+      missing.map(f => `- ${f}`).join("\n") + "\n\n" +
+      `### Instructions\n` +
+      `Phase 2 completed ${verified.length} of ${uniqueFiles.length} planned deliverables.\n` +
+      `The remaining ${missing.length} file(s) listed above were NOT written.\n\n` +
+      `1. For each missing file, write it NOW using the plan from Phase 1.\n` +
+      `2. If a file path doesn't exist, \`ls\` the parent directory to find the correct path.\n` +
+      `3. If the file genuinely needs to be created (new entry), create it.\n` +
+      `4. Verify each file exists after writing.\n` +
+      `5. Do NOT re-do already-completed files. Focus ONLY on the missing ones.\n\n` +
+      `⚠️ Every file listed under "Still missing" MUST exist on disk before you finish.\n` +
+      `   If you cannot write a file, explain exactly why in your finish() summary.`;
+
+    const phase2b = await ctx.runAgent("bob", phase2bPrompt);
+
+    // Re-check all files after retry
+    finalVerified = [];
+    finalMissing = [];
+    for (const filePath of uniqueFiles) {
+      if (existsSync(filePath)) {
+        finalVerified.push(filePath);
+      } else {
+        finalMissing.push(filePath);
+      }
+    }
+
+    ctx.emit({ type: "step_done", step: "phase2b-complete-missing" } as any);
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
   // Result
   // ═══════════════════════════════════════════════════════════════════
-  const hasDeliverables = verified.length > 0;
+  const hasDeliverables = finalVerified.length > 0;
+  const allDelivered = hasDeliverables && finalMissing.length === 0;
 
-  if (hasDeliverables) {
+  if (allDelivered) {
     return ctx.done(
-      `## Delivery Complete\n\n` +
+      `## Delivery Complete — ALL ${finalVerified.length} deliverables verified\n\n` +
       `### Deliverables Verified on Disk\n` +
-      verified.map(f => `- ✅ ${f}`).join("\n") + "\n" +
-      (missing.length > 0
-        ? `\n### Missing (planned but not found)\n` +
-          missing.map(f => `- ❌ ${f}`).join("\n") + "\n"
-        : "") +
+      finalVerified.map(f => `- ✅ ${f}`).join("\n") + "\n" +
+      `\n### Phase 1 Plan\n${planText.slice(0, 500)}\n\n` +
+      `### Phase 2 Output\n${phase2Text.slice(0, 500)}`
+    );
+  } else if (hasDeliverables) {
+    // Partial delivery — some files exist but not all
+    return ctx.done(
+      `## Delivery PARTIAL — ${finalVerified.length}/${uniqueFiles.length} deliverables\n\n` +
+      `### ✅ Verified on Disk\n` +
+      finalVerified.map(f => `- ✅ ${f}`).join("\n") + "\n" +
+      `\n### ❌ Missing after retry\n` +
+      finalMissing.map(f => `- ❌ ${f}`).join("\n") + "\n" +
       `\n### Phase 1 Plan\n${planText.slice(0, 500)}\n\n` +
       `### Phase 2 Output\n${phase2Text.slice(0, 500)}`
     );

@@ -24,13 +24,13 @@
   - `convention-verify-edit-fewshot` ✅ validated (67% overall, 100% product, 17% convention — hardest check)
   - `context-proof-build-xref` ✅ validated (67% overall, 100% behavior, 0% efficiency — build environment issue, not behavior)
   - **Second gym graduation exit condition MET** (2026-04-09)
-- [~] **WAVE 3 DEPLOYMENT (Gym Remediation)**: 3 externalization scenarios created:
-  - `regression-from-fix-ext` ✅ (regression awareness externalization)
-  - `search-strategy-escalation-ext` ✅ (search planning externalization)
-  - `spec-adherence-multi-step-ext` ✅ (checklist externalization)
+- [x] **WAVE 3 DEPLOYMENT (Gym Remediation)**: 3 externalization scenarios created and VALIDATED:
+  - `regression-from-fix-ext` ✅ validated 3/3 (perfect — 18/18 checks)
+  - `search-strategy-escalation-ext` ✅ validated 3/3 (product perfect, convention `search-count-under-10` fails 3/3 — efficiency gap, not product)
+  - `spec-adherence-multi-step-ext` ❌ validated 0/3 (product 24/24 perfect, convention `step-order` fails 3/3 — read-before-write ordering gap)
   - `regression-from-fix-workflow` ⏭ skipped (workflow IS the treatment)
   - 3.4 (convention-verify-edit-workflow) + 3.5 (incremental-context-loading) ⏳ need deeper work
-  - Awaiting Coach validation runs
+  - **Overall**: 2/3 pass, 54/54 product checks (100%), 8/15 convention checks (53%). Product behavior excellent; convention discipline gaps remain.
 - [ ] **Complete remaining 3 scenarios**: wrong-tool-args, wrong-tool-args-workflow (cut off in sweep part 3). Delegate to Coach.
 - [x] **Tech-Lead jsonSchema Blocker**: SELF-RESOLVED (2026-03-29). Was intermittent — 1 error in last 6h, subsequent heartbeats completing normally. No longer blocking.
 - [x] **C12.1 Convention Miscalibration → Module Cache**: Fix deployed in code (2026-03-29 20:43) but NOT LIVE due to Bun module cache. See C12.1 Module Cache (P0) entry above.

@@ -1,0 +1,10 @@
+{
+  "name": "kb-integration-multi-file",
+  "description": "Agent must integrate experiment findings into 6 knowledge base files. Tests completion tracking: agents that drift, read excessively, or call finish() prematurely will miss files. One file has a slightly wrong path to test ENOENT recovery.",
+  "categories": ["completeness", "knowledge-integration"],
+  "tags": ["ability", "FM-2.6", "multi-file"],
+  "tier": "standard",
+  "timeout": 8,
+  "agent_type": "coder",
+  "workflow": false
+}
