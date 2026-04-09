@@ -1,17 +1,17 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~14:25 UTC
+Updated: 2026-04-09 ~14:55 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Running — Heartbeat active (just fired).
-- **Coach**: 🟢 Running — EXP-103 Phase 2 actively running (12 gym scenarios). 8/12 runs done, all 100% pass. Run 3 batch in progress.
-- **QA**: 🟢 Running — Heartbeat active (just fired).
+- **Bob**: 🟢 Running — Heartbeat active + forked "Anti-Confabulation Production Deployment" design brief (translating EXP-103 to production).
+- **Coach**: 🟢 Running — EXP-103 COMPLETE (12/12 runs, 100% pass). Session may still be running additional work.
+- **Scout**: 🟢 Running — Heartbeat active.
 - **Tech-lead**: 🟢 Idle — No active session.
-- **Scout**: 🟢 Idle — No active session.
 - **Optimizer**: 🟢 Idle — No active session.
 - **Evaluator**: 🟢 Idle — No active session.
-- **All agents**: 🟡 3/8 actively running (coach, bob, qa). Amy-kimi still 🔴. Zero errors in last hour.
+- **QA**: 🟢 Running — Heartbeat active.
+- **All agents**: 🟡 4/8 actively running (bob, coach, scout, qa). Amy-kimi still 🔴. Zero errors in last hour.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -93,7 +93,9 @@ Updated: 2026-04-09 ~14:25 UTC
 | **Multi-Session Harness Phase 3** | ⚠️ MOSTLY DONE | coach | 3/4 scenarios complete (`ghost-deliverable-chain`, `stale-plan-drift`, `unresolved-failure-chain`). `kb-integration-failure` missing `package.json` + `success_criteria.js` (interrupted). Also `instruction-override-drift` missing `success_criteria.js`. |
 | **Bug 2 Gate Abort Signal Fix** | ✅ MERGED | tech-lead/may | Branch `fix/bug2-gate-abort-signal` merged to main. Abort signal propagation + gym directory fix. 4/4 tests pass. |
 | **Telegram Notification Bug (req:88bd4688)** | ✅ ALREADY FIXED | tech-lead | Commit 9de9e58 merged to main. Notifications filtered to interface agent only + dead prompt handler removed. |
-| **EXP-103 Adversarial Framing vs Verification** | 🔄 IN PROGRESS | coach | Phase 1 (design) done. Phase 2: 8/12 runs complete (all 100% pass). Run 3 batch (final 4) running in `s_1775742854696_397`. Expected completion ~14:30. |
+| **EXP-103 Adversarial Framing vs Verification** | ✅ COMPLETE | coach | **LANDMARK**: Both adversarial framing AND machine-verified evidence = 100% pass (12/12 runs). Baselines 11-18%. +75-89pp effect size. Verification confabulation SOLVED. KE-099 + KE-100 created. Bob doing synthesis + production deployment design brief. |
+| **EXP-103 Theory-vs-Experiment Synthesis** | ✅ COMPLETE | bob | Cross-reference synthesis: DD-694/695/696/697 vs EXP-103 empirical results. Objective redirection (adversarial framing) achieves same outcome as information asymmetry (DD-694) through different mechanism. At `agents/bob/workspace/SYNTHESIS-theory-vs-experiment-DD694-697-EXP103.md`. |
+| **Anti-Confabulation Production Deployment Design** | 🔄 IN PROGRESS | bob | Forked session translating EXP-103 findings into production deployment plan. Session `15cfdae6`. |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -125,18 +127,18 @@ Updated: 2026-04-09 ~14:25 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (13:54)
-- **4 agents active** — May, Bob, Coach, Scout all running heartbeat cycles. Coach also running EXP-103 Phase 2 (12 gym scenarios).
+## Latest Cycle Summary (14:55)
+- **4 agents active** — May, Bob, Coach, Scout all running heartbeat cycles.
 - **Zero recent errors** — System clean.
-- **Cancelled stale session again** — `s_1775311714523_3` (idle 7186min/~5 days) was STILL showing despite previous cancel. Killed again.
+- **EXP-103 COMPLETE** — **LANDMARK result**: Both adversarial framing AND machine-verified evidence injection = 100% pass rate (12/12 runs) vs 11-18% baselines. Verification confabulation effectively solved. KE-099 (adversarial framing) + KE-100 (machine-verified evidence) created. Bob produced synthesis doc (theory vs experiment) and is now writing anti-confabulation production deployment design brief.
 - **No new tasks from Hao** — Nothing to dispatch.
-- **EXP-103 underway** — Coach designed adversarial framing vs verification confabulation experiment, now executing 12 gym runs across 4 scenarios.
-- **System healthy** — All key agents cycling normally. Amy-kimi still 🔴 (billing). Optimizer, Evaluator, Tech-lead, QA not currently running.
+- **System healthy** — All key agents cycling normally. Amy-kimi still 🔴 (billing). Optimizer, Evaluator, Tech-lead idle.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao**.
+- **P1**: **Anti-Confabulation Production Deployment** — Bob writing design brief. When done, dispatch to tech-lead for implementation.
 - **P1**: **Complete Multi-Session Harness Phase 3/4** — Coach continuing. Needs `kb-integration-failure/package.json` + `success_criteria.js` and `instruction-override-drift/success_criteria.js`.
-- **P1**: **Present research sprint results to Hao** — H-091, 17+ experiments, gym graduation, EXP-098 landmark result, EXP-101 null result.
+- **P1**: **Present research sprint results to Hao** — H-091, 17+ experiments, gym graduation, EXP-098 landmark, EXP-103 landmark, EXP-101 null result.
 - **P2**: Federation design ready for Hao review
 - **P2**: Pre-merge review gate Phase 2 (auto-review)
 - **P2**: Amy-kimi still down — blocked on Hao for billing
