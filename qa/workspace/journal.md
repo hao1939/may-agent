@@ -39,6 +39,26 @@ Heartbeat QA at HEAD **41b5074**. Spot-checked the earlier abort-signal propagat
 - `./node_modules/.bin/tsc --noEmit`: PASS (exit 0; no output)
 - `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2079 passed (2100)**
 
+## 2026-04-09T16:54Z
+
+### Summary
+Heartbeat QA at HEAD **41b5074**. Independently re-checked `src/lib/manager.ts` (session manager core) at the import/constructor/early-method level for obvious type/logic hazards. Mandatory gates run: `tsc` passes; `vitest` fails with the same systemic issues as earlier, plus an additional scrape DNS timeout test.
+
+### Files reviewed
+- `src/lib/manager.ts` (lines ~1–220)
+
+### Mandatory gates (re-run 2026-04-09T16:53Z)
+- `./node_modules/.bin/tsc --noEmit`: PASS (no output)
+- `./node_modules/.bin/vitest --run`: FAIL — **5 failed files | 136 passed (141)**; **22 failed | 2078 passed (2100)**
+  - `test/launcher.test.ts`: 7 failed — missing `/app/src/app/launcher.ts` (existsSync false + ENOENT reads)
+  - `test/context-learn.test.ts`: 7 failed — `rmSync(..., { recursive: true })` fails with `EACCES` under `/app/test-workspace/context-learn-test/*`
+  - `test/context-learning.test.ts`: 6 failed — same `EACCES` cleanup failure under `/app/test-workspace/context-learning-test/*`
+  - `test/research-db.test.ts`: 1 failed — `syncs the actual knowledge base without errors` timed out at 5000ms
+  - `test/scrape.test.ts`: 1 failed — `handles DNS resolution failure gracefully` timed out at 5000ms
+
+### Verdict
+CONDITIONAL — patch appears type-safe, but CI is blocked by missing file + permission/timeouts in test environment.
+
 ## 2026-04-09T16:26Z
 
 ### Summary
