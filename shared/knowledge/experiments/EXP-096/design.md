@@ -1,7 +1,7 @@
 # EXP-096: System Prompt Length Threshold for Few-Shot Delivery
 
 **Date**: 2026-04-09
-**Status**: IN PROGRESS
+**Status**: COMPLETE
 **Hypothesis**: Attention dilution causes system-prompt few-shot failure. Reducing system prompt from ~48KB to ~2KB will make system-prompt few-shot effective.
 
 ## Background
