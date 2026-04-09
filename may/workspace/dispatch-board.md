@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~10:53 UTC
+Updated: 2026-04-09 ~11:17 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
