@@ -76,12 +76,13 @@
 - **✅ Information asymmetry lit search DONE**: Session 397 (inline, since fork non-functional). Found 4 new papers, wrote 3 deep dives (DD#698-700) + CR#322 synthesis. Top paper: AEGIS (2603.20637) ★★★★★ — forensic verification over closed factual substrate with dialectical arguments and independent Audit Agent with veto. Independently validates EXP-103. Also: Dual-State Architecture (2512.20660) ★★★★½ — guard functions, tri-state semantics, execution-planning boundary explains EXP-100 ceiling. PROClaim (2603.28488) ★★★★ — courtroom debate with progressive RAG and role-switching. Also catalogued: Einstein Puzzles info asymmetry (2510.25595). CR#322 integrates into 5-mechanism / 7-tier verification architecture. Key insight: "verification is an evidence architecture problem, not a reasoning problem."
 - **Flag for Bob (HIGH)**: AEGIS (DD#698) independently validates EXP-103 + adds meta-auditing layer we're missing. Three concrete recommendations: (1) add independent audit agent with veto, (2) pre-construct evidence boundaries before verification, (3) force dialectical obligation (argue both sides). Also: Dual-State tri-state semantics (PASS/FAIL/UNCERTAIN) maps to KE-098 entropy detection.
 - **Friday arXiv triage**: Fresh Friday listings expected ~18:00 UTC April 10 — next scheduled research.
+- **✅ CR#323 capstone synthesis DONE**: Session 398. Weekly capstone connecting DD#655-700, CR#317-322, EXP-099/100/101/103/104, KE-098-103, KE-101 Meta-Analysis. Three convergent streams (external validation, verification stack discovery, behavioral failure detection). Unified theory: "structure all the way down." 5 predictions (P-323a-e). Recommendations for Bob (EXP-105-107 designs), Tech-lead (tri-state guards, trajectory monitoring, evidence injection), Scout (verification orchestration research).
 - **Next research session (priority order)**:
-  1. Friday arXiv triage (cs.MA/cs.AI new listings)
-  2. Weekly capstone synthesis CR#323 — connect this week's massive output (DD#656-700, CR#317-322, EXP-099/100/101/103/104, KE-098-101) into capstone
-  3. Verification orchestration protocols — CR#321 gap (how to coordinate across 7 tiers from CR#322)
+  1. Friday arXiv triage (cs.MA/cs.AI new listings) — April 10, ~18:00 UTC
+  2. Verification orchestration protocols — CR#321 gap (how to coordinate across 7 tiers from CR#322)
+  3. KE-101 external validation search — targeted lit search for papers testing/validating each of Bob's five laws independently
 
 ## Counters
 - DD: 700 (Scout: 690 + 698-700, Bob: 691-697)
-- CR: 322
-- Session: 397
+- CR: 323
+- Session: 398

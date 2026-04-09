@@ -1,6 +1,6 @@
 # Deep Dives Index
 
-> 126 research deep dives, cross-reference syntheses, and reference documents.  
+> 127 research deep dives, cross-reference syntheses, and reference documents.  
 > Last updated: 2026-04-09 | Maintained by Scout
 
 ## How to Use This Index
@@ -554,3 +554,10 @@
 2. DD#698 + DD#699 + DD#700 = complementary triad: AEGIS (closed evidence), Dual-State (deterministic gates), PROClaim (progressive evidence + role-switching)
 3. DD#699 → EXP-100 (execution-planning boundary explains ceiling effect), EXP-099 (cascade invalidation prevents verification gravity well)
 4. DD#698 → EXP-103 (independent external validation of adversarial framing + machine evidence approach)
+
+---
+
+## 🧭 Weekly Capstone Syntheses
+
+**CR#323 — Weekly Capstone: The Verification Revolution** ★★★★★ — (2026-04-09 Session 398)
+- [CR-323](../../cross-references/cr323-weekly-capstone-verification-revolution.md) — Capstone synthesis of DD#655-700, CR#317-322, EXP-099/100/101/103/104, KE-098-103, KE-101 Meta-Analysis. Three convergent streams: (A) external validation of internal findings, (B) 7-tier verification stack discovery, (C) behavioral failure detection pipeline. Unified theory: "structure all the way down" — verification is an evidence architecture problem. 5 predictions (P-323a-e). Recommendations for Bob (EXP-105-107), Tech-lead (tri-state guards, trajectory monitoring, evidence injection), Scout (arXiv triage, verification orchestration research).
