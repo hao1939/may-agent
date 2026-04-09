@@ -1,13 +1,13 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~17:53 UTC
+Updated: 2026-04-09 ~18:25 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Running — Anti-confab design brief ✅ REVISED (file updated 17:29 with EXP-104 confound findings). Heartbeat cycling.
-- **Coach**: 🟢 Running — EXP-105 designed, waiting for data (zero post-deploy work sessions). Heartbeat cycling.
+- **Bob**: 🟢 Running — KB integration (DD-701-704 + CR-324) completed this cycle. Heartbeat cycling.
+- **Coach**: 🟢 Running — Weekly regression check ✅ DONE. EXP-105 still waiting for data (zero coder/optimizer work sessions post-deployment).
 - **Scout**: 🟢 Running — Active research. Heartbeat cycling.
-- **Tech-lead**: 🟢 WORKING — Fixing heartbeat few-shot injection bug (req:75f9b6e9). Work session forked (req:8c77a14c).
+- **Tech-lead**: 🟢 Running — Heartbeat few-shot bug fix ✅ MERGED (commit 7e6bc59, 29/29 tests). Back to heartbeat cycling.
 - **Optimizer**: 🟡 IDLE — Just heartbeat cycling. No dispatched work.
 - **Evaluator**: 🟡 IDLE — Evaluating task trees + heartbeat cycling.
 - **QA**: 🟡 IDLE — Just heartbeat cycling.
@@ -102,8 +102,8 @@ Updated: 2026-04-09 ~17:53 UTC
 | **KE-101 Meta-Analysis** | ✅ COMPLETE | bob | **LANDMARK**: 104+ experiments synthesized into 5 Laws of Agent Improvement, 4-tier intervention hierarchy, 3 meta-principles. Core finding: structure dominates content (0/32+ text rules on judgment vs 87-100% structural). At `agents/shared/knowledge/entries/KE-101-meta-analysis-theory-of-agent-improvement.md`. |
 | **FM-3.3 Bob Concentration Analysis** | ✅ COMPLETE | coach | **NOT a real regression** — measurement artifact. 1.9x inflation from eval duplication + LLM eval selection bias. Bob's true FM-3.3 rate (13.6%) is *lowest* of agents with volume. At `agents/coach/workspace/briefs/bob-fm33-concentration-analysis.md`. |
 
-| **EXP-105 Few-Shot Production Impact** | ⏳ WAITING | coach | No data — zero coder/optimizer work sessions since deployment (Apr 9). Baselines captured. **BUG FOUND**: heartbeat tasks match `bug|error` trigger, injecting unnecessary few-shot (~500-800 tokens × 48 fires/day). Needs fix: exclude `[heartbeat]` from few-shot router. |
-| **Heartbeat Few-Shot Injection Bug Fix** | ⏳ IN PROGRESS | tech-lead | Work session forked (req:8c77a14c). Add `[heartbeat]` exclusion to few-shot router in `fewshot-inject.ts`. Dispatched 17:25, forked 17:53. |
+| **EXP-105 Few-Shot Production Impact** | ⏳ WAITING | coach | No data — zero coder/optimizer work sessions since deployment (Apr 9). Baselines captured. **BUG FIXED**: heartbeat exclusion merged (commit 7e6bc59). Token waste eliminated. |
+| **Heartbeat Few-Shot Injection Bug Fix** | ✅ MERGED | tech-lead/may | Branch `review/s_1775757252662_484` merged to main. Commit 7e6bc59. 29/29 tests pass. `[heartbeat]` prefix now skips few-shot router. |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -135,20 +135,20 @@ Updated: 2026-04-09 ~17:53 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (17:53)
+## Latest Cycle Summary (18:25)
 - **7 agents active** — All except Amy-kimi running heartbeat cycles.
-- **Zero recent errors** — 1 Bob interruption at 17:25 (Phase 2 anti-confab write aborted) but file was written successfully at 17:29. Non-critical.
+- **Zero errors this hour** — One Bob interruption earlier (17:25, Phase 2 write abort) but non-critical.
 - **3 agents effectively idle**: Optimizer, Evaluator, QA — all just cycling heartbeats.
-- **Active work**:
-  - **Tech-lead**: Fixing heartbeat few-shot injection bug (work session forked this cycle). Progress on P1 item.
-  - **Bob**: Anti-confab design brief ✅ revised with EXP-104 confound findings. Now ready for Hao/tech-lead review.
-  - **Coach**: EXP-105 blocked on data — still zero coder/optimizer real work sessions since few-shot deployment.
-- **No new tasks from Hao** — System in holding pattern after research sprint completion.
-- **Key insight**: Tech-lead now productive (few-shot bug fix). Bob completed the anti-confab revision. System transitioning from research to deployment phase but needs Hao direction for next priorities.
+- **Completed this cycle**:
+  - **Heartbeat few-shot bug fix** ✅ MERGED to main (commit 7e6bc59). Saves ~500-800 tokens × 48 fires/day. 29/29 tests.
+  - **Coach**: Weekly regression check completed.
+  - **Bob**: DD-701-704 + CR-324 KB integration completed.
+- **No new tasks from Hao** — System in holding pattern. Research sprint complete, deployment phase needs Hao direction.
+- **Stale zombie session**: `s_1775311714523_3` (may, 19hr old) — harmless, will die on its own.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao since Mar 24**.
-- **P1**: ~~Fix heartbeat few-shot injection bug~~ → **IN PROGRESS** (tech-lead, req:8c77a14c). Monitor completion next cycle.
+- **P1**: ~~Fix heartbeat few-shot injection bug~~ → ✅ **MERGED** (commit 7e6bc59, 29/29 tests).
 - **P1**: **Surface idle agents to Hao** — 3 agents burning cycles with zero output (optimizer, evaluator, QA). Need new work streams or permission to spin down.
 - **P1**: **Present research sprint results to Hao** — KE-101 meta-analysis is the capstone. H-091, 17+ experiments, gym graduation, EXP-098 landmark, EXP-103/104 confabulation findings.
 - **P1**: **Anti-confab brief ready for review** — At `agents/shared/may-agent-docs/design/anti-confabulation-deployment.md`. Revised with EXP-104 confound (evidence-over-narrative skill was the real fix, not adversarial framing). Ready for tech-lead + Hao.
