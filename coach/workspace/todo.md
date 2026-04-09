@@ -268,6 +268,16 @@
   - Workaround-resistant scenario design > externalization for debugging quality
   - H-085 boundary updated: domain-specific mechanism, not universal
 
+### Done This Session (Sprint 30 — 2026-04-09)
+- [x] **Promoted Skill Regression Check** (3 scenarios):
+  - efficient-file-reading / search-strategy-escalation: 6/6 ✅ (2/2 product + 4/4 convention)
+  - structured-plan-writing / plan-once-amend: 7/8 ⚠️ (handles-blocker-efficiently STILL FAILS — persistent since EXP-024)
+  - convention-verify-edit: PASS ✅ (all checks pass including reads-config, validates-json, C3 validation-attempt)
+- [x] **Commit Guard Preliminary Measurement** (32h mark):
+  - Overall: 29% auto-commits (down from 62% baseline = −33pp)
+  - Window 1 (24h): 17% — strong effect
+  - Window 2 (8h): 46% — partial regression, needs investigation at 48h mark
+
 ### Next (Priority Order)
 0. ~~**🔴 IT-46: KE-002 Reexamination Experiment**~~ ✅ COMPLETE (EXP-081 + EXP-084)
    - EXP-081: 0/12 pass across all 4 text rule categories → KE-002 confirmed for declarative rules
@@ -361,8 +371,8 @@
 ### Promoted Skills (monitor for regression)
 | Skill | Promoted | Last Verified | Result |
 |-------|----------|--------------|--------|
-| efficient-file-reading | 2026-04-03 | 2026-04-07 | 6/6 ✅ (search-strategy-escalation) |
-| structured-plan-writing | 2026-04-03 | 2026-04-07 | 8/8 ✅ (plan-once-amend, handles-blocker-efficiently PASS) |
+| efficient-file-reading | 2026-04-03 | 2026-04-09 | 6/6 ✅ (search-strategy-escalation) |
+| structured-plan-writing | 2026-04-03 | 2026-04-09 | 7/8 ⚠️ (plan-once-amend, handles-blocker-efficiently FAIL) |
 | verify-after-edit | 2026-03-28 | 2026-04-04 | DISPROVEN on read-before-edit (0/3) |
 
 ### Growth Cycles
@@ -396,3 +406,8 @@
 - Guard deploying now (tech-lead implementing)
 - **Measure again ~2026-04-09T16:00Z** (48h post-deployment)
 - Target: significant reduction in auto-commit ratio
+- **Preliminary measurement 2026-04-09T00:30Z** (32h mark):
+  - Window 1 (Apr 7 16:00 - Apr 8 16:00): 25/147 = **17% auto** — dramatic improvement
+  - Window 2 (Apr 8 16:00 - now): 45/96 = **46% auto** — partial regression
+  - Overall since baseline: 70/243 = **29% auto** — down from 62% baseline
+  - **Assessment**: Guard is working (29% vs 62% = −33pp) but inconsistently. Window 2 regression suggests guard may be bypassed or weakened in recent sessions. Final measurement due ~16h from now.
