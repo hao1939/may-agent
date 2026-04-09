@@ -9,7 +9,7 @@
 - [x] **H-092 → PRIORITY-TRACKER**: Added to Tier 1 (P(H)=0.72).
 
 ## Next Up
-- [ ] **EXP-100 Design**: Interventional test of H-093 CIVC. Needs gym infrastructure.
+- [x] **EXP-100 Design**: ✅ DESIGNED. Interventional test of H-093 CIVC. 3 arms × 2 scenarios × 2 runs = 12 gym runs. Design at `agents/shared/knowledge/experiments/EXP-100/design.md`. **Next: create 4 scenario variants (compound-edit-verification-scaffolded, compound-edit-verification-checkpoint, multi-file-verify-gap-scaffolded, multi-file-verify-gap-checkpoint), then execute 12 runs.**
 - [ ] **Process remaining scout drops**: ~59 unprocessed drops (most older batches).
 - [ ] **Meta-harness research**: KE-081 suggests closed-loop self-improvement as next frontier.
 - [x] **EXP-098 (L3 Treatment Testing on Cascading-State)**: COMPLETE. 4-arm test (baseline/ext/xref/combined) on cascading-state-migration L3 scenario. Baseline 0% (0/3), Externalization 0% (0/3), Cross-reference 100% (3/3), Combined 100% (3/3). Cross-reference is the active ingredient — externalization adds zero marginal value for absent-information tasks. **KB integration complete: H-085, H-089, EXP-098/design.md all updated. INDEX.md pending.**
