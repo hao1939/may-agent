@@ -493,3 +493,15 @@
 7. DD#676 + DD#677 + DD#678 = detection (mid-trajectory structural monitoring) + architecture (externalized reflection) + evaluation (adaptive scenario generation) — complete framework for next EXP-100 iteration
 8. DD#676 → DD#671 (Structural bottleneck finding connects to Structure Snowballing — both identify structural complexity as the key driver, not semantic difficulty)
 9. DD#677 → DD#667 (Self-revision decomposition complements MASC metacognitive correction — both argue for externalized, inspectable reflection mechanisms)
+
+**Verbalized confidence & linguistic calibration literature (EXP-101 / H-094 grounding)** ★★★★★ — NEW (2026-04-09 Session 389)
+1. [dd679](DD-679-explicit-uncertainty-interfaces-llm.md) — ★★★★★ EXCEPTIONAL: Dual uncertainty interfaces — global (verbalized confidence for final-answer trust) and local (`<uncertain>` markers during reasoning for intervention timing). Local interface induces late-layer reorganization. Makes silent failures visible. Directly validates HVR as "noisy local interface." Reasoning-time signals > post-hoc confidence.
+2. [dd680](DD-680-linguistic-confidence-hedging-mapper.md) — ★★★★½ First large-scale hedging expression dataset + lightweight hedge→confidence mapper. Most LLMs underperform on natural linguistic confidence. Weighted hedging scores > binary counting. Critical resource for EXP-101 methodology.
+3. [dd681](DD-681-reasoning-contamination-effect-confidence.md) — ★★★★½ CRITICAL WARNING: Calibration and verbalized confidence are ORTHOGONAL in representation space. "Reasoning Contamination Effect" — reasoning disrupts confidence verbalization. Position-weighted HVR (late-trace > full-trace) is essential. Predicts EXP-101 AUROC 0.55-0.65 (below SELFDOUBT benchmarks).
+4. DD#679 → DD#656 (SELFDOUBT's HVR = passive noisy version of trained local uncertainty interface; trained markers would outperform)
+5. DD#679 → DD#667 (Local uncertainty markers could trigger MASC-style metacognitive correction in real time)
+6. DD#680 → EXP-101 (Weighted hedging scores using mapper instead of binary hedge counting — direct methodology improvement)
+7. DD#681 → EXP-101 ⚠️ (RCE predicts late-trace HVR >> full-trace HVR — must test position-weighted variant)
+8. DD#681 → DD#674 (Hidden-state probing avoids RCE entirely — operates below verbalization layer, may be more robust)
+9. DD#679 + DD#680 + DD#681 = validation (HVR is real signal) + methodology (weighted hedging) + calibration warning (RCE limits passive detection) — comprehensive grounding for EXP-101
+10. Also catalogued but not deep-dived: 2604.01457 (Wired for Overconfidence — mechanistic circuits), 2603.17839 (Cached verbal confidence — DeepMind), 2604.03904 (I-CALM — confidence-aware abstention)

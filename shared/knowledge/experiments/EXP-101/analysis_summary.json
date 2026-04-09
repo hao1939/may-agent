@@ -1,0 +1,148 @@
+{
+  "totalSessions": 1259,
+  "skipped": 187,
+  "labeledSessions": 1253,
+  "zeroHedge": {
+    "count": 722,
+    "coverage": 0.5762170790103751,
+    "precision": 0.9626038781163435,
+    "correct": 695,
+    "total": 722
+  },
+  "hasHedge": {
+    "correct": 510,
+    "total": 531,
+    "precision": 0.96045197740113
+  },
+  "auroc": 0.5356154910096819,
+  "aurocBaselines": {
+    "shorterSessions": 0.537612378976487,
+    "longerSessions": 0.4623876210235132,
+    "fewerOps": 0.41372164048865623,
+    "moreOps": 0.5862783595113438
+  },
+  "hvrDistribution": {
+    "min": 0,
+    "p10": 0,
+    "p25": 0,
+    "p50": 0,
+    "p75": 0.21428571428571427,
+    "p90": 0.4444444444444444,
+    "max": 2.8,
+    "mean": 0.14248567538897877
+  },
+  "fm33": {
+    "evalSessionCount": 0,
+    "fm33Count": 0,
+    "noFM33Count": 0,
+    "fm33AvgHVR": null,
+    "noFM33AvgHVR": null
+  },
+  "agentStats": {
+    "amy-kimi": {
+      "n": 22,
+      "zhCov": 0.8181818181818182,
+      "zhPrec": 0.7222222222222222,
+      "avgHVR": 0.04671717171717171,
+      "avgHedgeRate": 0.6735729682574854,
+      "avgVerifyRate": 13.911488878791726,
+      "corrRate": 0.7727272727272727,
+      "auroc": 0.38235294117647056
+    },
+    "bob": {
+      "n": 270,
+      "zhCov": 0.45318352059925093,
+      "zhPrec": 0.9586776859504132,
+      "avgHVR": 0.1632749413978345,
+      "avgHedgeRate": 1.574589270046115,
+      "avgVerifyRate": 10.456202906763759,
+      "corrRate": 0.9588014981273408,
+      "auroc": 0.5182883522727273
+    },
+    "coach": {
+      "n": 268,
+      "zhCov": 0.33707865168539325,
+      "zhPrec": 0.8777777777777778,
+      "avgHVR": 0.2412006636785853,
+      "avgHedgeRate": 2.0770739357141084,
+      "avgVerifyRate": 10.461593175894501,
+      "corrRate": 0.9250936329588015,
+      "auroc": 0.4722672064777328
+    },
+    "coder": {
+      "n": 4,
+      "zhCov": 0.5,
+      "zhPrec": 1,
+      "avgHVR": 0.29166666666666663,
+      "avgHedgeRate": 3.5521405558259733,
+      "avgVerifyRate": 6.005446932015664,
+      "corrRate": 0.75,
+      "auroc": null
+    },
+    "evaluator": {
+      "n": 141,
+      "zhCov": 0.9361702127659575,
+      "zhPrec": 0.9924242424242424,
+      "avgHVR": 0.03829787234042553,
+      "avgHedgeRate": 0.147870174255455,
+      "avgVerifyRate": 5.350590588851197,
+      "corrRate": 0.9929078014184397,
+      "auroc": 0.46785714285714286
+    },
+    "may": {
+      "n": 128,
+      "zhCov": 0.6141732283464567,
+      "zhPrec": 0.9743589743589743,
+      "avgHVR": 0.07781174321673458,
+      "avgHedgeRate": 0.944301268827081,
+      "avgVerifyRate": 11.475364021447863,
+      "corrRate": 0.9763779527559056,
+      "auroc": 0.4663978494623656
+    },
+    "optimizer": {
+      "n": 141,
+      "zhCov": 0.6808510638297872,
+      "zhPrec": 0.9895833333333334,
+      "avgHVR": 0.13409812599220552,
+      "avgHedgeRate": 1.1852769852344454,
+      "avgVerifyRate": 5.009662323230131,
+      "corrRate": 0.9787234042553191,
+      "auroc": 0.716183574879227
+    },
+    "qa": {
+      "n": 10,
+      "zhCov": 0.9,
+      "zhPrec": 1,
+      "avgHVR": 0.025,
+      "avgHedgeRate": 0.1941747572815534,
+      "avgVerifyRate": 2.854880952560135,
+      "corrRate": 1,
+      "auroc": null
+    },
+    "scout": {
+      "n": 125,
+      "zhCov": 0.6935483870967742,
+      "zhPrec": 0.9883720930232558,
+      "avgHVR": 0.07394127180009534,
+      "avgHedgeRate": 0.577650498383342,
+      "avgVerifyRate": 7.4321266916636795,
+      "corrRate": 0.9838709677419355,
+      "auroc": 0.6495901639344261
+    },
+    "tech-lead": {
+      "n": 150,
+      "zhCov": 0.6,
+      "zhPrec": 0.9888888888888889,
+      "avgHVR": 0.1647240730356581,
+      "avgHedgeRate": 1.6248838029196169,
+      "avgVerifyRate": 7.9708200981467465,
+      "corrRate": 0.9866666666666667,
+      "auroc": 0.4577702702702703
+    }
+  },
+  "pUpdate": {
+    "from": 0.45,
+    "to": 0.45,
+    "reason": "Ambiguous results — no clear update"
+  }
+}

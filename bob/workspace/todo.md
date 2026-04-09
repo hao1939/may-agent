@@ -76,6 +76,15 @@
 - [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% of verify-after-edit failures need code-level fix, not prompting. Deferred until prompting experiments complete.
 - [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
 
+## Session Notes (2026-04-09 ~11:55)
+- **DD-676/677/678 INDEX INTEGRATION + KE-089 SYNTHESIS**: Integrated three new deep dives into INDEX.md Research Library and wrote cross-paper synthesis KE-089.
+  - **DD-676** ★★★★★ CRITICAL: TraceSafe-Bench — mid-trajectory safety benchmark. Structural data competence (ρ=0.79) dominates guardrail effectiveness; jailbreak robustness ρ≈0. Architecture > scale. Grounds H-093, seeds KE-089.
+  - **DD-677** ★★★★½: Self-Revising Agent Decomposition — 4-component decomposition shows explicit world-model planning (+24.1pp) dominates; LLM revision non-monotonic at ~4.3% of turns. Validates H-085, seeds KE-089.
+  - **DD-678** ★★★★: HAAF + NAAMSE — adaptive evaluation frameworks. Scenario manifold + evolutionary search for finding CIVC failure boundaries. Directly applicable to EXP-100 redesign. Seeds KE-089.
+  - **KE-089 WRITTEN**: Structural Verification Competence & Adaptive Evaluation Design. Key synthesis: structural competence hierarchy (structured data parsing > explicit planning > belief tracking > LLM revision). Reframes EXP-100 redesign toward mid-trajectory structural complexity. 4 predictions.
+- **Files created**: `agents/shared/knowledge/entries/KE-089-structural-verification-competence-adaptive-evaluation.md`
+- **Files modified**: `agents/shared/knowledge/INDEX.md` (3 DD rows + KE-089 row), `agents/bob/workspace/todo.md`
+
 ## Session Notes (2026-04-09 ~10:05)
 - **Cascade dynamics cross-thread synthesis**: Wrote comprehensive SYNTHESIS-cascade-dynamics-verification-defense-stack.md — the Five-Layer Cascade Defense Stack connecting DD-667→DD-675 (9 papers) with EXP-099, H-092/093/094, and KE-080→088.
   - **Key insight**: Verification collapse is a multi-stage degradation interceptable at 5 temporal points (Architecture → Pre-generation → Mid-generation → Post-step → Post-chain)

@@ -1,7 +1,7 @@
 # EXP-101: HVR (Hedge-to-Verify Ratio) Validation on Agent Session Logs
 
 **Date**: 2026-04-09
-**Status**: DESIGNED
+**Status**: COMPLETED
 **Hypothesis**: H-094 (P(H)=0.45) — HVR as Zero-Cost Agent Confidence Gate
 **Connected**: H-093 (CIVC), KE-068 (SELFDOUBT findings), DD-656 (SELFDOUBT paper)
 **Budget**: ~$0 (retrospective analysis of existing session data) + optional ~$2-3 for new gym validation runs

@@ -1332,3 +1332,29 @@ Production multi-agent data management system with "three-track knowledge archit
 ### Additional papers found (not deep-dived)
 
 | 2604.06742 | CLI-Tool-Bench: Evaluating LLM-Based 0-to-1 Software Generation (Hu et al., 2026) | ★★★½ GOOD — 100 real-world repos, black-box differential testing for ground-up CLI tool generation. Top models <43% success. Token consumption ≠ performance. Relevant harder evaluation setting for coding agent verification. |
+
+## 2026-04-09 — Session 389: Verbalized Confidence & Linguistic Calibration (EXP-101 / H-094 Grounding)
+
+### LLMs Should Express Uncertainty Explicitly — arXiv:2604.05306
+
+| 2604.05306 | LLMs Should Express Uncertainty Explicitly (Guo et al., April 2026) | ★★★★★ EXCEPTIONAL — Two complementary uncertainty interfaces: (1) global verbalized confidence for final-answer trust, (2) local `<uncertain>` markers during reasoning for intervention timing. Local interface induces late-layer reorganization (not just decoding refinement). Makes silent failures visible. Directly validates and extends HVR approach: passive hedging detection = noisy version of local interface. Key: reasoning-time signals are higher-value than post-hoc confidence. (ref: DD-679) |
+
+### Wired for Overconfidence: Mechanistic Circuits for Inflated Verbalized Confidence — arXiv:2604.01457
+
+| 2604.01457 | Wired for Overconfidence: A Mechanistic Perspective on Inflated Verbalized Confidence in LLMs (Zhao et al., April 2026) | ★★★★½ EXCELLENT — Circuit-level analysis: compact MLP blocks + attention heads in middle-to-late layers write the confidence-inflation signal. Identifies specific circuits causing overconfidence. Targeted inference-time interventions on these circuits substantially improve calibration. Explains WHY hedging markers work (mechanistic basis) and points to circuit-level fixes. (not deep-dived) |
+
+### Closing the Confidence-Faithfulness Gap — Reasoning Contamination Effect — arXiv:2603.25052
+
+| 2603.25052 | Closing the Confidence-Faithfulness Gap in Large Language Models (Miao & Ungar, March 2026) | ★★★★½ EXCELLENT — Calibration and verbalized confidence are linearly encoded but ORTHOGONAL. "Reasoning Contamination Effect" (RCE): reasoning disrupts confidence verbalization, exacerbating miscalibration. Two-stage adaptive steering fixes it. Critical warning for EXP-101: agent reasoning traces are exactly where RCE manifests. Position-weighted HVR (late-trace > full-trace) is essential. (ref: DD-681) |
+
+### How do LLMs Compute Verbal Confidence — Cached Metacognition — arXiv:2603.17839
+
+| 2603.17839 | How do LLMs Compute Verbal Confidence (Kumaran et al., DeepMind/Google, March 2026) | ★★★★ EXCELLENT — Confidence is CACHED at answer-adjacent positions (not reconstructed post-hoc). Reflects automatic sophisticated self-evaluation beyond token log-probabilities. Activation steering, patching, noising experiments on Gemma 3 27B and Qwen 2.5 7B. Implies verbal confidence reflects real metacognition. Supports HVR as a genuine signal, not artifact. (not deep-dived) |
+
+### Can LLMs Express Uncertainty Like Humans? — Linguistic Confidence via Hedging Mapper — arXiv:2509.24202
+
+| 2509.24202 | Can Large Language Models Express Uncertainty Like Human? (Tao et al., September 2025) | ★★★★½ EXCELLENT — First large-scale hedging expression dataset with human-annotated confidence scores. Lightweight mapper: hedges → calibrated confidence at near-zero cost. Most LLMs underperform on natural LC without prompting. Fine-tuning improves LC reliability. Directly applicable to EXP-101: weighted hedging scores > binary hedge counting. Key warning: natural hedging in agent traces may be poorly calibrated. (ref: DD-680) |
+
+### I-CALM: Incentivizing Confidence-Aware Abstention — arXiv:2604.03904
+
+| 2604.03904 | I-CALM: Incentivizing Confidence-Aware Abstention for LLM Hallucination Mitigation (Zong et al., April 2026) | ★★★★ EXCELLENT — Prompt-based framework: elicits verbal confidence + rewards abstention + normative principles (truthfulness, humility). GPT-5 mini on PopQA: reduces false-answer rate by shifting error-prone cases to abstention. Yields abstention-hallucination frontier. No retraining needed. Verbal confidence stable under prompt paraphrasing. Practical agent confidence gating approach. (not deep-dived) |
