@@ -1,16 +1,16 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~20:53 UTC
+Updated: 2026-04-09 ~21:26 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Running — Self-directed: Integrating EXP-107 findings into KB (just started). Bayesian Scorecard done earlier (29 ops).
-- **Coach**: 🟢 Running — EXP-107 Phase 1 COMPLETE (37 ops). Control arm: 6.25% FM-3.3 rate → experiment BLOCKED (below 30% threshold). Significant finding: gym-production gap confirmed. EXP-105 still waiting for data.
-- **Scout**: 🟢 Running — Heartbeat cycling, moderate activity.
-- **Tech-lead**: 🟡 IDLE — 1 op/heartbeat. No dispatched work. 14 commits undeployed (blocked on restart).
-- **Optimizer**: 🟡 IDLE — 3.5 ops avg. Just cycling.
+- **Bob**: 🟢 Running — EXP-107 KB integration COMPLETE. Clean heartbeat, fully current through KE-107. Self-directing.
+- **Coach**: 🟢 ACTIVE — Self-directed EXP-107 Phase 2: Running context-fatigue-verification baseline (session `s_1775769893871_555`). 3 runs to test if new multi-session scenario hits ≥30% FM-3.3 rate.
+- **Scout**: 🟢 Running — Heartbeat cycling, reprioritizing toward gym-production gap research.
+- **Tech-lead**: 🟡 IDLE — 1 op/heartbeat. No dispatched work.
+- **Optimizer**: 🟡 IDLE — 3-4 ops avg. Just cycling.
 - **Evaluator**: 🟡 IDLE — Running auto-evals but minimal activity.
-- **QA**: 🟡 IDLE — Minimal activity, no review branches to check.
+- **QA**: 🟡 IDLE — Minimal activity.
 - **All agents**: 🟢 7/8 running. **3 agents effectively idle** (tech-lead, optimizer, QA). Zero errors in last hour.
 
 ## Active Priorities (from Hao)
@@ -103,7 +103,9 @@ Updated: 2026-04-09 ~20:53 UTC
 | **FM-3.3 Bob Concentration Analysis** | ✅ COMPLETE | coach | **NOT a real regression** — measurement artifact. 1.9x inflation from eval duplication + LLM eval selection bias. Bob's true FM-3.3 rate (13.6%) is *lowest* of agents with volume. At `agents/coach/workspace/briefs/bob-fm33-concentration-analysis.md`. |
 
 | **EXP-107 Adversarial Self-Check** | ✅ BLOCKED | coach | Control arm: 6.25% FM-3.3 rate (1/16 finish calls), far below 30% viability threshold. **KEY FINDING**: Gym-production gap for FM-3.3 is ~10× (6% gym vs 50-70% production). Cannot run treatment arms. Recommends harder scenarios or production A/B testing. Bob integrating findings. Results at `agents/shared/knowledge/experiments/EXP-107/results.md`. |
-| **EXP-105 Few-Shot Production Impact** | ⏳ WAITING | coach | No data — zero coder/optimizer work sessions since deployment (Apr 9). Baselines captured. **BUG FIXED**: heartbeat exclusion merged (commit 7e6bc59). Token waste eliminated. |
+| **EXP-107 Phase 2 Context-Fatigue Baseline** | 🔄 RUNNING | coach | Session `s_1775769893871_555`. Running context-fatigue-verification scenario 3x to measure FM-3.3 rate. Target: ≥30%. |
+| **Fewshot Heartbeat Case-Insensitive Fix** | ✅ MERGED | may | Branch `review/fix-fewshot-heartbeat` merged to main. Regex `/^\[heartbeat\]/i` replaces startsWith. 30/30 tests pass. Branch deleted. |
+| **EXP-105 Few-Shot Production Impact** | ⏳ WAITING | coach | No data — zero coder/optimizer work sessions since deployment (Apr 9). Baselines captured. **BUG FIXED**: heartbeat exclusion merged (commit 7e6bc59 + case-insensitive fix). Token waste eliminated. |
 | **Heartbeat Few-Shot Injection Bug Fix** | ✅ MERGED | tech-lead/may | Branch `review/s_1775757252662_484` merged to main. Commit 7e6bc59. 29/29 tests pass. `[heartbeat]` prefix now skips few-shot router. |
 | **KE-106 Structural Enforcement ≠ Training** | ✅ COMPLETE | coach | Guards catch errors at 50-70% of sessions but underlying rate never decreases over 26 days. Guards are permanent infrastructure, not training wheels. At `agents/shared/knowledge/entries/KE-106-structural-enforcement-no-training-effect.md`. |
 
@@ -137,19 +139,20 @@ Updated: 2026-04-09 ~20:53 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (20:53)
+## Latest Cycle Summary (21:26)
 - **7 agents active** — All except Amy-kimi running heartbeat cycles.
 - **Zero errors this hour** — Clean system.
-- **Coach EXP-107 complete**: Control arm shows 6.25% FM-3.3 rate in gym (vs 50-70% production). Experiment BLOCKED — can't run treatment arms with base rate this low. Key finding: gym-production gap for FM-3.3 is ~10×.
-- **Bob integrating EXP-107**: Just started a work session to fold findings into KB.
-- **Zombie session killed**: `s_1775311714523_3` (may, 126hr+) — cancelled successfully.
-- **3 agents effectively idle**: Tech-lead (1 op/hb), Optimizer (3.5 ops), QA (minimal). No dispatched work available.
-- **System in post-sprint lull**: Awaiting Hao direction for next work streams. Bob and Coach self-directing well on knowledge integration.
+- **Coach self-directing EXP-107 Phase 2**: Forked work session (`s_1775769893871_555`) to baseline-test context-fatigue-verification scenario. Running 3 gym iterations to see if new multi-session design hits ≥30% FM-3.3 rate.
+- **Bob fully current**: EXP-107 integration complete. All knowledge through KE-107 indexed. Clean heartbeat, no pending work.
+- **Merged**: `review/fix-fewshot-heartbeat` — case-insensitive heartbeat exclusion in fewshot router. 30/30 tests pass. Branch deleted.
+- **Zombie session re-killed**: `s_1775311714523_3` (from tech-lead Telegram fix) — cancelled again.
+- **3 agents effectively idle**: Tech-lead (1 op/hb), Optimizer (3-4 ops), QA (minimal). No dispatched work.
+- **System stable but underutilized**: Awaiting Hao direction for next work streams. Coach is the only agent doing substantive work (EXP-107 continuation).
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao since Mar 24**.
-- **P0**: **Address system-wide idle state** — 6/7 running agents producing nothing. Options: (a) Hao provides new direction, (b) self-assign from research projects, (c) spin down idle agents to save cost.
-- **P1**: **Surface idle agents to Hao** — 3+ agents burning cycles with zero output (optimizer, evaluator, QA, tech-lead). Need new work streams or permission to spin down.
+- **P0**: **Address system-wide idle state** — 3+ agents burning cycles with zero output. Options: (a) Hao provides new direction, (b) self-assign from research projects, (c) spin down idle agents to save cost.
+- **P1**: **Monitor EXP-107 Phase 2** — Coach running context-fatigue-verification baseline (`s_1775769893871_555`). Watch for results — if ≥30% FM-3.3, we can proceed to treatment arms.
 - **P1**: **Present research sprint results to Hao** — KE-101 meta-analysis is the capstone. H-091, 17+ experiments, gym graduation, EXP-098 landmark, EXP-103/104 confabulation findings.
 - **P1**: **Anti-confab brief ready for review** — At `agents/shared/may-agent-docs/design/anti-confabulation-deployment.md`. Revised with EXP-104 confound. Ready for tech-lead + Hao.
 - **P2**: Federation design ready for Hao review
