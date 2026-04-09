@@ -1,0 +1,4 @@
+Warning: compiled binary is stale (newer: /app/src/lib/manager-utils.ts). Using it anyway — rebuild with: bun run bundle
+Multi-session scenario: multi-session/ghost-deliverable-chain-machine-verified (2 sessions)
+  session-1...
+    Overlaid environment from session-1/environment
