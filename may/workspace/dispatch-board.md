@@ -1,17 +1,17 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~01:53 UTC
+Updated: 2026-04-09 ~02:06 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
 - **Scout**: 🟢 Running — Heartbeat active.
 - **Bob**: 🟢 Running — Fresh heartbeat cycle.
-- **Coach**: 🟢 Running — Completed Sprint Synthesis (KE-065) + Skill Regression Check last cycle. Fresh heartbeat.
-- **Tech-lead**: 🟢 Running — Heartbeat active.
-- **Optimizer**: 🟢 Running — One interruption last cycle, monitoring.
-- **QA**: 🟢 Running — Heartbeat active.
+- **Coach**: 🟢 Running — Long session (14min+), monitoring.
+- **Tech-lead**: 🟢 Running — Just fixed Optimizer/QA outage.
+- **Optimizer**: 🟢 RESTORED — Was down 17 days (Mar 23 - Apr 9). Auto-pause cleared.
+- **QA**: 🟢 RESTORED — Was down 17 days (Mar 23 - Apr 9). Auto-pause cleared.
 - **Evaluator**: 🟢 Running — Heartbeat active.
-- **All agents**: 🟢 All heartbeats firing. System restarted overnight — all agents running fresh cycles.
+- **All agents**: 🟡 7/8 running. Amy-kimi still 🔴. Optimizer + QA just restored after 17-day outage.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -63,6 +63,8 @@ Updated: 2026-04-09 ~01:53 UTC
 | **Git Branch Concurrency (req:9eb89c49)** | ✅ ANSWERED | bob | Analysis at `agents/bob/workspace/git-concurrency-analysis.md`. Safe today (no branching in practice), worktrees recommended if review gates enforced. |
 | **Crash Loop Bug (req:e750a385)** | ✅ ALREADY FIXED | tech-lead | Commits 9ea5b5a + fcb97c9 + 9c7e549 already merged. Three-layer defense + compaction persistence. |
 | **Token Efficiency Research** | ✅ COMPLETE | bob | **P0 FINDING**: $441/week wasted from zero prompt caching on Claude Opus. LiteLLM proxy strips cache headers. Fix: set ANTHROPIC_API_KEY in .env + restart. Executive brief at `agents/bob/workspace/token-waste-executive-brief.md`. |
+| **Optimizer + QA 17-Day Outage** | ✅ FIXED | tech-lead | Model alias change + auto-pause circuit breaker = 17 days down (Mar 23 - Apr 9). Both restored. Report: `agents/tech-lead/workspace/fix-optimizer-qa-outage.md`. |
+| **Auto-Pause Recovery Design** | ⏳ PENDING | bob | Need probe timer or decay mechanism to prevent permanent lockout. P1 request sent. |
 | **EXP-095 Few-Shot Delivery Mechanism** | ✅ COMPLETE | coach | **DEFINITIVE**: Task-message = 100% (6/6), system-prompt = 0% (3/3). Position is everything. Content quality irrelevant if delivery position wrong. |
 | **Few-Shot Production Deployment Proposal** | ✅ COMPLETE | coach | Comprehensive proposal at `agents/coach/workspace/proposal-fewshot-production-deployment.md`. Phase 1: static routing + 3 proven examples. ~2hr implementation. Needs tech-lead + Bob review. |
 | **Bob Heartbeat System Analysis** | ⏳ IN PROGRESS | bob | Auto-loop workflow analyzing heartbeat/cron system. Session s_1775699416405_85. |
@@ -97,18 +99,20 @@ Updated: 2026-04-09 ~01:53 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (01:53)
-- **EXP-095 COMPLETE**: Few-shot delivery mechanism test confirms task-message position is everything. 100% at task-level vs 0% at system-prompt. This closes the "how to deploy skills" question definitively.
-- **Token Waste Analysis COMPLETE**: Bob found $441/week (60%) wasted from zero prompt caching. ANTHROPIC_API_KEY not set → LiteLLM strips cache headers. Fix is 5 minutes. Total savings path: $790→$254/week (68% reduction).
-- **Few-Shot Production Deployment Proposal**: Coach wrote comprehensive plan. Phase 1 (static routing, 3 examples) = ~2hr implementation. Ready for tech-lead + Bob review.
-- **Bob now analyzing heartbeat system** — auto-loop workflow in progress.
-- **Convention regression**: Bob C12.1 dropped from 96.6% to 91%. Coach alerted.
-- **All agents active** — no failures, no stuck sessions. Amy-kimi still 🔴.
+## Latest Cycle Summary (02:03)
+- **🔧 MAJOR FIX: Optimizer + QA restored after 17-day outage** — Root cause: model name resolution change (opus→claude-opus-4.6, gpt52→gpt-5.2) + auto-pause circuit breaker locked both agents out permanently. Tech-lead fixed by calling agents directly to break error streak. Full report: `agents/tech-lead/workspace/fix-optimizer-qa-outage.md`.
+- **Orphaned Bob sessions cleaned** — Two stuck Bob sessions (s_1775696852659_0, s_1775697208091_0) marked as interrupted. Bob running fresh heartbeats fine.
+- **EXP-095 COMPLETE**: Few-shot delivery mechanism test confirms task-message position is everything. 100% at task-level vs 0% at system-prompt.
+- **Token Waste Analysis COMPLETE**: Bob found $441/week (60%) wasted from zero prompt caching. Fix is 5 minutes. Blocked on Hao.
+- **Few-Shot Production Deployment Proposal**: Coach wrote comprehensive plan. Phase 1 = ~2hr. Ready for review.
+- **P1 recommendation**: Add auto-pause recovery mechanism (probe timer or decay). Sent to Bob for design.
+- **All agents active** — 7/8 running. Amy-kimi still 🔴.
 
 ## Next Actions
-- **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). Code already exists (commit 7c86665). **Blocked on Hao** (needs env var + restart).
-- **P1**: **Review few-shot deployment proposal** — Coach's production deployment plan at `agents/coach/workspace/proposal-fewshot-production-deployment.md`. Phase 1 = static routing + 3 examples, ~2hr. Route to tech-lead for implementation review.
-- **P1**: **Present research sprint results to Hao** — H-091 P(H)=0.93, 16 experiments complete (EXP-084→095), KE-065 synthesis, token waste analysis, auto-loop decision brief, two critical bugs fixed, git analysis complete.
+- **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao**.
+- **P1**: **Auto-pause recovery design** — Current auto-pause has no recovery path. Need probe timer or decay to prevent 17-day outages. Bob to design.
+- **P1**: **Review few-shot deployment proposal** — Coach's plan at `agents/coach/workspace/proposal-fewshot-production-deployment.md`. Route to tech-lead.
+- **P1**: **Present research sprint results to Hao** — H-091 P(H)=0.93, 16 experiments, KE-065 synthesis, token waste analysis, two critical bugs fixed.
 - **P2**: Federation design ready for Hao review
 - **P2**: Pre-merge review gate Phase 2 (auto-review)
 - **P2**: Amy-kimi still down — blocked on Hao for billing
