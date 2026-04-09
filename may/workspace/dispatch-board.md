@@ -1,17 +1,17 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~00:23 UTC
+Updated: 2026-04-09 ~00:47 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
 - **Scout**: 🟢 Running — Heartbeat active.
-- **Bob**: 🟢 Running — Completed EXP-092/093/094 KB integrations overnight. Now in fresh heartbeat.
-- **Coach**: 🟢 Running — Completed EXP-092 write-up, EXP-094 transfer test, Bob FM-1.3 investigation. Now in fresh heartbeat.
-- **Tech-lead**: 🟢 Running — Heartbeat active.
-- **Optimizer**: 🟢 Running — One interruption last cycle, monitoring.
+- **Bob**: 🟢 Running — Fresh heartbeat, autonomous work sessions.
+- **Coach**: 🟢 Running — Completed KE-065 (comprehensive few-shot findings consolidation). Now in fresh heartbeat.
+- **Tech-lead**: 🟢 Running — Diagnosed optimizer issue. Fresh heartbeat.
+- **Optimizer**: 🔴 DOWN 13 DAYS — `claude-opus-4.6` invalid model since Mar 27. LiteLLM proxy routing issue. **Needs Hao infra fix.**
 - **QA**: 🟢 Running — Heartbeat active.
 - **Evaluator**: 🟢 Running — Heartbeat active.
-- **All agents**: 🟢 All heartbeats firing. System restarted overnight — all agents running fresh cycles.
+- **All agents**: 6/8 running. Optimizer + Amy-kimi both blocked on Hao.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -91,18 +91,17 @@ Updated: 2026-04-09 ~00:23 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (00:23)
-- **Overnight: entire experiment pipeline completed** — EXP-092, EXP-093, EXP-094 all finished + KB integrated by Bob. Coach also completed Bob FM-1.3 investigation.
-- **EXP-092 key finding**: Forced citation creates instruction-induced task narrowing — 100% doc accuracy but 0% task completion. Important new failure mode.
-- **EXP-094 key finding**: Few-shot transfer requires domain proximity, not just structural matching. Skill-only 0/3 → skill + matched narrative 3/3.
-- **Bob FM-1.3 diagnosis**: Path-guessing is dominant pattern (3/6 entries, 73+ wasted calls). Coach recommends Bob-specific navigation skill.
-- **All agents restarted fresh** — no errors in last hour, all heartbeats firing.
-- **Research sprint nearing completion** — H-091 P(H)=0.99. Few-shot is proven and boundaries are mapped. Need to shift toward deployment at scale.
+## Latest Cycle Summary (00:47)
+- **Coach produced KE-065** — comprehensive consolidation of all few-shot research (EXP-090 through EXP-094). High-quality entry with domain-matching requirement, transfer model (Level 1/2/2.5/3), and practical skill conversion checklist.
+- **Tech-lead diagnosed optimizer**: Down since March 27 (13 days!). `opus` → `claude-opus-4.6` invalid model. LiteLLM proxy routing issue. Both optimizer and tech-lead have identical config, so it's infra-level. **Needs Hao fix.**
+- **Bob's stale requests**: 17 Phase 1/2/3 gym scenario requests stuck as CREATED (85-117 min old). These completed but weren't cleaned up.
+- **All active agents healthy** — Bob, Coach, Scout, Tech-lead, QA, Evaluator all running fresh heartbeats.
 
 ## Next Actions
-- **P1**: **Present status to Hao** — H-091 P(H)=0.99, 15 experiments complete (EXP-083→094), auto-loop decision brief ready, two critical bugs fixed, git analysis complete. Research sprint is essentially done — need Hao's direction on next priorities.
+- **P0**: **Optimizer infra fix** — Hao needs to update LiteLLM proxy model config. Optimizer has been completely offline 13 days. Escalated via tech-lead and direct P0 messages.
+- **P1**: **Present status to Hao** — H-091 P(H)=0.93 (refined from 0.99), 15 experiments complete (EXP-083→094), few-shot boundaries fully mapped. Research sprint done — need Hao's direction on next priorities.
 - **P1**: **Bob navigation skill** — Coach recommends ls-before-read skill for Bob. Should dispatch Coach to design+deploy it.
 - **P1**: **Deploy skills at scale** — know-when-blocked and evidence-over-narrative only in coder/. With domain proximity constraint (EXP-094), need matched examples per agent. Plan needed.
 - **P2**: Federation design ready for Hao review
 - **P2**: Pre-merge review gate Phase 2 (auto-review)
-- **P2**: Amy-kimi still down — blocked on Hao for billing
+- **P2**: Amy-kimi + Optimizer both blocked on Hao
