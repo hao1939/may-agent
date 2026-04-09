@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~12:53 UTC
+Updated: 2026-04-09 ~13:24 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
@@ -124,12 +124,12 @@ Updated: 2026-04-09 ~12:53 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (12:53)
-- **All agents active** — All 7 agents (excl. amy-kimi) just started heartbeat cycles simultaneously. Evaluator running a session eval too.
-- **Zero errors** — No failures in last hour. System healthy.
-- **Cleaned up stale session** — Cancelled `s_1775311714523_3` (idle for 7125min, already finished Telegram fix).
-- **Coach work pending** — IT-65/IT-66 work session (multi-session integration plan) queued ~27min, should get picked up this heartbeat cycle.
+## Latest Cycle Summary (13:24)
+- **5 agents active** — May, Bob, Coach, Scout, QA all started heartbeat cycles. Optimizer, Evaluator, Tech-lead not currently running.
+- **Zero recent errors** — 3 old failures (600-841min ago) all already resolved (EXP-097 done, optimizer outage fixed, cron DB bug).
+- **Cancelled stale session** — Finally killed `s_1775311714523_3` (idle 7156min/~5 days).
 - **No new tasks from Hao** — Nothing to dispatch.
+- **System healthy** — All key agents cycling normally. Amy-kimi still 🔴 (billing).
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao**.
