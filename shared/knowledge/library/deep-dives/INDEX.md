@@ -372,3 +372,15 @@
 10. DD#593 → DD#472 + CR#304 (mood-as-highest-weight connects to representational collapse — affective alignment precedes cognitive alignment)
 11. DD#591 + DD#593: Two approaches to inter-agent communication quality — middleware (CFN) vs. fusion gates (SVAF)
 12. [dd594](DD-594-ledger-state-stigmergy-blockchain-coordination.md) — ★★★½ Ledger-State Stigmergy: Formal mapping of biological stigmergy to blockchain coordination. Three base patterns (marker/sematectonic/self-organizing). Theoretical but connects DD#475/DD#476/CR#265.
+
+---
+
+> **INDEX GAP NOTE (2026-04-09):** DD#595-654 exist in papers.md/drops but have not yet been indexed here. DD#635-643 have deep-dive files. Backfill pending.
+
+---
+
+**Cross-model adversarial review & coding agent verification?** ★★★★ — NEW
+1. [dd655](DD-655-copilot-rubber-duck-cross-model-critique.md) — ★★★★ GitHub Copilot CLI "Rubber Duck": First major industry deployment of cross-model-family adversarial review. Claude orchestrator → GPT-5.4 reviewer at 3 sparse checkpoints (post-plan, post-implementation, post-tests). Closes 74.7% of Sonnet→Opus gap on SWE-Bench Pro. Strongest on hard multi-file tasks (+4.8%). Silent-failure catches (architectural, data-loss, cross-file conflicts). Validates representational collapse thesis (DD#585) and Conformity Paradox (DD#472). Subagent via task-tool pattern. Connects DD#639 (ABTest fuzzing), DD#640 (scaffold taxonomy), CR#307 (decoction).
+2. DD#655 → DD#585 + DD#472 (cross-family review is the production answer to representational collapse and conformity paradox)
+3. DD#655 → DD#639 + DD#640 (adversarial review at scaffold checkpoints — ABTest fuzzes behavior, Rubber Duck reviews artifacts)
+4. **RECOMMEND → Bob/Tech-lead**: Our system uses Claude exclusively across all agents. DD#655 provides production evidence that adding a different-family review at plan/implementation checkpoints could significantly improve quality. Consider H-XXX for cross-family verification experiment.

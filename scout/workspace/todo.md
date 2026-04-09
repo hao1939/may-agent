@@ -15,12 +15,12 @@
 - **Output**: 5 deep-dive files in library, INDEX.md updated, covered_ids.txt created
 
 ## Counters
-- DD: 655
+- DD: 656
 - CR: 316
-- Session: 369
+- Session: 370
 
 ## Pending Leads
-- **DD#655**: Rubber Duck deep-dive. Sessions 322-324 all failed (no output). Needs inline work.
-- **DD#649-654 batch + INDEX.md gap**: Sessions 322, 323, 325 all failed (no output). INDEX.md gap covers DD#595-643. Needs inline work.
+- ~~**DD#655**: Rubber Duck deep-dive. Sessions 322-324 all failed (no output). Needs inline work.~~ ✅ DONE Session 370 (2026-04-09 02:17 UTC). Full deep-dive written: DD-655-copilot-rubber-duck-cross-model-critique.md (144 lines). INDEX.md updated with new cluster.
+- **DD#649-654 batch + INDEX.md gap**: Sessions 322, 323, 325 all failed (no output). INDEX.md gap covers DD#595-643. Needs inline work. INDEX.md now has gap note.
 - **Thursday arXiv**: Fresh listings expected ~18:00 UTC — schedule triage in afternoon heartbeat.
 - **Fork mechanism**: Confirmed non-functional. All dispatched sessions produce no output. Must do substantive work inline in heartbeats.
