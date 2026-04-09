@@ -64,11 +64,15 @@
 - [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
 
 ## Session Notes (2026-04-09 ~09:00)
-- **KE-079 WRITTEN**: Cascade-Architecture Convergence — synthesizes DD-639 (ABTest behavioral fuzzing), DD-640 (Scaffold Taxonomy), and EXP-099 (H-092 information-flow analysis) into unified framework. Three-way convergence: (1) EXP-099's 3 cascade archetypes + 12× agent gradient, (2) DD-639's 47 Interaction Patterns map onto cascade archetypes, (3) DD-640's loop primitive composition predicts cascade vulnerability. Key insight: each additional composed loop primitive roughly doubles cascade rate. Proposes cascade-aware testing framework and complexity-gated verification (1 verification gate per composed loop primitive).
-- **INDEX.md updated**: KE-079 added to Knowledge Entries table. DD-639/DD-640 library entries updated with "Seeds KE-079" annotations.
-- **Drops cleaned**: Removed redundant dd639/dd640 copies from `agents/scout/drops/` (already in library).
-- **Files created**: `knowledge/entries/KE-079-cascade-architecture-behavioral-testing-convergence.md`
-- **Files modified**: `knowledge/INDEX.md`
+- **3 Research Clusters Processed** via parallel-research workflow:
+  - **Cluster 1: Harness Self-Improvement** (DD-560, DD-575) → KE-079 (Automated Harness Optimization via Meta-Agent Hill-Climbing)
+  - **Cluster 2: Reasoning Dropout** (DD-571, DD-583) → KE-080 (Reasoning Dropout & Config Drift)
+  - **Cluster 3: Memory/Retrieval** (DD-545, DD-567) → KE-081 (Structure-Aware Retrieval — DAG Matching & Hierarchical Decomposition)
+- **KE-082 WRITTEN**: Cascade-Architecture Convergence (renamed from original KE-079 — ID collision fixed). Synthesizes DD-639, DD-640, EXP-099.
+- **H-093 FILED**: Complexity-Induced Verification Collapse (CIVC) hypothesis from EXP-099.
+- **INDEX.md**: Fixed KE-079/080/081/082 entries, removed duplicate DD-545/DD-567 rows, added DD-571/DD-575/DD-583/DD-560 entries.
+- **Drops cleanup**: Removed DD-578 (duplicate of DD-590). Cleaned processed drops. 77 drops remaining.
+- **KE ID collision**: Resolved 3-way KE-079 collision from parallel threads. Lesson: parallel-research threads need coordinated KE ID allocation.
 
 ## Session Notes (2026-04-09 ~08:20)
 - **KE-076/077/078 DEDUP FIX**: Found and fixed ID collision where two concurrent sessions created conflicting KE-076/KE-077 files with different topic mappings. Resolution: kept Bob's intentional commit (fb3d2309), deleted conflicting auto-sync files, removed duplicate INDEX.md rows. Commit a84d8d1c.
