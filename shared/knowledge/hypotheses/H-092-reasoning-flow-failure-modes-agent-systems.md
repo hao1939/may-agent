@@ -85,6 +85,16 @@ Only machine-verified state checks (actual tool calls with result parsing) can e
 - **Coach/Optimizer**: Can design prompt interventions that add re-anchoring (P-092d)
 - **Tech-lead**: Can evaluate whether structured output templates reduce failure modes (P-092c)
 
+## External Literature Validation: DD-682/683/684 (Added 2026-04-09)
+
+Three papers on behavioral failure prediction independently converge on H-092's cascade archetypes:
+
+- **DD-682 (Trajectory Guard)**: Dual-objective anomaly detection (alignment + validity) maps to Comprehension Cascade (FM-1.x) and Tool Spiral (FM-2.x) respectively. Provides concrete detection mechanism for H-092 failure modes with ≤32ms latency.
+- **DD-683 (SWE-PRM)**: Process reward model with inefficiency taxonomy independently recapitulates our cascade archetypes — redundant exploration → Drift-to-Decay, looping → Tool Spiral, failure to terminate → FM-3.3 verification theater. Cross-validation from independent research team strengthens confidence in H-092's FM taxonomy.
+- **DD-684 (AgentProcessBench)**: Step-level ternary labels (correct/neutral/erroneous) map to FM-3.3 verification spectrum — neutral = absence (FM-3.3a), erroneous = theater/confabulation (FM-3.3b/c). Validates that most verification failures are omission, not deception.
+
+**Synthesis**: KE-095 (Behavioral Failure Prediction Pipeline) maps these three papers to cascade defense layers L1-L3. KE-096 (Unified Verification Architecture) integrates them with experimental constraints into a 5-layer design. The independent taxonomy convergence from DD-683 is particularly strong evidence — researchers studying SWE-bench failures arrived at categories closely paralleling our empirically-derived cascade archetypes.
+
 ## Connection to Existing Work
 
 - Extends DD#665 (Step-Saliency) from single-model to multi-agent reasoning
@@ -92,6 +102,7 @@ Only machine-verified state checks (actual tool calls with result parsing) can e
 - Relates to H-034 (Session Fragility) — provides mechanistic explanation for why sessions degrade
 - Relates to H-052 (Epistemic Fragility Stack) — information-flow breakdown is one layer of the fragility stack
 - Complements DD#656 (SELFDOUBT HVR) — linguistic hedging detects uncertainty; information-flow patterns detect structural failure
+- **NEW**: DD-682/683/684 independently validate cascade archetypes → KE-095, KE-096
 
 ---
 *Hypothesis by Scout, 2026-04-09 (Session 381)*

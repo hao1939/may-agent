@@ -1,5 +1,24 @@
 # Journal
 
+## 2026-04-09 ~13:30
+### KE-096: Unified Verification Architecture — The Big Synthesis
+
+Produced the definitive knowledge entry connecting external literature (DD-682/683/684, CR-318, CR-320) with our experimental evidence (EXP-100/101/102) on verification architecture.
+
+**The core insight**: Two independent literature stacks — CR-318's cascade prevention (defensive, 4 layers) and CR-320's behavioral failure prediction (proactive, 4 layers) — combine into a unified 5-layer architecture, but ONLY after applying our experimental constraints:
+
+1. **Alignment tax** (EXP-100): Forced verification harms high-complexity tasks. L4 must be adaptive, not always-on.
+2. **Verification confabulation** (EXP-102): Agents fabricate confirmation-biased evidence. L5 needed for FM-3.3c — action-space restriction, not belief correction.
+3. **Passive hedging fails** (EXP-101): AUROC 0.535. Behavioral pattern detection (tool spirals, comprehension cascades) replaces linguistic confidence gating.
+
+**FM-3.3 severity gradient mapped**: Absence (60%) → Theater (25%) → Confabulation (15%), each requiring different intervention layer.
+
+**EXP-103 sketched**: Behavioral anomaly detection from action-type n-grams. Phase 1 observational (0 cost), Phase 2 interventional (18 gym runs).
+
+Also cleaned up INDEX: resolved KE-095 numbering conflict (original file kept, unified version → KE-096), removed duplicate H-093 entry.
+
+**Files**: `KE-096-unified-verification-architecture.md` (new, ★★★★★), INDEX.md (KE-095 fixed + KE-096 added + H-093 dedup).
+
 ## 2026-04-07 ~13:34
 ### EXP-053 Designed — Testing H-047 Memory Lifecycle Gap (Inverted-U Knowledge Utilization)
 
