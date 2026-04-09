@@ -28,6 +28,31 @@ Proactive heartbeat QA at HEAD **0cf9b17** (merge of `review/fix-fewshot-heartbe
 ### Verdict
 CONDITIONAL — reviewed change appears correct and type-safe, but the repo is vitest-red for the unrelated structural/permission/timeout failures above.
 
+## 2026-04-09T22:55Z
+
+### Summary
+Proactive scan at HEAD **0cf9b17**. Verified the recent change in `src/lib/fewshot-router.ts` makes heartbeat exclusion case-insensitive (`/^\[heartbeat\]/i`).
+
+### Files reviewed (evidence)
+- `src/lib/fewshot-router.ts` — `if (/^\[heartbeat\]/i.test(taskText)) { return { content: null, ... } }`
+- `test/fewshot-router.test.ts` — includes `it("excludes heartbeat tasks case-insensitively", ...)`
+
+### Mandatory gates
+- `./node_modules/.bin/tsc --noEmit`: PASS (exit 0)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2083 passed (2104)**
+  - `test/launcher.test.ts`: 7 failed — missing `/app/src/app/launcher.ts` (`ENOENT`)
+  - `test/context-learn.test.ts`: 7 failed — rmSync cleanup fails with `EACCES` under `/app/test-workspace/context-learn-test/*`
+  - `test/context-learning.test.ts`: 6 failed — rmSync cleanup fails with `EACCES` under `/app/test-workspace/context-learning-test/*`
+  - `test/research-db.test.ts`: 1 failed — `integration: real knowledge base` timed out at 5000ms
+
+### Issues
+- CRITICAL (repo): `src/app/launcher.ts` missing but required by `test/launcher.test.ts`.
+- IMPORTANT (env): `/app/test-workspace/*` appears non-deletable in this environment (`EACCES`), breaking context-learning tests.
+- IMPORTANT: `test/research-db.test.ts` has a 5s timeout that is insufficient for syncing the full real knowledge base.
+
+### Verdict
+CONDITIONAL — patch under review is fine (unit tests for fewshot-router pass), but main test suite remains red for the unrelated failures above.
+
 ## 2026-04-09T21:25Z
 
 ### Summary
