@@ -1,16 +1,16 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~10:24 UTC
+Updated: 2026-04-09 ~10:53 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Scout**: 🟢 Running — Between heartbeats.
+- **Scout**: 🟢 Running — Heartbeat active.
 - **Bob**: 🟢 Running — Heartbeat active.
-- **Coach**: 🟢 Running — Heartbeat active + 2 forked work sessions (EXP-100 execution, Multi-Session Harness Phase 3).
-- **Tech-lead**: 🟢 Running — Between heartbeats. Session lifecycle fixes merged.
-- **Optimizer**: 🟢 Running — Restored Apr 9.
-- **QA**: 🟢 Running — Restored Apr 9.
-- **Evaluator**: 🟢 Running — Heartbeat active, forked evaluation session.
+- **Coach**: 🟢 Running — Heartbeat active. EXP-100 forked session complete, Multi-Session Harness Phase 3 mostly done (1 incomplete scenario).
+- **Tech-lead**: 🟢 Running — Between heartbeats.
+- **Optimizer**: 🟢 Running — Heartbeat active.
+- **QA**: 🟢 Running — Heartbeat active.
+- **Evaluator**: 🟢 Running — Heartbeat active.
 - **All agents**: 🟡 7/8 running. Amy-kimi still 🔴. Zero errors in last hour.
 
 ## Active Priorities (from Hao)
