@@ -1,17 +1,17 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~04:51 UTC
+Updated: 2026-04-09 ~05:26 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
 - **Scout**: 🟢 Running — Heartbeat active.
-- **Bob**: 🟢 Running — Heartbeat active.
-- **Coach**: 🟢 Running — Heartbeat active.
-- **Tech-lead**: 🟢 Running — Finish-guard orchestration fix IN PROGRESS (s_1775710457934_174). Few-shot Phase 1 queued.
-- **Optimizer**: 🟢 Running — Restored Apr 9. Tool quality regression investigation received.
+- **Bob**: 🟢 Running — Reviewing "Graduate the Gym" proposal (s_1775712294415_186).
+- **Coach**: 🟢 Running — Wave 1 validated, Wave 2+3 requests queued.
+- **Tech-lead**: 🟢 Running — Finish-guard fix MERGED. Few-shot Phase 1 queued.
+- **Optimizer**: 🟢 Running — Restored Apr 9.
 - **QA**: 🟢 Running — Restored Apr 9.
 - **Evaluator**: 🟢 Running — Heartbeat active.
-- **All agents**: 🟡 7/8 running. Amy-kimi still 🔴. Optimizer + QA just restored after 17-day outage.
+- **All agents**: 🟡 7/8 running. Amy-kimi still 🔴. Zero errors in last hour.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -73,7 +73,12 @@ Updated: 2026-04-09 ~04:51 UTC
 | **Few-Shot Deployment Tech Review** | ✅ COMPLETE | tech-lead | **GO for Phase 1** with 6 required modifications. Integration point: manager.ts line 978. Coder-only scope for MVP. Bypass flag needed for gym. Review at `agents/tech-lead/workspace/review-fewshot-proposal.md`. |
 | **Few-Shot Example Store (Phase 1)** | ✅ COMPLETE | coach | 3 examples extracted: binary-file-escalation, reproduce-first-debugging, escalation-judgment. INDEX with trigger patterns at `agents/shared/knowledge/fewshot-examples/`. |
 | **FM-3.1 Bob Regression Investigation** | ✅ COMPLETE | coach | **NOT a Bob regression** — finish-guard infrastructure false positive. 9/9 caused by (1) orchestration unawareness + (2) generic GHOST_KEYWORDS. Analysis at `agents/coach/workspace/bob-fm31-regression-analysis.md`. |
-| **Finish-Guard Orchestration Fix** | ⏳ DISPATCHED | tech-lead | Fix false positives: add workflow/agents to write-evidence exemption in finish-guard.ts. req:67425d6c. |
+| **Finish-Guard Orchestration Fix** | ✅ MERGED | tech-lead | Branch `review/finish-guard-orchestration-fix` merged to main. 56/56 tests pass. Orchestration+agents tools exempt from write-evidence. GHOST_KEYWORDS trimmed (removed add/create/remove/change). Commit 8a07792. |
+| **Wave 1 Gym Validation** | ✅ COMPLETE | coach | 9/9 behavioral pass. know-when-blocked 3/3, evidence-over-narrative 3/3 (8/8 checks), classify-then-act 3/3 (6/6). Results: `agents/coach/workspace/growth-receipts/wave1-deployment-results.md`. |
+| **Bob Wave 1 Treatment Scenarios** | ✅ COMPLETE | bob | 3 treatment scenarios created in gym. DD-660 KB integration done. |
+| **DD-660 KB Integration** | ✅ COMPLETE | bob | Positional privilege findings integrated into KE-065 and H-091. |
+| **Bob "Graduate the Gym" Review** | ⏳ IN PROGRESS | bob | Running (s_1775712294415_186). Reviewing Coach's proposal. |
+| **Wave 2+3 Coach Validation** | ⏳ QUEUED | coach | Duplicate requests from Bob (567be7cc/6cadb4fc for Wave 2, e25e8839/28c4ff79 for Wave 3). Coach will pick up on next heartbeat. |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -105,18 +110,19 @@ Updated: 2026-04-09 ~04:51 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (04:51)
-- **System stable** — 7/8 agents running, zero errors in last hour. Zombie session s_1775311714523_3 cancelled.
-- **Finish-guard orchestration fix IN PROGRESS** — Tech-lead forked work session s_1775710457934_174 to implement Fix 1 (orchestration exemption) + Fix 2 (GHOST_KEYWORDS refinement). Irony: tech-lead's own heartbeat got blocked by FM-3.1 while dispatching the fix.
-- **Coach duplicate requests resolved** — req:f70085c7 and req:7a81e4f3 marked completed (duplicates of existing req:67425d6c dispatch).
-- **Duplicate tech-lead request cleaned** — req:494a8999 marked completed (duplicate of req:67425d6c).
+## Latest Cycle Summary (05:26)
+- **Finish-guard fix MERGED** — Branch `review/finish-guard-orchestration-fix` fast-forwarded to main. 56/56 tests pass. Orchestration sessions + agents tool calls now exempt from write-evidence check. GHOST_KEYWORDS refined.
+- **Wave 1 validated perfectly** — Coach ran 9/9 gym scenarios with behavioral pass. know-when-blocked, evidence-over-narrative, classify-then-act all 3/3. Ready for Wave 2.
+- **Bob completed DD-660 integration + Wave 1 scenarios** — Now reviewing Coach's "Graduate the Gym" proposal.
+- **Zombie session killed** — s_1775311714523_3 (4+ days idle) cancelled.
+- **Zero errors** — All 7 running agents healthy. No failures in last hour.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao**.
-- **P1**: **Finish-guard orchestration fix** — IN PROGRESS (s_1775710457934_174). Monitor next cycle.
-- **P1**: **Few-shot Phase 1 implementation** — All prerequisites done (review ✅, examples ✅). Tech-lead implements after finish-guard fix.
-- **P1**: **Auto-pause recovery implementation** — Design complete. Queue for tech-lead after current items.
-- **P1**: **Present research sprint results to Hao** — H-091 P(H)=0.93, 17 experiments, KE-065 synthesis, token waste analysis, two critical bugs fixed, auto-pause recovery designed.
+- **P1**: **Few-shot Phase 1 implementation** — All prerequisites complete (review ✅, examples ✅, finish-guard fix ✅). Tech-lead implements integration in manager.ts.
+- **P1**: **Wave 2+3 gym validation** — Coach has queued requests. Will proceed after heartbeat.
+- **P1**: **Auto-pause recovery implementation** — Design complete. Queue for tech-lead after few-shot Phase 1.
+- **P1**: **Present research sprint results to Hao** — H-091 P(H)=0.93→0.99, 17+ experiments, Wave 1 validated, finish-guard fixed, DD-660 integrated.
 - **P2**: Federation design ready for Hao review
 - **P2**: Pre-merge review gate Phase 2 (auto-review)
 - **P2**: Amy-kimi still down — blocked on Hao for billing

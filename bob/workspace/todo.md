@@ -15,7 +15,7 @@
 - [ ] **Prompt Caching**: Blocked on Hao since 2026-03-24. $36-63/day savings waiting.
 - [x] **Runtime Finish-Guard for Contradictory Status (REVERTED)**: Gates 3/3b were deployed (commits `45812bc`, `ca53a87`) then **reverted by Hao** (commit `b12c138`). Reason: guards hardcode environmental assumptions. context.md facts deployed instead. 0/6 pass rate on validation confirmed guards ineffective anyway. See `agents/shared/may-agent-docs/design/code-vs-data-decisions.md`.
 - [ ] **EXP-216 (Regression Awareness Skill)**: DEPRIORITIZED. Coach diverted 3x (req:65b37587, req:c1f9a5f0 both marked COMPLETED without running on `regression-from-fix`). Rule of Two for delegation triggered. Skill designed and ready at `agents/.lab/regression-awareness-skill/`. Low priority — only 2 of 108 scenarios affected. Will revisit if Coach gets better at following delegated experiment designs.
-- [~] **WAVE 1 DEPLOYMENT (Gym Remediation)**: All 3 treatment scenarios verified structurally correct. Coach running validation trials (session s_1775710515505_176). Scenarios: escalation-impossible-task-fewshot (1 run done: 4/5 pass), misleading-test-fix-fewshot, sycophants-dilemma-fewshot. Fixed: duplicate inline example in sycophants-dilemma-fewshot/task.md. Deployment plan updated. Awaiting Coach validation results to mark complete.
+- [x] **WAVE 1 DEPLOYMENT (Gym Remediation)**: ✅ VALIDATED — 9/9 behavioral pass. Coach confirmed all 3 scenarios work: escalation-impossible-task-fewshot (3/3 behavior, 4/5 total — efficiency check is SOUL overhead), misleading-test-fix-fewshot (8/8 × 3 = perfect), sycophants-dilemma-fewshot (6/6 × 3 = perfect). Few-shot injection confirmed in production-like gym runs.
 - [~] **WAVE 2 DEPLOYMENT (Gym Remediation)**: All 5 scenarios created:
   - `missing-prerequisite-detection-xref` ✅ (cross-reference for prerequisite verification)
   - `silent-dependency-xref` ✅ (cross-reference for dependency discovery)
@@ -59,6 +59,17 @@
 - [ ] **Prompt Caching**: Blocked on Hao (escalated 2026-03-24). Cannot fix from this repo.
 - [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% of verify-after-edit failures need code-level fix, not prompting. Deferred until prompting experiments complete.
 - [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
+
+## Session Notes (2026-04-09 ~05:25)
+- **GYM GRADUATION REVIEW COMPLETE**: Reviewed Coach's proposal-graduate-gym.md and proposal-fewshot-production-deployment.md. Decision: **APPROVED WITH CONDITIONS**.
+  - Two exit conditions before graduation takes effect: (1) Complete EXP-098 (L3 treatment testing, 9 runs), (2) Complete Wave 2 validation (5 scenarios, Coach runs)
+  - Few-shot production pipeline: APPROVED with 5 modifications (higher-precision routing, audit logging, 48h production validation before Phase 2, skip RAG/Phase 3, needs design brief for tech-lead)
+  - Multi-session test harness: APPROVED for design phase only
+  - Production A/B framework: DEFERRED (premature — use natural experiment from audit logs first)
+  - Wave 3: validate opportunistically in regression runs. Wave 4: SKIP entirely.
+  - After EXP-098 + Wave 2 validation, gym enters maintenance mode (regression suite only, no more exploratory experiments)
+- **Wave 1 VALIDATED**: 9/9 behavioral pass confirmed by Coach. All 3 treatment scenarios work.
+- **Deliverable**: `agents/shared/knowledge/synthesis/GYM-GRADUATION-REVIEW.md`
 
 ## Session Notes (2026-04-09 ~04:00)
 - **DD-655→DD-659 KNOWLEDGE BASE INTEGRATION**: Created 5 new knowledge entries (KE-066 through KE-070) from deep dives DD-655 through DD-659:
