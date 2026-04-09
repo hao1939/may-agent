@@ -79,6 +79,7 @@ import { readIdentity } from "./detached.js";
 import { runActiveRecall, formatRecallWarnings } from "./active-recall.js";
 import { readLatestCheckpointForAgent, cleanupStepCounter } from "./tools/checkpoint.js";
 import { routeKnowledge } from "./knowledge-router.js";
+import { routeFewShotExamples } from "./fewshot-router.js";
 import { buildTrace } from "./manager-trace.js";
 import { hasFinishToolCall, extractFinishParams, runAgentWithRetry } from "./manager-retry.js";
 import { createAgentsTool as createAgentsToolFn, type CreateAgentsToolOptions } from "./manager-agents-tool.js";
@@ -981,7 +982,20 @@ export class SubagentManager {
     // message.  This keeps the system prompt stable across sessions so that
     // Anthropic prompt caching produces cache reads.
     const sessionContext = this.buildSessionContext(def, name, sessionId, persistDir, task);
-    const promptText = `${sessionContext}\n\n---\n\n${task}`;
+
+    // Few-shot example injection (Phase 1: coder + optimizer only)
+    let fewShotBlock: string | null = null;
+    if (!opts?.skipFewShot && def.projectRoot) {
+      const fewShotResult = routeFewShotExamples(task, name, def.projectRoot);
+      if (fewShotResult.content) {
+        fewShotBlock = fewShotResult.content;
+        log("info", `[few-shot] ${name}/${sessionId}: injected ${fewShotResult.matchedFiles.join(", ")} (~${fewShotResult.tokenEstimate} tokens)`);
+      }
+    }
+
+    const promptText = fewShotBlock
+      ? `${sessionContext}\n\n---\n\n${fewShotBlock}\n\n---\n\n${task}`
+      : `${sessionContext}\n\n---\n\n${task}`;
 
     session.promise = runAgentWithRetry(
       session,
