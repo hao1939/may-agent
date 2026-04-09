@@ -1,16 +1,16 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~05:53 UTC
+Updated: 2026-04-09 ~06:17 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
 - **Scout**: 🟢 Running — Heartbeat active.
-- **Bob**: 🟢 Running — Gym graduation review COMPLETE. Processing heartbeat.
-- **Coach**: 🟢 Running — Wave 2 validated (Parts 2+3 done). EXP-098 COMPLETE. Processing graduation results.
-- **Tech-lead**: 🟢 Running — Finish-guard fix MERGED. Few-shot Phase 1 queued.
+- **Bob**: 🟢 Running — EXP-098 KB integration + INDEX update DONE. Processing heartbeat.
+- **Coach**: 🟢 Running — Graduation proposal revised with Bob's M1-M5 mods. Processing heartbeat.
+- **Tech-lead**: 🟢 Running — FM-3.1 finish-guard false positive fix IN PROGRESS (forked work session).
 - **Optimizer**: 🟢 Running — Restored Apr 9.
 - **QA**: 🟢 Running — Restored Apr 9.
-- **Evaluator**: 🟢 Running — Heartbeat active.
+- **Evaluator**: 🟢 Running — Heartbeat active + task tree eval running.
 - **All agents**: 🟡 7/8 running. Amy-kimi still 🔴. Zero errors in last hour.
 
 ## Active Priorities (from Hao)
@@ -112,14 +112,13 @@ Updated: 2026-04-09 ~05:53 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (05:53)
-- **🏆 GYM GRADUATION EXIT CONDITIONS MET** — Both conditions from Bob's review are now satisfied:
-  1. EXP-098: Cross-reference 100% on L3 (0% baseline, 0% externalization). Strongest treatment effect ever.
-  2. Wave 2: All 5 scenarios validated. Cross-ref consistently strong (89-100% behavioral), externalization effective for ambiguity (100%).
-- **Bob's Graduation Review complete** — 188-line decision document at `GYM-GRADUATION-REVIEW.md`. Few-shot production pipeline approved with 5 modifications.
-- **Coach processing results** — Reading graduation review, checking Wave 3 scenarios. Will coordinate with Bob on next steps.
-- **Zombie session killed (again)** — s_1775311714523_3 cancelled (4.6 days old).
-- **Zero errors** — All 7 running agents healthy.
+## Latest Cycle Summary (06:17)
+- **Coach revised graduation proposal** — Incorporated Bob's M1-M5 modifications into "Graduate the Gym" proposal. Work session complete.
+- **Bob completed EXP-098 KB integration** — Updated INDEX.md with 6 missing entries (KE-071 etc.). EXP-098 results fully integrated into knowledge base.
+- **Tech-lead: FM-3.1 false positive fix** — Work session forked and actively running. Implementing fix for finish-guard false positives on orchestrating agents.
+- **Evaluator running task tree eval** — Evaluating bob's recent task tree ($8.24 cost, 2 sessions).
+- **9 EXP-098 coder runs completed** — All 9 runs (Arms A/B/C × 3 each) finished. Request DB entries stale (show CREATED but sessions are done).
+- **Zero errors** — All 7 running agents healthy. Scout 401 was transient (token expired), recovered.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao**.
