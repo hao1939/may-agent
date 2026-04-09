@@ -1,13 +1,13 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~02:53 UTC
+Updated: 2026-04-09 ~03:24 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
 - **Scout**: 🟢 Running — Heartbeat active.
-- **Bob**: 🟢 Running — Heartbeat cycle. EXP-095 KB integration done.
-- **Coach**: 🟢 Running — EXP-096 (System Prompt Length Threshold) in progress.
-- **Tech-lead**: 🟢 Running — Last heartbeat completed cleanly.
+- **Bob**: 🟢 Running — Heartbeat + forked EXP-097 KB integration.
+- **Coach**: 🟢 Running — Heartbeat active. EXP-097 complete. FM-3.1 growth trigger received.
+- **Tech-lead**: 🟢 Running — Heartbeat active. Few-shot deployment review dispatched (req:fdadb5fa).
 - **Optimizer**: 🟢 RESTORED — Was down 17 days (Mar 23 - Apr 9). Auto-pause cleared.
 - **QA**: 🟢 RESTORED — Was down 17 days (Mar 23 - Apr 9). Auto-pause cleared.
 - **Evaluator**: 🟢 Running — Heartbeat active.
@@ -69,6 +69,8 @@ Updated: 2026-04-09 ~02:53 UTC
 | **Few-Shot Production Deployment Proposal** | ✅ COMPLETE | coach | Comprehensive proposal at `agents/coach/workspace/proposal-fewshot-production-deployment.md`. Phase 1: static routing + 3 proven examples. ~2hr implementation. Needs tech-lead + Bob review. |
 | **Bob Heartbeat System Analysis** | ✅ COMPLETE | bob | 231-line analysis at `agents/bob/workspace/heartbeat-analysis.md`. 48 cron entries inventoried, ~1,256 fires/day, 7 consolidation recommendations. |
 | **EXP-096 System Prompt Length Threshold** | ✅ COMPLETE | coach | **DEFINITIVE**: Attention dilution REJECTED. Minimal 11KB prompt still 0/3; task-message few-shot 3/3. Position > length. Positional privilege confirmed. |
+| **EXP-097 Simulated Positional Privilege** | ✅ COMPLETE | coach | **PARTIAL**: Urgency framing at end of SOUL.md = 33% (vs 100% task-message, 0% plain system prompt). Weak partial fix, NOT viable for production. Task-message injection mandatory. Bob integrating. |
+| **Few-Shot Deployment Tech Review** | ⏳ DISPATCHED | tech-lead | Review Coach's production deployment proposal. Feasibility + effort assessment. req:fdadb5fa. |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -100,18 +102,20 @@ Updated: 2026-04-09 ~02:53 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (02:53)
+## Latest Cycle Summary (03:24)
 - **System stable** — All 7/8 agents running. No errors in past hour. Clean cycle.
-- **EXP-096 COMPLETE**: Attention dilution hypothesis REJECTED. Reducing system prompt from 48KB to 11KB still 0/3. Task-message few-shot 3/3. **Positional privilege** is the mechanism, not prompt length. Major finding for skill delivery strategy.
-- **Auto-Pause Recovery Design** still pending with Bob (req:36f360fa). Bob in heartbeat now — should pick up.
-- **Cleaned stale session** s_1775311714523_3 (109 hours idle).
-- **All research on track**: EXP-095→096 chain complete. Few-shot delivery mechanism fully characterized.
+- **EXP-097 COMPLETE**: Simulated positional privilege in system prompt = 33% (vs 100% task-message). Urgency framing at end of SOUL.md is a weak partial fix — NOT viable for production. Confirms task-message injection is mandatory. Bob self-forked KB integration.
+- **Few-shot deployment review dispatched** → tech-lead (req:fdadb5fa). Coach's production proposal ready for technical assessment.
+- **Coach FM-3.1 growth trigger** — Bob has 9 repeated FM-3.1 (path-guessing) errors in 7 days. Coach received auto-trigger to initiate growth cycle. Navigation skill already deployed (Apr 9), so this may be covered.
+- **Tool quality regression** — Optimizer notified of bash/edit regression (+180% bash:other errors). Will investigate.
+- **Cancelled stale session** s_1775311714523_3 (still 109h idle from last cycle).
+- **Research chain complete**: EXP-095→096→097 fully characterize few-shot delivery mechanism. Position > length > framing. Task-message is the only reliable delivery path.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao**.
-- **P1**: **Auto-pause recovery design** — Current auto-pause has no recovery path. Need probe timer or decay to prevent 17-day outages. Bob to design.
-- **P1**: **Review few-shot deployment proposal** — Coach's plan at `agents/coach/workspace/proposal-fewshot-production-deployment.md`. Route to tech-lead.
-- **P1**: **Present research sprint results to Hao** — H-091 P(H)=0.93, 16 experiments, KE-065 synthesis, token waste analysis, two critical bugs fixed.
+- **P1**: **Few-shot deployment tech review** — Dispatched to tech-lead (req:fdadb5fa). Awaiting assessment.
+- **P1**: **Auto-pause recovery design** — Bob still hasn't produced this. May need re-dispatch if not done by next cycle.
+- **P1**: **Present research sprint results to Hao** — H-091 P(H)=0.93, 17 experiments, KE-065 synthesis, token waste analysis, two critical bugs fixed.
 - **P2**: Federation design ready for Hao review
 - **P2**: Pre-merge review gate Phase 2 (auto-review)
 - **P2**: Amy-kimi still down — blocked on Hao for billing

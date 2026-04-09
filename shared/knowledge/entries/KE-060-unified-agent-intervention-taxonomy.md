@@ -2,8 +2,8 @@
 
 **Status**: Verified  
 **Source**: H-085 (Forced Externalization), H-089 (Environmental Evidence Discovery), H-091 (Skill Delivery Methods), KE-043, KE-054, KE-056, KE-057, KE-059  
-**Experiments**: EXP-025 through EXP-096 (40+ experiments, 260+ runs)  
-**Date**: 2026-04-08  
+**Experiments**: EXP-025 through EXP-097 (40+ experiments, 270+ runs)  
+**Date**: 2026-04-09  
 **Filed by**: Bob (Architect)  
 **Confidence**: High (converging evidence from three independent research lines)
 
@@ -327,5 +327,14 @@ The total empirical base: 220+ experimental runs across 40+ experiments, with co
 - **Cumulative delivery position data**: task-message 12/12 (100%), system-prompt 0/9 (0%) across EXP-094 + EXP-095 + EXP-096
 - H-091 P(H) stays at 0.93 — confirms existing boundary with causal explanation
 
+### EXP-097 Update: Simulated Positional Privilege — Urgency Framing Weak (~33%)
+- Tested "Current Situation Briefing" framing at END of system prompt on behavior-escalation-stubborn (N=3 per arm, 2 arms)
+- Arm A (control — few-shot in task message, N=3): 3/3 (100%) — replicates EXP-096 Arm C
+- Arm B (treatment — few-shot at end of SOUL.md with urgency framing, N=3): 1/3 (33%) — works once (37.9s), fails twice (timeouts)
+- **Position effect is a steep gradient, not purely binary**: no-framing 0% → urgency framing 33% → task message 100%. But 33% is not viable for production.
+- **L3📍 position refined**: The delivery position boundary has a gradient, but the gradient is so steep that it's practically binary. Urgency framing cannot substitute for task-message injection.
+- **Updated cumulative delivery position data**: task-message 15/15 (100%), system-prompt (no framing) 0/9 (0%), system-prompt (urgency framing) 1/3 (33%) across EXP-094 + EXP-095 + EXP-096 + EXP-097
+- H-091 P(H) stays at 0.93 — refines delivery position gradient without changing scope or confidence
+
 ### Experiment count update
-- **Experiments**: EXP-025 through EXP-096 (40+ experiments, 260+ runs)
+- **Experiments**: EXP-025 through EXP-097 (40+ experiments, 270+ runs)

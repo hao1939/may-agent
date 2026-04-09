@@ -1,21 +1,21 @@
-# The Intervention Architecture — What 26 Experiments Tell Us About Changing Agent Behavior
+# The Intervention Architecture — What 27 Experiments Tell Us About Changing Agent Behavior
 
-> **Capstone synthesis** — the full arc from EXP-070 through EXP-096: how we discovered three mechanisms of agent behavior change, mapped their boundaries, found a breakthrough delivery method, and built an actionable system for fixing any agent failure.
-> ⚠️ **EXP-096 Update**: EXP-095's "delivery position is binary" finding was **invalidated** by infrastructure bugs. Corrected: delivery position is a reliability gradient (task-message most reliable, system-prompt works with attention dilution). See EXP-096 results for corrected data.
+> **Capstone synthesis** — the full arc from EXP-070 through EXP-097: how we discovered three mechanisms of agent behavior change, mapped their boundaries, found a breakthrough delivery method, and built an actionable system for fixing any agent failure.
+> ⚠️ **EXP-096/097 Update**: EXP-095's delivery position finding was **confirmed** by EXP-096 (0/3 even at 11KB system prompt) and refined by EXP-097 (urgency framing = 33%, still unreliable). The mechanism is **positional privilege** — categorical, not attention dilution. Task-message = 100%, system-prompt = 0-33%.
 > Created: 2026-04-09 | Author: Bob (Architect)
-> Sources: EXP-070–096, KE-002, KE-054–065, H-085, H-088, H-089, H-091, WKWA-001, WKWA-005, WKWA-006, Gym Failure Remediation Strategy
+> Sources: EXP-070–097, KE-002, KE-054–065, H-085, H-088, H-089, H-091, WKWA-001, WKWA-005, WKWA-006, Gym Failure Remediation Strategy
 
 ---
 
 ## Executive Summary
 
-Across 26 controlled experiments (EXP-070 through EXP-096) with 200+ individual runs, we discovered and validated a complete architecture for changing LLM agent behavior. The architecture rests on three findings:
+Across 27 controlled experiments (EXP-070 through EXP-097) with 220+ individual runs, we discovered and validated a complete architecture for changing LLM agent behavior. The architecture rests on three findings:
 
 1. **Three Mechanisms** — Every agent failure is fixable by exactly one of three mechanisms: M1 (Analysis Activation), M2 (Evidence Discovery), or M3 (Structural Constraint). Applying the wrong mechanism produces 0% improvement regardless of effort.
 
 2. **Few-Shot Breakthrough** — Domain-matched worked examples achieve 100% pass rate on judgment and process discipline tasks (18/18 cumulative), breaking the binary between text rules (0/32) and workflow enforcement (~100%). This is the most cost-effective intervention in the system.
 
-3. **Delivery Position is a Reliability Gradient** — ~~EXP-095 claimed task-message=100% vs system-prompt=0%.~~ EXP-096 discovered infrastructure bugs invalidating this. Corrected: task-message delivery is most reliable (100%), system-prompt delivery works but with attention dilution at scale (75% at 11KB, behavioral but not pass-rate success at 48KB). Content quality AND delivery position both matter, but neither is binary.
+3. **Delivery Position is Positional Privilege** — EXP-095 found task-message=100% vs system-prompt=0%. EXP-096 **confirmed** this: even reducing system prompt by 77% (48KB→11KB) still yielded 0/3. The mechanism is **positional privilege** (categorical system vs task), NOT attention dilution. EXP-097 showed urgency framing in system prompt achieves 33% — a weak gradient exists, but task-message delivery is the only reliable production mechanism. Cumulative: task-message 15/15 (100%), system-prompt 1/12 (8%).
 
 **The practical bottom line**: When an agent fails, diagnose which mechanism applies (M1/M2/M3), select the matching intervention level (L1–L5), deliver it through the right channel (task message preferred for L3, infrastructure for L5), and expect near-ceiling results. The days of "just add a rule to the prompt" are over — we now have an engineering discipline for behavior change.
 
@@ -90,8 +90,9 @@ Then we discovered few-shot worked examples.
 | EXP-092 | Forced analysis-to-documentation transfer | 100% doc accuracy but 0% task completion — execution crowding |
 | EXP-093 | Verify-after-edit discipline | +40pp on "what to check" but -20pp on "when to check" — temporal boundary |
 | EXP-094 | Cross-domain generalization (credentials→binary) | 0% cross-domain on hard tasks; 100% domain-matched — proximity boundary |
-| EXP-095 | Delivery position (task-message vs system-prompt) | ⚠️ INVALIDATED — infrastructure bugs caused scoring failures |
-| EXP-096 | System prompt length threshold + infrastructure bugs | Bugs fixed. Task-message 100%, system-prompt 75% (11KB), attention dilution at 48KB |
+| EXP-095 | Delivery position (task-message vs system-prompt) | Task-message 100% (6/6), system-prompt 0% (0/3) — confirmed by EXP-096 |
+| EXP-096 | System prompt length threshold (attention dilution test) | Attention dilution REJECTED — 77% prompt reduction still 0/3. Positional privilege confirmed |
+| EXP-097 | Urgency framing in system prompt | 33% (1/3) — weak gradient exists but unreliable for production |
 
 **Cumulative domain-matched few-shot record: 18/18 (100%)** across 8 scenarios spanning judgment, process discipline, and validation knowledge.
 
@@ -140,7 +141,7 @@ Six levels of intervention, validated across 25 experiments:
 **Key boundaries**:
 - Few-shot fails for temporal discipline (-20pp, EXP-093)
 - Few-shot fails cross-domain on hard tasks (0%, EXP-094)
-- ~~Few-shot fails in system prompt regardless of content quality (0%, EXP-095)~~ **CORRECTED by EXP-096**: system-prompt delivery works but with attention dilution; task-message delivery recommended for reliability
+- Few-shot fails in system prompt regardless of content quality (0%, EXP-095; confirmed by EXP-096 even at 11KB). Urgency framing achieves weak 33% (EXP-097) — task-message delivery required for reliability
 - Externalization produces execution crowding when chained with output requirements (EXP-092)
 
 #### M2: Evidence Discovery — "The agent doesn't have the information it needs"
@@ -223,7 +224,7 @@ Step 4: Is this a judgment or process discipline failure?
 ├── YES → L3: Domain-matched few-shot worked example
 │   Hard scenario (0% baseline)? → MUST be domain-matched
 │   Moderate scenario (30-70%)? → Cross-domain example may suffice (~67%)
-│   Inject via task message for maximum reliability (system prompt works but with attention dilution, EXP-096)
+│   Inject via task message — mandatory for reliability (system prompt = 0-33%, EXP-095/096/097)
 │   Expected: 100% domain-matched (18/18, EXP-084–094)
 │   └── DONE
 │
