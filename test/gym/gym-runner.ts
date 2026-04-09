@@ -817,8 +817,14 @@ function runMultiSessionScenario(
         const sourcePath = artifactStore.get(artifactName);
         if (sourcePath && existsSync(sourcePath)) {
           const destPath = join(workDir, destName);
-          mkdirSync(join(destPath, ".."), { recursive: true });
-          cpSync(sourcePath, destPath);
+          const isDir = statSync(sourcePath).isDirectory();
+          if (isDir) {
+            mkdirSync(destPath, { recursive: true });
+            cpSync(sourcePath, destPath, { recursive: true });
+          } else {
+            mkdirSync(join(destPath, ".."), { recursive: true });
+            cpSync(sourcePath, destPath);
+          }
           console.error(`    Injected artifact: ${artifactName} → ${destName}`);
         } else {
           // Artifact not available — session runs without it (best-effort)
@@ -882,8 +888,14 @@ function runMultiSessionScenario(
         if (existsSync(artifactPath)) {
           // Store a copy in temp dir so environment overlays don't clobber it
           const storePath = join(gymRoot, "artifacts", `${sessionId}--${artifactName.replace(/\//g, "__")}`);
-          mkdirSync(join(storePath, ".."), { recursive: true });
-          cpSync(artifactPath, storePath);
+          const isDir = statSync(artifactPath).isDirectory();
+          if (isDir) {
+            mkdirSync(storePath, { recursive: true });
+            cpSync(artifactPath, storePath, { recursive: true });
+          } else {
+            mkdirSync(join(storePath, ".."), { recursive: true });
+            cpSync(artifactPath, storePath);
+          }
           artifactStore.set(artifactName, storePath);
           console.error(`    Collected artifact: ${artifactName}`);
         } else {
