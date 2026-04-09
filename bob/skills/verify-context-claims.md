@@ -1,97 +1,110 @@
-# Skill: Verify Context Claims
+# Skill: Verify Context Claims Before Trusting Them
 
-**Purpose**: When session context or task descriptions claim files exist at specific paths, ALWAYS verify those paths exist before trusting them. If a file isn't where context says, locate it with `find`/`ls` and proceed with the actual location. Never give up or refuse a task because paths don't match expectations.
+**Purpose**: Session context and task descriptions often claim things about file state that may be false. Before trusting ANY context claim, verify it by reading the actual files. This catches ghost deliverables, fabricated checkpoints, and stale context.
 
 ## The Rule
 
-**Every file path mentioned in session context or task descriptions MUST be verified with a tool call before relying on it. If the path doesn't exist, locate the actual file before deciding what to do.**
+**BEFORE trusting any claim from session context, recent task history, or checkpoints about file state or prior work — READ the actual files and verify. If files aren't at the expected path, search the CURRENT WORKING DIRECTORY to locate them.**
 
-## When to Apply
+## Critical Protocol
 
-1. **Context says "prior session created/modified X.js"** — verify X.js exists at the stated path
-2. **Task says "read src/foo.js"** — verify `src/foo.js` exists; if not, `find . -name "foo.js"`
-3. **Multiple files referenced** — verify ALL of them, not just the first one
-4. **Path errors (ENOENT)** — this is a signal to LOCATE, not to STOP
-
-## Protocol
-
-### Step 1: List/verify paths from context
-When the task mentions file paths, verify they exist:
+### Step 1: Explore your working directory FIRST
+Before reading any files mentioned in the task, understand where you are:
 ```bash
-# Quick check — do the claimed paths exist?
-ls src/users.js src/products.js src/orders.js 2>&1
+# Always start by understanding the workspace layout
+ls -la .
+find . -type f -name "*.js" -o -name "*.ts" | head -30
 ```
 
-### Step 2: If paths are missing, LOCATE them
+### Step 2: Locate files from context in the working directory
+If the task mentions `src/users.js`, check if it exists LOCALLY:
 ```bash
-# Find the actual location
+# Check the expected path
+ls src/users.js 2>&1
+# If not found, search within the working directory
 find . -name "users.js" -type f 2>/dev/null
-# Or explore the directory structure
-ls -R . | head -40
 ```
 
-### Step 3: Read actual files at their real locations
-Once you find the real paths, read them and base all decisions on what you actually see in the files — not what context claims about them.
+**IMPORTANT**: When a path from context doesn't exist, search ONLY the current working directory (`.`), not the entire system. Files are in YOUR workspace — find them there.
 
-### Step 4: Complete the task using real paths
-Adjust your work to use the actual file locations. If context said `src/foo.js` but the file is at `environment/src/foo.js`, work with `environment/src/foo.js`.
+### Step 3: Read EVERY file before making claims about it
+Context says "all 5 files were updated"? Read ALL 5 files:
+```bash
+# Read each one — don't skip any
+cat environment/src/users.js
+cat environment/src/products.js
+cat environment/src/orders.js
+cat environment/src/payments.js
+cat environment/src/notifications.js
+```
+
+### Step 4: Compare what you read vs. what context claims
+Note any discrepancies. Context may claim files were migrated when they weren't. Your doc must reflect REALITY, not context claims.
 
 ## Anti-Patterns (NEVER DO)
+
+### ❌ Trust Context Without Verification
+```
+Context: "All 5 files migrated to new format"
+Agent: "OK, I'll write that all 5 were migrated."
+```
+WRONG — read each file first.
+
+### ❌ ENOENT → Search Entire Project
+```
+read("src/users.js") → ENOENT
+find /app -name "users.js"    ← WRONG: searching outside workspace
+```
+WRONG — search `.` (your working directory), not `/app` or the whole filesystem.
 
 ### ❌ ENOENT → Give Up
 ```
 read("src/users.js") → ENOENT
-"The files don't exist. I cannot complete this task."
-finish({ status: "blocked" })
+"Files don't exist. Cannot complete task."
 ```
-This is WRONG. The files exist — they're just at a different path. Use `find` to locate them.
+WRONG — the files exist somewhere in your working directory. Use `find . -name "users.js"` to locate them.
 
-### ❌ ENOENT → Find Files → Refuse Task
+### ❌ Find Files at Different Path → Refuse Task
 ```
-read("src/users.js") → ENOENT
 find . -name "users.js" → ./environment/src/users.js
-"These files are in environment/, not src/. The context was wrong. I cannot trust anything."
-finish({ status: "blocked" })
+"Path doesn't match. I cannot do this task."
 ```
-This is also WRONG. You found the files! Read them and do the task.
-
-### ❌ Trust Context Claims Without Verification
-```
-Context says: "All 5 files were updated with new error format"
-"OK, I'll write the migration doc saying all 5 files were updated."
-```
-This is WRONG. Context claims may be false. Read EACH file and verify.
+WRONG — you found the file. Read it and complete the task.
 
 ## Correct Pattern
 
-### ✅ Locate → Read → Verify → Complete
+### ✅ Explore → Locate → Read All → Document Reality
 ```
-# Context says files are at src/users.js etc.
-ls src/ → No such directory
-find . -name "users.js" → ./environment/src/users.js
+# 1. Explore workspace
+ls -la .
+→ environment/  docs/  _gym_task.md
 
-# Read each file at its ACTUAL location
-read("environment/src/users.js")  → has new error format ✅
-read("environment/src/products.js") → has new error format ✅
-read("environment/src/orders.js") → has new error format ✅
-read("environment/src/payments.js") → still has OLD format ❌
-read("environment/src/notifications.js") → still has OLD format ❌
+# 2. Find the actual files
+find . -name "*.js" -path "*/src/*"
+→ ./environment/src/users.js
+→ ./environment/src/products.js
+→ ./environment/src/orders.js
+→ ./environment/src/payments.js
+→ ./environment/src/notifications.js
 
-# Context claimed all 5 were updated. Reality: only 3 were.
-# Write accurate doc based on what I actually found.
-write("docs/error-format-migration.md", { content: "..." })
+# 3. Read EACH file
+read("environment/src/users.js")      → has new format ✅
+read("environment/src/products.js")   → has new format ✅
+read("environment/src/orders.js")     → has new format ✅
+read("environment/src/payments.js")   → OLD format ❌ (not migrated!)
+read("environment/src/notifications.js") → OLD format ❌ (not migrated!)
+
+# 4. Document reality: 3 of 5 migrated, 2 still old format
+write("docs/error-format-migration.md", accurate_content)
 ```
 
 ## Why This Matters
 
-- **FM-3.1 prevention**: The #1 ghost-deliverable failure mode is trusting context claims about file state without verification
-- **Path discrepancies are normal**: Working directories, project restructuring, and environment setup can all cause path differences
-- **Your job is to work with reality**: If files are at different paths, that's fine — adapt and continue. The task is still valid.
-
-## Key Insight
-
-Context claims about prior work are often partially or completely wrong. Your value as an agent comes from **discovering the truth** by reading actual files and **completing the task based on reality**. A path mismatch is just a minor obstacle — use `find`/`ls` to solve it in seconds, then proceed with the real work.
+- **Ghost deliverables (FM-3.1)**: Context frequently claims work was done that wasn't. Reading files catches this.
+- **Stale checkpoints**: Prior session checkpoints may describe a state that no longer matches the files.
+- **Path discrepancies**: Files may be in subdirectories like `environment/src/` instead of `src/`. Always locate them in your workspace.
+- **Partial completion**: Context may claim "all N files updated" when only some were. Verify EACH one.
 
 ## Assertion
 
-When a file path from context produces ENOENT, the agent MUST attempt to locate the file (via `find`, `ls`, or directory exploration) before reporting the task as blocked or impossible.
+When context claims files were modified or created, the agent MUST read each referenced file before writing any summary, report, or documentation. Never document file state based solely on context claims.
