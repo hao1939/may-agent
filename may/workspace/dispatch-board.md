@@ -1,12 +1,12 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~05:26 UTC
+Updated: 2026-04-09 ~05:53 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
 - **Scout**: 🟢 Running — Heartbeat active.
-- **Bob**: 🟢 Running — Reviewing "Graduate the Gym" proposal (s_1775712294415_186).
-- **Coach**: 🟢 Running — Wave 1 validated, Wave 2+3 requests queued.
+- **Bob**: 🟢 Running — Gym graduation review COMPLETE. Processing heartbeat.
+- **Coach**: 🟢 Running — Wave 2 validated (Parts 2+3 done). EXP-098 COMPLETE. Processing graduation results.
 - **Tech-lead**: 🟢 Running — Finish-guard fix MERGED. Few-shot Phase 1 queued.
 - **Optimizer**: 🟢 Running — Restored Apr 9.
 - **QA**: 🟢 Running — Restored Apr 9.
@@ -77,8 +77,10 @@ Updated: 2026-04-09 ~05:26 UTC
 | **Wave 1 Gym Validation** | ✅ COMPLETE | coach | 9/9 behavioral pass. know-when-blocked 3/3, evidence-over-narrative 3/3 (8/8 checks), classify-then-act 3/3 (6/6). Results: `agents/coach/workspace/growth-receipts/wave1-deployment-results.md`. |
 | **Bob Wave 1 Treatment Scenarios** | ✅ COMPLETE | bob | 3 treatment scenarios created in gym. DD-660 KB integration done. |
 | **DD-660 KB Integration** | ✅ COMPLETE | bob | Positional privilege findings integrated into KE-065 and H-091. |
-| **Bob "Graduate the Gym" Review** | ⏳ IN PROGRESS | bob | Running (s_1775712294415_186). Reviewing Coach's proposal. |
-| **Wave 2+3 Coach Validation** | ⏳ QUEUED | coach | Duplicate requests from Bob (567be7cc/6cadb4fc for Wave 2, e25e8839/28c4ff79 for Wave 3). Coach will pick up on next heartbeat. |
+| **Bob "Graduate the Gym" Review** | ✅ COMPLETE | bob | APPROVED WITH CONDITIONS. Two exit conditions: EXP-098 + Wave 2 validation. 188-line review at `agents/shared/knowledge/synthesis/GYM-GRADUATION-REVIEW.md`. |
+| **Wave 2 Coach Validation** | ✅ COMPLETE | coach | All 5 scenarios tested 3x each. Part 2: convention-verify 17% convention / context-xref 100% behavior. Part 3: missing-prereq 87% / silent-dep 100% / judgment-ambiguous 100%. Cross-ref consistently strong. |
+| **EXP-098 L3 Treatment Testing** | ✅ COMPLETE | coach | **LANDMARK**: Cross-reference 100% (3/3) on L3 cascading-state. Baseline 0%, externalization 0%. Strongest treatment effect observed in any experiment: 0%→100%. |
+| **Gym Graduation Exit Conditions** | ✅ BOTH MET | - | EXP-098 ✅ (cross-ref 100% on L3) + Wave 2 validation ✅ (5 scenarios done). **Gym can now enter maintenance/regression mode.** |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -110,19 +112,21 @@ Updated: 2026-04-09 ~05:26 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (05:26)
-- **Finish-guard fix MERGED** — Branch `review/finish-guard-orchestration-fix` fast-forwarded to main. 56/56 tests pass. Orchestration sessions + agents tool calls now exempt from write-evidence check. GHOST_KEYWORDS refined.
-- **Wave 1 validated perfectly** — Coach ran 9/9 gym scenarios with behavioral pass. know-when-blocked, evidence-over-narrative, classify-then-act all 3/3. Ready for Wave 2.
-- **Bob completed DD-660 integration + Wave 1 scenarios** — Now reviewing Coach's "Graduate the Gym" proposal.
-- **Zombie session killed** — s_1775311714523_3 (4+ days idle) cancelled.
-- **Zero errors** — All 7 running agents healthy. No failures in last hour.
+## Latest Cycle Summary (05:53)
+- **🏆 GYM GRADUATION EXIT CONDITIONS MET** — Both conditions from Bob's review are now satisfied:
+  1. EXP-098: Cross-reference 100% on L3 (0% baseline, 0% externalization). Strongest treatment effect ever.
+  2. Wave 2: All 5 scenarios validated. Cross-ref consistently strong (89-100% behavioral), externalization effective for ambiguity (100%).
+- **Bob's Graduation Review complete** — 188-line decision document at `GYM-GRADUATION-REVIEW.md`. Few-shot production pipeline approved with 5 modifications.
+- **Coach processing results** — Reading graduation review, checking Wave 3 scenarios. Will coordinate with Bob on next steps.
+- **Zombie session killed (again)** — s_1775311714523_3 cancelled (4.6 days old).
+- **Zero errors** — All 7 running agents healthy.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao**.
-- **P1**: **Few-shot Phase 1 implementation** — All prerequisites complete (review ✅, examples ✅, finish-guard fix ✅). Tech-lead implements integration in manager.ts.
-- **P1**: **Wave 2+3 gym validation** — Coach has queued requests. Will proceed after heartbeat.
+- **P0**: **Gym enters maintenance mode** — Bob/Coach to coordinate transition. No more exploratory experiments. Gym becomes regression suite only.
+- **P1**: **Few-shot Phase 1 implementation** — All prerequisites complete (review ✅, examples ✅, finish-guard fix ✅, graduation approved ✅). Tech-lead implements integration in manager.ts. **This is now the #1 build priority.**
 - **P1**: **Auto-pause recovery implementation** — Design complete. Queue for tech-lead after few-shot Phase 1.
-- **P1**: **Present research sprint results to Hao** — H-091 P(H)=0.93→0.99, 17+ experiments, Wave 1 validated, finish-guard fixed, DD-660 integrated.
+- **P1**: **Present research sprint results to Hao** — H-091, 17+ experiments, gym graduation, EXP-098 landmark result.
 - **P2**: Federation design ready for Hao review
 - **P2**: Pre-merge review gate Phase 2 (auto-review)
 - **P2**: Amy-kimi still down — blocked on Hao for billing
