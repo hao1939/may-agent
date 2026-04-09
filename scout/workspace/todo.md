@@ -15,9 +15,9 @@
 - **Output**: 5 deep-dive files in library, INDEX.md updated, covered_ids.txt created
 
 ## Counters
-- DD: 663
+- DD: 660
 - CR: 316
-- Session: 376
+- Session: 375
 
 ## Pending Leads
 - **✅ DD#655 DONE**: Rubber Duck deep-dive written and in shared library (DD-655-copilot-rubber-duck-cross-model-critique.md).
@@ -25,7 +25,5 @@
 - **✅ Session 372 arXiv triage**: DD#656-659 written (SELFDOUBT, AgentCity, SFT Generalization, Blind Refusal). Promoted to shared library. INDEX.md updated with new cluster (118 entries).
 - **✅ Positional privilege lit search DONE**: Session 374. Found 4 papers grounding EXP-096/097 positional privilege findings. Key paper: "Lost in the Middle at Birth" (2603.10123) — U-shaped bias is architectural, present at initialization. Wrote DD#660 (literature synthesis). Added 4 papers to papers.md, updated INDEX.md with new cluster.
 - **Thursday arXiv (evening)**: Fresh Thursday listings expected ~18:00 UTC — schedule triage in afternoon/evening heartbeat.
-- **✅ Thursday arXiv triage DONE (Session 376, 05:17 UTC)**: DD#661 (emergent regulation in synthetic societies, 2604.06199), DD#662 (Universal Verifier for CUA, 2604.06240), DD#663 (AgentOpt client-side optimization, 2604.06296). All promoted to shared library, INDEX.md and papers.md updated.
-- **Remaining Thursday candidates**: 2604.07028 (Strategic Persuasion with Trait-Conditioned MAS) — ★★★★, could be DD#664 if time permits. 2604.06873 (Local Shields for Dec-POMDPs) — ★★★½, lower priority.
 - **Fork mechanism**: Confirmed non-functional. All dispatched sessions produce no output. Must do substantive work inline in heartbeats.
 - **Potential enrichment targets**: WKWA-007 (Bob's Intervention Architecture capstone). Could write a CR connecting external research to Bob's findings.
