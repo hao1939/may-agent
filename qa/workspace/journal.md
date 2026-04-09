@@ -38,6 +38,29 @@ Heartbeat QA at HEAD **41b5074**. Spot-checked the earlier abort-signal propagat
 ### Mandatory gates (re-run 2026-04-09T15:24Z)
 - `./node_modules/.bin/tsc --noEmit`: PASS (exit 0; no output)
 - `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2079 passed (2100)**
+
+## 2026-04-09T16:26Z
+
+### Summary
+Proactive heartbeat QA at HEAD **41b5074** (latest main-repo commit affecting code appears to be **00005e4**: session lifecycle bug fixes). I reviewed the newly added regression tests for lifecycle fixes and re-ran mandatory gates. **Type-check passes**; **vitest fails** due to pre-existing repo/environment issues (missing `src/app/launcher.ts`, EACCES in tmp workspace cleanup, and a 5s timeout in real knowledge base sync).
+
+### Files reviewed
+- `src/lib/manager.ts` (top ~220 lines; verified manager skeleton and exports compile)
+- `test/session-lifecycle-fixes.test.ts` (full file; added regression tests for Bug 3/4/8/10)
+
+### Mandatory gates (re-run 2026-04-09T16:23Z)
+- `./node_modules/.bin/tsc --noEmit`: PASS (no output)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2079 passed (2100)**
+  - `test/launcher.test.ts`: 7 failed — `/app/src/app/launcher.ts` missing (existsSync false + ENOENT reads)
+  - `test/context-learn.test.ts`: 7 failed — `rmSync(..., { recursive: true })` throws `EACCES` removing `/app/test-workspace/context-learn-test/test-agent`
+  - `test/context-learning.test.ts`: 6 failed — same `EACCES` removing `/app/test-workspace/context-learning-test/.state`
+  - `test/research-db.test.ts`: 1 failed — integration test `syncs the actual knowledge base without errors` timed out at 5000ms (observed run ~5.2s)
+
+### Issues noted (test quality)
+- The Bug 8 test (`"resumeSession restores parentAgentName"`) currently does **not** assert the intended behavior; it only checks `resumed.length > 0` then indirectly checks the session exists. This could pass even if `parentAgentName` is not restored.
+
+### Verdict
+CONDITIONAL — code compiles; lifecycle tests run and pass, but overall suite is red for reasons unrelated to lifecycle patch; Bug 8 regression test assertion is weak.
   - `test/launcher.test.ts`: 7 failed — `/app/src/app/launcher.ts` missing (existsSync false + ENOENT)
   - `test/context-learn.test.ts`: 7 failed — `rmSync` fails `EACCES` on `/app/test-workspace/context-learn-test/*`
   - `test/context-learning.test.ts`: 6 failed — `rmSync` fails `EACCES` on `/app/test-workspace/context-learning-test/*`
