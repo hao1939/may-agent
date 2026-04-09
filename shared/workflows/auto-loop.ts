@@ -561,7 +561,29 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
       const execText = (execResult.status === "error" ? "" : execResult.lastAssistantText) ?? "";
       const files = extractFilesFromResult(execResult);
-      const findings = extractKeyFindings(execText);
+      let findings = extractKeyFindings(execText);
+      
+      // If no findings from text, try reading written files for key findings
+      if (findings.length === 0 && files.length > 0) {
+        for (const fp of files) {
+          try {
+            if (existsSync(fp) && fp.endsWith(".md")) {
+              const content = readFileSync(fp, "utf-8");
+              const fileFindingsRaw = extractKeyFindings(content);
+              if (fileFindingsRaw.length > findings.length) findings = fileFindingsRaw;
+              // Also try section headers as findings
+              if (findings.length === 0) {
+                const headers = content.split("\n")
+                  .filter(l => /^#{2,3}\s/.test(l))
+                  .map(l => l.replace(/^#{2,3}\s*/, "").trim())
+                  .filter(l => l.length > 10 && !l.toLowerCase().includes("table of contents"));
+                if (headers.length >= 2) findings = headers.slice(0, 5);
+              }
+            }
+          } catch { /* skip unreadable files */ }
+        }
+      }
+      
       if (findings.length) {
         state.context.keyFindings.push(...findings);
       }
