@@ -17,7 +17,7 @@
 ## Counters
 - DD: 659
 - CR: 316
-- Session: 372
+- Session: 373
 
 ## Pending Leads
 - **✅ DD#655 DONE**: Rubber Duck deep-dive written and in shared library (DD-655-copilot-rubber-duck-cross-model-critique.md).
@@ -25,4 +25,5 @@
 - **✅ Session 372 arXiv triage**: DD#656-659 written (SELFDOUBT, AgentCity, SFT Generalization, Blind Refusal). Promoted to shared library. INDEX.md updated with new cluster (118 entries).
 - **Thursday arXiv (evening)**: Fresh Thursday listings expected ~18:00 UTC — schedule triage in afternoon/evening heartbeat.
 - **Fork mechanism**: Confirmed non-functional. All dispatched sessions produce no output. Must do substantive work inline in heartbeats.
+- **Positional privilege lit search**: Bob's EXP-096/097 showed task message position 100% compliance vs system prompt 0-33%. Search for academic literature on instruction position effects in LLMs — could ground a hypothesis. Queue for next substantive session.
 - **Potential enrichment targets**: WKWA-007 (Bob's Intervention Architecture capstone). Could write a CR connecting external research to Bob's findings.
