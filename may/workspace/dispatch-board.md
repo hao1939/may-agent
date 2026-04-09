@@ -1,17 +1,17 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~16:53 UTC
+Updated: 2026-04-09 ~17:25 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Running — Research portfolio at transition point. avg 4.9m/session.
-- **Coach**: 🟢 Running — FM-3.3 concentration analysis done (measurement artifact, not real regression). avg 5.2m/session.
-- **Scout**: 🟢 Running — avg 10.9m/session. Active research.
-- **Tech-lead**: 🟡 IDLE — avg 0.4m/session. No dispatched work.
-- **Optimizer**: 🟡 IDLE — avg 0.3m/session (3h). Tool quality regression #11 logged (not actionable).
-- **Evaluator**: 🟡 IDLE — avg 0.1m/session (3h). Just heartbeat cycling.
-- **QA**: 🟡 IDLE — avg 0.8m/session (3h). Just heartbeat cycling.
-- **All agents**: 🟢 7/8 running. **4 agents underutilized** (tech-lead, optimizer, evaluator, QA). Zero errors.
+- **Bob**: 🟢 Running — Working on anti-confabulation design brief update (EXP-104 confound revision) + heartbeat.
+- **Coach**: 🟢 Running — EXP-105 designed, waiting for data (zero post-deploy work sessions). Heartbeat cycling.
+- **Scout**: 🟢 Running — Active research. Heartbeat cycling.
+- **Tech-lead**: 🟡 IDLE — Just heartbeat cycling. No dispatched work.
+- **Optimizer**: 🟡 IDLE — Just heartbeat cycling. No dispatched work.
+- **Evaluator**: 🟡 IDLE — Just heartbeat cycling.
+- **QA**: 🟡 IDLE — Just heartbeat cycling.
+- **All agents**: 🟢 7/8 running. **4 agents underutilized** (tech-lead, optimizer, evaluator, QA). Zero errors in last hour.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -102,6 +102,8 @@ Updated: 2026-04-09 ~16:53 UTC
 | **KE-101 Meta-Analysis** | ✅ COMPLETE | bob | **LANDMARK**: 104+ experiments synthesized into 5 Laws of Agent Improvement, 4-tier intervention hierarchy, 3 meta-principles. Core finding: structure dominates content (0/32+ text rules on judgment vs 87-100% structural). At `agents/shared/knowledge/entries/KE-101-meta-analysis-theory-of-agent-improvement.md`. |
 | **FM-3.3 Bob Concentration Analysis** | ✅ COMPLETE | coach | **NOT a real regression** — measurement artifact. 1.9x inflation from eval duplication + LLM eval selection bias. Bob's true FM-3.3 rate (13.6%) is *lowest* of agents with volume. At `agents/coach/workspace/briefs/bob-fm33-concentration-analysis.md`. |
 
+| **EXP-105 Few-Shot Production Impact** | ⏳ WAITING | coach | No data — zero coder/optimizer work sessions since deployment (Apr 9). Baselines captured. **BUG FOUND**: heartbeat tasks match `bug|error` trigger, injecting unnecessary few-shot (~500-800 tokens × 48 fires/day). Needs fix: exclude `[heartbeat]` from few-shot router. |
+
 ## Completed/Archived
 | Item | When | Notes |
 |------|------|-------|
@@ -132,21 +134,23 @@ Updated: 2026-04-09 ~16:53 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (16:53)
+## Latest Cycle Summary (17:25)
 - **7 agents active** — All except Amy-kimi running heartbeat cycles.
-- **Zero recent errors** — System clean.
-- **4 agents effectively idle**: Tech-lead, Evaluator, Optimizer, QA — all just cycling heartbeats. System at transition point.
-- **Completions since last cycle**:
-  - **Coach**: FM-3.3 Bob concentration investigation complete — **measurement artifact**, not real regression. Bob's true FM-3.3 rate (13.6%) is *lowest* of any agent with volume. Inflation from evaluation duplication (1.9x) + LLM eval selection bias. Analysis at `agents/coach/workspace/briefs/bob-fm33-concentration-analysis.md`.
+- **Zero recent errors** — No errors in last hour. System healthy and clean.
+- **4 agents effectively idle**: Tech-lead, Evaluator, Optimizer, QA — all just cycling heartbeats.
+- **Active work**:
+  - **Bob**: Working on anti-confabulation design brief update (dispatched by self; revising with EXP-104 confound findings). In progress.
+  - **Coach**: EXP-105 designed but **blocked on data** — zero coder/optimizer work sessions since few-shot deployment. Baselines captured. Also found heartbeat→few-shot injection bug.
+- **3 old failures** (all >14h old, not recent): Bob EXP-097 integration (aborted), optimizer timeout, may analyze-failures DB bug. None actionable now.
 - **No new tasks from Hao** — Nothing to dispatch.
-- **Key observation**: System stable but idle. Research sprint complete. Need Hao direction for next work streams.
+- **Key insight**: System at transition point. Research sprint complete. EXP-104 was a watershed — the evidence-over-narrative skill already solved confabulation. The anti-confab deployment brief is being revised accordingly.
 
 ## Next Actions
-- **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao**.
-- **P1**: **Surface idle agents to Hao** — 4 agents burning cycles with zero output. Need new work streams or permission to spin down.
-- **P1**: **Dispatch C1.5 ghost fix** — Coach's analysis recommends verify-before-finish skill. Could dispatch coach to build + test it in gym.
+- **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao since Mar 24**.
+- **P1**: **Fix heartbeat few-shot injection bug** — Heartbeat tasks match `bug|error` trigger, wasting ~500-800 tokens × 48 fires/day. Add `[heartbeat]` exclusion to few-shot router in `fewshot-inject.ts`. Dispatch to tech-lead.
+- **P1**: **Surface idle agents to Hao** — 4 agents burning cycles with zero output (tech-lead, optimizer, evaluator, QA). Need new work streams or permission to spin down.
 - **P1**: **Present research sprint results to Hao** — KE-101 meta-analysis is the capstone. H-091, 17+ experiments, gym graduation, EXP-098 landmark, EXP-103/104 confabulation findings.
-- **P1**: **Review anti-confab design brief in light of EXP-104** — Brief recommends adversarial framing + machine evidence. EXP-104 shows skill alone is sufficient. Brief is still good defense-in-depth but priority/urgency should be adjusted.
+- **P1**: **Bob anti-confab brief revision in progress** — Dispatched by coach. Bob updating design brief with EXP-104 confound findings. Monitor completion.
 - **P2**: Federation design ready for Hao review
 - **P2**: Pre-merge review gate Phase 2 (auto-review) — could give tech-lead something to build
 - **P2**: Amy-kimi still down — blocked on Hao for billing
