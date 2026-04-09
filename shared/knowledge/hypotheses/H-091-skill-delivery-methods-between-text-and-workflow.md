@@ -71,6 +71,8 @@ L2: Echo-back → +1.3 score (EXP-084)
 L2.5: Checklist → +2.0 score (EXP-084)
 L3: Few-shot example → +2.3 score (EXP-084)
 L3.5: Few-shot for temporal discipline → partial effect (EXP-093: C3 +40pp but C2.3 -20pp)
+L3⚠️: Few-shot cross-domain (hard scenarios) → 0% (EXP-094: credentials→binary FAILS)
+L3✅: Few-shot domain-matched narrative → 100% even on hardest scenario (EXP-094: binary→binary)
 L5: Workflow enforcement → +3.0 score (EXP-045)
 
 ## Open Questions

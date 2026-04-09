@@ -355,6 +355,17 @@
   - **PRIORITY-TRACKER updated**: Header mentions EXP-088 COMPLETE. H-088 moved from Tier 2 (0.70) to Tier 1 (0.80). EXP-088 added to experiment queue (COMPLETE). Meta-process section updated (12→11 high confidence count adjusted, H-088 promoted).
   - **Files modified**: H-088.md, KE-056.md, KE-060.md, INDEX.md, PRIORITY-TRACKER.md, todo.md
 
+## Session Notes (2026-04-08 ~23:55)
+- [x] **EXP-094 integration**: COMPLETE — Few-Shot Cross-Scenario Generalization (domain proximity) results integrated into knowledge base.
+  - **Key findings**: SECOND BOUNDARY FOUND — Domain Proximity. Skill-only few-shot (credentials→binary domain) 0/3 (0%) on hardest scenario. Domain-matched narrative (binary→binary) 3/3 (100%). Cross-domain structural match insufficient for hard scenarios. Transfer model revised from TWO to THREE levels: exact match=100%, same domain=100%, different domain=0% on hard scenarios.
+  - **H-091 updated**: P(H) 0.95→0.93. EXP-094 evidence section added. Two boundaries documented (temporal + domain proximity). Mechanism hierarchy updated with L3/L3⚠️ split.
+  - **KE-059 updated**: Source line expanded with EXP-094. Three-level transfer model documented. Domain proximity boundary added.
+  - **KE-060 updated**: EXP-094 update section added. L3 delivery hierarchy split into domain-matched (reliable) vs cross-domain (unreliable on hard scenarios). Run count updated to 250+.
+  - **INDEX.md updated**: KE-059, KE-060, H-091 summary rows updated with EXP-094 findings. EXP-094 experiment row added. Run count updated to 250+, experiment range to EXP-094.
+  - **PRIORITY-TRACKER updated**: Header updated with EXP-094 COMPLETE. H-091 P(H) updated (0.95→0.93). EXP-094 added to experiment queue. Meta-process confidence summary updated.
+  - **Implication**: Domain proximity matters more than structural similarity for few-shot transfer on hard scenarios. Practical consequence: few-shot libraries need domain-matched examples, not just skill-matched examples. Cross-domain examples may work on easy scenarios (per EXP-086: 66.7%) but fail completely on hard ones (EXP-094: 0%).
+  - **Files modified**: H-091.md, KE-059.md, KE-060.md, INDEX.md, PRIORITY-TRACKER.md, todo.md
+
 ## Session Notes (2026-04-08 ~23:25)
 - [x] **EXP-093 integration**: COMPLETE — Few-Shot Sprint 3 (Verify-After-Edit Discipline) results integrated into knowledge base.
   - **Key findings**: BOUNDARY FOUND — "What vs When" distinction. C3 validation (what to check) +40pp (40%→80%), but C2.3 temporal sequencing (read-after-write) -20pp (40%→20%). Few-shot teaches what to validate but NOT when to verify. Product quality +40pp despite no temporal discipline. 16 runs (8 control, 8 treatment).

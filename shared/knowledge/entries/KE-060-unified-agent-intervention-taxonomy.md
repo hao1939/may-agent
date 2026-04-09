@@ -293,3 +293,13 @@ The total empirical base: 220+ experimental runs across 40+ experiments, with co
 - H-091 P(H) 0.99→0.95 — first partial failure; temporal discipline excluded from few-shot scope
 - **Updated L3 position**: L3 few-shot effective for judgment + process + validation knowledge; temporal discipline requires L5 workflow enforcement
 - **Taxonomy implication**: Need L3.5 category for "partial few-shot transfer" — knowledge transfers but habit formation does not
+
+### EXP-094 Update: Few-Shot Boundary Found — Domain Proximity
+- know-when-blocked on behavior-escalation-stubborn (hardest scenario, 0/15+ historical, N=3+3)
+- Skill-only (credentials example → binary domain): 0/3 (0%) — cross-domain structural match FAILS ❌
+- Skill + domain-matched narrative (binary→binary): 3/3 (100%) — domain-matched narrative WORKS ✅
+- **Three-level transfer model**: exact match=100%, same domain=100%, different domain=0% on hard scenarios
+- H-091 P(H) 0.95→0.93 — domain proximity boundary narrows few-shot applicability
+- **Updated L3 position**: L3 few-shot requires domain-matched examples for hard scenarios; cross-domain structural matching insufficient
+- **Taxonomy implication**: L3 splits into L3 (domain-matched, reliable) and L3⚠️ (cross-domain, unreliable on hard scenarios)
+- Cumulative matched few-shot: 18/18 on domain-matched scenarios

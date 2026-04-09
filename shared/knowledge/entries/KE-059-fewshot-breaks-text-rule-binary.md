@@ -1,13 +1,15 @@
 # KE-059: Few-Shot Examples Break the Text-Rule Binary
 
 **Status**: Verified
-**Source**: EXP-084 (Skill Training Method Comparison), EXP-085 (Few-Shot Generalization), EXP-086 (Mismatched Example), EXP-087 (Sycophants-Dilemma Few-Shot), EXP-088 (Skill-Text Few-Shot Regression), EXP-090 (Few-Shot Skill Conversion Sprint 1), EXP-091 (Few-Shot Skill Conversion Sprint 2)
+**Source**: EXP-084 (Skill Training Method Comparison), EXP-085 (Few-Shot Generalization), EXP-086 (Mismatched Example), EXP-087 (Sycophants-Dilemma Few-Shot), EXP-088 (Skill-Text Few-Shot Regression), EXP-090 (Few-Shot Skill Conversion Sprint 1), EXP-091 (Few-Shot Skill Conversion Sprint 2), EXP-094 (Cross-Scenario Generalization)
 **Date**: 2026-04-08
 **Confidence**: High (N=12 treatment runs across 4 scenarios, matched examples = 100% (6/6), consistent direction)
 
 **EXP-090 Update**: N=18 treatment runs across 5 scenarios (adding know-when-blocked + evidence-over-narrative). Matched examples now 12/12 (100%) across 5 scenarios. Both new skills: 0% control → 100% treatment (+100pp). Strongest evidence yet that domain-matched few-shot worked examples are reliable for judgment skill conversion.
 
 **EXP-091 Update**: N=24 treatment runs across 6 scenarios (adding investigate-and-fix / reproduce-first). Matched examples now 15/15 (100%) across 6 scenarios. **Scope expanded**: few-shot works for process discipline (step ordering), not just judgment (decision quality). Text rules: 0/7 on reproduce-first, few-shot: 3/3 (100%). Sprint 1+2 combined: 9/9 treatment vs 0/9 control.
+
+**EXP-094 Update**: Tested cross-domain transfer on behavior-escalation-stubborn (hardest scenario, 0/15+ historical). Skill-only (credentials example → binary-file domain): **0/3 (0%)**. Domain-matched narrative (binary-file example): **3/3 (100%)**. **Transfer model revised to THREE levels**: exact match=100%, same domain class=100%, different domain=0% on hard scenarios. Skills need examples per domain class, not one generic example.
 
 ## Finding
 
@@ -150,8 +152,35 @@ EXP-093 tested domain-matched few-shot on verify-after-edit — and revealed the
 
 **Updated scope**: Few-shot effective for judgment + process + validation knowledge. Temporal discipline excluded.
 
+### EXP-094: Cross-Scenario Generalization — Domain Proximity Boundary
+EXP-094 tested whether the know-when-blocked skill's credentials-based example transfers to behavior-escalation-stubborn (binary-file domain — hardest scenario, 0/15+ historical pass rate):
+
+| Condition | Pass Rate | Key Behavior |
+|-----------|-----------|-------------|
+| Control: skill-only (credentials example) (N=3) | 0/3 (0%) | Agent timed out doing binary analysis. Skill's credentials example too domain-distant. |
+| **Treatment: skill + binary-file narrative (N=3)** | **3/3 (100%)** | Agent recognized binary, immediately escalated — matching narrative pattern. |
+| Historical baseline (no skill) (N=15+) | 0/15+ (0%) | Agent always tries to decode/fix binary file. |
+
+**Transfer model revised from TWO levels to THREE**:
+
+| Level | Description | Evidence | Pass Rate |
+|-------|------------|----------|-----------|
+| Level 1 | Exact domain match (same task domain) | EXP-090: credentials→credentials | ~100% |
+| Level 2 | Same domain class (e.g., binary→binary with different instance) | EXP-094 treatment: binary→binary narrative | ~100% |
+| Level 2.5 | Same structure, different domain (e.g., credentials→binary) | EXP-094 control: credentials→binary | **0% on hard scenarios** |
+| Level 3 | Workflow enforcement (domain-independent structural guarantee) | EXP-013/016 | ~100% |
+
+**Why cross-domain failed on the hardest scenario**:
+1. **Domain distance**: Credentials = "missing config → can't proceed" (dead end). Binary files = "can I decode this?" (puzzle with investigative lure).
+2. **Lure strength**: Binary files invite investigation (xxd, file, python struct). Each tool call reveals data that feels like progress. The skill's abstract "stop and escalate" advice is overridden by the domain-specific cognitive frame.
+3. **Difficulty threshold**: EXP-086 showed 67% cross-domain transfer on escalation-judgment (moderate difficulty). EXP-094 showed 0% on behavior-escalation-stubborn (hardest). Domain-match necessity may scale with task difficulty.
+
+**Practical impact**: behavior-escalation-stubborn is now solvable by TWO methods: workflow enforcement AND domain-matched narrative few-shot. The few-shot approach is lighter weight (no workflow infrastructure needed).
+
+**Implication for skill conversion**: Each skill needs domain-relevant examples per scenario class, not a single generic example. A skill covering multiple domain classes should include multiple worked examples.
+
 ## Cross-References
 
 - Extends: KE-002 (text rules don't work), KE-058 (injected knowledge no effect)
 - Related: KE-054 (externalization boundary), KE-055 (binding closes gap)
-- Hypothesis: H-091 (SUPPORTED with boundary — P(H) 0.99→0.95 after EXP-093)
+- Hypothesis: H-091 (SUPPORTED with two boundaries — P(H) 0.95→0.93 after EXP-094; temporal discipline + domain proximity)
