@@ -1,13 +1,13 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~11:17 UTC
+Updated: 2026-04-09 ~11:24 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
 - **Scout**: 🟢 Running — Heartbeat active.
 - **Bob**: 🟢 Running — Heartbeat active.
-- **Coach**: 🟢 Running — Heartbeat active. EXP-100 forked session complete, Multi-Session Harness Phase 3 mostly done (1 incomplete scenario).
-- **Tech-lead**: 🟢 Running — Between heartbeats.
+- **Coach**: 🟢 Running — Heartbeat active. Multi-Session Harness Phase 3 in progress (kb-integration-failure).
+- **Tech-lead**: 🟢 Running — Heartbeat just completed.
 - **Optimizer**: 🟢 Running — Heartbeat active.
 - **QA**: 🟢 Running — Heartbeat active.
 - **Evaluator**: 🟢 Running — Heartbeat active.
@@ -89,7 +89,8 @@ Updated: 2026-04-09 ~11:17 UTC
 | **Auto-Pause Recovery Implementation** | ✅ MERGED | tech-lead | Probe timer + exponential backoff (5min→2h cap) + 24h TTL + escalation to May. 39/39 tests pass. Branch `review/auto-pause-recovery` merged commit `bd56956`. |
 | **Session Lifecycle Bug Fixes (3,4,8,10)** | ✅ MERGED | tech-lead | Bob found 10 bugs in manager.ts. Tech-lead fixed 4 HIGH/MED. Tests 6/6. Branch merged to main. |
 | **EXP-100 CIVC Interventional Test** | ✅ COMPLETE | coach | **CEILING EFFECT**: 12/12 (100%) all arms. Baseline too easy — no treatment differentiation. Scenarios need harder difficulty. |
-| **Multi-Session Harness Phase 3** | ⚠️ MOSTLY DONE | coach | 3/4 scenarios complete (`ghost-deliverable-chain`, `stale-plan-drift`, `unresolved-failure-chain`). `kb-integration-failure` missing `package.json` + `success_criteria.js` (interrupted). |
+| **Multi-Session Harness Phase 3** | ⚠️ MOSTLY DONE | coach | 3/4 scenarios complete (`ghost-deliverable-chain`, `stale-plan-drift`, `unresolved-failure-chain`). `kb-integration-failure` missing `package.json` + `success_criteria.js` (interrupted). Also `instruction-override-drift` missing `success_criteria.js`. |
+| **Bug 2 Gate Abort Signal Fix** | ✅ MERGED | tech-lead/may | Branch `fix/bug2-gate-abort-signal` merged to main. Abort signal propagation + gym directory fix. 4/4 tests pass. |
 | **Telegram Notification Bug (req:88bd4688)** | ✅ ALREADY FIXED | tech-lead | Commit 9de9e58 merged to main. Notifications filtered to interface agent only + dead prompt handler removed. |
 
 ## Completed/Archived
@@ -122,18 +123,16 @@ Updated: 2026-04-09 ~11:17 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (11:17)
-- **System quiet** — Only may + evaluator running at 11:17 UTC. All other agents between heartbeats. Zero errors in last hour.
-- **Bob integrating EXP-100** — Self-forked work session (req:724d48bb, 28m). KB integration of ceiling effect finding.
-- **Coach working on Multi-Session Harness Phase 3** — Self-forked (req:d3671348, 28m). Finishing remaining scenarios.
-- **Review branch awaiting merge** — `review/s_1775702934728_338` has 6 commits: finish-guard orchestration fix, fewshot injection tests (22), gym state isolation, GHOST_KEYWORDS regex fix. Two merge requests sent to tech-lead (one duplicate). Will merge on next tech-lead heartbeat.
+## Latest Cycle Summary (11:24)
+- **All agents running** — Full heartbeat cycle in progress. All 7 active agents executing. Zero errors.
+- **Merged `fix/bug2-gate-abort-signal`** — 2 commits: abort signal propagation in manager.ts (Bug 2 fix) + gym-runner directory artifact handling. 4/4 tests pass. Merged to main.
+- **Coach completing Multi-Session Harness Phase 3** — kb-integration-failure scenario (self-forked req:c02ba380). Also note: `instruction-override-drift` scenario missing `success_criteria.js`.
+- **Tool quality regression** — Optimizer received alert: bash exit-code-nonzero +148%, bash:other +81%. Optimizer handling.
 - **No failures, no stuck sessions** — Clean cycle.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao**.
-- **P1**: **EXP-100 KB integration** — Bob actively working (req:724d48bb). In progress.
-- **P1**: **Complete kb-integration-failure scenario** — Coach actively working on Multi-Session Harness Phase 3 (req:d3671348).
-- **P1**: **Merge review branch** — `review/s_1775702934728_338` (6 commits). Two merge requests sent to tech-lead, awaiting next heartbeat.
+- **P1**: **Complete Multi-Session Harness Phase 3** — Coach working on kb-integration-failure. Also need `instruction-override-drift/success_criteria.js`.
 - **P1**: **Present research sprint results to Hao** — H-091, 17+ experiments, gym graduation, EXP-098 landmark result.
 - **P2**: Federation design ready for Hao review
 - **P2**: Pre-merge review gate Phase 2 (auto-review)
