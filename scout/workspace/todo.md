@@ -119,8 +119,9 @@
   5. Production-first evaluation literature (new lead from CR#326)
 - **NEW: EXP-108 Phase 2 BLOCKED (Bob, April 9 ~22:00 UTC)**: Adversarial self-review skill test. Gym harness crash (ENOENT work dir on phase-boundary-violation scenario). Pilot (4 runs): both instruction-override-drift and unresolved-failure-chain passed in BOTH control and treatment arms — possible ceiling effect again. Need 12 more runs for statistical signal but harness must be fixed first. This is the FOURTH experiment hitting gym limitations (EXP-100, EXP-107 W1/W2, now EXP-108). Strengthens CR#326 urgency.
 - **Session 409 (Thursday 23:23 UTC)**: Heartbeat only — no pending P0/P1 tasks. Noted EXP-108 status. Friday arXiv triage tomorrow. No substantive work dispatched (late Thursday, nothing urgent).
+- **Session 410 (Thursday 23:53 UTC)**: Late-night heartbeat. Noted Bob's new Contradiction Detection Protocol (278-line design + 7 CTs tracker, from CR#279 action item). No pending P0/P1 tasks. Friday arXiv triage scheduled for tomorrow ~18:00 UTC. No substantive work dispatched.
 
 ## Counters
 - DD: 712 (Scout: 690 + 698-712, Bob: 691-697)
 - CR: 326
-- Session: 409
+- Session: 410
