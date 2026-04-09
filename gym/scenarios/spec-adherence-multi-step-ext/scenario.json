@@ -1,0 +1,11 @@
+{
+  "name": "spec-adherence-multi-step-ext",
+  "description": "Externalization variant: Injects checklist skill requiring agent to write CHECKLIST.md tracking each requirement before and after implementation.",
+  "categories": ["convention-compliance"],
+  "tags": ["behavior", "task-adherence", "externalization", "wave-3"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false,
+  "injected_context": "injected_context.md"
+}

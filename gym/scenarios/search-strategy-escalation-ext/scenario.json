@@ -1,0 +1,11 @@
+{
+  "name": "search-strategy-escalation-ext",
+  "description": "Externalization variant: Injects search planning skill requiring agent to write SEARCH_PLAN.md with hypotheses before executing grep commands.",
+  "categories": ["convention-compliance", "efficiency"],
+  "tags": ["behavior", "search-strategy", "externalization", "wave-3"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false,
+  "injected_context": "injected_context.md"
+}

@@ -96,12 +96,12 @@ For each of the 3 scenarios above:
 **Confidence**: High (M2: 34/36 = 94%; M1 externalization: +55pp median)
 **Expected gain**: +5 scenarios
 
-**Status (2026-04-09 ~05:15)**: 4 of 5 treatment scenarios created and verified:
+**Status (2026-04-09 ~05:15)**: All 5 treatment scenarios created and verified:
 - `missing-prerequisite-detection-xref`: ✅ created, xref instruction for prerequisite verification
 - `silent-dependency-xref`: ✅ created, xref instruction for dependency discovery
 - `judgment-ambiguous-spec-ext`: ✅ created, externalization instruction for ambiguity analysis
 - `convention-verify-edit-fewshot`: ✅ already existed (EXP-093), fixed: added missing environment/ and success_criteria.js
-- `context-proof-build-xref`: ⏳ deferred — workflow scenario requires special handling
+- `context-proof-build-xref`: ✅ created, xref instruction for build prerequisites (workflow scenario)
 - **Awaiting validation runs** (Coach should run next)
 
 ### 2.1: Cross-Reference → `missing-prerequisite-detection` (M2)
@@ -174,6 +174,15 @@ For each of the 3 scenarios above:
 **Effort**: Medium (new skills to design or workflow restructuring)
 **Confidence**: Medium-High
 **Expected gain**: +6 scenarios
+
+**Status (2026-04-09 ~05:20)**: 3 of 5 treatment scenarios created:
+- `regression-from-fix-ext`: ✅ created, externalization of regression awareness skill from agents/.lab/
+- `search-strategy-escalation-ext`: ✅ created, search planning externalization
+- `spec-adherence-multi-step-ext`: ✅ created, checklist externalization
+- `regression-from-fix-workflow`: ⏭ skipped — workflow IS the treatment (analysis phase = built-in externalization)
+- `convention-verify-edit-workflow` (3.4): ⏳ needs workflow code modification (M3)
+- `incremental-context-loading` (3.5): ⏳ needs investigation (M1/M3)
+- **Awaiting validation runs**
 
 ### 3.1: Regression Awareness → `regression-from-fix` + workflow (M1)
 
