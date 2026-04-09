@@ -1,0 +1,11 @@
+{
+  "name": "regression-from-fix-ext",
+  "description": "Externalization variant: Injects regression awareness skill requiring agent to grep for callers and write IMPACT.md before editing any function.",
+  "categories": ["bug-fixing", "verification"],
+  "tags": ["regression-awareness", "side-effects", "testing", "externalization", "wave-3"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false,
+  "injected_context": "injected_context.md"
+}

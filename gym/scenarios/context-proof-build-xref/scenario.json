@@ -1,0 +1,13 @@
+{
+  "name": "context-proof-build-xref",
+  "description": "Cross-reference variant: Injects instruction to discover build prerequisites by reading build scripts and grepping for dependencies before running build commands.",
+  "categories": ["context-learning", "proof"],
+  "tags": ["behavior", "multi-session", "build-gotcha", "xref", "wave-2"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": true,
+  "learn_between_phases": true,
+  "phase_cleanup": ["generated", "dist"],
+  "injected_context": "injected_context.md"
+}

@@ -16,12 +16,19 @@
 - [x] **Runtime Finish-Guard for Contradictory Status (REVERTED)**: Gates 3/3b were deployed (commits `45812bc`, `ca53a87`) then **reverted by Hao** (commit `b12c138`). Reason: guards hardcode environmental assumptions. context.md facts deployed instead. 0/6 pass rate on validation confirmed guards ineffective anyway. See `agents/shared/may-agent-docs/design/code-vs-data-decisions.md`.
 - [ ] **EXP-216 (Regression Awareness Skill)**: DEPRIORITIZED. Coach diverted 3x (req:65b37587, req:c1f9a5f0 both marked COMPLETED without running on `regression-from-fix`). Rule of Two for delegation triggered. Skill designed and ready at `agents/.lab/regression-awareness-skill/`. Low priority — only 2 of 108 scenarios affected. Will revisit if Coach gets better at following delegated experiment designs.
 - [~] **WAVE 1 DEPLOYMENT (Gym Remediation)**: All 3 treatment scenarios verified structurally correct. Coach running validation trials (session s_1775710515505_176). Scenarios: escalation-impossible-task-fewshot (1 run done: 4/5 pass), misleading-test-fix-fewshot, sycophants-dilemma-fewshot. Fixed: duplicate inline example in sycophants-dilemma-fewshot/task.md. Deployment plan updated. Awaiting Coach validation results to mark complete.
-- [~] **WAVE 2 DEPLOYMENT (Gym Remediation)**: 4 of 5 scenarios created:
+- [~] **WAVE 2 DEPLOYMENT (Gym Remediation)**: All 5 scenarios created:
   - `missing-prerequisite-detection-xref` ✅ (cross-reference for prerequisite verification)
   - `silent-dependency-xref` ✅ (cross-reference for dependency discovery)
   - `judgment-ambiguous-spec-ext` ✅ (externalization for ambiguity analysis)
   - `convention-verify-edit-fewshot` ✅ (fixed: was missing environment/ + success_criteria.js)
-  - `context-proof-build-xref` ⏳ deferred (workflow scenario needs special handling)
+  - `context-proof-build-xref` ✅ (cross-reference for build prerequisites, workflow scenario)
+  - Awaiting Coach validation runs
+- [~] **WAVE 3 DEPLOYMENT (Gym Remediation)**: 3 externalization scenarios created:
+  - `regression-from-fix-ext` ✅ (regression awareness externalization)
+  - `search-strategy-escalation-ext` ✅ (search planning externalization)
+  - `spec-adherence-multi-step-ext` ✅ (checklist externalization)
+  - `regression-from-fix-workflow` ⏭ skipped (workflow IS the treatment)
+  - 3.4 (convention-verify-edit-workflow) + 3.5 (incremental-context-loading) ⏳ need deeper work
   - Awaiting Coach validation runs
 - [ ] **Complete remaining 3 scenarios**: wrong-tool-args, wrong-tool-args-workflow (cut off in sweep part 3). Delegate to Coach.
 - [x] **Tech-Lead jsonSchema Blocker**: SELF-RESOLVED (2026-03-29). Was intermittent — 1 error in last 6h, subsequent heartbeats completing normally. No longer blocking.
