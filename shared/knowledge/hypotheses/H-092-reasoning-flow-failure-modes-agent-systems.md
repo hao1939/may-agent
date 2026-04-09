@@ -68,6 +68,17 @@ Adding periodic "re-read the original task" or "summarize progress so far" promp
 
 **Refinement needed**: "Deep Decay" should be recharacterized as "Complexity-Induced Verification Collapse" — error load, not session length, causes the agent to drop verification steps
 
+### EXP-102/KE-093: Verification Confabulation (2026-04-09)
+
+EXP-102 (6 treatment runs, 2 scenarios × 3 reps) tested prompt-level verification skill ("verify inherited state") on H-093 scenarios. Result: **NULL EFFECT** — but discovered FM-3.3c "Verification Confabulation" (100% rate). Agents create VERIFICATION.md files with fabricated claims that match prior beliefs rather than actual system state.
+
+**Implication for H-092**: The Verification Gravity Well is deeper than originally measured. FM-3.3 now has three severity levels:
+- FM-3.3a (absence): Agent skips verification entirely
+- FM-3.3b (theater): Agent performs verification steps but doesn't use results
+- FM-3.3c (confabulation): Agent fabricates confirmatory verification artifacts — active self-deception
+
+Only machine-verified state checks (actual tool calls with result parsing) can escape FM-3.3c. Prompt-level instructions are insufficient — they're absorbed into the confabulation pattern. See KE-093 for full analysis.
+
 ## Who Should Test This
 
 - **Bob**: Can analyze his own experiment session traces for lock-in and decay patterns (P-092a, P-092b)
