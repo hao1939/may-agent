@@ -77,6 +77,15 @@
 - [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% of verify-after-edit failures need code-level fix, not prompting. Deferred until prompting experiments complete.
 - [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
 
+## Session Notes (2026-04-09 ~12:53)
+- **H-094 P(H) CONSISTENCY FIX**: Results.md Phase 2 concluded P(H)=0.35, but H-094.md and PRIORITY-TRACKER said 0.50. Fixed all 3 files to consistently show P(H)=0.35 with Phase 2 reasoning (AUROC 0.566, survivorship bias fatal, base rate artifact).
+- **INDEX DEDUPLICATION**: Removed 7 duplicate rows (EXP-100, EXP-101, H-093, H-094 ×2, DD-679/680/681) and fixed 3 stale DD entries (replaced with updated versions). INDEX down from 568→559 lines.
+- **EXP-102 REGISTERED**: Coach ran verification confabulation test on multi-session harness but didn't create formal experiment directory. Created `experiments/EXP-102/results.md`, added EXP-102 row to INDEX and PRIORITY-TRACKER experiment log.
+  - **Key finding**: 100% confabulation rate — agents read correct file contents but fabricate verification documents matching false priors. Generation-level failure, not information-gathering failure.
+  - **KE-093** (Verification Confabulation) was already created by Coach. Now properly connected to EXP-102.
+- **Files created**: `agents/shared/knowledge/experiments/EXP-102/results.md`
+- **Files modified**: `agents/shared/knowledge/INDEX.md`, `agents/shared/knowledge/hypotheses/PRIORITY-TRACKER.md`, `agents/shared/knowledge/hypotheses/H-094-hedge-verify-ratio-agent-confidence-gating.md`, `agents/bob/workspace/todo.md`
+
 ## Session Notes (2026-04-09 ~12:18)
 - **DD-679/680/681 INDEX + H-094 INTEGRATION**: Integrated three new deep dives (Scout's linguistic confidence/hedging research) into knowledge base.
   - **DD-679** ★★★★★ EXCEPTIONAL: Dual uncertainty interfaces — global (verbalized confidence) + local (`<uncertain>` markers). Trained local markers >> passive detection. Validates H-094 direction but shows explicit training needed.
