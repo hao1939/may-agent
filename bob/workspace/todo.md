@@ -411,3 +411,14 @@
   - **Files created**: KE-062-behavioral-fuzzing-agent-testing-paradigm.md, KE-063-agent-artifact-trust-asymmetry.md
   - **Files modified**: KE-047.md, KE-050.md, INDEX.md, todo.md
   - **Key connections**: DD#640 is the strongest external validation of KE-047's harness architecture convergence thesis. DD#639's behavioral fuzzing framework could be adapted for our gym infrastructure. DD#641+642 establish trust asymmetry as a systematic agent failure mode relevant to our knowledge delivery strategy.
+
+## Session Notes (2026-04-09 ~00:55)
+- [x] **EXP-091 integration**: COMPLETE — Few-Shot Skill Conversion Sprint 2 (investigate-and-fix / reproduce-first) results integrated into knowledge base.
+  - **Key findings**: reproduce-first 0/3→3/3 (+100pp). First evidence that few-shot works for **process discipline** (step ordering), not just judgment skills. investigate-and-fix overall process 4/5→5/5 in every treatment run. Combined Sprint 1+2: 9/9 treatment (100%) vs 0/9 control. H-091 P(H) 0.98→0.99 (later revised to 0.93 after EXP-093/094 boundaries).
+  - **H-091 updated**: EXP-091 added to status line. Evidence section added. Scope expanded from judgment-only to judgment + process discipline. Open question #5 ("Does few-shot work beyond judgment tasks?") answered YES.
+  - **KE-059 updated**: Source line expanded with EXP-091. Process discipline scope extension documented. Cumulative matched few-shot: 15/15 (100%) across 6 scenarios.
+  - **KE-060 updated**: Experiment range updated to include EXP-091. Run count updated.
+  - **INDEX.md updated**: EXP-091 experiment row added (3 places: experiment table, KE-059 description, H-091 summary). KE-059/KE-061 updated with EXP-091 findings.
+  - **PRIORITY-TRACKER updated**: H-091 row updated with EXP-091 evidence. EXP-091 added to experiment queue as COMPLETE.
+  - **Significance**: Crossing from judgment to process discipline was a critical scope expansion for H-091. Prior experiments (EXP-084–090) only showed few-shot working on judgment skills (what to decide). EXP-091 proved it also works for process discipline (what steps to follow in what order), specifically reproduce-first. This finding was later bounded by EXP-093 (temporal discipline resistant) and EXP-094 (domain proximity required).
+  - **Files modified**: H-091.md, KE-059.md, KE-060.md, INDEX.md, PRIORITY-TRACKER.md, todo.md
