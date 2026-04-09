@@ -4,7 +4,7 @@
 
 # QA Journal — 2026-04-09
 
-## 2026-04-09T21:55Z
+## 2026-04-09T22:25Z
 
 ### Summary
 Proactive heartbeat QA at HEAD **0cf9b17** (merge of `review/fix-fewshot-heartbeat`). I read `src/lib/fewshot-router.ts` and confirmed the heartbeat exclusion is now **case-insensitive** (`/^\[heartbeat\]/i`), preventing few-shot token spend on heartbeat sessions.
@@ -13,20 +13,20 @@ Proactive heartbeat QA at HEAD **0cf9b17** (merge of `review/fix-fewshot-heartbe
 - `src/lib/fewshot-router.ts` — `if (/^\[heartbeat\]/i.test(taskText)) return { content: null, ... }`
 
 ### Mandatory gates
-- `./node_modules/.bin/tsc --noEmit`: PASS (no output)
+- `./node_modules/.bin/tsc --noEmit`: PASS (exit 0; no output)
 - `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2083 passed (2104)**
+  - `test/launcher.test.ts`: 7 failed — structural expectations for `/app/src/app/launcher.ts` but file missing (`existsSync` false + `ENOENT` reads)
   - `test/context-learn.test.ts`: 7 failed — `rmSync(..., { recursive: true })` → `EACCES` under `/app/test-workspace/context-learn-test/*`
   - `test/context-learning.test.ts`: 6 failed — `rmSync(..., { recursive: true })` → `EACCES` under `/app/test-workspace/context-learning-test/*`
-  - `test/launcher.test.ts`: 7 failed — expects `/app/src/app/launcher.ts` to exist; ENOENT
   - `test/research-db.test.ts`: 1 failed — integration test timed out at 5000ms
 
 ### Issues
-- CRITICAL (repo/test mismatch): `test/launcher.test.ts` requires `src/app/launcher.ts`, but it is missing at HEAD.
-- IMPORTANT (env/permissions): context-learning tests cannot delete `/app/test-workspace/*` (`EACCES` in rmSync).
-- IMPORTANT (test robustness/perf): `test/research-db.test.ts` “sync real knowledge base” exceeds 5s timeout.
+- CRITICAL: `test/launcher.test.ts` requires `src/app/launcher.ts`, but it is missing at HEAD (suite cannot go green).
+- IMPORTANT: context-learning tests cannot delete `/app/test-workspace/*` (`EACCES` in rmSync) in this environment.
+- IMPORTANT: `test/research-db.test.ts` “sync real knowledge base” times out at 5s; may need higher timeout or reduced workload.
 
 ### Verdict
-CONDITIONAL — patch itself type-checks and is small/targeted; test suite is red for unrelated reasons above.
+CONDITIONAL — reviewed change appears correct and type-safe, but the repo is vitest-red for the unrelated structural/permission/timeout failures above.
 
 ## 2026-04-09T21:25Z
 
