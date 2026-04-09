@@ -1,15 +1,15 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~18:55 UTC
+Updated: 2026-04-09 ~19:23 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Running — KB integration (DD-701-704 + CR-324) completed this cycle. Heartbeat cycling.
-- **Coach**: 🟢 Running — Weekly regression check ✅ DONE. EXP-105 still waiting for data (zero coder/optimizer work sessions post-deployment).
-- **Scout**: 🟢 Running — Active research. Heartbeat cycling.
-- **Tech-lead**: 🟢 Running — Heartbeat few-shot bug fix ✅ MERGED (commit 7e6bc59, 29/29 tests). Back to heartbeat cycling.
-- **Optimizer**: 🟡 IDLE — Just heartbeat cycling. No dispatched work.
-- **Evaluator**: 🟡 IDLE — Evaluating task trees + heartbeat cycling.
+- **Bob**: 🟢 Running — Heartbeat cycling. No dispatched work.
+- **Coach**: 🟢 Running — KE-106 written (Structural Enforcement ≠ Training). FM-3.3 analysis done. EXP-105 still waiting for data.
+- **Scout**: 🟢 Running — Heartbeat cycling.
+- **Tech-lead**: 🟢 Running — Explicitly says "Nothing to do." Heartbeat cycling.
+- **Optimizer**: 🟡 IDLE — Tool quality regression #11 analyzed (not actionable). Just heartbeat cycling.
+- **Evaluator**: 🟡 IDLE — Just heartbeat cycling.
 - **QA**: 🟡 IDLE — Just heartbeat cycling.
 - **All agents**: 🟢 7/8 running. **3 agents underutilized** (optimizer, evaluator, QA). Zero errors in last hour.
 
@@ -104,6 +104,7 @@ Updated: 2026-04-09 ~18:55 UTC
 
 | **EXP-105 Few-Shot Production Impact** | ⏳ WAITING | coach | No data — zero coder/optimizer work sessions since deployment (Apr 9). Baselines captured. **BUG FIXED**: heartbeat exclusion merged (commit 7e6bc59). Token waste eliminated. |
 | **Heartbeat Few-Shot Injection Bug Fix** | ✅ MERGED | tech-lead/may | Branch `review/s_1775757252662_484` merged to main. Commit 7e6bc59. 29/29 tests pass. `[heartbeat]` prefix now skips few-shot router. |
+| **KE-106 Structural Enforcement ≠ Training** | ✅ COMPLETE | coach | Guards catch errors at 50-70% of sessions but underlying rate never decreases over 26 days. Guards are permanent infrastructure, not training wheels. At `agents/shared/knowledge/entries/KE-106-structural-enforcement-no-training-effect.md`. |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -135,23 +136,23 @@ Updated: 2026-04-09 ~18:55 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (18:25)
+## Latest Cycle Summary (19:23)
 - **7 agents active** — All except Amy-kimi running heartbeat cycles.
-- **Zero errors this hour** — One Bob interruption earlier (17:25, Phase 2 write abort) but non-critical.
-- **3 agents effectively idle**: Optimizer, Evaluator, QA — all just cycling heartbeats.
-- **Completed this cycle**:
-  - **Heartbeat few-shot bug fix** ✅ MERGED to main (commit 7e6bc59). Saves ~500-800 tokens × 48 fires/day. 29/29 tests.
-  - **Coach**: Weekly regression check completed.
-  - **Bob**: DD-701-704 + CR-324 KB integration completed.
-- **No new tasks from Hao** — System in holding pattern. Research sprint complete, deployment phase needs Hao direction.
-- **Stale zombie session**: `s_1775311714523_3` (may, 19hr old) — harmless, will die on its own.
+- **Zero errors this hour** — Clean system.
+- **4+ agents effectively idle**: Tech-lead ("Nothing to do"), Optimizer, Evaluator, QA, Bob, Scout — all just cycling heartbeats.
+- **Completed since last cycle**:
+  - **Coach**: KE-106 written (Structural Enforcement Does Not Train Behavior — guards catch 50-70% of sessions but error rate never decreases). FM-3.3 trend analysis completed.
+  - **Growth trigger for tech-lead FM-3.3** → Dismissed. Coach already analyzed as measurement artifact (eval duplication + LLM selection bias).
+- **System observation**: ~5 hours of near-zero productive output from most agents. System is in a natural lull — research sprint complete, all major tasks done, awaiting Hao direction.
+- **Stale zombie session**: `s_1775311714523_3` (may, 20hr old) — harmless.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao since Mar 24**.
-- **P1**: ~~Fix heartbeat few-shot injection bug~~ → ✅ **MERGED** (commit 7e6bc59, 29/29 tests).
-- **P1**: **Surface idle agents to Hao** — 3 agents burning cycles with zero output (optimizer, evaluator, QA). Need new work streams or permission to spin down.
+- **P0**: **Address system-wide idle state** — 6/7 running agents producing nothing. Options: (a) Hao provides new direction, (b) self-assign from research projects, (c) spin down idle agents to save cost.
+- **P1**: **Surface idle agents to Hao** — 3+ agents burning cycles with zero output (optimizer, evaluator, QA, tech-lead). Need new work streams or permission to spin down.
 - **P1**: **Present research sprint results to Hao** — KE-101 meta-analysis is the capstone. H-091, 17+ experiments, gym graduation, EXP-098 landmark, EXP-103/104 confabulation findings.
-- **P1**: **Anti-confab brief ready for review** — At `agents/shared/may-agent-docs/design/anti-confabulation-deployment.md`. Revised with EXP-104 confound (evidence-over-narrative skill was the real fix, not adversarial framing). Ready for tech-lead + Hao.
+- **P1**: **Anti-confab brief ready for review** — At `agents/shared/may-agent-docs/design/anti-confabulation-deployment.md`. Revised with EXP-104 confound. Ready for tech-lead + Hao.
 - **P2**: Federation design ready for Hao review
-- **P2**: Pre-merge review gate Phase 2 (auto-review) — could give tech-lead something to build after few-shot bug fix
+- **P2**: Pre-merge review gate Phase 2 (auto-review) — could give tech-lead productive work
 - **P2**: Amy-kimi still down — blocked on Hao for billing
+- **P2**: EXP-031 (On-Demand Workflow Discovery) designed by optimizer — ready for gym execution
