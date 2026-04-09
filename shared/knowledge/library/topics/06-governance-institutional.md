@@ -44,6 +44,7 @@
 |-------|----------------|
 | [KE-048](../../entries/KE-048-agent-safety-stack-vulnerability-to-regulation.md) | Agent Safety Stack: L4 Social Governance (Wikipedia AI Tom deploy-first-ask-later, self-attestation failure) + L5 Regulatory Compliance (EU law mapping, behavioral drift makes static regulation impossible). Governance must be layered and adaptive. |
 | [KE-051](../../entries/KE-051-self-governance-stack.md) | ★★★★★ Self-Governance Stack: three layers (L1 Self-Verification, L2 Diversity Enforcement, L3 Meta-Verification). Constitutional meta-engineering Laws A/B/C map to Layers 2/1/3. Critical gap identified: L2 (diversity enforcement) absent in our system. |
+| [KE-073](../../entries/KE-073-emergent-decentralized-corrective-signaling.md) | Emergent decentralized corrective signaling: 14,490 agents self-regulate without human moderation. Connects to H-056 (cooperative convergence) and KE-070 (governance). Corrective signaling scales with directive intensity. Implications for governance-without-central-authority design. |
 
 ## Related Hypotheses
 - **H-045**: Sprint contract pattern — structured commitment boundaries

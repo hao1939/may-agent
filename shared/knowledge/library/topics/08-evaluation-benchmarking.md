@@ -43,6 +43,7 @@
 | [KE-052](../../entries/KE-052-structural-access-thesis.md) | Structural Access Constraints Dominate Content Quality: RIFT predicts evaluator agreement (r=0.81). Accessibility of evaluation criteria matters more than their quality. Access is designable — rewrite low-RIFT rubrics. |
 | [KE-053](../../entries/KE-053-gym-production-gap-structural-not-behavioral.md) | Gym-Production Gap Is Structural: 96% gym ceiling ≠ production success. Isolated competency tests cannot predict deployed performance. Three structural gaps (context scale, instruction complexity, compound verification). Gym functions as regression suite, not training tool. |
 | [KE-059](../../entries/KE-059-fewshot-breaks-text-rule-binary.md) | Few-Shot Breaks Text-Rule Binary: EXP-084 (N=30) — worked examples, checklists, and echo-back produce measurable improvement on judgment tasks where text rules show 0% effect. Intermediate delivery methods exist between text and workflow. Evaluation method: 7-point rubric scoring across 5 training methods. |
+| [KE-074](../../entries/KE-074-universal-verification-design-process-outcome-separation.md) | ★★★★★ Universal Verification Design: Process/outcome separation, rubric-first evaluation, controllable/uncontrollable failure distinction, divide-and-conquer context transform verification from ~31% agreement to human-level (κ=0.64). Verification quality is architectural, not model-dependent. Maps to H-054 and H-009. |
 
 ## Related Hypotheses
 - **H-009**: Evaluator drift
