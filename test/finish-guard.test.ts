@@ -150,11 +150,97 @@ describe("finish-guard", () => {
     expect(result!.reason).toContain("FM-3.1 Ghost Deliverable");
   });
 
-  it("blocks 'Added new feature' summary with no deliverables and no writes", async () => {
+  it("allows 'Added new feature' summary without writes (generic word removed from GHOST_KEYWORDS)", async () => {
     const ctx = makeCtx({ status: "success", summary: "Added retry logic to the API client" }, []);
+    const result = await guard(ctx);
+    expect(result).toBeUndefined();
+  });
+
+  it("allows 'created' in analytical summary without writes (generic word removed)", async () => {
+    const ctx = makeCtx(
+      { status: "success", summary: "File was created in a previous session, verified it exists" },
+      [assistantWithToolCall("read", { path: "src/foo.ts" })],
+    );
+    const result = await guard(ctx);
+    expect(result).toBeUndefined();
+  });
+
+  it("allows 'removed' in analytical summary without writes (generic word removed)", async () => {
+    const ctx = makeCtx(
+      { status: "success", summary: "Analyzed what could be removed or consolidated" },
+      [assistantWithToolCall("read", { path: "src/foo.ts" })],
+    );
+    const result = await guard(ctx);
+    expect(result).toBeUndefined();
+  });
+
+  it("allows 'changed' in analytical summary without writes (generic word removed)", async () => {
+    const ctx = makeCtx(
+      { status: "success", summary: "Nothing changed since last review — all metrics stable" },
+      [assistantWithToolCall("read", { path: "src/foo.ts" })],
+    );
+    const result = await guard(ctx);
+    expect(result).toBeUndefined();
+  });
+
+  it("blocks 'wrote' summary with no file changes", async () => {
+    const ctx = makeCtx({ status: "success", summary: "Wrote the new caching module" }, []);
     const result = await guard(ctx);
     expect(result).toBeDefined();
     expect(result!.block).toBe(true);
+    expect(result!.reason).toContain("FM-3.1 Ghost Deliverable");
+  });
+
+  // === Orchestration Tool Exemption Tests ===
+
+  it("allows finish(success) with deliverables when workflow tool was used", async () => {
+    const ctx = makeCtx(
+      {
+        status: "success",
+        summary: "Ran auto-loop workflow for token analysis",
+        deliverables: [{ path: "agents/bob/workspace/token-analysis.md", description: "analysis output" }],
+      },
+      [
+        assistantWithToolCall("workflow", { action: "run", name: "auto-loop", task: "token analysis" }),
+        assistantWithToolCall("read", { path: "agents/bob/workspace/token-analysis.md" }),
+      ],
+    );
+    const result = await guard(ctx);
+    expect(result).toBeUndefined();
+  });
+
+  it("allows finish(success) with deliverables when agents tool was used", async () => {
+    const ctx = makeCtx(
+      {
+        status: "success",
+        summary: "Delegated implementation to coder agent",
+        deliverables: [{ path: "src/feature.ts", description: "new feature" }],
+      },
+      [
+        assistantWithToolCall("agents", { action: "call", agent: "coder", task: "implement feature" }),
+        assistantWithToolCall("read", { path: "src/feature.ts" }),
+      ],
+    );
+    const result = await guard(ctx);
+    expect(result).toBeUndefined();
+  });
+
+  it("allows ghost keyword summary when workflow tool was used (no deliverables)", async () => {
+    const ctx = makeCtx(
+      { status: "success", summary: "Implemented the feature via auto-loop workflow" },
+      [assistantWithToolCall("workflow", { action: "run", name: "auto-loop", task: "implement feature" })],
+    );
+    const result = await guard(ctx);
+    expect(result).toBeUndefined();
+  });
+
+  it("allows ghost keyword summary when agents tool was used (no deliverables)", async () => {
+    const ctx = makeCtx(
+      { status: "success", summary: "Fixed the bug by delegating to coder" },
+      [assistantWithToolCall("agents", { action: "call", agent: "coder", task: "fix bug" })],
+    );
+    const result = await guard(ctx);
+    expect(result).toBeUndefined();
   });
 
   it("does not block ghost guard when deliverables ARE listed (falls through to Gate 1)", async () => {
