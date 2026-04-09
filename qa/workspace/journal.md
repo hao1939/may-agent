@@ -38,6 +38,27 @@ Heartbeat QA at HEAD **7e6bc59**. Reviewed `src/lib/fewshot-router.ts` (confirme
   - `test/context-learn.test.ts`: 7 failed — `rmSync(tmpDir, { recursive: true })` throws `EACCES` on `/app/test-workspace/context-learn-test/test-agent`
   - `test/context-learning.test.ts`: 6 failed — same `EACCES` on `/app/test-workspace/context-learning-test/.state`
   - `test/launcher.test.ts`: 7 failed — asserts `/app/src/app/launcher.ts` exists, then reads it; ENOENT
+
+## 2026-04-09T20:25Z
+
+### Summary
+Proactive heartbeat QA at HEAD **7e6bc59** (most recent commit). I independently inspected the actual change in `src/lib/fewshot-router.ts`: `routeFewShotExamples()` now returns early when `taskText` starts with `[heartbeat]`, preventing irrelevant few-shot injection. `tsc` passes. `vitest` fails due to multiple **unrelated** issues (missing launcher file, test-workspace permissions, research-db timeout).
+
+### Files reviewed (evidence)
+- `src/lib/fewshot-router.ts` (read around the new guard; confirmed exact early return behavior)
+- `test/launcher.test.ts` (read; confirms tests hard-require `src/app/launcher.ts`)
+
+### Mandatory gates (re-run)
+- `./node_modules/.bin/tsc --noEmit`: PASS
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2082 passed (2103)**
+
+### Notable failures (appear pre-existing/unrelated to fewshot-router change)
+- `test/launcher.test.ts`: 7 failed — `existsSync(/app/src/app/launcher.ts)` is false; subsequent reads throw ENOENT
+- `test/context-learn.test.ts` + `test/context-learning.test.ts`: 13 failed — cleanup `rmSync(..., { recursive: true })` throws `EACCES` under `/app/test-workspace/*`
+- `test/research-db.test.ts`: 1 failed — integration test times out at 5000ms
+
+### Verdict
+CONDITIONAL — change itself looks correct, but main branch test suite is not green.
   - `test/research-db.test.ts`: 1 failed — integration test `syncs the actual knowledge base without errors` timed out at 5000ms (observed ~5.5s)
 
 ### Issues
