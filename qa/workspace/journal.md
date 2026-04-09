@@ -78,6 +78,28 @@ Heartbeat QA at HEAD **41b5074**. Independently re-checked `src/lib/manager.ts` 
 ### Verdict
 CONDITIONAL — patch appears type-safe, but CI is blocked by missing file + permission/timeouts in test environment.
 
+## 2026-04-09T18:25Z
+
+### Summary
+Heartbeat QA at HEAD **d7e6b4f**. Reviewed the most recent non-agents change in `test/gym/gym-runner.ts` (commit **330b2a9**) where multiple `cpSync()` calls were updated to include `{ recursive: true }`, fixing directory-copy failures when sandboxing/copying agent directories.
+
+### Files reviewed
+- `test/gym/gym-runner.ts` (may-agent adapter setup + sandbox agent copy paths; includes `cpSync(..., { recursive: true })`)
+
+### Mandatory gates (re-run)
+- `./node_modules/.bin/tsc --noEmit`: PASS (no output)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2079 passed (2100)**
+  - `test/launcher.test.ts`: 7 failed — expects `/app/src/app/launcher.ts` to exist; file missing (ENOENT)
+  - `test/context-learn.test.ts`: 7 failed — `rmSync(..., { recursive: true })` fails with `EACCES` under `/app/test-workspace/context-learn-test/test-agent`
+  - `test/context-learning.test.ts`: 6 failed — `rmSync(..., { recursive: true })` fails with `EACCES` under `/app/test-workspace/context-learning-test/.state`
+  - `test/research-db.test.ts`: 1 failed — integration test timed out at 5000ms
+
+### Issues
+- IMPORTANT (env/repo): The vitest failures appear **pre-existing/unrelated** to the gym-runner `cpSync` change. They are dominated by a missing `src/app/launcher.ts`, filesystem permission errors in `/app/test-workspace/*`, and a 5s timeout in a research-db integration test.
+
+### Verdict
+CONDITIONAL — the reviewed change looks correct and typechecks; repo/test environment needs fixes before suite can go green.
+
 ## 2026-04-09T16:26Z
 
 ### Summary
