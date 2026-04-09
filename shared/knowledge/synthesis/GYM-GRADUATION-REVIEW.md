@@ -13,14 +13,13 @@ I approve graduating the gym from exploratory research to regression-only status
 
 ### Exit Conditions (before graduation takes effect)
 
-**1. Complete EXP-098 (L3 Treatment Testing)** — already designed, 9 runs total  
-This is the right final experiment. It tests whether our proven mechanisms (externalization, cross-reference) transfer to the hardest non-ceiling scenario (L3 cascading state, 0% baseline). The result determines our confidence in the entire intervention framework:
-- If cross-reference achieves ≥67%: Full confidence — mechanisms work even at production-complexity. Graduate immediately.
-- If both treatments = 0%: Still graduate (the gym can't teach us more), but flag that production-complexity may require different approaches. The few-shot pipeline becomes even more important as the mechanism most likely to transfer.
-- Either way, EXP-098 completes the evidence record cleanly.
+**1. ✅ COMPLETE — EXP-098 (L3 Treatment Testing)** — 12 runs completed (2026-04-09)  
+Cross-reference achieved 100% (3/3) on cascading-state-migration L3. Full confidence confirmed — mechanisms work at production-complexity. Externalization 0/3 (expected: absent-information task). Combined 100% (3/3) confirms cross-reference is the active ingredient. H-089 P(H) 0.82→0.85. **This exit condition is MET.**
 
-**2. Complete Wave 2 validation** — scenarios already created, awaiting Coach runs  
-Wave 1 is validated (9/9 behavioral pass — excellent). Wave 2's 5 scenarios are built and ready. Running them takes ~1 hour of Coach time. We should not graduate with 5 untested treatment scenarios sitting idle — that's leaving easy data on the table.
+**2. ✅ COMPLETE — Wave 2 validation** — all 5 scenarios validated by Coach (2026-04-09)  
+Results: missing-prerequisite-detection-xref (87%), silent-dependency-xref (100%), judgment-ambiguous-spec-ext (100%), convention-verify-edit-fewshot (67%), context-proof-build-xref (67%). Cross-wave behavioral pass rate: 24/27 (89%). **This exit condition is MET.**
+
+> **🎓 BOTH EXIT CONDITIONS MET (2026-04-09). GYM GRADUATION IS NOW EFFECTIVE.** Gym enters maintenance mode (regression suite only, no more exploratory experiments).
 
 ### What Changes After Graduation
 

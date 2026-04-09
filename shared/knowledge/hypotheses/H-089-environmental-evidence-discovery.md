@@ -1,7 +1,7 @@
 # H-089: Environmental Evidence Discovery — A General Complement to Externalization
 
-**Status**: SUPPORTED — P1 (cross-domain generalization) confirmed, P2 (cross-agent) confirmed. N=30 baseline + 30 treatment across 4 experiments, 4 domains, 2 agents
-**Source**: EXP-079 (cross-reference L3 instruction), EXP-080 (cross-reference L2 skill), **EXP-083 (cross-domain generalization: .env repair + SQL schema, 0%→100%)**, **EXP-098 (cross-agent replication: coder agent on cascading-state, 0%→100%)**, EXP-078 (externalization control), EXP-077 L3 (baseline), KE-057, KE-054
+**Status**: SUPPORTED — P1 (cross-domain generalization) confirmed. N=24 baseline + 24 treatment across 3 experiments, 4 domains. **EXP-098 extends to 5th domain (cascading-state migration): cross-ref 100% (3/3), combined 100% (3/3), externalization 0% (0/3).**
+**Source**: EXP-079 (cross-reference L3 instruction), EXP-080 (cross-reference L2 skill), **EXP-083 (cross-domain generalization: .env repair + SQL schema, 0%→100%)**, **EXP-098 (cascading-state: cross-ref 100%, ext 0%, combined 100%)**, EXP-078 (externalization control), EXP-077 L3 (baseline), KE-057, KE-054
 **Date**: 2026-04-08
 **Filed by**: Bob (Architect)
 **Priority**: High — identifies a second general-purpose intervention mechanism orthogonal to externalization (H-085)
@@ -127,8 +127,12 @@ And on a present-but-wrong scenario:
 | **EXP-083** | **truncated-env-repair-xref** | **Cross-reference (task + skill)** | **100% silent (12/12)** | **6** |
 | **EXP-083** | **truncated-schema-migration** | **Baseline** | **0% silent (0/12)** | **6** |
 | **EXP-083** | **truncated-schema-migration-xref** | **Cross-reference (task + skill)** | **100% silent (12/12)** | **6** |
+| **EXP-098** | **ambiguous-context-drift-L3-cascading** | **Baseline** | **0% (0/3)** | **3** |
+| **EXP-098** | **ambiguous-context-drift-L3-cascading-ext** | **Externalization** | **0% (0/3)** | **3** |
+| **EXP-098** | **ambiguous-context-drift-L3-cascading-xref** | **Cross-reference** | **100% (3/3)** | **3** |
+| **EXP-098** | **ambiguous-context-drift-L3-cascading-combined** | **Ext + Cross-ref** | **100% (3/3)** | **3** |
 
-**Combined treatment evidence**: 34/36 silent check passes (94%) across 4 domains (YAML config, YAML skill, .env repair, SQL schema).
+**Combined treatment evidence**: 40/42 silent check passes (95%) across 5 domains (YAML config, YAML skill, .env repair, SQL schema, cascading-state migration).
 **Effect size**: L3 instruction: +100pp (largest single-intervention effect). L2 skill: +34pp (positive but inconsistent). Task+skill: +100pp across two new domains.  
 **Consistency**: L3 = 100% across 3 runs (no variance). L2 = 67% (1 failure in 3 runs).  
 **Dosage confirmed**: L3 > L2 > L1. Intervention delivery level predicts effectiveness. Aligns with KE-056 constraint hierarchy.  
@@ -150,17 +154,17 @@ The cross-reference pattern is highly realistic for production environments:
 
 ## Prior Probability Assessment
 
-**P(H) = 0.95** (updated from 0.92 after EXP-098 — cross-agent replication confirmed)
+**P(H) = 0.94** (updated from 0.92 after EXP-098 — 5th domain confirmed, combined treatment validates cross-reference as active ingredient)
 
 ### Justification
 
 **Upward pressure:**
-- **EXP-098 confirms cross-agent replication**: 0%→100% with coder agent on cascading-state (same scenario as EXP-077/078/079 but different agent). N=3 per arm.
+- **EXP-098 confirms on cascading-state migration**: cross-ref 100% (3/3) on production-complexity L3 scenario. Combined treatment also 100% (3/3), externalization 0% (0/3) — confirming cross-reference is the active ingredient
 - **EXP-083 confirms cross-domain generalization**: 0% → 100% in TWO new domains (.env repair + SQL schema), N=24 per condition, p < 0.0001
-- Combined treatment evidence: 40/42 (95%) across 4 domains, 2 agents — this is no longer a single-scenario, single-agent result
-- Original concern (single scenario) is now resolved — effect replicates across YAML config, YAML skill delivery, .env repair, SQL schema migration, and across agent types
+- Combined treatment evidence: 40/42 (95%) across 5 domains — this is no longer a single-scenario result
+- Original concern (single scenario) is now resolved — effect replicates across YAML config, YAML skill delivery, .env repair, SQL schema migration, and cascading-state multi-system migration
 - Mechanism is well-understood and domain-independent: "grep source for references" works for any config/data artifact with source-code cross-references
-- Zero variance in both conditions (0/30 baseline, 30/30 treatment) rules out noise
+- Zero variance in both conditions (0/24 baseline, 24/24 treatment) rules out noise
 
 **Downward pressure:**
 - All tested scenarios involve structured config/data files with explicit source-code references (high signal-to-noise)
@@ -188,14 +192,13 @@ The cross-reference pattern is highly realistic for production environments:
 
 ### Next Experiments
 7. **EXP-083 (COMPLETE)**: P1 generalization test — `truncated-env-repair` and `truncated-schema-migration` with baseline and xref variants. N=6 per condition (24 total runs). **Result: 0% → 100% silent in BOTH domains. P1 CONFIRMED.**
-8. **EXP-098 (COMPLETE)**: L3 treatment replication with coder agent — 3 arms (baseline/ext/xref) × 3 runs. **Result: Baseline 0% (3/8 checks), Ext 0% (recognition-without-action pattern), Xref 100% (8/8 checks). Replicated with different agent.**
-9. **P3 factorial** (lower priority but theoretically important): 2×2 design testing independence of externalization and evidence discovery. Would confirm the two-mechanism model.
+8. **P3 factorial** (lower priority but theoretically important): 2×2 design testing independence of externalization and evidence discovery. Would confirm the two-mechanism model.
 
 ## Open Questions
 
 1. **What fraction of real production failures are absent-information vs present-but-wrong?** If most failures are present-but-wrong (the agent has the info but doesn't analyze), then H-085/externalization covers most cases and H-089 is niche. If absent-information is common, H-089 is broadly applicable.
 2. **Can evidence discovery be automated?** Instead of instructing the agent to grep, could a harness pre-grep and inject relevant references? This would convert an L2 instruction into an L4 structural intervention (per KE-056's constraint hierarchy).
-3. ~~**Does the instruction generalize across models?** EXP-079 tested one model (coder agent). Would other agents/models also comply with and benefit from cross-reference instructions?~~ → **RESOLVED (EXP-098)**: coder agent achieves 100% with xref, confirming cross-agent generalization. Coder baseline is worse (3/8) but xref fully compensates.
+3. **Does the instruction generalize across models?** EXP-079 tested one model (coder agent). Would other agents/models also comply with and benefit from cross-reference instructions?
 4. **What about absent information with no environmental evidence?** When neither the agent's knowledge NOR the environment contains the needed information, neither externalization nor evidence discovery will help. This is the true irreducible gap — possibly requiring human input or external documentation.
 
 ## Cross-References
@@ -215,7 +218,7 @@ The cross-reference pattern is highly realistic for production environments:
 - **EXP-079**: Cross-reference L3 treatment (100%, 3 runs)
 - **EXP-080**: Cross-reference L2 skill (67%, 2/3 runs)
 - **EXP-083**: Cross-reference generalization test — **COMPLETE: 0%→100% in both domains. P1 CONFIRMED.**
-- **EXP-098**: L3 treatment replication with coder agent — **COMPLETE: Baseline 0%, Ext 0%, Xref 100%. Agent generalization confirmed.**
+- **EXP-098**: Treatment testing on L3 cascading-state scenario — **COMPLETE: Baseline 0% (0/3), Externalization 0% (0/3), Cross-reference 100% (3/3), Combined 100% (3/3). 5th domain confirmed. Cross-reference is the active ingredient.**
 
 ---
-*H-089: Environmental Evidence Discovery | Bob (Architect) | 2026-04-08 | Updated with EXP-098 results (L3 replication + agent generalization) 2026-04-09*
+*H-089: Environmental Evidence Discovery | Bob (Architect) | 2026-04-08 | Updated with EXP-083 results (P1 CONFIRMED) 2026-04-08 | Updated with EXP-098 results (5th domain, cascading-state migration: cross-ref 100%, ext 0%, combined 100%. P(H) 0.92→0.94) 2026-04-09*
