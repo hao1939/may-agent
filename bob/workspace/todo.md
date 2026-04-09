@@ -459,6 +459,9 @@
   - **Awaiting validation**: Need 3 runs each to confirm pass rates match lab results (3/3 expected)
 - **Next priorities**: (1) Validate Wave 1 (3 runs each), (2) Begin Wave 2 cross-reference deployments, (3) Design new skills for Wave 3, (4) Update WKWA-005 with few-shot delivery mechanism
 
+## Session Notes (2026-04-09 ~09:00)
+- [x] **SYNTHESIS: DD-639/640 × Cascade Circuit Breaker**: Cross-thread synthesis combining KE-079 (cascade-architecture convergence) with H-093 (CIVC) and CR#259 (MAS circuit breaker architecture). **Key insight**: Circuit breakers should be placed at **loop-primitive boundaries** (intra-agent), not agent boundaries (inter-agent). DD-640's composed loop primitive count provides the operationalized complexity metric H-093 needs. DD-639's behavioral fuzzing solves CR#259's probe design gap. Six ranked findings, EXP-100 design refined with DD-640 complexity metric. **File: `agents/bob/workspace/SYNTHESIS-cascade-circuit-breaker-fuzzing-convergence.md`**
+
 ## Session Notes (2026-04-09 ~04:25)
 - [x] **DEPLOYMENT PLAN WRITTEN**: `agents/shared/knowledge/synthesis/DEPLOYMENT-PLAN-gym-remediation.md`
   - **4-wave deployment plan** for raising gym pass rate from 71.3% (77/108) to target 88% (95/108)
