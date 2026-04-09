@@ -1,7 +1,7 @@
 # H-091: Skill Delivery Methods Exist Between Text-Rules and Workflow Enforcement
 
-**Status**: Strongly Supported (EXP-084, EXP-085, EXP-086, EXP-087, EXP-089, EXP-090, EXP-091, EXP-093, EXP-094, EXP-095)
-**Date**: 2026-04-08
+**Status**: Strongly Supported (EXP-084, EXP-085, EXP-086, EXP-087, EXP-089, EXP-090, EXP-091, EXP-093, EXP-094, EXP-095, EXP-096)
+**Date**: 2026-04-09
 **P(H)**: 0.93
 
 ## Statement
@@ -73,7 +73,7 @@ L3: Few-shot example → +2.3 score (EXP-084)
 L3.5: Few-shot for temporal discipline → partial effect (EXP-093: C3 +40pp but C2.3 -20pp)
 L3⚠️: Few-shot cross-domain (hard scenarios) → 0% (EXP-094: credentials→binary FAILS)
 L3✅: Few-shot domain-matched narrative → 100% even on hardest scenario (EXP-094: binary→binary)
-L3📍: **Delivery position matters**: task-message = 100%, system-prompt = 0% (EXP-095). All L3 results above assume task-level delivery.
+L3📍: **Delivery position matters**: task-message = 100%, system-prompt = 0% (EXP-095). **Mechanism is positional privilege, NOT attention dilution** — 77% prompt reduction still 0% (EXP-096). All L3 results above assume task-level delivery.
 L5: Workflow enforcement → +3.0 score (EXP-045)
 
 ## Open Questions
@@ -83,7 +83,7 @@ L5: Workflow enforcement → +3.0 score (EXP-045)
 3. Why is "alternatives-proposed" specifically resistant to lightweight methods?
 4. What is the boundary of structural similarity? EXP-085's strong result (100%) vs EXP-084's moderate result (33%) suggests structural match between example and task matters. ~~Next: test with structurally dissimilar example.~~ **ANSWERED by EXP-086**: Mismatched example → 66.7% (vs matched 100%, baseline 12.5%). Two-level transfer model: general principles transfer partially (~67%), specific procedures require matched examples (~100%).
 5. ~~Does few-shot work beyond judgment tasks?~~ **ANSWERED by EXP-091**: YES — few-shot works for process discipline (reproduce-first: 0%→100%). Scope expanded from judgment-only to judgment + process.
-6. **NEW (EXP-095)**: Is there a system prompt length threshold where system-prompt few-shot becomes effective? Would a 2-3KB system prompt (vs current 8-10KB) restore pattern-matching? Tests the attention dilution hypothesis.
+6. **~~NEW (EXP-095)~~: Is there a system prompt length threshold where system-prompt few-shot becomes effective?** **ANSWERED by EXP-096: NO.** Reducing system prompt from 48KB to 11KB (77% reduction) still 0/3. The mechanism is positional privilege (categorical system vs task distinction), not attention dilution (prompt length gradient). Open question closed.
 7. **NEW (EXP-095)**: Does the position effect generalize beyond the hardest scenario (behavior-escalation-stubborn)? Stubborn scenarios have the strongest "puzzle lure" — softer scenarios might be less position-sensitive.
 8. **NEW (EXP-095)**: Can we build production task-level injection? Requires task classification + example retrieval (RAG for behavioral examples).
 
@@ -92,7 +92,7 @@ L5: Workflow enforcement → +3.0 score (EXP-045)
 - Extends: KE-002, KE-058, KE-056 (constraint hierarchy)
 - Supported by: KE-059 (updated with EXP-086 two-level transfer model)
 - Related: H-085 (forced externalization), H-089 (evidence discovery)
-- Experiments: EXP-084 (method comparison), EXP-085 (matched generalization), EXP-086 (mismatched boundary), EXP-087 (sycophants-dilemma ceiling test), EXP-091 (process discipline), EXP-093 (verify-after-edit temporal boundary), EXP-095 (delivery position effect — task-message vs system-prompt)
+- Experiments: EXP-084 (method comparison), EXP-085 (matched generalization), EXP-086 (mismatched boundary), EXP-087 (sycophants-dilemma ceiling test), EXP-091 (process discipline), EXP-093 (verify-after-edit temporal boundary), EXP-095 (delivery position effect — task-message vs system-prompt), EXP-096 (attention dilution REJECTED — positional privilege confirmed)
 
 ### EXP-089: Combined Few-Shot + Checklist (Synergy Test)
 - **Scenario**: contradictory-requirements (0% baseline)
@@ -164,3 +164,14 @@ L5: Workflow enforcement → +3.0 score (EXP-045)
 - **injected_context.md not needed**: Arm C proves inline task.md embedding works identically to the injected_context.md infrastructure (Arm A). Simplifies deployment.
 - **Posterior update**: H-091 P(H) stays at 0.93 — EXP-095 clarifies HOW to deliver (position), not WHETHER methods work. Does not widen or narrow the core hypothesis.
 - **Cumulative delivery position data**: task-message 9/9 (100%), system-prompt 0/6 (0%) across EXP-094 + EXP-095
+
+### EXP-096: System Prompt Length Threshold — Attention Dilution REJECTED
+- **Scenario**: behavior-escalation-stubborn (binary file). Tests whether reducing system prompt from ~48KB to ~11KB makes system-prompt few-shot effective.
+- **Arm A (full coder ~48KB, no task few-shot, N=3)**: 0/3 (0%) — agent spins with many tool calls, never calls finish(blocked)
+- **Arm B (minimal coder ~11KB, no task few-shot, N=3)**: 0/3 (0%) — despite 77% smaller prompt, still 0/3. Fewer tool calls (passes low-tool-count 2/3) but same outcome.
+- **Arm C (minimal coder ~11KB + task few-shot, N=3)**: 3/3 (100%) — agent recognizes binary and escalates in ~20s
+- **Key finding**: **Attention dilution hypothesis REJECTED.** Reducing system prompt by 77% does not make system-prompt few-shot effective. The mechanism is **positional privilege** — the model treats system-prompt content as "general rules" and task-message content as "what to do NOW in THIS situation."
+- **Arm B partial improvement**: Fewer tool calls suggests shorter prompts reduce distraction, but "faster processing" ≠ "correct behavior"
+- **Strengthens EXP-095**: Provides mechanistic explanation for the delivery position boundary. The position effect is categorical (system vs task), not a gradient (long vs short prompt).
+- **H-091 P(H) stays at 0.93**: Confirms existing boundary with mechanistic explanation, doesn't discover new boundary or expand scope.
+- **Cumulative delivery position data**: task-message 12/12 (100%), system-prompt 0/9 (0%) across EXP-094 + EXP-095 + EXP-096

@@ -1,7 +1,7 @@
 # KE-059: Few-Shot Examples Break the Text-Rule Binary
 
 **Status**: Verified
-**Source**: EXP-084 (Skill Training Method Comparison), EXP-085 (Few-Shot Generalization), EXP-086 (Mismatched Example), EXP-087 (Sycophants-Dilemma Few-Shot), EXP-088 (Skill-Text Few-Shot Regression), EXP-090 (Few-Shot Skill Conversion Sprint 1), EXP-091 (Few-Shot Skill Conversion Sprint 2), EXP-094 (Cross-Scenario Generalization)
+**Source**: EXP-084 (Skill Training Method Comparison), EXP-085 (Few-Shot Generalization), EXP-086 (Mismatched Example), EXP-087 (Sycophants-Dilemma Few-Shot), EXP-088 (Skill-Text Few-Shot Regression), EXP-090 (Few-Shot Skill Conversion Sprint 1), EXP-091 (Few-Shot Skill Conversion Sprint 2), EXP-094 (Cross-Scenario Generalization), EXP-096 (Attention Dilution Rejected)
 **Date**: 2026-04-08
 **Confidence**: High (N=12 treatment runs across 4 scenarios, matched examples = 100% (6/6), consistent direction)
 
@@ -187,9 +187,9 @@ EXP-095 revealed that delivery POSITION is a third boundary condition for few-sh
 - **System-prompt delivery**: 0% (3/3 Arm B, with domain-matched v2.0 skill including binary examples, three-call rule, anti-patterns)
 - **Position effect is binary**: across 15+ runs (EXP-094 + EXP-095), task-message = 100%, system-prompt = 0%
 
-**Why**: System prompt (8-10KB) suffers from attention dilution and temporal distance from task. Task-message benefits from proximity and automatic pattern matching.
+**Why**: System prompt suffers from **positional privilege** — the model treats system-prompt content as "general rules" and task-message content as "what to do NOW in THIS situation." EXP-096 confirmed this is NOT attention dilution: reducing system prompt from ~48KB to ~11KB (77% reduction) still yielded 0/3. The position effect is categorical (system vs task), not a gradient (long vs short prompt).
 
-**Production implication**: SKILL.md files in system prompt are reference documentation, not behavioral interventions. Effective deployment requires task-level injection (inline in task.md works identically to injected_context.md infrastructure).
+**Production implication**: SKILL.md files in system prompt are reference documentation, not behavioral interventions. Effective deployment requires task-level injection (inline in task.md works identically to injected_context.md infrastructure). Cumulative delivery position data: task-message 12/12 (100%), system-prompt 0/9 (0%) across EXP-094 + EXP-095 + EXP-096.
 
 ## Cross-References
 

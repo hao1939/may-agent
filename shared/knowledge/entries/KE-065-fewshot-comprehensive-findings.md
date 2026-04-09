@@ -65,7 +65,7 @@ Attempting to fix a documentation gap with L1/L2 instruction-level interventions
    - The reasoning process, not just the outcome
    - The key decision point where the wrong choice is tempting
 4. **Match the domain class** of the target scenario. A credentials example won't fix a binary-file task.
-5. **Deliver via task-level message**, not embedded in SKILL.md text. EXP-095 showed system-prompt delivery = 0% (even with domain-matched binary examples in know-when-blocked v2.0), while task-message delivery = 100% regardless of mechanism (injected_context.md prefix or inline in task.md body). The position effect is absolute: across 12+ runs, task-message = 100%, system-prompt = 0%.
+5. **Deliver via task-level message**, not embedded in SKILL.md text. EXP-095 showed system-prompt delivery = 0% (even with domain-matched binary examples in know-when-blocked v2.0), while task-message delivery = 100% regardless of mechanism (injected_context.md prefix or inline in task.md body). The position effect is absolute: across 21 runs (EXP-094+095+096), task-message = 12/12 (100%), system-prompt = 0/9 (0%). EXP-096 confirmed the mechanism is **positional privilege** (categorical system vs task), not attention dilution (prompt length).
 6. **For multi-domain skills**, include one worked example per domain class.
 7. **Don't add compensating instructions** to fix gaps — they create task narrowing (EXP-092). Fix gaps structurally.
 
