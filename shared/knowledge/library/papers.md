@@ -1378,3 +1378,19 @@ Production multi-agent data management system with "three-track knowledge archit
 ### Information Fidelity in Tool-Using Agents — Martingale Analysis — arXiv:2602.13320
 
 | 2602.13320 | Information Fidelity in Tool-Using LLM Agents: A Martingale Analysis of the Model Context Protocol (Fan, Tan, Wattenhofer, Ong, AAMAS 2026) | ★★★★ EXCELLENT — First theoretical framework for error accumulation in MCP agents. Cumulative distortion grows linearly, deviations bounded by O(√T). Concentration property rules out exponential failure modes. Semantic weighting reduces distortion by 80%. Periodic re-grounding every ~9 steps suffices. Validated on Qwen2-7B, Llama-3-8B, Mistral-7B. Provides mechanistic foundation for re-grounding schedule. (not deep-dived) |
+
+### AEGIS — Forensic Verification via Dialectics and Meta-Auditing — arXiv:2603.20637
+
+| 2603.20637 | AEGIS: From Clues to Verdicts — Graph-Guided Deep Vulnerability Reasoning via Dialectics and Meta-Auditing (Fang et al., March 2026) | ★★★★★ CRITICAL — Forensic verification over closed factual substrate. Root cause of verification failure: "reasoning in ungrounded deliberative space." Three-phase pipeline: clue identification → evidence boundary construction (CPG) → dialectical verification + independent Audit Agent with veto power. New SOTA on PrimeVul (122 correct, 54.4% FP reduction). $0.09/sample, zero-shot. Independently validates EXP-103. Adds meta-auditing layer. (ref: DD-698) |
+
+### Dual-State Architecture — Guard Functions and Recovery Hierarchy — arXiv:2512.20660
+
+| 2512.20660 | The Dual-State Architecture for Reliable LLM Agents (Thompson, Dec 2025/Mar 2026) | ★★★★½ EXCELLENT — Formalizes DSAP: stochastic generation + deterministic guard. Tri-state semantics (PASS/FAIL/UNCERTAIN). Three-level recovery: context refinement, informed backtracking with cascade invalidation, human escalation. 66pp reliability gain at 1.2-2.1× cost. Key finding: execution recovery ≠ planning recovery — 0% end-to-end patch production on SWE-Bench Pro despite 100% context injection effectiveness. Explains EXP-100 ceiling. (ref: DD-699) |
+
+### PROClaim — Courtroom-Style Multi-Agent Debate — arXiv:2603.28488
+
+| 2603.28488 | Courtroom-Style Multi-Agent Debate with Progressive RAG and Role-Switching for Controversial Claim Verification (Chowdhury et al., March 2026) | ★★★★ EXCELLENT — Courtroom trial formalization of verification debate. Progressive RAG (evidence grows during debate) drives +7.5pp. Role-switching (argue opposite side) adds +2.5pp. Heterogeneous multi-judge for bias mitigation. 81.7% on Check-COVID. Structural deliberation + model heterogeneity mitigate systematic biases. (ref: DD-700) |
+
+### Einstein Puzzles — LLM Collaboration Under Information Asymmetry — arXiv:2510.25595
+
+| 2510.25595 | Communication and Verification in LLM Agents under Information Asymmetry (Alonso et al., ICML 2025 workshop) | ★★★★ EXCELLENT — Empirical study of LLM collaboration on Einstein puzzles under information asymmetry. Agents without communication achieve high task performance but lack genuine rule understanding. Environment verifier enhances true comprehension. Relevant to understanding role of structured communication vs independent reasoning in multi-agent verification. (not deep-dived) |

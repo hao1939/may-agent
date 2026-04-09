@@ -1,6 +1,6 @@
 # Deep Dives Index
 
-> 123 research deep dives, cross-reference syntheses, and reference documents.  
+> 126 research deep dives, cross-reference syntheses, and reference documents.  
 > Last updated: 2026-04-09 | Maintained by Scout
 
 ## How to Use This Index
@@ -544,3 +544,13 @@
 2. DD#691-694 cluster → KE-093, EXP-102 (all four papers ground our verification confabulation finding)
 3. DD#693 → H-094 (HVR failure may reflect the grounding-sycophancy tradeoff — agents too confident to hedge)
 4. DD#694 → DD#682 (Trajectory Guard anomaly detection could flag moments of context-override in verification)
+**Verification Grounding & Recovery Architecture** ★★★★★ — NEW (2026-04-09 Session 397)
+1. [dd698](dd698-aegis-forensic-verification-dialectics.md) — ★★★★★ AEGIS: Forensic verification over closed factual substrate with dialectical arguments and independent Audit Agent with veto power. Root cause: "reasoning in ungrounded deliberative space." New SOTA on PrimeVul (122 correct, first >100). 54.4% FP reduction. Independently validates EXP-103 (adversarial framing + machine evidence). Adds meta-auditing layer we're missing.
+2. [dd699](dd699-dual-state-architecture-guard-recovery.md) — ★★★★½ Dual-State Architecture: Formalizes guard functions (deterministic post-condition verification), tri-state semantics (PASS/FAIL/UNCERTAIN), three-level recovery hierarchy with cascade invalidation. Key finding: execution recovery ≠ planning recovery. 66pp reliability gain at 1.2-2.1× cost. 0% end-to-end patch production reveals execution-planning boundary. Explains EXP-100 ceiling effect.
+3. [dd700](dd700-proclaim-courtroom-debate-verification.md) — ★★★★ PROClaim: Courtroom-style multi-agent debate with Progressive RAG (evidence grows during debate), role-switching (argue opposite side), heterogeneous multi-judge. +10pp over standard debate. P-RAG drives +7.5pp. Structural deliberation + model heterogeneity mitigate systematic biases.
+4. Also catalogued: 2510.25595 (Einstein Puzzles — LLM collaboration under info asymmetry, ICML 2025 workshop. Agents without communication achieve high performance but lack rule understanding. Environment verifier enhances comprehension.)
+**Cross-references (Session 397)**:
+1. CR#322 — Verification Grounding Synthesis: Integrates DD#698-700 with DD#691-694 into 5-mechanism solution stack (closed boundary → progressive evidence → deterministic guards → dialectical obligation → meta-auditing). 7-tier verification architecture from T0 (guards) to T7 (planning synthesis). Key insight: verification is an evidence architecture problem, not a reasoning problem.
+2. DD#698 + DD#699 + DD#700 = complementary triad: AEGIS (closed evidence), Dual-State (deterministic gates), PROClaim (progressive evidence + role-switching)
+3. DD#699 → EXP-100 (execution-planning boundary explains ceiling effect), EXP-099 (cascade invalidation prevents verification gravity well)
+4. DD#698 → EXP-103 (independent external validation of adversarial framing + machine evidence approach)
