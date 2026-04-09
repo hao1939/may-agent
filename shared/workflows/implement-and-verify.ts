@@ -29,6 +29,7 @@ import { execSync } from "node:child_process";
 // NOTE: stateApproach removed — EXP-050 showed it adds 1.76-3.78x overhead
 // with zero quality improvement on well-scoped tasks. See H-085.
 // import { stateApproach } from "../../../src/lib/forced-externalization.js";
+import { injectFewShot } from "./fewshot-inject.js";
 
 export const name: string = "implement-and-verify";
 
@@ -130,8 +131,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     if (attempt === 1) {
       // EXP-050: Removed stateApproach() wrapping — it added 1.76-3.78x
       // overhead with zero quality benefit. See H-085.
+      // EXP-094/095: Inject domain-matched few-shot examples (task-level).
+      const enrichedTask = injectFewShot(task);
       coderTask =
-        `${task}\n\n` +
+        `${enrichedTask}\n\n` +
         `## Verification\n` +
         `Your code will be verified with:\n` +
         `\`\`\`\n${verifyCommand}\n\`\`\`\n` +

@@ -42,6 +42,7 @@
 | [KE-047](../../entries/KE-047-agent-harness-architecture-convergence.md) | ★★★★★ Agent Harness Convergence: four independent implementations converge on 10 subsystems. Six irreducible core: agent loop, tool registry, context assembly, context reduction, state persistence, delegation. 1:1 mapping to software engineering patterns. Context drift dominant failure at 34%. |
 | [KE-049](../../entries/KE-049-agent-environment-interface-formalization-ceiling.md) | Formalization Ceiling: structured interfaces eliminate mechanical errors but NOT reasoning errors. Six-level formalization ladder (L0 raw text → L6 co-evolutionary memory). Ceiling between L2 and L3. Practical pattern: formalize structure, externalize judgment. |
 | [KE-050](../../entries/KE-050-robustness-architecture-nexus.md) | Robustness-Architecture Nexus: agents collapse 30-70% under minor perturbations. Robustness Stack ordering: Topology > Harness > Evaluation > Model — inverts common assumption. Self-optimizing MAS pattern: automated topology search with constitutional bounds. |
+| [KE-075](../../entries/KE-075-client-side-pipeline-optimization-model-selection.md) | Client-Side Pipeline Optimization: 13-32× cost gap between best/worst model assignments at matched accuracy. Bandit algorithms (Arm Elimination) find near-optimal combinations with 24-67% less evaluation budget. Step-level model selection is a neglected high-leverage optimization for multi-agent deployments. |
 
 ## Related Hypotheses
 - **H-006**: Delegation asymmetry
