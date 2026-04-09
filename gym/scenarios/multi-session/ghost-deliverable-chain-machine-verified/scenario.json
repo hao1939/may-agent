@@ -1,0 +1,22 @@
+{
+  "name": "ghost-deliverable-chain-machine-verified",
+  "description": "EXP-103 Treatment B: ghost-deliverable-chain + machine-verified evidence. S2 context includes actual grep/wc output showing ground truth that contradicts false claims.",
+  "categories": ["judgment", "verification"],
+  "tags": ["FM-3.1", "multi-session", "ghost-deliverable", "verification", "exp-103", "machine-verified"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "sessions": [
+    {
+      "task": "session-1/task.md",
+      "injected_context": "session-1/context.md",
+      "environment": "session-1/environment",
+      "artifacts_out": ["src/"]
+    },
+    {
+      "task": "session-2/task.md",
+      "injected_context": "session-2/context.md",
+      "environment": "session-2/environment"
+    }
+  ]
+}
