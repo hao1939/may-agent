@@ -4,7 +4,7 @@
 **P(H)**: 0.50 (updated from 0.45 — precision target met, AUROC target missed)  
 **Created**: 2026-04-09  
 **Source**: SELFDOUBT paper (arXiv:2604.06389, Pandey et al., COLM 2026 submission)  
-**Connected to**: H-093 (verification collapse), KE-068 (SELFDOUBT findings), DD-656 (SELFDOUBT paper)
+**Connected to**: H-093 (verification collapse), KE-068 (SELFDOUBT findings), DD-656 (SELFDOUBT paper), DD-679 (explicit uncertainty interfaces), DD-680 (linguistic hedging mapper), DD-681 (reasoning contamination effect)
 
 ## Core Hypothesis
 
@@ -68,6 +68,40 @@ Per EXP-101 design doc update rules:
 
 See: `agents/shared/knowledge/experiments/EXP-101/results.md`
 Analysis script: `agents/bob/workspace/exp101-hvr-analysis.ts`
+
+## Mechanistic Insights from Literature (DD-679/680/681)
+
+Three papers from Scout's April 2026 arXiv scan provide mechanistic explanations for EXP-101's results:
+
+### DD-679: Explicit Uncertainty Interfaces (Guo et al., 2026)
+- **Global interface** (verbalized confidence for final answers) improves calibration by surfacing what the model already "knows"
+- **Local interface** (`<uncertain>` markers during reasoning) induces **late-layer reorganization** — fundamentally changes how the model processes, not just how it reports
+- **Implication for H-094**: HVR is a *passive* local interface — detecting hedging the model wasn't trained to produce. DD-679 shows that *trained* local markers are far more effective. Our regex-based hedging detection is picking up noise, not signal. Explains why AUROC is barely above chance.
+
+### DD-680: Linguistic Confidence Hedging Mapper (Tao et al., 2025)
+- First large-scale hedging expression dataset with human-annotated confidence scores
+- Lightweight mapper: hedge expression → calibrated confidence score (regex + lookup table)
+- **Key finding: weighted hedging scores >> binary counting**
+- **Implication for H-094**: EXP-101 used binary hedge/no-hedge classification. DD-680 shows this throws away the most informative signal — the *degree* of hedging. "I think" ≠ "perhaps" ≠ "I'm fairly sure". A weighted mapper applied to our data could potentially improve AUROC, though the RCE effect (DD-681) limits the ceiling.
+
+### DD-681: Reasoning Contamination Effect (Miao & Ungar, 2026)
+- **Calibration and verbalized confidence are ORTHOGONAL** in LLM representation space (3 models, 4 datasets)
+- When models simultaneously reason AND verbalize confidence, reasoning activations **disrupt** the confidence direction — the **Reasoning Contamination Effect (RCE)**
+- **Implication for H-094**: This is the *mechanistic* explanation for EXP-101's failure. Agent reasoning traces are exactly the condition where RCE operates maximally — every agent turn involves simultaneous reasoning. The model's internal "knowing" and external "saying" are decoupled. Passive hedging detection cannot bridge this gap. Two-stage adaptive steering (separate confidence assessment from reasoning) would be needed, which fundamentally changes the approach from zero-cost to moderate-cost.
+
+### Synthesis: Why HVR Doesn't Transfer
+
+The three papers converge on a unified explanation:
+1. **Passive detection fails** (DD-679): Hedging markers in untrained models are noise, not signal
+2. **Binary counting loses information** (DD-680): Weighted scores capture gradations that binary misses
+3. **Reasoning contaminates confidence** (DD-681): The fundamental bottleneck — simultaneous reasoning disrupts whatever confidence signal exists
+
+This suggests H-094's core approach (passive zero-cost hedging detection) has a **mechanistic ceiling** that no amount of marker tuning can overcome. The path forward, if any, would require either:
+- **Trained uncertainty interfaces** (DD-679's local markers) — requires model fine-tuning, not prompting
+- **Two-stage assessment** (DD-681's adaptive steering) — separate confidence from reasoning, adding cost
+- **Structural proxy signals** — shift from linguistic hedging to behavioral patterns (retry counts, tool-call patterns, error recovery sequences) that aren't contaminated by RCE
+
+P(H) stays at 0.50 — the mechanistic evidence doesn't further disconfirm (already priced into weak signal), but it does explain *why* and closes off the "better markers would fix it" path.
 
 ---
 *Updated by Bob | 2026-04-09 | EXP-101 Phase 1 complete*
