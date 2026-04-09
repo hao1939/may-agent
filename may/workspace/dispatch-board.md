@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~01:24 UTC
+Updated: 2026-04-09 ~01:53 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
@@ -62,7 +62,10 @@ Updated: 2026-04-09 ~01:24 UTC
 | EXP-087 KB Integration | ✅ COMPLETE | bob | Bob session completed. EXP-089 results also integrated. |
 | **Git Branch Concurrency (req:9eb89c49)** | ✅ ANSWERED | bob | Analysis at `agents/bob/workspace/git-concurrency-analysis.md`. Safe today (no branching in practice), worktrees recommended if review gates enforced. |
 | **Crash Loop Bug (req:e750a385)** | ✅ ALREADY FIXED | tech-lead | Commits 9ea5b5a + fcb97c9 + 9c7e549 already merged. Three-layer defense + compaction persistence. |
-| **Token Efficiency Research** | ⏳ IN PROGRESS | bob | Auto-loop workflow analyzing may-agent session token patterns. Session s_1775697016608_53. |
+| **Token Efficiency Research** | ✅ COMPLETE | bob | **P0 FINDING**: $441/week wasted from zero prompt caching on Claude Opus. LiteLLM proxy strips cache headers. Fix: set ANTHROPIC_API_KEY in .env + restart. Executive brief at `agents/bob/workspace/token-waste-executive-brief.md`. |
+| **EXP-095 Few-Shot Delivery Mechanism** | ✅ COMPLETE | coach | **DEFINITIVE**: Task-message = 100% (6/6), system-prompt = 0% (3/3). Position is everything. Content quality irrelevant if delivery position wrong. |
+| **Few-Shot Production Deployment Proposal** | ✅ COMPLETE | coach | Comprehensive proposal at `agents/coach/workspace/proposal-fewshot-production-deployment.md`. Phase 1: static routing + 3 proven examples. ~2hr implementation. Needs tech-lead + Bob review. |
+| **Bob Heartbeat System Analysis** | ⏳ IN PROGRESS | bob | Auto-loop workflow analyzing heartbeat/cron system. Session s_1775699416405_85. |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -94,16 +97,18 @@ Updated: 2026-04-09 ~01:24 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (01:24)
-- **All agents active on heartbeats** — bob, coach, scout, evaluator, qa all running fresh cycles. No errors. Amy-kimi still 🔴.
-- **Token efficiency research dispatched to Bob** — auto-loop workflow running (session s_1775697016608_53). Analyzing session token patterns, waste sources, compaction behavior. 14min in.
-- **Bob also running EXP-070+EXP-092 synthesis** — connecting transfer gap findings (session s_1775697793921_59).
-- **Coach running EXP-095** — few-shot delivery mechanism test (task prefix vs system prompt).
-- **No failures in past hour** — system healthy, all heartbeats firing.
+## Latest Cycle Summary (01:53)
+- **EXP-095 COMPLETE**: Few-shot delivery mechanism test confirms task-message position is everything. 100% at task-level vs 0% at system-prompt. This closes the "how to deploy skills" question definitively.
+- **Token Waste Analysis COMPLETE**: Bob found $441/week (60%) wasted from zero prompt caching. ANTHROPIC_API_KEY not set → LiteLLM strips cache headers. Fix is 5 minutes. Total savings path: $790→$254/week (68% reduction).
+- **Few-Shot Production Deployment Proposal**: Coach wrote comprehensive plan. Phase 1 (static routing, 3 examples) = ~2hr implementation. Ready for tech-lead + Bob review.
+- **Bob now analyzing heartbeat system** — auto-loop workflow in progress.
+- **Convention regression**: Bob C12.1 dropped from 96.6% to 91%. Coach alerted.
+- **All agents active** — no failures, no stuck sessions. Amy-kimi still 🔴.
 
 ## Next Actions
-- **P1**: **Present status to Hao** — H-091 P(H)=0.93, 15 experiments complete, KE-065 synthesis done, auto-loop decision brief ready, two critical bugs fixed, git analysis complete. Research sprint complete — need Hao's direction on next priorities.
-- **P1**: **Deploy skills at scale** — know-when-blocked and evidence-over-narrative only in coder/. With domain proximity constraint (EXP-094/KE-065), need matched examples per agent. Bob to design scale-out plan.
+- **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). Code already exists (commit 7c86665). **Blocked on Hao** (needs env var + restart).
+- **P1**: **Review few-shot deployment proposal** — Coach's production deployment plan at `agents/coach/workspace/proposal-fewshot-production-deployment.md`. Phase 1 = static routing + 3 examples, ~2hr. Route to tech-lead for implementation review.
+- **P1**: **Present research sprint results to Hao** — H-091 P(H)=0.93, 16 experiments complete (EXP-084→095), KE-065 synthesis, token waste analysis, auto-loop decision brief, two critical bugs fixed, git analysis complete.
 - **P2**: Federation design ready for Hao review
 - **P2**: Pre-merge review gate Phase 2 (auto-review)
 - **P2**: Amy-kimi still down — blocked on Hao for billing
