@@ -36,13 +36,22 @@ The gym graduation proposal was approved by Bob with M1-M5 modifications (all ap
 - Needs auto-readback or structural enforcement in the tool layer
 - **Blocked on**: Engineering capacity (tech-lead)
 
-### 5. EXP-108: Adversarial Self-Review Skill [DESIGNED]
+### 5. EXP-108: Adversarial Self-Review Skill [BLOCKED — CEILING]
 - **Design doc**: `agents/shared/knowledge/experiments/EXP-108/design.md`
-- **Question**: Does adversarial generation-objective redirection (from EXP-103) generalize as a skill to non-confabulation failure modes (FM-2.6, FM-1.4)?
-- **Design**: 2-arm (control vs. adversarial skill), 3 multi-session scenarios, N=3/arm/scenario = 18 runs
-- **Scenarios**: phase-boundary-violation, instruction-override-drift, unresolved-failure-chain
-- **Cost**: ~$9 + 1.5 hours
-- **Next**: Phase 1 — author adversarial-self-review.md skill, create lab fork, run control arm
+- **Results**: `agents/shared/knowledge/experiments/EXP-108/results.md`
+- **Finding**: ALL 7 multi-session scenarios at ceiling (91-100%) for coder agent. Bob baselines were 11-75%. Existing skill stack already solves these failure modes. Cannot test adversarial skill — no room for improvement.
+- **Implication**: Gym is saturated. Need harder scenarios for further skill development.
+- **Completed**: 2026-04-09
+
+### 6. Next Frontier: Harder Gym Scenarios [TODO]
+- **Why**: All 26 single-session + 7 multi-session scenarios at ceiling. Gym can't drive further skill improvement.
+- **Directions to explore**:
+  - Scenarios requiring strategic decision-making under ambiguity (not just "verify inherited work")
+  - Scenarios where the correct action conflicts with skill guidance (skill interference)
+  - Scenarios with subtle errors that evidence-over-narrative doesn't catch
+  - Production-derived scenarios from real failure modes not yet captured
+- **Prerequisite**: Analyze recent production sessions for failure modes NOT covered by existing scenarios
+- **Next**: Fork a design session when ready
 
 ---
 
