@@ -288,14 +288,14 @@ function extractFilesFromResult(result: { messages?: any[]; lastAssistantText?: 
 function extractDecision(text: string): "continue" | "revise" | "done" {
   const lower = text.toLowerCase();
 
+  // Check for DONE/CONTINUE/REVISE markers (strongest signal)
+  if (/\b(?:decision|verdict|status)\s*:\s*\**\s*done\b/i.test(text)) return "done";
+  if (/\b(?:decision|verdict|status)\s*:\s*\**\s*revise\b/i.test(text)) return "revise";
+  if (/\b(?:decision|verdict|status)\s*:\s*\**\s*continue\b/i.test(text)) return "continue";
+  
   // Explicit signals
-  if (lower.includes("##") && lower.includes("done")) return "done";
-  if (lower.includes("task complete") || lower.includes("all cycles complete")) return "done";
-  if (lower.includes("revise plan") || lower.includes("need to revise") || lower.includes("replanning")) return "revise";
-
-  // Check for DONE/CONTINUE/REVISE markers
-  if (/\b(decision|verdict|status)\s*:\s*done\b/i.test(text)) return "done";
-  if (/\b(decision|verdict|status)\s*:\s*revise\b/i.test(text)) return "revise";
+  if (lower.includes("task complete") || lower.includes("goal has been achieved") || lower.includes("all cycles complete") || lower.includes("goal has been fully achieved")) return "done";
+  if (lower.includes("revise plan") || lower.includes("need to revise") || lower.includes("replanning") || lower.includes("plan needs adjustment")) return "revise";
 
   return "continue";
 }
@@ -414,13 +414,18 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           `${state.history.length > 0 ? `## Previous work\n${summarizeHistory(state.history)}\n\n` : ""}` +
           `${summarizeContext(state.context) !== "(no accumulated context)" ? `## Context\n${summarizeContext(state.context)}\n\n` : ""}` +
           `Create a concrete ${state.maxCycles}-step plan. For each step, describe what to do and what the expected output is.\n\n` +
-          `Format your plan as a numbered list, one step per cycle.`
+          `**IMPORTANT**: Before calling finish(), write your plan to a file at \`${statePath.replace(/\.json$/, "-plan.md")}\` using the write tool. ` +
+          `Format as a numbered list:\n` +
+          `1. [Step description]\n` +
+          `2. [Step description]\n` +
+          `etc.`
         : `## Task: Revise the plan\n\n` +
           `Goal: ${state.task}\n` +
           `Original plan:\n${state.plan.map((p, i) => `${i + 1}. ${p}`).join("\n")}\n\n` +
           `## What happened\n${summarizeHistory(state.history)}\n\n` +
           `## Context\n${summarizeContext(state.context)}\n\n` +
-          `Revise the plan based on what we've learned. Keep remaining cycles realistic.`;
+          `Revise the plan based on what we've learned. Keep remaining cycles realistic.\n\n` +
+          `**IMPORTANT**: Before calling finish(), write the revised plan to \`${statePath.replace(/\.json$/, "-plan.md")}\` using the write tool.`;
 
       const planResult = await ctx.runAgent(state.agent, planTask);
       if (planResult.status === "error") {
@@ -433,16 +438,43 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         });
       }
 
-      // Extract plan from agent output — try multiple formats
+      // Extract plan from agent output — try multiple sources
       const planText = planResult.lastAssistantText ?? "";
-      let planLines = planText
-        .split("\n")
-        // Match: "1.", "1)", "Step 1:", "**1.", "- Step 1:"
-        .filter((l) => /^\s*(?:\*\*)?(?:step\s+)?\d+[.):\s]/i.test(l))
-        .map((l) => l.replace(/^\s*(?:\*\*)?(?:step\s+)?\d+[.):\s]*\**\s*/i, "").trim())
-        .filter(Boolean);
+      const planFilePath = statePath.replace(/\.json$/, "-plan.md");
       
-      // Fallback: try bullet points if no numbered items found
+      // Source 1: Try the plan file the agent was asked to write
+      let planLines: string[] = [];
+      try {
+        if (existsSync(planFilePath)) {
+          const planFileContent = readFileSync(planFilePath, "utf-8");
+          planLines = planFileContent
+            .split("\n")
+            .filter((l) => /^\s*(?:\*\*)?(?:step\s+)?\d+[.):\s]/i.test(l))
+            .map((l) => l.replace(/^\s*(?:\*\*)?(?:step\s+)?\d+[.):\s]*\**\s*/i, "").trim())
+            .filter(Boolean);
+          // Also try bullet format from file
+          if (planLines.length === 0) {
+            planLines = planFileContent
+              .split("\n")
+              .filter((l) => /^\s*[-*•]\s/.test(l))
+              .map((l) => l.replace(/^\s*[-*•]\s*/, "").trim())
+              .filter((l) => l.length > 10)
+              .slice(0, 10);
+          }
+        }
+      } catch { /* file read failed — fall through to text extraction */ }
+      
+      // Source 2: Try the agent's text output
+      if (planLines.length === 0) {
+        planLines = planText
+          .split("\n")
+          // Match: "1.", "1)", "Step 1:", "**1.", "- Step 1:"
+          .filter((l) => /^\s*(?:\*\*)?(?:step\s+)?\d+[.):\s]/i.test(l))
+          .map((l) => l.replace(/^\s*(?:\*\*)?(?:step\s+)?\d+[.):\s]*\**\s*/i, "").trim())
+          .filter(Boolean);
+      }
+      
+      // Source 3: bullet points from text
       if (planLines.length === 0) {
         planLines = planText
           .split("\n")
@@ -450,6 +482,24 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           .map((l) => l.replace(/^\s*[-*•]\s*/, "").trim())
           .filter((l) => l.length > 10)
           .slice(0, 10);
+      }
+
+      // Source 4: Try extracting from messages (tool results, write() calls)
+      if (planLines.length === 0 && planResult.messages) {
+        for (const msg of planResult.messages) {
+          if (msg.role === "assistant" && Array.isArray(msg.content)) {
+            for (const block of msg.content) {
+              if (block.type === "tool_use" && block.name === "write" && block.input?.content) {
+                const writeLines = String(block.input.content)
+                  .split("\n")
+                  .filter((l: string) => /^\s*\d+[.)]\s/.test(l))
+                  .map((l: string) => l.replace(/^\s*\d+[.)]\s*/, "").trim())
+                  .filter(Boolean);
+                if (writeLines.length > planLines.length) planLines = writeLines;
+              }
+            }
+          }
+        }
       }
 
       if (planLines.length > 0) {
