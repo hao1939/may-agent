@@ -874,7 +874,44 @@ describe("extractKeyFacts", () => {
     const facts = extractKeyFacts(messages);
     expect(facts.filesRead.size).toBe(0);
     expect(facts.filesWritten.size).toBe(0);
+    expect(facts.filesEdited.size).toBe(0);
+    expect(facts.agentCalls).toHaveLength(0);
     expect(facts.execCommands).toHaveLength(0);
+  });
+
+  it("extracts files edited via edit() calls", () => {
+    const messages: AgentMessage[] = [
+      toolCallMsg("edit", { path: "src/a.ts", oldText: "foo", newText: "bar" }),
+      toolResultMsg("edit", "Edit applied"),
+    ];
+
+    const facts = extractKeyFacts(messages);
+    expect(facts.filesEdited.has("src/a.ts")).toBe(true);
+    expect(facts.filesWritten.has("src/a.ts")).toBe(false);
+  });
+
+  it("extracts agent calls", () => {
+    const messages: AgentMessage[] = [
+      toolCallMsg("agents", { action: "call", agent: "coder", task: "Fix the bug in parser.ts" }),
+      toolResultMsg("agents", "Task completed"),
+    ];
+
+    const facts = extractKeyFacts(messages);
+    expect(facts.agentCalls).toHaveLength(1);
+    expect(facts.agentCalls[0].agent).toBe("coder");
+    expect(facts.agentCalls[0].task).toBe("Fix the bug in parser.ts");
+  });
+
+  it("ignores non-call agent actions", () => {
+    const messages: AgentMessage[] = [
+      toolCallMsg("agents", { action: "list" }),
+      toolResultMsg("agents", "agents list"),
+      toolCallMsg("agents", { action: "fork", agent: "bob", task: "research" }),
+      toolResultMsg("agents", "forked"),
+    ];
+
+    const facts = extractKeyFacts(messages);
+    expect(facts.agentCalls).toHaveLength(0);
   });
 });
 
