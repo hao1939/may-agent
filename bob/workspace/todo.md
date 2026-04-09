@@ -60,6 +60,17 @@
 - [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% of verify-after-edit failures need code-level fix, not prompting. Deferred until prompting experiments complete.
 - [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
 
+## Session Notes (2026-04-09 ~05:25)
+- **GYM GRADUATION REVIEW COMPLETE**: Reviewed Coach's proposal-graduate-gym.md and proposal-fewshot-production-deployment.md. Decision: **APPROVED WITH CONDITIONS**.
+  - Two exit conditions before graduation takes effect: (1) Complete EXP-098 (L3 treatment testing, 9 runs), (2) Complete Wave 2 validation (5 scenarios, Coach runs)
+  - Few-shot production pipeline: APPROVED with 5 modifications (higher-precision routing, audit logging, 48h production validation before Phase 2, skip RAG/Phase 3, needs design brief for tech-lead)
+  - Multi-session test harness: APPROVED for design phase only
+  - Production A/B framework: DEFERRED (premature — use natural experiment from audit logs first)
+  - Wave 3: validate opportunistically in regression runs. Wave 4: SKIP entirely.
+  - After EXP-098 + Wave 2 validation, gym enters maintenance mode (regression suite only, no more exploratory experiments)
+- **Wave 1 VALIDATED**: 9/9 behavioral pass confirmed by Coach. All 3 treatment scenarios work.
+- **Deliverable**: `agents/shared/knowledge/synthesis/GYM-GRADUATION-REVIEW.md`
+
 ## Session Notes (2026-04-09 ~04:00)
 - **DD-655→DD-659 KNOWLEDGE BASE INTEGRATION**: Created 5 new knowledge entries (KE-066 through KE-070) from deep dives DD-655 through DD-659:
   - **KE-066**: Cross-model-family critique (Rubber Duck) — 74.7% gap closure with sparse cross-family review. From DD-655.
