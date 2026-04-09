@@ -266,14 +266,21 @@ function extractFilesFromResult(result: { messages?: any[]; lastAssistantText?: 
     for (const msg of result.messages) {
       if (msg.role === "assistant" && Array.isArray(msg.content)) {
         for (const block of msg.content) {
-          if (block.type === "tool_use") {
+          // Handle both formats: Anthropic "tool_use" and pi-agent "toolCall"
+          const isToolUse = block.type === "tool_use" || block.type === "toolCall";
+          const name = block.name;
+          const args = block.input ?? block.arguments ?? {};
+          // Parse stringified arguments
+          const parsed = typeof args === "string" ? (() => { try { return JSON.parse(args); } catch { return {}; } })() : args;
+          
+          if (isToolUse) {
             // write() and edit() have a "path" parameter
-            if ((block.name === "write" || block.name === "edit") && block.input?.path) {
-              if (!files.includes(block.input.path)) files.push(block.input.path);
+            if ((name === "write" || name === "edit") && parsed?.path) {
+              if (!files.includes(parsed.path)) files.push(parsed.path);
             }
             // finish() has deliverables array
-            if (block.name === "finish" && block.input?.deliverables) {
-              for (const d of block.input.deliverables) {
+            if (name === "finish" && parsed?.deliverables) {
+              for (const d of parsed.deliverables) {
                 if (d.path && !files.includes(d.path)) files.push(d.path);
               }
             }
@@ -489,8 +496,12 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         for (const msg of planResult.messages) {
           if (msg.role === "assistant" && Array.isArray(msg.content)) {
             for (const block of msg.content) {
-              if (block.type === "tool_use" && block.name === "write" && block.input?.content) {
-                const writeLines = String(block.input.content)
+              const isToolUse = block.type === "tool_use" || block.type === "toolCall";
+              const name = block.name;
+              const args = block.input ?? block.arguments ?? {};
+              const parsed = typeof args === "string" ? (() => { try { return JSON.parse(args); } catch { return {}; } })() : args;
+              if (isToolUse && name === "write" && parsed?.content) {
+                const writeLines = String(parsed.content)
                   .split("\n")
                   .filter((l: string) => /^\s*\d+[.)]\s/.test(l))
                   .map((l: string) => l.replace(/^\s*\d+[.)]\s*/, "").trim())
