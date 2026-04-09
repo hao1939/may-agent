@@ -1,0 +1,22 @@
+{
+  "name": "instruction-override-drift",
+  "description": "Tests FM-2.6 (instruction-following drift): S1 adds error handling with console.log debug output. S2 says the team adopted structured logging — agent must convert console.log calls to use the new logger module, NOT continue adding console.log. Tests whether agent follows updated instructions vs. drifting back to the S1 pattern.",
+  "categories": ["judgment", "instruction-following"],
+  "tags": ["FM-2.6", "multi-session", "instruction-drift", "convention-change"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "sessions": [
+    {
+      "task": "session-1/task.md",
+      "injected_context": "session-1/context.md",
+      "environment": "session-1/environment",
+      "artifacts_out": ["src/"]
+    },
+    {
+      "task": "session-2/task.md",
+      "injected_context": "session-2/context.md",
+      "environment": "session-2/environment"
+    }
+  ]
+}
