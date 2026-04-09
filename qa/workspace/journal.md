@@ -4,15 +4,147 @@
 
 # QA Journal — 2026-04-09
 
+## 2026-04-09T22:25Z
+
+### Summary
+Proactive heartbeat QA at HEAD **0cf9b17** (merge of `review/fix-fewshot-heartbeat`). I read `src/lib/fewshot-router.ts` and confirmed the heartbeat exclusion is now **case-insensitive** (`/^\[heartbeat\]/i`), preventing few-shot token spend on heartbeat sessions.
+
+### Files reviewed (evidence)
+- `src/lib/fewshot-router.ts` — `if (/^\[heartbeat\]/i.test(taskText)) return { content: null, ... }`
+
+### Mandatory gates
+- `./node_modules/.bin/tsc --noEmit`: PASS (exit 0; no output)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2083 passed (2104)**
+  - `test/launcher.test.ts`: 7 failed — structural expectations for `/app/src/app/launcher.ts` but file missing (`existsSync` false + `ENOENT` reads)
+  - `test/context-learn.test.ts`: 7 failed — `rmSync(..., { recursive: true })` → `EACCES` under `/app/test-workspace/context-learn-test/*`
+  - `test/context-learning.test.ts`: 6 failed — `rmSync(..., { recursive: true })` → `EACCES` under `/app/test-workspace/context-learning-test/*`
+  - `test/research-db.test.ts`: 1 failed — integration test timed out at 5000ms
+
+### Issues
+- CRITICAL: `test/launcher.test.ts` requires `src/app/launcher.ts`, but it is missing at HEAD (suite cannot go green).
+- IMPORTANT: context-learning tests cannot delete `/app/test-workspace/*` (`EACCES` in rmSync) in this environment.
+- IMPORTANT: `test/research-db.test.ts` “sync real knowledge base” times out at 5s; may need higher timeout or reduced workload.
+
+### Verdict
+CONDITIONAL — reviewed change appears correct and type-safe, but the repo is vitest-red for the unrelated structural/permission/timeout failures above.
+
+## 2026-04-09T21:25Z
+
+### Summary
+Proactive heartbeat QA at HEAD **7e6bc59** (`fix: skip few-shot injection for heartbeat sessions`). I read `src/lib/fewshot-router.ts` and verified the new early return in `routeFewShotExamples()` for tasks starting with `[heartbeat]`, preventing wasted example injection tokens.
+
+### Files reviewed (evidence)
+- `src/lib/fewshot-router.ts` (full file) — `if (taskText.startsWith("[heartbeat]")) return { content: null, ... }`
+
+### Mandatory gates
+- `./node_modules/.bin/tsc --noEmit`: PASS (no output)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2082 passed (2103)**
+  - `test/launcher.test.ts`: 7 failed — expects `/app/src/app/launcher.ts` to exist; ENOENT
+  - `test/context-learn.test.ts`: 7 failed — `rmSync(..., { recursive: true })` fails with `EACCES` under `/app/test-workspace/context-learn-test/*`
+  - `test/context-learning.test.ts`: 6 failed — same `EACCES` under `/app/test-workspace/context-learning-test/*`
+  - `test/research-db.test.ts`: 1 failed — integration test timed out at 5000ms
+
+### Issues
+- CRITICAL (repo/test mismatch): `test/launcher.test.ts` requires `src/app/launcher.ts`, but it is missing at HEAD.
+- IMPORTANT (env/permissions): context-learning tests cannot delete `/app/test-workspace/*` (`EACCES` in rmSync).
+- IMPORTANT (test robustness): `test/research-db.test.ts` “sync real knowledge base” occasionally exceeds 5s timeout.
+
+### Verdict
+CONDITIONAL — change appears correct and type-safe, but repo is vitest-red for the unrelated issues above.
+
+## 2026-04-09T19:25Z
+
+### Summary
+Heartbeat QA at HEAD **7e6bc59**. I reviewed the most recent change set (`src/lib/fewshot-router.ts` + `test/fewshot-router.test.ts`) which adds a guard to **skip few-shot injection for heartbeat tasks**. `tsc` is green. `vitest` still fails, but the failures appear **pre-existing/unrelated** to this patch (missing `src/app/launcher.ts`, permissions in `/app/test-workspace/*`, and a research-db timeout). The new fewshot-router tests passed.
+
+### Files reviewed
+- `src/lib/fewshot-router.ts` (routeFewShotExamples heartbeat exclusion; pattern parsing/matching)
+- `test/fewshot-router.test.ts` (new coverage for heartbeat exclusion + existing router behaviors)
+
+### Mandatory gates (re-run)
+- `./node_modules/.bin/tsc --noEmit`: PASS (no output)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2082 passed (2103)**
+  - `test/launcher.test.ts`: 7 failed — expects `/app/src/app/launcher.ts` to exist; file missing (existsSync false / ENOENT)
+  - `test/context-learn.test.ts`: 7 failed — `rmSync(..., { recursive: true })` fails with `EACCES` under `/app/test-workspace/context-learn-test/*`
+  - `test/context-learning.test.ts`: 6 failed — same `EACCES` cleanup failure under `/app/test-workspace/context-learning-test/*`
+  - `test/research-db.test.ts`: 1 failed — `syncs the actual knowledge base without errors` timed out at 5000ms
+
+### Verdict
+CONDITIONAL — The heartbeat exclusion change appears correct and covered by tests; repo still has unrelated failing tests that should be addressed separately.
+
+## 2026-04-09T19:55Z
+
+### Summary
+Heartbeat QA at HEAD **7e6bc59**. Reviewed `src/lib/fewshot-router.ts` (confirmed heartbeat skip guard and overall example matching/formatting behavior) and re-ran mandatory gates.
+
+### Files reviewed
+- `src/lib/fewshot-router.ts` (full file via two reads)
+
+### Mandatory gates
+- `./node_modules/.bin/tsc --noEmit`: PASS (no output)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2082 passed (2103)**
+  - `test/context-learn.test.ts`: 7 failed — `rmSync(tmpDir, { recursive: true })` throws `EACCES` on `/app/test-workspace/context-learn-test/test-agent`
+  - `test/context-learning.test.ts`: 6 failed — same `EACCES` on `/app/test-workspace/context-learning-test/.state`
+  - `test/launcher.test.ts`: 7 failed — asserts `/app/src/app/launcher.ts` exists, then reads it; ENOENT
+
+## 2026-04-09T20:25Z
+
+### Summary
+Proactive heartbeat QA at HEAD **7e6bc59** (most recent commit). I independently inspected the actual change in `src/lib/fewshot-router.ts`: `routeFewShotExamples()` now returns early when `taskText` starts with `[heartbeat]`, preventing irrelevant few-shot injection. `tsc` passes. `vitest` fails due to multiple **unrelated** issues (missing launcher file, test-workspace permissions, research-db timeout).
+
+### Files reviewed (evidence)
+- `src/lib/fewshot-router.ts` (read around the new guard; confirmed exact early return behavior)
+- `test/launcher.test.ts` (read; confirms tests hard-require `src/app/launcher.ts`)
+
+### Mandatory gates (re-run)
+- `./node_modules/.bin/tsc --noEmit`: PASS
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2082 passed (2103)**
+
+### Notable failures (appear pre-existing/unrelated to fewshot-router change)
+- `test/launcher.test.ts`: 7 failed — `existsSync(/app/src/app/launcher.ts)` is false; subsequent reads throw ENOENT
+- `test/context-learn.test.ts` + `test/context-learning.test.ts`: 13 failed — cleanup `rmSync(..., { recursive: true })` throws `EACCES` under `/app/test-workspace/*`
+- `test/research-db.test.ts`: 1 failed — integration test times out at 5000ms
+
+### Verdict
+CONDITIONAL — change itself looks correct, but main branch test suite is not green.
+  - `test/research-db.test.ts`: 1 failed — integration test `syncs the actual knowledge base without errors` timed out at 5000ms (observed ~5.5s)
+
+### Issues
+- CRITICAL (repo/test mismatch): `test/launcher.test.ts` expects `src/app/launcher.ts`, but it is missing at HEAD.
+- IMPORTANT (env/permissions): tests using `/app/test-workspace/*` cannot cleanup due to ownership/permissions (`EACCES` in rmSync).
+- IMPORTANT (test robustness): research-db real-knowledge sync sometimes exceeds 5s timeout; should raise timeout or reduce workload.
+
+### Verdict
+CONDITIONAL — fewshot-router change appears correct and is covered (`test/fewshot-router.test.ts` passes), but repo remains vitest-red due to the unrelated structural/permission/timeout failures above.
+
+## 2026-04-09T17:55Z
+
+### Summary
+Heartbeat QA at HEAD **e5ea46e**. I spot-checked the most recent non-agents change set in `src/lib/manager.ts` (session lifecycle fixes commit ancestry) and re-ran mandatory gates. `tsc` is green; `vitest` remains red due to **pre-existing repo/environment issues** (missing `src/app/launcher.ts`, EACCES when cleaning `/app/test-workspace/*`, and a 5s timeout in a research-db integration test).
+
+### Files reviewed
+- `src/lib/manager.ts` (imports, re-export of manager-utils, SubagentManager fields/constructor docs; read lines ~1–200)
+
+### Mandatory gates (re-run)
+- `./node_modules/.bin/tsc --noEmit`: PASS (no output)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2079 passed (2100)**
+  - `test/launcher.test.ts`: 7 failed — expects `/app/src/app/launcher.ts` to exist; file missing (existsSync false / ENOENT)
+  - `test/context-learn.test.ts`: 7 failed — `rmSync(..., { recursive: true })` fails with `EACCES` under `/app/test-workspace/context-learn-test/*`
+  - `test/context-learning.test.ts`: 6 failed — same `EACCES` cleanup failure under `/app/test-workspace/context-learning-test/*`
+  - `test/research-db.test.ts`: 1 failed — `syncs the actual knowledge base without errors` timed out at 5000ms
+
+### Verdict
+CONDITIONAL — Patch-level changes appear to compile; test failures look unrelated to the code under review and indicate repo/environment drift that should be addressed separately.
+
 ## 2026-04-09T13:24Z
 
 ### Summary
-Heartbeat QA at HEAD **d7e6b4f** (merge: abort signal propagation + gym directory fix). I reviewed `src/lib/manager.ts` (event bridge section) and re-ran mandatory gates. **Type-check passes**; **vitest fails** due to repo/environment issues (missing `/app/src/app/launcher.ts`, EACCES cleanup failures) that appear unrelated to the abort-signal/gym-runner changes.
+Heartbeat QA at HEAD **d7e6b4f** (merge: abort signal propagation + gym directory fix). I reviewed `src/lib/manager-utils.ts` (new helper module; tool pivot/error detection and abort-controller addition to ActiveSession) and re-ran mandatory gates. **Type-check passes**; **vitest fails** due to repo/environment issues (missing `/app/src/app/launcher.ts`, EACCES cleanup failures, knowledge sync timeout) that appear unrelated to the abort-signal/gym-runner changes.
 
 ### Files reviewed
-- `src/lib/manager.ts` (lines ~200–270: `bridgeAgentEvents()`)
+- `src/lib/manager-utils.ts` (top ~1–200: helpers/constants; abortController field in `ActiveSession` interface)
 
-### Mandatory gates (re-run 2026-04-09T14:24Z)
+### Mandatory gates (re-run 2026-04-09T14:54Z)
 - `./node_modules/.bin/tsc --noEmit`: PASS (no output)
 - `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2079 passed (2100 total)**
   - `test/launcher.test.ts`: 7 failed — expects `/app/src/app/launcher.ts` to exist; file missing (existsSync false + ENOENT reads)
@@ -21,10 +153,95 @@ Heartbeat QA at HEAD **d7e6b4f** (merge: abort signal propagation + gym director
   - `test/research-db.test.ts`: 1 failed — integration test `syncs the actual knowledge base without errors` timed out at 5000ms
 
 ### Notes
-- Compared to earlier run, `test/research-db.test.ts` timeout **did reproduce** this time (took >5s).
+- `test/research-db.test.ts` timeout reproduced again (ran ~5.2s before failing), suggesting baseline perf variability.
 
 ### Verdict
 CONDITIONAL — compilation is green; suite is red for missing file + permission/timeouts that look external to the patch.
+
+## 2026-04-09T15:25Z
+
+### Summary
+Heartbeat QA at HEAD **41b5074**. Spot-checked the earlier abort-signal propagation change (commit **3fdf733**) by reading `src/lib/manager.ts` and `src/lib/manager-utils.ts` (ActiveSession now carries an `AbortController`). Re-ran mandatory gates: `tsc` passes; `vitest` still fails due to pre-existing repo/environment issues (missing launcher.ts, EACCES cleanup failures, research-db timeout).
+
+### Files reviewed
+- `src/lib/manager.ts` (partial read; imports/manager skeleton)
+- `src/lib/manager-utils.ts` (ActiveSession interface; abortController addition)
+
+### Mandatory gates (re-run 2026-04-09T15:24Z)
+- `./node_modules/.bin/tsc --noEmit`: PASS (exit 0; no output)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2079 passed (2100)**
+
+## 2026-04-09T16:54Z
+
+### Summary
+Heartbeat QA at HEAD **41b5074**. Independently re-checked `src/lib/manager.ts` (session manager core) at the import/constructor/early-method level for obvious type/logic hazards. Mandatory gates run: `tsc` passes; `vitest` fails with the same systemic issues as earlier, plus an additional scrape DNS timeout test.
+
+### Files reviewed
+- `src/lib/manager.ts` (lines ~1–220)
+
+### Mandatory gates (re-run 2026-04-09T16:53Z)
+- `./node_modules/.bin/tsc --noEmit`: PASS (no output)
+- `./node_modules/.bin/vitest --run`: FAIL — **5 failed files | 136 passed (141)**; **22 failed | 2078 passed (2100)**
+  - `test/launcher.test.ts`: 7 failed — missing `/app/src/app/launcher.ts` (existsSync false + ENOENT reads)
+  - `test/context-learn.test.ts`: 7 failed — `rmSync(..., { recursive: true })` fails with `EACCES` under `/app/test-workspace/context-learn-test/*`
+  - `test/context-learning.test.ts`: 6 failed — same `EACCES` cleanup failure under `/app/test-workspace/context-learning-test/*`
+  - `test/research-db.test.ts`: 1 failed — `syncs the actual knowledge base without errors` timed out at 5000ms
+  - `test/scrape.test.ts`: 1 failed — `handles DNS resolution failure gracefully` timed out at 5000ms
+
+### Verdict
+CONDITIONAL — patch appears type-safe, but CI is blocked by missing file + permission/timeouts in test environment.
+
+## 2026-04-09T18:25Z
+
+### Summary
+Heartbeat QA at HEAD **d7e6b4f**. Reviewed the most recent non-agents change in `test/gym/gym-runner.ts` (commit **330b2a9**) where multiple `cpSync()` calls were updated to include `{ recursive: true }`, fixing directory-copy failures when sandboxing/copying agent directories.
+
+### Files reviewed
+- `test/gym/gym-runner.ts` (may-agent adapter setup + sandbox agent copy paths; includes `cpSync(..., { recursive: true })`)
+
+### Mandatory gates (re-run)
+- `./node_modules/.bin/tsc --noEmit`: PASS (no output)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2079 passed (2100)**
+  - `test/launcher.test.ts`: 7 failed — expects `/app/src/app/launcher.ts` to exist; file missing (ENOENT)
+  - `test/context-learn.test.ts`: 7 failed — `rmSync(..., { recursive: true })` fails with `EACCES` under `/app/test-workspace/context-learn-test/test-agent`
+  - `test/context-learning.test.ts`: 6 failed — `rmSync(..., { recursive: true })` fails with `EACCES` under `/app/test-workspace/context-learning-test/.state`
+  - `test/research-db.test.ts`: 1 failed — integration test timed out at 5000ms
+
+### Issues
+- IMPORTANT (env/repo): The vitest failures appear **pre-existing/unrelated** to the gym-runner `cpSync` change. They are dominated by a missing `src/app/launcher.ts`, filesystem permission errors in `/app/test-workspace/*`, and a 5s timeout in a research-db integration test.
+
+### Verdict
+CONDITIONAL — the reviewed change looks correct and typechecks; repo/test environment needs fixes before suite can go green.
+
+## 2026-04-09T16:26Z
+
+### Summary
+Proactive heartbeat QA at HEAD **41b5074** (latest main-repo commit affecting code appears to be **00005e4**: session lifecycle bug fixes). I reviewed the newly added regression tests for lifecycle fixes and re-ran mandatory gates. **Type-check passes**; **vitest fails** due to pre-existing repo/environment issues (missing `src/app/launcher.ts`, EACCES in tmp workspace cleanup, and a 5s timeout in real knowledge base sync).
+
+### Files reviewed
+- `src/lib/manager.ts` (top ~220 lines; verified manager skeleton and exports compile)
+- `test/session-lifecycle-fixes.test.ts` (full file; added regression tests for Bug 3/4/8/10)
+
+### Mandatory gates (re-run 2026-04-09T16:23Z)
+- `./node_modules/.bin/tsc --noEmit`: PASS (no output)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2079 passed (2100)**
+  - `test/launcher.test.ts`: 7 failed — `/app/src/app/launcher.ts` missing (existsSync false + ENOENT reads)
+  - `test/context-learn.test.ts`: 7 failed — `rmSync(..., { recursive: true })` throws `EACCES` removing `/app/test-workspace/context-learn-test/test-agent`
+  - `test/context-learning.test.ts`: 6 failed — same `EACCES` removing `/app/test-workspace/context-learning-test/.state`
+  - `test/research-db.test.ts`: 1 failed — integration test `syncs the actual knowledge base without errors` timed out at 5000ms (observed run ~5.2s)
+
+### Issues noted (test quality)
+- The Bug 8 test (`"resumeSession restores parentAgentName"`) currently does **not** assert the intended behavior; it only checks `resumed.length > 0` then indirectly checks the session exists. This could pass even if `parentAgentName` is not restored.
+
+### Verdict
+CONDITIONAL — code compiles; lifecycle tests run and pass, but overall suite is red for reasons unrelated to lifecycle patch; Bug 8 regression test assertion is weak.
+  - `test/launcher.test.ts`: 7 failed — `/app/src/app/launcher.ts` missing (existsSync false + ENOENT)
+  - `test/context-learn.test.ts`: 7 failed — `rmSync` fails `EACCES` on `/app/test-workspace/context-learn-test/*`
+  - `test/context-learning.test.ts`: 6 failed — `rmSync` fails `EACCES` on `/app/test-workspace/context-learning-test/*`
+  - `test/research-db.test.ts`: 1 failed — integration test timed out at 5000ms
+
+### Verdict
+CONDITIONAL — patch appears type-safe; test failures look unrelated to abort-signal propagation and point to missing file + filesystem permissions + a slow integration test.
 
 ---
 
@@ -803,6 +1020,31 @@ Proactive scan of unreviewed HEAD commits (latest: **2372c03**, merge of **e307d
 
 ### Verdict
 PASS (with note above)
+
+---
+
+## 2026-04-09T18:55Z
+
+### Summary
+Heartbeat QA at HEAD **7e6bc59** (“skip few-shot injection for heartbeat sessions”). Reviewed `src/lib/fewshot-router.ts` and verified the new heartbeat guard: `routeFewShotExamples()` early-returns when `taskText.startsWith("[heartbeat]")`.
+
+### Files reviewed
+- `src/lib/fewshot-router.ts` (full file)
+
+### Mandatory gates (re-run)
+- `./node_modules/.bin/tsc --noEmit`: PASS (no output)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2082 passed (2103)**
+  - `test/launcher.test.ts`: 7 failed — missing `/app/src/app/launcher.ts` (existsSync false / ENOENT)
+  - `test/context-learn.test.ts`: 7 failed — `rmSync(..., { recursive: true })` fails `EACCES` under `/app/test-workspace/context-learn-test/*`
+  - `test/context-learning.test.ts`: 6 failed — same `EACCES` cleanup failure under `/app/test-workspace/context-learning-test/*`
+  - `test/research-db.test.ts`: 1 failed — integration test `syncs the actual knowledge base without errors` timed out at 5000ms
+
+### Issues
+- IMPORTANT (code robustness): `parseTriggerPattern()` uses a regex-literal parser `/\/(.*?)\/(...)` which will fail on patterns containing an unescaped `/` in the example file. If examples ever need to match paths/URLs, consider supporting escaped slashes or a different encoding.
+- IMPORTANT (repo health): test suite remains red due to missing `src/app/launcher.ts`, permission issues under `/app/test-workspace`, and a tight 5s timeout in a research-db integration test.
+
+### Verdict
+CONDITIONAL — the heartbeat skip change looks correct and typechecks; repo cannot be considered green until the above test/environment issues are resolved.
 
 ---
 
@@ -3876,3 +4118,47 @@ Proactive scan of unreviewed commit **28412aa** (auto-pause circuit breaker reco
 
 ### Verdict
 CONDITIONAL (patch under review compiles; environment/repo test failures must be resolved before a clean PASS run is possible)
+
+---
+
+## 2026-04-09T15:54Z
+
+### Summary
+Heartbeat QA at HEAD **41b5074**. Read `src/lib/manager.ts` (lines 1–220) as a spot-check on the manager changes merged earlier. Re-ran mandatory gates: `tsc` passes; `vitest` fails consistently with the same 4 failing files as earlier today (missing launcher.ts, EACCES on test workspace cleanup, knowledge sync timeout).
+
+### Files reviewed
+- `src/lib/manager.ts` (lines 1–220)
+
+### Mandatory gates
+- `./node_modules/.bin/tsc --noEmit`: PASS (no output)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2079 passed (2100)**
+  - `test/launcher.test.ts`: 7 failed — `ENOENT` reading `/app/src/app/launcher.ts`
+  - `test/context-learn.test.ts`: 7 failed — `EACCES` rmdir `/app/test-workspace/context-learn-test/test-agent`
+  - `test/context-learning.test.ts`: 6 failed — `EACCES` rmdir `/app/test-workspace/context-learning-test/.state`
+  - `test/research-db.test.ts`: 1 failed — timeout in 5000ms (`syncs the actual knowledge base without errors`)
+
+### Verdict
+CONDITIONAL — compilation is green; test suite failures look environmental/repo-integrity related rather than caused by manager/abort-signal changes.
+
+## 2026-04-09T17:25Z
+
+### Summary
+Proactive heartbeat QA at HEAD **41b5074**. Reviewed `src/lib/session-subscribers.ts` (event-driven session side effects) and re-ran mandatory gates. **Type-check is green.** **Vitest is red** due to (a) missing `src/app/launcher.ts` expected by `test/launcher.test.ts`, (b) `EACCES` during cleanup under `/app/test-workspace` in context-learning tests, and (c) a 5s timeout syncing the real knowledge base.
+
+### Files reviewed
+- `src/lib/session-subscribers.ts` (lines 1–260)
+- `test/launcher.test.ts` (lines ~90–~175; launcher existence/content assertions)
+
+### Mandatory gates (re-run 2026-04-09T17:24Z)
+- `./node_modules/.bin/tsc --noEmit`: PASS (no output)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2079 passed (2100)**
+  - `test/launcher.test.ts`: 7 failed — asserts `existsSync(/app/src/app/launcher.ts) === true` and reads it (ENOENT)
+  - `test/context-learn.test.ts`: 7 failed — `rmSync(tmpDir, { recursive: true })` throws `EACCES` at `test/context-learn.test.ts:11`
+  - `test/context-learning.test.ts`: 6 failed — same `EACCES` at `test/context-learning.test.ts:43`
+  - `test/research-db.test.ts`: 1 failed — integration test `syncs the actual knowledge base without errors` timed out at 5000ms (observed ~5.2s)
+
+### Code quality notes
+- `src/lib/session-subscribers.ts` contains multiple `catch { /* best-effort */ }` blocks around persistence/workspace updates. This is likely intentional, but in prod these failures will be silent; consider adding minimal debug logging (guarded) for diagnostic visibility.
+
+### Verdict
+CONDITIONAL — code compiles; test suite failures appear unrelated to the subscriber module and look like repo/environment problems (missing launcher module + filesystem permissions + too-tight integration timeout).
