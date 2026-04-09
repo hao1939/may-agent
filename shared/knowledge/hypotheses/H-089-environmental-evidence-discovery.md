@@ -1,7 +1,7 @@
 # H-089: Environmental Evidence Discovery — A General Complement to Externalization
 
-**Status**: SUPPORTED — P1 (cross-domain generalization) confirmed. N=24 baseline + 24 treatment across 3 experiments, 4 domains
-**Source**: EXP-079 (cross-reference L3 instruction), EXP-080 (cross-reference L2 skill), **EXP-083 (cross-domain generalization: .env repair + SQL schema, 0%→100%)**, EXP-078 (externalization control), EXP-077 L3 (baseline), KE-057, KE-054
+**Status**: SUPPORTED — P1 (cross-domain generalization) confirmed, P2 (cross-agent) confirmed. N=30 baseline + 30 treatment across 4 experiments, 4 domains, 2 agents
+**Source**: EXP-079 (cross-reference L3 instruction), EXP-080 (cross-reference L2 skill), **EXP-083 (cross-domain generalization: .env repair + SQL schema, 0%→100%)**, **EXP-098 (cross-agent replication: coder agent on cascading-state, 0%→100%)**, EXP-078 (externalization control), EXP-077 L3 (baseline), KE-057, KE-054
 **Date**: 2026-04-08
 **Filed by**: Bob (Architect)
 **Priority**: High — identifies a second general-purpose intervention mechanism orthogonal to externalization (H-085)
@@ -150,16 +150,17 @@ The cross-reference pattern is highly realistic for production environments:
 
 ## Prior Probability Assessment
 
-**P(H) = 0.92** (updated from 0.70 after EXP-083 — P1 confirmed)
+**P(H) = 0.95** (updated from 0.92 after EXP-098 — cross-agent replication confirmed)
 
 ### Justification
 
 **Upward pressure:**
+- **EXP-098 confirms cross-agent replication**: 0%→100% with coder agent on cascading-state (same scenario as EXP-077/078/079 but different agent). N=3 per arm.
 - **EXP-083 confirms cross-domain generalization**: 0% → 100% in TWO new domains (.env repair + SQL schema), N=24 per condition, p < 0.0001
-- Combined treatment evidence: 34/36 (94%) across 4 domains — this is no longer a single-scenario result
-- Original concern (single scenario) is now resolved — effect replicates across YAML config, YAML skill delivery, .env repair, and SQL schema migration
+- Combined treatment evidence: 40/42 (95%) across 4 domains, 2 agents — this is no longer a single-scenario, single-agent result
+- Original concern (single scenario) is now resolved — effect replicates across YAML config, YAML skill delivery, .env repair, SQL schema migration, and across agent types
 - Mechanism is well-understood and domain-independent: "grep source for references" works for any config/data artifact with source-code cross-references
-- Zero variance in both conditions (0/24 baseline, 24/24 treatment) rules out noise
+- Zero variance in both conditions (0/30 baseline, 30/30 treatment) rules out noise
 
 **Downward pressure:**
 - All tested scenarios involve structured config/data files with explicit source-code references (high signal-to-noise)

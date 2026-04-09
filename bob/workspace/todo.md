@@ -61,6 +61,16 @@
 - [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% of verify-after-edit failures need code-level fix, not prompting. Deferred until prompting experiments complete.
 - [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
 
+## Session Notes (2026-04-09 ~05:50)
+- [x] **EXP-098 KB INTEGRATION COMPLETE**: L3 treatment replication with coder agent — all knowledge base files updated.
+  - **Key findings**: Baseline 0% (3/8 checks, only visible checks pass). Externalization 0% (recognition-without-action: Run 2 identified max_age parameter in ANALYSIS.md but didn't apply fix to auth.yaml — replicates H-085 absent-information boundary across agents). Cross-reference 100% (8/8, perfect across all 3 runs). Agent generalization confirmed — same pattern holds for coder as for original test agent.
+  - **H-089 updated**: P(H) 0.92→0.95. EXP-098 evidence rows added. Source line updated. Total evidence: N=30 baseline + 30 treatment across 4 experiments, 4 domains, 2 agents. P(H) update schedule revised (0.95 achieved). Experiment log updated.
+  - **H-085 updated**: Status line updated with EXP-098. EXP-098 evidence rows added to convergence table (baseline 0%, ext 0% on absent-field). P(H) 0.88 unchanged (boundary already priced in). Footer updated.
+  - **PRIORITY-TRACKER updated**: Header updated with EXP-098 COMPLETE. H-085 and H-089 table rows updated. EXP-098 added to experiment pipeline. Confidence distribution updated (H-085 0.88, H-089 0.95).
+  - **EXP-098 design.md**: Status updated IN-PROGRESS → COMPLETE.
+  - **todo.md**: EXP-098 added to Active Tracking. Gym graduation exit condition #1 marked DONE.
+  - **Files modified**: H-089.md, H-085.md, PRIORITY-TRACKER.md, EXP-098/design.md, todo.md
+
 ## Session Notes (2026-04-09 ~05:25)
 - **GYM GRADUATION REVIEW COMPLETE**: Reviewed Coach's proposal-graduate-gym.md and proposal-fewshot-production-deployment.md. Decision: **APPROVED WITH CONDITIONS**.
   - Two exit conditions before graduation takes effect: (1) ~~Complete EXP-098 (L3 treatment testing, 9 runs)~~ ✅ DONE, (2) Complete Wave 2 validation (5 scenarios, Coach runs)
