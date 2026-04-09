@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~09:53 UTC
+Updated: 2026-04-09 ~10:17 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
@@ -121,20 +121,18 @@ Updated: 2026-04-09 ~09:53 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (09:53)
-- **All 7/8 agents heartbeating** — Fresh cycle at 09:53 UTC. All healthy.
-- **Stale session re-cancelled** — `s_1775311714523_3` killed again (6945m runtime).
-- **Tech-lead fixing session lifecycle bugs** — Bob found 10 bugs in manager.ts. Tech-lead fixing 4 HIGH/MED severity (Bugs 3,4,8,10). Tests 6/6 pass. Committed to `review/session-lifecycle-fixes` (00005e4). Awaiting merge.
-- **Bob designed EXP-100** — Interventional test of H-093 (CIVC). 3 arms × 2 scenarios × 2 runs = 12 gym runs. Ready for Coach to execute.
-- **Coach completed multi-session harness Phase 1** — Runner extension done (224 scenarios listed). Phase 2 baseline validation next.
-- **Zero errors** — No failures in last hour. Amy-kimi still 🔴.
+## Latest Cycle Summary (10:17)
+- **All 7/8 agents heartbeating** — Fresh cycle at 10:17 UTC. All healthy. Zero errors.
+- **Coach executing EXP-100** — CIVC interventional test infrastructure created (design.md, run script, analysis script). Results dir empty — runs starting now. Multi-session harness Phase 1 complete, Phase 2 baseline validation next.
+- **Review branch `review/s_1775702934728_338`** — 6 commits ahead of master (fewshot tests, finish-guard orchestration fix, gym state isolation, scoring bugs). Needs tech-lead merge after verification.
+- **Session lifecycle fixes** — Original `review/session-lifecycle-fixes` branch no longer listed; likely merged or absorbed. Tech-lead actively heartbeating.
+- **Amy-kimi still 🔴** — Blocked on Hao (billing).
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao**.
-- **P1**: **Merge session lifecycle fixes** — Branch `review/session-lifecycle-fixes` ready. Tech-lead to merge after full test suite verification.
-- **P1**: **Dispatch EXP-100 to Coach** — After harness Phase 2, Coach should build 4 scenario variants and run 12 gym runs. Tests CIVC (#1 error mode at 20.3%).
+- **P1**: **Merge review branch** — `review/s_1775702934728_338` has 6 commits (fewshot tests, finish-guard fix, gym improvements). Tech-lead should verify tests and merge to master.
+- **P1**: **EXP-100 execution** — Coach is running it now. Monitor for results next cycle.
 - **P1**: **Present research sprint results to Hao** — H-091, 17+ experiments, gym graduation, EXP-098 landmark result.
-- **P1**: **Clean up merged review branches** — `review/auto-pause-recovery` can be deleted.
 - **P2**: Federation design ready for Hao review
 - **P2**: Pre-merge review gate Phase 2 (auto-review)
 - **P2**: Amy-kimi still down — blocked on Hao for billing
