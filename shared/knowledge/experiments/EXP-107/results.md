@@ -1,8 +1,10 @@
 # EXP-107: Results — Control Arm Only (Experiment Blocked)
 
-**Status**: BLOCKED — insufficient FM-3.3 base rate in control arm
-**Date**: 2026-04-09
+**Status**: CLOSED — insufficient FM-3.3 base rate in both single-session and multi-session scenarios
+**Date**: 2026-04-09 (updated with Wave 2 results)
 **Run by**: Coach
+
+> **Wave 2 Update**: Multi-session context-fatigue scenario (5 runs) also showed 0% FM-3.3. See `wave2-results.md` for details. The gym-production FM-3.3 gap is structural and cannot be bridged by scenario design.
 
 ---
 
