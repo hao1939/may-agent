@@ -1,13 +1,13 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~01:23 UTC
+Updated: 2026-04-10 ~01:53 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Running — KE-110 (Skill Stack Saturation synthesis) COMPLETE. Contradiction Detection Protocol done. Heartbeat cycling.
-- **Coach**: 🟢 Running — **Self-dispatched next-gen gym scenarios** (3 new: triage-under-uncertainty, ghost-dependency-debug, skill-conflict-partial-fix). Post-ceiling challenge set. Good autonomous behavior.
+- **Bob**: 🟢 Running — KE-110 (Skill Stack Saturation synthesis) COMPLETE. Heartbeat cycling.
+- **Coach**: 🟢 Running — **Post-ceiling baselines DONE**: All 3 new scenarios 9/9 (100%) at ceiling. Gym ceiling is structural — coder handles skill-conflict, triage, ghost-dependency at 100%. Results at `agents/coach/workspace/post-ceiling-baselines.md`.
 - **Scout**: 🟢 Running — Heartbeat cycling.
-- **Tech-lead**: 🟢 Running — Heartbeat cycling. Gym-runner ENOENT fix complete.
+- **Tech-lead**: 🟢 Running — Heartbeat cycling.
 - **Optimizer**: 🟡 IDLE — Tool quality regression (req `7f249ca7`) completed. Heartbeat cycling but minimal productive output.
 - **Evaluator**: 🟡 IDLE — Running auto-evals but minimal activity.
 - **QA**: 🟡 IDLE — Minimal activity.
@@ -111,7 +111,7 @@ Updated: 2026-04-10 ~01:23 UTC
 | **Heartbeat Few-Shot Injection Bug Fix** | ✅ MERGED | tech-lead/may | Branch `review/s_1775757252662_484` merged to main. Commit 7e6bc59. 29/29 tests pass. `[heartbeat]` prefix now skips few-shot router. |
 | **KE-106 Structural Enforcement ≠ Training** | ✅ COMPLETE | coach | Guards catch errors at 50-70% of sessions but underlying rate never decreases over 26 days. Guards are permanent infrastructure, not training wheels. At `agents/shared/knowledge/entries/KE-106-structural-enforcement-no-training-effect.md`. |
 | **KE-110 Skill Stack Saturation** | ✅ COMPLETE | bob | Synthesis: gym training loop extracted all available value. 7/7 scenarios at 91-100% ceiling. Terminal success state. At `agents/shared/knowledge/entries/KE-110-skill-stack-saturation-gym-ceiling-confirms-improvement-loop.md`. |
-| **Next-Gen Gym Scenarios (Post-Ceiling)** | ✅ DESIGNED | coach | 3 new harder scenarios: triage-under-uncertainty, ghost-dependency-debug, skill-conflict-partial-fix. At `agents/gym/scenarios/`. Ready for baseline+treatment runs. |
+| **Next-Gen Gym Scenarios (Post-Ceiling)** | ✅ BASELINED (CEILING) | coach | 3 new scenarios ALL at 100% baseline (9/9 runs). Gym ceiling confirmed structural — coder handles skill-conflict, triage, ghost-dependency natively. Harder scenarios needed (multi-file cascading, 50+ file codebases, ambiguous requirements). Results at `agents/coach/workspace/post-ceiling-baselines.md`. |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -143,20 +143,21 @@ Updated: 2026-04-10 ~01:23 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (01:23)
-- **System stable**: 1 coach abort (baseline gym run interrupted after 5min — `15c5e161` still CREATED, coach will retry). All 7 non-May agents currently in heartbeat cycle.
-- **Last 2h**: Mostly heartbeat cycling. Coach designed next-gen scenarios (21min work session). Bob wrote KE-110 (6min). All others = heartbeat-only (0-1min).
-- **Coach baseline interrupted**: Work session baselining 3 new post-ceiling scenarios was aborted. Request still active — coach should pick it up this cycle.
+## Latest Cycle Summary (01:53)
+- **System stable**: All 8 non-May agents in heartbeat cycle. Zero errors in last hour (1 coach abort earlier, now resolved).
+- **Post-ceiling baselines DONE**: Coach completed 25min work session (01:24). All 3 new "harder" scenarios at 100% baseline (9/9). Gym ceiling is structural — single-session coding tasks within coder's native capability. Coach recommends: multi-file cascading bugs, 50+ file codebases, ambiguous requirements, multi-session scenarios with information loss.
+- **Gym research loop complete**: KE-110 (saturation) + post-ceiling baselines = the gym training loop has extracted all available value. Further investment requires fundamentally different scenario architecture.
+- **EXP-105 still waiting**: Zero coder/optimizer work sessions since few-shot deployment (Apr 9). Production impact measurement blocked on work sessions occurring.
 - **Optimizer + QA**: Still effectively idle. No self-initiated productive work.
 - **Amy-kimi still 🔴**: Blocked on Hao for billing.
 - **Late night**: System in steady state. No May dispatches needed.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao since Mar 24**.
-- **P0**: **Run next-gen gym scenarios** — Coach designed 3 new harder scenarios. Next step: baseline + treatment runs. Coach should self-dispatch this.
 - **P1**: **Address system-wide idle state** — Optimizer + QA burning cycles with zero output. Options: (a) Hao provides new direction, (b) self-assign from research projects, (c) spin down idle agents.
-- **P1**: **Present research sprint results to Hao** — KE-101 meta-analysis is the capstone. H-091 (P(H)=0.99), 17+ experiments, gym graduation, EXP-098 landmark, EXP-103/104 confabulation findings, EXP-107/108 gym-production gap + saturation.
+- **P1**: **Present research sprint results to Hao** — KE-101 meta-analysis is the capstone. H-091 (P(H)=0.99), 17+ experiments, gym graduation, EXP-098 landmark, EXP-103/104 confabulation findings, EXP-107/108 gym-production gap + saturation. Post-ceiling baselines reinforce conclusion.
 - **P1**: **Anti-confab brief ready for review** — At `agents/shared/may-agent-docs/design/anti-confabulation-deployment.md`. Revised with EXP-104 confound.
+- **P1**: **Gym next phase** — Current gym is saturated. Needs architectural redesign for harder scenarios (50+ files, multi-session, ambiguous requirements). This is a Bob design task.
 - **P2**: `analyze-failures` cron DB bug — persistent but non-critical. Could dispatch to tech-lead.
 - **P2**: Federation design ready for Hao review
 - **P2**: Pre-merge review gate Phase 2 (auto-review)
