@@ -4981,4 +4981,6 @@ Verdict: **PASS** — no code/test regressions observed.
   - `test/coach-setup.test.ts`: fails because coach workflows import `bun:sqlite` (e.g. `agents/coach/workflows/gym-helpers.ts:12`), which Vitest (Node) cannot resolve.
   - `test/research-db.test.ts`: integration test asserts `< 5` total parse errors, but current `agents/shared/knowledge` produces **exactly 5** (`expect(totalErrors.length).toBeLessThan(5)` fails).
 
+2026-04-10T18:53Z — Proactive scan after new commits up to 7faf2ca. Read `agents/coach/workflows/gym-helpers.ts` (imports `bun:sqlite`) and `agents/may/handlers/evaluate-sessions.ts` (best-effort emit; includes pipeline-dedup rekeying). Ran gates: `./node_modules/.bin/tsc --noEmit` PASS; `./node_modules/.bin/vitest --run` FAIL (same 3 tests). Findings: (1) CRITICAL for test suite: Node-based Vitest cannot load coach workflows due to `bun:sqlite` usage; (2) IMPORTANT: research-db integration test now failing at threshold (exactly 5 errors). Verdict: CONDITIONAL pending fixing these failures.
+
 Verdict: **CONDITIONAL** — Typecheck is clean and failures look like environment/data drift rather than the cron patch itself; cannot PASS until Vitest suite is green.
