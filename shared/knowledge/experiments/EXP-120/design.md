@@ -1,6 +1,6 @@
 # EXP-120: Progressive Externalization for Discovery Tasks — Design
 
-**Status**: COMPLETE — See results.md
+**Status**: COMPLETE ✅ POSITIVE (directional) — See results.md
 **Date**: 2026-04-10
 **Author**: Coach
 **Type**: A/B Experiment (Gym Scenario)

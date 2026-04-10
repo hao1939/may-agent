@@ -1,0 +1,52 @@
+{
+  "scenario": "kb-integration-discovery-progressive",
+  "agent": "bob",
+  "lab_fork": null,
+  "passed": false,
+  "checks": [
+    {
+      "name": "h042-probability",
+      "passed": true,
+      "message": "H-042.md updated: P(H)=0.72, has EXP-142 evidence section"
+    },
+    {
+      "name": "ke017-evidence",
+      "passed": false,
+      "message": "KE-017.md issues: hasEXP142=false, hasLatencyFinding=true"
+    },
+    {
+      "name": "ke023-status",
+      "passed": true,
+      "message": "KE-023-cache-architecture.md updated to VALIDATED"
+    },
+    {
+      "name": "index-entry-added",
+      "passed": true,
+      "message": "INDEX.md has new KE-071 entry referencing EXP-142"
+    },
+    {
+      "name": "priority-reordered",
+      "passed": true,
+      "message": "H-042 moved to High Priority section"
+    },
+    {
+      "name": "synth008-updated",
+      "passed": true,
+      "message": "SYNTH-008.md updated with EXP-142 findings"
+    },
+    {
+      "name": "todo-marked-complete",
+      "passed": true,
+      "message": "EXP-142 todo item marked as complete"
+    },
+    {
+      "name": "all-files-modified",
+      "passed": false,
+      "message": "Only 6/7 files correctly updated: ke017-evidence"
+    }
+  ],
+  "summary": "6/8 checks passed",
+  "agent_status": "completed",
+  "duration": "187.2s",
+  "gym_root": "/app/agents/gym/scenarios"
+}
