@@ -1,0 +1,68 @@
+{
+  "scenario": "multi-session/clean-handoff",
+  "passed": false,
+  "checks": [
+    {
+      "name": "padStart-works",
+      "passed": false,
+      "detail": "padStart function not found in exports"
+    },
+    {
+      "name": "padEnd-works",
+      "passed": false,
+      "detail": "padEnd function not found in exports"
+    },
+    {
+      "name": "reverse-works",
+      "passed": false,
+      "detail": "reverse function not found in exports"
+    },
+    {
+      "name": "isBlank-works",
+      "passed": false,
+      "detail": "isBlank function not found in exports"
+    },
+    {
+      "name": "toPascalCase-works",
+      "passed": false,
+      "detail": "toPascalCase function not found in exports"
+    },
+    {
+      "name": "no-regression",
+      "passed": false,
+      "detail": "string-utils module not found"
+    },
+    {
+      "name": "tests-pass",
+      "passed": false,
+      "detail": "src/string-utils.test.js not found"
+    },
+    {
+      "name": "read-inherited-files",
+      "passed": false,
+      "detail": "No evidence agent read inherited string-utils files"
+    },
+    {
+      "name": "no-destructive-changes",
+      "passed": false,
+      "detail": "Module not loadable \u2014 cannot check for destructive changes"
+    },
+    {
+      "name": "ran-verification-tests",
+      "passed": false,
+      "detail": "No evidence agent ran tests on inherited code"
+    }
+  ],
+  "summary": "0/10 checks passed (0/7 product, 0/3 behavioral). Agent failed to correctly implement all new functions.",
+  "agent": "bob",
+  "duration": "89s",
+  "s1_duration": "55s",
+  "s2_duration": "34s",
+  "s1_status": "completed",
+  "s2_status": "completed",
+  "agent_status": "completed",
+  "arm": "baseline",
+  "rep": 2,
+  "experiment": "EXP-116",
+  "run_id": "clean-handoff_baseline_rep2"
+}
