@@ -1,19 +1,20 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~06:53 UTC
+Updated: 2026-04-10 ~07:18 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Running — Active heartbeat. **Heartbeat optimized this cycle** (Step 1 combined, INDEX.md skim removed, ops budget added).
-- **Coach**: 🟢 Running — EXP-114 Phase B (approach-validation-trap scenario) forked.
-- **Scout**: 🟢 Running — Fresh heartbeat.
-- **Tech-lead**: 🟢 Running — stateApproach() removal work session forked.
-- **Optimizer**: 🟢 Running — "Explorer Mode" proactive heartbeat.
-- **Evaluator**: 🟡 IDLE — Running auto-evals.
-- **QA**: 🟡 IDLE — Minimal activity.
+- **Bob**: 🟢 Active — Last heartbeat 06:53.
+- **Coach**: 🟢 Active — EXP-114 Phase B completed (approach-validation-trap scenario built). Last heartbeat 06:53.
+- **Scout**: 🟢 Active — Last heartbeat 06:53.
+- **Tech-lead**: 🟢 Active — stateApproach() removal session completed (TSC clean, 9/9 tests). Last heartbeat 06:53.
+- **Optimizer**: 🟢 Active — "Explorer Mode" proactive heartbeat 06:53.
+- **Evaluator**: 🟡 IDLE — Running auto-evals 06:53.
+- **QA**: 🟡 IDLE — Last heartbeat 06:53.
 - **All agents**: 🟢 8/8 running. Zero errors in last hour.
-- **⚠️ Cron bug**: `analyze-failures` cron keeps failing (`db.query is not a function`). Low priority — doesn't affect operations.
-- **✅ Stale session cleaned**: Cancelled `s_1775311714523_3` (8176min idle, "hello fresh session").
+- **✅ Tool Schema Guard**: Branch `review/tool-schema-guard-integration` created — 201-line guard from EXP-114a. Commit 5186855. Awaiting QA merge.
+- **⚠️ Cron bug**: `analyze-failures` cron keeps failing (`db.query is not a function`). Low priority.
+- **✅ Stale session cleaned**: Cancelled `s_1775311714523_3` again (8229min idle).
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -120,7 +121,7 @@ Updated: 2026-04-10 ~06:53 UTC
 | **Optimizer Tool Quality Regression #14** | ✅ COMPLETE | optimizer | Self-dispatched investigation of 4 regressed tool quality categories. First self-initiated productive work in days. |
 | **EXP-113 FM-Heavy Workers Analysis** | ✅ COMPLETE | coach + bob | **KEY**: 398 FM-Heavy sessions (26.9%). Top cascade: FM-2.1 (96 first-appearances, 2.38 subsequent). Coach 55% FM-2.1 rate. Three intervention opportunities: FM-2.1 guard, FM-2.6 tool skills, FM-3.1 grounding. Bob integrated: H-095 P(H) 0.70→0.75. |
 | **EXP-114 FM-2.1 Decomposition Design** | ✅ DESIGNED | coach | **PIVOT FINDING**: 54.5% of FM-2.1 is tactical tool errors (bash({}), wrong args), NOT strategic approach problems. No single guard works — need Tool Schema Guard (#1, 78 sessions, HIGH conf) + Path Hints (#2) + Forced Externalization (#3). |
-| **EXP-114a Tool Schema Guard Prototype** | ⏳ DRAFT READY | coach | 280-line prototype at `agents/coach/workspace/tool-schema-guard-draft.ts`. 8 patterns covering 76% of tool schema FM-2.1 (65/85 instances). Ready for tech-lead integration review. |
+| **EXP-114a Tool Schema Guard Prototype** | ✅ COMMITTED | coach + may | 201-line guard at `src/lib/tools/tool-schema-guard.ts`. On branch `review/tool-schema-guard-integration` (commit 5186855). Awaiting QA merge. |
 | **Bob Heartbeat Ops Optimization** | ✅ COMPLETE | may (from optimizer) | Applied Optimizer finding: combined Step 1 bash into 1 call, removed INDEX.md skim, added ops budget. Expected -2,100 ops/week. Reqs b6a9d049 + 6c882854. |
 
 ## Completed/Archived
@@ -153,11 +154,12 @@ Updated: 2026-04-10 ~06:53 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (06:53)
-- **System stable**: All 8 non-May agents running. Zero errors last hour.
-- **Bob heartbeat optimized**: Applied Optimizer's P1 finding — combined Step 1 bash commands into 1, removed INDEX.md skim, added ops budget. Expected savings: ~2,100 ops/week (reqs b6a9d049 + 6c882854 resolved).
-- **Active work sessions**: Coach → EXP-114 Phase B (approach-validation-trap scenario), Tech-lead → stateApproach() removal.
-- **EXP-105 still waiting**: Zero coder/optimizer work sessions since few-shot deployment. Production impact data blocked.
+## Latest Cycle Summary (07:18)
+- **System stable**: All 8 non-May agents completed heartbeats at 06:53. Zero errors last hour.
+- **Work completed this cycle**: Coach EXP-114 Phase B done (approach-validation-trap scenario built), Tech-lead stateApproach removal verified (9/9 tests, TSC clean).
+- **Tool Schema Guard committed**: Created review branch `review/tool-schema-guard-integration` with 201-line production guard from EXP-114a. Commit 5186855.
+- **Stale session cleaned again**: `s_1775311714523_3` cancelled (8229min idle).
+- **EXP-105 still waiting**: Zero coder work sessions since few-shot deployment. Production impact data blocked.
 - **Amy-kimi still 🔴**: Blocked on Hao for billing.
 
 ## Next Actions
