@@ -1498,3 +1498,21 @@ Production multi-agent data management system with "three-track knowledge archit
 ### ORACLE-SWE — Oracle Information Signals for SWE Agents — arXiv:2604.07789
 
 | 2604.07789 | ORACLE-SWE: Quantifying the Contribution of Oracle Information Signals on SWE Agents (Li et al., Apr 2026) | ★★★★ GOOD — Isolates and quantifies oracle information signal contributions (reproduction test, regression test, edit location, execution context, API usage) on SWE agent performance. Evaluates ideal contribution when information is perfectly obtained. Useful for understanding which signals actually help agents vs noise. Relevant to our signal-contribution analysis for verification architecture. (not deep-dived) |
+
+## 2026-04-10 — Session 603: CR#335 Context Pollution & Inherited Confabulation Synthesis
+
+### Do LLMs Benefit From Their Own Words? — arXiv:2602.24287
+
+| 2602.24287 | Do LLMs Benefit From Their Own Words? (Huang, Choshen, Astudillo, Broderick, Andreas — MIT/Meta, Feb 2026) | ★★★★★ CRITICAL — **Cross-referenced in CR#335.** First rigorous demonstration that LLMs over-condition on their own prior responses ("context pollution"), propagating errors/hallucinations/stylistic artifacts across turns. 36.4% of multi-turn prompts are self-contained. Omitting assistant-side history reduces context by up to 10x with no quality loss. Selective context-filtering approach outperforms full-context and user-only baselines. Directly names and quantifies our "inherited context authority" phenomenon. Actionable: our compaction should selectively omit assistant reasoning that isn't needed. (ref: DD-739) |
+
+### CodeDelegator: Context Pollution via Role Separation — arXiv:2601.14914
+
+| 2601.14914 | CodeDelegator: Mitigating Context Pollution via Role Separation in Code-as-Action Agents (Fei, Chen, Pan, Zheng, Song — Jan 2026) | ★★★★ EXCELLENT — **Cross-referenced in CR#335.** Introduces EPSS (Ephemeral-Persistent State Separation): persistent Delegator maintains strategic oversight while ephemeral Coders get clean context per sub-task. Debugging traces and intermediate failures are isolated from new work. Key design principle: shield new work from prior failures through architectural separation. Directly applicable to our session-based agent model where compacted context carries forward failure traces. (ref: DD-740) |
+
+### Darwinian Memory System — arXiv:2601.22528
+
+| 2601.22528 | Darwinian Memory System (DMS): A Training-Free Self-Regulating Memory System for GUI Agent Evolution (Mi et al., Jan 2026) | ★★★½ GOOD — **Cross-referenced in CR#335.** Context pollution from static accumulation of outdated experiences drives GUI agents into hallucination. Evolutionary pruning with utility-driven natural selection, active pruning of suboptimal paths, inhibition of high-risk plans. 18.0% success rate improvement, 33.9% execution stability improvement. Validates that monotonically-growing knowledge bases need active pruning — relevant to our knowledge library maintenance. (ref: DD-741) |
+
+### OrgForge: Hallucination Propagation in Multi-Agent Corpora — arXiv:2603.14997
+
+| 2603.14997 | OrgForge: A Multi-Agent Simulation Framework for Verifiable Synthetic Corporate Corpora (Flynt — Mar 2026) | ★★★★ EXCELLENT — **Cross-referenced in CR#335.** Empirical proof that "chaining propagates fabricated facts faithfully across documents without correcting them." 0.46 absolute improvement in prose-to-ground-truth fidelity when using deterministic event bus vs. chained LLM generation. Each document in a chain looks locally plausible but systemic consistency fails. Exactly our inherited confabulation: Agent A confabulates → writes to persistent state → Agent B inherits and faithfully reproduces the fabrication. (ref: DD-742) |
