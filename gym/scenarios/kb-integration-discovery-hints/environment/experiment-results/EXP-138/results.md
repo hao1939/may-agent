@@ -1,24 +1,12 @@
-# EXP-138: Combined Cache-First and Batch Processing
+# EXP-138: Batch Size Optimization
 
-**Status**: Complete
 **Date**: 2026-04-01
-**Hypothesis**: Combining cache-first (H-042) with batch processing (H-038) will 
-yield better results than either approach alone.
+**Status**: Complete
+**Hypothesis**: H-038 (follow-up — optimal batch size)
+
+## Summary
+Tested batch sizes 10, 50, 100, 500, 1000 across 5,000 operations each. Batch size 100 is optimal, balancing error rate reduction with acceptable latency.
 
 ## Results
-
-**Verdict**: PARTIALLY SUPPORTED — Combined approach is worse than cache-first alone.
-
-- Cache-first + batching: 45% latency reduction, 2.3x memory
-- Cache-first only: 62% projected reduction, 1.4x memory (needs EXP-142 confirmation)
-- Batching only: 12% reduction, 1.0x memory
-
-## Recommendation
-
-Proceed with cache-first as primary strategy. Use batch processing only for 
-non-latency-sensitive bulk operations.
-
-## Follow-up
-
-EXP-142 will validate the cache-first projections. If confirmed, this settles
-the cache vs batch debate definitively.
+- See KE-055 for detailed results.
+- Recommendation: Use batch size 100 for production deployment.

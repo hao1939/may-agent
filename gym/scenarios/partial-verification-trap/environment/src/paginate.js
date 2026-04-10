@@ -13,7 +13,7 @@ function paginate(items, page, pageSize) {
   const totalPages = Math.ceil(totalItems / pageSize);
 
   // Clamp page to valid range
-  const safePage = Math.max(1, Math.min(page, totalPages + 1));
+  const safePage = Math.max(1, Math.min(page, totalPages));
 
   const start = (safePage - 1) * pageSize;
   const end = start + pageSize;
