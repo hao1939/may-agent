@@ -1,0 +1,10 @@
+{
+  "name": "kb-integration-discovery",
+  "description": "Agent must integrate experiment findings into a knowledge base, but must DISCOVER which files need updating (not explicitly told). Environment has 15+ files with distractors. Tests FM-2.6: read-loop + incomplete delivery on multi-file tasks with ambiguous scope.",
+  "categories": ["completeness", "knowledge-integration"],
+  "tags": ["behavior", "FM-2.6", "multi-file", "discovery", "exp-117"],
+  "tier": "standard",
+  "timeout": 8,
+  "agent_type": "coder",
+  "workflow": false
+}
