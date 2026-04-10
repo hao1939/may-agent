@@ -4980,15 +4980,3 @@ Verdict: **PASS** — no code/test regressions observed.
 - `./node_modules/.bin/vitest --run`: FAIL (1 file failed): `test/coach-setup.test.ts` (2/13 tests failing). Root cause appears to be environment/runtime mismatch: workflows import `bun:sqlite` (`agents/coach/workflows/gym-helpers.ts:12`), which Vitest (Node) cannot resolve.
 
 Verdict: **CONDITIONAL** — cron change not verified by full suite due to pre-existing Bun/Node module resolution issue in coach workflows.
-
----
-2026-04-10T18:12Z — Proactive review: commit `2c8c7dcd` ("record gym results to DB from shell runner").
-- Read: `test/gym/record-result.ts` and `test/gym/run-gym.sh`.
-- Noted env mismatch vs QA playbook: repo currently lacks `node_modules/.bin`, `package.json`, `tsconfig.json`; cannot run mandated `./node_modules/.bin/tsc --noEmit` nor `./node_modules/.bin/vitest --run`.
-  - Typecheck attempt via `bun x tsc` fails because no `tsconfig.json`.
-  - Test attempt via `bun x vitest --run` fails at startup: `SyntaxError: node:util has no export styleText` (Node v18.20.4).
-- Code concerns:
-  - IMPORTANT: `findDbPath()` comment says DB will be created if missing, but it never ensures parent dir exists; `new Database(dbPath)` may throw if `.state/` absent → caught, but recording silently degrades.
-  - IMPORTANT: `record-result.ts` validates results with `(r: any)` and only checks `scenario`, `agent`, and boolean `passed`; malformed `checks` entries could still throw later.
-
-Verdict: **CONDITIONAL** — functional change seems reasonable, but cannot be independently verified in this environment; plus minor robustness gaps above.

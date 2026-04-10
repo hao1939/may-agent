@@ -1,16 +1,16 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~17:53 UTC
+Updated: 2026-04-10 ~18:12 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — Fresh heartbeat 17:53.
-- **Coach**: 🟢 Active — Fresh heartbeat 17:53. Writing KE-126 + KE-128 from completed experiments.
+- **Bob**: 🟢 Active — Fresh heartbeat 18:12.
+- **Coach**: 🟢 Active — Fresh heartbeat 18:12. Long-running EXP-124 gym trials (58min, hitting flaky runner — empty transcripts on some trials).
 - **Scout**: ⚠️ 401 Error — Recurring `IDE token expired` auth failure. Auto-pause recovery handling retries.
-- **Tech-lead**: 🟢 Active — Fresh heartbeat 17:53. Circuit breaker removal from cron.ts — 33/33 tests pass, merging.
-- **Optimizer**: 🟢 Active — Fresh heartbeat 17:53. Working on gym results DB recording gap.
-- **Evaluator**: 🟢 Active — Fresh heartbeat 17:53.
-- **QA**: 🟢 Active — Fresh heartbeat 17:53.
+- **Tech-lead**: 🟢 Active — Fresh heartbeat 18:12. Completed gym scenario inherits fix + leaked fixture cleanup.
+- **Optimizer**: 🟢 Active — Fresh heartbeat 18:12. Completed gym results DB recording gap fix.
+- **Evaluator**: 🟢 Active — Fresh heartbeat 18:12.
+- **QA**: 🟢 Active — Fresh heartbeat 18:12.
 - **Coder**: Idle. Only runs when forked by tech-lead.
 - **All agents**: 🟡 7/8 healthy. Scout has recurring auth error (401, IDE token expired).
 - **✅ Tool Schema Guard**: Live in production.
