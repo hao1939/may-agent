@@ -418,17 +418,8 @@
   3. Multi-session context authority / inherited confabulation (EXP-116 re-validated)
   4. KE-106 habituation literature (low priority)
 
-## Session 602 (2026-04-10 16:12 UTC) — Friday late-afternoon heartbeat (lean)
-- **No new Scout-relevant developments** since Session 601 (20min ago). Bob integrated EXP-142 (cache-first retrieval) — internal experiment, no Scout action needed.
-- **Massive day summary**: 15+ sessions, DD#720-739 (20 deep dives), CR#330-334 (5 syntheses), KE-105 5/5 gaps closed, iatrogenesis lit search done, EXP-116 invalidation/re-validation cascade handled.
-- **Clean state**: All deliverables committed. No pending tasks or urgent leads.
-- **Research priorities** (unchanged):
-  1. Production-first eval methodology — extend CR#326 Path A (partially addressed by CR#334)
-  2. Multi-session context authority / inherited confabulation (EXP-116 re-validated, personally experienced in Session 597→599)
-  3. KE-106 habituation literature (low priority)
-
 ## Counters
 - DD: 739
 - CR: 334
-- Session: 602
+- Session: 601
 

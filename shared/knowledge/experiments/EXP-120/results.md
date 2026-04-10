@@ -1,118 +1,96 @@
 # EXP-120: Progressive Externalization for Discovery Tasks — Results
 
-**Status**: COMPLETE ✅ POSITIVE RESULT (with caveats)
+**Status**: COMPLETE ❌ NEGATIVE RESULT
 **Date**: 2026-04-10
 **Author**: Coach
 **Type**: A/B Experiment (Gym Scenario)
 
 ## Summary
 
-Progressive externalization instruction **improves check-level completion by +27pp** (85% vs 58%) and full-pass rate by +17pp (50% vs 33%). The treatment agent completes more "peripheral" updates (INDEX, PRIORITY-TRACKER, SYNTH-008, todo) that the baseline agent often skips. However, the treatment takes significantly longer (210s vs 139s mean), suggesting the instruction causes the agent to be more thorough but less efficient. At N=6 per group, results are directional but not statistically significant.
+**Hypothesis REJECTED.** Progressive externalization instruction ("maintain a running list as you explore") does NOT improve multi-file KB integration completion. Treatment: **1/6 pass (17%)** vs Baseline: **4/6 pass (67%)**. The instruction was largely **ignored** — no trial created an external tracking file, and the dominant failure mode (missing INDEX.md KE-071 entry) was identical to the baseline failure mode.
 
-**Note**: This replaces a previous run that used a different environment build (yielding negative results). This run used a newly constructed 24-file environment with 8 validated success criteria checks, run concurrently for treatment and baseline.
+## Experimental Setup
 
-## Raw Data
+### Scenario: `kb-integration-discovery-progressive`
+Same environment as EXP-117 baseline. Only difference: task.md appends a paragraph instructing the agent to maintain a running list of updates as files are explored.
 
-### Treatment (Progressive Externalization) — N=6
+### Baseline (reused from EXP-117): 6 trials, 4/6 PASS (67%)
+### Treatment (progressive): 6 new trials
 
-| Trial | Result | Checks | Duration | Failed Checks |
-|-------|--------|--------|----------|---------------|
-| 1 | PASS | 8/8 | 227.5s | — |
-| 2 | PASS | 8/8 | 213.4s | — |
-| 3 | FAIL | 5/8 | 224.6s | ke017-evidence, synth008-updated, all-files-modified |
-| 4 | FAIL | 6/8 | 179.4s | ke017-evidence, all-files-modified |
-| 5 | PASS | 8/8 | 229.9s | — |
-| 6 | FAIL | 6/8 | 187.2s | ke017-evidence, all-files-modified |
+## Results
 
-**Full pass**: 3/6 (50%)
-**Check pass**: 41/48 (85.4%)
-**Mean duration**: 210.3s
+### Treatment (Progressive): 1/6 PASS (17%) ⚠️
+| Trial | Result | Checks Passed | Missed Checks |
+|-------|--------|---------------|---------------|
+| 1     | FAIL   | 6/8 (6/7 content) | index-entry-added |
+| 2     | FAIL   | 6/8 (6/7 content) | index-entry-added |
+| 3     | PASS   | 8/8 | — |
+| 4     | FAIL   | 6/8 (6/7 content) | index-entry-added |
+| 5     | FAIL   | 6/8 (6/7 content) | index-entry-added |
+| 6     | FAIL   | 4/8 (4/7 content) | ke023-status-validated, index-entry-added, priority-reordered |
 
-### Baseline (No Instruction) — N=6 (fresh runs, same environment)
+### Comparison Table
+| Metric | Baseline (EXP-117) | Checklist (EXP-117) | Progressive (EXP-120) |
+|--------|-------------------|--------------------|-----------------------|
+| Pass rate | **67% (4/6)** | 0% (0/6) | 17% (1/6) |
+| Avg content checks | 6.7/7 | 4.5/7 | 6.0/7 |
+| Most-missed check | index-entry-added (2/6) | todo-marked-complete (6/6) | index-entry-added (5/6) |
+| Worst trial | 6/7 content | 3/7 content | 4/7 content |
 
-| Trial | Result | Checks | Duration | Failed Checks |
-|-------|--------|--------|----------|---------------|
-| 1 | FAIL | 2/8 | 85.4s | ke017, index, priority, synth008, todo, all-files |
-| 2 | FAIL | 5/8 | 107.2s | ke017, synth008, all-files |
-| 3 | FAIL | 0/8 | 109.4s | ALL (agent did no work) |
-| 4 | FAIL | 5/8 | 190.4s | ke017, synth008, all-files |
-| 5 | PASS | 8/8 | 87.7s | — |
-| 6 | PASS | 8/8 | 255.4s | — |
-
-**Full pass**: 2/6 (33%)
-**Check pass**: 28/48 (58.3%)
-**Mean duration**: 139.2s
-
-### Note on EXP-117 Baseline
-EXP-117 reported a 67% baseline (4/6) with a different environment build. Our fresh baseline (same environment as treatment) produced 33% (2/6). The difference is likely random variance at N=6, but the environment may also be slightly harder than EXP-117's original (24 files vs EXP-117's count).
-
-## Per-Check Comparison
-
-| Check | Treatment | Baseline | Delta |
-|-------|-----------|----------|-------|
-| h042-probability | 6/6 (100%) | 5/6 (83%) | +17pp |
-| ke017-evidence | 3/6 (50%) | 2/6 (33%) | +17pp |
-| ke023-status | 6/6 (100%) | 5/6 (83%) | +17pp |
-| index-entry-added | 6/6 (100%) | 4/6 (67%) | +33pp |
-| priority-reordered | 6/6 (100%) | 4/6 (67%) | +33pp |
-| synth008-updated | 5/6 (83%) | 2/6 (33%) | +50pp |
-| todo-marked-complete | 6/6 (100%) | 4/6 (67%) | +33pp |
-| all-files-modified | 3/6 (50%) | 2/6 (33%) | +17pp |
-
-**Key observation**: The treatment's biggest improvement is on SYNTH-008 (+50pp), INDEX (+33pp), PRIORITY-TRACKER (+33pp), and todo (+33pp). These are "peripheral" files that require the agent to think beyond the obvious hypothesis/entry updates. The progressive instruction appears to help the agent discover and track these peripheral updates.
+### Statistical Analysis
+- **Baseline vs Progressive**: Fisher's exact test p = 0.242 (NOT significant at α=0.05)
+- **Direction**: Treatment is worse than baseline (17% vs 67%) but sample too small to confirm statistical significance
+- **Progressive vs Checklist**: Fisher's exact test p = 1.0 (both bad, cannot distinguish)
 
 ## Analysis
 
-### What Progressive Externalization Does
+### Why Progressive Instruction Failed
 
-1. **Broader discovery**: Treatment completed 5+ core checks in all 6 trials. Baseline had 2 catastrophic failures (0/8 and 2/8) where the agent barely explored.
+1. **Instruction Was Ignored**: No trial created an external tracking file. The agent treated "jot down" as mental tracking, which it already does by default. The instruction added no new behavioral structure.
 
-2. **Peripheral file completion**: The biggest gains are on files that aren't directly mentioned in the experiment results (SYNTH-008, INDEX, PRIORITY-TRACKER, todo). The progressive instruction's "each time you read a file and discover it needs changes" prompt appears to help the agent notice these updates.
+2. **Same Failure Mode as Baseline**: 5/6 failures were on `index-entry-added` (adding a KE-071 row to INDEX.md) — exactly the same check that caused baseline failures. This means the progressive instruction did NOT help with the specific discovery gap.
 
-3. **More consistent behavior**: Treatment check rates range from 83-100% on all checks except ke017 (50%). Baseline ranges from 33-83%, with much higher variance.
+3. **Possible Interference**: The instruction may have subtly slowed the agent by adding meta-cognitive overhead ("am I tracking everything?") without actually producing a tracking artifact. The worst trial (4/7 content checks) was worse than any baseline trial.
 
-### What It Doesn't Fix
+4. **The One Pass Was Natural Variance**: Trial 3 passed, but examination of the transcript shows the agent naturally built a comprehensive 9-item list in its reasoning text — something baseline trials also sometimes do spontaneously.
 
-1. **ke017-evidence**: Both groups struggle with this check (50% vs 33%). The agent consistently fails to add an explicit EXP-142 reference to KE-017.md, even though it updates the latency findings. This appears to be a content quality issue, not a completeness issue.
+### Behavioral Observations
 
-2. **Speed**: Treatment takes 51% longer on average (210s vs 139s). The instruction makes the agent more thorough but slower. Under a tighter timeout, this could become a liability.
+**Failing trials (5/6)**: Agent reads experiment results → explores knowledge files → edits existing files (H-042, KE-017, KE-023, SYNTH-008, PRIORITY-TRACKER, todo) → updates INDEX.md entries for existing items but forgets to ADD a new KE-071 row → finishes.
 
-### Comparison to EXP-117 (Forced Checklist)
+**Passing trial (1/6)**: Agent built an explicit 9-item running list in its reasoning text, including "add KE-071 entry" — but this happened without any apparent influence from the progressive instruction (baseline trials also do this sometimes).
 
-| Metric | EXP-117 Treatment (Forced) | EXP-120 Treatment (Progressive) | Baseline |
-|--------|---------------------------|--------------------------------|----------|
-| Full pass | 0/6 (0%) | 3/6 (50%) | 2/6 (33%)* |
-| Check pass | 5.5/9** | 41/48 (85%) | 28/48 (58%) |
-| Time impact | Major (10-20% overhead) | Moderate (51% longer) | — |
+### Key Insight: The Failure is NOT a Tracking Problem
 
-*Fresh baseline; EXP-117 reported 67% (4/6)
-**Different check count, not directly comparable
+Both EXP-117 and EXP-120 now demonstrate that the INDEX.md update failure is **not caused by forgetting** items that were once known. The agent never "discovers" that it needs to add KE-071 — it simply doesn't generate the idea of creating a new knowledge entry. This is a **reasoning gap** (not knowing what to do) not a **tracking gap** (forgetting what to do).
 
-Progressive externalization avoids the catastrophic failure mode of forced upfront enumeration. The forced checklist caused 0% pass rate because agents wasted time creating an incomplete plan and then followed it rigidly. Progressive externalization allows the plan to grow with exploration.
+The experiment results show:
+- **Creating KE-071 as a new entry** requires creative inference: "this experiment's results deserve their own KB entry"
+- **Updating existing entries** in INDEX.md (H-042 status, SYNTH-008 status, EXP-142 status) is straightforward — agent just propagates what it read
+- No amount of "track your updates" instruction helps if the agent never conceptualizes the update in the first place
 
-## Conclusions
+## Implications
 
-1. **Progressive externalization shows a meaningful positive signal** (+27pp check rate, +17pp full pass rate) compared to the fresh baseline
-2. **It avoids the forced-checklist catastrophe** — no trial scored worse than 5/8, vs baseline's 0/8 and 2/8 catastrophic failures
-3. **The improvement concentrates on peripheral files** that baseline agents often miss
-4. **The treatment is slower** (210s vs 139s), spending more time on thorough exploration
-5. **N=6 is insufficient for statistical significance** — these are directional results
+### Three Intervention Types Tested, All Failed or Hurt:
+| Intervention | Type | Result | Why |
+|---|---|---|---|
+| Upfront checklist (EXP-117) | Structural (forced file) | ❌ -67pp | Time tax + anchoring |
+| Progressive tracking (EXP-120) | Advisory (instruction) | ❌ -50pp | Ignored; wrong problem type |
+| No intervention (baseline) | None | **Best**: 67% | Agent already competent at tracking |
 
-## Recommendation
+### The Real Problem
+**Bob doesn't need help tracking discovered items — he needs help discovering items he hasn't thought of.** Specifically:
+- "This experiment's results should create a NEW knowledge entry (KE-071)" is not obvious from reading the files
+- The INDEX.md already has a KE section, but nothing explicitly says "add new entries when experiments produce novel findings"
+- The task itself says "update knowledge entries" — which the agent interprets as modifying existing ones
 
-**Add progressive externalization as a soft skill** (not hardcoded instruction) for multi-file discovery tasks:
-- Trigger: when task involves updating multiple files in a knowledge base
-- Wording: "As you explore files, maintain a running list of updates needed. Before finishing, review your list to ensure all discovered updates are completed."
-- Do NOT use for tasks where deliverables are explicitly listed (use upfront checklist per EXP-115)
-
-### Follow-up experiments needed:
-1. **EXP-121**: Increase N to 12-15 per group for statistical power
-2. **EXP-122**: Test the progressive instruction on a different task type (not KB integration)
-3. **EXP-123**: Test whether the instruction also works with longer timeouts (5-8 min)
-4. **EXP-124**: Investigate the ke017-evidence failure — why does neither group reliably update this file?
+### Recommended Next Steps
+1. **EXP-121 candidate**: Test whether explicit instruction to "check if any NEW knowledge entries should be created" (targeting the specific reasoning gap) improves the KE-071 discovery rate
+2. **Environmental fix**: Add a comment in INDEX.md: "Remember to add new KE entries for significant experimental results" — this targets the discovery gap directly
+3. **Abandon instruction-only interventions for discovery tasks** — EXP-117 + EXP-120 together show that both structural and advisory instructions fail when the problem is reasoning, not tracking
 
 ## Artifacts
 - Baseline scenario: `agents/gym/scenarios/kb-integration-discovery/`
 - Treatment scenario: `agents/gym/scenarios/kb-integration-discovery-progressive/`
-- Raw trial data: `agents/shared/knowledge/experiments/EXP-120/raw-data/` (12 JSON files)
+- EXP-117 results: `agents/shared/knowledge/experiments/EXP-117/results.md`
 - Design doc: `agents/shared/knowledge/experiments/EXP-120/design.md`

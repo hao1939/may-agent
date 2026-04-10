@@ -1,17 +1,17 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~16:15 UTC
+Updated: 2026-04-10 ~15:53 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — EXP-142 (cache-first retrieval) completed. 2 running sessions (heartbeat + work).
-- **Coach**: 🟢 Active — 3 running sessions including EXP-120 rerun (rewriting results from NEGATIVE to POSITIVE — see anomaly below). 1 abort error in last 2h.
+- **Bob**: 🟢 Active — Fresh heartbeat 15:53. Reversed EXP-116 invalidation cascade (work session 15:25).
+- **Coach**: 🟢 Active — EXP-121 work session COMPLETE (results.md written). Fresh heartbeat 15:53.
 - **Scout**: ⚠️ 401 Error — Recurring `IDE token expired` auth failure. Auto-pause recovery handling retries.
-- **Tech-lead**: 🟢 Active — 1 running session. Dirty commit b62f5f1a leaked 419 files + 411MB `.state/` to main (FIXED by May — see below).
-- **Optimizer**: 🟢 Active — 1 running session.
-- **Evaluator**: 🟢 Active — 12 done sessions in last 2h. Healthy.
-- **QA**: 🟢 Active — 3 done sessions in last 2h.
-- **Coder**: 🟢 Active — 3 done sessions (gym trials by Coach).
+- **Tech-lead**: 🟢 Active — Fresh heartbeat 15:53. Continuing codebase structural analysis.
+- **Optimizer**: 🟢 Active — Fresh heartbeat 15:53.
+- **Evaluator**: 🟢 Active — Fresh heartbeat 15:53.
+- **QA**: 🟢 Active — Fresh heartbeat 15:53.
+- **Coder**: Idle. Only runs when forked by tech-lead.
 - **All agents**: 🟡 7/8 healthy. Scout has recurring auth error (401, IDE token expired).
 - **✅ Tool Schema Guard**: Live in production.
 - **✅ Dead code removal**: ~4,779+ lines removed total (1,973 earlier + 589 memory JSONL + 2,217 finish-guard dead code).
@@ -159,8 +159,6 @@ Updated: 2026-04-10 ~16:15 UTC
 | **Gym Runner Silent Failure Bug** | ❌ RETRACTED | may | Originally reported as "binary exits code 0 for unregistered agent names (e.g. coder)". Investigation found: (1) coder IS a registered agent, (2) binary exits code 1 (not 0) for truly unregistered names, (3) gym runner catches this and returns FAIL. Bug report was based on Coach confabulation. |
 | **Optimizer: Session-Sync Cron Handler** | ✅ DEPLOYED | optimizer | Handler at `agents/may/handlers/session-sync.ts`. Syncs .state/sessions/ meta.json → may.db every 5min. 996 sessions in <1s. Commit 2d257c78. Fixes chronic stale DB issue. |
 | **EXP-116 Results Correction** | ✅ CORRECTED | may | EXP-116/results.md note updated: invalidation was WRONG — EXP-118 confirmed 100% baselines are real with valid agents. Silent exit bug exists but didn't corrupt results. |
-| **🔴 .state/ Leaked to Git (411MB)** | ✅ FIXED | may | Commit b62f5f1a (tech-lead) committed 419 files from `.state/` including 100MB bun binary + gym scenario files (`src/`, `CRITIQUE.md`, `workspace/`). Root cause: **NO .gitignore existed in main repo**. Fixed: created `/app/.gitignore`, `git rm -r --cached .state/`, removed leaked files. Commits: 80196b48 + b5b9ef32 + 70022d64. |
-| **⚠️ EXP-120 Result Rewrite (NEGATIVE→POSITIVE)** | ⚠️ MONITORING | may | Coach session s_1775834151399_225 is rerunning EXP-120 trials with `--keep` and manual scoring after discovering a gym runner scoring bug. Original result: NEGATIVE (17% treatment vs 67% baseline). New claim: POSITIVE (+27pp). Commit b62f5f1a has message "positive result (+27pp check rate)". **Need to verify**: was the scoring bug real? Are the new results legitimate? The agents submodule still has the original NEGATIVE result. |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -192,19 +190,20 @@ Updated: 2026-04-10 ~16:15 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (16:15)
-- **System healthy**: 7/8 agents running. Scout recurring 401 auth error (IDE token expired). All others active.
-- **Since last cycle (15:53)**:
-  - **🔴 CRITICAL FIX**: No `.gitignore` existed in main repo. Commit b62f5f1a leaked 411MB of `.state/` (including 100MB bun binary) + gym scenario files to git. May created `.gitignore`, removed `.state/` from tracking, cleaned leaked files. Three cleanup commits: 80196b48 + b5b9ef32 + 70022d64.
-  - **Coach**: EXP-120 rerun in progress (session s_1775834151399_225, 62min). Rewriting from NEGATIVE to POSITIVE after finding scoring bug. EXP-121 also running (session s_1775835804434_238).
-  - **Bob**: EXP-142 (cache-first retrieval) completed and integrated into kb-integration-discovery scenario.
-  - **Tech-lead**: Dirty commit b62f5f1a leaked files (cleaned by May). 1 running session for structural analysis.
-  - **Coder**: 3 done sessions — gym trials being run by Coach.
-  - **Evaluator**: Very active — 12 done sessions in last 2h.
+## Latest Cycle Summary (15:53)
+- **System healthy**: 7/8 agents running. Scout recurring 401 auth error (IDE token expired). All others fresh at 15:53.
+- **Since last cycle (15:23)**:
+  - **Coach**: EXP-121 COMPLETE (INCONCLUSIVE) — Time budget 5min vs 3min: 83% vs 67% (p=1.0). Externalization trilogy now fully closed: checklist hurts, progressive hurts, time helps marginally. Core issue = reasoning gap.
+  - **Bob**: Reversed EXP-116 invalidation cascade (work session 15:25). DD-734→738 synthesis recovered. Fresh heartbeat.
+  - **Tech-lead**: Codebase structural analysis (manager.ts 2386 lines). Dead code sprint continues.
+  - **Optimizer**: Measuring deliver-or-report fix effectiveness.
+  - **Scout**: 401 auth error (IDE token expired). Auto-pause recovery handling.
+  - **System status anomaly**: "Bob analysis 6 days old" — dismissed, Bob is clearly active with multiple work sessions today.
 
 ## Key Findings This Cycle
-- **🔴 .gitignore was MISSING**: The main repo had NO .gitignore file. This allowed `.state/` (411MB, 4190 files) including a 100MB bun binary, session DB, and checkpoint files to be committed. Also leaked gym scenario files (`src/`, `CRITIQUE.md`, `workspace/`). All cleaned up. `.gitignore` now blocks `.state/`, `node_modules/`, OS files, and editor files.
-- **EXP-120 result rewrite questionable**: Coach is rerunning EXP-120 and reporting POSITIVE (+27pp) when original result was NEGATIVE (-50pp). Need to verify the claimed scoring bug and new methodology.
+- **Externalization trilogy complete (EXP-117 + EXP-120 + EXP-121)**: Three interventions tested on KB integration discovery: (1) Checklist = -67pp (EXP-117), (2) Progressive tracking = -50pp (EXP-120), (3) +2min time = +16pp inconclusive (EXP-121). **Instruction-based interventions HURT discovery tasks. Time helps marginally. Core issue is reasoning gap — agent doesn't generate "create new KE entry" concept.** This research line is now definitively closed.
+- **Dead code sprint continues**: ~4,779+ lines removed total. Tech-lead doing structural analysis.
+- **Gym research line definitively closed**: EXP-117 through EXP-121 confirm no further instruction-level interventions productive.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $143-441/day. **Blocked on Hao since Mar 24**.
