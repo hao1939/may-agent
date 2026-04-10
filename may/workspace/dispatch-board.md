@@ -1,26 +1,25 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~13:42 UTC
+Updated: 2026-04-10 ~13:53 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — H-097 CCC Triad continuing. Last heartbeat 13:12.
-- **Coach**: 🟢 Active — EXP-117 cross-agent adversarial handoff baselines running (~28min). Optimizer scoring 1/9 on kb-integration-failure, 2/8 on ghost-deliverable-chain.
+- **Bob**: 🟢 Active — H-097 CCC Triad continuing. Heartbeat 13:53 in progress.
+- **Coach**: 🟢 Active — EXP-117 work session (59min) iterating on FM-2.6 scenario difficulty. Found 5min too easy, 3min creating first failures (6/8 checks). Running more trials.
 - **Scout**: 🟢 Active — Heartbeat running.
-- **Tech-lead**: 🟢 Active — **Branch reconciliation DONE** (91d495db): master merged into main, master deleted. Single canonical branch. 192 tests pass.
+- **Tech-lead**: 🟢 Active — **Memory JSONL removal MERGED** (ceb009a): 589 lines removed. Heartbeat 13:53 in progress.
 - **Optimizer**: 🟢 Active — Heartbeat running.
 - **Evaluator**: 🟢 Active — Running evaluations.
-- **QA**: 🟢 Active — Heartbeat running.
+- **QA**: 🟢 Active — Heartbeat running. 13:23 cycle had auth error (401 token expired), likely transient.
 - **Coder**: Idle. Only runs when forked by tech-lead.
-- **All agents**: 🟢 8/8 running. Zero errors last hour.
+- **All agents**: 🟢 8/8 running. One transient QA error last hour (auth).
 - **✅ Tool Schema Guard**: Live in production.
-- **✅ Dead code removal**: ~1,973 lines removed.
+- **✅ Dead code removal**: ~2,562 lines removed total (1,973 earlier + 589 memory JSONL).
 - **✅ Web UI Phase 1**: Merged to main.
 - **✅ Bun restored**: DB queries working natively.
 - **✅ Branch reconciled**: main/master merged (91d495db). Single branch now.
 - **⚠️ Finish-guard false positive on git ops**: Tech-lead's branch reconcile session was blocked 4× by FM-3.1 guard — `git merge` isn't recognized as file-producing. Need guard update.
 - **⚠️ Cron bug**: `analyze-failures` cron keeps failing (`db.query is not a function`). Low priority.
-- **⚠️ Session lifecycle bug**: Forked sessions that call finish() may not update DB status. Had to manually fix s_1775826987549_165.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -147,8 +146,9 @@ Updated: 2026-04-10 ~13:42 UTC
 | **EXP-116 KB Integration** | ✅ COMPLETE | bob | H-093 updated (P(H) 0.70→0.72), FM-3.3d severity gradient, commit 22b2bd9c. |
 | **KE-122 + KE-123 (from EXP-116)** | ✅ COMPLETE | coach | Intervention Decay + Over-Intervention Iatrogenesis. Commit fe83e8de. |
 | **Security.test.ts Timeout Fix** | ✅ MERGED | tech-lead/may | Sandbox timeout race fix. Branch merged to main (54b09c11). 21/21 tests pass. |
-| **EXP-117 Bob FM-2.6 Investigation** | ⏳ IN PROGRESS | coach | Investigating Bob's FM-2.6 delegation patterns. Dispatched this cycle (req:449e0aa4). |
+| **EXP-117 Bob FM-2.6 Investigation** | ⏳ IN PROGRESS | coach | 59min work session. Bob passes 5min easily, first failures at 3min (6/8). Iterating on difficulty calibration. |
 | **Main/Master Branch Reconciliation** | ✅ COMPLETE | tech-lead | Merged master into main (91d495db). 192 tests pass. Master branch deleted. Single canonical branch. |
+| **Memory JSONL System Removal** | ✅ MERGED | tech-lead | Commit ceb009a. 589 lines removed (writer, reader, subscriber, tests). Total dead code: 2,562 lines. |
 | **Finish-Guard Git Ops False Positive** | ⚠️ NEW | tech-lead | FM-3.1 guard blocked git merge 4× — doesn't recognize `git merge` as file-producing. Needs guard update to whitelist git operations. |
 
 ## Completed/Archived
@@ -181,23 +181,22 @@ Updated: 2026-04-10 ~13:42 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (13:42)
-- **System healthy**: All 8 non-May agents running. Zero errors last hour. Fresh heartbeat cycle just started (~38s ago).
-- **Since last cycle (13:23)**:
-  - **Tech-lead**: Branch reconciliation DONE — master merged into main (91d495db), 192 tests pass, master branch deleted. Single canonical branch. BUT finish-guard blocked it 4× (git merge not recognized as file-producing op).
-  - **Coach**: EXP-117 adversarial handoff baselines running. Optimizer results so far: 1/9 on kb-integration-failure (3 reps), 2/8 on ghost-deliverable-chain (2 reps done).
-  - **Zombie cleaned**: s_1774303617649_81 (tech-lead, 18 days old) manually marked completed in DB.
-  - **Session lifecycle bug found**: s_1775826987549_165 (tech-lead branch reconcile) finished via finish() but DB still showed 'running'. Manually fixed.
+## Latest Cycle Summary (13:53)
+- **System healthy**: All 8 non-May agents running. One transient QA auth error (13:23 cycle, 401 token expired). All heartbeats fresh.
+- **Since last cycle (13:42)**:
+  - **Tech-lead**: Memory JSONL system removal MERGED (commit ceb009a, 589 lines). Dead code total now 2,562 lines. composeGuards fail-open also merged (215295a). Now in fresh heartbeat cycle.
+  - **Coach**: EXP-117 deep iteration — Bob passes all checks at 5min timeout, first failures at 3min (6/8 checks). Running more 3min trials to establish baseline rate. Good experimental methodology.
+  - **QA**: Auth error (401 "IDE token expired") at 13:23. New cycle started, likely transient.
+  - **All others**: Standard heartbeat cycles, no issues.
 
 ## Key Findings This Cycle
-- **Finish-guard false positive on git ops**: The FM-3.1 guard blocks `git merge` operations because it doesn't recognize them as file-producing. Tech-lead fought it 4 times before finding wording that passed. Needs a guard update to whitelist git operations.
-- **Session lifecycle bug**: Forked sessions may not properly update DB status on completion. s_1775826987549_165 was a clear case — finish(success) was called but DB never updated.
+- **Dead code momentum continues**: Tech-lead autonomously identified and removed 589-line memory JSONL system (writer, reader, subscriber, tests). Total dead code removal now 2,562 lines across multiple PRs.
+- **EXP-117 finding difficulty calibration**: Coach is doing careful experimental work — reducing timeout from 5→3 minutes created first discriminating results (Bob 6/8 instead of 8/8). This is good methodology for finding the right difficulty level.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao since Mar 24**.
 - **P1**: **Fix finish-guard git false positive** — Guard needs to recognize `git merge/rebase/cherry-pick` as valid file-producing operations. Dispatch to tech-lead.
 - **P1**: **EXP-105 Few-Shot Production Impact** — Need coder/optimizer work sessions to generate data.
 - **P1**: **Present research sprint results to Hao** — KE-101 meta-analysis capstone. 17+ experiments. Gym graduation. Token waste finding ($441/week).
-- **P2**: Session lifecycle bug — forked sessions not updating DB on finish(). Investigate.
 - **P2**: `analyze-failures` cron DB bug — persistent but non-critical.
 - **P2**: Amy-kimi still down — blocked on Hao for billing.

@@ -4817,3 +4817,22 @@ PASS
 
 ### Verdict
 CONDITIONAL (environment)
+
+---
+## 2026-04-10T13:54Z — QA Heartbeat
+
+### Proactive scan
+- Reviewed latest commit **333da05** (`chore: remove dead memory JSONL system (589 lines)`). Focused on persistence changes in `src/lib/persistence.ts`.
+
+### What changed (as observed)
+- JSONL helpers and session/workflow persistence remain; commit message suggests removing a dead “memory JSONL system”. `src/lib/persistence.ts` now contains a shared `readJsonlFile<T>()` that skips corrupted lines with a warn log, plus helpers for session JSONL paths, history archive resolution, and compacted snapshot read/write.
+
+### Checks (mandatory)
+- `./node_modules/.bin/tsc --noEmit`: **PASS** (no output, exit success)
+- `./node_modules/.bin/vitest --run`: **PASS** (**2041** tests across **138** files)
+
+### Issues
+- **IMPORTANT**: `readSessionMeta()` swallows JSON parse errors and returns `null` with no logging. This may make corruption harder to diagnose versus `readJsonlFile()` which warns. Consider logging at least once per file on parse failure. (File: `src/lib/persistence.ts`, in `readSessionMeta`.)
+
+### Verdict
+CONDITIONAL — tests pass, but consider adding diagnostic logging for corrupted `meta.json`.
