@@ -1,7 +1,7 @@
 # KE-125: Forced Deliverable Enumeration Fails on Discovery Tasks Under Time Pressure
 
 **Status**: Active
-**Source**: EXP-117, EXP-120, EXP-121 (externalization trilogy on kb-integration-discovery scenario)
+**Source**: EXP-117, EXP-120, EXP-121 (externalization trilogy), EXP-122 (environmental hints)
 **Date**: 2026-04-10
 **Qualifies**: KE-121 (forced externalization prevents misinterpretation), KE-007 (structural enforcement)
 **Extends**: H-085 boundary conditions (5th boundary: discovery overhead)
@@ -18,8 +18,13 @@
 | Upfront checklist (EXP-117) | Structural | 0% (0/6) | **-67pp** |
 | Progressive tracking (EXP-120) | Advisory | 17% (1/6) | **-50pp** |
 | Extended time budget, 5 min (EXP-121) | Environmental | 83% (5/6) | **+16pp** (NS) |
+| Environmental hint in INDEX.md (EXP-122) | Environmental | 67% (4/6) | **0pp** (null) |
 
-EXP-117 (p=0.030) is statistically significant. EXP-120 (p=0.242) trends in the same direction but sample is too small for significance. EXP-121 (5 min timeout, p=1.0) shows a suggestive +16pp improvement but is not significant. Together these form a clear pattern: **instruction-based externalization hurts discovery tasks; more time helps marginally; the core failure is a reasoning gap**.
+EXP-117 (p=0.030) is statistically significant. EXP-120 (p=0.242) trends in the same direction but sample is too small for significance. EXP-121 (5 min timeout, p=1.0) shows a suggestive +16pp improvement but is not significant. EXP-122 (environmental hint, p=1.0) shows zero improvement. Together these form a clear pattern: **instruction-based externalization hurts discovery tasks; environmental hints have no effect; more time helps marginally; the core failure is a reasoning gap that text-based interventions cannot close**.
+
+## EXP-122 Update: Environmental Hints Have No Effect
+
+An HTML comment hint in INDEX.md ("When experiments validate new findings, add a new KE entry here with the next available ID") had zero effect: 4/6 pass (67%), identical to baseline. The hint was positioned exactly where the agent edits INDEX.md, yet the agent still missed KE-071 at the same rate. This eliminates the "right-time, right-place cue" hypothesis. The failure is not "didn't know" (the EXP-142 results already tell the agent to add KE-071) — it's either stochastic reasoning variation or sequencing/time-budget dependent.
 
 ## EXP-121 Update: Time Budget Is Not the Primary Limiter
 
