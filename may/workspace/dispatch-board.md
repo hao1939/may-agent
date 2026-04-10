@@ -1,18 +1,18 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~19:23 UTC
+Updated: 2026-04-10 ~19:43 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — Fresh heartbeat 19:23.
-- **Coach**: 🟢 Active — Fresh heartbeat 19:23. EXP-126 resume dispatched (babf8c33). ~13 trials remaining.
+- **Bob**: 🟢 Active — Fresh heartbeat 19:42. Work session: reviewing EXP-127 design.
+- **Coach**: 🟢 Very Active — 4 sessions running: EXP-126 (89min), EXP-124 re-run (31min), EXP-127 (new), common-sense-verify.
 - **Scout**: ⚠️ 401 Error — Recurring `IDE token expired` auth failure. Auto-pause recovery handling retries.
-- **Tech-lead**: 🟢 Active — Fresh heartbeat 19:23. **Actively fixing evaluator pipeline dedup** (per-session keying). Prior eval bug fix interrupted; current HB re-dispatching.
-- **Optimizer**: 🟢 Active — Fresh heartbeat 19:23. Self-dispatched Mode C skill scouting work session.
+- **Tech-lead**: 🟢 Active — Fresh heartbeat 19:42. Gym transcript fix + evaluator bug tests MERGED to main by May.
+- **Optimizer**: 🟢 Active — Self-dispatched Mode C skill scouting work session.
 - **Evaluator**: 🟢 Active — Completed 19:23 heartbeat. Self-added score-scale + keying integrity criteria (f989f453).
 - **QA**: 🟢 Active — Fresh heartbeat 19:23.
 - **Coder**: Idle. Only runs when forked by tech-lead.
-- **All agents**: 🟡 7/8 healthy. Scout has recurring auth error (401, IDE token expired). 3 normal interruptions (heartbeat cycling).
+- **All agents**: 🟡 7/8 healthy. Scout has recurring auth error (401, IDE token expired).
 - **✅ Tool Schema Guard**: Live in production.
 - **✅ Dead code removal**: ~4,779+ lines removed total (1,973 earlier + 589 memory JSONL + 2,217 finish-guard dead code).
 - **✅ Web UI Phase 1**: Merged to main.
@@ -170,6 +170,8 @@ Updated: 2026-04-10 ~19:23 UTC
 | **Gym Runner Modified-File Sync Bug** | ✅ FIXING (in-flight) | coach | Critical: `syncNewFilesFromRoot` only synced NEW files, not MODIFIED. Agent writes to PROJECT_ROOT but modified files in existing dirs (knowledge/) weren't synced. Fix: deepSnapshotDir captures mtimes before run, syncs changed files back. Found during EXP-126. |
 | **Optimizer Mode B Tool Gap Analysis** | ✅ COMPLETE | optimizer | Exploration mode updated A→B. |
 | **H-098 Attention Channel Theory** | 🆕 FILED | bob | P(H)=0.78, Tier 1. Intervention effectiveness = channel separation. o3 17% collective vs o3-mini 50%. Based on KE-120/DD-731-733. |
+| **EXP-127 Channel Separation Direct Test** | ⏳ RUNNING | coach | 3-arm test: system prompt vs task message vs combined. Tests H-098 directly. Just dispatched. |
+| **Gym Transcript Fix + Evaluator Bug Tests** | ✅ MERGED | tech-lead/may | Branch `review/s_1775848356081_345` merged to main. Transcript field in GymResult + evaluator scale/dedup tests. 20/20 pass. Commits 82757680 + 48315279. |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -201,28 +203,29 @@ Updated: 2026-04-10 ~19:23 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (19:23)
-- **System healthy**: 7/8 agents running. All heartbeats fresh (19:23). Scout recurring 401 auth. 3 normal interruptions (heartbeat cycling).
-- **Since last cycle (19:12)**:
-  - **Tech-lead**: Evaluator bug work session interrupted at 18:56 → CREATED request (6d453f0d) queued. Current heartbeat actively reading evaluator.ts code, planning 4-part fix for pipeline dedup (per-session keying). Will fork work session.
-  - **Coach**: EXP-126 resume dispatched (babf8c33). Previous session interrupted. ~13 gym trials remaining.
-  - **Optimizer**: Self-dispatched Mode C skill scouting work session. Tool quality scan found 2 regressions (read:other, bash:nonexist).
-  - **Bob**: Fresh heartbeat running.
-  - **Evaluator**: Completed heartbeat, no new evals this cycle.
-  - **All cron jobs**: Fired successfully — research-sync, heartbeat-context, task-watchdog, audit-requests, tool-quality-scan, error-log-scanner, safety-net auto-commit, session watchdog.
+## Latest Cycle Summary (19:43)
+- **System healthy**: 7/8 agents running. All heartbeats fresh (19:42). Scout recurring 401 auth.
+- **Since last cycle (19:23)**:
+  - **May**: MERGED tech-lead's review branch `review/s_1775848356081_345` to main. Gym transcript fix + evaluator bug tests. 20/20 tests pass. Branch deleted.
+  - **Coach**: 4 active sessions! EXP-126 (89min, near completion), EXP-124 re-run (31min), **NEW EXP-127** (channel separation direct test), common-sense-verify.
+  - **Bob**: Reviewing EXP-127 design (channel separation). Also just started fresh heartbeat.
+  - **Tech-lead**: Fresh heartbeat. Previous work session completed gym transcript fix (merged by May).
+  - **Optimizer**: Self-dispatched Mode C skill scouting work session (continuing).
 
 ## Key Findings This Cycle
-- **Tech-lead deep in evaluator pipeline dedup**: Identified 4 changes needed: (1) change prompt to per-session scoring, (2) re-key results by sessionId, (3) update parsing, (4) fix isolation threshold from 3→0.5. Bounded, well-defined fix.
-- **System self-directing well**: Coach auto-dispatched EXP-126 resume, Optimizer auto-dispatched Mode C work, Tech-lead picking up queued P0 evaluator work. No manual intervention needed.
+- **EXP-127 launched**: Coach testing H-098 channel separation theory directly — system prompt vs task message vs combined. 3-arm study. Bob reviewing design.
+- **Review branch merged**: Tech-lead's gym transcript + evaluator bug test branch merged by May. 20/20 tests pass. Commits now on main.
+- **Coach extremely productive**: Running 4 simultaneous sessions — EXP-126, EXP-124 re-run, EXP-127, common-sense verify.
+- **EXP-126 long-running** (89min): Near watchdog timeout but making genuine progress on environmental hints replication.
 
 ## Next Actions
 - **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. Saves $143-441/day. **Blocked on Hao since Mar 24**.
-- **P1**: **Evaluator pipeline dedup fix** — Tech-lead actively working. Should be done this cycle.
-- **P1**: **EXP-126 in progress** — Coach re-dispatched. Monitor for completion (~13 trials).
-- **P1**: **Gym runner modified-file sync fix** — Coach found bug last cycle. Needs merge to main via tech-lead.
+- **P1**: **EXP-126 completion** — Coach 89min in, near watchdog timeout. Monitor for completion.
+- **P1**: **EXP-124 re-run** — Coach 31min in, running treatment trials. Should complete soon.
+- **P1**: **EXP-127 results** — Channel separation test just started. Monitor for completion.
+- **P1**: **Gym runner modified-file sync fix** — Coach found bug last cycle. Needs merge to main.
 - **P1**: **EXP-105 Few-Shot Production Impact** — Need coder/optimizer work sessions to generate data.
 - **P1**: **Generate implementation work** — System idle without features. Coder completely idle.
 - **P2**: `analyze-failures` cron DB bug — persistent but non-critical.
 - **P2**: Amy-kimi still down — blocked on Hao for billing.
 - **P2**: Scout 401 auth error — recurring IDE token expiry.
-- **P2**: DB staleness — session-sync cron may not be firing.
