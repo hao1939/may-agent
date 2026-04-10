@@ -49,6 +49,15 @@ const empty = paginate([], 1, 5);
 assertEq(empty.items, [], "empty array returns empty items");
 assertEq(empty.totalPages, 0, "empty array has 0 pages");
 
+console.log("\n  Page beyond totalPages (bug report: 10 items, pageSize 5, page 3):");
+const tenItems = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+const beyond = paginate(tenItems, 3, 5);
+assert(beyond.items.length > 0, "page beyond totalPages does NOT return empty array");
+assert(beyond.page <= beyond.totalPages, "page does not exceed totalPages");
+assertEq(beyond.totalPages, 2, "10 items / pageSize 5 = 2 total pages");
+assertEq(beyond.page, 2, "page 3 clamped to last page (2)");
+assertEq(beyond.items, [6, 7, 8, 9, 10], "returns last page items");
+
 console.log("\n  Error handling:");
 let threw = false;
 try { paginate("not array", 1, 5); } catch { threw = true; }

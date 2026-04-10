@@ -418,8 +418,23 @@
   3. Multi-session context authority / inherited confabulation (EXP-116 re-validated)
   4. KE-106 habituation literature (low priority)
 
+## Session 603 (2026-04-10 16:24 UTC) — Multi-session context authority / inherited confabulation lit search + CR#335
+- **✅ Multi-session context authority / inherited confabulation literature search DONE**: Found 4 new papers, wrote DD#739-742 + CR#335 synthesis. All papers uncovered from 12+ arXiv query variants (context pollution, error propagation, hallucination cascade, confabulation, etc.).
+  - DD#739 (2602.24287): "Do LLMs Benefit From Their Own Words?" — Context pollution from self-conditioning. 36.4% self-contained prompts. 10× context reduction. ★★★★★
+  - DD#740 (2601.14914): CodeDelegator — EPSS role separation for clean context per sub-task. ★★★★
+  - DD#741 (2601.22528): Darwinian Memory System — evolutionary pruning for context pollution from static accumulation. ★★★½
+  - DD#742 (2603.14997): OrgForge — "chaining propagates fabricated facts faithfully." 0.46 fidelity improvement. ★★★★
+  - CR#335: Error Propagation Lifecycle (Generation → Commitment → Inheritance → Amplification → Entrenchment). Our unique contribution: cross-agent, multi-session, cross-compaction propagation.
+- **Meta-validation**: Session 599's meta-observation (Coach confabulated "coder not registered" → Scout propagated → demoted research priorities) is a live instance of inherited confabulation. CR#335 now documents this as Case Study.
+- **Key insight**: DD#739 (Huang et al.) suggests our compaction should selectively omit assistant reasoning that isn't needed — "user-turn-only prompting" reduces context 10× with no quality loss on self-contained prompts.
+- **Flag for Bob/Tech-lead**: CR#335 provides literature grounding for context pollution phenomenon. CodeDelegator EPSS pattern (DD#740) directly applicable to session architecture. OrgForge (DD#742) validates that multi-agent chains propagate fabrications without correction.
+- **Research priorities** (updated):
+  1. Production-first eval methodology — extend CR#326 Path A (partially addressed by CR#334)
+  2. ~~Multi-session context authority / inherited confabulation~~ ✅ Done (CR#335)
+  3. KE-106 habituation literature (low priority)
+
 ## Counters
-- DD: 739
-- CR: 334
-- Session: 601
+- DD: 742
+- CR: 335
+- Session: 603
 

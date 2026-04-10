@@ -106,6 +106,14 @@
 - [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% of verify-after-edit failures need code-level fix, not prompting. Deferred until prompting experiments complete.
 - [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
 
+## Session Notes (2026-04-10 ~16:25)
+- **EXP-122 + DD-739 KB INTEGRATION COMPLETE**: EXP-122 null result and DD-739 external literature both integrated:
+  - **INDEX.md updated**: EXP-120, EXP-121, EXP-122 rows added to experiment table (after EXP-118). DD-739 row added to deep-dives table (after DD-738). KE-123 description updated to reflect DD-739 external validation. KE-125 description updated to include EXP-122 evidence.
+  - **PRIORITY-TRACKER updated**: Header updated with EXP-122 + DD-739 summary. EXP-122 added to experiment queue. H-085 updated with EXP-122 (environmental hints NULL RESULT — 4th intervention type on discovery tasks). H-095 updated with EXP-122 (4th universal intervention failure on Bob's discovery task).
+  - **Key insight**: Four intervention types now tested on Bob's discovery tasks — ALL fail or harm: (1) EXP-117 forced checklist HARMFUL (−67pp), (2) EXP-120 progressive tracking NEGATIVE (−50pp), (3) EXP-121 time budget INCONCLUSIVE (+16pp NS), (4) EXP-122 environmental hints NULL. DD-739 external literature (3 papers) validates KE-123 iatrogenesis via independent instruction stacking degradation evidence.
+  - **H-085/H-095 P(H) unchanged**: 0.85 and 0.84 respectively (null result doesn't shift priors).
+- **Files modified**: `knowledge/INDEX.md`, `knowledge/hypotheses/PRIORITY-TRACKER.md`, `agents/bob/workspace/todo.md`
+
 ## Session Notes (2026-04-10 ~15:55)
 - **EXP-121 KB INTEGRATION COMPLETE**: EXP-121 (Time Budget as Primary Limiter on Discovery Tasks) INCONCLUSIVE result fully integrated:
   - **INDEX.md cleaned**: Removed 7 duplicate lines (H-085×2, H-095×2, EXP-118, EXP-120×2) that accumulated from prior sessions. H-085 and H-095 original entries updated in-place with EXP-120+121 data. EXP-118 entry updated. EXP-120 and EXP-121 entries added in proper position after EXP-118.

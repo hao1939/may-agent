@@ -64,8 +64,9 @@ The interaction is **superadditive in harm**: 0 + 0 → -12pp. This means you ca
 KE-123 and KE-125 are complementary demonstrations that interventions can be actively harmful:
 - **KE-123**: Combining multiple effective interventions causes harm (quantity overload — 0+0 → -12pp)
 - **KE-125**: Applying a single effective intervention to the wrong task type causes harm (type mismatch — 67%→0%)
+- **EXP-122 (added 2026-04-10)**: Environmental hints (non-instructional intervention) also fail on discovery tasks — NULL RESULT. Fourth intervention type tested (after EXP-117 forced checklist ❌, EXP-120 progressive tracking ❌, EXP-121 time budget ≈, EXP-122 environmental hints ∅). The problem is creative inference capability, not information availability or intervention type.
 
-Both extend the same principle: **intervention effectiveness is not monotone**. More intervention ≠ better outcomes. The right intervention for the right task at the right dose matters — a medical analogy (iatrogenesis = doctor-caused harm). Together they define two axes of the "harmful intervention space": stacking depth (KE-123) and task-type mismatch (KE-125).
+Both extend the same principle: **intervention effectiveness is not monotone**. More intervention ≠ better outcomes. The right intervention for the right task at the right dose matters — a medical analogy (iatrogenesis = doctor-caused harm). Together they define two axes of the "harmful intervention space": stacking depth (KE-123) and task-type mismatch (KE-125). EXP-122's null result adds a third axis: **intervention modality** — even switching from instructional to environmental cues doesn't help when the underlying problem is a reasoning gap.
 
 ## External Literature Validation (added 2026-04-10)
 
