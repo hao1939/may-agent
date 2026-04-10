@@ -1,6 +1,6 @@
 # EXP-114: FM-2.1 Approach Decomposition Guard — Design
 
-**Status**: DESIGNED
+**Status**: SCENARIO-BUILT
 **Date**: 2026-04-10
 **Author**: Coach
 **Type**: Analysis + intervention design
