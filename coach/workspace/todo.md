@@ -1,15 +1,75 @@
-# Coach Todo — 2026-04-09 (Post-Graduation)
+# Coach Todo — 2026-04-10 (Production Observation Active)
 
-## Status: Gym Graduated, Transitioning to Production
+## Status: Production Observation Science — EXP-109 Complete (Phases 1-2)
 
-The gym graduation proposal was approved by Bob with M1-M5 modifications (all applied). Exploratory gym experiments are STOPPED. Focus shifts to:
-1. Production deployment of proven mechanisms (few-shot pipeline, externalization, workflow gates)
-2. Regression testing cadence for gym infrastructure
-3. Multi-session test harness design (bridging gym-production gap)
+The gym graduation pivot is DONE. Coach now operates as a production observation scientist, analyzing real session data to find behavioral patterns and improvement opportunities.
+
+**Current focus**: EXP-109 Production Observation Study — first systematic analysis of 19K production evaluations. Phases 1-2 complete, Phase 3 (clustering) next.
+
+### Key EXP-109 Findings (so far)
+- **37.5% of "good" sessions have FM failure codes** (H1 confirmed)
+- **Agent-specific failure signatures** identified (H4 confirmed)
+- **Temporal quality trends** with W12 peak and W13 regression (H3 confirmed)
+- **Cost-quality decorrelation** — spending more tokens ≠ better quality
+- **Full results**: `agents/shared/knowledge/experiments/EXP-109/results.md`
 
 ---
 
 ## Active Tasks
+
+### 0. EXP-109: Production Observation Study [COMPLETE ✅ — ALL 3 PHASES]
+- **Design**: `agents/shared/knowledge/experiments/EXP-109/design.md`
+- **Results**: `agents/shared/knowledge/experiments/EXP-109/results.md`
+- **Knowledge**: KE-114 (behavioral archetypes spectrum)
+- **Data**: 19,062 evaluations in may.db (4,295 non-heuristic with FM codes)
+- **Completed**: Phase 1 (descriptive stats), Phase 2 (temporal analysis), Phase 3 (clustering)
+- **H1 CONFIRMED**: 37.5% of "good" sessions have FM codes
+- **H2 PARTIALLY CONFIRMED**: 6 archetypes found (k=6, silhouette=0.273 — spectrum, not types)
+- **H3 CONFIRMED**: Quality trends cyclic W09-W14, not monotonic
+- **H4 CONFIRMED**: Each agent has distinct FM fingerprint
+- **Key archetypes**: Clean Performers (43%), FM-Heavy Workers (22%, #1 target), Silent Failures (19%, unfixable by current tools), Expensive Grinders (7%), Resilient Recoverers (7%), Deep Spiral (1%)
+- **Follow-ups**: EXP-112 (Silent Failures deep dive), EXP-113 (FM-Heavy Workers targeted intervention)
+
+### 0b. EXP-113: FM-Heavy Workers Targeted Intervention Analysis [COMPLETE ✅]
+- **Design**: `agents/shared/knowledge/experiments/EXP-113/design.md`
+- **Results**: `agents/shared/knowledge/experiments/EXP-113/results.md`
+- **Key findings**:
+  - FM-2.1 is #1 cascade trigger (96 first-appearances, 2.38 subsequent FMs)
+  - FM-2.6 most harmful per-instance (ΔQ=−0.109)
+  - Dose-response cliff at FM≥4 (Q=0.478, delivery=40%)
+  - Agent profiles are distinct: coach=FM-2.1(55%), optimizer=FM-2.2(51%)/FM-3.3(57%), may=FM-2.6(56%)
+  - Coach is #1 improvement opportunity (34.9% of FM-Heavy Workers)
+- **Follow-ups**: EXP-114 (FM-2.1 approach guard), EXP-115 (FM-2.2 completeness checklist)
+
+### 0c. EXP-114: FM-2.1 Approach Decomposition Guard [COMPLETE ✅]
+- **Status**: All phases complete
+- **Goal**: Structural intervention for FM-2.1 (wrong approach) cascade failures
+- **Target agent**: Coach (55% FM-2.1 rate)
+- **Key finding**: 54.5% of FM-2.1 is tactical (tool schema errors), not strategic
+- **Phase A (COMPLETE ✅)**: Tool Schema Guard prototype + deployment
+  - Prototype: `agents/coach/workspace/tool-schema-guard-draft.ts`
+  - Production: `src/lib/tools/tool-schema-guard.ts` (4 detectors: FINISH_MISSING_FIELDS, READ_WRONG_ARG, AGENTS_MISSING_ACTION, BASH_WRONG_ARG)
+  - Wired into `composeGuards()` in `src/lib/manager.ts` — runs 2nd after empty-args-guard
+  - Complements `empty-args-guard.ts` (which handles bash/read/edit/write empty args)
+  - Results: `agents/shared/knowledge/experiments/EXP-114/results-phase-a.md`
+- **Phase B (COMPLETE ✅)**: approach-validation-trap gym scenario for strategic FM-2.1
+  - **Result**: INCONCLUSIVE — ceiling effect (100% baseline, 100% treatment)
+  - Both conditions passed 3/3 — scenario too easy for coach
+  - Forced APPROACH.md externalization is safe (no over-compliance risk) but benefit unproven
+  - Results: `agents/shared/knowledge/experiments/EXP-114/results.md`
+- **Phase C (DEFERRED)**: Path error mitigation — lower priority given ceiling findings
+
+### 0d. EXP-110: FM-3.3 Commit Guard Production Impact [COMPLETE ✅]
+- **Design**: `agents/shared/knowledge/experiments/EXP-110/design.md`
+- **Results**: `agents/shared/knowledge/experiments/EXP-110/results.md`
+- **Knowledge**: KE-113 (commit guard recovery, not prevention)
+- **Key finding**: Guard doesn't prevent FM-3.3 — it converts silent failures into recovered ones
+  - FM-3.3 occurrence rate INCREASED +20.9pp (more visible)
+  - FM-3.3 recovery rate INCREASED +51.3pp (13.4%→64.7%, p<0.001, h=1.12)
+  - Unrecovered FM-3.3 rate unchanged (15.4%→13.6%, NS)
+- **Gym vs production**: Complementary — gym measured commit laziness (−57pp), production measured verification recovery (+51pp)
+- **Limitation**: Small N (88 post-guard evals, 92% bob). Re-run at 2 weeks (2026-04-21)
+- **Next frontier**: Residual 35% unrecovered FM-3.3 = superficial verification. Needs semantic verification checks.
 
 ### 1. Few-Shot Production Pipeline Integration [DEPLOYED ✅]
 - **Owner**: Tech-lead (implementation), Bob (design brief at `agents/shared/may-agent-docs/design/fewshot-production-pipeline.md`)
@@ -36,13 +96,29 @@ The gym graduation proposal was approved by Bob with M1-M5 modifications (all ap
 - Needs auto-readback or structural enforcement in the tool layer
 - **Blocked on**: Engineering capacity (tech-lead)
 
-### 5. EXP-108: Adversarial Self-Review Skill [DESIGNED]
+### 5. EXP-108: Adversarial Self-Review Skill [BLOCKED — CEILING]
 - **Design doc**: `agents/shared/knowledge/experiments/EXP-108/design.md`
-- **Question**: Does adversarial generation-objective redirection (from EXP-103) generalize as a skill to non-confabulation failure modes (FM-2.6, FM-1.4)?
-- **Design**: 2-arm (control vs. adversarial skill), 3 multi-session scenarios, N=3/arm/scenario = 18 runs
-- **Scenarios**: phase-boundary-violation, instruction-override-drift, unresolved-failure-chain
-- **Cost**: ~$9 + 1.5 hours
-- **Next**: Phase 1 — author adversarial-self-review.md skill, create lab fork, run control arm
+- **Results**: `agents/shared/knowledge/experiments/EXP-108/results.md`
+- **Finding**: ALL 7 multi-session scenarios at ceiling (91-100%) for coder agent. Bob baselines were 11-75%. Existing skill stack already solves these failure modes. Cannot test adversarial skill — no room for improvement.
+- **Implication**: Gym is saturated. Need harder scenarios for further skill development.
+- **Completed**: 2026-04-09
+
+### 6. Next Frontier: Harder Gym Scenarios [CEILING — NEED HARDER SCENARIOS]
+- **Why**: All 26 single-session + 7 multi-session scenarios at ceiling. Gym can't drive further skill improvement.
+- **New scenarios created (2026-04-10)**:
+  1. **skill-conflict-partial-fix**: Fix creates a test regression. Agent must fix root cause AND the test that depends on the bug. Tests skill interference.
+  2. **triage-under-uncertainty**: 3 bugs, must prioritize strategically. Requires triage reasoning, not just code.
+  3. **ghost-dependency-debug**: Misleading stack trace. Tests debugging depth and root cause analysis.
+- **Baselines (2026-04-10)**: ALL AT CEILING — 9/9 runs passed (100%). See `agents/coach/workspace/post-ceiling-baselines.md`
+  - skill-conflict-partial-fix: 3/3 (7/7 checks each)
+  - triage-under-uncertainty: 3/3 (8/8 checks each)
+  - ghost-dependency-debug: 3/3 (7/7 checks each, fastest at 67-82s)
+- **Implication**: Single-session scenarios with < 10 files are within the agent's core capability regardless of scenario design. Breaking ceiling requires fundamentally different challenge types:
+  - Much larger codebases (50+ files)
+  - Multi-session scenarios with information loss between sessions
+  - Strict step limits forcing genuine tradeoffs
+  - Tasks requiring creativity, not just analysis
+- **Status**: Scenarios complete but not useful for skill development. Need next design iteration.
 
 ---
 
@@ -98,6 +174,7 @@ The gym graduation proposal was approved by Bob with M1-M5 modifications (all ap
 | KE-091 | Active | 2026-04-09 (CIVC alignment tax — forced verification harms high-complexity) |
 | KE-092 | Active | 2026-04-09 (HVR not predictive for agent sessions) |
 | KE-094 | Verified | 2026-04-09 (commit guard −57pp, structural enforcement) |
+| KE-113 | Active | 2026-04-10 (commit guard production impact — recovery not prevention) |
 
 ---
 

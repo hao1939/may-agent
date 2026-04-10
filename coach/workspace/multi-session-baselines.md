@@ -146,3 +146,31 @@ Best targets for skill/workflow interventions (most room for improvement):
 1. Run 1 more baseline per scenario for N=3 statistical confidence
 2. Design interventions (cross-reference skill, verification gate) for top 2-3 scenarios
 3. Run treatment arms and measure improvement
+
+---
+
+## Coder Agent Results (with full skill stack)
+
+**Date**: 2026-04-09
+**Agent**: Coder (with evidence-over-narrative, verify-after-edit, investigate-and-fix, etc.)
+
+| Scenario | FM Target | Bob Avg | Coder Rep 1 | Coder Rep 2 | Coder Rep 3 | Coder Avg |
+|---|---|---|---|---|---|---|
+| ghost-deliverable-chain | FM-3.1 | 25% | 8/8 (100%) | 8/8 (100%) | 8/8 (100%) | **100%** |
+| kb-integration-failure | FM-2.6+3.1 | 11% | 9/9 (100%) | — | — | **100%** |
+| unresolved-failure-chain | FM-1.4 | 44% | 8/8 (100%) | 8/8 (100%) | — | **100%** |
+| stale-plan-drift | FM-2.6 | 75% | 8/8 (100%) | — | — | **100%** |
+| instruction-override-drift | FM-2.6 | 40% | 10/10 (100%) | 10/10 (100%) | — | **100%** |
+| phase-boundary-violation | FM-2.6 | — | 10/11 (91%) | 10/11 (91%) | CRASHED | **91%** |
+| context-fatigue-verification | FM-3.3 | — | 14/14 (100%) | 14/14 (100%) | 14/14 (100%) | **100%** |
+
+**Key finding**: All scenarios at ceiling (91–100%). The skill stack has fully addressed these multi-session failure modes.
+
+**Improvement from Bob → Coder:**
+- ghost-deliverable-chain: +75pp (25% → 100%)
+- kb-integration-failure: +89pp (11% → 100%)
+- instruction-override-drift: +60pp (40% → 100%)
+- unresolved-failure-chain: +56pp (44% → 100%)
+- stale-plan-drift: +25pp (75% → 100%)
+
+**Implication**: The gym's multi-session scenarios are saturated. Need harder scenarios for further skill development.
