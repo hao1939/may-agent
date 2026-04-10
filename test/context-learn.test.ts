@@ -1,15 +1,22 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdirSync, existsSync, rmSync } from "node:fs";
 import { join } from "node:path";
+import { tmpdir } from "node:os";
+import { randomBytes } from "node:crypto";
 import { learnFromSession } from "../src/lib/context-learn.js";
 
-const tmpDir = join(process.cwd(), "test-workspace", "context-learn-test");
-const agentDir = join(tmpDir, "test-agent");
+let tmpDir: string;
+let agentDir: string;
 
 describe("learnFromSession", () => {
   beforeEach(() => {
-    if (existsSync(tmpDir)) rmSync(tmpDir, { recursive: true });
+    tmpDir = join(tmpdir(), `context-learn-test-${randomBytes(6).toString("hex")}`);
+    agentDir = join(tmpDir, "test-agent");
     mkdirSync(agentDir, { recursive: true });
+  });
+
+  afterEach(() => {
+    if (existsSync(tmpDir)) rmSync(tmpDir, { recursive: true });
   });
 
   it("extracts npm→bun correction", () => {

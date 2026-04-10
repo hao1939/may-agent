@@ -1,15 +1,17 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdirSync, writeFileSync, readFileSync, existsSync, rmSync } from "node:fs";
 import { join } from "node:path";
+import { tmpdir } from "node:os";
+import { randomBytes } from "node:crypto";
 import { SubagentManager } from "../src/lib/index.js";
 import { createContextUpdater } from "../src/lib/session-subscribers.js";
 import { getModel } from "@mariozechner/pi-ai";
 
-const tmpDir = join(process.cwd(), "test-workspace", "context-learning-test");
-const persistDir = join(tmpDir, ".state");
-const agentsDir = join(tmpDir, "agents");
-const agentDir = join(agentsDir, "test-agent");
-const contextPath = join(agentDir, "context.md");
+let tmpDir: string;
+let persistDir: string;
+let agentsDir: string;
+let agentDir: string;
+let contextPath: string;
 
 // Minimal model for testing (won't actually call LLM)
 const testModel = {
@@ -39,11 +41,18 @@ function applyContextUpdates(
 
 describe("Context Learning", () => {
   beforeEach(() => {
-    // Clean up
-    if (existsSync(tmpDir)) rmSync(tmpDir, { recursive: true });
+    tmpDir = join(tmpdir(), `context-learning-test-${randomBytes(6).toString("hex")}`);
+    persistDir = join(tmpDir, ".state");
+    agentsDir = join(tmpDir, "agents");
+    agentDir = join(agentsDir, "test-agent");
+    contextPath = join(agentDir, "context.md");
     mkdirSync(join(agentDir, "knowledge"), { recursive: true });
     mkdirSync(join(agentDir, "workspace"), { recursive: true });
     mkdirSync(persistDir, { recursive: true });
+  });
+
+  afterEach(() => {
+    if (existsSync(tmpDir)) rmSync(tmpDir, { recursive: true });
   });
 
   it("applyContextUpdates creates context.md with added facts", () => {
