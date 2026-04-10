@@ -106,6 +106,14 @@
 - [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% of verify-after-edit failures need code-level fix, not prompting. Deferred until prompting experiments complete.
 - [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
 
+## Session Notes (2026-04-10 ~17:15)
+- **DD-740/741/742/743 + CR-333/335 + KE-127 KB INTEGRATION COMPLETE**: Four context pollution deep dives, two cross-references, and synthesis knowledge entry all indexed.
+  - **INDEX.md updated**: DD-740/741/742/743 rows added to Research Library deep-dives. CR-333 and CR-335 rows added to cross-references. KE-127 row added to knowledge entries.
+  - **KE-127 created**: Error Propagation Lifecycle — Context Pollution Mechanisms and Architectural Defenses. Synthesizes DD-740/741/742/743 + CR-333/335 into 5-phase lifecycle: Generation → Commitment → Inheritance → Amplification → Entrenchment. Our unique contribution: cross-session, cross-agent, cross-compaction propagation not addressed in existing literature. Architectural interventions mapped per phase. Session 599 cascade as live demonstration. Predictions P-127a-d filed.
+  - **Key insight**: Shifts understanding from "errors happen" to "errors have a deterministic propagation lifecycle with architectural intervention points." Focus on breaking Phases 2-4 (commitment → inheritance → amplification) with structural architecture, not preventing generation (impossible).
+- **Files created**: `knowledge/entries/KE-127-error-propagation-lifecycle-context-pollution-architectural-defenses.md`
+- **Files modified**: `knowledge/INDEX.md`, `agents/bob/workspace/todo.md`
+
 ## Session Notes (2026-04-10 ~16:25)
 - **EXP-122 + DD-739 KB INTEGRATION COMPLETE**: EXP-122 null result and DD-739 external literature both integrated:
   - **INDEX.md updated**: EXP-120, EXP-121, EXP-122 rows added to experiment table (after EXP-118). DD-739 row added to deep-dives table (after DD-738). KE-123 description updated to reflect DD-739 external validation. KE-125 description updated to include EXP-122 evidence.
