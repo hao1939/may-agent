@@ -1,7 +1,7 @@
 # KE-125: Forced Deliverable Enumeration Fails on Discovery Tasks Under Time Pressure
 
 **Status**: Active
-**Source**: EXP-117 (Bob's FM-2.6 read-loop pattern, kb-integration-discovery scenario)
+**Source**: EXP-117, EXP-120 (Bob's FM-2.6 read-loop pattern, kb-integration-discovery scenario)
 **Date**: 2026-04-10
 **Qualifies**: KE-121 (forced externalization prevents misinterpretation), KE-007 (structural enforcement)
 **Extends**: H-085 boundary conditions (5th boundary: discovery overhead)
@@ -10,17 +10,25 @@
 
 ## Finding
 
-Forced deliverable enumeration (writing a checklist before executing) **significantly worsened** performance on a multi-file KB integration task: baseline 67% (4/6) → treatment 0% (0/6), p=0.030. The treatment completed fewer files on average (5.5/9 checks vs 7.3/8 baseline).
+**Both** forced enumeration approaches harmed performance on a multi-file KB integration discovery task:
 
-This is the first evidence of forced externalization actively **harming** performance (not just failing to help as in EXP-078/EXP-098).
+| Intervention | Type | Pass Rate | Δ vs Baseline |
+|---|---|---|---|
+| No intervention (baseline) | — | **67% (4/6)** | — |
+| Upfront checklist (EXP-117) | Structural | 0% (0/6) | **-67pp** |
+| Progressive tracking (EXP-120) | Advisory | 17% (1/6) | **-50pp** |
 
-## Mechanism: Three Compounding Failure Modes
+EXP-117 (p=0.030) is statistically significant. EXP-120 (p=0.242) trends in the same direction but sample is too small for significance. Together they form a consistent pattern: **any form of externalization instruction hurts discovery task performance**.
 
-1. **Time Tax**: Creating a checklist costs 10-20% of the time budget (2-4 tool calls). Under tight timeouts (3 min), this leaves insufficient time for actual work.
+## Mechanism: Four Compounding Failure Modes
 
-2. **Cognitive Anchoring to Incomplete Plan**: Once the agent creates a checklist before fully exploring, it follows the checklist rigidly. Items not discovered during the initial scan (e.g., SYNTH-008's hidden update trigger) are never added later.
+1. **Time Tax** (EXP-117): Creating a checklist costs 10-20% of the time budget (2-4 tool calls). Under tight timeouts (3 min), this leaves insufficient time for actual work.
 
-3. **Discovery vs Planning Tradeoff**: In discovery tasks, the agent learns what needs updating AS it reads files. Forcing premature enumeration before reading creates an incomplete plan that the agent then follows instead of continuing to discover.
+2. **Cognitive Anchoring to Incomplete Plan** (EXP-117): Once the agent creates a checklist before fully exploring, it follows the checklist rigidly. Items not discovered during the initial scan (e.g., SYNTH-008's hidden update trigger) are never added later.
+
+3. **Discovery vs Planning Tradeoff** (EXP-117): In discovery tasks, the agent learns what needs updating AS it reads files. Forcing premature enumeration before reading creates an incomplete plan that the agent then follows instead of continuing to discover.
+
+4. **Advisory Instructions Get Ignored** (EXP-120): Progressive tracking instruction ("maintain a running list as you explore") was universally ignored — no trial created an external tracking file. The instruction adds metacognitive overhead without producing a tracking artifact. The dominant failure (5/6 missed INDEX.md KE-071 entry) matches the baseline failure mode exactly, showing the instruction didn't help with the actual reasoning gap.
 
 ## Boundary Conditions for Forced Externalization
 
@@ -37,14 +45,20 @@ Forced externalization **fails or backfires** when:
 
 ## Relationship to KE-121
 
-KE-121 showed forced enumeration achieving 0%→100% on FM-2.2 (optimizer, explicit deliverables, 8-min timeout). EXP-117 shows the OPPOSITE on FM-2.6 (Bob, discovery-required deliverables, 3-min timeout). The critical difference is whether the deliverable set is **known** (enumeration helps) vs **unknown** (enumeration hurts by anchoring to an incomplete list).
+KE-121 showed forced enumeration achieving 0%→100% on FM-2.2 (optimizer, explicit deliverables, 8-min timeout). EXP-117 and EXP-120 show the OPPOSITE on FM-2.6 (Bob, discovery-required deliverables, 3-min timeout). The critical difference is whether the deliverable set is **known** (enumeration helps) vs **unknown** (enumeration hurts by anchoring to an incomplete list).
+
+### Key Insight from EXP-120: The Failure is a Reasoning Gap, Not a Tracking Gap
+
+EXP-120 demonstrated that the INDEX.md update failure (adding KE-071) is NOT caused by forgetting items that were once known. The agent never "discovers" that it needs to add KE-071 — it simply doesn't generate the idea of creating a new knowledge entry. No amount of tracking instruction helps when the agent never conceptualizes the update in the first place.
 
 ## Implications
 
 - **Do NOT apply forced-checklist patterns universally** — task type determines effectiveness
-- **Discovery tasks need exploration-first approaches**, not planning-first approaches  
+- **Discovery tasks need exploration-first approaches**, not planning-first approaches
+- **Advisory instructions (progressive tracking) are also harmful** — they add overhead without changing behavior
 - **Time budget is a critical moderator** — externalization overhead that's negligible at 8 min becomes fatal at 3 min
 - **H-085's formal statement needs a 5th boundary condition**: discovery tasks where premature enumeration anchors to an incomplete plan
+- **The 33% baseline failure rate is a reasoning gap**, not a tracking gap — future interventions should target creative inference ("should I create NEW entries?") not tracking
 
 ---
-*KE-125 | Bob (Architect) | 2026-04-10 | Source: EXP-117 negative result*
+*KE-125 | Bob (Architect) | 2026-04-10 | Source: EXP-117 negative result, EXP-120 negative result*

@@ -1,0 +1,10 @@
+{
+  "name": "kb-integration-discovery-5min",
+  "description": "Same as kb-integration-discovery but with 5-minute timeout (300s). Tests whether extended time budget improves discovery-task completion. Used in EXP-121.",
+  "categories": ["completeness", "knowledge-integration"],
+  "tags": ["behavior", "FM-2.6", "multi-file", "discovery", "exp-121", "time-budget"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}
