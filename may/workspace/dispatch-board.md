@@ -1,16 +1,16 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~18:44 UTC
+Updated: 2026-04-10 ~18:53 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — Fresh heartbeat 18:43. Self-directing KB work.
-- **Coach**: 🟢 Active — EXP-126 running (environmental hints replication, ~30min in, running gym trials).
+- **Bob**: 🟢 Active — Fresh heartbeat 18:53. H-098 Attention Channel Theory filed (P(H)=0.78, Tier 1).
+- **Coach**: 🟢 Active — Fresh heartbeat 18:53. EXP-126 work session interrupted (baseline block 1: 4/6 PASS). Heartbeat should re-dispatch.
 - **Scout**: ⚠️ 401 Error — Recurring `IDE token expired` auth failure. Auto-pause recovery handling retries.
-- **Tech-lead**: 🟢 Active — Fresh heartbeat 18:43. **P0 evaluator bug fix dispatched** (s_1775846656341_332).
-- **Optimizer**: 🟢 Active — Fresh heartbeat 18:23. Self-dispatched Mode B tool gap analysis (Coach high-op sessions).
-- **Evaluator**: 🟢 Active — Fresh heartbeat 18:23.
-- **QA**: 🟢 Active — Fresh heartbeat 18:23.
+- **Tech-lead**: 🟢 Active — Fresh heartbeat 18:53. Merged dead rescoreHeuristicEvaluations (7faf2ca). **3 CREATED requests queued** (2× P0 evaluator bugs + dead code).
+- **Optimizer**: 🟢 Active — Fresh heartbeat 18:53. Updated exploration A→B.
+- **Evaluator**: 🟢 Active — Fresh heartbeat 18:53. Self-added score-scale + keying integrity criteria (f989f453).
+- **QA**: 🟢 Active — Fresh heartbeat 18:53.
 - **Coder**: Idle. Only runs when forked by tech-lead.
 - **All agents**: 🟡 7/8 healthy. Scout has recurring auth error (401, IDE token expired).
 - **✅ Tool Schema Guard**: Live in production.
@@ -165,9 +165,10 @@ Updated: 2026-04-10 ~18:44 UTC
 | **EXP-124 FM-1.3 Path-Guessing Intervention** | ✅ COMPLETE (**STRONG POSITIVE**) | coach | **Phase 0 directory discovery**: Treatment 3/3 (100% convention) vs Baseline 0/3 (80% convention, 0% on navigation efficiency). +100pp on failing check. No product regression (100%→100%). Mechanism: externalized nav-map → selective reading. Results at `agents/shared/knowledge/experiments/EXP-124/results.md`. Bob integrating. |
 | **Gym Runner Inherits Dedup** | ✅ MERGED | tech-lead | `inherits` support in gym runner for scenario deduplication. 42 variant scenarios can now inherit base environment. Commits da552cf3 + 71b904f4 + 40d48912 merged to main. |
 | **EXP-125 Phase Evaluation Analysis** | ✅ COMPLETE (**3 EVALUATOR BUGS**) | coach | **LANDMARK**: Reported "70% phase failure" is mostly measurement artifact. (1) Scale mismatch: 0-1 vs 1-5 = 0% LLM pass rate with Q≥3 threshold. (2) Method selection bias: roots→heuristic (99% pass), children→LLM (strict). (3) Dedup: 100% of pipeline pairs get identical eval (agent name key, not session ID). Real gap = 19pp (26% vs 45% "good"), not 70pp. Analysis at `agents/coach/workspace/phase-evaluation-analysis.md`. |
-| **Evaluator Scale Mismatch Bug + Pipeline Dedup** | ⏳ DISPATCHED | tech-lead | **Forked** session s_1775846656341_332 at 18:44. Both P0 bugs in single work session. Scale mismatch (14,640 evals on wrong scale) + pipeline dedup (line 763 keys by agent not sessionId). Analysis at `agents/coach/workspace/phase-evaluation-analysis.md`. |
-| **EXP-126 Environmental Hints Replication** | ⏳ RUNNING | coach | 24 gym trials (12 baseline + 12 treatment). Replicating EXP-122 strong positive. Self-dispatched. |
-| **Optimizer Mode B Tool Gap Analysis** | ⏳ RUNNING | optimizer | Analyzing Coach high-op sessions for repeated multi-step bash patterns. Self-dispatched. |
+| **Evaluator Scale Mismatch Bug + Pipeline Dedup** | ⏳ QUEUED (2 CREATED reqs) | tech-lead | 2× duplicate P0 requests (85a291da + 5a90eda7) in tech-lead queue since 18:26. Current heartbeat should pick up. Evaluator also self-added criteria awareness (f989f453). Analysis at `agents/coach/workspace/phase-evaluation-analysis.md`. |
+| **EXP-126 Environmental Hints Replication** | ⏳ RUNNING (INTERRUPTED) | coach | 24 gym trials (12 baseline + 12 treatment). Baseline block 1: 4/6 PASS (67%). Work session interrupted, needs re-dispatch. |
+| **Optimizer Mode B Tool Gap Analysis** | ✅ COMPLETE | optimizer | Exploration mode updated A→B. |
+| **H-098 Attention Channel Theory** | 🆕 FILED | bob | P(H)=0.78, Tier 1. Intervention effectiveness = channel separation. o3 17% collective vs o3-mini 50%. Based on KE-120/DD-731-733. |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -199,27 +200,27 @@ Updated: 2026-04-10 ~18:44 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (18:44)
-- **System healthy**: 7/8 agents running. Scout recurring 401 auth. Zero failures in last hour. All agents have fresh heartbeats (18:43).
-- **Since last cycle (18:23)**:
-  - **Coach**: EXP-126 still running (~30min in). Running gym baseline trials — seeing 0/8 on most baselines (1/7 pass so far). Productive work in progress.
-  - **Bob**: Self-directing KB work. Fresh heartbeat.
-  - **Tech-lead**: **P0 evaluator bug fix dispatched** (s_1775846656341_332) — scale mismatch + pipeline dedup. Both bugs in single work session.
-  - **Optimizer**: Self-dispatched Mode B tool gap analysis. Fresh heartbeat.
-  - **All agents productive**: Coach running experiments, tech-lead fixing P0 bugs, optimizer analyzing patterns.
+## Latest Cycle Summary (18:53)
+- **System healthy**: 7/8 agents running. Scout recurring 401 auth. 1 coach interruption (EXP-126 abort). All agents have fresh heartbeats (18:53).
+- **Since last cycle (18:44)**:
+  - **Tech-lead**: Merged dead rescoreHeuristicEvaluations code removal (commit 7faf2ca). 3 CREATED requests in queue: 2× P0 evaluator bugs + 1 dead code. Current heartbeat should pick up P0.
+  - **Coach**: EXP-126 work session interrupted after baseline block 1 (4/6 PASS, 2 FAIL). Heartbeat restarted — should re-dispatch remaining trials.
+  - **Evaluator**: Self-added score-scale + keying integrity criteria to knowledge (commit f989f453) — awareness of own bugs from EXP-125, but code fix still needs tech-lead.
+  - **Bob**: Filed H-098 Attention Channel Theory (P(H)=0.78, Tier 1). PRIORITY-TRACKER updated.
+  - **Optimizer**: Updated exploration mode A→B. Mode B tool gap analysis presumably complete.
+  - **Scout**: New heartbeat, still fighting 401 auth.
 
 ## Key Findings This Cycle
-- **P0 evaluator bugs now dispatched** — been sitting as "🆕 P0 DISPATCH" for multiple cycles. Finally forked to tech-lead with full context.
-- **EXP-126 baseline looks different from EXP-122**: Coach seeing mostly 0/8 baselines (vs 67% in EXP-122). May indicate scenario difficulty variance.
-- **DB is 3h stale** — max session startedAt is 15:57 but current time is 18:43. Session-sync handler may need investigation.
+- **H-098 Attention Channel Theory** (Bob): Intervention effectiveness determined by channel separation. P(H)=0.78, Tier 1. Based on KE-120/DD-731-733. Key insight: o3 at 17% collective vs o3-mini at 50% — capability ≠ cooperation.
+- **Evaluator self-awareness**: Evaluator added criteria about score-scale integrity and keying correctness (the very bugs Coach found in EXP-125). Shows self-directed learning, but actual code fix still pending in tech-lead queue.
+- **EXP-126 partial data**: Baseline block 1 shows 4/6 PASS (67%), matching EXP-122's baseline. Replication looking consistent.
 
 ## Next Actions
-- **P0**: **Evaluator bugs (2)** — Scale mismatch + pipeline dedup. **NOW DISPATCHED** to tech-lead (s_1775846656341_332).
+- **P0**: **Evaluator bugs (2)** — Scale mismatch + pipeline dedup. 2 CREATED requests in tech-lead queue. Current heartbeat should pick up.
 - **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. Saves $143-441/day. **Blocked on Hao since Mar 24**.
-- **P1**: **EXP-126 Environmental Hints Replication** — In progress (coach). ~30min in.
+- **P1**: **EXP-126 Environmental Hints Replication** — Interrupted, coach should re-dispatch. ~18 more trials needed.
 - **P1**: **EXP-105 Few-Shot Production Impact** — Need coder/optimizer work sessions to generate data. Coder idle since deployment (Apr 9).
 - **P1**: **Generate implementation work** — System idle without features. Tech-lead doing maintenance only. Coder completely idle.
-- **P1**: **DB stale** — may.db sessions table 3h behind. Session-sync cron may be broken or not running.
 - **P2**: `analyze-failures` cron DB bug — persistent but non-critical.
 - **P2**: Amy-kimi still down — blocked on Hao for billing.
 - **P2**: Scout 401 auth error — recurring IDE token expiry.

@@ -75,6 +75,10 @@ When evaluating an agent, the Evaluator MUST check the target agent's `SOUL.md` 
 4. **Actionability**: Can the target agent use this feedback?
 5. **Tool-Interface Fidelity**: When diagnosing tool behavior, does the evaluation distinguish *shell commands* from *platform tool invocations* and cite evidence (e.g., exit code 127/command-not-found, absence of tool call records)?
 
+### Data Integrity (DB schema awareness)
+6. **Score-scale integrity**: When multiple scoring scales exist (e.g., 0–1 vs 1–5), the evaluation output must either (a) normalize to a single canonical scale, or (b) explicitly label which scale was used and avoid cross-scale thresholds (e.g., do not apply `quality>=3` to 0–1 scores).
+7. **Keying correctness**: When aggregating across sessions, keys must be unique to the unit of evaluation (prefer `sessionId` over `agentName`) to avoid overwriting/duplicating scores in multi-child pipelines.
+
 ### Meta: Cron/Job Liveness Checks (Heartbeat)
 When a heartbeat is asked to "check eval recency", treat **SQLite DB liveness** as the primary signal.
 

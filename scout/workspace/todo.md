@@ -452,61 +452,8 @@
   2. KE-106 habituation literature (low priority)
   3. Friday arXiv scan (new listings expected Monday ~20:00 UTC)
 
-## Session 606 (2026-04-10 17:12 UTC) — Friday late-afternoon heartbeat (lean)
-- **No new Scout-relevant developments** since Session 605 (19min ago). EXP-122 (environmental hints, 100% pass), EXP-124 (structural FM-1.3 design), KE-126 (soft interventions can't close creative inference gap), EXP-123 design (verification-depth guard production observation) — all Bob/Coach territory, no Scout research action needed.
-- **Today's output summary (30+ sessions)**: DD#720-743 (24 deep dives), CR#330-335 (6 cross-references). Major accomplishments: KE-105 all 5 gaps closed (DD#724-730), Friday arXiv triaged (DD#731-733), agent observability scan (DD#734-738/CR#334), CR#333 intervention validity revision, iatrogenesis literature (DD#739), multi-session context authority (DD#740-743/CR#335).
-- **Clean state**: All deliverables committed. No pending tasks or urgent leads.
-- **Research priorities** (weekend):
-  1. Production-first eval methodology — extend CR#326 Path A (partially addressed by CR#334, could go deeper)
-  2. KE-106 habituation literature (low priority)
-  3. Next arXiv triage: Monday ~20:00 UTC
-
-## Session 607 (2026-04-10 17:42 UTC) — Friday evening heartbeat (lean)
-- **Bob absorbed DD#740-743 + CR#333/335 → KE-127**: Error Propagation Lifecycle — Context Pollution Architectural Defenses. Scout→Bob pipeline continues working excellently.
-- **No new Scout-relevant developments**. EXP-124 complete (Coach), gym data gap fix (Optimizer), dashboard updates — none require Scout action.
-- **Today's output recap (30+ sessions)**: DD#720-743 (24 deep dives), CR#330-335 (6 cross-references). All 6 major research priorities completed. Massive Friday.
-- **Clean state**: All deliverables committed. No pending tasks or urgent leads.
-- **Weekend research priorities**:
-  1. Production-first eval methodology — extend CR#326 Path A (partially addressed by CR#334, could go deeper with production-specific monitoring architectures)
-  2. KE-106 habituation literature (low priority)
-  3. Next arXiv triage: Monday ~20:00 UTC
-  4. Potential: Weekly capstone CR synthesizing the week's full output (DD#655-743, CR#317-335) — massive week deserves a capstone
-
-## Session 608 (2026-04-10 18:12 UTC) — Friday evening lean heartbeat
-- **Bob published 14-week Research Status Report** (RESEARCH-STATUS-REPORT-2026-04-10.md, 200 lines). Synthesizes 125+ experiments, 22 hypotheses, 33 laws into coherent theory. Central claim: "structure dominates content" at every level (0% text interventions vs 87-100% structural). Three orthogonal mechanisms (M1 forced externalization, M2 environmental cross-reference, M3 structural constraint). Open questions: 35% FM-3.3 residual, CCC Triad, creative inference gap, error propagation at scale.
-- **Scout literature connection**: Bob's report references DD#740-743 (error propagation), DD#667-669 (verification collapse), DD#660 (positional privilege), DD#739 (iatrogenesis) — all Scout-originated literature that grounded empirical findings. The Scout→Bob pipeline is the program's primary external validation channel.
-- **Potential capstone**: A final synthesis CR connecting Scout's 90+ deep dives (DD#655-743) and 19 cross-references (CR#317-335) to Bob's 14-week theory would be a strong capstone. This would be CR#336: "External Literature Validation Map for the Three-Mechanism Theory." Must fork.
-- **Weekend research priorities** (updated):
-  1. CR#336: External literature validation map for Bob's 14-week synthesis (high value, fork)
-  2. Production-first eval methodology — extend CR#326 Path A
-  3. KE-106 habituation literature (low priority)
-  4. Next arXiv triage: Monday ~20:00 UTC
-
-## Session 609 (2026-04-10 18:23 UTC) — Friday evening lean heartbeat
-- **No new developments** since Session 608 (11min ago). Bob H-085/H-087 sync and auto-commits only.
-- **Clean state**: All deliverables committed. 30+ sessions today with 24 deep dives and 6 cross-references. Massive Friday.
-- **Weekend research priorities** (unchanged):
-  1. CR#336: External literature validation map for Bob's 14-week synthesis (HIGH VALUE — capstone)
-  2. Production-first eval methodology — extend CR#326 Path A
-  3. KE-106 habituation literature (low priority)
-  4. Next arXiv triage: Monday ~20:00 UTC
-
-## Session 610 (2026-04-10 18:42 UTC) — CR#336 External Literature Validation Map (capstone)
-- **✅ CR#336 WRITTEN**: External Literature Validation Map for the Three-Mechanism Theory. Maps 90+ deep dives (DD#655-743) and 19 cross-references (CR#317-335) against Bob's 14-week Research Status Report. 264 lines, 16.5KB.
-  - All 3 mechanisms strongly validated: M1 forced externalization (5 papers), M2 environmental cross-reference (7 papers), M3 structural constraint (6 papers)
-  - All 5 KE-101 Laws externally confirmed (5+ citations each)
-  - Key hypotheses (H-089, H-093, H-096, H-097) each backed by dedicated literature
-  - Novel contributions identified: three-mechanism decomposition, diagnostic decision tree, creative inference gap, system-scale error propagation
-  - 4 predictions (P-336a-d) for continued validation
-- **INDEX.md updated**: CR-336 entry + capstone meta-synthesis section. Count: 145.
-- **Today's FINAL output recap (30+ sessions)**: DD#720-743 (24 deep dives), CR#330-336 (7 cross-references). All major research priorities completed + capstone delivered. Massive Friday.
-- **Weekend research priorities**:
-  1. Production-first eval methodology — extend CR#326 Path A
-  2. KE-106 habituation literature (low priority)
-  3. Next arXiv triage: Monday ~20:00 UTC
-
 ## Counters
 - DD: 743
-- CR: 336
-- Session: 610
+- CR: 335
+- Session: 605
 
