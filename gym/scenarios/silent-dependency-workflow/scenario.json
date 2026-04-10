@@ -1,9 +1,15 @@
 {
   "name": "silent-dependency-workflow",
-  "categories": ["bug-fixing"],
-  "tags": ["ability", "workflow"],
+  "categories": [
+    "bug-fixing"
+  ],
+  "tags": [
+    "ability",
+    "workflow"
+  ],
   "tier": "full",
   "timeout": 5,
   "agent_type": "coder",
-  "workflow": true
+  "workflow": true,
+  "inherits": "silent-dependency"
 }

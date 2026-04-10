@@ -1,9 +1,16 @@
 {
   "name": "mock-leak-trap-workflow",
-  "categories": ["judgment", "bug-fixing"],
-  "tags": ["ability", "behavior"],
+  "categories": [
+    "judgment",
+    "bug-fixing"
+  ],
+  "tags": [
+    "ability",
+    "behavior"
+  ],
   "tier": "standard",
   "timeout": 6,
   "agent_type": "coder",
-  "workflow": true
+  "workflow": true,
+  "inherits": "mock-leak-trap"
 }

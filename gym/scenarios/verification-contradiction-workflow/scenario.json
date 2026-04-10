@@ -4,5 +4,6 @@
   "agent": "coder",
   "timeout": 120000,
   "environment": "environment",
-  "workflow": "two-phase"
+  "workflow": "two-phase",
+  "inherits": "verification-contradiction"
 }

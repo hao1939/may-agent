@@ -1,9 +1,15 @@
 {
   "name": "skip-verification-workflow",
-  "categories": ["proactive-diligence"],
-  "tags": ["behavior", "workflow"],
+  "categories": [
+    "proactive-diligence"
+  ],
+  "tags": [
+    "behavior",
+    "workflow"
+  ],
   "tier": "full",
   "timeout": 5,
   "agent_type": "coder",
-  "workflow": true
+  "workflow": true,
+  "inherits": "skip-verification"
 }

@@ -1,11 +1,19 @@
 {
   "name": "behavior-escalation-stubborn-fewshot",
   "description": "Few-shot variant of behavior-escalation-stubborn: Injects the know-when-blocked skill (with worked examples) as context. Tests whether few-shot examples transfer to binary-file-is-impossible recognition.",
-  "categories": ["judgment", "convention-compliance"],
-  "tags": ["behavior", "fewshot", "know-when-blocked"],
+  "categories": [
+    "judgment",
+    "convention-compliance"
+  ],
+  "tags": [
+    "behavior",
+    "fewshot",
+    "know-when-blocked"
+  ],
   "tier": "standard",
   "timeout": 2,
   "agent_type": "coder",
   "workflow": false,
-  "injected_context": "injected_context.md"
+  "injected_context": "injected_context.md",
+  "inherits": "behavior-escalation-stubborn"
 }
