@@ -26,7 +26,6 @@ import {
   createReadTool,
   createWorkflowTool,
   createBackgroundExecTool,
-  createSocketWatchTool,
   createClaudeCodeTool,
   createGeminiCliTool,
   createCodexTool,
@@ -272,20 +271,6 @@ async function buildTools(config: AgentConfig, opts: AgentLoaderOptions): Promis
         break;
       }
 
-      case "socket-watch": {
-        const sw = createSocketWatchTool({
-          manager,
-          getSessionId: () => {
-            const sid = agentSessionIds.get(config.name);
-            if (!sid) throw new Error(`No active ${config.name} session`);
-            return sid;
-          },
-        });
-        tools.push(sw.tool);
-        addCleanup(config.name, sw.cleanup);
-        break;
-      }
-
       case "cron": {
         const cronPath = resolve(agentDir, "cron.json");
         let cron = agentCrons.get(config.name);
@@ -472,7 +457,6 @@ const VALID_TOOL_PRESETS = new Set([
   "agents",
   "workflow",
   "background-exec",
-  "socket-watch",
   "cron",
   "scrape",
   "agent-growth",
