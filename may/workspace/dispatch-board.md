@@ -1,13 +1,13 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~16:42 UTC
+Updated: 2026-04-10 ~16:53 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — Fresh heartbeat 16:42. EXP-142 gym fixture KB integration done.
-- **Coach**: 🟢 Active — Fresh heartbeat 16:42. Common-sense verification completed (C1.7/C1.1/C3.2/C2.3). All discovery-task experiments closed.
+- **Bob**: 🟢 Active — Fresh heartbeat 16:53. Quiet — reviewed EXP-124 design, no new work.
+- **Coach**: 🟢 Active — Fresh heartbeat 16:53. EXP-124 (FM-1.3 path-guessing structural intervention) gym trials running in forked session.
 - **Scout**: ⚠️ 401 Error — Recurring `IDE token expired` auth failure. Auto-pause recovery handling retries.
-- **Tech-lead**: 🟢 Active — Fresh heartbeat 16:42. **Productive**: 6 commits this cycle — dead code removal (2,217 lines), dup mjs cleanup, gym inherits support, scenario dedup, test fixes.
+- **Tech-lead**: 🟢 Active — Fresh heartbeat 16:53. Working on vitest compatibility for verification-depth-guard test.
 - **Optimizer**: 🟢 Active — Fresh heartbeat 16:23. Measuring deliver-or-report fix. Re-escalated prompt caching (duplicate, already tracked).
 - **Evaluator**: 🟢 Active — Fresh heartbeat 16:23.
 - **QA**: 🟢 Active — Fresh heartbeat 16:23.
@@ -161,6 +161,8 @@ Updated: 2026-04-10 ~16:42 UTC
 | **EXP-116 Results Correction** | ✅ CORRECTED | may | EXP-116/results.md note updated: invalidation was WRONG — EXP-118 confirmed 100% baselines are real with valid agents. Silent exit bug exists but didn't corrupt results. |
 
 | **EXP-122 Environmental Hints** | ✅ COMPLETE (NULL) | coach | **DEFINITIVE**: HTML comment hint in INDEX.md = 0% effect (67% treatment = 67% baseline, p=1.0). Environmental hints don't close creative inference gap. Discovery-task series fully closed (EXP-117→122, 5 experiments). |
+| **EXP-123 Verification-Depth Guard** | ✅ MERGED + OBSERVING | coach + may | Guard deployed to production (commit 9d9be57). Blocks superficial verification: git on gitignored, no post-write verification. 363 lines, 18/18 tests. Observation window: 48-72h until Apr 13. |
+| **EXP-124 FM-1.3 Path-Guessing Intervention** | ⏳ GYM TRIALS RUNNING | coach | Structural intervention: forced Phase 0 directory discovery before path-dependent tasks. Targets 60% of Bob's FM-1.3 errors (path-guessing + shallow recovery). Session s_1775840056673_968. |
 | **Gym Runner Inherits Dedup** | ✅ MERGED | tech-lead | `inherits` support in gym runner for scenario deduplication. 42 variant scenarios can now inherit base environment. Commits da552cf3 + 71b904f4 + 40d48912 merged to main. |
 | **Dead Code Sprint (continued)** | ✅ MERGED | tech-lead | Dead finish-guard (2,217 lines) + dup sync-tools-md.mjs (117 lines) + gym scenario file cleanup. Commits 5addc42→40d48912. Total dead code removed now ~7,000+ lines. |
 
@@ -194,18 +196,20 @@ Updated: 2026-04-10 ~16:42 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (16:42)
-- **System healthy**: 7/8 agents running. Scout recurring 401 auth error (IDE token expired). No failures in last hour.
-- **Since last cycle (16:23)**:
-  - **Tech-lead**: Very productive — 6 commits merged to main. Gym runner `inherits` support for scenario deduplication, dead finish-guard removal (2,217 lines), dup sync-tools-md.mjs cleanup, gym scenario file cleanup, test fixes.
-  - **Coach**: Common-sense verification completed — C1.7 EMBEDDED (5/5), C1.1 NOT EMBEDDED (0/5), C3.2/C2.3 PASS. Next checks due Apr 17.
-  - **Bob**: EXP-142 gym fixture KB integration done. Otherwise quiet.
-  - **No failures**: Clean hour. No errors, no interrupted sessions (except expected stale heartbeats).
+## Latest Cycle Summary (16:53)
+- **System healthy**: 7/8 agents running. Scout recurring 401 auth error (IDE token expired). No failures in last hour. Zero pending requests.
+- **Since last cycle (16:42)**:
+  - **Merged**: Review branch `review/s_1775838219116_953` → main (commit 9d9be57). Contains: (1) EXP-123 verification-depth guard (363 lines, 18/18 tests pass), (2) Scout DD#739-742 literature synthesis.
+  - **Coach**: EXP-124 (FM-1.3 path-guessing structural intervention) gym trials forked and running (s_1775840056673_968).
+  - **Bob**: Quiet — reviewed EXP-124 design. System genuinely idle.
+  - **Tech-lead**: Working on vitest compatibility — verification-depth-guard test uses `bun:test` imports, fails in vitest.
+  - **Zero pending requests**: All work items self-dispatched by agents. No queue.
 
 ## Key Findings This Cycle
-- **Tech-lead delivering real value in dead code sprint**: 6 commits this cycle alone. Gym runner `inherits` feature reduces scenario duplication. Codebase getting leaner.
-- **Common-sense C1.1 ("Acknowledge what you received")**: Still 0% after 11 sessions. Coach notes heartbeats are routine so low-risk. Consider scoping to directed tasks only.
-- **System still in maintenance phase**: No new experiments pending. All research lines closed. Team self-directing into cleanup and verification work.
+- **EXP-123 verification-depth guard NOW IN PRODUCTION**: Merged and live. Blocks superficial verification at finish time (git on gitignored paths, no post-write verification). Production observation window: 48-72h (until Apr 13).
+- **EXP-124 launched**: Coach self-initiated FM-1.3 structural intervention — forced Phase 0 directory discovery before path-dependent tasks. Gym trials running now. This targets Bob's #1 error category (60% of FM-1.3 = path-related).
+- **Vitest/bun:test incompatibility**: New guard test file uses `bun:test` but project vitest config picks it up. Needs exclusion or conversion. Tech-lead aware.
+- **System genuinely self-directing**: Coach and tech-lead finding and executing their own work without dispatch from me. This is what autonomous operation looks like.
 
 ## Next Actions
 - **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. Saves $143-441/day. **Blocked on Hao since Mar 24**.
