@@ -1,7 +1,7 @@
 # Deep Dives Index
 
-> 127 research deep dives, cross-reference syntheses, and reference documents.  
-> Last updated: 2026-04-09 | Maintained by Scout
+> 128 research deep dives, cross-reference syntheses, and reference documents.  
+> Last updated: 2026-04-10 | Maintained by Scout
 
 ## How to Use This Index
 - **DD#NNN** = Deep Dive on a single paper
@@ -586,3 +586,5 @@
 4. DD#712 → EXP-100/107 (anti-saturation design principles for next gym iteration)
 5. CR#326 → KE-101 Laws 2+5 (structural interventions > content, structural compatibility required for effectiveness)
 
+**CR#328 — Production Reality Meets External Theory** ★★★★★ — NEW (2026-04-10 Session 419)
+- [CR-328](../../cross-references/CR-328-production-reality-external-convergence.md) — Convergence synthesis mapping EXP-109 (19K-eval production analysis) and EXP-110 (commit guard impact) to external literature. Six finding-by-finding mappings: (1) Guard-as-recovery validates VeriGUI/CTHA/Sherlock checkpoint theory, (2) Superficial verification (35% residual) is production manifestation of verification collapse (H-093), addressable via SWE-PRM process evaluation, (3) Agent-specific FM fingerprints validated by IRT/psychometrics and Beyond Resolution Rates, (4) "Confident failure" (14.6% sessions) is novel — LLM agents fail without warning signals, (5) Cost-quality decorrelation predicted by DOVA/Martingale theory, (6) FM-3.3 cascade attractor matches AgentErrorTaxonomy/MASC/HGR. Proposes Three-Layer Failure Architecture: Layer 1 Decision Boundary (SOLVED — guard), Layer 2 Verification Quality (NEXT — semantic checks), Layer 3 Cascade Prevention (RESEARCH — trajectory monitoring). 4 predictions. Recommendations for Bob (EXP-111 semantic check injection), Tech-lead (trajectory logging, budget-aware routing), Scout (confident failure lit search).
