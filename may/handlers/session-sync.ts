@@ -9,6 +9,10 @@
  * Solution: This handler runs every 5 minutes and upserts session metadata
  * from the filesystem into the sessions table.
  *
+ * NOTE: Uses its own Database connection instead of ctx.getDb() because
+ * the shared connection's WAL data doesn't persist between handler calls.
+ * See: agents/optimizer/workspace/findings/2026-04-10-session-sync-persistence-bug.md
+ *
  * Pure JS — no LLM calls, no cost.
  *
  * Usage in cron.json:
@@ -22,6 +26,7 @@
  *   }
  */
 
+import { Database } from "bun:sqlite";
 import { readdirSync, readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
