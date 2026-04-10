@@ -73,7 +73,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         `vitest: ${result.vitest?.pass ? "PASS" : "FAIL"}. ` +
         `Sending gate results to QA.`
       );
-      // Send request to QA so its skipIfIdle triggers
+      // Send request to QA with gate results
       const gateContext = [
         `## Repo Gate Results (pre-computed)`,
         `- Commits: ${result.newCommitCount} new since ${(result.previousCommit || "initial").slice(0, 7)}`,

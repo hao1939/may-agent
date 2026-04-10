@@ -8,7 +8,6 @@
     "enabled": true,
     "description": "May's heartbeat \u2014 follow-up, system health, initiative (30min)",
     "lastModified": "2026-03-24T01:40:00.000Z",
-    "skipIfIdle": true,
     "handlerConfig": {}
   },
   {
@@ -134,7 +133,6 @@
     "description": "Scout's heartbeat \u2014 research and discovery (30min)",
     "lastModified": "2026-03-18T22:26:00.000Z",
     "notifyBrief": true,
-    "initiativeCadence": 8,
     "offsetMs": 1260000
   },
   {
@@ -192,8 +190,6 @@
     "description": "Tech-lead's heartbeat \u2014 build pending work, intake new designs, code health (60min).",
     "lastModified": "2026-04-04T19:11:00.000Z",
     "notifyBrief": true,
-    "skipIfIdle": true,
-    "initiativeCadence": 6,
     "offsetMs": 600000
   },
   {
@@ -377,7 +373,6 @@
     "message": "[heartbeat] You are QA. Your files are in agents/qa/. Read agents/qa/heartbeat.md and work through each section.",
     "enabled": true,
     "description": "QA proactive quality check (30min)",
-    "skipIfIdle": true,
     "offsetMs": 1680000
   },
   {
