@@ -1,16 +1,16 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~12:26 UTC
+Updated: 2026-04-10 ~12:53 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
 - **Bob**: 🟢 Active — Heartbeat running. H-097 CCC Triad work.
-- **Coach**: 🟢 Active — EXP-116 Phase 2 **36/36 COMPLETE** (s_1775818479860_845). Writing results. Key: Baseline 100%, Arms A/B 100%, Arm C 83%, Arm D 72%. Combined variants DEGRADE performance (context overload). Adversarial framing = zero marginal value. Bob review done.
+- **Coach**: 🟢 Active — EXP-116 COMPLETE. EXP-117 dispatched (Bob FM-2.6 investigation, req:449e0aa4).
 - **Scout**: 🟢 Active — Heartbeat running.
-- **Tech-lead**: 🟢 Active — Self-dispatched dead code removal session (req:6b86fd94). EXP-115 re-dispatch pending (req:e7ffe8fe, DUPLICATE: e8b4b581 + a0603489).
-- **Optimizer**: 🟢 Active — Heartbeat 12:13. Tool quality regression investigation.
-- **Evaluator**: 🟢 Active — Heartbeat 12:13. Running task tree evaluations. ~164 unevaluated sessions backlog.
-- **QA**: 🟢 Active — Heartbeat 12:13.
+- **Tech-lead**: 🟢 Active — composeGuards fail-open merged (215295a). Dead code sprint done.
+- **Optimizer**: 🟢 Active — Found evaluator SOUL.md tool list bug (25 false hallucination penalties). Fixed by May.
+- **Evaluator**: 🟢 Active — Running evaluations. Tool list fix deployed (commit 1b097b96).
+- **QA**: 🟢 Active — Heartbeat running.
 - **Coder**: Idle. Only runs when forked by tech-lead.
 - **All agents**: 🟢 8/8 running. Zero errors last hour.
 - **✅ Zombie cleaned**: s_1774303617649_81 (tech-lead, 422h) — cancelled this cycle.
@@ -20,7 +20,7 @@ Updated: 2026-04-10 ~12:26 UTC
 - **⚠️ Bun missing**: bun binary gone from .state/.bun/bin/. DB queries need node+better-sqlite3 or bundled binary. Affects heartbeat DB queries.
 - **⚠️ Cron bug**: `analyze-failures` cron keeps failing (`db.query is not a function`). Low priority.
 - **⚠️ Git drift**: Project restructured to bundled binary — source files inside bundle, not on filesystem.
-- **⚠️ Duplicate requests in DB**: 4 pairs of duplicates (coder Web UI ×2, tech-lead review ×2, bob EXP-115 ×2, coach EXP-115 ×2). Need cleanup.
+- **⚠️ Duplicate requests in DB**: Cleaned this cycle (5 resolved). Ongoing monitoring.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -138,8 +138,11 @@ Updated: 2026-04-10 ~12:26 UTC
 | **Bob DD-720-723 Indexing** | ✅ COMPLETE | bob | Evaluation architecture entries indexed into knowledge base. |
 | **Scout C1.3/C7.1 Investigation** | ✅ COMPLETE | coach | Root cause: path inconsistency. Scout writes drops to 4+ dirs, only `/knowledge/` exempt. Text instructions can't fix post-action habits. Brief at `agents/coach/workspace/briefs/scout-c13-regression-diagnostic.md`. |
 | **EXP-116 Adversarial Framing Guard** | ✅ COMPLETE | coach + bob | **36/36 runs done**. Baseline 100%, A/B 100%, C 83%, D 72%. Combined variants DEGRADE via context overload. Bob's review: EXP-103 contradiction (100% single-session vs 0% multi-session in earlier partial data). Results.md + phase2-analysis.md written. Adversarial framing = zero marginal value. |
+| **Evaluator SOUL.md Tool List Bug** | ✅ FIXED | may | Missing read/write/edit/finish/system_status/checkpoint from real tools. 25+ false hallucination penalties. Commit 1b097b96. Found by Optimizer. |
+| **ComposeGuards Fail-Open** | ✅ MERGED | tech-lead | Commit 215295a. Try-catch prevents guard exceptions from crashing tool calls. |
+| **EXP-115 Completeness Guard** | ✅ ALREADY LIVE | tech-lead | `completeness-guard.ts` (193 lines) in production. Branch GC was cosmetic — code was already merged. |
 | **Bob H-097 CCC Triad Hypothesis** | ⏳ NEW | bob | Multi-Agent CCC Triad: Cooperation + Calibrated Agreement + Context Isolation. P(H)=0.65. Based on KE-120/DD-731-733. Key insight: o3 at 17% collective vs o3-mini at 50% — capability ≠ cooperation. |
-| **Tech-lead EXP-115 Completeness Guard** | ❌ BRANCH LOST | tech-lead | Branch review/s_1775810855346_43 deleted/GC'd. Commit 484a53cb gone. **Needs re-implementation** — design + results at EXP-115/. |
+| **Tech-lead EXP-115 Completeness Guard** | ✅ RESOLVED | tech-lead | Branch GC'd but code already in production. See "EXP-115 Completeness Guard" above. |
 | **Tech-lead Dead Code Sprint** | ✅ MERGED | tech-lead | Socket-watch (0975c41, 706 lines) + stuck-detector (4733672, 657 lines) + forced-externalization (610 lines) = ~1,973 lines removed total. Web UI Phase 1 also merged (c76cd98). |
 
 ## Completed/Archived
@@ -172,35 +175,26 @@ Updated: 2026-04-10 ~12:26 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (12:26)
+## Latest Cycle Summary (12:53)
 - **System healthy**: All 8 non-May agents running. Zero errors last hour. All heartbeats fresh.
-- **Since last cycle (12:13)**:
-  - **Coach**: EXP-116 Phase 2 **ALL 36/36 RUNS COMPLETE**. Final checkpoint data: Baseline 100%, Arm A 100%, Arm B 100%, Arm C 83% (DEGRADED), Arm D 72% (DEGRADED). Combined variants hurt via context overload. Bob review + results.md written. Coach still in session writing up final analysis.
-  - **Tech-lead**: Self-dispatched dead code removal session. EXP-115 re-dispatch DUPLICATED (e8b4b581 + a0603489, both CREATED 28m).
+- **Since last cycle (12:26)**:
+  - **Optimizer**: Found P0 bug — Evaluator SOUL.md tool list only had `agents/workflow/cron/bash`, missing `read/write/edit/finish/system_status/checkpoint`. Caused 25+ false hallucination penalties. **Fixed by May** (commit 1b097b96).
+  - **Tech-lead**: composeGuards fail-open try-catch merged to main (215295a). Sent evaluator bug to Bob (redundant — already fixed).
+  - **Coach**: EXP-116 fully complete. EXP-117 dispatched (Bob FM-2.6 delegation pattern).
   - **Bob**: H-097 CCC Triad continuing.
-  - **Optimizer**: Active heartbeat. Tool quality regression work.
-  - **Evaluator**: Active. ~164 session backlog (clearing).
-  - **No new errors or failures**.
+  - **Evaluator/QA**: Heartbeats running normally.
+  - **Cleaned 5 stale CREATED requests** (evaluator bug duplicates + composeGuards).
+  - **EXP-115 completeness guard**: Already in production (`src/lib/tools/completeness-guard.ts`, 193 lines, imported in manager.ts). Branch loss was cosmetic — code is live.
 
 ## Key Findings This Cycle
-- **EXP-116 Phase 2 FINAL DATA (36/36 runs)**:
-  - **Baseline**: 100% (6 scenarios × 3 reps each)
-  - **Arm A (adversarial)**: 100% — no marginal value
-  - **Arm B (machine-verified)**: 100% — no marginal value
-  - **Arm C (combined)**: 83% — context overload DEGRADES
-  - **Arm D (combined+guard)**: 72% — context overload DEGRADES further
-  - **Clean handoff**: 100%
-  - **Conclusion**: Evidence-over-narrative skill (already deployed) is the real fix. Additional treatments either match baseline or actively hurt. Combined variants suffer from context overload.
-  - **Bob's analysis**: EXP-103 contradiction — 100% in single-session vs 0% in earlier multi-session partial data. Multi-session inheritance qualitatively changes confabulation mechanism. H0 confirmed.
-- **Bun runtime missing** — heartbeat DB queries broken. Need to figure out how to query may.db without bun or better-sqlite3.
+- **Evaluator SOUL.md tool list bug**: Missing 5 core tools caused systematic false positives in hallucination detection. All evals since deployment were affected. Fix deployed, but historic eval data may need re-calibration.
+- **EXP-115 guard is already live**: Despite branch being GC'd, the completeness guard code exists in production (193 lines, imported at manager.ts line 22). No re-implementation needed.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao since Mar 24**.
-- **P1**: **EXP-116 completing (~11 more runs)** — Coach to write up results. Bob to integrate. Expected conclusion: adversarial framing provides no marginal value over skill deployment.
-- **P1**: **EXP-115 completeness guard re-implementation** — Branch lost. Re-dispatch sent to tech-lead (req:e7ffe8fe).
-- **P1**: **Bun reinstall or DB query alternative** — Need working DB query tool for supervisory queries.
 - **P1**: **EXP-105 Few-Shot Production Impact** — Need coder/optimizer work sessions to generate data.
 - **P1**: **Present research sprint results to Hao** — KE-101 meta-analysis capstone. 17+ experiments. Gym graduation. Token waste finding ($441/week).
+- **P1**: **Bun reinstall or DB query alternative** — Need working DB query tool for supervisory queries. Using node+better-sqlite3 as workaround.
 - **P2**: `analyze-failures` cron DB bug — persistent but non-critical.
 - **P2**: Federation design ready for Hao review.
 - **P2**: Amy-kimi still down — blocked on Hao for billing.
