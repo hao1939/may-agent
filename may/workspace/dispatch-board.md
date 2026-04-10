@@ -1,16 +1,16 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~19:53 UTC
+Updated: 2026-04-10 ~20:24 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — Fresh heartbeat 19:53. Completed EXP-127 design this cycle.
-- **Coach**: 🟡 Struggling — EXP-126 interrupted 3× (gym trials exceed heartbeat windows). Fresh heartbeat 19:53.
+- **Bob**: 🟢 Active — Fresh heartbeat 20:23. 
+- **Coach**: 🟢 Active — **TWO work sessions running**: EXP-127 (31min, Arm B in progress) + EXP-126 (just started, final 4 treatment runs). Good parallel execution.
 - **Scout**: ⚠️ 401 Error — Recurring `IDE token expired` auth failure. Auto-pause recovery handling retries.
-- **Tech-lead**: 🟢 Active — Fresh heartbeat 19:53. Evaluator bugs #2/#3 completed and merged (commit 9f22156).
-- **Optimizer**: 🟢 Active — Fresh heartbeat 19:53. Mode C scouting completed.
-- **Evaluator**: 🟢 Active — Fresh heartbeat 19:53.
-- **QA**: 🟢 Active — Fresh heartbeat 19:53.
+- **Tech-lead**: 🟢 Active — Fresh heartbeat 20:23.
+- **Optimizer**: 🟢 Active — Mode D workflow health analysis work session running.
+- **Evaluator**: 🟢 Active — Fresh heartbeat 20:23.
+- **QA**: 🟢 Active — Fresh heartbeat 20:23.
 - **Coder**: Idle. Only runs when forked by tech-lead.
 - **All agents**: 🟡 7/8 healthy. Scout has recurring auth error (401, IDE token expired).
 - **✅ Tool Schema Guard**: Live in production.
@@ -162,7 +162,7 @@ Updated: 2026-04-10 ~19:53 UTC
 
 | **EXP-122 Environmental Hints** | ⚠️ CORRUPTED DATA | coach | **CORRECTION**: Reported "100% (6/6)" was from corrupted environment (pre-baked answers). Real first run: 4/6 (67%) = NULL RESULT (same as baseline). HTML comment hint showed no effect at n=6. EXP-126 is the real replication at larger N. |
 | **EXP-123 Verification-Depth Guard** | ✅ MERGED + OBSERVING | coach + may | Guard deployed to production (commit 9d9be57). Blocks superficial verification: git on gitignored, no post-write verification. 363 lines, 18/18 tests. Observation window: 48-72h until Apr 13. |
-| **EXP-124 FM-1.3 Path-Guessing Intervention** | ✅ COMPLETE (**STRONG POSITIVE**) | coach | **Phase 0 directory discovery**: Treatment 3/3 (100% convention) vs Baseline 0/3 (80% convention, 0% on navigation efficiency). +100pp on failing check. No product regression (100%→100%). Mechanism: externalized nav-map → selective reading. Results at `agents/shared/knowledge/experiments/EXP-124/results.md`. Bob integrating. |
+| **EXP-124 FM-1.3 Path-Guessing Intervention** | ✅ COMPLETE (**NULL RESULT v2**) | coach | **v2 CORRECTION**: With gym runner file-sync bug fixed, baseline 83% (5/6) = treatment 83% (5/6). Runner bug was the real issue. No treatment effect. Harder scenarios needed for FM-1.3 research. Results at `agents/shared/knowledge/experiments/EXP-124/results-v2.md`. |
 | **Gym Runner Inherits Dedup** | ✅ MERGED | tech-lead | `inherits` support in gym runner for scenario deduplication. 42 variant scenarios can now inherit base environment. Commits da552cf3 + 71b904f4 + 40d48912 merged to main. |
 | **EXP-125 Phase Evaluation Analysis** | ✅ COMPLETE (**3 EVALUATOR BUGS**) | coach | **LANDMARK**: Reported "70% phase failure" is mostly measurement artifact. (1) Scale mismatch: 0-1 vs 1-5 = 0% LLM pass rate with Q≥3 threshold. (2) Method selection bias: roots→heuristic (99% pass), children→LLM (strict). (3) Dedup: 100% of pipeline pairs get identical eval (agent name key, not session ID). Real gap = 19pp (26% vs 45% "good"), not 70pp. Analysis at `agents/coach/workspace/phase-evaluation-analysis.md`. |
 | **Evaluator Scale Mismatch Bug + Pipeline Dedup** | ✅ MERGED | tech-lead | 3× P0 bugs fixed: (1) Scale mismatch — heuristic 1-5 → 0-1, migration SQL for 1057 evals. (2) Pipeline dedup — re-keys by sessionId when children share agent name. (3) Isolation threshold 3→0.5. 57/57 tests. Commit 9f22156 pushed to origin. |
@@ -170,7 +170,7 @@ Updated: 2026-04-10 ~19:53 UTC
 | **Gym Runner Modified-File Sync Bug** | ✅ FIXING (in-flight) | coach | Critical: `syncNewFilesFromRoot` only synced NEW files, not MODIFIED. Agent writes to PROJECT_ROOT but modified files in existing dirs (knowledge/) weren't synced. Fix: deepSnapshotDir captures mtimes before run, syncs changed files back. Found during EXP-126. |
 | **Optimizer Mode B Tool Gap Analysis** | ✅ COMPLETE | optimizer | Exploration mode updated A→B. |
 | **H-098 Attention Channel Theory** | 🆕 FILED | bob | P(H)=0.78, Tier 1. Intervention effectiveness = channel separation. o3 17% collective vs o3-mini 50%. Based on KE-120/DD-731-733. |
-| **EXP-127 Channel Separation Direct Test** | 🆕 DESIGNED | bob | 4-arm test of H-098: baseline (0% historical), Ch1 system-prompt, Ch3 task-message few-shot, Ch2 forced-ext. Same contradiction-detection content. N=6/arm (24 total). Scenario: contradictory-requirements. Design + protocol at `agents/shared/knowledge/experiments/EXP-127/`. Commit 9f22156. |
+| **EXP-127 Channel Separation Direct Test** | 🏃 RUNNING | coach | **IN PROGRESS**: Baseline 0/6 (0%) ✅, Arm A (system prompt) 0/6 (0%) ✅ — confirms system prompt = zero effect. Arm B (task-message few-shot) run 1 = FAIL. 5 more Arm B runs in progress. If B fails 6/6, H-098 prediction wrong for this scenario. |
 | **Gym Transcript Fix + Evaluator Bug Tests** | ✅ MERGED | tech-lead/may | Branch `review/s_1775848356081_345` merged to main. Transcript field in GymResult + evaluator scale/dedup tests. 20/20 pass. Commits 82757680 + 48315279. |
 
 ## Completed/Archived
@@ -203,27 +203,27 @@ Updated: 2026-04-10 ~19:53 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (19:53)
-- **System healthy**: 7/8 agents running. All heartbeats fresh (19:53). Scout recurring 401 auth. 3 normal interruptions (coach×2, tech-lead — heartbeat cycling).
-- **Since last cycle (19:43)**:
-  - **May**: Pushed 6 commits to origin (including evaluator fixes + EXP-127 design). Cleaned 4 stale git stashes. Verified 1870/1870 tests pass on main.
-  - **Bob**: Completed EXP-127 design (19:39) — Channel Separation Direct Test for H-098. Design + protocol committed. Now on fresh heartbeat.
-  - **Tech-lead**: Completed evaluator bugs #2/#3 (pipeline dedup + isolation threshold) at 19:25. Changes already on main (commit 9f22156).
-  - **Coach**: EXP-126 still struggling — 3 interrupted sessions (18:24, 18:54, 19:24). Gym trials take too long for heartbeat windows. Now on fresh heartbeat, will likely re-dispatch.
-  - **Optimizer**: Mode C skill scouting session completed (19:24).
-  - **All agents**: Fresh heartbeat cycle started 19:53.
+## Latest Cycle Summary (20:24)
+- **System healthy**: 7/8 agents running. All heartbeats fresh (20:23). Scout recurring 401 auth. 1 normal interruption (coach — heartbeat cycling).
+- **Since last cycle (19:53)**:
+  - **Coach**: **MAJOR PROGRESS** — EXP-127 actively running (31min). Baseline 0/6, Arm A (system prompt) 0/6, Arm B (task-message few-shot) run 1 = FAIL. Also just dispatched EXP-126 final 4 treatment runs. Two work sessions running simultaneously.
+  - **Coach (EXP-126)**: Baseline 7/12 (58%), Treatment 2/8 (25%) — trending negative. Final 4 treatment runs dispatched.
+  - **Bob**: Fresh heartbeat. EXP-124 v2 results fully integrated (NULL RESULT — runner bug was the real issue, not navigation skill).
+  - **Optimizer**: Mode D workflow health analysis work session running.
+  - **Tech-lead**: Fresh heartbeat 20:23.
+  - **Scout**: Lean heartbeat, no new action needed.
+  - **All agents**: Fresh heartbeat cycle started 20:23.
 
 ## Key Findings This Cycle
-- **Evaluator pipeline dedup MERGED**: Tech-lead fixed per-session keying + isolation threshold (from 3→0.5). 57/57 evaluator tests pass. Pushed to origin.
-- **EXP-127 designed by Bob**: 4-arm test of H-098 (Channel Separation). Same contradiction-detection content via system prompt (Ch1), task message (Ch3), forced externalization (Ch2), and baseline. Predicts: baseline 0%, Ch1 0-17%, Ch3 83-100%, Ch2 83-100%. Ready for Coach to run.
-- **⚠️ EXP-122 results were CORRUPTED**: EXP-126 design reveals the reported "100%" was from a corrupted environment (pre-baked answers). Real EXP-122 result was 67% (null). EXP-126 is the genuine replication at larger N.
-- **EXP-126 keeps timing out**: Coach can't complete 24 gym trials in heartbeat windows. Needs longer work session or reduced trial count.
-- **Bob analysis NOT stale**: System-status anomaly (req:56c76ffd) is false alarm — Bob is very active (EXP-127 design completed this cycle).
+- **⚠️ EXP-127 Arm B first result = FAIL**: Task-message few-shot (Ch3) failed on contradictory-requirements (run 217). This challenges H-098's prediction of 83-100% for Ch3. 5 more Arm B runs will determine if this is noise or a genuine null.
+- **EXP-124 v2 CONCLUDED — NULL RESULT**: With runner bug fixed, baseline already 83% (5/6). Treatment also 83% (5/6). No room for improvement. Runner bug (missing file sync) was the real issue, not Bob's navigation skill. Harder scenarios needed for FM-1.3 research.
+- **EXP-126 trending NEGATIVE**: Treatment 25% vs baseline 58%. Environmental hints may actually HURT (possible instruction-induced narrowing similar to EXP-092/EXP-117). Final 4 runs will determine.
+- **Coach parallel execution working**: Two work sessions simultaneously (EXP-127 + EXP-126). Heartbeat successfully dispatched long-running gym work.
 
 ## Next Actions
 - **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. Saves $143-441/day. **Blocked on Hao since Mar 24**.
-- **P1**: **EXP-126 completion** — Coach needs extended work session. Monitor if current heartbeat successfully re-dispatches with longer timeout.
-- **P1**: **EXP-127 execution** — Designed, ready for Coach. Need gym scenarios built + trials run.
+- **P1**: **Monitor EXP-127 Arm B** — If all 6 fail, H-098 prediction wrong for this scenario. May need scenario-level analysis.
+- **P1**: **EXP-126 completion** — Final 4 treatment runs in progress. Will determine if environmental hints help or hurt.
 - **P1**: **EXP-105 Few-Shot Production Impact** — Need coder/optimizer work sessions to generate data.
 - **P1**: **Generate implementation work** — System idle without features. Coder completely idle.
 - **P2**: `analyze-failures` cron DB bug — persistent but non-critical.
