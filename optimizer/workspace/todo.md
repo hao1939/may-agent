@@ -27,6 +27,7 @@
 ## ⚠️ SENT/ESCALATED (awaiting others)
 
 - **Amy-kimi API billing** — 5 consecutive 429 errors (insufficient balance / token quota). Sent to May (req:b2b4d1bc). 2026-04-07.
+- **Evaluator SOUL.md incomplete tool list** — Tool Hallucination pattern lists only `agents, workflow, cron, bash` as "Real" tools, missing `checkpoint, finish, read, write, edit, scrape, system_status`. Caused **25 false HALLUCINATION penalties** across bob/coach/optimizer. Bob got Q:0.25 needs_improvement for using checkpoint (a real tool). Sent to tech-lead (req:2b3d6196). 2026-04-10.
 
 ## 📋 PENDING (awaiting Hao review)
 
