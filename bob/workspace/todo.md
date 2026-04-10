@@ -106,6 +106,14 @@
 - [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% of verify-after-edit failures need code-level fix, not prompting. Deferred until prompting experiments complete.
 - [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
 
+## Session Notes (2026-04-10 ~17:55)
+- **EXP-124 KB INTEGRATION — PARTIAL**: KE-128 written and INDEX updated. Topic files (07-tool-use-workflows, 10-agent-design-patterns) updated.
+  - **KE-128**: Phase 0 Discovery — Validated Structural Intervention for FM-1.3 (Exhaustive Reading). +100pp on failing nav check. Skills teach knowledge, Phase 0 creates confidence to skip files. 3rd validated agent-specific structural guard.
+  - **INDEX.md**: EXP-124/KE-128 row added.
+  - **STILL NEEDED**: PRIORITY-TRACKER update (H-085 EXP-124 evidence, H-095 EXP-124 evidence, experiment queue). H-085 and H-095 hypothesis file updates with EXP-124 as evidence. Low priority — core knowledge captured in KE-128.
+- **EXP-123**: Still RUNNING (Phase 2 production observation). No results yet.
+- **No new drops**. System is quiet.
+
 ## Session Notes (2026-04-10 ~17:15)
 - **DD-740/741/742/743 + CR-333/335 + KE-127 KB INTEGRATION COMPLETE**: Four context pollution deep dives, two cross-references, and synthesis knowledge entry all indexed.
   - **INDEX.md updated**: DD-740/741/742/743 rows added to Research Library deep-dives. CR-333 and CR-335 rows added to cross-references. KE-127 row added to knowledge entries.
