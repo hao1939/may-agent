@@ -93,61 +93,70 @@ function parseMeta(filePath: string): SessionMeta | null {
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
   return async () => {
     const sessionsDir = join(ctx.projectRoot, ".state", "sessions");
-    const db = ctx.getDb();
+    const dbPath = join(ctx.projectRoot, ".state", "may.db");
 
-    const upsert = db.prepare(`
-      INSERT OR REPLACE INTO sessions
-        (sessionId, agent, task, status, kind, source,
-         parentSessionId, requestId, workflowRunId,
-         startedAt, endedAt, error, outcome, opCount)
-      VALUES
-        (?, ?, ?, ?, ?, ?,
-         ?, ?, ?,
-         ?, ?, ?, ?, ?)
-    `);
+    // Use our own connection instead of ctx.getDb() — the shared connection's
+    // WAL data doesn't persist between handler calls (see findings doc).
+    const db = new Database(dbPath);
 
-    const metaFiles = collectMetaFiles(sessionsDir);
+    try {
+      const upsert = db.prepare(`
+        INSERT OR REPLACE INTO sessions
+          (sessionId, agent, task, status, kind, source,
+           parentSessionId, requestId, workflowRunId,
+           startedAt, endedAt, error, outcome, opCount)
+        VALUES
+          (?, ?, ?, ?, ?, ?,
+           ?, ?, ?,
+           ?, ?, ?, ?, ?)
+      `);
 
-    let synced = 0;
-    let skipped = 0;
+      const metaFiles = collectMetaFiles(sessionsDir);
 
-    const transaction = db.transaction(() => {
-      for (const { sessionId, path } of metaFiles) {
-        const meta = parseMeta(path);
-        if (!meta || !meta.agent || !meta.startedAt) {
-          skipped++;
-          continue;
+      let synced = 0;
+      let skipped = 0;
+
+      const transaction = db.transaction(() => {
+        for (const { sessionId, path } of metaFiles) {
+          const meta = parseMeta(path);
+          if (!meta || !meta.agent || !meta.startedAt) {
+            skipped++;
+            continue;
+          }
+
+          upsert.run(
+            sessionId,
+            meta.agent,
+            meta.task ?? "",
+            meta.status ?? "running",
+            meta.kind ?? null,
+            meta.source ?? null,
+            meta.parentSessionId ?? null,
+            meta.requestId ?? null,
+            meta.workflowRunId ?? null,
+            meta.startedAt,
+            meta.endedAt ?? null,
+            meta.error ?? null,
+            meta.outcome ?? null,
+            meta.opCount ?? 0,
+          );
+          synced++;
         }
+      });
 
-        upsert.run(
-          sessionId,
-          meta.agent,
-          meta.task ?? "",
-          meta.status ?? "running",
-          meta.kind ?? null,
-          meta.source ?? null,
-          meta.parentSessionId ?? null,
-          meta.requestId ?? null,
-          meta.workflowRunId ?? null,
-          meta.startedAt,
-          meta.endedAt ?? null,
-          meta.error ?? null,
-          meta.outcome ?? null,
-          meta.opCount ?? 0,
-        );
-        synced++;
-      }
-    });
+      transaction();
 
-    transaction();
+      ctx.log(`[session-sync] Synced ${synced} sessions (${skipped} skipped)`);
 
-    ctx.log(`[session-sync] Synced ${synced} sessions (${skipped} skipped)`);
-
-    ctx.emit({
-      type: "session_sync",
-      synced,
-      skipped,
-      total: metaFiles.length,
-    });
+      ctx.emit({
+        type: "session_sync",
+        synced,
+        skipped,
+        total: metaFiles.length,
+      });
+    } finally {
+      // Ensure the connection is closed and WAL is checkpointed
+      db.close();
+    }
   };
 };
