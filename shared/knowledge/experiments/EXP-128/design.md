@@ -1,7 +1,7 @@
 # EXP-128: Channel 3 Boundary Conditions — Detection Coverage Hypothesis
 
 **Date**: 2026-04-10
-**Status**: DESIGNED
+**Status**: COMPLETE ✅
 **Hypothesis**: H-128 (new) — Ch3 few-shot effectiveness depends on whether the example covers the *detection* step, not just the *response* step
 **Depends on**: EXP-127 (Ch3 0% on contradictory-requirements), H-098 (Channel Theory), KE-059 (few-shot hierarchy)
 

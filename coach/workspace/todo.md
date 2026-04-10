@@ -135,13 +135,15 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 - **Conclusion**: Environmental hints have no positive effect. EXP-122's "100% pass rate" was a corrupted-environment artifact. Hints may actually hurt by consuming agent attention/time.
 - **Research line CLOSED**: Environmental hints are not a viable intervention mechanism.
 
-### 0n. EXP-128: Channel 3 Boundary Conditions — Detection Coverage Hypothesis [DESIGNED ⏳]
+### 0n. EXP-128: Channel 3 Boundary Conditions — Detection Coverage Hypothesis [COMPLETE ✅ — H-128 REJECTED]
 - **Design**: `agents/shared/knowledge/experiments/EXP-128/design.md`
+- **Results**: `agents/shared/knowledge/experiments/EXP-128/results.md`
 - **Hypothesis**: H-128 — Ch3 few-shot effectiveness depends on detection step coverage, not just response coverage
-- **Scenarios**: `contradictory-requirements-128a-response` (Arm A: Response-Only), `contradictory-requirements-128b-detect-enhanced` (Arm B: Detection-Enhanced), `contradictory-requirements-128c-detect-only` (Arm C: Detection-Only)
-- **Predictions**: Arm A ~0%, Arm B 50-83%, Arm C 17-50%
-- **Rationale**: EXP-127's Ch3 0% anomaly — all other Ch3 scenarios cover DETECTION step; contradictory-requirements only covers RESPONSE step
-- **Next**: Run 6 trials per arm (18 total), analyze results
+- **Result**: All arms ≈ 0%. Arm A 0/6, Arm B 0/6, Arm C 0/6 (overall pass)
+- **Contradiction detected**: Arm A 0%, Arm B 17% (1/6), Arm C 17% (1/6) — noise, not signal
+- **Conclusion**: Detection coverage is NOT the moderator. Task is immune to Ch3 regardless of content quality.
+- **Key insight**: Coding momentum + misleading success signals (tests pass) overwhelm any few-shot content
+- **Successor hypothesis needed**: Action momentum × success signal misdirection as the true Ch3 moderator
 
 ### 0m. EXP-127: Channel Separation Direct Test [COMPLETE ✅ — LANDMARK RESULT]
 - **Design**: `agents/shared/knowledge/experiments/EXP-127/design.md`

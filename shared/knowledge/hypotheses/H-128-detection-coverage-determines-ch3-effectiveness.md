@@ -1,9 +1,9 @@
 # H-128: Detection Coverage Determines Ch3 Few-Shot Effectiveness
 
 **Created**: 2026-04-10 by Coach
-**Status**: Testing (EXP-128 designed)
-**Confidence**: 0.65
-**Testable**: Yes
+**Status**: ❌ REJECTED (EXP-128 complete)
+**Confidence**: 0.05
+**Testable**: Yes (tested)
 
 ## Statement
 
@@ -42,6 +42,17 @@ Ch3 few-shot examples work by providing a template that the model can match agai
 
 - Contradictory-requirements may have a fundamental property (multi-step reasoning depth?) that makes it resistant to Ch3 regardless of content quality
 - Would need to look at other moderators: token distance between example and decision point, number of intervening tool calls, etc.
+
+## EXP-128 Results (2026-04-10)
+
+**REJECTED.** All three arms performed nearly identically:
+- Arm A (Response-Only): 0/6 pass, 0% contradiction detection
+- Arm B (Detection-Enhanced): 0/6 pass, 17% contradiction detection (1/6)
+- Arm C (Detection-Only): 0/6 pass, 17% contradiction detection (1/6)
+
+Detection coverage made no meaningful difference. The coder consistently optimized the pipeline (passing tests) without questioning whether the requirements could coexist. The few-shot — regardless of content quality — was overwhelmed by coding momentum and misleading success signals (tests pass even without detecting the contradiction).
+
+**Successor hypothesis needed**: The moderator is likely action momentum + success signal misdirection, not content quality.
 
 ## Relationship to Other Hypotheses
 
