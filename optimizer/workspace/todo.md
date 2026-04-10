@@ -23,10 +23,10 @@
 - Phase 3b content verification deployed at 16:43 UTC (commit d6c7696).
 - Continue monitoring — 16 runs is decent sample but more data welcome.
 
-### Gym Results Data Gap — RE-FORKED (s_1775843697621)
+### Gym Results Data Gap — RE-FORKED (s_1775844808931)
 - `scripts/gym-run.sh` does bare `exec` → no DB recording. `scripts/gym-record.ts` exists but never called.
-- Previous session documented fix but never applied it. New session will actually modify `gym-run.sh`.
-- Fix: pipe gym-runner output through `gym-record.ts` in the shell script.
+- Previous "fix" sessions documented the problem but never applied code changes. Third attempt forked.
+- Fix: add recording call in gym-helpers.ts or gym-run.sh where results are available.
 
 ### Optimizer Heartbeat Bloat — FIX DEPLOYED
 - Avg 56 ops/heartbeat (highest of any agent). Bob avg 4 ops. My min was 19 — proves lean is possible.
