@@ -19,6 +19,7 @@ import { createScrapeDedupGuard } from "./tools/scrape-dedup-guard.js";
 import { createEmptyArgsGuard } from "./tools/empty-args-guard.js";
 import { createToolSchemaGuard } from "./tools/tool-schema-guard.js";
 import { createCommitGuard } from "./tools/commit-guard.js";
+import { createCompletenessGuard } from "./tools/completeness-guard.js";
 import { composeGuards } from "./tools/compose-guards.js";
 import {
   detectErrors,
@@ -384,6 +385,7 @@ export class SubagentManager {
           beforeToolCall: composeGuards(
             createEmptyArgsGuard(),
             createToolSchemaGuard(),
+            createCompletenessGuard(def.name),
             createFinishGuard(),
             createCommitGuard(def.name, this._projectRoot),
             createReadDedupGuard(),
