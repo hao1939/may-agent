@@ -117,6 +117,16 @@
   - **Fix**: Three extraction strategies: (1) toolCall blocks (pre-compaction), (2) parse "Files written:"/"Files edited:" from compacted context, (3) parse "✅ Wrote N bytes to" from toolResult blocks. Tested against real session data.
   - **Impact**: Phase 2 was running on all 11 sessions in last 12h with 0 skipped. 4 of those had ≤12 ops (likely redundant). Fix should start saving ~36% of Phase 2 runs.
 
+## Session Notes (2026-04-10 ~14:55)
+- **EXP-117 KB INTEGRATION COMPLETE**: EXP-117 (Forced Deliverable Enumeration for Bob FM-2.6) negative result fully integrated:
+  - **KE-125 created**: Forced Enumeration Fails on Discovery Tasks Under Time Pressure. Original KE-123 ID collision resolved (→KE-125).
+  - **H-085 updated**: P(H) 0.88→0.85. 5th boundary condition added (discovery-task overhead). EXP-117 added to evidence table, source list, audit trail. Status updated.
+  - **H-095 updated**: P(H) 0.82→0.84. EXP-117 added as supporting evidence #11 (differential effect: same checklist = +100pp optimizer, −67pp Bob). 
+  - **KE-121 updated**: Boundary qualification added — enumeration works when deliverables are explicit, harms when they require discovery.
+  - **PRIORITY-TRACKER updated**: Header, H-085 row (P(H)→0.85), H-095 row (P(H)→0.84), EXP-117 added to experiment queue.
+  - **INDEX.md updated**: H-085 row, H-095 row, EXP-117 experiment row, KE-125 row all added/updated.
+  - **Files modified**: `knowledge/entries/KE-125-forced-enumeration-fails-discovery-tasks.md` (NEW), `knowledge/hypotheses/H-085-forced-externalization-general-mechanism.md`, `knowledge/hypotheses/H-095-agent-specific-failure-interventions.md`, `knowledge/entries/KE-121-forced-externalization-prevents-misinterpretation.md`, `knowledge/hypotheses/PRIORITY-TRACKER.md`, `knowledge/INDEX.md`
+
 ## Session Notes (2026-04-10 ~14:15)
 - **EXP-118 INVALIDATION PROPAGATED**: EXP-118 (Cross-Agent Adversarial Handoff Baselines) showed EXP-116 used `--agent coder` (not a valid agent name). All EXP-116 conclusions invalidated. Propagated across knowledge base:
   - **H-093**: P(H) reverted 0.72 → 0.70 (EXP-116 evidence removed). EXP-116 section marked with ⚠️ invalidation note.
