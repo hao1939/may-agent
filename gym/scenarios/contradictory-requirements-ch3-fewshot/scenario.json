@@ -1,0 +1,11 @@
+{
+  "name": "contradictory-requirements-ch3-fewshot",
+  "description": "EXP-127 Channel 3 arm: Same contradiction detection content as Channel 1 (system prompt skill), but delivered via injected_context (task-message prepended). Tests H-098 prediction that delivery channel, not content, determines effectiveness.",
+  "categories": ["judgment"],
+  "tags": ["behavior", "contradiction", "fewshot", "exp-127", "channel-test"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "work_dir_setup": "copy",
+  "injected_context": "injected_context.md"
+}
