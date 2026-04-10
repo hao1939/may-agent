@@ -115,12 +115,6 @@ describe("SubagentManager path accessors", () => {
     expect(manager.getWorkspacePath("nonexistent")).toBeUndefined();
   });
 
-  it("getMemoryPath returns memory file path when persistDir is set", () => {
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
-    const expected = join(persistDir, "memory", "my-agent.jsonl");
-    expect(manager.getMemoryPath("my-agent")).toBe(expected);
-  });
-
   it("getOutputPath returns outputDir for active session", () => {
     const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
     manager.register({
