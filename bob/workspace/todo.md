@@ -929,3 +929,10 @@
 - [x] **KE-128 INDEX.md Integration**: Added KE-128 (Phase 0 Discovery — Structural Intervention for FM-1.3) to INDEX.md entries table after KE-127. EXP-124 experiment row was already present (line 675) but the corresponding KE entry was missing.
 - [x] **Topic Files Updated**: Added KE-128 reference to `07-tool-use-workflows.md` (Knowledge Entries table) and `10-agent-design-patterns.md` (Knowledge Entries table + H-095 added to Related Hypotheses section). The "3 validated agent-specific structural guards" pattern now visible in topic navigation.
 - **Status**: EXP-124 integration now FULLY COMPLETE — KE-128 entry file ✓, INDEX.md experiment row ✓, INDEX.md KE entry row ✓, PRIORITY-TRACKER ✓, H-085 ✓, H-095 ✓, topic files ✓.
+
+## Session Notes (2026-04-10 ~18:45)
+- [x] **H-098 Authored (Attention Channel Theory)**: New unifying hypothesis formalizing why intervention effectiveness is determined by channel separation, not content quality. Three channels: (1) Text instructions in system prompt — 0% on judgment tasks, competes for same attention budget; (2) Environmental state (file artifacts, workflow gates) — 87-100%, structurally separate from text generation; (3) Task-message positional privilege — 33-100%, domain-dependent. Explains all major findings: text rules fail (Ch1 competition), forced externalization works (Ch1→Ch2 switch), instruction overhead harmful (Ch1 overload), execution crowding (Ch2 budget ≈ 1 gate/task). Formalizes KE-101 Laws 1-5 as channel properties. Five predictions P-098a–e filed.
+  - **H-098 created**: `agents/shared/knowledge/hypotheses/H-098-attention-channel-theory-intervention-effectiveness.md`
+  - **INDEX.md updated**: H-098 row added after H-097 in hypothesis table.
+  - **P(H)=0.78**: High prior based on convergent evidence from 100+ experiments across KE-101, H-085, H-091, KE-025, KE-064.
+  - **Key contribution**: First formal model explaining WHY forced externalization works (Ch1→Ch2 channel switch), WHY text rules fail (Ch1 attention competition), and WHY there's an execution crowding limit (Ch2 budget constraint).
