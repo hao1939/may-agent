@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { classifyFailure } from "../agents/may/handlers/tool-quality-scan.ts";
 
-function chain(tool: string, args: string, result: string, rootCause: string) {
-  return { trigger: { tool, args, result }, rootCause, recovery: [] };
+function chain(tool: string, args: string, result: string, rootCause: string, isError?: boolean) {
+  return { trigger: { tool, args, result, isError }, rootCause, recovery: [] };
 }
 
 describe("classifyFailure", () => {
@@ -123,5 +123,21 @@ describe("classifyFailure", () => {
 
   it("classifies module-not-found", () => {
     expect(classifyFailure(chain("bash", '{"command":"bun x.ts"}', "Cannot find module 'foo'", "Cannot find module 'foo'"))).toBe("module-not-found");
+  });
+
+  it("classifies truncated bash output with isError as exit-code-nonzero", () => {
+    // When output is truncated, "Command exited with code N" is cut off.
+    // The chain detector still sets isError:true and rootCause starts with "exec failed:".
+    expect(classifyFailure(chain("bash",
+      '{"command":"grep -c \\"KE-079\\" agents/shared/knowledge/INDEX.md && echo \\"---\\""}',
+      "3\n---\n# KE-079: Cascade-Architecture Convergence",
+      'exec failed: {"command":"grep -c \\"KE-079\\"  — 3\n---\n# KE-079: Cascade-Architecture Convergence',
+      true))).toBe("exit-code-nonzero");
+  });
+
+  it("still classifies genuine other when isError is not set", () => {
+    // Without isError, truncated output with "exec failed:" should remain "other"
+    expect(classifyFailure(chain("bash", '{"command":"cat foo.js"}',
+      "/** Markdown Renderer */", "bash failed: /** Markdown Renderer */"))).toBe("other");
   });
 });
