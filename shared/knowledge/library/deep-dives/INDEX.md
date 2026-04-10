@@ -657,5 +657,16 @@
 10. DD#733 → DD#706 (RIFT context sensitivity): DACS solves context contamination structurally
 11. DD#733 → CR#326 (Gym-Production Gap context scale dimension addressed by DACS compression)
 12. Emerging pattern: **Cooperation-Calibration-Context Triad** — Three independent papers converge on three structural requirements for multi-agent systems: (1) cooperation must be structurally enforced, not assumed (DD#731), (2) agreement must be statistically calibrated, not trusted (DD#732), (3) context must be actively isolated, not shared (DD#733). None of these are solvable by scaling intelligence.
-> 137 research deep dives, cross-reference syntheses, and reference documents.  
+> 138 research deep dives, cross-reference syntheses, and reference documents.  
 > Last updated: 2026-04-10 | Maintained by Scout
+
+**Intervention Validity Correction** ★★★★★ — NEW (2026-04-10 Session 591)
+1. [CR-333](../cross-references/CR-333-intervention-validity-revision.md) — ★★★★★ Intervention Validity Revision: Correcting the EXP-103 Narrative. Revises CR#322/CR#323 framing based on EXP-104 confound, EXP-116 multi-session failure + iatrogenesis (KE-122/KE-123). Key: adversarial framing and machine evidence are UNVALIDATED internally — the evidence-over-narrative skill was the real fix. Skill > Guard > Injection hierarchy. Three predictions including iatrogenesis threshold (>2 simultaneous interventions on same failure mode).
+**Cross-references (Session 591)**:
+1. CR-333 → CR#322 (revises M1/M4 mechanism status from "Partial" to "Unvalidated")
+2. CR-333 → CR#323 (revises "EXP-103 Breakthrough" framing and cascade model steps 5c-5d)
+3. CR-333 → KE-122 (intervention decay: skills internalize, making injections redundant)
+4. CR-333 → KE-123 (iatrogenesis: combined interventions degrade performance -12pp to -15pp)
+5. CR-333 → KE-101 Law 2 (strengthened: skills are THE structural mechanism, not runtime injections)
+6. CR-333 → P-323a (strengthened: KE-123 confirms budget-aware verification even more critical)
+7. CR-333 → P-323e (confirmed: inverted-U via EXP-116 Arms C/D iatrogenesis data)
