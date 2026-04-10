@@ -78,6 +78,30 @@ CONDITIONAL — reviewed gym-runner change appears coherent and type-safe, but r
 
 ## 2026-04-09T23:30Z
 
+## 2026-04-10T03:27Z
+
+### Summary
+Proactive heartbeat QA at HEAD **a1f1468** (top of tree). I reviewed the recent gym-runner change in `test/gym/gym-runner.ts` (may-agent adapter sandbox copy of `agents/<name>` into the scenario workdir) and ran the mandatory gates.
+
+### Files reviewed (evidence)
+- `test/gym/gym-runner.ts` (read lines 1–260): confirms identity sandbox copy uses `cpSync(agentDir, agentDest, { recursive: true })` guarded by `existsSync(agentDir) && !existsSync(agentDest)` and ensures parent dir exists via `mkdirSync(join(_workDir, "agents"), { recursive: true })`.
+
+### Mandatory gates
+- `./node_modules/.bin/tsc --noEmit`: PASS (exit 0; no output)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2089 passed (2110)**
+  - `test/launcher.test.ts`: 7 failed — expects `/app/src/app/launcher.ts` to exist; missing (`existsSync` false + ENOENT reads)
+  - `test/context-learn.test.ts`: 7 failed — cleanup `rmSync(tmpDir, { recursive: true })` fails with `EACCES` under `/app/test-workspace/context-learn-test/test-agent`
+  - `test/context-learning.test.ts`: 6 failed — cleanup `rmSync(tmpDir, { recursive: true })` fails with `EACCES` under `/app/test-workspace/context-learning-test/.state`
+  - `test/research-db.test.ts`: 1 failed — integration test `syncs the actual knowledge base without errors` timed out at 5000ms (observed ~5.6s)
+
+### Issues
+- CRITICAL (repo/test mismatch): missing `src/app/launcher.ts` breaks `test/launcher.test.ts`.
+- IMPORTANT (env/permissions): inability to `rmSync` under `/app/test-workspace/*` causes `EACCES` failures.
+- IMPORTANT (test robustness): real knowledge base sync sometimes exceeds 5s timeout.
+
+### Verdict
+CONDITIONAL — the sampled gym-runner code change looks reasonable and type-checks; CI remains red due to unrelated missing module + environment/timeout issues.
+
 ### Summary
 Heartbeat QA at HEAD **0cf9b17**. I re-ran the mandatory gates and re-read `src/lib/fewshot-router.ts` to independently verify the heartbeat exclusion is now case-insensitive (`/^\[heartbeat\]/i`), preventing few-shot injection for `[heartbeat]` (any casing).
 
