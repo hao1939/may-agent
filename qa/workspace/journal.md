@@ -4956,3 +4956,14 @@ Reviewed `src/gym/runner.ts` changes adding `inherits?: string` to scenario meta
 
 ### Verdict
 CONDITIONAL — Inherits fallback logic looks reasonable from static review, but `copyEnvironment()`’s preserve/flatten decision appears inconsistent with its comment, and I could not run typecheck/tests in this environment.
+
+---
+### 2026-04-10T16:54Z — Heartbeat QA Review
+
+Reviewed commit **2649423** (`test/gym/gym-runner.ts`): adds early-abort guards when `adapter.runAgent()` returns `status === "error"` with an empty `sessionId`, preventing the gym from scoring an unmodified environment.
+
+Findings:
+- IMPORTANT: `tsc --noEmit` currently fails due to a non-Vitest/Bun-only test file (`src/lib/tools/verification-depth-guard.test.ts`) importing `bun:test` (TS2307). This is an environment/tooling consistency issue; `vitest --run` also fails on the same suite.
+- MINOR: In `runMultiSessionScenario()` abort return, `session_id` is constructed from `allSessionResults.map((r) => r.sessionId).join(",")`; when the failing result has empty sessionId, this can yield trailing commas/empty tokens (cosmetic).
+
+Verdict: **CONDITIONAL** — The guard logic itself reads correct and matches the stated intent, but CI will remain red under Vitest/tsc until the Bun-only test is addressed or excluded.

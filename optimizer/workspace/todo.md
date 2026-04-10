@@ -28,6 +28,9 @@
 
 - **Bob HB dispatch**: 87% properly dispatched. 13% inline-heavy — not fixable via text rules (KE-002).
 - **System waste**: 0-1.9% across all agents. Quality universally "good".
+- **Context tax**: 82% of all input tokens are re-sent conversation context. Bob worst at 13.8K tok/op. Prompt caching fix would save ~$128/day.
+- **Coach work sessions**: Highest per-session cost ($74/day total, 38 sessions at avg 46 ops). 5 sessions >60 ops = 35.6% of coach cost.
+- **Daily cost**: ~$302/day total. Bob $107, Coach $74, May $36, Scout $32.
 - **Bob quality scores**: Artificially low (2.47) due to Phase 1/2 double-penalization. Actual ~3.87. Low priority.
 - **Heartbeat bloat**: 61% of system ops in heartbeats. Only bob/coach dispatch effectively. Needs structural fix.
 - **Tool quality**: Waste rate 3.6% (stable). All regressions are bob INDEX.md noise.

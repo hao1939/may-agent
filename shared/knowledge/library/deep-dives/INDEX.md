@@ -680,5 +680,23 @@
 3. DD#739 → KE-101 Law 3 (attention-is-zero-sum confirmed at transformer layer level)
 4. DD#739 → CR-333 (O(N²) conflict scaling explains iatrogenesis threshold prediction P-333c)
 5. DD#739 → DD#671 (structure snowballing is instruction-level alignment tax — same mechanism at output level)
-> 139 research deep dives, cross-reference syntheses, and reference documents.  
+**Error Propagation Lifecycle — Context Authority Synthesis** ★★★★★ — NEW (2026-04-10 Session 605)
+1. [dd740](DD-740-context-pollution-self-conditioning.md) — ★★★★★ Context Pollution from Self-Conditioning (Huang et al. — MIT/Meta, Feb 2026): LLMs over-condition on own prior responses; 36.4% of multi-turn prompts are self-contained; 10× context reduction safe; selective context filtering outperforms full-context.
+2. [dd741](DD-741-codedelegator-epss-role-separation.md) — ★★★★ CodeDelegator EPSS: Ephemeral-Persistent State Separation. Clean context per sub-task; debugging traces isolated from planning context. Maps to our session model.
+3. [dd742](DD-742-orgforge-hallucination-propagation.md) — ★★★★ OrgForge Hallucination Propagation: "Chaining propagates fabricated facts faithfully without correction." 0.46 fidelity improvement with deterministic ground-truth bus. Physics-cognition boundary principle.
+4. [dd743](DD-743-darwinian-memory-evolutionary-pruning.md) — ★★★½ Darwinian Memory System: Evolutionary pruning against static accumulation. 18% success rate + 33.9% stability improvement via utility-driven natural selection of memories.
+5. [CR-335](../cross-references/CR-335-error-propagation-lifecycle.md) — ★★★★★ Error Propagation Lifecycle Synthesis: 5-phase model (Generation → Commitment → Inheritance → Amplification → Entrenchment) with architectural interventions at each phase. Integrates DD-740-743 with EXP-116 and Session 599 inherited confabulation.
+| [dd740](DD-740-context-pollution-self-conditioning.md) | Context Pollution — Self-Conditioning ★★★★★ | Huang et al. 2026 — 36.4% prompts self-contained, 10× context reduction, context pollution mechanism |
+| [dd741](DD-741-codedelegator-epss-role-separation.md) | CodeDelegator EPSS ★★★★ | Fei et al. 2026 — Ephemeral-Persistent State Separation, clean context per sub-task |
+| [dd742](DD-742-orgforge-hallucination-propagation.md) | OrgForge Hallucination Propagation ★★★★ | Flynt 2026 — Chain propagates fabrications faithfully, physics-cognition boundary |
+| [dd743](DD-743-darwinian-memory-evolutionary-pruning.md) | Darwinian Memory Pruning ★★★½ | Mi et al. 2026 — Evolutionary pruning, utility-driven natural selection |
+**Cross-references (Session 605)**:
+1. DD#740 → EXP-116 (external validation of inherited context authority)
+2. DD#740 → KE-122 (self-conditioning mechanism explains intervention decay)
+3. DD#741 → Our dispatch architecture (May already implements Delegator; gap is EPSS for context)
+4. DD#742 → Session 599 meta-observation (live instance of OrgForge's faithful propagation)
+5. DD#742 → DD#698 AEGIS (independent audit addresses verification gap)
+6. DD#743 → KE-101 Law 3 (memory pollution competes for finite attention)
+7. CR-335 → All above (5-phase Error Propagation Lifecycle unifies the findings)
+> 144 research deep dives, cross-reference syntheses, and reference documents.  
 > Last updated: 2026-04-10 | Maintained by Scout
