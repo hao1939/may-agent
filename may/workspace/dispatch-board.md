@@ -1,23 +1,23 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~11:14 UTC
+Updated: 2026-04-10 ~11:23 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — Heartbeat 11:12. Lean cycle — EXP-116 review already done. Clearing error logs.
-- **Coach**: 🟢 Active — Heartbeat 11:12. Dispatched EXP-116 Phase 2 **revised** (s_1775819641735_110) — incorporating Bob's 3 critical review issues.
-- **Scout**: 🟢 Active — Heartbeat 11:12.
-- **Tech-lead**: 🟢 Active — Heartbeat 11:12. Dead code removal in progress: commit 1e902a6e on `review/dead-code-removal` (675 lines, 6 files: ops-gate, manager-receipts, orders + tests).
-- **Optimizer**: 🟢 Active — Heartbeat 11:12.
-- **Evaluator**: 🟢 Active — Heartbeat 11:12. Running task tree evaluations.
-- **QA**: 🟢 Active — Heartbeat 11:12.
+- **Bob**: 🟢 Active — Heartbeat 11:23. Lean cycle — hypothesis housekeeping, H-097 CCC Triad.
+- **Coach**: 🟢 Active — Heartbeat 11:23. EXP-116 Phase 2 work session running (29min, s_1775818479860_845). Baselines 100%, Arm A 100%, Arm B running. **CEILING EFFECT confirmed** — evidence-over-narrative skill already fixed these scenarios.
+- **Scout**: 🟢 Active — Heartbeat 11:23.
+- **Tech-lead**: 🟢 Active — Heartbeat 11:23. Socket-watch removal **MERGED** (commit 0975c41, 706 lines). Web UI Phase 1 **MERGED** (commit c76cd98). Dead code total: ~1,973 lines removed.
+- **Optimizer**: 🟢 Active — Heartbeat 11:23. Flagged stale DB tables (false alarm — sessions table is current).
+- **Evaluator**: 🟢 Active — Heartbeat 11:23. Running task tree evaluations.
+- **QA**: 🟢 Active — Heartbeat 11:23.
 - **Coder**: Idle. Only runs when forked by tech-lead.
 - **All agents**: 🟢 8/8 running. Zero errors last hour.
 - **✅ Tool Schema Guard**: Live in production.
-- **✅ Dead code removal**: ~1,267 lines dead code purged + dead finish-guard.ts removed (2f261cc7).
+- **✅ Dead code removal**: ~1,973 lines removed (stuck-detector 657 + forced-externalization 610 + socket-watch 706).
+- **✅ Web UI Phase 1**: Merged to main (c76cd98) — agent activity grid, timeline, health summary.
 - **⚠️ Cron bug**: `analyze-failures` cron keeps failing (`db.query is not a function`). Low priority.
 - **⚠️ Git drift**: Project restructured to bundled binary — source files inside bundle, not on filesystem.
-- **✅ Web UI branch**: Stale branch cleaned up (deleted). Web UI is built into the bundled binary. No reconciliation needed.
 - **⚠️ Duplicate requests in DB**: 4 pairs of duplicates (coder Web UI ×2, tech-lead review ×2, bob EXP-115 ×2, coach EXP-115 ×2). Need cleanup.
 
 ## Active Priorities (from Hao)
@@ -135,10 +135,10 @@ Updated: 2026-04-10 ~11:14 UTC
 | **Tech-lead: 21 Test Fixes** | ✅ MERGED | tech-lead | Commit ead6c82. Dead launcher tests + permission-blocked workspace dirs + flaky research-db. 2098/2098 tests pass. |
 | **Bob DD-720-723 Indexing** | ✅ COMPLETE | bob | Evaluation architecture entries indexed into knowledge base. |
 | **Scout C1.3/C7.1 Investigation** | ✅ COMPLETE | coach | Root cause: path inconsistency. Scout writes drops to 4+ dirs, only `/knowledge/` exempt. Text instructions can't fix post-action habits. Brief at `agents/coach/workspace/briefs/scout-c13-regression-diagnostic.md`. |
-| **EXP-116 Adversarial Framing Guard** | ⚠️ REVISION IN PROGRESS | coach + bob | Coach dispatched **revised** Phase 2 (s_1775819641735_110). Actively addressing Bob's 3 critical issues: EXP-103 confound, KE refs (094→099, 095→100), EXP-108 null result. Session reading EXP-108 data + checking scenario configs. |
+| **EXP-116 Adversarial Framing Guard** | ⚠️ CEILING EFFECT | coach + bob | Phase 2 running — **ALL ARMS 100%** (baseline 6/6, Arm A 6/6, Arm B running). Evidence-over-narrative skill already fixed confabulation. Bob's review validated: EXP-103 confound confirmed. Adversarial framing provides no marginal value. |
 | **Bob H-097 CCC Triad Hypothesis** | ⏳ NEW | bob | Multi-Agent CCC Triad: Cooperation + Calibrated Agreement + Context Isolation. P(H)=0.65. Based on KE-120/DD-731-733. Key insight: o3 at 17% collective vs o3-mini at 50% — capability ≠ cooperation. |
 | **Tech-lead EXP-115 Completeness Guard** | ⚠️ UNMERGED | tech-lead | Commit 484a53cb on `review/s_1775810855346_43`. NOT on main yet. Needs merge. |
-| **Tech-lead Dead Code: ops-gate/manager-receipts/orders** | ✅ COMMITTED | tech-lead | Commit 1e902a6e on `review/dead-code-removal`. 6 files, 675 lines deleted. Tests 37/38 (1 pre-existing flaky). Needs merge to main. |
+| **Tech-lead Dead Code Sprint** | ✅ MERGED | tech-lead | Socket-watch (0975c41, 706 lines) + stuck-detector (4733672, 657 lines) + forced-externalization (610 lines) = ~1,973 lines removed total. Web UI Phase 1 also merged (c76cd98). |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -170,28 +170,23 @@ Updated: 2026-04-10 ~11:14 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (11:14)
-- **System healthy**: All 8 non-May agents running. All heartbeats fresh (~11:12).
-- **Since last cycle (10:53)**:
-  - Bob: Lean heartbeat — EXP-116 review already done. Cleared error log. No new drops or experiments.
-  - Coach: Dispatched **EXP-116 Phase 2 REVISED** (s_1775819641735_110). Session is actively reading EXP-108 null results and checking scenario configs. Incorporating all 3 of Bob's critical review issues.
-  - Tech-lead: Forked dead code removal (req:d46ed55c). Committed 1e902a6e on `review/dead-code-removal`: 6 files deleted (ops-gate, manager-receipts, orders + tests), 675 lines removed. Tests 37/38 (1 pre-existing flaky sandbox timeout).
-  - Scout: Heartbeat — arXiv triage confirmed complete (DD#731-733). Clean state.
-  - Bob filed **H-097** (Multi-Agent CCC Triad): Cooperation + Calibrated Agreement + Context Isolation required for reliable multi-agent coordination. P(H)=0.65. Based on KE-120 (DD-731/732/733 synthesis).
-- **New branch to merge**: `review/dead-code-removal` (1e902a6e) — 675 lines dead code. Awaiting tech-lead merge to main.
-- **EXP-115 completeness guard** still unmerged on `review/s_1775810855346_43` (484a53cb). Not on main.
+## Latest Cycle Summary (11:23)
+- **System healthy**: All 8 non-May agents running. Zero errors. All heartbeats fresh (~11:23).
+- **Since last cycle (11:14)**:
+  - **Tech-lead**: Socket-watch removal **MERGED** (commit 0975c41, 706 lines). Web UI Phase 1 **MERGED** (commit c76cd98). Both on main now. ~1,973 lines total dead code removed.
+  - **Coach**: EXP-116 Phase 2 work session 29min in. **Ceiling effect confirmed**: Baselines 100% (6/6), Arm A 100% (6/6), Arm B running. Evidence-over-narrative skill already fixed these scenarios. Bob's review concern validated.
+  - **Bob**: Lean heartbeat — hypothesis housekeeping. H-094/H-068 archived, H-097 promoted to Tier 2.
+  - **Optimizer**: Flagged stale DB sessions/evaluations tables (investigated — sessions table IS current, latest entry 11:23. Optimizer's finding was inaccurate).
+  - **Scout**: Lean heartbeat — arXiv triage done, clean state.
 
 ## Key New Findings This Cycle
-- **Coach revised EXP-116 design incorporating Bob's feedback**: The Phase 2 fork is properly addressing the EXP-103 confound, KE reference errors, and EXP-108 null result. Good cross-agent quality loop.
-- **H-097 CCC Triad from external research**: Bob synthesized 3 ICLR papers into a testable hypothesis about multi-agent coordination structural requirements. Relevant to our system: o3 at 17% collective vs o3-mini at 50% shows capability ≠ cooperation.
-- **Tech-lead continues dead code cleanup**: Now ~1,942 lines total dead code removed (1,267 prior + 675 this cycle). Codebase getting leaner.
-- **Agents self-organizing well**: Bob, Coach, and Tech-lead all finding and executing productive work autonomously. Coach correctly prioritized revising EXP-116 based on Bob's review before running trials.
+- **EXP-116 Phase 2 CEILING EFFECT**: Baselines jumped from EXP-103's 11-25% to 100%. The evidence-over-narrative skill deployment (EXP-104 finding) was the real fix for confabulation. Adversarial framing is not providing marginal value. This confirms Bob's review was correct — EXP-103's +75-89pp was confounded by the skill deployment.
+- **Dead code removal sprint total**: ~1,973 lines removed (stuck-detector 657 + forced-externalization 610 + socket-watch 706). Codebase significantly leaner.
+- **Web UI Phase 1 live on main**: Agent activity grid, timeline, health summary.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao since Mar 24**.
-- **P1**: **EXP-116 Phase 2 revised in progress** — Coach forked session actively running with Bob's review fixes.
-- **P1**: **Merge `review/dead-code-removal`** — Tech-lead should merge to main after finishing current heartbeat.
-- **P1**: **Merge `review/s_1775810855346_43`** (EXP-115 completeness guard) — sitting unmerged since last cycle.
+- **P1**: **EXP-116 Phase 2 wrapping up** — Coach finishing Arm B runs. Expect ceiling effect across all arms. Will need Bob to integrate null result.
 - **P1**: **EXP-105 Few-Shot Production Impact** — Need coder/optimizer work sessions to generate data.
 - **P1**: **Present research sprint results to Hao** — KE-101 meta-analysis capstone. 17+ experiments. Gym graduation. Token waste finding ($441/week).
 - **P2**: `analyze-failures` cron DB bug — persistent but non-critical.
