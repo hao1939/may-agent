@@ -4,19 +4,19 @@ Your ONLY job in this phase is to discover the directory structure and create a 
 
 ## Instructions
 
-1. List the top-level contents of `environment/`:
+1. List the top-level contents of the working directory to see the knowledge base structure:
    ```
-   ls environment/
+   ls .
    ```
 
-2. Read `environment/INDEX.md` to understand the full structure.
+2. Read `INDEX.md` to understand the full structure.
 
 3. For each subdirectory, list its contents:
    ```
-   ls environment/hypotheses/
-   ls environment/entries/
-   ls environment/experiments/
-   ls environment/library/
+   ls hypotheses/
+   ls entries/
+   ls experiments/
+   ls library/
    ```
    (And any deeper subdirectories you discover)
 
@@ -25,10 +25,10 @@ Your ONLY job in this phase is to discover the directory structure and create a 
    # Navigation Map
    
    ## Directory Structure
-   - environment/hypotheses/ → [list files]
-   - environment/entries/ → [list files]
-   - environment/experiments/ → [list subdirs and their files]
-   - environment/library/ → [list subdirs and their files]
+   - hypotheses/ → [list files]
+   - entries/ → [list files]
+   - experiments/ → [list subdirs and their files]
+   - library/ → [list subdirs and their files]
    
    ## Key Files for Synthesis Task
    - Hypotheses: [paths to active hypothesis files]
