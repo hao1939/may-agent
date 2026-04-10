@@ -1,18 +1,19 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~05:53 UTC
+Updated: 2026-04-10 ~06:24 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
 - **Bob**: 🟢 Running — Active heartbeat.
-- **Coach**: 🟢 Running — Reflect cron + heartbeat both active.
+- **Coach**: 🟢 Running — EXP-114a Tool Schema Guard prototype in progress.
 - **Scout**: 🟢 Running — Fresh heartbeat.
-- **Tech-lead**: 🟢 Running — Heartbeat cycling.
-- **Optimizer**: 🟡 IMPROVED — Self-dispatched tool quality regression #14 investigation this cycle.
-- **Evaluator**: 🟡 IDLE — Running auto-evals, task tree eval completed.
+- **Tech-lead**: 🟢 Running — Heartbeat cycling (new "Simplification Engine" proactive heartbeat).
+- **Optimizer**: 🟢 Running — New "Explorer Mode" proactive heartbeat. Self-dispatched regression #14 last cycle.
+- **Evaluator**: 🟡 IDLE — Running auto-evals.
 - **QA**: 🟡 IDLE — Minimal activity.
 - **All agents**: 🟢 8/8 running. Zero errors in last hour.
 - **⚠️ Cron bug**: `analyze-failures` cron keeps failing (`db.query is not a function`). Low priority — doesn't affect operations.
+- **✅ Stale session cleaned**: Cancelled `s_1775311714523_3` (8176min idle, "hello fresh session").
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -119,7 +120,7 @@ Updated: 2026-04-10 ~05:53 UTC
 | **Optimizer Tool Quality Regression #14** | ✅ COMPLETE | optimizer | Self-dispatched investigation of 4 regressed tool quality categories. First self-initiated productive work in days. |
 | **EXP-113 FM-Heavy Workers Analysis** | ✅ COMPLETE | coach + bob | **KEY**: 398 FM-Heavy sessions (26.9%). Top cascade: FM-2.1 (96 first-appearances, 2.38 subsequent). Coach 55% FM-2.1 rate. Three intervention opportunities: FM-2.1 guard, FM-2.6 tool skills, FM-3.1 grounding. Bob integrated: H-095 P(H) 0.70→0.75. |
 | **EXP-114 FM-2.1 Decomposition Design** | ✅ DESIGNED | coach | **PIVOT FINDING**: 54.5% of FM-2.1 is tactical tool errors (bash({}), wrong args), NOT strategic approach problems. No single guard works — need Tool Schema Guard (#1, 78 sessions, HIGH conf) + Path Hints (#2) + Forced Externalization (#3). |
-| **EXP-114a Tool Schema Guard Prototype** | ⏳ IN PROGRESS | coach | Self-dispatched. Building `createToolSchemaGuard()` as `beforeToolCall` hook. Targets 36.6% of FM-2.1 (tool misuse). |
+| **EXP-114a Tool Schema Guard Prototype** | ⏳ DRAFT READY | coach | 280-line prototype at `agents/coach/workspace/tool-schema-guard-draft.ts`. 8 patterns covering 76% of tool schema FM-2.1 (65/85 instances). Ready for tech-lead integration review. |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -151,11 +152,11 @@ Updated: 2026-04-10 ~05:53 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (05:53)
+## Latest Cycle Summary (06:24)
 - **System stable**: All 8 non-May agents running. Zero errors last hour. Research pipeline running autonomously.
-- **EXP-113 fully integrated**: Bob committed H-095 update (P(H) 0.70→0.75) + KE-115. FM-Heavy Workers analysis complete.
-- **EXP-114 design complete + prototype started**: Coach's analysis pivoted the FM-2.1 intervention — 54.5% is tactical tool misuse, not strategic. Already building Tool Schema Guard prototype (EXP-114a).
-- **All agents self-directed**: Bob integrating research, Coach running experiments, Scout/Evaluator/Tech-lead heartbeating, Optimizer investigating regressions.
+- **EXP-114a draft complete**: Coach produced 280-line Tool Schema Guard prototype with 8 patterns covering 76% of tool schema FM-2.1. Ready for tech-lead review.
+- **Proactive heartbeats active**: Tech-lead ("Simplification Engine") and Optimizer ("Explorer Mode") both running with new proactive heartbeats from last cycle's rewrite.
+- **Stale session cleaned**: Cancelled `s_1775311714523_3` (8176min idle).
 - **EXP-105 still waiting**: Zero coder/optimizer work sessions since few-shot deployment. Production impact data blocked.
 - **Amy-kimi still 🔴**: Blocked on Hao for billing.
 
