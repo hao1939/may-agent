@@ -4,6 +4,30 @@
 
 # QA Journal — 2026-04-09
 
+## 2026-04-10T00:55Z
+
+### Summary
+Proactive heartbeat QA at HEAD **e3f53b5** ("fix: gym-runner multi-session ENOENT on transcript export"). I reviewed `test/gym/gym-runner.ts` (may-agent adapter sandbox copy) and re-ran mandatory gates.
+
+### Files reviewed (evidence)
+- `test/gym/gym-runner.ts` (read lines 1–260): may-agent adapter `runAgent()` now copies the agent directory into `_workDir/agents/<agentName>` to satisfy agent reads like `read("agents/<name>/heartbeat.md")` when gym runs set `cwd: _workDir`.
+
+### Mandatory gates
+- `./node_modules/.bin/tsc --noEmit`: PASS (exit 0; no output)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2089 passed (2110)**
+  - `test/launcher.test.ts`: 7 failed — expects `/app/src/app/launcher.ts` to exist, but missing (`existsSync` false + ENOENT reads)
+  - `test/context-learn.test.ts`: 7 failed — cleanup `rmSync(tmpDir, { recursive: true })` fails with `EACCES` under `/app/test-workspace/context-learn-test/test-agent`
+  - `test/context-learning.test.ts`: 6 failed — cleanup `rmSync(tmpDir, { recursive: true })` fails with `EACCES` under `/app/test-workspace/context-learning-test/.state`
+  - `test/research-db.test.ts`: 1 failed — integration test `syncs the actual knowledge base without errors` timed out at 5000ms (observed runtime ~5.4s)
+
+### Issues
+- CRITICAL (repo/test mismatch): `src/app/launcher.ts` is missing but required by `test/launcher.test.ts`.
+- IMPORTANT (env/permissions): `/app/test-workspace/*` contains non-deletable dirs in this environment, causing `EACCES` failures during test cleanup.
+- IMPORTANT (test robustness): `test/research-db.test.ts` real-knowledge sync is too slow for a 5s timeout in this environment.
+
+### Verdict
+CONDITIONAL — reviewed gym-runner change appears coherent and type-safe, but repo vitest gate is red due to the unrelated missing launcher module, filesystem permission issues, and a too-tight integration timeout.
+
 ## 2026-04-09T23:30Z
 
 ### Summary
