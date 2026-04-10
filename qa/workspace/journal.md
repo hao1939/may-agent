@@ -4907,3 +4907,19 @@ CONDITIONAL — directionally correct, but should sync files on invalid_agent to
 
 ### Verdict
 PASS — change is correct and test suite passes.
+
+---
+
+## 2026-04-10T15:55Z — Heartbeat QA Review
+
+Reviewed current HEAD (latest commit: `2649423` in `git log --oneline -10`). Read `src/app/ui/web.ts` (Web UI server / API handlers / websocket proxy).
+
+- Ran TypeScript check: `./node_modules/.bin/tsc --noEmit` (exit 0).
+- Ran test suite: `./node_modules/.bin/vitest --run` (exit 0, **2041 tests** across 138 files).
+
+Findings:
+- IMPORTANT: `src/app/ui/web.ts` contains multiple silent `catch {}` blocks in filesystem walking (`findSocketPath()`), transcript parsing (`handleTranscript()`), and browse listing; these can hide real IO/JSON problems. Consider at least debug logging (behind a flag) for unexpected failures.
+- IMPORTANT: `handleBrowse()` attempts a path traversal guard using `absPath.startsWith(sharedDir)` but builds `absPath` with `join(sharedDir, relPath)` rather than `resolve()`; `..` components may bypass the prefix check. Consider `const abs = resolve(sharedDir, relPath)` and then `abs.startsWith(sharedDir + path.sep)`.
+
+### Verdict
+CONDITIONAL — tests pass, but the browse path traversal check looks unsafe and should be hardened before relying on it for security.

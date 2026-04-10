@@ -1,0 +1,10 @@
+{
+  "name": "kb-integration-discovery-hints",
+  "description": "Variant of kb-integration-discovery with environmental hints in INDEX.md. Tests whether HTML comment nudges improve creative inference (adding new KB entries). Same 8 checks, same 3 min timeout. EXP-122.",
+  "categories": ["completeness", "knowledge-integration"],
+  "tags": ["behavior", "FM-2.6", "multi-file", "discovery", "exp-122", "environmental-hints"],
+  "tier": "standard",
+  "timeout": 3,
+  "agent_type": "coder",
+  "workflow": false
+}

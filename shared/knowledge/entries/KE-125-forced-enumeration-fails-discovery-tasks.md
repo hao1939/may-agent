@@ -1,7 +1,7 @@
 # KE-125: Forced Deliverable Enumeration Fails on Discovery Tasks Under Time Pressure
 
 **Status**: Active
-**Source**: EXP-117, EXP-120 (Bob's FM-2.6 read-loop pattern, kb-integration-discovery scenario)
+**Source**: EXP-117, EXP-120, EXP-121 (externalization trilogy on kb-integration-discovery scenario)
 **Date**: 2026-04-10
 **Qualifies**: KE-121 (forced externalization prevents misinterpretation), KE-007 (structural enforcement)
 **Extends**: H-085 boundary conditions (5th boundary: discovery overhead)
@@ -14,11 +14,16 @@
 
 | Intervention | Type | Pass Rate | Δ vs Baseline |
 |---|---|---|---|
-| No intervention (baseline) | — | **67% (4/6)** | — |
+| No intervention (baseline, 3 min) | — | **67% (4/6)** | — |
 | Upfront checklist (EXP-117) | Structural | 0% (0/6) | **-67pp** |
 | Progressive tracking (EXP-120) | Advisory | 17% (1/6) | **-50pp** |
+| Extended time budget, 5 min (EXP-121) | Environmental | 83% (5/6) | **+16pp** (NS) |
 
-EXP-117 (p=0.030) is statistically significant. EXP-120 (p=0.242) trends in the same direction but sample is too small for significance. Together they form a consistent pattern: **any form of externalization instruction hurts discovery task performance**.
+EXP-117 (p=0.030) is statistically significant. EXP-120 (p=0.242) trends in the same direction but sample is too small for significance. EXP-121 (5 min timeout, p=1.0) shows a suggestive +16pp improvement but is not significant. Together these form a clear pattern: **instruction-based externalization hurts discovery tasks; more time helps marginally; the core failure is a reasoning gap**.
+
+## EXP-121 Update: Time Budget Is Not the Primary Limiter
+
+Extended time (5 min vs 3 min) raised pass rate from 67%→83% (+16pp, NS). The single failure was the same `index-entry-added` check — the agent doesn't spontaneously generate "create a NEW KE-071 entry." Time helps at the margin by letting the agent finish routine work before the creative-inference step, but the reasoning gap persists regardless of time budget. This confirms the **primary limiter is creative inference**, not time or tracking.
 
 ## Mechanism: Four Compounding Failure Modes
 

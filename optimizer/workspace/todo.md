@@ -86,6 +86,7 @@ Tool quality regression #15 (2026-04-10 07:24) — 1 regressed category. bash:ot
 - **FIRST POST-FIX MEASUREMENT (2026-04-10 13:55)**: Early exit **IS WORKING**. First post-fix workflow run (wr_1775829315936_eooq) used narrow path — Phase 2 task says "Write REMAINING Deliverables Only" instead of full "Write Deliverables NOW". Phase 1: 8 ops, Phase 2 narrow: 9 ops (interrupted), Phase 2b retry: 27 ops. Total: 44 ops. Need ~10 more workflow runs for statistical measurement. All pre-fix runs (before 12:59 UTC) still showed full Phase 2 as expected.
 - **MEASUREMENT WINDOW (2026-04-10 14:23)**: 1h since fix, only 1 workflow run so far. At 18 runs/24h rate, need ~12h more for 10+ data points. Next full measurement at ~Apr 11 01:00 UTC.
 - **MEASUREMENT UPDATE (2026-04-10 15:25)**: 2.5h since fix, 2 workflow runs. Run 1 (13:55): NARROW path used (8+9+27=44 ops). Run 2 (15:25): Phase 1 only so far (5 ops). Pre-fix average: 2 phases × ~33 ops. Still need ~8 more runs for statistical significance. Continue monitoring.
+- **MEASUREMENT UPDATE (2026-04-10 15:55)**: 3h since fix, 4 workflow runs total. Run 1 (wr_eooq): P1(8)+P2-NARROW(9,int)+P2-FULL(27)=44 ops — narrow triggered but retry ran full. Run 2 (wr_b0ht): P1(5) only — P2 pending. Run 3 (wr_xhyk): P1(0) running. Run 4 (wr_qufk): P2-FULL(44) — first run, may have missed fix. Still need ~6+ more completed runs. Next measurement: ~Apr 11 01:00 UTC.
 
 ### QA Journal Token Waste (2026-04-10 09:23)
 **Mode B exploration** — Tool Gap Analysis, found major token waste:
