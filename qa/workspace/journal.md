@@ -4680,3 +4680,21 @@ Proactive heartbeat QA at HEAD **41b5074**. Reviewed `src/lib/session-subscriber
 
 ### Verdict
 CONDITIONAL — code compiles; test suite failures appear unrelated to the subscriber module and look like repo/environment problems (missing launcher module + filesystem permissions + too-tight integration timeout).
+
+---
+
+## 2026-04-10T10:24Z — QA Heartbeat
+
+### Proactive scan
+- Unreviewed commit at HEAD: **4733672** `chore: remove dead stuck-detector.ts module (657 lines)`.
+- Verified `src/lib/stuck-detector.ts` is removed; `src/lib/manager.ts` no longer imports it (file still compiles under full suite).
+
+### Checks
+- `./node_modules/.bin/tsc --noEmit`: **PASS** (no output; exit code assumed 0)
+- `./node_modules/.bin/vitest --run`: **PASS** (**2067** tests across **139** files)
+
+### Findings
+- No functional regressions found in the portion of `src/lib/manager.ts` reviewed (completion pipeline, compaction persistence error handling, retry wiring). Some non-fatal catch blocks intentionally emit bus warnings; no silent swallowing observed in the reviewed section.
+
+### Verdict
+PASS
