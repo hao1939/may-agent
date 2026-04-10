@@ -66,6 +66,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   function handleRequests(url: URL): Response {
     const from = url.searchParams.get("from") || undefined;
     const status = url.searchParams.get("status") || undefined;
+    const agent = url.searchParams.get("agent") || undefined;
     const limit = Math.min(parseInt(url.searchParams.get("limit") || "50", 10), 200);
     const offset = parseInt(url.searchParams.get("offset") || "0", 10);
     let where = "1=1";
@@ -77,6 +78,10 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     if (status) {
       where += " AND status = ?";
       params.push(status);
+    }
+    if (agent) {
+      where += " AND toAgent = ?";
+      params.push(agent);
     }
     const total = (
       _db()
@@ -357,6 +362,127 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     });
   }
 
+  // ── Agent Activity API ──────────────────────────────────────────────
+
+  function handleAgentActivity(): Response {
+    const now = Date.now();
+    const dayStart = now - 86400000;
+    const rows = _db()
+      .prepare(
+        `SELECT agent,
+                MAX(startedAt) as lastSession,
+                COUNT(*) as sessionsToday,
+                SUM(CASE WHEN status='done' THEN 1 ELSE 0 END) as doneCount,
+                SUM(CASE WHEN status='error' THEN 1 ELSE 0 END) as errorCount
+         FROM sessions
+         WHERE startedAt > ?
+         GROUP BY agent
+         ORDER BY lastSession DESC`,
+      )
+      .all(dayStart) as Array<{
+      agent: string;
+      lastSession: number;
+      sessionsToday: number;
+      doneCount: number;
+      errorCount: number;
+    }>;
+
+    const agents = rows.map((r) => {
+      const elapsed = now - r.lastSession;
+      let status: "active" | "idle" | "inactive";
+      if (elapsed < 30 * 60 * 1000) status = "active";
+      else if (elapsed < 2 * 60 * 60 * 1000) status = "idle";
+      else status = "inactive";
+
+      return {
+        name: r.agent,
+        lastSession: r.lastSession,
+        sessionsToday: r.sessionsToday,
+        successRate: r.sessionsToday > 0 ? Math.round((r.doneCount / r.sessionsToday) * 100) : 0,
+        status,
+      };
+    });
+
+    return json({ agents });
+  }
+
+  function handleAgentTimeline(url: URL): Response {
+    const hours = Math.min(parseInt(url.searchParams.get("hours") || "24", 10), 168);
+    const since = Date.now() - hours * 60 * 60 * 1000;
+
+    const rows = _db()
+      .prepare(
+        `SELECT sessionId, agent, startedAt, endedAt, status
+         FROM sessions
+         WHERE startedAt > ?
+         ORDER BY agent, startedAt ASC`,
+      )
+      .all(since) as Array<{
+      sessionId: string;
+      agent: string;
+      startedAt: number;
+      endedAt: number | null;
+      status: string;
+    }>;
+
+    const agentMap: Record<string, Array<{ id: string; start: number; end: number | null; status: string }>> = {};
+    for (const r of rows) {
+      if (!agentMap[r.agent]) agentMap[r.agent] = [];
+      agentMap[r.agent].push({
+        id: r.sessionId,
+        start: r.startedAt,
+        end: r.endedAt,
+        status: r.status,
+      });
+    }
+
+    const agents = Object.entries(agentMap).map(([name, sessions]) => ({ name, sessions }));
+    return json({ agents, since, now: Date.now() });
+  }
+
+  function handleSystemHealth(): Response {
+    const now = Date.now();
+    const todayStart = now - 86400000;
+    const yesterdayStart = todayStart - 86400000;
+
+    const todayStats = _db()
+      .prepare(
+        `SELECT COUNT(*) as total,
+                SUM(CASE WHEN status='done' THEN 1 ELSE 0 END) as done,
+                SUM(CASE WHEN status='error' THEN 1 ELSE 0 END) as errors,
+                AVG(CASE WHEN endedAt IS NOT NULL THEN endedAt - startedAt END) as avgDuration
+         FROM sessions WHERE startedAt > ?`,
+      )
+      .get(todayStart) as { total: number; done: number; errors: number; avgDuration: number | null };
+
+    const yesterdayStats = _db()
+      .prepare(
+        `SELECT COUNT(*) as total,
+                SUM(CASE WHEN status='error' THEN 1 ELSE 0 END) as errors
+         FROM sessions WHERE startedAt > ? AND startedAt <= ?`,
+      )
+      .get(yesterdayStart, todayStart) as { total: number; errors: number };
+
+    const activeAgents = _db()
+      .prepare(
+        `SELECT COUNT(DISTINCT agent) as cnt FROM sessions WHERE startedAt > ?`,
+      )
+      .get(now - 2 * 60 * 60 * 1000) as { cnt: number };
+
+    const todayErrorRate = todayStats.total > 0 ? Math.round((todayStats.errors / todayStats.total) * 100) : 0;
+    const yesterdayErrorRate = yesterdayStats.total > 0 ? Math.round((yesterdayStats.errors / yesterdayStats.total) * 100) : 0;
+
+    return json({
+      sessionsToday: todayStats.total,
+      successRate: todayStats.total > 0 ? Math.round((todayStats.done / todayStats.total) * 100) : 0,
+      activeAgents: activeAgents.cnt,
+      avgDurationMs: todayStats.avgDuration ? Math.round(todayStats.avgDuration) : null,
+      errorRateToday: todayErrorRate,
+      errorRateYesterday: yesterdayErrorRate,
+      errorTrend: todayErrorRate - yesterdayErrorRate,
+    });
+  }
+
   // ── Knowledge API ──────────────────────────────────────────────────
 
   // ── Browse API: generic file/directory browser for knowledge base ──
@@ -478,6 +604,9 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       }
       if (url.pathname === "/api/requests") return handleRequests(url);
       if (url.pathname === "/api/stats") return handleStats();
+      if (url.pathname === "/api/agents/activity") return handleAgentActivity();
+      if (url.pathname === "/api/agents/timeline") return handleAgentTimeline(url);
+      if (url.pathname === "/api/agents/health") return handleSystemHealth();
       if (url.pathname === "/api/digest") return handleDigest(url);
       if (url.pathname === "/api/benchmarks") return handleBenchmarks(url);
       if (url.pathname === "/api/benchmarks/prompts") return handleBenchmarkPrompts(url);
