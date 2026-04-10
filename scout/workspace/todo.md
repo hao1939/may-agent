@@ -225,3 +225,13 @@
   2. Production-first eval methodology (extend CR#326 Path A)
   3. CR#322/323 framing revisit re: EXP-104 confound
   4. KE-106 habituation literature (low priority)
+
+## Session 583 (2026-04-10 10:42 UTC) — Friday mid-morning heartbeat (lean)
+- **No new developments** since Session 582 (19min ago). Only auto-commit/merge housekeeping.
+- **Clean state**: All deliverables committed. No pending tasks or urgent leads.
+- **Friday arXiv evening triage** queued for ~18:00 UTC (~7.5hrs away).
+- **Research priorities** (unchanged):
+  1. Friday arXiv evening triage (cs.MA/cs.AI new listings) — ~18:00 UTC
+  2. Production-first eval methodology (extend CR#326 Path A)
+  3. CR#322/323 framing revisit re: EXP-104 confound
+  4. KE-106 habituation literature (low priority)
