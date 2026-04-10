@@ -1,0 +1,52 @@
+{
+  "scenario": "kb-integration-discovery",
+  "agent": "bob",
+  "lab_fork": null,
+  "passed": false,
+  "checks": [
+    {
+      "name": "h042-probability",
+      "passed": false,
+      "message": "H-042.md issues: hasNewProb=false, oldProbRemoved=false, hasEvidence=true"
+    },
+    {
+      "name": "ke017-evidence",
+      "passed": false,
+      "message": "KE-017.md issues: hasEXP142=false, hasLatencyFinding=true"
+    },
+    {
+      "name": "ke023-status",
+      "passed": false,
+      "message": "KE-023 file(s) found (KE-023-cache-architecture.md) but status still TESTING"
+    },
+    {
+      "name": "index-entry-added",
+      "passed": false,
+      "message": "INDEX.md issues: hasKE071=false, hasEXP142Ref=false"
+    },
+    {
+      "name": "priority-reordered",
+      "passed": false,
+      "message": "H-042 placement: inHigh=false, stillInMedium=true"
+    },
+    {
+      "name": "synth008-updated",
+      "passed": false,
+      "message": "SYNTH-008.md issues: hasEXP142Results=false, hasQuantitativeUpdate=true, gapUpdated=false"
+    },
+    {
+      "name": "todo-marked-complete",
+      "passed": false,
+      "message": "todo.md: markedDone=false, stillUndone=true"
+    },
+    {
+      "name": "all-files-modified",
+      "passed": false,
+      "message": "Only 0/7 files correctly updated: h042-probability, ke017-evidence, ke023-status, index-entry-added, priority-reordered, synth008-updated, todo-marked-complete"
+    }
+  ],
+  "summary": "0/8 checks passed",
+  "agent_status": "completed",
+  "duration": "109.4s",
+  "gym_root": "/app/agents/gym/scenarios"
+}
