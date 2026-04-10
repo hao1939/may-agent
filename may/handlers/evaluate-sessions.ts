@@ -64,85 +64,6 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
   };
 };
 
-// ── Post-heuristic rescoring ──────────────────────────────────────────
-
-/**
- * Clean up stale heuristic evaluation data (migration tasks only).
- *
- * Phase 3 (rubber-stamp rescoring) was REMOVED 2026-04-06 because the
- * heuristic evaluator now computes real scores. The rescorer was
- * overwriting legitimate scores and creating column/overall-blob mismatches.
- * See commit history for details.
- */
-function rescoreHeuristicEvaluations(persistDir: string, getDb: () => any): number {
-  let db: any;
-  try {
-    db = getDb();
-  } catch {
-    return 0; // DB not available
-  }
-
-  // Phase 1: Clean up stale heuristic evaluations with incorrect issue tags.
-  // The binary fix (a6250b0) corrected writeHeuristicEvaluations() going forward,
-  // but old evaluations still have session_error/opBudget_exhaustion for interrupted
-  // 0-op sessions that should be skipped. Fix them here.
-  try {
-    const staleEvals = db.prepare(
-      `SELECT e.sessionId, s.status, s.opCount
-       FROM evaluations e
-       JOIN sessions s ON e.sessionId = s.sessionId
-       WHERE e.evaluatedByHeuristic = 1
-         AND (e.issues LIKE '%session_error%' OR e.issues LIKE '%opBudget%')
-         AND s.status = 'interrupted' AND (s.opCount IS NULL OR s.opCount = 0)`
-    ).all() as Array<{ sessionId: string; status: string; opCount: number }>;
-
-    if (staleEvals.length > 0) {
-      const fixStmt = db.prepare(
-        `UPDATE evaluations SET verdict = 'skipped', quality = 0, efficiency = 0, issues = '[]', skippedByJs = 1
-         WHERE sessionId = ?`
-      );
-      for (const { sessionId } of staleEvals) {
-        fixStmt.run(sessionId);
-      }
-    }
-  } catch { /* best-effort cleanup */ }
-
-  // Phase 2: Also clean up opBudget_exhaustion from any heuristic eval (opBudget removed Mar 30)
-  try {
-    const opBudgetEvals = db.prepare(
-      `SELECT sessionId, issues FROM evaluations
-       WHERE evaluatedByHeuristic = 1 AND issues LIKE '%opBudget_exhaustion%'`
-    ).all() as Array<{ sessionId: string; issues: string }>;
-
-    if (opBudgetEvals.length > 0) {
-      const updateIssuesStmt = db.prepare(
-        `UPDATE evaluations SET issues = ? WHERE sessionId = ?`
-      );
-      for (const { sessionId, issues } of opBudgetEvals) {
-        try {
-          const parsed = JSON.parse(issues) as string[];
-          const cleaned = parsed.filter((i: string) => i !== "opBudget_exhaustion");
-          updateIssuesStmt.run(JSON.stringify(cleaned), sessionId);
-        } catch { /* skip unparseable */ }
-      }
-    }
-  } catch { /* best-effort cleanup */ }
-
-  // Phase 3: REMOVED (2026-04-06)
-  //
-  // Previously rescored evaluations with quality=5, efficiency=4 (the old
-  // "rubber stamp" signature from the bundled heuristic evaluator). But the
-  // heuristic evaluator in evaluator.ts now has sophisticated scoring (Phases
-  // 2-4 of H-009) and Q=5, E=4 is a legitimate score. The rescorer was:
-  //   1. Overwriting real scores with crude file-size-based efficiency
-  //   2. Not updating the `overall` JSON blob, creating column/blob mismatch
-  //   3. Penalizing large sessions (tech-lead) with E=1 despite high quality
-  //
-  // Phases 1 & 2 above handle stale data migration and are retained.
-
-  return 0;
-}
-
 // ── Pure logic ────────────────────────────────────────────────────────
 
 /**
@@ -217,18 +138,6 @@ export async function handleEvaluateSessions(opts: {
     const msg = err instanceof Error ? err.message : String(err);
     result.errors.push(`writeHeuristicEvaluations failed: ${msg}`);
     onLog?.(`[eval] writeHeuristicEvaluations failed: ${msg}`);
-  }
-
-  // Clean up stale heuristic evaluation data (legacy migration).
-  // Phase 3 (rubber-stamp rescoring) was removed — heuristic evaluator now
-  // produces real scores, so no rescoring is needed.
-  try {
-    const rescored = rescoreHeuristicEvaluations(persistDir, opts.getDb);
-    if (rescored > 0) onLog?.(`[eval] Cleaned up ${rescored} stale heuristic evaluation(s)`);
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    result.errors.push(`rescoreHeuristicEvaluations failed: ${msg}`);
-    onLog?.(`[eval] rescoreHeuristicEvaluations failed: ${msg}`);
   }
 
   const allParents = findParentsWithUnevaluatedChildren(persistDir, opts.getDb, opts.loadAllSessionMetas);
