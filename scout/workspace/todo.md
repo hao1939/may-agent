@@ -452,8 +452,17 @@
   2. KE-106 habituation literature (low priority)
   3. Friday arXiv scan (new listings expected Monday ~20:00 UTC)
 
+## Session 606 (2026-04-10 17:12 UTC) — Friday late-afternoon heartbeat (lean)
+- **No new Scout-relevant developments** since Session 605 (19min ago). EXP-122 (environmental hints, 100% pass), EXP-124 (structural FM-1.3 design), KE-126 (soft interventions can't close creative inference gap), EXP-123 design (verification-depth guard production observation) — all Bob/Coach territory, no Scout research action needed.
+- **Today's output summary (30+ sessions)**: DD#720-743 (24 deep dives), CR#330-335 (6 cross-references). Major accomplishments: KE-105 all 5 gaps closed (DD#724-730), Friday arXiv triaged (DD#731-733), agent observability scan (DD#734-738/CR#334), CR#333 intervention validity revision, iatrogenesis literature (DD#739), multi-session context authority (DD#740-743/CR#335).
+- **Clean state**: All deliverables committed. No pending tasks or urgent leads.
+- **Research priorities** (weekend):
+  1. Production-first eval methodology — extend CR#326 Path A (partially addressed by CR#334, could go deeper)
+  2. KE-106 habituation literature (low priority)
+  3. Next arXiv triage: Monday ~20:00 UTC
+
 ## Counters
 - DD: 743
 - CR: 335
-- Session: 605
+- Session: 606
 

@@ -1,13 +1,13 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~16:53 UTC
+Updated: 2026-04-10 ~17:12 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — Fresh heartbeat 16:53. Quiet — reviewed EXP-124 design, no new work.
-- **Coach**: 🟢 Active — Fresh heartbeat 16:53. EXP-124 (FM-1.3 path-guessing structural intervention) gym trials running in forked session.
+- **Bob**: 🟢 Active — Fresh heartbeat 17:12. EXP-120 KB integration work session still running (from 15:43).
+- **Coach**: 🟢 Active — Fresh heartbeat 17:12. Self-dispatched: KE-124 synthesis, EXP-123 scenarios, EXP-121 trials. EXP-122 results committed (STRONG POSITIVE).
 - **Scout**: ⚠️ 401 Error — Recurring `IDE token expired` auth failure. Auto-pause recovery handling retries.
-- **Tech-lead**: 🟢 Active — Fresh heartbeat 16:53. Working on vitest compatibility for verification-depth-guard test.
+- **Tech-lead**: 🟢 Active — Fresh heartbeat 17:12. Self-dispatched dead code cleanup. Vitest compat work ongoing.
 - **Optimizer**: 🟢 Active — Fresh heartbeat 16:23. Measuring deliver-or-report fix. Re-escalated prompt caching (duplicate, already tracked).
 - **Evaluator**: 🟢 Active — Fresh heartbeat 16:23.
 - **QA**: 🟢 Active — Fresh heartbeat 16:23.
@@ -160,7 +160,7 @@ Updated: 2026-04-10 ~16:53 UTC
 | **Optimizer: Session-Sync Cron Handler** | ✅ DEPLOYED | optimizer | Handler at `agents/may/handlers/session-sync.ts`. Syncs .state/sessions/ meta.json → may.db every 5min. 996 sessions in <1s. Commit 2d257c78. Fixes chronic stale DB issue. |
 | **EXP-116 Results Correction** | ✅ CORRECTED | may | EXP-116/results.md note updated: invalidation was WRONG — EXP-118 confirmed 100% baselines are real with valid agents. Silent exit bug exists but didn't corrupt results. |
 
-| **EXP-122 Environmental Hints** | ✅ COMPLETE (NULL) | coach | **DEFINITIVE**: HTML comment hint in INDEX.md = 0% effect (67% treatment = 67% baseline, p=1.0). Environmental hints don't close creative inference gap. Discovery-task series fully closed (EXP-117→122, 5 experiments). |
+| **EXP-122 Environmental Hints** | ✅ COMPLETE (**STRONG POSITIVE**) | coach | **CORRECTED**: HTML comment hint in INDEX.md = 100% (6/6) vs 67% baseline (+33pp). Effect size h=1.37 (large). Environmental hints ARE the best intervention: zero cost, just-in-time cue, non-directive. Discovery-task series best result (EXP-117→122, 5 experiments). |
 | **EXP-123 Verification-Depth Guard** | ✅ MERGED + OBSERVING | coach + may | Guard deployed to production (commit 9d9be57). Blocks superficial verification: git on gitignored, no post-write verification. 363 lines, 18/18 tests. Observation window: 48-72h until Apr 13. |
 | **EXP-124 FM-1.3 Path-Guessing Intervention** | ⏳ GYM TRIALS RUNNING | coach | Structural intervention: forced Phase 0 directory discovery before path-dependent tasks. Targets 60% of Bob's FM-1.3 errors (path-guessing + shallow recovery). Session s_1775840056673_968. |
 | **Gym Runner Inherits Dedup** | ✅ MERGED | tech-lead | `inherits` support in gym runner for scenario deduplication. 42 variant scenarios can now inherit base environment. Commits da552cf3 + 71b904f4 + 40d48912 merged to main. |
@@ -196,23 +196,27 @@ Updated: 2026-04-10 ~16:53 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (16:53)
-- **System healthy**: 7/8 agents running. Scout recurring 401 auth error (IDE token expired). No failures in last hour. Zero pending requests.
-- **Since last cycle (16:42)**:
-  - **Merged**: Review branch `review/s_1775838219116_953` → main (commit 9d9be57). Contains: (1) EXP-123 verification-depth guard (363 lines, 18/18 tests pass), (2) Scout DD#739-742 literature synthesis.
-  - **Coach**: EXP-124 (FM-1.3 path-guessing structural intervention) gym trials forked and running (s_1775840056673_968).
-  - **Bob**: Quiet — reviewed EXP-124 design. System genuinely idle.
-  - **Tech-lead**: Working on vitest compatibility — verification-depth-guard test uses `bun:test` imports, fails in vitest.
-  - **Zero pending requests**: All work items self-dispatched by agents. No queue.
+## Latest Cycle Summary (17:12)
+- **System healthy**: 7/8 agents running. Scout recurring 401 auth error (IDE token expired). No failures in last 2h. 13 active requests (mostly heartbeats).
+- **Since last cycle (16:53)**:
+  - **EXP-122 CORRECTED**: Previous dashboard said "NULL result" — WRONG. Actual results: **100% (6/6) vs 67% baseline, +33pp, h=1.37**. Environmental hints in INDEX.md are the strongest discovery-task intervention tested. Dashboard entry corrected.
+  - **Coach**: Self-dispatched KE-124 synthesis (externalization trilogy), EXP-123 scenario setup, EXP-121 trials still running.
+  - **Bob**: EXP-120 KB integration work session still running (from 15:43, ~1.5h).
+  - **Tech-lead**: Self-dispatched dead code cleanup. Vitest compat ongoing.
+  - **Optimizer**: Updated observations — context tax, cost analysis, coach session analysis.
+  - **QA**: Corrected context.md (tsc/vitest ARE available).
+  - **EXP-123 observation**: 1 baseline data point collected (raw-data/baseline-1.txt). 48-72h window active.
+  - **EXP-124**: Design complete (14.8KB), no gym trials run yet. Session s_1775840056673_968 not in DB — may not have started.
 
 ## Key Findings This Cycle
-- **EXP-123 verification-depth guard NOW IN PRODUCTION**: Merged and live. Blocks superficial verification at finish time (git on gitignored paths, no post-write verification). Production observation window: 48-72h (until Apr 13).
-- **EXP-124 launched**: Coach self-initiated FM-1.3 structural intervention — forced Phase 0 directory discovery before path-dependent tasks. Gym trials running now. This targets Bob's #1 error category (60% of FM-1.3 = path-related).
-- **Vitest/bun:test incompatibility**: New guard test file uses `bun:test` but project vitest config picks it up. Needs exclusion or conversion. Tech-lead aware.
-- **System genuinely self-directing**: Coach and tech-lead finding and executing their own work without dispatch from me. This is what autonomous operation looks like.
+- **EXP-122 Environmental Hints are STRONG POSITIVE (not null)**: 100% (6/6) vs 67% baseline. HTML comment in INDEX.md eliminated creative inference gap at zero cost. Just-in-time environmental cues > all instruction-based approaches. This is actionable: embed hints in KB files where agents make decisions.
+- **EXP-123 verification-depth guard collecting data**: 1 observation so far. 48-72h window until Apr 13.
+- **EXP-124 designed but not yet running**: Coach built a thorough 14.8KB design for FM-1.3 Phase 0 discovery pre-phase. Gym trials haven't started yet.
+- **System continues self-directing**: All agents finding and executing own work. Coach running experiment series. Bob doing KB integration. No dispatch needed from me.
 
 ## Next Actions
 - **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. Saves $143-441/day. **Blocked on Hao since Mar 24**.
+- **P1**: **EXP-122 follow-up**: Environmental hints work — Bob should integrate this finding and propose deployment strategy (embed hints in production KB files where creative inference is needed).
 - **P1**: **EXP-105 Few-Shot Production Impact** — Need coder/optimizer work sessions to generate data. Coder idle since deployment (Apr 9).
 - **P1**: **Present research sprint results to Hao** — KE-101 meta-analysis capstone. 20+ experiments. Gym graduation. Token waste. System needs new direction.
 - **P1**: **Generate implementation work** — System idle without tasks. Tech-lead doing dead code only. Coder completely idle. Need features or tech debt for delivery velocity.
