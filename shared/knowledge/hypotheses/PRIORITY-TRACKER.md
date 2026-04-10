@@ -36,13 +36,11 @@
 | H-056 | Cooperative convergence — system-level resistance to change | **0.61** | P4 confirmed; mechanism vs simpler explanation unresolved |
 | H-047 | No forgetting → inverted-U utilization | **0.62** | EXP-053 Phase 2: recency bias + density saturation confirmed; clean inverted-U not found. "Narrowing scope with compensation." |
 | H-096 | Evaluation architecture determines quality ceiling — checkpoint decomposition + state-diff + adaptive rubrics will break 35% verification residual | **0.68** | **PROPOSED** (2026-04-10): KE-116 synthesis formalizes DD-720/721/722/723 findings as testable hypothesis. 35% FM-3.3 residual + 14.6% confident failures are architectural ceilings (trajectory-level eval degrades 24pp, narrative judgment enables confabulation, fixed rubrics allow dimensional masking). All evidence indirect — needs EXP-115 (DAF retrofit) for first direct test. |
+| H-097 | CCC Triad — multi-agent coordination requires structural cooperation + calibrated agreement + context isolation | **0.65** | **PROPOSED** (2026-04-10): KE-120 synthesis of DD-731/732/733. Strong external evidence (o3 17% vs o3-mini 50%, 81.9% wrong-consensus intercepted, DACS 90-98.4%). Untested internally. |
 
 ## 🔴 Tier 3: Weak Signal — P(H) < 0.50
 
-| ID | Claim | P(H) | Status |
-|----|-------|------|--------|
-| H-094 | HVR (Hedge-to-Verify Ratio) as zero-cost agent confidence gate — zero-hedge outputs ~96% correct, enables selective verification | **0.35** | **EXP-101 COMPLETE — WEAK SIGNAL**: 1,259 sessions analyzed, Phase 2: 582 with evals, AUROC 0.566 (below 0.60 target). Zero-hedge gate vacuous (base rate artifact). Survivorship bias fatal. P(H) 0.45→0.35 (stronger downgrade per Phase 2 reasoning). Phase 2 not justified. |
-| H-068 | Functional emotion pressure degrades late-session behavior | **0.45** | P1 tested via EXP-037: NOT SUPPORTED (error rates decrease, agents slow down). P2-P4 untested. Below Tier 2 threshold (0.50) — retained for tracking only. |
+*No active hypotheses in this tier.*
 
 ### EXP-025 Prospective Validation Results (Final)
 - **63% binary accuracy** — below 70% threshold, but the asymmetry is the real finding
@@ -68,6 +66,8 @@
 | H-064 | Self-preservation bias detection | **0.25** | 📦 **MERGED** into H-055/H-056. Already central to both. Detection mechanisms are action items, not a hypothesis. | 2026-04-07 |
 | H-065 | Proactive tool safety guardrails | **0.23** | 📦 **ARCHIVED** — not our domain. ToolSafe requires model-level changes we can't make. | 2026-04-07 |
 | H-070 | Workflow fixed cost model | **0.25** | 📦 **ARCHIVED** — P1 refuted by EXP-051. R×N predicts worse than R alone. Overhead is proportional, not fixed. Superseded by KE-052 (Structural Access Thesis). | 2026-04-07 |
+| H-094 | HVR (Hedge-to-Verify Ratio) as zero-cost confidence gate | **0.35** | 📦 **ARCHIVED** — EXP-101 AUROC 0.566, zero-hedge gate vacuous (base rate artifact), survivorship bias fatal. Mechanistic explanation: Reasoning Contamination Effect (DD-681). | 2026-04-10 |
+| H-068 | Functional emotion pressure degrades late-session behavior | **0.45** | 📦 **ARCHIVED** — P1 NOT SUPPORTED (EXP-037: error rates decrease at session end). P2-P4 untested. Below Tier 2 threshold (0.50), no further experiments planned. | 2026-04-10 |
 
 ## 🆕 Tier 5: New Hypotheses (moratorium violators — triage)
 
