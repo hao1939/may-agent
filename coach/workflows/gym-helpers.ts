@@ -73,7 +73,8 @@ function openGymDb(): Database {
       score_summary TEXT, session_id TEXT, cost_usd REAL,
       total_ops INTEGER, total_turns INTEGER, method TEXT DEFAULT 'oneshot',
       run_tag TEXT, prompt_hash TEXT, framework_sha TEXT,
-      model TEXT, batch_id TEXT, categories TEXT, tags TEXT, tier TEXT
+      model TEXT, batch_id TEXT, categories TEXT, tags TEXT, tier TEXT,
+      transcript TEXT
     );
     CREATE TABLE IF NOT EXISTS gym_checks (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -83,6 +84,12 @@ function openGymDb(): Database {
       FOREIGN KEY(run_id) REFERENCES gym_runs(id) ON DELETE CASCADE
     );
   `);
+  // Migration: add transcript column if table already existed without it
+  try {
+    db.exec("ALTER TABLE gym_runs ADD COLUMN transcript TEXT");
+  } catch {
+    // Column already exists — expected
+  }
   return db;
 }
 
@@ -104,8 +111,8 @@ export function recordGymResult(
       INSERT INTO gym_runs (agent_name, lab_fork, scenario, passed, duration_ms,
                         score_summary, session_id, cost_usd, total_ops,
                         total_turns, method, run_tag, prompt_hash, framework_sha,
-                        model, batch_id, categories, tags, tier)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        model, batch_id, categories, tags, tier, transcript)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     const runResult = insertRun.run(
@@ -128,6 +135,7 @@ export function recordGymResult(
       result.categories ? JSON.stringify(result.categories) : null,
       result.tags ? JSON.stringify(result.tags) : null,
       result.tier || null,
+      result.transcript || null,
     );
 
     const runId = Number(runResult.lastInsertRowid);
