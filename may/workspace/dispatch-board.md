@@ -1,17 +1,17 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~03:53 UTC
+Updated: 2026-04-10 ~04:23 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Running — Active. Integrated Scout drops DD-713/714 this hour. 3 done + 1 running.
-- **Coach**: 🟢 Running — Post-ceiling baselines done. Gym saturated. Heartbeat cycling.
+- **Bob**: 🟢 Running — Active. EXP-109 KB integration complete (KE-112, H-095). 4 sessions this hour.
+- **Coach**: 🟢 Running — EXP-109 + EXP-110 complete this cycle. Major production observation results.
 - **Scout**: 🟢 Running — Heartbeat cycling.
 - **Tech-lead**: 🟢 Running — Heartbeat cycling.
-- **Optimizer**: 🟡 IDLE — Heartbeat cycling but minimal productive output.
-- **Evaluator**: 🟡 IDLE — Running auto-evals but minimal activity.
+- **Optimizer**: 🟡 IMPROVED — Self-dispatched tool quality regression #14 investigation this cycle.
+- **Evaluator**: 🟡 IDLE — Running auto-evals, task tree eval completed.
 - **QA**: 🟡 IDLE — Minimal activity.
-- **All agents**: 🟢 8/8 running. **2 agents effectively idle** (optimizer, QA). Zero errors in last hour.
+- **All agents**: 🟢 8/8 running. Zero errors in last hour.
 - **⚠️ Cron bug**: `analyze-failures` cron keeps failing (`db.query is not a function`). Low priority — doesn't affect operations.
 
 ## Active Priorities (from Hao)
@@ -112,6 +112,11 @@ Updated: 2026-04-10 ~03:53 UTC
 | **KE-106 Structural Enforcement ≠ Training** | ✅ COMPLETE | coach | Guards catch errors at 50-70% of sessions but underlying rate never decreases over 26 days. Guards are permanent infrastructure, not training wheels. At `agents/shared/knowledge/entries/KE-106-structural-enforcement-no-training-effect.md`. |
 | **KE-110 Skill Stack Saturation** | ✅ COMPLETE | bob | Synthesis: gym training loop extracted all available value. 7/7 scenarios at 91-100% ceiling. Terminal success state. At `agents/shared/knowledge/entries/KE-110-skill-stack-saturation-gym-ceiling-confirms-improvement-loop.md`. |
 | **Next-Gen Gym Scenarios (Post-Ceiling)** | ✅ BASELINED (CEILING) | coach | 3 new scenarios ALL at 100% baseline (9/9 runs). Gym ceiling confirmed structural — coder handles skill-conflict, triage, ghost-dependency natively. Harder scenarios needed (multi-file cascading, 50+ file codebases, ambiguous requirements). Results at `agents/coach/workspace/post-ceiling-baselines.md`. |
+| **EXP-109 Production Observation Study** | ✅ COMPLETE | coach + bob | **LANDMARK**: 19,062 evals analyzed. 37.5% of "good" sessions have FM codes. Agent-specific failure signatures confirmed. Cost-quality decorrelated. KE-112 created, H-095 filed (P(H)=0.65). Bob integrated findings. Results at `agents/shared/knowledge/experiments/EXP-109/results.md`. |
+| **EXP-110 FM-3.3 Commit Guard Impact** | ✅ COMPLETE | coach | **KEY**: Guard enables recovery (+51.3pp, p<0.001), doesn't prevent FM-3.3. Raw rate increased but recovery from 13.4%→64.7%. Residual 35% unrecovered = superficial verification. Results at `agents/shared/knowledge/experiments/EXP-110/results.md`. |
+| **KE-112 Verdicts Lie** | ✅ COMPLETE | bob | Production quality multi-modal — verdicts mask process issues. Agent FM fingerprints documented. |
+| **H-095 Agent-Specific Interventions** | ✅ FILED | bob | P(H)=0.65. Agent-specific interventions > universal. Predictions defined. Needs EXP-109 Phase 3 for validation. |
+| **Optimizer Tool Quality Regression #14** | ✅ COMPLETE | optimizer | Self-dispatched investigation of 4 regressed tool quality categories. First self-initiated productive work in days. |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -143,14 +148,13 @@ Updated: 2026-04-10 ~03:53 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (03:53)
+## Latest Cycle Summary (04:23)
 - **System stable**: All 8 non-May agents running. Zero errors in last hour.
-- **Bob active**: Integrated Scout drops DD-713/714 this cycle. 3 completed + 1 running session in last hour.
-- **EXP-105 still waiting**: Zero coder/optimizer work sessions since few-shot deployment (Apr 9). Production impact blocked on work sessions occurring.
-- **Optimizer + QA**: Still effectively idle. No self-initiated productive work.
+- **EXP-109 COMPLETE**: Coach ran production observation study on 19,062 evaluations. **Landmark findings**: 37.5% of "good" sessions contain FM codes; each agent has distinct failure signature; cost-quality decorrelated. KE-112 created, H-095 filed (P(H)=0.65). Bob integrated into KB.
+- **EXP-110 COMPLETE**: Coach measured commit guard production impact. **Key**: Guard doesn't prevent FM-3.3 — it enables recovery (+51.3pp recovery rate, χ²=49.8, p<0.001). Raw FM-3.3 rate increased but unrecovered rate similar. Guard mechanism = recovery, not prevention.
+- **Optimizer active**: Self-dispatched tool quality regression #14 investigation. First self-initiated productive work in days.
+- **EXP-105 still waiting**: Zero coder/optimizer work sessions since few-shot deployment. Production impact blocked.
 - **Amy-kimi still 🔴**: Blocked on Hao for billing.
-- **Late night steady state**: No dispatches needed — all items either completed or blocked on Hao input.
-- **"Bob analysis 5 days old" anomaly**: DISMISSED — Bob is actively running and producing output. System-status heuristic is checking a stale artifact, not Bob's actual activity.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao since Mar 24**.
