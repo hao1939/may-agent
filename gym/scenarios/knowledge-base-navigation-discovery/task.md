@@ -1,6 +1,55 @@
-# Task: Synthesize Research Status Report
+# Phase 0: Directory Discovery (MANDATORY)
 
-You have a knowledge base in the `environment/` directory with research entries, experiment results, hypotheses, and a library of deep dives. The structure is NOT flat — files are nested in subdirectories within `environment/`.
+Your ONLY job in this phase is to discover the directory structure and create a navigation map. Do NOT start the main task yet.
+
+## Instructions
+
+1. List the top-level contents of `environment/`:
+   ```
+   ls environment/
+   ```
+
+2. Read `environment/INDEX.md` to understand the full structure.
+
+3. For each subdirectory, list its contents:
+   ```
+   ls environment/hypotheses/
+   ls environment/entries/
+   ls environment/experiments/
+   ls environment/library/
+   ```
+   (And any deeper subdirectories you discover)
+
+4. Write a navigation map to `nav-map.md` in the working directory:
+   ```markdown
+   # Navigation Map
+   
+   ## Directory Structure
+   - environment/hypotheses/ → [list files]
+   - environment/entries/ → [list files]
+   - environment/experiments/ → [list subdirs and their files]
+   - environment/library/ → [list subdirs and their files]
+   
+   ## Key Files for Synthesis Task
+   - Hypotheses: [paths to active hypothesis files]
+   - Entries: [paths to knowledge entry files]
+   - Deep dives: [paths to relevant deep dive files]
+   - Experiments: [paths to experiment result files]
+   ```
+
+5. Call finish() with a summary of what you found.
+
+⚠️ CONSTRAINTS:
+- Do NOT read any content files (only INDEX.md and directory listings)
+- Do NOT start analyzing or synthesizing
+- Do NOT write synthesis.md
+- ONLY list directories, read INDEX.md, and write nav-map.md
+
+---
+
+# Phase 1: Synthesize Research Status Report
+
+You have a navigation map in `nav-map.md` from Phase 0. Use it to find files efficiently.
 
 ## Requirements
 
@@ -25,7 +74,7 @@ Find the deep dive about failure modes and extract the specific information abou
 Find the experiment that tested SOUL text vs workflow enforcement, and verify whether its conclusion aligns with the relevant verified knowledge entry (RKE-003). State whether they agree and quote the key data.
 
 ## Important
-- The knowledge base is in the `environment/` directory. Start there.
-- The knowledge base has an INDEX.md that tells you where things are. Find it first.
-- Directory structures may not be what you expect. Check what exists before assuming paths.
-- There are ~17 files across multiple directories. You need to find specific ones, not read them all.
+- Use the paths from `nav-map.md` — do NOT guess paths.
+- If you need a file not in your navigation map, `ls` its parent directory first.
+- The knowledge base has ~17 files. You should only need to read 6-8 specific files.
+- Budget: aim for <15 tool calls in this phase.
