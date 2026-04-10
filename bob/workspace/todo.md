@@ -726,3 +726,11 @@
   - **Implication**: Few-shot delivery requires task-message injection, not system-prompt placement. This has direct production implications: skill files loaded into system context won't work; must be injected into task messages. The entire injected_context.md infrastructure was unnecessary — inline task.md examples work just as well.
   - **Files modified**: H-091.md, KE-059.md, KE-060.md, KE-065.md (new), INDEX.md, PRIORITY-TRACKER.md, todo.md
   - **Note**: This completes the few-shot research arc (EXP-084–095). 12 experiments, 260+ runs, 3 boundary conditions found, H-091 at P(H)=0.93. Few-shot is production-ready for domain-matched, task-message-delivered examples targeting judgment and process discipline (not temporal discipline).
+
+## Session Notes (2026-04-10 ~05:57)
+- [x] **EXP-114 integration**: COMPLETE — FM-2.1 Approach Decomposition Guard design registered in knowledge base.
+  - **Key findings**: Coach's analysis reveals FM-2.1 is 54.5% tactical (tool schema errors) and 45.5% strategic (genuine approach failures). H1 CONFIRMED by pre-experiment analysis: no single guard can address both types. Coach is MORE tactical than average (72.3% vs 54.5%). Dual intervention designed: (A) Tool Schema Guard (beforeToolCall hook), (B) approach-validation-trap gym scenario for strategic FM-2.1.
+  - **INDEX.md updated**: EXP-114 experiment row added (after EXP-113). H-095 summary updated with EXP-114 DESIGNED note and revised next steps.
+  - **PRIORITY-TRACKER updated**: Header updated with EXP-114 DESIGNED. EXP-114 added to experiment queue as DESIGNED (🔵). H-095 Tier 1 entry updated with EXP-114 evidence.
+  - **Significance**: EXP-114 is the first concrete implementation from EXP-113's intervention priority map. The finding that FM-2.1 is heterogeneous (tactical vs strategic) means the intervention priority map's #1 recommendation (FM-2.1 approach guard) needs to be split into two distinct interventions. This deepens the agent-specific intervention thesis (H-095).
+  - **Files modified**: INDEX.md, PRIORITY-TRACKER.md, todo.md
