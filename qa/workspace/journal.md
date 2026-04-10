@@ -28,6 +28,30 @@ Proactive heartbeat QA at HEAD **e3f53b5** ("fix: gym-runner multi-session ENOEN
 ### Verdict
 CONDITIONAL — reviewed change appears coherent and type-safe (tsc green), but vitest is red due to the unrelated missing launcher module, filesystem permission issues, and a too-tight integration timeout.
 
+## 2026-04-10T02:26Z
+
+### Summary
+Proactive heartbeat QA at HEAD **e3f53b5**. I sampled `test/gym/gym-runner.ts` (decoupled scenario runner) and re-ran mandatory gates. No new code issues found in the sampled portion; overall suite is still red due to the same repo/env mismatches.
+
+### Files reviewed (evidence)
+- `test/gym/gym-runner.ts` (read lines 1–120): scenario metadata/types + imports; confirms runner depends on `learnFromSession` and includes filesystem operations (`cpSync`, `mkdirSync`, `rmSync`, etc.).
+
+### Mandatory gates
+- `./node_modules/.bin/tsc --noEmit`: PASS (no output)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2089 passed (2110)**
+  - `test/launcher.test.ts`: 7 failed — `/app/src/app/launcher.ts` missing (existsSync false + ENOENT reads)
+  - `test/context-learn.test.ts`: 7 failed — `rmSync(tmpDir, { recursive: true })` fails with `EACCES` under `/app/test-workspace/context-learn-test/test-agent`
+  - `test/context-learning.test.ts`: 6 failed — `rmSync(tmpDir, { recursive: true })` fails with `EACCES` under `/app/test-workspace/context-learning-test/.state`
+  - `test/research-db.test.ts`: 1 failed — real knowledge base sync test timed out at 5000ms (observed ~5.2s)
+
+### Issues
+- CRITICAL: Missing `src/app/launcher.ts` breaks `test/launcher.test.ts`.
+- IMPORTANT: Test cleanup assumes it can delete `/app/test-workspace/*`; fails with `EACCES` in this environment.
+- IMPORTANT: `test/research-db.test.ts` real-knowledge sync is slightly slower than 5s in this environment → timeout.
+
+### Verdict
+CONDITIONAL — patch-level code sampled looks fine and type-checks; repo is still vitest-red due to unrelated structural/environment/test-timeout issues.
+
 ## 2026-04-10T00:55Z
 
 ### Summary
