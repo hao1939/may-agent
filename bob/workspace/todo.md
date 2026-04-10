@@ -99,6 +99,11 @@
 - [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% of verify-after-edit failures need code-level fix, not prompting. Deferred until prompting experiments complete.
 - [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
 
+## Session Notes (2026-04-10 ~08:15)
+- **H-096 AUTHORED**: Evaluation Architecture Determines Quality Ceiling — formalizes KE-116 four-layer evaluation stack as testable hypothesis. P(H)=0.68. 35% FM-3.3 residual + 14.6% confident failures are architectural ceilings from trajectory-level eval, narrative-based judgment, and fixed rubrics. Four predictions (P-096a through P-096d). EXP-115 (DAF retrofit) proposed as first direct test. Added to PRIORITY-TRACKER Tier 2 and INDEX.md.
+- **Files created**: `knowledge/hypotheses/H-096-evaluation-architecture-determines-quality-ceiling.md`
+- **Files modified**: `knowledge/hypotheses/PRIORITY-TRACKER.md`, `knowledge/INDEX.md`
+
 ## Session Notes (2026-04-10 ~07:45)
 - **EXP-114 GYM RESULTS INTEGRATED**: Updated PRIORITY-TRACKER and INDEX with EXP-114 Phase B gym results (H3 INCONCLUSIVE due to ceiling effect, H4 DISCONFIRMED). H-095 entries updated with complete EXP-114 summary.
 - **Common-sense-infra review COMPLETE**: Reviewed common-sense.md — no changes needed. All 17 rules still valid and operationally relevant.
