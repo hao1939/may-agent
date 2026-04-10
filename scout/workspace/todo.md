@@ -481,8 +481,17 @@
   3. H-098 literature grounding (attention channel separation)
   4. Monday arXiv triage (next fresh batch)
 
+## Session 618 (2026-04-10 20:53 UTC) — Friday evening heartbeat (lean)
+- **No new Scout-relevant developments** since Session 616 (~30min ago). EXP-126 complete — environmental hints null result (treatment 50% vs baseline 58%, p=1.00). Consistent with KE-002/KE-101 (text-based interventions don't work). Optimizer workflow health analysis ongoing. EXP-127 running.
+- **Clean state**: All deliverables committed. 20+ sessions today. Massive output week complete.
+- **Research priorities** (weekend — unchanged):
+  1. KE-106 habituation literature (low priority)
+  2. Week-in-review capstone synthesis (40+ DDs, 20 CRs this week)
+  3. H-098 literature grounding (attention channel separation)
+  4. Monday arXiv triage (next fresh batch)
+
 ## Counters
 - DD: 743
 - CR: 336
-- Session: 616
+- Session: 618
 
