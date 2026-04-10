@@ -1,15 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import {
   readSessionMessages,
-  readMemoryEntries,
   ensureSessionDir,
   RegistryStore,
   sessionJsonlPath,
   sessionMetaPath,
-  memoryPath,
 } from "../src/lib/persistence.js";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 
@@ -59,40 +57,6 @@ describe("JSONL corruption handling", () => {
     warnSpy.mockRestore();
   });
 
-  it("readMemoryEntries skips corrupted lines and returns valid ones", () => {
-    const agentName = "test-agent";
-
-    // Write a mix of valid and corrupted memory entries
-    const filePath = memoryPath(persistDir, agentName);
-    mkdirSync(join(persistDir, "memory"), { recursive: true });
-
-    const validEntry = {
-      task: "test task",
-      status: "done",
-      duration: "5s",
-      summary: "completed",
-      timestamp: Date.now(),
-    };
-
-    const lines = [
-      JSON.stringify(validEntry),
-      "corrupted line here!!!",
-      JSON.stringify({ ...validEntry, task: "second task" }),
-    ];
-    writeFileSync(filePath, lines.join("\n"), "utf-8");
-
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-
-    const entries = readMemoryEntries(persistDir, agentName);
-
-    expect(entries).toHaveLength(2);
-    expect(entries[0].task).toBe("test task");
-    expect(entries[1].task).toBe("second task");
-    expect(warnSpy).toHaveBeenCalledOnce();
-
-    warnSpy.mockRestore();
-  });
-
   it("readSessionMessages returns empty array for all-corrupted file", () => {
     const sessionId = "all-corrupted";
     ensureSessionDir(persistDir, sessionId);
@@ -109,38 +73,6 @@ describe("JSONL corruption handling", () => {
     warnSpy.mockRestore();
   });
 
-  it("readMemoryEntries with limit still works after skipping corrupted lines", () => {
-    const agentName = "limited-agent";
-    mkdirSync(join(persistDir, "memory"), { recursive: true });
-
-    const filePath = memoryPath(persistDir, agentName);
-    const entries = [];
-    for (let i = 0; i < 5; i++) {
-      entries.push(
-        JSON.stringify({
-          task: `task-${i}`,
-          status: "done",
-          duration: "1s",
-          summary: null,
-          timestamp: Date.now() + i,
-        }),
-      );
-    }
-    // Insert corruption in the middle
-    entries.splice(2, 0, "corrupt!");
-    writeFileSync(filePath, entries.join("\n"), "utf-8");
-
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-
-    // Request last 3 entries (out of 5 valid ones)
-    const result = readMemoryEntries(persistDir, agentName, 3);
-    expect(result).toHaveLength(3);
-    expect(result[0].task).toBe("task-2");
-    expect(result[1].task).toBe("task-3");
-    expect(result[2].task).toBe("task-4");
-
-    warnSpy.mockRestore();
-  });
 });
 
 describe("RegistryStore atomic writes", () => {

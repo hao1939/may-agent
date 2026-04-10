@@ -103,9 +103,6 @@ export {
   readSessionMetaAsync,
   listActiveSessionIdsAsync,
   listArchivedSessionIdsAsync,
-  memoryPath,
-  appendMemoryEntry,
-  readMemoryEntries,
   saveWorkflowRun,
   readWorkflowRun,
   listWorkflowRuns,
@@ -149,7 +146,6 @@ export type {
   PersistedAgentConfig,
   PersistedSession,
   SessionKind,
-  MemoryEntry,
   WorkflowRun,
   WorkflowStep,
 } from "./persistence.js";
