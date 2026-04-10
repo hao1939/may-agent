@@ -83,6 +83,31 @@ CONDITIONAL — reviewed gym-runner change appears coherent and type-safe, but r
 ### Summary
 Proactive heartbeat QA at HEAD **a1f1468** (top of tree). I reviewed `test/gym/gym-runner.ts` (latest gym-runner changes) and ran the mandatory gates.
 
+## 2026-04-10T04:26Z
+
+### Summary
+Heartbeat QA at HEAD **a1f1468**. I independently re-ran mandatory gates and sampled the current `test/gym/gym-runner.ts` (may-agent adapter setup section). `tsc` is green; `vitest` is red due to repo/environment test issues.
+
+### Files reviewed (evidence)
+- `test/gym/gym-runner.ts` (read lines 1–220): confirms may-agent adapter sets up `agentsRoot` (optionally sandboxed), copies `agents` recursively into gym-local dirs, and falls back to `vite-node` if no compiled `bundle/may-agent` exists.
+- `test/launcher.test.ts` (read lines 90–~210): confirms tests hard-require `/app/src/app/launcher.ts` to exist and contain specific implementation strings.
+
+### Mandatory gates
+- `./node_modules/.bin/tsc --noEmit`: PASS (no output; exit 0)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2089 passed (2110)**
+  - `test/launcher.test.ts`: 7 failed — `src/app/launcher.ts` missing (`existsSync` false + ENOENT reading `/app/src/app/launcher.ts`).
+  - `test/context-learn.test.ts`: 7 failed — cleanup `rmSync(tmpDir, { recursive: true })` fails with `EACCES` under `/app/test-workspace/context-learn-test/test-agent`.
+  - `test/context-learning.test.ts`: 6 failed — cleanup `rmSync(tmpDir, { recursive: true })` fails with `EACCES` under `/app/test-workspace/context-learning-test/.state`.
+  - `test/research-db.test.ts`: 1 failed — integration test `syncs the actual knowledge base without errors` timed out at **5000ms** (observed ~5.7s).
+
+### Issues
+- CRITICAL (repo/test mismatch): `src/app/launcher.ts` is missing but required by `test/launcher.test.ts`.
+- IMPORTANT (env/permissions): `/app/test-workspace/*` cleanup fails with `EACCES` during context-learning tests.
+- IMPORTANT (test robustness): `test/research-db.test.ts` real knowledge base sync sometimes exceeds a 5s timeout in this environment.
+
+### Verdict
+CONDITIONAL — sampled code appears coherent and `tsc` is green, but the suite remains vitest-red due to unrelated structural/environment/timeout issues.
+
 ### Files reviewed (evidence)
 - `test/gym/gym-runner.ts` (read lines 1–1413): confirmed may-agent adapter sandboxes `agents/<name>` into `_workDir/agents/<name>` before running oneshot; also reviewed the multi-session runner’s additional `workDir` existence guards and combined transcript export.
 
