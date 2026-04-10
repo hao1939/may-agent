@@ -4734,3 +4734,21 @@ Reviewed commit **c76cd98** adding Web UI endpoints + static HTML dashboard (`sr
 
 ### Verdict
 CONDITIONAL — OK to ship if browse path traversal check is fixed or endpoint is restricted; otherwise risk of reading arbitrary files under state-adjacent paths.
+
+---
+## 2026-04-10T11:54Z — Heartbeat QA
+
+### Scope
+- Proactive scan of recent commits: HEAD `0975c41` (merge removing dead `socket-watch` module).
+- Read `src/app/ui/web.ts` (Web UI server) for spot-check of error handling / security.
+
+### Checks (mandatory)
+- `./node_modules/.bin/tsc --noEmit`: PASS (no output, exit 0 assumed).
+- `./node_modules/.bin/vitest --run`: PASS (138 test files, 2056 tests).
+
+### Findings
+- IMPORTANT (web.ts): multiple silent `catch {}` blocks swallow errors in filesystem scanning (`findSocketPath()`), transcript parsing, and browse listing. This can hide real operational issues; consider logging at least once or returning structured error details.
+- IMPORTANT (web.ts): `/api/browse` uses `join(sharedDir, relPath)` + `startsWith(sharedDir)` as a traversal guard. This is generally OK on POSIX, but can be brittle with path normalization/odd inputs; safer to `resolve(sharedDir, relPath)` and check prefix on the resolved path.
+
+### Verdict
+PASS for commit `0975c41` (removal of dead module; tests green). Web UI concerns tracked above (pre-existing in `c76cd98`).
