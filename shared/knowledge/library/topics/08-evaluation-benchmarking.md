@@ -27,6 +27,8 @@
 | [dd241](../deep-dives/dd241-mast-why-mas-fail.md) | ★★★★★ MAST failure taxonomy |
 | [dd225](../deep-dives/dd225-mas-fire-fault-injection.md) | Systematic fault injection testing |
 | [dd479](../deep-dives/deep-dive-dd479-reliability-limits-mas.md) | ★★★★★ Formal reliability limits |
+| [dd728](../deep-dives/dd728-trace-adaptive-compute-agreement-signal.md) | ★★★★★ TrACE — inter-rollout agreement as per-step capability signal. Training-free, detects confident failures |
+| [dd730](../deep-dives/dd730-saver-self-audited-verified-reasoning.md) | ★★★★½ SAVeR — adversarial auditing of reasoning faithfulness before action commitment. Consensus ≠ faithfulness |
 
 ### Our System's Evaluation
 | File | What It Covers |
