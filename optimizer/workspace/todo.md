@@ -64,10 +64,9 @@ Tool quality regression #15 (2026-04-10 07:24) — 1 regressed category. bash:ot
 - When Bob writes in Phase 1, Phase 2 becomes redundant (finds work already done, finishes ~5-12 ops of nothing)
 - **48h data**: 25 Phase 1 sessions, 24 Phase 2 sessions. 50% of Phase 2 sessions are ≤12 ops (redundant)
 - **109 ops wasted** on redundant Phase 2 sessions + 49/215 evals (23%) penalized for phase-boundary violations
-- Drags bob's quality scores down artificially (Q:0.25-0.6 for sessions that actually delivered correctly)
-- **Structural fix**: Add deliverable-existence check between Phase 1 and Phase 2 — if planned files already exist after Phase 1, skip Phase 2 (or convert to verify-only). This is the same `existsSync` check already used in Phase 3.
-- Aligns with DD-708 finding: "Framework prompts influence tactics but not outcomes" — text-based phase boundary fails; structural verification succeeds.
-- **Status**: Recorded. Will fork work session if this is still the top priority next heartbeat.
+- **FIX DEPLOYED** (commit 5df41205, 2026-04-10 10:01): Early exit check between Phase 1 and Phase 2 — uses `existsSync` to detect if planned files already exist. Three paths: (a) all exist → skip Phase 2 entirely, (b) some exist → narrow Phase 2 to missing files only, (c) none exist → full Phase 2. Also added `extractFilePaths()` helper and Phase 2b retry for missing deliverables.
+- **Pre-fix baseline (24h)**: 20 Phase 2 sessions. 12/20 (60%) were redundant (≤15 ops), consuming 121 ops. 8/20 were productive (169 ops). **Expected savings: ~121 ops/day (42% of Phase 2 ops).**
+- **Measurement**: Next heartbeat cycle should show skipped Phase 2 sessions in bob's workflow runs. Look for `phase2-skipped-early-delivery` step events or significantly fewer Phase 2 sessions.
 
 ### QA Journal Token Waste (2026-04-10 09:23)
 **Mode B exploration** — Tool Gap Analysis, found major token waste:
@@ -75,7 +74,7 @@ Tool quality regression #15 (2026-04-10 07:24) — 1 regressed category. bash:ot
 - QA runs ~47 sessions/day, each reading the full journal = **3.18M tokens/day wasted** (~$9.50/day)
 - QA's tokens/op (36,710) is 10x higher than optimizer (3,392) — journal read is the driver
 - QA outcomes never reference old journal entries — only current findings
-- First request (req:e3a52c95) was never created properly. **Re-sent to tech-lead** (req:f367defd) with exact fix instructions
+- **Sent to tech-lead** — both requests (req:e3a52c95, req:77a2b7b5) marked COMPLETED. QA heartbeat.md now uses `tail -5` for journal reads instead of full read. QA recent ops: 4-11 (down from previous levels).
 - Expected savings: ~3M tokens/day after fix
 
 ### Workflow Health Check (2026-04-10 08:23)
