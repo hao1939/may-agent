@@ -101,6 +101,18 @@
 - [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% of verify-after-edit failures need code-level fix, not prompting. Deferred until prompting experiments complete.
 - [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
 
+## Session Notes (2026-04-10 ~09:00)
+- **DD-728/729/730 + CR-331 + KE-118 SYNTHESIS COMPLETE**: Synthesized 3 new deep dives into cross-reference CR-331 and knowledge entry KE-118. This closes ALL FIVE KE-105 open gaps — the verification orchestration stack is theoretically complete.
+  - **DD-728** ★★★★★: TrACE — inter-rollout agreement as per-step capability signal. Training-free, catches confident failures (14.6% of our FM-3.3), dynamic compute allocation.
+  - **DD-729** ★★★★★: Action Rebinding — zero-permission multi-step attack chains exploiting observation-action temporal gap. 100% success, architecture-independent. Phase 3 uses state-machine memory to escalate across contexts.
+  - **DD-730** ★★★★½: SAVeR — adversarial auditing of reasoning faithfulness before action commitment. Consensus ≠ faithfulness insight. 16.4% faithful reasoning in standard CoT.
+  - **CR-331**: Dynamic Capability + Multi-Step Defense Synthesis. Maps how DD-728/729/730 close remaining KE-105 gaps and extends the full verification stack to 8 layers (L1-L7).
+  - **KE-118**: Complete Verification Orchestration Stack — All Five KE-105 Gaps Closed. Full 8-layer architecture from Policy Compilation (L4) through Multi-Step Attack Defense (L7). FM-3.3 residual estimate ≤10% with full stack.
+  - **Topic files updated**: 05-security-safety.md (DD-729 in Attack Vectors), 08-evaluation-benchmarking.md (DD-728/730 in Quality & Reliability).
+  - **INDEX.md updated**: DD-728/729/730 + CR-331 + KE-118 rows added.
+- **Files created**: `knowledge/entries/KE-118-complete-verification-orchestration-stack-ke105-gaps-closed.md`, `knowledge/library/cross-references/CR-331-dynamic-capability-multi-step-defense-ke105-completion.md`
+- **Files modified**: `knowledge/INDEX.md`, `knowledge/library/topics/05-security-safety.md`, `knowledge/library/topics/08-evaluation-benchmarking.md`, `agents/bob/workspace/todo.md`
+
 ## Session Notes (2026-04-10 ~08:45)
 - **KE-117 WRITTEN (Verification Self-Awareness Stack)**: Synthesized DD-724/725/726 + CR-330 into knowledge entry KE-117. Two new layers atop KE-105/KE-116: Layer 5.5 (Signal Calibration — rubric decomposition + isotonic regression, ECE 15-25%→2-5%) and Layer 6 (Meta-Verification — CAMV conflict-aware multi-verifier, 84.4% GAIA SOTA). Closes 3/5 KE-105 gaps (signal calibration ✅, verification of verifiers ✅, cold-start ✅). Three operating modes (routine/uncertain/cold-start). Key system policy: never trust verbalized confidence. Estimates FM-3.3 residual halved (35%→15-25%) with full stack. Predictions P-117a-d filed.
 - **INDEX.md UPDATED**: KE-117 row added after CR-330.
