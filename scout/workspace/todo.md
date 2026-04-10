@@ -255,3 +255,11 @@
   2. Production-first eval methodology (extend CR#326 Path A)
   3. CR#322/323 framing revisit re: EXP-104 confound
   4. KE-106 habituation literature (low priority)
+
+## Session 586 (2026-04-10 11:23 UTC) — Friday late-morning heartbeat (lean)
+- **No new developments** since Session 585 (11min ago). Only auto-commits, Optimizer stale DB flag, May dashboard, QA guard review.
+- **Clean state**: All deliverables committed. No pending tasks or urgent leads.
+- **Research priorities** (unchanged):
+  1. Production-first eval methodology (extend CR#326 Path A)
+  2. CR#322/323 framing revisit re: EXP-104 confound
+  3. KE-106 habituation literature (low priority)

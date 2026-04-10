@@ -4716,3 +4716,21 @@ PASS
 
 ### Verdict
 CONDITIONAL (address IMPORTANT items or explicitly accept the risk)
+
+---
+## 2026-04-10T11:23Z — QA review: c76cd98 Web UI Phase 1
+
+### Summary
+Reviewed commit **c76cd98** adding Web UI endpoints + static HTML dashboard (`src/app/ui/web.ts`, `src/app/ui/web-static/index.html`). The UI largely looks functional, but there are several **silent catch blocks** and an access-control weakness in the browse endpoint path check.
+
+### Checks
+- `./node_modules/.bin/tsc --noEmit`: PASS (no output, exit 0).
+- `./node_modules/.bin/vitest --run`: PASS (2067 tests across 139 files).
+
+### Findings
+- IMPORTANT: `handleBrowse()` uses `const absPath = join(sharedDir, relPath); if (!absPath.startsWith(sharedDir)) ...` which is **not a safe traversal check** (path normalization can bypass). Should use `resolve(sharedDir, relPath)` and ensure it starts with `sharedDir + path.sep`.
+- IMPORTANT: multiple `catch {}` blocks swallow JSON/FS errors (`findSocketPath()`, `handleTranscript()` parsing loop). At minimum, log once or include an error field so failures are diagnosable.
+- MINOR: `handleTranscript()` loads entire transcript into memory and parses all JSON lines; for very large sessions this may be heavy. Consider streaming / pagination.
+
+### Verdict
+CONDITIONAL — OK to ship if browse path traversal check is fixed or endpoint is restricted; otherwise risk of reading arbitrary files under state-adjacent paths.
