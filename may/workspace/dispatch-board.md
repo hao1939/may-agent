@@ -1,16 +1,16 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~11:42 UTC
+Updated: 2026-04-10 ~11:53 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — Heartbeat 11:42. H-097 CCC Triad work.
-- **Coach**: 🟢 Active — Heartbeat 11:42. EXP-116 Phase 2 running 36-trial batch (~48 min, s_1775819641735_110). **CEILING EFFECT confirmed** across all arms — evidence-over-narrative skill already fixed confabulation.
-- **Scout**: 🟢 Active — Heartbeat 11:42.
-- **Tech-lead**: 🟢 Active — Heartbeat 11:42. Dead code ops-gate/manager-receipts/orders **MERGED** (1e902a6e, 675 lines). Total dead code removed: ~2,648 lines.
-- **Optimizer**: 🟢 Active — Heartbeat 11:42. False alarm about stale DB dismissed.
-- **Evaluator**: 🟢 Active — Heartbeat 11:42. Running task tree evaluations.
-- **QA**: 🟢 Active — Heartbeat 11:42.
+- **Bob**: 🟢 Active — Heartbeat 11:53. H-097 CCC Triad work.
+- **Coach**: 🟢 Active — Heartbeat 11:53. EXP-116 Phase 2 work session 61min in (s_1775818479860_845). Running Arm C/D trials. **CEILING EFFECT confirmed** across all arms.
+- **Scout**: 🟢 Active — Heartbeat 11:53.
+- **Tech-lead**: 🟢 Active — Heartbeat 11:53. Dead code total: ~2,648 lines removed. EXP-115 completeness guard branch **LOST** (deleted/GC'd) — needs re-dispatch.
+- **Optimizer**: 🟢 Active — Heartbeat 11:53. Tool quality regression investigation queued (edit:edit-match-fail +57%).
+- **Evaluator**: 🟢 Active — Heartbeat 11:53. Running task tree evaluations.
+- **QA**: 🟢 Active — Heartbeat 11:53.
 - **Coder**: Idle. Only runs when forked by tech-lead.
 - **All agents**: 🟢 8/8 running. Zero errors last hour.
 - **✅ Tool Schema Guard**: Live in production.
@@ -137,7 +137,7 @@ Updated: 2026-04-10 ~11:42 UTC
 | **Scout C1.3/C7.1 Investigation** | ✅ COMPLETE | coach | Root cause: path inconsistency. Scout writes drops to 4+ dirs, only `/knowledge/` exempt. Text instructions can't fix post-action habits. Brief at `agents/coach/workspace/briefs/scout-c13-regression-diagnostic.md`. |
 | **EXP-116 Adversarial Framing Guard** | ⚠️ CEILING EFFECT | coach + bob | Phase 2 running — **ALL ARMS 100%** (baseline 6/6, Arm A 6/6, Arm B running). Evidence-over-narrative skill already fixed confabulation. Bob's review validated: EXP-103 confound confirmed. Adversarial framing provides no marginal value. |
 | **Bob H-097 CCC Triad Hypothesis** | ⏳ NEW | bob | Multi-Agent CCC Triad: Cooperation + Calibrated Agreement + Context Isolation. P(H)=0.65. Based on KE-120/DD-731-733. Key insight: o3 at 17% collective vs o3-mini at 50% — capability ≠ cooperation. |
-| **Tech-lead EXP-115 Completeness Guard** | ⚠️ UNMERGED | tech-lead | Commit 484a53cb on `review/s_1775810855346_43`. NOT on main yet. Needs merge. |
+| **Tech-lead EXP-115 Completeness Guard** | ❌ BRANCH LOST | tech-lead | Branch review/s_1775810855346_43 deleted/GC'd. Commit 484a53cb gone. **Needs re-implementation** — design + results at EXP-115/. |
 | **Tech-lead Dead Code Sprint** | ✅ MERGED | tech-lead | Socket-watch (0975c41, 706 lines) + stuck-detector (4733672, 657 lines) + forced-externalization (610 lines) = ~1,973 lines removed total. Web UI Phase 1 also merged (c76cd98). |
 
 ## Completed/Archived
@@ -170,24 +170,24 @@ Updated: 2026-04-10 ~11:42 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (11:42)
-- **System healthy**: All 8 non-May agents running. Zero errors. All heartbeats fresh (~11:42).
-- **Since last cycle (11:23)**:
-  - **Tech-lead**: Dead code removal (ops-gate, manager-receipts, orders) already on main (1e902a6e, 675 lines). Branch cleaned. Total dead code: ~2,648 lines. EXP-115 completeness guard branch (review/s_1775810855346_43) has .state/ data committed — needs clean rebranch.
-  - **Coach**: EXP-116 Phase 2 running 36-trial batch. In progress (~48 min). All preliminary arms show 100% — ceiling effect confirmed.
-  - **Bob**: H-097 CCC Triad. Normal heartbeat.
-  - **Optimizer**: Duplicate stale-DB requests (3e693a3e + 9f6d860a) — false alarm, already dismissed.
-  - **Growth trigger**: Bob FM-3.3 trigger fired (58 errors/7d) — already extensively analyzed (EXP-107/108/110, FM-3.3 analysis). Measurement artifact + gym-production gap. No action.
+## Latest Cycle Summary (11:53)
+- **System healthy**: All 8 non-May agents running. Zero errors last hour. All heartbeats fresh (~11:53).
+- **Since last cycle (11:42)**:
+  - **Coach**: EXP-116 Phase 2 work session 61min (s_1775818479860_845). Actively running Arm C/D gym trials. All preliminary arms show ceiling (100%).
+  - **Tech-lead**: EXP-115 completeness guard branch **GONE** — `review/s_1775810855346_43` no longer exists in git. Commit 484a53cb not in reflog. Implementation lost. Needs re-dispatch.
+  - **Bob**: Normal heartbeat. H-097 CCC Triad.
+  - **Optimizer**: Tool quality regression queued (edit:edit-match-fail +57%, req:b75979a5).
+  - **Zombie cleaned**: s_1775311714523_3 (36h old May session) marked interrupted.
+  - **System-status anomaly (req:56157375)**: "Bob analysis 6 days old" — false alarm. `analysis.md` is historical artifact, not active deliverable. Dismissed.
 
 ## Key New Findings This Cycle
-- **Dead code total now ~2,648 lines** — ops-gate/manager-receipts/orders (675) added to prior 1,973.
-- **EXP-115 completeness guard branch is dirty** — committed .state/ session data (12,511 files). Tech-lead needs clean branch with only source changes.
-- **EXP-116 Phase 2 still running** — 36-trial batch, all preliminary arms at ceiling (100%). Will confirm adversarial framing provides zero marginal value.
+- **EXP-115 completeness guard implementation LOST** — branch deleted/GC'd. Source changes gone. Design + results still at `agents/shared/knowledge/experiments/EXP-115/`. Need to re-dispatch to tech-lead.
+- **EXP-116 Phase 2 nearing completion** — Coach running Arm C/D trials (combined skill+guard arms). Expect null result (ceiling effect confirms EXP-104: evidence-over-narrative skill was the real fix).
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao since Mar 24**.
-- **P1**: **EXP-115 completeness guard clean branch** — Tech-lead needs to cherry-pick only source changes from review/s_1775810855346_43 (exclude .state/).
-- **P1**: **EXP-116 Phase 2 completing** — Coach 36-trial batch. Bob to integrate null result when done.
+- **P1**: **Re-dispatch EXP-115 completeness guard to tech-lead** — Branch lost, needs fresh implementation from EXP-115 design doc.
+- **P1**: **EXP-116 Phase 2 completing** — Coach finishing Arm C/D. Bob to integrate null result when done.
 - **P1**: **EXP-105 Few-Shot Production Impact** — Need coder/optimizer work sessions to generate data.
 - **P1**: **Present research sprint results to Hao** — KE-101 meta-analysis capstone. 17+ experiments. Gym graduation. Token waste finding ($441/week).
 - **P2**: `analyze-failures` cron DB bug — persistent but non-critical.

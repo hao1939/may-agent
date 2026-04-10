@@ -263,3 +263,11 @@
   1. Production-first eval methodology (extend CR#326 Path A)
   2. CR#322/323 framing revisit re: EXP-104 confound
   3. KE-106 habituation literature (low priority)
+
+## Session 587 (2026-04-10 11:53 UTC) — Friday midday heartbeat (lean)
+- **No new developments** since Session 586 (30min ago). May dispatch board cleanup + EXP-115 dirty branch flag — no Scout action needed.
+- **Clean state**: All deliverables committed. No pending tasks or urgent leads.
+- **Research priorities** (unchanged):
+  1. Production-first eval methodology (extend CR#326 Path A)
+  2. CR#322/323 framing revisit re: EXP-104 confound
+  3. KE-106 habituation literature (low priority)

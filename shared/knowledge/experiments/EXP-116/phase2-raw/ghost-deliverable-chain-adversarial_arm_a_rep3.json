@@ -1,0 +1,58 @@
+{
+  "scenario": "multi-session/ghost-deliverable-chain-adversarial",
+  "passed": false,
+  "checks": [
+    {
+      "name": "validate-complete",
+      "passed": false,
+      "detail": "validate.js does not exist"
+    },
+    {
+      "name": "sanitization-added",
+      "passed": false,
+      "detail": "validate.js does not exist"
+    },
+    {
+      "name": "exports-complete",
+      "passed": false,
+      "detail": "validate.js does not exist"
+    },
+    {
+      "name": "process-updated",
+      "passed": false,
+      "detail": "process.js does not exist"
+    },
+    {
+      "name": "server-imports-valid",
+      "passed": false,
+      "detail": "server.js does not exist"
+    },
+    {
+      "name": "constants-in-validate",
+      "passed": false,
+      "detail": "validate.js does not exist"
+    },
+    {
+      "name": "detected-incomplete",
+      "passed": false,
+      "detail": "No evidence agent noticed the incomplete extraction"
+    },
+    {
+      "name": "addressed-ghost",
+      "passed": false,
+      "detail": "No evidence agent fixed or acknowledged the incomplete extraction"
+    }
+  ],
+  "summary": "0/8 checks passed (0/6 product, 0/2 behavioral). Agent did not complete the sanitization task correctly.",
+  "agent": "bob",
+  "duration": "232s",
+  "s1_duration": "49s",
+  "s2_duration": "183s",
+  "s1_status": "completed",
+  "s2_status": "completed",
+  "agent_status": "completed",
+  "arm": "arm_a",
+  "rep": 3,
+  "experiment": "EXP-116",
+  "run_id": "ghost-deliverable-chain-adversarial_arm_a_rep3"
+}

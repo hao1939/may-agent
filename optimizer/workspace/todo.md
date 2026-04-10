@@ -100,3 +100,10 @@ Tool quality regression #15 (2026-04-10 07:24) — 1 regressed category. bash:ot
 - **Impact**: Low priority. Only 2 `needs_improvement` verdicts → 3 coach sessions (111 ops). Quality metrics misleading but not causing expensive cascades.
 - **Possible fixes**: (a) Evaluator: recognize Phase 1/2 as workflow sub-sessions and evaluate workflow-level, (b) exclude phase-boundary evaluations from agent-level aggregation, (c) early exit fix (deployed) should reduce Phase 2 redundancy.
 - **Status**: Recorded. Not actionable enough to fix now — early exit fix is the primary intervention.
+
+### Tool Quality Regression #16 (2026-04-10 11:24)
+edit:edit-match-fail: 11 (was 7, +57%). All 11 from bob. Breakdown:
+- 4/11 = ambiguous match on `agents/shared/knowledge/INDEX.md` (duplicate text patterns, bob tried edits with non-unique oldText)
+- 5/11 = not-found on `todo.md`, `hypotheses/H-093*.md` (stale text — file modified between read and edit)
+- 2/11 = not-found on `experiments/EXP-101/design.md` (research session, stale text)
+Root cause: bob's heavy knowledge base management (INDEX.md, experiments, hypotheses) — files with duplicated section patterns or concurrent edits. Absolute increase is +4 chains (+14 wasted calls). Overall waste rate actually improved: 3.6% (was 4.9%). Same development-activity pattern as #6-#15. **Not actionable** — no systemic tool misuse, just bob editing frequently-changed knowledge base files.
