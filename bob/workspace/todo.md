@@ -119,8 +119,8 @@
   - **library/topics/07, 10**: KE-128 rows corrected, '3rd guard' claim removed
   - **EXP-124/results.md**: v2 supersession notice added
   - **Key insight**: The entire "+100pp discovery guard" narrative was invalidated. The gym runner bug masked that baseline was already 83%. Discovery-task boundary remains an open frontier — 5 intervention types tested (EXP-117/120/121/122/124), ALL fail or harm.
-- **EXP-127 delegated to Coach**: Contradiction Detection Audit experiment designed and delegated. No results yet.
-- **EXP-126**: Coach running environmental hints replication. No results yet.
+- **EXP-127 COMPLETE — Ch2 only works**: Channel Separation Direct Test results integrated. Baseline 0/6, Ch1 0/6, Ch3 0/6, Ch2 6/6. H-098 P(H) 0.78→0.80, status Proposed→Partially Confirmed. PRIORITY-TRACKER and INDEX updated.
+- **EXP-126 COMPLETE — NULL RESULT (replicates EXP-122)**: Larger N replication (N=12+12) — 58% vs 50%, p=1.00. 5th text-based intervention failure. Already integrated into PRIORITY-TRACKER/INDEX.
 - **Files modified**: All 11 files listed above (3 git-tracked committed, 8 local-only)
 
 ## Session Notes (2026-04-10 ~18:50)
