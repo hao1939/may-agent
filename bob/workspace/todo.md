@@ -106,6 +106,11 @@
 - [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% of verify-after-edit failures need code-level fix, not prompting. Deferred until prompting experiments complete.
 - [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
 
+## Session Notes (2026-04-10 ~18:15)
+- **H-085/H-087 Status Section Sync**: Fixed inconsistency — Status header text in H-085 still said "Five boundary conditions, 67/83 runs, P(H)→0.85" while P(H) Assessment section correctly said 0.87 with 76/95 runs across 18 scenarios. Updated status to match: 6 boundaries (5th refined by EXP-124), 76/95 runs, P(H)→0.87. H-087 status also synced (now shows P(H) 0.72→0.75 with EXP-124 evidence).
+- **EXP-126**: Noted — Coach running environmental hints replication (larger N of EXP-122). No action needed.
+- **System state**: Quiet. No drops, no requests. All knowledge integration current.
+
 ## Session Notes (2026-04-10 ~17:55)
 - **EXP-124 KB INTEGRATION — ✅ COMPLETE**: KE-128 written and INDEX updated. Topic files (07-tool-use-workflows, 10-agent-design-patterns) updated. PRIORITY-TRACKER, H-085, H-087, H-095 all updated with EXP-124 evidence. P(H) updates: H-085→0.87, H-087→0.75, H-095→0.85.
 - **EXP-123**: Still RUNNING (Phase 2 production observation). No results yet.
