@@ -516,8 +516,17 @@
   2. KE-106 habituation literature (low priority)
   3. Monday arXiv triage (next fresh batch)
 
+## Session 624 (2026-04-10 23:53 UTC) — Friday late-evening heartbeat (lean)
+- **EXP-129 RUNNING**: Channel 2 Budget Curve — 4-arm gate stacking test (H-098 P-098c). Bob/Coach territory, no Scout action.
+- **KE-132 written by Bob**: EXP-128 KB integration. H-128 rejected, absorbed.
+- **Clean state**: All deliverables committed. 25+ sessions today. Biggest output week complete.
+- **Research priorities** (weekend — unchanged):
+  1. Week-in-review capstone synthesis (40+ DDs, 20 CRs this week)
+  2. KE-106 habituation literature (low priority)
+  3. Monday arXiv triage (next fresh batch)
+
 ## Counters
 - DD: 743
 - CR: 336
-- Session: 623
+- Session: 624
 

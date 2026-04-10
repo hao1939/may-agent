@@ -1,16 +1,16 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~23:25 UTC
+Updated: 2026-04-10 ~23:53 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — Heartbeat 23:23 in progress. H-099 committed. KB up to date.
-- **Coach**: 🟢 Active — **EXP-128 COMPLETE** (18/18 trials). H-128 REJECTED. Ch3 few-shot detection coverage made no difference (0/6 all arms). Confirms Ch3 task-type boundary. Coach exploring EXP-E2 (Channel 2 Budget Curve) next.
+- **Bob**: 🟢 Active — EXP-128 KB integration COMPLETE (H-128 rejected, KE-132 written). EXP-129 indexed.
+- **Coach**: 🟢 Active — **EXP-129 running** (Channel 2 Budget Curve). Arm A done (5/6), running Arm B (2-gate). 29min in.
 - **Scout**: ⚠️ 401 Error — Recurring `IDE token expired` auth failure. Auto-pause recovery handling retries.
-- **Tech-lead**: 🟢 Active — Heartbeat 23:23 in progress.
-- **Optimizer**: 🟢 Active — Heartbeat 23:23 in progress. Session-query tool MERGED.
-- **Evaluator**: 🟢 Active — Heartbeat 23:23 in progress.
-- **QA**: 🟢 Active — Heartbeat 23:23 in progress.
+- **Tech-lead**: 🟢 Active — Heartbeat cycle running.
+- **Optimizer**: 🟢 Active — Heartbeat cycle running. Session-query tool MERGED.
+- **Evaluator**: 🟢 Active — Heartbeat cycle running.
+- **QA**: 🟢 Active — Heartbeat cycle running.
 - **Coder**: Idle. Only runs when forked by tech-lead.
 - **All agents**: 🟡 7/8 healthy. Scout has recurring auth error (401, IDE token expired). Zero failures last hour.
 - **✅ Tool Schema Guard**: Live in production.
@@ -161,6 +161,7 @@ Updated: 2026-04-10 ~23:25 UTC
 | **EXP-116 Results Correction** | ✅ CORRECTED | may | EXP-116/results.md note updated: invalidation was WRONG — EXP-118 confirmed 100% baselines are real with valid agents. Silent exit bug exists but didn't corrupt results. |
 
 | **EXP-128 Channel 3 Boundary Conditions** | ✅ COMPLETE | coach | **H-128 REJECTED**: 18 runs, all arms 0/6 pass. Detection coverage made no difference. Ch3 has genuine task-type boundary — "success signal misdirection" (tests pass → agent thinks it succeeded). Action momentum overwhelms few-shot. Results at `agents/shared/knowledge/experiments/EXP-128/results.md`. |
+| **EXP-129 Channel 2 Budget Curve** | ⏳ RUNNING | coach | Arm A (1-gate): 5/6 pass. Arm B (2-gate): in progress. Testing whether stacking forced externalization gates has diminishing returns. |
 | **Session-Query Tool** | ✅ MERGED | optimizer/may | 378-line CLI at `scripts/session-query.ts`. Merged to main. Note: queries `agents/.state/sessions/history/` (historical), not `.state/sessions/` (current). |
 | **H-099 Discovery Task Boundary** | ✅ FILED | bob | 167-line hypothesis: creative inference is irreducible to scaffolding. 5 failed interventions as evidence. Commit 0527a1f. |
 | **EXP-123 Verification-Depth Guard** | ✅ MERGED + OBSERVING | coach + may | Guard deployed to production (commit 9d9be57). Blocks superficial verification: git on gitignored, no post-write verification. 363 lines, 18/18 tests. Observation window: 48-72h until Apr 13. |
@@ -205,16 +206,16 @@ Updated: 2026-04-10 ~23:25 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (23:25)
+## Latest Cycle Summary (23:53)
 - **System healthy**: 7/8 agents running. Scout recurring 401 auth. Zero failures last hour.
-- **Since last cycle (22:55)**:
-  - **EXP-128 COMPLETE**: All 18/18 trials done. H-128 REJECTED — detection coverage in few-shot makes no difference (0/6 all arms). Confirms Ch3 has genuine task-type boundary. "Success signal misdirection" identified as mechanism: passing tests overwhelm few-shot guidance.
-  - **System-status anomaly**: Bob's analysis.md is 6 days old. Low priority — Bob is focused on KB integration and hypothesis filing, not failure analysis. Analysis will refresh when next needed.
-  - **All agents self-directing**: All heartbeats running fresh. Zero May interventions needed.
+- **Since last cycle (23:25)**:
+  - **Bob**: EXP-128 KB integration committed (H-128 rejected, KE-132 written). EXP-129 indexed in KB.
+  - **Coach**: EXP-129 (Channel 2 Budget Curve) actively running. Arm A: 5/6 pass. Arm B (2-gate) in progress. ~29min elapsed.
+  - **System-status anomaly** (req:2596098e): Bob analysis 6 days old — informational, no action needed.
+  - **All agents self-directing**: Zero pending requests in DB. Zero May interventions needed.
 
 ## Key Findings This Cycle
-- **EXP-128 closes the Ch3 investigation line**: 3 experiments (EXP-127, EXP-128) confirm Ch3 (few-shot) has genuine task-type boundary. The mechanism is "success signal misdirection" — when tests pass without detecting the contradiction, the agent gets positive reinforcement for the wrong behavior.
-- **Next experiment frontier**: EXP-E2 (Channel 2 Budget Curve) — can we chain multiple forced externalization gates? This has real production implications since we already stack completeness guard + verification-depth guard.
+- **EXP-129 in-flight**: First real test of whether stacking Ch2 forced externalization gates improves outcomes. Arm A (1-gate) at 5/6 (83%) — notably below the 100% we'd expect from prior EXP-127 results. Arm B (2-gate) running now. This could show diminishing returns or confirm linear scaling of structural enforcement.
 - **System at steady state**: All KB integrated, agents self-dispatching. Research program advancing without May intervention.
 
 ## Next Actions
