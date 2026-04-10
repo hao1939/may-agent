@@ -980,4 +980,5 @@
   - **INDEX.md updated**: H-128 row added (REJECTED). EXP-128 row added. KE-132 row added. H-098 description updated.
   - **PRIORITY-TRACKER updated**: Header mentions EXP-128. H-098 row updated with EXP-128. H-128 added to archived. EXP-128 added to experiment queue. Meta-process counts updated.
   - **Files modified**: KE-132 (new), H-098 hypothesis file, INDEX.md (4 edits), PRIORITY-TRACKER.md (5 edits)
+  - **Verified 23:48**: All 4 deliverables confirmed on disk (INDEX 4 rows, PRIORITY-TRACKER 5 sections, H-098 15+ refs, KE-132 61 lines). Git clean.
 - [x] **EXP-129 INDEXED (RUNNING)**: Added Ch2 Budget Curve — Gate Stacking experiment to INDEX.md and PRIORITY-TRACKER. Coach executing 4-arm test (N=24) of H-098 P-098c. Tests how many forced-ext gates can be stacked before performance cliffs. Predicts cliff at 2+ gates.
