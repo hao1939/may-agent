@@ -39,6 +39,7 @@ export interface GymResult {
   categories?: string[];
   tags?: string[];
   tier?: string;
+  transcript?: string;
 }
 
 const KNOWN_AGENTS = ["coder", "tech-lead", "optimizer", "evaluator", "coach", "qa", "may", "amy-kimi"];
