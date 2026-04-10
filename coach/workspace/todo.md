@@ -26,7 +26,19 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 - **H1 CONFIRMED**: 37.5% of "good" sessions have FM codes (threshold was ≥30%)
 - **H3 CONFIRMED**: Quality trends cyclic W09-W14, not monotonic
 - **H4 CONFIRMED**: Each agent has distinct FM fingerprint
-- **Proposed follow-ups**: EXP-110 (FM-3.3 commit guard impact), EXP-111 (behavioral archetypes), EXP-112 (confident failure deep dives)
+- **Follow-ups**: EXP-110 (COMPLETE ✅), EXP-111 (behavioral archetypes), EXP-112 (confident failure deep dives)
+
+### 0b. EXP-110: FM-3.3 Commit Guard Production Impact [COMPLETE ✅]
+- **Design**: `agents/shared/knowledge/experiments/EXP-110/design.md`
+- **Results**: `agents/shared/knowledge/experiments/EXP-110/results.md`
+- **Knowledge**: KE-113 (commit guard recovery, not prevention)
+- **Key finding**: Guard doesn't prevent FM-3.3 — it converts silent failures into recovered ones
+  - FM-3.3 occurrence rate INCREASED +20.9pp (more visible)
+  - FM-3.3 recovery rate INCREASED +51.3pp (13.4%→64.7%, p<0.001, h=1.12)
+  - Unrecovered FM-3.3 rate unchanged (15.4%→13.6%, NS)
+- **Gym vs production**: Complementary — gym measured commit laziness (−57pp), production measured verification recovery (+51pp)
+- **Limitation**: Small N (88 post-guard evals, 92% bob). Re-run at 2 weeks (2026-04-21)
+- **Next frontier**: Residual 35% unrecovered FM-3.3 = superficial verification. Needs semantic verification checks.
 
 ### 1. Few-Shot Production Pipeline Integration [DEPLOYED ✅]
 - **Owner**: Tech-lead (implementation), Bob (design brief at `agents/shared/may-agent-docs/design/fewshot-production-pipeline.md`)
@@ -131,6 +143,7 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 | KE-091 | Active | 2026-04-09 (CIVC alignment tax — forced verification harms high-complexity) |
 | KE-092 | Active | 2026-04-09 (HVR not predictive for agent sessions) |
 | KE-094 | Verified | 2026-04-09 (commit guard −57pp, structural enforcement) |
+| KE-113 | Active | 2026-04-10 (commit guard production impact — recovery not prevention) |
 
 ---
 
