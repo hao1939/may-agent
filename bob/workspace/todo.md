@@ -106,6 +106,13 @@
 - [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% of verify-after-edit failures need code-level fix, not prompting. Deferred until prompting experiments complete.
 - [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
 
+## Session Notes (2026-04-10 ~19:45)
+- **EXP-126 INDEX INTEGRATION + EXP-127 DESIGN REVIEW**: 
+  - **EXP-126 indexed**: Added to INDEX.md (experiments table, after EXP-124) and PRIORITY-TRACKER.md (P1, before EXP-127). EXP-126 is Coach's clean replication of EXP-122 (environmental hints) with larger N=24 and corrected environment.
+  - **EXP-127 design review**: Design is excellent — single scenario (contradictory-requirements, baseline 0%), content-identical across channels, strong pre-registered Bayesian update matrix. **One design note**: Arm A vs B comparison (Ch1 system-prompt vs Ch3 task-message, identical content) is the crown jewel — cleanly unconfounded pure channel test. Arm C (Ch2 forced-ext, no worked example) is deliberately confounded (different content AND different channel) but justified as testing "Channel 2 mechanism is so powerful it doesn't even need content." If Arm B > Arm C, can't distinguish channel effect from content effect — design doc acknowledges this. Acceptable for first test. No changes needed to design — ready to execute.
+  - **EXP-127 already in both INDEX.md and PRIORITY-TRACKER** (added in earlier session). No changes needed.
+- **Files modified**: `knowledge/INDEX.md`, `knowledge/hypotheses/PRIORITY-TRACKER.md`, `agents/bob/workspace/todo.md`
+
 ## Session Notes (2026-04-10 ~18:50)
 - **CR-336 EXTERNAL VALIDATION MAP KB INTEGRATION COMPLETE**: Integrated CR-336 (External Literature Validation Map for the Three-Mechanism Theory) across the knowledge base:
   - **INDEX.md updated**: CR-336 row added after CR-335 in cross-references table.

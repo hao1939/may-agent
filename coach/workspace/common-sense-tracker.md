@@ -8,7 +8,7 @@ Tracks which rules from `agents/shared/common-sense.md` have been verified, when
 |------|--------------|--------|-------------------|-------|
 | Claim, then act (Relaxed C40) | - | ❓ Not verified | - | - |
 | Evidence first | - | ❓ Not verified | - | - |
-| C1.3 Verify every write | 2026-04-08 | ✅ Pass | May, Coach | See entry below |
+| C1.3 Verify every write | 2026-04-10 | ⚠️ Partial | tech-lead, coach, optimizer | Consecutive-edit clusters skip individual verification |
 | C1.7 Success Requires Evidence | 2026-04-09 | ✅ Pass | tech-lead, coach, may | See entry below |
 | C1.8 Match finish() status to reality | 2026-04-09 | ⚠️ Mostly pass | bob, qa, may, coach | 5/6 compliant; 1 borderline FM-2.6 overlap |
 | Environment Reality (C50) | - | ❓ Not verified | - | - |
@@ -41,6 +41,43 @@ Tracks which rules from `agents/shared/common-sense.md` have been verified, when
 - **Verdict: COMPLIANT**
 
 **Overall: ✅ Both agents verified their writes. No growth cycle action needed.**
+
+### C1.3 Verify every write — 2026-04-10 (Re-check)
+
+**Motivation**: Previous check (2026-04-08) only sampled 2 sessions and found full compliance. Re-checking with a larger sample of recent high-edit sessions.
+
+**Sessions examined (4 sessions, 3 agents, all from 2026-04-10):**
+
+**tech-lead (s_1775848670237_351) — gym transcript fix, 34 edits:**
+- Files edited: `src/gym/runner.ts`, `test/gym/record-result.ts`
+- Lines 52–56 in tool sequence: **5 consecutive edits** with no read-back or bash between them. Single bash at line 57.
+- Lines 61–63: **3 consecutive edits** before verification at line 64.
+- Most other edits individually followed by bash (test runs) — good practice.
+- ⚠️ **PARTIAL** — ~60% of edits had immediate verification. Consecutive-edit clusters lack individual verification.
+
+**coach (s_1775844922864_318) — experiment work, 14 edits + 10 writes:**
+- Lines 35–36: 2 consecutive writes before bash at 37.
+- Lines 39–40: 2 consecutive writes before bash at 41.
+- Lines 107–108: 2 consecutive edits before bash at 109.
+- ⚠️ **PARTIAL** — Most writes verified, but pairs of writes batched without individual verification.
+
+**optimizer (s_1775848384257_347) — 6 writes:**
+- Line 39: **write() immediately followed by finish()** at line 40. No read-back at all.
+- Gate enforcement caught it — finish rejected, forcing reads at lines 41-42 before allowing finish at 43.
+- ❌ **VIOLATION** — Agent's instinct was to skip verification entirely. Gate saved it.
+
+**tech-lead (s_1775848348843_339) — dispatch-board updates, 8 edits:**
+- Lines 13–16: **4 consecutive edits** to `agents/may/workspace/dispatch-board.md` with no verification between them.
+- Only bash at line 17 and read at line 18 after all 4 edits.
+- ⚠️ **PARTIAL** — Diff previews were visible, but 4 rapid edits without stopping to verify suggests insufficient review.
+
+**Compliance summary: 0/4 fully compliant, 3/4 partial, 1/4 violated.**
+
+**Key finding**: The main violation pattern is **consecutive edits without individual verification**. Agents batch related changes and only verify after the entire batch. This is qualitatively different from the 2026-04-08 check (which found full compliance in 2 low-edit sessions). High-edit sessions consistently show this clustering pattern.
+
+**The verification gate on finish() is the last line of defense** and works well (caught optimizer's write→finish skip). But the per-edit discipline degrades during complex multi-edit refactoring tasks.
+
+**Recommendation**: ⚠️ Consider adding to growth cycle queue — a skill reinforcement for "verify each edit individually, even when making related changes to the same file." This is the #1 convention violation as noted in common-sense.md itself.
 
 ### C1.7 Success Requires Evidence — 2026-04-09
 

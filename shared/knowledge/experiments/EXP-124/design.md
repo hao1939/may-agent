@@ -1,6 +1,6 @@
 # EXP-124: Structural Intervention for FM-1.3 (Path-Guessing / Flailing)
 
-**Status**: CONCLUDED — Inconclusive (see results.md for details)
+**Status**: CONCLUDED — No Treatment Effect (see results-v2.md for post-fix results)
 **Date**: 2026-04-10
 **Author**: Coach
 **Type**: Workflow modification + Gym A/B experiment
