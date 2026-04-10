@@ -57,6 +57,15 @@ Tool quality regression #13 (2026-04-09 23:23) — 1 regressed category. read:no
 Tool quality regression #14 (2026-04-10 03:24) — 4 regressed categories. Waste rate 4.7% (was 5.3%) — actually improved. bash:git-error 50 (was 6, +733%), edit:edit-match-fail 9 (was 5, +80%), bash:timeout-killed 10 (was 6, +67%), read:other 7 (was 5, +40%). Root cause: **classifier fix artifact, not real regression**. The classifier gap fix deployed at 23:27 reclassified chains from `other` to proper categories: bash:other dropped 65→8 (-57 chains) while bash:git-error rose 6→50 (+44) and edit:edit-match-fail rose 5→9 (+4). The +733% git-error spike exactly matches the ~47 chains the fix was expected to reclassify (gitignore blocks, review gate blocks, push rejections). bash:timeout-killed (+4) = bob's `git push k3s main` timing out at 120s — remote push issue, not tool misuse. read:other (+2) = noise. All errors from bob only. Not actionable — this is the classifier working correctly.
 Tool quality regression #15 (2026-04-10 07:24) — 1 regressed category. bash:other: 10 (was 8, +25%). All from bob research sessions. Root cause: truncated command output where "Command exited with code N" was cut off — classifier couldn't detect exit-code-nonzero. **FIX DEPLOYED** (commits 0c2ab70 + 48e73ff7, 2026-04-10): Added fallback for `isError:true` + `^exec failed:` rootCause → exit-code-nonzero. 25 tests pass. Expected to move all 10 chains from bash:other to exit-code-nonzero in next scan.
 
+### QA Journal Token Waste (2026-04-10 09:23)
+**Mode B exploration** — Tool Gap Analysis, found major token waste:
+- QA heartbeat instructs `read("workspace/journal.md")` every heartbeat — journal is 270KB / 4,682 lines
+- QA runs ~47 sessions/day, each reading the full journal = **3.18M tokens/day wasted** (~$9.50/day)
+- QA's tokens/op (36,710) is 10x higher than optimizer (3,392) — journal read is the driver
+- QA outcomes never reference old journal entries — only current findings
+- **Sent to tech-lead** (req:e3a52c95) to fix heartbeat.md: change full read to `tail -50` for recent context only
+- Expected savings: ~3M tokens/day after fix
+
 ### Workflow Health Check (2026-04-10 08:23)
 **Mode D exploration** — Post-restart workflow audit (48h window):
 - **implement-and-review**: Heavy use by bob (60 Phase 1+2 sessions), **100% success rate**. Verdict parsing fix validated. Phase 1 avg 31 ops, Phase 2 avg 20 ops.
