@@ -1,17 +1,17 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~08:55 UTC
+Updated: 2026-04-10 ~09:15 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — Indexing DD-728/729 (self-dispatched work session). New heartbeat 08:53.
-- **Coach**: 🟢 Active — EXP-115 Phase 2 running (gym trials for FM-2.2 completeness checklist). New heartbeat 08:53. Completed EXP-114a T+2h monitoring (57 sessions, 0 guard activations, 0 FP — insufficient volume) + EXP-115 Phase 1 (gym scenarios built).
-- **Scout**: 🟢 Active — Session 578, all entries verified. New heartbeat 08:53.
-- **Tech-lead**: 🟢 Active — Dead code removal (finish-guard). Dispatched P1 to start coder Web UI build. New heartbeat 08:53.
-- **Optimizer**: 🟢 Active — Workflow health check verified. New heartbeat 08:53.
-- **Evaluator**: 🟢 Active — Process #5 liveness verified. New heartbeat 08:53.
-- **QA**: 🟢 Active — New heartbeat 08:53.
-- **Coder**: 🟡 Build dispatched via tech-lead (req:aedb557f). Spec at `agents/coder/workspace/SPEC-webui-agent-visualization.md`. Awaiting tech-lead to fork work session.
+- **Bob**: 🟢 Active — New heartbeat 09:12. Forked EXP-108 Phase 2 KB integration (req:43b2c663).
+- **Coach**: 🟢 Active — EXP-115 Phase 2 running (~28min, gym trials for FM-2.2 completeness checklist). Completed EXP-108 Phase 2 (adversarial self-review A/B: NO effect, do NOT deploy). New heartbeat 09:12.
+- **Scout**: 🟢 Active — New heartbeat 09:12.
+- **Tech-lead**: 🟢 Active — Checking test-fix session status. Re-dispatched Web UI build (req:f0420cf7). New heartbeat 09:12.
+- **Optimizer**: 🟢 Active — New heartbeat 09:12.
+- **Evaluator**: 🟢 Active — 19 sessions today (most active). New heartbeat 09:12.
+- **QA**: 🟢 Active — New heartbeat 09:12.
+- **Coder**: 🟡 Web UI build re-dispatched to tech-lead (req:f0420cf7). Original spec lost. Awaiting tech-lead to create new spec and fork coder.
 - **All agents**: 🟢 8/8 running. Zero errors last hour.
 - **✅ Tool Schema Guard**: Live in production. EXP-114a T+2h: 0 activations in 57 sessions (1.5% base rate too low — need 280+ sessions for statistical power).
 - **⚠️ Cron bug**: `analyze-failures` cron keeps failing (`db.query is not a function`). Low priority.
@@ -107,7 +107,7 @@ Updated: 2026-04-10 ~08:55 UTC
 | **FM-3.3 Bob Concentration Analysis** | ✅ COMPLETE | coach | **NOT a real regression** — measurement artifact. 1.9x inflation from eval duplication + LLM eval selection bias. Bob's true FM-3.3 rate (13.6%) is *lowest* of agents with volume. At `agents/coach/workspace/briefs/bob-fm33-concentration-analysis.md`. |
 
 | **EXP-107 Adversarial Self-Check** | ✅ BLOCKED | coach | Control arm: 6.25% FM-3.3 rate (1/16 finish calls), far below 30% viability threshold. **KEY FINDING**: Gym-production gap for FM-3.3 is ~10× (6% gym vs 50-70% production). Cannot run treatment arms. Recommends harder scenarios or production A/B testing. Bob integrating findings. Results at `agents/shared/knowledge/experiments/EXP-107/results.md`. |
-| **EXP-108 Adversarial Self-Review Skill** | ✅ COMPLETE (BLOCKED_CEILING) | coach | All 7 multi-session scenarios at 91-100% ceiling. Coder agent has +25pp to +89pp over Bob baseline. Skill authored but NOT deployed — no discriminating scenarios. Gym multi-session is saturated. Results at `agents/shared/knowledge/experiments/EXP-108/results.md`. Commit d3096ae0. |
+| **EXP-108 Adversarial Self-Review Skill** | ✅ COMPLETE (NULL RESULT) | coach | Phase 1: BLOCKED_CEILING (91-100% baseline). **Phase 2**: 18 multi-session A/B runs. NO significant effect (+2.3pp overall, p>>0.05). Treatment SLOWER in 2/3 scenarios (+28%, +153%). Skill causes "review without action" — more thinking time, zero improvement. Do NOT deploy. Bob KB integrating (req:43b2c663). |
 | **EXP-107 Phase 2 Context-Fatigue Baseline** | ✅ CLOSED | coach | **5 runs, 0% FM-3.3** (all 14/14 checks passed). Multi-session + urgency + scope creep still can't trigger FM-3.3 in gym. **Gym-production FM-3.3 gap is structural and confirmed unfixable via scenario design.** Experiment fully closed. |
 | **Fewshot Heartbeat Case-Insensitive Fix** | ✅ MERGED | may | Branch `review/fix-fewshot-heartbeat` merged to main. Regex `/^\[heartbeat\]/i` replaces startsWith. 30/30 tests pass. Branch deleted. |
 | **EXP-105 Few-Shot Production Impact** | ⏳ WAITING | coach | No data — zero coder/optimizer work sessions since deployment (Apr 9). Baselines captured. **BUG FIXED**: heartbeat exclusion merged (commit 7e6bc59 + case-insensitive fix). Token waste eliminated. |
@@ -121,7 +121,7 @@ Updated: 2026-04-10 ~08:55 UTC
 | **H-095 Agent-Specific Interventions** | ✅ FILED | bob | P(H)=0.65. Agent-specific interventions > universal. Predictions defined. Needs EXP-109 Phase 3 for validation. |
 | **Optimizer Tool Quality Regression #14** | ✅ COMPLETE | optimizer | Self-dispatched investigation of 4 regressed tool quality categories. First self-initiated productive work in days. |
 | **EXP-115 FM-2.2 Completeness Checklist** | ⏳ Phase 2 running | coach | Phase 1 complete (gym scenarios built). Phase 2: 3 baseline + 3 treatment gym trials running. Target: optimizer FM-2.2 (51% rate). Risk: high ceiling. |
-| **Web UI Agent Visualization Dashboard** | 🟡 DISPATCHED | tech-lead→coder | Spec at `agents/coder/workspace/SPEC-webui-agent-visualization.md`. Dispatched req:aedb557f. Awaiting tech-lead fork. |
+| **Web UI Agent Visualization Dashboard** | 🟡 RE-DISPATCHED | tech-lead→coder | Original spec lost. Re-dispatched to tech-lead (req:f0420cf7). Design at `agents/may/designs/web-ui-chat-improvements.md`. 3 gaps: transcript hydration, session header, localStorage resume. |
 | **EXP-114a Tool Schema Guard Monitoring** | ⏳ INSUFFICIENT DATA | coach | T+2h: 57 sessions, 0 activations, 0 FP. Base rate 1.5% — need 280+ sessions. Guard may be bypassed (April sessions get framework errors instead). |
 | **EXP-113 FM-Heavy Workers Analysis** | ✅ COMPLETE | coach + bob | **KEY**: 398 FM-Heavy sessions (26.9%). Top cascade: FM-2.1 (96 first-appearances, 2.38 subsequent). Coach 55% FM-2.1 rate. Three intervention opportunities: FM-2.1 guard, FM-2.6 tool skills, FM-3.1 grounding. Bob integrated: H-095 P(H) 0.70→0.75. |
 | **EXP-114 FM-2.1 Decomposition Design** | ✅ DESIGNED | coach | **PIVOT FINDING**: 54.5% of FM-2.1 is tactical tool errors (bash({}), wrong args), NOT strategic approach problems. No single guard works — need Tool Schema Guard (#1, 78 sessions, HIGH conf) + Path Hints (#2) + Forced Externalization (#3). |
@@ -162,28 +162,27 @@ Updated: 2026-04-10 ~08:55 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (08:55)
-- **System healthy**: All 8 non-May agents running. Zero errors. All heartbeats fresh (~08:53).
-- **Coach completed 2 work sessions**: EXP-114a T+2h monitoring (85 ops — 57 sessions analyzed, 0 guard activations, need 280+ for statistical power) + EXP-115 Phase 1 (48 ops — gym scenarios built and validated). Now running EXP-115 Phase 2 (gym trials).
-- **Bob**: Self-dispatched DD-728/729 indexing work session. Knowledge base maintenance.
-- **Scout**: Verified session 578 notes, all entries correct.
-- **Tech-lead**: Dead code removal (finish-guard), dispatched to start coder Web UI build (req:aedb557f).
-- **Optimizer**: Workflow health check verified. Self-directing.
-- **Evaluator**: Process #5 liveness verified, evaluations DB active.
-- **Coder**: Web UI build dispatched via tech-lead. Awaiting fork.
-- **Amy-kimi still 🔴**: Blocked on Hao for billing.
-- **System running autonomously**: All agents productively self-directing. Research pipeline active.
+## Latest Cycle Summary (09:15)
+- **System healthy**: All 8 non-May agents running. Zero errors last hour. All heartbeats fresh (~09:12).
+- **EXP-108 Phase 2 COMPLETE**: Adversarial self-review skill = NULL RESULT. 18 A/B runs, +2.3pp overall (not significant). Treatment slower in 2/3 scenarios. Do NOT deploy. Bob integrating.
+- **EXP-115 Phase 2 running**: Coach gym trials for FM-2.2 completeness checklist (~28min, normal).
+- **Web UI build STALLED**: Original spec file lost. Re-dispatched to tech-lead (req:f0420cf7).
+- **Bob**: Forked for EXP-108 KB integration (req:43b2c663). Also ran KE-117 synthesis earlier.
+- **Tech-lead**: Checking test-fix session (3 pre-existing failures). Will pick up Web UI dispatch next cycle.
+- **Evaluator**: Very active — 19 sessions today.
+- **All others**: Self-directing, productive.
 
 ## Key New Findings This Cycle
-- **EXP-114a (Tool Schema Guard monitoring)**: Zero activations in 57 post-deployment sessions. Base rate too low (1.5%) — need 280+ sessions for 80% power. Guard may be bypassed by April sessions getting framework validation errors instead.
-- **EXP-115 Phase 1**: FM-2.2 completeness checklist gym scenarios built. Two scenarios validated (baseline + treatment with DELIVERABLES_CHECKLIST.md). Risk: high ceiling probability.
+- **EXP-108 Phase 2 (adversarial self-review A/B)**: NO significant treatment effect. The skill causes agents to spend more time reviewing but doesn't translate reviews into corrective action. Aligns with KE-002 (text rules 0% for judgment) and KE-106 (guards ≠ training). "Review without action" is a new failure mode to document.
+- **EXP-115 Phase 2**: Still running, awaiting results.
+- **Web UI build gap identified**: Spec file disappeared, no coder sessions since Mar 23 (just gym runs). Re-dispatched.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao since Mar 24**. Optimizer confirmed root cause: binary doesn't set `cache_control` breakpoints for Anthropic API.
-- **P1**: **Web UI build** — Dispatched to tech-lead→coder (req:aedb557f). Monitor for progress.
-- **P1**: **Present research sprint results to Hao** — KE-101 meta-analysis is the capstone. H-091 (P(H)=0.99), 17+ experiments, gym graduation, EXP-098 landmark, EXP-103/104 confabulation findings, EXP-107/108 gym-production gap + saturation.
-- **P1**: **EXP-115 Phase 2** — Coach running gym trials now. Monitor for results.
-- **P1**: **EXP-105 Few-Shot Production Impact** — Still waiting for coder/optimizer work sessions since deployment. Web UI build will generate first real coder work.
+- **P1**: **Web UI build** — Re-dispatched to tech-lead (req:f0420cf7). Monitor for spec creation + coder fork.
+- **P1**: **EXP-115 Phase 2 results** — Coach running now. Check next heartbeat.
+- **P1**: **EXP-105 Few-Shot Production Impact** — Still waiting for coder/optimizer work sessions. Web UI build will generate first real coder work.
+- **P1**: **Present research sprint results to Hao** — KE-101 meta-analysis capstone. 17+ experiments. Gym graduation. EXP-108 now adds null-result datapoint.
 - **P2**: `analyze-failures` cron DB bug — persistent but non-critical.
 - **P2**: Federation design ready for Hao review
 - **P2**: Amy-kimi still down — blocked on Hao for billing
