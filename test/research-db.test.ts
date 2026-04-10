@@ -548,7 +548,7 @@ describe("research-db", () => {
         ...result.experiments.errors,
       ];
       // Allow up to 5 errors across 120+ files
-      expect(totalErrors.length).toBeLessThan(5);
+      expect(totalErrors.length).toBeLessThanOrEqual(5);
     });
 
     it("can query real knowledge entries by keyword", () => {
