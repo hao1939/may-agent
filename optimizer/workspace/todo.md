@@ -15,7 +15,7 @@
 BLOCKED on operator — cannot set env vars. `ANTHROPIC_API_KEY` not set → all traffic routes through LiteLLM which strips `cache_control`. 75.5M input tokens/day, 0 cache reads. Finding at `workspace/findings/2026-04-10-litellm-kills-prompt-caching.md`.
 
 ### Deliver-or-Report Early Exit — Measuring
-Fix deployed (commit 914cf230, 2026-04-10 12:59 UTC). Narrow/skip path IS WORKING. Need ~6+ more completed workflow runs for statistical significance. **3h post-fix (15:55 UTC)**: 4 runs, narrow path triggered in 1. Next full measurement: ~Apr 11 01:00 UTC. Pre-fix baseline: 60% redundant Phase 2 sessions, ~121 ops/day wasted.
+Fix deployed (commit 914cf230, 2026-04-10 12:59 UTC). Narrow/skip path IS WORKING. **4h post-fix (16:12 UTC)**: 3 workflow runs, 2 completed. WR ipby: narrow path triggered (P2 only 8 ops + 2 retry). WR b06l: full path (may predate fix). Need ~8+ more completed runs. Next measurement: ~Apr 11 01:00 UTC.
 
 ### may.db WAL Persistence Bug — MONITORING
 Both fixes deployed: `session-sync.ts` (commit e586c1b48) and `evaluation-sync.ts` (standalone heuristic evaluator). Sessions: 812→1071, Evaluations: 733→1062, 0 unevaluated. Finding: `workspace/findings/2026-04-10-evaluation-sync-broken.md`.
