@@ -63,7 +63,7 @@ Tool quality regression #15 (2026-04-10 07:24) — 1 regressed category. bash:ot
 - QA runs ~47 sessions/day, each reading the full journal = **3.18M tokens/day wasted** (~$9.50/day)
 - QA's tokens/op (36,710) is 10x higher than optimizer (3,392) — journal read is the driver
 - QA outcomes never reference old journal entries — only current findings
-- **Sent to tech-lead** (req:e3a52c95) to fix heartbeat.md: change full read to `tail -50` for recent context only
+- First request (req:e3a52c95) was never created properly. **Re-sent to tech-lead** (req:f367defd) with exact fix instructions
 - Expected savings: ~3M tokens/day after fix
 
 ### Workflow Health Check (2026-04-10 08:23)

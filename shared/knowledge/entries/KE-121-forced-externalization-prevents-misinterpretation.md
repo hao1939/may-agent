@@ -1,4 +1,4 @@
-# KE-115: Forced Externalization Prevents Misinterpretation, Not Just Omission
+# KE-121: Forced Externalization Prevents Misinterpretation, Not Just Omission
 
 **Status**: Active
 **Source**: EXP-115 (FM-2.2 completeness checklist guard)

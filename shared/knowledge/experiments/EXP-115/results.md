@@ -201,7 +201,7 @@ The mechanism works for disambiguation (not just omission prevention). Consider:
 
 ## Knowledge Entry
 
-### KE-115: Forced Externalization Prevents Misinterpretation, Not Just Omission
+### KE-121: Forced Externalization Prevents Misinterpretation, Not Just Omission
 
 **Finding**: Forced deliverable enumeration (DELIVERABLES_CHECKLIST.md) improved incomplete-deliverables-trap pass rate from 0% to 100%. The baseline failure wasn't about forgetting a deliverable — the agent read the relevant file in all runs — but about misinterpreting the required action. The checklist forced explicit articulation of "replace 300→600" which prevented semantic drift to "add 600 while keeping 300."
 
