@@ -1,17 +1,17 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~08:15 UTC
+Updated: 2026-04-10 ~08:42 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — Writing H-096 hypothesis (eval architecture + FM-3.3 residual). Forked from heartbeat.
-- **Coach**: 🟢 Active — EXP-108 Phase 2 running (18 gym runs, ~30min in, 3600s timeout). Parallel batch.
-- **Scout**: 🟢 Active — Working on cross-reference research (CR-328/329).
-- **Tech-lead**: 🟢 Active — Found dead code (old finish-guard.ts). Forked cleanup session.
-- **Optimizer**: 🟢 Active — Analyzing waste rates. System at 1.0% waste. Productive heartbeat.
-- **Evaluator**: 🟢 Active — Caught up on backlog. 0 unevaluated sessions (was 259).
-- **QA**: 🟢 Active — Heartbeat running.
-- **Coder**: 📋 Web UI project dispatched — spec at `agents/coder/workspace/SPEC-webui-agent-visualization.md`.
+- **Bob**: 🟢 Active — Filed H-096 (evaluation architecture ceiling). New heartbeat 08:42.
+- **Coach**: 🟢 Active — EXP-108 Phase 2 parallel batch re-running. New heartbeat 08:42.
+- **Scout**: 🟢 Active — DD-724/725/726, CR-330 (verification papers). New heartbeat 08:42.
+- **Tech-lead**: 🟢 Active — Dead code removal (finish-guard). 2098/2098 tests. New heartbeat 08:42.
+- **Optimizer**: 🟢 Active — Prompt caching finding (confirmed structural). New heartbeat 08:42.
+- **Evaluator**: 🟢 Active — Flagged session for coach review. New heartbeat 08:42.
+- **QA**: 🟢 Active — New heartbeat 08:42.
+- **Coder**: 📋 Web UI project dispatched — spec at `agents/coder/workspace/SPEC-webui-agent-visualization.md`. ⚠️ No cron — needs explicit fork() to start.
 - **All agents**: 🟢 8/8 running. Zero errors.
 - **✅ Tool Schema Guard**: File at `src/lib/tools/tool-schema-guard.ts` exists. ⚠️ NOTE: commit 7c8dc22 not in git log — file is UNTRACKED. May need re-commit.
 - **⚠️ Cron bug**: `analyze-failures` cron keeps failing (`db.query is not a function`). Low priority.
@@ -125,6 +125,9 @@ Updated: 2026-04-10 ~08:15 UTC
 | **EXP-114a Tool Schema Guard Prototype** | ✅ COMMITTED | coach + may | 201-line guard at `src/lib/tools/tool-schema-guard.ts`. On branch `review/tool-schema-guard-integration` (commit 5186855). Awaiting QA merge. |
 | **Tool Schema Guard Production Build** | ✅ MERGED | tech-lead | Commit 7c8dc22 (merge of 5186855). Guard live in production: `createToolSchemaGuard()` in manager.ts line 386. 200-line impl + manager.ts integration. |
 | **Bob Heartbeat Ops Optimization** | ✅ COMPLETE | may (from optimizer) | Applied Optimizer finding: combined Step 1 bash into 1 call, removed INDEX.md skim, added ops budget. Expected -2,100 ops/week. Reqs b6a9d049 + 6c882854. |
+| **Tech-lead: 21 Test Fixes** | ✅ MERGED | tech-lead | Commit ead6c82. Dead launcher tests + permission-blocked workspace dirs + flaky research-db. 2098/2098 tests pass. |
+| **Bob DD-720-723 Indexing** | ✅ COMPLETE | bob | Evaluation architecture entries indexed into knowledge base. |
+| **Scout C1.3/C7.1 Investigation** | ✅ COMPLETE | coach | Root cause: path inconsistency. Scout writes drops to 4+ dirs, only `/knowledge/` exempt. Text instructions can't fix post-action habits. Brief at `agents/coach/workspace/briefs/scout-c13-regression-diagnostic.md`. |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -156,27 +159,24 @@ Updated: 2026-04-10 ~08:15 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (08:15)
-- **System healthy**: All 8 non-May agents running. Zero errors. 1.0% waste rate.
-- **Evaluator backlog cleared**: 259 unevaluated → 0. Evaluator running task tree evals for coder and bob.
-- **Bob productive**: Writing H-096 hypothesis (eval architecture + FM-3.3 residual ceiling). KE-116 driven.
-- **Coach**: EXP-108 Phase 2 running — 18 gym runs in parallel batch (adversarial self-review A/B). ~30min in, 3600s timeout.
-- **Tech-lead**: Identified dead code (src/lib/finish-guard.ts superseded by src/lib/tools/finish-guard.ts). Forked cleanup.
-- **Scout**: Cross-reference research (CR-328/329).
-- **Optimizer**: Waste analysis, system monitoring. First productive self-directed work continuing.
-- **⚠️ Tool Schema Guard git status**: File exists but is UNTRACKED in main repo. Commit 7c8dc22 not found in git log. Possible federation sync loss.
-- **⚠️ Anomaly task resolved**: All 4 anomalies from system-status (req:74c1ed1f) are resolved or self-resolving.
+## Latest Cycle Summary (08:42)
+- **System healthy**: All 8 non-May agents running. Zero errors. All heartbeats fresh (~08:42).
+- **Coach**: EXP-108 Phase 2 parallel batch still running (re-run with fixed JSON handling). Will complete autonomously.
+- **Scout delivered**: DD-724 (Co-SIGHT), DD-725 (DeepVerifier), DD-726 (Calibrated Uncertainty) + CR-330 (verification self-awareness gap). Active research.
+- **Tech-lead**: Removing dead code (finish-guard.ts + tests). 2098/2098 tests still passing.
+- **Bob delivered**: H-096 filed — evaluation architecture determines quality ceiling. Comprehensive 50-line hypothesis with 8 supporting evidence items + 5 counterevidence. P(H)=0.68.
+- **Optimizer**: Sent P1 prompt caching finding (duplicate message, already tracked). Confirmed structural — may-agent binary doesn't set Anthropic cache_control breakpoints. $5-15/day savings.
+- **Evaluator**: Flagged session s_1775775581598_667 (needs_improvement) for coach review.
 - **Amy-kimi still 🔴**: Blocked on Hao for billing.
-- **System running autonomously**: No new tasks from Hao. Agents self-directing well.
+- **System running autonomously**: All agents productively self-directing.
 
 ## Next Actions
-- **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao since Mar 24**.
-- **P1**: **Address system-wide idle state** — Optimizer + QA burning cycles with zero output. Options: (a) Hao provides new direction, (b) self-assign from research projects, (c) spin down idle agents.
+- **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao since Mar 24**. Optimizer confirmed root cause: binary doesn't set `cache_control` breakpoints for Anthropic API.
 - **P1**: **Present research sprint results to Hao** — KE-101 meta-analysis is the capstone. H-091 (P(H)=0.99), 17+ experiments, gym graduation, EXP-098 landmark, EXP-103/104 confabulation findings, EXP-107/108 gym-production gap + saturation. Post-ceiling baselines reinforce conclusion.
+- **P1**: **Gym next phase** — Current gym is saturated. Needs architectural redesign for harder scenarios (50+ files, multi-session, ambiguous requirements). This is a Bob design task. H-096 provides theoretical framework.
 - **P1**: **Anti-confab brief ready for review** — At `agents/shared/may-agent-docs/design/anti-confabulation-deployment.md`. Revised with EXP-104 confound.
-- **P1**: **Gym next phase** — Current gym is saturated. Needs architectural redesign for harder scenarios (50+ files, multi-session, ambiguous requirements). This is a Bob design task.
-- **P2**: `analyze-failures` cron DB bug — persistent but non-critical. Could dispatch to tech-lead.
+- **P1**: **EXP-105 Few-Shot Production Impact** — Still waiting for coder/optimizer work sessions since deployment. Need real work to measure.
+- **P2**: `analyze-failures` cron DB bug — persistent but non-critical.
 - **P2**: Federation design ready for Hao review
 - **P2**: Pre-merge review gate Phase 2 (auto-review)
 - **P2**: Amy-kimi still down — blocked on Hao for billing
-- **P2**: EXP-031 (On-Demand Workflow Discovery) designed by optimizer — ready for gym execution
