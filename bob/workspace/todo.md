@@ -969,3 +969,14 @@
   - **Protocol**: `agents/shared/knowledge/experiments/EXP-127/protocol.md`
   - **Channel 3 scenario**: `agents/gym/scenarios/contradictory-requirements-ch3-fewshot/`
   - **Channel 1 lab fork**: `agents/.lab/coder-channel-test-ch1/`
+
+## Session Notes (2026-04-10 ~23:30)
+- [x] **EXP-128 KB INTEGRATION — COMPLETE**: Channel 3 Boundary Conditions (Detection Coverage) experiment integrated into knowledge base.
+  - **Key findings**: H-128 REJECTED — detection coverage does NOT determine Ch3 effectiveness. 3-arm design (Arm A response-only 0/6, Arm B detection-enhanced 0/6, Arm C detection-only 0/6). All content variants fail identically → content quality is NOT the Ch3 moderator. The real boundary is **task type**: coding tasks create execution momentum that overwhelms positional privilege. Ch3 works for behavioral tasks (EXP-095: 100%) but fails for analytical judgment under coding momentum.
+  - **Two mechanisms identified**: (1) Coding momentum — high-salience code tokens dominate even task-message attention, (2) Success signal misdirection — "code compiles + tests pass" creates false completion signal.
+  - **KE-132 WRITTEN**: Channel 3 Few-Shot Has a Task-Type Boundary — Coding Momentum Overwhelms Positional Privilege. `agents/shared/knowledge/entries/KE-132-ch3-task-type-boundary-coding-momentum.md`
+  - **H-128 status**: ❌ REJECTED (P(H): 0.55→0.05)
+  - **H-098 updated**: P(H) description updated (EXP-128 confirms task-type boundary). Status → "two direct tests complete, Ch3 boundary clarified". Depends-on includes KE-132. P-098b refined with task-type boundary. Evidence table expanded. Open Question #1 partially answered. Practical guidance updated for Ch3 behavioral-only constraint.
+  - **INDEX.md updated**: H-128 row added (REJECTED). EXP-128 row added. KE-132 row added. H-098 description updated.
+  - **PRIORITY-TRACKER updated**: Header mentions EXP-128. H-098 row updated with EXP-128. H-128 added to archived. EXP-128 added to experiment queue. Meta-process counts updated.
+  - **Files modified**: KE-132 (new), H-098 hypothesis file, INDEX.md (4 edits), PRIORITY-TRACKER.md (5 edits)
