@@ -125,6 +125,16 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 - **Mechanism**: Externalized navigation map → selective reading. Phase 0 converts "navigate and read everything" into "navigate first, read selectively."
 - **Recommendation**: Apply Phase 0 discovery to workflows with unfamiliar 10+ file directory structures
 
+### 0k. Phase Evaluation Analysis — Production Data Deep Dive [COMPLETE ✅]
+- **Report**: `agents/coach/workspace/phase-evaluation-analysis.md`
+- **Status**: Analysis complete — 3 critical bugs found, real gap quantified
+- **Finding 1**: Scale mismatch — LLM evaluator uses 0-1, heuristic uses 1-5, threshold Q≥3 makes LLM 0% pass (P0 BUG)
+- **Finding 2**: Evaluation selection bias — root→heuristic (98% pass), child→LLM (26% "good"). Phase sessions always child.
+- **Finding 3**: Duplicate evaluations — 100% of pipeline P1/P2 pairs get IDENTICAL scores (keyed by agent name, not session ID)
+- **Real gap**: 26% "good" (phase) vs 45% "good" (non-phase) when controlling for evaluation method — 19pp, not 70pp
+- **Root causes**: Phase boundary violation (47%), verification gaps (81%), P2-has-nothing-to-do (19%)
+- **Recommendations**: (1) Harmonize quality scales P0, (2) Per-session evaluation keys P0, (3) Rethink phase boundaries P1
+
 ### 0j. EXP-123: Verification-Depth Guard — Superficial Verification Block [DEPLOYED ⏳]
 - **Design**: `agents/shared/knowledge/experiments/EXP-123/design.md`
 - **Implementation**: `src/lib/tools/verification-depth-guard.ts` (363 lines)
