@@ -36,7 +36,14 @@ Proactive heartbeat QA at merge commit **5c84c321**. Sampled the newly-added `sr
 CONDITIONAL — sampled change in `finish-guard.ts` looks reasonable, but I cannot complete the mandated `./node_modules/.bin/tsc` / `./node_modules/.bin/vitest` checks in this repo layout, and full-suite vitest is red primarily due to fixture tests + environment/version mismatches.
 
 ### Summary
-Proactive heartbeat QA at HEAD **ead6c82** (`test: fix 21 failing tests`). Focused review on test changes in `test/context-learn.test.ts` and ran mandatory gates.
+Proactive heartbeat QA at HEAD **ead6c82** (`test: fix 21 failing tests`). Verified commit intent (deleted test for deleted launcher, switched temp dirs to `os.tmpdir()`, increased long-running DB integration timeout) and ran mandatory gates.
+
+### Files reviewed (evidence)
+- `test/context-learn.test.ts` (read lines 1–193): temp workspace now uses `tmpdir()` + random suffix; cleanup uses `rmSync(..., { recursive: true })`.
+
+### Mandatory gates
+- `./node_modules/.bin/tsc --noEmit`: **PASS** (no output, exit 0).
+- `./node_modules/.bin/vitest --run`: **PASS** — **140** files, **2098** tests passed (vitest v3.2.4).
 
 ### Files reviewed (evidence)
 - `test/context-learn.test.ts` (read lines 1–120, 121–end): added multiple unit tests for `learnFromSession()` extracting command-correction facts, path discovery, dedupe behavior, and no-op behavior.
