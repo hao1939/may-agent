@@ -1,26 +1,28 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~12:26 UTC
+Updated: 2026-04-10 ~12:55 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — Heartbeat running. H-097 CCC Triad work.
-- **Coach**: 🟢 Active — EXP-116 Phase 2 **36/36 COMPLETE** (s_1775818479860_845). Writing results. Key: Baseline 100%, Arms A/B 100%, Arm C 83%, Arm D 72%. Combined variants DEGRADE performance (context overload). Adversarial framing = zero marginal value. Bob review done.
-- **Scout**: 🟢 Active — Heartbeat running.
-- **Tech-lead**: 🟢 Active — Self-dispatched dead code removal session (req:6b86fd94). EXP-115 re-dispatch pending (req:e7ffe8fe, DUPLICATE: e8b4b581 + a0603489).
-- **Optimizer**: 🟢 Active — Heartbeat 12:13. Tool quality regression investigation.
-- **Evaluator**: 🟢 Active — Heartbeat 12:13. Running task tree evaluations. ~164 unevaluated sessions backlog.
-- **QA**: 🟢 Active — Heartbeat 12:13.
+- **Bob**: 🟢 Active — EXP-116 KB integration complete (53 ops). H-097 CCC Triad continuing.
+- **Coach**: 🟢 Active — EXP-116 results written. KE-122/KE-123 written (6 ops).
+- **Scout**: 🟢 Active — Heartbeat 12:42.
+- **Tech-lead**: 🟢 Active — Fixed security test timeout (8 ops). EXP-115 guard re-implementation pending.
+- **Optimizer**: 🟢 Active — Heartbeat 12:42 (19 ops). Tool quality work.
+- **Evaluator**: 🟢 Active — Running evaluations. Session digest tasks clearing.
+- **QA**: 🟢 Active — Heartbeat 12:42 (11 ops).
 - **Coder**: Idle. Only runs when forked by tech-lead.
-- **All agents**: 🟢 8/8 running. Zero errors last hour.
+- **All agents**: 🟢 8/8 running. Zero errors this cycle.
 - **✅ Zombie cleaned**: s_1774303617649_81 (tech-lead, 422h) — cancelled this cycle.
 - **✅ Tool Schema Guard**: Live in production.
 - **✅ Dead code removal**: ~1,973 lines removed (stuck-detector 657 + forced-externalization 610 + socket-watch 706).
 - **✅ Web UI Phase 1**: Merged to main (c76cd98) — agent activity grid, timeline, health summary.
-- **⚠️ Bun missing**: bun binary gone from .state/.bun/bin/. DB queries need node+better-sqlite3 or bundled binary. Affects heartbeat DB queries.
+- **⚠️ Bun missing**: bun binary gone from .state/.bun/bin/. Reinstalled this cycle (curl). DB queries need bun or node+better-sqlite3.
 - **⚠️ Cron bug**: `analyze-failures` cron keeps failing (`db.query is not a function`). Low priority.
 - **⚠️ Git drift**: Project restructured to bundled binary — source files inside bundle, not on filesystem.
 - **⚠️ Duplicate requests in DB**: 4 pairs of duplicates (coder Web UI ×2, tech-lead review ×2, bob EXP-115 ×2, coach EXP-115 ×2). Need cleanup.
+- **✅ Gym burst incident (RESOLVED)**: Training-sprint cron (24h, May's cron.json) fired at 11:48, spawned 43 bob gym sessions over 41 min (~200 ops). NOT truly runaway — the workflow ran all experiment×scenario pairs and completed naturally at 12:29. **Root cause**: training-sprint workflow had no session budget cap. **FIX**: Added MAX_GYM_SESSIONS=20 cap (commit e698bd95). Remaining scenarios skip with note in results.
+- **✅ Zombie cleanup**: Killed zombie PID 3807 (node). Fixed stuck bob session s_1775824183435_0. Fixed stale tech-lead session s_1774303617649_81.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -172,35 +174,31 @@ Updated: 2026-04-10 ~12:26 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (12:26)
-- **System healthy**: All 8 non-May agents running. Zero errors last hour. All heartbeats fresh.
-- **Since last cycle (12:13)**:
-  - **Coach**: EXP-116 Phase 2 **ALL 36/36 RUNS COMPLETE**. Final checkpoint data: Baseline 100%, Arm A 100%, Arm B 100%, Arm C 83% (DEGRADED), Arm D 72% (DEGRADED). Combined variants hurt via context overload. Bob review + results.md written. Coach still in session writing up final analysis.
-  - **Tech-lead**: Self-dispatched dead code removal session. EXP-115 re-dispatch DUPLICATED (e8b4b581 + a0603489, both CREATED 28m).
-  - **Bob**: H-097 CCC Triad continuing.
-  - **Optimizer**: Active heartbeat. Tool quality regression work.
-  - **Evaluator**: Active. ~164 session backlog (clearing).
+## Latest Cycle Summary (12:55)
+- **System healthy**: All 8 non-May agents running. Zero errors this cycle. All heartbeats fresh (12:42 batch).
+- **Since last cycle (12:26)**:
+  - **Gym burst RESOLVED**: Investigated P0 runaway gym loop. Root cause: training-sprint cron (24h) fired at 11:48, spawned 43 bob sessions over 41 min via unbounded experiment×scenario loop. **FIX committed**: MAX_GYM_SESSIONS=20 cap in training-sprint.ts (commit e698bd95).
+  - **Bob**: EXP-116 KB integration complete (53 ops). Legitimate work session.
+  - **Coach**: KE-122/KE-123 knowledge entries written (6 ops).
+  - **Tech-lead**: Fixed security test timeout (8 ops). EXP-115 guard pending.
+  - **Zombie cleanup**: Killed node zombie PID 3807. Fixed stuck sessions.
+  - **Bun reinstalled**: curl-installed bun to .bun/bin for DB queries.
   - **No new errors or failures**.
 
 ## Key Findings This Cycle
-- **EXP-116 Phase 2 FINAL DATA (36/36 runs)**:
-  - **Baseline**: 100% (6 scenarios × 3 reps each)
-  - **Arm A (adversarial)**: 100% — no marginal value
-  - **Arm B (machine-verified)**: 100% — no marginal value
-  - **Arm C (combined)**: 83% — context overload DEGRADES
-  - **Arm D (combined+guard)**: 72% — context overload DEGRADES further
-  - **Clean handoff**: 100%
-  - **Conclusion**: Evidence-over-narrative skill (already deployed) is the real fix. Additional treatments either match baseline or actively hurt. Combined variants suffer from context overload.
-  - **Bob's analysis**: EXP-103 contradiction — 100% in single-session vs 0% in earlier multi-session partial data. Multi-session inheritance qualitatively changes confabulation mechanism. H0 confirmed.
-- **Bun runtime missing** — heartbeat DB queries broken. Need to figure out how to query may.db without bun or better-sqlite3.
+- **Gym burst incident fully diagnosed**:
+  - NOT truly runaway — bounded by experiments×scenarios count, completed naturally
+  - 43 sessions × 4.7 avg ops = ~200 ops wasted
+  - Training-sprint cron is daily (24h), next fire ~2026-04-11 11:48 UTC
+  - Fix: Budget cap prevents >20 gym sessions per sprint run
+- **EXP-116 Phase 2 FINAL DATA (36/36 runs)** — same conclusions as 12:26 update
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao since Mar 24**.
-- **P1**: **EXP-116 completing (~11 more runs)** — Coach to write up results. Bob to integrate. Expected conclusion: adversarial framing provides no marginal value over skill deployment.
-- **P1**: **EXP-115 completeness guard re-implementation** — Branch lost. Re-dispatch sent to tech-lead (req:e7ffe8fe).
-- **P1**: **Bun reinstall or DB query alternative** — Need working DB query tool for supervisory queries.
-- **P1**: **EXP-105 Few-Shot Production Impact** — Need coder/optimizer work sessions to generate data.
+- **P1**: **EXP-115 completeness guard re-implementation** — Branch lost. Re-dispatch sent to tech-lead.
 - **P1**: **Present research sprint results to Hao** — KE-101 meta-analysis capstone. 17+ experiments. Gym graduation. Token waste finding ($441/week).
+- **P1**: **EXP-105 Few-Shot Production Impact** — Need coder/optimizer work sessions to generate data.
 - **P2**: `analyze-failures` cron DB bug — persistent but non-critical.
+- **P2**: Duplicate request cleanup — 4 pairs in DB.
 - **P2**: Federation design ready for Hao review.
 - **P2**: Amy-kimi still down — blocked on Hao for billing.
