@@ -104,6 +104,15 @@
 - [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% of verify-after-edit failures need code-level fix, not prompting. Deferred until prompting experiments complete.
 - [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
 
+## Session Notes (2026-04-10 ~12:45)
+- **EXP-116 INTEGRATED INTO H-093**: Analyzed contradictory Phase 1/Phase 2 results and added comprehensive EXP-116 section to H-093.
+  - **Phase 1** (Coach, 36 runs): Baseline 100%, treatments degrade to 85-88%. Adversarial framing HURTS — overcorrection destroys correct work.
+  - **Phase 2** (Bob, 15 trials): INVALID — infrastructure confound (missing files in treatment runs). Baseline 11% confirms CIVC prediction.
+  - **New FM-3.3d**: "Verification destruction" — verification attempts actively degrade the system. Extends FM-3.3 severity gradient: absence → theater → confabulation → destruction.
+  - **P(H) 0.70 → 0.72**: Modest increase — contradictory results limit evidentiary weight, but overcorrection effect and baseline verification collapse both consistent with CIVC theory.
+- **PRIORITY-TRACKER updated**: H-093 entry updated with EXP-116 summary, P(H) 0.72, FM-3.3d extension noted.
+- **Key insight**: EXP-116 Phase 1 + Phase 2 together tell a coherent story even though they disagree on numbers. The universal pattern is: prompt-level verification interventions are at best useless (EXP-102) and at worst destructive (EXP-116). Only structural interventions (machine-verified evidence, guards) produce durable improvements. This strongly supports the CIVC framework — verification collapse is a structural problem requiring structural solutions.
+
 ## Session Notes (2026-04-10 ~10:45)
 - **EXP-116 DESIGN REVIEW COMPLETE**: Thorough critical review written to `agents/shared/knowledge/experiments/EXP-116/review-bob.md`. Recommendation: **DO NOT PROCEED as designed**. Three critical issues found:
   1. **C1: EXP-103 confound** — evidence-over-narrative skill was already deployed, making the +75-89pp effect size uninterpretable (EXP-104 revealed this). The baseline was anomalous.

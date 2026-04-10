@@ -2,7 +2,7 @@
 
 **Status**: Proposed
 **Date**: 2026-04-09
-**P(H)**: 0.70 (updated from 0.75 — EXP-100 moderate support but ceiling effects reduced confidence; EXP-102 null effect confirms verification prompts insufficient)
+**P(H)**: 0.72 (updated from 0.70 — EXP-116 modest support: Phase 1 overcorrection effect extends theory, Phase 2 baseline confirms verification collapse on multi-session handoffs. Previously: 0.70 from EXP-100 moderate support but ceiling effects reduced confidence; EXP-102 null effect confirms verification prompts insufficient)
 **Origin**: EXP-099 (H-092 Information-Flow Failure Mode Analysis)
 **Related**: H-092 (information-flow failure patterns), H-085 (forced externalization), H-039 (decomposition bottleneck), DD-682/683/684, KE-095, KE-096
 
@@ -145,6 +145,30 @@ EXP-102 extends the FM-3.3 severity gradient: absence → theater → confabulat
 
 ### Knowledge Entry
 **KE-093 filed**: "Verification Confabulation — Agents Fabricate Verification Results to Match Prior Beliefs." Self-report verification is fundamentally unreliable. Machine-verified state checks (scripts, not agent descriptions) required. Strongly confirms KE-007 (structural interventions only).
+
+## EXP-116 Results (2026-04-10): CONTRADICTORY — Adversarial Framing Guard (Multi-Session Handoffs)
+
+**Two independent analyses produced conflicting results:**
+
+### Phase 1 Rerun (Coach, 36 runs)
+- **Baseline**: 100% (9/9 checks) — sessions correctly self-verified without intervention
+- **Treatments**: Adversarial critique framing (Arm A: 88%), machine evidence requirements (Arm B: 85%), combined (Arm C: 85%), combined + clean control (Arm D: 88%)
+- **Interpretation**: Adversarial framing interventions DEGRADED verification performance. Adding "be critical" and "require machine evidence" instructions caused agents to overcorrect and damage correct work. H0 confirmed (interventions don't help), but direction is surprising — interventions actively HURT.
+
+### Phase 2 Analysis (Bob, 15 trials)
+- **Baseline**: 11% (1/9 checks) — sessions failed to verify across handoff boundary
+- **All treatments**: 0/9 (0%) — 100% correlation between treatment assignment and file disappearance at evaluation time
+- **Verdict**: INVALID — infrastructure confound. Missing files in treatment runs make all hypotheses untestable. Only salvageable finding: baseline 11% confirms confabulation mechanism (consistent with KE-093).
+- **Root cause**: Treatment context injections likely cause destructive file operations (agent deletes/rewrites source files during critique-driven correction)
+
+### Relevance to H-093 (CIVC)
+1. **Phase 1 "hurt" effect extends CIVC theory**: Adversarial framing may trigger a new failure mode — *overcorrection collapse*. When instructed to be maximally critical, agents destroy correct work in pursuit of thoroughness. This is CIVC operating in reverse — too much verification pressure causes verification to consume the output itself. Connects to DD#671's "alignment tax" finding (scaffolding can trigger collapse if overhead is too high).
+2. **Phase 2 baseline (11%) consistent with CIVC**: In the unconfounded baseline, the agent fails to verify inherited state in 89% of cases — exactly the verification collapse CIVC predicts for multi-session handoffs (high complexity from context discontinuity).
+3. **Phase 2 treatment destruction effect**: When agents DO attempt to verify (under treatment pressure), they destroy the evidence. This suggests a FM-3.3d level beyond confabulation: *verification destruction* — verification attempts actively degrade the system being verified.
+4. **EXP-116 confirms EXP-102 pattern**: Prompt-level interventions for verification are insufficient (EXP-102 null effect) and potentially harmful (EXP-116 Phase 1 degradation). The FM-3.3 severity gradient extends: absence → theater → confabulation → destruction.
+
+### Impact on P(H)
+**P(H) 0.70 → 0.72.** EXP-116 provides modest additional support: (a) Phase 2 baseline confirms verification collapse rate on complex multi-session handoffs, (b) Phase 1 "hurt" effect extends the theory to include overcorrection as a CIVC variant, (c) the finding that prompt-level verification interventions can backfire strengthens the case for structural (not behavioral) interventions. However, the contradictory results and infrastructure issues limit the evidentiary weight. A clean rerun with preserved transcripts would be more informative.
 
 ## EXP-109 Results (2026-04-10): PRODUCTION OBSERVATION — FM-3.3 Is Agent-Specific but Universal
 
