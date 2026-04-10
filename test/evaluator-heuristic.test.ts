@@ -155,9 +155,9 @@ describe("computeHeuristicScores - waste ratio penalty", () => {
     // wasteRatio = 5/10 = 0.5 → moderate_waste_ratio
     expect(scores.issues).toContain("multiple_tool_errors");
     expect(scores.issues).toContain("moderate_waste_ratio");
-    // efficiency: 3 + 1(done+3tools) - 1(multiple_tool_errors) - 1(moderate_waste) = 2
-    // quality: 3 + 1(done+3tools) - 1(moderate_waste) = 3
-    expect(scores.efficiency).toBeLessThanOrEqual(2);
+    // efficiency: 0.5 + 0.2(done+3tools) - 0.2(multiple_tool_errors) - 0.2(moderate_waste) = 0.3
+    // quality: 0.5 - 0.2(moderate_waste) = 0.3
+    expect(scores.efficiency).toBeLessThanOrEqual(0.3);
   });
 
   it("session with 75%+ waste ratio gets high_waste_ratio and needs_improvement", () => {
@@ -253,7 +253,7 @@ describe("computeHeuristicScores - error type differentiation", () => {
     });
     const scores = computeHeuristicScores(session, transcript, messages);
     // Quality should NOT be penalized — agent was doing good work
-    expect(scores.quality).toBeGreaterThanOrEqual(3);
+    expect(scores.quality).toBeGreaterThanOrEqual(0.5);
     // Efficiency gets mild -1 penalty for not finishing within budget
     expect(scores.issues).toContain("turn_limit_hit");
     expect(scores.issues).not.toContain("session_error");
@@ -272,7 +272,7 @@ describe("computeHeuristicScores - error type differentiation", () => {
     // No quality or efficiency penalty for provider errors
     expect(scores.issues).toContain("provider_error");
     expect(scores.issues).not.toContain("session_error");
-    expect(scores.quality).toBeGreaterThanOrEqual(3);
+    expect(scores.quality).toBeGreaterThanOrEqual(0.5);
   });
 
   it("genuine agent error still penalizes quality as before", () => {
@@ -318,7 +318,7 @@ describe("computeHeuristicScores - error type differentiation", () => {
     });
     const scores = computeHeuristicScores(session, transcript, messages);
     // Should get good quality for productive work despite turn limit
-    expect(scores.quality).toBeGreaterThanOrEqual(3);
+    expect(scores.quality).toBeGreaterThanOrEqual(0.5);
     expect(scores.productiveCalls).toBe(40);
     expect(scores.wastedCalls).toBe(0);
     expect(scores.issues).toContain("turn_limit_hit");
@@ -467,8 +467,8 @@ describe("computeHeuristicScores - finish status differentiation (H-009)", () =>
     ];
     const transcript = toTranscript(messages);
     const scores = computeHeuristicScores(makeSession(), transcript, messages);
-    // Phase 3: Base 3 + 1 (finish_success_verified) = 4 (no done+tools quality bonus)
-    expect(scores.quality).toBe(4);
+    // Phase 3: Base 0.5 + 0.2 (finish_success_verified) = 0.7 (no done+tools quality bonus)
+    expect(scores.quality).toBe(0.7);
     expect(scores.issues).toContain("finish_success_verified");
     expect(scores.issues).toContain("has_deliverables");
     expect(scores.verdict).toBe("good");
@@ -488,8 +488,8 @@ describe("computeHeuristicScores - finish status differentiation (H-009)", () =>
     ];
     const transcript = toTranscript(messages);
     const scores = computeHeuristicScores(makeSession(), transcript, messages);
-    // Phase 3: Base 3 + 0 (no evidence = no bonus) = 3
-    expect(scores.quality).toBe(3);
+    // Phase 3: Base 0.5 + 0 (no evidence = no bonus) = 0.5
+    expect(scores.quality).toBe(0.5);
     expect(scores.issues).toContain("finish_success_unverified");
     expect(scores.issues).not.toContain("finish_success_verified");
   });
@@ -509,8 +509,8 @@ describe("computeHeuristicScores - finish status differentiation (H-009)", () =>
     ];
     const transcript = toTranscript(messages);
     const scores = computeHeuristicScores(makeSession(), transcript, messages);
-    // Phase 3: Base 3 + 0 (partial = no bonus, no done+tools quality bonus) = 3
-    expect(scores.quality).toBe(3);
+    // Phase 3: Base 0.5 + 0 (partial = no bonus, no done+tools quality bonus) = 0.5
+    expect(scores.quality).toBe(0.5);
     expect(scores.issues).toContain("finish_partial");
   });
 
@@ -529,8 +529,8 @@ describe("computeHeuristicScores - finish status differentiation (H-009)", () =>
     ];
     const transcript = toTranscript(messages);
     const scores = computeHeuristicScores(makeSession(), transcript, messages);
-    // Phase 3: Base 3 - 1 (finish_failure) = 2
-    expect(scores.quality).toBe(2);
+    // Phase 3: Base 0.5 - 0.2 (finish_failure) = 0.3
+    expect(scores.quality).toBeCloseTo(0.3, 10);
     expect(scores.issues).toContain("finish_failure");
   });
 
@@ -549,8 +549,8 @@ describe("computeHeuristicScores - finish status differentiation (H-009)", () =>
     ];
     const transcript = toTranscript(messages);
     const scores = computeHeuristicScores(makeSession(), transcript, messages);
-    // Phase 3: Base 3 - 1 (finish_blocked) = 2
-    expect(scores.quality).toBe(2);
+    // Phase 3: Base 0.5 - 0.2 (finish_blocked) = 0.3
+    expect(scores.quality).toBeCloseTo(0.3, 10);
     expect(scores.issues).toContain("finish_blocked");
   });
 
@@ -606,8 +606,8 @@ describe("computeHeuristicScores - finish status differentiation (H-009)", () =>
     ];
     const transcript = toTranscript(messages);
     const scores = computeHeuristicScores(makeSession(), transcript, messages);
-    // Phase 3: Base 3 + 0 (no finish bonus, no done+tools quality bonus) = 3
-    expect(scores.quality).toBe(3);
+    // Phase 3: Base 0.5 + 0 (no finish bonus, no done+tools quality bonus) = 0.5
+    expect(scores.quality).toBe(0.5);
     expect(scores.issues).toContain("no_finish_call");
     expect(scores.issues).not.toContain("finish_success_verified");
     expect(scores.issues).not.toContain("finish_success_unverified");
@@ -630,8 +630,8 @@ describe("computeHeuristicScores - finish status differentiation (H-009)", () =>
     const scores = computeHeuristicScores(session, transcript, messages);
     expect(scores.issues).toContain("session_interrupted");
     expect(scores.issues).not.toContain("no_finish_call");
-    // Quality stays at base 3 — no penalty, no bonus
-    expect(scores.quality).toBe(3);
+    // Quality stays at base 0.5 — no penalty, no bonus
+    expect(scores.quality).toBe(0.5);
   });
 });
 
@@ -653,8 +653,8 @@ describe("computeHeuristicScores - Phase 2 semantic quality (H-009)", () => {
     const transcript = toTranscript(messages);
     const scores = computeHeuristicScores(makeSession(), transcript, messages);
     expect(scores.issues).toContain("hollow_summary");
-    // Phase 3: Base 3 + 1 (verified) - 1 (hollow_summary) = 3
-    expect(scores.quality).toBe(3);
+    // Phase 3: Base 0.5 + 0.2 (verified) - 0.2 (hollow_summary) = 0.5
+    expect(scores.quality).toBeCloseTo(0.5, 10);
   });
 
   it("good summary (≥ 30 chars) → no hollow_summary issue", () => {
@@ -693,8 +693,8 @@ describe("computeHeuristicScores - Phase 2 semantic quality (H-009)", () => {
     const transcript = toTranscript(messages);
     const scores = computeHeuristicScores(makeSession(), transcript, messages);
     expect(scores.issues).toContain("vague_verification_evidence");
-    // Phase 3: Base 3 + 1 (verified) - 1 (vague evidence) = 3
-    expect(scores.quality).toBe(3);
+    // Phase 3: Base 0.5 + 0.2 (verified) - 0.2 (vague evidence) = 0.5
+    expect(scores.quality).toBeCloseTo(0.5, 10);
   });
 
   it("mixed evidence (some specific, some vague) → mostly_vague if majority vague", () => {
@@ -801,8 +801,8 @@ describe("computeHeuristicScores - Phase 4 scoring calibration (H-009)", () => {
     ];
     const transcript = toTranscript(messages);
     const scores = computeHeuristicScores(makeSession(), transcript, messages);
-    // Phase 4: Base 3 + 1 (verified finish) + 1 (verified_with_tests) = 5
-    expect(scores.quality).toBe(5);
+    // Phase 4: Base 0.5 + 0.2 (verified finish) + 0.2 (verified_with_tests) = 0.9
+    expect(scores.quality).toBeCloseTo(0.9, 10);
     expect(scores.issues).toContain("verified_with_tests");
     expect(scores.verdict).toBe("good");
   });
@@ -823,8 +823,8 @@ describe("computeHeuristicScores - Phase 4 scoring calibration (H-009)", () => {
     ];
     const transcript = toTranscript(messages);
     const scores = computeHeuristicScores(makeSession(), transcript, messages);
-    // Phase 4: Base 3 + 1 (verified finish) = 4, no test runs for bonus
-    expect(scores.quality).toBe(4);
+    // Phase 4: Base 0.5 + 0.2 (verified finish) = 0.7, no test runs for bonus
+    expect(scores.quality).toBe(0.7);
     expect(scores.issues).not.toContain("verified_with_tests");
     expect(scores.verdict).toBe("good");
   });
@@ -843,8 +843,8 @@ describe("computeHeuristicScores - Phase 4 scoring calibration (H-009)", () => {
     ];
     const transcript = toTranscript(messages);
     const scores = computeHeuristicScores(makeSession(), transcript, messages);
-    // Phase 3: Base 3 + 0 (no evidence) = 3
-    expect(scores.quality).toBe(3);
+    // Phase 3: Base 0.5 + 0 (no evidence) = 0.5
+    expect(scores.quality).toBe(0.5);
     expect(scores.verdict).toBe("acceptable");
   });
 
@@ -859,10 +859,10 @@ describe("computeHeuristicScores - Phase 4 scoring calibration (H-009)", () => {
     ];
     const transcript = toTranscript(messages);
     const scores = computeHeuristicScores(makeSession(), transcript, messages);
-    // Phase 3: Base 3 quality (no finish bonus, no done+tools quality bonus)
-    expect(scores.quality).toBe(3);
-    // But efficiency still gets the +1
-    expect(scores.efficiency).toBe(4);
+    // Phase 3: Base 0.5 quality (no finish bonus, no done+tools quality bonus)
+    expect(scores.quality).toBe(0.5);
+    // But efficiency still gets the +0.2
+    expect(scores.efficiency).toBe(0.7);
   });
 
   it("inline scripts with 'test' substring → no false positive (H-009 Phase 4b)", () => {
@@ -906,7 +906,7 @@ describe("computeHeuristicScores - Phase 4 scoring calibration (H-009)", () => {
     const transcript = toTranscript(messages);
     const scores = computeHeuristicScores(makeSession(), transcript, messages);
     // Should NOT get verified_with_tests — these are not real test commands
-    expect(scores.quality).toBe(4); // verified finish only
+    expect(scores.quality).toBe(0.7); // verified finish only
     expect(scores.issues).not.toContain("verified_with_tests");
   });
 
@@ -949,7 +949,7 @@ describe("computeHeuristicScores - Phase 4 scoring calibration (H-009)", () => {
     const transcript = toTranscript(messages);
     const scores = computeHeuristicScores(makeSession(), transcript, messages);
     // Should get verified_with_tests — test/, .test., __tests__ patterns
-    expect(scores.quality).toBe(5);
+    expect(scores.quality).toBeCloseTo(0.9, 10);
     expect(scores.issues).toContain("verified_with_tests");
   });
 
@@ -980,7 +980,7 @@ describe("computeHeuristicScores - Phase 4 scoring calibration (H-009)", () => {
     const transcript = toTranscript(messages);
     const scores = computeHeuristicScores(makeSession(), transcript, messages);
     // bun run check, bun vitest, bun run build all count → verified_with_tests
-    expect(scores.quality).toBe(5);
+    expect(scores.quality).toBeCloseTo(0.9, 10);
     expect(scores.issues).toContain("verified_with_tests");
   });
 });
@@ -1018,7 +1018,7 @@ describe("computeHeuristicScores - proxy-satisfying behavior", () => {
     );
     const scores = computeHeuristicScores(makeSession(), transcript, messages);
     expect(scores.issues).toContain("proxy_satisfying_strong");
-    expect(scores.quality).toBeLessThanOrEqual(2);
+    expect(scores.quality).toBeLessThanOrEqual(0.3);
   });
 
   it("detects weak proxy-satisfying: single contradiction signal in summary", () => {
@@ -1102,8 +1102,8 @@ describe("computeHeuristicScores - proxy-satisfying behavior", () => {
       "Cannot access the external service. Missing API tokens. Hardcoded mock response data as placeholder instead of real values."
     );
     const scores = computeHeuristicScores(makeSession(), transcript, messages);
-    // Base 3 + 1 (verified success) - 2 (proxy strong) = 2
-    expect(scores.quality).toBeLessThanOrEqual(3);
+    // Base 0.5 + 0.2 (verified success) - 0.4 (proxy strong) = 0.3
+    expect(scores.quality).toBeLessThanOrEqual(0.5);
     expect(scores.issues).toContain("proxy_satisfying_strong");
   });
 

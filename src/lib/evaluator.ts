@@ -225,7 +225,7 @@ export interface AgentScores {
 
 /** Result of evaluating a complete task tree (multiple agent sessions). */
 export interface TaskEvaluationResult {
-  /** Per-agent scores indexed by agent name. */
+  /** Per-agent scores indexed by sessionId (not agent name, to handle duplicate agent names). */
   agents: Record<string, AgentScores>;
   /** Overall task result. */
   overall: {
@@ -567,7 +567,14 @@ function buildEvalPrompt(
   perAgentTranscripts: string[],
   totalUsage: UsageSummary,
 ): string {
-  const agentList = [...new Set(children.map((c) => c.agent))].join(", ");
+  // Build unique eval labels per child. When multiple children share an agent name,
+  // use "agent (session s_xxx)" so the LLM can score each separately.
+  const agentNameCounts = new Map<string, number>();
+  for (const c of children) agentNameCounts.set(c.agent, (agentNameCounts.get(c.agent) ?? 0) + 1);
+  const evalLabels = children.map((c) =>
+    (agentNameCounts.get(c.agent) ?? 0) > 1 ? `${c.agent} (session ${c.sessionId})` : c.agent,
+  );
+  const agentList = evalLabels.join(", ");
   return [
     `# Task Tree Evaluation`,
     ``,
@@ -727,7 +734,10 @@ export async function evaluateTask(opts: EvaluateTaskOptions): Promise<TaskEvalu
       `Your previous response did not contain a valid JSON scores block. `,
       `Please output ONLY the JSON scores block in a \`\`\`json code fence, `,
       `followed by a ### Lessons section. No other text.\n`,
-      `Agents to score: ${[...new Set(children.map((c) => c.agent))].join(", ")}\n`,
+      `Agents to score: ${children.map((c) => {
+        const count = children.filter((o) => o.agent === c.agent).length;
+        return count > 1 ? `${c.agent} (session ${c.sessionId})` : c.agent;
+      }).join(", ")}\n`,
       `--- ORIGINAL TRANSCRIPT (for context) ---`,
       ...perAgentTranscripts,
       `--- END TRANSCRIPT ---\n`,
@@ -759,11 +769,50 @@ export async function evaluateTask(opts: EvaluateTaskOptions): Promise<TaskEvalu
     raw: responseText,
   };
 
-  // Build per-agent scores, filling in from parsed data
+  // Build per-agent scores, filling in from parsed data.
+  // Key by sessionId (not agent name) to avoid duplicate-name collisions (EXP-125 Bug 2).
+  // Match strategy: try "agent (session s_xxx)" key first (for duplicate agent names),
+  // then fall back to plain agent name (for unique agent names / backward compat).
+  const usedParsedKeys = new Set<string>();
   for (const child of children) {
-    const agentParsed = parsed.agents[child.agent];
-    if (agentParsed) {
-      result.agents[child.agent] = {
+    const sessionLabel = `${child.agent} (session ${child.sessionId})`;
+    const agentParsed = parsed.agents[sessionLabel] ?? parsed.agents[child.agent];
+    const matchedKey = parsed.agents[sessionLabel] ? sessionLabel : child.agent;
+    // Avoid reusing the same parsed key for multiple children
+    if (usedParsedKeys.has(matchedKey)) {
+      // This child got a duplicate match — try order-based fallback
+      // Find any unmatched parsed key that starts with the agent name
+      const fallbackKey = Object.keys(parsed.agents).find(
+        (k) => !usedParsedKeys.has(k) && (k === child.agent || k.startsWith(`${child.agent} (`)),
+      );
+      const fallbackParsed = fallbackKey ? parsed.agents[fallbackKey] : undefined;
+      if (fallbackParsed && fallbackKey) {
+        usedParsedKeys.add(fallbackKey);
+        result.agents[child.sessionId] = {
+          agent: child.agent,
+          sessionId: child.sessionId,
+          efficiency: fallbackParsed.efficiency,
+          quality: fallbackParsed.quality,
+          productive_calls: fallbackParsed.productive_calls,
+          wasted_calls: fallbackParsed.wasted_calls,
+          verdict: fallbackParsed.verdict as "good" | "acceptable" | "needs_improvement",
+          issues: fallbackParsed.issues,
+        };
+      } else {
+        result.agents[child.sessionId] = {
+          agent: child.agent,
+          sessionId: child.sessionId,
+          efficiency: 0,
+          quality: 0,
+          productive_calls: 0,
+          wasted_calls: 0,
+          verdict: "needs_improvement",
+          issues: ["evaluator did not score this session (duplicate agent name)"],
+        };
+      }
+    } else if (agentParsed) {
+      usedParsedKeys.add(matchedKey);
+      result.agents[child.sessionId] = {
         agent: child.agent,
         sessionId: child.sessionId,
         efficiency: agentParsed.efficiency,
@@ -775,7 +824,7 @@ export async function evaluateTask(opts: EvaluateTaskOptions): Promise<TaskEvalu
       };
     } else {
       // Evaluator didn't score this agent — use defaults
-      result.agents[child.agent] = {
+      result.agents[child.sessionId] = {
         agent: child.agent,
         sessionId: child.sessionId,
         efficiency: 0,
@@ -793,9 +842,9 @@ export async function evaluateTask(opts: EvaluateTaskOptions): Promise<TaskEvalu
   // isolated transcripts. If isolated evaluation scores lower, the contextual
   // evaluation was inflated by agent self-narrative (confirmation bias).
   // Use the lower (more skeptical) scores. See EXP-039/design.md Phase B findings.
-  // NOTE: Scale is 1-5 (clamped by heuristic evaluator and LLM prompt). Threshold 3
+  // NOTE: Scale is 0.0-1.0 (clamped by heuristic evaluator and LLM prompt). Threshold 0.5
   // targets "acceptable but weak" sessions where confirmation bias is most likely.
-  const ISOLATION_THRESHOLD = 3;
+  const ISOLATION_THRESHOLD = 0.5;
   if (
     !isolatedTranscript &&
     result.overall.quality > 0 &&
@@ -845,15 +894,19 @@ export async function evaluateTask(opts: EvaluateTaskOptions): Promise<TaskEvalu
         result.overall.efficiency = Math.min(result.overall.efficiency, isoParsed.overall.efficiency);
         result.overall.verdict = isoParsed.overall.verdict as "good" | "acceptable" | "needs_improvement";
 
-        // Update per-agent scores where isolated is lower
-        for (const [agent, isoScores] of Object.entries(isoParsed.agents)) {
-          if (result.agents[agent] && isoScores.quality < result.agents[agent].quality) {
-            result.agents[agent].quality = isoScores.quality;
-            result.agents[agent].efficiency = Math.min(result.agents[agent].efficiency, isoScores.efficiency);
-            result.agents[agent].verdict = isoScores.verdict as "good" | "acceptable" | "needs_improvement";
-            result.agents[agent].issues = [
-              ...result.agents[agent].issues,
-              ...(isoScores.issues || []).filter((i: string) => !result.agents[agent].issues.includes(i)),
+        // Update per-session scores where isolated is lower.
+        // isoParsed.agents is keyed by agent name (or "agent (session s_xxx)").
+        // Match to result.agents which is keyed by sessionId.
+        for (const child of children) {
+          const sessionLabel = `${child.agent} (session ${child.sessionId})`;
+          const isoScores = isoParsed.agents[sessionLabel] ?? isoParsed.agents[child.agent];
+          if (isoScores && result.agents[child.sessionId] && isoScores.quality < result.agents[child.sessionId].quality) {
+            result.agents[child.sessionId].quality = isoScores.quality;
+            result.agents[child.sessionId].efficiency = Math.min(result.agents[child.sessionId].efficiency, isoScores.efficiency);
+            result.agents[child.sessionId].verdict = isoScores.verdict as "good" | "acceptable" | "needs_improvement";
+            result.agents[child.sessionId].issues = [
+              ...result.agents[child.sessionId].issues,
+              ...(isoScores.issues || []).filter((i: string) => !result.agents[child.sessionId].issues.includes(i)),
             ];
           }
         }
@@ -866,7 +919,7 @@ export async function evaluateTask(opts: EvaluateTaskOptions): Promise<TaskEvalu
 
   // Save evaluation for each session ID (marks them as evaluated)
   for (const child of children) {
-    const agentScore = result.agents[child.agent];
+    const agentScore = result.agents[child.sessionId];
     const usage = extractUsage(child.messages);
     const createdAt = extractTimestamp(child.sessionId);
 
@@ -1206,8 +1259,8 @@ export function computeHeuristicScores(
   issues: string[];
   resultDelivered: boolean;
 } {
-  let efficiency = 3;
-  let quality = 3;
+  let efficiency = 0.5;
+  let quality = 0.5;
   let productiveCalls = 0;
   let wastedCalls = 0;
   const issues: string[] = [];
@@ -1232,14 +1285,14 @@ export function computeHeuristicScores(
       // Agent was actively working, just exceeded turn budget.
       // Don't penalize quality — the work done may be perfectly good.
       // Mild efficiency penalty since the agent didn't finish within budget.
-      efficiency -= 1;
+      efficiency -= 0.2;
       issues.push("turn_limit_hit");
     } else if (/litellm|BadRequestError|Github_copilotException|model.*not supported/i.test(errMsg)) {
       // Provider/infrastructure error — not the agent's fault at all.
       issues.push("provider_error");
     } else {
       // Genuine agent error (crash, validation failure, etc.)
-      quality -= 1;
+      quality -= 0.2;
       issues.push("session_error");
     }
   }
@@ -1248,7 +1301,7 @@ export function computeHeuristicScores(
 
   // 3. Very shallow sessions (< 2 assistant turns with few tool calls)
   if (assistantTurns <= 1 && totalToolCalls === 0) {
-    quality -= 2;
+    quality -= 0.4;
     issues.push("shallow_session");
   }
 
@@ -1274,11 +1327,11 @@ export function computeHeuristicScores(
         // H-009 Phase 3: +1 (not +2) — verified completion is expected behavior,
         // not exceptional. Quality 5 should require additional differentiation
         // (see Phase 2 semantic checks below for further adjustments).
-        quality += 1;
+        quality += 0.2;
         issues.push("finish_success_verified");
       } else if (hasEvidence) {
         // Has evidence but no deliverables — slightly weaker signal
-        quality += 1;
+        quality += 0.2;
         issues.push("finish_success_verified");
       } else {
         // Claimed success without verification evidence — no quality bonus
@@ -1292,7 +1345,7 @@ export function computeHeuristicScores(
       issues.push("finish_partial");
     } else if (finishStatus === "failure" || finishStatus === "blocked") {
       // Task failed or blocked — quality penalty
-      quality -= 1;
+      quality -= 0.2;
       issues.push(`finish_${finishStatus}`);
     }
   } else if (hasFinishCall) {
@@ -1311,7 +1364,7 @@ export function computeHeuristicScores(
   // H-009 Phase 3: Only give efficiency bonus, not quality bonus.
   // Using tools in a done session is baseline expected behavior.
   if (session.status === "done" && totalToolCalls >= 3) {
-    efficiency += 1;
+    efficiency += 0.2;
   }
 
   // 5b. H-009 Phase 2: Semantic quality signals for finish(success)
@@ -1326,7 +1379,7 @@ export function computeHeuristicScores(
 
     // 5b-i. Hollow success: claims success but summary is trivially short
     if (summary.length < 30) {
-      quality -= 1;
+      quality -= 0.2;
       issues.push("hollow_summary");
     }
 
@@ -1348,7 +1401,7 @@ export function computeHeuristicScores(
       });
       if (vagueEvidence.length === evidence.length) {
         // ALL evidence items are vague — this is a quality concern
-        quality -= 1;
+        quality -= 0.2;
         issues.push("vague_verification_evidence");
       } else if (vagueEvidence.length > evidence.length / 2) {
         issues.push("mostly_vague_evidence");
@@ -1388,7 +1441,7 @@ export function computeHeuristicScores(
         }
       }
       if (verificationRuns >= 3) {
-        quality += 1;
+        quality += 0.2;
         issues.push("verified_with_tests");
       }
     }
@@ -1459,11 +1512,11 @@ export function computeHeuristicScores(
 
     if (proxyHits >= 2) {
       // Multiple proxy signals = strong evidence of proxy-satisfying behavior
-      quality -= 2;
+      quality -= 0.4;
       issues.push("proxy_satisfying_strong");
     } else if (proxyHits === 1) {
       // Single signal = suspicious but not definitive
-      quality -= 1;
+      quality -= 0.2;
       issues.push("proxy_satisfying_weak");
     }
   }
@@ -1485,8 +1538,8 @@ export function computeHeuristicScores(
     if (frustration.frustrationScore >= 6) {
       if (!hasVerification) {
         // High frustration + unverified success = likely topology rewrite
-        quality -= 1;
-        efficiency -= 1;
+        quality -= 0.2;
+        efficiency -= 0.2;
         issues.push("frustration_detected");
       } else {
         // High frustration but verified = agent persevered, just note it
@@ -1497,7 +1550,7 @@ export function computeHeuristicScores(
       const weakIdx = issues.indexOf("proxy_satisfying_weak");
       if (weakIdx !== -1) {
         issues[weakIdx] = "proxy_satisfying_strong";
-        quality -= 1; // Frustration + proxy = strong evidence of rewrite
+        quality -= 0.2; // Frustration + proxy = strong evidence of rewrite
       }
     } else if (frustration.frustrationScore >= 4) {
       // Moderate frustration — note but don't penalize
@@ -1542,7 +1595,7 @@ export function computeHeuristicScores(
   }
   // Cap wasted calls: each hard error wastes ~1 tool call, not more
   if (hardErrors > 3) {
-    efficiency -= 1;
+    efficiency -= 0.2;
     wastedCalls = Math.min(hardErrors, Math.ceil(totalToolCalls * 0.5));
     issues.push("multiple_tool_errors");
   } else if (hardErrors > 0) {
@@ -1557,25 +1610,25 @@ export function computeHeuristicScores(
   if (totalToolCalls > 0) {
     const wasteRatio = wastedCalls / totalToolCalls;
     if (wasteRatio >= 0.75) {
-      efficiency -= 2;
-      quality -= 2;
+      efficiency -= 0.4;
+      quality -= 0.4;
       issues.push("high_waste_ratio");
     } else if (wasteRatio >= 0.5) {
-      efficiency -= 1;
-      quality -= 1;
+      efficiency -= 0.2;
+      quality -= 0.2;
       issues.push("moderate_waste_ratio");
     }
   }
 
-  // Clamp scores to 1-5 range
-  efficiency = Math.max(1, Math.min(5, efficiency));
-  quality = Math.max(1, Math.min(5, quality));
+  // Clamp scores to 0.0-1.0 range
+  efficiency = Math.max(0, Math.min(1, efficiency));
+  quality = Math.max(0, Math.min(1, quality));
 
   // Determine verdict
   let verdict: "good" | "acceptable" | "needs_improvement";
-  if (quality >= 4 && efficiency >= 4) {
+  if (quality >= 0.7 && efficiency >= 0.7) {
     verdict = "good";
-  } else if (quality >= 2 && efficiency >= 2) {
+  } else if (quality >= 0.3 && efficiency >= 0.3) {
     verdict = "acceptable";
   } else {
     verdict = "needs_improvement";

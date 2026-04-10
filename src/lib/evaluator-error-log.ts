@@ -77,7 +77,7 @@ export function appendErrorLogs(result: TaskEvaluationResult, children: ChildSes
   const timestamp = new Date().toISOString();
 
   for (const child of children) {
-    const agentScore = result.agents[child.agent];
+    const agentScore = result.agents[child.sessionId];
     if (!agentScore) continue;
 
     const issues = agentScore.issues;
