@@ -97,7 +97,13 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     return ctx.escalate("Phase 1 (analyze) failed", { error: phase1.error });
   }
 
-  const planText = phase1.lastAssistantText ?? "";
+  // Extract plan from ALL assistant messages (not just lastAssistantText,
+  // which is typically just the finish() summary without file paths).
+  const allAssistantText = (phase1.messages ?? [])
+    .filter((m: any) => m.role === "assistant")
+    .flatMap((m: any) => (m.content ?? []).filter((b: any) => b.type === "text").map((b: any) => b.text))
+    .join("\n");
+  const planText = allAssistantText || phase1.lastAssistantText || "";
   const plannedFiles = extractFilePaths(planText);
 
   ctx.emit({ type: "step_done", step: "phase1-analyze" } as any);
