@@ -93,6 +93,10 @@
 - [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% of verify-after-edit failures need code-level fix, not prompting. Deferred until prompting experiments complete.
 - [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
 
+## Session Notes (2026-04-10 ~04:00)
+- **EXP-109 PHASE 2 INTEGRATION COMPLETE**: Updated H-092 and H-093 hypothesis files with EXP-109 results sections. Updated H-092 and H-093 entries in INDEX.md with EXP-109 summaries. All EXP-109 knowledge base integration now complete (EXP-109 row, KE-112 row, H-095 authored + indexed, H-092 file + INDEX entry updated, H-093 file + INDEX entry updated).
+- **Files modified**: `knowledge/hypotheses/H-092-reasoning-flow-failure-modes-agent-systems.md`, `knowledge/hypotheses/H-093-complexity-induced-verification-collapse.md`, `knowledge/INDEX.md`
+
 ## Session Notes (2026-04-09 ~23:55)
 - **KE-110 WRITTEN (SKILL STACK SATURATION)**: Capstone synthesis of the gym improvement loop. Three convergent evidence streams: (1) EXP-108 ceiling — all 7 multi-session scenarios at 91–100%, (2) KE-109 structural gap — gym skills solve gym-shaped problems only, (3) KE-106 guard permanence — neither skills nor guards train behavior. The gym skill improvement loop ran 25+ experiments and is terminally complete with the 5-skill stack (evidence-over-narrative, verify-after-edit, investigate-and-fix, classify-then-act, efficient-file-reading).
 - **CT-004 RESOLVED**: Guards as permanent infrastructure vs training stepping stones — resolved via KE-110 evidence synthesis. Guards and skills are both permanent infrastructure. Neither trains the underlying model. Contradiction Tracker updated (2 open → 1 open, 3 resolved → 4 resolved, resolution rate 43% → 57%).
