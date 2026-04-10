@@ -11,9 +11,9 @@
 
 ## 🔴 ACTIVE
 
-- **Post-restart baseline (2026-04-10)** — System restarted after 16-day gap. First 6h snapshot: 27 sessions, 282 ops, $12 total cost ($48/day rate). Waste rate 1.0% (excellent). Top cost: scout $3.75 (1.15M input tokens — large doc reads), bob $3.32 (63-op heartbeat did work inline instead of dispatching). Bob's 2nd heartbeat IS dispatching via workflow — tracking whether dispatcher mode holds.
-- **Bob heartbeat dispatch consistency** — First post-restart HB: 63 ops inline (bad). Second: dispatched via `deliver-or-report` workflow (good). Need 3+ data points to assess. Observation fix (combined bash cmds) deployed but the real cost driver is inline-vs-dispatch, not observation overhead.
-- **EXP-031: On-Demand Workflow Discovery** — Behavioral experiments COMPLETED: **0/26 discovery rate**. Phase 1 gym runs not yet executed. Strongly predicts push delivery is required. Consider writing final synthesis as a KE entry.
+- **Post-restart baseline (2026-04-10)** — System restarted after 16-day gap. First 6h snapshot: 27 sessions, 282 ops, $12 total cost ($48/day rate). **12h update**: 45 sessions, 729 ops, ~$35 total ($78/day projected). Cost drivers: scout $7.14 (2 expensive heartbeats reading papers, 900K-1.15M tokens each), bob $11.09 (99-op deliver-or-report P1). Waste rate near 0% across all agents. Cost increase from $48→$78/day is legitimate work activity, not waste.
+- **Bob heartbeat dispatch consistency** — First post-restart HB: 63 ops inline (bad). Second: dispatched via `deliver-or-report` workflow (good). Latest: bob's 3rd HB was only 13 ops (dispatcher mode). Tracking confirmed — dispatch mode holding.
+- ~~**EXP-031: On-Demand Workflow Discovery**~~ — DONE. KE-026 already synthesizes all findings (0/30 discovery across 3 resource types). No separate KE entry needed.
 - **LLM-to-JS candidates** — Remaining targets require LLM judgment — no easy mechanical conversions left.
 
 ### Stale / resolved after restart
