@@ -82,7 +82,7 @@ If an agent refuses citing a safety policy, verify it exists in the agent's SOUL
 
 - **Blind Overwrite** (Critical): Agent reads file → read truncated → writes file. Quality ≤ 0.4. Note: transcript truncation markers from reviewers ≠ agent truncation.
 - **Verification Failure** (P19 / FM-3.3): Edits file, never verifies. Flag: `[FM-3.3]` `[VERIFICATION_FAILURE]`
-- **Tool Hallucination**: Non-existent tools. Real: `agents`, `workflow`, `cron`, `bash`. Fake: `exec`, `Edit`, `MultiEdit`. Flag: `[HALLUCINATION]`
+- **Tool Hallucination**: Non-existent tools. Real: `read`, `write`, `edit`, `bash`, `agents`, `finish`, `cron`, `system_status`. Fake: `exec`, `Edit`, `MultiEdit`, `workflow`. Flag: `[HALLUCINATION]`
 - **[LOOPING] / [FM-1.3]**: Same failed action repeated.
 - **[LAZY]**: Asks user for findable info.
 - **[SILENT_FAIL]**: Fails without reporting error.
