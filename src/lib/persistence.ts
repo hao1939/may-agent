@@ -7,16 +7,11 @@ import {
   renameSync,
   rmSync,
   readdirSync,
-  openSync,
-  fstatSync,
-  readSync,
-  closeSync,
 } from "node:fs";
 import { readFile, readdir } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { SubagentDefinition } from "./types.js";
-import { sanitizeMemory } from "./security/memory-sanitizer.js";
 // DB writes removed from RegistryStore — handled by DbWriter subscriber via EventBus.
 import { log } from "./log.js";
 
@@ -73,21 +68,6 @@ export interface Registry {
   sessions: Record<string, PersistedSession>;
 }
 
-/** A single memory entry, appended to memory/<name>.jsonl after each session. */
-export interface MemoryEntry {
-  task: string;
-  status: string;
-  duration: string;
-  summary: string | null;
-  timestamp: number;
-  /** Items the agent completed (from finish() completed_items). */
-  completed?: string[];
-  /** New items the agent identified (from finish() new_items). */
-  newItems?: string[];
-  /** Files modified during the session. */
-  files?: string[];
-}
-
 /** Extract persistable fields from a SubagentDefinition. */
 function toPersistedConfig(def: SubagentDefinition): PersistedAgentConfig {
   const config: PersistedAgentConfig = {
@@ -119,71 +99,6 @@ function readJsonlFile<T>(filePath: string): T[] {
     }
   }
   return items;
-}
-
-/** Read only the last N JSON lines from a file by reading backwards from the end.
- *  Much more efficient than readJsonlFile() for large files when only the tail is needed.
- *  Falls back to full-file read if the file is small (< 64KB). */
-function readLastNJsonlLines<T>(filePath: string, n: number): T[] {
-  if (!existsSync(filePath) || n <= 0) return [];
-
-  const CHUNK_SIZE = 32 * 1024; // 32KB chunks
-  const SMALL_FILE_THRESHOLD = 64 * 1024; // Below this, just read the whole thing
-
-  const fd = openSync(filePath, "r");
-  try {
-    const stat = fstatSync(fd);
-    const fileSize = stat.size;
-    if (fileSize === 0) return [];
-
-    // For small files, fall back to full read (overhead of seeking not worth it)
-    if (fileSize <= SMALL_FILE_THRESHOLD) {
-      closeSync(fd);
-      const all = readJsonlFile<T>(filePath);
-      return all.slice(-n);
-    }
-
-    // Read backwards in chunks to find enough newlines
-    let tailText = "";
-    let newlineCount = 0;
-    let position = fileSize;
-
-    while (position > 0 && newlineCount <= n) {
-      const readSize = Math.min(CHUNK_SIZE, position);
-      position -= readSize;
-      const buf = Buffer.alloc(readSize);
-      readSync(fd, buf, 0, readSize, position);
-      const chunk = buf.toString("utf-8");
-      tailText = chunk + tailText;
-
-      // Count newlines in this chunk to know if we have enough
-      for (let i = 0; i < chunk.length; i++) {
-        if (chunk[i] === "\n") newlineCount++;
-      }
-    }
-
-    // Parse the tail text — take only the last N valid entries
-    const lines = tailText.trim().split("\n");
-    // Take at most the last N lines (there may be more due to chunk boundaries)
-    const candidateLines = lines.slice(-n);
-    const items: T[] = [];
-    for (const line of candidateLines) {
-      if (!line.trim()) continue;
-      try {
-        items.push(JSON.parse(line) as T);
-      } catch {
-        log("warn", `[persistence:jsonl] Skipping corrupted JSONL line in ${filePath}`);
-      }
-    }
-    return items;
-  } finally {
-    // fd might already be closed if we took the small-file path
-    try {
-      closeSync(fd);
-    } catch {
-      /* already closed */
-    }
-  }
 }
 
 // ── Session JSONL helpers ──────────────────────────────────────────────
@@ -263,58 +178,6 @@ export function archiveSession(persistDir: string, sessionId: string): void {
     rmSync(dest, { recursive: true, force: true });
   }
   renameSync(src, dest);
-}
-
-// ── Memory JSONL helpers ───────────────────────────────────────────────
-
-/** Return the path to an agent's memory JSONL file. */
-export function memoryPath(persistDir: string, name: string): string {
-  return join(persistDir, "memory", `${name}.jsonl`);
-}
-
-/** Append a memory entry as a JSON line. Creates the file and directory if needed.
- *  Sanitizes the task and summary fields to prevent memory poisoning (P72). */
-export function appendMemoryEntry(persistDir: string, name: string, entry: MemoryEntry): void {
-  const filePath = memoryPath(persistDir, name);
-  mkdirSync(dirname(filePath), { recursive: true });
-
-  // Sanitize agent-generated content before persisting to long-term memory
-  const sanitized = { ...entry };
-  if (sanitized.summary) {
-    const result = sanitizeMemory(sanitized.summary, { agentName: name });
-    if (result.action === "rejected") {
-      sanitized.summary = `[SANITIZED — prompt injection blocked: ${result.issues.join("; ")}]`;
-    } else if (result.action === "redacted") {
-      sanitized.summary = result.content;
-    }
-  }
-  if (sanitized.task) {
-    const result = sanitizeMemory(sanitized.task, { agentName: name });
-    if (result.action === "rejected") {
-      sanitized.task = `[SANITIZED — prompt injection blocked]`;
-    } else if (result.action === "redacted") {
-      sanitized.task = result.content;
-    }
-  }
-
-  const line = JSON.stringify(sanitized) + "\n";
-  appendFileSync(filePath, line, "utf-8");
-}
-
-/** Read the last N memory entries (or all if limit is not specified).
- *  When limit is specified, uses efficient tail-read to avoid parsing the entire file.
- *  Corrupted lines are skipped with a warning. */
-export function readMemoryEntries(
-  persistDir: string,
-  name: string,
-  limit?: number,
-  _includeCorrupted: boolean = false,
-): MemoryEntry[] {
-  if (limit !== undefined) {
-    if (limit <= 0) return [];
-    return readLastNJsonlLines<MemoryEntry>(memoryPath(persistDir, name), limit);
-  }
-  return readJsonlFile<MemoryEntry>(memoryPath(persistDir, name));
 }
 
 // ── Session meta.json helpers ─────────────────────────────────────────
