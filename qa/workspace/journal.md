@@ -4852,3 +4852,21 @@ CONDITIONAL — tests pass, but consider adding diagnostic logging for corrupted
 
 ### Verdict
 PASS — implementation matches documented behavior; typecheck and full test suite pass.
+
+---
+## 2026-04-10T14:42Z — Heartbeat QA scan
+
+### Reviewed
+- Recent commit: `649b0a6a` (finish-guard git-operation false-positive fix)
+- Files inspected: `src/lib/tools/finish-guard.ts`, `test/tools-finish-guard.test.ts`
+
+### Findings
+- **IMPORTANT (environment):** Mandatory QA steps cannot be executed here: `./node_modules/.bin/tsc --noEmit` and `./node_modules/.bin/vitest --run` both missing (exit 127). This prevents runtime verification but appears to be a known environment constraint.
+- **MINOR:** `BASH_VERIFY_PATTERNS` still matches `npx tsc` / `npx vitest` even though `npx` is not available in this environment; not harmful, but adds dead pattern surface.
+
+### Notes
+- `BASH_WRITE_PATTERNS` now treats several git operations (`merge`, `rebase`, `cherry-pick`, `pull`, `checkout`, `reset`, `stash`, `restore`) as write-like evidence; this seems reasonable given they mutate the working tree.
+- New tests are extensive and directly cover the new patterns.
+
+### Verdict
+CONDITIONAL — code change looks correct on inspection, but cannot independently run typecheck/tests in this environment.
