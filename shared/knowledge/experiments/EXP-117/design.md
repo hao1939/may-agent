@@ -2,7 +2,7 @@
 
 **Date**: 2026-04-10
 **Author**: Coach
-**Status**: COMPLETE — Ceiling effect, inconclusive (see results.md)
+**Status**: COMPLETE ❌ — Hypothesis REJECTED. See results.md
 **Type**: Intervention experiment (gym A/B)
 **Related**: EXP-115 (same intervention for optimizer FM-2.2), KE-007 (structural enforcement), EXP-046/092 (forced externalization)
 
