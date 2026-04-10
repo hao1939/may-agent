@@ -66,6 +66,33 @@ CONDITIONAL — this commit is low-risk and correct, but CI is red due to pre-ex
 
 ---
 
+## 2026-04-10T06:30Z
+
+### Summary
+Proactive heartbeat QA at HEAD **a1f1468** ("fix: remove accidental submodule entry for agents/"). I re-ran mandatory gates and sampled failing tests to confirm the current suite failures are still dominated by pre-existing repo/env issues (missing launcher module, filesystem permission cleanup, tight integration timeout).
+
+### Files reviewed (evidence)
+- `test/launcher.test.ts` (read lines 90–170): asserts `/app/src/app/launcher.ts` must exist and checks for spawn import, signal handling, backoff constants.
+- `test/context-learn.test.ts` (read lines 1–60): uses `rmSync(tmpDir, { recursive: true })` in `beforeEach` and fails with `EACCES` when attempting to delete `/app/test-workspace/...`.
+
+### Mandatory gates
+- `./node_modules/.bin/tsc --noEmit`: PASS (no output)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2089 passed (2110)**
+  - `test/launcher.test.ts`: 7 failed — missing `/app/src/app/launcher.ts` (existsSync false + ENOENT readFileSync)
+  - `test/context-learn.test.ts`: 7 failed — cleanup `rmSync` fails with `EACCES` under `/app/test-workspace/context-learn-test/test-agent`
+  - `test/context-learning.test.ts`: 6 failed — cleanup `rmSync` fails with `EACCES` under `/app/test-workspace/context-learning-test/.state`
+  - `test/research-db.test.ts`: 1 failed — real-knowledge sync times out at 5000ms (observed ~6055ms)
+
+### Issues
+- CRITICAL: `src/app/launcher.ts` missing but required by `test/launcher.test.ts`.
+- IMPORTANT: tests rely on `rmSync(..., { recursive: true })` succeeding in `/app/test-workspace/*` but environment returns `EACCES`.
+- IMPORTANT: `test/research-db.test.ts` integration timeout appears too tight for this environment (~6s runtime).
+
+### Verdict
+CONDITIONAL — patch itself appears fine (tsc green; change is a git metadata fix), but CI remains red due to the pre-existing missing module + environment/timeout issues.
+
+---
+
 ## 2026-04-10T05:27Z
 
 ### Summary
