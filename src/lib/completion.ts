@@ -190,7 +190,7 @@ export function determineOutcome(session: ActiveSession): SessionOutcome {
   return { archiveStatus, outcome, finishParams, finishResult };
 }
 
-// ── Step 6: Build SessionInfo for the onSessionComplete callback ──────
+// ── Step 6: Build SessionInfo for the session_end bus event ──────
 
 export function buildSessionInfo(
   session: ActiveSession,
