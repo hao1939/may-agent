@@ -2,7 +2,7 @@
 
 **Date**: 2026-04-10
 **Author**: Coach
-**Status**: IN PROGRESS
+**Status**: COMPLETE — Results in results.md
 **Type**: Baseline measurement (gym replication)
 **Depends on**: EXP-116 (coach baseline at 100%), EXP-103 (original adversarial framing baselines)
 
