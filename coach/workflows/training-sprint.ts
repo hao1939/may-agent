@@ -155,6 +155,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   }
 
   // Run baseline and patched tests for each experiment
+  // Budget cap: max 20 gym sessions (10 baseline + 10 patched) to prevent runaway loops.
+  // On 2026-04-10, an uncapped run spawned 43 sessions in 41 minutes (~200 ops).
+  const MAX_GYM_SESSIONS = 20;
+  let gymSessionCount = 0;
+
   interface SprintResult {
     fork: string;
     scenario: string;
@@ -173,8 +178,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     }
 
     for (const scenario of exp.scenarios) {
+      if (gymSessionCount >= MAX_GYM_SESSIONS) {
+        resultLines.push(`- ${scenario}: SKIPPED (gym session budget exhausted: ${gymSessionCount}/${MAX_GYM_SESSIONS})`);
+        continue;
+      }
       const baseline = runGym(scenario, exp.agent);
+      gymSessionCount++;
       const patched = runGym(scenario, exp.agent, exp.forkName);
+      gymSessionCount++;
       const bPassed = baseline.checks.filter(c => c.passed).length;
       const pPassed = patched.checks.filter(c => c.passed).length;
       const delta = pPassed - bPassed;
@@ -184,6 +195,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       resultLines.push(`- ${scenario}: baseline=${baseline.passed ? "PASS" : "FAIL"} (${bPassed}/${baseline.checks.length}), patched=${patched.passed ? "PASS" : "FAIL"} (${pPassed}/${patched.checks.length}), delta=${delta >= 0 ? "+" : ""}${delta}`);
     }
     resultLines.push("");
+  }
+
+  if (gymSessionCount >= MAX_GYM_SESSIONS) {
+    resultLines.push(`\n⚠️ Gym session budget exhausted (${gymSessionCount}/${MAX_GYM_SESSIONS}). Some scenarios were skipped.\n`);
   }
 
   // Write results to file for Step 4 to read
