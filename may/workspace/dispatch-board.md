@@ -1,28 +1,26 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~12:55 UTC
+Updated: 2026-04-10 ~12:53 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — EXP-116 KB integration complete (53 ops). H-097 CCC Triad continuing.
-- **Coach**: 🟢 Active — EXP-116 results written. KE-122/KE-123 written (6 ops).
-- **Scout**: 🟢 Active — Heartbeat 12:42.
-- **Tech-lead**: 🟢 Active — Fixed security test timeout (8 ops). EXP-115 guard re-implementation pending.
-- **Optimizer**: 🟢 Active — Heartbeat 12:42 (19 ops). Tool quality work.
-- **Evaluator**: 🟢 Active — Running evaluations. Session digest tasks clearing.
-- **QA**: 🟢 Active — Heartbeat 12:42 (11 ops).
+- **Bob**: 🟢 Active — Heartbeat running. H-097 CCC Triad work.
+- **Coach**: 🟢 Active — EXP-116 COMPLETE. EXP-117 dispatched (Bob FM-2.6 investigation, req:449e0aa4).
+- **Scout**: 🟢 Active — Heartbeat running.
+- **Tech-lead**: 🟢 Active — composeGuards fail-open merged (215295a). Dead code sprint done.
+- **Optimizer**: 🟢 Active — Found evaluator SOUL.md tool list bug (25 false hallucination penalties). Fixed by May.
+- **Evaluator**: 🟢 Active — Running evaluations. Tool list fix deployed (commit 1b097b96).
+- **QA**: 🟢 Active — Heartbeat running.
 - **Coder**: Idle. Only runs when forked by tech-lead.
-- **All agents**: 🟢 8/8 running. Zero errors this cycle.
+- **All agents**: 🟢 8/8 running. Zero errors last hour.
 - **✅ Zombie cleaned**: s_1774303617649_81 (tech-lead, 422h) — cancelled this cycle.
 - **✅ Tool Schema Guard**: Live in production.
 - **✅ Dead code removal**: ~1,973 lines removed (stuck-detector 657 + forced-externalization 610 + socket-watch 706).
 - **✅ Web UI Phase 1**: Merged to main (c76cd98) — agent activity grid, timeline, health summary.
-- **⚠️ Bun missing**: bun binary gone from .state/.bun/bin/. Reinstalled this cycle (curl). DB queries need bun or node+better-sqlite3.
+- **⚠️ Bun missing**: bun binary gone from .state/.bun/bin/. DB queries need node+better-sqlite3 or bundled binary. Affects heartbeat DB queries.
 - **⚠️ Cron bug**: `analyze-failures` cron keeps failing (`db.query is not a function`). Low priority.
 - **⚠️ Git drift**: Project restructured to bundled binary — source files inside bundle, not on filesystem.
-- **⚠️ Duplicate requests in DB**: 4 pairs of duplicates (coder Web UI ×2, tech-lead review ×2, bob EXP-115 ×2, coach EXP-115 ×2). Need cleanup.
-- **✅ Gym burst incident (RESOLVED)**: Training-sprint cron (24h, May's cron.json) fired at 11:48, spawned 43 bob gym sessions over 41 min (~200 ops). NOT truly runaway — the workflow ran all experiment×scenario pairs and completed naturally at 12:29. **Root cause**: training-sprint workflow had no session budget cap. **FIX**: Added MAX_GYM_SESSIONS=20 cap (commit e698bd95). Remaining scenarios skip with note in results.
-- **✅ Zombie cleanup**: Killed zombie PID 3807 (node). Fixed stuck bob session s_1775824183435_0. Fixed stale tech-lead session s_1774303617649_81.
+- **⚠️ Duplicate requests in DB**: Cleaned this cycle (5 resolved). Ongoing monitoring.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -140,8 +138,11 @@ Updated: 2026-04-10 ~12:55 UTC
 | **Bob DD-720-723 Indexing** | ✅ COMPLETE | bob | Evaluation architecture entries indexed into knowledge base. |
 | **Scout C1.3/C7.1 Investigation** | ✅ COMPLETE | coach | Root cause: path inconsistency. Scout writes drops to 4+ dirs, only `/knowledge/` exempt. Text instructions can't fix post-action habits. Brief at `agents/coach/workspace/briefs/scout-c13-regression-diagnostic.md`. |
 | **EXP-116 Adversarial Framing Guard** | ✅ COMPLETE | coach + bob | **36/36 runs done**. Baseline 100%, A/B 100%, C 83%, D 72%. Combined variants DEGRADE via context overload. Bob's review: EXP-103 contradiction (100% single-session vs 0% multi-session in earlier partial data). Results.md + phase2-analysis.md written. Adversarial framing = zero marginal value. |
+| **Evaluator SOUL.md Tool List Bug** | ✅ FIXED | may | Missing read/write/edit/finish/system_status/checkpoint from real tools. 25+ false hallucination penalties. Commit 1b097b96. Found by Optimizer. |
+| **ComposeGuards Fail-Open** | ✅ MERGED | tech-lead | Commit 215295a. Try-catch prevents guard exceptions from crashing tool calls. |
+| **EXP-115 Completeness Guard** | ✅ ALREADY LIVE | tech-lead | `completeness-guard.ts` (193 lines) in production. Branch GC was cosmetic — code was already merged. |
 | **Bob H-097 CCC Triad Hypothesis** | ⏳ NEW | bob | Multi-Agent CCC Triad: Cooperation + Calibrated Agreement + Context Isolation. P(H)=0.65. Based on KE-120/DD-731-733. Key insight: o3 at 17% collective vs o3-mini at 50% — capability ≠ cooperation. |
-| **Tech-lead EXP-115 Completeness Guard** | ❌ BRANCH LOST | tech-lead | Branch review/s_1775810855346_43 deleted/GC'd. Commit 484a53cb gone. **Needs re-implementation** — design + results at EXP-115/. |
+| **Tech-lead EXP-115 Completeness Guard** | ✅ RESOLVED | tech-lead | Branch GC'd but code already in production. See "EXP-115 Completeness Guard" above. |
 | **Tech-lead Dead Code Sprint** | ✅ MERGED | tech-lead | Socket-watch (0975c41, 706 lines) + stuck-detector (4733672, 657 lines) + forced-externalization (610 lines) = ~1,973 lines removed total. Web UI Phase 1 also merged (c76cd98). |
 
 ## Completed/Archived
@@ -174,31 +175,26 @@ Updated: 2026-04-10 ~12:55 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (12:55)
-- **System healthy**: All 8 non-May agents running. Zero errors this cycle. All heartbeats fresh (12:42 batch).
+## Latest Cycle Summary (12:53)
+- **System healthy**: All 8 non-May agents running. Zero errors last hour. All heartbeats fresh.
 - **Since last cycle (12:26)**:
-  - **Gym burst RESOLVED**: Investigated P0 runaway gym loop. Root cause: training-sprint cron (24h) fired at 11:48, spawned 43 bob sessions over 41 min via unbounded experiment×scenario loop. **FIX committed**: MAX_GYM_SESSIONS=20 cap in training-sprint.ts (commit e698bd95).
-  - **Bob**: EXP-116 KB integration complete (53 ops). Legitimate work session.
-  - **Coach**: KE-122/KE-123 knowledge entries written (6 ops).
-  - **Tech-lead**: Fixed security test timeout (8 ops). EXP-115 guard pending.
-  - **Zombie cleanup**: Killed node zombie PID 3807. Fixed stuck sessions.
-  - **Bun reinstalled**: curl-installed bun to .bun/bin for DB queries.
-  - **No new errors or failures**.
+  - **Optimizer**: Found P0 bug — Evaluator SOUL.md tool list only had `agents/workflow/cron/bash`, missing `read/write/edit/finish/system_status/checkpoint`. Caused 25+ false hallucination penalties. **Fixed by May** (commit 1b097b96).
+  - **Tech-lead**: composeGuards fail-open try-catch merged to main (215295a). Sent evaluator bug to Bob (redundant — already fixed).
+  - **Coach**: EXP-116 fully complete. EXP-117 dispatched (Bob FM-2.6 delegation pattern).
+  - **Bob**: H-097 CCC Triad continuing.
+  - **Evaluator/QA**: Heartbeats running normally.
+  - **Cleaned 5 stale CREATED requests** (evaluator bug duplicates + composeGuards).
+  - **EXP-115 completeness guard**: Already in production (`src/lib/tools/completeness-guard.ts`, 193 lines, imported in manager.ts). Branch loss was cosmetic — code is live.
 
 ## Key Findings This Cycle
-- **Gym burst incident fully diagnosed**:
-  - NOT truly runaway — bounded by experiments×scenarios count, completed naturally
-  - 43 sessions × 4.7 avg ops = ~200 ops wasted
-  - Training-sprint cron is daily (24h), next fire ~2026-04-11 11:48 UTC
-  - Fix: Budget cap prevents >20 gym sessions per sprint run
-- **EXP-116 Phase 2 FINAL DATA (36/36 runs)** — same conclusions as 12:26 update
+- **Evaluator SOUL.md tool list bug**: Missing 5 core tools caused systematic false positives in hallucination detection. All evals since deployment were affected. Fix deployed, but historic eval data may need re-calibration.
+- **EXP-115 guard is already live**: Despite branch being GC'd, the completeness guard code exists in production (193 lines, imported at manager.ts line 22). No re-implementation needed.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao since Mar 24**.
-- **P1**: **EXP-115 completeness guard re-implementation** — Branch lost. Re-dispatch sent to tech-lead.
-- **P1**: **Present research sprint results to Hao** — KE-101 meta-analysis capstone. 17+ experiments. Gym graduation. Token waste finding ($441/week).
 - **P1**: **EXP-105 Few-Shot Production Impact** — Need coder/optimizer work sessions to generate data.
+- **P1**: **Present research sprint results to Hao** — KE-101 meta-analysis capstone. 17+ experiments. Gym graduation. Token waste finding ($441/week).
+- **P1**: **Bun reinstall or DB query alternative** — Need working DB query tool for supervisory queries. Using node+better-sqlite3 as workaround.
 - **P2**: `analyze-failures` cron DB bug — persistent but non-critical.
-- **P2**: Duplicate request cleanup — 4 pairs in DB.
 - **P2**: Federation design ready for Hao review.
 - **P2**: Amy-kimi still down — blocked on Hao for billing.

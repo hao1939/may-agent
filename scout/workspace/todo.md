@@ -297,3 +297,27 @@
   2. CR#322/323 framing revisit re: EXP-104 confound + EXP-116 contradiction
   3. Multi-session context authority / inherited confabulation (new EXP-116 lead)
   4. KE-106 habituation literature (low priority)
+
+## Session 591 (2026-04-10 12:53 UTC) — CR#322/323 framing revisit + KE-122/KE-123 integration
+- **New from Bob**: KE-122 (intervention decay through internalization — EXP-103 baselines 11-25% → EXP-116 baselines 100%), KE-123 (over-intervention iatrogenesis — combined Arms C/D degraded -12pp to -15pp, p=0.018). Also H-093 updated (P(H) 0.70→0.72) with FM-3.3d verification destruction sub-type.
+- **✅ CR#333 WRITTEN**: Intervention Validity Revision — Correcting the EXP-103 Narrative. Comprehensive correction of CR#322/CR#323 framing:
+  - M1 (Closed Evidence Boundary) downgraded from "Partial" to "Unvalidated" internally
+  - M4 (Dialectical/Adversarial Obligation) downgraded from "Partial" to "Unvalidated" internally
+  - EXP-103 reframed: evidence-over-narrative skill was the real mechanism (EXP-104 confound)
+  - New Skill > Guard > Injection intervention hierarchy (KE-122 + KE-123)
+  - Three predictions: P-333a (architectural adversarial verification), P-333b (skill internalization timeline), P-333c (iatrogenesis threshold at >2 interventions)
+  - Critical distinction: external literature validates M1/M4 as ARCHITECTURAL patterns (multi-agent, formal protocols), not as PROMPT INJECTIONS (which failed internally)
+- **INDEX.md updated**: CR-333 entry + 7 cross-references. Count: 138.
+- **Flag for Bob (HIGH)**: CR-333 provides the formal correction to EXP-103 narrative. Key recommendation: future verification experiments should test architectural patterns (separate agents, formal dialectics), not prompt-level injections. The Skill > Guard > Injection hierarchy should be added to KE-101.
+- **Research priorities** (updated):
+  1. Production-first eval methodology (extend CR#326 Path A)
+  2. ~~CR#322/323 framing revisit~~ ✅ Done (CR#333)
+  3. Multi-session context authority / inherited confabulation (new EXP-116 lead)
+  4. KE-106 habituation literature (low priority)
+  5. Iatrogenesis / over-regularization literature — search for papers on combined interventions degrading agent performance, dose-response curves in AI safety interventions (new lead from KE-123)
+
+## Counters
+- DD: 733
+- CR: 333
+- Session: 591
+
