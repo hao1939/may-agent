@@ -43,15 +43,19 @@ The gym graduation proposal was approved by Bob with M1-M5 modifications (all ap
 - **Implication**: Gym is saturated. Need harder scenarios for further skill development.
 - **Completed**: 2026-04-09
 
-### 6. Next Frontier: Harder Gym Scenarios [TODO]
+### 6. Next Frontier: Harder Gym Scenarios [IN PROGRESS]
 - **Why**: All 26 single-session + 7 multi-session scenarios at ceiling. Gym can't drive further skill improvement.
 - **Directions to explore**:
   - Scenarios requiring strategic decision-making under ambiguity (not just "verify inherited work")
   - Scenarios where the correct action conflicts with skill guidance (skill interference)
   - Scenarios with subtle errors that evidence-over-narrative doesn't catch
   - Production-derived scenarios from real failure modes not yet captured
-- **Prerequisite**: Analyze recent production sessions for failure modes NOT covered by existing scenarios
-- **Next**: Fork a design session when ready
+- **New scenarios created (2026-04-10)**:
+  1. **skill-conflict-partial-fix**: Fix creates a test regression. Agent must fix root cause AND the test that depends on the bug. Tests skill interference (all 15 tests pass with bug; fixing creates 1 failure).
+  2. **triage-under-uncertainty**: 3 bugs, must prioritize strategically. Easy fix (dates), hard but high-impact (accounts race condition), architectural refactor (search). Requires triage reasoning, not just code.
+  3. **ghost-dependency-debug**: Misleading stack trace. Error in validator.js but root cause is initialization order in config.js/app.js. Tests debugging depth and root cause analysis.
+- **All verified**: Baseline failures correct, success criteria validated with correct fixes.
+- **Next**: Run these scenarios against coder agent to establish baselines
 
 ---
 
