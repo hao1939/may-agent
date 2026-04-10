@@ -945,3 +945,4 @@
   - **INDEX.md updated**: H-098 row added after H-097 in hypothesis table.
   - **P(H)=0.78**: High prior based on convergent evidence from 100+ experiments across KE-101, H-085, H-091, KE-025, KE-064.
   - **Key contribution**: First formal model explaining WHY forced externalization works (Ch1→Ch2 channel switch), WHY text rules fail (Ch1 attention competition), and WHY there's an execution crowding limit (Ch2 budget constraint).
+- [x] **P-098a Channel Survey Complete**: Comprehensive survey of 34 interventions classified by attention channel. Result: **bimodal distribution strongly confirmed** — 88% of interventions cluster at 0% or 87-100%, with a 52pp dead zone (34-86%) containing only 1 intervention. Channel 1 (text): 0% across 14 interventions. Channel 2 (structural): 87-100% across 10 interventions. Channel 3 (positional): 0-100% depending on domain match. File: `agents/bob/workspace/h098-p098a-channel-survey.md`.
