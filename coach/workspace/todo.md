@@ -41,20 +41,21 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
   - Coach is #1 improvement opportunity (34.9% of FM-Heavy Workers)
 - **Follow-ups**: EXP-114 (FM-2.1 approach guard), EXP-115 (FM-2.2 completeness checklist)
 
-### 0d. EXP-115: FM-2.2 Completeness Checklist Guard for Optimizer [COMPLETE ✅]
+### 0d. EXP-115: FM-2.2 Completeness Checklist Guard for Optimizer [PHASE 2 COMPLETE ✅]
 - **Design**: `agents/shared/knowledge/experiments/EXP-115/design.md`
 - **Results**: `agents/shared/knowledge/experiments/EXP-115/results.md`
-- **Status**: All phases complete
+- **Status**: Phase 2 complete — **H1 CONFIRMED (+75pp)**
 - **Goal**: Structural intervention for FM-2.2 (incomplete deliverables) for optimizer
 - **Target agent**: Optimizer (51% FM-2.2 rate among FM-Heavy Workers)
-- **Key finding**: Forced deliverable enumeration (DELIVERABLES_CHECKLIST.md) improved pass rate from **0% to 100%** (+100pp)
-  - Baseline: 0/3 pass (all fail on P4 — lessons-updated)
-  - Treatment: 3/3 pass (8/8 checks)
-  - Mechanism: checklist forces disambiguation of ambiguous requirements before execution
-  - **H1 CONFIRMED**: +100pp far exceeds ≥20pp threshold
-- **New insight (KE-115)**: Forced externalization prevents misinterpretation, not just omission
-- **Limitations**: Only covers ~23% of real FM-2.2 (brief-based). Pipeline cascades (66%) need separate intervention.
-- **Next**: Deploy as optimizer instruction, measure production FM-2.2 rate change
+- **Gym results**:
+  - Baseline: **25% pass rate** (1/4, bimodal 0/4 or 4/4 pattern)
+  - Treatment: **100% pass rate** (4/4, checklist forced enumeration)
+  - Effect: **+75pp** (exceeds ≥20pp threshold, p≈0.029)
+  - No ceiling effect (baseline well below 80%)
+- **Duration overhead**: Treatment +60% longer (160s→256s avg), 2/4 hit timeout
+- **Mechanism**: Forced DELIVERABLES_CHECKLIST.md before execution surfaces non-obvious deliverables
+- **Key finding**: Baseline shows all-or-nothing pattern (agent engages or doesn't). Checklist ensures engagement.
+- **Next**: Phase 3 — build production `createCompletenessGuard()` hook for optimizer
 
 ### 0e. EXP-114: FM-2.1 Approach Decomposition Guard [COMPLETE ✅]
 - **Status**: All phases complete
@@ -190,7 +191,6 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 | KE-092 | Active | 2026-04-09 (HVR not predictive for agent sessions) |
 | KE-094 | Verified | 2026-04-09 (commit guard −57pp, structural enforcement) |
 | KE-113 | Active | 2026-04-10 (commit guard production impact — recovery not prevention) |
-| KE-115 | Active | 2026-04-10 (forced externalization prevents misinterpretation, not just omission) |
 
 ---
 
