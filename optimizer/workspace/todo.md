@@ -19,6 +19,17 @@
 - ~~**EXP-031: On-Demand Workflow Discovery**~~ — DONE. KE-026 already synthesizes all findings (0/30 discovery across 3 resource types). No separate KE entry needed.
 - **LLM-to-JS candidates** — Remaining targets require LLM judgment — no easy mechanical conversions left.
 
+### 🚨 LiteLLM Strips Prompt Caching — $143/day Waste (2026-04-10 14:53)
+**Mode B exploration** — discovered ALL Anthropic agents get 0% prompt cache hits:
+- `ANTHROPIC_API_KEY` not set → all traffic routes through LiteLLM (`http://litellm:4000`)
+- LiteLLM strips `cache_control` fields → Anthropic never sees caching hints
+- **24h data**: 75.5M input tokens, $266.78 cost, **0 cache reads** across 377 sessions
+- QA (gpt52/OpenAI) gets 8.6M cache reads — proves the infrastructure works
+- Bob alone: 31.7M input tokens/24h, $93/day — largest single consumer
+- **Estimated savings: $143/day (~$4,300/month)** with 70% cache hit rate
+- Code at `src/app/may.ts:148-165` already has the bypass path, just needs the env var
+- **Status**: BLOCKED on operator — cannot set env vars. Finding at `workspace/findings/2026-04-10-litellm-kills-prompt-caching.md`
+
 ### Stale / resolved after restart
 - ~~Cost/cache analysis~~ — Finding file archived (2026-03). Will re-measure when we have 48h of post-restart data.
 - ~~Coach model misconfiguration~~ — Finding file archived (2026-03). Need to verify with current coach sessions.

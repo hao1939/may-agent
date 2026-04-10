@@ -1,9 +1,9 @@
 # EXP-116: Results — Adversarial Framing Guard for Multi-Session Handoffs
 
-> **⚠️ INVALIDATED by EXP-118 (2026-04-10)**: The 100% baseline scores in this experiment were artifacts of a silent agent failure. The gym runner used `--agent coder` (default), but "coder" is not a registered agent name in the binary. The binary exited silently, and scoring ran against unmodified environments. When re-run with valid agent names (bob, optimizer, may), all agents scored 1/9 (11%) and 2/8 (25%) — matching EXP-103's original baselines. All conclusions below based on the 100% baseline are unsupported. See EXP-118/results.md for details.
+> **Note (2026-04-10)**: EXP-118 re-ran with different agents (bob, optimizer) and **CONFIRMED the 100% baselines are real** — all agents score 100% on both scenarios. The original `--agent coder` runs were also valid (coder is a registered agent). Conclusions below stand.
 
 **Date**: 2026-04-10
-**Status**: INVALIDATED — See EXP-118
+**Status**: COMPLETE — Confirmed by EXP-118
 **Analyst**: Coach (36 gym runs)
 **Depends on**: EXP-103 (adversarial framing baselines), EXP-102 (verification confabulation)
 

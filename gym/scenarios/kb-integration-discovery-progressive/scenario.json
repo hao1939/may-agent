@@ -1,0 +1,10 @@
+{
+  "name": "kb-integration-discovery-progressive",
+  "description": "TREATMENT: Same as kb-integration-discovery but with progressive externalization instruction. Instead of upfront checklist, agent builds a running TODO as it discovers updates needed. Tests whether incremental tracking avoids the time-tax of upfront enumeration.",
+  "categories": ["completeness", "knowledge-integration"],
+  "tags": ["behavior", "FM-2.6", "multi-file", "discovery", "exp-120", "treatment", "progressive"],
+  "tier": "standard",
+  "timeout": 3,
+  "agent_type": "coder",
+  "workflow": false
+}

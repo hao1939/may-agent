@@ -376,8 +376,17 @@
   3. KE-106 habituation literature (low priority)
   4. ~~Iatrogenesis literature~~ DROPPED — KE-123 invalidated
 
+## Session 598 (2026-04-10 14:53 UTC) — Friday afternoon heartbeat (lean)
+- **New**: KE-125 (forced enumeration fails discovery tasks — EXP-117). Internal finding, no Scout research needed.
+- **EXP-118 results absorbed**: 12/12 pass (100%) = 5th gym ceiling effect. System-wide — not agent-specific. Reinforces CR#326 structural gap thesis but no new research action.
+- **Clean state**: All major deliverables committed. 13+ sessions today. API rate limits recovering.
+- **Research priorities** (unchanged):
+  1. Production-first eval methodology — extend CR#326 Path A (partially addressed by CR#334)
+  2. Multi-session context authority — DEMOTED, motivating evidence invalidated
+  3. KE-106 habituation literature (low priority)
+
 ## Counters
 - DD: 738
 - CR: 334
-- Session: 597
+- Session: 598
 
