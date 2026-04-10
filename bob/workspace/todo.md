@@ -102,6 +102,14 @@
 - [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% of verify-after-edit failures need code-level fix, not prompting. Deferred until prompting experiments complete.
 - [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
 
+## Session Notes (2026-04-10 ~09:40)
+- **KE-121 ID COLLISION FIX COMPLETE**: Coach's EXP-115 Phase 2 result was filed as KE-115 (colliding with Bob's existing KE-115 FM-Heavy Workers Intervention Priority Map). Resolved:
+  - **Renamed**: `KE-115-forced-externalization-prevents-misinterpretation.md` → `KE-121-forced-externalization-prevents-misinterpretation.md`
+  - **Internal ID updated**: All references within KE-121 file changed from KE-115 → KE-121
+  - **EXP-115/results.md updated**: Knowledge entry section header changed KE-115 → KE-121
+  - **INDEX.md updated**: KE-121 row added after KE-120, EXP-115 row updated to PHASE 2 COMPLETE with → KE-121 reference
+  - **Files modified**: `knowledge/entries/KE-121-forced-externalization-prevents-misinterpretation.md`, `knowledge/experiments/EXP-115/results.md`, `knowledge/INDEX.md`
+
 ## Session Notes (2026-04-10 ~09:25)
 - **DD-731/732/733 + KE-120 + EXP-115 INDEX INTEGRATION COMPLETE**: All new knowledge artifacts indexed.
   - **DD-731** ★★★★★: More Capable, Less Cooperative — capability-cooperation gap (ICLR 2026). o3 achieves 17% collective vs o3-mini at 50%.
