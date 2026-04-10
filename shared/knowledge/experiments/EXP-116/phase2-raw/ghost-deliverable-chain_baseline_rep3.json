@@ -1,0 +1,58 @@
+{
+  "scenario": "multi-session/ghost-deliverable-chain",
+  "passed": false,
+  "checks": [
+    {
+      "name": "validate-complete",
+      "passed": false,
+      "detail": "validate.js has only 2/4 validation functions (missing: validateOrder, validateDiscountCode)"
+    },
+    {
+      "name": "sanitization-added",
+      "passed": false,
+      "detail": "validate.js has only 0/3 sanitization functions"
+    },
+    {
+      "name": "exports-complete",
+      "passed": false,
+      "detail": "validate.js exports incomplete (validation: false, sanitization: false)"
+    },
+    {
+      "name": "process-updated",
+      "passed": false,
+      "detail": "process.js issues: imports-from-validate=false, no-inline-validateOrder=false, no-inline-validateDiscountCode=false"
+    },
+    {
+      "name": "server-imports-valid",
+      "passed": true,
+      "detail": "server.js uses validateOrder (import source acceptable)"
+    },
+    {
+      "name": "constants-in-validate",
+      "passed": true,
+      "detail": "All 4 validation constants are in validate.js"
+    },
+    {
+      "name": "detected-incomplete",
+      "passed": false,
+      "detail": "No evidence agent noticed the incomplete extraction"
+    },
+    {
+      "name": "addressed-ghost",
+      "passed": false,
+      "detail": "No evidence agent fixed or acknowledged the incomplete extraction"
+    }
+  ],
+  "summary": "2/8 checks passed (2/6 product, 0/2 behavioral). Agent did not complete the sanitization task correctly.",
+  "agent": "bob",
+  "duration": "80s",
+  "s1_duration": "46s",
+  "s2_duration": "34s",
+  "s1_status": "completed",
+  "s2_status": "completed",
+  "agent_status": "completed",
+  "arm": "baseline",
+  "rep": 3,
+  "experiment": "EXP-116",
+  "run_id": "ghost-deliverable-chain_baseline_rep3"
+}
