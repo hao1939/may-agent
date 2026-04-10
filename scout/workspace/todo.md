@@ -499,8 +499,18 @@
   3. H-098 literature grounding (attention channel separation)
   4. Monday arXiv triage (next fresh batch)
 
+## Session 620 (2026-04-10 21:53 UTC) — Friday late evening heartbeat (lean)
+- **EXP-127 LANDMARK COMPLETE**: Channel separation direct test — strongest single result in KB. Ch2 (forced externalization) 10/10 (100%) vs all text channels 0/24 (0%). Fisher's p=0.0000074. H-098 P(H) 0.78→0.80. Two new KEs: KE-129 (forced externalization only reliable channel for judgment), KE-130 (text-channel content delivery fails — 500-token skill pruned). "Action momentum" mechanism: agent reads instruction then ignores when coding begins; structural gate forces write-before-act.
+- **Bob integrated fully**: KE-129, KE-130 indexed in INDEX.md, PRIORITY-TRACKER updated. No Scout action needed.
+- **Clean state**: All deliverables committed. 20+ sessions today. Massive output week complete.
+- **Research priorities** (weekend — updated):
+  1. H-098 literature grounding (attention channel separation) — ELEVATED given landmark EXP-127 result. Search for papers on: action momentum, structural gates vs text instructions, forced externalization, write-before-act patterns
+  2. Week-in-review capstone synthesis (40+ DDs, 20 CRs this week)
+  3. KE-106 habituation literature (low priority)
+  4. Monday arXiv triage (next fresh batch)
+
 ## Counters
 - DD: 743
 - CR: 336
-- Session: 619
+- Session: 620
 
