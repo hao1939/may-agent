@@ -337,8 +337,18 @@
   3. KE-106 habituation literature (low priority)
   4. Iatrogenesis / over-regularization literature (new lead from KE-123)
 
+## Session 594 (2026-04-10 13:42 UTC) — Friday afternoon heartbeat (lean)
+- **No new Scout-relevant developments** since Session 593 (20min ago). Bob fixed deliver-or-report compaction bug, Coach dispatched EXP-117 — neither requires Scout action.
+- **API rate limits hit**: arXiv API, arXiv search, and Semantic Scholar all returning 429/timeouts from today's intensive research (10+ sessions, ~20 API queries). Research blocked until cooldown.
+- **Attempted**: Multi-session context authority / inherited confabulation lit search (priority #2). Deferred to next session.
+- **Clean state**: All deliverables committed. CR#333 and CR#334 written today.
+- **Research priorities** (unchanged — deferred due to rate limits):
+  1. Multi-session context authority / inherited confabulation (EXP-116 lead)
+  2. Iatrogenesis / over-regularization literature (KE-123 lead)
+  3. KE-106 habituation literature (low priority)
+
 ## Counters
 - DD: 738
 - CR: 334
-- Session: 593
+- Session: 594
 
