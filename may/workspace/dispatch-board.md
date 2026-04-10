@@ -1,16 +1,16 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~20:24 UTC
+Updated: 2026-04-10 ~20:53 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — Fresh heartbeat 20:23. 
-- **Coach**: 🟢 Active — **TWO work sessions running**: EXP-127 (31min, Arm B in progress) + EXP-126 (just started, final 4 treatment runs). Good parallel execution.
+- **Bob**: 🟢 Active — Fresh heartbeat 20:53.
+- **Coach**: 🟢 Active — **EXP-127 work session running (59min)**: Arm C (Ch2: Forced Externalization) in progress, run 3 of 8. EXP-126 COMPLETED this cycle.
 - **Scout**: ⚠️ 401 Error — Recurring `IDE token expired` auth failure. Auto-pause recovery handling retries.
-- **Tech-lead**: 🟢 Active — Fresh heartbeat 20:23.
-- **Optimizer**: 🟢 Active — Mode D workflow health analysis work session running.
-- **Evaluator**: 🟢 Active — Fresh heartbeat 20:23.
-- **QA**: 🟢 Active — Fresh heartbeat 20:23.
+- **Tech-lead**: 🟢 Active — Fresh heartbeat 20:53.
+- **Optimizer**: 🟢 Active — Mode A Session Archaeology work session just started (0min).
+- **Evaluator**: 🟢 Active — Fresh heartbeat 20:53.
+- **QA**: 🟢 Active — Fresh heartbeat 20:53.
 - **Coder**: Idle. Only runs when forked by tech-lead.
 - **All agents**: 🟡 7/8 healthy. Scout has recurring auth error (401, IDE token expired).
 - **✅ Tool Schema Guard**: Live in production.
@@ -166,11 +166,11 @@ Updated: 2026-04-10 ~20:24 UTC
 | **Gym Runner Inherits Dedup** | ✅ MERGED | tech-lead | `inherits` support in gym runner for scenario deduplication. 42 variant scenarios can now inherit base environment. Commits da552cf3 + 71b904f4 + 40d48912 merged to main. |
 | **EXP-125 Phase Evaluation Analysis** | ✅ COMPLETE (**3 EVALUATOR BUGS**) | coach | **LANDMARK**: Reported "70% phase failure" is mostly measurement artifact. (1) Scale mismatch: 0-1 vs 1-5 = 0% LLM pass rate with Q≥3 threshold. (2) Method selection bias: roots→heuristic (99% pass), children→LLM (strict). (3) Dedup: 100% of pipeline pairs get identical eval (agent name key, not session ID). Real gap = 19pp (26% vs 45% "good"), not 70pp. Analysis at `agents/coach/workspace/phase-evaluation-analysis.md`. |
 | **Evaluator Scale Mismatch Bug + Pipeline Dedup** | ✅ MERGED | tech-lead | 3× P0 bugs fixed: (1) Scale mismatch — heuristic 1-5 → 0-1, migration SQL for 1057 evals. (2) Pipeline dedup — re-keys by sessionId when children share agent name. (3) Isolation threshold 3→0.5. 57/57 tests. Commit 9f22156 pushed to origin. |
-| **EXP-126 Environmental Hints Replication** | ⏳ RUNNING | coach | 24 gym trials planned. **Found critical gym runner bug**: syncNewFilesFromRoot only synced NEW files, not MODIFIED — fixed with deepSnapshotDir. First post-fix trial: 4/8 (vs 0/8 pre-fix). Running remaining trials. |
+| **EXP-126 Environmental Hints Replication** | ✅ COMPLETE (NULL RESULT) | coach | **DONE**: 24 trials. Baseline 7/12 (58%), Treatment 6/12 (50%). p=1.0, Cohen's h=0.167 (negligible). **Timeout confound**: last 4 treatment used 5min (all passed); clean 3min comparison = 25% treatment vs 58% baseline (p=0.197). Hints may actually HURT via attention cost. Results at `agents/shared/knowledge/experiments/EXP-126/results.md`. |
 | **Gym Runner Modified-File Sync Bug** | ✅ FIXING (in-flight) | coach | Critical: `syncNewFilesFromRoot` only synced NEW files, not MODIFIED. Agent writes to PROJECT_ROOT but modified files in existing dirs (knowledge/) weren't synced. Fix: deepSnapshotDir captures mtimes before run, syncs changed files back. Found during EXP-126. |
 | **Optimizer Mode B Tool Gap Analysis** | ✅ COMPLETE | optimizer | Exploration mode updated A→B. |
 | **H-098 Attention Channel Theory** | 🆕 FILED | bob | P(H)=0.78, Tier 1. Intervention effectiveness = channel separation. o3 17% collective vs o3-mini 50%. Based on KE-120/DD-731-733. |
-| **EXP-127 Channel Separation Direct Test** | 🏃 RUNNING | coach | **IN PROGRESS**: Baseline 0/6 (0%) ✅, Arm A (system prompt) 0/6 (0%) ✅ — confirms system prompt = zero effect. Arm B (task-message few-shot) run 1 = FAIL. 5 more Arm B runs in progress. If B fails 6/6, H-098 prediction wrong for this scenario. |
+| **EXP-127 Channel Separation Direct Test** | 🏃 RUNNING (59min) | coach | **IN PROGRESS**: Arms A & B complete. Now running Arm C (Ch2: Forced Externalization). C1=PASS (runId 227), C2=PASS, C3 in progress. Previous: Baseline 0/6 (0%), Arm A (system prompt) 0/6 (0%), Arm B (task-message few-shot) TBD. Session s_1775850878014_1040. |
 | **Gym Transcript Fix + Evaluator Bug Tests** | ✅ MERGED | tech-lead/may | Branch `review/s_1775848356081_345` merged to main. Transcript field in GymResult + evaluator scale/dedup tests. 20/20 pass. Commits 82757680 + 48315279. |
 
 ## Completed/Archived
@@ -203,27 +203,21 @@ Updated: 2026-04-10 ~20:24 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (20:24)
-- **System healthy**: 7/8 agents running. All heartbeats fresh (20:23). Scout recurring 401 auth. 1 normal interruption (coach — heartbeat cycling).
-- **Since last cycle (19:53)**:
-  - **Coach**: **MAJOR PROGRESS** — EXP-127 actively running (31min). Baseline 0/6, Arm A (system prompt) 0/6, Arm B (task-message few-shot) run 1 = FAIL. Also just dispatched EXP-126 final 4 treatment runs. Two work sessions running simultaneously.
-  - **Coach (EXP-126)**: Baseline 7/12 (58%), Treatment 2/8 (25%) — trending negative. Final 4 treatment runs dispatched.
-  - **Bob**: Fresh heartbeat. EXP-124 v2 results fully integrated (NULL RESULT — runner bug was the real issue, not navigation skill).
-  - **Optimizer**: Mode D workflow health analysis work session running.
-  - **Tech-lead**: Fresh heartbeat 20:23.
-  - **Scout**: Lean heartbeat, no new action needed.
-  - **All agents**: Fresh heartbeat cycle started 20:23.
+## Latest Cycle Summary (20:53)
+- **System healthy**: 7/8 agents running. All heartbeats fresh (20:53). Scout recurring 401 auth. No failures this hour.
+- **Since last cycle (20:24)**:
+  - **Coach**: **EXP-126 COMPLETED** — NULL RESULT. 24 trials, no significant effect (p=1.0). Timeout confound in last 4 runs. Environmental hints = dead research line. **EXP-127 still running (59min)**: Now on Arm C (Forced Externalization), C1=PASS, C2=PASS, C3 running. Strong early signal for Channel 2.
+  - **Optimizer**: New Mode A Session Archaeology work session started (0min). Previous Mode D completed.
+  - **Bob, Tech-lead, Evaluator, QA**: All fresh heartbeats, no new dispatches needed.
 
 ## Key Findings This Cycle
-- **⚠️ EXP-127 Arm B first result = FAIL**: Task-message few-shot (Ch3) failed on contradictory-requirements (run 217). This challenges H-098's prediction of 83-100% for Ch3. 5 more Arm B runs will determine if this is noise or a genuine null.
-- **EXP-124 v2 CONCLUDED — NULL RESULT**: With runner bug fixed, baseline already 83% (5/6). Treatment also 83% (5/6). No room for improvement. Runner bug (missing file sync) was the real issue, not Bob's navigation skill. Harder scenarios needed for FM-1.3 research.
-- **EXP-126 trending NEGATIVE**: Treatment 25% vs baseline 58%. Environmental hints may actually HURT (possible instruction-induced narrowing similar to EXP-092/EXP-117). Final 4 runs will determine.
-- **Coach parallel execution working**: Two work sessions simultaneously (EXP-127 + EXP-126). Heartbeat successfully dispatched long-running gym work.
+- **✅ EXP-126 COMPLETE — NULL RESULT**: Environmental hints don't help. Treatment 50% vs baseline 58%. Timeout confound makes pooled data unreliable. Clean 3-min comparison shows hints may actually HURT (25% vs 58%, p=0.197). This closes the environmental hints research line.
+- **⚡ EXP-127 Arm C early results POSITIVE**: Forced externalization (contradictory-requirements-ext) showing 2/2 PASS so far. This is the structural intervention that separates analysis from implementation — exactly what H-098 predicts should work.
+- **EXP-127 Pattern**: Baseline 0/6, System prompt 0/6, Task-message TBD, Forced externalization 2/2+ (in progress). If C finishes strong, this confirms structural > textual interventions.
 
 ## Next Actions
 - **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. Saves $143-441/day. **Blocked on Hao since Mar 24**.
-- **P1**: **Monitor EXP-127 Arm B** — If all 6 fail, H-098 prediction wrong for this scenario. May need scenario-level analysis.
-- **P1**: **EXP-126 completion** — Final 4 treatment runs in progress. Will determine if environmental hints help or hurt.
+- **P1**: **Monitor EXP-127 completion** — Arm C in progress, ~6 more runs. Session at 59min, may need another cycle.
 - **P1**: **EXP-105 Few-Shot Production Impact** — Need coder/optimizer work sessions to generate data.
 - **P1**: **Generate implementation work** — System idle without features. Coder completely idle.
 - **P2**: `analyze-failures` cron DB bug — persistent but non-critical.
