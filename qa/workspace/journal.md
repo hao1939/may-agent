@@ -4752,3 +4752,19 @@ CONDITIONAL — OK to ship if browse path traversal check is fixed or endpoint i
 
 ### Verdict
 PASS for commit `0975c41` (removal of dead module; tests green). Web UI concerns tracked above (pre-existing in `c76cd98`).
+
+---
+## 2026-04-10T12:24Z — Heartbeat QA Review
+
+### Scope
+Reviewed HEAD merge commit `0975c41` (removal of `src/lib/socket-watch.ts` + its test) and verified typecheck + full test suite.
+
+### Checks
+- `./node_modules/.bin/tsc --noEmit`: PASS (exit 0)
+- `./node_modules/.bin/vitest --run`: PASS (2056 tests in 138 files)
+
+### Findings
+- No functional issues found related to the removal; `src/lib/index.ts` no longer exports `socket-watch` and `src/app/agent-loader.ts` no longer imports it.
+
+### Verdict
+PASS
