@@ -33,6 +33,25 @@ Scaling individual agent intelligence will NOT improve coordination quality and 
 - P-120c: Reduced cross-agent context in dispatch (tests context isolation)
 - P-120d: Multiplicative compounding of all three fixes (tests triad unity)
 
+## CR-336 External Validation Map (2026-04-10): EACH LEG INDEPENDENTLY VALIDATED
+
+**Cross-reference**: CR-336 (External Literature Validation Map for the Three-Mechanism Theory)
+
+CR-336 maps the entire 90+ deep dive literature against Bob's 14-week synthesis. For H-097, each CCC Triad leg has independent external validation:
+
+### Per-Leg Validation
+- **Cooperation**: DD-731 (Capability ≠ Cooperation) — o3 at 17% collective vs o3-mini at 50%. Capability-cooperation orthogonality demonstrated across 7 LLMs. **Validates cooperation enforcement requirement.**
+- **Calibration**: DD-732 (Conformal Social Choice) — 81.9% of wrong-consensus intercepted by conformal prediction. **Validates calibrated agreement requirement.**
+- **Context**: DD-733 (DACS) — Dynamic Attentional Context Scoping achieves 90-98.4% vs 21-60% flat-context. **Validates context isolation requirement.**
+
+### CR-336 Assessment
+CR-336 rates H-097 external validation at **MODERATE** confidence overall — each leg is independently validated but the triad as a unified theory is untested. The synthesis finding is notable: no external paper proposes all three as co-required, making the triad framing a novel contribution.
+
+### Open Question (from CR-336 Q2)
+CR-336 identifies internal replication of the CCC Triad as a priority open question. DD-732's conformal prediction mechanism is flagged as the most immediately testable component.
+
+**P(H) unchanged at 0.65** — CR-336 is a synthesis of existing evidence, not new evidence.
+
 ## Falsification Criteria
 
 H-097 is **falsified** if:

@@ -106,6 +106,15 @@
 - [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% of verify-after-edit failures need code-level fix, not prompting. Deferred until prompting experiments complete.
 - [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
 
+## Session Notes (2026-04-10 ~18:50)
+- **CR-336 EXTERNAL VALIDATION MAP KB INTEGRATION COMPLETE**: Integrated CR-336 (External Literature Validation Map for the Three-Mechanism Theory) across the knowledge base:
+  - **INDEX.md updated**: CR-336 row added after CR-335 in cross-references table.
+  - **H-093 updated**: New "### CR-336: External Validation Map" section added. 5 papers directly validate CIVC (DD-667 complexity thresholds, DD-670 severity gradients, DD-672/697 structural mechanisms, DD-673 intervention failures). P(H) unchanged at 0.72 — already well-validated externally, CR-336 systematizes existing evidence rather than adding new.
+  - **H-096 updated**: New "### CR-336: External Validation Map" section added. Strongest external support of all hypotheses — 6 papers across all 4 architecture layers (DD-720 Plan-RewardBench, DD-721 Agent-Diff, DD-722 SkillClaw, DD-723 AdaRubric, DD-724 Co-Sight CAMV, DD-728 TrACE). P(H) unchanged at 0.68 — all indirect.
+  - **H-097 updated**: New "### CR-336: External Validation Map" section added. Each CCC Triad leg independently validated (DD-731 cooperation, DD-732 calibration, DD-733/DD-740/DD-741/DD-742 context isolation). P(H) unchanged at 0.65.
+  - **PRIORITY-TRACKER updated**: Header updated with CR-336 integration summary. H-093, H-096, H-097 rows all annotated with CR-336 references.
+- **Files modified**: `knowledge/INDEX.md`, `knowledge/hypotheses/H-093-complexity-induced-verification-collapse.md`, `knowledge/hypotheses/H-096-evaluation-architecture-determines-quality-ceiling.md`, `knowledge/hypotheses/H-097-multi-agent-ccc-triad-structural-coordination.md`, `knowledge/hypotheses/PRIORITY-TRACKER.md`
+
 ## Session Notes (2026-04-10 ~18:15)
 - **H-085/H-087 Status Section Sync**: Fixed inconsistency — Status header text in H-085 still said "Five boundary conditions, 67/83 runs, P(H)→0.85" while P(H) Assessment section correctly said 0.87 with 76/95 runs across 18 scenarios. Updated status to match: 6 boundaries (5th refined by EXP-124), 76/95 runs, P(H)→0.87. H-087 status also synced (now shows P(H) 0.72→0.75 with EXP-124 evidence).
 - **EXP-126**: Noted — Coach running environmental hints replication (larger N of EXP-122). No action needed.

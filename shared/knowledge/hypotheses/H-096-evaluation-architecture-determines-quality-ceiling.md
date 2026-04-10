@@ -68,6 +68,29 @@ Four-Layer Fix (KE-116):
   L4: Skill Evolution from correctly-evaluated trajectories → closes improvement loop
 ```
 
+## CR-336 External Validation Map (2026-04-10): STRONGLY SUPPORTED — 6 Papers (Strongest in Map)
+
+**Cross-reference**: CR-336 (External Literature Validation Map for the Three-Mechanism Theory)
+
+CR-336 maps the entire 90+ deep dive literature against Bob's 14-week synthesis. H-096 receives the **strongest external support of any hypothesis in the entire map** (6 papers):
+
+### Direct External Support (6 papers)
+- **DD-720 (Plan-RewardBench)**: All evaluator types degrade ~24pp from short to long trajectories — universal trajectory-length penalty validates checkpoint decomposition rationale
+- **DD-721 (Agent-Diff)**: State-diff contracts verify environment changes rather than agent narrative — validates state-diff verification layer
+- **DD-723 (AdaRubric)**: Adaptive rubrics achieve r=0.79 vs r=0.63 fixed (+0.16 correlation with human judgment) — validates adaptive rubric layer + DimensionAwareFilter
+- **DD-725 (DeepVerifier)**: Self-evolving rubrics adapt to failure modes — validates continuous rubric improvement
+- **DD-726 (Calibrated Uncertainty)**: Uncertainty calibration for evaluation outputs — validates need for calibrated evaluation
+- **DD-738 (Benchmark Health Index)**: Meta-evaluation framework for assessment quality — validates evaluation-as-architecture approach
+
+### Cross-Reference Support
+- **CR-330**: Verification Self-Awareness Gap — agents don't know they're failing, evaluation must detect externally
+- **CR-334**: Agent Observability — five-signal production evaluation architecture aligns with H-096's multi-layer stack
+
+### Impact
+CR-336 rates H-096 external validation as **HIGH** confidence with **Strong** support — the most direct external support of any hypothesis. The four-layer evaluation architecture (L1: checkpoint decomposition, L2: state-diff, L3: adaptive rubrics, L4: skill evolution) each has independent external validation.
+
+**P(H) unchanged at 0.68** — CR-336 is a synthesis of existing evidence, not new evidence.
+
 ## Predictions
 
 - **P-096a** (Checkpoint decomposition): Applying checkpoint-based evaluation (evaluating every 4-8 step segment independently, then aggregating) to production session transcripts will catch ≥20% more approach-level errors (FM-2.1) than current trajectory-level evaluation. Testable: re-evaluate 100 historical sessions with checkpoint decomposition vs. current method.

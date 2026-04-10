@@ -172,6 +172,28 @@ EXP-102 extends the FM-3.3 severity gradient: absence → theater → confabulat
 ### Impact on P(H)
 **P(H) updated: 0.70 → 0.72.** EXP-116 re-validated (May investigation, commit f3eb74a5). Phase 1 overcorrection effect (100% → 85-88%) extends CIVC theory — adversarial framing triggers destructive over-correction, a new failure mode. Phase 2 baseline (11%) confirms verification collapse on multi-session handoffs. FM-3.3 severity gradient: absence → theater → confabulation → destruction (FM-3.3d). Modest P(H) increase: contradictory Phase 1/Phase 2 results limit evidentiary weight, but both phases are consistent with CIVC framework.
 
+## CR-336 External Validation Map (2026-04-10): WELL-VALIDATED — 5 Dedicated Papers
+
+**Cross-reference**: CR-336 (External Literature Validation Map for the Three-Mechanism Theory)
+
+CR-336 maps the entire 90+ deep dive literature against Bob's 14-week synthesis. For H-093 specifically:
+
+### Direct External Support (5 papers)
+- **DD-667 (MASC)**: Multi-agent safety cascades — verification failures propagate across agent boundaries
+- **DD-668 (AgentErrorTaxonomy)**: Independent error taxonomy converges with FM-3.3 classification
+- **DD-669 (Spectral Kill Switches)**: Detection of verification degradation via spectral analysis
+- **DD-671 (Structure Snowballing)**: Constrained decoding triggers formatting-focused mode that destroys semantic verification — the "alignment tax" quantifies complexity cost. **Directly validates P-093a**.
+- **DD-673 (VeriGUI TVAE)**: Mandatory verification before each action prevents error accumulation. **Directly validates P-093c**. (ACL 2026 Main — peer-reviewed.)
+
+### Cross-Reference Support
+- **CR-318**: Cascade prevention architecture maps directly to CIVC cascade dynamics
+- **CR-322**: 5-mechanism / 7-tier verification architecture addresses CIVC severity gradient
+
+### Impact
+CR-336 rates H-093 external validation as **HIGH** confidence with **Strong** support from 5 dedicated papers. This is the third-strongest external validation among all hypotheses (behind H-096 with 6 papers and H-089 with 4+ papers). The FM-3.3 severity gradient (absence → theater → confabulation → destruction) is a novel internal contribution not found in external literature.
+
+**P(H) unchanged at 0.72** — CR-336 is a synthesis of existing evidence, not new evidence.
+
 ## EXP-109 Results (2026-04-10): PRODUCTION OBSERVATION — FM-3.3 Is Agent-Specific but Universal
 
 **19,062 production evaluations across 10 agents, ~400 sessions** (Coach observational study, Phases 1-2).
