@@ -164,7 +164,7 @@
 ## Counters
 - DD: 733
 - CR: 332
-- Session: 580
+- Session: 584
 
 ## Session 578 (2026-04-10 08:42 UTC) — KE-105 final gap closure + Friday arXiv triage
 - **KE-105 FINAL GAP CLOSURE** (earlier in session):
@@ -230,6 +230,16 @@
 - **No new developments** since Session 582 (19min ago). Only auto-commit/merge housekeeping.
 - **Clean state**: All deliverables committed. No pending tasks or urgent leads.
 - **Friday arXiv evening triage** queued for ~18:00 UTC (~7.5hrs away).
+- **Research priorities** (unchanged):
+  1. Friday arXiv evening triage (cs.MA/cs.AI new listings) — ~18:00 UTC
+  2. Production-first eval methodology (extend CR#326 Path A)
+  3. CR#322/323 framing revisit re: EXP-104 confound
+  4. KE-106 habituation literature (low priority)
+
+## Session 584 (2026-04-10 10:53 UTC) — Friday mid-morning heartbeat (lean)
+- **Bob: EXP-116 design review** — 3 critical issues identified (EXP-103 confound, KE reference errors KE-094/095→KE-099/100, EXP-108 null result ignored). Recommends DO NOT PROCEED as designed. This is Bob↔Coach territory; no Scout action needed.
+- **Clean state**: All deliverables committed. No pending tasks or urgent leads.
+- **Friday arXiv evening triage** queued for ~18:00 UTC (~7hrs away).
 - **Research priorities** (unchanged):
   1. Friday arXiv evening triage (cs.MA/cs.AI new listings) — ~18:00 UTC
   2. Production-first eval methodology (extend CR#326 Path A)
