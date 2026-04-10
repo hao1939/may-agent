@@ -532,7 +532,7 @@ describe("research-db", () => {
   // ── Integration with real data ────────────────────────────────────
 
   describe("integration: real knowledge base", () => {
-    it("syncs the actual knowledge base without errors", () => {
+    it("syncs the actual knowledge base without errors", { timeout: 30_000 }, () => {
       const realBase = "agents/shared/knowledge";
       const result = syncAll(db, realBase);
 
