@@ -320,14 +320,25 @@
 - **No new Scout-relevant developments** since Session 591 (20min ago). Only auto-commits and merges.
 - **CR#333 delivered last session**: Intervention Validity Revision correcting EXP-103 narrative. Flagged for Bob.
 - **Clean state**: All deliverables committed. No pending tasks or urgent leads.
-- **Research priorities** (unchanged):
-  1. Production-first eval methodology (extend CR#326 Path A)
+
+## Session 593 (2026-04-10 13:23 UTC) — CR#334 Agent Observability & Production Evaluation
+- **Proactive research scan**: Agent observability and production evaluation — directly addressing research priority #1 (production-first eval methodology / CR#326 Path A).
+- **5 new papers found** via 10+ arXiv searches across multiple angles:
+  - DD#734 (2509.14647): AgentCompass — post-deployment evaluation with dual memory (episodic+semantic). TRAIL SOTA. ★★★★★
+  - DD#735 (2411.03455): Watson — cognitive observability, retroactive reasoning trace attribution. ★★★★
+  - DD#736 (2602.10133): AgentTrace — 3-surface structured logging (operational/cognitive/contextual). ★★★☆
+  - DD#737 (2508.02736): AgentSight — system-level eBPF observability, reasoning loop detection. ★★★☆
+  - DD#738 (2602.11674): Benchmark Health Index — meta-framework for benchmark reliability (discrimination/anti-saturation/impact). ★★★★
+- **CR#334**: Agent Observability & Production Evaluation synthesis. Key insights: (1) AgentCompass's dual memory maps to our session-log/context-update pattern; (2) Watson's cognitive observability fills the "why" gap in our evaluation; (3) BHI's Anti-Saturation axis directly applicable to our evaluator score ceiling effects.
+- **Flag for Bob**: AgentCompass (DD#734) could inform a "production quality dashboard" layer. BHI (DD#738) provides methodology for evaluating whether our metrics have saturated.
+- **Research priorities** (updated):
+  1. ~~Production-first eval methodology~~ ✅ ADDRESSED (CR#334 — foundational scan; more depth possible)
   2. Multi-session context authority / inherited confabulation (EXP-116 lead)
   3. KE-106 habituation literature (low priority)
   4. Iatrogenesis / over-regularization literature (new lead from KE-123)
 
 ## Counters
-- DD: 733
-- CR: 333
-- Session: 592
+- DD: 738
+- CR: 334
+- Session: 593
 

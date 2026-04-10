@@ -2,6 +2,30 @@
 
 Papers and articles worth reading, with key takeaways.
 
+## 2026-04-10 — Session 593: CR#334 Agent Observability & Production Evaluation
+
+**Context**: Proactive scan on how to evaluate and monitor LLM agents in production settings. Our system runs 500+ sessions/day with no systematic production observability beyond session logs. These papers address the emerging "AgentOps" space: structured tracing, cognitive observability, post-deployment debugging, benchmark health, and system-level monitoring.
+
+### AgentCompass: Post-Deployment Evaluation of Agentic Workflows — arXiv:2509.14647
+
+| 2509.14647 | AgentCompass: Towards Reliable Evaluation of Agentic Workflows in Production (Kartik, Sapra, Hada, Pareek — Sep 2025) | ★★★★★ CRITICAL — First evaluation framework explicitly designed for post-deployment monitoring and debugging of agentic workflows. Models expert debugger reasoning through multi-stage pipeline: error identification → thematic clustering → quantitative scoring → strategic summarization. Key innovation: dual memory system (episodic + semantic) enabling continual learning across executions. Achieves SOTA on TRAIL benchmark while finding issues missed by human annotators. Directly relevant: our evaluator looks at individual sessions in isolation; AgentCompass shows how to build cross-execution pattern recognition. The episodic/semantic memory split maps to our session-log/context-update distinction. Could inform a "production quality dashboard" layer above our current evaluator. (ref: DD-734) |
+
+### Watson: Cognitive Observability for LLM Agent Reasoning — arXiv:2411.03455
+
+| 2411.03455 | Watson: A Cognitive Observability Framework for the Reasoning of LLM-Powered Agents (Rombaut, Masoumzadeh, Vasilevski, Lin, Hassan — Nov 2024, rev Sep 2025) | ★★★★ EXCELLENT — Introduces "cognitive observability" — recovering implicit reasoning behind agent decisions without altering behavior. Watson retroactively infers reasoning traces using prompt attribution. Evaluated on MMLU + AutoCodeRover/OpenHands on SWE-bench-lite. Surfaces actionable reasoning insights and supports targeted interventions. Key concept for us: our evaluator already does post-hoc assessment, but Watson shows how to attribute specific failures to specific reasoning steps. This could enhance our evaluation from "session passed/failed" to "failure at step N was caused by reasoning pattern X". Complements AgentCompass (cross-execution) with within-execution granularity. (ref: DD-735) |
+
+### AgentTrace: Structured Logging for Agent Observability — arXiv:2602.10133
+
+| 2602.10133 | AgentTrace: A Structured Logging Framework for Agent System Observability (AlSayyad, Huang, Pal — Feb 2026, AAAI 2026 LaMAS Workshop) | ★★★☆ GOOD — Runtime telemetry framework capturing structured logs across three surfaces: operational, cognitive, and contextual. Designed for security/accountability/real-time monitoring. The three-surface taxonomy (operational=what happened, cognitive=why, contextual=under what conditions) is a useful mental model. However, primarily a framework proposal without extensive empirical evaluation. Our system already has operational logs (session transcripts) and contextual logs (context.md), but lacks the cognitive surface — the "why" behind decisions. AgentTrace's design could inform a lightweight structured-trace addition to our sessions. (ref: DD-736) |
+
+### AgentSight: System-Level Observability via eBPF — arXiv:2508.02736
+
+| 2508.02736 | AgentSight: System-Level Observability for AI Agents Using eBPF (Zheng, Hu, Yu, Quinn — Aug 2025, PACMI 2025) | ★★★☆ GOOD — System-level monitoring using eBPF to bridge semantic gap between agent intent and system actions. Intercepts TLS-encrypted LLM traffic + kernel events, correlates them causally. Detects prompt injection, reasoning loops, coordination bottlenecks. <3% overhead. Instrumentation-free and framework-agnostic. Less directly applicable (our agents don't run as standalone processes), but the "semantic gap" concept is relevant: we observe session outputs but not the correlation between model calls and system effects. The reasoning loop detection is particularly relevant — we've seen agents repeat similar actions across sessions. Open-source at github.com/agent-sight/agentsight. (ref: DD-737) |
+
+### Benchmark Health Index: Benchmarking the Benchmarks — arXiv:2602.11674
+
+| 2602.11674 | Benchmark Health Index: A Systematic Framework for Benchmarking the Benchmarks of LLMs (Zhu, Hua, Miao, Zhao — Feb 2026) | ★★★★ EXCELLENT — Meta-framework for evaluating benchmark reliability along three axes: (1) Capability Discrimination (separating signal from noise), (2) Anti-Saturation (remaining headroom before ceiling effects), (3) Impact (ecosystem influence). Audits 106 benchmarks from 91 model reports. Directly relevant to our work: we've seen benchmark saturation in our own evaluation (evaluator scores plateau near ceiling). BHI's Anti-Saturation axis could be applied to our internal metrics — if all sessions score 3-4, the metric has no discrimination power left. The framework gives us vocabulary and methodology for when to retire or revise evaluation rubrics. (ref: DD-738) |
+
 ## 2026-04-10 — Session 579: CR#324 Gap-Filling Research (Verification Orchestration Stack)
 
 **Context**: CR#324 identified 5 gaps in the verification orchestration stack: (1) signal calibration, (2) dynamic capability profiles, (3) multi-step attack detection, (4) verification of verifiers, (5) cold-start. This session targets gaps 1, 3, and 4 with new literature.
