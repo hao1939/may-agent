@@ -1,16 +1,16 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~21:23 UTC
+Updated: 2026-04-10 ~21:53 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — Fresh heartbeat 21:23. EXP-127 KB integration self-dispatched (req:c15a56d7).
-- **Coach**: 🟢 Active — Fresh heartbeat 21:23. EXP-126+127 KE writing work session self-dispatched (req:97fba2d5).
+- **Bob**: 🟢 Active — Fresh heartbeat 21:53. EXP-127 KB integration COMPLETE (commit 7b1ed2ea).
+- **Coach**: 🟢 Active — Fresh heartbeat 21:53. KE-129/130/131 written and committed.
 - **Scout**: ⚠️ 401 Error — Recurring `IDE token expired` auth failure. Auto-pause recovery handling retries.
-- **Tech-lead**: 🟢 Active — Fresh heartbeat 21:23.
-- **Optimizer**: 🟢 Active — Mode B Tool Gap Analysis work session running (req:71cf671c).
-- **Evaluator**: 🟢 Active — Fresh heartbeat 21:23.
-- **QA**: 🟢 Active — Fresh heartbeat 21:23.
+- **Tech-lead**: 🟢 Active — Fresh heartbeat 21:53.
+- **Optimizer**: 🟢 Active — Fresh heartbeat 21:53. Mode B Tool Gap Analysis completed.
+- **Evaluator**: 🟢 Active — Fresh heartbeat 21:53.
+- **QA**: 🟢 Active — Fresh heartbeat 21:53.
 - **Coder**: Idle. Only runs when forked by tech-lead.
 - **All agents**: 🟡 7/8 healthy. Scout has recurring auth error (401, IDE token expired).
 - **✅ Tool Schema Guard**: Live in production.
@@ -203,30 +203,24 @@ Updated: 2026-04-10 ~21:23 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (21:23)
-- **System healthy**: 7/8 agents running. All heartbeats fresh (21:23). Scout recurring 401 auth. Zero failures this hour.
-- **Since last cycle (20:53)**:
-  - **EXP-127 COMPLETE (LANDMARK)**: 24 trials, 4 arms. Forced externalization 100% (6/6) vs 0% for ALL text-based channels (baseline, system prompt, task message, even combined). p=0.0000074. This definitively confirms: structural gates > text delivery for judgment tasks. Confound found (skill already deployed), actually strengthens conclusion.
-  - **Knowledge APPLICATION**: Removed contradiction-detection.md skill (0/18 with it present). Evidence-based pruning.
-  - **Self-direction**: Coach self-dispatched KE writing (req:97fba2d5), Bob self-dispatched KB integration (req:c15a56d7). No May intervention needed.
-  - **Optimizer**: Mode B Tool Gap Analysis work session running.
-  - **Tech-lead**: Test cleanup work session completed (dead evaluate-sessions test + vitest/bun:sqlite fix).
+## Latest Cycle Summary (21:53)
+- **System healthy**: 7/8 agents running. All heartbeats fresh (21:53). Scout recurring 401 auth. Zero failures this hour.
+- **Since last cycle (21:23)**:
+  - **EXP-127 KB integration COMPLETE**: Bob committed 7b1ed2ea — H-098 P(H) 0.80, KE-129/KE-130 indexed in PRIORITY-TRACKER and INDEX.
+  - **KE-129/130/131 written**: Coach created knowledge entries for EXP-126 (null result) and EXP-127 (forced ext only channel, text channel failure).
+  - **Optimizer Mode B Tool Gap Analysis completed**: Multi-step bash patterns analysis finished.
+  - **All agents self-directing**: Zero May interventions needed this cycle. Team fully autonomous.
 
 ## Key Findings This Cycle
-- **✅ EXP-127 COMPLETE — LANDMARK**: Channel Separation Direct Test. 24 runs across 4 arms:
-  - Baseline: 0/6 (0%), Ch1 System Prompt: 0/6 (0%), Ch3 Task Message: 0/6 (0%), **Ch2 Forced Externalization: 6/6 (100%)**
-  - p = 0.0000074 (Ch2 vs all others pooled)
-  - Cumulative: 10/10 (100%) for forced externalization on contradictory-requirements
-  - **Confound strengthens result**: contradiction-detection skill was already in system prompt for ALL runs, proving Ch1 categorically fails
-  - H-098 P(H) 0.78 → ~0.80 (3/4 predictions correct; Ch3 miss)
-  - **Practical implication**: For judgment tasks, stop building text skills. Build structural gates (forced externalization) instead.
-- **✅ Skill pruned**: contradiction-detection.md removed (commit 8f3d660f). ~500 tokens saved per coder session.
+- **EXP-127 fully integrated into KB** — H-098 (Attention Channel Theory) now at P(H)=0.80 with direct interventional evidence. This is the team's strongest empirical finding: only structural gates (Ch2/forced externalization) work for judgment tasks.
+- **Research pipeline is mature**: 104+ experiments, 131 KEs, 23 active hypotheses. Gym at ceiling. Discovery boundary (FM-1.3) remains the one unresolved frontier.
+- **System at steady state**: All active work items from this sprint are complete. Agents are self-directing on incremental improvements.
 
 ## Next Actions
 - **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. Saves $143-441/day. **Blocked on Hao since Mar 24**.
-- **P1**: **EXP-127 KB integration** — Bob self-dispatched (req:c15a56d7). Monitor completion.
-- **P1**: **EXP-105 Few-Shot Production Impact** — Need coder/optimizer work sessions to generate data.
+- **P1**: **EXP-105 Few-Shot Production Impact** — Need coder/optimizer work sessions to generate data. No coder work happening.
 - **P1**: **Generate implementation work** — System idle without features. Coder completely idle. Need Hao priorities.
+- **P1**: **Discovery boundary research** — FM-1.3 (creative inference gap) is the one unresolved finding. 5 interventions failed. New approach needed.
 - **P2**: `analyze-failures` cron DB bug — persistent but non-critical.
 - **P2**: Amy-kimi still down — blocked on Hao for billing.
 - **P2**: Scout 401 auth error — recurring IDE token expiry.
