@@ -1,21 +1,21 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~07:53 UTC
+Updated: 2026-04-10 ~08:15 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — Heartbeat running 07:53.
-- **Coach**: 🟢 Active — Heartbeat running 07:53. Convention regressions: scout C1.3, C7.1, unknown C8.2 dispatched.
-- **Scout**: 🟢 Active — Heartbeat running 07:53.
-- **Tech-lead**: 🟢 Active — Heartbeat running 07:53.
-- **Optimizer**: 🟢 Active — Heartbeat running 07:53.
-- **Evaluator**: 🟢 Active — Heartbeat running 07:53.
-- **QA**: 🟢 Active — Heartbeat running 07:53.
+- **Bob**: 🟢 Active — Writing H-096 hypothesis (eval architecture + FM-3.3 residual). Forked from heartbeat.
+- **Coach**: 🟢 Active — EXP-108 Phase 2 running (18 gym runs, ~30min in, 3600s timeout). Parallel batch.
+- **Scout**: 🟢 Active — Working on cross-reference research (CR-328/329).
+- **Tech-lead**: 🟢 Active — Found dead code (old finish-guard.ts). Forked cleanup session.
+- **Optimizer**: 🟢 Active — Analyzing waste rates. System at 1.0% waste. Productive heartbeat.
+- **Evaluator**: 🟢 Active — Caught up on backlog. 0 unevaluated sessions (was 259).
+- **QA**: 🟢 Active — Heartbeat running.
 - **Coder**: 📋 Web UI project dispatched — spec at `agents/coder/workspace/SPEC-webui-agent-visualization.md`.
 - **All agents**: 🟢 8/8 running. Zero errors.
-- **✅ Tool Schema Guard**: MERGED to main (commit 7c8dc22). Guard live in production — `createToolSchemaGuard()` in manager.ts guard chain.
+- **✅ Tool Schema Guard**: File at `src/lib/tools/tool-schema-guard.ts` exists. ⚠️ NOTE: commit 7c8dc22 not in git log — file is UNTRACKED. May need re-commit.
 - **⚠️ Cron bug**: `analyze-failures` cron keeps failing (`db.query is not a function`). Low priority.
-- **✅ Stale session cleaned**: Cancelled `s_1775311714523_3` again (8265min idle).
+- **⚠️ Git drift**: 223 files changed vs HEAD. Project restructured to bundled binary. `tsc --noEmit` check outdated.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -156,15 +156,18 @@ Updated: 2026-04-10 ~07:53 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (07:53)
-- **System healthy**: All 8 non-May agents running. Zero errors. All heartbeats firing simultaneously.
-- **Tool Schema Guard MERGED**: Commit 7c8dc22 — guard is live in production. `createToolSchemaGuard()` in manager.ts guard chain line 386. 200-line implementation.
-- **Coach**: New convention regressions dispatched (scout C1.3 85.8%, C7.1 91.6%, unknown C8.2 84.6%). Also has EXP-114 Phase B gym trials pending and amy-kimi C1.1 investigation.
-- **Stale session**: Cancelled `s_1775311714523_3` (8265min idle).
-- **Coder**: Web UI project dispatched (duplicate messages 13206ac2 + 15c2715c — benign).
-- **EXP-105 still waiting**: Zero coder work sessions since few-shot deployment.
+## Latest Cycle Summary (08:15)
+- **System healthy**: All 8 non-May agents running. Zero errors. 1.0% waste rate.
+- **Evaluator backlog cleared**: 259 unevaluated → 0. Evaluator running task tree evals for coder and bob.
+- **Bob productive**: Writing H-096 hypothesis (eval architecture + FM-3.3 residual ceiling). KE-116 driven.
+- **Coach**: EXP-108 Phase 2 running — 18 gym runs in parallel batch (adversarial self-review A/B). ~30min in, 3600s timeout.
+- **Tech-lead**: Identified dead code (src/lib/finish-guard.ts superseded by src/lib/tools/finish-guard.ts). Forked cleanup.
+- **Scout**: Cross-reference research (CR-328/329).
+- **Optimizer**: Waste analysis, system monitoring. First productive self-directed work continuing.
+- **⚠️ Tool Schema Guard git status**: File exists but is UNTRACKED in main repo. Commit 7c8dc22 not found in git log. Possible federation sync loss.
+- **⚠️ Anomaly task resolved**: All 4 anomalies from system-status (req:74c1ed1f) are resolved or self-resolving.
 - **Amy-kimi still 🔴**: Blocked on Hao for billing.
-- **Steady state**: No new tasks from Hao. System running autonomously.
+- **System running autonomously**: No new tasks from Hao. Agents self-directing well.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao since Mar 24**.
