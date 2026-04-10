@@ -4,7 +4,7 @@
   "categories": ["completeness", "knowledge-integration"],
   "tags": ["behavior", "FM-2.6", "multi-file", "discovery", "exp-117"],
   "tier": "standard",
-  "timeout": 8,
+  "timeout": 3,
   "agent_type": "coder",
   "workflow": false
 }
