@@ -135,6 +135,14 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 - **Conclusion**: Environmental hints have no positive effect. EXP-122's "100% pass rate" was a corrupted-environment artifact. Hints may actually hurt by consuming agent attention/time.
 - **Research line CLOSED**: Environmental hints are not a viable intervention mechanism.
 
+### 0n. EXP-128: Channel 3 Boundary Conditions — Detection Coverage Hypothesis [DESIGNED ⏳]
+- **Design**: `agents/shared/knowledge/experiments/EXP-128/design.md`
+- **Hypothesis**: H-128 — Ch3 few-shot effectiveness depends on detection step coverage, not just response coverage
+- **Scenarios**: `contradictory-requirements-128a-response` (Arm A: Response-Only), `contradictory-requirements-128b-detect-enhanced` (Arm B: Detection-Enhanced), `contradictory-requirements-128c-detect-only` (Arm C: Detection-Only)
+- **Predictions**: Arm A ~0%, Arm B 50-83%, Arm C 17-50%
+- **Rationale**: EXP-127's Ch3 0% anomaly — all other Ch3 scenarios cover DETECTION step; contradictory-requirements only covers RESPONSE step
+- **Next**: Run 6 trials per arm (18 total), analyze results
+
 ### 0m. EXP-127: Channel Separation Direct Test [COMPLETE ✅ — LANDMARK RESULT]
 - **Design**: `agents/shared/knowledge/experiments/EXP-127/design.md`
 - **Results**: `agents/shared/knowledge/experiments/EXP-127/results.md`

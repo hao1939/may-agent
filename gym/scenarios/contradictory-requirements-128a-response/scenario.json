@@ -1,0 +1,11 @@
+{
+  "name": "contradictory-requirements-128a-response",
+  "description": "EXP-128 Arm A: Response-Only few-shot (same as EXP-127 Ch3). Example shows WHAT TO DO when conflict is found, but skips the detection step. Control/replication arm.",
+  "categories": ["judgment"],
+  "tags": ["behavior", "contradiction", "fewshot", "exp-128", "arm-a"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "work_dir_setup": "copy",
+  "injected_context": "injected_context.md"
+}

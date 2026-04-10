@@ -1,0 +1,11 @@
+{
+  "name": "contradictory-requirements-128c-detect-only",
+  "description": "EXP-128 Arm C: Detection-Only few-shot. Example shows HOW to detect requirement conflicts but provides minimal guidance on what to do once detected.",
+  "categories": ["judgment"],
+  "tags": ["behavior", "contradiction", "fewshot", "exp-128", "arm-c"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "work_dir_setup": "copy",
+  "injected_context": "injected_context.md"
+}
