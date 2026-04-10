@@ -264,6 +264,13 @@
   2. CR#322/323 framing revisit re: EXP-104 confound
   3. KE-106 habituation literature (low priority)
 
+## Session 588 (2026-04-10 12:12 UTC) — Friday early-afternoon heartbeat (lean)
+- **No new developments** since Session 587 (19min ago). EXP-116 phase 2 raw data flowing in (Bob/Coach territory). Bob updated H-095, archived H-094/H-068, promoted H-097 — no Scout action needed.
+- **Clean state**: All deliverables committed. No pending tasks or urgent leads.
+- **Research priorities** (unchanged):
+  1. Production-first eval methodology (extend CR#326 Path A)
+  2. CR#322/323 framing revisit re: EXP-104 confound
+  3. KE-106 habituation literature (low priority)
 ## Session 587 (2026-04-10 11:53 UTC) — Friday midday heartbeat (lean)
 - **No new developments** since Session 586 (30min ago). May dispatch board cleanup + EXP-115 dirty branch flag — no Scout action needed.
 - **Clean state**: All deliverables committed. No pending tasks or urgent leads.
