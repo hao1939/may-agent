@@ -857,6 +857,42 @@ function runMultiSessionScenario(
     allSessionResults.push(lastResult);
     console.error(`    ${sessionId} complete (status: ${lastResult.status}, session: ${lastResult.sessionId})`);
 
+    // Agent failed to launch (e.g. unregistered agent) — abort entire multi-session
+    if (lastResult.status === "error" && !lastResult.sessionId) {
+      const durationMs = Date.now() - startMs;
+      console.error(`    ABORT: agent failed to launch in ${sessionId} — skipping remaining sessions and scoring`);
+
+      const effectiveAgentsRoot = labFork ? join(gymRoot, "agents-lab") : join(PROJECT_ROOT, "agents");
+      const frameworkSha = computeFrameworkSha();
+      const model = readAgentModel(effectiveAgentsRoot, agentName);
+      const prompt = assembleEffectivePrompt(effectiveAgentsRoot, agentName);
+
+      return {
+        scenario: scenarioName,
+        adapter: adapter.name,
+        agent: agentName,
+        lab_fork: labFork || null,
+        workflow: false,
+        passed: false,
+        checks: [{ name: "agent_launch", passed: false, message: `Agent failed to launch in ${sessionId} (status: error, no sessionId)` }],
+        judgments: [],
+        summary: `FAIL: agent failed to launch in ${sessionId}`,
+        agent_status: "error",
+        duration_ms: durationMs,
+        session_id: allSessionResults.map((r) => r.sessionId).join(","),
+        session_path: "",
+        work_dir: workDir,
+        gym_root: gymRoot,
+        prompt_hash: prompt?.hash ?? null,
+        prompt_text: prompt?.text ?? null,
+        framework_sha: frameworkSha,
+        model,
+        categories: meta.categories ?? [],
+        tags: meta.tags ?? [],
+        tier: meta.tier ?? null,
+      };
+    }
+
     // Ensure workDir still exists after agent run — the agent may have
     // deleted or relocated it (e.g. rm -rf ., cleanup scripts, etc.)
     if (!existsSync(workDir)) {
@@ -1047,6 +1083,36 @@ function runScenario(
       allPhaseResults.push(lastResult);
       console.error(`Phase ${i + 1} complete (session: ${lastResult.sessionId})`);
 
+      // Agent failed to launch (e.g. unregistered agent) — abort before scoring
+      if (lastResult.status === "error" && !lastResult.sessionId) {
+        const durationMs = Date.now() - startMs;
+        console.error(`  ABORT: agent failed to launch (phase ${i + 1}) — skipping scoring`);
+        return {
+          scenario: scenarioName,
+          adapter: adapter.name,
+          agent: agentName,
+          lab_fork: labFork || null,
+          workflow: isWorkflow,
+          passed: false,
+          checks: [{ name: "agent_launch", passed: false, message: `Agent failed to launch in phase ${i + 1} (status: error, no sessionId)` }],
+          judgments: [],
+          summary: `FAIL: agent failed to launch in phase ${i + 1}`,
+          agent_status: "error",
+          duration_ms: durationMs,
+          session_id: "",
+          session_path: "",
+          work_dir: workDir,
+          gym_root: gymRoot,
+          prompt_hash: null,
+          prompt_text: null,
+          framework_sha: computeFrameworkSha(),
+          model: null,
+          categories: meta?.categories ?? [],
+          tags: meta?.tags ?? [],
+          tier: meta?.tier ?? null,
+        };
+      }
+
       // Context learning between phases: extract facts from this phase's transcript
       // and write to the agent's context.md in the sandbox
       if (learnBetween && i < parts.length - 1 && lastResult.sessionPath) {
@@ -1108,6 +1174,36 @@ function runScenario(
     writeFileSync(taskFile, `${contextPrefix}Work in this directory: ${workDir}\n\n${taskContent}\n`);
 
     lastResult = adapter.runAgent(taskFile, workDir, timeout);
+  }
+
+  // Agent failed to launch (e.g. unregistered agent) — abort before scoring
+  if (lastResult.status === "error" && !lastResult.sessionId) {
+    const durationMs = Date.now() - startMs;
+    console.error(`  ABORT: agent failed to launch — skipping scoring`);
+    return {
+      scenario: scenarioName,
+      adapter: adapter.name,
+      agent: agentName,
+      lab_fork: labFork || null,
+      workflow: isWorkflow,
+      passed: false,
+      checks: [{ name: "agent_launch", passed: false, message: "Agent failed to launch (status: error, no sessionId)" }],
+      judgments: [],
+      summary: "FAIL: agent failed to launch",
+      agent_status: "error",
+      duration_ms: durationMs,
+      session_id: "",
+      session_path: "",
+      work_dir: workDir,
+      gym_root: gymRoot,
+      prompt_hash: null,
+      prompt_text: null,
+      framework_sha: computeFrameworkSha(),
+      model: null,
+      categories: meta?.categories ?? [],
+      tags: meta?.tags ?? [],
+      tier: meta?.tier ?? null,
+    };
   }
 
   const durationMs = Date.now() - startMs;
