@@ -272,3 +272,19 @@ This mirrors the clinical analogy perfectly. The discovery that antibiotics prod
 The Safety Iatrogenesis Cascade is arguably the most structurally important finding in the portfolio because it applies *to the very mechanisms we use to make systems safe*. Every other failure mode (coordination collapse, drift, deception, scaling limits) is at least in principle addressable through safety engineering. But if safety engineering itself produces iatrogenic effects that compound faster than the safety benefits accumulate, then **the safety engineering approach itself needs to be redesigned** — from parametric (modify the agent's learned behavior) to structural (constrain the agent's action space externally).
 
 The eight papers synthesized here, from eight independent research groups across four countries, converge on this single structural insight with remarkable consistency. The iatrogenic cascade is not a theoretical possibility — it is an empirically demonstrated, experimentally quantified, mechanistically explained reality of current LLM safety practice.
+
+---
+
+## 8. Update: Instruction-Level Evidence (DD#739, 2026-04-10)
+
+DD#739 extends this synthesis with five additional papers providing **instruction-level quantitative evidence** for the iatrogenic mechanism:
+
+- **arXiv:2510.14842** (IBM): "Soft conflict scoring" — quantitative measure of pairwise instruction tension. Performance degrades as O(N²) with instruction count, not O(N). Direct mechanism for KE-123's superadditive harm.
+- **arXiv:2505.07591** (Fudan): 77.67%→32.96% degradation across 19 LLMs × 4 difficulty levels. Universal, not model-specific.
+- **arXiv:2509.23188**: Attention drift in middle transformer layers mediates instruction conflicts. Surgical LoRA (SAIL) can partially restore.
+- **arXiv:2603.24124**: Alignment tax narrows response space, making additional behavioral constraints more likely to cross the over-constraint threshold.
+- **arXiv:2604.08297**: Safety-critical parameters co-located with task performance parameters in middle layers — the architectural basis for parametric competition.
+
+These findings strengthen the cascade model by providing the **mechanistic substrate** (attention competition in middle layers, parametric overlap between safety and capability) and a **quantitative framework** (soft conflict scoring, O(N²) scaling) for predicting iatrogenic risk before deployment.
+
+See: `agents/shared/knowledge/library/deep-dives/DD-739-instruction-stacking-degradation-empirical-evidence.md`
