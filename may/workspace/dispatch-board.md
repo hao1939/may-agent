@@ -1,16 +1,16 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~15:53 UTC
+Updated: 2026-04-10 ~16:23 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — Fresh heartbeat 15:53. Reversed EXP-116 invalidation cascade (work session 15:25).
-- **Coach**: 🟢 Active — EXP-121 work session COMPLETE (results.md written). Fresh heartbeat 15:53.
+- **Bob**: 🟢 Active — Fresh heartbeat 16:23. EXP-121 KB integration done. Externalization trilogy findings absorbed.
+- **Coach**: 🟢 Active — EXP-122 COMPLETE (null result). Fresh heartbeat 16:23. All discovery-task experiments now closed.
 - **Scout**: ⚠️ 401 Error — Recurring `IDE token expired` auth failure. Auto-pause recovery handling retries.
-- **Tech-lead**: 🟢 Active — Fresh heartbeat 15:53. Continuing codebase structural analysis.
-- **Optimizer**: 🟢 Active — Fresh heartbeat 15:53.
-- **Evaluator**: 🟢 Active — Fresh heartbeat 15:53.
-- **QA**: 🟢 Active — Fresh heartbeat 15:53.
+- **Tech-lead**: 🟢 Active — Fresh heartbeat 16:23. Legacy callbacks removed, gym runner fix merged. Dead code sprint continues.
+- **Optimizer**: 🟢 Active — Fresh heartbeat 16:23. Measuring deliver-or-report fix. Re-escalated prompt caching (duplicate, already tracked).
+- **Evaluator**: 🟢 Active — Fresh heartbeat 16:23.
+- **QA**: 🟢 Active — Fresh heartbeat 16:23.
 - **Coder**: Idle. Only runs when forked by tech-lead.
 - **All agents**: 🟡 7/8 healthy. Scout has recurring auth error (401, IDE token expired).
 - **✅ Tool Schema Guard**: Live in production.
@@ -160,6 +160,8 @@ Updated: 2026-04-10 ~15:53 UTC
 | **Optimizer: Session-Sync Cron Handler** | ✅ DEPLOYED | optimizer | Handler at `agents/may/handlers/session-sync.ts`. Syncs .state/sessions/ meta.json → may.db every 5min. 996 sessions in <1s. Commit 2d257c78. Fixes chronic stale DB issue. |
 | **EXP-116 Results Correction** | ✅ CORRECTED | may | EXP-116/results.md note updated: invalidation was WRONG — EXP-118 confirmed 100% baselines are real with valid agents. Silent exit bug exists but didn't corrupt results. |
 
+| **EXP-122 Environmental Hints** | ✅ COMPLETE (NULL) | coach | **DEFINITIVE**: HTML comment hint in INDEX.md = 0% effect (67% treatment = 67% baseline, p=1.0). Environmental hints don't close creative inference gap. Discovery-task series fully closed (EXP-117→122, 5 experiments). |
+
 ## Completed/Archived
 | Item | When | Notes |
 |------|------|-------|
@@ -190,28 +192,25 @@ Updated: 2026-04-10 ~15:53 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (15:53)
-- **System healthy**: 7/8 agents running. Scout recurring 401 auth error (IDE token expired). All others fresh at 15:53.
-- **Since last cycle (15:23)**:
-  - **Coach**: EXP-121 COMPLETE (INCONCLUSIVE) — Time budget 5min vs 3min: 83% vs 67% (p=1.0). Externalization trilogy now fully closed: checklist hurts, progressive hurts, time helps marginally. Core issue = reasoning gap.
-  - **Bob**: Reversed EXP-116 invalidation cascade (work session 15:25). DD-734→738 synthesis recovered. Fresh heartbeat.
-  - **Tech-lead**: Codebase structural analysis (manager.ts 2386 lines). Dead code sprint continues.
-  - **Optimizer**: Measuring deliver-or-report fix effectiveness.
-  - **Scout**: 401 auth error (IDE token expired). Auto-pause recovery handling.
-  - **System status anomaly**: "Bob analysis 6 days old" — dismissed, Bob is clearly active with multiple work sessions today.
+## Latest Cycle Summary (16:23)
+- **System healthy**: 7/8 agents running. Scout recurring 401 auth error (IDE token expired). All others fresh at 16:23.
+- **Since last cycle (15:53)**:
+  - **Coach**: EXP-122 COMPLETE (NULL RESULT) — Environmental hints in INDEX.md had zero effect (67% = 67% baseline). Discovery-task intervention series now fully closed (5 experiments: EXP-117→122).
+  - **Bob**: EXP-121 KB integration done. System is genuinely quiet — all recent experiments integrated.
+  - **Tech-lead**: Legacy callbacks removed + gym runner silent failure fix. Dead code sprint continues.
+  - **Optimizer**: Re-escalated prompt caching (duplicate — already tracked P0 since Mar 24). Measuring deliver-or-report fix.
+  - **Cleaned up**: 2 duplicate optimizer requests (prompt caching) + 1 stale coach request (EXP-122 completed).
 
 ## Key Findings This Cycle
-- **Externalization trilogy complete (EXP-117 + EXP-120 + EXP-121)**: Three interventions tested on KB integration discovery: (1) Checklist = -67pp (EXP-117), (2) Progressive tracking = -50pp (EXP-120), (3) +2min time = +16pp inconclusive (EXP-121). **Instruction-based interventions HURT discovery tasks. Time helps marginally. Core issue is reasoning gap — agent doesn't generate "create new KE entry" concept.** This research line is now definitively closed.
-- **Dead code sprint continues**: ~4,779+ lines removed total. Tech-lead doing structural analysis.
-- **Gym research line definitively closed**: EXP-117 through EXP-121 confirm no further instruction-level interventions productive.
+- **Discovery-task intervention series FULLY CLOSED (EXP-117→122)**: Five experiments on kb-integration-discovery: (1) Checklist = -67pp (EXP-117), (2) Progressive = -50pp (EXP-120), (3) +2min time = +16pp NS (EXP-121), (4) Environmental hints = 0pp (EXP-122). **No text-based intervention improves discovery. 67% appears to be the natural ceiling at 3min.** Only remaining lever: time budget (marginal).
+- **System entering genuine maintenance phase**: All research lines closed. Dead code sprint ongoing. No active experiments pending. Team needs new direction.
 
 ## Next Actions
-- **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $143-441/day. **Blocked on Hao since Mar 24**.
-- **P1**: **EXP-105 Few-Shot Production Impact** — Need coder/optimizer work sessions to generate data. No data since deployment (Apr 9). Coder completely idle.
-- **P1**: **Present research sprint results to Hao** — KE-101 meta-analysis capstone. 17+ experiments. Gym graduation. Token waste. System entered maintenance phase.
-- **P1**: **Generate implementation work** — System is idle without tasks for tech-lead/coder. Need new features or tech debt items to drive delivery and EXP-105 data.
-- **P1**: **Environmental fix for KB discovery** — Externalization trilogy suggests only environmental/template cues will help. Could modify INDEX.md structure or add "new entry" prompts. But need design first.
+- **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. Saves $143-441/day. **Blocked on Hao since Mar 24**.
+- **P1**: **EXP-105 Few-Shot Production Impact** — Need coder/optimizer work sessions to generate data. Coder idle since deployment (Apr 9).
+- **P1**: **Present research sprint results to Hao** — KE-101 meta-analysis capstone. 20+ experiments. Gym graduation. Token waste. System needs new direction.
+- **P1**: **Generate implementation work** — System idle without tasks. Tech-lead doing dead code only. Coder completely idle. Need features or tech debt for delivery velocity.
 - **P2**: `analyze-failures` cron DB bug — persistent but non-critical.
 - **P2**: Amy-kimi still down — blocked on Hao for billing.
-- **P2**: Scout 401 auth error — recurring IDE token expiry. Infrastructure issue.
-- **P2**: Zombie session cleanup — tech-lead s_1774303617649_81 should be marked completed in DB.
+- **P2**: Scout 401 auth error — recurring IDE token expiry.
+- **P2**: Zombie session cleanup — tech-lead s_1774303617649_81.
