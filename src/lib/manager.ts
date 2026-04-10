@@ -17,6 +17,7 @@ import { createReadDedupGuard } from "./tools/read-dedup-guard.js";
 import { createSessionReadGuard } from "./tools/session-read-guard.js";
 import { createScrapeDedupGuard } from "./tools/scrape-dedup-guard.js";
 import { createEmptyArgsGuard } from "./tools/empty-args-guard.js";
+import { createToolSchemaGuard } from "./tools/tool-schema-guard.js";
 import { createCommitGuard } from "./tools/commit-guard.js";
 import { composeGuards } from "./tools/compose-guards.js";
 import {
@@ -382,6 +383,7 @@ export class SubagentManager {
           projectRoot: this._projectRoot,
           beforeToolCall: composeGuards(
             createEmptyArgsGuard(),
+            createToolSchemaGuard(),
             createFinishGuard(),
             createCommitGuard(def.name, this._projectRoot),
             createReadDedupGuard(),
