@@ -4680,21 +4680,3 @@ Proactive heartbeat QA at HEAD **41b5074**. Reviewed `src/lib/session-subscriber
 
 ### Verdict
 CONDITIONAL — code compiles; test suite failures appear unrelated to the subscriber module and look like repo/environment problems (missing launcher module + filesystem permissions + too-tight integration timeout).
-
----
-## 2026-04-10T10:12:36.160Z — Heartbeat
-
-### Proactive scan
-- Reviewed latest commit `484a53cb` (“feat(guard): add completeness guard for EXP-115 Phase 3”). Most files touched are `.state/*` session artifacts; the meaningful code changes are in `src/lib/tools/completeness-guard.ts` and related tests.
-- Read `src/lib/tools/completeness-guard.ts`.
-
-### Code quality findings
-- The guard is intentionally **fail-open** (`try { ... } catch { return undefined }`), so it will never block on internal errors; good for resilience but weakens enforcement if transcript schema drifts.
-- Evidence detection currently considers `write/edit` path substring match and `bash` command substring match for `DELIVERABLES_CHECKLIST` (case-insensitive). It **does not** scan `checkpoint()` tool calls even though the header comment claims it does.
-
-### Verification
-- `./node_modules/.bin/tsc --noEmit` → FAIL (tool not present; exit 127)
-- `./node_modules/.bin/vitest --run` → FAIL (tool not present; exit 127)
-
-### Verdict
-CONDITIONAL — code read indicates no obvious logic bug, but the implementation contradicts its own documentation (checkpoint evidence not implemented). Test execution unavailable due to missing toolchain in environment.
