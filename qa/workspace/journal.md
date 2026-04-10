@@ -5026,3 +5026,10 @@ Key failures observed:
 - error log writer tests: `appendErrorLogs` not creating/appending JSONL file under `agents/_test_error_log_agent/`
 - research-db integration threshold: expected `<5` errors, got `5`
 Verdict: CONDITIONAL (patch likely fine; test suite currently red due to above issues)
+
+2026-04-10T21:25Z — Proactive QA heartbeat.
+- Reviewed latest commit `162215d` (agents knowledge update: EXP-127 results run-id listing fix). Content change only; no code touched.
+- Read `agents/shared/knowledge/experiments/EXP-127/results.md` (top section) to confirm the Run IDs for Arm C are now listed as `227–231 (6 runs)` and other arms list explicit IDs.
+- Ran `./node_modules/.bin/tsc --noEmit`: PASS.
+- Ran `./node_modules/.bin/vitest --run`: PASS (2046 tests, 138 files). Only warnings observed were Node experimental sqlite warnings.
+Verdict: PASS (no issues found in the reviewed change; repo gates green).
