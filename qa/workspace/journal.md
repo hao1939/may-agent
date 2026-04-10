@@ -4977,6 +4977,8 @@ Verdict: **PASS** — no code/test regressions observed.
 2026-04-10T17:54Z — Proactive review of HEAD commit `2d2ab65` (cron/circuit-breaker removal).
 - Read: `src/app/cron.ts` (top portion). Noted potential reliability risk: `watchConfig()` uses both `watchFile()` and an explicit `setInterval()` poll; `unwatchConfig()` clears the interval and calls `unwatchFile()` by path (not watcher), which is OK, but there is an empty `catch {}` in the poll loop that can hide reload failures.
 - `./node_modules/.bin/tsc --noEmit`: PASS (no output).
-- `./node_modules/.bin/vitest --run`: FAIL (1 file failed): `test/coach-setup.test.ts` (2/13 tests failing). Root cause appears to be environment/runtime mismatch: workflows import `bun:sqlite` (`agents/coach/workflows/gym-helpers.ts:12`), which Vitest (Node) cannot resolve.
+- `./node_modules/.bin/vitest --run`: FAIL (2 files failed / 3 tests failed / 2051 passed):
+  - `test/coach-setup.test.ts`: fails because coach workflows import `bun:sqlite` (e.g. `agents/coach/workflows/gym-helpers.ts:12`), which Vitest (Node) cannot resolve.
+  - `test/research-db.test.ts`: integration test asserts `< 5` total parse errors, but current `agents/shared/knowledge` produces **exactly 5** (`expect(totalErrors.length).toBeLessThan(5)` fails).
 
-Verdict: **CONDITIONAL** — cron change not verified by full suite due to pre-existing Bun/Node module resolution issue in coach workflows.
+Verdict: **CONDITIONAL** — Typecheck is clean and failures look like environment/data drift rather than the cron patch itself; cannot PASS until Vitest suite is green.
