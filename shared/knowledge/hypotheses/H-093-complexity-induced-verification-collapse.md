@@ -2,7 +2,7 @@
 
 **Status**: Proposed
 **Date**: 2026-04-09
-**P(H)**: 0.72 (updated from 0.70 — EXP-116 modest support: Phase 1 overcorrection effect extends theory, Phase 2 baseline confirms verification collapse on multi-session handoffs. Previously: 0.70 from EXP-100 moderate support but ceiling effects reduced confidence; EXP-102 null effect confirms verification prompts insufficient)
+**P(H)**: 0.70 (reverted from 0.72 — EXP-116 evidence invalidated by EXP-118; original EXP-116 support was based on confounded baselines: Phase 1 overcorrection effect extends theory, Phase 2 baseline confirms verification collapse on multi-session handoffs. Previously: 0.70 from EXP-100 moderate support but ceiling effects reduced confidence; EXP-102 null effect confirms verification prompts insufficient)
 **Origin**: EXP-099 (H-092 Information-Flow Failure Mode Analysis)
 **Related**: H-092 (information-flow failure patterns), H-085 (forced externalization), H-039 (decomposition bottleneck), DD-682/683/684, KE-095, KE-096
 
