@@ -96,13 +96,13 @@ DD-704's tie-rate insight is uniquely valuable: when multiple verification metho
 
 What this stack still needs:
 
-| Gap | Description | Potential Source |
-|-----|-------------|-----------------|
-| **Signal calibration** | DSL audits decisions given scores, not score accuracy | Active calibration research needed |
-| **Dynamic profiles** | Capability profiles are static; agents improve over time | Online learning / bandit approaches |
-| **Multi-step attack detection** | Sentinels check individual requests; coordinated attacks span requests | Sequential anomaly detection |
-| **Verification of verifiers** | Who checks the sentinels? No self-verification mechanism | Meta-verification / formal methods |
-| **Cold-start** | New task types lack risk cue data | Bayesian priors + rapid exploration |
+| Gap | Description | Potential Source | Status |
+|-----|-------------|-----------------|--------|
+| **Signal calibration** | DSL audits decisions given scores, not score accuracy | Active calibration research needed | **ADDRESSED** — DD#724 (Planner-Auditor Twin, Brier Score calibration), DD#727 (SWE-PRM, taxonomy-guided process signals). Two complementary approaches: mathematical calibration + semantic calibration. |
+| **Dynamic profiles** | Capability profiles are static; agents improve over time | Online learning / bandit approaches | **OPEN** — No directly applicable paper found yet. |
+| **Multi-step attack detection** | Sentinels check individual requests; coordinated attacks span requests | Sequential anomaly detection | **ADDRESSED** — DD#725 (SentinelAgent, intent-verified delegation chains). Chain-level monitoring with formal TLA+ guarantees. |
+| **Verification of verifiers** | Who checks the sentinels? No self-verification mechanism | Meta-verification / formal methods | **ADDRESSED** — DD#725 (SentinelAgent, TLA+ formal proofs of sentinel correctness) + DD#726 (AIP, cryptographic agent identity verification). Correctness + authenticity. |
+| **Cold-start** | New task types lack risk cue data | Bayesian priors + rapid exploration | **OPEN** — No directly applicable paper found yet. |
 
 ## Implications for Bob
 

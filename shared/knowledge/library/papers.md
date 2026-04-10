@@ -2,6 +2,26 @@
 
 Papers and articles worth reading, with key takeaways.
 
+## 2026-04-10 — Session 579: CR#324 Gap-Filling Research (Verification Orchestration Stack)
+
+**Context**: CR#324 identified 5 gaps in the verification orchestration stack: (1) signal calibration, (2) dynamic capability profiles, (3) multi-step attack detection, (4) verification of verifiers, (5) cold-start. This session targets gaps 1, 3, and 4 with new literature.
+
+### Planner-Auditor Twin: Calibrated Confidence for Agentic Planning — arXiv:2601.21113
+
+| 2601.21113 | Planner-Auditor Twin: Agentic Discharge Planning with Calibrated Confidence (Jan 2026) | ★★★★ EXCELLENT — Dual-agent architecture separating planning from confidence assessment. Auditor trained on Brier Score (proper scoring rule) and ECE produces genuinely well-calibrated confidence estimates. Prevents self-assessment bias (DD#719) by having separate models for planning and evaluation. Self-improvement loop: low-confidence steps trigger re-planning. Directly addresses CR#324 Gap 1 (Signal Calibration) — our verification DSL audits decisions given scores but never checks score accuracy; this paper shows how to produce trustworthy scores. (ref: DD-724) |
+
+### SentinelAgent: Intent-Verified Delegation Chain Verification — arXiv:2604.02767
+
+| 2604.02767 | SentinelAgent: Intent-Verified Delegation in Multi-Agent Systems (Apr 2026) | ★★★★★ CRITICAL — Formal verification framework for delegation chains. Every delegation carries cryptographically-bound intent declaration; downstream actions verified against original delegator's intent. TLA+ formal verification of safety properties (no unauthorized escalation, no intent drift, no delegation cycles). Chain-level monitoring addresses multi-step attacks that appear benign individually. Addresses CR#324 Gap 3 (Multi-step attack detection) and Gap 4 (Verification of verifiers). The TLA+ proofs are the strongest meta-verification: sentinel correctness is mathematically guaranteed. (ref: DD-725) |
+
+### AIP: Agent Identity Protocol for Verifiable Delegation — arXiv:2603.24775
+
+| 2603.24775 | AIP: Agent Identity Protocol for Verifiable Multi-Agent Delegation (Mar 2026) | ★★★★ EXCELLENT — Cryptographic identity protocol for agents across heterogeneous platforms (MCP, A2A, custom). Verifiable agent identity as first-class primitive. Delegation attestations allow third-party verification of authorization chains. Supports credential revocation and rotation. Addresses CR#324 Gap 4 (Verification of verifiers) from identity angle — complements DD#725's correctness guarantees with authenticity guarantees. Combined: you verify both WHAT the verifier does (TLA+) and WHO the verifier is (AIP). (ref: DD-726) |
+
+### SWE-PRM: Process Reward Models for Course-Correcting SWE Agents — arXiv:2509.02360
+
+| 2509.02360 | When Agents go Astray: Course-Correcting SWE Agents with PRMs (Gandhi, Tsay, Ganhotra, Kate, Rizk — IBM Research, Sep 2025) | ★★★★ EXCELLENT — Inference-time Process Reward Model that detects trajectory inefficiencies and course-corrects during execution. Taxonomy-guided feedback (looping, redundant exploration, failure to terminate) outperforms both unguided and action-prescriptive interventions. SWE-bench Verified: 40.0%→50.6% (+10.6pp). Only $0.20/task added cost. Addresses CR#324 Gap 1 (Signal Calibration) via semantically calibrated intervention signals (taxonomy categories vs. opaque confidence scores). Direct evidence for H-096: evaluation architecture alone raises quality ceiling by 10.6pp. (ref: DD-727) |
+
 ## 2026-04-09 — Session 384 Additions (Verification Collapse Literature Search)
 
 ### arXiv:2604.06066 — From Hallucination to Structure Snowballing: The Alignment Tax of Constrained Decoding in LLM Reflection (Zhou)
