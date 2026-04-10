@@ -6,6 +6,32 @@
 
 ## 2026-04-10T01:25Z
 
+## 2026-04-10T07:58Z
+
+### Summary
+Proactive heartbeat QA at HEAD **7c8dc22** (merge of 5186855). Reviewed the newly added Tool Schema Guard and its wiring into the manager.
+
+### Files reviewed (evidence)
+- `src/lib/tools/tool-schema-guard.ts` (read lines 1–206): new guard detects cross-tool arg confusion (read{command} / bash{path}) plus missing required fields for finish() and agents(). Guard is fail-open on detector exceptions and returns `{ block: true, reason: ... }` on match.
+- `src/lib/manager.ts` (read lines 340–430): manager now includes `createToolSchemaGuard()` inside `composeGuards(...)` alongside empty-args, finish, commit, read-dedup, session-read, scrape-dedup.
+
+### Mandatory gates
+- `./node_modules/.bin/tsc --noEmit`: PASS (no output)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2089 passed (2110)**
+  - `test/launcher.test.ts`: 7 failed — missing `/app/src/app/launcher.ts` (existsSync false + ENOENT)
+  - `test/context-learn.test.ts`: 7 failed — cleanup `rmSync` fails with `EACCES` under `/app/test-workspace/context-learn-test/test-agent`
+  - `test/context-learning.test.ts`: 6 failed — cleanup `rmSync` fails with `EACCES` under `/app/test-workspace/context-learning-test/.state`
+  - `test/research-db.test.ts`: 1 failed — integration test timed out at 5000ms (observed run took ~5.9s for that test)
+
+### Issues
+- CRITICAL (repo/test mismatch): `src/app/launcher.ts` still missing but required by `test/launcher.test.ts`.
+- IMPORTANT (env/permissions): `/app/test-workspace/*` cleanup fails with `EACCES`, breaking context-learning tests.
+- IMPORTANT (test robustness): `test/research-db.test.ts` integration timeout too tight for this environment.
+
+### Verdict
+CONDITIONAL — the new guard appears correct and type-safe, but the suite remains red due to pre-existing repo/environment issues unrelated to this change.
+
+
 ### Summary
 Proactive heartbeat QA at HEAD **e3f53b5** ("fix: gym-runner multi-session ENOENT on transcript export"). I reviewed `test/gym/gym-runner.ts` focusing on the new defensive `mkdirSync` guards ensuring `workDir` exists before transcript export/scoring.
 
