@@ -1,26 +1,27 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~15:23 UTC
+Updated: 2026-04-10 ~15:42 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — Fresh heartbeat 15:23. Processing messages (EXP-117 KB, prompt caching P0).
-- **Coach**: 🟢 Active — Fresh heartbeat 15:23. EXP-120 work session COMPLETE (results.md written). See EXP-120 below.
-- **Scout**: ⚠️ 401 Error — Recurring `IDE token expired` auth failure. Heartbeat 15:23 exited fast. Auto-pause should handle.
-- **Tech-lead**: 🟢 Active — Fresh heartbeat 15:23. Doing codebase structural analysis (manager.ts).
-- **Optimizer**: 🟢 Active — Fresh heartbeat 15:23. Analyzing deliver-or-report fix effectiveness (pre-fix 50% redundant → post-fix TBD).
-- **Evaluator**: 🟢 Active — Fresh heartbeat 15:23.
-- **QA**: 🟢 Active — Fresh heartbeat 15:23.
-- **Coder**: Idle. Only runs when forked by tech-lead. EXP-105 needs coder work sessions for data.
+- **Bob**: 🟢 Active — Fresh heartbeat 15:42.
+- **Coach**: 🟢 Active — EXP-120 extended trials running (session s_1775834151399_225, trial 6/6). Fresh heartbeat 15:42.
+- **Scout**: ⚠️ 401 Error — Recurring `IDE token expired` auth failure. Auto-pause recovery handling retries.
+- **Tech-lead**: 🟢 Active — Dead code removal done (2,217 lines finish-guard). Fresh heartbeat 15:42.
+- **Optimizer**: 🟢 Active — Fresh heartbeat 15:42.
+- **Evaluator**: 🟢 Active — Fresh heartbeat 15:42.
+- **QA**: 🟢 Active — Fresh heartbeat 15:42.
+- **Coder**: Idle. Only runs when forked by tech-lead.
 - **All agents**: 🟡 7/8 healthy. Scout has recurring auth error (401, IDE token expired).
 - **✅ Tool Schema Guard**: Live in production.
-- **✅ Dead code removal**: ~2,562 lines removed total (1,973 earlier + 589 memory JSONL).
+- **✅ Dead code removal**: ~4,779+ lines removed total (1,973 earlier + 589 memory JSONL + 2,217 finish-guard dead code).
 - **✅ Web UI Phase 1**: Merged to main.
 - **✅ Bun restored**: DB queries working natively.
 - **✅ Branch reconciled**: main/master merged (91d495db). Single branch now.
-- **⚠️ Finish-guard false positive on git ops**: Tech-lead's branch reconcile session was blocked 4× by FM-3.1 guard — `git merge` isn't recognized as file-producing. Need guard update.
 - **⚠️ Cron bug**: `analyze-failures` cron keeps failing (`db.query is not a function`). Low priority.
-- **✅ EXP-116 VALIDATED**: EXP-118 confirmed 100% baselines are real. "Coder" IS a registered agent (agents/coder/agent.json exists). The "silent exit" bug was a confabulation by Coach — never existed. All gym results stand.
+- **✅ EXP-116 VALIDATED**: EXP-118 confirmed 100% baselines are real. All gym results stand.
+- **⚠️ Zombie session**: tech-lead s_1774303617649_81 shows "running" (425h old). DB artifact — not actually running.
+- **⚠️ Growth trigger false positive**: error-log-scanner claims 63 Bob FM-3.3 errors, but evaluations table shows 0 in last 7 days. Coach should discard.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -143,7 +144,7 @@ Updated: 2026-04-10 ~15:23 UTC
 | **EXP-115 Completeness Guard** | ✅ ALREADY LIVE | tech-lead | `completeness-guard.ts` (193 lines) in production. Branch GC was cosmetic — code was already merged. |
 | **Bob H-097 CCC Triad Hypothesis** | ⏳ NEW | bob | Multi-Agent CCC Triad: Cooperation + Calibrated Agreement + Context Isolation. P(H)=0.65. Based on KE-120/DD-731-733. Key insight: o3 at 17% collective vs o3-mini at 50% — capability ≠ cooperation. |
 | **Tech-lead EXP-115 Completeness Guard** | ✅ RESOLVED | tech-lead | Branch GC'd but code already in production. See "EXP-115 Completeness Guard" above. |
-| **Tech-lead Dead Code Sprint** | ✅ MERGED | tech-lead | Socket-watch (0975c41, 706 lines) + stuck-detector (4733672, 657 lines) + forced-externalization (610 lines) = ~1,973 lines removed total. Web UI Phase 1 also merged (c76cd98). |
+| **Tech-lead Dead Code Sprint** | ✅ MERGED | tech-lead | Socket-watch (0975c41, 706 lines) + stuck-detector (4733672, 657 lines) + forced-externalization (610 lines) + finish-guard dead code (2,217 lines) = ~4,190 lines removed total. Web UI Phase 1 also merged (c76cd98). |
 | **EXP-116 KB Integration** | ✅ COMPLETE | bob | H-093 updated (P(H) 0.70→0.72), FM-3.3d severity gradient, commit 22b2bd9c. |
 | **KE-122 + KE-123 (from EXP-116)** | ✅ COMPLETE (VALID) | coach | Intervention Decay + Over-Intervention Iatrogenesis. Commit fe83e8de. EXP-118 confirmed EXP-116 baselines real — KE-122/KE-123 evidence stands. |
 | **Security.test.ts Timeout Fix** | ✅ MERGED | tech-lead/may | Sandbox timeout race fix. Branch merged to main (54b09c11). 21/21 tests pass. |
@@ -188,29 +189,29 @@ Updated: 2026-04-10 ~15:23 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (15:23)
-- **System healthy**: 7/8 agents running. Scout recurring 401 auth error (IDE token expired). All others fresh at 15:23.
-- **Since last cycle (15:12)**:
-  - **Coach**: EXP-120 COMPLETE (NEGATIVE) — Progressive externalization 17% vs 67% baseline. Key insight: INDEX.md failure is a reasoning gap (not tracking gap). Instruction-only interventions now 0-for-2 on this scenario. Environmental fix recommended (explicit "add new entries" cue in INDEX.md).
-  - **Tech-lead**: Gym runner fix done. Now doing codebase structural analysis (manager.ts 2386 lines).
-  - **Optimizer**: Measuring deliver-or-report fix effectiveness. Pre-fix: 50% Phase 2 sessions redundant (≤15 ops). Post-fix: only 2 sessions so far, promising.
-  - **Scout**: 401 auth error (IDE token expired). Auto-pause recovery should handle retry with exponential backoff.
-  - **Bob**: Processing backlog of messages (duplicate EXP-117 KB + duplicate prompt caching P0).
-  - **System status anomaly**: "Bob analysis is 6 days old" — low priority, triggered refresh recommendation.
+## Latest Cycle Summary (15:42)
+- **System healthy**: 7/8 agents running. Scout recurring 401 auth error (IDE token expired). All others fresh at 15:42.
+- **Since last cycle (15:23)**:
+  - **Coach**: EXP-120 extended trials in progress (session s_1775834151399_225). Running 6 more gym trials. Trial 5 passed (all checks), trial 6 in progress. Will update results.md when done.
+  - **Tech-lead**: Dead code removal MERGED (2,217 lines finish-guard code). Total dead code removed: ~4,779 lines. Fresh heartbeat at 15:42.
+  - **Optimizer**: Fresh heartbeat at 15:42. Continuing deliver-or-report effectiveness measurement.
+  - **Bob**: Fresh heartbeat at 15:42.
+  - **Growth trigger false positive**: error-log-scanner sent Coach "63 Bob FM-3.3 errors" but evaluations table shows 0. Likely error-log-scanner is using a different data source or counting method. Coach should discard.
+  - **Zombie session**: tech-lead s_1774303617649_81 shows "running" in DB for 425h. Stale DB entry — not actually running.
 
 ## Key Findings This Cycle
-- **EXP-120 joins EXP-117 as negative result**: Three interventions tested on KB integration discovery: (1) Upfront checklist = -67pp (EXP-117), (2) Progressive tracking = -50pp (EXP-120), (3) No intervention = BEST at 67%. **The real problem is Bob doesn't generate the idea "create a new KE entry" — he only updates existing entries.** This is a reasoning gap requiring environmental/template cues, not instructions.
-- **Gym research line definitively closed**: EXP-117 + EXP-118 + EXP-119 (cancelled) + EXP-120 all confirm gym is at ceiling. Five-skill stack + structural guards extracted all available value. No further instruction-level interventions productive.
+- **EXP-120 extended to 12 trials**: Coach is running 6 additional trials beyond the initial 6 (initial: 1/6 pass, 17%). Trial 5 of extended set just passed. Will update significance once all 12 complete.
+- **Dead code sprint accelerating**: Tech-lead removed 2,217 lines of dead finish-guard code (req:5cfaa32d). Combined with earlier removals: ~4,779 lines removed total. Codebase is getting leaner.
+- **Gym research line definitively closed**: EXP-117 + EXP-118 + EXP-119 (cancelled) + EXP-120 all confirm gym is at ceiling. Five-skill stack + structural guards extracted all available value.
 - **Deliver-or-report fix showing promise**: Optimizer tracking post-fix Phase 2 sessions — early data suggests redundant sessions reduced from 50% to near-zero.
-- **Scout auth error recurring**: IDE token expired. Not actionable by agents — infrastructure-level issue.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $143-441/day. **Blocked on Hao since Mar 24**.
-- **P1**: **EXP-121 candidate: INDEX.md environmental fix** — Coach's recommendation: test whether adding a comment in INDEX.md ("Remember to add new KE entries for significant experimental results") improves KE-071 discovery rate. Targets the reasoning gap identified by EXP-117+120.
+- **P1**: **EXP-121 candidate: INDEX.md environmental fix** — Test whether adding a comment in INDEX.md ("Remember to add new KE entries for significant experimental results") improves KE-071 discovery rate.
 - **P1**: **EXP-105 Few-Shot Production Impact** — Need coder/optimizer work sessions to generate data. No data since deployment (Apr 9). Coder completely idle.
-- **P1**: **Present research sprint results to Hao** — KE-101 meta-analysis capstone. 17+ experiments. Gym graduation. Token waste. System entered maintenance phase.
-- **P1**: **Generate implementation work** — System is idle without tasks for tech-lead/coder. Need new features or tech debt items to drive delivery and EXP-105 data.
+- **P1**: **Present research sprint results to Hao** — KE-101 meta-analysis capstone. 17+ experiments. Gym graduation. Token waste.
+- **P1**: **Generate implementation work** — System is idle without tasks for tech-lead/coder. Need new features or tech debt items.
 - **P2**: `analyze-failures` cron DB bug — persistent but non-critical.
 - **P2**: Amy-kimi still down — blocked on Hao for billing.
 - **P2**: Scout 401 auth error — recurring IDE token expiry. Infrastructure issue.
-- **P2**: Coach confabulation pattern — multiple incidents of fabricated data/bugs. Evidence-over-narrative skill helped on coder, consider similar for Coach.
+- **P2**: Zombie session cleanup — tech-lead s_1774303617649_81 should be marked completed in DB.
