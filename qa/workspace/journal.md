@@ -8,6 +8,33 @@
 
 ## 2026-04-10T07:58Z
 
+## 2026-04-10T08:18Z
+
+### Summary
+Proactive heartbeat QA at merge commit **5c84c321**. Sampled the newly-added `src/lib/tools/finish-guard.ts` and attempted mandatory gates. Repository/tooling layout differs from the heartbeat template assumptions: there is no `node_modules/.bin/tsc`, no `tsconfig.json`, and `bun x vitest --run` without a pinned version fails due to a Node/Vitest incompatibility. Running pinned vitest succeeds for core tests but the full suite is red due to environment/scenario fixtures.
+
+### Files reviewed (evidence)
+- `src/lib/tools/finish-guard.ts` (read lines 1–220): finish() guard now includes orchestration exemptions (`agents`/`workflow` tools; summary keywords like "dispatch") and a verify-after-write gate.
+
+### Mandatory gates (attempted)
+- `./node_modules/.bin/tsc --noEmit`: **FAIL (env)** — `./node_modules/.bin/tsc` not present (bash exit 127).
+- `./node_modules/.bin/vitest --run`: **FAIL (env)** — `./node_modules/.bin/vitest` not present; `bun x vitest --run` (latest) crashes (`node:util styleText` export missing).
+
+### Substitute verification (due to missing node_modules)
+- `bun x vitest@3.2.4 --run test/tools-finish-guard.test.ts`: **PASS** — 1 file, **82 tests** passed.
+- `bun x vitest@3.2.4 --run` (entire repo): **FAIL** — 34 failed | 18 passed files; 14 failed | 407 passed tests. Failures include:
+  - `test/security.test.ts`: infinite-loop timeout test times out at 5000ms.
+  - `test/gym/gym.test.ts`: runner fails under Node 18 with `__dirname is not defined in ES module scope` (script emitted as ESM).
+  - `test/ops-gate.test.ts`: `getReceipts` since-filter expectation mismatch.
+  - Many `agents/gym/scenarios/**` fixture tests fail (by design or due to missing deps / `process.exit`), polluting the global vitest run.
+
+### Issues
+- CRITICAL (test gating): `bun x vitest --run` without a pinned version fails at startup (Node/Vitest dependency mismatch).
+- IMPORTANT (test suite hygiene): `vitest --run` picks up many `agents/gym/scenarios/**` fixture tests which fail (missing deps, calls to `process.exit`, no vitest suite). Consider excluding them via vitest config/include patterns.
+
+### Verdict
+CONDITIONAL — sampled change in `finish-guard.ts` looks reasonable, but I cannot complete the mandated `./node_modules/.bin/tsc` / `./node_modules/.bin/vitest` checks in this repo layout, and full-suite vitest is red primarily due to fixture tests + environment/version mismatches.
+
 ### Summary
 Proactive heartbeat QA at HEAD **7c8dc22** (merge of 5186855). Reviewed the newly added Tool Schema Guard and its wiring into the manager.
 
