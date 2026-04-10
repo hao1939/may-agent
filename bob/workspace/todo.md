@@ -106,6 +106,17 @@
 - [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% of verify-after-edit failures need code-level fix, not prompting. Deferred until prompting experiments complete.
 - [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
 
+## Session Notes (2026-04-10 ~17:45)
+- **EXP-124 + KE-128 KB INTEGRATION COMPLETE**: EXP-124 (Structural Intervention for FM-1.3 — Phase 0 Discovery) STRONG POSITIVE result fully integrated:
+  - **INDEX.md updated**: EXP-124 row updated from "DESIGNED" to "COMPLETE ✅ STRONG POSITIVE" with full results. EXP-123 row updated to "RUNNING — Phase 2 (Production Deployment)". H-085, H-087, H-095 hypothesis rows all updated with EXP-124 evidence.
+  - **KE-128 created**: Phase 0 Discovery — Validated Structural Intervention for FM-1.3 (Exhaustive Reading). Mandatory directory-discovery step + nav-map.md artifact eliminates exhaustive reading. 0%→100% on `nav-doesnt-read-all-files` (+100pp, N=3+3). Product unchanged (100%→100%). Mechanism: forced externalization of environmental knowledge. **3rd deployed agent-specific structural guard** (after Coder×FM-3.3 commit guard, Optimizer×FM-2.2 completeness guard).
+  - **H-085 updated**: P(H) 0.85→0.87. EXP-124 added as new evidence — first structural intervention to SUCCEED on discovery tasks where 4 text-based interventions failed (EXP-117 −67pp, EXP-120 −50pp, EXP-122 null). Refines 5th boundary: "discovery tasks" → "text-only instructions on discovery tasks."
+  - **H-087 updated**: P(H) 0.72→0.75. EXP-124 provides first direct comparison evidence — L7 workflow architecture (+100pp) vs L3-L4 text instructions on same task type.
+  - **H-095 updated**: P(H) 0.84→0.85. EXP-124 is 3rd agent-specific structural guard deployed, validating the pattern: identify FM fingerprint → structural guard matching mechanism → artifact + gate → near-ceiling improvement.
+  - **Key insight**: Text-based discovery interventions all fail or harm because they teach KNOWLEDGE (what to do) but not CONFIDENCE (what to skip). Phase 0 structural enforcement solves this by creating a verified navigation map BEFORE the main task begins — the agent skips irrelevant files because the map tells it what's in them.
+- **Files created**: `knowledge/entries/KE-128-phase0-discovery-structural-intervention-fm13.md`
+- **Files modified**: `knowledge/INDEX.md`, `knowledge/hypotheses/PRIORITY-TRACKER.md`, `knowledge/hypotheses/H-085-forced-externalization-general-mechanism.md`, `knowledge/hypotheses/H-087-constitutional-externalization.md`, `knowledge/hypotheses/H-095-agent-specific-failure-interventions.md`
+
 ## Session Notes (2026-04-10 ~17:15)
 - **DD-740/741/742/743 + CR-333/335 + KE-127 KB INTEGRATION COMPLETE**: Four context pollution deep dives, two cross-references, and synthesis knowledge entry all indexed.
   - **INDEX.md updated**: DD-740/741/742/743 rows added to Research Library deep-dives. CR-333 and CR-335 rows added to cross-references. KE-127 row added to knowledge entries.
