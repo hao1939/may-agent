@@ -1446,3 +1446,15 @@ Production multi-agent data management system with "three-track knowledge archit
 ### LACIE — Listener-Aware Confidence Calibration — arXiv:2405.21028
 
 | 2405.21028 | LACIE: Listener-Aware Finetuning for Confidence Calibration in Large Language Models (Stengel-Eskin, Hase, Bansal — UNC Chapel Hill, May 2024) | ★★★★ EXCELLENT — Foundational pre-agentic work on overconfidence. Key insight: calibration as preference optimization via speaker-listener game. Trains models to modulate BOTH implicit markers (authoritative tone, spurious details) AND explicit markers (numeric scores). Results: 47% fewer incorrect answers accepted by human listeners while maintaining acceptance of correct answers. Emergent abstention ("I don't know") for uncertain answers. Shows overconfidence is TRAINABLE — models can learn to hedge when uncertain. Relevant as a potential mitigation strategy for confident failures: LACIE-style training could reduce the 14.6% silent failure rate. (not deep-dived) |
+
+### Co-Sight — Conflict-Aware Meta-Verification — arXiv:2510.21557
+
+| 2510.21557 | Co-Sight: Enhancing LLM-Based Agents via Conflict-Aware Meta-Verification (GAIA SOTA 84.4%, Oct 2025) | ★★★★★ CRITICAL — Conflict-Aware Meta-Verification (CAMV) framework. Multiple perception models analyze each input; disagreement triggers targeted re-verification. GAIA SOTA 84.4% via coordinated verification rather than single-model scaling. Three actionable patterns: disagreement-triggered deep verification, running confidence scores per verifier, conflict history as training signal. Fills KE-105 "verification of verifiers" gap — the first paper to treat verifier disagreement as a first-class signal. (ref: DD-724) |
+
+### DeepVerifier — Self-Evolving Rubric-Based Verification — arXiv:2601.15808
+
+| 2601.15808 | Inference-Time Scaling of Verification: Self-Evolving Rubric-Based Deep Verification (DeepVerifier, Jan 2026) | ★★★★★ CRITICAL — Outperforms LLM-as-Judge by 12-48% via rubric decomposition. DRA failure taxonomy (5 categories, 13 sub-categories) — first systematic taxonomy of verification failures. Each rubric dimension scored independently with calibratable confidence. Self-evolving rubrics refine criteria at inference time via error feedback loops. Fills KE-105 "signal calibration" gap. Connects DD-723 (AdaRubric) and DD-702 (DOVA). (ref: DD-725) |
+
+### Calibrated Uncertainty in Process Reward Models — arXiv:2603.06317
+
+| 2603.06317 | From Entropy to Calibrated Uncertainty: Toward Better Confidence Estimation for Process Reward Models (Mar 2026) | ★★★★½ EXCELLENT — Survey/framework for process-level confidence calibration. Key finding: isotonic regression reduces ECE from 15-25% to 2-5%. Verbalized confidence unreliable (20-40% gap between stated and actual accuracy). Conformal prediction provides formal coverage guarantees for cold-start scenarios. Three calibration paradigms: post-hoc recalibration, training-time auxiliary objectives, hybrid. System policy implication: all confidence scores must go through post-hoc calibration. Fills KE-105 "signal calibration" (statistical) and "cold-start" gaps. (ref: DD-726) |
