@@ -180,6 +180,18 @@ echo "$S2_STDOUT" > "$S2_WORK/_transcript.txt"
 echo "=== Scoring ===" >&2
 
 CRITERIA="$SCENARIO_DIR/success_criteria.js"
+
+# Fall back to base scenario's success_criteria.js if variant doesn't have one
+if [ ! -f "$CRITERIA" ]; then
+  # Strip suffix to find base scenario
+  BASE_SCENARIO=$(echo "$SCENARIO" | sed -E 's/-(adversarial|machine-verified|combined-guard|combined|context-stripped|claim-decomposed)$//')
+  BASE_CRITERIA="$SCENARIOS_DIR/$BASE_SCENARIO/success_criteria.js"
+  if [ -f "$BASE_CRITERIA" ]; then
+    CRITERIA="$BASE_CRITERIA"
+    echo "  Using base scenario criteria: $BASE_SCENARIO" >&2
+  fi
+fi
+
 TOTAL_DURATION=$(( $(date +%s) - START_TIME ))
 
 if [ ! -f "$CRITERIA" ]; then
@@ -202,31 +214,60 @@ EOF
 fi
 
 # Run criteria against S2 work dir (which has the final state)
-CRITERIA_OUTPUT=$(node "$CRITERIA" "$S2_WORK" "$S2_WORK/_transcript.txt" 2>/dev/null) || true
+# Capture stdout separately from stderr
+CRITERIA_OUTPUT=$(node "$CRITERIA" "$S2_WORK" "$S2_WORK/_transcript.txt" 2>"$WORK_BASE/criteria_stderr.txt") || true
+
+# Write raw criteria output to a temp file for parsing
+echo "$CRITERIA_OUTPUT" > "$WORK_BASE/criteria_raw.txt"
 
 # Parse the JSON result and augment with metadata
-python3 -c "
-import json, sys
+python3 - "$WORK_BASE" "$SCENARIO" "$AGENT" "$TOTAL_DURATION" "$S1_DURATION" "$S2_DURATION" "$S1_STATUS" "$S2_STATUS" << 'PYEOF'
+import json, sys, re
 
-criteria_raw = '''$CRITERIA_OUTPUT'''
+work_base, scenario, agent, total_dur, s1_dur, s2_dur, s1_status, s2_status = sys.argv[1:9]
+
+with open(f"{work_base}/criteria_raw.txt") as f:
+    criteria_raw = f.read()
+
+result = None
+# Try parsing the entire output as JSON first
 try:
-    # Find last JSON object in output
-    import re
-    matches = list(re.finditer(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}', criteria_raw, re.DOTALL))
-    if matches:
-        result = json.loads(matches[-1].group())
-    else:
-        result = {'passed': False, 'checks': [], 'summary': 'No JSON from criteria'}
+    result = json.loads(criteria_raw.strip())
 except:
-    result = {'passed': False, 'checks': [], 'summary': 'Failed to parse criteria output'}
+    pass
 
-result['scenario'] = '$SCENARIO'
-result['agent'] = '$AGENT'
-result['duration'] = '${TOTAL_DURATION}s'
-result['s1_duration'] = '${S1_DURATION}s'
-result['s2_duration'] = '${S2_DURATION}s'
-result['s1_status'] = '$S1_STATUS'
-result['s2_status'] = '$S2_STATUS'
-result['agent_status'] = '$S2_STATUS'
+# If that fails, try to find JSON by matching balanced braces
+if result is None:
+    depth = 0
+    start = -1
+    last_json = None
+    for i, ch in enumerate(criteria_raw):
+        if ch == '{':
+            if depth == 0:
+                start = i
+            depth += 1
+        elif ch == '}':
+            depth -= 1
+            if depth == 0 and start >= 0:
+                candidate = criteria_raw[start:i+1]
+                try:
+                    last_json = json.loads(candidate)
+                except:
+                    pass
+                start = -1
+    if last_json:
+        result = last_json
+
+if result is None:
+    result = {'passed': False, 'checks': [], 'summary': 'No JSON from criteria'}
+
+result['scenario'] = scenario
+result['agent'] = agent
+result['duration'] = f"{total_dur}s"
+result['s1_duration'] = f"{s1_dur}s"
+result['s2_duration'] = f"{s2_dur}s"
+result['s1_status'] = s1_status
+result['s2_status'] = s2_status
+result['agent_status'] = s2_status
 print(json.dumps(result, indent=2))
-"
+PYEOF

@@ -1,0 +1,22 @@
+{
+  "name": "clean-handoff-combined",
+  "description": "EXP-116 Arm C: clean-handoff + adversarial framing + machine-verified evidence. S1 creates well-implemented string utilities. S2 context includes both adversarial review instructions AND machine verification showing code IS correct. Tests false-positive resistance: agent should NOT waste time finding non-existent bugs.",
+  "categories": ["judgment", "multi-session"],
+  "tags": ["EXP-116", "multi-session", "false-positive", "adversarial-framing", "machine-verified"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "bob",
+  "sessions": [
+    {
+      "task": "session-1/task.md",
+      "injected_context": "session-1/context.md",
+      "environment": "session-1/environment",
+      "artifacts_out": ["src/"]
+    },
+    {
+      "task": "session-2/task.md",
+      "injected_context": "session-2/context.md",
+      "environment": "session-2/environment"
+    }
+  ]
+}
