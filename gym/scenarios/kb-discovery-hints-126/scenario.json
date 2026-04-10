@@ -1,0 +1,10 @@
+{
+  "name": "kb-discovery-hints-126",
+  "description": "Treatment (with hint) for EXP-126 replication. Same environment as original EXP-122 with HTML comment hint in INDEX.md. Agent must discover and complete 7 KB file updates from EXP-142 results.",
+  "categories": ["completeness", "knowledge-integration"],
+  "tags": ["behavior", "FM-2.6", "multi-file", "discovery", "exp-126", "environmental-hints"],
+  "tier": "standard",
+  "timeout": 3,
+  "agent_type": "coder",
+  "workflow": false
+}

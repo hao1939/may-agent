@@ -1,16 +1,16 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~17:53 UTC
+Updated: 2026-04-10 ~18:12 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — Fresh heartbeat 17:53.
-- **Coach**: 🟢 Active — Fresh heartbeat 17:53. Writing KE-126 + KE-128 from completed experiments.
+- **Bob**: 🟢 Active — Fresh heartbeat 18:12.
+- **Coach**: 🟢 Active — Fresh heartbeat 18:12. Long-running EXP-124 gym trials (58min, hitting flaky runner — empty transcripts on some trials).
 - **Scout**: ⚠️ 401 Error — Recurring `IDE token expired` auth failure. Auto-pause recovery handling retries.
-- **Tech-lead**: 🟢 Active — Fresh heartbeat 17:53. Circuit breaker removal from cron.ts — 33/33 tests pass, merging.
-- **Optimizer**: 🟢 Active — Fresh heartbeat 17:53. Working on gym results DB recording gap.
-- **Evaluator**: 🟢 Active — Fresh heartbeat 17:53.
-- **QA**: 🟢 Active — Fresh heartbeat 17:53.
+- **Tech-lead**: 🟢 Active — Fresh heartbeat 18:12. Completed gym scenario inherits fix + leaked fixture cleanup.
+- **Optimizer**: 🟢 Active — Fresh heartbeat 18:12. Completed gym results DB recording gap fix.
+- **Evaluator**: 🟢 Active — Fresh heartbeat 18:12.
+- **QA**: 🟢 Active — Fresh heartbeat 18:12.
 - **Coder**: Idle. Only runs when forked by tech-lead.
 - **All agents**: 🟡 7/8 healthy. Scout has recurring auth error (401, IDE token expired).
 - **✅ Tool Schema Guard**: Live in production.
@@ -196,17 +196,19 @@ Updated: 2026-04-10 ~17:53 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (17:53)
-- **System healthy**: 7/8 agents running. Scout recurring 401 auth. Zero failures in last hour. All agents have fresh heartbeats (17:53).
-- **Since last cycle (17:42)**:
-  - **Coach**: Writing KE-126 (Creative Inference Gap synthesis from EXP-117→122) + KE-128 (Phase 0 Discovery from EXP-124). Good autonomous KB curation.
-  - **Tech-lead**: Removing redundant circuit breaker from cron.ts (superseded by auto-pause recovery). 33/33 tests pass. Merge blocked by uncommitted scout workspace files — will resolve.
-  - **Optimizer**: Identified gym results DB recording gap in gym-helpers.ts. Forked work session to fix. Self-initiated.
-  - **All agents self-directing**: Zero pending dispatch. System in mature autonomous operation.
+## Latest Cycle Summary (18:12)
+- **System healthy**: 7/8 agents running. Scout recurring 401 auth. Zero failures in last hour. All agents have fresh heartbeats (18:12).
+- **Since last cycle (17:53)**:
+  - **Coach**: EXP-124 gym trials still running (~58min). Hitting flaky gym runner — some trials produce empty transcripts/agent errors. Still investigating. Running baseline comparisons.
+  - **Tech-lead**: Completed inherits fix for 36 broken gym scenarios (s_1775843315147_302) + leaked fixture cleanup.
+  - **Optimizer**: Completed gym results DB recording gap fix (s_1775843116915_301). Self-initiated. Good autonomous behavior.
+  - **Bob**: Fresh heartbeat starting. KB integration work continuing (EXP-124 results, DD-734→738 synthesis done last cycle).
+  - **All agents self-directing**: Zero pending dispatch from May. System in mature autonomous operation.
 
 ## Key Findings This Cycle
-- **EXP-124 FM-1.3 Phase 0 Discovery VALIDATED**: (Carried from 17:42) Forced directory discovery before path-dependent tasks converts "navigate and read everything" into "navigate first, then read selectively." +100pp on failing check, no product regression. Ready for production deployment.
-- **Research line completion**: Externalization series (EXP-117→124, 6 experiments) now fully complete and synthesized. Structural > environmental > text interventions confirmed across all tested FM types.
+- **Gym runner flakiness**: Coach's EXP-124 treatment trials hitting empty transcripts on some runs. Agent errors/timeouts. Not a task design issue — runner reliability problem. May need tech-lead investigation if pattern persists.
+- **EXP-124 FM-1.3 Phase 0 Discovery VALIDATED**: (Carried) +100pp on failing check, no product regression. Ready for deployment.
+- **Research line completion**: Externalization series (EXP-117→124, 6 experiments) fully complete and synthesized.
 
 ## Next Actions
 - **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. Saves $143-441/day. **Blocked on Hao since Mar 24**.
