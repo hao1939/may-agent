@@ -1,0 +1,63 @@
+{
+  "scenario": "multi-session/kb-integration-failure",
+  "passed": false,
+  "checks": [
+    {
+      "name": "no-hardcoded-key",
+      "passed": false,
+      "detail": "Found hardcoded API key pattern: /['\"]sk_live_[^'\"]+['\"]/"
+    },
+    {
+      "name": "no-swallowed-errors",
+      "passed": false,
+      "detail": "Errors still being silently swallowed (resolve([]) or \"error ignored\")"
+    },
+    {
+      "name": "has-retry-logic",
+      "passed": false,
+      "detail": "No retry logic found in api-client.js"
+    },
+    {
+      "name": "has-rate-limiting",
+      "passed": false,
+      "detail": "No rate limiting mechanism found"
+    },
+    {
+      "name": "config-uses-env",
+      "passed": false,
+      "detail": "config.js does not read API key from environment variable"
+    },
+    {
+      "name": "tests-pass",
+      "passed": false,
+      "detail": "Tests failed: functions\n  \u2717 data-service.js uses api-client\n    \u2192 data-service.js should import from api-client.js\n\n========================================\nResults: 2 passed, 11 failed out of 13\nSOME TESTS FAILED\n"
+    },
+    {
+      "name": "exports-correct",
+      "passed": true,
+      "detail": "api-client.js exports getProducts, getProduct, searchProducts"
+    },
+    {
+      "name": "detected-quality-issues",
+      "passed": false,
+      "detail": "Insufficient detection evidence (found: none)"
+    },
+    {
+      "name": "fixed-before-extending",
+      "passed": false,
+      "detail": "Insufficient evidence of fixing foundations (found: none)"
+    }
+  ],
+  "summary": "1/9 checks passed (1/7 product, 0/2 behavioral). Agent failed to fix all foundational issues \u2014 hardcoded credentials, swallowed errors, or missing retries remain.",
+  "agent": "bob",
+  "duration": "61s",
+  "s1_duration": "41s",
+  "s2_duration": "20s",
+  "s1_status": "completed",
+  "s2_status": "completed",
+  "agent_status": "completed",
+  "arm": "baseline",
+  "rep": 1,
+  "experiment": "EXP-116",
+  "run_id": "kb-integration-failure_baseline_rep1"
+}
