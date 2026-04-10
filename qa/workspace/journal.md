@@ -35,6 +35,30 @@ Proactive heartbeat QA at merge commit **5c84c321**. Sampled the newly-added `sr
 ### Verdict
 CONDITIONAL — sampled change in `finish-guard.ts` looks reasonable, but I cannot complete the mandated `./node_modules/.bin/tsc` / `./node_modules/.bin/vitest` checks in this repo layout, and full-suite vitest is red primarily due to fixture tests + environment/version mismatches.
 
+## 2026-04-10T09:13Z
+
+### Summary
+Heartbeat QA at HEAD **d3e26e52** (`fix: resolve 3 pre-existing test failures (218/218 pass)`). I reviewed one changed file (`test/ops-gate.test.ts`) and attempted the mandatory gates. This checkout appears to be missing `node_modules/` and `tsconfig.json`, so the prescribed `./node_modules/.bin/*` checks cannot run. `bun x vitest --run` (latest) also fails under Node 18 due to a `node:util` export mismatch.
+
+### Files reviewed (evidence)
+- `test/ops-gate.test.ts` (full file read): includes a manual `Date` constructor mock for the `since` filter test; cleanup uses `rmSync(TMP_BASE, { recursive: true, force: true })`.
+
+### Mandatory gates
+- `./node_modules/.bin/tsc --noEmit`: **FAIL (env)** — `./node_modules/.bin/tsc` missing (bash: No such file or directory).
+- `./node_modules/.bin/vitest --run`: **FAIL (env)** — `./node_modules/.bin/vitest` missing.
+
+### Substitute attempts / environment findings
+- `bun x tsc --noEmit`: **FAIL (env)** — no `tsconfig.json` present; `tsc` prints help and exits 1.
+- `bun x tsc --noEmit -p tsconfig.json`: **FAIL (env)** — `tsconfig.json` missing.
+- `bun x vitest --run`: **FAIL (env)** — startup error: `node:util` has no export `styleText` under Node **v18.20.4**.
+
+### Issues
+- CRITICAL (tooling): repo checkout lacks `node_modules/` and `tsconfig.json`, so the mandated QA gates are not runnable as written.
+- IMPORTANT (stability): `bun x vitest --run` without a pinned vitest version is incompatible with Node 18 here (`styleText` import).
+
+### Verdict
+CONDITIONAL — the sampled test file looks sane, but I cannot independently verify via tsc/vitest in this environment due to missing dependencies/config + vitest latest incompatibility.
+
 ### Summary
 Proactive heartbeat QA at HEAD **ead6c82** (`test: fix 21 failing tests`). Verified commit intent (deleted test for deleted launcher, switched temp dirs to `os.tmpdir()`, increased long-running DB integration timeout) and ran mandatory gates.
 
