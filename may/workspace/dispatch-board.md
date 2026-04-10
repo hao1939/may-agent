@@ -1,18 +1,18 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~22:55 UTC
+Updated: 2026-04-10 ~23:25 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — Fresh heartbeat 22:25. H-099 (Discovery Task Boundary) designed and committed (0527a1f). System quiet, all KB up to date.
-- **Coach**: 🟢 Active — EXP-128 WORK SESSION in progress (12/18 trials complete as of ~22:54). Channel 3 boundary conditions test. All arms scoring low (mostly 2/5).
+- **Bob**: 🟢 Active — Heartbeat 23:23 in progress. H-099 committed. KB up to date.
+- **Coach**: 🟢 Active — **EXP-128 COMPLETE** (18/18 trials). H-128 REJECTED. Ch3 few-shot detection coverage made no difference (0/6 all arms). Confirms Ch3 task-type boundary. Coach exploring EXP-E2 (Channel 2 Budget Curve) next.
 - **Scout**: ⚠️ 401 Error — Recurring `IDE token expired` auth failure. Auto-pause recovery handling retries.
-- **Tech-lead**: 🟢 Active — Heartbeat 22:23 in progress.
-- **Optimizer**: 🟢 Active — Fresh heartbeat 22:24. Session-query tool MERGED to main. All 4 exploration modes done.
-- **Evaluator**: 🟢 Active — Fresh heartbeat 22:24.
-- **QA**: 🟢 Active — Fresh heartbeat 22:24.
+- **Tech-lead**: 🟢 Active — Heartbeat 23:23 in progress.
+- **Optimizer**: 🟢 Active — Heartbeat 23:23 in progress. Session-query tool MERGED.
+- **Evaluator**: 🟢 Active — Heartbeat 23:23 in progress.
+- **QA**: 🟢 Active — Heartbeat 23:23 in progress.
 - **Coder**: Idle. Only runs when forked by tech-lead.
-- **All agents**: 🟡 7/8 healthy. Scout has recurring auth error (401, IDE token expired).
+- **All agents**: 🟡 7/8 healthy. Scout has recurring auth error (401, IDE token expired). Zero failures last hour.
 - **✅ Tool Schema Guard**: Live in production.
 - **✅ Dead code removal**: ~4,779+ lines removed total (1,973 earlier + 589 memory JSONL + 2,217 finish-guard dead code).
 - **✅ Web UI Phase 1**: Merged to main.
@@ -160,7 +160,7 @@ Updated: 2026-04-10 ~22:55 UTC
 | **Optimizer: Session-Sync Cron Handler** | ✅ DEPLOYED | optimizer | Handler at `agents/may/handlers/session-sync.ts`. Syncs .state/sessions/ meta.json → may.db every 5min. 996 sessions in <1s. Commit 2d257c78. Fixes chronic stale DB issue. |
 | **EXP-116 Results Correction** | ✅ CORRECTED | may | EXP-116/results.md note updated: invalidation was WRONG — EXP-118 confirmed 100% baselines are real with valid agents. Silent exit bug exists but didn't corrupt results. |
 
-| **EXP-128 Channel 3 Boundary Conditions** | 🏃 RUNNING (12/18) | coach | 18 gym trials (3 arms × 6 runs). 12/18 complete. All arms scoring low (2-3/5). Preliminary: Ch3 alone insufficient, consistent with EXP-127 (only Ch2 forced-ext works). |
+| **EXP-128 Channel 3 Boundary Conditions** | ✅ COMPLETE | coach | **H-128 REJECTED**: 18 runs, all arms 0/6 pass. Detection coverage made no difference. Ch3 has genuine task-type boundary — "success signal misdirection" (tests pass → agent thinks it succeeded). Action momentum overwhelms few-shot. Results at `agents/shared/knowledge/experiments/EXP-128/results.md`. |
 | **Session-Query Tool** | ✅ MERGED | optimizer/may | 378-line CLI at `scripts/session-query.ts`. Merged to main. Note: queries `agents/.state/sessions/history/` (historical), not `.state/sessions/` (current). |
 | **H-099 Discovery Task Boundary** | ✅ FILED | bob | 167-line hypothesis: creative inference is irreducible to scaffolding. 5 failed interventions as evidence. Commit 0527a1f. |
 | **EXP-123 Verification-Depth Guard** | ✅ MERGED + OBSERVING | coach + may | Guard deployed to production (commit 9d9be57). Blocks superficial verification: git on gitignored, no post-write verification. 363 lines, 18/18 tests. Observation window: 48-72h until Apr 13. |
@@ -205,17 +205,17 @@ Updated: 2026-04-10 ~22:55 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (22:55)
-- **System healthy**: 7/8 agents running. Scout recurring 401 auth. Zero failures this hour.
-- **Since last cycle (22:27)**:
-  - **EXP-128 progressing**: Coach work session 12/18 trials complete (~67%). All arms scoring poorly (mostly 2/5, a few 3/5). Consistent with EXP-127 findings — Ch3 alone insufficient for judgment tasks.
-  - **All agents self-directing**: Zero May interventions needed. Team fully autonomous.
-  - **No new dispatch items**: No pending requests for May. System at steady state.
+## Latest Cycle Summary (23:25)
+- **System healthy**: 7/8 agents running. Scout recurring 401 auth. Zero failures last hour.
+- **Since last cycle (22:55)**:
+  - **EXP-128 COMPLETE**: All 18/18 trials done. H-128 REJECTED — detection coverage in few-shot makes no difference (0/6 all arms). Confirms Ch3 has genuine task-type boundary. "Success signal misdirection" identified as mechanism: passing tests overwhelm few-shot guidance.
+  - **System-status anomaly**: Bob's analysis.md is 6 days old. Low priority — Bob is focused on KB integration and hypothesis filing, not failure analysis. Analysis will refresh when next needed.
+  - **All agents self-directing**: All heartbeats running fresh. Zero May interventions needed.
 
 ## Key Findings This Cycle
-- **H-099 formalizes the discovery boundary**: Bob synthesized the FM-1.3 dead-end into a proper hypothesis — creative inference may be fundamentally irreducible to scaffolding. This is the theoretical capstone for the intervention trilogy (EXP-117/120/121).
-- **EXP-128 is the last active experiment**: Testing whether Ch3 failure on contradictory-requirements is a boundary condition or generalizable weakness. Results will update H-098 (Attention Channel Theory).
-- **System at steady state + actively exploring**: All KB integrated, agents self-dispatching new experiments without prompting.
+- **EXP-128 closes the Ch3 investigation line**: 3 experiments (EXP-127, EXP-128) confirm Ch3 (few-shot) has genuine task-type boundary. The mechanism is "success signal misdirection" — when tests pass without detecting the contradiction, the agent gets positive reinforcement for the wrong behavior.
+- **Next experiment frontier**: EXP-E2 (Channel 2 Budget Curve) — can we chain multiple forced externalization gates? This has real production implications since we already stack completeness guard + verification-depth guard.
+- **System at steady state**: All KB integrated, agents self-dispatching. Research program advancing without May intervention.
 
 ## Next Actions
 - **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. Saves $143-441/day. **Blocked on Hao since Mar 24**.
