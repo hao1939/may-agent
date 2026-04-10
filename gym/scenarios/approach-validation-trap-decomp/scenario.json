@@ -1,0 +1,10 @@
+{
+  "name": "approach-validation-trap-decomp",
+  "description": "Forced-decomposition variant of approach-validation-trap: Agent must write APPROACH.md (task understanding, planned steps, key questions) BEFORE writing analysis.md. Tests whether forced externalization of approach prevents premature conclusion from red herring.",
+  "categories": ["judgment", "root-cause-analysis"],
+  "tags": ["behavior", "fm-2.1", "analysis", "red-herring", "exp-114", "decomposition"],
+  "tier": "standard",
+  "timeout": 4,
+  "agent_type": "coach",
+  "workflow": false
+}
