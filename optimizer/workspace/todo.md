@@ -67,6 +67,7 @@ Tool quality regression #15 (2026-04-10 07:24) — 1 regressed category. bash:ot
 - **FIX DEPLOYED** (commit 5df41205, 2026-04-10 10:01): Early exit check between Phase 1 and Phase 2 — uses `existsSync` to detect if planned files already exist. Three paths: (a) all exist → skip Phase 2 entirely, (b) some exist → narrow Phase 2 to missing files only, (c) none exist → full Phase 2. Also added `extractFilePaths()` helper and Phase 2b retry for missing deliverables.
 - **Pre-fix baseline (24h)**: 20 Phase 2 sessions. 12/20 (60%) were redundant (≤15 ops), consuming 121 ops. 8/20 were productive (169 ops). **Expected savings: ~121 ops/day (42% of Phase 2 ops).**
 - **Measurement**: Next heartbeat cycle should show skipped Phase 2 sessions in bob's workflow runs. Look for `phase2-skipped-early-delivery` step events or significantly fewer Phase 2 sessions.
+- **BUG FOUND (2026-04-10 10:53)**: Early exit was NEVER triggering. Root cause: `lastAssistantText` is the finish() summary (no file paths), not the plan message. `extractFilePaths()` always returned `[]`, so `plannedFiles.length > 0` was always false. **All 10 post-fix Phase 2 sessions ran full normal path.** FIX: commit fbff24ba — now scans ALL assistant messages via `phase1.messages` array for file path extraction. Also caps planText at 4000 chars for prompt injection. Added observability logging.
 
 ### QA Journal Token Waste (2026-04-10 09:23)
 **Mode B exploration** — Tool Gap Analysis, found major token waste:

@@ -4698,3 +4698,21 @@ CONDITIONAL — code compiles; test suite failures appear unrelated to the subsc
 
 ### Verdict
 PASS
+
+---
+## 2026-04-10T10:56Z — QA Heartbeat
+
+### Reviewed
+- Commit `c76cd98` (Web UI Phase 1): `src/app/ui/web.ts`, `src/app/ui/web-static/index.html`.
+
+### Findings
+- IMPORTANT: `src/app/ui/web.ts`: multiple `catch {}` blocks swallow errors silently (notably in `findSocketPath()` directory scanning and identity parsing, and transcript parsing). This could hide corruption/permission issues; consider at least debug logging or narrow the try/catch scope.
+- IMPORTANT: `src/app/ui/web.ts`: `/api/browse` path security uses `absPath.startsWith(sharedDir)` after `join(sharedDir, relPath)`. This is generally OK, but can be brittle on platforms with path normalization quirks; consider `resolve()` + `startsWith(resolve(sharedDir) + sep)`.
+- MINOR: `src/app/ui/web-static/index.html`: a few UI strings include emoji; acceptable, but if environment is emoji-hostile, consider plain text.
+
+### Checks
+- `./node_modules/.bin/tsc --noEmit`: PASS (no output, exit 0).
+- `./node_modules/.bin/vitest --run`: PASS (2067 tests across 139 files).
+
+### Verdict
+CONDITIONAL (address IMPORTANT items or explicitly accept the risk)

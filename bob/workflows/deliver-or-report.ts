@@ -97,10 +97,25 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     return ctx.escalate("Phase 1 (analyze) failed", { error: phase1.error });
   }
 
-  const planText = phase1.lastAssistantText ?? "";
-  const plannedFiles = extractFilePaths(planText);
+  // Extract plan from ALL assistant messages (not just lastAssistantText,
+  // which is typically just the finish() summary without file paths).
+  const allAssistantText = (phase1.messages ?? [])
+    .filter((m: any) => m.role === "assistant")
+    .flatMap((m: any) => (m.content ?? []).filter((b: any) => b.type === "text").map((b: any) => b.text))
+    .join("\n");
+  // Use full text for file path extraction, but cap for prompt injection
+  const planTextFull = allAssistantText || phase1.lastAssistantText || "";
+  const planText = planTextFull.length > 4000 ? planTextFull.slice(0, 4000) + "\n[...truncated]" : planTextFull;
+  const plannedFiles = extractFilePaths(planTextFull);
 
   ctx.emit({ type: "step_done", step: "phase1-analyze" } as any);
+
+  // Log extracted paths for observability
+  if (plannedFiles.length > 0) {
+    ctx.emit({ type: "step_start", step: `file-check: ${plannedFiles.length} planned files detected` });
+  } else {
+    ctx.emit({ type: "step_start", step: "file-check: 0 planned files detected (early-exit disabled)" });
+  }
 
   // ═══════════════════════════════════════════════════════════════════
   // EARLY EXIT CHECK: Did Phase 1 already write the deliverables?

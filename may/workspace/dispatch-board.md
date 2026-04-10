@@ -1,16 +1,16 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~10:42 UTC
+Updated: 2026-04-10 ~10:53 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — Heartbeat 10:42. H-094/H-068 archival ✅. EXP-116 review dispatched (self). H-097 hypothesis added.
-- **Coach**: 🟢 Active — Heartbeat 10:42. EXP-116 Phase 2 dispatched (self). 30-trial adversarial framing guard validation.
-- **Scout**: 🟢 Active — Heartbeat 10:42.
-- **Tech-lead**: 🟢 Active — Heartbeat 10:42. Completeness guard for EXP-115 committed (484a53cb). 3 pre-existing test failures fixed (d3e26e52).
-- **Optimizer**: 🟢 Active — Heartbeat 10:42. deliver-or-report early exit fix ✅.
-- **Evaluator**: 🟢 Active — Heartbeat 10:42. Running task tree evaluations.
-- **QA**: 🟢 Active — Heartbeat 10:42.
+- **Bob**: 🟢 Active — Heartbeat 10:53. EXP-116 review completed: "SIGNIFICANT REVISIONS NEEDED" (3 critical issues: confounded EXP-103 base, KE reference errors, EXP-108 null result ignored).
+- **Coach**: 🟢 Active — Heartbeat 10:53. EXP-116 Phase 2 running (30-trial gym validation, started 10:54).
+- **Scout**: 🟢 Active — Heartbeat 10:53.
+- **Tech-lead**: 🟢 Active — Heartbeat 10:53. Merged `review/webui-agent-activity` to main + `review/remove-stuck-detector` (657 lines removed).
+- **Optimizer**: 🟢 Active — Heartbeat 10:53. deliver-or-report early exit fix ✅ last cycle.
+- **Evaluator**: 🟢 Active — Heartbeat 10:53. Running task tree evaluations.
+- **QA**: 🟢 Active — Heartbeat 10:53.
 - **Coder**: Idle. Only runs when forked by tech-lead.
 - **All agents**: 🟢 8/8 running. Zero errors last hour.
 - **✅ Tool Schema Guard**: Live in production.
@@ -135,7 +135,7 @@ Updated: 2026-04-10 ~10:42 UTC
 | **Tech-lead: 21 Test Fixes** | ✅ MERGED | tech-lead | Commit ead6c82. Dead launcher tests + permission-blocked workspace dirs + flaky research-db. 2098/2098 tests pass. |
 | **Bob DD-720-723 Indexing** | ✅ COMPLETE | bob | Evaluation architecture entries indexed into knowledge base. |
 | **Scout C1.3/C7.1 Investigation** | ✅ COMPLETE | coach | Root cause: path inconsistency. Scout writes drops to 4+ dirs, only `/knowledge/` exempt. Text instructions can't fix post-action habits. Brief at `agents/coach/workspace/briefs/scout-c13-regression-diagnostic.md`. |
-| **EXP-116 Adversarial Framing Guard** | ⏳ IN PROGRESS | coach + bob | Coach running Phase 2 (30-trial validation). Bob reviewing design. Self-dispatched by both agents. |
+| **EXP-116 Adversarial Framing Guard** | ⚠️ REVISIONS NEEDED | coach + bob | Coach Phase 2 running (30 trials). **Bob review: 3 critical issues** — EXP-103 confound, KE reference errors, EXP-108 null ignored. Design needs revision before deployment. |
 | **Bob H-097 Hypothesis** | ⏳ NEW | bob | New hypothesis added during corpus maintenance. Details TBD. |
 | **Tech-lead EXP-115 Completeness Guard** | ✅ COMMITTED | tech-lead | Commit 484a53cb. 3 pre-existing test failures also fixed (d3e26e52). Dead finish-guard.ts removed (2f261cc7). |
 
@@ -169,27 +169,27 @@ Updated: 2026-04-10 ~10:42 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (10:42)
-- **System healthy**: All 8 non-May agents running. Zero errors last hour. All heartbeats fresh (~10:42).
-- **Since last cycle (10:23)**:
-  - Bob: H-094/H-068 hypothesis archival ✅ (20 ops). Self-dispatched EXP-116 review + H-097 addition.
-  - Coach: Self-dispatched EXP-116 Phase 2 (30-trial adversarial framing guard validation).
-  - Tech-lead: Completeness guard committed (484a53cb). 3 pre-existing test failures fixed (d3e26e52). Dead finish-guard.ts removed (2f261cc7).
-  - Evaluator: Running task tree evaluations continuously.
-- **Web UI branch resolved**: Branch `review/webui-agent-activity` no longer exists. Web UI is built into the bundled binary. No reconciliation needed.
-- **Agents self-organizing well**: Bob and Coach both self-dispatched EXP-116 work without May intervention. Good autonomous behavior.
+## Latest Cycle Summary (10:53)
+- **System healthy**: All 8 non-May agents running. Zero errors last hour. All heartbeats fresh (~10:53).
+- **Since last cycle (10:42)**:
+  - Bob: EXP-116 review completed — "SIGNIFICANT REVISIONS NEEDED". 3 critical issues: EXP-103 confound, KE reference errors, EXP-108 null result ignored.
+  - Coach: EXP-116 Phase 2 running (30-trial gym validation, forked at 10:54). In progress.
+  - Tech-lead: Merged web UI dashboard + stuck-detector removal (657 lines) last cycle. No new work this cycle yet.
+  - Optimizer: deliver-or-report early exit fix done last cycle. Heartbeat running.
+  - Evaluator: Task tree evaluations continuing.
+- **DB cleanup**: 2 duplicate coder Web UI requests cleaned (15c2715c, 13206ac2) — already done by tech-lead.
 
 ## Key New Findings This Cycle
-- **Agents actively self-dispatching**: Both Bob (EXP-116 design review) and Coach (EXP-116 Phase 2 validation) created their own work requests this cycle. This is the autonomous behavior Hao wants.
-- **Tech-lead continuing proactive cleanup**: Dead finish-guard.ts removed, test failures fixed — all without dispatch from May.
-- **Web UI branch resolved**: No longer exists on filesystem. Source is inside the bundled binary.
+- **Bob's EXP-116 review is rigorous**: Bob correctly identified that EXP-103's baseline was confounded by the already-deployed evidence-over-narrative skill. This means the adversarial framing effect size (+75-89pp) may be inflated. Coach's Phase 2 trial results will help clarify the marginal effect.
+- **Tech-lead merged 2 branches**: `review/webui-agent-activity` (dashboard UI + 3 API endpoints) + `review/remove-stuck-detector` (657 lines dead code removed). Both to main.
+- **Agents continue self-organizing**: Bob and Coach both independently working on EXP-116 without May dispatch. Good autonomous behavior.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao since Mar 24**.
-- **P1**: **EXP-116 in progress** — Bob reviewing design, Coach running Phase 2 (30 trials). Adversarial framing guard for multi-session handoffs.
+- **P1**: **EXP-116 Phase 2 in progress** — Coach running trials. Bob's review means design may need revision before deployment.
 - **P1**: **EXP-105 Few-Shot Production Impact** — Need coder/optimizer work sessions to generate data.
 - **P1**: **Present research sprint results to Hao** — KE-101 meta-analysis capstone. 17+ experiments. Gym graduation. Token waste finding ($441/week).
-- **P2**: Clean up 4 duplicate request pairs in DB.
+- **P2**: Remaining duplicate request pairs in DB (2 more pairs to check).
 - **P2**: `analyze-failures` cron DB bug — persistent but non-critical.
 - **P2**: Federation design ready for Hao review.
 - **P2**: Amy-kimi still down — blocked on Hao for billing.
