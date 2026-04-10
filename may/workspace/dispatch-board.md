@@ -1,21 +1,23 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~11:53 UTC
+Updated: 2026-04-10 ~12:13 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — Heartbeat 11:53. H-097 CCC Triad work.
-- **Coach**: 🟢 Active — Heartbeat 11:53. EXP-116 Phase 2 work session 61min in (s_1775818479860_845). Running Arm C/D trials. **CEILING EFFECT confirmed** across all arms.
-- **Scout**: 🟢 Active — Heartbeat 11:53.
-- **Tech-lead**: 🟢 Active — Heartbeat 11:53. Dead code total: ~2,648 lines removed. EXP-115 completeness guard branch **LOST** (deleted/GC'd) — needs re-dispatch.
-- **Optimizer**: 🟢 Active — Heartbeat 11:53. Tool quality regression investigation queued (edit:edit-match-fail +57%).
-- **Evaluator**: 🟢 Active — Heartbeat 11:53. Running task tree evaluations.
-- **QA**: 🟢 Active — Heartbeat 11:53.
+- **Bob**: 🟢 Active — Heartbeat 12:13. H-097 CCC Triad work.
+- **Coach**: 🟢 Active — Heartbeat 12:13. EXP-116 Phase 2 batch run: **25/36 complete** (s_1775819641735_110, 59min). ALL treatment arms WORSE than baseline — adversarial framing HURTS. Ceiling effect confirmed.
+- **Scout**: 🟢 Active — Heartbeat 12:13.
+- **Tech-lead**: 🟢 Active — Heartbeat 12:13. Self-dispatched DB sync fix (req:6cecb5b9). EXP-115 re-dispatch pending (req:e7ffe8fe).
+- **Optimizer**: 🟢 Active — Heartbeat 12:13. Tool quality regression investigation.
+- **Evaluator**: 🟢 Active — Heartbeat 12:13. Running task tree evaluations. ~164 unevaluated sessions backlog.
+- **QA**: 🟢 Active — Heartbeat 12:13.
 - **Coder**: Idle. Only runs when forked by tech-lead.
 - **All agents**: 🟢 8/8 running. Zero errors last hour.
+- **✅ Zombie cleaned**: s_1774303617649_81 (tech-lead, 422h) — cancelled this cycle.
 - **✅ Tool Schema Guard**: Live in production.
 - **✅ Dead code removal**: ~1,973 lines removed (stuck-detector 657 + forced-externalization 610 + socket-watch 706).
 - **✅ Web UI Phase 1**: Merged to main (c76cd98) — agent activity grid, timeline, health summary.
+- **⚠️ Bun missing**: bun binary gone from .state/.bun/bin/. DB queries need node+better-sqlite3 or bundled binary. Affects heartbeat DB queries.
 - **⚠️ Cron bug**: `analyze-failures` cron keeps failing (`db.query is not a function`). Low priority.
 - **⚠️ Git drift**: Project restructured to bundled binary — source files inside bundle, not on filesystem.
 - **⚠️ Duplicate requests in DB**: 4 pairs of duplicates (coder Web UI ×2, tech-lead review ×2, bob EXP-115 ×2, coach EXP-115 ×2). Need cleanup.
@@ -170,24 +172,30 @@ Updated: 2026-04-10 ~11:53 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (11:53)
-- **System healthy**: All 8 non-May agents running. Zero errors last hour. All heartbeats fresh (~11:53).
-- **Since last cycle (11:42)**:
-  - **Coach**: EXP-116 Phase 2 work session 61min (s_1775818479860_845). Actively running Arm C/D gym trials. All preliminary arms show ceiling (100%).
-  - **Tech-lead**: EXP-115 completeness guard branch **GONE** — `review/s_1775810855346_43` no longer exists in git. Commit 484a53cb not in reflog. Implementation lost. Needs re-dispatch.
-  - **Bob**: Normal heartbeat. H-097 CCC Triad.
-  - **Optimizer**: Tool quality regression queued (edit:edit-match-fail +57%, req:b75979a5).
-  - **Zombie cleaned**: s_1775311714523_3 (36h old May session) marked interrupted.
-  - **System-status anomaly (req:56157375)**: "Bob analysis 6 days old" — false alarm. `analysis.md` is historical artifact, not active deliverable. Dismissed.
+## Latest Cycle Summary (12:13)
+- **System healthy**: All 8 non-May agents running. Zero errors last hour. All heartbeats fresh (~12:13).
+- **Since last cycle (11:53)**:
+  - **Coach**: EXP-116 Phase 2 batch run at **25/36 trials complete** (s_1775819641735_110, 59min). Preliminary data: ALL treatment arms score WORSE than baseline across both scenarios. Adversarial framing actively harmful.
+  - **Tech-lead**: New heartbeat + self-dispatched DB sync fix. EXP-115 re-dispatch received (req:e7ffe8fe).
+  - **Bob**: New heartbeat. H-097 CCC Triad continuing.
+  - **Optimizer**: Active heartbeat. Tool quality regression work.
+  - **Evaluator**: Active. ~164 unevaluated sessions backlog (clearing over time).
+  - **Zombie cleaned**: s_1774303617649_81 (tech-lead, running **422 hours**) — cancelled this cycle.
+  - **System-status anomaly (req:28a3407b)**: 4 anomalies. Zombie cleaned ✅. Bob analysis = false alarm ✅. tsc = bundled binary (known) ✅. Eval backlog = evaluator running ✅.
+  - **Bun binary MISSING**: .state/.bun/bin/ empty. DB queries via node/better-sqlite3 also broken (no module). Only bundled binary can query DB. Need to reinstall bun or adjust approach.
 
-## Key New Findings This Cycle
-- **EXP-115 completeness guard implementation LOST** — branch deleted/GC'd. Source changes gone. Design + results still at `agents/shared/knowledge/experiments/EXP-115/`. Need to re-dispatch to tech-lead.
-- **EXP-116 Phase 2 nearing completion** — Coach running Arm C/D trials (combined skill+guard arms). Expect null result (ceiling effect confirms EXP-104: evidence-over-narrative skill was the real fix).
+## Key Findings This Cycle
+- **EXP-116 Phase 2 DATA (22/36 runs scored)**:
+  - **kb-integration-failure**: Baseline 1/9, Arm A (adversarial) 0/9, Arm B (machine-verified) 0/9, Arm C (combined) 0/9, Arm D (combined+guard) 0/9
+  - **ghost-deliverable-chain**: Baseline 2/8, Arm A (adversarial) 0/8, Arm B (machine-verified) 0/8
+  - **Pattern**: Adversarial framing and machine verification both HURT relative to baseline. Evidence-over-narrative skill (already deployed) is the real fix. Additional treatments add confusion.
+- **Bun runtime missing** — heartbeat DB queries broken. Need to figure out how to query may.db without bun or better-sqlite3.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao since Mar 24**.
-- **P1**: **Re-dispatch EXP-115 completeness guard to tech-lead** — Branch lost, needs fresh implementation from EXP-115 design doc.
-- **P1**: **EXP-116 Phase 2 completing** — Coach finishing Arm C/D. Bob to integrate null result when done.
+- **P1**: **EXP-116 completing (~11 more runs)** — Coach to write up results. Bob to integrate. Expected conclusion: adversarial framing provides no marginal value over skill deployment.
+- **P1**: **EXP-115 completeness guard re-implementation** — Branch lost. Re-dispatch sent to tech-lead (req:e7ffe8fe).
+- **P1**: **Bun reinstall or DB query alternative** — Need working DB query tool for supervisory queries.
 - **P1**: **EXP-105 Few-Shot Production Impact** — Need coder/optimizer work sessions to generate data.
 - **P1**: **Present research sprint results to Hao** — KE-101 meta-analysis capstone. 17+ experiments. Gym graduation. Token waste finding ($441/week).
 - **P2**: `analyze-failures` cron DB bug — persistent but non-critical.

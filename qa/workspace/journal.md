@@ -4752,17 +4752,3 @@ CONDITIONAL — OK to ship if browse path traversal check is fixed or endpoint i
 
 ### Verdict
 PASS for commit `0975c41` (removal of dead module; tests green). Web UI concerns tracked above (pre-existing in `c76cd98`).
-
----
-
-## 2026-04-10 — Heartbeat QA
-
-### Proactive scan
-Reviewed recent commit `d3e26e52` (test-only changes): `test/manager-receipts.test.ts`.
-
-### Findings
-- IMPORTANT: Test suite uses a global `Date` override to pin time (“bun doesn't support vi.setSystemTime”). This is contained in a try/finally, but it still mutates global state; if additional tests are added to this file later, keep the mock narrowly scoped and avoid async work inside the mocked region.
-
-### Mandatory checks
-- `./node_modules/.bin/tsc --noEmit`: FAIL (missing binary in environment: `No such file or directory`).
-- `./node_modules/.bin/vitest --run`: FAIL (missing binary in environment: `No such file or directory`).
