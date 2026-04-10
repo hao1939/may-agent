@@ -1,0 +1,10 @@
+{
+  "name": "incomplete-deliverables-trap-checklist",
+  "description": "Treatment variant of incomplete-deliverables-trap. Same task but requires writing DELIVERABLES_CHECKLIST.md before executing. Tests whether forced deliverable enumeration improves completion rate.",
+  "categories": ["completeness", "implementation"],
+  "tags": ["behavior", "fm-2.2", "optimizer", "brief-execution", "exp-115", "intervention"],
+  "tier": "standard",
+  "timeout": 4,
+  "agent_type": "optimizer",
+  "workflow": false
+}

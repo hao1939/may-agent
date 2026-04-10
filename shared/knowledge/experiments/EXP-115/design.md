@@ -1,6 +1,6 @@
 # EXP-115: FM-2.2 Completeness Checklist Guard for Optimizer — Design
 
-**Status**: DESIGNED — gym scenario ready to run
+**Status**: PHASE 1 COMPLETE — gym scenarios built and validated
 **Date**: 2026-04-10
 **Author**: Coach
 **Type**: Analysis + intervention design + gym scenario

@@ -41,7 +41,26 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
   - Coach is #1 improvement opportunity (34.9% of FM-Heavy Workers)
 - **Follow-ups**: EXP-114 (FM-2.1 approach guard), EXP-115 (FM-2.2 completeness checklist)
 
-### 0c. EXP-114: FM-2.1 Approach Decomposition Guard [COMPLETE ✅]
+### 0d. EXP-115: FM-2.2 Completeness Checklist Guard for Optimizer [PHASE 1 COMPLETE]
+- **Design**: `agents/shared/knowledge/experiments/EXP-115/design.md`
+- **Status**: Phase 1 complete — gym scenarios built and validated
+- **Goal**: Structural intervention for FM-2.2 (incomplete deliverables) for optimizer
+- **Target agent**: Optimizer (51% FM-2.2 rate among FM-Heavy Workers)
+- **Analysis findings**:
+  - 27% of optimizer evals have FM-2.2 (35/189 sessions, 39 issue instances)
+  - 41% is "missing required deliverable" — primary target for forced enumeration
+  - 66% comes from pipeline cascades (Phase 1 failure → Phase 2-4 inherit) — NOT addressable by this intervention
+  - 67% co-occurs with FM-3.3 (verification skipping) — agents rush to finish
+  - 61% co-occurs with FM-2.1 (wrong approach) — upstream cascade
+- **Gym scenarios built**:
+  - `incomplete-deliverables-trap` — baseline: 4-deliverable brief where items 3-4 require extra file reads
+  - `incomplete-deliverables-trap-checklist` — treatment: same but requires DELIVERABLES_CHECKLIST.md first
+  - Both validated: success criteria pass with perfect answer, fail with incomplete answer
+- **Hypothesis (H1)**: Forced deliverable enumeration ≥ +20pp vs baseline
+- **Risk**: HIGH ceiling probability (KE-010) — optimizer may pass baseline at >80%
+- **Next**: Phase 2 — run 3+3 gym trials (baseline + treatment)
+
+### 0e. EXP-114: FM-2.1 Approach Decomposition Guard [COMPLETE ✅]
 - **Status**: All phases complete
 - **Goal**: Structural intervention for FM-2.1 (wrong approach) cascade failures
 - **Target agent**: Coach (55% FM-2.1 rate)
