@@ -18,11 +18,12 @@
 
 ### Deliver-or-Report Early Exit — Measuring (commit 914cf230)
 - Detects files written in Phase 1 → narrows/skips Phase 2. Pre-fix: 60% of P2 redundant (121 ops/day wasted).
-- Post-fix: 1 completed NARROW run (P2: 10 ops vs pre-fix avg 16). Need ~6+ more runs.
-- Next measurement: ~Apr 11 01:00 UTC.
+- Post-fix: 2 completed runs. Run 1: P1=87, P2=8, P2b=2 (NARROW path). Run 2: parallel-research (not D-o-R).
+- Phase 3b content verification deployed at 16:43 UTC (commit d6c7696). Next D-o-R run will include it.
+- Need ~4+ more D-o-R runs for statistically meaningful comparison.
 
 ### may.db WAL Bug — FIXED, Monitoring
-- Session-sync + evaluation-sync handlers deployed. 1071 evals, 0 unevaluated (as of 16:42 UTC).
+- Session-sync + evaluation-sync handlers deployed. 1071 evals, 0 unevaluated (as of 17:10 UTC).
 
 ## 📊 OBSERVATIONS (no action needed)
 
@@ -36,6 +37,9 @@
 - **Tool quality**: Waste rate 3.6% (stable). All regressions are bob INDEX.md noise.
 - **LLM evaluations**: All heuristic-only. By design if JS evaluator sufficient.
 - **Dead workflows**: may/coach ~367 lines never-used code. Low-priority cleanup.
+- **Workflow adoption**: Only 2.5% of sessions use workflows (4/160 today). Coach last used workflows Mar 23 (18 days). Bob uses D-o-R and parallel-research.
+- **Optimizer heartbeat cost**: 56 ops avg (highest of any agent HBs). Driven by open-ended DB exploration. Bob HBs avg 4 ops, coach 20 ops.
+- **Bob P1 read-loop**: 87 ops in Phase 1 of D-o-R for a KB integration task. "Don't write, just plan" instruction enables endless reading.
 
 ## ⚠️ SENT/ESCALATED
 
