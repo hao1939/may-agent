@@ -95,6 +95,24 @@ Three papers on behavioral failure prediction independently converge on H-092's 
 
 **Synthesis**: KE-095 (Behavioral Failure Prediction Pipeline) maps these three papers to cascade defense layers L1-L3. KE-096 (Unified Verification Architecture) integrates them with experimental constraints into a 5-layer design. The independent taxonomy convergence from DD-683 is particularly strong evidence — researchers studying SWE-bench failures arrived at categories closely paralleling our empirically-derived cascade archetypes.
 
+## EXP-109 Results (2026-04-10): PRODUCTION VALIDATION — Agent-Specific FM Fingerprints
+
+**19,062 production evaluations across 10 agents, ~400 sessions** (Coach observational study).
+
+### Key Findings for H-092
+1. **Agent FM fingerprints confirm cascade archetypes**: Bob→FM-3.3 (verification, 38 instances), Coach→FM-2.1 (wrong approach, 92 instances), Coder→FM-3.3+FM-2.2 (verification+completeness). Each agent's dominant FM maps to the cascade archetype most relevant to its task complexity profile.
+2. **FM co-occurrence in production**: Top pairs are FM-2.2+FM-3.3 (81), FM-2.1+FM-2.2 (79), FM-2.1+FM-3.3 (79) — confirming cascade clustering from EXP-099's observational data at 20× larger scale.
+3. **Agent gradient confirmed at population level**: QA (bounded tasks) = 81.7% good rate; Bob (complex integration) = 19.6% good rate; Optimizer = 18.1%. Tracks with EXP-099's Scout 6% → Optimizer 73% cascade gradient.
+4. **"Confident failure" archetype validated**: LQ-HE quadrant (low quality, high efficiency — sessions that efficiently produce poor results) has highest FM rate at 49.0%. This is the Comprehension Cascade in production: agent moves fast but in the wrong direction.
+5. **Temporal variation**: Quality is cyclic (W09: 0.45 → W12: 0.70 → W13: 0.42 → W14: 0.76), not monotonically improving. Consistent with cascade vulnerability being task-complexity-dependent rather than skill-dependent.
+
+### Prediction Updates
+- **P-092c (structured boundaries)**: FURTHER SUPPORTED — QA (most structured/bounded tasks) has 81.7% good rate vs Optimizer (least structured) at 18.1%. 4.5× differential at population level.
+- **P-092d (re-anchoring)**: Still untested, but the 53.3% failure-chain rate in "good" sessions suggests widespread need for mid-session intervention.
+
+### Impact on P(H)
+**P(H) unchanged at 0.72.** EXP-109 provides large-N production validation of EXP-099's observational findings but doesn't test new predictions. The agent FM fingerprints and cascade co-occurrence data strengthen confidence but were already predicted by H-092. → KE-112 (production quality is multi-modal).
+
 ## Connection to Existing Work
 
 - Extends DD#665 (Step-Saliency) from single-model to multi-agent reasoning

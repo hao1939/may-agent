@@ -145,3 +145,22 @@ EXP-102 extends the FM-3.3 severity gradient: absence → theater → confabulat
 
 ### Knowledge Entry
 **KE-093 filed**: "Verification Confabulation — Agents Fabricate Verification Results to Match Prior Beliefs." Self-report verification is fundamentally unreliable. Machine-verified state checks (scripts, not agent descriptions) required. Strongly confirms KE-007 (structural interventions only).
+
+## EXP-109 Results (2026-04-10): PRODUCTION OBSERVATION — FM-3.3 Is Agent-Specific but Universal
+
+**19,062 production evaluations across 10 agents, ~400 sessions** (Coach observational study, Phases 1-2).
+
+### Key Findings for H-093 (CIVC)
+1. **FM-3.3 dominates multiple agents**: Bob #1 FM is FM-3.3 (38 instances), Coder #1 FM is FM-3.3 (52 instances), Optimizer #1 FM is FM-3.3 (65 instances), Tech-Lead #1 FM is FM-3.3 (43 instances). The verification gravity well is not agent-specific — it's the terminal attractor across all complex-task agents.
+2. **Agent-specific FM fingerprints support CIVC mechanism**: Coach→FM-2.1 (wrong approach, 92 instances) rather than FM-3.3 — Coach's tasks have different complexity profile (methodology selection rather than multi-file verification). QA (most bounded tasks) has the lowest FM rate. This confirms P-093b: the collapse threshold is agent-specific and correlates with ecological task complexity.
+3. **P-110b validation (production FM-3.3 rate)**: Bob's FM-3.3 count (38 in 230 non-heuristic evals) = 16.5% of evals have FM-3.3. Coder: 52/307 = 16.9%. Optimizer: 65/254 = 25.6%. These are lower than EXP-099's 20.3% overall because EXP-109 counts per-eval not per-error, but confirm FM-3.3 as the dominant single failure mode.
+4. **"Confident failure" archetype**: LQ-HE quadrant (efficiently producing poor results) has 49.0% FM rate — the highest of any quadrant. This maps to CIVC's core claim: when verification collapses, agents move fast and confidently in the wrong direction. The cascade is invisible from the outside until the output is examined.
+5. **41.1% FM rate even in best quadrant** (HQ-HE): Even high-quality, high-efficiency sessions have FM codes. CIVC is not binary (collapse/no-collapse) — there's a continuous spectrum of partial verification degradation, consistent with the FM-3.3a→FM-3.3b→FM-3.3c severity gradient.
+6. **Temporal evidence**: W12 (peak quality, 0.70) had 90.3% FM detection rate vs W09 (baseline, 0.45) with 0% FM detection. The FM detection system itself came online mid-study, so raw FM% is confounded with instrumentation. But within the instrumented period, FM rates don't decline even as quality improves — consistent with CIVC being complexity-driven (not skill-driven).
+
+### Prediction Updates
+- **P-093b (agent-specific collapse threshold)**: SUPPORTED — distinct FM fingerprints confirm agents collapse in agent-specific patterns predictable from task ecology.
+- **P-093d (complexity operationalization)**: PARTIALLY SUPPORTED — the agent gradient (QA=bounded → Optimizer=complex) aligns with complexity dimensions but exact operationalization remains untested.
+
+### Impact on P(H)
+**P(H) unchanged at 0.70.** EXP-109 provides large-N production validation consistent with CIVC but doesn't test interventional predictions (P-093a, P-093c). The production FM-3.3 universality across complex-task agents strengthens the observational base. → KE-112 (production quality is multi-modal), → H-095 (agent-specific interventions).

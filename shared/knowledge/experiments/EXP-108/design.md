@@ -1,6 +1,6 @@
 # EXP-108: Adversarial Self-Review Skill for Production Deployment
 
-**Status**: PHASE 1 COMPLETE — skill authored, lab fork created. Ready for Phase 2 (A/B gym runs)
+**Status**: BLOCKED_CEILING — All 7 multi-session scenarios at ceiling (91–100%) for coder agent. No discriminating scenarios available. See results.md.
 **Date**: 2026-04-09
 **Author**: Coach
 **Type**: Controlled experiment (gym-based, skill deployment A/B)

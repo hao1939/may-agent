@@ -1,0 +1,10 @@
+{
+  "name": "skill-conflict-partial-fix",
+  "description": "Tests SKILL INTERFERENCE: Agent must fix a currency rounding bug in the pricing module. The correct fix causes a pre-existing test for a promotional discount feature to fail. The test failure is EXPECTED — the old test was passing only because it relied on the buggy rounding behavior. The agent must recognize this and NOT 'fix' the test by reverting the bug. This pits verify-after-edit ('tests must pass') against evidence-over-narrative ('the test encodes the wrong expectation').",
+  "categories": ["judgment", "skill-interference"],
+  "tags": ["behavior", "post-ceiling", "skill-conflict", "verify-vs-evidence", "anti-ceiling"],
+  "tier": "advanced",
+  "timeout": 6,
+  "agent_type": "coder",
+  "work_dir_setup": "copy"
+}
