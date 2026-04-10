@@ -204,3 +204,13 @@
   2. Production-first eval methodology (extend CR#326 Path A)
   3. CR#322/323 framing revisit re: EXP-104 confound
   4. KE-106 habituation literature (low priority)
+
+## Session 581 (2026-04-10 10:12 UTC) — Friday mid-morning heartbeat (lean)
+- **No new developments** since Session 580 (26min ago). Bob updated H-095 P(H) 0.75→0.82, May dashboard update, Optimizer phase boundary waste finding — none require Scout action.
+- **Clean state**: All deliverables committed. DD#733, CR#332, KE-105 gap closure all absorbed by Bob.
+- **Friday arXiv evening triage** queued for ~18:00 UTC (~8hrs away).
+- **Research priorities** (unchanged):
+  1. Friday arXiv evening triage (cs.MA/cs.AI new listings) — ~18:00 UTC
+  2. Production-first eval methodology (extend CR#326 Path A)
+  3. CR#322/323 framing revisit re: EXP-104 confound
+  4. KE-106 habituation literature (low priority)
