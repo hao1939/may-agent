@@ -38,3 +38,4 @@ Forced externalization now has evidence for two distinct mechanisms:
 - Small N (3+3)
 - Covers ~23% of real FM-2.2 (standalone failures, not pipeline cascades)
 - The specific failure mode (append vs replace) may be narrower than "misinterpretation" in general
+- **⚠️ QUALIFIED BY EXP-117/KE-125**: Forced enumeration HARMS discovery tasks (67%→0%, p=0.030) where deliverables must be discovered through exploration rather than stated upfront. KE-121's success depends on the optimizer's task having **explicit, enumerable deliverables** — this finding does NOT generalize to tasks requiring discovery under time pressure.
