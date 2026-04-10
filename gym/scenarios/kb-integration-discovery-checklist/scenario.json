@@ -1,0 +1,10 @@
+{
+  "name": "kb-integration-discovery-checklist",
+  "description": "TREATMENT: Same as kb-integration-discovery but with forced deliverable enumeration instruction. Tests whether a checklist prompt prevents FM-2.6 read-loop pattern.",
+  "agent": "bob",
+  "target_level": "L2",
+  "max_turns": 30,
+  "max_cost_usd": 2.0,
+  "timeout_seconds": 300,
+  "tags": ["exp-117", "fm-2.6", "treatment", "checklist"]
+}
