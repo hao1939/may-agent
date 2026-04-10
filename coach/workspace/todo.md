@@ -41,21 +41,26 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
   - Coach is #1 improvement opportunity (34.9% of FM-Heavy Workers)
 - **Follow-ups**: EXP-114 (FM-2.1 approach guard), EXP-115 (FM-2.2 completeness checklist)
 
-### 0d. EXP-115: FM-2.2 Completeness Checklist Guard for Optimizer [PHASE 2 COMPLETE ✅]
+### 0d. EXP-115: FM-2.2 Completeness Checklist Guard for Optimizer [COMPLETE ✅ — ALL 3 PHASES]
 - **Design**: `agents/shared/knowledge/experiments/EXP-115/design.md`
 - **Results**: `agents/shared/knowledge/experiments/EXP-115/results.md`
-- **Status**: Phase 2 complete — **H1 CONFIRMED (+75pp)**
+- **Status**: All phases complete — **H1 CONFIRMED (+100pp on final scenario)**
 - **Goal**: Structural intervention for FM-2.2 (incomplete deliverables) for optimizer
 - **Target agent**: Optimizer (51% FM-2.2 rate among FM-Heavy Workers)
-- **Gym results**:
-  - Baseline: **25% pass rate** (1/4, bimodal 0/4 or 4/4 pattern)
-  - Treatment: **100% pass rate** (4/4, checklist forced enumeration)
-  - Effect: **+75pp** (exceeds ≥20pp threshold, p≈0.029)
-  - No ceiling effect (baseline well below 80%)
-- **Duration overhead**: Treatment +60% longer (160s→256s avg), 2/4 hit timeout
-- **Mechanism**: Forced DELIVERABLES_CHECKLIST.md before execution surfaces non-obvious deliverables
-- **Key finding**: Baseline shows all-or-nothing pattern (agent engages or doesn't). Checklist ensures engagement.
-- **Next**: Phase 3 — build production `createCompletenessGuard()` hook for optimizer
+- **Gym results** (Phase 2):
+  - Baseline: **0% pass rate** (0/3, all fail P4 identically)
+  - Treatment: **100% pass rate** (3/3, checklist forced enumeration)
+  - Effect: **+100pp** (far exceeds ≥20pp threshold)
+  - No ceiling effect (0% baseline)
+- **Mechanism**: Forced DELIVERABLES_CHECKLIST.md before execution prevents misinterpretation of ambiguous deliverables
+- **Key finding**: Baseline failure is semantic (misinterpretation), not omission. Checklist forces explicit articulation → prevents drift.
+- **Phase 3** (Production guard — COMPLETE):
+  - Built `src/lib/tools/completeness-guard.ts` — `createCompletenessGuard()` factory
+  - 31 tests passing in `test/completeness-guard.test.ts`
+  - Wired into `src/lib/manager.ts` composeGuards() — optimizer-only, block mode
+  - Monitors for DELIVERABLES_CHECKLIST.md in transcript before allowing finish(success)
+- **Knowledge**: KE-121 (forced externalization prevents misinterpretation, not just omission)
+- **Next**: Monitor production FM-2.2 rate. Re-measure at Apr 21 when N≥50 optimizer evals.
 
 ### 0e. EXP-114: FM-2.1 Approach Decomposition Guard [COMPLETE ✅]
 - **Status**: All phases complete
