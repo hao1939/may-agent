@@ -4907,3 +4907,19 @@ CONDITIONAL — directionally correct, but should sync files on invalid_agent to
 
 ### Verdict
 PASS — change is correct and test suite passes.
+
+---
+## 2026-04-10T15:42Z — Heartbeat QA
+
+### Proactive scan
+- Reviewed unreviewed commit **a9f8661f** (“remove dead finish-guard code (2217 lines, never wired into runtime)”).
+
+### Findings
+- IMPORTANT: The commit deletes `src/lib/finish-guard.ts`, `src/lib/tools/finish-guard.ts`, and two associated test files. If any runtime path still imports these, this will become a hard runtime failure. I did a quick filesystem check and those paths do not exist on disk post-commit (confirmed), but I did **not** verify imports/usages across the repo in this heartbeat.
+
+### Checks
+- `./node_modules/.bin/tsc --noEmit`: FAIL (tool not present in environment; exited 127)
+- `./node_modules/.bin/vitest --run`: FAIL (tool not present in environment; exited 127)
+
+### Verdict
+CONDITIONAL — safe **if** nothing imports these removed modules; please confirm via a repo-wide import search in a proper CI environment.
