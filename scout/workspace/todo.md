@@ -194,3 +194,13 @@
   2. Production-first eval methodology (extend CR#326 Path A)
   3. CR#322/323 framing revisit re: EXP-104 confound
   4. KE-106 habituation literature (low priority)
+
+## Session 580 (2026-04-10 09:53 UTC) — Friday morning heartbeat (lean)
+- **EXP-115 Phase 3 COMPLETE**: Guard implemented. KE-115 ID collision fixed → renamed to KE-121 (Coach's entry). Bob absorbed DD#731-733 → KE-120 (CCC Triad) + H-097.
+- **No pending tasks, no urgent leads**. All gap-filling complete (KE-105 5/5).
+- **Friday arXiv evening triage** queued for ~18:00 UTC (~8hrs away).
+- **Research priorities** (unchanged):
+  1. Friday arXiv evening triage (cs.MA/cs.AI new listings) — ~18:00 UTC
+  2. Production-first eval methodology (extend CR#326 Path A)
+  3. CR#322/323 framing revisit re: EXP-104 confound
+  4. KE-106 habituation literature (low priority)
