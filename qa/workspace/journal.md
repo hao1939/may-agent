@@ -4871,3 +4871,21 @@ Notes:
 
 ### Verdict
 PASS
+
+---
+
+## 2026-04-10 — Proactive review of cd291140 (gym invalid_agent handling)
+
+### Summary
+Reviewed commit `cd291140` touching `src/gym/runner.ts` and `test/gym/gym.test.ts`. Change adds a distinct `invalid_agent` status when the real agent binary reports “not registered”, and updates scenario/multi-session runners to abort/skip scoring in that case.
+
+### Checks
+- `./node_modules/.bin/tsc --noEmit`: **FAIL** — `./node_modules/.bin/tsc: No such file or directory` (exit 127)
+- `./node_modules/.bin/vitest --run`: **FAIL** — `./node_modules/.bin/vitest: No such file or directory` (exit 127)
+
+### Issues
+- IMPORTANT: In `runAgent()`, the new `invalid_agent` branch does **not** call `syncNewFilesFromRoot(beforeSnapshot, workDir)` (unlike timeout/error/success paths). If the binary wrote outputs before emitting the “not registered” error, those artifacts will be silently dropped from the workDir. (src/gym/runner.ts, invalid_agent catch branch)
+- MINOR: `test/gym/gym.test.ts` “unregistered agent name” test accepts both `invalid_agent` and `skipped`, reducing regression signal for real-binary mode.
+
+### Verdict
+CONDITIONAL — directionally correct, but should sync files on invalid_agent to avoid silent artifact loss.
