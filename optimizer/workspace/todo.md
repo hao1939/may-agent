@@ -55,3 +55,13 @@ Classifier gap fix deployed (2026-04-09 23:27) — Improved `classifyFailure()` 
 Tool quality regression #13 (2026-04-09 23:23) — 1 regressed category. read:nonexistent-path: 10 (was 8, +25%). Tiny absolute increase (+2). System waste rates near 0% across all agents in last 6h. Same development-activity pattern as #6-#12. Not actionable.
 Tool quality regression #14 (2026-04-10 03:24) — 4 regressed categories. Waste rate 4.7% (was 5.3%) — actually improved. bash:git-error 50 (was 6, +733%), edit:edit-match-fail 9 (was 5, +80%), bash:timeout-killed 10 (was 6, +67%), read:other 7 (was 5, +40%). Root cause: **classifier fix artifact, not real regression**. The classifier gap fix deployed at 23:27 reclassified chains from `other` to proper categories: bash:other dropped 65→8 (-57 chains) while bash:git-error rose 6→50 (+44) and edit:edit-match-fail rose 5→9 (+4). The +733% git-error spike exactly matches the ~47 chains the fix was expected to reclassify (gitignore blocks, review gate blocks, push rejections). bash:timeout-killed (+4) = bob's `git push k3s main` timing out at 120s — remote push issue, not tool misuse. read:other (+2) = noise. All errors from bob only. Not actionable — this is the classifier working correctly.
 Tool quality regression #15 (2026-04-10 07:24) — 1 regressed category. bash:other: 10 (was 8, +25%). All from bob research sessions. Root cause: truncated command output where "Command exited with code N" was cut off — classifier couldn't detect exit-code-nonzero. **FIX DEPLOYED** (commits 0c2ab70 + 48e73ff7, 2026-04-10): Added fallback for `isError:true` + `^exec failed:` rootCause → exit-code-nonzero. 25 tests pass. Expected to move all 10 chains from bash:other to exit-code-nonzero in next scan.
+
+### Workflow Health Check (2026-04-10 08:23)
+**Mode D exploration** — Post-restart workflow audit (48h window):
+- **implement-and-review**: Heavy use by bob (60 Phase 1+2 sessions), **100% success rate**. Verdict parsing fix validated. Phase 1 avg 31 ops, Phase 2 avg 20 ops.
+- **auto-loop**: 7 runs (new), all successful.
+- **fewshot-inject**: 2 runs (new), both successful.
+- **implement-and-adversarial-review**: 2 runs, 100% success.
+- **Dead workflow candidates**: may/design-then-build (0 runs ever), may/research-pipeline (0 runs ever), may/project-monitor (1 run ever, disabled), coach/convention-review (0 ever), coach/verify-setup (0 ever). Total: 367 lines dead code.
+- **Dormant optimizer workflows**: design-review, enhance-cron, safe-edit — 0 runs in 14d (761 lines). Historical usage exists but dormant.
+- **No action needed now** — next cleanup round can archive may+coach dead workflows.
