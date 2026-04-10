@@ -9,6 +9,7 @@
 import { execSync } from "node:child_process";
 import { readdirSync, existsSync, appendFileSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { Database } from "bun:sqlite";
 
 export const PROJECT_ROOT = resolve(join(import.meta.dirname ?? ".", "../../.."));
 export const AGENTS_ROOT = resolve(process.env["AGENTS_ROOT"] || join(PROJECT_ROOT, "agents"));
@@ -20,21 +21,146 @@ export interface GymResult {
   agent: string;
   lab_fork: string | null;
   passed: boolean;
-  checks: Array<{ name: string; passed: boolean; message?: string }>;
+  checks: Array<{ name: string; passed: boolean; message?: string; detail?: string; category?: string; code?: string }>;
   summary: string;
   agent_status: string;
   duration: string;
+  duration_ms?: number;
   gym_root: string;
+  session_id?: string;
+  cost_usd?: number;
+  total_ops?: number;
+  total_turns?: number;
+  method?: string;
+  prompt_hash?: string;
+  prompt_text?: string;
+  framework_sha?: string;
+  model?: string;
+  categories?: string[];
+  tags?: string[];
+  tier?: string;
 }
 
 const KNOWN_AGENTS = ["coder", "tech-lead", "optimizer", "evaluator", "coach", "qa", "may", "amy-kimi"];
 
-/** Run a single gym scenario and parse the JSON result. */
-export function runGym(scenario: string, agent: string, labFork?: string): GymResult {
+// ── DB Recording ───────────────────────────────────────────────────────
+
+function parseDuration(dur: string): number | null {
+  if (!dur) return null;
+  const num = Number(dur);
+  if (!isNaN(num)) return Math.round(num);
+  let ms = 0;
+  const minMatch = dur.match(/([\d.]+)\s*m/);
+  const secMatch = dur.match(/([\d.]+)\s*s/);
+  if (minMatch) ms += parseFloat(minMatch[1]) * 60_000;
+  if (secMatch) ms += parseFloat(secMatch[1]) * 1_000;
+  return ms > 0 ? Math.round(ms) : null;
+}
+
+function openGymDb(): Database {
+  const dbPath = join(PROJECT_ROOT, ".state", "may.db");
+  const db = new Database(dbPath);
+  db.exec("PRAGMA journal_mode = WAL;");
+  db.exec("PRAGMA foreign_keys = ON;");
+  // Ensure tables exist (matches gym-record.ts schema)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS gym_runs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      timestamp TEXT DEFAULT (datetime('now')),
+      agent_name TEXT NOT NULL, lab_fork TEXT, scenario TEXT NOT NULL,
+      passed INTEGER NOT NULL DEFAULT 0, duration_ms INTEGER,
+      score_summary TEXT, session_id TEXT, cost_usd REAL,
+      total_ops INTEGER, total_turns INTEGER, method TEXT DEFAULT 'oneshot',
+      run_tag TEXT, prompt_hash TEXT, framework_sha TEXT,
+      model TEXT, batch_id TEXT, categories TEXT, tags TEXT, tier TEXT
+    );
+    CREATE TABLE IF NOT EXISTS gym_checks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      run_id INTEGER NOT NULL, check_name TEXT NOT NULL,
+      passed INTEGER NOT NULL DEFAULT 0, detail TEXT,
+      category TEXT, code TEXT,
+      FOREIGN KEY(run_id) REFERENCES gym_runs(id) ON DELETE CASCADE
+    );
+  `);
+  return db;
+}
+
+/**
+ * Record a gym result to may.db (gym_runs + gym_checks tables).
+ * Matches the schema used by scripts/gym-record.ts for data consistency.
+ * Returns the inserted run ID, or -1 if recording failed.
+ */
+export function recordGymResult(
+  result: GymResult,
+  opts?: { batchId?: string; runTag?: string },
+): number {
+  let db: Database | null = null;
+  try {
+    db = openGymDb();
+    const durationMs = result.duration_ms ?? parseDuration(result.duration);
+
+    const insertRun = db.query<{ id: number }, unknown[]>(`
+      INSERT INTO gym_runs (agent_name, lab_fork, scenario, passed, duration_ms,
+                        score_summary, session_id, cost_usd, total_ops,
+                        total_turns, method, run_tag, prompt_hash, framework_sha,
+                        model, batch_id, categories, tags, tier)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    const runResult = insertRun.run(
+      result.agent,
+      result.lab_fork || null,
+      result.scenario,
+      result.passed ? 1 : 0,
+      durationMs,
+      result.summary || null,
+      result.session_id || null,
+      result.cost_usd || null,
+      result.total_ops || null,
+      result.total_turns || null,
+      result.method || "oneshot",
+      opts?.runTag || null,
+      result.prompt_hash || null,
+      result.framework_sha || null,
+      result.model || null,
+      opts?.batchId || null,
+      result.categories ? JSON.stringify(result.categories) : null,
+      result.tags ? JSON.stringify(result.tags) : null,
+      result.tier || null,
+    );
+
+    const runId = Number(runResult.lastInsertRowid);
+
+    // Insert individual checks
+    if (result.checks && result.checks.length > 0) {
+      const insertCheck = db.query(`
+        INSERT INTO gym_checks (run_id, check_name, passed, detail, category, code)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `);
+      for (const check of result.checks) {
+        // gym-helpers uses 'message', gym-record uses 'detail' — support both
+        const detail = check.detail || check.message || null;
+        insertCheck.run(runId, check.name, check.passed ? 1 : 0, detail, check.category || null, check.code || null);
+      }
+    }
+
+    return runId;
+  } catch (err: any) {
+    // Never let DB recording break gym execution
+    console.error(`[gym-helpers] Failed to record gym result: ${err.message || err}`);
+    return -1;
+  } finally {
+    db?.close();
+  }
+}
+
+/** Run a single gym scenario and parse the JSON result. Auto-records to DB unless skipRecord is true. */
+export function runGym(scenario: string, agent: string, labFork?: string, opts?: { skipRecord?: boolean; batchId?: string; runTag?: string }): GymResult {
   const args = [scenario, "--agent", agent, "--timeout", "3"];
   if (labFork) args.push("--lab", labFork);
   const cmd = `test/gym/run-gym.sh ${args.map(a => `'${a}'`).join(" ")}`;
 
+  let result: GymResult;
   try {
     const stdout = execSync(cmd, {
       encoding: "utf-8",
@@ -42,14 +168,14 @@ export function runGym(scenario: string, agent: string, labFork?: string): GymRe
       cwd: PROJECT_ROOT,
       stdio: ["pipe", "pipe", "pipe"],
     });
-    return JSON.parse(stdout.trim());
+    result = JSON.parse(stdout.trim());
   } catch (err: any) {
     // gym-runner.ts may exit non-zero on score failure but still produce JSON
     const stdout = (err.stdout ?? "").trim();
     try {
-      return JSON.parse(stdout);
+      result = JSON.parse(stdout);
     } catch {
-      return {
+      result = {
         scenario,
         agent,
         lab_fork: labFork ?? null,
@@ -62,6 +188,13 @@ export function runGym(scenario: string, agent: string, labFork?: string): GymRe
       };
     }
   }
+
+  // Auto-record to DB (opt-out with skipRecord: true)
+  if (!opts?.skipRecord) {
+    recordGymResult(result, { batchId: opts?.batchId, runTag: opts?.runTag });
+  }
+
+  return result;
 }
 
 /** List known gym scenario names. */
