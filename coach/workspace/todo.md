@@ -17,16 +17,18 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 
 ## Active Tasks
 
-### 0. EXP-109: Production Observation Study [PHASE 1-2 COMPLETE ✅]
+### 0. EXP-109: Production Observation Study [COMPLETE ✅ — ALL 3 PHASES]
 - **Design**: `agents/shared/knowledge/experiments/EXP-109/design.md`
 - **Results**: `agents/shared/knowledge/experiments/EXP-109/results.md`
+- **Knowledge**: KE-114 (behavioral archetypes spectrum)
 - **Data**: 19,062 evaluations in may.db (4,295 non-heuristic with FM codes)
-- **Completed**: Phase 1 (descriptive stats), Phase 2 (temporal analysis)
-- **Next**: Phase 3 (behavioral clustering — k-means on feature matrix)
-- **H1 CONFIRMED**: 37.5% of "good" sessions have FM codes (threshold was ≥30%)
+- **Completed**: Phase 1 (descriptive stats), Phase 2 (temporal analysis), Phase 3 (clustering)
+- **H1 CONFIRMED**: 37.5% of "good" sessions have FM codes
+- **H2 PARTIALLY CONFIRMED**: 6 archetypes found (k=6, silhouette=0.273 — spectrum, not types)
 - **H3 CONFIRMED**: Quality trends cyclic W09-W14, not monotonic
 - **H4 CONFIRMED**: Each agent has distinct FM fingerprint
-- **Follow-ups**: EXP-110 (COMPLETE ✅), EXP-111 (behavioral archetypes), EXP-112 (confident failure deep dives)
+- **Key archetypes**: Clean Performers (43%), FM-Heavy Workers (22%, #1 target), Silent Failures (19%, unfixable by current tools), Expensive Grinders (7%), Resilient Recoverers (7%), Deep Spiral (1%)
+- **Follow-ups**: EXP-112 (Silent Failures deep dive), EXP-113 (FM-Heavy Workers targeted intervention)
 
 ### 0b. EXP-110: FM-3.3 Commit Guard Production Impact [COMPLETE ✅]
 - **Design**: `agents/shared/knowledge/experiments/EXP-110/design.md`
