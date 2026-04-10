@@ -118,18 +118,20 @@ A larger update would be warranted if Channel 3 had matched prediction. The miss
 
 ## Key Findings (Knowledge Entries)
 
-### KE-XXX: Forced Externalization Is the Only Reliable Channel for Judgment Tasks
+### KE-129: Forced Externalization Is the Only Reliable Channel for Judgment Tasks
 - Channel 2 (forced externalization) achieved 100% (10/10 cumulative) on contradictory-requirements
 - Channel 1 (system prompt text) achieved 0% (0/18 cumulative, counting the confound)
 - Channel 3 (task message few-shot) achieved 11% (1/9 cumulative)
 - Even COMBINING Channel 1 + Channel 3 (Arm B) achieved 0% (0/6)
 - For judgment tasks requiring contradiction detection, only structural gates work
+- **Full entry**: `agents/shared/knowledge/entries/KE-129-forced-externalization-only-reliable-channel-judgment.md`
 
-### KE-XXX: Content Delivery Through Text Channels Fails for This Judgment Class
+### KE-130: Content Delivery Through Text Channels Fails for This Judgment Class
 - The contradiction detection worked example (high-quality, domain-matched) was delivered through system prompt, task message, and both simultaneously
 - 0/24 runs where the content was delivered via text (Channels 1 and/or 3) produced the desired behavior
 - The SAME scenario achieves 100% with a structural gate (Channel 2) that doesn't include the worked example
 - This confirms H-098's claim that Channel 2 works through mechanism (forcing the analysis step), not through content
+- **Full entry**: `agents/shared/knowledge/entries/KE-130-text-channel-content-delivery-fails-judgment.md`
 
 ## Recommendations
 

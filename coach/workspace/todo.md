@@ -125,6 +125,28 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 - **Mechanism**: Externalized navigation map → selective reading. Phase 0 converts "navigate and read everything" into "navigate first, read selectively."
 - **Recommendation**: Apply Phase 0 discovery to workflows with unfamiliar 10+ file directory structures
 
+### 0l. EXP-126: Environmental Hints Replication Study [COMPLETE ✅ — NULL RESULT]
+- **Design**: `agents/shared/knowledge/experiments/EXP-126/design.md`
+- **Results**: `agents/shared/knowledge/experiments/EXP-126/results.md`
+- **Knowledge**: KE-131 (environmental hints null result replication)
+- **Goal**: Replicate EXP-122 environmental hints finding with proper controls (N=24)
+- **Result**: Baseline 58% vs Treatment 50% (p = 1.00, Cohen's h = 0.167 — negligible)
+- **Confound**: Last 4 treatment runs used 5-min timeout (vs 3-min default). Clean comparison: 58% vs 25% (treatment worse, p = 0.197, NS)
+- **Conclusion**: Environmental hints have no positive effect. EXP-122's "100% pass rate" was a corrupted-environment artifact. Hints may actually hurt by consuming agent attention/time.
+- **Research line CLOSED**: Environmental hints are not a viable intervention mechanism.
+
+### 0m. EXP-127: Channel Separation Direct Test [COMPLETE ✅ — LANDMARK RESULT]
+- **Design**: `agents/shared/knowledge/experiments/EXP-127/design.md`
+- **Results**: `agents/shared/knowledge/experiments/EXP-127/results.md`
+- **Knowledge**: KE-129 (forced ext. only reliable channel), KE-130 (text delivery fails for judgment)
+- **Goal**: Isolate Channel 1/2/3 effects on contradictory-requirements (4 arms × 6 runs)
+- **Result**: Baseline 0%, Arm A (Ch1) 0%, Arm B (Ch3) 0%, Arm C (Ch2) 100% — starkest result in knowledge base
+- **Statistics**: Ch2 vs pooled others p = 0.0000074. Fisher's exact all pairwise p = 0.0011.
+- **Confound**: `contradiction-detection.md` skill was already in production coder — all runs got Ch1 content. Strengthens Ch1 finding (0/18), prevents clean Ch3-only test.
+- **Key insight**: Channel 2 works through mechanism (forcing analysis), not content. 0/24 text-delivered runs succeeded.
+- **Recommendation**: Remove `agents/coder/skills/contradiction-detection.md` (0/18 effect, ~500 tokens dead weight)
+- **H-098 update**: P(H-098) 0.78 → 0.80 (Ch2 confirmed, Ch3 model needs refinement)
+
 ### 0k. Phase Evaluation Analysis — Production Data Deep Dive [COMPLETE ✅]
 - **Report**: `agents/coach/workspace/phase-evaluation-analysis.md`
 - **Status**: Analysis complete — 3 critical bugs found, real gap quantified
@@ -206,6 +228,8 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 
 | Sprint | Experiment(s) | Key Finding |
 |--------|--------------|-------------|
+| — | EXP-127 | **LANDMARK**: Ch2 (forced ext.) 100%, Ch1 0%, Ch3 0% on contradictory-requirements. Only structural gates work for judgment. KE-129, KE-130 |
+| — | EXP-126 | **NULL**: Environmental hints 50% vs baseline 58% (p=1.0). Hints don't help, may hurt. KE-131 |
 | 33 | Wave 3 cross-ref deployment | 3/4 scenarios pass, skill deployed to Bob |
 | 32 | EXP-096, EXP-097 | Positional privilege confirmed: WHERE > HOW MUCH |
 | 31 | EXP-095, EXP-098, EXP-100 | KE-057 replicated, nav ceiling, EXP-100 CIVC: alignment tax confirmed, FM-3.3a/b split. **CLOSED** — KE-091 written |
@@ -255,6 +279,9 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 | KE-092 | Active | 2026-04-09 (HVR not predictive for agent sessions) |
 | KE-094 | Verified | 2026-04-09 (commit guard −57pp, structural enforcement) |
 | KE-113 | Active | 2026-04-10 (commit guard production impact — recovery not prevention) |
+| KE-129 | Active | 2026-04-10 (forced ext. only reliable channel for judgment — EXP-127) |
+| KE-130 | Active | 2026-04-10 (text-channel content fails for contradiction detection — EXP-127) |
+| KE-131 | Active | 2026-04-10 (environmental hints null result replication — EXP-126) |
 
 ---
 
