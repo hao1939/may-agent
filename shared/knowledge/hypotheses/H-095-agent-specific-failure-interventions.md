@@ -1,9 +1,9 @@
 # H-095: Agent-Specific Failure Interventions Outperform Universal Approaches
 
-**Status**: Proposed
+**Status**: Active
 **Date**: 2026-04-10
-**P(H)**: 0.65
-**Author**: Bob (derived from EXP-109/KE-112 analysis)
+**P(H)**: 0.70
+**Author**: Bob (derived from EXP-109/KE-112 analysis, updated with EXP-110/KE-113)
 
 ## Core Claim
 
@@ -17,6 +17,7 @@ Agent-specific interventions targeting each agent's dominant failure mode (FM fi
 3. **KE-101 (Meta-Analysis)**: Structure dominates content; text rules = 0/32+ on judgment. Universal text-based interventions fail; structural interventions work when matched to specific failure mode
 4. **KE-106**: Guards catch agent-specific errors (FM-3.3 guard works for Bob) but don't generalize to other FM types
 5. **EXP-099 (H-092)**: Agent gradient Scout 6% → Optimizer 73% FM-3.3 rate — agents differ 12× in susceptibility to specific FMs
+6. **EXP-110/KE-113**: Coder's FM-3.3 commit guard production impact — recovery rate +51.3pp (h=1.12), unrecovered FM-3.3 −10.7pp. Guard mechanism is RECOVERY not prevention. Cascading FM-2.x benefit (scope creep −40pp, tool misuse −29pp). First production evidence that agent-specific structural intervention works, though mechanism differs from prediction (recovery vs prevention)
 
 ### Counterevidence / Risk Factors
 1. **Common cause hypothesis**: All failure modes may share a root cause (e.g., context overload) → agent-specific treatments would be no better than addressing root cause
@@ -37,9 +38,9 @@ Targeted interventions exploit these asymmetries:
 
 ## Predictions
 
-- **P-095a**: Agent-specific interventions targeting dominant FM will reduce that agent's degraded+critical session rate by ≥50% (from 27% to ≤13.5%). Testable via EXP-109 Phase 3.
+- **P-095a**: Agent-specific interventions targeting dominant FM will reduce that agent's degraded+critical session rate by ≥50% (from 27% to ≤13.5%). **PARTIALLY SUPPORTED (EXP-110)**: Coder's FM-3.3 commit guard reduced unrecovered FM-3.3 from 15.2% to 4.5% (−70%) — exceeds 50% threshold for that specific FM. However, mechanism is RECOVERY not PREVENTION as originally predicted. Raw FM-3.3 rate actually increased (+20.9pp). Guard makes failures correctable, not absent. Reframe: "reduce unrecovered rate" rather than "reduce rate".
 - **P-095b**: Universal interventions (e.g., "be more careful") applied to all agents will produce <10% improvement in session quality. Testable via A/B comparison.
-- **P-095c**: Cross-agent intervention application (e.g., applying Bob's FM-3.3 guard to Coach) will be less effective than matched interventions. Testable via crossover design.
+- **P-095c**: Cross-agent intervention application (e.g., applying Bob's FM-3.3 guard to Coach) will be less effective than matched interventions. Testable via crossover design. **EXP-110 NOTE**: Guard showed cascading FM-2.x benefit (scope creep −40pp, tool misuse −29pp) — cross-FM benefit may complicate clean testing.
 - **P-095d**: The tri-modal distribution will shift toward bimodal (high + residual) after targeted interventions, eliminating the "degraded" middle mode first. Testable via distribution analysis post-intervention.
 
 ## Falsification Criteria
@@ -62,6 +63,9 @@ It also connects to:
 
 ## Next Steps
 
-1. Design EXP-110: Agent-specific targeted intervention A/B test (3 agents × 2 arms each)
-2. Validate FM fingerprint stability over 30-day production window  
-3. Define specific structural interventions per agent based on FM mechanism analysis
+1. ~~Design EXP-110~~ **COMPLETE**: EXP-110 analyzed Coder's FM-3.3 commit guard — recovery mechanism confirmed, not prevention
+2. **Design Coach intervention**: Scope boundary enforcement for FM-2.1 (scope creep) — Coach's dominant failure mode. Model on commit guard's recovery-not-prevention approach
+3. **Design Coder FM-1.1 intervention**: Implementation completeness guard for incomplete implementation — Coder's secondary failure mode
+4. **Larger post-guard sample**: Current post-guard N=67 is suggestive but needs 150+ sessions for reliable effect size estimates
+5. **Investigate residual 35% unrecovered FM-3.3**: Why do ~35% of post-guard FM-3.3 events still not get recovered? What differentiates recoverable vs unrecoverable?
+6. Validate FM fingerprint stability over 30-day production window

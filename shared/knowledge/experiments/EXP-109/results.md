@@ -1,6 +1,6 @@
 # EXP-109: Production Observation Study — Results
 
-**Status**: COMPLETE (Phases 1-2), Phase 3 deferred to next session
+**Status**: COMPLETE (Phases 1-3)
 **Date**: 2026-04-10
 **Author**: Coach
 **Type**: Observational study (retrospective production data analysis)
@@ -13,13 +13,17 @@ Analysis of **19,062 production evaluations** (4,295 non-heuristic, 14,767 heuri
 
 1. **H1 CONFIRMED — Hidden Process Pathology is Pervasive**: 37.5% of sessions rated "good" contain FM failure codes. 53.3% have failure chains. Even in the best-performing quadrant (high quality + high efficiency), **41.1%** of sessions have FM codes. P-111a's ≥30% threshold is exceeded.
 
-2. **H3 CONFIRMED — Significant Temporal Trends**: Quality improved dramatically from W09 (Q=0.45) to W12 (Q=0.70), then regressed in W13 (Q=0.42) before recovering in W14 (Q=0.76). This is NOT monotonic improvement — it's cyclic, suggesting task-difficulty variation or personnel/configuration changes.
+2. **H2 PARTIALLY CONFIRMED — Behavioral Archetypes as Spectrum**: K-means clustering (k=6, silhouette=0.273) reveals 6 behavioral archetypes, but with weak separation — production behavior is a continuous spectrum, not discrete types. The four main archetypes: **Clean Performers** (43%), **FM-Heavy Workers** (22%), **Silent Failures** (19%), and **Expensive Grinders** (7%).
 
-3. **H4 CONFIRMED — Agent-Specific Failure Signatures**: Each agent has a distinct FM-code fingerprint. Bob → FM-3.3 (verification skipping), Coach → FM-2.1 (wrong approach), May → FM-2.6 (tool misuse), Coder → FM-3.3 (verification) + FM-2.2/2.3 (incomplete work). Interventions should be agent-specific.
+3. **H3 CONFIRMED — Significant Temporal Trends**: Quality improved dramatically from W09 (Q=0.45) to W12 (Q=0.70), then regressed in W13 (Q=0.42) before recovering in W14 (Q=0.76). This is NOT monotonic improvement — it's cyclic, suggesting task-difficulty variation or personnel/configuration changes.
 
-4. **New Finding — Cost-Quality Decorrelation**: Spending more tokens does NOT improve quality. Correlation ranges from -0.23 (coder) to +0.25 (QA), with most agents near zero. The exception is QA (r=0.25), where the task structure rewards thoroughness.
+4. **H4 CONFIRMED — Agent-Specific Failure Signatures**: Each agent has a distinct FM-code fingerprint. Bob → FM-3.3 (verification skipping), Coach → FM-2.1 (wrong approach), May → FM-2.6 (tool misuse), Coder → FM-3.3 (verification) + FM-2.2/2.3 (incomplete work). Interventions should be agent-specific.
 
-5. **New Finding — Evaluation System Dual-Scale Problem**: Heuristic and non-heuristic evaluations use fundamentally different scales (0-5 vs 0-1). This makes 76% of evaluations non-comparable to the 24% that contain rich FM-code data.
+5. **New Finding — The #1 Intervention Target is FM-Heavy Workers**: 321 sessions (22%) achieve moderate quality (0.51) but have 3.3 FM codes per session (vs 0.39 for Clean Performers). 95% have execution failures, 78% have verification failures. These are fixable with targeted skills. Dominated by optimizer (28%) and coach (27%).
+
+6. **New Finding — 19% of Sessions Fail Silently**: 283 sessions have low quality (0.27), no FM codes (0.12), and almost never deliver results (13%). Current process tools (skills, guards) will NOT help these — they need capability or routing improvements.
+
+7. **New Finding — Cost-Quality Decorrelation**: Spending more tokens does NOT improve quality. Correlation ranges from -0.23 (coder) to +0.25 (QA), with most agents near zero.
 
 ---
 
@@ -157,7 +161,7 @@ This means **76% of production evaluations lack the granularity needed for produ
 | Hypothesis | Prediction | Result | Evidence |
 |-----------|-----------|--------|----------|
 | **H1** (Hidden pathology) | ≥30% of "good" sessions have process issues | **CONFIRMED (37.5%)** | 200/533 good sessions have FM codes |
-| **H2** (Behavioral archetypes) | 3-5 clusters | **DEFERRED** | Need Phase 3 clustering analysis |
+| **H2** (Behavioral archetypes) | 3-5 clusters | **PARTIALLY CONFIRMED** | 6 clusters found (silhouette=0.27, weak but present). Production behavior is a spectrum, not discrete types. See Phase 3. |
 | **H3** (Temporal drift) | Significant trends | **CONFIRMED** | Q ranges from 0.38 (W11) to 0.76 (W14); per-agent trends show +0.15 to +0.44 improvement |
 | **H4** (Agent signatures) | Distinct FM profiles | **CONFIRMED** | Each agent has unique top-3 FM code pattern |
 | **H0** (Null) | Verdicts well-calibrated | **REJECTED** | Process pathology pervasive in "good" sessions |
@@ -185,20 +189,21 @@ Bob improved from Q=0.33 (W09) to Q=0.77 (W14) — a +0.44 gain, the largest of 
 
 ## Implications for Coach's Next Steps
 
-### Immediate Actions
-1. **Focus interventions on FM-3.3** (292 instances, top failure mode, affects all agents) — the commit guard is already deployed; measure its production impact with a before/after analysis
-2. **Target Bob and Optimizer** — the two agents with highest needs_improvement rates (40.9%, 27.6%) and most complex tasks
-3. **Investigate "confident failures"** (LQ-HE quadrant) — 239 sessions where agents efficiently produce poor results
+### Immediate Actions (Updated with Phase 3 Findings)
+1. **Target the FM-Heavy Workers cluster (321 sessions, 22%)** — the highest-ROI intervention target. 95% have FM-2.x, 78% have FM-3.x. Dominated by optimizer (28%) and coach (27%).
+2. **Deploy FM-3.3 guards to optimizer and coach** — these agents contribute 55% of the FM-Heavy Workers cluster. The commit guard is deployed for coder; extend to optimizer and coach.
+3. **Address Silent Failures differently** — 283 sessions (19%) fail without FM signals. Don't waste skill/guard improvements on these — they need better task routing or early termination.
+4. **Investigate "confident failures"** (LQ-HE quadrant / FM-Heavy Workers overlap) — sessions that efficiently produce poor results
 
 ### Infrastructure Priorities
-4. **Expand non-heuristic evaluation coverage** from 24% to ≥60% — this is the biggest data gap
-5. **Build per-agent FM dashboards** — agent-specific failure profiles need agent-specific interventions
-6. **Implement before/after analysis** for deployed interventions (commit guard, few-shot, promoted skills)
+5. **Expand non-heuristic evaluation coverage** from 24% to ≥60% — this is the biggest data gap
+6. **Build per-agent FM dashboards** — agent-specific failure profiles need agent-specific interventions
+7. **Implement continuous FM-rate monitoring** — use the cluster profiles as baselines, track shifts over time
 
 ### Next Experiments
-7. **EXP-110** (proposed): Focused study on FM-3.3 in production — does the commit guard reduce FM-3.3 rates? Before/after analysis of sessions pre- and post-guard deployment.
-8. **EXP-111** (proposed): Behavioral archetype clustering (Phase 3 of EXP-109) — k-means on the feature matrix, characterize archetypes, design targeted interventions.
-9. **EXP-112** (proposed): "Confident failure" deep dive — manual transcript review of 10-20 LQ-HE sessions to identify what's going wrong when agents efficiently produce bad outcomes.
+8. **EXP-110** (COMPLETE): FM-3.3 commit guard impact analysis
+9. **EXP-112** (proposed): "Confident failure" / Silent Failures deep dive — manual transcript review of 10-20 Silent Failure sessions to understand what goes wrong when no FM codes are triggered
+10. **EXP-113** (proposed): Targeted intervention for FM-Heavy Workers — deploy specific skills to optimizer and coach, measure cluster membership shifts
 
 ---
 
@@ -207,10 +212,168 @@ Bob improved from Q=0.33 (W09) to Q=0.77 (W14) — a +0.44 gain, the largest of 
 - **Data source**: may.db evaluations table, all entries as of 2026-04-10
 - **Non-heuristic sample**: 4,295 evaluations scored by the LLM-based evaluator with FM codes, failure chains, and multi-dimensional issues
 - **Heuristic sample**: 14,767 evaluations scored by rule-based heuristics (0-5 scale, verdicts only)
-- **Analysis**: SQL queries via bun:sqlite against the existing database
+- **Analysis**: SQL queries via bun:sqlite against the existing database; k-means clustering via custom TypeScript implementation
 - **Limitations**: 
   - Observational, not causal — temporal correlations don't prove intervention effects
   - Evaluator has its own biases (KE-104) — FM codes reflect evaluator's detection ability, not ground truth
   - "Good" sessions with FM codes may have FM codes of low severity — severity weighting not yet implemented
   - W13 has small N (52) — conclusions about that week are tentative
   - The FM% increase over time (W09: 0% → W12: 90%) may reflect evaluator capability improvement, not actual FM rate changes
+  - K-means silhouette of 0.27 indicates weak cluster separation — production behavior is a spectrum, not discrete types
+  - Clustering on 1,475 sessions (quality > 0, non-heuristic only); results may not generalize to heuristic-evaluated sessions
+
+---
+
+## Phase 3: Behavioral Clustering Analysis
+
+### 3.1 Methodology
+
+**Feature Matrix**: 1,475 non-heuristic evaluations with quality > 0, each represented by 11 normalized features:
+- **Performance**: quality, efficiency, wastedCallRatio
+- **Process signals**: fmCount, hasFM_2x (execution), hasFM_3x (verification)
+- **Failure chains**: failureChainCount, failureChainDepth (max recovery steps)
+- **Resources**: cost ($), turns
+- **Outcome**: resultDelivered (0/1)
+
+**Normalization**: Z-score standardization (zero mean, unit variance) per feature.
+
+**Clustering**: K-means with k ∈ {3, 4, 5, 6}, 10 random restarts per k with k-means++ initialization. Best run selected by silhouette score (sampled on 500 points for computational efficiency).
+
+### 3.2 Optimal k Selection
+
+| k | Silhouette Score | Interpretation |
+|---|-----------------|----------------|
+| 3 | 0.258 | Weak structure |
+| 4 | 0.262 | Weak structure |
+| 5 | 0.270 | Weak structure |
+| 6 | **0.273** | Weak structure (best) |
+
+All silhouette scores fall in the 0.25-0.30 range (weak but present structure). The marginal improvement from k=3 to k=6 is only +0.015. **This is itself a finding**: production sessions form a continuous behavioral spectrum rather than discrete archetypes. The clusters are useful as analytical buckets, not as natural types.
+
+### 3.3 The Six Behavioral Archetypes
+
+#### Archetype 1: "Clean Performers" (N=640, 43.4%)
+
+| Metric | Value |
+|--------|-------|
+| Quality | **0.786** |
+| Efficiency | **0.768** |
+| FM Count | 0.39 (very low) |
+| Result Delivered | 91.1% |
+| Cost | $0.55 |
+| Turns | 9.8 |
+| Verdict | 70% good, 28% acceptable |
+
+**Top agents**: coder (27%), qa (15%), bob (13%), coach (12%), tech-lead (9%)
+**Top FM codes**: FM-3.3: 10.2%, FM-1.x: 5.8%, FM-2.2: 4.5%
+**Profile**: The gold standard. Quick, cheap, effective sessions with minimal process issues. Coder and QA dominate — agents with structured, well-defined tasks.
+
+#### Archetype 2: "FM-Heavy Workers" (N=321, 21.8%) 🟢 LOW-HANGING FRUIT
+
+| Metric | Value |
+|--------|-------|
+| Quality | **0.507** |
+| Efficiency | 0.569 |
+| FM Count | **3.33** (very high) |
+| FM-2.x rate | **95.0%** |
+| FM-3.x rate | **77.6%** |
+| Result Delivered | 44.9% |
+| Cost | $1.14 |
+| Verdict | 46% acceptable, 39% needs_improvement |
+
+**Top agents**: optimizer (28%), coach (27%), may (12%), coder (11%)
+**Top FM codes**: FM-3.3: 56.1%, FM-1.x: 47.7%, FM-2.1: 46.7%, FM-2.2: 41.7%
+**Profile**: **THE most improvable cluster.** Moderate quality but drowning in FM codes. 95% have execution failures, 78% have verification failures. If FM-3.3 (56% of this cluster) were addressed, many sessions could shift to Clean Performers. Optimizer and coach dominate — open-ended, research-oriented tasks.
+
+#### Archetype 3: "Expensive Grinders" (N=108, 7.3%)
+
+| Metric | Value |
+|--------|-------|
+| Quality | 0.497 |
+| Efficiency | 0.464 |
+| FM Count | 0.59 (low) |
+| Cost | **$5.76** (very expensive) |
+| Turns | **50.8** (very long) |
+| Wasted Call Ratio | 24.2% |
+| Result Delivered | 36.1% |
+
+**Top agents**: coach (25%), coder (21%), optimizer (17%), unknown (14%)
+**Profile**: Burn resources ($5.76 avg, 10× Clean Performers) for mediocre results. Low FM count is deceptive — they're grinding through long, complex tasks with many retries. The failures are in resource management, not specific FM categories.
+
+#### Archetype 4: "Silent Failures" (N=283, 19.2%)
+
+| Metric | Value |
+|--------|-------|
+| Quality | **0.270** (low) |
+| Efficiency | 0.429 |
+| FM Count | **0.12** (extremely low) |
+| Result Delivered | **13.1%** |
+| Wasted Call Ratio | 20.4% |
+| Verdict | 86% needs_improvement |
+
+**Top agents**: bob (25%), coder (16%), tech-lead (11%), optimizer (10%)
+**Profile**: **Most concerning cluster.** Fail quietly — almost no FM codes yet 86% needs_improvement. They give up early or crash without meaningful output. Bob dominates — complex integration tasks exceed capability boundaries. **Current process tools (skills, guards) will NOT help.** These need better task routing or capability improvements.
+
+#### Archetype 5: "Resilient Recoverers" (N=104, 7.1%)
+
+| Metric | Value |
+|--------|-------|
+| Quality | 0.640 |
+| Failure Chain Count | **9.91** (very high) |
+| Failure Chain Depth | 3.62 |
+| Result Delivered | 87.5% |
+| Verdict | 64% acceptable |
+
+**Top agents**: coach (27%), bob (24%), coder (18%)
+**Profile**: Encounter many failures (9.91 chains) but recover effectively — 87.5% deliver results. Quality is decent (0.64) but efficiency suffers from recovery overhead. Demonstrates effective self-correction behavior.
+
+#### Archetype 6: "Deep Spiral" (N=19, 1.3%)
+
+| Metric | Value |
+|--------|-------|
+| Quality | 0.540 |
+| Failure Chain Depth | **24.84** (extremely deep) |
+| Turns | 37.4 |
+| Verdict | 63% needs_improvement |
+
+**Top agents**: coach (53%), tech-lead (21%), bob (21%)
+**Profile**: Tiny cluster — extreme outliers with extremely deep failure-chain recovery. Coach dominates. May be extreme cases of Resilient Recoverers. Small N makes this unreliable as a stable archetype.
+
+### 3.4 Cluster Composition by Agent
+
+| Agent | Clean Perf | FM-Heavy | Expensive | Silent Fail | Resilient | Deep Spiral |
+|-------|:---:|:---:|:---:|:---:|:---:|:---:|
+| **coder** (295) | **59%** | 12% | 8% | 15% | 6% | 0% |
+| **qa** (119) | **82%** | 6% | 0% | 8% | 3% | 0% |
+| **coach** (255) | 30% | **34%** | 11% | 11% | 11% | 4% |
+| **optimizer** (189) | 23% | **47%** | 10% | 15% | 6% | 0% |
+| **bob** (211) | 40% | 9% | 4% | **34%** | 12% | 2% |
+| **tech-lead** (143) | 40% | 22% | 6% | 22% | 7% | 3% |
+| **may** (78) | 31% | **47%** | 0% | 21% | 1% | 0% |
+| **scout** (68) | 65% | 10% | 3% | 15% | 6% | 1% |
+| **amy** (48) | 38% | 2% | 10% | **48%** | 2% | 0% |
+
+**Key patterns**: QA 82% Clean Performers (structured tasks). Optimizer & May 47% FM-Heavy (open-ended tasks). Bob 34% Silent Failures (complex integration). Amy 48% Silent Failures. Agent role determines cluster more than agent capability.
+
+### 3.5 The Improvability Map
+
+| Archetype | N | Improvable? | Intervention Type | Expected Lift |
+|-----------|---|-------------|-------------------|---------------|
+| Clean Performers | 640 | ❌ Already good | Maintain | — |
+| **FM-Heavy Workers** | **321** | **🟢 YES — highest ROI** | **Skills: FM-3.3 guard, FM-2.1 decomposition** | **Q: 0.51 → 0.65+** |
+| Expensive Grinders | 108 | 🟡 Partial | Resource limits, early termination | Cost reduction |
+| Silent Failures | 283 | ❌ Not with current tools | Capability/routing | Needs model-level work |
+| Resilient Recoverers | 104 | 🟡 Self-correcting | Efficiency optimization | E: 0.50 → 0.60+ |
+| Deep Spiral | 19 | ❌ Too small | Monitor only | — |
+
+### 3.6 H2 Verdict
+
+**H2: PARTIALLY CONFIRMED.** Predicted 3-5 archetypes; found 6 (near prediction). But silhouette 0.273 = weak separation. Production behavior is a continuous spectrum. The four main clusters (Clean Performers, FM-Heavy Workers, Silent Failures, Expensive Grinders) are clearly distinct in character though boundaries are fuzzy. Clusters are analytically useful for targeting interventions even if not statistically strong as natural types.
+
+### 3.7 Key Phase 3 Insights
+
+1. **43% of sessions already work well** (Clean Performers). The system is bimodal, not universally broken.
+2. **22% (FM-Heavy Workers) are the single best intervention target.** Moderate quality + many fixable FM codes = highest ROI for skills and guards.
+3. **19% fail silently.** No FM codes, no failure chains, just poor outcomes. Current process tools will NOT help. Different interventions needed.
+4. **Production behavior is a spectrum, not types.** Intervention thresholds should be continuous (e.g., "if FM count > 2") not categorical.
+5. **Agent role determines cluster membership more than capability.** QA tasks → Clean Performers. Research tasks → FM-Heavy Workers. Complex integration → Silent Failures.
