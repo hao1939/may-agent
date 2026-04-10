@@ -33,6 +33,7 @@
 | [KE-049](../../entries/KE-049-agent-environment-interface-formalization-ceiling.md) | Interface Formalization Ceiling: schema-first tool APIs reduce interface misuse but have zero impact on semantic misuse and zero task success improvement (DD-543). Agent HTTP behavioral signatures compress to 1-2 requests (DD-566). |
 | [KE-056](../../entries/KE-056-constraint-hierarchy-workaround-availability.md) | Constraint Hierarchy: L5 action-space > L4 mechanical (100%) > L3 experiential (67%) > L2 binding (0%) > L1 text (0%). Workaround availability is the dominant variable. |
 | [KE-059](../../entries/KE-059-fewshot-breaks-text-rule-binary.md) | ★★★★ Few-Shot Breaks Text-Rule Binary: Worked examples produce +2.3 score improvement and 100% analysis creation on judgment tasks where text rules = 0%. Checklists (+2.0) and echo-back (+1.3) also effective. First evidence of intermediate skill delivery methods between L1 text (0%) and L5 workflow (100%). |
+| [KE-128](../../entries/KE-128-phase0-discovery-structural-intervention-fm13.md) | ★★★★ Phase 0 Discovery — Structural Intervention for FM-1.3: Mandatory directory-discovery pre-phase producing `nav-map.md` eliminates exhaustive reading (+100pp, N=3+3). Skills teach knowledge but not confidence to skip files; Phase 0 changes information state before task begins. 3rd validated agent-specific structural guard. |
 
 ## Related Hypotheses
 - **H-036**: Claude harness patterns — optimal tool use configurations

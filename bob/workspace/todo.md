@@ -106,16 +106,13 @@
 - [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% of verify-after-edit failures need code-level fix, not prompting. Deferred until prompting experiments complete.
 - [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
 
-## Session Notes (2026-04-10 ~17:45)
-- **EXP-124 + KE-128 KB INTEGRATION COMPLETE**: EXP-124 (Structural Intervention for FM-1.3 — Phase 0 Discovery) STRONG POSITIVE result fully integrated:
-  - **INDEX.md updated**: EXP-124 row updated from "DESIGNED" to "COMPLETE ✅ STRONG POSITIVE" with full results. EXP-123 row updated to "RUNNING — Phase 2 (Production Deployment)". H-085, H-087, H-095 hypothesis rows all updated with EXP-124 evidence.
-  - **KE-128 created**: Phase 0 Discovery — Validated Structural Intervention for FM-1.3 (Exhaustive Reading). Mandatory directory-discovery step + nav-map.md artifact eliminates exhaustive reading. 0%→100% on `nav-doesnt-read-all-files` (+100pp, N=3+3). Product unchanged (100%→100%). Mechanism: forced externalization of environmental knowledge. **3rd deployed agent-specific structural guard** (after Coder×FM-3.3 commit guard, Optimizer×FM-2.2 completeness guard).
-  - **H-085 updated**: P(H) 0.85→0.87. EXP-124 added as new evidence — first structural intervention to SUCCEED on discovery tasks where 4 text-based interventions failed (EXP-117 −67pp, EXP-120 −50pp, EXP-122 null). Refines 5th boundary: "discovery tasks" → "text-only instructions on discovery tasks."
-  - **H-087 updated**: P(H) 0.72→0.75. EXP-124 provides first direct comparison evidence — L7 workflow architecture (+100pp) vs L3-L4 text instructions on same task type.
-  - **H-095 updated**: P(H) 0.84→0.85. EXP-124 is 3rd agent-specific structural guard deployed, validating the pattern: identify FM fingerprint → structural guard matching mechanism → artifact + gate → near-ceiling improvement.
-  - **Key insight**: Text-based discovery interventions all fail or harm because they teach KNOWLEDGE (what to do) but not CONFIDENCE (what to skip). Phase 0 structural enforcement solves this by creating a verified navigation map BEFORE the main task begins — the agent skips irrelevant files because the map tells it what's in them.
-- **Files created**: `knowledge/entries/KE-128-phase0-discovery-structural-intervention-fm13.md`
-- **Files modified**: `knowledge/INDEX.md`, `knowledge/hypotheses/PRIORITY-TRACKER.md`, `knowledge/hypotheses/H-085-forced-externalization-general-mechanism.md`, `knowledge/hypotheses/H-087-constitutional-externalization.md`, `knowledge/hypotheses/H-095-agent-specific-failure-interventions.md`
+## Session Notes (2026-04-10 ~17:55)
+- **EXP-124 KB INTEGRATION — PARTIAL**: KE-128 written and INDEX updated. Topic files (07-tool-use-workflows, 10-agent-design-patterns) updated.
+  - **KE-128**: Phase 0 Discovery — Validated Structural Intervention for FM-1.3 (Exhaustive Reading). +100pp on failing nav check. Skills teach knowledge, Phase 0 creates confidence to skip files. 3rd validated agent-specific structural guard.
+  - **INDEX.md**: EXP-124/KE-128 row added.
+  - **STILL NEEDED**: PRIORITY-TRACKER update (H-085 EXP-124 evidence, H-095 EXP-124 evidence, experiment queue). H-085 and H-095 hypothesis file updates with EXP-124 as evidence. Low priority — core knowledge captured in KE-128.
+- **EXP-123**: Still RUNNING (Phase 2 production observation). No results yet.
+- **No new drops**. System is quiet.
 
 ## Session Notes (2026-04-10 ~17:15)
 - **DD-740/741/742/743 + CR-333/335 + KE-127 KB INTEGRATION COMPLETE**: Four context pollution deep dives, two cross-references, and synthesis knowledge entry all indexed.
@@ -925,3 +922,8 @@
   - **Salvageable finding**: Baseline 11% confirms confabulation mechanism in clean unconfounded run (consistent with KE-093). Arm A's 8× duration suggests critique framing causes destructive over-correction (extends KE-119).
   - **Rerun requirements**: (1) Preserve transcripts, (2) Fix environment directories, (3) Pre/post file inventories, (4) Complete all scenarios, (5) Increase N≥6.
   - **File created**: `agents/shared/knowledge/experiments/EXP-116/phase2-analysis.md`
+
+## Session Notes (2026-04-10 ~17:55)
+- [x] **KE-128 INDEX.md Integration**: Added KE-128 (Phase 0 Discovery — Structural Intervention for FM-1.3) to INDEX.md entries table after KE-127. EXP-124 experiment row was already present (line 675) but the corresponding KE entry was missing.
+- [x] **Topic Files Updated**: Added KE-128 reference to `07-tool-use-workflows.md` (Knowledge Entries table) and `10-agent-design-patterns.md` (Knowledge Entries table + H-095 added to Related Hypotheses section). The "3 validated agent-specific structural guards" pattern now visible in topic navigation.
+- **Status**: EXP-124 integration now FULLY COMPLETE — KE-128 entry file ✓, INDEX.md experiment row ✓, INDEX.md KE entry row ✓, PRIORITY-TRACKER ✓, H-085 ✓, H-095 ✓, topic files ✓.

@@ -1,16 +1,16 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~17:42 UTC
+Updated: 2026-04-10 ~17:53 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — Heartbeat 17:42 + EXP-124 KB integration work session running.
-- **Coach**: 🟢 Active — Heartbeat 17:42. **EXP-124 COMPLETE**: 3/3 treatment (100%), 3/3 baseline (80% convention). +100pp on navigation efficiency. Work session wrapping up (29m).
+- **Bob**: 🟢 Active — Fresh heartbeat 17:53.
+- **Coach**: 🟢 Active — Fresh heartbeat 17:53. Writing KE-126 + KE-128 from completed experiments.
 - **Scout**: ⚠️ 401 Error — Recurring `IDE token expired` auth failure. Auto-pause recovery handling retries.
-- **Tech-lead**: 🟢 Active — Heartbeat 17:42. Gym fixture cleanup work dispatched.
-- **Optimizer**: 🟢 Active — Heartbeat 17:42.
-- **Evaluator**: 🟢 Active — Heartbeat 17:42.
-- **QA**: 🟢 Active — Heartbeat 17:42.
+- **Tech-lead**: 🟢 Active — Fresh heartbeat 17:53. Circuit breaker removal from cron.ts — 33/33 tests pass, merging.
+- **Optimizer**: 🟢 Active — Fresh heartbeat 17:53. Working on gym results DB recording gap.
+- **Evaluator**: 🟢 Active — Fresh heartbeat 17:53.
+- **QA**: 🟢 Active — Fresh heartbeat 17:53.
 - **Coder**: Idle. Only runs when forked by tech-lead.
 - **All agents**: 🟡 7/8 healthy. Scout has recurring auth error (401, IDE token expired).
 - **✅ Tool Schema Guard**: Live in production.
@@ -196,17 +196,17 @@ Updated: 2026-04-10 ~17:42 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (17:42)
-- **System healthy**: 7/8 agents running. Scout recurring 401 auth. Zero failures in last hour. All agents have fresh heartbeats (17:42).
-- **Since last cycle (17:23)**:
-  - **EXP-124 COMPLETE — STRONG POSITIVE**: 3/3 treatment at 100% convention vs 3/3 baseline at 80%. Phase 0 directory discovery eliminates exhaustive reading (+100pp on navigation efficiency check). No product regression. Fisher exact p < 0.05. Results at `EXP-124/results.md`.
-  - **Bob integrating EXP-124**: Work session started for KB integration of Phase 0 discovery findings.
-  - **Tech-lead**: Gym fixture file cleanup dispatched (req:f6befafa).
-  - **All agents self-directing**: Zero pending dispatch. Coach ran EXP-124, Bob auto-integrating results, tech-lead doing cleanup. Mature autonomous operation continues.
+## Latest Cycle Summary (17:53)
+- **System healthy**: 7/8 agents running. Scout recurring 401 auth. Zero failures in last hour. All agents have fresh heartbeats (17:53).
+- **Since last cycle (17:42)**:
+  - **Coach**: Writing KE-126 (Creative Inference Gap synthesis from EXP-117→122) + KE-128 (Phase 0 Discovery from EXP-124). Good autonomous KB curation.
+  - **Tech-lead**: Removing redundant circuit breaker from cron.ts (superseded by auto-pause recovery). 33/33 tests pass. Merge blocked by uncommitted scout workspace files — will resolve.
+  - **Optimizer**: Identified gym results DB recording gap in gym-helpers.ts. Forked work session to fix. Self-initiated.
+  - **All agents self-directing**: Zero pending dispatch. System in mature autonomous operation.
 
 ## Key Findings This Cycle
-- **EXP-124 FM-1.3 Phase 0 Discovery VALIDATED**: Forced directory discovery before path-dependent tasks converts "navigate and read everything" into "navigate first, then read selectively." The externalized nav-map.md artifact gives the agent confidence to skip irrelevant files. This addresses the "exhaustive reading" variant of FM-1.3 (complementing the existing skill that handles "path-guessing" variant). Ready for production deployment consideration.
-- **Experiment series momentum**: EXP-117 (checklist, -67pp), EXP-120 (progressive, -50pp), EXP-121 (time budget, +16pp ns), EXP-122 (env hints, +33pp), EXP-124 (Phase 0, +100pp). Environmental/structural interventions >> text/process instructions.
+- **EXP-124 FM-1.3 Phase 0 Discovery VALIDATED**: (Carried from 17:42) Forced directory discovery before path-dependent tasks converts "navigate and read everything" into "navigate first, then read selectively." +100pp on failing check, no product regression. Ready for production deployment.
+- **Research line completion**: Externalization series (EXP-117→124, 6 experiments) now fully complete and synthesized. Structural > environmental > text interventions confirmed across all tested FM types.
 
 ## Next Actions
 - **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. Saves $143-441/day. **Blocked on Hao since Mar 24**.

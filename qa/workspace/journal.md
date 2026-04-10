@@ -4972,3 +4972,11 @@ Reviewed latest HEAD commit `fb14bdd` (scout knowledge update) and ran mandatory
 - Read: `agents/shared/knowledge/library/deep-dives/DD-740-context-pollution-self-conditioning.md` — content is coherent, properly formatted, and consistent with cross-reference list.
 
 Verdict: **PASS** — no code/test regressions observed.
+
+---
+2026-04-10T17:54Z — Proactive review of HEAD commit `2d2ab65` (cron/circuit-breaker removal).
+- Read: `src/app/cron.ts` (top portion). Noted potential reliability risk: `watchConfig()` uses both `watchFile()` and an explicit `setInterval()` poll; `unwatchConfig()` clears the interval and calls `unwatchFile()` by path (not watcher), which is OK, but there is an empty `catch {}` in the poll loop that can hide reload failures.
+- `./node_modules/.bin/tsc --noEmit`: PASS (no output).
+- `./node_modules/.bin/vitest --run`: FAIL (1 file failed): `test/coach-setup.test.ts` (2/13 tests failing). Root cause appears to be environment/runtime mismatch: workflows import `bun:sqlite` (`agents/coach/workflows/gym-helpers.ts:12`), which Vitest (Node) cannot resolve.
+
+Verdict: **CONDITIONAL** — cron change not verified by full suite due to pre-existing Bun/Node module resolution issue in coach workflows.
