@@ -52,7 +52,7 @@ Targeted interventions exploit these asymmetries:
 - **P-095b**: Universal interventions (e.g., "be more careful") applied to all agents will produce <10% improvement in session quality. Testable via A/B comparison.
 - **P-095c**: Cross-agent intervention application (e.g., applying Bob's FM-3.3 guard to Coach) will be less effective than matched interventions. Testable via crossover design. **EXP-110 NOTE**: Guard showed cascading FM-2.x benefit (scope creep −40pp, tool misuse −29pp) — cross-FM benefit may complicate clean testing. **EXP-113 NOTE**: Post-guard FM-Heavy Workers (N=16) are dominated by bob and have 88% FM-3.3 — the commit guard already selected out the easy cases, leaving a harder residual population. This suggests cross-agent spillover effects are real but diminishing.
 - **P-095d**: The tri-modal distribution will shift toward bimodal (high + residual) after targeted interventions, eliminating the "degraded" middle mode first. Testable via distribution analysis post-intervention.
-- **P-095e** *(NEW from EXP-113)*: Targeting FM-2.1 (approach problems) with an approach validation guard for coach will reduce cascade formation rate (currently 2.38 subsequent FMs per FM-2.1 trigger) by ≥40%. This is the highest-priority intervention per KE-115. **EXP-114a NOTE**: Tool schema guard addresses the tactical subset (54.2% of schema issues) — this is a partial implementation of P-095e. The schema guard prevents individual tool misuses but does NOT address cascade formation from strategic FM-2.1 (approach failures). Full P-095e testing requires Phase B (approach-validation-trap gym) + production deployment of both guards.
+- **P-095e** *(NEW from EXP-113)*: Targeting FM-2.1 (approach problems) with an approach validation guard for coach will reduce cascade formation rate (currently 2.38 subsequent FMs per FM-2.1 trigger) by ≥40%. This is the highest-priority intervention per KE-115. **EXP-114a NOTE**: Tool schema guard addresses the tactical subset (54.2% of schema issues) — this is a partial implementation of P-095e. The schema guard prevents individual tool misuses but does NOT address cascade formation from strategic FM-2.1 (approach failures). Full P-095e testing requires Phase B (approach-validation-trap gym) + production deployment of both guards. **EXP-115 NOTE**: Optimizer FM-2.2 completeness checklist guard (+100pp) demonstrates the same agent-specific structural guard paradigm working for a DIFFERENT agent × FM combination. P-095e for coach FM-2.1 remains the next priority — but the general pattern (agent-specific structural guard → massive effect) is now confirmed across 2 independent agents/FMs.
 
 ## Falsification Criteria
 
@@ -72,16 +72,19 @@ It also connects to:
 - **KE-106**: Guards work for FM-3.3 in Bob specifically; this generalizes to all agents × their dominant FMs
 - **KE-101**: Structure > content principle applies at agent level too — the right structure for each agent is different
 - **KE-115**: Intervention priority map provides actionable 4-step deployment roadmap ranked by expected impact
+- **KE-121**: Forced externalization prevents misinterpretation, not just omission — extends the mechanism understanding from EXP-115
 
 ## Next Steps
 
 1. ~~Design EXP-110~~ **COMPLETE**: EXP-110 was used by Coach for FM-3.3 commit guard production impact study — recovery mechanism confirmed, not prevention
 2. ~~EXP-113 FM-Heavy Workers analysis~~ **COMPLETE**: All 5 hypotheses confirmed (N=398). Agent profiles distinct at scale. FM-2.1 is #1 cascade trigger. Intervention priority map created (KE-115). P(H) 0.70→0.75
 3. ~~EXP-114a Tool Schema Guard~~ **PHASE A COMPLETE**: Prototype catches 54.2% of FM-2.1 tool schema issues (52/96). Coach catch rate 65.6%. 8 patterns, 6 tools. Pure arg inspection, fail-open, ~0ms overhead. **Next: deploy Phase 1 (log-only), then Phase 2 (block), then Phase 3 (measure)**
-4. **PRIORITY #1 — EXP-114 Phase B (approach-validation-trap gym)**: Design and run gym scenario testing the strategic subset of FM-2.1 (45.5% of FM-2.1). This is the higher-leverage half — strategic FM-2.1 triggers cascades, tactical FM-2.1 causes individual tool failures
-5. **PRIORITY #2 — EXP-114 deployment (log-only→block→measure)**: Deploy tool schema guard in production. Phase 1: log only (measure catch rate). Phase 2: block (measure recovery). Phase 3: measure impact on FM-2.1 rate and cascade formation
-6. **PRIORITY #3 — Design FM-1.1 task completeness check for Coder**: Second-ranked intervention per KE-115. Coder's FM-1.1 (incomplete implementation) is distinct from FM-3.3 (already addressed by commit guard)
-7. **PRIORITY #4 — Design FM-2.4 scope enforcement**: Third-ranked intervention per KE-115, applicable cross-agent
-8. **Larger post-guard sample**: Current post-guard N=67 (EXP-110) + N=16 (EXP-113 post-guard FM-Heavy). Need 150+ sessions for reliable effect size estimates
-9. **Investigate post-guard residual**: EXP-113 H5 shows post-guard FM-Heavy Workers (N=16) are 88% FM-3.3, dominated by bob — a smaller but harder population. Why do these resist the guard?
-10. Validate FM fingerprint stability over 30-day production window
+4. ~~EXP-115 FM-2.2 Completeness Checklist Guard~~ **CLOSED**: +100pp (0%→100%, N=3+3). Guard deployed in production. 2nd agent-specific guard validated. → KE-121. P(H) 0.75→0.82
+5. **PRIORITY #1 — EXP-114 Phase B (approach-validation-trap gym)**: Design and run gym scenario testing the strategic subset of FM-2.1 (45.5% of FM-2.1). This is the higher-leverage half — strategic FM-2.1 triggers cascades, tactical FM-2.1 causes individual tool failures
+6. **PRIORITY #2 — EXP-114 deployment (log-only→block→measure)**: Deploy tool schema guard in production. Phase 1: log only (measure catch rate). Phase 2: block (measure recovery). Phase 3: measure impact on FM-2.1 rate and cascade formation
+7. **PRIORITY #3 — Design FM-1.1 task completeness check for Coder**: Second-ranked intervention per KE-115. Coder's FM-1.1 (incomplete implementation) is distinct from FM-3.3 (already addressed by commit guard)
+8. **PRIORITY #4 — Design FM-2.4 scope enforcement**: Third-ranked intervention per KE-115, applicable cross-agent
+9. **EXP-115 production measurement**: Monitor optimizer FM-2.2 rate post-deployment (baseline 27.0%). Target: ≥5pp reduction. Wait 2 weeks for N≥50 evaluations. 66% pipeline cascade FM-2.2 unaddressed.
+10. **Larger post-guard sample**: Current post-guard N=67 (EXP-110) + N=16 (EXP-113 post-guard FM-Heavy). Need 150+ sessions for reliable effect size estimates
+11. **Investigate post-guard residual**: EXP-113 H5 shows post-guard FM-Heavy Workers (N=16) are 88% FM-3.3, dominated by bob — a smaller but harder population. Why do these resist the guard?
+12. Validate FM fingerprint stability over 30-day production window

@@ -26,10 +26,13 @@ export const name: string = "deliver-or-report";
 
 export const description: string =
   "Multi-phase delivery workflow. Phase 1: analyze and plan (identify " +
-  "deliverables). Phase 2: write deliverables to disk. Phase 2b: " +
-  "retry any missing deliverables (auto-triggered when Phase 2 misses " +
-  "planned files). Phase 3: verify ALL planned files exist. Prevents " +
-  "non-delivery (FM-3.1) and partial-delivery (FM-2.6).";
+  "deliverables). Early-exit check: if Phase 1 already wrote all planned " +
+  "files (KE-002, ~50% of runs), skip Phase 2 entirely. Otherwise, " +
+  "Phase 2: write deliverables to disk (narrowed to missing files only " +
+  "when some already exist). Phase 2b: retry any missing deliverables " +
+  "(auto-triggered when Phase 2 misses planned files). Phase 3: verify " +
+  "ALL planned files exist. Prevents non-delivery (FM-3.1) and " +
+  "partial-delivery (FM-2.6).";
 
 // ── Helpers ────────────────────────────────────────────────────────────
 
@@ -100,43 +103,100 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   ctx.emit({ type: "step_done", step: "phase1-analyze" } as any);
 
   // ═══════════════════════════════════════════════════════════════════
-  // PHASE 2: Execute & Deliver
+  // EARLY EXIT CHECK: Did Phase 1 already write the deliverables?
+  // (KE-002: ~50% of the time, bob writes files despite "DO NOT WRITE"
+  //  instruction. When that happens, Phase 2 is redundant.)
   // ═══════════════════════════════════════════════════════════════════
-  ctx.emit({ type: "step_start", step: "phase2-deliver" });
+  const alreadyExist: string[] = [];
+  const stillMissing: string[] = [];
 
-  const phase2Prompt =
-    `## Phase 2: Write Deliverables NOW\n\n` +
-    `### Original Task\n${ctx.task}\n\n` +
-    `### Plan from Phase 1\n${planText}\n\n` +
-    `### Instructions — YOUR ONLY JOB IS TO WRITE THE DELIVERABLES\n` +
-    `You have already analyzed the task in Phase 1. The plan is above.\n` +
-    `Now execute it:\n\n` +
-    `1. Write each deliverable file listed in the plan.\n` +
-    `2. After each write/edit call, verify it succeeded (read back the file).\n` +
-    `3. If a write fails:\n` +
-    `   - Try \`edit()\` with exact text match\n` +
-    `   - If edit fails, try \`write()\` with full content\n` +
-    `   - If write fails, try \`bash("cat > filepath << 'ENDOFFILE'\\n...\\nENDOFFILE")\`\n` +
-    `   - If ALL fail, report exactly what failed and why.\n` +
-    `4. Do NOT spend time re-analyzing. The analysis is done. WRITE.\n` +
-    `5. Before calling finish(), verify EVERY planned deliverable exists on disk.\n\n` +
-    `⚠️ You MUST produce at least one deliverable file. If you finish without\n` +
-    `   writing any file, this session has FAILED. Analysis without output = failure.\n\n` +
-    `⚠️ If finish(status: "success") is called, at least one deliverable MUST exist.`;
-
-  const phase2 = await ctx.runAgent("bob", phase2Prompt);
-  if (phase2.status === "error") {
-    return ctx.escalate("Phase 2 (deliver) failed", { error: phase2.error });
+  for (const filePath of plannedFiles) {
+    if (existsSync(filePath)) {
+      alreadyExist.push(filePath);
+    } else {
+      stillMissing.push(filePath);
+    }
   }
 
-  ctx.emit({ type: "step_done", step: "phase2-deliver" } as any);
+  let phase2Text = "";
+  const allPlannedFound = plannedFiles.length > 0 && stillMissing.length === 0;
+  const somePlannedFound = alreadyExist.length > 0 && stillMissing.length > 0;
+
+  if (allPlannedFound) {
+    // ─── FAST PATH: All deliverables already exist — skip Phase 2 ───
+    ctx.emit({ type: "step_start", step: "phase2-skipped-early-delivery" });
+    phase2Text = `[Phase 2 skipped: all ${alreadyExist.length} planned deliverable(s) already written by Phase 1]\n` +
+      alreadyExist.map(f => `- ✅ ${f}`).join("\n");
+    ctx.emit({ type: "step_done", step: "phase2-skipped-early-delivery" } as any);
+
+  } else if (somePlannedFound) {
+    // ─── NARROW PATH: Some exist — Phase 2 only writes missing ones ──
+    ctx.emit({ type: "step_start", step: "phase2-deliver-remaining" });
+
+    const phase2NarrowPrompt =
+      `## Phase 2: Write REMAINING Deliverables Only\n\n` +
+      `### Original Task\n${ctx.task}\n\n` +
+      `### Plan from Phase 1\n${planText}\n\n` +
+      `### ✅ Already written (Phase 1 wrote these — DO NOT redo):\n` +
+      alreadyExist.map(f => `- ${f}`).join("\n") + "\n\n" +
+      `### ❌ Still missing — WRITE THESE NOW:\n` +
+      stillMissing.map(f => `- ${f}`).join("\n") + "\n\n" +
+      `### Instructions\n` +
+      `Phase 1 already wrote ${alreadyExist.length} of ${plannedFiles.length} deliverables.\n` +
+      `You ONLY need to write the ${stillMissing.length} missing file(s) listed above.\n\n` +
+      `1. Write each missing deliverable file.\n` +
+      `2. After each write/edit call, verify it succeeded (read back the file).\n` +
+      `3. If a write fails, try edit() → write() → bash("cat > ...") in order.\n` +
+      `4. Do NOT re-analyze. Do NOT rewrite already-completed files. Just write the missing ones.\n` +
+      `5. Before calling finish(), verify every missing file now exists on disk.\n\n` +
+      `⚠️ You MUST write the missing file(s). Finishing without them = failure.`;
+
+    const phase2 = await ctx.runAgent("bob", phase2NarrowPrompt);
+    if (phase2.status === "error") {
+      return ctx.escalate("Phase 2 (deliver-remaining) failed", { error: phase2.error });
+    }
+    phase2Text = phase2.lastAssistantText ?? "";
+
+    ctx.emit({ type: "step_done", step: "phase2-deliver-remaining" } as any);
+
+  } else {
+    // ─── NORMAL PATH: No deliverables exist yet — full Phase 2 ──────
+    ctx.emit({ type: "step_start", step: "phase2-deliver" });
+
+    const phase2Prompt =
+      `## Phase 2: Write Deliverables NOW\n\n` +
+      `### Original Task\n${ctx.task}\n\n` +
+      `### Plan from Phase 1\n${planText}\n\n` +
+      `### Instructions — YOUR ONLY JOB IS TO WRITE THE DELIVERABLES\n` +
+      `You have already analyzed the task in Phase 1. The plan is above.\n` +
+      `Now execute it:\n\n` +
+      `1. Write each deliverable file listed in the plan.\n` +
+      `2. After each write/edit call, verify it succeeded (read back the file).\n` +
+      `3. If a write fails:\n` +
+      `   - Try \`edit()\` with exact text match\n` +
+      `   - If edit fails, try \`write()\` with full content\n` +
+      `   - If write fails, try \`bash("cat > filepath << 'ENDOFFILE'\\n...\\nENDOFFILE")\`\n` +
+      `   - If ALL fail, report exactly what failed and why.\n` +
+      `4. Do NOT spend time re-analyzing. The analysis is done. WRITE.\n` +
+      `5. Before calling finish(), verify EVERY planned deliverable exists on disk.\n\n` +
+      `⚠️ You MUST produce at least one deliverable file. If you finish without\n` +
+      `   writing any file, this session has FAILED. Analysis without output = failure.\n\n` +
+      `⚠️ If finish(status: "success") is called, at least one deliverable MUST exist.`;
+
+    const phase2 = await ctx.runAgent("bob", phase2Prompt);
+    if (phase2.status === "error") {
+      return ctx.escalate("Phase 2 (deliver) failed", { error: phase2.error });
+    }
+    phase2Text = phase2.lastAssistantText ?? "";
+
+    ctx.emit({ type: "step_done", step: "phase2-deliver" } as any);
+  }
 
   // ═══════════════════════════════════════════════════════════════════
   // PHASE 3: Verify artifacts exist (pure JS — no LLM)
   // ═══════════════════════════════════════════════════════════════════
   ctx.emit({ type: "step_start", step: "phase3-verify" });
 
-  const phase2Text = phase2.lastAssistantText ?? "";
   const allMentionedFiles = [
     ...plannedFiles,
     ...extractFilePaths(phase2Text),
