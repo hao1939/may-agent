@@ -28,6 +28,7 @@
 - [x] **KE-060 Discovery-Task Boundary Update**: Updated unified intervention taxonomy with 5th M1 boundary (discovery-task overhead from EXP-117/120/KE-125). Added iatrogenic interaction evidence from EXP-116/KE-123. Cross-references added to KE-123↔KE-125. INDEX.md EXP-118 entry corrected (wrong numbers: claimed 11/25/17% but actual results = 100%). PRIORITY-TRACKER conflict file cleaned up (stale version removed).
 - [x] **KE-082 Synthesis (Reasoning Dropout + Config Drift)**: DD-571 + DD-583 → distributed quality failure modes.
 - [x] **H-092 → PRIORITY-TRACKER**: Added to Tier 1 (P(H)=0.72).
+- [x] **H-099 DISCOVERY TASK BOUNDARY AUTHORED**: Formalizes 6-experiment convergent null results (EXP-117/120/121/122/124/126) into mechanistic theory. Creative inference is irreducible to external scaffolding. Three cognitive operations taxonomy (Execution→intervention-responsive, Recognition→partially responsive via Ch2, Discovery→no intervention works). Ch1 actively harmful on discovery (combined 8% vs 67% baseline, p=0.005). Stochastic inference model explains harm/null/positive asymmetry. P(H)=0.78. 5 testable predictions (P-099a through P-099e). PRIORITY-TRACKER updated (24 active hypotheses, 18 high-confidence). **File: `agents/shared/knowledge/hypotheses/H-099-discovery-task-boundary-creative-inference-irreducibility.md`**
 
 ## Next Up
 - [x] **EXP-100 Design + Execution**: ✅ DESIGNED, EXECUTED, and ANALYZED. Interventional test of H-093 CIVC. 3 arms × 2 scenarios × 2 runs = 12 gym runs. **RESULT: MODERATE SUPPORT** — Treatments +100pp on medium-complexity (0%→100%) but fail/harm on high-complexity (baseline 50%, scaffolding 50%, checkpoint 0%). Forced checkpoints HARM high-complexity (alignment tax per DD-671). FM-3.3 split confirmed: FM-3.3a (absence) vs FM-3.3b (verification theater). H-093 P(H) 0.75→0.70. Design at `agents/shared/knowledge/experiments/EXP-100/design.md`, results at `agents/shared/knowledge/experiments/EXP-100/results.md`. **Next: design harder scenarios or test "naked" agent.**
@@ -119,8 +120,8 @@
   - **library/topics/07, 10**: KE-128 rows corrected, '3rd guard' claim removed
   - **EXP-124/results.md**: v2 supersession notice added
   - **Key insight**: The entire "+100pp discovery guard" narrative was invalidated. The gym runner bug masked that baseline was already 83%. Discovery-task boundary remains an open frontier — 5 intervention types tested (EXP-117/120/121/122/124), ALL fail or harm.
-- **EXP-127 delegated to Coach**: Contradiction Detection Audit experiment designed and delegated. No results yet.
-- **EXP-126**: Coach running environmental hints replication. No results yet.
+- **EXP-127 COMPLETE — Ch2 only works**: Channel Separation Direct Test results integrated. Baseline 0/6, Ch1 0/6, Ch3 0/6, Ch2 6/6. H-098 P(H) 0.78→0.80, status Proposed→Partially Confirmed. PRIORITY-TRACKER and INDEX updated.
+- **EXP-126 COMPLETE — NULL RESULT (replicates EXP-122)**: Larger N replication (N=12+12) — 58% vs 50%, p=1.00. 5th text-based intervention failure. Already integrated into PRIORITY-TRACKER/INDEX.
 - **Files modified**: All 11 files listed above (3 git-tracked committed, 8 local-only)
 
 ## Session Notes (2026-04-10 ~18:50)
