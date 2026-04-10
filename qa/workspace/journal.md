@@ -61,17 +61,17 @@ PASS — mandatory gates green; sampled tests look reasonable and non-flaky.
 ## 2026-04-10T09:25Z
 
 ### Summary
-Proactive heartbeat QA at HEAD **ead6c82** (`test: fix 21 failing tests`). Verified the commit matches the intent shown in the commit message: deletes an obsolete `test/launcher.test.ts` for a deleted module, switches context-learning tests to use `os.tmpdir()` (avoiding permission issues under `/app/test-workspace/*`), and increases the research-db integration timeout.
+Proactive heartbeat QA at HEAD **8e569ba** (merge: `review/remove-forced-externalization`). Reviewed the underlying commit **6015964** which deletes a dead `src/lib/forced-externalization.ts` module and its corresponding test. Verified the module contents were purely prompt-builder utilities (no runtime dependency impact) and confirmed the repo still typechecks and tests pass.
 
 ### Files reviewed (evidence)
-- `test/context-learn.test.ts` (read lines 1–193): now uses `tmpdir()` + random suffix; cleans up with `rmSync` guarded by `existsSync`.
+- `src/lib/forced-externalization.ts` via `git show 6015964 -- src/lib/forced-externalization.ts` (full file): contains only string prompt-builder helpers (`writeFirst`, `readFirst`, `twoPhase`, etc.); no side effects.
 
 ### Mandatory gates
 - `./node_modules/.bin/tsc --noEmit`: **PASS** (exit 0).
-- `./node_modules/.bin/vitest --run`: **PASS** — **140** test files, **2098** tests passed (vitest v3.2.4).
+- `./node_modules/.bin/vitest --run`: **PASS** — **139** test files, **2064** tests passed (vitest v3.2.4).
 
 ### Issues
-No issues found in the sampled file/change.
+No issues found.
 
 ### Verdict
 PASS

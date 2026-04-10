@@ -11,4 +11,10 @@ No pending reviews? Do ONE of these (rotate):
 - **Code quality sweep** — pick a source file from `src/lib/`. Read it. Error handling gaps? Silent failures?
 
 ## 3. Close Out
-`read("workspace/journal.md")` then `edit()` to append findings at the end. Never use `write()` on journal.md — it's append-only. If you found issues, notify tech-lead via `agents.message`. Call `finish({ status: 'success', summary: '<what you reviewed and found>' })`.
+Append your findings to `workspace/journal.md`. It's append-only — **never use `write()`** on it.
+
+To append efficiently (the file is large — do NOT read the whole thing):
+1. `bash("tail -5 workspace/journal.md")` to see the last few lines
+2. `edit("workspace/journal.md", { oldText: <those last lines>, newText: <those last lines + your new entry> })`
+
+If you found issues, notify tech-lead via `agents.message`. Call `finish({ status: 'success', summary: '<what you reviewed and found>' })`.

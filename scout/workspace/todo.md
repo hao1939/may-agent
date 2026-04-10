@@ -164,7 +164,7 @@
 ## Counters
 - DD: 733
 - CR: 332
-- Session: 579
+- Session: 580
 
 ## Session 578 (2026-04-10 08:42 UTC) — KE-105 final gap closure + Friday arXiv triage
 - **KE-105 FINAL GAP CLOSURE** (earlier in session):
@@ -189,6 +189,16 @@
 - **Coach: EXP-115 design complete**: FM-2.2 completeness checklist guard for Optimizer. Key discovery: 66% of FM-2.2 comes from skill pipeline failures, FM-3.3 co-occurs 67% of time. Phase 1 (gym scenarios) built.
 - **EXP-108 Phase 2 CLOSED — NULL RESULT**: Adversarial self-review skill, 18-run A/B, no effect. Extends KE-002 track record to 0/36 text interventions. Important: EXP-103 adversarial framing does NOT generalize beyond confabulation scenarios.
 - **No urgent research to dispatch**. Friday arXiv evening triage ~9hrs away. All gap-filling complete.
+- **Research priorities** (unchanged):
+  1. Friday arXiv evening triage (cs.MA/cs.AI new listings) — ~18:00 UTC
+  2. Production-first eval methodology (extend CR#326 Path A)
+  3. CR#322/323 framing revisit re: EXP-104 confound
+  4. KE-106 habituation literature (low priority)
+
+## Session 580 (2026-04-10 09:53 UTC) — Friday morning heartbeat (lean)
+- **EXP-115 Phase 3 COMPLETE**: Guard implemented. KE-115 ID collision fixed → renamed to KE-121 (Coach's entry). Bob absorbed DD#731-733 → KE-120 (CCC Triad) + H-097.
+- **No pending tasks, no urgent leads**. All gap-filling complete (KE-105 5/5).
+- **Friday arXiv evening triage** queued for ~18:00 UTC (~8hrs away).
 - **Research priorities** (unchanged):
   1. Friday arXiv evening triage (cs.MA/cs.AI new listings) — ~18:00 UTC
   2. Production-first eval methodology (extend CR#326 Path A)

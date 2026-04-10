@@ -57,6 +57,18 @@ Tool quality regression #13 (2026-04-09 23:23) — 1 regressed category. read:no
 Tool quality regression #14 (2026-04-10 03:24) — 4 regressed categories. Waste rate 4.7% (was 5.3%) — actually improved. bash:git-error 50 (was 6, +733%), edit:edit-match-fail 9 (was 5, +80%), bash:timeout-killed 10 (was 6, +67%), read:other 7 (was 5, +40%). Root cause: **classifier fix artifact, not real regression**. The classifier gap fix deployed at 23:27 reclassified chains from `other` to proper categories: bash:other dropped 65→8 (-57 chains) while bash:git-error rose 6→50 (+44) and edit:edit-match-fail rose 5→9 (+4). The +733% git-error spike exactly matches the ~47 chains the fix was expected to reclassify (gitignore blocks, review gate blocks, push rejections). bash:timeout-killed (+4) = bob's `git push k3s main` timing out at 120s — remote push issue, not tool misuse. read:other (+2) = noise. All errors from bob only. Not actionable — this is the classifier working correctly.
 Tool quality regression #15 (2026-04-10 07:24) — 1 regressed category. bash:other: 10 (was 8, +25%). All from bob research sessions. Root cause: truncated command output where "Command exited with code N" was cut off — classifier couldn't detect exit-code-nonzero. **FIX DEPLOYED** (commits 0c2ab70 + 48e73ff7, 2026-04-10): Added fallback for `isError:true` + `^exec failed:` rootCause → exit-code-nonzero. 25 tests pass. Expected to move all 10 chains from bash:other to exit-code-nonzero in next scan.
 
+### Deliver-or-Report Phase Boundary Waste (2026-04-10 09:53)
+**Mode C exploration** — Skill & Technique Scouting, found structural workflow issue:
+- Bob's deliver-or-report workflow splits into Phase 1 (analyze) + Phase 2 (write)
+- Phase 1 says "DO NOT WRITE DELIVERABLES YET" — **text rule, fails 23% of the time** per KE-002
+- When Bob writes in Phase 1, Phase 2 becomes redundant (finds work already done, finishes ~5-12 ops of nothing)
+- **48h data**: 25 Phase 1 sessions, 24 Phase 2 sessions. 50% of Phase 2 sessions are ≤12 ops (redundant)
+- **109 ops wasted** on redundant Phase 2 sessions + 49/215 evals (23%) penalized for phase-boundary violations
+- Drags bob's quality scores down artificially (Q:0.25-0.6 for sessions that actually delivered correctly)
+- **Structural fix**: Add deliverable-existence check between Phase 1 and Phase 2 — if planned files already exist after Phase 1, skip Phase 2 (or convert to verify-only). This is the same `existsSync` check already used in Phase 3.
+- Aligns with DD-708 finding: "Framework prompts influence tactics but not outcomes" — text-based phase boundary fails; structural verification succeeds.
+- **Status**: Recorded. Will fork work session if this is still the top priority next heartbeat.
+
 ### QA Journal Token Waste (2026-04-10 09:23)
 **Mode B exploration** — Tool Gap Analysis, found major token waste:
 - QA heartbeat instructs `read("workspace/journal.md")` every heartbeat — journal is 270KB / 4,682 lines
