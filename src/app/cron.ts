@@ -64,17 +64,10 @@ export class Cron {
   private projectRoot: string;
   private persistDir: string;
 
-  // ── Circuit breaker: track consecutive errors per agent ──────────────
-  private agentErrors = new Map<string, { count: number; lastErrorAt: number }>();
   /** Track which agents have already had an escalation created (avoid duplicates). */
   private autoPauseEscalated = new Set<string>();
   /** Track which agents were in auto-pause state (to detect recovery). */
   private autoPauseActive = new Map<string, { pausedAt: number; probeCount: number }>();
-
-  /** Max consecutive errors before the circuit breaker trips. */
-  private static readonly CB_TRIP_THRESHOLD = 3;
-  /** How long (ms) to wait after circuit trips before trying a probe. */
-  private static readonly CB_PROBE_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
 
   constructor(
     private configPath: string,
@@ -402,52 +395,6 @@ export class Cron {
     }
   }
 
-  // ── Circuit breaker helpers ─────────────────────────────────────────
-
-  /**
-   * Check if an agent's circuit breaker is tripped (too many consecutive errors).
-   * After tripping, allows one probe every CB_PROBE_INTERVAL_MS.
-   */
-  private isCircuitBroken(agentName: string): boolean {
-    const state = this.agentErrors.get(agentName);
-    if (!state) return false;
-    if (state.count < Cron.CB_TRIP_THRESHOLD) return false;
-
-    // Circuit is tripped — check if enough time has passed for a probe
-    const elapsed = Date.now() - state.lastErrorAt;
-    if (elapsed >= Cron.CB_PROBE_INTERVAL_MS) {
-      // Allow one probe through. The probe will either reset the counter
-      // (on success via recordAgentSuccess) or update lastErrorAt (on failure
-      // via recordAgentError).
-      return false;
-    }
-
-    return true;
-  }
-
-  /** Record a successful session for an agent — resets circuit breaker. */
-  private recordAgentSuccess(agentName: string): void {
-    this.agentErrors.delete(agentName);
-  }
-
-  /** Record a failed session for an agent — increments circuit breaker counter. */
-  private recordAgentError(agentName: string): void {
-    const state = this.agentErrors.get(agentName);
-    if (state) {
-      state.count++;
-      state.lastErrorAt = Date.now();
-    } else {
-      this.agentErrors.set(agentName, { count: 1, lastErrorAt: Date.now() });
-    }
-    const current = this.agentErrors.get(agentName)!;
-    if (current.count === Cron.CB_TRIP_THRESHOLD) {
-      const msg = `Circuit breaker TRIPPED for ${agentName} — ${current.count} consecutive errors. Backing off for ${Cron.CB_PROBE_INTERVAL_MS / 60000}m.`;
-      this.onError?.(msg);
-      // Push notification so May/human sees it (not just a log line)
-      this.notify?.(msg);
-    }
-  }
-
   /** Fail any orphaned running requests for a job (from a previous crashed process). */
   private failOrphans(entryName: string): void {
     try {
@@ -475,13 +422,6 @@ export class Cron {
         const agentName = entry.agent || "may";
         if (this.isAgentHeartbeatRunning(agentName)) {
           this.onError?.(`Cron "${entry.name}" skipped — ${agentName} heartbeat still running`);
-          return;
-        }
-        // Circuit breaker: skip if agent has too many consecutive errors
-        if (this.isCircuitBroken(agentName)) {
-          this.onError?.(
-            `Cron "${entry.name}" skipped — circuit breaker tripped for ${agentName} (${this.agentErrors.get(agentName)?.count ?? 0} consecutive errors)`,
-          );
           return;
         }
         // DB-based auto-pause with recovery: persistent across restarts
@@ -553,16 +493,8 @@ export class Cron {
         }
       }
 
-      // Circuit breaker for ALL agent-specific modes (not just heartbeats)
-      // Prevents wasted sessions when an agent's model is down or misconfigured
+      // Auto-pause for non-heartbeat agent modes: persistent across restarts
       if (mode !== "heartbeat" && entry.agent) {
-        if (this.isCircuitBroken(entry.agent)) {
-          this.onError?.(
-            `Cron "${entry.name}" skipped — circuit breaker tripped for ${entry.agent} (${this.agentErrors.get(entry.agent)?.count ?? 0} consecutive errors)`,
-          );
-          return;
-        }
-        // DB-based auto-pause: persistent across restarts
         const jobApConfig = parseAutoPauseConfig(entry.handlerConfig);
         const jobApState = getAutoPauseState(this.persistDir, entry.agent, jobApConfig);
         if (jobApState.state === "auto-paused" && !jobApState.probeDue) {
@@ -792,8 +724,6 @@ export class Cron {
               ? `Probe for ${agentName} succeeded — recovering from auto-pause`
               : `Heartbeat for ${agentName} completed`,
           });
-          // Circuit breaker: reset on success
-          this.recordAgentSuccess(agentName);
 
           // Probe success → agent recovered from auto-pause
           if (isProbe && this.autoPauseActive.has(agentName)) {
@@ -841,8 +771,6 @@ export class Cron {
             durationMs: Date.now() - startMs,
             error: errMsg,
           });
-          // Circuit breaker: track consecutive errors
-          this.recordAgentError(agentName);
 
           // Probe failure → update probe count tracking
           if (isProbe && this.autoPauseActive.has(agentName)) {
@@ -895,8 +823,6 @@ export class Cron {
     updateRequest(this.persistDir, requestId, { status: "IN_PROGRESS" });
     const startMs = Date.now();
 
-    const agentName = entry.agent;
-
     handler()
       .then(() => {
         updateRequest(this.persistDir, requestId, {
@@ -905,8 +831,6 @@ export class Cron {
           durationMs: Date.now() - startMs,
           summary: `JS handler "${entry.name}" completed`,
         });
-        // Circuit breaker: reset on success for agent-specific handlers
-        if (agentName) this.recordAgentSuccess(agentName);
       })
       .catch((err) => {
         const errMsg = err instanceof Error ? err.message : String(err);
@@ -916,8 +840,6 @@ export class Cron {
           durationMs: Date.now() - startMs,
           error: errMsg,
         });
-        // Circuit breaker: track consecutive errors for agent-specific handlers
-        if (agentName) this.recordAgentError(agentName);
         this.onError?.(`Cron handler "${entry.name}" failed: ${errMsg}`);
       });
   }
