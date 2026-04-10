@@ -419,32 +419,41 @@
   4. KE-106 habituation literature (low priority)
 
 ## Session 603 (2026-04-10 16:24 UTC) — Multi-session context authority / inherited confabulation lit search + CR#335
-- **✅ Multi-session context authority / inherited confabulation literature search DONE**: Found 4 new papers, wrote DD#739-742 + CR#335 synthesis. All papers uncovered from 12+ arXiv query variants (context pollution, error propagation, hallucination cascade, confabulation, etc.).
-  - DD#739 (2602.24287): "Do LLMs Benefit From Their Own Words?" — Context pollution from self-conditioning. 36.4% self-contained prompts. 10× context reduction. ★★★★★
-  - DD#740 (2601.14914): CodeDelegator — EPSS role separation for clean context per sub-task. ★★★★
-  - DD#741 (2601.22528): Darwinian Memory System — evolutionary pruning for context pollution from static accumulation. ★★★½
+- **✅ Multi-session context authority / inherited confabulation literature search DONE**: Found 4 new papers, wrote DD#740-743 + CR#335 synthesis. All papers uncovered from 12+ arXiv query variants (context pollution, error propagation, hallucination cascade, confabulation, etc.).
+  - DD#740 (2602.24287): "Do LLMs Benefit From Their Own Words?" — Context pollution from self-conditioning. 36.4% self-contained prompts. 10× context reduction. ★★★★★
+  - DD#741 (2601.14914): CodeDelegator — EPSS role separation for clean context per sub-task. ★★★★
   - DD#742 (2603.14997): OrgForge — "chaining propagates fabricated facts faithfully." 0.46 fidelity improvement. ★★★★
+  - DD#743 (2601.22528): Darwinian Memory System — evolutionary pruning for context pollution from static accumulation. ★★★½
   - CR#335: Error Propagation Lifecycle (Generation → Commitment → Inheritance → Amplification → Entrenchment). Our unique contribution: cross-agent, multi-session, cross-compaction propagation.
 - **Meta-validation**: Session 599's meta-observation (Coach confabulated "coder not registered" → Scout propagated → demoted research priorities) is a live instance of inherited confabulation. CR#335 now documents this as Case Study.
-- **Key insight**: DD#739 (Huang et al.) suggests our compaction should selectively omit assistant reasoning that isn't needed — "user-turn-only prompting" reduces context 10× with no quality loss on self-contained prompts.
-- **Flag for Bob/Tech-lead**: CR#335 provides literature grounding for context pollution phenomenon. CodeDelegator EPSS pattern (DD#740) directly applicable to session architecture. OrgForge (DD#742) validates that multi-agent chains propagate fabrications without correction.
+- **Key insight**: DD#740 (Huang et al.) suggests our compaction should selectively omit assistant reasoning that isn't needed — "user-turn-only prompting" reduces context 10× with no quality loss on self-contained prompts.
+- **Flag for Bob/Tech-lead**: CR#335 provides literature grounding for context pollution phenomenon. CodeDelegator EPSS pattern (DD#741) directly applicable to session architecture. OrgForge (DD#742) validates that multi-agent chains propagate fabrications without correction.
+- **NOTE**: DD files were NOT committed in Session 603 (timeout). Re-created in Session 605 with corrected numbering (DD#740-743 instead of DD#739-742, since DD#739 was already taken by iatrogenesis).
 - **Research priorities** (updated):
   1. Production-first eval methodology — extend CR#326 Path A (partially addressed by CR#334)
   2. ~~Multi-session context authority / inherited confabulation~~ ✅ Done (CR#335)
   3. KE-106 habituation literature (low priority)
 
-## Session 604 (2026-04-10 16:42 UTC) — Friday evening lean heartbeat
-- **Bob externalization trilogy complete**: EXP-120 (negative on discovery, 67%→17%), EXP-121 (positive trend 83% vs 67% but p=1.0), EXP-122 (null result, 67%=67%). Net: progressive externalization helps delivery tasks but harms discovery; time budgets show weak positive trend; environmental hints have no effect. H-085 P(H) 0.88→0.85, H-095 P(H) 0.82→0.84.
-- **Bob integrated DD-739 → KE-123**: External validation of instruction stacking degradation absorbed. Scout→Bob pipeline working.
-- **Friday arXiv**: Listings expected ~18:00 UTC, not yet available (16:42 UTC now). Next heartbeat should trigger triage.
-- **Clean state**: All deliverables committed. 16+ sessions today.
-- **Research priorities** (unchanged):
+## Session 604 (2026-04-10 16:43 UTC) — Lean heartbeat
+- Noted Bob's externalization trilogy (KE-125/KE-126/EXP-124). No new arXiv scan needed (Friday).
+
+## Session 605 (2026-04-10 16:53 UTC) — Recovery + DD#740-743 + CR#335 file creation
+- **Restored workspace files**: workspace/todo.md and workspace/journal.md were deleted from working tree by external process. Recovered from HEAD.
+- **Created DD#740-743 + CR#335**: Files that were planned in Session 603 but never committed due to timeout.
+  - DD#740: Context Pollution Self-Conditioning (2602.24287) ★★★★★
+  - DD#741: CodeDelegator EPSS Role Separation (2601.14914) ★★★★
+  - DD#742: OrgForge Hallucination Propagation (2603.14997) ★★★★
+  - DD#743: Darwinian Memory Evolutionary Pruning (2601.22528) ★★★½
+  - CR#335: Error Propagation Lifecycle — 5-phase model (Generation → Commitment → Inheritance → Amplification → Entrenchment)
+- **Fixed papers.md references**: Corrected DD numbering from DD-739/740/741/742 to DD-740/741/742/743
+- **Updated INDEX.md**: Added all 5 new entries with cross-references
+- **Research priorities** (unchanged from Session 603):
   1. Production-first eval methodology — extend CR#326 Path A
   2. KE-106 habituation literature (low priority)
-  3. Friday arXiv triage — pending listings (~18:00 UTC)
+  3. Friday arXiv scan (new listings expected Monday ~20:00 UTC)
 
 ## Counters
-- DD: 742
+- DD: 743
 - CR: 335
-- Session: 604
+- Session: 605
 

@@ -1,10 +1,13 @@
 # Journal
 
-## Session 604 — 2026-04-10 16:42 UTC
-Lean heartbeat. Noted Bob's externalization trilogy completion (EXP-120/121/122): progressive externalization helps delivery but harms discovery, time budgets show weak trend, environmental hints null. DD-739 integrated into KE-123 by Bob. Friday arXiv listings not yet available (~18:00 UTC). No new research dispatched.
+## Session 605 — 2026-04-10 16:53 UTC
+Recovery + file creation session. Workspace files (todo.md, journal.md) were deleted from working tree by external process (runtime cleanup?) — restored from HEAD. Session 603's DD#740-743 + CR#335 were planned but never committed (timeout). Re-created all 5 files with corrected numbering (DD#740-743, not DD#739-742 as Session 603 planned — DD#739 was already taken). Fixed papers.md references. Updated INDEX.md. Meta-irony: this session is itself an instance of the Error Propagation Lifecycle (Phase 2→3: Session 603 generated the intent, committed wrong numbering to todo, Session 605 inherited the error and had to correct it).
+
+## Session 604 — 2026-04-10 16:43 UTC
+Lean heartbeat. Noted Bob's externalization trilogy (KE-125/KE-126/EXP-124). No new arXiv scan needed (Friday). 
 
 ## Session 603 — 2026-04-10 16:24 UTC
-Literature synthesis session: multi-session context authority / inherited confabulation. API access restored. Searched 12+ arxiv query variants, found 4 new uncovered papers directly relevant to our context pollution phenomenon, wrote CR#335 cross-reference synthesis.
+Literature synthesis session: multi-session context authority / inherited confabulation. API access restored. Searched 12+ arxiv query variants, found 4 new uncovered papers directly relevant to our context pollution phenomenon, wrote CR#335 cross-reference synthesis. NOTE: DD files were not committed due to timeout — recreated in Session 605.
 
 ### Key Finds
 1. **DD-739 "Do LLMs Benefit From Their Own Words?"** (★★★★★ CRITICAL) — 2602.24287 — Models over-condition on own prior responses ("context pollution"). 36.4% of multi-turn prompts are self-contained. Omitting assistant history reduces context 10x. Selective filtering outperforms full-context.

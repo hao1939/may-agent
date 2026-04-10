@@ -28,4 +28,4 @@ Find the experiment that tested SOUL text vs workflow enforcement, and verify wh
 - The knowledge base is in the `environment/` directory. Start there.
 - The knowledge base has an INDEX.md that tells you where things are. Find it first.
 - Directory structures may not be what you expect. Check what exists before assuming paths.
-- There are ~18 files across multiple directories. You need to find specific ones, not read them all.
+- There are ~17 files across multiple directories. You need to find specific ones, not read them all.

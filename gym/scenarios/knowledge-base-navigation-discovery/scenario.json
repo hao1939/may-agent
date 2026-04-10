@@ -1,0 +1,11 @@
+{
+  "name": "knowledge-base-navigation-discovery",
+  "categories": ["convention-compliance", "efficiency"],
+  "tags": ["behavior", "path-navigation", "ls-before-cat", "skill-test", "phase0-treatment"],
+  "tier": "standard",
+  "timeout": 8,
+  "agent_type": "bob",
+  "workflow": true,
+  "learn_between_phases": false,
+  "description": "EXP-124 treatment variant of knowledge-base-navigation. Adds a mandatory Phase 0 discovery pre-phase that forces directory listing and navigation map writing BEFORE the main synthesis task. Tests whether structural phase separation reduces FM-1.3 path-guessing errors."
+}
