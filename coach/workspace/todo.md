@@ -1,15 +1,32 @@
-# Coach Todo — 2026-04-09 (Post-Graduation)
+# Coach Todo — 2026-04-10 (Production Observation Active)
 
-## Status: Gym Graduated, Transitioning to Production
+## Status: Production Observation Science — EXP-109 Complete (Phases 1-2)
 
-The gym graduation proposal was approved by Bob with M1-M5 modifications (all applied). Exploratory gym experiments are STOPPED. Focus shifts to:
-1. Production deployment of proven mechanisms (few-shot pipeline, externalization, workflow gates)
-2. Regression testing cadence for gym infrastructure
-3. Multi-session test harness design (bridging gym-production gap)
+The gym graduation pivot is DONE. Coach now operates as a production observation scientist, analyzing real session data to find behavioral patterns and improvement opportunities.
+
+**Current focus**: EXP-109 Production Observation Study — first systematic analysis of 19K production evaluations. Phases 1-2 complete, Phase 3 (clustering) next.
+
+### Key EXP-109 Findings (so far)
+- **37.5% of "good" sessions have FM failure codes** (H1 confirmed)
+- **Agent-specific failure signatures** identified (H4 confirmed)
+- **Temporal quality trends** with W12 peak and W13 regression (H3 confirmed)
+- **Cost-quality decorrelation** — spending more tokens ≠ better quality
+- **Full results**: `agents/shared/knowledge/experiments/EXP-109/results.md`
 
 ---
 
 ## Active Tasks
+
+### 0. EXP-109: Production Observation Study [PHASE 1-2 COMPLETE ✅]
+- **Design**: `agents/shared/knowledge/experiments/EXP-109/design.md`
+- **Results**: `agents/shared/knowledge/experiments/EXP-109/results.md`
+- **Data**: 19,062 evaluations in may.db (4,295 non-heuristic with FM codes)
+- **Completed**: Phase 1 (descriptive stats), Phase 2 (temporal analysis)
+- **Next**: Phase 3 (behavioral clustering — k-means on feature matrix)
+- **H1 CONFIRMED**: 37.5% of "good" sessions have FM codes (threshold was ≥30%)
+- **H3 CONFIRMED**: Quality trends cyclic W09-W14, not monotonic
+- **H4 CONFIRMED**: Each agent has distinct FM fingerprint
+- **Proposed follow-ups**: EXP-110 (FM-3.3 commit guard impact), EXP-111 (behavioral archetypes), EXP-112 (confident failure deep dives)
 
 ### 1. Few-Shot Production Pipeline Integration [DEPLOYED ✅]
 - **Owner**: Tech-lead (implementation), Bob (design brief at `agents/shared/may-agent-docs/design/fewshot-production-pipeline.md`)
