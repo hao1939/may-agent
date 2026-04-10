@@ -37,7 +37,7 @@
 - Fix: Rewrote heartbeat.md to "Dispatcher Mode" — observe in 1-2 ops, fork all analysis work. Target: ≤15 ops.
 - Baseline: 8 heartbeats in 12h, avg 56 ops, total 451. Measuring post-fix.
 - Last exploration mode: **D** (Workflow Health — Apr 10 ~20:24 UTC). Next: **A** (Session Archaeology).
-- Mode D forked: Workflow health post-adoption impact analysis (s_1775852684311_1052).
+- Mode D **COMPLETE**: Workflow health analysis. **Key result: D-o-R uses +53% more ops than non-WF work sessions** (45.7 vs 29.9). Phase 1 is the bloat source (30.4 avg ops — matches a complete non-WF session). Error rates 50% lower (2.1% vs 3.9%). Quality scores incomparable (different eval scales). Finding: `workspace/finding-workflow-health-0410.md`
 - Mode C finding complete: `workspace/finding-workflow-adoption-gap-0410.md`
 
 ### may.db WAL Bug — FIXED, Monitoring
@@ -57,7 +57,8 @@
 - **Tool quality**: Waste rate 3.6% (stable). All regressions are bob INDEX.md noise.
 - **LLM evaluations**: All heuristic-only. By design if JS evaluator sufficient.
 - **Dead workflows**: may/coach ~367 lines never-used code. Low-priority cleanup.
-- **Workflow adoption**: 7% of sessions use workflows (35/503 today, up from 2.5%). All bob D-o-R and parallel-research. Other agents don't use workflows.
+- **Workflow adoption**: 4.5% system-wide (Apr 4-10). Bob 22.4%, Coach 1.9%, others 0%. No clear upward trend (fluctuates 0.3%-16.6% weekly).
+- **Workflow efficiency**: D-o-R runs cost +53% more ops than non-WF equivalents. Phase 1 unbounded reading is root cause. Error rates ~50% lower. Quality scores INCOMPARABLE (0-1 vs 0-5 scales — data infra bug).
 - **Optimizer heartbeat cost**: Was 56 ops avg. Fix deployed (Dispatcher Mode heartbeat). Measuring.
 - **Bob P1 read-loop**: 87 ops in Phase 1 of D-o-R for a KB integration task. "Don't write, just plan" instruction enables endless reading.
 
