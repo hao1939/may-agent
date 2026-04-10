@@ -38,6 +38,34 @@ Proactive heartbeat QA at HEAD **e3f53b5**. I sampled `test/gym/gym-runner.ts` (
 
 ### Mandatory gates
 - `./node_modules/.bin/tsc --noEmit`: PASS (no output)
+
+---
+
+## 2026-04-10T05:27Z
+
+### Summary
+Proactive heartbeat QA at HEAD **a1f1468** ("fix: remove accidental submodule entry for agents/"). Verified the commit removes a stray gitlink entry and does not introduce code changes. Re-ran mandatory QA gates.
+
+### Files reviewed (evidence)
+- Commit diff `a1f1468` deletes file `agents` with mode **160000** (gitlink): `Subproject commit ...` (from `git show a1f1468 -- agents`).
+- `test/launcher.test.ts` (read lines 90–170): failing tests hard-require `/app/src/app/launcher.ts` and assert expected strings.
+- `test/context-learn.test.ts` (read lines 1–110): failing tests delete `tmpDir` under `/app/test-workspace/...` via `rmSync(..., { recursive: true })`.
+
+### Mandatory gates
+- `./node_modules/.bin/tsc --noEmit`: PASS (exit 0; no output)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2089 passed (2110)**
+  - `test/launcher.test.ts`: 7 failed — `/app/src/app/launcher.ts` missing (existsSync false + ENOENT)
+  - `test/context-learn.test.ts`: 7 failed — `rmSync` cleanup fails with `EACCES` on `/app/test-workspace/context-learn-test/test-agent`
+  - `test/context-learning.test.ts`: 6 failed — `rmSync` cleanup fails with `EACCES` on `/app/test-workspace/context-learning-test/.state`
+  - `test/research-db.test.ts`: 1 failed — integration test timed out at 5000ms
+
+### Issues
+- CRITICAL (repo/test mismatch): `src/app/launcher.ts` absent but required by tests.
+- IMPORTANT (env/permissions): `/app/test-workspace/*` owned by `nobody:nogroup` (seen via `ls -ld`) causing cleanup `EACCES` in tests.
+- IMPORTANT (test robustness): `research-db` real-base sync exceeds 5s timeout in this environment.
+
+### Verdict
+CONDITIONAL — submodule cleanup change is safe; suite failures appear unrelated and environmental/repo-mismatch, but they prevent a green CI without fixes.
 - `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2089 passed (2110)**
   - `test/launcher.test.ts`: 7 failed — `/app/src/app/launcher.ts` missing (existsSync false + ENOENT reads)
   - `test/context-learn.test.ts`: 7 failed — `rmSync(tmpDir, { recursive: true })` fails with `EACCES` under `/app/test-workspace/context-learn-test/test-agent`
