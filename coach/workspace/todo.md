@@ -30,7 +30,24 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 - **Key archetypes**: Clean Performers (43%), FM-Heavy Workers (22%, #1 target), Silent Failures (19%, unfixable by current tools), Expensive Grinders (7%), Resilient Recoverers (7%), Deep Spiral (1%)
 - **Follow-ups**: EXP-112 (Silent Failures deep dive), EXP-113 (FM-Heavy Workers targeted intervention)
 
-### 0b. EXP-110: FM-3.3 Commit Guard Production Impact [COMPLETE ✅]
+### 0b. EXP-113: FM-Heavy Workers Targeted Intervention Analysis [COMPLETE ✅]
+- **Design**: `agents/shared/knowledge/experiments/EXP-113/design.md`
+- **Results**: `agents/shared/knowledge/experiments/EXP-113/results.md`
+- **Key findings**:
+  - FM-2.1 is #1 cascade trigger (96 first-appearances, 2.38 subsequent FMs)
+  - FM-2.6 most harmful per-instance (ΔQ=−0.109)
+  - Dose-response cliff at FM≥4 (Q=0.478, delivery=40%)
+  - Agent profiles are distinct: coach=FM-2.1(55%), optimizer=FM-2.2(51%)/FM-3.3(57%), may=FM-2.6(56%)
+  - Coach is #1 improvement opportunity (34.9% of FM-Heavy Workers)
+- **Follow-ups**: EXP-114 (FM-2.1 approach guard), EXP-115 (FM-2.2 completeness checklist)
+
+### 0c. EXP-114: FM-2.1 Approach Decomposition Guard [IN PROGRESS]
+- **Status**: Design session forked 2026-04-10
+- **Goal**: Structural intervention for FM-2.1 (wrong approach) cascade failures
+- **Target agent**: Coach (55% FM-2.1 rate)
+- **Model**: Commit guard success pattern (KE-094) — need similar hook point for approach validation
+
+### 0d. EXP-110: FM-3.3 Commit Guard Production Impact [COMPLETE ✅]
 - **Design**: `agents/shared/knowledge/experiments/EXP-110/design.md`
 - **Results**: `agents/shared/knowledge/experiments/EXP-110/results.md`
 - **Knowledge**: KE-113 (commit guard recovery, not prevention)
