@@ -1,21 +1,21 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~07:45 UTC
+Updated: 2026-04-10 ~07:53 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — Heartbeat running 07:23.
-- **Coach**: 🟢 Active — Heartbeat running 07:23. Convention regression alert received (amy-kimi C1.1).
-- **Scout**: 🟢 Active — Heartbeat running 07:23.
-- **Tech-lead**: 🟢 Active — Heartbeat running 07:23.
-- **Optimizer**: 🟢 Active — Heartbeat running 07:23.
-- **Evaluator**: 🟢 Active — Heartbeat running 07:23.
-- **QA**: 🟢 Active — Heartbeat running 07:23.
+- **Bob**: 🟢 Active — Heartbeat running 07:53.
+- **Coach**: 🟢 Active — Heartbeat running 07:53. Convention regressions: scout C1.3, C7.1, unknown C8.2 dispatched.
+- **Scout**: 🟢 Active — Heartbeat running 07:53.
+- **Tech-lead**: 🟢 Active — Heartbeat running 07:53.
+- **Optimizer**: 🟢 Active — Heartbeat running 07:53.
+- **Evaluator**: 🟢 Active — Heartbeat running 07:53.
+- **QA**: 🟢 Active — Heartbeat running 07:53.
 - **Coder**: 📋 Web UI project dispatched — spec at `agents/coder/workspace/SPEC-webui-agent-visualization.md`.
 - **All agents**: 🟢 8/8 running. Zero errors.
-- **✅ Tool Schema Guard**: Branch `review/tool-schema-guard-integration` awaiting QA merge. Commit 5186855.
+- **✅ Tool Schema Guard**: MERGED to main (commit 7c8dc22). Guard live in production — `createToolSchemaGuard()` in manager.ts guard chain.
 - **⚠️ Cron bug**: `analyze-failures` cron keeps failing (`db.query is not a function`). Low priority.
-- **✅ Stale session cleaned**: Cancelled `s_1775311714523_3` again (8235min idle).
+- **✅ Stale session cleaned**: Cancelled `s_1775311714523_3` again (8265min idle).
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -123,7 +123,7 @@ Updated: 2026-04-10 ~07:45 UTC
 | **EXP-113 FM-Heavy Workers Analysis** | ✅ COMPLETE | coach + bob | **KEY**: 398 FM-Heavy sessions (26.9%). Top cascade: FM-2.1 (96 first-appearances, 2.38 subsequent). Coach 55% FM-2.1 rate. Three intervention opportunities: FM-2.1 guard, FM-2.6 tool skills, FM-3.1 grounding. Bob integrated: H-095 P(H) 0.70→0.75. |
 | **EXP-114 FM-2.1 Decomposition Design** | ✅ DESIGNED | coach | **PIVOT FINDING**: 54.5% of FM-2.1 is tactical tool errors (bash({}), wrong args), NOT strategic approach problems. No single guard works — need Tool Schema Guard (#1, 78 sessions, HIGH conf) + Path Hints (#2) + Forced Externalization (#3). |
 | **EXP-114a Tool Schema Guard Prototype** | ✅ COMMITTED | coach + may | 201-line guard at `src/lib/tools/tool-schema-guard.ts`. On branch `review/tool-schema-guard-integration` (commit 5186855). Awaiting QA merge. |
-| **Tool Schema Guard Production Build** | 🔨 IN PROGRESS | tech-lead | Dispatched 07:45. Full production build: prototype → `src/lib/tools/tool-schema-guard.ts`, add to `composeGuards()`, 8 pattern tests, log-only mode. Session `s_1775807180530_14`. |
+| **Tool Schema Guard Production Build** | ✅ MERGED | tech-lead | Commit 7c8dc22 (merge of 5186855). Guard live in production: `createToolSchemaGuard()` in manager.ts line 386. 200-line impl + manager.ts integration. |
 | **Bob Heartbeat Ops Optimization** | ✅ COMPLETE | may (from optimizer) | Applied Optimizer finding: combined Step 1 bash into 1 call, removed INDEX.md skim, added ops budget. Expected -2,100 ops/week. Reqs b6a9d049 + 6c882854. |
 
 ## Completed/Archived
@@ -156,13 +156,12 @@ Updated: 2026-04-10 ~07:45 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (07:45)
-- **System healthy**: All 8 non-May agents running. Evaluator processing backlog (152 unevaluated sessions).
-- **Tech-lead dispatched**: Tool Schema Guard production build (EXP-114a). First real work for tech-lead in 17 days. Session `s_1775807180530_14`.
-- **Coach**: Running EXP-108 Phase 2 (adversarial self-review A/B gym runs — 18 multi-session runs).
-- **Evaluator**: Completed recent task tree evaluations. Working through 152 unevaluated session backlog.
-- **Bob**: Heartbeat active, working on common-sense-infra review.
-- **Anomalies resolved**: (1) Stuck evaluator already interrupted ✅, (2) Bob analysis.md not needed ✅, (3) tsc not available in this env ✅, (4) Unevaluated sessions being processed ✅.
+## Latest Cycle Summary (07:53)
+- **System healthy**: All 8 non-May agents running. Zero errors. All heartbeats firing simultaneously.
+- **Tool Schema Guard MERGED**: Commit 7c8dc22 — guard is live in production. `createToolSchemaGuard()` in manager.ts guard chain line 386. 200-line implementation.
+- **Coach**: New convention regressions dispatched (scout C1.3 85.8%, C7.1 91.6%, unknown C8.2 84.6%). Also has EXP-114 Phase B gym trials pending and amy-kimi C1.1 investigation.
+- **Stale session**: Cancelled `s_1775311714523_3` (8265min idle).
+- **Coder**: Web UI project dispatched (duplicate messages 13206ac2 + 15c2715c — benign).
 - **EXP-105 still waiting**: Zero coder work sessions since few-shot deployment.
 - **Amy-kimi still 🔴**: Blocked on Hao for billing.
 - **Steady state**: No new tasks from Hao. System running autonomously.
