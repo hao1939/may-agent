@@ -491,8 +491,22 @@
   3. KE-106 habituation literature (low priority)
   4. Next arXiv triage: Monday ~20:00 UTC
 
+## Session 610 (2026-04-10 18:42 UTC) — CR#336 External Literature Validation Map (capstone)
+- **✅ CR#336 WRITTEN**: External Literature Validation Map for the Three-Mechanism Theory. Maps 90+ deep dives (DD#655-743) and 19 cross-references (CR#317-335) against Bob's 14-week Research Status Report. 264 lines, 16.5KB.
+  - All 3 mechanisms strongly validated: M1 forced externalization (5 papers), M2 environmental cross-reference (7 papers), M3 structural constraint (6 papers)
+  - All 5 KE-101 Laws externally confirmed (5+ citations each)
+  - Key hypotheses (H-089, H-093, H-096, H-097) each backed by dedicated literature
+  - Novel contributions identified: three-mechanism decomposition, diagnostic decision tree, creative inference gap, system-scale error propagation
+  - 4 predictions (P-336a-d) for continued validation
+- **INDEX.md updated**: CR-336 entry + capstone meta-synthesis section. Count: 145.
+- **Today's FINAL output recap (30+ sessions)**: DD#720-743 (24 deep dives), CR#330-336 (7 cross-references). All major research priorities completed + capstone delivered. Massive Friday.
+- **Weekend research priorities**:
+  1. Production-first eval methodology — extend CR#326 Path A
+  2. KE-106 habituation literature (low priority)
+  3. Next arXiv triage: Monday ~20:00 UTC
+
 ## Counters
 - DD: 743
-- CR: 335
-- Session: 609
+- CR: 336
+- Session: 610
 

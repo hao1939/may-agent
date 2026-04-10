@@ -1,13 +1,13 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~18:23 UTC
+Updated: 2026-04-10 ~18:44 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — Fresh heartbeat 18:23. Completed EXP-124 KB integration (H-085/H-087 status sync).
-- **Coach**: 🟢 Active — Fresh heartbeat 18:23. EXP-125 complete (evaluator bug analysis). Forked EXP-126 (environmental hints replication, 24 trials).
+- **Bob**: 🟢 Active — Fresh heartbeat 18:43. Self-directing KB work.
+- **Coach**: 🟢 Active — EXP-126 running (environmental hints replication, ~30min in, running gym trials).
 - **Scout**: ⚠️ 401 Error — Recurring `IDE token expired` auth failure. Auto-pause recovery handling retries.
-- **Tech-lead**: 🟢 Active — Fresh heartbeat 18:23. Circuit breaker removal merged. Now doing dead code / maintenance.
+- **Tech-lead**: 🟢 Active — Fresh heartbeat 18:43. **P0 evaluator bug fix dispatched** (s_1775846656341_332).
 - **Optimizer**: 🟢 Active — Fresh heartbeat 18:23. Self-dispatched Mode B tool gap analysis (Coach high-op sessions).
 - **Evaluator**: 🟢 Active — Fresh heartbeat 18:23.
 - **QA**: 🟢 Active — Fresh heartbeat 18:23.
@@ -165,8 +165,7 @@ Updated: 2026-04-10 ~18:23 UTC
 | **EXP-124 FM-1.3 Path-Guessing Intervention** | ✅ COMPLETE (**STRONG POSITIVE**) | coach | **Phase 0 directory discovery**: Treatment 3/3 (100% convention) vs Baseline 0/3 (80% convention, 0% on navigation efficiency). +100pp on failing check. No product regression (100%→100%). Mechanism: externalized nav-map → selective reading. Results at `agents/shared/knowledge/experiments/EXP-124/results.md`. Bob integrating. |
 | **Gym Runner Inherits Dedup** | ✅ MERGED | tech-lead | `inherits` support in gym runner for scenario deduplication. 42 variant scenarios can now inherit base environment. Commits da552cf3 + 71b904f4 + 40d48912 merged to main. |
 | **EXP-125 Phase Evaluation Analysis** | ✅ COMPLETE (**3 EVALUATOR BUGS**) | coach | **LANDMARK**: Reported "70% phase failure" is mostly measurement artifact. (1) Scale mismatch: 0-1 vs 1-5 = 0% LLM pass rate with Q≥3 threshold. (2) Method selection bias: roots→heuristic (99% pass), children→LLM (strict). (3) Dedup: 100% of pipeline pairs get identical eval (agent name key, not session ID). Real gap = 19pp (26% vs 45% "good"), not 70pp. Analysis at `agents/coach/workspace/phase-evaluation-analysis.md`. |
-| **Evaluator Scale Mismatch Bug** | 🆕 P0 DISPATCH | tech-lead | 14,640 evals on 1-5 scale vs 4,756 on 0-1 scale. Any cross-method comparison meaningless. Fix: normalize scores in evaluator.ts. From Coach EXP-125 analysis. |
-| **Evaluator Pipeline Dedup Bug** | 🆕 P0 DISPATCH | tech-lead | evaluator.ts line 763 keys by `child.agent` not `child.sessionId` — when P1+P2 share same agent, both get identical eval. 100% of 26 pipeline pairs affected. |
+| **Evaluator Scale Mismatch Bug + Pipeline Dedup** | ⏳ DISPATCHED | tech-lead | **Forked** session s_1775846656341_332 at 18:44. Both P0 bugs in single work session. Scale mismatch (14,640 evals on wrong scale) + pipeline dedup (line 763 keys by agent not sessionId). Analysis at `agents/coach/workspace/phase-evaluation-analysis.md`. |
 | **EXP-126 Environmental Hints Replication** | ⏳ RUNNING | coach | 24 gym trials (12 baseline + 12 treatment). Replicating EXP-122 strong positive. Self-dispatched. |
 | **Optimizer Mode B Tool Gap Analysis** | ⏳ RUNNING | optimizer | Analyzing Coach high-op sessions for repeated multi-step bash patterns. Self-dispatched. |
 
@@ -200,26 +199,27 @@ Updated: 2026-04-10 ~18:23 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (18:23)
-- **System healthy**: 7/8 agents running. Scout recurring 401 auth. Zero failures in last hour. All agents have fresh heartbeats (18:23).
-- **Since last cycle (17:53)**:
-  - **Coach**: EXP-125 COMPLETE — found 3 evaluator bugs explaining "70% phase failure" (real gap = 19pp). Forked EXP-126 (environmental hints replication, 24 trials). Writing KE-126 + KE-128.
-  - **Bob**: Completed EXP-124 KB integration — H-085/H-087 status sync, Research Status Report (14-week synthesis, 125+ experiments, 22 hypotheses).
-  - **Tech-lead**: Circuit breaker removal merged (33/33 tests). Now on dead code / maintenance.
-  - **Optimizer**: Fixed gym results DB recording gap (commit 961d892f, +182 lines). Self-dispatched Mode B tool gap analysis.
-  - **All agents self-directing**: Coach + Optimizer self-dispatching productive work. Zero idle agents except Coder.
+## Latest Cycle Summary (18:44)
+- **System healthy**: 7/8 agents running. Scout recurring 401 auth. Zero failures in last hour. All agents have fresh heartbeats (18:43).
+- **Since last cycle (18:23)**:
+  - **Coach**: EXP-126 still running (~30min in). Running gym baseline trials — seeing 0/8 on most baselines (1/7 pass so far). Productive work in progress.
+  - **Bob**: Self-directing KB work. Fresh heartbeat.
+  - **Tech-lead**: **P0 evaluator bug fix dispatched** (s_1775846656341_332) — scale mismatch + pipeline dedup. Both bugs in single work session.
+  - **Optimizer**: Self-dispatched Mode B tool gap analysis. Fresh heartbeat.
+  - **All agents productive**: Coach running experiments, tech-lead fixing P0 bugs, optimizer analyzing patterns.
 
 ## Key Findings This Cycle
-- **🔴 EXP-125: THREE EVALUATOR BUGS FOUND** (Coach): (1) Scale mismatch — LLM evals use 0-1, heuristic uses 1-5, any Q≥3 threshold = 0% LLM pass. 14,640 vs 4,756 entries affected. (2) Method selection bias — roots get lenient heuristic (99% pass), children get strict LLM. (3) Pipeline dedup — evaluator.ts line 763 keys by agent name, not session ID, so P1+P2 get identical scores (100% of 26 pairs). **Real phase quality gap = 19pp (26% vs 45% "good"), not 70pp.** → Dispatching both bugs to tech-lead as P0.
-- **EXP-124 KB Integration complete** — Bob synced H-085 (P(H)=0.87) and H-087 (P(H)=0.75) with EXP-124 evidence.
-- **Research line completion**: Externalization series (EXP-117→124, 6 experiments) fully complete and synthesized.
+- **P0 evaluator bugs now dispatched** — been sitting as "🆕 P0 DISPATCH" for multiple cycles. Finally forked to tech-lead with full context.
+- **EXP-126 baseline looks different from EXP-122**: Coach seeing mostly 0/8 baselines (vs 67% in EXP-122). May indicate scenario difficulty variance.
+- **DB is 3h stale** — max session startedAt is 15:57 but current time is 18:43. Session-sync handler may need investigation.
 
 ## Next Actions
-- **P0**: **Evaluator bugs (2)** — Scale mismatch + pipeline dedup. Dispatched to tech-lead this cycle. Analysis at `agents/coach/workspace/phase-evaluation-analysis.md`.
+- **P0**: **Evaluator bugs (2)** — Scale mismatch + pipeline dedup. **NOW DISPATCHED** to tech-lead (s_1775846656341_332).
 - **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. Saves $143-441/day. **Blocked on Hao since Mar 24**.
-- **P1**: **EXP-126 Environmental Hints Replication** — In progress (coach). 24 trials.
+- **P1**: **EXP-126 Environmental Hints Replication** — In progress (coach). ~30min in.
 - **P1**: **EXP-105 Few-Shot Production Impact** — Need coder/optimizer work sessions to generate data. Coder idle since deployment (Apr 9).
 - **P1**: **Generate implementation work** — System idle without features. Tech-lead doing maintenance only. Coder completely idle.
+- **P1**: **DB stale** — may.db sessions table 3h behind. Session-sync cron may be broken or not running.
 - **P2**: `analyze-failures` cron DB bug — persistent but non-critical.
 - **P2**: Amy-kimi still down — blocked on Hao for billing.
 - **P2**: Scout 401 auth error — recurring IDE token expiry.

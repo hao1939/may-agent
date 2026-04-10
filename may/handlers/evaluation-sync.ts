@@ -12,12 +12,24 @@
  *
  * Pure JS — no LLM calls, no cost.
  *
- * Scoring logic (replicates the binary's heuristic evaluator):
+ * ## Scale: 0.0–1.0 (unified with LLM evaluator, per DOMAIN.md)
+ *
+ * All scores are on a 0.0–1.0 scale to match the LLM evaluator's DOMAIN.md spec.
+ * This enables cross-method comparisons (heuristic vs LLM) without scale conversion.
+ *
+ * Scoring logic:
  * - Evaluator sessions → skipped (meta agents don't evaluate themselves)
- * - Error sessions → Q:1, E:3, needs_improvement
+ * - Error sessions → Q:0.1, E:0.4, needs_improvement
  * - 0-op interrupted → skipped
- * - Done sessions → Q:5, E:4, good (default heuristic)
- * - Shallow sessions (≤2 ops, not evaluator) → Q:2, E:3, acceptable
+ * - Done sessions → Q:1.0, E:0.8, good (default heuristic)
+ * - Shallow sessions (≤2 ops, not evaluator) → Q:1.0, E:0.8, good
+ *
+ * Verdict thresholds (same as DOMAIN.md):
+ * - good: efficiency ≥ 0.7 AND quality ≥ 0.7
+ * - acceptable: efficiency ≥ 0.4 AND quality ≥ 0.4
+ * - needs_improvement: any metric < 0.4
+ *
+ * On first run after upgrade, migrates existing 1-5 scale scores to 0-1.
  */
 
 import { Database } from "bun:sqlite";
@@ -153,7 +165,7 @@ function computeEvaluation(meta: SessionMeta, sessionDir: string): {
     const issues: string[] = ["session_error"];
     if (opCount <= 2) issues.push("shallow_session");
     return {
-      quality: 1, efficiency: 3,
+      quality: 0.1, efficiency: 0.4,
       productiveCalls: productive, wastedCalls: wasted,
       verdict: "needs_improvement",
       issues,
@@ -165,7 +177,7 @@ function computeEvaluation(meta: SessionMeta, sessionDir: string): {
   // Shallow sessions (very few ops, not a normal completion)
   if (opCount <= 2 && status === "done") {
     return {
-      quality: 5, efficiency: 4,
+      quality: 1.0, efficiency: 0.8,
       productiveCalls: productive, wastedCalls: wasted,
       verdict: "good",
       issues: [],
@@ -175,31 +187,31 @@ function computeEvaluation(meta: SessionMeta, sessionDir: string): {
   }
 
   // Compute efficiency based on waste ratio
-  let effScore = 4;
+  let effScore = 0.8;
   const totalCalls = productive + wasted;
   if (totalCalls > 0) {
     const wasteRatio = wasted / totalCalls;
-    if (wasteRatio > 0.3) effScore = 2;
-    else if (wasteRatio > 0.15) effScore = 3;
-    else effScore = 4;
+    if (wasteRatio > 0.3) effScore = 0.3;
+    else if (wasteRatio > 0.15) effScore = 0.5;
+    else effScore = 0.8;
   }
 
   // Default: done session with reasonable ops
   const issues: string[] = [];
-  let quality = 5;
+  let quality = 1.0;
   let verdict = "good";
 
   // Flag high waste
   if (wasted > 5 && totalCalls > 0 && wasted / totalCalls > 0.2) {
     issues.push("high_waste_ratio");
-    quality = 4;
+    quality = 0.75;
     verdict = "acceptable";
   }
 
   // Flag very high op count (possible runaway)
   if (opCount > 100) {
     issues.push("high_op_count");
-    if (quality > 3) quality = 4;
+    if (quality > 0.5) quality = 0.75;
   }
 
   return {
@@ -223,6 +235,31 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     const db = new Database(dbPath);
 
     try {
+      // ── Migration: convert existing 1-5 scale scores to 0-1 ──────────
+      // The old heuristic evaluator used 1-5 scale (matching evaluator-scoring SKILL.md).
+      // DOMAIN.md uses 0-1 scale. This one-time migration normalizes all existing
+      // heuristic evaluations to 0-1 so cross-method comparisons work.
+      // Detection: if any heuristic evaluation has quality > 1.0, it's old-scale.
+      const oldScaleCount = (db.prepare(
+        "SELECT COUNT(*) as cnt FROM evaluations WHERE evaluatedByHeuristic = 1 AND (quality > 1.0 OR efficiency > 1.0)"
+      ).get() as { cnt: number }).cnt;
+      if (oldScaleCount > 0) {
+        // Convert 1-5 → 0-1: newScore = (oldScore - 1) / 4
+        // quality: 1→0.0, 2→0.25, 3→0.5, 4→0.75, 5→1.0
+        // efficiency: same mapping
+        db.exec(`
+          UPDATE evaluations
+          SET quality = ROUND((quality - 1.0) / 4.0, 2),
+              efficiency = ROUND((efficiency - 1.0) / 4.0, 2),
+              overall = json_set(
+                json_set(overall, '$.quality', ROUND((quality - 1.0) / 4.0, 2)),
+                '$.efficiency', ROUND((efficiency - 1.0) / 4.0, 2)
+              )
+          WHERE evaluatedByHeuristic = 1 AND (quality > 1.0 OR efficiency > 1.0)
+        `);
+        ctx.log(`[evaluation-sync] Migrated ${oldScaleCount} evaluations from 1-5 scale to 0-1`);
+      }
+
       // Get already-evaluated session IDs
       const evaluatedIds = new Set<string>();
       const rows = db.prepare("SELECT sessionId FROM evaluations").all() as Array<{ sessionId: string }>;
@@ -264,14 +301,14 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
             upsert.run(
               session.sessionId,
               session.agent,
-              isEvaluator ? 0 : isError ? 1 : 5,
-              isEvaluator ? 0 : isError ? 3 : 4,
+              isEvaluator ? 0 : isError ? 0.1 : 1.0,
+              isEvaluator ? 0 : isError ? 0.4 : 0.8,
               0, 0,
               isEvaluator ? "skipped" : isError ? "needs_improvement" : "good",
               isEvaluator ? JSON.stringify([`meta_agent_skipped (${session.agent})`]) : "[]",
               JSON.stringify({
-                quality: isEvaluator ? 0 : isError ? 1 : 5,
-                efficiency: isEvaluator ? 0 : isError ? 3 : 4,
+                quality: isEvaluator ? 0 : isError ? 0.1 : 1.0,
+                efficiency: isEvaluator ? 0 : isError ? 0.4 : 0.8,
                 verdict: isEvaluator ? "skipped" : isError ? "needs_improvement" : "good",
                 result_delivered: !isEvaluator && !isError,
               }),

@@ -30,27 +30,27 @@ Before assigning a 1-5 score, check for **Fatal Failures**. If any of these exis
 - Status: FAIL
 - Stop scoring quality. Document the specific failure.
 
-### Step 2: Quality Score (1-5)
+### Step 2: Quality Score (0.0–1.0)
 If no fatal failures, how well did it do the job?
 
 | Score | Criteria |
 |-------|----------|
-| **5 (Perfect)** | Task completed fully. Edge cases handled. No hallucinations. Output is verifiable and correct. |
-| **4 (Good)** | Task completed. Minor non-critical issues (e.g., verbose logs, minor style drift). Output is usable. |
-| **3 (Okay)** | Task partially completed or required human intervention/correction. Output needs work. |
-| **2 (Poor)** | Task attempted but missed the main goal. Output is broken or wrong. |
-| **1 (Bad)** | Task misunderstood or mostly failed. Agent got lost. |
+| **1.0 (Perfect)** | Task completed fully. Edge cases handled. No hallucinations. Output is verifiable and correct. |
+| **0.7 (Good)** | Task completed. Minor non-critical issues (e.g., verbose logs, minor style drift). Output is usable. |
+| **0.5 (Okay)** | Task partially completed or required human intervention/correction. Output needs work. |
+| **0.3 (Poor)** | Task attempted but missed the main goal. Output is broken or wrong. |
+| **0.1 (Bad)** | Task misunderstood or mostly failed. Agent got lost. |
 
-### Step 3: Efficiency Score (1-5)
+### Step 3: Efficiency Score (0.0–1.0)
 How much waste was generated?
 
 | Score | Criteria |
 |-------|----------|
-| **5 (Optimal)** | Zero wasted steps. Minimum tokens used. No redundant reads. |
-| **4 (Efficient)** | 1-2 redundant steps (e.g., `ls` then `find`, or reading a file twice). |
-| **3 (Average)** | Several redundant steps or minor loops. |
-| **2 (Inefficient)** | Significant loops (3+ retries of same error), reading massive files unnecessarily. |
-| **1 (Wasteful)** | Infinite loop, massive token dump, or flailing without progress. |
+| **1.0 (Optimal)** | Zero wasted steps. Minimum tokens used. No redundant reads. |
+| **0.8 (Efficient)** | 1-2 redundant steps (e.g., `ls` then `find`, or reading a file twice). |
+| **0.5 (Average)** | Several redundant steps or minor loops. |
+| **0.3 (Inefficient)** | Significant loops (3+ retries of same error), reading massive files unnecessarily. |
+| **0.1 (Wasteful)** | Infinite loop, massive token dump, or flailing without progress. |
 
 ## Output Format
 Your output must be a JSON object inside a code block.
@@ -59,12 +59,12 @@ Your output must be a JSON object inside a code block.
 {
   "sessionId": "s_...",
   "quality": {
-    "score": 0-5,
+    "score": 0.0-1.0,
     "verdict": "PASS" | "FAIL" | "WARN",
     "reasoning": "Specific evidence citing line numbers..."
   },
   "efficiency": {
-    "score": 0-5,
+    "score": 0.0-1.0,
     "waste": ["List of wasteful actions..."],
     "reasoning": "Specific evidence..."
   },

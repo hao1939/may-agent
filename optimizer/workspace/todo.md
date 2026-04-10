@@ -23,11 +23,6 @@
 - Phase 3b content verification deployed at 16:43 UTC (commit d6c7696).
 - Continue monitoring — 16 runs is decent sample but more data welcome.
 
-### Gym Results Data Gap — RE-FORKED (s_1775844808931)
-- `scripts/gym-run.sh` does bare `exec` → no DB recording. `scripts/gym-record.ts` exists but never called.
-- Previous "fix" sessions documented the problem but never applied code changes. Third attempt forked.
-- Fix: add recording call in gym-helpers.ts or gym-run.sh where results are available.
-
 ### Coach Session Efficiency — FINDING COMPLETE
 - 2,175 coach sessions analyzed. 50.3% zero-op, 64% of ops in top sessions are exploration waste.
 - Top 15 sessions avg 24% productivity. Two sessions 3% productive (68 calls, 2 productive).
@@ -41,7 +36,7 @@
 - Root cause: heartbeat.md encouraged inline exploration (multi-query DB analysis, file reads).
 - Fix: Rewrote heartbeat.md to "Dispatcher Mode" — observe in 1-2 ops, fork all analysis work. Target: ≤15 ops.
 - Baseline: 8 heartbeats in 12h, avg 56 ops, total 451. Measuring post-fix.
-- Last exploration mode: **C** (Skill & Technique Scouting — Coach session efficiency deep dive, Apr 10 ~18:45 UTC). Next: **D** (Workflow Health Check).
+- Last exploration mode: **D** (Workflow Health — Apr 10 ~17:19 UTC). Next: **A** (Session Archaeology).
 
 ### may.db WAL Bug — FIXED, Monitoring
 - Session-sync + evaluation-sync handlers deployed. 1071 evals, 0 unevaluated (as of 17:10 UTC).
@@ -73,5 +68,7 @@
 - **Memory Redesign Brief** — `workspace/brief-memory-redesign.md`. 2026-03-17.
 
 ## ✅ DONE
+
+- **Gym Results Data Gap** — Both paths now record: `gym-helpers.ts` has `recordGymResult()` (commit 961d892f0), `run-gym.sh` pipes to `record-result.ts` (commit 2c8c7dcd). 22 runs + 156 checks verified in DB. (2026-04-10)
 
 48+ items Mar 17 – Apr 10. Detailed logs: `workspace/todo-archive-20260410.md`

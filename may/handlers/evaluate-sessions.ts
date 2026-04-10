@@ -156,6 +156,40 @@ export async function handleEvaluateSessions(opts: {
     try {
       const evalResult = await opts.evaluateTask({ manager, persistDir, parentSessionId: parentId });
       if (evalResult) {
+        // ── Pipeline dedup fix ──────────────────────────────────────
+        // evaluateTask() keys results by child.agent, not child.sessionId.
+        // When multiple children share the same agent name (e.g., both "bob"
+        // in a P1→P2 pipeline), one evaluation overwrites the other and both
+        // sessions get IDENTICAL scores. Detect and flag this.
+        if (evalResult.agents && evalResult.sessionIds?.length > 1) {
+          const allMetas = opts.loadAllSessionMetas();
+          // Group children by agent
+          const childrenByAgent: Record<string, string[]> = {};
+          for (const sid of evalResult.sessionIds) {
+            const meta = allMetas[sid];
+            const agent = meta?.agent || "unknown";
+            if (!childrenByAgent[agent]) childrenByAgent[agent] = [];
+            childrenByAgent[agent].push(sid);
+          }
+          // For agents with multiple children, re-key by sessionId
+          for (const [agent, sids] of Object.entries(childrenByAgent)) {
+            if (sids.length > 1 && evalResult.agents[agent]) {
+              const sharedEval = evalResult.agents[agent];
+              // Flag the duplication in the evaluation issues
+              const dupWarning = `[PIPELINE_DEDUP] ${sids.length} sessions share agent "${agent}" — scores may be duplicated`;
+              if (!sharedEval.issues) sharedEval.issues = [];
+              sharedEval.issues.push(dupWarning);
+              // Re-key: assign the shared eval to each sessionId individually
+              for (const sid of sids) {
+                evalResult.agents[sid] = { ...sharedEval, sessionId: sid };
+              }
+              // Remove the agent-keyed entry (now replaced by sessionId-keyed entries)
+              delete evalResult.agents[agent];
+              onLog?.(`[eval] Pipeline dedup: ${sids.length} children share agent "${agent}" for parent ${parentId} — flagged`);
+            }
+          }
+        }
+
         result.parentsEvaluated.push(parentId);
         result.parentVerdicts[parentId] = evalResult.overall.verdict;
         result.sessionsEvaluated += evalResult.sessionIds.length;
