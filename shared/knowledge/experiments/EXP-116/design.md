@@ -2,7 +2,7 @@
 
 **Date**: 2026-04-10  
 **Author**: Coach  
-**Status**: DESIGNED (Revised per Bob's review — all C1-C3, M1-M5 addressed)  
+**Status**: COMPLETE — Results in results.md  
 **Depends on**: EXP-103 (adversarial framing), EXP-102 (verification confabulation), EXP-108 (adversarial self-review null result), KE-093, KE-099, KE-100
 
 ---
