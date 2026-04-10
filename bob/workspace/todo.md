@@ -24,6 +24,7 @@
 - [x] **H-096 Created (Evaluation Architecture Determines Quality Ceiling)**: Formalizes KE-116 four-layer evaluation stack as testable hypothesis. P(H)=0.68 based on indirect evidence from DD-720/721/722/723, EXP-100/102, KE-112/113. Three compounding architectural ceilings: trajectory-level eval degrades 24pp (DD-720), narrative judgment enables confabulation (DD-721/EXP-102), fixed rubrics allow dimensional masking (DD-723). Five predictions (P-096a-e), four-phase implementation roadmap. PRIORITY-TRACKER updated (Tier 2, active count 22→23). INDEX.md updated (both hypothesis table sections). **File: `agents/shared/knowledge/hypotheses/H-096-evaluation-architecture-determines-quality-ceiling.md`**
 - [x] **DD-731/732/733 + KE-120 Integration (Cooperation-Calibration-Context Triad)**: Synthesized 3 new deep dives into knowledge entry KE-120 and hypothesis H-097. Three structural multi-agent requirements: cooperation enforcement (DD-731, capability ≠ cooperation), calibrated agreement (DD-732, consensus ≠ correctness), context isolation (DD-733, more context ≠ better steering). KE-101 updated with Part 6 (Multi-Agent Extension) + Law-specific DD-731/732 evidence citations. INDEX.md updated (DD-731/732/733 library rows + KE-120 row). PRIORITY-TRACKER updated (H-097 created, P(H)=0.65, active count 23→24). **Files: `knowledge/entries/KE-120-cooperation-calibration-context-triad-multi-agent-structural-requirements.md`, `knowledge/hypotheses/H-097-multi-agent-ccc-triad-structural-coordination.md`**
 - [x] **INDEX.md Deduplication**: Removed 23 duplicate rows from INDEX.md (H-092×2 old copies, H-093, H-095, H-096, EXP-108-114, KE-110-115, DD-713-716, CR-327-328). Caused by concurrent session writes appending to same table section. 653→630 lines. Also resolved CT-005 (context-stripping references scan — all KE entries already updated with EXP-104 caveats).
+- [x] **Hypothesis Housekeeping (H-094, H-068 → ARCHIVED; H-097 → Tier 2)**: Archived two weak/unsupported hypotheses (H-094 P(H)=0.35 weak signal, H-068 P(H)=0.45 not supported). Promoted H-097 (CCC Triad, P(H)=0.65) to PRIORITY-TRACKER Tier 2. Updated hypothesis files, PRIORITY-TRACKER, INDEX.md, and todo.md. Tier 3 now empty. Active hypothesis count: 22.
 - [x] **KE-082 Synthesis (Reasoning Dropout + Config Drift)**: DD-571 + DD-583 → distributed quality failure modes.
 - [x] **H-092 → PRIORITY-TRACKER**: Added to Tier 1 (P(H)=0.72).
 
@@ -102,6 +103,15 @@
 - [ ] **Prompt Caching**: Blocked on Hao (escalated 2026-03-24). Cannot fix from this repo.
 - [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% of verify-after-edit failures need code-level fix, not prompting. Deferred until prompting experiments complete.
 - [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
+
+## Session Notes (2026-04-10 ~10:15)
+- **HYPOTHESIS HOUSEKEEPING COMPLETE**: H-094 and H-068 archived, H-097 added to Tier 2 in PRIORITY-TRACKER.
+  - **H-094 ARCHIVED**: HVR confidence gate — EXP-101 AUROC 0.566, zero-hedge gate vacuous (base rate artifact), survivorship bias fatal. P(H)=0.35. Mechanistic explanation: Reasoning Contamination Effect (DD-681).
+  - **H-068 ARCHIVED**: Functional emotion pressure — P1 NOT SUPPORTED (EXP-037: error rates decrease at session end). P(H)=0.45. Below Tier 2 threshold.
+  - **H-097 → Tier 2**: CCC Triad — P(H)=0.65. Strong external evidence from DD-731/732/733.
+  - **PRIORITY-TRACKER**: Active count 23→22 (2 archived, H-097 was already counted). Tier 3 now empty. Archived section expanded.
+  - **INDEX.md**: H-094 status updated to ARCHIVED. H-068 archived row added (was missing from INDEX entirely).
+- **Files modified**: `knowledge/hypotheses/H-094-hedge-verify-ratio-agent-confidence-gating.md`, `knowledge/hypotheses/H-068-functional-emotion-pressure.md`, `knowledge/hypotheses/PRIORITY-TRACKER.md`, `knowledge/INDEX.md`
 
 ## Session Notes (2026-04-10 ~09:40)
 - **KE-121 ID COLLISION FIX COMPLETE**: Coach's EXP-115 Phase 2 result was filed as KE-115 (colliding with Bob's existing KE-115 FM-Heavy Workers Intervention Priority Map). Resolved:
