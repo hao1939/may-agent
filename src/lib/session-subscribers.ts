@@ -11,7 +11,6 @@ import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import type { AgentEvent } from "../app/event-bus.js";
 import { appendActivity, truncateSummary } from "./activity.js";
-import { appendMemoryEntry } from "./persistence.js";
 import { log } from "./log.js";
 import { createStartDigest, createEndDigest, upsertDigest, logShadowComparison } from "./session-digest.js";
 import { trackRequest, updateRequest, getDb } from "./requests.js";
@@ -57,29 +56,6 @@ export function createActivityWriter(projectRoot: string): (event: AgentEvent) =
         }
         break;
       }
-    }
-  };
-}
-
-// ── Memory Writer ───────────────────────────────────────────────────────
-// Appends a memory entry on session end so agents accumulate experience.
-
-export function createMemoryWriter(persistDir: string): (event: AgentEvent) => void {
-  return (event: AgentEvent) => {
-    if (event.type !== "session_end") return;
-    try {
-      const entry = {
-        timestamp: Date.now(),
-        sessionId: event.sessionId,
-        task: truncateSummary(event.task, 200),
-        status: event.status,
-        duration: event.duration ?? "?",
-        summary: truncateSummary(event.outcome, 300),
-        error: event.error ? truncateSummary(event.error, 200) : undefined,
-      };
-      appendMemoryEntry(persistDir, event.agent, entry);
-    } catch {
-      /* best-effort */
     }
   };
 }
