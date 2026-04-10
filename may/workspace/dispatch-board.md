@@ -1,18 +1,18 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~09:15 UTC
+Updated: 2026-04-10 ~09:23 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — New heartbeat 09:12. Forked EXP-108 Phase 2 KB integration (req:43b2c663).
-- **Coach**: 🟢 Active — EXP-115 Phase 2 running (~28min, gym trials for FM-2.2 completeness checklist). Completed EXP-108 Phase 2 (adversarial self-review A/B: NO effect, do NOT deploy). New heartbeat 09:12.
-- **Scout**: 🟢 Active — New heartbeat 09:12.
-- **Tech-lead**: 🟢 Active — Checking test-fix session status. Re-dispatched Web UI build (req:f0420cf7). New heartbeat 09:12.
-- **Optimizer**: 🟢 Active — New heartbeat 09:12.
-- **Evaluator**: 🟢 Active — 19 sessions today (most active). New heartbeat 09:12.
-- **QA**: 🟢 Active — New heartbeat 09:12.
-- **Coder**: 🟡 Web UI build re-dispatched to tech-lead (req:f0420cf7). Original spec lost. Awaiting tech-lead to create new spec and fork coder.
-- **All agents**: 🟢 8/8 running. Zero errors last hour.
+- **Bob**: 🟢 Active — Heartbeat 09:23. Completed DD-728/729/730 indexing + CR-331.
+- **Coach**: 🟢 Active — EXP-115 Phase 2 RESUMED (was interrupted, auto-resumed 09:24). Running gym trials for FM-2.2.
+- **Scout**: 🟢 Active — Heartbeat 09:23.
+- **Tech-lead**: 🟢 Active — Heartbeat 09:23. Dead code removal (forced-externalization) on review branch. Web UI build dispatched (req:aedb557f).
+- **Optimizer**: 🟢 Active — Heartbeat 09:23. **Good autonomous work**: diagnosed + fixed QA finish_partial anomaly (commit 474b5145). Root cause: QA trying tsc/vitest in env that lacks them.
+- **Evaluator**: 🟢 Active — Heartbeat 09:23. 20+ sessions today.
+- **QA**: 🟢 Active — Heartbeat 09:23. finish_partial issue should be fixed by optimizer's context.md update.
+- **Coder**: 🟡 Spec ready (`agents/coder/workspace/SPEC-webui-agent-visualization.md`). Awaiting tech-lead to fork coder build session.
+- **All agents**: 🟢 8/8 running. 1 coach interruption last hour (auto-resumed). Zero errors.
 - **✅ Tool Schema Guard**: Live in production. EXP-114a T+2h: 0 activations in 57 sessions (1.5% base rate too low — need 280+ sessions for statistical power).
 - **⚠️ Cron bug**: `analyze-failures` cron keeps failing (`db.query is not a function`). Low priority.
 - **⚠️ Git drift**: 223 files changed vs HEAD. Project restructured to bundled binary.
@@ -162,27 +162,25 @@ Updated: 2026-04-10 ~09:15 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (09:15)
-- **System healthy**: All 8 non-May agents running. Zero errors last hour. All heartbeats fresh (~09:12).
-- **EXP-108 Phase 2 COMPLETE**: Adversarial self-review skill = NULL RESULT. 18 A/B runs, +2.3pp overall (not significant). Treatment slower in 2/3 scenarios. Do NOT deploy. Bob integrating.
-- **EXP-115 Phase 2 running**: Coach gym trials for FM-2.2 completeness checklist (~28min, normal).
-- **Web UI build STALLED**: Original spec file lost. Re-dispatched to tech-lead (req:f0420cf7).
-- **Bob**: Forked for EXP-108 KB integration (req:43b2c663). Also ran KE-117 synthesis earlier.
-- **Tech-lead**: Checking test-fix session (3 pre-existing failures). Will pick up Web UI dispatch next cycle.
-- **Evaluator**: Very active — 19 sessions today.
-- **All others**: Self-directing, productive.
+## Latest Cycle Summary (09:23)
+- **System healthy**: All 8 non-May agents running. 1 coach interruption (auto-resumed). All heartbeats fresh (~09:23).
+- **EXP-115 Phase 2 RESUMED**: Coach interrupted at 09:04, auto-resumed 09:24. Treatment run 2 passed (8/8). Continuing.
+- **Optimizer autonomous fix**: Diagnosed QA finish_partial anomaly (43/47 evals capped at Q:3). Root cause: QA SOUL.md mandated tsc/vitest runs that don't exist in env. Fixed via context.md update (commit 474b5145). Good proactive work.
+- **Tech-lead**: Dead code removal (forced-externalization, 610 lines) on review branch. Web UI build dispatched.
+- **Bob**: DD-728/729/730 indexing complete. CR-331 indexed. 
+- **Duplicate requests detected**: 2 coder Web UI messages, 2 tech-lead Web UI messages, 2 optimizer→tech-lead QA fix messages. Not blocking but cluttering request DB.
 
 ## Key New Findings This Cycle
-- **EXP-108 Phase 2 (adversarial self-review A/B)**: NO significant treatment effect. The skill causes agents to spend more time reviewing but doesn't translate reviews into corrective action. Aligns with KE-002 (text rules 0% for judgment) and KE-106 (guards ≠ training). "Review without action" is a new failure mode to document.
-- **EXP-115 Phase 2**: Still running, awaiting results.
-- **Web UI build gap identified**: Spec file disappeared, no coder sessions since Mar 23 (just gym runs). Re-dispatched.
+- **QA finish_partial root cause** (optimizer finding): QA was trying to run tsc/vitest per SOUL.md instructions, failing, and finishing as blocked/partial → quality capped at 3. 18% of QA evals were penalized. Fix: context.md tells QA these tools are unavailable.
+- **EXP-115 Phase 2**: Still running (treatment run 2 passed 8/8 so far). Full results next cycle.
+- **Tech-lead dead code cleanup**: Removing forced-externalization module (610 lines). On review branch, not yet merged.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao since Mar 24**. Optimizer confirmed root cause: binary doesn't set `cache_control` breakpoints for Anthropic API.
-- **P1**: **Web UI build** — Re-dispatched to tech-lead (req:f0420cf7). Monitor for spec creation + coder fork.
+- **P1**: **Web UI build** — Spec exists at `agents/coder/workspace/SPEC-webui-agent-visualization.md`. Tech-lead should fork coder this cycle.
 - **P1**: **EXP-115 Phase 2 results** — Coach running now. Check next heartbeat.
 - **P1**: **EXP-105 Few-Shot Production Impact** — Still waiting for coder/optimizer work sessions. Web UI build will generate first real coder work.
-- **P1**: **Present research sprint results to Hao** — KE-101 meta-analysis capstone. 17+ experiments. Gym graduation. EXP-108 now adds null-result datapoint.
+- **P1**: **Present research sprint results to Hao** — KE-101 meta-analysis capstone. 17+ experiments. Gym graduation.
 - **P2**: `analyze-failures` cron DB bug — persistent but non-critical.
 - **P2**: Federation design ready for Hao review
 - **P2**: Amy-kimi still down — blocked on Hao for billing
