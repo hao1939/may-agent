@@ -1,18 +1,18 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~18:53 UTC
+Updated: 2026-04-10 ~19:12 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — Fresh heartbeat 18:53. H-098 Attention Channel Theory filed (P(H)=0.78, Tier 1).
-- **Coach**: 🟢 Active — Fresh heartbeat 18:53. EXP-126 work session interrupted (baseline block 1: 4/6 PASS). Heartbeat should re-dispatch.
+- **Bob**: 🟢 Active — Fresh heartbeat 19:12. Last cycle: H-098 filed, multiple KB integration work sessions.
+- **Coach**: 🟢 Active — Fresh heartbeat 19:12. **EXP-126 work session running 57min** — found+fixed critical gym runner bug (syncNewFilesFromRoot: modified files weren't synced). Running trials.
 - **Scout**: ⚠️ 401 Error — Recurring `IDE token expired` auth failure. Auto-pause recovery handling retries.
-- **Tech-lead**: 🟢 Active — Fresh heartbeat 18:53. Merged dead rescoreHeuristicEvaluations (7faf2ca). **3 CREATED requests queued** (2× P0 evaluator bugs + dead code).
-- **Optimizer**: 🟢 Active — Fresh heartbeat 18:53. Updated exploration A→B.
-- **Evaluator**: 🟢 Active — Fresh heartbeat 18:53. Self-added score-scale + keying integrity criteria (f989f453).
-- **QA**: 🟢 Active — Fresh heartbeat 18:53.
+- **Tech-lead**: 🟢 Active — Fresh heartbeat 19:12. **✅ P0 evaluator bugs FIXED** (scale mismatch + pipeline dedup, 8 tests, 1057 DB evals migrated).
+- **Optimizer**: 🟢 Active — Fresh heartbeat 19:12. 3rd attempt at gym results data gap fix.
+- **Evaluator**: 🟢 Active — Fresh heartbeat 19:12. Self-added score-scale + keying integrity criteria (f989f453).
+- **QA**: 🟢 Active — Fresh heartbeat 19:12.
 - **Coder**: Idle. Only runs when forked by tech-lead.
-- **All agents**: 🟡 7/8 healthy. Scout has recurring auth error (401, IDE token expired).
+- **All agents**: 🟡 7/8 healthy. Scout has recurring auth error (401, IDE token expired). No failures in last hour.
 - **✅ Tool Schema Guard**: Live in production.
 - **✅ Dead code removal**: ~4,779+ lines removed total (1,973 earlier + 589 memory JSONL + 2,217 finish-guard dead code).
 - **✅ Web UI Phase 1**: Merged to main.
@@ -165,8 +165,9 @@ Updated: 2026-04-10 ~18:53 UTC
 | **EXP-124 FM-1.3 Path-Guessing Intervention** | ✅ COMPLETE (**STRONG POSITIVE**) | coach | **Phase 0 directory discovery**: Treatment 3/3 (100% convention) vs Baseline 0/3 (80% convention, 0% on navigation efficiency). +100pp on failing check. No product regression (100%→100%). Mechanism: externalized nav-map → selective reading. Results at `agents/shared/knowledge/experiments/EXP-124/results.md`. Bob integrating. |
 | **Gym Runner Inherits Dedup** | ✅ MERGED | tech-lead | `inherits` support in gym runner for scenario deduplication. 42 variant scenarios can now inherit base environment. Commits da552cf3 + 71b904f4 + 40d48912 merged to main. |
 | **EXP-125 Phase Evaluation Analysis** | ✅ COMPLETE (**3 EVALUATOR BUGS**) | coach | **LANDMARK**: Reported "70% phase failure" is mostly measurement artifact. (1) Scale mismatch: 0-1 vs 1-5 = 0% LLM pass rate with Q≥3 threshold. (2) Method selection bias: roots→heuristic (99% pass), children→LLM (strict). (3) Dedup: 100% of pipeline pairs get identical eval (agent name key, not session ID). Real gap = 19pp (26% vs 45% "good"), not 70pp. Analysis at `agents/coach/workspace/phase-evaluation-analysis.md`. |
-| **Evaluator Scale Mismatch Bug + Pipeline Dedup** | ⏳ QUEUED (2 CREATED reqs) | tech-lead | 2× duplicate P0 requests (85a291da + 5a90eda7) in tech-lead queue since 18:26. Current heartbeat should pick up. Evaluator also self-added criteria awareness (f989f453). Analysis at `agents/coach/workspace/phase-evaluation-analysis.md`. |
-| **EXP-126 Environmental Hints Replication** | ⏳ RUNNING (INTERRUPTED) | coach | 24 gym trials (12 baseline + 12 treatment). Baseline block 1: 4/6 PASS (67%). Work session interrupted, needs re-dispatch. |
+| **Evaluator Scale Mismatch Bug + Pipeline Dedup** | ✅ FIXED | tech-lead | 2× P0 bugs fixed: (1) Scale mismatch — heuristic 1-5 → 0-1, migration SQL for 1057 evals. (2) Pipeline dedup — re-keys by sessionId when children share agent name. 8 new tests pass. |
+| **EXP-126 Environmental Hints Replication** | ⏳ RUNNING | coach | 24 gym trials planned. **Found critical gym runner bug**: syncNewFilesFromRoot only synced NEW files, not MODIFIED — fixed with deepSnapshotDir. First post-fix trial: 4/8 (vs 0/8 pre-fix). Running remaining trials. |
+| **Gym Runner Modified-File Sync Bug** | ✅ FIXING (in-flight) | coach | Critical: `syncNewFilesFromRoot` only synced NEW files, not MODIFIED. Agent writes to PROJECT_ROOT but modified files in existing dirs (knowledge/) weren't synced. Fix: deepSnapshotDir captures mtimes before run, syncs changed files back. Found during EXP-126. |
 | **Optimizer Mode B Tool Gap Analysis** | ✅ COMPLETE | optimizer | Exploration mode updated A→B. |
 | **H-098 Attention Channel Theory** | 🆕 FILED | bob | P(H)=0.78, Tier 1. Intervention effectiveness = channel separation. o3 17% collective vs o3-mini 50%. Based on KE-120/DD-731-733. |
 
@@ -200,27 +201,27 @@ Updated: 2026-04-10 ~18:53 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (18:53)
-- **System healthy**: 7/8 agents running. Scout recurring 401 auth. 1 coach interruption (EXP-126 abort). All agents have fresh heartbeats (18:53).
-- **Since last cycle (18:44)**:
-  - **Tech-lead**: Merged dead rescoreHeuristicEvaluations code removal (commit 7faf2ca). 3 CREATED requests in queue: 2× P0 evaluator bugs + 1 dead code. Current heartbeat should pick up P0.
-  - **Coach**: EXP-126 work session interrupted after baseline block 1 (4/6 PASS, 2 FAIL). Heartbeat restarted — should re-dispatch remaining trials.
-  - **Evaluator**: Self-added score-scale + keying integrity criteria to knowledge (commit f989f453) — awareness of own bugs from EXP-125, but code fix still needs tech-lead.
-  - **Bob**: Filed H-098 Attention Channel Theory (P(H)=0.78, Tier 1). PRIORITY-TRACKER updated.
-  - **Optimizer**: Updated exploration mode A→B. Mode B tool gap analysis presumably complete.
-  - **Scout**: New heartbeat, still fighting 401 auth.
+## Latest Cycle Summary (19:12)
+- **System healthy**: 7/8 agents running. Zero failures in last hour. Scout recurring 401 auth. All heartbeats just fired (19:12).
+- **Since last cycle (18:53)**:
+  - **Tech-lead**: **✅ P0 evaluator bugs FIXED** — Scale mismatch (heuristic 1-5→0-1, 1057 DB evals migrated) + pipeline dedup (re-key by sessionId). 8 new tests. evaluation-sync.ts + evaluate-sessions.ts + SKILL.md updated.
+  - **Coach**: EXP-126 work session running 57min — **found+fixed critical gym runner bug** (syncNewFilesFromRoot didn't sync modified files). First post-fix trial: 4/8 (vs 0/8 pre-fix). Running remaining baseline/treatment trials.
+  - **Bob**: Multiple KB integration work sessions (DD-734→738, H-098 integration, etc.). Fresh heartbeat just started.
+  - **Optimizer**: 3rd attempt at gym results data gap fix. Fresh heartbeat restarted.
+  - **Scout**: Still fighting 401 auth. Fresh heartbeat.
 
 ## Key Findings This Cycle
-- **H-098 Attention Channel Theory** (Bob): Intervention effectiveness determined by channel separation. P(H)=0.78, Tier 1. Based on KE-120/DD-731-733. Key insight: o3 at 17% collective vs o3-mini at 50% — capability ≠ cooperation.
-- **Evaluator self-awareness**: Evaluator added criteria about score-scale integrity and keying correctness (the very bugs Coach found in EXP-125). Shows self-directed learning, but actual code fix still pending in tech-lead queue.
-- **EXP-126 partial data**: Baseline block 1 shows 4/6 PASS (67%), matching EXP-122's baseline. Replication looking consistent.
+- **P0 Evaluator Bugs Fixed** (Tech-lead): Both scale mismatch and pipeline dedup resolved. This means evaluation data will finally be accurate going forward. 1057 historical evals migrated to correct 0-1 scale.
+- **Gym Runner Modified-File Sync Bug** (Coach): Critical infrastructure bug found — `syncNewFilesFromRoot` only synced NEW files, not MODIFIED. This means all gym experiments where the agent modified files in existing directories (like knowledge/) may have had incorrect results. Coach is fixing and re-running trials.
+- **DB staleness**: sessions table 3+ hours stale (max startedAt 15:57 vs 19:12 current). session-sync handler exists but may not be firing. Low priority — system_status uses live session dirs.
 
 ## Next Actions
-- **P0**: **Evaluator bugs (2)** — Scale mismatch + pipeline dedup. 2 CREATED requests in tech-lead queue. Current heartbeat should pick up.
 - **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. Saves $143-441/day. **Blocked on Hao since Mar 24**.
-- **P1**: **EXP-126 Environmental Hints Replication** — Interrupted, coach should re-dispatch. ~18 more trials needed.
+- **P1**: **EXP-126 in progress** — Coach working through trials with gym runner fix. Monitor for completion.
+- **P1**: **Gym runner fix needs merge** — Coach's deepSnapshotDir fix for syncNewFilesFromRoot should be committed to main via tech-lead. All past experiment results using file MODIFICATION (not creation) may need review.
 - **P1**: **EXP-105 Few-Shot Production Impact** — Need coder/optimizer work sessions to generate data. Coder idle since deployment (Apr 9).
 - **P1**: **Generate implementation work** — System idle without features. Tech-lead doing maintenance only. Coder completely idle.
 - **P2**: `analyze-failures` cron DB bug — persistent but non-critical.
 - **P2**: Amy-kimi still down — blocked on Hao for billing.
 - **P2**: Scout 401 auth error — recurring IDE token expiry.
+- **P2**: DB staleness — session-sync cron may not be firing.
