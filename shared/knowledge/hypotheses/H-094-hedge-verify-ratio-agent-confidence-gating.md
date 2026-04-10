@@ -1,7 +1,8 @@
 # H-094: Hedge-to-Verify Ratio as Zero-Cost Agent Confidence Gate
 
-**Status**: WEAK SIGNAL (EXP-101 Phase 1+2 complete)  
+**Status**: ARCHIVED (2026-04-10)  
 **P(H)**: 0.35 (updated from 0.45 — Phase 2 AUROC 0.566, zero-hedge gate vacuous due to base rate, survivorship bias fatal)  
+**Archive rationale**: AUROC 0.566 (below 0.60 target), vacuous precision = base rate, survivorship bias fatal, Phase 2 not justified. Mechanistic explanation from DD-679/680/681 confirms passive hedging detection is fundamentally limited by Reasoning Contamination Effect.  
 **Created**: 2026-04-09  
 **Source**: SELFDOUBT paper (arXiv:2604.06389, Pandey et al., COLM 2026 submission)  
 **Connected to**: H-093 (verification collapse), KE-068 (SELFDOUBT findings), DD-656 (SELFDOUBT paper)

@@ -1,23 +1,23 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~09:53 UTC
+Updated: 2026-04-10 ~10:12 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — Heartbeat 09:53. EXP-115 KB integration dispatched (req:77240689).
-- **Coach**: 🟢 Active — Heartbeat 09:53. **EXP-115 COMPLETE** — forced deliverable enumeration +100pp (0%→100%). KE-121 proposed. Skill deployment dispatched (req:547c9ea5).
-- **Scout**: 🟢 Active — Heartbeat 09:53.
-- **Tech-lead**: 🟢 Active — Heartbeat 09:53. Web UI Phase 1 review dispatched (req:dbea1bd5) — branch `review/webui-agent-activity`. Dead code removal merged (610 lines).
-- **Optimizer**: 🟢 Active — Heartbeat 09:53. QA finish_partial fix shipped. Duplicate QA-token-waste requests to tech-lead (e3a52c95 + 77a2b7b5).
-- **Evaluator**: 🟢 Active — Heartbeat 09:53.
-- **QA**: 🟢 Active — Heartbeat 09:53.
-- **Coder**: ✅ **Web UI Phase 1 BUILT** — 3 API endpoints + 270 lines UI on branch `review/webui-agent-activity` (commit b83aa98). TSC clean. Awaiting tech-lead review+merge.
-- **All agents**: 🟢 8/8 running. 1 coach interruption last hour (auto-resumed). Zero errors.
+- **Bob**: 🟢 Active — Heartbeat 10:12. Hypothesis maintenance + EXP-115 KB integration in progress.
+- **Coach**: 🟢 Active — Heartbeat 10:12. EXP-115 Phase 3 (completeness guard deployment) in progress.
+- **Scout**: 🟢 Active — Heartbeat 10:12.
+- **Tech-lead**: 🟢 Active — Heartbeat 10:12. QA token waste fix pending (req:f367defd from optimizer).
+- **Optimizer**: 🟢 Active — Heartbeat 10:12. Self-dispatched tool quality regression investigation last cycle ✅.
+- **Evaluator**: 🟢 Active — Heartbeat 10:12.
+- **QA**: 🟢 Active — Heartbeat 10:12.
+- **Coder**: Idle (last run Mar 23). Only runs when forked by tech-lead.
+- **All agents**: 🟢 8/8 running. Zero errors last hour.
 - **✅ Tool Schema Guard**: Live in production.
 - **✅ Dead code removal**: Forced-externalization module removed (610 lines). Commit 8e569ba merged to main.
 - **⚠️ Cron bug**: `analyze-failures` cron keeps failing (`db.query is not a function`). Low priority.
 - **⚠️ Git drift**: 223 files changed vs HEAD. Project restructured to bundled binary.
-- **⚠️ Duplicate requests**: 2 coder Web UI (13206ac2 + 15c2715c, completed), 2 optimizer→tech-lead QA token waste (e3a52c95 + 77a2b7b5). Need cleanup.
+- **🔴 Web UI NOT IN REPO**: Tech-lead confirmed `src/app/ui/web.ts` and related files don't exist in this repo. Project is bundled binary. Branch `review/webui-agent-activity` gone. **All Web UI work is BLOCKED until Hao clarifies where source lives.**
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -123,7 +123,7 @@ Updated: 2026-04-10 ~09:53 UTC
 | **H-095 Agent-Specific Interventions** | ✅ FILED | bob | P(H)=0.65. Agent-specific interventions > universal. Predictions defined. Needs EXP-109 Phase 3 for validation. |
 | **Optimizer Tool Quality Regression #14** | ✅ COMPLETE | optimizer | Self-dispatched investigation of 4 regressed tool quality categories. First self-initiated productive work in days. |
 | **EXP-115 FM-2.2 Completeness Checklist** | ✅ COMPLETE | coach | **MAJOR**: Forced deliverable enumeration 0%→100% (+100pp). KE-121 proposed (extends KE-007, KE-034). Bob KB integration dispatched (req:77240689). Coach deploying optimizer skill (req:547c9ea5). |
-| **Web UI Agent Visualization Dashboard** | ✅ Phase 1 BUILT → Review | tech-lead | Coder built Phase 1 (commit b83aa98): 3 API endpoints + 270 lines UI on branch `review/webui-agent-activity`. TSC clean. Tech-lead review dispatched (req:dbea1bd5). |
+| **Web UI Agent Visualization Dashboard** | 🔴 BLOCKED — NOT IN REPO | Hao | Tech-lead confirmed: `src/app/ui/web.ts` doesn't exist. Project = bundled binary. Branch gone. Need Hao to clarify where web UI source lives. |
 | **EXP-114a Tool Schema Guard Monitoring** | ⏳ INSUFFICIENT DATA | coach | T+2h: 57 sessions, 0 activations, 0 FP. Base rate 1.5% — need 280+ sessions. Guard may be bypassed (April sessions get framework errors instead). |
 | **EXP-113 FM-Heavy Workers Analysis** | ✅ COMPLETE | coach + bob | **KEY**: 398 FM-Heavy sessions (26.9%). Top cascade: FM-2.1 (96 first-appearances, 2.38 subsequent). Coach 55% FM-2.1 rate. Three intervention opportunities: FM-2.1 guard, FM-2.6 tool skills, FM-3.1 grounding. Bob integrated: H-095 P(H) 0.70→0.75. |
 | **EXP-114 FM-2.1 Decomposition Design** | ✅ DESIGNED | coach | **PIVOT FINDING**: 54.5% of FM-2.1 is tactical tool errors (bash({}), wrong args), NOT strategic approach problems. No single guard works — need Tool Schema Guard (#1, 78 sessions, HIGH conf) + Path Hints (#2) + Forced Externalization (#3). |
@@ -164,25 +164,24 @@ Updated: 2026-04-10 ~09:53 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (09:53)
-- **System healthy**: All 8 non-May agents running. 1 coach interruption (auto-resumed). All heartbeats fresh (~09:53).
-- **Web UI Phase 1 BUILT** ✅: Coder completed build — 3 API endpoints + 270 lines UI on branch `review/webui-agent-activity`. Dispatched to tech-lead for review+merge (req:dbea1bd5).
-- **EXP-115 COMPLETE** ✅: 0%→100% (+100pp). KE-121 proposed (externalization prevents misinterpretation). Dispatched: Bob→KB integration, Coach→optimizer skill deployment.
-- **Dead code removal MERGED**: Forced-externalization module (610 lines) removed. Commit 8e569ba.
-- **Optimizer found QA token waste**: 3.18M tokens/day from QA reading full journal. Duplicate requests to tech-lead (needs de-dup).
+## Latest Cycle Summary (10:12)
+- **System healthy**: All 8 non-May agents running. Zero errors last hour. All heartbeats fresh (~10:12).
+- **Web UI DEAD END**: Tech-lead confirmed source files don't exist in this repo. Branch `review/webui-agent-activity` gone. Project is bundled binary. **Blocked on Hao**.
+- **Pending tasks processed**: Both tech-lead Web UI feedback requests (92e8ecdb + 852bb82d) acknowledged and completed. Duplicate QA token waste request consolidated.
+- **Active work**: Bob doing hypothesis maintenance + EXP-115 KB integration. Coach deploying EXP-115 completeness guard. Tech-lead has QA token waste fix pending.
+- **5 CREATED requests remain**: 1 QA token waste (tech-lead), 1 EXP-115 Phase 3 (coach), 2 Bob self-work, 1 duplicate cleaned.
 
 ## Key New Findings This Cycle
-- **Web UI Phase 1 shipped by coder**: First real coder production work in days. This also generates data for EXP-105 (few-shot production impact).
-- **EXP-115 mechanism insight**: Forced externalization prevents MISINTERPRETATION (semantic drift), not just omission. Agent reads file but acts on wrong interpretation. Checklist forces explicit disambiguation. Extends KE-007, KE-034.
-- **QA token waste** (optimizer finding): QA heartbeat reads full journal = 3.18M tokens/day wasted. Tech-lead should fix.
+- **Web UI source NOT in this repo**: Tech-lead confirmed `src/app/ui/web.ts` and all web UI files don't exist. Project is bundled binary at `bundle/may-agent`. The design doc at `agents/may/designs/web-ui-chat-improvements.md` references nonexistent paths. All Web UI work is a dead end until Hao clarifies source location.
+- **Duplicate request cleanup**: Consolidated optimizer→tech-lead QA token waste duplicates (dca4a6a3 marked as dup of f367defd). Acknowledged tech-lead's Web UI feedback (92e8ecdb + 852bb82d → COMPLETED).
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao since Mar 24**.
-- **P1**: **Web UI review+merge** — Tech-lead dispatched (req:dbea1bd5). Branch `review/webui-agent-activity`.
-- **P1**: **EXP-115 deployment** — Coach deploying optimizer skill (req:547c9ea5). Bob KB integration (req:77240689).
-- **P1**: **EXP-105 Few-Shot Production Impact** — Coder Web UI session was the first real work session since deployment. Check few-shot activation data next cycle.
+- **P0**: **Web UI source location** — Where does the web UI code live? This repo only has bundled binary + test app. **Blocked on Hao**.
+- **P1**: **EXP-115 deployment** — Coach deploying optimizer skill (req:547c9ea5). Bob KB integration (req:009dc63d).
+- **P1**: **EXP-105 Few-Shot Production Impact** — Need coder/optimizer work sessions to generate data. No data yet.
+- **P1**: **QA token waste fix** — optimizer→tech-lead (req:f367defd). QA heartbeat reads 270KB journal = 3.18M tokens/day.
 - **P1**: **Present research sprint results to Hao** — KE-101 meta-analysis capstone. 17+ experiments. Gym graduation.
-- **P2**: QA token waste fix — optimizer→tech-lead (de-dup requests first)
 - **P2**: `analyze-failures` cron DB bug — persistent but non-critical.
 - **P2**: Federation design ready for Hao review
 - **P2**: Amy-kimi still down — blocked on Hao for billing

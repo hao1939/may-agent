@@ -1,6 +1,6 @@
 # Hypothesis Priority Tracker
 
-**Updated**: 2026-04-10 (Bob: EXP-115 CLOSED — +100pp effect confirmed, guard implemented. DD-731/732/733 + KE-120 integrated. KE-121 ID collision fixed. Previously: EXP-108 CLOSED — NULL RESULT, H-096 CREATED, EXP-114 GYM RESULTS, EXP-114a PHASE A COMPLETE, EXP-113 COMPLETE, EXP-110 COMPLETE.) | **Active hypotheses**: 23 | **Tested**: 21/23 | **Resolution ratio**: 13 resolved | **High-confidence (P≥0.70)**: 16  
+**Updated**: 2026-04-10 (Bob: H-094/H-068 ARCHIVED, H-097 added to Tier 2. Previously: EXP-115 CLOSED, DD-731/732/733 + KE-120 integrated, KE-121 ID collision fixed, EXP-108 CLOSED, H-096 CREATED, EXP-114 GYM RESULTS, EXP-114a PHASE A COMPLETE, EXP-113 COMPLETE, EXP-110 COMPLETE.) | **Active hypotheses**: 22 | **Tested**: 20/22 | **Resolution ratio**: 15 resolved | **High-confidence (P≥0.70)**: 16  
 **Bayesian scorecard**: See `SCORECARD-bayesian-2026-04-09.md` for full reconciled methodology (supersedes 2026-04-04 version)
 
 > ✅ **MORATORIUM SATISFIED** (2026-04-07): 11 hypotheses resolved this session (H-001 disconfirmed, H-002 superseded, H-034/H-038/H-039/H-052 reclassified as design notes/truisms, H-046/H-048/H-051 archived for insufficient evidence/chain dependencies, H-064/H-065 already merged/out-of-domain). New hypotheses may now be created, subject to quality standards (falsifiable, P(H) prior ≥ 0.40, connected to empirical evidence).

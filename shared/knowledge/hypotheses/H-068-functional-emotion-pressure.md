@@ -1,7 +1,8 @@
 # H-068: Functional Emotion Pressure — Agent Behavior Degrades Under Resource Constraints Due to Emotion-Like Internal States
 
-**Status**: P1 tested (not supported), P2-P4 untested  
-**Confidence**: MEDIUM (downgraded from HIGH based on EXP-037)  
+**Status**: ARCHIVED (2026-04-10)  
+**Confidence**: LOW — P(H)=0.45  
+**Archive rationale**: P1 NOT SUPPORTED (EXP-037: error rates decrease at session end, agents slow down). P2-P4 untested. Below Tier 2 threshold (0.50), no further experiments planned.  
 **Filed**: 2026-04-04  
 **Source**: DD#516 (Anthropic Emotion Concepts), DD#496 (TBSP Self-Preservation), DD#499 (Budgeted Forgetting)  
 **Relates to**: H-055 (Self-Improvement Paradox), H-052 (Epistemic Fragility Stack), CR#275 (Cooperation-Collusion Spectrum)
