@@ -145,13 +145,13 @@ The mechanism in both cases is the same: **reasoning optimization and coordinati
 
 ## Part 4: Predictions
 
-- **P-119a**: Upgrading to a more capable base model WITHOUT changing cooperation infrastructure will NOT improve cross-agent knowledge transfer rates. It may reduce them. (Tests DD-731 cooperation-capability orthogonality in our system.)
+- **P-120a**: Upgrading to a more capable base model WITHOUT changing cooperation infrastructure will NOT improve cross-agent knowledge transfer rates. It may reduce them. (Tests DD-731 cooperation-capability orthogonality in our system.)
 
-- **P-119b**: Adding conformal prediction to verification outputs will intercept >40% of cases where current evaluation gives pass but quality is degraded (the "verdicts lie" problem from KE-112). This will reduce H-096's confident failure rate.
+- **P-120b**: Adding conformal prediction to verification outputs will intercept >40% of cases where current evaluation gives pass but quality is degraded (the "verdicts lie" problem from KE-112). This will reduce H-096's confident failure rate.
 
-- **P-119c**: Reducing cross-agent context in dispatched sessions to ≤200 token summaries will improve task success rate for multi-agent coordination tasks by >10%. (Tests DD-733 DACS principle in our dispatch architecture.)
+- **P-120c**: Reducing cross-agent context in dispatched sessions to ≤200 token summaries will improve task success rate for multi-agent coordination tasks by >10%. (Tests DD-733 DACS principle in our dispatch architecture.)
 
-- **P-119d**: The Cooperation-Calibration-Context requirements compound multiplicatively, not additively. A system that fixes all three will see >2× the improvement of fixing any individual one. (Tests the triad as a unified architectural requirement.)
+- **P-120d**: The Cooperation-Calibration-Context requirements compound multiplicatively, not additively. A system that fixes all three will see >2× the improvement of fixing any individual one. (Tests the triad as a unified architectural requirement.)
 
 ---
 

@@ -1,6 +1,6 @@
 # Hypothesis Priority Tracker
 
-**Updated**: 2026-04-10 (Bob: EXP-108 CLOSED — NULL RESULT. Full 18-run A/B test of adversarial self-review skill shows no treatment effect (Control 77.8% vs Treatment 72.2%, p=0.99). Skill adds "review without action" — consistent with KE-002/KE-106. KE-119 filed. H-095 evidence #9, H-093 updated. Previously: H-096 CREATED, EXP-114 GYM RESULTS, EXP-114a PHASE A COMPLETE, EXP-113 COMPLETE, EXP-110 COMPLETE.) | **Active hypotheses**: 23 | **Tested**: 20/23 | **Resolution ratio**: 13 resolved | **High-confidence (P≥0.70)**: 16  
+**Updated**: 2026-04-10 (Bob: H-097 CREATED — CCC Triad, multi-agent coordination structural requirements. KE-120 synthesizes DD-731/732/733. Previously: EXP-108 CLOSED — NULL RESULT, H-096 CREATED, EXP-114 GYM RESULTS, EXP-114a PHASE A COMPLETE, EXP-113 COMPLETE, EXP-110 COMPLETE.) | **Active hypotheses**: 24 | **Tested**: 20/24 | **Resolution ratio**: 13 resolved | **High-confidence (P≥0.70)**: 16  
 **Bayesian scorecard**: See `SCORECARD-bayesian-2026-04-09.md` for full reconciled methodology (supersedes 2026-04-04 version)
 
 > ✅ **MORATORIUM SATISFIED** (2026-04-07): 11 hypotheses resolved this session (H-001 disconfirmed, H-002 superseded, H-034/H-038/H-039/H-052 reclassified as design notes/truisms, H-046/H-048/H-051 archived for insufficient evidence/chain dependencies, H-064/H-065 already merged/out-of-domain). New hypotheses may now be created, subject to quality standards (falsifiable, P(H) prior ≥ 0.40, connected to empirical evidence).
@@ -36,6 +36,7 @@
 | H-056 | Cooperative convergence — system-level resistance to change | **0.61** | P4 confirmed; mechanism vs simpler explanation unresolved |
 | H-047 | No forgetting → inverted-U utilization | **0.62** | EXP-053 Phase 2: recency bias + density saturation confirmed; clean inverted-U not found. "Narrowing scope with compensation." |
 | H-096 | Evaluation architecture determines quality ceiling — checkpoint decomposition + state-diff + adaptive rubrics will break 35% verification residual | **0.68** | **PROPOSED** (2026-04-10): KE-116 synthesis formalizes DD-720/721/722/723 findings as testable hypothesis. 35% FM-3.3 residual + 14.6% confident failures are architectural ceilings (trajectory-level eval degrades 24pp, narrative judgment enables confabulation, fixed rubrics allow dimensional masking). All evidence indirect — needs EXP-115 (DAF retrofit) for first direct test. |
+| H-097 | Multi-agent coordination requires structural cooperation + calibrated agreement + context isolation (CCC Triad) — not solvable by scaling individual agent capability | **0.65** | **PROPOSED** (2026-04-10): KE-120 synthesizes DD-731/732/733. Three independent papers show: capability ≠ cooperation (o3 17% vs o3-mini 50%), consensus ≠ correctness (81.9% wrong-consensus intercepted), more context ≠ better steering (21-60% baseline → 90-98.4% with DACS). All external evidence — untested in our system. Predictions P-120a-d filed. First test: measure whether model upgrade (if any) changes cross-agent coordination quality. |
 
 ## 🔴 Tier 3: Weak Signal — P(H) < 0.50
 
