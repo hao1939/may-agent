@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~00:53 UTC
+Updated: 2026-04-10 ~01:23 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
@@ -143,13 +143,13 @@ Updated: 2026-04-10 ~00:53 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (00:53)
-- **System stable**: Zero errors in last hour. All 8 agents heartbeat cycling normally.
-- **Coach designed 3 next-gen gym scenarios**: triage-under-uncertainty, ghost-dependency-debug, skill-conflict-partial-fix. Post-ceiling challenge set — breaks the gym saturation impasse. Good self-dispatch.
-- **Bob completed KE-110**: Skill Stack Saturation synthesis — confirms gym training loop extracted all available value. Terminal success state.
+## Latest Cycle Summary (01:23)
+- **System stable**: 1 coach abort (baseline gym run interrupted after 5min — `15c5e161` still CREATED, coach will retry). All 7 non-May agents currently in heartbeat cycle.
+- **Last 2h**: Mostly heartbeat cycling. Coach designed next-gen scenarios (21min work session). Bob wrote KE-110 (6min). All others = heartbeat-only (0-1min).
+- **Coach baseline interrupted**: Work session baselining 3 new post-ceiling scenarios was aborted. Request still active — coach should pick it up this cycle.
 - **Optimizer + QA**: Still effectively idle. No self-initiated productive work.
 - **Amy-kimi still 🔴**: Blocked on Hao for billing.
-- **Late night**: Agents self-directing well. No May dispatches needed this cycle.
+- **Late night**: System in steady state. No May dispatches needed.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao since Mar 24**.
