@@ -858,6 +858,14 @@
   - **KE-123**: Evidence weakened → SUPPORTED (iatrogenesis)
   - **Files modified**: H-093 hypothesis file, INDEX.md (6 rows), PRIORITY-TRACKER.md (4 locations)
   - **Committed**: 8524bd63
+- [x] **EXP-120 KB INTEGRATION — Progressive externalization NEGATIVE on discovery tasks**: Coach ran EXP-120 on same kb-integration-discovery task as EXP-117. Results: baseline 67% → treatment 17% (p=0.242, N=6+6). The progressive tracking instruction was completely IGNORED — no trial created an external tracking file. Same failure mode as baseline (missing INDEX.md KE-071 entry). **Key insight**: failure is a reasoning gap (agent can't conceptualize new KE entries) not a tracking gap (forgets known items). This is the third intervention type tested on discovery tasks; all fail or harm:
+  - EXP-117: Upfront checklist → 0% (-67pp) 
+  - EXP-120: Progressive tracking → 17% (-50pp)
+  - No intervention (baseline) → 67% (best!)
+  - **H-085**: P(H) stays 0.85, 73/89 total ext runs across 17 scenarios
+  - **H-095**: P(H) stays 0.84, EXP-120 adds to evidence that universal interventions harm
+  - **Files modified**: H-085 hypothesis file, INDEX.md, PRIORITY-TRACKER.md
+  - **Committed**: 8ff47029
 
 ## Session Notes (2026-04-10 ~08:01)
 - [x] **DD-720/721/722/723 indexing task — ALREADY COMPLETE**: Verification confirmed all 6 entries (4 DDs + 1 CR + 1 KE) already present in INDEX.md from prior session. DD-720 (Plan-RewardBench, line 642), DD-721 (Agent-Diff, line 643), DD-722 (SkillClaw, line 644), DD-723 (AdaRubric, line 645), CR-329 (Next-Gen Evaluation Architecture, line 646), KE-116 (synthesis entry, line 647). KE-116 file exists at `knowledge/entries/KE-116-next-gen-evaluation-architecture-adaptive-state-aware.md`. Todo.md already had integration marked complete (line 21). No new edits needed to INDEX.md.
