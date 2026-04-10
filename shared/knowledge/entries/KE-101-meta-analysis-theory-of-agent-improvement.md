@@ -17,7 +17,7 @@ This document synthesizes findings across all experiments into five laws, four i
 ## Part 1: The Five Laws of Agent Improvement
 
 ### Law 1: Text Rules Do Not Change Judgment Behavior
-**Evidence**: KE-002 (0/32+ experiments), KE-009 (0/8 negative examples), KE-025 (external validation from DD-537)
+**Evidence**: KE-002 (0/32+ experiments), KE-009 (0/8 negative examples), KE-025 (external validation from DD-537), DD-731 (capability doesn't predict cooperation — explicit protocols needed, not instructions)
 
 Adding text instructions to agent prompts — SOUL.md rules, behavioral guidelines, domain knowledge, negative examples, warning labels — produces zero measurable behavior change on judgment-class tasks. This holds across:
 - Identity/role framing (0/3)
@@ -35,7 +35,7 @@ Adding text instructions to agent prompts — SOUL.md rules, behavioral guidelin
 **Exception**: Text DOES work for environmental facts ("use bun not npm", "no npx available"). The boundary is factual constraints (text works) vs. judgment decisions (text doesn't).
 
 ### Law 2: Only Structural Interventions Reliably Change Behavior
-**Evidence**: KE-007 (56+ experiments), KE-031 (+69pp aggregate), KE-094 (-57pp laziness)
+**Evidence**: KE-007 (56+ experiments), KE-031 (+69pp aggregate), KE-094 (-57pp laziness), DD-731 (explicit protocols double cooperation performance; structural mechanism not prompt-based)
 
 Interventions that change the agent's execution sequence — not its instructions — are the only reliable mechanism. Three structural types work:
 
@@ -48,7 +48,7 @@ Interventions that change the agent's execution sequence — not its instruction
 **Unifying mechanism**: All three work by restructuring **when** the agent thinks relative to **when** it acts. They don't add information — they add temporal sequencing. The agent already knows the right answer (KE-031: agents produce 8,000-10,000 character analyses showing deep understanding when forced to externalize). The default behavior suppresses this latent capability.
 
 ### Law 3: Agent Attention Is Zero-Sum
-**Evidence**: KE-025 (instruction overhead paradox), KE-064 (execution crowding), KE-027 (skill ablation shows 0 effect)
+**Evidence**: KE-025 (instruction overhead paradox), KE-064 (execution crowding), KE-027 (skill ablation shows 0 effect), DD-733 (DACS: context pollution from N agents degrades steering to 21-60%; isolation restores 90-98.4%)
 
 Every addition to an agent's context — instructions, skills, rules, examples — consumes finite attention capacity. This creates three failure modes:
 
@@ -79,7 +79,7 @@ The adoption hierarchy is dramatic:
 **Corollary**: Building a capability is half the work. Wiring it into the execution path is the other half. An unwired capability is functionally nonexistent. Even wired capabilities decay from peak to 4-10% floor over 7 days (organic decay from session-length optimization pressure).
 
 ### Law 5: Access Structure Dominates Content Quality
-**Evidence**: KE-052 (unified thesis across 3 domains, r=0.81 for RIFT prediction)
+**Evidence**: KE-052 (unified thesis across 3 domains, r=0.81 for RIFT prediction), DD-732 (conformal calibration of verification outputs matters more than individual verifier accuracy — selection effect achieves +22pp)
 
 Across workflow effectiveness, evaluation reliability, and knowledge base utilization, a single pattern emerges: **the accessibility of information matters more than its quality.** Systems fail because the right content can't reach the right consumer at the right time.
 
@@ -242,12 +242,29 @@ When designing an agent improvement:
 
 ---
 
+## Part 6: Multi-Agent Extension — The Cooperation-Calibration-Context Triad
+
+**Added**: 2026-04-10 (DD-731, DD-732, DD-733 integration — see KE-120 for full synthesis)
+
+Three independent papers from a single arXiv drop validate and extend Laws 1, 2, 3, 5 in the multi-agent domain:
+
+| Paper | Finding | Law Validated | Extension |
+|-------|---------|---------------|-----------|
+| DD-731 (Yadav et al., ICLR 2026) | o3 at 17% collective vs o3-mini at 50% — capability ≠ cooperation | Laws 1, 2 | Structure (explicit protocols) works; instructions/capability don't |
+| DD-732 (Wang et al.) | 81.9% wrong-consensus intercepted by conformal prediction | Law 5 | Calibration architecture > verifier quality |
+| DD-733 (Patel) | 90-98.4% accuracy with context isolation vs 21-60% flat | Law 3 | Attention zero-sum applies to multi-agent context with amplified force |
+
+**Key insight**: The Five Laws apply with **amplified force** in multi-agent settings. The N-agent multiplier makes every violation worse. This constitutes a 6th external validation group for the theory (previous 5: SkillsBench, ETH Zürich, DD-537, DD-706, DD-688).
+
+---
+
 ## Cross-References
 
 **Foundational**: KE-002, KE-007, KE-020, KE-025, KE-031, KE-052
 **Mechanisms**: KE-029, KE-034, KE-038, KE-059, KE-064, KE-065
 **Verification**: KE-093, KE-097, KE-099, KE-100
 **Infrastructure**: KE-094
+**Multi-Agent Extension**: KE-120, DD-731, DD-732, DD-733
 **Methodology**: KE-027 (ablation imperative), KE-052 (RIFT evaluation)
 **Hypotheses**: H-085 (forced externalization), H-093 (CIVC), H-094 (behavioral prediction)
 

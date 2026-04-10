@@ -1458,3 +1458,19 @@ Production multi-agent data management system with "three-track knowledge archit
 ### Calibrated Uncertainty in Process Reward Models — arXiv:2603.06317
 
 | 2603.06317 | From Entropy to Calibrated Uncertainty: Toward Better Confidence Estimation for Process Reward Models (Mar 2026) | ★★★★½ EXCELLENT — Survey/framework for process-level confidence calibration. Key finding: isotonic regression reduces ECE from 15-25% to 2-5%. Verbalized confidence unreliable (20-40% gap between stated and actual accuracy). Conformal prediction provides formal coverage guarantees for cold-start scenarios. Three calibration paradigms: post-hoc recalibration, training-time auxiliary objectives, hybrid. System policy implication: all confidence scores must go through post-hoc calibration. Fills KE-105 "signal calibration" (statistical) and "cold-start" gaps. (ref: DD-726) |
+
+### More Capable, Less Cooperative — ICLR 2026 Workshop — arXiv:2604.07821
+
+| 2604.07821 | More Capable, Less Cooperative? When LLMs Fail At Zero-Cost Collaboration (Yadav, Black, Sourbut — ICLR 2026 Workshop, Apr 2026) | ★★★★★ CRITICAL — Capability ≠ cooperation. o3 at 17% vs o3-mini at 50% collective performance despite identical instructions. Causal decomposition separates cooperation from competence failures. Explicit protocols double low-competence model performance. Tiny sharing incentives improve weak cooperators. 6th external validation of KE-101 Laws 1, 2, 5: scaling intelligence alone will not solve coordination problems. (ref: DD-731) |
+
+### Conformal Social Choice — Safe Multi-Agent Deliberation — arXiv:2604.07667
+
+| 2604.07667 | From Debate to Decision: Conformal Social Choice for Safe Multi-Agent Deliberation (Wang et al., Apr 2026) | ★★★★★ CRITICAL — Post-hoc conformal prediction converts debate into calibrated act-vs-escalate decisions. 81.9% wrong-consensus cases intercepted at α=0.05. Coverage within 1-2pp of target. Remaining singletons reach 90-96.8% accuracy — selection effect, not reasoning improvement. Provides formal calibration mechanism for KE-117 Layer 5.5. Formalizes tri-state semantics (singleton→act, larger→escalate). (ref: DD-732) |
+
+### Dynamic Attentional Context Scoping (DACS) — arXiv:2604.07911
+
+| 2604.07911 | Dynamic Attentional Context Scoping: Agent-Triggered Focus Sessions for Isolated Per-Agent Steering (Patel, Apr 2026) | ★★★★½ EXCELLENT — Context pollution solved by asymmetric Registry/Focus modes. 90-98.4% accuracy vs 21-60% baseline. Agent-triggered context isolation, ≤200 tokens per non-focus agent. Advantage grows with N. Wrong-agent contamination: 28-57% → 0-14%. Context efficiency up to 3.53×. Direct implementation of KE-101 Law 3 (attention zero-sum). Actionable for our dispatch architecture. (ref: DD-733) |
+
+### ORACLE-SWE — Oracle Information Signals for SWE Agents — arXiv:2604.07789
+
+| 2604.07789 | ORACLE-SWE: Quantifying the Contribution of Oracle Information Signals on SWE Agents (Li et al., Apr 2026) | ★★★★ GOOD — Isolates and quantifies oracle information signal contributions (reproduction test, regression test, edit location, execution context, API usage) on SWE agent performance. Evaluates ideal contribution when information is perfectly obtained. Useful for understanding which signals actually help agents vs noise. Relevant to our signal-contribution analysis for verification architecture. (not deep-dived) |

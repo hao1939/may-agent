@@ -637,5 +637,25 @@
 7. DD#730 → CR-330 (amends CAMV: add adversarial audit alongside consensus — catches shared unfaithfulness)
 8. DD#730 → EXP-109 (adversarial auditing targets the mechanism of confident failures: coherent-but-unfaithful reasoning)
 9. CR-332 → CR-330 (completes KE-105: 5/5 gaps closed, full verification orchestration architecture now has external grounding)
-> 134 research deep dives, cross-reference syntheses, and reference documents.  
+**Friday Sweep — Cooperation, Calibrated Escalation, Context Isolation** ★★★★★ — NEW (2026-04-10 Session 578)
+1. [dd731](DD-731-capability-cooperation-gap-iclr2026.md) — ★★★★★ "More Capable, Less Cooperative?" (2604.07821, ICLR 2026 Workshop): Capability does NOT predict cooperation. o3 at 17% vs o3-mini at 50% collective performance. Causal decomposition separates cooperation from competence failures. Explicit protocols double performance for low-competence models. Independently validates KE-101 Laws 1, 2, 5. 6th external validation group.
+2. [dd732](DD-732-conformal-social-choice-safe-deliberation.md) — ★★★★★ Conformal Social Choice (2604.07667): Agreement ≠ correctness. Conformal prediction layer converts debate outputs into calibrated act-vs-escalate decisions with coverage guarantee ≥1-α. 81.9% of wrong-consensus cases intercepted. Selection effect, not reasoning improvement — remaining singletons reach 90-96.8% accuracy. Provides formal calibration mechanism for KE-117 Layer 5.5. Formalizes tri-state semantics.
+3. [dd733](DD-733-dacs-context-scoping-multi-agent-orchestration.md) — ★★★★½ DACS (2604.07911): Context pollution in multi-agent orchestration solved by asymmetric Registry/Focus modes. 90-98.4% accuracy vs 21-60% baseline. Agent-triggered, deterministic context isolation. ≤200 tokens per non-focus agent. Advantage grows with N. Direct implementation of KE-101 Law 3 (attention zero-sum). Actionable for our dispatch architecture.
+| [dd731](DD-731-capability-cooperation-gap-iclr2026.md) | Capability ≠ Cooperation in Multi-Agent LLMs ★★★★★ | Yadav et al., ICLR 2026 Workshop — o3 at 17% vs o3-mini at 50% collective performance. Cooperation-competence causal decomposition. Validates KE-101 Laws 1, 2, 5. |
+| [dd732](DD-732-conformal-social-choice-safe-deliberation.md) | Conformal Social Choice for Safe Deliberation ★★★★★ | Wang et al. 2026 — Conformal prediction for act-vs-escalate decisions. 81.9% wrong-consensus interception. Formal coverage guarantee. Fills KE-117 Layer 5.5 calibration gap. |
+| [dd733](DD-733-dacs-context-scoping-multi-agent-orchestration.md) | DACS — Context Scoping for Multi-Agent Orchestration ★★★★½ | Patel 2026 — Registry/Focus mode switching. 90-98.4% accuracy vs 21-60% baseline. Agent-triggered context isolation. Implementation of Law 3. |
+**Cross-references (Session 578 Friday sweep)**:
+1. DD#731 → KE-101 (6th external validation: capability ≠ cooperation validates Laws 1, 2, 5)
+2. DD#731 → DD#706 (RIFT): Both show structure dominates content — RIFT for prompts, DD#731 for cooperation
+3. DD#731 → CR#325 (External Validation): Adds 6th research group
+4. DD#732 → KE-117 (Provides formal conformal calibration for Layer 5.5 signal calibration)
+5. DD#732 → DD#724 (Conformal prediction + CAMV = calibrated conflict-aware verification)
+6. DD#732 → DD#730 (SAVeR): Consensus ≠ faithfulness; DD#732 provides the fix: calibrated prediction sets
+7. DD#732 → DD#726 (Conformal prediction stronger than isotonic regression — distribution-free guarantees)
+8. DD#732 → EXP-103 (Post-hoc calibration via conformal prediction could catch confabulated verifications)
+9. DD#733 → KE-101 Law 3 (Direct implementation of attention-is-zero-sum)
+10. DD#733 → DD#706 (RIFT context sensitivity): DACS solves context contamination structurally
+11. DD#733 → CR#326 (Gym-Production Gap context scale dimension addressed by DACS compression)
+12. Emerging pattern: **Cooperation-Calibration-Context Triad** — Three independent papers converge on three structural requirements for multi-agent systems: (1) cooperation must be structurally enforced, not assumed (DD#731), (2) agreement must be statistically calibrated, not trusted (DD#732), (3) context must be actively isolated, not shared (DD#733). None of these are solvable by scaling intelligence.
+> 137 research deep dives, cross-reference syntheses, and reference documents.  
 > Last updated: 2026-04-10 | Maintained by Scout
