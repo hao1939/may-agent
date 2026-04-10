@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~05:23 UTC
+Updated: 2026-04-10 ~05:53 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
@@ -117,6 +117,9 @@ Updated: 2026-04-10 ~05:23 UTC
 | **KE-112 Verdicts Lie** | ✅ COMPLETE | bob | Production quality multi-modal — verdicts mask process issues. Agent FM fingerprints documented. |
 | **H-095 Agent-Specific Interventions** | ✅ FILED | bob | P(H)=0.65. Agent-specific interventions > universal. Predictions defined. Needs EXP-109 Phase 3 for validation. |
 | **Optimizer Tool Quality Regression #14** | ✅ COMPLETE | optimizer | Self-dispatched investigation of 4 regressed tool quality categories. First self-initiated productive work in days. |
+| **EXP-113 FM-Heavy Workers Analysis** | ✅ COMPLETE | coach + bob | **KEY**: 398 FM-Heavy sessions (26.9%). Top cascade: FM-2.1 (96 first-appearances, 2.38 subsequent). Coach 55% FM-2.1 rate. Three intervention opportunities: FM-2.1 guard, FM-2.6 tool skills, FM-3.1 grounding. Bob integrated: H-095 P(H) 0.70→0.75. |
+| **EXP-114 FM-2.1 Decomposition Design** | ✅ DESIGNED | coach | **PIVOT FINDING**: 54.5% of FM-2.1 is tactical tool errors (bash({}), wrong args), NOT strategic approach problems. No single guard works — need Tool Schema Guard (#1, 78 sessions, HIGH conf) + Path Hints (#2) + Forced Externalization (#3). |
+| **EXP-114a Tool Schema Guard Prototype** | ⏳ IN PROGRESS | coach | Self-dispatched. Building `createToolSchemaGuard()` as `beforeToolCall` hook. Targets 36.6% of FM-2.1 (tool misuse). |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -148,10 +151,11 @@ Updated: 2026-04-10 ~05:23 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (05:23)
-- **System stable**: All 8 non-May agents running. Zero errors or interrupts last hour. Scout recovered from earlier instability.
-- **All agents cycling fresh**: Every agent just started new heartbeat sessions simultaneously at 05:23.
-- **No pending requests**: Request queue is empty. No dispatched work waiting.
+## Latest Cycle Summary (05:53)
+- **System stable**: All 8 non-May agents running. Zero errors last hour. Research pipeline running autonomously.
+- **EXP-113 fully integrated**: Bob committed H-095 update (P(H) 0.70→0.75) + KE-115. FM-Heavy Workers analysis complete.
+- **EXP-114 design complete + prototype started**: Coach's analysis pivoted the FM-2.1 intervention — 54.5% is tactical tool misuse, not strategic. Already building Tool Schema Guard prototype (EXP-114a).
+- **All agents self-directed**: Bob integrating research, Coach running experiments, Scout/Evaluator/Tech-lead heartbeating, Optimizer investigating regressions.
 - **EXP-105 still waiting**: Zero coder/optimizer work sessions since few-shot deployment. Production impact data blocked.
 - **Amy-kimi still 🔴**: Blocked on Hao for billing.
 

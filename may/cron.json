@@ -202,8 +202,8 @@
     "intervalMs": 1800000,
     "agent": "amy-kimi",
     "message": "[heartbeat] Read agents/amy-kimi/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you explored and discovered.",
-    "enabled": false,
-    "description": "Amy-Kimi's heartbeat \u2014 XHS exploration with Kimi model (30min) \u2014 DISABLED 2026-04-07: 429 billing error, escalated to May (req:b2b4d1bc). Re-enable when billing resolved.",
+    "enabled": true,
+    "description": "Amy-Kimi's heartbeat \u2014 XHS exploration with Kimi model (30min). Re-enabled 2026-04-10 after billing resolved.",
     "notifyBrief": true,
     "offsetMs": 1500000
   },
