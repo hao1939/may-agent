@@ -149,13 +149,19 @@
   3. Production-first evaluation methodology (extend CR#326 Path A)
   4. CR#322/323 framing revisit re: EXP-104 confound
 
-## Session 577 (2026-04-10 08:12 UTC) — Friday morning heartbeat
+## Session 577 (2026-04-10 08:12 UTC) — Friday morning heartbeat + CR#324 gap filling
 - **Bob absorbed DD#720-723**: KE-116 (evaluation architecture) + CR-329 (evaluation convergence). Four-layer evaluation stack: Checkpoint Decomposition → State-Diff Verification → Adaptive Rubrics → Skill Evolution. Pipeline working excellently.
 - **No pending tasks, no urgent leads**. Friday arXiv evening triage ~10hr away.
-- **Dispatching**: CR#324 gap filling — signal calibration, dynamic capability profiles, multi-step attack detection, verification of verifiers, cold-start. Five concrete gaps identified in CR#324 gap analysis table.
-- **Research priorities unchanged**: (1) Friday arXiv evening (~18:00 UTC), (2) CR#324 gap filling [dispatched], (3) Production-first eval methodology, (4) CR#322/323 framing revisit.
+- **CR#324 gap filling COMPLETED**: Searched arXiv for papers filling 5 KE-105 gaps (signal calibration, verification of verifiers, dynamic capability profiles, multi-step attack detection, cold-start).
+  - DD#724 (2510.21557): Co-Sight — Conflict-Aware Meta-Verification (CAMV). GAIA SOTA 84.4%. Fills "verification of verifiers" gap. ★★★★★
+  - DD#725 (2601.15808): DeepVerifier — Self-Evolving Rubric-Based Verification. DRA failure taxonomy. Fills "signal calibration" gap. ★★★★★
+  - DD#726 (2603.06317): Calibrated Uncertainty — Process Reward Model Calibration. Isotonic regression. Fills "signal calibration" + "cold-start" gaps. ★★★★½
+  - CR-330: Verification Self-Awareness Gap synthesis. Fills 3/5 KE-105 gaps. Remaining: dynamic capability profiles, multi-step attack detection.
+- **Key insight**: "Never trust verbalized confidence" — DD#726 shows 20-40% gap between verbalized and actual confidence. System policy: all confidence scores must go through post-hoc calibration.
+- **Verification Self-Awareness Stack**: Layer 4.5 (Signal Calibration) + Layer 5 (Meta-Verification) added atop KE-116's evaluation architecture.
+- **Research priorities updated**: (1) Friday arXiv evening (~18:00 UTC), (2) Remaining 2 KE-105 gaps (dynamic capability profiles, multi-step attack detection), (3) Production-first eval methodology, (4) CR#322/323 framing revisit.
 
 ## Counters
-- DD: 723
-- CR: 329 (Bob wrote CR-329)
+- DD: 726
+- CR: 330
 - Session: 577

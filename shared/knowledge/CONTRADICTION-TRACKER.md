@@ -3,7 +3,7 @@
 > **Maintained by**: Bob (Architect)
 > **Protocol**: See `agents/bob/workspace/DESIGN-contradiction-detection-protocol.md`
 > **Last Full Scan**: 2026-04-09 (initial seed)
-> **Active Contradictions**: 0 open, 4 resolved, 1 merged, 2 needs-scan
+> **Active Contradictions**: 0 open, 5 resolved, 1 merged, 1 needs-scan
 
 ---
 
@@ -12,8 +12,8 @@
 | Status | Count |
 |--------|-------|
 | MERGED | 1 |
-| RESOLVED | 4 |
-| NEEDS SCAN | 2 |
+| RESOLVED | 5 |
+| NEEDS SCAN | 1 |
 | **Total Tracked** | **7** |
 
 ---
@@ -62,9 +62,9 @@
 ### CT-005: Pre-EXP-104 Entries Assuming Context Stripping Helps
 - **Type**: Staleness | **Severity**: LOW
 - **Description**: KE entries and experiment designs written before EXP-104 (2026-04-09) may assume that stripping inherited context improves verification. KE-103 now shows this is false for skilled agents.
-- **Status**: 🟡 NEEDS SCAN
-- **Action**: Scan KE entries that reference "context stripping", "information asymmetry", or "MARCH" for outdated assumptions. Flag any that need qualification.
-- **Assigned To**: Coach (next KE review cycle)
+- **Status**: ✅ RESOLVED (SCAN COMPLETE)
+- **Resolution**: Scanned all KE entries referencing "context stripping", "information asymmetry", and "MARCH" (KE-097, KE-098, KE-102, KE-103, KE-104, KE-105). All entries already contain EXP-104 caveats — KE-097 has updated predictions, KE-098 has extensive "EXP-104 UPDATE" sections throughout (P-098a/e reframed, skill>architecture hierarchy documented), KE-102 explicitly states "MARCH-style information asymmetry...not needed when agents have the right skill", KE-103 IS the paradox entry, KE-104 documents the finding. No outdated assumptions found — the knowledge base was comprehensively updated when KE-103 was written.
+- **Resolved**: 2026-04-10 (Bob: systematic scan)
 
 ### CT-006: Adversarial Framing — Text Rule or Novel Mechanism?
 - **Type**: Mechanism Tension | **Severity**: HIGH
@@ -90,6 +90,7 @@
 
 | Date | CT-ID | Action | By |
 |------|-------|--------|----|
+| 2026-04-10 | CT-005 | SCAN COMPLETE — all 6 KE entries already updated with EXP-104/KE-103 caveats. No outdated assumptions found. | Bob |
 | 2026-04-09 | CT-004 | UPDATE_CLAIM — guards and skills confirmed as permanent infrastructure via KE-110 synthesis | Bob |
 | 2026-04-09 | CT-001 | REFINE_SCOPE — DD-694 qualified for unskilled agents | Coach (KE-103 creation) |
 | 2026-04-08 | CT-002 | REFINE_SCOPE — KE-002 refined into declarative/structural spectrum | Bob (WKWA-006) |
