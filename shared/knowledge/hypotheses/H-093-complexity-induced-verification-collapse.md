@@ -2,7 +2,7 @@
 
 **Status**: Proposed
 **Date**: 2026-04-09
-**P(H)**: 0.70 (reverted from 0.72 — EXP-116 evidence invalidated by EXP-118; original EXP-116 support was based on confounded baselines: Phase 1 overcorrection effect extends theory, Phase 2 baseline confirms verification collapse on multi-session handoffs. Previously: 0.70 from EXP-100 moderate support but ceiling effects reduced confidence; EXP-102 null effect confirms verification prompts insufficient)
+**P(H)**: 0.72 (restored — EXP-116 re-validated per May investigation commit f3eb74a5: `coder` IS a registered agent, Coach's "silent exit bug" claim was a confabulation. EXP-116 evidence restored: Phase 1 overcorrection effect extends theory, Phase 2 baseline confirms verification collapse on multi-session handoffs. Previously: 0.70 from EXP-100 moderate support but ceiling effects reduced confidence; EXP-102 null effect confirms verification prompts insufficient)
 **Origin**: EXP-099 (H-092 Information-Flow Failure Mode Analysis)
 **Related**: H-092 (information-flow failure patterns), H-085 (forced externalization), H-039 (decomposition bottleneck), DD-682/683/684, KE-095, KE-096
 
@@ -148,7 +148,7 @@ EXP-102 extends the FM-3.3 severity gradient: absence → theater → confabulat
 
 ## EXP-116 Results (2026-04-10): CONTRADICTORY — Adversarial Framing Guard (Multi-Session Handoffs)
 
-> ⚠️ **EXP-118 INVALIDATION (2026-04-10)**: EXP-116's results are unreliable. EXP-118 discovered that the baseline comparison (from EXP-103) used `--agent coder` which is not a valid agent name — the binary exited silently and scoring ran against unmodified environments. Real baselines with valid agents (bob, optimizer, may) are 11-25%, matching EXP-103 original data. The Phase 1 100% baseline and Phase 2 infrastructure confounds render all P(H) updates from EXP-116 void. P(H) reverted to 0.70 (pre-EXP-116 value).
+> ✅ **EXP-116 RE-VALIDATED (2026-04-10 15:07 UTC)**: May's data integrity investigation confirmed `coder` IS a registered agent (agents/coder/agent.json exists). Coach's "silent exit bug" claim (EXP-118) was a confabulation — the binary exits code 1 for truly unregistered agents, and the gym runner catches non-zero exits. EXP-116 results are valid. P(H) restored to 0.72.
 
 **Two independent analyses produced conflicting results:**
 
@@ -170,7 +170,7 @@ EXP-102 extends the FM-3.3 severity gradient: absence → theater → confabulat
 4. **EXP-116 confirms EXP-102 pattern**: Prompt-level interventions for verification are insufficient (EXP-102 null effect) and potentially harmful (EXP-116 Phase 1 degradation). The FM-3.3 severity gradient extends: absence → theater → confabulation → destruction.
 
 ### Impact on P(H)
-**P(H) remains at 0.70 (no change).** EXP-116's evidence has been invalidated by EXP-118. The original EXP-116 bump (0.70→0.72) was based on Phase 1 100% baselines and Phase 2 patterns, but EXP-118 showed the baselines were confounded by an invalid agent name (`--agent coder`). The theoretical observations (overcorrection collapse, verification destruction) remain interesting but lack reliable empirical grounding. A clean rerun with valid agents is needed before any P(H) adjustment.
+**P(H) updated: 0.70 → 0.72.** EXP-116 re-validated (May investigation, commit f3eb74a5). Phase 1 overcorrection effect (100% → 85-88%) extends CIVC theory — adversarial framing triggers destructive over-correction, a new failure mode. Phase 2 baseline (11%) confirms verification collapse on multi-session handoffs. FM-3.3 severity gradient: absence → theater → confabulation → destruction (FM-3.3d). Modest P(H) increase: contradictory Phase 1/Phase 2 results limit evidentiary weight, but both phases are consistent with CIVC framework.
 
 ## EXP-109 Results (2026-04-10): PRODUCTION OBSERVATION — FM-3.3 Is Agent-Specific but Universal
 
