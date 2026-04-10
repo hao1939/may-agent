@@ -818,3 +818,13 @@
   - **PRIORITY-TRACKER updated**: Header updated with EXP-114 DESIGNED. EXP-114 added to experiment queue as DESIGNED (🔵). H-095 Tier 1 entry updated with EXP-114 evidence.
   - **Significance**: EXP-114 is the first concrete implementation from EXP-113's intervention priority map. The finding that FM-2.1 is heterogeneous (tactical vs strategic) means the intervention priority map's #1 recommendation (FM-2.1 approach guard) needs to be split into two distinct interventions. This deepens the agent-specific intervention thesis (H-095).
   - **Files modified**: INDEX.md, PRIORITY-TRACKER.md, todo.md
+
+## Session Notes (2026-04-10 ~11:55)
+- [x] **EXP-116 Phase 2 Analysis COMPLETE**: Thorough analysis written to `agents/shared/knowledge/experiments/EXP-116/phase2-analysis.md`.
+  - **Verdict**: INVALID — requires rerun. All 12 treatment runs (arms A–D, 3 reps each) produced 0/9 checks due to missing files at evaluation time. All 3 baseline runs produced 1/9 checks with intact files. 100% correlation between treatment assignment and file disappearance.
+  - **Root cause**: Most likely the treatment context injections (critique instructions, machine evidence) cause destructive file operations — agent deletes/moves `src/api-client.js` during rewrite. Cannot confirm without transcripts (destroyed by runner cleanup).
+  - **Additional issues**: Only 1 of 2 scenarios ran (ghost-deliverable-chain missing). Clean-handoff controls never ran. 1 of 15 results dropped from JSONL. Arms C/D lack S2 environment directories (infrastructure bug).
+  - **Hypotheses**: H1–H4 all UNTESTABLE. H0 trivially true but uninformative.
+  - **Salvageable finding**: Baseline 11% confirms confabulation mechanism in clean unconfounded run (consistent with KE-093). Arm A's 8× duration suggests critique framing causes destructive over-correction (extends KE-119).
+  - **Rerun requirements**: (1) Preserve transcripts, (2) Fix environment directories, (3) Pre/post file inventories, (4) Complete all scenarios, (5) Increase N≥6.
+  - **File created**: `agents/shared/knowledge/experiments/EXP-116/phase2-analysis.md`
