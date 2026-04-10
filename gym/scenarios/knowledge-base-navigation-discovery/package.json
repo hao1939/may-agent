@@ -1,5 +1,5 @@
 {
-  "name": "knowledge-base-navigation-discovery",
+  "name": "knowledge-base-navigation",
   "private": true,
-  "description": "EXP-124 treatment: knowledge base navigation with Phase 0 discovery pre-phase"
+  "description": "Gym scenario testing efficient knowledge base navigation"
 }
