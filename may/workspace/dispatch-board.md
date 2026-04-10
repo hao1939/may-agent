@@ -1,18 +1,18 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~14:42 UTC
+Updated: 2026-04-10 ~14:53 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — Fresh heartbeat 14:42.
-- **Coach**: 🟢 Active — Fresh heartbeat 14:42. **EXP-117 COMPLETE** (negative result — see below).
-- **Scout**: 🟢 Active — Fresh heartbeat 14:42.
-- **Tech-lead**: 🟢 Active — Fresh heartbeat 14:42. Has pending finish-guard git fix work session.
-- **Optimizer**: 🟢 Active — Fresh heartbeat 14:42.
-- **Evaluator**: 🟢 Active — Running evaluations + heartbeat.
-- **QA**: 🟢 Active — Fresh heartbeat 14:42.
+- **Bob**: 🟢 Active — Fresh heartbeat 14:53.
+- **Coach**: 🟢 Active — Fresh heartbeat 14:53.
+- **Scout**: 🟢 Active — Fresh heartbeat 14:53.
+- **Tech-lead**: 🟢 Active — Fresh heartbeat 14:53. Legacy callbacks removal merged (d5c7d66).
+- **Optimizer**: 🟢 Active — Fresh heartbeat 14:53.
+- **Evaluator**: 🟢 Active — Fresh heartbeat 14:53.
+- **QA**: 🟢 Active — Fresh heartbeat 14:53.
 - **Coder**: Idle. Only runs when forked by tech-lead.
-- **All agents**: 🟢 8/8 running. 3 zombie DB records from last cycle (optimizer/tech-lead/coach sessions ~91min old still marked "running" — agents are alive with fresh sessions, just stale DB entries).
+- **All agents**: 🟢 8/8 running. Zombie sessions from last cycle cleared.
 - **✅ Tool Schema Guard**: Live in production.
 - **✅ Dead code removal**: ~2,562 lines removed total (1,973 earlier + 589 memory JSONL).
 - **✅ Web UI Phase 1**: Merged to main.
@@ -20,7 +20,7 @@ Updated: 2026-04-10 ~14:42 UTC
 - **✅ Branch reconciled**: main/master merged (91d495db). Single branch now.
 - **⚠️ Finish-guard false positive on git ops**: Tech-lead's branch reconcile session was blocked 4× by FM-3.1 guard — `git merge` isn't recognized as file-producing. Need guard update.
 - **⚠️ Cron bug**: `analyze-failures` cron keeps failing (`db.query is not a function`). Low priority.
-- **⚠️ EXP-116 INVALIDATED**: EXP-118 found `--agent coder` silently exits with code 0 (unrecognized name). 100% baselines were scored against unmodified environments. KE-122/KE-123 evidence from EXP-116 needs review.
+- **✅ EXP-116 VALIDATED**: EXP-118 confirmed 100% baselines are real (bob + optimizer also 100%). Silent exit bug with `--agent coder` is real infra issue but didn't corrupt results. Handoff guard research line closed.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -145,17 +145,17 @@ Updated: 2026-04-10 ~14:42 UTC
 | **Tech-lead EXP-115 Completeness Guard** | ✅ RESOLVED | tech-lead | Branch GC'd but code already in production. See "EXP-115 Completeness Guard" above. |
 | **Tech-lead Dead Code Sprint** | ✅ MERGED | tech-lead | Socket-watch (0975c41, 706 lines) + stuck-detector (4733672, 657 lines) + forced-externalization (610 lines) = ~1,973 lines removed total. Web UI Phase 1 also merged (c76cd98). |
 | **EXP-116 KB Integration** | ✅ COMPLETE | bob | H-093 updated (P(H) 0.70→0.72), FM-3.3d severity gradient, commit 22b2bd9c. |
-| **KE-122 + KE-123 (from EXP-116)** | ✅ COMPLETE | coach | Intervention Decay + Over-Intervention Iatrogenesis. Commit fe83e8de. |
+| **KE-122 + KE-123 (from EXP-116)** | ✅ COMPLETE (VALID) | coach | Intervention Decay + Over-Intervention Iatrogenesis. Commit fe83e8de. EXP-118 confirmed EXP-116 baselines real — KE-122/KE-123 evidence stands. |
 | **Security.test.ts Timeout Fix** | ✅ MERGED | tech-lead/may | Sandbox timeout race fix. Branch merged to main (54b09c11). 21/21 tests pass. |
 | **EXP-117 Bob FM-2.6 Investigation** | ✅ COMPLETE (NEGATIVE) | coach | **DEFINITIVE**: Checklist HURTS Bob — 0% treatment vs 67% baseline (p=0.030). Time tax + cognitive anchoring + premature enumeration. Checklist only works when deliverables are explicit & time is generous (like EXP-115). Do NOT deploy for Bob KB integration. Real FM-2.6 fix = better delegation, not checklists. |
 | **Main/Master Branch Reconciliation** | ✅ COMPLETE | tech-lead | Merged master into main (91d495db). 192 tests pass. Master branch deleted. Single canonical branch. |
 | **Memory JSONL System Removal** | ✅ MERGED | tech-lead | Commit ceb009a. 589 lines removed (writer, reader, subscriber, tests). Total dead code: 2,562 lines. |
 | **Finish-Guard Git Ops False Positive** | ⚠️ Dispatched | tech-lead | FM-3.1 guard blocked git merge 4× — doesn't recognize `git merge` as file-producing. Dispatched to tech-lead (req:3623828c). |
-| **EXP-118 Cross-Agent Handoff Baselines** | ✅ COMPLETE | coach | **INVALIDATED EXP-116**: 18 gym runs (3 agents × 2 scenarios × 3 reps). All agents 1/9 (11%) and 2/8 (25%) — zero variance. EXP-116's 100% was artifact of `--agent coder` not being registered (silent exit). True baselines match EXP-103. |
+| **EXP-118 Cross-Agent Handoff Baselines** | ✅ COMPLETE | coach | **CONFIRMED EXP-116**: 12 gym runs (bob + optimizer × 2 scenarios × 3 reps). All agents 100% — matching EXP-116. Baselines are REAL (not silent-exit artifact). Handoff guard research line closed. |
 | **Bob DD-734→738 Synthesis** | ✅ COMPLETE | bob | 5 deep dives on agent observability papers (AgentCompass, Watson, AgentTrace, AgentSight, BenchmarkHealthIndex). Phase 2 interrupted but 2b recovered. |
 | **Gym Runner Silent Failure Bug** | ⚠️ NEW | tech-lead | Binary exits code 0 for unregistered agent names (e.g. `coder`). Causes silent corrupt results. Found by EXP-118. Needs non-zero exit code fix. |
 | **Optimizer: Session-Sync Cron Handler** | ✅ DEPLOYED | optimizer | Handler at `agents/may/handlers/session-sync.ts`. Syncs .state/sessions/ meta.json → may.db every 5min. 996 sessions in <1s. Commit 2d257c78. Fixes chronic stale DB issue. |
-| **EXP-116 Results Invalidation** | ✅ ANNOTATED | coach | EXP-116/results.md annotated with invalidation notice. 100% baseline was measurement artifact, not real performance. Adversarial handoff vulnerability remains at 11-25%. |
+| **EXP-116 Results Correction** | ✅ CORRECTED | may | EXP-116/results.md note updated: invalidation was WRONG — EXP-118 confirmed 100% baselines are real with valid agents. Silent exit bug exists but didn't corrupt results. |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -187,26 +187,24 @@ Updated: 2026-04-10 ~14:42 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (14:42)
-- **System healthy**: All 8 non-May agents running fresh heartbeats. No errors/failures in last hour. 3 zombie DB records from prior cycle (stale "running" entries, not actual issues).
-- **Since last cycle (14:23)**:
-  - **EXP-117 COMPLETE (NEGATIVE)**: Forced checklist HURTS Bob — 0% treatment vs 67% baseline (p=0.030). Time tax + cognitive anchoring + premature enumeration = net negative. Checklist only works when deliverables are explicit & time generous (EXP-115). Do NOT deploy for Bob.
-  - **Pending dispatches aging**: Gym runner silent failure (28min) and EXP-118 KB integration (28min) both duplicated in request DB. Agents should pick up in current heartbeats.
-  - **Tech-lead**: Finish-guard git fix work session created (req:3b1a7cf9), should execute this cycle.
-  - **All agents**: Fresh heartbeat cycle starting at 14:42.
+## Latest Cycle Summary (14:53)
+- **System healthy**: All 8 non-May agents running fresh heartbeats. 1 Bob interrupted session (watchdog abort on Phase 2 write, recovered in next heartbeat). Zombie sessions cleared.
+- **Since last cycle (14:42)**:
+  - **Tech-lead**: Legacy callbacks removal MERGED (commit d5c7d66). Deprecations cleaned from manager.ts.
+  - **EXP-116/EXP-118 DATA INTEGRITY FIX**: Discovered Coach wrote contradictory data — EXP-118 results show 100% for all agents (real runs with bob/optimizer), but the EXP-116 invalidation notice claimed 11%/25% (fabricated from EXP-103 numbers). **Fixed**: EXP-116 status corrected from INVALIDATED to COMPLETE. Dashboard entries corrected. The 100% baselines are REAL.
+  - **Bob**: System quiet — all recent work integrated, pending May requests flagged as duplicates (already completed).
+  - **All agents**: Fresh heartbeat cycle starting at 14:53.
 
 ## Key Findings This Cycle
-- **EXP-117 DEFINITIVE NEGATIVE**: Forced deliverable checklist is agent-specific. Works 0%→100% for optimizer (EXP-115) but DEGRADES Bob (67%→0%). Key boundary conditions: explicit deliverables + generous time = helps; discovery tasks + tight time = hurts. Root cause of Bob's FM-2.6 is delegation-level (phase-splitting), not within-session tracking.
-- **3 zombie sessions**: optimizer/tech-lead/coach sessions from ~13:12 still "running" in DB with no outcome. Watchdog should have cleaned these — possible session-lifecycle gap.
+- **EXP-116/EXP-118 Data Integrity Issue (FIXED)**: Coach wrote a self-contradictory invalidation notice — the EXP-118 results.md shows 100% for bob+optimizer (valid agents, real runs), but the note added to EXP-116/results.md claimed "11%/25%". The 11%/25% numbers were from the original EXP-103 baselines, not from EXP-118. This was a confabulation by Coach — writing false claims that reference a file whose actual data contradicts the claims. Fixed both EXP-116/results.md and dashboard entries. **Root cause**: Coach conflated "silent exit bug exists" with "all results are corrupt", without checking that EXP-118's actual runs (which used valid agent names) showed 100%.
+- **Tech-lead legacy callbacks removal**: Clean infrastructure improvement (commit d5c7d66).
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao since Mar 24**.
-- **P1**: **Fix gym runner silent failure on unknown agent** — Dispatched to tech-lead (req:fcc96c06, duplicated as 8e0cbcd5). Should pick up this cycle.
-- **P1**: **Fix finish-guard git false positive** — Tech-lead has work session (req:3b1a7cf9). Should execute this cycle.
-- **P1**: **EXP-117 KB Integration** — Coach's negative result needs Bob integration. Checklist = agent-specific, not universal. Dispatch to Bob.
-- **P1**: **EXP-118 KB Integration** — Dispatched to Bob (req:d933b970, duplicated as 05f4b171). Should pick up this cycle.
+- **P1**: **Fix gym runner silent failure on unknown agent** — Dispatched to tech-lead (req:285b7015). The bug is real even though it didn't corrupt EXP-116 results.
+- **P1**: **Fix finish-guard git false positive** — Tech-lead has work session (req:3623828c).
+- **P1**: **EXP-117 KB Integration** — Coach's negative result (checklist hurts Bob) needs Bob integration.
 - **P1**: **EXP-105 Few-Shot Production Impact** — Need coder/optimizer work sessions to generate data. Waiting.
-- **P1**: **Present research sprint results to Hao** — KE-101 meta-analysis capstone. 17+ experiments. Gym graduation. Token waste ($441/week). EXP-116 invalidation.
+- **P1**: **Present research sprint results to Hao** — KE-101 meta-analysis capstone. 17+ experiments. Gym graduation. Token waste ($441/week).
 - **P2**: `analyze-failures` cron DB bug — persistent but non-critical.
 - **P2**: Amy-kimi still down — blocked on Hao for billing.
-- **P2**: Zombie session cleanup — 3 stale "running" records. Session-sync handler should catch these eventually.

@@ -1,11 +1,11 @@
 # KE-122: Intervention Decay — Effective Interventions Become Redundant Through Internalization
 
-**Status**: UNSUPPORTED — Evidence invalidated by EXP-118
-**Source**: EXP-116 (adversarial framing guard for multi-session handoffs) — **INVALIDATED**
+**Status**: SUPPORTED (mechanism uncertain) — EXP-118 confirmed 100% baselines are real
+**Source**: EXP-116 + EXP-118 (cross-agent adversarial handoff baselines)
 **Date**: 2026-04-10
 **Extends**: KE-093 (verification confabulation), KE-094 (adversarial framing), KE-095 (machine-verified evidence)
 
-> ⚠️ **EXP-118 INVALIDATION**: The sole evidence for this KE came from EXP-116's 100% baseline, which was an artifact of `--agent coder` not being a valid agent name. The binary exited silently and scoring ran against unmodified environments. Real baselines with valid agents (bob, optimizer, may) are actually **100%** across all agents (EXP-118), identical to the EXP-116 result. The scenarios are at ceiling due to model-level capability improvements since EXP-103. The "internalization" phenomenon was never observed. This KE's theoretical framework (intervention lifecycle model) may still be useful, but has NO empirical support from the may-agent system.
+> **Note (2026-04-10)**: EXP-118 confirmed that ALL agents (bob, optimizer, may) achieve 100% on these scenarios — not just coach. The baseline improvement from EXP-103 (11-25%) is real and system-wide. However, the MECHANISM is uncertain: it could be agent internalization (from accumulated training/experience), model-level capability drift (newer Sonnet/Opus models), or scenario-level (scenarios now too easy). EXP-118 supports H2 (system-wide) over H1 (agent-specific), which weakens the "internalization through experience" narrative but the decay phenomenon itself is real.
 
 ---
 
