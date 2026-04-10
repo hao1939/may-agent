@@ -1,16 +1,16 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~21:53 UTC
+Updated: 2026-04-10 ~22:27 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — Fresh heartbeat 21:53. EXP-127 KB integration COMPLETE (commit 7b1ed2ea).
-- **Coach**: 🟢 Active — Fresh heartbeat 21:53. KE-129/130/131 written and committed.
+- **Bob**: 🟢 Active — Fresh heartbeat 22:25. H-099 (Discovery Task Boundary) designed and committed (0527a1f). System quiet, all KB up to date.
+- **Coach**: 🟢 Active — Fresh heartbeat 22:24. EXP-128 designed, WORK SESSION self-dispatched (18 gym trials running now). Channel 3 boundary conditions test.
 - **Scout**: ⚠️ 401 Error — Recurring `IDE token expired` auth failure. Auto-pause recovery handling retries.
-- **Tech-lead**: 🟢 Active — Fresh heartbeat 21:53.
-- **Optimizer**: 🟢 Active — Fresh heartbeat 21:53. Mode B Tool Gap Analysis completed.
-- **Evaluator**: 🟢 Active — Fresh heartbeat 21:53.
-- **QA**: 🟢 Active — Fresh heartbeat 21:53.
+- **Tech-lead**: 🟢 Active — Heartbeat 22:23 in progress.
+- **Optimizer**: 🟢 Active — Fresh heartbeat 22:24. Session-query tool MERGED to main. All 4 exploration modes done.
+- **Evaluator**: 🟢 Active — Fresh heartbeat 22:24.
+- **QA**: 🟢 Active — Fresh heartbeat 22:24.
 - **Coder**: Idle. Only runs when forked by tech-lead.
 - **All agents**: 🟡 7/8 healthy. Scout has recurring auth error (401, IDE token expired).
 - **✅ Tool Schema Guard**: Live in production.
@@ -160,7 +160,9 @@ Updated: 2026-04-10 ~21:53 UTC
 | **Optimizer: Session-Sync Cron Handler** | ✅ DEPLOYED | optimizer | Handler at `agents/may/handlers/session-sync.ts`. Syncs .state/sessions/ meta.json → may.db every 5min. 996 sessions in <1s. Commit 2d257c78. Fixes chronic stale DB issue. |
 | **EXP-116 Results Correction** | ✅ CORRECTED | may | EXP-116/results.md note updated: invalidation was WRONG — EXP-118 confirmed 100% baselines are real with valid agents. Silent exit bug exists but didn't corrupt results. |
 
-| **EXP-122 Environmental Hints** | ⚠️ CORRUPTED DATA | coach | **CORRECTION**: Reported "100% (6/6)" was from corrupted environment (pre-baked answers). Real first run: 4/6 (67%) = NULL RESULT (same as baseline). HTML comment hint showed no effect at n=6. EXP-126 is the real replication at larger N. |
+| **EXP-128 Channel 3 Boundary Conditions** | 🏃 RUNNING | coach | 18 gym trials (3 arms × 6 runs) testing detection coverage hypothesis. Self-dispatched work session in progress. |
+| **Session-Query Tool** | ✅ MERGED | optimizer/may | 378-line CLI at `scripts/session-query.ts`. Merged to main. Note: queries `agents/.state/sessions/history/` (historical), not `.state/sessions/` (current). |
+| **H-099 Discovery Task Boundary** | ✅ FILED | bob | 167-line hypothesis: creative inference is irreducible to scaffolding. 5 failed interventions as evidence. Commit 0527a1f. |
 | **EXP-123 Verification-Depth Guard** | ✅ MERGED + OBSERVING | coach + may | Guard deployed to production (commit 9d9be57). Blocks superficial verification: git on gitignored, no post-write verification. 363 lines, 18/18 tests. Observation window: 48-72h until Apr 13. |
 | **EXP-124 FM-1.3 Path-Guessing Intervention** | ✅ COMPLETE (**NULL RESULT v2**) | coach | **v2 CORRECTION**: With gym runner file-sync bug fixed, baseline 83% (5/6) = treatment 83% (5/6). Runner bug was the real issue. No treatment effect. Harder scenarios needed for FM-1.3 research. Results at `agents/shared/knowledge/experiments/EXP-124/results-v2.md`. |
 | **Gym Runner Inherits Dedup** | ✅ MERGED | tech-lead | `inherits` support in gym runner for scenario deduplication. 42 variant scenarios can now inherit base environment. Commits da552cf3 + 71b904f4 + 40d48912 merged to main. |
@@ -203,18 +205,19 @@ Updated: 2026-04-10 ~21:53 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (21:53)
-- **System healthy**: 7/8 agents running. All heartbeats fresh (21:53). Scout recurring 401 auth. Zero failures this hour.
-- **Since last cycle (21:23)**:
-  - **EXP-127 KB integration COMPLETE**: Bob committed 7b1ed2ea — H-098 P(H) 0.80, KE-129/KE-130 indexed in PRIORITY-TRACKER and INDEX.
-  - **KE-129/130/131 written**: Coach created knowledge entries for EXP-126 (null result) and EXP-127 (forced ext only channel, text channel failure).
-  - **Optimizer Mode B Tool Gap Analysis completed**: Multi-step bash patterns analysis finished.
+## Latest Cycle Summary (22:27)
+- **System healthy**: 7/8 agents running. All heartbeats fresh (22:24). Scout recurring 401 auth. Zero failures this hour.
+- **Since last cycle (21:53)**:
+  - **H-099 Discovery Task Boundary FILED**: Bob designed 167-line hypothesis — creative inference is irreducible to scaffolding. 5 failed interventions (EXP-117/120/121/124/126) as evidence. Commit 0527a1f.
+  - **Session-query tool MERGED**: Optimizer's 378-line CLI tool (`scripts/session-query.ts`) merged to main. Replaces manual bash archaeology.
+  - **EXP-128 DESIGNED + RUNNING**: Coach designed Channel 3 boundary conditions experiment and self-dispatched a work session (18 gym trials). Testing if few-shot's failure on contradictory-requirements is detection-specific.
+  - **Review branches cleaned**: `review/s_1775858119288_1086` (stale) deleted, `review/session-query-tool` merged and deleted.
   - **All agents self-directing**: Zero May interventions needed this cycle. Team fully autonomous.
 
 ## Key Findings This Cycle
-- **EXP-127 fully integrated into KB** — H-098 (Attention Channel Theory) now at P(H)=0.80 with direct interventional evidence. This is the team's strongest empirical finding: only structural gates (Ch2/forced externalization) work for judgment tasks.
-- **Research pipeline is mature**: 104+ experiments, 131 KEs, 23 active hypotheses. Gym at ceiling. Discovery boundary (FM-1.3) remains the one unresolved frontier.
-- **System at steady state**: All active work items from this sprint are complete. Agents are self-directing on incremental improvements.
+- **H-099 formalizes the discovery boundary**: Bob synthesized the FM-1.3 dead-end into a proper hypothesis — creative inference may be fundamentally irreducible to scaffolding. This is the theoretical capstone for the intervention trilogy (EXP-117/120/121).
+- **EXP-128 is the last active experiment**: Testing whether Ch3 failure on contradictory-requirements is a boundary condition or generalizable weakness. Results will update H-098 (Attention Channel Theory).
+- **System at steady state + actively exploring**: All KB integrated, agents self-dispatching new experiments without prompting.
 
 ## Next Actions
 - **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. Saves $143-441/day. **Blocked on Hao since Mar 24**.
