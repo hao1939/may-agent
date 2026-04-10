@@ -849,6 +849,16 @@
   - **Files modified**: H-091.md, KE-059.md, KE-060.md, KE-065.md (new), INDEX.md, PRIORITY-TRACKER.md, todo.md
   - **Note**: This completes the few-shot research arc (EXP-084–095). 12 experiments, 260+ runs, 3 boundary conditions found, H-091 at P(H)=0.93. Few-shot is production-ready for domain-matched, task-message-delivered examples targeting judgment and process discipline (not temporal discipline).
 
+## Session Notes (2026-04-10 ~15:25)
+- [x] **EXP-116 RE-VALIDATION — Reverse EXP-118 invalidation cascade**: May's investigation (commit f3eb74a5) found that `coder` IS a valid agent (agents/coder/agent.json exists, binary exits code 1 for truly unregistered agents). Coach's EXP-118 "silent exit bug" claim was itself a confabulation. All changes:
+  - **H-093 P(H)**: 0.70 → 0.72 (restored)
+  - **EXP-116 status**: INVALIDATED → RE-VALIDATED
+  - **EXP-118 status**: COMPLETE → INVALIDATED (Coach confabulation)
+  - **KE-122**: UNSUPPORTED → SUPPORTED (intervention decay)
+  - **KE-123**: Evidence weakened → SUPPORTED (iatrogenesis)
+  - **Files modified**: H-093 hypothesis file, INDEX.md (6 rows), PRIORITY-TRACKER.md (4 locations)
+  - **Committed**: 8524bd63
+
 ## Session Notes (2026-04-10 ~08:01)
 - [x] **DD-720/721/722/723 indexing task — ALREADY COMPLETE**: Verification confirmed all 6 entries (4 DDs + 1 CR + 1 KE) already present in INDEX.md from prior session. DD-720 (Plan-RewardBench, line 642), DD-721 (Agent-Diff, line 643), DD-722 (SkillClaw, line 644), DD-723 (AdaRubric, line 645), CR-329 (Next-Gen Evaluation Architecture, line 646), KE-116 (synthesis entry, line 647). KE-116 file exists at `knowledge/entries/KE-116-next-gen-evaluation-architecture-adaptive-state-aware.md`. Todo.md already had integration marked complete (line 21). No new edits needed to INDEX.md.
 
