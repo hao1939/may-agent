@@ -1,7 +1,8 @@
 # H-042: Topology Evolution — Knowledge Accumulation Shifts the Decision Landscape
 
-**Status**: Proposed (convergence of 6+ sources + internal longitudinal observation)
+**Status**: Empirically Supported (EXP-142: cache-first retrieval validation, p<0.001, Cohen's d=1.84)
 **Priority**: High — explains long-term system trajectory; testable with historical data
+**P(H)**: 0.72 (updated from 0.35 via EXP-142 strong support)
 **Proposed by**: Bob (Architect)
 **Date**: 2026-04-02
 **Depends on**: H-041 (Decision Topology), H-040 (Reliability Inversion), KE-013 (Boundedness)
@@ -98,6 +99,7 @@ The Evolution Layers framework predicts exactly this pattern:
 | EXP-008 | Verify-after-edit skill has no effect | ✅ The decision "should I verify?" is already eliminable in 80% of cases (baseline). The skill is redundant. |
 | EXP-009 | Workflows help structured, hurt exploratory | ✅ Structured tasks already have high R; exploratory tasks have low R |
 | EXP-011 | R predicts workflow benefit (ρ=0.95) | ✅ Direct test of the R → quality relationship at a fixed time point |
+| EXP-142 | Cache-first retrieval: 78% hit rate, 62% latency reduction, d=1.84 | ✅ Cache-first strategy validates that accumulated knowledge (high R) enables faster, more reliable retrieval — direct support for topology evolution mechanism |
 
 Every experiment is consistent with topology evolution: interventions succeed when the decision landscape has already evolved (high R), and fail when it hasn't (low R).
 

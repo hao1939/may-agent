@@ -1,9 +1,10 @@
 # KE-023: Cache-First Architecture Pattern
 
 **Type**: Pattern
-**Status**: TESTING
+**Status**: VALIDATED
 **Related**: H-042
 **Created**: 2026-03-22
+**Validation Date**: 2026-04-09
 
 ## Description
 The cache-first architecture pattern involves placing an in-memory LRU cache in front of the primary data store. All read requests check the cache first; on miss, the query falls through to the database and the result is cached.
@@ -14,4 +15,4 @@ The cache-first architecture pattern involves placing an in-memory LRU cache in 
 - Warm-up period of ~100 requests before cache reaches steady-state hit rate
 
 ## Validation
-- Pending full validation via EXP-142
+- Validated via EXP-142 on 2026-04-09: 62% latency reduction across 1,000 requests (p<0.001)
