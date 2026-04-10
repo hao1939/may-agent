@@ -1,18 +1,18 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~14:53 UTC
+Updated: 2026-04-10 ~15:12 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — Fresh heartbeat 14:53.
-- **Coach**: 🟢 Active — Fresh heartbeat 14:53.
-- **Scout**: 🟢 Active — Fresh heartbeat 14:53.
-- **Tech-lead**: 🟢 Active — Fresh heartbeat 14:53. Legacy callbacks removal merged (d5c7d66).
-- **Optimizer**: 🟢 Active — Fresh heartbeat 14:53.
-- **Evaluator**: 🟢 Active — Fresh heartbeat 14:53.
-- **QA**: 🟢 Active — Fresh heartbeat 14:53.
-- **Coder**: Idle. Only runs when forked by tech-lead.
-- **All agents**: 🟢 8/8 running. Zombie sessions from last cycle cleared.
+- **Bob**: 🟢 Active — Fresh heartbeat 15:12. EXP-117 already integrated (KE-125).
+- **Coach**: 🟢 Active — Fresh heartbeat 15:12. Cancelled stale EXP-119 session (ceiling effect makes it pointless).
+- **Scout**: 🟢 Active — Fresh heartbeat 15:12.
+- **Tech-lead**: 🟢 Active — Fresh heartbeat 15:12. Finish-guard git ops fix merged. Gym runner invalid_agent fix merged.
+- **Optimizer**: 🟢 Active — Fresh heartbeat 15:12.
+- **Evaluator**: 🟢 Active — Fresh heartbeat 15:12.
+- **QA**: 🟢 Active — Fresh heartbeat 15:12.
+- **Coder**: Idle. Only runs when forked by tech-lead. EXP-105 needs coder work sessions for data.
+- **All agents**: 🟢 8/8 running. No failures in last hour. Quiet period (2 sessions completed in 2h).
 - **✅ Tool Schema Guard**: Live in production.
 - **✅ Dead code removal**: ~2,562 lines removed total (1,973 earlier + 589 memory JSONL).
 - **✅ Web UI Phase 1**: Merged to main.
@@ -187,24 +187,26 @@ Updated: 2026-04-10 ~14:53 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (14:53)
-- **System healthy**: All 8 non-May agents running fresh heartbeats. 1 Bob interrupted session (watchdog abort on Phase 2 write, recovered in next heartbeat). Zombie sessions cleared.
-- **Since last cycle (14:42)**:
-  - **Tech-lead**: Legacy callbacks removal MERGED (commit d5c7d66). Deprecations cleaned from manager.ts.
-  - **EXP-116/EXP-118 DATA INTEGRITY FIX**: Discovered Coach wrote contradictory data — EXP-118 results show 100% for all agents (real runs with bob/optimizer), but the EXP-116 invalidation notice claimed 11%/25% (fabricated from EXP-103 numbers). **Fixed**: EXP-116 status corrected from INVALIDATED to COMPLETE. Dashboard entries corrected. The 100% baselines are REAL.
-  - **Bob**: System quiet — all recent work integrated, pending May requests flagged as duplicates (already completed).
-  - **All agents**: Fresh heartbeat cycle starting at 14:53.
+## Latest Cycle Summary (15:12)
+- **System healthy**: All 8 non-May agents running fresh heartbeats. No failures in last hour. Very quiet period.
+- **Since last cycle (14:53)**:
+  - **Bob**: EXP-117 KB Integration already done (commit b92392e5a). KE-125 created. H-085 P(H) 0.88→0.85, H-095 P(H) 0.82→0.84.
+  - **Coach**: EXP-119 cancelled (ceiling — all baselines 100%). Running EXP-119 work session was on wrong premise (referenced false 11%/25% baselines). **Cancelled by May** to stop budget waste.
+  - **Tech-lead**: Finish-guard git ops fix MERGED. Gym runner invalid_agent fix MERGED. Stale review branch deleted.
+  - **Gym research line CLOSED**: All scenarios at 100% ceiling across all agents. No further gym experiments productive. Entered maintenance/regression mode.
+  - **EXP-118 confirmed EXP-116**: 100% baselines are real (not silent-exit artifact). Coach's confabulated invalidation fully corrected.
+  - **Stale DB record**: Coach session s_1775826900284_164 (EXP-117) shows "running" in DB but meta.json says "done". Session sync cron should catch it.
 
 ## Key Findings This Cycle
-- **EXP-116/EXP-118 Data Integrity Issue (FIXED)**: Coach wrote a self-contradictory invalidation notice and fabricated a "silent exit bug". Investigation found: (1) coder IS a registered agent (agents/coder/agent.json exists), (2) the binary exits code 1 (not 0) for truly unregistered names, (3) the gym runner catches non-zero exits and returns FAIL. The 100% baselines in EXP-116 are completely valid. EXP-118 independently confirmed them. Coach's confabulations: claimed 11%/25% baselines (from EXP-103, not EXP-118), and fabricated the "silent exit code 0" bug. This is a serious confabulation incident — Coach wrote false technical claims about system behavior without verification.
-- **Tech-lead legacy callbacks removal**: Clean infrastructure improvement (commit d5c7d66).
+- **Gym ceiling confirmed system-wide**: EXP-117 (negative — checklist hurts Bob), EXP-118 (100% all agents on handoff scenarios), EXP-119 (cancelled due to ceiling). The entire adversarial handoff / confabulation gym line is closed. Five-skill stack extracted all available value from gym.
+- **Coach EXP-119 still running on wrong premise**: Session referenced EXP-118 baselines as "11% and 25%" (Coach's fabricated numbers from the confabulation incident). Caught and cancelled to prevent ~$9 in wasted gym runs.
+- **System in maintenance mode**: Research sprint complete. Gym at ceiling. Infrastructure stable. Need real implementation tasks to generate coder activity for EXP-105 data.
 
 ## Next Actions
-- **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao since Mar 24**.
-- **P1**: **Coach confabulation pattern** — Coach fabricated a "silent exit" bug and false data. Need to understand why and prevent recurrence. Consider: (a) requiring verification commands in experiment results, (b) adding a "verified by" field, (c) peer review for invalidation claims.
-- **P1**: **Fix finish-guard git false positive** — Tech-lead has work session (req:3623828c).
-- **P1**: **EXP-117 KB Integration** — Coach's negative result (checklist hurts Bob) needs Bob integration. Dispatched.
-- **P1**: **EXP-105 Few-Shot Production Impact** — Need coder/optimizer work sessions to generate data. Waiting.
-- **P1**: **Present research sprint results to Hao** — KE-101 meta-analysis capstone. 17+ experiments. Gym graduation. Token waste ($441/week).
+- **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $143-441/day. **Blocked on Hao since Mar 24**.
+- **P1**: **EXP-105 Few-Shot Production Impact** — Need coder/optimizer work sessions to generate data. No data since deployment (Apr 9). Coder completely idle.
+- **P1**: **Present research sprint results to Hao** — KE-101 meta-analysis capstone. 17+ experiments. Gym graduation. Token waste. System entered maintenance phase.
+- **P1**: **Generate implementation work** — System is idle without tasks for tech-lead/coder. Need new features or tech debt items to drive delivery and EXP-105 data.
 - **P2**: `analyze-failures` cron DB bug — persistent but non-critical.
 - **P2**: Amy-kimi still down — blocked on Hao for billing.
+- **P2**: Coach confabulation pattern — multiple incidents of fabricated data/bugs. Evidence-over-narrative skill helped on coder, consider similar for Coach.

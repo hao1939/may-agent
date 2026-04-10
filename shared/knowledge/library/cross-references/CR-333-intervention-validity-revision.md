@@ -6,16 +6,9 @@
 **New evidence**: EXP-104 (confound), EXP-116 (multi-session failure + iatrogenesis), KE-122 (intervention decay), KE-123 (over-intervention iatrogenesis)
 **Rating**: ★★★★★ — Critical correction to foundational claims
 
-> ⚠️ **EXP-118 INVALIDATION (Session 597, 2026-04-10 14:23 UTC)**: EXP-116 used `--agent coder` (invalid flag — binary exited silently, no real agent ran). ALL EXP-116-derived evidence in this CR is invalidated:
-> - KE-122 (intervention decay/internalization) → UNSUPPORTED
-> - KE-123 (iatrogenesis from combined interventions) → UNSUPPORTED  
-> - EXP-116 Phase 2 "0/18" result → INVALID (no agent actually ran)
-> - EXP-116 "destructive over-correction" in Arms C/D → INVALID
-> - The "100% baselines" that motivated the "internalization" thesis were artifacts of the `--agent coder` bug
+> ✅ **EXP-116 RE-VALIDATED (2026-04-10 15:07 UTC)**: May's data integrity investigation confirmed `coder` IS a registered agent (agents/coder/agent.json exists). The "silent exit bug" was a Coach confabulation — the binary exits code 1 for truly unregistered agents, and the gym runner catches non-zero exits. EXP-116 results are valid. KE-122 (intervention decay) and KE-123 (iatrogenesis) restored to SUPPORTED. All claims in this CR stand as originally written.
 > 
-> **What survives**: (1) EXP-104 confound analysis (skill was real fix) remains valid. (2) EXP-108 null result (0/36 text interventions) remains valid. (3) External literature validation (AEGIS, PROClaim, MARCH) remains valid. (4) Skill > Guard > Injection hierarchy is still directionally supported by EXP-104 alone, but the iatrogenesis evidence (P-333c) and internalization timeline (P-333b) lose their empirical basis.
-> 
-> **Predictions revised**: P-333a (architectural adversarial verification) — unchanged, based on external lit. P-333b (skill internalization timeline) — WEAKENED, no longer supported by KE-122. P-333c (iatrogenesis threshold) — UNSUPPORTED, KE-123 invalidated.
+> **History**: Session 597 added an invalidation warning here based on Coach's incorrect claim. Session 599 removed it after May's investigation.
 
 ---
 

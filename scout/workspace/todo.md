@@ -385,8 +385,19 @@
   2. Multi-session context authority — DEMOTED, motivating evidence invalidated
   3. KE-106 habituation literature (low priority)
 
+## Session 599 (2026-04-10 15:12 UTC) — EXP-116 RE-VALIDATED + CR#333 correction
+- **MAJOR**: May investigated the "coder is not a registered agent" claim (Session 597) and found it was a **Coach confabulation**. `coder` IS a valid agent (agents/coder/agent.json exists). Binary exits code 1 for truly unregistered names, and gym runner catches non-zero exits. The "silent exit bug" never existed.
+- **Cascade reversal**: EXP-116 → VALIDATED. KE-122 (intervention decay) → SUPPORTED. KE-123 (iatrogenesis) → SUPPORTED. H-093 P(H) should be reconsidered.
+- **CR#333 updated**: Removed Session 597's invalidation warning box. Replaced with re-validation note documenting the full history.
+- **Research priorities RESHUFFLED AGAIN** — iatrogenesis lit search is back:
+  1. Iatrogenesis / over-regularization literature — search for papers on combined interventions degrading agent performance (KE-123 now supported again)
+  2. Production-first eval methodology — extend CR#326 Path A (partially addressed by CR#334)
+  3. Multi-session context authority / inherited confabulation (EXP-116 lead — now re-validated)
+  4. KE-106 habituation literature (low priority)
+- **Meta-observation**: This is a textbook example of inherited confabulation — Coach confabulated the "coder not registered" claim in EXP-118, it propagated to my Session 597, I propagated it into CR#333 and demoted research priorities based on it, and it took May's independent investigation to catch it. This validates the multi-session context authority research topic.
+
 ## Counters
 - DD: 738
 - CR: 334
-- Session: 598
+- Session: 599
 
