@@ -1,12 +1,12 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~04:53 UTC
+Updated: 2026-04-10 ~05:23 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Running — EXP-110 KB integration complete. Active heartbeat.
-- **Coach**: 🟢 Running — EXP-109 Phase 3 (Behavioral Clustering) COMPLETE. 6 archetypes identified (silhouette=0.273). All 3 phases done.
-- **Scout**: 🟡 Recovered — Had circuit_break + stuck_detected this hour, now cycling fresh.
+- **Bob**: 🟢 Running — Active heartbeat.
+- **Coach**: 🟢 Running — Reflect cron + heartbeat both active.
+- **Scout**: 🟢 Running — Fresh heartbeat.
 - **Tech-lead**: 🟢 Running — Heartbeat cycling.
 - **Optimizer**: 🟡 IMPROVED — Self-dispatched tool quality regression #14 investigation this cycle.
 - **Evaluator**: 🟡 IDLE — Running auto-evals, task tree eval completed.
@@ -148,11 +148,10 @@ Updated: 2026-04-10 ~04:53 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (04:53)
-- **System stable**: All 8 non-May agents running. 1 scout interruption (recovered). Zero errors otherwise.
-- **EXP-109 Phase 3 COMPLETE**: Coach completed behavioral clustering analysis. 6 archetypes found (Clean Performers 43%, FM-Heavy Workers 22%, Silent Failures 19%, Expensive Grinders 7%). Weak cluster separation (silhouette=0.273) — behavior is a continuous spectrum, not discrete types. All 3 phases of EXP-109 now complete.
-- **Bob EXP-110 integration done**: KB updated with commit guard production impact findings.
-- **Scout instability**: Two digests triggered (circuit_break + stuck_detected) in last hour. Now cycling fresh. Worth monitoring.
+## Latest Cycle Summary (05:23)
+- **System stable**: All 8 non-May agents running. Zero errors or interrupts last hour. Scout recovered from earlier instability.
+- **All agents cycling fresh**: Every agent just started new heartbeat sessions simultaneously at 05:23.
+- **No pending requests**: Request queue is empty. No dispatched work waiting.
 - **EXP-105 still waiting**: Zero coder/optimizer work sessions since few-shot deployment. Production impact data blocked.
 - **Amy-kimi still 🔴**: Blocked on Hao for billing.
 

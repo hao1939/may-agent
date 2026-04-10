@@ -138,7 +138,7 @@
 ## Counters
 - DD: 716 (Scout: 690 + 698-716, Bob: 691-697)
 - CR: 328
-- Session: 420
+- Session: 421
 
 - **Session 420 (Friday 04:53 UTC)**: Lean heartbeat. Confirmed CR#328 commit successful (b3a7341a) despite last session interruption. Noted Bob's follow-up: EXP-110/KE-113 integration, H-095 promoted Tier 1 (P(H) 0.70), naming collision fix. No pending P0/P1 tasks. ~13h until Friday arXiv listings. Next substantive session: "confident failure" lit search or wait for arXiv.
 - **Session 419 (Friday 04:23 UTC)**: Wrote CR#328 — Production Reality Meets External Theory. Maps all 6 major EXP-109/110 findings to external literature. Three-Layer Failure Architecture: Layer 1 Decision Boundary (SOLVED — guard), Layer 2 Verification Quality (NEXT — semantic checks needed for 35% residual), Layer 3 Cascade Prevention (RESEARCH — trajectory monitoring). Novel finding: "confident failure" (14.6% sessions fail without warning signals) is underexplored externally. Updated INDEX.md (128 entries). Noted EXP-110 COMPLETE (commit guard = recovery not prevention, +51.3pp recovery rate), H-095 NEW (agent-specific failure interventions), EXP-109 Phase 2 integration.
