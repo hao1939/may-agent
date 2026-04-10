@@ -39,6 +39,31 @@ Proactive heartbeat QA at HEAD **e3f53b5**. I sampled `test/gym/gym-runner.ts` (
 ### Mandatory gates
 - `./node_modules/.bin/tsc --noEmit`: PASS (no output)
 
+## 2026-04-10T05:56Z
+
+### Summary
+Proactive heartbeat QA at HEAD **a1f1468** ("fix: remove accidental submodule entry for agents/"). Change deletes the stray gitlink entry `agents` (mode 160000), undoing an accidental submodule addition.
+
+### Files reviewed (evidence)
+- Commit diff `a1f1468`: removes `agents` gitlink (`deleted file mode 160000`).
+- `test/launcher.test.ts` (read lines 90–170): confirms the suite expects `/app/src/app/launcher.ts` to exist and inspects its content for restart/backoff behavior.
+
+### Mandatory gates
+- `./node_modules/.bin/tsc --noEmit`: PASS (no output)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2089 passed (2110)**
+  - `test/launcher.test.ts`: 7 failed — missing `/app/src/app/launcher.ts` (existsSync false + ENOENT)
+  - `test/context-learn.test.ts`: 7 failed — cleanup `rmSync` fails with `EACCES` under `/app/test-workspace/context-learn-test/test-agent`
+  - `test/context-learning.test.ts`: 6 failed — cleanup `rmSync` fails with `EACCES` under `/app/test-workspace/context-learning-test/.state`
+  - `test/research-db.test.ts`: 1 failed — integration test timed out at 5000ms (observed 6161ms)
+
+### Issues
+- CRITICAL (repo/test mismatch): `src/app/launcher.ts` is missing but required by `test/launcher.test.ts`.
+- IMPORTANT (env/permissions): test cleanup fails with `EACCES` in `/app/test-workspace/*`.
+- IMPORTANT (timeout robustness): `test/research-db.test.ts` real-knowledge sync exceeds 5s.
+
+### Verdict
+CONDITIONAL — this commit is low-risk and correct, but CI is red due to pre-existing missing module + environment/timeout issues not introduced by this change.
+
 ---
 
 ## 2026-04-10T05:27Z
