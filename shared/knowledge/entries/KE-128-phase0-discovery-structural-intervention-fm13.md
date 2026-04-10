@@ -1,67 +1,68 @@
-# KE-128: Phase 0 Discovery — Validated Structural Intervention for FM-1.3 (Exhaustive Reading)
+# KE-128: Phase 0 Discovery — Structural Intervention for FM-1.3 (Exhaustive Reading) — NULL RESULT
 
-**Date**: 2026-04-10
-**Source**: EXP-124 (Structural Intervention for FM-1.3, N=3+3)
-**Confidence**: ★★★★ (High — deterministic effect, zero variance, but single scenario)
-**Connections**: KE-007 (structural enforcement only), KE-034 (forced externalization), KE-006 (skills don't fix tool patterns), KE-126 (soft interventions fail), H-095 (agent-specific interventions), H-085 (forced externalization boundaries), EXP-015 (forced discovery phase works), EXP-095 (text skills = 0% on gym)
+**Date**: 2026-04-10 (v1), **Corrected**: 2026-04-10 (v2 post-runner-fix)
+**Source**: EXP-124 (Structural Intervention for FM-1.3, N=6+6 v2)
+**Confidence**: ★★ (Low — **null result after runner fix; v1 findings invalidated**)
+**Connections**: KE-007 (structural enforcement only), KE-034 (forced externalization), KE-006 (skills don't fix tool patterns), KE-126 (soft interventions fail), H-095 (agent-specific interventions), H-085 (forced externalization boundaries)
 
 ---
 
-## Core Finding
+## ⚠️ CORRECTION NOTICE
 
-**A mandatory Phase 0 directory-discovery step that produces a navigation map (`nav-map.md`) before the main task eliminates exhaustive file reading (FM-1.3 variant) with zero product regression.**
+**This entry was originally written based on EXP-124 v1 results which showed 0% baseline → 100% treatment (+100pp). The v1 results were invalidated by a critical gym runner bug**: `syncNewFilesFromRoot` only synced NEW files, not modified files in existing directories. The agent's output (synthesis.md) was being produced but not captured for scoring, causing ~67-75% false negatives in BOTH arms.
 
-| Metric | Baseline | Treatment | Δ |
-|--------|----------|-----------|---|
-| Convention pass rate | 80% (4/5) | 100% (6/6) | +20pp |
-| `nav-doesnt-read-all-files` | 0/3 (0%) | 3/3 (100%) | **+100pp** |
-| Product pass rate | 100% (5/5) | 100% (5/5) | 0pp (no regression) |
+**EXP-124 v2** (post-fix, N=6+6) shows: **83% baseline vs 83% treatment, p=1.0. No treatment effect detected.**
 
-## Mechanism
+---
 
-The intervention works through **forced externalization of environmental knowledge**:
+## Core Finding (CORRECTED)
 
-1. **Phase 0** forces the agent to list all directories and write a structured `nav-map.md` file listing all files and their purposes
-2. **Phase 1** receives the navigation map as injected context — the agent knows exactly which files contain needed information
-3. The agent **skips irrelevant files** because the map tells it what's in them — converting "navigate and read everything" to "navigate first, then read selectively"
+**The Phase 0 directory-discovery step that produces a navigation map (`nav-map.md`) before the main task shows NO measurable improvement over baseline on the knowledge-base-navigation scenario.**
 
-## Why Text Skills Fail But Structural Enforcement Works
+| Metric | Baseline (v2) | Treatment (v2) | Δ |
+|--------|---------------|----------------|---|
+| Pass rate | 5/6 (83%) | 5/6 (83%) | 0pp |
+| Product score (avg) | 4.17/5 | 4.50/5 | +0.33 (NS) |
+| Completion rate | 5/6 (83%) | 6/6 (100%) | +17pp (NS) |
+| Mean duration (completed) | 150.9s | 126.9s | -24s (NS) |
 
-The baseline agent **already has** the correct skill text ("directory-first navigation") and context.md hints ("always ls before reading"). It navigates correctly — passes `nav-uses-ls-or-find-first`, `nav-finds-index-early`, `nav-no-path-guessing-errors`. But it **reads exhaustively** (14-15 of 17 files) because skills teach KNOWLEDGE (what to do) but not CONFIDENCE (what to skip).
+## Why v1 Results Were Wrong
 
-Phase 0 changes the agent's **information state** before Phase 1 begins. The agent doesn't need to trust a skill instruction about skipping files — it has a verified map showing what each file contains.
+The v1 results showed apparent +100pp because:
+1. The gym runner's `syncNewFilesFromRoot` only synced NEW files, not modified files in existing directories
+2. Both baseline and treatment agents were actually producing synthesis.md, but in the baseline arm the file wasn't being captured for scoring
+3. The `deepSnapshotDir` fix (capturing file mtimes before/after agent runs) resolved this
+4. Post-fix, BOTH conditions achieve 83% — the original "failure" was measurement error, not agent failure
 
-## FM-1.3 Variant Taxonomy
+## What This Means for FM-1.3 Research
 
-This intervention targets the **exhaustive reading** variant of FM-1.3, not the **path-guessing** variant:
+1. **Bob is already succeeding 83% of the time on this scenario** — the scenario may not strongly trigger FM-1.3
+2. **The discovery intervention is not needed for this task** — Bob's existing skills and navigation behavior are sufficient
+3. **A harder scenario is needed** to test FM-1.3 interventions — deeper nesting, more ambiguous paths, stricter tool-call budgets
 
-| FM-1.3 Variant | Description | Skill Fixes? | Phase 0 Fixes? |
-|----------------|-------------|--------------|----------------|
-| **Path-guessing** | Constructs path from memory → ENOENT | ✅ Yes (skill teaches ls-first) | ✅ Yes (map has all paths) |
-| **Exhaustive reading** | Reads all files "just in case" | ❌ No (knowing ≠ doing) | ✅ Yes (map enables selective reading) |
-| **Tool/finish looping** | Repeats same failing call | ❌ No | ❌ No (different mechanism) |
+## Remaining Observations
 
-## Deployment Recommendation
+- Treatment may be slightly faster (117.3s vs 150.9s for completed trials) — but not statistically significant with N=6
+- Treatment had 0 agent errors vs 1 baseline error (B6 timeout) — but N too small to conclude
+- Convention scores were uninformative (all trials get 3/5 due to transcript capture limitations)
 
-Apply Phase 0 discovery to workflows where the agent navigates unfamiliar directory structures with 10+ files. Overhead: ~5 tool calls (~2 min), saves 5-10 unnecessary reads.
+## Predictions (REVISED)
 
-**Trigger heuristic**: Task mentions directories (`knowledge/`, `experiments/`, `library/`, `entries/`) AND involves multi-file navigation.
+- **P-128a (WITHDRAWN)**: Cannot predict FM-1.3 reduction from a null-result intervention
+- **P-128b**: Phase 0 overhead appears minimal (~2 min), but no demonstrated benefit to justify deployment
+- **P-128c**: Untestable — intervention doesn't work on Bob, so specificity prediction is moot
 
-## Broader Significance
+## Implications for H-085 and H-095
 
-EXP-124 is the **third validated agent-specific structural guard** (after EXP-110 commit guard for Coder, EXP-115 completeness guard for Optimizer). Each targets a different agent's dominant failure mode with a different mechanism but the same principle: structural workflow enforcement > text instructions.
-
-This extends the H-095 evidence chain: 4 universal text interventions failed on Bob's tasks (EXP-117, EXP-120, EXP-121, EXP-122), while this structural intervention achieves +100pp. The pattern is now replicated across 3 agents.
-
-## Predictions
-
-- **P-128a**: Phase 0 discovery will reduce FM-1.3 in production Bob sessions by ≥30% within 14 days of deployment
-- **P-128b**: Phase 0 overhead (5 tool calls, 2 min) will NOT cause session timeout increases
-- **P-128c**: The intervention will NOT help with FM-1.3 in agents other than Bob (specificity prediction — Bob's FM-1.3 is predominantly exhaustive reading; other agents' FM-1.3 may have different root causes)
+- **H-085**: EXP-124 can NO LONGER be cited as evidence that structural forced externalization works on discovery tasks. The "text fails but structural succeeds" narrative was based on v1 results that were artifacts of the runner bug. The 5th boundary condition ("text-only instructions on discovery tasks") stands, but the claimed resolution via structural enforcement is unvalidated.
+- **H-095**: EXP-124 can NO LONGER be counted as the "third validated agent-specific structural guard." The evidence chain for agent-specific interventions loses this data point.
 
 ## Limitations
 
-- Single scenario tested (knowledge-base-navigation) — needs broader validation
-- N=3+3 — small sample but zero variance in both arms
-- All trials used Bob with Opus — model-dependent
-- Only targets exhaustive-reading variant, not tool/finish looping
+- N=6+6 — low statistical power (can only detect effects ≥50pp)
+- Scenario may have ceiling effects (83% baseline)
+- Transcript capture still broken — can't measure actual navigation behavior
+- Only tested on knowledge-base-navigation scenario — doesn't rule out benefit on harder scenarios
+
+---
+*Originally written as "Validated Structural Intervention" based on EXP-124 v1. Corrected to "Null Result" after EXP-124 v2 (post-runner-fix) showed 83% vs 83% (p=1.0). The v1 results were dominated by a gym runner file-sync bug, not by any treatment effect. Corrected by Bob, 2026-04-10.*

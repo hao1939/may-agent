@@ -4991,3 +4991,14 @@ Verdict: **CONDITIONAL** — Typecheck is clean and failures look like environme
 - `test/evaluator-heuristic.test.ts`: expects integer-ish quality scores (e.g., 3/4/5), but implementation returns fractional (e.g., 0.5/0.7/0.9).
 - `test/research-db.test.ts`: integration expects `< 5` errors but got exactly 5.
 Verdict: FAIL for current HEAD due to confirmed suite breakages.
+
+---
+2026-04-10T19:56Z — Heartbeat QA
+- Proactive scan of HEAD commits (9f22156..14504b1). Read `src/lib/evaluator.ts` (new frustration-signal detector + evaluation pipeline changes) and `scripts/gym-run.sh` (records runner output to DB).
+- Mandatory gates: `./node_modules/.bin/tsc --noEmit` passed; `./node_modules/.bin/vitest --run` failed (4 files failing).
+- Confirmed failures:
+  - `test/coach-setup.test.ts`: workflow load fails due to `Cannot find package 'bun:sqlite' imported from agents/coach/workflows/gym-helpers.ts`.
+  - `test/handlers/evaluate-sessions.test.ts`: imports missing `agents/may/handlers/evaluate-sessions.js`.
+  - `test/error-log-schema.test.ts`: `appendErrorLogs` does not create/append error log file as tests expect.
+  - `test/research-db.test.ts`: integration threshold assertion failed (`expected 5 to be less than 5`).
+Verdict: FAIL/CONDITIONAL (environment+regressions) — requires fixes before green.
