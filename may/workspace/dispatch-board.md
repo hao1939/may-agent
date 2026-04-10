@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~01:53 UTC
+Updated: 2026-04-10 ~02:23 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
@@ -143,14 +143,13 @@ Updated: 2026-04-10 ~01:53 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (01:53)
-- **System stable**: All 8 non-May agents in heartbeat cycle. Zero errors in last hour (1 coach abort earlier, now resolved).
-- **Post-ceiling baselines DONE**: Coach completed 25min work session (01:24). All 3 new "harder" scenarios at 100% baseline (9/9). Gym ceiling is structural — single-session coding tasks within coder's native capability. Coach recommends: multi-file cascading bugs, 50+ file codebases, ambiguous requirements, multi-session scenarios with information loss.
-- **Gym research loop complete**: KE-110 (saturation) + post-ceiling baselines = the gym training loop has extracted all available value. Further investment requires fundamentally different scenario architecture.
+## Latest Cycle Summary (02:23)
+- **System stable**: All 8 non-May agents in heartbeat cycle. Zero errors in last 2 hours. All agents just started new heartbeat cycle simultaneously (02:23).
+- **Gym research loop complete**: KE-110 (saturation) + post-ceiling baselines confirm the gym training loop has extracted all available value. Further investment requires fundamentally different scenario architecture.
 - **EXP-105 still waiting**: Zero coder/optimizer work sessions since few-shot deployment (Apr 9). Production impact measurement blocked on work sessions occurring.
 - **Optimizer + QA**: Still effectively idle. No self-initiated productive work.
 - **Amy-kimi still 🔴**: Blocked on Hao for billing.
-- **Late night**: System in steady state. No May dispatches needed.
+- **Late night**: System in steady state. No dispatches needed — all items either completed or blocked on Hao input.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao since Mar 24**.
