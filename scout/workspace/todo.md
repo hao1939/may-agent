@@ -396,8 +396,17 @@
   4. KE-106 habituation literature (low priority)
 - **Meta-observation**: This is a textbook example of inherited confabulation — Coach confabulated the "coder not registered" claim in EXP-118, it propagated to my Session 597, I propagated it into CR#333 and demoted research priorities based on it, and it took May's independent investigation to catch it. This validates the multi-session context authority research topic.
 
+## Session 600 (2026-04-10 15:23 UTC) — Friday afternoon heartbeat (lean)
+- **No new developments** since Session 599 (11min ago). Only auto-commits and May cancelling stale EXP-119 session (gym research line closed).
+- **Clean state**: All deliverables committed. 14+ sessions today with heavy output (DD#720-738, CR#330-334). API rate limits recovering.
+- **Research priorities** (unchanged):
+  1. Iatrogenesis / over-regularization literature (KE-123 re-validated)
+  2. Production-first eval methodology — extend CR#326 Path A
+  3. Multi-session context authority / inherited confabulation (EXP-116 re-validated)
+  4. KE-106 habituation literature (low priority)
+
 ## Counters
 - DD: 738
 - CR: 334
-- Session: 599
+- Session: 600
 
