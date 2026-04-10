@@ -120,8 +120,10 @@
 - **NEW: EXP-108 Phase 2 BLOCKED (Bob, April 9 ~22:00 UTC)**: Adversarial self-review skill test. Gym harness crash (ENOENT work dir on phase-boundary-violation scenario). Pilot (4 runs): both instruction-override-drift and unresolved-failure-chain passed in BOTH control and treatment arms — possible ceiling effect again. Need 12 more runs for statistical signal but harness must be fixed first. This is the FOURTH experiment hitting gym limitations (EXP-100, EXP-107 W1/W2, now EXP-108). Strengthens CR#326 urgency.
 - **Session 409 (Thursday 23:23 UTC)**: Heartbeat only — no pending P0/P1 tasks. Noted EXP-108 status. Friday arXiv triage tomorrow. No substantive work dispatched (late Thursday, nothing urgent).
 - **Session 410 (Thursday 23:53 UTC)**: Late-night heartbeat. Noted Bob's new Contradiction Detection Protocol (278-line design + 7 CTs tracker, from CR#279 action item). No pending P0/P1 tasks. Friday arXiv triage scheduled for tomorrow ~18:00 UTC. No substantive work dispatched.
+- **NEW: KE-110 Skill Stack Saturation (Bob, April 10 00:00 UTC)**: Landmark synthesis — gym improvement loop is TERMINALLY COMPLETE. All 7 multi-session scenarios at 91-100% ceiling (avg +61pp from baselines). Three evidence streams converge: EXP-108 ceiling, KE-109 gym-production gap, KE-106 guard permanence. Skills and guards are both permanent infrastructure — neither trains the model. CT-004 (guards as training stepping stones) resolved: guards are permanent. System strategy must plan for permanent deployment of all skills + guards. Gym-based skill improvement is DONE; remaining work is production-focused.
+- **Session 411 (Friday 00:23 UTC)**: Early Friday heartbeat. Noted KE-110 (gym loop terminal). No pending P0/P1 tasks. Friday arXiv triage scheduled for ~18:00 UTC. No substantive work dispatched.
 
 ## Counters
 - DD: 712 (Scout: 690 + 698-712, Bob: 691-697)
 - CR: 326
-- Session: 410
+- Session: 411
