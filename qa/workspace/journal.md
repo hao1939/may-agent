@@ -5033,3 +5033,5 @@ Verdict: CONDITIONAL (patch likely fine; test suite currently red due to above i
 - Ran `./node_modules/.bin/tsc --noEmit`: PASS.
 - Ran `./node_modules/.bin/vitest --run`: PASS (2046 tests, 138 files). Only warnings observed were Node experimental sqlite warnings.
 Verdict: PASS (no issues found in the reviewed change; repo gates green).
+
+- 2026-04-10T21:56Z — Proactive QA: reviewed latest commit `162215d` (knowledge-only change to EXP-127 results). Read `agents/shared/knowledge/experiments/EXP-127/results.md` (lines 1–~170) to confirm Arm C run IDs are expressed as a range and other arms remain explicit lists. Ran mandatory gates: `./node_modules/.bin/tsc --noEmit` PASS; `./node_modules/.bin/vitest --run` PASS (2046 tests / 138 files).
