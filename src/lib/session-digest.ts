@@ -79,16 +79,6 @@ export function getLastDigest(persistDir: string, sessionId: string): DigestRow 
 }
 
 /**
- * Get the full digest timeline for a session.
- */
-export function getDigestTimeline(persistDir: string, sessionId: string): DigestRow[] {
-  const db = getDb(persistDir);
-  return db
-    .prepare(`SELECT * FROM session_digests WHERE sessionId = ? ORDER BY step ASC`)
-    .all(sessionId) as unknown as DigestRow[];
-}
-
-/**
  * Get recent digests for an agent (for context injection).
  * Deduplicates — returns only the latest row per session.
  */
@@ -900,61 +890,4 @@ export function createCheckpointDigest(
   }
 }
 
-// ── Query helpers ──────────────────────────────────────────────────────
 
-/**
- * Get all failure digests since a given timestamp.
- */
-export function getFailureDigests(persistDir: string, since: number): DigestRow[] {
-  const db = getDb(persistDir);
-  return db
-    .prepare(
-      `SELECT * FROM session_digests
-       WHERE outcome = 'failure' AND created_at > ?
-       ORDER BY created_at DESC`,
-    )
-    .all(since) as unknown as DigestRow[];
-}
-
-/**
- * Get agent health summary since a given timestamp.
- */
-export function getAgentDigestHealth(
-  persistDir: string,
-  since: number,
-): Array<{
-  agent: string;
-  clean_ends: number;
-  problems: number;
-  escalations: number;
-}> {
-  const db = getDb(persistDir);
-  return db
-    .prepare(
-      `SELECT agent,
-        SUM(CASE WHEN trigger = 'end' THEN 1 ELSE 0 END) as clean_ends,
-        SUM(CASE WHEN trigger IN ('stuck_detected','circuit_break','timeout') THEN 1 ELSE 0 END) as problems,
-        SUM(CASE WHEN action = 'escalate' THEN 1 ELSE 0 END) as escalations
-      FROM session_digests WHERE created_at > ? GROUP BY agent`,
-    )
-    .all(since) as unknown as Array<{
-    agent: string;
-    clean_ends: number;
-    problems: number;
-    escalations: number;
-  }>;
-}
-
-/**
- * Get classifier action log (most recent actions first).
- */
-export function getActionLog(persistDir: string, limit = 20): DigestRow[] {
-  const db = getDb(persistDir);
-  return db
-    .prepare(
-      `SELECT * FROM session_digests
-       WHERE action IS NOT NULL
-       ORDER BY created_at DESC LIMIT ?`,
-    )
-    .all(limit) as unknown as DigestRow[];
-}

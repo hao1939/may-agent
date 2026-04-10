@@ -62,7 +62,6 @@ import {
   appendSessionMessage,
   readSessionMessages,
   sessionOutputDir,
-  memoryPath,
   listActiveSessionIds,
   readSessionMeta,
   writeSessionMeta,
@@ -2131,11 +2130,6 @@ export class SubagentManager {
     if (!workspace) return undefined;
     const agentDir = dirname(workspace);
     return join(agentDir, "workflows");
-  }
-
-  /** Get the memory JSONL path for an agent. */
-  getMemoryPath(name: string): string {
-    return memoryPath(this.registry.persistDir, name);
   }
 
   /** Get the output directory for a session (active or archived). */
