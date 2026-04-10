@@ -1,10 +1,17 @@
 {
   "name": "hidden-dependency-workflow",
-  "categories": ["root-cause-analysis"],
-  "tags": ["ability", "workflow", "investigation"],
+  "categories": [
+    "root-cause-analysis"
+  ],
+  "tags": [
+    "ability",
+    "workflow",
+    "investigation"
+  ],
   "tier": "standard",
   "timeout": 5,
   "agent_type": "coder",
   "workflow": true,
-  "description": "Workflow-enforced version of hidden-dependency. Phase 1 forces the agent to trace the full dependency chain (surface typo + deeper checksum mismatch) and write a complete analysis before touching any code. Phase 2 implements fixes based on the written analysis. Tests whether two-phase separation prevents the common failure mode of fixing the surface bug and then bypassing validation when hitting the deeper bug."
+  "description": "Workflow-enforced version of hidden-dependency. Phase 1 forces the agent to trace the full dependency chain (surface typo + deeper checksum mismatch) and write a complete analysis before touching any code. Phase 2 implements fixes based on the written analysis. Tests whether two-phase separation prevents the common failure mode of fixing the surface bug and then bypassing validation when hitting the deeper bug.",
+  "inherits": "hidden-dependency"
 }

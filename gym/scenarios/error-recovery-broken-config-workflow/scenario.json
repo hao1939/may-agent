@@ -1,9 +1,16 @@
 {
   "name": "error-recovery-broken-config-workflow",
-  "categories": ["error-recovery"],
-  "tags": ["behavior", "resilience", "workflow"],
+  "categories": [
+    "error-recovery"
+  ],
+  "tags": [
+    "behavior",
+    "resilience",
+    "workflow"
+  ],
   "tier": "standard",
   "timeout": 5,
   "agent_type": "coder",
-  "workflow": true
+  "workflow": true,
+  "inherits": "error-recovery-broken-config"
 }

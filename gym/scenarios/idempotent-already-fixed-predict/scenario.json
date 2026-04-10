@@ -1,10 +1,20 @@
 {
   "name": "idempotent-already-fixed-predict",
-  "categories": ["convention-compliance", "efficiency"],
-  "tags": ["behavior", "idempotent", "early-exit", "workflow", "predict-verify"],
+  "categories": [
+    "convention-compliance",
+    "efficiency"
+  ],
+  "tags": [
+    "behavior",
+    "idempotent",
+    "early-exit",
+    "workflow",
+    "predict-verify"
+  ],
   "tier": "standard",
   "timeout": 5,
   "agent_type": "coder",
   "workflow": true,
-  "workflow_name": "predict-then-verify"
+  "workflow_name": "predict-then-verify",
+  "inherits": "idempotent-already-fixed"
 }

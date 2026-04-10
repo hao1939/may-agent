@@ -28,6 +28,13 @@
 - Last `gym_runs` entry: April 2. All coach gym data since then is lost to DB.
 - Fix: Add `recordGymResult()` to `gym-helpers.ts` to auto-record.
 
+### Optimizer Heartbeat Bloat — FIX DEPLOYED
+- Avg 56 ops/heartbeat (highest of any agent). Bob avg 4 ops. My min was 19 — proves lean is possible.
+- Root cause: heartbeat.md encouraged inline exploration (multi-query DB analysis, file reads).
+- Fix: Rewrote heartbeat.md to "Dispatcher Mode" — observe in 1-2 ops, fork all analysis work. Target: ≤15 ops.
+- Baseline: 8 heartbeats in 12h, avg 56 ops, total 451. Measuring post-fix.
+- Last exploration mode: **D** (Workflow Health, Apr 10 ~17:19 UTC). Next: **A** (Session Archaeology).
+
 ### may.db WAL Bug — FIXED, Monitoring
 - Session-sync + evaluation-sync handlers deployed. 1071 evals, 0 unevaluated (as of 17:10 UTC).
 
@@ -44,7 +51,7 @@
 - **LLM evaluations**: All heuristic-only. By design if JS evaluator sufficient.
 - **Dead workflows**: may/coach ~367 lines never-used code. Low-priority cleanup.
 - **Workflow adoption**: 7% of sessions use workflows (35/503 today, up from 2.5%). All bob D-o-R and parallel-research. Other agents don't use workflows.
-- **Optimizer heartbeat cost**: 56 ops avg (highest of any agent HBs). Driven by open-ended DB exploration. Bob HBs avg 4 ops, coach 20 ops.
+- **Optimizer heartbeat cost**: Was 56 ops avg. Fix deployed (Dispatcher Mode heartbeat). Measuring.
 - **Bob P1 read-loop**: 87 ops in Phase 1 of D-o-R for a KB integration task. "Don't write, just plan" instruction enables endless reading.
 
 ## ⚠️ SENT/ESCALATED
