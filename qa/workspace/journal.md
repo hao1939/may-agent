@@ -793,6 +793,32 @@ CONDITIONAL — the new auto-loop tests look reasonable and include `rmSync(...,
 
 ---
 
+## 2026-04-10T01:55Z
+
+### Summary
+Heartbeat QA at HEAD **e3f53b5**. Reviewed `src/lib/fewshot-router.ts` (heartbeat exclusion guard remains case-insensitive) and ran mandatory gates.
+
+### Files reviewed (evidence)
+- `src/lib/fewshot-router.ts` — verified early return `if (/^\[heartbeat\]/i.test(taskText)) { ... }`.
+
+### Mandatory gates
+- `./node_modules/.bin/tsc --noEmit`: PASS (no output)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2089 passed (2110)**
+  - `test/launcher.test.ts`: 7 failed — expects `/app/src/app/launcher.ts` to exist; `existsSync` false and ENOENT reading the file.
+  - `test/context-learn.test.ts`: 7 failed — `rmSync(tmpDir, { recursive: true })` fails with `EACCES` under `/app/test-workspace/context-learn-test/test-agent`.
+  - `test/context-learning.test.ts`: 6 failed — cleanup `rmSync(..., { recursive: true })` fails with `EACCES` under `/app/test-workspace/context-learning-test/.state`.
+  - `test/research-db.test.ts`: 1 failed — integration test `syncs the actual knowledge base without errors` timed out at 5000ms (observed ~5.3s).
+
+### Issues
+- CRITICAL (repo/test mismatch): missing `src/app/launcher.ts` required by `test/launcher.test.ts`.
+- IMPORTANT (env/permissions): `/app/test-workspace/*` is not deletable in this environment, breaking context-learning cleanup.
+- IMPORTANT (test robustness): `test/research-db.test.ts` integration timeout (5s) too tight for this environment.
+
+### Verdict
+CONDITIONAL — code read appears correct and type-check passes, but the repo remains vitest-red for the unrelated missing launcher module, filesystem permission issues, and a too-tight integration timeout.
+
+---
+
 ## 2026-04-09T01:55Z
 
 ### Summary
