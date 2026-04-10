@@ -1,17 +1,21 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~22:59 UTC
+Updated: 2026-04-10 ~07:45 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Running — Self-directing. Sent P1 to tech-lead re: few-shot production wiring.
-- **Coach**: 🟢 Running — **3 active WORK sessions**: FM-3.1 ghost deliverable fix (×2), FM-1.3 kb-navigation baseline+treatment. All running gym scenarios (~28min in).
-- **Scout**: 🟢 Running — Heartbeat cycling, reprioritizing toward gym-production gap research.
-- **Tech-lead**: 🟢 Running — Heartbeat just fired. Has P1 from Bob: wire few-shot injection into production dispatch.
-- **Optimizer**: 🟢 Running — Has WORK session investigating tool quality regression #11.
-- **Evaluator**: 🟡 Running — Heartbeat cycling, auto-evals.
-- **QA**: 🟡 IDLE — Minimal activity.
-- **All agents**: 🟢 8/8 running (Amy-kimi still down). **Coach most active** (3 concurrent growth cycles). Zero errors.
+- **Bob**: 🟢 Active — Heartbeat running 07:23.
+- **Coach**: 🟢 Active — Heartbeat running 07:23. Convention regression alert received (amy-kimi C1.1).
+- **Scout**: 🟢 Active — Heartbeat running 07:23.
+- **Tech-lead**: 🟢 Active — Heartbeat running 07:23.
+- **Optimizer**: 🟢 Active — Heartbeat running 07:23.
+- **Evaluator**: 🟢 Active — Heartbeat running 07:23.
+- **QA**: 🟢 Active — Heartbeat running 07:23.
+- **Coder**: 📋 Web UI project dispatched — spec at `agents/coder/workspace/SPEC-webui-agent-visualization.md`.
+- **All agents**: 🟢 8/8 running. Zero errors.
+- **✅ Tool Schema Guard**: Branch `review/tool-schema-guard-integration` awaiting QA merge. Commit 5186855.
+- **⚠️ Cron bug**: `analyze-failures` cron keeps failing (`db.query is not a function`). Low priority.
+- **✅ Stale session cleaned**: Cancelled `s_1775311714523_3` again (8235min idle).
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -103,12 +107,24 @@ Updated: 2026-04-09 ~22:59 UTC
 | **FM-3.3 Bob Concentration Analysis** | ✅ COMPLETE | coach | **NOT a real regression** — measurement artifact. 1.9x inflation from eval duplication + LLM eval selection bias. Bob's true FM-3.3 rate (13.6%) is *lowest* of agents with volume. At `agents/coach/workspace/briefs/bob-fm33-concentration-analysis.md`. |
 
 | **EXP-107 Adversarial Self-Check** | ✅ BLOCKED | coach | Control arm: 6.25% FM-3.3 rate (1/16 finish calls), far below 30% viability threshold. **KEY FINDING**: Gym-production gap for FM-3.3 is ~10× (6% gym vs 50-70% production). Cannot run treatment arms. Recommends harder scenarios or production A/B testing. Bob integrating findings. Results at `agents/shared/knowledge/experiments/EXP-107/results.md`. |
-| **EXP-108 Adversarial Self-Review Skill** | 🔄 Phase 1 done | coach | Skill authored, lab fork created. Tests generation-objective redirection beyond confabulation. Ready for Phase 2 (A/B gym runs). Design at `agents/shared/knowledge/experiments/EXP-108/design.md`. |
+| **EXP-108 Adversarial Self-Review Skill** | ✅ COMPLETE (BLOCKED_CEILING) | coach | All 7 multi-session scenarios at 91-100% ceiling. Coder agent has +25pp to +89pp over Bob baseline. Skill authored but NOT deployed — no discriminating scenarios. Gym multi-session is saturated. Results at `agents/shared/knowledge/experiments/EXP-108/results.md`. Commit d3096ae0. |
 | **EXP-107 Phase 2 Context-Fatigue Baseline** | ✅ CLOSED | coach | **5 runs, 0% FM-3.3** (all 14/14 checks passed). Multi-session + urgency + scope creep still can't trigger FM-3.3 in gym. **Gym-production FM-3.3 gap is structural and confirmed unfixable via scenario design.** Experiment fully closed. |
 | **Fewshot Heartbeat Case-Insensitive Fix** | ✅ MERGED | may | Branch `review/fix-fewshot-heartbeat` merged to main. Regex `/^\[heartbeat\]/i` replaces startsWith. 30/30 tests pass. Branch deleted. |
 | **EXP-105 Few-Shot Production Impact** | ⏳ WAITING | coach | No data — zero coder/optimizer work sessions since deployment (Apr 9). Baselines captured. **BUG FIXED**: heartbeat exclusion merged (commit 7e6bc59 + case-insensitive fix). Token waste eliminated. |
 | **Heartbeat Few-Shot Injection Bug Fix** | ✅ MERGED | tech-lead/may | Branch `review/s_1775757252662_484` merged to main. Commit 7e6bc59. 29/29 tests pass. `[heartbeat]` prefix now skips few-shot router. |
 | **KE-106 Structural Enforcement ≠ Training** | ✅ COMPLETE | coach | Guards catch errors at 50-70% of sessions but underlying rate never decreases over 26 days. Guards are permanent infrastructure, not training wheels. At `agents/shared/knowledge/entries/KE-106-structural-enforcement-no-training-effect.md`. |
+| **KE-110 Skill Stack Saturation** | ✅ COMPLETE | bob | Synthesis: gym training loop extracted all available value. 7/7 scenarios at 91-100% ceiling. Terminal success state. At `agents/shared/knowledge/entries/KE-110-skill-stack-saturation-gym-ceiling-confirms-improvement-loop.md`. |
+| **Next-Gen Gym Scenarios (Post-Ceiling)** | ✅ BASELINED (CEILING) | coach | 3 new scenarios ALL at 100% baseline (9/9 runs). Gym ceiling confirmed structural — coder handles skill-conflict, triage, ghost-dependency natively. Harder scenarios needed (multi-file cascading, 50+ file codebases, ambiguous requirements). Results at `agents/coach/workspace/post-ceiling-baselines.md`. |
+| **EXP-109 Production Observation Study** | ✅ ALL PHASES COMPLETE | coach + bob | **LANDMARK**: 19,062 evals analyzed. Phase 3 clustering: 6 archetypes (Clean Performers 43%, FM-Heavy Workers 22%, Silent Failures 19%, Expensive Grinders 7%). Behavior is continuous spectrum (silhouette=0.273). KE-112 created, H-095 filed (P(H)=0.65). Bob integrated. |
+| **EXP-110 FM-3.3 Commit Guard Impact** | ✅ COMPLETE | coach | **KEY**: Guard enables recovery (+51.3pp, p<0.001), doesn't prevent FM-3.3. Raw rate increased but recovery from 13.4%→64.7%. Residual 35% unrecovered = superficial verification. Results at `agents/shared/knowledge/experiments/EXP-110/results.md`. |
+| **KE-112 Verdicts Lie** | ✅ COMPLETE | bob | Production quality multi-modal — verdicts mask process issues. Agent FM fingerprints documented. |
+| **H-095 Agent-Specific Interventions** | ✅ FILED | bob | P(H)=0.65. Agent-specific interventions > universal. Predictions defined. Needs EXP-109 Phase 3 for validation. |
+| **Optimizer Tool Quality Regression #14** | ✅ COMPLETE | optimizer | Self-dispatched investigation of 4 regressed tool quality categories. First self-initiated productive work in days. |
+| **EXP-113 FM-Heavy Workers Analysis** | ✅ COMPLETE | coach + bob | **KEY**: 398 FM-Heavy sessions (26.9%). Top cascade: FM-2.1 (96 first-appearances, 2.38 subsequent). Coach 55% FM-2.1 rate. Three intervention opportunities: FM-2.1 guard, FM-2.6 tool skills, FM-3.1 grounding. Bob integrated: H-095 P(H) 0.70→0.75. |
+| **EXP-114 FM-2.1 Decomposition Design** | ✅ DESIGNED | coach | **PIVOT FINDING**: 54.5% of FM-2.1 is tactical tool errors (bash({}), wrong args), NOT strategic approach problems. No single guard works — need Tool Schema Guard (#1, 78 sessions, HIGH conf) + Path Hints (#2) + Forced Externalization (#3). |
+| **EXP-114a Tool Schema Guard Prototype** | ✅ COMMITTED | coach + may | 201-line guard at `src/lib/tools/tool-schema-guard.ts`. On branch `review/tool-schema-guard-integration` (commit 5186855). Awaiting QA merge. |
+| **Tool Schema Guard Production Build** | 🔨 IN PROGRESS | tech-lead | Dispatched 07:45. Full production build: prototype → `src/lib/tools/tool-schema-guard.ts`, add to `composeGuards()`, 8 pattern tests, log-only mode. Session `s_1775807180530_14`. |
+| **Bob Heartbeat Ops Optimization** | ✅ COMPLETE | may (from optimizer) | Applied Optimizer finding: combined Step 1 bash into 1 call, removed INDEX.md skim, added ops budget. Expected -2,100 ops/week. Reqs b6a9d049 + 6c882854. |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -140,20 +156,25 @@ Updated: 2026-04-09 ~22:59 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (22:59)
-- **All heartbeats firing** (11 sessions running). Amy-kimi still 🔴. Zero failures.
-- **Coach highly active**: 3 concurrent WORK sessions — FM-3.1 ghost deliverable (2 sessions: one running gym treatment runs, one designing+testing skill), FM-1.3 kb-navigation (baseline+treatment runs with fixed initial conditions). Results mixed so far (ghost: treatment helps detection but path confusion persists; nav: 3-4/5 convention, product always 5/5).
-- **Bob → tech-lead P1**: Bob self-dispatched few-shot production wiring to tech-lead (req:65234b57). Duplicate message also sent (req:eb1476c4). Tech-lead heartbeat just started, should pick up.
-- **Optimizer investigating**: Tool quality regression #11 (bash:nonexistent command errors).
-- **System utilization improved**: Coach + Optimizer + Tech-lead all have productive work. Only QA truly idle.
+## Latest Cycle Summary (07:45)
+- **System healthy**: All 8 non-May agents running. Evaluator processing backlog (152 unevaluated sessions).
+- **Tech-lead dispatched**: Tool Schema Guard production build (EXP-114a). First real work for tech-lead in 17 days. Session `s_1775807180530_14`.
+- **Coach**: Running EXP-108 Phase 2 (adversarial self-review A/B gym runs — 18 multi-session runs).
+- **Evaluator**: Completed recent task tree evaluations. Working through 152 unevaluated session backlog.
+- **Bob**: Heartbeat active, working on common-sense-infra review.
+- **Anomalies resolved**: (1) Stuck evaluator already interrupted ✅, (2) Bob analysis.md not needed ✅, (3) tsc not available in this env ✅, (4) Unevaluated sessions being processed ✅.
+- **EXP-105 still waiting**: Zero coder work sessions since few-shot deployment.
+- **Amy-kimi still 🔴**: Blocked on Hao for billing.
+- **Steady state**: No new tasks from Hao. System running autonomously.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao since Mar 24**.
-- **P1**: **Few-shot production wiring** — Bob dispatched to tech-lead (req:65234b57). Tech-lead has design review at `agents/tech-lead/workspace/review-fewshot-proposal.md`. Monitor for completion.
-- **P1**: **EXP-107 CLOSED — next steps for FM-3.3** — Gym can't reproduce production FM-3.3. Options: (a) production A/B testing of adversarial self-check, (b) focus on production-specific FM-3.3 drivers (context complexity, multi-session fatigue), (c) accept gym has solved FM-3.3 and move on.
-- **P1**: **Present research sprint results to Hao** — KE-101 meta-analysis is the capstone. H-091 (P(H)=0.99), 17+ experiments, gym graduation, EXP-098 landmark, EXP-103/104 confabulation findings, EXP-107 gym-production gap confirmed.
-- **P1**: **Anti-confab brief ready for review** — At `agents/shared/may-agent-docs/design/anti-confabulation-deployment.md`. Revised with EXP-104 confound. Ready for tech-lead + Hao.
+- **P1**: **Address system-wide idle state** — Optimizer + QA burning cycles with zero output. Options: (a) Hao provides new direction, (b) self-assign from research projects, (c) spin down idle agents.
+- **P1**: **Present research sprint results to Hao** — KE-101 meta-analysis is the capstone. H-091 (P(H)=0.99), 17+ experiments, gym graduation, EXP-098 landmark, EXP-103/104 confabulation findings, EXP-107/108 gym-production gap + saturation. Post-ceiling baselines reinforce conclusion.
+- **P1**: **Anti-confab brief ready for review** — At `agents/shared/may-agent-docs/design/anti-confabulation-deployment.md`. Revised with EXP-104 confound.
+- **P1**: **Gym next phase** — Current gym is saturated. Needs architectural redesign for harder scenarios (50+ files, multi-session, ambiguous requirements). This is a Bob design task.
+- **P2**: `analyze-failures` cron DB bug — persistent but non-critical. Could dispatch to tech-lead.
 - **P2**: Federation design ready for Hao review
-- **P2**: Pre-merge review gate Phase 2 (auto-review) — could give tech-lead productive work
+- **P2**: Pre-merge review gate Phase 2 (auto-review)
 - **P2**: Amy-kimi still down — blocked on Hao for billing
 - **P2**: EXP-031 (On-Demand Workflow Discovery) designed by optimizer — ready for gym execution
