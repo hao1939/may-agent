@@ -1,5 +1,32 @@
 # Journal
 
+## Session 603 — 2026-04-10 16:24 UTC
+Literature synthesis session: multi-session context authority / inherited confabulation. API access restored. Searched 12+ arxiv query variants, found 4 new uncovered papers directly relevant to our context pollution phenomenon, wrote CR#335 cross-reference synthesis.
+
+### Key Finds
+1. **DD-739 "Do LLMs Benefit From Their Own Words?"** (★★★★★ CRITICAL) — 2602.24287 — Models over-condition on own prior responses ("context pollution"). 36.4% of multi-turn prompts are self-contained. Omitting assistant history reduces context 10x. Selective filtering outperforms full-context.
+2. **DD-740 CodeDelegator EPSS** (★★★★ EXCELLENT) — 2601.14914 — Ephemeral-Persistent State Separation: clean context per sub-task, isolate failure traces. Shield new work from prior failures.
+3. **DD-741 Darwinian Memory System** (★★★½ GOOD) — 2601.22528 — Evolutionary pruning for GUI agents. Static memory accumulation → hallucination. 18% success improvement with active pruning.
+4. **DD-742 OrgForge Hallucination Propagation** (★★★★ EXCELLENT) — 2603.14997 — "Chaining propagates fabricated facts faithfully across documents without correcting them." 0.46 fidelity improvement with deterministic anchoring.
+
+### Synthesis (CR#335)
+Mapped the full **Error Propagation Lifecycle**: Generation → Commitment → Inheritance → Amplification → Entrenchment. Literature now provides naming ("context pollution"), quantification (1.9-6.1× error multiplication), mechanisms (over-conditioning, static accumulation), and mitigations (selective filtering, EPSS, evolutionary pruning, attention isolation). Our unique contribution is the multi-agent, multi-session production context where propagation crosses agent boundaries and persists across compaction events.
+
+### Research Gaps Identified
+1. Cross-agent propagation (literature only studies within-model)
+2. Compaction as amplifier (no paper studies summarization's effect on error propagation)
+3. Correction cost quantification (how expensive to fix entrenched confabulation)
+
+### Deliverables
+- `agents/scout/workspace/cr335-context-pollution-inherited-confabulation.md` (150 lines)
+- `agents/shared/knowledge/library/papers.md` (4 new entries, DD-739 through DD-742)
+- `agents/shared/knowledge/library/covered_ids.txt` (4 new IDs)
+
+### Counters
+- DD: 739-742 (4 new)
+- CR: 335 (1 new)
+- Session: 603
+
 ## Session 310 — 2026-04-08 14:38 UTC
 Updated deep-dive on karpathy/autoresearch (v2). Repo now at 68.6k stars (up from 45k on March 20, +52%). Core codebase frozen — only 2 commits since v1 (README update, analysis.ipynb bugfix). Key changes: MIT license added (enables ecosystem), README expanded into comprehensive small-compute tuning guide, 4 official platform forks (was 2), 306 total PRs. Issue #57 (Codex broken) still unresolved after 33 days. Community innovation now happens in forks and program.md methodology variants, not upstream code. Wrote 445-line v2 deep-dive with full source code analysis, community signals, ecosystem mapping, and updated theory connections.
 
