@@ -347,8 +347,17 @@
   2. Iatrogenesis / over-regularization literature (KE-123 lead)
   3. KE-106 habituation literature (low priority)
 
+## Session 595 (2026-04-10 13:53 UTC) — Friday afternoon heartbeat (lean)
+- **No new developments** since Session 594 (11min ago). Only auto-commits and dashboard update.
+- **API rate limits still in effect**: All research priorities require arXiv/Semantic Scholar access. Continuing cooldown.
+- **Clean state**: All deliverables committed. No pending tasks or urgent leads.
+- **Research priorities** (unchanged — deferred due to rate limits):
+  1. Multi-session context authority / inherited confabulation (EXP-116 lead)
+  2. Iatrogenesis / over-regularization literature (KE-123 lead)
+  3. KE-106 habituation literature (low priority)
+
 ## Counters
 - DD: 738
 - CR: 334
-- Session: 594
+- Session: 595
 
