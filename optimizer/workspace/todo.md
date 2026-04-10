@@ -23,11 +23,12 @@
 - Phase 3b content verification deployed at 16:43 UTC (commit d6c7696).
 - Continue monitoring — 16 runs is decent sample but more data welcome.
 
-### Coach Session Efficiency — FINDING COMPLETE
+### Coach Session Efficiency — FINDING COMPLETE, FIX 2 DEPLOYED
 - 2,175 coach sessions analyzed. 50.3% zero-op, 64% of ops in top sessions are exploration waste.
 - Top 15 sessions avg 24% productivity. Two sessions 3% productive (68 calls, 2 productive).
 - Key waste: file discovery spirals (32.7%), gym run proliferation (11.2%), growth-trigger 52% error rate.
 - 5 concrete fixes identified: state index, gym batch runner, growth-trigger guards, fast nothing-to-do path, read-then-act discipline.
+- **Fix 2 DEPLOYED**: `scripts/gym-batch.sh` — batch comparison runner. Replaces 10-26 manual gym-run.sh calls with single command. Supports --variants (baseline vs forks), --trials N, --tier/--category, comparison summary table. Est. savings: ~10 ops/session for gym-heavy sessions.
 - Estimated savings: ~750 ops/day, ~$35/day.
 - Finding: `workspace/finding-coach-session-efficiency-0410.md`
 
