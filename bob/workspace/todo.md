@@ -96,6 +96,11 @@
 - [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% of verify-after-edit failures need code-level fix, not prompting. Deferred until prompting experiments complete.
 - [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
 
+## Session Notes (2026-04-10 ~07:45)
+- **EXP-114 GYM RESULTS INTEGRATED**: Updated PRIORITY-TRACKER and INDEX with EXP-114 Phase B gym results (H3 INCONCLUSIVE due to ceiling effect, H4 DISCONFIRMED). H-095 entries updated with complete EXP-114 summary.
+- **Common-sense-infra review COMPLETE**: Reviewed common-sense.md — no changes needed. All 17 rules still valid and operationally relevant.
+- **Files modified**: `knowledge/INDEX.md`, `knowledge/hypotheses/PRIORITY-TRACKER.md`, `agents/bob/workspace/todo.md`
+
 ## Session Notes (2026-04-10 ~06:30)
 - **EXP-114a KNOWLEDGE BASE INTEGRATION COMPLETE**: Full integration of Coach's EXP-114 Phase A (Tool Schema Guard Prototype) results into knowledge base.
 - **Key findings from EXP-114a**: Tool schema guard prototype targets the tactical subset of FM-2.1 (tool schema errors). 52/96 FM-2.1 schema issues catchable (54.2% of schema subset, 23.7% of all FM-2.1). Coach benefits most: 40/61 = 65.6% catch rate. 8 patterns across 6 tools (bash_empty #1 at 39 instances). Pure arg inspection, fail-open, ~0ms overhead. H2 SUPPORTED retrospectively: single guard cannot address both tactical and strategic FM-2.1. Tool hallucination (17.7% of FM-2.1) NOT catchable by schema guard.

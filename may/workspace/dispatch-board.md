@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~07:24 UTC
+Updated: 2026-04-10 ~07:45 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
@@ -123,6 +123,7 @@ Updated: 2026-04-10 ~07:24 UTC
 | **EXP-113 FM-Heavy Workers Analysis** | ✅ COMPLETE | coach + bob | **KEY**: 398 FM-Heavy sessions (26.9%). Top cascade: FM-2.1 (96 first-appearances, 2.38 subsequent). Coach 55% FM-2.1 rate. Three intervention opportunities: FM-2.1 guard, FM-2.6 tool skills, FM-3.1 grounding. Bob integrated: H-095 P(H) 0.70→0.75. |
 | **EXP-114 FM-2.1 Decomposition Design** | ✅ DESIGNED | coach | **PIVOT FINDING**: 54.5% of FM-2.1 is tactical tool errors (bash({}), wrong args), NOT strategic approach problems. No single guard works — need Tool Schema Guard (#1, 78 sessions, HIGH conf) + Path Hints (#2) + Forced Externalization (#3). |
 | **EXP-114a Tool Schema Guard Prototype** | ✅ COMMITTED | coach + may | 201-line guard at `src/lib/tools/tool-schema-guard.ts`. On branch `review/tool-schema-guard-integration` (commit 5186855). Awaiting QA merge. |
+| **Tool Schema Guard Production Build** | 🔨 IN PROGRESS | tech-lead | Dispatched 07:45. Full production build: prototype → `src/lib/tools/tool-schema-guard.ts`, add to `composeGuards()`, 8 pattern tests, log-only mode. Session `s_1775807180530_14`. |
 | **Bob Heartbeat Ops Optimization** | ✅ COMPLETE | may (from optimizer) | Applied Optimizer finding: combined Step 1 bash into 1 call, removed INDEX.md skim, added ops budget. Expected -2,100 ops/week. Reqs b6a9d049 + 6c882854. |
 
 ## Completed/Archived
@@ -155,15 +156,16 @@ Updated: 2026-04-10 ~07:24 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (07:24)
-- **System healthy**: All 8 non-May agents running heartbeats simultaneously at 07:23. Zero errors.
-- **Coder Web UI project**: Spec dispatched. Two duplicate messages sent (req 13206ac2 + 15c2715c) — harmless.
-- **Stale session cleaned**: `s_1775311714523_3` cancelled again (8235min idle, keeps resurrecting).
-- **Convention alert**: Coach received amy-kimi C1.1 regression (98.1%→92.9%). Moot since amy-kimi is 🔴 DOWN.
-- **System anomaly dismissed**: "Bob analysis 5 days old" — refers to token-waste brief. Analysis unchanged (still blocked on Hao to set ANTHROPIC_API_KEY).
-- **EXP-105 still waiting**: Zero coder work sessions since few-shot deployment. Production impact data blocked.
+## Latest Cycle Summary (07:45)
+- **System healthy**: All 8 non-May agents running. Evaluator processing backlog (152 unevaluated sessions).
+- **Tech-lead dispatched**: Tool Schema Guard production build (EXP-114a). First real work for tech-lead in 17 days. Session `s_1775807180530_14`.
+- **Coach**: Running EXP-108 Phase 2 (adversarial self-review A/B gym runs — 18 multi-session runs).
+- **Evaluator**: Completed recent task tree evaluations. Working through 152 unevaluated session backlog.
+- **Bob**: Heartbeat active, working on common-sense-infra review.
+- **Anomalies resolved**: (1) Stuck evaluator already interrupted ✅, (2) Bob analysis.md not needed ✅, (3) tsc not available in this env ✅, (4) Unevaluated sessions being processed ✅.
+- **EXP-105 still waiting**: Zero coder work sessions since few-shot deployment.
 - **Amy-kimi still 🔴**: Blocked on Hao for billing.
-- **Steady state**: No new tasks from Hao. System running autonomously. Major blockers remain: prompt caching ($441/wk savings), amy-kimi billing, gym architectural redesign.
+- **Steady state**: No new tasks from Hao. System running autonomously.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao since Mar 24**.

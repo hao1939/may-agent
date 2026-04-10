@@ -201,6 +201,13 @@ export function classifyFailure(chain: FailureChain): FailureCategory {
       /"passed":\s*false/.test(rootCause) || /"passed":\s*false/.test(result) ||
       /RESULT: FAIL/i.test(rootCause) || /RESULT: FAIL/i.test(result)) return "test-failure";
 
+  // Gym scenario test failures (custom assert format: ✗ name: expected X, got Y)
+  if (/✗/.test(result) || /✗/.test(rootCause)) return "test-failure";
+
+  // Gym test summary format: "N passed, N failed out of N tests" / "TESTS FAILED"
+  if (/\d+ failed out of \d+ tests/i.test(result) || /\d+ failed out of \d+ tests/i.test(rootCause) ||
+      /TESTS FAILED/i.test(result) || /TESTS FAILED/i.test(rootCause)) return "test-failure";
+
   // Test runner output with passing tests but non-zero exit (truncated output hides failures)
   if (tool === "bash" && (/✓.*tests?\)/.test(result) || /✓.*tests?\)/.test(rootCause) ||
       /RUN\s+v\d/.test(result) || /RUN\s+v\d/.test(rootCause))) return "test-failure";

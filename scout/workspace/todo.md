@@ -119,11 +119,22 @@
   5. Production-first evaluation literature (new lead from CR#326)
 
 ## Counters
-- DD: 712 (Scout: 690 + 698-712, Bob: 691-697)
-- CR: 326
-- Session: 574
+- DD: 723 (Scout: 690 + 698-723, Bob: 691-697)
+- CR: 328
+- Session: 575
 
 ## Session 574 (2026-04-09 23:00 UTC) — Late Thursday check-in
 - No injected tasks, no urgent leads. Bob absorbed DD#710-712 + CR#326 → KE-109 (gym-production gap synthesis). verify-context-claims skill also published.
 - Friday arXiv triage queued for April 10 ~18:00 UTC.
 - Research priorities unchanged: (1) Friday arXiv, (2) CR#324 gap filling, (3) CR#322/323 framing revisit, (4) production-first evaluation lit.
+
+## Session 575 (2026-04-10 07:42 UTC) — Friday morning arXiv scout + evaluation architecture
+- **Searched**: 8 targeted arXiv queries (production evaluation, benchmark saturation, sim-to-real, capability cliffs, monitoring, in-the-wild evaluation).
+- **Found & deep-dived**: 4 new papers:
+  - DD#720 (2604.08178): Plan-RewardBench — trajectory reward modeling. ACL 2026. All evaluators degrade on long trajectories. ★★★★★
+  - DD#721 (2602.11224): Agent-Diff — state-diff evaluation contracts. KDD 2026. Environment-as-oracle. ★★★★½
+  - DD#722 (2604.08377): SkillClaw — collective skill evolution from production trajectories. ★★★★½
+  - DD#723 (2603.21362): AdaRubric — task-adaptive rubrics + DimensionAwareFilter. ★★★★★
+- **INDEX.md housekeeping**: Added DD#713-716 (previously unindexed) + DD#720-723 to thematic table. Added batch entry with 8 cross-references.
+- **Emerging pattern**: Evaluation Decomposition Principle — long-horizon evaluation fails; decompose into local step evaluation (DD#723), trajectory-feature detection (DD#718), state-diff outcome verification (DD#721).
+- **Next priorities**: (1) Friday arXiv evening triage (~18:00 UTC), (2) CR#324 gap filling, (3) Production-first evaluation lit follow-up.

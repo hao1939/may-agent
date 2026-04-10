@@ -11,14 +11,16 @@
 
 ## 🔴 ACTIVE
 
-- **Skip rate investigation** — Skip rate stable: 50w 12%, 200w 6.5%. Monitoring continues.
-- **LLM-to-JS candidates (next)** — Remaining targets by ops/week: common-sense-verify (680 ops/wk), common-sense-infra (165 ops/wk), reflect (208 ops/wk). All require LLM judgment — no easy mechanical conversions left.
+- **Post-restart baseline (2026-04-10)** — DB shows gap from Mar 24 – Apr 9 (0 sessions). System restarted today with 15 sessions, only 1 substantive (evaluator, 8 ops). Collecting fresh data — need 24-48h before meaningful efficiency analysis.
 - **Bob heartbeat observation overhead** — **FIX DEPLOYED** (commit 00fe3c93, 2026-04-10 06:55). Combined 4 bash cmds → 1, removed INDEX.md skim, added "1-2 ops max" budget. Pre-fix: median 12 ops, avg 18. **First post-fix HB: 8 ops** (49% below pre-fix avg). Need more data points. Finding: `workspace/finding-bob-heartbeat-overhead-0410.md`.
-- **Cost/cache analysis** — $1,409/wk total, top 3 agents have 0% cache hit rate = $1,129/wk (80%). Escalated to May. See `workspace/finding-cost-cache-miss-0404.md`.
-- **Coach model misconfiguration** — `opus` → `claude-opus-4.6` not available. Needs Hao/May fix. See `workspace/finding-coach-model-misconfig-0404.md`.
-- **LLM evaluations dead since Mar 31** — All evals heuristic-only (no parent-child sessions). See `workspace/finding-eval-heuristic-only-0404.md`.
-- **Session digest quality monitoring** — End digests work (100% coverage) but `still_open` and `files_modified` need improvement. Track after next restart.
-- **EXP-031: On-Demand Workflow Discovery** — 5-arm experiment designed. Ready for Phase 1 gym execution (12 runs, ~$17). Design at `agents/shared/knowledge/experiments/EXP-031/design.md`.
+- **EXP-031: On-Demand Workflow Discovery** — Behavioral experiments COMPLETED: **0/26 discovery rate** across all resource types and salience levels. Phase 1 gym runs (Arms A-D) not yet executed but behavioral evidence strongly predicts Arms A-C fail. Next: decide whether to run Phase 1 for rigor or skip to Arm D/E, or synthesize into "push delivery required" recommendation. Design at `agents/shared/knowledge/experiments/EXP-031/design.md`.
+- **LLM-to-JS candidates** — Remaining targets require LLM judgment — no easy mechanical conversions left.
+
+### Stale / needs re-verification after restart
+- **Cost/cache analysis** — Needs re-measurement with current data. See `workspace/finding-cost-cache-miss-0404.md`.
+- **Coach model misconfiguration** — Check if still relevant. See `workspace/finding-coach-model-misconfig-0404.md`.
+- **LLM evaluations** — Check if parent-child eval sessions restored. See `workspace/finding-eval-heuristic-only-0404.md`.
+- **Session digest quality** — Monitor after restart.
 
 ## ⚠️ SENT/ESCALATED (awaiting others)
 
@@ -42,7 +44,7 @@
 
 Detailed findings in `workspace/finding-*.md` and `workspace/brief-*.md`.
 Tool quality regressions [1-5] all resolved — waste rate 0.07-2.4%, not actionable.
-Tool quality regression #6 (bash errors ×4 categories) — investigated 2026-04-09. 42/59 bash:other = classifier gap (gym ✓/✗ format). Rest = natural variance from 2 bob sessions. One fix proposed: add ✗ regex to test-failure classifier.
+Tool quality regression #6 (bash errors ×4 categories) — investigated 2026-04-09. 42/59 bash:other = classifier gap (gym ✓/✗ format). Rest = natural variance from 2 bob sessions. **FIX DEPLOYED** (commit 79141deb, 2026-04-10): Added ✗ regex, `TESTS FAILED`, `N failed out of N tests` to test-failure classifier. Also expanded git-error and exit-code-nonzero coverage.
 Tool quality regression #7 (2026-04-09 03:23) — bash:other 28 (+180%), edit:other 2 (+100%), bash:exit-code-nonzero 11 (+267%). Root cause: bob gym scenario dev (27/28 bash:other from bob), tech-lead exploratory greps. Waste rate 2.2% — elevated but not actionable. Same classifier-gap pattern as #6.
 Tool quality regression #8 (2026-04-09 07:23) — bash:exit-code-nonzero 21 (+91%), read:nonexistent-path 8 (+167%), bash:nonexistent-path 8 (+300%), edit:other 5 (+150%). Root cause: bob 104-op gym remediation session + coach wave-2 validation/few-shot deployment. Same development-activity pattern as #6/#7. Not actionable.
 Tool quality regression #9 (2026-04-09 11:23) — bash:exit-code-nonzero 52 (+148%), bash:other 49 (+81%), plus bash:nonexistent-path, edit:other. Root cause: bob heavy research sessions (79-op HB, multiple 40-70 op research/integration sessions), coach multi-session harness phases 1-3, tech-lead manager.ts bug fixes. Same development-activity pattern as #6/#7/#8. Not actionable.
