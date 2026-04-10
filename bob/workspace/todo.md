@@ -117,6 +117,15 @@
   - **Fix**: Three extraction strategies: (1) toolCall blocks (pre-compaction), (2) parse "Files written:"/"Files edited:" from compacted context, (3) parse "✅ Wrote N bytes to" from toolResult blocks. Tested against real session data.
   - **Impact**: Phase 2 was running on all 11 sessions in last 12h with 0 skipped. 4 of those had ≤12 ops (likely redundant). Fix should start saving ~36% of Phase 2 runs.
 
+## Session Notes (2026-04-10 ~14:15)
+- **EXP-118 INVALIDATION PROPAGATED**: EXP-118 (Cross-Agent Adversarial Handoff Baselines) showed EXP-116 used `--agent coder` (not a valid agent name). All EXP-116 conclusions invalidated. Propagated across knowledge base:
+  - **H-093**: P(H) reverted 0.72 → 0.70 (EXP-116 evidence removed). EXP-116 section marked with ⚠️ invalidation note.
+  - **PRIORITY-TRACKER**: Header updated, H-093 row P(H) 0.70, EXP-116 queue entry marked INVALIDATED, meta-process section updated.
+  - **INDEX.md**: H-093, H-095, EXP-116, KE-122, KE-123 entries all updated with invalidation notes. EXP-118 added.
+  - **KE-122**: Already marked UNSUPPORTED (prior session).
+  - **KE-123**: Already marked UNSUPPORTED (prior session).
+  - **EXP-116 results.md**: Already had invalidation header (prior session).
+
 ## Session Notes (2026-04-10 ~12:45)
 - **EXP-116 INTEGRATED INTO H-093**: Analyzed contradictory Phase 1/Phase 2 results and added comprehensive EXP-116 section to H-093.
   - **Phase 1** (Coach, 36 runs): Baseline 100%, treatments degrade to 85-88%. Adversarial framing HURTS — overcorrection destroys correct work.
