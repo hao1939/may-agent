@@ -1,20 +1,21 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~07:18 UTC
+Updated: 2026-04-10 ~07:24 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — Last heartbeat 06:53.
-- **Coach**: 🟢 Active — EXP-114 Phase B completed (approach-validation-trap scenario built). Last heartbeat 06:53.
-- **Scout**: 🟢 Active — Last heartbeat 06:53.
-- **Tech-lead**: 🟢 Active — stateApproach() removal session completed (TSC clean, 9/9 tests). Last heartbeat 06:53.
-- **Optimizer**: 🟢 Active — "Explorer Mode" proactive heartbeat 06:53.
-- **Evaluator**: 🟡 IDLE — Running auto-evals 06:53.
-- **QA**: 🟡 IDLE — Last heartbeat 06:53.
-- **All agents**: 🟢 8/8 running. Zero errors in last hour.
-- **✅ Tool Schema Guard**: Branch `review/tool-schema-guard-integration` created — 201-line guard from EXP-114a. Commit 5186855. Awaiting QA merge.
+- **Bob**: 🟢 Active — Heartbeat running 07:23.
+- **Coach**: 🟢 Active — Heartbeat running 07:23. Convention regression alert received (amy-kimi C1.1).
+- **Scout**: 🟢 Active — Heartbeat running 07:23.
+- **Tech-lead**: 🟢 Active — Heartbeat running 07:23.
+- **Optimizer**: 🟢 Active — Heartbeat running 07:23.
+- **Evaluator**: 🟢 Active — Heartbeat running 07:23.
+- **QA**: 🟢 Active — Heartbeat running 07:23.
+- **Coder**: 📋 Web UI project dispatched — spec at `agents/coder/workspace/SPEC-webui-agent-visualization.md`.
+- **All agents**: 🟢 8/8 running. Zero errors.
+- **✅ Tool Schema Guard**: Branch `review/tool-schema-guard-integration` awaiting QA merge. Commit 5186855.
 - **⚠️ Cron bug**: `analyze-failures` cron keeps failing (`db.query is not a function`). Low priority.
-- **✅ Stale session cleaned**: Cancelled `s_1775311714523_3` again (8229min idle).
+- **✅ Stale session cleaned**: Cancelled `s_1775311714523_3` again (8235min idle).
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -154,13 +155,15 @@ Updated: 2026-04-10 ~07:18 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (07:18)
-- **System stable**: All 8 non-May agents completed heartbeats at 06:53. Zero errors last hour.
-- **Work completed this cycle**: Coach EXP-114 Phase B done (approach-validation-trap scenario built), Tech-lead stateApproach removal verified (9/9 tests, TSC clean).
-- **Tool Schema Guard committed**: Created review branch `review/tool-schema-guard-integration` with 201-line production guard from EXP-114a. Commit 5186855.
-- **Stale session cleaned again**: `s_1775311714523_3` cancelled (8229min idle).
+## Latest Cycle Summary (07:24)
+- **System healthy**: All 8 non-May agents running heartbeats simultaneously at 07:23. Zero errors.
+- **Coder Web UI project**: Spec dispatched. Two duplicate messages sent (req 13206ac2 + 15c2715c) — harmless.
+- **Stale session cleaned**: `s_1775311714523_3` cancelled again (8235min idle, keeps resurrecting).
+- **Convention alert**: Coach received amy-kimi C1.1 regression (98.1%→92.9%). Moot since amy-kimi is 🔴 DOWN.
+- **System anomaly dismissed**: "Bob analysis 5 days old" — refers to token-waste brief. Analysis unchanged (still blocked on Hao to set ANTHROPIC_API_KEY).
 - **EXP-105 still waiting**: Zero coder work sessions since few-shot deployment. Production impact data blocked.
 - **Amy-kimi still 🔴**: Blocked on Hao for billing.
+- **Steady state**: No new tasks from Hao. System running autonomously. Major blockers remain: prompt caching ($441/wk savings), amy-kimi billing, gym architectural redesign.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao since Mar 24**.
