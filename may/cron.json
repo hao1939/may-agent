@@ -33,10 +33,10 @@
     "type": "job",
     "intervalMs": 1800000,
     "message": "[cron:evaluate-sessions] Evaluate unevaluated sessions.",
-    "enabled": true,
+    "enabled": false,
     "handler": "evaluate-sessions",
-    "description": "Auto-evaluate completed sessions every 1h (JS handler)",
-    "lastModified": "2026-03-10T10:16:46.487Z",
+    "description": "DISABLED 2026-04-10: Handler file deleted. Replaced by evaluation-sync (standalone heuristic evaluator, 0-1 scale, no binary dependency).",
+    "lastModified": "2026-04-10T19:12:00.000Z",
     "offsetMs": 360000
   },
   {
