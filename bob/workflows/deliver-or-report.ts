@@ -31,8 +31,11 @@ export const description: string =
   "Phase 2: write deliverables to disk (narrowed to missing files only " +
   "when some already exist). Phase 2b: retry any missing deliverables " +
   "(auto-triggered when Phase 2 misses planned files). Phase 3: verify " +
-  "ALL planned files exist. Prevents non-delivery (FM-3.1) and " +
-  "partial-delivery (FM-2.6).";
+  "ALL planned files exist (pure JS). Phase 3b: LLM-based content " +
+  "verification — a SEPARATE session reads back every deliverable and " +
+  "confirms contents match the plan (anti-FM-3.3: catches fabricated " +
+  "verification evidence). Prevents non-delivery (FM-3.1), " +
+  "partial-delivery (FM-2.6), and verification gaps (FM-3.3).";
 
 // ── Helpers ────────────────────────────────────────────────────────────
 
@@ -287,9 +290,12 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   }
 
   // ═══════════════════════════════════════════════════════════════════
-  // PHASE 3: Verify artifacts exist (pure JS — no LLM)
+  // PHASE 3: Verify artifacts — existence check (pure JS) + content
+  // verification (LLM). The LLM phase catches FM-3.3 (fabricated
+  // verification evidence) by making a SEPARATE session read back
+  // every deliverable and confirm contents match the plan.
   // ═══════════════════════════════════════════════════════════════════
-  ctx.emit({ type: "step_start", step: "phase3-verify" });
+  ctx.emit({ type: "step_start", step: "phase3-existence-check" });
 
   const allMentionedFiles = [
     ...plannedFiles,
@@ -309,7 +315,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     }
   }
 
-  ctx.emit({ type: "step_done", step: "phase3-verify" } as any);
+  ctx.emit({ type: "step_done", step: "phase3-existence-check" } as any);
 
   // ═══════════════════════════════════════════════════════════════════
   // PHASE 2b: Retry missing files (if any)
@@ -357,6 +363,68 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   }
 
   // ═══════════════════════════════════════════════════════════════════
+  // PHASE 3b: LLM-based content verification (anti-FM-3.3)
+  //
+  // A SEPARATE session reads back every deliverable file and confirms
+  // contents match the plan. This catches fabricated verification
+  // evidence — the previous phases may CLAIM they verified, but this
+  // phase actually performs the verification in isolation.
+  // ═══════════════════════════════════════════════════════════════════
+  let verificationReport = "";
+
+  if (finalVerified.length > 0) {
+    ctx.emit({ type: "step_start", step: "phase3b-content-verify" });
+
+    const fileList = finalVerified.map((f, i) => `${i + 1}. \`${f}\``).join("\n");
+    const phase3bPrompt =
+      `## Phase 3: VERIFY Deliverable Contents (READ-ONLY)\n\n` +
+      `### Original Task\n${ctx.task}\n\n` +
+      `### Plan from Phase 1\n${planText}\n\n` +
+      `### Deliverable files to verify:\n${fileList}\n\n` +
+      `### Instructions — YOUR ONLY JOB IS TO VERIFY\n` +
+      `A previous phase wrote the deliverable files listed above.\n` +
+      `Your job is to READ each file and confirm its contents are correct.\n\n` +
+      `For EACH file:\n` +
+      `1. Call \`read("${finalVerified[0]}")\` (or the actual path) to read its full contents.\n` +
+      `2. Check: Does it match what the plan specified?\n` +
+      `3. Check: Is it well-formed (valid syntax, no placeholders, no TODO stubs)?\n` +
+      `4. Check: Does it actually address the original task?\n\n` +
+      `After reading ALL files, call finish() with:\n` +
+      `- status: "success" if ALL files pass verification\n` +
+      `- status: "failure" if ANY file has issues\n` +
+      `- verification_evidence: For each file, cite the EXACT content you read\n` +
+      `  (first 2-3 lines or key section) proving you actually read it.\n\n` +
+      `⚠️ You MUST actually call read() on each file. Do NOT fabricate evidence.\n` +
+      `⚠️ Do NOT write or edit any files. This phase is READ-ONLY.\n` +
+      `⚠️ If a file is empty, malformed, or doesn't match the plan, report failure.`;
+
+    const phase3b = await ctx.runAgent("bob", phase3bPrompt);
+
+    // Extract the verification result
+    const phase3bText = phase3b.lastAssistantText ?? "";
+    const phase3bFailed = phase3b.status === "error" ||
+      phase3bText.toLowerCase().includes("status: \"failure\"") ||
+      phase3bText.toLowerCase().includes("status: 'failure'") ||
+      phase3bText.toLowerCase().includes("verification failed");
+
+    verificationReport = phase3bText;
+
+    if (phase3bFailed) {
+      ctx.emit({ type: "step_done", step: "phase3b-content-verify (FAILED)" } as any);
+      return ctx.escalate(
+        "Content verification failed: Phase 3b found issues with deliverable contents",
+        {
+          verifiedFiles: finalVerified,
+          verificationReport: verificationReport.slice(0, 1000),
+          phase1Summary: planText.slice(0, 300),
+        }
+      );
+    }
+
+    ctx.emit({ type: "step_done", step: "phase3b-content-verify" } as any);
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
   // Result
   // ═══════════════════════════════════════════════════════════════════
   const hasDeliverables = finalVerified.length > 0;
@@ -367,7 +435,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       `## Delivery Complete — ALL ${finalVerified.length} deliverables verified\n\n` +
       `### Deliverables Verified on Disk\n` +
       finalVerified.map(f => `- ✅ ${f}`).join("\n") + "\n" +
-      `\n### Phase 1 Plan\n${planText.slice(0, 500)}\n\n` +
+      `\n### Content Verification (Phase 3b)\n${verificationReport.slice(0, 500)}\n\n` +
+      `### Phase 1 Plan\n${planText.slice(0, 500)}\n\n` +
       `### Phase 2 Output\n${phase2Text.slice(0, 500)}`
     );
   } else if (hasDeliverables) {
@@ -376,7 +445,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       `## Delivery PARTIAL — ${finalVerified.length}/${uniqueFiles.length} deliverables\n\n` +
       `### ✅ Verified on Disk\n` +
       finalVerified.map(f => `- ✅ ${f}`).join("\n") + "\n" +
-      `\n### ❌ Missing after retry\n` +
+      `\n### Content Verification (Phase 3b)\n${verificationReport.slice(0, 500)}\n\n` +
+      `### ❌ Missing after retry\n` +
       finalMissing.map(f => `- ❌ ${f}`).join("\n") + "\n" +
       `\n### Phase 1 Plan\n${planText.slice(0, 500)}\n\n` +
       `### Phase 2 Output\n${phase2Text.slice(0, 500)}`
