@@ -362,8 +362,22 @@
 - EXP-118 completed by Coach (cross-agent adversarial handoff baselines) — no Scout action needed.
 - KE-124 already written from our CR-334 work.
 
+## Session 597 (2026-04-10 14:23 UTC) — EXP-118 invalidation cascade + CR#333 correction
+- **EXP-118 INVALIDATION CASCADE**: EXP-116 used `--agent coder` (invalid flag — binary exited silently). No real agent ran in ANY EXP-116 trial. Cascade:
+  - KE-122 (intervention decay/internalization) → UNSUPPORTED
+  - KE-123 (over-intervention iatrogenesis) → UNSUPPORTED
+  - H-093 P(H) reverted 0.72→0.70
+  - EXP-116 fully invalidated
+- **CR#333 correction note added**: Prominent warning box at top of CR-333-intervention-validity-revision.md documenting which claims survive (EXP-104 confound, EXP-108 null result, external lit) and which are invalidated (all EXP-116-derived claims).
+- **Research priorities RESHUFFLED**: Priorities motivated by EXP-116 evidence demoted/dropped.
+- **Research priorities** (revised):
+  1. Production-first eval methodology — extend CR#326 Path A (partially addressed by CR#334)
+  2. Multi-session context authority — DEMOTED, motivating evidence invalidated
+  3. KE-106 habituation literature (low priority)
+  4. ~~Iatrogenesis literature~~ DROPPED — KE-123 invalidated
+
 ## Counters
 - DD: 738
 - CR: 334
-- Session: 596
+- Session: 597
 
