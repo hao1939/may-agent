@@ -3,7 +3,8 @@
 **Status**: preliminary (needs larger sample)  
 **Evidence**: Convention compliance data 2026-04-02 through 2026-04-05, skill deployments to 4 agents  
 **Discovered**: 2026-04-05  
-**Last verified**: 2026-04-05
+**Last verified**: 2026-04-05  
+**Cross-reference**: EXP-142 (cache-first retrieval validation) provides indirect support — cache-first strategy showed 78% hit rate and 62% latency reduction, suggesting that retrieval infrastructure (not skill text deployment) may be the key bottleneck. Consistent with KE-023's finding that passive skill deployment is ineffective in production.
 
 ## Claim
 
@@ -54,3 +55,4 @@ C1.7 remained stable — the regression is specific to C1.1 (read-before-edit).
 - KE-007: Workflow enforcement is the only reliable behavioral intervention
 - KE-011: Knowledge files are passive — agents skip them in oneshot mode
 - EXP-035: stale-error-misdiagnosis baseline ceiling
+- EXP-142: Cache-first retrieval strategy validation (H-042) — supports retrieval infrastructure > passive text deployment
