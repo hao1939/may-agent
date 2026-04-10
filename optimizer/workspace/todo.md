@@ -36,7 +36,7 @@
 - Root cause: heartbeat.md encouraged inline exploration (multi-query DB analysis, file reads).
 - Fix: Rewrote heartbeat.md to "Dispatcher Mode" — observe in 1-2 ops, fork all analysis work. Target: ≤15 ops.
 - Baseline: 8 heartbeats in 12h, avg 56 ops, total 451. Measuring post-fix.
-- Last exploration mode: **C** (Skill & Technique Scouting — Apr 10 ~19:24 UTC). Next: **D** (Workflow Health).
+- Last exploration mode: **B** (Tool Gap Analysis — Apr 10 ~19:19 UTC). Next: **D** (Workflow Health).
 
 ### may.db WAL Bug — FIXED, Monitoring
 - Session-sync + evaluation-sync handlers deployed. 1071 evals, 0 unevaluated (as of 17:10 UTC).
