@@ -6,6 +6,5 @@
   "timeout": 5,
   "agent_type": "bob",
   "workflow": false,
-  "injected_context": "injected_context.md",
   "description": "Tests whether agent navigates a knowledge base efficiently — listing directories before guessing paths, and not spiraling into broad searches when a path doesn't exist. The task requires finding specific information across a nested directory structure with non-obvious paths."
 }
