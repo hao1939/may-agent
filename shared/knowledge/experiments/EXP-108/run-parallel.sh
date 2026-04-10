@@ -37,13 +37,17 @@ run_single() {
     } > "$context_file"
   fi
   
-  # Run
+  # Run (gym runner exits non-zero when checks fail, so we capture that)
   local result
   result=$(cd /app && bash test/gym/run-gym.sh \
     "multi-session/$scenario" \
     --agent "$AGENT" \
     --timeout 10 \
-    2>>"$log_file") || result='{"error":true}'
+    2>>"$log_file") || true
+  
+  if [ -z "$result" ]; then
+    result='{"error":true}'
+  fi
   
   # Restore
   if [ "$arm" = "treatment" ] && [ -f "$backup_file" ]; then
@@ -55,14 +59,14 @@ run_single() {
 import sys, json
 try:
     data = json.load(sys.stdin)
-except:
-    data = {'error': True, 'raw': sys.stdin.read()}
+except Exception as e:
+    data = {'error': True, 'parse_error': str(e)}
 data['arm'] = '$arm'
 data['rep'] = $rep
 data['experiment'] = 'EXP-108'
 data['scenario_short'] = '$scenario'
-print(json.dumps(data))
-" > "$result_file" 2>>"$log_file" || echo "$result" > "$result_file"
+json.dump(data, open('$result_file', 'w'))
+" 2>>"$log_file" || echo '{"error":true,"arm":"'$arm'","rep":'$rep',"scenario_short":"'$scenario'"}' > "$result_file"
   
   echo "[$(date -u)] DONE: $scenario $arm rep$rep" >> "$log_file"
 }

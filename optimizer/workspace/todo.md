@@ -11,16 +11,16 @@
 
 ## 🔴 ACTIVE
 
-- **Post-restart baseline (2026-04-10)** — DB shows gap from Mar 24 – Apr 9 (0 sessions). System restarted today with 15 sessions, only 1 substantive (evaluator, 8 ops). Collecting fresh data — need 24-48h before meaningful efficiency analysis.
-- **Bob heartbeat observation overhead** — **FIX DEPLOYED** (commit 00fe3c93, 2026-04-10 06:55). Combined 4 bash cmds → 1, removed INDEX.md skim, added "1-2 ops max" budget. Pre-fix: median 12 ops, avg 18. **First post-fix HB: 8 ops** (49% below pre-fix avg). Need more data points. Finding: `workspace/finding-bob-heartbeat-overhead-0410.md`.
-- **EXP-031: On-Demand Workflow Discovery** — Behavioral experiments COMPLETED: **0/26 discovery rate** across all resource types and salience levels. Phase 1 gym runs (Arms A-D) not yet executed but behavioral evidence strongly predicts Arms A-C fail. Next: decide whether to run Phase 1 for rigor or skip to Arm D/E, or synthesize into "push delivery required" recommendation. Design at `agents/shared/knowledge/experiments/EXP-031/design.md`.
+- **Post-restart baseline (2026-04-10)** — System restarted after 16-day gap. First 6h snapshot: 27 sessions, 282 ops, $12 total cost ($48/day rate). Waste rate 1.0% (excellent). Top cost: scout $3.75 (1.15M input tokens — large doc reads), bob $3.32 (63-op heartbeat did work inline instead of dispatching). Bob's 2nd heartbeat IS dispatching via workflow — tracking whether dispatcher mode holds.
+- **Bob heartbeat dispatch consistency** — First post-restart HB: 63 ops inline (bad). Second: dispatched via `deliver-or-report` workflow (good). Need 3+ data points to assess. Observation fix (combined bash cmds) deployed but the real cost driver is inline-vs-dispatch, not observation overhead.
+- **EXP-031: On-Demand Workflow Discovery** — Behavioral experiments COMPLETED: **0/26 discovery rate**. Phase 1 gym runs not yet executed. Strongly predicts push delivery is required. Consider writing final synthesis as a KE entry.
 - **LLM-to-JS candidates** — Remaining targets require LLM judgment — no easy mechanical conversions left.
 
-### Stale / needs re-verification after restart
-- **Cost/cache analysis** — Needs re-measurement with current data. See `workspace/finding-cost-cache-miss-0404.md`.
-- **Coach model misconfiguration** — Check if still relevant. See `workspace/finding-coach-model-misconfig-0404.md`.
-- **LLM evaluations** — Check if parent-child eval sessions restored. See `workspace/finding-eval-heuristic-only-0404.md`.
-- **Session digest quality** — Monitor after restart.
+### Stale / resolved after restart
+- ~~Cost/cache analysis~~ — Finding file archived (2026-03). Will re-measure when we have 48h of post-restart data.
+- ~~Coach model misconfiguration~~ — Finding file archived (2026-03). Need to verify with current coach sessions.
+- **LLM evaluations** — VERIFIED STILL RELEVANT. All evals are heuristic-only or JS-evaluated (skippedByJs). No LLM evaluator sessions running. This is by design if JS evaluator is sufficient, but limits evaluation depth.
+- **Session digest quality** — Cannot verify (digest column removed from sessions table). May need alternate approach.
 
 ## ⚠️ SENT/ESCALATED (awaiting others)
 

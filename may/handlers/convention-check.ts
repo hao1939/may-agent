@@ -586,7 +586,7 @@ function checkC1_4_finishClearly(toolCalls: ToolCall[]): CheckResult {
 /**
  * C1.5: ghost-deliverables
  * Every deliverable path declared in finish(success/partial) must exist on disk.
- * Uses fs.existsSync — same logic as src/lib/finish-guard.ts but applied post-hoc.
+ * Uses fs.existsSync — same logic as src/lib/tools/finish-guard.ts but applied post-hoc.
  */
 function checkC1_5_ghostDeliverables(toolCalls: ToolCall[]): CheckResult {
   const violations: string[] = [];
