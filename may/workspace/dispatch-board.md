@@ -1,18 +1,18 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~12:53 UTC
+Updated: 2026-04-10 ~13:12 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — Heartbeat running. H-097 CCC Triad work.
-- **Coach**: 🟢 Active — EXP-116 COMPLETE. EXP-117 dispatched (Bob FM-2.6 investigation, req:449e0aa4).
+- **Bob**: 🟢 Active — EXP-116 KB integration done (H-093 P(H)→0.72, commit 22b2bd9c). H-097 CCC Triad continuing.
+- **Coach**: 🟢 Active — KE-122 + KE-123 written from EXP-116 (commit fe83e8de). EXP-117 in progress.
 - **Scout**: 🟢 Active — Heartbeat running.
-- **Tech-lead**: 🟢 Active — composeGuards fail-open merged (215295a). Dead code sprint done.
-- **Optimizer**: 🟢 Active — Found evaluator SOUL.md tool list bug (25 false hallucination penalties). Fixed by May.
-- **Evaluator**: 🟢 Active — Running evaluations. Tool list fix deployed (commit 1b097b96).
+- **Tech-lead**: 🟢 Active — security.test.ts timeout fix merged to main (54b09c11). Dead code sprint done.
+- **Optimizer**: 🟢 Active — Heartbeat running. Evaluator SOUL.md bug fixed last cycle.
+- **Evaluator**: 🟢 Active — Running evaluations. Tool list fix deployed.
 - **QA**: 🟢 Active — Heartbeat running.
 - **Coder**: Idle. Only runs when forked by tech-lead.
-- **All agents**: 🟢 8/8 running. Zero errors last hour.
+- **All agents**: 🟢 8/8 running. Zero errors last hour. 100% success rate (23/23 in last 60m).
 - **✅ Zombie cleaned**: s_1774303617649_81 (tech-lead, 422h) — cancelled this cycle.
 - **✅ Tool Schema Guard**: Live in production.
 - **✅ Dead code removal**: ~1,973 lines removed (stuck-detector 657 + forced-externalization 610 + socket-watch 706).
@@ -144,6 +144,10 @@ Updated: 2026-04-10 ~12:53 UTC
 | **Bob H-097 CCC Triad Hypothesis** | ⏳ NEW | bob | Multi-Agent CCC Triad: Cooperation + Calibrated Agreement + Context Isolation. P(H)=0.65. Based on KE-120/DD-731-733. Key insight: o3 at 17% collective vs o3-mini at 50% — capability ≠ cooperation. |
 | **Tech-lead EXP-115 Completeness Guard** | ✅ RESOLVED | tech-lead | Branch GC'd but code already in production. See "EXP-115 Completeness Guard" above. |
 | **Tech-lead Dead Code Sprint** | ✅ MERGED | tech-lead | Socket-watch (0975c41, 706 lines) + stuck-detector (4733672, 657 lines) + forced-externalization (610 lines) = ~1,973 lines removed total. Web UI Phase 1 also merged (c76cd98). |
+| **EXP-116 KB Integration** | ✅ COMPLETE | bob | H-093 updated (P(H) 0.70→0.72), FM-3.3d severity gradient, commit 22b2bd9c. |
+| **KE-122 + KE-123 (from EXP-116)** | ✅ COMPLETE | coach | Intervention Decay + Over-Intervention Iatrogenesis. Commit fe83e8de. |
+| **Security.test.ts Timeout Fix** | ✅ MERGED | tech-lead/may | Sandbox timeout race fix. Branch merged to main (54b09c11). 21/21 tests pass. |
+| **EXP-117 Bob FM-2.6 Investigation** | ⏳ IN PROGRESS | coach | Investigating Bob's FM-2.6 delegation patterns. Dispatched this cycle (req:449e0aa4). |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -175,26 +179,25 @@ Updated: 2026-04-10 ~12:53 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (12:53)
-- **System healthy**: All 8 non-May agents running. Zero errors last hour. All heartbeats fresh.
-- **Since last cycle (12:26)**:
-  - **Optimizer**: Found P0 bug — Evaluator SOUL.md tool list only had `agents/workflow/cron/bash`, missing `read/write/edit/finish/system_status/checkpoint`. Caused 25+ false hallucination penalties. **Fixed by May** (commit 1b097b96).
-  - **Tech-lead**: composeGuards fail-open try-catch merged to main (215295a). Sent evaluator bug to Bob (redundant — already fixed).
-  - **Coach**: EXP-116 fully complete. EXP-117 dispatched (Bob FM-2.6 delegation pattern).
-  - **Bob**: H-097 CCC Triad continuing.
-  - **Evaluator/QA**: Heartbeats running normally.
-  - **Cleaned 5 stale CREATED requests** (evaluator bug duplicates + composeGuards).
-  - **EXP-115 completeness guard**: Already in production (`src/lib/tools/completeness-guard.ts`, 193 lines, imported in manager.ts). Branch loss was cosmetic — code is live.
+## Latest Cycle Summary (13:12)
+- **System healthy**: All 8 non-May agents running. Zero errors last hour. 100% success rate (23/23). All heartbeats fresh.
+- **Since last cycle (12:53)**:
+  - **Bob**: ✅ EXP-116 KB integration complete — H-093 updated (P(H) 0.70→0.72), FM-3.3d severity gradient added, committed 22b2bd9c.
+  - **Coach**: ✅ KE-122 (Intervention Decay) + KE-123 (Over-Intervention Iatrogenesis) written from EXP-116, committed fe83e8de.
+  - **Tech-lead**: ✅ security.test.ts timeout fix — branch merged to main (54b09c11), 21/21 tests pass.
+  - **Branch cleanup**: Deleted 3 stale review branches (fix-security-test-timeout, exp-115-completeness-guard, s_1775810855346_43-clean).
+  - **All agents**: New heartbeat cycle started. Current work sessions in progress.
+  - **EXP-117**: Dispatched to coach (Bob FM-2.6 delegation investigation). In progress.
 
 ## Key Findings This Cycle
-- **Evaluator SOUL.md tool list bug**: Missing 5 core tools caused systematic false positives in hallucination detection. All evals since deployment were affected. Fix deployed, but historic eval data may need re-calibration.
-- **EXP-115 guard is already live**: Despite branch being GC'd, the completeness guard code exists in production (193 lines, imported at manager.ts line 22). No re-implementation needed.
+- **KE-122 Intervention Decay**: Effective interventions become redundant as agents internalize behavior (EXP-103 baseline 11-25% → EXP-116 baseline 100%). Lifecycle: Experiment → Guard → Internalization → Deprecation.
+- **KE-123 Over-Intervention Iatrogenesis**: Combining individually safe interventions DEGRADES performance (-12pp to -15pp, p=0.018). Mechanism: double adversarial pressure → over-refactoring → breaking working code.
+- **FM-3.3 severity gradient**: Now 4 levels: a) absence, b) theater, c) confabulation, d) destruction/overcorrection.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao since Mar 24**.
 - **P1**: **EXP-105 Few-Shot Production Impact** — Need coder/optimizer work sessions to generate data.
 - **P1**: **Present research sprint results to Hao** — KE-101 meta-analysis capstone. 17+ experiments. Gym graduation. Token waste finding ($441/week).
-- **P1**: **Bun reinstall or DB query alternative** — Need working DB query tool for supervisory queries. Using node+better-sqlite3 as workaround.
 - **P2**: `analyze-failures` cron DB bug — persistent but non-critical.
 - **P2**: Federation design ready for Hao review.
 - **P2**: Amy-kimi still down — blocked on Hao for billing.
