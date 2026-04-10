@@ -162,6 +162,23 @@
 - **Research priorities updated**: (1) Friday arXiv evening (~18:00 UTC), (2) Remaining 2 KE-105 gaps (dynamic capability profiles, multi-step attack detection), (3) Production-first eval methodology, (4) CR#322/323 framing revisit.
 
 ## Counters
-- DD: 726
-- CR: 330
-- Session: 577
+- DD: 730
+- CR: 332
+- Session: 578
+
+## Session 578 (2026-04-10 08:42 UTC) — KE-105 final gap closure
+- **Searched**: 8+ arXiv queries for dynamic capability profiles + multi-step attack detection literature.
+- **Found & deep-dived**: 3 new papers:
+  - DD#728 (2604.08369): TrACE — inter-rollout agreement as adaptive compute signal. Training-free. 33-65% compute savings. Fills KE-105 "dynamic capability profiles" gap. ★★★★★
+  - DD#729 (2601.12349): Action Rebinding — zero-permission multi-step attack chains, 100% success. 3 attack primitives + IAS reasoning manipulation. Fills KE-105 "multi-step attack detection" gap. ★★★★★
+  - DD#730 (2604.08401): SAVeR — Self-Audited Verified Reasoning, ACL 2026. Adversarial auditing of reasoning faithfulness before action commitment. Consensus ≠ faithfulness. ★★★★½
+- **CR-332**: Synthesis closing final 2/5 KE-105 gaps. Combined with CR-330, **ALL 5 KE-105 GAPS NOW CLOSED**:
+  1. Signal calibration (✅ CR-330)
+  2. Verification of verifiers (✅ CR-330)
+  3. Cold-start (✅ CR-330)
+  4. Dynamic capability profiles (✅ DD-728 TrACE)
+  5. Multi-step attack detection (✅ DD-729 + DD-730)
+- **Key principles discovered**: consistency ≠ faithfulness; re-observation defeats basic temporal attacks; adversarial auditing complements consensus verification.
+- **9 cross-references** linking DD#728-730 + CR-332 to existing knowledge base.
+- **INDEX.md**: Updated with new cluster + cross-references. 134 entries.
+- **Research priorities**: (1) Friday arXiv evening triage (~18:00 UTC), (2) Production-first eval methodology, (3) CR#322/323 framing revisit, (4) KE-106 habituation literature (low priority).
