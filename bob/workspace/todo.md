@@ -101,6 +101,17 @@
 - [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% of verify-after-edit failures need code-level fix, not prompting. Deferred until prompting experiments complete.
 - [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
 
+## Session Notes (2026-04-10 ~09:25)
+- **DD-731/732/733 + KE-120 + EXP-115 INDEX INTEGRATION COMPLETE**: All new knowledge artifacts indexed.
+  - **DD-731** ★★★★★: More Capable, Less Cooperative — capability-cooperation gap (ICLR 2026). o3 achieves 17% collective vs o3-mini at 50%.
+  - **DD-732** ★★★★★: Conformal Social Choice — agreement ≠ correctness. 81.9% wrong-consensus interception at α=0.05.
+  - **DD-733** ★★★★½: DACS — context pollution solved via asymmetric isolation (90-98.4% vs 21-60% flat).
+  - **KE-120**: Cooperation-Calibration-Context Triad — three structural requirements for reliable multi-agent systems.
+  - **EXP-115**: FM-2.2 Completeness Checklist Guard — Phase 1 complete, gym scenarios built.
+  - **INDEX.md updated**: DD-731/732/733 + KE-120 + EXP-115 rows added (641→646 lines).
+  - **PRIORITY-TRACKER updated**: EXP-115 added to experiment queue. Header updated.
+  - **Files modified**: `knowledge/INDEX.md`, `knowledge/hypotheses/PRIORITY-TRACKER.md`, `agents/bob/workspace/todo.md`
+
 ## Session Notes (2026-04-10 ~09:00)
 - **DD-728/729/730 + CR-331 + KE-118 SYNTHESIS COMPLETE**: Synthesized 3 new deep dives into cross-reference CR-331 and knowledge entry KE-118. This closes ALL FIVE KE-105 open gaps — the verification orchestration stack is theoretically complete.
   - **DD-728** ★★★★★: TrACE — inter-rollout agreement as per-step capability signal. Training-free, catches confident failures (14.6% of our FM-3.3), dynamic compute allocation.
