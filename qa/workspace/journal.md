@@ -58,6 +58,34 @@ Proactive heartbeat QA at HEAD **a1f1468** ("fix: remove accidental submodule en
 
 ### Issues
 - CRITICAL (repo/test mismatch): `src/app/launcher.ts` is missing but required by `test/launcher.test.ts`.
+
+---
+
+# QA Journal — 2026-04-10 (Heartbeat)
+
+## 2026-04-10T07:26Z
+
+### Summary
+Proactive heartbeat QA at HEAD **a1f1468**. I verified the most recent commit is a 1-line deletion of an `agents` gitlink (undo accidental submodule). I then ran mandatory QA gates; TypeScript typecheck is green, but Vitest remains red due to pre-existing repo/env issues.
+
+### Files reviewed (evidence)
+- `test/launcher.test.ts` (read lines 90–170): test suite asserts `launcherTs` exists and reads `/app/src/app/launcher.ts` for required strings (spawn import, signals, backoff constants).
+
+### Mandatory gates
+- `./node_modules/.bin/tsc --noEmit`: PASS (no output)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2089 passed (2110)**
+  - `test/launcher.test.ts`: 7 failed — missing `/app/src/app/launcher.ts` (existsSync false + ENOENT)
+  - `test/context-learn.test.ts`: 7 failed — `rmSync(tmpDir, { recursive: true })` fails with `EACCES` on `/app/test-workspace/context-learn-test/test-agent`
+  - `test/context-learning.test.ts`: 6 failed — cleanup `rmSync` fails with `EACCES` on `/app/test-workspace/context-learning-test/.state`
+  - `test/research-db.test.ts`: 1 failed — integration test times out at 5000ms (observed 6253ms)
+
+### Issues
+- CRITICAL: repo/test mismatch — `src/app/launcher.ts` is missing but required by `test/launcher.test.ts`.
+- IMPORTANT: environment/permissions — test cleanup `rmSync` hits `EACCES` under `/app/test-workspace/*`.
+- IMPORTANT: test robustness — `test/research-db.test.ts` “real knowledge base” sync exceeds 5s timeout in this environment.
+
+### Verdict
+CONDITIONAL — commit itself is fine and does not break `tsc`; however, the test suite is currently failing due to unrelated missing file + environment constraints.
 - IMPORTANT (env/permissions): test cleanup fails with `EACCES` in `/app/test-workspace/*`.
 - IMPORTANT (timeout robustness): `test/research-db.test.ts` real-knowledge sync exceeds 5s.
 
