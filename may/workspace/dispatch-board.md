@@ -1,23 +1,23 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~10:23 UTC
+Updated: 2026-04-10 ~10:42 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — Heartbeat 10:23. H-095 update ✅ (P(H)→0.82 with EXP-115 evidence). EXP-115 KB integration ✅.
-- **Coach**: 🟢 Active — Heartbeat 10:23. EXP-115 completeness guard built ✅. Skill deployment to optimizer dispatched.
-- **Scout**: 🟢 Active — Heartbeat 10:23.
-- **Tech-lead**: 🟢 Active — Heartbeat 10:23. Stuck-detector removal MERGED (657 lines, commit 4733672). Web UI review dispatched (req:dbea1bd5).
-- **Optimizer**: 🟢 Active — Heartbeat 10:23. deliver-or-report early exit fix ✅.
-- **Evaluator**: 🟢 Active — Heartbeat 10:23.
-- **QA**: 🟢 Active — Heartbeat 10:23.
+- **Bob**: 🟢 Active — Heartbeat 10:42. H-094/H-068 archival ✅. EXP-116 review dispatched (self). H-097 hypothesis added.
+- **Coach**: 🟢 Active — Heartbeat 10:42. EXP-116 Phase 2 dispatched (self). 30-trial adversarial framing guard validation.
+- **Scout**: 🟢 Active — Heartbeat 10:42.
+- **Tech-lead**: 🟢 Active — Heartbeat 10:42. Completeness guard for EXP-115 committed (484a53cb). 3 pre-existing test failures fixed (d3e26e52).
+- **Optimizer**: 🟢 Active — Heartbeat 10:42. deliver-or-report early exit fix ✅.
+- **Evaluator**: 🟢 Active — Heartbeat 10:42. Running task tree evaluations.
+- **QA**: 🟢 Active — Heartbeat 10:42.
 - **Coder**: Idle. Only runs when forked by tech-lead.
 - **All agents**: 🟢 8/8 running. Zero errors last hour.
 - **✅ Tool Schema Guard**: Live in production.
-- **✅ Dead code removal**: Forced-externalization (610 lines, 8e569ba) + stuck-detector (657 lines, 4733672) removed. ~1,267 lines total dead code purged.
+- **✅ Dead code removal**: ~1,267 lines dead code purged + dead finish-guard.ts removed (2f261cc7).
 - **⚠️ Cron bug**: `analyze-failures` cron keeps failing (`db.query is not a function`). Low priority.
-- **⚠️ Git drift**: 223 files changed vs HEAD. Project restructured to bundled binary.
-- **⚠️ Web UI branch stale**: Branch `review/webui-agent-activity` exists (commit b83aa98) but based on old main. Web UI source already on main (`web.ts` 663 lines, `index.html` 1394 lines). Branch adds simpler version (129+274 lines). Tech-lead review dispatched to reconcile.
+- **⚠️ Git drift**: Project restructured to bundled binary — source files inside bundle, not on filesystem.
+- **✅ Web UI branch**: Stale branch cleaned up (deleted). Web UI is built into the bundled binary. No reconciliation needed.
 - **⚠️ Duplicate requests in DB**: 4 pairs of duplicates (coder Web UI ×2, tech-lead review ×2, bob EXP-115 ×2, coach EXP-115 ×2). Need cleanup.
 
 ## Active Priorities (from Hao)
@@ -135,6 +135,9 @@ Updated: 2026-04-10 ~10:23 UTC
 | **Tech-lead: 21 Test Fixes** | ✅ MERGED | tech-lead | Commit ead6c82. Dead launcher tests + permission-blocked workspace dirs + flaky research-db. 2098/2098 tests pass. |
 | **Bob DD-720-723 Indexing** | ✅ COMPLETE | bob | Evaluation architecture entries indexed into knowledge base. |
 | **Scout C1.3/C7.1 Investigation** | ✅ COMPLETE | coach | Root cause: path inconsistency. Scout writes drops to 4+ dirs, only `/knowledge/` exempt. Text instructions can't fix post-action habits. Brief at `agents/coach/workspace/briefs/scout-c13-regression-diagnostic.md`. |
+| **EXP-116 Adversarial Framing Guard** | ⏳ IN PROGRESS | coach + bob | Coach running Phase 2 (30-trial validation). Bob reviewing design. Self-dispatched by both agents. |
+| **Bob H-097 Hypothesis** | ⏳ NEW | bob | New hypothesis added during corpus maintenance. Details TBD. |
+| **Tech-lead EXP-115 Completeness Guard** | ✅ COMMITTED | tech-lead | Commit 484a53cb. 3 pre-existing test failures also fixed (d3e26e52). Dead finish-guard.ts removed (2f261cc7). |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -166,29 +169,26 @@ Updated: 2026-04-10 ~10:23 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (10:23)
-- **System healthy**: All 8 non-May agents running. Zero errors last hour. All heartbeats fresh (~10:23).
-- **4 work sessions completed** since last cycle:
-  - Bob: H-095 updated with EXP-115 evidence (P(H)→0.82). 23 ops.
-  - Coach: EXP-115 completeness guard built and deployed. 20 ops.
-  - Tech-lead: Stuck-detector removed (657 lines, commit 4733672 merged to main). 9 ops.
-  - Optimizer: deliver-or-report early exit fix. 17 ops.
-- **Web UI clarified**: Source DOES exist on main (`web.ts` 663 lines, `index.html` 1394 lines). Branch `review/webui-agent-activity` adds a SIMPLER version (129+274 lines) — stale branch, needs reconciliation. Previous "NOT IN REPO" was wrong. Tech-lead review dispatched.
-- **~1,267 lines of dead code removed** this morning (forced-externalization 610 + stuck-detector 657).
-- **4 duplicate request pairs** in DB need cleanup.
+## Latest Cycle Summary (10:42)
+- **System healthy**: All 8 non-May agents running. Zero errors last hour. All heartbeats fresh (~10:42).
+- **Since last cycle (10:23)**:
+  - Bob: H-094/H-068 hypothesis archival ✅ (20 ops). Self-dispatched EXP-116 review + H-097 addition.
+  - Coach: Self-dispatched EXP-116 Phase 2 (30-trial adversarial framing guard validation).
+  - Tech-lead: Completeness guard committed (484a53cb). 3 pre-existing test failures fixed (d3e26e52). Dead finish-guard.ts removed (2f261cc7).
+  - Evaluator: Running task tree evaluations continuously.
+- **Web UI branch resolved**: Branch `review/webui-agent-activity` no longer exists. Web UI is built into the bundled binary. No reconciliation needed.
+- **Agents self-organizing well**: Bob and Coach both self-dispatched EXP-116 work without May intervention. Good autonomous behavior.
 
 ## Key New Findings This Cycle
-- **Web UI source exists on main** (correcting last cycle): `src/app/ui/web.ts` (663 lines) and `src/app/ui/web-static/index.html` (1394 lines) are on main. The branch has a smaller/simpler version that would overwrite. Tech-lead needs to reconcile.
-- **All dispatched work from last cycle completed**: Bob, Coach, Tech-lead, Optimizer all finished their forked work sessions. System is highly productive — 4 parallel work items completed in 30 min.
-- **Dead code purge continuing**: Tech-lead proactively removing unused modules. Good autonomous behavior.
+- **Agents actively self-dispatching**: Both Bob (EXP-116 design review) and Coach (EXP-116 Phase 2 validation) created their own work requests this cycle. This is the autonomous behavior Hao wants.
+- **Tech-lead continuing proactive cleanup**: Dead finish-guard.ts removed, test failures fixed — all without dispatch from May.
+- **Web UI branch resolved**: No longer exists on filesystem. Source is inside the bundled binary.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao since Mar 24**.
-- **P1**: **Web UI review+merge** — Tech-lead dispatched (req:dbea1bd5). Branch `review/webui-agent-activity` needs reconciliation with main's existing web.ts.
-- **P1**: **EXP-115 skill deployment** — Coach deploying optimizer skill (req:547c9ea5). Bob KB integration ✅ DONE.
-- **P1**: **EXP-105 Few-Shot Production Impact** — Need coder/optimizer work sessions to generate data. Coder's Web UI session was first data point.
-- **P1**: **QA token waste fix** — optimizer identified 3.18M tokens/day wasted. Tech-lead has it.
-- **P1**: **Present research sprint results to Hao** — KE-101 meta-analysis capstone. 17+ experiments. Gym graduation.
+- **P1**: **EXP-116 in progress** — Bob reviewing design, Coach running Phase 2 (30 trials). Adversarial framing guard for multi-session handoffs.
+- **P1**: **EXP-105 Few-Shot Production Impact** — Need coder/optimizer work sessions to generate data.
+- **P1**: **Present research sprint results to Hao** — KE-101 meta-analysis capstone. 17+ experiments. Gym graduation. Token waste finding ($441/week).
 - **P2**: Clean up 4 duplicate request pairs in DB.
 - **P2**: `analyze-failures` cron DB bug — persistent but non-critical.
 - **P2**: Federation design ready for Hao review.

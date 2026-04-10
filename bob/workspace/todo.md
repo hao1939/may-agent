@@ -104,6 +104,16 @@
 - [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% of verify-after-edit failures need code-level fix, not prompting. Deferred until prompting experiments complete.
 - [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
 
+## Session Notes (2026-04-10 ~10:45)
+- **EXP-116 DESIGN REVIEW COMPLETE**: Thorough critical review written to `agents/shared/knowledge/experiments/EXP-116/review-bob.md`. Recommendation: **DO NOT PROCEED as designed**. Three critical issues found:
+  1. **C1: EXP-103 confound** — evidence-over-narrative skill was already deployed, making the +75-89pp effect size uninterpretable (EXP-104 revealed this). The baseline was anomalous.
+  2. **C2: KE reference errors** — design cites KE-094/095 but these are actually KE-099/100. Wrong knowledge entries referenced.
+  3. **C3: EXP-108 Phase 2 null result ignored** — adversarial self-review showed null result (KE-119: "review without action"). Framing-only arm (Arm A) predicted to fail.
+- **Key insight**: The most promising component is machine-verified evidence + beforeToolCall guard (Arm D), not adversarial framing alone. Structural intervention is the active ingredient, consistent with KE-101 meta-analysis (structure > content).
+- **5 moderate issues**: baseline reuse invalid, KE numbers wrong in header, H2 criteria too lenient (50%→20%), N=6 per arm underpowered, production sections premature.
+- **Recommendation**: Fix confound acknowledgment, update KE references, add EXP-108 discussion, increase N to ≥9, tighten overhead criteria, simplify to 3-arm design (baseline vs evidence-only vs evidence+guard).
+- **File created**: `agents/shared/knowledge/experiments/EXP-116/review-bob.md`
+
 ## Session Notes (2026-04-10 ~10:15)
 - **HYPOTHESIS HOUSEKEEPING COMPLETE**: H-094 and H-068 archived, H-097 added to Tier 2 in PRIORITY-TRACKER.
   - **H-094 ARCHIVED**: HVR confidence gate — EXP-101 AUROC 0.566, zero-hedge gate vacuous (base rate artifact), survivorship bias fatal. P(H)=0.35. Mechanistic explanation: Reasoning Contamination Effect (DD-681).
