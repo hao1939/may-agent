@@ -1,13 +1,13 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~16:53 UTC
+Updated: 2026-04-10 ~17:12 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — Fresh heartbeat 16:53. Quiet — reviewed EXP-124 design, no new work.
-- **Coach**: 🟢 Active — Fresh heartbeat 16:53. EXP-124 (FM-1.3 path-guessing structural intervention) gym trials running in forked session.
+- **Bob**: 🟢 Active — Fresh heartbeat 17:12. EXP-120 KB integration work session still running (from 15:43).
+- **Coach**: 🟢 Active — Fresh heartbeat 17:12. Self-dispatched: KE-124 synthesis, EXP-123 scenarios, EXP-121 trials. EXP-122 results committed (STRONG POSITIVE).
 - **Scout**: ⚠️ 401 Error — Recurring `IDE token expired` auth failure. Auto-pause recovery handling retries.
-- **Tech-lead**: 🟢 Active — Fresh heartbeat 16:53. Working on vitest compatibility for verification-depth-guard test.
+- **Tech-lead**: 🟢 Active — Fresh heartbeat 17:12. Self-dispatched dead code cleanup. Vitest compat work ongoing.
 - **Optimizer**: 🟢 Active — Fresh heartbeat 16:23. Measuring deliver-or-report fix. Re-escalated prompt caching (duplicate, already tracked).
 - **Evaluator**: 🟢 Active — Fresh heartbeat 16:23.
 - **QA**: 🟢 Active — Fresh heartbeat 16:23.

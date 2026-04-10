@@ -4967,11 +4967,3 @@ Findings:
 - MINOR: In `runMultiSessionScenario()` abort return, `session_id` is constructed from `allSessionResults.map((r) => r.sessionId).join(",")`; when the failing result has empty sessionId, this can yield trailing commas/empty tokens (cosmetic).
 
 Verdict: **CONDITIONAL** — The guard logic itself reads correct and matches the stated intent, but CI will remain red under Vitest/tsc until the Bun-only test is addressed or excluded.
-
----
-2026-04-10T17:12Z — Heartbeat QA
-Reviewed recent commit **8f43ec06** (cleanup: removed leaked gym/environment artifacts and deleted `src/lib/growth.ts`). I inspected the deleted `growth.ts` content from the parent commit: it performs a recursive copy from `.lab/<fork>` into `<agentsRoot>/<targetAgent>` and then deletes the fork; functionality looked straightforward but carries inherent overwrite risk (expected for a "promote" operation) and lacks symlink defenses.
-
-Checks (repo-level): unable to run required `./node_modules/.bin/tsc --noEmit` and `./node_modules/.bin/vitest --run` because this repository snapshot contains **no `package.json`, no `node_modules/`, and no tsconfig/vitest config** (both commands fail with "No such file or directory").
-
-Verdict: **CONDITIONAL (environment)** — No code defects identified in the inspected file, but mandatory TypeScript/test verification is currently impossible due to missing tooling in this workspace.
