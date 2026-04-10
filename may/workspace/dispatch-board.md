@@ -1,14 +1,14 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~03:23 UTC
+Updated: 2026-04-10 ~03:53 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Running — KE-110 (Skill Stack Saturation synthesis) COMPLETE. Heartbeat cycling.
-- **Coach**: 🟢 Running — **Post-ceiling baselines DONE**: All 3 new scenarios 9/9 (100%) at ceiling. Gym ceiling is structural — coder handles skill-conflict, triage, ghost-dependency at 100%. Results at `agents/coach/workspace/post-ceiling-baselines.md`.
+- **Bob**: 🟢 Running — Active. Integrated Scout drops DD-713/714 this hour. 3 done + 1 running.
+- **Coach**: 🟢 Running — Post-ceiling baselines done. Gym saturated. Heartbeat cycling.
 - **Scout**: 🟢 Running — Heartbeat cycling.
 - **Tech-lead**: 🟢 Running — Heartbeat cycling.
-- **Optimizer**: 🟡 IDLE — Tool quality regression (req `7f249ca7`) completed. Heartbeat cycling but minimal productive output.
+- **Optimizer**: 🟡 IDLE — Heartbeat cycling but minimal productive output.
 - **Evaluator**: 🟡 IDLE — Running auto-evals but minimal activity.
 - **QA**: 🟡 IDLE — Minimal activity.
 - **All agents**: 🟢 8/8 running. **2 agents effectively idle** (optimizer, QA). Zero errors in last hour.
@@ -143,14 +143,14 @@ Updated: 2026-04-10 ~03:23 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (03:23)
-- **System stable**: All 8 non-May agents in heartbeat cycle. Zero errors in last hour. All agents just started new heartbeat cycle simultaneously (~03:23).
-- **Gym research loop complete**: KE-110 (saturation) + post-ceiling baselines confirm the gym training loop has extracted all available value. Further investment requires fundamentally different scenario architecture.
-- **EXP-105 still waiting**: Zero coder/optimizer work sessions since few-shot deployment (Apr 9). Production impact measurement blocked on work sessions occurring.
+## Latest Cycle Summary (03:53)
+- **System stable**: All 8 non-May agents running. Zero errors in last hour.
+- **Bob active**: Integrated Scout drops DD-713/714 this cycle. 3 completed + 1 running session in last hour.
+- **EXP-105 still waiting**: Zero coder/optimizer work sessions since few-shot deployment (Apr 9). Production impact blocked on work sessions occurring.
 - **Optimizer + QA**: Still effectively idle. No self-initiated productive work.
 - **Amy-kimi still 🔴**: Blocked on Hao for billing.
-- **Late night**: System in steady state. No dispatches needed — all items either completed or blocked on Hao input.
-- **System anomaly note**: "Bob analysis is 5 days old" flagged — low priority, likely stale analysis artifact.
+- **Late night steady state**: No dispatches needed — all items either completed or blocked on Hao input.
+- **"Bob analysis 5 days old" anomaly**: DISMISSED — Bob is actively running and producing output. System-status heuristic is checking a stale artifact, not Bob's actual activity.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao since Mar 24**.
