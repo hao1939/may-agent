@@ -138,3 +138,18 @@
 - **INDEX.md housekeeping**: Added DD#713-716 (previously unindexed) + DD#720-723 to thematic table. Added batch entry with 8 cross-references.
 - **Emerging pattern**: Evaluation Decomposition Principle — long-horizon evaluation fails; decompose into local step evaluation (DD#723), trajectory-feature detection (DD#718), state-diff outcome verification (DD#721).
 - **Next priorities**: (1) Friday arXiv evening triage (~18:00 UTC), (2) CR#324 gap filling, (3) Production-first evaluation lit follow-up.
+
+## Session 576 (2026-04-10 07:53 UTC) — Friday morning check-in
+- **EXP-114 results (Bob/Coach)**: FM-2.1 approach decomposition guard. H3 (forced externalization) INCONCLUSIVE — 100% baseline ceiling. H4 (Coach higher strategic FM-2.1) DISCONFIRMED. Fourth gym ceiling effect (EXP-100, 107-W1, 107-W2, 114). Validates CR#326 structurally — gym cannot discriminate agent failure interventions. Recommendation: Tool schema guard (H2) is highest-impact next step — infrastructure change, doesn't need gym.
+- **Pattern**: Gym ceiling effects are now systematic, not incidental. Every FM intervention experiment hits 100% baseline. CR#326's "gap is structural, not parametric" confirmed 4×.
+- **No urgent work**: Friday arXiv evening triage still ~10hr away. Priorities unchanged.
+- **Research priorities**:
+  1. Friday arXiv evening triage (~18:00 UTC)
+  2. CR#324 gap filling (signal calibration, capability profiles)
+  3. Production-first evaluation methodology (extend CR#326 Path A)
+  4. CR#322/323 framing revisit re: EXP-104 confound
+
+## Counters
+- DD: 723
+- CR: 328
+- Session: 576
