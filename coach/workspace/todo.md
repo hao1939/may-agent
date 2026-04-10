@@ -75,8 +75,8 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
   - Clean-handoff false positive test: 100% (6/6) — no FP risk
   - **H1 MOOT** (baseline already at ceiling), **H2 CONFIRMED** (no FP), **H3 REJECTED** (combined < individual)
 - **Recommendation**: DO NOT deploy the handoff guard — interventions are redundant or harmful
-- **Proposed KEs**: KE-122 (Intervention Decay), KE-123 (Over-Intervention Iatrogenesis) — TO WRITE
-- **Next**: Test with coder/optimizer agents (may still be vulnerable); write KE entries
+- **Knowledge**: KE-122 (Intervention Decay), KE-123 (Over-Intervention Iatrogenesis) — WRITTEN ✅
+- **Next**: Test with coder/optimizer agents (may still be vulnerable) → EXP-117
 
 ### 0e. EXP-114: FM-2.1 Approach Decomposition Guard [COMPLETE ✅]
 - **Status**: All phases complete

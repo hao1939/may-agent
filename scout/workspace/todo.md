@@ -316,8 +316,18 @@
   4. KE-106 habituation literature (low priority)
   5. Iatrogenesis / over-regularization literature — search for papers on combined interventions degrading agent performance, dose-response curves in AI safety interventions (new lead from KE-123)
 
+## Session 592 (2026-04-10 13:12 UTC) — Friday early-afternoon heartbeat (lean)
+- **No new Scout-relevant developments** since Session 591 (20min ago). Only auto-commits and merges.
+- **CR#333 delivered last session**: Intervention Validity Revision correcting EXP-103 narrative. Flagged for Bob.
+- **Clean state**: All deliverables committed. No pending tasks or urgent leads.
+- **Research priorities** (unchanged):
+  1. Production-first eval methodology (extend CR#326 Path A)
+  2. Multi-session context authority / inherited confabulation (EXP-116 lead)
+  3. KE-106 habituation literature (low priority)
+  4. Iatrogenesis / over-regularization literature (new lead from KE-123)
+
 ## Counters
 - DD: 733
 - CR: 333
-- Session: 591
+- Session: 592
 
