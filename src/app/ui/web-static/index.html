@@ -109,6 +109,62 @@
   .md-rendered code { background: var(--bg3); padding: 2px 5px; border-radius: 3px; font-size: 12px; }
   .msg.assistant.md-rendered td, .msg.assistant.md-rendered th { padding: 4px 8px; border: 1px solid var(--border); }
   .msg.assistant.md-rendered strong { color: var(--fg); }
+
+  /* System Health Summary */
+  .health-summary { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+  .health-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; flex: 1; min-width: 130px; }
+  .health-card .health-label { font-size: 11px; color: var(--fg2); text-transform: uppercase; letter-spacing: 0.5px; }
+  .health-card .health-value { font-size: 22px; font-weight: 600; margin-top: 2px; }
+  .health-card .health-sub { font-size: 11px; color: var(--fg2); margin-top: 2px; }
+  .health-card .trend-up { color: var(--red); }
+  .health-card .trend-down { color: var(--green); }
+  .health-card .trend-flat { color: var(--fg2); }
+
+  /* Agent Status Grid */
+  .agent-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin-bottom: 20px; }
+  .agent-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; cursor: pointer; transition: border-color 0.15s, transform 0.1s; position: relative; overflow: hidden; }
+  .agent-card:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .agent-card.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .agent-card .agent-status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+  .agent-card .agent-status-dot.active { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .agent-card .agent-status-dot.idle { background: var(--yellow); box-shadow: 0 0 6px var(--yellow); }
+  .agent-card .agent-status-dot.inactive { background: var(--red); }
+  .agent-card .agent-name { font-weight: 600; font-size: 13px; }
+  .agent-card .agent-meta { font-size: 11px; color: var(--fg2); margin-top: 6px; display: flex; flex-direction: column; gap: 2px; }
+  .agent-card .agent-meta span { display: flex; justify-content: space-between; }
+  .agent-card .agent-bar { position: absolute; bottom: 0; left: 0; height: 2px; background: var(--green); transition: width 0.3s; }
+
+  /* Activity Timeline */
+  .timeline-section { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 20px; }
+  .timeline-section h3 { font-size: 13px; color: var(--fg2); margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+  .timeline-section h3 select { background: var(--bg); color: var(--fg); border: 1px solid var(--border); border-radius: 4px; padding: 2px 6px; font-size: 12px; }
+  .timeline-row { display: flex; align-items: center; margin-bottom: 6px; min-height: 24px; }
+  .timeline-label { width: 90px; font-size: 11px; color: var(--fg2); flex-shrink: 0; text-align: right; padding-right: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .timeline-track { flex: 1; height: 20px; position: relative; background: var(--bg); border-radius: 3px; overflow: hidden; }
+  .timeline-block { position: absolute; height: 100%; border-radius: 2px; min-width: 2px; opacity: 0.85; cursor: pointer; transition: opacity 0.15s; }
+  .timeline-block:hover { opacity: 1; z-index: 1; box-shadow: 0 0 4px rgba(255,255,255,0.2); }
+  .timeline-block.done { background: var(--green); }
+  .timeline-block.error { background: var(--red); }
+  .timeline-block.running { background: var(--accent); }
+  .timeline-block.interrupted { background: var(--fg2); }
+  .timeline-axis { display: flex; justify-content: space-between; margin-top: 4px; padding-left: 90px; }
+  .timeline-axis span { font-size: 10px; color: var(--fg2); }
+  .timeline-tooltip { position: fixed; background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; font-size: 12px; color: var(--fg); z-index: 100; pointer-events: none; max-width: 300px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+
+  /* Mobile responsive */
+  @media (max-width: 768px) {
+    .agent-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+    .agent-card { padding: 10px; }
+    .health-summary { gap: 8px; }
+    .health-card { min-width: 100px; padding: 10px 12px; }
+    .health-card .health-value { font-size: 18px; }
+    .timeline-label { width: 60px; font-size: 10px; }
+    .timeline-axis { padding-left: 60px; }
+  }
+  @media (max-width: 480px) {
+    .agent-grid { grid-template-columns: 1fr 1fr; }
+    .health-summary { flex-direction: column; }
+  }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/marked@15.0.12/marked.min.js"></script>
 </head>
@@ -128,10 +184,26 @@
   <!-- Dashboard -->
   <div id="dashboard">
     <div id="digest-panel" style="margin-bottom:20px"></div>
+    <div id="health-summary" class="health-summary"></div>
+    <div id="agent-grid" class="agent-grid"></div>
+    <div id="activity-timeline" class="timeline-section" style="display:none">
+      <h3>
+        Activity Timeline
+        <select id="timeline-hours" onchange="loadTimeline()">
+          <option value="6">Last 6h</option>
+          <option value="12">Last 12h</option>
+          <option value="24" selected>Last 24h</option>
+          <option value="48">Last 48h</option>
+        </select>
+      </h3>
+      <div id="timeline-body"></div>
+      <div id="timeline-axis" class="timeline-axis"></div>
+    </div>
     <div class="stats" id="stats"></div>
     <div class="filters">
       <select id="f-from"><option value="">All sources</option><option value="human">Human</option><option value="cron">Cron</option></select>
       <select id="f-status"><option value="">All statuses</option><option value="COMPLETED">Completed</option><option value="FAILED">Failed</option><option value="CREATED">Active</option></select>
+      <select id="f-agent"><option value="">All agents</option></select>
     </div>
     <div class="request-list" id="request-list"></div>
     <div class="pagination" id="pagination"></div>
@@ -208,6 +280,202 @@ document.querySelectorAll('.tab').forEach(tab => {
 
 // ── Dashboard ─────────────────────────────────────────────────────────
 
+let selectedAgent = null;
+
+// ── System Health Summary ─────────────────────────────────────────────
+
+async function loadHealth() {
+  try {
+    const r = await fetch('/api/agents/health');
+    const data = await r.json();
+    const el = document.getElementById('health-summary');
+    const avgDur = data.avgDurationMs
+      ? (data.avgDurationMs < 60000 ? Math.round(data.avgDurationMs / 1000) + 's' : Math.round(data.avgDurationMs / 60000) + 'm')
+      : '—';
+    const trendIcon = data.errorTrend > 0 ? '↑' : data.errorTrend < 0 ? '↓' : '→';
+    const trendClass = data.errorTrend > 0 ? 'trend-up' : data.errorTrend < 0 ? 'trend-down' : 'trend-flat';
+    const trendText = data.errorTrend > 0 ? `+${data.errorTrend}%` : data.errorTrend < 0 ? `${data.errorTrend}%` : 'same';
+    el.innerHTML = `
+      <div class="health-card">
+        <div class="health-label">Sessions Today</div>
+        <div class="health-value">${data.sessionsToday}</div>
+        <div class="health-sub">${data.successRate}% success rate</div>
+      </div>
+      <div class="health-card">
+        <div class="health-label">Active Agents</div>
+        <div class="health-value">${data.activeAgents}</div>
+        <div class="health-sub">in last 2 hours</div>
+      </div>
+      <div class="health-card">
+        <div class="health-label">Avg Duration</div>
+        <div class="health-value">${avgDur}</div>
+        <div class="health-sub">per session</div>
+      </div>
+      <div class="health-card">
+        <div class="health-label">Error Rate</div>
+        <div class="health-value">${data.errorRateToday}%</div>
+        <div class="health-sub"><span class="${trendClass}">${trendIcon} ${trendText} vs yesterday</span></div>
+      </div>
+    `;
+  } catch (e) { console.error('Health error:', e); }
+}
+
+// ── Agent Status Grid ─────────────────────────────────────────────────
+
+async function loadAgentGrid() {
+  try {
+    const r = await fetch('/api/agents/activity');
+    const data = await r.json();
+    const grid = document.getElementById('agent-grid');
+    if (!data.agents || data.agents.length === 0) {
+      grid.innerHTML = '<div style="color:var(--fg2);font-size:13px;padding:8px">No agent activity in the last 24 hours.</div>';
+      return;
+    }
+
+    // Populate the agent filter dropdown
+    const agentSelect = document.getElementById('f-agent');
+    const currentVal = agentSelect.value;
+    agentSelect.innerHTML = '<option value="">All agents</option>' +
+      data.agents.map(a => `<option value="${esc(a.name)}" ${currentVal === a.name ? 'selected' : ''}>${esc(a.name)}</option>`).join('');
+
+    grid.innerHTML = data.agents.map(a => {
+      const elapsed = Date.now() - a.lastSession;
+      let timeAgo;
+      if (elapsed < 60000) timeAgo = 'just now';
+      else if (elapsed < 3600000) timeAgo = Math.round(elapsed / 60000) + 'm ago';
+      else timeAgo = Math.round(elapsed / 3600000) + 'h ago';
+
+      const barWidth = Math.min(a.successRate, 100);
+      const isSelected = selectedAgent === a.name;
+
+      return `<div class="agent-card ${isSelected ? 'selected' : ''}" onclick="toggleAgentFilter('${esc(a.name)}')">
+        <div style="display:flex;align-items:center">
+          <span class="agent-status-dot ${a.status}"></span>
+          <span class="agent-name">${esc(a.name)}</span>
+        </div>
+        <div class="agent-meta">
+          <span><span>Last active</span><span>${timeAgo}</span></span>
+          <span><span>Sessions</span><span>${a.sessionsToday}</span></span>
+          <span><span>Success</span><span>${a.successRate}%</span></span>
+        </div>
+        <div class="agent-bar" style="width:${barWidth}%"></div>
+      </div>`;
+    }).join('');
+  } catch (e) { console.error('Agent grid error:', e); }
+}
+
+function toggleAgentFilter(name) {
+  if (selectedAgent === name) {
+    selectedAgent = null;
+  } else {
+    selectedAgent = name;
+  }
+  // Update filter dropdown to match
+  const agentSelect = document.getElementById('f-agent');
+  agentSelect.value = selectedAgent || '';
+  // Re-render grid to show selection
+  loadAgentGrid();
+  // Reload requests with filter
+  offset = 0;
+  loadRequests();
+}
+
+// ── Activity Timeline ─────────────────────────────────────────────────
+
+let timelineTooltip = null;
+
+async function loadTimeline() {
+  const hours = parseInt(document.getElementById('timeline-hours').value || '24', 10);
+  const section = document.getElementById('activity-timeline');
+  const body = document.getElementById('timeline-body');
+  const axis = document.getElementById('timeline-axis');
+
+  try {
+    const r = await fetch('/api/agents/timeline?hours=' + hours);
+    const data = await r.json();
+
+    if (!data.agents || data.agents.length === 0) {
+      section.style.display = 'none';
+      return;
+    }
+    section.style.display = '';
+
+    const now = data.now;
+    const since = data.since;
+    const span = now - since;
+
+    // Render rows
+    let html = '';
+    for (const agent of data.agents) {
+      html += `<div class="timeline-row">`;
+      html += `<div class="timeline-label" title="${esc(agent.name)}">${esc(agent.name)}</div>`;
+      html += `<div class="timeline-track">`;
+      for (const s of agent.sessions) {
+        const left = ((s.start - since) / span) * 100;
+        const end = s.end || now;
+        const width = Math.max(((end - s.start) / span) * 100, 0.3);
+        const statusClass = s.status === 'done' ? 'done' : s.status === 'error' ? 'error' : s.status === 'running' ? 'running' : 'interrupted';
+        const dur = s.end ? Math.round((s.end - s.start) / 1000) : null;
+        const durStr = dur !== null ? (dur < 60 ? dur + 's' : Math.round(dur / 60) + 'm') : 'running';
+        html += `<div class="timeline-block ${statusClass}"
+          style="left:${left}%;width:${width}%"
+          data-agent="${esc(agent.name)}" data-status="${s.status}" data-dur="${durStr}" data-id="${s.id}"
+          onmouseenter="showTimelineTooltip(event, this)" onmouseleave="hideTimelineTooltip()"
+          onclick="loadSessionDetail('${s.id}')"></div>`;
+      }
+      html += `</div></div>`;
+    }
+    body.innerHTML = html;
+
+    // Render axis
+    const tickCount = Math.min(hours, 12);
+    const tickInterval = span / tickCount;
+    let axisHtml = '';
+    for (let i = 0; i <= tickCount; i++) {
+      const t = new Date(since + i * tickInterval);
+      const label = t.getHours().toString().padStart(2, '0') + ':' + t.getMinutes().toString().padStart(2, '0');
+      axisHtml += `<span>${label}</span>`;
+    }
+    axis.innerHTML = axisHtml;
+  } catch (e) {
+    console.error('Timeline error:', e);
+    section.style.display = 'none';
+  }
+}
+
+function showTimelineTooltip(event, el) {
+  if (!timelineTooltip) {
+    timelineTooltip = document.createElement('div');
+    timelineTooltip.className = 'timeline-tooltip';
+    document.body.appendChild(timelineTooltip);
+  }
+  const agent = el.dataset.agent;
+  const status = el.dataset.status;
+  const dur = el.dataset.dur;
+  const statusEmoji = status === 'done' ? '✅' : status === 'error' ? '❌' : status === 'running' ? '🔵' : '⚪';
+  timelineTooltip.innerHTML = `<strong>${agent}</strong><br>${statusEmoji} ${status} · ${dur}`;
+  timelineTooltip.style.display = 'block';
+  positionTooltip(event);
+}
+
+function positionTooltip(event) {
+  if (!timelineTooltip) return;
+  const x = event.clientX + 12;
+  const y = event.clientY - 40;
+  timelineTooltip.style.left = x + 'px';
+  timelineTooltip.style.top = y + 'px';
+}
+
+function hideTimelineTooltip() {
+  if (timelineTooltip) timelineTooltip.style.display = 'none';
+}
+
+document.addEventListener('mousemove', function(e) {
+  if (timelineTooltip && timelineTooltip.style.display === 'block') positionTooltip(e);
+});
+
+// ── Stats / Requests ──────────────────────────────────────────────────
+
 async function loadStats() {
   try {
     const r = await fetch('/api/stats');
@@ -228,9 +496,11 @@ async function loadStats() {
 async function loadRequests() {
   const from = document.getElementById('f-from').value;
   const status = document.getElementById('f-status').value;
+  const agentFilter = selectedAgent || document.getElementById('f-agent').value;
   const params = new URLSearchParams({ limit, offset });
   if (from) params.set('from', from);
   if (status) params.set('status', status);
+  if (agentFilter) params.set('agent', agentFilter);
 
   try {
     const r = await fetch('/api/requests?' + params);
@@ -707,6 +977,7 @@ document.getElementById('chat-input').addEventListener('keydown', (e) => {
 // ── Filters ───────────────────────────────────────────────────────────
 document.getElementById('f-from').addEventListener('change', () => { offset=0; loadRequests(); });
 document.getElementById('f-status').addEventListener('change', () => { offset=0; loadRequests(); });
+document.getElementById('f-agent').addEventListener('change', () => { offset=0; selectedAgent = document.getElementById('f-agent').value || null; loadAgentGrid(); loadRequests(); });
 
 // ── Helpers ───────────────────────────────────────────────────────────
 function esc(s) {
@@ -1008,6 +1279,9 @@ async function loadDigest(date) {
 // ── Init ──────────────────────────────────────────────────────────────
 
 loadDigest();
+loadHealth();
+loadAgentGrid();
+loadTimeline();
 loadStats();
 loadRequests();
 
