@@ -67,4 +67,35 @@ describe("composeGuards", () => {
     const composed = composeGuards();
     expect(await composed(makeCtx())).toBeUndefined();
   });
+
+  it("a throwing guard does not crash the composition", async () => {
+    const composed = composeGuards(
+      async () => { throw new Error("guard exploded"); },
+      async () => undefined,
+    );
+    // Should not throw — fail-open
+    expect(await composed(makeCtx())).toBeUndefined();
+  });
+
+  it("guards after a throwing guard still execute", async () => {
+    const calls: string[] = [];
+    const composed = composeGuards(
+      async () => { calls.push("a"); throw new Error("boom"); },
+      async () => { calls.push("b"); return { block: true, reason: "from B" }; },
+    );
+    const result = await composed(makeCtx());
+    expect(calls).toEqual(["a", "b"]);
+    expect(result).toEqual({ block: true, reason: "from B" });
+  });
+
+  it("throwing guard is treated as if it returned undefined", async () => {
+    const composed = composeGuards(
+      async () => ({ block: false, reason: "warning before" }),
+      async () => { throw new Error("kaboom"); },
+      async () => ({ block: false, reason: "warning after" }),
+    );
+    const result = await composed(makeCtx());
+    // The throwing guard is skipped; last warning wins
+    expect(result).toEqual({ block: false, reason: "warning after" });
+  });
 });

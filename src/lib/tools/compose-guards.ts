@@ -45,7 +45,14 @@ export function composeGuards(...guards: BeforeToolCallHook[]): BeforeToolCallHo
     let lastWarning: BeforeToolCallResult | undefined;
 
     for (const guard of guards) {
-      const result = await guard(context, signal);
+      let result: BeforeToolCallResult | undefined;
+      try {
+        result = await guard(context, signal);
+      } catch (err) {
+        // Fail-open: guard crash should not block the tool call
+        console.error(`[composeGuards] guard threw — failing open:`, err);
+        continue;
+      }
       if (!result) continue;
 
       // Blocking result — return immediately
