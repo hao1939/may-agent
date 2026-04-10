@@ -4852,3 +4852,22 @@ CONDITIONAL — tests pass, but consider adding diagnostic logging for corrupted
 
 ### Verdict
 PASS — implementation matches documented behavior; typecheck and full test suite pass.
+
+---
+
+## 2026-04-10T14:56Z — QA heartbeat
+
+Reviewed commit **d5c7d66** (Remove deprecated legacy callbacks onSessionComplete/onSessionStart/onSessionBlocked).
+
+- Read: `src/lib/manager.ts` (top section) and `src/lib/manager-utils.ts` (top section) to confirm `SubagentManagerOptions` callback fields are removed and re-exports preserved.
+- Observed change is deletion-only (44 lines removed) per `git show --stat`.
+
+Notes:
+- No immediate correctness issues found from the portions read; change appears to remove unused/deprecated options surface.
+
+### Checks
+- `./node_modules/.bin/tsc --noEmit`: PASS (exit 0)
+- `./node_modules/.bin/vitest --run`: PASS (2041 tests)
+
+### Verdict
+PASS
