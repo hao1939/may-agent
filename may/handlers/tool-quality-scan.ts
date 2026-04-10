@@ -164,7 +164,8 @@ export function classifyFailure(chain: FailureChain): FailureCategory {
   if (rootCause.includes("Validation failed")) return "schema-violation";
   if (rootCause.includes("ENOENT") || result.includes("No such file")) return "nonexistent-path";
   if (rootCause.includes("EISDIR") || result.includes("Is a directory")) return "path-is-directory";
-  if (tool === "edit" && (rootCause.includes("Could not find") || rootCause.includes("exact text"))) return "edit-match-fail";
+  if (tool === "edit" && (rootCause.includes("Could not find") || rootCause.includes("exact text") ||
+      /Found \d+ occurrences/.test(rootCause) || /Found \d+ occurrences/.test(result))) return "edit-match-fail";
   if (rootCause.includes("P53") || rootCause.includes("convention")) return "convention-block";
 
   if (rootCause.includes("command not found") || result.includes("command not found")) return "cmd-not-found";
@@ -200,20 +201,33 @@ export function classifyFailure(chain: FailureChain): FailureCategory {
       /"passed":\s*false/.test(rootCause) || /"passed":\s*false/.test(result) ||
       /RESULT: FAIL/i.test(rootCause) || /RESULT: FAIL/i.test(result)) return "test-failure";
 
+  // Gym scenario test failures (custom assert format: ✗ name: expected X, got Y)
+  if (/✗/.test(result) || /✗/.test(rootCause)) return "test-failure";
+
+  // Gym test summary format: "N passed, N failed out of N tests" / "TESTS FAILED"
+  if (/\d+ failed out of \d+ tests/i.test(result) || /\d+ failed out of \d+ tests/i.test(rootCause) ||
+      /TESTS FAILED/i.test(result) || /TESTS FAILED/i.test(rootCause)) return "test-failure";
+
   // Test runner output with passing tests but non-zero exit (truncated output hides failures)
   if (tool === "bash" && (/✓.*tests?\)/.test(result) || /✓.*tests?\)/.test(rootCause) ||
       /RUN\s+v\d/.test(result) || /RUN\s+v\d/.test(rootCause))) return "test-failure";
 
-  // Git CLI errors (argument conflicts, bad refs, etc.)
+  // Git CLI errors (argument conflicts, bad refs, gitignore blocks, review gate, push rejections)
   if (/^fatal:/.test(result.trim()) || /^fatal:/.test(rootCause.trim()) ||
-      /fatal:.*cannot be used together/.test(rootCause) || /fatal:.*cannot be used together/.test(result)) return "git-error";
+      /fatal:.*cannot be used together/.test(rootCause) || /fatal:.*cannot be used together/.test(result) ||
+      /ignored by one of your \.gitignore/i.test(rootCause) || /ignored by one of your \.gitignore/i.test(result) ||
+      /Direct commits to main are blocked/i.test(rootCause) || /Direct commits to main are blocked/i.test(result) ||
+      /failed to push some refs/i.test(rootCause) || /failed to push some refs/i.test(result) ||
+      /\[rejected\].*fetch first/i.test(rootCause) || /\[rejected\].*fetch first/i.test(result) ||
+      /nothing to commit/i.test(rootCause) || /nothing to commit/i.test(result) ||
+      /Changes not staged for commit/i.test(rootCause) || /Changes not staged for commit/i.test(result)) return "git-error";
 
   // Environment mismatch (wrong Node version, missing built-in, etc.)
   if (/ERR_UNKNOWN_BUILTIN_MODULE|no such built-in module/i.test(rootCause) ||
       /ERR_UNKNOWN_BUILTIN_MODULE|no such built-in module/i.test(result)) return "env-mismatch";
 
-  // Non-zero exit code with no meaningful error (grep found nothing, ls partial fail, cat missing)
-  if (/Command exited with code [12]\b/.test(rootCause) || /Command exited with code [12]\b/.test(result)) return "exit-code-nonzero";
+  // Non-zero exit code (grep found nothing, ls partial fail, command not found [127], git errors [128])
+  if (/Command exited with code [1-9]\d*\b/.test(rootCause) || /Command exited with code [1-9]\d*\b/.test(result)) return "exit-code-nonzero";
 
   return "other";
 }
