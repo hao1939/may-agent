@@ -339,3 +339,28 @@ H-054 P(H) updated to 0.65 (from 0.50). Phase 2 (inter-rater reliability measure
 - PRIORITY-TRACKER updated: H-043 P(H)→0.72, H-054 P(H)→0.65, EXP-051/052 added to queue
 
 **Reflection**: The RIFT audit (EXP-052) produced the most actionable finding — the 3 lowest-RIFT scenarios (qa-overstrict-gate, qa-severity-calibration, incremental-context-loading) are candidates for rubric rewriting. Converting process checks to product checks (e.g., measuring efficiency via token count rather than transcript pattern matching) would systematically raise evaluation reliability.
+
+## Session: 2026-04-10 (EXP-116 Phase 2 Analysis)
+
+**Task**: Analyze EXP-116 Phase 2 results and write deliverables (results.md, INDEX update, PRIORITY-TRACKER update).
+
+**Key findings**:
+1. **Data correction**: Phase 1 analysis (`phase2-analysis.md`) undercounted — 18 trials exist, not 15. Ghost-deliverable-chain had 4 runs (3 baseline + 1 arm_a), not "missing entirely"
+2. **Universal null result**: 0/18 runs passed. Baseline: 11% checks (kb), 25% checks (ghost). All 12 treatment runs: 0% checks
+3. **Destructive over-correction**: Treatment contexts caused agents to delete source files during critique, extending KE-119's "review without action" to "review triggers destruction"
+4. **EXP-103 contradiction**: Same interventions (adversarial framing, machine evidence) achieved 100% in single-session EXP-103 but 0% in multi-session EXP-116. Multi-session inheritance qualitatively changes confabulation mechanism
+5. **Infrastructure confounds**: Arms C/D missing environment directories, ghost-deliverable Arms B-D never ran, no transcripts preserved
+6. **Duration-outcome inversion**: Arm A spent 8× longer (159s vs 18s) but scored worse (0% vs 11%)
+
+**Deliverables**:
+- `agents/shared/knowledge/experiments/EXP-116/results.md` — comprehensive 235-line results analysis
+- `agents/shared/knowledge/INDEX.md` — EXP-116 added, H-095 updated with EXP-116 evidence
+- `agents/shared/knowledge/hypotheses/PRIORITY-TRACKER.md` — EXP-116 added to experiment table, H-095 evidence updated, header updated
+
+**Key decisions**:
+1. **H0 CONFIRMED**: No treatment arm achieved ≥80%. Null result.
+2. **H1 NOT CONFIRMED** (partially confounded): Infrastructure issues prevent definitive rejection, but clean Arms A/B both scored 0%
+3. **H3 CONFIRMED (reversed)**: Adversarial framing alone didn't just fail — it actively harmed (0% vs 11% baseline)
+4. **P(H-095) unchanged at 0.82**: EXP-116 null result is consistent with but doesn't strengthen H-095
+
+**Reflection**: The EXP-103 vs EXP-116 contradiction is the most intellectually interesting finding. Single-session confabulation is bypassable with prompt-level critique (EXP-103: 100%), but inherited confabulation from a prior session is completely resistant to the same interventions (EXP-116: 0%). This suggests multi-session handoffs create a different psychological dynamic — the agent treats inherited context as more authoritative than in-session reasoning, making it harder to override with additional prompting. This is consistent with the broader pattern: structural interventions (guards, checklists) work; text-based interventions (reviews, critiques) don't.
