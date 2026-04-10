@@ -45,6 +45,7 @@
 | [KE-049](../../entries/KE-049-agent-environment-interface-formalization-ceiling.md) | Formalization Ceiling: structured interfaces eliminate mechanical errors but NOT reasoning errors. Six-level formalization ladder (L0 raw text → L6 co-evolutionary memory). Ceiling between L2 and L3. Practical pattern: formalize structure, externalize judgment. |
 | [KE-050](../../entries/KE-050-robustness-architecture-nexus.md) | Robustness-Architecture Nexus: agents collapse 30-70% under minor perturbations. Robustness Stack ordering: Topology > Harness > Evaluation > Model — inverts common assumption. Self-optimizing MAS pattern: automated topology search with constitutional bounds. |
 | [KE-075](../../entries/KE-075-client-side-pipeline-optimization-model-selection.md) | Client-Side Pipeline Optimization: 13-32× cost gap between best/worst model assignments at matched accuracy. Bandit algorithms (Arm Elimination) find near-optimal combinations with 24-67% less evaluation budget. Step-level model selection is a neglected high-leverage optimization for multi-agent deployments. |
+| [KE-128](../../entries/KE-128-phase0-discovery-structural-intervention-fm13.md) | ★★★★ Phase 0 Discovery for FM-1.3: Mandatory pre-phase directory discovery (+100pp on exhaustive reading). 3rd agent-specific structural guard (after EXP-110 Coder commit guard, EXP-115 Optimizer completeness guard). Pattern: change agent's information state before task begins, not instructions about what to do. |
 
 ## Related Hypotheses
 - **H-006**: Delegation asymmetry
@@ -53,6 +54,7 @@
 - **H-041**: Decision topology
 - **H-042**: Topology evolution
 - **H-044**: Asymmetric default behavior
+- **H-095**: Agent-specific failure interventions outperform universal approaches (P(H)=0.84) — three validated structural guards: EXP-110 (Coder commit), EXP-115 (Optimizer completeness), EXP-124 (Bob Phase 0 discovery)
 
 ## Design Anti-Patterns
 From our system's experience and research:

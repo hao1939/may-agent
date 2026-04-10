@@ -914,3 +914,8 @@
   - **Salvageable finding**: Baseline 11% confirms confabulation mechanism in clean unconfounded run (consistent with KE-093). Arm A's 8× duration suggests critique framing causes destructive over-correction (extends KE-119).
   - **Rerun requirements**: (1) Preserve transcripts, (2) Fix environment directories, (3) Pre/post file inventories, (4) Complete all scenarios, (5) Increase N≥6.
   - **File created**: `agents/shared/knowledge/experiments/EXP-116/phase2-analysis.md`
+
+## Session Notes (2026-04-10 ~17:55)
+- [x] **KE-128 INDEX.md Integration**: Added KE-128 (Phase 0 Discovery — Structural Intervention for FM-1.3) to INDEX.md entries table after KE-127. EXP-124 experiment row was already present (line 675) but the corresponding KE entry was missing.
+- [x] **Topic Files Updated**: Added KE-128 reference to `07-tool-use-workflows.md` (Knowledge Entries table) and `10-agent-design-patterns.md` (Knowledge Entries table + H-095 added to Related Hypotheses section). The "3 validated agent-specific structural guards" pattern now visible in topic navigation.
+- **Status**: EXP-124 integration now FULLY COMPLETE — KE-128 entry file ✓, INDEX.md experiment row ✓, INDEX.md KE entry row ✓, PRIORITY-TRACKER ✓, H-085 ✓, H-095 ✓, topic files ✓.
