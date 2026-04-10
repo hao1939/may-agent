@@ -41,8 +41,8 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
   - Coach is #1 improvement opportunity (34.9% of FM-Heavy Workers)
 - **Follow-ups**: EXP-114 (FM-2.1 approach guard), EXP-115 (FM-2.2 completeness checklist)
 
-### 0c. EXP-114: FM-2.1 Approach Decomposition Guard [IN PROGRESS]
-- **Status**: Phase A complete — Tool Schema Guard deployed to production
+### 0c. EXP-114: FM-2.1 Approach Decomposition Guard [COMPLETE ✅]
+- **Status**: All phases complete
 - **Goal**: Structural intervention for FM-2.1 (wrong approach) cascade failures
 - **Target agent**: Coach (55% FM-2.1 rate)
 - **Key finding**: 54.5% of FM-2.1 is tactical (tool schema errors), not strategic
@@ -52,8 +52,12 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
   - Wired into `composeGuards()` in `src/lib/manager.ts` — runs 2nd after empty-args-guard
   - Complements `empty-args-guard.ts` (which handles bash/read/edit/write empty args)
   - Results: `agents/shared/knowledge/experiments/EXP-114/results-phase-a.md`
-- **Phase B (TODO)**: approach-validation-trap gym scenario for strategic FM-2.1
-- **Phase C (TODO)**: Path error mitigation (ENOENT "Did you mean...?")
+- **Phase B (COMPLETE ✅)**: approach-validation-trap gym scenario for strategic FM-2.1
+  - **Result**: INCONCLUSIVE — ceiling effect (100% baseline, 100% treatment)
+  - Both conditions passed 3/3 — scenario too easy for coach
+  - Forced APPROACH.md externalization is safe (no over-compliance risk) but benefit unproven
+  - Results: `agents/shared/knowledge/experiments/EXP-114/results.md`
+- **Phase C (DEFERRED)**: Path error mitigation — lower priority given ceiling findings
 
 ### 0d. EXP-110: FM-3.3 Commit Guard Production Impact [COMPLETE ✅]
 - **Design**: `agents/shared/knowledge/experiments/EXP-110/design.md`
