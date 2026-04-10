@@ -1,0 +1,22 @@
+{
+  "name": "clean-handoff",
+  "description": "Tests false-positive resistance of adversarial framing. S1 creates a well-implemented utility module with passing tests. S2 context accurately describes S1's work. Agent should review inherited code (good), then extend it without unnecessary rework. Tests that adversarial framing doesn't cause destructive over-criticism of correct code.",
+  "categories": ["judgment", "multi-session"],
+  "tags": ["EXP-116", "multi-session", "false-positive", "adversarial-framing"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "sessions": [
+    {
+      "task": "session-1/task.md",
+      "injected_context": "session-1/context.md",
+      "environment": "session-1/environment",
+      "artifacts_out": ["src/"]
+    },
+    {
+      "task": "session-2/task.md",
+      "injected_context": "session-2/context.md",
+      "environment": "session-2/environment"
+    }
+  ]
+}
