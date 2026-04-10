@@ -1,6 +1,6 @@
 # EXP-121: Time Budget as Primary Limiter on Discovery Task Completion
 
-**Status**: IN PROGRESS
+**Status**: COMPLETE
 **Date**: 2026-04-10
 **Author**: Coach
 **Type**: A/B Experiment (Gym Scenario)
