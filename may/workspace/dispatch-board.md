@@ -1,23 +1,23 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~09:42 UTC
+Updated: 2026-04-10 ~09:53 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — Heartbeat 09:42. Completed: EXP-108 KB integration + Strategic Research Direction Review (KE-120 Cooperation-Calibration-Context Triad, H-097, DD-731/732/733).
-- **Coach**: 🟢 Active — Heartbeat 09:42. **EXP-115 COMPLETE** — forced deliverable enumeration +100pp (0%→100%). KE-115 created.
-- **Scout**: 🟢 Active — Heartbeat 09:42. DD#731-733 Friday arXiv triage done.
-- **Tech-lead**: 🟢 Active — Heartbeat 09:42. Test fix session done. **Web UI still not picked up** (4 duplicate requests in queue).
-- **Optimizer**: 🟢 Active — Heartbeat 09:42. QA finish_partial fix shipped. Now doing Mode D workflow health checks.
-- **Evaluator**: 🟢 Active — Heartbeat 09:42.
-- **QA**: 🟢 Active — Heartbeat 09:42. Security tool review done.
-- **Coder**: 🟡 Spec ready (`agents/coder/workspace/SPEC-webui-agent-visualization.md`). Awaiting tech-lead to fork coder build session.
-- **All agents**: 🟢 8/8 running. Zero errors. Zero stuck sessions.
+- **Bob**: 🟢 Active — Heartbeat 09:53. EXP-115 KB integration dispatched (req:77240689).
+- **Coach**: 🟢 Active — Heartbeat 09:53. **EXP-115 COMPLETE** — forced deliverable enumeration +100pp (0%→100%). KE-121 proposed. Skill deployment dispatched (req:547c9ea5).
+- **Scout**: 🟢 Active — Heartbeat 09:53.
+- **Tech-lead**: 🟢 Active — Heartbeat 09:53. Web UI Phase 1 review dispatched (req:dbea1bd5) — branch `review/webui-agent-activity`. Dead code removal merged (610 lines).
+- **Optimizer**: 🟢 Active — Heartbeat 09:53. QA finish_partial fix shipped. Duplicate QA-token-waste requests to tech-lead (e3a52c95 + 77a2b7b5).
+- **Evaluator**: 🟢 Active — Heartbeat 09:53.
+- **QA**: 🟢 Active — Heartbeat 09:53.
+- **Coder**: ✅ **Web UI Phase 1 BUILT** — 3 API endpoints + 270 lines UI on branch `review/webui-agent-activity` (commit b83aa98). TSC clean. Awaiting tech-lead review+merge.
+- **All agents**: 🟢 8/8 running. 1 coach interruption last hour (auto-resumed). Zero errors.
 - **✅ Tool Schema Guard**: Live in production.
-- **✅ Evaluator SOUL.md**: Applied optimizer's adversarial sycophancy hardening (Trust Artifacts subsection added).
+- **✅ Dead code removal**: Forced-externalization module removed (610 lines). Commit 8e569ba merged to main.
 - **⚠️ Cron bug**: `analyze-failures` cron keeps failing (`db.query is not a function`). Low priority.
 - **⚠️ Git drift**: 223 files changed vs HEAD. Project restructured to bundled binary.
-- **⚠️ Web UI duplicate requests**: 4 CREATED requests to tech-lead for same Web UI task. Needs cleanup.
+- **⚠️ Duplicate requests**: 2 coder Web UI (13206ac2 + 15c2715c, completed), 2 optimizer→tech-lead QA token waste (e3a52c95 + 77a2b7b5). Need cleanup.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -122,8 +122,8 @@ Updated: 2026-04-10 ~09:42 UTC
 | **KE-112 Verdicts Lie** | ✅ COMPLETE | bob | Production quality multi-modal — verdicts mask process issues. Agent FM fingerprints documented. |
 | **H-095 Agent-Specific Interventions** | ✅ FILED | bob | P(H)=0.65. Agent-specific interventions > universal. Predictions defined. Needs EXP-109 Phase 3 for validation. |
 | **Optimizer Tool Quality Regression #14** | ✅ COMPLETE | optimizer | Self-dispatched investigation of 4 regressed tool quality categories. First self-initiated productive work in days. |
-| **EXP-115 FM-2.2 Completeness Checklist** | ✅ COMPLETE | coach | **MAJOR**: Forced deliverable enumeration 0%→100% (+100pp). KE-115 created. Mechanism: externalization prevents misinterpretation, not just omission. External validity: ~23% of real FM-2.2. Commit 7de9568a. |
-| **Web UI Agent Visualization Dashboard** | 🟡 RE-DISPATCHED | tech-lead→coder | Original spec lost. Re-dispatched to tech-lead (req:f0420cf7). Design at `agents/may/designs/web-ui-chat-improvements.md`. 3 gaps: transcript hydration, session header, localStorage resume. |
+| **EXP-115 FM-2.2 Completeness Checklist** | ✅ COMPLETE | coach | **MAJOR**: Forced deliverable enumeration 0%→100% (+100pp). KE-121 proposed (extends KE-007, KE-034). Bob KB integration dispatched (req:77240689). Coach deploying optimizer skill (req:547c9ea5). |
+| **Web UI Agent Visualization Dashboard** | ✅ Phase 1 BUILT → Review | tech-lead | Coder built Phase 1 (commit b83aa98): 3 API endpoints + 270 lines UI on branch `review/webui-agent-activity`. TSC clean. Tech-lead review dispatched (req:dbea1bd5). |
 | **EXP-114a Tool Schema Guard Monitoring** | ⏳ INSUFFICIENT DATA | coach | T+2h: 57 sessions, 0 activations, 0 FP. Base rate 1.5% — need 280+ sessions. Guard may be bypassed (April sessions get framework errors instead). |
 | **EXP-113 FM-Heavy Workers Analysis** | ✅ COMPLETE | coach + bob | **KEY**: 398 FM-Heavy sessions (26.9%). Top cascade: FM-2.1 (96 first-appearances, 2.38 subsequent). Coach 55% FM-2.1 rate. Three intervention opportunities: FM-2.1 guard, FM-2.6 tool skills, FM-3.1 grounding. Bob integrated: H-095 P(H) 0.70→0.75. |
 | **EXP-114 FM-2.1 Decomposition Design** | ✅ DESIGNED | coach | **PIVOT FINDING**: 54.5% of FM-2.1 is tactical tool errors (bash({}), wrong args), NOT strategic approach problems. No single guard works — need Tool Schema Guard (#1, 78 sessions, HIGH conf) + Path Hints (#2) + Forced Externalization (#3). |
@@ -164,24 +164,25 @@ Updated: 2026-04-10 ~09:42 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (09:42)
-- **System healthy**: All 8 non-May agents running. Zero errors. Zero stuck sessions. All heartbeats fresh (~09:42).
-- **EXP-115 COMPLETE** ✅: Forced deliverable enumeration: 0% → 100% (+100pp). KE-115 created. Commit 7de9568a. **Key insight**: checklist prevented *misinterpretation*, not just omission.
-- **Bob completed 2 work sessions**: (1) EXP-108 KB integration (adversarial self-review null result). (2) Strategic Research Direction Review → KE-120 (Cooperation-Calibration-Context Triad), H-097, DD-731/732/733.
-- **Evaluator SOUL.md hardened**: Applied optimizer's adversarial sycophancy brief — "Trust Artifacts, Not Explanations" subsection added to P108 section.
-- **Web UI still stalled**: 4 duplicate CREATED requests to tech-lead. Tech-lead keeps doing other work. May need stronger signal next cycle.
+## Latest Cycle Summary (09:53)
+- **System healthy**: All 8 non-May agents running. 1 coach interruption (auto-resumed). All heartbeats fresh (~09:53).
+- **Web UI Phase 1 BUILT** ✅: Coder completed build — 3 API endpoints + 270 lines UI on branch `review/webui-agent-activity`. Dispatched to tech-lead for review+merge (req:dbea1bd5).
+- **EXP-115 COMPLETE** ✅: 0%→100% (+100pp). KE-121 proposed (externalization prevents misinterpretation). Dispatched: Bob→KB integration, Coach→optimizer skill deployment.
+- **Dead code removal MERGED**: Forced-externalization module (610 lines) removed. Commit 8e569ba.
+- **Optimizer found QA token waste**: 3.18M tokens/day from QA reading full journal. Duplicate requests to tech-lead (needs de-dup).
 
 ## Key New Findings This Cycle
-- **EXP-115 COMPLETE** (coach): Forced deliverable enumeration 0%→100%. Mechanism: externalization prevents misinterpretation, not just omission. External validity limited (~23% of real FM-2.2).
-- **KE-120** (bob): Cooperation-Calibration-Context Triad — three structural multi-agent requirements. Capability ≠ cooperation, consensus ≠ correctness, more context ≠ better steering.
-- **H-097** (bob): Multi-Agent CCC Structural Coordination hypothesis filed, P(H)=0.65.
+- **Web UI Phase 1 shipped by coder**: First real coder production work in days. This also generates data for EXP-105 (few-shot production impact).
+- **EXP-115 mechanism insight**: Forced externalization prevents MISINTERPRETATION (semantic drift), not just omission. Agent reads file but acts on wrong interpretation. Checklist forces explicit disambiguation. Extends KE-007, KE-034.
+- **QA token waste** (optimizer finding): QA heartbeat reads full journal = 3.18M tokens/day wasted. Tech-lead should fix.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao since Mar 24**.
-- **P1**: **Web UI build** — Spec exists. Tech-lead has 4 duplicate requests. If not picked up by next heartbeat, fork directly.
-- **P1**: **EXP-105 Few-Shot Production Impact** — Still waiting for coder/optimizer work sessions.
-- **P1**: **EXP-115 production deployment** — Gym result confirmed. Deploy deliverable checklist guard to optimizer production.
+- **P1**: **Web UI review+merge** — Tech-lead dispatched (req:dbea1bd5). Branch `review/webui-agent-activity`.
+- **P1**: **EXP-115 deployment** — Coach deploying optimizer skill (req:547c9ea5). Bob KB integration (req:77240689).
+- **P1**: **EXP-105 Few-Shot Production Impact** — Coder Web UI session was the first real work session since deployment. Check few-shot activation data next cycle.
 - **P1**: **Present research sprint results to Hao** — KE-101 meta-analysis capstone. 17+ experiments. Gym graduation.
+- **P2**: QA token waste fix — optimizer→tech-lead (de-dup requests first)
 - **P2**: `analyze-failures` cron DB bug — persistent but non-critical.
 - **P2**: Federation design ready for Hao review
 - **P2**: Amy-kimi still down — blocked on Hao for billing
