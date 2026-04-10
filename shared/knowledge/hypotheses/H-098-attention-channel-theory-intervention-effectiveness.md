@@ -121,12 +121,15 @@ Because Channel 2 operates through environmental state (not text competition), a
 
 ## Experimental Proposals
 
-### EXP-E1: Channel Separation Direct Test
+### EXP-E1: Channel Separation Direct Test → **EXP-127 (DESIGNED)**
 Design: Same judgment intervention delivered through 3 channels:
-- Arm A: Text instruction in system prompt (Channel 1)
-- Arm B: Same content as task-message few-shot (Channel 3)
-- Arm C: Same content as forced externalization gate (Channel 2)
-Prediction: 0%, 33-100%, 87-100% respectively. N=6 per arm.
+- Arm A: Text instruction in system prompt (Channel 1) — lab fork `coder-channel-test-ch1`
+- Arm B: Same content as task-message few-shot (Channel 3) — scenario `contradictory-requirements-ch3-fewshot`
+- Arm C: Same content as forced externalization gate (Channel 2) — scenario `contradictory-requirements-ext`
+- Baseline: No intervention — scenario `contradictory-requirements`
+Prediction: Baseline 0%, Ch1 0-17%, Ch3 83-100%, Ch2 83-100%. N=6 per arm (24 total).
+**Status**: Design + protocol complete. Scenarios + lab fork created. Ready to execute.
+**Files**: `agents/shared/knowledge/experiments/EXP-127/design.md`, `protocol.md`
 
 ### EXP-E2: Channel 2 Budget Curve
 Design: Chain 1, 2, 3, 4 forced externalization gates on a judgment task.
