@@ -2,7 +2,6 @@
 ## Available Tools (auto-generated from agent.json)
 `read`, `write`, `edit`, `bash`, `checkpoint`, `finish`
 
-**OpBudget**: 20 ops per session
 <!-- SYNC:TOOLS_END -->
 
 # Tools

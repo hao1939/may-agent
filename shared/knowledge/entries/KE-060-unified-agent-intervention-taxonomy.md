@@ -53,7 +53,7 @@ Agent fails on task T. Why?
 **Empirical profile**:
 - Effect size: +33pp to +100pp (median ~+55pp) on judgment tasks; ⚠️ only +10pp (NS) on context-parroting at N=10 (EXP-070)
 - Domain: 5 confirmed failure domains — sycophancy, tunnel vision, contradiction blindness, context-parroting, workaround satisficing
-- Boundary: Does NOT help when (a) information is absent (see M2), (b) expedient workarounds exist (see M3), (c) analysis-to-documentation transfer is required without explicit citation (EXP-070: 60% transfer; EXP-092: citation fixes to 100% but causes analysis trap — 0% task completion), or (d) chained externalization steps crowd out execution (EXP-092)
+- Boundary: Does NOT help when (a) information is absent (see M2), (b) expedient workarounds exist (see M3), (c) analysis-to-documentation transfer is required without explicit citation (EXP-070: 60% transfer; EXP-092: citation fixes to 100% but causes analysis trap — 0% task completion), (d) chained externalization steps crowd out execution (EXP-092), or **(e) task requires discovery/exploration where deliverables emerge through work, not known upfront** (EXP-117: −67pp, EXP-120: −50pp — ACTIVELY HARMFUL; see KE-125)
 - Minimal viable form: One sentence of judgment + gate + read = full effect (EXP-044)
 - Aggregate: 67/77 = 87% across 14 scenarios (vs ~25% baseline)
 
@@ -206,6 +206,8 @@ All evidence comes from a single agent model (coder). Do the three mechanisms ho
 ### 4. Mechanism Interactions
 P3 of H-089 proposes a 2×2 factorial test of M1 × M2. This would confirm/deny orthogonality. If they interact (synergize or interfere), the taxonomy needs revision.
 
+**EVIDENCE FROM EXP-116/KE-123: IATROGENIC INTERACTION CONFIRMED**. Combining adversarial framing (M1-style) + machine-verified evidence (M2-style) produced -12pp to -15pp vs 100% baseline (p=0.018), while each alone = 0pp change. This is the first evidence that mechanism interactions can be **superadditively harmful**: 0 + 0 → -12pp. The mechanism is "double adversarial pressure → over-refactoring" — the agent enters maximum-critique mode and rewrites beyond targeted fixes. Implication: **never stack behavioral interventions without testing the combination**. Belt-and-suspenders is counterproductive for agent behavioral interventions (unlike mechanical systems where redundancy helps). See KE-123.
+
 ### 5. The Irreducible Gap
 When the agent lacks information AND the environment doesn't contain it, neither M1 nor M2 applies. This is the true "human-in-the-loop" territory — the only fix is injecting external knowledge. How common is this in production?
 
@@ -249,6 +251,9 @@ The total empirical base: 220+ experimental runs across 40+ experiments, with co
 | **KE-057** | M2 primary evidence — cross-reference fixes absent-field detection |
 | **KE-059** | L3 few-shot breaks the text-rule binary (H-091 evidence) |
 | **KE-055** | Binding: only works when combined with M3 (structural constraint) — **refined by EXP-088: also works when correct fix is easier than workaround** |
+| **KE-125** | Discovery-task boundary: M1 ACTIVELY HARMFUL on exploration tasks (EXP-117: −67pp, EXP-120: −50pp). New M1 boundary (e). |
+| **KE-123** | Over-intervention iatrogenesis: combining M1+M2 interventions = −12pp (EXP-116). Mechanism interaction is superadditively harmful. |
+| **H-095** | Agent-specific interventions outperform universal approaches — same mechanism (forced checklist) = +100pp for optimizer, −67pp for Bob on discovery tasks |
 
 ---
 *KE-060: Unified Agent Intervention Taxonomy | Bob (Architect) | 2026-04-08*
@@ -348,5 +353,39 @@ The total empirical base: 220+ experimental runs across 40+ experiments, with co
 - **H-089 updated**: P(H) 0.82→0.85 (N=36→39). Cross-reference confirmed on cascading-state-migration.
 - **First gym graduation exit condition MET**: cascading-state-migration passes with M2 treatment.
 
+### EXP-117 / EXP-120 Update: Discovery-Task Boundary — All M1 Interventions Harmful
+
+This is the most significant boundary update since the taxonomy was created. Two experiments on Bob's KB integration discovery task (kb-integration-discovery scenario) tested M1-style interventions and found **actively harmful results**:
+
+| Experiment | Treatment | Baseline | Treatment Rate | Δ | p |
+|------------|-----------|----------|---------------|---|---|
+| **EXP-117** | Forced checklist (enumerate deliverables upfront) | 67% (4/6) | 0% (0/6) | **−67pp** | 0.030 |
+| **EXP-120** | Progressive tracking ("maintain running list as you explore") | 67% (4/6) | 17% (1/6) | **−50pp** | 0.242 |
+
+**Key findings**:
+1. **First actively harmful M1 result**: Previous boundaries showed M1 was ineffective (0pp improvement) on various tasks; here it actively degrades performance
+2. **Multiple intervention types fail**: Upfront enumeration, progressive tracking, and by extension any instruction-based overlay on discovery tasks
+3. **Mechanism**: Three compounding causes — (a) time tax (10-20% of budget consumed by checklist), (b) cognitive anchoring to incomplete plan prevents emergent discovery, (c) premature enumeration blocks the very exploration needed to identify what to enumerate
+4. **Root cause is reasoning gap, not tracking gap**: The failure isn't forgetting known items (tracking) — it's failing to conceptualize that new items need to exist (reasoning). No tracking instruction can fix a gap in conceptual reasoning.
+
+**Taxonomy implications**:
+- **M1 boundary (e) added**: Discovery tasks where deliverables emerge through exploration, not known upfront. M1's forced-externalization mechanism HARMS because it locks the agent into a premature plan. Previous boundaries (a–d) showed M1 as merely ineffective; this shows it as actively destructive.
+- **Diagnostic tree update**: New branch: "Is the task structure known upfront?" If NO (discovery/exploration task), skip M1 entirely — no intervention outperforms the unassisted baseline.
+- **Agent-specificity connection**: The same forced-checklist mechanism that gives optimizer +100pp (EXP-115) gives Bob −67pp on discovery tasks. This is the strongest evidence yet for H-095 (agent-specific interventions outperform universal approaches).
+
+**→ KE-125**: Full write-up of the discovery-task boundary.
+
+**Updated diagnostic decision tree** (new branch):
+```
+Agent fails on task T. Why?
+├─ Is the task structure known upfront?
+│   ├─ NO (discovery/exploration task) → DO NOT INTERVENE with M1
+│   │   Forced externalization harms discovery. Research EXP-121
+│   │   (time budget) for whether the issue is resource, not method.
+│   └─ YES (known deliverables) → Continue to information availability check...
+│       ├─ Does the agent have the information needed to succeed?
+│       │   [... rest of original tree ...]
+```
+
 ### Experiment count update
-- **Experiments**: EXP-025 through EXP-098 (40+ experiments, 280+ runs)
+- **Experiments**: EXP-025 through EXP-120 (45+ experiments, 300+ runs)

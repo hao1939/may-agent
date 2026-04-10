@@ -2,7 +2,6 @@
 ## Available Tools (auto-generated from agent.json)
 `claude_code`, `gemini_cli`, `codex_cli`, `finish`
 
-**OpBudget**: 60 ops per session
 <!-- SYNC:TOOLS_END -->
 
 # Master — Tools

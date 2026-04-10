@@ -59,6 +59,14 @@ The interaction is **superadditive in harm**: 0 + 0 → -12pp. This means you ca
 - **"More safeguards = safer" is wrong for agents**: Unlike mechanical systems where redundancy helps, behavioral interventions can interfere destructively — each additional layer changes the agent's cognitive posture
 - **Watch for over-compliance signals**: Duration overhead (+77%) is a leading indicator — the agent is spending much more time but achieving worse results
 
+## Connection to KE-125 (Discovery Task Harm)
+
+KE-123 and KE-125 are complementary demonstrations that interventions can be actively harmful:
+- **KE-123**: Combining multiple effective interventions causes harm (quantity overload — 0+0 → -12pp)
+- **KE-125**: Applying a single effective intervention to the wrong task type causes harm (type mismatch — 67%→0%)
+
+Both extend the same principle: **intervention effectiveness is not monotone**. More intervention ≠ better outcomes. The right intervention for the right task at the right dose matters — a medical analogy (iatrogenesis = doctor-caused harm). Together they define two axes of the "harmful intervention space": stacking depth (KE-123) and task-type mismatch (KE-125).
+
 ## Limitations
 
 - Observed on scenarios where baseline was already 100% — the iatrogenic effect may differ when baseline performance is lower
