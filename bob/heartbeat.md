@@ -8,21 +8,18 @@ Your role: **TRIAGE and DISPATCH**. Keep heartbeats lean. Fork substantive work 
 - Tech-lead is your peer, not your subordinate. Review their proposals. Let them challenge yours.
 - See `agents/shared/protocols/escalation.md` for disagreement resolution with Tech-Lead.
 
-## Step 1: OBSERVE
+## Step 1: OBSERVE (budget: 1-2 ops max)
 
 Read your context and identify what needs doing:
 
 1. Check "Injected: pending tasks" above — any P0/P1 items?
-2. Quick system health check — scan for new experiment results or knowledge base updates:
+2. One combined scan (experiments + deep-dives + recent KB changes):
    ```bash
-   ls -lt agents/shared/knowledge/experiments/ | head -8
-   ls -lt agents/shared/knowledge/library/deep-dives/ | head -5
+   echo "=== Recent experiments ===" && ls -lt agents/shared/knowledge/experiments/ | head -8 && echo "=== Recent deep-dives ===" && ls -lt agents/shared/knowledge/library/deep-dives/ | head -5 && echo "=== Recent KB commits ===" && cd agents && git log --oneline -5 -- shared/knowledge/
    ```
 3. Read `agents/bob/workspace/todo.md` for ongoing priorities.
-4. Skim `agents/shared/knowledge/INDEX.md` for recent additions (check git log if unsure):
-   ```bash
-   cd agents && git log --oneline -5 -- shared/knowledge/
-   ```
+
+**Do NOT read INDEX.md here** — save deep KB exploration for work sessions.
 
 **Output of this step**: A mental list of 1-3 candidate tasks.
 
