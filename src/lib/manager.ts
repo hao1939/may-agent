@@ -20,6 +20,7 @@ import { createEmptyArgsGuard } from "./tools/empty-args-guard.js";
 import { createToolSchemaGuard } from "./tools/tool-schema-guard.js";
 import { createCommitGuard } from "./tools/commit-guard.js";
 import { createCompletenessGuard } from "./tools/completeness-guard.js";
+import { createVerificationDepthGuard } from "./tools/verification-depth-guard.js";
 import { composeGuards } from "./tools/compose-guards.js";
 import {
   detectErrors,
@@ -381,6 +382,7 @@ export class SubagentManager {
             createCompletenessGuard(def.name),
             createFinishGuard(),
             createCommitGuard(def.name, this._projectRoot),
+            createVerificationDepthGuard(def.name),
             createReadDedupGuard(),
             createSessionReadGuard(),
             createScrapeDedupGuard(),
