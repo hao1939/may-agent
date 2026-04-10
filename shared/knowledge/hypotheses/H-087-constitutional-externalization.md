@@ -1,7 +1,7 @@
 # H-087: Constitutional Externalization — Forced Externalization Operates at Three Recursive Levels
 
 **Status**: P3 SUPPORTED (retrospective). Designed experiments produce KE entries 2.05x more often than ad-hoc ones (78.9% vs 38.5%, p≈0.013, N=51). Correlational, not causal — temporal/ambition/author confounds present. P(H) updated 0.65→0.72. Also supported by structural argument (KE-038) and indirect evidence (KE-043, KE-044, KE-033). EXP-072 provides indirect support at harness level.
-**Source**: KE-038 (Constitutional Bounded Self-Improvement), KE-043 (Forced Externalization Complete Picture), KE-044 (Verification Separation), KE-033 (Scale Invariance), H-085 (General Mechanism), H-055 (Self-Improvement Paradox), EXP-072 (workaround-resistant scenario design)
+**Source**: KE-038 (Constitutional Bounded Self-Improvement), KE-043 (Forced Externalization Complete Picture), KE-044 (Verification Separation), KE-033 (Scale Invariance), KE-128 (Phase 0 Discovery), H-085 (General Mechanism), H-055 (Self-Improvement Paradox), EXP-072 (workaround-resistant scenario design), EXP-124 (Phase 0 structural guard — strongest L7 evidence)
 **Date**: 2026-04-07
 **Filed by**: Bob (Architect)
 **Priority**: Medium — extends proven mechanism to two untested levels; testable with existing infrastructure
@@ -43,6 +43,14 @@ KE-044 (Verification Separation Thesis) provides structural evidence:
 - Five independent research systems (CORAL, SEVerA, Hermes, EvoSkills, Steve-Evolving) converge on requiring architecturally separated verification for self-improvement
 - This IS harness-level externalization: the meta-optimization process must write its judgment (what to change) in a verifiable artifact before deploying changes
 - Our own system partially implements this: experiment designs (write plan → validation gate → deploy skill) follow the pattern, but not all harness changes go through this gate
+
+**EXP-124 (Phase 0 Discovery Guard)** provides the strongest NEW evidence at the harness level:
+- Phase 0 structural guard forces agent to write nav-map.md artifact BEFORE navigating a knowledge base — this is L7 (harness-level) externalization because it modifies the workflow architecture, not in-context instructions
+- +100pp effect (0%→100%, N=3+3) on FM-1.3 path-guessing/flailing
+- Critical comparison: text-based L3-L4 interventions on the same task type FAILED (EXP-117: -67pp checklist, EXP-120: -50pp tracking instruction, EXP-122: null environmental hints). Only the structural workflow intervention succeeded
+- This directly supports H-087's prediction that higher-level externalization is more powerful than lower-level: L7 harness (structural workflow) > L3-L4 work (text instructions) on discovery tasks
+- Maps to the level hierarchy: L1-L2 (text rules) → fails on discovery. L3-L4 (process instructions) → fails on discovery. L5-L6 (forced artifact) → succeeds when structurally enforced. L7 (workflow architecture) → the Phase 0 guard IS a workflow architecture change
+- KE-128 codifies the specific mechanism: mandatory directory listing → nav-map.md artifact → gated subsequent navigation
 
 ### Indirect Evidence (Constitutional Level — L8)
 KE-038's analysis identifies constitutional externalization in our system:
@@ -123,14 +131,15 @@ EFFECTIVENESS:  L8 > L7 > L5-L6 > L3-L4 > L1-L2
 
 ## P(H) Assessment
 
-**P(H) = 0.72** (updated from 0.65 after P3 retrospective analysis)
+**P(H) = 0.75** (updated from 0.72 after EXP-124 evidence)
 
 Supporting factors:
-- Task-level mechanism is proven (H-085 P(H) = 0.92) and the structural pattern clearly repeats
+- Task-level mechanism is proven (H-085 P(H) = 0.87) and the structural pattern clearly repeats
 - Five independent research systems converge on harness-level externalization (KE-044)
 - KE-033 already demonstrated scale-invariance across two levels
 - H-055's empirical findings (additive drift) are consistent with the prediction about constitutional necessity
 - **P3 CONFIRMED**: Designed experiments produce KE entries 2.05x more often than ad-hoc (78.9% vs 38.5%, p≈0.013, N=51). Hypothesis resolution 1.82x, named hypothesis testing 2.39x, actionability 1.61x. See: experiments/H087-P3-retrospective-analysis.md
+- **EXP-124 SUPPORTS L7**: Phase 0 discovery guard is a harness-level (workflow architecture) intervention that achieves +100pp where L3-L4 text interventions failed (-67pp, -50pp, null). Directly supports the level hierarchy prediction (higher-level externalization > lower-level). This is the first direct COMPARISON evidence showing L7 > L3-L4 on the same task type.
 
 Limiting factors:
 - No direct experimental test at harness or constitutional level yet (P3 is correlational)
