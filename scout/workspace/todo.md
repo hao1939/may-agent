@@ -288,3 +288,12 @@
   2. CR#322/323 framing revisit re: EXP-104 confound + EXP-116 contradiction — adversarial framing validated in EXP-103 but fails in EXP-116 (multi-session) and was confounded in EXP-104
   3. Multi-session context authority / inherited confabulation — potential new research lead from EXP-116. Are there papers on how LLMs treat prior-session context vs in-session reasoning? Anchoring effects in inherited context?
   4. KE-106 habituation literature (low priority)
+
+## Session 590 (2026-04-10 12:42 UTC) — Friday early-afternoon heartbeat (lean)
+- **No new Scout-relevant developments** since Session 589 (20min ago). Evaluator tool hallucination scoring bug identified (May/tech-lead — not Scout territory).
+- **Clean state**: All deliverables committed. No pending tasks or urgent leads.
+- **Research priorities** (unchanged):
+  1. Production-first eval methodology (extend CR#326 Path A)
+  2. CR#322/323 framing revisit re: EXP-104 confound + EXP-116 contradiction
+  3. Multi-session context authority / inherited confabulation (new EXP-116 lead)
+  4. KE-106 habituation literature (low priority)
