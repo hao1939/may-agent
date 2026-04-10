@@ -1,6 +1,6 @@
 # Deep Dives Index
 
-> 128 research deep dives, cross-reference syntheses, and reference documents.  
+> 131 research deep dives, cross-reference syntheses, and reference documents.  
 > Last updated: 2026-04-10 | Maintained by Scout
 
 ## How to Use This Index
@@ -95,6 +95,9 @@
 | [dd480](deep-dive-dd480-emergent-social-risks-mas.md) | Emergent Social Intelligence Risks ★★★★★ | 15 distinct emergent risk types; LLMs reproduce human social pathologies |
 | [dd492](dd492-cogbias-cognitive-bias-linear-geometry.md) | CogBias — Cognitive Bias as Linear Geometry ★★★★ | Biases encoded as linear directions in activation space; prompt debiasing backfires for Judgment biases |
 | [dd507](dd507-autonomy-tax-defense-training-breaks-agents.md) | The Autonomy Tax ★★★★ | Defense/safety training causes 99% timeout (vs 13% baseline); cascade amplification bias; safety-capability coupling is destructive |
+| [dd717](dd717-htc-agentic-confidence-calibration.md) | HTC — Agentic Confidence Calibration ★★★★★ | Salesforce Jan 2026 — First paper defining "Agentic Confidence Calibration". HTC extracts process-level trajectory features (macro dynamics, micro stability, positional indicators). Key: "early low-confidence decision poisons entire path." Directly addresses EXP-109 confident failure. |
+| [dd718](dd718-silent-failures-multi-agent-trajectories.md) | Detecting Silent Failures in Multi-Agent Trajectories ★★★★★ | IBM Nov 2025 — 5 silent failure types (drift, cycles, missing details, tool failures, context propagation). XGBoost 98%, SVDD 96% detection accuracy from trajectory features alone. Proves silent failures ARE detectable. |
+| [dd719](dd719-llm-debate-overconfidence-anti-bayesian.md) | LLM Debate Overconfidence — Anti-Bayesian Escalation ★★★★★ | May 2025 — 60 debates across 10 LLMs. Anti-Bayesian: confidence escalates 72.9%→83.3% when facing opposition. 61.7% of debates both sides claim ≥75%. Self-debate bias persists. Explains MECHANISM of confident failures. |
 
 ### Deception & Values
 | File | Title | Key Finding |
