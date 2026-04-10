@@ -4972,3 +4972,11 @@ Reviewed latest HEAD commit `fb14bdd` (scout knowledge update) and ran mandatory
 - Read: `agents/shared/knowledge/library/deep-dives/DD-740-context-pollution-self-conditioning.md` — content is coherent, properly formatted, and consistent with cross-reference list.
 
 Verdict: **PASS** — no code/test regressions observed.
+
+---
+2026-04-10T17:42Z — Proactive scan
+- Recent commits: inspected `c53cd79e` (deleted leaked fixture JS files from `src/`). Deletion looks safe; files were generic utilities and commit message claims nothing imports them.
+- Read: `src/gym/runner.ts` (full file) for quality sweep. Noted potential bug: `runMultiSession()` calls `runAgent(adapter, taskContent, tmpDir, agent, timeoutMs)` but `runAgent()` signature requires `(adapter, taskContent, workDir, agent, timeoutMs, withHistory)`. This should be a TypeScript error.
+- Mandatory checks: could not run `./node_modules/.bin/tsc --noEmit` or `./node_modules/.bin/vitest --run` because `node_modules/.bin` is missing and no `package.json` found at repo root (environment/setup issue).
+
+Verdict: **CONDITIONAL** — cannot fully verify due to missing toolchain; code has a likely TS signature mismatch that should be fixed/validated.
