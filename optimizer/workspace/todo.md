@@ -23,9 +23,9 @@
 - Phase 3b content verification deployed at 16:43 UTC (commit d6c7696).
 - Continue monitoring — 16 runs is decent sample but more data welcome.
 
-### Gym Results Data Gap — RE-FORKED (s_1775844808931)
+### Gym Results Data Gap — 3RD ATTEMPT (s_1775846632946)
 - `scripts/gym-run.sh` does bare `exec` → no DB recording. `scripts/gym-record.ts` exists but never called.
-- Previous "fix" sessions documented the problem but never applied code changes. Third attempt forked.
+- Previous 2 "fix" sessions reported success but committed NO code changes. Third attempt explicitly requires committed code.
 - Fix: add recording call in gym-helpers.ts or gym-run.sh where results are available.
 
 ### Coach Session Efficiency — FINDING COMPLETE
@@ -41,7 +41,7 @@
 - Root cause: heartbeat.md encouraged inline exploration (multi-query DB analysis, file reads).
 - Fix: Rewrote heartbeat.md to "Dispatcher Mode" — observe in 1-2 ops, fork all analysis work. Target: ≤15 ops.
 - Baseline: 8 heartbeats in 12h, avg 56 ops, total 451. Measuring post-fix.
-- Last exploration mode: **C** (Skill & Technique Scouting — Coach session efficiency deep dive, Apr 10 ~18:45 UTC). Next: **D** (Workflow Health Check).
+- Last exploration mode: **D** (Workflow Health — Apr 10 ~17:19 UTC). Next: **A** (Session Archaeology).
 
 ### may.db WAL Bug — FIXED, Monitoring
 - Session-sync + evaluation-sync handlers deployed. 1071 evals, 0 unevaluated (as of 17:10 UTC).
