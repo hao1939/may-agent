@@ -229,6 +229,11 @@ export function classifyFailure(chain: FailureChain): FailureCategory {
   // Non-zero exit code (grep found nothing, ls partial fail, command not found [127], git errors [128])
   if (/Command exited with code [1-9]\d*\b/.test(rootCause) || /Command exited with code [1-9]\d*\b/.test(result)) return "exit-code-nonzero";
 
+  // Truncated output where exit code was cut off — rootCause says "exec failed" but
+  // output was truncated before the "Command exited with code N" line appeared.
+  // The chain detector marks these isError:true, so they are genuine non-zero exits.
+  if (tool === "bash" && chain.trigger?.isError && /^exec failed:/.test(rootCause)) return "exit-code-nonzero";
+
   return "other";
 }
 
