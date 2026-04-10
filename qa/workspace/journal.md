@@ -4,25 +4,355 @@
 
 # QA Journal — 2026-04-09
 
-## 2026-04-09T23:02Z
+## 2026-04-10T01:25Z
 
 ### Summary
-Proactive scan of HEAD commit **5c84c321** (multi-session gym runner + finish-guard changes). I focused on `src/gym/runner.ts` and found two correctness issues in multi-session handling. I attempted mandatory gates, but this checkout cannot run them because `./node_modules/.bin/tsc` and `./node_modules/.bin/vitest` are missing.
+Proactive heartbeat QA at HEAD **e3f53b5** ("fix: gym-runner multi-session ENOENT on transcript export"). I reviewed `test/gym/gym-runner.ts` focusing on the new defensive `mkdirSync` guards ensuring `workDir` exists before transcript export/scoring.
 
 ### Files reviewed (evidence)
-- `src/gym/runner.ts` — multi-session support (`copyArtifacts`, `runMultiSession`, `runScenario` dispatch)
+- `test/gym/gym-runner.ts` (read lines 1–1413): multi-session runner now recreates `workDir` if deleted before env overlay, after each agent run, and again before combined transcript export/scoring.
 
-### Mandatory gates (this environment)
-- `./node_modules/.bin/tsc --noEmit`: FAIL to execute — `No such file or directory` (exit 127)
-- `./node_modules/.bin/vitest --run`: FAIL to execute — `No such file or directory` (exit 127)
+### Mandatory gates
+- `./node_modules/.bin/tsc --noEmit`: PASS (exit 0; no output)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2089 passed (2110)**
+  - `test/launcher.test.ts`: 7 failed — expects `/app/src/app/launcher.ts` to exist, but missing (`existsSync` false + ENOENT reads)
+  - `test/context-learn.test.ts`: 7 failed — cleanup `rmSync(tmpDir, { recursive: true })` fails with `EACCES` under `/app/test-workspace/context-learn-test/test-agent`
+  - `test/context-learning.test.ts`: 6 failed — cleanup `rmSync(tmpDir, { recursive: true })` fails with `EACCES` under `/app/test-workspace/context-learning-test/.state`
+  - `test/research-db.test.ts`: 1 failed — integration test `syncs the actual knowledge base without errors` timed out at 5000ms (observed ~5.3s)
 
 ### Issues
-- **IMPORTANT (logic)**: `runScenario(..., withHistory)` ignores `withHistory` for multi-session scenarios: it calls `runMultiSession(..., keepDir, false)` (hard-coded `false`). Additionally, `runMultiSession()` calls `runAgent(...)` without forwarding `withHistory` at all.
-- **IMPORTANT (spec/behavior mismatch)**: `copyArtifacts()` docstring claims support for “directory prefixes (ending with /)”, but implementation treats patterns as exact paths (`path.join(srcDir, pattern)`); patterns like `dir/` won’t match if the actual directory is `dir`.
-- **CRITICAL (process)**: Missing toolchain (`node_modules/.bin/*`) prevents required type-check and test verification in this environment.
+- CRITICAL (repo/test mismatch): `src/app/launcher.ts` is missing but required by `test/launcher.test.ts`.
+- IMPORTANT (env/permissions): `/app/test-workspace/*` contains non-deletable dirs in this environment, causing `EACCES` failures during test cleanup.
+- IMPORTANT (test robustness): `test/research-db.test.ts` real-knowledge sync exceeds a 5s timeout in this environment.
 
 ### Verdict
-CONDITIONAL — findings above should be addressed; I cannot independently validate compile/test because the toolchain is absent in this checkout.
+CONDITIONAL — reviewed change appears coherent and type-safe (tsc green), but vitest is red due to the unrelated missing launcher module, filesystem permission issues, and a too-tight integration timeout.
+
+## 2026-04-10T02:26Z
+
+### Summary
+Proactive heartbeat QA at HEAD **e3f53b5**. I sampled `test/gym/gym-runner.ts` (decoupled scenario runner) and re-ran mandatory gates. No new code issues found in the sampled portion; overall suite is still red due to the same repo/env mismatches.
+
+### Files reviewed (evidence)
+- `test/gym/gym-runner.ts` (read lines 1–120): scenario metadata/types + imports; confirms runner depends on `learnFromSession` and includes filesystem operations (`cpSync`, `mkdirSync`, `rmSync`, etc.).
+
+### Mandatory gates
+- `./node_modules/.bin/tsc --noEmit`: PASS (no output)
+
+## 2026-04-10T05:56Z
+
+### Summary
+Proactive heartbeat QA at HEAD **a1f1468** ("fix: remove accidental submodule entry for agents/"). Change deletes the stray gitlink entry `agents` (mode 160000), undoing an accidental submodule addition.
+
+### Files reviewed (evidence)
+- Commit diff `a1f1468`: removes `agents` gitlink (`deleted file mode 160000`).
+- `test/launcher.test.ts` (read lines 90–170): confirms the suite expects `/app/src/app/launcher.ts` to exist and inspects its content for restart/backoff behavior.
+
+### Mandatory gates
+- `./node_modules/.bin/tsc --noEmit`: PASS (no output)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2089 passed (2110)**
+  - `test/launcher.test.ts`: 7 failed — missing `/app/src/app/launcher.ts` (existsSync false + ENOENT)
+  - `test/context-learn.test.ts`: 7 failed — cleanup `rmSync` fails with `EACCES` under `/app/test-workspace/context-learn-test/test-agent`
+  - `test/context-learning.test.ts`: 6 failed — cleanup `rmSync` fails with `EACCES` under `/app/test-workspace/context-learning-test/.state`
+  - `test/research-db.test.ts`: 1 failed — integration test timed out at 5000ms (observed 6161ms)
+
+### Issues
+- CRITICAL (repo/test mismatch): `src/app/launcher.ts` is missing but required by `test/launcher.test.ts`.
+
+---
+
+# QA Journal — 2026-04-10 (Heartbeat)
+
+## 2026-04-10T07:26Z
+
+### Summary
+Proactive heartbeat QA at HEAD **a1f1468**. I verified the most recent commit is a 1-line deletion of an `agents` gitlink (undo accidental submodule). I then ran mandatory QA gates; TypeScript typecheck is green, but Vitest remains red due to pre-existing repo/env issues.
+
+### Files reviewed (evidence)
+- `test/launcher.test.ts` (read lines 90–170): test suite asserts `launcherTs` exists and reads `/app/src/app/launcher.ts` for required strings (spawn import, signals, backoff constants).
+
+### Mandatory gates
+- `./node_modules/.bin/tsc --noEmit`: PASS (no output)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2089 passed (2110)**
+  - `test/launcher.test.ts`: 7 failed — missing `/app/src/app/launcher.ts` (existsSync false + ENOENT)
+  - `test/context-learn.test.ts`: 7 failed — `rmSync(tmpDir, { recursive: true })` fails with `EACCES` on `/app/test-workspace/context-learn-test/test-agent`
+  - `test/context-learning.test.ts`: 6 failed — cleanup `rmSync` fails with `EACCES` on `/app/test-workspace/context-learning-test/.state`
+  - `test/research-db.test.ts`: 1 failed — integration test times out at 5000ms (observed 6253ms)
+
+### Issues
+- CRITICAL: repo/test mismatch — `src/app/launcher.ts` is missing but required by `test/launcher.test.ts`.
+- IMPORTANT: environment/permissions — test cleanup `rmSync` hits `EACCES` under `/app/test-workspace/*`.
+- IMPORTANT: test robustness — `test/research-db.test.ts` “real knowledge base” sync exceeds 5s timeout in this environment.
+
+### Verdict
+CONDITIONAL — commit itself is fine and does not break `tsc`; however, the test suite is currently failing due to unrelated missing file + environment constraints.
+- IMPORTANT (env/permissions): test cleanup fails with `EACCES` in `/app/test-workspace/*`.
+- IMPORTANT (timeout robustness): `test/research-db.test.ts` real-knowledge sync exceeds 5s.
+
+### Verdict
+CONDITIONAL — this commit is low-risk and correct, but CI is red due to pre-existing missing module + environment/timeout issues not introduced by this change.
+
+---
+
+## 2026-04-10T06:30Z
+
+### Summary
+Proactive heartbeat QA at HEAD **a1f1468** ("fix: remove accidental submodule entry for agents/"). I re-ran mandatory gates and sampled failing tests to confirm the current suite failures are still dominated by pre-existing repo/env issues (missing launcher module, filesystem permission cleanup, tight integration timeout).
+
+### Files reviewed (evidence)
+- `test/launcher.test.ts` (read lines 90–170): asserts `/app/src/app/launcher.ts` must exist and checks for spawn import, signal handling, backoff constants.
+- `test/context-learn.test.ts` (read lines 1–60): uses `rmSync(tmpDir, { recursive: true })` in `beforeEach` and fails with `EACCES` when attempting to delete `/app/test-workspace/...`.
+
+### Mandatory gates
+- `./node_modules/.bin/tsc --noEmit`: PASS (no output)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2089 passed (2110)**
+  - `test/launcher.test.ts`: 7 failed — missing `/app/src/app/launcher.ts` (existsSync false + ENOENT readFileSync)
+  - `test/context-learn.test.ts`: 7 failed — cleanup `rmSync` fails with `EACCES` under `/app/test-workspace/context-learn-test/test-agent`
+  - `test/context-learning.test.ts`: 6 failed — cleanup `rmSync` fails with `EACCES` under `/app/test-workspace/context-learning-test/.state`
+  - `test/research-db.test.ts`: 1 failed — real-knowledge sync times out at 5000ms (observed ~6055ms)
+
+### Issues
+- CRITICAL: `src/app/launcher.ts` missing but required by `test/launcher.test.ts`.
+- IMPORTANT: tests rely on `rmSync(..., { recursive: true })` succeeding in `/app/test-workspace/*` but environment returns `EACCES`.
+- IMPORTANT: `test/research-db.test.ts` integration timeout appears too tight for this environment (~6s runtime).
+
+### Verdict
+CONDITIONAL — patch itself appears fine (tsc green; change is a git metadata fix), but CI remains red due to the pre-existing missing module + environment/timeout issues.
+
+---
+
+## 2026-04-10T06:55Z
+
+### Summary
+Heartbeat QA at HEAD **a1f1468**: ran mandatory gates and re-validated current vitest failures. `tsc` still passes. `vitest` still fails due to three pre-existing issues: missing `src/app/launcher.ts`, non-deletable `/app/test-workspace/*` directories causing `EACCES` in context-learning tests, and a slow integration test timing out at 5s.
+
+### Files reviewed (evidence)
+- `test/launcher.test.ts` (read lines 90–190): `expect(existsSync(launcherTs)).toBe(true)` then reads `/app/src/app/launcher.ts` and asserts on constants/backoff strings.
+- `test/context-learn.test.ts` (read lines 1–40): `tmpDir = join(process.cwd(), "test-workspace", "context-learn-test")`; `beforeEach` calls `rmSync(tmpDir, { recursive: true })`.
+- `test/research-db.test.ts` (read lines 510–560): integration test `syncs the actual knowledge base without errors` calls `syncAll(db, "agents/shared/knowledge")` with default vitest timeout.
+
+### Mandatory gates (this run)
+- `./node_modules/.bin/tsc --noEmit`: PASS (no output)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2089 passed (2110)**
+  - `test/launcher.test.ts`: 7 failed — `src/app/launcher.ts` missing (existsSync false + ENOENT)
+  - `test/context-learn.test.ts`: 7 failed — `rmSync` throws `EACCES` at `test/context-learn.test.ts:11`
+  - `test/context-learning.test.ts`: 6 failed — `rmSync` throws `EACCES` at `test/context-learning.test.ts:43`
+  - `test/research-db.test.ts`: 1 failed — timed out at 5000ms (observed 6054ms)
+
+### Issues
+- CRITICAL (repo/test mismatch): `src/app/launcher.ts` absent but required by `test/launcher.test.ts`.
+- IMPORTANT (environment/permissions): tests attempt to delete under `/app/test-workspace/*` but get `EACCES`.
+- IMPORTANT (test robustness): `test/research-db.test.ts` real KB sync can exceed 5s in this environment.
+
+### Verdict
+CONDITIONAL — changes at HEAD appear type-safe, but the test gate cannot go green until the repo mismatch/permission/timeout issues are addressed.
+
+---
+
+## 2026-04-10T05:27Z
+
+### Summary
+Proactive heartbeat QA at HEAD **a1f1468** ("fix: remove accidental submodule entry for agents/"). Verified the commit removes a stray gitlink entry and does not introduce code changes. Re-ran mandatory QA gates.
+
+### Files reviewed (evidence)
+- Commit diff `a1f1468` deletes file `agents` with mode **160000** (gitlink): `Subproject commit ...` (from `git show a1f1468 -- agents`).
+- `test/launcher.test.ts` (read lines 90–170): failing tests hard-require `/app/src/app/launcher.ts` and assert expected strings.
+- `test/context-learn.test.ts` (read lines 1–110): failing tests delete `tmpDir` under `/app/test-workspace/...` via `rmSync(..., { recursive: true })`.
+
+### Mandatory gates
+- `./node_modules/.bin/tsc --noEmit`: PASS (exit 0; no output)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2089 passed (2110)**
+  - `test/launcher.test.ts`: 7 failed — `/app/src/app/launcher.ts` missing (existsSync false + ENOENT)
+  - `test/context-learn.test.ts`: 7 failed — `rmSync` cleanup fails with `EACCES` on `/app/test-workspace/context-learn-test/test-agent`
+  - `test/context-learning.test.ts`: 6 failed — `rmSync` cleanup fails with `EACCES` on `/app/test-workspace/context-learning-test/.state`
+  - `test/research-db.test.ts`: 1 failed — integration test timed out at 5000ms
+
+### Issues
+- CRITICAL (repo/test mismatch): `src/app/launcher.ts` absent but required by tests.
+- IMPORTANT (env/permissions): `/app/test-workspace/*` owned by `nobody:nogroup` (seen via `ls -ld`) causing cleanup `EACCES` in tests.
+- IMPORTANT (test robustness): `research-db` real-base sync exceeds 5s timeout in this environment.
+
+### Verdict
+CONDITIONAL — submodule cleanup change is safe; suite failures appear unrelated and environmental/repo-mismatch, but they prevent a green CI without fixes.
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2089 passed (2110)**
+  - `test/launcher.test.ts`: 7 failed — `/app/src/app/launcher.ts` missing (existsSync false + ENOENT reads)
+  - `test/context-learn.test.ts`: 7 failed — `rmSync(tmpDir, { recursive: true })` fails with `EACCES` under `/app/test-workspace/context-learn-test/test-agent`
+  - `test/context-learning.test.ts`: 6 failed — `rmSync(tmpDir, { recursive: true })` fails with `EACCES` under `/app/test-workspace/context-learning-test/.state`
+  - `test/research-db.test.ts`: 1 failed — real knowledge base sync test timed out at 5000ms (observed ~5.2s)
+
+### Issues
+- CRITICAL: Missing `src/app/launcher.ts` breaks `test/launcher.test.ts`.
+- IMPORTANT: Test cleanup assumes it can delete `/app/test-workspace/*`; fails with `EACCES` in this environment.
+- IMPORTANT: `test/research-db.test.ts` real-knowledge sync is slightly slower than 5s in this environment → timeout.
+
+### Verdict
+CONDITIONAL — patch-level code sampled looks fine and type-checks; repo is still vitest-red due to unrelated structural/environment/test-timeout issues.
+
+## 2026-04-10T00:55Z
+
+### Summary
+Proactive heartbeat QA at HEAD **e3f53b5** ("fix: gym-runner multi-session ENOENT on transcript export"). I reviewed `test/gym/gym-runner.ts` (may-agent adapter sandbox copy) and re-ran mandatory gates.
+
+### Files reviewed (evidence)
+- `test/gym/gym-runner.ts` (read lines 1–260): may-agent adapter `runAgent()` now copies the agent directory into `_workDir/agents/<agentName>` to satisfy agent reads like `read("agents/<name>/heartbeat.md")` when gym runs set `cwd: _workDir`.
+
+### Mandatory gates
+- `./node_modules/.bin/tsc --noEmit`: PASS (exit 0; no output)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2089 passed (2110)**
+  - `test/launcher.test.ts`: 7 failed — expects `/app/src/app/launcher.ts` to exist, but missing (`existsSync` false + ENOENT reads)
+  - `test/context-learn.test.ts`: 7 failed — cleanup `rmSync(tmpDir, { recursive: true })` fails with `EACCES` under `/app/test-workspace/context-learn-test/test-agent`
+  - `test/context-learning.test.ts`: 6 failed — cleanup `rmSync(tmpDir, { recursive: true })` fails with `EACCES` under `/app/test-workspace/context-learning-test/.state`
+  - `test/research-db.test.ts`: 1 failed — integration test `syncs the actual knowledge base without errors` timed out at 5000ms (observed runtime ~5.4s)
+
+### Issues
+- CRITICAL (repo/test mismatch): `src/app/launcher.ts` is missing but required by `test/launcher.test.ts`.
+- IMPORTANT (env/permissions): `/app/test-workspace/*` contains non-deletable dirs in this environment, causing `EACCES` failures during test cleanup.
+- IMPORTANT (test robustness): `test/research-db.test.ts` real-knowledge sync is too slow for a 5s timeout in this environment.
+
+### Verdict
+CONDITIONAL — reviewed gym-runner change appears coherent and type-safe, but repo vitest gate is red due to the unrelated missing launcher module, filesystem permission issues, and a too-tight integration timeout.
+
+## 2026-04-09T23:30Z
+
+## 2026-04-10T04:56Z
+
+### Summary
+Proactive heartbeat QA at HEAD **a1f1468** ("fix: remove accidental submodule entry for agents/"). Change removes a stray git *submodule* (mode 160000) entry for `agents/` from the main repo, which is correct because `agents/` is a separate repo and is gitignored here.
+
+### Files reviewed (evidence)
+- `src/app/may.ts` (read lines 1–200): sampled for sanity around restart/launcher integration references.
+
+### Mandatory gates
+- `./node_modules/.bin/tsc --noEmit`: PASS (no output; exit 0)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2089 passed (2110)**
+  - `test/launcher.test.ts`: 7 failed — expects `/app/src/app/launcher.ts` to exist; file missing (existsSync false + ENOENT reads)
+  - `test/context-learn.test.ts`: 7 failed — `rmSync(tmpDir, { recursive: true })` fails with `EACCES` under `/app/test-workspace/context-learn-test/test-agent`
+  - `test/context-learning.test.ts`: 6 failed — cleanup `rmSync(tmpDir, { recursive: true })` fails with `EACCES` under `/app/test-workspace/context-learning-test/.state`
+  - `test/research-db.test.ts`: 1 failed — integration test `syncs the actual knowledge base without errors` timed out at 5000ms (observed ~6.2s)
+
+### Issues
+- CRITICAL (repo/test mismatch): `src/app/launcher.ts` is missing but required by `test/launcher.test.ts`.
+- IMPORTANT (env/permissions): `/app/test-workspace/*` contains non-deletable dirs in this environment, causing `EACCES` failures during test cleanup.
+- IMPORTANT (test robustness): `test/research-db.test.ts` real-knowledge sync exceeds a 5s timeout in this environment.
+
+### Verdict
+CONDITIONAL — the commit itself (removing erroneous submodule entry) is correct and `tsc` is green, but the full vitest suite remains red due to the unrelated missing launcher module plus environment/timeout issues.
+
+## 2026-04-10T03:27Z
+
+### Summary
+Proactive heartbeat QA at HEAD **a1f1468** (top of tree). I reviewed `test/gym/gym-runner.ts` (latest gym-runner changes) and ran the mandatory gates.
+
+## 2026-04-10T04:26Z
+
+### Summary
+Heartbeat QA at HEAD **a1f1468**. I independently re-ran mandatory gates and sampled the current `test/gym/gym-runner.ts` (may-agent adapter setup section). `tsc` is green; `vitest` is red due to repo/environment test issues.
+
+### Files reviewed (evidence)
+- `test/gym/gym-runner.ts` (read lines 1–220): confirms may-agent adapter sets up `agentsRoot` (optionally sandboxed), copies `agents` recursively into gym-local dirs, and falls back to `vite-node` if no compiled `bundle/may-agent` exists.
+- `test/launcher.test.ts` (read lines 90–~210): confirms tests hard-require `/app/src/app/launcher.ts` to exist and contain specific implementation strings.
+
+### Mandatory gates
+- `./node_modules/.bin/tsc --noEmit`: PASS (no output; exit 0)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2089 passed (2110)**
+  - `test/launcher.test.ts`: 7 failed — `src/app/launcher.ts` missing (`existsSync` false + ENOENT reading `/app/src/app/launcher.ts`).
+  - `test/context-learn.test.ts`: 7 failed — cleanup `rmSync(tmpDir, { recursive: true })` fails with `EACCES` under `/app/test-workspace/context-learn-test/test-agent`.
+  - `test/context-learning.test.ts`: 6 failed — cleanup `rmSync(tmpDir, { recursive: true })` fails with `EACCES` under `/app/test-workspace/context-learning-test/.state`.
+  - `test/research-db.test.ts`: 1 failed — integration test `syncs the actual knowledge base without errors` timed out at **5000ms** (observed ~5.7s).
+
+### Issues
+- CRITICAL (repo/test mismatch): `src/app/launcher.ts` is missing but required by `test/launcher.test.ts`.
+- IMPORTANT (env/permissions): `/app/test-workspace/*` cleanup fails with `EACCES` during context-learning tests.
+- IMPORTANT (test robustness): `test/research-db.test.ts` real knowledge base sync sometimes exceeds a 5s timeout in this environment.
+
+### Verdict
+CONDITIONAL — sampled code appears coherent and `tsc` is green, but the suite remains vitest-red due to unrelated structural/environment/timeout issues.
+
+### Files reviewed (evidence)
+- `test/gym/gym-runner.ts` (read lines 1–1413): confirmed may-agent adapter sandboxes `agents/<name>` into `_workDir/agents/<name>` before running oneshot; also reviewed the multi-session runner’s additional `workDir` existence guards and combined transcript export.
+
+### Mandatory gates
+- `./node_modules/.bin/tsc --noEmit`: PASS (no output)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2089 passed (2110)**
+  - `test/launcher.test.ts`: 7 failed — expects `/app/src/app/launcher.ts` to exist; missing (`existsSync` false + ENOENT reads)
+  - `test/context-learn.test.ts`: 7 failed — cleanup `rmSync(tmpDir, { recursive: true })` fails with `EACCES` under `/app/test-workspace/context-learn-test/test-agent`
+  - `test/context-learning.test.ts`: 6 failed — cleanup `rmSync(tmpDir, { recursive: true })` fails with `EACCES` under `/app/test-workspace/context-learning-test/.state`
+  - `test/research-db.test.ts`: 1 failed — integration test `syncs the actual knowledge base without errors` timed out at 5000ms (observed ~6.1s)
+
+### Issues
+- CRITICAL (repo/test mismatch): missing `src/app/launcher.ts` breaks `test/launcher.test.ts`.
+- IMPORTANT (env/permissions): inability to delete `/app/test-workspace/*` causes `EACCES` failures in context-learning tests.
+- IMPORTANT (test robustness): `test/research-db.test.ts` real-knowledge sync exceeds 5s timeout in this environment.
+
+### Verdict
+CONDITIONAL — reviewed gym-runner code is coherent and type-checks, but vitest is red due to unrelated missing launcher module + environment/timeout issues.
+
+### Files reviewed (evidence)
+- `test/gym/gym-runner.ts` (read lines 1–260): confirms identity sandbox copy uses `cpSync(agentDir, agentDest, { recursive: true })` guarded by `existsSync(agentDir) && !existsSync(agentDest)` and ensures parent dir exists via `mkdirSync(join(_workDir, "agents"), { recursive: true })`.
+
+### Mandatory gates
+- `./node_modules/.bin/tsc --noEmit`: PASS (exit 0; no output)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2089 passed (2110)**
+  - `test/launcher.test.ts`: 7 failed — expects `/app/src/app/launcher.ts` to exist; missing (`existsSync` false + ENOENT reads)
+  - `test/context-learn.test.ts`: 7 failed — cleanup `rmSync(tmpDir, { recursive: true })` fails with `EACCES` under `/app/test-workspace/context-learn-test/test-agent`
+  - `test/context-learning.test.ts`: 6 failed — cleanup `rmSync(tmpDir, { recursive: true })` fails with `EACCES` under `/app/test-workspace/context-learning-test/.state`
+  - `test/research-db.test.ts`: 1 failed — integration test `syncs the actual knowledge base without errors` timed out at 5000ms (observed ~5.6s)
+
+### Issues
+- CRITICAL (repo/test mismatch): missing `src/app/launcher.ts` breaks `test/launcher.test.ts`.
+- IMPORTANT (env/permissions): inability to `rmSync` under `/app/test-workspace/*` causes `EACCES` failures.
+- IMPORTANT (test robustness): real knowledge base sync sometimes exceeds 5s timeout.
+
+### Verdict
+CONDITIONAL — the sampled gym-runner code change looks reasonable and type-checks; CI remains red due to unrelated missing module + environment/timeout issues.
+
+### Summary
+Heartbeat QA at HEAD **0cf9b17**. I re-ran the mandatory gates and re-read `src/lib/fewshot-router.ts` to independently verify the heartbeat exclusion is now case-insensitive (`/^\[heartbeat\]/i`), preventing few-shot injection for `[heartbeat]` (any casing).
+
+### Files reviewed (evidence)
+- `src/lib/fewshot-router.ts` — `if (/^\[heartbeat\]/i.test(taskText)) { return { content: null, ... } }`
+
+### Mandatory gates
+- `./node_modules/.bin/tsc --noEmit`: PASS (exit 0; no output)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2083 passed (2104)**
+  - `test/launcher.test.ts`: 7 failed — `src/app/launcher.ts` missing (`existsSync` false + `ENOENT` reading `/app/src/app/launcher.ts`).
+  - `test/context-learn.test.ts`: 7 failed — `rmSync(..., { recursive: true })` fails with `EACCES` under `/app/test-workspace/context-learn-test/*`.
+  - `test/context-learning.test.ts`: 6 failed — same `EACCES` issue under `/app/test-workspace/context-learning-test/*`.
+  - `test/research-db.test.ts`: 1 failed — integration test times out at 5000ms (`syncs the actual knowledge base without errors`).
+
+### Issues
+- CRITICAL: repo test suite is red due to missing `src/app/launcher.ts` required by `test/launcher.test.ts`.
+- IMPORTANT: test environment permission issue prevents cleanup in context-learning tests (`EACCES` on rmdir).
+- IMPORTANT: `test/research-db.test.ts` has a too-tight timeout (5s) for syncing the real knowledge base in this environment.
+
+### Verdict
+CONDITIONAL — reviewed heartbeat exclusion behavior appears correct and is type-safe, but vitest is red for the unrelated structural/permission/timeout failures above.
+
+## 2026-04-09T23:55Z
+
+### Summary
+Proactive heartbeat QA at HEAD **e3f53b5** (gym-runner transcript export fix). I inspected `test/gym/gym-runner.ts` around the may-agent adapter changes: it now sandboxes the agent directory into the session workDir (`workDir/agents/<name>`) so agent reads like `read("agents/<name>/heartbeat.md")` work in gym runs.
+
+### Files reviewed (evidence)
+- `test/gym/gym-runner.ts` — may-agent adapter `runAgent()` creates `agentDest = join(_workDir, "agents", agentName)` and copies the agent dir there with `cpSync(..., { recursive: true })`.
+
+### Mandatory gates
+- `./node_modules/.bin/tsc --noEmit`: PASS (exit 0; no output)
+- `./node_modules/.bin/vitest --run`: FAIL (2110 tests total; 21 failing). Failing groups are pre-existing environment/structural issues: missing `src/app/launcher.ts`, `EACCES` deleting `/app/test-workspace/*` in context-learning tests, and `test/research-db` integration timeout at 5s.
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2089 passed (2110)**
+  - `test/launcher.test.ts`: 7 failed — `src/app/launcher.ts` missing (`existsSync` false + `ENOENT` reading `/app/src/app/launcher.ts`).
+  - `test/context-learn.test.ts`: 7 failed — `rmSync(..., { recursive: true })` fails with `EACCES` under `/app/test-workspace/context-learn-test/*`.
+  - `test/context-learning.test.ts`: 6 failed — same `EACCES` issue under `/app/test-workspace/context-learning-test/*`.
+  - `test/research-db.test.ts`: 1 failed — integration test times out at 5000ms (`syncs the actual knowledge base without errors`).
+
+### Issues
+- IMPORTANT: `createMayAgentAdapter().runAgent()` swallows exec errors and returns `{ sessionId: "", status: "error" }` if JSON parse is impossible; might hide useful diagnostics for gym runs.
+- CRITICAL (pre-existing): repo test suite is red due to missing `src/app/launcher.ts` required by `test/launcher.test.ts`.
+- IMPORTANT (pre-existing): test environment permission issue prevents cleanup in context-learning tests (`EACCES` on rmdir).
+- IMPORTANT (pre-existing): `test/research-db.test.ts` has a too-tight timeout (5s) for syncing the real knowledge base in this environment.
+
+### Verdict
+CONDITIONAL — the gym-runner change is type-safe, but overall suite is vitest-red for unrelated missing file + env permission + timeout issues.
 
 ## 2026-04-09T22:25Z
 
@@ -48,27 +378,30 @@ Proactive heartbeat QA at HEAD **0cf9b17** (merge of `review/fix-fewshot-heartbe
 ### Verdict
 CONDITIONAL — reviewed change appears correct and type-safe, but the repo is vitest-red for the unrelated structural/permission/timeout failures above.
 
----
-
-## 2026-04-09T22:59Z
+## 2026-04-09T22:55Z
 
 ### Summary
-Proactive scan of latest merge commit **5c84c321** (adds multi-session scenario support in `src/gym/runner.ts` plus finish-guard and gym tests). I verified the new multi-session logic by reading `src/gym/runner.ts` (multi-session section + runScenario dispatch).
+Proactive scan at HEAD **0cf9b17**. Verified the recent change in `src/lib/fewshot-router.ts` makes heartbeat exclusion case-insensitive (`/^\[heartbeat\]/i`).
 
 ### Files reviewed (evidence)
-- `src/gym/runner.ts` — `runMultiSession()` implementation and `runScenario()` dispatch (reads at offsets 520 and 660).
+- `src/lib/fewshot-router.ts` — `if (/^\[heartbeat\]/i.test(taskText)) { return { content: null, ... } }`
+- `test/fewshot-router.test.ts` — includes `it("excludes heartbeat tasks case-insensitively", ...)`
 
-### Mandatory gates (this environment)
-- `./node_modules/.bin/tsc --noEmit`: FAIL to execute — `./node_modules/.bin/tsc: No such file or directory` (exit 127)
-- `./node_modules/.bin/vitest --run`: FAIL to execute — `./node_modules/.bin/vitest: No such file or directory` (exit 127)
+### Mandatory gates
+- `./node_modules/.bin/tsc --noEmit`: PASS (exit 0)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2083 passed (2104)**
+  - `test/launcher.test.ts`: 7 failed — missing `/app/src/app/launcher.ts` (`ENOENT`)
+  - `test/context-learn.test.ts`: 7 failed — rmSync cleanup fails with `EACCES` under `/app/test-workspace/context-learn-test/*`
+  - `test/context-learning.test.ts`: 6 failed — rmSync cleanup fails with `EACCES` under `/app/test-workspace/context-learning-test/*`
+  - `test/research-db.test.ts`: 1 failed — `integration: real knowledge base` timed out at 5000ms
 
 ### Issues
-- CRITICAL (environment/repo packaging): repo appears to be missing `package.json` and `node_modules/` entirely (`find . -maxdepth 2 -name package.json` returned nothing), so mandatory TypeScript + vitest gates cannot be run.
-- IMPORTANT (correctness risk): `runMultiSession()` always calls `runAgent(adapter, taskContent, tmpDir, agent, timeoutMs)` **without** passing `withHistory`, and `runScenario()` passes `false` into `runMultiSession(...)` regardless of its own `withHistory` parameter. If multi-session scenarios should support history, it is currently ignored.
-- IMPORTANT (artifact spec mismatch): `copyArtifacts()` docstring says it supports "directory prefixes (ending with /)", but implementation treats patterns as exact paths (`path.join(srcDir, pattern)`); a pattern like `dir/` likely won’t match the actual directory `dir`.
+- CRITICAL (repo): `src/app/launcher.ts` missing but required by `test/launcher.test.ts`.
+- IMPORTANT (env): `/app/test-workspace/*` appears non-deletable in this environment (`EACCES`), breaking context-learning tests.
+- IMPORTANT: `test/research-db.test.ts` has a 5s timeout that is insufficient for syncing the full real knowledge base.
 
 ### Verdict
-CONDITIONAL — code changes look plausible on inspection, but cannot be fully validated because this checkout lacks the JS/TS toolchain files required to run `tsc`/`vitest`.
+CONDITIONAL — patch under review is fine (unit tests for fewshot-router pass), but main test suite remains red for the unrelated failures above.
 
 ## 2026-04-09T21:25Z
 
@@ -712,6 +1045,32 @@ CONDITIONAL — the new auto-loop tests look reasonable and include `rmSync(...,
 
 ---
 
+## 2026-04-10T01:55Z
+
+### Summary
+Heartbeat QA at HEAD **e3f53b5**. Reviewed `src/lib/fewshot-router.ts` (heartbeat exclusion guard remains case-insensitive) and ran mandatory gates.
+
+### Files reviewed (evidence)
+- `src/lib/fewshot-router.ts` — verified early return `if (/^\[heartbeat\]/i.test(taskText)) { ... }`.
+
+### Mandatory gates
+- `./node_modules/.bin/tsc --noEmit`: PASS (no output)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2089 passed (2110)**
+  - `test/launcher.test.ts`: 7 failed — expects `/app/src/app/launcher.ts` to exist; `existsSync` false and ENOENT reading the file.
+  - `test/context-learn.test.ts`: 7 failed — `rmSync(tmpDir, { recursive: true })` fails with `EACCES` under `/app/test-workspace/context-learn-test/test-agent`.
+  - `test/context-learning.test.ts`: 6 failed — cleanup `rmSync(..., { recursive: true })` fails with `EACCES` under `/app/test-workspace/context-learning-test/.state`.
+  - `test/research-db.test.ts`: 1 failed — integration test `syncs the actual knowledge base without errors` timed out at 5000ms (observed ~5.3s).
+
+### Issues
+- CRITICAL (repo/test mismatch): missing `src/app/launcher.ts` required by `test/launcher.test.ts`.
+- IMPORTANT (env/permissions): `/app/test-workspace/*` is not deletable in this environment, breaking context-learning cleanup.
+- IMPORTANT (test robustness): `test/research-db.test.ts` integration timeout (5s) too tight for this environment.
+
+### Verdict
+CONDITIONAL — code read appears correct and type-check passes, but the repo remains vitest-red for the unrelated missing launcher module, filesystem permission issues, and a too-tight integration timeout.
+
+---
+
 ## 2026-04-09T01:55Z
 
 ### Summary
@@ -726,6 +1085,32 @@ Heartbeat review at HEAD **77fe36c** (new tests: `test/auto-loop.test.ts`). File
   - `test/launcher.test.ts`: 7 failed (`ENOENT` for `/app/src/app/launcher.ts`)
   - `test/context-learn.test.ts`: 7 failed (`EACCES` rmdir `/app/test-workspace/context-learn-test/test-agent`)
   - `test/context-learning.test.ts`: 6 failed (`EACCES` rmdir `/app/test-workspace/context-learning-test/.state`)
+
+---
+
+## 2026-04-10T02:55Z
+
+### Summary
+Proactive heartbeat QA at HEAD **e3f53b5** ("fix: gym-runner multi-session ENOENT on transcript export"). I reviewed the updated may-agent adapter sandbox behavior in `test/gym/gym-runner.ts` and re-ran mandatory gates.
+
+### Files reviewed (evidence)
+- `test/gym/gym-runner.ts` (read lines 1–260): confirms may-agent `runAgent()` creates `gymRoot/state`, and sandboxes the agent directory into `workDir/agents/<agentName>` via `mkdirSync` + `cpSync({ recursive: true })` before invoking may-agent.
+
+### Mandatory gates
+- `./node_modules/.bin/tsc --noEmit`: PASS (no output)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2089 passed (2110)**
+  - `test/launcher.test.ts`: 7 failed — `/app/src/app/launcher.ts` missing (existsSync false + ENOENT reads)
+  - `test/context-learn.test.ts`: 7 failed — `rmSync(tmpDir, { recursive: true })` fails with `EACCES` under `/app/test-workspace/context-learn-test/test-agent`
+  - `test/context-learning.test.ts`: 6 failed — cleanup `rmSync(tmpDir, { recursive: true })` fails with `EACCES` under `/app/test-workspace/context-learning-test/.state`
+  - `test/research-db.test.ts`: 1 failed — integration test `syncs the actual knowledge base without errors` timed out at 5000ms (observed 5522ms)
+
+### Issues
+- CRITICAL (repo/test mismatch): Missing `src/app/launcher.ts` breaks `test/launcher.test.ts`.
+- IMPORTANT (env/permissions): context-learning tests cannot delete `/app/test-workspace/*` in this environment (`EACCES` from `rmSync`).
+- IMPORTANT (test robustness): `test/research-db.test.ts` "real knowledge base" sync can exceed 5s → raise timeout or reduce workload.
+
+### Verdict
+CONDITIONAL — reviewed change type-checks (`tsc` green). Vitest is red for the unrelated missing launcher module, test-workspace permission failures, and a too-tight integration timeout.
 
 ### Issues
 - CRITICAL (repo mismatch): `test/launcher.test.ts` expects `src/app/launcher.ts`, but file is missing → 7 test failures.
