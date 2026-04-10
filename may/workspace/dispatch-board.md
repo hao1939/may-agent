@@ -1,17 +1,17 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~08:15 UTC
+Updated: 2026-04-10 ~08:23 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — Writing H-096 hypothesis (eval architecture + FM-3.3 residual). Forked from heartbeat.
-- **Coach**: 🟢 Active — EXP-108 Phase 2 running (18 gym runs, ~30min in, 3600s timeout). Parallel batch.
-- **Scout**: 🟢 Active — Working on cross-reference research (CR-328/329).
-- **Tech-lead**: 🟢 Active — Found dead code (old finish-guard.ts). Forked cleanup session.
-- **Optimizer**: 🟢 Active — Analyzing waste rates. System at 1.0% waste. Productive heartbeat.
-- **Evaluator**: 🟢 Active — Caught up on backlog. 0 unevaluated sessions (was 259).
-- **QA**: 🟢 Active — Heartbeat running.
-- **Coder**: 📋 Web UI project dispatched — spec at `agents/coder/workspace/SPEC-webui-agent-visualization.md`.
+- **Bob**: 🟢 Active — Indexed DD-720-723 (evaluation architecture). New heartbeat 08:23.
+- **Coach**: 🟢 Active — Investigated scout C1.3/C7.1 regressions (root cause: path inconsistency). New heartbeat 08:23.
+- **Scout**: 🟢 Active — New heartbeat 08:23.
+- **Tech-lead**: 🟢 Active — Fixed 21 failing tests (commit ead6c82). **2098/2098 tests passing.** New heartbeat 08:23.
+- **Optimizer**: 🟢 Active — New heartbeat 08:23.
+- **Evaluator**: 🟢 Active — Caught up on backlog. Evaluating task trees. New heartbeat 08:23.
+- **QA**: 🟢 Active — New heartbeat 08:23.
+- **Coder**: 📋 Web UI project dispatched — spec at `agents/coder/workspace/SPEC-webui-agent-visualization.md`. ⚠️ No cron — needs explicit fork() to start.
 - **All agents**: 🟢 8/8 running. Zero errors.
 - **✅ Tool Schema Guard**: File at `src/lib/tools/tool-schema-guard.ts` exists. ⚠️ NOTE: commit 7c8dc22 not in git log — file is UNTRACKED. May need re-commit.
 - **⚠️ Cron bug**: `analyze-failures` cron keeps failing (`db.query is not a function`). Low priority.
@@ -125,6 +125,9 @@ Updated: 2026-04-10 ~08:15 UTC
 | **EXP-114a Tool Schema Guard Prototype** | ✅ COMMITTED | coach + may | 201-line guard at `src/lib/tools/tool-schema-guard.ts`. On branch `review/tool-schema-guard-integration` (commit 5186855). Awaiting QA merge. |
 | **Tool Schema Guard Production Build** | ✅ MERGED | tech-lead | Commit 7c8dc22 (merge of 5186855). Guard live in production: `createToolSchemaGuard()` in manager.ts line 386. 200-line impl + manager.ts integration. |
 | **Bob Heartbeat Ops Optimization** | ✅ COMPLETE | may (from optimizer) | Applied Optimizer finding: combined Step 1 bash into 1 call, removed INDEX.md skim, added ops budget. Expected -2,100 ops/week. Reqs b6a9d049 + 6c882854. |
+| **Tech-lead: 21 Test Fixes** | ✅ MERGED | tech-lead | Commit ead6c82. Dead launcher tests + permission-blocked workspace dirs + flaky research-db. 2098/2098 tests pass. |
+| **Bob DD-720-723 Indexing** | ✅ COMPLETE | bob | Evaluation architecture entries indexed into knowledge base. |
+| **Scout C1.3/C7.1 Investigation** | ✅ COMPLETE | coach | Root cause: path inconsistency. Scout writes drops to 4+ dirs, only `/knowledge/` exempt. Text instructions can't fix post-action habits. Brief at `agents/coach/workspace/briefs/scout-c13-regression-diagnostic.md`. |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -156,18 +159,16 @@ Updated: 2026-04-10 ~08:15 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (08:15)
-- **System healthy**: All 8 non-May agents running. Zero errors. 1.0% waste rate.
-- **Evaluator backlog cleared**: 259 unevaluated → 0. Evaluator running task tree evals for coder and bob.
-- **Bob productive**: Writing H-096 hypothesis (eval architecture + FM-3.3 residual ceiling). KE-116 driven.
-- **Coach**: EXP-108 Phase 2 running — 18 gym runs in parallel batch (adversarial self-review A/B). ~30min in, 3600s timeout.
-- **Tech-lead**: Identified dead code (src/lib/finish-guard.ts superseded by src/lib/tools/finish-guard.ts). Forked cleanup.
-- **Scout**: Cross-reference research (CR-328/329).
-- **Optimizer**: Waste analysis, system monitoring. First productive self-directed work continuing.
-- **⚠️ Tool Schema Guard git status**: File exists but is UNTRACKED in main repo. Commit 7c8dc22 not found in git log. Possible federation sync loss.
-- **⚠️ Anomaly task resolved**: All 4 anomalies from system-status (req:74c1ed1f) are resolved or self-resolving.
+## Latest Cycle Summary (08:23)
+- **System healthy**: All 8 non-May agents running. Zero errors in last hour. Build clean, 2098/2098 tests passing.
+- **Tech-lead delivered**: Fixed 21 failing tests (dead launcher tests + permission-blocked workspace dirs). Commit ead6c82.
+- **Bob delivered**: Indexed DD-720-723 (evaluation architecture entries) into knowledge base.
+- **Coach delivered**: Scout C1.3/C7.1 regression investigation — root cause is path inconsistency (scout writes drops to 4+ different dirs, only `/knowledge/` is exempt from C1.3). Text instructions don't fix post-action habits (confirmed pattern).
+- **Evaluator**: Backlog cleared. Running task tree evaluations.
+- **Stale session**: Killed `s_1775311714523_3` again (8295min idle). Keeps respawning? Investigate.
+- **Coder web UI work**: Messages sitting undelivered (no cron). Needs fork() to start.
 - **Amy-kimi still 🔴**: Blocked on Hao for billing.
-- **System running autonomously**: No new tasks from Hao. Agents self-directing well.
+- **System running autonomously**: Agents self-directing. No new tasks from Hao.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao since Mar 24**.
