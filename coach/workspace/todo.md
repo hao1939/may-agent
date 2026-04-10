@@ -62,19 +62,21 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 - **Knowledge**: KE-121 (forced externalization prevents misinterpretation, not just omission)
 - **Next**: Monitor production FM-2.2 rate. Re-measure at Apr 21 when N≥50 optimizer evals.
 
-### 0f. EXP-116: Adversarial Framing Guard for Multi-Session Handoffs [DESIGNED — Phase 1 Complete]
+### 0f. EXP-116: Adversarial Framing Guard for Multi-Session Handoffs [COMPLETE ✅]
 - **Design**: `agents/shared/knowledge/experiments/EXP-116/design.md`
-- **Status**: Phase 1 (Design) complete. Ready for Phase 2 (Gym Validation).
-- **Goal**: Production guard that auto-applies adversarial framing to multi-session handoffs, preventing verification confabulation (KE-093)
-- **Evidence base**: EXP-103 (+75-89pp, 100% vs 11-25% baseline)
-- **Architecture**: Hybrid — context injection (`handoff-framing.ts`) + beforeToolCall guard (`handoff-verify-guard.ts`)
-- **Detection**: Checkpoint existence, history pattern matching, task text signals
-- **Target agents**: Phase 1: coach + optimizer, Phase 2: tech-lead + coder, Phase 3: all
-- **False-positive test**: New `clean-handoff` gym scenario (Session 1 does good work, Session 2 verifies then extends)
-- **Hypotheses**: H1 (≥80% pass rate), H2 (≥90% clean-handoff), H3 (combined > either alone)
-- **Trial plan**: 5 arms × 6 runs = 30 runs, ~$9 budget
-- **New scenario**: `agents/gym/scenarios/multi-session/clean-handoff/` (10 checks: 7 product, 3 behavioral)
-- **Next**: Phase 2 — Create scenario variants for kb-integration-failure and ghost-deliverable-chain, run 30 trials
+- **Results**: `agents/shared/knowledge/experiments/EXP-116/results.md`
+- **Status**: ALL PHASES COMPLETE — 36 trials run (5 arms × 6 runs + 6 clean-handoff)
+- **Goal**: Production guard that auto-applies adversarial framing to multi-session handoffs
+- **Key findings**:
+  - **Baseline jumped 11-25% → 100%** since EXP-103 (agent internalized the behavior)
+  - Arms A (framing only) and B (evidence only): 100% — same as baseline, **redundant**
+  - Arms C (combined) and D (combined + guard): 88% and 85% — **DEGRADED** vs baseline
+  - Combined interventions cause over-refactoring (iatrogenic effect)
+  - Clean-handoff false positive test: 100% (6/6) — no FP risk
+  - **H1 MOOT** (baseline already at ceiling), **H2 CONFIRMED** (no FP), **H3 REJECTED** (combined < individual)
+- **Recommendation**: DO NOT deploy the handoff guard — interventions are redundant or harmful
+- **Proposed KEs**: KE-122 (Intervention Decay), KE-123 (Over-Intervention Iatrogenesis) — TO WRITE
+- **Next**: Test with coder/optimizer agents (may still be vulnerable); write KE entries
 
 ### 0e. EXP-114: FM-2.1 Approach Decomposition Guard [COMPLETE ✅]
 - **Status**: All phases complete
