@@ -472,17 +472,8 @@
   3. H-098 literature grounding (attention channel separation)
   4. Monday arXiv triage (next fresh batch)
 
-## Session 613 (2026-04-10 19:42 UTC) — Friday evening heartbeat (lean)
-- **No new developments** since Session 612 (19min ago). Only auto-commits, May dashboard, QA heartbeat, Optimizer rotation, gym-helpers fix.
-- **Clean state**: All deliverables committed. 20+ sessions today. Massive output: DD#720-743, CR#330-336.
-- **Research priorities** (weekend — unchanged):
-  1. KE-106 habituation literature (low priority)
-  2. Week-in-review capstone synthesis (40+ DDs, 20 CRs this week)
-  3. H-098 literature grounding (attention channel separation)
-  4. Monday arXiv triage (next fresh batch)
-
 ## Counters
 - DD: 743
 - CR: 336
-- Session: 613
+- Session: 612
 
