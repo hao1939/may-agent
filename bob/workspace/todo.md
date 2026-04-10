@@ -16,6 +16,7 @@
 - [x] **EXP-109 + KE-112 Knowledge Base Integration**: INDEX.md updated (EXP-109 row in experiments table, KE-112 row in KE table, H-095 row in hypotheses table). PRIORITY-TRACKER updated (header, H-093 EXP-109 evidence, H-095 added, experiment queue updated). H-095 authored.
 - [x] **H-095 Authored**: Agent-Specific Failure Interventions Outperform Universal Approaches. Derived from EXP-109/KE-112 analysis. P(H)=0.65. Four predictions (P-095a–d). Mechanism: each agent's ecological niche drives distinct FM fingerprint, requiring targeted structural interventions. Next: EXP-110 design. **File: `agents/shared/knowledge/hypotheses/H-095-agent-specific-failure-interventions.md`**
 - [x] **EXP-110 + KE-113 Knowledge Base Integration**: EXP-110 (FM-3.3 Commit Guard Production Impact) COMPLETE — recovery not prevention mechanism. INDEX.md updated (EXP-110 row, KE-113 row, H-095 row updated with EXP-110 evidence). PRIORITY-TRACKER updated (header, H-095 promoted Tier 3→Tier 1, P(H) 0.65→0.70, experiment queue, meta-process). H-095 hypothesis file updated (status Active, evidence #6, P-095a PARTIALLY SUPPORTED, next steps revised).
+- [x] **EXP-113 + KE-115 Knowledge Base Integration**: EXP-113 (FM-Heavy Workers Targeted Intervention Analysis, N=398) COMPLETE — all 5 hypotheses confirmed. INDEX.md updated (EXP-113 row, KE-115 row, H-095 row updated with EXP-113 evidence). PRIORITY-TRACKER updated (header, H-095 P(H) 0.70→0.75, experiment queue, meta-process). H-095 hypothesis file updated (P(H) 0.75, evidence #7, mechanism section expanded with all 5 agents + FM-2.1 cascade finding, P-095a FURTHER SUPPORTED, P-095c annotated, new P-095e prediction, next steps revised with KE-115 priority map).
 - [x] **KE-082 Synthesis (Reasoning Dropout + Config Drift)**: DD-571 + DD-583 → distributed quality failure modes.
 - [x] **H-092 → PRIORITY-TRACKER**: Added to Tier 1 (P(H)=0.72).
 
@@ -93,6 +94,13 @@
 - [ ] **Prompt Caching**: Blocked on Hao (escalated 2026-03-24). Cannot fix from this repo.
 - [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% of verify-after-edit failures need code-level fix, not prompting. Deferred until prompting experiments complete.
 - [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
+
+## Session Notes (2026-04-10 ~05:25)
+- **EXP-113 + KE-115 KNOWLEDGE BASE INTEGRATION COMPLETE**: Full integration of Coach's EXP-113 (FM-Heavy Workers Targeted Intervention Analysis) and KE-115 (Intervention Priority Map) into knowledge base.
+- **Key findings from EXP-113**: All 5 hypotheses confirmed on N=398 FM-Heavy Worker sessions (26.9% of production). (H1) FM-2.1 is #1 cascade trigger (96 first-appearances, 2.38 subsequent FMs/session). (H2) Agent profiles truly distinct at scale — each agent has dominant FM accounting for 51-80% of sessions. (H3) Dose-response cliff at FM≥4 (Q=0.478, delivery<50%). (H4) Intervention priority map: FM-2.1 approach guard > FM-1.1 task check > FM-2.4 scope enforcement > FM-2.6 tool skills. (H5) Post-guard FM-Heavy Workers are smaller but harder (N=16, 88% FM-3.3, dominated by bob).
+- **Critical reframing**: FM-3.3 is downstream symptom of FM-2.1 cascade — target upstream approach problems first, not downstream verification failures. This has implications for H-093 (CIVC may be triggered by upstream approach failures).
+- **H-095 updated**: P(H) 0.70→0.75. Evidence #7 added. Mechanism section expanded to include all 5 agents with prevalence data. New prediction P-095e (FM-2.1 approach guard for coach). Next steps revised with KE-115 priority-ranked intervention roadmap. Connection to H-093 annotated with F2 cascade finding.
+- **Files modified**: `knowledge/INDEX.md`, `knowledge/hypotheses/H-095-agent-specific-failure-interventions.md`, `knowledge/hypotheses/PRIORITY-TRACKER.md`, `agents/bob/workspace/todo.md`
 
 ## Session Notes (2026-04-10 ~04:35)
 - **EXP-110/KE-113 INTEGRATION FINALIZATION**: Completed remaining integration items from naming collision fix:
