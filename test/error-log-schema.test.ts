@@ -81,7 +81,7 @@ describe("appendErrorLogs", () => {
   it("writes JSONL entries for issues with FM codes", () => {
     const result: TaskEvaluationResult = {
       agents: {
-        _test_error_log_agent: {
+        s_test_001: {
           agent: "_test_error_log_agent",
           sessionId: "s_test_001",
           efficiency: 3,
@@ -151,7 +151,7 @@ describe("appendErrorLogs", () => {
   it("skips issues without FM codes", () => {
     const result: TaskEvaluationResult = {
       agents: {
-        _test_error_log_agent: {
+        s_test_002: {
           agent: "_test_error_log_agent",
           sessionId: "s_test_002",
           efficiency: 5,
@@ -214,7 +214,7 @@ describe("appendErrorLogs", () => {
 
     const result: TaskEvaluationResult = {
       agents: {
-        _test_error_log_agent: {
+        s_test_003: {
           agent: "_test_error_log_agent",
           sessionId: "s_test_003",
           efficiency: 2,
@@ -276,7 +276,7 @@ describe("appendErrorLogs", () => {
   it("produces valid JSONL (each line is parseable JSON)", () => {
     const result: TaskEvaluationResult = {
       agents: {
-        _test_error_log_agent: {
+        s_test_004: {
           agent: "_test_error_log_agent",
           sessionId: "s_test_004",
           efficiency: 1,
