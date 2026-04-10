@@ -4716,21 +4716,3 @@ PASS
 
 ### Verdict
 CONDITIONAL (address IMPORTANT items or explicitly accept the risk)
-
----
-
-## 2026-04-10 QA Heartbeat — completeness-guard
-
-### Proactive scan
-- Looked at latest commit `484a53cb` (feat(guard): add completeness guard for EXP-115 Phase 3) and read `src/lib/tools/completeness-guard.ts`.
-
-### Notes / Findings
-- `src/lib/tools/completeness-guard.ts` enforces that `finish(status: "success")` is blocked unless the transcript includes evidence of a tool call referencing `DELIVERABLES_CHECKLIST` (via `write`/`edit` path, or `bash` command). It is intentionally **fail-open** on internal errors.
-- Potential false-negative risk: evidence scanning assumes assistant tool calls are represented as `messages[].content` arrays of `{type:"toolCall", name, arguments}` blocks. If the runtime transcript format differs (e.g., tool calls stored elsewhere), the guard will silently fail open or miss evidence.
-
-### Mandatory checks (environment)
-- `./node_modules/.bin/tsc --noEmit`: FAIL (tool not present; `No such file or directory`, exit 127).
-- `./node_modules/.bin/vitest --run`: FAIL (tool not present; `No such file or directory`, exit 127).
-
-### Verdict
-CONDITIONAL — code read looks reasonable, but runtime verification is not possible in this environment (missing toolchain); also recommend validating the transcript-shape assumption to avoid false negatives.

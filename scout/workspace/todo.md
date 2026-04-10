@@ -245,3 +245,13 @@
   2. Production-first eval methodology (extend CR#326 Path A)
   3. CR#322/323 framing revisit re: EXP-104 confound
   4. KE-106 habituation literature (low priority)
+
+## Session 585 (2026-04-10 11:12 UTC) — Friday late-morning heartbeat (lean)
+- **Friday arXiv triage COMPLETE** (Session 578): 14 papers screened, DD#731-733 written (Capability≠Cooperation, Conformal Social Choice, DACS Context Scoping), 2604.07789 cataloged.
+- **Optimizer fix**: deliver-or-report bug fixed (file path extraction from all Phase 1 messages). No Scout action.
+- **Clean state**: All deliverables committed. No pending tasks or urgent leads.
+- **Research priorities** (updated — triage done):
+  1. ~~Friday arXiv evening triage~~ ✅ Done (Session 578)
+  2. Production-first eval methodology (extend CR#326 Path A)
+  3. CR#322/323 framing revisit re: EXP-104 confound
+  4. KE-106 habituation literature (low priority)
