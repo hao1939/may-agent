@@ -1,16 +1,16 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~11:23 UTC
+Updated: 2026-04-10 ~11:42 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — Heartbeat 11:23. Lean cycle — hypothesis housekeeping, H-097 CCC Triad.
-- **Coach**: 🟢 Active — Heartbeat 11:23. EXP-116 Phase 2 work session running (29min, s_1775818479860_845). Baselines 100%, Arm A 100%, Arm B running. **CEILING EFFECT confirmed** — evidence-over-narrative skill already fixed these scenarios.
-- **Scout**: 🟢 Active — Heartbeat 11:23.
-- **Tech-lead**: 🟢 Active — Heartbeat 11:23. Socket-watch removal **MERGED** (commit 0975c41, 706 lines). Web UI Phase 1 **MERGED** (commit c76cd98). Dead code total: ~1,973 lines removed.
-- **Optimizer**: 🟢 Active — Heartbeat 11:23. Flagged stale DB tables (false alarm — sessions table is current).
-- **Evaluator**: 🟢 Active — Heartbeat 11:23. Running task tree evaluations.
-- **QA**: 🟢 Active — Heartbeat 11:23.
+- **Bob**: 🟢 Active — Heartbeat 11:42. H-097 CCC Triad work.
+- **Coach**: 🟢 Active — Heartbeat 11:42. EXP-116 Phase 2 running 36-trial batch (~48 min, s_1775819641735_110). **CEILING EFFECT confirmed** across all arms — evidence-over-narrative skill already fixed confabulation.
+- **Scout**: 🟢 Active — Heartbeat 11:42.
+- **Tech-lead**: 🟢 Active — Heartbeat 11:42. Dead code ops-gate/manager-receipts/orders **MERGED** (1e902a6e, 675 lines). Total dead code removed: ~2,648 lines.
+- **Optimizer**: 🟢 Active — Heartbeat 11:42. False alarm about stale DB dismissed.
+- **Evaluator**: 🟢 Active — Heartbeat 11:42. Running task tree evaluations.
+- **QA**: 🟢 Active — Heartbeat 11:42.
 - **Coder**: Idle. Only runs when forked by tech-lead.
 - **All agents**: 🟢 8/8 running. Zero errors last hour.
 - **✅ Tool Schema Guard**: Live in production.
@@ -170,23 +170,24 @@ Updated: 2026-04-10 ~11:23 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (11:23)
-- **System healthy**: All 8 non-May agents running. Zero errors. All heartbeats fresh (~11:23).
-- **Since last cycle (11:14)**:
-  - **Tech-lead**: Socket-watch removal **MERGED** (commit 0975c41, 706 lines). Web UI Phase 1 **MERGED** (commit c76cd98). Both on main now. ~1,973 lines total dead code removed.
-  - **Coach**: EXP-116 Phase 2 work session 29min in. **Ceiling effect confirmed**: Baselines 100% (6/6), Arm A 100% (6/6), Arm B running. Evidence-over-narrative skill already fixed these scenarios. Bob's review concern validated.
-  - **Bob**: Lean heartbeat — hypothesis housekeeping. H-094/H-068 archived, H-097 promoted to Tier 2.
-  - **Optimizer**: Flagged stale DB sessions/evaluations tables (investigated — sessions table IS current, latest entry 11:23. Optimizer's finding was inaccurate).
-  - **Scout**: Lean heartbeat — arXiv triage done, clean state.
+## Latest Cycle Summary (11:42)
+- **System healthy**: All 8 non-May agents running. Zero errors. All heartbeats fresh (~11:42).
+- **Since last cycle (11:23)**:
+  - **Tech-lead**: Dead code removal (ops-gate, manager-receipts, orders) already on main (1e902a6e, 675 lines). Branch cleaned. Total dead code: ~2,648 lines. EXP-115 completeness guard branch (review/s_1775810855346_43) has .state/ data committed — needs clean rebranch.
+  - **Coach**: EXP-116 Phase 2 running 36-trial batch. In progress (~48 min). All preliminary arms show 100% — ceiling effect confirmed.
+  - **Bob**: H-097 CCC Triad. Normal heartbeat.
+  - **Optimizer**: Duplicate stale-DB requests (3e693a3e + 9f6d860a) — false alarm, already dismissed.
+  - **Growth trigger**: Bob FM-3.3 trigger fired (58 errors/7d) — already extensively analyzed (EXP-107/108/110, FM-3.3 analysis). Measurement artifact + gym-production gap. No action.
 
 ## Key New Findings This Cycle
-- **EXP-116 Phase 2 CEILING EFFECT**: Baselines jumped from EXP-103's 11-25% to 100%. The evidence-over-narrative skill deployment (EXP-104 finding) was the real fix for confabulation. Adversarial framing is not providing marginal value. This confirms Bob's review was correct — EXP-103's +75-89pp was confounded by the skill deployment.
-- **Dead code removal sprint total**: ~1,973 lines removed (stuck-detector 657 + forced-externalization 610 + socket-watch 706). Codebase significantly leaner.
-- **Web UI Phase 1 live on main**: Agent activity grid, timeline, health summary.
+- **Dead code total now ~2,648 lines** — ops-gate/manager-receipts/orders (675) added to prior 1,973.
+- **EXP-115 completeness guard branch is dirty** — committed .state/ session data (12,511 files). Tech-lead needs clean branch with only source changes.
+- **EXP-116 Phase 2 still running** — 36-trial batch, all preliminary arms at ceiling (100%). Will confirm adversarial framing provides zero marginal value.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao since Mar 24**.
-- **P1**: **EXP-116 Phase 2 wrapping up** — Coach finishing Arm B runs. Expect ceiling effect across all arms. Will need Bob to integrate null result.
+- **P1**: **EXP-115 completeness guard clean branch** — Tech-lead needs to cherry-pick only source changes from review/s_1775810855346_43 (exclude .state/).
+- **P1**: **EXP-116 Phase 2 completing** — Coach 36-trial batch. Bob to integrate null result when done.
 - **P1**: **EXP-105 Few-Shot Production Impact** — Need coder/optimizer work sessions to generate data.
 - **P1**: **Present research sprint results to Hao** — KE-101 meta-analysis capstone. 17+ experiments. Gym graduation. Token waste finding ($441/week).
 - **P2**: `analyze-failures` cron DB bug — persistent but non-critical.

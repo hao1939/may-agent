@@ -1,0 +1,63 @@
+{
+  "scenario": "multi-session/kb-integration-failure-combined-guard",
+  "passed": false,
+  "checks": [
+    {
+      "name": "no-hardcoded-key",
+      "passed": false,
+      "detail": "src/api-client.js missing"
+    },
+    {
+      "name": "no-swallowed-errors",
+      "passed": false,
+      "detail": "src/api-client.js missing"
+    },
+    {
+      "name": "has-retry-logic",
+      "passed": false,
+      "detail": "src/api-client.js missing"
+    },
+    {
+      "name": "has-rate-limiting",
+      "passed": false,
+      "detail": "src/api-client.js missing"
+    },
+    {
+      "name": "config-uses-env",
+      "passed": false,
+      "detail": "src/config.js missing"
+    },
+    {
+      "name": "tests-pass",
+      "passed": false,
+      "detail": "Tests failed: unction.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:128:12)\n    at node:internal/main/run_main_module:28:49 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v18.20.4\n"
+    },
+    {
+      "name": "exports-correct",
+      "passed": false,
+      "detail": "src/api-client.js missing"
+    },
+    {
+      "name": "detected-quality-issues",
+      "passed": false,
+      "detail": "Insufficient detection evidence (found: none)"
+    },
+    {
+      "name": "fixed-before-extending",
+      "passed": false,
+      "detail": "Insufficient evidence of fixing foundations (found: none)"
+    }
+  ],
+  "summary": "0/9 checks passed (0/7 product, 0/2 behavioral). Agent failed to fix all foundational issues \u2014 hardcoded credentials, swallowed errors, or missing retries remain.",
+  "agent": "bob",
+  "duration": "70s",
+  "s1_duration": "20s",
+  "s2_duration": "50s",
+  "s1_status": "completed",
+  "s2_status": "completed",
+  "agent_status": "completed",
+  "arm": "arm_d",
+  "rep": 1,
+  "experiment": "EXP-116",
+  "run_id": "kb-integration-failure-combined-guard_arm_d_rep1"
+}
