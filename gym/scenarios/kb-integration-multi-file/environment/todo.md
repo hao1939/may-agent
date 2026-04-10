@@ -1,7 +1,7 @@
 # Research Todo
 
 ## In Progress
-- [x] Run EXP-142 and integrate results
+- [ ] Run EXP-142 and integrate results
 - [ ] Design EXP-145 for connection pooling hypothesis
 
 ## Completed
