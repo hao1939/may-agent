@@ -286,11 +286,14 @@ Build `createCompletenessGuard()` as a `beforeToolCall` hook:
 **Alternative (if gym hits ceiling)**: Skip the guard, deploy as an optimizer skill/workflow instruction. Measure production FM-2.2 rate change. Less rigorous but avoids the ceiling problem.
 
 **Phase 3 COMPLETE** (2026-04-10):
-- Built `src/lib/tools/completeness-guard.ts` — `createCompletenessGuard()` factory
+- Built `src/lib/tools/completeness-guard.ts` — `createCompletenessGuard(agentName, options?)` factory
 - Transcript-based detection: scans write()/edit()/bash() tool calls for "DELIVERABLES_CHECKLIST" evidence
-- Follows existing guard patterns (fail-open, synchronous, no IO)
-- Configurable: `block` (true/false), `checklistFileName`, `onBlock` callback
-- Test suite: `test/completeness-guard.test.ts` — 28 tests, all passing
+- Follows existing guard patterns (fail-open, synchronous, no filesystem IO)
+- Configurable: `block` (true/false), `checklistFileName`, `agents` (string|string[]), `onBlock` callback
+- Default: optimizer-only, block mode, filename "DELIVERABLES_CHECKLIST"
+- Wired into `src/lib/manager.ts` composeGuards() — runs before finish-guard (so checklist is required before verification)
+- Test suite: `test/completeness-guard.test.ts` — 31 tests, all passing (agent targeting, status filtering, write/edit/bash detection, configuration, fail-open, edge cases)
+- TypeScript compiles cleanly (`tsc --noEmit` zero errors)
 - **Note**: Results.md recommends deploying as optimizer instruction rather than hard guard. The guard is available for either approach — set `block: false` for log-only mode to measure before enforcing.
 
 ---
