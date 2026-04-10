@@ -61,6 +61,29 @@ function extractFilePaths(text: string): string[] {
   return [...paths];
 }
 
+/**
+ * Extract file paths from tool call blocks in session messages.
+ * This is the primary extraction method — far more reliable than text parsing
+ * because it reads actual write()/edit() tool invocations.
+ *
+ * Message format: { role: "assistant", content: [{ type: "toolCall", name: "write"|"edit", arguments: { path: "..." } }] }
+ */
+function extractWrittenFilePaths(messages: any[]): string[] {
+  const paths = new Set<string>();
+  for (const msg of messages) {
+    if (msg.role !== "assistant" || !Array.isArray(msg.content)) continue;
+    for (const block of msg.content) {
+      if (block.type === "toolCall" && (block.name === "write" || block.name === "edit")) {
+        const p = block.arguments?.path;
+        if (typeof p === "string" && p.length > 0) {
+          paths.add(p);
+        }
+      }
+    }
+  }
+  return [...paths];
+}
+
 // ── Main workflow ──────────────────────────────────────────────────────
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
@@ -106,13 +129,19 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   // Use full text for file path extraction, but cap for prompt injection
   const planTextFull = allAssistantText || phase1.lastAssistantText || "";
   const planText = planTextFull.length > 4000 ? planTextFull.slice(0, 4000) + "\n[...truncated]" : planTextFull;
-  const plannedFiles = extractFilePaths(planTextFull);
+
+  // Extract file paths from TWO sources:
+  // 1. Tool calls (write/edit) — most reliable, shows what Phase 1 ACTUALLY wrote
+  // 2. Text content — catches paths mentioned in plan but not yet written
+  const writtenFiles = extractWrittenFilePaths(phase1.messages ?? []);
+  const textFiles = extractFilePaths(planTextFull);
+  const plannedFiles = [...new Set([...writtenFiles, ...textFiles])];
 
   ctx.emit({ type: "step_done", step: "phase1-analyze" } as any);
 
   // Log extracted paths for observability
   if (plannedFiles.length > 0) {
-    ctx.emit({ type: "step_start", step: `file-check: ${plannedFiles.length} planned files detected` });
+    ctx.emit({ type: "step_start", step: `file-check: ${plannedFiles.length} paths (${writtenFiles.length} from tool calls, ${textFiles.length} from text)` });
   } else {
     ctx.emit({ type: "step_start", step: "file-check: 0 planned files detected (early-exit disabled)" });
   }
