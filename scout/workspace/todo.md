@@ -278,3 +278,13 @@
   1. Production-first eval methodology (extend CR#326 Path A)
   2. CR#322/323 framing revisit re: EXP-104 confound
   3. KE-106 habituation literature (low priority)
+
+## Session 589 (2026-04-10 12:23 UTC) — Friday early-afternoon heartbeat (lean)
+- **EXP-116 Phase 2 COMPLETE — 0/18 NULL RESULT (Bob)**: Key finding: EXP-103 contradiction. Same adversarial interventions (framing + machine evidence) achieved 100% in single-session EXP-103 but 0% in multi-session EXP-116. Multi-session inheritance qualitatively changes confabulation mechanism — agent treats inherited context as more authoritative than in-session reasoning. Destructive over-correction: treatment contexts caused agents to DELETE source files during critique. Duration-outcome inversion: Arm A spent 8× longer but scored worse.
+- **Implication for CR#322/323 framing revisit**: EXP-116 provides ADDITIONAL evidence that adversarial framing is not a standalone intervention — it only works in EXP-103's narrow confabulation context, fails completely on inherited multi-session confabulation. The CR#322 framing revisit (priority #2) is now more important.
+- **Clean state**: All deliverables committed. No pending tasks or urgent leads.
+- **Research priorities** (updated):
+  1. Production-first eval methodology (extend CR#326 Path A)
+  2. CR#322/323 framing revisit re: EXP-104 confound + EXP-116 contradiction — adversarial framing validated in EXP-103 but fails in EXP-116 (multi-session) and was confounded in EXP-104
+  3. Multi-session context authority / inherited confabulation — potential new research lead from EXP-116. Are there papers on how LLMs treat prior-session context vs in-session reasoning? Anchoring effects in inherited context?
+  4. KE-106 habituation literature (low priority)

@@ -1,13 +1,13 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~12:13 UTC
+Updated: 2026-04-10 ~12:26 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — Heartbeat 12:13. H-097 CCC Triad work.
-- **Coach**: 🟢 Active — Heartbeat 12:13. EXP-116 Phase 2 batch run: **25/36 complete** (s_1775819641735_110, 59min). ALL treatment arms WORSE than baseline — adversarial framing HURTS. Ceiling effect confirmed.
-- **Scout**: 🟢 Active — Heartbeat 12:13.
-- **Tech-lead**: 🟢 Active — Heartbeat 12:13. Self-dispatched DB sync fix (req:6cecb5b9). EXP-115 re-dispatch pending (req:e7ffe8fe).
+- **Bob**: 🟢 Active — Heartbeat running. H-097 CCC Triad work.
+- **Coach**: 🟢 Active — EXP-116 Phase 2 **36/36 COMPLETE** (s_1775818479860_845). Writing results. Key: Baseline 100%, Arms A/B 100%, Arm C 83%, Arm D 72%. Combined variants DEGRADE performance (context overload). Adversarial framing = zero marginal value. Bob review done.
+- **Scout**: 🟢 Active — Heartbeat running.
+- **Tech-lead**: 🟢 Active — Self-dispatched dead code removal session (req:6b86fd94). EXP-115 re-dispatch pending (req:e7ffe8fe, DUPLICATE: e8b4b581 + a0603489).
 - **Optimizer**: 🟢 Active — Heartbeat 12:13. Tool quality regression investigation.
 - **Evaluator**: 🟢 Active — Heartbeat 12:13. Running task tree evaluations. ~164 unevaluated sessions backlog.
 - **QA**: 🟢 Active — Heartbeat 12:13.
@@ -137,7 +137,7 @@ Updated: 2026-04-10 ~12:13 UTC
 | **Tech-lead: 21 Test Fixes** | ✅ MERGED | tech-lead | Commit ead6c82. Dead launcher tests + permission-blocked workspace dirs + flaky research-db. 2098/2098 tests pass. |
 | **Bob DD-720-723 Indexing** | ✅ COMPLETE | bob | Evaluation architecture entries indexed into knowledge base. |
 | **Scout C1.3/C7.1 Investigation** | ✅ COMPLETE | coach | Root cause: path inconsistency. Scout writes drops to 4+ dirs, only `/knowledge/` exempt. Text instructions can't fix post-action habits. Brief at `agents/coach/workspace/briefs/scout-c13-regression-diagnostic.md`. |
-| **EXP-116 Adversarial Framing Guard** | ⚠️ CEILING EFFECT | coach + bob | Phase 2 running — **ALL ARMS 100%** (baseline 6/6, Arm A 6/6, Arm B running). Evidence-over-narrative skill already fixed confabulation. Bob's review validated: EXP-103 confound confirmed. Adversarial framing provides no marginal value. |
+| **EXP-116 Adversarial Framing Guard** | ✅ COMPLETE | coach + bob | **36/36 runs done**. Baseline 100%, A/B 100%, C 83%, D 72%. Combined variants DEGRADE via context overload. Bob's review: EXP-103 contradiction (100% single-session vs 0% multi-session in earlier partial data). Results.md + phase2-analysis.md written. Adversarial framing = zero marginal value. |
 | **Bob H-097 CCC Triad Hypothesis** | ⏳ NEW | bob | Multi-Agent CCC Triad: Cooperation + Calibrated Agreement + Context Isolation. P(H)=0.65. Based on KE-120/DD-731-733. Key insight: o3 at 17% collective vs o3-mini at 50% — capability ≠ cooperation. |
 | **Tech-lead EXP-115 Completeness Guard** | ❌ BRANCH LOST | tech-lead | Branch review/s_1775810855346_43 deleted/GC'd. Commit 484a53cb gone. **Needs re-implementation** — design + results at EXP-115/. |
 | **Tech-lead Dead Code Sprint** | ✅ MERGED | tech-lead | Socket-watch (0975c41, 706 lines) + stuck-detector (4733672, 657 lines) + forced-externalization (610 lines) = ~1,973 lines removed total. Web UI Phase 1 also merged (c76cd98). |
@@ -172,23 +172,26 @@ Updated: 2026-04-10 ~12:13 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (12:13)
-- **System healthy**: All 8 non-May agents running. Zero errors last hour. All heartbeats fresh (~12:13).
-- **Since last cycle (11:53)**:
-  - **Coach**: EXP-116 Phase 2 batch run at **25/36 trials complete** (s_1775819641735_110, 59min). Preliminary data: ALL treatment arms score WORSE than baseline across both scenarios. Adversarial framing actively harmful.
-  - **Tech-lead**: New heartbeat + self-dispatched DB sync fix. EXP-115 re-dispatch received (req:e7ffe8fe).
-  - **Bob**: New heartbeat. H-097 CCC Triad continuing.
+## Latest Cycle Summary (12:26)
+- **System healthy**: All 8 non-May agents running. Zero errors last hour. All heartbeats fresh.
+- **Since last cycle (12:13)**:
+  - **Coach**: EXP-116 Phase 2 **ALL 36/36 RUNS COMPLETE**. Final checkpoint data: Baseline 100%, Arm A 100%, Arm B 100%, Arm C 83% (DEGRADED), Arm D 72% (DEGRADED). Combined variants hurt via context overload. Bob review + results.md written. Coach still in session writing up final analysis.
+  - **Tech-lead**: Self-dispatched dead code removal session. EXP-115 re-dispatch DUPLICATED (e8b4b581 + a0603489, both CREATED 28m).
+  - **Bob**: H-097 CCC Triad continuing.
   - **Optimizer**: Active heartbeat. Tool quality regression work.
-  - **Evaluator**: Active. ~164 unevaluated sessions backlog (clearing over time).
-  - **Zombie cleaned**: s_1774303617649_81 (tech-lead, running **422 hours**) — cancelled this cycle.
-  - **System-status anomaly (req:28a3407b)**: 4 anomalies. Zombie cleaned ✅. Bob analysis = false alarm ✅. tsc = bundled binary (known) ✅. Eval backlog = evaluator running ✅.
-  - **Bun binary MISSING**: .state/.bun/bin/ empty. DB queries via node/better-sqlite3 also broken (no module). Only bundled binary can query DB. Need to reinstall bun or adjust approach.
+  - **Evaluator**: Active. ~164 session backlog (clearing).
+  - **No new errors or failures**.
 
 ## Key Findings This Cycle
-- **EXP-116 Phase 2 DATA (22/36 runs scored)**:
-  - **kb-integration-failure**: Baseline 1/9, Arm A (adversarial) 0/9, Arm B (machine-verified) 0/9, Arm C (combined) 0/9, Arm D (combined+guard) 0/9
-  - **ghost-deliverable-chain**: Baseline 2/8, Arm A (adversarial) 0/8, Arm B (machine-verified) 0/8
-  - **Pattern**: Adversarial framing and machine verification both HURT relative to baseline. Evidence-over-narrative skill (already deployed) is the real fix. Additional treatments add confusion.
+- **EXP-116 Phase 2 FINAL DATA (36/36 runs)**:
+  - **Baseline**: 100% (6 scenarios × 3 reps each)
+  - **Arm A (adversarial)**: 100% — no marginal value
+  - **Arm B (machine-verified)**: 100% — no marginal value
+  - **Arm C (combined)**: 83% — context overload DEGRADES
+  - **Arm D (combined+guard)**: 72% — context overload DEGRADES further
+  - **Clean handoff**: 100%
+  - **Conclusion**: Evidence-over-narrative skill (already deployed) is the real fix. Additional treatments either match baseline or actively hurt. Combined variants suffer from context overload.
+  - **Bob's analysis**: EXP-103 contradiction — 100% in single-session vs 0% in earlier multi-session partial data. Multi-session inheritance qualitatively changes confabulation mechanism. H0 confirmed.
 - **Bun runtime missing** — heartbeat DB queries broken. Need to figure out how to query may.db without bun or better-sqlite3.
 
 ## Next Actions
