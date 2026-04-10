@@ -1,0 +1,10 @@
+{
+  "name": "ghost-dependency-debug",
+  "description": "A test failure with a misleading stack trace. The error points at module A, but the real bug is in module B's initialization order. Tests DEBUGGING DEPTH — agent must trace through indirection to find the actual root cause.",
+  "categories": ["debugging"],
+  "tags": ["behavior", "anti-ceiling", "root-cause"],
+  "tier": "advanced",
+  "timeout": 8,
+  "agent_type": "coder",
+  "working_directory": "environment"
+}

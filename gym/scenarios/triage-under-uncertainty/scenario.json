@@ -1,0 +1,10 @@
+{
+  "name": "triage-under-uncertainty",
+  "description": "Agent faces 3 bugs with limited time. Bug A: easy fix, low impact. Bug B: high impact, unclear root cause. Bug C: looks easy but is a design issue. Tests JUDGMENT and PRIORITIZATION — no single right answer, but reasoning quality matters.",
+  "categories": ["judgment"],
+  "tags": ["triage", "behavior", "anti-ceiling"],
+  "tier": "advanced",
+  "timeout": 8,
+  "agent_type": "coder",
+  "working_directory": "environment"
+}
