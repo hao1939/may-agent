@@ -5,13 +5,13 @@
 **Date**: 2026-04-10
 **Extends**: KE-093 (verification confabulation), KE-094 (adversarial framing), KE-095 (machine-verified evidence)
 
-> ⚠️ **EXP-118 INVALIDATION**: The sole evidence for this KE came from EXP-116's 100% baseline, which was an artifact of `--agent coder` not being a valid agent name. The binary exited silently and scoring ran against unmodified environments. Real baselines with valid agents (bob, optimizer, may) are 11-25%, matching EXP-103 original data. The "internalization" phenomenon was never observed. This KE's theoretical framework (intervention lifecycle model) may still be useful, but has NO empirical support from the may-agent system.
+> ⚠️ **EXP-118 INVALIDATION**: The sole evidence for this KE came from EXP-116's 100% baseline, which was an artifact of `--agent coder` not being a valid agent name. The binary exited silently and scoring ran against unmodified environments. Real baselines with valid agents (bob, optimizer, may) are actually **100%** across all agents (EXP-118), identical to the EXP-116 result. The scenarios are at ceiling due to model-level capability improvements since EXP-103. The "internalization" phenomenon was never observed. This KE's theoretical framework (intervention lifecycle model) may still be useful, but has NO empirical support from the may-agent system.
 
 ---
 
 ## Finding
 
-Interventions proven effective in EXP-103 became completely redundant within ~1 day. The same gym scenarios that measured 11-25% baseline pass rates in EXP-103 (April 9) showed **100% baseline pass rates** in EXP-116 (April 10) — an ~80pp improvement with zero intervention applied. Both adversarial framing (Arm A) and machine-verified evidence (Arm B) added 0pp over the new baseline.
+Interventions proven effective in EXP-103 became completely redundant within ~1 day. The same gym scenarios that measured 11-25% baseline pass rates in EXP-103 (April 9) showed **100% baseline pass rates** across all tested agents (coach in EXP-116, bob and optimizer in EXP-118) — an ~80pp improvement with zero intervention applied.
 
 The agent internalized the behaviors that the interventions were designed to enforce. The training worked — then the guard became unnecessary.
 

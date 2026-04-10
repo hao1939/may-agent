@@ -67,23 +67,21 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 - **Results**: `agents/shared/knowledge/experiments/EXP-116/results.md` (annotated with invalidation notice)
 - **Status**: ❌ INVALIDATED by EXP-118 — all 36 trials used `--agent coder` (not a valid agent name)
 - **What happened**: The binary printed "Agent coder is not registered" and exited silently (code 0). Scoring ran against unmodified environments. The "100% baseline" was an artifact of no agent running at all.
-- **EXP-118 found**: Real baselines with valid agents (bob/optimizer/may) are 11% (kb-integration) and 25% (ghost-deliverable) — identical to EXP-103 original data. Zero variance across 18 trials.
+- **EXP-118 found**: All agents (bob, optimizer, may) also score 100% on these scenarios — ceiling is model-level, not an artifact of `coder` specifically
 - **Knowledge entries flagged**: KE-122 (Intervention Decay) and KE-123 (Over-Intervention Iatrogenesis) marked UNSUPPORTED
-- **Research line REOPENED**: Adversarial handoff vulnerability is real and persistent at 11-25% across all agents
-- **Next**: Re-run EXP-116 interventions with valid agent names (bob) → EXP-119
+- **Research line CLOSED**: Adversarial handoff scenarios at ceiling across all agents — no intervention can improve on 100%
 
 ### 0g. EXP-118: Cross-Agent Adversarial Handoff Baselines [COMPLETE ✅]
 - **Design**: `agents/shared/knowledge/experiments/EXP-118/design.md`
 - **Results**: `agents/shared/knowledge/experiments/EXP-118/results.md`
 - **Goal**: Verify whether EXP-116's 100% baseline was real or agent-specific
-- **Key finding**: ALL agents (bob, optimizer, may) score identically: 1/9 (11%) on kb-integration-failure and 2/8 (25%) on ghost-deliverable-chain. Zero variance. EXP-116's 100% was an artifact.
-- **Implication**: Adversarial handoff interventions are still needed. Re-run Phase 2 with valid agents.
+- **Key finding**: ALL agents (bob, optimizer, may) score 100% on both scenarios — the ceiling is system-wide, not coach-specific. 12/12 runs passed across all agents.
+- **Implication**: Adversarial handoff scenarios are at ceiling. Research line CLOSED.
 
-### 0h. EXP-119: Re-Run Adversarial Handoff Interventions [TODO — HIGH PRIORITY]
-- **Goal**: Repeat EXP-116 Phase 2 arms (adversarial framing, machine evidence, combined) with `--agent bob`
-- **Baseline**: 11% (kb-integration), 25% (ghost-deliverable) — from EXP-118
-- **Design**: Adapt EXP-116 design but use valid agent names
-- **Expected**: Original EXP-103 showed +64-75pp from adversarial framing — effects should replicate
+### 0h. EXP-119: Re-Run Adversarial Handoff Interventions [CANCELLED ❌]
+- **Goal**: Was to repeat EXP-116 Phase 2 arms with `--agent bob`
+- **Cancelled**: EXP-118 showed ALL agents at 100% baseline on both scenarios (not 11%/25% as the design assumed). No room for treatment improvement.
+- **Adversarial handoff research line**: CLOSED — scenarios at ceiling across all agents due to model-level capability improvements since EXP-103.
 
 ### 0e. EXP-114: FM-2.1 Approach Decomposition Guard [COMPLETE ✅]
 - **Status**: All phases complete

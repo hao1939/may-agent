@@ -2,8 +2,10 @@
 
 **Date**: 2026-04-10
 **Author**: Coach
-**Status**: IN PROGRESS
+**Status**: CANCELLED — EXP-118 shows 100% baseline across all agents
 **Depends on**: EXP-116 (design), EXP-118 (valid baselines)
+
+> ⚠️ **CANCELLED**: This experiment's premise was wrong. The design references "EXP-118 baselines: 11% (kb-integration) and 25% (ghost-deliverable)" — but those were EXP-103's original numbers. EXP-118 actually found **100% baselines** across all agents (bob, optimizer, may) on both scenarios. With baselines at ceiling, no treatment arm can demonstrate improvement. The adversarial handoff research line is CLOSED.
 
 ---
 
