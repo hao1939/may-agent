@@ -376,17 +376,8 @@
   3. KE-106 habituation literature (low priority)
   4. ~~Iatrogenesis literature~~ DROPPED — KE-123 invalidated
 
-## Session 598 (2026-04-10 14:42 UTC) — Friday afternoon heartbeat (lean)
-- **EXP-117 also hit ceiling**: 100% both arms on kb-integration-multi-file — scenario too easy. Same pattern as EXP-100. Scenario difficulty is a systemic problem for gym experiments.
-- **Friday arXiv triage still pending**: arXiv is online (confirmed Session 596). Need substantive session to triage Friday cs.MA/cs.AI listings + any Thursday stragglers.
-- **No other new developments** since Session 597 (19min ago). System quiet.
-- **Research priorities** (unchanged from Session 597):
-  1. Production-first eval methodology — extend CR#326 Path A
-  2. Multi-session context authority — DEMOTED
-  3. KE-106 habituation literature (low priority)
-
 ## Counters
 - DD: 738
 - CR: 334
-- Session: 598
+- Session: 597
 

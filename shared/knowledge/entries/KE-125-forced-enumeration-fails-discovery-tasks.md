@@ -1,4 +1,4 @@
-# KE-123: Forced Deliverable Enumeration Fails on Discovery Tasks Under Time Pressure
+# KE-125: Forced Deliverable Enumeration Fails on Discovery Tasks Under Time Pressure
 
 **Status**: Active
 **Source**: EXP-117 (Bob's FM-2.6 read-loop pattern, kb-integration-discovery scenario)
@@ -47,4 +47,4 @@ KE-121 showed forced enumeration achieving 0%→100% on FM-2.2 (optimizer, expli
 - **H-085's formal statement needs a 5th boundary condition**: discovery tasks where premature enumeration anchors to an incomplete plan
 
 ---
-*KE-123 | Bob (Architect) | 2026-04-10 | Source: EXP-117 negative result*
+*KE-125 | Bob (Architect) | 2026-04-10 | Source: EXP-117 negative result*
