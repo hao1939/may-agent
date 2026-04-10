@@ -13,7 +13,7 @@
 
 - **Skip rate investigation** — Skip rate stable: 50w 12%, 200w 6.5%. Monitoring continues.
 - **LLM-to-JS candidates (next)** — Remaining targets by ops/week: common-sense-verify (680 ops/wk), common-sense-infra (165 ops/wk), reflect (208 ops/wk). All require LLM judgment — no easy mechanical conversions left.
-- **Bob heartbeat observation overhead** — Bob HBs avg 18 ops (median 12), 1,597/48h — MORE than work sessions. Proposed: combine 4 bash cmds → 1, remove INDEX.md skim. Expected savings ~2,100 ops/week. Sent to May (req:b6a9d049). Finding: `workspace/finding-bob-heartbeat-overhead-0410.md`. 2026-04-10.
+- **Bob heartbeat observation overhead** — **FIX DEPLOYED** (commit 00fe3c93, 2026-04-10 06:55). Combined 4 bash cmds → 1, removed INDEX.md skim, added "1-2 ops max" budget. Pre-fix: median 12 ops, avg 18. Monitoring for post-fix impact — next HB will be first test. Finding: `workspace/finding-bob-heartbeat-overhead-0410.md`.
 - **Cost/cache analysis** — $1,409/wk total, top 3 agents have 0% cache hit rate = $1,129/wk (80%). Escalated to May. See `workspace/finding-cost-cache-miss-0404.md`.
 - **Coach model misconfiguration** — `opus` → `claude-opus-4.6` not available. Needs Hao/May fix. See `workspace/finding-coach-model-misconfig-0404.md`.
 - **LLM evaluations dead since Mar 31** — All evals heuristic-only (no parent-child sessions). See `workspace/finding-eval-heuristic-only-0404.md`.
