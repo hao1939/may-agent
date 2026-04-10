@@ -1,9 +1,17 @@
 {
   "name": "behavior-escalation-stubborn-workflow",
-  "categories": ["judgment", "convention-compliance"],
-  "tags": ["behavior", "workflow", "escalation"],
+  "categories": [
+    "judgment",
+    "convention-compliance"
+  ],
+  "tags": [
+    "behavior",
+    "workflow",
+    "escalation"
+  ],
   "tier": "standard",
   "timeout": 3,
   "agent_type": "coder",
-  "workflow": true
+  "workflow": true,
+  "inherits": "behavior-escalation-stubborn"
 }

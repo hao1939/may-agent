@@ -1,10 +1,19 @@
 {
   "name": "qa-overstrict-gate-workflow",
   "description": "Workflow variant of qa-overstrict-gate. Uses two-phase enforcement (Method #15) to force QA to diagnose test failures BEFORE writing a verdict. Phase 1 runs tests, reads error output, and documents which failures are environment-related vs patch-related. Phase 2 writes the verdict based on Phase 1's root-cause analysis. This prevents OVER-STRICT_GATE — the agent cannot reflexively FAIL because vitest returned non-zero without first documenting WHY it failed.",
-  "categories": ["judgment", "review"],
-  "tags": ["behavior", "qa-specific", "workflow", "FM-2.1"],
+  "categories": [
+    "judgment",
+    "review"
+  ],
+  "tags": [
+    "behavior",
+    "qa-specific",
+    "workflow",
+    "FM-2.1"
+  ],
   "tier": "standard",
   "timeout": 5,
   "agent_type": "qa",
-  "workflow": true
+  "workflow": true,
+  "inherits": "qa-overstrict-gate"
 }

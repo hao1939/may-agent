@@ -1,9 +1,16 @@
 {
   "name": "delegation-scope-boundary-workflow",
-  "categories": ["judgment", "delegation"],
-  "tags": ["behavior", "workflow"],
+  "categories": [
+    "judgment",
+    "delegation"
+  ],
+  "tags": [
+    "behavior",
+    "workflow"
+  ],
   "tier": "full",
   "timeout": 5,
   "agent_type": "coder",
-  "workflow": true
+  "workflow": true,
+  "inherits": "delegation-scope-boundary"
 }
