@@ -1,13 +1,13 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~00:24 UTC
+Updated: 2026-04-10 ~00:53 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Running — Self-dispatched KE-110 (Guards as Permanent Infrastructure) work session (req `0898b820`). Contradiction Detection Protocol continuation. Heartbeat cycling.
-- **Coach**: 🟢 Running — Heartbeat cycling. Gym saturated (EXP-108). Awaiting next research direction.
+- **Bob**: 🟢 Running — KE-110 (Skill Stack Saturation synthesis) COMPLETE. Contradiction Detection Protocol done. Heartbeat cycling.
+- **Coach**: 🟢 Running — **Self-dispatched next-gen gym scenarios** (3 new: triage-under-uncertainty, ghost-dependency-debug, skill-conflict-partial-fix). Post-ceiling challenge set. Good autonomous behavior.
 - **Scout**: 🟢 Running — Heartbeat cycling.
-- **Tech-lead**: 🟢 Running — **Gym-runner ENOENT fix COMPLETE** (req `b2f0039c` completed ~23:23 UTC). Heartbeat cycling.
+- **Tech-lead**: 🟢 Running — Heartbeat cycling. Gym-runner ENOENT fix complete.
 - **Optimizer**: 🟡 IDLE — Tool quality regression (req `7f249ca7`) completed. Heartbeat cycling but minimal productive output.
 - **Evaluator**: 🟡 IDLE — Running auto-evals but minimal activity.
 - **QA**: 🟡 IDLE — Minimal activity.
@@ -110,6 +110,8 @@ Updated: 2026-04-10 ~00:24 UTC
 | **EXP-105 Few-Shot Production Impact** | ⏳ WAITING | coach | No data — zero coder/optimizer work sessions since deployment (Apr 9). Baselines captured. **BUG FIXED**: heartbeat exclusion merged (commit 7e6bc59 + case-insensitive fix). Token waste eliminated. |
 | **Heartbeat Few-Shot Injection Bug Fix** | ✅ MERGED | tech-lead/may | Branch `review/s_1775757252662_484` merged to main. Commit 7e6bc59. 29/29 tests pass. `[heartbeat]` prefix now skips few-shot router. |
 | **KE-106 Structural Enforcement ≠ Training** | ✅ COMPLETE | coach | Guards catch errors at 50-70% of sessions but underlying rate never decreases over 26 days. Guards are permanent infrastructure, not training wheels. At `agents/shared/knowledge/entries/KE-106-structural-enforcement-no-training-effect.md`. |
+| **KE-110 Skill Stack Saturation** | ✅ COMPLETE | bob | Synthesis: gym training loop extracted all available value. 7/7 scenarios at 91-100% ceiling. Terminal success state. At `agents/shared/knowledge/entries/KE-110-skill-stack-saturation-gym-ceiling-confirms-improvement-loop.md`. |
+| **Next-Gen Gym Scenarios (Post-Ceiling)** | ✅ DESIGNED | coach | 3 new harder scenarios: triage-under-uncertainty, ghost-dependency-debug, skill-conflict-partial-fix. At `agents/gym/scenarios/`. Ready for baseline+treatment runs. |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -141,17 +143,17 @@ Updated: 2026-04-10 ~00:24 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (00:24)
+## Latest Cycle Summary (00:53)
 - **System stable**: Zero errors in last hour. All 8 agents heartbeat cycling normally.
-- **Tech-lead gym-runner ENOENT fix COMPLETE** (req `b2f0039c` completed ~23:23 UTC). Multi-session transcript export bug resolved.
-- **Bob self-dispatched KE-110**: Guards as Permanent Infrastructure work session (req `0898b820`). Continuation of Contradiction Detection Protocol work. Good autonomous behavior.
-- **Optimizer**: Tool quality regression (req `7f249ca7`) completed but remains effectively idle. No self-initiated productive work.
+- **Coach designed 3 next-gen gym scenarios**: triage-under-uncertainty, ghost-dependency-debug, skill-conflict-partial-fix. Post-ceiling challenge set — breaks the gym saturation impasse. Good self-dispatch.
+- **Bob completed KE-110**: Skill Stack Saturation synthesis — confirms gym training loop extracted all available value. Terminal success state.
+- **Optimizer + QA**: Still effectively idle. No self-initiated productive work.
 - **Amy-kimi still 🔴**: Blocked on Hao for billing.
-- **Late night cycle**: All active items trending stable. No new dispatches needed — agents are self-directing well.
+- **Late night**: Agents self-directing well. No May dispatches needed this cycle.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao since Mar 24**.
-- **P0**: **Gym saturation → what's next?** — EXP-108 confirms gym multi-session is saturated. Options: (a) harder scenario design, (b) production A/B testing, (c) shift focus to other improvement levers (tooling, architecture, deployment). Coach and Bob should converge on next research direction.
+- **P0**: **Run next-gen gym scenarios** — Coach designed 3 new harder scenarios. Next step: baseline + treatment runs. Coach should self-dispatch this.
 - **P1**: **Address system-wide idle state** — Optimizer + QA burning cycles with zero output. Options: (a) Hao provides new direction, (b) self-assign from research projects, (c) spin down idle agents.
 - **P1**: **Present research sprint results to Hao** — KE-101 meta-analysis is the capstone. H-091 (P(H)=0.99), 17+ experiments, gym graduation, EXP-098 landmark, EXP-103/104 confabulation findings, EXP-107/108 gym-production gap + saturation.
 - **P1**: **Anti-confab brief ready for review** — At `agents/shared/may-agent-docs/design/anti-confabulation-deployment.md`. Revised with EXP-104 confound.
