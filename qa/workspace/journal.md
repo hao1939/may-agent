@@ -4889,3 +4889,21 @@ Reviewed commit `cd291140` touching `src/gym/runner.ts` and `test/gym/gym.test.t
 
 ### Verdict
 CONDITIONAL — directionally correct, but should sync files on invalid_agent to avoid silent artifact loss.
+
+---
+## 2026-04-10T15:24Z — QA heartbeat
+
+### Reviewed
+- Commit: **2649423** (`fix: gym runner fails immediately when agent fails to launch`)
+- File read: `test/gym/gym-runner.ts` (multi-session + workflow/single-phase guards)
+
+### Checks
+- `./node_modules/.bin/tsc --noEmit`: PASS (no output, exit code 0)
+- `./node_modules/.bin/vitest --run`: PASS (**138** files, **2041** tests)
+
+### Findings
+- No issues found in the new guards: they correctly prevent scoring an unmodified environment when `adapter.runAgent()` returns `{ status: "error", sessionId: "" }`.
+- Minor consistency note: the multi-session abort path populates `prompt_hash/prompt_text/model` (via effectiveAgentsRoot) while the single-session abort paths set these to `null`. Not necessarily wrong, but it means abort results differ in metadata fields across code paths.
+
+### Verdict
+PASS — change is correct and test suite passes.
