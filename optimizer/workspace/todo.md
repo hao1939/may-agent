@@ -13,7 +13,7 @@
 
 - **Post-restart baseline (2026-04-10)** — System restarted after 16-day gap. First 6h snapshot: 27 sessions, 282 ops, $12 total cost ($48/day rate). **12h update**: 45 sessions, 729 ops, ~$35 total ($78/day projected). Cost drivers: scout $7.14 (2 expensive heartbeats reading papers, 900K-1.15M tokens each), bob $11.09 (99-op deliver-or-report P1). Waste rate near 0% across all agents. Cost increase from $48→$78/day is legitimate work activity, not waste.
 - **Bob heartbeat dispatch consistency** — First post-restart HB: 63 ops inline (bad). Second: dispatched via `deliver-or-report` workflow (good). **24h update (Apr 10 08:53)**: 6/47 HBs (13%) still inline-heavy (62-123 ops, zero forks). These 6 account for ~409 excess ops (16.6% of bob's total). But 87% of HBs are properly dispatched (median ~12 ops). Text rules already in heartbeat.md. Per KE-002, additional text won't fix the remaining 13%. Would need structural fix (heartbeat maxTurns cap) or accept as residual.
-- **⚠️ may.db sessions/evaluations tables STALE (2026-04-10 11:15)** — DB `sessions` table last entry: March 23. No code writes to sessions table — it was a legacy mechanism. Current session data is filesystem-only (`.state/sessions/`). The heartbeat efficiency snapshot query in `heartbeat.md` returns 18-day-old data silently. All agent queries against may.db for session analytics are blind to post-restart activity. The `evaluations` table is also stale (last entry March 23). Need: either (a) a cron handler to sync filesystem sessions → DB, or (b) update all queries to read from filesystem. Impact: optimizer/coach/may agents that query may.db for analytics are making decisions on stale data. **Escalate to tech-lead.**
+- ~~**⚠️ may.db sessions/evaluations tables STALE**~~ — **RESOLVED** (verified 2026-04-10 11:23). DB is now live — 18 sessions in last hour, latest entry matches current time. Tech-lead or system fix restored DB sync. `sessions` and `evaluations` tables both current.
 - ~~**QA finish_partial scoring anomaly**~~ — **FIX DEPLOYED** (commit 474b5145, 2026-04-10). Root cause identified: QA was self-imposing mandatory tsc/vitest runs from SOUL.md during heartbeats, failing (tools don't exist in env), and finishing as `blocked`/`partial` → Q:2-3 instead of Q:4-5. In last 48h: 3 finish_blocked + 3 finish_partial out of 34 QA evals (18% penalized). Fix: updated QA context.md to explicitly state tsc/vitest unavailable, directing QA to use static analysis and not report blocked for known env constraints.
 - ~~**EXP-031: On-Demand Workflow Discovery**~~ — DONE. KE-026 already synthesizes all findings (0/30 discovery across 3 resource types). No separate KE entry needed.
 - **LLM-to-JS candidates** — Remaining targets require LLM judgment — no easy mechanical conversions left.
@@ -88,3 +88,15 @@ Tool quality regression #15 (2026-04-10 07:24) — 1 regressed category. bash:ot
 - **Dead workflow candidates**: may/design-then-build (0 runs ever), may/research-pipeline (0 runs ever), may/project-monitor (1 run ever, disabled), coach/convention-review (0 ever), coach/verify-setup (0 ever). Total: 367 lines dead code.
 - **Dormant optimizer workflows**: design-review, enhance-cron, safe-edit — 0 runs in 14d (761 lines). Historical usage exists but dormant.
 - **No action needed now** — next cleanup round can archive may+coach dead workflows.
+
+### Bob Quality Score Artifact (2026-04-10 11:23)
+**Mode A exploration** — Session Archaeology, found evaluator scoring artifact:
+- Bob's quality avg is 2.47 — dramatically below all other agents (next lowest: QA 3.15, others 3.91+)
+- **Root cause**: 44/97 evaluations (45%) have sub-1.0 quality scores (0.25-0.90). All are LLM-evaluated (not heuristic).
+- 39/44 sub-1.0 scores (89%) come from deliver-or-report Phase 1/Phase 2 sessions
+- The LLM evaluator penalizes Phase 1 for writing files ("Phase 1 constraint violated") AND penalizes Phase 2 for Phase 1's behavior (task prompt contains Phase 1 output with violation evidence)
+- **Double-counting**: Same phase-boundary violation penalizes 2 sessions. If bob writes in Phase 1, both Phase 1 AND Phase 2 get sub-1.0 quality.
+- Without these 44 artifacts: bob's remaining 53 sessions avg Q:3.87 (in line with other agents)
+- **Impact**: Low priority. Only 2 `needs_improvement` verdicts → 3 coach sessions (111 ops). Quality metrics misleading but not causing expensive cascades.
+- **Possible fixes**: (a) Evaluator: recognize Phase 1/2 as workflow sub-sessions and evaluate workflow-level, (b) exclude phase-boundary evaluations from agent-level aggregation, (c) early exit fix (deployed) should reduce Phase 2 redundancy.
+- **Status**: Recorded. Not actionable enough to fix now — early exit fix is the primary intervention.
