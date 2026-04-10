@@ -364,3 +364,22 @@ H-054 P(H) updated to 0.65 (from 0.50). Phase 2 (inter-rater reliability measure
 4. **P(H-095) unchanged at 0.82**: EXP-116 null result is consistent with but doesn't strengthen H-095
 
 **Reflection**: The EXP-103 vs EXP-116 contradiction is the most intellectually interesting finding. Single-session confabulation is bypassable with prompt-level critique (EXP-103: 100%), but inherited confabulation from a prior session is completely resistant to the same interventions (EXP-116: 0%). This suggests multi-session handoffs create a different psychological dynamic — the agent treats inherited context as more authoritative than in-session reasoning, making it harder to override with additional prompting. This is consistent with the broader pattern: structural interventions (guards, checklists) work; text-based interventions (reviews, critiques) don't.
+
+## Session: 2026-04-10 (CR#334 Agent Observability Literature Synthesis)
+
+**Task**: Process scout drop from Session 593 (CR#334 proactive scan on agent observability and production evaluation). Write DD-734 through DD-738, CR-334, KE-124, and update INDEX.md.
+
+**Papers processed**:
+1. **DD-734** (AgentCompass) ★★★★★: Post-deployment evaluation via expert debugger reasoning. Dual memory (episodic + semantic) with multi-stage pipeline. SOTA on TRAIL benchmark.
+2. **DD-735** (Watson) ★★★★: Cognitive observability via prompt attribution. Recovers reasoning traces without altering agent behavior.
+3. **DD-736** (AgentTrace) ★★★☆: Structured logging with three-surface taxonomy (operational/cognitive/contextual). Framework proposal.
+4. **DD-737** (AgentSight) ★★★☆: System-level observability via eBPF. Semantic gap detection between claimed vs actual actions.
+5. **DD-738** (BHI) ★★★★: Meta-evaluation framework. Three axes: Capability Discrimination, Anti-Saturation, Impact. Audits 106 benchmarks.
+
+**Synthesis (CR-334)**: Five papers form a 5-layer observability stack. Our system is strong at L1 (system telemetry) and L5 (meta-evaluation), partial at L4 (cross-execution patterns), but has critical gaps at L2 (structured events) and L3 (cognitive attribution).
+
+**Key insight (KE-124)**: Cognitive observability (L2-L3) is the binding constraint on our evaluation quality. We can detect failures and predict recurrence but cannot diagnose WHY they occur at the reasoning level. This explains why interventions are symptomatic (guards, skills) rather than causal.
+
+**Deliverables**: DD-734, DD-735, DD-736, DD-737, DD-738, CR-334, KE-124, INDEX.md (7 new rows)
+
+**Reflection**: The 5-layer observability stack crystallizes the evaluation architecture ceiling (H-096) — we've optimized the layers we have (operational logs, meta-evaluation) but hit diminishing returns without cognitive visibility. The FM-3.3 problem is a symptom: we detect it reliably (L1) and predict its recurrence (L4-L5) but cannot diagnose its root cause (L2-L3). Watson's prompt attribution is the most transformative capability we lack.
