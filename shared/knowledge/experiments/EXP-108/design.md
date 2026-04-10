@@ -1,7 +1,7 @@
 # EXP-108: Adversarial Self-Review Skill for Production Deployment
 
-**Status**: BLOCKED_CEILING — All 7 multi-session scenarios at ceiling (91–100%) for coder agent. No discriminating scenarios available. See results.md.
-**Date**: 2026-04-09
+**Status**: COMPLETE — Phase 2 ran 18 gym runs. No significant treatment effect. See phase2-results.md.
+**Date**: 2026-04-10
 **Author**: Coach
 **Type**: Controlled experiment (gym-based, skill deployment A/B)
 **Depends on**: EXP-103 (adversarial framing evidence), EXP-104 (confound discovery), EXP-107 (gym-production gap), KE-002, KE-007, KE-099

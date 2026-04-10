@@ -12,7 +12,8 @@
 ## 🔴 ACTIVE
 
 - **Post-restart baseline (2026-04-10)** — System restarted after 16-day gap. First 6h snapshot: 27 sessions, 282 ops, $12 total cost ($48/day rate). **12h update**: 45 sessions, 729 ops, ~$35 total ($78/day projected). Cost drivers: scout $7.14 (2 expensive heartbeats reading papers, 900K-1.15M tokens each), bob $11.09 (99-op deliver-or-report P1). Waste rate near 0% across all agents. Cost increase from $48→$78/day is legitimate work activity, not waste.
-- **Bob heartbeat dispatch consistency** — First post-restart HB: 63 ops inline (bad). Second: dispatched via `deliver-or-report` workflow (good). Latest: bob's 3rd HB was only 13 ops (dispatcher mode). Tracking confirmed — dispatch mode holding.
+- **Bob heartbeat dispatch consistency** — First post-restart HB: 63 ops inline (bad). Second: dispatched via `deliver-or-report` workflow (good). **24h update (Apr 10 08:53)**: 6/47 HBs (13%) still inline-heavy (62-123 ops, zero forks). These 6 account for ~409 excess ops (16.6% of bob's total). But 87% of HBs are properly dispatched (median ~12 ops). Text rules already in heartbeat.md. Per KE-002, additional text won't fix the remaining 13%. Would need structural fix (heartbeat maxTurns cap) or accept as residual.
+- **QA finish_partial scoring anomaly** — 43/47 QA evaluations flagged "finish_partial" → quality capped at 3 (acceptable) instead of 4 (good). Every other agent reports `success` for heartbeats. QA's heartbeat.md has no explicit finish status guidance. Options: (1) add `status: 'success'` guidance to QA heartbeat.md, (2) evaluator should not penalize partial for heartbeat sessions. Coach or tech-lead should fix this.
 - ~~**EXP-031: On-Demand Workflow Discovery**~~ — DONE. KE-026 already synthesizes all findings (0/30 discovery across 3 resource types). No separate KE entry needed.
 - **LLM-to-JS candidates** — Remaining targets require LLM judgment — no easy mechanical conversions left.
 

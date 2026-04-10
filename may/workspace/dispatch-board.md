@@ -1,21 +1,21 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~08:42 UTC
+Updated: 2026-04-10 ~08:55 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — Filed H-096 (evaluation architecture ceiling). New heartbeat 08:42.
-- **Coach**: 🟢 Active — EXP-108 Phase 2 parallel batch re-running. New heartbeat 08:42.
-- **Scout**: 🟢 Active — DD-724/725/726, CR-330 (verification papers). New heartbeat 08:42.
-- **Tech-lead**: 🟢 Active — Dead code removal (finish-guard). 2098/2098 tests. New heartbeat 08:42.
-- **Optimizer**: 🟢 Active — Prompt caching finding (confirmed structural). New heartbeat 08:42.
-- **Evaluator**: 🟢 Active — Flagged session for coach review. New heartbeat 08:42.
-- **QA**: 🟢 Active — New heartbeat 08:42.
-- **Coder**: 📋 Web UI project dispatched — spec at `agents/coder/workspace/SPEC-webui-agent-visualization.md`. ⚠️ No cron — needs explicit fork() to start.
-- **All agents**: 🟢 8/8 running. Zero errors.
-- **✅ Tool Schema Guard**: File at `src/lib/tools/tool-schema-guard.ts` exists. ⚠️ NOTE: commit 7c8dc22 not in git log — file is UNTRACKED. May need re-commit.
+- **Bob**: 🟢 Active — Indexing DD-728/729 (self-dispatched work session). New heartbeat 08:53.
+- **Coach**: 🟢 Active — EXP-115 Phase 2 running (gym trials for FM-2.2 completeness checklist). New heartbeat 08:53. Completed EXP-114a T+2h monitoring (57 sessions, 0 guard activations, 0 FP — insufficient volume) + EXP-115 Phase 1 (gym scenarios built).
+- **Scout**: 🟢 Active — Session 578, all entries verified. New heartbeat 08:53.
+- **Tech-lead**: 🟢 Active — Dead code removal (finish-guard). Dispatched P1 to start coder Web UI build. New heartbeat 08:53.
+- **Optimizer**: 🟢 Active — Workflow health check verified. New heartbeat 08:53.
+- **Evaluator**: 🟢 Active — Process #5 liveness verified. New heartbeat 08:53.
+- **QA**: 🟢 Active — New heartbeat 08:53.
+- **Coder**: 🟡 Build dispatched via tech-lead (req:aedb557f). Spec at `agents/coder/workspace/SPEC-webui-agent-visualization.md`. Awaiting tech-lead to fork work session.
+- **All agents**: 🟢 8/8 running. Zero errors last hour.
+- **✅ Tool Schema Guard**: Live in production. EXP-114a T+2h: 0 activations in 57 sessions (1.5% base rate too low — need 280+ sessions for statistical power).
 - **⚠️ Cron bug**: `analyze-failures` cron keeps failing (`db.query is not a function`). Low priority.
-- **⚠️ Git drift**: 223 files changed vs HEAD. Project restructured to bundled binary. `tsc --noEmit` check outdated.
+- **⚠️ Git drift**: 223 files changed vs HEAD. Project restructured to bundled binary.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -120,6 +120,9 @@ Updated: 2026-04-10 ~08:42 UTC
 | **KE-112 Verdicts Lie** | ✅ COMPLETE | bob | Production quality multi-modal — verdicts mask process issues. Agent FM fingerprints documented. |
 | **H-095 Agent-Specific Interventions** | ✅ FILED | bob | P(H)=0.65. Agent-specific interventions > universal. Predictions defined. Needs EXP-109 Phase 3 for validation. |
 | **Optimizer Tool Quality Regression #14** | ✅ COMPLETE | optimizer | Self-dispatched investigation of 4 regressed tool quality categories. First self-initiated productive work in days. |
+| **EXP-115 FM-2.2 Completeness Checklist** | ⏳ Phase 2 running | coach | Phase 1 complete (gym scenarios built). Phase 2: 3 baseline + 3 treatment gym trials running. Target: optimizer FM-2.2 (51% rate). Risk: high ceiling. |
+| **Web UI Agent Visualization Dashboard** | 🟡 DISPATCHED | tech-lead→coder | Spec at `agents/coder/workspace/SPEC-webui-agent-visualization.md`. Dispatched req:aedb557f. Awaiting tech-lead fork. |
+| **EXP-114a Tool Schema Guard Monitoring** | ⏳ INSUFFICIENT DATA | coach | T+2h: 57 sessions, 0 activations, 0 FP. Base rate 1.5% — need 280+ sessions. Guard may be bypassed (April sessions get framework errors instead). |
 | **EXP-113 FM-Heavy Workers Analysis** | ✅ COMPLETE | coach + bob | **KEY**: 398 FM-Heavy sessions (26.9%). Top cascade: FM-2.1 (96 first-appearances, 2.38 subsequent). Coach 55% FM-2.1 rate. Three intervention opportunities: FM-2.1 guard, FM-2.6 tool skills, FM-3.1 grounding. Bob integrated: H-095 P(H) 0.70→0.75. |
 | **EXP-114 FM-2.1 Decomposition Design** | ✅ DESIGNED | coach | **PIVOT FINDING**: 54.5% of FM-2.1 is tactical tool errors (bash({}), wrong args), NOT strategic approach problems. No single guard works — need Tool Schema Guard (#1, 78 sessions, HIGH conf) + Path Hints (#2) + Forced Externalization (#3). |
 | **EXP-114a Tool Schema Guard Prototype** | ✅ COMMITTED | coach + may | 201-line guard at `src/lib/tools/tool-schema-guard.ts`. On branch `review/tool-schema-guard-integration` (commit 5186855). Awaiting QA merge. |
@@ -159,24 +162,28 @@ Updated: 2026-04-10 ~08:42 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (08:42)
-- **System healthy**: All 8 non-May agents running. Zero errors. All heartbeats fresh (~08:42).
-- **Coach**: EXP-108 Phase 2 parallel batch still running (re-run with fixed JSON handling). Will complete autonomously.
-- **Scout delivered**: DD-724 (Co-SIGHT), DD-725 (DeepVerifier), DD-726 (Calibrated Uncertainty) + CR-330 (verification self-awareness gap). Active research.
-- **Tech-lead**: Removing dead code (finish-guard.ts + tests). 2098/2098 tests still passing.
-- **Bob delivered**: H-096 filed — evaluation architecture determines quality ceiling. Comprehensive 50-line hypothesis with 8 supporting evidence items + 5 counterevidence. P(H)=0.68.
-- **Optimizer**: Sent P1 prompt caching finding (duplicate message, already tracked). Confirmed structural — may-agent binary doesn't set Anthropic cache_control breakpoints. $5-15/day savings.
-- **Evaluator**: Flagged session s_1775775581598_667 (needs_improvement) for coach review.
+## Latest Cycle Summary (08:55)
+- **System healthy**: All 8 non-May agents running. Zero errors. All heartbeats fresh (~08:53).
+- **Coach completed 2 work sessions**: EXP-114a T+2h monitoring (85 ops — 57 sessions analyzed, 0 guard activations, need 280+ for statistical power) + EXP-115 Phase 1 (48 ops — gym scenarios built and validated). Now running EXP-115 Phase 2 (gym trials).
+- **Bob**: Self-dispatched DD-728/729 indexing work session. Knowledge base maintenance.
+- **Scout**: Verified session 578 notes, all entries correct.
+- **Tech-lead**: Dead code removal (finish-guard), dispatched to start coder Web UI build (req:aedb557f).
+- **Optimizer**: Workflow health check verified. Self-directing.
+- **Evaluator**: Process #5 liveness verified, evaluations DB active.
+- **Coder**: Web UI build dispatched via tech-lead. Awaiting fork.
 - **Amy-kimi still 🔴**: Blocked on Hao for billing.
-- **System running autonomously**: All agents productively self-directing.
+- **System running autonomously**: All agents productively self-directing. Research pipeline active.
+
+## Key New Findings This Cycle
+- **EXP-114a (Tool Schema Guard monitoring)**: Zero activations in 57 post-deployment sessions. Base rate too low (1.5%) — need 280+ sessions for 80% power. Guard may be bypassed by April sessions getting framework validation errors instead.
+- **EXP-115 Phase 1**: FM-2.2 completeness checklist gym scenarios built. Two scenarios validated (baseline + treatment with DELIVERABLES_CHECKLIST.md). Risk: high ceiling probability.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao since Mar 24**. Optimizer confirmed root cause: binary doesn't set `cache_control` breakpoints for Anthropic API.
-- **P1**: **Present research sprint results to Hao** — KE-101 meta-analysis is the capstone. H-091 (P(H)=0.99), 17+ experiments, gym graduation, EXP-098 landmark, EXP-103/104 confabulation findings, EXP-107/108 gym-production gap + saturation. Post-ceiling baselines reinforce conclusion.
-- **P1**: **Gym next phase** — Current gym is saturated. Needs architectural redesign for harder scenarios (50+ files, multi-session, ambiguous requirements). This is a Bob design task. H-096 provides theoretical framework.
-- **P1**: **Anti-confab brief ready for review** — At `agents/shared/may-agent-docs/design/anti-confabulation-deployment.md`. Revised with EXP-104 confound.
-- **P1**: **EXP-105 Few-Shot Production Impact** — Still waiting for coder/optimizer work sessions since deployment. Need real work to measure.
+- **P1**: **Web UI build** — Dispatched to tech-lead→coder (req:aedb557f). Monitor for progress.
+- **P1**: **Present research sprint results to Hao** — KE-101 meta-analysis is the capstone. H-091 (P(H)=0.99), 17+ experiments, gym graduation, EXP-098 landmark, EXP-103/104 confabulation findings, EXP-107/108 gym-production gap + saturation.
+- **P1**: **EXP-115 Phase 2** — Coach running gym trials now. Monitor for results.
+- **P1**: **EXP-105 Few-Shot Production Impact** — Still waiting for coder/optimizer work sessions since deployment. Web UI build will generate first real coder work.
 - **P2**: `analyze-failures` cron DB bug — persistent but non-critical.
 - **P2**: Federation design ready for Hao review
-- **P2**: Pre-merge review gate Phase 2 (auto-review)
 - **P2**: Amy-kimi still down — blocked on Hao for billing

@@ -31,6 +31,7 @@
 | [dd472](../deep-dives/dd472-mad-spear-conformity-attack.md) | Conformity-driven prompt injection |
 | [dd-xamt](../deep-dives/dd-xamt-covert-memory-tampering.md) | Covert memory tampering |
 | [dd486](../deep-dives/dd486-secure-forgetting-agent-unlearning.md) | ★★★★ Secure forgetting / unlearning |
+| [dd729](../deep-dives/dd729-action-rebinding-multi-step-attack-chains.md) | ★★★★★ Action Rebinding — zero-permission multi-step attack chains exploiting observation-action temporal gap. 100% success, architecture-independent |
 | [CR#264](../deep-dives/cr264-cross-layer-attack-taxonomy-gra.md) | ★★★★★ Cross-layer attack taxonomy |
 
 ### Trust & Defense
