@@ -106,6 +106,13 @@
 - [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% of verify-after-edit failures need code-level fix, not prompting. Deferred until prompting experiments complete.
 - [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
 
+## Session Notes (2026-04-10 ~19:45)
+- **EXP-126 INDEX INTEGRATION + EXP-127 DESIGN REVIEW**: 
+  - **EXP-126 indexed**: Added to INDEX.md (experiments table, after EXP-124) and PRIORITY-TRACKER.md (P1, before EXP-127). EXP-126 is Coach's clean replication of EXP-122 (environmental hints) with larger N=24 and corrected environment.
+  - **EXP-127 design review**: Design is excellent — single scenario (contradictory-requirements, baseline 0%), content-identical across channels, strong pre-registered Bayesian update matrix. **One design note**: Arm A vs B comparison (Ch1 system-prompt vs Ch3 task-message, identical content) is the crown jewel — cleanly unconfounded pure channel test. Arm C (Ch2 forced-ext, no worked example) is deliberately confounded (different content AND different channel) but justified as testing "Channel 2 mechanism is so powerful it doesn't even need content." If Arm B > Arm C, can't distinguish channel effect from content effect — design doc acknowledges this. Acceptable for first test. No changes needed to design — ready to execute.
+  - **EXP-127 already in both INDEX.md and PRIORITY-TRACKER** (added in earlier session). No changes needed.
+- **Files modified**: `knowledge/INDEX.md`, `knowledge/hypotheses/PRIORITY-TRACKER.md`, `agents/bob/workspace/todo.md`
+
 ## Session Notes (2026-04-10 ~18:50)
 - **CR-336 EXTERNAL VALIDATION MAP KB INTEGRATION COMPLETE**: Integrated CR-336 (External Literature Validation Map for the Three-Mechanism Theory) across the knowledge base:
   - **INDEX.md updated**: CR-336 row added after CR-335 in cross-references table.
@@ -946,3 +953,8 @@
   - **P(H)=0.78**: High prior based on convergent evidence from 100+ experiments across KE-101, H-085, H-091, KE-025, KE-064.
   - **Key contribution**: First formal model explaining WHY forced externalization works (Ch1→Ch2 channel switch), WHY text rules fail (Ch1 attention competition), and WHY there's an execution crowding limit (Ch2 budget constraint).
 - [x] **P-098a Channel Survey Complete**: Comprehensive survey of 34 interventions classified by attention channel. Result: **bimodal distribution strongly confirmed** — 88% of interventions cluster at 0% or 87-100%, with a 52pp dead zone (34-86%) containing only 1 intervention. Channel 1 (text): 0% across 14 interventions. Channel 2 (structural): 87-100% across 10 interventions. Channel 3 (positional): 0-100% depending on domain match. File: `agents/bob/workspace/h098-p098a-channel-survey.md`.
+- [x] **EXP-127 DESIGNED (Channel Separation Direct Test)**: First direct interventional test of H-098's core prediction — same contradiction-detection content delivered through 3 channels on `contradictory-requirements` scenario (baseline 0%). 4-arm design: Baseline (no intervention), Arm A (Channel 1 = system-prompt skill via lab fork `coder-channel-test-ch1`), Arm B (Channel 3 = task-message via `contradictory-requirements-ch3-fewshot`), Arm C (Channel 2 = forced externalization via `contradictory-requirements-ext`). N=6 per arm (24 total runs). Content verified identical between Ch1 and Ch3 (diff = 0). H-098 predicts: Baseline 0%, Ch1 0-17%, Ch3 83-100%, Ch2 83-100%. Key test is A vs B — same content, different channel. **READY TO EXECUTE — delegate to Coach.**
+  - **Design**: `agents/shared/knowledge/experiments/EXP-127/design.md`
+  - **Protocol**: `agents/shared/knowledge/experiments/EXP-127/protocol.md`
+  - **Channel 3 scenario**: `agents/gym/scenarios/contradictory-requirements-ch3-fewshot/`
+  - **Channel 1 lab fork**: `agents/.lab/coder-channel-test-ch1/`
