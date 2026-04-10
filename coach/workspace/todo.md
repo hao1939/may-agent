@@ -41,24 +41,21 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
   - Coach is #1 improvement opportunity (34.9% of FM-Heavy Workers)
 - **Follow-ups**: EXP-114 (FM-2.1 approach guard), EXP-115 (FM-2.2 completeness checklist)
 
-### 0d. EXP-115: FM-2.2 Completeness Checklist Guard for Optimizer [PHASE 1 COMPLETE]
+### 0d. EXP-115: FM-2.2 Completeness Checklist Guard for Optimizer [PHASE 2 COMPLETE ✅]
 - **Design**: `agents/shared/knowledge/experiments/EXP-115/design.md`
-- **Status**: Phase 1 complete — gym scenarios built and validated
+- **Results**: `agents/shared/knowledge/experiments/EXP-115/results.md`
+- **Status**: Phase 2 complete — **H1 CONFIRMED (+75pp)**
 - **Goal**: Structural intervention for FM-2.2 (incomplete deliverables) for optimizer
 - **Target agent**: Optimizer (51% FM-2.2 rate among FM-Heavy Workers)
-- **Analysis findings**:
-  - 27% of optimizer evals have FM-2.2 (35/189 sessions, 39 issue instances)
-  - 41% is "missing required deliverable" — primary target for forced enumeration
-  - 66% comes from pipeline cascades (Phase 1 failure → Phase 2-4 inherit) — NOT addressable by this intervention
-  - 67% co-occurs with FM-3.3 (verification skipping) — agents rush to finish
-  - 61% co-occurs with FM-2.1 (wrong approach) — upstream cascade
-- **Gym scenarios built**:
-  - `incomplete-deliverables-trap` — baseline: 4-deliverable brief where items 3-4 require extra file reads
-  - `incomplete-deliverables-trap-checklist` — treatment: same but requires DELIVERABLES_CHECKLIST.md first
-  - Both validated: success criteria pass with perfect answer, fail with incomplete answer
-- **Hypothesis (H1)**: Forced deliverable enumeration ≥ +20pp vs baseline
-- **Risk**: HIGH ceiling probability (KE-010) — optimizer may pass baseline at >80%
-- **Next**: Phase 2 — run 3+3 gym trials (baseline + treatment)
+- **Gym results**:
+  - Baseline: **25% pass rate** (1/4, bimodal 0/4 or 4/4 pattern)
+  - Treatment: **100% pass rate** (4/4, checklist forced enumeration)
+  - Effect: **+75pp** (exceeds ≥20pp threshold, p≈0.029)
+  - No ceiling effect (baseline well below 80%)
+- **Duration overhead**: Treatment +60% longer (160s→256s avg), 2/4 hit timeout
+- **Mechanism**: Forced DELIVERABLES_CHECKLIST.md before execution surfaces non-obvious deliverables
+- **Key finding**: Baseline shows all-or-nothing pattern (agent engages or doesn't). Checklist ensures engagement.
+- **Next**: Phase 3 — build production `createCompletenessGuard()` hook for optimizer
 
 ### 0e. EXP-114: FM-2.1 Approach Decomposition Guard [COMPLETE ✅]
 - **Status**: All phases complete
