@@ -5,6 +5,6 @@
   "tier": "standard",
   "timeout": 5,
   "agent_type": "bob",
-  "workflow": true,
-  "description": "EXP-124 treatment variant of knowledge-base-navigation. Adds a mandatory Phase 0 (directory discovery) before the main task. Tests whether forced discovery pre-phase reduces FM-1.3 path-guessing errors. Uses workflow:true to structurally separate discovery from execution."
+  "workflow": false,
+  "description": "EXP-124 treatment variant of knowledge-base-navigation. Adds mandatory pre-task discovery instructions. Tests whether forced discovery reduces FM-1.3 path-guessing errors."
 }
