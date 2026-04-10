@@ -23,17 +23,17 @@
 - Phase 3b content verification deployed at 16:43 UTC (commit d6c7696).
 - Continue monitoring — 16 runs is decent sample but more data welcome.
 
-### Gym Results Data Gap — IN PROGRESS (forked s_1775842175996)
-- Coach `gym-helpers.ts` runs gym trials but never records to `gym_runs` table. 75 sessions in 7 days, 0 DB entries.
-- Last `gym_runs` entry: April 2. All coach gym data since then is lost to DB.
-- Fix: Add `recordGymResult()` to `gym-helpers.ts` to auto-record.
+### Gym Results Data Gap — RE-FORKED (s_1775843697621)
+- `scripts/gym-run.sh` does bare `exec` → no DB recording. `scripts/gym-record.ts` exists but never called.
+- Previous session documented fix but never applied it. New session will actually modify `gym-run.sh`.
+- Fix: pipe gym-runner output through `gym-record.ts` in the shell script.
 
 ### Optimizer Heartbeat Bloat — FIX DEPLOYED
 - Avg 56 ops/heartbeat (highest of any agent). Bob avg 4 ops. My min was 19 — proves lean is possible.
 - Root cause: heartbeat.md encouraged inline exploration (multi-query DB analysis, file reads).
 - Fix: Rewrote heartbeat.md to "Dispatcher Mode" — observe in 1-2 ops, fork all analysis work. Target: ≤15 ops.
 - Baseline: 8 heartbeats in 12h, avg 56 ops, total 451. Measuring post-fix.
-- Last exploration mode: **D** (Workflow Health, Apr 10 ~17:19 UTC). Next: **A** (Session Archaeology).
+- Last exploration mode: **A** (Session Archaeology, Apr 10 ~17:53 UTC). Next: **B** (Tool Gap Analysis).
 
 ### may.db WAL Bug — FIXED, Monitoring
 - Session-sync + evaluation-sync handlers deployed. 1071 evals, 0 unevaluated (as of 17:10 UTC).
