@@ -38,6 +38,7 @@ Proactive heartbeat QA at HEAD **e3f53b5** (gym-runner transcript export fix). I
 
 ### Mandatory gates
 - `./node_modules/.bin/tsc --noEmit`: PASS (exit 0; no output)
+- `./node_modules/.bin/vitest --run`: FAIL (2110 tests total; 21 failing). Failing groups are pre-existing environment/structural issues: missing `src/app/launcher.ts`, `EACCES` deleting `/app/test-workspace/*` in context-learning tests, and `test/research-db` integration timeout at 5s.
 - `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2089 passed (2110)**
   - `test/launcher.test.ts`: 7 failed — `src/app/launcher.ts` missing (`existsSync` false + `ENOENT` reading `/app/src/app/launcher.ts`).
   - `test/context-learn.test.ts`: 7 failed — `rmSync(..., { recursive: true })` fails with `EACCES` under `/app/test-workspace/context-learn-test/*`.
