@@ -168,9 +168,6 @@ export class SubagentManager {
    */
   private sessionResults = new Map<string, Promise<TaskResult>>();
   private registry: RegistryStore;
-  private onSessionComplete?: (info: SessionInfo) => void;
-  private onSessionStart?: (agentName: string, sessionId: string) => void;
-  private onSessionBlocked?: (agentName: string, sessionId: string, reason: string) => void;
   private bus?: import("./manager-utils.js").ManagerEventBus;
   private startedAt = Date.now();
   private _projectRoot: string;
@@ -198,9 +195,6 @@ export class SubagentManager {
     this._projectRoot = opts.projectRoot ?? resolve(opts.persistDir, "..");
     this._maxCallDepth = opts.maxCallDepth ?? 10;
     this._infraRetryMax = opts.infraRetryMax ?? INFRA_RETRY_MAX;
-    this.onSessionComplete = opts.onSessionComplete;
-    this.onSessionStart = opts.onSessionStart;
-    this.onSessionBlocked = opts.onSessionBlocked;
     this.bus = opts.bus;
     this.apiGate = opts.apiGate;
   }
@@ -828,14 +822,6 @@ export class SubagentManager {
       workspacePath: info.workspacePath,
       parentSessionId: info.parentSessionId,
     });
-    // Legacy callback (deprecated — use bus instead)
-    if (this.onSessionComplete) {
-      try {
-        this.onSessionComplete(info);
-      } catch {
-        /* best-effort */
-      }
-    }
   }
 
   /** Remove the [STARTED] sentinel file for a session. */
@@ -879,17 +865,6 @@ export class SubagentManager {
       }
     }
 
-    if (this.onSessionBlocked) {
-      try {
-        this.onSessionBlocked(
-          session.agentName,
-          session.sessionId,
-          `${finishParams.status}: ${finishParams.summary}`,
-        );
-      } catch {
-        /* best-effort */
-      }
-    }
   }
 
   run(name: string, task: string, opts?: RunOptions): string {
@@ -1023,8 +998,6 @@ export class SubagentManager {
       kind: session.kind,
       requestId: opts?.requestId,
     });
-    // Legacy callback (deprecated — use bus instead)
-    this.onSessionStart?.(name, sessionId);
 
     // Activity tracking handled by ActivityWriter subscriber (reacts to session_start event)
 
@@ -1404,8 +1377,6 @@ export class SubagentManager {
       kind: persisted.kind,
       requestId: persisted.requestId,
     });
-    // Legacy callback (deprecated — use bus instead)
-    this.onSessionStart?.(persisted.agent, sessionId);
 
     // Continue the agent — either resume from a pending user message or
     // inject a restart notice and let the agent continue its task.
@@ -1949,7 +1920,6 @@ export class SubagentManager {
       parentSessionId: session.parentSessionId,
       requestId: closeInfo.requestId,
     });
-    this.onSessionComplete?.(closeInfo as SessionInfo);
   }
 
   /** Steer a running session mid-run.

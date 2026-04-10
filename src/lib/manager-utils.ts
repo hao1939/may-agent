@@ -284,18 +284,7 @@ export interface SubagentManagerOptions {
    *  (empty responses, missing tool calls). Default: INFRA_RETRY_MAX (5).
    *  Set to 0 to disable retries (useful in tests). */
   infraRetryMax?: number;
-  /**
-   * @deprecated Use `bus` instead. Called after a task session completes.
-   */
-  onSessionComplete?: (info: SessionInfo) => void;
-  /**
-   * @deprecated Use `bus` instead. Called when any new session starts.
-   */
-  onSessionStart?: (agentName: string, sessionId: string) => void;
-  /**
-   * @deprecated Use `bus` instead. Called when an agent reports being blocked.
-   */
-  onSessionBlocked?: (agentName: string, sessionId: string, reason: string) => void;
+
   /**
    * Optional API concurrency gate. Limits concurrent streaming sessions
    * per API endpoint to prevent rate limit aborts.
