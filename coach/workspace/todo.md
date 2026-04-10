@@ -112,6 +112,23 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 - **Gym vs production**: Complementary — gym measured commit laziness (−57pp), production measured verification recovery (+51pp)
 - **Limitation**: Small N (88 post-guard evals, 92% bob). Re-run at 2 weeks (2026-04-21)
 - **Next frontier**: Residual 35% unrecovered FM-3.3 = superficial verification. Needs semantic verification checks.
+  - **→ EXP-123**: Verification-Depth Guard deployed (see below)
+
+### 0i. EXP-123: Verification-Depth Guard — Superficial Verification Block [DEPLOYED ⏳]
+- **Design**: `agents/shared/knowledge/experiments/EXP-123/design.md`
+- **Implementation**: `src/lib/tools/verification-depth-guard.ts` (363 lines)
+- **Tests**: `src/lib/tools/verification-depth-guard.test.ts` (18/18 pass)
+- **Status**: Phase 2 — guard deployed to production for all agents
+- **Goal**: Address the 35% residual unrecovered FM-3.3 (EXP-110 finding)
+- **Detects 3 patterns**:
+  - T1: Git commands on gitignored paths (agents/) — zero information gain
+  - T2: Missing post-write verification — writes/edits without subsequent read/test
+  - T3: tsc-only verification — syntax-only check on behavioral bugs (warn-only)
+- **Phase 1 result**: CEILING EFFECT — gym scenarios (compound-edit-verification, convention-verify-edit, assertion-without-evidence) all pass baseline; guard never fires
+- **Phase 2**: Production observation — guard wired into composeGuards() for all agents
+  - Kill switch: `DISABLE_VERIFICATION_DEPTH_GUARD=1`
+  - Measurement: Wait 48-72h, then analyze fire rate, true positive rate, recovery rate
+- **Next**: Analyze production impact on 2026-04-13
 
 ### 1. Few-Shot Production Pipeline Integration [DEPLOYED ✅]
 - **Owner**: Tech-lead (implementation), Bob (design brief at `agents/shared/may-agent-docs/design/fewshot-production-pipeline.md`)
