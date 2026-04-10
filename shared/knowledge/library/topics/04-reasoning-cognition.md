@@ -19,6 +19,7 @@
 |------|----------------|
 | [dd-lock](../deep-dives/dd-information-self-locking-rl.md) | Information self-locking in RL |
 | [CR#258](../deep-dives/cr258-compute-governance-when-what-think.md) | ★★★★★ Compute governance theory |
+| [dd735](../deep-dives/DD-735-watson-cognitive-observability.md) | ★★★★★ Watson — cognitive observability for LLM agent reasoning via prompt attribution. Traces reasoning quality back to specific prompt elements. Reveals which context drives (or fails to drive) agent decisions |
 | [H-032](../../hypotheses/H-032-triadic-cognitive-architecture.md) | Triadic cognitive architecture hypothesis |
 | [H-033](../../hypotheses/H-033-adaptive-reasoning-framework.md) | Adaptive reasoning framework |
 

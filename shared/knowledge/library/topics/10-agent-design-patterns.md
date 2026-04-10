@@ -20,6 +20,8 @@
 | [dd484](../deep-dives/dd484-orgagent-company-hierarchy-mas.md) | ★★★★★ 3-layer organizational pattern |
 | [dd485](../deep-dives/dd485-cascade-scoped-communication-replanning.md) | ★★★★★ Scoped communication pattern |
 | [dd255](../deep-dives/dd255-anthropic-measuring-agent-autonomy.md) | ★★★★★ Measuring agent autonomy in practice |
+| [dd736](../deep-dives/DD-736-agenttrace-structured-logging.md) | ★★★★½ AgentTrace — structured logging framework with three-surface taxonomy (tool interaction, environment state, agent reasoning). Standardizes observability across heterogeneous agent systems |
+| [dd737](../deep-dives/DD-737-agentsight-system-level-observability.md) | ★★★★ AgentSight — system-level observability for AI agents using eBPF. Kernel-level instrumentation without agent cooperation. Captures resource consumption, syscalls, I/O patterns at infrastructure layer |
 
 ### Practical Patterns from Our System
 | File | What It Covers |

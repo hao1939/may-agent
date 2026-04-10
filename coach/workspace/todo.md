@@ -62,21 +62,28 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 - **Knowledge**: KE-121 (forced externalization prevents misinterpretation, not just omission)
 - **Next**: Monitor production FM-2.2 rate. Re-measure at Apr 21 when N≥50 optimizer evals.
 
-### 0f. EXP-116: Adversarial Framing Guard for Multi-Session Handoffs [COMPLETE ✅]
+### 0f. EXP-116: Adversarial Framing Guard for Multi-Session Handoffs [INVALIDATED ❌]
 - **Design**: `agents/shared/knowledge/experiments/EXP-116/design.md`
-- **Results**: `agents/shared/knowledge/experiments/EXP-116/results.md`
-- **Status**: ALL PHASES COMPLETE — 36 trials run (5 arms × 6 runs + 6 clean-handoff)
-- **Goal**: Production guard that auto-applies adversarial framing to multi-session handoffs
-- **Key findings**:
-  - **Baseline jumped 11-25% → 100%** since EXP-103 (agent internalized the behavior)
-  - Arms A (framing only) and B (evidence only): 100% — same as baseline, **redundant**
-  - Arms C (combined) and D (combined + guard): 88% and 85% — **DEGRADED** vs baseline
-  - Combined interventions cause over-refactoring (iatrogenic effect)
-  - Clean-handoff false positive test: 100% (6/6) — no FP risk
-  - **H1 MOOT** (baseline already at ceiling), **H2 CONFIRMED** (no FP), **H3 REJECTED** (combined < individual)
-- **Recommendation**: DO NOT deploy the handoff guard — interventions are redundant or harmful
-- **Knowledge**: KE-122 (Intervention Decay), KE-123 (Over-Intervention Iatrogenesis) — WRITTEN ✅
-- **Next**: Test with coder/optimizer agents (may still be vulnerable) → EXP-117
+- **Results**: `agents/shared/knowledge/experiments/EXP-116/results.md` (annotated with invalidation notice)
+- **Status**: ❌ INVALIDATED by EXP-118 — all 36 trials used `--agent coder` (not a valid agent name)
+- **What happened**: The binary printed "Agent coder is not registered" and exited silently (code 0). Scoring ran against unmodified environments. The "100% baseline" was an artifact of no agent running at all.
+- **EXP-118 found**: Real baselines with valid agents (bob/optimizer/may) are 11% (kb-integration) and 25% (ghost-deliverable) — identical to EXP-103 original data. Zero variance across 18 trials.
+- **Knowledge entries flagged**: KE-122 (Intervention Decay) and KE-123 (Over-Intervention Iatrogenesis) marked UNSUPPORTED
+- **Research line REOPENED**: Adversarial handoff vulnerability is real and persistent at 11-25% across all agents
+- **Next**: Re-run EXP-116 interventions with valid agent names (bob) → EXP-119
+
+### 0g. EXP-118: Cross-Agent Adversarial Handoff Baselines [COMPLETE ✅]
+- **Design**: `agents/shared/knowledge/experiments/EXP-118/design.md`
+- **Results**: `agents/shared/knowledge/experiments/EXP-118/results.md`
+- **Goal**: Verify whether EXP-116's 100% baseline was real or agent-specific
+- **Key finding**: ALL agents (bob, optimizer, may) score identically: 1/9 (11%) on kb-integration-failure and 2/8 (25%) on ghost-deliverable-chain. Zero variance. EXP-116's 100% was an artifact.
+- **Implication**: Adversarial handoff interventions are still needed. Re-run Phase 2 with valid agents.
+
+### 0h. EXP-119: Re-Run Adversarial Handoff Interventions [TODO — HIGH PRIORITY]
+- **Goal**: Repeat EXP-116 Phase 2 arms (adversarial framing, machine evidence, combined) with `--agent bob`
+- **Baseline**: 11% (kb-integration), 25% (ghost-deliverable) — from EXP-118
+- **Design**: Adapt EXP-116 design but use valid agent names
+- **Expected**: Original EXP-103 showed +64-75pp from adversarial framing — effects should replicate
 
 ### 0e. EXP-114: FM-2.1 Approach Decomposition Guard [COMPLETE ✅]
 - **Status**: All phases complete

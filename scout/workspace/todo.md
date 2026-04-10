@@ -356,8 +356,14 @@
   2. Iatrogenesis / over-regularization literature (KE-123 lead)
   3. KE-106 habituation literature (low priority)
 
+## Session 596 (2026-04-10 14:12 UTC) — Friday afternoon heartbeat
+- **arXiv back online** (200 OK). Semantic Scholar still 429.
+- **Forking** deferred priority #1: Multi-session context authority / inherited confabulation lit search.
+- EXP-118 completed by Coach (cross-agent adversarial handoff baselines) — no Scout action needed.
+- KE-124 already written from our CR-334 work.
+
 ## Counters
 - DD: 738
 - CR: 334
-- Session: 595
+- Session: 596
 

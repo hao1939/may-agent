@@ -1,9 +1,11 @@
 # KE-123: Over-Intervention Iatrogenesis — Combined Interventions Degrade Performance
 
-**Status**: Active
-**Source**: EXP-116 (adversarial framing guard for multi-session handoffs)
+**Status**: UNSUPPORTED — Evidence invalidated by EXP-118
+**Source**: EXP-116 (adversarial framing guard for multi-session handoffs) — **INVALIDATED**
 **Date**: 2026-04-10
 **Extends**: KE-007 (structural enforcement > text rules), KE-122 (intervention decay)
+
+> ⚠️ **EXP-118 INVALIDATION**: All EXP-116 arms used `--agent coder`, which is not a valid agent name. The binary exited silently and scoring ran against unmodified environments. The "over-refactoring" degradation observed in Arms C/D was scored against agent-error output, not real agent behavior. No real agent ran in any EXP-116 trial. The iatrogenesis concept (combined interventions causing harm) is theoretically plausible but has NO empirical support from the may-agent system.
 
 ---
 

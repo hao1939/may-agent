@@ -1,9 +1,11 @@
 # KE-122: Intervention Decay — Effective Interventions Become Redundant Through Internalization
 
-**Status**: Active
-**Source**: EXP-116 (adversarial framing guard for multi-session handoffs)
+**Status**: UNSUPPORTED — Evidence invalidated by EXP-118
+**Source**: EXP-116 (adversarial framing guard for multi-session handoffs) — **INVALIDATED**
 **Date**: 2026-04-10
 **Extends**: KE-093 (verification confabulation), KE-094 (adversarial framing), KE-095 (machine-verified evidence)
+
+> ⚠️ **EXP-118 INVALIDATION**: The sole evidence for this KE came from EXP-116's 100% baseline, which was an artifact of `--agent coder` not being a valid agent name. The binary exited silently and scoring ran against unmodified environments. Real baselines with valid agents (bob, optimizer, may) are 11-25%, matching EXP-103 original data. The "internalization" phenomenon was never observed. This KE's theoretical framework (intervention lifecycle model) may still be useful, but has NO empirical support from the may-agent system.
 
 ---
 
