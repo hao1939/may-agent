@@ -1,6 +1,6 @@
 # H-087: Constitutional Externalization — Forced Externalization Operates at Three Recursive Levels
 
-**Status**: P3 SUPPORTED (retrospective). Designed experiments produce KE entries 2.05x more often than ad-hoc ones (78.9% vs 38.5%, p≈0.013, N=51). Correlational, not causal — temporal/ambition/author confounds present. P(H) updated 0.65→0.72. Also supported by structural argument (KE-038) and indirect evidence (KE-043, KE-044, KE-033). EXP-072 provides indirect support at harness level.
+**Status**: P3 SUPPORTED (retrospective). Designed experiments produce KE entries 2.05x more often than ad-hoc ones (78.9% vs 38.5%, p≈0.013, N=51). Correlational, not causal — temporal/ambition/author confounds present. **EXP-124**: First direct COMPARISON evidence — L7 workflow architecture (+100pp) vs L3-L4 text instructions (−67pp, −50pp, null) on same task type. 4th task-level instantiation of write→gate→act pattern (agent writes nav-map.md → gate requires it → Phase 1 acts on it). P(H) 0.72→0.75. Also supported by structural argument (KE-038) and indirect evidence (KE-043, KE-044, KE-033). EXP-072 provides indirect support at harness level.
 **Source**: KE-038 (Constitutional Bounded Self-Improvement), KE-043 (Forced Externalization Complete Picture), KE-044 (Verification Separation), KE-033 (Scale Invariance), KE-128 (Phase 0 Discovery), H-085 (General Mechanism), H-055 (Self-Improvement Paradox), EXP-072 (workaround-resistant scenario design), EXP-124 (Phase 0 structural guard — strongest L7 evidence)
 **Date**: 2026-04-07
 **Filed by**: Bob (Architect)
