@@ -62,13 +62,13 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 - **Knowledge**: KE-121 (forced externalization prevents misinterpretation, not just omission)
 - **Next**: Monitor production FM-2.2 rate. Re-measure at Apr 21 when N≥50 optimizer evals.
 
-### 0f. EXP-116: Adversarial Framing Guard for Multi-Session Handoffs [INVALIDATED ❌]
+### 0f. EXP-116: Adversarial Framing Guard for Multi-Session Handoffs [VALIDATED ✅]
 - **Design**: `agents/shared/knowledge/experiments/EXP-116/design.md`
-- **Results**: `agents/shared/knowledge/experiments/EXP-116/results.md` (annotated with invalidation notice)
-- **Status**: ❌ INVALIDATED by EXP-118 — all 36 trials used `--agent coder` (not a valid agent name)
-- **What happened**: The binary printed "Agent coder is not registered" and exited silently (code 0). Scoring ran against unmodified environments. The "100% baseline" was an artifact of no agent running at all.
+- **Results**: `agents/shared/knowledge/experiments/EXP-116/results.md`
+- **Status**: ✅ VALIDATED by EXP-118 — all agents (coder, bob, optimizer) score 100% on both scenarios
+- **What happened**: Originally suspected invalid due to `--agent coder` — but coder IS a registered agent (agents/coder/agent.json exists). EXP-118 confirmed with other agents. 100% baselines are real.
 - **EXP-118 found**: All agents (bob, optimizer, may) also score 100% on these scenarios — ceiling is model-level, not an artifact of `coder` specifically
-- **Knowledge entries flagged**: KE-122 (Intervention Decay) and KE-123 (Over-Intervention Iatrogenesis) marked UNSUPPORTED
+- **Knowledge entries**: KE-122 (Intervention Decay) SUPPORTED (mechanism uncertain), KE-123 (Over-Intervention Iatrogenesis) needs re-evaluation
 - **Research line CLOSED**: Adversarial handoff scenarios at ceiling across all agents — no intervention can improve on 100%
 
 ### 0g. EXP-118: Cross-Agent Adversarial Handoff Baselines [COMPLETE ✅]

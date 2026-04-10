@@ -11,7 +11,7 @@
 
 ## 1. Motivation
 
-EXP-116 Phase 2 ran 36 gym trials testing adversarial handoff interventions across 5 arms. **All 36 trials used `--agent coder`, which is not a valid agent name** — the binary exited silently and scores were artifacts. EXP-118 then established valid baselines with real agents: 11% (kb-integration-failure) and 25% (ghost-deliverable-chain), zero variance across bob/optimizer/may.
+EXP-116 Phase 2 ran 36 gym trials testing adversarial handoff interventions across 5 arms with `--agent coder`. EXP-118 verified these results with other agents (bob, optimizer) and found all agents score 100% on both scenarios. With baselines at ceiling, treatment arms cannot demonstrate improvement.
 
 EXP-119 re-runs the **treatment arms only** (A through D plus clean-handoff controls) using `--agent bob`, with EXP-118's baselines as the comparison point.
 

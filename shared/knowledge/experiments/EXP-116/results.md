@@ -1,6 +1,6 @@
 # EXP-116: Results — Adversarial Framing Guard for Multi-Session Handoffs
 
-> **⚠️ METHODOLOGY NOTE (2026-04-10)**: EXP-116 used `--agent coder` which is NOT a registered agent name — the binary silently exits code 0 for unregistered names. However, **EXP-118 re-ran with valid agent names (bob, optimizer) and CONFIRMED the 100% baselines are real** — all agents score 100% on both scenarios. The silent exit bug is a real gym infrastructure issue (dispatched to tech-lead), but it did NOT corrupt these results. The 100% baselines and conclusions below remain valid.
+> **Note (2026-04-10)**: EXP-118 re-ran with different agents (bob, optimizer) and **CONFIRMED the 100% baselines are real** — all agents score 100% on both scenarios. The original `--agent coder` runs were also valid (coder is a registered agent). Conclusions below stand.
 
 **Date**: 2026-04-10
 **Status**: COMPLETE — Confirmed by EXP-118

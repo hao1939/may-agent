@@ -20,7 +20,7 @@ Updated: 2026-04-10 ~14:53 UTC
 - **✅ Branch reconciled**: main/master merged (91d495db). Single branch now.
 - **⚠️ Finish-guard false positive on git ops**: Tech-lead's branch reconcile session was blocked 4× by FM-3.1 guard — `git merge` isn't recognized as file-producing. Need guard update.
 - **⚠️ Cron bug**: `analyze-failures` cron keeps failing (`db.query is not a function`). Low priority.
-- **✅ EXP-116 VALIDATED**: EXP-118 confirmed 100% baselines are real (bob + optimizer also 100%). Silent exit bug with `--agent coder` is real infra issue but didn't corrupt results. Handoff guard research line closed.
+- **✅ EXP-116 VALIDATED**: EXP-118 confirmed 100% baselines are real. "Coder" IS a registered agent (agents/coder/agent.json exists). The "silent exit" bug was a confabulation by Coach — never existed. All gym results stand.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -153,7 +153,7 @@ Updated: 2026-04-10 ~14:53 UTC
 | **Finish-Guard Git Ops False Positive** | ⚠️ Dispatched | tech-lead | FM-3.1 guard blocked git merge 4× — doesn't recognize `git merge` as file-producing. Dispatched to tech-lead (req:3623828c). |
 | **EXP-118 Cross-Agent Handoff Baselines** | ✅ COMPLETE | coach | **CONFIRMED EXP-116**: 12 gym runs (bob + optimizer × 2 scenarios × 3 reps). All agents 100% — matching EXP-116. Baselines are REAL (not silent-exit artifact). Handoff guard research line closed. |
 | **Bob DD-734→738 Synthesis** | ✅ COMPLETE | bob | 5 deep dives on agent observability papers (AgentCompass, Watson, AgentTrace, AgentSight, BenchmarkHealthIndex). Phase 2 interrupted but 2b recovered. |
-| **Gym Runner Silent Failure Bug** | ⚠️ NEW | tech-lead | Binary exits code 0 for unregistered agent names (e.g. `coder`). Causes silent corrupt results. Found by EXP-118. Needs non-zero exit code fix. |
+| **Gym Runner Silent Failure Bug** | ❌ RETRACTED | may | Originally reported as "binary exits code 0 for unregistered agent names (e.g. coder)". Investigation found: (1) coder IS a registered agent, (2) binary exits code 1 (not 0) for truly unregistered names, (3) gym runner catches this and returns FAIL. Bug report was based on Coach confabulation. |
 | **Optimizer: Session-Sync Cron Handler** | ✅ DEPLOYED | optimizer | Handler at `agents/may/handlers/session-sync.ts`. Syncs .state/sessions/ meta.json → may.db every 5min. 996 sessions in <1s. Commit 2d257c78. Fixes chronic stale DB issue. |
 | **EXP-116 Results Correction** | ✅ CORRECTED | may | EXP-116/results.md note updated: invalidation was WRONG — EXP-118 confirmed 100% baselines are real with valid agents. Silent exit bug exists but didn't corrupt results. |
 
@@ -196,14 +196,14 @@ Updated: 2026-04-10 ~14:53 UTC
   - **All agents**: Fresh heartbeat cycle starting at 14:53.
 
 ## Key Findings This Cycle
-- **EXP-116/EXP-118 Data Integrity Issue (FIXED)**: Coach wrote a self-contradictory invalidation notice — the EXP-118 results.md shows 100% for bob+optimizer (valid agents, real runs), but the note added to EXP-116/results.md claimed "11%/25%". The 11%/25% numbers were from the original EXP-103 baselines, not from EXP-118. This was a confabulation by Coach — writing false claims that reference a file whose actual data contradicts the claims. Fixed both EXP-116/results.md and dashboard entries. **Root cause**: Coach conflated "silent exit bug exists" with "all results are corrupt", without checking that EXP-118's actual runs (which used valid agent names) showed 100%.
+- **EXP-116/EXP-118 Data Integrity Issue (FIXED)**: Coach wrote a self-contradictory invalidation notice and fabricated a "silent exit bug". Investigation found: (1) coder IS a registered agent (agents/coder/agent.json exists), (2) the binary exits code 1 (not 0) for truly unregistered names, (3) the gym runner catches non-zero exits and returns FAIL. The 100% baselines in EXP-116 are completely valid. EXP-118 independently confirmed them. Coach's confabulations: claimed 11%/25% baselines (from EXP-103, not EXP-118), and fabricated the "silent exit code 0" bug. This is a serious confabulation incident — Coach wrote false technical claims about system behavior without verification.
 - **Tech-lead legacy callbacks removal**: Clean infrastructure improvement (commit d5c7d66).
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao since Mar 24**.
-- **P1**: **Fix gym runner silent failure on unknown agent** — Dispatched to tech-lead (req:285b7015). The bug is real even though it didn't corrupt EXP-116 results.
+- **P1**: **Coach confabulation pattern** — Coach fabricated a "silent exit" bug and false data. Need to understand why and prevent recurrence. Consider: (a) requiring verification commands in experiment results, (b) adding a "verified by" field, (c) peer review for invalidation claims.
 - **P1**: **Fix finish-guard git false positive** — Tech-lead has work session (req:3623828c).
-- **P1**: **EXP-117 KB Integration** — Coach's negative result (checklist hurts Bob) needs Bob integration.
+- **P1**: **EXP-117 KB Integration** — Coach's negative result (checklist hurts Bob) needs Bob integration. Dispatched.
 - **P1**: **EXP-105 Few-Shot Production Impact** — Need coder/optimizer work sessions to generate data. Waiting.
 - **P1**: **Present research sprint results to Hao** — KE-101 meta-analysis capstone. 17+ experiments. Gym graduation. Token waste ($441/week).
 - **P2**: `analyze-failures` cron DB bug — persistent but non-critical.
