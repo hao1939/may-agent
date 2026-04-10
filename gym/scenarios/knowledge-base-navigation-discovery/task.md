@@ -1,77 +1,80 @@
-## Phase 0: Directory Discovery (MANDATORY — DO NOT SKIP)
+# Phase 0: Directory Discovery (MANDATORY)
 
-Before starting the main task, you must map the directories you'll need. Your working directory contains a knowledge base with nested subdirectories.
+Your ONLY job in this phase is to discover the directory structure and create a navigation map. Do NOT start the main task yet.
 
-### Instructions
-1. List the root of your working directory:
-   - `ls` or `bash("ls")`
-   
-2. Find and read the INDEX.md file (it's a directory map).
+## Instructions
 
-3. List each subdirectory mentioned in INDEX.md:
-   - `ls entries/`
-   - `ls hypotheses/`
-   - `ls experiments/`
-   - `ls library/`
-   - `ls library/deep-dives/`
-   - Any other directories you discover
-
-4. Write a NAVIGATION MAP to `nav-map.md` in the current working directory:
+1. List the top-level contents of the working directory to see the knowledge base structure:
    ```
+   ls .
+   ```
+
+2. Read `INDEX.md` to understand the full structure.
+
+3. For each subdirectory, list its contents:
+   ```
+   ls hypotheses/
+   ls entries/
+   ls experiments/
+   ls library/
+   ```
+   (And any deeper subdirectories you discover)
+
+4. Write a navigation map to `nav-map.md` in the working directory:
+   ```markdown
    # Navigation Map
    
    ## Directory Structure
-   - entries/ → [list files]
    - hypotheses/ → [list files]
+   - entries/ → [list files]
    - experiments/ → [list subdirs and their files]
-   - library/deep-dives/ → [list files]
+   - library/ → [list subdirs and their files]
    
-   ## Key Files I'll Need
-   - [file 1] at [confirmed path]
-   - [file 2] at [confirmed path]
+   ## Key Files for Synthesis Task
+   - Hypotheses: [paths to active hypothesis files]
+   - Entries: [paths to knowledge entry files]
+   - Deep dives: [paths to relevant deep dive files]
+   - Experiments: [paths to experiment result files]
    ```
 
-5. Call finish() with the navigation map summary.
+5. Call finish() with a summary of what you found.
 
-⚠️ You must ONLY list directories, read INDEX.md, and write the navigation map.
-   Do NOT start analyzing any content files. Do NOT read research entries.
-   Do NOT start writing synthesis.md.
-   The next phase will handle the actual task using your map.
+⚠️ CONSTRAINTS:
+- Do NOT read any content files (only INDEX.md and directory listings)
+- Do NOT start analyzing or synthesizing
+- Do NOT write synthesis.md
+- ONLY list directories, read INDEX.md, and write nav-map.md
 
 ---
 
-## Phase 1: Synthesize Research Status Report
+# Phase 1: Synthesize Research Status Report
 
-You have a knowledge base in your working directory with research entries, experiment results, hypotheses, and a library of deep dives. The structure is NOT flat — files are nested in subdirectories.
+You have a navigation map in `nav-map.md` from Phase 0. Use it to find files efficiently.
 
-### Navigation Map
-A previous phase mapped the directory structure. Read `nav-map.md` in your working directory FIRST — it contains confirmed file paths. Use ONLY paths from that map. If you need a file not in the map, `ls` its parent directory first before trying to read it.
-
-### Requirements
+## Requirements
 
 Write a file called `synthesis.md` (in the current working directory) with the following sections:
 
-#### 1. Active Hypotheses Summary
+### 1. Active Hypotheses Summary
 Find all active hypotheses and for each one, list:
 - The hypothesis ID and claim
 - What experiments are testing it
 - Current status of those experiments
 
-#### 2. Evidence Gap Analysis
+### 2. Evidence Gap Analysis
 Identify which knowledge entries are still pending verification and what evidence is missing.
 
-#### 3. Key Finding About FM-1.3
+### 3. Key Finding About FM-1.3
 Find the deep dive about failure modes and extract the specific information about FM-1.3 (path guessing). Include:
 - The definition of FM-1.3
 - The listed triggers
 - The intervention candidates mentioned
 
-#### 4. Cross-Reference Check
+### 4. Cross-Reference Check
 Find the experiment that tested SOUL text vs workflow enforcement, and verify whether its conclusion aligns with the relevant verified knowledge entry (RKE-003). State whether they agree and quote the key data.
 
-### Important
-- Read `nav-map.md` first for the directory structure.
-- Use the confirmed paths from the navigation map. Do NOT guess paths.
-- If a path from the map doesn't work, `ls` the parent directory to find the correct name.
-- There are ~17 files across multiple directories. You need to find specific ones, not read them all.
-- Budget: aim for <20 tool calls total in this phase.
+## Important
+- Use the paths from `nav-map.md` — do NOT guess paths.
+- If you need a file not in your navigation map, `ls` its parent directory first.
+- The knowledge base has ~17 files. You should only need to read 6-8 specific files.
+- Budget: aim for <15 tool calls in this phase.
