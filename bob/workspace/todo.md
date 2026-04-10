@@ -104,6 +104,12 @@
 - [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% of verify-after-edit failures need code-level fix, not prompting. Deferred until prompting experiments complete.
 - [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
 
+## Session Notes (2026-04-10 ~13:25)
+- **deliver-or-report.ts EARLY EXIT BUG FIX**: Fixed `extractWrittenFilePaths()` failing after compaction.
+  - **Root cause**: Bob has `compaction: true`, so long Phase 1 sessions (83 ops) get messages compacted. Compaction replaces assistant toolCall blocks with text summaries containing "Files written: path1, path2". The original function only scanned assistant toolCall blocks → always found 0 paths after compaction → early exit never triggered.
+  - **Fix**: Three extraction strategies: (1) toolCall blocks (pre-compaction), (2) parse "Files written:"/"Files edited:" from compacted context, (3) parse "✅ Wrote N bytes to" from toolResult blocks. Tested against real session data.
+  - **Impact**: Phase 2 was running on all 11 sessions in last 12h with 0 skipped. 4 of those had ≤12 ops (likely redundant). Fix should start saving ~36% of Phase 2 runs.
+
 ## Session Notes (2026-04-10 ~12:45)
 - **EXP-116 INTEGRATED INTO H-093**: Analyzed contradictory Phase 1/Phase 2 results and added comprehensive EXP-116 section to H-093.
   - **Phase 1** (Coach, 36 runs): Baseline 100%, treatments degrade to 85-88%. Adversarial framing HURTS — overcorrection destroys correct work.

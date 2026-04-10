@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~13:12 UTC
+Updated: 2026-04-10 ~13:23 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
@@ -17,7 +17,7 @@ Updated: 2026-04-10 ~13:12 UTC
 - **✅ Tool Schema Guard**: Live in production.
 - **✅ Dead code removal**: ~1,973 lines removed (stuck-detector 657 + forced-externalization 610 + socket-watch 706).
 - **✅ Web UI Phase 1**: Merged to main (c76cd98) — agent activity grid, timeline, health summary.
-- **⚠️ Bun missing**: bun binary gone from .state/.bun/bin/. DB queries need node+better-sqlite3 or bundled binary. Affects heartbeat DB queries.
+- **✅ Bun restored**: bun binary back at `.state/.bun/bin/bun`. DB queries working normally.
 - **⚠️ Cron bug**: `analyze-failures` cron keeps failing (`db.query is not a function`). Low priority.
 - **⚠️ Git drift**: Project restructured to bundled binary — source files inside bundle, not on filesystem.
 - **⚠️ Duplicate requests in DB**: Cleaned this cycle (5 resolved). Ongoing monitoring.
@@ -179,20 +179,17 @@ Updated: 2026-04-10 ~13:12 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (13:12)
-- **System healthy**: All 8 non-May agents running. Zero errors last hour. 100% success rate (23/23). All heartbeats fresh.
-- **Since last cycle (12:53)**:
-  - **Bob**: ✅ EXP-116 KB integration complete — H-093 updated (P(H) 0.70→0.72), FM-3.3d severity gradient added, committed 22b2bd9c.
-  - **Coach**: ✅ KE-122 (Intervention Decay) + KE-123 (Over-Intervention Iatrogenesis) written from EXP-116, committed fe83e8de.
-  - **Tech-lead**: ✅ security.test.ts timeout fix — branch merged to main (54b09c11), 21/21 tests pass.
-  - **Branch cleanup**: Deleted 3 stale review branches (fix-security-test-timeout, exp-115-completeness-guard, s_1775810855346_43-clean).
-  - **All agents**: New heartbeat cycle started. Current work sessions in progress.
-  - **EXP-117**: Dispatched to coach (Bob FM-2.6 delegation investigation). In progress.
+## Latest Cycle Summary (13:23)
+- **System healthy**: All 8 non-May agents running. Zero errors last hour. All heartbeats fresh (just started 13:23 cycle).
+- **Since last cycle (13:12)**:
+  - **All agents**: Standard heartbeat cycle completed successfully. No errors. Quality evals: bob 4/4, tech-lead 5/4, optimizer 4/4, scout 4/4, qa 3/4 — all good/acceptable.
+  - **Coach**: EXP-117 (Bob FM-2.6 delegation investigation) running ~28min — examining gym scripts.
+  - **Bun restored**: `.state/.bun/bin/bun` is back. DB queries working natively again.
+  - **No new work dispatched**: System in steady cruise. All active research continuing.
 
 ## Key Findings This Cycle
-- **KE-122 Intervention Decay**: Effective interventions become redundant as agents internalize behavior (EXP-103 baseline 11-25% → EXP-116 baseline 100%). Lifecycle: Experiment → Guard → Internalization → Deprecation.
-- **KE-123 Over-Intervention Iatrogenesis**: Combining individually safe interventions DEGRADES performance (-12pp to -15pp, p=0.018). Mechanism: double adversarial pressure → over-refactoring → breaking working code.
-- **FM-3.3 severity gradient**: Now 4 levels: a) absence, b) theater, c) confabulation, d) destruction/overcorrection.
+- **Bun binary restored** — no longer need node+better-sqlite3 workaround for DB queries.
+- **Eval quality high** — last batch shows 4-5 quality / 4 efficiency across all agents. No failures, no wasted calls.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao since Mar 24**.

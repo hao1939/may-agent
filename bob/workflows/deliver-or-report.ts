@@ -62,25 +62,75 @@ function extractFilePaths(text: string): string[] {
 }
 
 /**
- * Extract file paths from tool call blocks in session messages.
- * This is the primary extraction method — far more reliable than text parsing
- * because it reads actual write()/edit() tool invocations.
+ * Extract file paths that were written/edited during a session.
  *
- * Message format: { role: "assistant", content: [{ type: "toolCall", name: "write"|"edit", arguments: { path: "..." } }] }
+ * Uses THREE extraction strategies (in priority order):
+ * 1. Tool call blocks — reads write()/edit() invocations from assistant messages
+ * 2. Compacted context — parses "Files written:" / "Files edited:" from compaction summaries
+ * 3. Tool result blocks — parses "Wrote N bytes to <path>" from tool results
+ *
+ * Strategy 2 is critical: when sessions are long (>20 ops), compaction replaces
+ * early assistant messages with a summary that lists files as text, removing the
+ * original toolCall blocks. Without strategy 2, long Phase 1 sessions always
+ * return 0 paths, defeating the early exit check.
  */
 function extractWrittenFilePaths(messages: any[]): string[] {
   const paths = new Set<string>();
+
   for (const msg of messages) {
-    if (msg.role !== "assistant" || !Array.isArray(msg.content)) continue;
-    for (const block of msg.content) {
-      if (block.type === "toolCall" && (block.name === "write" || block.name === "edit")) {
-        const p = block.arguments?.path;
-        if (typeof p === "string" && p.length > 0) {
-          paths.add(p);
+    if (!Array.isArray(msg.content)) continue;
+
+    // Strategy 1: Tool call blocks on assistant messages (pre-compaction)
+    if (msg.role === "assistant") {
+      for (const block of msg.content) {
+        if (block.type === "toolCall" && (block.name === "write" || block.name === "edit")) {
+          const p = block.arguments?.path;
+          if (typeof p === "string" && p.length > 0) {
+            paths.add(p);
+          }
+        }
+      }
+    }
+
+    // Strategy 2: Compacted context summaries (post-compaction)
+    // Format: "Files written: path1, path2" / "Files edited: path1, path2"
+    if (msg.role === "user") {
+      for (const block of msg.content) {
+        if (block.type === "text" && typeof block.text === "string") {
+          const writtenMatch = block.text.match(/Files written:\s*(.+)/);
+          if (writtenMatch) {
+            for (const p of writtenMatch[1].split(",").map((s: string) => s.trim())) {
+              if (p.length > 0) paths.add(p);
+            }
+          }
+          const editedMatch = block.text.match(/Files edited:\s*(.+)/);
+          if (editedMatch) {
+            for (const p of editedMatch[1].split(",").map((s: string) => s.trim())) {
+              if (p.length > 0) paths.add(p);
+            }
+          }
+        }
+      }
+    }
+
+    // Strategy 3: Tool result blocks (write tool output format)
+    // Format: "✅ Wrote N bytes to <path>"
+    if (msg.role === "toolResult") {
+      for (const block of msg.content ?? []) {
+        if (block.type === "text" && typeof block.text === "string") {
+          const writeMatch = block.text.match(/Wrote \d+ bytes to ([^\s(]+)/);
+          if (writeMatch) {
+            paths.add(writeMatch[1]);
+          }
+          const editMatch = block.text.match(/Edit applied to ([^\s(]+)/);
+          if (editMatch) {
+            paths.add(editMatch[1]);
+          }
         }
       }
     }
   }
+
   return [...paths];
 }
 
