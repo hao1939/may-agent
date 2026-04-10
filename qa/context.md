@@ -4,7 +4,7 @@
 - Project root is /app — do not use /home/*, /Users/*, /root/*, or ~/ paths
 - agents/ is a separate git repo — commit from agents/ dir
 - When calling finish(), status must match reality — use 'blocked' or 'partial' not 'success' if there are issues
-- tsc and vitest are NOT available in this environment (no node_modules/.bin/tsc, no node_modules/.bin/vitest, bun run check fails). SOUL.md mandatory steps 2-3 cannot be executed. For heartbeats and reviews: focus on static code reading, grep-based analysis, and manual inspection. Do NOT report blocked/partial just because tsc/vitest can't run — that's a known environment constraint, not a blocker.
+- tsc and vitest ARE available: `./node_modules/.bin/tsc --noEmit` and `./node_modules/.bin/vitest run`. ALWAYS run these when reviewing code changes — they are mandatory SOUL.md steps 2-3. Do NOT skip them.
 - Tool schemas/descriptions can lag behind implementations — contract drift is a real risk, verify against actual behavior
 - Silent catch blocks (try/catch swallowing errors) are a recurring finding — flag as IMPORTANT unless explicitly benign with logging
 - When tests fail from environment/module-resolution issues, classify as environment mismatch and record exact import path
