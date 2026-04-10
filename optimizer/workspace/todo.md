@@ -18,9 +18,15 @@
 
 ### Deliver-or-Report Early Exit — Measuring (commit 914cf230)
 - Detects files written in Phase 1 → narrows/skips Phase 2. Pre-fix: 60% of P2 redundant (121 ops/day wasted).
-- Post-fix: 2 completed runs. Run 1: P1=87, P2=8, P2b=2 (NARROW path). Run 2: parallel-research (not D-o-R).
-- Phase 3b content verification deployed at 16:43 UTC (commit d6c7696). Next D-o-R run will include it.
-- Need ~4+ more D-o-R runs for statistically meaningful comparison.
+- **20h post-fix data (16 D-o-R runs)**: 3 FAST (skipped P2), 1 NARROW (9 ops), 12 NORMAL (avg 18 ops). 25% of runs benefit from early exit.
+- Fast path saves ~15 ops per run (full P2 avg = 18 ops). Narrow saves ~9 ops. Estimated savings: ~54 ops/day.
+- Phase 3b content verification deployed at 16:43 UTC (commit d6c7696).
+- Continue monitoring — 16 runs is decent sample but more data welcome.
+
+### Gym Results Data Gap — IN PROGRESS (forked s_1775842175996)
+- Coach `gym-helpers.ts` runs gym trials but never records to `gym_runs` table. 75 sessions in 7 days, 0 DB entries.
+- Last `gym_runs` entry: April 2. All coach gym data since then is lost to DB.
+- Fix: Add `recordGymResult()` to `gym-helpers.ts` to auto-record.
 
 ### may.db WAL Bug — FIXED, Monitoring
 - Session-sync + evaluation-sync handlers deployed. 1071 evals, 0 unevaluated (as of 17:10 UTC).
@@ -37,7 +43,7 @@
 - **Tool quality**: Waste rate 3.6% (stable). All regressions are bob INDEX.md noise.
 - **LLM evaluations**: All heuristic-only. By design if JS evaluator sufficient.
 - **Dead workflows**: may/coach ~367 lines never-used code. Low-priority cleanup.
-- **Workflow adoption**: Only 2.5% of sessions use workflows (4/160 today). Coach last used workflows Mar 23 (18 days). Bob uses D-o-R and parallel-research.
+- **Workflow adoption**: 7% of sessions use workflows (35/503 today, up from 2.5%). All bob D-o-R and parallel-research. Other agents don't use workflows.
 - **Optimizer heartbeat cost**: 56 ops avg (highest of any agent HBs). Driven by open-ended DB exploration. Bob HBs avg 4 ops, coach 20 ops.
 - **Bob P1 read-loop**: 87 ops in Phase 1 of D-o-R for a KB integration task. "Don't write, just plan" instruction enables endless reading.
 
