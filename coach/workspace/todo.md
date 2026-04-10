@@ -114,7 +114,18 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 - **Next frontier**: Residual 35% unrecovered FM-3.3 = superficial verification. Needs semantic verification checks.
   - **→ EXP-123**: Verification-Depth Guard deployed (see below)
 
-### 0i. EXP-123: Verification-Depth Guard — Superficial Verification Block [DEPLOYED ⏳]
+### 0i. EXP-124: Phase 0 Discovery for FM-1.3 Exhaustive Reading [COMPLETE ✅]
+- **Design**: `agents/shared/knowledge/experiments/EXP-124/design.md`
+- **Results**: `agents/shared/knowledge/experiments/EXP-124/results.md`
+- **Scenario**: `knowledge-base-navigation` (17-file nested KB → synthesis)
+- **Treatment**: `knowledge-base-navigation-discovery` (2-phase: Phase 0 builds nav-map.md → Phase 1 synthesizes)
+- **Baseline**: 3/3 at 5/5 product, 4/5 convention (reads 14-15 of 17 files, threshold ≤12)
+- **Treatment**: 3/3 at 5/5 product, 6/6 convention (reads ≤10 files, nav-map created)
+- **Effect**: +100pp on failing check (nav-doesnt-read-all-files: 0% → 100%)
+- **Mechanism**: Externalized navigation map → selective reading. Phase 0 converts "navigate and read everything" into "navigate first, read selectively."
+- **Recommendation**: Apply Phase 0 discovery to workflows with unfamiliar 10+ file directory structures
+
+### 0j. EXP-123: Verification-Depth Guard — Superficial Verification Block [DEPLOYED ⏳]
 - **Design**: `agents/shared/knowledge/experiments/EXP-123/design.md`
 - **Implementation**: `src/lib/tools/verification-depth-guard.ts` (363 lines)
 - **Tests**: `src/lib/tools/verification-depth-guard.test.ts` (18/18 pass)
