@@ -1,16 +1,9 @@
 {
   "name": "partial-verification-trap-workflow",
-  "categories": [
-    "judgment",
-    "bug-fixing"
-  ],
-  "tags": [
-    "behavior",
-    "workflow"
-  ],
+  "categories": ["judgment", "bug-fixing"],
+  "tags": ["behavior", "workflow"],
   "tier": "standard",
   "timeout": 5,
   "agent_type": "coder",
-  "workflow": true,
-  "inherits": "partial-verification-trap"
+  "workflow": true
 }

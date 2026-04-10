@@ -1,19 +1,11 @@
 {
   "name": "read-before-edit-fewshot",
   "description": "Few-shot variant: Shows a worked example of an engineer fixing multiple bugs across files with per-file read→edit→verify cycle. Tests whether seeing the pattern induces both read-before-edit and verify-after-edit discipline.",
-  "categories": [
-    "convention-compliance"
-  ],
-  "tags": [
-    "behavior",
-    "edit-discipline",
-    "fewshot",
-    "EXP-093"
-  ],
+  "categories": ["convention-compliance"],
+  "tags": ["behavior", "edit-discipline", "fewshot", "EXP-093"],
   "tier": "standard",
   "timeout": 5,
   "agent_type": "coder",
   "workflow": false,
-  "injected_context": "injected_context.md",
-  "inherits": "read-before-edit"
+  "injected_context": "injected_context.md"
 }

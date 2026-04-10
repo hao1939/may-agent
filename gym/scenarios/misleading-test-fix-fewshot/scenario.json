@@ -1,21 +1,11 @@
 {
   "name": "misleading-test-fix-fewshot",
   "description": "Few-shot variant: Injects the 'evidence-over-narrative' skill via task context, then presents the misleading-test-fix scenario to test if the agent trusts runtime evidence over misleading test assertions.",
-  "categories": [
-    "judgment",
-    "root-cause"
-  ],
-  "tags": [
-    "behavioral",
-    "discipline",
-    "diagnosis",
-    "treatment",
-    "fewshot"
-  ],
+  "categories": ["judgment", "root-cause"],
+  "tags": ["behavioral", "discipline", "diagnosis", "treatment", "fewshot"],
   "tier": "standard",
   "timeout": 5,
   "agent_type": "coder",
   "workflow": false,
-  "injected_context": "injected_context.md",
-  "inherits": "misleading-test-fix"
+  "injected_context": "injected_context.md"
 }

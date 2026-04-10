@@ -1,16 +1,9 @@
 {
   "name": "read-before-edit-workflow",
-  "categories": [
-    "convention-compliance"
-  ],
-  "tags": [
-    "behavior",
-    "edit-discipline",
-    "workflow"
-  ],
+  "categories": ["convention-compliance"],
+  "tags": ["behavior", "edit-discipline", "workflow"],
   "tier": "standard",
   "timeout": 5,
   "agent_type": "coder",
-  "workflow": true,
-  "inherits": "read-before-edit"
+  "workflow": true
 }

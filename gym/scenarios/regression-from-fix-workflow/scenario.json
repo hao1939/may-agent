@@ -1,25 +1,14 @@
 {
   "name": "regression-from-fix-workflow",
   "description": "Workflow variant of regression-from-fix. Two-phase approach: Phase 1 forces analysis of the bug AND all dependent functions before editing. Phase 2 makes the minimal fix and verifies no regressions. Targets over-engineering and regression-blind editing.",
-  "categories": [
-    "bug-fixing",
-    "verification"
-  ],
+  "categories": ["bug-fixing", "verification"],
   "agent": "coder",
   "difficulty": "medium",
-  "tags": [
-    "regression-awareness",
-    "side-effects",
-    "testing",
-    "careful-editing",
-    "workflow",
-    "FM-3.3"
-  ],
+  "tags": ["regression-awareness", "side-effects", "testing", "careful-editing", "workflow", "FM-3.3"],
   "setup": "environment",
   "task": "task.md",
   "success_criteria": "success_criteria.js",
   "judge_criteria": "judge_criteria.md",
   "workflow": true,
-  "tier": "full",
-  "inherits": "regression-from-fix"
+  "tier": "full"
 }

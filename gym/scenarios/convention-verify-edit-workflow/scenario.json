@@ -1,16 +1,9 @@
 {
   "name": "convention-verify-edit-workflow",
-  "categories": [
-    "convention-compliance"
-  ],
-  "tags": [
-    "behavior",
-    "verification",
-    "workflow"
-  ],
+  "categories": ["convention-compliance"],
+  "tags": ["behavior", "verification", "workflow"],
   "tier": "standard",
   "timeout": 5,
   "agent_type": "tech-lead",
-  "workflow": true,
-  "inherits": "convention-verify-edit"
+  "workflow": true
 }

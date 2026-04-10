@@ -1,18 +1,10 @@
 {
   "name": "misleading-stacktrace-workflow",
-  "categories": [
-    "root-cause-analysis",
-    "error-recovery"
-  ],
-  "tags": [
-    "ability",
-    "judgment",
-    "workflow"
-  ],
+  "categories": ["root-cause-analysis", "error-recovery"],
+  "tags": ["ability", "judgment", "workflow"],
   "tier": "standard",
   "timeout": 5,
   "agent_type": "coder",
   "workflow": true,
-  "description": "Workflow-enforced version of misleading-stacktrace. The stacktrace points to userService.js but the real bug is in auth.js. Phase 1 forces full investigation (reading all files in the error path, tracing data flow) before any edits. Phase 2 implements the fix in the correct file. Tests whether workflow separation prevents the common failure of patching the symptom location instead of the root cause.",
-  "inherits": "misleading-stacktrace"
+  "description": "Workflow-enforced version of misleading-stacktrace. The stacktrace points to userService.js but the real bug is in auth.js. Phase 1 forces full investigation (reading all files in the error path, tracing data flow) before any edits. Phase 2 implements the fix in the correct file. Tests whether workflow separation prevents the common failure of patching the symptom location instead of the root cause."
 }

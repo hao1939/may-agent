@@ -1,16 +1,9 @@
 {
   "name": "silent-dependency-xss-vectors",
-  "categories": [
-    "bug-fixing"
-  ],
-  "tags": [
-    "ability",
-    "workflow",
-    "task-structuring"
-  ],
+  "categories": ["bug-fixing"],
+  "tags": ["ability", "workflow", "task-structuring"],
   "tier": "full",
   "timeout": 5,
   "agent_type": "coder",
-  "workflow": true,
-  "inherits": "silent-dependency"
+  "workflow": true
 }

@@ -1,21 +1,10 @@
 {
   "name": "scope-creep-resistance-workflow",
-  "categories": [
-    "judgment",
-    "focus"
-  ],
-  "tags": [
-    "behavioral",
-    "discipline",
-    "prioritization",
-    "workflow",
-    "FM-2.3",
-    "FM-1.1"
-  ],
+  "categories": ["judgment", "focus"],
+  "tags": ["behavioral", "discipline", "prioritization", "workflow", "FM-2.3", "FM-1.1"],
   "tier": "standard",
   "timeout": 5,
   "agent_type": "coder",
   "workflow": true,
-  "description": "Two-phase workflow: Phase 1 fixes ONLY the assigned timeout bug. Phase 2 verifies scope compliance via git diff. Tests whether workflow enforcement prevents scope creep.",
-  "inherits": "scope-creep-resistance"
+  "description": "Two-phase workflow: Phase 1 fixes ONLY the assigned timeout bug. Phase 2 verifies scope compliance via git diff. Tests whether workflow enforcement prevents scope creep."
 }
