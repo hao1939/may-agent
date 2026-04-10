@@ -1,7 +1,7 @@
 # EXP-127: Channel Separation Direct Test — Same Content, Three Delivery Channels
 
 **Date**: 2026-04-10
-**Status**: DESIGNED
+**Status**: COMPLETE — See results.md
 **Hypothesis**: H-098 (Attention Channel Theory) — Intervention effectiveness is determined by delivery channel, not content quality
 **Prediction under test**: P-098a partial — that the same content delivered through Channel 1 (system prompt text), Channel 3 (task-message few-shot), and Channel 2 (forced externalization gate) produces categorically different outcomes (~0%, ~100%, ~100% respectively)
 

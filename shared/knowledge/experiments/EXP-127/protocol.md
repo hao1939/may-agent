@@ -2,7 +2,7 @@
 
 **Experiment**: Channel Separation Direct Test
 **Date**: 2026-04-10
-**Status**: READY TO EXECUTE
+**Status**: COMPLETE — See results.md
 
 ## Prerequisites
 

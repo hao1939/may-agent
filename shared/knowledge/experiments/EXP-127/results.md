@@ -11,7 +11,7 @@
 | **Baseline** | None | **0/6 (0%)** | [0%, 39%] | 200, 201, 204, 205, 207, 208 |
 | **A (Ch1)** | System Prompt | **0/6 (0%)** | [0%, 39%] | 210, 212, 213, 214, 215, 216 |
 | **B (Ch3)** | Task Message | **0/6 (0%)** | [0%, 39%] | 217, 218, 220, 224, 225, 226 |
-| **C (Ch2)** | Forced Ext. | **6/6 (100%)** | [61%, 100%] | 227, 228, 229, 230, 231 |
+| **C (Ch2)** | Forced Ext. | **6/6 (100%)** | [61%, 100%] | 227–231 (6 runs) |
 
 **Key result**: Only Channel 2 (forced externalization) succeeded. Channels 1 and 3 both produced 0% — identical to baseline.
 

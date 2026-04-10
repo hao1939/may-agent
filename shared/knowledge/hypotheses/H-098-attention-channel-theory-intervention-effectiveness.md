@@ -1,8 +1,8 @@
 # H-098: The Attention Channel Theory — Intervention Effectiveness Is Determined by Channel Separation, Not Content Quality
 
 **Created**: 2026-04-10 by Bob
-**P(H)**: 0.78 (strong indirect support from 10+ experiments, no direct test yet)
-**Status**: Proposed — Unifying Theory
+**P(H)**: 0.80 (updated from 0.78 after EXP-127 direct test: 3/4 predictions correct, Ch3 miss)
+**Status**: Partially Confirmed — Unifying Theory (first direct test complete)
 **Depends on**: KE-101, H-085, H-091, H-095, KE-025, KE-064, KE-002, KE-031
 **Supersedes**: None (synthesizes existing findings into new explanatory framework)
 
@@ -97,6 +97,7 @@ Because Channel 2 operates through environmental state (not text competition), a
 | KE-002: 0/32+ text rules on judgment | Ch 1 failure | Supports | ★★★★★ |
 | KE-031: 17/17 forced ext successes | Ch 2 success | Supports | ★★★★★ |
 | EXP-095/096: system vs task position | Ch 3 boundary | Supports | ★★★★★ |
+| **EXP-127: Channel Separation Direct Test** | **All 3 channels** | **Partial support** | **★★★★★** |
 | KE-025: instruction overhead harmful | Ch 1 competition | Supports | ★★★★ |
 | KE-064: execution crowding at 2+ gates | Ch 2 budget | Supports | ★★★★ |
 | H-091: 15/15 task-msg, 0/9 sys-prompt | Ch 3 privilege | Supports | ★★★★ |
@@ -105,7 +106,9 @@ Because Channel 2 operates through environmental state (not text competition), a
 | EXP-117: same mechanism +100pp/-67pp | Agent-specificity | Neutral | ★★★ |
 | DD-660: U-shaped attention architectural | Ch 3 mechanism | Supports (theoretical) | ★★★ |
 
-**Cumulative direction**: 9 supporting, 1 neutral, 0 contradicting. Broad indirect support but no direct experimental test designed specifically for channel theory.
+**EXP-127 Details** (2026-04-10): First direct test of channel theory. Same contradiction-detection content on `contradictory-requirements`. Baseline 0/6, Ch1 0/6, Ch3 0/6, Ch2 6/6. Fisher's exact: Ch2 vs pooled others p=0.0000074. Ch1 confirmed at 0% ✅. Ch2 confirmed at 100% ✅. Ch3 predicted 83-100% but got 0% ❌. Confound: skill already in production coder, so Baseline≡Ch1 and Ch3=Ch1+Ch3 combined — strengthens Ch1 failure finding. Ch3 miss suggests domain match alone is insufficient for analytical judgment tasks (works for behavioral tasks per EXP-095).
+
+**Cumulative direction**: 10 supporting, 1 neutral, 0 contradicting. First direct test confirms 3/4 predictions. Channel 3 model needs refinement (may have task-type preconditions).
 
 ## Open Questions
 
@@ -121,15 +124,15 @@ Because Channel 2 operates through environmental state (not text competition), a
 
 ## Experimental Proposals
 
-### EXP-E1: Channel Separation Direct Test → **EXP-127 (DESIGNED)**
+### EXP-E1: Channel Separation Direct Test → **EXP-127 (COMPLETE)**
 Design: Same judgment intervention delivered through 3 channels:
 - Arm A: Text instruction in system prompt (Channel 1) — lab fork `coder-channel-test-ch1`
 - Arm B: Same content as task-message few-shot (Channel 3) — scenario `contradictory-requirements-ch3-fewshot`
 - Arm C: Same content as forced externalization gate (Channel 2) — scenario `contradictory-requirements-ext`
 - Baseline: No intervention — scenario `contradictory-requirements`
 Prediction: Baseline 0%, Ch1 0-17%, Ch3 83-100%, Ch2 83-100%. N=6 per arm (24 total).
-**Status**: Design + protocol complete. Scenarios + lab fork created. Ready to execute.
-**Files**: `agents/shared/knowledge/experiments/EXP-127/design.md`, `protocol.md`
+**Results**: Baseline 0/6, Ch1 0/6, Ch3 0/6, Ch2 6/6. Predictions hit 3/4 (Ch3 miss: 0% vs predicted 83-100%).
+**Files**: `agents/shared/knowledge/experiments/EXP-127/design.md`, `protocol.md`, `results.md`
 
 ### EXP-E2: Channel 2 Budget Curve
 Design: Chain 1, 2, 3, 4 forced externalization gates on a judgment task.
