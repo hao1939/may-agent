@@ -4770,6 +4770,25 @@ Reviewed HEAD merge commit `0975c41` (removal of `src/lib/socket-watch.ts` + its
 PASS
 
 ---
+## 2026-04-10T13:12:36.176Z — QA heartbeat review
+
+### Scope
+- Proactive scan of latest unreviewed commit: `4ec9a2c8` ("feat: add sync-sessions-db.ts to backfill sessions table from filesystem")
+- File reviewed: `scripts/sync-sessions-db.ts`
+
+### Checks
+- `./node_modules/.bin/tsc --noEmit`: FAIL (env: `./node_modules/.bin/tsc` not found; exit 127)
+- `./node_modules/.bin/vitest --run`: FAIL (env: `./node_modules/.bin/vitest` not found; exit 127)
+
+### Findings
+- IMPORTANT: `parseMeta()` silently swallows JSON/IO errors (`catch { return null; }`), which can hide malformed meta files and reduce observability during backfill.
+- IMPORTANT: Sessions with missing `agent` or `startedAt` are skipped without reporting the reason; recommend counting skipped-by-reason or logging a sample list.
+- MINOR: `normalizeStatus()` comment implies mapping, but the function returns input status unchanged (besides default). Either implement mapping or adjust the comment.
+
+### Verdict
+CONDITIONAL (reviewed code, but mandatory tool checks could not run in this environment)
+
+---
 ## 2026-04-10T12:54Z — QA heartbeat review
 
 ### Scope
