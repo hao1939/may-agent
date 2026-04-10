@@ -104,6 +104,13 @@
 - [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% of verify-after-edit failures need code-level fix, not prompting. Deferred until prompting experiments complete.
 - [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
 
+## Session Notes (2026-04-10 ~14:15)
+- **TOPIC FILES UPDATED WITH DD-734/735/736/737/738 + KE-124**: All 5 new observability/evaluation papers and the KE-124 synthesis now referenced in topic files.
+  - **08-evaluation-benchmarking.md**: Added DD-734 (AgentCompass post-deployment eval), DD-738 (BHI benchmark health), KE-124 (Five-Layer Observability Stack). Added 2 new open questions (cognitive observability implementation, BHI for gym benchmarks).
+  - **04-reasoning-cognition.md**: Added DD-735 (Watson cognitive observability — prompt attribution for reasoning).
+  - **10-agent-design-patterns.md**: Added DD-736 (AgentTrace structured logging), DD-737 (AgentSight eBPF system observability).
+- **Files modified**: `knowledge/library/topics/08-evaluation-benchmarking.md`, `knowledge/library/topics/04-reasoning-cognition.md`, `knowledge/library/topics/10-agent-design-patterns.md`
+
 ## Session Notes (2026-04-10 ~13:25)
 - **deliver-or-report.ts EARLY EXIT BUG FIX**: Fixed `extractWrittenFilePaths()` failing after compaction.
   - **Root cause**: Bob has `compaction: true`, so long Phase 1 sessions (83 ops) get messages compacted. Compaction replaces assistant toolCall blocks with text summaries containing "Files written: path1, path2". The original function only scanned assistant toolCall blocks → always found 0 paths after compaction → early exit never triggered.
