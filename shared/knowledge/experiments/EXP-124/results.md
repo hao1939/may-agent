@@ -1,96 +1,86 @@
-# EXP-124: Structural Intervention for FM-1.3 — Results
+# EXP-124 Results: Structural Intervention for FM-1.3
 
+**Status**: CONCLUDED — Inconclusive
 **Date**: 2026-04-10
-**Status**: COMPLETE
-**Hypothesis**: Forcing a Phase 0 "directory discovery" step before main work reduces path-guessing (FM-1.3) by creating a verified navigation map that eliminates the need to guess paths or read exhaustively.
+**Experimenter**: Coach
 
-## Design
+## Summary
 
-- **Scenario**: `knowledge-base-navigation` (17-file nested KB → synthesis report)
-- **Baseline**: `knowledge-base-navigation` (single session, existing skill only)
-- **Treatment**: `knowledge-base-navigation-discovery` (2-phase: Phase 0 builds nav-map.md → Phase 1 synthesizes)
-- **Scoring**: 5 product checks (correct synthesis) + 5 convention checks (baseline) / 6 convention checks (treatment, +nav-map)
-- **Failing convention check in baseline**: `nav-doesnt-read-all-files` — reads ≤12 of 17 KB files
+The experiment tested whether adding mandatory directory-discovery instructions to a knowledge-base navigation task reduces FM-1.3 (path guessing) behaviors. Results are **inconclusive** due to high noise from systemic gym runner issues.
 
-## Results
+## Trial Results
 
-### Baseline (knowledge-base-navigation, single session)
+### Baseline (knowledge-base-navigation, N=6)
 
-| Trial | Product | Convention | KB Files Read | Notes |
-|-------|---------|------------|---------------|-------|
-| B1 | 5/5 | 4/5 (80%) | 15/17 | Fails nav-doesnt-read-all-files |
-| B2 | 5/5 | 4/5 (80%) | 14/17 | Fails nav-doesnt-read-all-files |
-| B3 | 5/5 | 4/5 (80%) | — | Fails nav-doesnt-read-all-files |
+| Trial | Product | Convention | Agent Status | Passed |
+|-------|---------|------------|--------------|--------|
+| B1    | 5/5     | 3/5        | completed    | ✅     |
+| B2    | 0/5     | 3/5        | completed    | ❌     |
+| B3    | 0/5     | 3/5        | error        | ❌     |
+| B4    | 0/5     | 3/5        | completed    | ❌     |
+| B5    | 5/5     | 3/5        | completed    | ✅     |
+| B6    | 0/5     | 3/5        | error        | ❌     |
 
-**Baseline convention rate**: 80% (4.0/5.0 average)
-**Baseline navigation efficiency**: FAIL (reads nearly all files despite only needing 6-8)
+**Pass rate**: 2/6 (33%)
 
-### Treatment (knowledge-base-navigation-discovery, Phase 0 + Phase 1)
+### Treatment (knowledge-base-navigation-discovery, N=8)
 
-| Trial | Product | Convention | KB Files Read | Nav-Map | Notes |
-|-------|---------|------------|---------------|---------|-------|
-| T1 | 5/5 | 6/6 (100%) | 10/17 | ✅ Created | Perfect score |
-| T2 | 5/5 | 6/6 (100%) | — | ✅ Created | Perfect score |
-| T3 | 5/5 | 6/6 (100%) | — | ✅ Created | Perfect score |
+| Trial | Product | Convention | Agent Status | Passed |
+|-------|---------|------------|--------------|--------|
+| T1    | 3/5     | 3/5        | completed    | ✅     |
+| T2    | 0/5     | 3/5        | error        | ❌     |
+| T3    | 0/5     | 3/5        | error        | ❌     |
+| T4    | 0/5     | 3/5        | completed    | ❌     |
+| T5    | 0/5     | 3/5        | completed    | ❌     |
+| T7    | 0/5     | 3/5        | error        | ❌     |
+| T8    | 5/5     | 3/5        | completed    | ✅     |
+| T9    | 0/5     | 3/5        | completed    | ❌     |
 
-**Treatment convention rate**: 100% (6.0/6.0 average)
-**Treatment navigation efficiency**: PASS (reads only needed files)
+**Pass rate**: 2/8 (25%)
 
-## Key Metric: nav-doesnt-read-all-files
+## Key Findings
 
-| Condition | Pass Rate | Improvement |
-|-----------|-----------|-------------|
-| Baseline | 0/3 (0%) | — |
-| Treatment | 3/3 (100%) | +100pp |
+### 1. Results Are Inconclusive
+- Baseline pass rate: 33% vs Treatment pass rate: 25%
+- Difference is not statistically significant (Fisher exact p ≈ 1.0)
+- The dominant failure mode is NOT path-guessing — it's the agent failing to produce output files at all
 
-## Analysis
+### 2. Systemic Gym Runner Issues (Blocking Signal)
 
-### What Worked
+Three issues prevent meaningful FM-1.3 measurement:
 
-1. **Phase 0 creates a reusable navigation artifact** — `nav-map.md` survives between phases and gives Phase 1 a verified directory map. Instead of reading files to discover what's there, the agent already knows.
+**A. File placement bug**: The agent sometimes writes output files to the scenario source directory (`/app/agents/gym/scenarios/.../environment/`) instead of the tmpDir. The `syncNewFilesFromRoot` function only checks PROJECT_ROOT top-level files, not recursively. This causes false negatives.
 
-2. **Structural enforcement is more effective than skill text** — The baseline already has the "directory-first navigation" skill, which teaches ls→read patterns. But skills are advisory — the agent knows the pattern but still reads too many files. Phase 0 forces the discovery step to happen BEFORE the synthesis task even begins.
+**B. Empty transcripts**: All transcripts contain only a 1-line JSON summary (e.g., `{"sessionId":"...","status":"success"}`). Zero tool calls are ever parsed. The JSONL session data is never appended, likely because `gymStateDir` gets cleaned up before or the session format doesn't contain tool-call-level data. Convention checks that look for tool calls always find 0.
 
-3. **No product regression** — Product scores remain 5/5 (100%) in both conditions. The Phase 0 intervention adds navigation efficiency WITHOUT reducing synthesis quality.
+**C. High base failure rate**: Both baseline and treatment fail ~67-75% of the time due to the agent simply not producing synthesis.md. This noise overwhelms any signal from the discovery intervention.
 
-4. **Convention rate improvement is absolute** — 80% → 100% with zero variance in both conditions. The intervention is deterministic, not probabilistic.
+### 3. When Agent Succeeds, Quality Is High
+In the trials where the agent DID produce output (checked via misplaced files in source dirs), the synthesis quality was excellent: complete nav-maps, accurate hypotheses summaries, FM-1.3 details, and cross-reference checks. This suggests the task content itself is well-constructed.
 
-### Why Baselines Fail
+### 4. Convention Scores Are Meaningless
+All trials (both conditions) get exactly 3/5 convention because:
+- `nav-total-tool-calls-under-25` → always passes (0 < 25)
+- `nav-targeted-file-reads` → always passes (0 ≤ 12)
+- `nav-no-path-guessing-errors` → always passes (0 ≤ 1)
+- `nav-uses-ls-or-find-first` → always fails (0 ls/find detected)
+- `nav-finds-index-early` → always fails (no INDEX.md in transcript)
 
-The baseline agent:
-- Uses ls/find correctly (passes `nav-uses-ls-or-find-first`)
-- Finds INDEX.md early (passes `nav-finds-index-early`)
-- Has zero path-guessing errors (passes `nav-no-path-guessing-errors`)
-- Stays within tool call budget (passes `nav-total-tool-calls-under-25`)
-- BUT reads 14-15 of 17 files (FAILS `nav-doesnt-read-all-files`, threshold ≤12)
+## Recommendations
 
-The skill prevents path-guessing but doesn't prevent exhaustive reading. The agent navigates correctly but reads "just in case" — it lacks the confidence to skip files because it hasn't built a map of what's relevant vs. not.
+### Before re-running EXP-124:
+1. **Fix transcript capture**: The gym runner needs to capture actual tool calls from agent sessions, not just the 1-line summary JSON. Investigate why JSONL session data isn't being appended.
+2. **Fix file placement**: `syncNewFilesFromRoot` should also check recursively for files written inside the project tree, or the agent binary should be truly sandboxed to the workDir.
+3. **Increase reliability**: The ~33% base success rate makes experiments require very large N (>30 per arm) to detect effects. Root-cause the failures.
 
-### Why Treatment Succeeds
+### Alternative approach:
+Consider testing the FM-1.3 intervention via direct agent observation (single task sessions with transcript inspection) rather than the gym runner.
 
-Phase 0 changes the agent's information state before Phase 1 begins:
-1. Agent builds `nav-map.md` which lists ALL files and their purposes
-2. In Phase 1, agent reads nav-map.md and knows exactly which 6-8 files contain the needed information
-3. Agent skips irrelevant files because the map tells it what's in them
+## Scenario Artifacts
 
-The intervention converts "navigate and read everything" into "navigate first, then read selectively."
-
-## Conclusion
-
-**Phase 0 discovery is a validated structural intervention for FM-1.3 (exhaustive reading variant).**
-
-- Effect size: +100pp on the failing check (0% → 100%)
-- No product regression (100% → 100%)
-- 3/3 treatment trials pass (p < 0.05 vs baseline by Fisher exact test)
-- Mechanism: externalized navigation map → selective reading
-
-### Recommendation
-
-Apply Phase 0 discovery to any workflow where the agent must navigate unfamiliar directory structures with 10+ files. The intervention adds ~5 tool calls of overhead but saves 5-10 unnecessary reads.
-
-### Limitations
-
-- Tested on one scenario only (knowledge-base-navigation)
-- All trials used Bob with Opus — may vary with different models
-- Phase 0 adds ~2 minutes of overhead per session
-- The improvement is on the "exhaustive reading" variant of FM-1.3, not the "path-guessing" variant (which the skill already handles)
+- Treatment scenario: `agents/gym/scenarios/knowledge-base-navigation-discovery/`
+  - `scenario.json` — workflow:false, single-phase
+  - `task.md` — adds mandatory directory discovery step
+  - `success_criteria.js` — inherited from baseline
+  - `environment/` — copied from baseline
+- Lab fork doc: `agents/.lab/bob-fm13-discovery/README.md`
