@@ -1,0 +1,10 @@
+{
+  "name": "kb-discovery-baseline-126",
+  "description": "Baseline (no hints) for EXP-126 replication. Same environment as EXP-122 original but without the HTML comment hint. Agent must discover and complete 7 KB file updates from EXP-142 results.",
+  "categories": ["completeness", "knowledge-integration"],
+  "tags": ["behavior", "FM-2.6", "multi-file", "discovery", "exp-126", "baseline"],
+  "tier": "standard",
+  "timeout": 3,
+  "agent_type": "coder",
+  "workflow": false
+}
