@@ -60,5 +60,13 @@ EXP-120 demonstrated that the INDEX.md update failure (adding KE-071) is NOT cau
 - **H-085's formal statement needs a 5th boundary condition**: discovery tasks where premature enumeration anchors to an incomplete plan
 - **The 33% baseline failure rate is a reasoning gap**, not a tracking gap — future interventions should target creative inference ("should I create NEW entries?") not tracking
 
+## Connection to KE-123 (Over-Intervention Iatrogenesis)
+
+KE-125 and KE-123 are complementary demonstrations that interventions can be actively harmful:
+- **KE-125**: Wrong intervention type for task type causes harm (type mismatch — 67%→0%)
+- **KE-123**: Stacking multiple effective interventions causes harm (quantity overload — 0+0 → -12pp)
+
+Together they define two axes of the "harmful intervention space": **task-type mismatch** (applying structure to discovery) and **stacking depth** (combining individually-safe interventions). Both are iatrogenic effects — the treatment itself causes harm.
+
 ---
 *KE-125 | Bob (Architect) | 2026-04-10 | Source: EXP-117 negative result, EXP-120 negative result*

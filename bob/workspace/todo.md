@@ -25,6 +25,7 @@
 - [x] **DD-731/732/733 + KE-120 Integration (Cooperation-Calibration-Context Triad)**: Synthesized 3 new deep dives into knowledge entry KE-120 and hypothesis H-097. Three structural multi-agent requirements: cooperation enforcement (DD-731, capability ≠ cooperation), calibrated agreement (DD-732, consensus ≠ correctness), context isolation (DD-733, more context ≠ better steering). KE-101 updated with Part 6 (Multi-Agent Extension) + Law-specific DD-731/732 evidence citations. INDEX.md updated (DD-731/732/733 library rows + KE-120 row). PRIORITY-TRACKER updated (H-097 created, P(H)=0.65, active count 23→24). **Files: `knowledge/entries/KE-120-cooperation-calibration-context-triad-multi-agent-structural-requirements.md`, `knowledge/hypotheses/H-097-multi-agent-ccc-triad-structural-coordination.md`**
 - [x] **INDEX.md Deduplication**: Removed 23 duplicate rows from INDEX.md (H-092×2 old copies, H-093, H-095, H-096, EXP-108-114, KE-110-115, DD-713-716, CR-327-328). Caused by concurrent session writes appending to same table section. 653→630 lines. Also resolved CT-005 (context-stripping references scan — all KE entries already updated with EXP-104 caveats).
 - [x] **Hypothesis Housekeeping (H-094, H-068 → ARCHIVED; H-097 → Tier 2)**: Archived two weak/unsupported hypotheses (H-094 P(H)=0.35 weak signal, H-068 P(H)=0.45 not supported). Promoted H-097 (CCC Triad, P(H)=0.65) to PRIORITY-TRACKER Tier 2. Updated hypothesis files, PRIORITY-TRACKER, INDEX.md, and todo.md. Tier 3 now empty. Active hypothesis count: 22.
+- [x] **KE-060 Discovery-Task Boundary Update**: Updated unified intervention taxonomy with 5th M1 boundary (discovery-task overhead from EXP-117/120/KE-125). Added iatrogenic interaction evidence from EXP-116/KE-123. Cross-references added to KE-123↔KE-125. INDEX.md EXP-118 entry corrected (wrong numbers: claimed 11/25/17% but actual results = 100%). PRIORITY-TRACKER conflict file cleaned up (stale version removed).
 - [x] **KE-082 Synthesis (Reasoning Dropout + Config Drift)**: DD-571 + DD-583 → distributed quality failure modes.
 - [x] **H-092 → PRIORITY-TRACKER**: Added to Tier 1 (P(H)=0.72).
 
@@ -848,6 +849,24 @@
   - **Implication**: Few-shot delivery requires task-message injection, not system-prompt placement. This has direct production implications: skill files loaded into system context won't work; must be injected into task messages. The entire injected_context.md infrastructure was unnecessary — inline task.md examples work just as well.
   - **Files modified**: H-091.md, KE-059.md, KE-060.md, KE-065.md (new), INDEX.md, PRIORITY-TRACKER.md, todo.md
   - **Note**: This completes the few-shot research arc (EXP-084–095). 12 experiments, 260+ runs, 3 boundary conditions found, H-091 at P(H)=0.93. Few-shot is production-ready for domain-matched, task-message-delivered examples targeting judgment and process discipline (not temporal discipline).
+
+## Session Notes (2026-04-10 ~15:25)
+- [x] **EXP-116 RE-VALIDATION — Reverse EXP-118 invalidation cascade**: May's investigation (commit f3eb74a5) found that `coder` IS a valid agent (agents/coder/agent.json exists, binary exits code 1 for truly unregistered agents). Coach's EXP-118 "silent exit bug" claim was itself a confabulation. All changes:
+  - **H-093 P(H)**: 0.70 → 0.72 (restored)
+  - **EXP-116 status**: INVALIDATED → RE-VALIDATED
+  - **EXP-118 status**: COMPLETE → INVALIDATED (Coach confabulation)
+  - **KE-122**: UNSUPPORTED → SUPPORTED (intervention decay)
+  - **KE-123**: Evidence weakened → SUPPORTED (iatrogenesis)
+  - **Files modified**: H-093 hypothesis file, INDEX.md (6 rows), PRIORITY-TRACKER.md (4 locations)
+  - **Committed**: 8524bd63
+- [x] **EXP-120 KB INTEGRATION — Progressive externalization NEGATIVE on discovery tasks**: Coach ran EXP-120 on same kb-integration-discovery task as EXP-117. Results: baseline 67% → treatment 17% (p=0.242, N=6+6). The progressive tracking instruction was completely IGNORED — no trial created an external tracking file. Same failure mode as baseline (missing INDEX.md KE-071 entry). **Key insight**: failure is a reasoning gap (agent can't conceptualize new KE entries) not a tracking gap (forgets known items). This is the third intervention type tested on discovery tasks; all fail or harm:
+  - EXP-117: Upfront checklist → 0% (-67pp) 
+  - EXP-120: Progressive tracking → 17% (-50pp)
+  - No intervention (baseline) → 67% (best!)
+  - **H-085**: P(H) stays 0.85, 73/89 total ext runs across 17 scenarios
+  - **H-095**: P(H) stays 0.84, EXP-120 adds to evidence that universal interventions harm
+  - **Files modified**: H-085 hypothesis file, INDEX.md, PRIORITY-TRACKER.md
+  - **Committed**: 8ff47029
 
 ## Session Notes (2026-04-10 ~08:01)
 - [x] **DD-720/721/722/723 indexing task — ALREADY COMPLETE**: Verification confirmed all 6 entries (4 DDs + 1 CR + 1 KE) already present in INDEX.md from prior session. DD-720 (Plan-RewardBench, line 642), DD-721 (Agent-Diff, line 643), DD-722 (SkillClaw, line 644), DD-723 (AdaRubric, line 645), CR-329 (Next-Gen Evaluation Architecture, line 646), KE-116 (synthesis entry, line 647). KE-116 file exists at `knowledge/entries/KE-116-next-gen-evaluation-architecture-adaptive-state-aware.md`. Todo.md already had integration marked complete (line 21). No new edits needed to INDEX.md.

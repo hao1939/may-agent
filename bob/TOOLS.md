@@ -1,8 +1,7 @@
 <!-- SYNC:TOOLS_START -->
 ## Available Tools (auto-generated from agent.json)
-`read`, `write`, `edit`, `bash`, `agents`, `system_status`, `checkpoint`, `finish`
+`read`, `write`, `edit`, `bash`, `agents`, `system_status`, `checkpoint`, `workflow`, `finish`
 
-**OpBudget**: 40 ops per session
 <!-- SYNC:TOOLS_END -->
 
 # Tools
