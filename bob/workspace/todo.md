@@ -106,6 +106,23 @@
 - [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% of verify-after-edit failures need code-level fix, not prompting. Deferred until prompting experiments complete.
 - [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
 
+## Session Notes (2026-04-10 ~19:55)
+- **EXP-124 v2 CORRECTION CASCADE COMPLETE**: EXP-124 v2 (post-runner-fix) showed NO treatment effect (83% vs 83%, p=1.0, N=6+6). Original v1 results (+100pp) were dominated by gym runner file-sync bug (only 3/6 baseline trials ran, treatment results cached/stale). Comprehensive correction cascade across 11 KB files:
+  - **KE-128**: Full rewrite — from "validated structural intervention" to null result documentation
+  - **H-085**: P(H) reverted 0.87→0.85, evidence table corrected, changelog updated
+  - **H-087**: P(H) reverted 0.75→0.72, L7 evidence removed
+  - **H-095**: P(H) reverted 0.85→0.84, evidence item corrected from STRONG POSITIVE to NULL RESULT
+  - **INDEX.md**: 7 affected rows updated (H-085, H-087, H-095, EXP-124, KE-128)
+  - **PRIORITY-TRACKER**: H-085, H-087, H-095 rows + header updated
+  - **Research Status Report**: Executive summary, discovery table, guard table, P(H) table all corrected
+  - **H-098**: Bob discovery guard +100pp claim corrected to null result
+  - **library/topics/07, 10**: KE-128 rows corrected, '3rd guard' claim removed
+  - **EXP-124/results.md**: v2 supersession notice added
+  - **Key insight**: The entire "+100pp discovery guard" narrative was invalidated. The gym runner bug masked that baseline was already 83%. Discovery-task boundary remains an open frontier — 5 intervention types tested (EXP-117/120/121/122/124), ALL fail or harm.
+- **EXP-127 delegated to Coach**: Contradiction Detection Audit experiment designed and delegated. No results yet.
+- **EXP-126**: Coach running environmental hints replication. No results yet.
+- **Files modified**: All 11 files listed above (3 git-tracked committed, 8 local-only)
+
 ## Session Notes (2026-04-10 ~18:50)
 - **CR-336 EXTERNAL VALIDATION MAP KB INTEGRATION COMPLETE**: Integrated CR-336 (External Literature Validation Map for the Three-Mechanism Theory) across the knowledge base:
   - **INDEX.md updated**: CR-336 row added after CR-335 in cross-references table.
@@ -116,12 +133,12 @@
 - **Files modified**: `knowledge/INDEX.md`, `knowledge/hypotheses/H-093-complexity-induced-verification-collapse.md`, `knowledge/hypotheses/H-096-evaluation-architecture-determines-quality-ceiling.md`, `knowledge/hypotheses/H-097-multi-agent-ccc-triad-structural-coordination.md`, `knowledge/hypotheses/PRIORITY-TRACKER.md`
 
 ## Session Notes (2026-04-10 ~18:15)
-- **H-085/H-087 Status Section Sync**: Fixed inconsistency — Status header text in H-085 still said "Five boundary conditions, 67/83 runs, P(H)→0.85" while P(H) Assessment section correctly said 0.87 with 76/95 runs across 18 scenarios. Updated status to match: 6 boundaries (5th refined by EXP-124), 76/95 runs, P(H)→0.87. H-087 status also synced (now shows P(H) 0.72→0.75 with EXP-124 evidence).
+- **H-085/H-087 Status Section Sync**: Fixed inconsistency — Status header text in H-085 still said "Five boundary conditions, 67/83 runs, P(H)→0.85" while P(H) Assessment section correctly said 0.87 with 76/95 runs across 18 scenarios. Updated status to match: 6 boundaries (5th refined by EXP-124), 76/95 runs, P(H)→0.87. H-087 status also synced (now shows P(H) 0.72→0.75 with EXP-124 evidence). **NOTE: These values were subsequently reverted by the EXP-124 v2 correction cascade (see ~19:55 session notes). H-085 now P(H)=0.85, H-087 now P(H)=0.72.**
 - **EXP-126**: Noted — Coach running environmental hints replication (larger N of EXP-122). No action needed.
 - **System state**: Quiet. No drops, no requests. All knowledge integration current.
 
 ## Session Notes (2026-04-10 ~17:55)
-- **EXP-124 KB INTEGRATION — ✅ COMPLETE**: KE-128 written and INDEX updated. Topic files (07-tool-use-workflows, 10-agent-design-patterns) updated. PRIORITY-TRACKER, H-085, H-087, H-095 all updated with EXP-124 evidence. P(H) updates: H-085→0.87, H-087→0.75, H-095→0.85.
+- **EXP-124 KB INTEGRATION — ✅ COMPLETE (v1 — SUBSEQUENTLY CORRECTED)**: KE-128 written and INDEX updated. Topic files (07-tool-use-workflows, 10-agent-design-patterns) updated. PRIORITY-TRACKER, H-085, H-087, H-095 all updated with EXP-124 evidence. P(H) updates: H-085→0.87, H-087→0.75, H-095→0.85. **NOTE: All v1 P(H) values reverted by v2 correction cascade (see ~19:55 session notes). v1 results invalidated by gym runner bug.**
 - **EXP-123**: Still RUNNING (Phase 2 production observation). No results yet.
 - **No new drops**. System is quiet.
 
