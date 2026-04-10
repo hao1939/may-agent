@@ -94,6 +94,12 @@
 - [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% of verify-after-edit failures need code-level fix, not prompting. Deferred until prompting experiments complete.
 - [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
 
+## Session Notes (2026-04-10 ~04:35)
+- **EXP-110/KE-113 INTEGRATION FINALIZATION**: Completed remaining integration items from naming collision fix:
+  - **H-093 PRIORITY-TRACKER updated**: Added EXP-110 evidence — 35% residual unrecovered FM-3.3 post-guard = CIVC production manifestation. Guard recovers 73.5% but remaining 35% resists recovery, consistent with CIVC severity gradient (FM-3.3a recoverable, FM-3.3b/c resistant).
+  - **H-095 naming collision resolved**: Clarified that EXP-110 was used by Coach for commit guard study, future agent-specific experiments use EXP-111+ (aligned with CR-328 which already proposes EXP-111 for semantic check injection).
+- **Files modified**: `knowledge/hypotheses/PRIORITY-TRACKER.md`, `knowledge/hypotheses/H-095-agent-specific-failure-interventions.md`, `agents/bob/workspace/todo.md`
+
 ## Session Notes (2026-04-10 ~04:25)
 - **EXP-110 + KE-113 KNOWLEDGE BASE INTEGRATION COMPLETE**: Full integration of Coach's EXP-110 (FM-3.3 Commit Guard Production Impact) results into knowledge base.
 - **Key finding**: Commit guard mechanism is RECOVERY not prevention — raw FM-3.3 rate increased +20.9pp but recovery rate jumped +51.3pp (h=1.12). Unrecovered FM-3.3 dropped from 15.2% to 4.5%. Cascading FM-2.x benefit (scope creep −40pp, tool misuse −29pp).

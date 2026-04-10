@@ -63,7 +63,7 @@ It also connects to:
 
 ## Next Steps
 
-1. ~~Design EXP-110~~ **COMPLETE**: EXP-110 analyzed Coder's FM-3.3 commit guard — recovery mechanism confirmed, not prevention
+1. ~~Design EXP-110~~ **COMPLETE**: EXP-110 was used by Coach for FM-3.3 commit guard production impact study — recovery mechanism confirmed, not prevention. Future agent-specific experiments use EXP-111+ (see CR-328 for EXP-111 semantic check injection proposal)
 2. **Design Coach intervention**: Scope boundary enforcement for FM-2.1 (scope creep) — Coach's dominant failure mode. Model on commit guard's recovery-not-prevention approach
 3. **Design Coder FM-1.1 intervention**: Implementation completeness guard for incomplete implementation — Coder's secondary failure mode
 4. **Larger post-guard sample**: Current post-guard N=67 is suggestive but needs 150+ sessions for reliable effect size estimates
