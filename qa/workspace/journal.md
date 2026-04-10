@@ -93,6 +93,34 @@ CONDITIONAL — patch itself appears fine (tsc green; change is a git metadata f
 
 ---
 
+## 2026-04-10T06:55Z
+
+### Summary
+Heartbeat QA at HEAD **a1f1468**: ran mandatory gates and re-validated current vitest failures. `tsc` still passes. `vitest` still fails due to three pre-existing issues: missing `src/app/launcher.ts`, non-deletable `/app/test-workspace/*` directories causing `EACCES` in context-learning tests, and a slow integration test timing out at 5s.
+
+### Files reviewed (evidence)
+- `test/launcher.test.ts` (read lines 90–190): `expect(existsSync(launcherTs)).toBe(true)` then reads `/app/src/app/launcher.ts` and asserts on constants/backoff strings.
+- `test/context-learn.test.ts` (read lines 1–40): `tmpDir = join(process.cwd(), "test-workspace", "context-learn-test")`; `beforeEach` calls `rmSync(tmpDir, { recursive: true })`.
+- `test/research-db.test.ts` (read lines 510–560): integration test `syncs the actual knowledge base without errors` calls `syncAll(db, "agents/shared/knowledge")` with default vitest timeout.
+
+### Mandatory gates (this run)
+- `./node_modules/.bin/tsc --noEmit`: PASS (no output)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2089 passed (2110)**
+  - `test/launcher.test.ts`: 7 failed — `src/app/launcher.ts` missing (existsSync false + ENOENT)
+  - `test/context-learn.test.ts`: 7 failed — `rmSync` throws `EACCES` at `test/context-learn.test.ts:11`
+  - `test/context-learning.test.ts`: 6 failed — `rmSync` throws `EACCES` at `test/context-learning.test.ts:43`
+  - `test/research-db.test.ts`: 1 failed — timed out at 5000ms (observed 6054ms)
+
+### Issues
+- CRITICAL (repo/test mismatch): `src/app/launcher.ts` absent but required by `test/launcher.test.ts`.
+- IMPORTANT (environment/permissions): tests attempt to delete under `/app/test-workspace/*` but get `EACCES`.
+- IMPORTANT (test robustness): `test/research-db.test.ts` real KB sync can exceed 5s in this environment.
+
+### Verdict
+CONDITIONAL — changes at HEAD appear type-safe, but the test gate cannot go green until the repo mismatch/permission/timeout issues are addressed.
+
+---
+
 ## 2026-04-10T05:27Z
 
 ### Summary
