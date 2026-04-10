@@ -105,6 +105,15 @@
 - [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% of verify-after-edit failures need code-level fix, not prompting. Deferred until prompting experiments complete.
 - [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
 
+## Session Notes (2026-04-10 ~15:55)
+- **EXP-121 KB INTEGRATION COMPLETE**: EXP-121 (Time Budget as Primary Limiter on Discovery Tasks) INCONCLUSIVE result fully integrated:
+  - **INDEX.md cleaned**: Removed 7 duplicate lines (H-085×2, H-095×2, EXP-118, EXP-120×2) that accumulated from prior sessions. H-085 and H-095 original entries updated in-place with EXP-120+121 data. EXP-118 entry updated. EXP-120 and EXP-121 entries added in proper position after EXP-118.
+  - **EXP-121 INDEX entry added**: COMPLETE — INCONCLUSIVE (suggestive positive trend). 67%→83% (p=1.0, Cohen's h=0.39, N=6+6). Not significant. Closes "externalization trilogy" (EXP-117/120/121).
+  - **PRIORITY-TRACKER updated**: Header updated with EXP-121 summary. EXP-121 added to experiment queue with full details.
+  - **Key insight**: Closes the "externalization trilogy" — three experiments testing interventions on Bob's discovery task: (1) EXP-117 forced checklist = HARMFUL (−67pp, p=0.030), (2) EXP-120 progressive tracking = NEGATIVE (−50pp, p=0.242), (3) EXP-121 time budget = INCONCLUSIVE (+16pp, p=1.0). Hierarchy: instructions actively harm, time helps marginally, real problem is creative inference/reasoning gap.
+  - **H-085/H-095 P(H) unchanged**: 0.85 and 0.84 respectively (inconclusive result doesn't shift priors).
+- **Files modified**: `knowledge/INDEX.md`, `knowledge/hypotheses/PRIORITY-TRACKER.md`, `agents/bob/workspace/todo.md`
+
 ## Session Notes (2026-04-10 ~14:15)
 - **TOPIC FILES UPDATED WITH DD-734/735/736/737/738 + KE-124**: All 5 new observability/evaluation papers and the KE-124 synthesis now referenced in topic files.
   - **08-evaluation-benchmarking.md**: Added DD-734 (AgentCompass post-deployment eval), DD-738 (BHI benchmark health), KE-124 (Five-Layer Observability Stack). Added 2 new open questions (cognitive observability implementation, BHI for gym benchmarks).

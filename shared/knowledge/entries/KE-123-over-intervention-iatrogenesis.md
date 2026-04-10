@@ -67,6 +67,22 @@ KE-123 and KE-125 are complementary demonstrations that interventions can be act
 
 Both extend the same principle: **intervention effectiveness is not monotone**. More intervention ≠ better outcomes. The right intervention for the right task at the right dose matters — a medical analogy (iatrogenesis = doctor-caused harm). Together they define two axes of the "harmful intervention space": stacking depth (KE-123) and task-type mismatch (KE-125).
 
+## External Literature Validation (added 2026-04-10)
+
+DD#739 reviews five papers that independently confirm KE-123's mechanism at large scale:
+
+- **arXiv:2510.14842** (IBM Research): ScaledIF benchmark shows IF rate drops from 88%→66% (Llama-70B) as instructions increase from 2→10. Introduces "soft conflict" scoring — pairwise tension between instructions that grows as O(N²). Negatively correlated with performance. **Direct quantitative confirmation of our superadditive harm finding.**
+- **arXiv:2505.07591** (Fudan/Lenovo/Tencent): Performance drops from 77.67%→32.96% across 19 LLMs as constraint complexity increases. Improvement comes from attention module changes — suggesting degradation is rooted in how transformers allocate attention across competing objectives.
+- **arXiv:2509.23188**: Instruction conflicts in multi-agent systems resolved by attention heads in middle layers. SAIL (surgical LoRA) can partially restore performance — confirming the problem is localized, not diffuse.
+- **arXiv:2603.24124**: DPO alignment causes 40-79% response homogenization. Already-narrowed response space makes additional behavioral constraints more likely to push past the over-constraint tipping point.
+- **arXiv:2604.08297**: Safety-critical parameters concentrated in middle-layer V matrices/MLPs — overlapping with task performance parameters. Explains parametric competition when multiple interventions stack.
+
+**Key insight from synthesis:** The degradation function approximates `P(N) ≈ P₀ × (1 - α·N - β·C(N))` where C(N) grows as O(N²) pairwise soft conflicts. KE-123's -12pp from 2 interventions implies very high pairwise conflict between "adversarial framing" and "evidence verification" — higher than formatting instructions because behavioral interventions change the agent's cognitive posture, creating semantic (not just parametric) interference.
+
+**This makes KE-123 one of the best externally-validated findings in our knowledge base.**
+
+See: `agents/shared/knowledge/library/deep-dives/DD-739-instruction-stacking-degradation-empirical-evidence.md`
+
 ## Limitations
 
 - Observed on scenarios where baseline was already 100% — the iatrogenic effect may differ when baseline performance is lower
