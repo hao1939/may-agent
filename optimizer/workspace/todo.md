@@ -28,12 +28,20 @@
 - Previous "fix" sessions documented the problem but never applied code changes. Third attempt forked.
 - Fix: add recording call in gym-helpers.ts or gym-run.sh where results are available.
 
+### Coach Session Efficiency — FINDING COMPLETE
+- 2,175 coach sessions analyzed. 50.3% zero-op, 64% of ops in top sessions are exploration waste.
+- Top 15 sessions avg 24% productivity. Two sessions 3% productive (68 calls, 2 productive).
+- Key waste: file discovery spirals (32.7%), gym run proliferation (11.2%), growth-trigger 52% error rate.
+- 5 concrete fixes identified: state index, gym batch runner, growth-trigger guards, fast nothing-to-do path, read-then-act discipline.
+- Estimated savings: ~750 ops/day, ~$35/day.
+- Finding: `workspace/finding-coach-session-efficiency-0410.md`
+
 ### Optimizer Heartbeat Bloat — FIX DEPLOYED
 - Avg 56 ops/heartbeat (highest of any agent). Bob avg 4 ops. My min was 19 — proves lean is possible.
 - Root cause: heartbeat.md encouraged inline exploration (multi-query DB analysis, file reads).
 - Fix: Rewrote heartbeat.md to "Dispatcher Mode" — observe in 1-2 ops, fork all analysis work. Target: ≤15 ops.
 - Baseline: 8 heartbeats in 12h, avg 56 ops, total 451. Measuring post-fix.
-- Last exploration mode: **B** (Tool Gap Analysis, Apr 10 ~18:24 UTC). Next: **C** (Skill & Technique Scouting).
+- Last exploration mode: **C** (Skill & Technique Scouting — Coach session efficiency deep dive, Apr 10 ~18:45 UTC). Next: **D** (Workflow Health Check).
 
 ### may.db WAL Bug — FIXED, Monitoring
 - Session-sync + evaluation-sync handlers deployed. 1071 evals, 0 unevaluated (as of 17:10 UTC).
@@ -44,6 +52,8 @@
 - **System waste**: 0-1.9% across all agents. Quality universally "good".
 - **Context tax**: 82% of all input tokens are re-sent conversation context. Bob worst at 13.8K tok/op. Prompt caching fix would save ~$128/day.
 - **Coach work sessions**: Highest per-session cost ($74/day total, 38 sessions at avg 46 ops). 5 sessions >60 ops = 35.6% of coach cost.
+- **Coach exploration waste**: 64% of tool calls in high-op sessions are file discovery/read. Two heartbeats were 3% productive (68 calls → 2 writes). 50.3% of all coach sessions are zero-op.
+- **Coach growth-trigger**: 52% error rate (115/222 sessions fail). Needs precondition guards.
 - **Daily cost**: ~$302/day total. Bob $107, Coach $74, May $36, Scout $32.
 - **Bob quality scores**: Artificially low (2.47) due to Phase 1/2 double-penalization. Actual ~3.87. Low priority.
 - **Heartbeat bloat**: 61% of system ops in heartbeats. Only bob/coach dispatch effectively. Needs structural fix.
