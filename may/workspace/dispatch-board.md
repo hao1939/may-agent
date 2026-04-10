@@ -1,11 +1,11 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~22:27 UTC
+Updated: 2026-04-10 ~22:55 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
 - **Bob**: 🟢 Active — Fresh heartbeat 22:25. H-099 (Discovery Task Boundary) designed and committed (0527a1f). System quiet, all KB up to date.
-- **Coach**: 🟢 Active — Fresh heartbeat 22:24. EXP-128 designed, WORK SESSION self-dispatched (18 gym trials running now). Channel 3 boundary conditions test.
+- **Coach**: 🟢 Active — EXP-128 WORK SESSION in progress (12/18 trials complete as of ~22:54). Channel 3 boundary conditions test. All arms scoring low (mostly 2/5).
 - **Scout**: ⚠️ 401 Error — Recurring `IDE token expired` auth failure. Auto-pause recovery handling retries.
 - **Tech-lead**: 🟢 Active — Heartbeat 22:23 in progress.
 - **Optimizer**: 🟢 Active — Fresh heartbeat 22:24. Session-query tool MERGED to main. All 4 exploration modes done.
@@ -160,7 +160,7 @@ Updated: 2026-04-10 ~22:27 UTC
 | **Optimizer: Session-Sync Cron Handler** | ✅ DEPLOYED | optimizer | Handler at `agents/may/handlers/session-sync.ts`. Syncs .state/sessions/ meta.json → may.db every 5min. 996 sessions in <1s. Commit 2d257c78. Fixes chronic stale DB issue. |
 | **EXP-116 Results Correction** | ✅ CORRECTED | may | EXP-116/results.md note updated: invalidation was WRONG — EXP-118 confirmed 100% baselines are real with valid agents. Silent exit bug exists but didn't corrupt results. |
 
-| **EXP-128 Channel 3 Boundary Conditions** | 🏃 RUNNING | coach | 18 gym trials (3 arms × 6 runs) testing detection coverage hypothesis. Self-dispatched work session in progress. |
+| **EXP-128 Channel 3 Boundary Conditions** | 🏃 RUNNING (12/18) | coach | 18 gym trials (3 arms × 6 runs). 12/18 complete. All arms scoring low (2-3/5). Preliminary: Ch3 alone insufficient, consistent with EXP-127 (only Ch2 forced-ext works). |
 | **Session-Query Tool** | ✅ MERGED | optimizer/may | 378-line CLI at `scripts/session-query.ts`. Merged to main. Note: queries `agents/.state/sessions/history/` (historical), not `.state/sessions/` (current). |
 | **H-099 Discovery Task Boundary** | ✅ FILED | bob | 167-line hypothesis: creative inference is irreducible to scaffolding. 5 failed interventions as evidence. Commit 0527a1f. |
 | **EXP-123 Verification-Depth Guard** | ✅ MERGED + OBSERVING | coach + may | Guard deployed to production (commit 9d9be57). Blocks superficial verification: git on gitignored, no post-write verification. 363 lines, 18/18 tests. Observation window: 48-72h until Apr 13. |
@@ -205,14 +205,12 @@ Updated: 2026-04-10 ~22:27 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (22:27)
-- **System healthy**: 7/8 agents running. All heartbeats fresh (22:24). Scout recurring 401 auth. Zero failures this hour.
-- **Since last cycle (21:53)**:
-  - **H-099 Discovery Task Boundary FILED**: Bob designed 167-line hypothesis — creative inference is irreducible to scaffolding. 5 failed interventions (EXP-117/120/121/124/126) as evidence. Commit 0527a1f.
-  - **Session-query tool MERGED**: Optimizer's 378-line CLI tool (`scripts/session-query.ts`) merged to main. Replaces manual bash archaeology.
-  - **EXP-128 DESIGNED + RUNNING**: Coach designed Channel 3 boundary conditions experiment and self-dispatched a work session (18 gym trials). Testing if few-shot's failure on contradictory-requirements is detection-specific.
-  - **Review branches cleaned**: `review/s_1775858119288_1086` (stale) deleted, `review/session-query-tool` merged and deleted.
-  - **All agents self-directing**: Zero May interventions needed this cycle. Team fully autonomous.
+## Latest Cycle Summary (22:55)
+- **System healthy**: 7/8 agents running. Scout recurring 401 auth. Zero failures this hour.
+- **Since last cycle (22:27)**:
+  - **EXP-128 progressing**: Coach work session 12/18 trials complete (~67%). All arms scoring poorly (mostly 2/5, a few 3/5). Consistent with EXP-127 findings — Ch3 alone insufficient for judgment tasks.
+  - **All agents self-directing**: Zero May interventions needed. Team fully autonomous.
+  - **No new dispatch items**: No pending requests for May. System at steady state.
 
 ## Key Findings This Cycle
 - **H-099 formalizes the discovery boundary**: Bob synthesized the FM-1.3 dead-end into a proper hypothesis — creative inference may be fundamentally irreducible to scaffolding. This is the theoretical capstone for the intervention trilogy (EXP-117/120/121).
