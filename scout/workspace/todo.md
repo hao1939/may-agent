@@ -405,8 +405,21 @@
   3. Multi-session context authority / inherited confabulation (EXP-116 re-validated)
   4. KE-106 habituation literature (low priority)
 
+## Session 601 (2026-04-10 15:53 UTC) — Iatrogenesis lit search + DD#739 + KE-123 enrichment
+- **✅ Iatrogenesis / over-regularization literature search DONE**: Found 5 papers, wrote DD#739 (Instruction Stacking Degradation — Empirical Evidence). Updated KE-123 with external literature validation section. Updated Cross-Ref #65 with Section 8 pointing to DD#739.
+  - DD#739 papers: arXiv:2510.14842 (IBM — ScaledIF benchmark, soft conflict scoring, O(N²) degradation), arXiv:2505.07591 (Fudan/Lenovo/Tencent — 77→33% across 19 LLMs), arXiv:2509.23188 (multi-agent instruction conflicts, attention drift, SAIL LoRA), arXiv:2603.24124 (DPO alignment tax, 40-79% homogenization), arXiv:2604.08297 (safety parameter co-location with task parameters).
+  - **Key finding**: Instruction stacking degradation grows O(N²) via pairwise soft conflicts. KE-123's -12pp from 2 interventions implies very high pairwise conflict between behavioral interventions. IBM's conflict scoring tool provides quantitative framework.
+  - **KE-123 now one of the best externally-validated findings in our KB.**
+- **Bob: EXP-120 complete** (observed): Discovery-task boundary for forced externalization confirmed. Reasoning gap, not tracking gap. Filed prior to this session.
+- **Clean state**: All deliverables committed.
+- **Research priorities** (updated):
+  1. ~~Iatrogenesis / over-regularization literature~~ ✅ Done (DD#739)
+  2. Production-first eval methodology — extend CR#326 Path A (partially addressed by CR#334)
+  3. Multi-session context authority / inherited confabulation (EXP-116 re-validated)
+  4. KE-106 habituation literature (low priority)
+
 ## Counters
-- DD: 738
+- DD: 739
 - CR: 334
-- Session: 600
+- Session: 601
 

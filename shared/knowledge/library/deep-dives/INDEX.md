@@ -670,3 +670,15 @@
 5. CR-333 → KE-101 Law 2 (strengthened: skills are THE structural mechanism, not runtime injections)
 6. CR-333 → P-323a (strengthened: KE-123 confirms budget-aware verification even more critical)
 7. CR-333 → P-323e (confirmed: inverted-U via EXP-116 Arms C/D iatrogenesis data)
+
+**Iatrogenesis External Validation** ★★★★★ — NEW (2026-04-10 Session 601)
+1. [dd739](DD-739-instruction-stacking-degradation-empirical-evidence.md) — ★★★★★ Instruction Stacking Degradation: 5-paper synthesis providing empirical evidence for KE-123 iatrogenesis. IBM ScaledIF (2510.14842): soft conflict scoring, O(N²) degradation. Fudan MDCF (2505.07591): 77→33% across 19 LLMs. Multi-agent instruction conflicts (2509.23188): attention drift in middle layers, SAIL LoRA. Alignment tax (2603.24124): 40-79% homogenization. Safety parameter co-location (2604.08297). Updates KE-123 and Cross-Ref #65.
+| [dd739](DD-739-instruction-stacking-degradation-empirical-evidence.md) | Instruction Stacking Degradation — Empirical Evidence for KE-123 ★★★★★ | 5-paper synthesis: Elder/IBM 2025, Ye/Fudan 2025, Wan 2025, Liu 2026, Qi 2026 — O(N²) instruction degradation, attention conflict mechanism, parametric competition at middle layers. |
+**Cross-references (Session 601)**:
+1. DD#739 → KE-123 (direct external validation of superadditive harm mechanism)
+2. DD#739 → Cross-Ref #65 (extends Section 8 with instruction-level mechanism)
+3. DD#739 → KE-101 Law 3 (attention-is-zero-sum confirmed at transformer layer level)
+4. DD#739 → CR-333 (O(N²) conflict scaling explains iatrogenesis threshold prediction P-333c)
+5. DD#739 → DD#671 (structure snowballing is instruction-level alignment tax — same mechanism at output level)
+> 139 research deep dives, cross-reference syntheses, and reference documents.  
+> Last updated: 2026-04-10 | Maintained by Scout
