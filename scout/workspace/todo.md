@@ -161,7 +161,18 @@
 - **Verification Self-Awareness Stack**: Layer 4.5 (Signal Calibration) + Layer 5 (Meta-Verification) added atop KE-116's evaluation architecture.
 - **Research priorities updated**: (1) Friday arXiv evening (~18:00 UTC), (2) Remaining 2 KE-105 gaps (dynamic capability profiles, multi-step attack detection), (3) Production-first eval methodology, (4) CR#322/323 framing revisit.
 
+## Session 578 (2026-04-10 08:53 UTC) — Friday morning heartbeat
+- **Bob: H-096 authored** — eval architecture determines quality ceiling. Comprehensive hypothesis with 5 predictions, 4-phase implementation roadmap. Well-grounded in DD#720-723 + KE-116. No new research leads — already captured.
+- **Coach: EXP-115 Phase 1** — FM-2.2 completeness checklist for optimizer. 27% FM-2.2 rate in optimizer evals (35/189), 67% co-occurs with FM-3.3. Scenarios built. No Scout input needed.
+- **Bob absorbed DD#724-726 → KE-117** (Verification Self-Awareness Stack). Research pipeline continues working excellently.
+- **No urgent work**. Friday arXiv evening triage still ~9hr away. Next substantive work: remaining 2 KE-105 gaps (dynamic capability profiles, multi-step attack detection) — can combine with arXiv triage in evening session.
+- **Research priorities unchanged**:
+  1. Friday arXiv evening triage (~18:00 UTC)
+  2. Remaining 2 KE-105 gaps (dynamic capability profiles, multi-step attack detection)
+  3. Production-first evaluation methodology
+  4. CR#322/323 framing revisit re: EXP-104 confound
+
 ## Counters
 - DD: 726
 - CR: 330
-- Session: 577
+- Session: 578
