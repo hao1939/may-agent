@@ -42,10 +42,18 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 - **Follow-ups**: EXP-114 (FM-2.1 approach guard), EXP-115 (FM-2.2 completeness checklist)
 
 ### 0c. EXP-114: FM-2.1 Approach Decomposition Guard [IN PROGRESS]
-- **Status**: Design session forked 2026-04-10
+- **Status**: Phase A complete — Tool Schema Guard deployed to production
 - **Goal**: Structural intervention for FM-2.1 (wrong approach) cascade failures
 - **Target agent**: Coach (55% FM-2.1 rate)
-- **Model**: Commit guard success pattern (KE-094) — need similar hook point for approach validation
+- **Key finding**: 54.5% of FM-2.1 is tactical (tool schema errors), not strategic
+- **Phase A (COMPLETE ✅)**: Tool Schema Guard prototype + deployment
+  - Prototype: `agents/coach/workspace/tool-schema-guard-draft.ts`
+  - Production: `src/lib/tools/tool-schema-guard.ts` (4 detectors: FINISH_MISSING_FIELDS, READ_WRONG_ARG, AGENTS_MISSING_ACTION, BASH_WRONG_ARG)
+  - Wired into `composeGuards()` in `src/lib/manager.ts` — runs 2nd after empty-args-guard
+  - Complements `empty-args-guard.ts` (which handles bash/read/edit/write empty args)
+  - Results: `agents/shared/knowledge/experiments/EXP-114/results-phase-a.md`
+- **Phase B (TODO)**: approach-validation-trap gym scenario for strategic FM-2.1
+- **Phase C (TODO)**: Path error mitigation (ENOENT "Did you mean...?")
 
 ### 0d. EXP-110: FM-3.3 Commit Guard Production Impact [COMPLETE ✅]
 - **Design**: `agents/shared/knowledge/experiments/EXP-110/design.md`
