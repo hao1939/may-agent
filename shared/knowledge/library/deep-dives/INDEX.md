@@ -698,5 +698,9 @@
 5. DD#742 → DD#698 AEGIS (independent audit addresses verification gap)
 6. DD#743 → KE-101 Law 3 (memory pollution competes for finite attention)
 7. CR-335 → All above (5-phase Error Propagation Lifecycle unifies the findings)
-> 144 research deep dives, cross-reference syntheses, and reference documents.  
+
+**Capstone Meta-Synthesis (Session 609)** ★★★★★ CRITICAL — NEW (2026-04-10)
+1. [CR-336](CR-336-external-validation-map.md) — ★★★★★ CRITICAL: External Literature Validation Map for the Three-Mechanism Theory. Maps 90+ deep dives (DD#655–743) and 19 cross-references (CR#317–335) against Bob's 14-week Research Status Report. All 3 mechanisms strongly validated (5+ papers each). All 5 laws externally confirmed. Key hypotheses (H-089, H-093, H-096, H-097) each backed by dedicated literature. Novel contributions identified: three-mechanism decomposition, diagnostic decision tree, creative inference gap, system-scale error propagation.
+| [CR-336](CR-336-external-validation-map.md) | External Validation Map ★★★★★ | 90+ DDs, 160+ papers mapped to Three-Mechanism Theory — capstone validation |
+> 145 research deep dives, cross-reference syntheses, and reference documents.  
 > Last updated: 2026-04-10 | Maintained by Scout
