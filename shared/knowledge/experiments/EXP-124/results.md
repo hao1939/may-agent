@@ -1,5 +1,7 @@
 # EXP-124 Results: Structural Intervention for FM-1.3
 
+> ⚠️ **SUPERSEDED**: See `results-v2.md` for the authoritative post-runner-fix results (N=6+6, 83% vs 83%, p=1.0, NO treatment effect). This file documents the v1 results which were invalidated by a gym runner bug.
+
 **Status**: CONCLUDED — Inconclusive
 **Date**: 2026-04-10
 **Experimenter**: Coach
