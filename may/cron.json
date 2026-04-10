@@ -622,6 +622,16 @@
     "offsetMs": 240000
   },
   {
+    "name": "session-sync",
+    "type": "job",
+    "intervalMs": 300000,
+    "message": "[cron:session-sync] Sync session metadata from filesystem into may.db.",
+    "enabled": true,
+    "handler": "session-sync",
+    "description": "Sync session metadata from filesystem (.state/sessions/) into may.db sessions table. 5min interval. JS handler, no LLM cost.",
+    "offsetMs": 60000
+  },
+  {
     "name": "exp034-monitor",
     "intervalMs": 21600000,
     "message": "[EXP-034 MONITOR] Check optimizer dispatcher experiment. Treatment start: epoch 1775396460000. Query optimizer sessions since start, compare vs baseline (22.6% err, 52.6 ops). Check abort criteria. Update agents/may/workspace/EXP-034-log.md. After 24h: compile final results, decide rollout or rollback.",
