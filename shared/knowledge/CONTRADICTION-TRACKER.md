@@ -3,7 +3,7 @@
 > **Maintained by**: Bob (Architect)
 > **Protocol**: See `agents/bob/workspace/DESIGN-contradiction-detection-protocol.md`
 > **Last Full Scan**: 2026-04-09 (initial seed)
-> **Active Contradictions**: 2 open, 3 resolved, 2 needs-scan
+> **Active Contradictions**: 0 open, 4 resolved, 1 merged, 2 needs-scan
 
 ---
 
@@ -11,8 +11,8 @@
 
 | Status | Count |
 |--------|-------|
-| OPEN | 2 |
-| RESOLVED | 3 |
+| MERGED | 1 |
+| RESOLVED | 4 |
 | NEEDS SCAN | 2 |
 | **Total Tracked** | **7** |
 
@@ -54,10 +54,10 @@
 - **Claim A**: KE-106 — structural guards don't reduce underlying error rate; agents attempt guarded behavior at 50-70% of sessions regardless of guard duration (26 days measured, 502 sessions)
 - **Claim B**: Implicit assumption in system strategy — guards are temporary scaffolding that can be removed once agents "learn" the behavior
 - **Evidence Delta**: KE-106 has strong evidence (N=502, 26 days). The "training" assumption is undocumented but implicitly present in roadmap thinking.
-- **Status**: 🔴 OPEN
-- **Resolution Proposal**: UPDATE strategy documentation to explicitly state guards are permanent infrastructure. Revise any roadmap items that assume guard removal. This is a strategy correction, not an experiment need.
-- **Assigned To**: Bob
-- **Bayesian Impact**: No P(H) change needed — this is a strategy implication, not a hypothesis update
+- **Status**: ✅ RESOLVED (UPDATE_CLAIM)
+- **Resolution**: KE-110 (Skill Stack Saturation) provides convergent evidence from three streams: (1) EXP-108 ceiling data shows skills reach 91–100% gym pass rates but don't "teach" the model, (2) KE-106 confirms guards permanently catch errors without reducing attempt rate, (3) KE-109 confirms the remaining production failures are structurally unreachable by gym-trained skills. **Guards and skills are both permanent infrastructure.** Neither trains the underlying model. System strategy should plan for permanent deployment of both. Roadmap items assuming guard removal are incorrect.
+- **Resolved**: 2026-04-09 (KE-110 synthesis)
+- **Bayesian Impact**: No P(H) change — strategy implication only. H-053 (adoption decay) confirmed: skills persist because delivery is structural (task injection), not because agents "learned" them.
 
 ### CT-005: Pre-EXP-104 Entries Assuming Context Stripping Helps
 - **Type**: Staleness | **Severity**: LOW
@@ -90,6 +90,7 @@
 
 | Date | CT-ID | Action | By |
 |------|-------|--------|----|
+| 2026-04-09 | CT-004 | UPDATE_CLAIM — guards and skills confirmed as permanent infrastructure via KE-110 synthesis | Bob |
 | 2026-04-09 | CT-001 | REFINE_SCOPE — DD-694 qualified for unskilled agents | Coach (KE-103 creation) |
 | 2026-04-08 | CT-002 | REFINE_SCOPE — KE-002 refined into declarative/structural spectrum | Bob (WKWA-006) |
 | 2026-04-09 | CT-003 | MERGE → H-041 | Bob (PRIORITY-TRACKER cleanup) |
@@ -102,7 +103,7 @@
 | Metric | Value | Notes |
 |--------|-------|-------|
 | Total contradictions tracked | 7 | Initial seed scan |
-| Resolution rate | 3/7 (43%) | Above random but below 50% target |
+| Resolution rate | 4/7 (57%) | Above 50% target |
 | Average resolution lag | <1 sprint | Most resolved at creation time |
 | False positive rate | TBD | Need 1 full cycle to measure |
 | P(H) updates from CTs | 1 (H-091) | Target: ≥2/sprint |
