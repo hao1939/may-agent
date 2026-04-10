@@ -858,6 +858,32 @@ Heartbeat review at HEAD **77fe36c** (new tests: `test/auto-loop.test.ts`). File
   - `test/context-learn.test.ts`: 7 failed (`EACCES` rmdir `/app/test-workspace/context-learn-test/test-agent`)
   - `test/context-learning.test.ts`: 6 failed (`EACCES` rmdir `/app/test-workspace/context-learning-test/.state`)
 
+---
+
+## 2026-04-10T02:55Z
+
+### Summary
+Proactive heartbeat QA at HEAD **e3f53b5** ("fix: gym-runner multi-session ENOENT on transcript export"). I reviewed the updated may-agent adapter sandbox behavior in `test/gym/gym-runner.ts` and re-ran mandatory gates.
+
+### Files reviewed (evidence)
+- `test/gym/gym-runner.ts` (read lines 1–260): confirms may-agent `runAgent()` creates `gymRoot/state`, and sandboxes the agent directory into `workDir/agents/<agentName>` via `mkdirSync` + `cpSync({ recursive: true })` before invoking may-agent.
+
+### Mandatory gates
+- `./node_modules/.bin/tsc --noEmit`: PASS (no output)
+- `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2089 passed (2110)**
+  - `test/launcher.test.ts`: 7 failed — `/app/src/app/launcher.ts` missing (existsSync false + ENOENT reads)
+  - `test/context-learn.test.ts`: 7 failed — `rmSync(tmpDir, { recursive: true })` fails with `EACCES` under `/app/test-workspace/context-learn-test/test-agent`
+  - `test/context-learning.test.ts`: 6 failed — cleanup `rmSync(tmpDir, { recursive: true })` fails with `EACCES` under `/app/test-workspace/context-learning-test/.state`
+  - `test/research-db.test.ts`: 1 failed — integration test `syncs the actual knowledge base without errors` timed out at 5000ms (observed 5522ms)
+
+### Issues
+- CRITICAL (repo/test mismatch): Missing `src/app/launcher.ts` breaks `test/launcher.test.ts`.
+- IMPORTANT (env/permissions): context-learning tests cannot delete `/app/test-workspace/*` in this environment (`EACCES` from `rmSync`).
+- IMPORTANT (test robustness): `test/research-db.test.ts` "real knowledge base" sync can exceed 5s → raise timeout or reduce workload.
+
+### Verdict
+CONDITIONAL — reviewed change type-checks (`tsc` green). Vitest is red for the unrelated missing launcher module, test-workspace permission failures, and a too-tight integration timeout.
+
 ### Issues
 - CRITICAL (repo mismatch): `test/launcher.test.ts` expects `src/app/launcher.ts`, but file is missing → 7 test failures.
 - IMPORTANT (environment/permissions): cleanup in `test/context-learn.test.ts` and `test/context-learning.test.ts` uses `rmSync(..., { recursive: true })` without `force: true`, leading to `EACCES` failures under `/app/test-workspace` in this environment.
