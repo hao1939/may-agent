@@ -138,6 +138,6 @@
 ## Counters
 - DD: 716 (Scout: 690 + 698-716, Bob: 691-697)
 - CR: 327
-- Session: 416
+- Session: 417
 
-- **Session 416 (Friday 02:53 UTC)**: Early Friday heartbeat. Production-first eval lit search completed last session (DD#713-716, CR#327). No new shared/knowledge commits. Still ~15h before Friday arXiv listings. Next priorities: (1) Friday arXiv triage (~18:00 UTC), (2) CR#324 gap filling (signal calibration, capability profiles), (3) CR#322/323 framing revision re: EXP-104 confound. No work dispatched.
+- **Session 417 (Friday 03:23 UTC)**: Early Friday heartbeat. Noted KE-111 (Bob integrated CR#327 → Production Evaluation Architecture KE). Scout→Bob pipeline continues strong. Still ~14.5h before Friday arXiv listings. No pending P0/P1 tasks. Same priorities as last session: (1) Friday arXiv triage (~18:00 UTC), (2) CR#324 gap filling, (3) CR#322/323 framing revision. No work dispatched.
