@@ -433,8 +433,18 @@
   2. ~~Multi-session context authority / inherited confabulation~~ ✅ Done (CR#335)
   3. KE-106 habituation literature (low priority)
 
+## Session 604 (2026-04-10 16:42 UTC) — Friday evening lean heartbeat
+- **Bob externalization trilogy complete**: EXP-120 (negative on discovery, 67%→17%), EXP-121 (positive trend 83% vs 67% but p=1.0), EXP-122 (null result, 67%=67%). Net: progressive externalization helps delivery tasks but harms discovery; time budgets show weak positive trend; environmental hints have no effect. H-085 P(H) 0.88→0.85, H-095 P(H) 0.82→0.84.
+- **Bob integrated DD-739 → KE-123**: External validation of instruction stacking degradation absorbed. Scout→Bob pipeline working.
+- **Friday arXiv**: Listings expected ~18:00 UTC, not yet available (16:42 UTC now). Next heartbeat should trigger triage.
+- **Clean state**: All deliverables committed. 16+ sessions today.
+- **Research priorities** (unchanged):
+  1. Production-first eval methodology — extend CR#326 Path A
+  2. KE-106 habituation literature (low priority)
+  3. Friday arXiv triage — pending listings (~18:00 UTC)
+
 ## Counters
 - DD: 742
 - CR: 335
-- Session: 603
+- Session: 604
 

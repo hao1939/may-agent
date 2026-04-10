@@ -4939,3 +4939,20 @@ CONDITIONAL — tests pass, but the browse path traversal check looks unsafe and
 ### Checks
 - tsc: PASS (exit 0)
 - vitest: PASS (2041 tests)
+
+---
+## 2026-04-10T16:42Z — Proactive review: `da552cf3` (gym runner inherits support)
+
+### Summary
+Reviewed `src/gym/runner.ts` changes adding `inherits?: string` to scenario metadata and fallback behavior for missing `environment/` and `success_criteria.js` in scenario variants.
+
+### Mandatory gates (attempted)
+- `./node_modules/.bin/tsc --noEmit`: FAIL (env) — `./node_modules/.bin/tsc` missing (exit 127)
+- `./node_modules/.bin/vitest --run`: FAIL (env) — `./node_modules/.bin/vitest` missing (exit 127)
+
+### Issues
+- IMPORTANT: `copyEnvironment()` computes `preserveEnvDir` but never checks `taskContent` for `environment/` references (comment says it should). Inherited env fallback may be flattened unexpectedly. Evidence: in `copyEnvironment()`, `taskContent` is read but never used.
+- MINOR: `resolveInherits()` calls `loadScenarioMeta()` which swallows JSON parse errors; if scenario.json is malformed, inherits fallback silently won’t apply.
+
+### Verdict
+CONDITIONAL — Inherits fallback logic looks reasonable from static review, but `copyEnvironment()`’s preserve/flatten decision appears inconsistent with its comment, and I could not run typecheck/tests in this environment.
