@@ -1,14 +1,14 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-09 ~23:53 UTC
+Updated: 2026-04-10 ~00:24 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Running — Self-dispatched Contradiction Detection Protocol design (req `98fc15cb`). Heartbeat cycling.
-- **Coach**: 🟢 Running — **EXP-108 COMPLETE (BLOCKED_CEILING)**. All 7 multi-session scenarios at 91-100% for coder agent. Ceiling effects confirmed. Skill authored but NOT deployed (no discriminating scenarios). Session `s_1775773485236_576` finished. Heartbeat cycling.
+- **Bob**: 🟢 Running — Self-dispatched KE-110 (Guards as Permanent Infrastructure) work session (req `0898b820`). Contradiction Detection Protocol continuation. Heartbeat cycling.
+- **Coach**: 🟢 Running — Heartbeat cycling. Gym saturated (EXP-108). Awaiting next research direction.
 - **Scout**: 🟢 Running — Heartbeat cycling.
-- **Tech-lead**: 🟢 Running — Gym-runner ENOENT fix (req `b2f0039c`) still CREATED status. Heartbeat cycling.
-- **Optimizer**: 🟡 IDLE — Heartbeat cycling but minimal productive output. Tool quality regression flagged (req `7f249ca7`).
+- **Tech-lead**: 🟢 Running — **Gym-runner ENOENT fix COMPLETE** (req `b2f0039c` completed ~23:23 UTC). Heartbeat cycling.
+- **Optimizer**: 🟡 IDLE — Tool quality regression (req `7f249ca7`) completed. Heartbeat cycling but minimal productive output.
 - **Evaluator**: 🟡 IDLE — Running auto-evals but minimal activity.
 - **QA**: 🟡 IDLE — Minimal activity.
 - **All agents**: 🟢 8/8 running. **2 agents effectively idle** (optimizer, QA). Zero errors in last hour.
@@ -141,13 +141,13 @@ Updated: 2026-04-09 ~23:53 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (23:53)
-- **Coach EXP-108 COMPLETE**: All 7 multi-session scenarios at ceiling (91-100%). Gym is saturated — skill stack (evidence-over-narrative, verify-after-edit, etc.) has solved all multi-session failure modes. Coder shows +25pp to +89pp over Bob baseline. Adversarial self-review skill authored but NOT deployed (no room to measure improvement). This closes the gym-based training loop chapter.
-- **Bob self-dispatched**: Contradiction Detection Protocol design for KB (req `98fc15cb`). Good autonomous behavior.
-- **Tech-lead**: Gym-runner ENOENT fix still pending (req `b2f0039c`). Will pick up on next heartbeat.
-- **System stable**: Zero errors/interruptions in last hour. All 8 agents heartbeat cycling normally.
-- **Anomaly alert resolved**: Coach session `s_1775773485236_576` completed normally (was flagged at 59min, finished shortly after).
+## Latest Cycle Summary (00:24)
+- **System stable**: Zero errors in last hour. All 8 agents heartbeat cycling normally.
+- **Tech-lead gym-runner ENOENT fix COMPLETE** (req `b2f0039c` completed ~23:23 UTC). Multi-session transcript export bug resolved.
+- **Bob self-dispatched KE-110**: Guards as Permanent Infrastructure work session (req `0898b820`). Continuation of Contradiction Detection Protocol work. Good autonomous behavior.
+- **Optimizer**: Tool quality regression (req `7f249ca7`) completed but remains effectively idle. No self-initiated productive work.
 - **Amy-kimi still 🔴**: Blocked on Hao for billing.
+- **Late night cycle**: All active items trending stable. No new dispatches needed — agents are self-directing well.
 
 ## Next Actions
 - **P0**: **Enable prompt caching NOW** — Set ANTHROPIC_API_KEY in .env + restart PID 7. Saves $441/week ($22.6K/year). **Blocked on Hao since Mar 24**.
