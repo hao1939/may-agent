@@ -4734,3 +4734,20 @@ Reviewed commit **c76cd98** adding Web UI endpoints + static HTML dashboard (`sr
 
 ### Verdict
 CONDITIONAL — OK to ship if browse path traversal check is fixed or endpoint is restricted; otherwise risk of reading arbitrary files under state-adjacent paths.
+
+---
+## 2026-04-10T11:42Z — QA heartbeat
+
+### Proactive scan
+Reviewed latest main-repo commit `1e902a6e` (“chore: remove dead code — ops-gate, manager-receipts, orders”). It deletes `src/lib/{ops-gate,manager-receipts,orders}.ts` and their corresponding Vitest suites.
+
+### Findings
+- No functional review possible beyond deletion: the implementation files are removed. Primary risk is **accidental deletion of still-imported modules**.
+- I did a spot-check attempt to `read(src/lib/orders.ts)` and it correctly does not exist (consistent with deletion).
+
+### Checks
+- `./node_modules/.bin/tsc --noEmit`: FAIL (tool missing in environment; command exited 127).
+- `./node_modules/.bin/vitest --run`: FAIL (tool missing in environment; command exited 127).
+
+### Verdict
+CONDITIONAL — acceptable **only if** the deleted modules truly have zero production imports. Recommend verifying with a repo-wide import search (e.g. `grep -R "ops-gate" src/`) in an environment that has full toolchain.
