@@ -36,7 +36,8 @@
 - Root cause: heartbeat.md encouraged inline exploration (multi-query DB analysis, file reads).
 - Fix: Rewrote heartbeat.md to "Dispatcher Mode" — observe in 1-2 ops, fork all analysis work. Target: ≤15 ops.
 - Baseline: 8 heartbeats in 12h, avg 56 ops, total 451. Measuring post-fix.
-- Last exploration mode: **C** (Skill & Technique Scouting — Apr 10 ~19:32 UTC). Next: **D** (Workflow Health).
+- Last exploration mode: **D** (Workflow Health — Apr 10 ~20:24 UTC). Next: **A** (Session Archaeology).
+- Mode D forked: Workflow health post-adoption impact analysis (s_1775852684311_1052).
 - Mode C finding complete: `workspace/finding-workflow-adoption-gap-0410.md`
 
 ### may.db WAL Bug — FIXED, Monitoring
