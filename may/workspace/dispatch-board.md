@@ -1,18 +1,18 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-11 ~02:23 UTC
+Updated: 2026-04-11 ~02:53 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — Heartbeat running. EXP-130 KB integration done. **EXP-129 KB integration pending** (should self-dispatch).
-- **Coach**: 🟢 Active — **EXP-129 ✅ RESULTS WRITTEN**. Inverted-U confirmed: 3-gate = 100% optimal, 4-gate = 67% degrades. P-098c REJECTED. **EXP-130 ✅ COMPLETE** — few-shot IATROGENIC on discovery (-67pp, p=0.030).
-- **Scout**: ⚠️ 401 Error — Recurring auth failure. Research active: Einstellung effect synthesis (CR#337, DD#744-746) grounding EXP-130.
+- **Bob**: 🟢 Active — Heartbeat running. EXP-129 KB integration ✅ DONE (02:24). EXP-130 KB integration ✅ DONE.
+- **Coach**: 🟢 Active — **EXP-131 IN PROGRESS** (Unrelated Gate Stacking Test, 27min). Testing if EXP-129 hump curve holds with unrelated gates.
+- **Scout**: ⚠️ 401 Error — Recurring auth failure. Research active: Einstellung effect synthesis.
 - **Tech-lead**: 🟢 Active — Heartbeat cycle running.
-- **Optimizer**: 🟢 Active — **FINDING**: 0% tool adoption (session-query.ts, gym-batch.sh). Tools built but never surfaced to agents. Confirms KE-011.
+- **Optimizer**: ⚠️ 401 Error — Work session (Mode C skill scouting) hit auth failure. Same as Scout (LiteLLM GitHub token). Prior finding: 0% tool adoption.
 - **Evaluator**: 🟢 Active — Heartbeat cycle running.
 - **QA**: 🟢 Active — Heartbeat cycle running.
 - **Coder**: Idle. Only runs when forked by tech-lead.
-- **All agents**: 🟡 7/8 healthy. Scout has recurring auth error (401, IDE token expired). Zero failures last hour.
+- **All agents**: 🟡 6/8 healthy. Scout + Optimizer have 401 auth errors (LiteLLM GitHub token). Amy-kimi 429 (billing). Zero other failures last hour.
 - **✅ Tool Schema Guard**: Live in production.
 - **✅ Dead code removal**: ~4,779+ lines removed total (1,973 earlier + 589 memory JSONL + 2,217 finish-guard dead code).
 - **✅ Web UI Phase 1**: Merged to main.
@@ -177,6 +177,7 @@ Updated: 2026-04-11 ~02:23 UTC
 | **H-098 Attention Channel Theory** | 🆕 FILED | bob | P(H)=0.78, Tier 1. Intervention effectiveness = channel separation. o3 17% collective vs o3-mini 50%. Based on KE-120/DD-731-733. |
 | **EXP-127 Channel Separation Direct Test** | ✅ COMPLETE (**LANDMARK**) | coach | **Baseline 0/6, Ch1 0/6, Ch3 0/6, Ch2 (Forced Ext) 6/6 (100%)**. p=0.0000074 vs pooled others. Only structural gates work for judgment tasks. Confound: contradiction-detection skill was already deployed (all runs had Ch1). Even Ch1+Ch3 combined = 0/6. Skill removed (commit 8f3d660f). Bob KB integrating (req:c15a56d7). Results at `agents/shared/knowledge/experiments/EXP-127/results.md`. |
 | **Gym Transcript Fix + Evaluator Bug Tests** | ✅ MERGED | tech-lead/may | Branch `review/s_1775848356081_345` merged to main. Transcript field in GymResult + evaluator scale/dedup tests. 20/20 pass. Commits 82757680 + 48315279. |
+| **EXP-131 Unrelated Gate Stacking** | ⏳ IN PROGRESS | coach | Testing if EXP-129 hump curve holds when gates are unrelated to the task. Self-dispatched follow-on. Running parallel gym trials. |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -215,22 +216,24 @@ Updated: 2026-04-11 ~02:23 UTC
   - **Bob EXP-130 KB integration ✅ DONE**: Completed in work session. H-099, H-098 updated.
   - **All agents self-directing**: 1 active request (Coach EXP-129 writeup). Zero May interventions needed.
 
-## Latest Cycle Summary (02:23)
-- **System healthy**: 8/8 agents running heartbeats. Scout recurring 401 auth. Zero failures last hour.
-- **Since last cycle (01:53)**:
-  - **Coach EXP-129 RESULTS WRITTEN**: Full 7,860-byte analysis. Inverted-U confirmed — 3-gate optimal (100%), 4-gate degrades (67%). P-098c REJECTED. Key: failure mode at 4 gates is implementation quality (time pressure), not judgment quality.
-  - **Optimizer FINDING**: 0% adoption of built tools (session-query.ts, gym-batch.sh). Tools never surfaced to agents. Next high-value tool: gym results aggregator. Confirms KE-011.
-  - **Scout**: Einstellung effect literature synthesis (CR#337, DD#744-746). Grounding EXP-130 iatrogenic finding in psychology research.
-  - **Bob**: EXP-129 KB integration pending — should self-dispatch from heartbeat.
+## Latest Cycle Summary (02:53)
+- **System**: 6/8 healthy. Scout + Optimizer 401 auth errors (LiteLLM GitHub token). Amy-kimi 429 (billing).
+- **Since last cycle (02:23)**:
+  - **Bob EXP-129 KB integration ✅ DONE** (02:24+02:31): Two sessions — direct integration + research synthesis. All KB work current.
+  - **Coach EXP-131 IN PROGRESS** (27min): Self-dispatched follow-on to EXP-129. Testing if hump curve holds with unrelated gates. Running parallel gym trials.
+  - **Optimizer 401 ERROR**: Mode C work session hit LiteLLM auth failure. Same root cause as Scout.
+  - **All agents self-directing**: Coach driving experiments, Bob integrating findings. Zero May interventions needed.
 
 ## Key Findings This Cycle
 - **EXP-129 INVERTED-U (FINAL)**: Gate stacking shows hump curve, NOT cliff. 3-gate = 100% (optimal), 4-gate = 67% (time pressure). Each gate adds ~167s linear. P-098c execution-crowding prediction WRONG — crowding is task-specific, not universal. **Deployment recommendation: 3 analytical gates max**.
 - **Tool Adoption = 0%**: Building tools is necessary but insufficient. Must be injected into agent context (KE-011). Action needed: surface tools to relevant agents.
 - **EXP-130 LANDMARK** (from prior cycle): Few-shot -67pp on discovery. Template-following displaces exploration. H-099 P(H)=0.90.
+- **401 Auth Degradation**: Optimizer now joining Scout with 401 errors. LiteLLM GitHub token issue affecting 2/8 agents. May need Hao escalation if persistent.
 
 ## Next Actions
 - **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. Saves $143-441/day. **Blocked on Hao since Mar 24**.
-- **P1**: **EXP-129 KB integration** — Bob should self-dispatch. Monitor next cycle.
+- **P0**: **LiteLLM 401 auth** — Optimizer + Scout both failing. If persists next cycle, escalate to Hao.
+- **P1**: **EXP-131 results** — Coach running. Monitor next cycle for completion.
 - **P1**: **Surface tools to agents** — session-query.ts + gym-batch.sh need context.md entries. Consider shared/tools.md catalog.
 - **P1**: **EXP-105 Few-Shot Production Impact** — Need coder/optimizer work sessions to generate data. No coder work happening.
 - **P1**: **Generate implementation work** — System idle without features. Coder completely idle. Need Hao priorities.
