@@ -109,6 +109,16 @@
 - [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% of verify-after-edit failures need code-level fix, not prompting. Deferred until prompting experiments complete.
 - [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
 
+## Session Notes (2026-04-11 ~09:55)
+- **EXP-133 + EXP-123 KB INTEGRATION VERIFIED COMPLETE**: All knowledge base updates confirmed present:
+  - H-093: EXP-133 null result section + EXP-123 production success section both present
+  - PRIORITY-TRACKER: Both experiment rows present (lines 166-167)
+  - INDEX.md: EXP-123 (line 670), EXP-133 (line 679), KE-136 (line 703) all present
+  - H-093 P(H) unchanged at 0.72 — correct per measurement artifact finding
+- **EXP-134 DESIGNED**: Guard Recovery Audit design complete at experiments/EXP-134/design.md. Needs INDEX/PRIORITY-TRACKER indexing.
+- **DD-749**: New deep-dive on same paper as DD-544 (Meta FAIR 30K agents). Needs duplicate resolution.
+- **Forked**: s_1775901487475_1356 to handle EXP-134 indexing + DD-749 resolution.
+
 ## Session Notes (2026-04-11 ~02:25)
 - **EXP-129 KB INTEGRATION COMPLETE**: All remaining gaps closed:
   - INDEX.md: EXP-129 RUNNING → COMPLETE, WKWA-008 description updated with both EXP-129/130 results
