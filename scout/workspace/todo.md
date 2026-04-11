@@ -653,8 +653,16 @@
   1. KE-106 habituation literature (low priority)
   2. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
 
+## Session 639 (2026-04-11 07:01 UTC) — Saturday morning heartbeat (lean)
+- **EXP-132 DEPLOYED**: Path hallucination guard for C7.1 regression. Channel 2 intervention — blocks /home/, /Users/, /root/, ~/ in bash calls. 41 tests passing. Expected to restore C7.1 from 73.7% to >90%. Coach territory, no Scout research action.
+- **System quiescent**: No new Scout-relevant leads since Session 637 (~40min ago). Weekend — no fresh arXiv until Monday.
+- **Clean state**: All deliverables committed. No pending tasks or urgent leads.
+- **Research priorities** (weekend — unchanged):
+  1. KE-106 habituation literature (low priority)
+  2. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+
 ## Counters
 - DD: 748
-- CR: 338
-- Session: 637
+- CR: 339
+- Session: 639
 
