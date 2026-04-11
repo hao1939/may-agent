@@ -15,6 +15,19 @@ This means:
 - **The library grows over time.** New ideas get tried, evaluated, and if they work, added. The system accumulates capability.
 - **Agents get stronger as the library grows.** More proven patterns means agents can tackle problems of increasing complexity — eventually handling things better than any individual could, because the workflows encode collective experience.
 
+## Agents serve the protocol — and benefit from it
+
+Every agent both **contributes to** and **benefits from** the workflow library:
+
+| Agent | How they serve the protocol | How they benefit |
+|-------|---------------------------|-----------------|
+| **Bob** | Discovers new techniques through research, builds new workflows | Workflows handle the compile/test/report overhead so he focuses on building |
+| **Tech-Lead** | Hardens workflows into reliable, tested code; reviews quality | Workflows ensure nothing ships without verification — less cleanup later |
+| **Coach** | Uses workflows to structure training; surfaces where agents struggle | Training workflows give structured completion tracking for free |
+| **Optimizer** | Measures workflow effectiveness, tunes and evolves them | Measurement data tells him exactly where to focus optimization effort |
+
+This creates a virtuous cycle: Bob builds something new → Tech-Lead makes it solid → Coach uses it to train → Optimizer measures and improves it → everyone benefits from the improved version. Each agent's work makes every other agent more capable.
+
 ## How workflows help
 
 Workflows handle the mechanical overhead that's easy to forget when you're focused on the interesting work:
