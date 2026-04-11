@@ -231,3 +231,24 @@ CR-336 rates H-093 external validation as **HIGH** confidence with **Strong** su
 
 ### Impact on P(H)
 **P(H) unchanged at 0.72.** EXP-133 is a null result with important methodological implications, but the measurement artifact affects FM-3.3 *detection methodology*, not the CIVC *mechanism*. The core evidence (EXP-099, EXP-102, EXP-116, 12+ external papers) is unaffected. The practical implication is that future FM-3.3 measurement must use marker-based detection.
+
+---
+
+## Evidence #8: EXP-123 — Verification-Depth Guard Production Deployment (Added 2026-04-11)
+
+### What Happened
+- EXP-123 deployed a structural guard blocking shallow verification at finish() time
+- **EXP-133 found the gym measurement was an artifact** (transcript-based detection), BUT the **production effect is REAL**
+- Production results (deployed 2026-04-10 16:51 UTC):
+  - **Bob C1.3**: 70.5% → 100% (+29.5pp)
+  - **Fleet C1.3**: 74.2% → 90.0% (+15.8pp)
+  - Per-agent: Bob/Coach/Scout/TechLead → 100%, Optimizer stayed at 56%, May regressed slightly
+
+### Implications for H-093 (CIVC)
+1. **Guard-as-recovery validates CIVC mechanism**: The guard works by forcing verification when agents forget — this is exactly the CIVC prediction that verification collapses under complexity and structural forcing can recover it (consistent with EXP-110/KE-113 pattern)
+2. **Differential agent response is informative**: 5 agents recover to 100% with the guard, but Optimizer (56%) and May (slight regression) don't — suggests CIVC severity varies by agent and some agents' verification collapse is resistant to this particular structural recovery mechanism
+3. **Production vs gym disconnect resolved**: Gym showed no effect (measurement artifact), but production shows large effect — confirms that CIVC is a real production phenomenon that gym scenarios under-measure (consistent with EXP-107 finding: gym FM-3.3 rate 4.8% vs production 50-70%)
+4. **Connects to H-095**: The differential agent response is better explained by H-095 (agent-specific interventions) than by CIVC alone — CIVC predicts the collapse, but agent-specific factors determine which recovery mechanisms work for which agents
+
+### Impact on P(H)
+**P(H) unchanged at 0.72.** EXP-123 production results are consistent with CIVC (verification collapse is real, structural forcing recovers it) but don't add new mechanistic evidence beyond what EXP-110 already showed. The differential agent response is better attributed to H-095. The key CIVC contribution is confirming that the production-gym gap (EXP-107) is real and structural guards have genuine production value despite gym null results.
