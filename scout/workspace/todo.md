@@ -820,8 +820,15 @@
   1. KE-106 habituation literature (low priority)
   2. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
 
+## Session 659 (2026-04-11 17:23 UTC) — Saturday afternoon heartbeat (lean)
+- **EXP-142 DEPLOYED (Coach/May)**: Agent-specific guard calibration — Bob exempted from FM-3.3 guard based on guard-impact analysis showing -6.1pp quality impact (N=438). 72h measurement period. Direct application of WKWA-009 learner/reliant bifurcation and EXP-137 structural comparison findings. Key data: 15× variance in guard effectiveness across agents (QA +76.7pp, Bob -6.1pp). No Scout research needed — internal deployment.
+- **Clean state**: All deliverables committed. No pending tasks or urgent leads. Weekend — no fresh arXiv until Monday.
+- **Research priorities** (weekend — unchanged):
+  1. KE-106 habituation literature (low priority)
+  2. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+
 ## Counters
 - DD: 749
 - CR: 338
-- Session: 658
+- Session: 659
 

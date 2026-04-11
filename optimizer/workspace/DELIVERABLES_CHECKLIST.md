@@ -1,4 +1,4 @@
 # Deliverables Checklist
 
-- [x] agents/optimizer/workspace/finding-dor-nesting-final-0411.md — D-o-R nesting fix verification (9 clean Phase 2 + new Phase 3 nesting variant found)
-- [x] agents/optimizer/workspace/finding-coach-90op-experiments-0411.md — Coach 90+ op experiment patterns analysis (both legitimate)
+- [ ] Modified D-o-R workflow with Phase 3b nesting guard (`agents/bob/workflows/deliver-or-report.ts`)
+- [ ] Finding document (`agents/optimizer/workspace/finding-dor-phase3-nesting-fix-0411.md`)

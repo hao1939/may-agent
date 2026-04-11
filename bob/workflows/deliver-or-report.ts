@@ -404,7 +404,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       `  (first 2-3 lines or key section) proving you actually read it.\n\n` +
       `⚠️ You MUST actually call read() on each file. Do NOT fabricate evidence.\n` +
       `⚠️ Do NOT write or edit any files. This phase is READ-ONLY.\n` +
-      `⚠️ If a file is empty, malformed, or doesn't match the plan, report failure.`;
+      `⚠️ If a file is empty, malformed, or doesn't match the plan, report failure.\n\n` +
+      `⛔ DO NOT call workflow.run(), callAgent(), or spawn sub-agents/sub-workflows. Your job is ONLY to read files and report pass/fail. Calling workflow.run() creates infinite nested workflows that waste hundreds of ops.`;
 
     const phase3b = await ctx.runAgent("bob", phase3bPrompt);
 
