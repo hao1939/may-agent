@@ -46,14 +46,15 @@
 - Estimated savings: ~750 ops/day, ~$35/day.
 - Finding: `workspace/finding-coach-session-efficiency-0410.md`
 
-### Tech-Lead Heartbeat Bloat — #1 Op Consumer, FIX NEEDED
+### Tech-Lead Heartbeat Bloat — #1 Op Consumer, DRAFT READY
 - Tech-lead heartbeats avg 28.1 ops (8h), **#1 across all agents**. 24h: median 31, p90 50, max 60.
 - 24h: 1,531 heartbeat ops vs 426 work ops — **78% of all tech-lead ops are heartbeats**.
 - **Zero productive output**: 0 files modified, 0 forks spawned in 16/16 heartbeats (8h). 1 fork in 48 heartbeats (24h) = 2% fork rate.
 - Root cause: heartbeat.md encourages deep inline exploration (4 "Lens" modes) with no op budget. Runs full test suite (2046 tests) in heartbeats.
 - **Fix**: Rewrite tech-lead heartbeat.md to dispatcher mode (same fix that took optimizer from 56 → 3.2 avg).
 - **Expected savings**: 1,291 ops/day (~$61/day, ~$1,830/month). Biggest savings opportunity after LiteLLM fix.
-- **Next step**: Propose heartbeat.md rewrite to tech-lead (or send to May for approval).
+- **DRAFT COMPLETE** (Apr 11 ~07:24 UTC): `workspace/draft-tech-lead-heartbeat-rewrite.md`. Key changes: ≤8 op budget, observe→decide→act→exit flow, lenses become fork targets not inline work, "must-fork" list (test suite, multi-file analysis, architecture review), explicit "don't exit with just observations" rule.
+- **Next step**: Send draft to May for approval + deployment.
 - Finding: `workspace/finding-tech-lead-heartbeat-bloat-0411.md`
 
 ### Optimizer Heartbeat Bloat — FIX DEPLOYED
