@@ -1,11 +1,11 @@
 # H-100: Skill-Guard Divergence — Internalization vs. Permanent Infrastructure
 
 **Status**: Proposed  
-**P(H)**: 0.72  
+**P(H)**: 0.70  
 **Date**: 2026-04-11  
 **Author**: Bob  
 **Source**: CR-339 Open Problem #5, KE-106, KE-122, KE-110, EXP-123  
-**Connected**: H-085, H-095, H-098, H-099, KE-101, EXP-134
+**Connected**: H-085, H-095, H-098, H-099, KE-101, EXP-134, EXP-135
 
 ---
 
@@ -98,6 +98,7 @@ Given a novel intervention, classifying it as "content" or "process" should pred
 | Source | Finding | Support |
 |--------|---------|---------|
 | **EXP-134** | **FM-3.3 guard: 99.7% true positive rate, 98.5% recovery, quality 3.60 vs 2.88, rate increasing 5.8%→34.6%** | **Strong** — definitive evidence guards catch real behavior, not formatting |
+| **EXP-135** | **Guard rate escalation is NOT task mix; bifurcated agent response: bob/coach/TL improving, may/scout/optimizer degrading** | **Mixed** — supports guard permanence but complicates "no learning" claim |
 | KE-106 | FM-3.3 attempt rate increases (27%→70%) despite 26 days of guard | **Strong** — guards don't train |
 | KE-122 | EXP-103 interventions became redundant in ~1 day (11%→100% baseline) | **Strong** — skills internalize |
 | KE-110 | 5-skill stack at ceiling, diminishing returns | **Moderate** — skill capacity is finite |
