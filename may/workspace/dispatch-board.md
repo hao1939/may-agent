@@ -1,14 +1,14 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-11 ~01:53 UTC
+Updated: 2026-04-11 ~02:23 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — Heartbeat running. **EXP-130 KB integration ✅ DONE**.
-- **Coach**: 🟢 Active — **EXP-129 ALL DATA COLLECTED** (Channel 2 Budget Curve). Arm A: 6/7 (86%), Arm B: 5/6 (83%), Arm C: 6/6 (100%), **Arm D: 4/6 (67%)**. Coach writing results. **EXP-130 ✅ COMPLETE** — few-shot IATROGENIC on discovery (-67pp, p=0.030).
-- **Scout**: ⚠️ 401 Error — Recurring `IDE token expired` auth failure. Auto-pause recovery handling retries.
+- **Bob**: 🟢 Active — Heartbeat running. EXP-130 KB integration done. **EXP-129 KB integration pending** (should self-dispatch).
+- **Coach**: 🟢 Active — **EXP-129 ✅ RESULTS WRITTEN**. Inverted-U confirmed: 3-gate = 100% optimal, 4-gate = 67% degrades. P-098c REJECTED. **EXP-130 ✅ COMPLETE** — few-shot IATROGENIC on discovery (-67pp, p=0.030).
+- **Scout**: ⚠️ 401 Error — Recurring auth failure. Research active: Einstellung effect synthesis (CR#337, DD#744-746) grounding EXP-130.
 - **Tech-lead**: 🟢 Active — Heartbeat cycle running.
-- **Optimizer**: 🟢 Active — D-o-R Phase 1 budget cap delivered last cycle. Heartbeat running.
+- **Optimizer**: 🟢 Active — **FINDING**: 0% tool adoption (session-query.ts, gym-batch.sh). Tools built but never surfaced to agents. Confirms KE-011.
 - **Evaluator**: 🟢 Active — Heartbeat cycle running.
 - **QA**: 🟢 Active — Heartbeat cycle running.
 - **Coder**: Idle. Only runs when forked by tech-lead.
@@ -161,7 +161,7 @@ Updated: 2026-04-11 ~01:53 UTC
 | **EXP-116 Results Correction** | ✅ CORRECTED | may | EXP-116/results.md note updated: invalidation was WRONG — EXP-118 confirmed 100% baselines are real with valid agents. Silent exit bug exists but didn't corrupt results. |
 
 | **EXP-128 Channel 3 Boundary Conditions** | ✅ COMPLETE | coach | **H-128 REJECTED**: 18 runs, all arms 0/6 pass. Detection coverage made no difference. Ch3 has genuine task-type boundary — "success signal misdirection" (tests pass → agent thinks it succeeded). Action momentum overwhelms few-shot. Results at `agents/shared/knowledge/experiments/EXP-128/results.md`. |
-| **EXP-129 Channel 2 Budget Curve** | ✅ DATA COMPLETE | coach | **ALL 25 RUNS DONE**: Arm A 6/7 (86%), Arm B 5/6 (83%), Arm C 6/6 (100%), **Arm D 4/6 (67%)**. Inverted-U: 3-gate optimal, 4-gate DEGRADES (time pressure 755s avg + scoring failures). Coach writing results. |
+| **EXP-129 Channel 2 Budget Curve** | ✅ COMPLETE | coach | **DEFINITIVE**: Hump curve, NOT cliff. 1-gate 86%, 2-gate 83%, **3-gate 100%**, 4-gate 67%. P-098c REJECTED. Each gate +167s linear. 4-gate failure = implementation (time pressure), NOT judgment. Deployment: 3 analytical gates max. Results at `agents/shared/knowledge/experiments/EXP-129/results.md`. **Bob KB integration pending**. |
 | **EXP-130 Few-Shot on Discovery** | ✅ COMPLETE (**IATROGENIC**) | coach | **LANDMARK**: Baseline 6/6 (100%) vs Few-shot 2/6 (33%). p=0.030. Few-shot ACTIVELY HURTS discovery tasks (-67pp). Template-following displaces exploration. H-099 P(H) 0.78→0.90. All 3 channels (Ch1/Ch2/Ch3) fail on discovery. Results at `agents/shared/knowledge/experiments/EXP-130/results.md`. |
 | **WKWA-008 Channel Theory Synthesis** | ✅ COMPLETE | bob | 10-experiment synthesis: channel × task-type matrix. At `synthesis/WKWA-008-channel-theory-discovery-boundary.md`. |
 | **Session-Query Tool** | ✅ MERGED | optimizer/may | 378-line CLI at `scripts/session-query.ts`. Merged to main. Note: queries `agents/.state/sessions/history/` (historical), not `.state/sessions/` (current). |
@@ -215,13 +215,23 @@ Updated: 2026-04-11 ~01:53 UTC
   - **Bob EXP-130 KB integration ✅ DONE**: Completed in work session. H-099, H-098 updated.
   - **All agents self-directing**: 1 active request (Coach EXP-129 writeup). Zero May interventions needed.
 
+## Latest Cycle Summary (02:23)
+- **System healthy**: 8/8 agents running heartbeats. Scout recurring 401 auth. Zero failures last hour.
+- **Since last cycle (01:53)**:
+  - **Coach EXP-129 RESULTS WRITTEN**: Full 7,860-byte analysis. Inverted-U confirmed — 3-gate optimal (100%), 4-gate degrades (67%). P-098c REJECTED. Key: failure mode at 4 gates is implementation quality (time pressure), not judgment quality.
+  - **Optimizer FINDING**: 0% adoption of built tools (session-query.ts, gym-batch.sh). Tools never surfaced to agents. Next high-value tool: gym results aggregator. Confirms KE-011.
+  - **Scout**: Einstellung effect literature synthesis (CR#337, DD#744-746). Grounding EXP-130 iatrogenic finding in psychology research.
+  - **Bob**: EXP-129 KB integration pending — should self-dispatch from heartbeat.
+
 ## Key Findings This Cycle
-- **EXP-129 INVERTED-U**: Gate count has diminishing returns. 3-gate = 100% (optimal), 4-gate = 67% (WORSE than 1-gate's 86%). Mechanism: 4th gate pushes duration to ~755s, causing timeout/scoring failures. The extra forced externalization becomes overhead rather than benefit. This gives us a concrete deployment recommendation: **3 forced externalization gates is the sweet spot for judgment tasks**.
-- **EXP-130 LANDMARK** (from last cycle): First experiment where intervention causes NET HARM. Few-shot -67pp on discovery. Template-as-ceiling suppresses exploratory behavior.
+- **EXP-129 INVERTED-U (FINAL)**: Gate stacking shows hump curve, NOT cliff. 3-gate = 100% (optimal), 4-gate = 67% (time pressure). Each gate adds ~167s linear. P-098c execution-crowding prediction WRONG — crowding is task-specific, not universal. **Deployment recommendation: 3 analytical gates max**.
+- **Tool Adoption = 0%**: Building tools is necessary but insufficient. Must be injected into agent context (KE-011). Action needed: surface tools to relevant agents.
+- **EXP-130 LANDMARK** (from prior cycle): Few-shot -67pp on discovery. Template-following displaces exploration. H-099 P(H)=0.90.
 
 ## Next Actions
 - **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. Saves $143-441/day. **Blocked on Hao since Mar 24**.
-- **P1**: **EXP-129 results writeup** — Coach finishing this session. Then Bob KB integration needed.
+- **P1**: **EXP-129 KB integration** — Bob should self-dispatch. Monitor next cycle.
+- **P1**: **Surface tools to agents** — session-query.ts + gym-batch.sh need context.md entries. Consider shared/tools.md catalog.
 - **P1**: **EXP-105 Few-Shot Production Impact** — Need coder/optimizer work sessions to generate data. No coder work happening.
 - **P1**: **Generate implementation work** — System idle without features. Coder completely idle. Need Hao priorities.
 - **P2**: `analyze-failures` cron DB bug — persistent but non-critical.
