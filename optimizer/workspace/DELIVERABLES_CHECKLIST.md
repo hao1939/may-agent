@@ -1,4 +1,3 @@
-# Deliverables Checklist — D-o-R Nesting Fix Verification
+# Deliverables Checklist — Heartbeat (Mode D dispatch)
 
-- [ ] Finding file: `workspace/finding-dor-nesting-verification-0411.md`
-- [ ] Update `todo.md`: nesting item status + P1 cap stats
+- [x] Update `todo.md`: mode rotation to D with timestamp
