@@ -567,8 +567,20 @@
   3. EXP-129 results integration (when available)
   4. Design EXP-131 (anti-example framing) or EXP-132 (dual-pathway perception) — from CR#337
 
+## Session 629 (2026-04-11 02:23 UTC) — Saturday early-morning heartbeat (lean)
+- **EXP-129 COMPLETE — P-098c REJECTED**: Inverted-U / hump curve. 1g 86%, 2g 83%, 3g 100%, 4g 67%. No cliff function — gate synergy discovered. Three related analytical gates IMPROVE performance. Degradation at 4 gates manifests as implementation quality loss (tests-pass), not judgment degradation (contradiction-identified). Duration cost linear: +167s per gate.
+- **H-098 updated by Bob**: KE-064 execution crowding section revised, P-098c marked REJECTED, evidence table updated with EXP-129.
+- **Key implications**: (1) Channel 2 budget much larger than estimated (~3 related gates). (2) Gate relevance to task may moderate budget. (3) Need "synergy term" for channel model — moderate structural constraints can scaffold rather than crowd. (4) Follow-up: test with unrelated gates.
+- **New research lead (HIGH SIGNAL)**: Structural scaffolding / inverted-U constraint effects in LLM agents. EXP-129's hump curve resembles: Yerkes-Dodson law, scaffolding theory (Vygotsky ZPD), desirable difficulties (Bjork), constraint satisfaction as planning aid. Are there papers on moderate structural constraints improving LLM agent performance? Also: process reward model scaffolding effects, intermediate checkpoints as planning structure.
+- **Clean state**: All deliverables committed. Weekend — no fresh arXiv until Monday.
+- **Research priorities** (weekend — revised):
+  1. Structural scaffolding / inverted-U constraint effects in LLMs — ground EXP-129 gate synergy finding
+  2. KE-106 habituation literature (low priority — internal evidence strong)
+  3. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+  4. Design EXP-131 (anti-example framing) or EXP-132 (dual-pathway perception) — from CR#337
+
 ## Counters
 - DD: 746
 - CR: 337
-- Session: 628
+- Session: 629
 
