@@ -18,6 +18,7 @@ import { createSessionReadGuard } from "./tools/session-read-guard.js";
 import { createScrapeDedupGuard } from "./tools/scrape-dedup-guard.js";
 import { createEmptyArgsGuard } from "./tools/empty-args-guard.js";
 import { createToolSchemaGuard } from "./tools/tool-schema-guard.js";
+import { createPathHallucinationGuard } from "./tools/path-hallucination-guard.js";
 import { createCommitGuard } from "./tools/commit-guard.js";
 import { createCompletenessGuard } from "./tools/completeness-guard.js";
 import { createVerificationDepthGuard } from "./tools/verification-depth-guard.js";
@@ -378,6 +379,7 @@ export class SubagentManager {
           beforeToolCall: composeGuards(
             createEmptyArgsGuard(),
             createToolSchemaGuard(),
+            createPathHallucinationGuard(),
             createCompletenessGuard(def.name),
             createFinishGuard(),
             createCommitGuard(def.name, this._projectRoot),
