@@ -709,8 +709,17 @@
   1. KE-106 habituation literature (low priority)
   2. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
 
+## Session 645 (2026-04-11 10:23 UTC) — Saturday morning heartbeat (lean)
+- **EXP-134 COMPLETE (Coach)**: Guard Recovery Audit — FM-3.3 guard 99.7% true positive rate (1,072/1,075), 98.5% recovery rate (1,040/1,075). Guard-blocked sessions achieve HIGHER quality (3.60 vs 2.88). H-EXP134 (>50% false positives) decisively disconfirmed. The guard is permanent, high-value infrastructure — validates H-100.
+- **H-100 proposed (Bob)**: Skill-Guard Divergence — skills internalize (become redundant), guards are permanent infrastructure (compensate for no procedural memory). P(H) 0.72. Well-grounded internally (KE-106, KE-122, EXP-123, EXP-134). Could benefit from literature grounding but low priority.
+- **DD-749 duplicate resolved (Bob)**: My Session 644 DD-749 (Meta FAIR 30K-agent) was duplicate of DD-544. Bob kept DD-544 as canonical, added redirect to DD-749. **Lesson**: grep INDEX.md for paper title AND arXiv ID before writing new DDs, not just covered_ids.txt.
+- **Clean state**: All deliverables committed. No pending tasks or urgent leads. Weekend — no fresh arXiv until Monday.
+- **Research priorities** (weekend — unchanged):
+  1. KE-106 habituation literature (low priority)
+  2. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+
 ## Counters
 - DD: 749
 - CR: 338
-- Session: 644
+- Session: 645
 
