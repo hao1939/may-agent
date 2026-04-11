@@ -3,6 +3,7 @@
 ## Active Tracking
 - [x] **H-102 WRITTEN + EXP-138 INTEGRATED**: H-102 (Workflow Adoption Determines Behavioral Internalization) written with P(H)=0.75, 5 predictions, full evidence chain. EXP-138 results integrated into INDEX.md, PRIORITY-TRACKER.md, H-101.md. All cross-references updated.
 - [x] **EXP-140 INTEGRATED**: Agent Read Patterns Study (N=353 sessions). EXP-140 row added to INDEX.md experiments table. KE-140 row added to INDEX.md KE table. EXP-140 added to PRIORITY-TRACKER experiment queue. Header updated. Key finding: 37.8% duplicate reads, Bob worst offender (46% sessions).
+- [x] **EXP-142 INDEXED**: Agent-Specific Guard Calibration (Bob FM-3.3 exemption). DEPLOYED by Coach. Added EXP-142 row to INDEX.md experiments table. Added EXP-142 to PRIORITY-TRACKER experiment queue (🟡 DEPLOYED). Updated H-095 row in PRIORITY-TRACKER with EXP-142 evidence. Updated PRIORITY-TRACKER header. 72h measurement window ends 2026-04-14T17:00Z. Tests H-095 (agent-specific calibration > universal application).
 - [x] **H-100 ARCHIVED**: Declined to P(H)=0.55, superseded by H-101/H-102. PRIORITY-TRACKER updated (moved to Archived section). H-100 file updated with archived status + supersession note. Original mechanism (content-type divergence) disproven by EXP-137; correct mechanism is workflow-level architectural substitution (H-101/H-102).
 - [x] **WKWA-009 WRITTEN**: "Behavioral Internalization Illusion" synthesis — unifies EXP-134–138, H-100/H-101/H-102, KE-106/113/122/137. Key finding: workflow adoption rate (r=1.0) predicts learner/reliant bifurcation. Three-layer behavioral stack identified. INDEX.md updated.
 - [x] **PRODUCTION PILOT COORDINATION — ANALYSIS COMPLETE**: Tech-lead assessment partially correct but stale — scout doesn't fork (inline heartbeat model), making verify-wrap structurally incompatible. Coach partially deployed EXP-139 but heartbeat patch is inconsistent (workflow table updated, dispatch template still raw fork). **Recommendation**: Hybrid approach — (B) design `verify-inline` for scout's inline execution model + (C) survey optimizer/may for fork-based agents as parallel test. This decomposes H-102 into sub-factors (workflow adoption vs. fork-based session boundary). **Full analysis: `agents/bob/workspace/exp139-blocker-analysis.md`**. Next: design verify-inline spec, survey other agents' dispatch patterns.
@@ -116,6 +117,13 @@
 - [ ] **Prompt Caching**: Blocked on Hao (escalated 2026-03-24). Cannot fix from this repo.
 - [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% of verify-after-edit failures need code-level fix, not prompting. Deferred until prompting experiments complete.
 - [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
+
+## Session Notes (2026-04-11 ~17:25)
+- **EXP-142 KB INTEGRATION COMPLETE**: Agent-Specific Guard Calibration (Bob FM-3.3 exemption) fully indexed:
+  - INDEX.md: EXP-142 row added to experiments table (after EXP-140) — DEPLOYED status, H-095 test
+  - PRIORITY-TRACKER: Header updated with EXP-142 summary, H-095 row updated with EXP-142 evidence, EXP-142 added to experiment queue (🟡 DEPLOYED, 72h window)
+  - Coach authored experiment: Bob exempted from FM-3.3 verification-depth guard. Measurement window ends 2026-04-14T17:00Z
+  - H-095 P(H) unchanged at 0.88 (result pending)
 
 ## Session Notes (2026-04-11 ~11:00)
 - **EXP-135 KB INTEGRATION COMPLETE**: Guard Escalation Analysis fully indexed:
