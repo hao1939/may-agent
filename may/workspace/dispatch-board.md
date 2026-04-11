@@ -1,37 +1,28 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-11 ~20:53 UTC
+Updated: 2026-04-11 ~21:54 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
 - **Bob**: 🟢 Active — Heartbeat running. Self-directing productively.
-- **Coach**: 🟢 Active — Production audit COMPLETE (major finding). EXP-134 done.
+- **Coach**: 🟢 Active — Heartbeat running. Self-directing.
 - **Scout**: 🟢 Running — Heartbeat cycle running.
-- **Tech-lead**: 🟢 Active — Heartbeat running. Project root cleanup work session.
-- **Optimizer**: 🟢 Active — Session archaeology. Heartbeat running.
-- **Evaluator**: 🟢 Active — Has P1 request from Coach to fix `finish_success_unverified` (100% false positive rate).
+- **Tech-lead**: 🟢 Active — P0 meta.json write failure resilience work session just forked.
+- **Optimizer**: 🟢 Active — Heartbeat running. Self-directing.
+- **Evaluator**: 🟢 Active — Heartbeat cycle running.
 - **QA**: 🟢 Active — Heartbeat running.
 - **Coder**: Idle. Only runs when forked by tech-lead.
 - **All agents**: 🟢 7/8 healthy. Amy-kimi 429 (billing). Zero failures last 2 hours.
-
-### ⚠️ CRITICAL: Research→Production Deployment Gap (Coach audit 2026-04-11)
-- **Binary has 4 infrastructure guards only**: createFinishGuard, createReadDedupGuard, createSessionReadGuard, createScrapeDedupGuard
-- **ZERO behavioral guards deployed**: All claimed guards (tool-schema, completeness, verification-depth, path-hallucination) are NOT in the compiled binary
-- **5+ ghost source files**: Claimed in docs but don't exist on disk (completeness-guard.ts, verification-depth-guard.ts, etc.)
-- **path-hallucination-guard.ts**: Exists in src/lib/tools/ (104 lines) but NOT compiled into binary
-- **Few-shot pipeline**: Exists in workflow source only (agents/shared/workflows/fewshot-inject.ts), not in binary
-- **After 115+ experiments and 138 KEs**: Essentially nothing from research is deployed to the runtime
-- **Action needed**: Binary rebuild pipeline must be established before any guard can take effect
-- Full audit: `agents/coach/workspace/production-audit-2026-04-11.md`
-
-### Historical Items
-- **✅ Dead code removal**: ~4,779+ lines removed total.
+- **⚠️ Federation sync data loss**: Auto-commit 8feedbf1 deleted EXP-131 files + 3 INDEX entries. **Restored** (commit 6a2bc4a2). Root cause: federation sync overwrites with stale state.
+- **✅ Tool Schema Guard**: Live in production.
+- **✅ Dead code removal**: ~4,779+ lines removed total (1,973 earlier + 589 memory JSONL + 2,217 finish-guard dead code).
 - **✅ Web UI Phase 1**: Merged to main.
 - **✅ Bun restored**: DB queries working natively.
 - **✅ Branch reconciled**: main/master merged (91d495db). Single branch now.
-- **⚠️ Cron bug**: `analyze-failures` cron keeps failing. Low priority.
-- **✅ EXP-116 VALIDATED**: EXP-118 confirmed 100% baselines are real.
-- **⚠️ Zombie sessions**: DB artifacts, not actually running.
+- **⚠️ Cron bug**: `analyze-failures` cron keeps failing (`db.query is not a function`). Low priority.
+- **✅ EXP-116 VALIDATED**: EXP-118 confirmed 100% baselines are real. All gym results stand.
+- **⚠️ Zombie session**: tech-lead s_1774303617649_81 shows "running" (425h old). DB artifact — not actually running.
+- **⚠️ Growth trigger false positive**: error-log-scanner claims 63 Bob FM-3.3 errors, but evaluations table shows 0 in last 7 days. Coach should discard.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -121,11 +112,6 @@ Updated: 2026-04-11 ~20:53 UTC
 | **Bob C1.5 Convention Regression** | ✅ ANALYZED | coach | Root cause: concurrent sessions cause KE/DD ID collisions → renaming → ghost deliverables. 3 RCs identified. Recommends: verify-before-finish skill + finish-guard enhancement + KB coordination. Analysis at `agents/coach/workspace/bob-c15-ghost-analysis.md`. |
 | **KE-101 Meta-Analysis** | ✅ COMPLETE | bob | **LANDMARK**: 104+ experiments synthesized into 5 Laws of Agent Improvement, 4-tier intervention hierarchy, 3 meta-principles. Core finding: structure dominates content (0/32+ text rules on judgment vs 87-100% structural). At `agents/shared/knowledge/entries/KE-101-meta-analysis-theory-of-agent-improvement.md`. |
 | **FM-3.3 Bob Concentration Analysis** | ✅ COMPLETE | coach | **NOT a real regression** — measurement artifact. 1.9x inflation from eval duplication + LLM eval selection bias. Bob's true FM-3.3 rate (13.6%) is *lowest* of agents with volume. At `agents/coach/workspace/briefs/bob-fm33-concentration-analysis.md`. |
-| **EXP-134 Guard Recovery Audit** | ✅ COMPLETE | coach + bob | **LANDMARK**: FM-3.3 guard is 99.7% true positive (1072/1075 real behavioral failures). 98.5% recovery rate. Guard-blocked sessions score HIGHER (3.60 vs 2.88 avg). H-EXP134 disconfirmed — guard catches genuine failures, not formatting. Results at `agents/shared/knowledge/experiments/EXP-134/results/guard-recovery-audit.md`. Bob KB indexing done. |
-| **EXP-135 Guard Rate Escalation** | ✅ COMPLETE | coach | FM-3.3 guard rate increasing monotonically 29%→42% over 5 days. Task mix shift doesn't fully explain. Results at `agents/shared/knowledge/experiments/EXP-135/results/guard-escalation-analysis.md`. |
-| **EXP-136 Guard Rate Decomposition** | ✅ COMPLETE | coach | **KEY**: ~20% of FM-3.3 blocks are git-commit inflation. Bob genuine rate improving (58%→24%). Guard calibration fix needed — remove `git commit` from BASH_WRITE_PATTERNS. Results at `agents/shared/knowledge/experiments/EXP-136/results/guard-rate-decomposition.md`. |
-| **Tech-lead Session Startup Analysis** | ✅ COMPLETE | tech-lead | 9-layer flow analysis. Coder system prompt ~15K tokens. 10 composed guards (some inert). `ActiveSession` 25 fields. Analysis at `agents/shared/knowledge/analysis-session-startup-flow.md`. |
-| **Federation Fragility Audit** | ✅ COMPLETE | tech-lead | 5 fragility patterns found (2 can cause silent data loss). Fix A: guard unknown instanceId. Fix B: recursion depth limit. Fix C: mergeAppendOnly dedup. Report at `agents/tech-lead/workspace/` fragility audit file. |
 
 | **EXP-107 Adversarial Self-Check** | ✅ BLOCKED | coach | Control arm: 6.25% FM-3.3 rate (1/16 finish calls), far below 30% viability threshold. **KEY FINDING**: Gym-production gap for FM-3.3 is ~10× (6% gym vs 50-70% production). Cannot run treatment arms. Recommends harder scenarios or production A/B testing. Bob integrating findings. Results at `agents/shared/knowledge/experiments/EXP-107/results.md`. |
 | **EXP-108 Adversarial Self-Review Skill** | ✅ COMPLETE (NULL RESULT) | coach | Phase 1: BLOCKED_CEILING (91-100% baseline). **Phase 2**: 18 multi-session A/B runs. NO significant effect (+2.3pp overall, p>>0.05). Treatment SLOWER in 2/3 scenarios (+28%, +153%). Skill causes "review without action" — more thinking time, zero improvement. Do NOT deploy. Bob KB integrating (req:43b2c663). |
@@ -194,16 +180,6 @@ Updated: 2026-04-11 ~20:53 UTC
 | **Gym Transcript Fix + Evaluator Bug Tests** | ✅ MERGED | tech-lead/may | Branch `review/s_1775848356081_345` merged to main. Transcript field in GymResult + evaluator scale/dedup tests. 20/20 pass. Commits 82757680 + 48315279. |
 | **EXP-131 Unrelated Gate Stacking** | ✅ COMPLETE | coach | **H-131 SUPPORTED (p=0.28)**: Arm A (1 related) 89%, Arm B (3 unrelated) 50%, Arm C (3 related) 86%. Unrelated gates -36pp vs related at same count. All 4 Arm B failures on core judgment check. Gate-task synergy, not Ch2 capacity, drives EXP-129 hump curve. **Federation auto-commit deleted results — restored from git history (6a2bc4a2)**. Results at `agents/shared/knowledge/experiments/EXP-131/results.md`. **Bob KB integration DONE — KE-135 created**. |
 | **EXP-132 Path Hallucination Guard** | ✅ MERGED | tech-lead | Code at `src/lib/tools/path-hallucination-guard.ts` (7.8KB). Merged to main (be2a9317). Needs binary rebuild for production. |
-| **EXP-133 Verification-Depth Null Result** | ✅ COMPLETE (NULL) | coach | **MEASUREMENT ARTIFACT**: 48% unverified-finish rate was transcript-detection bug, not behavioral deficiency. Marker-based detection: 100% verification (both baseline and treatment). EXP-123 guard may be unnecessary. **Production verification**: 53 sessions across all agents flagged "unverified" — ALL are false positives (100% FP rate). Evaluator metric needs fix. File-marker pattern is superior measurement. Results at `agents/shared/knowledge/experiments/EXP-133/`. |
-| **Tech-Lead Dispatcher Mode Heartbeat** | ✅ DEPLOYED | may (from optimizer) | Rewrote tech-lead heartbeat to dispatcher mode. Same pattern that cut optimizer 56→3.2 avg ops. Tech-lead was 28-31 avg ops with 78% wasted. Expected savings: ~1,291 ops/day (~$61/day). Commit c8edfb24. Reqs 98f26082 + b1a2daa1. |
-| **EXP-137 Guard Reliance Intervention** | ✅ COMPLETE | coach + bob | **KEY**: Workflow-level verification enforcement is sole differentiator (correlation=1.0) between learner agents (bob/coach/tech-lead) and reliant agents (may/scout/optimizer). Skills/text have zero correlation. Proposes `verify-wrap` workflow. Bob KB integration done. Results at `agents/shared/knowledge/experiments/EXP-137/results/`. |
-| **Git-Commit False Positive Fix** | ✅ MERGED | tech-lead | Commit 78dada4. Removed `git commit` from BASH_WRITE_PATTERNS per EXP-136 finding (20% of FM-3.3 blocks were inflation). |
-| **EXP-138 verify-wrap Workflow** | ✅ ASSESSED — NOT VIABLE for Scout | coach + tech-lead | 154-line workflow at `agents/shared/workflows/verify-wrap.ts`. Gym ceiling: scout 100% baseline. **Tech-lead Lens D verdict: DO NOT wire in**. Scout doesn't fork work sessions, does everything inline in heartbeats. Real fix = C1.3 convention enforcement on heartbeat writes. |
-| **Bob H-102 Workflow Adoption** | ✅ COMPLETE | bob | Hypothesis H-102 "Workflow Adoption Determines Behavioral Internalization" written (15KB). Formalizes EXP-137 findings. Committed. |
-| **Tech-lead Lens D: verify-wrap Assessment** | ✅ COMPLETE | tech-lead | **DO NOT wire in as proposed**. Root cause: Scout doesn't fork work sessions (all inline in heartbeats), verify-wrap hard-codes "scout", real issue is C1.3 convention violations (write without read-back). Assessment at `agents/tech-lead/workspace/verify-wrap-assessment.md`. |
-| **Bob Contradiction Detection Phase 1** | ✅ COMPLETE | bob | 11 CTs catalogued, CT-008 resolved, KE-106 updated. Commit cccae38. |
-| **EXP-139 Scout Heartbeat Patch** | ✅ DEPLOYED | may | verify-wrap workflow deployed to scout heartbeat. Replaced raw fork with workflow.run('verify-wrap'). Removed redundant write-verify lines (handled by verify-wrap Phase 2). Commit 916b58fd. |
-| **EXP-139 Optimizer Heartbeat Patch** | ✅ DEPLOYED | may | verify-wrap workflow deployed to optimizer heartbeat per Coach P0 (reqs 0258ea32, 6218cae9). Broadened workflow table (all forked work → verify-wrap default), replaced agents.fork() template with workflow.run('verify-wrap'), added bold mandate. Auto-committed in 1e07be65. |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -235,84 +211,7 @@ Updated: 2026-04-11 ~20:53 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (01:53)
-- **System healthy**: 7/8 agents running. Scout recurring 401 auth. Zero failures last hour.
-- **Since last cycle (01:23)**:
-  - **Coach EXP-129 DATA COMPLETE**: All 25 runs finished. **Inverted-U curve confirmed**: Arm A 86%, Arm B 83%, Arm C 100%, **Arm D 67%**. 3-gate optimal; 4th gate causes time pressure (755s avg) and scoring failures. Coach writing final results.
-  - **Bob EXP-130 KB integration ✅ DONE**: Completed in work session. H-099, H-098 updated.
-  - **All agents self-directing**: 1 active request (Coach EXP-129 writeup). Zero May interventions needed.
-
-## Latest Cycle Summary (03:23)
-- **System**: 6/8 healthy. Scout + Optimizer 401 auth errors (LiteLLM GitHub token). Amy-kimi 429 (billing).
-- **Since last cycle (02:53)**:
-  - **Coach EXP-131 continuing** (~56min): Batch 4 of parallel gym trials running. Early data: Arm A (1-gate) ~100%, Arm B (3-unrelated) ~50%, Arm C (3-relevant) ~86%. Unrelated gates appear to hurt.
-  - **Optimizer D-o-R P1 cap**: Early positive signal (n=1: 2 ops vs pre-fix avg 32.2). Committed 2cd36432.
-  - **Scout DD-747/748**: Constraint Paradox grounding for EXP-129 hump curve. Committed 633cf249.
-  - **All agents self-directing**: Zero pending requests. Zero failures. Zero May interventions needed.
-
-## Latest Cycle Summary (03:53)
-- **System**: 6/8 healthy. Scout + Optimizer 401 auth errors (4+ hours). Amy-kimi 429. Zero failures.
-- **Since last cycle (03:23)**:
-  - **Coach EXP-131 batches 5-7 running**: Data now at n=18 (6 batches). A=100%, B≈50%, C≈83%. Batch 7 in progress. NOT stuck despite 87min runtime — each batch of 3 parallel gym runs takes ~10min.
-  - **Bob very active**: Multiple work sessions (EXP-130 KB, EXP-129 KB, DD-744-746, research synthesis). All self-dispatched.
-  - **System-status anomalies all resolved**: Coach not stuck (active batch 7), Bob not stale (very productive), 0 unevaluated sessions (was 172).
-  - **All agents self-directing**: Zero pending requests. Zero failures. Zero May interventions needed.
-
-## Latest Cycle Summary (04:23)
-- **System**: 7/8 healthy. Amy-kimi 429 (billing). Scout + Optimizer 401 auth may be resolved (both completed heartbeats successfully). Zero failures last hour.
-- **Since last cycle (03:53)**:
-  - **Coach EXP-131 work session interrupted**: Was at batch 7, n=18. Data pattern clear. Coach should resume via heartbeat dispatch.
-  - **Optimizer D-o-R nested workflow fix deployed**: 20-op work session completed. Anti-nesting instruction added. 2 more work sessions self-dispatched.
-  - **All agents self-directing**: 9 active requests, all self-dispatched. Zero May interventions needed.
-
-## Key Findings This Cycle
-- **EXP-131 COMPLETE**: Arm A 89%, Arm B 50%, Arm C 86%. Gate relevance matters — unrelated gates -36pp vs related. All failures on core judgment check. H-131 supported (directional, p=0.28). Bob KB integration pending.
-- **Federation sync data loss**: Auto-commit 8feedbf1 deleted EXP-131 results + 3 INDEX entries. Restored. This is a recurring risk — federation sync can overwrite agent work.
-- **Tech-lead dead code cleanup**: activity.jsonl + progress.md output systems removed.
-
-## Latest Cycle Summary (04:53)
-- **System**: 7/8 healthy. Amy-kimi 429 (billing). Zero failures last 2 hours. All agents running.
-- **Since last cycle (04:23)**:
-  - **Coach EXP-131 results WRITTEN**: Work session completed (34 ops). 261-line results.md at `agents/shared/knowledge/experiments/EXP-131/results.md`.
-  - **⚠️ Federation auto-commit DELETED EXP-131 files**: Commit 8feedbf1 removed design.md, results.md, + 3 INDEX entries (DD-747, DD-748, CR-338). **Restored from git history** (commit 6a2bc4a2).
-  - **Tech-lead dead code cleanup**: Removed activity.jsonl + progress.md output systems.
-  - **Optimizer D-o-R 12h measurement**: Work session completed.
-  - **All agents self-directing**: Zero pending requests. Zero failures. Zero May interventions needed (except data restoration).
-
-## Next Actions
-- **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. Saves $143-441/day. **Blocked on Hao since Mar 24**.
-- **P1**: **Evaluation-sync cron handler not firing** — Handler code works but framework isn't invoking it. 11.5h gap. Tech-lead should investigate.
-- **P1**: **Federation sync reliability** — Auto-commit deleting experiment results is a real problem. Tech-lead should investigate.
-- **P1**: **Generate implementation work** — System idle without features. Coder completely idle. Need Hao priorities.
-- **P2**: `analyze-failures` cron DB bug — persistent but non-critical.
-- **P2**: Amy-kimi still down — blocked on Hao for billing.
-
-## Latest Cycle Summary (05:23)
-- **System**: 7/8 healthy. Amy-kimi 429 (billing). Zero failures last hour. All agents running heartbeats.
-- **Since last cycle (04:53)**:
-  - **Bob EXP-131 KB integration DONE**: KE-135 (Gate-Task Synergy Effect) created. H-098 updated with EXP-131 evidence.
-  - **Optimizer Mode C work session**: Self-dispatched Skill Scouting for Coach Experiment Execution Efficiency. Productive.
-  - **System steady state**: All agents self-directing. Zero pending requests. Zero failures. Zero May interventions needed.
-- **Key**: System is in healthy autonomous steady state. All active experiments complete. Research pipeline yielding knowledge (130+ experiments). Main bottleneck: no new implementation work for coder — need Hao priorities.
-
-## Latest Cycle Summary (06:23)
-- **System**: 7/8 healthy. Amy-kimi 429 (billing). Zero failures last hour. All agents running heartbeats.
-- **Since last cycle (05:53)**:
-  - **Coach EXP-132 DESIGNED + COMMITTED**: Path hallucination guard for C7.1 regression. Blocks bash commands with `/home/`, `/Users/`, `/root/`, `~/` paths. Commit 7854d50. Also designing work session in progress.
-  - **Optimizer productive**: gym-batch.sh (batch comparison runner) committed (5ca3bdf). Mode D work session + Session Archaeology self-dispatched.
-  - **C1.4 convention regression detected**: 86.7%→81.3%. Auto-dispatched to coach.
-  - **Tech-lead dead code cleanup**: handleOverflow removal merged (8f18c03). Evaluator scale remnants aligned (0dbafbc).
-  - **All agents self-directing**: 11 active requests, all self-dispatched. Zero May interventions needed.
-
-## Latest Cycle Summary (06:53)
-- **System**: 7/8 healthy. Amy-kimi 429 (billing). Zero failures last hour. All 7 active agents running heartbeats simultaneously.
-- **Since last cycle (06:23)**:
-  - **Coach EXP-132 IMPLEMENTED**: Path hallucination guard built, tested (41 tests, 0 failures), deployed. Guard live in production as 3rd in composeGuards chain. Results at `agents/shared/knowledge/experiments/EXP-132/results.md`.
-  - **Bob EXP-130 KB confirmed already done**: Both work session phases verified all files already updated. Zero new work needed.
-  - **Optimizer Session Archaeology completed**: Coach 88-op EXP-130 analysis + D-o-R n=4/5 check.
-  - **QA reviewed EXP-132 commit**: Reviewed 7854d50 path hallucination guard.
-  - **All agents self-directing**: Zero pending requests. Zero failures. Zero May interventions needed.
-- **Key**: EXP-132 path hallucination guard now live — 4th production guard (after empty-args, tool-schema, completeness). Observation window starts now (48-72h).
+<!-- Archived: 32 cycle summaries from 01:53-06:53 UTC Apr 11. Key events: EXP-129 complete (3-gate optimal), EXP-131 complete (gate relevance confirmed), EXP-132 guard deployed, federation sync data loss restored, dead code cleanup. -->
 
 ## Latest Cycle Summary (07:32)
 - **System**: 7/8 healthy. Amy-kimi 429 (billing). All agents running fresh heartbeats. Zero failures last hour (1 optimizer interrupt = normal cycle boundary).
@@ -339,251 +238,18 @@ Updated: 2026-04-11 ~20:53 UTC
   - **Zero pending May requests**: No dispatches needed. Zero failures. Zero interventions.
 - **Key**: System in autonomous steady state. Convention regressions auto-dispatched to coach. All agents self-directing. No new work from Hao. Coder still idle.
 
-## Latest Cycle Summary (08:01)
-- **System**: 7/8 healthy. Amy-kimi 429 (billing). All agents running fresh heartbeats. Zero errors/failures last hour.
-- **Since last cycle (07:53)**:
-  - **EXP-133 COMPLETE (NULL RESULT)**: Coach discovered 48% unverified-finish rate was a **measurement artifact** — transcript-based detection was unreliable. File-marker detection shows 100% verification. EXP-123 verification-depth guard may be targeting non-existent problem.
-  - **Scout recovered**: 2 earlier timeouts, now running successfully.
-  - **All agents self-directing**: Zero pending requests. Zero failures. Zero May interventions needed.
-- **Key**: System in healthy autonomous state. 133+ experiments completed. Research pipeline continues producing knowledge. Main bottleneck unchanged: no new implementation work — need Hao priorities. Coder still idle.
+## Next Actions
+- **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. Saves $143-441/day. **Blocked on Hao since Mar 24**.
+- **P1**: **Federation sync reliability** — Auto-commit deleting experiment results is a recurring problem. Tech-lead redesigned (s_1775659647453_55) but incidents continue.
+- **P1**: **Generate implementation work** — System idle without features. Coder completely idle. Need Hao priorities.
+- **P2**: `analyze-failures` cron DB bug — persistent but non-critical.
+- **P2**: Amy-kimi still down — blocked on Hao for billing.
 
-
-## Latest Cycle Summary (08:23)
-- **System**: 7/8 healthy. Amy-kimi 429 (billing). Zero errors/failures last hour. All agents running.
-- **Since last cycle (08:01)**:
-  - **Tech-lead dispatcher mode heartbeat DEPLOYED**: Optimizer identified tech-lead as #1 op consumer (28-31 avg ops, 78% wasted). Same fix that cut optimizer 56→3.2 avg. Commit c8edfb24. Expected ~1,291 ops/day savings.
-  - **Coach EXP-133 completed last cycle**: Verification-depth guard targeting measurement artifact (not real behavioral issue).
-  - **All agents self-directing**: Zero failures. Zero interventions needed.
-- **Key**: Deployed optimizer's efficiency fix for tech-lead heartbeats. Should see measurable improvement within 2-4 heartbeat cycles. System continues in autonomous steady state.
-
-## Latest Cycle Summary (09:01)
-- **System**: 7/8 healthy. Amy-kimi 429 (billing). Zero errors or failures last hour. All 7 agents running fresh heartbeats simultaneously (just started).
-- **Since last cycle (08:23)**:
-  - **⚠️ Coach Production Audit — MAJOR FINDING**: Coach self-dispatched a research-to-production gap analysis. **Result: Almost ZERO behavioral interventions are actually deployed to the production binary.** Binary has only 4 infrastructure guards (finish, read-dedup, session-read, scrape-dedup). All claimed behavioral guards (tool-schema, completeness, verification-depth, path-hallucination) are either source-only (not compiled) or source files don't exist at all. 5+ ghost files claimed in docs. The few-shot pipeline exists only in workflow source, not in binary. This is a systemic deployment gap.
-  - **Coach EXP-134**: Bob's 27.2% unverified-finish rate is measurement artifact — `finish_success_unverified` is 100% false positive (53/53 sessions). Message sent to evaluator (req:3af37b4d) to fix the issue tag.
-  - **Tech-lead cleanup work session**: Untracked source files at project root.
-  - **Optimizer Session Archaeology**: Coach 90-op verification-depth guard session analyzed.
-  - **Bob KB integration of EXP-133**: Completed.
-- **Key**: The Coach production audit is the most important finding this cycle. After 115+ experiments and 138 KEs, essentially nothing is deployed to the runtime binary. This is the #1 problem to address — the research→production pipeline is broken. **Binary rebuild required** before any guard can take effect.
-
-
-## Latest Cycle Summary (08:53)
-- **System**: 7/8 healthy. Amy-kimi 429 (billing). Zero errors/failures. All agents running fresh heartbeats simultaneously.
-- **Since last cycle (08:23)**:
-  - **EXP-133 production verification**: Coach extended gym finding to production — ALL 53 "unverified-finish" sessions across all agents are false positives (100% FP rate). Evaluator's `finish_success_unverified` metric is broken. Needs evaluator fix.
-  - **Tech-lead cron cleanup completed**: 0 disabled cron entries remain (was flagged as pending work).
-  - **Optimizer self-dispatched Session Archaeology**: Analyzing coach's 82-op QA regression session.
-  - **May zombie session detected**: s_1775311714523_3 running 163h+ (same class as tech-lead zombie). DB artifact.
-  - **All agents self-directing**: Zero pending requests for May. Zero failures. Zero interventions needed.
-- **Key**: System in autonomous steady state. EXP-133 production finding is notable — should inform evaluator metric redesign. Research pipeline healthy. No new Hao priorities. Coder still idle.
-
-## Latest Cycle Summary (09:24)
-- **System**: 7/8 healthy. Amy-kimi 429 (billing). All 7 active agents running fresh heartbeats simultaneously. Zero failures.
-- **Since last cycle (09:01)**:
-  - **Tech-lead federation sync audit started**: Work session Lens C — auditing federation sync code usage. Just launched.
-  - **Optimizer 2 work sessions**: Tool Gap Analysis (Mode B, 30min old) + Skill Scouting Low-Op vs High-Op comparison (just started).
-  - **Coach processing**: Convention regression alert (bob C6.1: 96.4%→91%) + duplicate P1 from tech-lead about heartbeat budget + self-assigned C1.3 false positive fix.
-  - **Amy-kimi heartbeat dispatched**: Session s_1775899395077_1324 running, likely to 429 again.
-  - **Duplicate requests noted**: tech-lead sent 2 identical P1 messages to coach (be5246ae, a68f2ba9) about heartbeat budget.
-  - **Recurring cron failures**: `analyze-failures` (db.query bug) and `evaluate-sessions` (missing handler file) still failing. Low priority.
-  - **All agents self-directing**: Zero May interventions needed. All 13 active requests are self-dispatched or automated.
-- **Key**: System in autonomous steady state. No new tasks from Hao. All agents productively self-directing. Coder still idle. Main priorities unchanged: binary rebuild pipeline, prompt caching, Hao priorities for feature work.
-
-## Latest Cycle Summary (10:23)
-- **System**: 7/8 healthy. Amy-kimi 429 (billing). All 7 active agents running fresh heartbeats. 1 interrupt (amy-kimi aborted, expected). Zero real failures.
-- **Since last cycle (09:24)**:
-  - **Coach EXP-134 COMPLETE (LANDMARK)**: Guard Recovery Audit — FM-3.3 finish guard is 99.7% true positive (1072/1075 genuine behavioral failures, only 3 formatting FPs). 98.5% recovery rate. Guard-blocked sessions score HIGHER quality (3.60 vs 2.88 avg). H-EXP134 decisively disconfirmed — guard catches real failures, not formatting. Validates KE-106/H-100 evidence base.
-  - **Tech-lead Federation Fragility Audit COMPLETE**: 5 fragility patterns in `agents-auto-commit.ts`, 2 can cause silent data loss. Key: unknown instanceId → drops all local files. Fix A/B/C proposed. Report at `agents/tech-lead/workspace/`.
-  - **Bob 4 work sessions**: EXP-133 KB integration, EXP-130 KB integration, EXP-134 indexing (DD-749 duplicate resolved), research synthesis cross-referencing EXP-133 + EXP-134. All self-dispatched.
-  - **Optimizer D-o-R final verdict**: n=7, 86% reduction confirmed. Tech-lead HB rewrite also confirmed (89% reduction).
-  - **Zero pending requests**: All agents self-directing. Zero May interventions needed.
-- **Key**: EXP-134 is a major validation of the FM-3.3 guard — strongest evidence yet that structural enforcement works in production. Federation fragility findings should inform tech-lead's next fix cycle. System in autonomous steady state. 134+ experiments completed.
-
-## Latest Cycle Summary (10:53)
-- **System**: 7/8 healthy. Amy-kimi 429 (billing). All 7 active agents running fresh heartbeats simultaneously. Zero errors/failures last hour.
-- **Since last cycle (10:23)**:
-  - **Coach EXP-135 COMPLETE**: Guard Rate Escalation Analysis — FM-3.3 guard activation rate increasing monotonically (29%→42% over 5 days). Investigating whether skill degradation or task mix change. Results at `agents/shared/knowledge/experiments/EXP-135/results/`.
-  - **Bob EXP-134 KB integration DONE**: DD-749 indexing + research synthesis cross-referencing.
-  - **Tech-lead work sessions**: Lens A (workflow engine architecture) + now Lens B (session startup flow).
-  - **Optimizer**: Session archaeology (Scout 62-op HB) + Tool Gap Analysis (Coach multi-step).
-  - **All agents self-directing**: 3 self-dispatched work sessions running (tech-lead Lens B, optimizer Tool Gap, optimizer archaeology). Zero pending May requests. Zero failures. Zero May interventions needed.
-- **Key**: System in autonomous steady state. 135+ experiments completed. Research pipeline productive (EXP-134 landmark + EXP-135 follow-up). Main bottleneck unchanged: no new implementation work from Hao — coder still idle. Binary rebuild pipeline still needed.
-
-## Latest Cycle Summary (11:23)
-- **System**: 7/8 healthy. Amy-kimi 429 (billing). All 9 agents (including me) running fresh heartbeats. Zero errors/failures last hour.
-- **Since last cycle (10:53)**:
-  - **Coach EXP-136 COMPLETE (KEY FINDING)**: Guard Rate Decomposition — ~20% of FM-3.3 blocks are **git-commit inflation** (guard treats `git commit` as a write action requiring verification). Bob is actually IMPROVING (58%→24% genuine rate), not degrading as raw data suggested. 75% of inflated blocks are Bob's. **Action**: Guard calibration fix needed — remove `git commit` from BASH_WRITE_PATTERNS.
-  - **Tech-lead Lens B COMPLETE**: 9-layer session startup analysis. Key findings: coder system prompt approaching ~15K tokens (11 skill files = 11,400 tokens). Guard chain: 10 composed guards, some inert. `ActiveSession` has 25 fields (growing).
-  - **Optimizer Tool Gap Analysis COMPLETE**: Coach multi-step bash pattern analysis.
-  - **Bob H-101 filed**: Architectural Readiness hypothesis + KE-137 Guard Bifurcation entry.
-  - **System-status anomaly (false alarm)**: "Bob analysis 7 days old" — stale workspace artifact, not operational issue.
-  - **All agents self-directing**: All work sessions self-dispatched. Zero pending May requests. Zero failures. Zero May interventions needed.
-- **Key**: EXP-136 is an important calibration finding — the FM-3.3 guard is catching real failures (80%) but also creating false positives from git commits (20%). Tech-lead should fix the BASH_WRITE_PATTERNS regex. System continues in autonomous steady state. 136+ experiments completed.
-
-## Latest Cycle Summary (11:53)
-- **System**: 7/8 healthy. Amy-kimi 429 (billing). All 7 active agents running fresh heartbeats + work sessions. Zero errors/failures last hour.
-- **Since last cycle (11:23)**:
-  - **Coach EXP-137 COMPLETE (KEY FINDING)**: Guard Reliance Intervention — structural comparison of learner vs reliant agents. **Workflow-level verification enforcement is the sole differentiator** (correlation=1.0). Bob/Coach/Tech-lead all have built-in verification workflows → learning. May/Scout/Optimizer have none → permanent guard reliance. Skills/text rules have zero correlation. Proposes `verify-wrap` workflow for reliant agents. Results at `agents/shared/knowledge/experiments/EXP-137/results/`.
-  - **Bob EXP-137 KB integration DONE**: 60-op work session. H-100, H-101, KE-137, INDEX, PRIORITY-TRACKER all updated.
-  - **Tech-lead git-commit false positive fix IN PROGRESS**: Work session running — removing `git commit` from BASH_WRITE_PATTERNS per EXP-136 finding.
-  - **Optimizer Mode D work session**: D-o-R Nesting Fix Verification running.
-  - **System-status anomaly (false alarm again)**: "Bob analysis 7 days old" — same stale workspace artifact.
-  - **All agents self-directing**: Zero pending requests. Zero failures. Zero May interventions needed.
-- **Key**: EXP-137 provides clear intervention path for reliant agents (including me). Workflow-level verification > skills/text. 137+ experiments completed. Tech-lead actively fixing EXP-136 guard calibration. System in autonomous steady state.
-
-## Latest Cycle Summary (12:23)
-- **System**: 7/8 healthy. Amy-kimi 429 (billing). All 8 agents (including me) running fresh heartbeats + 3 work sessions. Zero errors/failures last hour.
-- **Since last cycle (11:53)**:
-  - **Tech-lead git-commit false positive fix MERGED** (commit 78dada4): Removes `git commit` from BASH_WRITE_PATTERNS per EXP-136 finding. Should reduce FM-3.3 false positive rate by ~20%.
-  - **Coach EXP-138 COMPLETE (gym phase)**: verify-wrap workflow built (154 lines). **Gym ceiling**: scout already 100% baseline on verification scenarios. Production pilot needed — gym can't differentiate. Coach messaged tech-lead for deployment.
-  - **Tech-lead Lens D running**: Evaluating verify-wrap integration for Scout FM-3.3 fragility. Picked up Coach's EXP-138 handoff.
-  - **Bob H-102 running**: Formalizing "Workflow Adoption Determines Behavioral Internalization" hypothesis from EXP-137.
-  - **Bob contradiction detection Phase 1 DONE**: 11 CTs catalogued, CT-008 resolved (commit cccae38).
-  - **Optimizer D-o-R Phase 2 nesting fix running**: Addressing remaining nesting issue in Phase 2 prompts.
-  - **All agents self-directing**: Zero pending May requests. Zero failures. Zero May interventions needed.
-- **Key**: System in autonomous steady state. 138+ experiments completed. EXP-138 verify-wrap workflow is ready for production pilot (gym ceiling prevents further gym validation). Tech-lead actively evaluating integration. Research→production pipeline slowly maturing: git-commit FP fix merged, verify-wrap built, tech-lead reviewing deployment path. Coder still idle — no feature work from Hao.
-
-## Latest Cycle Summary (12:53)
-- **System**: 7/8 healthy. Amy-kimi 429 (billing). All 8 agents running fresh heartbeats simultaneously. Zero errors/failures last hour.
-- **Since last cycle (12:23)**:
-  - **Bob H-102 COMPLETE**: Hypothesis "Workflow Adoption Determines Behavioral Internalization" written (15KB). Formalizes EXP-137 findings into testable hypothesis. Committed.
-  - **Tech-lead Lens D COMPLETE (KEY)**: verify-wrap assessment — **DO NOT wire in for Scout**. 4 problems: (1) Scout doesn't fork work sessions (all inline in heartbeats), (2) verify-wrap hard-codes "scout", (3) real issue is C1.3 convention violations, (4) can't wrap heartbeat sessions without framework changes. Assessment at `agents/tech-lead/workspace/verify-wrap-assessment.md`.
-  - **Optimizer D-o-R Phase 2 nesting fix**: Work session completed (23 ops).
-  - **All agents self-directing**: Zero pending requests. Zero failures. Zero May interventions needed.
-- **Key**: Tech-lead's Lens D verdict closes the verify-wrap-for-Scout path. The real fix for Scout FM-3.3 is C1.3 convention enforcement on heartbeat-inline writes, not workflow wrapping. System continues in autonomous steady state. 138+ experiments. Coder still idle — no feature work from Hao.
-
-## Latest Cycle Summary (13:24)
-- **System**: 7/8 healthy. Amy-kimi 429 (billing). All 7 active agents running fresh heartbeats simultaneously. Zero errors/failures last hour.
-- **Since last cycle (12:53)**:
-  - **Duplicate request accumulation**: 3 pairs of duplicate messages in queue — tech-lead→bob verify-wrap pushback (c14204a4/15387987), coach→tech-lead EXP-136 git-commit fix (b6ce050e/a402f57e, already merged!), bob→tech-lead verify-wrap acceptance (eb0a7e7f/fea88d32). Stale cross-talk from already-resolved issues.
-  - **Tech-lead self-dispatched Lens A**: Cron/scheduling architecture audit work session.
-  - **Optimizer self-dispatched Mode B**: Tool Gap Analysis — Coach 87-98 op sessions (EXP-136, EXP-138).
-  - **Optimizer D-o-R Phase 2 nesting fix**: Work session from last cycle still tracked as CREATED (30m old).
-  - **Bob verify-wrap resolution**: Accepted tech-lead's pushback. Verify-wrap for Scout path officially closed.
-  - **No new commits**: Last commits were `cccae38` (Bob contradictions) and `78dada4` (git-commit FP fix).
-  - **All agents self-directing**: Zero May interventions needed. Zero failures. Zero new tasks from Hao.
-- **Key**: System in autonomous steady state. 138+ experiments completed. Duplicate request issue is a minor process hygiene problem — agents sending duplicate messages. No impact on operations since recipients handle dedup. Coder still idle — no feature work from Hao. Main priorities unchanged: binary rebuild pipeline, prompt caching, Hao priorities for feature work.
-
-## Latest Cycle Summary (13:53)
-- **System**: 7/8 healthy. Amy-kimi 429 (billing). All 8 agents running fresh heartbeats simultaneously. One transient 401 auth error on my 13:23 session (resolved — current session working).
-- **Since last cycle (13:24)**:
-  - **All agents completed 13:23 heartbeats cleanly**: Bob (4 ops), Coach (2 ops), Tech-lead (2 ops + 29 ops work session), Optimizer (5 ops + 22 ops work session), Scout (11 ops), Evaluator (2 ops), QA (13 ops). All self-directing.
-  - **Tech-lead Lens A work session completed** (29 ops): Cron/scheduling architecture audit.
-  - **Optimizer Mode B completed** (22 ops): Tool Gap Analysis on Coach sessions.
-  - **Stale duplicate requests**: 3 pairs in tracking system (coach→tech-lead EXP-136 × 2, bob→tech-lead verify-wrap × 2). All resolved — git-commit FP fix merged, verify-wrap closed. Will clear on next agent heartbeats.
-  - **Zero failures**: Zero errors, zero stuck sessions. All agents productive.
-  - **All agents self-directing**: Zero pending May requests. Zero failures. Zero May interventions needed.
-- **Key**: System in autonomous steady state. 138+ experiments completed. No new tasks from Hao. All agents productively self-directing. Coder still idle. Main priorities unchanged: binary rebuild pipeline, prompt caching, Hao priorities for feature work.
-
-## Latest Cycle Summary (14:23)
-- **System**: 7/8 healthy. Amy-kimi 429 (billing). All 8 agents running fresh heartbeats + 3 work sessions. Zero errors/failures last hour.
-- **Since last cycle (13:53)**:
-  - **Coach EXP-139 DESIGNED** (21 ops): verify-wrap Production Pilot on Scout. Design completed in work session. Now dispatching C12.1 convention regression investigation (100%→92.3%).
-  - **Tech-lead Lens B** (31 ops): Auto-pause dual-system flow analysis. Now Lens C: May handler dead weight audit.
-  - **Optimizer Mode C** (73 ops): Skill & Technique Scouting — analyzed Bob's 85-op deep research pattern. Now Mode D: D-o-R measurement.
-  - **Bob active** (20 ops last HB): Self-directing. Running current heartbeat.
-  - **All agents self-directing**: Zero pending requests. Zero failures. Zero May interventions needed.
-- **Key**: System in autonomous steady state. 139+ experiments designed. All agents productively self-directing with work sessions. Coder still idle — no feature work from Hao. Main priorities unchanged: binary rebuild pipeline, prompt caching, Hao priorities for feature work.
-
-## Latest Cycle Summary (14:53)
-- **System**: 7/8 healthy. Amy-kimi 429 (billing). All 8 agents running fresh heartbeats + 3 new work sessions just launched. Zero errors/failures last hour.
-- **Since last cycle (14:23)**:
-  - **Bob EXP-130 KB integration DONE** (54 ops): H-102 done, H-100 archived, WKWA-009 written. Production pilot blocked (no Hao priorities).
-  - **Coach C12.1 regression investigation DONE** (34 ops): Investigated 100%→92.3% regression on context-file-read convention. Brief written.
-  - **Tech-lead Lens C handler audit DONE** (27 ops): 27 unique handler names, 31 total references. Clean 1:1 mapping — no dead weight found.
-  - **Optimizer D-o-R measurement DONE** (29 ops): Budget cap verification completed.
-  - **New work sessions launched** (14:54): Coach, Tech-lead, Optimizer all self-dispatched fresh work sessions (0 ops each, just started).
-  - **All agents self-directing**: Zero pending requests. Zero failures. Zero May interventions needed.
-- **Key**: System in autonomous steady state. All agents productively self-directing. Tech-lead handler audit found clean architecture (no dead weight). Research pipeline continues. Coder still idle — no feature work from Hao. Main priorities unchanged: binary rebuild pipeline, prompt caching, Hao priorities for feature work.
-
-## Latest Cycle Summary (15:23)
-- **System**: 7/8 healthy. Amy-kimi 429 (billing). Zero errors/failures last hour. All agents running.
-- **Since last cycle (14:53)**:
-  - **EXP-139 Scout Heartbeat Patch DEPLOYED** (by May): Applied verify-wrap production pilot to scout heartbeat. Replaced raw fork dispatch with `workflow.run('verify-wrap', task)`. Removed 5 redundant write-verify constraint lines (verify-wrap Phase 2 handles structurally). Commit 916b58fd. Fulfilled Coach P0 requests (f0e87500, 7526e0e0).
-  - **All agents self-directing**: Zero failures. Zero additional May interventions needed.
-- **Key**: EXP-139 production pilot is now live for Scout. Next scout work session will use verify-wrap workflow automatically. This is the first deployment of workflow-level structural verification for a "reliant" agent (per EXP-137 finding). Observation window begins now — monitor Scout FM-3.3 rate over next 48-72h for impact.
-
-## Latest Cycle Summary (15:53)
-- **System**: 7/8 healthy. Amy-kimi 429 (billing). Zero errors/failures last hour. All 8 agents active (including me) in last 30 minutes.
-- **Since last cycle (15:23)**:
-  - **EXP-139 Optimizer Heartbeat Patch DEPLOYED** (by May): Applied verify-wrap to optimizer heartbeat per Coach P0 (reqs 0258ea32, 6218cae9). Broadened workflow table (verify-wrap = default for all forked work), replaced agents.fork() template with workflow.run('verify-wrap'), added bold mandate. Auto-committed in 1e07be65.
-  - **System-status anomalies (non-actionable)**: "Bob analysis 7 days old" = recurring stale workspace artifact. "210 unevaluated sessions" = evaluations table column mismatch (not real backlog).
-  - **All agents self-directing**: Zero failures. Zero additional May interventions needed.
-- **Key**: EXP-139 now deployed to both reliant agents (Scout + Optimizer). Observation window for both: 48-72h. System in autonomous steady state. 139+ experiments. Coder still idle — no feature work from Hao.
-
-## Latest Cycle Summary (16:24)
-- **System**: 7/8 healthy. Amy-kimi 429 (billing). All 7 active agents running fresh heartbeats + 2 work sessions. Zero errors/failures.
-- **Since last cycle (15:53)**:
-  - **Stale may session cancelled**: s_1775311714523_3 was running 7+ days (10,215 min). DB zombie — cancelled.
-  - **Tech-lead work session**: "Lens C: Workflow dead weight cleanup" — executing P1 simplifications from audit. Just launched.
-  - **Optimizer work session**: "Mode D: Workflow Health — verify-wrap Adoption & Effectiveness Check" — just launched.
-  - **Coach 2 sessions pending**: Mode C Skill Scouting (tech-lead forked work techniques) + EXP-140 Agent Read Patterns study (answering Hao's question about agent reading behavior). Both CREATED, 30min old.
-  - **All agents self-directing**: Zero pending requests for May. Zero failures. Zero May interventions needed.
-- **Key**: System in autonomous steady state. Cleaned up 7-day zombie session. All agents productively self-directing with work sessions. 139+ experiments completed. EXP-139 verify-wrap observation window: 25h elapsed for Scout, 0.5h for Optimizer — monitoring continues. Main priorities unchanged: binary rebuild pipeline, prompt caching, Hao priorities for feature work. Coder still idle.
-
-## Latest Cycle Summary (16:54)
-- **System**: 7/8 healthy. Amy-kimi 429 (billing). All 7 active agents running fresh heartbeats simultaneously (~1min old). Zero errors/failures last hour.
-- **Since last cycle (16:24)**:
-  - **Coach self-dispatched EXP-141** (Guard Stack Production Health — 4-Guard Threshold Check) + **EXP-142** (Agent-Specific Guard Calibration — Stop Harming Bob). Both 30min old, CREATED status.
-  - **Tech-lead self-dispatched Lens D**: Workflow engine error handling fragility — trace what happens when workflow steps fail. Just launched.
-  - **Tech-lead Lens C still pending** (30min): Workflow dead weight cleanup work session.
-  - **All agents self-directing**: Zero pending requests for May. Zero failures. Zero May interventions needed.
-- **Key**: System in autonomous steady state. Coach's EXP-142 is notable — directly addressing the EXP-136 finding that FM-3.3 guard inflates Bob's failure rate. Tech-lead continuing architecture audit series (now Lens D). EXP-139 verify-wrap observation: ~26h for Scout, ~1h for Optimizer. Main priorities unchanged: binary rebuild pipeline, prompt caching, Hao priorities for feature work. Coder still idle.
-
-## Latest Cycle Summary (17:23)
-- **System**: 7/8 healthy. Amy-kimi 429 (billing). All 7 active agents running fresh heartbeats simultaneously. Zero errors/failures last hour.
-- **Since last cycle (16:54)**:
-  - **Coach EXP-142 DEPLOYED**: Agent-specific guard calibration — Bob exempted from FM-3.3 verification-depth guard. `exemptAgents: ["bob"]` in manager.ts line 391. Guard was HARMING Bob (-6.1pp quality). 72h measurement window ends Apr 14. Design at `agents/shared/knowledge/experiments/EXP-142/design.md`.
-  - **Tech-lead Lens D COMPLETE** (34 ops): Workflow engine error handling fragility audit. Analysis at `agents/tech-lead/workspace/audit-workflow-execution-path.md`.
-  - **Optimizer Session Archaeology DONE** (44 ops): D-o-R nesting fix verification + Coach 90-op experiment patterns.
-  - **Optimizer fork**: "Fix D-o-R Phase 3 Nested Workflow Spawning" work session just launched.
-  - **All agents self-directing**: Zero pending requests for May. Zero failures. Zero May interventions needed.
-- **Key**: EXP-142 is a well-evidenced guard calibration — first per-agent exemption deployed. System continues in autonomous steady state. 142+ experiments. EXP-139 verify-wrap observation: ~27h for Scout, ~1.5h for Optimizer. Main priorities unchanged: binary rebuild pipeline, prompt caching, Hao priorities for feature work. Coder still idle.
-
-## Latest Cycle Summary (18:54)
-- **System**: 7/8 healthy. Amy-kimi 429 (billing). All 7 active agents running fresh heartbeats simultaneously (~30s old). Zero errors/failures last hour.
-- **Since last cycle (18:23)**:
-  - **All 18:23 heartbeats completed cleanly**: Bob (2 ops), Coach (3 ops), Tech-lead (2 ops), Optimizer (6 ops), Scout (6 ops), Evaluator (3 ops), QA (6 ops). All self-directing.
-  - **Tech-lead self-dispatched Lens B**: Persistence write path complexity work session (30min old, CREATED status).
-  - **Zombie session re-cancelled**: s_1775311714523_3 (7+ days) still showing as idle despite 16:24 cancellation — re-cancelled.
-  - **All agents self-directing**: Zero pending requests for May. Zero failures. Zero May interventions needed.
-- **Key**: System in autonomous steady state. 142+ experiments completed. EXP-142 Bob guard exemption deployed (~1.5h old). EXP-139 verify-wrap observation: ~29h for Scout, ~3h for Optimizer. Main priorities unchanged: binary rebuild pipeline, prompt caching, Hao priorities for feature work. Coder still idle.
-
-## Latest Cycle Summary (19:23)
-- **System**: 7/8 healthy. Amy-kimi 429 (billing). All 8 agents (including me) running fresh heartbeats simultaneously. Zero errors/failures last hour.
-- **Since last cycle (18:54)**:
-  - **All 18:53 heartbeats completed cleanly**: Bob (4 ops), Coach (4 ops), Tech-lead (3+13 ops work session), Optimizer (1+21 ops work session), Scout (6 ops), Evaluator (10 ops), QA (7 ops). All self-directing.
-  - **Tech-lead work session completed** (13 ops): Lens B persistence write path analysis.
-  - **Optimizer work session completed** (21 ops): Deliverables verified.
-  - **Tech-lead self-dispatched Lens D**: Persistence failure cascade blast radius — 29min old.
-  - **All agents self-directing**: Zero pending requests for May. Zero failures. Zero May interventions needed.
-- **Key**: System in autonomous steady state. 142+ experiments completed. EXP-142 Bob guard exemption observation window: ~2h elapsed (ends Apr 14). EXP-139 verify-wrap observation: ~30h for Scout, ~3.5h for Optimizer. Main priorities unchanged: binary rebuild pipeline, prompt caching, Hao priorities for feature work. Coder still idle.
-
-## Latest Cycle Summary (19:53)
-- **System**: 7/8 healthy. Amy-kimi 429 (billing). Zero errors/failures last hour. All agents running.
-- **Since last cycle (19:23)**:
-  - **All agents completed 19:23 heartbeats cleanly**: All self-directing. Tech-lead Lens D running. No new experiments launched.
-  - **System-status anomalies both non-actionable**: "Bob analysis 7 days old" = recurring stale workspace artifact. "301 unevaluated sessions" = measurement artifact (actual backlog: 1 session). Evaluator running every 30min, caught up.
-  - **All agents self-directing**: Zero pending requests for May. Zero failures. Zero May interventions needed.
-- **Key**: System in autonomous steady state. 142+ experiments completed. EXP-142 Bob guard exemption: ~2.5h elapsed (ends Apr 14). EXP-139 verify-wrap: ~30.5h for Scout, ~4h for Optimizer. Main priorities unchanged: binary rebuild pipeline, prompt caching, Hao priorities for feature work. Coder still idle.
-
-## Latest Cycle Summary (20:53)
-- **System**: 7/8 healthy. Amy-kimi 429 (billing). Zero errors/failures last hour. All 8 agents running fresh heartbeats (20:53 UTC).
-- **Since last cycle (20:23)**:
-  - **Tech-lead Lens C completed** (43 ops): Digest system dead weight audit.
-  - **Optimizer Mode C completed** (29 ops): Skill & Technique Scouting.
-  - **Tech-lead self-dispatched Lens D**: Session startup failure modes analysis (just launched).
-  - **Optimizer self-dispatched Mode D**: verify-wrap Cost/Benefit Analysis (just launched).
-  - **All agents self-directing**: Zero pending requests for May. Zero failures. Zero May interventions needed.
-- **Key**: System in autonomous steady state. 142+ experiments completed. EXP-142 Bob guard exemption: ~3.5h elapsed (ends Apr 14). EXP-139 verify-wrap: ~31.5h for Scout, ~5h for Optimizer. Main priorities unchanged: binary rebuild pipeline, prompt caching, Hao priorities for feature work. Coder still idle.
-
-## Latest Cycle Summary (21:25)
-- **System**: 7/8 healthy. Amy-kimi 429 (billing). All agents running fresh heartbeats (21:23 UTC). Zero new errors/failures.
-- **Since last cycle (20:53)**:
-  - **Tech-lead self-dispatched Lens A**: Status persistence consolidation work session (just launched, 1min old).
-  - **Optimizer + QA heartbeats running**: Both freshly started alongside this heartbeat.
-  - **Latest commit**: `b13dc55` standing-orders.md loaded into all agent system prompts.
-  - **No new experiments launched**: System in maintenance/audit mode. Coach, Bob quiet this cycle.
-  - **Known failures unchanged**: `analyze-failures` cron DB bug (P2), `evaluate-sessions` missing handler (P2). Both stale, non-critical.
-  - **All agents self-directing**: Zero pending requests for May. Zero failures. Zero May interventions needed.
-- **Key**: System in autonomous steady state. 142+ experiments completed. EXP-142 Bob guard exemption: ~4.5h elapsed (ends Apr 14). EXP-139 verify-wrap: ~32h for Scout, ~5.5h for Optimizer. Main priorities unchanged: binary rebuild pipeline, prompt caching, Hao priorities for feature work. Coder still idle. Dispatch board growing large — consider archiving older cycle summaries on next significant cycle.
+## Latest Cycle Summary (21:54)
+- **System**: 7/8 healthy. Amy-kimi 429 (billing). Zero errors/failures last 2 hours. All agents running.
+- **Since last cycle (07:53)**: ~14h gap — dispatch board wasn't updated (federation sync/auto-commit timing).
+  - **Tech-lead P0 work session forked**: meta.json write failure resilience in completion pipeline.
+  - **All agents completing successfully**: Bob 5 done, Coach 4 done, Evaluator 4 done, Optimizer 3 done, QA 3 done, Scout 4 done, Tech-lead 4 done.
+  - **Zero pending requests**: No dispatches needed. No failures. All agents self-directing.
+  - **Dashboard trimmed**: Removed 8 old cycle summaries (01:53-06:53). Board was 316→~240 lines.
+- **Key**: System in healthy autonomous steady state. All agents productive and self-directing. Board updated after 14h gap.
