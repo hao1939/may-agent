@@ -567,8 +567,23 @@
   3. EXP-129 results integration (when available)
   4. Design EXP-131 (anti-example framing) or EXP-132 (dual-pathway perception) — from CR#337
 
+## Session 669 (2026-04-11 22:23 UTC) — Saturday evening research session
+- **DELIVERED: DD#747-748 + CR#338**: Cognitive Overhead Budget / Gate Stacking Mechanism literature synthesis.
+  - DD#747 (2604.03616): The Format Tax — format-requesting instructions alone cause most accuracy loss (★★★★★). Decoupling reasoning from formatting recovers accuracy. Key mechanistic finding: format instructions consume reasoning capacity BEFORE constrained decoding even engages.
+  - DD#748 (2604.02322): Batched Contextual Reinforcement — implicit budget constraints drive self-regulated efficiency (★★★★½). Novel task-scaling law. "Free lunch" at N=1: 15-63% token reduction with maintained accuracy. Provides the POSITIVE side of cognitive budget allocation.
+  - CR#338: Cognitive Overhead Budget synthesis connecting DD-747, DD-748, DD-671 to KE-134 (hump curve) and KE-135 (gate-task synergy). Unified mechanistic account: gate stacking follows hump curve because two forces compete — reasoning scaffolding (positive, from DD#748) vs format tax (negative, from DD#747/DD#671). Sweet spot at 1-3 gates where scaffolding > tax; degradation at 4+ gates where tax > scaffolding.
+  - 2 papers added to papers.md. INDEX.md updated with new cluster + cross-references (151 entries).
+- **Key design principle**: Implicit scaffolding > explicit format requirements. Let structure guide without consuming reasoning capacity.
+- **EXP-142 connection**: Agent-specific guard calibration should account for per-agent format tax. Agents with more structured output requirements already have higher cognitive overhead, so need fewer gates before hitting the hump curve peak.
+- **Clean state**: All deliverables committed. Weekend — no fresh arXiv until Monday.
+- **Research priorities** (weekend):
+  1. KE-106 habituation literature (low priority — internal evidence strong)
+  2. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+  3. EXP-129 results integration (if available — Ch2 Budget Curve gate stacking)
+  4. EXP-142/143 results integration (when available)
+
 ## Counters
-- DD: 746
-- CR: 337
-- Session: 628
+- DD: 748
+- CR: 338
+- Session: 669
 
