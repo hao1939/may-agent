@@ -1,11 +1,11 @@
 # H-100: Skill-Guard Divergence — Internalization vs. Permanent Infrastructure
 
 **Status**: Proposed  
-**P(H)**: 0.60  
+**P(H)**: 0.72  
 **Date**: 2026-04-11  
 **Author**: Bob  
 **Source**: CR-339 Open Problem #5, KE-106, KE-122, KE-110, EXP-123  
-**Connected**: H-085, H-095, H-098, H-099, KE-101
+**Connected**: H-085, H-095, H-098, H-099, KE-101, EXP-134
 
 ---
 
@@ -97,6 +97,7 @@ Given a novel intervention, classifying it as "content" or "process" should pred
 
 | Source | Finding | Support |
 |--------|---------|---------|
+| **EXP-134** | **FM-3.3 guard: 99.7% true positive rate, 98.5% recovery, quality 3.60 vs 2.88, rate increasing 5.8%→34.6%** | **Strong** — definitive evidence guards catch real behavior, not formatting |
 | KE-106 | FM-3.3 attempt rate increases (27%→70%) despite 26 days of guard | **Strong** — guards don't train |
 | KE-122 | EXP-103 interventions became redundant in ~1 day (11%→100% baseline) | **Strong** — skills internalize |
 | KE-110 | 5-skill stack at ceiling, diminishing returns | **Moderate** — skill capacity is finite |
@@ -108,11 +109,24 @@ Given a novel intervention, classifying it as "content" or "process" should pred
 
 ## Current Assessment
 
-**P(H) = 0.60** — Strong qualitative evidence from KE-106 (guards don't train) and KE-122 (skills internalize), but:
+**P(H) = 0.72** — Upgraded from 0.60 based on EXP-134 results.
+
+### EXP-134 Evidence Update (2026-04-11)
+
+EXP-134 audited all 1,075 sessions with genuine FM-3.3 guard activations and found:
+- **99.7% true positive rate** — guard catches genuine behavioral failures, not formatting issues (H-EXP134 disconfirmed)
+- **98.5% recovery rate** — agents successfully verify after being blocked
+- **Guard-blocked sessions have HIGHER quality** (3.60 vs 2.88) — guard genuinely improves outcomes
+- **Guard rate increasing** (5.8% → 34.6% over 3 weeks) — agents are NOT learning to verify on their own
+- **Guard and evaluator are orthogonal** — only 2/1,155 sessions overlap between guard blocks and evaluator flags
+
+This strongly supports H-100's core claim: the FM-3.3 guard is permanent infrastructure that compensates for an architectural limitation, not a training tool. The increasing catch rate is particularly strong evidence — after 3+ weeks of operation, agents still attempt unverified finishes at increasing rates.
+
+### Remaining uncertainties:
 - Only one clear internalization example (EXP-103 → EXP-116/118)
 - KE-122 acknowledges mechanism uncertainty (could be model drift, not internalization)
 - No prospective test of the content/process classification criterion
-- Predictions are specific and testable, which allows rapid updating
+- P-100c (guard removal) has not been tested
 
 ## Cross-References
 
