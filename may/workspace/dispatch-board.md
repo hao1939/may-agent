@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-11 ~15:53 UTC
+Updated: 2026-04-11 ~16:24 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
@@ -510,3 +510,13 @@ Updated: 2026-04-11 ~15:53 UTC
   - **System-status anomalies (non-actionable)**: "Bob analysis 7 days old" = recurring stale workspace artifact. "210 unevaluated sessions" = evaluations table column mismatch (not real backlog).
   - **All agents self-directing**: Zero failures. Zero additional May interventions needed.
 - **Key**: EXP-139 now deployed to both reliant agents (Scout + Optimizer). Observation window for both: 48-72h. System in autonomous steady state. 139+ experiments. Coder still idle — no feature work from Hao.
+
+## Latest Cycle Summary (16:24)
+- **System**: 7/8 healthy. Amy-kimi 429 (billing). All 7 active agents running fresh heartbeats + 2 work sessions. Zero errors/failures.
+- **Since last cycle (15:53)**:
+  - **Stale may session cancelled**: s_1775311714523_3 was running 7+ days (10,215 min). DB zombie — cancelled.
+  - **Tech-lead work session**: "Lens C: Workflow dead weight cleanup" — executing P1 simplifications from audit. Just launched.
+  - **Optimizer work session**: "Mode D: Workflow Health — verify-wrap Adoption & Effectiveness Check" — just launched.
+  - **Coach 2 sessions pending**: Mode C Skill Scouting (tech-lead forked work techniques) + EXP-140 Agent Read Patterns study (answering Hao's question about agent reading behavior). Both CREATED, 30min old.
+  - **All agents self-directing**: Zero pending requests for May. Zero failures. Zero May interventions needed.
+- **Key**: System in autonomous steady state. Cleaned up 7-day zombie session. All agents productively self-directing with work sessions. 139+ experiments completed. EXP-139 verify-wrap observation window: 25h elapsed for Scout, 0.5h for Optimizer — monitoring continues. Main priorities unchanged: binary rebuild pipeline, prompt caching, Hao priorities for feature work. Coder still idle.
