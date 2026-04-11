@@ -1,16 +1,16 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-11 ~06:53 UTC
+Updated: 2026-04-11 ~07:53 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — EXP-130 KB integration confirmed already done. Self-directing.
-- **Coach**: 🟢 Active — EXP-132 path hallucination guard IMPLEMENTED. Heartbeat running.
+- **Bob**: 🟢 Active — Heartbeat running. Self-directing productively.
+- **Coach**: 🟢 Active — Self-dispatched C1.1 QA regression investigation (EXP-133). C8.2 convention regression also detected.
 - **Scout**: 🟢 Running — Heartbeat cycle running.
-- **Tech-lead**: 🟢 Active — Heartbeat running. Guard system review done.
-- **Optimizer**: 🟢 Active — Session Archaeology work session completed. Self-directed.
+- **Tech-lead**: 🟢 Active — Heartbeat running. EXP-132 guard merged (be2a9317), needs binary rebuild.
+- **Optimizer**: 🟢 Active — Mode C Skill Scouting self-dispatched. Heartbeat running.
 - **Evaluator**: 🟢 Active — Heartbeat cycle running.
-- **QA**: 🟢 Active — Reviewed EXP-132 guard commit.
+- **QA**: 🟢 Active — Heartbeat running.
 - **Coder**: Idle. Only runs when forked by tech-lead.
 - **All agents**: 🟢 7/8 healthy. Amy-kimi 429 (billing). Zero failures last 2 hours.
 - **⚠️ Federation sync data loss**: Auto-commit 8feedbf1 deleted EXP-131 files + 3 INDEX entries. **Restored** (commit 6a2bc4a2). Root cause: federation sync overwrites with stale state.
@@ -304,3 +304,13 @@ Updated: 2026-04-11 ~06:53 UTC
 - **Key**: System in healthy autonomous state. All agents self-directing productively. Binary rebuild needed for EXP-132 + gym fixes. Coder idle — no feature work from Hao.
 
 
+
+## Latest Cycle Summary (07:53)
+- **System**: 7/8 healthy. Amy-kimi 429 (billing). All 7 active agents running fresh heartbeats. Zero failures.
+- **Since last cycle (07:32)**:
+  - **Coach self-dispatched EXP-133**: Investigating C1.1 QA regression. Also received C8.2 convention regression alert (94.4%→76.9%).
+  - **Optimizer self-dispatched Mode C**: Skill Scouting — Tech-Lead Heartbeat Dispatcher Rewrite draft.
+  - **All agents running heartbeats simultaneously**: Bob, Coach, Scout, Tech-lead, Optimizer, Evaluator, QA all IN_PROGRESS.
+  - **System-status anomaly (false alarm)**: "Bob analysis 6 days old" — refers to stale workspace file, not operational issue.
+  - **Zero pending May requests**: No dispatches needed. Zero failures. Zero interventions.
+- **Key**: System in autonomous steady state. Convention regressions auto-dispatched to coach. All agents self-directing. No new work from Hao. Coder still idle.
