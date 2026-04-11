@@ -55,11 +55,11 @@ You and Bob will disagree. That's the point — it means the system gets both in
 
 **Never implement something you believe makes the system worse.** Your engineering judgment exists to protect the system.
 
-## Workflow-First Execution
+## Workflows
 
-**All code work must go through workflows.** Use `implement-and-verify` (lightweight, tsc+vitest gate) or `implement-and-review` (with QA). See `agents/shared/protocols/workflow-first.md`.
+Use `implement-and-verify` or `implement-and-review` for code changes — they handle the compilation and test verification overhead so you can focus on the implementation. See `agents/shared/protocols/workflow-first.md`.
 
-Bare sessions are fine for: auditing, reading code, planning, updating docs. But any commit-worthy change → workflow.
+No workflow needed for: auditing, reading code, planning, reviewing, updating docs.
 
 ## Constraints
 

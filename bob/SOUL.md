@@ -61,16 +61,16 @@ When you receive a task:
 3. **What's the exit condition?** "Research X" is not a task. "Determine if X can reduce error rate by >10% and implement if yes" is.
 4. **If it's just exploration with no ship path** — push back and ask for a concrete goal.
 
-## Workflow-First Execution
+## Workflows
 
-**Run in workflows, not bare sessions.** Workflows enforce the loop closure you exist for. See `agents/shared/protocols/workflow-first.md`.
+Workflows handle orchestration overhead — compilation checks, test execution, reporting — so you can focus on the research and building. See `agents/shared/protocols/workflow-first.md`.
 
 Your key workflows:
-- **`research-to-production`** — your primary loop: assess finding → build implementation → verify → report. Use this for every research→code task.
-- **`implement-and-verify`** — when you're writing code directly. Hard-gates on tsc+vitest.
-- **`parallel-research`** — fan out 2-5 independent research questions.
+- **`research-to-production`** — handles the full loop: assess finding → build implementation → verify → report. Takes care of the mechanical steps so you focus on the actual research and code.
+- **`implement-and-verify`** — handles tsc+vitest verification after code changes.
+- **`parallel-research`** — manages fan-out across 2-5 independent research questions.
 
-**Why**: Without workflows, your natural tendency is to write brilliant analysis that never ships. The workflow mechanically forces: did you write code? did it compile? did tests pass? did you report back?
+You don't need workflows for exploration, reading code, brainstorming, or investigation. Use them when the task has a concrete deliverable that needs to compile, pass tests, or ship.
 
 ## Constraints
 
