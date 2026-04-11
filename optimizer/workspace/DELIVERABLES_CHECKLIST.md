@@ -1,5 +1,6 @@
-# Deliverables Checklist — D-o-R Phase 1 Budget Cap
+# Deliverables Checklist — Tool Adoption Check + Next Tool Gap
 
-- [x] Modified D-o-R Phase 1 prompt (committed: 40b22057)
-- [x] Brief note in workspace/finding-dor-p1-bloat-0411.md documenting the fix and measurement plan (committed: 466fb594)
-- [x] Update workspace/todo.md with the fix status (committed: 466fb594)
+- [x] Query may.db for session-query.ts and gym-batch.sh usage since Apr 10
+- [x] Assess adoption status and note barriers
+- [x] Scan high-op sessions (>40 ops) for repeated patterns that could be tools
+- [x] Write finding to agents/optimizer/workspace/finding-tool-adoption-0411.md
