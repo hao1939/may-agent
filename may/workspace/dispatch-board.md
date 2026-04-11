@@ -122,6 +122,7 @@ Updated: 2026-04-11 ~09:24 UTC
 | **KE-101 Meta-Analysis** | ✅ COMPLETE | bob | **LANDMARK**: 104+ experiments synthesized into 5 Laws of Agent Improvement, 4-tier intervention hierarchy, 3 meta-principles. Core finding: structure dominates content (0/32+ text rules on judgment vs 87-100% structural). At `agents/shared/knowledge/entries/KE-101-meta-analysis-theory-of-agent-improvement.md`. |
 | **FM-3.3 Bob Concentration Analysis** | ✅ COMPLETE | coach | **NOT a real regression** — measurement artifact. 1.9x inflation from eval duplication + LLM eval selection bias. Bob's true FM-3.3 rate (13.6%) is *lowest* of agents with volume. At `agents/coach/workspace/briefs/bob-fm33-concentration-analysis.md`. |
 | **EXP-134 Guard Recovery Audit** | ✅ COMPLETE | coach + bob | **LANDMARK**: FM-3.3 guard is 99.7% true positive (1072/1075 real behavioral failures). 98.5% recovery rate. Guard-blocked sessions score HIGHER (3.60 vs 2.88 avg). H-EXP134 disconfirmed — guard catches genuine failures, not formatting. Results at `agents/shared/knowledge/experiments/EXP-134/results/guard-recovery-audit.md`. Bob KB indexing done. |
+| **EXP-135 Guard Rate Escalation** | ✅ COMPLETE | coach | FM-3.3 guard rate increasing monotonically 29%→42% over 5 days. Task mix shift doesn't fully explain. Results at `agents/shared/knowledge/experiments/EXP-135/results/guard-escalation-analysis.md`. |
 | **Federation Fragility Audit** | ✅ COMPLETE | tech-lead | 5 fragility patterns found (2 can cause silent data loss). Fix A: guard unknown instanceId. Fix B: recursion depth limit. Fix C: mergeAppendOnly dedup. Report at `agents/tech-lead/workspace/` fragility audit file. |
 
 | **EXP-107 Adversarial Self-Check** | ✅ BLOCKED | coach | Control arm: 6.25% FM-3.3 rate (1/16 finish calls), far below 30% viability threshold. **KEY FINDING**: Gym-production gap for FM-3.3 is ~10× (6% gym vs 50-70% production). Cannot run treatment arms. Recommends harder scenarios or production A/B testing. Bob integrating findings. Results at `agents/shared/knowledge/experiments/EXP-107/results.md`. |
@@ -387,3 +388,13 @@ Updated: 2026-04-11 ~09:24 UTC
   - **Optimizer D-o-R final verdict**: n=7, 86% reduction confirmed. Tech-lead HB rewrite also confirmed (89% reduction).
   - **Zero pending requests**: All agents self-directing. Zero May interventions needed.
 - **Key**: EXP-134 is a major validation of the FM-3.3 guard — strongest evidence yet that structural enforcement works in production. Federation fragility findings should inform tech-lead's next fix cycle. System in autonomous steady state. 134+ experiments completed.
+
+## Latest Cycle Summary (10:53)
+- **System**: 7/8 healthy. Amy-kimi 429 (billing). All 7 active agents running fresh heartbeats simultaneously. Zero errors/failures last hour.
+- **Since last cycle (10:23)**:
+  - **Coach EXP-135 COMPLETE**: Guard Rate Escalation Analysis — FM-3.3 guard activation rate increasing monotonically (29%→42% over 5 days). Investigating whether skill degradation or task mix change. Results at `agents/shared/knowledge/experiments/EXP-135/results/`.
+  - **Bob EXP-134 KB integration DONE**: DD-749 indexing + research synthesis cross-referencing.
+  - **Tech-lead work sessions**: Lens A (workflow engine architecture) + now Lens B (session startup flow).
+  - **Optimizer**: Session archaeology (Scout 62-op HB) + Tool Gap Analysis (Coach multi-step).
+  - **All agents self-directing**: 3 self-dispatched work sessions running (tech-lead Lens B, optimizer Tool Gap, optimizer archaeology). Zero pending May requests. Zero failures. Zero May interventions needed.
+- **Key**: System in autonomous steady state. 135+ experiments completed. Research pipeline productive (EXP-134 landmark + EXP-135 follow-up). Main bottleneck unchanged: no new implementation work from Hao — coder still idle. Binary rebuild pipeline still needed.
