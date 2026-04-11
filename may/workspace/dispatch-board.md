@@ -1,14 +1,14 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-11 ~04:53 UTC
+Updated: 2026-04-11 ~05:23 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — Heartbeat running. Self-directing.
-- **Coach**: 🟢 Active — **EXP-131 COMPLETE**. Results written + committed (261 lines). Arm A 89%, B 50%, C 86%. Gate relevance hypothesis SUPPORTED (directional, p=0.28).
+- **Bob**: 🟢 Active — Heartbeat running. Self-directing. EXP-131 KB integration done (KE-135 created).
+- **Coach**: 🟢 Active — EXP-131 COMPLETE. Heartbeat running.
 - **Scout**: 🟢 Running — Heartbeat cycle running.
-- **Tech-lead**: 🟢 Active — Dead code cleanup (activity.jsonl + progress.md removal). Self-directing.
-- **Optimizer**: 🟢 Running — D-o-R measurement + Mode B exploration. Self-directing.
+- **Tech-lead**: 🟢 Active — Heartbeat running. Dead code cleanup done last cycle.
+- **Optimizer**: 🟢 Active — Mode C work session (Skill Scouting for Coach). Self-directed.
 - **Evaluator**: 🟢 Active — Heartbeat cycle running.
 - **QA**: 🟢 Active — Heartbeat cycle running.
 - **Coder**: Idle. Only runs when forked by tech-lead.
@@ -178,7 +178,7 @@ Updated: 2026-04-11 ~04:53 UTC
 | **H-098 Attention Channel Theory** | 🆕 FILED | bob | P(H)=0.78, Tier 1. Intervention effectiveness = channel separation. o3 17% collective vs o3-mini 50%. Based on KE-120/DD-731-733. |
 | **EXP-127 Channel Separation Direct Test** | ✅ COMPLETE (**LANDMARK**) | coach | **Baseline 0/6, Ch1 0/6, Ch3 0/6, Ch2 (Forced Ext) 6/6 (100%)**. p=0.0000074 vs pooled others. Only structural gates work for judgment tasks. Confound: contradiction-detection skill was already deployed (all runs had Ch1). Even Ch1+Ch3 combined = 0/6. Skill removed (commit 8f3d660f). Bob KB integrating (req:c15a56d7). Results at `agents/shared/knowledge/experiments/EXP-127/results.md`. |
 | **Gym Transcript Fix + Evaluator Bug Tests** | ✅ MERGED | tech-lead/may | Branch `review/s_1775848356081_345` merged to main. Transcript field in GymResult + evaluator scale/dedup tests. 20/20 pass. Commits 82757680 + 48315279. |
-| **EXP-131 Unrelated Gate Stacking** | ✅ COMPLETE | coach | **H-131 SUPPORTED (p=0.28)**: Arm A (1 related) 89%, Arm B (3 unrelated) 50%, Arm C (3 related) 86%. Unrelated gates -36pp vs related at same count. All 4 Arm B failures on core judgment check. Gate-task synergy, not Ch2 capacity, drives EXP-129 hump curve. **Federation auto-commit deleted results — restored from git history (6a2bc4a2)**. Results at `agents/shared/knowledge/experiments/EXP-131/results.md`. **Bob KB integration pending**. |
+| **EXP-131 Unrelated Gate Stacking** | ✅ COMPLETE | coach | **H-131 SUPPORTED (p=0.28)**: Arm A (1 related) 89%, Arm B (3 unrelated) 50%, Arm C (3 related) 86%. Unrelated gates -36pp vs related at same count. All 4 Arm B failures on core judgment check. Gate-task synergy, not Ch2 capacity, drives EXP-129 hump curve. **Federation auto-commit deleted results — restored from git history (6a2bc4a2)**. Results at `agents/shared/knowledge/experiments/EXP-131/results.md`. **Bob KB integration DONE — KE-135 created**. |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -256,10 +256,17 @@ Updated: 2026-04-11 ~04:53 UTC
 
 ## Next Actions
 - **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. Saves $143-441/day. **Blocked on Hao since Mar 24**.
-- **P1**: **EXP-131 Bob KB integration** — Bob should integrate gate relevance findings into H-131/H-098/KE-134.
 - **P1**: **Federation sync reliability** — Auto-commit deleting experiment results is a real problem. Tech-lead should investigate.
 - **P1**: **Surface tools to agents** — session-query.ts + gym-batch.sh need context.md entries. Consider shared/tools.md catalog.
 - **P1**: **EXP-105 Few-Shot Production Impact** — Need coder/optimizer work sessions to generate data. No coder work happening.
 - **P1**: **Generate implementation work** — System idle without features. Coder completely idle. Need Hao priorities.
 - **P2**: `analyze-failures` cron DB bug — persistent but non-critical.
 - **P2**: Amy-kimi still down — blocked on Hao for billing.
+
+## Latest Cycle Summary (05:23)
+- **System**: 7/8 healthy. Amy-kimi 429 (billing). Zero failures last hour. All agents running heartbeats.
+- **Since last cycle (04:53)**:
+  - **Bob EXP-131 KB integration DONE**: KE-135 (Gate-Task Synergy Effect) created. H-098 updated with EXP-131 evidence.
+  - **Optimizer Mode C work session**: Self-dispatched Skill Scouting for Coach Experiment Execution Efficiency. Productive.
+  - **System steady state**: All agents self-directing. Zero pending requests. Zero failures. Zero May interventions needed.
+- **Key**: System is in healthy autonomous steady state. All active experiments complete. Research pipeline yielding knowledge (130+ experiments). Main bottleneck: no new implementation work for coder — need Hao priorities.
