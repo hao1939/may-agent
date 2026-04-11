@@ -16,20 +16,25 @@
 - Bypass exists at `src/app/may.ts:148-165`, needs `ANTHROPIC_API_KEY` env var.
 - **BLOCKED on operator.** Finding: `workspace/findings/2026-04-10-litellm-kills-prompt-caching.md`
 
-### D-o-R Phase 1 Budget Cap — ✅ CONFIRMED EFFECTIVE, CLOSING (n=7)
-- **FINAL VERDICT (Apr 11 09:55 UTC)**: P1 avg 4.9 ops (was 34.5 pre-fix) — **86% reduction**. All 7 P1s ≤7. Total run avg 24.6 (was 49.1) — **50% reduction**. 1 minor P2 nesting incident (24 ops), 0 P1-spawned nesting. Zero cap violations. ~343 ops/day saved (~$16/day).
-- **Residual**: P2 bloat outlier (1/7 runs, 57 ops). Separate optimization opportunity.
+### D-o-R Phase 1 Budget Cap — ✅ CONFIRMED EFFECTIVE, CLOSING (n=20)
+- **FINAL VERDICT (Apr 11 23:24 UTC)**: Post-cap P1 avg 6.5 ops (was 35.0 pre-cap) — **81% reduction**. n=20. Only 1/20 over budget (40 ops). Zero cap violations in last 12h.
 - Findings: `workspace/finding-dor-p1-bloat-0411.md`, `workspace/finding-dor-p1-cap-measurement-0411.md`, `workspace/finding-dor-p1-cap-final-verdict-0411.md`
 - **→ MOVING TO DONE**
 
-### D-o-R Nested Workflow Spawning — 3 FIXES DEPLOYED, MONITORING (n=1 post-all-fixes)
+### D-o-R Nested Workflow Spawning — ✅ CONFIRMED FIXED, CLOSING (n=7 post-all-fixes)
 - Bob 90-op session (s_...1119) was a **3-deep nested D-o-R workflow**: Phase 1 called callAgent → triggered another D-o-R → spawned another Phase 1. Total: 169 ops for 1 KB integration task.
 - **3 instances in 72h**: 101 + 47 + 13 = 161 wasted ops (~54 ops/day, ~$2.50/day).
 - **THREE FIX LAYERS**: (1) Phase 1 callAgent guard (commit 60a844e3, ~03:54 UTC), (2) Phase 2 callAgent guard (~12:24 UTC), (3) Phase 3 VERIFY nesting prevention (~17:24 UTC).
-- Phase 1 fix alone was insufficient — 2 nesting incidents from Phase 2 after P1 fix. Phase 3 had 1 incident after P2 fix. All 3 needed.
-- **Post-all-fixes (17:30+)**: n=1 clean run (24 ops, P1→P2, zero nesting). ⏳ Need n≥3 to confirm.
-- **19 total D-o-R runs Apr 11**: 3 nesting incidents (16%), all pre-complete-fix. 0 incidents post-complete-fix.
+- **Post-all-fixes (17:30+)**: n=7 D-o-R sessions, **ZERO nesting incidents**. ✅
 - Finding: `workspace/finding-bob-90op-archaeology-0411.md`, `workspace/finding-multi-fix-roundup-0411.md`
+- **→ MOVING TO DONE**
+
+### D-o-R Phase 2 Budget Cap — FIX DEPLOYED, MEASURING (Apr 11 23:24 UTC)
+- Phase 2 had NO budget cap. Data (n=33): p50=17, p75=23, p90=57, max=83 ops. 5/33 sessions >50 ops.
+- **Fix**: Added "BUDGET: 25 TOOL CALLS MAX" to Phase 2 prompts, "BUDGET: 20" to Phase 2b (commit b66e94a5).
+- Same pattern as P1 cap (which achieved 81% reduction, n=20).
+- **Estimated savings**: ~108 ops/day (~$5/day). A 25-op cap would reduce P2 total ops by 28%.
+- ⏳ Need n≥10 post-fix P2 sessions to confirm. Target: p50 ≤17, p90 ≤25.
 
 ### Coach Session Efficiency — FINDING COMPLETE, FIX 2 DEPLOYED
 - 2,175 coach sessions analyzed. 50.3% zero-op, 64% of ops in top sessions are exploration waste.
