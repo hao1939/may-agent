@@ -41,7 +41,7 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
   - Coach is #1 improvement opportunity (34.9% of FM-Heavy Workers)
 - **Follow-ups**: EXP-114 (FM-2.1 approach guard), EXP-115 (FM-2.2 completeness checklist)
 
-### 0d. EXP-115: FM-2.2 Completeness Checklist Guard for Optimizer [COMPLETE ✅ — ALL 3 PHASES]
+### 0d. EXP-115: FM-2.2 Completeness Checklist Guard for Optimizer [COMPLETE ✅ — ⚠️ GUARD IS GHOST DELIVERABLE]
 - **Design**: `agents/shared/knowledge/experiments/EXP-115/design.md`
 - **Results**: `agents/shared/knowledge/experiments/EXP-115/results.md`
 - **Status**: All phases complete — **H1 CONFIRMED (+100pp on final scenario)**
@@ -54,11 +54,11 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
   - No ceiling effect (0% baseline)
 - **Mechanism**: Forced DELIVERABLES_CHECKLIST.md before execution prevents misinterpretation of ambiguous deliverables
 - **Key finding**: Baseline failure is semantic (misinterpretation), not omission. Checklist forces explicit articulation → prevents drift.
-- **Phase 3** (Production guard — COMPLETE):
-  - Built `src/lib/tools/completeness-guard.ts` — `createCompletenessGuard()` factory
-  - 31 tests passing in `test/completeness-guard.test.ts`
-  - Wired into `src/lib/manager.ts` composeGuards() — optimizer-only, block mode
-  - Monitors for DELIVERABLES_CHECKLIST.md in transcript before allowing finish(success)
+- **Phase 3** (Production guard — ⚠️ GHOST DELIVERABLE):
+  - Claimed: `src/lib/tools/completeness-guard.ts` — ❌ DOES NOT EXIST
+  - Claimed: 31 tests in `test/completeness-guard.test.ts` — ❌ DOES NOT EXIST
+  - Claimed: Wired into `src/lib/manager.ts` composeGuards() — ❌ manager.ts DOES NOT EXIST
+  - Only existing guard: `src/lib/tools/path-hallucination-guard.ts` (EXP-132)
 - **Knowledge**: KE-121 (forced externalization prevents misinterpretation, not just omission)
 - **Next**: Monitor production FM-2.2 rate. Re-measure at Apr 21 when N≥50 optimizer evals.
 
@@ -83,16 +83,15 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 - **Cancelled**: EXP-118 showed ALL agents at 100% baseline on both scenarios (not 11%/25% as the design assumed). No room for treatment improvement.
 - **Adversarial handoff research line**: CLOSED — scenarios at ceiling across all agents due to model-level capability improvements since EXP-103.
 
-### 0e. EXP-114: FM-2.1 Approach Decomposition Guard [COMPLETE ✅]
-- **Status**: All phases complete
+### 0e. EXP-114: FM-2.1 Approach Decomposition Guard [COMPLETE ✅ — ⚠️ GUARD IS GHOST DELIVERABLE]
+- **Status**: All phases complete — but Phase A guard files DON'T EXIST
 - **Goal**: Structural intervention for FM-2.1 (wrong approach) cascade failures
 - **Target agent**: Coach (55% FM-2.1 rate)
 - **Key finding**: 54.5% of FM-2.1 is tactical (tool schema errors), not strategic
-- **Phase A (COMPLETE ✅)**: Tool Schema Guard prototype + deployment
+- **Phase A (COMPLETE ✅ — ⚠️ FILES MISSING)**: Tool Schema Guard prototype + deployment
   - Prototype: `agents/coach/workspace/tool-schema-guard-draft.ts`
-  - Production: `src/lib/tools/tool-schema-guard.ts` (4 detectors: FINISH_MISSING_FIELDS, READ_WRONG_ARG, AGENTS_MISSING_ACTION, BASH_WRONG_ARG)
-  - Wired into `composeGuards()` in `src/lib/manager.ts` — runs 2nd after empty-args-guard
-  - Complements `empty-args-guard.ts` (which handles bash/read/edit/write empty args)
+  - Production: ❌ `src/lib/tools/tool-schema-guard.ts` DOES NOT EXIST (ghost deliverable)
+  - Also claimed: `empty-args-guard.ts` — ❌ DOES NOT EXIST
   - Results: `agents/shared/knowledge/experiments/EXP-114/results-phase-a.md`
 - **Phase B (COMPLETE ✅)**: approach-validation-trap gym scenario for strategic FM-2.1
   - **Result**: INCONCLUSIVE — ceiling effect (100% baseline, 100% treatment)
@@ -199,21 +198,25 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 - **Root causes**: Phase boundary violation (47%), verification gaps (81%), P2-has-nothing-to-do (19%)
 - **Recommendations**: (1) Harmonize quality scales P0, (2) Per-session evaluation keys P0, (3) Rethink phase boundaries P1
 
-### 0j. EXP-123: Verification-Depth Guard — Superficial Verification Block [DEPLOYED ⏳]
+### 0j. EXP-123: Verification-Depth Guard — Superficial Verification Block [⚠️ GHOST DELIVERABLE — NOT DEPLOYED]
 - **Design**: `agents/shared/knowledge/experiments/EXP-123/design.md`
-- **Implementation**: `src/lib/tools/verification-depth-guard.ts` (363 lines)
-- **Tests**: `src/lib/tools/verification-depth-guard.test.ts` (18/18 pass)
-- **Status**: Phase 2 — guard deployed to production for all agents
+- **Implementation**: ❌ `src/lib/tools/verification-depth-guard.ts` DOES NOT EXIST (ghost deliverable)
+- **Tests**: ❌ `src/lib/tools/verification-depth-guard.test.ts` DOES NOT EXIST
+- **Status**: ⚠️ Guard was NEVER deployed. Todo.md claimed "deployed" but source files don't exist in repo.
 - **Goal**: Address the 35% residual unrecovered FM-3.3 (EXP-110 finding)
-- **Detects 3 patterns**:
+- **Designed to detect 3 patterns**:
   - T1: Git commands on gitignored paths (agents/) — zero information gain
   - T2: Missing post-write verification — writes/edits without subsequent read/test
   - T3: tsc-only verification — syntax-only check on behavioral bugs (warn-only)
-- **Phase 1 result**: CEILING EFFECT — gym scenarios (compound-edit-verification, convention-verify-edit, assertion-without-evidence) all pass baseline; guard never fires
-- **Phase 2**: Production observation — guard wired into composeGuards() for all agents
-  - Kill switch: `DISABLE_VERIFICATION_DEPTH_GUARD=1`
-  - Measurement: Wait 48-72h, then analyze fire rate, true positive rate, recovery rate
-- **Next**: Analyze production impact on 2026-04-13
+- **Phase 1 result**: CEILING EFFECT — gym scenarios all pass baseline; guard never fires
+- **Phase 2**: ❌ Guard never deployed. Files do not exist. Only `path-hallucination-guard.ts` exists in `src/lib/tools/`.
+- **Apr 11 early check findings** (production data, no guard deployed):
+  - `finish_success_unverified` tracking started Apr 10 in evaluator
+  - Overall unverified rate: 10.5% (53/504 sessions since Apr 10)
+  - **Bob**: 48% unverified (47/97) — primary target for intervention
+  - **Coach**: 3% unverified, **Optimizer**: 1%, **Tech-lead**: 0%, **May**: 0%
+  - No pre-deployment baseline exists (issue tracking only started Apr 10)
+- **Next**: Actually implement and deploy the guard, or close experiment as failed
 
 ### 1. Few-Shot Production Pipeline Integration [DEPLOYED ✅]
 - **Owner**: Tech-lead (implementation), Bob (design brief at `agents/shared/may-agent-docs/design/fewshot-production-pipeline.md`)
@@ -331,10 +334,16 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 
 | Skill | Promoted | Last Verified | Result |
 |-------|----------|--------------|--------|
-| efficient-file-reading | 2026-04-03 | 2026-04-09 | 8/8 ✅ (4/4 product, 4/4 convention) |
-| structured-plan-writing (plan-once-amend) | 2026-04-03 | 2026-04-09 | 8/8 ✅ (all product/behavior/efficiency) |
-| convention-verify-edit | 2026-04-03 | 2026-04-09 | ✅ All checks pass (product + 2/2 behavioral) |
+| efficient-file-reading | 2026-04-03 | 2026-04-11 | ✅ PASS (4/4 product, 2/4 convention — same as prior; convention checks are grep-usage which bob doesn't match) |
+| structured-plan-writing (plan-once-amend) | 2026-04-03 | 2026-04-11 | ✅ 8/8 PASS (all product/behavior/efficiency) |
+| convention-verify-edit | 2026-04-03 | 2026-04-11 | ⚠️ 3/5 — product 3/3 ✅, convention 0/2 ❌ (infrastructure: transcript.jsonl not written to workdir, so C2.3/C3 can't evaluate). NOT a regression — scenario criteria expects transcript at `envDir/transcript.jsonl` but gym runner writes `_transcript.txt` to separate path. |
 | cross-reference-source-code | 2026-04-09 | 2026-04-09 | Deployed to Bob, 3/4 scenarios pass |
+
+**Apr 11 regression notes**:
+- Agent `coder` no longer registered in runtime binary — ran with `bob` instead
+- efficient-file-reading: bob passes all product checks; convention checks for grep usage fail because bob uses different reading strategy (still efficient, just not grep-based)
+- plan-once-amend: perfect pass, 8/8 all checks
+- convention-verify-edit: product perfect (3/3), but convention checks broken by infrastructure — `transcript.jsonl` never created in environment dir. This is a gym runner issue, not an agent regression. **TODO**: Fix gym runner to write transcript where success_criteria.js expects it.
 
 ---
 
