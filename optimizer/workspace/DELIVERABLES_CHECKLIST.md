@@ -1,6 +1,4 @@
-# Deliverables Checklist — Tool Adoption Check + Next Tool Gap
+# Deliverables Checklist — Mode B: Tool Gap Analysis (s_1775883252866_1231)
 
-- [x] Query may.db for session-query.ts and gym-batch.sh usage since Apr 10
-- [x] Assess adoption status and note barriers
-- [x] Scan high-op sessions (>40 ops) for repeated patterns that could be tools
-- [x] Write finding to agents/optimizer/workspace/finding-tool-adoption-0411.md
+- [x] workspace/finding-tool-gap-0411-b.md — tool gap analysis findings
+- [x] Update todo.md with D-o-R measurement count and tool gap action items

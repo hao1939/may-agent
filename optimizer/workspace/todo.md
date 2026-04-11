@@ -16,12 +16,12 @@
 - Bypass exists at `src/app/may.ts:148-165`, needs `ANTHROPIC_API_KEY` env var.
 - **BLOCKED on operator.** Finding: `workspace/findings/2026-04-10-litellm-kills-prompt-caching.md`
 
-### D-o-R Phase 1 Budget Cap — FIX DEPLOYED, STILL n=1
+### D-o-R Phase 1 Budget Cap — FIX DEPLOYED, n=2
 - Analysis: P1 avg 31 ops (67% of run total). 14/14 bloated P1s do full write+verify in "plan" phase.
 - Fix: Rewrote P1 prompt with explicit 15-op budget, read cap (2-4 files), no-write/no-verify rules, 10-call guardrail.
 - Expected: P1 avg ≤15 ops, total run ≤30 ops, saving ~259 ops/day (~$12/day).
-- **5h measurement (still n=1)**: Sessions DB empty in current env — cannot query new data. Previous measurement: 1 D-o-R P1 at 2 ops (01:24 UTC).
-- **Watch for P2 compensatory bloat**: First post-fix P2 was 58 ops (slightly high). Monitor.
+- **~3.5h measurement (n=2)**: Run 1 (wr_3zbe): P1=2 ops, P2=58 ops, total=60. Run 2 (wr_lqzs): multi-thread research (22+37+9=68 ops, no labeled P1). P1 cap working, but total ops haven't decreased — P2 may be compensating.
+- **Watch for P2 compensatory bloat**: Run 1 P2=58 (P95+), Run 2 total=68. Combined avg 64 ops/run vs pre-fix ~46 avg.
 - **Next check**: 12h post-fix (~2026-04-11 13:00 UTC). Need n≥5 for confidence.
 - Findings: `workspace/finding-dor-p1-bloat-0411.md`, `workspace/finding-dor-p1-cap-measurement-0411.md`
 
@@ -50,6 +50,7 @@
 - Baseline: 8 heartbeats in 12h, avg 56 ops, total 451. Post-fix: avg 23 ops (59% reduction). ✅ SUCCESS.
 - Last exploration mode: **B** (Tool Gap — Bob 75-op Pattern Mining + D-o-R count update — Apr 11 ~04:54 UTC, s_1775883252866_1231). Previous: A (D-o-R Post-Fix 12h — Apr 11 ~04:24), D (D-o-R Nested Fix — Apr 11 ~03:53), C (Lean vs Bloated — Apr 11 ~02:24), B (Tool Adoption — Apr 11 ~02:01), A (D-o-R P1 Bloat — Apr 11 ~00:23).
 - **session-query tool BUILT** (`scripts/session-query.ts`). Replaces 15-25 bash archaeology pattern with single command. Supports: --agent, --since, --task, --status, --min-ops, --tools, --json, --sort. Tested with real data (911 sessions). Est. savings: 10-15 ops/session × 187 sessions = 1,870-2,805 ops.
+- **session-query adoption**: Only optimizer uses it actively. May + QA reference it passively (reviewed commit). **Blocker: filesystem history stale (through ~Apr 5 only)**. Needs may.db backend to be useful for recent data. Tool gap finding: `workspace/finding-tool-gap-0411-b.md`
 - Mode D **COMPLETE**: Workflow health analysis. **Key result: D-o-R uses +53% more ops than non-WF work sessions** (45.7 vs 29.9). Phase 1 is the bloat source (30.4 avg ops — matches a complete non-WF session). Error rates 50% lower (2.1% vs 3.9%). Quality scores incomparable (different eval scales). Finding: `workspace/finding-workflow-health-0410.md`
 - Mode C finding complete: `workspace/finding-workflow-adoption-gap-0410.md`
 - Mode A finding complete: `workspace/finding-coach-166op-archaeology-0410.md` — **Key result: high-op sessions are restart-accumulated, not single-context bloat. 184-op session had 6 restarts (7 segments). Primary fix is infra (cap restarts/turns), not behavioral.**
