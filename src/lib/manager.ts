@@ -802,7 +802,12 @@ export class SubagentManager {
 
     session.archiveStatus = outcome.archiveStatus;
     session.finishResult = outcome.finishResult;
-    this.registry.updateSessionStatus(session.sessionId, outcome.archiveStatus, session.error);
+    try {
+      this.registry.updateSessionStatus(session.sessionId, outcome.archiveStatus, session.error);
+    } catch (metaErr) {
+      log("error", `[completion] Failed to write meta.json for ${session.sessionId}: ${metaErr instanceof Error ? metaErr.message : String(metaErr)}`);
+      // Continue — still emit session_end so DB, digest, and other subscribers fire
+    }
 
     session.unsubscribe?.();
     session.endedAt = Date.now();
