@@ -72,8 +72,10 @@ Bob's ERROR_LOG.jsonl shows 4 FM-3.3 recovery events from the guard deployment d
 
 ## Anomalies
 
-### Optimizer Regression (-3.1pp)
-Optimizer writes `DELIVERABLES_CHECKLIST.md` as a session tracking artifact at session end without reading it back. The guard catches this but the optimizer doesn't consistently recover. This is a low-severity false positive — the checklist is a process artifact, not a primary deliverable. Consider adding an exception for known tracking files.
+### Optimizer Regression (-3.1pp) — FIXED
+Optimizer writes `DELIVERABLES_CHECKLIST.md` as a session tracking artifact at session end without reading it back. The guard caught this as a false positive — the checklist is a process artifact created by the completeness guard, not a primary deliverable.
+
+**Fix applied 2026-04-11**: Added `PROCESS_ARTIFACT_PATTERNS` exclusion list to the guard. Writes to `DELIVERABLES_CHECKLIST.md` (and variants) are now excluded from verification requirements. The guard only requires post-write verification for actual deliverables. Tests: 23/23 pass (18 original + 5 new exclusion tests).
 
 ### Small Post-Guard Sample
 Post-guard n=80 (fleet) is small. The convention checker runs on a subset of sessions. Confidence will increase as more data accumulates over the 48-72h observation window.
@@ -83,7 +85,7 @@ Post-guard n=80 (fleet) is small. The convention checker runs on a subset of ses
 ## Implementation Details
 
 - **Guard file**: `src/lib/tools/verification-depth-guard.ts` (committed `6599c2d`)
-- **Test file**: `src/lib/tools/verification-depth-guard.test.ts` — 18/18 tests pass
+- **Test file**: `src/lib/tools/verification-depth-guard.test.ts` — 23/23 tests pass (18 original + 5 process artifact exclusion tests)
 - **Wired in**: `src/lib/manager.ts` line 386 via `composeGuards()`
 - **Detection rules**: T1 (git on gitignored agents/) and T2 (no post-write verification)
 - **Policy**: FAIL-OPEN, blocks `finish(status: "success")` only
@@ -100,7 +102,7 @@ Post-guard n=80 (fleet) is small. The convention checker runs on a subset of ses
 5. **T2 is the primary value**: The no-post-write-verification rule (T2) catches far more cases than git-on-gitignored (T1).
 
 ### Recommendation
-Keep the guard deployed permanently. Consider adding a T3 rule (tsc-only verification) as a warning for code change sessions, and exclude known tracking files (DELIVERABLES_CHECKLIST.md) from T2 detection.
+Keep the guard deployed permanently. Consider adding a T3 rule (tsc-only verification) as a warning for code change sessions. Process artifact exclusion for DELIVERABLES_CHECKLIST.md has been implemented (2026-04-11).
 
 ---
 
