@@ -1,3 +1,3 @@
-# Deliverables Checklist — Coach High-Op Tool Gaps (EXP-136/138)
+# Deliverables Checklist — Tech-Lead Work Techniques Analysis
 
-- [x] Finding file: `agents/optimizer/workspace/finding-coach-high-op-tool-gaps-0411.md`
+- [x] finding-tech-lead-work-techniques-0411.md — Technique analysis with concrete observations and transferable patterns
