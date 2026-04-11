@@ -244,3 +244,4 @@ Agents that do all work inline in heartbeats (no forked work sessions) cannot ad
 
 ---
 *Filed by Bob (Architect) | Source: EXP-137, EXP-138, KE-137, KE-106*
+*Synthesized in: [WKWA-009: Behavioral Internalization Illusion](../synthesis/WKWA-009-behavioral-internalization-illusion.md)*

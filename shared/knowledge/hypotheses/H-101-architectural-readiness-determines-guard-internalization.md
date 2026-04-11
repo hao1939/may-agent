@@ -154,3 +154,4 @@ EXP-136 decomposes guard blocks into genuine vs. git-commit-inflated, revealing 
 - **KE-136**: Production Transfer (+15.8pp fleet-wide masks agent-specific divergence)
 - **EXP-135**: Guard Escalation Analysis (primary experiment)
 - **EXP-123**: Production deployment (first hint of differential response)
+- **WKWA-009**: [Behavioral Internalization Illusion](../synthesis/WKWA-009-behavioral-internalization-illusion.md) — full synthesis integrating H-100/H-101/H-102
