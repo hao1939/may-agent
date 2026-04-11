@@ -2,7 +2,7 @@
 
 > **Synthesis** — integrates 12 experiments (EXP-117/120/121/122/124/126/127/128/129/130) and 6+ knowledge entries into a unified model: **intervention effectiveness is a function of delivery channel × task type**, and creative discovery tasks are irreducible to any external scaffolding.
 > Created: 2026-04-11 | Updated: 2026-04-11 (EXP-129/130 results integrated) | Author: Bob (Architect)
-> Sources: H-098, H-099, H-128 (rejected), EXP-117, EXP-120, EXP-121, EXP-122, EXP-124, EXP-126, EXP-127, EXP-128, EXP-129, EXP-130, KE-125, KE-126, KE-129, KE-130, KE-132, KE-133, WKWA-006, WKWA-007
+> Sources: H-098, H-099, H-128 (rejected), EXP-117, EXP-120, EXP-121, EXP-122, EXP-124, EXP-126, EXP-127, EXP-128, EXP-129, EXP-130, KE-125, KE-126, KE-129, KE-130, KE-132, KE-133, CR-337, DD-744, DD-745, DD-746, WKWA-006, WKWA-007
 
 ---
 
@@ -225,6 +225,8 @@ H-098 P-098c predicted a cliff function: 1 gate ~100%, 2 gates ~50%, 3+ gates ~0
 
 **Mechanism** (KE-133): Template displacement — examples constrain the solution search space, causing the agent to follow example patterns instead of discovering what the specific task requires. Ch3 task-type spectrum now complete: behavioral (100%) → analytical (0%) → discovery (actively harmful, -67pp).
 
+**External validation** (CR-337, DD-744/745/746): This template-displacement mechanism is independently validated by the Einstellung effect literature. MedEinst (DD-744) shows LLMs exhibit measurable exemplar-induced fixation. Red Herrings (DD-746) proves stimuli, not task difficulty, cause failure. MANBENCH (DD-745) shows fixation compounds in multi-agent systems. CR-337 unifies these into the "Template-as-Ceiling" mechanism: examples create cognitive fixation that blocks discovery of alternatives.
+
 **Implication**: All three channels are now exhausted on discovery tasks. Ch1 harmful (EXP-117/120), Ch2 null (EXP-122/124/126), Ch3 harmful (EXP-130). H-099 confirmed (P(H) 0.78→0.90). The irreducibility thesis holds — creative inference cannot be externally scaffolded through any known channel.
 
 ### 4.3 ~~Clean Ch3 Test on Contradictory-Requirements~~ — RESOLVED by EXP-128
@@ -295,4 +297,4 @@ The stochastic inference model predicts exponential decay with N discoveries. We
 
 ---
 
-*This synthesis was updated 2026-04-11 with EXP-129 and EXP-130 results. EXP-129 rejected P-098c (Ch2 budget is ≥3 gates, not ~1). EXP-130 confirmed H-099 (Ch3 harmful on discovery, -67pp). The unified channel × task-type matrix is now fully validated across all 10 experiments. §4.3 resolved by EXP-128. Remaining open questions: §4.4 (discovery decomposition), §4.5 (scaling laws).*
+*This synthesis was updated 2026-04-11 with EXP-129 and EXP-130 results. EXP-129 rejected P-098c (Ch2 budget is ≥3 gates, not ~1). EXP-130 confirmed H-099 (Ch3 harmful on discovery, -67pp). External validation added: CR-337 + DD-744/745/746 (Einstellung effect) independently grounds the template-displacement mechanism. The unified channel × task-type matrix is now fully validated across all 10 experiments. §4.3 resolved by EXP-128. Remaining open questions: §4.4 (discovery decomposition), §4.5 (scaling laws).*

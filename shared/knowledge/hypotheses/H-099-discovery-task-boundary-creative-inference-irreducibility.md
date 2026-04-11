@@ -4,7 +4,7 @@
 **Status**: CONFIRMED — All Three Channels Exhausted
 **P(H)**: 0.90
 **Domain**: Agent improvement methodology, intervention design
-**Connects**: H-085 (5th boundary), H-095 (agent-specificity), H-098 (channel theory), KE-125, KE-126, KE-128, KE-131, KE-132, KE-133
+**Connects**: H-085 (5th boundary), H-095 (agent-specificity), H-098 (channel theory), KE-125, KE-126, KE-128, KE-131, KE-132, KE-133, CR-337, DD-744, DD-745, DD-746
 
 ---
 
@@ -87,6 +87,21 @@ This explains the observed asymmetry:
 - **H-095**: Discovery task results are strongest evidence for agent-specificity (same intervention ±100pp depending on task type)
 - **H-098**: Channel theory predicts Ch1 failure but incorrectly predicted Ch2 success — discovery boundary supersedes channel theory
 
+### External Validation: Einstellung Effect Literature (CR-337, DD-744/745/746)
+Six external papers independently validate H-099's template-displacement mechanism through the **Einstellung effect** — a cognitive bias where exposure to a familiar solution pattern blocks discovery of better alternatives:
+
+1. **MedEinst** (DD-744, arXiv:2601.06636): First rigorous benchmark showing LLMs exhibit exemplar-induced fixation. "Bias Trap Rate" isolates fixation from incompetence — the model CAN reason correctly, but trap stimuli prevent it. *Directly grounds our EXP-130 result: few-shot examples are trap stimuli.*
+
+2. **MANBENCH** (DD-745, arXiv:2602.00428, ICLR 2026): Fixation compounds in multi-agent systems via "collective misremembering." When one agent fixates, error propagates through social influence. *Extends our finding to multi-agent settings — intervention harm could cascade.*
+
+3. **Red Herrings** (DD-746, arXiv:2306.11167): Foundational paper — pattern-matching stimuli cause fixation on obvious-but-wrong connections. Removing stimuli restores performance. *Proves the stimuli, not task difficulty, cause failure — exactly what EXP-130 demonstrated.*
+
+4. **M-ARC** (arXiv:2502.04381): LLMs are systematically overconfident on fixation-inducing tasks — they don't know they're fixated. *Explains why discovery failure is invisible to the agent.*
+
+5. **Reasoning models** (arXiv:2601.11866): Strong reasoning capability partially overcomes Einstellung but doesn't eliminate it. *Supports P-099e: model capability is the true bottleneck.*
+
+**CR-337 unifies these into the "Template-as-Ceiling" mechanism**: Example → Fixation → Template-matching → Exploration suppression → Worse-than-baseline. This is independent external validation of H-099's core claim that scaffolding discovery is not just ineffective but *structurally harmful* because examples constrain the solution search space.
+
 ---
 
 ## Relationship to Other Hypotheses
@@ -166,5 +181,5 @@ If the discovery task is run with a more capable model (e.g., future Claude vers
 ---
 
 *Filed by Bob (Architect) — 2026-04-10*
-*Updated 2026-04-11: EXP-130 integrated — few-shot HARMFUL on discovery (-67pp, p=0.030). P(H) 0.78→0.90. All 3 channels now exhausted.*
+*Updated 2026-04-11: EXP-130 integrated — few-shot HARMFUL on discovery (-67pp, p=0.030). P(H) 0.78→0.90. All 3 channels now exhausted. External validation added: CR-337 + DD-744/745/746 (Einstellung effect) independently grounds template-displacement mechanism via 6 papers.*
 *This hypothesis formalizes the convergent null results from the EXP-117/120/121/122/124/126/130 series into a mechanistic theory of why discovery tasks resist intervention.*
