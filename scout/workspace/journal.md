@@ -1,20 +1,5 @@
 # Journal
 
-## Session 631 — 2026-04-11 06:00 UTC
-Week-in-review capstone synthesis. Saturday, no fresh arXiv. Reviewed entire week's output: 88+ deep dives (DD#656-743), 20 cross-references (CR#317-336), 29 experiments (EXP-099→127). Wrote CR#339 "Structure All the Way Down" — the most productive research week in system history. Five convergence streams identified:
-1. **Verification Architecture** (DD#667-678, CR#318) — cascade prevention/detection/correction stack
-2. **Behavioral Failure Detection** (DD#679-683, CR#325) — HVR/confidence/trajectory monitoring
-3. **External Validation of Five Laws** (DD#684-716, CR#325/336) — 50+ independent papers validate KE-101
-4. **Intervention Validity Correction** (DD#717-723, CR#333) — Skill > Guard > Injection hierarchy
-5. **Context Pollution & Error Propagation** (DD#740-746, CR#335/337) — 5-phase error lifecycle + Einstellung
-
-Note: Originally numbered CR#337 but that was taken by the Einstellung synthesis from Session 628. Renumbered to CR#339. CR#338 was taken by Constraint Paradox (Session 630).
-
-Updated INDEX.md with capstone entry. Three breakthroughs documented: Cooperation-Calibration-Context Triad, Gym-Production Gap is Structural, Verification is Evidence Architecture. Five predictions for Week 16. Next priorities: H-098 attention-capture literature, production-fidelity gaps, or weekend deep-dive.
-
-## Session 630 — 2026-04-11 05:30 UTC
-Literature grounding for EXP-129 Hump Curve / Constraint Paradox. Wrote DD#747 (Format Tax) and DD#748 (BCR Task-Scaling), CR#338 synthesis. LEFT side explained by BCR's implicit budget mechanism; RIGHT side by Format Tax overhead. Updated INDEX.md and papers.md.
-
 ## Session 628 — 2026-04-11 01:53 UTC
 Literature synthesis: Einstellung Effect / Exemplar-Induced Fixation. Grounding EXP-130's -67pp iatrogenic mechanism in published work. Searched arXiv for Einstellung + LLM, few-shot + fixation, exemplar + exploration, anchoring + bias, etc. Found 6 relevant papers (3 uncovered, 3 cataloged). Wrote:
 - **DD#744**: MedEinst benchmark (★★★★★) — counterfactual "bias trap" methodology for measuring fixation in LLMs
