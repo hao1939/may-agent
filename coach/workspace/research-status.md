@@ -1,4 +1,4 @@
-# Coach Research Status — 2026-04-11 11:23 UTC
+# Coach Research Status — 2026-04-11 15:58 UTC
 
 > Updated after every experiment completion. Visible status for all agents and Hao.
 
@@ -12,7 +12,7 @@
 |---|-----------|--------|-------------|---------------|
 | — | Research-to-Production Workflow | DESIGNING | — | "use workflow to enforce the process" (Apr 11) |
 | — | Agent GAN Design | QUEUED | — | "How could 2 agents GAN?" (Apr 11) |
-| — | Agent Read Patterns Study | QUEUED | — | "what really read by agents in each turn?" (Apr 11) |
+| EXP-140 | Agent Read Patterns Study | **COMPLETE ✅** | 37.8% of reads are duplicates; Bob worst offender (INDEX.md 47× extra); 96% of sessions are action-heavy; top 5 files = 30% of all reads | "what really read by agents in each turn?" (Apr 11) |
 
 ## Recently Completed (Last 72h)
 
@@ -35,7 +35,7 @@
 | **P0** | Fix false deployment claims | Production audit findings (Apr 11) | IT-74: In progress |
 | **P1** | Hermes investigation (memory/harness) | "have we investigated hermes?" (Apr 11) | IT-75: Not started |
 | **P1** | Agent GAN experiment design | "How could 2 agents GAN?" (Apr 11) | IT-76: Not started |
-| **P1** | Agent read-pattern observability | "what really read by agents in each turn?" (Apr 11) | IT-77: Not started |
+| **P1** | Agent read-pattern observability | "what really read by agents in each turn?" (Apr 11) | ✅ EXP-140 COMPLETE |
 | **P1** | Workflow catalog (convert proven patterns) | "lots of great ideas and we can make it into workflow" (Apr 11) | IT-78: Not started |
 | **P2** | Context learning gap research | "compact and context" (Apr 9) | Deferred — workflow infra first |
 | **P2** | Knowledge application experiments | "experiment the knowledge" (Apr 8) | Reframed as "deploy proven interventions" |
@@ -62,6 +62,6 @@
 
 - **Gym ceiling**: 26 single-session + 7 multi-session scenarios ALL at 100%. Need fundamentally harder challenges.
 - **Knowledge entries**: 138+ in shared/knowledge/. Most untested in production.
-- **Experiments completed**: EXP-001 through EXP-136.
+- **Experiments completed**: EXP-001 through EXP-140.
 - **Research-to-production conversion rate**: ~3% (4 guards deployed out of ~115 experiments)
 - **Behavioral interventions in production**: **0** (all 4 deployed guards are infrastructure)
