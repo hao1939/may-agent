@@ -179,6 +179,7 @@ Updated: 2026-04-11 ~05:53 UTC
 | **EXP-127 Channel Separation Direct Test** | ✅ COMPLETE (**LANDMARK**) | coach | **Baseline 0/6, Ch1 0/6, Ch3 0/6, Ch2 (Forced Ext) 6/6 (100%)**. p=0.0000074 vs pooled others. Only structural gates work for judgment tasks. Confound: contradiction-detection skill was already deployed (all runs had Ch1). Even Ch1+Ch3 combined = 0/6. Skill removed (commit 8f3d660f). Bob KB integrating (req:c15a56d7). Results at `agents/shared/knowledge/experiments/EXP-127/results.md`. |
 | **Gym Transcript Fix + Evaluator Bug Tests** | ✅ MERGED | tech-lead/may | Branch `review/s_1775848356081_345` merged to main. Transcript field in GymResult + evaluator scale/dedup tests. 20/20 pass. Commits 82757680 + 48315279. |
 | **EXP-131 Unrelated Gate Stacking** | ✅ COMPLETE | coach | **H-131 SUPPORTED (p=0.28)**: Arm A (1 related) 89%, Arm B (3 unrelated) 50%, Arm C (3 related) 86%. Unrelated gates -36pp vs related at same count. All 4 Arm B failures on core judgment check. Gate-task synergy, not Ch2 capacity, drives EXP-129 hump curve. **Federation auto-commit deleted results — restored from git history (6a2bc4a2)**. Results at `agents/shared/knowledge/experiments/EXP-131/results.md`. **Bob KB integration DONE — KE-135 created**. |
+| **EXP-132 Path Hallucination Guard** | ⏳ IMPL COMMITTED | coach | Ch2 guard for C7.1 regression. Blocks bash with `/home/`, `/Users/`, `/root/`, `~/` paths. Design + impl committed (7854d50). Awaiting production merge + observation window. |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -270,10 +271,11 @@ Updated: 2026-04-11 ~05:53 UTC
   - **System steady state**: All agents self-directing. Zero pending requests. Zero failures. Zero May interventions needed.
 - **Key**: System is in healthy autonomous steady state. All active experiments complete. Research pipeline yielding knowledge (130+ experiments). Main bottleneck: no new implementation work for coder — need Hao priorities.
 
-## Latest Cycle Summary (05:53)
+## Latest Cycle Summary (06:23)
 - **System**: 7/8 healthy. Amy-kimi 429 (billing). Zero failures last hour. All agents running heartbeats.
-- **Since last cycle (05:23)**:
-  - **⚠️ Evaluation-sync handler stale 11.5 hours**: Cron handler `evaluation-sync` stopped producing evaluations at 18:25 UTC yesterday. 245 sessions went unevaluated. Handler code is correct (manual run works). **Root cause: cron framework not invoking handler**. Manually caught up all 245 evaluations. Tech-lead should investigate cron handler invocation bug.
-  - **Bob quiescent**: No new KB work. System fully integrated. Waiting for new experiments/findings.
-  - **Evaluator noticed staleness**: 2 consecutive heartbeats flagged stale pipeline but didn't self-dispatch fix.
-  - **All other agents nominal**: Zero failures. Zero pending requests.
+- **Since last cycle (05:53)**:
+  - **Coach EXP-132 DESIGNED + COMMITTED**: Path hallucination guard for C7.1 regression. Blocks bash commands with `/home/`, `/Users/`, `/root/`, `~/` paths. Commit 7854d50. Also designing work session in progress.
+  - **Optimizer productive**: gym-batch.sh (batch comparison runner) committed (5ca3bdf). Mode D work session + Session Archaeology self-dispatched.
+  - **C1.4 convention regression detected**: 86.7%→81.3%. Auto-dispatched to coach.
+  - **Tech-lead dead code cleanup**: handleOverflow removal merged (8f18c03). Evaluator scale remnants aligned (0dbafbc).
+  - **All agents self-directing**: 11 active requests, all self-dispatched. Zero May interventions needed.
