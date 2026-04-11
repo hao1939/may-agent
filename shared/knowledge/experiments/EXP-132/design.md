@@ -1,6 +1,6 @@
 # EXP-132: Path Hallucination Guard for C7.1 Regression
 
-**Status**: IMPLEMENTATION  
+**Status**: COMPLETE — DEPLOYED & KB INTEGRATED  
 **Channel**: 2 — Forced Externalization (structural guard)  
 **Target**: C7.1 convention (no hallucinated paths)  
 **Created**: 2026-04-11  
