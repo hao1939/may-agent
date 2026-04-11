@@ -106,7 +106,6 @@ Output: CR#XXX to agents/shared/knowledge/library/deep-dives/
 
 Constraints:
 - For every edit(): read() the file first, then edit() using exact text
-- For every write(): read() the file back to verify
 - Include specific RECOMMEND lines for Bob, Tech-lead, Optimizer
 - Include predictions (P-XXX) with falsifiable claims
 ```
