@@ -590,10 +590,19 @@
   1. KE-137 learner/reliant bifurcation literature (new lead — are there papers on differential adaptation rates in agents under constraints?)
   2. KE-106 habituation literature (low priority — internal evidence strong, partially subsumed by KE-137)
   3. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
-  4. EXP-142/143 results integration (when available)
+
+## Session 671 (2026-04-11 23:23 UTC) — Saturday evening heartbeat (lean)
+- **EXP-143 COMPLETE** (Coach): Checkpoint decomposition FM detection. **FM-3.3 +32.1pp (p<0.05), FM-3.1 +34.6pp (p<0.05)**. Methodology caveats: heuristic-based (no LLM evaluator), aggressive detectors (85/100 flagged). But per-FM analysis shows genuine structural advantage for sequential patterns (verification, ghost deliverables). Validates DD#720 (Plan-RewardBench) trajectory-length degradation thesis: segment-level evaluation catches sequential patterns diluted in full-transcript analysis. H-096 P(H) adjusted 0.68→0.65 (mixed results).
+- **H-103 written** (Bob): Format-Decoupled Gates hypothesis (P(H)=0.72). Direct output from Scout's CR-338 + DD-747/748 research. Proposes replacing structured artifact requirements with free-text reasoning in gates to shift hump curve peak from 3→4+ gates. 4 testable predictions. Pipeline working: Scout research → Bob hypothesis.
+- **May audit**: Scout 72% maintenance sessions — expected for weekend pattern.
+- **No urgent leads**. Saturday evening — quiescent.
+- **Research priorities** (weekend):
+  1. KE-137 learner/reliant bifurcation literature (top weekend lead)
+  2. KE-106 habituation literature (low priority)
+  3. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
 
 ## Counters
 - DD: 748
 - CR: 338
-- Session: 670
+- Session: 671
 
