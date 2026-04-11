@@ -197,6 +197,15 @@
     "offsetMs": 1680000
   },
   {
+    "name": "heartbeat-amy-kimi",
+    "type": "heartbeat",
+    "intervalMs": 1800000,
+    "agent": "amy-kimi",
+    "message": "[heartbeat] Read agents/amy-kimi/heartbeat.md and work through each section top to bottom. End with finish().",
+    "enabled": true,
+    "description": "Amy-Kimi heartbeat — XHS research via Kimi API. Re-added 2026-04-11 after accidental removal."
+  },
+  {
     "name": "repo-gate-check",
     "type": "job",
     "handler": "repo-gate-check",
