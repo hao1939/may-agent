@@ -231,6 +231,15 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 - **Note**: EXP-133 discovered the original 48% "unverified" rate was a measurement artifact (transcript-based detection missed actual verification). The guard still provides value by enforcing the pattern structurally.
 - **Known issue**: Optimizer C1.3 false positives from DELIVERABLES_CHECKLIST.md (process artifact, not deliverable). Consider adding exception.
 
+### 0u. EXP-142: Agent-Specific Guard Calibration — Stop Harming Bob [DEPLOYED — MEASURING]
+- **Design**: `agents/shared/knowledge/experiments/EXP-142/design.md`
+- **Implementation**: `src/lib/tools/verification-depth-guard.ts` (added `exemptAgents` option), `src/lib/manager.ts` (bob exempt)
+- **Deployed**: 2026-04-11T16:54Z — 72h measurement period ends 2026-04-14T17:00Z
+- **Goal**: Exempt bob from FM-3.3 guard which is actively harming his quality (-6.1pp, N=438)
+- **Key data**: Bob blocked→74% good, unblocked→80% good. Guard hurts because D-o-R Phase 3b provides superior verification.
+- **Hypotheses**: H-142a (quality +5pp), H-142b (0% fire rate), H-142c (no regression for QA/coach/tech-lead)
+- **Checkpoints**: T+24h (Apr 12), T+48h (Apr 13), T+72h (Apr 14)
+
 ### 1. Few-Shot Production Pipeline Integration [DEPLOYED ✅]
 - **Owner**: Tech-lead (implementation), Bob (design brief at `agents/shared/may-agent-docs/design/fewshot-production-pipeline.md`)
 - **Production module**: `src/lib/fewshot-router.ts` — keyword-based example injection
