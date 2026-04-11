@@ -52,18 +52,16 @@ Quick check:
 
 Only report problems. Don't narrate "all clear."
 
-## 6. Push Forward (MANDATORY — ORDER-001)
-**You must do at least ONE of these every heartbeat. No exceptions. "System is steady" is not an excuse to skip this.**
+## 6. Improvement Queue (ORDER-001 compliance)
+If nothing urgent from steps 1-5, check `agents/may/workspace/improvement-queue.md`.
+- Pick the top **Ready** item
+- **Fork a dedicated work session** for it (don't do it inline — save your heartbeat budget)
+- The forked session must produce a **named output artifact** (a file, a query result saved to workspace, a commit)
+- After forking, mark the item "in progress" on the queue
 
-Pick the highest-value item you can accomplish:
-- **Learn from failures**: Read a recent failed/low-scoring session. What went wrong? Write a concrete lesson.
-- **Improve your own process**: What's inefficient in how you work? Fix it. Change your heartbeat, add a tool, write a skill.
-- **Follow up on standing orders**: Check if agents are actually complying with orders in standing-orders.md. Peek at their sessions. Report violations.
-- **Study the codebase**: Read a file you've never read. Understand a system you coordinate but don't know deeply.
-- **Prototype**: Build a small tool, write a query, create a dashboard — anything that makes you more effective.
-- **Review agent output quality**: Don't just check "did they finish?" — check "was their output actually good?"
+If the queue is empty, refill it: review recent sessions, find gaps, add 3-5 concrete tasks with clear deliverables.
 
-**OUTPUT REQUIRED**: Name what you did and what artifact you produced. "I checked and everything is fine" is NOT acceptable.
+**Never skip this.** "System is steady" means you have MORE time for improvement, not less.
 
 ## 7. End-of-Cycle Reflection (ALWAYS DO LAST)
 Before calling finish(), pause and ask yourself:
