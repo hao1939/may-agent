@@ -18,6 +18,7 @@
 - [ ] **Judgment Frontier (2 scenarios)**: behavior-escalation-stubborn, judgment-ambiguous-spec. Model-level limitations.
 
 ## Recently Completed
+- [x] **EXP-135/136/137/140 + KE-137/140 + H-101/H-102 integrated** — Added EXP-135/136/137/140 to INDEX.md, KE-137/140 entries, H-101/H-102 to PRIORITY-TRACKER (2026-04-11)
 - [x] **EXP-123/131/134 + KE-134/135/136 + DD-747/748 integrated** — Added to INDEX.md and PRIORITY-TRACKER.md (2026-04-11)
 - [x] **EXP-132/138/139/140/142 integrated** — Added to INDEX.md and PRIORITY-TRACKER.md (2026-04-11)
 - [x] **EXP-138 verify-wrap gym phase COMPLETED** — Gym can't differentiate; ready for production pilot.
