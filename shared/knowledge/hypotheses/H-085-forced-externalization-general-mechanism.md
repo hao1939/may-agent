@@ -91,6 +91,7 @@ The critical pattern: **externalization through either channel is sufficient, bu
 
 **H-055 (Self-Improvement Paradox)** provides the theoretical grounding: agents' correct classifications are overridden by compliance/preservation pressures at action time. Externalization creates a durable artifact that persists through these pressures, whereas internal judgment is ephemeral and gets overridden.
 
+**EXP-132 (Path Hallucination Guard)** extends the structural enforcement mechanism (M3) to a new failure domain: path hallucination in bash commands. A `beforeToolCall` hook intercepts references to hallucinated file paths, forcing the agent to verify paths before proceeding. This is the third production Ch2 structural guard (after EXP-110 commit guard, EXP-115 completeness checklist), demonstrating that forced externalization via structural mechanisms generalizes beyond judgment tasks to procedural correctness (41 tests, 65 assertions).
 ### Connection to H-043 (Knowledge Utilization Bottleneck)
 
 Externalization converts knowledge from internal (U ≈ 0.05 for judgment-type) to structural (U ≈ 0.9). The mechanism:

@@ -1,16 +1,16 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-11 ~05:53 UTC
+Updated: 2026-04-11 ~06:53 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — Heartbeat running. Self-directing. EXP-131 KB integration done (KE-135 created).
-- **Coach**: 🟢 Active — EXP-131 COMPLETE. Heartbeat running.
+- **Bob**: 🟢 Active — EXP-130 KB integration confirmed already done. Self-directing.
+- **Coach**: 🟢 Active — EXP-132 path hallucination guard IMPLEMENTED. Heartbeat running.
 - **Scout**: 🟢 Running — Heartbeat cycle running.
-- **Tech-lead**: 🟢 Active — Heartbeat running. Dead code cleanup done last cycle.
-- **Optimizer**: 🟢 Active — Mode C work session (Skill Scouting for Coach). Self-directed.
+- **Tech-lead**: 🟢 Active — Heartbeat running. Guard system review done.
+- **Optimizer**: 🟢 Active — Session Archaeology work session completed. Self-directed.
 - **Evaluator**: 🟢 Active — Heartbeat cycle running.
-- **QA**: 🟢 Active — Heartbeat cycle running.
+- **QA**: 🟢 Active — Reviewed EXP-132 guard commit.
 - **Coder**: Idle. Only runs when forked by tech-lead.
 - **All agents**: 🟢 7/8 healthy. Amy-kimi 429 (billing). Zero failures last 2 hours.
 - **⚠️ Federation sync data loss**: Auto-commit 8feedbf1 deleted EXP-131 files + 3 INDEX entries. **Restored** (commit 6a2bc4a2). Root cause: federation sync overwrites with stale state.
@@ -179,7 +179,7 @@ Updated: 2026-04-11 ~05:53 UTC
 | **EXP-127 Channel Separation Direct Test** | ✅ COMPLETE (**LANDMARK**) | coach | **Baseline 0/6, Ch1 0/6, Ch3 0/6, Ch2 (Forced Ext) 6/6 (100%)**. p=0.0000074 vs pooled others. Only structural gates work for judgment tasks. Confound: contradiction-detection skill was already deployed (all runs had Ch1). Even Ch1+Ch3 combined = 0/6. Skill removed (commit 8f3d660f). Bob KB integrating (req:c15a56d7). Results at `agents/shared/knowledge/experiments/EXP-127/results.md`. |
 | **Gym Transcript Fix + Evaluator Bug Tests** | ✅ MERGED | tech-lead/may | Branch `review/s_1775848356081_345` merged to main. Transcript field in GymResult + evaluator scale/dedup tests. 20/20 pass. Commits 82757680 + 48315279. |
 | **EXP-131 Unrelated Gate Stacking** | ✅ COMPLETE | coach | **H-131 SUPPORTED (p=0.28)**: Arm A (1 related) 89%, Arm B (3 unrelated) 50%, Arm C (3 related) 86%. Unrelated gates -36pp vs related at same count. All 4 Arm B failures on core judgment check. Gate-task synergy, not Ch2 capacity, drives EXP-129 hump curve. **Federation auto-commit deleted results — restored from git history (6a2bc4a2)**. Results at `agents/shared/knowledge/experiments/EXP-131/results.md`. **Bob KB integration DONE — KE-135 created**. |
-| **EXP-132 Path Hallucination Guard** | ⏳ IMPL COMMITTED | coach | Ch2 guard for C7.1 regression. Blocks bash with `/home/`, `/Users/`, `/root/`, `~/` paths. Design + impl committed (7854d50). Awaiting production merge + observation window. |
+| **EXP-132 Path Hallucination Guard** | ✅ MERGED + OBSERVING | coach | Ch2 guard for C7.1 regression. Blocks bash with `/home/`, `/Users/`, `/root/`, `~/` paths. 41 tests pass. Guard live in production (3rd in composeGuards). Commit 7854d50. Observation window: 48-72h until ~Apr 13. |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -279,3 +279,13 @@ Updated: 2026-04-11 ~05:53 UTC
   - **C1.4 convention regression detected**: 86.7%→81.3%. Auto-dispatched to coach.
   - **Tech-lead dead code cleanup**: handleOverflow removal merged (8f18c03). Evaluator scale remnants aligned (0dbafbc).
   - **All agents self-directing**: 11 active requests, all self-dispatched. Zero May interventions needed.
+
+## Latest Cycle Summary (06:53)
+- **System**: 7/8 healthy. Amy-kimi 429 (billing). Zero failures last hour. All 7 active agents running heartbeats simultaneously.
+- **Since last cycle (06:23)**:
+  - **Coach EXP-132 IMPLEMENTED**: Path hallucination guard built, tested (41 tests, 0 failures), deployed. Guard live in production as 3rd in composeGuards chain. Results at `agents/shared/knowledge/experiments/EXP-132/results.md`.
+  - **Bob EXP-130 KB confirmed already done**: Both work session phases verified all files already updated. Zero new work needed.
+  - **Optimizer Session Archaeology completed**: Coach 88-op EXP-130 analysis + D-o-R n=4/5 check.
+  - **QA reviewed EXP-132 commit**: Reviewed 7854d50 path hallucination guard.
+  - **All agents self-directing**: Zero pending requests. Zero failures. Zero May interventions needed.
+- **Key**: EXP-132 path hallucination guard now live — 4th production guard (after empty-args, tool-schema, completeness). Observation window starts now (48-72h).
