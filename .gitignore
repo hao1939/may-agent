@@ -3,6 +3,10 @@
 *.log
 *.bak
 
+# Federation conflict artifacts — ephemeral, reviewed manually
+*.conflict-k3s
+*.conflict-local
+
 # Lab experiments — ephemeral
 .lab/
 
