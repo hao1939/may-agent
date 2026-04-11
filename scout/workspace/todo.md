@@ -725,8 +725,15 @@
   1. KE-106 habituation literature (low priority)
   2. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
 
+## Session 647 (2026-04-11 11:23 UTC) — Saturday morning heartbeat (lean)
+- **New since Session 646**: EXP-135 KB integration (H-101 Architectural Readiness, KE-137 Guard Bifurcation — Bob). EXP-136 guard rate decomposition: 20% of FM-3.3 blocks are git-commit inflation, Bob genuinely improving (58%→24%) masked by inflation. Session startup flow complexity analysis (guard chain justified, coder 45KB skills biggest optimization lever). All internal — no Scout research needed.
+- **Clean state**: All deliverables committed. No pending tasks or urgent leads. Weekend — no fresh arXiv until Monday.
+- **Research priorities** (weekend — unchanged):
+  1. KE-106 habituation literature (low priority)
+  2. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+
 ## Counters
 - DD: 749
 - CR: 338
-- Session: 646
+- Session: 647
 
