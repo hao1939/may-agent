@@ -12,7 +12,6 @@ import type { SessionInfo } from "./types.js";
 import type { ActiveSession, RegisteredAgent } from "./manager-utils.js";
 import { formatDuration } from "./manager-utils.js";
 import { extractFinishParams, lastTurnCalledFinish } from "./manager-retry.js";
-import { isOverflowError, extractProgress, writeProgressFile } from "./overflow.js";
 
 // ── Error patterns that are post-finish artifacts (not real failures) ──
 
@@ -92,24 +91,15 @@ export function clearPostFinishErrors(session: ActiveSession): void {
 // ── Step 3: Handle context overflow ───────────────────────────────────
 
 /**
- * On context overflow, dump structured progress to the agent's workspace.
- * Best-effort — failures are silently ignored.
+ * On context overflow, previously dumped structured progress to the agent's workspace.
+ * Now a no-op — the digest system handles overflow recording.
  */
 export function handleOverflow(
   session: ActiveSession,
   agents: Map<string, RegisteredAgent>,
 ): void {
-  if (!session.error || !isOverflowError(session.error)) return;
-
-  const registered = agents.get(session.agentName);
-  const workspace = registered?.definition.workspace;
-  if (!workspace) return;
-
-  try {
-    writeProgressFile(workspace, extractProgress(session.task, session.agent.state.messages, session.error));
-  } catch {
-    /* best-effort */
-  }
+  // Overflow detection is still useful for logging; actual progress writing
+  // was removed (dead output system replaced by digest).
 }
 
 // ── Step 4: Detect shallow heartbeats ─────────────────────────────────
