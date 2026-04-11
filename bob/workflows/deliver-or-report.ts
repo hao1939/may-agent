@@ -236,14 +236,15 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     ctx.emit({ type: "step_start", step: "phase2-deliver-remaining" });
 
     const phase2NarrowPrompt =
-      `## Phase 2: Write REMAINING Deliverables Only\n\n` +
+      `## Phase 2: Write REMAINING Deliverables Only — BUDGET: 25 TOOL CALLS MAX\n\n` +
       `### Original Task\n${ctx.task}\n\n` +
       `### Plan from Phase 1\n${planText}\n\n` +
       `### ✅ Already written (Phase 1 wrote these — DO NOT redo):\n` +
       alreadyExist.map(f => `- ${f}`).join("\n") + "\n\n" +
       `### ❌ Still missing — WRITE THESE NOW:\n` +
       stillMissing.map(f => `- ${f}`).join("\n") + "\n\n" +
-      `### Instructions\n` +
+      `### Instructions — STRICT 25 TOOL CALL BUDGET\n` +
+      `You have a **hard budget of 25 tool calls** for this phase. Plan accordingly.\n\n` +
       `Phase 1 already wrote ${alreadyExist.length} of ${plannedFiles.length} deliverables.\n` +
       `You ONLY need to write the ${stillMissing.length} missing file(s) listed above.\n\n` +
       `1. Write each missing deliverable file.\n` +
@@ -251,7 +252,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       `3. If a write fails, try edit() → write() → bash("cat > ...") in order.\n` +
       `4. Do NOT re-analyze. Do NOT rewrite already-completed files. Just write the missing ones.\n` +
       `5. Before calling finish(), verify every missing file now exists on disk.\n\n` +
-      `⚠️ You MUST write the missing file(s). Finishing without them = failure.\n\n` +
+      `⚠️ You MUST write the missing file(s). Finishing without them = failure.\n` +
+      `⚠️ **If you've used 20 tool calls, STOP and call finish() NOW** — deliverable quality matters more than thoroughness.\n\n` +
       `⛔ DO NOT call callAgent() or spawn sub-agents — this creates infinite nested workflows that waste hundreds of ops. Write the deliverables yourself.`;
 
     const phase2 = await ctx.runAgent("bob", phase2NarrowPrompt);
@@ -267,10 +269,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     ctx.emit({ type: "step_start", step: "phase2-deliver" });
 
     const phase2Prompt =
-      `## Phase 2: Write Deliverables NOW\n\n` +
+      `## Phase 2: Write Deliverables NOW — BUDGET: 25 TOOL CALLS MAX\n\n` +
       `### Original Task\n${ctx.task}\n\n` +
       `### Plan from Phase 1\n${planText}\n\n` +
-      `### Instructions — YOUR ONLY JOB IS TO WRITE THE DELIVERABLES\n` +
+      `### Instructions — STRICT 25 TOOL CALL BUDGET\n` +
+      `You have a **hard budget of 25 tool calls** for this phase. Plan accordingly.\n` +
       `You have already analyzed the task in Phase 1. The plan is above.\n` +
       `Now execute it:\n\n` +
       `1. Write each deliverable file listed in the plan.\n` +
@@ -285,6 +288,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       `⚠️ You MUST produce at least one deliverable file. If you finish without\n` +
       `   writing any file, this session has FAILED. Analysis without output = failure.\n\n` +
       `⚠️ If finish(status: "success") is called, at least one deliverable MUST exist.\n\n` +
+      `⚠️ **If you've used 20 tool calls, STOP and call finish() NOW** — deliverable quality matters more than thoroughness.\n\n` +
       `⛔ DO NOT call callAgent() or spawn sub-agents — this creates infinite nested workflows that waste hundreds of ops. Write the deliverables yourself.`;
 
     const phase2 = await ctx.runAgent("bob", phase2Prompt);
@@ -334,7 +338,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     ctx.emit({ type: "step_start", step: "phase2b-complete-missing" });
 
     const phase2bPrompt =
-      `## Phase 2b: Complete Missing Deliverables\n\n` +
+      `## Phase 2b: Complete Missing Deliverables — BUDGET: 20 TOOL CALLS MAX\n\n` +
       `### Original Task\n${ctx.task}\n\n` +
       `### Plan from Phase 1\n${planText}\n\n` +
       `### Status: INCOMPLETE — ${missing.length} of ${uniqueFiles.length} deliverables missing\n\n` +
@@ -342,7 +346,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       verified.map(f => `- ${f}`).join("\n") + "\n\n" +
       `### ❌ Still missing — YOU MUST COMPLETE THESE:\n` +
       missing.map(f => `- ${f}`).join("\n") + "\n\n" +
-      `### Instructions\n` +
+      `### Instructions — STRICT 20 TOOL CALL BUDGET\n` +
+      `You have a **hard budget of 20 tool calls** for this phase.\n\n` +
       `Phase 2 completed ${verified.length} of ${uniqueFiles.length} planned deliverables.\n` +
       `The remaining ${missing.length} file(s) listed above were NOT written.\n\n` +
       `1. For each missing file, write it NOW using the plan from Phase 1.\n` +
