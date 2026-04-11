@@ -60,6 +60,22 @@ const SEARCH_COMMAND_PREFIXES = [
   "echo\t",
   "printf ",
   "printf\t",
+  "sed ",
+  "sed\t",
+];
+
+/**
+ * Inline script commands where the hallucinated path is inside a quoted
+ * code string — not a real filesystem access. E.g.:
+ *   bun -e 'const p = "/home/user"; ...'
+ *   node -e "console.log('/Users/dev')"
+ *   python -c "print('/root/path')"
+ */
+const INLINE_SCRIPT_PATTERNS = [
+  /^bun\s+(-e|--eval)\s/,
+  /^node\s+(-e|--eval)\s/,
+  /^python[23]?\s+-c\s/,
+  /^deno\s+(eval|run\s+-e)\s/,
 ];
 
 /**
@@ -75,6 +91,11 @@ function isSearchCommand(command: string): boolean {
   // Direct search command: `grep -r "/home" src/`
   for (const prefix of SEARCH_COMMAND_PREFIXES) {
     if (trimmed.startsWith(prefix)) return true;
+  }
+
+  // Inline script: `bun -e 'code mentioning /home'`
+  for (const pattern of INLINE_SCRIPT_PATTERNS) {
+    if (pattern.test(trimmed)) return true;
   }
 
   // Piped search: `cat file | grep "/home"`
@@ -123,7 +144,8 @@ function findHallucinatedPath(command: string): { prefix: string; fullMatch: str
  * - ~/ — tilde expansion (expands to non-existent home)
  *
  * Exclusions:
- * - grep/rg/ag/ack/echo/printf commands (searching for patterns)
+ * - grep/rg/ag/ack/echo/printf/sed commands (searching for patterns)
+ * - bun -e / node -e / python -c inline scripts (path in string literal)
  *
  * @returns Guard hook compatible with composeGuards()
  */

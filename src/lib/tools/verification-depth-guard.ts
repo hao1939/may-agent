@@ -108,10 +108,54 @@ function isGitOnAgentsPath(command: string): boolean {
   return gitCommandPattern.test(command) && agentsPathPattern.test(command);
 }
 
+// ──────────────────────────────────────────────────────────────────────
+// Process artifact exclusions
+// ──────────────────────────────────────────────────────────────────────
+
+/**
+ * Filenames (case-insensitive, without extension) that are process artifacts
+ * created by other guards — NOT deliverables that need post-write verification.
+ *
+ * - DELIVERABLES_CHECKLIST: created by completeness-guard.ts
+ *
+ * These files are guard-generated scaffolding, not agent deliverables.
+ * Requiring read-back verification for them creates false positives.
+ */
+const PROCESS_ARTIFACT_PATTERNS: RegExp[] = [
+  /DELIVERABLES_CHECKLIST/i,
+];
+
+/**
+ * Check if a tool call writes to a process artifact (guard-generated file).
+ * These writes are excluded from verification requirements.
+ */
+function isProcessArtifactWrite(call: ToolCallRecord): boolean {
+  if (call.name === "write" || call.name === "edit") {
+    const p = call.args.path;
+    if (typeof p === "string") {
+      return PROCESS_ARTIFACT_PATTERNS.some(pat => pat.test(p));
+    }
+  }
+
+  if (call.name === "bash") {
+    const cmd = String(call.args.command ?? "");
+    // Check if bash write targets a process artifact
+    if (/(?:>\s*[^\s]|>>\s*[^\s]|\btee\b|\bsed\s+-i\b|\bcat\s*>)/.test(cmd)) {
+      return PROCESS_ARTIFACT_PATTERNS.some(pat => pat.test(cmd));
+    }
+  }
+
+  return false;
+}
+
 /**
  * Check if a tool call is a "write" operation (creates or modifies files).
+ * Excludes writes to process artifacts (guard-generated files).
  */
 function isWriteCall(call: ToolCallRecord): boolean {
+  // Process artifact writes don't count as deliverable writes
+  if (isProcessArtifactWrite(call)) return false;
+
   if (call.name === "write" || call.name === "edit") return true;
 
   if (call.name === "bash") {
