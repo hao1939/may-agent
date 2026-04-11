@@ -805,8 +805,16 @@
   1. KE-106 habituation literature (low priority)
   2. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
 
+## Session 657 (2026-04-11 16:23 UTC) — Saturday afternoon heartbeat (lean)
+- **EXP-140 COMPLETE (Coach)**: Agent Read Patterns Study — 37.8% duplicate reads across 1,543 read events, Bob worst offender (46% sessions have dupes). KE-140 written. Internal efficiency finding — read dedup guard audit needed. Not a Scout research lead.
+- **EXP-139 DEPLOYED for Optimizer**: verify-wrap production pilot retargeted from Scout (architectural mismatch) to Optimizer. No Scout action needed.
+- **Clean state**: All deliverables committed. No pending tasks or urgent leads. Weekend — no fresh arXiv until Monday.
+- **Research priorities** (weekend — unchanged):
+  1. KE-106 habituation literature (low priority)
+  2. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+
 ## Counters
 - DD: 749
 - CR: 338
-- Session: 656
+- Session: 657
 
