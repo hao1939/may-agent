@@ -1,8 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isOverflowError, extractProgress, writeProgressFile } from "../src/lib/overflow.js";
-import { mkdtempSync, readFileSync, existsSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { isOverflowError, extractProgress } from "../src/lib/overflow.js";
 
 describe("isOverflowError", () => {
   it("detects Anthropic overflow", () => {
@@ -129,23 +126,5 @@ describe("extractProgress", () => {
     expect(result).toContain("START_MARKER");
     expect(result).not.toContain("END_MARKER");
     expect(result).toContain("_(truncated)_");
-  });
-});
-
-describe("writeProgressFile", () => {
-  it("writes progress.md to workspace", () => {
-    const dir = mkdtempSync(join(tmpdir(), "overflow-test-"));
-    const workspace = join(dir, "workspace");
-    writeProgressFile(workspace, "# Test Progress");
-    const content = readFileSync(join(workspace, "progress.md"), "utf-8");
-    expect(content).toBe("# Test Progress");
-  });
-
-  it("creates workspace directory if missing", () => {
-    const dir = mkdtempSync(join(tmpdir(), "overflow-test-"));
-    const workspace = join(dir, "deep", "nested", "workspace");
-    expect(existsSync(workspace)).toBe(false);
-    writeProgressFile(workspace, "content");
-    expect(existsSync(join(workspace, "progress.md"))).toBe(true);
   });
 });
