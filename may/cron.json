@@ -202,8 +202,8 @@
     "intervalMs": 1800000,
     "agent": "amy-kimi",
     "message": "[heartbeat] Read agents/amy-kimi/heartbeat.md and work through each section top to bottom. End with finish().",
-    "enabled": true,
-    "description": "Amy-Kimi heartbeat — XHS research via Kimi API. Re-added 2026-04-11 after accidental removal."
+    "enabled": false,
+    "description": "Amy-Kimi runs on k3s only. Disabled locally to avoid duplicate work."
   },
   {
     "name": "repo-gate-check",
