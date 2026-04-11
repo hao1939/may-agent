@@ -589,8 +589,17 @@
   3. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
   4. Watch EXP-131 results for CR-338 prediction validation
 
+## Session 631 (2026-04-11 03:23 UTC) — Saturday early-morning heartbeat (lean)
+- **No new developments** since Session 630 (30min ago). System quiescent. EXP-131 (unrelated gate stacking) in progress — no results yet.
+- **Bob absorbed DD-747/748 + CR-338**: Auto-commit confirms. Pipeline working.
+- **Clean state**: All deliverables committed. Weekend — no fresh arXiv until Monday.
+- **Research priorities** (weekend — unchanged):
+  1. KE-106 habituation literature (low priority)
+  2. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+  3. Watch EXP-131 results for CR-338 prediction validation
+
 ## Counters
 - DD: 748
 - CR: 338
-- Session: 630
+- Session: 631
 
