@@ -53,8 +53,8 @@ Few-shot examples in the task message operate through Channel 3 (positional priv
 ### Why instruction overhead is harmful (KE-025, Law 3)
 Each text instruction added to the system prompt increases Channel 1 competition. More tokens competing for the same attention budget = each individual instruction receives less processing. This isn't just "dilution" (spreading attention thinner) — it's *interference* (conflicting instructions create contradictory attention gradients). DD-537 (ETH Zürich) confirms: more context files hurt performance, each instruction is a potential failure mode.
 
-### Why execution crowding occurs (KE-064)
-Chaining multiple forced externalizations (analyze → cite → implement) works for each individual step but crowds out the primary task. This is Channel 2 overload: each environmental gate consumes execution budget. One externalization per task is optimal because it switches the channel for the judgment step without consuming the entire budget. The attention budget applies within Channel 2 as well — each structural intervention has a cost.
+### Why execution crowding occurs (KE-064) — ⚠️ REVISED by EXP-129
+Chaining multiple forced externalizations (analyze → cite → implement) works for each individual step but ~~crowds out the primary task~~. ~~This is Channel 2 overload: each environmental gate consumes execution budget. One externalization per task is optimal because it switches the channel for the judgment step without consuming the entire budget.~~ **EXP-129 update**: Up to 3 related analytical gates show NO crowding (100% at 3 gates). Crowding only appears at 4 gates (67%), and manifests as implementation degradation, not judgment degradation. The attention budget applies within Channel 2 as well — each structural intervention has a cost — but the budget is larger than originally estimated. KE-064 may reflect interference from *unrelated* gates or a different task type than the analytical judgment tested in EXP-129.
 
 ### Why agent-specific interventions outperform universal ones (H-095)
 Universal interventions try to address all failure modes through Channel 1 (add rules for all agents). Agent-specific structural interventions target the *specific* channel bottleneck for each agent's failure pattern. Optimizer's FM-2.2 (misinterpretation) → checklist gate (Channel 2, +100pp). Bob's FM-1.3 (exhaustive reading) → discovery guard (Channel 2) — ⚠️ **null result** (EXP-124 v2: 83% vs 83%, p=1.0; v1 +100pp invalidated by runner bug). The same Channel 2 mechanism (forced checklist) that gives Optimizer +100pp gives Bob -67pp on discovery tasks (EXP-117) — because the *specific* gate must match the *specific* failure. Discovery tasks remain an open problem.
@@ -70,8 +70,8 @@ There exists a sharp transition, not a gradient, between Channel 1 (text, ~0% on
 ### P-098b: Channel 3 Effectiveness Is Domain-Bounded *(REFINED by EXP-128, EXP-130)*
 Task-message delivery (Channel 3) effectiveness is bounded by ~~the degree of structural similarity between the example and the target task~~ **task type**: behavioral tasks (where few-shot directly templates response format) achieve ~100%, while analytical judgment tasks (where agent must interrupt execution flow) achieve ~0% regardless of content quality, **and discovery tasks (where creative inference is required) show actively HARMFUL effects** (-67pp, p=0.030). The boundary is not domain match or content quality (H-128 rejected) but whether the task requires coding execution momentum to be interrupted or creative exploration. **Evidence**: H-091 domain proximity boundary (EXP-094), EXP-127 (Ch3 0/6 on analytical), EXP-128 (3 content variants all 0/6 → content not the moderator), EXP-095 (100% on behavioral), EXP-130 (Ch3 2/6 vs 6/6 baseline on discovery → template-following displaces exploration).
 
-### P-098c: Channel 2 Capacity Is ~1 Intervention Per Task
-Environmental-state interventions have their own attention budget, distinct from Channel 1. The budget is approximately one forced externalization per task. Two gates in sequence should produce execution crowding (already confirmed by KE-064). Three gates should produce near-zero task completion. **Testable**: Chain 1, 2, 3 forced externalizations and measure task completion curve — expect cliff function, not linear decay.
+### P-098c: Channel 2 Capacity Is ~1 Intervention Per Task — **REJECTED (EXP-129)**
+Environmental-state interventions have their own attention budget, distinct from Channel 1. ~~The budget is approximately one forced externalization per task. Two gates in sequence should produce execution crowding (already confirmed by KE-064). Three gates should produce near-zero task completion.~~ **EXP-129 result**: 1g 86%, 2g 83%, 3g 100%, 4g 67%. Budget is at least 3 related analytical gates. **Testable**: ~~Chain 1, 2, 3 forced externalizations and measure task completion curve — expect cliff function, not linear decay.~~ **Done**: No cliff. Hump curve. Follow-up: test with *unrelated* gates to see if gate-task relevance moderates the budget.
 
 ### P-098d: System-Prompt Channel 1 Capacity Is Inversely Proportional to Task Complexity
 For simple tasks (high R), Channel 1 text interventions may show marginal effect because task-execution tokens are less demanding, leaving spare attention for behavioral modifiers. For complex tasks (low R), Channel 1 effectiveness drops to zero because all attention is consumed by task execution. **Testable**: Measure text-rule effectiveness across tasks binned by complexity — expect interaction between intervention type and task difficulty.
@@ -101,6 +101,7 @@ Because Channel 2 operates through environmental state (not text competition), a
 | **EXP-128: Ch3 Boundary Conditions** | **Ch 3 boundary** | **Supports (clarifies boundary)** | **★★★★** |
 | KE-025: instruction overhead harmful | Ch 1 competition | Supports | ★★★★ |
 | KE-064: execution crowding at 2+ gates | Ch 2 budget | Supports | ★★★★ |
+| **EXP-129: Ch2 Budget Curve (Gate Stacking)** | **Ch 2 budget** | **Contradicts P-098c** | **★★★★** |
 | H-091: 15/15 task-msg, 0/9 sys-prompt | Ch 3 privilege | Supports | ★★★★ |
 | KE-020: 0% available, 100% automatic | Ch 1→2 transition | Supports | ★★★★ |
 | KE-034: wrong analysis = correct analysis | Channel switch > content | Supports | ★★★★ |
@@ -113,15 +114,17 @@ Because Channel 2 operates through environmental state (not text competition), a
 
 **EXP-130 Details** (2026-04-11): Ch3 few-shot on discovery task (KB integration). Domain-matched examples with before/after patterns. Treatment 2/6 (33%) vs baseline 6/6 (100%). Fisher's exact p=0.030. Ch3 is not just null but actively HARMFUL on discovery tasks. Mechanism: template-following displaces the exploratory behavior needed for creative inference. Few-shot examples constrain the solution search space — the agent follows the example pattern rather than discovering what the specific task requires. This extends the Ch3 task-type boundary: behavioral (100%) → analytical (0%) → discovery (actively harmful). → KE-133.
 
-**Cumulative direction**: 12 supporting, 1 neutral, 0 contradicting. Two direct tests confirm 3/4 predictions + 1 boundary clarified. Channel 3 model refined: task-type boundary (behavioral vs analytical vs discovery under coding momentum).
+**EXP-129 Details** (2026-04-11): Direct test of P-098c (Ch2 budget curve). 4-arm design stacking 1-4 forced externalization gates on `contradictory-requirements` scenario. N=6-7 per arm. Results: 1-gate 86% (6/7), 2-gate 83% (5/6), 3-gate 100% (6/6), 4-gate 67% (4/6). **P-098c REJECTED** — no cliff function. Instead a "hump curve" peaking at 3 gates. No pairwise comparison significant (N too small), but the pattern is clear: gates don't crowd out execution until at least 4 are stacked, and even then degradation is modest (67%, not 0%). Failure mode at 4 gates was implementation quality (tests-pass), NOT judgment quality (contradiction-identified — which passed 5/5 at 4 gates). Duration scales linearly: +167s/gate. KE-064 (execution crowding at 2+ gates) needs revision — it may be task-specific or apply only to different gate types. → Revises P-098c, revises KE-064.
+
+**Cumulative direction**: 12 supporting, 1 neutral, 1 contradicting (P-098c). Two direct tests confirm 3/4 predictions + 1 boundary clarified. Channel 3 model refined: task-type boundary (behavioral vs analytical vs discovery under coding momentum). **EXP-129 rejects P-098c**: Ch2 budget is NOT ~1 gate — 3 gates show 100% and even 4 gates show 67%, not the predicted cliff.
 
 ## Open Questions
 
 1. **Is Channel 3 truly intermediate, or is it a special case of Channel 1?** The positional privilege effect (task-message vs system-prompt) could be a continuous gradient or a categorical boundary. EXP-096 suggests categorical, but more experiments needed. **EXP-128 update**: Ch3 is NOT Channel 1 — it works for behavioral tasks (EXP-095: 100%) but fails for analytical judgment under coding momentum. This is a task-type boundary, not a channel identity question. Ch3 is a genuine intermediate channel with its own preconditions.
 
-2. **What is the Channel 2 attention budget?** We know 1 externalization works and 2+ crowd out execution. Is the budget literally one gate, or is it proportional to total execution time?
+2. **What is the Channel 2 attention budget?** ~~We know 1 externalization works and 2+ crowd out execution. Is the budget literally one gate, or is it proportional to total execution time?~~ **EXP-129 update**: Budget is NOT ~1 gate. 3 related analytical gates show 100% pass rate, 4 gates show 67%. The budget is at least 3 gates for related analytical tasks. Remaining question: is the budget proportional to gate-task relevance? (i.e., do *unrelated* gates crowd out faster?)
 
-3. **Can Channel 2 interventions interfere with each other?** Two different structural gates might compete for execution time without any text-channel competition. Is this a fundamentally different type of resource constraint?
+3. **Can Channel 2 interventions interfere with each other?** Two different structural gates might compete for execution time without any text-channel competition. Is this a fundamentally different type of resource constraint? **EXP-129 update**: Related gates (analysis → impact → risk → plan) do NOT interfere up to 3 gates. At 4 gates, interference manifests as implementation degradation (tests-pass fails), not judgment degradation. Gate relevance may be a key moderator.
 
 4. **Does the channel model generalize to other LLMs?** All evidence is from a single model family. If Channel 1 suppression is architectural (causal decoder attention patterns), it should generalize. If it's alignment-training-specific, it might not.
 
@@ -140,10 +143,11 @@ Prediction: Baseline 0%, Ch1 0-17%, Ch3 83-100%, Ch2 83-100%. N=6 per arm (24 to
 **Follow-up**: EXP-128 tested whether Ch3 miss was due to content quality (H-128). Three content variants all 0/6 → content NOT the moderator. Ch3 has task-type boundary (KE-132).
 **Files**: `agents/shared/knowledge/experiments/EXP-127/design.md`, `protocol.md`, `results.md`; `agents/shared/knowledge/experiments/EXP-128/design.md`, `results.md`
 
-### EXP-E2: Channel 2 Budget Curve
+### EXP-E2: Channel 2 Budget Curve → **EXP-129 (COMPLETE — P-098c REJECTED)**
 Design: Chain 1, 2, 3, 4 forced externalization gates on a judgment task.
 Prediction: ~100%, ~50%, ~10%, ~0% task completion. Cliff between 1-2 gates.
-N=3 per condition.
+**Results**: 1g 86%, 2g 83%, 3g 100%, 4g 67%. No cliff. Hump curve peaking at 3 gates. P-098c rejected.
+**Files**: `agents/shared/knowledge/experiments/EXP-129/design.md`, `results.md`
 
 ### EXP-E3: Prompt Length × Channel Interaction
 Design: Forced externalization (Channel 2) with 10KB, 25KB, 50KB, 100KB system prompts.
@@ -162,6 +166,6 @@ H-098 is not just a description of what works — it's a **prescriptive decision
 
 3. **Use Channel 3** (task-message examples) as a lightweight alternative when Channel 2 infrastructure is too costly, **but only for behavioral tasks** where the few-shot directly templates the response. For analytical judgment tasks (contradiction detection, quality assessment under coding momentum), Channel 3 is ineffective regardless of content quality (EXP-128, KE-132). For discovery tasks (creative inference, novel pattern identification), Channel 3 is actively **harmful** — template-following displaces exploration (EXP-130, KE-133).
 
-4. **Budget Channel 2 interventions**: One structural gate per task. Choose the gate that addresses the highest-impact failure mode. More gates = worse outcomes.
+4. **Budget Channel 2 interventions**: ~~One structural gate per task.~~ **EXP-129 update**: Up to 3 related analytical gates per task with no degradation. At 4 gates, mild degradation (67%) manifests as implementation quality loss, not judgment loss. Choose gates that are analytically related to the task. Duration cost is real: +167s/gate. More gates = longer execution, which may matter more than accuracy loss.
 
 The channel model predicts that future intervention research should focus on expanding Channel 2 capacity (can we chain gates without crowding?) and understanding Channel 3 task-type boundaries (behavioral=100%, analytical=0%, discovery=harmful — what's the distinguishing feature?), rather than finding better Channel 1 content (which is provably futile for judgment tasks) or better Channel 3 content (which EXP-128/130 shows is futile or harmful for non-behavioral tasks).

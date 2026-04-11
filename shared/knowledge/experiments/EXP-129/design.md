@@ -1,7 +1,7 @@
 # EXP-129: Channel 2 Budget Curve — Forced Externalization Gate Stacking
 
 **Date**: 2026-04-10
-**Status**: RUNNING
+**Status**: COMPLETE — Hypothesis REJECTED
 **Hypothesis**: H-098 P-098c — Channel 2 capacity is ~1 intervention per task
 **Executor**: Coach
 **Planned by**: EXP-E2 in H-098
