@@ -6,7 +6,7 @@
  * (100+ gym runs, 18/18 matched = 100%).
  *
  * Usage:
- *   import { injectFewShot } from "./fewshot-inject.js";
+ *   import { injectFewShot } from "./fewshot-inject-helpers.js";
  *   const enrichedTask = injectFewShot(originalTask);
  *
  * Rules (from KE-065):

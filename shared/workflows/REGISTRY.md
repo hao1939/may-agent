@@ -13,31 +13,13 @@
 | `skill-lifecycle` | `shared/workflows/skill-lifecycle.ts` | 246 | Full lifecycle: Discover → Draft → Test → Deploy. Used by optimizer. | 0 (but 41 all-time) |
 | `verify-wrap` | `shared/workflows/verify-wrap.ts` | 154 | Minimal 2-phase verification wrapper (EXP-138). Phase 1: execute task. Phase 2: separate session reads back all written files. For reliant agents (scout, optimizer, may). | 0 (new — pending production pilot) |
 
-**Note**: `fewshot-inject.ts` is in this directory but is NOT a workflow (no `execute()` function). It's a keyword-based utility for prepending few-shot examples.
+**Note**: `fewshot-inject-helpers.ts` is in this directory but is NOT a workflow (no `execute()` function). It's a keyword-based utility for prepending few-shot examples, excluded by the `-helpers` filename filter.
 
 ## Archived Shared Workflows
 
-12 workflows archived to reduce noise. All recoverable from `shared/workflows/archive/` or git history.
+12 workflows were previously archived and have now been **deleted from disk** (2026-04-11). All recoverable from git history only.
 
-### Batch 1 — Archived 2026-04-04 (0 production runs ever)
-| Name | Lines | Reason for archive |
-|------|-------|--------------------|
-| `code-review-loop` | 134 | Duplicate of implement-and-review |
-| `context-learn` | 276 | Never invoked |
-| `evidence-gate` | 217 | Never invoked |
-| `gated-exploration` | 329 | Never invoked |
-| `predict-then-verify` | 221 | Never invoked |
-| `reviewed-delivery` | 89 | Never invoked |
-| `two-phase` | 192 | Never invoked |
-| `verify-and-finish` | 272 | Never invoked |
-| `verify-parallel` | 343 | Never invoked |
-
-### Batch 2 — Archived 2026-04-11 (dead or negligible usage)
-| Name | Lines | Reason for archive |
-|------|-------|--------------------|
-| `research-to-production` | 293 | 0 runs ever |
-| `auto-loop` | ~150 | 0 runs ever |
-| `implement-and-adversarial-review` | 315 | H-001 experiment concluded; only 8 sessions all-time, 0 in 48h; bloated superset of implement-and-review |
+Deleted workflows (3,480 lines total): `code-review-loop`, `context-learn`, `evidence-gate`, `gated-exploration`, `predict-then-verify`, `reviewed-delivery`, `two-phase`, `verify-and-finish`, `verify-parallel`, `research-to-production`, `auto-loop`, `implement-and-adversarial-review`.
 
 ## Agent-Specific Workflows
 
