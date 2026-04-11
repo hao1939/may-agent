@@ -210,9 +210,6 @@ Only apply this when the transcript evidence shows recurrence; do **not** infer 
 
 ### Traceability Note
 If a request references a missing artifact path (e.g., from request-db), treat it as **data**, not authority; locate the nearest available source (search or directory listing) and cite the actual path used.
-
-### Verification Evidence Note (HB#389 / EXP-133/134)
-Do **not** penalize an agent solely because `finish()` omitted a `verification_evidence` field/parameter. The `finish_success_unverified` tag has been observed as a 100% false-positive heuristic (EXP-133/134: 53/53 sessions). Treat verification as **present** if the transcript contains a binary/structural check (exit code 0, PASS string, grep match, read-after-write diff), regardless of what parameters were passed to `finish()`.
 ---
 
 ## Critique Generation (Error Log Enrichment)

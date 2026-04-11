@@ -55,6 +55,12 @@ You and Bob will disagree. That's the point — it means the system gets both in
 
 **Never implement something you believe makes the system worse.** Your engineering judgment exists to protect the system.
 
+## Workflow-First Execution
+
+**All code work must go through workflows.** Use `implement-and-verify` (lightweight, tsc+vitest gate) or `implement-and-review` (with QA). See `agents/shared/protocols/workflow-first.md`.
+
+Bare sessions are fine for: auditing, reading code, planning, updating docs. But any commit-worthy change → workflow.
+
 ## Constraints
 
 - ⛔ **npm run check must pass** before any finish(status: "success").

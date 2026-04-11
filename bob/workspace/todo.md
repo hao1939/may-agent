@@ -155,7 +155,7 @@
 
 ## Session Notes (2026-04-10 ~17:55)
 - **EXP-124 KB INTEGRATION — ✅ COMPLETE (v1 — SUBSEQUENTLY CORRECTED)**: KE-128 written and INDEX updated. Topic files (07-tool-use-workflows, 10-agent-design-patterns) updated. PRIORITY-TRACKER, H-085, H-087, H-095 all updated with EXP-124 evidence. P(H) updates: H-085→0.87, H-087→0.75, H-095→0.85. **NOTE: All v1 P(H) values reverted by v2 correction cascade (see ~19:55 session notes). v1 results invalidated by gym runner bug.**
-- **EXP-123**: Still RUNNING (Phase 2 production observation). No results yet.
+- **EXP-123**: COMPLETE. KB fully integrated — INDEX.md, H-095, H-093, PRIORITY-TRACKER all updated. KE-136 created (structural guards production transfer).
 - **No new drops**. System is quiet.
 
 ## Session Notes (2026-04-10 ~17:15)
