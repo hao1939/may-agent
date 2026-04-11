@@ -1,7 +1,7 @@
 # H-087: Constitutional Externalization — Forced Externalization Operates at Three Recursive Levels
 
-**Status**: P3 SUPPORTED (retrospective). Designed experiments produce KE entries 2.05x more often than ad-hoc ones (78.9% vs 38.5%, p≈0.013, N=51). Correlational, not causal — temporal/ambition/author confounds present. **EXP-124**: First direct COMPARISON evidence — L7 workflow architecture (+100pp) vs L3-L4 text instructions (−67pp, −50pp, null) on same task type. 4th task-level instantiation of write→gate→act pattern (agent writes nav-map.md → gate requires it → Phase 1 acts on it). P(H) 0.72→0.75. Also supported by structural argument (KE-038) and indirect evidence (KE-043, KE-044, KE-033). EXP-072 provides indirect support at harness level.
-**Source**: KE-038 (Constitutional Bounded Self-Improvement), KE-043 (Forced Externalization Complete Picture), KE-044 (Verification Separation), KE-033 (Scale Invariance), KE-128 (Phase 0 Discovery), H-085 (General Mechanism), H-055 (Self-Improvement Paradox), EXP-072 (workaround-resistant scenario design), EXP-124 (Phase 0 structural guard — strongest L7 evidence)
+**Status**: P3 SUPPORTED (retrospective). Designed experiments produce KE entries 2.05x more often than ad-hoc ones (78.9% vs 38.5%, p≈0.013, N=51). Correlational, not causal — temporal/ambition/author confounds present. **EXP-124**: Originally cited as first direct COMPARISON evidence — L7 workflow architecture (+100pp) vs L3-L4 text instructions. **⚠️ CORRECTED**: EXP-124 v2 (post-runner-fix) shows NULL RESULT (83% vs 83%, p=1.0, N=6+6). The v1 +100pp result was an artifact of a gym runner file-sync bug. The L7 > L3-L4 comparison on discovery tasks is NO LONGER SUPPORTED by this data. P(H) 0.75→0.72 (reverted). Still supported by structural argument (KE-038) and indirect evidence (KE-043, KE-044, KE-033). EXP-072 provides indirect support at harness level.
+**Source**: KE-038 (Constitutional Bounded Self-Improvement), KE-043 (Forced Externalization Complete Picture), KE-044 (Verification Separation), KE-033 (Scale Invariance), KE-128 (Phase 0 Discovery — CORRECTED: null result), H-085 (General Mechanism), H-055 (Self-Improvement Paradox), EXP-072 (workaround-resistant scenario design), EXP-124 (Phase 0 structural guard — **NULL RESULT**, v1 invalidated)
 **Date**: 2026-04-07
 **Filed by**: Bob (Architect)
 **Priority**: Medium — extends proven mechanism to two untested levels; testable with existing infrastructure
@@ -44,13 +44,13 @@ KE-044 (Verification Separation Thesis) provides structural evidence:
 - This IS harness-level externalization: the meta-optimization process must write its judgment (what to change) in a verifiable artifact before deploying changes
 - Our own system partially implements this: experiment designs (write plan → validation gate → deploy skill) follow the pattern, but not all harness changes go through this gate
 
-**EXP-124 (Phase 0 Discovery Guard)** provides the strongest NEW evidence at the harness level:
+**EXP-124 (Phase 0 Discovery Guard)** — ⚠️ **CORRECTED: NULL RESULT**
 - Phase 0 structural guard forces agent to write nav-map.md artifact BEFORE navigating a knowledge base — this is L7 (harness-level) externalization because it modifies the workflow architecture, not in-context instructions
-- +100pp effect (0%→100%, N=3+3) on FM-1.3 path-guessing/flailing
-- Critical comparison: text-based L3-L4 interventions on the same task type FAILED (EXP-117: -67pp checklist, EXP-120: -50pp tracking instruction, EXP-122: null environmental hints). Only the structural workflow intervention succeeded
-- This directly supports H-087's prediction that higher-level externalization is more powerful than lower-level: L7 harness (structural workflow) > L3-L4 work (text instructions) on discovery tasks
-- Maps to the level hierarchy: L1-L2 (text rules) → fails on discovery. L3-L4 (process instructions) → fails on discovery. L5-L6 (forced artifact) → succeeds when structurally enforced. L7 (workflow architecture) → the Phase 0 guard IS a workflow architecture change
-- KE-128 codifies the specific mechanism: mandatory directory listing → nav-map.md artifact → gated subsequent navigation
+- **v1 results (INVALIDATED)**: +100pp (0%→100%, N=3+3) — caused by gym runner file-sync bug (syncNewFilesFromRoot only synced new files, not modified files in existing directories)
+- **v2 results (post-runner-fix)**: 83% baseline vs 83% treatment (p=1.0, N=6+6) — **NO treatment effect**
+- The critical L7 > L3-L4 comparison is **no longer supported**: text-based interventions harm (-67pp, -50pp), but structural workflow intervention ALSO shows no effect (0pp)
+- This does NOT disprove H-087's level hierarchy prediction, but removes the strongest direct evidence for it. The comparison is confounded by the scenario having a ceiling effect (83% baseline)
+- KE-128 corrected to reflect null result
 
 ### Indirect Evidence (Constitutional Level — L8)
 KE-038's analysis identifies constitutional externalization in our system:
@@ -131,15 +131,15 @@ EFFECTIVENESS:  L8 > L7 > L5-L6 > L3-L4 > L1-L2
 
 ## P(H) Assessment
 
-**P(H) = 0.75** (updated from 0.72 after EXP-124 evidence)
+**P(H) = 0.72** (reverted from 0.75 — EXP-124 v2 null result removes primary L7 evidence)
 
 Supporting factors:
-- Task-level mechanism is proven (H-085 P(H) = 0.87) and the structural pattern clearly repeats
+- Task-level mechanism is proven (H-085 P(H) = 0.85) and the structural pattern clearly repeats
 - Five independent research systems converge on harness-level externalization (KE-044)
 - KE-033 already demonstrated scale-invariance across two levels
 - H-055's empirical findings (additive drift) are consistent with the prediction about constitutional necessity
 - **P3 CONFIRMED**: Designed experiments produce KE entries 2.05x more often than ad-hoc (78.9% vs 38.5%, p≈0.013, N=51). Hypothesis resolution 1.82x, named hypothesis testing 2.39x, actionability 1.61x. See: experiments/H087-P3-retrospective-analysis.md
-- **EXP-124 SUPPORTS L7**: Phase 0 discovery guard is a harness-level (workflow architecture) intervention that achieves +100pp where L3-L4 text interventions failed (-67pp, -50pp, null). Directly supports the level hierarchy prediction (higher-level externalization > lower-level). This is the first direct COMPARISON evidence showing L7 > L3-L4 on the same task type.
+- **EXP-124 NO LONGER SUPPORTS L7**: v2 post-runner-fix shows 83% vs 83% (p=1.0). The L7 > L3-L4 comparison is invalidated. Discovery tasks remain a boundary where neither text nor structural externalization interventions show positive effects.
 
 Limiting factors:
 - No direct experimental test at harness or constitutional level yet (P3 is correlational)
