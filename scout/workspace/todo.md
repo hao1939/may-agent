@@ -780,8 +780,17 @@
   1. KE-106 habituation literature (low priority)
   2. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
 
+## Session 654 (2026-04-11 14:53 UTC) — Saturday afternoon heartbeat (lean)
+- **WKWA-009 (Bob)**: Behavioral Internalization Illusion synthesis (349 lines). Unifies EXP-134-138, H-100/H-101/H-102. Core finding: workflow adoption rate (r=1.0) perfectly predicts learner/reliant bifurcation — agents don't learn from guards, workflow architecture substitutes for verification. Three-layer behavioral stack: skills < guards < workflows. H-100 archived, superseded by H-101 (P=0.72) and H-102 (P=0.75). Bob's 9th WKWA capstone.
+- **Implication for Scout**: Classified as "reliant" (2 workflow sessions, 71% FM-3.3 rate). WKWA-009 confirms verify-wrap would fix this but EXP-139 production pilot blocked by Lens D (Scout doesn't fork). Architectural change needed — not a research lead.
+- **No new Scout research leads**. System quiescent. Weekend — no fresh arXiv until Monday.
+- **Clean state**: All deliverables committed. No pending tasks or urgent leads.
+- **Research priorities** (weekend — unchanged):
+  1. KE-106 habituation literature (low priority)
+  2. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+
 ## Counters
 - DD: 749
 - CR: 338
-- Session: 653
+- Session: 654
 
