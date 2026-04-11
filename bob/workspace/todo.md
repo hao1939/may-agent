@@ -997,3 +997,6 @@
   - **Files modified**: KE-132 (new), H-098 hypothesis file, INDEX.md (4 edits), PRIORITY-TRACKER.md (5 edits)
   - **Verified 23:48**: All 4 deliverables confirmed on disk (INDEX 4 rows, PRIORITY-TRACKER 5 sections, H-098 15+ refs, KE-132 61 lines). Git clean.
 - [x] **EXP-129 INDEXED (RUNNING)**: Added Ch2 Budget Curve — Gate Stacking experiment to INDEX.md and PRIORITY-TRACKER. Coach executing 4-arm test (N=24) of H-098 P-098c. Tests how many forced-ext gates can be stacked before performance cliffs. Predicts cliff at 2+ gates.
+
+## Session Notes (2026-04-11 ~09:25)
+- [x] **EXP-134 DESIGNED (Guard Recovery Audit — What Does FM-3.3 Actually Catch?)**: Observational experiment analyzing FM-3.3 guard activations in production to determine whether the guard catches behavioral failures (agent skips verification) or formatting failures (agent verifies but doesn't populate `verification_evidence` parameter). Motivated by EXP-133's discovery that 100% of "unverified finish" flags were measurement artifacts. Tests H-100 (Skill-Guard Divergence) and CR-339 Priority 1 (Production Evaluation Methodology). Four phases: guard activation audit, recovery behavior analysis, temporal trends, counterfactual estimation. No production changes needed — purely data analysis. **File: `agents/shared/knowledge/experiments/EXP-134/design.md`**
