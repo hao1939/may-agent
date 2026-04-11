@@ -1,0 +1,11 @@
+{
+  "name": "contradictory-requirements-ext-3unrelated",
+  "description": "EXP-131 Arm B: Three UNRELATED forced externalization gates (CODE_STYLE_REVIEW.md + PERFORMANCE_BENCHMARKS.md + DEPENDENCY_AUDIT.md) before coding. Tests whether unrelated gates produce execution crowding that related gates (EXP-129 3-gate) didn't.",
+  "categories": ["judgment"],
+  "tags": ["behavior", "contradiction", "externalization", "workflow", "unrelated-gates"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "work_dir_setup": "copy",
+  "workflow": true
+}
