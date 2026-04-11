@@ -110,7 +110,23 @@ Given a novel intervention, classifying it as "content" or "process" should pred
 
 ## Current Assessment
 
-**P(H) = 0.72** — Upgraded from 0.60 based on EXP-134 results.
+**P(H) = 0.70** — Adjusted from 0.72 based on EXP-135 results.
+
+### EXP-135 Evidence Update (2026-04-11)
+
+EXP-135 investigated whether the guard rate escalation (found in EXP-134) was a Simpson's paradox artifact of task mix change, or genuine skill degradation:
+
+1. **Data correction**: EXP-134's Early/Mid period numbers were unverifiable — session JSONL files only exist from Apr 6 onward. The "5.8% → 20.1% → 34.6%" narrative was based on incomplete data.
+2. **Task mix ruled out**: Simpson's paradox test showed adjusting to constant task mix changed the rate by <2pp. The trend is real.
+3. **Within-heartbeat escalation**: 29.6% → 32.4% → 34.2% → 42.7% over Apr 6-11, within the single largest task type. Not explainable by task mix.
+4. **Bifurcated agent response** (novel finding):
+   - **Improving agents** (bob: 72%→10%, coach: 56%→24%, tech-lead: 29%→10%): Guard WORKED — they learned to verify
+   - **Degrading agents** (may: 39%→91%, scout: 11%→76%, optimizer: 17%→52%): Guard FAILED — they developed guard reliance
+5. **Net upward trend** driven by degrading agents degrading faster than improving agents improved.
+
+**Impact on H-100**: The core claim that guards are "permanent infrastructure" is complicated. Some agents DO learn from guards (contradicting P-100a that "attempt rates never decline"). But other agents develop guard-reliance (supporting the permanence claim for them). The phenomenon appears to be **agent-specific**, not universal.
+
+**Revision**: H-100 may need refinement into "guards are permanent for some agents but enable learning for others, depending on agent-specific learning dynamics." P(H) reduced from 0.72 → 0.70 because the evidence is more nuanced than previously assessed.
 
 ### EXP-134 Evidence Update (2026-04-11)
 
