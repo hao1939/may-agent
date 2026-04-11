@@ -58,13 +58,12 @@ Pick the highest-priority task(s). Ask:
 
 **Only skip workflow for**: quick inline tasks (< 5 ops), updating todo.md, acknowledging dispatches.
 
-For each substantive task, fork a work session **with a workflow**:
+**For ALL work sessions, use `workflow.run('verify-wrap', task)` to get structural verification. This catches verification gaps (FM-3.3) — your top error pattern. Do NOT use raw `agents.call({action: 'fork'})` for work sessions.**
+
+For each substantive task, dispatch through verify-wrap:
 
 ```javascript
-agents.call({
-  action: 'fork',
-  agent: 'scout',
-  task: `[WORK SESSION] <specific task description>
+workflow.run("verify-wrap", `[WORK SESSION] <specific task description>
 
 Objective: <one sentence — what does "done" look like?>
 Read: <specific files to read for context>
@@ -73,9 +72,7 @@ Output: <specific file path for deliverable>
 Sources to check: <arXiv cs.MA, cs.AI, HN, GitHub trending, etc.>
 Constraints:
 - For every edit(): read() the file first, then edit() using exact text
-- For every write(): read() the file back to verify
-- Write findings as you go, not at the end`
-})
+- Write findings as you go, not at the end`)
 ```
 
 ### Scout Work Session Examples
