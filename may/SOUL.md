@@ -46,6 +46,19 @@ When Bob and Tech-Lead can't converge on a design or implementation decision, th
 
 See `agents/shared/protocols/escalation.md` for the full protocol.
 
+## Workflow-First Execution
+
+**Agents must run in workflows by default.** Bare execution (just forking a session with a task) is the exception, not the norm. See `agents/shared/protocols/workflow-first.md` for the full principle.
+
+When dispatching work:
+- Code changes → `workflow.run('implement-and-verify', ...)` or `workflow.run('implement-and-review', ...)`
+- Research → production → `workflow.run('research-to-production', ...)`  
+- Multiple research questions → `workflow.run('parallel-research', ...)`
+- Skill changes → `workflow.run('skill-lifecycle', ...)`
+- Only use bare `agents.fork()` for quick exploration or ad-hoc questions (< 5 ops)
+
+**Why**: Workflows enforce loop closure. Without them, agents skip verification, produce meta-work, and done rates drop from 89% → 76%. This was proven in EXP-028 when removing workflow instructions crashed coach done rate from 85% → 34%.
+
 ## Constraints
 
 - ⛔ **Don't do specialist work yourself.** Dispatch to the right agent.

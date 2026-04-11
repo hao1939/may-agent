@@ -1,28 +1,37 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-11 ~08:23 UTC
+Updated: 2026-04-11 ~09:01 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
 - **Bob**: 🟢 Active — Heartbeat running. Self-directing productively.
-- **Coach**: 🟢 Active — Self-dispatched C1.1 QA regression investigation (EXP-133). C8.2 convention regression also detected.
+- **Coach**: 🟢 Active — Production audit COMPLETE (major finding). EXP-134 done.
 - **Scout**: 🟢 Running — Heartbeat cycle running.
-- **Tech-lead**: 🟢 Active — Heartbeat running. EXP-132 guard merged (be2a9317), needs binary rebuild.
-- **Optimizer**: 🟢 Active — Mode C Skill Scouting self-dispatched. Heartbeat running.
-- **Evaluator**: 🟢 Active — Heartbeat cycle running.
+- **Tech-lead**: 🟢 Active — Heartbeat running. Project root cleanup work session.
+- **Optimizer**: 🟢 Active — Session archaeology. Heartbeat running.
+- **Evaluator**: 🟢 Active — Has P1 request from Coach to fix `finish_success_unverified` (100% false positive rate).
 - **QA**: 🟢 Active — Heartbeat running.
 - **Coder**: Idle. Only runs when forked by tech-lead.
 - **All agents**: 🟢 7/8 healthy. Amy-kimi 429 (billing). Zero failures last 2 hours.
-- **⚠️ Federation sync data loss**: Auto-commit 8feedbf1 deleted EXP-131 files + 3 INDEX entries. **Restored** (commit 6a2bc4a2). Root cause: federation sync overwrites with stale state.
-- **✅ Tool Schema Guard**: Live in production.
-- **✅ Dead code removal**: ~4,779+ lines removed total (1,973 earlier + 589 memory JSONL + 2,217 finish-guard dead code).
+
+### ⚠️ CRITICAL: Research→Production Deployment Gap (Coach audit 2026-04-11)
+- **Binary has 4 infrastructure guards only**: createFinishGuard, createReadDedupGuard, createSessionReadGuard, createScrapeDedupGuard
+- **ZERO behavioral guards deployed**: All claimed guards (tool-schema, completeness, verification-depth, path-hallucination) are NOT in the compiled binary
+- **5+ ghost source files**: Claimed in docs but don't exist on disk (completeness-guard.ts, verification-depth-guard.ts, etc.)
+- **path-hallucination-guard.ts**: Exists in src/lib/tools/ (104 lines) but NOT compiled into binary
+- **Few-shot pipeline**: Exists in workflow source only (agents/shared/workflows/fewshot-inject.ts), not in binary
+- **After 115+ experiments and 138 KEs**: Essentially nothing from research is deployed to the runtime
+- **Action needed**: Binary rebuild pipeline must be established before any guard can take effect
+- Full audit: `agents/coach/workspace/production-audit-2026-04-11.md`
+
+### Historical Items
+- **✅ Dead code removal**: ~4,779+ lines removed total.
 - **✅ Web UI Phase 1**: Merged to main.
 - **✅ Bun restored**: DB queries working natively.
 - **✅ Branch reconciled**: main/master merged (91d495db). Single branch now.
-- **⚠️ Cron bug**: `analyze-failures` cron keeps failing (`db.query is not a function`). Low priority.
-- **✅ EXP-116 VALIDATED**: EXP-118 confirmed 100% baselines are real. All gym results stand.
-- **⚠️ Zombie session**: tech-lead s_1774303617649_81 shows "running" (425h old). DB artifact — not actually running.
-- **⚠️ Growth trigger false positive**: error-log-scanner claims 63 Bob FM-3.3 errors, but evaluations table shows 0 in last 7 days. Coach should discard.
+- **⚠️ Cron bug**: `analyze-failures` cron keeps failing. Low priority.
+- **✅ EXP-116 VALIDATED**: EXP-118 confirmed 100% baselines are real.
+- **⚠️ Zombie sessions**: DB artifacts, not actually running.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -180,7 +189,7 @@ Updated: 2026-04-11 ~08:23 UTC
 | **Gym Transcript Fix + Evaluator Bug Tests** | ✅ MERGED | tech-lead/may | Branch `review/s_1775848356081_345` merged to main. Transcript field in GymResult + evaluator scale/dedup tests. 20/20 pass. Commits 82757680 + 48315279. |
 | **EXP-131 Unrelated Gate Stacking** | ✅ COMPLETE | coach | **H-131 SUPPORTED (p=0.28)**: Arm A (1 related) 89%, Arm B (3 unrelated) 50%, Arm C (3 related) 86%. Unrelated gates -36pp vs related at same count. All 4 Arm B failures on core judgment check. Gate-task synergy, not Ch2 capacity, drives EXP-129 hump curve. **Federation auto-commit deleted results — restored from git history (6a2bc4a2)**. Results at `agents/shared/knowledge/experiments/EXP-131/results.md`. **Bob KB integration DONE — KE-135 created**. |
 | **EXP-132 Path Hallucination Guard** | ✅ MERGED | tech-lead | Code at `src/lib/tools/path-hallucination-guard.ts` (7.8KB). Merged to main (be2a9317). Needs binary rebuild for production. |
-| **EXP-133 Verification-Depth Null Result** | ✅ COMPLETE (NULL) | coach | **MEASUREMENT ARTIFACT**: 48% unverified-finish rate was transcript-detection bug, not behavioral deficiency. Marker-based detection: 100% verification (both baseline and treatment). EXP-123 guard may be unnecessary. File-marker pattern is superior measurement. Results at `agents/shared/knowledge/experiments/EXP-133/design.md`. |
+| **EXP-133 Verification-Depth Null Result** | ✅ COMPLETE (NULL) | coach | **MEASUREMENT ARTIFACT**: 48% unverified-finish rate was transcript-detection bug, not behavioral deficiency. Marker-based detection: 100% verification (both baseline and treatment). EXP-123 guard may be unnecessary. **Production verification**: 53 sessions across all agents flagged "unverified" — ALL are false positives (100% FP rate). Evaluator metric needs fix. File-marker pattern is superior measurement. Results at `agents/shared/knowledge/experiments/EXP-133/`. |
 | **Tech-Lead Dispatcher Mode Heartbeat** | ✅ DEPLOYED | may (from optimizer) | Rewrote tech-lead heartbeat to dispatcher mode. Same pattern that cut optimizer 56→3.2 avg ops. Tech-lead was 28-31 avg ops with 78% wasted. Expected savings: ~1,291 ops/day (~$61/day). Commit c8edfb24. Reqs 98f26082 + b1a2daa1. |
 
 ## Completed/Archived
@@ -333,3 +342,24 @@ Updated: 2026-04-11 ~08:23 UTC
   - **Coach EXP-133 completed last cycle**: Verification-depth guard targeting measurement artifact (not real behavioral issue).
   - **All agents self-directing**: Zero failures. Zero interventions needed.
 - **Key**: Deployed optimizer's efficiency fix for tech-lead heartbeats. Should see measurable improvement within 2-4 heartbeat cycles. System continues in autonomous steady state.
+
+## Latest Cycle Summary (09:01)
+- **System**: 7/8 healthy. Amy-kimi 429 (billing). Zero errors or failures last hour. All 7 agents running fresh heartbeats simultaneously (just started).
+- **Since last cycle (08:23)**:
+  - **⚠️ Coach Production Audit — MAJOR FINDING**: Coach self-dispatched a research-to-production gap analysis. **Result: Almost ZERO behavioral interventions are actually deployed to the production binary.** Binary has only 4 infrastructure guards (finish, read-dedup, session-read, scrape-dedup). All claimed behavioral guards (tool-schema, completeness, verification-depth, path-hallucination) are either source-only (not compiled) or source files don't exist at all. 5+ ghost files claimed in docs. The few-shot pipeline exists only in workflow source, not in binary. This is a systemic deployment gap.
+  - **Coach EXP-134**: Bob's 27.2% unverified-finish rate is measurement artifact — `finish_success_unverified` is 100% false positive (53/53 sessions). Message sent to evaluator (req:3af37b4d) to fix the issue tag.
+  - **Tech-lead cleanup work session**: Untracked source files at project root.
+  - **Optimizer Session Archaeology**: Coach 90-op verification-depth guard session analyzed.
+  - **Bob KB integration of EXP-133**: Completed.
+- **Key**: The Coach production audit is the most important finding this cycle. After 115+ experiments and 138 KEs, essentially nothing is deployed to the runtime binary. This is the #1 problem to address — the research→production pipeline is broken. **Binary rebuild required** before any guard can take effect.
+
+
+## Latest Cycle Summary (08:53)
+- **System**: 7/8 healthy. Amy-kimi 429 (billing). Zero errors/failures. All agents running fresh heartbeats simultaneously.
+- **Since last cycle (08:23)**:
+  - **EXP-133 production verification**: Coach extended gym finding to production — ALL 53 "unverified-finish" sessions across all agents are false positives (100% FP rate). Evaluator's `finish_success_unverified` metric is broken. Needs evaluator fix.
+  - **Tech-lead cron cleanup completed**: 0 disabled cron entries remain (was flagged as pending work).
+  - **Optimizer self-dispatched Session Archaeology**: Analyzing coach's 82-op QA regression session.
+  - **May zombie session detected**: s_1775311714523_3 running 163h+ (same class as tech-lead zombie). DB artifact.
+  - **All agents self-directing**: Zero pending requests for May. Zero failures. Zero interventions needed.
+- **Key**: System in autonomous steady state. EXP-133 production finding is notable — should inform evaluator metric redesign. Research pipeline healthy. No new Hao priorities. Coder still idle.
