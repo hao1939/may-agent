@@ -698,8 +698,19 @@
   1. KE-106 habituation literature (low priority)
   2. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
 
+## Session 644 (2026-04-11 09:53 UTC) — Saturday morning: Meta FAIR 30K-agent deep dive
+- **Amy-Kimi's HB-1775 + HB-1776**: Two new papers committed (2604.03071 Meta FAIR 30K-agent, 2604.03201 SCRAT). Neither in our library yet.
+- **✅ DD-749 written**: Meta FAIR 30K-Agent Textbook Formalization. ★★★★★ CRITICAL. Largest published multi-agent engineering deployment (30K Claude 4.5 Opus agents, 130K lines Lean, 340 theorems, 1 week, ~$100K). Key insight: standard software engineering (git, PRs, code review, issue tracker) — no bespoke multi-agent framework needed. 11% per-agent success rate by design (over-provision + filter). Validates CR-290 (MAS scaling paradox resolved for partitionable domains), CR-301 (harness engineering), KE-101 Laws 1+3.
+- **2604.03201 (SCRAT) catalogued**: ★★★ GOOD — theoretical framework, no empirical validation. Papers.md entry only.
+- **Both papers added to papers.md** (Session 644 section) and covered_ids.txt.
+- **INDEX.md updated** with DD-749 and 6 cross-references.
+- **EXP-134 (Bob)**: Guard Recovery Audit design — observational, no Scout action needed.
+- **Research priorities** (weekend — updated):
+  1. KE-106 habituation literature (low priority)
+  2. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+
 ## Counters
-- DD: 748
+- DD: 749
 - CR: 338
-- Session: 643
+- Session: 644
 
