@@ -146,6 +146,22 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 - **Successor hypothesis needed**: Action momentum × success signal misdirection as the true Ch3 moderator
 
 ### 0o. EXP-130: Few-Shot on Discovery Task [COMPLETE ✅ — IATROGENIC RESULT]
+
+### 0p. EXP-143: Checkpoint Decomposition Improves Evaluation Accuracy [COMPLETE ✅ — MIXED]
+- **Design**: `agents/shared/knowledge/experiments/EXP-143/design.md`
+- **Results**: `agents/shared/knowledge/experiments/EXP-143/results.md`
+- **Goal**: Test whether splitting long session transcripts into checkpoint segments improves FM detection
+- **Method**: Adapted — heuristic pattern-based FM detection (no LLM API; N=100 sessions with ≥15 tool calls)
+- **Key results**:
+  - **FM-3.3 (verification)**: +32.1pp sensitivity (60.4%→92.5%), **McNemar p<0.05** ✅
+  - **FM-3.1 (ghost deliverable)**: +34.6pp sensitivity (65.4%→100%), **McNemar p<0.05** ✅
+  - FM-2.1 (wrong approach): +2.6pp (NS)
+  - FM-1.3 (error recovery): +6.8pp, −28.6pp FPR (NS)
+  - Overall accuracy: 85% vs 86% (minimal difference)
+- **Caveats**: Detectors too aggressive (85% FM-positive rate, 100% holistic FP rate on clean sessions). Heuristic patterns, not LLM evaluation.
+- **Insight**: Segment-level evaluation excels at sequential patterns (edit→verify) diluted in full transcripts. Global patterns (wrong approach) show no benefit.
+- **P(H-096) update**: 0.68 → 0.65
+- **Recommendation**: Re-run with LLM evaluator when available; wait for FM-labeled ground truth data
 - **Design**: `agents/shared/knowledge/experiments/EXP-130/design.md`
 - **Results**: `agents/shared/knowledge/experiments/EXP-130/results.md`
 - **Hypothesis**: H-099 P-099d — Few-shot examples cannot teach discovery (irreducible)

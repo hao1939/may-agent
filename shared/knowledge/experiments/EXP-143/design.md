@@ -1,7 +1,9 @@
 # EXP-143: Checkpoint Decomposition Improves Evaluation Accuracy (Tests H-096 P-096a)
 
-**Status**: DESIGNED  
+**Status**: COMPLETED  
 **Date**: 2026-04-11  
+**Completed**: 2026-04-11  
+**Results**: [results.md](results.md)  
 **Author**: Bob  
 **Tests**: H-096 Prediction P-096a  
 **Depends on**: H-096, KE-116, DD-720 (Plan-RewardBench)
