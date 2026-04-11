@@ -646,24 +646,15 @@
   1. KE-106 habituation literature (low priority)
   2. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
 
-## Session 637 (2026-04-11 06:00 UTC) — Week-in-review capstone synthesis
-- **CR-339 WRITTEN**: "Structure All the Way Down" — week-in-review capstone. 88+ deep dives (DD#656-743), 20+ cross-references (CR#317-338), 29 experiments (EXP-099→127+). Five convergence streams, three breakthroughs, five predictions for Week 16. Originally numbered CR#337 but collision with Einstellung synthesis — renumbered to CR#339.
-- Updated INDEX.md with capstone entry + cross-references.
-- **Clean state**: All deliverables committed. Weekend — no fresh arXiv until Monday.
+## Session 637 (2026-04-11 06:23 UTC) — Saturday morning heartbeat (lean)
+- **No new Scout-relevant developments** since Session 636 (30min ago). EXP-132 designed (path hallucination guard for C7.1 regression) — Coach territory, not mine.
+- **Clean state**: All deliverables committed. No pending tasks or urgent leads. Weekend — no fresh arXiv until Monday.
 - **Research priorities** (weekend — unchanged):
   1. KE-106 habituation literature (low priority)
   2. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
 
-## Session 638 (2026-04-11 06:31 UTC) — Saturday morning heartbeat (lean)
-- **No new Scout-relevant developments** since Session 637 (~30min ago). Coach designed EXP-132 (path hallucination guard for C7.1 regression). Optimizer did bash command pattern analysis (847 commands, 6 patterns). Bob absorbed EXP-131 → KE-135 (already noted). All internal, no Scout action needed.
-- **CR-339 capstone delivered** last session. Week's output fully synthesized. Biggest research week: DD#720-748 (29 deep dives), CR#330-339 (10 cross-references), literature grounding for H-098/H-099.
-- **Clean state**: All deliverables committed. Weekend — no fresh arXiv until Monday.
-- **Research priorities** (weekend — unchanged):
-  1. KE-106 habituation literature (low priority — internal evidence strong)
-  2. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
-
 ## Counters
 - DD: 748
-- CR: 339
-- Session: 638
+- CR: 338
+- Session: 637
 

@@ -1,20 +1,19 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-11 ~06:00 UTC
+Updated: 2026-04-11 ~05:53 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — Fresh heartbeat 06:00. EXP-127 design complete, dispatched to Coach. Self-directing.
-- **Coach**: 🟢 Active — Fresh heartbeat 06:00. EXP-127 work sessions keep getting interrupted (3x). Bob re-dispatched.
-- **Scout**: 🟢 Running — Fresh heartbeat 06:00.
-- **Tech-lead**: 🟢 Active — Fresh heartbeat 06:00.
-- **Optimizer**: 🟢 Active — Fresh heartbeat + cron:optimize running 06:00.
-- **Evaluator**: 🟢 Active — Fresh heartbeat 06:00.
-- **QA**: 🟢 Active — Fresh heartbeat 06:00.
+- **Bob**: 🟢 Active — Heartbeat running. Self-directing. EXP-131 KB integration done (KE-135 created).
+- **Coach**: 🟢 Active — EXP-131 COMPLETE. Heartbeat running.
+- **Scout**: 🟢 Running — Heartbeat cycle running.
+- **Tech-lead**: 🟢 Active — Heartbeat running. Dead code cleanup done last cycle.
+- **Optimizer**: 🟢 Active — Mode C work session (Skill Scouting for Coach). Self-directed.
+- **Evaluator**: 🟢 Active — Heartbeat cycle running.
+- **QA**: 🟢 Active — Heartbeat cycle running.
 - **Coder**: Idle. Only runs when forked by tech-lead.
-- **All agents**: 🟢 7/8 healthy. Amy-kimi 429 (billing). System restarted ~00:44, clean restart at 06:00.
+- **All agents**: 🟢 7/8 healthy. Amy-kimi 429 (billing). Zero failures last 2 hours.
 - **⚠️ Federation sync data loss**: Auto-commit 8feedbf1 deleted EXP-131 files + 3 INDEX entries. **Restored** (commit 6a2bc4a2). Root cause: federation sync overwrites with stale state.
-- **⚠️ Growth trigger FM-2.6 FALSE POSITIVE**: error-log-scanner claims 15 Bob FM-2.6 errors, evaluations table shows 0 in last 7d. Same pattern as FM-3.3 false positive.
 - **✅ Tool Schema Guard**: Live in production.
 - **✅ Dead code removal**: ~4,779+ lines removed total (1,973 earlier + 589 memory JSONL + 2,217 finish-guard dead code).
 - **✅ Web UI Phase 1**: Merged to main.
@@ -180,6 +179,7 @@ Updated: 2026-04-11 ~06:00 UTC
 | **EXP-127 Channel Separation Direct Test** | ✅ COMPLETE (**LANDMARK**) | coach | **Baseline 0/6, Ch1 0/6, Ch3 0/6, Ch2 (Forced Ext) 6/6 (100%)**. p=0.0000074 vs pooled others. Only structural gates work for judgment tasks. Confound: contradiction-detection skill was already deployed (all runs had Ch1). Even Ch1+Ch3 combined = 0/6. Skill removed (commit 8f3d660f). Bob KB integrating (req:c15a56d7). Results at `agents/shared/knowledge/experiments/EXP-127/results.md`. |
 | **Gym Transcript Fix + Evaluator Bug Tests** | ✅ MERGED | tech-lead/may | Branch `review/s_1775848356081_345` merged to main. Transcript field in GymResult + evaluator scale/dedup tests. 20/20 pass. Commits 82757680 + 48315279. |
 | **EXP-131 Unrelated Gate Stacking** | ✅ COMPLETE | coach | **H-131 SUPPORTED (p=0.28)**: Arm A (1 related) 89%, Arm B (3 unrelated) 50%, Arm C (3 related) 86%. Unrelated gates -36pp vs related at same count. All 4 Arm B failures on core judgment check. Gate-task synergy, not Ch2 capacity, drives EXP-129 hump curve. **Federation auto-commit deleted results — restored from git history (6a2bc4a2)**. Results at `agents/shared/knowledge/experiments/EXP-131/results.md`. **Bob KB integration DONE — KE-135 created**. |
+| **EXP-132 Path Hallucination Guard** | ⏳ IMPL COMMITTED | coach | Ch2 guard for C7.1 regression. Blocks bash with `/home/`, `/Users/`, `/root/`, `~/` paths. Design + impl committed (7854d50). Awaiting production merge + observation window. |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -271,22 +271,11 @@ Updated: 2026-04-11 ~06:00 UTC
   - **System steady state**: All agents self-directing. Zero pending requests. Zero failures. Zero May interventions needed.
 - **Key**: System is in healthy autonomous steady state. All active experiments complete. Research pipeline yielding knowledge (130+ experiments). Main bottleneck: no new implementation work for coder — need Hao priorities.
 
-## Latest Cycle Summary (06:00)
-- **System**: 7/8 healthy. Amy-kimi 429 (billing). System restarted ~00:44, all agents fresh at 06:00.
+## Latest Cycle Summary (06:23)
+- **System**: 7/8 healthy. Amy-kimi 429 (billing). Zero failures last hour. All agents running heartbeats.
 - **Since last cycle (05:53)**:
-  - **System restart**: All sessions interrupted at ~00:44 UTC. Coach EXP-127 + Bob FM-3.1 growth cycle + optimizer tool quality regression — all interrupted. Clean restart at 06:00.
-  - **Bob re-dispatched EXP-127 to Coach**: Two fresh requests (5dc9e9f5, c429f69a). EXP-127 result files still empty (0 trials completed across 3 attempts).
-  - **Growth trigger FM-2.6 Bob = FALSE POSITIVE**: error-log-scanner claims 15 errors, evaluations shows 0. Same false alarm pattern as FM-3.3.
-  - **EXP-142 request (ebe0a22a) = GYM ARTIFACT**: "human→bob" request is actually from cli-oneshot gym scenario. Not a real human task. Can ignore.
-  - **Phase 4 Context Pressure Valve (e9622625)**: 18-day stale bob→tech-lead request. Partially superseded by context overflow fix (9ea5b5a) + compaction KeyFacts (0349a21). Low priority.
-- **Key**: System in recovery from restart. All agents self-directing. Main active research: EXP-127 (Channel Separation), Coach needs extended runtime to complete gym trials without timeout.
-
-## Next Actions
-- **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. Saves $143-441/day. **Blocked on Hao since Mar 24**.
-- **P1**: **EXP-127 completion** — Coach needs to complete 24 gym trials. Has been interrupted 3x. Bob re-dispatched. Monitor this cycle.
-- **P1**: **EXP-123 observation window** — Verification-depth guard deployed Apr 9. Window until Apr 13. Watch for activation data.
-- **P1**: **Generate implementation work** — System idle without features. Coder completely idle. Need Hao priorities.
-- **P1**: **Federation sync reliability** — Auto-commit deleting experiment results is a real problem. Tech-lead should investigate.
-- **P2**: `analyze-failures` cron DB bug — persistent but non-critical.
-- **P2**: Amy-kimi still down — blocked on Hao for billing.
-- **P2**: Eval-sync cron handler stale — manually caught up last cycle, root cause (cron framework not invoking) still unfixed.
+  - **Coach EXP-132 DESIGNED + COMMITTED**: Path hallucination guard for C7.1 regression. Blocks bash commands with `/home/`, `/Users/`, `/root/`, `~/` paths. Commit 7854d50. Also designing work session in progress.
+  - **Optimizer productive**: gym-batch.sh (batch comparison runner) committed (5ca3bdf). Mode D work session + Session Archaeology self-dispatched.
+  - **C1.4 convention regression detected**: 86.7%→81.3%. Auto-dispatched to coach.
+  - **Tech-lead dead code cleanup**: handleOverflow removal merged (8f18c03). Evaluator scale remnants aligned (0dbafbc).
+  - **All agents self-directing**: 11 active requests, all self-dispatched. Zero May interventions needed.
