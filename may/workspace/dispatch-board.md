@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-11 ~11:23 UTC
+Updated: 2026-04-11 ~12:23 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
@@ -197,7 +197,10 @@ Updated: 2026-04-11 ~11:23 UTC
 | **EXP-133 Verification-Depth Null Result** | ✅ COMPLETE (NULL) | coach | **MEASUREMENT ARTIFACT**: 48% unverified-finish rate was transcript-detection bug, not behavioral deficiency. Marker-based detection: 100% verification (both baseline and treatment). EXP-123 guard may be unnecessary. **Production verification**: 53 sessions across all agents flagged "unverified" — ALL are false positives (100% FP rate). Evaluator metric needs fix. File-marker pattern is superior measurement. Results at `agents/shared/knowledge/experiments/EXP-133/`. |
 | **Tech-Lead Dispatcher Mode Heartbeat** | ✅ DEPLOYED | may (from optimizer) | Rewrote tech-lead heartbeat to dispatcher mode. Same pattern that cut optimizer 56→3.2 avg ops. Tech-lead was 28-31 avg ops with 78% wasted. Expected savings: ~1,291 ops/day (~$61/day). Commit c8edfb24. Reqs 98f26082 + b1a2daa1. |
 | **EXP-137 Guard Reliance Intervention** | ✅ COMPLETE | coach + bob | **KEY**: Workflow-level verification enforcement is sole differentiator (correlation=1.0) between learner agents (bob/coach/tech-lead) and reliant agents (may/scout/optimizer). Skills/text have zero correlation. Proposes `verify-wrap` workflow. Bob KB integration done. Results at `agents/shared/knowledge/experiments/EXP-137/results/`. |
-| **Git-Commit False Positive Fix** | ⏳ IN PROGRESS | tech-lead | Removing `git commit` from BASH_WRITE_PATTERNS per EXP-136 finding (20% of FM-3.3 blocks are git-commit inflation). Work session running. |
+| **Git-Commit False Positive Fix** | ✅ MERGED | tech-lead | Commit 78dada4. Removed `git commit` from BASH_WRITE_PATTERNS per EXP-136 finding (20% of FM-3.3 blocks were inflation). |
+| **EXP-138 verify-wrap Workflow** | ✅ GYM COMPLETE | coach | 154-line workflow at `agents/shared/workflows/verify-wrap.ts`. Gym ceiling: scout 100% baseline. Production pilot needed. Coach→tech-lead handoff done. Tech-lead evaluating (Lens D). |
+| **Bob H-102 Workflow Adoption** | ⏳ IN PROGRESS | bob | Formalizing "Workflow Adoption Determines Behavioral Internalization" from EXP-137. Work session running. |
+| **Bob Contradiction Detection Phase 1** | ✅ COMPLETE | bob | 11 CTs catalogued, CT-008 resolved, KE-106 updated. Commit cccae38. |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -424,3 +427,15 @@ Updated: 2026-04-11 ~11:23 UTC
   - **System-status anomaly (false alarm again)**: "Bob analysis 7 days old" — same stale workspace artifact.
   - **All agents self-directing**: Zero pending requests. Zero failures. Zero May interventions needed.
 - **Key**: EXP-137 provides clear intervention path for reliant agents (including me). Workflow-level verification > skills/text. 137+ experiments completed. Tech-lead actively fixing EXP-136 guard calibration. System in autonomous steady state.
+
+## Latest Cycle Summary (12:23)
+- **System**: 7/8 healthy. Amy-kimi 429 (billing). All 8 agents (including me) running fresh heartbeats + 3 work sessions. Zero errors/failures last hour.
+- **Since last cycle (11:53)**:
+  - **Tech-lead git-commit false positive fix MERGED** (commit 78dada4): Removes `git commit` from BASH_WRITE_PATTERNS per EXP-136 finding. Should reduce FM-3.3 false positive rate by ~20%.
+  - **Coach EXP-138 COMPLETE (gym phase)**: verify-wrap workflow built (154 lines). **Gym ceiling**: scout already 100% baseline on verification scenarios. Production pilot needed — gym can't differentiate. Coach messaged tech-lead for deployment.
+  - **Tech-lead Lens D running**: Evaluating verify-wrap integration for Scout FM-3.3 fragility. Picked up Coach's EXP-138 handoff.
+  - **Bob H-102 running**: Formalizing "Workflow Adoption Determines Behavioral Internalization" hypothesis from EXP-137.
+  - **Bob contradiction detection Phase 1 DONE**: 11 CTs catalogued, CT-008 resolved (commit cccae38).
+  - **Optimizer D-o-R Phase 2 nesting fix running**: Addressing remaining nesting issue in Phase 2 prompts.
+  - **All agents self-directing**: Zero pending May requests. Zero failures. Zero May interventions needed.
+- **Key**: System in autonomous steady state. 138+ experiments completed. EXP-138 verify-wrap workflow is ready for production pilot (gym ceiling prevents further gym validation). Tech-lead actively evaluating integration. Research→production pipeline slowly maturing: git-commit FP fix merged, verify-wrap built, tech-lead reviewing deployment path. Coder still idle — no feature work from Hao.
