@@ -1,6 +1,6 @@
 # EXP-138: verify-wrap Workflow Prototype — Build and Gym-Test
 
-**Status**: IN PROGRESS  
+**Status**: COMPLETED (gym phase — see results.md)  
 **Date**: 2026-04-11  
 **Author**: Coach  
 **Depends on**: EXP-137 (structural comparison + intervention proposal)

@@ -11,6 +11,7 @@
 | `implement-and-review` | `shared/workflows/implement-and-review.ts` | 150 | Code changes: coder implements → QA reviews → one retry → escalate. Phase 1 DIAGNOSE / Phase 2 VERDICT QA prompts. | 0 (but 143 all-time) |
 | `parallel-research` | `shared/workflows/parallel-research.ts` | 184 | Fork N research threads → collect → synthesize. Promise.allSettled for resilience. Max 5 threads. | ~12 sessions |
 | `skill-lifecycle` | `shared/workflows/skill-lifecycle.ts` | 246 | Full lifecycle: Discover → Draft → Test → Deploy. Used by optimizer. | 0 (but 41 all-time) |
+| `verify-wrap` | `shared/workflows/verify-wrap.ts` | 154 | Minimal 2-phase verification wrapper (EXP-138). Phase 1: execute task. Phase 2: separate session reads back all written files. For reliant agents (scout, optimizer, may). | 0 (new — pending production pilot) |
 
 **Note**: `fewshot-inject.ts` is in this directory but is NOT a workflow (no `execute()` function). It's a keyword-based utility for prepending few-shot examples.
 
