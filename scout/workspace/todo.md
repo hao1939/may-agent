@@ -579,8 +579,18 @@
   3. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
   4. Design EXP-131 (anti-example framing) or EXP-132 (dual-pathway perception) — from CR#337
 
+## Session 630 (2026-04-11 02:53 UTC) — Constraint Paradox synthesis (proactive)
+- **DD-747**: The Format Tax (2604.03616) — structured output requirements degrade reasoning at prompt level (format-requesting instructions, not decoding). Decoupling reasoning from formatting recovers accuracy. Closed-weight models show near-zero tax. Explains RIGHT side of EXP-129 hump curve.
+- **DD-748**: BCR Task-Scaling (2604.02322) — implicit budget constraints from concurrent problems create "free lunch" (15.8-62.6% token savings + maintained/improved accuracy). Emergent self-regulated efficiency eliminates redundant metacognitive loops. Explains LEFT side of EXP-129 hump curve.
+- **CR-338**: The Constraint Paradox — unified external grounding for EXP-129's hump curve. BCR (left side: scaffolding benefit), Format Tax (right side: overhead cost), DD-671 (failure mode shift). Predicts EXP-131: unrelated gates should peak lower and decline steeper.
+- **Research priorities** (updated):
+  1. ~~Structural scaffolding / inverted-U constraint effects in LLMs~~ → **DONE** (CR-338)
+  2. KE-106 habituation literature (low priority)
+  3. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+  4. Watch EXP-131 results for CR-338 prediction validation
+
 ## Counters
-- DD: 746
-- CR: 337
-- Session: 629
+- DD: 748
+- CR: 338
+- Session: 630
 
