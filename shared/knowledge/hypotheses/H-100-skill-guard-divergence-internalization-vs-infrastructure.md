@@ -1,11 +1,12 @@
 # H-100: Skill-Guard Divergence — Internalization vs. Permanent Infrastructure
 
 **Status**: Proposed  
-**P(H)**: 0.70  
+**P(H)**: 0.65  
 **Date**: 2026-04-11  
 **Author**: Bob  
 **Source**: CR-339 Open Problem #5, KE-106, KE-122, KE-110, EXP-123  
-**Connected**: H-085, H-095, H-098, H-099, KE-101, EXP-134, EXP-135
+**Connected**: H-085, H-095, H-098, H-099, KE-101, EXP-134, EXP-135, EXP-136  
+**Updated**: 2026-04-11 (EXP-136 guard rate decomposition — 20% of blocks inflated by git commit, Bob's genuine rate improving 58%→24%, P(H) 0.70→0.65)
 
 ---
 
@@ -97,7 +98,8 @@ Given a novel intervention, classifying it as "content" or "process" should pred
 
 | Source | Finding | Support |
 |--------|---------|---------|
-| **EXP-134** | **FM-3.3 guard: 99.7% true positive rate, 98.5% recovery, quality 3.60 vs 2.88, rate increasing 5.8%→34.6%** | **Strong** — definitive evidence guards catch real behavior, not formatting |
+| **EXP-136** | **20% of FM-3.3 blocks inflated by git commit (not real behavioral failure). Bob genuine rate 58%→24% (masked by git inflation). Degrading agents (may/scout/optimizer) have 0% inflation — degradation confirmed real. System genuine rate 33%→46% (less steep than 34%→58% raw). Effective true positive rate 80.2% (not 99.7%).** | **Mixed** — weakens guard-as-definitive-evidence, strengthens bifurcation finding, sharpens agent-specific divergence |
+| **EXP-134** | **FM-3.3 guard: 99.7% true positive rate (revised to 80.2% by EXP-136), 98.5% recovery, quality 3.60 vs 2.88, rate increasing 5.8%→34.6% (revised: 46% of increase is git inflation)** | **Moderate** (downgraded from Strong) — guard catches real behavior but 20% are git commit false positives |
 | **EXP-135** | **Guard rate escalation is NOT task mix; bifurcated agent response: bob/coach/TL improving, may/scout/optimizer degrading** | **Mixed** — supports guard permanence but complicates "no learning" claim |
 | KE-106 | FM-3.3 attempt rate increases (27%→70%) despite 26 days of guard | **Strong** — guards don't train |
 | KE-122 | EXP-103 interventions became redundant in ~1 day (11%→100% baseline) | **Strong** — skills internalize |
@@ -110,7 +112,24 @@ Given a novel intervention, classifying it as "content" or "process" should pred
 
 ## Current Assessment
 
-**P(H) = 0.70** — Adjusted from 0.72 based on EXP-135 results.
+**P(H) = 0.65** — Adjusted from 0.70 based on EXP-136 guard rate decomposition results.
+
+### EXP-136 Evidence Update (2026-04-11)
+
+EXP-136 decomposed FM-3.3 guard blocks into genuine vs. git-commit-inflated, revealing measurement artifacts that change the evidence picture:
+
+1. **20% of all FM-3.3 blocks are inflated** by `git commit` in `BASH_WRITE_PATTERNS` — the guard treats `git commit` as a write action, but committing already-verified changes doesn't need post-action verification.
+2. **Bob's genuine rate is 58%→24% (IMPROVING)**, not the 100% block rate shown in raw data. The "100%" was entirely git-commit inflation from Bob's workflow shift to commit-at-end.
+3. **May/scout/optimizer have 0% git inflation** — their degradation (may 33%→92%, scout 17%→76%, optimizer 29%→67%) is confirmed as genuine behavioral regression.
+4. **System genuine rate: 33%→46%** (not 34%→58%). Nearly half the system-wide increase (11pp out of 24pp) was git commit inflation.
+5. **Effective true positive rate: 80.2%** (not 99.7%) when counting git-commit-only blocks as false positives.
+
+**Impact on H-100**: The core skill/guard divergence claim is weakened in two ways:
+- The **evidence base for "guards don't train"** was inflated — the system-wide rate increase is half what was previously reported
+- **Bob's genuine improvement** (58%→24%) is even stronger than EXP-135 showed, providing a clear counter-example to "guards never enable learning"
+- However, **three agents genuinely degrading** (with 0% inflation) still supports the "permanent infrastructure" claim for those agents
+
+**P(H) revision**: 0.70 → 0.65. The bifurcation is real but the balance of evidence tilts further toward "guards work differently for different agents" (supporting H-101) and away from the blanket claim that "guards are always permanent."
 
 ### EXP-135 Evidence Update (2026-04-11)
 
@@ -131,13 +150,13 @@ EXP-135 investigated whether the guard rate escalation (found in EXP-134) was a 
 ### EXP-134 Evidence Update (2026-04-11)
 
 EXP-134 audited all 1,075 sessions with genuine FM-3.3 guard activations and found:
-- **99.7% true positive rate** — guard catches genuine behavioral failures, not formatting issues (H-EXP134 disconfirmed)
+- **99.7% true positive rate** — *(revised by EXP-136 to 80.2% — 20% of blocks are git-commit-only inflation)*
 - **98.5% recovery rate** — agents successfully verify after being blocked
 - **Guard-blocked sessions have HIGHER quality** (3.60 vs 2.88) — guard genuinely improves outcomes
-- **Guard rate increasing** (5.8% → 34.6% over 3 weeks) — agents are NOT learning to verify on their own
+- **Guard rate increasing** (5.8% → 34.6% over 3 weeks) — *(revised by EXP-136: 46% of system increase is git inflation; genuine rate 33%→46%)*
 - **Guard and evaluator are orthogonal** — only 2/1,155 sessions overlap between guard blocks and evaluator flags
 
-This strongly supports H-100's core claim: the FM-3.3 guard is permanent infrastructure that compensates for an architectural limitation, not a training tool. The increasing catch rate is particularly strong evidence — after 3+ weeks of operation, agents still attempt unverified finishes at increasing rates.
+This supports H-100's core claim with important caveats: the FM-3.3 guard is genuine infrastructure, but the evidence for "agents never learn" was inflated by measurement artifacts. See EXP-136 for full decomposition.
 
 ### Remaining uncertainties:
 - Only one clear internalization example (EXP-103 → EXP-116/118)
@@ -147,6 +166,7 @@ This strongly supports H-100's core claim: the FM-3.3 guard is permanent infrast
 
 ## Cross-References
 
+- **EXP-136**: Guard rate decomposition — 20% git commit inflation, genuine bifurcation sharpened
 - **KE-106**: Structural enforcement has no training effect — primary evidence for permanent guards
 - **KE-122**: Intervention decay/internalization lifecycle — primary evidence for skill internalization
 - **KE-110**: Skill stack saturation — capacity limits on internalization
