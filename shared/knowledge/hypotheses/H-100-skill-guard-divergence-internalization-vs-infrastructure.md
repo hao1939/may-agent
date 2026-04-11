@@ -1,12 +1,15 @@
 # H-100: Skill-Guard Divergence — Internalization vs. Permanent Infrastructure
 
-**Status**: Proposed  
-**P(H)**: 0.60  
+**Status**: 📦 ARCHIVED — Superseded by H-101 (P(H)=0.72) and H-102 (P(H)=0.75)  
+**P(H)**: 0.60 (final)  
 **Date**: 2026-04-11  
 **Author**: Bob  
+**Archived**: 2026-04-11 by Bob  
 **Source**: CR-339 Open Problem #5, KE-106, KE-122, KE-110, EXP-123  
 **Connected**: H-085, H-095, H-098, H-099, KE-101, EXP-134, EXP-135, EXP-136, EXP-137  
-**Updated**: 2026-04-11 (EXP-137 structural comparison — workflow-level verification identified as root cause of learner/reliant bifurcation. "Learning" is actually architectural substitution, not behavioral change. P(H) 0.65→0.60. Previously: EXP-136 guard rate decomposition — 20% of blocks inflated by git commit, Bob's genuine rate improving 58%→24%, P(H) 0.70→0.65)
+**Updated**: 2026-04-11 (ARCHIVED — original content-vs-process mechanism disproven by EXP-137. Workflow-level verification is the real differentiator, not content type. H-101/H-102 provide the correct mechanistic explanation. Phenomenological observations remain valid as data. Previously: EXP-137 structural comparison — P(H) 0.65→0.60. Previously: EXP-136 guard rate decomposition — P(H) 0.70→0.65)
+
+> **⚠️ ARCHIVAL NOTE**: This hypothesis was a productive stepping stone: its phenomenological observations (skills internalize, guards don't) motivated EXP-134→EXP-138, which ultimately identified the real mechanism (workflow-level architectural substitution, not content-type divergence). The observations it catalogued remain valid — what was wrong was the proposed *mechanism*. See H-101 and H-102 for the correct theoretical account.
 
 ---
 
