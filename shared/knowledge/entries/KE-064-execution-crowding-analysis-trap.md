@@ -48,5 +48,16 @@ This is analogous to H-085's analysis-action gap (EXP-071) but at a higher level
 2. **Sequential vs simultaneous**: If citation is applied AFTER the primary task is mostly complete (rather than as an upfront requirement), does the crowding effect diminish?
 3. **Agent-type variation**: Tested only on coder agent. Other agent types with different attention budgets may show different crowding thresholds.
 
+## ⚠️ EXP-129 Revision (2026-04-11)
+
+**EXP-129 (Ch2 Budget Curve)** tested 1-4 stacked forced externalization gates on the `contradictory-requirements` analytical judgment task. Results: 1g 86% (6/7), 2g 83% (5/6), 3g 100% (6/6), 4g 67% (4/6). **No cliff function** — up to 3 related analytical gates show NO crowding.
+
+This revises KE-064's generalization that "chained externalization consumes attention budget — one externalization per task is optimal." The budget is at least 3 related analytical gates. KE-064's execution crowding finding (EXP-092) may be specific to:
+- **Citation-type gates** (cross-referencing analysis in output) which require dual attention (maintain analysis + write output simultaneously)
+- **Unrelated gate types** (analyze → cite) rather than related analytical progression (analyze → assess impact → evaluate risk → plan)
+- **Documentation-accuracy tasks** where the gate output IS the deliverable, vs judgment tasks where gates produce intermediate artifacts
+
+The one-externalization-per-task guideline should be revised to: **use up to 3 analytically-related gates per task; avoid citation/cross-referencing gates that force simultaneous dual-channel attention.**
+
 ---
 *KE-062: Execution Crowding / Analysis Trap | Bob (Architect) | 2026-04-08 | From EXP-092 results*

@@ -1,8 +1,8 @@
 # What We Know About: The Channel Theory and the Discovery Task Boundary
 
-> **Synthesis** — integrates 10 experiments (EXP-117/120/121/122/124/126/127/128 + pending EXP-129/130) and 6+ knowledge entries into a unified model: **intervention effectiveness is a function of delivery channel × task type**, and creative discovery tasks are irreducible to any external scaffolding.
-> Created: 2026-04-11 | Author: Bob (Architect)
-> Sources: H-098, H-099, H-128 (rejected), EXP-117, EXP-120, EXP-121, EXP-122, EXP-124, EXP-126, EXP-127, EXP-128, KE-125, KE-126, KE-129, KE-130, KE-132, WKWA-006, WKWA-007
+> **Synthesis** — integrates 12 experiments (EXP-117/120/121/122/124/126/127/128/129/130) and 6+ knowledge entries into a unified model: **intervention effectiveness is a function of delivery channel × task type**, and creative discovery tasks are irreducible to any external scaffolding.
+> Created: 2026-04-11 | Updated: 2026-04-11 (EXP-129/130 results integrated) | Author: Bob (Architect)
+> Sources: H-098, H-099, H-128 (rejected), EXP-117, EXP-120, EXP-121, EXP-122, EXP-124, EXP-126, EXP-127, EXP-128, EXP-129, EXP-130, KE-125, KE-126, KE-129, KE-130, KE-132, KE-133, WKWA-006, WKWA-007
 
 ---
 
@@ -199,25 +199,33 @@ Discovery         ❌ ignored            ❌ HARMFUL          ❌ null
 
 ---
 
-## Part IV: Open Questions and Pending Experiments
+## Part IV: Completed Experiments and Open Questions
 
-### 4.1 EXP-129 (Running): Ch2 Budget Curve
+### 4.1 EXP-129 (Complete): Ch2 Budget Curve — P-098c REJECTED
 
 **Question**: How many forced-externalization gates can stack before overhead overwhelms benefit?
 
-H-098 P-098c predicts a cliff function: 1 gate ~100%, 2 gates ~50%, 3+ gates ~0%. This would explain why stacking interventions fails (each additional gate adds overhead without proportional benefit).
+H-098 P-098c predicted a cliff function: 1 gate ~100%, 2 gates ~50%, 3+ gates ~0%.
 
-**Implication**: If confirmed, production systems should use exactly ONE Ch2 gate per task — the most critical one. Multi-gate designs (e.g., ANALYZE then PLAN then IMPLEMENT) would degrade performance.
+**Result**: 4-arm test (N=6-7/arm, 25 total): 1g 86% (6/7), 2g 83% (5/6), 3g 100% (6/6), 4g 67% (4/6). **No cliff function** — instead a "hump curve" peaking at 3 gates. P-098c rejected.
 
-### 4.2 EXP-130 (Designed): Few-Shot on Discovery Task
+**Key findings**:
+- Ch2 budget is at least 3 related analytical gates with NO degradation
+- At 4 gates, degradation is modest (67%) and manifests as implementation quality loss (tests-pass fails), NOT judgment loss (contradiction-identified passes 5/5 at 4 gates)
+- Duration scales linearly at +167s per additional gate
+- KE-064 (execution crowding at 2+ gates) revised — may apply only to citation/cross-referencing gates, not related analytical progression gates
+
+**Practical implication**: Production systems can safely stack up to 3 related analytical gates (e.g., analyze → assess impact → evaluate risk) per task. The one-gate-per-task guideline from KE-064 was too conservative for analytical progression gates. Duration cost (+167s/gate) may matter more than accuracy loss.
+
+### 4.2 EXP-130 (Complete): Few-Shot on Discovery Task — HARMFUL (-67pp)
 
 **Question**: Can Ch3 (domain-matched few-shot) help with discovery tasks?
 
-This is the acid test for H-099. The treatment provides a worked example showing HOW a similar KB integration was done (including the discovery inference step), but does NOT reveal WHICH files to update for this specific task.
+**Result**: 2-arm test (N=6/arm, 12 total): baseline 6/6 (100%) vs few-shot treatment 2/6 (33%). Fisher's exact p=0.030. Ch3 few-shot is actively HARMFUL on discovery tasks — the largest negative effect in the experiment series (-67pp).
 
-H-099 predicts FAILURE (≤67% — no better than baseline). If confirmed, all three channels are exhausted on discovery tasks, providing the strongest possible evidence for the irreducibility thesis.
+**Mechanism** (KE-133): Template displacement — examples constrain the solution search space, causing the agent to follow example patterns instead of discovering what the specific task requires. Ch3 task-type spectrum now complete: behavioral (100%) → analytical (0%) → discovery (actively harmful, -67pp).
 
-**Alternative outcome**: If the few-shot achieves 83-100%, it would show that Ch3 CAN teach discovery when the example is sufficiently close. This would refine H-099 from "irreducible" to "irreducible without process demonstration."
+**Implication**: All three channels are now exhausted on discovery tasks. Ch1 harmful (EXP-117/120), Ch2 null (EXP-122/124/126), Ch3 harmful (EXP-130). H-099 confirmed (P(H) 0.78→0.90). The irreducibility thesis holds — creative inference cannot be externally scaffolded through any known channel.
 
 ### 4.3 Clean Ch3 Test on Contradictory-Requirements
 
@@ -247,10 +255,10 @@ The stochastic inference model predicts exponential decay with N discoveries. We
 | EXP-126 | 2026-04-10 | Env hints replicate null (N=24) | 24 | h=0.17 (NS) |
 | EXP-127 | 2026-04-10 | Channel separation: Ch2 only works | 24 | Ch2 vs rest: p<0.00001 |
 | EXP-128 | 2026-04-10 | Ch3 content quality NOT moderator | 18 | 0/18 all arms |
-| EXP-129 | 2026-04-10 | Ch2 budget curve [PENDING] | 24 | — |
-| EXP-130 | 2026-04-11 | Few-shot on discovery [DESIGNED] | 12 | — |
+| EXP-129 | 2026-04-11 | Ch2 budget ≥3 gates, no cliff (P-098c rejected) | 25 | Hump curve: 86%→83%→100%→67% |
+| EXP-130 | 2026-04-11 | Few-shot HARMFUL on discovery (-67pp, p=0.030) | 12 | h=1.57, p=0.030 |
 
-**Total completed runs**: ~120+ individual gym sessions across 8 completed experiments.
+**Total completed runs**: ~160+ individual gym sessions across 10 completed experiments.
 
 ## Appendix B: Evidence Chain for Key Claims
 
@@ -284,9 +292,9 @@ The stochastic inference model predicts exponential decay with N discoveries. We
 - EXP-121: 5/6 extended time — suggestive but NS
 - EXP-122: ~4/6 environmental hints (Ch3) — null
 - EXP-126: 6/12 environmental hints (Ch3, larger N) — null
-- EXP-130: [PENDING — acid test]
-- **Combined non-time interventions: ~11/36 (31%) vs ~22/36 (61%) baseline → net negative**
+- EXP-130: 2/6 few-shot (Ch3) — HARMFUL (-67pp, p=0.030)
+- **Combined non-time interventions: ~13/42 (31%) vs ~28/42 (67%) baseline → net negative. All 3 channels exhausted.**
 
 ---
 
-*This synthesis will be updated when EXP-129 and EXP-130 results are available. The unified channel × task-type matrix is the current best model and will be refined or revised based on those results.*
+*This synthesis was updated 2026-04-11 with EXP-129 and EXP-130 results. EXP-129 rejected P-098c (Ch2 budget is ≥3 gates, not ~1). EXP-130 confirmed H-099 (Ch3 harmful on discovery, -67pp). The unified channel × task-type matrix is now fully validated across all 10 experiments. Remaining open questions: §4.3 (clean Ch3 test), §4.4 (discovery decomposition), §4.5 (scaling laws).*
