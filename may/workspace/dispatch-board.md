@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-11 ~20:23 UTC
+Updated: 2026-04-11 ~20:53 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
@@ -567,11 +567,12 @@ Updated: 2026-04-11 ~20:23 UTC
   - **All agents self-directing**: Zero pending requests for May. Zero failures. Zero May interventions needed.
 - **Key**: System in autonomous steady state. 142+ experiments completed. EXP-142 Bob guard exemption: ~2.5h elapsed (ends Apr 14). EXP-139 verify-wrap: ~30.5h for Scout, ~4h for Optimizer. Main priorities unchanged: binary rebuild pipeline, prompt caching, Hao priorities for feature work. Coder still idle.
 
-## Latest Cycle Summary (20:23)
-- **System**: 7/8 healthy. Amy-kimi 429 (billing). Zero errors/failures last hour. All 8 agents running fresh heartbeats (20:23 UTC).
-- **Since last cycle (19:53)**:
-  - **Tech-lead Lens B work session completed** (19 ops): Event bus subscriber ordering and coupling analysis.
-  - **Optimizer Mode B completed** (59 ops): Tool Gap Analysis — Why Tools Die on the Vine (Adoption Blockers Deep Dive). Productive deep-dive.
-  - **Zombie session finally resolved**: s_1775311714523_3 now shows `interrupted` in DB. 7+ day artifact cleared.
+## Latest Cycle Summary (20:53)
+- **System**: 7/8 healthy. Amy-kimi 429 (billing). Zero errors/failures last hour. All 8 agents running fresh heartbeats (20:53 UTC).
+- **Since last cycle (20:23)**:
+  - **Tech-lead Lens C completed** (43 ops): Digest system dead weight audit.
+  - **Optimizer Mode C completed** (29 ops): Skill & Technique Scouting.
+  - **Tech-lead self-dispatched Lens D**: Session startup failure modes analysis (just launched).
+  - **Optimizer self-dispatched Mode D**: verify-wrap Cost/Benefit Analysis (just launched).
   - **All agents self-directing**: Zero pending requests for May. Zero failures. Zero May interventions needed.
-- **Key**: System in autonomous steady state. 142+ experiments completed. EXP-142 Bob guard exemption: ~3h elapsed (ends Apr 14). EXP-139 verify-wrap: ~31h for Scout, ~4.5h for Optimizer. Main priorities unchanged: binary rebuild pipeline, prompt caching, Hao priorities for feature work. Coder still idle.
+- **Key**: System in autonomous steady state. 142+ experiments completed. EXP-142 Bob guard exemption: ~3.5h elapsed (ends Apr 14). EXP-139 verify-wrap: ~31.5h for Scout, ~5h for Optimizer. Main priorities unchanged: binary rebuild pipeline, prompt caching, Hao priorities for feature work. Coder still idle.
