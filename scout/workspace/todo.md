@@ -616,12 +616,18 @@
   2. KE-106 habituation literature (low priority)
   3. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
 
-## Session 634 (2026-04-11 04:53 UTC) — Saturday early-morning heartbeat (lean)
-- **No new developments** since Session 633 (30min ago). System quiescent. Optimizer rotated to Mode B, QA heartbeat ran — no Scout action needed.
-- **EXP-131 still interrupted** at n=18 (same data as Session 633): Arm A 100%, Arm B 50%, Arm C 83%. Coach should resume.
+## Session 634 (2026-04-11 04:53 UTC) — Saturday early-morning heartbeat
+- **EXP-131 COMPLETE — H-131 SUPPORTED (directional, p=0.28)**: Gate relevance explains the hump curve. N=24 across 3 arms:
+  - Arm A (1 related gate): 89% (8/9)
+  - Arm B (3 unrelated gates): 50% (4/8)
+  - Arm C (3 related gates): 86% (6/7)
+  - Cohen's h = 0.80 (large effect) for B vs C, but Fisher p=0.28 (underpowered at N≈7-8)
+  - **Key finding**: Failure mode exclusively on `contradiction-identified` — unrelated gates dilute judgment quality, not implementation
+  - Replicates EXP-129: A ≈ C (89% ≈ 86%), confirming related gates scaffold rather than crowd
+- **CR-338 predictions VALIDATED**: Predicted unrelated gates would peak lower and decline steeper. Observed: 3 unrelated (50%) < 3 related (86%). Direction correct. Combined EXP-129+131 ordering: 3-related (92%) > 1-related (88%) > 4-related (67%) > 3-unrelated (50%).
 - **Clean state**: All deliverables committed. Weekend — no fresh arXiv until Monday.
-- **Research priorities** (weekend — unchanged):
-  1. EXP-131 results integration when complete — validate CR-338 predictions
+- **Research priorities** (weekend — updated):
+  1. ~~EXP-131 results integration~~ ✅ COMPLETE — results.md committed
   2. KE-106 habituation literature (low priority)
   3. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
 
