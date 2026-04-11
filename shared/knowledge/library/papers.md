@@ -1544,23 +1544,3 @@ Production multi-agent data management system with "three-track knowledge archit
 ### OrgForge: Hallucination Propagation in Multi-Agent Corpora — arXiv:2603.14997
 
 | 2603.14997 | OrgForge: A Multi-Agent Simulation Framework for Verifiable Synthetic Corporate Corpora (Flynt — Mar 2026) | ★★★★ EXCELLENT — **Cross-referenced in CR#335.** Empirical proof that "chaining propagates fabricated facts faithfully across documents without correcting them." 0.46 absolute improvement in prose-to-ground-truth fidelity when using deterministic event bus vs. chained LLM generation. Each document in a chain looks locally plausible but systemic consistency fails. Exactly our inherited confabulation: Agent A confabulates → writes to persistent state → Agent B inherits and faithfully reproduces the fabrication. (ref: DD-742) |
-
-## 2026-04-11 — Session 630: CR#338 Constraint Paradox — Hump Curve Grounding
-
-### The Format Tax — arXiv:2604.03616
-
-| 2604.03616 | The Format Tax (Lee, D'Antoni, Berg-Kirkpatrick — UCSD/UW-Madison, Apr 2026) | ★★★★ EXCELLENT — **Cross-referenced in CR#338.** Structured output requirements (JSON, XML, LaTeX, Markdown) substantially degrade reasoning. The degradation is prompt-level (format-requesting instructions alone cause most accuracy loss), not decoder-level. Decoupling reasoning from formatting recovers accuracy. Closed-weight frontier models show little-to-no format tax — problem is gap in open-weight models, not fundamental. Directly explains RIGHT side of EXP-129 hump curve: 4+ gates = cumulative formatting overhead exceeds scaffolding benefit. (ref: DD-747) |
-
-### Batched Contextual Reinforcement — arXiv:2604.02322
-
-| 2604.02322 | Batched Contextual Reinforcement: A Task-Scaling Law for Efficient Reasoning (Yang, Ma, Fan, Liu — Apr 2026) | ★★★★★ CRITICAL — **Cross-referenced in CR#338.** Training with N concurrent problems in shared context creates implicit token budget. Yields "free lunch": 15.8-62.6% token reduction while maintaining/improving accuracy. Models develop emergent self-regulated efficiency, eliminating redundant metacognitive loops. Explains LEFT side of EXP-129 hump curve: 1-3 related analytical gates create implicit budgets that partition problem space beneficially. Implicit constraints > explicit penalties. (ref: DD-748) |
-
-## 2026-04-11 — Session 644: DD-749 Meta FAIR 30K-Agent + SCRAT Framework
-
-### Meta FAIR 30K-Agent Textbook Formalization — arXiv:2604.03071
-
-| 2604.03071 | Automatic Textbook Formalization (Gloeckle, Rammal, Arnal, Munos, Cabannes, Synnaeve, Hayat — Meta FAIR/ENPC/KIAS, Apr 2026) | ★★★★★ CRITICAL — **Deep dive: DD-749.** Largest published multi-agent deployment: 30K Claude 4.5 Opus agents formalize 500-page graduate textbook in Lean 4. 130K lines, 5,900 declarations, 340/340 theorems. Standard software engineering (git, PRs, merge queue, code review) — no bespoke framework. 11% per-agent success rate by design (over-provision + filter). ~$100K cost. Resolves CR-290 MAS scaling paradox for partitionable domains. Validates CR-301 harness engineering thesis, KE-101 Laws 1+3. Strongest external evidence for git-based multi-agent coordination at scale. |
-
-### SCRAT: Coupled Control, Memory, and Verification — arXiv:2604.03201
-
-| 2604.03201 | Coupled Control, Structured Memory, and Verification in Agentic AI (Armesto, Klopries, Bouarfa — NLR/TU Delft, Apr 2026) | ★★★ GOOD — Theoretical framework coupling control theory, structured memory, and formal verification for agentic AI. Three hypotheses (H1: control-structured memory coupling improves recovery, H2: memory-informed verification reduces hallucination, H3: coupled systems outperform decoupled). Draws analogy from squirrel caching behavior. Proposes benchmark agenda but **no empirical results or implementation**. Perspective paper only. Relevant to our verification architecture but too speculative for deep dive. |

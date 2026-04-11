@@ -150,9 +150,10 @@ Deploy L1+L2+L3 together in production. A/B test against current evaluation for 
 
 ## Next Steps
 
-1. **EXP-115 Design**: DAF Retrofit experiment — apply per-dimension thresholds to existing evaluation scores. Retrospective analysis of 200+ sessions.
-2. **EXP-116 Design**: State-Diff Pilot — implement state-diff verification for coder sessions. Compare with narrative evaluation on 50 known FM-3.3 sessions.
-3. Update PRIORITY-TRACKER with H-096.
+1. **EXP-143 (DESIGNED)**: Checkpoint Decomposition experiment — retrospective re-evaluation of 100 historical sessions comparing holistic vs checkpoint-decomposed evaluation. Tests P-096a directly. Ready for Coach execution.
+2. **EXP-115 Design**: DAF Retrofit experiment — apply per-dimension thresholds to existing evaluation scores. Retrospective analysis of 200+ sessions.
+3. **EXP-116 Design**: State-Diff Pilot — implement state-diff verification for coder sessions. Compare with narrative evaluation on 50 known FM-3.3 sessions.
+4. Update PRIORITY-TRACKER with H-096. ✅ Done (EXP-143 added).
 
 ## Tags
 `evaluation-architecture` `verification-quality` `trajectory-evaluation` `state-diff` `adaptive-rubrics` `checkpoint-evaluation` `quality-ceiling` `FM-3.3-residual`

@@ -53,6 +53,13 @@
 - Finding: `workspace/finding-tech-lead-heartbeat-bloat-0411.md`
 - **→ MOVING TO DONE after n≥8 confirms pattern holds**
 
+### Bob Heartbeat Bloat — ROOT CAUSE IDENTIFIED (Apr 11)
+- 92 Bob HBs analyzed (Apr 10-11): 8 bloated (>20 ops, 8.7%), 279 excess ops (29.9% of total).
+- NOT evening-specific — appears at all hours. Post-reform avg 10.2 (was 24.2), but remaining bloated = pure waste (0 output).
+- **Root causes**: (1) 164KB/999-line todo.md → reading loops, (2) No hard op budget, (3) Sync workflow.run() blocks parent, (4) Empty inbox → verification spiral.
+- **Top fix**: Archive completed items in todo.md (999→~200 lines). Est. savings: 2-5 ops/HB.
+- Finding: `workspace/finding-evening-health-0411.md`
+
 ### Optimizer Heartbeat Bloat — FIX DEPLOYED
 - Avg 56 ops/heartbeat (highest of any agent). Bob avg 4 ops. My min was 19 — proves lean is possible.
 - Root cause: heartbeat.md encouraged inline exploration (multi-query DB analysis, file reads).
