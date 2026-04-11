@@ -54,18 +54,16 @@ Idea → Experiment → Evaluate → Keep or Kill
 4. **Evaluate with evidence**: did done rates improve? did error rates drop? did agents produce better work?
 5. **Keep or kill**: if it works, add to the library and wire into agents. If not, document why and move on.
 
-Each technique is good at specific things. `implement-and-verify` is great for code changes but overkill for writing a doc. `research-to-production` closes the research→shipping gap but isn't needed for pure exploration. Knowing when to use which is part of the system's growing intelligence.
+Each technique is good at specific things. `implement-and-verify` is great for code changes but overkill for writing a doc. Knowing when to use which is part of the system's growing intelligence.
 
 ## Current workflow library
 
 | Task type | Workflow | What problem it solves |
 |-----------|----------|----------------------|
 | Any code change | `implement-and-verify` / `implement-and-review` | Forgetting to compile/test after changes |
-| Research → code | `research-to-production` | Research that never ships to production |
 | Multiple research questions | `parallel-research` | Sequential bottleneck when questions are independent |
 | Skill creation | `skill-lifecycle` | Skills that launch without measurement |
 | Training | `growth-cycle` / `training-sprint` | Unstructured training with no completion tracking |
-| Iterative refinement | `auto-loop` | Giving up after first attempt when iteration would help |
 
 ## When you don't need a workflow
 
@@ -103,7 +101,5 @@ When you spot a new problem that a workflow could solve:
 |----------|-------|-------------------|
 | `implement-and-verify` | Task description | Handles compile+test verification after code changes |
 | `implement-and-review` | Task description | Same + QA review phase |
-| `research-to-production` | Research finding to ship | Closes the assess → build → verify → report loop |
 | `parallel-research` | JSON with threads array | Independent exploration of 2-5 questions in parallel |
 | `skill-lifecycle` | Skill proposal | Full lifecycle: propose → test → measure → promote |
-| `auto-loop` | Task with loop config | Iterative refinement with configurable exit conditions |

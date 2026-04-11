@@ -1,7 +1,7 @@
 # Workflow Registry
 
 **Owner**: Optimizer (accountable for quality, deduplication, effectiveness tracking)
-**Last audit**: 2026-04-11T10:25 (Tech Lead — full architecture audit)
+**Last audit**: 2026-04-11T11:24 (Tech Lead — Lens C cleanup of stale references to archived workflows)
 
 ## Shared Workflows (active — available to all agents)
 
