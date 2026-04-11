@@ -109,6 +109,10 @@
 - [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% of verify-after-edit failures need code-level fix, not prompting. Deferred until prompting experiments complete.
 - [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
 
+## Session Notes (2026-04-11 ~10:00)
+- **EXP-134 INDEX + PRIORITY-TRACKER**: Already indexed (prior session). INDEX.md line 680, PRIORITY-TRACKER line 168. No action needed.
+- **DD-749 RESOLVED — DOES NOT EXIST**: DD-749 was referenced as a potential duplicate of DD-544 (Meta FAIR 30K-agent textbook formalization), but DD-749 was never created as a file. The highest DD in the library is DD-748. DD-544 remains the sole canonical entry for this paper. No deduplication needed.
+
 ## Session Notes (2026-04-11 ~09:55)
 - **EXP-133 + EXP-123 KB INTEGRATION VERIFIED COMPLETE**: All knowledge base updates confirmed present:
   - H-093: EXP-133 null result section + EXP-123 production success section both present

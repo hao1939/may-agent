@@ -349,7 +349,20 @@ function resolveConflicts(
   instanceId: "local" | "k3s" | "unknown",
   config: InstanceConfig,
   log: (msg: string) => void,
+  depth: number = 0,
 ): boolean {
+  // Guard: unknown instance can't do ownership-based resolution (would drop all local files)
+  if (instanceId === "unknown") {
+    log("[agents-auto-commit] ⚠️ unknown instance — skipping ownership resolution");
+    return false;
+  }
+
+  // Guard: prevent unbounded recursion during multi-commit rebase
+  if (depth > 50) {
+    log("[agents-auto-commit] ⚠️ conflict resolution exceeded max depth (50)");
+    return false;
+  }
+
   try {
     // Get list of conflicted files
     const conflictOutput = git("git diff --name-only --diff-filter=U", {
@@ -410,7 +423,7 @@ function resolveConflicts(
           timeout: 5_000,
         }).trim();
         if (moreConflicts) {
-          return resolveConflicts(agentsDir, instanceId, config, log);
+          return resolveConflicts(agentsDir, instanceId, config, log, depth + 1);
         }
       } catch {}
       return false;
@@ -533,9 +546,13 @@ function mergeAppendOnly(base: string, ours: string, theirs: string): string {
   const oursNew = ours.split("\n").filter(l => l.trim() && !baseLines.has(l.trim()));
   const theirsNew = theirs.split("\n").filter(l => l.trim() && !baseLines.has(l.trim()));
 
-  // Combine: base content + ours new + theirs new
+  // Deduplicate: don't include lines from theirs that ours already added
+  const oursNewSet = new Set(oursNew.map(l => l.trim()));
+  const uniqueTheirsNew = theirsNew.filter(l => !oursNewSet.has(l.trim()));
+
+  // Combine: base content + ours new + theirs new (deduplicated)
   const result = base.trimEnd();
-  const additions = [...oursNew, ...theirsNew].filter(Boolean);
+  const additions = [...oursNew, ...uniqueTheirsNew].filter(Boolean);
 
   if (!result && additions.length === 0) return "";
   if (!result) return additions.join("\n") + "\n";

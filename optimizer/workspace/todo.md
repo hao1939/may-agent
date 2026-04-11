@@ -16,17 +16,11 @@
 - Bypass exists at `src/app/may.ts:148-165`, needs `ANTHROPIC_API_KEY` env var.
 - **BLOCKED on operator.** Finding: `workspace/findings/2026-04-10-litellm-kills-prompt-caching.md`
 
-### D-o-R Phase 1 Budget Cap — FIX DEPLOYED, n=4 (TRENDING POSITIVE)
-- Analysis: P1 avg 31 ops (67% of run total). 14/14 bloated P1s do full write+verify in "plan" phase.
-- Fix: Rewrote P1 prompt with explicit 15-op budget, read cap (2-4 files), no-write/no-verify rules, 10-call guardrail.
-- Expected: P1 avg ≤15 ops, total run ≤30 ops, saving ~259 ops/day (~$12/day).
-- **~8h measurement (n=5) — COMPLETE ✅**: Run 1 (wr_3zbe): P1=2, P2=58, total=60. Run 2 (wr_lqzs): research-synthesis (68 ops). Run 3 (wr_l61f): P1=5, P2=21, total=26. Run 4 (wr_aiie): P1=7, P2=7, total=14. **Run 5 (wr_lb5, 07:25 UTC): P1=3, P2=6, total=9 — NEW LEANEST.**
-- **P1 avg (4 labeled runs)**: 4.25 ops (was 28.7 pre-fix) — **85% reduction** ✅. All ≤15. Max=7.
-- **D-o-R total avg**: 27.3 ops (n=4 labeled) vs 45.0 pre-fix — **39% reduction**. Trajectory: 60→26→14→9. ↓↓↓
-- **P2 bloat**: 1/4 inflated (wr_3zbe=58). Others: 21, 7, 6. Likely pre-existing P2 issue, not P1 related.
-- **Anti-nesting**: 0 incidents in 4 post-fix runs ✅
-- **VERDICT**: P1 budget cap is a clear success. n=5 reached. Moving to DONE.
-- Findings: `workspace/finding-dor-p1-bloat-0411.md`, `workspace/finding-dor-p1-cap-measurement-0411.md`
+### D-o-R Phase 1 Budget Cap — ✅ CONFIRMED EFFECTIVE, CLOSING (n=7)
+- **FINAL VERDICT (Apr 11 09:55 UTC)**: P1 avg 4.9 ops (was 34.5 pre-fix) — **86% reduction**. All 7 P1s ≤7. Total run avg 24.6 (was 49.1) — **50% reduction**. 1 minor P2 nesting incident (24 ops), 0 P1-spawned nesting. Zero cap violations. ~343 ops/day saved (~$16/day).
+- **Residual**: P2 bloat outlier (1/7 runs, 57 ops). Separate optimization opportunity.
+- Findings: `workspace/finding-dor-p1-bloat-0411.md`, `workspace/finding-dor-p1-cap-measurement-0411.md`, `workspace/finding-dor-p1-cap-final-verdict-0411.md`
+- **→ MOVING TO DONE**
 
 ### D-o-R Nested Workflow Spawning — ✅ FIX DEPLOYED (commit 60a844e3)
 - Bob 90-op session (s_...1119) was a **3-deep nested D-o-R workflow**: Phase 1 called callAgent → triggered another D-o-R → spawned another Phase 1. Total: 169 ops for 1 KB integration task.
@@ -46,16 +40,17 @@
 - Estimated savings: ~750 ops/day, ~$35/day.
 - Finding: `workspace/finding-coach-session-efficiency-0410.md`
 
-### Tech-Lead Heartbeat Bloat — #1 Op Consumer, DRAFT READY
-- Tech-lead heartbeats avg 28.1 ops (8h), **#1 across all agents**. 24h: median 31, p90 50, max 60.
-- 24h: 1,531 heartbeat ops vs 426 work ops — **78% of all tech-lead ops are heartbeats**.
-- **Zero productive output**: 0 files modified, 0 forks spawned in 16/16 heartbeats (8h). 1 fork in 48 heartbeats (24h) = 2% fork rate.
-- Root cause: heartbeat.md encourages deep inline exploration (4 "Lens" modes) with no op budget. Runs full test suite (2046 tests) in heartbeats.
-- **Fix**: Rewrite tech-lead heartbeat.md to dispatcher mode (same fix that took optimizer from 56 → 3.2 avg).
-- **Expected savings**: 1,291 ops/day (~$61/day, ~$1,830/month). Biggest savings opportunity after LiteLLM fix.
-- **DRAFT COMPLETE** (Apr 11 ~07:24 UTC): `workspace/draft-tech-lead-heartbeat-rewrite.md`. Key changes: ≤8 op budget, observe→decide→act→exit flow, lenses become fork targets not inline work, "must-fork" list (test suite, multi-file analysis, architecture review), explicit "don't exit with just observations" rule.
-- **Next step**: ✅ Draft sent to May for approval + deployment (Apr 11 ~07:54 UTC).
+### Tech-Lead Heartbeat Bloat — ✅ FIX DEPLOYED & CONFIRMED (89% reduction)
+- Tech-lead heartbeats avg 30.8 ops (24h pre-fix, n=44), **#1 across all agents**.
+- Root cause: heartbeat.md encouraged deep inline exploration (4 "Lens" modes) with no op budget.
+- **Fix**: Rewrote tech-lead heartbeat.md to dispatcher mode (same pattern as optimizer fix).
+- **DEPLOYED** (commit dfa10146, Apr 11 ~08:35 UTC). May deployed it directly.
+- **POST-FIX (n=4 heartbeats)**: avg 3.5 ops (ops: 8, 3, 1, 2). **89% reduction** ✅
+- Pre-fix avg: 30.8 ops (n=44). Post-fix avg: 3.5 ops (n=4).
+- **Savings**: ~1,100 ops/day (~$52/day, ~$1,560/month) based on ~40 heartbeats/day × 27.3 ops saved.
+- Tech-lead now properly forks work sessions (ops=40, 38, 5 seen in forked jobs).
 - Finding: `workspace/finding-tech-lead-heartbeat-bloat-0411.md`
+- **→ MOVING TO DONE after n≥8 confirms pattern holds**
 
 ### Optimizer Heartbeat Bloat — FIX DEPLOYED
 - Avg 56 ops/heartbeat (highest of any agent). Bob avg 4 ops. My min was 19 — proves lean is possible.
