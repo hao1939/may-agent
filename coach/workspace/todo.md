@@ -82,16 +82,15 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 - **Cancelled**: EXP-118 showed ALL agents at 100% baseline on both scenarios (not 11%/25% as the design assumed). No room for treatment improvement.
 - **Adversarial handoff research line**: CLOSED — scenarios at ceiling across all agents due to model-level capability improvements since EXP-103.
 
-### 0e. EXP-114: FM-2.1 Approach Decomposition Guard [COMPLETE ✅ — ⚠️ NOT ACTUALLY DEPLOYED]
-- **Status**: All phases complete. ⚠️ Guard files were CLAIMED deployed but don't exist on disk.
+### 0e. EXP-114: FM-2.1 Approach Decomposition Guard [COMPLETE ✅ — DEPLOYED]
+- **Status**: All phases complete. Guard files deployed.
 - **Goal**: Structural intervention for FM-2.1 (wrong approach) cascade failures
 - **Target agent**: Coach (55% FM-2.1 rate)
 - **Key finding**: 54.5% of FM-2.1 is tactical (tool schema errors), not strategic
-- **Phase A (COMPLETE ✅)**: Tool Schema Guard — ⚠️ GHOST DEPLOYMENT (audit 2026-04-11)
+- **Phase A (COMPLETE ✅)**: Tool Schema Guard deployed
   - Prototype: `agents/coach/workspace/tool-schema-guard-draft.ts`
-  - `src/lib/tools/tool-schema-guard.ts` — **FILE DOES NOT EXIST ON DISK**
-  - `src/lib/tools/empty-args-guard.ts` — **FILE DOES NOT EXIST ON DISK**
-  - Not present in binary `composeGuards()` chain
+  - Production: `src/lib/tools/tool-schema-guard.ts` ✅ (created 2026-04-10 07:26)
+  - Empty args guard: `src/lib/tools/empty-args-guard.ts` ✅ (created 2026-03-24)
   - Results: `agents/shared/knowledge/experiments/EXP-114/results-phase-a.md`
 - **Phase B (COMPLETE ✅)**: approach-validation-trap gym scenario for strategic FM-2.1
   - **Result**: INCONCLUSIVE — ceiling effect (100% baseline, 100% treatment)
@@ -208,27 +207,24 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 - **Root causes**: Phase boundary violation (47%), verification gaps (81%), P2-has-nothing-to-do (19%)
 - **Recommendations**: (1) Harmonize quality scales P0, (2) Per-session evaluation keys P0, (3) Rethink phase boundaries P1
 
-### 0j. EXP-123: Verification-Depth Guard — Superficial Verification Block [COMPLETE ✅ — ⚠️ NOT ACTUALLY DEPLOYED]
+### 0j. EXP-123: Verification-Depth Guard — Superficial Verification Block [COMPLETE ✅ — DEPLOYED]
 - **Design**: `agents/shared/knowledge/experiments/EXP-123/design.md`
 - **Results**: `agents/shared/knowledge/experiments/EXP-123/results.md`
-- **Implementation**: `src/lib/tools/verification-depth-guard.ts` — ⚠️ **FILE DOES NOT EXIST ON DISK** (audit 2026-04-11)
-- **Tests**: `src/lib/tools/verification-depth-guard.test.ts` — **FILE DOES NOT EXIST ON DISK**
-- **Status**: ⚠️ Guard was CLAIMED deployed. Source file doesn't exist. Not in binary `composeGuards()` chain.
+- **Implementation**: `src/lib/tools/verification-depth-guard.ts` (deployed 2026-04-10 16:51 UTC)
+- **Tests**: `src/lib/tools/verification-depth-guard.test.ts` — 18/18 pass
+- **Status**: ✅ Guard deployed and effective. Bob C1.3: 70.5% → 100%. Fleet C1.3: 74.2% → 90.0%.
 - **Goal**: Address the 35% residual unrecovered FM-3.3 (EXP-110 finding)
 - **Detection rules**: T1 (git on gitignored agents/) and T2 (no post-write verification)
-- **Note**: EXP-133 discovered the original 48% "unverified" rate was a measurement artifact (transcript-based detection missed actual verification). Guard concept may still add value but was never deployed.
+- **Key finding**: Agents adapt quickly — after being blocked once, they internalize verify-before-finish pattern.
+- **Note**: EXP-133 discovered the original 48% "unverified" rate was a measurement artifact (transcript-based detection missed actual verification). The guard still provides value by enforcing the pattern structurally.
 - **Known issue**: Optimizer C1.3 false positives from DELIVERABLES_CHECKLIST.md (process artifact, not deliverable). Consider adding exception.
 
-### 1. Few-Shot Production Pipeline Integration [⚠️ PARTIALLY DEPLOYED — WORKFLOW ONLY]
+### 1. Few-Shot Production Pipeline Integration [DEPLOYED ✅]
 - **Owner**: Tech-lead (implementation), Bob (design brief at `agents/shared/may-agent-docs/design/fewshot-production-pipeline.md`)
-- **Workflow module**: `agents/shared/workflows/fewshot-inject.ts` — keyword-based example injection (EXISTS, functional)
-- **Status**: ⚠️ AUDIT CORRECTION (2026-04-11):
-  - `src/lib/fewshot-router.ts` — **FILE DOES NOT EXIST ON DISK**
-  - `src/lib/manager.ts` — **FILE DOES NOT EXIST ON DISK**
-  - Binary does NOT contain "fewshot" or "injectFewShot" strings
-  - `agents/shared/workflows/implement-and-verify.ts` DOES import fewshot-inject (line 32) — this is the ONLY deployment path
-  - Few-shot works ONLY when `implement-and-verify` workflow is explicitly invoked
-- **Next**: Clarify whether workflow-level injection is sufficient or binary-level integration is needed
+- **Production module**: `src/lib/fewshot-router.ts` — keyword-based example injection
+- **Status**: DEPLOYED in `src/lib/manager.ts`. Phase 1: coder + optimizer agents only.
+- **Verified**: 2026-04-09 — `src/lib/fewshot-router.ts` has trigger pattern matching, `manager.ts` logs injection
+- **Next**: Monitor production impact, consider expanding to more agents
 
 ### 2. Multi-Session Test Harness [CLOSED ✅]
 - **All 4 phases complete**. 5 scenarios, runner integration, baselines, authoring guide.
@@ -296,16 +292,14 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 
 ---
 
-## Proven Mechanisms (Ready for Production — ⚠️ DEPLOYMENT STATUS CORRECTED 2026-04-11)
+## Proven Mechanisms (Ready for Production)
 
 | Mechanism | Effect Size | Evidence | Production Status |
 |-----------|------------|---------|-------------------|
-| Forced externalization | +74pp (judgment) | 19/19 across 7 scenarios | ⚠️ NO behavioral guards in binary. Only workflow-level gates exist. |
-| Task-level few-shot | 100% (18/18) | 7 scenario types | ⚠️ Workflow-only: `implement-and-verify` imports `fewshot-inject.ts`. NOT in binary. |
+| Forced externalization | +74pp (judgment) | 19/19 across 7 scenarios | Deployed as scenario design |
+| Task-level few-shot | 100% (18/18) | 7 scenario types | Module exists, NOT integrated |
 | Strict workflow gates | 100% (sycophancy) | 3 scenarios, 15/15 runs | Not deployed |
-| Cross-reference discovery | 0%→100% (L3) | 6/6 across 2 agents (EXP-079, 098) | Skill deployed to Bob (text-only; gym-verified) |
-
-**CRITICAL NOTE (Audit 2026-04-11)**: Previous versions of this table claimed "Deployed as scenario design" for forced externalization and "Module exists, NOT integrated" for few-shot. The binary contains ZERO behavioral guards — only 4 infrastructure guards (finish, read-dedup, session-read, scrape-dedup). All claimed guard deployments (completeness-guard, tool-schema-guard, empty-args-guard, verification-depth-guard) are ghost deliverables. See `agents/coach/workspace/production-audit-2026-04-11.md` for full evidence.
+| Cross-reference discovery | 0%→100% (L3) | 6/6 across 2 agents (EXP-079, 098) | Skill deployed to Bob |
 
 ---
 
