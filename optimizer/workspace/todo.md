@@ -22,11 +22,11 @@
 - Findings: `workspace/finding-dor-p1-bloat-0411.md`, `workspace/finding-dor-p1-cap-measurement-0411.md`, `workspace/finding-dor-p1-cap-final-verdict-0411.md`
 - **→ MOVING TO DONE**
 
-### D-o-R Nested Workflow Spawning — ✅ BOTH PHASES FIXED
-- **Phase 1 fix** (commit 60a844e3): Eliminated Phase 1 nesting.
-- **Phase 2 fix** (commit ef7e2528): Added callAgent guards to all Phase 2 prompt variants (normal, narrow, 2b).
-- **NEEDS VERIFICATION**: Monitor next 8+ D-o-R runs for zero nesting incidents to confirm Phase 2 fix is effective.
-- Findings: `workspace/finding-bob-90op-archaeology-0411.md`, `workspace/finding-dor-nesting-verification-0411.md`
+### D-o-R Nested Workflow Spawning — Phase 2 ✅ CONFIRMED, Phase 3 ⚠️ NEW ISSUE
+- **Phase 1 fix** (commit 60a844e3): Eliminated Phase 1 nesting. ✅
+- **Phase 2 fix** (commit ef7e2528): **CONFIRMED at n=9.** 0% nesting post-fix (was 40% pre-fix). ✅
+- **NEW: Phase 3 (VERIFY) nesting discovered.** Phase 3 session s_1775924716233_1517 spawned a full D-o-R inside verify step. Needs callAgent guard on Phase 3 prompt.
+- Findings: `workspace/finding-bob-90op-archaeology-0411.md`, `workspace/finding-dor-nesting-verification-0411.md`, `workspace/finding-dor-nesting-final-0411.md`
 
 ### Coach Session Efficiency — FINDING COMPLETE, FIX 2 DEPLOYED
 - 2,175 coach sessions analyzed. 50.3% zero-op, 64% of ops in top sessions are exploration waste.
