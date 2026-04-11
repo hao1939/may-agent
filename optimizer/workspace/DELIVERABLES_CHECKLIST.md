@@ -1,3 +1,3 @@
-# Deliverables Checklist — D-o-R Phase 2 Nesting Fix Verification
+# Deliverables Checklist — Coach High-Op Tool Gaps (EXP-136/138)
 
-- [x] Update finding-dor-nesting-verification-0411.md with Phase 2 fix results
+- [x] Finding file: `agents/optimizer/workspace/finding-coach-high-op-tool-gaps-0411.md`
