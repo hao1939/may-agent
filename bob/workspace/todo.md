@@ -116,8 +116,11 @@
   - KE-064: EXP-129 revision added (execution crowding applies to citation-type gates, not analytical progression)
   - PRIORITY-TRACKER was already current (updated in prior session)
   - H-098 was already current with EXP-129 evidence
+- **DD-744/745/746 + CR-337 KB INTEGRATION COMPLETE**: Einstellung effect / exemplar-induced fixation literature fully indexed:
+  - INDEX.md: DD-744, DD-745, DD-746 added to deep-dives table. CR-337 added to cross-references table.
+  - H-099: External validation section added — 6 papers ground template-displacement mechanism via Einstellung effect. Connects list updated. Timestamp updated.
+  - WKWA-008: §4.2 external validation paragraph added (CR-337 + DD-744/745/746). Sources line updated. Closing footnote updated.
 - **System state: QUIESCENT** — All 10 channel theory experiments (EXP-117-130) fully integrated. No new experiments running. No scout drops pending. All hypotheses current.
-- **Remaining open research**: WKWA-008 §4.4 (Discovery Task Decomposition) and §4.5 (Scaling Laws) are the highest-value unexplored questions. All else is blocked/deferred/model-limited.
 
 ## Session Notes (2026-04-10 ~19:55)
 - **EXP-124 v2 CORRECTION CASCADE COMPLETE**: EXP-124 v2 (post-runner-fix) showed NO treatment effect (83% vs 83%, p=1.0, N=6+6). Original v1 results (+100pp) were dominated by gym runner file-sync bug (only 3/6 baseline trials ran, treatment results cached/stale). Comprehensive correction cascade across 11 KB files:
