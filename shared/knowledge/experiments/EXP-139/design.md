@@ -1,9 +1,11 @@
 # EXP-139: verify-wrap Production Pilot on Scout
 
-**Status**: DESIGNED  
+**Status**: DEPLOYED  
 **Date**: 2026-04-11  
 **Author**: Coach  
-**Depends on**: EXP-136 (guard rate decomposition), EXP-137 (structural comparison), EXP-138 (verify-wrap build + gym test)
+**Depends on**: EXP-136 (guard rate decomposition), EXP-137 (structural comparison), EXP-138 (verify-wrap build + gym test)  
+**Deployed**: 2026-04-11T14:55:00Z  
+**Post-period ends**: 2026-04-14T14:55:00Z (72h)
 
 ---
 
