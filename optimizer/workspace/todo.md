@@ -20,12 +20,12 @@
 - Analysis: P1 avg 31 ops (67% of run total). 14/14 bloated P1s do full write+verify in "plan" phase.
 - Fix: Rewrote P1 prompt with explicit 15-op budget, read cap (2-4 files), no-write/no-verify rules, 10-call guardrail.
 - Expected: P1 avg ≤15 ops, total run ≤30 ops, saving ~259 ops/day (~$12/day).
-- **~5.5h measurement (n=4)**: Run 1 (wr_3zbe): P1=2, P2=58, total=60. Run 2 (wr_lqzs): research-synthesis (68 ops). Run 3 (wr_l61f): P1=5, P2=21, total=26. **Run 4 (wr_aiie, 06:24 UTC): P1=7, P2=7, total=14 — LEANEST EVER.**
-- **P1 avg (3 labeled runs)**: 4.7 ops (was 28.7 pre-fix) — **84% reduction** ✅. All ≤15.
-- **D-o-R total avg**: 33.3 ops (n=3 labeled) vs 45.0 pre-fix — **26% reduction**. Trajectory: 60→26→14.
-- **P2 bloat concern fading**: Only wr_3zbe P2 was inflated (58). wr_l61f (21) and wr_aiie (7) are normal/lean.
-- **Anti-nesting**: 0 incidents in 2 post-fix runs ✅
-- **Next check**: Need n≥5. 1 more run needed. Check ~2026-04-11 08:00 UTC.
+- **~8h measurement (n=5) — COMPLETE ✅**: Run 1 (wr_3zbe): P1=2, P2=58, total=60. Run 2 (wr_lqzs): research-synthesis (68 ops). Run 3 (wr_l61f): P1=5, P2=21, total=26. Run 4 (wr_aiie): P1=7, P2=7, total=14. **Run 5 (wr_lb5, 07:25 UTC): P1=3, P2=6, total=9 — NEW LEANEST.**
+- **P1 avg (4 labeled runs)**: 4.25 ops (was 28.7 pre-fix) — **85% reduction** ✅. All ≤15. Max=7.
+- **D-o-R total avg**: 27.3 ops (n=4 labeled) vs 45.0 pre-fix — **39% reduction**. Trajectory: 60→26→14→9. ↓↓↓
+- **P2 bloat**: 1/4 inflated (wr_3zbe=58). Others: 21, 7, 6. Likely pre-existing P2 issue, not P1 related.
+- **Anti-nesting**: 0 incidents in 4 post-fix runs ✅
+- **VERDICT**: P1 budget cap is a clear success. n=5 reached. Moving to DONE.
 - Findings: `workspace/finding-dor-p1-bloat-0411.md`, `workspace/finding-dor-p1-cap-measurement-0411.md`
 
 ### D-o-R Nested Workflow Spawning — ✅ FIX DEPLOYED (commit 60a844e3)
@@ -54,7 +54,7 @@
 - **Fix**: Rewrite tech-lead heartbeat.md to dispatcher mode (same fix that took optimizer from 56 → 3.2 avg).
 - **Expected savings**: 1,291 ops/day (~$61/day, ~$1,830/month). Biggest savings opportunity after LiteLLM fix.
 - **DRAFT COMPLETE** (Apr 11 ~07:24 UTC): `workspace/draft-tech-lead-heartbeat-rewrite.md`. Key changes: ≤8 op budget, observe→decide→act→exit flow, lenses become fork targets not inline work, "must-fork" list (test suite, multi-file analysis, architecture review), explicit "don't exit with just observations" rule.
-- **Next step**: Send draft to May for approval + deployment.
+- **Next step**: ✅ Draft sent to May for approval + deployment (Apr 11 ~07:54 UTC).
 - Finding: `workspace/finding-tech-lead-heartbeat-bloat-0411.md`
 
 ### Optimizer Heartbeat Bloat — FIX DEPLOYED
@@ -62,12 +62,10 @@
 - Root cause: heartbeat.md encouraged inline exploration (multi-query DB analysis, file reads).
 - Fix: Rewrote heartbeat.md to "Dispatcher Mode" — observe in 1-2 ops, fork all analysis work. Target: ≤15 ops.
 - Baseline: 8 heartbeats in 12h, avg 56 ops, total 451. Post-fix: avg 23 ops (59% reduction). ✅ SUCCESS.
-- Last exploration mode: **C** (Tech-Lead HB Rewrite Draft — Apr 11 ~07:23 UTC, s_1775892250621_1284). Previous: B (Tech-Lead Bloat Analysis — Apr 11 ~07:00), A (Coach 88-op EXP-130 + D-o-R n=4/5 — Apr 11 ~06:23), D (Adoption Unblock — Apr 11 ~05:53), C (Coach Experiment Technique — Apr 11 ~05:24), B (Tool Gap — Bob 75-op — Apr 11 ~04:54).
+- Last exploration mode: **D** (D-o-R n=5 measurement + tech-lead draft delivery — Apr 11 ~07:54 UTC, inline). Previous: C (Tech-Lead HB Rewrite Draft — Apr 11 ~07:23 UTC, s_1775892250621_1284). Previous: B (Tech-Lead Bloat Analysis — Apr 11 ~07:00), A (Coach 88-op EXP-130 + D-o-R n=4/5 — Apr 11 ~06:23), D (Adoption Unblock — Apr 11 ~05:53), C (Coach Experiment Technique — Apr 11 ~05:24), B (Tool Gap — Bob 75-op — Apr 11 ~04:54).
 - **session-query tool BUILT** (`scripts/session-query.ts`). Replaces 15-25 bash archaeology pattern with single command. Supports: --agent, --since, --task, --status, --min-ops, --tools, --json, --sort. Tested with real data (911 sessions). Est. savings: 10-15 ops/session × 187 sessions = 1,870-2,805 ops.
 - **session-query adoption**: Still **zero active adoption** beyond optimizer (confirmed Apr 11 05:24 UTC). May + QA have passive mentions only. **Three blockers**: (1) filesystem history stale (through ~Apr 5), (2) zero agents have session-query in context.md, (3) may.db has 0 coach sessions. No change since last check. **gym-batch.sh MERGED to main** (cherry-pick 5ca3bdf, Apr 11 ~05:54 UTC) + coach context.md updated. Previous blocker (stuck on review branch) resolved. Findings: `workspace/finding-tool-gap-0411-b.md`, `workspace/finding-coach-experiment-technique-0411.md`
 - Mode D **COMPLETE**: Workflow health analysis. **Key result: D-o-R uses +53% more ops than non-WF work sessions** (45.7 vs 29.9). Phase 1 is the bloat source (30.4 avg ops — matches a complete non-WF session). Error rates 50% lower (2.1% vs 3.9%). Quality scores incomparable (different eval scales). Finding: `workspace/finding-workflow-health-0410.md`
-- **Last exploration mode**: D (Apr 11 08:01 UTC). Previous: C (Tech-Lead HB Rewrite Draft — 07:23), B (Tech-Lead Bloat Analysis — 07:00), A (Coach 77-op — 07:38).
-- **Tech-lead heartbeat draft SENT to May** (req:5818df29, Apr 11 ~08:01 UTC). Awaiting review/deploy.
 - Mode C finding complete: `workspace/finding-workflow-adoption-gap-0410.md`
 - Mode A finding complete: `workspace/finding-coach-166op-archaeology-0410.md` — **Key result: high-op sessions are restart-accumulated, not single-context bloat. 184-op session had 6 restarts (7 segments). Primary fix is infra (cap restarts/turns), not behavioral.**
 - Mode A finding complete: `workspace/finding-dor-p1-bloat-0411.md` — **Key result: Phase 1 consumes 67% of all D-o-R ops. 14/14 bloated P1s (>40 ops) have "verified" in outcome — doing full delivery cycle in "plan" phase. 15-op cap would save 44% of D-o-R ops (259/day, ~$12/day). Fix: tighter P1 prompt with explicit 15-op budget.**
