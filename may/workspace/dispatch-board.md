@@ -1,11 +1,11 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-11 ~01:23 UTC
+Updated: 2026-04-11 ~01:53 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — Heartbeat running. EXP-130 KB integration pending.
-- **Coach**: 🟢 Active — **EXP-129 still running** (Channel 2 Budget Curve). Current data: Arm A: 6/7 (86%), Arm B: 5/6 (83%), Arm C: 6/6 (100%), Arm D: 1/2 (needs 4 more). **EXP-130 ✅ COMPLETE** — few-shot IATROGENIC on discovery (-67pp, p=0.030).
+- **Bob**: 🟢 Active — Heartbeat running. **EXP-130 KB integration ✅ DONE**.
+- **Coach**: 🟢 Active — **EXP-129 ALL DATA COLLECTED** (Channel 2 Budget Curve). Arm A: 6/7 (86%), Arm B: 5/6 (83%), Arm C: 6/6 (100%), **Arm D: 4/6 (67%)**. Coach writing results. **EXP-130 ✅ COMPLETE** — few-shot IATROGENIC on discovery (-67pp, p=0.030).
 - **Scout**: ⚠️ 401 Error — Recurring `IDE token expired` auth failure. Auto-pause recovery handling retries.
 - **Tech-lead**: 🟢 Active — Heartbeat cycle running.
 - **Optimizer**: 🟢 Active — D-o-R Phase 1 budget cap delivered last cycle. Heartbeat running.
@@ -161,7 +161,7 @@ Updated: 2026-04-11 ~01:23 UTC
 | **EXP-116 Results Correction** | ✅ CORRECTED | may | EXP-116/results.md note updated: invalidation was WRONG — EXP-118 confirmed 100% baselines are real with valid agents. Silent exit bug exists but didn't corrupt results. |
 
 | **EXP-128 Channel 3 Boundary Conditions** | ✅ COMPLETE | coach | **H-128 REJECTED**: 18 runs, all arms 0/6 pass. Detection coverage made no difference. Ch3 has genuine task-type boundary — "success signal misdirection" (tests pass → agent thinks it succeeded). Action momentum overwhelms few-shot. Results at `agents/shared/knowledge/experiments/EXP-128/results.md`. |
-| **EXP-129 Channel 2 Budget Curve** | ⏳ RUNNING | coach | Data: Arm A 6/7 (86%), Arm B 5/6 (83%), Arm C 6/6 (100%), Arm D 1/2 (incomplete). Coach actively running Arm D. Arm C (3-gate) still leads. |
+| **EXP-129 Channel 2 Budget Curve** | ✅ DATA COMPLETE | coach | **ALL 25 RUNS DONE**: Arm A 6/7 (86%), Arm B 5/6 (83%), Arm C 6/6 (100%), **Arm D 4/6 (67%)**. Inverted-U: 3-gate optimal, 4-gate DEGRADES (time pressure 755s avg + scoring failures). Coach writing results. |
 | **EXP-130 Few-Shot on Discovery** | ✅ COMPLETE (**IATROGENIC**) | coach | **LANDMARK**: Baseline 6/6 (100%) vs Few-shot 2/6 (33%). p=0.030. Few-shot ACTIVELY HURTS discovery tasks (-67pp). Template-following displaces exploration. H-099 P(H) 0.78→0.90. All 3 channels (Ch1/Ch2/Ch3) fail on discovery. Results at `agents/shared/knowledge/experiments/EXP-130/results.md`. |
 | **WKWA-008 Channel Theory Synthesis** | ✅ COMPLETE | bob | 10-experiment synthesis: channel × task-type matrix. At `synthesis/WKWA-008-channel-theory-discovery-boundary.md`. |
 | **Session-Query Tool** | ✅ MERGED | optimizer/may | 378-line CLI at `scripts/session-query.ts`. Merged to main. Note: queries `agents/.state/sessions/history/` (historical), not `.state/sessions/` (current). |
@@ -208,23 +208,20 @@ Updated: 2026-04-11 ~01:23 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (01:23)
-- **System healthy**: 7/8 agents running. Scout recurring 401 auth. Zero failures.
-- **Since last cycle (00:55)**:
-  - **Coach EXP-130 COMPLETE**: **IATROGENIC** — few-shot HURTS discovery (-67pp, p=0.030). Baseline 6/6 (100%) vs treatment 2/6 (33%). Template-following displaces exploration. H-099 P(H) 0.78→0.90. All 3 channels fail on discovery.
-  - **Coach EXP-129 continuing**: Arm D data coming in (1/2 so far). Arm C still leads at 6/6 (100%). Coach actively running remaining trials.
-  - **Bob**: EXP-130 KB integration pending (will pick up in next heartbeat).
-  - **Optimizer**: D-o-R Phase 1 budget cap completed last cycle.
-  - **All agents self-directing**: Zero pending requests. Zero May interventions needed.
+## Latest Cycle Summary (01:53)
+- **System healthy**: 7/8 agents running. Scout recurring 401 auth. Zero failures last hour.
+- **Since last cycle (01:23)**:
+  - **Coach EXP-129 DATA COMPLETE**: All 25 runs finished. **Inverted-U curve confirmed**: Arm A 86%, Arm B 83%, Arm C 100%, **Arm D 67%**. 3-gate optimal; 4th gate causes time pressure (755s avg) and scoring failures. Coach writing final results.
+  - **Bob EXP-130 KB integration ✅ DONE**: Completed in work session. H-099, H-098 updated.
+  - **All agents self-directing**: 1 active request (Coach EXP-129 writeup). Zero May interventions needed.
 
 ## Key Findings This Cycle
-- **EXP-130 LANDMARK**: First experiment where intervention causes NET HARM. Few-shot -67pp on discovery (100%→33%). Mechanism: template-as-ceiling suppresses exploratory behavior. Agent follows example's 7-step pattern but misses peripheral files (todo, priority-tracker, index) that require independent discovery. This extends H-099: discovery isn't just irreducible to scaffolding — scaffolding actively degrades it.
-- **EXP-129 emerging pattern**: 3-gate arm (C) at 100%, outperforming 1-gate (86%) and 2-gate (83%). If this holds, each additional forced externalization gate adds marginal value. Arm D (4-gate) still too early to call (1/2).
+- **EXP-129 INVERTED-U**: Gate count has diminishing returns. 3-gate = 100% (optimal), 4-gate = 67% (WORSE than 1-gate's 86%). Mechanism: 4th gate pushes duration to ~755s, causing timeout/scoring failures. The extra forced externalization becomes overhead rather than benefit. This gives us a concrete deployment recommendation: **3 forced externalization gates is the sweet spot for judgment tasks**.
+- **EXP-130 LANDMARK** (from last cycle): First experiment where intervention causes NET HARM. Few-shot -67pp on discovery. Template-as-ceiling suppresses exploratory behavior.
 
 ## Next Actions
 - **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. Saves $143-441/day. **Blocked on Hao since Mar 24**.
-- **P1**: **EXP-129 completion** — Coach actively running Arm D. Results expected within 30min.
-- **P1**: **EXP-130 KB integration** — Bob needs to integrate iatrogenic finding into H-099, H-098, KE-132. Will self-dispatch.
+- **P1**: **EXP-129 results writeup** — Coach finishing this session. Then Bob KB integration needed.
 - **P1**: **EXP-105 Few-Shot Production Impact** — Need coder/optimizer work sessions to generate data. No coder work happening.
 - **P1**: **Generate implementation work** — System idle without features. Coder completely idle. Need Hao priorities.
 - **P2**: `analyze-failures` cron DB bug — persistent but non-critical.
