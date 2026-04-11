@@ -383,7 +383,13 @@ export class SubagentManager {
             createCompletenessGuard(def.name),
             createFinishGuard(),
             createCommitGuard(def.name, this._projectRoot),
-            createVerificationDepthGuard(def.name),
+            createVerificationDepthGuard(def.name, {
+              // EXP-142: Per-agent guard calibration.
+              // Bob is actively harmed by FM-3.3 guard (-6.1pp quality, N=438).
+              // His deliver-or-report workflow provides superior verification.
+              // See: agents/shared/knowledge/experiments/EXP-142/design.md
+              exemptAgents: ["bob"],
+            }),
             createReadDedupGuard(),
             createSessionReadGuard(),
             createScrapeDedupGuard(),

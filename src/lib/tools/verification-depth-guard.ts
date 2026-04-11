@@ -30,6 +30,15 @@ export interface VerificationDepthGuardOptions {
   agents?: string | string[];
 
   /**
+   * Agent(s) exempt from this guard. Takes precedence over `agents`.
+   * If a string, matches exactly. If an array, matches any.
+   * 
+   * EXP-142: Per-agent guard calibration. Some agents (e.g., bob) have
+   * workflow-level verification that makes the guard redundant and harmful.
+   */
+  exemptAgents?: string | string[];
+
+  /**
    * Whether to block the finish call (true) or just warn (false).
    * Default: true
    */
@@ -343,11 +352,17 @@ export function createVerificationDepthGuard(
   const targetAgents = options.agents
     ? (Array.isArray(options.agents) ? options.agents : [options.agents])
     : undefined; // undefined = all agents
+  const exemptAgents = options.exemptAgents
+    ? (Array.isArray(options.exemptAgents) ? options.exemptAgents : [options.exemptAgents])
+    : []; // EXP-142: per-agent exemptions
   const shouldBlock = options.block !== false; // default true
   const onBlock = options.onBlock;
 
+  // Pre-check: is this agent exempt? (EXP-142: takes precedence over targetAgents)
+  const isExempt = exemptAgents.includes(agentName);
+
   // Pre-check: is this agent targeted?
-  const isTargeted = targetAgents ? targetAgents.includes(agentName) : true;
+  const isTargeted = !isExempt && (targetAgents ? targetAgents.includes(agentName) : true);
 
   return async (
     ctx: BeforeToolCallContext,
