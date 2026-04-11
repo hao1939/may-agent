@@ -167,6 +167,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     `- **DO NOT write or edit ANY deliverable files** — a separate Phase 2 session handles all writing.\n` +
     `- **DO NOT verify anything** — a separate Phase 3 session handles verification.\n` +
     `- **DO NOT read more than 5 files** — be selective, not exhaustive.\n` +
+    `- **DO NOT call callAgent() or spawn sub-agents** — Phase 2 handles execution. Calling callAgent triggers recursive workflow nesting that wastes hundreds of ops.\n` +
     `- **If you've used 10 tool calls, STOP reading and write your plan NOW.**\n` +
     `- You MAY write scratch notes to agents/bob/workspace/ if helpful.\n\n` +
     `The most efficient Phase 1 sessions read 2-3 files and finish in under 10 tool calls.\n` +
