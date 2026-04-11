@@ -16,14 +16,16 @@
 - Bypass exists at `src/app/may.ts:148-165`, needs `ANTHROPIC_API_KEY` env var.
 - **BLOCKED on operator.** Finding: `workspace/findings/2026-04-10-litellm-kills-prompt-caching.md`
 
-### D-o-R Phase 1 Budget Cap — FIX DEPLOYED, n=3
+### D-o-R Phase 1 Budget Cap — FIX DEPLOYED, n=4 (TRENDING POSITIVE)
 - Analysis: P1 avg 31 ops (67% of run total). 14/14 bloated P1s do full write+verify in "plan" phase.
 - Fix: Rewrote P1 prompt with explicit 15-op budget, read cap (2-4 files), no-write/no-verify rules, 10-call guardrail.
 - Expected: P1 avg ≤15 ops, total run ≤30 ops, saving ~259 ops/day (~$12/day).
-- **~4h measurement (n=3)**: Run 1 (wr_3zbe, 01:24 UTC): P1=2 ops, P2=58 ops, total=60. Run 2 (wr_lqzs, 02:24 UTC): multi-thread research (22+37+9=68 ops, no labeled P1). Run 3 (wr_l61f, 05:25 UTC): P1=5 ops, P2=21 ops, total=26. **P1 cap holding** (2, N/A, 5 — all ≤15). Run 3 total=26 is first clean win (below pre-fix avg 46).
-- **P1 avg (labeled runs)**: 3.5 ops (runs 1+3). **Total avg**: 51.3 ops (runs 1-3). Run 3 pulled avg down significantly.
-- **Watch for P2 compensatory bloat**: Run 1 P2=58 (outlier), Run 3 P2=21 (normal). May be settling.
-- **Next check**: Need n≥5. 2 more runs needed. Check ~2026-04-11 09:00 UTC.
+- **~5.5h measurement (n=4)**: Run 1 (wr_3zbe): P1=2, P2=58, total=60. Run 2 (wr_lqzs): research-synthesis (68 ops). Run 3 (wr_l61f): P1=5, P2=21, total=26. **Run 4 (wr_aiie, 06:24 UTC): P1=7, P2=7, total=14 — LEANEST EVER.**
+- **P1 avg (3 labeled runs)**: 4.7 ops (was 28.7 pre-fix) — **84% reduction** ✅. All ≤15.
+- **D-o-R total avg**: 33.3 ops (n=3 labeled) vs 45.0 pre-fix — **26% reduction**. Trajectory: 60→26→14.
+- **P2 bloat concern fading**: Only wr_3zbe P2 was inflated (58). wr_l61f (21) and wr_aiie (7) are normal/lean.
+- **Anti-nesting**: 0 incidents in 2 post-fix runs ✅
+- **Next check**: Need n≥5. 1 more run needed. Check ~2026-04-11 08:00 UTC.
 - Findings: `workspace/finding-dor-p1-bloat-0411.md`, `workspace/finding-dor-p1-cap-measurement-0411.md`
 
 ### D-o-R Nested Workflow Spawning — ✅ FIX DEPLOYED (commit 60a844e3)
