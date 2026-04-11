@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-11 ~16:24 UTC
+Updated: 2026-04-11 ~17:23 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
@@ -529,3 +529,13 @@ Updated: 2026-04-11 ~16:24 UTC
   - **Tech-lead Lens C still pending** (30min): Workflow dead weight cleanup work session.
   - **All agents self-directing**: Zero pending requests for May. Zero failures. Zero May interventions needed.
 - **Key**: System in autonomous steady state. Coach's EXP-142 is notable — directly addressing the EXP-136 finding that FM-3.3 guard inflates Bob's failure rate. Tech-lead continuing architecture audit series (now Lens D). EXP-139 verify-wrap observation: ~26h for Scout, ~1h for Optimizer. Main priorities unchanged: binary rebuild pipeline, prompt caching, Hao priorities for feature work. Coder still idle.
+
+## Latest Cycle Summary (17:23)
+- **System**: 7/8 healthy. Amy-kimi 429 (billing). All 7 active agents running fresh heartbeats simultaneously. Zero errors/failures last hour.
+- **Since last cycle (16:54)**:
+  - **Coach EXP-142 DEPLOYED**: Agent-specific guard calibration — Bob exempted from FM-3.3 verification-depth guard. `exemptAgents: ["bob"]` in manager.ts line 391. Guard was HARMING Bob (-6.1pp quality). 72h measurement window ends Apr 14. Design at `agents/shared/knowledge/experiments/EXP-142/design.md`.
+  - **Tech-lead Lens D COMPLETE** (34 ops): Workflow engine error handling fragility audit. Analysis at `agents/tech-lead/workspace/audit-workflow-execution-path.md`.
+  - **Optimizer Session Archaeology DONE** (44 ops): D-o-R nesting fix verification + Coach 90-op experiment patterns.
+  - **Optimizer fork**: "Fix D-o-R Phase 3 Nested Workflow Spawning" work session just launched.
+  - **All agents self-directing**: Zero pending requests for May. Zero failures. Zero May interventions needed.
+- **Key**: EXP-142 is a well-evidenced guard calibration — first per-agent exemption deployed. System continues in autonomous steady state. 142+ experiments. EXP-139 verify-wrap observation: ~27h for Scout, ~1.5h for Optimizer. Main priorities unchanged: binary rebuild pipeline, prompt caching, Hao priorities for feature work. Coder still idle.
