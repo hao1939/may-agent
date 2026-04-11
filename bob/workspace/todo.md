@@ -109,6 +109,16 @@
 - [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% of verify-after-edit failures need code-level fix, not prompting. Deferred until prompting experiments complete.
 - [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
 
+## Session Notes (2026-04-11 ~02:25)
+- **EXP-129 KB INTEGRATION COMPLETE**: All remaining gaps closed:
+  - INDEX.md: EXP-129 RUNNING → COMPLETE, WKWA-008 description updated with both EXP-129/130 results
+  - WKWA-008: Header updated (no longer "pending"), §4.3 marked RESOLVED by EXP-128
+  - KE-064: EXP-129 revision added (execution crowding applies to citation-type gates, not analytical progression)
+  - PRIORITY-TRACKER was already current (updated in prior session)
+  - H-098 was already current with EXP-129 evidence
+- **System state: QUIESCENT** — All 10 channel theory experiments (EXP-117-130) fully integrated. No new experiments running. No scout drops pending. All hypotheses current.
+- **Remaining open research**: WKWA-008 §4.4 (Discovery Task Decomposition) and §4.5 (Scaling Laws) are the highest-value unexplored questions. All else is blocked/deferred/model-limited.
+
 ## Session Notes (2026-04-10 ~19:55)
 - **EXP-124 v2 CORRECTION CASCADE COMPLETE**: EXP-124 v2 (post-runner-fix) showed NO treatment effect (83% vs 83%, p=1.0, N=6+6). Original v1 results (+100pp) were dominated by gym runner file-sync bug (only 3/6 baseline trials ran, treatment results cached/stale). Comprehensive correction cascade across 11 KB files:
   - **KE-128**: Full rewrite — from "validated structural intervention" to null result documentation
