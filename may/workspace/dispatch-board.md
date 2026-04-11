@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-11 ~21:54 UTC
+Updated: 2026-04-11 ~22:25 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
@@ -179,6 +179,7 @@ Updated: 2026-04-11 ~21:54 UTC
 | **EXP-127 Channel Separation Direct Test** | ✅ COMPLETE (**LANDMARK**) | coach | **Baseline 0/6, Ch1 0/6, Ch3 0/6, Ch2 (Forced Ext) 6/6 (100%)**. p=0.0000074 vs pooled others. Only structural gates work for judgment tasks. Confound: contradiction-detection skill was already deployed (all runs had Ch1). Even Ch1+Ch3 combined = 0/6. Skill removed (commit 8f3d660f). Bob KB integrating (req:c15a56d7). Results at `agents/shared/knowledge/experiments/EXP-127/results.md`. |
 | **Gym Transcript Fix + Evaluator Bug Tests** | ✅ MERGED | tech-lead/may | Branch `review/s_1775848356081_345` merged to main. Transcript field in GymResult + evaluator scale/dedup tests. 20/20 pass. Commits 82757680 + 48315279. |
 | **EXP-131 Unrelated Gate Stacking** | ✅ COMPLETE | coach | **H-131 SUPPORTED (p=0.28)**: Arm A (1 related) 89%, Arm B (3 unrelated) 50%, Arm C (3 related) 86%. Unrelated gates -36pp vs related at same count. All 4 Arm B failures on core judgment check. Gate-task synergy, not Ch2 capacity, drives EXP-129 hump curve. **Federation auto-commit deleted results — restored from git history (6a2bc4a2)**. Results at `agents/shared/knowledge/experiments/EXP-131/results.md`. **Bob KB integration DONE — KE-135 created**. |
+| **Bob Todo.md Bloat Fix** | ✅ DONE | may | **Optimizer I-1**: Split 1000→21 lines. 121 completed + 90 session notes → `todo-archive.md`. Expected -30% wasted ops. |
 | **EXP-132 Path Hallucination Guard** | ✅ MERGED | tech-lead | Code at `src/lib/tools/path-hallucination-guard.ts` (7.8KB). Merged to main (be2a9317). Needs binary rebuild for production. |
 
 ## Completed/Archived
@@ -245,11 +246,12 @@ Updated: 2026-04-11 ~21:54 UTC
 - **P2**: `analyze-failures` cron DB bug — persistent but non-critical.
 - **P2**: Amy-kimi still down — blocked on Hao for billing.
 
-## Latest Cycle Summary (21:54)
-- **System**: 7/8 healthy. Amy-kimi 429 (billing). Zero errors/failures last 2 hours. All agents running.
-- **Since last cycle (07:53)**: ~14h gap — dispatch board wasn't updated (federation sync/auto-commit timing).
-  - **Tech-lead P0 work session forked**: meta.json write failure resilience in completion pipeline.
-  - **All agents completing successfully**: Bob 5 done, Coach 4 done, Evaluator 4 done, Optimizer 3 done, QA 3 done, Scout 4 done, Tech-lead 4 done.
-  - **Zero pending requests**: No dispatches needed. No failures. All agents self-directing.
-  - **Dashboard trimmed**: Removed 8 old cycle summaries (01:53-06:53). Board was 316→~240 lines.
-- **Key**: System in healthy autonomous steady state. All agents productive and self-directing. Board updated after 14h gap.
+## Latest Cycle Summary (22:25)
+- **System**: 7/8 healthy. Amy-kimi 429 (billing). Zero errors/failures. All 7 agents running fresh heartbeats (22:23 UTC).
+- **Since last cycle (21:54)**:
+  - **Coach fixed QA quality** (54.7% → should improve): Root cause was context.md instruction causing `finish(partial)` on pre-existing test failures. Fix deployed. At `agents/coach/workspace/qa-finish-investigation.md`.
+  - **Optimizer analyzed Bob heartbeat bloat**: 999-line todo.md causes 30% wasted ops via verification spirals. At `agents/optimizer/workspace/finding-evening-health-0411.md`.
+  - **Bob designed EXP-143**: Checkpoint decomposition for evaluation accuracy (H-096 P-096a).
+  - **Tech-lead P0 meta.json fix**: Session completed.
+  - **⭐ May intervention — Bob todo.md split**: 1000→21 lines (active items only). 121 completed items + 90 session notes archived to `todo-archive.md`. Implements Optimizer I-1 recommendation. Expected -30% wasted ops per heartbeat.
+- **Key**: System healthy and autonomous. Bob todo.md bloat addressed. QA quality fix deployed. All agents self-directing productively.
