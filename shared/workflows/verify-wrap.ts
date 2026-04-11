@@ -85,7 +85,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   // ═══════════════════════════════════════════════════════════════════
   ctx.emit({ type: "step_start", step: "phase1-execute" });
 
-  const phase1 = await ctx.runAgent("scout", ctx.task);
+  const phase1 = await ctx.runAgent("optimizer", ctx.task);
   if (phase1.status === "error") {
     return ctx.escalate("Phase 1 (execute) failed", { error: phase1.error });
   }
@@ -125,7 +125,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     `⚠️ You MUST call read() on each file. Do NOT fabricate evidence.\n` +
     `⚠️ Do NOT write or edit any files. This is READ-ONLY.`;
 
-  const phase2 = await ctx.runAgent("scout", verifyPrompt);
+  const phase2 = await ctx.runAgent("optimizer", verifyPrompt);
 
   ctx.emit({ type: "step_done", step: "phase2-verify" } as any);
 

@@ -1,66 +1,70 @@
-# EXP-139: Scout Heartbeat Patch
+# EXP-139: Optimizer Heartbeat Patch
 
-**Purpose**: Deploy verify-wrap workflow as default dispatch for scout work sessions.
+**Purpose**: Deploy verify-wrap workflow as default dispatch for optimizer's forked work sessions.  
+**Replaces**: Previous scout heartbeat patch (scout is no longer the target).
 
-## Change 1: Replace dispatch template in Step 3
+## Change 1: Add verify-wrap mandate before the fork template in Step 3
 
-### Find this text (around line 68-80):
+### Find this text (around line 56-70):
 ```
-For each substantive task, fork a work session **with a workflow**:
-
+Fork template:
 ```javascript
-agents.call({
-  action: 'fork',
-  agent: 'scout',
-  task: `[WORK SESSION] <specific task description>
+agents.fork({
+  agent: 'optimizer',
+  task: `[WORK SESSION] <specific task>
 
-Objective: <one sentence — what does "done" look like?>
-Read: <specific files to read for context>
-Output: <specific file path for deliverable>
+Objective: <what does "done" look like?>
+Hypothesis: <what I think will improve, and how to measure it>
+Read: <specific files>
 
-Sources to check: <arXiv cs.MA, cs.AI, HN, GitHub trending, etc.>
-Constraints:
-- For every edit(): read() the file first, then edit() using exact text
-- For every write(): read() the file back to verify
-- Write findings as you go, not at the end`
+Deliverable: Write results to <specific file path>.`
 })
 ```
 ```
 
 ### Replace with:
 ```
-**For ALL work sessions, use `workflow.run('verify-wrap', task)` to get structural verification. This catches verification gaps (FM-3.3) — your top error pattern. Do NOT use raw `agents.call({action: 'fork'})` for work sessions.**
+**For ALL forked work sessions, use `workflow.run('verify-wrap', task)` instead of `agents.fork()`. This catches verification gaps (FM-3.3) — your top error pattern. Do NOT use raw `agents.fork()` for work sessions.**
 
-For each substantive task, dispatch through verify-wrap:
-
+Fork template (uses verify-wrap):
 ```javascript
-workflow.run("verify-wrap", `[WORK SESSION] <specific task description>
+workflow.run("verify-wrap", `[WORK SESSION] <specific task>
 
-Objective: <one sentence — what does "done" look like?>
-Read: <specific files to read for context>
-Output: <specific file path for deliverable>
+Objective: <what does "done" look like?>
+Hypothesis: <what I think will improve, and how to measure it>
+Read: <specific files>
 
-Sources to check: <arXiv cs.MA, cs.AI, HN, GitHub trending, etc.>
-Constraints:
-- For every edit(): read() the file first, then edit() using exact text
-- Write findings as you go, not at the end`)
+Deliverable: Write results to <specific file path>.`)
 ```
 ```
 
-**Note**: The "For every write(): read() the file back to verify" constraint is intentionally removed — verify-wrap Phase 2 handles this structurally.
+## Change 2: Update the workflow table to make verify-wrap the default
 
-## Change 2: Remove redundant verification lines from examples
-
-In each of the scout work session examples (Daily arXiv triage, Weekend synthesis, Targeted research, Deep dive enrichment, Hypothesis writing), remove the line:
+### Find this text (around line 48-55):
 ```
-- For every write(): read() the file back to verify
+| Work type | Workflow | Why |
+|-----------|----------|-----|
+| Building a new tool/skill | `workflow.run('implement-and-verify', task)` | Catches forgotten compile/test |
+| Investigation → written findings | `workflow.run('verify-wrap', task)` | Ensures findings actually get written |
+| Multi-question analysis | `workflow.run('parallel-research', JSON.stringify({...}))` | Parallel > sequential |
 ```
 
-This is now handled by verify-wrap Phase 2. Keep the "For every edit(): read() the file first, then edit() using exact text" line — that's about correct edit() usage, not verification.
+### Replace with:
+```
+| Work type | Workflow | Why |
+|-----------|----------|-----|
+| Building a new tool/skill | `workflow.run('implement-and-verify', task)` | Catches forgotten compile/test |
+| **All other forked work** | `workflow.run('verify-wrap', task)` | **Default.** Ensures verification of all written files (FM-3.3 fix) |
+| Multi-question analysis | `workflow.run('parallel-research', JSON.stringify({...}))` | Parallel > sequential |
+```
+
+**Note**: The "Investigation → written findings" row is broadened to "All other forked work" to make verify-wrap the default for any work session that doesn't fit implement-and-verify or parallel-research. This aligns with EXP-028's finding that workflows must be the obvious default, not a situational choice.
 
 ## Rationale
 
 - EXP-028 showed workflows with 0 heartbeat mentions get 0 usage
 - Bob's deliver-or-report works because his heartbeat says "use workflow.run"
-- Scout's FM-3.3 block rate is 71% — highest among all agents
+- Optimizer's FM-3.3 block rate is 67% — second-highest among all agents
+- Optimizer already references verify-wrap but only for investigations — not as default
 - verify-wrap is the minimum viable structural intervention
+- Optimizer uses fork-based dispatch (unlike scout), so verify-wrap is architecturally compatible
