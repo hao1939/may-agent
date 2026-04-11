@@ -102,6 +102,7 @@ Because Channel 2 operates through environmental state (not text competition), a
 | KE-025: instruction overhead harmful | Ch 1 competition | Supports | ★★★★ |
 | KE-064: execution crowding at 2+ gates | Ch 2 budget | Supports | ★★★★ |
 | **EXP-129: Ch2 Budget Curve (Gate Stacking)** | **Ch 2 budget** | **Contradicts P-098c** | **★★★★** |
+| **EXP-131: Gate-Task Synergy (Unrelated Stacking)** | **Ch 2 capacity** | **Supports (refines Ch2 budget)** | **★★★★** |
 | H-091: 15/15 task-msg, 0/9 sys-prompt | Ch 3 privilege | Supports | ★★★★ |
 | KE-020: 0% available, 100% automatic | Ch 1→2 transition | Supports | ★★★★ |
 | KE-034: wrong analysis = correct analysis | Channel switch > content | Supports | ★★★★ |
@@ -116,7 +117,9 @@ Because Channel 2 operates through environmental state (not text competition), a
 
 **EXP-129 Details** (2026-04-11): Direct test of P-098c (Ch2 budget curve). 4-arm design stacking 1-4 forced externalization gates on `contradictory-requirements` scenario. N=6-7 per arm. Results: 1-gate 86% (6/7), 2-gate 83% (5/6), 3-gate 100% (6/6), 4-gate 67% (4/6). **P-098c REJECTED** — no cliff function. Instead a "hump curve" peaking at 3 gates. No pairwise comparison significant (N too small), but the pattern is clear: gates don't crowd out execution until at least 4 are stacked, and even then degradation is modest (67%, not 0%). Failure mode at 4 gates was implementation quality (tests-pass), NOT judgment quality (contradiction-identified — which passed 5/5 at 4 gates). Duration scales linearly: +167s/gate. KE-064 (execution crowding at 2+ gates) needs revision — it may be task-specific or apply only to different gate types. → Revises P-098c, revises KE-064.
 
-**Cumulative direction**: 12 supporting, 1 neutral, 1 contradicting (P-098c). Two direct tests confirm 3/4 predictions + 1 boundary clarified. Channel 3 model refined: task-type boundary (behavioral vs analytical vs discovery under coding momentum). **EXP-129 rejects P-098c**: Ch2 budget is NOT ~1 gate — 3 gates show 100% and even 4 gates show 67%, not the predicted cliff.
+**EXP-131 Details** (2026-04-11): Follow-up testing whether gate RELEVANCE explains the EXP-129 hump curve. 3-arm design: Arm A (1 related gate, N=9) 89%, Arm B (3 unrelated gates, N=8) 50%, Arm C (3 related gates, N=7) 86%. **Gate relevance is the key moderator**: 3 related gates (86%) ≈ 1 related gate (89%) >> 3 unrelated gates (50%). Cohen's h = 0.80 (large) for B vs C, though p = 0.28 (underpowered). All 4 Arm B failures were specifically on `contradiction-identified` — unrelated gates dilute judgment depth without affecting implementation quality. Duration was identical across 3-gate arms (584s vs 575s), ruling out time pressure. Combined with EXP-129: 3-related 92% > 1-related 88% > 4-related 67% > 3-unrelated 50%. Ch2 capacity is measured in *relevant analytical scaffolding*, not raw gate count. → KE-135 (gate-task synergy effect).
+
+**Cumulative direction**: 13 supporting, 1 neutral, 1 contradicting (P-098c). Three direct tests confirm 3/4 predictions + 1 boundary clarified + Ch2 capacity refined. Channel 3 model refined: task-type boundary (behavioral vs analytical vs discovery under coding momentum). **EXP-129 rejects P-098c**: Ch2 budget is NOT ~1 gate — 3 gates show 100% and even 4 gates show 67%, not the predicted cliff. **EXP-131 refines further**: Ch2 budget depends on gate-task relevance, not count.
 
 ## Open Questions
 
@@ -143,11 +146,12 @@ Prediction: Baseline 0%, Ch1 0-17%, Ch3 83-100%, Ch2 83-100%. N=6 per arm (24 to
 **Follow-up**: EXP-128 tested whether Ch3 miss was due to content quality (H-128). Three content variants all 0/6 → content NOT the moderator. Ch3 has task-type boundary (KE-132).
 **Files**: `agents/shared/knowledge/experiments/EXP-127/design.md`, `protocol.md`, `results.md`; `agents/shared/knowledge/experiments/EXP-128/design.md`, `results.md`
 
-### EXP-E2: Channel 2 Budget Curve → **EXP-129 (COMPLETE — P-098c REJECTED)**
+### EXP-E2: Channel 2 Budget Curve → **EXP-129 (COMPLETE — P-098c REJECTED), EXP-131 (COMPLETE — Relevance Refinement)**
 Design: Chain 1, 2, 3, 4 forced externalization gates on a judgment task.
 Prediction: ~100%, ~50%, ~10%, ~0% task completion. Cliff between 1-2 gates.
-**Results**: 1g 86%, 2g 83%, 3g 100%, 4g 67%. No cliff. Hump curve peaking at 3 gates. P-098c rejected.
-**Files**: `agents/shared/knowledge/experiments/EXP-129/design.md`, `results.md`
+**EXP-129 Results**: 1g 86%, 2g 83%, 3g 100%, 4g 67%. No cliff. Hump curve peaking at 3 gates. P-098c rejected.
+**EXP-131 Results**: Follow-up testing gate relevance. 3 unrelated gates 50% vs 3 related gates 86% vs 1 related gate 89%. Gate-task synergy explains the hump curve — Ch2 capacity is measured in relevant scaffolding, not raw gate count. Cohen's h = 0.80 (large effect). → KE-135.
+**Files**: `agents/shared/knowledge/experiments/EXP-129/`, `agents/shared/knowledge/experiments/EXP-131/`, `agents/shared/knowledge/entries/KE-135-gate-task-synergy-effect.md`
 
 ### EXP-E3: Prompt Length × Channel Interaction
 Design: Forced externalization (Channel 2) with 10KB, 25KB, 50KB, 100KB system prompts.

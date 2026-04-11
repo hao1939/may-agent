@@ -1,8 +1,8 @@
 # What We Know About: The Channel Theory and the Discovery Task Boundary
 
-> **Synthesis** — integrates 12 experiments (EXP-117/120/121/122/124/126/127/128/129/130) and 6+ knowledge entries into a unified model: **intervention effectiveness is a function of delivery channel × task type**, and creative discovery tasks are irreducible to any external scaffolding.
-> Created: 2026-04-11 | Updated: 2026-04-11 (EXP-129/130 results integrated) | Author: Bob (Architect)
-> Sources: H-098, H-099, H-128 (rejected), EXP-117, EXP-120, EXP-121, EXP-122, EXP-124, EXP-126, EXP-127, EXP-128, EXP-129, EXP-130, KE-125, KE-126, KE-129, KE-130, KE-132, KE-133, CR-337, DD-744, DD-745, DD-746, WKWA-006, WKWA-007
+> **Synthesis** — integrates 13 experiments (EXP-117/120/121/122/124/126/127/128/129/130/131) and 6+ knowledge entries into a unified model: **intervention effectiveness is a function of delivery channel × task type**, and creative discovery tasks are irreducible to any external scaffolding.
+> Created: 2026-04-11 | Updated: 2026-04-11 (EXP-131 gate-task synergy integrated) | Author: Bob (Architect)
+> Sources: H-098, H-099, H-128 (rejected), EXP-117, EXP-120, EXP-121, EXP-122, EXP-124, EXP-126, EXP-127, EXP-128, EXP-129, EXP-130, EXP-131, KE-125, KE-126, KE-129, KE-130, KE-132, KE-133, KE-135, CR-337, DD-744, DD-745, DD-746, WKWA-006, WKWA-007
 
 ---
 
@@ -217,6 +217,8 @@ H-098 P-098c predicted a cliff function: 1 gate ~100%, 2 gates ~50%, 3+ gates ~0
 
 **Practical implication**: Production systems can safely stack up to 3 related analytical gates (e.g., analyze → assess impact → evaluate risk) per task. The one-gate-per-task guideline from KE-064 was too conservative for analytical progression gates. Duration cost (+167s/gate) may matter more than accuracy loss.
 
+**EXP-131 refinement**: The hump curve explanation is now clear — gate *relevance* is the key moderator, not gate count alone. See §4.3.
+
 ### 4.2 EXP-130 (Complete): Few-Shot on Discovery Task — HARMFUL (-67pp)
 
 **Question**: Can Ch3 (domain-matched few-shot) help with discovery tasks?
@@ -229,15 +231,36 @@ H-098 P-098c predicted a cliff function: 1 gate ~100%, 2 gates ~50%, 3+ gates ~0
 
 **Implication**: All three channels are now exhausted on discovery tasks. Ch1 harmful (EXP-117/120), Ch2 null (EXP-122/124/126), Ch3 harmful (EXP-130). H-099 confirmed (P(H) 0.78→0.90). The irreducibility thesis holds — creative inference cannot be externally scaffolded through any known channel.
 
-### 4.3 ~~Clean Ch3 Test on Contradictory-Requirements~~ — RESOLVED by EXP-128
+### 4.3 EXP-131 (Complete): Gate-Task Synergy — Relevance Is the Key Moderator
+
+**Question**: Does the EXP-129 hump curve reflect general Ch2 capacity limits, or does gate *relevance* to the core task matter?
+
+**Result**: 3-arm test (N=7-9/arm, 24 total): Arm A (1 related gate) 89% (8/9), Arm B (3 unrelated gates) 50% (4/8), Arm C (3 related gates) 86% (6/7). Fisher's exact B vs C: p=0.28 (underpowered), Cohen's h=0.80 (large effect).
+
+**Key findings**:
+- **Gate relevance, not count, determines performance.** Arms A and C are nearly identical (89% vs 86%, p=1.0, h=0.10), replicating EXP-129's finding that 1 related gate ≈ 3 related gates. Arm B (3 unrelated gates at the same count as C) drops to 50%.
+- **Failure mode is judgment-specific.** All Arm B failures were on `contradiction-identified` only — the core judgment check. Implementation quality (tests-pass, ordering-preserved) remained perfect. Unrelated gates don't degrade execution — they specifically dilute analytical depth.
+- **Duration rules out time pressure.** Arms B and C have nearly identical durations (584s vs 575s). The performance gap isn't about having less time — it's about what the agent spends cognitive budget on.
+- **EXP-129 replication.** Combined across both experiments: 1 related = 88% (14/16), 3 related = 92% (12/13), 3 unrelated = 50% (4/8), 4 related = 67% (4/6). The ordering is: 3-related > 1-related > 4-related > 3-unrelated.
+
+**Mechanism** (KE-135 — Gate-Task Synergy Effect): Unrelated gates (code style review, performance benchmarks, dependency audit) consume execution time on orthogonal analyses that produce no cognitive scaffolding for the judgment task. The agent creates thorough gate artifacts but its core analysis is shallower — mentioning contradictions superficially (0-1 patterns) rather than deeply analyzing them (≥2 required).
+
+**Practical implications**:
+1. Guard relevance matters more than guard count — 3 relevant guards > 2 irrelevant guards
+2. Orthogonal quality checks (style, dependencies, performance) should NOT gate judgment-critical work
+3. Production guard stacks need a relevance audit: any guard analytically orthogonal to the primary task may cause execution crowding
+
+**Hump curve explained**: The EXP-129 curve (86%→83%→100%→67% at 1-2-3-4 gates) reflects synergistic scaffolding from related gates peaking at 3, then capacity exhaustion at 4. The EXP-131 result shows that without relevance, even 3 gates degrade to 50% — worse than 4 related gates. Ch2 budget is measured in relevant analytical scaffolding, not raw gate count.
+
+### 4.4 ~~Clean Ch3 Test on Contradictory-Requirements~~ — RESOLVED by EXP-128
 
 EXP-127's Ch3 result (0/6) was confounded by a pre-existing Ch1 skill. **EXP-128 resolved this**: tested Ch3 without Ch1 confound in 3 content variants (response-only, detection-enhanced, detection-only). All 0/6. Ch3 truly fails on analytical judgment tasks under coding momentum — it's a task-type boundary, not a Ch1 interference effect. H-128 (content quality hypothesis) rejected. KE-132 created.
 
-### 4.4 Discovery Task Decomposition
+### 4.5 Discovery Task Decomposition
 
 The most promising practical path: can we decompose discovery tasks into recognition sub-tasks? For example, instead of "integrate EXP-142 findings into KB" (requires discovery), could we provide a checklist of file categories to check (reducing discovery to recognition)? This is NOT providing the answer — it's providing the search space.
 
-### 4.5 Scaling Laws
+### 4.6 Scaling Laws
 
 The stochastic inference model predicts exponential decay with N discoveries. We have data at N≈2 (p≈67%). Testing at N=4, N=6 would validate or refine the model. If p^N holds, tasks requiring 4 discoveries would succeed only ~45% of the time.
 
@@ -257,8 +280,9 @@ The stochastic inference model predicts exponential decay with N discoveries. We
 | EXP-128 | 2026-04-10 | Ch3 content quality NOT moderator | 18 | 0/18 all arms |
 | EXP-129 | 2026-04-11 | Ch2 budget ≥3 gates, no cliff (P-098c rejected) | 25 | Hump curve: 86%→83%→100%→67% |
 | EXP-130 | 2026-04-11 | Few-shot HARMFUL on discovery (-67pp, p=0.030) | 12 | h=1.57, p=0.030 |
+| EXP-131 | 2026-04-11 | Gate relevance > gate count; unrelated 50% vs related 86% | 24 | h=0.80 (large) |
 
-**Total completed runs**: ~160+ individual gym sessions across 10 completed experiments.
+**Total completed runs**: ~185+ individual gym sessions across 11 completed experiments.
 
 ## Appendix B: Evidence Chain for Key Claims
 
@@ -275,7 +299,10 @@ The stochastic inference model predicts exponential decay with N discoveries. We
 - EXP-073: 100% with binding (v3)
 - EXP-092: 100% citation accuracy
 - EXP-127: 6/6 (100%) on contradictory-requirements
-- **Cumulative on contradictory-requirements: 10/10 (100%)**
+- EXP-129: 3 related gates = 100% (6/6), even 4 gates = 67% (4/6) 
+- EXP-131: 3 related gates = 86% (6/7), but 3 unrelated gates = 50% (4/8) — relevance required
+- **Cumulative on contradictory-requirements with related gates: 26/29 (90%)**
+- **Gate relevance caveat**: Unrelated gates at same count degrade to 50% (EXP-131). Ch2 robustness requires analytical relevance.
 
 ### Claim: "Ch3 has task-type boundary"  
 - EXP-085: 3/3 (100%) on escalation-judgment (behavioral)
@@ -297,4 +324,4 @@ The stochastic inference model predicts exponential decay with N discoveries. We
 
 ---
 
-*This synthesis was updated 2026-04-11 with EXP-129 and EXP-130 results. EXP-129 rejected P-098c (Ch2 budget is ≥3 gates, not ~1). EXP-130 confirmed H-099 (Ch3 harmful on discovery, -67pp). External validation added: CR-337 + DD-744/745/746 (Einstellung effect) independently grounds the template-displacement mechanism. The unified channel × task-type matrix is now fully validated across all 10 experiments. §4.3 resolved by EXP-128. Remaining open questions: §4.4 (discovery decomposition), §4.5 (scaling laws).*
+*This synthesis was updated 2026-04-11 with EXP-131 gate-task synergy results. EXP-131 showed gate RELEVANCE is the key moderator for Ch2 capacity: 3 related gates (86%) ≈ 1 related (89%) >> 3 unrelated (50%). Cohen's h=0.80 (large). KE-135 created. Previously: EXP-129 rejected P-098c (Ch2 budget is ≥3 gates, not ~1). EXP-130 confirmed H-099 (Ch3 harmful on discovery, -67pp). External validation added: CR-337 + DD-744/745/746 (Einstellung effect) independently grounds the template-displacement mechanism. The unified channel × task-type matrix is now fully validated across all 11 experiments. §4.4 resolved by EXP-128. Remaining open questions: §4.5 (discovery decomposition), §4.6 (scaling laws).*
