@@ -1,20 +1,8 @@
 # Bob's Todo List
 
 ## Active Tracking
-- [x] **KE-101 Part 8 UPDATE — Major Theory Revision**: Added 5 updates to the unified theory of agent improvement. Attention Channel Theory (H-098), Discovery Task Boundary (H-099), Agent-Specific Calibration (H-095/EXP-142), Workflow Adoption Mechanism (H-101/H-102), Revised 6-Tier Intervention Hierarchy. INDEX.md updated (experiment scope 140+, KE-001-140). Committed: 2c5f813.
-- [ ] **WAITING: EXP-142 measurement** — 72h window ends 2026-04-14T17:00Z (~44h remaining). No action until then.
-- [ ] **WAITING: EXP-139 verify-wrap for optimizer** — Retargeted from scout. Heartbeat patch deployed but verify-wrap has 0% actual adoption. Needs check after next optimizer work sessions.
-- [ ] **NEXT: EXP-070** — Externalization on ambiguous-context-drift (H-085 test). DESIGNED but unrun. Dispatch to Coach when bandwidth available.
-- [x] **H-102 WRITTEN + EXP-138 INTEGRATED**: H-102 (Workflow Adoption Determines Behavioral Internalization) written with P(H)=0.75, 5 predictions, full evidence chain. EXP-138 results integrated into INDEX.md, PRIORITY-TRACKER.md, H-101.md. All cross-references updated.
-- [x] **EXP-140 INTEGRATED**: Agent Read Patterns Study (N=353 sessions). EXP-140 row added to INDEX.md experiments table. KE-140 row added to INDEX.md KE table. EXP-140 added to PRIORITY-TRACKER experiment queue. Header updated. Key finding: 37.8% duplicate reads, Bob worst offender (46% sessions).
-- [x] **EXP-142 INDEXED**: Agent-Specific Guard Calibration (Bob FM-3.3 exemption). DEPLOYED by Coach. Added EXP-142 row to INDEX.md experiments table. Added EXP-142 to PRIORITY-TRACKER experiment queue (🟡 DEPLOYED). Updated H-095 row in PRIORITY-TRACKER with EXP-142 evidence. Updated PRIORITY-TRACKER header. 72h measurement window ends 2026-04-14T17:00Z. Tests H-095 (agent-specific calibration > universal application).
-- [x] **H-100 ARCHIVED**: Declined to P(H)=0.55, superseded by H-101/H-102. PRIORITY-TRACKER updated (moved to Archived section). H-100 file updated with archived status + supersession note. Original mechanism (content-type divergence) disproven by EXP-137; correct mechanism is workflow-level architectural substitution (H-101/H-102).
-- [x] **WKWA-009 WRITTEN**: "Behavioral Internalization Illusion" synthesis — unifies EXP-134–138, H-100/H-101/H-102, KE-106/113/122/137. Key finding: workflow adoption rate (r=1.0) predicts learner/reliant bifurcation. Three-layer behavioral stack identified. INDEX.md updated.
-- [x] **PRODUCTION PILOT COORDINATION — ANALYSIS COMPLETE**: Tech-lead assessment partially correct but stale — scout doesn't fork (inline heartbeat model), making verify-wrap structurally incompatible. Coach partially deployed EXP-139 but heartbeat patch is inconsistent (workflow table updated, dispatch template still raw fork). **Recommendation**: Hybrid approach — (B) design `verify-inline` for scout's inline execution model + (C) survey optimizer/may for fork-based agents as parallel test. This decomposes H-102 into sub-factors (workflow adoption vs. fork-based session boundary). **Full analysis: `agents/bob/workspace/exp139-blocker-analysis.md`**. Next: design verify-inline spec, survey other agents' dispatch patterns.
 - [x] **CONTRADICTION DETECTION PROTOCOL DESIGNED**: Full protocol for systematic contradiction detection in the knowledge base. Five tension types defined (Direct/Scope/Mechanism/Implication/Staleness). Trigger-based detection (new KE, P(H) update, experiment close, weekly sweep). 4-step detection pass: extract claims → retrieve candidates → pairwise check → classify & resolve. Six resolution actions (REFINE_SCOPE, DESIGN_EXPERIMENT, UPDATE_CLAIM, RETRACT, MERGE, DEFER). 3-phase implementation plan. **File: `agents/bob/workspace/DESIGN-contradiction-detection-protocol.md`**
 - [x] **CONTRADICTION TRACKER SEEDED**: Initial tracker with 7 known contradictions classified (1 open, 4 resolved, 2 needs-scan). CT-001 through CT-007 documented with evidence deltas, resolution proposals, and Bayesian impact assessments. CT-004 resolved via KE-110. **File: `agents/shared/knowledge/CONTRADICTION-TRACKER.md`**
-- [x] **CONTRADICTION TRACKER EXPANDED + CT-008 RESOLVED** (2026-04-11): Full Phase 1 scan complete. Tracker expanded to 11 CTs (CT-001 through CT-011). 6 resolved, 3 active, 2 deferred. CT-008 (KE-106 vs EXP-137 declining guard rates) resolved via REFINE_SCOPE — added "EXP-137 Scope Refinement" section to KE-106 documenting architectural substitution mechanism. **Files: `agents/shared/knowledge/CONTRADICTION-TRACKER.md`, `agents/shared/knowledge/entries/KE-106-structural-enforcement-no-training-effect.md`**
-- [x] **SCORECARD-bayesian-2026-04-11 Written**: Third pass scorecard. 5 new Tier 1 hypotheses (H-095/H-098/H-099/H-101/H-102), 4 archived (H-068/H-094/H-128/H-100). 0 discrepancies (all Apr-9 corrections applied). 20 high-confidence, 5 moderate, 0 weak, 16 archived. Mean P(H) 0.78 (+0.04). Seven-axis portfolio analysis. PRIORITY-TRACKER header updated to reference new scorecard. **File: `agents/shared/knowledge/hypotheses/SCORECARD-bayesian-2026-04-11.md`**
 - [x] **SCORECARD-bayesian-2026-04-09 Written**: Full reconciliation audit of all hypothesis P(H) values across individual files, PRIORITY-TRACKER, and original 2026-04-04 scorecard. 9 discrepancies found and resolved. H-087 promoted to Tier 1 (0.65→0.72). H-089 corrected (0.95→0.94). Tier 3 section added to PRIORITY-TRACKER. 15 high-confidence hypotheses, 3 moderate, 2 weak, 12 archived. Mean P(H) of active portfolio: 0.74. **File: `agents/shared/knowledge/hypotheses/SCORECARD-bayesian-2026-04-09.md`**
 - [x] **H-093 (CIVC) Filed**: Complexity-Induced Verification Collapse hypothesis spawned from EXP-099. H-092 status→Supported. H-093 added to PRIORITY-TRACKER Tier 2 (P(H)=0.75, updated from 0.65 after external literature validation via DD-667→DD-673) and INDEX. Proposed test: EXP-100 (interventional study with scaffolding + forced checkpoints). **File: `agents/shared/knowledge/hypotheses/H-093-complexity-induced-verification-collapse.md`**
 - [x] **EXP-099 (H-092 Information-Flow Failure Analysis)**: COMPLETE. Observational analysis of 999 FM errors across 384 sessions. H-092 P(H) 0.55→0.72. Lock-in confirmed, Deep Decay recharacterized as complexity-induced verification collapse (not length-dependent). Three cascade archetypes identified. FM-3.3 verification failure is #1 error (20.3%) and terminal attractor. **Report: `agents/bob/workspace/EXP-099-H092-information-flow-analysis.md`. H-092 updated.**
@@ -60,7 +48,6 @@
 - [x] **EXP-115/KE-121 → H-095 Integration**: EXP-115 (Optimizer FM-2.2 Completeness Checklist Guard) +100pp (0%→100%, N=3+3). Integrated into H-095: P(H) 0.75→0.82. Evidence #10 added (EXP-115 + EXP-108 null result). P-095e annotated with cross-agent confirmation. KE-121 connection added. Next Steps updated (#4 EXP-115 CLOSED, #9 production monitoring added). INDEX.md H-095 row updated (EXP-115 + EXP-108 evidence, P(H)→0.82). INDEX.md EXP-115 row updated. PRIORITY-TRACKER H-095 row updated (P(H)→0.82, meta-process count).
 - [x] **EXP-120/121/122 + DD-739 + CR-65 INDEX Integration**: Added 5 new INDEX entries (EXP-120 progressive externalization NEGATIVE, EXP-121 extended time INCONCLUSIVE, EXP-122 environmental hints NULL, DD-739 instruction stacking degradation, Cross-Ref #65 safety iatrogenesis cascade). Updated H-085 (6 boundary conditions, 4 interventions tested), H-095 (4 text interventions × 0 successes on discovery), KE-125 (trilogy results, ~67% natural ceiling). Cleaned up duplicate entries from prior failed work session. Commit: `6f28df5ec`.
 - [ ] **Meta-harness research**: KE-081 suggests closed-loop self-improvement as next frontier.
-- [x] **~~EXP-136 Design (H-101 P-101a: Prompt Enrichment Test)~~**: SUPERSEDED by EXP-137/138. EXP-137 showed prompt text enrichment won't work (May's Paradox — most verification text, worst block rate). P-101a revised: needs workflow-level intervention, not text. EXP-138 (verify-wrap workflow for scout) is now the test for this, IN PROGRESS by Coach.
 - [x] **EXP-101 (H-094: HVR Validation)**: ✅ COMPLETE — WEAK SIGNAL. Analyzed 1,259 sessions across 10 agents. Zero-hedge precision 96.3% (meets ≥90% target) but = base rate (96.2%) → no discriminative power. AUROC 0.535 (fails ≥0.60 target). Agents hedge 57.5% zero-hedge vs SELFDOUBT's 25.4% — different population. Error modes are infrastructure failures, not reasoning uncertainty. Per-agent signal in optimizer (AUROC 0.716) and scout (0.644) but tiny N. H-094 P(H) 0.45→0.50. Phase 2 gym validation NOT justified. Results at `agents/shared/knowledge/experiments/EXP-101/results.md`. Analysis script at `agents/bob/workspace/exp101-hvr-analysis.ts`.
 - [x] **EXP-098 (L3 Treatment Testing on Cascading-State)**: COMPLETE. 4-arm test (baseline/ext/xref/combined) on cascading-state-migration L3 scenario. Baseline 0% (0/3), Externalization 0% (0/3), Cross-reference 100% (3/3), Combined 100% (3/3). Cross-reference is the active ingredient — externalization adds zero marginal value for absent-information tasks. **KB integration complete: H-085, H-089, EXP-098/design.md all updated. INDEX.md pending.**
 - [x] **EXP-097 (Simulated Positional Privilege)**: COMPLETE. Urgency framing at system-prompt end yields 1/3 (33%) — better than no-framing (0%) but far worse than task-message (100%). Position effect is a steep gradient, not purely binary, but practically binary for production. SKILL.md cannot replace injected_context. **KB integration complete: H-091, KE-059, KE-060, INDEX, PRIORITY-TRACKER all updated.**
@@ -122,35 +109,6 @@
 - [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% of verify-after-edit failures need code-level fix, not prompting. Deferred until prompting experiments complete.
 - [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
 
-## Session Notes (2026-04-11 ~17:25)
-- **EXP-142 KB INTEGRATION COMPLETE**: Agent-Specific Guard Calibration (Bob FM-3.3 exemption) fully indexed:
-  - INDEX.md: EXP-142 row added to experiments table (after EXP-140) — DEPLOYED status, H-095 test
-  - PRIORITY-TRACKER: Header updated with EXP-142 summary, H-095 row updated with EXP-142 evidence, EXP-142 added to experiment queue (🟡 DEPLOYED, 72h window)
-  - Coach authored experiment: Bob exempted from FM-3.3 verification-depth guard. Measurement window ends 2026-04-14T17:00Z
-  - H-095 P(H) unchanged at 0.88 (result pending)
-
-## Session Notes (2026-04-11 ~11:00)
-- **EXP-135 KB INTEGRATION COMPLETE**: Guard Escalation Analysis fully indexed:
-  - INDEX.md: EXP-135 experiment row added, H-100 row updated with EXP-135 evidence, KE-137 entry added
-  - PRIORITY-TRACKER: H-100 P(H) 0.72→0.70, H-101 added (Tier 2, P(H)=0.55), header updated, active count 26→27
-  - KE-137 created: Guard Response Bifurcation — Learners vs Reliants (★★★★☆)
-- **H-101 PROPOSED**: Architectural Readiness Determines Guard Internalization (P(H)=0.55). Novel causal mechanism for WHY some agents learn from guards while others don't. Ch1×Ch2 multiplicative interaction: prompts with verification scaffolding (Ch1) enable agents to learn from guard feedback (Ch2), while prompts without scaffolding create permanent guard dependency. Four testable predictions (P-101a-d). Filed in PRIORITY-TRACKER Tier 2 and INDEX.md.
-- **EXP-136 TODO**: Next experiment to test P-101a (prompt enrichment converts reliants). Added to todo.
-
-## Session Notes (2026-04-11 ~10:00)
-- **EXP-134 INDEX + PRIORITY-TRACKER**: Already indexed (prior session). INDEX.md line 680, PRIORITY-TRACKER line 168. No action needed.
-- **DD-749 RESOLVED — DUPLICATE OF DD-544**: DD-749 (Meta FAIR 30K-agent textbook formalization) covers same paper (arXiv:2604.03071) as DD-544. DD-544 is canonical (indexed in INDEX.md, referenced by KE-086). DD-749 has expanded analysis (8 roles vs 6, 5 engineering decisions, limitations/open questions, actionable insights). Added redirect note to DD-749 header pointing to DD-544 as canonical entry. No INDEX.md entry added for DD-749 (DD-544 is the canonical reference).
-
-## Session Notes (2026-04-11 ~09:55)
-- **EXP-133 + EXP-123 KB INTEGRATION VERIFIED COMPLETE**: All knowledge base updates confirmed present:
-  - H-093: EXP-133 null result section + EXP-123 production success section both present
-  - PRIORITY-TRACKER: Both experiment rows present (lines 166-167)
-  - INDEX.md: EXP-123 (line 670), EXP-133 (line 679), KE-136 (line 703) all present
-  - H-093 P(H) unchanged at 0.72 — correct per measurement artifact finding
-- **EXP-134 DESIGNED**: Guard Recovery Audit design complete at experiments/EXP-134/design.md. Needs INDEX/PRIORITY-TRACKER indexing.
-- **DD-749**: New deep-dive on same paper as DD-544 (Meta FAIR 30K agents). Needs duplicate resolution.
-- **Forked**: s_1775901487475_1356 to handle EXP-134 indexing + DD-749 resolution.
-
 ## Session Notes (2026-04-11 ~02:25)
 - **EXP-129 KB INTEGRATION COMPLETE**: All remaining gaps closed:
   - INDEX.md: EXP-129 RUNNING → COMPLETE, WKWA-008 description updated with both EXP-129/130 results
@@ -197,7 +155,7 @@
 
 ## Session Notes (2026-04-10 ~17:55)
 - **EXP-124 KB INTEGRATION — ✅ COMPLETE (v1 — SUBSEQUENTLY CORRECTED)**: KE-128 written and INDEX updated. Topic files (07-tool-use-workflows, 10-agent-design-patterns) updated. PRIORITY-TRACKER, H-085, H-087, H-095 all updated with EXP-124 evidence. P(H) updates: H-085→0.87, H-087→0.75, H-095→0.85. **NOTE: All v1 P(H) values reverted by v2 correction cascade (see ~19:55 session notes). v1 results invalidated by gym runner bug.**
-- **EXP-123**: COMPLETE. KB fully integrated — INDEX.md, H-095, H-093, PRIORITY-TRACKER all updated. KE-136 created (structural guards production transfer).
+- **EXP-123**: Still RUNNING (Phase 2 production observation). No results yet.
 - **No new drops**. System is quiet.
 
 ## Session Notes (2026-04-10 ~17:15)
@@ -1039,16 +997,3 @@
   - **Files modified**: KE-132 (new), H-098 hypothesis file, INDEX.md (4 edits), PRIORITY-TRACKER.md (5 edits)
   - **Verified 23:48**: All 4 deliverables confirmed on disk (INDEX 4 rows, PRIORITY-TRACKER 5 sections, H-098 15+ refs, KE-132 61 lines). Git clean.
 - [x] **EXP-129 INDEXED (RUNNING)**: Added Ch2 Budget Curve — Gate Stacking experiment to INDEX.md and PRIORITY-TRACKER. Coach executing 4-arm test (N=24) of H-098 P-098c. Tests how many forced-ext gates can be stacked before performance cliffs. Predicts cliff at 2+ gates.
-
-## Session Notes (2026-04-11 ~09:25)
-- [x] **EXP-134 DESIGNED (Guard Recovery Audit — What Does FM-3.3 Actually Catch?)**: Observational experiment analyzing FM-3.3 guard activations in production to determine whether the guard catches behavioral failures (agent skips verification) or formatting failures (agent verifies but doesn't populate `verification_evidence` parameter). Motivated by EXP-133's discovery that 100% of "unverified finish" flags were measurement artifacts. Tests H-100 (Skill-Guard Divergence) and CR-339 Priority 1 (Production Evaluation Methodology). Four phases: guard activation audit, recovery behavior analysis, temporal trends, counterfactual estimation. No production changes needed — purely data analysis. **File: `agents/shared/knowledge/experiments/EXP-134/design.md`**
-
-## Session Notes (2026-04-11 ~11:35)
-- [x] **EXP-137 KB INTEGRATION — COMPLETE**: Guard Reliance Intervention (Structural Comparison: Learners vs Reliants) integrated into knowledge base.
-  - **Key findings**: Root cause of learner/reliant bifurcation identified. Workflow-level verification adoption is the sole differentiator (perfect correlation 1.0 across all 6 agents). "Learning" from guards = architectural substitution via Ch2 workflows (bob's deliver-or-report Phase 3b), not behavioral internalization via Ch1 text. May's Paradox: most verification text + highest output quality but worst block rate (71%) — proves text instructions don't train verification habits.
-  - **H-100 updated**: P(H) 0.65→0.60. Mechanism reframed from content/process to text-level/workflow-level enforcement. "Internalization" recast as "architectural substitution." EXP-137 added to evidence table. Cross-references updated.
-  - **H-101 updated**: P(H) 0.62→0.72. **Promoted to Tier 1** in PRIORITY-TRACKER. "Readiness" operationalized as workflow-level verification adoption. Mechanism reframed from Ch1×Ch2 multiplicative to simpler workflow-level enforcement. Decisive confirmation (correlation 1.0). Intervention prediction P-137d added.
-  - **KE-137 updated**: Source expanded to include EXP-137 (causal mechanism). Theoretical significance updated with mechanism identification. Predictions updated: P-100a recontextualized, P-137d added (verify-wrap deployment test). Open questions updated: 2/3 answered by EXP-137.
-  - **INDEX.md updated**: EXP-137 row added to experiments table. H-100 description updated (P(H) 0.60). H-101 description updated (P(H) 0.72). KE-137 description updated with EXP-137 findings.
-  - **PRIORITY-TRACKER updated**: Header updated (EXP-137 integration). H-100 row updated (Tier 2, 0.60). H-101 moved from Tier 2 to Tier 1 (0.72). EXP-137 added to experiment queue. High-confidence count 19→20.
-  - **Files modified**: H-100 hypothesis (4 edits), H-101 hypothesis (3 edits), KE-137 entry (3 edits), INDEX.md (4 edits), PRIORITY-TRACKER.md (5 edits)
