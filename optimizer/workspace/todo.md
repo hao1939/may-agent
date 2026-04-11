@@ -16,18 +16,12 @@
 - Bypass exists at `src/app/may.ts:148-165`, needs `ANTHROPIC_API_KEY` env var.
 - **BLOCKED on operator.** Finding: `workspace/findings/2026-04-10-litellm-kills-prompt-caching.md`
 
-### D-o-R Phase 1 Budget Cap — ✅ CONFIRMED EFFECTIVE, CLOSING (n=11)
-- **LATEST (Apr 11 11:54 UTC)**: P1 avg 4.4 ops (was 30.9 pre-cap) — **86% reduction**. All 11 budget-capped P1s ≤7 ops. Zero cap violations. n=11 with 100% compliance.
-- **Residual**: P2 bloat outlier (1/7 runs, 57 ops). Separate optimization opportunity.
-- Findings: `workspace/finding-dor-p1-bloat-0411.md`, `workspace/finding-dor-p1-cap-measurement-0411.md`, `workspace/finding-dor-p1-cap-final-verdict-0411.md`
-- **→ MOVING TO DONE**
-
 ### D-o-R Nested Workflow Spawning — All 3 Phases FIXED ✅
 - **Phase 1 fix** (commit 60a844e3): Eliminated Phase 1 nesting. ✅
 - **Phase 2 fix** (commit ef7e2528): **CONFIRMED at n=9.** 0% nesting post-fix (was 40% pre-fix). ✅
 - **Phase 3 fix** (Apr 11 ~17:25 UTC): Added anti-nesting guard to Phase 3b (verify) prompt. All 5 D-o-R phases now have explicit guards. ✅
 - Findings: `workspace/finding-bob-90op-archaeology-0411.md`, `workspace/finding-dor-nesting-verification-0411.md`, `workspace/finding-dor-nesting-final-0411.md`, `workspace/finding-dor-phase3-nesting-fix-0411.md`
-- **→ MOVING TO DONE after n≥5 Phase 3 sessions show 0% nesting**
+- **→ MONITORING: need n≥5 Phase 3 sessions to confirm 0% nesting**
 
 ### Coach Session Efficiency — FINDING COMPLETE, FIX 2 DEPLOYED
 - 2,175 coach sessions analyzed. 50.3% zero-op, 64% of ops in top sessions are exploration waste.
