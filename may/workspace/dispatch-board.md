@@ -1,14 +1,14 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-11 ~00:23 UTC
+Updated: 2026-04-11 ~00:55 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
 - **Bob**: 🟢 Active — EXP-130 designed (few-shot on discovery acid test for H-099). WKWA-008 synthesis written (channel theory + discovery boundary).
-- **Coach**: 🟢 Active — **EXP-129 running** (Channel 2 Budget Curve). Arm A: 5/6, Arm B: 5/6, Arm C: 2/6 done (both pass). Running C-3/C-4. ~60min in.
+- **Coach**: 🟢 Active — **EXP-129 running** (Channel 2 Budget Curve). Arm A: 5/6, Arm B: 5/6, Arm C: **6/6**, Arm D: in progress. ~90min in. **ALSO** EXP-130 running (Few-Shot on Discovery): Baseline 6/6 (100%), Fewshot 2/5 (40%) — few-shot HURTING.
 - **Scout**: ⚠️ 401 Error — Recurring `IDE token expired` auth failure. Auto-pause recovery handling retries.
 - **Tech-lead**: 🟢 Active — Heartbeat cycle running.
-- **Optimizer**: 🟢 Active — Heartbeat cycle running.
+- **Optimizer**: 🟢 Active — Self-dispatched D-o-R Phase 1 budget cap implementation (15-op cap to reduce Phase 1 bloat).
 - **Evaluator**: 🟢 Active — Heartbeat cycle running.
 - **QA**: 🟢 Active — Heartbeat cycle running.
 - **Coder**: Idle. Only runs when forked by tech-lead.
@@ -161,8 +161,8 @@ Updated: 2026-04-11 ~00:23 UTC
 | **EXP-116 Results Correction** | ✅ CORRECTED | may | EXP-116/results.md note updated: invalidation was WRONG — EXP-118 confirmed 100% baselines are real with valid agents. Silent exit bug exists but didn't corrupt results. |
 
 | **EXP-128 Channel 3 Boundary Conditions** | ✅ COMPLETE | coach | **H-128 REJECTED**: 18 runs, all arms 0/6 pass. Detection coverage made no difference. Ch3 has genuine task-type boundary — "success signal misdirection" (tests pass → agent thinks it succeeded). Action momentum overwhelms few-shot. Results at `agents/shared/knowledge/experiments/EXP-128/results.md`. |
-| **EXP-129 Channel 2 Budget Curve** | ⏳ RUNNING | coach | Arm A: 5/6, Arm B: 5/6, Arm C: 2/6 done (both pass). Running C-3/C-4. No degradation from stacking gates so far. ~60min elapsed. |
-| **EXP-130 Few-Shot on Discovery** | 🆕 DESIGNED | bob → coach | Acid test for H-099: domain-matched few-shot on discovery task. If fails → discovery irreducible. Design at `EXP-130/design.md`. |
+| **EXP-129 Channel 2 Budget Curve** | ⏳ RUNNING | coach | Arm A: 5/6, Arm B: 5/6, Arm C: **6/6**, Arm D: in progress. Arm C outperforms A/B — more gates may HELP. ~90min elapsed. |
+| **EXP-130 Few-Shot on Discovery** | ⏳ RUNNING | coach | **SURPRISING**: Baseline 6/6 (100%) vs Fewshot 2/5 (40%). Few-shot HURTS discovery tasks — attention narrowing. Running last trial. H-099 strengthened. |
 | **WKWA-008 Channel Theory Synthesis** | ✅ COMPLETE | bob | 10-experiment synthesis: channel × task-type matrix. At `synthesis/WKWA-008-channel-theory-discovery-boundary.md`. |
 | **Session-Query Tool** | ✅ MERGED | optimizer/may | 378-line CLI at `scripts/session-query.ts`. Merged to main. Note: queries `agents/.state/sessions/history/` (historical), not `.state/sessions/` (current). |
 | **H-099 Discovery Task Boundary** | ✅ FILED | bob | 167-line hypothesis: creative inference is irreducible to scaffolding. 5 failed interventions as evidence. Commit 0527a1f. |
@@ -208,21 +208,23 @@ Updated: 2026-04-11 ~00:23 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (00:23)
-- **System healthy**: 7/8 agents running. Scout recurring 401 auth. Zero failures last hour. 1 coach interruption (EXP-129 session restart).
-- **Since last cycle (23:53)**:
-  - **Bob**: EXP-130 designed (few-shot on discovery — acid test for H-099). WKWA-008 synthesis written (channel theory + discovery boundary unified model). Excellent self-directed research.
-  - **Coach**: EXP-129 progressing well. Arm A: 5/6, Arm B: 5/6 (same rate — no degradation from 1→2 gates). Arm C: 2/6 done (both pass). Running C-3/C-4 with extended timeout. Arms C and D remain.
+## Latest Cycle Summary (00:55)
+- **System healthy**: 7/8 agents running. Scout recurring 401 auth. Zero failures.
+- **Since last cycle (00:23)**:
+  - **Coach EXP-129**: Arm C completed **6/6** (was 2/6). Now running Arm D. Arm C outperforms A and B!
+  - **Coach EXP-130**: Baseline 6/6 (100%), Fewshot 2/5 (40%) — few-shot HURTING on discovery tasks. Failure modes: todo-marked-complete, priority-reordered, index-entry-added. Running final trial.
+  - **Optimizer**: Self-dispatched D-o-R Phase 1 budget cap work session. Good self-directed work.
   - **All agents self-directing**: Zero pending requests in DB. Zero May interventions needed.
 
 ## Key Findings This Cycle
-- **EXP-129 emerging pattern**: Arm A (1-gate) = 5/6, Arm B (2-gate) = 5/6. No degradation AND no improvement from adding a second gate. If Arms C (3-gate) and D (4-gate) hold at 5/6, this suggests Ch2 forced externalization has a FIXED ceiling (~83%) for this scenario, independent of gate count. The 1/6 failure is likely an irreducible difficulty margin, not something more gates can fix.
-- **Bob's WKWA-008 synthesis is impressive**: Unifies 10 experiments and 6+ KEs into clean channel × task-type matrix. Key insight: intervention effectiveness = f(channel, task type), with discovery tasks irreducible across ALL channels.
-- **EXP-130 queued**: Bob designed the acid test — domain-matched few-shot on discovery tasks. If this fails (as H-099 predicts), we've exhausted every intervention channel for discovery. If it succeeds, the channel theory needs revision.
+- **EXP-129 SURPRISING RESULT**: Arm C (3 gates) = 6/6 = BETTER than Arm A (5/6) and Arm B (5/6). More gates might HELP, not hurt! If Arm D holds at 5/6 or 6/6, this rejects the "diminishing returns" hypothesis and suggests each gate adds marginal value up to a ceiling.
+- **EXP-130 MAJOR FINDING**: Few-shot HURTS on discovery tasks (40% vs 100% baseline). H-099 receives UNEXPECTED evidence — it's not just that few-shot fails to help, it actively degrades performance. The few-shot examples cause attention narrowing (agent misses todo-marked-complete and priority-reordered checks). This may be the strongest evidence yet for the "discovery irreducibility" thesis AND extends it: scaffolding doesn't just fail, it actively harms creative tasks.
+- **Optimizer self-dispatching well**: Finding and fixing D-o-R Phase 1 bloat autonomously. Good evidence of optimizer value.
 
 ## Next Actions
 - **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. Saves $143-441/day. **Blocked on Hao since Mar 24**.
-- **P1**: **EXP-130 execution** — Bob designed, Coach will need to run. Waiting for EXP-129 to complete first.
+- **P1**: **EXP-129 + EXP-130 completion** — Both running in parallel via Coach. Results expected within 30-60min. EXP-130 already showing few-shot HURTS discovery (40% vs 100% baseline).
+- **P1**: **D-o-R Phase 1 budget cap** — Optimizer implementing (self-dispatched work session active).
 - **P1**: **EXP-105 Few-Shot Production Impact** — Need coder/optimizer work sessions to generate data. No coder work happening.
 - **P1**: **Generate implementation work** — System idle without features. Coder completely idle. Need Hao priorities.
 - **P2**: `analyze-failures` cron DB bug — persistent but non-critical.
