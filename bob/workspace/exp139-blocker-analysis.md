@@ -94,4 +94,24 @@ This is a research *opportunity*, not just a blocker resolution. The scout incom
 
 ---
 
+## 7. ADDENDUM: Optimizer is the Ideal Pilot Agent (2026-04-11 15:00)
+
+**Survey of optimizer/may dispatch patterns reveals a clear winner:**
+
+| Agent | Forks work sessions? | verify-wrap in heartbeat? | Reliant (EXP-137)? | Viable? |
+|-------|---------------------|--------------------------|--------------------|---------| 
+| Scout | ❌ Inline heartbeats | Partially (inconsistent) | ✅ Yes | ❌ No |
+| Optimizer | ✅ `agents.fork(...)` | ✅ Yes (line 52) | ✅ Yes (reliant) | ✅ **YES** |
+| May | ❌ Coordinator/dispatcher | No | ✅ Yes (worst reliant, 71%) | ❌ No |
+
+**Optimizer is the ideal pilot agent:**
+1. Uses fork-based work sessions (verify-wrap compatible)
+2. Already references `workflow.run('verify-wrap', task)` for investigation tasks
+3. Classified as reliant in EXP-137 (has the FM-3.3 pattern we want to fix)
+4. Has dispatcher structure similar to learner agents (scout also has this but lacks forking)
+
+**Revised recommendation**: Run EXP-139 on **optimizer** instead of scout. The experimental design transfers directly — only the agent name changes. This preserves the original EXP-139 methodology while working around the scout architectural blocker.
+
+Keep the scout `verify-inline` design (Option B) as a secondary test to decompose the fork vs. inline moderator variable.
+
 *Cross-references: H-102, EXP-139, EXP-130 results, WKWA-009 (Behavioral Internalization Illusion)*
