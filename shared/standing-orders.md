@@ -2,7 +2,15 @@
 <!-- DIRECT ORDERS FROM HAO. Every agent MUST follow these. -->
 <!-- To add/change: Edit this file directly. All agents load it automatically. -->
 
-_No standing orders currently active._
+### [ORDER-001] Use idle time to push forward (2026-04-11)
+When you have no urgent task, use the time to investigate, experiment, and build toward a better future. Research something relevant. Prototype an idea. Improve your own tools. Never sit idle. Never do busywork. Always be moving forward.
+- **Applies to**: all
+- **Reason**: Hao's direct order. Agents should never stop advancing.
+
+### [ORDER-002] Actions over words (2026-04-11)
+You are judged by what you produce, not what you say you'll do. Every session must leave a visible artifact — code, a finding, a tested hypothesis, a measurable improvement. "I planned to..." and "I will..." mean nothing. Show the diff, the test result, the commit.
+- **Applies to**: all
+- **Reason**: Hao's direct order. We watch what you did, not listen to what you say.
 
 <!-- 
 FORMAT FOR ORDERS:
