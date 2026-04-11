@@ -1,18 +1,18 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-11 ~03:53 UTC
+Updated: 2026-04-11 ~04:23 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — Heartbeat running. Multiple work sessions in last 2h (EXP-130 KB, EXP-129 KB, DD-744-746, research synthesis). Self-directing.
-- **Coach**: 🟢 Active — **EXP-131 IN PROGRESS** (~87min, batch 7 of gym trials). Batches 1-6 done: **Arm A (1-gate) 6/6=100%, Arm B (3-unrelated) ~3/6=50%, Arm C (3-relevant) ~5/6=83%**. Pattern clear: unrelated gates HURT, relevant gates neutral.
-- **Scout**: ⚠️ 401 Error — Recurring auth failure. DD-747/748 + CR-338 committed last cycle.
+- **Bob**: 🟢 Active — Heartbeat running. Self-directing. Very productive last 2h.
+- **Coach**: 🟢 Active — **EXP-131 work session interrupted** (~117min ago). Data at n=18: **Arm A (1-gate) 6/6=100%, Arm B (3-unrelated) ~3/6=50%, Arm C (3-relevant) ~5/6=83%**. Coach should resume via heartbeat.
+- **Scout**: 🟢 Running — Completed last heartbeat successfully. 401 auth may have resolved.
 - **Tech-lead**: 🟢 Active — Heartbeat cycle running.
-- **Optimizer**: ⚠️ 401 Error — D-o-R P1 cap measurement showing early positive signal (n=1: 2 ops vs pre-fix avg 32.2). Auth issues persist.
-- **Evaluator**: 🟢 Active — 326 evals in last 24h. 0 unevaluated sessions.
+- **Optimizer**: 🟢 Running — D-o-R nested workflow fix deployed (20 ops, efficient). 2 self-dispatched work sessions queued. 401 auth may have resolved.
+- **Evaluator**: 🟢 Active — Heartbeat cycle running.
 - **QA**: 🟢 Active — Heartbeat cycle running.
 - **Coder**: Idle. Only runs when forked by tech-lead.
-- **All agents**: 🟡 6/8 healthy. Scout + Optimizer have 401 auth errors (LiteLLM GitHub token, 4+ hours). Amy-kimi 429 (billing). Zero failures last hour.
+- **All agents**: 🟢 7/8 healthy. Amy-kimi 429 (billing). Scout + Optimizer 401 errors MAY be resolved (both completed last heartbeat successfully). Zero failures last hour.
 - **✅ Tool Schema Guard**: Live in production.
 - **✅ Dead code removal**: ~4,779+ lines removed total (1,973 earlier + 589 memory JSONL + 2,217 finish-guard dead code).
 - **✅ Web UI Phase 1**: Merged to main.
@@ -232,17 +232,23 @@ Updated: 2026-04-11 ~03:53 UTC
   - **System-status anomalies all resolved**: Coach not stuck (active batch 7), Bob not stale (very productive), 0 unevaluated sessions (was 172).
   - **All agents self-directing**: Zero pending requests. Zero failures. Zero May interventions needed.
 
+## Latest Cycle Summary (04:23)
+- **System**: 7/8 healthy. Amy-kimi 429 (billing). Scout + Optimizer 401 auth may be resolved (both completed heartbeats successfully). Zero failures last hour.
+- **Since last cycle (03:53)**:
+  - **Coach EXP-131 work session interrupted**: Was at batch 7, n=18. Data pattern clear. Coach should resume via heartbeat dispatch.
+  - **Optimizer D-o-R nested workflow fix deployed**: 20-op work session completed. Anti-nesting instruction added. 2 more work sessions self-dispatched.
+  - **All agents self-directing**: 9 active requests, all self-dispatched. Zero May interventions needed.
+
 ## Key Findings This Cycle
-- **EXP-131 DATA MATURING (n=18)**: Arm A (1-gate) 6/6=100%, Arm B (3-unrelated) ~50%, Arm C (3-relevant) ~83%. Pattern strengthening: unrelated gates ACTIVELY HURT (50% vs 100% baseline). Relevant gates cause mild degradation (83% vs 100%). Gate CONTENT matters more than COUNT. Refines EXP-129 inverted-U.
-- **401 Auth PERSISTS**: Scout + Optimizer still failing. Now 4+ hours. Should escalate to Hao next available contact.
+- **EXP-131 DATA STRONG (n=18, interrupted)**: Arm A (1-gate) 6/6=100%, Arm B (3-unrelated) ~50%, Arm C (3-relevant) ~83%. Pattern clear: unrelated gates ACTIVELY HURT (50% vs 100% baseline). Gate CONTENT matters more than COUNT. Refines EXP-129 inverted-U. Coach should finish remaining runs this cycle.
+- **401 Auth RECOVERING**: Scout + Optimizer both completed last heartbeat without errors. 5+ hour outage may be over. Monitoring.
+- **Optimizer self-directing well**: D-o-R fix + 2 queued work sessions. Showing productivity.
 
 ## Next Actions
 - **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. Saves $143-441/day. **Blocked on Hao since Mar 24**.
-- **P0**: **LiteLLM 401 auth** — Optimizer + Scout both failing 3+ hours. Escalate to Hao next cycle if unchanged.
-- **P1**: **EXP-131 results** — Coach nearing completion. Monitor next cycle for final data + Bob KB integration.
+- **P1**: **EXP-131 completion** — Coach should finish + write results. Bob KB integration after.
 - **P1**: **Surface tools to agents** — session-query.ts + gym-batch.sh need context.md entries. Consider shared/tools.md catalog.
 - **P1**: **EXP-105 Few-Shot Production Impact** — Need coder/optimizer work sessions to generate data. No coder work happening.
 - **P1**: **Generate implementation work** — System idle without features. Coder completely idle. Need Hao priorities.
 - **P2**: `analyze-failures` cron DB bug — persistent but non-critical.
 - **P2**: Amy-kimi still down — blocked on Hao for billing.
-- **P2**: Scout 401 auth error — recurring IDE token expiry.
