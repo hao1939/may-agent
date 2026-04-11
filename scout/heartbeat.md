@@ -89,7 +89,6 @@ Output: Deep dives to agents/shared/knowledge/library/deep-dives/, papers to lib
 Sources: arXiv cs.MA/new, cs.AI/new (scrape HTML if API rate-limited)
 Constraints:
 - For every edit(): read() the file first, then edit() using exact text
-- For every write(): read() the file back to verify
 - Write findings as you go, not at the end
 - Update covered_ids.txt with all triaged paper IDs
 - Update todo.md with session summary at the end
@@ -122,7 +121,6 @@ Output: DD#XXX to agents/shared/knowledge/library/deep-dives/ (if warranted)
 Sources: arXiv search, Semantic Scholar, GitHub
 Constraints:
 - For every edit(): read() the file first, then edit() using exact text
-- For every write(): read() the file back to verify
 - If nothing meets ★★★★ threshold, note in todo.md and exit — don't force a deep dive
 ```
 
