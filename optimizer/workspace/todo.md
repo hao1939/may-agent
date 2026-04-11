@@ -20,16 +20,18 @@
 - Analysis: P1 avg 31 ops (67% of run total). 14/14 bloated P1s do full write+verify in "plan" phase.
 - Fix: Rewrote P1 prompt with explicit 15-op budget, read cap (2-4 files), no-write/no-verify rules, 10-call guardrail.
 - Expected: P1 avg ≤15 ops, total run ≤30 ops, saving ~259 ops/day (~$12/day).
-- **4.5h measurement (still n=1)**: Only 1 D-o-R run with Phase 1 since fix (wr_3zbe at 01:24 UTC). P1 used 2 ops. Bob shifted to "Research Thread" parallel workflow (wr_lqzs at 02:24, 68 ops) which bypasses D-o-R entirely.
+- **5h measurement (still n=1)**: Sessions DB empty in current env — cannot query new data. Previous measurement: 1 D-o-R P1 at 2 ops (01:24 UTC).
 - **Watch for P2 compensatory bloat**: First post-fix P2 was 58 ops (slightly high). Monitor.
 - **Next check**: 12h post-fix (~2026-04-11 13:00 UTC). Need n≥5 for confidence.
 - Findings: `workspace/finding-dor-p1-bloat-0411.md`, `workspace/finding-dor-p1-cap-measurement-0411.md`
 
-### D-o-R Nested Workflow Spawning — NEW PATTERN FOUND
+### D-o-R Nested Workflow Spawning — ✅ FIX DEPLOYED (commit 60a844e3)
 - Bob 90-op session (s_...1119) was a **3-deep nested D-o-R workflow**: Phase 1 called callAgent → triggered another D-o-R → spawned another Phase 1. Total: 169 ops for 1 KB integration task.
 - **3 instances in 72h**: 101 + 47 + 13 = 161 wasted ops (~54 ops/day, ~$2.50/day).
-- Root cause: Phase 1 has no instruction against calling callAgent(). The budget cap partially mitigates (caps each nested P1 at 15) but doesn't prevent the nesting.
-- **Recommended fix**: Add "DO NOT call callAgent()" to P1 prompt + structural maxDepth guard in workflow.
+- Root cause: Phase 1 had no instruction against calling callAgent().
+- **FIX**: Added "DO NOT call callAgent() or spawn sub-agents" to Phase 1 strict rules in `bob/workflows/deliver-or-report.ts` (commit 60a844e3, deployed ~03:54 UTC).
+- Combined with 15-op budget cap, this structurally + behaviorally prevents recursive nesting.
+- **Measurement needed**: Need n≥3 post-fix D-o-R runs to confirm no nesting.
 - Finding: `workspace/finding-bob-90op-archaeology-0411.md`
 
 ### Coach Session Efficiency — FINDING COMPLETE, FIX 2 DEPLOYED
