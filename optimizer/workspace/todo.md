@@ -22,11 +22,12 @@
 - Findings: `workspace/finding-dor-p1-bloat-0411.md`, `workspace/finding-dor-p1-cap-measurement-0411.md`, `workspace/finding-dor-p1-cap-final-verdict-0411.md`
 - **→ MOVING TO DONE**
 
-### D-o-R Nested Workflow Spawning — Phase 2 ✅ CONFIRMED, Phase 3 ⚠️ NEW ISSUE
+### D-o-R Nested Workflow Spawning — All 3 Phases FIXED ✅
 - **Phase 1 fix** (commit 60a844e3): Eliminated Phase 1 nesting. ✅
 - **Phase 2 fix** (commit ef7e2528): **CONFIRMED at n=9.** 0% nesting post-fix (was 40% pre-fix). ✅
-- **NEW: Phase 3 (VERIFY) nesting discovered.** Phase 3 session s_1775924716233_1517 spawned a full D-o-R inside verify step. Needs callAgent guard on Phase 3 prompt.
-- Findings: `workspace/finding-bob-90op-archaeology-0411.md`, `workspace/finding-dor-nesting-verification-0411.md`, `workspace/finding-dor-nesting-final-0411.md`
+- **Phase 3 fix** (Apr 11 ~17:25 UTC): Added anti-nesting guard to Phase 3b (verify) prompt. All 5 D-o-R phases now have explicit guards. ✅
+- Findings: `workspace/finding-bob-90op-archaeology-0411.md`, `workspace/finding-dor-nesting-verification-0411.md`, `workspace/finding-dor-nesting-final-0411.md`, `workspace/finding-dor-phase3-nesting-fix-0411.md`
+- **→ MOVING TO DONE after n≥5 Phase 3 sessions show 0% nesting**
 
 ### Coach Session Efficiency — FINDING COMPLETE, FIX 2 DEPLOYED
 - 2,175 coach sessions analyzed. 50.3% zero-op, 64% of ops in top sessions are exploration waste.
@@ -55,7 +56,7 @@
 - Root cause: heartbeat.md encouraged inline exploration (multi-query DB analysis, file reads).
 - Fix: Rewrote heartbeat.md to "Dispatcher Mode" — observe in 1-2 ops, fork all analysis work. Target: ≤15 ops.
 - Baseline: 8 heartbeats in 12h, avg 56 ops, total 451. Post-fix: avg 23 ops (59% reduction). ✅ SUCCESS.
-- Last exploration mode: **A** (D-o-R nesting fix verification + coach 90-op patterns — forked Apr 11 ~16:53 UTC). Previous: D (verify-wrap adoption — Apr 11 ~16:23), C (Tech-lead forked work session techniques — Apr 11 ~15:53), B (Recurring multi-step bash patterns — Apr 11 ~15:24), A (D-o-R monitoring update — Apr 11 ~14:53), D (D-o-R P1 cap expanded measurement — Apr 11 ~14:23), C (Bob 85-op deep research — Apr 11 ~13:53), B (Coach 87-98 op tool gap — Apr 11 ~13:31), A (D-o-R Phase 2 nesting re-verification — Apr 11 ~13:00).
+- Last exploration mode: **BUILD** (D-o-R Phase 3 nesting fix — forked Apr 11 ~17:25 UTC). Previous: A (D-o-R nesting fix verification + coach 90-op patterns — Apr 11 ~16:53), D (verify-wrap adoption — Apr 11 ~16:23), C (Tech-lead forked work session techniques — Apr 11 ~15:53), B (Recurring multi-step bash patterns — Apr 11 ~15:24). Next rotation: **B**.
 - **session-query tool BUILT** (`scripts/session-query.ts`). Replaces 15-25 bash archaeology pattern with single command. Supports: --agent, --since, --task, --status, --min-ops, --tools, --json, --sort. Tested with real data (911 sessions). Est. savings: 10-15 ops/session × 187 sessions = 1,870-2,805 ops.
 - **session-query adoption**: Still **zero active adoption** beyond optimizer (confirmed Apr 11 05:24 UTC). May + QA have passive mentions only. **Three blockers**: (1) filesystem history stale (through ~Apr 5), (2) zero agents have session-query in context.md, (3) may.db has 0 coach sessions. No change since last check. **gym-batch.sh MERGED to main** (cherry-pick 5ca3bdf, Apr 11 ~05:54 UTC) + coach context.md updated — but **gym-batch.sh also has ZERO adoption** despite being in context.md (see Coach Session Efficiency section). Findings: `workspace/finding-tool-gap-0411-b.md`, `workspace/finding-coach-experiment-technique-0411.md`, `workspace/finding-gym-batch-adoption-0411.md`
 - Mode D **COMPLETE**: Workflow health analysis. **Key result: D-o-R uses +53% more ops than non-WF work sessions** (45.7 vs 29.9). Phase 1 is the bloat source (30.4 avg ops — matches a complete non-WF session). Error rates 50% lower (2.1% vs 3.9%). Quality scores incomparable (different eval scales). Finding: `workspace/finding-workflow-health-0410.md`
