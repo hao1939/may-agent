@@ -16,12 +16,14 @@
 - Bypass exists at `src/app/may.ts:148-165`, needs `ANTHROPIC_API_KEY` env var.
 - **BLOCKED on operator.** Finding: `workspace/findings/2026-04-10-litellm-kills-prompt-caching.md`
 
-### D-o-R Phase 1 Budget Cap — FIX DEPLOYED (commit 40b22057)
+### D-o-R Phase 1 Budget Cap — FIX DEPLOYED, EARLY SIGNAL POSITIVE
 - Analysis: P1 avg 31 ops (67% of run total). 14/14 bloated P1s do full write+verify in "plan" phase.
 - Fix: Rewrote P1 prompt with explicit 15-op budget, read cap (2-4 files), no-write/no-verify rules, 10-call guardrail.
 - Expected: P1 avg ≤15 ops, total run ≤30 ops, saving ~259 ops/day (~$12/day).
-- **Measuring**: Check after 24h. If P1 avg >20, escalate to runtime maxOps (Option A).
-- Finding: `workspace/finding-dor-p1-bloat-0411.md`
+- **2h measurement (n=1)**: Post-fix P1 used **2 ops** vs pre-fix avg 32.2 (94% reduction). P2 used 58 ops. Need n≥5 for confidence.
+- **Watch for P2 compensatory bloat**: First post-fix P2 was 58 ops (slightly high). Monitor.
+- **Next check**: 12h post-fix (~2026-04-11 13:00 UTC). If P1 avg >20, escalate to runtime maxOps.
+- Findings: `workspace/finding-dor-p1-bloat-0411.md`, `workspace/finding-dor-p1-cap-measurement-0411.md`
 
 ### Coach Session Efficiency — FINDING COMPLETE, FIX 2 DEPLOYED
 - 2,175 coach sessions analyzed. 50.3% zero-op, 64% of ops in top sessions are exploration waste.
