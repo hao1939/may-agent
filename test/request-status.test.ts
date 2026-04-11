@@ -301,7 +301,7 @@ describe("printRequestStatus triage logic", () => {
 
   it("shows ATTENTION for low quality agents", () => {
     for (let i = 0; i < 5; i++) {
-      writeEval(persistDir, "bad-agent", 1, 1, "needs_improvement", i * 60_000);
+      writeEval(persistDir, "bad-agent", 0.1, 0.1, "needs_improvement", i * 60_000);
     }
 
     const output = printRequestStatus(persistDir, {
