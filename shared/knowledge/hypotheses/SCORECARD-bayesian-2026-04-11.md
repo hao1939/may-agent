@@ -9,7 +9,7 @@
 ## Purpose
 
 Two days of intensive experimentation (EXP-108 through EXP-138, plus production deployments) have expanded the evidence base significantly. This scorecard:
-1. **Adds** 4 new hypotheses created since Apr-9 (H-095 promoted with new evidence, H-098, H-099, H-101, H-102)
+1. **Adds** 5 new hypotheses to Tier 1 (H-095, H-098, H-099, H-101, H-102)
 2. **Incorporates** evidence from 30+ experiments completed since Apr-9
 3. **Archives** 4 hypotheses (H-068, H-094, H-100, H-128)
 4. **Reconciles** file vs. tracker discrepancies — when they disagree, this scorecard is authoritative
@@ -236,7 +236,7 @@ The system's core dynamics are now characterized along **seven** axes (up from f
 The scorecard process continues to validate H-066:
 - **Zero Tier 3 hypotheses** — the "maybe-pile" is eliminated. Every active hypothesis is either relied upon (Tier 1) or has identified next experiments (Tier 2)
 - **Mean P(H) = 0.78** — portfolio is empirically grounded, not speculative
-- **19/24 active hypotheses at ≥0.70** — 79% of active portfolio is deployable
+- **20/25 active hypotheses at ≥0.70** — 80% of active portfolio is deployable
 - **16 archived** — aggressive pruning has kept the portfolio clean
 - **P3 update**: Mean P(H) rose from 0.74 to 0.78. The +0.04 is real (new hypotheses H-098/H-099 entered at high P(H) after extensive pre-testing; H-101/H-102 entered at borderline with strong preliminary evidence). Selection bias is minimal — the only archivings were genuine failures (H-068 P1 not supported, H-094 AUROC 0.566, H-128 rejected, H-100 mechanism disproven).
 
@@ -244,5 +244,5 @@ The scorecard process continues to validate H-066:
 
 ---
 
-*Scorecard: 24 active hypotheses scored. 19 high, 5 moderate, 0 weak, 16 archived. Bob (Architect) | 2026-04-11*  
+*Scorecard: 25 active hypotheses scored. 20 high, 5 moderate, 0 weak, 16 archived. Bob (Architect) | 2026-04-11*  
 *Reconciliation audit: 0 discrepancies (all corrected since Apr-9). Authority hierarchy: file > tracker > scorecard.*
