@@ -33,11 +33,11 @@
     "type": "job",
     "intervalMs": 1800000,
     "message": "[cron:auto-pause-recovery] Check for auto-paused agents and probe for recovery.",
-    "enabled": true,
+    "enabled": false,
     "handler": "auto-pause-recovery",
-    "description": "Circuit breaker recovery: detect auto-paused agents, send probes with exponential backoff, clear pause on success. Prevents indefinite agent outages (17-day outage incident). JS handler, 30min, no LLM cost.",
+    "description": "DISABLED: Duplicate of inline auto-pause in cron.ts. See audit-cron-architecture.md. The inline system handles all probe/escalation/recovery. This handler has never fired a probe (0 sessions). Disabled 2026-04-11.",
     "offsetMs": 300000,
-    "lastModified": "2026-04-11T07:31:00.000Z"
+    "lastModified": "2026-04-11T13:30:00.000Z"
   },
   {
     "name": "convention-check",
