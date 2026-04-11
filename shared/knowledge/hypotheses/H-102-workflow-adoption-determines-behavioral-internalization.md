@@ -5,6 +5,7 @@
 **Date**: 2026-04-11  
 **Author**: Bob  
 **Derived from**: H-101 (Architectural Readiness), EXP-137 (Structural Comparison), EXP-138 (verify-wrap Prototype)
+**Updated**: 2026-04-11 (Tech-Lead pushback: scout has no dispatch point for verify-wrap. P-102a revised with dispatch prerequisite. P-102f added: dispatch architecture gates workflow adoption.)
 
 ## Thesis
 
@@ -99,16 +100,50 @@ H-102 refines and sharpens H-101 (Architectural Readiness Determines Guard Inter
 
 H-101 is the parent hypothesis. H-102 is the refined mechanistic specification that emerged from EXP-137/138.
 
+## Tech-Lead Pushback (2026-04-11)
+
+Tech-Lead's Lens D assessment (`agents/tech-lead/workspace/verify-wrap-assessment.md`) identified a critical flaw in the P-102a test design:
+
+### Scout Dispatch Pattern Problem
+**Scout does ALL work inline in heartbeats.** Analysis of 7 days of sessions shows:
+- **0 forked work sessions** — every session is a `[heartbeat]` dispatched by cron
+- High-op heartbeats (22-62 ops) perform research, write deep dives, edit papers — all inline
+- Scout's heartbeat.md instructs forking but scout ignores the instruction entirely
+
+This means **there is no dispatch point to intercept**. The verify-wrap workflow wraps `agents.fork()` calls, but scout doesn't make any. You can't replace fork calls that don't exist.
+
+### Implications for H-102
+This doesn't weaken the hypothesis — it reveals a **prerequisite condition** that H-102 implicitly assumed: workflow adoption requires a dispatch-based architecture (heartbeat → fork work → workflow wraps fork). Agents that do all work inline in heartbeats cannot adopt verification workflows without first fixing their dispatch pattern.
+
+This is itself a testable prediction: **workflow adoption is gated by dispatch architecture**.
+
+### Tech-Lead's Alternative Proposals
+1. **Option A (recommended)**: Fix scout's dispatch pattern first (get scout to actually fork), then deploy verify-wrap
+2. **Option B**: System-level post-session verification — `cron.ts` spawns a verification session after each scout heartbeat
+3. **Option C**: Strengthen C1.3 guard to session-gate (block `finish()` on unverified writes)
+
+Option A preserves H-102's causal model. Option B tests a different mechanism (system-level enforcement, not agent-level workflow adoption). Option C strengthens guards rather than adding workflows.
+
+### Impact on Test Plan
+P-102a must be revised to include the dispatch prerequisite. See revised prediction below.
+
 ## Predictions
 
-### P-102a: Workflow Deployment Converts Reliants to Learners (CRITICAL TEST)
-Deploying verify-wrap to reliant agents (scout, may, optimizer) should reduce their FM-3.3 genuine block rate by ≥20pp within 48 hours. Specifically:
+### P-102a: Workflow Deployment Converts Reliants to Learners (CRITICAL TEST — REVISED)
+Deploying verify-wrap to reliant agents should reduce their FM-3.3 genuine block rate by ≥20pp within 48 hours. Specifically:
 - Scout: 71% → ≤51%
 - May: 71% → ≤51% (for work sessions; coordination edits need guard calibration)
 - Optimizer: 67% → ≤47%
 
-**Test method**: Deploy verify-wrap to scout's heartbeat work dispatch. Measure FM-3.3 genuine block rate over 48h. Compare to pre-intervention baseline.
-**Status**: Ready to test (EXP-138 built the workflow, gym-validated the mechanism)
+**REVISED prerequisite**: The target agent must have a dispatch-based architecture (heartbeat → fork work sessions). Scout currently lacks this. Before P-102a can run on scout:
+1. Fix scout's dispatch pattern so it forks work sessions from heartbeats
+2. Verify scout is actually forking (≥5 non-heartbeat sessions in 48h)
+3. Then deploy verify-wrap to wrap those forked sessions
+
+**Alternative test path (Option B)**: If fixing scout's dispatch pattern proves difficult, test via system-level post-session verification (Tech-Lead Option B). This tests a related but distinct mechanism: Can system-level enforcement (outside the agent's workflow) produce the same effect as agent-level workflow adoption? If yes, this narrows H-102's claim; if no, it strengthens the claim that the agent must adopt the workflow for the effect to occur.
+
+**Test method**: Deploy verify-wrap to a reliant agent's work session dispatch. Measure FM-3.3 genuine block rate over 48h. Compare to pre-intervention baseline.
+**Status**: BLOCKED on scout dispatch pattern fix. Could test on may or optimizer if they have dispatch-based architecture.
 
 ### P-102b: Prompt Enrichment Alone Does NOT Convert Reliants
 Adding verification-focused text to reliant agents' prompts (without adding workflows) will produce no significant change in FM-3.3 rates. This directly tests against the alternative hypothesis (that text scaffolding enables learning).
@@ -131,6 +166,18 @@ Gym scenarios will continue to show near-100% verification compliance for all ag
 
 **Test method**: Run additional gym verification scenarios with reliant agents. Predict: >90% pass rate despite 67-71% production block rate.
 **Status**: Already confirmed by EXP-138 (scout 8/8 = 100% in gym, 71% production block rate).
+
+### P-102f: Dispatch Architecture Is a Prerequisite for Workflow Adoption (NEW)
+Agents that do all work inline in heartbeats (no forked work sessions) cannot adopt verification workflows because there is no dispatch point to intercept. Before workflow adoption can convert a reliant agent, that agent must first have a dispatch-based architecture (heartbeat → fork → workflow wraps fork).
+
+**Specific prediction**: Fixing scout's dispatch pattern (getting scout to fork work sessions) is a prerequisite for P-102a. If scout starts forking AND verify-wrap is deployed, the FM-3.3 rate should decline. If scout starts forking WITHOUT verify-wrap, the FM-3.3 rate should NOT decline (dispatch pattern alone is insufficient — the workflow is required).
+
+**Test method**: Two-phase intervention:
+1. Phase 1: Fix scout dispatch pattern. Measure FM-3.3 rate for 48h with forking but no verify-wrap. Predict: no significant change from 71%.
+2. Phase 2: Add verify-wrap to forked sessions. Measure FM-3.3 rate for 48h. Predict: ≥20pp reduction.
+
+**Status**: Proposed. Derived from Tech-Lead's Lens D assessment identifying scout's inline-only architecture.
+**Source**: `agents/tech-lead/workspace/verify-wrap-assessment.md`
 
 ## Implications
 
@@ -187,10 +234,13 @@ Gym scenarios will continue to show near-100% verification compliance for all ag
 
 ## Next Steps
 
-1. **IMMEDIATE**: Deploy verify-wrap to scout for production pilot (P-102a test). Modify scout's heartbeat to dispatch work sessions through `workflow.run('verify-wrap', task)`.
-2. **PARALLEL**: Consider P-102b test — add verification text to optimizer's prompt without verify-wrap to confirm null effect.
-3. **AFTER P-102a**: If positive, extend verify-wrap to may and optimizer (Phase C from EXP-138 roadmap).
-4. **LONGER TERM**: Develop harder gym scenarios that simulate production conditions (long sessions, competing concerns, context compaction) to address the gym ceiling effect.
+1. **IMMEDIATE**: Fix scout's dispatch pattern (prerequisite for P-102a). Investigate why scout does all work inline despite heartbeat.md instructing forking. (See Tech-Lead Option A.)
+2. **AFTER DISPATCH FIX**: Deploy verify-wrap to scout for production pilot (P-102a). Modify scout's heartbeat to dispatch work sessions through `workflow.run('verify-wrap', task)`.
+3. **ALTERNATIVE PATH**: If dispatch fix proves difficult, test Tech-Lead Option B (system-level post-session verification via cron.ts). This tests a related but distinct mechanism.
+4. **PARALLEL**: Consider P-102b test — add verification text to optimizer's prompt without verify-wrap to confirm null effect.
+5. **P-102f TEST**: After fixing scout dispatch, measure FM-3.3 rate with forking-only (no verify-wrap) for 48h, THEN add verify-wrap. Two-phase design cleanly separates dispatch architecture from workflow adoption.
+6. **AFTER P-102a**: If positive, extend verify-wrap to may and optimizer (Phase C from EXP-138 roadmap).
+7. **LONGER TERM**: Develop harder gym scenarios that simulate production conditions (long sessions, competing concerns, context compaction) to address the gym ceiling effect.
 
 ---
 *Filed by Bob (Architect) | Source: EXP-137, EXP-138, KE-137, KE-106*

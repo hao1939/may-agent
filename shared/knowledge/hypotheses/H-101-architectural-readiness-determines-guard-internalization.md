@@ -14,11 +14,39 @@ Guards work as **permanent infrastructure** (H-100) for agents lacking this scaf
 
 ## Mechanism
 
-1. **Guard fires** → agent's behavior is corrected
-2. **If agent's prompt already contains verification concepts** → correction aligns with existing prompt expectations → agent weights prompt-aligned behavior more heavily in future → guard rate declines (internalization)
-3. **If agent's prompt lacks verification concepts** → correction is external and contextless → agent has no internal representation to reinforce → guard rate increases (reliance)
+### Revised Understanding: Workflow Substitution (Updated 2026-04-11 per CT-009)
 
-In Channel Theory (H-098) terms: Guards create Ch2 environmental state. For "ready" agents, this Ch2 signal reinforces existing Ch1 concepts (multiplicative effect). For "unready" agents, the Ch2 signal exists in isolation (additive at best, reliance at worst).
+EXP-137's structural comparison decisively replaced the original mechanism. The revised understanding:
+
+```
+WITH verification workflow (learner agents: bob, coach, tech-lead):
+  Session N: Agent dispatches work → workflow adds verification phase → done
+  Guard rarely fires → "declining rate" observed
+  Mechanism: Workflow BYPASSES the need for self-verification
+  The agent didn't "learn" — the architecture enforced the behavior
+
+WITHOUT verification workflow (reliant agents: may, scout, optimizer):
+  Session N: Agent writes → forgets to verify → guard blocks → retries → done
+  Session N+1: Same error → guard catches again → "escalating rate"
+  Mechanism: No persistent learning occurs — guard is needed every time
+```
+
+**Key insight**: "Architectural readiness" does NOT mean the agent's prompt contains verification concepts. It means the agent's **workflow infrastructure** mechanically enforces verification. May's Paradox is the decisive evidence: May has the MOST verification text of any agent (verify-before-finish skill, data-aware 70L verify-after-edit) yet has the WORST block rate (71%). Text scaffolding is irrelevant.
+
+### Channel Theory (H-098) Integration (Revised)
+
+- **Ch1 (prompt/skills)**: Zero effect on guard rates. Confirmed by May's Paradox and KE-106.
+- **Ch2 (structural/environmental)**: Workflows are Ch2 interventions that work by mechanically restructuring sessions.
+- **Original Ch1×Ch2 interaction model**: SUPERSEDED. The data shows Ch2 alone (workflow adoption) is sufficient. Ch1 contribution is negligible. H-102 formalizes this simplification.
+
+### Historical Mechanism (Pre-EXP-137, Superseded)
+
+The original H-101 mechanism proposed:
+
+> If agent's prompt already contains verification concepts → guard correction aligns with existing prompt expectations → agent weights prompt-aligned behavior more heavily → guard rate declines (internalization).
+> If agent's prompt lacks verification concepts → correction is external and contextless → no internal representation to reinforce → guard rate increases (reliance).
+
+This was falsified by EXP-137: May has the most verification prompt content yet shows escalating rates. The mechanism is not prompt × guard interaction but workflow substitution.
 
 ## Evidence
 
@@ -52,23 +80,29 @@ KE-122 showed skills internalize within ~1 day. H-101 proposes that guards can A
 
 ## Predictions
 
-### P-101a: Prompt Enrichment Converts Reliants to Learners
-Adding verification-focused content to the system prompts of "reliant" agents (may, scout, optimizer) should shift their guard activation trajectory from escalating to declining within 2 weeks. **Specific test**: Add verification scaffolding to May's prompt, track FM-3.3 guard rate for 14 days, compare to pre-intervention trajectory.
+### P-101a: Workflow Deployment Converts Reliants to Learners (REVISED)
+~~Original: Adding verification-focused content to the system prompts of "reliant" agents should shift their guard activation trajectory.~~
 
-### P-101b: Removing Prompt Scaffolding Converts Learners to Reliants
-Removing verification-focused content from "learner" agents' prompts (bob, coach, TL) should cause their guard rates to re-escalate, even though they previously showed declining rates. **Specific test**: Remove verification scaffolding from Bob's prompt, track FM-3.3 guard rate for 14 days.
+**Revised**: Adding verification **workflows** (not just prompt text) to reliant agents should shift their trajectory. Simple prompt enrichment alone will NOT work (May's Paradox). This is directly testable via verify-wrap (EXP-138). **Note**: Requires dispatch-based architecture as prerequisite — see H-102 P-102f.
+
+### P-101b: Removing Workflow Reverts Learners to Reliants (REVISED)
+~~Original: Removing verification-focused content from "learner" agents' prompts should cause re-escalation.~~
+
+**Revised**: Removing verification **workflows** from learner agents should cause guard rates to re-escalate. Removing prompt text alone should have no effect. **Specific test**: Disable bob's deliver-or-report workflow (revert to raw `agents.fork()`), track FM-3.3 rate for 14 days. Predict: re-escalation from 24% toward >50%. (DESTRUCTIVE TEST — see H-102 P-102d.)
 
 ### P-101c: New Guard on Novel Behavior Shows Same Bifurcation Pattern
-Deploying a NEW structural guard for a behavior NOT currently scaffolded in ANY agent's prompt should show initially uniform guard rates across all agents (no bifurcation), because no agent has architectural readiness for the new behavior.
+Deploying a NEW structural guard for a behavior NOT currently covered by any agent's workflow should show initially uniform guard rates across all agents (no bifurcation), because no agent has workflow coverage for the new behavior. *Unchanged — this prediction is mechanism-agnostic.*
 
-### P-101d: Architectural Readiness Score Predicts Guard Trajectory
-A quantified "readiness score" (counting verification-related concepts in each agent's system prompt) should correlate with guard rate trajectory (R² > 0.5 across the 7 agents).
+### P-101d: Workflow Adoption Rate Predicts Guard Trajectory (REVISED)
+~~Original: A "readiness score" counting verification-related concepts in prompts should correlate with trajectory.~~
+
+**Revised**: The ratio (workflow-wrapped sessions / total work sessions) should strongly predict FM-3.3 genuine block rate trajectory. Expected R² > 0.7 across active agents. Prompt text features will show R² ≈ 0 (confirmed by EXP-137).
 
 ## Implications
 
-1. **Guard deployment should be paired with prompt enrichment** — deploy guard + add conceptual scaffolding to prompt simultaneously
-2. **Guard rate trajectory is a diagnostic** — declining = agent is learning; escalating = architectural gap
-3. **H-100 revision needed**: The skill/guard distinction should be refined into a 2×2 matrix: skill × ready = fast internalization, skill × unready = slow internalization, guard × ready = eventual internalization (learner pattern), guard × unready = permanent dependency (reliant pattern)
+1. **Guard deployment should be paired with workflow adoption** — deploy guard + add verification workflow simultaneously (prompt enrichment alone is insufficient per May's Paradox)
+2. **Guard rate trajectory is a diagnostic for workflow coverage** — declining = good workflow coverage; escalating = workflow gap
+3. **H-100 revision needed**: The skill/guard distinction should be refined: the key variable is workflow adoption, not prompt scaffolding. Agents with verification workflows show declining guard rates (architectural substitution); agents without show escalating rates (permanent dependency).
 
 ## Bayesian Assessment
 

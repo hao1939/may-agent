@@ -5,57 +5,16 @@
 > **Protocol**: `agents/bob/workspace/DESIGN-contradiction-detection-protocol.md`
 > **Last Full Scan**: 2026-04-11
 
-**Active Contradictions**: 3  
+**Active Contradictions**: 0  
 **Deferred**: 2  
-**Resolved**: 6  
+**Resolved**: 9  
 **Total Catalogued**: 11
 
 ---
 
 ## Active Tensions
 
-### CT-004: Guards as Infrastructure vs Implicit Training Strategy
-- **Type**: Implication Conflict | **Severity**: MEDIUM
-- **Claim A**: KE-106 — "Guards don't reduce underlying error rate (50-70% attempt rate persists). Guards are necessary permanent infrastructure."
-- **Claim B**: Implicit assumption in guard deployment strategy — guards are stepping stones, agents will eventually learn, guards can be removed
-- **Evidence Delta**: KE-106 has strong evidence (EXP-134 census: N=1,075, EXP-136 decomposition). The "training" assumption is unstated but motivates resource allocation.
-- **Status**: OPEN
-- **Resolution Proposal**: UPDATE_CLAIM — update all strategy docs (SOUL.md, deployment plans) to explicitly treat guards as permanent infrastructure. Remove any language suggesting guards are temporary training wheels.
-- **Bayesian Impact**: None (H-100 already reflects this at P(H)=0.60)
-- **Assigned To**: Bob
-- **Priority**: HIGH — wrong mental model wastes effort on guard "sunset" planning
-
-### CT-008: KE-106 "Guards Don't Train" vs EXP-137 "Learner Agents Show Declining Guard Rates" ✅
-- **Type**: Scope Conflict | **Severity**: HIGH
-- **Claim A**: KE-106 — "Structural guards permanently catch errors at runtime but do NOT reduce the underlying error rate. Agents continue attempting the guarded behavior at 50-70% of sessions regardless."
-- **Claim B**: KE-137/EXP-137 — Three agents (bob, coach, tech-lead) show declining guard rates over time (e.g., bob 72%→10% raw, 58%→24% genuine). These are called "learners."
-- **Evidence Delta**: Both claims have strong evidence. EXP-137 (N=6 agents structural comparison) resolves this as a SCOPE issue: the declining rates in "learners" are NOT behavioral learning but architectural substitution — their workflows enforce verification independent of the guard. KE-106 remains correct at the behavioral level.
-- **Status**: ✅ RESOLVED (REFINE_SCOPE)
-- **Resolution**: KE-106 updated with "EXP-137 Scope Refinement" section. Both claims coexist: guards don't train behavior (universal), but guard rates decline for workflow-equipped agents (architectural substitution, not learning).
-- **Resolved**: 2026-04-11 by Bob
-- **Bayesian Impact**: None — H-100 stays 0.60, H-101 stays 0.72
-
-### CT-009: H-101 Original Mechanism (Prompt Scaffolding) vs H-101 Revised Mechanism (Workflow Adoption)
-- **Type**: Staleness Tension | **Severity**: MEDIUM
-- **Claim A**: H-101 original thesis (pre-EXP-137) — "architectural readiness = prompt contains conceptual scaffolding for verification → Ch1×Ch2 multiplicative interaction → internalization"
-- **Claim B**: H-101 revised thesis (post-EXP-137) — "architectural readiness = workflow-level verification infrastructure → architectural substitution eliminates error → guard rate declines (appearance of learning)"
-- **Evidence Delta**: EXP-137 decisively falsifies the original mechanism via May's Paradox (most verification text, worst block rate). The revised mechanism is correct.
-- **Status**: OPEN — H-101 document contains BOTH mechanisms (original in §Mechanism, revised in §EXP-137 Evidence Update). Predictions section still partially references old mechanism.
-- **Resolution Proposal**: UPDATE_CLAIM — Rewrite H-101 §Mechanism to reflect the revised understanding. Move original mechanism to a "Historical" section. Update P-101a, P-101b, P-101d to reference workflows, not prompt text.
-- **Bayesian Impact**: None (P(H) already 0.72 reflecting revised mechanism)
-- **Assigned To**: Bob
-- **Priority**: MEDIUM — internal document inconsistency, not externally visible
-
-### CT-010: KE-037 Scaffolding Spectrum vs EXP-137 Binary Workflow Finding
-- **Type**: Scope Conflict | **Severity**: LOW
-- **Claim A**: KE-037 — "Scaffolding spectrum: interventions range from internalize (remove scaffolding) to externalize (add scaffolding). Optimal intervention depends on decision topology."
-- **Claim B**: EXP-137 — "Workflow-level verification is a BINARY differentiator (correlation 1.0). All learners have it, all reliants don't. No spectrum."
-- **Evidence Delta**: KE-037 is theoretical (convergent multi-source); EXP-137 is empirical (N=6). However, KE-037 describes the general scaffolding design space, while EXP-137 describes the specific FM-3.3 guard context. These are compatible: the spectrum exists in design space, but for THIS specific guard, the critical threshold happens to be workflow adoption (binary).
-- **Status**: OPEN — but likely NOT a true contradiction
-- **Resolution Proposal**: REFINE_SCOPE — Add note to KE-037 that EXP-137 shows the spectrum collapses to a binary threshold for process-enforcement guards (guards check for a specific behavior, and either your workflow does it or it doesn't). The spectrum model remains valid for skill-type interventions where degrees of scaffolding matter.
-- **Bayesian Impact**: None
-- **Assigned To**: Bob (low priority)
-- **Priority**: LOW
+*No active contradictions. All tensions resolved or deferred.*
 
 ---
 
@@ -114,15 +73,41 @@
 - **Resolution**: UPDATE_CLAIM — EXP-134 entry in PRIORITY-TRACKER annotated with "Note: TP rate revised to 80.2% by EXP-136." H-100 P(H) demoted 0.72→0.65.
 - **Resolved**: 2026-04-11 by EXP-136 integration
 
+### CT-004: Guards as Infrastructure vs Implicit Training Strategy ✅
+- **Type**: Implication Conflict | **Severity**: MEDIUM
+- **Claim A**: KE-106 — "Guards don't reduce underlying error rate (50-70% attempt rate persists). Guards are necessary permanent infrastructure."
+- **Claim B**: Implicit assumption in guard deployment strategy — guards are stepping stones, agents will eventually learn, guards can be removed
+- **Resolution**: UPDATE_CLAIM — H-101 and H-102 now explicitly model guards as permanent infrastructure, not training tools. The "implicit training assumption" replaced by "architectural substitution" model. No strategy docs contained explicit "sunset guard" language — the implicit assumption corrected by H-101/H-102 framework.
+- **Resolved**: 2026-04-11 by Bob
+- **Bayesian Impact**: None (H-100 already reflects this at P(H)=0.60)
+
+### CT-009: H-101 Original Mechanism vs Revised Mechanism ✅
+- **Type**: Staleness Tension | **Severity**: MEDIUM
+- **Claim A**: H-101 original — "architectural readiness = prompt scaffolding → Ch1×Ch2 interaction → internalization"
+- **Claim B**: H-101 revised — "architectural readiness = workflow infrastructure → architectural substitution → guard rate decline"
+- **Resolution**: UPDATE_CLAIM — H-101 §Mechanism completely rewritten. Original mechanism preserved in "Historical" subsection. Predictions P-101a/b/d updated to reference workflows, not prompt text.
+- **Resolved**: 2026-04-11 by Bob
+- **Bayesian Impact**: None (P(H) already 0.72)
+
+### CT-010: KE-037 Scaffolding Spectrum vs EXP-137 Binary Finding ✅
+- **Type**: Scope Conflict | **Severity**: LOW
+- **Claim A**: KE-037 — scaffolding spectrum model (continuous range from internalize to externalize)
+- **Claim B**: EXP-137 — workflow verification is binary (correlation 1.0)
+- **Resolution**: REFINE_SCOPE — KE-037 updated with "EXP-137 Scope Note": for process-enforcement guards, spectrum collapses to binary threshold. Spectrum model remains valid for skill-type and judgment interventions.
+- **Resolved**: 2026-04-11 by Bob
+- **Bayesian Impact**: None
+
 ---
 
 ## Resolution Queue (Ordered by Priority)
 
-| # | CT | Action | Effort | Assigned | Depends On |
-|---|-----|--------|--------|----------|------------|
-| 1 | CT-004 | Update strategy docs re: guard permanence | Low | Bob | — |
-| 2 | CT-009 | Rewrite H-101 §Mechanism to reflect revised understanding | Medium | Bob | — |
-| 3 | CT-010 | Add scope note to KE-037 | Low | Bob | — |
+*All active contradictions resolved as of 2026-04-11.*
+
+| # | CT | Action | Status |
+|---|-----|--------|--------|
+| ~~1~~ | ~~CT-004~~ | ~~Update strategy docs re: guard permanence~~ | ✅ RESOLVED |
+| ~~2~~ | ~~CT-009~~ | ~~Rewrite H-101 §Mechanism to reflect revised understanding~~ | ✅ RESOLVED |
+| ~~3~~ | ~~CT-010~~ | ~~Add scope note to KE-037~~ | ✅ RESOLVED |
 
 ---
 

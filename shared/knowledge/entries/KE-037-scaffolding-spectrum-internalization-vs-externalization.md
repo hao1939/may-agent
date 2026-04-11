@@ -165,6 +165,17 @@ H-085 should note DD-569/570/CR-301 as additional supporting evidence for:
 
 ## Confidence Assessment
 
+### EXP-137 Scope Note (Added 2026-04-11, CT-010 Resolution)
+
+EXP-137 found that for **process-enforcement guards** (like FM-3.3, which checks for a specific behavior: read-after-write), the scaffolding spectrum **collapses to a binary threshold**: either the agent's workflow mechanically enforces the behavior (correlation 1.0 with learner status) or it doesn't. There is no intermediate "partial scaffolding" that produces partial improvement.
+
+This does NOT invalidate the spectrum model. Rather, it reveals that the spectrum's shape depends on the intervention type:
+- **Process-enforcement guards**: Binary threshold — the workflow either does the behavior or it doesn't. The spectrum collapses to two points.
+- **Skill-type interventions** (e.g., few-shot examples, analysis scaffolding): Continuous spectrum — degrees of scaffolding matter. SKILL0's progressive withdrawal is meaningful here.
+- **Judgment tasks** (H-085): Continuous — minimal externalization (one sentence) matches full analysis, suggesting a low threshold but still a spectrum.
+
+The scaffolding spectrum remains the correct general framework. EXP-137 adds a boundary condition: for binary-checkable behaviors (did you read back the file?), the optimal scaffold is either "full workflow enforcement" or "none" — there's no useful middle ground.
+
 **Confidence**: Medium. This synthesis connects well-validated findings (H-085 at 0.97, SKILL0's published results, CR-301's ecosystem evidence) through a theoretical framework (the scaffolding spectrum). The framework is coherent and makes testable predictions, but:
 
 - The spectrum itself is not experimentally validated — it's an organizing framework
