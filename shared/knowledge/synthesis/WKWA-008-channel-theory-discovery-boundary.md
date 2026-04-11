@@ -295,4 +295,4 @@ The stochastic inference model predicts exponential decay with N discoveries. We
 
 ---
 
-*This synthesis was updated 2026-04-11 with EXP-129 and EXP-130 results. EXP-129 rejected P-098c (Ch2 budget is ≥3 gates, not ~1). EXP-130 confirmed H-099 (Ch3 harmful on discovery, -67pp). The unified channel × task-type matrix is now fully validated across all 10 experiments. Remaining open questions: §4.3 (clean Ch3 test), §4.4 (discovery decomposition), §4.5 (scaling laws).*
+*This synthesis was updated 2026-04-11 with EXP-129 and EXP-130 results. EXP-129 rejected P-098c (Ch2 budget is ≥3 gates, not ~1). EXP-130 confirmed H-099 (Ch3 harmful on discovery, -67pp). The unified channel × task-type matrix is now fully validated across all 10 experiments. §4.3 resolved by EXP-128. Remaining open questions: §4.4 (discovery decomposition), §4.5 (scaling laws).*
