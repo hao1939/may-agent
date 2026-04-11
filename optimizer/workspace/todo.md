@@ -37,7 +37,7 @@
 - Root cause: heartbeat.md encouraged inline exploration (multi-query DB analysis, file reads).
 - Fix: Rewrote heartbeat.md to "Dispatcher Mode" — observe in 1-2 ops, fork all analysis work. Target: ≤15 ops.
 - Baseline: 8 heartbeats in 12h, avg 56 ops, total 451. Post-fix: avg 23 ops (59% reduction). ✅ SUCCESS.
-- Last exploration mode: **A** (D-o-R Phase 1 Bloat — Apr 11 ~00:23 UTC) IN PROGRESS. Finding: `workspace/finding-tool-gap-analysis-0410.md`. Top pattern: Session Archaeology (187 sessions, 10-15 ops each).
+- Last exploration mode: **C** (Lean vs Bloated Sessions — Apr 11 ~02:24 UTC) IN PROGRESS. Previous: B (Tool Adoption — Apr 11 ~02:01), A (D-o-R P1 Bloat — Apr 11 ~00:23).
 - **session-query tool BUILT** (`scripts/session-query.ts`). Replaces 15-25 bash archaeology pattern with single command. Supports: --agent, --since, --task, --status, --min-ops, --tools, --json, --sort. Tested with real data (911 sessions). Est. savings: 10-15 ops/session × 187 sessions = 1,870-2,805 ops.
 - Mode D **COMPLETE**: Workflow health analysis. **Key result: D-o-R uses +53% more ops than non-WF work sessions** (45.7 vs 29.9). Phase 1 is the bloat source (30.4 avg ops — matches a complete non-WF session). Error rates 50% lower (2.1% vs 3.9%). Quality scores incomparable (different eval scales). Finding: `workspace/finding-workflow-health-0410.md`
 - Mode C finding complete: `workspace/finding-workflow-adoption-gap-0410.md`
