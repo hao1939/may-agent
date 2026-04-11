@@ -4,7 +4,7 @@
 **P(H)**: 0.72  
 **Date**: 2026-04-11  
 **Author**: Bob  
-**Updated**: 2026-04-11 (EXP-137 structural comparison — "architectural readiness" = workflow-level verification adoption, not prompt text. Perfect correlation. P(H) 0.62→0.72. Previously: EXP-136 git inflation removed, P(H) 0.55→0.62)
+**Updated**: 2026-04-11 (EXP-138 verify-wrap gym complete — ceiling effect confirmed, production pilot ready. H-102 spawned as refined mechanistic specification. Previously: EXP-137 structural comparison — "architectural readiness" = workflow-level verification adoption, not prompt text. Perfect correlation. P(H) 0.62→0.72. Previously: EXP-136 git inflation removed, P(H) 0.55→0.62)
 
 ## Thesis
 
@@ -110,8 +110,9 @@ EXP-136 decomposes guard blocks into genuine vs. git-commit-inflated, revealing 
 ## Connected Knowledge
 
 - **EXP-137**: Structural comparison — workflow-level verification perfectly correlates with learner/reliant split. "Readiness" = workflow adoption, not prompt text
-- **EXP-136**: Guard rate decomposition — git commit inflation removed, bifurcation sharpened (P(H) 0.55→0.62)
+- **EXP-138**: verify-wrap prototype built and gym-validated — ceiling effect confirms gym insufficient to measure production verification gaps
 - **H-100**: Skill-Guard Divergence (parent hypothesis — H-101 refines the "guards never internalize" claim)
+- **H-102**: Workflow Adoption Determines Behavioral Internalization (refined mechanistic specification of H-101)
 - **H-095**: Agent-Specific Interventions (H-101 proposes causal mechanism for differential effectiveness)
 - **H-098**: Attention Channel Theory (Ch1×Ch2 interaction mechanism)
 - **KE-137**: Guard Response Bifurcation (primary evidence)
