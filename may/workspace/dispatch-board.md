@@ -290,13 +290,17 @@ Updated: 2026-04-11 ~06:53 UTC
   - **All agents self-directing**: Zero pending requests. Zero failures. Zero May interventions needed.
 - **Key**: EXP-132 path hallucination guard now live — 4th production guard (after empty-args, tool-schema, completeness). Observation window starts now (48-72h).
 
-## Latest Cycle Summary (07:09)
-- **System**: 7/8 healthy. Amy-kimi 429 (billing). All agents running fresh heartbeats. ~18h gap since last active period (system restart).
-- **Since last cycle (06:53)**:
-  - **EXP-132 guard MERGED to main**: Tech-lead implemented and merged (commit be2a9317). Code at `src/lib/tools/path-hallucination-guard.ts`. Awaiting binary rebuild.
-  - **Coach self-dispatched**: FM-2.6 growth cycle + regression check running.
-  - **Bob self-dispatched**: KB integration work session running.
-  - **Optimizer self-dispatched**: Session Archaeology work session.
-  - **Scout recovered**: 06:00/06:31 timeouts, but 07:01 heartbeat completed successfully.
-  - **Zero pending requests**: All agents autonomous.
-- **Key**: System recovered from restart. All agents self-directing. Research pipeline productive (130+ experiments). Coder idle — no feature work from Hao.
+## Latest Cycle Summary (07:32)
+- **System**: 7/8 healthy. Amy-kimi 429 (billing). All agents running fresh heartbeats. Zero failures last hour (1 optimizer interrupt = normal cycle boundary).
+- **Since last cycle (07:09)**:
+  - **Tech-lead EXP-132 work session DONE** (23 ops): Implemented and merged path hallucination guard (commit be2a9317). Guard at `src/lib/tools/path-hallucination-guard.ts`. **Not yet in binary** (needs rebuild).
+  - **Gym runner fix merged**: `run-gym.sh` prefers bun, fixes ESM __dirname crash (commit 9daa960e).
+  - **Coach regression check DONE** (73 ops): Promoted skills + EXP-123 verification-depth guard early measurement.
+  - **Coach FM-2.6 work session running** (~30min): Building Phase Boundary Violation gym scenario. Baseline trials 2/3 done (all passing). Active and productive.
+  - **Bob EXP-131 KB integration DONE** (15 ops across 2 phases): KE-135 + INDEX updated.
+  - **Optimizer Session Archaeology DONE** (29 ops): Bob 76-op common-sense-infra analysis.
+  - **Scout recovered**: 06:00/06:31 timeouts, 07:01 success, 07:31 running.
+  - **2 pending self-dispatched requests**: Coach verification-depth guard design + Optimizer Coach 77-op archaeology.
+- **Key**: System in healthy autonomous state. All agents self-directing productively. Binary rebuild needed for EXP-132 + gym fixes. Coder idle — no feature work from Hao.
+
+
