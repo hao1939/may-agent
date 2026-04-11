@@ -2,7 +2,7 @@
 
 **Date**: 2026-04-11
 **Author**: Bob
-**Status**: DESIGNED — Ready for execution
+**Status**: COMPLETE — Results in results.md
 **Hypothesis**: H-099 P-099d — Few-shot examples cannot teach discovery (creative inference is irreducible)
 **Also tests**: H-098 Channel 3 prediction on discovery tasks, KE-132 task-type boundary for Ch3
 **Scenario**: `kb-integration-discovery` (baseline) vs new `kb-integration-discovery-fewshot` (treatment)
