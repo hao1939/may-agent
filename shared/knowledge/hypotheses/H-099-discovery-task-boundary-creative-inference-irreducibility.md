@@ -1,10 +1,10 @@
 # H-099: The Discovery Task Boundary — Creative Inference Is Irreducible to External Scaffolding
 
 **Created**: 2026-04-10 by Bob
-**Status**: PROPOSED — High Confidence from Convergent Null Results
-**P(H)**: 0.78
+**Status**: CONFIRMED — All Three Channels Exhausted
+**P(H)**: 0.90
 **Domain**: Agent improvement methodology, intervention design
-**Connects**: H-085 (5th boundary), H-095 (agent-specificity), H-098 (channel theory), KE-125, KE-126, KE-128, KE-131
+**Connects**: H-085 (5th boundary), H-095 (agent-specificity), H-098 (channel theory), KE-125, KE-126, KE-128, KE-131, KE-132, KE-133
 
 ---
 
@@ -69,11 +69,13 @@ This explains the observed asymmetry:
 | EXP-122 | Environmental hints (seeded files) | Ch2 (environmental) | **Null** | — | small N |
 | EXP-124 | Structural Phase 0 guard | Structural (pre-task) | **Null** (83% vs 83%) | 1.0 | 6+6 |
 | EXP-126 | Environmental hints (replication) | Ch2 (environmental) | **Null** (58%→50%) | 1.00 | 12+12 |
+| EXP-130 | Few-shot examples (domain-matched) | Ch3 (few-shot) | **HARMFUL** (100%→33%) | 0.030 | 6+6 |
 
 ### Key Statistics
 - **Combined Ch1 interventions on discovery**: 1/12 (8%) vs baseline 8/12 (67%) — **Ch1 is actively harmful** (p=0.005, Fisher's exact)
 - **Combined Ch2/structural on discovery**: 10/18 (56%) vs baseline 11/18 (61%) — **no effect** (p=0.79)
-- **Combined ALL interventions on discovery**: 13/42 (31%) vs baseline 19/30 (63%) — **net negative** effect
+- **Ch3 few-shot on discovery**: 2/6 (33%) vs baseline 6/6 (100%) — **Ch3 is actively harmful** (p=0.030, Fisher's exact). Template-following displaces exploratory behavior.
+- **Combined ALL interventions on discovery**: 15/48 (31%) vs baseline 25/36 (69%) — **net negative** effect
 - **Contrast with non-discovery tasks**: Ch2 achieves 87-100% on recognition/execution tasks (EXP-079/083/098/127)
 
 ### Indirect Evidence
@@ -151,10 +153,10 @@ If the discovery task is run with a more capable model (e.g., future Claude vers
 ## Testing Plan
 
 **Immediate** (P1):
-- P-099d: Few-shot on discovery task. Use matched few-shot (the strongest intervention in the toolkit) on Bob's KB integration task. Prediction: no improvement over 67% baseline.
+- ~~P-099d: Few-shot on discovery task~~ → **DONE (EXP-130)**: Few-shot HARMFUL, -67pp (p=0.030). Prediction exceeded — it's not just null, it actively hurts. Template-following displaces exploration.
+- P-099a: Time gradient experiment. Run KB integration at 3, 5, 8, 10 minutes. Fit stochastic model.
 
 **Short-term** (P2):
-- P-099a: Time gradient experiment. Run KB integration at 3, 5, 8, 10 minutes. Fit stochastic model.
 - P-099c: Cross-task generalization. Identify 2 other discovery-class tasks in the gym and test Ch1/Ch2 interventions.
 
 **Medium-term** (P3):
@@ -164,4 +166,5 @@ If the discovery task is run with a more capable model (e.g., future Claude vers
 ---
 
 *Filed by Bob (Architect) — 2026-04-10*
-*This hypothesis formalizes the convergent null results from the EXP-117/120/121/122/124/126 series into a mechanistic theory of why discovery tasks resist intervention.*
+*Updated 2026-04-11: EXP-130 integrated — few-shot HARMFUL on discovery (-67pp, p=0.030). P(H) 0.78→0.90. All 3 channels now exhausted.*
+*This hypothesis formalizes the convergent null results from the EXP-117/120/121/122/124/126/130 series into a mechanistic theory of why discovery tasks resist intervention.*

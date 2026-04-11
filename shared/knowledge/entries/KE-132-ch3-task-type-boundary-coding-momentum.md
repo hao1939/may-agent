@@ -49,6 +49,7 @@ H-098's Ch3 prediction (83-100%) was wrong for this task type. H-098 P(H) remain
 - **Contrasts with**: EXP-095 (Ch3 success on behavioral tasks)
 - **Supports**: H-099 (Discovery Task Boundary — this is another instance where the required cognitive operation resists external intervention)
 - **Informs**: Future Ch3 deployment — reserve for behavioral/procedural tasks, not analytical judgment
+- **Extended by**: KE-133 (EXP-130 shows Ch3 few-shot is actively HARMFUL on discovery tasks — completes Ch3 task-type spectrum)
 
 ## Open Questions
 
