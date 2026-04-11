@@ -16,12 +16,12 @@
 - Bypass exists at `src/app/may.ts:148-165`, needs `ANTHROPIC_API_KEY` env var.
 - **BLOCKED on operator.** Finding: `workspace/findings/2026-04-10-litellm-kills-prompt-caching.md`
 
-### Deliver-or-Report Early Exit — Measuring (commit 914cf230)
-- Detects files written in Phase 1 → narrows/skips Phase 2. Pre-fix: 60% of P2 redundant (121 ops/day wasted).
-- **20h post-fix data (16 D-o-R runs)**: 3 FAST (skipped P2), 1 NARROW (9 ops), 12 NORMAL (avg 18 ops). 25% of runs benefit from early exit.
-- Fast path saves ~15 ops per run (full P2 avg = 18 ops). Narrow saves ~9 ops. Estimated savings: ~54 ops/day.
-- Phase 3b content verification deployed at 16:43 UTC (commit d6c7696).
-- Continue monitoring — 16 runs is decent sample but more data welcome.
+### D-o-R Phase 1 Budget Cap — FIX DEPLOYED (commit 40b22057)
+- Analysis: P1 avg 31 ops (67% of run total). 14/14 bloated P1s do full write+verify in "plan" phase.
+- Fix: Rewrote P1 prompt with explicit 15-op budget, read cap (2-4 files), no-write/no-verify rules, 10-call guardrail.
+- Expected: P1 avg ≤15 ops, total run ≤30 ops, saving ~259 ops/day (~$12/day).
+- **Measuring**: Check after 24h. If P1 avg >20, escalate to runtime maxOps (Option A).
+- Finding: `workspace/finding-dor-p1-bloat-0411.md`
 
 ### Coach Session Efficiency — FINDING COMPLETE, FIX 2 DEPLOYED
 - 2,175 coach sessions analyzed. 50.3% zero-op, 64% of ops in top sessions are exploration waste.
@@ -64,7 +64,7 @@
 - **Workflow adoption**: 4.5% system-wide (Apr 4-10). Bob 22.4%, Coach 1.9%, others 0%. No clear upward trend (fluctuates 0.3%-16.6% weekly).
 - **Workflow efficiency**: D-o-R runs cost +53% more ops than non-WF equivalents. Phase 1 unbounded reading is root cause. Error rates ~50% lower. Quality scores INCOMPARABLE (0-1 vs 0-5 scales — data infra bug).
 - **Optimizer heartbeat cost**: Was 56 ops avg. Fix deployed (Dispatcher Mode heartbeat). Measuring.
-- **Bob P1 read-loop**: 87 ops in Phase 1 of D-o-R for a KB integration task. "Don't write, just plan" instruction enables endless reading. **Updated**: 72h analysis confirms P1 avg=31 ops, 67% of run cost. 14/14 bloated P1s do full write+verify in "plan" phase. 15-op cap would save 44% of D-o-R ops. Finding: `workspace/finding-dor-p1-bloat-0411.md`
+- **Bob P1 read-loop**: ~~87 ops in Phase 1 of D-o-R for a KB integration task.~~ **FIX DEPLOYED (commit 40b22057)**: 15-op budget cap prompt. Measuring — check after 24h. Finding: `workspace/finding-dor-p1-bloat-0411.md`
 - **Session restart accumulation**: Top coach sessions (184, 129 ops) are multi-restart sessions (6-12 restarts), not single-context bloat. Each restart adds discovery overhead + grows context window (up to 50K tokens/turn). Infra fix (maxRestarts=3 or maxTurns=80) would cap all >100 op sessions. Investigation spiral: 129-op session spent 69 ops debugging model issues — not coach's job.
 
 ## ⚠️ SENT/ESCALATED
