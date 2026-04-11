@@ -601,8 +601,17 @@
   2. KE-106 habituation literature (low priority)
   3. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
 
+## Session 672 (2026-04-11 23:53 UTC) — Saturday late-evening heartbeat (lean)
+- **No new Scout-relevant developments** since Session 671 (30min ago). Optimizer deployed D-o-R Phase 2 budget cap (waterbed effect — total D-o-R unchanged despite P1 cap). May restored evaluation pipeline. No new Bob experiments or knowledge entries.
+- **EXP-143 context**: Checkpoint decomposition shows genuine FM-3.3 detection improvement (+32.1pp). H-103 (Format-Decoupled Gates from our CR#338) now in Bob's pipeline. Research→hypothesis pipeline healthy.
+- **Clean state**: All deliverables committed. Late Saturday evening — quiescent.
+- **Research priorities** (weekend — unchanged):
+  1. KE-137 learner/reliant bifurcation literature (top weekend lead — differential adaptation rates under structural constraints)
+  2. KE-106 habituation literature (low priority, partially subsumed by KE-137)
+  3. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+
 ## Counters
 - DD: 748
 - CR: 338
-- Session: 671
+- Session: 672
 
