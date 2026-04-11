@@ -1,14 +1,14 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~23:53 UTC
+Updated: 2026-04-11 ~00:23 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — EXP-128 KB integration COMPLETE (H-128 rejected, KE-132 written). EXP-129 indexed.
-- **Coach**: 🟢 Active — **EXP-129 running** (Channel 2 Budget Curve). Arm A done (5/6), running Arm B (2-gate). 29min in.
+- **Bob**: 🟢 Active — EXP-130 designed (few-shot on discovery acid test for H-099). WKWA-008 synthesis written (channel theory + discovery boundary).
+- **Coach**: 🟢 Active — **EXP-129 running** (Channel 2 Budget Curve). Arm A: 5/6, Arm B: 5/6, Arm C: 2/6 done (both pass). Running C-3/C-4. ~60min in.
 - **Scout**: ⚠️ 401 Error — Recurring `IDE token expired` auth failure. Auto-pause recovery handling retries.
 - **Tech-lead**: 🟢 Active — Heartbeat cycle running.
-- **Optimizer**: 🟢 Active — Heartbeat cycle running. Session-query tool MERGED.
+- **Optimizer**: 🟢 Active — Heartbeat cycle running.
 - **Evaluator**: 🟢 Active — Heartbeat cycle running.
 - **QA**: 🟢 Active — Heartbeat cycle running.
 - **Coder**: Idle. Only runs when forked by tech-lead.
@@ -161,7 +161,9 @@ Updated: 2026-04-10 ~23:53 UTC
 | **EXP-116 Results Correction** | ✅ CORRECTED | may | EXP-116/results.md note updated: invalidation was WRONG — EXP-118 confirmed 100% baselines are real with valid agents. Silent exit bug exists but didn't corrupt results. |
 
 | **EXP-128 Channel 3 Boundary Conditions** | ✅ COMPLETE | coach | **H-128 REJECTED**: 18 runs, all arms 0/6 pass. Detection coverage made no difference. Ch3 has genuine task-type boundary — "success signal misdirection" (tests pass → agent thinks it succeeded). Action momentum overwhelms few-shot. Results at `agents/shared/knowledge/experiments/EXP-128/results.md`. |
-| **EXP-129 Channel 2 Budget Curve** | ⏳ RUNNING | coach | Arm A (1-gate): 5/6 pass. Arm B (2-gate): in progress. Testing whether stacking forced externalization gates has diminishing returns. |
+| **EXP-129 Channel 2 Budget Curve** | ⏳ RUNNING | coach | Arm A: 5/6, Arm B: 5/6, Arm C: 2/6 done (both pass). Running C-3/C-4. No degradation from stacking gates so far. ~60min elapsed. |
+| **EXP-130 Few-Shot on Discovery** | 🆕 DESIGNED | bob → coach | Acid test for H-099: domain-matched few-shot on discovery task. If fails → discovery irreducible. Design at `EXP-130/design.md`. |
+| **WKWA-008 Channel Theory Synthesis** | ✅ COMPLETE | bob | 10-experiment synthesis: channel × task-type matrix. At `synthesis/WKWA-008-channel-theory-discovery-boundary.md`. |
 | **Session-Query Tool** | ✅ MERGED | optimizer/may | 378-line CLI at `scripts/session-query.ts`. Merged to main. Note: queries `agents/.state/sessions/history/` (historical), not `.state/sessions/` (current). |
 | **H-099 Discovery Task Boundary** | ✅ FILED | bob | 167-line hypothesis: creative inference is irreducible to scaffolding. 5 failed interventions as evidence. Commit 0527a1f. |
 | **EXP-123 Verification-Depth Guard** | ✅ MERGED + OBSERVING | coach + may | Guard deployed to production (commit 9d9be57). Blocks superficial verification: git on gitignored, no post-write verification. 363 lines, 18/18 tests. Observation window: 48-72h until Apr 13. |
@@ -206,23 +208,23 @@ Updated: 2026-04-10 ~23:53 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (23:53)
-- **System healthy**: 7/8 agents running. Scout recurring 401 auth. Zero failures last hour.
-- **Since last cycle (23:25)**:
-  - **Bob**: EXP-128 KB integration committed (H-128 rejected, KE-132 written). EXP-129 indexed in KB.
-  - **Coach**: EXP-129 (Channel 2 Budget Curve) actively running. Arm A: 5/6 pass. Arm B (2-gate) in progress. ~29min elapsed.
-  - **System-status anomaly** (req:2596098e): Bob analysis 6 days old — informational, no action needed.
+## Latest Cycle Summary (00:23)
+- **System healthy**: 7/8 agents running. Scout recurring 401 auth. Zero failures last hour. 1 coach interruption (EXP-129 session restart).
+- **Since last cycle (23:53)**:
+  - **Bob**: EXP-130 designed (few-shot on discovery — acid test for H-099). WKWA-008 synthesis written (channel theory + discovery boundary unified model). Excellent self-directed research.
+  - **Coach**: EXP-129 progressing well. Arm A: 5/6, Arm B: 5/6 (same rate — no degradation from 1→2 gates). Arm C: 2/6 done (both pass). Running C-3/C-4 with extended timeout. Arms C and D remain.
   - **All agents self-directing**: Zero pending requests in DB. Zero May interventions needed.
 
 ## Key Findings This Cycle
-- **EXP-129 in-flight**: First real test of whether stacking Ch2 forced externalization gates improves outcomes. Arm A (1-gate) at 5/6 (83%) — notably below the 100% we'd expect from prior EXP-127 results. Arm B (2-gate) running now. This could show diminishing returns or confirm linear scaling of structural enforcement.
-- **System at steady state**: All KB integrated, agents self-dispatching. Research program advancing without May intervention.
+- **EXP-129 emerging pattern**: Arm A (1-gate) = 5/6, Arm B (2-gate) = 5/6. No degradation AND no improvement from adding a second gate. If Arms C (3-gate) and D (4-gate) hold at 5/6, this suggests Ch2 forced externalization has a FIXED ceiling (~83%) for this scenario, independent of gate count. The 1/6 failure is likely an irreducible difficulty margin, not something more gates can fix.
+- **Bob's WKWA-008 synthesis is impressive**: Unifies 10 experiments and 6+ KEs into clean channel × task-type matrix. Key insight: intervention effectiveness = f(channel, task type), with discovery tasks irreducible across ALL channels.
+- **EXP-130 queued**: Bob designed the acid test — domain-matched few-shot on discovery tasks. If this fails (as H-099 predicts), we've exhausted every intervention channel for discovery. If it succeeds, the channel theory needs revision.
 
 ## Next Actions
 - **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. Saves $143-441/day. **Blocked on Hao since Mar 24**.
+- **P1**: **EXP-130 execution** — Bob designed, Coach will need to run. Waiting for EXP-129 to complete first.
 - **P1**: **EXP-105 Few-Shot Production Impact** — Need coder/optimizer work sessions to generate data. No coder work happening.
 - **P1**: **Generate implementation work** — System idle without features. Coder completely idle. Need Hao priorities.
-- **P1**: **Discovery boundary research** — FM-1.3 (creative inference gap) is the one unresolved finding. 5 interventions failed. New approach needed.
 - **P2**: `analyze-failures` cron DB bug — persistent but non-critical.
 - **P2**: Amy-kimi still down — blocked on Hao for billing.
 - **P2**: Scout 401 auth error — recurring IDE token expiry.
