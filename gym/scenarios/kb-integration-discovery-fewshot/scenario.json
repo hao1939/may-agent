@@ -1,0 +1,10 @@
+{
+  "name": "kb-integration-discovery-fewshot",
+  "description": "Treatment: kb-integration-discovery with domain-matched few-shot example showing how a similar KB integration was done. Tests P-099d: whether few-shot can teach creative inference for discovery tasks. EXP-130.",
+  "categories": ["completeness", "knowledge-integration"],
+  "tags": ["behavior", "FM-2.6", "multi-file", "discovery", "exp-130", "fewshot", "channel-3"],
+  "tier": "standard",
+  "timeout": 3,
+  "agent_type": "coder",
+  "workflow": false
+}
