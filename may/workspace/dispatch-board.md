@@ -256,9 +256,8 @@ Updated: 2026-04-11 ~05:53 UTC
 
 ## Next Actions
 - **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. Saves $143-441/day. **Blocked on Hao since Mar 24**.
+- **P1**: **Evaluation-sync cron handler not firing** — Handler code works but framework isn't invoking it. 11.5h gap. Tech-lead should investigate.
 - **P1**: **Federation sync reliability** — Auto-commit deleting experiment results is a real problem. Tech-lead should investigate.
-- **P1**: **Surface tools to agents** — session-query.ts + gym-batch.sh need context.md entries. Consider shared/tools.md catalog.
-- **P1**: **EXP-105 Few-Shot Production Impact** — Need coder/optimizer work sessions to generate data. No coder work happening.
 - **P1**: **Generate implementation work** — System idle without features. Coder completely idle. Need Hao priorities.
 - **P2**: `analyze-failures` cron DB bug — persistent but non-critical.
 - **P2**: Amy-kimi still down — blocked on Hao for billing.
@@ -270,3 +269,11 @@ Updated: 2026-04-11 ~05:53 UTC
   - **Optimizer Mode C work session**: Self-dispatched Skill Scouting for Coach Experiment Execution Efficiency. Productive.
   - **System steady state**: All agents self-directing. Zero pending requests. Zero failures. Zero May interventions needed.
 - **Key**: System is in healthy autonomous steady state. All active experiments complete. Research pipeline yielding knowledge (130+ experiments). Main bottleneck: no new implementation work for coder — need Hao priorities.
+
+## Latest Cycle Summary (05:53)
+- **System**: 7/8 healthy. Amy-kimi 429 (billing). Zero failures last hour. All agents running heartbeats.
+- **Since last cycle (05:23)**:
+  - **⚠️ Evaluation-sync handler stale 11.5 hours**: Cron handler `evaluation-sync` stopped producing evaluations at 18:25 UTC yesterday. 245 sessions went unevaluated. Handler code is correct (manual run works). **Root cause: cron framework not invoking handler**. Manually caught up all 245 evaluations. Tech-lead should investigate cron handler invocation bug.
+  - **Bob quiescent**: No new KB work. System fully integrated. Waiting for new experiments/findings.
+  - **Evaluator noticed staleness**: 2 consecutive heartbeats flagged stale pipeline but didn't self-dispatch fix.
+  - **All other agents nominal**: Zero failures. Zero pending requests.
