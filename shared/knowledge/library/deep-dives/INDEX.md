@@ -715,5 +715,18 @@
 5. DD#746 → H-099 (foundational explanation for why discovery tasks resist scaffolding)
 6. DD#746 → KE-002 (fixation operates below instruction-following level)
 7. CR#337 → All above (Template-as-Ceiling unified account)
-> 148 research deep dives, cross-reference syntheses, and reference documents.  
+
+**Constraint Paradox / Hump Curve Grounding** ★★★★★ — NEW (2026-04-11 Session 630)
+1. [dd747](DD-747-format-tax-structured-output-reasoning-degradation.md) — ★★★★ The Format Tax: Structured output requirements degrade reasoning. Format-requesting instructions (not decoding) cause most accuracy loss. Decoupling recovers accuracy. Explains RIGHT side of EXP-129 hump curve.
+2. [dd748](DD-748-bcr-task-scaling-implicit-budget-constraint.md) — ★★★★★ BCR "Free Lunch": Implicit budget constraints from concurrent problems improve efficiency AND accuracy. Emergent self-regulated efficiency eliminates redundant metacognitive loops. Explains LEFT side of EXP-129 hump curve.
+3. [CR-338](../cross-references/CR-338-constraint-paradox-hump-curve-grounding.md) — ★★★★★ The Constraint Paradox: Unified external grounding for EXP-129's hump curve. BCR explains scaffolding benefit (left side), Format Tax explains overhead cost (right side), DD-671 explains failure mode shift.
+| [dd747](DD-747-format-tax-structured-output-reasoning-degradation.md) | The Format Tax ★★★★ | Lee et al. 2026 — Structured output degrades reasoning, prompt-level not decoder-level |
+| [dd748](DD-748-bcr-task-scaling-implicit-budget-constraint.md) | BCR Task-Scaling ★★★★★ | Yang et al. 2026 — Implicit budget "free lunch", emergent self-regulation |
+**Cross-references (Session 630)**:
+1. DD#747 → KE-134 (explains RIGHT side of hump curve — format overhead)
+2. DD#748 → KE-134 (explains LEFT side of hump curve — implicit budget benefit)
+3. DD#748 → KE-064 (revises execution crowding: related gates synergize via BCR mechanism)
+4. CR#338 → EXP-131 prediction (unrelated gates should show lower peak, steeper decline)
+5. CR#338 → KE-101 Law 2 (structural scaffolding vs format overhead distinction)
+> 150 research deep dives, cross-reference syntheses, and reference documents.  
 > Last updated: 2026-04-11 | Maintained by Scout
