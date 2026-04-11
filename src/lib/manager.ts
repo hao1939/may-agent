@@ -25,7 +25,6 @@ import { composeGuards } from "./tools/compose-guards.js";
 import {
   detectErrors,
   clearPostFinishErrors,
-  handleOverflow,
   detectShallowHeartbeat,
   determineOutcome,
   buildSessionInfo,
@@ -670,7 +669,7 @@ export class SubagentManager {
   /**
    * Common completion handler — called when the agent's turn settles (prompt()/continue() resolves).
    *
-   * Pipeline: detectErrors → clearPostFinishErrors → handleOverflow →
+   * Pipeline: detectErrors → clearPostFinishErrors →
    *           detectShallowHeartbeat → determineOutcome → archive/notify
    *
    * Chat sessions (autoClose="never") transition to "idle" and stay in memory.
@@ -723,9 +722,7 @@ export class SubagentManager {
       session.error = session.agent.state.errorMessage;
     }
 
-    handleOverflow(session, this.agents);
-
-    // Digest: overflow (after handleOverflow detects it) — pass manager for LLM synthesis + classification
+    // Digest: overflow — pass manager for LLM synthesis + classification
     if (session.error && isOverflowError(session.error)) {
       upsertDigest(this.registry.persistDir, {
         sessionId: session.sessionId,
