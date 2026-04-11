@@ -16,20 +16,22 @@
 - Bypass exists at `src/app/may.ts:148-165`, needs `ANTHROPIC_API_KEY` env var.
 - **BLOCKED on operator.** Finding: `workspace/findings/2026-04-10-litellm-kills-prompt-caching.md`
 
-### D-o-R Phase 1 Budget Cap — ✅ CONFIRMED EFFECTIVE, CLOSING (n=7)
-- **FINAL VERDICT (Apr 11 09:55 UTC)**: P1 avg 4.9 ops (was 34.5 pre-fix) — **86% reduction**. All 7 P1s ≤7. Total run avg 24.6 (was 49.1) — **50% reduction**. 1 minor P2 nesting incident (24 ops), 0 P1-spawned nesting. Zero cap violations. ~343 ops/day saved (~$16/day).
+### D-o-R Phase 1 Budget Cap — ✅ CONFIRMED EFFECTIVE, CLOSING (n=11)
+- **LATEST (Apr 11 11:54 UTC)**: P1 avg 4.4 ops (was 30.9 pre-cap) — **86% reduction**. All 11 budget-capped P1s ≤7 ops. Zero cap violations. n=11 with 100% compliance.
 - **Residual**: P2 bloat outlier (1/7 runs, 57 ops). Separate optimization opportunity.
 - Findings: `workspace/finding-dor-p1-bloat-0411.md`, `workspace/finding-dor-p1-cap-measurement-0411.md`, `workspace/finding-dor-p1-cap-final-verdict-0411.md`
 - **→ MOVING TO DONE**
 
-### D-o-R Nested Workflow Spawning — ✅ FIX DEPLOYED (commit 60a844e3)
+### D-o-R Nested Workflow Spawning — ❌ FIX INCOMPLETE (Phase 2 still nests)
 - Bob 90-op session (s_...1119) was a **3-deep nested D-o-R workflow**: Phase 1 called callAgent → triggered another D-o-R → spawned another Phase 1. Total: 169 ops for 1 KB integration task.
-- **3 instances in 72h**: 101 + 47 + 13 = 161 wasted ops (~54 ops/day, ~$2.50/day).
-- Root cause: Phase 1 had no instruction against calling callAgent().
-- **FIX**: Added "DO NOT call callAgent() or spawn sub-agents" to Phase 1 strict rules in `bob/workflows/deliver-or-report.ts` (commit 60a844e3, deployed ~03:54 UTC).
-- Combined with 15-op budget cap, this structurally + behaviorally prevents recursive nesting.
-- **Measurement needed**: Need n≥3 post-fix D-o-R runs to confirm no nesting.
-- Finding: `workspace/finding-bob-90op-archaeology-0411.md`
+- **3 pre-fix instances**: 101 + 47 + 13 = 161 wasted ops.
+- **Phase 1 fix** (commit 60a844e3, ~03:54 UTC): Added "DO NOT call callAgent()" to Phase 1 strict rules. **Phase 1 nesting: ELIMINATED** (0 incidents post-fix).
+- **Phase 2 nesting: STILL HAPPENING** — 2 post-fix incidents in 8 runs (25% rate). Phase 2 prompt has NO callAgent guard.
+  - Incident 1 (08:54 UTC): Phase 2 spawned nested D-o-R, +24 wasted ops.
+  - Incident 2 (11:24 UTC): Phase 2 spawned nested D-o-R, +65 wasted ops.
+- **FIX NEEDED**: Add "DO NOT call callAgent()" to Phase 2 prompt (normal, narrow, and 2b variants) in deliver-or-report.ts. 1-line addition to 3 prompt strings.
+- **Impact**: ~264 wasted ops/day from nesting (~$12/day).
+- Findings: `workspace/finding-bob-90op-archaeology-0411.md`, `workspace/finding-dor-nesting-verification-0411.md`
 
 ### Coach Session Efficiency — FINDING COMPLETE, FIX 2 DEPLOYED
 - 2,175 coach sessions analyzed. 50.3% zero-op, 64% of ops in top sessions are exploration waste.
@@ -84,7 +86,7 @@
 - **Tool quality**: Waste rate 3.6% (stable). All regressions are bob INDEX.md noise.
 - **LLM evaluations**: All heuristic-only. By design if JS evaluator sufficient.
 - **Dead workflows**: may/coach ~367 lines never-used code. Low-priority cleanup.
-- **Workflow adoption**: 4.5% system-wide (Apr 4-10). Bob 22.4%, Coach 1.9%, others 0%. No clear upward trend (fluctuates 0.3%-16.6% weekly).
+- **Workflow adoption**: System-wide **surged to 10.1%** (Apr 11, up from 4.5% Apr 4-10). Bob at **49.1%** (up from 22.4%). Surge started Apr 9 when D-o-R became default dispatch path. Coach 1.9%, others 0%.
 - **Workflow efficiency**: D-o-R runs cost +53% more ops than non-WF equivalents. Phase 1 unbounded reading is root cause. Error rates ~50% lower. Quality scores INCOMPARABLE (0-1 vs 0-5 scales — data infra bug).
 - **Optimizer heartbeat cost**: Was 56 ops avg. Fix deployed (Dispatcher Mode heartbeat). Measuring.
 - **Bob P1 read-loop**: ~~87 ops in Phase 1 of D-o-R for a KB integration task.~~ **FIX DEPLOYED (commit 40b22057)**: 15-op budget cap prompt. Measuring — check after 24h. Finding: `workspace/finding-dor-p1-bloat-0411.md`

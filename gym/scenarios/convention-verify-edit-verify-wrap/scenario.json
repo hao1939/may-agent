@@ -1,0 +1,17 @@
+{
+  "name": "convention-verify-edit-verify-wrap",
+  "categories": [
+    "convention-compliance"
+  ],
+  "tags": [
+    "behavior",
+    "verification",
+    "workflow",
+    "EXP-138"
+  ],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "scout",
+  "workflow": true,
+  "inherits": "convention-verify-edit"
+}
