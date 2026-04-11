@@ -111,7 +111,7 @@
 
 ## Session Notes (2026-04-11 ~10:00)
 - **EXP-134 INDEX + PRIORITY-TRACKER**: Already indexed (prior session). INDEX.md line 680, PRIORITY-TRACKER line 168. No action needed.
-- **DD-749 RESOLVED — DOES NOT EXIST**: DD-749 was referenced as a potential duplicate of DD-544 (Meta FAIR 30K-agent textbook formalization), but DD-749 was never created as a file. The highest DD in the library is DD-748. DD-544 remains the sole canonical entry for this paper. No deduplication needed.
+- **DD-749 RESOLVED — DUPLICATE OF DD-544**: DD-749 (Meta FAIR 30K-agent textbook formalization) covers same paper (arXiv:2604.03071) as DD-544. DD-544 is canonical (indexed in INDEX.md, referenced by KE-086). DD-749 has expanded analysis (8 roles vs 6, 5 engineering decisions, limitations/open questions, actionable insights). Added redirect note to DD-749 header pointing to DD-544 as canonical entry. No INDEX.md entry added for DD-749 (DD-544 is the canonical reference).
 
 ## Session Notes (2026-04-11 ~09:55)
 - **EXP-133 + EXP-123 KB INTEGRATION VERIFIED COMPLETE**: All knowledge base updates confirmed present:

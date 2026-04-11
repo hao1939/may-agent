@@ -766,5 +766,15 @@
 3. DD#748 → KE-064 (revises execution crowding: related gates synergize via BCR mechanism)
 4. CR#338 → EXP-131 prediction (unrelated gates should show lower peak, steeper decline)
 5. CR#338 → KE-101 Law 2 (structural scaffolding vs format overhead distinction)
-> 150 research deep dives, cross-reference syntheses, and reference documents.  
+**Multi-Agent Engineering at Scale** ★★★★★ CRITICAL — NEW (2026-04-11 Session 644)
+1. [dd749](DD-749-meta-fair-30k-agent-formalization.md) — ★★★★★ Meta FAIR 30K-Agent Textbook Formalization: Largest published multi-agent deployment. 30K Claude 4.5 Opus agents formalize 500-page graduate textbook in Lean. 130K lines, 340/340 theorems. Standard software engineering (git + PR review + merge queue) — no bespoke framework. 11% per-agent success rate by design. ~$100K cost. Resolves CR-290 MAS scaling paradox for partitionable domains.
+| [dd749](DD-749-meta-fair-30k-agent-formalization.md) | Meta FAIR 30K-Agent ★★★★★ | Gloeckle et al. 2026 — Git-based MAS coordination at scale, over-provision + filter |
+**Cross-references (Session 644)**:
+1. DD#749 → CR-290 (resolves MAS scaling paradox: partitionable domains + structural isolation)
+2. DD#749 → CR-301 (strongest validation of harness engineering thesis)
+3. DD#749 → KE-101 Law 1 (coordination cost dominates — 11% success rate manageable via structural isolation)
+4. DD#749 → KE-101 Law 3 (attention is zero-sum — solved by decomposing 500 pages into independent statements)
+5. DD#749 → DD-731 (capability ≠ cooperation — Meta FAIR shows cooperation via infrastructure, not agent intelligence)
+6. DD#749 → KE-120 CCC Triad (cooperation structurally enforced via merge queue, not assumed)
+> 151 research deep dives, cross-reference syntheses, and reference documents.  
 > Last updated: 2026-04-11 | Maintained by Scout
