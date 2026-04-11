@@ -1,42 +1,67 @@
-# Coach Research Status — 2026-04-10 05:25 UTC
+# Coach Research Status — 2026-04-11 11:23 UTC
 
 > Updated after every experiment completion. Visible status for all agents and Hao.
+
+## ⚠️ CRITICAL: Production Deployment Reality Check (2026-04-11 Audit)
+
+**The binary ships with 4 infrastructure guards. Zero behavioral intervention guards from Coach research are deployed.** The following "Shipped to Production" claims from prior versions were FALSE. See `agents/coach/workspace/production-audit-2026-04-11.md` for full audit.
 
 ## Active Research
 
 | # | Experiment | Status | Key Finding | Hao Directive |
 |---|-----------|--------|-------------|---------------|
-| EXP-114 | FM-2.1 Approach Decomposition Guard | DESIGNED — not yet run | — | Self-directed (follows EXP-113) |
+| — | Research-to-Production Workflow | DESIGNING | — | "use workflow to enforce the process" (Apr 11) |
+| — | Agent GAN Design | QUEUED | — | "How could 2 agents GAN?" (Apr 11) |
+| — | Agent Read Patterns Study | QUEUED | — | "what really read by agents in each turn?" (Apr 11) |
 
-## Recently Completed (Last 48h)
+## Recently Completed (Last 72h)
 
 | # | Experiment | Completed | Key Finding | Hao Directive |
 |---|-----------|-----------|-------------|---------------|
-| EXP-113 | FM-Heavy Workers Targeted Intervention | 2026-04-10 05:04 | FM-2.1 is #1 intervention priority (score=0.025). Cascade trigger: FM-2.1 first → 2.38 subsequent FMs. Dose-response: each additional FM drops quality by ~0.05. Post-guard residual: 16 sessions, 88% FM-3.3, bob dominates. | Self-directed (EXP-109 follow-up) |
-| EXP-110 | FM-3.3 Commit Guard Production Impact | 2026-04-10 04:01 | Guard doesn't prevent FM-3.3 — it converts silent failures to recovered ones. Recovery rate +51.3pp (p<0.001). Unrecovered rate unchanged. | Partially aligned (commit guard measurement) |
-| EXP-109 | Production Observation Study (3 phases) | 2026-04-10 04:34 | 6 behavioral archetypes: Clean Performers (43%), FM-Heavy Workers (22%), Silent Failures (19%), Expensive Grinders (7%), Resilient Recoverers (7%), Deep Spiral (1%). 37.5% of "good" sessions have FM codes. | Self-directed (production observation) |
-| EXP-108 | Adversarial Self-Review Skill | 2026-04-09 | All 7 multi-session scenarios at ceiling (91-100%). Gym saturated — can't test new skills. | Self-directed (skill testing) |
+| EXP-136 | Guard Rate Decomposition | 2026-04-11 | 20% of FM-3.3 blocks inflated by `git commit` in BASH_WRITE_PATTERNS. Bob improving (58%→24% genuine), may/optimizer degrading. | Partially (guard accuracy) |
+| EXP-135 | Guard Rate Escalation | 2026-04-11 | Guard rate increasing — skill degradation or task mix change? | Self-directed |
+| EXP-134 | Guard Recovery Audit | 2026-04-11 | What FM-3.3 actually catches in production | Self-directed |
+| EXP-133 | Verification-Depth Guard | 2026-04-11 | **NULL RESULT**: 48% "unverified" rate was 100% measurement artifact | Self-directed |
+| EXP-130 | Few-Shot on Discovery | 2026-04-11 | **IATROGENIC**: Few-shot HURTS discovery by -67pp (p=0.030) | Self-directed |
+| EXP-120 | Progressive Externalization | 2026-04-10 | **NEGATIVE**: Instruction ignored; treatment worse than baseline (17% vs 67%) | Self-directed |
+| EXP-115 | FM-2.2 Completeness Guard | 2026-04-10 | +100pp in gym (0%→100%). **NOT DEPLOYED** (source file does not exist) | Partially aligned |
+| EXP-114 | FM-2.1 Approach Guard | 2026-04-10 | Phase A tool-schema guard designed. Phase B inconclusive (ceiling). **NOT DEPLOYED** (source file does not exist) | Self-directed |
 
 ## Queued Research (Hao-Aligned, Prioritized)
 
 | Priority | Topic | Hao Directive Reference | Status |
 |----------|-------|------------------------|--------|
-| **P0** | Context learning gap — strategic knowledge extraction | "The compact and context sounds great" (Apr 9) + "context learning only captures operational facts" (Apr 7) | NOT STARTED — next research project |
-| **P0** | Auto-loop for sustained research | 8+ asks about long-running tasks (Apr 7-9) | Bob tested (5 sessions). Not yet used for real research. |
-| **P1** | Tech-lead role redesign proposal | "tech-lead should be autonomous stability engineer" (Apr 9) | NOT STARTED |
-| **P1** | Knowledge application experiments | "experiment the knowledge, try to use it, or it's dead knowledge" (Apr 8) | NOT STARTED |
-| **P2** | KE-002 re-examination | "knowledge against my instincts — text rules not working" (Apr 8) | Part of knowledge application |
+| **P0** | Research-to-production workflow | "close the loop" + "use workflow to enforce" (Apr 11) | IT-73: Designing |
+| **P0** | Fix false deployment claims | Production audit findings (Apr 11) | IT-74: In progress |
+| **P1** | Hermes investigation (memory/harness) | "have we investigated hermes?" (Apr 11) | IT-75: Not started |
+| **P1** | Agent GAN experiment design | "How could 2 agents GAN?" (Apr 11) | IT-76: Not started |
+| **P1** | Agent read-pattern observability | "what really read by agents in each turn?" (Apr 11) | IT-77: Not started |
+| **P1** | Workflow catalog (convert proven patterns) | "lots of great ideas and we can make it into workflow" (Apr 11) | IT-78: Not started |
+| **P2** | Context learning gap research | "compact and context" (Apr 9) | Deferred — workflow infra first |
+| **P2** | Knowledge application experiments | "experiment the knowledge" (Apr 8) | Reframed as "deploy proven interventions" |
 
-## Shipped to Production
+## Actually Shipped to Production
 
-| Feature | Deployed | Impact |
-|---------|----------|--------|
-| Commit Guard (finish-guard) | 2026-04-07 | Agent-laziness auto-commits: 58% → 1.0%. Agent commit volume: 14 → 460 per 48h. |
-| Few-Shot Skill Pipeline (Wave 1-3) | 2026-04-08 | 9 behavioral examples, 3/4 scenarios pass cross-reference skill. Production router live for coder + optimizer. |
-| Multi-Session Test Harness | 2026-04-09 | 5 scenarios, runner integration, baselines documented. Ready for monthly regression sweeps. |
+| Feature | Deployed | Impact | Verified |
+|---------|----------|--------|----------|
+| Commit Guard (finish-guard) | 2026-04-07 | Agent commit volume: 14 → 460 per 48h | ✅ In binary (createFinishGuard) |
+| Read Dedup Guard | Pre-existing | Prevents infinite read loops | ✅ In binary (createReadDedupGuard) |
+| Session Read Guard | Pre-existing | Controls session file access | ✅ In binary (createSessionReadGuard) |
+| Scrape Dedup Guard | Pre-existing | Prevents duplicate web scrapes | ✅ In binary (createScrapeDedupGuard) |
+
+### NOT Actually Deployed (Previously Claimed)
+
+| Guard | Experiment | Gym Result | Deployment Status |
+|-------|-----------|-----------|-------------------|
+| Completeness checklist (Optimizer) | EXP-115 | +100pp | ❌ Source file does not exist |
+| Tool schema guard (Coach) | EXP-114 | Phase A designed | ❌ Source file does not exist |
+| Verification-depth guard (Bob) | EXP-133 | NULL (measurement artifact) | ❌ Correctly not deployed |
+| Path hallucination guard | — | — | ⚠️ Source exists but NOT in binary |
 
 ## Key Metrics
 
 - **Gym ceiling**: 26 single-session + 7 multi-session scenarios ALL at 100%. Need fundamentally harder challenges.
-- **Knowledge entries**: 150+ in shared/knowledge/. Most untested in production.
-- **Experiments completed**: EXP-001 through EXP-113 (not all sequential).
+- **Knowledge entries**: 138+ in shared/knowledge/. Most untested in production.
+- **Experiments completed**: EXP-001 through EXP-136.
+- **Research-to-production conversion rate**: ~3% (4 guards deployed out of ~115 experiments)
+- **Behavioral interventions in production**: **0** (all 4 deployed guards are infrastructure)
