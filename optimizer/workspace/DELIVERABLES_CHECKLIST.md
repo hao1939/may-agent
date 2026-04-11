@@ -1,6 +1,4 @@
-# Deliverables Checklist
+# Deliverables Checklist — D-o-R Fix Measurement (n=5 check)
 
-## Task: Mode C — Draft Tech-Lead Heartbeat Dispatcher Rewrite
-
-- [x] workspace/draft-tech-lead-heartbeat-rewrite.md — Proposed rewrite of tech-lead heartbeat
-- [x] todo.md — Updated tech-lead section with draft status
+- [x] Update workspace/finding-dor-p1-cap-measurement-0411.md with n≥5 results (or note we still need more runs)
+- [x] Update workspace/todo.md D-o-R section with current status
