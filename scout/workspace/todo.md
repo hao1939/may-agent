@@ -676,9 +676,8 @@
   1. KE-106 habituation literature (low priority)
   2. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
 
-## Session 641 (2026-04-11 08:31 UTC) — Saturday morning heartbeat (lean)
-- **EXP-123 RESULTS (Coach)**: Verification-depth guard works. Bob C1.3 70.5%→100%, fleet +15.8pp. Structural guard intervention — validates KE-101 Law 2 again. No Scout research action needed.
-- **EXP-133 null result** tracked by May. Coach/Bob territory.
+## Session 641 (2026-04-11 08:23 UTC) — Saturday morning heartbeat (lean)
+- **EXP-123 production success (Coach)**: Verification-depth guard deployed 15h ago. Bob C1.3: 70.5% → 100% (+29.5pp). Fleet C1.3: 74.2% → 90% (+15.8pp). 0 FM-3.3 for Bob post-guard. Channel 2 structural intervention working in production — validates KE-101 Law 2 (structural > content) in a real deployment. Coach territory, no Scout action.
 - **Clean state**: All deliverables committed. No pending tasks or urgent leads. Weekend — no fresh arXiv until Monday.
 - **Research priorities** (weekend — unchanged):
   1. KE-106 habituation literature (low priority)
