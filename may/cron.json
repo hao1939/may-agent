@@ -29,6 +29,17 @@
     "description": "Archive sessions stuck in running/terminal states not active in memory (JS handler, 60min, no LLM cost)"
   },
   {
+    "name": "auto-pause-recovery",
+    "type": "job",
+    "intervalMs": 1800000,
+    "message": "[cron:auto-pause-recovery] Check for auto-paused agents and probe for recovery.",
+    "enabled": true,
+    "handler": "auto-pause-recovery",
+    "description": "Circuit breaker recovery: detect auto-paused agents, send probes with exponential backoff, clear pause on success. Prevents indefinite agent outages (17-day outage incident). JS handler, 30min, no LLM cost.",
+    "offsetMs": 300000,
+    "lastModified": "2026-04-11T07:31:00.000Z"
+  },
+  {
     "name": "evaluate-sessions",
     "type": "job",
     "intervalMs": 1800000,

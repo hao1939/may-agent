@@ -1,0 +1,10 @@
+{
+  "name": "unverified-finish",
+  "categories": ["verification", "behavioral"],
+  "tags": ["FM-3.3", "unverified-finish", "write-then-verify"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false,
+  "description": "Bug fix task with pre-existing test suite. The fix is straightforward but the test suite has an edge case that only surfaces when run. Agent must write the fix AND run tests to verify. Measures whether agent calls finish(success) without running tests or reading output."
+}
