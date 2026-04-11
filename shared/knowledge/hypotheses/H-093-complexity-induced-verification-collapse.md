@@ -212,3 +212,22 @@ CR-336 rates H-093 external validation as **HIGH** confidence with **Strong** su
 
 ### Impact on P(H)
 **P(H) unchanged at 0.70.** EXP-109 provides large-N production validation consistent with CIVC but doesn't test interventional predictions (P-093a, P-093c). The production FM-3.3 universality across complex-task agents strengthens the observational base. → KE-112 (production quality is multi-modal), → H-095 (agent-specific interventions).
+
+## EXP-133 Results (2026-04-11): NULL RESULT — Measurement Artifact Discovery
+
+**EXP-133 tested a finish()-time verification-depth guard. The 48% unverified-finish rate that motivated this experiment was a measurement artifact.**
+
+### What Happened
+- **Transcript-based detection** (regex scanning for verification tool calls in transcript text) reported 48% of sessions finishing without verification
+- **File-marker detection** (checking for actual file read/write operations) showed **100% verification in BOTH baseline and treatment** — 0% unverified rate
+- The discrepancy: transcript regex couldn't observe verification tool calls that actually occurred (tool call contents are structured data, not always visible in transcript text)
+
+### Implications for H-093 (CIVC)
+1. **Some FM-3.3 "residual" may be measurement error**: The 48% rate that partially motivated CIVC intervention experiments was inflated by detection methodology, not real behavioral deficiency
+2. **P-093b partially weakened**: If agent-specific FM-3.3 rates include measurement artifacts, the true collapse thresholds may be higher (agents verify more than we measured)
+3. **EXP-123 production deployment should be re-evaluated**: The verification-depth guard deployed in production was built on the 48% transcript-based rate — its value may be lower than estimated
+4. **FM-3.3 gym scoring needs marker-based detection**: Future experiments measuring FM-3.3 must use file-marker or tool-call-log-based detection, not transcript regex
+5. **CIVC core theory unaffected**: The observational evidence (EXP-099: 999 errors, 384 sessions) used human-classified FM codes, not transcript detection. The external literature validation (CR-336: 5 papers) is independent. But the *magnitude* of CIVC in production may be smaller than estimated.
+
+### Impact on P(H)
+**P(H) unchanged at 0.72.** EXP-133 is a null result with important methodological implications, but the measurement artifact affects FM-3.3 *detection methodology*, not the CIVC *mechanism*. The core evidence (EXP-099, EXP-102, EXP-116, 12+ external papers) is unaffected. The practical implication is that future FM-3.3 measurement must use marker-based detection.

@@ -180,6 +180,7 @@ Updated: 2026-04-11 ~07:53 UTC
 | **Gym Transcript Fix + Evaluator Bug Tests** | ✅ MERGED | tech-lead/may | Branch `review/s_1775848356081_345` merged to main. Transcript field in GymResult + evaluator scale/dedup tests. 20/20 pass. Commits 82757680 + 48315279. |
 | **EXP-131 Unrelated Gate Stacking** | ✅ COMPLETE | coach | **H-131 SUPPORTED (p=0.28)**: Arm A (1 related) 89%, Arm B (3 unrelated) 50%, Arm C (3 related) 86%. Unrelated gates -36pp vs related at same count. All 4 Arm B failures on core judgment check. Gate-task synergy, not Ch2 capacity, drives EXP-129 hump curve. **Federation auto-commit deleted results — restored from git history (6a2bc4a2)**. Results at `agents/shared/knowledge/experiments/EXP-131/results.md`. **Bob KB integration DONE — KE-135 created**. |
 | **EXP-132 Path Hallucination Guard** | ✅ MERGED | tech-lead | Code at `src/lib/tools/path-hallucination-guard.ts` (7.8KB). Merged to main (be2a9317). Needs binary rebuild for production. |
+| **EXP-133 Verification-Depth Null Result** | ✅ COMPLETE (NULL) | coach | **MEASUREMENT ARTIFACT**: 48% unverified-finish rate was transcript-detection bug, not behavioral deficiency. Marker-based detection: 100% verification (both baseline and treatment). EXP-123 guard may be unnecessary. File-marker pattern is superior measurement. Results at `agents/shared/knowledge/experiments/EXP-133/design.md`. |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -314,3 +315,11 @@ Updated: 2026-04-11 ~07:53 UTC
   - **System-status anomaly (false alarm)**: "Bob analysis 6 days old" — refers to stale workspace file, not operational issue.
   - **Zero pending May requests**: No dispatches needed. Zero failures. Zero interventions.
 - **Key**: System in autonomous steady state. Convention regressions auto-dispatched to coach. All agents self-directing. No new work from Hao. Coder still idle.
+
+## Latest Cycle Summary (08:01)
+- **System**: 7/8 healthy. Amy-kimi 429 (billing). All agents running fresh heartbeats. Zero errors/failures last hour.
+- **Since last cycle (07:53)**:
+  - **EXP-133 COMPLETE (NULL RESULT)**: Coach discovered 48% unverified-finish rate was a **measurement artifact** — transcript-based detection was unreliable. File-marker detection shows 100% verification. EXP-123 verification-depth guard may be targeting non-existent problem.
+  - **Scout recovered**: 2 earlier timeouts, now running successfully.
+  - **All agents self-directing**: Zero pending requests. Zero failures. Zero May interventions needed.
+- **Key**: System in healthy autonomous state. 133+ experiments completed. Research pipeline continues producing knowledge. Main bottleneck unchanged: no new implementation work — need Hao priorities. Coder still idle.
