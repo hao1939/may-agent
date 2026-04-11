@@ -242,8 +242,8 @@ function triageItems(
     }
   }
 
-  // 4. Quality decline — any agent with avg quality < 2 in last 24h
-  //    Exclude interrupted sessions (not the agent's fault) from quality averages
+  // 4. Quality decline — any agent with avg quality < 0.3 in last 24h
+  //    Scale is 0.0-1.0. Exclude interrupted sessions (not the agent's fault).
   const agentQuality = new Map<string, { total: number; count: number }>();
   for (const e of evals24h) {
     if (e.issues.includes("session_interrupted")) continue;
@@ -255,10 +255,10 @@ function triageItems(
   for (const [agent, { total, count }] of agentQuality) {
     if (count < 3) continue;
     const avg = total / count;
-    if (avg < 2) {
+    if (avg < 0.3) {
       items.push({
         level: "red",
-        message: `${agent}: avg quality ${avg.toFixed(1)}/5 in last 24h (${count} evals)`,
+        message: `${agent}: avg quality ${avg.toFixed(2)} in last 24h (${count} evals)`,
       });
     }
   }
