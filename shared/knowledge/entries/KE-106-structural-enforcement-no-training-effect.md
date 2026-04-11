@@ -85,6 +85,7 @@ The guard escape rate is the actionable metric: it measures how many unverified 
 
 - **extends** → KE-007 (structural enforcement works — this adds: it works *as a guard*, not as training)
 - **extends** → KE-094 (commit guard effectiveness — this adds: the behavioral root cause persists)
+- **validated by** → EXP-134 (full census of 1,075 guard activations: 99.7% true positive rate, 98.5% recovery, rate increasing 5.8%→34.6% — definitively confirms guards don't train behavior)
 - **consistent with** → KE-002 (text rules don't change judgment behavior, 0/32+)
 - **consistent with** → KE-101 (meta-analysis: structure dominates content at every level)
 - **source data** → EXP-099 (FM classification system defining FM-3.3)

@@ -1,33 +1,42 @@
 # Workflow Registry
 
 **Owner**: Optimizer (accountable for quality, deduplication, effectiveness tracking)
-**Last audit**: 2026-04-04T09:30
+**Last audit**: 2026-04-11T10:25 (Tech Lead — full architecture audit)
 
 ## Shared Workflows (active — available to all agents)
 
-| Name | File | Lines | Purpose |
-|------|------|-------|---------|
-| `implement-and-review` | `shared/workflows/implement-and-review.ts` | 150 | Code changes: coder implements → QA reviews → one retry → escalate. Fixed verdict parsing (defaults to conditional-pass). Phase 1 DIAGNOSE / Phase 2 VERDICT QA prompts. Consolidated from tech-lead (2026-04-04). |
-| `implement-and-verify` | `shared/workflows/implement-and-verify.ts` | 197 | Lightweight code workflow (H-070 P3): coder implements → shell verification (tsc+vitest) → one retry → escalate. No QA agent. Target C_fixed ~3-5 ops. EXP-050 tested: removed stateApproach (added 1.76-3.78x overhead with zero quality benefit). |
-| `parallel-research` | `shared/workflows/parallel-research.ts` | 184 | Fork N research threads in parallel → collect results → synthesize findings. Promise.allSettled for resilience. Max 5 threads. Input: JSON with threads array. Design doc: `agents/bob/workspace/meta-harness-design.md`. |
-| `research-to-production` | `shared/workflows/research-to-production.ts` | 293 | Research→production loop: assess → build → verify → report. Closes the gap between findings and shipped code. |
-| `skill-lifecycle` | `shared/workflows/skill-lifecycle.ts` | 246 | Full lifecycle: propose → test → measure → promote/retire a skill |
+| Name | File | Lines | Purpose | 48h Usage |
+|------|------|-------|---------|-----------|
+| `implement-and-verify` | `shared/workflows/implement-and-verify.ts` | 197 | Lightweight code workflow (H-070 P3): coder Plan → Write → Verify. No QA agent. **Workhorse — 85% of all workflow usage.** | ~79 sessions |
+| `implement-and-review` | `shared/workflows/implement-and-review.ts` | 150 | Code changes: coder implements → QA reviews → one retry → escalate. Phase 1 DIAGNOSE / Phase 2 VERDICT QA prompts. | 0 (but 143 all-time) |
+| `parallel-research` | `shared/workflows/parallel-research.ts` | 184 | Fork N research threads → collect → synthesize. Promise.allSettled for resilience. Max 5 threads. | ~12 sessions |
+| `skill-lifecycle` | `shared/workflows/skill-lifecycle.ts` | 246 | Full lifecycle: Discover → Draft → Test → Deploy. Used by optimizer. | 0 (but 41 all-time) |
 
-## Archived Shared Workflows (moved to `shared/workflows/archive/` on 2026-04-04)
+**Note**: `fewshot-inject.ts` is in this directory but is NOT a workflow (no `execute()` function). It's a keyword-based utility for prepending few-shot examples.
 
-9 workflows with **0 production runs ever** archived to reduce noise. Recoverable if needed.
+## Archived Shared Workflows
 
+12 workflows archived to reduce noise. All recoverable from `shared/workflows/archive/` or git history.
+
+### Batch 1 — Archived 2026-04-04 (0 production runs ever)
 | Name | Lines | Reason for archive |
 |------|-------|--------------------|
 | `code-review-loop` | 134 | Duplicate of implement-and-review |
-| `context-learn` | 276 | Never invoked (the context-learn _module_ is used; this workflow is not) |
+| `context-learn` | 276 | Never invoked |
 | `evidence-gate` | 217 | Never invoked |
 | `gated-exploration` | 329 | Never invoked |
 | `predict-then-verify` | 221 | Never invoked |
 | `reviewed-delivery` | 89 | Never invoked |
 | `two-phase` | 192 | Never invoked |
-| `verify-and-finish` | 272 | Never invoked (consolidated 2026-04-04, still 0 runs) |
-| `verify-parallel` | 343 | Never invoked (consolidated 2026-04-04, still 0 runs) |
+| `verify-and-finish` | 272 | Never invoked |
+| `verify-parallel` | 343 | Never invoked |
+
+### Batch 2 — Archived 2026-04-11 (dead or negligible usage)
+| Name | Lines | Reason for archive |
+|------|-------|--------------------|
+| `research-to-production` | 293 | 0 runs ever |
+| `auto-loop` | ~150 | 0 runs ever |
+| `implement-and-adversarial-review` | 315 | H-001 experiment concluded; only 8 sessions all-time, 0 in 48h; bloated superset of implement-and-review |
 
 ## Agent-Specific Workflows
 
