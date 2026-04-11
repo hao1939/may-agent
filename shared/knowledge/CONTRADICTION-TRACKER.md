@@ -1,114 +1,138 @@
 # Contradiction Tracker
 
 > **Maintained by**: Bob (Architect)
-> **Protocol**: See `agents/bob/workspace/DESIGN-contradiction-detection-protocol.md`
-> **Last Full Scan**: 2026-04-09 (initial seed)
-> **Active Contradictions**: 0 open, 5 resolved, 1 merged, 1 needs-scan
+> **Created**: 2026-04-11 (Phase 1 of Contradiction Detection Protocol)
+> **Protocol**: `agents/bob/workspace/DESIGN-contradiction-detection-protocol.md`
+> **Last Full Scan**: 2026-04-11
 
----
-
-## Summary
-
-| Status | Count |
-|--------|-------|
-| MERGED | 1 |
-| RESOLVED | 5 |
-| NEEDS SCAN | 1 |
-| **Total Tracked** | **7** |
+**Active Contradictions**: 3  
+**Deferred**: 2  
+**Resolved**: 6  
+**Total Catalogued**: 11
 
 ---
 
 ## Active Tensions
 
-### CT-001: Context Stripping — Skilled vs Unskilled Agent Performance
-- **Type**: Scope Conflict | **Severity**: HIGH
-- **Claim A**: KE-103 — removing inherited context hurts skilled agents (88% stripped vs 100% full, N=6/arm, EXP-104)
-- **Claim B**: DD-694 (MARCH thesis) — information asymmetry improves verification quality
-- **Evidence Delta**: KE-103 has direct experimental evidence (N=18 total). DD-694 is external literature claim.
-- **Status**: ✅ RESOLVED (REFINE_SCOPE)
-- **Resolution**: DD-694 claim qualified: "for unskilled agents or agents without evidence-over-narrative skill." KE-103 already documents this as an explicit contradiction at creation time. Both claims coexist with scope boundaries.
-- **Resolved**: 2026-04-09 (at KE-103 creation)
-- **Bayesian Impact**: None required — KE-103 already correctly scoped
-
-### CT-002: Text Rules — Binary Failure or Spectrum?
-- **Type**: Scope Conflict | **Severity**: HIGH
-- **Claim A**: KE-002 — text rules have 0/35 (0%) effect on judgment tasks. Extended to 0/47 with EXP-081/084 negative-example arm.
-- **Claim B**: KE-059 (EXP-084) — few-shot worked examples achieve 33-100% pass rate on the same judgment tasks where text rules score 0%
-- **Evidence Delta**: Both claims are well-evidenced (N>30 for KE-002, N=18 for KE-059). Not a conflict — it's a category discovery.
-- **Status**: ✅ RESOLVED (REFINE_SCOPE)
-- **Resolution**: WKWA-006 synthesis resolved this: KE-002 applies to "declarative text rules" (outcome descriptions). KE-059 covers "structural text" (process-changing worked examples). The binary KE-002 framing was refined into a spectrum: declarative (0%) → structural (~33%) → few-shot (33-100%) → workflow (~100%). EXP-108 design explicitly addresses this distinction.
-- **Resolved**: 2026-04-08 (WKWA-006 synthesis)
-- **Bayesian Impact**: H-091 P(H) 0.75→0.93 (reflects spectrum rather than binary)
-
-### CT-003: H-060/H-061 — Hierarchical vs Flat MAS
-- **Type**: Direct Contradiction | **Severity**: MEDIUM
-- **Claim A**: H-060 — hierarchical MAS outperforms flat MAS (OrgAgent evidence)
-- **Claim B**: H-061 — constrained communication improves MAS (implies information restriction > hierarchy; PNAS "free info hurts" paper)
-- **Evidence Delta**: Both based on external literature, neither directly tested in our system
-- **Status**: MERGED → H-041 (scope variable). Experimental resolution pending.
-- **Resolution**: DESIGN_EXPERIMENT — would require ablation study: remove hierarchy layer from our system, test with constrained communication only. Low priority given current experiment queue.
-- **Bayesian Impact**: H-041 P(H) unchanged — the tension is acknowledged within H-041's scope variable analysis
-
-### CT-004: Guards as Permanent Infrastructure vs Training Stepping Stones
+### CT-004: Guards as Infrastructure vs Implicit Training Strategy
 - **Type**: Implication Conflict | **Severity**: MEDIUM
-- **Claim A**: KE-106 — structural guards don't reduce underlying error rate; agents attempt guarded behavior at 50-70% of sessions regardless of guard duration (26 days measured, 502 sessions)
-- **Claim B**: Implicit assumption in system strategy — guards are temporary scaffolding that can be removed once agents "learn" the behavior
-- **Evidence Delta**: KE-106 has strong evidence (N=502, 26 days). The "training" assumption is undocumented but implicitly present in roadmap thinking.
-- **Status**: ✅ RESOLVED (UPDATE_CLAIM)
-- **Resolution**: KE-110 (Skill Stack Saturation) provides convergent evidence from three streams: (1) EXP-108 ceiling data shows skills reach 91–100% gym pass rates but don't "teach" the model, (2) KE-106 confirms guards permanently catch errors without reducing attempt rate, (3) KE-109 confirms the remaining production failures are structurally unreachable by gym-trained skills. **Guards and skills are both permanent infrastructure.** Neither trains the underlying model. System strategy should plan for permanent deployment of both. Roadmap items assuming guard removal are incorrect.
-- **Resolved**: 2026-04-09 (KE-110 synthesis)
-- **Bayesian Impact**: No P(H) change — strategy implication only. H-053 (adoption decay) confirmed: skills persist because delivery is structural (task injection), not because agents "learned" them.
+- **Claim A**: KE-106 — "Guards don't reduce underlying error rate (50-70% attempt rate persists). Guards are necessary permanent infrastructure."
+- **Claim B**: Implicit assumption in guard deployment strategy — guards are stepping stones, agents will eventually learn, guards can be removed
+- **Evidence Delta**: KE-106 has strong evidence (EXP-134 census: N=1,075, EXP-136 decomposition). The "training" assumption is unstated but motivates resource allocation.
+- **Status**: OPEN
+- **Resolution Proposal**: UPDATE_CLAIM — update all strategy docs (SOUL.md, deployment plans) to explicitly treat guards as permanent infrastructure. Remove any language suggesting guards are temporary training wheels.
+- **Bayesian Impact**: None (H-100 already reflects this at P(H)=0.60)
+- **Assigned To**: Bob
+- **Priority**: HIGH — wrong mental model wastes effort on guard "sunset" planning
+
+### CT-008: KE-106 "Guards Don't Train" vs EXP-137 "Learner Agents Show Declining Guard Rates" ✅
+- **Type**: Scope Conflict | **Severity**: HIGH
+- **Claim A**: KE-106 — "Structural guards permanently catch errors at runtime but do NOT reduce the underlying error rate. Agents continue attempting the guarded behavior at 50-70% of sessions regardless."
+- **Claim B**: KE-137/EXP-137 — Three agents (bob, coach, tech-lead) show declining guard rates over time (e.g., bob 72%→10% raw, 58%→24% genuine). These are called "learners."
+- **Evidence Delta**: Both claims have strong evidence. EXP-137 (N=6 agents structural comparison) resolves this as a SCOPE issue: the declining rates in "learners" are NOT behavioral learning but architectural substitution — their workflows enforce verification independent of the guard. KE-106 remains correct at the behavioral level.
+- **Status**: ✅ RESOLVED (REFINE_SCOPE)
+- **Resolution**: KE-106 updated with "EXP-137 Scope Refinement" section. Both claims coexist: guards don't train behavior (universal), but guard rates decline for workflow-equipped agents (architectural substitution, not learning).
+- **Resolved**: 2026-04-11 by Bob
+- **Bayesian Impact**: None — H-100 stays 0.60, H-101 stays 0.72
+
+### CT-009: H-101 Original Mechanism (Prompt Scaffolding) vs H-101 Revised Mechanism (Workflow Adoption)
+- **Type**: Staleness Tension | **Severity**: MEDIUM
+- **Claim A**: H-101 original thesis (pre-EXP-137) — "architectural readiness = prompt contains conceptual scaffolding for verification → Ch1×Ch2 multiplicative interaction → internalization"
+- **Claim B**: H-101 revised thesis (post-EXP-137) — "architectural readiness = workflow-level verification infrastructure → architectural substitution eliminates error → guard rate declines (appearance of learning)"
+- **Evidence Delta**: EXP-137 decisively falsifies the original mechanism via May's Paradox (most verification text, worst block rate). The revised mechanism is correct.
+- **Status**: OPEN — H-101 document contains BOTH mechanisms (original in §Mechanism, revised in §EXP-137 Evidence Update). Predictions section still partially references old mechanism.
+- **Resolution Proposal**: UPDATE_CLAIM — Rewrite H-101 §Mechanism to reflect the revised understanding. Move original mechanism to a "Historical" section. Update P-101a, P-101b, P-101d to reference workflows, not prompt text.
+- **Bayesian Impact**: None (P(H) already 0.72 reflecting revised mechanism)
+- **Assigned To**: Bob
+- **Priority**: MEDIUM — internal document inconsistency, not externally visible
+
+### CT-010: KE-037 Scaffolding Spectrum vs EXP-137 Binary Workflow Finding
+- **Type**: Scope Conflict | **Severity**: LOW
+- **Claim A**: KE-037 — "Scaffolding spectrum: interventions range from internalize (remove scaffolding) to externalize (add scaffolding). Optimal intervention depends on decision topology."
+- **Claim B**: EXP-137 — "Workflow-level verification is a BINARY differentiator (correlation 1.0). All learners have it, all reliants don't. No spectrum."
+- **Evidence Delta**: KE-037 is theoretical (convergent multi-source); EXP-137 is empirical (N=6). However, KE-037 describes the general scaffolding design space, while EXP-137 describes the specific FM-3.3 guard context. These are compatible: the spectrum exists in design space, but for THIS specific guard, the critical threshold happens to be workflow adoption (binary).
+- **Status**: OPEN — but likely NOT a true contradiction
+- **Resolution Proposal**: REFINE_SCOPE — Add note to KE-037 that EXP-137 shows the spectrum collapses to a binary threshold for process-enforcement guards (guards check for a specific behavior, and either your workflow does it or it doesn't). The spectrum model remains valid for skill-type interventions where degrees of scaffolding matter.
+- **Bayesian Impact**: None
+- **Assigned To**: Bob (low priority)
+- **Priority**: LOW
+
+---
+
+## Deferred Tensions
 
 ### CT-005: Pre-EXP-104 Entries Assuming Context Stripping Helps
 - **Type**: Staleness | **Severity**: LOW
-- **Description**: KE entries and experiment designs written before EXP-104 (2026-04-09) may assume that stripping inherited context improves verification. KE-103 now shows this is false for skilled agents.
-- **Status**: ✅ RESOLVED (SCAN COMPLETE)
-- **Resolution**: Scanned all KE entries referencing "context stripping", "information asymmetry", and "MARCH" (KE-097, KE-098, KE-102, KE-103, KE-104, KE-105). All entries already contain EXP-104 caveats — KE-097 has updated predictions, KE-098 has extensive "EXP-104 UPDATE" sections throughout (P-098a/e reframed, skill>architecture hierarchy documented), KE-102 explicitly states "MARCH-style information asymmetry...not needed when agents have the right skill", KE-103 IS the paradox entry, KE-104 documents the finding. No outdated assumptions found — the knowledge base was comprehensively updated when KE-103 was written.
-- **Resolved**: 2026-04-10 (Bob: systematic scan)
+- **Claim A**: Early KE entries and hypotheses referencing "context stripping" as a positive intervention (pre-EXP-104)
+- **Claim B**: KE-103 (Context-Stripping Paradox) — removing context HURTS skilled agents (88% vs 100%)
+- **Status**: DEFERRED — would require auditing ~50 early entries for stale "context stripping" references. Low ROI given the early entries are rarely cited.
+- **Review Date**: 2026-05-01 (if KB grows significantly)
 
-### CT-006: Adversarial Framing — Text Rule or Novel Mechanism?
+### CT-007: KE-031 "Domain-Independent" Forced Externalization Scope
+- **Type**: Scope | **Severity**: LOW
+- **Claim A**: KE-031 — forced externalization is "domain-independent" (tested on 3 domains)
+- **Claim B**: EXP-117/120/121/122/126 — forced externalization FAILS on discovery tasks (5 interventions tested, all fail or harm)
+- **Status**: DEFERRED — KE-031's "domain-independent" claim may need narrowing to "non-discovery domains." But KE-123 already captures the iatrogenesis concern, and KE-125/126 documents the ~67% ceiling. The original claim is effectively superseded by H-099 (Creative Inference Irreducibility).
+- **Review Date**: Next KE-031 citation
+
+---
+
+## Resolved Tensions
+
+### CT-001: Context Stripping — Skilled vs Unskilled Agent Performance ✅
+- **Type**: Scope Conflict | **Severity**: HIGH
+- **Claim A**: KE-103 — removing context hurts skilled agents (88% vs 100%, N=6)
+- **Claim B**: DD-694/MARCH — information asymmetry improves verification
+- **Resolution**: REFINE_SCOPE — DD-694 applies to unskilled agents. KE-103 adds boundary condition for skilled agents.
+- **Resolved**: 2026-04-09 by KE-103 creation
+
+### CT-002: Text Rules — Binary or Spectrum? ✅
+- **Type**: Scope Conflict | **Severity**: HIGH
+- **Claim A**: KE-002 — text rules 0/35 on judgment tasks
+- **Claim B**: KE-059/EXP-084 — few-shot (a text delivery) achieves 33-100%
+- **Resolution**: REFINE_SCOPE — KE-002 refined: "declarative text rules" vs "structural text" (WKWA-006). Few-shot examples are structural (frame-alignment), not declarative (instruction-following).
+- **Resolved**: 2026-04-08 by WKWA-006 synthesis
+
+### CT-003: H-060/H-061 — Hierarchical vs Flat MAS ✅
+- **Type**: Direct Contradiction | **Severity**: MEDIUM
+- **Claim A**: H-060 — hierarchical MAS outperforms flat
+- **Claim B**: H-061 — constrained communication improves MAS (implies flat + constraints > hierarchy)
+- **Resolution**: MERGE → H-041 (Decision Topology). Both are special cases: hierarchy works when it aligns with decision topology (high R). Flat + constraints works when hierarchy adds overhead on low-R tasks.
+- **Resolved**: 2026-04-07 by H-041 merge. Experimental resolution still needed (ablation study) but theoretical tension resolved.
+
+### CT-006: Adversarial Framing — Text Rule or Not? ✅
 - **Type**: Mechanism Tension | **Severity**: HIGH
-- **Claim A**: KE-002 — text rules don't work on judgment tasks (0/35+)
-- **Claim B**: EXP-103 — adversarial framing ("find 3 bugs") achieves 100% (6/6) on verification confabulation — but is delivered as text
-- **Evidence Delta**: Both well-evidenced. The tension is in categorization, not data.
-- **Status**: ✅ RESOLVED (REFINE_SCOPE)
-- **Resolution**: EXP-108 design (§1.2) explicitly addresses this: adversarial framing is "structural text" that changes the generation objective, not a declarative text rule that describes an outcome. KE-002's nuance section distinguishes declarative (0/35) from structural (2/9 pass). WKWA-006 formalizes the spectrum. Not a contradiction — a category refinement that strengthens both claims.
-- **Resolved**: 2026-04-09 (EXP-108 design document)
-- **Bayesian Impact**: None — both KE-002 and KE-059 updated with refined scope
+- **Claim A**: EXP-103 — adversarial framing redirects generation objective, achieving high success rates
+- **Claim B**: KE-002 — text rules don't work (0/35)
+- **Resolution**: REFINE_SCOPE — adversarial framing is NOT a text rule (it changes the frame/objective, not the instruction). Classified as "frame alignment" in WKWA-006. EXP-108 confirmed: adding "adversarial self-review" as a text instruction (without frame change) = null effect.
+- **Resolved**: 2026-04-09 by WKWA-006 + EXP-108
 
-### CT-007: KE-031 Domain Independence — Tested on 3 Domains, Claims Generality
-- **Type**: Scope Conflict (potential) | **Severity**: LOW
-- **Claim**: KE-031 — "Forced externalization is domain-independent" based on 3 failure domains (tunnel vision, sycophancy, contradiction blindness), N=30
-- **Concern**: 3 domains is evidence but not proof of domain independence. Untested on: phase-boundary violations (FM-2.6), instruction drift, failure chain propagation (FM-1.4).
-- **Status**: 🟡 NEEDS SCAN — Will EXP-108 results (which tests forced externalization on new domains) update this?
-- **Action**: After EXP-108 Phase 2 completes, re-evaluate KE-031 scope claim with expanded domain evidence.
-- **Assigned To**: Bob (post-EXP-108)
+### CT-011: EXP-134 TP Rate (99.7%) vs EXP-136 Revised TP Rate (80.2%) ✅
+- **Type**: Staleness | **Severity**: MEDIUM
+- **Claim A**: EXP-134 — FM-3.3 guard true positive rate is 99.7% (3/1,075 false positives)
+- **Claim B**: EXP-136 — 20% of blocks are git-commit-only inflation, effective TP rate is 80.2%
+- **Resolution**: UPDATE_CLAIM — EXP-134 entry in PRIORITY-TRACKER annotated with "Note: TP rate revised to 80.2% by EXP-136." H-100 P(H) demoted 0.72→0.65.
+- **Resolved**: 2026-04-11 by EXP-136 integration
 
 ---
 
-## Resolution Log
+## Resolution Queue (Ordered by Priority)
 
-| Date | CT-ID | Action | By |
-|------|-------|--------|----|
-| 2026-04-10 | CT-005 | SCAN COMPLETE — all 6 KE entries already updated with EXP-104/KE-103 caveats. No outdated assumptions found. | Bob |
-| 2026-04-09 | CT-004 | UPDATE_CLAIM — guards and skills confirmed as permanent infrastructure via KE-110 synthesis | Bob |
-| 2026-04-09 | CT-001 | REFINE_SCOPE — DD-694 qualified for unskilled agents | Coach (KE-103 creation) |
-| 2026-04-08 | CT-002 | REFINE_SCOPE — KE-002 refined into declarative/structural spectrum | Bob (WKWA-006) |
-| 2026-04-09 | CT-003 | MERGE → H-041 | Bob (PRIORITY-TRACKER cleanup) |
-| 2026-04-09 | CT-006 | REFINE_SCOPE — structural vs declarative text distinguished | Coach (EXP-108 design) |
+| # | CT | Action | Effort | Assigned | Depends On |
+|---|-----|--------|--------|----------|------------|
+| 1 | CT-004 | Update strategy docs re: guard permanence | Low | Bob | — |
+| 2 | CT-009 | Rewrite H-101 §Mechanism to reflect revised understanding | Medium | Bob | — |
+| 3 | CT-010 | Add scope note to KE-037 | Low | Bob | — |
 
 ---
 
-## Metrics
+## Detection Log
 
-| Metric | Value | Notes |
-|--------|-------|-------|
-| Total contradictions tracked | 7 | Initial seed scan |
-| Resolution rate | 4/7 (57%) | Above 50% target |
-| Average resolution lag | <1 sprint | Most resolved at creation time |
-| False positive rate | TBD | Need 1 full cycle to measure |
-| P(H) updates from CTs | 1 (H-091) | Target: ≥2/sprint |
+| Date | Trigger | Scope | Contradictions Found | New CTs |
+|------|---------|-------|---------------------|---------|
+| 2026-04-11 | Phase 1 seed (full KB scan) | All KE, H, WKWA entries | 11 total (5 pre-resolved, 4 active, 2 deferred) | CT-001 through CT-011 |
 
 ---
 
-*Next scheduled scan: end of next sprint or when EXP-108 Phase 2 unblocks.*
+*Next scheduled scan: On next KE entry creation or experiment closure.*
+*Protocol: `agents/bob/workspace/DESIGN-contradiction-detection-protocol.md`*

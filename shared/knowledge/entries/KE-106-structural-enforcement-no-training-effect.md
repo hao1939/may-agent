@@ -81,11 +81,26 @@ The guard escape rate is the actionable metric: it measures how many unverified 
 - **Single model**: Tested only with Claude Sonnet 4. Other models may show different patterns.
 - **Confound: guard sophistication increased simultaneously**: The guard was improved multiple times (9 commits). It's possible that a perfect guard from day 1 might have shown a slight training effect, though this seems unlikely given KE-002.
 
+## EXP-137 Scope Refinement (2026-04-11)
+
+EXP-137 (Guard Reliance Intervention — Structural Comparison) revealed an important scope refinement to this entry's core claim:
+
+**The "no training effect" claim holds universally at the behavioral level** — no agent actually changes its default verification behavior. However, three agents (bob, coach, tech-lead) show declining guard rates over time (e.g., bob 72%→10% raw, 58%→24% genuine per EXP-136). This APPEARS to contradict "guards don't train."
+
+**Resolution**: The declining rates are caused by **architectural substitution**, not behavioral learning. All three "learner" agents have workflow-level verification phases (e.g., bob's deliver-or-report Phase 3b) that independently enforce verification. Their workflows make the guard redundant — the guard fires less because the workflow already did the verification. If the workflow were removed, the underlying 50-70% attempt rate would reassert.
+
+**May's Paradox** (EXP-137) confirms this: May has the MOST verification-related text in its prompt but the WORST guard block rate (71%). Text ≠ readiness. Workflow infrastructure ≠ text instructions.
+
+**Updated claim**: "Guards don't train behavior" remains correct. "Guard rates can decline for workflow-equipped agents" is a separate, compatible phenomenon. See KE-137 for the learner/reliant bifurcation mechanism and H-101 for the theoretical framework.
+
+> **CT-008 resolution** (Contradiction Tracker): REFINE_SCOPE — this section resolves the apparent tension between KE-106 and KE-137/EXP-137. Both claims coexist with clear scope boundaries.
+
 ## Cross-References
 
 - **extends** → KE-007 (structural enforcement works — this adds: it works *as a guard*, not as training)
 - **extends** → KE-094 (commit guard effectiveness — this adds: the behavioral root cause persists)
 - **validated by** → EXP-134 (full census of 1,075 guard activations: 99.7% true positive rate, 98.5% recovery, rate increasing 5.8%→34.6% — definitively confirms guards don't train behavior)
+- **refined by** → EXP-137/KE-137 (architectural substitution explains declining rates in workflow-equipped agents; CT-008 resolved)
 - **consistent with** → KE-002 (text rules don't change judgment behavior, 0/32+)
 - **consistent with** → KE-101 (meta-analysis: structure dominates content at every level)
 - **source data** → EXP-099 (FM classification system defining FM-3.3)
