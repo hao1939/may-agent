@@ -251,7 +251,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       `3. If a write fails, try edit() → write() → bash("cat > ...") in order.\n` +
       `4. Do NOT re-analyze. Do NOT rewrite already-completed files. Just write the missing ones.\n` +
       `5. Before calling finish(), verify every missing file now exists on disk.\n\n` +
-      `⚠️ You MUST write the missing file(s). Finishing without them = failure.`;
+      `⚠️ You MUST write the missing file(s). Finishing without them = failure.\n\n` +
+      `⛔ DO NOT call callAgent() or spawn sub-agents — this creates infinite nested workflows that waste hundreds of ops. Write the deliverables yourself.`;
 
     const phase2 = await ctx.runAgent("bob", phase2NarrowPrompt);
     if (phase2.status === "error") {
@@ -283,7 +284,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       `5. Before calling finish(), verify EVERY planned deliverable exists on disk.\n\n` +
       `⚠️ You MUST produce at least one deliverable file. If you finish without\n` +
       `   writing any file, this session has FAILED. Analysis without output = failure.\n\n` +
-      `⚠️ If finish(status: "success") is called, at least one deliverable MUST exist.`;
+      `⚠️ If finish(status: "success") is called, at least one deliverable MUST exist.\n\n` +
+      `⛔ DO NOT call callAgent() or spawn sub-agents — this creates infinite nested workflows that waste hundreds of ops. Write the deliverables yourself.`;
 
     const phase2 = await ctx.runAgent("bob", phase2Prompt);
     if (phase2.status === "error") {
@@ -349,7 +351,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       `4. Verify each file exists after writing.\n` +
       `5. Do NOT re-do already-completed files. Focus ONLY on the missing ones.\n\n` +
       `⚠️ Every file listed under "Still missing" MUST exist on disk before you finish.\n` +
-      `   If you cannot write a file, explain exactly why in your finish() summary.`;
+      `   If you cannot write a file, explain exactly why in your finish() summary.\n\n` +
+      `⛔ DO NOT call callAgent() or spawn sub-agents — this creates infinite nested workflows that waste hundreds of ops. Write the deliverables yourself.`;
 
     const phase2b = await ctx.runAgent("bob", phase2bPrompt);
 
