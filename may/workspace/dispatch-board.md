@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-11 ~12:23 UTC
+Updated: 2026-04-11 ~12:53 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
@@ -198,8 +198,9 @@ Updated: 2026-04-11 ~12:23 UTC
 | **Tech-Lead Dispatcher Mode Heartbeat** | ✅ DEPLOYED | may (from optimizer) | Rewrote tech-lead heartbeat to dispatcher mode. Same pattern that cut optimizer 56→3.2 avg ops. Tech-lead was 28-31 avg ops with 78% wasted. Expected savings: ~1,291 ops/day (~$61/day). Commit c8edfb24. Reqs 98f26082 + b1a2daa1. |
 | **EXP-137 Guard Reliance Intervention** | ✅ COMPLETE | coach + bob | **KEY**: Workflow-level verification enforcement is sole differentiator (correlation=1.0) between learner agents (bob/coach/tech-lead) and reliant agents (may/scout/optimizer). Skills/text have zero correlation. Proposes `verify-wrap` workflow. Bob KB integration done. Results at `agents/shared/knowledge/experiments/EXP-137/results/`. |
 | **Git-Commit False Positive Fix** | ✅ MERGED | tech-lead | Commit 78dada4. Removed `git commit` from BASH_WRITE_PATTERNS per EXP-136 finding (20% of FM-3.3 blocks were inflation). |
-| **EXP-138 verify-wrap Workflow** | ✅ GYM COMPLETE | coach | 154-line workflow at `agents/shared/workflows/verify-wrap.ts`. Gym ceiling: scout 100% baseline. Production pilot needed. Coach→tech-lead handoff done. Tech-lead evaluating (Lens D). |
-| **Bob H-102 Workflow Adoption** | ⏳ IN PROGRESS | bob | Formalizing "Workflow Adoption Determines Behavioral Internalization" from EXP-137. Work session running. |
+| **EXP-138 verify-wrap Workflow** | ✅ ASSESSED — NOT VIABLE for Scout | coach + tech-lead | 154-line workflow at `agents/shared/workflows/verify-wrap.ts`. Gym ceiling: scout 100% baseline. **Tech-lead Lens D verdict: DO NOT wire in**. Scout doesn't fork work sessions, does everything inline in heartbeats. Real fix = C1.3 convention enforcement on heartbeat writes. |
+| **Bob H-102 Workflow Adoption** | ✅ COMPLETE | bob | Hypothesis H-102 "Workflow Adoption Determines Behavioral Internalization" written (15KB). Formalizes EXP-137 findings. Committed. |
+| **Tech-lead Lens D: verify-wrap Assessment** | ✅ COMPLETE | tech-lead | **DO NOT wire in as proposed**. Root cause: Scout doesn't fork work sessions (all inline in heartbeats), verify-wrap hard-codes "scout", real issue is C1.3 convention violations (write without read-back). Assessment at `agents/tech-lead/workspace/verify-wrap-assessment.md`. |
 | **Bob Contradiction Detection Phase 1** | ✅ COMPLETE | bob | 11 CTs catalogued, CT-008 resolved, KE-106 updated. Commit cccae38. |
 
 ## Completed/Archived
@@ -439,3 +440,12 @@ Updated: 2026-04-11 ~12:23 UTC
   - **Optimizer D-o-R Phase 2 nesting fix running**: Addressing remaining nesting issue in Phase 2 prompts.
   - **All agents self-directing**: Zero pending May requests. Zero failures. Zero May interventions needed.
 - **Key**: System in autonomous steady state. 138+ experiments completed. EXP-138 verify-wrap workflow is ready for production pilot (gym ceiling prevents further gym validation). Tech-lead actively evaluating integration. Research→production pipeline slowly maturing: git-commit FP fix merged, verify-wrap built, tech-lead reviewing deployment path. Coder still idle — no feature work from Hao.
+
+## Latest Cycle Summary (12:53)
+- **System**: 7/8 healthy. Amy-kimi 429 (billing). All 8 agents running fresh heartbeats simultaneously. Zero errors/failures last hour.
+- **Since last cycle (12:23)**:
+  - **Bob H-102 COMPLETE**: Hypothesis "Workflow Adoption Determines Behavioral Internalization" written (15KB). Formalizes EXP-137 findings into testable hypothesis. Committed.
+  - **Tech-lead Lens D COMPLETE (KEY)**: verify-wrap assessment — **DO NOT wire in for Scout**. 4 problems: (1) Scout doesn't fork work sessions (all inline in heartbeats), (2) verify-wrap hard-codes "scout", (3) real issue is C1.3 convention violations, (4) can't wrap heartbeat sessions without framework changes. Assessment at `agents/tech-lead/workspace/verify-wrap-assessment.md`.
+  - **Optimizer D-o-R Phase 2 nesting fix**: Work session completed (23 ops).
+  - **All agents self-directing**: Zero pending requests. Zero failures. Zero May interventions needed.
+- **Key**: Tech-lead's Lens D verdict closes the verify-wrap-for-Scout path. The real fix for Scout FM-3.3 is C1.3 convention enforcement on heartbeat-inline writes, not workflow wrapping. System continues in autonomous steady state. 138+ experiments. Coder still idle — no feature work from Hao.
