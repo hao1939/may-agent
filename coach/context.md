@@ -2,6 +2,7 @@
 - bun is at .state/.bun/bin/bun — add to PATH: `export PATH=".state/.bun/bin:$PATH"`
 - sqlite3 CLI is not available — query may.db with bun: `bun -e "import {Database} from 'bun:sqlite'; ..."`
 - Gym runner: scripts/gym-run.sh <scenario> --agent <name>
+- Gym batch runner: scripts/gym-batch.sh — run multiple scenarios at once with --variants, --trials N, --tier/--category filtering, and comparison summary. Use instead of manual gym-run.sh loops.
 - Gym scenarios are in agents/gym/scenarios/
 - Lab forks for experiments: agents/.lab/<fork-name>/
 - SOUL.md text changes don't fix judgment failures (0/18 in experiments) — use workflow enforcement

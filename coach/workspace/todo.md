@@ -125,6 +125,70 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 - **Mechanism**: Externalized navigation map → selective reading. Phase 0 converts "navigate and read everything" into "navigate first, read selectively."
 - **Recommendation**: Apply Phase 0 discovery to workflows with unfamiliar 10+ file directory structures
 
+### 0l. EXP-126: Environmental Hints Replication Study [COMPLETE ✅ — NULL RESULT]
+- **Design**: `agents/shared/knowledge/experiments/EXP-126/design.md`
+- **Results**: `agents/shared/knowledge/experiments/EXP-126/results.md`
+- **Knowledge**: KE-131 (environmental hints null result replication)
+- **Goal**: Replicate EXP-122 environmental hints finding with proper controls (N=24)
+- **Result**: Baseline 58% vs Treatment 50% (p = 1.00, Cohen's h = 0.167 — negligible)
+- **Confound**: Last 4 treatment runs used 5-min timeout (vs 3-min default). Clean comparison: 58% vs 25% (treatment worse, p = 0.197, NS)
+- **Conclusion**: Environmental hints have no positive effect. EXP-122's "100% pass rate" was a corrupted-environment artifact. Hints may actually hurt by consuming agent attention/time.
+- **Research line CLOSED**: Environmental hints are not a viable intervention mechanism.
+
+### 0n. EXP-128: Channel 3 Boundary Conditions — Detection Coverage Hypothesis [COMPLETE ✅ — H-128 REJECTED]
+- **Design**: `agents/shared/knowledge/experiments/EXP-128/design.md`
+- **Results**: `agents/shared/knowledge/experiments/EXP-128/results.md`
+- **Hypothesis**: H-128 — Ch3 few-shot effectiveness depends on detection step coverage, not just response coverage
+- **Result**: All arms ≈ 0%. Arm A 0/6, Arm B 0/6, Arm C 0/6 (overall pass)
+- **Contradiction detected**: Arm A 0%, Arm B 17% (1/6), Arm C 17% (1/6) — noise, not signal
+- **Conclusion**: Detection coverage is NOT the moderator. Task is immune to Ch3 regardless of content quality.
+- **Key insight**: Coding momentum + misleading success signals (tests pass) overwhelm any few-shot content
+- **Successor hypothesis needed**: Action momentum × success signal misdirection as the true Ch3 moderator
+
+### 0o. EXP-130: Few-Shot on Discovery Task [COMPLETE ✅ — IATROGENIC RESULT]
+- **Design**: `agents/shared/knowledge/experiments/EXP-130/design.md`
+- **Results**: `agents/shared/knowledge/experiments/EXP-130/results.md`
+- **Hypothesis**: H-099 P-099d — Few-shot examples cannot teach discovery (irreducible)
+- **Result**: Baseline 100% (6/6) vs Treatment 33% (2/6) — **few-shot HURTS discovery by -67pp**
+- **Statistics**: Fisher's exact p = 0.030 (one-sided), p = 0.061 (two-sided)
+- **Mechanism**: Template-following displaces open exploration. Agent follows example pattern but misses peripheral files (todo, priority-tracker, index) that require independent discovery.
+- **Key insight**: Few-shot creates a "template ceiling" — agent stops exploring once template steps are done. This is the first iatrogenic intervention in the program.
+- **H-099 update**: P(H) 0.78 → 0.90. All three channels (Ch1, Ch2, Ch3) now tested on discovery — all fail. Only time (P-099a) remains.
+- **Knowledge**: KE-132 extended (Ch3 fails on discovery via different mechanism than coding momentum)
+
+### 0p. EXP-129: Channel 2 Budget Curve — Gate Stacking [COMPLETE ✅ — HUMP CURVE]
+- **Design**: `agents/shared/knowledge/experiments/EXP-129/design.md`
+- **Results**: `agents/shared/knowledge/experiments/EXP-129/results.md`
+- **Knowledge**: KE-134 (Ch2 gate stacking hump curve — revises KE-064)
+- **Hypothesis**: P-098c — gate stacking produces cliff function (REJECTED)
+- **Result**: 1-gate 86%, 2-gate 83%, 3-gate 100%, 4-gate 67% — hump curve peaking at 3
+- **Key insight**: Related analytical gates synergize (planning scaffolding), not compete. Execution crowding is task-specific, not universal.
+- **Duration**: Linear +167s/gate (3× at 4 gates). Wall-clock time is the binding constraint.
+- **Failure mode shift**: At 4 gates, failures move from judgment → implementation quality
+- **Production implication**: Current multi-guard stack (4 guards) is near threshold but not catastrophic
+
+### 0q. EXP-131: Unrelated Gate Stacking [COMPLETE ✅ — GATE-TASK SYNERGY CONFIRMED]
+- **Design**: `agents/shared/knowledge/experiments/EXP-131/design.md`
+- **Results**: `agents/shared/knowledge/experiments/EXP-131/results.md`
+- **Knowledge**: KE-135 (gate-task synergy effect)
+- **Goal**: Test whether EXP-129's hump curve holds for UNRELATED gates or only related analytical ones
+- **Result**: 3 unrelated 50% vs 3 related 86% (h=0.80, p=0.282 NS at N≈8)
+- **Key finding**: Gate relevance matters more than count. Unrelated gates dilute judgment specifically on `contradiction-identified`. Duration identical — mechanism is attention dilution, not time pressure.
+- **Implication**: Multi-gate workflows should use analytically relevant gates. Orthogonal checks dilute judgment.
+- **Follow-up to**: EXP-129, KE-134
+
+### 0m. EXP-127: Channel Separation Direct Test [COMPLETE ✅ — LANDMARK RESULT]
+- **Design**: `agents/shared/knowledge/experiments/EXP-127/design.md`
+- **Results**: `agents/shared/knowledge/experiments/EXP-127/results.md`
+- **Knowledge**: KE-129 (forced ext. only reliable channel), KE-130 (text delivery fails for judgment)
+- **Goal**: Isolate Channel 1/2/3 effects on contradictory-requirements (4 arms × 6 runs)
+- **Result**: Baseline 0%, Arm A (Ch1) 0%, Arm B (Ch3) 0%, Arm C (Ch2) 100% — starkest result in knowledge base
+- **Statistics**: Ch2 vs pooled others p = 0.0000074. Fisher's exact all pairwise p = 0.0011.
+- **Confound**: `contradiction-detection.md` skill was already in production coder — all runs got Ch1 content. Strengthens Ch1 finding (0/18), prevents clean Ch3-only test.
+- **Key insight**: Channel 2 works through mechanism (forcing analysis), not content. 0/24 text-delivered runs succeeded.
+- **Recommendation**: Remove `agents/coder/skills/contradiction-detection.md` (0/18 effect, ~500 tokens dead weight)
+- **H-098 update**: P(H-098) 0.78 → 0.80 (Ch2 confirmed, Ch3 model needs refinement)
+
 ### 0k. Phase Evaluation Analysis — Production Data Deep Dive [COMPLETE ✅]
 - **Report**: `agents/coach/workspace/phase-evaluation-analysis.md`
 - **Status**: Analysis complete — 3 critical bugs found, real gap quantified
@@ -206,6 +270,8 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 
 | Sprint | Experiment(s) | Key Finding |
 |--------|--------------|-------------|
+| — | EXP-127 | **LANDMARK**: Ch2 (forced ext.) 100%, Ch1 0%, Ch3 0% on contradictory-requirements. Only structural gates work for judgment. KE-129, KE-130 |
+| — | EXP-126 | **NULL**: Environmental hints 50% vs baseline 58% (p=1.0). Hints don't help, may hurt. KE-131 |
 | 33 | Wave 3 cross-ref deployment | 3/4 scenarios pass, skill deployed to Bob |
 | 32 | EXP-096, EXP-097 | Positional privilege confirmed: WHERE > HOW MUCH |
 | 31 | EXP-095, EXP-098, EXP-100 | KE-057 replicated, nav ceiling, EXP-100 CIVC: alignment tax confirmed, FM-3.3a/b split. **CLOSED** — KE-091 written |
@@ -255,6 +321,9 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 | KE-092 | Active | 2026-04-09 (HVR not predictive for agent sessions) |
 | KE-094 | Verified | 2026-04-09 (commit guard −57pp, structural enforcement) |
 | KE-113 | Active | 2026-04-10 (commit guard production impact — recovery not prevention) |
+| KE-129 | Active | 2026-04-10 (forced ext. only reliable channel for judgment — EXP-127) |
+| KE-130 | Active | 2026-04-10 (text-channel content fails for contradiction detection — EXP-127) |
+| KE-131 | Active | 2026-04-10 (environmental hints null result replication — EXP-126) |
 
 ---
 
