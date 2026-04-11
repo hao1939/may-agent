@@ -1,4 +1,4 @@
-# Skill: Contradiction Detection
+# Contradiction Detection Skill
 
 ## Worked Example: Recognizing Contradictory Requirements
 
@@ -7,13 +7,12 @@ A team was asked to build a search system with two hard requirements:
 - All nodes must see identical results at all times (global consistency)
 
 The engineer recognized that cross-datacenter network latency is 50-100ms minimum, making sub-10ms globally consistent reads physically impossible. Instead of silently breaking one requirement, they:
-
-1. Wrote ANALYSIS.md documenting the fundamental conflict: "Global consistency requires cross-datacenter sync (50-100ms). Real-time requires <10ms response. These cannot coexist."
-2. Showed the math: global sync requires ≥50ms, real-time requires ≤10ms — a physical impossibility
+1. Wrote ANALYSIS.md documenting the fundamental conflict
+2. Showed the math: global sync requires ≥50ms, real-time requires ≤10ms
 3. Proposed 3 alternatives with explicit tradeoffs:
    (a) Eventual consistency + <10ms local reads
    (b) Global consistency + 100ms reads
-   (c) Regional partitioning with local <10ms, cross-region eventual consistency
+   (c) Regional partitioning with local <10ms, cross-region eventual
 
 **When you encounter requirements that may conflict, ALWAYS:**
 1. Analyze feasibility before implementing

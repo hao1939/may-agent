@@ -1,18 +1,20 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-10 ~19:53 UTC
+Updated: 2026-04-11 ~06:00 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — Fresh heartbeat 19:53. Completed EXP-127 design this cycle.
-- **Coach**: 🟡 Struggling — EXP-126 interrupted 3× (gym trials exceed heartbeat windows). Fresh heartbeat 19:53.
-- **Scout**: ⚠️ 401 Error — Recurring `IDE token expired` auth failure. Auto-pause recovery handling retries.
-- **Tech-lead**: 🟢 Active — Fresh heartbeat 19:53. Evaluator bugs #2/#3 completed and merged (commit 9f22156).
-- **Optimizer**: 🟢 Active — Fresh heartbeat 19:53. Mode C scouting completed.
-- **Evaluator**: 🟢 Active — Fresh heartbeat 19:53.
-- **QA**: 🟢 Active — Fresh heartbeat 19:53.
+- **Bob**: 🟢 Active — Fresh heartbeat 06:00. EXP-127 design complete, dispatched to Coach. Self-directing.
+- **Coach**: 🟢 Active — Fresh heartbeat 06:00. EXP-127 work sessions keep getting interrupted (3x). Bob re-dispatched.
+- **Scout**: 🟢 Running — Fresh heartbeat 06:00.
+- **Tech-lead**: 🟢 Active — Fresh heartbeat 06:00.
+- **Optimizer**: 🟢 Active — Fresh heartbeat + cron:optimize running 06:00.
+- **Evaluator**: 🟢 Active — Fresh heartbeat 06:00.
+- **QA**: 🟢 Active — Fresh heartbeat 06:00.
 - **Coder**: Idle. Only runs when forked by tech-lead.
-- **All agents**: 🟡 7/8 healthy. Scout has recurring auth error (401, IDE token expired).
+- **All agents**: 🟢 7/8 healthy. Amy-kimi 429 (billing). System restarted ~00:44, clean restart at 06:00.
+- **⚠️ Federation sync data loss**: Auto-commit 8feedbf1 deleted EXP-131 files + 3 INDEX entries. **Restored** (commit 6a2bc4a2). Root cause: federation sync overwrites with stale state.
+- **⚠️ Growth trigger FM-2.6 FALSE POSITIVE**: error-log-scanner claims 15 Bob FM-2.6 errors, evaluations table shows 0 in last 7d. Same pattern as FM-3.3 false positive.
 - **✅ Tool Schema Guard**: Live in production.
 - **✅ Dead code removal**: ~4,779+ lines removed total (1,973 earlier + 589 memory JSONL + 2,217 finish-guard dead code).
 - **✅ Web UI Phase 1**: Merged to main.
@@ -160,18 +162,24 @@ Updated: 2026-04-10 ~19:53 UTC
 | **Optimizer: Session-Sync Cron Handler** | ✅ DEPLOYED | optimizer | Handler at `agents/may/handlers/session-sync.ts`. Syncs .state/sessions/ meta.json → may.db every 5min. 996 sessions in <1s. Commit 2d257c78. Fixes chronic stale DB issue. |
 | **EXP-116 Results Correction** | ✅ CORRECTED | may | EXP-116/results.md note updated: invalidation was WRONG — EXP-118 confirmed 100% baselines are real with valid agents. Silent exit bug exists but didn't corrupt results. |
 
-| **EXP-122 Environmental Hints** | ⚠️ CORRUPTED DATA | coach | **CORRECTION**: Reported "100% (6/6)" was from corrupted environment (pre-baked answers). Real first run: 4/6 (67%) = NULL RESULT (same as baseline). HTML comment hint showed no effect at n=6. EXP-126 is the real replication at larger N. |
+| **EXP-128 Channel 3 Boundary Conditions** | ✅ COMPLETE | coach | **H-128 REJECTED**: 18 runs, all arms 0/6 pass. Detection coverage made no difference. Ch3 has genuine task-type boundary — "success signal misdirection" (tests pass → agent thinks it succeeded). Action momentum overwhelms few-shot. Results at `agents/shared/knowledge/experiments/EXP-128/results.md`. |
+| **EXP-129 Channel 2 Budget Curve** | ✅ COMPLETE | coach | **DEFINITIVE**: Hump curve, NOT cliff. 1-gate 86%, 2-gate 83%, **3-gate 100%**, 4-gate 67%. P-098c REJECTED. Each gate +167s linear. 4-gate failure = implementation (time pressure), NOT judgment. Deployment: 3 analytical gates max. Results at `agents/shared/knowledge/experiments/EXP-129/results.md`. **Bob KB integration pending**. |
+| **EXP-130 Few-Shot on Discovery** | ✅ COMPLETE (**IATROGENIC**) | coach | **LANDMARK**: Baseline 6/6 (100%) vs Few-shot 2/6 (33%). p=0.030. Few-shot ACTIVELY HURTS discovery tasks (-67pp). Template-following displaces exploration. H-099 P(H) 0.78→0.90. All 3 channels (Ch1/Ch2/Ch3) fail on discovery. Results at `agents/shared/knowledge/experiments/EXP-130/results.md`. |
+| **WKWA-008 Channel Theory Synthesis** | ✅ COMPLETE | bob | 10-experiment synthesis: channel × task-type matrix. At `synthesis/WKWA-008-channel-theory-discovery-boundary.md`. |
+| **Session-Query Tool** | ✅ MERGED | optimizer/may | 378-line CLI at `scripts/session-query.ts`. Merged to main. Note: queries `agents/.state/sessions/history/` (historical), not `.state/sessions/` (current). |
+| **H-099 Discovery Task Boundary** | ✅ FILED | bob | 167-line hypothesis: creative inference is irreducible to scaffolding. 5 failed interventions as evidence. Commit 0527a1f. |
 | **EXP-123 Verification-Depth Guard** | ✅ MERGED + OBSERVING | coach + may | Guard deployed to production (commit 9d9be57). Blocks superficial verification: git on gitignored, no post-write verification. 363 lines, 18/18 tests. Observation window: 48-72h until Apr 13. |
-| **EXP-124 FM-1.3 Path-Guessing Intervention** | ✅ COMPLETE (**STRONG POSITIVE**) | coach | **Phase 0 directory discovery**: Treatment 3/3 (100% convention) vs Baseline 0/3 (80% convention, 0% on navigation efficiency). +100pp on failing check. No product regression (100%→100%). Mechanism: externalized nav-map → selective reading. Results at `agents/shared/knowledge/experiments/EXP-124/results.md`. Bob integrating. |
+| **EXP-124 FM-1.3 Path-Guessing Intervention** | ✅ COMPLETE (**NULL RESULT v2**) | coach | **v2 CORRECTION**: With gym runner file-sync bug fixed, baseline 83% (5/6) = treatment 83% (5/6). Runner bug was the real issue. No treatment effect. Harder scenarios needed for FM-1.3 research. Results at `agents/shared/knowledge/experiments/EXP-124/results-v2.md`. |
 | **Gym Runner Inherits Dedup** | ✅ MERGED | tech-lead | `inherits` support in gym runner for scenario deduplication. 42 variant scenarios can now inherit base environment. Commits da552cf3 + 71b904f4 + 40d48912 merged to main. |
 | **EXP-125 Phase Evaluation Analysis** | ✅ COMPLETE (**3 EVALUATOR BUGS**) | coach | **LANDMARK**: Reported "70% phase failure" is mostly measurement artifact. (1) Scale mismatch: 0-1 vs 1-5 = 0% LLM pass rate with Q≥3 threshold. (2) Method selection bias: roots→heuristic (99% pass), children→LLM (strict). (3) Dedup: 100% of pipeline pairs get identical eval (agent name key, not session ID). Real gap = 19pp (26% vs 45% "good"), not 70pp. Analysis at `agents/coach/workspace/phase-evaluation-analysis.md`. |
 | **Evaluator Scale Mismatch Bug + Pipeline Dedup** | ✅ MERGED | tech-lead | 3× P0 bugs fixed: (1) Scale mismatch — heuristic 1-5 → 0-1, migration SQL for 1057 evals. (2) Pipeline dedup — re-keys by sessionId when children share agent name. (3) Isolation threshold 3→0.5. 57/57 tests. Commit 9f22156 pushed to origin. |
-| **EXP-126 Environmental Hints Replication** | ⏳ RUNNING | coach | 24 gym trials planned. **Found critical gym runner bug**: syncNewFilesFromRoot only synced NEW files, not MODIFIED — fixed with deepSnapshotDir. First post-fix trial: 4/8 (vs 0/8 pre-fix). Running remaining trials. |
+| **EXP-126 Environmental Hints Replication** | ✅ COMPLETE (NULL RESULT) | coach | **DONE**: 24 trials. Baseline 7/12 (58%), Treatment 6/12 (50%). p=1.0, Cohen's h=0.167 (negligible). **Timeout confound**: last 4 treatment used 5min (all passed); clean 3min comparison = 25% treatment vs 58% baseline (p=0.197). Hints may actually HURT via attention cost. Results at `agents/shared/knowledge/experiments/EXP-126/results.md`. |
 | **Gym Runner Modified-File Sync Bug** | ✅ FIXING (in-flight) | coach | Critical: `syncNewFilesFromRoot` only synced NEW files, not MODIFIED. Agent writes to PROJECT_ROOT but modified files in existing dirs (knowledge/) weren't synced. Fix: deepSnapshotDir captures mtimes before run, syncs changed files back. Found during EXP-126. |
 | **Optimizer Mode B Tool Gap Analysis** | ✅ COMPLETE | optimizer | Exploration mode updated A→B. |
 | **H-098 Attention Channel Theory** | 🆕 FILED | bob | P(H)=0.78, Tier 1. Intervention effectiveness = channel separation. o3 17% collective vs o3-mini 50%. Based on KE-120/DD-731-733. |
-| **EXP-127 Channel Separation Direct Test** | 🆕 DESIGNED | bob | 4-arm test of H-098: baseline (0% historical), Ch1 system-prompt, Ch3 task-message few-shot, Ch2 forced-ext. Same contradiction-detection content. N=6/arm (24 total). Scenario: contradictory-requirements. Design + protocol at `agents/shared/knowledge/experiments/EXP-127/`. Commit 9f22156. |
+| **EXP-127 Channel Separation Direct Test** | ✅ COMPLETE (**LANDMARK**) | coach | **Baseline 0/6, Ch1 0/6, Ch3 0/6, Ch2 (Forced Ext) 6/6 (100%)**. p=0.0000074 vs pooled others. Only structural gates work for judgment tasks. Confound: contradiction-detection skill was already deployed (all runs had Ch1). Even Ch1+Ch3 combined = 0/6. Skill removed (commit 8f3d660f). Bob KB integrating (req:c15a56d7). Results at `agents/shared/knowledge/experiments/EXP-127/results.md`. |
 | **Gym Transcript Fix + Evaluator Bug Tests** | ✅ MERGED | tech-lead/may | Branch `review/s_1775848356081_345` merged to main. Transcript field in GymResult + evaluator scale/dedup tests. 20/20 pass. Commits 82757680 + 48315279. |
+| **EXP-131 Unrelated Gate Stacking** | ✅ COMPLETE | coach | **H-131 SUPPORTED (p=0.28)**: Arm A (1 related) 89%, Arm B (3 unrelated) 50%, Arm C (3 related) 86%. Unrelated gates -36pp vs related at same count. All 4 Arm B failures on core judgment check. Gate-task synergy, not Ch2 capacity, drives EXP-129 hump curve. **Federation auto-commit deleted results — restored from git history (6a2bc4a2)**. Results at `agents/shared/knowledge/experiments/EXP-131/results.md`. **Bob KB integration DONE — KE-135 created**. |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -203,29 +211,82 @@ Updated: 2026-04-10 ~19:53 UTC
 | Anti-busywork campaign | Apr 6 | Bob, Coach, Optimizer heartbeats fixed |
 | Agent busywork fix | Apr 6 | All 3 agents fixed — journal refs removed |
 
-## Latest Cycle Summary (19:53)
-- **System healthy**: 7/8 agents running. All heartbeats fresh (19:53). Scout recurring 401 auth. 3 normal interruptions (coach×2, tech-lead — heartbeat cycling).
-- **Since last cycle (19:43)**:
-  - **May**: Pushed 6 commits to origin (including evaluator fixes + EXP-127 design). Cleaned 4 stale git stashes. Verified 1870/1870 tests pass on main.
-  - **Bob**: Completed EXP-127 design (19:39) — Channel Separation Direct Test for H-098. Design + protocol committed. Now on fresh heartbeat.
-  - **Tech-lead**: Completed evaluator bugs #2/#3 (pipeline dedup + isolation threshold) at 19:25. Changes already on main (commit 9f22156).
-  - **Coach**: EXP-126 still struggling — 3 interrupted sessions (18:24, 18:54, 19:24). Gym trials take too long for heartbeat windows. Now on fresh heartbeat, will likely re-dispatch.
-  - **Optimizer**: Mode C skill scouting session completed (19:24).
-  - **All agents**: Fresh heartbeat cycle started 19:53.
+## Latest Cycle Summary (01:53)
+- **System healthy**: 7/8 agents running. Scout recurring 401 auth. Zero failures last hour.
+- **Since last cycle (01:23)**:
+  - **Coach EXP-129 DATA COMPLETE**: All 25 runs finished. **Inverted-U curve confirmed**: Arm A 86%, Arm B 83%, Arm C 100%, **Arm D 67%**. 3-gate optimal; 4th gate causes time pressure (755s avg) and scoring failures. Coach writing final results.
+  - **Bob EXP-130 KB integration ✅ DONE**: Completed in work session. H-099, H-098 updated.
+  - **All agents self-directing**: 1 active request (Coach EXP-129 writeup). Zero May interventions needed.
+
+## Latest Cycle Summary (03:23)
+- **System**: 6/8 healthy. Scout + Optimizer 401 auth errors (LiteLLM GitHub token). Amy-kimi 429 (billing).
+- **Since last cycle (02:53)**:
+  - **Coach EXP-131 continuing** (~56min): Batch 4 of parallel gym trials running. Early data: Arm A (1-gate) ~100%, Arm B (3-unrelated) ~50%, Arm C (3-relevant) ~86%. Unrelated gates appear to hurt.
+  - **Optimizer D-o-R P1 cap**: Early positive signal (n=1: 2 ops vs pre-fix avg 32.2). Committed 2cd36432.
+  - **Scout DD-747/748**: Constraint Paradox grounding for EXP-129 hump curve. Committed 633cf249.
+  - **All agents self-directing**: Zero pending requests. Zero failures. Zero May interventions needed.
+
+## Latest Cycle Summary (03:53)
+- **System**: 6/8 healthy. Scout + Optimizer 401 auth errors (4+ hours). Amy-kimi 429. Zero failures.
+- **Since last cycle (03:23)**:
+  - **Coach EXP-131 batches 5-7 running**: Data now at n=18 (6 batches). A=100%, B≈50%, C≈83%. Batch 7 in progress. NOT stuck despite 87min runtime — each batch of 3 parallel gym runs takes ~10min.
+  - **Bob very active**: Multiple work sessions (EXP-130 KB, EXP-129 KB, DD-744-746, research synthesis). All self-dispatched.
+  - **System-status anomalies all resolved**: Coach not stuck (active batch 7), Bob not stale (very productive), 0 unevaluated sessions (was 172).
+  - **All agents self-directing**: Zero pending requests. Zero failures. Zero May interventions needed.
+
+## Latest Cycle Summary (04:23)
+- **System**: 7/8 healthy. Amy-kimi 429 (billing). Scout + Optimizer 401 auth may be resolved (both completed heartbeats successfully). Zero failures last hour.
+- **Since last cycle (03:53)**:
+  - **Coach EXP-131 work session interrupted**: Was at batch 7, n=18. Data pattern clear. Coach should resume via heartbeat dispatch.
+  - **Optimizer D-o-R nested workflow fix deployed**: 20-op work session completed. Anti-nesting instruction added. 2 more work sessions self-dispatched.
+  - **All agents self-directing**: 9 active requests, all self-dispatched. Zero May interventions needed.
 
 ## Key Findings This Cycle
-- **Evaluator pipeline dedup MERGED**: Tech-lead fixed per-session keying + isolation threshold (from 3→0.5). 57/57 evaluator tests pass. Pushed to origin.
-- **EXP-127 designed by Bob**: 4-arm test of H-098 (Channel Separation). Same contradiction-detection content via system prompt (Ch1), task message (Ch3), forced externalization (Ch2), and baseline. Predicts: baseline 0%, Ch1 0-17%, Ch3 83-100%, Ch2 83-100%. Ready for Coach to run.
-- **⚠️ EXP-122 results were CORRUPTED**: EXP-126 design reveals the reported "100%" was from a corrupted environment (pre-baked answers). Real EXP-122 result was 67% (null). EXP-126 is the genuine replication at larger N.
-- **EXP-126 keeps timing out**: Coach can't complete 24 gym trials in heartbeat windows. Needs longer work session or reduced trial count.
-- **Bob analysis NOT stale**: System-status anomaly (req:56c76ffd) is false alarm — Bob is very active (EXP-127 design completed this cycle).
+- **EXP-131 COMPLETE**: Arm A 89%, Arm B 50%, Arm C 86%. Gate relevance matters — unrelated gates -36pp vs related. All failures on core judgment check. H-131 supported (directional, p=0.28). Bob KB integration pending.
+- **Federation sync data loss**: Auto-commit 8feedbf1 deleted EXP-131 results + 3 INDEX entries. Restored. This is a recurring risk — federation sync can overwrite agent work.
+- **Tech-lead dead code cleanup**: activity.jsonl + progress.md output systems removed.
+
+## Latest Cycle Summary (04:53)
+- **System**: 7/8 healthy. Amy-kimi 429 (billing). Zero failures last 2 hours. All agents running.
+- **Since last cycle (04:23)**:
+  - **Coach EXP-131 results WRITTEN**: Work session completed (34 ops). 261-line results.md at `agents/shared/knowledge/experiments/EXP-131/results.md`.
+  - **⚠️ Federation auto-commit DELETED EXP-131 files**: Commit 8feedbf1 removed design.md, results.md, + 3 INDEX entries (DD-747, DD-748, CR-338). **Restored from git history** (commit 6a2bc4a2).
+  - **Tech-lead dead code cleanup**: Removed activity.jsonl + progress.md output systems.
+  - **Optimizer D-o-R 12h measurement**: Work session completed.
+  - **All agents self-directing**: Zero pending requests. Zero failures. Zero May interventions needed (except data restoration).
 
 ## Next Actions
 - **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. Saves $143-441/day. **Blocked on Hao since Mar 24**.
-- **P1**: **EXP-126 completion** — Coach needs extended work session. Monitor if current heartbeat successfully re-dispatches with longer timeout.
-- **P1**: **EXP-127 execution** — Designed, ready for Coach. Need gym scenarios built + trials run.
-- **P1**: **EXP-105 Few-Shot Production Impact** — Need coder/optimizer work sessions to generate data.
-- **P1**: **Generate implementation work** — System idle without features. Coder completely idle.
+- **P1**: **Evaluation-sync cron handler not firing** — Handler code works but framework isn't invoking it. 11.5h gap. Tech-lead should investigate.
+- **P1**: **Federation sync reliability** — Auto-commit deleting experiment results is a real problem. Tech-lead should investigate.
+- **P1**: **Generate implementation work** — System idle without features. Coder completely idle. Need Hao priorities.
 - **P2**: `analyze-failures` cron DB bug — persistent but non-critical.
 - **P2**: Amy-kimi still down — blocked on Hao for billing.
-- **P2**: Scout 401 auth error — recurring IDE token expiry.
+
+## Latest Cycle Summary (05:23)
+- **System**: 7/8 healthy. Amy-kimi 429 (billing). Zero failures last hour. All agents running heartbeats.
+- **Since last cycle (04:53)**:
+  - **Bob EXP-131 KB integration DONE**: KE-135 (Gate-Task Synergy Effect) created. H-098 updated with EXP-131 evidence.
+  - **Optimizer Mode C work session**: Self-dispatched Skill Scouting for Coach Experiment Execution Efficiency. Productive.
+  - **System steady state**: All agents self-directing. Zero pending requests. Zero failures. Zero May interventions needed.
+- **Key**: System is in healthy autonomous steady state. All active experiments complete. Research pipeline yielding knowledge (130+ experiments). Main bottleneck: no new implementation work for coder — need Hao priorities.
+
+## Latest Cycle Summary (06:00)
+- **System**: 7/8 healthy. Amy-kimi 429 (billing). System restarted ~00:44, all agents fresh at 06:00.
+- **Since last cycle (05:53)**:
+  - **System restart**: All sessions interrupted at ~00:44 UTC. Coach EXP-127 + Bob FM-3.1 growth cycle + optimizer tool quality regression — all interrupted. Clean restart at 06:00.
+  - **Bob re-dispatched EXP-127 to Coach**: Two fresh requests (5dc9e9f5, c429f69a). EXP-127 result files still empty (0 trials completed across 3 attempts).
+  - **Growth trigger FM-2.6 Bob = FALSE POSITIVE**: error-log-scanner claims 15 errors, evaluations shows 0. Same false alarm pattern as FM-3.3.
+  - **EXP-142 request (ebe0a22a) = GYM ARTIFACT**: "human→bob" request is actually from cli-oneshot gym scenario. Not a real human task. Can ignore.
+  - **Phase 4 Context Pressure Valve (e9622625)**: 18-day stale bob→tech-lead request. Partially superseded by context overflow fix (9ea5b5a) + compaction KeyFacts (0349a21). Low priority.
+- **Key**: System in recovery from restart. All agents self-directing. Main active research: EXP-127 (Channel Separation), Coach needs extended runtime to complete gym trials without timeout.
+
+## Next Actions
+- **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. Saves $143-441/day. **Blocked on Hao since Mar 24**.
+- **P1**: **EXP-127 completion** — Coach needs to complete 24 gym trials. Has been interrupted 3x. Bob re-dispatched. Monitor this cycle.
+- **P1**: **EXP-123 observation window** — Verification-depth guard deployed Apr 9. Window until Apr 13. Watch for activation data.
+- **P1**: **Generate implementation work** — System idle without features. Coder completely idle. Need Hao priorities.
+- **P1**: **Federation sync reliability** — Auto-commit deleting experiment results is a real problem. Tech-lead should investigate.
+- **P2**: `analyze-failures` cron DB bug — persistent but non-critical.
+- **P2**: Amy-kimi still down — blocked on Hao for billing.
+- **P2**: Eval-sync cron handler stale — manually caught up last cycle, root cause (cron framework not invoking) still unfixed.

@@ -10,7 +10,7 @@
 
 Fourteen weeks of empirical research on multi-agent LLM systems have produced a **coherent, actionable theory of agent improvement**. The central finding is categorical: **structure dominates content** at every level. Text-based interventions achieve 0% on judgment tasks (N=32+). Structural interventions achieve 87-100%. This gap is not incremental — it is a phase transition.
 
-The program has converged on three orthogonal mechanisms that explain all observed intervention effects (KE-060), formalized in 33 laws of multi-agent behavior (GUS), and validated through 16 high-confidence hypotheses (P(H) ≥ 0.70). The latest sprint (EXP-117 through EXP-124) established the **discovery task boundary** — the first domain where forced externalization is actively harmful — and then found a structural workaround that resolves it.
+The program has converged on three orthogonal mechanisms that explain all observed intervention effects (KE-060), formalized in 33 laws of multi-agent behavior (GUS), and validated through 16 high-confidence hypotheses (P(H) ≥ 0.70). The latest sprint (EXP-117 through EXP-124) established the **discovery task boundary** — the first domain where forced externalization is actively harmful — but the structural workaround (EXP-124) was a **null result** (v2 post-runner-fix: 83% vs 83%, p=1.0). The discovery-task boundary remains an open frontier.
 
 ---
 
@@ -56,9 +56,9 @@ All observed intervention effects decompose into exactly three orthogonal mechan
 
 3. **H-053 (P=0.88)**: Workflow adoption decays without structural reinforcement. The EXP-028 natural experiment showed 51pp degradation when a coach's heartbeat was rewritten — the largest measured effect size in the program.
 
-4. **H-085 (P=0.87)**: Forced externalization is the general mechanism. 76/95 runs across 18 scenarios, 6 failure domains. Five boundary conditions now mapped: path choice, absent info, multi-doc transfer, execution crowding, and **discovery tasks** (actively harmful).
+4. **H-085 (P=0.85)**: Forced externalization is the general mechanism. 71/89 runs across 17 scenarios, 5 failure domains (EXP-124 removed — null result). Five boundary conditions now mapped: path choice, absent info, multi-doc transfer, execution crowding, and **discovery tasks** (neither text nor structural interventions effective).
 
-5. **H-095 (P=0.85)**: Agent-specific interventions outperform universal approaches. Three independent agents now have validated structural guards: Coder (commit guard for FM-3.3), Optimizer (completeness guard for FM-2.2), Bob (Phase 0 discovery for FM-1.3). Same structural pattern, different mechanisms.
+5. **H-095 (P=0.84)**: Agent-specific interventions outperform universal approaches. Two validated structural guards: Coder (commit guard for FM-3.3), Optimizer (completeness guard for FM-2.2). Bob's Phase 0 discovery guard (EXP-124) was null result (v2 post-runner-fix). Same structural pattern validated where it works.
 
 ### The Discovery Boundary (EXP-117–124 Sprint)
 
@@ -70,9 +70,9 @@ The most important recent finding: **forced externalization is actively harmful 
 | EXP-120 | Progressive tracking | **-50pp** | Harm (NS) |
 | EXP-121 | Extended time | +16pp | Trending positive (NS) |
 | EXP-122 | Environmental hints | 0pp | No effect |
-| EXP-124 | Phase 0 nav-map (structural) | **+100pp** | Strong positive |
+| EXP-124 | Phase 0 nav-map (structural) | **0pp** (v2) | ⚠️ Null result (v1 invalidated by runner bug) |
 
-**Insight**: The failure is a **creative inference gap** (KE-126) — the agent must generate the novel idea "this result deserves a new KB entry" from first principles. This is not a tracking problem (tracking instructions are ignored), not a knowledge problem (environmental hints have zero effect), and not a time problem (extra time helps marginally). Only structural intervention — externalizing *environmental knowledge* (what files exist) rather than *task judgment* — works.
+**Insight**: The failure is a **creative inference gap** (KE-126) — the agent must generate the novel idea "this result deserves a new KB entry" from first principles. This is not a tracking problem (tracking instructions are ignored), not a knowledge problem (environmental hints have zero effect), and not a time problem (extra time helps marginally). The structural intervention (EXP-124) — externalizing *environmental knowledge* (what files exist) — also showed no effect when properly tested (v2 post-runner-fix). The discovery-task boundary remains unresolved.
 
 ---
 
@@ -129,7 +129,7 @@ Structural cooperation + calibrated agreement + context isolation. Strong extern
 |-------|-------|----------|--------|--------|
 | Commit verification guard | Coder | FM-3.3 | +51.3pp recovery | Production |
 | Completeness checklist guard | Optimizer | FM-2.2 | +100pp | Production |
-| Phase 0 discovery guard | Bob | FM-1.3 | +100pp | Validated, deploying |
+| Phase 0 discovery guard | Bob | FM-1.3 | ⚠️ 0pp (null result, v2) | NOT deploying — v1 invalidated |
 | Behavioral frustration detector | All | Frustration spiral | Detects error bursts, re-reads, edit thrash | Production |
 | Finish-status scoring | Evaluator | FM-3.3 | 4-phase mitigation | Production |
 
@@ -169,11 +169,11 @@ Structural cooperation + calibrated agreement + context isolation. Strong extern
 | H-089 | 0.94 | Environmental evidence discovery closes absent-info gaps |
 | H-091 | 0.93 | Few-shot delivery methods bridge text-workflow gap |
 | H-053 | 0.88 | Workflow adoption decays without structural reinforcement |
-| H-085 | 0.87 | Forced externalization is the general judgment mechanism |
+| H-085 | 0.85 | Forced externalization is the general judgment mechanism (EXP-124 v2 null → reverted from 0.87) |
 | H-058 | 0.87 | Frustration → topology rewrite; forced assessment prevents |
 | H-043 | 0.85 | Knowledge utilization bottleneck: U = P(access)×P(applies)×P(helps) |
 | H-009 | 0.85 | Evaluator heuristic was rubber stamp (now mitigated) |
-| H-095 | 0.85 | Agent-specific interventions outperform universal |
+| H-095 | 0.84 | Agent-specific interventions outperform universal (EXP-124 v2 null → reverted from 0.85) |
 | H-055 | 0.82 | Self-improvement bias: cosmetic not substantive |
 | H-088 | 0.80 | Implementation commitment closes analysis-action gap |
 | H-054 | 0.75 | LLM judges have fundamental accuracy limits by task type |

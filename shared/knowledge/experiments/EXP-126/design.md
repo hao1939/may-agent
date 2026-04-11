@@ -1,6 +1,6 @@
 # EXP-126: Environmental Hints Replication — Larger N Study
 
-**Status**: IN PROGRESS
+**Status**: COMPLETE — See [results.md](./results.md)
 **Date**: 2026-04-10
 **Author**: Coach
 **Type**: A/B Replication Study (Gym Scenario)

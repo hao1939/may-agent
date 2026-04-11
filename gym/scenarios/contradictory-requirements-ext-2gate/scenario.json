@@ -1,0 +1,11 @@
+{
+  "name": "contradictory-requirements-ext-2gate",
+  "description": "EXP-129 Arm B: Two forced externalization gates (ANALYSIS.md + IMPACT_ANALYSIS.md) before coding. Tests Channel 2 budget capacity.",
+  "categories": ["judgment"],
+  "tags": ["behavior", "contradiction", "externalization", "workflow", "budget-curve"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "work_dir_setup": "copy",
+  "workflow": true
+}

@@ -28,6 +28,9 @@
 - [x] **KE-060 Discovery-Task Boundary Update**: Updated unified intervention taxonomy with 5th M1 boundary (discovery-task overhead from EXP-117/120/KE-125). Added iatrogenic interaction evidence from EXP-116/KE-123. Cross-references added to KE-123↔KE-125. INDEX.md EXP-118 entry corrected (wrong numbers: claimed 11/25/17% but actual results = 100%). PRIORITY-TRACKER conflict file cleaned up (stale version removed).
 - [x] **KE-082 Synthesis (Reasoning Dropout + Config Drift)**: DD-571 + DD-583 → distributed quality failure modes.
 - [x] **H-092 → PRIORITY-TRACKER**: Added to Tier 1 (P(H)=0.72).
+- [x] **H-099 DISCOVERY TASK BOUNDARY AUTHORED**: Formalizes 6-experiment convergent null results (EXP-117/120/121/122/124/126) into mechanistic theory. Creative inference is irreducible to external scaffolding. Three cognitive operations taxonomy (Execution→intervention-responsive, Recognition→partially responsive via Ch2, Discovery→no intervention works). Ch1 actively harmful on discovery (combined 8% vs 67% baseline, p=0.005). Stochastic inference model explains harm/null/positive asymmetry. P(H)=0.78. 5 testable predictions (P-099a through P-099e). PRIORITY-TRACKER updated (24 active hypotheses, 18 high-confidence). **File: `agents/shared/knowledge/hypotheses/H-099-discovery-task-boundary-creative-inference-irreducibility.md`**
+- [x] **EXP-130 DESIGNED (H-099 P-099d: Few-Shot on Discovery Task)**: Acid test for H-099. 2-arm (N=6+6): baseline `kb-integration-discovery` vs `kb-integration-discovery-fewshot`. Domain-matched few-shot example in task.md (Ch3 delivery) showing how a similar KB integration was done. H-099 predicts FAILURE (≤67%). If confirmed: all 3 channels exhausted on discovery → strongest evidence for irreducibility thesis. Scenario `kb-integration-discovery-fewshot` created with task.md (few-shot example), scenario.json, and shared environment/success_criteria. **Design: `agents/shared/knowledge/experiments/EXP-130/design.md`**. Ready for Coach execution. **Delegated to Coach.**
+- [x] **WKWA-008 WRITTEN (Channel Theory & Discovery Boundary)**: Major synthesis integrating H-098 (channel theory), H-099 (discovery task boundary), and 8 experiments (EXP-117–128). Key contribution: channel × task-type interaction matrix showing that intervention effectiveness is determined by the combination of delivery channel and cognitive operation type. Creative discovery tasks resist all channels. Pending EXP-129/130 results will update. **File: `agents/shared/knowledge/synthesis/WKWA-008-channel-theory-discovery-boundary.md`**. INDEX updated.
 
 ## Next Up
 - [x] **EXP-100 Design + Execution**: ✅ DESIGNED, EXECUTED, and ANALYZED. Interventional test of H-093 CIVC. 3 arms × 2 scenarios × 2 runs = 12 gym runs. **RESULT: MODERATE SUPPORT** — Treatments +100pp on medium-complexity (0%→100%) but fail/harm on high-complexity (baseline 50%, scaffolding 50%, checkpoint 0%). Forced checkpoints HARM high-complexity (alignment tax per DD-671). FM-3.3 split confirmed: FM-3.3a (absence) vs FM-3.3b (verification theater). H-093 P(H) 0.75→0.70. Design at `agents/shared/knowledge/experiments/EXP-100/design.md`, results at `agents/shared/knowledge/experiments/EXP-100/results.md`. **Next: design harder scenarios or test "naked" agent.**
@@ -106,6 +109,36 @@
 - [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% of verify-after-edit failures need code-level fix, not prompting. Deferred until prompting experiments complete.
 - [ ] **Judgment Frontier (3→2 scenarios after EXP-090)**: behavior-escalation-stubborn, judgment-ambiguous-spec. ~~escalation-impossible-task~~ SOLVED by few-shot (EXP-090, 0→100%). ~~sycophants-dilemma~~ SOLVED by few-shot (EXP-087, 0→100%). Remaining 2 confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
 
+## Session Notes (2026-04-11 ~02:25)
+- **EXP-129 KB INTEGRATION COMPLETE**: All remaining gaps closed:
+  - INDEX.md: EXP-129 RUNNING → COMPLETE, WKWA-008 description updated with both EXP-129/130 results
+  - WKWA-008: Header updated (no longer "pending"), §4.3 marked RESOLVED by EXP-128
+  - KE-064: EXP-129 revision added (execution crowding applies to citation-type gates, not analytical progression)
+  - PRIORITY-TRACKER was already current (updated in prior session)
+  - H-098 was already current with EXP-129 evidence
+- **DD-744/745/746 + CR-337 KB INTEGRATION COMPLETE**: Einstellung effect / exemplar-induced fixation literature fully indexed:
+  - INDEX.md: DD-744, DD-745, DD-746 added to deep-dives table. CR-337 added to cross-references table.
+  - H-099: External validation section added — 6 papers ground template-displacement mechanism via Einstellung effect. Connects list updated. Timestamp updated.
+  - WKWA-008: §4.2 external validation paragraph added (CR-337 + DD-744/745/746). Sources line updated. Closing footnote updated.
+- **System state: QUIESCENT** — All 10 channel theory experiments (EXP-117-130) fully integrated. No new experiments running. No scout drops pending. All hypotheses current.
+
+## Session Notes (2026-04-10 ~19:55)
+- **EXP-124 v2 CORRECTION CASCADE COMPLETE**: EXP-124 v2 (post-runner-fix) showed NO treatment effect (83% vs 83%, p=1.0, N=6+6). Original v1 results (+100pp) were dominated by gym runner file-sync bug (only 3/6 baseline trials ran, treatment results cached/stale). Comprehensive correction cascade across 11 KB files:
+  - **KE-128**: Full rewrite — from "validated structural intervention" to null result documentation
+  - **H-085**: P(H) reverted 0.87→0.85, evidence table corrected, changelog updated
+  - **H-087**: P(H) reverted 0.75→0.72, L7 evidence removed
+  - **H-095**: P(H) reverted 0.85→0.84, evidence item corrected from STRONG POSITIVE to NULL RESULT
+  - **INDEX.md**: 7 affected rows updated (H-085, H-087, H-095, EXP-124, KE-128)
+  - **PRIORITY-TRACKER**: H-085, H-087, H-095 rows + header updated
+  - **Research Status Report**: Executive summary, discovery table, guard table, P(H) table all corrected
+  - **H-098**: Bob discovery guard +100pp claim corrected to null result
+  - **library/topics/07, 10**: KE-128 rows corrected, '3rd guard' claim removed
+  - **EXP-124/results.md**: v2 supersession notice added
+  - **Key insight**: The entire "+100pp discovery guard" narrative was invalidated. The gym runner bug masked that baseline was already 83%. Discovery-task boundary remains an open frontier — 5 intervention types tested (EXP-117/120/121/122/124), ALL fail or harm.
+- **EXP-127 COMPLETE — Ch2 only works**: Channel Separation Direct Test results integrated. Baseline 0/6, Ch1 0/6, Ch3 0/6, Ch2 6/6. H-098 P(H) 0.78→0.80, status Proposed→Partially Confirmed. PRIORITY-TRACKER and INDEX updated.
+- **EXP-126 COMPLETE — NULL RESULT (replicates EXP-122)**: Larger N replication (N=12+12) — 58% vs 50%, p=1.00. 5th text-based intervention failure. Already integrated into PRIORITY-TRACKER/INDEX.
+- **Files modified**: All 11 files listed above (3 git-tracked committed, 8 local-only)
+
 ## Session Notes (2026-04-10 ~18:50)
 - **CR-336 EXTERNAL VALIDATION MAP KB INTEGRATION COMPLETE**: Integrated CR-336 (External Literature Validation Map for the Three-Mechanism Theory) across the knowledge base:
   - **INDEX.md updated**: CR-336 row added after CR-335 in cross-references table.
@@ -116,12 +149,12 @@
 - **Files modified**: `knowledge/INDEX.md`, `knowledge/hypotheses/H-093-complexity-induced-verification-collapse.md`, `knowledge/hypotheses/H-096-evaluation-architecture-determines-quality-ceiling.md`, `knowledge/hypotheses/H-097-multi-agent-ccc-triad-structural-coordination.md`, `knowledge/hypotheses/PRIORITY-TRACKER.md`
 
 ## Session Notes (2026-04-10 ~18:15)
-- **H-085/H-087 Status Section Sync**: Fixed inconsistency — Status header text in H-085 still said "Five boundary conditions, 67/83 runs, P(H)→0.85" while P(H) Assessment section correctly said 0.87 with 76/95 runs across 18 scenarios. Updated status to match: 6 boundaries (5th refined by EXP-124), 76/95 runs, P(H)→0.87. H-087 status also synced (now shows P(H) 0.72→0.75 with EXP-124 evidence).
+- **H-085/H-087 Status Section Sync**: Fixed inconsistency — Status header text in H-085 still said "Five boundary conditions, 67/83 runs, P(H)→0.85" while P(H) Assessment section correctly said 0.87 with 76/95 runs across 18 scenarios. Updated status to match: 6 boundaries (5th refined by EXP-124), 76/95 runs, P(H)→0.87. H-087 status also synced (now shows P(H) 0.72→0.75 with EXP-124 evidence). **NOTE: These values were subsequently reverted by the EXP-124 v2 correction cascade (see ~19:55 session notes). H-085 now P(H)=0.85, H-087 now P(H)=0.72.**
 - **EXP-126**: Noted — Coach running environmental hints replication (larger N of EXP-122). No action needed.
 - **System state**: Quiet. No drops, no requests. All knowledge integration current.
 
 ## Session Notes (2026-04-10 ~17:55)
-- **EXP-124 KB INTEGRATION — ✅ COMPLETE**: KE-128 written and INDEX updated. Topic files (07-tool-use-workflows, 10-agent-design-patterns) updated. PRIORITY-TRACKER, H-085, H-087, H-095 all updated with EXP-124 evidence. P(H) updates: H-085→0.87, H-087→0.75, H-095→0.85.
+- **EXP-124 KB INTEGRATION — ✅ COMPLETE (v1 — SUBSEQUENTLY CORRECTED)**: KE-128 written and INDEX updated. Topic files (07-tool-use-workflows, 10-agent-design-patterns) updated. PRIORITY-TRACKER, H-085, H-087, H-095 all updated with EXP-124 evidence. P(H) updates: H-085→0.87, H-087→0.75, H-095→0.85. **NOTE: All v1 P(H) values reverted by v2 correction cascade (see ~19:55 session notes). v1 results invalidated by gym runner bug.**
 - **EXP-123**: Still RUNNING (Phase 2 production observation). No results yet.
 - **No new drops**. System is quiet.
 
@@ -951,3 +984,16 @@
   - **Protocol**: `agents/shared/knowledge/experiments/EXP-127/protocol.md`
   - **Channel 3 scenario**: `agents/gym/scenarios/contradictory-requirements-ch3-fewshot/`
   - **Channel 1 lab fork**: `agents/.lab/coder-channel-test-ch1/`
+
+## Session Notes (2026-04-10 ~23:30)
+- [x] **EXP-128 KB INTEGRATION — COMPLETE**: Channel 3 Boundary Conditions (Detection Coverage) experiment integrated into knowledge base.
+  - **Key findings**: H-128 REJECTED — detection coverage does NOT determine Ch3 effectiveness. 3-arm design (Arm A response-only 0/6, Arm B detection-enhanced 0/6, Arm C detection-only 0/6). All content variants fail identically → content quality is NOT the Ch3 moderator. The real boundary is **task type**: coding tasks create execution momentum that overwhelms positional privilege. Ch3 works for behavioral tasks (EXP-095: 100%) but fails for analytical judgment under coding momentum.
+  - **Two mechanisms identified**: (1) Coding momentum — high-salience code tokens dominate even task-message attention, (2) Success signal misdirection — "code compiles + tests pass" creates false completion signal.
+  - **KE-132 WRITTEN**: Channel 3 Few-Shot Has a Task-Type Boundary — Coding Momentum Overwhelms Positional Privilege. `agents/shared/knowledge/entries/KE-132-ch3-task-type-boundary-coding-momentum.md`
+  - **H-128 status**: ❌ REJECTED (P(H): 0.55→0.05)
+  - **H-098 updated**: P(H) description updated (EXP-128 confirms task-type boundary). Status → "two direct tests complete, Ch3 boundary clarified". Depends-on includes KE-132. P-098b refined with task-type boundary. Evidence table expanded. Open Question #1 partially answered. Practical guidance updated for Ch3 behavioral-only constraint.
+  - **INDEX.md updated**: H-128 row added (REJECTED). EXP-128 row added. KE-132 row added. H-098 description updated.
+  - **PRIORITY-TRACKER updated**: Header mentions EXP-128. H-098 row updated with EXP-128. H-128 added to archived. EXP-128 added to experiment queue. Meta-process counts updated.
+  - **Files modified**: KE-132 (new), H-098 hypothesis file, INDEX.md (4 edits), PRIORITY-TRACKER.md (5 edits)
+  - **Verified 23:48**: All 4 deliverables confirmed on disk (INDEX 4 rows, PRIORITY-TRACKER 5 sections, H-098 15+ refs, KE-132 61 lines). Git clean.
+- [x] **EXP-129 INDEXED (RUNNING)**: Added Ch2 Budget Curve — Gate Stacking experiment to INDEX.md and PRIORITY-TRACKER. Coach executing 4-arm test (N=24) of H-098 P-098c. Tests how many forced-ext gates can be stacked before performance cliffs. Predicts cliff at 2+ gates.

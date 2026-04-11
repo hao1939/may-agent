@@ -1,0 +1,11 @@
+{
+  "name": "contradictory-requirements-128b-detect-enhanced",
+  "description": "EXP-128 Arm B: Detection-Enhanced few-shot. Example shows step-by-step HOW to detect requirement conflicts (feasibility checks for each requirement, then cross-check), PLUS the response pattern.",
+  "categories": ["judgment"],
+  "tags": ["behavior", "contradiction", "fewshot", "exp-128", "arm-b"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "work_dir_setup": "copy",
+  "injected_context": "injected_context.md"
+}

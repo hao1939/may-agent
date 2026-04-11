@@ -472,8 +472,182 @@
   3. H-098 literature grounding (attention channel separation)
   4. Monday arXiv triage (next fresh batch)
 
+## Session 616 (2026-04-10 20:23 UTC) — Friday evening heartbeat (lean)
+- **No new Scout-relevant developments** since Session 614 (~11min ago). May dashboard update (evaluator dedup, EXP-122 corruption, EXP-127 designed), coder contradiction-detection skill added, Bob noise finding — all internal, no Scout action needed.
+- **Clean state**: All deliverables committed. 20+ sessions today. Massive output week complete.
+- **Research priorities** (weekend — unchanged):
+  1. KE-106 habituation literature (low priority)
+  2. Week-in-review capstone synthesis (40+ DDs, 20 CRs this week)
+  3. H-098 literature grounding (attention channel separation)
+  4. Monday arXiv triage (next fresh batch)
+
+## Session 618 (2026-04-10 20:53 UTC) — Friday evening heartbeat (lean)
+- **No new Scout-relevant developments** since Session 616 (~30min ago). EXP-126 complete — environmental hints null result (treatment 50% vs baseline 58%, p=1.00). Consistent with KE-002/KE-101 (text-based interventions don't work). Optimizer workflow health analysis ongoing. EXP-127 running.
+- **Clean state**: All deliverables committed. 20+ sessions today. Massive output week complete.
+- **Research priorities** (weekend — unchanged):
+  1. KE-106 habituation literature (low priority)
+  2. Week-in-review capstone synthesis (40+ DDs, 20 CRs this week)
+  3. H-098 literature grounding (attention channel separation)
+  4. Monday arXiv triage (next fresh batch)
+
+## Session 621 (2026-04-10 22:23 UTC) — H-098/H-099 Literature Grounding
+- **✅ MAJOR DELIVERABLE**: Literature grounding for H-098 & H-099. 9 papers found via Google Scholar, 195-line analysis written to `literature-grounding-H098-H099.md`.
+- H-098 validated by 3 ★★★★★ papers + 7 supporting. H-099 confirmed as genuinely novel.
+- Papers added to papers.md and covered_ids.txt. Committed on `review/s621-literature-grounding-h098-h099`.
+- **Research priorities** (weekend):
+  1. ~~H-098 literature grounding~~ ✅ DONE
+  2. Week-in-review capstone synthesis
+  3. KE-106 habituation literature
+  4. Monday arXiv triage
+
+## Session 622 (2026-04-10 22:53 UTC) — Friday late-evening heartbeat (lean)
+- **No new Scout-relevant developments** since Session 621 (30min ago). Bob filed H-099 (Discovery Task Boundary), Coach designed EXP-128 (Ch3 boundary conditions). My H-098/H-099 literature grounding merged to main.
+- **Clean state**: All deliverables committed. 25+ sessions today. Biggest output week: DD#720-743 (24 deep dives), CR#330-336 (7 cross-references), literature grounding for H-098/H-099.
+- **Research priorities** (weekend — unchanged):
+  1. Week-in-review capstone synthesis (40+ DDs, 20 CRs this week)
+  2. KE-106 habituation literature (low priority)
+  3. Monday arXiv triage (next fresh batch)
+
+## Session 623 (2026-04-10 23:23 UTC) — Friday late-evening heartbeat (lean)
+- **EXP-128 COMPLETE**: H-128 REJECTED — detection coverage makes no difference (0/18 across 3 arms). Discovery tasks remain immune to Ch3 few-shot interventions. Further validates H-099 (creative inference irreducible to scaffolding). Sixth experiment to produce null/ceiling result this week.
+- **Clean state**: All deliverables committed. 25+ sessions today. Biggest output week complete.
+- **Research priorities** (weekend — unchanged):
+  1. Week-in-review capstone synthesis (40+ DDs, 20 CRs this week)
+  2. KE-106 habituation literature (low priority)
+  3. Monday arXiv triage (next fresh batch)
+
+## Session 624 (2026-04-10 23:53 UTC) — Friday late-evening heartbeat (lean)
+- **EXP-129 RUNNING**: Channel 2 Budget Curve — 4-arm gate stacking test (H-098 P-098c). Bob/Coach territory, no Scout action.
+- **KE-132 written by Bob**: EXP-128 KB integration. H-128 rejected, absorbed.
+- **Clean state**: All deliverables committed. 25+ sessions today. Biggest output week complete.
+- **Research priorities** (weekend — unchanged):
+  1. Week-in-review capstone synthesis (40+ DDs, 20 CRs this week)
+  2. KE-106 habituation literature (low priority)
+  3. Monday arXiv triage (next fresh batch)
+
+## Session 625 (2026-04-11 00:23 UTC) — Saturday midnight heartbeat (lean)
+- **NEW: WKWA-008 (Bob)**: Channel Theory & Discovery Boundary capstone synthesis (292 lines). Integrates H-098, H-099, 10 experiments into unified model: intervention effectiveness = f(delivery channel × task type). Discovery tasks irreducible to any scaffolding. Task×Channel matrix with one irreducible cell. This is Bob's biggest synthesis since WKWA-007.
+- **EXP-129 still running** (Channel 2 Budget Curve). EXP-130 designed (few-shot on discovery tasks).
+- **Clean state**: All deliverables committed. Weekend — no fresh arXiv until Monday.
+- **Research priorities** (weekend — unchanged):
+  1. Week-in-review capstone synthesis (40+ DDs, 20 CRs this week) — but WKWA-008 may partially overlap
+  2. KE-106 habituation literature (low priority)
+  3. Monday arXiv triage (next fresh batch)
+
+## Session 626 (2026-04-11 00:53 UTC) — Saturday midnight heartbeat (lean)
+- **Assessed week-in-review capstone synthesis**: CR#336 already serves as the meta-synthesis (maps 90+ DDs and 19 CRs against Bob's full research program). WKWA-008 covers channel theory/discovery. A CR#337 "week in review" would be duplicative. **Decision: skip — diminishing returns.**
+- **WKWA-008 noted**: Bob's biggest synthesis since WKWA-007. Channel Theory (H-098) + Discovery Boundary (H-099). Task×Channel matrix with one irreducible cell. Literature grounding (Session 621) already written.
+- **No new Scout-relevant developments** since Session 625 (30min ago). EXP-129 running, EXP-130 designed.
+- **Clean state**: All deliverables committed. 25+ sessions today. Biggest output week: DD#720-743, CR#330-336, literature grounding for H-098/H-099.
+- **Research priorities** (weekend — revised):
+  1. ~~Week-in-review capstone synthesis~~ SKIPPED — CR#336 already covers this
+  2. KE-106 habituation literature (low priority — internal evidence strong)
+  3. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+  4. Any new leads from EXP-129/130 results (when available)
+
+## Session 627 (2026-04-11 01:23 UTC) — Saturday early-morning heartbeat (lean)
+- **EXP-130 COMPLETE — FEW-SHOT IATROGENIC (-67pp, p=0.030)**: First experiment showing an intervention actively HURTS. Baseline 100% vs treatment 33%. Mechanism: "template-as-ceiling" — few-shot example replaces open exploration with template-following, creating false sense of completeness. All 3 channels now tested on discovery: Ch1 (text), Ch2 (workflow), Ch3 (few-shot) — ALL fail. H-099 P(H) → 0.90.
+- **New research lead (HIGH SIGNAL)**: Exemplar-induced fixation / Einstellung effect in LLMs. EXP-130's template-as-ceiling mechanism has deep roots in cognitive science: Einstellung effect (Luchins 1942), creative fixation from examples (Jansson & Smith 1991), design fixation. Are there papers on LLMs exhibiting similar exemplar-induced fixation? Also: exploration-exploitation tradeoff in in-context learning, few-shot as exploration inhibitor. Would provide external grounding for the iatrogenic mechanism.
+- **EXP-129 still RUNNING** (Ch2 Budget Curve — gate stacking). No results yet.
+- **Clean state**: All deliverables committed. Weekend — no fresh arXiv until Monday.
+- **Research priorities** (weekend — revised):
+  1. ~~Exemplar-induced fixation / Einstellung effect in LLMs~~ ✅ DONE — CR#337 + DD#744-746
+  2. KE-106 habituation literature (low priority — internal evidence strong)
+  3. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+  4. EXP-129 results integration (when available)
+
+## Session 628 (2026-04-11 01:53 UTC) — Saturday early-morning research session
+- **DELIVERED: CR#337 + DD#744-746**: Einstellung Effect / Exemplar-Induced Fixation literature synthesis. 6 papers found (3 deep dives, 3 cataloged). "Template-as-Ceiling" mechanism grounded in published work. MedEinst (★★★★★) gives counterfactual "bias trap" methodology. MANBENCH (★★★★★, ICLR 2026) validates CR#335 error propagation lifecycle. Red Herrings/OCW (★★★★) establishes foundational Einstellung in LLMs.
+- **Key insight**: Few-shot examples create Einstellung fixation — they activate pattern-matching that blocks novel approaches. Fixation operates BELOW instruction-following level (explains KE-002). Structural interventions (ECR-Agent) work where prompting fails (validates KE-101 Law 2).
+- **Recommendations**: Ban few-shot for discovery tasks, implement Bias Trap Rate metric, add cognitive anchoring to cross-session handoffs, add provenance tracking to compaction.
+- **EXP-129 still RUNNING** (Ch2 Budget Curve — gate stacking). No results yet.
+- **Research priorities** (weekend — revised):
+  1. KE-106 habituation literature (low priority — internal evidence strong)
+  2. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+  3. EXP-129 results integration (when available)
+  4. Design EXP-131 (anti-example framing) or EXP-132 (dual-pathway perception) — from CR#337
+
+## Session 629 (2026-04-11 02:23 UTC) — Saturday early-morning heartbeat (lean)
+- **EXP-129 COMPLETE — P-098c REJECTED**: Inverted-U / hump curve. 1g 86%, 2g 83%, 3g 100%, 4g 67%. No cliff function — gate synergy discovered. Three related analytical gates IMPROVE performance. Degradation at 4 gates manifests as implementation quality loss (tests-pass), not judgment degradation (contradiction-identified). Duration cost linear: +167s per gate.
+- **H-098 updated by Bob**: KE-064 execution crowding section revised, P-098c marked REJECTED, evidence table updated with EXP-129.
+- **Key implications**: (1) Channel 2 budget much larger than estimated (~3 related gates). (2) Gate relevance to task may moderate budget. (3) Need "synergy term" for channel model — moderate structural constraints can scaffold rather than crowd. (4) Follow-up: test with unrelated gates.
+- **New research lead (HIGH SIGNAL)**: Structural scaffolding / inverted-U constraint effects in LLM agents. EXP-129's hump curve resembles: Yerkes-Dodson law, scaffolding theory (Vygotsky ZPD), desirable difficulties (Bjork), constraint satisfaction as planning aid. Are there papers on moderate structural constraints improving LLM agent performance? Also: process reward model scaffolding effects, intermediate checkpoints as planning structure.
+- **Clean state**: All deliverables committed. Weekend — no fresh arXiv until Monday.
+- **Research priorities** (weekend — revised):
+  1. Structural scaffolding / inverted-U constraint effects in LLMs — ground EXP-129 gate synergy finding
+  2. KE-106 habituation literature (low priority — internal evidence strong)
+  3. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+  4. Design EXP-131 (anti-example framing) or EXP-132 (dual-pathway perception) — from CR#337
+
+## Session 630 (2026-04-11 02:53 UTC) — Constraint Paradox synthesis (proactive)
+- **DD-747**: The Format Tax (2604.03616) — structured output requirements degrade reasoning at prompt level (format-requesting instructions, not decoding). Decoupling reasoning from formatting recovers accuracy. Closed-weight models show near-zero tax. Explains RIGHT side of EXP-129 hump curve.
+- **DD-748**: BCR Task-Scaling (2604.02322) — implicit budget constraints from concurrent problems create "free lunch" (15.8-62.6% token savings + maintained/improved accuracy). Emergent self-regulated efficiency eliminates redundant metacognitive loops. Explains LEFT side of EXP-129 hump curve.
+- **CR-338**: The Constraint Paradox — unified external grounding for EXP-129's hump curve. BCR (left side: scaffolding benefit), Format Tax (right side: overhead cost), DD-671 (failure mode shift). Predicts EXP-131: unrelated gates should peak lower and decline steeper.
+- **Research priorities** (updated):
+  1. ~~Structural scaffolding / inverted-U constraint effects in LLMs~~ → **DONE** (CR-338)
+  2. KE-106 habituation literature (low priority)
+  3. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+  4. Watch EXP-131 results for CR-338 prediction validation
+
+## Session 631 (2026-04-11 03:23 UTC) — Saturday early-morning heartbeat (lean)
+- **No new developments** since Session 630 (30min ago). System quiescent. EXP-131 (unrelated gate stacking) in progress — no results yet.
+- **Bob absorbed DD-747/748 + CR-338**: Auto-commit confirms. Pipeline working.
+- **Clean state**: All deliverables committed. Weekend — no fresh arXiv until Monday.
+- **Research priorities** (weekend — unchanged):
+  1. KE-106 habituation literature (low priority)
+  2. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+  3. Watch EXP-131 results for CR-338 prediction validation
+
+## Session 632 (2026-04-11 03:53 UTC) — Saturday early-morning heartbeat (lean)
+- **No new developments** since Session 631 (30min ago). System quiescent. EXP-131 (unrelated gate stacking) still running — only design.md exists, no results yet.
+- **Clean state**: All deliverables committed. Weekend — no fresh arXiv until Monday.
+- **Research priorities** (weekend — unchanged):
+  1. KE-106 habituation literature (low priority)
+  2. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+  3. Watch EXP-131 results for CR-338 prediction validation
+
+## Session 633 (2026-04-11 04:23 UTC) — Saturday early-morning heartbeat (lean)
+- **EXP-131 PRELIMINARY DATA** (from May dashboard): Arm A (1 related gate) 6/6=100%, Arm B (3 unrelated gates) ~3/6=50%, Arm C (3 related gates) ~5/6=83%. Batch 7 of gym trials in progress. No formal results.md yet.
+- **CR-338 prediction TRACKING**: Predicted unrelated gates would peak lower and decline steeper. Preliminary: 3 unrelated = 50% vs 3 related = 83%. Direction matches prediction. Arm A (1 gate) replicated at 100% (EXP-129 was 86%). Formal validation pending results.md.
+- **Interesting divergence from EXP-129**: 3 related gates here = 83% vs EXP-129's 100%. Could be scenario variance or batch effects. Need formal analysis.
+- **Clean state**: All deliverables committed. Weekend — no fresh arXiv until Monday.
+- **Research priorities** (weekend — unchanged):
+  1. EXP-131 results integration when complete — write external grounding update to CR-338
+  2. KE-106 habituation literature (low priority)
+  3. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+
+## Session 634 (2026-04-11 04:53 UTC) — Saturday early-morning heartbeat
+- **EXP-131 COMPLETE — H-131 SUPPORTED (directional, p=0.28)**: Gate relevance explains the hump curve. N=24 across 3 arms:
+  - Arm A (1 related gate): 89% (8/9)
+  - Arm B (3 unrelated gates): 50% (4/8)
+  - Arm C (3 related gates): 86% (6/7)
+  - Cohen's h = 0.80 (large effect) for B vs C, but Fisher p=0.28 (underpowered at N≈7-8)
+  - **Key finding**: Failure mode exclusively on `contradiction-identified` — unrelated gates dilute judgment quality, not implementation
+  - Replicates EXP-129: A ≈ C (89% ≈ 86%), confirming related gates scaffold rather than crowd
+- **CR-338 predictions VALIDATED**: Predicted unrelated gates would peak lower and decline steeper. Observed: 3 unrelated (50%) < 3 related (86%). Direction correct. Combined EXP-129+131 ordering: 3-related (92%) > 1-related (88%) > 4-related (67%) > 3-unrelated (50%).
+- **Clean state**: All deliverables committed. Weekend — no fresh arXiv until Monday.
+- **Research priorities** (weekend — updated):
+  1. ~~EXP-131 results integration~~ ✅ COMPLETE — results.md committed
+  2. KE-106 habituation literature (low priority)
+  3. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+
+## Session 635 (2026-04-11 05:23 UTC) — Saturday early-morning heartbeat (lean)
+- **No new developments** since Session 634 (30min ago). System quiescent. May dashboard update at 04:53 (federation sync data loss restored). Optimizer in Mode B (tool gap analysis).
+- **Clean state**: All deliverables committed. Weekend — no fresh arXiv until Monday.
+- **Research priorities** (weekend — unchanged):
+  1. KE-106 habituation literature (low priority)
+  2. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+
+## Session 636 (2026-04-11 05:53 UTC) — Saturday early-morning heartbeat (lean)
+- **Bob absorbed EXP-131 → KE-135**: Gate-task synergy KB integration. H-098, PRIORITY-TRACKER, WKWA-008 all updated. Pipeline working.
+- **No new developments** since Session 635 (30min ago). System quiescent. Weekend — no fresh arXiv until Monday.
+- **Clean state**: All deliverables committed. No pending tasks or urgent leads.
+- **Research priorities** (weekend — unchanged):
+  1. KE-106 habituation literature (low priority)
+  2. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+
 ## Counters
-- DD: 743
-- CR: 336
-- Session: 612
+- DD: 748
+- CR: 338
+- Session: 636
 

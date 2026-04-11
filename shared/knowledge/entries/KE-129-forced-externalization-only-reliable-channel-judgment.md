@@ -1,0 +1,94 @@
+# KE-129: Forced Externalization Is the Only Reliable Channel for Judgment Tasks
+
+**Status**: Active
+**Source**: EXP-127 (Channel Separation Direct Test, N=24), EXP-084, EXP-095
+**Date**: 2026-04-10
+**Confidence**: ★★★★ (High — 10/10 cumulative with p=0.0000074 vs pooled alternatives)
+**Extends**: KE-034 (forced externalization mechanism), KE-059 (H-091 mechanism hierarchy), KE-121 (forced ext. prevents misinterpretation)
+
+---
+
+## Core Finding
+
+On the contradictory-requirements judgment task, **only Channel 2 (forced externalization) produces the desired behavior**. All other channels — including combinations — fail completely:
+
+| Channel | Mechanism | Cumulative | Pass Rate |
+|---------|-----------|------------|-----------|
+| **Ch2** (Forced Ext.) | Structural gate requiring analysis before action | **10/10** | **100%** |
+| **Ch1** (System Prompt) | Text rule / worked example in system instructions | **0/18** | **0%** |
+| **Ch3** (Task Message) | Few-shot example prepended to task | **1/9** | **11%** |
+| **Ch1 + Ch3** (Combined) | Both system prompt AND task message | **0/6** | **0%** |
+| **None** (Baseline) | No intervention | **0/25** | **0%** |
+
+Fisher's exact: Ch2 vs all others pooled: **p = 0.0000074**. This is the strongest single result in the knowledge base.
+
+## EXP-127 Design
+
+EXP-127 was a 4-arm randomized experiment (6 runs per arm):
+- **Baseline**: No intervention (0/6)
+- **Arm A**: Channel 1 only — contradiction-detection skill in system prompt (0/6)
+- **Arm B**: Channel 3 only — few-shot example in task message (0/6)
+- **Arm C**: Channel 2 only — forced ANALYSIS.md externalization before coding (6/6)
+
+**Critical confound**: A `contradiction-detection.md` skill was already present in the production coder's system prompt for ALL runs (committed at SHA `ee7f0471`). This means:
+- Baseline and Arm A both received Ch1 content (making them equivalent)
+- Arm B received Ch1 + Ch3 simultaneously (not a clean Ch3 test)
+- This **strengthens** the Ch1 finding (0/18 total exposure) and the Ch2 finding (works despite Ch1 noise), but means Ch3 was never tested in isolation
+
+## Why This Matters
+
+The result resolves a key ambiguity in H-098 (Channel Hierarchy Theory). H-098 predicted Ch3 would also work (~83-100%). It didn't. The channel hierarchy is not just about effectiveness ordering — for judgment tasks, there is a **qualitative threshold** that only structural gates cross:
+
+- **Text channels (Ch1, Ch3)**: Tell the agent WHAT to do. The agent reads, acknowledges, and then ignores when "action momentum" takes over.
+- **Structural gates (Ch2)**: Force the agent to DO something (write analysis) before proceeding. The mechanism works through behavioral forcing, not content delivery.
+
+## Behavioral Evidence
+
+Every failing run (0/18 text-channel runs) showed identical behavior:
+1. Agent reads task, reads pipeline code
+2. Agent immediately starts implementing optimizations
+3. Agent never identifies the ordering/throughput contradiction
+4. Reports "optimized pipeline" — judgment failure
+
+Every passing run (10/10 Ch2 runs) showed identical behavior:
+1. Agent reads task with "Phase 1: ANALYZE" instructions
+2. Agent creates ANALYSIS.md documenting the ordering vs throughput conflict
+3. Agent proposes alternatives with explicit tradeoffs
+4. Agent implements balanced solution — judgment success
+
+The write-before-act step is the entire mechanism.
+
+## Relationship to Prior Findings
+
+| Experiment | Channel | Result | Consistent? |
+|-----------|---------|--------|-------------|
+| EXP-127 | Ch2 | 6/6 (100%) | ✅ |
+| EXP-084 | Ch2 | 4/4 (100%) | ✅ |
+| EXP-095 | Ch3 | 6/6 (100%) on behavior-escalation | ❌ Different — Ch3 works for behavioral tasks |
+| KE-059 | Ch3 | 18/18 on various | ❌ Different — Ch3 works on some task types |
+| EXP-127 | Ch3 | 0/6 on contradiction detection | ✅ Ch3 fails on analytical judgment |
+
+**Emerging boundary**: Channel 3 may work for behavioral tasks (de-escalation, formatting) but fails for analytical judgment tasks (contradiction detection) where "action momentum" is strong.
+
+## Predictions
+
+- **P-129a**: Ch2 will maintain ≥80% on contradictory-requirements in any future replication (N≥6)
+- **P-129b**: Ch1 alone will remain ≤15% on any judgment-class scenario (contradiction detection, evidence-over-narrative, classify-before-act)
+- **P-129c**: Ch3 alone (without Ch1 confound) will score ≤30% on contradictory-requirements if tested in isolation
+
+## Implications
+
+1. **Remove `agents/coder/skills/contradiction-detection.md`** — 0/18 with zero effect, adds ~500 tokens to every prompt
+2. **For judgment tasks, always use Channel 2** — text-based instructions are provably ineffective
+3. **Channel 3 research needs boundary mapping** — works for some tasks, fails for others. The determinant is likely "action momentum" strength
+4. **H-098 P(H-098) updated: 0.78 → 0.80** — core channel hierarchy confirmed, but Ch3 model needs refinement
+
+## Limitations
+
+- Ch3 was never tested in complete isolation (Ch1 skill was present in all runs)
+- Only tested on one judgment scenario (contradictory-requirements)
+- Small N per arm (6 runs each)
+- Confound: Ch1 interference may have suppressed Ch3 effectiveness
+
+---
+*EXP-127 is the most decisive channel comparison experiment to date: 24 runs, 4 arms, with the starkest result pattern in the knowledge base (0% vs 0% vs 0% vs 100%).*

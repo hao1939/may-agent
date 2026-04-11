@@ -2,6 +2,34 @@
 
 Papers and articles worth reading, with key takeaways.
 
+## 2026-04-11 — Session 628: CR#337 Exemplar-Induced Fixation / Einstellung Effect in LLMs
+
+**Context**: EXP-130 showed few-shot examples cause -67pp iatrogenic degradation on discovery tasks. This session grounds the mechanism in published literature on the Einstellung effect — the cognitive bias where familiar solutions block discovery of better alternatives. These papers establish that LLMs systematically exhibit this effect, measure it rigorously, and identify mitigations.
+
+### MedEinst: Benchmarking the Einstellung Effect in Medical LLMs — arXiv:2601.06636
+
+| 2601.06636 | MedEinst: Benchmarking the Einstellung Effect in Medical LLMs through Counterfactual Differential Diagnosis (Chen, Zhu, Huang, Wang — Jan 2026) | ★★★★★ CRITICAL — First rigorous benchmark for Einstellung-induced fixation in LLMs. 5,383 counterfactual clinical case pairs across 49 diseases: each pair has a control case (where patterns work) and a "trap" case (where evidence flips the diagnosis but surface patterns still match). Measures "Bias Trap Rate" — probability of misdiagnosis on traps despite correct diagnosis on controls. Frontier models show severe bias trap rates despite high baseline accuracy. Directly grounds EXP-130: few-shot examples ARE bias traps — they establish surface patterns that block evidence-based reasoning. ECR-Agent mitigation uses architectural intervention (dynamic causal inference with dual-pathway perception + critic-driven graph evolution) — validates KE-101 Law 2 that structural beats content intervention. (ref: DD-744) |
+
+### MANBENCH: The Mandela Effect in LLM-Based Multi-Agent Systems — arXiv:2602.00428
+
+| 2602.00428 | When Agents "Misremember" Collectively: Exploring the Mandela Effect in LLM-based Multi-Agent Systems (Xu, An, Shi et al. — Jan 2026; ICLR 2026) | ★★★★★ CRITICAL — First systematic study of collective false memory in multi-agent systems. MANBENCH benchmark: 4 task types, 5 interaction protocols varying agent roles and memory timescales. Shows false details reinforced through social influence get internalized as ground truth. Directly validates CR#335 Error Propagation Lifecycle (Generation → Commitment → Inheritance → Amplification → Entrenchment). Mitigation: cognitive anchoring (pre-establish ground truth references) + source scrutiny achieves 74.40% reduction. Maps to our architecture: cognitive anchoring = evidence-over-narrative skill, source scrutiny = provenance tracking in compaction. ICLR 2026 publication gives this extra weight. (ref: DD-745) |
+
+### Red Herrings: Einstellung Effect and Creative Problem Solving in LLMs — arXiv:2306.11167
+
+| 2306.11167 | Large Language Models are Fixated by Red Herrings: Exploring Creative Problem Solving and Einstellung Effect using the Only Connect Wall Dataset (Naeini, Saqur, Saeidi, Giorgi, Taati — Jun 2023, v4 Nov 2023) | ★★★★ EXCELLENT — Foundational paper establishing that LLMs exhibit Einstellung fixation in creative problem solving. Uses Only Connect Wall (OCW) dataset with built-in red herrings (deliberately misleading cross-connections). LLMs fixate on the most obvious (but wrong) connections. Randomization test confirms: removing red herrings improves performance, proving misleading stimuli (not task difficulty) drive failures. Bridges cognitive neuroscience framework to LLM behavior. Directly grounds H-099 (discovery tasks resist all interventions) — LLMs must OVERCOME fixation to solve creative tasks, but fixation is inherent to pattern processing. Few-shot examples = pre-exposure to misleading stimuli = induced Einstellung. (ref: DD-746) |
+
+### Advances in LLM Reasoning Enable Flexibility in Clinical Problem-Solving — arXiv:2601.11866
+
+| 2601.11866 | Advances in LLM Reasoning Enable Flexibility in Clinical Problem-Solving (Shidara, Prem, Kim et al. — Jan 2026) | ★★★½ GOOD — Companion paper to M-ARC benchmark showing reasoning models partially overcome Einstellung traps. Top reasoning models reach human-level on M-ARC, with 55-70% accuracy on questions most commonly missed by physicians. Partially positive result: reasoning capability (not prompting) reduces fixation. Nuance: strong reasoning models may be LESS susceptible than humans to Einstellung effects in structured domains. Suggests that discovery task failures may partly be mitigated by model capability advances rather than prompt engineering. |
+
+### Limitations of Large Language Models in Clinical Problem-Solving from Inflexible Reasoning — arXiv:2502.04381
+
+| 2502.04381 | Limitations of Large Language Models in Clinical Problem-Solving Arising from Inflexible Reasoning (Kim, Podlasek, Shidara et al. — Feb 2025; Sci Rep 15, 39426) | ★★★★ EXCELLENT — Introduces M-ARC (medical abstraction and reasoning corpus) benchmark exploiting Einstellung effect to test LLM reasoning flexibility. LLMs including o1 and Gemini perform poorly vs. physicians, demonstrating inflexible pattern matching + overconfidence. Published in Nature Scientific Reports, giving strong empirical grounding. Establishes that the failure mode is systematic: LLMs are overconfident about wrong answers on tasks requiring pattern override. Validates that uncertainty estimation doesn't help — models are miscalibrated specifically on fixation-inducing tasks. |
+
+### Einstellung Rigidity Index for Continual Learning — arXiv:2510.00475
+
+| 2510.00475 | Diagnosing Shortcut-Induced Rigidity in Continual Learning: The Einstellung Rigidity Index (ERI) (Gu, Shi — Oct 2025) | ★★★ GOOD — Introduces ERI metric to disentangle genuine transfer from cue-inflated performance in continual learning. Less directly relevant (focuses on training-time rigidity in CV models, not inference-time LLM behavior), but the conceptual framework is useful: prior task weights bias representation reuse toward shortcut features, blocking optimal solutions. The "Adaptation Delay" and "Suboptimal Feature Reliance" facets could inspire metrics for measuring fixation severity in our system. |
+
 ## 2026-04-10 — Session 593: CR#334 Agent Observability & Production Evaluation
 
 **Context**: Proactive scan on how to evaluate and monitor LLM agents in production settings. Our system runs 500+ sessions/day with no systematic production observability beyond session logs. These papers address the emerging "AgentOps" space: structured tracing, cognitive observability, post-deployment debugging, benchmark health, and system-level monitoring.
@@ -1516,3 +1544,13 @@ Production multi-agent data management system with "three-track knowledge archit
 ### OrgForge: Hallucination Propagation in Multi-Agent Corpora — arXiv:2603.14997
 
 | 2603.14997 | OrgForge: A Multi-Agent Simulation Framework for Verifiable Synthetic Corporate Corpora (Flynt — Mar 2026) | ★★★★ EXCELLENT — **Cross-referenced in CR#335.** Empirical proof that "chaining propagates fabricated facts faithfully across documents without correcting them." 0.46 absolute improvement in prose-to-ground-truth fidelity when using deterministic event bus vs. chained LLM generation. Each document in a chain looks locally plausible but systemic consistency fails. Exactly our inherited confabulation: Agent A confabulates → writes to persistent state → Agent B inherits and faithfully reproduces the fabrication. (ref: DD-742) |
+
+## 2026-04-11 — Session 630: CR#338 Constraint Paradox — Hump Curve Grounding
+
+### The Format Tax — arXiv:2604.03616
+
+| 2604.03616 | The Format Tax (Lee, D'Antoni, Berg-Kirkpatrick — UCSD/UW-Madison, Apr 2026) | ★★★★ EXCELLENT — **Cross-referenced in CR#338.** Structured output requirements (JSON, XML, LaTeX, Markdown) substantially degrade reasoning. The degradation is prompt-level (format-requesting instructions alone cause most accuracy loss), not decoder-level. Decoupling reasoning from formatting recovers accuracy. Closed-weight frontier models show little-to-no format tax — problem is gap in open-weight models, not fundamental. Directly explains RIGHT side of EXP-129 hump curve: 4+ gates = cumulative formatting overhead exceeds scaffolding benefit. (ref: DD-747) |
+
+### Batched Contextual Reinforcement — arXiv:2604.02322
+
+| 2604.02322 | Batched Contextual Reinforcement: A Task-Scaling Law for Efficient Reasoning (Yang, Ma, Fan, Liu — Apr 2026) | ★★★★★ CRITICAL — **Cross-referenced in CR#338.** Training with N concurrent problems in shared context creates implicit token budget. Yields "free lunch": 15.8-62.6% token reduction while maintaining/improving accuracy. Models develop emergent self-regulated efficiency, eliminating redundant metacognitive loops. Explains LEFT side of EXP-129 hump curve: 1-3 related analytical gates create implicit budgets that partition problem space beneficially. Implicit constraints > explicit penalties. (ref: DD-748) |

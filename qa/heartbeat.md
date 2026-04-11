@@ -14,7 +14,8 @@ No pending reviews? Do ONE of these (rotate):
 Append your findings to `workspace/journal.md`. It's append-only — **never use `write()`** on it.
 
 To append efficiently (the file is large — do NOT read the whole thing):
-1. `bash("tail -5 workspace/journal.md")` to see the last few lines
-2. `edit("workspace/journal.md", { oldText: <those last lines>, newText: <those last lines + your new entry> })`
+1. `bash("wc -l workspace/journal.md")` to get the line count N
+2. `read("workspace/journal.md", { offset: N - 4, limit: 5 })` to see just the last 5 lines
+3. `edit("workspace/journal.md", { oldText: <those last lines>, newText: <those last lines + your new entry> })`
 
 If you found issues, notify tech-lead via `agents.message`. Call `finish({ status: 'success', summary: '<what you reviewed and found>' })`.
