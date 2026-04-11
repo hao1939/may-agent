@@ -10,55 +10,10 @@
 import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import type { AgentEvent } from "../app/event-bus.js";
-import { appendActivity, truncateSummary } from "./activity.js";
 import { log } from "./log.js";
 import { createStartDigest, createEndDigest, upsertDigest, logShadowComparison } from "./session-digest.js";
 import { trackRequest, updateRequest, getDb } from "./requests.js";
 import type { SubagentManager } from "./manager.js";
-
-// ── Activity Writer ─────────────────────────────────────────────────────
-// Writes session lifecycle events to agents/<name>/workspace/activity.jsonl
-// so agents can see what happened recently.
-
-export function createActivityWriter(projectRoot: string): (event: AgentEvent) => void {
-  return (event: AgentEvent) => {
-    switch (event.type) {
-      case "session_start":
-        appendActivity(
-          projectRoot,
-          { ts: Date.now(), event: "start", sid: event.sessionId, agent: event.agent, task: truncateSummary(event.task, 500) },
-          event.workspacePath,
-        );
-        break;
-
-      case "session_end": {
-        const summary = truncateSummary(event.outcome);
-        if (event.status === "error" || event.status === "interrupted") {
-          appendActivity(
-            projectRoot,
-            {
-              ts: Date.now(), event: "error", sid: event.sessionId, agent: event.agent,
-              turns: event.turnCount ?? 0, duration: event.duration ?? "?",
-              summary, error: truncateSummary(event.error),
-            },
-            event.workspacePath,
-          );
-        } else {
-          appendActivity(
-            projectRoot,
-            {
-              ts: Date.now(), event: "done", sid: event.sessionId, agent: event.agent,
-              turns: event.turnCount ?? 0, duration: event.duration ?? "?",
-              summary, files: event.filesModified ?? [],
-            },
-            event.workspacePath,
-          );
-        }
-        break;
-      }
-    }
-  };
-}
 
 // ── Context Updater ─────────────────────────────────────────────────────
 // Applies context_updates from finish() to agents/<name>/context.md.
@@ -169,52 +124,6 @@ export function createRequestTracker(persistDir: string): (event: AgentEvent) =>
       } catch {
         /* best-effort */
       }
-    }
-  };
-}
-
-// ── Progress Writer ─────────────────────────────────────────────────────
-// Writes workspace/progress.md on session end with task progress info.
-
-export function createProgressWriter(projectRoot: string): (event: AgentEvent) => void {
-  return (event: AgentEvent) => {
-    if (event.type !== "session_end") return;
-    if (event.status !== "done") return;
-
-    const finishParams = event.finishParams as any;
-    if (!finishParams) return;
-
-    try {
-      const workspace = join(projectRoot, "agents", event.agent, "workspace");
-      mkdirSync(workspace, { recursive: true });
-      const progressPath = join(workspace, "progress.md");
-
-      const lines: string[] = [
-        `# Progress — ${event.agent}`,
-        `Updated: ${new Date().toISOString().slice(0, 16)}`,
-        "",
-        `## Last Session`,
-        `- Task: ${truncateSummary(event.task, 200)}`,
-        `- Status: ${event.status}`,
-        `- Summary: ${truncateSummary(event.outcome, 300)}`,
-      ];
-
-      if (finishParams.completed_items?.length) {
-        lines.push("", "## Completed");
-        for (const item of finishParams.completed_items) {
-          lines.push(`- [x] ${item}`);
-        }
-      }
-      if (finishParams.new_items?.length) {
-        lines.push("", "## Next");
-        for (const item of finishParams.new_items) {
-          lines.push(`- [ ] ${item}`);
-        }
-      }
-
-      writeFileSync(progressPath, lines.join("\n") + "\n");
-    } catch {
-      /* best-effort */
     }
   };
 }
