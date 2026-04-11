@@ -3,7 +3,8 @@
 - rg (ripgrep) is not installed — use grep -r instead
 - Project root is /app — do not use /home/*, /Users/*, /root/*, or ~/ paths
 - agents/ is a separate git repo — commit from agents/ dir
-- When calling finish(), status must match reality — use 'blocked' or 'partial' not 'success' if there are issues
+- finish() status guide: Use 'success' when YOU completed your QA review (read code, ran checks, logged findings) — even if vitest/tsc found pre-existing failures unrelated to your review. Use 'partial' ONLY if you couldn't complete your own review steps. Use 'blocked' ONLY if something prevents you from doing any review at all. Pre-existing test failures are findings to report, not blockers on your QA work.
+- ALWAYS call finish() at the end of every session — never end with a plain text summary. The finish() call is mandatory.
 - tsc and vitest ARE available: `./node_modules/.bin/tsc --noEmit` and `./node_modules/.bin/vitest run`. ALWAYS run these when reviewing code changes — they are mandatory SOUL.md steps 2-3. Do NOT skip them.
 - Tool schemas/descriptions can lag behind implementations — contract drift is a real risk, verify against actual behavior
 - Silent catch blocks (try/catch swallowing errors) are a recurring finding — flag as IMPORTANT unless explicitly benign with logging
