@@ -16,12 +16,13 @@
 - Bypass exists at `src/app/may.ts:148-165`, needs `ANTHROPIC_API_KEY` env var.
 - **BLOCKED on operator.** Finding: `workspace/findings/2026-04-10-litellm-kills-prompt-caching.md`
 
-### D-o-R Nested Workflow Spawning — All 3 Phases FIXED ✅
+### D-o-R Nested Workflow Spawning — All 3 Phases FIXED ✅ CONFIRMED
 - **Phase 1 fix** (commit 60a844e3): Eliminated Phase 1 nesting. ✅
 - **Phase 2 fix** (commit ef7e2528): **CONFIRMED at n=9.** 0% nesting post-fix (was 40% pre-fix). ✅
-- **Phase 3 fix** (Apr 11 ~17:25 UTC): Added anti-nesting guard to Phase 3b (verify) prompt. All 5 D-o-R phases now have explicit guards. ✅
-- Findings: `workspace/finding-bob-90op-archaeology-0411.md`, `workspace/finding-dor-nesting-verification-0411.md`, `workspace/finding-dor-nesting-final-0411.md`, `workspace/finding-dor-phase3-nesting-fix-0411.md`
-- **→ MONITORING: need n≥5 Phase 3 sessions to confirm 0% nesting**
+- **Phase 3 fix** (Apr 11 ~17:25 UTC): **CONFIRMED at n=5.** 0% nesting post-guard (was 10% pre-guard). ✅
+- Combined post-fix nesting rate: **0/30 sessions (0%)** across all three phases.
+- Findings: `workspace/finding-bob-90op-archaeology-0411.md`, `workspace/finding-dor-nesting-verification-0411.md`, `workspace/finding-dor-nesting-final-0411.md`, `workspace/finding-dor-phase3-nesting-fix-0411.md`, `workspace/finding-dor-postcap-health-0411.md`
+- **→ DONE at n=5. May revisit at n≥10 for definitive confirmation but low priority.**
 
 ### Coach Session Efficiency — FINDING COMPLETE, FIX 2 DEPLOYED
 - 2,175 coach sessions analyzed. 50.3% zero-op, 64% of ops in top sessions are exploration waste.
@@ -43,7 +44,7 @@
 - Root cause: heartbeat.md encouraged inline exploration (multi-query DB analysis, file reads).
 - Fix: Rewrote heartbeat.md to "Dispatcher Mode" — observe in 1-2 ops, fork all analysis work. Target: ≤15 ops.
 - Baseline: 8 heartbeats in 12h, avg 56 ops, total 451. Post-fix: avg 23 ops (59% reduction). ✅ SUCCESS.
-- Last exploration mode: **C** (Coach EXP-141 89-op analysis — forked Apr 11 ~18:24 UTC). Previous: B (Tool Gap — adoption blockers analysis — Apr 11 ~17:54), BUILD (D-o-R Phase 3 nesting fix — Apr 11 ~17:25), A (D-o-R nesting fix verification + coach 90-op patterns — Apr 11 ~16:53), D (verify-wrap adoption — Apr 11 ~16:23). Next rotation: **D**.
+- Last exploration mode: **D** (D-o-R post-cap health + Phase 3 nesting monitor — Apr 11 ~18:54 UTC). Previous: C (Coach EXP-141 89-op analysis — forked Apr 11 ~18:24 UTC), B (Tool Gap — adoption blockers analysis — Apr 11 ~17:54), BUILD (D-o-R Phase 3 nesting fix — Apr 11 ~17:25), A (D-o-R nesting fix verification + coach 90-op patterns — Apr 11 ~16:53), D (verify-wrap adoption — Apr 11 ~16:23). Next rotation: **A**.
 - **session-query tool BUILT** (`scripts/session-query.ts`). Replaces 15-25 bash archaeology pattern with single command. Supports: --agent, --since, --task, --status, --min-ops, --tools, --json, --sort. Tested with real data (911 sessions). Est. savings: 10-15 ops/session × 187 sessions = 1,870-2,805 ops.
 - **session-query adoption**: Still **zero active adoption** beyond optimizer (confirmed Apr 11 05:24 UTC). May + QA have passive mentions only. **Three blockers**: (1) filesystem history stale (through ~Apr 5), (2) zero agents have session-query in context.md, (3) may.db has 0 coach sessions. No change since last check. **gym-batch.sh MERGED to main** (cherry-pick 5ca3bdf, Apr 11 ~05:54 UTC) + coach context.md updated — but **gym-batch.sh also has ZERO adoption** despite being in context.md (see Coach Session Efficiency section). Findings: `workspace/finding-tool-gap-0411-b.md`, `workspace/finding-coach-experiment-technique-0411.md`, `workspace/finding-gym-batch-adoption-0411.md`
 - Mode D **COMPLETE**: Workflow health analysis. **Key result: D-o-R uses +53% more ops than non-WF work sessions** (45.7 vs 29.9). Phase 1 is the bloat source (30.4 avg ops — matches a complete non-WF session). Error rates 50% lower (2.1% vs 3.9%). Quality scores incomparable (different eval scales). Finding: `workspace/finding-workflow-health-0410.md`
@@ -73,7 +74,7 @@
 - **Workflow adoption**: System-wide **surged to 10.1%** (Apr 11, up from 4.5% Apr 4-10). Bob at **49.1%** (up from 22.4%). Surge started Apr 9 when D-o-R became default dispatch path. Coach 1.9%, others 0%.
 - **Workflow efficiency**: D-o-R runs cost +53% more ops than non-WF equivalents. Phase 1 unbounded reading is root cause. Error rates ~50% lower. Quality scores INCOMPARABLE (0-1 vs 0-5 scales — data infra bug).
 - **Optimizer heartbeat cost**: Was 56 ops avg. Fix deployed (Dispatcher Mode heartbeat). Measuring.
-- **Bob P1 read-loop**: ~~87 ops in Phase 1 of D-o-R for a KB integration task.~~ **FIX DEPLOYED (commit 40b22057)**: 15-op budget cap prompt. Measuring — check after 24h. Finding: `workspace/finding-dor-p1-bloat-0411.md`
+- **Bob P1 read-loop**: ~~87 ops in Phase 1 of D-o-R for a KB integration task.~~ **FIX DEPLOYED (commit 40b22057)**: 15-op budget cap prompt. **MEASURED**: 32.6% total D-o-R cost reduction (45.3→30.6 avg ops). One cap violation (40 ops, 94.4% compliance). Finding: `workspace/finding-dor-p1-bloat-0411.md`, `workspace/finding-dor-postcap-health-0411.md`
 - **Session restart accumulation**: Top coach sessions (184, 129 ops) are multi-restart sessions (6-12 restarts), not single-context bloat. Each restart adds discovery overhead + grows context window (up to 50K tokens/turn). Infra fix (maxRestarts=3 or maxTurns=80) would cap all >100 op sessions. Investigation spiral: 129-op session spent 69 ops debugging model issues — not coach's job.
 
 ## ⚠️ SENT/ESCALATED
