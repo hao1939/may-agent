@@ -167,10 +167,14 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 - **Failure mode shift**: At 4 gates, failures move from judgment → implementation quality
 - **Production implication**: Current multi-guard stack (4 guards) is near threshold but not catastrophic
 
-### 0q. EXP-131: Unrelated Gate Stacking [IN PROGRESS 🔄]
-- **Design**: `agents/shared/knowledge/experiments/EXP-131/design.md` (being designed)
+### 0q. EXP-131: Unrelated Gate Stacking [COMPLETE ✅ — GATE-TASK SYNERGY CONFIRMED]
+- **Design**: `agents/shared/knowledge/experiments/EXP-131/design.md`
+- **Results**: `agents/shared/knowledge/experiments/EXP-131/results.md`
+- **Knowledge**: KE-135 (gate-task synergy effect)
 - **Goal**: Test whether EXP-129's hump curve holds for UNRELATED gates or only related analytical ones
-- **Rationale**: EXP-129 used 3 related analytical gates (analysis + impact + risk). If unrelated gates (analysis + style-check + perf-audit) produce worse results, then gate synergy is content-dependent, not a general Ch2 property.
+- **Result**: 3 unrelated 50% vs 3 related 86% (h=0.80, p=0.282 NS at N≈8)
+- **Key finding**: Gate relevance matters more than count. Unrelated gates dilute judgment specifically on `contradiction-identified`. Duration identical — mechanism is attention dilution, not time pressure.
+- **Implication**: Multi-gate workflows should use analytically relevant gates. Orthogonal checks dilute judgment.
 - **Follow-up to**: EXP-129, KE-134
 
 ### 0m. EXP-127: Channel Separation Direct Test [COMPLETE ✅ — LANDMARK RESULT]

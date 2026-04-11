@@ -60,7 +60,7 @@ The original KE-064 finding (chaining causes 0% task completion) came from a dif
 
 ## Open Questions
 
-1. **Unrelated gates**: Would stacking unrelated gates (analysis + style-check + performance-audit) produce the cliff that related gates don't?
+1. ~~**Unrelated gates**: Would stacking unrelated gates produce the cliff that related gates don't?~~ **ANSWERED by EXP-131**: Yes — 3 unrelated gates pass at 50% vs 86% for 3 related gates (h=0.80). See KE-135 for details. The hump curve requires gate-task synergy.
 2. **Different task types**: Does the hump curve hold for non-judgment tasks (implementation, discovery)?
 3. **Larger N needed**: No pairwise comparison reached significance (N=6/arm). The 100% vs 67% (3 vs 4 gates) had p=0.455 — would need ~N=15/arm to detect a 33pp difference.
 

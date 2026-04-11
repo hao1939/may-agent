@@ -1,18 +1,19 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-11 ~04:23 UTC
+Updated: 2026-04-11 ~04:53 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — Heartbeat running. Self-directing. Very productive last 2h.
-- **Coach**: 🟢 Active — **EXP-131 work session interrupted** (~117min ago). Data at n=18: **Arm A (1-gate) 6/6=100%, Arm B (3-unrelated) ~3/6=50%, Arm C (3-relevant) ~5/6=83%**. Coach should resume via heartbeat.
-- **Scout**: 🟢 Running — Completed last heartbeat successfully. 401 auth may have resolved.
-- **Tech-lead**: 🟢 Active — Heartbeat cycle running.
-- **Optimizer**: 🟢 Running — D-o-R nested workflow fix deployed (20 ops, efficient). 2 self-dispatched work sessions queued. 401 auth may have resolved.
+- **Bob**: 🟢 Active — Heartbeat running. Self-directing.
+- **Coach**: 🟢 Active — **EXP-131 COMPLETE**. Results written + committed (261 lines). Arm A 89%, B 50%, C 86%. Gate relevance hypothesis SUPPORTED (directional, p=0.28).
+- **Scout**: 🟢 Running — Heartbeat cycle running.
+- **Tech-lead**: 🟢 Active — Dead code cleanup (activity.jsonl + progress.md removal). Self-directing.
+- **Optimizer**: 🟢 Running — D-o-R measurement + Mode B exploration. Self-directing.
 - **Evaluator**: 🟢 Active — Heartbeat cycle running.
 - **QA**: 🟢 Active — Heartbeat cycle running.
 - **Coder**: Idle. Only runs when forked by tech-lead.
-- **All agents**: 🟢 7/8 healthy. Amy-kimi 429 (billing). Scout + Optimizer 401 errors MAY be resolved (both completed last heartbeat successfully). Zero failures last hour.
+- **All agents**: 🟢 7/8 healthy. Amy-kimi 429 (billing). Zero failures last 2 hours.
+- **⚠️ Federation sync data loss**: Auto-commit 8feedbf1 deleted EXP-131 files + 3 INDEX entries. **Restored** (commit 6a2bc4a2). Root cause: federation sync overwrites with stale state.
 - **✅ Tool Schema Guard**: Live in production.
 - **✅ Dead code removal**: ~4,779+ lines removed total (1,973 earlier + 589 memory JSONL + 2,217 finish-guard dead code).
 - **✅ Web UI Phase 1**: Merged to main.
@@ -177,7 +178,7 @@ Updated: 2026-04-11 ~04:23 UTC
 | **H-098 Attention Channel Theory** | 🆕 FILED | bob | P(H)=0.78, Tier 1. Intervention effectiveness = channel separation. o3 17% collective vs o3-mini 50%. Based on KE-120/DD-731-733. |
 | **EXP-127 Channel Separation Direct Test** | ✅ COMPLETE (**LANDMARK**) | coach | **Baseline 0/6, Ch1 0/6, Ch3 0/6, Ch2 (Forced Ext) 6/6 (100%)**. p=0.0000074 vs pooled others. Only structural gates work for judgment tasks. Confound: contradiction-detection skill was already deployed (all runs had Ch1). Even Ch1+Ch3 combined = 0/6. Skill removed (commit 8f3d660f). Bob KB integrating (req:c15a56d7). Results at `agents/shared/knowledge/experiments/EXP-127/results.md`. |
 | **Gym Transcript Fix + Evaluator Bug Tests** | ✅ MERGED | tech-lead/may | Branch `review/s_1775848356081_345` merged to main. Transcript field in GymResult + evaluator scale/dedup tests. 20/20 pass. Commits 82757680 + 48315279. |
-| **EXP-131 Unrelated Gate Stacking** | ⏳ IN PROGRESS | coach | Testing if EXP-129 hump curve holds when gates are unrelated to the task. Self-dispatched follow-on. Running parallel gym trials. |
+| **EXP-131 Unrelated Gate Stacking** | ✅ COMPLETE | coach | **H-131 SUPPORTED (p=0.28)**: Arm A (1 related) 89%, Arm B (3 unrelated) 50%, Arm C (3 related) 86%. Unrelated gates -36pp vs related at same count. All 4 Arm B failures on core judgment check. Gate-task synergy, not Ch2 capacity, drives EXP-129 hump curve. **Federation auto-commit deleted results — restored from git history (6a2bc4a2)**. Results at `agents/shared/knowledge/experiments/EXP-131/results.md`. **Bob KB integration pending**. |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -240,13 +241,23 @@ Updated: 2026-04-11 ~04:23 UTC
   - **All agents self-directing**: 9 active requests, all self-dispatched. Zero May interventions needed.
 
 ## Key Findings This Cycle
-- **EXP-131 DATA STRONG (n=18, interrupted)**: Arm A (1-gate) 6/6=100%, Arm B (3-unrelated) ~50%, Arm C (3-relevant) ~83%. Pattern clear: unrelated gates ACTIVELY HURT (50% vs 100% baseline). Gate CONTENT matters more than COUNT. Refines EXP-129 inverted-U. Coach should finish remaining runs this cycle.
-- **401 Auth RECOVERING**: Scout + Optimizer both completed last heartbeat without errors. 5+ hour outage may be over. Monitoring.
-- **Optimizer self-directing well**: D-o-R fix + 2 queued work sessions. Showing productivity.
+- **EXP-131 COMPLETE**: Arm A 89%, Arm B 50%, Arm C 86%. Gate relevance matters — unrelated gates -36pp vs related. All failures on core judgment check. H-131 supported (directional, p=0.28). Bob KB integration pending.
+- **Federation sync data loss**: Auto-commit 8feedbf1 deleted EXP-131 results + 3 INDEX entries. Restored. This is a recurring risk — federation sync can overwrite agent work.
+- **Tech-lead dead code cleanup**: activity.jsonl + progress.md output systems removed.
+
+## Latest Cycle Summary (04:53)
+- **System**: 7/8 healthy. Amy-kimi 429 (billing). Zero failures last 2 hours. All agents running.
+- **Since last cycle (04:23)**:
+  - **Coach EXP-131 results WRITTEN**: Work session completed (34 ops). 261-line results.md at `agents/shared/knowledge/experiments/EXP-131/results.md`.
+  - **⚠️ Federation auto-commit DELETED EXP-131 files**: Commit 8feedbf1 removed design.md, results.md, + 3 INDEX entries (DD-747, DD-748, CR-338). **Restored from git history** (commit 6a2bc4a2).
+  - **Tech-lead dead code cleanup**: Removed activity.jsonl + progress.md output systems.
+  - **Optimizer D-o-R 12h measurement**: Work session completed.
+  - **All agents self-directing**: Zero pending requests. Zero failures. Zero May interventions needed (except data restoration).
 
 ## Next Actions
 - **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. Saves $143-441/day. **Blocked on Hao since Mar 24**.
-- **P1**: **EXP-131 completion** — Coach should finish + write results. Bob KB integration after.
+- **P1**: **EXP-131 Bob KB integration** — Bob should integrate gate relevance findings into H-131/H-098/KE-134.
+- **P1**: **Federation sync reliability** — Auto-commit deleting experiment results is a real problem. Tech-lead should investigate.
 - **P1**: **Surface tools to agents** — session-query.ts + gym-batch.sh need context.md entries. Consider shared/tools.md catalog.
 - **P1**: **EXP-105 Few-Shot Production Impact** — Need coder/optimizer work sessions to generate data. No coder work happening.
 - **P1**: **Generate implementation work** — System idle without features. Coder completely idle. Need Hao priorities.
