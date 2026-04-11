@@ -5,11 +5,11 @@
  * "session archived with correct status". Extracted from handleCompletion()
  * in manager.ts to make the critical path testable and readable.
  *
- * Pipeline: detectErrors → clearPostFinishErrors → handleOverflow → determineOutcome
+ * Pipeline: detectErrors → clearPostFinishErrors → detectShallowHeartbeat → determineOutcome
  */
 
 import type { SessionInfo } from "./types.js";
-import type { ActiveSession, RegisteredAgent } from "./manager-utils.js";
+import type { ActiveSession } from "./manager-utils.js";
 import { formatDuration } from "./manager-utils.js";
 import { extractFinishParams, lastTurnCalledFinish } from "./manager-retry.js";
 
@@ -88,21 +88,7 @@ export function clearPostFinishErrors(session: ActiveSession): void {
   }
 }
 
-// ── Step 3: Handle context overflow ───────────────────────────────────
-
-/**
- * On context overflow, previously dumped structured progress to the agent's workspace.
- * Now a no-op — the digest system handles overflow recording.
- */
-export function handleOverflow(
-  session: ActiveSession,
-  agents: Map<string, RegisteredAgent>,
-): void {
-  // Overflow detection is still useful for logging; actual progress writing
-  // was removed (dead output system replaced by digest).
-}
-
-// ── Step 4: Detect shallow heartbeats ─────────────────────────────────
+// ── Step 3: Detect shallow heartbeats ─────────────────────────────────
 
 /**
  * Heartbeat sessions MUST use tools (read heartbeat.md, etc.).
@@ -120,7 +106,7 @@ export function detectShallowHeartbeat(session: ActiveSession): void {
   }
 }
 
-// ── Step 5: Determine final session outcome ───────────────────────────
+// ── Step 4: Determine final session outcome ───────────────────────────
 
 export interface SessionOutcome {
   /** Terminal status for archiving. */
@@ -180,7 +166,7 @@ export function determineOutcome(session: ActiveSession): SessionOutcome {
   return { archiveStatus, outcome, finishParams, finishResult };
 }
 
-// ── Step 6: Build SessionInfo for the session_end bus event ──────
+// ── Step 5: Build SessionInfo for the session_end bus event ──────
 
 export function buildSessionInfo(
   session: ActiveSession,
