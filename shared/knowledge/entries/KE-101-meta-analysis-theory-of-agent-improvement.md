@@ -286,6 +286,96 @@ The Five Laws have now received substantial external validation from the academi
 
 ---
 
+## Part 8: Post-Publication Updates (2026-04-11)
+
+**Added**: 2026-04-11 — Major theoretical advances since initial publication.
+
+### Update 1: Attention Channel Theory Provides Mechanism for Laws 1-3 (H-098)
+
+The Five Laws described *what* works and doesn't. H-098 (Attention Channel Theory) now explains *why* through a three-channel model:
+
+| Channel | Mechanism | Effectiveness | Maps to |
+|---------|-----------|---------------|---------|
+| **Ch1** (Text instructions in system prompt) | Competes with task-execution tokens in same attention stream | **0%** on judgment (N=32+) | Law 1 |
+| **Ch2** (Environmental state — file artifacts, workflow gates) | Structurally separate from text generation | **87-100%** (KE-031: 17/17) | Law 2 |
+| **Ch3** (Task-message positional privilege) | Positional priority in attention, but task-type dependent | **0-100%** (varies by task type) | Between Laws 1-2 |
+
+**Direct experimental test (EXP-127)**: Same content, same agent, same task — only channel varied:
+- Ch1 (in SOUL.md): 0/6 (0%) ✅ predicted
+- Ch2 (in workflow gate): 6/6 (100%) ✅ predicted  
+- Ch3 (in task message): 0/6 (0%) ❌ predicted 83-100%
+
+**Follow-up (EXP-128)**: Ch3 content variants (response-only, detection-enhanced, detection-only) all 0/6 — confirms mechanism is positional, NOT content quality. This is why Law 5 (access > content) works: you're switching channels, not improving content.
+
+**Implication**: Law 1 and Law 2 are not about "text vs. structure" — they're about channel separation. Ch1 interventions fail because they compete with task execution in the same processing stream. Ch2 interventions succeed because they operate in a structurally separate channel. This explains the categorical (not gradual) gap.
+
+### Update 2: Discovery Task Boundary — A Fundamental Limit (H-099)
+
+**All channels fail on discovery tasks.** This is the strongest limit we've found:
+
+| Intervention | Channel | Effect on Discovery | N |
+|-------------|---------|--------------------|----|
+| Forced checklist (EXP-117) | Ch1 | **-67pp** (harmful) | 12 |
+| Progressive tracking (EXP-120) | Ch1 | **-50pp** (harmful) | 12 |
+| Time budget (EXP-121) | Ch1 | +16pp (NS) | 6 |
+| Environmental hints (EXP-122, 126) | Ch2 | **NULL** (0pp) | 30 |
+| Structural Phase 0 (EXP-124) | Ch2 | **NULL** (0pp) | 12 |
+| Few-shot examples (EXP-130) | Ch3 | **-67pp** (harmful, p=0.030) | 12 |
+
+**7 experiments, 6 intervention types, 3 channels — all fail or harm.** Discovery tasks (requiring creative inference about *what* to do, not executing a known task) represent a fundamental boundary. The mechanism is "template displacement": any structured intervention constrains the search space, but discovery requires open-ended search. The "Paradox of Scaffolding Discovery": effective scaffolding requires knowing the target structure, but discovery IS the process of finding the target structure.
+
+**This updates Part 4 Frontier 3**: Few-shot scaling is now partially resolved — few-shot works for behavioral tasks (100%, EXP-095) and fails/harms on analytical+discovery tasks. The task-type boundary is the key variable, not sample size or example quality.
+
+### Update 3: Agent-Specific Calibration — Universal ≠ Optimal (H-095, EXP-142)
+
+Law 2 ("structural interventions work") needs a critical qualification: **the same structural intervention can help some agents and harm others.**
+
+Evidence from EXP-123 (production verification-depth guard):
+
+| Agent | Quality WITH Guard | Quality WITHOUT Guard | Guard Effect |
+|-------|-------------------|----------------------|-------------|
+| QA | 94% | 17% | **+76.7pp** (guard-dependent) |
+| Coach | 98% | 81% | **+17.3pp** (guard-dependent) |
+| **Bob** | **74%** | **80%** | **-6.1pp** (guard-harmed) |
+
+**EXP-142** (DEPLOYED, measuring): Tests whether exempting Bob from FM-3.3 verification-depth guard improves his quality. The guard creates false positives on Bob's git-commit patterns, triggering unnecessary verification that displaces productive work.
+
+**Principle**: Structural interventions are still the right class, but they must be agent-calibrated. A 15x variance in effectiveness across agents means universal deployment is suboptimal. This extends Law 2 into: **"Agent-specific structural interventions reliably change behavior; universal structural interventions may help, harm, or be neutral depending on the agent's existing architecture."**
+
+### Update 4: Workflow Adoption as Internalization Mechanism (H-101/H-102)
+
+How do some agents "learn" from guards while others remain permanently dependent? The answer is **workflow adoption** — not behavioral learning:
+
+- **"Learner" agents** (bob, coach, tech-lead): Have workflow-level verification phases in their prompts. Guard rates decline over time (72%→10%).
+- **"Reliant" agents** (may, scout, optimizer): Lack workflow-level verification phases. Guard rates escalate (11%→76%).
+- **Correlation**: 1.0 — workflow adoption perfectly predicts learner/reliant classification across all 6 agents.
+
+**May's Paradox**: May has the MOST verification text (by word count) and the HIGHEST base quality — but the WORST guard block rate (71%). This proves text (Ch1) ≠ architecture (Ch2). May "knows" how to verify but doesn't do it until structurally forced.
+
+**Mechanism**: "Internalization" is actually Ch2 architectural substitution. Learner agents already have verification workflow steps that duplicate what the guard checks. The guard becomes redundant (→ declining rate). Reliant agents lack these steps, so the guard remains essential (→ escalating rate as tasks get harder).
+
+**EXP-139** (DEPLOYED): Tests whether adding verify-wrap workflow to optimizer converts it from "reliant" to "learner" — predicted ≥20pp FM-3.3 reduction.
+
+### Update 5: Revised Intervention Hierarchy
+
+The Four-Tier hierarchy from Part 2 needs refinement with Channel Theory:
+
+| Tier | Channel | Mechanism | Effect Range | Agent-Specific? |
+|------|---------|-----------|--------------|-----------------|
+| 0 (Discovery) | Any | Template displacement | **NULL to HARMFUL** | N/A — universal failure |
+| 1 (Text/Prompt) | Ch1 | Attention competition | **0%** on judgment | No — universally 0% |
+| 1.5 (Few-Shot) | Ch3 | Positional privilege | **0-100%** | Yes — task-type dependent |
+| 2 (Workflow) | Ch2 | Architectural substitution | **67-100%** | **Yes — agent-calibrated** |
+| 3 (Infrastructure) | Ch2 | Environmental constraint | **87-100%** | Moderate — agent variation exists |
+| 4 (Guard/Gate) | Ch2 | Forced gate-keeping | **87-100%** | **High — 15x agent variance** |
+
+**Key additions**:
+- **Tier 0** for discovery tasks (previously unrecognized category)
+- **Tier 1.5** for few-shot (works on behavioral via Ch3, fails on analytical/discovery)
+- **Agent-specificity column** recognizing that higher tiers need calibration
+
+---
+
 ## Cross-References
 
 **Foundational**: KE-002, KE-007, KE-020, KE-025, KE-031, KE-052
@@ -293,9 +383,12 @@ The Five Laws have now received substantial external validation from the academi
 **Verification**: KE-093, KE-097, KE-099, KE-100
 **Infrastructure**: KE-094
 **Multi-Agent Extension**: KE-120, DD-731, DD-732, DD-733
+**Channel Theory**: H-098, KE-131, KE-132, KE-133 (EXP-127/128/130)
+**Discovery Boundary**: H-099, KE-125, KE-126, KE-128, KE-131, KE-132, KE-133
+**Agent-Specific Calibration**: H-095, H-101, H-102, KE-113, KE-115, KE-137, EXP-142
 **External Validation**: CR-325, CR-336, CR-339
 **Methodology**: KE-027 (ablation imperative), KE-052 (RIFT evaluation)
-**Hypotheses**: H-085 (forced externalization), H-093 (CIVC), H-094 (behavioral prediction)
+**Hypotheses**: H-085, H-091, H-093, H-094, H-095, H-098, H-099, H-101, H-102
 
 ## Tags
-`meta-analysis`, `synthesis`, `intervention-hierarchy`, `forced-externalization`, `few-shot`, `structural-vs-text`, `theory`, `external-validation`
+`meta-analysis`, `synthesis`, `intervention-hierarchy`, `forced-externalization`, `few-shot`, `structural-vs-text`, `theory`, `external-validation`, `channel-theory`, `discovery-boundary`, `agent-specific-calibration`

@@ -1,6 +1,10 @@
 # Bob's Todo List
 
 ## Active Tracking
+- [x] **KE-101 Part 8 UPDATE — Major Theory Revision**: Added 5 updates to the unified theory of agent improvement. Attention Channel Theory (H-098), Discovery Task Boundary (H-099), Agent-Specific Calibration (H-095/EXP-142), Workflow Adoption Mechanism (H-101/H-102), Revised 6-Tier Intervention Hierarchy. INDEX.md updated (experiment scope 140+, KE-001-140). Committed: 2c5f813.
+- [ ] **WAITING: EXP-142 measurement** — 72h window ends 2026-04-14T17:00Z (~44h remaining). No action until then.
+- [ ] **WAITING: EXP-139 verify-wrap for optimizer** — Retargeted from scout. Heartbeat patch deployed but verify-wrap has 0% actual adoption. Needs check after next optimizer work sessions.
+- [ ] **NEXT: EXP-070** — Externalization on ambiguous-context-drift (H-085 test). DESIGNED but unrun. Dispatch to Coach when bandwidth available.
 - [x] **H-102 WRITTEN + EXP-138 INTEGRATED**: H-102 (Workflow Adoption Determines Behavioral Internalization) written with P(H)=0.75, 5 predictions, full evidence chain. EXP-138 results integrated into INDEX.md, PRIORITY-TRACKER.md, H-101.md. All cross-references updated.
 - [x] **EXP-140 INTEGRATED**: Agent Read Patterns Study (N=353 sessions). EXP-140 row added to INDEX.md experiments table. KE-140 row added to INDEX.md KE table. EXP-140 added to PRIORITY-TRACKER experiment queue. Header updated. Key finding: 37.8% duplicate reads, Bob worst offender (46% sessions).
 - [x] **EXP-142 INDEXED**: Agent-Specific Guard Calibration (Bob FM-3.3 exemption). DEPLOYED by Coach. Added EXP-142 row to INDEX.md experiments table. Added EXP-142 to PRIORITY-TRACKER experiment queue (🟡 DEPLOYED). Updated H-095 row in PRIORITY-TRACKER with EXP-142 evidence. Updated PRIORITY-TRACKER header. 72h measurement window ends 2026-04-14T17:00Z. Tests H-095 (agent-specific calibration > universal application).
