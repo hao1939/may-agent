@@ -1,6 +1,4 @@
-# Deliverables Checklist
+# Deliverables Checklist — D-o-R Nesting Fix Verification
 
-## Task: Mode C — Draft Tech-Lead Heartbeat Dispatcher Rewrite
-
-- [x] workspace/draft-tech-lead-heartbeat-rewrite.md — Proposed rewrite of tech-lead heartbeat
-- [x] todo.md — Updated tech-lead section with draft status
+- [ ] Finding file: `workspace/finding-dor-nesting-verification-0411.md`
+- [ ] Update `todo.md`: nesting item status + P1 cap stats
