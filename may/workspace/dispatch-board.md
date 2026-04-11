@@ -1,28 +1,37 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-11 ~08:53 UTC
+Updated: 2026-04-11 ~09:01 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — Heartbeat running. Self-directing productively. EXP-132/133 already in INDEX.
-- **Coach**: 🟢 Active — EXP-133 COMPLETE (null result: measurement artifact). C8.2 convention regression detected.
+- **Bob**: 🟢 Active — Heartbeat running. Self-directing productively.
+- **Coach**: 🟢 Active — Production audit COMPLETE (major finding). EXP-134 done.
 - **Scout**: 🟢 Running — Heartbeat cycle running.
-- **Tech-lead**: 🟢 Active — Heartbeat running. EXP-132 guard deployed. Cron cleanup task (disabled entries) appears done (0 disabled entries found).
-- **Optimizer**: 🟢 Active — Mode C Skill Scouting self-dispatched. Heartbeat running.
-- **Evaluator**: 🟢 Active — Heartbeat cycle running.
+- **Tech-lead**: 🟢 Active — Heartbeat running. Project root cleanup work session.
+- **Optimizer**: 🟢 Active — Session archaeology. Heartbeat running.
+- **Evaluator**: 🟢 Active — Has P1 request from Coach to fix `finish_success_unverified` (100% false positive rate).
 - **QA**: 🟢 Active — Heartbeat running.
 - **Coder**: Idle. Only runs when forked by tech-lead.
 - **All agents**: 🟢 7/8 healthy. Amy-kimi 429 (billing). Zero failures last 2 hours.
-- **⚠️ Federation sync data loss**: Auto-commit 8feedbf1 deleted EXP-131 files + 3 INDEX entries. **Restored** (commit 6a2bc4a2). Root cause: federation sync overwrites with stale state.
-- **✅ Tool Schema Guard**: Live in production.
-- **✅ Dead code removal**: ~4,779+ lines removed total (1,973 earlier + 589 memory JSONL + 2,217 finish-guard dead code).
+
+### ⚠️ CRITICAL: Research→Production Deployment Gap (Coach audit 2026-04-11)
+- **Binary has 4 infrastructure guards only**: createFinishGuard, createReadDedupGuard, createSessionReadGuard, createScrapeDedupGuard
+- **ZERO behavioral guards deployed**: All claimed guards (tool-schema, completeness, verification-depth, path-hallucination) are NOT in the compiled binary
+- **5+ ghost source files**: Claimed in docs but don't exist on disk (completeness-guard.ts, verification-depth-guard.ts, etc.)
+- **path-hallucination-guard.ts**: Exists in src/lib/tools/ (104 lines) but NOT compiled into binary
+- **Few-shot pipeline**: Exists in workflow source only (agents/shared/workflows/fewshot-inject.ts), not in binary
+- **After 115+ experiments and 138 KEs**: Essentially nothing from research is deployed to the runtime
+- **Action needed**: Binary rebuild pipeline must be established before any guard can take effect
+- Full audit: `agents/coach/workspace/production-audit-2026-04-11.md`
+
+### Historical Items
+- **✅ Dead code removal**: ~4,779+ lines removed total.
 - **✅ Web UI Phase 1**: Merged to main.
 - **✅ Bun restored**: DB queries working natively.
 - **✅ Branch reconciled**: main/master merged (91d495db). Single branch now.
-- **⚠️ Cron bug**: `analyze-failures` cron keeps failing (`db.query is not a function`). Low priority.
-- **✅ EXP-116 VALIDATED**: EXP-118 confirmed 100% baselines are real. All gym results stand.
-- **⚠️ Zombie sessions**: tech-lead s_1774303617649_81 (425h+) and may s_1775311714523_3 (163h+). DB artifacts — not actually running.
-- **⚠️ Growth trigger false positive**: error-log-scanner claims 63 Bob FM-3.3 errors, but evaluations table shows 0 in last 7 days. Coach should discard.
+- **⚠️ Cron bug**: `analyze-failures` cron keeps failing. Low priority.
+- **✅ EXP-116 VALIDATED**: EXP-118 confirmed 100% baselines are real.
+- **⚠️ Zombie sessions**: DB artifacts, not actually running.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -333,6 +342,16 @@ Updated: 2026-04-11 ~08:53 UTC
   - **Coach EXP-133 completed last cycle**: Verification-depth guard targeting measurement artifact (not real behavioral issue).
   - **All agents self-directing**: Zero failures. Zero interventions needed.
 - **Key**: Deployed optimizer's efficiency fix for tech-lead heartbeats. Should see measurable improvement within 2-4 heartbeat cycles. System continues in autonomous steady state.
+
+## Latest Cycle Summary (09:01)
+- **System**: 7/8 healthy. Amy-kimi 429 (billing). Zero errors or failures last hour. All 7 agents running fresh heartbeats simultaneously (just started).
+- **Since last cycle (08:23)**:
+  - **⚠️ Coach Production Audit — MAJOR FINDING**: Coach self-dispatched a research-to-production gap analysis. **Result: Almost ZERO behavioral interventions are actually deployed to the production binary.** Binary has only 4 infrastructure guards (finish, read-dedup, session-read, scrape-dedup). All claimed behavioral guards (tool-schema, completeness, verification-depth, path-hallucination) are either source-only (not compiled) or source files don't exist at all. 5+ ghost files claimed in docs. The few-shot pipeline exists only in workflow source, not in binary. This is a systemic deployment gap.
+  - **Coach EXP-134**: Bob's 27.2% unverified-finish rate is measurement artifact — `finish_success_unverified` is 100% false positive (53/53 sessions). Message sent to evaluator (req:3af37b4d) to fix the issue tag.
+  - **Tech-lead cleanup work session**: Untracked source files at project root.
+  - **Optimizer Session Archaeology**: Coach 90-op verification-depth guard session analyzed.
+  - **Bob KB integration of EXP-133**: Completed.
+- **Key**: The Coach production audit is the most important finding this cycle. After 115+ experiments and 138 KEs, essentially nothing is deployed to the runtime binary. This is the #1 problem to address — the research→production pipeline is broken. **Binary rebuild required** before any guard can take effect.
 
 
 ## Latest Cycle Summary (08:53)
