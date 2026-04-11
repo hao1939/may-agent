@@ -1,98 +1,86 @@
-# Finding: D-o-R Phase 1 Cap Measurement — Update 4 (n=4)
+# Finding: D-o-R Phase 1 Cap & Heartbeat Budget — Update 5 (n=27 heartbeats, n=14 Phase 1s)
 
-**Date**: 2026-04-11 06:25 UTC (~5.5h post P1 cap, ~2.5h post anti-nesting fix)
-**Fix 1**: Phase 1 budget cap (commit 40b22057, deployed ~00:58 UTC)
-**Fix 2**: Anti-nesting instruction (commit 60a844e3, deployed ~03:54 UTC)
-**Status**: TRENDING POSITIVE — n=4 (need n≥5 for confirmation)
+**Date**: 2026-04-11 14:55 UTC (~14h post P1 cap, ~2.5h post Phase 2 fix)  
+**Fix 1**: Phase 1 budget cap (commit 40b22057, deployed ~00:58 UTC)  
+**Fix 2**: Anti-nesting instruction (commit 60a844e3, deployed ~03:54 UTC)  
+**Fix 3**: Phase 2 callAgent guard (commit ef7e2528, deployed ~12:09 UTC)  
+**Status**: ✅ P1 CAP CONFIRMED (n=14, 0 violations) | ⚠️ HEARTBEAT BUDGET EXCEEDS 15 ops 19% of time
 
-## All Post-Fix D-o-R Workflow Runs (n=4)
+## Phase 1 Budget Cap: ✅ PERFECT COMPLIANCE (n=14)
 
-| # | Run ID | Phase 1 | Phase 2 | Total | Time | Task |
-|---|--------|---------|---------|-------|------|------|
-| 1 | wr_3zbe | **2 ops** | **58 ops** | **60 ops** | 01:24 UTC | EXP-130 KB integration |
-| 2 | wr_lqzs | N/A (research-synthesis) | 22+37+9 | **68 ops** | 02:24 UTC | Multi-thread research |
-| 3 | wr_l61f | **5 ops** | **21 ops** | **26 ops** | 05:25 UTC | EXP-131 KB integration |
-| 4 | wr_aiie | **7 ops** | **7 ops** | **14 ops** | 06:24 UTC | EXP-130 KB integration |
-
-### P1 Cap Results (labeled D-o-R runs only, excluding wr_lqzs)
+All 14 Phase 1 sessions since the cap commit have stayed within the 15-op ceiling:
 
 | Metric | Value | Target | Status |
 |--------|-------|--------|--------|
-| P1 ops | 2, 5, 7 | ≤15 | ✅ All within cap |
-| P1 mean | **4.7 ops** | ≤15 | ✅ (was 28.7 pre-fix) |
-| P1 max | 7 | ≤15 | ✅ |
+| Count | 14 | ≥20 | 📈 Growing |
+| P1 mean | **4.4 ops** | ≤15 | ✅ |
+| P1 median | **4** | ≤15 | ✅ |
+| P1 max | **11** | ≤15 | ✅ |
+| P1 min | 0 (running) | — | — |
+| Violations (>15) | **0** | 0 | ✅ |
 
-**P1 cap is holding solidly.** Three consecutive runs all well under 15. Average 4.7 ops vs pre-fix 28.7 = **84% reduction in P1 ops.**
+**Distribution (n=14):** `[0, 2, 2, 2, 3, 3, 4, 4, 5, 5, 6, 7, 7, 11]`
 
-### P2 Compensatory Bloat — Resolving
+**P1 cap is rock-solid.** 14 consecutive runs, zero violations, average 4.4 ops vs pre-fix 28.7 = **85% reduction**. The 15-op budget cap prompt is highly effective.
 
-| Run | P2 Ops | Notes |
-|-----|--------|-------|
-| wr_3zbe | 58 | Outlier — complex task (EXP-130 results, 8 files) |
-| wr_l61f | 21 | Normal range |
-| wr_aiie | 7 | Lean — simple KB integration |
+## Bob Heartbeat Budget: ⚠️ 19% VIOLATION RATE (n=27)
 
-**P2 mean (3 labeled runs): 28.7 ops** — higher than pre-fix P2 avg (17.0), but heavily skewed by the single 58-op outlier. Excluding that outlier, P2 avg = 14.0 (below pre-fix mean). **P2 bloat concern is fading** as new runs come in with normal P2 sizes.
+The 15-op cap applies to Phase 1, but heartbeats (which dispatch work) don't have an explicit budget cap. Since the cap commit:
 
-### Total Run Cost
+| Metric | Value |
+|--------|-------|
+| Completed heartbeats | 27 |
+| Mean ops | **10.0** |
+| Median ops | **7** |
+| Max ops | **42** |
+| ≤7 ops (lean) | 17/27 (63%) |
+| >15 ops | 5/27 (19%) |
 
-| Scenario | Avg Total Ops | Median |
-|----------|:-------------:|:------:|
-| Pre-fix (n=39) | 45.0 | 31.5 |
-| **Post-fix D-o-R (n=3)** | **33.3** | **26** |
-| Post-fix all (n=4, incl research-synth) | 42.0 | 47 |
+### Heartbeat Violation Analysis
 
-**D-o-R total cost trending down**: 33.3 avg (n=3 labeled runs) vs 45.0 pre-fix = **26% reduction**. The trajectory is clear: 60 → 26 → 14. Recent runs are dramatically leaner.
+| Session | Ops | Time | Children | Pattern |
+|---------|-----|------|----------|---------|
+| s_1775874219713 | **42** | 02:23 | 3 forks | Multi-thread research synthesis dispatch |
+| s_1775885020113 | **17** | 05:23 | 2 forks | D-o-R dispatch (P1+P2) |
+| s_1775904820244 | **30** | 10:53 | 0 forks | Solo work — no dispatch, just reading/writing |
+| s_1775912021068 | **20** | 12:53 | 2 forks | D-o-R dispatch + work |
+| s_1775915621641 | **20** | 13:53 | 0 forks | Solo work |
 
-## Anti-Nesting Fix Status
+**Observation**: Heartbeat bloat comes from two patterns:
+1. **Heavy dispatch heartbeats** (42, 17, 20 ops): Read context → analyze → fork multiple work sessions. The dispatch overhead itself is the cost.
+2. **Solo-work heartbeats** (30, 20 ops): The heartbeat does substantial direct work instead of dispatching. This is the more concerning pattern — heartbeats doing work they should delegate.
 
-**2 post-fix runs (wr_l61f, wr_aiie). Zero nesting observed.** ✅ Both runs completed with clean P1→P2 handoff, no callAgent() in P1. Combined with budget cap, recursive nesting appears structurally eliminated.
+### Heartbeat vs Phase 1 Comparison
 
-## Pre-Fix vs Post-Fix Summary
+| Metric | Phase 1 (n=14) | Heartbeat (n=27) |
+|--------|:-:|:-:|
+| Mean ops | 4.4 | 10.0 |
+| Median ops | 4 | 7 |
+| Max ops | 11 | 42 |
+| >15 rate | 0% | 19% |
 
-| Metric | Pre-Fix (n=49) | Post-Fix (n=3) | Target | Status |
+Phase 1 has an explicit "BUDGET: 15 TOOL CALLS MAX" prompt. Heartbeats don't. The cap works when present.
+
+## Pre-Fix vs Post-Fix Summary (Phase 1 Focus)
+
+| Metric | Pre-Fix (n=49) | Post-Fix (n=14) | Target | Status |
 |--------|:-:|:-:|:-:|:-:|
-| P1 mean | 28.7 | **4.7** | ≤15 | ✅ |
-| P1 max | 87 | **7** | ≤15 | ✅ |
+| P1 mean | 28.7 | **4.4** | ≤15 | ✅ |
+| P1 max | 87 | **11** | ≤15 | ✅ |
 | P1 bloated (>40 ops) | 31% | **0%** | ≤10% | ✅ |
-| P2 mean | 17.0 | **28.7** | ≤20 | ⚠️ (skewed by 1 outlier) |
-| Total D-o-R mean | 45.0 | **33.3** | ≤30 | 📈 Close |
-| Nesting incidents | 3 in 72h | **0 in 5.5h** | 0 | ✅ |
+| Violations (>15) | ~43% | **0%** | 0% | ✅ |
 
-## Trajectory Analysis
+## Potential Next Action
 
-The last 3 D-o-R runs show a clear efficiency improvement trend:
+The heartbeat budget isn't part of the D-o-R fix scope, but the data suggests a similar prompt-based cap could work for heartbeats. The 63% already-lean rate suggests most heartbeats naturally stay efficient — only the 19% that do direct work or heavy dispatch exceed 15 ops. A "BUDGET: 15 TOOL CALLS" instruction in the heartbeat prompt could eliminate this without changing behavior for the majority.
 
-```
-Run 1 (01:24): 60 total  ████████████████████████████████████████████████████████████████
-Run 3 (05:25): 26 total  ██████████████████████████████
-Run 4 (06:24): 14 total  ████████████████
-Pre-fix avg:   45 total  █████████████████████████████████████████████████
-Target:        30 total  ██████████████████████████████████
-```
-
-Run 4 (14 ops total) is the **leanest D-o-R workflow run ever measured** — well below both the target (30) and the pre-fix lean P1 subset average (20.0).
-
-## Risks (Updated)
-
-### R1: P2 Compensatory Bloat → DOWNGRADED to MEDIUM
-**Evidence**: Only 1/3 labeled P2 sessions was inflated (58 ops). The other two (21, 7) are normal or lean. Likely the 58-op session was task complexity, not systematic compensation.
-**Action**: Continue monitoring. If next 2 P2s are ≤25, close this risk.
-
-### R2: Insufficient Sample Size → n=4, need n≥5
-**Action**: One more D-o-R run needed. At current rate, expected within ~1h.
-
-### R3: Alternative Workflow Bypass → LOW
-The research-synthesis workflow (wr_lqzs) was 68 ops but this is a fundamentally different workflow type. D-o-R is the target and D-o-R is improving.
-
-## Next Measurement
-
-- **When**: n=5 (expect ~07:30 UTC Apr 11) or next optimizer heartbeat
-- **What to measure**: Confirm P1 ≤15, P2 normalizing, total ≤30 avg
-- **If confirmed**: Move D-o-R cap measurement to DONE ✅
+**However**: Heartbeat bloat may be intentional — some tasks genuinely need multi-fork dispatch that takes 20+ ops of context reading. This warrants separate analysis before applying a cap.
 
 ## Data Source
 
-- **DB**: `.state/may.db` — 18,855 sessions
-- **Query**: `workflowRunId IS NOT NULL AND startedAt > 1775866680000`
-- **Note**: `startedAt` is epoch milliseconds. Use `.state/may.db` (not root `may.db` which has empty tables).
+- **DB**: `.state/may.db`
+- **P1 query**: `agent='bob' AND task LIKE '%Phase 1%' AND startedAt > 1775866543000`
+- **Heartbeat query**: `agent='bob' AND task LIKE '[heartbeat]%' AND startedAt > 1775866543000`
+
+---
+*Optimizer | Session s_1775919270991_1478 | 2026-04-11 ~14:55 UTC*
