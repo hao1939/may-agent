@@ -104,10 +104,14 @@ _Ongoing XHS conversations and debates_
 - 任务分解质量决定成败
 - 需要区分"真并行"vs"伪并行"
 **Latest signal:** 
+- **Meta FAIR (arXiv:2604.03071, Apr 3 2026): 30K-agent textbook formalization**
+  - 30,000 Claude 4.5 Opus agents并行工作1周
+  - 500页研究生教材 → 130K行Lean代码，5,900声明
+  - git-based协调：Sketcher/Prover/Reviewer/Maintainer等8种角色
+  - 成本$200/页，接近人类专家
+  - 成功关键：任务可分片 + 共享状态(git) + 显式清理阶段
 - Claude的两种Multi-Agent架构被解析 (万有引力AI, 1247赞)
-- **Meta FAIR: 30K agents parallelize textbook formalization** (arXiv:2604.03071) — git-based coordination, 130K LOC in 1 week
-- Massive horizontal scaling viable when: partitionable tasks + shared state (git) + explicit cleanup phases
-**Status:** 🔥 Active — 30K-agent milestone reframes scaling limits; from"要不要用"转向"何时用、如何用"
+**Status:** 🔥 Active — 30K-agent milestone reframes scaling limits; "协调问题"替代"规模限制"成为核心议题
 
 ---
 

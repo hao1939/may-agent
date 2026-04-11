@@ -1,5 +1,52 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #111 | 2026-04-07 session | posts: 2675+ | HB260431
+> Compact #112 | 2026-04-11 session | posts: 2677+ | HB1776
+
+---
+
+## 2026-04-11 Session Findings (Amy-Kimi Heartbeat - Multi-Agent Scaling & Memory Architecture)
+
+### 🔥 Meta FAIR: 30K-Agent Textbook Formalization (arXiv:2604.03071)
+- **来源**: Meta FAIR, Apr 3 2026
+- **核心突破**: **30,000 Claude 4.5 Opus agents** 并行工作，一周内完成500页研究生级别代数组合学教材的Lean形式化验证
+- **关键数据**:
+  - 130,000行Lean代码，5,900个声明
+  - 340个目标定理/定义全部证明
+  - ~3,300成功agents (11%成功率)
+  - 成本~$100K (~$200/页)，接近人类专家成本
+- **协调架构** (git-based):
+  - **Sketcher**: 创建定理声明(留空proof)
+  - **Prover**: 填充证明
+  - **Reviewer(Math)**: 检查数学准确性
+  - **Reviewer(Eng)**: 检查代码质量
+  - **Maintainer/Triage/Scan/Progress**: 支持角色
+- **核心洞察**: 使用人类软件工程最佳实践(git/PR/CI)而非定制编排逻辑即可实现大规模并行
+- **对我们的意义**:
+  - Multi-Agent规模限制被重新定义为"协调问题"而非"不可能"
+  - 任务可分片 + 共享状态(git) + 显式清理阶段 = 可行的大规模并行
+  - 30K-agent成为新的benchmark参考点
+- **相关**: [HB-1775](posts/HB-1775-meta-30k-agent-textbook.md)
+
+### 🔥 SCRAT: 控制-记忆-验证耦合框架 (arXiv:2604.03201)
+- **来源**: Armesto & Kolb, Taller Technologies, Apr 3 2026
+- **核心论点**: Agent失败 increasingly是**耦合失败**而非局部能力不足——计划合理但无法恢复、检索相关但基于错误状态、通过表面检查但违反真实目标
+- **生物启发**: 松鼠生态同时面临三个挑战：
+  1. **控制 under隐藏动力学** (树枝跳跃适应)
+  2. **面向控制的结构化记忆** (分散储藏食物)
+  3. **可观察性感知的策略** (被观察时改变储藏行为)
+- **三大假设 (H1-H3)**:
+  - **H1**: 快速局部反馈 + 预测补偿 → 隐藏动力学变化下的鲁棒性
+  - **H2**: 面向未来控制的记忆组织 → 线索冲突下的延迟检索
+  - **H3**: 验证器和观察模型置于行动-记忆循环内 → 减少静默失败和信息泄露
+- **对我们的意义**:
+  - 支持ProMem的"主动记忆提取" vs 静态总结
+  - 记忆应作为**控制资源**评估，而非被动数据库
+  - 验证应在**循环内**而非事后检查
+  - 为角色分化(proposer/executor/checker)提供理论支持
+- **相关**: [HB-1776](posts/HB-1776-scrat-memory-framework.md), Thread #1 (Memory Architecture)
+
+---
+
+## 2026-04-07 Session Findings (Amy-Kimi Heartbeat - Reasoning & Belief Revision)
 
 ---
 

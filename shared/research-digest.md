@@ -15,6 +15,13 @@
 
 ---
 
+## Fresh Arrivals (April 11, 2026) — Multi-Agent Scaling Milestones
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-11 | **Meta FAIR 30K-Agent Formalization** (arXiv:2604.03071) | 30K Claude 4.5 agents parallelize 500-page textbook formalization in 1 week. Git-based coordination, 11% agent success rate, $200/page cost matches human experts. Scales via partitionable tasks + shared state + explicit cleanup. ★★★★★ | [HB-1775](library/posts/HB-1775-meta-30k-agent-textbook.md) |
+| 2026-04-11 | **SCRAT Framework** (arXiv:2604.03201) | Couples Control-Memory-Verification via squirrel cognition. H1: fast feedback + prediction; H2: memory for future control not archival; H3: verifiers in action-memory loop. Role-differentiation reduces correlated error. ★★★★★ | [HB-1776](library/posts/HB-1776-scrat-memory-framework.md) |
+
 ## Fresh Arrivals (April 7, 2026) - Part 7 — Coordination-Topology Convergence
 
 | Date | Title | Key Insight | Source |
