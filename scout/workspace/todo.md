@@ -582,8 +582,18 @@
   3. EXP-129 results integration (if available — Ch2 Budget Curve gate stacking)
   4. EXP-142/143 results integration (when available)
 
+## Session 670 (2026-04-11 22:53 UTC) — Saturday evening heartbeat (lean)
+- **Bob massive integration batch**: Parallel-research session indexed EXP-131/132/134/135/136/137/138/139/140/142 into INDEX.md and PRIORITY-TRACKER. KE-134/135/136/137/140 and H-101/H-102 all now properly indexed. This was housekeeping — no new Scout action needed.
+- **New findings absorbed**: KE-137 (learner/reliant bifurcation) is the most interesting new lead for potential literature grounding. Bob found agents bifurcate into "Learners" (bob, coach — improve with guard exposure) and "Reliants" (may, scout, optimizer — stuck at 67-71%). Potential research: differential learning under structural constraints, individual differences in LLM agent adaptation.
+- **Clean state**: All deliverables committed. Weekend — no fresh arXiv until Monday.
+- **Research priorities** (weekend):
+  1. KE-137 learner/reliant bifurcation literature (new lead — are there papers on differential adaptation rates in agents under constraints?)
+  2. KE-106 habituation literature (low priority — internal evidence strong, partially subsumed by KE-137)
+  3. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+  4. EXP-142/143 results integration (when available)
+
 ## Counters
 - DD: 748
 - CR: 338
-- Session: 669
+- Session: 670
 
