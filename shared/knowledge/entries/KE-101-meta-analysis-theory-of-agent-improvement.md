@@ -258,6 +258,34 @@ Three independent papers from a single arXiv drop validate and extend Laws 1, 2,
 
 ---
 
+## Part 7: External Validation
+
+**Added**: 2026-04-11
+
+The Five Laws have now received substantial external validation from the academic literature. Across 50+ external papers, 6 independent research groups, and ~30,000 evaluations, the core findings hold:
+
+### Validation Sources
+
+| Source | What It Validates | Scale |
+|--------|-------------------|-------|
+| **CR-325** (Five Laws External Validation) | First systematic mapping of external literature to all 5 Laws. Each law validated by 2-5 independent papers. SkillsBench (7,308 trajectories): AI-generated skills average -1.3pp. ETH Zürich: instruction overhead +20% cost, -completion. | 15+ papers, ~10K evaluations |
+| **CR-336** (External Literature Validation Map) | Capstone meta-synthesis mapping 90+ deep dives (DD#655-743) and 19 cross-references (CR#317-335) against the Three-Mechanism Theory. All 5 Laws validated by 3-5+ independent sources each. All 3 mechanisms (M1/M2/M3) validated by 5+ papers each. Novel contributions identified: three-mechanism decomposition (KE-060), diagnostic decision tree, creative inference gap (KE-126). | 90+ papers, ~15K evaluations |
+| **CR-339** (Week in Review Capstone) | Structure All the Way Down — synthesizes 88 DDs + 20 CRs across 5 convergence streams. Confirms structure > content across all streams. 3 breakthroughs (creative inference gap, constraint paradox hump curve, multi-agent amplification). | Full corpus synthesis, ~30K cumulative evaluations |
+
+### Validation Summary by Law
+
+| Law | External Support | Confidence |
+|-----|-----------------|------------|
+| Law 1 (Text rules fail) | SkillsBench (-1.3pp, N=7,308), DD-537 (ETH Zürich), DD-731 (capability ≠ cooperation) | Very High |
+| Law 2 (Structure works) | DD-731 (protocols double cooperation), DD-732 (calibration architecture), 5+ M1/M2/M3 papers | Very High |
+| Law 3 (Attention zero-sum) | DD-733 (DACS: context pollution → 21-60%), DD-537 (instruction overhead +20% cost) | Very High |
+| Law 4 (Explicit wiring required) | DD-706 (capability discovery ~0%), SkillsBench (skill availability ≠ skill use) | High |
+| Law 5 (Access > content) | DD-732 (conformal calibration > verifier quality), CR-336 (RIFT prediction validated) | Very High |
+
+**Bottom line**: The Five Laws are no longer just internal empirical findings — they are externally validated theoretical principles with convergent support from 6+ independent research groups across ~30K evaluations. No contradictory evidence has been found.
+
+---
+
 ## Cross-References
 
 **Foundational**: KE-002, KE-007, KE-020, KE-025, KE-031, KE-052
@@ -265,8 +293,9 @@ Three independent papers from a single arXiv drop validate and extend Laws 1, 2,
 **Verification**: KE-093, KE-097, KE-099, KE-100
 **Infrastructure**: KE-094
 **Multi-Agent Extension**: KE-120, DD-731, DD-732, DD-733
+**External Validation**: CR-325, CR-336, CR-339
 **Methodology**: KE-027 (ablation imperative), KE-052 (RIFT evaluation)
 **Hypotheses**: H-085 (forced externalization), H-093 (CIVC), H-094 (behavioral prediction)
 
 ## Tags
-`meta-analysis`, `synthesis`, `intervention-hierarchy`, `forced-externalization`, `few-shot`, `structural-vs-text`, `theory`
+`meta-analysis`, `synthesis`, `intervention-hierarchy`, `forced-externalization`, `few-shot`, `structural-vs-text`, `theory`, `external-validation`
