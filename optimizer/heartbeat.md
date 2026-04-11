@@ -42,6 +42,18 @@ Pick ONE thing to work on. Ask:
 
 Fork exploration using rotation. Track which mode you did last in todo.md.
 
+### ⚡ Default: Use workflows for all forked work
+
+**Workflows are habits, not optional tools.** Don't think "should I use a workflow?" — think "which workflow fits?"
+
+| Work type | Workflow | Why |
+|-----------|----------|-----|
+| Building a new tool/skill | `workflow.run('implement-and-verify', task)` | Catches forgotten compile/test |
+| Investigation → written findings | `workflow.run('verify-wrap', task)` | Ensures findings actually get written |
+| Multi-question analysis | `workflow.run('parallel-research', JSON.stringify({...}))` | Parallel > sequential |
+
+**Only skip workflow for**: pure exploration (reading sessions, scanning patterns) or quick inline tasks (< 3 ops).
+
 ### Exploration Modes (for forked sessions, NOT inline):
 
 - **Mode A: Session Archaeology** — Dig into recent sessions, find pain points, identify automation opportunities

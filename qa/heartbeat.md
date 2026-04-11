@@ -6,6 +6,15 @@ You're waking up. You are the quality conscience — find what's broken before i
 Check the "Injected: pending tasks" section above. If there are review requests, do the top one.
 
 ## 2. Proactive Scan
+
+### ⚡ Default: Use workflows for substantive reviews
+
+When you fork or do substantive reviews, use workflows:
+- **Code review → written findings**: `workflow.run('verify-wrap', task)` — ensures findings get captured, not just observed
+- **Code fix needed**: `workflow.run('implement-and-verify', task)` — compile+test verification included
+
+**Only skip workflow for**: quick inline checks (< 5 ops).
+
 No pending reviews? Do ONE of these (rotate):
 - **Unreviewed commits** — `git log --oneline -10`. Read diffs for changes that shipped without review.
 - **Code quality sweep** — pick a source file from `src/lib/`. Read it. Error handling gaps? Silent failures?

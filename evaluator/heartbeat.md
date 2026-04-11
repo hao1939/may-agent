@@ -47,6 +47,19 @@ You own: **#5 Session Evaluation, #15 LLM Evaluation**.
 Quick — 1 bash call to check DB recency (python3/sqlite). Move on.
 
 ## 2. Signal Quality Review
+
+### ⚡ Default: Use workflows for substantive work
+
+When you fork work sessions from this heartbeat, **default to using workflows**:
+
+| Work type | Workflow | Why |
+|-----------|----------|-----|
+| Criteria updates (editing criteria.md) | `workflow.run('implement-and-verify', task)` | Ensures the edit is valid and consistent |
+| Calibration analysis → written report | `workflow.run('verify-wrap', task)` | Ensures findings get written, not just observed |
+| Multi-agent evaluation comparison | `workflow.run('parallel-research', JSON.stringify({...}))` | Compare multiple agents in parallel |
+
+**Only skip workflow for**: quick checks (< 5 ops), reading evaluations inline, updating flags.
+
 Your consumers (Coach, Optimizer, Bob) act on your scores. Make sure you're measuring what they need.
 
 - Has Coach requested a new scoring dimension? Check the injected pending tasks for Coach requests.

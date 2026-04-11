@@ -46,7 +46,19 @@ Pick the highest-priority task(s). Ask:
 
 ## Step 3: DISPATCH
 
-For each substantive task, fork a work session:
+### ⚡ Default: Use workflows for all forked work
+
+**Workflows are habits, not optional tools.** Don't think "should I use a workflow?" — think "which workflow fits?"
+
+| Work type | Workflow | Why |
+|-----------|----------|-----|
+| Deep dive → written finding | `workflow.run('verify-wrap', task)` | Ensures DD actually gets written and verified |
+| Multi-paper triage | `workflow.run('parallel-research', JSON.stringify({...}))` | Evaluate multiple papers in parallel |
+| Synthesis → actionable document | `workflow.run('verify-wrap', task)` | Ensures cross-reference gets written completely |
+
+**Only skip workflow for**: quick inline tasks (< 5 ops), updating todo.md, acknowledging dispatches.
+
+For each substantive task, fork a work session **with a workflow**:
 
 ```javascript
 agents.call({

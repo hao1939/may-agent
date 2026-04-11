@@ -85,6 +85,33 @@ From EXP-001 and EXP-028:
 
 The 34% crash proves the point: the agent was still competent. It just didn't have the scaffolding to handle the boring parts. Workflows give it that.
 
+## The Enforcement Principle
+
+> **When agents repeatedly fail at something, the fix is never "remind them harder." It's either teach them to use an existing workflow, or build a workflow that mechanically prevents the failure.**
+
+This is the system's core quality enforcement mechanism:
+
+```
+Agent keeps failing at X
+  → Does a workflow already handle X? → Wire it into their heartbeat
+  → No workflow exists? → Can we build one with reasonable effort?
+    → Yes → Build it, test it, wire it in
+    → No → This is a genuine capability gap, not a process gap
+```
+
+**Why this works:** Workflows are executed by the runtime, not remembered by the agent. An agent doesn't need to "remember to compile" — `implement-and-verify` compiles for them. An agent doesn't need to "remember to write findings" — `verify-wrap` enforces it.
+
+**Evidence from our system (72h window):**
+
+| Agent | Manual quality | Workflow quality | Δ |
+|-------|---------------|-----------------|---|
+| coach | 3.4 | 4.3 | **+0.9** |
+| tech-lead | 3.6 | 4.3 | **+0.7** |
+
+Wasted calls drop to near-zero with workflows. The agent is equally competent — but the workflow handles the mechanical parts that are easy to forget under cognitive load.
+
+**This means:** Every heartbeat should map work types → workflows. "Should I use a workflow?" is the wrong question. "Which workflow fits?" is the right one. Only skip workflows for trivially small tasks (< 5 ops).
+
 ## Adding new workflows
 
 When you spot a new problem that a workflow could solve:

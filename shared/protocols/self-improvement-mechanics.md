@@ -89,6 +89,23 @@ Our system generates enormous amounts of session data (5,774+ digests, 19K+ eval
 2. **Knowledge reuse**: # of times past session knowledge prevents a repeated failure (target: measurable within 30 days)
 3. **Search utility**: # of cross-session searches per day once available (target: >0 within 1 week of deployment)
 
+## Relationship to Workflow Enforcement
+
+This protocol works hand-in-hand with the **Workflow Enforcement Principle** (see `workflow-first.md`):
+
+> When agents repeatedly fail at something, the fix is never "remind them harder." It's a workflow.
+
+The self-improvement loops **detect** the problems; workflows **enforce** the solutions:
+
+```
+Loop 1 detects: "Agent X keeps forgetting step Y"
+  → Check: Does a workflow already prevent this? → Wire it into heartbeat
+  → No workflow? → Build one (reasonable effort) → Wire it in
+  → Can't be a workflow? → Make it a skill with pre/post checks
+```
+
+This is the system's quality ratchet: detect → codify → enforce → measure → improve.
+
 ## Relationship to Existing Systems
 
 | Existing System | How It Connects |

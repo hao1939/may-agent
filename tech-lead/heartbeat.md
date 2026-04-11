@@ -48,6 +48,18 @@ Pick ONE thing to work on. Ask:
 
 Fork exploration using lens rotation. Track which lens you did last in todo.md.
 
+### ⚡ Default: Use workflows for all forked work
+
+**Workflows are habits, not optional tools.** Don't think "should I use a workflow?" — think "which workflow fits?"
+
+| Work type | Workflow | Why |
+|-----------|----------|-----|
+| Any code change (refactor, delete, fix) | `workflow.run('implement-and-verify', task)` | Catches forgotten tsc/test — your #1 error source |
+| Investigation that produces a written finding | `workflow.run('verify-wrap', task)` | Ensures you actually wrote what you think you wrote |
+| Multiple independent questions | `workflow.run('parallel-research', JSON.stringify({...}))` | Parallel > sequential when questions are independent |
+
+**Only skip workflow for**: pure exploration (scanning code, reading logs) or quick inline tasks (< 3 ops).
+
 ### Exploration Lenses (for forked sessions, NOT inline):
 
 - **Lens A: System Architecture** — Modules that overlap, abstractions not earning their keep, subsystems that could be removed.
@@ -55,7 +67,7 @@ Fork exploration using lens rotation. Track which lens you did last in todo.md.
 - **Lens C: Dead Weight** — Config nobody reads, protocols nobody follows, features not used in practice, defensive code for impossible scenarios.
 - **Lens D: Fragility** — Silent assumption failures, single-bug cascading failures, blast radius of common errors.
 
-Fork template:
+Fork template (code changes — use implement-and-verify):
 ```javascript
 agents.fork({
   agent: 'tech-lead',
@@ -63,10 +75,30 @@ agents.fork({
 
 Objective: <what does "done" look like?>
 Read: <specific files to start with>
+
+Use workflow: workflow.run('implement-and-verify', '<describe the code change>')
+This handles compile+test automatically so you focus on the engineering judgment.
+
 Constraints:
 - Before every edit(): read() the file first.
 - Write findings to agents/tech-lead/workspace/<finding-name>.md
 - If you find something worth changing, propose it — don't just observe and exit.`
+})
+```
+
+Fork template (investigation/analysis — use verify-wrap):
+```javascript
+agents.fork({
+  agent: 'tech-lead',
+  task: `[WORK SESSION] Lens <A/B/C/D>: <specific target>
+
+Objective: <what does "done" look like?>
+Read: <specific files to start with>
+
+Use workflow: workflow.run('verify-wrap', '<describe the investigation>')
+This ensures your findings actually get written, not just observed.
+
+Output: agents/tech-lead/workspace/<finding-name>.md`
 })
 ```
 

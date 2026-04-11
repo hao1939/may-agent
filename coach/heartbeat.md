@@ -56,7 +56,20 @@ Pick the highest-priority task(s). Ask:
 
 ## Step 3: DISPATCH
 
-For each substantive task, fork a work session:
+### ⚡ Default: Use workflows for all forked work
+
+**Workflows are habits, not optional tools.** Don't think "should I use a workflow?" — think "which workflow fits?"
+
+| Work type | Workflow | Why |
+|-----------|----------|-----|
+| Gym scenarios / growth cycles | `workflow.run('growth-cycle', task)` | Structured: baseline → intervene → measure |
+| Training sprints | `workflow.run('training-sprint', task)` | Batch testing with completion tracking |
+| Investigation → written findings | `workflow.run('verify-wrap', task)` | Ensures findings actually get written, not just observed |
+| Multi-question research | `workflow.run('parallel-research', JSON.stringify({...}))` | Parallel > sequential |
+
+**Only skip workflow for**: quick triage (< 5 ops), updating todo.md, responding to a dispatch.
+
+For each substantive task, fork a work session **with a workflow**:
 
 ```javascript
 agents.call({
@@ -67,6 +80,8 @@ agents.call({
 Objective: <one sentence — what does "done" look like?>
 Read: <specific files to read for context>
 Output: <specific file path for deliverable>
+
+Use the appropriate workflow — growth-cycle for gym work, verify-wrap for investigations.
 
 Constraints:
 - <specific constraints>`
