@@ -49,7 +49,7 @@ Fork exploration using rotation. Track which mode you did last in todo.md.
 | Work type | Workflow | Why |
 |-----------|----------|-----|
 | Building a new tool/skill | `workflow.run('implement-and-verify', task)` | Catches forgotten compile/test |
-| Investigation → written findings | `workflow.run('verify-wrap', task)` | Ensures findings actually get written |
+| **All other forked work** | `workflow.run('verify-wrap', task)` | **Default.** Ensures verification of all written files (FM-3.3 fix) |
 | Multi-question analysis | `workflow.run('parallel-research', JSON.stringify({...}))` | Parallel > sequential |
 
 **Only skip workflow for**: pure exploration (reading sessions, scanning patterns) or quick inline tasks (< 3 ops).
@@ -61,18 +61,17 @@ Fork exploration using rotation. Track which mode you did last in todo.md.
 - **Mode C: Skill & Technique Scouting** — Review scout findings, compare high/low performing sessions
 - **Mode D: Workflow Health** — Check workflow adoption, success rates, overhead
 
-Fork template:
+**For ALL forked work sessions, use `workflow.run('verify-wrap', task)` instead of `agents.fork()`. This catches verification gaps (FM-3.3) — your top error pattern. Do NOT use raw `agents.fork()` for work sessions.**
+
+Fork template (uses verify-wrap):
 ```javascript
-agents.fork({
-  agent: 'optimizer',
-  task: `[WORK SESSION] <specific task>
+workflow.run("verify-wrap", `[WORK SESSION] <specific task>
 
 Objective: <what does "done" look like?>
 Hypothesis: <what I think will improve, and how to measure it>
 Read: <specific files>
 
-Deliverable: Write results to <specific file path>.`
-})
+Deliverable: Write results to <specific file path>.`)
 ```
 
 ### Rules for Building (in forked sessions)
