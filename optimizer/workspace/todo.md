@@ -16,13 +16,14 @@
 - Bypass exists at `src/app/may.ts:148-165`, needs `ANTHROPIC_API_KEY` env var.
 - **BLOCKED on operator.** Finding: `workspace/findings/2026-04-10-litellm-kills-prompt-caching.md`
 
-### D-o-R Phase 1 Budget Cap — FIX DEPLOYED, n=2
+### D-o-R Phase 1 Budget Cap — FIX DEPLOYED, n=3
 - Analysis: P1 avg 31 ops (67% of run total). 14/14 bloated P1s do full write+verify in "plan" phase.
 - Fix: Rewrote P1 prompt with explicit 15-op budget, read cap (2-4 files), no-write/no-verify rules, 10-call guardrail.
 - Expected: P1 avg ≤15 ops, total run ≤30 ops, saving ~259 ops/day (~$12/day).
-- **~3.5h measurement (n=2)**: Run 1 (wr_3zbe): P1=2 ops, P2=58 ops, total=60. Run 2 (wr_lqzs): multi-thread research (22+37+9=68 ops, no labeled P1). P1 cap working, but total ops haven't decreased — P2 may be compensating.
-- **Watch for P2 compensatory bloat**: Run 1 P2=58 (P95+), Run 2 total=68. Combined avg 64 ops/run vs pre-fix ~46 avg.
-- **Next check**: 12h post-fix (~2026-04-11 13:00 UTC). Need n≥5 for confidence.
+- **~4h measurement (n=3)**: Run 1 (wr_3zbe, 01:24 UTC): P1=2 ops, P2=58 ops, total=60. Run 2 (wr_lqzs, 02:24 UTC): multi-thread research (22+37+9=68 ops, no labeled P1). Run 3 (wr_l61f, 05:25 UTC): P1=5 ops, P2=21 ops, total=26. **P1 cap holding** (2, N/A, 5 — all ≤15). Run 3 total=26 is first clean win (below pre-fix avg 46).
+- **P1 avg (labeled runs)**: 3.5 ops (runs 1+3). **Total avg**: 51.3 ops (runs 1-3). Run 3 pulled avg down significantly.
+- **Watch for P2 compensatory bloat**: Run 1 P2=58 (outlier), Run 3 P2=21 (normal). May be settling.
+- **Next check**: Need n≥5. 2 more runs needed. Check ~2026-04-11 09:00 UTC.
 - Findings: `workspace/finding-dor-p1-bloat-0411.md`, `workspace/finding-dor-p1-cap-measurement-0411.md`
 
 ### D-o-R Nested Workflow Spawning — ✅ FIX DEPLOYED (commit 60a844e3)
@@ -50,7 +51,7 @@
 - Baseline: 8 heartbeats in 12h, avg 56 ops, total 451. Post-fix: avg 23 ops (59% reduction). ✅ SUCCESS.
 - Last exploration mode: **D** (Adoption Unblock — Merge gym-batch + D-o-R data — Apr 11 ~05:53 UTC, s_1775886856133_1251). Previous: C (Coach Experiment Technique — Apr 11 ~05:24), B (Tool Gap — Bob 75-op — Apr 11 ~04:54), A (D-o-R Post-Fix 12h — Apr 11 ~04:24), D (D-o-R Nested Fix — Apr 11 ~03:53), C (Lean vs Bloated — Apr 11 ~02:24).
 - **session-query tool BUILT** (`scripts/session-query.ts`). Replaces 15-25 bash archaeology pattern with single command. Supports: --agent, --since, --task, --status, --min-ops, --tools, --json, --sort. Tested with real data (911 sessions). Est. savings: 10-15 ops/session × 187 sessions = 1,870-2,805 ops.
-- **session-query adoption**: Still **zero active adoption** beyond optimizer (confirmed Apr 11 05:24 UTC). May + QA have passive mentions only. **Three blockers**: (1) filesystem history stale (through ~Apr 5), (2) zero agents have session-query in context.md, (3) may.db has 0 coach sessions. No change since last check. **gym-batch.sh also unadopted** — never merged to main (still on `review/gym-batch-runner` branch). Coach can't use it. Merging gym-batch + adding context.md entries is highest-ROI action (~60-150 ops/day savings). Findings: `workspace/finding-tool-gap-0411-b.md`, `workspace/finding-coach-experiment-technique-0411.md`
+- **session-query adoption**: Still **zero active adoption** beyond optimizer (confirmed Apr 11 05:24 UTC). May + QA have passive mentions only. **Three blockers**: (1) filesystem history stale (through ~Apr 5), (2) zero agents have session-query in context.md, (3) may.db has 0 coach sessions. No change since last check. **gym-batch.sh MERGED to main** (cherry-pick 5ca3bdf, Apr 11 ~05:54 UTC) + coach context.md updated. Previous blocker (stuck on review branch) resolved. Findings: `workspace/finding-tool-gap-0411-b.md`, `workspace/finding-coach-experiment-technique-0411.md`
 - Mode D **COMPLETE**: Workflow health analysis. **Key result: D-o-R uses +53% more ops than non-WF work sessions** (45.7 vs 29.9). Phase 1 is the bloat source (30.4 avg ops — matches a complete non-WF session). Error rates 50% lower (2.1% vs 3.9%). Quality scores incomparable (different eval scales). Finding: `workspace/finding-workflow-health-0410.md`
 - Mode C finding complete: `workspace/finding-workflow-adoption-gap-0410.md`
 - Mode A finding complete: `workspace/finding-coach-166op-archaeology-0410.md` — **Key result: high-op sessions are restart-accumulated, not single-context bloat. 184-op session had 6 restarts (7 segments). Primary fix is infra (cap restarts/turns), not behavioral.**
