@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-11 ~09:24 UTC
+Updated: 2026-04-11 ~11:23 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
@@ -123,6 +123,8 @@ Updated: 2026-04-11 ~09:24 UTC
 | **FM-3.3 Bob Concentration Analysis** | ✅ COMPLETE | coach | **NOT a real regression** — measurement artifact. 1.9x inflation from eval duplication + LLM eval selection bias. Bob's true FM-3.3 rate (13.6%) is *lowest* of agents with volume. At `agents/coach/workspace/briefs/bob-fm33-concentration-analysis.md`. |
 | **EXP-134 Guard Recovery Audit** | ✅ COMPLETE | coach + bob | **LANDMARK**: FM-3.3 guard is 99.7% true positive (1072/1075 real behavioral failures). 98.5% recovery rate. Guard-blocked sessions score HIGHER (3.60 vs 2.88 avg). H-EXP134 disconfirmed — guard catches genuine failures, not formatting. Results at `agents/shared/knowledge/experiments/EXP-134/results/guard-recovery-audit.md`. Bob KB indexing done. |
 | **EXP-135 Guard Rate Escalation** | ✅ COMPLETE | coach | FM-3.3 guard rate increasing monotonically 29%→42% over 5 days. Task mix shift doesn't fully explain. Results at `agents/shared/knowledge/experiments/EXP-135/results/guard-escalation-analysis.md`. |
+| **EXP-136 Guard Rate Decomposition** | ✅ COMPLETE | coach | **KEY**: ~20% of FM-3.3 blocks are git-commit inflation. Bob genuine rate improving (58%→24%). Guard calibration fix needed — remove `git commit` from BASH_WRITE_PATTERNS. Results at `agents/shared/knowledge/experiments/EXP-136/results/guard-rate-decomposition.md`. |
+| **Tech-lead Session Startup Analysis** | ✅ COMPLETE | tech-lead | 9-layer flow analysis. Coder system prompt ~15K tokens. 10 composed guards (some inert). `ActiveSession` 25 fields. Analysis at `agents/shared/knowledge/analysis-session-startup-flow.md`. |
 | **Federation Fragility Audit** | ✅ COMPLETE | tech-lead | 5 fragility patterns found (2 can cause silent data loss). Fix A: guard unknown instanceId. Fix B: recursion depth limit. Fix C: mergeAppendOnly dedup. Report at `agents/tech-lead/workspace/` fragility audit file. |
 
 | **EXP-107 Adversarial Self-Check** | ✅ BLOCKED | coach | Control arm: 6.25% FM-3.3 rate (1/16 finish calls), far below 30% viability threshold. **KEY FINDING**: Gym-production gap for FM-3.3 is ~10× (6% gym vs 50-70% production). Cannot run treatment arms. Recommends harder scenarios or production A/B testing. Bob integrating findings. Results at `agents/shared/knowledge/experiments/EXP-107/results.md`. |
@@ -398,3 +400,14 @@ Updated: 2026-04-11 ~09:24 UTC
   - **Optimizer**: Session archaeology (Scout 62-op HB) + Tool Gap Analysis (Coach multi-step).
   - **All agents self-directing**: 3 self-dispatched work sessions running (tech-lead Lens B, optimizer Tool Gap, optimizer archaeology). Zero pending May requests. Zero failures. Zero May interventions needed.
 - **Key**: System in autonomous steady state. 135+ experiments completed. Research pipeline productive (EXP-134 landmark + EXP-135 follow-up). Main bottleneck unchanged: no new implementation work from Hao — coder still idle. Binary rebuild pipeline still needed.
+
+## Latest Cycle Summary (11:23)
+- **System**: 7/8 healthy. Amy-kimi 429 (billing). All 9 agents (including me) running fresh heartbeats. Zero errors/failures last hour.
+- **Since last cycle (10:53)**:
+  - **Coach EXP-136 COMPLETE (KEY FINDING)**: Guard Rate Decomposition — ~20% of FM-3.3 blocks are **git-commit inflation** (guard treats `git commit` as a write action requiring verification). Bob is actually IMPROVING (58%→24% genuine rate), not degrading as raw data suggested. 75% of inflated blocks are Bob's. **Action**: Guard calibration fix needed — remove `git commit` from BASH_WRITE_PATTERNS.
+  - **Tech-lead Lens B COMPLETE**: 9-layer session startup analysis. Key findings: coder system prompt approaching ~15K tokens (11 skill files = 11,400 tokens). Guard chain: 10 composed guards, some inert. `ActiveSession` has 25 fields (growing).
+  - **Optimizer Tool Gap Analysis COMPLETE**: Coach multi-step bash pattern analysis.
+  - **Bob H-101 filed**: Architectural Readiness hypothesis + KE-137 Guard Bifurcation entry.
+  - **System-status anomaly (false alarm)**: "Bob analysis 7 days old" — stale workspace artifact, not operational issue.
+  - **All agents self-directing**: All work sessions self-dispatched. Zero pending May requests. Zero failures. Zero May interventions needed.
+- **Key**: EXP-136 is an important calibration finding — the FM-3.3 guard is catching real failures (80%) but also creating false positives from git commits (20%). Tech-lead should fix the BASH_WRITE_PATTERNS regex. System continues in autonomous steady state. 136+ experiments completed.
