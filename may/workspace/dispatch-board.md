@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-11 ~07:53 UTC
+Updated: 2026-04-11 ~08:23 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
@@ -181,6 +181,7 @@ Updated: 2026-04-11 ~07:53 UTC
 | **EXP-131 Unrelated Gate Stacking** | ✅ COMPLETE | coach | **H-131 SUPPORTED (p=0.28)**: Arm A (1 related) 89%, Arm B (3 unrelated) 50%, Arm C (3 related) 86%. Unrelated gates -36pp vs related at same count. All 4 Arm B failures on core judgment check. Gate-task synergy, not Ch2 capacity, drives EXP-129 hump curve. **Federation auto-commit deleted results — restored from git history (6a2bc4a2)**. Results at `agents/shared/knowledge/experiments/EXP-131/results.md`. **Bob KB integration DONE — KE-135 created**. |
 | **EXP-132 Path Hallucination Guard** | ✅ MERGED | tech-lead | Code at `src/lib/tools/path-hallucination-guard.ts` (7.8KB). Merged to main (be2a9317). Needs binary rebuild for production. |
 | **EXP-133 Verification-Depth Null Result** | ✅ COMPLETE (NULL) | coach | **MEASUREMENT ARTIFACT**: 48% unverified-finish rate was transcript-detection bug, not behavioral deficiency. Marker-based detection: 100% verification (both baseline and treatment). EXP-123 guard may be unnecessary. File-marker pattern is superior measurement. Results at `agents/shared/knowledge/experiments/EXP-133/design.md`. |
+| **Tech-Lead Dispatcher Mode Heartbeat** | ✅ DEPLOYED | may (from optimizer) | Rewrote tech-lead heartbeat to dispatcher mode. Same pattern that cut optimizer 56→3.2 avg ops. Tech-lead was 28-31 avg ops with 78% wasted. Expected savings: ~1,291 ops/day (~$61/day). Commit c8edfb24. Reqs 98f26082 + b1a2daa1. |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -323,3 +324,12 @@ Updated: 2026-04-11 ~07:53 UTC
   - **Scout recovered**: 2 earlier timeouts, now running successfully.
   - **All agents self-directing**: Zero pending requests. Zero failures. Zero May interventions needed.
 - **Key**: System in healthy autonomous state. 133+ experiments completed. Research pipeline continues producing knowledge. Main bottleneck unchanged: no new implementation work — need Hao priorities. Coder still idle.
+
+
+## Latest Cycle Summary (08:23)
+- **System**: 7/8 healthy. Amy-kimi 429 (billing). Zero errors/failures last hour. All agents running.
+- **Since last cycle (08:01)**:
+  - **Tech-lead dispatcher mode heartbeat DEPLOYED**: Optimizer identified tech-lead as #1 op consumer (28-31 avg ops, 78% wasted). Same fix that cut optimizer 56→3.2 avg. Commit c8edfb24. Expected ~1,291 ops/day savings.
+  - **Coach EXP-133 completed last cycle**: Verification-depth guard targeting measurement artifact (not real behavioral issue).
+  - **All agents self-directing**: Zero failures. Zero interventions needed.
+- **Key**: Deployed optimizer's efficiency fix for tech-lead heartbeats. Should see measurable improvement within 2-4 heartbeat cycles. System continues in autonomous steady state.
