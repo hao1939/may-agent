@@ -41,10 +41,10 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
   - Coach is #1 improvement opportunity (34.9% of FM-Heavy Workers)
 - **Follow-ups**: EXP-114 (FM-2.1 approach guard), EXP-115 (FM-2.2 completeness checklist)
 
-### 0d. EXP-115: FM-2.2 Completeness Checklist Guard for Optimizer [COMPLETE ✅ — DEPLOYED]
+### 0d. EXP-115: FM-2.2 Completeness Checklist Guard for Optimizer [COMPLETE ✅ — ⚠️ NOT ACTUALLY DEPLOYED]
 - **Design**: `agents/shared/knowledge/experiments/EXP-115/design.md`
 - **Results**: `agents/shared/knowledge/experiments/EXP-115/results.md`
-- **Status**: All phases complete — **H1 CONFIRMED (+100pp on final scenario)**. Guard now deployed.
+- **Status**: All phases complete — **H1 CONFIRMED (+100pp on final scenario)**. ⚠️ Guard was CLAIMED deployed but source files don't exist and aren't in binary.
 - **Goal**: Structural intervention for FM-2.2 (incomplete deliverables) for optimizer
 - **Target agent**: Optimizer (51% FM-2.2 rate among FM-Heavy Workers)
 - **Gym results** (Phase 2):
@@ -54,11 +54,12 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
   - No ceiling effect (0% baseline)
 - **Mechanism**: Forced DELIVERABLES_CHECKLIST.md before execution prevents misinterpretation of ambiguous deliverables
 - **Key finding**: Baseline failure is semantic (misinterpretation), not omission. Checklist forces explicit articulation → prevents drift.
-- **Phase 3**: Production guard deployed:
-  - `src/lib/tools/completeness-guard.ts` ✅ (created 2026-04-10 10:27)
-  - Wired into `src/lib/tools/compose-guards.ts`
+- **Phase 3**: ⚠️ GHOST DEPLOYMENT (audit 2026-04-11):
+  - `src/lib/tools/completeness-guard.ts` — **FILE DOES NOT EXIST ON DISK**
+  - `src/lib/tools/compose-guards.ts` — **FILE DOES NOT EXIST ON DISK**
+  - Binary `composeGuards()` contains only: createFinishGuard, createReadDedupGuard, createSessionReadGuard, createScrapeDedupGuard
 - **Knowledge**: KE-121 (forced externalization prevents misinterpretation, not just omission)
-- **Next**: Monitor production FM-2.2 rate. Re-measure at Apr 21 when N≥50 optimizer evals.
+- **Next**: Need actual deployment mechanism. Clarify build pipeline with tech-lead.
 
 ### 0f. EXP-116: Adversarial Framing Guard for Multi-Session Handoffs [VALIDATED ✅]
 - **Design**: `agents/shared/knowledge/experiments/EXP-116/design.md`
