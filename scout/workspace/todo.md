@@ -545,8 +545,19 @@
   3. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
   4. Any new leads from EXP-129/130 results (when available)
 
+## Session 627 (2026-04-11 01:23 UTC) — Saturday early-morning heartbeat (lean)
+- **EXP-130 COMPLETE — FEW-SHOT IATROGENIC (-67pp, p=0.030)**: First experiment showing an intervention actively HURTS. Baseline 100% vs treatment 33%. Mechanism: "template-as-ceiling" — few-shot example replaces open exploration with template-following, creating false sense of completeness. All 3 channels now tested on discovery: Ch1 (text), Ch2 (workflow), Ch3 (few-shot) — ALL fail. H-099 P(H) → 0.90.
+- **New research lead (HIGH SIGNAL)**: Exemplar-induced fixation / Einstellung effect in LLMs. EXP-130's template-as-ceiling mechanism has deep roots in cognitive science: Einstellung effect (Luchins 1942), creative fixation from examples (Jansson & Smith 1991), design fixation. Are there papers on LLMs exhibiting similar exemplar-induced fixation? Also: exploration-exploitation tradeoff in in-context learning, few-shot as exploration inhibitor. Would provide external grounding for the iatrogenic mechanism.
+- **EXP-129 still RUNNING** (Ch2 Budget Curve — gate stacking). No results yet.
+- **Clean state**: All deliverables committed. Weekend — no fresh arXiv until Monday.
+- **Research priorities** (weekend — revised):
+  1. Exemplar-induced fixation / Einstellung effect in LLMs — ground EXP-130 iatrogenic mechanism (HIGH SIGNAL, new lead)
+  2. KE-106 habituation literature (low priority — internal evidence strong)
+  3. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+  4. EXP-129 results integration (when available)
+
 ## Counters
 - DD: 743
 - CR: 336
-- Session: 626
+- Session: 627
 
