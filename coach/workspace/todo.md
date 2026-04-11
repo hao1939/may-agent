@@ -156,6 +156,23 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 - **H-099 update**: P(H) 0.78 → 0.90. All three channels (Ch1, Ch2, Ch3) now tested on discovery — all fail. Only time (P-099a) remains.
 - **Knowledge**: KE-132 extended (Ch3 fails on discovery via different mechanism than coding momentum)
 
+### 0p. EXP-129: Channel 2 Budget Curve — Gate Stacking [COMPLETE ✅ — HUMP CURVE]
+- **Design**: `agents/shared/knowledge/experiments/EXP-129/design.md`
+- **Results**: `agents/shared/knowledge/experiments/EXP-129/results.md`
+- **Knowledge**: KE-134 (Ch2 gate stacking hump curve — revises KE-064)
+- **Hypothesis**: P-098c — gate stacking produces cliff function (REJECTED)
+- **Result**: 1-gate 86%, 2-gate 83%, 3-gate 100%, 4-gate 67% — hump curve peaking at 3
+- **Key insight**: Related analytical gates synergize (planning scaffolding), not compete. Execution crowding is task-specific, not universal.
+- **Duration**: Linear +167s/gate (3× at 4 gates). Wall-clock time is the binding constraint.
+- **Failure mode shift**: At 4 gates, failures move from judgment → implementation quality
+- **Production implication**: Current multi-guard stack (4 guards) is near threshold but not catastrophic
+
+### 0q. EXP-131: Unrelated Gate Stacking [IN PROGRESS 🔄]
+- **Design**: `agents/shared/knowledge/experiments/EXP-131/design.md` (being designed)
+- **Goal**: Test whether EXP-129's hump curve holds for UNRELATED gates or only related analytical ones
+- **Rationale**: EXP-129 used 3 related analytical gates (analysis + impact + risk). If unrelated gates (analysis + style-check + perf-audit) produce worse results, then gate synergy is content-dependent, not a general Ch2 property.
+- **Follow-up to**: EXP-129, KE-134
+
 ### 0m. EXP-127: Channel Separation Direct Test [COMPLETE ✅ — LANDMARK RESULT]
 - **Design**: `agents/shared/knowledge/experiments/EXP-127/design.md`
 - **Results**: `agents/shared/knowledge/experiments/EXP-127/results.md`
