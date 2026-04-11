@@ -220,7 +220,10 @@
         "quality",
         "delegated",
         "open-ended",
-        "scope"
+        "scope",
+        "scope",
+        "broad task",
+        "narrow task"
       ],
       "agents": [
         "*"
@@ -317,7 +320,11 @@
         "gate",
         "L5",
         "agreement",
-        "push back"
+        "push back",
+        "sycophantic",
+        "disagree",
+        "push back",
+        "agree too much"
       ],
       "agents": [
         "coach",
@@ -410,7 +417,9 @@
         "too many",
         "performance",
         "injection",
-        "minimal"
+        "minimal",
+        "too much context",
+        "information overload"
       ],
       "agents": [
         "*"
@@ -426,8 +435,9 @@
         "reference",
         "self-serve",
         "find",
-        "push",
-        "knowledge delivery"
+        "knowledge delivery",
+        "push model",
+        "inject knowledge"
       ],
       "agents": [
         "*"
@@ -443,7 +453,10 @@
         "sycophancy",
         "compliance",
         "request type",
-        "before responding"
+        "before responding",
+        "sycophantic",
+        "agree",
+        "push back"
       ],
       "agents": [
         "coach",
@@ -461,7 +474,10 @@
         "tunnel vision",
         "contradiction",
         "judgment",
-        "write first"
+        "write first",
+        "write out reasoning",
+        "think step",
+        "externalize"
       ],
       "agents": [
         "*"
@@ -513,7 +529,11 @@
         "hurt",
         "judgment",
         "coding",
-        "harm"
+        "harm",
+        "when to use",
+        "externalize",
+        "bug",
+        "fix"
       ],
       "agents": [
         "*"
@@ -530,7 +550,10 @@
         "field",
         "detection",
         "read code",
-        "verify"
+        "verify",
+        "read source",
+        "check implementation",
+        "actual code"
       ],
       "agents": [
         "*"
@@ -599,7 +622,10 @@
         "conflict",
         "docs",
         "over-trust",
-        "asymmetry"
+        "asymmetry",
+        "README",
+        "comment",
+        "source of truth"
       ],
       "agents": [
         "*"
@@ -653,7 +679,10 @@
         "self-report",
         "trust",
         "check",
-        "verify"
+        "verify",
+        "self-verify",
+        "verified",
+        "test pass"
       ],
       "agents": [
         "*"
@@ -719,7 +748,11 @@
         "cite",
         "tool output",
         "conclusion",
-        "verification"
+        "verification",
+        "evidence first",
+        "prove it",
+        "show evidence",
+        "hallucinate"
       ],
       "agents": [
         "*"
@@ -882,7 +915,10 @@
         "too many",
         "iatrogenesis",
         "less is more",
-        "stack"
+        "stack",
+        "too many interventions",
+        "multiple",
+        "combined"
       ],
       "agents": [
         "*"
@@ -1037,7 +1073,10 @@
         "token",
         "cache",
         "re-read",
-        "efficiency"
+        "efficiency",
+        "read again",
+        "already read",
+        "re-reading"
       ],
       "agents": [
         "tech-lead",
