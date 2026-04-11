@@ -1,142 +1,1049 @@
 {
   "_meta": {
     "description": "Compact index for task-aware knowledge injection. Each entry has keywords for matching and a one-liner for injection.",
-    "updated": "2026-04-04",
-    "usage": "src/lib/knowledge-router.ts reads this file at startup and matches task text against keywords."
+    "updated": "2026-04-10",
+    "usage": "src/lib/knowledge-router.ts reads this file at startup and matches task text against keywords.",
+    "expansion": "Expanded from 19 to 60 entries. Prioritized actionable entries that affect decision-making at task time."
   },
   "entries": [
     {
       "id": "KE-001",
       "file": "entries/KE-001.md",
       "oneliner": "Context learning works for environmental knowledge only — derivable facts have zero impact (EXP-001)",
-      "keywords": ["context.md", "context learning", "environmental", "knowledge injection", "prompt"],
-      "agents": ["tech-lead", "coach", "bob"]
+      "keywords": [
+        "context.md",
+        "context learning",
+        "environmental",
+        "knowledge injection",
+        "prompt"
+      ],
+      "agents": [
+        "tech-lead",
+        "coach",
+        "bob"
+      ]
     },
     {
       "id": "KE-002",
       "file": "entries/KE-002.md",
       "oneliner": "Text rules have 0% success for judgment failures — 0/20 experiments. Use workflows instead (KE-007)",
-      "keywords": ["text rule", "judgment", "SOUL.md", "skill", "behavioral", "intervention", "fix behavior", "prompt engineering"],
-      "agents": ["*"]
+      "keywords": [
+        "text rule",
+        "judgment",
+        "SOUL.md",
+        "skill",
+        "behavioral",
+        "intervention",
+        "fix behavior",
+        "prompt engineering"
+      ],
+      "agents": [
+        "*"
+      ]
     },
     {
       "id": "KE-003",
       "file": "entries/KE-003.md",
       "oneliner": "Rich delegation context (file paths, constraints, verification) reduces wasted ops by 47%",
-      "keywords": ["delegation", "delegate", "coder", "call agent", "agents.call", "task description"],
-      "agents": ["tech-lead", "optimizer", "may"]
+      "keywords": [
+        "delegation",
+        "delegate",
+        "coder",
+        "call agent",
+        "agents.call",
+        "task description"
+      ],
+      "agents": [
+        "tech-lead",
+        "optimizer",
+        "may"
+      ]
     },
     {
       "id": "KE-004",
       "file": "entries/KE-004.md",
       "oneliner": "Guards are brittle (false positives when env changes) — use context.md for environmental constraints",
-      "keywords": ["guard", "regex", "tool block", "safety", "constraint", "binary guard"],
-      "agents": ["tech-lead", "may"]
+      "keywords": [
+        "guard",
+        "regex",
+        "tool block",
+        "safety",
+        "constraint",
+        "binary guard"
+      ],
+      "agents": [
+        "tech-lead",
+        "may"
+      ]
     },
     {
       "id": "KE-005",
       "file": "entries/KE-005.md",
       "oneliner": "QA catches only 14% of issues vs evaluator's 27% — QA rubber-stamps",
-      "keywords": ["QA", "review", "quality", "detection", "evaluation", "rubber stamp"],
-      "agents": ["coach", "optimizer", "may"]
+      "keywords": [
+        "QA",
+        "review",
+        "quality",
+        "detection",
+        "evaluation",
+        "rubber stamp"
+      ],
+      "agents": [
+        "coach",
+        "optimizer",
+        "may"
+      ]
     },
     {
       "id": "KE-006",
       "file": "entries/KE-006.md",
       "oneliner": "Skills targeting reasoning patterns don't change tool-calling patterns — behavior at tool-call level is unaffected",
-      "keywords": ["skill", "reasoning", "tool call", "pattern", "behavioral change"],
-      "agents": ["coach", "tech-lead"]
+      "keywords": [
+        "skill",
+        "reasoning",
+        "tool call",
+        "pattern",
+        "behavioral change"
+      ],
+      "agents": [
+        "coach",
+        "tech-lead"
+      ]
     },
     {
       "id": "KE-007",
       "file": "entries/KE-007.md",
       "oneliner": "Workflow enforcement is the ONLY reliable behavioral intervention — 5/56 experiments promoted, all structural",
-      "keywords": ["workflow", "intervention", "behavioral", "enforcement", "method", "promote", "fix behavior"],
-      "agents": ["*"]
+      "keywords": [
+        "workflow",
+        "intervention",
+        "behavioral",
+        "enforcement",
+        "method",
+        "promote",
+        "fix behavior"
+      ],
+      "agents": [
+        "*"
+      ]
     },
     {
       "id": "KE-008",
       "file": "entries/KE-008.md",
       "oneliner": "Heartbeat step restructuring causes regression — don't change heartbeat step order",
-      "keywords": ["heartbeat", "restructure", "step order", "regression", "cron"],
-      "agents": ["tech-lead", "may"]
+      "keywords": [
+        "heartbeat",
+        "restructure",
+        "step order",
+        "regression",
+        "cron"
+      ],
+      "agents": [
+        "tech-lead",
+        "may"
+      ]
     },
     {
       "id": "KE-009",
       "file": "entries/KE-009.md",
       "oneliner": "Negative examples in LESSONS.md have zero effect on behavior",
-      "keywords": ["LESSONS.md", "negative example", "anti-pattern", "lesson"],
-      "agents": ["coach", "tech-lead"]
+      "keywords": [
+        "LESSONS.md",
+        "negative example",
+        "anti-pattern",
+        "lesson"
+      ],
+      "agents": [
+        "coach",
+        "tech-lead"
+      ]
     },
     {
       "id": "KE-010",
       "file": "entries/KE-010.md",
       "oneliner": "Most gym scenarios hit ceiling — agents pass at baseline. Check baseline before building interventions",
-      "keywords": ["gym", "scenario", "baseline", "ceiling", "benchmark", "training"],
-      "agents": ["coach", "tech-lead"]
+      "keywords": [
+        "gym",
+        "scenario",
+        "baseline",
+        "ceiling",
+        "benchmark",
+        "training"
+      ],
+      "agents": [
+        "coach",
+        "tech-lead"
+      ]
     },
     {
       "id": "KE-011",
       "file": "entries/KE-011.md",
       "oneliner": "Knowledge files are passive — agents skip them in oneshot mode. Critical info must be injected or in context.md",
-      "keywords": ["knowledge", "file", "passive", "skip", "read", "utilization", "INDEX.md"],
-      "agents": ["*"]
+      "keywords": [
+        "knowledge",
+        "file",
+        "passive",
+        "skip",
+        "read",
+        "utilization",
+        "INDEX.md"
+      ],
+      "agents": [
+        "*"
+      ]
     },
     {
       "id": "KE-012",
       "file": "entries/KE-012.md",
       "oneliner": "Lab-fork null-patch test confirms infrastructure validity — null patch shows no effect, real patches can be trusted",
-      "keywords": ["lab", "fork", "null patch", "infrastructure", "validation", "experiment"],
-      "agents": ["coach", "tech-lead"]
+      "keywords": [
+        "lab",
+        "fork",
+        "null patch",
+        "infrastructure",
+        "validation",
+        "experiment"
+      ],
+      "agents": [
+        "coach",
+        "tech-lead"
+      ]
     },
     {
       "id": "KE-013",
       "file": "entries/KE-013.md",
       "oneliner": "Task boundedness is the primary driver of delegated session quality — bounded tasks succeed, open-ended fail",
-      "keywords": ["delegation", "task", "bounded", "quality", "delegated", "open-ended", "scope"],
-      "agents": ["*"]
+      "keywords": [
+        "delegation",
+        "task",
+        "bounded",
+        "quality",
+        "delegated",
+        "open-ended",
+        "scope"
+      ],
+      "agents": [
+        "*"
+      ]
     },
     {
       "id": "KE-014",
       "file": "entries/KE-014-quote-splitting-bypass.md",
       "oneliner": "Bash quote splitting can bypass security checks — sanitize tool input before shell execution",
-      "keywords": ["security", "bash", "quote", "splitting", "injection", "shell"],
-      "agents": ["tech-lead", "may"]
+      "keywords": [
+        "security",
+        "bash",
+        "quote",
+        "splitting",
+        "injection",
+        "shell"
+      ],
+      "agents": [
+        "tech-lead",
+        "may"
+      ]
     },
     {
       "id": "KE-015",
       "file": "entries/KE-015.md",
       "oneliner": "Decision topology R predicts workflow effectiveness — workflows help when R > 0.5, hurt when R < 0.3",
-      "keywords": ["workflow", "decision topology", "R value", "effectiveness", "predict", "design"],
-      "agents": ["*"]
+      "keywords": [
+        "workflow",
+        "decision topology",
+        "R value",
+        "effectiveness",
+        "predict",
+        "design"
+      ],
+      "agents": [
+        "*"
+      ]
     },
     {
       "id": "KE-016",
       "file": "entries/KE-016.md",
       "oneliner": "Workflow effectiveness depends on decision type — eliminable decisions benefit, essential decisions don't",
-      "keywords": ["workflow", "decision type", "eliminable", "essential", "effectiveness"],
-      "agents": ["*"]
+      "keywords": [
+        "workflow",
+        "decision type",
+        "eliminable",
+        "essential",
+        "effectiveness"
+      ],
+      "agents": [
+        "*"
+      ]
     },
     {
       "id": "KE-017",
       "file": "entries/KE-017.md",
       "oneliner": "Materialize-findings skill improves both behavior AND product quality — write findings before producing output",
-      "keywords": ["materialize", "findings", "skill", "exploration", "write first", "intermediate"],
-      "agents": ["*"]
+      "keywords": [
+        "materialize",
+        "findings",
+        "skill",
+        "exploration",
+        "write first",
+        "intermediate"
+      ],
+      "agents": [
+        "*"
+      ]
     },
     {
       "id": "KE-018",
       "file": "entries/KE-018.md",
       "oneliner": "Environmental nudges match text skills for behavioral change — context.md is as effective as skill files",
-      "keywords": ["environmental", "nudge", "context.md", "skill", "behavioral", "change"],
-      "agents": ["coach", "tech-lead"]
+      "keywords": [
+        "environmental",
+        "nudge",
+        "context.md",
+        "skill",
+        "behavioral",
+        "change"
+      ],
+      "agents": [
+        "coach",
+        "tech-lead"
+      ]
     },
     {
       "id": "KE-019",
       "file": "entries/KE-019.md",
       "oneliner": "Sycophancy requires materialization gates (L5) — nudges and basic workflows insufficient",
-      "keywords": ["sycophancy", "materialization", "gate", "L5", "agreement", "push back"],
-      "agents": ["coach", "tech-lead", "bob"]
+      "keywords": [
+        "sycophancy",
+        "materialization",
+        "gate",
+        "L5",
+        "agreement",
+        "push back"
+      ],
+      "agents": [
+        "coach",
+        "tech-lead",
+        "bob"
+      ]
+    },
+    {
+      "id": "KE-020",
+      "file": "entries/KE-020.md",
+      "oneliner": "Agent capability adoption requires explicit wiring, not just availability — building a feature doesn't mean agents will use it",
+      "keywords": [
+        "capability",
+        "adoption",
+        "wiring",
+        "feature",
+        "available",
+        "use",
+        "integration"
+      ],
+      "agents": [
+        "tech-lead",
+        "may",
+        "optimizer"
+      ]
+    },
+    {
+      "id": "KE-021",
+      "file": "entries/KE-021.md",
+      "oneliner": "Skill effectiveness: Process skills > Knowledge skills > Judgment skills. Only process skills reliably change behavior",
+      "keywords": [
+        "skill",
+        "type",
+        "process",
+        "knowledge",
+        "judgment",
+        "effectiveness",
+        "training"
+      ],
+      "agents": [
+        "coach",
+        "tech-lead",
+        "bob"
+      ]
+    },
+    {
+      "id": "KE-022",
+      "file": "entries/KE-022-early-exploration-errors.md",
+      "oneliner": "Agent errors concentrate in early exploration phase — front-load verification to catch early mistakes",
+      "keywords": [
+        "error",
+        "early",
+        "exploration",
+        "phase",
+        "verification",
+        "front-load",
+        "beginning"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-024",
+      "file": "entries/KE-024-dispatcher-heartbeat-pattern.md",
+      "oneliner": "Separating heartbeat triage from execution eliminates overhead and errors — dispatch, don't do both",
+      "keywords": [
+        "heartbeat",
+        "triage",
+        "dispatch",
+        "execution",
+        "overhead",
+        "separation"
+      ],
+      "agents": [
+        "tech-lead",
+        "may",
+        "optimizer"
+      ]
+    },
+    {
+      "id": "KE-025",
+      "file": "entries/KE-025-instruction-overhead-paradox.md",
+      "oneliner": "Instruction overhead paradox: more context files HURT performance. Minimal injection beats comprehensive docs",
+      "keywords": [
+        "instruction",
+        "overhead",
+        "context",
+        "files",
+        "too many",
+        "performance",
+        "injection",
+        "minimal"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-026",
+      "file": "entries/KE-026-pull-model-discovery-dead.md",
+      "oneliner": "Pull-model discovery is dead — agents cannot self-serve from reference materials. Push knowledge, don't make them find it",
+      "keywords": [
+        "pull",
+        "discovery",
+        "reference",
+        "self-serve",
+        "find",
+        "push",
+        "knowledge delivery"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-029",
+      "file": "entries/KE-029-classify-then-act-eliminates-sycophancy.md",
+      "oneliner": "Classify-then-act eliminates sycophantic compliance — force the agent to categorize the request before responding",
+      "keywords": [
+        "classify",
+        "categorize",
+        "sycophancy",
+        "compliance",
+        "request type",
+        "before responding"
+      ],
+      "agents": [
+        "coach",
+        "tech-lead",
+        "bob"
+      ]
+    },
+    {
+      "id": "KE-031",
+      "file": "entries/KE-031-forced-externalization-domain-independent.md",
+      "oneliner": "Forced externalization is domain-independent — +69pp across tunnel vision, sycophancy, and contradiction blindness",
+      "keywords": [
+        "forced externalization",
+        "domain",
+        "tunnel vision",
+        "contradiction",
+        "judgment",
+        "write first"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-052",
+      "file": "entries/KE-052-structural-access-thesis.md",
+      "oneliner": "Structural access constraints dominate content quality — it doesn't matter how good knowledge is if agents can't reach it at decision time",
+      "keywords": [
+        "access",
+        "knowledge",
+        "utilization",
+        "structural",
+        "delivery",
+        "reach",
+        "decision time"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-053",
+      "file": "entries/KE-053-gym-production-gap-structural-not-behavioral.md",
+      "oneliner": "Gym-production gap is structural, not behavioral — gym success doesn't predict production performance",
+      "keywords": [
+        "gym",
+        "production",
+        "gap",
+        "transfer",
+        "predict",
+        "real world"
+      ],
+      "agents": [
+        "coach",
+        "tech-lead",
+        "bob"
+      ]
+    },
+    {
+      "id": "KE-054",
+      "file": "entries/KE-054-externalization-boundary-judgment-vs-debugging.md",
+      "oneliner": "Externalization has a sharp domain boundary — helps judgment tasks, HURTS debugging tasks. Don't apply universally",
+      "keywords": [
+        "externalization",
+        "debugging",
+        "domain boundary",
+        "hurt",
+        "judgment",
+        "coding",
+        "harm"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-057",
+      "file": "entries/KE-057-cross-reference-fixes-absent-field-detection.md",
+      "oneliner": "Cross-referencing source code fixes absent-field detection failures — always read the actual code, not just docs",
+      "keywords": [
+        "cross-reference",
+        "source code",
+        "absent",
+        "field",
+        "detection",
+        "read code",
+        "verify"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-059",
+      "file": "entries/KE-059-fewshot-breaks-text-rule-binary.md",
+      "oneliner": "Few-shot examples break the text-rule binary — they work where text rules fail, by showing rather than telling",
+      "keywords": [
+        "few-shot",
+        "example",
+        "text rule",
+        "show",
+        "demonstrate",
+        "worked example"
+      ],
+      "agents": [
+        "coach",
+        "tech-lead"
+      ]
+    },
+    {
+      "id": "KE-060",
+      "file": "entries/KE-060-unified-agent-intervention-taxonomy.md",
+      "oneliner": "Three intervention mechanisms: (1) structural gates, (2) few-shot examples, (3) environmental nudges. Text rules are not a mechanism",
+      "keywords": [
+        "intervention",
+        "mechanism",
+        "taxonomy",
+        "gate",
+        "few-shot",
+        "nudge",
+        "approach"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-061",
+      "file": "entries/KE-061-fewshot-judgment-skill-effectiveness.md",
+      "oneliner": "Few-shot worked examples achieve 0%→100% on judgment skills — the most powerful single-entry intervention found",
+      "keywords": [
+        "few-shot",
+        "worked example",
+        "judgment",
+        "skill",
+        "powerful",
+        "100%",
+        "training"
+      ],
+      "agents": [
+        "coach",
+        "tech-lead"
+      ]
+    },
+    {
+      "id": "KE-063",
+      "file": "entries/KE-063-agent-artifact-trust-asymmetry.md",
+      "oneliner": "Artifact trust asymmetry: LLMs systematically over-trust documentation over code. When docs conflict with code, agents follow docs",
+      "keywords": [
+        "trust",
+        "documentation",
+        "code",
+        "conflict",
+        "docs",
+        "over-trust",
+        "asymmetry"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-064",
+      "file": "entries/KE-064-execution-crowding-analysis-trap.md",
+      "oneliner": "Execution crowding: chained externalization steps create an analysis trap — too many gates kills execution velocity",
+      "keywords": [
+        "crowding",
+        "externalization",
+        "analysis",
+        "trap",
+        "too many gates",
+        "execution",
+        "velocity",
+        "over-process"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-072",
+      "file": "entries/KE-072-positional-privilege-architectural-theory.md",
+      "oneliner": "Positional privilege is architectural — system prompt content is categorically different from task message. Skills go in task, identity in system",
+      "keywords": [
+        "system prompt",
+        "task message",
+        "positional",
+        "privilege",
+        "identity",
+        "skill placement",
+        "where to put"
+      ],
+      "agents": [
+        "tech-lead",
+        "coach",
+        "may"
+      ]
+    },
+    {
+      "id": "KE-093",
+      "file": "entries/KE-093-verification-confabulation.md",
+      "oneliner": "Verification confabulation: agents fabricate verification results to match prior beliefs. Never trust self-reported verification",
+      "keywords": [
+        "verification",
+        "confabulation",
+        "fabricate",
+        "self-report",
+        "trust",
+        "check",
+        "verify"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-094",
+      "file": "entries/KE-094-commit-guard-structural-enforcement.md",
+      "oneliner": "Commit guard structural enforcement eliminates agent laziness — beforeToolCall hooks are highest-ROI investment",
+      "keywords": [
+        "commit",
+        "guard",
+        "enforcement",
+        "lazy",
+        "beforeToolCall",
+        "hook",
+        "structural"
+      ],
+      "agents": [
+        "tech-lead",
+        "may"
+      ]
+    },
+    {
+      "id": "KE-097",
+      "file": "entries/KE-097-confirmation-bias-mechanism-verification-confabulation.md",
+      "oneliner": "Confirmation bias is root mechanism of verification confabulation — agents confirm what they expect, not what exists",
+      "keywords": [
+        "confirmation bias",
+        "confabulation",
+        "verification",
+        "expect",
+        "root cause"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-101",
+      "file": "entries/KE-101-meta-analysis-theory-of-agent-improvement.md",
+      "oneliner": "Meta-analysis: what actually improves LLM agent performance — structural gates > few-shot > environmental nudges >> text rules (0%)",
+      "keywords": [
+        "meta-analysis",
+        "what works",
+        "improve",
+        "performance",
+        "evidence",
+        "ranking"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-102",
+      "file": "entries/KE-102-skill-level-confabulation-fix.md",
+      "oneliner": "Evidence-over-narrative skill eliminates verification confabulation — require citing specific tool output before conclusions",
+      "keywords": [
+        "evidence",
+        "narrative",
+        "confabulation",
+        "cite",
+        "tool output",
+        "conclusion",
+        "verification"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-106",
+      "file": "entries/KE-106-structural-enforcement-no-training-effect.md",
+      "oneliner": "Structural enforcement does NOT train behavior — guards are brakes, not driving lessons. Don't expect internalization from guards",
+      "keywords": [
+        "guard",
+        "enforcement",
+        "train",
+        "internalize",
+        "brakes",
+        "permanent",
+        "structural"
+      ],
+      "agents": [
+        "tech-lead",
+        "coach",
+        "bob"
+      ]
+    },
+    {
+      "id": "KE-109",
+      "file": "entries/KE-109-gym-production-gap-structural-mismatch.md",
+      "oneliner": "Gym-production gap is structural across 5 dimensions — don't optimize gym scores expecting production improvement",
+      "keywords": [
+        "gym",
+        "production",
+        "gap",
+        "dimension",
+        "structural",
+        "optimize",
+        "transfer"
+      ],
+      "agents": [
+        "coach",
+        "tech-lead",
+        "bob"
+      ]
+    },
+    {
+      "id": "KE-110",
+      "file": "entries/KE-110-skill-stack-saturation-gym-ceiling-confirms-improvement-loop.md",
+      "oneliner": "Skill stack saturation reached — gym ceiling confirms the improvement loop works AND is finished. Shift to production evaluation",
+      "keywords": [
+        "saturation",
+        "ceiling",
+        "improvement",
+        "finished",
+        "production",
+        "skill stack",
+        "diminishing"
+      ],
+      "agents": [
+        "coach",
+        "tech-lead"
+      ]
+    },
+    {
+      "id": "KE-112",
+      "file": "entries/KE-112-production-quality-multimodal-verdicts-lie.md",
+      "oneliner": "Production session quality is multi-modal — single verdict scores lie. Evaluate behavioral patterns, not aggregate scores",
+      "keywords": [
+        "production",
+        "quality",
+        "multi-modal",
+        "verdict",
+        "score",
+        "evaluate",
+        "behavioral pattern"
+      ],
+      "agents": [
+        "coach",
+        "evaluator",
+        "tech-lead"
+      ]
+    },
+    {
+      "id": "KE-113",
+      "file": "entries/KE-113-commit-guard-recovery-not-prevention.md",
+      "oneliner": "Commit guard production impact: recovery not prevention — guards help agents recover from mistakes, they don't prevent the mistakes",
+      "keywords": [
+        "commit",
+        "guard",
+        "production",
+        "recovery",
+        "prevention",
+        "impact",
+        "mistake"
+      ],
+      "agents": [
+        "tech-lead",
+        "may"
+      ]
+    },
+    {
+      "id": "KE-114",
+      "file": "entries/KE-114-production-behavioral-archetypes-spectrum.md",
+      "oneliner": "Production behavioral archetypes form a spectrum, not types — agents blend behaviors based on task context",
+      "keywords": [
+        "archetype",
+        "spectrum",
+        "behavioral",
+        "production",
+        "agent behavior",
+        "types",
+        "blend"
+      ],
+      "agents": [
+        "coach",
+        "evaluator"
+      ]
+    },
+    {
+      "id": "KE-119",
+      "file": "entries/KE-119-adversarial-self-review-null-result-review-without-action.md",
+      "oneliner": "Adversarial self-review is null result — agents review without changing action. Review gates must force re-work, not just reflection",
+      "keywords": [
+        "self-review",
+        "adversarial",
+        "review",
+        "null",
+        "reflection",
+        "re-work",
+        "gate"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-122",
+      "file": "entries/KE-122-intervention-decay-internalization-lifecycle.md",
+      "oneliner": "Intervention decay: effective interventions become redundant through internalization — periodically audit if guards are still needed",
+      "keywords": [
+        "decay",
+        "redundant",
+        "internalization",
+        "audit",
+        "intervention",
+        "remove",
+        "obsolete"
+      ],
+      "agents": [
+        "tech-lead",
+        "coach"
+      ]
+    },
+    {
+      "id": "KE-123",
+      "file": "entries/KE-123-over-intervention-iatrogenesis.md",
+      "oneliner": "Over-intervention iatrogenesis: combined interventions DEGRADE performance. Less is more — max 2-3 active interventions per task",
+      "keywords": [
+        "over-intervention",
+        "combined",
+        "degrade",
+        "too many",
+        "iatrogenesis",
+        "less is more",
+        "stack"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-125",
+      "file": "entries/KE-125-forced-enumeration-fails-discovery-tasks.md",
+      "oneliner": "Forced deliverable enumeration fails on discovery tasks under time pressure — don't gate discovery/exploration with rigid checklists",
+      "keywords": [
+        "deliverable",
+        "enumeration",
+        "discovery",
+        "time pressure",
+        "exploration",
+        "rigid",
+        "checklist",
+        "creative"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-129",
+      "file": "entries/KE-129-forced-externalization-only-reliable-channel-judgment.md",
+      "oneliner": "Forced externalization is the ONLY reliable channel for judgment tasks — Ch1 (text) and Ch3 (few-shot) fail on judgment",
+      "keywords": [
+        "externalization",
+        "channel",
+        "judgment",
+        "reliable",
+        "only",
+        "gate"
+      ],
+      "agents": [
+        "coach",
+        "tech-lead",
+        "bob"
+      ]
+    },
+    {
+      "id": "KE-132",
+      "file": "entries/KE-132-ch3-task-type-boundary-coding-momentum.md",
+      "oneliner": "Few-shot has a task-type boundary: coding momentum overwhelms examples — don't use few-shot for coding tasks",
+      "keywords": [
+        "few-shot",
+        "coding",
+        "boundary",
+        "momentum",
+        "overwhelm",
+        "task type"
+      ],
+      "agents": [
+        "coach",
+        "tech-lead"
+      ]
+    },
+    {
+      "id": "KE-133",
+      "file": "entries/KE-133-few-shot-harmful-discovery-template-displacement.md",
+      "oneliner": "Few-shot is ACTIVELY HARMFUL on discovery tasks — template-following displaces exploration. Never use examples for open-ended work",
+      "keywords": [
+        "few-shot",
+        "harmful",
+        "discovery",
+        "template",
+        "exploration",
+        "open-ended",
+        "creative"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-134",
+      "file": "entries/KE-134-ch2-gate-stacking-hump-curve.md",
+      "oneliner": "Gate stacking follows a hump curve, not a cliff — 2-3 gates optimal, 4+ starts declining, but no catastrophic collapse",
+      "keywords": [
+        "gate",
+        "stacking",
+        "hump",
+        "optimal",
+        "how many",
+        "gates",
+        "count"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-135",
+      "file": "entries/KE-135-gate-task-synergy-effect.md",
+      "oneliner": "Gate-task synergy effect: gate performance depends on relevance to the task, not gate count. Match gates to task type",
+      "keywords": [
+        "gate",
+        "synergy",
+        "relevance",
+        "match",
+        "task type",
+        "appropriate"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-136",
+      "file": "entries/KE-136-structural-guards-production-transfer-verification-depth.md",
+      "oneliner": "Structural guards transfer to production — verification-depth guard delivers +15.8pp fleet-wide. Guards are the proven production intervention",
+      "keywords": [
+        "guard",
+        "production",
+        "transfer",
+        "verification-depth",
+        "fleet",
+        "proven",
+        "deploy"
+      ],
+      "agents": [
+        "tech-lead",
+        "may"
+      ]
+    },
+    {
+      "id": "KE-137",
+      "file": "entries/KE-137-guard-response-bifurcation-learners-vs-reliants.md",
+      "oneliner": "Guard response bifurcation: learners improve permanently, reliants only perform with guard active. ~40% of agents are reliants",
+      "keywords": [
+        "guard",
+        "learner",
+        "reliant",
+        "bifurcation",
+        "permanent",
+        "remove guard"
+      ],
+      "agents": [
+        "tech-lead",
+        "coach"
+      ]
+    },
+    {
+      "id": "KE-140",
+      "file": "entries/KE-140-agent-read-patterns-duplicate-reads.md",
+      "oneliner": "Agent duplicate reads are primary token waste — agents re-read files they already have in context. Cache-aware tooling could save 30%+ tokens",
+      "keywords": [
+        "duplicate",
+        "read",
+        "waste",
+        "token",
+        "cache",
+        "re-read",
+        "efficiency"
+      ],
+      "agents": [
+        "tech-lead",
+        "may",
+        "optimizer"
+      ]
     }
   ]
 }
