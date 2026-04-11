@@ -145,6 +145,17 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 - **Key insight**: Coding momentum + misleading success signals (tests pass) overwhelm any few-shot content
 - **Successor hypothesis needed**: Action momentum × success signal misdirection as the true Ch3 moderator
 
+### 0o. EXP-130: Few-Shot on Discovery Task [COMPLETE ✅ — IATROGENIC RESULT]
+- **Design**: `agents/shared/knowledge/experiments/EXP-130/design.md`
+- **Results**: `agents/shared/knowledge/experiments/EXP-130/results.md`
+- **Hypothesis**: H-099 P-099d — Few-shot examples cannot teach discovery (irreducible)
+- **Result**: Baseline 100% (6/6) vs Treatment 33% (2/6) — **few-shot HURTS discovery by -67pp**
+- **Statistics**: Fisher's exact p = 0.030 (one-sided), p = 0.061 (two-sided)
+- **Mechanism**: Template-following displaces open exploration. Agent follows example pattern but misses peripheral files (todo, priority-tracker, index) that require independent discovery.
+- **Key insight**: Few-shot creates a "template ceiling" — agent stops exploring once template steps are done. This is the first iatrogenic intervention in the program.
+- **H-099 update**: P(H) 0.78 → 0.90. All three channels (Ch1, Ch2, Ch3) now tested on discovery — all fail. Only time (P-099a) remains.
+- **Knowledge**: KE-132 extended (Ch3 fails on discovery via different mechanism than coding momentum)
+
 ### 0m. EXP-127: Channel Separation Direct Test [COMPLETE ✅ — LANDMARK RESULT]
 - **Design**: `agents/shared/knowledge/experiments/EXP-127/design.md`
 - **Results**: `agents/shared/knowledge/experiments/EXP-127/results.md`
