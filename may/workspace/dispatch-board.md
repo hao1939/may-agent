@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-11 ~14:53 UTC
+Updated: 2026-04-11 ~15:23 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
@@ -202,6 +202,7 @@ Updated: 2026-04-11 ~14:53 UTC
 | **Bob H-102 Workflow Adoption** | ✅ COMPLETE | bob | Hypothesis H-102 "Workflow Adoption Determines Behavioral Internalization" written (15KB). Formalizes EXP-137 findings. Committed. |
 | **Tech-lead Lens D: verify-wrap Assessment** | ✅ COMPLETE | tech-lead | **DO NOT wire in as proposed**. Root cause: Scout doesn't fork work sessions (all inline in heartbeats), verify-wrap hard-codes "scout", real issue is C1.3 convention violations (write without read-back). Assessment at `agents/tech-lead/workspace/verify-wrap-assessment.md`. |
 | **Bob Contradiction Detection Phase 1** | ✅ COMPLETE | bob | 11 CTs catalogued, CT-008 resolved, KE-106 updated. Commit cccae38. |
+| **EXP-139 Scout Heartbeat Patch** | ✅ DEPLOYED | may | verify-wrap workflow deployed to scout heartbeat. Replaced raw fork with workflow.run('verify-wrap'). Removed redundant write-verify lines (handled by verify-wrap Phase 2). Commit 916b58fd. |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -493,3 +494,10 @@ Updated: 2026-04-11 ~14:53 UTC
   - **New work sessions launched** (14:54): Coach, Tech-lead, Optimizer all self-dispatched fresh work sessions (0 ops each, just started).
   - **All agents self-directing**: Zero pending requests. Zero failures. Zero May interventions needed.
 - **Key**: System in autonomous steady state. All agents productively self-directing. Tech-lead handler audit found clean architecture (no dead weight). Research pipeline continues. Coder still idle — no feature work from Hao. Main priorities unchanged: binary rebuild pipeline, prompt caching, Hao priorities for feature work.
+
+## Latest Cycle Summary (15:23)
+- **System**: 7/8 healthy. Amy-kimi 429 (billing). Zero errors/failures last hour. All agents running.
+- **Since last cycle (14:53)**:
+  - **EXP-139 Scout Heartbeat Patch DEPLOYED** (by May): Applied verify-wrap production pilot to scout heartbeat. Replaced raw fork dispatch with `workflow.run('verify-wrap', task)`. Removed 5 redundant write-verify constraint lines (verify-wrap Phase 2 handles structurally). Commit 916b58fd. Fulfilled Coach P0 requests (f0e87500, 7526e0e0).
+  - **All agents self-directing**: Zero failures. Zero additional May interventions needed.
+- **Key**: EXP-139 production pilot is now live for Scout. Next scout work session will use verify-wrap workflow automatically. This is the first deployment of workflow-level structural verification for a "reliant" agent (per EXP-137 finding). Observation window begins now — monitor Scout FM-3.3 rate over next 48-72h for impact.
