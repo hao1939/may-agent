@@ -1,4 +1,4 @@
 # Deliverables Checklist
 
-- [x] Modified D-o-R workflow with Phase 3b nesting guard (`agents/bob/workflows/deliver-or-report.ts`)
-- [x] Finding document (`agents/optimizer/workspace/finding-dor-phase3-nesting-fix-0411.md`)
+- [x] Finding document: `agents/optimizer/workspace/finding-tool-adoption-blockers-0411.md`
+- [x] Fix implementation: Added gym-batch.sh to `agents/shared/skills/agent-gym/SKILL.md` (Quick Reference + dedicated section)

@@ -19,6 +19,11 @@ scripts/gym-run.sh --run-all --tier smoke --agent coder
 # Test a .lab/ fork
 scripts/gym-run.sh <scenario> --agent coder --lab <fork-name>
 
+# Batch runs: multiple scenarios/variants/trials in one call
+scripts/gym-batch.sh --scenario <name> --agent coder --trials 5
+scripts/gym-batch.sh --scenario <name> --variants baseline,my-fork --trials 3
+scripts/gym-batch.sh --tier smoke --agent coder --variants baseline,fork1
+
 # Run a lab experiment (A/B comparison)
 scripts/lab-run.sh EXP-XXX
 scripts/lab-run.sh EXP-XXX --dry-run
@@ -86,6 +91,24 @@ scripts/lab-run.sh EXP-003
 ```
 
 Results saved to `agents/shared/knowledge/experiments/EXP-XXX/runs/`.
+
+## Batch Gym Runs
+
+When running multiple trials, comparing variants, or running across tiers — use `gym-batch.sh` instead of calling `gym-run.sh` in a loop:
+
+```bash
+# Run 5 trials of one scenario (for statistical confidence)
+scripts/gym-batch.sh --scenario hasty-fix --agent coder --trials 5
+
+# Compare baseline vs a lab fork, 3 trials each
+scripts/gym-batch.sh --scenario verify-before-finish --agent coder \
+  --variants baseline,coder-with-skill --trials 3
+
+# Run all smoke-tier scenarios with comparison
+scripts/gym-batch.sh --tier smoke --agent coder --variants baseline,my-fork --trials 2
+```
+
+**When to use gym-batch vs gym-run**: If you're about to call `gym-run.sh` more than twice in a session, use `gym-batch.sh` instead. It handles the loop, records results with batch IDs, and prints a comparison summary.
 
 ## Growth Cycle (Fork → Test → Promote)
 
