@@ -34,23 +34,16 @@
 - Finding: `workspace/finding-coach-session-efficiency-0410.md`
 
 ### Tech-Lead Heartbeat Bloat — ✅ FIX DEPLOYED & CONFIRMED (89% reduction)
-- Tech-lead heartbeats avg 30.8 ops (24h pre-fix, n=44), **#1 across all agents**.
-- Root cause: heartbeat.md encouraged deep inline exploration (4 "Lens" modes) with no op budget.
-- **Fix**: Rewrote tech-lead heartbeat.md to dispatcher mode (same pattern as optimizer fix).
-- **DEPLOYED** (commit dfa10146, Apr 11 ~08:35 UTC). May deployed it directly.
-- **POST-FIX (n=4 heartbeats)**: avg 3.5 ops (ops: 8, 3, 1, 2). **89% reduction** ✅
-- Pre-fix avg: 30.8 ops (n=44). Post-fix avg: 3.5 ops (n=4).
-- **Savings**: ~1,100 ops/day (~$52/day, ~$1,560/month) based on ~40 heartbeats/day × 27.3 ops saved.
-- Tech-lead now properly forks work sessions (ops=40, 38, 5 seen in forked jobs).
+- Tech-lead now at avg 13 ops (last 6h snapshot), down from 30.8 pre-fix. Properly forking work.
 - Finding: `workspace/finding-tech-lead-heartbeat-bloat-0411.md`
-- **→ MOVING TO DONE after n≥8 confirms pattern holds**
+- **→ MONITORING — check at n≥20 for final confirmation**
 
 ### Optimizer Heartbeat Bloat — FIX DEPLOYED
 - Avg 56 ops/heartbeat (highest of any agent). Bob avg 4 ops. My min was 19 — proves lean is possible.
 - Root cause: heartbeat.md encouraged inline exploration (multi-query DB analysis, file reads).
 - Fix: Rewrote heartbeat.md to "Dispatcher Mode" — observe in 1-2 ops, fork all analysis work. Target: ≤15 ops.
 - Baseline: 8 heartbeats in 12h, avg 56 ops, total 451. Post-fix: avg 23 ops (59% reduction). ✅ SUCCESS.
-- Last exploration mode: **BUILD** (D-o-R Phase 3 nesting fix — forked Apr 11 ~17:25 UTC). Previous: A (D-o-R nesting fix verification + coach 90-op patterns — Apr 11 ~16:53), D (verify-wrap adoption — Apr 11 ~16:23), C (Tech-lead forked work session techniques — Apr 11 ~15:53), B (Recurring multi-step bash patterns — Apr 11 ~15:24). Next rotation: **B**.
+- Last exploration mode: **B** (Tool Gap — adoption blockers analysis — forked Apr 11 ~17:54 UTC). Previous: BUILD (D-o-R Phase 3 nesting fix — Apr 11 ~17:25), A (D-o-R nesting fix verification + coach 90-op patterns — Apr 11 ~16:53), D (verify-wrap adoption — Apr 11 ~16:23), C (Tech-lead forked work session techniques — Apr 11 ~15:53). Next rotation: **C**.
 - **session-query tool BUILT** (`scripts/session-query.ts`). Replaces 15-25 bash archaeology pattern with single command. Supports: --agent, --since, --task, --status, --min-ops, --tools, --json, --sort. Tested with real data (911 sessions). Est. savings: 10-15 ops/session × 187 sessions = 1,870-2,805 ops.
 - **session-query adoption**: Still **zero active adoption** beyond optimizer (confirmed Apr 11 05:24 UTC). May + QA have passive mentions only. **Three blockers**: (1) filesystem history stale (through ~Apr 5), (2) zero agents have session-query in context.md, (3) may.db has 0 coach sessions. No change since last check. **gym-batch.sh MERGED to main** (cherry-pick 5ca3bdf, Apr 11 ~05:54 UTC) + coach context.md updated — but **gym-batch.sh also has ZERO adoption** despite being in context.md (see Coach Session Efficiency section). Findings: `workspace/finding-tool-gap-0411-b.md`, `workspace/finding-coach-experiment-technique-0411.md`, `workspace/finding-gym-batch-adoption-0411.md`
 - Mode D **COMPLETE**: Workflow health analysis. **Key result: D-o-R uses +53% more ops than non-WF work sessions** (45.7 vs 29.9). Phase 1 is the bloat source (30.4 avg ops — matches a complete non-WF session). Error rates 50% lower (2.1% vs 3.9%). Quality scores incomparable (different eval scales). Finding: `workspace/finding-workflow-health-0410.md`
@@ -92,6 +85,7 @@
 
 ## ✅ DONE
 
+- **D-o-R Phase 1 Budget Cap** — CONFIRMED EFFECTIVE (n=11). P1 avg 4.4 ops (was 30.9) — 86% reduction. 100% compliance. Findings: `workspace/finding-dor-p1-bloat-0411.md`, `workspace/finding-dor-p1-cap-measurement-0411.md`, `workspace/finding-dor-p1-cap-final-verdict-0411.md` (2026-04-11)
 - **Bash Command Pattern Analysis** — 847 commands across 12 high-op sessions. Top 3 patterns (git-review-chain 91x, grep-then-read 87x, file-discovery-spiral 75x) = 52% of all commands. Concrete tool/script fixes sketched for each. Est. 125-220 ops/day savings. Finding: `workspace/finding-bash-command-patterns-0411.md` (2026-04-11)
 - **Gym Results Data Gap** — Both paths now record: `gym-helpers.ts` has `recordGymResult()` (commit 961d892f0), `run-gym.sh` pipes to `record-result.ts` (commit 2c8c7dcd). 22 runs + 156 checks verified in DB. (2026-04-10)
 
