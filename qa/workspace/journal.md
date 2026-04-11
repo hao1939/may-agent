@@ -5002,3 +5002,11 @@ Verdict: FAIL for current HEAD due to confirmed suite breakages.
   - `test/error-log-schema.test.ts`: `appendErrorLogs` does not create/append error log file as tests expect.
   - `test/research-db.test.ts`: integration threshold assertion failed (`expected 5 to be less than 5`).
 Verdict: FAIL/CONDITIONAL (environment+regressions) — requires fixes before green.
+
+---
+2026-04-11T00:46Z — Proactive review: commit 82757680 (deep file sync in gym runner + evaluation bug tests)
+- Read: `src/gym/runner.ts`, `test/evaluation-bugs.test.ts`.
+- CRITICAL: gym runner tests failing because compiled runner runs as ESM but uses `__dirname`. `vitest --run test/gym/gym.test.ts` fails with `ReferenceError: __dirname is not defined in ES module scope` from `/tmp/gym-runner-*.mjs`.
+- CRITICAL: new test file `test/evaluation-bugs.test.ts` imports `bun:test` and `bun:sqlite`, but vitest environment cannot resolve them; suite fails to load (`Failed to load url bun:test`).
+- IMPORTANT: mandatory `./node_modules/.bin/tsc --noEmit` could not be run: `node_modules/.bin/tsc` is missing in this repo state.
+Verdict: FAIL (regressions in gym runner + tests not compatible with vitest)
