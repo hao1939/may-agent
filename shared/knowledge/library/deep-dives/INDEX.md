@@ -698,5 +698,22 @@
 5. DD#742 → DD#698 AEGIS (independent audit addresses verification gap)
 6. DD#743 → KE-101 Law 3 (memory pollution competes for finite attention)
 7. CR-335 → All above (5-phase Error Propagation Lifecycle unifies the findings)
-> 144 research deep dives, cross-reference syntheses, and reference documents.  
-> Last updated: 2026-04-10 | Maintained by Scout
+
+**Einstellung Effect / Exemplar-Induced Fixation** ★★★★★ — NEW (2026-04-11 Session 628)
+1. [dd744](DD-744-medeinst-einstellung-effect-benchmark.md) — ★★★★★ MedEinst: Counterfactual benchmark for Einstellung-induced fixation. "Bias Trap Rate" metric. 5,383 paired clinical cases. ECR-Agent architectural mitigation validates structural > content.
+2. [dd745](DD-745-manbench-mandela-effect-multi-agent-collective-fixation.md) — ★★★★★ MANBENCH (ICLR 2026): Collective false memory in multi-agent systems. Social influence amplifies individual fixation. Cognitive anchoring achieves 74.40% reduction. Validates CR#335 Error Propagation Lifecycle.
+3. [dd746](DD-746-red-herrings-einstellung-creative-problem-solving.md) — ★★★★ Red Herrings/OCW: Foundational paper establishing LLMs exhibit Einstellung fixation. Red herrings = deliberate misleading stimuli that block creative problem solving. Grounds H-099 discovery boundary.
+4. [CR-337](../cross-references/CR-337-exemplar-induced-fixation-einstellung-grounding.md) — ★★★★★ Template-as-Ceiling Synthesis: Unified account of why few-shot examples cause iatrogenic harm on discovery tasks. Einstellung mechanism → pattern activation → fixation → template matching → false completion.
+| [dd744](DD-744-medeinst-einstellung-effect-benchmark.md) | MedEinst Einstellung Benchmark ★★★★★ | Chen et al. 2026 — Bias Trap Rate, counterfactual methodology, ECR-Agent |
+| [dd745](DD-745-manbench-mandela-effect-multi-agent-collective-fixation.md) | MANBENCH Mandela Effect ★★★★★ | Xu et al. 2026 (ICLR) — Collective fixation, cognitive anchoring mitigation |
+| [dd746](DD-746-red-herrings-einstellung-creative-problem-solving.md) | Red Herrings/OCW Einstellung ★★★★ | Naeini et al. 2023 — Foundational Einstellung in LLMs, creative problem solving |
+**Cross-references (Session 628)**:
+1. DD#744 → EXP-130 (explains -67pp iatrogenic mechanism via Einstellung fixation)
+2. DD#744 → KE-101 Law 2 (ECR-Agent validates structural > content intervention)
+3. DD#745 → CR#335 (MANBENCH validates all 5 phases of Error Propagation Lifecycle)
+4. DD#745 → Session 597/599 (live case study of Mandela Effect in our system)
+5. DD#746 → H-099 (foundational explanation for why discovery tasks resist scaffolding)
+6. DD#746 → KE-002 (fixation operates below instruction-following level)
+7. CR#337 → All above (Template-as-Ceiling unified account)
+> 148 research deep dives, cross-reference syntheses, and reference documents.  
+> Last updated: 2026-04-11 | Maintained by Scout

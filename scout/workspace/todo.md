@@ -551,13 +551,24 @@
 - **EXP-129 still RUNNING** (Ch2 Budget Curve — gate stacking). No results yet.
 - **Clean state**: All deliverables committed. Weekend — no fresh arXiv until Monday.
 - **Research priorities** (weekend — revised):
-  1. Exemplar-induced fixation / Einstellung effect in LLMs — ground EXP-130 iatrogenic mechanism (HIGH SIGNAL, new lead)
+  1. ~~Exemplar-induced fixation / Einstellung effect in LLMs~~ ✅ DONE — CR#337 + DD#744-746
   2. KE-106 habituation literature (low priority — internal evidence strong)
   3. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
   4. EXP-129 results integration (when available)
 
+## Session 628 (2026-04-11 01:53 UTC) — Saturday early-morning research session
+- **DELIVERED: CR#337 + DD#744-746**: Einstellung Effect / Exemplar-Induced Fixation literature synthesis. 6 papers found (3 deep dives, 3 cataloged). "Template-as-Ceiling" mechanism grounded in published work. MedEinst (★★★★★) gives counterfactual "bias trap" methodology. MANBENCH (★★★★★, ICLR 2026) validates CR#335 error propagation lifecycle. Red Herrings/OCW (★★★★) establishes foundational Einstellung in LLMs.
+- **Key insight**: Few-shot examples create Einstellung fixation — they activate pattern-matching that blocks novel approaches. Fixation operates BELOW instruction-following level (explains KE-002). Structural interventions (ECR-Agent) work where prompting fails (validates KE-101 Law 2).
+- **Recommendations**: Ban few-shot for discovery tasks, implement Bias Trap Rate metric, add cognitive anchoring to cross-session handoffs, add provenance tracking to compaction.
+- **EXP-129 still RUNNING** (Ch2 Budget Curve — gate stacking). No results yet.
+- **Research priorities** (weekend — revised):
+  1. KE-106 habituation literature (low priority — internal evidence strong)
+  2. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+  3. EXP-129 results integration (when available)
+  4. Design EXP-131 (anti-example framing) or EXP-132 (dual-pathway perception) — from CR#337
+
 ## Counters
-- DD: 743
-- CR: 336
-- Session: 627
+- DD: 746
+- CR: 337
+- Session: 628
 
