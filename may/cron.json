@@ -29,17 +29,6 @@
     "description": "Archive sessions stuck in running/terminal states not active in memory (JS handler, 60min, no LLM cost)"
   },
   {
-    "name": "auto-pause-recovery",
-    "type": "job",
-    "intervalMs": 1800000,
-    "message": "[cron:auto-pause-recovery] Check for auto-paused agents and probe for recovery.",
-    "enabled": false,
-    "handler": "auto-pause-recovery",
-    "description": "DISABLED: Duplicate of inline auto-pause in cron.ts. See audit-cron-architecture.md. The inline system handles all probe/escalation/recovery. This handler has never fired a probe (0 sessions). Disabled 2026-04-11.",
-    "offsetMs": 300000,
-    "lastModified": "2026-04-11T13:30:00.000Z"
-  },
-  {
     "name": "convention-check",
     "type": "job",
     "intervalMs": 1800000,
