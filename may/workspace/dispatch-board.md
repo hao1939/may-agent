@@ -179,7 +179,7 @@ Updated: 2026-04-11 ~06:53 UTC
 | **EXP-127 Channel Separation Direct Test** | ✅ COMPLETE (**LANDMARK**) | coach | **Baseline 0/6, Ch1 0/6, Ch3 0/6, Ch2 (Forced Ext) 6/6 (100%)**. p=0.0000074 vs pooled others. Only structural gates work for judgment tasks. Confound: contradiction-detection skill was already deployed (all runs had Ch1). Even Ch1+Ch3 combined = 0/6. Skill removed (commit 8f3d660f). Bob KB integrating (req:c15a56d7). Results at `agents/shared/knowledge/experiments/EXP-127/results.md`. |
 | **Gym Transcript Fix + Evaluator Bug Tests** | ✅ MERGED | tech-lead/may | Branch `review/s_1775848356081_345` merged to main. Transcript field in GymResult + evaluator scale/dedup tests. 20/20 pass. Commits 82757680 + 48315279. |
 | **EXP-131 Unrelated Gate Stacking** | ✅ COMPLETE | coach | **H-131 SUPPORTED (p=0.28)**: Arm A (1 related) 89%, Arm B (3 unrelated) 50%, Arm C (3 related) 86%. Unrelated gates -36pp vs related at same count. All 4 Arm B failures on core judgment check. Gate-task synergy, not Ch2 capacity, drives EXP-129 hump curve. **Federation auto-commit deleted results — restored from git history (6a2bc4a2)**. Results at `agents/shared/knowledge/experiments/EXP-131/results.md`. **Bob KB integration DONE — KE-135 created**. |
-| **EXP-132 Path Hallucination Guard** | ✅ MERGED + OBSERVING | coach | Ch2 guard for C7.1 regression. Blocks bash with `/home/`, `/Users/`, `/root/`, `~/` paths. 41 tests pass. Guard live in production (3rd in composeGuards). Commit 7854d50. Observation window: 48-72h until ~Apr 13. |
+| **EXP-132 Path Hallucination Guard** | ✅ MERGED | tech-lead | Code at `src/lib/tools/path-hallucination-guard.ts` (7.8KB). Merged to main (be2a9317). Needs binary rebuild for production. |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -289,3 +289,14 @@ Updated: 2026-04-11 ~06:53 UTC
   - **QA reviewed EXP-132 commit**: Reviewed 7854d50 path hallucination guard.
   - **All agents self-directing**: Zero pending requests. Zero failures. Zero May interventions needed.
 - **Key**: EXP-132 path hallucination guard now live — 4th production guard (after empty-args, tool-schema, completeness). Observation window starts now (48-72h).
+
+## Latest Cycle Summary (07:09)
+- **System**: 7/8 healthy. Amy-kimi 429 (billing). All agents running fresh heartbeats. ~18h gap since last active period (system restart).
+- **Since last cycle (06:53)**:
+  - **EXP-132 guard MERGED to main**: Tech-lead implemented and merged (commit be2a9317). Code at `src/lib/tools/path-hallucination-guard.ts`. Awaiting binary rebuild.
+  - **Coach self-dispatched**: FM-2.6 growth cycle + regression check running.
+  - **Bob self-dispatched**: KB integration work session running.
+  - **Optimizer self-dispatched**: Session Archaeology work session.
+  - **Scout recovered**: 06:00/06:31 timeouts, but 07:01 heartbeat completed successfully.
+  - **Zero pending requests**: All agents autonomous.
+- **Key**: System recovered from restart. All agents self-directing. Research pipeline productive (130+ experiments). Coder idle — no feature work from Hao.
