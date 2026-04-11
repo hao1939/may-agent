@@ -22,14 +22,14 @@
 - Findings: `workspace/finding-dor-p1-bloat-0411.md`, `workspace/finding-dor-p1-cap-measurement-0411.md`, `workspace/finding-dor-p1-cap-final-verdict-0411.md`
 - **→ MOVING TO DONE**
 
-### D-o-R Nested Workflow Spawning — ✅ FIX DEPLOYED (commit 60a844e3)
+### D-o-R Nested Workflow Spawning — 3 FIXES DEPLOYED, MONITORING (n=1 post-all-fixes)
 - Bob 90-op session (s_...1119) was a **3-deep nested D-o-R workflow**: Phase 1 called callAgent → triggered another D-o-R → spawned another Phase 1. Total: 169 ops for 1 KB integration task.
 - **3 instances in 72h**: 101 + 47 + 13 = 161 wasted ops (~54 ops/day, ~$2.50/day).
-- Root cause: Phase 1 had no instruction against calling callAgent().
-- **FIX**: Added "DO NOT call callAgent() or spawn sub-agents" to Phase 1 strict rules in `bob/workflows/deliver-or-report.ts` (commit 60a844e3, deployed ~03:54 UTC).
-- Combined with 15-op budget cap, this structurally + behaviorally prevents recursive nesting.
-- **Measurement needed**: Need n≥3 post-fix D-o-R runs to confirm no nesting.
-- Finding: `workspace/finding-bob-90op-archaeology-0411.md`
+- **THREE FIX LAYERS**: (1) Phase 1 callAgent guard (commit 60a844e3, ~03:54 UTC), (2) Phase 2 callAgent guard (~12:24 UTC), (3) Phase 3 VERIFY nesting prevention (~17:24 UTC).
+- Phase 1 fix alone was insufficient — 2 nesting incidents from Phase 2 after P1 fix. Phase 3 had 1 incident after P2 fix. All 3 needed.
+- **Post-all-fixes (17:30+)**: n=1 clean run (24 ops, P1→P2, zero nesting). ⏳ Need n≥3 to confirm.
+- **19 total D-o-R runs Apr 11**: 3 nesting incidents (16%), all pre-complete-fix. 0 incidents post-complete-fix.
+- Finding: `workspace/finding-bob-90op-archaeology-0411.md`, `workspace/finding-multi-fix-roundup-0411.md`
 
 ### Coach Session Efficiency — FINDING COMPLETE, FIX 2 DEPLOYED
 - 2,175 coach sessions analyzed. 50.3% zero-op, 64% of ops in top sessions are exploration waste.
@@ -41,24 +41,25 @@
 - Estimated savings: ~750 ops/day, ~$35/day.
 - Finding: `workspace/finding-coach-session-efficiency-0410.md`
 
-### Tech-Lead Heartbeat Bloat — ✅ FIX DEPLOYED & CONFIRMED (89% reduction)
-- Tech-lead heartbeats avg 30.8 ops (24h pre-fix, n=44), **#1 across all agents**.
+### Tech-Lead Heartbeat Bloat — ✅ CONFIRMED, MOVING TO DONE (n=34, 76% reduction)
+- Tech-lead heartbeats avg 26.1 ops (pre-fix, n=18 on Apr 11).
 - Root cause: heartbeat.md encouraged deep inline exploration (4 "Lens" modes) with no op budget.
 - **Fix**: Rewrote tech-lead heartbeat.md to dispatcher mode (same pattern as optimizer fix).
 - **DEPLOYED** (commit dfa10146, Apr 11 ~08:35 UTC). May deployed it directly.
-- **POST-FIX (n=4 heartbeats)**: avg 3.5 ops (ops: 8, 3, 1, 2). **89% reduction** ✅
-- Pre-fix avg: 30.8 ops (n=44). Post-fix avg: 3.5 ops (n=4).
-- **Savings**: ~1,100 ops/day (~$52/day, ~$1,560/month) based on ~40 heartbeats/day × 27.3 ops saved.
-- Tech-lead now properly forks work sessions (ops=40, 38, 5 seen in forked jobs).
-- Finding: `workspace/finding-tech-lead-heartbeat-bloat-0411.md`
-- **→ MOVING TO DONE after n≥8 confirms pattern holds**
+- **POST-FIX (n=34 heartbeats)**: avg 6.3 ops. **76% reduction** ✅
+- 82% of post-fix HBs are lean (≤5 ops, avg 2.1). 18% are work-dispatch (expected).
+- **Savings**: 19.8 ops/HB × ~40 HB/day = **~792 ops/day (~$37/day, ~$1,110/month)**.
+- Finding: `workspace/finding-tech-lead-heartbeat-bloat-0411.md`, `workspace/finding-multi-fix-roundup-0411.md`
+- **→ MOVING TO DONE**
 
-### Bob Heartbeat Bloat — ROOT CAUSE IDENTIFIED (Apr 11)
+### Bob Heartbeat Bloat — ROOT CAUSE IDENTIFIED, NO FIX DEPLOYED (Apr 11)
 - 92 Bob HBs analyzed (Apr 10-11): 8 bloated (>20 ops, 8.7%), 279 excess ops (29.9% of total).
 - NOT evening-specific — appears at all hours. Post-reform avg 10.2 (was 24.2), but remaining bloated = pure waste (0 output).
+- **Latest 12h (n=25)**: avg 10.8 ops, median 5, max 55. 3/25 (12%) >20 ops — **slightly worse than baseline (8.7%)**.
+- 55-op outlier at 20:53 UTC is the worst single HB in the window.
 - **Root causes**: (1) 164KB/999-line todo.md → reading loops, (2) No hard op budget, (3) Sync workflow.run() blocks parent, (4) Empty inbox → verification spiral.
 - **Top fix**: Archive completed items in todo.md (999→~200 lines). Est. savings: 2-5 ops/HB.
-- Finding: `workspace/finding-evening-health-0411.md`
+- Finding: `workspace/finding-evening-health-0411.md`, `workspace/finding-multi-fix-roundup-0411.md`
 
 ### Optimizer Heartbeat Bloat — FIX DEPLOYED
 - Avg 56 ops/heartbeat (highest of any agent). Bob avg 4 ops. My min was 19 — proves lean is possible.
