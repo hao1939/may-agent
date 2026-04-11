@@ -22,15 +22,10 @@
 - Findings: `workspace/finding-dor-p1-bloat-0411.md`, `workspace/finding-dor-p1-cap-measurement-0411.md`, `workspace/finding-dor-p1-cap-final-verdict-0411.md`
 - **→ MOVING TO DONE**
 
-### D-o-R Nested Workflow Spawning — ❌ FIX INCOMPLETE (Phase 2 still nests)
-- Bob 90-op session (s_...1119) was a **3-deep nested D-o-R workflow**: Phase 1 called callAgent → triggered another D-o-R → spawned another Phase 1. Total: 169 ops for 1 KB integration task.
-- **3 pre-fix instances**: 101 + 47 + 13 = 161 wasted ops.
-- **Phase 1 fix** (commit 60a844e3, ~03:54 UTC): Added "DO NOT call callAgent()" to Phase 1 strict rules. **Phase 1 nesting: ELIMINATED** (0 incidents post-fix).
-- **Phase 2 nesting: STILL HAPPENING** — 2 post-fix incidents in 8 runs (25% rate). Phase 2 prompt has NO callAgent guard.
-  - Incident 1 (08:54 UTC): Phase 2 spawned nested D-o-R, +24 wasted ops.
-  - Incident 2 (11:24 UTC): Phase 2 spawned nested D-o-R, +65 wasted ops.
-- **FIX NEEDED**: Add "DO NOT call callAgent()" to Phase 2 prompt (normal, narrow, and 2b variants) in deliver-or-report.ts. 1-line addition to 3 prompt strings.
-- **Impact**: ~264 wasted ops/day from nesting (~$12/day).
+### D-o-R Nested Workflow Spawning — ✅ BOTH PHASES FIXED
+- **Phase 1 fix** (commit 60a844e3): Eliminated Phase 1 nesting.
+- **Phase 2 fix** (commit ef7e2528): Added callAgent guards to all Phase 2 prompt variants (normal, narrow, 2b).
+- **NEEDS VERIFICATION**: Monitor next 8+ D-o-R runs for zero nesting incidents to confirm Phase 2 fix is effective.
 - Findings: `workspace/finding-bob-90op-archaeology-0411.md`, `workspace/finding-dor-nesting-verification-0411.md`
 
 ### Coach Session Efficiency — FINDING COMPLETE, FIX 2 DEPLOYED
