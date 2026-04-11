@@ -1,0 +1,11 @@
+{
+  "name": "unverified-finish-guard",
+  "categories": ["verification", "behavioral"],
+  "tags": ["FM-3.3", "unverified-finish", "write-then-verify", "EXP-133", "treatment"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false,
+  "description": "Treatment arm of EXP-133. Same task as unverified-finish but with injected context requiring verification before finish(success). Tests whether Channel 3 (context injection) changes Bob's verification behavior.",
+  "injected_context": "injected_context.md"
+}
