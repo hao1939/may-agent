@@ -146,16 +146,15 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   ctx.emit({ type: "step_start", step: "phase1-analyze" });
 
   const phase1Prompt =
-    `## Phase 1: Analyze & Plan (DO NOT WRITE DELIVERABLES YET)\n\n` +
+    `## Phase 1: Analyze & Plan — BUDGET: 15 TOOL CALLS MAX\n\n` +
     `### Task\n${ctx.task}\n\n` +
-    `### Instructions\n` +
-    `Your job in this phase is ONLY to analyze and plan. Do NOT write any deliverable files yet.\n\n` +
-    `1. Read all necessary context files to understand the task.\n` +
+    `### Instructions — STRICT 15 TOOL CALL BUDGET\n` +
+    `You have a **hard budget of 15 tool calls** for this phase. Plan accordingly.\n\n` +
+    `1. Read the 2-4 most relevant context files (be selective — NOT every file).\n` +
     `2. Determine exactly what deliverable(s) must be produced.\n` +
-    `3. For each deliverable, specify:\n` +
-    `   - The exact file path where it will be written\n` +
-    `   - A brief outline of what it should contain\n` +
-    `4. Output your plan in this format:\n\n` +
+    `3. For each deliverable, specify the exact file path and a brief content outline.\n` +
+    `4. Call finish() with your plan. Your plan does NOT need to be perfect — Phase 2 has full context too.\n\n` +
+    `Output format:\n` +
     `\`\`\`\n` +
     `DELIVERABLES:\n` +
     `1. [file path] — [what it contains]\n` +
@@ -164,9 +163,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     `PLAN:\n` +
     `[Step-by-step plan for Phase 2 to execute]\n` +
     `\`\`\`\n\n` +
-    `⚠️ Do NOT call write() or edit() on deliverable files in this phase.\n` +
-    `   You MAY read files. You MAY write scratch notes to agents/bob/workspace/ if helpful.\n` +
-    `   Phase 2 will handle all deliverable writing.`;
+    `### ⛔ STRICT RULES\n` +
+    `- **DO NOT write or edit ANY deliverable files** — a separate Phase 2 session handles all writing.\n` +
+    `- **DO NOT verify anything** — a separate Phase 3 session handles verification.\n` +
+    `- **DO NOT read more than 5 files** — be selective, not exhaustive.\n` +
+    `- **If you've used 10 tool calls, STOP reading and write your plan NOW.**\n` +
+    `- You MAY write scratch notes to agents/bob/workspace/ if helpful.\n\n` +
+    `The most efficient Phase 1 sessions read 2-3 files and finish in under 10 tool calls.\n` +
+    `You will NOT be penalized for a brief plan — Phase 2 can read additional files as needed.`;
 
   const phase1 = await ctx.runAgent("bob", phase1Prompt);
   if (phase1.status === "error") {
