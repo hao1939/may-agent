@@ -16,19 +16,6 @@
 - Bypass exists at `src/app/may.ts:148-165`, needs `ANTHROPIC_API_KEY` env var.
 - **BLOCKED on operator.** Finding: `workspace/findings/2026-04-10-litellm-kills-prompt-caching.md`
 
-### D-o-R Phase 1 Budget Cap — ✅ CONFIRMED EFFECTIVE, CLOSING (n=20)
-- **FINAL VERDICT (Apr 11 23:24 UTC)**: Post-cap P1 avg 6.5 ops (was 35.0 pre-cap) — **81% reduction**. n=20. Only 1/20 over budget (40 ops). Zero cap violations in last 12h.
-- Findings: `workspace/finding-dor-p1-bloat-0411.md`, `workspace/finding-dor-p1-cap-measurement-0411.md`, `workspace/finding-dor-p1-cap-final-verdict-0411.md`
-- **→ MOVING TO DONE**
-
-### D-o-R Nested Workflow Spawning — ✅ CONFIRMED FIXED, CLOSING (n=7 post-all-fixes)
-- Bob 90-op session (s_...1119) was a **3-deep nested D-o-R workflow**: Phase 1 called callAgent → triggered another D-o-R → spawned another Phase 1. Total: 169 ops for 1 KB integration task.
-- **3 instances in 72h**: 101 + 47 + 13 = 161 wasted ops (~54 ops/day, ~$2.50/day).
-- **THREE FIX LAYERS**: (1) Phase 1 callAgent guard (commit 60a844e3, ~03:54 UTC), (2) Phase 2 callAgent guard (~12:24 UTC), (3) Phase 3 VERIFY nesting prevention (~17:24 UTC).
-- **Post-all-fixes (17:30+)**: n=7 D-o-R sessions, **ZERO nesting incidents**. ✅
-- Finding: `workspace/finding-bob-90op-archaeology-0411.md`, `workspace/finding-multi-fix-roundup-0411.md`
-- **→ MOVING TO DONE**
-
 ### D-o-R Phase 2 Budget Cap — FIX DEPLOYED, MEASURING (Apr 11 23:24 UTC)
 - Phase 2 had NO budget cap. Data (n=33): p50=17, p75=23, p90=57, max=83 ops. 5/33 sessions >50 ops.
 - **Fix**: Added "BUDGET: 25 TOOL CALLS MAX" to Phase 2 prompts, "BUDGET: 20" to Phase 2b (commit b66e94a5).
@@ -46,17 +33,6 @@
 - Estimated savings: ~750 ops/day, ~$35/day.
 - Finding: `workspace/finding-coach-session-efficiency-0410.md`
 
-### Tech-Lead Heartbeat Bloat — ✅ CONFIRMED, MOVING TO DONE (n=34, 76% reduction)
-- Tech-lead heartbeats avg 26.1 ops (pre-fix, n=18 on Apr 11).
-- Root cause: heartbeat.md encouraged deep inline exploration (4 "Lens" modes) with no op budget.
-- **Fix**: Rewrote tech-lead heartbeat.md to dispatcher mode (same pattern as optimizer fix).
-- **DEPLOYED** (commit dfa10146, Apr 11 ~08:35 UTC). May deployed it directly.
-- **POST-FIX (n=34 heartbeats)**: avg 6.3 ops. **76% reduction** ✅
-- 82% of post-fix HBs are lean (≤5 ops, avg 2.1). 18% are work-dispatch (expected).
-- **Savings**: 19.8 ops/HB × ~40 HB/day = **~792 ops/day (~$37/day, ~$1,110/month)**.
-- Finding: `workspace/finding-tech-lead-heartbeat-bloat-0411.md`, `workspace/finding-multi-fix-roundup-0411.md`
-- **→ MOVING TO DONE**
-
 ### Bob Heartbeat Bloat — ROOT CAUSE IDENTIFIED, NO FIX DEPLOYED (Apr 11)
 - 92 Bob HBs analyzed (Apr 10-11): 8 bloated (>20 ops, 8.7%), 279 excess ops (29.9% of total).
 - NOT evening-specific — appears at all hours. Post-reform avg 10.2 (was 24.2), but remaining bloated = pure waste (0 output).
@@ -71,7 +47,7 @@
 - Root cause: heartbeat.md encouraged inline exploration (multi-query DB analysis, file reads).
 - Fix: Rewrote heartbeat.md to "Dispatcher Mode" — observe in 1-2 ops, fork all analysis work. Target: ≤15 ops.
 - Baseline: 8 heartbeats in 12h, avg 56 ops, total 451. Post-fix: avg 23 ops (59% reduction). ✅ SUCCESS.
-- Last exploration mode: **C** (Bob 79-op Research Thread investigation — Apr 11 ~22:54 UTC). Previous: B (Bob Evening HB Bloat pattern — Apr 11 ~21:53 UTC).
+- Last exploration mode: **C** (Bob 79-op Research Thread investigation — Apr 11 ~22:54 UTC). Previous: D, B, A. **Next: A** (rotation).
 - **session-query tool BUILT** (`scripts/session-query.ts`). Replaces 15-25 bash archaeology pattern with single command. Supports: --agent, --since, --task, --status, --min-ops, --tools, --json, --sort. Tested with real data (911 sessions). Est. savings: 10-15 ops/session × 187 sessions = 1,870-2,805 ops.
 - **session-query adoption**: Still **zero active adoption** beyond optimizer (confirmed Apr 11 05:24 UTC). May + QA have passive mentions only. **Three blockers**: (1) filesystem history stale (through ~Apr 5), (2) zero agents have session-query in context.md, (3) may.db has 0 coach sessions. No change since last check. **gym-batch.sh MERGED to main** (cherry-pick 5ca3bdf, Apr 11 ~05:54 UTC) + coach context.md updated — but **gym-batch.sh also has ZERO adoption** despite being in context.md (see Coach Session Efficiency section). Findings: `workspace/finding-tool-gap-0411-b.md`, `workspace/finding-coach-experiment-technique-0411.md`, `workspace/finding-gym-batch-adoption-0411.md`
 - Mode D **UPDATED Apr 11 23:24**: Workflow health post-fix. **P1 cap works (6.8 avg, -78%)** but total D-o-R unchanged (44.3 vs 45.7 — waterbed effect: P2 absorbed savings at 24.9 avg). Overhead ratio **worsened** to +94% vs non-WF (was +53%) because non-WF also got leaner (22.8 from 29.9). Zero nesting post-fix (n=8). System WF adoption up to 57.8% (was 38.1%). Optimizer now WF user (27%). Verify-wrap 87.5% zero-op verification. 0% WF error rate (n=78). **Next fix: P2 budget cap (15-20 ops)**. Finding: `workspace/finding-workflow-health-0411.md`
@@ -113,6 +89,9 @@
 
 ## ✅ DONE
 
+- **D-o-R Phase 1 Budget Cap** — Post-cap P1 avg 6.5 ops (was 35.0) — 81% reduction, n=20. Zero violations in last 12h. Findings: `workspace/finding-dor-p1-bloat-0411.md`, `workspace/finding-dor-p1-cap-measurement-0411.md`, `workspace/finding-dor-p1-cap-final-verdict-0411.md` (2026-04-11)
+- **D-o-R Nested Workflow Spawning** — 3 fix layers deployed, zero nesting incidents post-fix (n=7). Findings: `workspace/finding-bob-90op-archaeology-0411.md`, `workspace/finding-multi-fix-roundup-0411.md` (2026-04-11)
+- **Tech-Lead Heartbeat Bloat** — Dispatcher mode fix: avg 6.3 ops post-fix (was 26.1), 76% reduction, n=34. Savings ~792 ops/day (~$37/day). Findings: `workspace/finding-tech-lead-heartbeat-bloat-0411.md`, `workspace/finding-multi-fix-roundup-0411.md` (2026-04-11)
 - **Bash Command Pattern Analysis** — 847 commands across 12 high-op sessions. Top 3 patterns (git-review-chain 91x, grep-then-read 87x, file-discovery-spiral 75x) = 52% of all commands. Concrete tool/script fixes sketched for each. Est. 125-220 ops/day savings. Finding: `workspace/finding-bash-command-patterns-0411.md` (2026-04-11)
 - **Gym Results Data Gap** — Both paths now record: `gym-helpers.ts` has `recordGymResult()` (commit 961d892f0), `run-gym.sh` pipes to `record-result.ts` (commit 2c8c7dcd). 22 runs + 156 checks verified in DB. (2026-04-10)
 

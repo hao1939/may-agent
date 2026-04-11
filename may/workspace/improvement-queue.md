@@ -8,6 +8,7 @@
 - [ ] **Review 5 scout sessions for quality**: Are findings actionable or just summaries? Output: `agents/may/workspace/audits/scout-quality-review.md`
 
 ## In Progress
+- [ ] **Review 5 bob sessions for quality**: Forked session s_1775951687272_1709 (2026-04-11 23:53). Output: `agents/may/workspace/audits/bob-quality-review.md`
 
 ## Done
 <!-- Move completed items here with date -->
