@@ -27,4 +27,24 @@ To append efficiently (the file is large — do NOT read the whole thing):
 2. `read("workspace/journal.md", { offset: N - 4, limit: 5 })` to see just the last 5 lines
 3. `edit("workspace/journal.md", { oldText: <those last lines>, newText: <those last lines + your new entry> })`
 
-If you found issues, notify tech-lead via `agents.message`. Call `finish({ status: 'success', summary: '<what you reviewed and found>' })`.
+If you found issues, notify tech-lead via `agents.message`.
+
+### finish() — MANDATORY, every session
+
+**ALWAYS call `finish()`.** Never end with a plain text summary.
+
+```js
+finish({
+  status: '<success|partial|blocked>',
+  summary: '<1-2 sentences: what you reviewed and what you found>',
+  deliverables: [{ path: 'workspace/journal.md', description: 'Appended review findings' }],
+  verification_evidence: ['Step N: bash(tsc) exit code 0', 'Step M: read(file) confirmed finding']
+})
+```
+
+**When to use each status:**
+- **`success`** — You completed your QA review steps (read code, ran checks, logged findings). Use this even if tsc/vitest found pre-existing failures — those are **findings to report**, not blockers on your work.
+- **`partial`** — Your own review steps were interrupted (e.g., you couldn't finish reading the code, journal append failed, ran out of time mid-review).
+- **`blocked`** — Something prevents you from doing any review at all (e.g., can't access files, no commits to review AND no source files to scan).
+
+**⚠️ Common mistake:** Pre-existing test failures (bun:sqlite issues, flaky thresholds) are NOT reasons for `partial`. You found them, you reported them — that's a successful QA review.
