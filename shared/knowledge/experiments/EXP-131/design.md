@@ -1,7 +1,7 @@
 # EXP-131: Unrelated Gate Stacking Test — Does Gate Relevance Explain the Hump Curve?
 
 **Date**: 2026-04-11
-**Status**: IN PROGRESS
+**Status**: COMPLETE
 **Hypothesis**: Gate stacking degradation depends on relevance — unrelated gates will produce earlier/steeper performance drop than related gates
 **Predecessor**: EXP-129 (Channel 2 Budget Curve — hump curve discovery)
 **Knowledge**: KE-134 (hump curve finding), KE-064 (execution crowding — revised)
