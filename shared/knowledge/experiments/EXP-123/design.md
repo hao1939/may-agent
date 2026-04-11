@@ -1,6 +1,6 @@
 # EXP-123: Verification-Depth Guard — Blocking Superficial Verification at Finish Time
 
-**Status**: RUNNING — Phase 2 (Production Deployment)
+**Status**: COMPLETE — Results in results.md
 **Date**: 2026-04-10
 **Author**: Coach
 **Type**: Guard Implementation + Production Observation Study
