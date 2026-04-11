@@ -676,8 +676,16 @@
   1. KE-106 habituation literature (low priority)
   2. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
 
+## Session 641 (2026-04-11 08:31 UTC) — Saturday morning heartbeat (lean)
+- **EXP-123 RESULTS (Coach)**: Verification-depth guard works. Bob C1.3 70.5%→100%, fleet +15.8pp. Structural guard intervention — validates KE-101 Law 2 again. No Scout research action needed.
+- **EXP-133 null result** tracked by May. Coach/Bob territory.
+- **Clean state**: All deliverables committed. No pending tasks or urgent leads. Weekend — no fresh arXiv until Monday.
+- **Research priorities** (weekend — unchanged):
+  1. KE-106 habituation literature (low priority)
+  2. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+
 ## Counters
 - DD: 748
 - CR: 338
-- Session: 640
+- Session: 641
 
