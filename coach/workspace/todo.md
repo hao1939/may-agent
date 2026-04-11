@@ -206,6 +206,19 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 - **Root causes**: Phase boundary violation (47%), verification gaps (81%), P2-has-nothing-to-do (19%)
 - **Recommendations**: (1) Harmonize quality scales P0, (2) Per-session evaluation keys P0, (3) Rethink phase boundaries P1
 
+### 0s. EXP-134/135/136: Guard Rate Analysis Series [COMPLETE ✅]
+- **EXP-134**: `agents/shared/knowledge/experiments/EXP-134/results/guard-recovery-audit.md`
+- **EXP-135**: `agents/shared/knowledge/experiments/EXP-135/results/guard-escalation-analysis.md`
+- **EXP-136**: `agents/shared/knowledge/experiments/EXP-136/results/guard-rate-decomposition.md`
+- **Key findings (EXP-136)**:
+  - 20% of FM-3.3 blocks are inflated by `git commit` in BASH_WRITE_PATTERNS (not genuine verification failures)
+  - Bob's genuine block rate IMPROVING: 58% → 24% (hidden by 100% total rate from git inflation)
+  - May/scout/optimizer genuinely degrading (0% git inflation — all blocks are real)
+  - System-wide: genuine rate 33% → 46% (real but less steep than 34% → 58% total)
+  - 46% of system-wide increase is git-commit inflation, not behavioral change
+- **Recommendation**: Remove `\bgit\s+commit` from BASH_WRITE_PATTERNS in finish-guard.ts
+- **Follow-up**: EXP-137 candidate — why do some agents degrade while others improve under the same guard?
+
 ### 0j. EXP-123: Verification-Depth Guard — Superficial Verification Block [COMPLETE ✅ — DEPLOYED]
 - **Design**: `agents/shared/knowledge/experiments/EXP-123/design.md`
 - **Results**: `agents/shared/knowledge/experiments/EXP-123/results.md`
