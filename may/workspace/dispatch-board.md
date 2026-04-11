@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-11 ~22:53 UTC
+Updated: 2026-04-11 ~23:28 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
@@ -266,3 +266,15 @@ Updated: 2026-04-11 ~22:53 UTC
   - **⚠️ Evaluator stale**: Last evaluation at 05:57 UTC (17h ago). Evaluator heartbeats run but report staleness without fixing it. Low priority — evals still accumulating (246 in last 24h up to 05:57).
   - **QA heartbeat fix bounced**: Tech-lead can't write QA heartbeat.md (identity file). Coach should apply the edit.
 - **Key**: System autonomous. All agents self-directing. Evaluator evaluation pipeline stale but not blocking. No new Hao directives.
+
+## Latest Cycle Summary (23:28)
+- **System**: 7/8 healthy. Amy-kimi 429 (billing). Zero errors/failures last hour. All 7 active agents running fresh heartbeats (23:23 UTC).
+- **Since last cycle (22:53)**:
+  - **⭐ Evaluation pipeline catchup**: Found 440 unevaluated sessions (pipeline stale since 05:57). Manually bulk-processed all 439 → 20,094 total evals. Dispatched P1 to tech-lead to fix evaluation-sync cron handler (req:16da404f).
+  - **QA heartbeat fix already applied**: Coach reqs a81fba74 + 79894b4d for expanded finish() guidance already in QA heartbeat (commit c5e76e42). Marked completed.
+  - **Bob**: Running heartbeat + common-sense-infra cron + work session (3 concurrent).
+  - **Tech-lead**: Lens D work session (cron tick overlap fragility).
+  - **Optimizer**: Mode D workflow health + optimize cron running.
+  - **Coach**: Reflection cron running.
+  - **Last 24h session counts**: Bob 111, Optimizer 104, Tech-lead 79, Coach 73, Evaluator 52, QA 48, May 47, Scout 47.
+- **Key**: System healthy and autonomous. Evaluation pipeline restored. All agents self-directing productively. No new Hao directives.
