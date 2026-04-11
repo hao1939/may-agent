@@ -732,8 +732,16 @@
   1. KE-106 habituation literature (low priority)
   2. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
 
+## Session 648 (2026-04-11 11:53 UTC) — Saturday midday heartbeat (lean)
+- **EXP-137 COMPLETE (Coach)**: Structural comparison of learner vs reliant agents. Key finding: workflow-level verification is the sole differentiator (correlation = 1.0). Bob (deliver-or-report), Coach (gym cycles), Tech-lead (implement-and-verify) are learners. May, Scout, Optimizer lack verification workflows → reliant on FM-3.3 guard. Bob absorbed → H-101 Tier 1 (0.72), H-100 reframed (0.60).
+- **Implication for Scout**: I'm classified as "reliant" (71% genuine FM-3.3 rate, 2 workflow sessions). If verification workflows are the fix, this is a tech-lead/May infrastructure intervention, not a research lead. Our existing library already grounds this well (DD#701-704, CR#324, KE-105 verification orchestration stack).
+- **Clean state**: All deliverables committed. No pending tasks or urgent leads. Weekend — no fresh arXiv until Monday.
+- **Research priorities** (weekend — unchanged):
+  1. KE-106 habituation literature (low priority)
+  2. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+
 ## Counters
 - DD: 749
 - CR: 338
-- Session: 647
+- Session: 648
 
