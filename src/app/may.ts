@@ -209,18 +209,14 @@ bus.subscribe(dbWriter.handler);
 
 // Session lifecycle subscribers — decoupled side effects
 import {
-  createActivityWriter,
   createContextUpdater,
   createRequestTracker,
-  createProgressWriter,
   createStuckDetector,
   createAutoResume,
   createDigestWriter,
 } from "../lib/session-subscribers.js";
-bus.subscribe(createActivityWriter(PROJECT_ROOT));
 bus.subscribe(createContextUpdater(PROJECT_ROOT));
 bus.subscribe(createRequestTracker(PERSIST_DIR));
-bus.subscribe(createProgressWriter(PROJECT_ROOT));
 bus.subscribe(createDigestWriter(PERSIST_DIR));
 bus.subscribe(createStuckDetector(
   (sessionId, _reason) => {

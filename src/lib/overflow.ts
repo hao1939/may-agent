@@ -1,6 +1,4 @@
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
-import { writeFileSync, mkdirSync } from "node:fs";
-import { join } from "node:path";
 import { extractKeyFacts } from "./compaction.js";
 
 /**
@@ -159,14 +157,4 @@ export function extractProgress(task: string, messages: AgentMessage[], error: s
   sections.push(``);
 
   return sections.join("\n");
-}
-
-/**
- * Write progress.md to the agent's workspace directory.
- * Creates the directory if it doesn't exist.
- */
-export function writeProgressFile(workspace: string, content: string): void {
-  mkdirSync(workspace, { recursive: true });
-  const filePath = join(workspace, "progress.md");
-  writeFileSync(filePath, content, "utf-8");
 }

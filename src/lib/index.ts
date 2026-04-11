@@ -85,7 +85,7 @@ export type {
   FailureStep,
   AgentScoreSummary,
 } from "./evaluator.js";
-export { isOverflowError, extractProgress, writeProgressFile } from "./overflow.js";
+export { isOverflowError, extractProgress } from "./overflow.js";
 export {
   RegistryStore,
   ensureSessionDir,
