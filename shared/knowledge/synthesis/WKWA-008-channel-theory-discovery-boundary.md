@@ -227,11 +227,9 @@ H-098 P-098c predicted a cliff function: 1 gate ~100%, 2 gates ~50%, 3+ gates ~0
 
 **Implication**: All three channels are now exhausted on discovery tasks. Ch1 harmful (EXP-117/120), Ch2 null (EXP-122/124/126), Ch3 harmful (EXP-130). H-099 confirmed (P(H) 0.78→0.90). The irreducibility thesis holds — creative inference cannot be externally scaffolded through any known channel.
 
-### 4.3 Clean Ch3 Test on Contradictory-Requirements
+### 4.3 ~~Clean Ch3 Test on Contradictory-Requirements~~ — RESOLVED by EXP-128
 
-EXP-127's Ch3 result (0/6) was confounded by a pre-existing Ch1 skill. A clean test (Ch3 without Ch1) would determine whether:
-- Ch3 truly fails on this task (task-type boundary confirmed)
-- Ch1 interferes with Ch3 (channel interaction effect — new phenomenon)
+EXP-127's Ch3 result (0/6) was confounded by a pre-existing Ch1 skill. **EXP-128 resolved this**: tested Ch3 without Ch1 confound in 3 content variants (response-only, detection-enhanced, detection-only). All 0/6. Ch3 truly fails on analytical judgment tasks under coding momentum — it's a task-type boundary, not a Ch1 interference effect. H-128 (content quality hypothesis) rejected. KE-132 created.
 
 ### 4.4 Discovery Task Decomposition
 
