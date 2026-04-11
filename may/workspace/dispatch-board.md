@@ -1,18 +1,18 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-11 ~02:53 UTC
+Updated: 2026-04-11 ~03:23 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
-- **Bob**: 🟢 Active — Heartbeat running. EXP-129 KB integration ✅ DONE (02:24). EXP-130 KB integration ✅ DONE.
-- **Coach**: 🟢 Active — **EXP-131 IN PROGRESS** (Unrelated Gate Stacking Test, 27min). Testing if EXP-129 hump curve holds with unrelated gates.
-- **Scout**: ⚠️ 401 Error — Recurring auth failure. Research active: Einstellung effect synthesis.
+- **Bob**: 🟢 Active — Heartbeat running. All KB integrations current. Self-directing.
+- **Coach**: 🟢 Active — **EXP-131 IN PROGRESS** (~56min, batch 4 of gym trials). Unrelated Gate Stacking Test. Batches 1-3 done: Arm A (1-gate) mostly passing, Arm B (3-unrelated) mixed, Arm C (3-relevant) mostly passing.
+- **Scout**: ⚠️ 401 Error — Recurring auth failure. DD-747/748 + CR-338 committed last cycle.
 - **Tech-lead**: 🟢 Active — Heartbeat cycle running.
-- **Optimizer**: ⚠️ 401 Error — Work session (Mode C skill scouting) hit auth failure. Same as Scout (LiteLLM GitHub token). Prior finding: 0% tool adoption.
-- **Evaluator**: 🟢 Active — Heartbeat cycle running.
+- **Optimizer**: ⚠️ 401 Error — D-o-R P1 cap measurement showing early positive signal (n=1: 2 ops vs pre-fix avg 32.2). Auth issues persist.
+- **Evaluator**: 🟢 Active — Heartbeat cycle running. 2,162 recent evals flowing.
 - **QA**: 🟢 Active — Heartbeat cycle running.
 - **Coder**: Idle. Only runs when forked by tech-lead.
-- **All agents**: 🟡 6/8 healthy. Scout + Optimizer have 401 auth errors (LiteLLM GitHub token). Amy-kimi 429 (billing). Zero other failures last hour.
+- **All agents**: 🟡 6/8 healthy. Scout + Optimizer have 401 auth errors (LiteLLM GitHub token). Amy-kimi 429 (billing). Zero failures last hour.
 - **✅ Tool Schema Guard**: Live in production.
 - **✅ Dead code removal**: ~4,779+ lines removed total (1,973 earlier + 589 memory JSONL + 2,217 finish-guard dead code).
 - **✅ Web UI Phase 1**: Merged to main.
@@ -216,24 +216,22 @@ Updated: 2026-04-11 ~02:53 UTC
   - **Bob EXP-130 KB integration ✅ DONE**: Completed in work session. H-099, H-098 updated.
   - **All agents self-directing**: 1 active request (Coach EXP-129 writeup). Zero May interventions needed.
 
-## Latest Cycle Summary (02:53)
+## Latest Cycle Summary (03:23)
 - **System**: 6/8 healthy. Scout + Optimizer 401 auth errors (LiteLLM GitHub token). Amy-kimi 429 (billing).
-- **Since last cycle (02:23)**:
-  - **Bob EXP-129 KB integration ✅ DONE** (02:24+02:31): Two sessions — direct integration + research synthesis. All KB work current.
-  - **Coach EXP-131 IN PROGRESS** (27min): Self-dispatched follow-on to EXP-129. Testing if hump curve holds with unrelated gates. Running parallel gym trials.
-  - **Optimizer 401 ERROR**: Mode C work session hit LiteLLM auth failure. Same root cause as Scout.
-  - **All agents self-directing**: Coach driving experiments, Bob integrating findings. Zero May interventions needed.
+- **Since last cycle (02:53)**:
+  - **Coach EXP-131 continuing** (~56min): Batch 4 of parallel gym trials running. Early data: Arm A (1-gate) ~100%, Arm B (3-unrelated) ~50%, Arm C (3-relevant) ~86%. Unrelated gates appear to hurt.
+  - **Optimizer D-o-R P1 cap**: Early positive signal (n=1: 2 ops vs pre-fix avg 32.2). Committed 2cd36432.
+  - **Scout DD-747/748**: Constraint Paradox grounding for EXP-129 hump curve. Committed 633cf249.
+  - **All agents self-directing**: Zero pending requests. Zero failures. Zero May interventions needed.
 
 ## Key Findings This Cycle
-- **EXP-129 INVERTED-U (FINAL)**: Gate stacking shows hump curve, NOT cliff. 3-gate = 100% (optimal), 4-gate = 67% (time pressure). Each gate adds ~167s linear. P-098c execution-crowding prediction WRONG — crowding is task-specific, not universal. **Deployment recommendation: 3 analytical gates max**.
-- **Tool Adoption = 0%**: Building tools is necessary but insufficient. Must be injected into agent context (KE-011). Action needed: surface tools to relevant agents.
-- **EXP-130 LANDMARK** (from prior cycle): Few-shot -67pp on discovery. Template-following displaces exploration. H-099 P(H)=0.90.
-- **401 Auth Degradation**: Optimizer now joining Scout with 401 errors. LiteLLM GitHub token issue affecting 2/8 agents. May need Hao escalation if persistent.
+- **EXP-131 EARLY SIGNAL**: Unrelated gates hurt (~50% pass) vs relevant gates (~86-100%). Suggests gate CONTENT matters, not just gate COUNT. If confirmed, this refines EXP-129's inverted-U — the curve depends on gate relevance, not just gate number.
+- **401 Auth PERSISTS**: Scout + Optimizer still failing. Now 3+ hours. Should escalate to Hao if not resolved by next cycle.
 
 ## Next Actions
 - **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. Saves $143-441/day. **Blocked on Hao since Mar 24**.
-- **P0**: **LiteLLM 401 auth** — Optimizer + Scout both failing. If persists next cycle, escalate to Hao.
-- **P1**: **EXP-131 results** — Coach running. Monitor next cycle for completion.
+- **P0**: **LiteLLM 401 auth** — Optimizer + Scout both failing 3+ hours. Escalate to Hao next cycle if unchanged.
+- **P1**: **EXP-131 results** — Coach nearing completion. Monitor next cycle for final data + Bob KB integration.
 - **P1**: **Surface tools to agents** — session-query.ts + gym-batch.sh need context.md entries. Consider shared/tools.md catalog.
 - **P1**: **EXP-105 Few-Shot Production Impact** — Need coder/optimizer work sessions to generate data. No coder work happening.
 - **P1**: **Generate implementation work** — System idle without features. Coder completely idle. Need Hao priorities.
