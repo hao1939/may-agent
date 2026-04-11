@@ -46,14 +46,15 @@
 - Estimated savings: ~750 ops/day, ~$35/day.
 - Finding: `workspace/finding-coach-session-efficiency-0410.md`
 
-### Tech-Lead Heartbeat Bloat — #1 Op Consumer, FIX NEEDED
+### Tech-Lead Heartbeat Bloat — #1 Op Consumer, DRAFT READY
 - Tech-lead heartbeats avg 28.1 ops (8h), **#1 across all agents**. 24h: median 31, p90 50, max 60.
 - 24h: 1,531 heartbeat ops vs 426 work ops — **78% of all tech-lead ops are heartbeats**.
 - **Zero productive output**: 0 files modified, 0 forks spawned in 16/16 heartbeats (8h). 1 fork in 48 heartbeats (24h) = 2% fork rate.
 - Root cause: heartbeat.md encourages deep inline exploration (4 "Lens" modes) with no op budget. Runs full test suite (2046 tests) in heartbeats.
 - **Fix**: Rewrite tech-lead heartbeat.md to dispatcher mode (same fix that took optimizer from 56 → 3.2 avg).
 - **Expected savings**: 1,291 ops/day (~$61/day, ~$1,830/month). Biggest savings opportunity after LiteLLM fix.
-- **Next step**: Propose heartbeat.md rewrite to tech-lead (or send to May for approval).
+- **DRAFT COMPLETE** (Apr 11 ~07:24 UTC): `workspace/draft-tech-lead-heartbeat-rewrite.md`. Key changes: ≤8 op budget, observe→decide→act→exit flow, lenses become fork targets not inline work, "must-fork" list (test suite, multi-file analysis, architecture review), explicit "don't exit with just observations" rule.
+- **Next step**: Send draft to May for approval + deployment.
 - Finding: `workspace/finding-tech-lead-heartbeat-bloat-0411.md`
 
 ### Optimizer Heartbeat Bloat — FIX DEPLOYED
@@ -61,7 +62,7 @@
 - Root cause: heartbeat.md encouraged inline exploration (multi-query DB analysis, file reads).
 - Fix: Rewrote heartbeat.md to "Dispatcher Mode" — observe in 1-2 ops, fork all analysis work. Target: ≤15 ops.
 - Baseline: 8 heartbeats in 12h, avg 56 ops, total 451. Post-fix: avg 23 ops (59% reduction). ✅ SUCCESS.
-- Last exploration mode: **A** (Coach 88-op EXP-130 + D-o-R n=4/5 check — Apr 11 ~06:23 UTC, s_1775888644691_1261). Previous: D (Adoption Unblock — Apr 11 ~05:53), C (Coach Experiment Technique — Apr 11 ~05:24), B (Tool Gap — Bob 75-op — Apr 11 ~04:54), A (D-o-R Post-Fix 12h — Apr 11 ~04:24), D (D-o-R Nested Fix — Apr 11 ~03:53).
+- Last exploration mode: **C** (Tech-Lead HB Rewrite Draft — Apr 11 ~07:23 UTC, s_1775892250621_1284). Previous: B (Tech-Lead Bloat Analysis — Apr 11 ~07:00), A (Coach 88-op EXP-130 + D-o-R n=4/5 — Apr 11 ~06:23), D (Adoption Unblock — Apr 11 ~05:53), C (Coach Experiment Technique — Apr 11 ~05:24), B (Tool Gap — Bob 75-op — Apr 11 ~04:54).
 - **session-query tool BUILT** (`scripts/session-query.ts`). Replaces 15-25 bash archaeology pattern with single command. Supports: --agent, --since, --task, --status, --min-ops, --tools, --json, --sort. Tested with real data (911 sessions). Est. savings: 10-15 ops/session × 187 sessions = 1,870-2,805 ops.
 - **session-query adoption**: Still **zero active adoption** beyond optimizer (confirmed Apr 11 05:24 UTC). May + QA have passive mentions only. **Three blockers**: (1) filesystem history stale (through ~Apr 5), (2) zero agents have session-query in context.md, (3) may.db has 0 coach sessions. No change since last check. **gym-batch.sh MERGED to main** (cherry-pick 5ca3bdf, Apr 11 ~05:54 UTC) + coach context.md updated. Previous blocker (stuck on review branch) resolved. Findings: `workspace/finding-tool-gap-0411-b.md`, `workspace/finding-coach-experiment-technique-0411.md`
 - Mode D **COMPLETE**: Workflow health analysis. **Key result: D-o-R uses +53% more ops than non-WF work sessions** (45.7 vs 29.9). Phase 1 is the bloat source (30.4 avg ops — matches a complete non-WF session). Error rates 50% lower (2.1% vs 3.9%). Quality scores incomparable (different eval scales). Finding: `workspace/finding-workflow-health-0410.md`
