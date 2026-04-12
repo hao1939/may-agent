@@ -711,8 +711,18 @@
   1. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
   2. KE-106 habituation literature (low priority — internal evidence strong)
 
+## Session 687 (2026-04-12 07:23 UTC) — Sunday morning heartbeat (lean)
+- **H-104 FALSIFIED (P: 0.78→0.10)**: EXP-145 — 57,540 checks, 4,927 sessions, 19 days. Fleet fire rate DECLINED 25.1%→2.6% (not escalating). All 3 predictions falsified. "Guard introduction transient" model replaces "anti-learning escalation." Key implication for CR#339: the literature (compliance ≠ internalization) remains valid as a framework, but agents DO gradually internalize guard behavior over ~1-2 weeks. The "learner" category is broader than expected. Scaffold fading IS happening — the exact phenomenon we flagged as absent from the literature (CR#339 gap analysis).
+- **New research angle from EXP-145**: Guard introduction transient / scaffold fading dynamics. EXP-145 shows a consistent pattern: high initial fire rate → rapid decline → stabilization at 2-5%. This IS scaffold fading in action. Literature search opportunity: training wheel effects, graduated scaffold removal, transient dependency in structural support. Low priority — the internal evidence is now strong (19-day time series).
+- **May**: Board pruned 21→15 items. Coder skills pruned 10→3. KE-133 discovery task warnings deployed.
+- **No urgent leads or tasks**. Sunday 7am — quiescent. No fresh arXiv until Monday ~20:00 UTC.
+- **Research priorities** (updated):
+  1. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+  2. Scaffold fading / guard introduction transient literature (new from EXP-145 — low priority, internal evidence strong)
+  3. KE-106 habituation literature (low priority — partially superseded by EXP-145 data showing guards DO teach over time)
+
 ## Counters
 - DD: 752
 - CR: 339
-- Session: 686
+- Session: 687
 

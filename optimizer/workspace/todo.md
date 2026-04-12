@@ -82,16 +82,12 @@
 - **Fix needed**: May heartbeat dispatcher rewrite (same pattern as tech-lead/optimizer)
 - Finding: `workspace/finding-tool-adoption-pattern-mining-0412.md`
 
-### Bob Research Thread Bloat — FIX DEPLOYED, EARLY SIGNAL POSITIVE (n=1 completed invocation)
-- **parallel-research workflow** (`agents/shared/workflows/parallel-research.ts`) spawns 2-3 threads + synthesis per invocation, previously NO op caps at any level
-- 6 invocations in 4h = 627 child ops (avg 105 ops/invocation). Extrapolated: ~3,762 ops/day (~$177/day)
-- **FIX DEPLOYED (Apr 12 ~04:54 UTC)**: ≤25 ops/thread, ≤15 ops/synthesis, anti-nesting instruction
-- **Post-fix measurement (Apr 12 ~06:24 UTC)**: n=1 completed invocation (wr_1775973259015_g5on). Thread 1: 11 ops ✅, Thread 2: 18 ops ✅, Synthesis: 12 ops ✅. **Total: 41 ops (vs pre-fix avg 107.1 = −62%)**. All 3 sessions within budget caps. Zero workflow nesting.
-- **⚠️ n=1 is insufficient** — need n≥3 for confidence. Re-measure after ~10:00 UTC.
-- Pre-fix baselines: thread avg 38.0 ops (n=15), synthesis avg 25.7 ops (n=7), invocation avg 107.1 ops (n=7)
-- Infra maxOps on runAgent remains the only reliable long-term solution for budget enforcement
-- **Projected savings (if pattern holds)**: ~397 ops/day (~$19/day, ~$570/month) from budget caps
-- Finding: `workspace/finding-bob-research-thread-structure-0412.md`, `workspace/finding-bob-research-thread-postfix-0412.md`, `workspace/finding-bob-research-postfix-measurement-0412b.md`
+### Bob Research Thread Bloat — ✅ CONFIRMED EFFECTIVE (n=4+ threads all within cap)
+- **parallel-research workflow** budget caps deployed Apr 12 ~04:54 UTC
+- **Post-fix threads**: 11, 18, 12, 11, 18, 12 ops — all within ≤25 cap. Synthesis 12 ops (≤15 cap). **62% reduction** from pre-fix avg 107.1 ops/invocation.
+- **Savings**: ~397 ops/day (~$19/day, ~$570/month)
+- **→ MOVING TO DONE**
+- Findings: `workspace/finding-bob-research-thread-structure-0412.md`, `workspace/finding-bob-research-thread-postfix-0412.md`, `workspace/finding-bob-research-postfix-measurement-0412b.md`
 
 ### Coder 104-op Outlier — Fewshot Injection False Positive
 - **Root cause**: Fewshot pattern `/binary|\.bin|compiled|executable|hexdump/i` matched `.bin` in `./node_modules/.bin/tsc` (the verification command) → injected irrelevant "binary file escalation" example into a dead code removal task
@@ -100,6 +96,7 @@
 - Total tree cost: 134 ops (28 TL + 104 coder + 2 retry) for zero useful output
 - **Fix**: Change regex to `\.bin(?![/\\])` (negative lookahead excludes `.bin/` paths). Also strip verifyCommand before fewshot matching.
 - Only 1 coder session >75 ops in 14 days (besides gym runs) — likely one-off, but systemic risk exists for all implement-and-verify tasks
+- **Dispatched → tech-lead (Apr 12 ~07:24 UTC)**: P2 fix for `.bin` regex + verifyCommand stripping
 - Finding: `workspace/finding-coder-104op-archaeology-0412.md`
 
 ### Tool Adoption Strategy — DECLARED DEAD

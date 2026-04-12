@@ -1,18 +1,18 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-12 ~06:53 UTC
+Updated: 2026-04-12 ~07:24 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors (billing). Blocked on Hao.
-- **Bob**: 🟢 Active — Heartbeat running. EXP-147 designed.
-- **Coach**: 🟢 Active — EXP-123 COMPLETE. EXP-145 in progress.
+- **Bob**: 🟢 Active — EXP-147 Track A Phase 1 done. EXP-146 design in progress.
+- **Coach**: 🟢 Active — EXP-147 Phase 1 COMPLETE. Convention regressions ongoing.
 - **Scout**: 🟢 Active — Heartbeat cycle running.
-- **Tech-lead**: 🟢 Active — Coder skill pruning P0+P1 both done. Cron handler resolver WIP.
-- **Optimizer**: 🟢 Active — Post-fix measurement done (bob budget caps confirmed).
-- **Evaluator**: 🟢 Active — Stale by ~9h (last eval 21:28 Apr 11). Needs investigation.
+- **Tech-lead**: 🟢 Active — Coder skill pruning done. Cron handler resolver + D-o-R fix WIP.
+- **Optimizer**: 🟢 Active — Bob budget caps confirmed. Session archaeology done.
+- **Evaluator**: 🟢 Active — Cycling normally. 440 evals/24h (~73% coverage).
 - **QA**: 🟢 Active.
 - **Coder**: Available — no active sessions. Skills pruned to 3 (was 10).
-- **Summary**: 7/8 healthy. Amy-kimi 429 (billing). Evaluator stale (~9h since last eval).
+- **Summary**: 7/8 healthy. Amy-kimi 429 (billing). All others cycling normally.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -29,7 +29,7 @@ Updated: 2026-04-12 ~06:53 UTC
 | **EXP-114a Tool Schema Guard Monitoring** | ⏳ INSUFFICIENT DATA | coach | 57 sessions, 0 activations. Need 280+. |
 | **Web UI Agent Visualization Dashboard** | ⚠️ Branch stale | tech-lead | Source on main (`web.ts` 663 lines). Branch needs reconciliation. |
 | **Finish-Guard Git Ops False Positive** | ⚠️ Dispatched | tech-lead | FM-3.1 guard blocked git merge 4×. |
-| **Bob H-097 CCC Triad Hypothesis** | ⏳ NEW | bob | P(H)=0.65. EXP-147 designed, ready for coach execution. |
+| **Bob H-097 CCC Triad Hypothesis** | ⏳ IN PROGRESS | bob | P(H)=0.55. EXP-147 Track A Phase 1 done (0.92% wrong-consensus — P-120b moot). Track B pending. |
 | **H-098 Attention Channel Theory** | 🆕 FILED | bob | P(H)=0.78, Tier 1. |
 | **H-099 Discovery Task Boundary** | 🆕 FILED | bob | Creative inference irreducible to scaffolding. |
 | **EXP-132 Path Hallucination Guard** | ⚠️ Needs rebuild | tech-lead | Code merged but binary not rebuilt. |
@@ -37,7 +37,7 @@ Updated: 2026-04-12 ~06:53 UTC
 | **Deliver-or-Report Workflow Fix** | ⏳ IN PROGRESS | tech-lead | 41% done rate. Sensitivity fix in progress. |
 | **EXP-145 Guard Dependency Escalation** | ✅ COMPLETE | coach | H-104 FALSIFIED (0.78→0.10). Fleet fire rate declined 25.1%→2.6%. |
 | **EXP-146 Thinking-Token Analysis** | ⏳ IN PROGRESS | bob | Designing for H-105. |
-| **EXP-147 CCC Triad Validation** | 🆕 DESIGNED | bob | Tests H-097 via P-120b + P-120c. Ready for coach. |
+| **EXP-147 CCC Triad Validation** | ⏳ Track A Ph1 DONE | coach | Track A: 0.92% wrong-consensus (P-120b moot, skip Ph2). Track B (Context Isolation) not started. |
 | **Cron Handler Resolver** | ⏳ IN PROGRESS | tech-lead | Dynamic handler loading on reload. Uncommitted `src/app/cron.ts`. |
 
 ## Next Actions
@@ -46,14 +46,15 @@ Updated: 2026-04-12 ~06:53 UTC
 - **P1**: **Generate implementation work** — System idle without features. Coder completely idle. Need Hao priorities.
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (06:53)
-- **System**: 7/8 healthy. Evaluator stale (~9h since last eval). All agents cycling.
-- **EXP-123 COMPLETE**: 38h production data confirms verification-depth guard works. Fleet C1.3 at 95.3%. C1.5 regression was measurement artifact (fixed by tech-lead, 7d54e506). Optimizer C1.3 at 82% — coach investigating.
-- **Coder Skill Pruning COMPLETE**: Both P0 (3 disproven, 16.3KB) and P1 (4 untested, 14.4KB) done. Coder 10→3 skills, 43KB→~13KB (70% reduction).
-- **EXP-147 designed**: Bob completed CCC Triad validation experiment design (H-097, P-120b + P-120c). Ready for coach execution.
-- **Optimizer**: Post-fix measurement confirms bob research thread budget caps working (-62% tool calls).
-- **Tech-lead**: Cron handler resolver in progress (uncommitted `src/app/cron.ts`). analyze-failures handler already fixed.
-- **Improvement queue**: 2 ready items (discovery task protection, skill sunset review).
+## Latest Cycle Summary (07:24)
+- **System**: 7/8 healthy. All agents cycling normally. 440 evals/24h (73% coverage).
+- **EXP-147 Track A Phase 1 COMPLETE**: Wrong-consensus rate 0.92% (CI: 0.73-1.11%). P-120b (calibration) moot — system already <1% disagreement. Skip Phase 2. Track B (Context Isolation) next.
+- **EXP-145 COMPLETE**: H-104 FALSIFIED (P(H) 0.78→0.10). Fleet fire rate 25.1%→2.6%.
+- **Coder Skill Pruning COMPLETE**: 10→3 skills, 70% reduction (43KB→~13KB).
+- **Optimizer**: Bob research thread budget caps confirmed working (-62% tool calls). Session archaeology completed.
+- **Tech-lead**: D-o-R sensitivity fix + cron handler resolver in progress.
+- **Coach**: Convention regressions (QA C1.1/C1.4, Optimizer C1.1/C1.3) — targeted fixes deployed.
+- **Improvement queue**: 4 ready items (skill sunset, archive rotation, H-104 impact review, evaluator tagging).
 
 ## Archive Reference
 Full history of 140+ completed items archived to `dispatch-board-archive-apr12.md`.
