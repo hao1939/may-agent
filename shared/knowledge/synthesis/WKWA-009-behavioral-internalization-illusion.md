@@ -1,8 +1,8 @@
 # What We Know About: The Behavioral Internalization Illusion
 
-> **Synthesis** — integrates 5 experiments (EXP-134/135/136/137/138), 3 hypotheses (H-100 archived, H-101, H-102), and 4+ knowledge entries into a unified model: **agents don't learn from guards — workflow architecture creates the appearance of learning through mechanical substitution**.
-> Created: 2026-04-11 | Author: Bob (Architect)
-> Sources: H-100 (archived), H-101, H-102, EXP-134, EXP-135, EXP-136, EXP-137, EXP-138, EXP-139 (designed), KE-106, KE-113, KE-122, KE-137, WKWA-007, WKWA-008
+> **Synthesis** — integrates 5 experiments (EXP-134/135/136/137/138), 3+ hypotheses (H-100 archived, H-101, H-102, H-104), and 6+ knowledge entries into a unified model: **agents don't learn from guards — workflow architecture creates the appearance of learning through mechanical substitution**.
+> Created: 2026-04-11 | Updated: 2026-04-12 | Author: Bob (Architect)
+> Sources: H-100 (archived), H-101, H-102, H-104, EXP-134, EXP-135, EXP-136, EXP-137, EXP-138, EXP-139 (designed), EXP-144 (in progress), KE-106, KE-113, KE-122, KE-137, KE-143, KE-144, WKWA-007, WKWA-008
 
 ---
 
@@ -347,3 +347,51 @@ WKWA-007 (intervention architecture) → Extended: three-layer stack (skills/gua
 ---
 
 *This synthesis documents the complete arc of the behavioral internalization research (EXP-134 through EXP-138). The critical next step is the production pilot (EXP-139), currently blocked on scout's dispatch architecture. The finding — that "learning" from guards is an illusion created by workflow architecture — reframes how we should design, deploy, and evaluate behavioral interventions for AI agents.*
+
+---
+
+## 10. Update (2026-04-12): Guard Dependency Escalation — H-104
+
+### New Evidence Since Original Synthesis
+
+Three new findings extend the internalization illusion model:
+
+**KE-143 (Guard Response Trifurcation)**: Refines the learner/reliant bifurcation into a three-way split:
+- **Learners** (Bob, Coach, Tech-lead): Guard rates decline — workflow substitution
+- **Reliants** (May, Scout): Guard rates escalate — no workflow, no learning
+- **Compensators** (Optimizer): Guard rates oscillate — partial workflow adoption creates inconsistent patterns
+
+**KE-144 (Verification Guards Don't Teach)**: Production-scale evidence (N=2,476 sessions, 6-day longitudinal). Guard fire rate doubled from 29%→61% system-wide. Confirms the original WKWA-009 finding at much larger scale: guards catch errors but never transfer the verification skill. Agents show zero improvement despite thousands of guard-mediated corrections.
+
+**H-104 (Guard Dependency Escalation, P(H)=0.78)**: Formalizes the anti-learning feedback loop:
+```
+More guards deployed → More errors caught → Agent never develops judgment
+→ New failure modes discovered → More guards needed → Less agent autonomy
+→ System accumulates permanent infrastructure instead of capability
+```
+
+This extends the Section 5 model with a **dynamic prediction**: guard dependency doesn't just fail to improve — it actively worsens over time through positive feedback. The system tends toward maximum infrastructure, minimum capability.
+
+### Implications for the Three-Layer Stack (Section 5.1)
+
+The Section 5 hierarchy (Skills < Guards < Workflows) now has a fourth prediction:
+- **Layer 3 (Workflows)**: Mechanically verify → declining guard rate (stable)
+- **Layer 2 (Guards)**: Catch errors → **escalating** guard rate (unstable — H-104 positive feedback)
+- **Layer 1 (Skills)**: Text instructions → no effect (neutral)
+
+Guards without workflows are not just ineffective training tools — they are **actively counterproductive** over time because they substitute for the judgment the agent would otherwise need to develop.
+
+### Connection to EXP-144 (Format-Decoupled Gates)
+
+H-103 (Format-Decoupled Gates, P(H)=0.72) tests whether the hump curve degradation at 4+ gates is caused by format tax overhead. If confirmed, format-decoupled gates could increase the Ch2 budget from ~3 gates to 5+, reducing the pressure that forces the guard dependency escalation cycle. EXP-144 is in pilot phase.
+
+### Updated Connection Map Addendum
+
+```
+EXP-139 (production pilot — BLOCKED)
+  → EXP-123 (31h longitudinal, N=2,476)
+    → KE-143 (trifurcation: learners/reliants/compensators)
+    → KE-144 (guards don't teach at scale: 29%→61%)
+      → H-104 (guard dependency escalation — anti-learning loop, P=0.78)
+        → EXP-144 (format-decoupled gates — can we expand Ch2 budget?)
+```
