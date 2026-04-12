@@ -134,7 +134,7 @@ export function runTaskWatchdog(
   try {
     const db = ctx.getDb();
     staleRequests = db
-      .query(
+      .prepare(
         `SELECT requestId, status, method, toAgent, COALESCE(fromEntity, 'unknown') as fromEntity, sessionId, createdAt, COALESCE(task, '') as task
          FROM requests
          WHERE status IN ('CREATED', 'IN_PROGRESS')
@@ -143,7 +143,7 @@ export function runTaskWatchdog(
       .all(now - NUDGE_AGE_MS) as RequestRow[];
     // Fetch all open requests for orphan detection (includes recent ones)
     allOpenRequests = db
-      .query(
+      .prepare(
         `SELECT requestId, status, method, toAgent, COALESCE(fromEntity, 'unknown') as fromEntity, sessionId, createdAt, COALESCE(task, '') as task
          FROM requests
          WHERE status IN ('CREATED', 'IN_PROGRESS')`,

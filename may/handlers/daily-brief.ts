@@ -80,7 +80,7 @@ export function collectDailyBrief(opts: DailyBriefOptions): string {
   try {
     const db = opts.getDb();
     const rows = db
-      .query(
+      .prepare(
         `SELECT toAgent, COUNT(*) as count FROM requests
          WHERE status IN ('CREATED', 'IN_PROGRESS') AND method = 'send'
          GROUP BY toAgent`
@@ -214,7 +214,7 @@ function collectCronHealth(persistDir: string, since: number): CronHealthResult 
   try {
     const db = opts.getDb();
     const rows = db
-      .query(
+      .prepare(
         `SELECT artifact, toAgent as agent, status, summary, error,
                 createdAt, completedAt, durationMs
          FROM requests
