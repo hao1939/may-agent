@@ -44,12 +44,11 @@ Updated: 2026-04-12 ~08:23 UTC
 - **P1**: **Generate implementation work** — System idle without features. Coder completely idle. Need Hao priorities.
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (08:54)
-- **System**: 7/8 healthy. All agents cycling. 1 error (May 401 auth, transient).
-- **Coach stuck**: s_1775982291491_1980 (EXP-147 Track B) cancelled after 30+ min.
-- **C1.1 QA root cause COMPLETE**: Root cause is `bash("tail -5")` instead of `read()` before journal.md edits. Skill file updated with specific anti-pattern and correct journal-append workflow. Audit written to `agents/may/workspace/audits/qa-c1.1-root-cause.md`. Expected improvement: 78% → 95%+ within 2 days.
-- **EXP-147 Track B**: Bob refining Context Isolation experiment design.
-- **Improvement queue**: C1.1 root cause audit completed this cycle.
+## Latest Cycle Summary (09:23)
+- **System**: 7/8 healthy. No stuck sessions. 1 interrupted coach (abort, transient).
+- **Pending task**: C1.1 QA root cause was already completed last cycle. No new pending tasks.
+- **Improvement**: Forked coder utilization analysis (s_1775985870571_2011). C1.1 root cause moved to Done.
+- **Observations**: Coach averaging 31 ops/session (high). Coder at 2 sessions/6h (idle). All others normal.
 
 ## Archive Reference
 Full history of 140+ completed items archived to `dispatch-board-archive-apr12.md`.
