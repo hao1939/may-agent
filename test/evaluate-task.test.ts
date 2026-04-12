@@ -102,7 +102,7 @@ vi.mock("../src/lib/db.js", () => {
   };
 });
 
-import { findUnevaluatedChildren, writeSkippedEvaluations } from "../src/lib/evaluator.js";
+import { findUnevaluatedChildren } from "../src/lib/evaluator.js";
 import { upsertEvaluation, hasEvaluation, closeDb } from "../src/lib/requests.js";
 import type { PersistedSession } from "../src/lib/persistence.js";
 
@@ -294,76 +294,3 @@ describe("findUnevaluatedChildren", () => {
   });
 });
 
-describe("writeSkippedEvaluations – orphaned sessions (no meta.json)", () => {
-  let persistDir: string;
-
-  beforeEach(() => {
-    persistDir = tmpDir();
-  });
-
-  afterEach(() => {
-    try {
-      closeDb(persistDir);
-    } catch {
-      /* ignore */
-    }
-  });
-
-  it("handles sessions without meta.json", async () => {
-    // Create an orphaned session directory with a session.jsonl but NO meta.json
-    const sessionId = "orphan-session-1";
-    const sessionDirPath = join(persistDir, "sessions", "history", sessionId);
-    mkdirSync(sessionDirPath, { recursive: true });
-    writeFileSync(
-      join(sessionDirPath, "session.jsonl"),
-      JSON.stringify({ role: "user", content: [{ type: "text", text: "hello" }] }) + "\n",
-      "utf-8",
-    );
-
-    const written = await writeSkippedEvaluations(persistDir);
-    expect(written).toBeGreaterThanOrEqual(1);
-
-    // Check DB instead of file
-    expect(hasEvaluation(persistDir, sessionId)).toBe(true);
-    const { getEvaluation } = await import("../src/lib/requests.js");
-    const evaluation = getEvaluation(persistDir, sessionId);
-    expect(evaluation).not.toBeNull();
-    expect(evaluation!.agent).toBe("unknown");
-    expect(evaluation!.issues).toContain("no_metadata");
-    expect(evaluation!.skippedByJs).toBe(true);
-    expect(evaluation!.efficiency).toBe(0);
-    expect(evaluation!.quality).toBe(0);
-    expect(evaluation!.verdict).toBe("skipped");
-  });
-
-  it("skips already-evaluated orphaned sessions", async () => {
-    // Create an orphaned session directory
-    const sessionId = "orphan-session-2";
-    const sessionDirPath = join(persistDir, "sessions", sessionId);
-    mkdirSync(sessionDirPath, { recursive: true });
-    writeFileSync(
-      join(sessionDirPath, "session.jsonl"),
-      JSON.stringify({ role: "user", content: [{ type: "text", text: "hello" }] }) + "\n",
-      "utf-8",
-    );
-
-    // Pre-existing evaluation in DB
-    upsertEvaluation(persistDir, {
-      sessionId,
-      agent: "previously-evaluated",
-      quality: 5,
-      efficiency: 5,
-      verdict: "good",
-      createdAt: Date.now(),
-    });
-
-    const written = await writeSkippedEvaluations(persistDir);
-    expect(written).toBe(0);
-
-    // Verify original evaluation is unchanged
-    const { getEvaluation } = await import("../src/lib/requests.js");
-    const evaluation = getEvaluation(persistDir, sessionId);
-    expect(evaluation!.agent).toBe("previously-evaluated");
-    expect(evaluation!.quality).toBe(5);
-  });
-});

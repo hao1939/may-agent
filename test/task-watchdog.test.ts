@@ -99,8 +99,6 @@ function makeContext(tmpDir: string, opts: MockCtxOpts = {}): {
     emit: (event: Record<string, unknown>) => emitted.push(event),
     loadAllSessionMetas: () => ({}),
     evaluateTask: async () => null,
-    writeSkippedEvaluations: async () => 0,
-    writeHeuristicEvaluations: async () => 0,
   };
 
   return { ctx, emitted, logged, notified };
@@ -683,8 +681,6 @@ describe("task-watchdog", () => {
       emit: () => {},
       loadAllSessionMetas: () => ({}),
       evaluateTask: async () => null,
-      writeSkippedEvaluations: async () => 0,
-      writeHeuristicEvaluations: async () => 0,
     };
 
     const result = runTaskWatchdog(ctx);
