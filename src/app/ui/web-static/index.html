@@ -256,6 +256,25 @@
 .session-inspector .back-btn:hover { background: var(--accent); color: var(--bg); }
 .copy-btn { background: none; border: none; cursor: pointer; color: var(--fg2); font-size: 14px; }
 .copy-btn:hover { color: var(--fg); }
+
+/* Requests Tab */
+.requests-tab { padding: 0; }
+.req-filters { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+.req-filter-btn { padding: 4px 12px; border-radius: 12px; cursor: pointer; color: var(--fg2); font-size: 12px; background: var(--bg2); border: 1px solid var(--border); }
+.req-filter-btn:hover { color: var(--fg); border-color: var(--fg2); }
+.req-filter-btn.active { color: var(--fg); background: var(--bg3); border-color: var(--accent); }
+.req-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.req-table th { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); color: var(--fg2); font-weight: 500; }
+.req-table td { padding: 6px 8px; border-bottom: 1px solid var(--bg3); }
+.req-table tr:hover { background: var(--bg3); }
+.req-status { padding: 2px 6px; border-radius: 3px; font-size: 11px; font-weight: 500; }
+.req-status.COMPLETED { background: rgba(63,185,80,0.15); color: var(--green); }
+.req-status.CREATED { background: rgba(88,166,255,0.15); color: var(--accent); }
+.req-status.IN_PROGRESS { background: rgba(210,153,34,0.15); color: var(--yellow); }
+.req-status.FAILED { background: rgba(248,81,73,0.15); color: var(--red); }
+.req-method { padding: 2px 6px; border-radius: 3px; font-size: 11px; background: var(--bg3); color: var(--fg2); }
+.req-detail { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 12px; margin: 4px 0; }
+.req-detail .task-text { font-family: var(--mono); font-size: 12px; white-space: pre-wrap; word-break: break-word; margin-top: 8px; padding: 8px; background: var(--bg2); border-radius: 4px; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/marked@15.0.12/marked.min.js"></script>
 </head>
@@ -268,6 +287,7 @@
     <div class="tab" data-tab="chat">Chat</div>
     <div class="tab" data-tab="knowledge">Knowledge</div>
     <div class="tab" data-tab="benchmarks">Benchmarks</div>
+    <div class="tab" data-tab="requests">Requests</div>
   </div>
 </div>
 
@@ -342,6 +362,38 @@
       </div>
     </div>
   </div>
+
+  <!-- Requests -->
+  <div id="requests" class="hidden">
+    <div class="requests-tab">
+      <div class="req-filters">
+        <div style="display:flex;gap:4px;flex-wrap:wrap">
+          <button class="req-filter-btn active" data-status="">All</button>
+          <button class="req-filter-btn" data-status="CREATED">Pending</button>
+          <button class="req-filter-btn" data-status="IN_PROGRESS">Active</button>
+          <button class="req-filter-btn" data-status="COMPLETED">Completed</button>
+          <button class="req-filter-btn" data-status="FAILED">Failed</button>
+        </div>
+        <select id="req-agent-filter" style="background:var(--bg2);color:var(--fg);border:1px solid var(--border);border-radius:4px;padding:4px 8px;font-size:12px">
+          <option value="">All agents</option>
+        </select>
+      </div>
+      <table class="req-table">
+        <thead>
+          <tr>
+            <th>Age</th>
+            <th>From</th>
+            <th>To</th>
+            <th>Method</th>
+            <th>Status</th>
+            <th>Task</th>
+          </tr>
+        </thead>
+        <tbody id="req-table-body"></tbody>
+      </table>
+      <div class="req-pagination" id="req-pagination" style="display:flex;align-items:center;gap:8px;padding:8px 0"></div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -371,9 +423,11 @@ document.querySelectorAll('.tab').forEach(tab => {
     document.getElementById('chat').classList.toggle('hidden', currentTab !== 'chat');
     document.getElementById('benchmarks').classList.toggle('hidden', currentTab !== 'benchmarks');
     document.getElementById('knowledge').classList.toggle('hidden', currentTab !== 'knowledge');
+    document.getElementById('requests').classList.toggle('hidden', currentTab !== 'requests');
     if (currentTab === 'chat') initChat();
     if (currentTab === 'benchmarks') loadBenchmarks();
     if (currentTab === 'knowledge') loadKnowledge();
+    if (currentTab === 'requests') loadRequestsTab();
   });
 });
 
@@ -1051,6 +1105,7 @@ function switchToChat(message) {
   document.getElementById('dashboard').classList.add('hidden');
   document.getElementById('chat').classList.remove('hidden');
   document.getElementById('benchmarks').classList.add('hidden');
+  document.getElementById('requests').classList.add('hidden');
   initChat();
 
   // Pre-fill the input with the context message
@@ -1734,9 +1789,11 @@ if (currentTab && currentTab !== 'dashboard') {
   document.getElementById('chat').classList.toggle('hidden', currentTab !== 'chat');
   document.getElementById('benchmarks').classList.toggle('hidden', currentTab !== 'benchmarks');
   document.getElementById('knowledge').classList.toggle('hidden', currentTab !== 'knowledge');
+  document.getElementById('requests').classList.toggle('hidden', currentTab !== 'requests');
   if (currentTab === 'chat') initChat();
   if (currentTab === 'benchmarks') loadBenchmarks();
   if (currentTab === 'knowledge') loadKnowledge();
+  if (currentTab === 'requests') loadRequestsTab();
 }
 
 // ── Knowledge Browser ─────────────────────────────────────────────────
@@ -1829,6 +1886,127 @@ function renderFileContent(el, text, path) {
     el.innerHTML = `<pre style="font-size:12px">${esc(text)}</pre>`;
   }
 }
+
+// ── Requests Tab ──────────────────────────────────────────────────────
+let reqOffset = 0;
+const reqLimit = 50;
+let reqStatus = '';
+let reqAgent = '';
+
+async function loadRequestsTab() {
+  const params = new URLSearchParams({ limit: reqLimit, offset: reqOffset });
+  if (reqStatus) params.set('status', reqStatus);
+  if (reqAgent) params.set('agent', reqAgent);
+
+  try {
+    const r = await fetch('/api/requests?' + params);
+    const data = await r.json();
+    renderRequestsTab(data);
+  } catch(e) { console.error('Requests tab load error:', e); }
+
+  // Populate agent dropdown if empty
+  const sel = document.getElementById('req-agent-filter');
+  if (sel.options.length <= 1) {
+    try {
+      const r = await fetch('/api/agents/health');
+      const data = await r.json();
+      if (data.agents) {
+        data.agents.forEach(a => {
+          const opt = document.createElement('option');
+          opt.value = a.agent;
+          opt.textContent = a.agent;
+          sel.appendChild(opt);
+        });
+      }
+    } catch(e) {}
+  }
+}
+
+function reqAge(ts) {
+  const diff = Date.now() - ts;
+  if (diff < 60000) return Math.round(diff/1000) + 's';
+  if (diff < 3600000) return Math.round(diff/60000) + 'm';
+  if (diff < 86400000) return Math.round(diff/3600000) + 'h';
+  return Math.round(diff/86400000) + 'd';
+}
+
+function renderRequestsTab(data) {
+  const tbody = document.getElementById('req-table-body');
+  if (!data.requests.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--fg2);padding:20px">No requests found</td></tr>';
+    document.getElementById('req-pagination').innerHTML = '';
+    return;
+  }
+
+  tbody.innerHTML = data.requests.map(r => {
+    const taskPreview = esc((r.task || '').slice(0, 120)) + ((r.task || '').length > 120 ? '…' : '');
+    return `<tr class="req-row" data-rid="${r.requestId}">
+      <td style="white-space:nowrap">${reqAge(r.createdAt)}</td>
+      <td>${esc(r.fromEntity)}</td>
+      <td>${esc(r.toAgent)}</td>
+      <td><span class="req-method">${esc(r.method)}</span></td>
+      <td><span class="req-status ${r.status}">${r.status}</span></td>
+      <td style="max-width:400px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${taskPreview}</td>
+    </tr>
+    <tr class="req-detail-row" id="req-detail-${r.requestId}" style="display:none">
+      <td colspan="6">
+        <div class="req-detail">
+          <div style="display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:12px;margin-bottom:8px">
+            <span style="color:var(--fg2)">Request ID:</span><span>${r.requestId}</span>
+            <span style="color:var(--fg2)">Created:</span><span>${new Date(r.createdAt).toLocaleString()}</span>
+            ${r.completedAt ? `<span style="color:var(--fg2)">Completed:</span><span>${new Date(r.completedAt).toLocaleString()}</span>` : ''}
+            ${r.durationMs ? `<span style="color:var(--fg2)">Duration:</span><span>${r.durationMs < 60000 ? Math.round(r.durationMs/1000)+'s' : Math.round(r.durationMs/60000)+'m'}</span>` : ''}
+            ${r.sessionId ? `<span style="color:var(--fg2)">Session:</span><span>${r.sessionId}</span>` : ''}
+            ${r.source ? `<span style="color:var(--fg2)">Source:</span><span>${r.source}</span>` : ''}
+            ${r.error ? `<span style="color:var(--fg2)">Error:</span><span style="color:var(--red)">${esc(r.error)}</span>` : ''}
+          </div>
+          <div class="task-text">${esc(r.task || '')}</div>
+          ${r.summary ? `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)"><strong style="color:var(--fg2);font-size:11px">Summary:</strong><div style="margin-top:4px;font-size:12px">${esc(r.summary)}</div></div>` : ''}
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  // Click handlers for expand/collapse
+  tbody.querySelectorAll('.req-row').forEach(row => {
+    row.style.cursor = 'pointer';
+    row.addEventListener('click', () => {
+      const rid = row.dataset.rid;
+      const detail = document.getElementById('req-detail-' + rid);
+      const isVisible = detail.style.display !== 'none';
+      // Close all others
+      tbody.querySelectorAll('.req-detail-row').forEach(r => r.style.display = 'none');
+      if (!isVisible) detail.style.display = 'table-row';
+    });
+  });
+
+  // Pagination
+  const pg = document.getElementById('req-pagination');
+  const hasPrev = reqOffset > 0;
+  const hasNext = reqOffset + reqLimit < data.total;
+  pg.innerHTML = `
+    <button ${hasPrev ? '' : 'disabled'} onclick="reqOffset=Math.max(0,reqOffset-reqLimit);loadRequestsTab()">← Prev</button>
+    <span style="color:var(--fg2);font-size:12px">${reqOffset+1}–${Math.min(reqOffset+reqLimit,data.total)} of ${data.total}</span>
+    <button ${hasNext ? '' : 'disabled'} onclick="reqOffset+=reqLimit;loadRequestsTab()">Next →</button>
+  `;
+}
+
+// Filter button handlers
+document.querySelectorAll('.req-filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.req-filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    reqStatus = btn.dataset.status;
+    reqOffset = 0;
+    loadRequestsTab();
+  });
+});
+
+document.getElementById('req-agent-filter').addEventListener('change', (e) => {
+  reqAgent = e.target.value;
+  reqOffset = 0;
+  loadRequestsTab();
+});
 </script>
 </body>
 </html>
