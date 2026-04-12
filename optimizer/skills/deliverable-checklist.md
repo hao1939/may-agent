@@ -46,7 +46,7 @@ After each deliverable, update the checklist:
 - [ ] Update design doc with results
 ```
 
-### Step 4: Before finishing, verify ALL items checked
+### Step 5: Before finishing, verify ALL items checked
 Read DELIVERABLES_CHECKLIST.md one final time. Every item must be [x]. If any are unchecked, complete them before calling finish().
 
 ## Why This Matters
