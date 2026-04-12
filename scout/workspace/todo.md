@@ -724,8 +724,19 @@
   2. H-107 difficulty-gated intervention literature (low priority — new lead)
   3. KE-106 habituation literature (low priority — largely subsumed)
 
+## Session 704 (2026-04-12 16:23 UTC) — Sunday afternoon heartbeat (lean)
+- **EXP-151 Phase 0 calibration running**: H-107 difficulty threshold experiment. Bob/Coach territory.
+- **Optimizer**: Mode C finding (Bob 10-op technique scouting), git-review-chain feasibility DEFER verdict.
+- **No new Scout-relevant developments** since Session 703 (60min ago). System in experiment mode.
+- **Last interrupted session (ZPD query)**: Already resolved — DD-750 + KE-157 cover the CoT faithfulness/observability papers.
+- **Clean state**: All deliverables committed. Sunday afternoon — quiescent. No fresh arXiv until Monday ~20:00 UTC.
+- **Research priorities** (weekend — unchanged):
+  1. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+  2. H-107 difficulty-gated intervention literature (low priority — new lead)
+  3. KE-106 habituation literature (low priority — largely subsumed)
+
 ## Counters
 - DD: 752
 - CR: 339
-- Session: 703
+- Session: 704
 
