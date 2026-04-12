@@ -178,21 +178,19 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 - **Root causes**: Phase boundary violation (47%), verification gaps (81%), P2-has-nothing-to-do (19%)
 - **Recommendations**: (1) Harmonize quality scales P0, (2) Per-session evaluation keys P0, (3) Rethink phase boundaries P1
 
-### 0j. EXP-123: Verification-Depth Guard — Superficial Verification Block [DEPLOYED ⏳]
+### 0j. EXP-123: Verification-Depth Guard — Superficial Verification Block [COMPLETE ✅]
 - **Design**: `agents/shared/knowledge/experiments/EXP-123/design.md`
+- **Results**: `agents/shared/knowledge/experiments/EXP-123/results.md`
 - **Implementation**: `src/lib/tools/verification-depth-guard.ts` (363 lines)
 - **Tests**: `src/lib/tools/verification-depth-guard.test.ts` (18/18 pass)
-- **Status**: Phase 2 — guard deployed to production for all agents
-- **Goal**: Address the 35% residual unrecovered FM-3.3 (EXP-110 finding)
-- **Detects 3 patterns**:
-  - T1: Git commands on gitignored paths (agents/) — zero information gain
-  - T2: Missing post-write verification — writes/edits without subsequent read/test
-  - T3: tsc-only verification — syntax-only check on behavioral bugs (warn-only)
-- **Phase 1 result**: CEILING EFFECT — gym scenarios (compound-edit-verification, convention-verify-edit, assertion-without-evidence) all pass baseline; guard never fires
-- **Phase 2**: Production observation — guard wired into composeGuards() for all agents
-  - Kill switch: `DISABLE_VERIFICATION_DEPTH_GUARD=1`
-  - Measurement: Wait 48-72h, then analyze fire rate, true positive rate, recovery rate
-- **Next**: Analyze production impact on 2026-04-13
+- **Status**: COMPLETE — 38h observation confirms guard effective and stable
+- **Key results**:
+  - Fleet C1.3: 74.2% → **95.3%** (+21.3pp)
+  - Bob C1.3: 70.5% → **100%** (n=113)
+  - Optimizer: 82.0% — lowest, needs investigation
+  - C1.5 "regression" was **false positive** from checker timing bug (fixed: commit 7d54e506)
+  - Three agent categories: guard-dependent (QA, coach, TL), guard-neutral (optimizer, may, scout), guard-harmed (bob: -6.1pp quality)
+- **Recommendation**: Keep deployed permanently. Monitor optimizer. Revisit bob exemption if quality degrades.
 
 ### 1. Few-Shot Production Pipeline Integration [DEPLOYED ✅]
 - **Owner**: Tech-lead (implementation), Bob (design brief at `agents/shared/may-agent-docs/design/fewshot-production-pipeline.md`)
