@@ -114,7 +114,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     `,
       )
       .all(sessionId);
-    return json({ session, children });
+    const evaluation = _db().prepare("SELECT * FROM evaluations WHERE sessionId = ?").get(sessionId) || null;
+    return json({ session, children, evaluation });
   }
 
   function handleTranscript(sessionId: string): Response {
