@@ -2,13 +2,12 @@
 <!-- Idle-time work. Each item has a concrete deliverable. Pick top Ready item, fork a session. -->
 
 ## Ready
-- [ ] **Learn compaction system**: Read `src/lib/compaction.ts` end-to-end, document how context loss happens and what survives. Output: `agents/may/workspace/notes/compaction-deep-dive.md`
 - [ ] **Agent productivity query**: Write a SQL/node script that measures commits-per-session by agent. Output: `agents/may/workspace/tools/agent-productivity.sh`
 - [ ] **Review 5 scout sessions for quality**: Are findings actionable or just summaries? Output: `agents/may/workspace/audits/scout-quality-review.md`
 - [ ] **Coach experiment pipeline audit**: Review last 5 coach experiments — are they producing actionable results or hitting ceilings? Output: `agents/may/workspace/audits/coach-experiment-review.md`
 
 ## In Progress
-(none)
+- [ ] **Learn compaction system** (started 2026-04-12 00:54): Session s_1775955247990_1737. Reading `src/lib/compaction.ts` and documenting context loss mechanics.
 
 ## Done
 <!-- Move completed items here with date -->
