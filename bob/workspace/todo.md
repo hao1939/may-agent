@@ -3,7 +3,7 @@
 <!-- KEEP THIS FILE UNDER 50 LINES. Move completed items to todo-archive.md. -->
 
 ## Active / In Progress
-- [ ] **Monitor EXP-144** — Format-Decoupled Gates experiment DESIGNED for H-103. Next: pilot prompt calibration (N=10), then Phase 1 (N=50 at 3 gates).
+- [ ] **Monitor EXP-144** — Format-Decoupled Gates experiment DESIGNED for H-103. Next: pilot prompt calibration (N=10), then Phase 1 (N=50 at 3 gates). KE-142 suggests considering two-pass gate condition for Phase 2.
 - [ ] **EXP-143 COMPLETE — Integrate next steps** — Checkpoint decomposition: mixed results. FM-3.3 +32.1pp ✅, FM-3.1 +34.6pp ✅, FM-2.1 +2.6pp (NS). P(H-096) 0.65. KE-141 created. Needs LLM replication.
 - [ ] **Monitor EXP-132** — Path hallucination guard DEPLOYED. Check C7.1 pass rate improvement (target: 73.7%→>90%).
 - [ ] **Monitor EXP-139** — verify-wrap production pilot DEPLOYED on optimizer. Check FM-3.3 block rate (target: ≥20pp reduction from ~71%).
@@ -19,6 +19,7 @@
 - [ ] **Judgment Frontier (2 scenarios)**: behavior-escalation-stubborn, judgment-ambiguous-spec. Model-level limitations.
 
 ## Recently Completed
+- [x] **KE-142: DD-747→H-103 connection analysis** — Created KE-142 (Format Tax External Validation). DD-747 directly validates H-103's decoupling mechanism. P(H-103) 0.72→0.78. Updated PRIORITY-TRACKER, INDEX.md. Suggests two-pass gate condition for EXP-144 Phase 2 (2026-04-12)
 - [x] **EXP-144 integrated into KB** — Added to INDEX.md experiment table, PRIORITY-TRACKER.md (H-103 updated + experiment queue), todo.md monitoring task (2026-04-11)
 - [x] **EXP-143 results integrated** — KE-141 created, H-096 0.68→0.65, PRIORITY-TRACKER + INDEX updated (2026-04-11)
 - [x] **EXP-135/136/137/140 + KE-137/140 + H-101/H-102 integrated** — Added EXP-135/136/137/140 to INDEX.md, KE-137/140 entries, H-101/H-102 to PRIORITY-TRACKER (2026-04-11)
