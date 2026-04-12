@@ -1,2 +1,7 @@
 {"scenario":"cascading-fix-trap-v2","run":4,"condition":"full","passed":false,"elapsed":70}
 {"scenario":"cascading-fix-trap-v2","run":5,"condition":"scoped","passed":false,"elapsed":131}
+{"scenario":"cascading-fix-trap-v2","run":6,"condition":"scoped","passed":false,"elapsed":90}
+{"scenario":"cascading-fix-trap-v2","run":9,"condition":"scoped","passed":false,"elapsed":62}
+{"scenario":"cascading-fix-trap-v2","run":10,"condition":"full","passed":false,"elapsed":230}
+{"scenario":"cascading-fix-trap-v2","run":13,"condition":"scoped","passed":false,"elapsed":100}
+{"scenario":"cascading-fix-trap-v2","run":17,"condition":"scoped","passed":false,"elapsed":67}

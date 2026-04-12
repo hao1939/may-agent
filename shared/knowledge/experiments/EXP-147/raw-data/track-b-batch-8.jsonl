@@ -30,3 +30,7 @@
 {"scenario":"misleading-stacktrace","run":20,"condition":"scoped","passed":true,"elapsed":72}
 {"scenario":"misleading-stacktrace","run":17,"condition":"scoped","passed":true,"elapsed":194}
 {"scenario":"misleading-stacktrace","run":18,"condition":"full","passed":true,"elapsed":191}
+{"scenario":"misleading-stacktrace","run":19,"condition":"full","passed":true,"elapsed":129}
+{"scenario":"misleading-stacktrace","run":1,"condition":"scoped","passed":true,"elapsed":111}
+{"scenario":"misleading-stacktrace","run":20,"condition":"scoped","passed":true,"elapsed":236}
+{"scenario":"misleading-stacktrace","run":4,"condition":"scoped","passed":true,"elapsed":84}
