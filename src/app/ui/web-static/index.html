@@ -151,6 +151,31 @@
   .timeline-axis span { font-size: 10px; color: var(--fg2); }
   .timeline-tooltip { position: fixed; background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; font-size: 12px; color: var(--fg); z-index: 100; pointer-events: none; max-width: 300px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
 
+  /* Activity Feed */
+  .activity-feed-section { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 20px; }
+  .activity-feed-section h3 { font-size: 13px; color: var(--fg2); margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+  .feed-list { max-height: 400px; overflow-y: auto; }
+  .feed-item { padding: 6px 10px; border-bottom: 1px solid var(--border); font-size: 12px; display: flex; gap: 8px; }
+  .feed-item .feed-time { color: var(--fg2); white-space: nowrap; min-width: 50px; }
+  .feed-item .feed-agent { font-weight: bold; min-width: 80px; }
+  .feed-item .feed-text { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+  .feed-agent-bob { color: #6ab0f3; }
+  .feed-agent-tech-lead { color: #c792ea; }
+  .feed-agent-coder { color: #89ddff; }
+  .feed-agent-optimizer { color: #f78c6c; }
+  .feed-agent-coach { color: #ffcb6b; }
+  .feed-agent-qa { color: #82aaff; }
+  .feed-agent-scout { color: #c3e88d; }
+  .feed-agent-may { color: #ff5370; }
+  .feed-agent-evaluator { color: #f07178; }
+  .feed-agent-amy-kimi { color: #bb80b3; }
+  .feed-type-start { border-left: 3px solid var(--accent); }
+  .feed-type-end-good { border-left: 3px solid var(--green); }
+  .feed-type-end-error { border-left: 3px solid var(--red); }
+  .feed-type-notification { border-left: 3px solid var(--yellow); }
+  #feed-pause-btn { background: var(--bg); color: var(--fg); border: 1px solid var(--border); border-radius: 4px; padding: 2px 6px; font-size: 12px; cursor: pointer; }
+  #feed-pause-btn:hover { border-color: var(--accent); }
+
   /* Mobile responsive */
   @media (max-width: 768px) {
     .agent-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
@@ -198,6 +223,13 @@
       </h3>
       <div id="timeline-body"></div>
       <div id="timeline-axis" class="timeline-axis"></div>
+    </div>
+    <div id="activity-feed" class="activity-feed-section">
+      <h3>
+        Live Activity Feed
+        <button id="feed-pause-btn" onclick="toggleFeedPause()">⏸ Pause</button>
+      </h3>
+      <div id="feed-list" class="feed-list"></div>
     </div>
     <div class="stats" id="stats"></div>
     <div class="filters">
@@ -693,11 +725,49 @@ let chatInitialized = false;
 let activeSessions = [];
 let currentSessionId = null;
 let renderMd = true; // markdown rendering on by default
+let feedPaused = false;
+let feedItems = [];
+
+function toggleFeedPause() {
+  feedPaused = !feedPaused;
+  document.getElementById('feed-pause-btn').textContent = feedPaused ? '▶ Resume' : '⏸ Pause';
+}
+
+function addFeedItem(agent, text, type) {
+  const now = new Date();
+  const timeStr = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0') + ':' + now.getSeconds().toString().padStart(2, '0');
+  const agentClass = 'feed-agent-' + (agent || '').replace(/[^a-z0-9-]/gi, '-').toLowerCase();
+  const typeClass = 'feed-type-' + (type || '').replace(/[^a-z0-9-]/gi, '-');
+
+  const item = { agent, text, type, time: timeStr };
+  feedItems.push(item);
+
+  const feedList = document.getElementById('feed-list');
+  if (!feedList) return;
+
+  const div = document.createElement('div');
+  div.className = 'feed-item ' + typeClass;
+  div.innerHTML = '<span class="feed-time">' + esc(timeStr) + '</span>' +
+    '<span class="feed-agent ' + agentClass + '">' + esc(agent || '') + '</span>' +
+    '<span class="feed-text">' + esc(text || '') + '</span>';
+  feedList.appendChild(div);
+
+  // Trim to max 50 items
+  while (feedItems.length > 50) {
+    feedItems.shift();
+    if (feedList.firstChild) feedList.removeChild(feedList.firstChild);
+  }
+
+  // Auto-scroll if not paused
+  if (!feedPaused) {
+    feedList.scrollTop = feedList.scrollHeight;
+  }
+}
 
 function initChat() {
   if (chatInitialized) return;
   chatInitialized = true;
-  connectWs();
+  // WS is now connected on page load; no need to call connectWs() here
 }
 
 function toggleMarkdown() {
@@ -886,6 +956,7 @@ function connectWs() {
             activeSessions.push({ agent: event.agent, sessionId: event.sessionId, status: 'running', task: event.task });
             renderSessionPicker();
           }
+          addFeedItem(event.agent, 'started session: ' + (event.task || '').slice(0, 80), 'start');
           break;
         }
         case 'session_end': {
@@ -899,6 +970,7 @@ function connectWs() {
           // Update session picker
           activeSessions = activeSessions.filter(s => s.sessionId !== event.sessionId);
           renderSessionPicker();
+          addFeedItem(event.agent, 'finished (' + (event.status || '?') + (event.duration ? ', ' + event.duration : '') + ')', event.status === 'error' ? 'end-error' : 'end-good');
           break;
         }
         case 'notification': {
@@ -910,6 +982,7 @@ function connectWs() {
           div.textContent = `📋 ${event.agent}: ${event.text.slice(0, 300)}`;
           messages.appendChild(div);
           messages.scrollTop = messages.scrollHeight;
+          addFeedItem(event.agent, event.text?.slice(0, 120) || '', 'notification');
           break;
         }
         case 'connected':
@@ -1284,6 +1357,7 @@ loadAgentGrid();
 loadTimeline();
 loadStats();
 loadRequests();
+connectWs();
 
 // Apply initial tab from URL hash
 if (currentTab && currentTab !== 'dashboard') {
