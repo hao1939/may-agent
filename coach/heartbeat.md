@@ -56,6 +56,15 @@ Pick the highest-priority task(s). Ask:
 
 ## Step 3: DISPATCH
 
+### ⚡ Work Session Efficiency
+**Op budget for work sessions: ≤35 ops.** Efficient sessions complete in 18-35 ops; bloated ones hit 50-60.
+The #1 cause of bloat: **interactive SQL query loops** — writing one `bun -e` per question wastes 50+ ops/session.
+- Design tasks: ≤30 ops
+- Gym execution: ≤40 ops
+- Data analysis: ≤30 ops (use BATCH scripts — one bun -e per analysis phase, not per question)
+- If hitting budget: CHECKPOINT progress and finish. Resume in next session.
+- Plan your queries FIRST, then run them all at once.
+
 ### ⚡ Default: Use workflows for all forked work
 
 **Workflows are habits, not optional tools.** Don't think "should I use a workflow?" — think "which workflow fits?"
@@ -131,6 +140,10 @@ Questions to answer:
 1. When exactly did the regression start?
 2. Is it correlated with any specific code change or SOUL.md update?
 3. Which agents are most affected?
+
+⚠️ ANALYSIS EFFICIENCY: Write ALL data queries in a SINGLE bun -e script per analysis phase.
+Do NOT write one bun script per question. Batch all queries into one invocation.
+Budget: ≤5 bash calls for all data collection. If you need more, you're exploring interactively — stop, plan your remaining questions, then batch them.
 ```
 
 **Scenario design:**

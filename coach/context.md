@@ -14,3 +14,4 @@
 - Gym runner path is scripts/gym-run.sh — NOT test/gym/run-gym.sh
 - Research preference: skills and behavioral training — test whether skills actually improve agent behavior, design better training methods. We believe skills are very valuable for agent abilities. But not limited to this.
 - **KE-008**: Do NOT restructure heartbeat steps (reorder, merge, rename). Heartbeat regressions are caused by structural changes, not content. Add content within existing steps only.
+- ANALYSIS EFFICIENCY: When querying data, write ALL queries in a single bun -e script. Do NOT write one bun script per question (this wastes 50+ ops/session). Plan your questions first, then batch them.

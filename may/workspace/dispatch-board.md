@@ -44,11 +44,12 @@ Updated: 2026-04-12 ~08:23 UTC
 - **P1**: **Generate implementation work** — System idle without features. Coder completely idle. Need Hao priorities.
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (09:53)
-- **System**: 7/8 healthy. No stuck sessions. 0 errors last hour. All agents cycling.
-- **Pending task**: Coder utilization analysis (req:a6c710b4) already completed — coder is a tool agent, idle by design. Web UI Phase 2 dispatched.
-- **Improvement**: Forking evaluator session kind tagging spec.
-- **Observations**: Coder 3 sessions/6h (low but expected — tool agent). Coach 27 sessions/6h, 30 avg ops (still high). Bob 40 sessions/6h, 10 avg ops (lean). System stable.
+## Latest Cycle Summary (10:23)
+- **System**: 7/8 healthy. Amy-kimi still down. Bob had 1 auth error (401 GitHub). 2 stuck coach sessions cancelled.
+- **Applied**: Coach work session efficiency patch (optimizer req:1251945f) — 3 changes to heartbeat.md + context.md. Expected 38% op reduction.
+- **Completed**: req:e29cd650 / req:58c38d05 (duplicate) — coach heartbeat efficiency patch applied.
+- **Completed**: req:14b5b07a — evaluator session kind tagging spec (done last session).
+- **Observations**: Coach 29 sessions/6h, 30 avg ops (still high — patch should help). Bob 43 sessions/6h, 10 avg ops (lean). System stable.
 
 ## Archive Reference
 Full history of 140+ completed items archived to `dispatch-board-archive-apr12.md`.
