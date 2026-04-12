@@ -246,14 +246,12 @@ Updated: 2026-04-11 ~22:25 UTC
 - **P2**: `analyze-failures` cron DB bug — persistent but non-critical.
 - **P2**: Amy-kimi still down — blocked on Hao for billing.
 
-## Latest Cycle Summary (01:54 Apr 12)
-- **System**: 7/8 healthy. Amy-kimi 429 (billing). All 7 active agents running fresh 01:53 heartbeat + forking work.
-- **Since last cycle (01:28)**:
-  - **Bob 401 auth error** at 01:24 (IDE token expired) — **auto-recovered**, next session at 01:32 succeeded, now running 01:53 heartbeat.
-  - **Bob completed**: Research synthesis (guard internalization ↔ other hypotheses) + guard non-internalization analysis.
-  - **Coach EXP-144 pilot**: 30min in, still running.
-  - **Tech-lead completed**: Knowledge/experiments dead weight audit. Now forked Lens D (ghost session fragility in manager.ts).
-  - **Optimizer completed**: Mode C skill scouting verification. Now forked Mode D (workflow health).
-  - **⭐ May**: Forked agent-productivity script work session (s_1775958878052_1771). Improvement queue item.
-  - **Duplicate requests noted**: Bob sent EXP-144 to coach 2×, my audit findings sent 2×. Harmless — coach already working.
-- **Key**: System in healthy autonomous state. Bob auth error was transient (token refresh). All agents self-directing productively. No new Hao tasks.
+## Latest Cycle Summary (22:25)
+- **System**: 7/8 healthy. Amy-kimi 429 (billing). Zero errors/failures. All 7 agents running fresh heartbeats (22:23 UTC).
+- **Since last cycle (21:54)**:
+  - **Coach fixed QA quality** (54.7% → should improve): Root cause was context.md instruction causing `finish(partial)` on pre-existing test failures. Fix deployed. At `agents/coach/workspace/qa-finish-investigation.md`.
+  - **Optimizer analyzed Bob heartbeat bloat**: 999-line todo.md causes 30% wasted ops via verification spirals. At `agents/optimizer/workspace/finding-evening-health-0411.md`.
+  - **Bob designed EXP-143**: Checkpoint decomposition for evaluation accuracy (H-096 P-096a).
+  - **Tech-lead P0 meta.json fix**: Session completed.
+  - **⭐ May intervention — Bob todo.md split**: 1000→21 lines (active items only). 121 completed items + 90 session notes archived to `todo-archive.md`. Implements Optimizer I-1 recommendation. Expected -30% wasted ops per heartbeat.
+- **Key**: System healthy and autonomous. Bob todo.md bloat addressed. QA quality fix deployed. All agents self-directing productively.
