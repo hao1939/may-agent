@@ -44,13 +44,13 @@
 | H-047 | No forgetting → inverted-U utilization | **0.62** | EXP-053 Phase 2: recency bias + density saturation confirmed; clean inverted-U not found. "Narrowing scope with compensation." |
 | H-097 | CCC Triad — multi-agent coordination requires structural cooperation + calibrated agreement + context isolation | **0.55** | **PARTIALLY TESTED** (2026-04-12): EXP-147 P-120b moot (0.92% wrong-consensus rate). P(H) 0.65→0.55. Track B in progress. |
 | H-102 | **Workflow Adoption Determines Behavioral Internalization** — declining guard rates reflect architectural substitution, not behavioral learning | **0.55** | **EXP-148 COMPLETE** (2026-04-12): 3/4 predictions failed. Universal decline driven by Mar 30–31 infra changes. P(H) 0.75→0.55. |
-| H-106 | **Observability Tax Harms Architecturally Ready Agents** — guards requiring forced externalization actively degrade performance for agents who already reason at Layer 1-2. Extends H-101 bifurcation: ready agents aren't just unaffected by guards, they're *harmed* by compliance artifacts. | **0.40** | **PARTIALLY TESTED** (2026-04-12): P-106a falsified (ready agents have *lower* block rates on correct work: 34.3% vs 53.5%, z=−7.53). P-106d falsified (inflation correction flattened curve, not steepened). P(H) 0.72→0.40. KE-158 reframes as difficulty-threshold-gated, not agent-readiness-gated. EXP-149 should stratify by task difficulty. |
 
 ## 🔴 Tier 3: Weak Signal — P(H) < 0.50
 
 | ID | Claim | P(H) | Status |
 |----|-------|------|--------|
 | H-103 | Format-decoupled gates shift the hump curve rightward | **0.45** | **EXP-144 PARTIAL** (2026-04-12): P(H) 0.72→0.45. Format overhead lower than predicted. |
+| H-106 | **Observability Tax Harms Architecturally Ready Agents** — guards requiring forced externalization actively degrade performance for agents who already reason at Layer 1-2. | **0.40** | **PARTIALLY TESTED** (2026-04-12): P-106a falsified (ready agents have *lower* block rates on correct work: 34.3% vs 53.5%, z=−7.53). P-106d falsified (inflation correction flattened curve, not steepened). P(H) 0.72→0.40. KE-158 reframes as difficulty-threshold-gated, not agent-readiness-gated. EXP-149 should stratify by task difficulty. |
 
 ### EXP-025 Prospective Validation Results (Final)
 - **63% binary accuracy** — below 70% threshold, but the asymmetry is the real finding
@@ -214,9 +214,9 @@ EXP-026 production data confirms H-041's core prediction: **workflow benefit sca
 ## Meta-Process: H-066 (Bayesian Belief Management)
 
 The Bayesian scoring process itself is tracked as H-066. After 2026-04-07 corpus cleanup:
-- **23 high confidence** (≥0.70): H-055 (0.82), H-041 (0.72), H-053 (0.88), H-059 (0.72), H-085 (0.85), H-058 (0.87), H-009 (0.85), H-043 (0.85), H-054 (0.75), H-091 (0.93), H-089 (0.94), H-088 (0.80), H-092 (0.72), H-093 (0.72), H-087 (0.72), H-095 (0.88), H-096 (0.70), H-098 (0.80), H-099 (0.90), H-101 (0.78), H-105 (0.75), H-131 (0.70), H-106 (0.72)
+- **22 high confidence** (≥0.70): H-055 (0.82), H-041 (0.72), H-053 (0.88), H-059 (0.72), H-085 (0.85), H-058 (0.87), H-009 (0.85), H-043 (0.85), H-054 (0.75), H-091 (0.93), H-089 (0.94), H-088 (0.80), H-092 (0.72), H-093 (0.72), H-087 (0.72), H-095 (0.88), H-096 (0.70), H-098 (0.80), H-099 (0.90), H-101 (0.78), H-105 (0.75), H-131 (0.70)
 - **5 moderate** (0.50-0.70): H-014 (0.63), H-056 (0.61), H-047 (0.62), H-097 (0.55), H-102 (0.55)
-- **1 weak signal** (<0.50): H-103 (0.45)
+- **2 weak signal** (<0.50): H-103 (0.45), H-106 (0.40)
 - **1 meta**: H-066 (Bayesian belief management)
 - **19 archived/resolved**: H-001 (disconfirmed), H-002 (superseded), H-034/H-038/H-039 (design principles), H-046/H-048/H-051 (insufficient evidence), H-052 (absorbed), H-064/H-065 (merged/out-of-domain), H-070 (refuted), H-094 (archived), H-068 (archived), H-128 (rejected), H-100 (superseded by H-101/H-102), H-104 (FALSIFIED — P:0.78→0.10, EXP-145)
 - **H-066 P1 confirmed**: 7 hypotheses scored below 0.40 (predicted ≥5)
