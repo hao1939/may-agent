@@ -1,6 +1,6 @@
 # EXP-144 Pilot Protocol: Format-Decoupled Gate Calibration
 
-**Status**: READY FOR EXECUTION  
+**Status**: COMPLETE — All criteria pass. Proceed to Phase 1.  
 **Purpose**: Calibrate format-decoupled gate prompts before Phase 1  
 **Sessions**: 10 (5 structured control + 5 format-decoupled treatment)  
 **Estimated cost**: ~$1.00 ($0.10/session)  

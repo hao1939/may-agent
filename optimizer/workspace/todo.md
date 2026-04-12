@@ -16,11 +16,12 @@
 - Bypass exists at `src/app/may.ts:148-165`, needs `ANTHROPIC_API_KEY` env var.
 - **BLOCKED on operator.** Finding: `workspace/findings/2026-04-10-litellm-kills-prompt-caching.md`
 
-### D-o-R Phase 1 Budget Cap — ✅ CONFIRMED EFFECTIVE, CLOSING (n=7)
-- **FINAL VERDICT (Apr 11 09:55 UTC)**: P1 avg 4.9 ops (was 34.5 pre-fix) — **86% reduction**. All 7 P1s ≤7. Total run avg 24.6 (was 49.1) — **50% reduction**. 1 minor P2 nesting incident (24 ops), 0 P1-spawned nesting. Zero cap violations. ~343 ops/day saved (~$16/day).
-- **Residual**: P2 bloat outlier (1/7 runs, 57 ops). Separate optimization opportunity.
-- Findings: `workspace/finding-dor-p1-bloat-0411.md`, `workspace/finding-dor-p1-cap-measurement-0411.md`, `workspace/finding-dor-p1-cap-final-verdict-0411.md`
-- **→ MOVING TO DONE**
+### D-o-R Phase 1 Budget Cap — ⚠️ 89% EFFECTIVE, 3 VIOLATIONS FOUND (n=27)
+- **UPDATED (Apr 12 02:54 UTC)**: n=27 Phase 1 sessions measured. 24/27 (88.9%) compliant, avg 4.3 ops. **3 violations**: 93, 40, 37 ops — all on batch data-integration tasks (INDEX.md batch add, Bayesian scorecard, EXP-143 integration).
+- **Root cause**: Budget is prompt-only — no hard enforcement in `ctx.runAgent()`. Data-heavy mechanical tasks cause LLM to ignore budget and do work inline. Early-exit path (Phase 2 skipped when Phase 1 writes files) inadvertently **rewards** violations.
+- **113-op "Research Synthesis" session is NOT a D-o-R violation** — it's the parallel-research workflow synthesis step (no budget caps at all).
+- **Fix needed**: Hard `maxOps` parameter on `ctx.runAgent()` for structural enforcement. Interim: inject warning at op 12/15.
+- Findings: `workspace/finding-dor-p1-bloat-0411.md`, `workspace/finding-dor-p1-cap-measurement-0411.md`, `workspace/finding-dor-p1-cap-final-verdict-0411.md`, **`workspace/finding-bob-93op-cap-violation-0412.md`**
 
 ### D-o-R Nested Workflow Spawning — ✅ FIX DEPLOYED (commit 60a844e3)
 - Bob 90-op session (s_...1119) was a **3-deep nested D-o-R workflow**: Phase 1 called callAgent → triggered another D-o-R → spawned another Phase 1. Total: 169 ops for 1 KB integration task.
