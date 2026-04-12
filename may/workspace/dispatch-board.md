@@ -35,10 +35,9 @@ Updated: 2026-04-12 ~07:53 UTC
 | **EXP-132 Path Hallucination Guard** | ⚠️ Needs rebuild | tech-lead | Code merged but binary not rebuilt. |
 | **Convention Regressions** | ⚠️ IN PROGRESS | coach | QA: C1.1 44.4%, C1.4 71.1%. Optimizer: C1.1 78.1%, C1.3 82%. |
 | **Deliver-or-Report Workflow Fix** | ⏳ IN PROGRESS | tech-lead | 41% done rate. Sensitivity fix in progress. |
-| **EXP-145 Guard Dependency Escalation** | ✅ COMPLETE | coach | H-104 FALSIFIED (0.78→0.10). Fleet fire rate declined 25.1%→2.6%. |
 | **EXP-146 Thinking-Token Analysis** | ⏳ Phase 1 ran | bob+coach | Coach ran Phase 1 (blocked on infra). Bob processing results + updating H-105. |
 | **EXP-147 CCC Triad Validation** | ⏳ Track B DESIGNING | bob | Track A done (0.92% wrong-consensus, P-120b moot). Bob refining Track B design (Context Isolation). |
-| **Cron Handler Resolver** | ✅ COMPLETE | tech-lead | All tests passing (31/31 cron-tool + 5/5 handler-resolver). Committed. |
+| **Fewshot Regex False Positives** | ✅ COMPLETE | tech-lead | Session s_1775980510847_1965 done. |
 
 ## Next Actions
 - **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. Saves $143-441/day. **Blocked on Hao since Mar 24**.
@@ -46,15 +45,13 @@ Updated: 2026-04-12 ~07:53 UTC
 - **P1**: **Generate implementation work** — System idle without features. Coder completely idle. Need Hao priorities.
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (07:53)
+## Latest Cycle Summary (08:23)
 - **System**: 7/8 healthy. All agents cycling. No failures in last hour.
-- **Cron Handler Resolver COMPLETE**: Tech-lead finished — 31/31 cron-tool + 5/5 handler-resolver tests pass.
-- **EXP-146 Phase 1**: Coach executed retrospective analysis (blocked on infra for live data). Bob processing results.
+- **Fewshot Regex Fix DONE**: Tech-lead completed false positive fix (s_1775980510847_1965).
+- **H-104 Impact Review DONE**: 8 update actions identified (P1-P3), no experiments blocked.
 - **EXP-147 Track B**: Bob refining Context Isolation experiment design.
-- **Bob**: 3 active work sessions — EXP-147 Track A results processed (H-097 P(H) 0.65→0.55), Track B design, EXP-146 results.
-- **Skill Sunset Review COMPLETE**: Coder pruned 10→3, P0 fixes deployed. No further sunsets identified.
-- **Coach**: Convention regressions still in progress. Discovery task warnings deployed.
-- **Improvement queue**: 3 ready items (archive rotation, H-104 impact review, evaluator tagging).
+- **Convention Regressions**: Coach ongoing — QA C1.1 44.4%, Optimizer C1.1 78.1%.
+- **Improvement queue**: 2 ready items (archive rotation → doing now, evaluator tagging).
 
 ## Archive Reference
 Full history of 140+ completed items archived to `dispatch-board-archive-apr12.md`.

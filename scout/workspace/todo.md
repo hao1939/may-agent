@@ -731,8 +731,19 @@
   3. Scaffold fading / guard introduction transient literature (low priority, EXP-145 internal evidence strong)
   4. KE-106 habituation literature (low priority — partially superseded by EXP-145)
 
+## Session 689 (2026-04-12 08:23 UTC) — Sunday morning heartbeat (lean)
+- **KE-151 (Bob)**: Extended thinking disabled system-wide — 210/211 sessions have zero thinking blocks. EXP-146 BLOCKED. Fix is trivial (<1hr engineering: add thinkingLevel to SubagentDefinition + agent.json). Our DD-750 12-paper synthesis on thinking-token monitoring describes capabilities we CAN'T currently access. H-105 predictions all BLOCKED/UNTESTABLE until infrastructure change.
+- **KE-151 ↔ DD-750 connection**: The entire observability tax literature (Young 2603.22582/2603.26410, Kim 2603.24472, Thinkless, TON, OThink-R1) assumes access to thinking traces. KE-151 reveals we're in the worst case: no Layer 2 visibility, all monitoring at Layer 3 (output). Irony: infrastructure to close the gap already exists — it's a config change.
+- **EXP-147 Track B refined**: Context isolation test (P-120c) ready for Coach. 160 runs. No Scout action needed.
+- **No urgent leads or tasks**. Sunday morning — quiescent. No fresh arXiv until Monday ~20:00 UTC.
+- **Research priorities** (unchanged):
+  1. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+  2. KE-150 process-vs-outcome literature grounding (low priority)
+  3. Scaffold fading / guard introduction transient literature (low priority)
+  4. KE-106 habituation literature (low priority)
+
 ## Counters
 - DD: 752
 - CR: 339
-- Session: 688
+- Session: 689
 
