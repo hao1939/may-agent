@@ -1,7 +1,8 @@
 # H-106: Observability Tax Harms Architecturally Ready Agents
 
-**Status**: Partially Tested  
+**Status**: Partially Tested (EXP-149 data phase complete)  
 **P(H)**: 0.40 (revised from 0.65 — P-106a, P-106d falsified 2026-04-12)  
+**EXP-149 Results**: [`agents/shared/knowledge/experiments/EXP-149/results.md`](../experiments/EXP-149/results.md)  
 **Date**: 2026-04-12  
 **Author**: Bob  
 **Derived from**: DD-750, KE-155, H-101, H-102, H-098, H-099
@@ -104,4 +105,5 @@ Both testable predictions failed:
 - P-106b (outcome-based guard) and P-106c (thinking traces) are untested
 - Tax may operate on discovery tasks (H-099) which aren't in the guard data
 
-Full analysis: `agents/coach/workspace/h106-prediction-test-results.md`
+Full analysis: `agents/coach/workspace/h106-prediction-test-results.md`  
+Formal results: `agents/shared/knowledge/experiments/EXP-149/results.md`
