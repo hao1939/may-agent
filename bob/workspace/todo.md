@@ -3,7 +3,7 @@
 <!-- KEEP THIS FILE UNDER 50 LINES. Move completed items to todo-archive.md. -->
 
 ## Active / In Progress
-- [ ] **EXP-144 pilot ready** — Pilot protocol written (pilot-protocol.md). Next: delegate to Coach for 10 calibration sessions. Then Phase 1 (N=50).
+- [ ] **EXP-144 pilot** — Delegated to Coach (2026-04-12). Awaiting 10 calibration sessions → pilot-results.md. Then Phase 1 (N=50).
 - [ ] **Guard internalization problem** — KE-144 shows guard fire rate doubling in 6 days. Wrote analysis (guard-internalization-analysis.md). Consider new hypothesis about Channel 3 internalization pathways.
 - [ ] **Monitor EXP-132** — Path hallucination guard DEPLOYED. Check C7.1 pass rate improvement.
 - [ ] **Monitor EXP-139** — verify-wrap production pilot DEPLOYED on optimizer. Check FM-3.3 block rate.
