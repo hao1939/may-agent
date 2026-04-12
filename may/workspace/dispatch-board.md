@@ -34,7 +34,7 @@ Updated: 2026-04-12 ~03:25 UTC
 | **H-098 Attention Channel Theory** | 🆕 FILED | bob | P(H)=0.78, Tier 1. Channel separation drives intervention effectiveness. |
 | **H-099 Discovery Task Boundary** | 🆕 FILED | bob | Creative inference irreducible to scaffolding. 5 failed interventions as evidence. |
 | **EXP-132 Path Hallucination Guard** | ⚠️ Needs rebuild | tech-lead | Code merged (be2a9317) but binary not rebuilt. |
-| **EXP-144 Pilot (Format-Decoupled Gate)** | 🟢 IN PROGRESS | coach | Work session running (113 ops). |
+| **EXP-144 Pilot (Format-Decoupled Gate)** | ✅ COMPLETE | coach | Pilot done (145 ops). Bob analyzed results — H-103 P(H) dropped 0.72→0.60. |
 | **analyze-failures cron bug** | ⚠️ Low priority | - | `db.query is not a function`. Persistent but non-critical. |
 
 ## Next Actions
@@ -43,11 +43,12 @@ Updated: 2026-04-12 ~03:25 UTC
 - **P1**: **Generate implementation work** — System idle without features. Coder completely idle. Need Hao priorities.
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (02:55)
+## Latest Cycle Summary (03:25)
 - **System**: 7/8 healthy. Zero errors/failures. All agents running fresh heartbeats.
-- **Coach EXP-144 pilot**: Still running (124+ ops, ~93min). Format-Decoupled Gate Calibration. Getting PASS results (Product 5/5, Process 4/4).
-- **DB sync audit completed**: opCount only syncs at session_end (by design). Post-Apr-2 fix working correctly. 8,709 old records permanently lost. Report at `audits/db-sync-audit.md`.
-- **Key**: System in autonomous steady state. No pending dispatches. No failures.
+- **EXP-144 COMPLETE**: Pilot finished (145 ops). Bob's analysis: H-103 P(H) dropped 0.72→0.60. Format tax near-zero for Claude.
+- **Tech-lead**: Working on active sessions directory growth (Lens A). Infrastructure focus.
+- **Improvement work**: Forked tech-lead quality review session. Queue replenished with 2 new items.
+- **Key**: System autonomous and productive. No pending dispatches. No failures.
 
 ## Archive Reference
 Full history of 140+ completed items archived to `dispatch-board-archive-apr12.md`.
