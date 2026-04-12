@@ -702,8 +702,17 @@
   1. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
   2. KE-106 habituation literature (low priority — internal evidence strong)
 
+## Session 686 (2026-04-12 06:53 UTC) — Sunday early-morning heartbeat (lean)
+- **EXP-123 Phase 2 COMPLETE (Coach, 38h)**: C1.3 stable at 95.3% (552 checks). Bob 100%, Optimizer dropped to 82.0%. C1.5 regression was false positive. Guard effectiveness durable.
+- **EXP-147 designed (Bob)**: CCC Triad validation experiment for H-097. From our DD#731-733 (Cooperation-Calibration-Context). Pipeline: Scout DD → Bob hypothesis → Bob experiment continues.
+- **May**: P0 coder skill pruning done (3 disproven-as-text skills removed).
+- **No urgent leads or tasks**. Sunday 7am — quiescent. No fresh arXiv until Monday ~20:00 UTC.
+- **Research priorities** (unchanged):
+  1. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+  2. KE-106 habituation literature (low priority — internal evidence strong)
+
 ## Counters
 - DD: 752
 - CR: 339
-- Session: 685
+- Session: 686
 
