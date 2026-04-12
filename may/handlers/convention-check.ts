@@ -585,8 +585,19 @@ function checkC1_4_finishClearly(toolCalls: ToolCall[]): CheckResult {
 
 /**
  * C1.5: ghost-deliverables
- * Every deliverable path declared in finish(success/partial) must exist on disk.
- * Uses fs.existsSync — same logic as src/lib/tools/finish-guard.ts but applied post-hoc.
+ * Every deliverable path declared in finish(success/partial) must have existed at session end.
+ *
+ * The finish() tool in lifecycle.ts already validates existsSync() at call time and
+ * returns an error if any deliverable is missing. So rather than re-checking the disk
+ * post-hoc (which causes false positives when files are deleted by later cleanup/KB
+ * archival), we check the finish() tool result from the transcript:
+ *
+ * - If the finish result contains "Deliverables not found on disk" → ghost deliverable
+ * - If the finish result contains the success marker (✅ or ✓) → files existed at session end
+ * - If the finish call was blocked by the guard → skip (agent may have retried)
+ *
+ * This eliminates the timing bug where existsSync() at check time (hours later)
+ * disagrees with existsSync() at session end time.
  */
 function checkC1_5_ghostDeliverables(toolCalls: ToolCall[]): CheckResult {
   const violations: string[] = [];
@@ -598,13 +609,47 @@ function checkC1_5_ghostDeliverables(toolCalls: ToolCall[]): CheckResult {
 
     const deliverables = tc.input?.deliverables as Array<{ path?: string }> | undefined;
     if (!deliverables || !Array.isArray(deliverables)) continue;
+    if (deliverables.length === 0) continue;
 
-    for (const d of deliverables) {
-      if (!d.path || typeof d.path !== "string") continue;
-      const resolved = d.path.startsWith("/") ? d.path : join("/app", d.path);
-      if (!existsSync(resolved)) {
-        violations.push(`Ghost deliverable: '${d.path}' declared in finish(${status}) but does not exist on disk`);
+    // Check the finish() tool result to determine if deliverables existed at session end.
+    // The lifecycle.ts finish tool returns "Deliverables not found on disk: ..." if missing,
+    // or a formatted summary with ✓ markers if present.
+    const result = tc.resultContent || "";
+
+    // If the result shows the finish tool caught missing deliverables at call time, flag them
+    if (result.includes("Deliverables not found on disk")) {
+      // Extract specific missing paths from the error message
+      const match = result.match(/Deliverables not found on disk:\s*(.+?)(?:\.|$)/);
+      if (match) {
+        const missingPaths = match[1].split(",").map((p: string) => p.trim());
+        for (const p of missingPaths) {
+          violations.push(`Ghost deliverable: '${p}' declared in finish(${status}) but did not exist at session end`);
+        }
+      } else {
+        // Fallback: we know something was missing but can't parse which
+        violations.push(`Ghost deliverable(s) declared in finish(${status}) — lifecycle guard caught missing files at session end`);
       }
+      continue;
+    }
+
+    // If the finish call was blocked by any guard (FM-3.1, FM-3.3, uncommitted changes, etc.),
+    // skip — this call didn't actually succeed, and the agent may have retried
+    if (result.includes("blocked")) {
+      continue;
+    }
+
+    // If we have a result that looks like a successful finish (contains the ✅ marker
+    // or deliverable checkmarks), trust that files existed at session end
+    if (result.includes("✅") || result.includes("✓")) {
+      continue; // Deliverables verified at finish time — pass
+    }
+
+    // No result content available (transcript truncated or format changed) —
+    // give benefit of the doubt rather than produce false positives.
+    // The lifecycle.ts guard enforces this at runtime; post-hoc disk checks
+    // are unreliable due to file cleanup timing.
+    if (!result) {
+      continue;
     }
   }
 
