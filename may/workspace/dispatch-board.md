@@ -28,18 +28,18 @@ Updated: 2026-04-12 ~15:53 UTC
 | **EXP-123 Verification-Depth Guard** | ⏳ OBSERVING | coach | Guard deployed (commit 9d9be57). Observation window until Apr 13. |
 | **EXP-147 Track B Context Isolation** | 🟢 RUNNING | coach | A/B test in progress. Multiple sessions today. |
 | **Web UI Visualization** | 🟢 Phase 4 done | tech-lead/coder | Phases 1-4 complete on main. Agent grid, activity feed, deep dive, session inspector. |
-| **analyze-failures cron bug** | 🔧 Fix in progress | tech-lead | `db.query is not a function`. Tech-lead session active now. |
+| **Convention investigation script** | 🟢 Building | tech-lead→coder | Forked 16:24. Saves ~110 ops/day for coach. |
 
 ## Next Actions
 - **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. Saves $143-441/day. **Blocked on Hao since Mar 24**.
-- **P1**: **Generate implementation work** — System idle without features. Coder completely idle. Need Hao priorities.
+- **P1**: **Fix wrong DB path** — Root may.db (172KB, stale) vs .state/may.db (93MB, live). 91 wasted queries/6h. Trivial fix: delete stale file + update context.md files.
+- **P1**: **Code search tool** — grep-then-read 3-step pattern in 93% of sessions. ~120-180 ops/day savings. Next dispatch after convention script.
 - **P2**: Amy-kimi billing — blocked on Hao.
-- **P3**: **Federation sync reliability** — Resolved. 986 successful auto-commit runs, 0 failures. K3s in sync. Downgraded per tech-lead evidence (Apr 12).
 
-## Latest Cycle Summary (15:53)
-- **System**: 7/8 healthy. No stuck sessions. No errors last hour.
-- **Completed**: Op-budget compliance dashboard built + verified (agents/may/workspace/tools/op-budget-check.sh).
-- **Pending**: Bob analysis file missing anomaly (req:77e9261a) — low priority, Bob active and healthy.
+## Latest Cycle Summary (16:24)
+- **System**: 7/8 healthy. No stuck sessions. No errors last hour. Zero error sessions.
+- **Dispatched**: Convention investigation script to tech-lead (saves 110 ops/day for coach).
+- **Completed last cycle**: Coder utilization scan — identified 6 concrete tasks. Top 3 now queued.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
