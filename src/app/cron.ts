@@ -56,6 +56,8 @@ export class Cron {
   private handlers = new Map<string, CronHandler>();
   private onJobFire?: CronJobCallback;
   private configWatcher?: StatWatcher;
+  /** Dynamic handler resolver — called when reload() finds an entry with `handler` but no registered handler. */
+  private handlerResolver?: (entryName: string, entry: CronEntry) => Promise<boolean>;
 
   /** Default minimum ms between reactive triggers for same entry.
    *  Per-entry cooldown = 75% of the entry's intervalMs (min 60s). */
@@ -83,6 +85,11 @@ export class Cron {
 
   registerHandler(jobName: string, handler: CronHandler): void {
     this.handlers.set(jobName, handler);
+  }
+
+  /** Set a resolver for dynamically loading handlers when new entries appear post-startup. */
+  setHandlerResolver(resolver: (entryName: string, entry: CronEntry) => Promise<boolean>): void {
+    this.handlerResolver = resolver;
   }
 
   onFire(cb: CronJobCallback): void {
@@ -254,7 +261,33 @@ export class Cron {
           const pending = this.pendingStartTimers.get(entry.name);
           if (pending) clearTimeout(pending);
           this.pendingStartTimers.delete(entry.name);
-          this.startEntry(entry);
+
+          // If entry has a handler field but no registered handler, try dynamic resolution
+          if (entry.handler && !this.handlers.has(entry.name) && this.handlerResolver) {
+            const entrySnapshot = { ...entry };
+            this.handlerResolver(entry.name, entrySnapshot)
+              .then((resolved) => {
+                if (resolved) {
+                  this.onError?.(`[handler] Dynamically resolved handler for "${entrySnapshot.name}" on reload`);
+                } else {
+                  this.onError?.(
+                    `⚠️ [handler] Failed to resolve handler for "${entrySnapshot.name}" — entry will be skipped until next reload`,
+                  );
+                }
+                this.startEntry(entrySnapshot);
+              })
+              .catch((err) => {
+                const errMsg = err instanceof Error ? err.message : String(err);
+                this.onError?.(
+                  `⚠️ [handler] Error resolving handler for "${entrySnapshot.name}": ${errMsg} — entry will be skipped`,
+                );
+                // Still try to start — resolveMode() will skip if handler is missing
+                this.startEntry(entrySnapshot);
+              });
+          } else {
+            this.startEntry(entry);
+          }
+
           this.onError?.(
             `Reloaded "${entry.name}": intervalMs=${entry.intervalMs}${old ? ` (was ${old.intervalMs})` : " (new)"}`,
           );
