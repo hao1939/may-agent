@@ -8,3 +8,9 @@
 {"scenario":"plan-once-amend","run":8,"condition":"full","passed":false,"elapsed":189,"db_run_id":"unknown","index":7}
 {"scenario":"plan-once-amend","run":9,"condition":"full","passed":true,"elapsed":74,"db_run_id":"unknown","index":8}
 {"scenario":"plan-once-amend","run":10,"condition":"scoped","passed":true,"elapsed":104,"db_run_id":"unknown","index":9}
+{"scenario":"plan-once-amend","run":11,"condition":"full","passed":true,"elapsed":87,"db_run_id":"unknown","index":10}
+{"scenario":"plan-once-amend","run":12,"condition":"scoped","passed":true,"elapsed":87,"db_run_id":"unknown","index":11}
+{"scenario":"plan-once-amend","run":13,"condition":"full","passed":true,"elapsed":97,"db_run_id":"unknown","index":12}
+{"scenario":"plan-once-amend","run":14,"condition":"scoped","passed":true,"elapsed":106,"db_run_id":"unknown","index":13}
+{"scenario":"plan-once-amend","run":15,"condition":"scoped","passed":true,"elapsed":72,"db_run_id":"unknown","index":14}
+{"scenario":"plan-once-amend","run":16,"condition":"scoped","passed":true,"elapsed":71,"db_run_id":"unknown","index":15}
