@@ -221,6 +221,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   }
 
   let phase2Text = "";
+  let phase2Messages: any[] = [];
+  let phase2FinishDeliverables: string[] = [];
   const allPlannedFound = plannedFiles.length > 0 && stillMissing.length === 0;
   const somePlannedFound = alreadyExist.length > 0 && stillMissing.length > 0;
 
@@ -261,6 +263,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       return ctx.escalate("Phase 2 (deliver-remaining) failed", { error: phase2.error });
     }
     phase2Text = phase2.lastAssistantText ?? "";
+    phase2Messages = phase2.messages ?? [];
+    phase2FinishDeliverables = (phase2.finishResult?.deliverables ?? []).map((d: any) => d.path).filter(Boolean);
 
     ctx.emit({ type: "step_done", step: "phase2-deliver-remaining" } as any);
 
@@ -296,6 +300,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       return ctx.escalate("Phase 2 (deliver) failed", { error: phase2.error });
     }
     phase2Text = phase2.lastAssistantText ?? "";
+    phase2Messages = phase2.messages ?? [];
+    phase2FinishDeliverables = (phase2.finishResult?.deliverables ?? []).map((d: any) => d.path).filter(Boolean);
 
     ctx.emit({ type: "step_done", step: "phase2-deliver" } as any);
   }
@@ -311,6 +317,15 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const allMentionedFiles = [
     ...plannedFiles,
     ...extractFilePaths(phase2Text),
+    // P-fix: Also extract from Phase 2's actual tool calls (write/edit) and
+    // structured finish() deliverables — these are the most reliable sources
+    // because they reflect what the agent ACTUALLY did, not just what it said.
+    // Root cause: phase2.lastAssistantText is often a brief verification summary
+    // (e.g., "All verified ✅") without full file paths, so extractFilePaths()
+    // returns nothing. But the session messages contain the actual write/edit
+    // tool calls, and finishResult.deliverables has explicitly declared paths.
+    ...extractWrittenFilePaths(phase2Messages),
+    ...phase2FinishDeliverables,
   ];
 
   // Deduplicate
@@ -466,12 +481,43 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       `### Phase 2 Output\n${phase2Text.slice(0, 500)}`
     );
   } else {
+    // Check if the agent reported success via finish() even though no file paths were
+    // detected — this may indicate the task was already done (no writes needed).
+    const phase2FinishStatus = (() => {
+      // Extract from last phase2 messages (search for finish tool call)
+      for (let i = phase2Messages.length - 1; i >= 0; i--) {
+        const msg = phase2Messages[i];
+        if (msg.role === "assistant" && Array.isArray(msg.content)) {
+          for (const block of msg.content) {
+            if (block.type === "toolCall" && block.name === "finish") {
+              return block.arguments?.status;
+            }
+          }
+        }
+      }
+      return undefined;
+    })();
+
+    if (phase2FinishStatus === "success") {
+      // Agent claimed success but no files detected — likely an "already done" task
+      return ctx.done(
+        `## Delivery Complete (pre-existing) — agent reported success, no new files needed\n\n` +
+        `### Note\nPhase 2 reported success via finish() but no deliverable file paths were detected.\n` +
+        `This typically means the task's deliverables already existed before the workflow started.\n\n` +
+        `### Phase 2 Summary\n${phase2Text.slice(0, 500)}\n\n` +
+        `### Phase 1 Plan\n${planText.slice(0, 500)}`
+      );
+    }
+
     return ctx.escalate(
       "Non-delivery detected: Phase 2 completed but no deliverable files found on disk",
       {
         plannedFiles: uniqueFiles,
         phase1Summary: planText.slice(0, 300),
         phase2Summary: phase2Text.slice(0, 300),
+        phase2FinishStatus,
+        phase2FinishDeliverables,
+        phase2WrittenFiles: extractWrittenFilePaths(phase2Messages),
       }
     );
   }
