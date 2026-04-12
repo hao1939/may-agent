@@ -6,7 +6,8 @@
 - [ ] **EXP-145 DESIGNED** — Guard dependency escalation time-series (H-104). Phase 1 is retrospective — can start immediately with production data. Delegate Phase 1 to Coach/Optimizer.
 - [ ] **EXP-143 DESIGNED** — Checkpoint decomposition evaluation experiment (H-096 P-096a). Ready for Coach execution.
 - [ ] **H-097 needs experiment design** — CCC Triad (cooperation + calibration + context isolation). P=0.65, zero internal testing. Strong external evidence from DD-731/732/733.
-- [ ] **DD-750 → New hypothesis**: Three-Layer Reasoning Model (latent→thinking→output). DD-750's 12-paper synthesis suggests Layer 2 monitoring is ~3x more faithful than Layer 3 (our guards). Could reframe H-103/H-104 guard design direction. Write H-105?
+- [x] **H-105 WRITTEN** — Three-Layer Reasoning Model (latent→thinking→output). P=0.72, 5 predictions, connects DD-750/KE-146/H-103/H-104. Proposes EXP-146.
+- [ ] **EXP-146 needs design** — Thinking-token analysis experiment for H-105. Compare thinking-trace vs output-level detection rates for verification gaps.
 - [ ] **Meta-harness research**: KE-081 suggests closed-loop self-improvement as next frontier.
 - [ ] **Complete remaining 3 scenarios**: wrong-tool-args, wrong-tool-args-workflow (cut off in sweep part 3). Delegate to Coach.
 
