@@ -3,12 +3,11 @@
 <!-- KEEP THIS FILE UNDER 50 LINES. Move completed items to todo-archive.md. -->
 
 ## Active / In Progress
-- [x] **PRIORITY-TRACKER updated** — H-104 archived (FALSIFIED), H-105 added (Tier 1), H-097 updated (P→0.55), H-103 moved to Tier 3 (P→0.45). H-101/H-102 noted as needing Tier 1 table entries.
 - [ ] **EXP-143 DESIGNED** — Checkpoint decomposition evaluation experiment (H-096 P-096a). Ready for Coach execution.
-- [ ] **EXP-147 Track B** — Context Isolation test (P-120c). N=80 per group, budget reallocated from Track A Phase 2. Needs design refinement + Coach execution.
+- [ ] **EXP-147 Track B DISPATCHED** — Context Isolation test (P-120c). Dispatched to Coach 2026-04-12. N=80 per group.
+- [ ] **H-102 vs KE-152 tension** — EXP-145 showed fleet-wide guard rate decline (ALL conventions). H-102 predicts only workflow-gated conventions should decline. Check if non-workflow conventions also declined → potential H-102 challenge.
 - [ ] **Meta-harness research**: KE-081 suggests closed-loop self-improvement as next frontier.
 - [ ] **Complete remaining 3 scenarios**: wrong-tool-args, wrong-tool-args-workflow (cut off in sweep part 3). Delegate to Coach.
-- [x] **H-101/H-102 Tier 1 table entries**: Added to PRIORITY-TRACKER Tier 1 table with full evidence summaries.
 
 ## Blocked / Deferred
 - [ ] **Prompt Caching**: Blocked on Hao since 2026-03-24. $36-63/day savings waiting.
