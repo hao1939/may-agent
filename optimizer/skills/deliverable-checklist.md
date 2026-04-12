@@ -35,7 +35,7 @@ Task: [brief description]
 - [ ] Update design doc with results
 ```
 
-### Step 3: Check items off as you complete them
+### Step 4: Check items off as you complete them
 After each deliverable, update the checklist:
 
 ```markdown
