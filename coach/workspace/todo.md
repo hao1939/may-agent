@@ -194,21 +194,22 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 - **Root causes**: Phase boundary violation (47%), verification gaps (81%), P2-has-nothing-to-do (19%)
 - **Recommendations**: (1) Harmonize quality scales P0, (2) Per-session evaluation keys P0, (3) Rethink phase boundaries P1
 
-### 0j. EXP-123: Verification-Depth Guard — Superficial Verification Block [DEPLOYED ⏳]
+### 0j. EXP-123: Verification-Depth Guard — Superficial Verification Block [COMPLETE ✅ — 31h Results]
 - **Design**: `agents/shared/knowledge/experiments/EXP-123/design.md`
+- **Results**: `agents/shared/knowledge/experiments/EXP-123/results.md` (updated 2026-04-11 24:00 with 31h data)
 - **Implementation**: `src/lib/tools/verification-depth-guard.ts` (363 lines)
-- **Tests**: `src/lib/tools/verification-depth-guard.test.ts` (18/18 pass)
-- **Status**: Phase 2 — guard deployed to production for all agents
+- **Tests**: `src/lib/tools/verification-depth-guard.test.ts` (23/23 pass, incl. process artifact fix)
+- **Status**: COMPLETE — guard deployed, all hypotheses confirmed
 - **Goal**: Address the 35% residual unrecovered FM-3.3 (EXP-110 finding)
-- **Detects 3 patterns**:
-  - T1: Git commands on gitignored paths (agents/) — zero information gain
-  - T2: Missing post-write verification — writes/edits without subsequent read/test
-  - T3: tsc-only verification — syntax-only check on behavioral bugs (warn-only)
-- **Phase 1 result**: CEILING EFFECT — gym scenarios (compound-edit-verification, convention-verify-edit, assertion-without-evidence) all pass baseline; guard never fires
-- **Phase 2**: Production observation — guard wired into composeGuards() for all agents
-  - Kill switch: `DISABLE_VERIFICATION_DEPTH_GUARD=1`
-  - Measurement: Wait 48-72h, then analyze fire rate, true positive rate, recovery rate
-- **Next**: Analyze production impact on 2026-04-13
+- **Key results (31h)**:
+  - C1.3 fleet: **74.2% → 95.0%** (+20.8pp) — all agents ≥90%
+  - C1.3 bob: **70.5% → 97.9%** (+27.4pp)
+  - C1.3 optimizer: **59.4% → 90.5%** (+31.1pp, after process artifact fix)
+  - 3 agent categories: guard-dependent (QA +76.7pp), guard-neutral (optimizer, may, scout), guard-harmed (bob -6.1pp quality)
+- **Concerns**:
+  - Guard fire rate still RISING (not declining) — agents not internalizing
+  - Bob quality penalty when guard fires (-6.1pp) — investigate D-o-R interaction
+- **Follow-ups**: Monitor fire rate trend, consider per-agent thresholds, write KE entry
 
 ### 1. Few-Shot Production Pipeline Integration [DEPLOYED ✅]
 - **Owner**: Tech-lead (implementation), Bob (design brief at `agents/shared/may-agent-docs/design/fewshot-production-pipeline.md`)
