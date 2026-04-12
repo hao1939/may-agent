@@ -14,10 +14,13 @@
 
 ## How to Do It
 
-### Step 1: Read the task/brief carefully
+### Step 1: Orient first — read context files
+Read your context files (heartbeat.md, context.md, the task brief) as you normally would. C12.1 requires orientation before acting — always read before you write.
+
+### Step 2: Identify deliverables from the task/brief
 Identify every deliverable mentioned — files to create, files to modify, tests to write, configs to update.
 
-### Step 2: Create DELIVERABLES_CHECKLIST.md
+### Step 3: Create DELIVERABLES_CHECKLIST.md
 Write it in your workspace or the task's working directory:
 
 ```markdown
