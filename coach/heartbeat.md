@@ -56,6 +56,24 @@ Pick the highest-priority task(s). Ask:
 
 ## Step 3: DISPATCH
 
+### 🚦 Running-Session Guard (MANDATORY before forking)
+
+**Before forking ANY work session**, check if one is already running:
+
+```bash
+export PATH=".state/.bun/bin:$PATH" && bun -e "
+import{Database}from'bun:sqlite';
+const db=new Database('.state/may.db',{readonly:true});
+const running=db.query(\"SELECT sessionId,task,datetime(startedAt/1000,'unixepoch')as started FROM sessions WHERE agent='coach' AND status='running' AND task LIKE '%WORK SESSION%'\").all();
+if(running.length>0){console.log('⛔ BLOCKED — work session already running:');running.forEach(s=>console.log('  '+s.started+': '+s.task.substring(0,80)));console.log('DO NOT FORK. Wait for it to finish.')}else{console.log('✅ No running work sessions. Safe to fork.')}
+"
+```
+
+**Rules:**
+- If the check prints `⛔ BLOCKED` → **DO NOT fork.** Skip to Step 4 and exit. The running session will finish on its own.
+- If the check prints `✅ Safe to fork` → proceed with dispatch below.
+- **Never skip this check.** The #1 cause of wasted ops is overlapping work sessions (e.g., 6 concurrent EXP-147 sessions costing ~100 ops).
+
 ### ⚡ Work Session Efficiency
 **Op budget for work sessions: ≤35 ops.** Efficient sessions complete in 18-35 ops; bloated ones hit 50-60.
 The #1 cause of bloat: **interactive SQL query loops** — writing one `bun -e` per question wastes 50+ ops/session.
