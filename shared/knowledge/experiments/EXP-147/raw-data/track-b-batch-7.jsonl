@@ -28,3 +28,7 @@
 {"scenario":"contradictory-requirements","run":1,"condition":"full","passed":true,"elapsed":285}
 {"scenario":"stale-approach-fixation","run":20,"condition":"full","passed":true,"elapsed":95}
 {"scenario":"contradictory-requirements","run":20,"condition":"full","passed":true,"elapsed":128}
+{"scenario":"contradictory-requirements","run":2,"condition":"scoped","passed":true,"elapsed":170}
+{"scenario":"contradictory-requirements","run":3,"condition":"full","passed":true,"elapsed":115}
+{"scenario":"contradictory-requirements","run":4,"condition":"scoped","passed":true,"elapsed":84}
+{"scenario":"contradictory-requirements","run":5,"condition":"scoped","passed":true,"elapsed":93}

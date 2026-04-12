@@ -1,0 +1,5 @@
+{"scenario":"misleading-stacktrace","run":1,"condition":"full","passed":true,"elapsed":113}
+{"scenario":"misleading-stacktrace","run":2,"condition":"full","passed":true,"elapsed":64}
+{"scenario":"misleading-stacktrace","run":3,"condition":"scoped","passed":true,"elapsed":55}
+{"scenario":"misleading-stacktrace","run":4,"condition":"full","passed":true,"elapsed":62}
+{"scenario":"misleading-stacktrace","run":5,"condition":"full","passed":true,"elapsed":92}
