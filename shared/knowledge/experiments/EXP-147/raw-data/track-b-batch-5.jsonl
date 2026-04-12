@@ -4,3 +4,5 @@
 {"scenario":"hidden-dependency","run":18,"condition":"scoped","passed":true,"elapsed":137}
 {"scenario":"hidden-dependency","run":19,"condition":"full","passed":true,"elapsed":94}
 {"scenario":"hidden-dependency","run":20,"condition":"full","passed":true,"elapsed":78}
+{"scenario":"cascading-fix-trap-v2","run":1,"condition":"full","passed":false,"elapsed":79}
+{"scenario":"cascading-fix-trap-v2","run":2,"condition":"full","passed":false,"elapsed":95}
