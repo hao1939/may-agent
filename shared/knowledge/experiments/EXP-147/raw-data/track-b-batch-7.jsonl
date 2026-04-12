@@ -32,3 +32,4 @@
 {"scenario":"contradictory-requirements","run":3,"condition":"full","passed":true,"elapsed":115}
 {"scenario":"contradictory-requirements","run":4,"condition":"scoped","passed":true,"elapsed":84}
 {"scenario":"contradictory-requirements","run":5,"condition":"scoped","passed":true,"elapsed":93}
+{"scenario":"contradictory-requirements","run":6,"condition":"scoped","passed":true,"elapsed":148}
