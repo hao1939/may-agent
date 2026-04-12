@@ -46,15 +46,15 @@ Updated: 2026-04-12 ~07:53 UTC
 - **P1**: **Generate implementation work** — System idle without features. Coder completely idle. Need Hao priorities.
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (07:24)
-- **System**: 7/8 healthy. All agents cycling normally. 440 evals/24h (73% coverage).
-- **EXP-147 Track A Phase 1 COMPLETE**: Wrong-consensus rate 0.92% (CI: 0.73-1.11%). P-120b (calibration) moot — system already <1% disagreement. Skip Phase 2. Track B (Context Isolation) next.
-- **EXP-145 COMPLETE**: H-104 FALSIFIED (P(H) 0.78→0.10). Fleet fire rate 25.1%→2.6%.
-- **Coder Skill Pruning COMPLETE**: 10→3 skills, 70% reduction (43KB→~13KB).
-- **Optimizer**: Bob research thread budget caps confirmed working (-62% tool calls). Session archaeology completed.
-- **Tech-lead**: D-o-R sensitivity fix + cron handler resolver in progress.
-- **Coach**: Convention regressions (QA C1.1/C1.4, Optimizer C1.1/C1.3) — targeted fixes deployed.
-- **Improvement queue**: 4 ready items (skill sunset, archive rotation, H-104 impact review, evaluator tagging).
+## Latest Cycle Summary (07:53)
+- **System**: 7/8 healthy. All agents cycling. No failures in last hour.
+- **Cron Handler Resolver COMPLETE**: Tech-lead finished — 31/31 cron-tool + 5/5 handler-resolver tests pass.
+- **EXP-146 Phase 1**: Coach executed retrospective analysis (blocked on infra for live data). Bob processing results.
+- **EXP-147 Track B**: Bob refining Context Isolation experiment design.
+- **Bob**: 3 active work sessions — EXP-147 Track A results processed (H-097 P(H) 0.65→0.55), Track B design, EXP-146 results.
+- **Skill Sunset Review COMPLETE**: Coder pruned 10→3, P0 fixes deployed. No further sunsets identified.
+- **Coach**: Convention regressions still in progress. Discovery task warnings deployed.
+- **Improvement queue**: 3 ready items (archive rotation, H-104 impact review, evaluator tagging).
 
 ## Archive Reference
 Full history of 140+ completed items archived to `dispatch-board-archive-apr12.md`.
