@@ -87,6 +87,10 @@ const C1_3_EXEMPT_PATTERNS = [
   /graduation-log\.md$/,
   // Temp files — not worth verifying
   /^\/tmp\//,
+  // Deliverable checklists — planning/tracking files, read back when edited later
+  /DELIVERABLES_CHECKLIST\.md$/,
+  // Workspace findings — investigation artifacts, new file creation (low-risk)
+  /finding-.*\.md$/,
 ];
 
 /** Lookback for regression detection (7 days in ms). */

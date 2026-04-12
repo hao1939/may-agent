@@ -1,12 +1,3 @@
-{"scenario":"plan-once-amend","run":19,"condition":"scoped"}
-{"scenario":"plan-once-amend","run":20,"condition":"full"}
-{"scenario":"hidden-dependency","run":1,"condition":"scoped"}
-{"scenario":"hidden-dependency","run":2,"condition":"scoped"}
-{"scenario":"hidden-dependency","run":3,"condition":"scoped"}
-{"scenario":"hidden-dependency","run":4,"condition":"scoped"}
-{"scenario":"hidden-dependency","run":5,"condition":"scoped"}
-{"scenario":"hidden-dependency","run":6,"condition":"scoped"}
-{"scenario":"hidden-dependency","run":7,"condition":"scoped"}
 {"scenario":"hidden-dependency","run":8,"condition":"full"}
 {"scenario":"hidden-dependency","run":9,"condition":"scoped"}
 {"scenario":"hidden-dependency","run":10,"condition":"full"}

@@ -21,3 +21,8 @@
 {"scenario":"hidden-dependency","run":1,"condition":"scoped","passed":true,"elapsed":101,"db_run_id":"unknown","index":0}
 {"scenario":"hidden-dependency","run":2,"condition":"scoped","passed":true,"elapsed":99,"db_run_id":"unknown","index":1}
 {"scenario":"hidden-dependency","run":3,"condition":"scoped","passed":true,"elapsed":105,"db_run_id":"unknown","index":2}
+{"scenario":"hidden-dependency","run":4,"condition":"scoped","passed":true,"elapsed":61,"db_run_id":"unknown","index":3}
+{"scenario":"hidden-dependency","run":5,"condition":"scoped","passed":true,"elapsed":57,"db_run_id":"unknown","index":4}
+{"scenario":"hidden-dependency","run":6,"condition":"scoped","passed":true,"elapsed":141,"db_run_id":"unknown","index":5}
+{"scenario":"hidden-dependency","run":7,"condition":"scoped","passed":false,"elapsed":190,"db_run_id":"unknown","index":6}
+{"scenario":"hidden-dependency","run":8,"condition":"full","passed":true,"elapsed":103,"db_run_id":"unknown","index":7}
