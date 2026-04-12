@@ -218,6 +218,7 @@
 - 2026-04-12 15:53: **Feature rotation check**: no pending features (dispatch board P1: "Need Hao priorities"). **Infra**: Lens C — test file dead weight (orphaned tests for deleted modules). Forked (s_1776009275129_2222).
 - 2026-04-12 16:23: **Feature rotation check**: no pending features (dispatch board P1: "Need Hao priorities"). **Infra**: Lens D — implement-and-verify workflow production reliability audit. Forked (s_1776011071613_2237).
 - 2026-04-12 16:30: **Tool**: convention-investigate.sh — single-script investigation tool for coach. Replaces 76-op manual investigation protocol. Review branch: review/s_1776011067924_2235.
+- 2026-04-12 16:53: **P1 fix**: Wrong DB path — agents hitting stale root may.db instead of .state/may.db (req:962cbd64 from May). Forked (s_1776012868029_2249).
 - **Next**: Lens A next cycle (feature rotation if items appear)
 - 2026-04-12 05:53: **P1 Workflow Adoption** (req:afa5607f) — forked deliver-or-report escalation investigation (s_1775973259186_1900). Coach's plan has 3 Phase 1 items: (1) fix deliver-or-report 41% done rate, (2) wire implement-and-verify, (3) audit verify-wrap vs C1.5. Item 3 likely resolved by C1.5 fix from last session.
 - **NOTE**: P1 QA heartbeat fix (req:5e23d82f/fe94b906) — write-blocked (heartbeat.md is identity file). Coach should apply the edit themselves or ask May.
