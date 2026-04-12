@@ -29,22 +29,21 @@ To append efficiently (the file is large — do NOT read the whole thing):
 
 If you found issues, notify tech-lead via `agents.message`.
 
-### finish() — MANDATORY, every session
+**Do NOT stop here. You MUST continue to Step 4.**
 
-**ALWAYS call `finish()`.** Never end with a plain text summary.
+## 4. EXIT (budget: 1 op — just the finish() call)
+
+Call `finish()` with what you reviewed and what you found. **This is your final tool call — not a text summary.**
 
 ```js
 finish({
-  status: '<success|partial|blocked>',
-  summary: '<1-2 sentences: what you reviewed and what you found>',
+  status: 'success',  // success=completed review, partial=review interrupted, blocked=can't review at all
+  summary: '<what you reviewed and what you found>',
   deliverables: [{ path: 'workspace/journal.md', description: 'Appended review findings' }],
   verification_evidence: ['Step N: bash(tsc) exit code 0', 'Step M: read(file) confirmed finding']
 })
 ```
 
-**When to use each status:**
-- **`success`** — You completed your QA review steps (read code, ran checks, logged findings). Use this even if tsc/vitest found pre-existing failures — those are **findings to report**, not blockers on your work.
-- **`partial`** — Your own review steps were interrupted (e.g., you couldn't finish reading the code, journal append failed, ran out of time mid-review).
-- **`blocked`** — Something prevents you from doing any review at all (e.g., can't access files, no commits to review AND no source files to scan).
+**⚠️ Pre-existing test failures are findings, not blockers.** You found them, you reported them — use `success`.
 
-**⚠️ Common mistake:** Pre-existing test failures (bun:sqlite issues, flaky thresholds) are NOT reasons for `partial`. You found them, you reported them — that's a successful QA review.
+**⚠️ NEVER end with a text message.** Your last action must be `finish()`.
