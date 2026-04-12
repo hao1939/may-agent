@@ -5,3 +5,7 @@
 {"scenario":"cascading-fix-trap-v2","run":10,"condition":"full","passed":false,"elapsed":230}
 {"scenario":"cascading-fix-trap-v2","run":13,"condition":"scoped","passed":false,"elapsed":100}
 {"scenario":"cascading-fix-trap-v2","run":17,"condition":"scoped","passed":false,"elapsed":67}
+{"scenario":"cascading-fix-trap-v2","run":18,"condition":"full","passed":false,"elapsed":204}
+{"scenario":"cascading-fix-trap-v2","run":20,"condition":"full","passed":false,"elapsed":60}
+{"scenario":"contradictory-requirements","run":2,"condition":"full","passed":false,"elapsed":103}
+{"scenario":"misleading-stacktrace","run":8,"condition":"scoped","passed":true,"elapsed":105}
