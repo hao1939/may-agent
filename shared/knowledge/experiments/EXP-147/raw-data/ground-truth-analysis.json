@@ -1,0 +1,1304 @@
+{
+  "metadata": {
+    "sample_size": 50,
+    "seed": 147,
+    "stratification": "25 pass-like (good/acceptable), 25 fail-like (needs_improvement)",
+    "ground_truth_criteria": {
+      "pass": "Session done + result_delivered + ≤1 convention failure",
+      "fail": "Session error/interrupted + not delivered, OR result not delivered, OR ≥3 convention failures",
+      "partial": "Session not done but result delivered",
+      "uncertain": "Mixed signals"
+    }
+  },
+  "summary": {
+    "wrong_consensus_rate": 0.02,
+    "false_pass_rate": 0.04,
+    "false_fail_rate": 0,
+    "wrong_count": 1,
+    "total": 50
+  },
+  "results": [
+    {
+      "sessionId": "s_1775787818219_647",
+      "agent": "qa",
+      "verdict": "acceptable",
+      "verdict_mapped": "pass",
+      "ground_truth": "pass",
+      "gt_binary": "pass",
+      "gt_reason": "Session done, result delivered, ≤1 convention failure",
+      "wrong_consensus": false,
+      "signals": {
+        "session_ended_ok": true,
+        "session_status": "done",
+        "result_delivered": true,
+        "conventions_failed": 0,
+        "conventions_checked": 12,
+        "convention_pass_rate": 1,
+        "digest_outcomes": [
+          "in_progress",
+          "success"
+        ],
+        "eval_issues": [
+          "finish_partial"
+        ],
+        "quality": 3,
+        "wasted_ratio": 0.09090909090909091
+      }
+    },
+    {
+      "sessionId": "s_1775764417902_523",
+      "agent": "qa",
+      "verdict": "acceptable",
+      "verdict_mapped": "pass",
+      "ground_truth": "pass",
+      "gt_binary": "pass",
+      "gt_reason": "Session done, result delivered, ≤1 convention failure",
+      "wrong_consensus": false,
+      "signals": {
+        "session_ended_ok": true,
+        "session_status": "done",
+        "result_delivered": true,
+        "conventions_failed": 0,
+        "conventions_checked": 12,
+        "convention_pass_rate": 1,
+        "digest_outcomes": [
+          "in_progress",
+          "success"
+        ],
+        "eval_issues": [
+          "finish_partial"
+        ],
+        "quality": 3,
+        "wasted_ratio": 0
+      }
+    },
+    {
+      "sessionId": "s_1775949821869_1691",
+      "agent": "tech-lead",
+      "verdict": "good",
+      "verdict_mapped": "pass",
+      "ground_truth": "pass",
+      "gt_binary": "pass",
+      "gt_reason": "Session done, result delivered, ≤1 convention failure",
+      "wrong_consensus": false,
+      "signals": {
+        "session_ended_ok": true,
+        "session_status": "done",
+        "result_delivered": true,
+        "conventions_failed": 0,
+        "conventions_checked": 12,
+        "convention_pass_rate": 1,
+        "digest_outcomes": [
+          "in_progress",
+          "success"
+        ],
+        "eval_issues": [],
+        "quality": 1,
+        "wasted_ratio": null
+      }
+    },
+    {
+      "sessionId": "s_1775541738828_7",
+      "agent": "amy-kimi",
+      "verdict": "acceptable",
+      "verdict_mapped": "pass",
+      "ground_truth": "fail",
+      "gt_binary": "fail",
+      "gt_reason": "Session error, result not delivered",
+      "wrong_consensus": true,
+      "signals": {
+        "session_ended_ok": false,
+        "session_status": "error",
+        "result_delivered": false,
+        "conventions_failed": 0,
+        "conventions_checked": 0,
+        "convention_pass_rate": null,
+        "digest_outcomes": [
+          "in_progress",
+          "failure"
+        ],
+        "eval_issues": [
+          "session_error"
+        ],
+        "quality": 2,
+        "wasted_ratio": null
+      }
+    },
+    {
+      "sessionId": "s_1775539938034_259",
+      "agent": "optimizer",
+      "verdict": "good",
+      "verdict_mapped": "pass",
+      "ground_truth": "pass",
+      "gt_binary": "pass",
+      "gt_reason": "Session done, result delivered, ≤1 convention failure",
+      "wrong_consensus": false,
+      "signals": {
+        "session_ended_ok": true,
+        "session_status": "done",
+        "result_delivered": true,
+        "conventions_failed": 0,
+        "conventions_checked": 12,
+        "convention_pass_rate": 1,
+        "digest_outcomes": [
+          "in_progress",
+          "success"
+        ],
+        "eval_issues": [
+          "finish_success_verified",
+          "success_no_deliverables"
+        ],
+        "quality": 4,
+        "wasted_ratio": 0
+      }
+    },
+    {
+      "sessionId": "s_1775904850180_1379",
+      "agent": "optimizer",
+      "verdict": "good",
+      "verdict_mapped": "pass",
+      "ground_truth": "pass",
+      "gt_binary": "pass",
+      "gt_reason": "Session done, result delivered, ≤1 convention failure",
+      "wrong_consensus": false,
+      "signals": {
+        "session_ended_ok": true,
+        "session_status": "done",
+        "result_delivered": true,
+        "conventions_failed": 1,
+        "conventions_checked": 12,
+        "convention_pass_rate": 0.9166666666666666,
+        "digest_outcomes": [
+          "in_progress",
+          "in_progress",
+          "success"
+        ],
+        "eval_issues": [],
+        "quality": 1,
+        "wasted_ratio": null
+      }
+    },
+    {
+      "sessionId": "s_1775944493290_1647",
+      "agent": "coder",
+      "verdict": "good",
+      "verdict_mapped": "pass",
+      "ground_truth": "pass",
+      "gt_binary": "pass",
+      "gt_reason": "Session done, result delivered, ≤1 convention failure",
+      "wrong_consensus": false,
+      "signals": {
+        "session_ended_ok": true,
+        "session_status": "done",
+        "result_delivered": true,
+        "conventions_failed": 1,
+        "conventions_checked": 12,
+        "convention_pass_rate": 0.9166666666666666,
+        "digest_outcomes": [
+          "in_progress",
+          "success"
+        ],
+        "eval_issues": [],
+        "quality": 1,
+        "wasted_ratio": null
+      }
+    },
+    {
+      "sessionId": "s_1775944413267_1636",
+      "agent": "may",
+      "verdict": "good",
+      "verdict_mapped": "pass",
+      "ground_truth": "pass",
+      "gt_binary": "pass",
+      "gt_reason": "Session done, result delivered, ≤1 convention failure",
+      "wrong_consensus": false,
+      "signals": {
+        "session_ended_ok": true,
+        "session_status": "done",
+        "result_delivered": true,
+        "conventions_failed": 0,
+        "conventions_checked": 12,
+        "convention_pass_rate": 1,
+        "digest_outcomes": [
+          "in_progress",
+          "success"
+        ],
+        "eval_issues": [],
+        "quality": 1,
+        "wasted_ratio": null
+      }
+    },
+    {
+      "sessionId": "s_1775813044970_810",
+      "agent": "coach",
+      "verdict": "good",
+      "verdict_mapped": "pass",
+      "ground_truth": "pass",
+      "gt_binary": "pass",
+      "gt_reason": "Session done, result delivered, ≤1 convention failure",
+      "wrong_consensus": false,
+      "signals": {
+        "session_ended_ok": true,
+        "session_status": "done",
+        "result_delivered": true,
+        "conventions_failed": 0,
+        "conventions_checked": 12,
+        "convention_pass_rate": 1,
+        "digest_outcomes": [
+          "in_progress",
+          "in_progress",
+          "success"
+        ],
+        "eval_issues": [
+          "finish_success_verified",
+          "has_deliverables"
+        ],
+        "quality": 4,
+        "wasted_ratio": 0
+      }
+    },
+    {
+      "sessionId": "s_1775948022002_1670",
+      "agent": "optimizer",
+      "verdict": "good",
+      "verdict_mapped": "pass",
+      "ground_truth": "pass",
+      "gt_binary": "pass",
+      "gt_reason": "Session done, result delivered, ≤1 convention failure",
+      "wrong_consensus": false,
+      "signals": {
+        "session_ended_ok": true,
+        "session_status": "done",
+        "result_delivered": true,
+        "conventions_failed": 0,
+        "conventions_checked": 12,
+        "convention_pass_rate": 1,
+        "digest_outcomes": [
+          "in_progress",
+          "success"
+        ],
+        "eval_issues": [],
+        "quality": 1,
+        "wasted_ratio": null
+      }
+    },
+    {
+      "sessionId": "s_1775946222284_1655",
+      "agent": "coach",
+      "verdict": "good",
+      "verdict_mapped": "pass",
+      "ground_truth": "pass",
+      "gt_binary": "pass",
+      "gt_reason": "Session done, result delivered, ≤1 convention failure",
+      "wrong_consensus": false,
+      "signals": {
+        "session_ended_ok": true,
+        "session_status": "done",
+        "result_delivered": true,
+        "conventions_failed": 0,
+        "conventions_checked": 12,
+        "convention_pass_rate": 1,
+        "digest_outcomes": [
+          "in_progress",
+          "success"
+        ],
+        "eval_issues": [],
+        "quality": 1,
+        "wasted_ratio": null
+      }
+    },
+    {
+      "sessionId": "s_1775547138292_41",
+      "agent": "qa",
+      "verdict": "acceptable",
+      "verdict_mapped": "pass",
+      "ground_truth": "pass",
+      "gt_binary": "pass",
+      "gt_reason": "Session done, result delivered, ≤1 convention failure",
+      "wrong_consensus": false,
+      "signals": {
+        "session_ended_ok": true,
+        "session_status": "done",
+        "result_delivered": true,
+        "conventions_failed": 0,
+        "conventions_checked": 12,
+        "convention_pass_rate": 1,
+        "digest_outcomes": [
+          "in_progress",
+          "success"
+        ],
+        "eval_issues": [
+          "finish_partial"
+        ],
+        "quality": 3,
+        "wasted_ratio": 0
+      }
+    },
+    {
+      "sessionId": "s_1775899420780_1332",
+      "agent": "qa",
+      "verdict": "good",
+      "verdict_mapped": "pass",
+      "ground_truth": "pass",
+      "gt_binary": "pass",
+      "gt_reason": "Session done, result delivered, ≤1 convention failure",
+      "wrong_consensus": false,
+      "signals": {
+        "session_ended_ok": true,
+        "session_status": "done",
+        "result_delivered": true,
+        "conventions_failed": 0,
+        "conventions_checked": 0,
+        "convention_pass_rate": null,
+        "digest_outcomes": [
+          "in_progress",
+          "success"
+        ],
+        "eval_issues": [],
+        "quality": 1,
+        "wasted_ratio": null
+      }
+    },
+    {
+      "sessionId": "s_1775737416661_357",
+      "agent": "coach",
+      "verdict": "good",
+      "verdict_mapped": "pass",
+      "ground_truth": "pass",
+      "gt_binary": "pass",
+      "gt_reason": "Session done, result delivered, ≤1 convention failure",
+      "wrong_consensus": false,
+      "signals": {
+        "session_ended_ok": true,
+        "session_status": "done",
+        "result_delivered": true,
+        "conventions_failed": 0,
+        "conventions_checked": 12,
+        "convention_pass_rate": 1,
+        "digest_outcomes": [
+          "in_progress",
+          "success"
+        ],
+        "eval_issues": [
+          "finish_success_verified",
+          "success_no_deliverables"
+        ],
+        "quality": 4,
+        "wasted_ratio": 0
+      }
+    },
+    {
+      "sessionId": "s_1775922821592_1500",
+      "agent": "tech-lead",
+      "verdict": "good",
+      "verdict_mapped": "pass",
+      "ground_truth": "pass",
+      "gt_binary": "pass",
+      "gt_reason": "Session done, result delivered, ≤1 convention failure",
+      "wrong_consensus": false,
+      "signals": {
+        "session_ended_ok": true,
+        "session_status": "done",
+        "result_delivered": true,
+        "conventions_failed": 0,
+        "conventions_checked": 12,
+        "convention_pass_rate": 1,
+        "digest_outcomes": [
+          "in_progress",
+          "success"
+        ],
+        "eval_issues": [],
+        "quality": 1,
+        "wasted_ratio": null
+      }
+    },
+    {
+      "sessionId": "s_1775865219394_1124",
+      "agent": "bob",
+      "verdict": "good",
+      "verdict_mapped": "pass",
+      "ground_truth": "pass",
+      "gt_binary": "pass",
+      "gt_reason": "Session done, result delivered, ≤1 convention failure",
+      "wrong_consensus": false,
+      "signals": {
+        "session_ended_ok": true,
+        "session_status": "done",
+        "result_delivered": true,
+        "conventions_failed": 0,
+        "conventions_checked": 12,
+        "convention_pass_rate": 1,
+        "digest_outcomes": [
+          "in_progress",
+          "success"
+        ],
+        "eval_issues": [],
+        "quality": 1,
+        "wasted_ratio": null
+      }
+    },
+    {
+      "sessionId": "s_1775662998191_68",
+      "agent": "optimizer",
+      "verdict": "good",
+      "verdict_mapped": "pass",
+      "ground_truth": "pass",
+      "gt_binary": "pass",
+      "gt_reason": "Session done, result delivered, ≤1 convention failure",
+      "wrong_consensus": false,
+      "signals": {
+        "session_ended_ok": true,
+        "session_status": "done",
+        "result_delivered": true,
+        "conventions_failed": 0,
+        "conventions_checked": 12,
+        "convention_pass_rate": 1,
+        "digest_outcomes": [
+          "in_progress",
+          "success"
+        ],
+        "eval_issues": [
+          "finish_success_verified",
+          "success_no_deliverables"
+        ],
+        "quality": 4,
+        "wasted_ratio": 0
+      }
+    },
+    {
+      "sessionId": "s_1775644996575_3",
+      "agent": "coach",
+      "verdict": "good",
+      "verdict_mapped": "pass",
+      "ground_truth": "pass",
+      "gt_binary": "pass",
+      "gt_reason": "Session done, result delivered, ≤1 convention failure",
+      "wrong_consensus": false,
+      "signals": {
+        "session_ended_ok": true,
+        "session_status": "done",
+        "result_delivered": true,
+        "conventions_failed": 1,
+        "conventions_checked": 12,
+        "convention_pass_rate": 0.9166666666666666,
+        "digest_outcomes": [
+          "in_progress",
+          "success"
+        ],
+        "eval_issues": [
+          "finish_success_verified",
+          "success_no_deliverables"
+        ],
+        "quality": 4,
+        "wasted_ratio": 0.07142857142857142
+      }
+    },
+    {
+      "sessionId": "s_1775723011983_254",
+      "agent": "bob",
+      "verdict": "good",
+      "verdict_mapped": "pass",
+      "ground_truth": "pass",
+      "gt_binary": "pass",
+      "gt_reason": "Session done, result delivered, ≤1 convention failure",
+      "wrong_consensus": false,
+      "signals": {
+        "session_ended_ok": true,
+        "session_status": "done",
+        "result_delivered": true,
+        "conventions_failed": 0,
+        "conventions_checked": 12,
+        "convention_pass_rate": 1,
+        "digest_outcomes": [
+          "in_progress",
+          "success"
+        ],
+        "eval_issues": [
+          "finish_success_verified",
+          "success_no_deliverables"
+        ],
+        "quality": 4,
+        "wasted_ratio": 0
+      }
+    },
+    {
+      "sessionId": "s_1775543538033_11",
+      "agent": "coach",
+      "verdict": "good",
+      "verdict_mapped": "pass",
+      "ground_truth": "pass",
+      "gt_binary": "pass",
+      "gt_reason": "Session done, result delivered, ≤1 convention failure",
+      "wrong_consensus": false,
+      "signals": {
+        "session_ended_ok": true,
+        "session_status": "done",
+        "result_delivered": true,
+        "conventions_failed": 0,
+        "conventions_checked": 12,
+        "convention_pass_rate": 1,
+        "digest_outcomes": [
+          "in_progress",
+          "success"
+        ],
+        "eval_issues": [
+          "finish_success_verified",
+          "has_deliverables"
+        ],
+        "quality": 4,
+        "wasted_ratio": 0
+      }
+    },
+    {
+      "sessionId": "s_1775849060847_1026",
+      "agent": "optimizer",
+      "verdict": "good",
+      "verdict_mapped": "pass",
+      "ground_truth": "pass",
+      "gt_binary": "pass",
+      "gt_reason": "Session done, result delivered (minor convention issues)",
+      "wrong_consensus": false,
+      "signals": {
+        "session_ended_ok": true,
+        "session_status": "done",
+        "result_delivered": true,
+        "conventions_failed": 2,
+        "conventions_checked": 12,
+        "convention_pass_rate": 0.8333333333333334,
+        "digest_outcomes": [
+          "in_progress",
+          "success"
+        ],
+        "eval_issues": [],
+        "quality": 1,
+        "wasted_ratio": null
+      }
+    },
+    {
+      "sessionId": "s_1775935483234_1589",
+      "agent": "tech-lead",
+      "verdict": "good",
+      "verdict_mapped": "pass",
+      "ground_truth": "pass",
+      "gt_binary": "pass",
+      "gt_reason": "Session done, result delivered, ≤1 convention failure",
+      "wrong_consensus": false,
+      "signals": {
+        "session_ended_ok": true,
+        "session_status": "done",
+        "result_delivered": true,
+        "conventions_failed": 0,
+        "conventions_checked": 12,
+        "convention_pass_rate": 1,
+        "digest_outcomes": [
+          "in_progress",
+          "success"
+        ],
+        "eval_issues": [],
+        "quality": 1,
+        "wasted_ratio": null
+      }
+    },
+    {
+      "sessionId": "s_1775768017741_538",
+      "agent": "coach",
+      "verdict": "good",
+      "verdict_mapped": "pass",
+      "ground_truth": "pass",
+      "gt_binary": "pass",
+      "gt_reason": "Session done, result delivered, ≤1 convention failure",
+      "wrong_consensus": false,
+      "signals": {
+        "session_ended_ok": true,
+        "session_status": "done",
+        "result_delivered": true,
+        "conventions_failed": 0,
+        "conventions_checked": 12,
+        "convention_pass_rate": 1,
+        "digest_outcomes": [
+          "in_progress",
+          "success"
+        ],
+        "eval_issues": [
+          "finish_success_verified",
+          "has_deliverables"
+        ],
+        "quality": 4,
+        "wasted_ratio": 0
+      }
+    },
+    {
+      "sessionId": "s_1775939022016_1604",
+      "agent": "optimizer",
+      "verdict": "good",
+      "verdict_mapped": "pass",
+      "ground_truth": "pass",
+      "gt_binary": "pass",
+      "gt_reason": "Session done, result delivered, ≤1 convention failure",
+      "wrong_consensus": false,
+      "signals": {
+        "session_ended_ok": true,
+        "session_status": "done",
+        "result_delivered": true,
+        "conventions_failed": 0,
+        "conventions_checked": 12,
+        "convention_pass_rate": 1,
+        "digest_outcomes": [
+          "in_progress",
+          "success"
+        ],
+        "eval_issues": [],
+        "quality": 1,
+        "wasted_ratio": null
+      }
+    },
+    {
+      "sessionId": "s_1775931821973_1560",
+      "agent": "optimizer",
+      "verdict": "good",
+      "verdict_mapped": "pass",
+      "ground_truth": "pass",
+      "gt_binary": "pass",
+      "gt_reason": "Session done, result delivered, ≤1 convention failure",
+      "wrong_consensus": false,
+      "signals": {
+        "session_ended_ok": true,
+        "session_status": "done",
+        "result_delivered": true,
+        "conventions_failed": 0,
+        "conventions_checked": 12,
+        "convention_pass_rate": 1,
+        "digest_outcomes": [
+          "in_progress",
+          "success"
+        ],
+        "eval_issues": [],
+        "quality": 1,
+        "wasted_ratio": null
+      }
+    },
+    {
+      "sessionId": "s_1773566036423_895",
+      "agent": "tech-lead",
+      "verdict": "needs_improvement",
+      "verdict_mapped": "fail",
+      "ground_truth": "fail",
+      "gt_binary": "fail",
+      "gt_reason": "Session error, result not delivered",
+      "wrong_consensus": false,
+      "signals": {
+        "session_ended_ok": false,
+        "session_status": "error",
+        "result_delivered": false,
+        "conventions_failed": 0,
+        "conventions_checked": 0,
+        "convention_pass_rate": null,
+        "digest_outcomes": [],
+        "eval_issues": [
+          "session_error",
+          "multiple_tool_errors"
+        ],
+        "quality": 2,
+        "wasted_ratio": 1
+      }
+    },
+    {
+      "sessionId": "s_1773401028640_400",
+      "agent": "may",
+      "verdict": "needs_improvement",
+      "verdict_mapped": "fail",
+      "ground_truth": "fail",
+      "gt_binary": "fail",
+      "gt_reason": "Session error, result not delivered",
+      "wrong_consensus": false,
+      "signals": {
+        "session_ended_ok": false,
+        "session_status": "error",
+        "result_delivered": false,
+        "conventions_failed": 0,
+        "conventions_checked": 0,
+        "convention_pass_rate": null,
+        "digest_outcomes": [],
+        "eval_issues": [
+          "session_error",
+          "shallow_session"
+        ],
+        "quality": 1,
+        "wasted_ratio": null
+      }
+    },
+    {
+      "sessionId": "s_1773505029023_218",
+      "agent": "amy",
+      "verdict": "needs_improvement",
+      "verdict_mapped": "fail",
+      "ground_truth": "fail",
+      "gt_binary": "fail",
+      "gt_reason": "Result not delivered",
+      "wrong_consensus": false,
+      "signals": {
+        "session_ended_ok": true,
+        "session_status": "done",
+        "result_delivered": false,
+        "conventions_failed": 0,
+        "conventions_checked": 0,
+        "convention_pass_rate": null,
+        "digest_outcomes": [],
+        "eval_issues": [
+          "shallow_session"
+        ],
+        "quality": 1,
+        "wasted_ratio": null
+      }
+    },
+    {
+      "sessionId": "s_1773499991571_77",
+      "agent": "may",
+      "verdict": "needs_improvement",
+      "verdict_mapped": "fail",
+      "ground_truth": "fail",
+      "gt_binary": "fail",
+      "gt_reason": "Session error, result not delivered",
+      "wrong_consensus": false,
+      "signals": {
+        "session_ended_ok": false,
+        "session_status": "error",
+        "result_delivered": false,
+        "conventions_failed": 0,
+        "conventions_checked": 0,
+        "convention_pass_rate": null,
+        "digest_outcomes": [],
+        "eval_issues": [
+          "session_error",
+          "multiple_tool_errors"
+        ],
+        "quality": 2,
+        "wasted_ratio": 0.3125
+      }
+    },
+    {
+      "sessionId": "s_1773444098771_1713",
+      "agent": "tech-lead",
+      "verdict": "needs_improvement",
+      "verdict_mapped": "fail",
+      "ground_truth": "fail",
+      "gt_binary": "fail",
+      "gt_reason": "Session error, result not delivered",
+      "wrong_consensus": false,
+      "signals": {
+        "session_ended_ok": false,
+        "session_status": "error",
+        "result_delivered": false,
+        "conventions_failed": 0,
+        "conventions_checked": 0,
+        "convention_pass_rate": null,
+        "digest_outcomes": [],
+        "eval_issues": [
+          "session_error",
+          "multiple_tool_errors"
+        ],
+        "quality": 2,
+        "wasted_ratio": 0.34146341463414637
+      }
+    },
+    {
+      "sessionId": "s_1773715324052_89",
+      "agent": "coach",
+      "verdict": "needs_improvement",
+      "verdict_mapped": "fail",
+      "ground_truth": "fail",
+      "gt_binary": "fail",
+      "gt_reason": "Session error, result not delivered",
+      "wrong_consensus": false,
+      "signals": {
+        "session_ended_ok": false,
+        "session_status": "error",
+        "result_delivered": false,
+        "conventions_failed": 0,
+        "conventions_checked": 0,
+        "convention_pass_rate": null,
+        "digest_outcomes": [],
+        "eval_issues": [
+          "session_error",
+          "multiple_tool_errors"
+        ],
+        "quality": 3,
+        "wasted_ratio": 0.36666666666666664
+      }
+    },
+    {
+      "sessionId": "s_1773454027449_2124",
+      "agent": "tech-lead",
+      "verdict": "needs_improvement",
+      "verdict_mapped": "fail",
+      "ground_truth": "fail",
+      "gt_binary": "fail",
+      "gt_reason": "Session error, result not delivered",
+      "wrong_consensus": false,
+      "signals": {
+        "session_ended_ok": false,
+        "session_status": "error",
+        "result_delivered": false,
+        "conventions_failed": 0,
+        "conventions_checked": 0,
+        "convention_pass_rate": null,
+        "digest_outcomes": [],
+        "eval_issues": [
+          "session_error",
+          "multiple_tool_errors"
+        ],
+        "quality": 2,
+        "wasted_ratio": 1
+      }
+    },
+    {
+      "sessionId": "s_1773799116670_348",
+      "agent": "bob",
+      "verdict": "needs_improvement",
+      "verdict_mapped": "fail",
+      "ground_truth": "fail",
+      "gt_binary": "fail",
+      "gt_reason": "Session error, result not delivered",
+      "wrong_consensus": false,
+      "signals": {
+        "session_ended_ok": false,
+        "session_status": "error",
+        "result_delivered": false,
+        "conventions_failed": 0,
+        "conventions_checked": 0,
+        "convention_pass_rate": null,
+        "digest_outcomes": [],
+        "eval_issues": [
+          "session_error",
+          "shallow_session"
+        ],
+        "quality": 1,
+        "wasted_ratio": null
+      }
+    },
+    {
+      "sessionId": "s_1774422575241_0",
+      "agent": "bob",
+      "verdict": "needs_improvement",
+      "verdict_mapped": "fail",
+      "ground_truth": "fail",
+      "gt_binary": "fail",
+      "gt_reason": "Result not delivered",
+      "wrong_consensus": false,
+      "signals": {
+        "session_ended_ok": true,
+        "session_status": "done",
+        "result_delivered": false,
+        "conventions_failed": 0,
+        "conventions_checked": 0,
+        "convention_pass_rate": null,
+        "digest_outcomes": [],
+        "eval_issues": [
+          "shallow_session"
+        ],
+        "quality": 1,
+        "wasted_ratio": null
+      }
+    },
+    {
+      "sessionId": "s_1773718791474_307",
+      "agent": "coach",
+      "verdict": "needs_improvement",
+      "verdict_mapped": "fail",
+      "ground_truth": "fail",
+      "gt_binary": "fail",
+      "gt_reason": "Session error, result not delivered",
+      "wrong_consensus": false,
+      "signals": {
+        "session_ended_ok": false,
+        "session_status": "error",
+        "result_delivered": false,
+        "conventions_failed": 0,
+        "conventions_checked": 0,
+        "convention_pass_rate": null,
+        "digest_outcomes": [],
+        "eval_issues": [
+          "session_error",
+          "multiple_tool_errors"
+        ],
+        "quality": 2,
+        "wasted_ratio": 0.25
+      }
+    },
+    {
+      "sessionId": "s_1773500299983_88",
+      "agent": "tech-lead",
+      "verdict": "needs_improvement",
+      "verdict_mapped": "fail",
+      "ground_truth": "fail",
+      "gt_binary": "fail",
+      "gt_reason": "Session error, result not delivered",
+      "wrong_consensus": false,
+      "signals": {
+        "session_ended_ok": false,
+        "session_status": "error",
+        "result_delivered": false,
+        "conventions_failed": 0,
+        "conventions_checked": 0,
+        "convention_pass_rate": null,
+        "digest_outcomes": [],
+        "eval_issues": [
+          "session_error",
+          "multiple_tool_errors"
+        ],
+        "quality": 2,
+        "wasted_ratio": 0.29310344827586204
+      }
+    },
+    {
+      "sessionId": "s_1773716991371_191",
+      "agent": "coach",
+      "verdict": "needs_improvement",
+      "verdict_mapped": "fail",
+      "ground_truth": "fail",
+      "gt_binary": "fail",
+      "gt_reason": "Session error, result not delivered",
+      "wrong_consensus": false,
+      "signals": {
+        "session_ended_ok": false,
+        "session_status": "error",
+        "result_delivered": false,
+        "conventions_failed": 0,
+        "conventions_checked": 0,
+        "convention_pass_rate": null,
+        "digest_outcomes": [],
+        "eval_issues": [
+          "session_error",
+          "multiple_tool_errors"
+        ],
+        "quality": 2,
+        "wasted_ratio": 0.4
+      }
+    },
+    {
+      "sessionId": "s_1773715268999_64",
+      "agent": "coach",
+      "verdict": "needs_improvement",
+      "verdict_mapped": "fail",
+      "ground_truth": "fail",
+      "gt_binary": "fail",
+      "gt_reason": "Session error, result not delivered",
+      "wrong_consensus": false,
+      "signals": {
+        "session_ended_ok": false,
+        "session_status": "error",
+        "result_delivered": false,
+        "conventions_failed": 0,
+        "conventions_checked": 0,
+        "convention_pass_rate": null,
+        "digest_outcomes": [],
+        "eval_issues": [
+          "session_error",
+          "multiple_tool_errors"
+        ],
+        "quality": 3,
+        "wasted_ratio": 0.2608695652173913
+      }
+    },
+    {
+      "sessionId": "s_1773516049481_576",
+      "agent": "amy",
+      "verdict": "needs_improvement",
+      "verdict_mapped": "fail",
+      "ground_truth": "fail",
+      "gt_binary": "fail",
+      "gt_reason": "Result not delivered",
+      "wrong_consensus": false,
+      "signals": {
+        "session_ended_ok": true,
+        "session_status": "done",
+        "result_delivered": false,
+        "conventions_failed": 0,
+        "conventions_checked": 0,
+        "convention_pass_rate": null,
+        "digest_outcomes": [],
+        "eval_issues": [
+          "shallow_session"
+        ],
+        "quality": 1,
+        "wasted_ratio": null
+      }
+    },
+    {
+      "sessionId": "s_1773574610702_1128",
+      "agent": "scout",
+      "verdict": "needs_improvement",
+      "verdict_mapped": "fail",
+      "ground_truth": "fail",
+      "gt_binary": "fail",
+      "gt_reason": "Session error, result not delivered",
+      "wrong_consensus": false,
+      "signals": {
+        "session_ended_ok": false,
+        "session_status": "error",
+        "result_delivered": false,
+        "conventions_failed": 0,
+        "conventions_checked": 0,
+        "convention_pass_rate": null,
+        "digest_outcomes": [],
+        "eval_issues": [
+          "session_error",
+          "shallow_session"
+        ],
+        "quality": 1,
+        "wasted_ratio": null
+      }
+    },
+    {
+      "sessionId": "s_1773587332071_326",
+      "agent": "coach",
+      "verdict": "needs_improvement",
+      "verdict_mapped": "fail",
+      "ground_truth": "fail",
+      "gt_binary": "fail",
+      "gt_reason": "Session interrupted, result not delivered",
+      "wrong_consensus": false,
+      "signals": {
+        "session_ended_ok": false,
+        "session_status": "interrupted",
+        "result_delivered": false,
+        "conventions_failed": 0,
+        "conventions_checked": 0,
+        "convention_pass_rate": null,
+        "digest_outcomes": [],
+        "eval_issues": [
+          "shallow_session"
+        ],
+        "quality": 1,
+        "wasted_ratio": null
+      }
+    },
+    {
+      "sessionId": "s_1773776096870_25",
+      "agent": "scout",
+      "verdict": "needs_improvement",
+      "verdict_mapped": "fail",
+      "ground_truth": "fail",
+      "gt_binary": "fail",
+      "gt_reason": "Session interrupted, result not delivered",
+      "wrong_consensus": false,
+      "signals": {
+        "session_ended_ok": false,
+        "session_status": "interrupted",
+        "result_delivered": false,
+        "conventions_failed": 0,
+        "conventions_checked": 0,
+        "convention_pass_rate": null,
+        "digest_outcomes": [],
+        "eval_issues": [
+          "session_error",
+          "multiple_tool_errors"
+        ],
+        "quality": 3,
+        "wasted_ratio": 0.11764705882352941
+      }
+    },
+    {
+      "sessionId": "s_1773556493903_604",
+      "agent": "tech-lead",
+      "verdict": "needs_improvement",
+      "verdict_mapped": "fail",
+      "ground_truth": "fail",
+      "gt_binary": "fail",
+      "gt_reason": "Session error, result not delivered",
+      "wrong_consensus": false,
+      "signals": {
+        "session_ended_ok": false,
+        "session_status": "error",
+        "result_delivered": false,
+        "conventions_failed": 0,
+        "conventions_checked": 0,
+        "convention_pass_rate": null,
+        "digest_outcomes": [],
+        "eval_issues": [
+          "session_error",
+          "shallow_session",
+          "multiple_tool_errors"
+        ],
+        "quality": 1,
+        "wasted_ratio": null
+      }
+    },
+    {
+      "sessionId": "s_1773296878138_4",
+      "agent": "scout-growth-test",
+      "verdict": "needs_improvement",
+      "verdict_mapped": "fail",
+      "ground_truth": "fail",
+      "gt_binary": "fail",
+      "gt_reason": "Result not delivered",
+      "wrong_consensus": false,
+      "signals": {
+        "session_ended_ok": true,
+        "session_status": "done",
+        "result_delivered": false,
+        "conventions_failed": 0,
+        "conventions_checked": 0,
+        "convention_pass_rate": null,
+        "digest_outcomes": [],
+        "eval_issues": [
+          "shallow_session"
+        ],
+        "quality": 1,
+        "wasted_ratio": null
+      }
+    },
+    {
+      "sessionId": "s_1773715274996_67",
+      "agent": "coach",
+      "verdict": "needs_improvement",
+      "verdict_mapped": "fail",
+      "ground_truth": "fail",
+      "gt_binary": "fail",
+      "gt_reason": "Session error, result not delivered",
+      "wrong_consensus": false,
+      "signals": {
+        "session_ended_ok": false,
+        "session_status": "error",
+        "result_delivered": false,
+        "conventions_failed": 0,
+        "conventions_checked": 0,
+        "convention_pass_rate": null,
+        "digest_outcomes": [],
+        "eval_issues": [
+          "session_error",
+          "multiple_tool_errors",
+          "moderate_waste_ratio"
+        ],
+        "quality": 1,
+        "wasted_ratio": 0.5
+      }
+    },
+    {
+      "sessionId": "s_1773786576862_204",
+      "agent": "bob",
+      "verdict": "needs_improvement",
+      "verdict_mapped": "fail",
+      "ground_truth": "fail",
+      "gt_binary": "fail",
+      "gt_reason": "Session error, result not delivered",
+      "wrong_consensus": false,
+      "signals": {
+        "session_ended_ok": false,
+        "session_status": "error",
+        "result_delivered": false,
+        "conventions_failed": 0,
+        "conventions_checked": 0,
+        "convention_pass_rate": null,
+        "digest_outcomes": [],
+        "eval_issues": [
+          "session_error",
+          "shallow_session"
+        ],
+        "quality": 1,
+        "wasted_ratio": null
+      }
+    },
+    {
+      "sessionId": "s_1773715191371_10",
+      "agent": "coach",
+      "verdict": "needs_improvement",
+      "verdict_mapped": "fail",
+      "ground_truth": "fail",
+      "gt_binary": "fail",
+      "gt_reason": "Session error, result not delivered",
+      "wrong_consensus": false,
+      "signals": {
+        "session_ended_ok": false,
+        "session_status": "error",
+        "result_delivered": false,
+        "conventions_failed": 0,
+        "conventions_checked": 0,
+        "convention_pass_rate": null,
+        "digest_outcomes": [],
+        "eval_issues": [
+          "session_error",
+          "multiple_tool_errors",
+          "moderate_waste_ratio"
+        ],
+        "quality": 1,
+        "wasted_ratio": 0.5
+      }
+    },
+    {
+      "sessionId": "s_1773506134423_266",
+      "agent": "tech-lead",
+      "verdict": "needs_improvement",
+      "verdict_mapped": "fail",
+      "ground_truth": "fail",
+      "gt_binary": "fail",
+      "gt_reason": "Session error, result not delivered",
+      "wrong_consensus": false,
+      "signals": {
+        "session_ended_ok": false,
+        "session_status": "error",
+        "result_delivered": false,
+        "conventions_failed": 0,
+        "conventions_checked": 0,
+        "convention_pass_rate": null,
+        "digest_outcomes": [],
+        "eval_issues": [
+          "session_error",
+          "shallow_session"
+        ],
+        "quality": 1,
+        "wasted_ratio": null
+      }
+    },
+    {
+      "sessionId": "s_1773715191386_12",
+      "agent": "coach",
+      "verdict": "needs_improvement",
+      "verdict_mapped": "fail",
+      "ground_truth": "fail",
+      "gt_binary": "fail",
+      "gt_reason": "Session error, result not delivered",
+      "wrong_consensus": false,
+      "signals": {
+        "session_ended_ok": false,
+        "session_status": "error",
+        "result_delivered": false,
+        "conventions_failed": 0,
+        "conventions_checked": 0,
+        "convention_pass_rate": null,
+        "digest_outcomes": [],
+        "eval_issues": [
+          "session_error",
+          "multiple_tool_errors"
+        ],
+        "quality": 2,
+        "wasted_ratio": 0.4
+      }
+    },
+    {
+      "sessionId": "s_1773546147865_310",
+      "agent": "tech-lead",
+      "verdict": "needs_improvement",
+      "verdict_mapped": "fail",
+      "ground_truth": "fail",
+      "gt_binary": "fail",
+      "gt_reason": "Session error, result not delivered",
+      "wrong_consensus": false,
+      "signals": {
+        "session_ended_ok": false,
+        "session_status": "error",
+        "result_delivered": false,
+        "conventions_failed": 0,
+        "conventions_checked": 0,
+        "convention_pass_rate": null,
+        "digest_outcomes": [],
+        "eval_issues": [
+          "session_error",
+          "multiple_tool_errors"
+        ],
+        "quality": 2,
+        "wasted_ratio": 0.6538461538461539
+      }
+    }
+  ]
+}

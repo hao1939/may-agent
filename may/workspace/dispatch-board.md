@@ -1,18 +1,18 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-12 ~06:25 UTC
+Updated: 2026-04-12 ~06:53 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors (billing). Blocked on Hao.
-- **Bob**: 🟢 Active — Heartbeat cycle running.
-- **Coach**: 🟢 Active — Heartbeat cycle running.
+- **Bob**: 🟢 Active — Heartbeat running. EXP-147 designed.
+- **Coach**: 🟢 Active — EXP-123 COMPLETE. EXP-145 in progress.
 - **Scout**: 🟢 Active — Heartbeat cycle running.
-- **Tech-lead**: 🟢 Active — Heartbeat + coder skill pruning completed.
-- **Optimizer**: 🟢 Active — Heartbeat running (previous cycle had 2 interrupts, recovered).
-- **Evaluator**: 🟢 Active.
+- **Tech-lead**: 🟢 Active — Coder skill pruning P0+P1 both done. Cron handler resolver WIP.
+- **Optimizer**: 🟢 Active — Post-fix measurement done (bob budget caps confirmed).
+- **Evaluator**: 🟢 Active — Stale by ~9h (last eval 21:28 Apr 11). Needs investigation.
 - **QA**: 🟢 Active.
-- **Coder**: Available — no active sessions.
-- **Summary**: 7/8 healthy. Amy-kimi 429 (billing). All agents cycling normally.
+- **Coder**: Available — no active sessions. Skills pruned to 3 (was 10).
+- **Summary**: 7/8 healthy. Amy-kimi 429 (billing). Evaluator stale (~9h since last eval).
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -27,7 +27,7 @@ Updated: 2026-04-12 ~06:25 UTC
 | Amy-kimi billing outage | 🔴 Blocked | Hao | Still 429, needs balance refill |
 | **EXP-105 Few-Shot Production Impact** | ⏳ WAITING | coach | Zero coder/optimizer work sessions since deployment (Apr 9). Baselines captured. Heartbeat exclusion bug fixed. |
 | **EXP-114a Tool Schema Guard Monitoring** | ⏳ INSUFFICIENT DATA | coach | T+2h: 57 sessions, 0 activations, 0 FP. Need 280+ sessions. |
-| **EXP-123 Verification-Depth Guard** | ⏳ OBSERVING | coach | Guard deployed (commit 9d9be57). Observation window until Apr 13. |
+| **EXP-123 Verification-Depth Guard** | ✅ COMPLETE | coach | 38h data: Fleet C1.3 95.3% (552 checks). C1.5 regression was measurement artifact (fixed). Optimizer C1.3 dropped to 82% — needs investigation. |
 | **Web UI Agent Visualization Dashboard** | ⚠️ Branch stale | tech-lead | Source on main (`web.ts` 663 lines). Branch needs reconciliation. |
 | **Finish-Guard Git Ops False Positive** | ⚠️ Dispatched | tech-lead | FM-3.1 guard blocked git merge 4×. Dispatched (req:3623828c). |
 | **Bob H-097 CCC Triad Hypothesis** | ⏳ NEW | bob | P(H)=0.65. Multi-Agent CCC Triad. |
@@ -41,9 +41,10 @@ Updated: 2026-04-12 ~06:25 UTC
 | **Deliver-or-Report Workflow Fix** | ⏳ IN PROGRESS | tech-lead | 41% done rate (23/39 escalated). Tech-lead working on sensitivity fix. |
 | **EXP-145 Guard Dependency Escalation** | ⏳ IN PROGRESS | coach | Phase 1: time-series retrospective analysis. |
 | **EXP-146 Thinking-Token Analysis** | ⏳ IN PROGRESS | bob | Designing for H-105 (Three-Layer Reasoning Model). |
-| **analyze-failures cron bug** | ⚠️ Low priority | - | `db.query is not a function`. Persistent but non-critical. |
-| **Coder Skill Pruning P0** | ✅ DONE | tech-lead | 3 disproven-as-text skills removed (16.3KB). Commit 6705a0b3. Coder 10→7 skills. |
-| **Coder Skill Pruning P1** | 🆕 READY | tech-lead | Remove 4 untested skills (14.4KB). Coder 7→3 skills. Audit: `audits/skill-overlap-audit.md` |
+| **analyze-failures cron bug** | ✅ FIXED | tech-lead | Handler already uses `prepare`. Tech-lead now working on cron dynamic handler resolver (uncommitted `src/app/cron.ts`). |
+| **Coder Skill Pruning P0** | ✅ DONE | tech-lead | 3 disproven-as-text skills removed (16.3KB). Commit 6705a0b3. |
+| **Coder Skill Pruning P1** | ✅ DONE | tech-lead | 4 untested skills removed (14.4KB). Commit 2ea68a4b. Coder 10→3 skills (70% reduction). |
+| **EXP-147 CCC Triad Validation** | 🆕 DESIGNED | bob | Tests H-097 via P-120b + P-120c. Design complete. Ready for coach to execute. |
 
 ## Next Actions
 - **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. Saves $143-441/day. **Blocked on Hao since Mar 24**.
@@ -51,13 +52,14 @@ Updated: 2026-04-12 ~06:25 UTC
 - **P1**: **Generate implementation work** — System idle without features. Coder completely idle. Need Hao priorities.
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (06:25)
-- **System**: 7/8 healthy. All agents cycling normally. No critical failures.
-- **Coder Skill Pruning P0 DONE**: Removed 3 disproven-as-text skills from coder (classify-then-act, investigate-and-fix, evidence-over-narrative). 16.3KB savings. Commit 6705a0b3. Coder now 7 skills/~27KB.
-- **Skill Overlap Audit complete**: Full report at `audits/skill-overlap-audit.md`. Coder was critically overloaded (43KB/10 skills). P1 (remove 4 untested, 14KB more) ready to dispatch.
-- **Active research**: Bob, Coach, Optimizer all cycling. Tech-lead completed pruning task.
-- **Improvement queue**: 2 ready items remaining (discovery task protection, skill sunset review).
-- **Optimizer**: Had 2 interrupts last cycle (request aborted), now recovered and running.
+## Latest Cycle Summary (06:53)
+- **System**: 7/8 healthy. Evaluator stale (~9h since last eval). All agents cycling.
+- **EXP-123 COMPLETE**: 38h production data confirms verification-depth guard works. Fleet C1.3 at 95.3%. C1.5 regression was measurement artifact (fixed by tech-lead, 7d54e506). Optimizer C1.3 at 82% — coach investigating.
+- **Coder Skill Pruning COMPLETE**: Both P0 (3 disproven, 16.3KB) and P1 (4 untested, 14.4KB) done. Coder 10→3 skills, 43KB→~13KB (70% reduction).
+- **EXP-147 designed**: Bob completed CCC Triad validation experiment design (H-097, P-120b + P-120c). Ready for coach execution.
+- **Optimizer**: Post-fix measurement confirms bob research thread budget caps working (-62% tool calls).
+- **Tech-lead**: Cron handler resolver in progress (uncommitted `src/app/cron.ts`). analyze-failures handler already fixed.
+- **Improvement queue**: 2 ready items (discovery task protection, skill sunset review).
 
 ## Archive Reference
 Full history of 140+ completed items archived to `dispatch-board-archive-apr12.md`.

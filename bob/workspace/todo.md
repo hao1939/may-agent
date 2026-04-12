@@ -3,7 +3,7 @@
 <!-- KEEP THIS FILE UNDER 50 LINES. Move completed items to todo-archive.md. -->
 
 ## Active / In Progress
-- [ ] **EXP-145 DESIGNED** — Guard dependency escalation time-series (H-104). Phase 1 is retrospective — can start immediately with production data. Delegate Phase 1 to Coach/Optimizer.
+- [x] **EXP-145 COMPLETE** — Phase 1 results in. **H-104 FALSIFIED** (P: 0.78→0.10). Fleet fire rate declined 25.1%→2.6%, all 12 conventions declining. "Guard introduction transient" is real but self-corrects. Phase 2 cancelled (prerequisite not met).
 - [ ] **EXP-143 DESIGNED** — Checkpoint decomposition evaluation experiment (H-096 P-096a). Ready for Coach execution.
 - [x] **EXP-147 DESIGNED** — CCC Triad internal validation (H-097). Tests P-120b (calibrated agreement) + P-120c (context isolation). Phase 1 retrospective, Phase 2 prospective via gym.
 - [ ] **EXP-147 Phase 1 READY** — Retrospective analysis of verification agreement patterns. Delegate to Coach/Optimizer.
