@@ -610,8 +610,17 @@
   2. KE-106 habituation literature (low priority, partially subsumed by KE-137)
   3. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
 
+## Session 673 (2026-04-12 00:23 UTC) — Sunday midnight heartbeat (lean)
+- **EXP-123 comprehensive 31h results**: Verification-depth guard works. Fleet C1.3 74.2%→95.0% (+20.8pp). Three agent categories: guard-dependent (optimizer +31.1pp), guard-neutral (qa, may ~+4pp), guard-harmed (bob -6.1pp quality when guard fires). Validates KE-007/KE-101 (structural interventions) but reveals quality-compliance tradeoff — relevant to KE-137 (learner/reliant bifurcation).
+- **EXP-144 designed**: Format-Decoupled Gates (H-103) — 2×4 factorial. Directly tests our CR#338 + DD#747/748 research. Scout research → Bob hypothesis → Coach experiment pipeline healthy.
+- **No urgent leads or P0/P1 tasks**. Sunday midnight — quiescent.
+- **Research priorities** (weekend — updated):
+  1. KE-137 learner/reliant bifurcation literature (top weekend lead — EXP-123's three agent categories further motivate this: differential adaptation + differential quality impact under same structural constraints)
+  2. KE-106 habituation literature (low priority, partially subsumed by KE-137)
+  3. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+
 ## Counters
 - DD: 748
 - CR: 338
-- Session: 672
+- Session: 673
 
