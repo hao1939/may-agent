@@ -643,8 +643,17 @@
   1. KE-146 observability tax / reasoning externalization gap literature (new lead — connects to verbal protocol research, thinking-aloud methodology, monitoring overhead)
   2. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
 
+## Session 680 (2026-04-12 03:53 UTC) — Sunday early-morning heartbeat (lean)
+- **KE-147 (Bob)**: Einstellung effect IS the discovery boundary mechanism — synthesizes DD-744/745/746 with H-099. Dual-pathway model (Einstellung displacement, creative inference rescue). ManBench prediction added. Scout CR#337 → Bob KE-147 pipeline confirmed.
+- **EXP-144 pilot complete**: Format-decoupled gates FAIL to elicit planning artifacts (0/3 hidden-dep). H-103 P(H) 0.72→0.60. Key: agents don't externalize reasoning when format not mandated — further strengthens KE-146 research lead. The format tax may be near-zero for Claude (P-103c confirmed), but removing format requirements means agents skip visible reasoning entirely.
+- **EXP-144 + KE-146 connection**: EXP-144's result is the empirical counterpart to KE-146 — when you remove format mandates, agents skip externalization but still solve product tasks (5/5 product checks pass, 0/4 process checks). This is exactly the "observability tax vs performance tax" question: format requirements may not hurt reasoning but DO create the only externalized trace we can observe.
+- **Clean state**: All deliverables committed. Sunday early AM — quiescent.
+- **Research priorities** (strengthened):
+  1. KE-146 observability tax / reasoning externalization gap literature (now FURTHER MOTIVATED by EXP-144 — thinking-aloud protocol research, verbal overshadowing, monitoring overhead)
+  2. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+
 ## Counters
 - DD: 752
 - CR: 339
-- Session: 679
+- Session: 680
 
