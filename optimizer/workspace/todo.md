@@ -44,6 +44,7 @@
 - Mode C finding complete: `workspace/finding-workflow-adoption-gap-0410.md`
 - Mode A finding complete: `workspace/finding-coach-166op-archaeology-0410.md` — **Key result: high-op sessions are restart-accumulated, not single-context bloat. 184-op session had 6 restarts (7 segments). Primary fix is infra (cap restarts/turns), not behavioral.**
 - Mode A finding complete: `workspace/finding-dor-p1-bloat-0411.md` — **Key result: Phase 1 consumes 67% of all D-o-R ops. 14/14 bloated P1s (>40 ops) have "verified" in outcome — doing full delivery cycle in "plan" phase. 15-op cap would save 44% of D-o-R ops (259/day, ~$12/day). Fix: tighter P1 prompt with explicit 15-op budget.**
+- **24h MEASUREMENT (Apr 12 ~08:54 UTC)**: P1 avg 31.2→11.7 (62% reduction), excl. 2 outliers: 4.5 (86% reduction). Total run 46.0→29.4 (36% reduction). 2 KB INDEX batch tasks blew budget (93, 90 ops) — batch tasks need script, not D-o-R. Cap holds for standard tasks. ~425 ops/day saved (~$20/day). Finding: `workspace/finding-dor-p1-budget-cap-24h-measurement-0412.md`
 - Mode A finding complete: `workspace/finding-coach-82op-qa-regression-0411.md` — Coach 82-op QA regression investigation (EXP-133). Completed Apr 11 ~08:29 UTC.
 
 ### may.db WAL Bug — FIXED, Monitoring
@@ -96,7 +97,7 @@
 - **Workflow adoption**: 4.5% system-wide (Apr 4-10). Bob 22.4%, Coach 1.9%, others 0%. No clear upward trend (fluctuates 0.3%-16.6% weekly).
 - **Workflow efficiency**: D-o-R runs cost +53% more ops than non-WF equivalents. Phase 1 unbounded reading is root cause. Error rates ~50% lower. Quality scores INCOMPARABLE (0-1 vs 0-5 scales — data infra bug).
 - **Optimizer heartbeat cost**: Was 56 ops avg. Fix deployed (Dispatcher Mode heartbeat). Measuring.
-- **Bob P1 read-loop**: ~~87 ops in Phase 1 of D-o-R for a KB integration task.~~ **FIX DEPLOYED (commit 40b22057)**: 15-op budget cap prompt. Measuring — check after 24h. Finding: `workspace/finding-dor-p1-bloat-0411.md`
+- **Bob P1 read-loop**: ~~87 ops in Phase 1 of D-o-R for a KB integration task.~~ **FIX DEPLOYED + 24h CONFIRMED (commit 40b22057)**: P1 avg 31.2→11.7 (62% reduction). Excl. batch outliers: 4.5 (86%). Full run: 46.0→29.4 (36%). ~425 ops/day saved (~$20/day). 2 batch tasks (90+ ops) defeat the cap — need script. Findings: `workspace/finding-dor-p1-bloat-0411.md`, `workspace/finding-dor-p1-budget-cap-24h-measurement-0412.md`
 - **Session restart accumulation**: Top coach sessions (184, 129 ops) are multi-restart sessions (6-12 restarts), not single-context bloat. Each restart adds discovery overhead + grows context window (up to 50K tokens/turn). Infra fix (maxRestarts=3 or maxTurns=80) would cap all >100 op sessions. Investigation spiral: 129-op session spent 69 ops debugging model issues — not coach's job.
 
 ## ⚠️ SENT/ESCALATED
@@ -109,7 +110,7 @@
 
 ## ✅ DONE
 
-- **D-o-R Phase 1 Budget Cap** — 86% reduction (29.7→4.9 avg ops). ~343 ops/day saved (~$16/day). (2026-04-11)
+- **D-o-R Phase 1 Budget Cap** — 86% reduction (29.7→4.9 avg ops). ~343 ops/day saved (~$16/day). *24h confirmed*: 62% all-in (31.2→11.7), 86% excl. batch outliers. ~425 ops/day saved (~$20/day). (2026-04-11/12)
 - **D-o-R Nested Workflow Spawning** — 0/4 nesting incidents post-fix. (2026-04-12)
 - **Bob Research Thread Bloat** — 62% reduction via parallel-research budget caps. ~397 ops/day saved (~$19/day). (2026-04-12)
 - **Tech-Lead Heartbeat Bloat** — 89% reduction (30.8→3.5 avg ops). ~1,100 ops/day saved (~$52/day). (2026-04-11)
