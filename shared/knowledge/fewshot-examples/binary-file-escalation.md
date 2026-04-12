@@ -7,7 +7,7 @@
 ## Trigger Patterns
 
 ```regex
-/binary|\.bin\b|compiled\s+(binary|file|executable)|executable|hexdump/i
+/binary|\.bin\b(?!\/)|compiled\s+(binary|file|executable)|executable|hexdump/i
 ```
 
 ## Worked Example
