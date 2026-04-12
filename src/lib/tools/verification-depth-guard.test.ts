@@ -234,6 +234,62 @@ describe("verification-depth-guard", () => {
     });
   });
 
+  describe("process artifact exclusions", () => {
+    test("allows finish when only write is DELIVERABLES_CHECKLIST.md (process artifact)", async () => {
+      const guard = createVerificationDepthGuard("optimizer");
+      const ctx = makeContext([
+        { name: "read", args: { path: "agents/optimizer/todo.md" } },
+        { name: "write", args: { path: "agents/optimizer/DELIVERABLES_CHECKLIST.md", content: "- [ ] task 1" } },
+        // No post-write verification — but the write is a process artifact
+      ]);
+      const result = await guard(ctx);
+      expect(result).toBeUndefined();
+    });
+
+    test("allows finish when DELIVERABLES_CHECKLIST is written via bash redirect", async () => {
+      const guard = createVerificationDepthGuard("optimizer");
+      const ctx = makeContext([
+        { name: "read", args: { path: "agents/optimizer/todo.md" } },
+        { name: "bash", args: { command: "echo '- [ ] task 1' > DELIVERABLES_CHECKLIST.md" } },
+      ]);
+      const result = await guard(ctx);
+      expect(result).toBeUndefined();
+    });
+
+    test("still blocks when real deliverable is unverified alongside process artifact", async () => {
+      const guard = createVerificationDepthGuard("optimizer");
+      const ctx = makeContext([
+        { name: "write", args: { path: "agents/optimizer/DELIVERABLES_CHECKLIST.md", content: "- [ ] task 1" } },
+        { name: "edit", args: { path: "src/pricing.ts", oldText: "old", newText: "new" } },
+        // No verification after the real deliverable write
+      ]);
+      const result = await guard(ctx);
+      expect(result).toBeDefined();
+      expect(result!.block).toBe(true);
+      expect(result!.reason).toContain("T2-no-post-write-verification");
+    });
+
+    test("allows when real deliverable is verified even with unverified process artifact", async () => {
+      const guard = createVerificationDepthGuard("optimizer");
+      const ctx = makeContext([
+        { name: "write", args: { path: "agents/optimizer/DELIVERABLES_CHECKLIST.md", content: "- [ ] task 1" } },
+        { name: "edit", args: { path: "src/pricing.ts", oldText: "old", newText: "new" } },
+        { name: "read", args: { path: "src/pricing.ts" } }, // verifies the real deliverable
+      ]);
+      const result = await guard(ctx);
+      expect(result).toBeUndefined();
+    });
+
+    test("case-insensitive match for DELIVERABLES_CHECKLIST", async () => {
+      const guard = createVerificationDepthGuard("optimizer");
+      const ctx = makeContext([
+        { name: "write", args: { path: "agents/optimizer/deliverables_checklist.md", content: "content" } },
+      ]);
+      const result = await guard(ctx);
+      expect(result).toBeUndefined();
+    });
+  });
+
   describe("edge cases / fail-open", () => {
     test("handles empty transcript", async () => {
       const guard = createVerificationDepthGuard("bob");

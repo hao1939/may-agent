@@ -21,7 +21,7 @@ const WRITE_TOOL_NAMES = new Set(["write", "edit"]);
 const BASH_TOOL_NAME = "bash";
 
 /** Patterns in bash commands that indicate file-writing activity (redirects, copies, etc.). */
-const BASH_WRITE_PATTERNS = /(?:>\s|>>\s|\btee\b|\bcp\b|\bmv\b|\bmkdir\b|\btouch\b|\bgit\s+commit)/;
+const BASH_WRITE_PATTERNS = /(?:>\s|>>\s|\btee\b|\bcp\b|\bmv\b|\bmkdir\b|\btouch\b)/;
 
 /** Patterns in bash commands that indicate verification activity. */
 const BASH_VERIFY_PATTERNS =
