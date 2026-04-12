@@ -199,6 +199,7 @@
 - 2026-04-12 07:23: **Cron handler resolver** — forked (s_1775978657790_1948). 34 uncommitted lines in src/app/cron.ts for dynamic handler registration. Verify + commit to review branch.
 - 2026-04-12 07:53: **P2 Fix**: Coder fewshot regex false positives — COMPLETE (s_1775980510847_1965). Fixed `.bin` and `consumer` pattern matches.
 - 2026-04-12 08:23: Lens A — review branch hygiene audit forked (s_1775982270346_1978).
+- 2026-04-12 08:53: **Feature/fix rotation**: deliver-or-report Phase 3 file detection fix forked (s_1775984075740_1996). Root cause diagnosed prior session, now applying fix.
 - **Next**: Lens B
 - 2026-04-12 05:53: **P1 Workflow Adoption** (req:afa5607f) — forked deliver-or-report escalation investigation (s_1775973259186_1900). Coach's plan has 3 Phase 1 items: (1) fix deliver-or-report 41% done rate, (2) wire implement-and-verify, (3) audit verify-wrap vs C1.5. Item 3 likely resolved by C1.5 fix from last session.
 - **NOTE**: P1 QA heartbeat fix (req:5e23d82f/fe94b906) — write-blocked (heartbeat.md is identity file). Coach should apply the edit themselves or ask May.

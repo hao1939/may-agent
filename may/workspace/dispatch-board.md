@@ -44,13 +44,13 @@ Updated: 2026-04-12 ~08:23 UTC
 - **P1**: **Generate implementation work** — System idle without features. Coder completely idle. Need Hao priorities.
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (08:23)
-- **System**: 7/8 healthy. All agents cycling. No failures in last hour.
-- **Fewshot Regex Fix DONE**: Tech-lead completed false positive fix (s_1775980510847_1965).
-- **H-104 Impact Review DONE**: 8 update actions identified (P1-P3), no experiments blocked.
+## Latest Cycle Summary (08:53)
+- **System**: 7/8 healthy. All agents cycling. No failures in last hour. No stuck sessions.
+- **EXP-132 binary rebuild**: Dispatched to tech-lead (s_1775984053211_1994).
+- **C1.1 QA root cause**: Forked work session (s_1775984045658_1993) — analyzing why QA is at 44.4%.
 - **EXP-147 Track B**: Bob refining Context Isolation experiment design.
 - **Convention Regressions**: Coach ongoing — QA C1.1 44.4%, Optimizer C1.1 78.1%.
-- **Improvement queue**: 2 ready items (archive rotation → doing now, evaluator tagging).
+- **Improvement queue**: 2 items dispatched this cycle (C1.1 root cause, EXP-132 rebuild).
 
 ## Archive Reference
 Full history of 140+ completed items archived to `dispatch-board-archive-apr12.md`.

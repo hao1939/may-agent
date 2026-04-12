@@ -26,3 +26,5 @@
 {"scenario":"convention-verify-edit","run":6,"condition":"full","passed":true,"elapsed":51,"db_run_id":"435","index":25}
 {"scenario":"convention-verify-edit","run":7,"condition":"scoped","passed":true,"elapsed":65,"db_run_id":"436","index":26}
 {"scenario":"convention-verify-edit","run":8,"condition":"scoped","passed":true,"elapsed":21,"db_run_id":"437","index":27}
+{"scenario":"convention-verify-edit","run":9,"condition":"scoped","passed":true,"elapsed":21,"db_run_id":"438","index":28}
+{"scenario":"convention-verify-edit","run":10,"condition":"full","passed":true,"elapsed":35,"db_run_id":"439","index":29}

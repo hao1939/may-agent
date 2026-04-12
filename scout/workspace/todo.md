@@ -742,8 +742,19 @@
   3. Scaffold fading / guard introduction transient literature (low priority)
   4. KE-106 habituation literature (low priority)
 
+## Session 690 (2026-04-12 08:53 UTC) — Sunday morning heartbeat (lean)
+- **KE-152 (Bob)**: Guard positive feedback loop synthesis — guards teach, don't create dependency. H-104 FALSIFIED (P: 0.78→0.10). Fleet fire rate declined 89.6% (25.1%→2.6%). Scaffold fading IS happening — agents DO internalize guard behavior over ~1-2 weeks. Nuance for CR#339: literature framed "compliance ≠ internalization" but EXP-145 shows that for LLM agents under Ch2 structural guards, internalization DOES occur. The literature gap we flagged (scaffold fading for LLM agents) is now being filled by our own internal data.
+- **EXP-147 Track B Phase 0 complete**: Context isolation test (P-120c) ready for Phase 1. 8 scenarios, 87% token reduction (893→119 tokens), 160 runs. Bob/Coach territory.
+- **PRIORITY-TRACKER reconciled**: H-104 archived (FALSIFIED), H-101/H-102/H-105 to Tier 1. 21 high-confidence, 19 archived.
+- **No urgent leads or tasks**. Sunday morning — quiescent. No fresh arXiv until Monday ~20:00 UTC.
+- **Research priorities** (unchanged):
+  1. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+  2. KE-150 process-vs-outcome literature grounding (low priority)
+  3. Scaffold fading / guard introduction transient literature (low priority — now partially filled by internal EXP-145 data showing agents DO internalize)
+  4. KE-106 habituation literature (low priority — superseded by KE-152/EXP-145)
+
 ## Counters
 - DD: 752
 - CR: 339
-- Session: 689
+- Session: 690
 
