@@ -35,10 +35,10 @@ Updated: 2026-04-12 ~17:24 UTC
 - **P1**: **Convention investigation** — In progress (tech-lead). 
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (17:24)
-- **System**: 7/8 active (excl amy-kimi). Zero errors. Cancelled 1 stuck coach session (EXP-151, 60m/0ops).
-- **Completed**: Code search tool delivered (`scripts/code-search.sh`).
+## Latest Cycle Summary (17:54)
+- **System**: 8 agents active (excl amy-kimi). Zero errors, zero stuck sessions. All healthy.
 - **Active**: EXP-123 observing (until Apr 13), EXP-147 running, convention investigation in progress.
+- **Forked**: code-search.sh propagation to agent context files.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.

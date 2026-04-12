@@ -5215,3 +5215,21 @@ Reviewed HEAD **6041365** (feat: Web UI Phase 4 — Session Inspector). Read `sr
 
 ### Verdict
 CONDITIONAL — acceptable UI changes, but repository should not ship with current red tests (watchdog + research-db budget).
+
+---
+
+## 2026-04-12T17:55Z — Heartbeat QA review (commit 6041365)
+
+### Summary
+Reviewed `src/app/ui/web.ts` and partial `src/app/ui/web-static/index.html` for the Session Inspector UI/API addition. Typecheck passes; tests currently fail in watchdog + research-db suites.
+
+### Checks
+- tsc --noEmit: PASS (no output)
+- vitest --run: FAIL (129 files; 1926 tests; 25 failed)
+
+### Findings
+- `src/app/ui/web.ts`: adds `evaluation` to `/api/sessions/:id` response. This is a DB schema coupling; no error handling around missing `evaluations` table (will throw at runtime if migrations lag). Consider try/catch with a null fallback.
+- `src/app/ui/web.ts`: many silent `catch {}` blocks (socket discovery, transcript JSON.parse, websocket proxy JSON.parse). This hides operational failures; at least add minimal `console.warn` in non-hot loops.
+
+### Verdict
+CONDITIONAL — UI/API change seems reasonable and compiles, but cannot be considered shippable with current red tests (task-watchdog widespread failures + research-db integration budget failure).
