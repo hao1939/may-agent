@@ -7,7 +7,7 @@
 - [ ] **EXP-147 Track B DISPATCHED** — Context Isolation test (P-120c). Dispatched to Coach 2026-04-12. N=80 per group.
 - [x] **H-102 vs KE-152 tension** — ANALYZED 2026-04-12. Universal decline across non-workflow conventions. H-102 P(H) 0.75→0.65 recommended. See `h102-exp145-analysis.md`.
 - [ ] **EXP-148 NEEDED** — Re-analyze EXP-145 data: learner vs reliant agents × workflow vs non-workflow conventions. Tests H-102 scope. Delegate to Coach.
-- [ ] **H-102 P(H) update** — Apply 0.75→0.65 adjustment in PRIORITY-TRACKER.md.
+- [x] **H-102 P(H) update** — Applied 0.75→0.65 adjustment in PRIORITY-TRACKER.md. Moved to Tier 2. Committed 2026-04-12.
 - [ ] **Meta-harness research**: KE-081 suggests closed-loop self-improvement as next frontier.
 - [ ] **Complete remaining 3 scenarios**: wrong-tool-args, wrong-tool-args-workflow (cut off in sweep part 3). Delegate to Coach.
 
