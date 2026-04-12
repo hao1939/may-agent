@@ -35,6 +35,8 @@ Task: [brief description]
 - [ ] Update design doc with results
 ```
 
+**After writing, verify with `read()` that the checklist was created correctly.** C1.3 requires every write() be verified — the checklist is no exception.
+
 ### Step 4: Check items off as you complete them
 After each deliverable, **read() the checklist first**, then edit() to check off the item. The read() is required by C1.1 (read-before-edit) — even if you just wrote the file, you must read() before edit().
 
