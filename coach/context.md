@@ -1,6 +1,6 @@
 - npx is not available in this environment — use ./node_modules/.bin/<tool> or bun x <tool>
 - bun is at .state/.bun/bin/bun — add to PATH: `export PATH=".state/.bun/bin:$PATH"`
-- sqlite3 CLI is not available — query may.db with bun: `bun -e "import {Database} from 'bun:sqlite'; ..."`
+- sqlite3 CLI is not available — query .state/may.db with bun: `bun -e "import {Database} from 'bun:sqlite'; const db = new Database('.state/may.db', {readonly:true}); ..."`
 - Gym runner: scripts/gym-run.sh <scenario> --agent <name>
 - Gym batch runner: scripts/gym-batch.sh — run multiple scenarios at once with --variants, --trials N, --tier/--category filtering, and comparison summary. Use instead of manual gym-run.sh loops.
 - Gym scenarios are in agents/gym/scenarios/

@@ -2,7 +2,7 @@
 - bun is at .state/.bun/bin/bun — add to PATH: `export PATH=".state/.bun/bin:$PATH"`
 - npx is not available in this environment — use ./node_modules/.bin/<tool> or bun x <tool>
 - sudo is not available
-- sqlite3 CLI is not available — query may.db with bun: `bun -e "import {Database} from 'bun:sqlite'; ..."`
+- sqlite3 CLI is not available — query .state/may.db with bun: `bun -e "import {Database} from 'bun:sqlite'; const db = new Database('.state/may.db', {readonly:true}); ..."`
 - node:sqlite is NOT available (requires Node 22+, this environment runs Node 18) — use bun:sqlite instead
 - Build check: npm run check (runs tsc --noEmit) — run after every code change
 - agents/ is a separate git repo (gitignored from main) — commit agent changes from agents/ dir

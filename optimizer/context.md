@@ -1,10 +1,10 @@
 - npx is not available in this environment — use ./node_modules/.bin/<tool> or bun x <tool>
 - bun is at .state/.bun/bin/bun — add to PATH: `export PATH=".state/.bun/bin:$PATH"`
-- sqlite3 CLI is not available — query may.db with bun: `bun -e "import {Database} from 'bun:sqlite'; ..."`
+- sqlite3 CLI is not available — query .state/may.db with bun: `bun -e "import {Database} from 'bun:sqlite'; const db = new Database('.state/may.db', {readonly:true}); ..."`
 - Gym runner: scripts/gym-run.sh <scenario> --agent <name>
 - Gym stats: bun scripts/gym-stats.ts
 - agents/ is a separate git repo — commit from agents/ dir
-- Session data is in may.db sessions + evaluations tables, not filesystem scans
+- Session data is in .state/may.db sessions + evaluations tables, not filesystem scans
 - Cron handlers are in agents/<name>/handlers/ — referenced by cron.json "handler" field
 - Don't add harness guards without gym evidence — text rules don't change LLM behavior
 - Project root is /app — do not use /home/*, /Users/*, /root/*, or ~/ paths (they don't exist in this environment)

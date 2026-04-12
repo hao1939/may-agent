@@ -1,6 +1,6 @@
 - bun is at .state/.bun/bin/bun — add to PATH: `export PATH=".state/.bun/bin:$PATH"`
 - npx is not available in this environment — use ./node_modules/.bin/<tool> or bun x <tool>
-- sqlite3 CLI is not available — query may.db with bun: `bun -e "import {Database} from 'bun:sqlite'; ..."`
+- sqlite3 CLI is not available — query .state/may.db with bun: `bun -e "import {Database} from 'bun:sqlite'; const db = new Database('.state/may.db', {readonly:true}); ..."`
 - agents/ is a separate git repo — commit from agents/ dir, not project root
 - Design docs go in agents/shared/may-agent-docs/design/
 - Briefs go in agents/bob/workspace/sent/ after delivery
