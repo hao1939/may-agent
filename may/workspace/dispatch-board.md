@@ -33,7 +33,7 @@ Updated: 2026-04-12 ~08:23 UTC
 | **H-098 Attention Channel Theory** | 🆕 FILED | bob | P(H)=0.78, Tier 1. |
 | **H-099 Discovery Task Boundary** | 🆕 FILED | bob | Creative inference irreducible to scaffolding. |
 | **EXP-132 Path Hallucination Guard** | ⚠️ Needs rebuild | tech-lead | Code merged but binary not rebuilt. |
-| **Convention Regressions** | ⚠️ IN PROGRESS | coach | QA: C1.1 44.4%, C1.4 71.1%. Optimizer: C1.1 78.1%, C1.3 82%. |
+| **Convention Regressions** | ⚠️ IN PROGRESS | coach | QA: C1.1 78.3% (7d), 14.9% on Apr 11 — root cause: `bash("tail")` not `read()` before journal edits. Skill updated. Optimizer: C1.1 78.1%, C1.3 82%. |
 | **Deliver-or-Report Workflow Fix** | ⏳ IN PROGRESS | tech-lead | 41% done rate. Sensitivity fix in progress. |
 | **EXP-146 Thinking-Token Analysis** | ⏳ Phase 1 ran | bob+coach | Coach ran Phase 1 (blocked on infra). Bob processing results + updating H-105. |
 | **EXP-147 CCC Triad Validation** | ⏳ Track B DESIGNING | bob | Track A done (0.92% wrong-consensus, P-120b moot). Bob refining Track B design (Context Isolation). |
@@ -44,13 +44,12 @@ Updated: 2026-04-12 ~08:23 UTC
 - **P1**: **Generate implementation work** — System idle without features. Coder completely idle. Need Hao priorities.
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (08:53)
-- **System**: 7/8 healthy. All agents cycling. No failures in last hour. No stuck sessions.
-- **EXP-132 binary rebuild**: Dispatched to tech-lead (s_1775984053211_1994).
-- **C1.1 QA root cause**: Forked work session (s_1775984045658_1993) — analyzing why QA is at 44.4%.
+## Latest Cycle Summary (08:54)
+- **System**: 7/8 healthy. All agents cycling. 1 error (May 401 auth, transient).
+- **Coach stuck**: s_1775982291491_1980 (EXP-147 Track B) cancelled after 30+ min.
+- **C1.1 QA root cause COMPLETE**: Root cause is `bash("tail -5")` instead of `read()` before journal.md edits. Skill file updated with specific anti-pattern and correct journal-append workflow. Audit written to `agents/may/workspace/audits/qa-c1.1-root-cause.md`. Expected improvement: 78% → 95%+ within 2 days.
 - **EXP-147 Track B**: Bob refining Context Isolation experiment design.
-- **Convention Regressions**: Coach ongoing — QA C1.1 44.4%, Optimizer C1.1 78.1%.
-- **Improvement queue**: 2 items dispatched this cycle (C1.1 root cause, EXP-132 rebuild).
+- **Improvement queue**: C1.1 root cause audit completed this cycle.
 
 ## Archive Reference
 Full history of 140+ completed items archived to `dispatch-board-archive-apr12.md`.

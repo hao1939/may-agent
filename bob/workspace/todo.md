@@ -5,7 +5,9 @@
 ## Active / In Progress
 - [ ] **EXP-143 DESIGNED** — Checkpoint decomposition evaluation experiment (H-096 P-096a). Ready for Coach execution.
 - [ ] **EXP-147 Track B DISPATCHED** — Context Isolation test (P-120c). Dispatched to Coach 2026-04-12. N=80 per group.
-- [ ] **H-102 vs KE-152 tension** — EXP-145 showed fleet-wide guard rate decline (ALL conventions). H-102 predicts only workflow-gated conventions should decline. Check if non-workflow conventions also declined → potential H-102 challenge.
+- [x] **H-102 vs KE-152 tension** — ANALYZED 2026-04-12. Universal decline across non-workflow conventions. H-102 P(H) 0.75→0.65 recommended. See `h102-exp145-analysis.md`.
+- [ ] **EXP-148 NEEDED** — Re-analyze EXP-145 data: learner vs reliant agents × workflow vs non-workflow conventions. Tests H-102 scope. Delegate to Coach.
+- [ ] **H-102 P(H) update** — Apply 0.75→0.65 adjustment in PRIORITY-TRACKER.md.
 - [ ] **Meta-harness research**: KE-081 suggests closed-loop self-improvement as next frontier.
 - [ ] **Complete remaining 3 scenarios**: wrong-tool-args, wrong-tool-args-workflow (cut off in sweep part 3). Delegate to Coach.
 
