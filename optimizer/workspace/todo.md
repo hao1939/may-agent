@@ -36,7 +36,7 @@
 - Root cause: heartbeat.md encouraged inline exploration (multi-query DB analysis, file reads).
 - Fix: Rewrote heartbeat.md to "Dispatcher Mode" — observe in 1-2 ops, fork all analysis work. Target: ≤15 ops.
 - Baseline: 8 heartbeats in 12h, avg 56 ops, total 451. Post-fix: avg 23 ops (59% reduction). ✅ SUCCESS.
-- Last exploration mode: **B** (codeSearch tool scoping & build — Apr 12 ~17:24 UTC). Next rotation: **C**. Previous: A (Tech-lead 6h distribution & cross-agent scan — Apr 12 ~16:53), D (Workflow Health — adoption trends & D-o-R budget holding — Apr 12 ~16:24), C (Bob 10-op technique scouting — Apr 12 ~15:53), B (Git-review-chain tool feasibility — Apr 12 ~15:24), A (Tech-lead 96-op & fresh outlier analysis — Apr 12 ~14:54).
+- Last exploration mode: **C** (Skills Adoption Audit — Apr 12 ~17:54 UTC). Next rotation: **D**. Previous: B (codeSearch tool scoping & build — Apr 12 ~17:24), A (Tech-lead 6h distribution & cross-agent scan — Apr 12 ~16:53), D (Workflow Health — adoption trends & D-o-R budget holding — Apr 12 ~16:24), C (Bob 10-op technique scouting — Apr 12 ~15:53), B (Git-review-chain tool feasibility — Apr 12 ~15:24).
 - **session-query tool BUILT** (`scripts/session-query.ts`). Replaces 15-25 bash archaeology pattern with single command. Supports: --agent, --since, --task, --status, --min-ops, --tools, --json, --sort. Tested with real data (911 sessions). Est. savings: 10-15 ops/session × 187 sessions = 1,870-2,805 ops.
 - **code-search tool BUILT** (`scripts/code-search.ts`). Replaces 3-16 consecutive grep/rg chains with single structured call. Supports: --context, --scope, --type/--glob, --files-only, --stats, --json, --max, --fixed. Uses rg (fallback: grep). Auto-excludes node_modules. Tested with 7 real queries. Est. savings: 120-180 ops/day (~$6-9/day), 93% of sessions affected. Finding: `workspace/finding-codesearch-tool-scoping-0412.md`
 - **session-query adoption**: Still **zero active adoption** beyond optimizer (confirmed Apr 11 05:24 UTC). May + QA have passive mentions only. **Three blockers**: (1) filesystem history stale (through ~Apr 5), (2) zero agents have session-query in context.md, (3) may.db has 0 coach sessions. No change since last check. **gym-batch.sh MERGED to main** (cherry-pick 5ca3bdf, Apr 11 ~05:54 UTC) + coach context.md updated — but **gym-batch.sh also has ZERO adoption** despite being in context.md (see Coach Session Efficiency section). Findings: `workspace/finding-tool-gap-0411-b.md`, `workspace/finding-coach-experiment-technique-0411.md`, `workspace/finding-gym-batch-adoption-0411.md`
@@ -78,6 +78,8 @@
 - Finding: `workspace/finding-tool-adoption-pattern-mining-0412.md`
 
 ## 📊 OBSERVATIONS (no action needed)
+
+- **Skills Adoption Audit (Apr 12)**: 58 shared skills, only ~13 actively deployed. 50% are dead weight (untested/disproven/no-lift). verify-after-edit (9 agents) is most deployed. read-before-edit (5 agents) still worst convention at 88.6% — deployment ≠ adoption. Only 3 mechanisms work: workflow enforcement, code-level guards, and gym-proven skill injection. Finding: `workspace/finding-skills-adoption-audit-0412.md`
 
 - **Bob HB dispatch**: 87% properly dispatched. 13% inline-heavy — not fixable via text rules (KE-002).
 - **System waste**: 0-1.9% across all agents. Quality universally "good".
