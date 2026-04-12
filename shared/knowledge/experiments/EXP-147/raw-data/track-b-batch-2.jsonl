@@ -18,3 +18,6 @@
 {"scenario":"plan-once-amend","run":18,"condition":"full","passed":true,"elapsed":89,"db_run_id":"unknown","index":17}
 {"scenario":"plan-once-amend","run":19,"condition":"scoped","passed":true,"elapsed":74,"db_run_id":"unknown","index":18}
 {"scenario":"plan-once-amend","run":20,"condition":"full","passed":true,"elapsed":86,"db_run_id":"unknown","index":19}
+{"scenario":"hidden-dependency","run":1,"condition":"scoped","passed":true,"elapsed":101,"db_run_id":"unknown","index":0}
+{"scenario":"hidden-dependency","run":2,"condition":"scoped","passed":true,"elapsed":99,"db_run_id":"unknown","index":1}
+{"scenario":"hidden-dependency","run":3,"condition":"scoped","passed":true,"elapsed":105,"db_run_id":"unknown","index":2}
