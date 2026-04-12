@@ -35,6 +35,7 @@ Updated: 2026-04-12 ~05:00 UTC
 | **H-099 Discovery Task Boundary** | 🆕 FILED | bob | Creative inference irreducible to scaffolding. 5 failed interventions as evidence. |
 | **EXP-132 Path Hallucination Guard** | ⚠️ Needs rebuild | tech-lead | Code merged (be2a9317) but binary not rebuilt. |
 | **EXP-144 Pilot (Format-Decoupled Gate)** | ✅ COMPLETE | coach | Pilot done (145 ops). Bob analyzed results — H-103 P(H) dropped 0.72→0.60. |
+| **C1.5 Checker Timing Bug** | ⚠️ RETRY NEEDED | tech-lead | 100% of C1.5 failures are false positives (checker runs hours after session). First attempt tainted (58 turns, 7 tool errors, no commit). Need retry. Coach analysis: `finding-bob-c15-regression-0412.md` |
 | **analyze-failures cron bug** | ⚠️ Low priority | - | `db.query is not a function`. Persistent but non-critical. |
 
 ## Next Actions
@@ -43,13 +44,11 @@ Updated: 2026-04-12 ~05:00 UTC
 - **P1**: **Generate implementation work** — System idle without features. Coder completely idle. Need Hao priorities.
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (04:25)
-- **System**: 7/8 healthy. Zero errors/failures last hour. All agents running fresh heartbeats.
-- **Coach EXP-144 Phase 1**: 50 gym runs executing (~59min in, 2h timeout). Legitimate long-running experiment.
-- **Optimizer quality review COMPLETE**: Grade B-. Strong analyst (data-rich findings, root-cause depth), weak closer (only ~7% of 71 findings led to deployed fixes). Key finding: 3,442 ops/48h on analysis, heartbeat bloat returning (19.8 avg ops). Recommendation: dispatch fixes, not just findings.
-- **Tech-lead quality review COMPLETE**: Grade B+. 10 commits in 48h, ~1,200 lines removed. Concern: 100% infra, zero feature work.
-- **Aggregate insight**: Both optimizer and tech-lead have high analysis:action ratios. System is in "maintenance analysis loop" — producing lots of reports/findings but few features or deployments. Need to steer toward delivery.
-- **KE Deployment Audit COMPLETE**: Only 15% of 146 KEs deployed. 54% documented-only. Top 5 actions: (1) Deploy evidence-over-narrative to all agents, (2) Skill overlap audit + remove redundant, (3) Push knowledge model instead of pull, (4) Discovery task protection from few-shot, (5) Skill sunset cycle. Report at `agents/may/workspace/audits/ke-deployment-status.md`.
+## Latest Cycle Summary (05:23)
+- **System**: 7/8 healthy. Zero errors/failures last hour. All agents running fresh heartbeats. Coder forked by tech-lead (active).
+- **Coach C1.5 finding dispatched**: Coach identified 100% of Bob's C1.5 failures as false positives (checker timing bug). Dispatched to tech-lead — first attempt failed (tainted session, 58 turns, no commit). Will retry next cycle.
+- **KE pushes committed** (last cycle): 4 verified KEs deployed to agent context.md files (commit 7ff2a6d8).
+- **Improvement queue**: 5 ready items. Picking "Tech-lead feature steering" this cycle.
 
 ## Archive Reference
 Full history of 140+ completed items archived to `dispatch-board-archive-apr12.md`.
