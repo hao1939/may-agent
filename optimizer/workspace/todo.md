@@ -36,7 +36,7 @@
 - Root cause: heartbeat.md encouraged inline exploration (multi-query DB analysis, file reads).
 - Fix: Rewrote heartbeat.md to "Dispatcher Mode" — observe in 1-2 ops, fork all analysis work. Target: ≤15 ops.
 - Baseline: 8 heartbeats in 12h, avg 56 ops, total 451. Post-fix: avg 23 ops (59% reduction). ✅ SUCCESS.
-- Last exploration mode: **A** (Bob 77-op & Coach 66/63-op outliers — Apr 12 ~12:54 UTC). Next rotation: **B**. Previous: D (D-o-R P1 budget cap + May HB budget cap measurement — Apr 12 ~12:24), C (efficient vs bloated session techniques — Apr 12 ~11:24), B (Coach investigation tool gaps — Apr 12 ~10:54), A (Coder 104-op outlier — Apr 12 ~06:54).
+- Last exploration mode: **B** (Fresh tool gap scan — Apr 12 ~13:24 UTC). Next rotation: **C**. Previous: A (Bob 77-op & Coach 66/63-op outliers — Apr 12 ~12:54), D (D-o-R P1 budget cap + May HB budget cap measurement — Apr 12 ~12:24), C (efficient vs bloated session techniques — Apr 12 ~11:24), B (Coach investigation tool gaps — Apr 12 ~10:54), A (Coder 104-op outlier — Apr 12 ~06:54).
 - **session-query tool BUILT** (`scripts/session-query.ts`). Replaces 15-25 bash archaeology pattern with single command. Supports: --agent, --since, --task, --status, --min-ops, --tools, --json, --sort. Tested with real data (911 sessions). Est. savings: 10-15 ops/session × 187 sessions = 1,870-2,805 ops.
 - **session-query adoption**: Still **zero active adoption** beyond optimizer (confirmed Apr 11 05:24 UTC). May + QA have passive mentions only. **Three blockers**: (1) filesystem history stale (through ~Apr 5), (2) zero agents have session-query in context.md, (3) may.db has 0 coach sessions. No change since last check. **gym-batch.sh MERGED to main** (cherry-pick 5ca3bdf, Apr 11 ~05:54 UTC) + coach context.md updated — but **gym-batch.sh also has ZERO adoption** despite being in context.md (see Coach Session Efficiency section). Findings: `workspace/finding-tool-gap-0411-b.md`, `workspace/finding-coach-experiment-technique-0411.md`, `workspace/finding-gym-batch-adoption-0411.md`
 - **ADOPTION FIX DIRECTION (Apr 12)**: Per tool adoption patterns finding — don't bother adding session-query to context.md (Level 4 = 0% adoption). Must fix may.db backend FIRST, then wire into workflow prompts/heartbeat dispatch templates (Level 1-3). Finding: `workspace/finding-tool-adoption-patterns-0412.md`
@@ -67,6 +67,7 @@
 - **Fix**: Change regex to `\.bin(?![/\\])` (negative lookahead excludes `.bin/` paths). Also strip verifyCommand before fewshot matching.
 - Only 1 coder session >75 ops in 14 days (besides gym runs) — likely one-off, but systemic risk exists for all implement-and-verify tasks
 - **Dispatched → tech-lead (Apr 12 ~07:24 UTC)**: P2 fix for `.bin` regex + verifyCommand stripping
+- **FIX DEPLOYED ✅** (confirmed Apr 12 ~13:24): tech-lead session s_1775980510847_1965 fixed both patterns. `.bin` → `\.bin\b(?!\/)`, escalation-judgment regex tightened.
 - Finding: `workspace/finding-coder-104op-archaeology-0412.md`
 
 ### Tool Adoption Strategy — DECLARED DEAD
