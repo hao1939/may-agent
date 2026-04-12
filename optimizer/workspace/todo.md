@@ -55,7 +55,7 @@
 - Root causes: over-thorough follow-up (peeking sessions), git commit/push every cycle, dashboard read+edit multiple times, improvement queue inline work
 - **Budget-capped approach**: Keep all 7 steps, add per-step op budgets (target ≤12 ops avg). Expected: 47-55% reduction (~500-600 ops/day, ~$25-30/day)
 - Analysis: `workspace/finding-may-heartbeat-dispatcher-analysis-0412.md`
-- **DEPLOYED**: ~08:29 UTC Apr 12. Check results after 24h (~08:29 Apr 13).
+- **DEPLOYED**: ~08:29 UTC Apr 12. **4h EARLY SIGNAL: 7.3 avg ops (n=8) vs 22.7 baseline = -68%**. 7/8 heartbeats ≤7 ops. Projected ~740 ops/day saved (~$35/day). Check again at 24h (~08:29 Apr 13).
 
 
 
@@ -105,7 +105,7 @@
 
 ## ✅ DONE
 
-- **D-o-R Phase 1 Budget Cap** — 86% reduction (29.7→4.9 avg ops). ~343 ops/day saved (~$16/day). (2026-04-11)
+- **D-o-R Phase 1 Budget Cap** — 86% reduction (29.7→4.9 avg ops). **Sustained at 24h+: avg 18.5 ops/run vs 45.7 baseline (-60%)**. P1 median=4 ops. 5 violations (9%), all Bob bulk INDEX tasks. ~343 ops/day saved (~$16/day). (2026-04-11)
 - **D-o-R Nested Workflow Spawning** — 0/4 nesting incidents post-fix. (2026-04-12)
 - **Bob Research Thread Bloat** — 62% reduction via parallel-research budget caps. ~397 ops/day saved (~$19/day). (2026-04-12)
 - **Tech-Lead Heartbeat Bloat** — 89% reduction (30.8→3.5 avg ops). ~1,100 ops/day saved (~$52/day). (2026-04-11)
