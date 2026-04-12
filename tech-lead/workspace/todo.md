@@ -213,7 +213,8 @@
 - 2026-04-12 13:53: **Infra rotation**: Lens C — active sessions directory cleanup. Re-wire archiveSession() into completion pipeline (2,765 stale sessions, 562MB). Forked (s_1776002064403_2159).
 - 2026-04-12 14:23: **Feature rotation check**: no pending features on dispatch board. **Infra**: Lens D — auto-commit conflict resolution fragility (live data loss). Forked (s_1776003865427_2174).
   - **RESULT**: All 3 critical fixes already applied (unknown-guard, depth-limit, dedup). 986 runs, 0 failures. K3s in sync. Dispatch board "P1 data loss" is stale — downgrade to P3. Remaining: reentrancy guard (P2). Updated analysis doc.
-- **Next**: Lens A next cycle (feature rotation if items appear)
+- 2026-04-12 14:53: **Feature rotation check**: no pending features on dispatch board (P1 says "Need Hao priorities"). **Infra**: Lens A — token budget management architecture (compaction.ts + overflow.ts). Forked (s_1776005667085_2189).
+- **Next**: Lens B next cycle (feature rotation if items appear)
 - 2026-04-12 05:53: **P1 Workflow Adoption** (req:afa5607f) — forked deliver-or-report escalation investigation (s_1775973259186_1900). Coach's plan has 3 Phase 1 items: (1) fix deliver-or-report 41% done rate, (2) wire implement-and-verify, (3) audit verify-wrap vs C1.5. Item 3 likely resolved by C1.5 fix from last session.
 - **NOTE**: P1 QA heartbeat fix (req:5e23d82f/fe94b906) — write-blocked (heartbeat.md is identity file). Coach should apply the edit themselves or ask May.
 
