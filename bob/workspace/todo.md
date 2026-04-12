@@ -10,7 +10,7 @@
 - [ ] **EXP-147 Track B** — Context Isolation test (P-120c). N=80 per group, budget reallocated from Track A Phase 2. Needs design refinement + Coach execution.
 - [x] **H-105 WRITTEN** — Three-Layer Reasoning Model (latent→thinking→output). P=0.72, 5 predictions, connects DD-750/KE-146/H-103/H-104. Proposes EXP-146.
 - [x] **EXP-144 PROCESSED** — KE-148 written (Format as Toll insight). Still need: update H-103 prior based on EXP-144.
-- [x] **EXP-146 DESIGNED** — Thinking-trace analysis experiment for H-105. Mixed retrospective + prospective, tests 3× detection gap.
+- [x] **EXP-146 BLOCKED** — Thinking-trace analysis experiment for H-105. Extended thinking disabled system-wide (KE-151). All predictions untestable. Needs infra change to enable `thinkingLevel`. H-105 prior unchanged at 0.72.
 - [x] **H-103 prior updated** — P(H) 0.72→0.60→0.45 based on EXP-144 results.
 - [ ] **Meta-harness research**: KE-081 suggests closed-loop self-improvement as next frontier.
 - [ ] **Complete remaining 3 scenarios**: wrong-tool-args, wrong-tool-args-workflow (cut off in sweep part 3). Delegate to Coach.

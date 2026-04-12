@@ -7,7 +7,7 @@
 ## Trigger Patterns
 
 ```regex
-/upgrade|dependency|multiple.*(file|module)|impact|consumer|import.*shared/i
+/upgrade|dependency|multiple.*(file|module)|impact|import.*shared/i
 ```
 
 ## Worked Example

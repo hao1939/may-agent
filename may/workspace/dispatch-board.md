@@ -1,15 +1,15 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-12 ~07:24 UTC
+Updated: 2026-04-12 ~07:53 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors (billing). Blocked on Hao.
-- **Bob**: 🟢 Active — EXP-147 Track A Phase 1 done. EXP-146 design in progress.
-- **Coach**: 🟢 Active — EXP-147 Phase 1 COMPLETE. Convention regressions ongoing.
+- **Bob**: 🟢 Active — Processing EXP-147 Track A results. Track B design + EXP-146 results in progress.
+- **Coach**: 🟢 Active — EXP-146 Phase 1 ran (blocked on infra). Convention regressions ongoing.
 - **Scout**: 🟢 Active — Heartbeat cycle running.
-- **Tech-lead**: 🟢 Active — Coder skill pruning done. Cron handler resolver + D-o-R fix WIP.
-- **Optimizer**: 🟢 Active — Bob budget caps confirmed. Session archaeology done.
-- **Evaluator**: 🟢 Active — Cycling normally. 440 evals/24h (~73% coverage).
+- **Tech-lead**: 🟢 Active — Cron handler resolver COMPLETE. D-o-R fix WIP.
+- **Optimizer**: 🟢 Active — Cycling normally.
+- **Evaluator**: 🟢 Active — 440 evals/24h.
 - **QA**: 🟢 Active.
 - **Coder**: Available — no active sessions. Skills pruned to 3 (was 10).
 - **Summary**: 7/8 healthy. Amy-kimi 429 (billing). All others cycling normally.
@@ -36,9 +36,9 @@ Updated: 2026-04-12 ~07:24 UTC
 | **Convention Regressions** | ⚠️ IN PROGRESS | coach | QA: C1.1 44.4%, C1.4 71.1%. Optimizer: C1.1 78.1%, C1.3 82%. |
 | **Deliver-or-Report Workflow Fix** | ⏳ IN PROGRESS | tech-lead | 41% done rate. Sensitivity fix in progress. |
 | **EXP-145 Guard Dependency Escalation** | ✅ COMPLETE | coach | H-104 FALSIFIED (0.78→0.10). Fleet fire rate declined 25.1%→2.6%. |
-| **EXP-146 Thinking-Token Analysis** | ⏳ IN PROGRESS | bob | Designing for H-105. |
-| **EXP-147 CCC Triad Validation** | ⏳ Track A Ph1 DONE | coach | Track A: 0.92% wrong-consensus (P-120b moot, skip Ph2). Track B (Context Isolation) not started. |
-| **Cron Handler Resolver** | ⏳ IN PROGRESS | tech-lead | Dynamic handler loading on reload. Uncommitted `src/app/cron.ts`. |
+| **EXP-146 Thinking-Token Analysis** | ⏳ Phase 1 ran | bob+coach | Coach ran Phase 1 (blocked on infra). Bob processing results + updating H-105. |
+| **EXP-147 CCC Triad Validation** | ⏳ Track B DESIGNING | bob | Track A done (0.92% wrong-consensus, P-120b moot). Bob refining Track B design (Context Isolation). |
+| **Cron Handler Resolver** | ✅ COMPLETE | tech-lead | All tests passing (31/31 cron-tool + 5/5 handler-resolver). Committed. |
 
 ## Next Actions
 - **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. Saves $143-441/day. **Blocked on Hao since Mar 24**.

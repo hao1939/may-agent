@@ -31,18 +31,6 @@
 - **DEEPER ANALYSIS (Apr 12)**: 183 EXP-tagged sessions. Primary cost driver is gym run count × serial overhead (2-4 ops/run). EXP-144 Pilot (145 ops) ran 54 gym runs + debugged broken environments. EXP-143 (35 ops, same day) batched 200 evaluations into a single script invocation. The cost is driven by experiment TYPE, not execution quality. Three concrete techniques: gym batch runner (saves 20-70 ops/session), pre-flight env validation (saves 20-40 ops when envs are broken, ~25% of gym sessions), pre-specified analysis scripts (saves 20-40 ops on analysis sessions). Total projected: ~1,860-3,720 ops across experiment sessions.
 - Finding: `workspace/finding-coach-experiment-cost-scouting-0412.md`
 
-### Tech-Lead Heartbeat Bloat — ✅ FIX DEPLOYED & CONFIRMED (89% reduction)
-- Tech-lead heartbeats avg 30.8 ops (24h pre-fix, n=44), **#1 across all agents**.
-- Root cause: heartbeat.md encouraged deep inline exploration (4 "Lens" modes) with no op budget.
-- **Fix**: Rewrote tech-lead heartbeat.md to dispatcher mode (same pattern as optimizer fix).
-- **DEPLOYED** (commit dfa10146, Apr 11 ~08:35 UTC). May deployed it directly.
-- **POST-FIX (n=4 heartbeats)**: avg 3.5 ops (ops: 8, 3, 1, 2). **89% reduction** ✅
-- Pre-fix avg: 30.8 ops (n=44). Post-fix avg: 3.5 ops (n=4).
-- **Savings**: ~1,100 ops/day (~$52/day, ~$1,560/month) based on ~40 heartbeats/day × 27.3 ops saved.
-- Tech-lead now properly forks work sessions (ops=40, 38, 5 seen in forked jobs).
-- Finding: `workspace/finding-tech-lead-heartbeat-bloat-0411.md`
-- **→ MOVING TO DONE after n≥8 confirms pattern holds**
-
 ### Optimizer Heartbeat Bloat — FIX DEPLOYED
 - Avg 56 ops/heartbeat (highest of any agent). Bob avg 4 ops. My min was 19 — proves lean is possible.
 - Root cause: heartbeat.md encouraged inline exploration (multi-query DB analysis, file reads).

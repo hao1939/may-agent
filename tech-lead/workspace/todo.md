@@ -197,6 +197,7 @@
 - 2026-04-12 06:23: Lens D (analyze-failures cron bug fragility) — forked (s_1775975059405_1919). Persistent `db.query is not a function` error. Silent cron failure wastes resources.
 - 2026-04-12 06:53: **Coder Skill Pruning P1** — forked (s_1775976871478_1936). Remove 4 untested skills (14.4KB), coder 7→3 skills.
 - 2026-04-12 07:23: **Cron handler resolver** — forked (s_1775978657790_1948). 34 uncommitted lines in src/app/cron.ts for dynamic handler registration. Verify + commit to review branch.
+- 2026-04-12 07:53: **P2 Fix**: Coder fewshot regex false positives — forked (s_1775980510847_1965). Fix `.bin` and `consumer` pattern matches in binary-file-escalation.md and escalation-judgment.md.
 - **Next**: Lens A
 - 2026-04-12 05:53: **P1 Workflow Adoption** (req:afa5607f) — forked deliver-or-report escalation investigation (s_1775973259186_1900). Coach's plan has 3 Phase 1 items: (1) fix deliver-or-report 41% done rate, (2) wire implement-and-verify, (3) audit verify-wrap vs C1.5. Item 3 likely resolved by C1.5 fix from last session.
 - **NOTE**: P1 QA heartbeat fix (req:5e23d82f/fe94b906) — write-blocked (heartbeat.md is identity file). Coach should apply the edit themselves or ask May.
