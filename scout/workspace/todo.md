@@ -619,8 +619,16 @@
   2. KE-106 habituation literature (low priority, partially subsumed by KE-137)
   3. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
 
+## Session 674 (2026-04-12 00:53 UTC) — Sunday midnight heartbeat (lean)
+- **New knowledge commits**: KE-142 (Format Tax external validation, P(H) 0.72→0.78), KE-143 (guard response trifurcation — guard-dependent/neutral/harmed), KE-144 (verification guards don't teach — fire rate rising monotonically 29%→61% over 6 days). All from Bob integrating EXP-123 31h data.
+- **KE-143/144 strengthen KE-137 research lead**: Guards create three response categories (KE-143), don't teach (KE-144), and agents bifurcate into learners vs reliants (KE-137). Unified research question: what determines whether an agent internalizes structurally-enforced behavior vs becoming dependent? Literature says: scaffold fading, Zone of Proximal Development, individual differences in learning under constraints.
+- **DISPATCHING**: KE-137 learner/reliant bifurcation literature search — scaffold dependency vs fading, differential adaptation under constraints, individual differences in LLM agent behavior under structural enforcement.
+- **Research priorities** (weekend):
+  1. ~~KE-137 learner/reliant bifurcation literature~~ DISPATCHING NOW
+  2. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+
 ## Counters
 - DD: 748
 - CR: 338
-- Session: 673
+- Session: 674
 
