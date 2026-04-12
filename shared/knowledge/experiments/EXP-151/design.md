@@ -1,6 +1,6 @@
 # EXP-151: Difficulty-Threshold Moderation of Overhead Effects
 
-**Status**: Designed  
+**Status**: Phase 0 Complete — Calibration done, scenarios selected  
 **Hypothesis**: H-107 (Difficulty Threshold Hypothesis)  
 **Predecessor**: EXP-149 (overhead measurement — motivated H-107 via KE-158)  
 **Created**: 2026-04-12  
@@ -39,26 +39,26 @@ Tasks are classified by **baseline pass rate** (measured under minimal-overhead 
 | Medium | 40–60%            | Agent succeeds roughly half the time; requires sustained reasoning |
 | Hard   | <30%              | Agent rarely succeeds; fundamental capability limit |
 
-### 3.3 Candidate Scenarios
+### 3.3 Selected Scenarios (Phase 0 Calibration Complete)
 
-From existing gym infrastructure (baseline rates from EXP-149 and prior runs):
+See `phase0-calibration.md` for full data compilation and methodology.
 
-**Easy bucket candidates:**
-- `simple-verification` — baseline ~80–85%
-- `basic-file-edit` — baseline ~75%
-- `straightforward-debug` — baseline ~72%
+**Easy bucket (>70% baseline):**
+- `mock-leak-trap` — 100% (8/8), code debugging (test mocking)
+- `investigate-fix-pattern` — 89% (8/9), investigation + code fix
+- `wrong-fix-recovery` — 78% (7/9), error recovery from wrong approach
 
-**Medium bucket candidates:**
-- `cascading-fix-trap-v2` — baseline ~45–55% (key scenario from KE-158)
-- `multi-step-refactor` — baseline ~50%
-- `stale-approach-fixation` — baseline ~42%
+**Medium bucket (40–60% baseline):**
+- `sycophants-dilemma` — 50% (3/6), judgment under sycophantic pressure
+- `escalation-impossible-task` — 40% (2/5), feasibility assessment ⚠️ needs calibration
+- `behavior-escalation-stubborn` — 50% (2/4), escalation judgment ⚠️ needs calibration
 
-**Hard bucket candidates:**
-- `complex-architecture` — baseline ~20–25%
-- `novel-synthesis` — baseline ~15–20%
-- `deep-debugging-chain` — baseline ~25%
+**Hard bucket (<30% baseline):**
+- `contradictory-requirements` — 0% (0/16), deep reasoning (contradiction detection)
+- `escalation-judgment-base` — 12.5% (1/8), multi-file awareness (tunnel vision)
+- `context-proof-build-xref` — 0% (0/3), cross-reference discovery ⚠️ needs calibration
 
-> **Calibration note**: If existing scenarios don't cleanly fit buckets, run N=20 calibration trials under minimal overhead to establish true baselines before the main experiment. This is critical — misclassified difficulty invalidates the interaction test.
+> **Calibration status**: 6 of 9 scenarios have high-confidence baselines (N≥6). Three scenarios (M2, M3, H3) need 6 additional calibration trials each to confirm bucket assignment. See phase0-calibration.md §6 for protocol.
 
 ### 3.4 Overhead Conditions
 
