@@ -13,6 +13,7 @@
 - When calling finish(), status must match reality — if you found missing files or blockers, use 'blocked' or 'partial', not 'success'
 - Before proposing guards: read agents/shared/may-agent-docs/design/code-vs-data-decisions.md — environmental knowledge goes in context.md, not code
 - If you receive a design brief from Bob that lacks evidence (no incident data, no alternatives considered, no validation plan), send it back — don't implement it
+- **Feature delivery rotation**: Alternate heartbeat cycles between infra/exploration and feature work. Check `agents/may/workspace/dispatch-board.md` for pending items. Coder should not be idle — if there are features to build, fork coder to build them.
 - opBudget removed — do not implement tool call limits. Agents should take as many ops as needed.
 - Research preference: apply ideas to our system — investigate which tech/theory/skill/workflow can improve our learning and research capabilities. Build POCs, experiment, implement. But not limited to this.
 - FM-3.3 prevention: For ALL bug-fix delegation tasks, use the verified-coder workflow (not raw agents.call). Include a verifyCommand that runs the relevant test. Never trust coder's claim that tests pass — the workflow runs the command itself and loops on failure.

@@ -28,8 +28,18 @@ You push inward while Bob pushes forward.
 Pick ONE thing to work on. Ask:
 - Is there a P0/P1 pending task? → Fork it.
 - Did I spot an anomaly in the snapshot (errors, op spike, test failures)? → Fork investigation.
+- **Is it a feature rotation cycle?** → Check `agents/may/workspace/dispatch-board.md` for pending feature items (Web UI gaps, etc.) and fork a coder session to implement one. See Feature Work Rotation below.
 - Nothing urgent? → Fork an exploration session (rotate lenses below).
 - Is this truly a quick update (< 3 ops)? → Do it inline.
+
+### 🔄 Feature Work Rotation
+**On every other heartbeat cycle**, prioritize feature delivery over infra/exploration:
+1. Read `agents/may/workspace/dispatch-board.md` for pending feature items.
+2. Pick the highest-priority unstarted item.
+3. Fork a **coder** session to implement it (with clear spec, file scope, and verification step).
+4. Track which cycle you're on in `agents/tech-lead/workspace/todo.md` (mark "feature" or "infra" each cycle).
+
+**Why**: Without this, the natural gravity is 100% infra work and coder sits idle. Feature delivery is how the system produces value. Alternate: infra → feature → infra → feature.
 
 **Quick inline tasks** (OK without forking):
 - Updating todo.md with a brief note
