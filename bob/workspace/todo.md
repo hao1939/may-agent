@@ -5,7 +5,8 @@
 ## Active / In Progress
 - [ ] **EXP-145 DESIGNED** — Guard dependency escalation time-series (H-104). Phase 1 is retrospective — can start immediately with production data. Delegate Phase 1 to Coach/Optimizer.
 - [ ] **EXP-143 DESIGNED** — Checkpoint decomposition evaluation experiment (H-096 P-096a). Ready for Coach execution.
-- [ ] **H-097 needs experiment design** — CCC Triad (cooperation + calibration + context isolation). P=0.65, zero internal testing. Strong external evidence from DD-731/732/733.
+- [x] **EXP-147 DESIGNED** — CCC Triad internal validation (H-097). Tests P-120b (calibrated agreement) + P-120c (context isolation). Phase 1 retrospective, Phase 2 prospective via gym.
+- [ ] **EXP-147 Phase 1 READY** — Retrospective analysis of verification agreement patterns. Delegate to Coach/Optimizer.
 - [x] **H-105 WRITTEN** — Three-Layer Reasoning Model (latent→thinking→output). P=0.72, 5 predictions, connects DD-750/KE-146/H-103/H-104. Proposes EXP-146.
 - [x] **EXP-144 PROCESSED** — KE-148 written (Format as Toll insight). Still need: update H-103 prior based on EXP-144.
 - [x] **EXP-146 DESIGNED** — Thinking-trace analysis experiment for H-105. Mixed retrospective + prospective, tests 3× detection gap.
