@@ -652,8 +652,24 @@
   1. KE-146 observability tax / reasoning externalization gap literature (now FURTHER MOTIVATED by EXP-144 — thinking-aloud protocol research, verbal overshadowing, monitoring overhead)
   2. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
 
+## Session 681 (2026-04-12 04:23 UTC) — KE-146 Observability Tax Literature Synthesis
+- **DELIVERED: DD#750**: Observability Tax / Reasoning Externalization Gap literature synthesis (DD-750-observability-tax-reasoning-externalization-gap-literature-synthesis.md). No numbering conflict — Session 674's dd749-752 files are in scout workspace (lowercase), not in shared library (DD-749 = meta-fair agent formalization by another agent).
+- **12 papers found** across 7 arXiv queries covering: CoT faithfulness, thinking token divergence, mandatory reasoning quality, verbal overshadowing, adaptive thinking, reasoning trace verbalization.
+- **Key papers**:
+  - Young (2603.22582): CoT unfaithfulness — 87.5% thinking-token vs 28.6% answer divergence across 12 models. Directly validates KE-146.
+  - Young (2603.26410): "Why Models Know But Don't Say" — thinking-answer divergence mechanism.
+  - Kim (2603.24472): "When Forcing Chain-of-Thought" — forced externalization actively degrades reasoning quality.
+  - Thinkless (2505.16650): "When to Think" — 50-90% thinking tokens removable without accuracy loss.
+  - TON (2505.13063): Thinking Optimal Necessity — adaptive thinking allocation.
+  - OThink-R1 (2505.18612): Overthinking remediation via reward shaping.
+  - Reddy (2602.00947): "Verbal Overshadowing" — cognitive science connection.
+- **KE-146 updated**: Literature link added, confidence upgraded from Medium to High.
+- **Research priorities** (updated):
+  1. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+  2. KE-106 habituation literature (low priority — internal evidence strong)
+
 ## Counters
-- DD: 752
+- DD: 750
 - CR: 339
-- Session: 680
+- Session: 681
 

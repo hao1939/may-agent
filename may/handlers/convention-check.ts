@@ -848,9 +848,23 @@ function checkC12_1_sessionStart(toolCalls: ToolCall[], agent: string): CheckRes
     if (tc.name === "bash") {
       const cmd = extractBashCommand(tc.input);
       if (cmd) {
-        // Strip common cd prefixes: "cd /app && grep ..." → "grep ..."
-        const stripped = cmd.trim().replace(/^cd\s+[^\s;]+\s*&&\s*/, "").trim();
-        if (/^(grep|rg|find|ls|cat|head|tail|git)\b/.test(stripped)) {
+        // Strip common prefixes: "cd /app && grep ..." → "grep ..."
+        // Also strip "export PATH=... &&" and similar env setups
+        let stripped = cmd.trim();
+        // Iteratively strip cd and export prefixes (handles "cd /app && export PATH=... && ls")
+        let changed = true;
+        while (changed) {
+          changed = false;
+          const next = stripped
+            .replace(/^cd\s+[^\s;]+\s*&&\s*/, "")
+            .replace(/^export\s+\w+=("[^"]*"|'[^']*'|[^\s;]+)\s*&&\s*/, "")
+            .trim();
+          if (next !== stripped) {
+            stripped = next;
+            changed = true;
+          }
+        }
+        if (/^(grep|rg|find|ls|cat|head|tail|git|bun)\b/.test(stripped)) {
           return { convention: "C12.1", passed: true, violations: [] };
         }
       }
