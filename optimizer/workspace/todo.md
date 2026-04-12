@@ -16,20 +16,17 @@
 - Bypass exists at `src/app/may.ts:148-165`, needs `ANTHROPIC_API_KEY` env var.
 - **BLOCKED on operator.** Finding: `workspace/findings/2026-04-10-litellm-kills-prompt-caching.md`
 
-### D-o-R Phase 1 Budget Cap — ✅ CONFIRMED EFFECTIVE, CLOSING (n=7)
-- **FINAL VERDICT (Apr 11 09:55 UTC)**: P1 avg 4.9 ops (was 34.5 pre-fix) — **86% reduction**. All 7 P1s ≤7. Total run avg 24.6 (was 49.1) — **50% reduction**. 1 minor P2 nesting incident (24 ops), 0 P1-spawned nesting. Zero cap violations. ~343 ops/day saved (~$16/day).
-- **Residual**: P2 bloat outlier (1/7 runs, 57 ops). Separate optimization opportunity.
-- Findings: `workspace/finding-dor-p1-bloat-0411.md`, `workspace/finding-dor-p1-cap-measurement-0411.md`, `workspace/finding-dor-p1-cap-final-verdict-0411.md`
-- **→ MOVING TO DONE**
+### D-o-R Phase 1 Budget Cap — ✅ CLOSED (n=23, 91% compliant)
+- **CLOSED (Apr 12 02:00 UTC)**: n=23 D-o-R Phase 1 sessions measured. 21/23 compliant (91%). Avg 7.6 ops (was 34.5 pre-fix) — **78% reduction**. 2 violations (37, 40 ops) on complex analytical tasks.
+- **NOTE**: Previous reports incorrectly counted optimizer skill-discovery "Phase 1" sessions as D-o-R violations. Properly filtered, optimizer has 0 D-o-R P1 sessions — only Bob uses D-o-R.
+- Findings: `workspace/finding-dor-p1-bloat-0411.md`, `workspace/finding-dor-p1-cap-measurement-0411.md`, `workspace/finding-dor-p1-cap-final-verdict-0411.md`, `workspace/finding-workflow-health-0412.md`
+- **→ MOVED TO DONE**
 
-### D-o-R Nested Workflow Spawning — ✅ FIX DEPLOYED (commit 60a844e3)
+### D-o-R Nested Workflow Spawning — ✅ CLOSED (confirmed post-fix, n=4 clean runs)
 - Bob 90-op session (s_...1119) was a **3-deep nested D-o-R workflow**: Phase 1 called callAgent → triggered another D-o-R → spawned another Phase 1. Total: 169 ops for 1 KB integration task.
-- **3 instances in 72h**: 101 + 47 + 13 = 161 wasted ops (~54 ops/day, ~$2.50/day).
-- Root cause: Phase 1 had no instruction against calling callAgent().
 - **FIX**: Added "DO NOT call callAgent() or spawn sub-agents" to Phase 1 strict rules in `bob/workflows/deliver-or-report.ts` (commit 60a844e3, deployed ~03:54 UTC).
-- Combined with 15-op budget cap, this structurally + behaviorally prevents recursive nesting.
-- **Measurement needed**: Need n≥3 post-fix D-o-R runs to confirm no nesting.
-- Finding: `workspace/finding-bob-90op-archaeology-0411.md`
+- **POST-FIX CONFIRMED (Apr 12)**: 4 clean D-o-R workflow runs with no nesting detected. Phase 1→Phase 2 handoff clean (e.g., P1=4/P2=12, P1=1/P2=5).
+- **→ MOVED TO DONE**
 
 ### Coach Session Efficiency — FINDING COMPLETE, FIX 2 DEPLOYED
 - 2,175 coach sessions analyzed. 50.3% zero-op, 64% of ops in top sessions are exploration waste.
@@ -42,17 +39,11 @@
 - Estimated savings: ~750 ops/day, ~$35/day.
 - Finding: `workspace/finding-coach-session-efficiency-0410.md`
 
-### Tech-Lead Heartbeat Bloat — ✅ FIX DEPLOYED & CONFIRMED (89% reduction)
-- Tech-lead heartbeats avg 30.8 ops (24h pre-fix, n=44), **#1 across all agents**.
-- Root cause: heartbeat.md encouraged deep inline exploration (4 "Lens" modes) with no op budget.
-- **Fix**: Rewrote tech-lead heartbeat.md to dispatcher mode (same pattern as optimizer fix).
-- **DEPLOYED** (commit dfa10146, Apr 11 ~08:35 UTC). May deployed it directly.
-- **POST-FIX (n=4 heartbeats)**: avg 3.5 ops (ops: 8, 3, 1, 2). **89% reduction** ✅
-- Pre-fix avg: 30.8 ops (n=44). Post-fix avg: 3.5 ops (n=4).
-- **Savings**: ~1,100 ops/day (~$52/day, ~$1,560/month) based on ~40 heartbeats/day × 27.3 ops saved.
-- Tech-lead now properly forks work sessions (ops=40, 38, 5 seen in forked jobs).
-- Finding: `workspace/finding-tech-lead-heartbeat-bloat-0411.md`
-- **→ MOVING TO DONE after n≥8 confirms pattern holds**
+### Tech-Lead Heartbeat Bloat — ✅ CLOSED (n=12+, confirmed 89% reduction)
+- Pre-fix avg: 30.8 ops (n=44). Post-fix avg: 3.5 ops.
+- **DEPLOYED** (commit dfa10146, Apr 11 ~08:35 UTC). Dispatcher mode working.
+- **Savings**: ~1,100 ops/day (~$52/day, ~$1,560/month).
+- **→ MOVED TO DONE**
 
 ### Optimizer Heartbeat Bloat — FIX DEPLOYED
 - Avg 56 ops/heartbeat (highest of any agent). Bob avg 4 ops. My min was 19 — proves lean is possible.
@@ -68,6 +59,14 @@
 - Mode A finding complete: `workspace/finding-coach-166op-archaeology-0410.md` — **Key result: high-op sessions are restart-accumulated, not single-context bloat. 184-op session had 6 restarts (7 segments). Primary fix is infra (cap restarts/turns), not behavioral.**
 - Mode A finding complete: `workspace/finding-dor-p1-bloat-0411.md` — **Key result: Phase 1 consumes 67% of all D-o-R ops. 14/14 bloated P1s (>40 ops) have "verified" in outcome — doing full delivery cycle in "plan" phase. 15-op cap would save 44% of D-o-R ops (259/day, ~$12/day). Fix: tighter P1 prompt with explicit 15-op budget.**
 - Mode A finding complete: `workspace/finding-coach-82op-qa-regression-0411.md` — Coach 82-op QA regression investigation (EXP-133). Completed Apr 11 ~08:29 UTC.
+
+### Research Thread Workflow Cost — NEW (Apr 12)
+- Bob's Research Thread workflow averaged **166 ops** in latest run (`wr_1775957068232_3ls8`).
+- Breakdown: Thread 1 (15 ops, failed — auth error), Thread 2 (38 ops), Synthesis (113 ops).
+- **Synthesis step has no op cap** — when a thread fails, synthesis compensates with massive ops.
+- Research Thread avg ops per session: 35.9 (threads) + 24.5 (synthesis) = most expensive workflow type.
+- **Recommendation**: Add synthesis step budget cap (~50 ops). Investigate thread failure handling.
+- Finding: `workspace/finding-workflow-health-0412.md`
 
 ### may.db WAL Bug — FIXED, Monitoring
 - Session-sync + evaluation-sync handlers deployed. 1071 evals, 0 unevaluated (as of 17:10 UTC).
@@ -102,6 +101,9 @@
 
 ## ✅ DONE
 
+- **D-o-R Phase 1 Budget Cap** — CLOSED (Apr 12). n=23, 91% compliant, avg 7.6 ops (was 34.5). 78% reduction. 2 violations on complex tasks. Finding: `workspace/finding-workflow-health-0412.md`
+- **D-o-R Nested Workflow Spawning** — CLOSED (Apr 12). Fix deployed (commit 60a844e3). 4 clean post-fix runs confirmed. No nesting detected.
+- **Tech-Lead Heartbeat Bloat** — CLOSED (Apr 12). 89% reduction (30.8→3.5 avg ops). ~$52/day savings. Finding: `workspace/finding-tech-lead-heartbeat-bloat-0411.md`
 - **Bash Command Pattern Analysis** — 847 commands across 12 high-op sessions. Top 3 patterns (git-review-chain 91x, grep-then-read 87x, file-discovery-spiral 75x) = 52% of all commands. Concrete tool/script fixes sketched for each. Est. 125-220 ops/day savings. Finding: `workspace/finding-bash-command-patterns-0411.md` (2026-04-11)
 - **Gym Results Data Gap** — Both paths now record: `gym-helpers.ts` has `recordGymResult()` (commit 961d892f0), `run-gym.sh` pipes to `record-result.ts` (commit 2c8c7dcd). 22 runs + 156 checks verified in DB. (2026-04-10)
 
