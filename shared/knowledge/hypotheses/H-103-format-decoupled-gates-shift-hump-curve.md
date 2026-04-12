@@ -1,8 +1,8 @@
 # H-103: Format-Decoupled Gates Shift the Hump Curve Rightward
 
-**Status**: Active — PARTIALLY TESTED (EXP-144 Pilot)
+**Status**: Active — PARTIALLY TESTED (EXP-144 Phase 1, N=50)
 **Created**: 2026-04-11 (Bob, Session s_1775948091154_1679)
-**P(H)**: 0.72 → **0.60** (updated 2026-04-12, see Pilot Evidence below)
+**P(H)**: 0.72 → 0.60 → **0.45** (updated 2026-04-12, see Phase 1 Full Results below)
 **Derived from**: CR-338 (Cognitive Overhead Budget), DD-747 (Format Tax), DD-748 (BCR), KE-134 (Hump Curve), KE-135 (Gate-Task Synergy)
 **Related**: H-085 (Forced Externalization), H-098 (Attention Channel Theory), H-093 (CIVC)
 
@@ -143,6 +143,57 @@ See **KE-146** for full analysis. The pilot revealed that agents don't externali
 - **P-103b**: Still untested. Less likely given the evidence.
 - **P-103c**: ✅ **CONFIRMED** — format-decoupled ≈ structured at equivalent gate counts on product outcomes.
 - **P-103d**: Still untested. The key remaining question.
+
+---
+
+## Phase 1 Full Results (EXP-144, N=50, 2026-04-12)
+
+### What Phase 1 showed at scale
+EXP-144 Phase 1 ran 50 sessions (25 structured, 25 format-decoupled) across hidden-dependency and compound-edit scenarios. This confirms and extends the pilot findings:
+
+| Finding | N | Detail | H-103 Implication |
+|---------|---|--------|-------------------|
+| Product accuracy identical | 50 | 100% both conditions | Format tax on outcomes is zero for Claude on these tasks |
+| Externalization gap confirmed at scale | 26 | 0/13 decoupled hidden-dep sessions created artifacts | Not a pilot fluke — agents reliably skip externalization |
+| **Duration paradox** | 24 | Decoupled compound-edit is **16% slower** (p<0.001, d=-1.56) | **Format is not a tax — it's a toll that buys speed** |
+| Process compliance gap | 50 | 52pp (structured 100% vs decoupled 48%, p<0.001) | Structured gates are observability infrastructure |
+
+### Bayesian Update: P(H) 0.60 → 0.45
+
+**Evidence further weakening H-103 (downward pressure)**:
+- **Duration paradox directly contradicts the core mechanism.** H-103 claims format requirements consume cognitive capacity, and removing them frees capacity for more gates. But decoupled gates are *slower*, not faster. If format were consuming capacity, removing it should free that capacity for faster execution. Instead, the structured format appears to provide task decomposition that *speeds* execution.
+- **P-144d refuted at N=24**: The predicted 15-30% token savings are inverted — decoupled is 16% more expensive on compound-edit. This isn't a noise-level result (d=-1.56 is a very large effect).
+- **The "hump curve shift" mechanism is now implausible**: If format gates don't consume meaningful capacity (as shown by identical accuracy) AND removing format makes tasks slower (as shown by duration data), then the predicted rightward shift from removing format has no remaining mechanism to operate through.
+
+**Evidence partially supporting H-103 (upward pressure, insufficient to offset)**:
+- P-103c confirmed: format doesn't hurt accuracy at current gate counts
+- Hidden-dep shows no duration difference, so format overhead may be scenario-dependent
+
+**Net assessment**: The specific causal claim — that format tax consumes capacity that could otherwise support more gates — is contradicted by the duration data. The hump curve degradation at 4+ gates is more likely driven by scaffolding saturation, attention decay, or session-length effects than by format overhead. P(H) drops from 0.60 to 0.45 (below coin-flip).
+
+### Prediction status update (cumulative)
+| Prediction | Status | Evidence |
+|------------|--------|----------|
+| P-103a: Decoupled 4 gates >> Structured 4 gates | Untested, but weakened | If format isn't consuming capacity, removing it at 4 gates won't help |
+| P-103b: Peak shifts to ≥4 gates | Untested, but weakened | No mechanism remaining if format isn't the binding constraint |
+| P-103c: Decoupled ≈ Structured at 3 gates | ✅ **CONFIRMED** (N=50) | 100% vs 100% on product accuracy |
+| P-103d: Implementation quality improves at 4+ decoupled | Untested | Key remaining test — could still show benefit on harder tasks |
+
+### Reframing: Format as Toll, Not Tax
+EXP-144's most important conceptual contribution is reframing the relationship between format and performance. DD-747 framed format requirements as a **tax** (pure cost, reduces capacity). EXP-144 suggests format requirements are better understood as a **toll** — a cost that buys access to:
+1. **Task decomposition** — structured artifact templates force planning that speeds execution
+2. **Auditability** — externalized reasoning enables debugging and oversight
+3. **Compliance** — agents show their work only when mandated to
+
+This reframing is captured in **KE-148**.
+
+### What remains testable
+H-103 is not dead — but the remaining testable predictions (P-103a, P-103b, P-103d) all require:
+1. **Harder scenarios** with <90% baseline accuracy (current ceiling effect prevents detection)
+2. **4+ gate configurations** (Phase 1 only tested 3 gates)
+3. **FM detection** in the gym pipeline
+
+If these tests also show no benefit from format decoupling, H-103 should be retired.
 
 ---
 
