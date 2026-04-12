@@ -146,22 +146,6 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 - **Successor hypothesis needed**: Action momentum × success signal misdirection as the true Ch3 moderator
 
 ### 0o. EXP-130: Few-Shot on Discovery Task [COMPLETE ✅ — IATROGENIC RESULT]
-
-### 0p. EXP-143: Checkpoint Decomposition Improves Evaluation Accuracy [COMPLETE ✅ — MIXED]
-- **Design**: `agents/shared/knowledge/experiments/EXP-143/design.md`
-- **Results**: `agents/shared/knowledge/experiments/EXP-143/results.md`
-- **Goal**: Test whether splitting long session transcripts into checkpoint segments improves FM detection
-- **Method**: Adapted — heuristic pattern-based FM detection (no LLM API; N=100 sessions with ≥15 tool calls)
-- **Key results**:
-  - **FM-3.3 (verification)**: +32.1pp sensitivity (60.4%→92.5%), **McNemar p<0.05** ✅
-  - **FM-3.1 (ghost deliverable)**: +34.6pp sensitivity (65.4%→100%), **McNemar p<0.05** ✅
-  - FM-2.1 (wrong approach): +2.6pp (NS)
-  - FM-1.3 (error recovery): +6.8pp, −28.6pp FPR (NS)
-  - Overall accuracy: 85% vs 86% (minimal difference)
-- **Caveats**: Detectors too aggressive (85% FM-positive rate, 100% holistic FP rate on clean sessions). Heuristic patterns, not LLM evaluation.
-- **Insight**: Segment-level evaluation excels at sequential patterns (edit→verify) diluted in full transcripts. Global patterns (wrong approach) show no benefit.
-- **P(H-096) update**: 0.68 → 0.65
-- **Recommendation**: Re-run with LLM evaluator when available; wait for FM-labeled ground truth data
 - **Design**: `agents/shared/knowledge/experiments/EXP-130/design.md`
 - **Results**: `agents/shared/knowledge/experiments/EXP-130/results.md`
 - **Hypothesis**: H-099 P-099d — Few-shot examples cannot teach discovery (irreducible)
@@ -194,22 +178,21 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 - **Root causes**: Phase boundary violation (47%), verification gaps (81%), P2-has-nothing-to-do (19%)
 - **Recommendations**: (1) Harmonize quality scales P0, (2) Per-session evaluation keys P0, (3) Rethink phase boundaries P1
 
-### 0j. EXP-123: Verification-Depth Guard — Superficial Verification Block [COMPLETE ✅ — 31h Results]
+### 0j. EXP-123: Verification-Depth Guard — Superficial Verification Block [DEPLOYED ⏳]
 - **Design**: `agents/shared/knowledge/experiments/EXP-123/design.md`
-- **Results**: `agents/shared/knowledge/experiments/EXP-123/results.md` (updated 2026-04-11 24:00 with 31h data)
 - **Implementation**: `src/lib/tools/verification-depth-guard.ts` (363 lines)
-- **Tests**: `src/lib/tools/verification-depth-guard.test.ts` (23/23 pass, incl. process artifact fix)
-- **Status**: COMPLETE — guard deployed, all hypotheses confirmed
+- **Tests**: `src/lib/tools/verification-depth-guard.test.ts` (18/18 pass)
+- **Status**: Phase 2 — guard deployed to production for all agents
 - **Goal**: Address the 35% residual unrecovered FM-3.3 (EXP-110 finding)
-- **Key results (31h)**:
-  - C1.3 fleet: **74.2% → 95.0%** (+20.8pp) — all agents ≥90%
-  - C1.3 bob: **70.5% → 97.9%** (+27.4pp)
-  - C1.3 optimizer: **59.4% → 90.5%** (+31.1pp, after process artifact fix)
-  - 3 agent categories: guard-dependent (QA +76.7pp), guard-neutral (optimizer, may, scout), guard-harmed (bob -6.1pp quality)
-- **Concerns**:
-  - Guard fire rate still RISING (not declining) — agents not internalizing
-  - Bob quality penalty when guard fires (-6.1pp) — investigate D-o-R interaction
-- **Follow-ups**: Monitor fire rate trend, consider per-agent thresholds, write KE entry
+- **Detects 3 patterns**:
+  - T1: Git commands on gitignored paths (agents/) — zero information gain
+  - T2: Missing post-write verification — writes/edits without subsequent read/test
+  - T3: tsc-only verification — syntax-only check on behavioral bugs (warn-only)
+- **Phase 1 result**: CEILING EFFECT — gym scenarios (compound-edit-verification, convention-verify-edit, assertion-without-evidence) all pass baseline; guard never fires
+- **Phase 2**: Production observation — guard wired into composeGuards() for all agents
+  - Kill switch: `DISABLE_VERIFICATION_DEPTH_GUARD=1`
+  - Measurement: Wait 48-72h, then analyze fire rate, true positive rate, recovery rate
+- **Next**: Analyze production impact on 2026-04-13
 
 ### 1. Few-Shot Production Pipeline Integration [DEPLOYED ✅]
 - **Owner**: Tech-lead (implementation), Bob (design brief at `agents/shared/may-agent-docs/design/fewshot-production-pipeline.md`)

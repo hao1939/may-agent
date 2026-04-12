@@ -715,20 +715,5 @@
 5. DD#746 → H-099 (foundational explanation for why discovery tasks resist scaffolding)
 6. DD#746 → KE-002 (fixation operates below instruction-following level)
 7. CR#337 → All above (Template-as-Ceiling unified account)
-
-**Cognitive Overhead Budget / Gate Stacking Mechanism** ★★★★★ — NEW (2026-04-11 Session 669)
-1. [dd747](DD-747-the-format-tax.md) — ★★★★★ The Format Tax: Format-requesting instructions alone cause most accuracy loss (before constrained decoding). Decoupling reasoning from formatting recovers accuracy. Closed-weight models have largely closed the gap.
-2. [dd748](DD-748-batched-contextual-reinforcement-task-scaling.md) — ★★★★½ BCR: Implicit budget constraints (batch N problems) drive self-regulated efficiency. Novel task-scaling law. "Free lunch" at N=1: 15-63% token reduction with maintained accuracy.
-3. [CR-338](../cross-references/CR-338-cognitive-overhead-budget-hump-curve-grounding.md) — ★★★★★ Cognitive Overhead Budget Synthesis: Unified mechanistic account of why gate stacking follows a hump curve. Two competing forces (reasoning scaffolding vs format tax). Connects DD-747, DD-748, DD-671 to KE-134/KE-135.
-| [dd747](DD-747-the-format-tax.md) | The Format Tax ★★★★★ | Lee et al. 2026 — Structured output degrades reasoning, fix via decoupling |
-| [dd748](DD-748-batched-contextual-reinforcement-task-scaling.md) | BCR Task-Scaling ★★★★½ | Yang et al. 2026 — Implicit budget, self-regulated efficiency, task-scaling law |
-**Cross-references (Session 669)**:
-1. DD#747 → KE-134 (format tax is the mechanism behind hump curve degradation at 4 gates)
-2. DD#748 → KE-134 (implicit budget from multi-gate structure drives self-regulated efficiency at 1-3 gates)
-3. DD#671 → KE-134 (structure snowballing is the failure mode when format tax exceeds capacity)
-4. DD#747 + DD#748 → Design principle: implicit scaffolding > explicit format
-5. DD#747 → DD#671 (same mechanism from different angles: prompt-level vs decoder-level)
-6. CR#338 → EXP-142 (agent-specific guard calibration should account for per-agent format tax)
-7. CR#338 → KE-101 Laws 2+3 (scaffolding creates capacity, format consumes capacity)
-> 151 research deep dives, cross-reference syntheses, and reference documents.  
+> 148 research deep dives, cross-reference syntheses, and reference documents.  
 > Last updated: 2026-04-11 | Maintained by Scout

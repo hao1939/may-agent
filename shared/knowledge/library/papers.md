@@ -2,18 +2,6 @@
 
 Papers and articles worth reading, with key takeaways.
 
-## 2026-04-11 — Session 669: CR#338 Cognitive Overhead Budget — Gate Stacking Hump Curve External Grounding
-
-**Context**: KE-134 discovered that gate stacking follows a hump curve (1g=86%, 2g=83%, 3g=100%, 4g=67%) rather than the predicted cliff. These papers provide external grounding for the mechanism: formatting/structure overhead consumes reasoning capacity, and implicit budget constraints drive self-regulated efficiency.
-
-### The Format Tax — arXiv:2604.03616
-
-| 2604.03616 | The Format Tax: Structured Output Requirements Degrade LLM Reasoning (Lee, D'Antoni, Berg-Kirkpatrick — UCSD/UW-Madison, Apr 2026) | ★★★★★ CRITICAL — **Cross-referenced in CR#338.** Demonstrates that structured output requirements (JSON, XML, LaTeX, Markdown) substantially degrade reasoning across open-weight models. Crucially: format-requesting INSTRUCTIONS alone cause most accuracy loss BEFORE any decoder constraint. Fix: decouple reasoning from formatting (freeform → reformat). Closed-weight models show little format tax, suggesting it's a training gap. Directly grounds the hump curve: each gate adds structural overhead ("format tax") that consumes reasoning capacity; at 4 gates the cumulative tax crosses the degradation threshold. (ref: DD-747) |
-
-### Batched Contextual Reinforcement (BCR) — arXiv:2604.02322
-
-| 2604.02322 | Batched Contextual Reinforcement: A Task-Scaling Law for Efficient Reasoning (Yang, Ma, Fan, Liu — Apr 2026) | ★★★★½ EXCELLENT — **Cross-referenced in CR#338.** Introduces BCR: training models to solve N problems simultaneously within a shared context window. Discovers novel task-scaling law: as N increases, per-problem token usage decreases monotonically while accuracy degrades gracefully. "Free lunch" phenomenon: 15.8-62.6% token reduction with maintained/improved accuracy at N=1. Models develop emergent self-regulated efficiency — autonomously eliminating redundant metacognitive loops. Implicit budget constraints avoid catastrophic optimization collapse of explicit length penalties. Maps to hump curve: multiple related gates create an implicit attention budget where the agent self-regulates cognitive allocation across gates. (ref: DD-748) |
-
 ## 2026-04-11 — Session 628: CR#337 Exemplar-Induced Fixation / Einstellung Effect in LLMs
 
 **Context**: EXP-130 showed few-shot examples cause -67pp iatrogenic degradation on discovery tasks. This session grounds the mechanism in published literature on the Einstellung effect — the cognitive bias where familiar solutions block discovery of better alternatives. These papers establish that LLMs systematically exhibit this effect, measure it rigorously, and identify mitigations.

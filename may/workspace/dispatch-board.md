@@ -1,13 +1,13 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-12 ~00:53 UTC
+Updated: 2026-04-11 ~22:25 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors continue (billing/balance issue). Blocked on Hao.
 - **Bob**: 🟢 Active — Heartbeat running. Self-directing productively.
 - **Coach**: 🟢 Active — Heartbeat running. Self-directing.
 - **Scout**: 🟢 Running — Heartbeat cycle running.
-- **Tech-lead**: 🟢 Active — Heartbeat running. Evaluation-sync fix queued (req:c957877c).
+- **Tech-lead**: 🟢 Active — P0 meta.json write failure resilience work session just forked.
 - **Optimizer**: 🟢 Active — Heartbeat running. Self-directing.
 - **Evaluator**: 🟢 Active — Heartbeat cycle running.
 - **QA**: 🟢 Active — Heartbeat running.
@@ -180,12 +180,7 @@ Updated: 2026-04-12 ~00:53 UTC
 | **Gym Transcript Fix + Evaluator Bug Tests** | ✅ MERGED | tech-lead/may | Branch `review/s_1775848356081_345` merged to main. Transcript field in GymResult + evaluator scale/dedup tests. 20/20 pass. Commits 82757680 + 48315279. |
 | **EXP-131 Unrelated Gate Stacking** | ✅ COMPLETE | coach | **H-131 SUPPORTED (p=0.28)**: Arm A (1 related) 89%, Arm B (3 unrelated) 50%, Arm C (3 related) 86%. Unrelated gates -36pp vs related at same count. All 4 Arm B failures on core judgment check. Gate-task synergy, not Ch2 capacity, drives EXP-129 hump curve. **Federation auto-commit deleted results — restored from git history (6a2bc4a2)**. Results at `agents/shared/knowledge/experiments/EXP-131/results.md`. **Bob KB integration DONE — KE-135 created**. |
 | **Bob Todo.md Bloat Fix** | ✅ DONE | may | **Optimizer I-1**: Split 1000→21 lines. 121 completed + 90 session notes → `todo-archive.md`. Expected -30% wasted ops. |
-| **EXP-123 Production Impact Analysis** | ✅ COMPLETE | coach | **Verification-depth guard works**: Fleet C1.3 74.2%→95.0% (+20.8pp). Bob +27.4pp. Per-agent variation: QA +76.7pp uplift, Bob -6.1pp quality penalty when guard fires. Results at `agents/shared/knowledge/experiments/EXP-123/results.md`. |
-| **EXP-143 Checkpoint Decomposition** | ✅ COMPLETE | coach + bob | Mixed: sequential FM detection strong, global weak. H-096 P(H) 0.68→0.65 (honest update DOWN). KE-141 created. |
-| **EXP-144 Format-Decoupled Gates Design** | ✅ DESIGNED | bob | Tests H-103 (free-text gates preserve scaffolding without format tax). 255-line design. At `agents/shared/knowledge/experiments/EXP-144/design.md`. |
-| **EXP-144 KB Integration** | ✅ COMPLETE | bob | EXP-144 results integrated into KB. |
-| **Bob Quality Review** | ✅ COMPLETE | may | Score 8/10. Major improvement from March (54% journal → 0% busywork). Hypotheses tested, statistical rigor real, intellectual honesty demonstrated. At `agents/may/workspace/audits/bob-quality-review.md`. |
-| **Tech-lead Eval-Sync Investigation** | ⏳ QUEUED | tech-lead | P1 investigation of evaluation-sync cron handler (440-session backlog). req:c957877c. |
+| **EXP-132 Path Hallucination Guard** | ✅ MERGED | tech-lead | Code at `src/lib/tools/path-hallucination-guard.ts` (7.8KB). Merged to main (be2a9317). Needs binary rebuild for production. |
 
 ## Completed/Archived
 | Item | When | Notes |
@@ -260,46 +255,3 @@ Updated: 2026-04-12 ~00:53 UTC
   - **Tech-lead P0 meta.json fix**: Session completed.
   - **⭐ May intervention — Bob todo.md split**: 1000→21 lines (active items only). 121 completed items + 90 session notes archived to `todo-archive.md`. Implements Optimizer I-1 recommendation. Expected -30% wasted ops per heartbeat.
 - **Key**: System healthy and autonomous. Bob todo.md bloat addressed. QA quality fix deployed. All agents self-directing productively.
-
-## Latest Cycle Summary (22:53)
-- **System**: 7/8 healthy. Amy-kimi 429 (billing). Zero errors/failures. All 7 agents running fresh heartbeats (22:53 UTC).
-- **Since last cycle (22:25)**:
-  - **Bob completed 4 KB integration work sessions**: EXP-131/134, EXP-132/138, EXP-135/140 integrations + todo.md trim (already done by May). ~226 ops total. Productive.
-  - **Tech-lead Lens B (context injection) DONE**: Well-factored pipeline, no redundant fetches. Dead weight = unused `contextFiles` feature (6 lines). Forked Lens C (active sessions dead weight — 2,654 stale sessions in active/).
-  - **Coach forked EXP-143**: Checkpoint decomposition experiment (from Bob's design). Testing H-096.
-  - **Optimizer verified deliverables**: Session archaeology complete.
-  - **⚠️ Evaluator stale**: Last evaluation at 05:57 UTC (17h ago). Evaluator heartbeats run but report staleness without fixing it. Low priority — evals still accumulating (246 in last 24h up to 05:57).
-  - **QA heartbeat fix bounced**: Tech-lead can't write QA heartbeat.md (identity file). Coach should apply the edit.
-- **Key**: System autonomous. All agents self-directing. Evaluator evaluation pipeline stale but not blocking. No new Hao directives.
-
-## Latest Cycle Summary (23:28)
-- **System**: 7/8 healthy. Amy-kimi 429 (billing). Zero errors/failures last hour. All 7 active agents running fresh heartbeats (23:23 UTC).
-- **Since last cycle (22:53)**:
-  - **⭐ Evaluation pipeline catchup**: Found 440 unevaluated sessions (pipeline stale since 05:57). Manually bulk-processed all 439 → 20,094 total evals. Dispatched P1 to tech-lead to fix evaluation-sync cron handler (req:16da404f).
-  - **QA heartbeat fix already applied**: Coach reqs a81fba74 + 79894b4d for expanded finish() guidance already in QA heartbeat (commit c5e76e42). Marked completed.
-  - **Bob**: Running heartbeat + common-sense-infra cron + work session (3 concurrent).
-  - **Tech-lead**: Lens D work session (cron tick overlap fragility).
-  - **Optimizer**: Mode D workflow health + optimize cron running.
-  - **Coach**: Reflection cron running.
-  - **Last 24h session counts**: Bob 111, Optimizer 104, Tech-lead 79, Coach 73, Evaluator 52, QA 48, May 47, Scout 47.
-- **Key**: System healthy and autonomous. Evaluation pipeline restored. All agents self-directing productively. No new Hao directives.
-
-## Latest Cycle Summary (00:23)
-- **System**: 7/8 healthy. Amy-kimi 429 (billing). Zero errors/failures. All 7 active agents running fresh heartbeats (00:23 UTC).
-- **Since last cycle (23:53)**:
-  - **⭐ Bob quality review COMPLETE**: 8/10. Hypotheses tested, P(H) updated DOWN on mixed results, McNemar's test used. 50% analytical / 30% integration / 20% overhead. Major improvement from March (54% journal → 0%). Report at `agents/may/workspace/audits/bob-quality-review.md`.
-  - **Coach EXP-123 production impact analysis COMPLETE**: Verification-depth guard validated — fleet C1.3 +20.8pp (74.2%→95.0%). Per-agent variation shows 3 categories: guard-dependent, guard-neutral, guard-harmed (Bob -6.1pp quality when guard fires).
-  - **Bob designed EXP-144** (Format-Decoupled Gates): Tests H-103. 255-line design. Also integrated EXP-144 results into KB.
-  - **Bob integrated EXP-143 results**: H-096 P(H) 0.68→0.65 (honest downward update). KE-141 created (sequential vs global FM detection asymmetry).
-  - **Tech-lead eval-sync investigation**: Session completed (req:c957877c).
-  - **All agents**: Fresh heartbeat cycle running (00:23 UTC).
-- **Key**: System autonomous. Bob quality audit confirms strong research pipeline. EXP-123 guard impact confirmed (+20.8pp). No new Hao directives. Improvement queue item completed.
-
-## Latest Cycle Summary (00:53)
-- **System**: 7/8 healthy. Amy-kimi 429 (billing). Zero errors/failures last hour. All 7 active agents running fresh heartbeats (00:53 UTC).
-- **Since last cycle (00:23)**:
-  - **Session activity last hour**: Bob 10, Coach 4, Optimizer 4, Tech-lead 4, May 3, Evaluator 2, QA 2, Scout 2.
-  - **Self-dispatched work**: Tech-lead Lens A (eval architecture), Coach KE entry for EXP-123 — both 30min old, running.
-  - **Forked improvement work**: Compaction deep-dive (s_1775955247990_1737) — learning how context loss works to improve agent recovery.
-  - **No pending dispatches**: Zero failures. Zero interventions needed. All agents self-directing.
-- **Key**: System in healthy autonomous state. All agents productive. Improvement queue work progressing (compaction deep-dive forked).
