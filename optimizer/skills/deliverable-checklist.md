@@ -36,8 +36,14 @@ Task: [brief description]
 ```
 
 ### Step 4: Check items off as you complete them
-After each deliverable, update the checklist:
+After each deliverable, **read() the checklist first**, then edit() to check off the item. The read() is required by C1.1 (read-before-edit) — even if you just wrote the file, you must read() before edit().
 
+```
+read("agents/optimizer/workspace/DELIVERABLES_CHECKLIST.md")  ← required before edit
+edit(path, "- [ ] Create src/lib/new-module.ts", "- [x] Create src/lib/new-module.ts ✅")
+```
+
+Example checklist after updates:
 ```markdown
 - [x] Create src/lib/new-module.ts ✅
 - [x] Add tests in test/new-module.test.ts ✅ (12/12 pass)
