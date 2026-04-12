@@ -14,3 +14,5 @@
 {"scenario":"cascading-fix-trap-v2","run":8,"condition":"full","passed":false,"elapsed":115}
 {"scenario":"cascading-fix-trap-v2","run":9,"condition":"full","passed":false,"elapsed":80}
 {"scenario":"cascading-fix-trap-v2","run":10,"condition":"scoped","passed":false,"elapsed":53}
+{"scenario":"cascading-fix-trap-v2","run":11,"condition":"scoped","passed":false,"elapsed":71}
+{"scenario":"cascading-fix-trap-v2","run":12,"condition":"scoped","passed":false,"elapsed":56}
