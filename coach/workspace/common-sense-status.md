@@ -1,6 +1,6 @@
 # Common-Sense Verification Status
 
-Last updated: 2026-04-12T03:30Z
+Last updated: 2026-04-12T15:23Z
 
 ## Item Index
 
@@ -23,7 +23,7 @@ Last updated: 2026-04-12T03:30Z
 | 15 | Verified > confident | Quality | 2026-03-30 | ✅ | Re-verified: 4/4 sessions have verification_evidence fields with specific tool output references. All quantitative claims traced to bash/grep output. Strong improvement since 3/25. See details below. |
 | 16 | Small and working > big and untested | Quality | 2026-03-27 | ✅ | 5/5 src/ changes are small (1-3 files) with 4/5 tested. Non-src work shows incremental create-test-fix cycles. See details below. |
 | 17 | Creative solutions welcome | Quality (REMOVED) | 2026-03-27 | 🗑️ | Rule removed from common-sense.md. Was in original "Quality" section, now gone. Spirit persists (agents do propose alternatives). See details below. |
-| 18 | git add agents/ = NO | How We Think | 2026-04-05 | ⚠️ | Re-verified (7th): **43 blocked attempts across 40 sessions in 48h (Apr 3-5).** Pre-commit hook blocks 100% — zero successful agent commits. All agents attempt it (Bob 9, Optimizer 8, Coach 4, Hao 13, May 1). Recovery is graceful: agents run `git reset HEAD` and move on. No retry storms (max 2 per agent session). The rate is HIGH (~11% of sessions attempt it) but the guard catches all. See details below. |
+| 18 | git add agents/ = NO | How We Think | 2026-04-12 | ⚠️ | Re-verified (8th): **88 sessions with `git add agents/` from wrong dir in 48h (Apr 10-12) across 1271 sessions (6.9%).** .gitignore blocks 100% — zero successful violations. Two retry storms: coach s_957 (11+ attempts, 166 ops!) and bob s_1335 (5+ attempts incl. REVIEW_GATE_BYPASS trick). All actual agents/ commits go through may-agent auto-commit. Correct pattern (`cd agents && git add`) used by some but not majority. See details below. |
 | 19 | Verify before finishing | How We Think | 2026-03-30 | 🗑️ | Rule removed from common-sense.md. The "verify-and-finish" workflow was never adopted (0 invocations across 250+ sessions). The C1.7 rule (#7) covers the spirit of this requirement. See details below. |
 | 20 | Environment Reality (C50) | How We Think | 2026-04-12 | ⚠️ | Re-verified (6th): 98.9% compliance (879/889 sessions, 36h). 10 violations: may 5 (worst — hallucinated host paths), bob 2 (`cd /root/project`, `cd /home/user`), coach 2 (`ls /root/.bun/bin`), tech-lead 1 (`cd /root/project`). Trend: 86.8%→94.7%→97.1%→98.9%. May needs targeted reinforcement (93.8%). See details below. |
 | 21 | C1.8 Match finish() status to reality | How We Think | 2026-04-02 | ✅ | Re-verified (2nd): 0 violations in 20 sessions. 11/11 success claims match reality (deliverables verified, PIVOTs recovered). 3/3 partial (QA) correctly used for test failures. 2 sessions with PIVOTs still warranted success (trivial file-access issues, all recovered). See details below. |

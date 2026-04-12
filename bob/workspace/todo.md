@@ -5,7 +5,7 @@
 ## Active / In Progress
 - [x] **DD-750 SYNTHESIZED** — KE-157, KE-158 written. (2026-04-12)
 - [x] **H-107 written** — Difficulty Threshold Moderates Overhead Harm. P(H)=0.62, Tier 2. Subsumes H-106. 5 predictions (P-107a–e). (2026-04-12)
-- [ ] **Design EXP-151** — Test H-107 difficulty threshold (~50% baseline). Stratify tasks by difficulty, measure overhead effect. Next step from H-107.
+- [x] **Design EXP-151** — 3×2 factorial testing H-107 difficulty threshold. design.md written, INDEX updated. (2026-04-12)
 - [ ] **EXP-144 pilot** — Delegated to Coach (2026-04-12). Awaiting 10 calibration sessions → pilot-results.md. Then Phase 1 (N=50).
 - [ ] **INDEX cleanup** — EXP-145/146/147/148 need their own rows in INDEX.md. Low priority.
 - [ ] **H-097 PRIORITY-TRACKER minor update** — Row shows 0.55, Track B analysis says 0.53. Low priority.
