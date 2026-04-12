@@ -14,3 +14,14 @@
 {"scenario":"cascading-fix-trap-v2","run":17,"condition":"full","passed":false,"elapsed":75}
 {"scenario":"cascading-fix-trap-v2","run":14,"condition":"scoped","passed":true,"elapsed":212}
 {"scenario":"cascading-fix-trap-v2","run":15,"condition":"full","passed":true,"elapsed":58}
+{"scenario":"cascading-fix-trap-v2","run":16,"condition":"full","passed":true,"elapsed":76}
+{"scenario":"cascading-fix-trap-v2","run":18,"condition":"scoped","passed":false,"elapsed":214}
+{"scenario":"cascading-fix-trap-v2","run":19,"condition":"scoped","passed":false,"elapsed":108}
+{"scenario":"cascading-fix-trap-v2","run":20,"condition":"scoped","passed":false,"elapsed":59}
+{"scenario":"cascading-fix-trap-v2","run":17,"condition":"full","passed":true,"elapsed":230}
+{"scenario":"stale-approach-fixation","run":1,"condition":"full","passed":true,"elapsed":81}
+{"scenario":"cascading-fix-trap-v2","run":18,"condition":"scoped","passed":true,"elapsed":65}
+{"scenario":"cascading-fix-trap-v2","run":19,"condition":"scoped","passed":true,"elapsed":71}
+{"scenario":"stale-approach-fixation","run":2,"condition":"scoped","passed":true,"elapsed":121}
+{"scenario":"cascading-fix-trap-v2","run":20,"condition":"scoped","passed":true,"elapsed":63}
+{"scenario":"stale-approach-fixation","run":3,"condition":"scoped","passed":true,"elapsed":104}

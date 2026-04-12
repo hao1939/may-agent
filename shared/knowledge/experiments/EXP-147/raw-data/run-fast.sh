@@ -12,13 +12,13 @@ BATCH_SIZE="${3:-74}"  # How many to run (default: all)
 CONTEXT_FULL="agents/shared/knowledge/experiments/EXP-147/raw-data/context-full.md"
 CONTEXT_SCOPED="agents/shared/knowledge/experiments/EXP-147/raw-data/context-scoped.md"
 CONTEXT_TARGET="agents/bob/context.md"
-CONTEXT_BACKUP="agents/bob/context.md.exp147bak"
+CONTEXT_BACKUP="agents/bob/context.md.exp147bak.$$"
 
 export PATH=".state/.bun/bin:$PATH"
 
 # Backup original context
 cp "$CONTEXT_TARGET" "$CONTEXT_BACKUP"
-trap 'cp "$CONTEXT_BACKUP" "$CONTEXT_TARGET"; rm -f "$CONTEXT_BACKUP"; echo "Context restored on exit"' EXIT
+trap 'if [ -f "$CONTEXT_BACKUP" ]; then cp "$CONTEXT_BACKUP" "$CONTEXT_TARGET"; rm -f "$CONTEXT_BACKUP"; echo "Context restored on exit"; fi' EXIT
 
 RUN_INDEX=0
 TOTAL=$(wc -l < "$INPUT_FILE")
