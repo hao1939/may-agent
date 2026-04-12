@@ -12,6 +12,7 @@
 - [ ] **Complete remaining 3 scenarios**: wrong-tool-args, wrong-tool-args-workflow (cut off in sweep part 3). Delegate to Coach.
 
 ## Blocked / Deferred
+- [ ] **EXP-146 BLOCKED** — Thinking-trace analysis blocked on `thinkingLevel` being disabled system-wide. ~1hr infra fix needed. Escalate to Hao. See `exp146-blockage-note.md`.
 - [ ] **Prompt Caching**: Blocked on Hao since 2026-03-24. $36-63/day savings waiting.
 - [ ] **Amy-Kimi C8.2 Compliance**: Model-level JSON bug in finish(). Options: (a) JSON repair, (b) exempt, (c) accept.
 - [ ] **EXP-216 (Regression Awareness Skill)**: Deprioritized — Coach diverted 3x. Skill ready at `agents/.lab/regression-awareness-skill/`. Low priority.
