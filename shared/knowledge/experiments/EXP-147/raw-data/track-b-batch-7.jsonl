@@ -8,3 +8,12 @@
 {"scenario":"stale-approach-fixation","run":7,"condition":"scoped","passed":true,"elapsed":101}
 {"scenario":"contradictory-requirements","run":13,"condition":"scoped","passed":true,"elapsed":134}
 {"scenario":"stale-approach-fixation","run":8,"condition":"full","passed":true,"elapsed":111}
+{"scenario":"stale-approach-fixation","run":9,"condition":"full","passed":true,"elapsed":80}
+{"scenario":"contradictory-requirements","run":14,"condition":"full","passed":true,"elapsed":117}
+{"scenario":"stale-approach-fixation","run":10,"condition":"full","passed":true,"elapsed":105}
+{"scenario":"contradictory-requirements","run":15,"condition":"scoped","passed":true,"elapsed":146}
+{"scenario":"stale-approach-fixation","run":11,"condition":"full","passed":true,"elapsed":102}
+{"scenario":"contradictory-requirements","run":16,"condition":"scoped","passed":true,"elapsed":139}
+{"scenario":"stale-approach-fixation","run":12,"condition":"scoped","passed":true,"elapsed":101}
+{"scenario":"stale-approach-fixation","run":13,"condition":"scoped","passed":true,"elapsed":142}
+{"scenario":"contradictory-requirements","run":17,"condition":"full","passed":true,"elapsed":215}
