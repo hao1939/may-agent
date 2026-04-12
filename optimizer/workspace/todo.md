@@ -62,7 +62,8 @@
 - **DEPLOYED**: 2026-04-12 ~08:28 UTC to `agents/may/heartbeat.md`. Budget caps added within existing 7-step structure (KE-008 compliant). Changes: global ≤12 op budget, per-step budget annotations, combined system snapshot query, no-peek rule, no-git-commit rule, fork-only enforcement, "MUST FORK" list, op budget reference table.
 - Baseline: avg 22.4 ops, median 19, P90=42 (n=96 in 48h ending 2026-04-12 ~08:00 UTC)
 - **MEASUREMENT (Apr 12 ~09:53 UTC)**: n=5 post-deploy, avg 12.6 ops (ops=26,4,5,28,0). Baseline avg 22.4 ops. **44% reduction** overall. BUT 2/5 sessions hit 26-28 ops (above baseline median 19). 3/5 sessions ≤5 ops (excellent). Bimodal: caps work for normal heartbeats, fail for some inline-heavy ones.
-- **NEXT**: Investigate the 26-op and 28-op outlier sessions — what blew the budget? Then decide if tighter enforcement or prompt fix needed. Also continue monitoring (need 10+ samples).
+- **OUTLIER INVESTIGATION (Apr 12 ~09:55 UTC)**: The "outliers" (26-op and 28-op) were measurement errors: 26-op session was pre-deploy (started 6min before commit), 28-op was a forked work session (not a heartbeat). **Corrected post-deploy heartbeat results**: n=3, ops=[4,5,6], avg=5.0 ops, 78% reduction. ALL under ≤12 budget. No prompt changes needed. Continue monitoring (need 10+ samples). Finding: `workspace/finding-may-heartbeat-cap-outliers-0412.md`
+- **Measurement methodology fix**: Future measurements must filter by `source` (exclude agents.fork), task prefix ([heartbeat] vs [WORK SESSION]), use git commit timestamp as cutoff, and exclude status='running'.
 
 
 
