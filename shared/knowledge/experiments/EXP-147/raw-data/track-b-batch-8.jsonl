@@ -12,3 +12,14 @@
 {"scenario":"contradictory-requirements","run":8,"condition":"scoped","passed":true,"elapsed":137}
 {"scenario":"misleading-stacktrace","run":11,"condition":"scoped","passed":true,"elapsed":81}
 {"scenario":"misleading-stacktrace","run":12,"condition":"scoped","passed":true,"elapsed":78}
+{"scenario":"misleading-stacktrace","run":13,"condition":"full","passed":true,"elapsed":93}
+{"scenario":"contradictory-requirements","run":9,"condition":"full","passed":true,"elapsed":211}
+{"scenario":"misleading-stacktrace","run":14,"condition":"full","passed":true,"elapsed":62}
+{"scenario":"misleading-stacktrace","run":10,"condition":"full","passed":true,"elapsed":57}
+{"scenario":"misleading-stacktrace","run":11,"condition":"full","passed":true,"elapsed":65}
+{"scenario":"misleading-stacktrace","run":12,"condition":"scoped","passed":true,"elapsed":60}
+{"scenario":"misleading-stacktrace","run":15,"condition":"full","passed":true,"elapsed":181}
+{"scenario":"misleading-stacktrace","run":13,"condition":"full","passed":true,"elapsed":129}
+{"scenario":"misleading-stacktrace","run":16,"condition":"scoped","passed":true,"elapsed":205}
+{"scenario":"misleading-stacktrace","run":14,"condition":"full","passed":true,"elapsed":187}
+{"scenario":"misleading-stacktrace","run":17,"condition":"full","passed":true,"elapsed":83}
