@@ -154,7 +154,7 @@ export function collectCoachingReport(opts: CoachingReportOptions): string {
   let coachTodoCount = 0;
   try {
     const db = opts.getDb();
-    const row = db.query("SELECT COUNT(*) as cnt FROM requests WHERE toAgent = 'coach' AND status IN ('CREATED','IN_PROGRESS') AND method = 'send'").get() as { cnt: number } | null;
+    const row = db.prepare("SELECT COUNT(*) as cnt FROM requests WHERE toAgent = 'coach' AND status IN ('CREATED','IN_PROGRESS') AND method = 'send'").get() as { cnt: number } | null;
     coachTodoCount = row?.cnt ?? 0;
   } catch { /* best-effort — DB may not be available */ }
 

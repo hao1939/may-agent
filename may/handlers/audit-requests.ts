@@ -76,13 +76,13 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     //    These have been injected into enough heartbeats. Keeping them
     //    just bloats context and wastes tokens.
     try {
-      const staleSends = db.query(
+      const staleSends = db.prepare(
         `SELECT * FROM requests WHERE status = 'CREATED' AND method = 'send' AND createdAt < ?`
       ).all(now - STALE_SEND_MS) as RequestRow[];
 
       for (const req of staleSends) {
         try {
-          db.query(
+          db.prepare(
             `UPDATE requests SET status = ?, summary = ?, completedAt = ?, updatedAt = ? WHERE requestId = ?`
           ).run(
             "COMPLETED",
@@ -109,7 +109,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     // 2. Auto-expire stale CREATED `call` requests to non-agent targets
     //    e.g. "bob -> finish" — these are tracking artifacts from the finish() tool
     try {
-      const staleCallRows = db.query(
+      const staleCallRows = db.prepare(
         `SELECT * FROM requests WHERE status = 'CREATED' AND method = 'call' AND createdAt < ?`
       ).all(now - STALE_NONAGENT_CALL_MS) as RequestRow[];
 
@@ -117,7 +117,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
       for (const req of staleNonAgent) {
         try {
-          db.query(
+          db.prepare(
             `UPDATE requests SET status = ?, summary = ?, completedAt = ?, updatedAt = ? WHERE requestId = ?`
           ).run(
             "COMPLETED",
@@ -146,7 +146,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     //     At 72+ stale requests, they bloat the active request list and waste context.
     let expiredAgentCalls = 0;
     try {
-      const staleAgentCallRows = db.query(
+      const staleAgentCallRows = db.prepare(
         `SELECT * FROM requests WHERE status = 'CREATED' AND method = 'call' AND createdAt < ?`
       ).all(now - STALE_AGENT_CALL_MS) as RequestRow[];
 
@@ -154,7 +154,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
       for (const req of staleAgentCalls) {
         try {
-          db.query(
+          db.prepare(
             `UPDATE requests SET status = ?, summary = ?, completedAt = ?, updatedAt = ? WHERE requestId = ?`
           ).run(
             "COMPLETED",
@@ -182,7 +182,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     let resetCount = 0;
     try {
       const activeSessions = getActiveSessionIds(ctx.persistDir);
-      const staleInProgress = db.query(
+      const staleInProgress = db.prepare(
         `SELECT * FROM requests WHERE status = 'IN_PROGRESS' AND createdAt < ?`
       ).all(now - STALE_IN_PROGRESS_MS) as RequestRow[];
 
@@ -192,7 +192,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
       for (const req of orphaned) {
         try {
-          db.query(
+          db.prepare(
             `UPDATE requests SET status = 'CREATED', sessionId = NULL, updatedAt = ? WHERE requestId = ?`
           ).run(now, req.requestId);
           resetCount++;
@@ -212,7 +212,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     let archived = 0;
     try {
       const archiveCutoff = now - ARCHIVE_DAYS * 86400000;
-      const result = db.query(
+      const result = db.prepare(
         `DELETE FROM requests WHERE status IN ('COMPLETED', 'FAILED') AND completedAt < ?`
       ).run(archiveCutoff);
       archived = (result as { changes: number }).changes;
@@ -226,7 +226,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     // Summary
     let activeCount = 0;
     try {
-      const row = db.query(
+      const row = db.prepare(
         `SELECT COUNT(*) as count FROM requests WHERE status IN ('CREATED', 'IN_PROGRESS')`
       ).get() as { count: number } | null;
       activeCount = row?.count ?? 0;

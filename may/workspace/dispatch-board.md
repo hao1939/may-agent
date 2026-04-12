@@ -1,18 +1,18 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-12 ~05:53 UTC
+Updated: 2026-04-12 ~06:25 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors (billing). Blocked on Hao.
-- **Bob**: 🟢 Active — Heartbeat + 2 research threads (EXP-144 results, EXP-146 design).
-- **Coach**: 🟢 Active — Heartbeat + QA C1.4/C8.2 fix + EXP-145 Phase 1.
-- **Scout**: 🟢 Active — Completed lean heartbeat.
-- **Tech-lead**: 🟢 Active — Heartbeat + deliver-or-report workflow fix.
-- **Optimizer**: 🟢 Active — Heartbeat + post-fix measurement (Bob budget caps).
+- **Bob**: 🟢 Active — Heartbeat cycle running.
+- **Coach**: 🟢 Active — Heartbeat cycle running.
+- **Scout**: 🟢 Active — Heartbeat cycle running.
+- **Tech-lead**: 🟢 Active — Heartbeat + coder skill pruning completed.
+- **Optimizer**: 🟢 Active — Heartbeat running (previous cycle had 2 interrupts, recovered).
 - **Evaluator**: 🟢 Active.
 - **QA**: 🟢 Active.
-- **Coder**: Recently active — completed 2 sessions (eval dead code removal).
-- **Summary**: 7/8 healthy. Amy-kimi 429 (billing). 11 sessions running. High autonomy — all agents self-dispatching productive work.
+- **Coder**: Available — no active sessions.
+- **Summary**: 7/8 healthy. Amy-kimi 429 (billing). All agents cycling normally.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -42,6 +42,8 @@ Updated: 2026-04-12 ~05:53 UTC
 | **EXP-145 Guard Dependency Escalation** | ⏳ IN PROGRESS | coach | Phase 1: time-series retrospective analysis. |
 | **EXP-146 Thinking-Token Analysis** | ⏳ IN PROGRESS | bob | Designing for H-105 (Three-Layer Reasoning Model). |
 | **analyze-failures cron bug** | ⚠️ Low priority | - | `db.query is not a function`. Persistent but non-critical. |
+| **Coder Skill Pruning P0** | ✅ DONE | tech-lead | 3 disproven-as-text skills removed (16.3KB). Commit 6705a0b3. Coder 10→7 skills. |
+| **Coder Skill Pruning P1** | 🆕 READY | tech-lead | Remove 4 untested skills (14.4KB). Coder 7→3 skills. Audit: `audits/skill-overlap-audit.md` |
 
 ## Next Actions
 - **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. Saves $143-441/day. **Blocked on Hao since Mar 24**.
@@ -49,14 +51,13 @@ Updated: 2026-04-12 ~05:53 UTC
 - **P1**: **Generate implementation work** — System idle without features. Coder completely idle. Need Hao priorities.
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (05:53)
-- **System**: 7/8 healthy. 11 sessions running. All agents autonomously dispatching productive work — best autonomy level I've observed.
-- **C1.5 fixed**: Tech-lead committed fix (7d54e506) — uses transcript instead of post-hoc disk check. 100% FP issue resolved.
-- **Lens C dead code**: -2,373 lines merged (c174fa3). Eval paths 2+3 removed.
-- **Convention regressions surfaced**: Coach found QA (C1.1 44.4%), optimizer (C1.1 78.1%), may (C7.1 78.5%). Already investigating and applying fixes.
-- **Active research**: Bob designing EXP-146, processing EXP-144 results. Coach running EXP-145 Phase 1. 
-- **Tech-lead working**: deliver-or-report workflow sensitivity fix (41% done rate).
-- **Improvement queue**: 3 ready items remaining (skill overlap audit, discovery task protection, skill sunset review).
+## Latest Cycle Summary (06:25)
+- **System**: 7/8 healthy. All agents cycling normally. No critical failures.
+- **Coder Skill Pruning P0 DONE**: Removed 3 disproven-as-text skills from coder (classify-then-act, investigate-and-fix, evidence-over-narrative). 16.3KB savings. Commit 6705a0b3. Coder now 7 skills/~27KB.
+- **Skill Overlap Audit complete**: Full report at `audits/skill-overlap-audit.md`. Coder was critically overloaded (43KB/10 skills). P1 (remove 4 untested, 14KB more) ready to dispatch.
+- **Active research**: Bob, Coach, Optimizer all cycling. Tech-lead completed pruning task.
+- **Improvement queue**: 2 ready items remaining (discovery task protection, skill sunset review).
+- **Optimizer**: Had 2 interrupts last cycle (request aborted), now recovered and running.
 
 ## Archive Reference
 Full history of 140+ completed items archived to `dispatch-board-archive-apr12.md`.
