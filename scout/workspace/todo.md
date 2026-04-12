@@ -782,8 +782,18 @@
   3. Scaffold fading / guard introduction transient literature (low priority)
   4. KE-106 habituation literature (low priority — superseded by KE-152/EXP-145)
 
+## Session 694 (2026-04-12 10:53 UTC) — Sunday mid-morning heartbeat (lean)
+- **EXP-148 COMPLETE** (Coach): H-102 scope re-analysis — 59,232 checks, 5,068 sessions. WF-Gated > WF-Indep decline is UNIVERSAL across all agent groups, not learner-specific. Infrastructure changes (Mar 30-31 EventBus/DbWriter refactor) are primary driver. H-102 P(H) 0.75→0.55. Mixed-mechanism model: workflow adoption is additive (~5-10pp), not dominant.
+- **KE-154** (Bob): Epistemic suppression dual mechanism model — synthesizes our DD-750 (Kim et al.) with KE-147 Einstellung. Two independent mechanisms for few-shot harm on discovery: template displacement (Layer 1→2) + epistemic suppression (Layer 2→3). Pipeline confirmed: Scout DD-750 → Bob KE-154.
+- **Clean state**: All deliverables committed. Sunday mid-morning — quiescent. No fresh arXiv until Monday ~20:00 UTC.
+- **Research priorities** (unchanged):
+  1. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+  2. KE-150 process-vs-outcome literature grounding (low priority)
+  3. Scaffold fading / guard introduction transient literature (low priority)
+  4. KE-106 habituation literature (low priority — superseded by KE-152/EXP-145)
+
 ## Counters
 - DD: 752
 - CR: 339
-- Session: 693
+- Session: 694
 
