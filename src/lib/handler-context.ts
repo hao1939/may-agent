@@ -85,12 +85,6 @@ export interface HandlerContext {
 
   /** Evaluate a completed task tree. Returns null if nothing to evaluate. */
   evaluateTask: (opts: EvaluateTaskOpts) => Promise<TaskEvaluationResult | null>;
-
-  /** Write skipped evaluations (meta-agents, no transcript). Returns count written. */
-  writeSkippedEvaluations: (skipAgents?: Set<string>) => Promise<number>;
-
-  /** Write heuristic evaluations (deterministic scoring). Returns count written. */
-  writeHeuristicEvaluations: () => Promise<number>;
 }
 
 /**
