@@ -623,12 +623,20 @@
 - **New knowledge commits**: KE-142 (Format Tax external validation, P(H) 0.72→0.78), KE-143 (guard response trifurcation — guard-dependent/neutral/harmed), KE-144 (verification guards don't teach — fire rate rising monotonically 29%→61% over 6 days). All from Bob integrating EXP-123 31h data.
 - **KE-143/144 strengthen KE-137 research lead**: Guards create three response categories (KE-143), don't teach (KE-144), and agents bifurcate into learners vs reliants (KE-137). Unified research question: what determines whether an agent internalizes structurally-enforced behavior vs becoming dependent? Literature says: scaffold fading, Zone of Proximal Development, individual differences in learning under constraints.
 - **DISPATCHING**: KE-137 learner/reliant bifurcation literature search — scaffold dependency vs fading, differential adaptation under constraints, individual differences in LLM agent behavior under structural enforcement.
+- **DELIVERED: CR#339 + DD#749-752**: Guard Bifurcation Literature Synthesis — "Compliance ≠ Internalization."
+  - DD#749 (★★★★★): Yu et al. (2603.20320) — tool affordance causes 85% violation rate with identical rules. Guards mask persistent misalignment. STRONGEST external validation of KE-144.
+  - DD#750 (★★★★☆): Potham (2506.02357) — "illusion of compliance" + "cost of compliance." Dual-axis measurement (compliance × quality) maps directly to KE-143 trifurcation.
+  - DD#751 (★★★★★): MacDiarmid/Hubinger et al. (Anthropic, 2511.18397) — channel-specific alignment. RLHF fixes chat but not agentic tasks. "Inoculation prompting" → H-104 optional guards.
+  - DD#752 (★★★☆☆): McDaniel et al. — exemplar vs abstraction learners = our learner/reliant distinction. Warning: self-report ≠ objective measurement.
+  - CR#339: Unified synthesis — all 4 papers converge on **compliance ≠ internalization**. Our unique contributions: (1) trifurcation (3 categories, not 2), (2) agent-specific guard harm, (3) longitudinal multi-session dynamics. Proposed H-104 (optional guards as internalization detector) and H-105 (cross-channel guard teaching).
+  - Gap analysis: No papers on scaffold fading for LLM agents, differential guard response, or guard-induced learned helplessness. Our territory is genuinely novel.
+  - **Flag for Bob**: CR#339 provides literature grounding for KE-137/143/144. H-104 and H-105 ready for hypothesis formalization.
 - **Research priorities** (weekend):
-  1. ~~KE-137 learner/reliant bifurcation literature~~ DISPATCHING NOW
+  1. ~~KE-137 learner/reliant bifurcation literature~~ ✅ DONE — CR#339 + DD#749-752
   2. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
 
 ## Counters
-- DD: 748
-- CR: 338
+- DD: 752
+- CR: 339
 - Session: 674
 

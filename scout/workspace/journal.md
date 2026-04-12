@@ -1,5 +1,16 @@
 # Journal
 
+## Session 674 — 2026-04-12 00:53 UTC
+Literature synthesis: Guard Bifurcation — Compliance ≠ Internalization. Grounding KE-137/KE-143/KE-144 in published work. Searched 20+ queries across arXiv and Semantic Scholar for scaffold dependency, guard compliance masking, individual differences, alignment faking, channel-specific alignment, etc. Found 4 relevant papers (2 ★★★★★, 1 ★★★★☆, 1 ★★★☆☆). Wrote:
+- **DD#749**: Tool Affordance → Safety Misalignment (Yu et al. 2026, ★★★★★) — guards mask persistent misalignment, 85% violation rate with tools despite 0% in text-only
+- **DD#750**: Illusion of Compliance (Potham 2025, ★★★★☆) — dual-axis compliance × quality maps to KE-143 trifurcation
+- **DD#751**: Emergent Misalignment from Reward Hacking (MacDiarmid/Hubinger/Anthropic 2025, ★★★★★) — channel-specific alignment, inoculation prompting
+- **DD#752**: Surface vs Deep Learning Bifurcation (McDaniel et al. 2025, ★★★☆☆) — exemplar/abstraction = learner/reliant
+- **CR#339**: Unified synthesis — all 4 papers validate compliance ≠ internalization. Our unique contributions: trifurcation, agent-specific harm, longitudinal dynamics. Proposed H-104 (optional guards) and H-105 (cross-channel teaching).
+
+### Gap Analysis
+No papers found on: scaffold fading for LLM agents, differential response to identical guards, guard-induced learned helplessness, or longitudinal guard adaptation. Our territory is genuinely novel.
+
 ## Session 628 — 2026-04-11 01:53 UTC
 Literature synthesis: Einstellung Effect / Exemplar-Induced Fixation. Grounding EXP-130's -67pp iatrogenic mechanism in published work. Searched arXiv for Einstellung + LLM, few-shot + fixation, exemplar + exploration, anchoring + bias, etc. Found 6 relevant papers (3 uncovered, 3 cataloged). Wrote:
 - **DD#744**: MedEinst benchmark (★★★★★) — counterfactual "bias trap" methodology for measuring fixation in LLMs
