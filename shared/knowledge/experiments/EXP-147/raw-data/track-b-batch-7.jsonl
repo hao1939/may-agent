@@ -27,3 +27,4 @@
 {"scenario":"stale-approach-fixation","run":19,"condition":"scoped","passed":true,"elapsed":107}
 {"scenario":"contradictory-requirements","run":1,"condition":"full","passed":true,"elapsed":285}
 {"scenario":"stale-approach-fixation","run":20,"condition":"full","passed":true,"elapsed":95}
+{"scenario":"contradictory-requirements","run":20,"condition":"full","passed":true,"elapsed":128}
