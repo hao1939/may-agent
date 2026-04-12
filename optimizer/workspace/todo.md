@@ -16,7 +16,20 @@
 - Bypass exists at `src/app/may.ts:148-165`, needs `ANTHROPIC_API_KEY` env var.
 - **BLOCKED on operator.** Finding: `workspace/findings/2026-04-10-litellm-kills-prompt-caching.md`
 
+### D-o-R Phase 1 Budget Cap — ✅ CONFIRMED EFFECTIVE, CLOSING (n=7)
+- **FINAL VERDICT (Apr 11 09:55 UTC)**: P1 avg 4.9 ops (was 34.5 pre-fix) — **86% reduction**. All 7 P1s ≤7. Total run avg 24.6 (was 49.1) — **50% reduction**. 1 minor P2 nesting incident (24 ops), 0 P1-spawned nesting. Zero cap violations. ~343 ops/day saved (~$16/day).
+- **Residual**: P2 bloat outlier (1/7 runs, 57 ops). Separate optimization opportunity.
+- Findings: `workspace/finding-dor-p1-bloat-0411.md`, `workspace/finding-dor-p1-cap-measurement-0411.md`, `workspace/finding-dor-p1-cap-final-verdict-0411.md`
+- **→ MOVING TO DONE**
 
+### D-o-R Nested Workflow Spawning — ✅ FIX DEPLOYED (commit 60a844e3)
+- Bob 90-op session (s_...1119) was a **3-deep nested D-o-R workflow**: Phase 1 called callAgent → triggered another D-o-R → spawned another Phase 1. Total: 169 ops for 1 KB integration task.
+- **3 instances in 72h**: 101 + 47 + 13 = 161 wasted ops (~54 ops/day, ~$2.50/day).
+- Root cause: Phase 1 had no instruction against calling callAgent().
+- **FIX**: Added "DO NOT call callAgent() or spawn sub-agents" to Phase 1 strict rules in `bob/workflows/deliver-or-report.ts` (commit 60a844e3, deployed ~03:54 UTC).
+- Combined with 15-op budget cap, this structurally + behaviorally prevents recursive nesting.
+- **Measurement needed**: Need n≥3 post-fix D-o-R runs to confirm no nesting.
+- Finding: `workspace/finding-bob-90op-archaeology-0411.md`
 
 ### Coach Session Efficiency — FINDING COMPLETE, FIX 2 DEPLOYED
 - 2,175 coach sessions analyzed. 50.3% zero-op, 64% of ops in top sessions are exploration waste.
@@ -28,15 +41,25 @@
 - **TOOL ADOPTION PATTERN IDENTIFIED (Apr 12)**: Context.md mentions = 0% adoption. Dispatch path integration = non-zero adoption. The fix is to wire gym-batch into growth-cycle.ts prompt (structural enforcement), NOT add more context.md text. See 5-level adoption hierarchy. Finding: `workspace/finding-tool-adoption-patterns-0412.md`
 - Estimated savings: ~750 ops/day, ~$35/day.
 - Finding: `workspace/finding-coach-session-efficiency-0410.md`
-- **DEEPER ANALYSIS (Apr 12)**: 183 EXP-tagged sessions. Primary cost driver is gym run count × serial overhead (2-4 ops/run). EXP-144 Pilot (145 ops) ran 54 gym runs + debugged broken environments. EXP-143 (35 ops, same day) batched 200 evaluations into a single script invocation. The cost is driven by experiment TYPE, not execution quality. Three concrete techniques: gym batch runner (saves 20-70 ops/session), pre-flight env validation (saves 20-40 ops when envs are broken, ~25% of gym sessions), pre-specified analysis scripts (saves 20-40 ops on analysis sessions). Total projected: ~1,860-3,720 ops across experiment sessions.
-- Finding: `workspace/finding-coach-experiment-cost-scouting-0412.md`
+
+### Tech-Lead Heartbeat Bloat — ✅ FIX DEPLOYED & CONFIRMED (89% reduction)
+- Tech-lead heartbeats avg 30.8 ops (24h pre-fix, n=44), **#1 across all agents**.
+- Root cause: heartbeat.md encouraged deep inline exploration (4 "Lens" modes) with no op budget.
+- **Fix**: Rewrote tech-lead heartbeat.md to dispatcher mode (same pattern as optimizer fix).
+- **DEPLOYED** (commit dfa10146, Apr 11 ~08:35 UTC). May deployed it directly.
+- **POST-FIX (n=4 heartbeats)**: avg 3.5 ops (ops: 8, 3, 1, 2). **89% reduction** ✅
+- Pre-fix avg: 30.8 ops (n=44). Post-fix avg: 3.5 ops (n=4).
+- **Savings**: ~1,100 ops/day (~$52/day, ~$1,560/month) based on ~40 heartbeats/day × 27.3 ops saved.
+- Tech-lead now properly forks work sessions (ops=40, 38, 5 seen in forked jobs).
+- Finding: `workspace/finding-tech-lead-heartbeat-bloat-0411.md`
+- **→ MOVING TO DONE after n≥8 confirms pattern holds**
 
 ### Optimizer Heartbeat Bloat — FIX DEPLOYED
 - Avg 56 ops/heartbeat (highest of any agent). Bob avg 4 ops. My min was 19 — proves lean is possible.
 - Root cause: heartbeat.md encouraged inline exploration (multi-query DB analysis, file reads).
 - Fix: Rewrote heartbeat.md to "Dispatcher Mode" — observe in 1-2 ops, fork all analysis work. Target: ≤15 ops.
 - Baseline: 8 heartbeats in 12h, avg 56 ops, total 451. Post-fix: avg 23 ops (59% reduction). ✅ SUCCESS.
-- Last exploration mode: **A** (Coder 104-op outlier archaeology — Apr 12 ~06:54 UTC). Previous: D (D-o-R nesting post-fix + Bob research thread structure — forked Apr 12 ~04:24 UTC), C (coach experiment cost scouting — Apr 12 ~03:59), B (tool adoption pattern mining — Apr 12 ~03:28), A (Bob 93-op P1 cap violation — Apr 12 ~02:58).
+- Last exploration mode: **C** (gym-batch adoption + coach technique scouting — forked Apr 11 ~11:23 UTC). Previous: B (Coach tool gap analysis — Apr 11 ~10:53), A (Scout heartbeat investigation — Apr 11 ~10:24), D (D-o-R final verdict + tech-lead — Apr 11 ~10:00), C (Apr 11 ~09:23), B (Apr 11 ~08:53), A (Coach 82-op QA regression — Apr 11 ~08:23), D (D-o-R n=5 + tech-lead draft — Apr 11 ~07:54), C (Apr 11 ~07:23), B (Apr 11 ~07:00), A (Apr 11 ~06:23), D (Apr 11 ~05:53), C (Apr 11 ~05:24), B (Apr 11 ~04:54).
 - **session-query tool BUILT** (`scripts/session-query.ts`). Replaces 15-25 bash archaeology pattern with single command. Supports: --agent, --since, --task, --status, --min-ops, --tools, --json, --sort. Tested with real data (911 sessions). Est. savings: 10-15 ops/session × 187 sessions = 1,870-2,805 ops.
 - **session-query adoption**: Still **zero active adoption** beyond optimizer (confirmed Apr 11 05:24 UTC). May + QA have passive mentions only. **Three blockers**: (1) filesystem history stale (through ~Apr 5), (2) zero agents have session-query in context.md, (3) may.db has 0 coach sessions. No change since last check. **gym-batch.sh MERGED to main** (cherry-pick 5ca3bdf, Apr 11 ~05:54 UTC) + coach context.md updated — but **gym-batch.sh also has ZERO adoption** despite being in context.md (see Coach Session Efficiency section). Findings: `workspace/finding-tool-gap-0411-b.md`, `workspace/finding-coach-experiment-technique-0411.md`, `workspace/finding-gym-batch-adoption-0411.md`
 - **ADOPTION FIX DIRECTION (Apr 12)**: Per tool adoption patterns finding — don't bother adding session-query to context.md (Level 4 = 0% adoption). Must fix may.db backend FIRST, then wire into workflow prompts/heartbeat dispatch templates (Level 1-3). Finding: `workspace/finding-tool-adoption-patterns-0412.md`
@@ -48,32 +71,6 @@
 
 ### may.db WAL Bug — FIXED, Monitoring
 - Session-sync + evaluation-sync handlers deployed. 1071 evals, 0 unevaluated (as of 17:10 UTC).
-
-### May Heartbeat Bloat — NEW #1 BLOATER (24.7 avg, up 42%)
-- May heartbeats avg 24.7 ops (n=15 in 6h) — **up 42% from 17.4 yesterday**
-- Does inline work: reviews, audits, dashboard updates, session quality checks
-- Unlike tech-lead/optimizer (fixed with dispatcher), May's heartbeat.md explicitly tells it to DO work inline
-- 370 ops in 15 heartbeats. If reduced to 5 avg: save ~1,180 ops/day (~$56/day)
-- **Fix needed**: May heartbeat dispatcher rewrite (same pattern as tech-lead/optimizer)
-- Finding: `workspace/finding-tool-adoption-pattern-mining-0412.md`
-
-
-
-### Coder 104-op Outlier — Fewshot Injection False Positive
-- **Root cause**: Fewshot pattern `/binary|\.bin|compiled|executable|hexdump/i` matched `.bin` in `./node_modules/.bin/tsc` (the verification command) → injected irrelevant "binary file escalation" example into a dead code removal task
-- Also matched `consumer` in code description → injected "escalation-judgment" example
-- Coder spent 104 ops / 10.3 min, produced **zero changes** ("No changes to the protected files")
-- Total tree cost: 134 ops (28 TL + 104 coder + 2 retry) for zero useful output
-- **Fix**: Change regex to `\.bin(?![/\\])` (negative lookahead excludes `.bin/` paths). Also strip verifyCommand before fewshot matching.
-- Only 1 coder session >75 ops in 14 days (besides gym runs) — likely one-off, but systemic risk exists for all implement-and-verify tasks
-- **Dispatched → tech-lead (Apr 12 ~07:24 UTC)**: P2 fix for `.bin` regex + verifyCommand stripping
-- Finding: `workspace/finding-coder-104op-archaeology-0412.md`
-
-### Tool Adoption Strategy — DECLARED DEAD
-- gym-batch.sh and session-query.ts: **4th consecutive check confirming zero adoption** (24h+ since merge)
-- Context.md references don't drive adoption. Only viable paths: embed in workflow JS code or handler code
-- **Recommendation**: Remove context.md references to reduce bloat, abandon prompt-based adoption strategy
-- Finding: `workspace/finding-tool-adoption-pattern-mining-0412.md`
 
 ## 📊 OBSERVATIONS (no action needed)
 
@@ -105,10 +102,6 @@
 
 ## ✅ DONE
 
-- **D-o-R Phase 1 Budget Cap** — 86% reduction (29.7→4.9 avg ops). ~343 ops/day saved (~$16/day). (2026-04-11)
-- **D-o-R Nested Workflow Spawning** — 0/4 nesting incidents post-fix. (2026-04-12)
-- **Bob Research Thread Bloat** — 62% reduction via parallel-research budget caps. ~397 ops/day saved (~$19/day). (2026-04-12)
-- **Tech-Lead Heartbeat Bloat** — 89% reduction (30.8→3.5 avg ops). ~1,100 ops/day saved (~$52/day). (2026-04-11)
 - **Bash Command Pattern Analysis** — 847 commands across 12 high-op sessions. Top 3 patterns (git-review-chain 91x, grep-then-read 87x, file-discovery-spiral 75x) = 52% of all commands. Concrete tool/script fixes sketched for each. Est. 125-220 ops/day savings. Finding: `workspace/finding-bash-command-patterns-0411.md` (2026-04-11)
 - **Gym Results Data Gap** — Both paths now record: `gym-helpers.ts` has `recordGymResult()` (commit 961d892f0), `run-gym.sh` pipes to `record-result.ts` (commit 2c8c7dcd). 22 runs + 156 checks verified in DB. (2026-04-10)
 
