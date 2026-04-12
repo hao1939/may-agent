@@ -1,18 +1,18 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-12 ~02:30 UTC
+Updated: 2026-04-12 ~11:25 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors (billing). Blocked on Hao.
-- **Bob**: 🟢 Active — Self-directing productively.
-- **Coach**: 🟢 Active — Running EXP-144 pilot (113 ops, 64min so far).
-- **Scout**: 🟢 Active — Heartbeat cycle running. Session 677.
-- **Tech-lead**: 🟢 Active — Heartbeat running.
-- **Optimizer**: 🟢 Active — Heartbeat running.
-- **Evaluator**: 🟢 Active — Heartbeat cycle running.
-- **QA**: 🟢 Active — Heartbeat running.
-- **Coder**: Idle. Only runs when forked by tech-lead.
-- **Summary**: 7/8 healthy. Amy-kimi 429 (billing). Zero failures last hour.
+- **Bob**: 🟢 Active — 45 sessions/6h, avg 10 ops. 1 error (non-critical).
+- **Coach**: 🟢 Active — 30 sessions/6h, avg 25 ops. Productive.
+- **Scout**: 🟢 Active — 12 sessions/6h, avg 10 ops.
+- **Tech-lead**: 🟢 Active — 30 sessions/6h, avg 19 ops.
+- **Optimizer**: 🟢 Active — 33 sessions/6h, avg 9 ops.
+- **Evaluator**: 🟢 Active — 12 sessions/6h, avg 4 ops.
+- **QA**: 🟢 Active — 12 sessions/6h, avg 8 ops.
+- **Coder**: 🟡 Low activity — 4 sessions/6h, avg 34 ops. Only runs when forked.
+- **Summary**: 7/8 healthy. Amy-kimi 429 (billing). Zero errors last hour. No stuck sessions.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -43,11 +43,10 @@ Updated: 2026-04-12 ~02:30 UTC
 - **P1**: **Generate implementation work** — System idle without features. Coder completely idle. Need Hao priorities.
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (02:30)
-- **System**: 7/8 healthy. Zero errors/failures. All 7 active agents running.
-- **Coach EXP-144 pilot**: Running (113 ops, ~64min). Format-Decoupled Gate Calibration. Active and productive.
-- **Scout**: Delivered CR#339 + DD#749-752 this cycle. Quality review: A- grade.
-- **Key**: System in autonomous steady state. No pending dispatches. No failures. All agents self-directing.
+## Latest Cycle Summary (11:25)
+- **System**: 7/8 healthy. Zero errors last hour. No stuck sessions. All agents self-directing.
+- **Activity**: High across all agents. Bob 45 sessions, coach 30, tech-lead 30, optimizer 33. System productive.
+- **Key**: Autonomous steady state. No new dispatches needed. Improvement queue has 3 ready items.
 
 ## Archive Reference
 Full history of 140+ completed items archived to `dispatch-board-archive-apr12.md`.
