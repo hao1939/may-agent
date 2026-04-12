@@ -1,8 +1,3 @@
-{"scenario":"hidden-dependency","run":8,"condition":"full"}
-{"scenario":"hidden-dependency","run":9,"condition":"scoped"}
-{"scenario":"hidden-dependency","run":10,"condition":"full"}
-{"scenario":"hidden-dependency","run":11,"condition":"full"}
-{"scenario":"hidden-dependency","run":12,"condition":"full"}
 {"scenario":"hidden-dependency","run":13,"condition":"full"}
 {"scenario":"hidden-dependency","run":14,"condition":"full"}
 {"scenario":"hidden-dependency","run":15,"condition":"full"}
@@ -11,3 +6,15 @@
 {"scenario":"hidden-dependency","run":18,"condition":"scoped"}
 {"scenario":"hidden-dependency","run":19,"condition":"full"}
 {"scenario":"hidden-dependency","run":20,"condition":"full"}
+{"scenario":"cascading-fix-trap-v2","run":1,"condition":"full"}
+{"scenario":"cascading-fix-trap-v2","run":2,"condition":"full"}
+{"scenario":"cascading-fix-trap-v2","run":3,"condition":"full"}
+{"scenario":"cascading-fix-trap-v2","run":4,"condition":"scoped"}
+{"scenario":"cascading-fix-trap-v2","run":5,"condition":"full"}
+{"scenario":"cascading-fix-trap-v2","run":6,"condition":"full"}
+{"scenario":"cascading-fix-trap-v2","run":7,"condition":"scoped"}
+{"scenario":"cascading-fix-trap-v2","run":8,"condition":"full"}
+{"scenario":"cascading-fix-trap-v2","run":9,"condition":"full"}
+{"scenario":"cascading-fix-trap-v2","run":10,"condition":"scoped"}
+{"scenario":"cascading-fix-trap-v2","run":11,"condition":"scoped"}
+{"scenario":"cascading-fix-trap-v2","run":12,"condition":"scoped"}

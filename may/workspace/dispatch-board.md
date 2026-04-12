@@ -1,18 +1,18 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-12 ~08:23 UTC
+Updated: 2026-04-12 ~02:30 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors (billing). Blocked on Hao.
-- **Bob**: 🟢 Active — EXP-147 Track B design + EXP-146 results in progress.
-- **Coach**: 🟢 Active — Convention regressions ongoing.
-- **Scout**: 🟢 Active — Heartbeat cycle running.
-- **Tech-lead**: 🟢 Active — Fewshot regex false positive fix DONE. D-o-R fix WIP.
-- **Optimizer**: 🟢 Active — Cycling normally.
-- **Evaluator**: 🟢 Active — 440 evals/24h.
-- **QA**: 🟢 Active.
-- **Coder**: Available — no active sessions. Skills pruned to 3 (was 10).
-- **Summary**: 7/8 healthy. Amy-kimi 429 (billing). All others cycling normally. No failures last hour.
+- **Bob**: 🟢 Active — Self-directing productively.
+- **Coach**: 🟢 Active — Running EXP-144 pilot (113 ops, 64min so far).
+- **Scout**: 🟢 Active — Heartbeat cycle running. Session 677.
+- **Tech-lead**: 🟢 Active — Heartbeat running.
+- **Optimizer**: 🟢 Active — Heartbeat running.
+- **Evaluator**: 🟢 Active — Heartbeat cycle running.
+- **QA**: 🟢 Active — Heartbeat running.
+- **Coder**: Idle. Only runs when forked by tech-lead.
+- **Summary**: 7/8 healthy. Amy-kimi 429 (billing). Zero failures last hour.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -25,18 +25,17 @@ Updated: 2026-04-12 ~08:23 UTC
 | Issue | Status | Owner | Notes |
 |-------|--------|-------|-------|
 | Amy-kimi billing outage | 🔴 Blocked | Hao | Still 429, needs balance refill |
-| **EXP-105 Few-Shot Production Impact** | ⏳ WAITING | coach | Zero coder/optimizer work sessions since deployment (Apr 9). Baselines captured. |
-| **EXP-114a Tool Schema Guard Monitoring** | ⏳ INSUFFICIENT DATA | coach | 57 sessions, 0 activations. Need 280+. |
+| **EXP-105 Few-Shot Production Impact** | ⏳ WAITING | coach | Zero coder/optimizer work sessions since deployment (Apr 9). Baselines captured. Heartbeat exclusion bug fixed. |
+| **EXP-114a Tool Schema Guard Monitoring** | ⏳ INSUFFICIENT DATA | coach | T+2h: 57 sessions, 0 activations, 0 FP. Need 280+ sessions. |
+| **EXP-123 Verification-Depth Guard** | ⏳ OBSERVING | coach | Guard deployed (commit 9d9be57). Observation window until Apr 13. |
 | **Web UI Agent Visualization Dashboard** | ⚠️ Branch stale | tech-lead | Source on main (`web.ts` 663 lines). Branch needs reconciliation. |
-| **Finish-Guard Git Ops False Positive** | ⚠️ Dispatched | tech-lead | FM-3.1 guard blocked git merge 4×. |
-| **Bob H-097 CCC Triad Hypothesis** | ⏳ IN PROGRESS | bob | P(H)=0.55. EXP-147 Track A Phase 1 done (0.92% wrong-consensus — P-120b moot). Track B pending. |
-| **H-098 Attention Channel Theory** | 🆕 FILED | bob | P(H)=0.78, Tier 1. |
-| **H-099 Discovery Task Boundary** | 🆕 FILED | bob | Creative inference irreducible to scaffolding. |
-| **EXP-132 Path Hallucination Guard** | ⚠️ Needs rebuild | tech-lead | Code merged but binary not rebuilt. |
-| **Convention Regressions** | ⚠️ IN PROGRESS | coach | QA: C1.1 78.3% (7d), 14.9% on Apr 11 — root cause: `bash("tail")` not `read()` before journal edits. Skill updated. Optimizer: C1.1 78.1%, C1.3 82%. |
-| **Deliver-or-Report Workflow Fix** | ⏳ IN PROGRESS | tech-lead | 41% done rate. Sensitivity fix in progress. |
-| **EXP-146 Thinking-Token Analysis** | ⏳ Phase 1 ran | bob+coach | Coach ran Phase 1 (blocked on infra). Bob processing results + updating H-105. |
-| **EXP-147 CCC Triad Validation** | ⏳ Track B DESIGNING | bob | Track A done (0.92% wrong-consensus, P-120b moot). Bob refining Track B design (Context Isolation). |
+| **Finish-Guard Git Ops False Positive** | ⚠️ Dispatched | tech-lead | FM-3.1 guard blocked git merge 4×. Dispatched (req:3623828c). |
+| **Bob H-097 CCC Triad Hypothesis** | ⏳ NEW | bob | P(H)=0.65. Multi-Agent CCC Triad. |
+| **H-098 Attention Channel Theory** | 🆕 FILED | bob | P(H)=0.78, Tier 1. Channel separation drives intervention effectiveness. |
+| **H-099 Discovery Task Boundary** | 🆕 FILED | bob | Creative inference irreducible to scaffolding. 5 failed interventions as evidence. |
+| **EXP-132 Path Hallucination Guard** | ⚠️ Needs rebuild | tech-lead | Code merged (be2a9317) but binary not rebuilt. |
+| **EXP-144 Pilot (Format-Decoupled Gate)** | 🟢 IN PROGRESS | coach | Work session running (113 ops). |
+| **analyze-failures cron bug** | ⚠️ Low priority | - | `db.query is not a function`. Persistent but non-critical. |
 
 ## Next Actions
 - **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. Saves $143-441/day. **Blocked on Hao since Mar 24**.
@@ -44,11 +43,11 @@ Updated: 2026-04-12 ~08:23 UTC
 - **P1**: **Generate implementation work** — System idle without features. Coder completely idle. Need Hao priorities.
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (10:53)
-- **System**: 7/8 healthy. Amy-kimi still down. Bob 1 auth error (401 transient), coach 1 interrupted (normal). No stuck sessions.
-- **Coach efficiency patch**: Too early to verify — 0 work sessions since patch applied (~08:27). Will check again in 1-2 cycles.
-- **Activity**: Bob 44 sessions/6h (10 avg ops), Coach 30 sessions (30 avg ops), Tech-lead 30 sessions (17 avg ops). All healthy.
-- **Improvement queue**: Coach patch verification still top item (needs more data). EXP-132 rebuild + Web UI Phase 2 in progress.
+## Latest Cycle Summary (02:30)
+- **System**: 7/8 healthy. Zero errors/failures. All 7 active agents running.
+- **Coach EXP-144 pilot**: Running (113 ops, ~64min). Format-Decoupled Gate Calibration. Active and productive.
+- **Scout**: Delivered CR#339 + DD#749-752 this cycle. Quality review: A- grade.
+- **Key**: System in autonomous steady state. No pending dispatches. No failures. All agents self-directing.
 
 ## Archive Reference
 Full history of 140+ completed items archived to `dispatch-board-archive-apr12.md`.

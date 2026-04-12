@@ -1,9 +1,9 @@
 # EXP-147 Results: CCC Triad Internal Validation — Track A Phase 1
 
-**Status**: TRACK A PHASE 1 COMPLETE — Phase 2 skipped per design (baseline < 5%)  
-**Track B**: Not started (independent, can proceed separately)  
+**Status**: TRACK A COMPLETE (Phase 2 skipped), TRACK B COMPLETE (partial execution — 86/160 runs)  
 **Observation window**: 2026-04-12  
-**Analysis session**: s_1775976868492_1935  
+**Track A analysis session**: s_1775976868492_1935  
+**Track B analysis session**: s_1775991281088_2065  
 
 ---
 
@@ -205,9 +205,206 @@ The 19.7% convention-failure rate in `good`-verdict sessions initially appeared 
 
 ---
 
-## 8. Connections
+## 8. Connections (Track A)
 
 - **Updates**: H-097 (prior unchanged at 0.55 — P-120b leg is healthy)
 - **Enables**: Track B (Context Isolation) with reallocated budget
 - **Informs**: Convention enforcement gap (finding §6.2) — possible new hypothesis about process compliance enforcement
 - **Related**: EXP-123 (verification-depth guard — different evaluator improvement), EXP-146 (thinking-token calibration)
+
+---
+---
+
+# EXP-147 Results: Track B — Context Isolation (P-120c)
+
+**Status**: COMPLETE (partial execution: 86/160 planned runs)  
+**Date**: 2026-04-12  
+**Prediction tested**: P-120c — "Scoping dispatched context to task-relevant information (vs full agent context) improves task success rate by ≥15pp"  
+
+---
+
+## 9. Executive Summary (Track B)
+
+Track B tested whether reducing injected context (from ~893 tokens full context.md to ~119 tokens scoped) improves gym scenario task success rate. The result is a **null result** — both conditions achieved ~97% success rates with a treatment effect of +0.5pp (z=0.17, p=0.43, n.s.).
+
+However, **this null result is severely compromised by two design-execution gaps**:
+
+1. **Incomplete execution**: Only 86 of 160 planned runs completed (54%), covering 4 of 8 scenarios. The 4 missing scenarios (cascading-fix-trap-v2, contradictory-requirements, misleading-stacktrace, stale-approach-fixation) were the harder ones expected to show differentiation.
+2. **Ceiling effect**: The 4 completed scenarios had ~97% pass rates in both conditions, leaving essentially no room for improvement. These were among the easier scenarios in the design (convention-compliance and debugging tasks).
+
+**Bottom line**: The experiment cannot distinguish "context isolation doesn't help" from "we only tested scenarios where everything passes regardless." P-120c remains **inconclusive**, not falsified.
+
+**H-097 posterior**: 0.55 → **0.53** (minimal downward adjustment — weak null signal, heavily attenuated by ceiling effect and incomplete execution).
+
+---
+
+## 10. Track B Data Summary
+
+### 10.1 Execution Coverage
+
+| Metric | Planned | Actual | % |
+|--------|---------|--------|---|
+| Total runs | 160 | 86 | 54% |
+| Scenarios | 8 | 4 | 50% |
+| Control (full context) runs | 84 | 38 | 45% |
+| Treatment (scoped context) runs | 76 | 48 | 63% |
+
+**Scenarios completed** (4):
+| Scenario | Category | Full runs | Scoped runs | Total |
+|----------|----------|-----------|-------------|-------|
+| read-before-edit | convention-compliance | 10 | 10 | 20 |
+| convention-verify-edit | convention-compliance | 10 | 10 | 20 |
+| plan-once-amend | efficiency | 10 | 12 | 22 |
+| hidden-dependency | root-cause-analysis | 8 | 16 | 24 |
+
+**Scenarios NOT executed** (4): cascading-fix-trap-v2, contradictory-requirements, misleading-stacktrace, stale-approach-fixation — these span debugging, judgment, and error-recovery categories. 88 runs remain in `remaining-runs.jsonl`.
+
+### 10.2 Primary Result: Task Success Rate
+
+| Condition | Passed | Total | Rate | 95% CI |
+|-----------|--------|-------|------|--------|
+| Full context (control) | 37 | 38 | 97.4% | 86.2–99.9% |
+| Scoped context (treatment) | 47 | 48 | 97.9% | 88.9–99.9% |
+| **Difference** | — | — | **+0.5pp** | — |
+
+**Statistical test** (two-proportion z-test, one-tailed H₁: scoped > full):
+- z = 0.168
+- p = 0.43 (not significant at any conventional α)
+- Effect size h = 0.036 (negligible; threshold for "small" is 0.20)
+
+**Interpretation per pre-registered criteria (§4.3.3 of design)**:
+- Δ = +0.5pp falls in the **null result** zone (±7pp of control)
+- However, the 97% ceiling makes this metric uninformative (see §11)
+
+### 10.3 Failures
+
+Only 2 failures across 86 runs:
+
+| Scenario | Run | Condition | Elapsed | Notes |
+|----------|-----|-----------|---------|-------|
+| plan-once-amend | 8 | full | 189s | Hit timeout in control condition |
+| hidden-dependency | 7 | scoped | 190s | Hit timeout in treatment condition |
+
+One failure in each condition — no pattern suggesting either condition is systematically worse.
+
+### 10.4 Secondary Metrics
+
+**Elapsed time**:
+| Condition | Mean | Median | P25 | P75 | Range |
+|-----------|------|--------|-----|-----|-------|
+| Full | 73.0s | 52s | 23s | 97s | 14–224s |
+| Scoped | 70.8s | 74s | 32s | 97s | 17–190s |
+
+Difference: −2.2s (scoped slightly faster, not significant). Note: hidden-dependency showed larger gap (full=156s vs scoped=107s) but this may reflect the unbalanced sample (8 full vs 16 scoped).
+
+**Per-scenario elapsed**:
+| Scenario | Full mean | Scoped mean | Δ |
+|----------|-----------|-------------|---|
+| read-before-edit | 26s | 34s | +8s |
+| convention-verify-edit | 32s | 30s | −2s |
+| plan-once-amend | 95s | 88s | −7s |
+| hidden-dependency | 156s | 107s | −49s |
+
+---
+
+## 11. Why This Null Result Is Unreliable
+
+### 11.1 Ceiling Effect
+
+The fundamental problem: when the control condition already passes 97.4% of the time, there is no room for treatment to improve. The power calculation in the design (§4.3.3) assumed a 55% control baseline — the actual 97% baseline makes the experiment unable to detect any effect.
+
+**Why the ceiling?** The 4 scenarios that ran (read-before-edit, convention-verify-edit, plan-once-amend, hidden-dependency) appear to be relatively easy. The design anticipated baselines of 40–65%, but actual pass rates were 90–100%.
+
+### 11.2 Missing Harder Scenarios
+
+The 4 unexecuted scenarios were specifically chosen because they were expected to be harder:
+- **cascading-fix-trap-v2** (estimated ~40% baseline) — complex debugging where excess context could distract
+- **stale-approach-fixation** (estimated ~45% baseline) — pivoting task where context could anchor
+- **contradictory-requirements** (estimated ~50% baseline) — clear-thinking task where context adds noise
+- **misleading-stacktrace** (estimated ~55% baseline) — investigation task requiring focus
+
+If context isolation helps primarily on harder tasks (a plausible hypothesis), the effect would only appear in the missing data.
+
+### 11.3 Active Recall Confound
+
+Per Phase 0 results (§4.3), active_recall was NOT controlled — both conditions may have received the same active_recall injections. The design identified this as a confound (§4.4) but no mitigation was implemented. Since active_recall can inject 1,000–8,000 tokens of context, the effective difference between conditions may have been smaller than intended (119 vs 893 tokens in context.md, but potentially +8,000 tokens of active_recall in both).
+
+### 11.4 Statistical Power at Ceiling
+
+With control rate = 97.4%, treatment rate = 97.9%, N = 38/48:
+- Detectable effect size at 80% power: ~20pp (would need treatment = 100% + impossible headroom)
+- The experiment had effectively **zero power** to detect the predicted 15pp effect given this ceiling
+
+---
+
+## 12. P-120c Evaluation
+
+**Prediction**: "Scoping dispatched context to task-relevant information (vs full agent context) improves task success rate by ≥15pp"
+
+**Finding**: +0.5pp (n.s.), but ceiling effect at ~97% makes this uninformative.
+
+**Assessment**: **INCONCLUSIVE** — the experiment cannot distinguish between:
+- (a) Context isolation truly has no effect on task success
+- (b) The selected scenarios were too easy to show any differentiation
+- (c) Active recall injection washed out the treatment contrast
+
+**What would be needed to resolve P-120c**:
+1. Complete the remaining 88 runs on the 4 harder scenarios
+2. OR run a new experiment with scenarios that have 40–60% baseline pass rates
+3. AND control or measure active_recall injection
+
+---
+
+## 13. H-097 Posterior Update (Track B)
+
+| Prior | Evidence | Posterior | Reasoning |
+|-------|----------|-----------|-----------|
+| 0.55 | Track B: +0.5pp, p=0.43, INCONCLUSIVE | **0.53** | Weak downward pressure: null direction is slightly negative for H-097, but ceiling effect and incomplete execution severely attenuate the signal. If this were a clean null at 55% baseline, we'd move to 0.50 per design. Given it's compromised, only a minimal adjustment. |
+
+**Per design §4.6**: A null result (±7pp) maps to 0.55 → 0.50. But the design assumed adequate power (78% at N=80 per group, 55% baseline). Actual power was ~0% due to ceiling. Applying full Bayesian update as if the test were valid would be overweighting bad data. Compromise: move 40% of the way toward the null-result target (0.55 → 0.55 - 0.4×0.05 = 0.53).
+
+---
+
+## 14. Recommendations
+
+### 14.1 Complete Track B
+The 88 remaining runs are already specified in `remaining-runs.jsonl`. Running them would add the 4 harder scenarios. If those show a ceiling too, the null result becomes more credible. If they show lower baselines with treatment differentiation, P-120c gets a real test.
+
+### 14.2 Design Improvements for EXP-147B-v2
+If re-running from scratch:
+1. **Pre-screen scenarios for difficulty**: Only include scenarios with 30–70% historical pass rate
+2. **Control active_recall**: Either disable it for both conditions, or use it as the treatment variable instead of context.md
+3. **Measure what actually gets injected**: Log the full prompt token count per run, not just the context.md file size
+4. **Consider active_recall as the real treatment**: The design noted active_recall can inject 1,000–8,000 tokens. Removing active_recall might be a more impactful manipulation than shrinking context.md by 774 tokens.
+
+### 14.3 Theory Implications
+
+The null result — even if unreliable — suggests a refinement of the context isolation hypothesis: **static context reduction (shrinking context.md) may not be the right operationalization of DD-733's dynamic context scoping (DACS)**. DACS doesn't just reduce context; it dynamically selects task-relevant context at dispatch time. Our treatment gave the agent minimal context rather than optimal context. The distinction matters.
+
+---
+
+## 15. Raw Data (Track B)
+
+- `raw-data/track-b-batch-1.jsonl`: 40 runs (scenarios: read-before-edit, convention-verify-edit, plan-once-amend, hidden-dependency)
+- `raw-data/track-b-batch-2.jsonl`: 32 runs (same scenarios)
+- `raw-data/track-b-batch-3.jsonl`: 9 runs (hidden-dependency)
+- `raw-data/track-b-batch-4.jsonl`: 5 runs (hidden-dependency)
+- `raw-data/remaining-runs.jsonl`: 88 unexecuted runs across 5 scenarios
+- `raw-data/context-full.md`: Frozen full context (3,574 bytes, ~893 tokens)
+- `raw-data/context-scoped.md`: Scoped context (475 bytes, ~119 tokens)
+- `raw-data/phase0-results.md`: Phase 0 setup and pilot results
+
+---
+
+## 16. Combined Track A + Track B Summary
+
+| Track | Prediction | Result | H-097 Impact |
+|-------|-----------|--------|-------------|
+| A (Calibration) | P-120b: calibration reduces wrong-consensus ≥30% | **MOOT** — baseline wrong-consensus 0.92%, nothing to fix | Neutral (0.55 → 0.55) |
+| B (Context Isolation) | P-120c: scoped context improves success ≥15pp | **INCONCLUSIVE** — +0.5pp but ceiling effect at 97% | Minimal negative (0.55 → 0.53) |
+
+**Combined H-097 posterior**: 0.55 → **0.53**
+
+Neither track provided a clean test of the CCC triad. Track A found the system doesn't have the problem P-120b was designed to fix. Track B was compromised by ceiling effects and incomplete execution. The CCC triad hypothesis remains largely untested in our system — external evidence (DD-731/732/733) still dominates the evidence base.
+
+**Next priority for H-097**: Either (a) complete Track B remaining runs, or (b) design a new experiment testing context isolation on harder tasks with active_recall as the treatment variable.

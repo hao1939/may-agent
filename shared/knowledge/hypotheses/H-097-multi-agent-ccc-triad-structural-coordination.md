@@ -1,9 +1,9 @@
 # H-097: Multi-Agent Coordination Requires Structural Cooperation + Calibrated Agreement + Context Isolation (CCC Triad)
 
 **Created**: 2026-04-10 by Bob
-**P(H)**: 0.55 (updated 2026-04-12 — P-120b leg rendered moot by EXP-147; prior lowered from 0.65 based on design-phase reassessment)
+**P(H)**: 0.53 (updated 2026-04-12 — Track B null result, attenuated by ceiling effect; see EXP-147 Track B results §13)
 **Source**: KE-120 (DD-731/732/733 synthesis)
-**Status**: Partially tested — P-120b moot (EXP-147 Track A), P-120c pending (Track B)
+**Status**: Partially tested — P-120b moot (EXP-147 Track A), P-120c inconclusive/ceiling (Track B)
 
 ## Claim
 
@@ -30,7 +30,7 @@ Scaling individual agent intelligence will NOT improve coordination quality and 
 ### Not Yet Tested
 - P-120a: Model upgrade effect on cross-agent coordination (tests cooperation orthogonality)
 - ~~P-120b: Conformal prediction on verification outputs (tests calibration mechanism)~~ **MOOT** — EXP-147 Track A found baseline wrong-consensus rate of 0.92% (95% CI: 0.73–1.11%), far below the 5% threshold. The heuristic evaluator's 3-way classification (good/acceptable/NI) already provides implicit calibration. Conformal prediction has nothing meaningful to improve.
-- P-120c: Reduced cross-agent context in dispatch (tests context isolation) — **Track B ready**, budget reallocated from Track A Phase 2
+- ~~P-120c: Reduced cross-agent context in dispatch (tests context isolation)~~ **INCONCLUSIVE** — EXP-147 Track B found +0.5pp (n.s., z=0.17, p=0.43) but compromised by ceiling effect (97% baseline pass rate) and incomplete execution (86/160 runs, 4/8 scenarios). Cannot distinguish no-effect from too-easy-scenarios.
 - P-120d: Multiplicative compounding of all three fixes (tests triad unity)
 
 ### EXP-147 Track A Results (2026-04-12)
@@ -38,6 +38,13 @@ Scaling individual agent intelligence will NOT improve coordination quality and 
 - **Key insight**: Evaluator already uses calibrated 3-way classification — `acceptable` category (36.4% of sessions) functions as implicit uncertainty flag
 - **Quality ≠ Process**: 19.7% of `good`-verdict sessions have 3+ convention failures, but these are process violations not quality errors
 - **Decision**: Track A Phase 2 skipped (baseline < 5% threshold), budget reallocated to Track B
+
+### EXP-147 Track B Results (2026-04-12)
+- **Treatment effect**: +0.5pp (scoped 97.9% vs full 97.4%, z=0.17, p=0.43, n.s.)
+- **Ceiling effect**: 4 completed scenarios all had ~97% pass rate — zero statistical power
+- **Incomplete**: 4 harder scenarios (cascading-fix-trap-v2, contradictory-requirements, misleading-stacktrace, stale-approach-fixation) never executed
+- **Active recall confound**: Not controlled — potentially washed out the 774-token context.md difference
+- **Decision**: P-120c inconclusive. Complete remaining 88 runs or redesign with harder scenarios and active_recall control.
 - **See**: KE-149 (3-way classifier insight), KE-150 (quality ≠ process compliance)
 
 ## CR-336 External Validation Map (2026-04-10): EACH LEG INDEPENDENTLY VALIDATED

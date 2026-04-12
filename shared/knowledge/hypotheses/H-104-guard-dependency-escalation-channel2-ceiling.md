@@ -1,12 +1,11 @@
 # H-104: Guard Dependency Escalation — Channel 2 Forces Compliance Without Transfer
 
-**Status**: FALSIFIED  
-**P(H)**: 0.10  
-**Date**: 2026-04-12 (updated)  
+**Status**: Proposed  
+**P(H)**: 0.78  
+**Date**: 2026-04-12  
 **Author**: Bob  
 **Source**: KE-144 (verification guard non-internalization, N=2,476 sessions, 1,127 blocks), guard-internalization-analysis.md  
-**Falsified by**: EXP-145 (Phase 1 time-series analysis, N=57,540 checks, 4,927 sessions, 19 days). 3/3 retrospective predictions falsified (P-104a, P-104d, P-104e). Fleet fire rate declined 25.1%→2.6% (not escalating). All 12 conventions show significant declining trends.  
-**Connected**: H-100 (skill-guard divergence, ARCHIVED), H-101 (architectural readiness, P=0.72), H-102 (workflow adoption, P=0.75), H-098 (attention channel theory, P=0.80), H-085 (forced externalization, P=0.85), H-095 (agent-specific interventions, P=0.84), KE-106, KE-137, KE-143, KE-144, EXP-110, EXP-123, EXP-134, EXP-135, EXP-136, EXP-137, **EXP-145**
+**Connected**: H-100 (skill-guard divergence, ARCHIVED), H-101 (architectural readiness, P=0.72), H-102 (workflow adoption, P=0.75), H-098 (attention channel theory, P=0.80), H-085 (forced externalization, P=0.85), H-095 (agent-specific interventions, P=0.84), KE-106, KE-137, KE-143, KE-144, EXP-110, EXP-123, EXP-134, EXP-135, EXP-136, EXP-137
 
 ---
 
@@ -86,29 +85,7 @@ The threshold is whether the correct response can be specified as a finite, repe
 
 ## Evidence
 
-### ⚠️ FALSIFICATION: EXP-145 (19-Day Time-Series Analysis, Apr 12 2026)
-
-EXP-145 ran a comprehensive retrospective analysis with 57,540 convention checks across 4,927 sessions over 19 days. **All 3 tested predictions were falsified:**
-
-| Prediction | Expected | Observed | Verdict |
-|---|---|---|---|
-| P-104a: Fleet fire rate ≥70% | Escalation | **Declined 25.1%→2.6%** (p<0.001) | FALSIFIED |
-| P-104d: Commit vs verification diverge | Divergence | **Both declined in parallel** | FALSIFIED |
-| P-104e: Guard count monotonic increase | No removals | **2 removal events** (Mar 27, 29) | FALSIFIED |
-
-**Key findings that refute the anti-learning mechanism:**
-1. All 12 monitored conventions show declining fire rates (11/12 statistically significant)
-2. Every agent improved — bob (83.8%→1.6%), scout (84.7%→9.5%), optimizer (75.4%→9.4%)
-3. Guards follow a "unified learning curve": high initial fire rate → rapid decline → stabilization at 2-5%
-4. The guard removal events show active system pruning, not monotonic accumulation
-
-**What the original evidence (KE-144) actually showed:** The 6-day escalation window (Apr 6-10) captured the **guard introduction transient** — the initial shock period after FM-3.3 deployment. EXP-145's longer observation window revealed this was a temporary phase that self-corrects within days, not evidence of a permanent escalation spiral.
-
-**Residual finding:** A transient FM-3.3 dependency window existed (Apr 6-10, dependency gap peaking at +52.8pp), but it self-corrected by Apr 11 (gap dropped to +21.1pp). This "guard introduction transient" is a real phenomenon but supports a *scaffolding* model, not a *dependency* model. See EXP-145 results for details.
-
----
-
-### [HISTORICAL] Primary: KE-144 (Monotonic Fleet-Wide Escalation)
+### Primary: KE-144 (Monotonic Fleet-Wide Escalation)
 
 The strongest evidence is the 6-day fire rate trajectory from EXP-123 production data (N=2,476 sessions, 1,127 block events):
 
@@ -158,12 +135,10 @@ The audit chain from EXP-134 through EXP-136 established:
 
 ## Predictions
 
-### P-104a: Fleet Fire Rate Will Exceed 70% by April 15 — ❌ FALSIFIED
+### P-104a: Fleet Fire Rate Will Exceed 70% by April 15
 Without workflow intervention, the fleet fire rate will continue its monotonic increase. Based on the 6-day trend (+5.3pp/day), extrapolation predicts ~70% by Apr 15. More conservatively (assuming some deceleration as rates approach ceiling), >65% by Apr 15.
 
 **Test**: Observe fleet fire rate on Apr 15. If >65% without intervention, P-104a confirmed. If rates plateau <60%, H-104's escalation mechanism is weaker than predicted.
-
-**Result (EXP-145)**: Fleet fire rate on Apr 12 was 3.1%. Maximum 3-day rolling average was 26.6%. Mann-Kendall tau = -0.753, p<0.001 (highly significant DECLINING trend). The rate declined from 25.1% to 2.6% over 19 days.
 
 ### P-104b: Verify-Wrap Deployment Will Reduce Reliant Agent Fire Rates >20pp
 Deploying verify-wrap workflows (per H-102/EXP-138) to reliant agents (may, scout, optimizer) should reduce their individual fire rates by >20pp within 48h. This tests whether architectural substitution (not behavioral training) is the fix.
@@ -176,19 +151,15 @@ If the verification guard is temporarily removed for 7 days then reinstated, the
 **Test**: Remove guard for 7 days → reinstate → compare fire rate at day 1 post-reinstatement vs. rate at removal day. If within 5pp of pre-removal rate, H-104 strongly supported. If significantly lower than pre-removal (agents "reset"), the mechanism is different.
 **Risk**: Destructive test — quality will degrade during removal period. Mitigate by running only on tech-lead (genuine learner, expected to maintain behavior) and optimizer (lowest production impact).
 
-### P-104d: New Judgment-Dependent Guards Will Show Same Escalation Pattern — ❌ FALSIFIED
+### P-104d: New Judgment-Dependent Guards Will Show Same Escalation Pattern
 Any newly deployed guard that enforces a judgment-dependent behavior (not a simple binary rule) should show the same escalation pattern: initial moderate fire rate → monotonic increase over the first 7 days.
 
 **Test**: Upon next guard deployment (any type), track fire rate daily for 7 days. Classify the enforced behavior as atomic/binary/judgment-dependent. If judgment-dependent guard shows escalation and atomic guard doesn't, the complexity threshold is confirmed.
 
-**Result (EXP-145)**: Both commit (C12.1) and verification (C1.3) guards declined in parallel. C12.1 dropped from 91.6% to 2.4% (-89.2pp), C1.3 dropped from 52.7% to 4.5% (-48.2pp). No divergence between guard types — both followed the same "unified learning curve" pattern. The judgment-dependent verification guard internalized just like the simple commit guard, disproving the complexity threshold prediction.
-
-### P-104e: Escalation Rate Correlates with Behavior Complexity — ❌ FALSIFIED
+### P-104e: Escalation Rate Correlates with Behavior Complexity
 Among multiple guards operating simultaneously, the escalation rate (pp increase per day) should be proportional to the cognitive complexity of the enforced behavior. The verification guard (most complex) should escalate fastest; completeness checklists (moderate) should escalate slower; commit discipline (simplest) should not escalate at all.
 
 **Test**: Compare daily Δ fire rate across EXP-110 (commit), EXP-115 (completeness), and EXP-123 (verification) guards. Expect: Δ_verification > Δ_completeness > Δ_commit ≈ 0.
-
-**Result (EXP-145)**: Guard count went from 2→11 but with 2 explicit removal events (Mar 27 mass revert, Mar 29 context.md replacement). The system shows active guard pruning — trying, measuring, reverting when ineffective. This is the opposite of the mindless accumulation H-104 predicts. The "guard-count ratchet" is not monotonic.
 
 ---
 
@@ -265,21 +236,7 @@ Measure the rate at which agents perform verification *before* the guard has a c
 
 ---
 
-## Implications (Updated Post-Falsification)
-
-**The original implications below are INVALIDATED by EXP-145.** The corrected understanding:
-
-1. **Guards scaffold learning, not dependency.** The data shows a "training wheels" model where guards catch errors during a learning period, after which agents internalize the behavior. Fire rates decline to 2-5% for all guard types.
-
-2. **The introduction transient is real but self-correcting.** New guards show 1-7 days of high fire rates before agents adapt. Observing only this window (as KE-144 did) creates an illusion of permanent dependency.
-
-3. **The complexity threshold (judgment-dependent vs atomic) is NOT a permanent ceiling.** Both guard types show the same internalization arc. The verification guard just starts from a higher baseline and takes slightly longer to converge.
-
-4. **Guard pruning is healthy system behavior.** Two removal events confirm the system actively manages guard portfolio — not mindlessly accumulating.
-
-5. **All agents learn.** No permanent "reliant" class exists. Speed varies (bob improved 82.2pp, amy-kimi improved 29.9pp), but direction is universal.
-
-### Original Implications (INVALIDATED)
+## Implications
 
 1. **Guards are permanent infrastructure — budget accordingly**. Stop framing guard deployment as temporary training. Fire rates for judgment-dependent guards will approach 100% for agents without verification workflows. Plan for the retry-cycle overhead.
 
@@ -300,30 +257,30 @@ Measure the rate at which agents perform verification *before* the guard has a c
 
 ## Bayesian Assessment
 
-**P(H) = 0.10** (updated 2026-04-12 from 0.78)
+**P(H) = 0.78**
 
-### EXP-145 Falsification Update
+### Evidence Weights
 
 | Evidence | Direction | Weight |
 |----------|-----------|--------|
-| **EXP-145: 3/3 predictions falsified** | **Strong refutation** | **-0.55** |
-| **EXP-145: Fleet fire rate declining (25.1%→2.6%, p<0.001)** | **Strong refutation** | **-0.15** |
-| **EXP-145: All 12 conventions declining** | **Refutation** | **-0.05** |
-| KE-144: 6-day escalation (reinterpreted as introduction transient) | Neutral (explained) | -0.05 |
-| EXP-110: Commit guard internalized | Still supports complexity threshold | +0.02 |
-| EXP-137: Workflow = correlate of learning | Partially still relevant | +0.01 |
+| KE-144: Monotonic fleet-wide escalation (N=2,476) | Strong support | +0.15 |
+| KE-144: 6/8 agents show escalation | Support | +0.08 |
+| EXP-110: Commit guard internalized (contrasting case) | Support for complexity threshold | +0.05 |
+| KE-143: Guard-harmed agent (Bob) | Support for escalation extreme | +0.03 |
+| EXP-137: Workflow = only correlate of learning | Indirect support (explains non-escalation) | +0.05 |
+| H-102 P=0.75: Workflow substitution mechanism | Theoretical support | +0.05 |
+| No direct experimental test of escalation mechanism | Uncertainty | -0.05 |
+| Population-level data, not controlled experiment | Caution | -0.08 |
 
-**Prior (from KE-144 evidence)**: 0.78  
-**Posterior (after EXP-145 falsification)**: 0.10
-
-The remaining 0.10 probability accounts for the possibility that the "guard introduction transient" finding could indicate a weaker version of the mechanism that operates only during the first few days of guard deployment, rather than a permanent escalation spiral. However, the core thesis — that guards produce *escalating* dependency that approaches 100% — is conclusively falsified.
+**Starting prior**: 0.50 (novel mechanistic claim about behavioral dynamics)  
+**Posterior**: 0.78 (strong observational evidence, consistent with theoretical framework, but no interventional test yet)
 
 ### What Would Move P(H)?
 
-- ~~P(H) → 0.90: P-104c guard removal/reinstatement shows no persistent learning~~ — MOOT (macro falsification)
-- ~~P(H) → 0.85: P-104a fleet rate exceeds 65% by Apr 15~~ — FALSIFIED (rate is 2.6%)
-- **P(H) → 0.20**: New evidence that the introduction transient lasts >14 days for a newly deployed guard
-- **P(H) → 0.05**: Additional guards deployed and all show the same scaffolding→internalization arc
+- **P(H) → 0.90**: P-104c guard removal/reinstatement shows no persistent learning (fire rate returns to pre-removal level)
+- **P(H) → 0.85**: P-104a fleet rate exceeds 65% by Apr 15 without intervention
+- **P(H) → 0.60**: Fire rates plateau (suggesting static non-learning, not active escalation)
+- **P(H) → 0.40**: Fire rates decline fleet-wide without workflow changes (suggesting eventual internalization despite current escalation)
 
 ---
 
