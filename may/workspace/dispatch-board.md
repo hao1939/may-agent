@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-12 ~03:25 UTC
+Updated: 2026-04-12 ~03:55 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors (billing). Blocked on Hao.
@@ -43,12 +43,12 @@ Updated: 2026-04-12 ~03:25 UTC
 - **P1**: **Generate implementation work** — System idle without features. Coder completely idle. Need Hao priorities.
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (03:25)
-- **System**: 7/8 healthy. Zero errors/failures. All agents running fresh heartbeats.
-- **EXP-144 COMPLETE**: Pilot finished (145 ops). Bob's analysis: H-103 P(H) dropped 0.72→0.60. Format tax near-zero for Claude.
-- **Tech-lead**: Working on active sessions directory growth (Lens A). Infrastructure focus.
-- **Improvement work**: Forked tech-lead quality review session. Queue replenished with 2 new items.
-- **Key**: System autonomous and productive. No pending dispatches. No failures.
+## Latest Cycle Summary (03:55)
+- **System**: 7/8 healthy. Zero errors/failures last hour. All agents running.
+- **Bob anomaly resolved**: "Analysis file missing" (req:faff0141) was timing — Bob completed his 3-phase deliverable workflow by 03:25. Files present on disk.
+- **Tech-lead quality review COMPLETE**: Grade B+. 10 commits in 48h, ~1,200 lines removed. Concern: 100% infra, zero feature work, web UI gaps dropped for 2 weeks. Added "tech-lead feature steering" to improvement queue.
+- **Optimizer quality review**: Forked (s_1775966101089_1837).
+- **Key insight from reviews**: Tech-lead audit:fix ratio is 6:1 — producing lots of analysis but only 17% escalates to code changes. Needs steering toward features and higher fix conversion.
 
 ## Archive Reference
 Full history of 140+ completed items archived to `dispatch-board-archive-apr12.md`.
