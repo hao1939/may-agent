@@ -4,3 +4,7 @@
 {"scenario":"stale-approach-fixation","run":5,"condition":"full","passed":true,"elapsed":101}
 {"scenario":"contradictory-requirements","run":11,"condition":"full","passed":true,"elapsed":120}
 {"scenario":"stale-approach-fixation","run":6,"condition":"scoped","passed":true,"elapsed":93}
+{"scenario":"contradictory-requirements","run":12,"condition":"full","passed":true,"elapsed":81}
+{"scenario":"stale-approach-fixation","run":7,"condition":"scoped","passed":true,"elapsed":101}
+{"scenario":"contradictory-requirements","run":13,"condition":"scoped","passed":true,"elapsed":134}
+{"scenario":"stale-approach-fixation","run":8,"condition":"full","passed":true,"elapsed":111}
