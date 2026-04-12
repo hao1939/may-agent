@@ -37,7 +37,7 @@
 - Root cause: heartbeat.md encouraged inline exploration (multi-query DB analysis, file reads).
 - Fix: Rewrote heartbeat.md to "Dispatcher Mode" — observe in 1-2 ops, fork all analysis work. Target: ≤15 ops.
 - Baseline: 8 heartbeats in 12h, avg 56 ops, total 451. Post-fix: avg 23 ops (59% reduction). ✅ SUCCESS.
-- Last exploration mode: **B** (May heartbeat dispatcher analysis — Apr 12 ~07:54 UTC). Previous: A (Coder 104-op outlier archaeology — Apr 12 ~06:54 UTC), D (D-o-R nesting post-fix — Apr 12 ~04:24 UTC), C (coach experiment cost scouting — Apr 12 ~03:59), B (tool adoption pattern mining — Apr 12 ~03:28).
+- Last exploration mode: **C** (coach work session cost analysis — Apr 12 ~09:39 UTC). Previous: B (May heartbeat dispatcher analysis — Apr 12 ~07:54 UTC), A (Coder 104-op outlier archaeology — Apr 12 ~06:54 UTC), D (D-o-R nesting post-fix — Apr 12 ~04:24 UTC), C (coach experiment cost scouting — Apr 12 ~03:59).
 - **session-query tool BUILT** (`scripts/session-query.ts`). Replaces 15-25 bash archaeology pattern with single command. Supports: --agent, --since, --task, --status, --min-ops, --tools, --json, --sort. Tested with real data (911 sessions). Est. savings: 10-15 ops/session × 187 sessions = 1,870-2,805 ops.
 - **session-query adoption**: Still **zero active adoption** beyond optimizer (confirmed Apr 11 05:24 UTC). May + QA have passive mentions only. **Three blockers**: (1) filesystem history stale (through ~Apr 5), (2) zero agents have session-query in context.md, (3) may.db has 0 coach sessions. No change since last check. **gym-batch.sh MERGED to main** (cherry-pick 5ca3bdf, Apr 11 ~05:54 UTC) + coach context.md updated — but **gym-batch.sh also has ZERO adoption** despite being in context.md (see Coach Session Efficiency section). Findings: `workspace/finding-tool-gap-0411-b.md`, `workspace/finding-coach-experiment-technique-0411.md`, `workspace/finding-gym-batch-adoption-0411.md`
 - **ADOPTION FIX DIRECTION (Apr 12)**: Per tool adoption patterns finding — don't bother adding session-query to context.md (Level 4 = 0% adoption). Must fix may.db backend FIRST, then wire into workflow prompts/heartbeat dispatch templates (Level 1-3). Finding: `workspace/finding-tool-adoption-patterns-0412.md`
@@ -61,8 +61,8 @@
 - Patch file: `workspace/patch-may-heartbeat-budget-caps.md`
 - **DEPLOYED**: 2026-04-12 ~08:28 UTC to `agents/may/heartbeat.md`. Budget caps added within existing 7-step structure (KE-008 compliant). Changes: global ≤12 op budget, per-step budget annotations, combined system snapshot query, no-peek rule, no-git-commit rule, fork-only enforcement, "MUST FORK" list, op budget reference table.
 - Baseline: avg 22.4 ops, median 19, P90=42 (n=96 in 48h ending 2026-04-12 ~08:00 UTC)
-- **EARLY MEASUREMENT (Apr 12 ~09:40 UTC)**: n=2 post-deploy, avg 4.5 ops (ops=5, ops=4). Baseline avg 24.0 ops (recent 12h). **81% reduction** but only 2 samples. Needs 6+ samples for confidence.
-- **NEXT**: Measure post-deployment. Check after 6-12h for avg ops reduction. Target: ≤12 ops avg.
+- **MEASUREMENT (Apr 12 ~09:53 UTC)**: n=5 post-deploy, avg 12.6 ops (ops=26,4,5,28,0). Baseline avg 22.4 ops. **44% reduction** overall. BUT 2/5 sessions hit 26-28 ops (above baseline median 19). 3/5 sessions ≤5 ops (excellent). Bimodal: caps work for normal heartbeats, fail for some inline-heavy ones.
+- **NEXT**: Investigate the 26-op and 28-op outlier sessions — what blew the budget? Then decide if tighter enforcement or prompt fix needed. Also continue monitoring (need 10+ samples).
 
 
 
