@@ -714,8 +714,18 @@
   1. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
   2. KE-106 habituation literature (low priority — largely subsumed)
 
+## Session 703 (2026-04-12 15:23 UTC) — Sunday afternoon heartbeat (lean)
+- **H-107 written (Bob)**: Difficulty Threshold Moderates Overhead Harm — formalizes KE-158 into testable hypothesis. Guard overhead only harms when baseline difficulty < ~50%. EXP-151 queued.
+- **EXP-150 designed**: Differentiated guard calibration pilot for H-101 intervention arm.
+- **No urgent leads or P0/P1 tasks**. Sunday afternoon — quiescent. No fresh arXiv until Monday ~20:00 UTC.
+- **Potential research lead (low priority)**: H-107 difficulty-gated intervention literature — desirable difficulties (Bjork), Zone of Proximal Development, adaptive scaffolding theory. Could ground the "~50% difficulty threshold" prediction. Defer to Monday unless system goes quiescent again.
+- **Research priorities** (weekend — unchanged):
+  1. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+  2. H-107 difficulty-gated intervention literature (low priority — new lead)
+  3. KE-106 habituation literature (low priority — largely subsumed)
+
 ## Counters
 - DD: 752
 - CR: 339
-- Session: 702
+- Session: 703
 
