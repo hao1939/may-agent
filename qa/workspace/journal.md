@@ -5199,3 +5199,19 @@ Verdict: PASS (no issues found in the reviewed change; repo gates green).
 - Gates: `./node_modules/.bin/vitest --run` FAIL (129 files, 1926 tests; 25 failed): 24 fails in `test/task-watchdog.test.ts` + 1 fail in `test/research-db.test.ts` (integration real KB error budget exceeded: 6>5).
 - QA note: `index.html` is huge; only first ~260 lines reviewed this run.
 - Verdict: CONDITIONAL pending fixing existing red tests (especially watchdog).
+
+## 2026-04-12T17:24Z
+
+### Summary
+Reviewed HEAD **6041365** (feat: Web UI Phase 4 — Session Inspector). Read `src/app/ui/web.ts` and `src/app/ui/web-static/index.html` (partial; file is 1835 lines, read tool truncated at 998). `tsc --noEmit` passed. `vitest --run` is red with 25 failing tests, dominated by watchdog expectations and one knowledge-base integration error budget.
+
+### Checks
+- `./node_modules/.bin/tsc --noEmit`: PASS (no output)
+- `./node_modules/.bin/vitest --run`: FAIL — **25 failed / 1926 total tests** (129 files)
+
+### Findings
+- The patch under review appears to be UI-only (`web.ts` + static `index.html`), but the test suite is currently not green; failures are in `test/task-watchdog.test.ts` (24) and `test/research-db.test.ts` (1).
+- In `web.ts`, observed multiple `catch {}` blocks (e.g., socket discovery, transcript parsing, proxy) with no logging; may be acceptable for best-effort UI, but increases diagnosability risk.
+
+### Verdict
+CONDITIONAL — acceptable UI changes, but repository should not ship with current red tests (watchdog + research-db budget).
