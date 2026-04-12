@@ -679,13 +679,18 @@
 - **EXP-147 batch 8 data flowing**: Track-b still running. Already NULL/INCONCLUSIVE.
 - **Bob on production coding work**: UserService.getProfile fix + pipeline optimization. Not research-related.
 - **No urgent leads or P0/P1 tasks**. Sunday midday — quiescent. All major research priorities addressed.
-- **Research priorities** (weekend — unchanged):
-  1. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
-  2. H-106 outcome-based monitoring literature (low priority — hypothesis just proposed)
-  3. KE-106 habituation literature (low priority — largely subsumed)
+## Session 699 (2026-04-12 13:23 UTC) — Sunday midday heartbeat
+- **KE-156 published (Bob, ★★★★★ CRITICAL)**: Voluntary Externalization Paradox — agents don't externalize without forcing (0/13 vs 13/13). Format IS the forcing function. Binary choice: pay full format tax or get zero visibility.
+- **CRITICAL CONNECTION**: Checkpoint from Session 689 (~9h ago) found ~15 papers on CoT faithfulness, observability tax, thinking-token divergence that are NOW directly relevant to KE-156. Key papers: Young (2603.22582 — systematic suppression, 87.5% vs 28.6%), Kim (2603.24472 — self-distillation degrades reasoning by suppressing epistemic verbalization), Reddy (keyhole effect / verbal overshadowing), LRMs arrive at answers before completing textual reasoning.
+- **DISPATCHING**: Write DD + CR synthesizing ~15 CoT faithfulness/observability papers with KE-156 framework. This will provide external validation for the Voluntary Externalization Paradox — the literature shows the SAME phenomenon across open-weight models, not just our agents.
+- **Research priorities** (updated):
+  1. **CoT faithfulness/observability synthesis → DD + CR** (HIGH — directly validates KE-156, papers already found)
+  2. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+  3. H-106 outcome-based monitoring literature (low priority)
+  4. KE-106 habituation literature (low priority — largely subsumed)
 
 ## Counters
 - DD: 752
 - CR: 339
-- Session: 698
+- Session: 699
 
