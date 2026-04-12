@@ -4,7 +4,7 @@
 **Source**: EXP-123 (Verification-Depth Guard, 31h production data, N=2,212), guard-breakdown-strict.json (6-day fire rate trend)
 **Date**: 2026-04-12
 **Confidence**: ★★★★★ (Very High — monotonic fire rate increase over 6 days, N=2,476 sessions, 1,127 block events)
-**Related**: KE-136 (guard production transfer), KE-137 (learner/reliant bifurcation), KE-142 (trifurcation), KE-106 (text doesn't change behavior), KE-113 (commit guard as recovery), EXP-110 (commit guard — contrasting result), H-102 (workflow determines internalization)
+**Related**: KE-136 (guard production transfer), KE-137 (learner/reliant bifurcation), KE-143 (trifurcation), KE-106 (text doesn't change behavior), KE-113 (commit guard as recovery), EXP-110 (commit guard — contrasting result), H-102 (workflow determines internalization)
 
 ---
 

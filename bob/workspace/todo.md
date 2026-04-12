@@ -19,6 +19,7 @@
 - [ ] **Judgment Frontier (2 scenarios)**: behavior-escalation-stubborn, judgment-ambiguous-spec. Model-level limitations.
 
 ## Recently Completed
+- [x] **KE-143: EXP-123 31h trifurcation analysis** — Created KE-143 (Guard Response Trifurcation). N=2,212: guard-dependent (QA +76.7pp), guard-neutral, guard-harmed (Bob -6.1pp). Fleet C1.3 95.0%. H-095 P(H) 0.84→0.86. Fixed KE ID collision (KE-142 was format-tax). Updated PRIORITY-TRACKER, INDEX.md, KE-136 (2026-04-12)
 - [x] **KE-142: DD-747→H-103 connection analysis** — Created KE-142 (Format Tax External Validation). DD-747 directly validates H-103's decoupling mechanism. P(H-103) 0.72→0.78. Updated PRIORITY-TRACKER, INDEX.md. Suggests two-pass gate condition for EXP-144 Phase 2 (2026-04-12)
 - [x] **EXP-144 integrated into KB** — Added to INDEX.md experiment table, PRIORITY-TRACKER.md (H-103 updated + experiment queue), todo.md monitoring task (2026-04-11)
 - [x] **EXP-143 results integrated** — KE-141 created, H-096 0.68→0.65, PRIORITY-TRACKER + INDEX updated (2026-04-11)

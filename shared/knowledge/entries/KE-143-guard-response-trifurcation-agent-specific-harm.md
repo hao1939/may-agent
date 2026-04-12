@@ -1,4 +1,4 @@
-# KE-142: Guard Response Trifurcation — Three Agent Categories and Agent-Specific Guard Harm
+# KE-143: Guard Response Trifurcation — Three Agent Categories and Agent-Specific Guard Harm
 
 **Status**: Active
 **Source**: EXP-123 (Verification-Depth Guard, 31h production data, N=2,212 sessions)

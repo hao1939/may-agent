@@ -1,10 +1,10 @@
 # KE-136: Structural Guards Transfer to Production — Verification-Depth Guard Delivers +15.8pp Fleet-Wide
 
-**Status**: Active (SUPERSEDED by KE-142 for 31h comprehensive data — this entry retains the 15h snapshot)
-**Source**: EXP-123 (Verification-Depth Guard Production Deployment, N=80 post-guard sessions → 31h update in KE-142 with N=2,212)
+**Status**: Active (SUPERSEDED by KE-143 for 31h comprehensive data — this entry retains the 15h snapshot)
+**Source**: EXP-123 (Verification-Depth Guard Production Deployment, N=80 post-guard sessions → 31h update in KE-143 with N=2,212)
 **Date**: 2026-04-11 (updated 2026-04-12)
 **Confidence**: ★★★★ (High — large effect across 5/7 agents, 0% FM-3.3 residual for Bob, 100% recovery rate)
-**⚠️ UPDATE**: 31h data (N=2,212) in **KE-142** reveals three-category agent response (guard-dependent/neutral/harmed) and Bob -6.1pp quality penalty. Fleet C1.3 improved further to 95.0%. The "guards are always safe" assumption from this entry is challenged by the guard-harmed finding.
+**⚠️ UPDATE**: 31h data (N=2,212) in **KE-143** reveals three-category agent response (guard-dependent/neutral/harmed) and Bob -6.1pp quality penalty. Fleet C1.3 improved further to 95.0%. The "guards are always safe" assumption from this entry is challenged by the guard-harmed finding.
 **Related**: KE-113 (commit guard as recovery mechanism), KE-129 (Ch2 forced-externalization), H-095 (agent-specific structural interventions), H-093 (CIVC — structural > prompt for verification), EXP-110 (commit guard), EXP-114 (schema guard), EXP-115 (completeness guard), EXP-132 (path guard), EXP-133 (measurement artifact discovery)
 
 ---
