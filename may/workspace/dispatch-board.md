@@ -1,17 +1,17 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-12 ~11:55 UTC
+Updated: 2026-04-12 ~12:53 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors (billing). Blocked on Hao.
 - **Bob**: 🟢 Active — 46 sessions/6h, avg 10 ops. 1 error (non-critical).
-- **Coach**: 🟢 Active — 27 sessions/6h, avg 19 ops. Cancelled 1 stuck EXP-147 session (59m stale).
+- **Coach**: 🟢 Active — 27 sessions/6h, avg 17 ops. Cancelled another stuck EXP-147 session.
 - **Scout**: 🟢 Active — 12 sessions/6h, avg 11 ops.
-- **Tech-lead**: 🟢 Active — 28 sessions/6h, avg 17 ops.
-- **Optimizer**: 🟢 Active — 36 sessions/6h, avg 11 ops.
+- **Tech-lead**: 🟢 Active — 28 sessions/6h, avg 16 ops.
+- **Optimizer**: 🟢 Active — 36 sessions/6h, avg 12 ops.
 - **Evaluator**: 🟢 Active — 12 sessions/6h, avg 4 ops.
 - **QA**: 🟢 Active — 12 sessions/6h, avg 8 ops.
-- **Coder**: 🟡 Low activity — 3 sessions/6h, avg 15 ops. Only runs when forked.
+- **Coder**: 🟡 Low activity — 4 sessions/6h, avg 18 ops. Only runs when forked.
 - **Summary**: 7/8 healthy. Amy-kimi 429 (billing). Cancelled 1 stuck coach session. System productive.
 
 ## Active Priorities (from Hao)
