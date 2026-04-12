@@ -1,9 +1,9 @@
 # EXP-123 Results: Verification-Depth Guard — Production Impact
 
 **Status**: COMPLETE — Guard deployed and effective
-**Observation window**: 2026-04-10 16:51 UTC → 2026-04-11 23:53 UTC (~31h)
-**Author**: Coach (initial results 2026-04-11 ~08:00; updated 2026-04-11 ~24:00 with 31h data)
-**Data sources**: `.state/convention-checks/summary.json`, `.state/fm33-blocks-enhanced.json`, `.state/guard-breakdown[-strict].json`, `guard-impact-analysis-20260411.md`
+**Observation window**: 2026-04-10 16:51 UTC → 2026-04-12 06:24 UTC (~38h)
+**Author**: Coach (initial results 2026-04-11 ~08:00; updated 2026-04-11 ~24:00 with 31h data; 38h update 2026-04-12 ~06:24)
+**Data sources**: `.state/convention-checks/summary.json`, `.state/fm33-blocks-enhanced.json`, `.state/guard-breakdown[-strict].json`, `guard-impact-analysis-20260411.md`, `may.db:convention_checks`
 
 ---
 
@@ -11,9 +11,11 @@
 
 The verification-depth guard intercepts `finish(status: "success")` calls and blocks when the session transcript shows no post-write verification. Deployed to all agents on 2026-04-10 16:51 UTC.
 
-**Primary finding**: The guard works. Fleet-wide C1.3 (post-write verification) rate improved from **74.2% → 95.0%** (+20.8pp) over the 7-day window. Bob specifically improved from **70.5% → 97.9%** (+27.4pp). All hypotheses confirmed.
+**Primary finding**: The guard works. Fleet-wide C1.3 (post-write verification) rate improved from **74.2% → 95.3%** (+21.3pp) over the 38h window (966 sessions). Bob specifically improved from **70.5% → 100%** (n=113). All hypotheses confirmed.
 
 **Secondary finding**: Guard effectiveness varies dramatically by agent (from +76.7pp quality uplift for QA to -6.1pp quality penalty for Bob). Three agent categories identified: guard-dependent, guard-neutral, and guard-harmed. Per-agent tuning recommended.
+
+**38h update**: C1.3 rate stabilized at **95.3%** (526/552), consistent with the 31h reading of 95.0%. Bob maintains **100%** (113/113). Optimizer remains the weakest at **82.0%** — deserves investigation. The C1.5 (ghost-deliverables) "regression" that triggered this review was a **false positive** from the convention checker's timing bug, now fixed by tech-lead (commit 7d54e506).
 
 ---
 
@@ -49,15 +51,16 @@ The verification-depth guard intercepts `finish(status: "success")` calls and bl
 - Optimizer improved most in absolute terms: +31.1pp (59.4% → 90.5%) — the process artifact fix resolved the earlier regression
 - QA and May were already high (>94%) pre-guard, so gains are marginal
 
-### Trend: 15h vs 31h Window
+### Trend: 15h vs 31h vs 38h Window
 
 | Time Point | Fleet C1.3 | Bob C1.3 | n |
 |---|---|---|---|
-| Pre-guard baseline | 74.2% | 70.5% | 4444 |
+| Pre-guard baseline | 74.2% | 70.5% | 4,395 |
 | 15h post-deployment | 90.0% | 100% | 80 |
-| 31h post-deployment (7d average) | **95.0%** | **97.9%** | 2212 |
+| 31h post-deployment (7d average) | **95.0%** | **97.9%** | 2,212 |
+| 38h post-deployment | **95.3%** | **100%** | 552 |
 
-The improvement has **stabilized and strengthened**: fleet C1.3 continued improving from 90.0% (15h) to 95.0% (31h). The 15h data was small-sample (n=80); the 7-day average (n=2212) provides much higher confidence.
+The improvement has **stabilized**: fleet C1.3 held at 95.0-95.3% from 31h to 38h. Bob reached and maintained 100% (n=113).
 
 ---
 
@@ -204,6 +207,48 @@ System-wide FM-3.3 fire rate is **increasing**: 29% (Apr 6) → 61% (Apr 11). Th
 - **Policy**: FAIL-OPEN, blocks `finish(status: "success")` only
 - **Kill switch**: `DISABLE_VERIFICATION_DEPTH_GUARD=1` env var
 - **Process artifact fix**: `PROCESS_ARTIFACT_PATTERNS` exclusion for `DELIVERABLES_CHECKLIST.md`
+
+---
+
+## 8. Phase 2: 38h Update (2026-04-12 ~06:24)
+
+### C1.3 Stability Confirmed
+
+| Time Point | Fleet C1.3 | Bob C1.3 | n |
+|---|---|---|---|
+| Pre-guard baseline | 74.2% | 70.5% | 4,395 |
+| 15h post-deployment | 90.0% | 100% | 80 |
+| 31h post-deployment | 95.0% | 97.9% | 2,212 |
+| **38h post-deployment** | **95.3%** | **100%** | **552** |
+
+C1.3 has stabilized in the 95-96% band. Daily rates: Apr 10: 93.9%, Apr 11: 95.5%, Apr 12: 95.4%. The improvement is durable.
+
+### Per-Agent Rates (38h window, Apr 10 16:51 → Apr 12 06:24)
+
+| Agent | Rate | n | Change from 31h |
+|---|---|---|---|
+| **bob** | **100%** | 113 | ↑ from 97.9% |
+| **scout** | **100%** | 53 | ↑ from 90.1% |
+| **tech-lead** | **98.8%** | 82 | ↑ from 94.8% |
+| **may** | **98.1%** | 52 | ↑ from 97.9% |
+| **coach** | **97.6%** | 85 | ↑ from 93.9% |
+| **qa** | **96.2%** | 53 | ↓ from 98.2% |
+| **optimizer** | **82.0%** | 111 | ↓ from 90.5% |
+
+**New concern**: Optimizer dropped from 90.5% (31h) to **82.0%** (38h). This may be a regression since the process artifact fix, or a data window artifact. Should be investigated.
+
+### C1.5 "Regression" — Resolved (False Positive)
+
+The C1.5 (ghost-deliverables) regression that triggered this investigation was caused by the **convention checker's timing bug**:
+
+- **Root cause**: The C1.5 checker was running `existsSync()` hours after session end. Files that existed at finish-time had been deleted by knowledge archival/pruning (e.g., May's auto-commit `eb8ab8c7` on Apr 11 deleted `CONTRADICTION-TRACKER.md`, `KE-101`, and `KE-106`).
+- **Fix**: Tech-lead commit `7d54e506` (2026-04-12 05:30 UTC) changed the checker to use the finish() tool result from the transcript instead of post-hoc disk state.
+- **Post-fix result**: **100% pass rate** across all agents (40/40 checks in first 0.9h).
+- **Implication**: Bob's C1.5 "failures" (95.8% pre-guard → dips on Apr 9 and Apr 12) were measurement artifacts, not behavioral regressions. No intervention needed for C1.5.
+
+### Bob Exemption Status
+
+The EXP-142 commit (`b6158c8`, Apr 11 16:57) that exempted Bob from the verification-depth guard was **never merged to HEAD**. Bob remains subject to the guard, and his C1.3 is now at 100% (113/113). Given the earlier -6.1pp quality finding, this should be revisited if quality metrics show continued degradation.
 
 ---
 
