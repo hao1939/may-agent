@@ -28,18 +28,17 @@ Updated: 2026-04-12 ~15:53 UTC
 | **EXP-123 Verification-Depth Guard** | ⏳ OBSERVING | coach | Guard deployed (commit 9d9be57). Observation window until Apr 13. |
 | **EXP-147 Track B Context Isolation** | 🟢 RUNNING | coach | A/B test in progress. Multiple sessions today. |
 | **Web UI Visualization** | 🟢 Phase 4 done | tech-lead/coder | Phases 1-4 complete on main. Agent grid, activity feed, deep dive, session inspector. |
-| **Convention investigation script** | 🟢 Building | tech-lead→coder | Forked 16:24. Saves ~110 ops/day for coach. |
+| **Code search tool** | ⏳ Building | tech-lead→coder | Forked 16:53. Saves ~120-180 ops/day. |
 
 ## Next Actions
 - **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. Saves $143-441/day. **Blocked on Hao since Mar 24**.
-- **P1**: **Fix wrong DB path** — Root may.db (172KB, stale) vs .state/may.db (93MB, live). 91 wasted queries/6h. Trivial fix: delete stale file + update context.md files.
-- **P1**: **Code search tool** — grep-then-read 3-step pattern in 93% of sessions. ~120-180 ops/day savings. Next dispatch after convention script.
+- **P1**: **Code search tool** — Dispatched to tech-lead (16:53). Saves 120-180 ops/day.
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (16:24)
-- **System**: 7/8 healthy. No stuck sessions. No errors last hour. Zero error sessions.
-- **Dispatched**: Convention investigation script to tech-lead (saves 110 ops/day for coach).
-- **Completed last cycle**: Coder utilization scan — identified 6 concrete tasks. Top 3 now queued.
+## Latest Cycle Summary (16:53)
+- **System**: 8/8 active (excl amy-kimi). Zero errors, zero stuck. All healthy.
+- **Dispatched**: Code search tool to tech-lead (saves 120-180 ops/day).
+- **Completed**: Wrong DB path fix confirmed done (root may.db gone, context.md files correct).
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
