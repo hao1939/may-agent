@@ -978,6 +978,70 @@ The spirit of creative solutions is embedded in the remaining rules. A standalon
 ---
 
 
+### #18 — git add agents/ = NO — RE-VERIFICATION #8 (2026-04-12 15:23Z)
+
+**Rule**: "Files in `agents/` directories are gitignored. Do NOT try to `git add` or `git commit` files under `agents/`. Only `src/` and `scripts/` files are tracked by git. Agent files already persist at runtime — no git needed."
+
+**Method**: Searched 1271 sessions from Apr 10-12 (48h window). Identified sessions with `git add agents` attempts from the main repo (`cd /app`), pre-commit hook rejections, and correct `cd agents && git add` usage. Cross-referenced with may.db for agent identity.
+
+**Quantitative findings**:
+
+| Metric | Apr 3-5 (#7) | **Apr 10-12 (#8)** | Trend |
+|--------|-------------|-------------------|-------|
+| Total sessions (48h) | 354 | **1271** | ↑ 3.6× more activity |
+| Sessions with `git add agents` text | 43 | **88** | ↑ Raw count up |
+| Violation rate | ~11% | **6.9%** | ↓ Improved |
+| Pre-commit hook blocks | 43 | **180** | ↑ (mostly review gate, not agents/ guard) |
+| Successful bypasses | 0 | **0** | ✅ Zero |
+| Max retries per session | 2 | **11+ (coach s_957)** | ↑ Worse outliers |
+| Sessions using correct `cd agents && git add` | not measured | **10+** | — |
+
+**Key distinction**: The 180 pre-commit hook blocks are predominantly the **review gate** (blocking direct commits to main in the src/ repo), NOT the agents/ guard. Tech-lead accounts for 167/180 (93%) — these are legitimate code commits hitting the review gate, not agents/ violations.
+
+**Actual agents/ commit violations** (from wrong directory):
+
+| Session | Agent | Pattern | Retries | Outcome |
+|---------|-------|---------|---------|---------|
+| s_1775838368441_957 | **coach** | `git add agents/shared/common-sense.md` from /app, 11+ attempts | **11+** | .gitignore blocked all; burned **166 ops** total session |
+| s_1775899503711_1335 | **bob** | `git add agents` (broad), then `REVIEW_GATE_BYPASS=1 git add agents` | **5+** | .gitignore blocked; eventually used `cd agents && git add -f` |
+| s_1775850845795_1038 | **optimizer** | `cd /app && git add agents` twice | 2 | .gitignore blocked |
+| s_1775946213181_1652 | **may** | `cd /app && git add agents/bob/... agents/may/...` | 1 | .gitignore blocked |
+| s_1775834610445_926 | **may** | `cd /app && git add agents/may/workspace/dispatch-board.md` | 1 | .gitignore blocked |
+| s_1775840018675_965 | **scout** | `cd /app && git add agents/shared/...` (6 files) | 1 | .gitignore blocked |
+| s_1775843838533_990 | **coach** | `cd /app && git add agents/coach/workspace/...` | 1 | .gitignore blocked |
+
+**By agent (wrong-dir attempts)**:
+- Coach: 2 sessions (one was 166-op retry storm)
+- May: 3 sessions (single attempts, mild)
+- Bob: 2 sessions (one with REVIEW_GATE_BYPASS escalation)
+- Scout: 1 session
+- Optimizer: 1 session
+
+**Correct usage** (`cd agents && git add`): Found in 10+ sessions — bob, may, tech-lead, scout all use the correct pattern in some sessions. Not consistent across all agents.
+
+**All actual agents/ commits go through may-agent auto-commit system** — git log from agents/ repo shows every commit author is "may-agent". No agent successfully commits directly.
+
+**Retry storm analysis**:
+1. **Coach s_957 (166 ops!)**: The worst offender in the entire tracker history. Tried `git add agents/shared/common-sense.md` from /app at least 11 times with variations (`\n`, `&&`, different quoting). Never switched to `cd agents/`. This single session's op waste exceeds the previous check's max retry count by 5.5×.
+2. **Bob s_1335 (67 ops)**: Tried `git add agents` → got .gitignore message → tried `REVIEW_GATE_BYPASS=1 git add agents` (creative but wrong — bypass is for review gate, not .gitignore) → eventually recovered with `cd agents && git add -f`.
+
+**Recovery patterns**:
+- May sessions: graceful (single attempt, move on)
+- Scout/optimizer: graceful (1-2 attempts)
+- Bob: moderate (5+ attempts but eventually finds correct approach)
+- Coach: poor (11+ retries without adapting strategy — violates #2 "Escalate, don't spin")
+
+**Comparison with previous check**:
+- Previous (#7): "43 blocked attempts across 40 sessions... No retry storms (max 2 per agent session)"
+- Current (#8): Similar rate (6.9% vs 11%), but with severe outlier retry storms (coach 11+, bob 5+)
+- .gitignore continues to provide 100% protection — zero violations reach git
+
+**Conclusion**: ⚠️ remains. While the violation *rate* improved (11%→6.9%), two retry storms emerged (coach 166 ops, bob 67 ops) that waste significant compute. The fundamental issue persists: agents default to `cd /app && git add agents/...` because their working directory is /app and the files they edit are under agents/. The `.gitignore` guard catches all violations, but the retry behavior (especially coach s_957) is a new concern that wastes substantial ops.
+
+**Action**: Consider Growth Cycle for retry-storm prevention. The coach 166-op session suggests that when `git add` fails due to .gitignore, agents should immediately try `cd agents && git add <relative-path>` instead of retrying the same command. This could be addressed via context.md reinforcement or a skill.
+
+---
+
 ### #18 — git add agents/ = NO — RE-VERIFICATION #7 (2026-04-05 16:50Z)
 
 **Rule**: "Files in `agents/` directories are gitignored. Do NOT try to `git add` or `git commit` files under `agents/`. Only `src/` and `scripts/` files are tracked by git. Agent files already persist at runtime — no git needed."
