@@ -74,6 +74,21 @@ Read: <specific files>
 Deliverable: Write results to <specific file path>.`)
 ```
 
+### Finding Conversion — Dispatch, Don't Just Log
+
+**Problem**: Only ~7% of findings become deployed fixes. Analysis is strong but delivery is weak.
+
+**Rule**: When a Mode B or Mode C analysis produces a finding with a specific, actionable code fix, **fork a tech-lead or coder session with the fix details BEFORE the cycle ends.** Don't just write the finding to a file — dispatch it.
+
+Conversion template (add to end of any analysis session):
+```
+If this finding has a concrete fix (specific file, specific change):
+  → agents.fork('tech-lead', `[FIX] <title>\n\nFinding: <what's wrong>\nFile: <path>\nFix: <exact change>\nEvidence: <how to verify>`)
+  → Note in todo.md: "Dispatched: <finding> → tech-lead (<date>)"
+```
+
+**Skip dispatch only if**: the finding is observational (no clear fix), requires design discussion first, or is already tracked.
+
 ### Rules for Building (in forked sessions)
 - **Always measure before AND after.** No baseline = no evidence.
 - **One improvement per session.** Don't stack changes.
