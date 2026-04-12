@@ -154,6 +154,13 @@ export function createPathHallucinationGuard(): (
       const found = findHallucinatedPath(command);
       if (!found) return undefined; // Shouldn't happen given checks above, but fail-open
 
+      // Detect bun-path-specific hallucination (the #1 pattern)
+      const isBunPath = found.fullMatch.includes("bun") || command.includes(".bun/bin");
+      const bunHint = isBunPath
+        ? `\n\nFor bun specifically: export PATH=".state/.bun/bin:$PATH"\n` +
+          `  Then just use: bun -e "..."`
+        : "";
+
       return {
         block: true,
         reason:
@@ -162,7 +169,8 @@ export function createPathHallucinationGuard(): (
           `The project root is /app. There are no /home/, /Users/, or /root/ directories.\n` +
           `Rewrite your command using /app as the base path.\n` +
           `  Example: cd /app && git status\n` +
-          `  Example: cat /app/src/lib/manager.ts`,
+          `  Example: cat /app/src/lib/manager.ts` +
+          bunHint,
       };
     } catch {
       // Fail-open: detection errors should not block tool calls
