@@ -7,6 +7,7 @@
 - [ ] **EXP-143 DESIGNED** — Checkpoint decomposition evaluation experiment (H-096 P-096a). Ready for Coach execution.
 - [ ] **H-097 needs experiment design** — CCC Triad (cooperation + calibration + context isolation). P=0.65, zero internal testing. Strong external evidence from DD-731/732/733.
 - [x] **H-105 WRITTEN** — Three-Layer Reasoning Model (latent→thinking→output). P=0.72, 5 predictions, connects DD-750/KE-146/H-103/H-104. Proposes EXP-146.
+- [x] **EXP-144 PROCESSED** — H-103 updated (P→0.45), KE-148 written (Format as Toll). Duration paradox refutes format-tax-as-capacity-drain.
 - [ ] **EXP-146 needs design** — Thinking-token analysis experiment for H-105. Compare thinking-trace vs output-level detection rates for verification gaps.
 - [ ] **Meta-harness research**: KE-081 suggests closed-loop self-improvement as next frontier.
 - [ ] **Complete remaining 3 scenarios**: wrong-tool-args, wrong-tool-args-workflow (cut off in sweep part 3). Delegate to Coach.
