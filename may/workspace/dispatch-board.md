@@ -36,10 +36,10 @@ Updated: 2026-04-12 ~12:53 UTC
 - **P1**: **Generate implementation work** — System idle without features. Coder completely idle. Need Hao priorities.
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (13:23)
-- **System**: 7/8 healthy. Zero errors last hour. Cancelled 2 more stuck coach EXP-147 sessions.
-- **Activity**: All agents active. Coach EXP-147 Track B keeps getting stuck — 3+ cancellations now. May need intervention.
-- **Improvement**: Evaluator backlog assessment complete (77% backlog, growing). Ready queue empty — needs refill.
+## Latest Cycle Summary (13:53)
+- **System**: 7/8 healthy. No stuck sessions. No errors last hour. Bob 44/6h, Coach 24, TL 28, Optimizer 38 — all productive.
+- **Activity**: Coder still low (4/6h). Coach EXP-147 recurring stuck sessions resolved via improvement queue item (fork-without-check fix).
+- **Improvement**: Queue refilled (5 Ready items). Forking top item: eval-sync handler investigation.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
