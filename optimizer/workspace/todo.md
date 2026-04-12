@@ -16,12 +16,15 @@
 - Bypass exists at `src/app/may.ts:148-165`, needs `ANTHROPIC_API_KEY` env var.
 - **BLOCKED on operator.** Finding: `workspace/findings/2026-04-10-litellm-kills-prompt-caching.md`
 
-### D-o-R Phase 2 Budget Cap — FIX DEPLOYED, MEASURING (Apr 11 23:24 UTC)
+### D-o-R Phase 2 Budget Cap — FIX DEPLOYED, EARLY DATA PROMISING (Apr 11 23:24 UTC)
 - Phase 2 had NO budget cap. Data (n=33): p50=17, p75=23, p90=57, max=83 ops. 5/33 sessions >50 ops.
 - **Fix**: Added "BUDGET: 25 TOOL CALLS MAX" to Phase 2 prompts, "BUDGET: 20" to Phase 2b (commit b66e94a5).
 - Same pattern as P1 cap (which achieved 81% reduction, n=20).
 - **Estimated savings**: ~108 ops/day (~$5/day). A 25-op cap would reduce P2 total ops by 28%.
-- ⏳ Need n≥10 post-fix P2 sessions to confirm. Target: p50 ≤17, p90 ≤25.
+- **Early data (n=2, Apr 12 00:24)**: Post-cap avg 8.5 ops (5, 12) vs pre-cap avg 28.1 (n=8, 12h window). **70% reduction** — direction strong, need n≥10 to confirm.
+- ⚠️ P1 cap had one 37-op violation (2.5x budget) at 23:24 — session skipped P2 entirely so total WF was 38 ops. Text caps still leak occasionally.
+- **New finding**: Bob "Research Thread" sessions (79, 79, 51 ops at 22:26) bypass D-o-R entirely — no phase structure, no budget caps. Next biggest savings target after P2 cap confirms.
+- Finding: `workspace/finding-mode-a-tl81-p2cap-0412.md`
 
 ### Coach Session Efficiency — FINDING COMPLETE, FIX 2 DEPLOYED
 - 2,175 coach sessions analyzed. 50.3% zero-op, 64% of ops in top sessions are exploration waste.
@@ -47,12 +50,13 @@
 - Root cause: heartbeat.md encouraged inline exploration (multi-query DB analysis, file reads).
 - Fix: Rewrote heartbeat.md to "Dispatcher Mode" — observe in 1-2 ops, fork all analysis work. Target: ≤15 ops.
 - Baseline: 8 heartbeats in 12h, avg 56 ops, total 451. Post-fix: avg 23 ops (59% reduction). ✅ SUCCESS.
-- Last exploration mode: **C** (Bob 79-op Research Thread investigation — Apr 11 ~22:54 UTC). Previous: D, B, A. **Next: A** (rotation).
+- Last exploration mode: **A** (TL 81-op session & P2 cap early data — Apr 12 ~00:24 UTC). Previous: C, D, B, A. **Next: B** (rotation).
 - **session-query tool BUILT** (`scripts/session-query.ts`). Replaces 15-25 bash archaeology pattern with single command. Supports: --agent, --since, --task, --status, --min-ops, --tools, --json, --sort. Tested with real data (911 sessions). Est. savings: 10-15 ops/session × 187 sessions = 1,870-2,805 ops.
 - **session-query adoption**: Still **zero active adoption** beyond optimizer (confirmed Apr 11 05:24 UTC). May + QA have passive mentions only. **Three blockers**: (1) filesystem history stale (through ~Apr 5), (2) zero agents have session-query in context.md, (3) may.db has 0 coach sessions. No change since last check. **gym-batch.sh MERGED to main** (cherry-pick 5ca3bdf, Apr 11 ~05:54 UTC) + coach context.md updated — but **gym-batch.sh also has ZERO adoption** despite being in context.md (see Coach Session Efficiency section). Findings: `workspace/finding-tool-gap-0411-b.md`, `workspace/finding-coach-experiment-technique-0411.md`, `workspace/finding-gym-batch-adoption-0411.md`
 - Mode D **UPDATED Apr 11 23:24**: Workflow health post-fix. **P1 cap works (6.8 avg, -78%)** but total D-o-R unchanged (44.3 vs 45.7 — waterbed effect: P2 absorbed savings at 24.9 avg). Overhead ratio **worsened** to +94% vs non-WF (was +53%) because non-WF also got leaner (22.8 from 29.9). Zero nesting post-fix (n=8). System WF adoption up to 57.8% (was 38.1%). Optimizer now WF user (27%). Verify-wrap 87.5% zero-op verification. 0% WF error rate (n=78). **Next fix: P2 budget cap (15-20 ops)**. Finding: `workspace/finding-workflow-health-0411.md`
 - Mode C finding complete: `workspace/finding-workflow-adoption-gap-0410.md`
 - Mode A finding complete: `workspace/finding-coach-166op-archaeology-0410.md` — **Key result: high-op sessions are restart-accumulated, not single-context bloat. 184-op session had 6 restarts (7 segments). Primary fix is infra (cap restarts/turns), not behavioral.**
+- Mode A finding complete: `workspace/finding-mode-a-tl81-p2cap-0412.md` — **TL 81-op session was legitimate P1 investigation (eval-sync outage, fix shipped commit 76972ef). P2 cap early data (n=2): 70% reduction (8.5 vs 28.1 avg). Research Thread sessions (209 combined ops) bypass D-o-R — next savings target.**
 - Mode A finding complete: `workspace/finding-dor-p1-bloat-0411.md` — **Key result: Phase 1 consumes 67% of all D-o-R ops. 14/14 bloated P1s (>40 ops) have "verified" in outcome — doing full delivery cycle in "plan" phase. 15-op cap would save 44% of D-o-R ops (259/day, ~$12/day). Fix: tighter P1 prompt with explicit 15-op budget.**
 - Mode A finding complete: `workspace/finding-coach-82op-qa-regression-0411.md` — Coach 82-op QA regression investigation (EXP-133). Completed Apr 11 ~08:29 UTC.
 
