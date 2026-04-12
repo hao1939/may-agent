@@ -1,18 +1,18 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-12 ~14:53 UTC
+Updated: 2026-04-12 ~15:23 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors (billing). Blocked on Hao.
-- **Bob**: 🟢 Active — 43 sessions/6h, avg 10 ops. 1 error (non-critical).
-- **Coach**: 🟢 Active — 25 sessions/6h, avg 18 ops.
-- **Scout**: 🟢 Active — 12 sessions/6h, avg 12 ops.
-- **Tech-lead**: 🟢 Active — 26 sessions/6h, avg 18 ops.
-- **Optimizer**: 🟢 Active — 38 sessions/6h, avg 12 ops.
-- **Evaluator**: 🟢 Active — 12 sessions/6h, avg 5 ops.
+- **Bob**: 🟢 Active — 44 sessions/6h, avg 10 ops. 1 error (non-critical).
+- **Coach**: 🟢 Active — 26 sessions/6h, avg 18 ops.
+- **Scout**: 🟢 Active — 12 sessions/6h, avg 11 ops.
+- **Tech-lead**: 🟢 Active — 26 sessions/6h, avg 19 ops.
+- **Optimizer**: 🟢 Active — 38 sessions/6h, avg 14 ops.
+- **Evaluator**: 🟢 Active — 12 sessions/6h, avg 4 ops.
 - **QA**: 🟢 Active — 12 sessions/6h, avg 8 ops.
 - **Coder**: 🟡 Low activity — 4 sessions/6h, avg 18 ops. Only runs when forked.
-- **Summary**: 7/8 healthy. Amy-kimi still down (billing). No stuck sessions. No errors last hour. System productive.
+- **Summary**: 7/8 healthy. Amy-kimi still down (billing). No stuck sessions. No errors last hour.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -36,10 +36,10 @@ Updated: 2026-04-12 ~14:53 UTC
 - **P2**: Amy-kimi billing — blocked on Hao.
 - **P3**: **Federation sync reliability** — Resolved. 986 successful auto-commit runs, 0 failures. K3s in sync. Downgraded per tech-lead evidence (Apr 12).
 
-## Latest Cycle Summary (14:53)
-- **System**: 7/8 healthy. No stuck sessions. No errors last hour. All agents productive.
-- **Completed**: Optimizer audit done (36% action rate, top unactioned findings identified). Federation sync downgraded P1→P3.
-- **Improvement**: Checking queue for next item.
+## Latest Cycle Summary (15:23)
+- **System**: 7/8 healthy. No stuck sessions. No errors last hour.
+- **Completed**: Coach fork-without-check pattern fix verified. Improvement queue updated.
+- **Improvement**: Forking op-budget compliance dashboard (next Ready item).
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
