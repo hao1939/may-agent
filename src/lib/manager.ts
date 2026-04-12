@@ -993,59 +993,80 @@ export class SubagentManager {
     // Add to activeSessions before notifying listener (subscribe() needs it)
     this.activeSessions.set(sessionId, session);
 
-    // Emit session_start and bridge agent events to the bus
-    this.bridgeAgentEvents(name, sessionId);
-    const meta = readSessionMeta(this.registry.persistDir, sessionId);
-    this.emit({
-      type: "session_start",
-      sessionId,
-      agent: name,
-      task: meta?.task ?? task,
-      parentSessionId: opts?.parentSessionId,
-      workflowRunId: opts?.workflowRunId,
-      source: opts?.source,
-      kind: session.kind,
-      requestId: opts?.requestId,
-    });
+    try {
+      // Emit session_start and bridge agent events to the bus
+      this.bridgeAgentEvents(name, sessionId);
+      const meta = readSessionMeta(this.registry.persistDir, sessionId);
+      this.emit({
+        type: "session_start",
+        sessionId,
+        agent: name,
+        task: meta?.task ?? task,
+        parentSessionId: opts?.parentSessionId,
+        workflowRunId: opts?.workflowRunId,
+        source: opts?.source,
+        kind: session.kind,
+        requestId: opts?.requestId,
+      });
 
-    // Activity tracking handled by ActivityWriter subscriber (reacts to session_start event)
+      // Activity tracking handled by ActivityWriter subscriber (reacts to session_start event)
 
-    // The initial user message is persisted via the message_end subscriber
-    // when agentLoop emits it (before any LLM call). No explicit write here
-    // to avoid duplicate JSONL entries.
+      // The initial user message is persisted via the message_end subscriber
+      // when agentLoop emits it (before any LLM call). No explicit write here
+      // to avoid duplicate JSONL entries.
 
-    // Prepend session context (session ID + task history) to the first user
-    // message.  This keeps the system prompt stable across sessions so that
-    // Anthropic prompt caching produces cache reads.
-    const sessionContext = this.buildSessionContext(def, name, sessionId, persistDir, task);
+      // Prepend session context (session ID + task history) to the first user
+      // message.  This keeps the system prompt stable across sessions so that
+      // Anthropic prompt caching produces cache reads.
+      const sessionContext = this.buildSessionContext(def, name, sessionId, persistDir, task);
 
-    // Few-shot example injection (Phase 1: coder + optimizer only)
-    let fewShotBlock: string | null = null;
-    if (!opts?.skipFewShot && def.projectRoot) {
-      const fewShotResult = routeFewShotExamples(task, name, def.projectRoot);
-      if (fewShotResult.content) {
-        fewShotBlock = fewShotResult.content;
-        log("info", `[few-shot] ${name}/${sessionId}: injected ${fewShotResult.matchedFiles.join(", ")} (~${fewShotResult.tokenEstimate} tokens)`);
+      // Few-shot example injection (Phase 1: coder + optimizer only)
+      let fewShotBlock: string | null = null;
+      if (!opts?.skipFewShot && def.projectRoot) {
+        const fewShotResult = routeFewShotExamples(task, name, def.projectRoot);
+        if (fewShotResult.content) {
+          fewShotBlock = fewShotResult.content;
+          log("info", `[few-shot] ${name}/${sessionId}: injected ${fewShotResult.matchedFiles.join(", ")} (~${fewShotResult.tokenEstimate} tokens)`);
+        }
       }
+
+      const promptText = fewShotBlock
+        ? `${sessionContext}\n\n---\n\n${fewShotBlock}\n\n---\n\n${task}`
+        : `${sessionContext}\n\n---\n\n${task}`;
+
+      session.promise = runAgentWithRetry(
+        session,
+        this.gatedPrompt(session, () => agent.prompt(promptText)),
+        this._infraRetryMax,
+        (s) => this.handleCompletion(s),
+        this.registry.persistDir,
+      );
+
+      this.sessionResults.set(
+        sessionId,
+        session.promise.then(() => this.buildResultFromSession(session)),
+      );
+      return sessionId;
+    } catch (err) {
+      // Ghost session prevention: if anything between activeSessions.set() and
+      // session.promise assignment throws, the session would be stuck in
+      // activeSessions with no promise — never completing, blocking future
+      // heartbeats via overlap guard. Clean up to prevent this.
+      this.activeSessions.delete(sessionId);
+      this.clearTimeout(session);
+      log("error", `[run] Session ${sessionId} startup failed after activation: ${err}`);
+      try {
+        const existingMeta2 = readSessionMeta(this.registry.persistDir, sessionId);
+        if (existingMeta2) {
+          this.registry.saveSession(sessionId, {
+            ...existingMeta2,
+            status: "error",
+            error: err instanceof Error ? err.message : String(err),
+          });
+        }
+      } catch { /* best-effort — don't mask the original error */ }
+      throw err;
     }
-
-    const promptText = fewShotBlock
-      ? `${sessionContext}\n\n---\n\n${fewShotBlock}\n\n---\n\n${task}`
-      : `${sessionContext}\n\n---\n\n${task}`;
-
-    session.promise = runAgentWithRetry(
-      session,
-      this.gatedPrompt(session, () => agent.prompt(promptText)),
-      this._infraRetryMax,
-      (s) => this.handleCompletion(s),
-      this.registry.persistDir,
-    );
-
-    this.sessionResults.set(
-      sessionId,
-      session.promise.then(() => this.buildResultFromSession(session)),
-    );
-    return sessionId;
   }
 
   /** Mark any workflow runs stuck at "running" as "interrupted".
