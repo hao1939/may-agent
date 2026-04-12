@@ -94,7 +94,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     const threadTask =
       `## Research Thread: ${label}\n\n` +
       `${thread.task}\n\n` +
-      `Write your findings to a file. Be thorough but focused on this specific thread.`;
+      `**Budget: ≤25 tool calls.** Focus on answering the question, not exhaustive exploration.\n` +
+      `If you've used 20 tool calls, STOP and write what you have NOW.\n\n` +
+      `⛔ Do NOT trigger deliver-or-report or other workflows — you are inside a research thread.\n` +
+      `Do NOT call workflow.run() or callAgent(). Write deliverables directly.\n\n` +
+      `Write your findings to a file. Be focused on this specific thread.`;
 
     return ctx.runAgent(agent, threadTask);
   });
@@ -149,6 +153,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
   const synthTask =
     `## Task: Research Synthesis\n\n` +
+    `**Budget: ≤15 tool calls.** Synthesize the thread results into a coherent answer.\n\n` +
     `${synthesisInstructions}\n\n` +
     `## Thread Results (${successCount}/${input.threads.length} succeeded)\n\n` +
     `${threadSummaries.join("\n\n")}\n\n` +

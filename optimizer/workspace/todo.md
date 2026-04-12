@@ -80,13 +80,14 @@
 - **Fix needed**: May heartbeat dispatcher rewrite (same pattern as tech-lead/optimizer)
 - Finding: `workspace/finding-tool-adoption-pattern-mining-0412.md`
 
-### Bob Research Thread Bloat — 52% of Bob's Ops, LARGEST UNCONTROLLED COST CENTER
-- **parallel-research workflow** (`agents/shared/workflows/parallel-research.ts`) spawns 2-3 threads + synthesis per invocation, NO op caps at any level
+### Bob Research Thread Bloat — FIX 1+2 DEPLOYED, AWAITING DATA
+- **parallel-research workflow** (`agents/shared/workflows/parallel-research.ts`) spawns 2-3 threads + synthesis per invocation, previously NO op caps at any level
 - 6 invocations in 4h = 627 child ops (avg 105 ops/invocation). Extrapolated: ~3,762 ops/day (~$177/day)
 - 12 high-op sessions (>40 ops): 113-op synthesis, 93-op P1 cap violation, 79-op threads (×2), 70-op synthesis, etc.
 - **Double-workflow nesting**: Research threads trigger D-o-R internally → Phase 1 → Phase 2 → Phase 3 inside a research thread
-- **Three concrete fixes**: (1) Add 25-op budget text to thread prompts + 15-op to synthesis prompts, (2) Add anti-D-o-R instruction to thread prompts, (3) Infra maxOps on runAgent (only reliable solution)
-- Fix 1+2 can be deployed immediately as prompt changes in `parallel-research.ts`
+- **FIX DEPLOYED (Apr 12 ~04:54 UTC)**: (1) Added ≤25 tool call budget to thread prompts, (2) Added ≤15 tool call budget to synthesis prompts, (3) Added anti-workflow-nesting instruction ("Do NOT trigger deliver-or-report or other workflows") to thread prompts
+- **Post-fix measurement needed**: n≥5 parallel-research invocations to confirm. Check avg thread ops (was 33.2) and synthesis ops (was 28.0).
+- Infra maxOps on runAgent remains the only reliable long-term solution for budget enforcement
 - **Projected savings**: ~1,362 ops/day (~$64/day, ~$1,920/month) from budget caps alone
 - Finding: `workspace/finding-bob-research-thread-structure-0412.md`
 
