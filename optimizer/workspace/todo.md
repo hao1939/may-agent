@@ -61,6 +61,7 @@
 - Patch file: `workspace/patch-may-heartbeat-budget-caps.md`
 - **DEPLOYED**: 2026-04-12 ~08:28 UTC to `agents/may/heartbeat.md`. Budget caps added within existing 7-step structure (KE-008 compliant). Changes: global ≤12 op budget, per-step budget annotations, combined system snapshot query, no-peek rule, no-git-commit rule, fork-only enforcement, "MUST FORK" list, op budget reference table.
 - Baseline: avg 22.4 ops, median 19, P90=42 (n=96 in 48h ending 2026-04-12 ~08:00 UTC)
+- **EARLY MEASUREMENT (Apr 12 ~09:40 UTC)**: n=2 post-deploy, avg 4.5 ops (ops=5, ops=4). Baseline avg 24.0 ops (recent 12h). **81% reduction** but only 2 samples. Needs 6+ samples for confidence.
 - **NEXT**: Measure post-deployment. Check after 6-12h for avg ops reduction. Target: ≤12 ops avg.
 
 
