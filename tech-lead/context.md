@@ -8,6 +8,7 @@
 - agents/ is a separate git repo (gitignored from main) — commit agent changes from agents/ dir
 - When delegating to coder: add explicit file scope boundaries ("ONLY modify X, do NOT touch Y")
 - Coder has SPEC_NONCOMPLIANCE pattern — always include verification step in delegated tasks
+- Code search: use `scripts/code-search.sh <pattern>` for searching code — replaces manual grep/find chains. Supports `--path`, `-C` (context lines), `-i`, `-l` (files-only). Examples: `scripts/code-search.sh 'Database' --path 'src/**/*.ts'`
 - Gym runner: scripts/gym-run.sh <scenario> --agent coder
 - Project root is /app — do not use /home/*, /Users/*, /root/*, or ~/ paths (they don't exist in this environment)
 - When calling finish(), status must match reality — if you found missing files or blockers, use 'blocked' or 'partial', not 'success'

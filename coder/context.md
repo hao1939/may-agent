@@ -4,7 +4,7 @@
 - bun is at .state/.bun/bin/bun — add to PATH: `export PATH=".state/.bun/bin:$PATH"`
 - Project root is /app — do not use /home/*, /Users/*, /root/*, or ~/ paths
 - npx is not available — use ./node_modules/.bin/<tool> or bun x <tool>
-- rg (ripgrep) is not installed — use grep -r instead
+- rg (ripgrep) is not installed — use `scripts/code-search.sh <pattern>` instead of manual grep. Supports `--path 'src/**/*.ts'`, `-C N` (context lines), `-i` (case-insensitive), `-l` (files-only). Handles exclusions (node_modules, .git, .state) automatically.
 
 ## CRITICAL: Investigation Work Pattern
 When doing multi-step analysis (reading logs, correlating data, investigating issues):

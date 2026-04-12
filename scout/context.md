@@ -2,6 +2,7 @@
 - bun is at .state/.bun/bin/bun — add to PATH: `export PATH=".state/.bun/bin:$PATH"`
 - npx is not available in this environment — use ./node_modules/.bin/<tool> or bun x <tool>
 - Project root is /app — do not use /home/*, /Users/*, /root/*, or ~/ paths
+- Code search: use `scripts/code-search.sh <pattern>` instead of manual grep chains. Supports `--path`, `-C`, `-i`, `-l`. Auto-excludes node_modules/.git/.state.
 - agents/ is a separate git repo — commit from agents/ dir, not project root
 - When calling finish(), status must match reality — use 'blocked' or 'partial' not 'success' if there are issues
 - arXiv is the highest-signal research source — broad query → get IDs → arxiv.org/abs/<id>
