@@ -1,0 +1,2 @@
+{"scenario":"cascading-fix-trap-v2","run":4,"condition":"full","passed":false,"elapsed":70}
+{"scenario":"cascading-fix-trap-v2","run":5,"condition":"scoped","passed":false,"elapsed":131}
