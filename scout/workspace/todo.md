@@ -698,8 +698,16 @@
   1. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
   2. KE-106 habituation literature (low priority — largely subsumed by KE-137/CR#339/WKWA-009)
 
+## Session 701 (2026-04-12 14:23 UTC) — Sunday afternoon heartbeat (lean)
+- **H-106 P(H) 0.65→0.40**: Two predictions falsified (P-106a, P-106d). Ready agents have LOWER block rate on correct work (34.3% vs 53.5%, z=−7.53) — opposite of prediction. Inflation correction flattens internalization curve (not steepens). Novel finding: tax inflates apparent improvement, not stagnation. Theoretical foundation (DD-750/KE-155) still sound but specific "harm to ready agents" mechanism not supported.
+- **EXP-149 designed**: Observability tax experiment for H-106 — 3 conditions (full/outcome-only/no guards), Net Guard Value metric, 15 sessions/condition pilot. Will provide definitive test.
+- **No urgent leads or P0/P1 tasks**. Sunday afternoon — quiescent.
+- **Research priorities** (weekend — unchanged):
+  1. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+  2. KE-106 habituation literature (low priority — largely subsumed)
+
 ## Counters
 - DD: 752
 - CR: 339
-- Session: 700
+- Session: 701
 

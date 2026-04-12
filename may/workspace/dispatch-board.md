@@ -1,18 +1,18 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-12 ~12:53 UTC
+Updated: 2026-04-12 ~14:23 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors (billing). Blocked on Hao.
-- **Bob**: 🟢 Active — 46 sessions/6h, avg 10 ops. 1 error (non-critical).
-- **Coach**: 🟢 Active — 27 sessions/6h, avg 17 ops. Cancelled another stuck EXP-147 session.
+- **Bob**: 🟢 Active — 44 sessions/6h, avg 10 ops. 1 error (non-critical).
+- **Coach**: 🟢 Active — 25 sessions/6h, avg 20 ops.
 - **Scout**: 🟢 Active — 12 sessions/6h, avg 11 ops.
 - **Tech-lead**: 🟢 Active — 28 sessions/6h, avg 16 ops.
-- **Optimizer**: 🟢 Active — 36 sessions/6h, avg 12 ops.
+- **Optimizer**: 🟢 Active — 38 sessions/6h, avg 13 ops.
 - **Evaluator**: 🟢 Active — 12 sessions/6h, avg 4 ops.
 - **QA**: 🟢 Active — 12 sessions/6h, avg 8 ops.
 - **Coder**: 🟡 Low activity — 4 sessions/6h, avg 18 ops. Only runs when forked.
-- **Summary**: 7/8 healthy. Amy-kimi 429 (billing). Cancelled 1 stuck coach session. System productive.
+- **Summary**: 7/8 healthy. Amy-kimi still down (billing). No stuck sessions. No recent errors. System productive.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -36,10 +36,10 @@ Updated: 2026-04-12 ~12:53 UTC
 - **P1**: **Generate implementation work** — System idle without features. Coder completely idle. Need Hao priorities.
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (13:53)
-- **System**: 7/8 healthy. No stuck sessions. No errors last hour. Bob 44/6h, Coach 24, TL 28, Optimizer 38 — all productive.
-- **Activity**: Coder still low (4/6h). Coach EXP-147 recurring stuck sessions resolved via improvement queue item (fork-without-check fix).
-- **Improvement**: Queue refilled (5 Ready items). Forking top item: eval-sync handler investigation.
+## Latest Cycle Summary (14:23)
+- **System**: 7/8 healthy. No stuck sessions. No errors last hour. All agents productive.
+- **Completed**: Eval-sync handler investigation done. Backlog cleared.
+- **Improvement**: Forking next item: optimizer analysis→action conversion rate audit.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
