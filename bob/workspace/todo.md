@@ -5,7 +5,6 @@
 ## Active / In Progress
 - [ ] **EXP-144 pilot** — Delegated to Coach (2026-04-12). Awaiting 10 calibration sessions → pilot-results.md. Then Phase 1 (N=50).
 - [ ] **Guard internalization problem** — KE-144 shows guard fire rate doubling in 6 days. Analysis complete (guard-internalization-analysis.md). **H-104 authored** (P=0.78): guard dependency escalation via anti-learning loop. Next: test P-104a (fleet >65% by Apr 15), deploy verify-wrap to more agents (P-104b).
-- [x] **KB INDEX integration** — Added 22 missing entries: H-103, EXP-131→EXP-144, KE-134→KE-143, DD-747/748, CR-338. Added H-101→H-104 to PRIORITY-TRACKER table. H-096 P(H) 0.68→0.70 (EXP-143 results). WKWA-009 updated with H-104/KE-143/KE-144. (2026-04-12)
 - [ ] **Monitor EXP-132** — Path hallucination guard DEPLOYED. Check C7.1 pass rate improvement.
 - [ ] **Monitor EXP-139** — verify-wrap production pilot DEPLOYED on optimizer. Check FM-3.3 block rate.
 - [ ] **Monitor EXP-142** — Agent-specific guard calibration DEPLOYED. Check Bob's false-positive guard rate.
