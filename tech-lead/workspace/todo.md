@@ -215,7 +215,8 @@
   - **RESULT**: All 3 critical fixes already applied (unknown-guard, depth-limit, dedup). 986 runs, 0 failures. K3s in sync. Dispatch board "P1 data loss" is stale — downgrade to P3. Remaining: reentrancy guard (P2). Updated analysis doc.
 - 2026-04-12 14:53: **Feature rotation check**: no pending features on dispatch board (P1 says "Need Hao priorities"). **Infra**: Lens A — token budget management architecture (compaction.ts + overflow.ts). Forked (s_1776005667085_2189).
 - 2026-04-12 15:23: **Feature rotation check**: no pending features (dispatch board P1: "Need Hao priorities"). **Infra**: Lens B — config resolution path complexity (resolveAgentConfig + buildSessionContext). Forked (s_1776007472537_2207).
-- **Next**: Lens C next cycle (feature rotation if items appear)
+- 2026-04-12 15:53: **Feature rotation check**: no pending features (dispatch board P1: "Need Hao priorities"). **Infra**: Lens C — test file dead weight (orphaned tests for deleted modules). Forked (s_1776009275129_2222).
+- **Next**: Lens D next cycle (feature rotation if items appear)
 - 2026-04-12 05:53: **P1 Workflow Adoption** (req:afa5607f) — forked deliver-or-report escalation investigation (s_1775973259186_1900). Coach's plan has 3 Phase 1 items: (1) fix deliver-or-report 41% done rate, (2) wire implement-and-verify, (3) audit verify-wrap vs C1.5. Item 3 likely resolved by C1.5 fix from last session.
 - **NOTE**: P1 QA heartbeat fix (req:5e23d82f/fe94b906) — write-blocked (heartbeat.md is identity file). Coach should apply the edit themselves or ask May.
 
