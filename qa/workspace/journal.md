@@ -5187,7 +5187,15 @@ Verdict: PASS (no issues found in the reviewed change; repo gates green).
   - **IMPORTANT**: `getActiveSessionIds()` filters to names starting with `s_`; if real session IDs differ, orphan/stale logic will misclassify.
 
 2026-04-12T16:24Z heartbeat — Reviewed latest commit 6041365 (Web UI Phase 4 — Session Inspector).
-- Read `src/app/ui/web.ts` diff: `/api/sessions/:id` now returns `{ session, children, evaluation }` via `SELECT * FROM evaluations WHERE sessionId = ?`.
+- Read `src/app/ui/web.ts`: `/api/sessions/:id` now returns `{ session, children, evaluation }` with `evaluation = SELECT * FROM evaluations WHERE sessionId = ?`.
 - Read start of `src/app/ui/web-static/index.html` (large CSS/JS changes for session inspector UI; not fully reviewed due to size).
-- Gates: `./node_modules/.bin/tsc --noEmit` PASS (no output). `./node_modules/.bin/vitest --run` FAIL (1926 tests, 26 failed): major failures in `test/task-watchdog.test.ts` (24 fails, watchdog returning 0 actions) + `test/scrape.test.ts` (DNS failure test timeout 5000ms) + `test/research-db.test.ts` (expected totalErrors.length<=5 got 6 at line 551).
-- Verdict: CONDITIONAL — session inspector change appears type-safe, but repo test suite is currently red; watchdog failures look like a real regression (path/persistDir mismatch) not just flaky infra.
+- Gates: `./node_modules/.bin/tsc --noEmit` PASS (no output). `./node_modules/.bin/vitest --run` FAIL (1926 tests, 25 failed):
+  - `test/task-watchdog.test.ts`: 24 failures; many expectations see 0 actions (e.g., staleCount, nudged/escalated/alerted lengths).
+  - `test/research-db.test.ts`: 1 failure at `test/research-db.test.ts:551` (expected totalErrors.length<=5 got 6).
+- Verdict: CONDITIONAL — session inspector change looks type-safe, but repo test suite is currently red; watchdog failures look like a real regression (logic not emitting actions) rather than flaky infra.
+2026-04-12T16:55Z heartbeat — Proactive scan: verified commit 6041365 (Session Inspector UI/API).
+- Read `src/app/ui/web.ts` and confirmed new `evaluation` join in `handleSession()` plus new JSON payload.
+- Gates: `./node_modules/.bin/tsc --noEmit` PASS (no output).
+- Gates: `./node_modules/.bin/vitest --run` FAIL (129 files, 1926 tests; 25 failed): 24 fails in `test/task-watchdog.test.ts` + 1 fail in `test/research-db.test.ts` (integration real KB error budget exceeded: 6>5).
+- QA note: `index.html` is huge; only first ~260 lines reviewed this run.
+- Verdict: CONDITIONAL pending fixing existing red tests (especially watchdog).
