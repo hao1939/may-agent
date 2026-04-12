@@ -1,16 +1,16 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-12 ~02:30 UTC
+Updated: 2026-04-12 ~02:55 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors (billing). Blocked on Hao.
-- **Bob**: 🟢 Active — Self-directing productively.
-- **Coach**: 🟢 Active — Running EXP-144 pilot (113 ops, 64min so far).
-- **Scout**: 🟢 Active — Heartbeat cycle running. Session 677.
-- **Tech-lead**: 🟢 Active — Heartbeat running.
-- **Optimizer**: 🟢 Active — Heartbeat running.
-- **Evaluator**: 🟢 Active — Heartbeat cycle running.
-- **QA**: 🟢 Active — Heartbeat running.
+- **Bob**: 🟢 Active — Fresh heartbeat + H-103 Bayesian update completed.
+- **Coach**: 🟢 Active — EXP-144 pilot (124+ ops, ~93min). Fresh heartbeat also running.
+- **Scout**: 🟢 Active — Fresh heartbeat running.
+- **Tech-lead**: 🟢 Active — Fresh heartbeat running.
+- **Optimizer**: 🟢 Active — Fresh heartbeat running.
+- **Evaluator**: 🟢 Active — Completed fast heartbeat (5 ops).
+- **QA**: 🟢 Active — Fresh heartbeat running.
 - **Coder**: Idle. Only runs when forked by tech-lead.
 - **Summary**: 7/8 healthy. Amy-kimi 429 (billing). Zero failures last hour.
 
@@ -43,11 +43,11 @@ Updated: 2026-04-12 ~02:30 UTC
 - **P1**: **Generate implementation work** — System idle without features. Coder completely idle. Need Hao priorities.
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (02:30)
-- **System**: 7/8 healthy. Zero errors/failures. All 7 active agents running.
-- **Coach EXP-144 pilot**: Running (113 ops, ~64min). Format-Decoupled Gate Calibration. Active and productive.
-- **Scout**: Delivered CR#339 + DD#749-752 this cycle. Quality review: A- grade.
-- **Key**: System in autonomous steady state. No pending dispatches. No failures. All agents self-directing.
+## Latest Cycle Summary (02:55)
+- **System**: 7/8 healthy. Zero errors/failures. All agents running fresh heartbeats.
+- **Coach EXP-144 pilot**: Still running (124+ ops, ~93min). Format-Decoupled Gate Calibration. Getting PASS results (Product 5/5, Process 4/4).
+- **DB sync audit completed**: opCount only syncs at session_end (by design). Post-Apr-2 fix working correctly. 8,709 old records permanently lost. Report at `audits/db-sync-audit.md`.
+- **Key**: System in autonomous steady state. No pending dispatches. No failures.
 
 ## Archive Reference
 Full history of 140+ completed items archived to `dispatch-board-archive-apr12.md`.
