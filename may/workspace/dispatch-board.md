@@ -1,18 +1,18 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-12 ~15:53 UTC
+Updated: 2026-04-12 ~17:24 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors (billing). Blocked on Hao.
-- **Bob**: 🟢 Active — 44 sessions/6h, avg 10 ops. 1 error (non-critical).
-- **Coach**: 🟢 Active — 26 sessions/6h, avg 18 ops.
-- **Scout**: 🟢 Active — 12 sessions/6h, avg 11 ops.
-- **Tech-lead**: 🟢 Active — 25 sessions/6h, avg 19 ops.
-- **Optimizer**: 🟢 Active — 38 sessions/6h, avg 13 ops.
-- **Evaluator**: 🟢 Active — 12 sessions/6h, avg 4 ops.
-- **QA**: 🟢 Active — 12 sessions/6h, avg 8 ops.
-- **Coder**: 🟡 Low activity — 3 sessions/6h, avg 19 ops. Only runs when forked.
-- **Summary**: 7/8 healthy. Amy-kimi still down (billing). No stuck sessions. No errors last hour.
+- **Bob**: 🟢 Active — 35 sessions/6h, avg 8 ops. Zero errors.
+- **Coach**: 🟢 Active — 22 sessions/6h, avg 13 ops. Cancelled stuck EXP-151 session (60m, 0 ops).
+- **Scout**: 🟢 Active — 12 sessions/6h, avg 8 ops.
+- **Tech-lead**: 🟢 Active — 28 sessions/6h, avg 18 ops.
+- **Optimizer**: 🟢 Active — 38 sessions/6h, avg 14 ops.
+- **Evaluator**: 🟢 Active — 12 sessions/6h, avg 5 ops.
+- **QA**: 🟢 Active — 12 sessions/6h, avg 9 ops.
+- **Coder**: 🟡 Low activity — 2 sessions/6h, avg 20 ops. Only runs when forked.
+- **Summary**: 7/8 healthy. Amy-kimi still down. Zero errors last hour. Cancelled 1 stuck coach session.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -28,17 +28,17 @@ Updated: 2026-04-12 ~15:53 UTC
 | **EXP-123 Verification-Depth Guard** | ⏳ OBSERVING | coach | Guard deployed (commit 9d9be57). Observation window until Apr 13. |
 | **EXP-147 Track B Context Isolation** | 🟢 RUNNING | coach | A/B test in progress. Multiple sessions today. |
 | **Web UI Visualization** | 🟢 Phase 4 done | tech-lead/coder | Phases 1-4 complete on main. Agent grid, activity feed, deep dive, session inspector. |
-| **Code search tool** | ⏳ Building | tech-lead→coder | Forked 16:53. Saves ~120-180 ops/day. |
+| **Code search tool** | ✅ Done | tech-lead→coder | Delivered at `scripts/code-search.sh` (3.9KB). Saves ~120-180 ops/day. |
 
 ## Next Actions
 - **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. Saves $143-441/day. **Blocked on Hao since Mar 24**.
-- **P1**: **Code search tool** — Dispatched to tech-lead (16:53). Saves 120-180 ops/day.
+- **P1**: **Convention investigation** — In progress (tech-lead). 
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (16:53)
-- **System**: 8/8 active (excl amy-kimi). Zero errors, zero stuck. All healthy.
-- **Dispatched**: Code search tool to tech-lead (saves 120-180 ops/day).
-- **Completed**: Wrong DB path fix confirmed done (root may.db gone, context.md files correct).
+## Latest Cycle Summary (17:24)
+- **System**: 7/8 active (excl amy-kimi). Zero errors. Cancelled 1 stuck coach session (EXP-151, 60m/0ops).
+- **Completed**: Code search tool delivered (`scripts/code-search.sh`).
+- **Active**: EXP-123 observing (until Apr 13), EXP-147 running, convention investigation in progress.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
