@@ -1,18 +1,18 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-12 ~07:53 UTC
+Updated: 2026-04-12 ~08:23 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors (billing). Blocked on Hao.
-- **Bob**: 🟢 Active — Processing EXP-147 Track A results. Track B design + EXP-146 results in progress.
-- **Coach**: 🟢 Active — EXP-146 Phase 1 ran (blocked on infra). Convention regressions ongoing.
+- **Bob**: 🟢 Active — EXP-147 Track B design + EXP-146 results in progress.
+- **Coach**: 🟢 Active — Convention regressions ongoing.
 - **Scout**: 🟢 Active — Heartbeat cycle running.
-- **Tech-lead**: 🟢 Active — Cron handler resolver COMPLETE. D-o-R fix WIP.
+- **Tech-lead**: 🟢 Active — Fewshot regex false positive fix DONE. D-o-R fix WIP.
 - **Optimizer**: 🟢 Active — Cycling normally.
 - **Evaluator**: 🟢 Active — 440 evals/24h.
 - **QA**: 🟢 Active.
 - **Coder**: Available — no active sessions. Skills pruned to 3 (was 10).
-- **Summary**: 7/8 healthy. Amy-kimi 429 (billing). All others cycling normally.
+- **Summary**: 7/8 healthy. Amy-kimi 429 (billing). All others cycling normally. No failures last hour.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
