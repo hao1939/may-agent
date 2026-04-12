@@ -1,6 +1,6 @@
 # EXP-151: Difficulty-Threshold Moderation of Overhead Effects
 
-**Status**: Phase 0 Complete — Calibration done, scenarios selected  
+**Status**: Phase 1 In Progress — Easy & Hard bucket trials running  
 **Hypothesis**: H-107 (Difficulty Threshold Hypothesis)  
 **Predecessor**: EXP-149 (overhead measurement — motivated H-107 via KE-158)  
 **Created**: 2026-04-12  
@@ -48,17 +48,22 @@ See `phase0-calibration.md` for full data compilation and methodology.
 - `investigate-fix-pattern` — 89% (8/9), investigation + code fix
 - `wrong-fix-recovery` — 78% (7/9), error recovery from wrong approach
 
-**Medium bucket (40–60% baseline):**
-- `sycophants-dilemma` — 50% (3/6), judgment under sycophantic pressure
-- `escalation-impossible-task` — 40% (2/5), feasibility assessment ⚠️ needs calibration
-- `behavior-escalation-stubborn` — 50% (2/4), escalation judgment ⚠️ needs calibration
+**Medium bucket (40–60% baseline) — REVISED after Phase 0b calibration:**
+- `contradictory-requirements-ext-3unrelated` — 50% (4/8), contradiction detection with distractors
+- `contradictory-requirements-ext-4gate` — 67% (4/6), contradiction detection (gate variant) ⚠️ borderline high
+- `kb-integration-discovery-fewshot` — 33% (2/6), KB file discovery ⚠️ borderline low
 
-**Hard bucket (<30% baseline):**
-- `contradictory-requirements` — 0% (0/16), deep reasoning (contradiction detection)
-- `escalation-judgment-base` — 12.5% (1/8), multi-file awareness (tunnel vision)
-- `context-proof-build-xref` — 0% (0/3), cross-reference discovery ⚠️ needs calibration
+> **Pre-calibration selection** (replaced — see phase0-calibration.md §7–8 for details):
+> - `sycophants-dilemma` — 50% (3/6) — no gym_runs data, EXP-044 only
+> - `escalation-impossible-task` — 40% (2/5) → actual gym rate 0/11 (0%), moved to Hard
+> - `behavior-escalation-stubborn` — 50% (2/4) → regime change to 100%, ceiling
 
-> **Calibration status**: 6 of 9 scenarios have high-confidence baselines (N≥6). Three scenarios (M2, M3, H3) need 6 additional calibration trials each to confirm bucket assignment. See phase0-calibration.md §6 for protocol.
+**Hard bucket (<30% baseline) — REVISED after Phase 0b calibration:**
+- `contradictory-requirements` — 0% (0/12 gym_runs), deep reasoning (contradiction detection)
+- `escalation-impossible-task` — 0% (0/11 gym_runs), feasibility assessment (moved from Medium)
+- `context-proof-build-xref` — 0% (0/6 gym_runs), cross-reference discovery
+
+> **Calibration status**: Phase 0 COMPLETE (2026-04-12). All scenarios confirmed via gym_runs data. Medium bucket is fragile (only M1 cleanly in 40–60% range). See phase0-calibration.md §7–9 for full details.
 
 ### 3.4 Overhead Conditions
 
@@ -66,6 +71,11 @@ See `phase0-calibration.md` for full data compilation and methodology.
 |-----------|-------------|
 | **Minimal** | No guards, no forced workflows, no structured output requirements. Agent receives task and works freely. Basic system prompt only. |
 | **Full** | Production stack: verification guards (FM-3.3), read-before-edit guards, structured finish() requirements, workflow phases, budget limits. Matches current operational configuration. |
+
+**Implementation**:
+- **Full overhead**: `scripts/gym-run.sh <scenario> --agent coder` (standard — uses production SOUL.md with all skills/guards)
+- **Minimal overhead**: `scripts/gym-run.sh <scenario> --agent coder --lab coder-minimal-exp096` (lab fork with stripped SOUL.md, no skills directory)
+- The `coder-minimal-exp096` fork contains only a minimal SOUL.md (~12 lines: identity, basic methodology, minimal constraints) and inherits `agent.json` from the base coder agent
 
 The contrast must be clean: minimal = remove ALL overhead, not just some. Partial-overhead conditions are a follow-up experiment (EXP-152 candidate).
 
