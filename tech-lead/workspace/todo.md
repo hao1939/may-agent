@@ -195,6 +195,7 @@
 - 2026-04-12 05:23: Lens C (evaluation dead weight cleanup) — **COMPLETE**: Removed Paths 2-3 (writeSkippedEvaluations, writeHeuristicEvaluations, computeHeuristicScores, detectFrustrationSignals, extractFinishCallParams). evaluator.ts: 1640→831 lines (-49%), total -2,373 lines across 9 files. Review branch: review/s_1775971448515_1880. See workspace/cleanup-evaluation-dead-weight.md
 - 2026-04-12 05:24: **C1.5 ghost-deliverables false positive fix** — COMPLETE (commit 7d54e506). Changed convention-check.ts to use transcript-based verification instead of post-hoc existsSync(). The lifecycle.ts finish tool already validates at call time; re-checking hours later caused false positives when KB archival/cleanup moved files. Also fixes false positives from blocked finish calls (FM-3.1/FM-3.3/uncommitted).
 - **Next**: Lens D
+- 2026-04-12 05:53: **P1 Workflow Adoption** (req:afa5607f) — forked deliver-or-report escalation investigation (s_1775973259186_1900). Coach's plan has 3 Phase 1 items: (1) fix deliver-or-report 41% done rate, (2) wire implement-and-verify, (3) audit verify-wrap vs C1.5. Item 3 likely resolved by C1.5 fix from last session.
 - **NOTE**: P1 QA heartbeat fix (req:5e23d82f/fe94b906) — write-blocked (heartbeat.md is identity file). Coach should apply the edit themselves or ask May.
 
 ## Low-Priority Cleanup
