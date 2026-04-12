@@ -32,7 +32,7 @@
 
 | H-105 | **Three-Layer Reasoning Model** — thinking-token monitoring is ~3× more faithful than output monitoring. Latent→thinking→output layers have decreasing observability. | **PROPOSED** (2026-04-12): DD-750/KE-146/KE-147 synthesis. EXP-146 designed but BLOCKED — extended thinking disabled system-wide (KE-151). 5 predictions untestable until infra change. | **0.72** |
 | H-101 | **Architectural Readiness Determines Guard Internalization** — an agent's capacity to internalize guard-enforced behaviors depends on whether its system prompt already contains conceptual scaffolding for the guarded behavior. Guards become redundant for architecturally-ready agents. | EXP-136 (git inflation removed, P 0.55→0.62). EXP-137 (structural comparison: "architectural readiness" = workflow-level verification adoption, perfect correlation, P 0.62→0.72). EXP-138 (verify-wrap gym ceiling effect confirmed, production pilot ready). H-102 spawned as refined mechanistic specification. | **0.72** |
-| H-102 | **Workflow Adoption Determines Behavioral Internalization** — declining guard activation rates reflect architectural substitution (workflow-enforced verification), not behavioral learning. Workflow adoption rate (% of sessions through verification workflows) perfectly predicts learner/reliant bifurcation (correlation=1.0). | Derived from H-101, EXP-137 (structural comparison), EXP-138 (verify-wrap prototype). Tech-Lead pushback: scout has no dispatch point. P-102a revised with dispatch prerequisite. P-102f added: dispatch architecture gates workflow adoption. | **0.75** |
+| H-102 | **Workflow Adoption Determines Behavioral Internalization** — declining guard activation rates reflect architectural substitution (workflow-enforced verification), not behavioral learning. Workflow adoption rate (% of sessions through verification workflows) perfectly predicts learner/reliant bifurcation (correlation=1.0). | Derived from H-101, EXP-137 (structural comparison), EXP-138 (verify-wrap prototype). Tech-Lead pushback: scout has no dispatch point. P-102a revised with dispatch prerequisite. P-102f added: dispatch architecture gates workflow adoption. EXP-145 shows universal decline across non-workflow conventions too (H-102 overfits to workflow mechanism). P(H) 0.75→0.65. | **0.65** |
 
 ## 🟡 Tier 2: Moderate Confidence — P(H) 0.50-0.69
 
@@ -204,8 +204,8 @@ EXP-026 production data confirms H-041's core prediction: **workflow benefit sca
 ## Meta-Process: H-066 (Bayesian Belief Management)
 
 The Bayesian scoring process itself is tracked as H-066. After 2026-04-07 corpus cleanup:
-- **21 high confidence** (≥0.70): H-055 (0.82), H-041 (0.72), H-053 (0.88), H-059 (0.72), H-085 (0.85), H-058 (0.87), H-009 (0.85), H-043 (0.85), H-054 (0.75), H-091 (0.93), H-089 (0.94), H-088 (0.80), H-092 (0.72), H-093 (0.72), H-087 (0.72), H-095 (0.84), H-098 (0.80), H-099 (0.90), H-101 (0.72), H-102 (0.75), H-105 (0.72)
-- **5 moderate** (0.50-0.70): H-014 (0.63), H-056 (0.61), H-047 (0.62), H-096 (0.68), H-097 (0.55)
+- **20 high confidence** (≥0.70): H-055 (0.82), H-041 (0.72), H-053 (0.88), H-059 (0.72), H-085 (0.85), H-058 (0.87), H-009 (0.85), H-043 (0.85), H-054 (0.75), H-091 (0.93), H-089 (0.94), H-088 (0.80), H-092 (0.72), H-093 (0.72), H-087 (0.72), H-095 (0.84), H-098 (0.80), H-099 (0.90), H-101 (0.72), H-105 (0.72)
+- **6 moderate** (0.50-0.70): H-014 (0.63), H-056 (0.61), H-047 (0.62), H-096 (0.68), H-097 (0.55), H-102 (0.65)
 - **1 weak signal** (<0.50): H-103 (0.45)
 - **1 meta**: H-066 (Bayesian belief management)
 - **19 archived/resolved**: H-001 (disconfirmed), H-002 (superseded), H-034/H-038/H-039 (design principles), H-046/H-048/H-051 (insufficient evidence), H-052 (absorbed), H-064/H-065 (merged/out-of-domain), H-070 (refuted), H-094 (archived), H-068 (archived), H-128 (rejected), **H-100 (superseded by H-101/H-102)**, **H-104 (FALSIFIED — P:0.78→0.10, EXP-145)**

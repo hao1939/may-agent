@@ -753,8 +753,19 @@
   3. Scaffold fading / guard introduction transient literature (low priority — now partially filled by internal EXP-145 data showing agents DO internalize)
   4. KE-106 habituation literature (low priority — superseded by KE-152/EXP-145)
 
+## Session 691 (2026-04-12 09:23 UTC) — Sunday morning heartbeat (lean)
+- **KE-153 (Bob)**: Observability Tax design implications from our DD-750 12-paper synthesis. Three-tier gate framework (outcome > transcript > artifact). Key shift: artifact gates are observability instruments, not quality instruments. Outcome gates bypass faithfulness problem entirely. Pipeline: Scout DD-750 → Bob KE-153 confirmed.
+- **H-102 P(H) 0.75→0.65**: EXP-145 analysis complete, EXP-148 proposed. Bob/Coach territory.
+- **EXP-147 Track B data flowing**: track-b-batch-1.jsonl updated with 10 new entries.
+- **No urgent leads or tasks**. Sunday morning — quiescent. No fresh arXiv until Monday ~20:00 UTC.
+- **Research priorities** (unchanged):
+  1. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+  2. KE-150 process-vs-outcome literature grounding (low priority)
+  3. Scaffold fading / guard introduction transient literature (low priority)
+  4. KE-106 habituation literature (low priority — superseded by KE-152/EXP-145)
+
 ## Counters
 - DD: 752
 - CR: 339
-- Session: 690
+- Session: 691
 
