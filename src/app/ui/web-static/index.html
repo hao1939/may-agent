@@ -220,6 +220,42 @@
 .file-list { list-style: none; padding: 0; max-height: 300px; overflow-y: auto; }
 .file-list li { padding: 4px 8px; font-family: monospace; font-size: 12px; border-bottom: 1px solid var(--bg3, #333); }
 .file-list li:hover { background: var(--bg3, rgba(255,255,255,0.03)); }
+.session-inspector { max-width: 900px; }
+.session-inspector .header-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.session-inspector .meta-grid { display: grid; grid-template-columns: auto 1fr; gap: 4px 16px; font-size: 13px; }
+.session-inspector .meta-grid dt { color: var(--fg2); }
+.session-inspector .meta-grid dd { margin: 0; }
+.session-inspector pre.task-block {
+  background: var(--bg2); padding: 12px; border-radius: 6px;
+  white-space: pre-wrap; word-break: break-word;
+  max-height: 300px; overflow-y: auto; font-size: 12px;
+  margin: 8px 0;
+}
+.session-inspector .score-bar {
+  height: 8px; border-radius: 4px; background: var(--bg2);
+  position: relative; overflow: hidden; width: 120px; display: inline-block; vertical-align: middle;
+}
+.session-inspector .score-bar .fill {
+  height: 100%; border-radius: 4px; position: absolute; left: 0; top: 0;
+}
+.session-inspector .eval-card {
+  background: var(--bg2); padding: 12px; border-radius: 6px; margin: 8px 0;
+}
+.session-inspector .section { margin: 16px 0; }
+.session-inspector .section h4 { margin: 0 0 8px 0; color: var(--fg2); font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
+.session-inspector .outcome-block {
+  background: var(--bg2); padding: 12px; border-radius: 6px;
+  font-size: 13px; white-space: pre-wrap; word-break: break-word;
+  max-height: 200px; overflow-y: auto;
+}
+.session-inspector .back-btn {
+  background: var(--bg2); border: 1px solid var(--border); color: var(--fg);
+  padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 13px;
+  margin-bottom: 12px;
+}
+.session-inspector .back-btn:hover { background: var(--accent); color: var(--bg); }
+.copy-btn { background: none; border: none; cursor: pointer; color: var(--fg2); font-size: 14px; }
+.copy-btn:hover { color: var(--fg); }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/marked@15.0.12/marked.min.js"></script>
 </head>
@@ -748,7 +784,42 @@ function renderRequests(data) {
   });
 }
 
+const sessionHistory = [];
+let currentInspectedSession = null;
+
+function fmtTime(epoch) {
+  if (!epoch) return '—';
+  const d = new Date(epoch);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ', ' +
+         d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+}
+
+function scoreBar(val, color) {
+  const pct = Math.round((val || 0) * 100);
+  return `<span class="score-bar"><span class="fill" style="width:${pct}%;background:${color}"></span></span> ${pct}%`;
+}
+
+function statusColor(status) {
+  if (!status) return '';
+  const s = status.toLowerCase();
+  if (s === 'success' || s === 'done') return 'green';
+  if (s === 'error' || s === 'failed') return 'red';
+  if (s === 'running') return 'blue';
+  if (s === 'timeout') return 'orange';
+  return '';
+}
+
+function verdictColor(verdict) {
+  if (!verdict) return '';
+  const v = verdict.toLowerCase();
+  if (v === 'good') return '#4caf50';
+  if (v === 'needs_improvement') return '#ff9800';
+  if (v === 'poor') return '#f44336';
+  return 'var(--fg2)';
+}
+
 async function loadSessionDetail(sessionId) {
+  currentInspectedSession = sessionId;
   const panel = document.getElementById('detail-panel');
   panel.innerHTML = '<div class="panel">Loading...</div>';
 
@@ -763,24 +834,125 @@ async function loadSessionDetail(sessionId) {
     if (sessData.error) { panel.innerHTML = `<div class="panel">${sessData.error}</div>`; return; }
 
     const s = sessData.session;
-    const dur = s.endedAt ? Math.round((s.endedAt - s.startedAt)/1000) + 's' : 'running';
+    const ev = sessData.evaluation;
+    const durSec = s.endedAt ? Math.round((s.endedAt - s.startedAt) / 1000) : null;
+    const durStr = durSec !== null ? (durSec >= 60 ? Math.floor(durSec/60) + 'm ' + (durSec%60) + 's' : durSec + 's') : 'running...';
 
-    let html = `<div class="panel">
-      <h3>${s.agent} <span class="badge ${s.status}">${s.status}</span> · ${dur} · ${s.opCount || 0} ops
-        <button class="ask-btn" style="margin-left:12px" onclick="askAboutSession('${s.sessionId}', ${JSON.stringify(esc(s.task.slice(0,200))).replace(/'/g,'\\&#39;')})">💬 Ask about this</button>
-      </h3>
-      <div style="color:var(--fg2);font-size:12px;margin-bottom:8px">${esc(s.task.slice(0,200))}</div>
-      ${s.outcome ? `<div style="font-style:italic;color:var(--fg2);font-size:12px;margin-bottom:12px">${esc(s.outcome)}</div>` : ''}`;
+    let html = `<div class="panel session-inspector">`;
 
-    // Children tree
-    if (sessData.children.length) {
-      html += '<h3 style="margin-top:16px">Delegation Tree</h3>';
-      html += renderTree(sessData.children);
+    // Back button
+    if (sessionHistory.length) {
+      html += `<button class="back-btn" onclick="goBackSession()">← Back to previous</button>`;
     }
 
-    // Transcript
+    // A. Session Header Card
+    html += `<div class="section">
+      <div class="header-row">
+        <h3 style="margin:0">${esc(s.sessionId)}</h3>
+        <button class="copy-btn" title="Copy session ID" onclick="navigator.clipboard.writeText('${esc(s.sessionId)}')">📋</button>
+        <span class="badge ${s.status}">${s.status}</span>
+      </div>
+      <div class="header-row" style="margin-top:8px">
+        <span style="font-size:14px"><a href="#" style="color:var(--accent);text-decoration:none" onclick="event.preventDefault();loadAgentDeepDive('${esc(s.agent)}')">${esc(s.agent)}</a></span>
+        <span style="color:var(--fg2);font-size:13px">· ${durStr} · ${s.opCount || 0} ops</span>
+        <button class="ask-btn" style="margin-left:auto" onclick="askAboutSession('${s.sessionId}', ${JSON.stringify(esc((s.task || '').slice(0,200))).replace(/'/g,'\\&#39;')})">💬 Ask about this</button>
+      </div>
+      <div style="font-size:12px;color:var(--fg2);margin-top:6px">
+        <span title="${s.startedAt || ''}">Started: ${fmtTime(s.startedAt)}</span>
+        &nbsp;·&nbsp;
+        <span title="${s.endedAt || ''}">Ended: ${fmtTime(s.endedAt)}</span>
+      </div>
+    </div>`;
+
+    // B. Task Section
+    html += `<div class="section">
+      <h4>Task</h4>
+      <pre class="task-block">${esc(s.task || '')}</pre>
+    </div>`;
+
+    // C. Metadata Section
+    html += `<div class="section">
+      <h4>Metadata</h4>
+      <dl class="meta-grid">`;
+    if (s.kind) html += `<dt>Kind</dt><dd>${esc(s.kind)}</dd>`;
+    if (s.source) html += `<dt>Source</dt><dd>${esc(s.source)}</dd>`;
+    if (s.model) html += `<dt>Model</dt><dd>${esc(s.model)}</dd>`;
+    if (s.parentSessionId) html += `<dt>Parent</dt><dd><a href="#" style="color:var(--accent)" onclick="event.preventDefault();loadSessionDetail('${esc(s.parentSessionId)}')">${esc(s.parentSessionId)}</a></dd>`;
+    if (s.workflowRunId) html += `<dt>Workflow Run</dt><dd>${esc(s.workflowRunId)}</dd>`;
+    if (s.requestId) html += `<dt>Request</dt><dd>${esc(s.requestId)}</dd>`;
+    html += `</dl></div>`;
+
+    // D. Outcome Section
+    if (s.outcome) {
+      html += `<div class="section">
+        <h4>Outcome</h4>`;
+      if (s.outcome.length > 500) {
+        const shortOutcome = s.outcome.slice(0, 500);
+        html += `<div class="outcome-block" id="outcome-block">${esc(shortOutcome)}…
+          <div style="margin-top:8px"><a href="#" style="color:var(--accent);font-size:12px" onclick="event.preventDefault();toggleOutcome()">Show full outcome</a></div>
+        </div>`;
+      } else {
+        html += `<div class="outcome-block">${esc(s.outcome)}</div>`;
+      }
+      html += `</div>`;
+    }
+
+    // E. Evaluation Section
+    if (ev) {
+      html += `<div class="section">
+        <h4>Evaluation</h4>
+        <div class="eval-card">`;
+      if (ev.quality != null) {
+        const qColor = ev.quality >= 0.7 ? '#4caf50' : ev.quality >= 0.4 ? '#ff9800' : '#f44336';
+        html += `<div style="margin-bottom:6px"><strong>Quality:</strong> ${scoreBar(ev.quality, qColor)}</div>`;
+      }
+      if (ev.efficiency != null) {
+        const eColor = ev.efficiency >= 0.7 ? '#4caf50' : ev.efficiency >= 0.4 ? '#ff9800' : '#f44336';
+        html += `<div style="margin-bottom:6px"><strong>Efficiency:</strong> ${scoreBar(ev.efficiency, eColor)}</div>`;
+      }
+      if (ev.verdict) {
+        html += `<div style="margin-bottom:6px"><strong>Verdict:</strong> <span style="color:${verdictColor(ev.verdict)};font-weight:600">${esc(ev.verdict)}</span></div>`;
+      }
+      if (ev.productiveCalls != null || ev.wastedCalls != null) {
+        html += `<div style="margin-bottom:6px;font-size:13px">Productive calls: <strong>${ev.productiveCalls ?? '—'}</strong> · Wasted calls: <strong>${ev.wastedCalls ?? '—'}</strong></div>`;
+      }
+      // Parse issues
+      if (ev.issues) {
+        try {
+          const issues = typeof ev.issues === 'string' ? JSON.parse(ev.issues) : ev.issues;
+          if (Array.isArray(issues) && issues.length) {
+            html += `<div style="margin-top:8px"><strong>Issues:</strong><ul style="margin:4px 0;padding-left:20px;font-size:13px">`;
+            for (const issue of issues) {
+              html += `<li>${esc(typeof issue === 'string' ? issue : JSON.stringify(issue))}</li>`;
+            }
+            html += `</ul></div>`;
+          }
+        } catch(e) { /* ignore parse errors */ }
+      }
+      // Parse overall
+      if (ev.overall) {
+        try {
+          const overall = typeof ev.overall === 'string' ? JSON.parse(ev.overall) : ev.overall;
+          if (overall && typeof overall === 'object') {
+            html += `<div style="margin-top:8px"><strong>Summary:</strong> <span style="font-size:13px">${esc(overall.summary || overall.verdict || JSON.stringify(overall))}</span></div>`;
+          }
+        } catch(e) { /* ignore parse errors */ }
+      }
+      html += `</div></div>`;
+    }
+
+    // F. Delegation Tree
+    if (sessData.children.length) {
+      html += `<div class="section">
+        <h4>Delegation Tree</h4>`;
+      html += renderTree(sessData.children);
+      html += `</div>`;
+    }
+
+    // G. Transcript
     if (transData.messages && transData.messages.length) {
-      html += `<h3 style="margin-top:16px">Transcript (${transData.messageCount} messages)</h3>`;
+      html += `<div class="section">
+        <h4>Transcript (${transData.messageCount} messages)</h4>`;
       html += '<div class="transcript">';
       for (const m of transData.messages) {
         if (m.role === 'user') {
@@ -799,9 +971,42 @@ async function loadSessionDetail(sessionId) {
 
     html += '</div>';
     panel.innerHTML = html;
+
+    // Store full outcome for expand/collapse
+    if (s.outcome && s.outcome.length > 500) {
+      panel._fullOutcome = s.outcome;
+      panel._outcomeExpanded = false;
+    }
+
     panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch(e) {
     panel.innerHTML = `<div class="panel">Error loading session: ${e.message}</div>`;
+  }
+}
+
+function goBackSession() {
+  if (sessionHistory.length) {
+    const prev = sessionHistory.pop();
+    loadSessionDetail(prev);
+  }
+}
+
+function navigateToSession(sessionId, fromSessionId) {
+  if (fromSessionId) sessionHistory.push(fromSessionId);
+  loadSessionDetail(sessionId);
+}
+
+function toggleOutcome() {
+  const panel = document.getElementById('detail-panel');
+  const block = document.getElementById('outcome-block');
+  if (!block || !panel._fullOutcome) return;
+  panel._outcomeExpanded = !panel._outcomeExpanded;
+  if (panel._outcomeExpanded) {
+    block.innerHTML = esc(panel._fullOutcome) +
+      `<div style="margin-top:8px"><a href="#" style="color:var(--accent);font-size:12px" onclick="event.preventDefault();toggleOutcome()">Show less</a></div>`;
+  } else {
+    block.innerHTML = esc(panel._fullOutcome.slice(0, 500)) + '…' +
+      `<div style="margin-top:8px"><a href="#" style="color:var(--accent);font-size:12px" onclick="event.preventDefault();toggleOutcome()">Show full outcome</a></div>`;
   }
 }
 
@@ -819,7 +1024,7 @@ function renderTree(children) {
     let h = '';
     for (const c of kids) {
       const dur = c.endedAt ? Math.round((c.endedAt - c.startedAt)/1000) + 's' : '...';
-      h += `<div class="tree-node">
+      h += `<div class="tree-node" style="cursor:pointer" onclick="event.stopPropagation();navigateToSession('${esc(c.sessionId)}', currentInspectedSession)">
         <span class="agent">${c.agent}</span> <span class="badge ${c.status}">${c.status}</span> · ${dur}
         <div class="task-preview">${esc(c.task.slice(0,100))}</div>
         ${c.outcome ? `<div class="outcome-preview">${esc(c.outcome.slice(0,150))}</div>` : ''}
