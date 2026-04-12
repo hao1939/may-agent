@@ -16,3 +16,5 @@
 {"scenario":"plan-once-amend","run":16,"condition":"scoped","passed":true,"elapsed":71,"db_run_id":"unknown","index":15}
 {"scenario":"plan-once-amend","run":17,"condition":"scoped","passed":true,"elapsed":97,"db_run_id":"unknown","index":16}
 {"scenario":"plan-once-amend","run":18,"condition":"full","passed":true,"elapsed":89,"db_run_id":"unknown","index":17}
+{"scenario":"plan-once-amend","run":19,"condition":"scoped","passed":true,"elapsed":74,"db_run_id":"unknown","index":18}
+{"scenario":"plan-once-amend","run":20,"condition":"full","passed":true,"elapsed":86,"db_run_id":"unknown","index":19}

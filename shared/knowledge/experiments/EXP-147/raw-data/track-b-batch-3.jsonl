@@ -1,0 +1,3 @@
+{"scenario":"plan-once-amend","run":19,"condition":"scoped","passed":true,"elapsed":76}
+{"scenario":"plan-once-amend","run":20,"condition":"full","passed":true,"elapsed":92}
+{"scenario":"hidden-dependency","run":1,"condition":"scoped","passed":true,"elapsed":58}
