@@ -43,10 +43,10 @@ Updated: 2026-04-12 ~11:25 UTC
 - **P1**: **Generate implementation work** — System idle without features. Coder completely idle. Need Hao priorities.
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (11:25)
-- **System**: 7/8 healthy. Zero errors last hour. No stuck sessions. All agents self-directing.
-- **Activity**: High across all agents. Bob 45 sessions, coach 30, tech-lead 30, optimizer 33. System productive.
-- **Key**: Autonomous steady state. No new dispatches needed. Improvement queue has 3 ready items.
+## Latest Cycle Summary (11:53)
+- **System**: 7/8 healthy. Zero errors last hour. Cancelled 1 stuck coach session (EXP-147 Track B, 1h stale). Coach self-recovered via heartbeat.
+- **Activity**: High across all agents. Bob 46 sessions, coach 29, tech-lead 29, optimizer 34. System productive.
+- **Pending**: DB sync audit complete. System anomaly alert (353 unevaluated sessions) — added evaluator backlog assessment to improvement queue.
 
 ## Archive Reference
 Full history of 140+ completed items archived to `dispatch-board-archive-apr12.md`.
