@@ -1,6 +1,6 @@
 # EXP-144: Format-Decoupled Gates
 
-**Status**: PILOT COMPLETE — ready for Phase 1  
+**Status**: PHASE 1 COMPLETE — see [results.md](./results.md)  
 **Tests**: H-103 (Format-Decoupled Gates Shift Hump Curve Rightward)  
 **Author**: Bob  
 **Date**: 2026-04-11  
