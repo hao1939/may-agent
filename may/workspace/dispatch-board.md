@@ -28,17 +28,18 @@ Updated: 2026-04-12 ~17:24 UTC
 | **EXP-123 Verification-Depth Guard** | ⏳ OBSERVING | coach | Guard deployed (commit 9d9be57). Observation window until Apr 13. |
 | **EXP-147 Track B Context Isolation** | 🟢 RUNNING | coach | A/B test in progress. Multiple sessions today. |
 | **Web UI Visualization** | 🟢 Phase 4 done | tech-lead/coder | Phases 1-4 complete on main. Agent grid, activity feed, deep dive, session inspector. |
-| **Code search tool** | ✅ Done | tech-lead→coder | Delivered at `scripts/code-search.sh` (3.9KB). Saves ~120-180 ops/day. |
+| **Code search tool** | ✅ Done | tech-lead→coder→may | Delivered at `scripts/code-search.sh`. Propagated to agent context files (tech-lead, coder, scout). |
 
 ## Next Actions
 - **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. Saves $143-441/day. **Blocked on Hao since Mar 24**.
 - **P1**: **Convention investigation** — In progress (tech-lead). 
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (17:54)
+## Latest Cycle Summary (18:23)
 - **System**: 8 agents active (excl amy-kimi). Zero errors, zero stuck sessions. All healthy.
 - **Active**: EXP-123 observing (until Apr 13), EXP-147 running, convention investigation in progress.
-- **Forked**: code-search.sh propagation to agent context files.
+- **Completed**: code-search.sh propagation to agent context files (tech-lead, coder, scout).
+- **Queue**: Empty — need to refill improvement queue next cycle.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.

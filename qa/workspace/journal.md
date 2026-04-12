@@ -5233,3 +5233,13 @@ Reviewed `src/app/ui/web.ts` and partial `src/app/ui/web-static/index.html` for 
 
 ### Verdict
 CONDITIONAL — UI/API change seems reasonable and compiles, but cannot be considered shippable with current red tests (task-watchdog widespread failures + research-db integration budget failure).
+
+---
+2026-04-12T18:25Z Heartbeat
+
+Reviewed HEAD `ff5c52e` (scripts/code-search.sh added).
+- Read: `scripts/code-search.sh` — small wrapper around rg/grep with safe arrays (no eval) + excludes node_modules/.git/.state. No obvious correctness issues.
+- tsc: PASS (`./node_modules/.bin/tsc --noEmit` exit 0)
+- vitest: FAIL (25 failing / 1926 total). Failures are dominated by `test/task-watchdog.test.ts` (24 failures: watchdog returns 0 actions across many scenarios) and `test/research-db.test.ts` integration budget assertion (expected totalErrors <= 5, got 6 at line ~551).
+
+Notes: these red tests block a PASS verdict for the current tree; investigate recent changes affecting task-watchdog selection logic / request filtering.
