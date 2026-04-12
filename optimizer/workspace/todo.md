@@ -70,6 +70,28 @@
 ### may.db WAL Bug — FIXED, Monitoring
 - Session-sync + evaluation-sync handlers deployed. 1071 evals, 0 unevaluated (as of 17:10 UTC).
 
+### May Heartbeat Bloat — NEW #1 BLOATER (24.7 avg, up 42%)
+- May heartbeats avg 24.7 ops (n=15 in 6h) — **up 42% from 17.4 yesterday**
+- Does inline work: reviews, audits, dashboard updates, session quality checks
+- Unlike tech-lead/optimizer (fixed with dispatcher), May's heartbeat.md explicitly tells it to DO work inline
+- 370 ops in 15 heartbeats. If reduced to 5 avg: save ~1,180 ops/day (~$56/day)
+- **Fix needed**: May heartbeat dispatcher rewrite (same pattern as tech-lead/optimizer)
+- Finding: `workspace/finding-tool-adoption-pattern-mining-0412.md`
+
+### Bob Research Thread Bloat — 52% of Bob's Ops
+- 13 Research Thread sessions in 6h, avg 36.9 ops, total 480 (52% of Bob's 920)
+- KB integration sessions hit 79 ops EACH (×2), plus 93-op P1 cap violation
+- Combined with Research Synthesis (147 ops): 68% of Bob's ops
+- **No structural cap** on research thread sessions. P1 budget cap text ignored (93 ops with "BUDGET: 15" in prompt)
+- Text-based caps unreliable — need infrastructure enforcement (maxOps on callAgent)
+- Finding: `workspace/finding-tool-adoption-pattern-mining-0412.md`
+
+### Tool Adoption Strategy — DECLARED DEAD
+- gym-batch.sh and session-query.ts: **4th consecutive check confirming zero adoption** (24h+ since merge)
+- Context.md references don't drive adoption. Only viable paths: embed in workflow JS code or handler code
+- **Recommendation**: Remove context.md references to reduce bloat, abandon prompt-based adoption strategy
+- Finding: `workspace/finding-tool-adoption-pattern-mining-0412.md`
+
 ## 📊 OBSERVATIONS (no action needed)
 
 - **Bob HB dispatch**: 87% properly dispatched. 13% inline-heavy — not fixable via text rules (KE-002).
