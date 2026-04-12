@@ -73,6 +73,7 @@ import {
   saveCompactedMessages,
   readArchivedSessionMessages,
   historyDir,
+  archiveSession,
 } from "./persistence.js";
 import type { PersistedSession, SessionKind } from "./persistence.js";
 import type { SessionTrace } from "./workflow.js";
@@ -620,12 +621,19 @@ export class SubagentManager {
     return ctxLines.join("\n");
   }
 
-  /** Clean up step counter on session completion. Sessions stay in sessions/<id>/ — no archiving. */
+  /** Clean up step counter and archive session to history on completion. */
   private cleanupSession(session: ActiveSession): void {
     try {
       cleanupStepCounter(session.sessionId);
     } catch {
       /* best-effort */
+    }
+    // Move completed session from sessions/<id>/ to sessions/history/<id>/.
+    // readSessionMeta() already checks both locations, so late reads still work.
+    try {
+      archiveSession(this.registry.persistDir, session.sessionId);
+    } catch {
+      /* best-effort — session data stays in active dir if rename fails */
     }
   }
 
