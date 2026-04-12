@@ -190,6 +190,36 @@
     .agent-grid { grid-template-columns: 1fr 1fr; }
     .health-summary { flex-direction: column; }
   }
+/* Agent Deep Dive */
+.agent-deep-dive { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 20px; position: relative; }
+.agent-deep-dive .close-btn { position: absolute; top: 12px; right: 14px; background: none; border: none; color: var(--fg2); font-size: 18px; cursor: pointer; }
+.agent-deep-dive .close-btn:hover { color: var(--fg); }
+.agent-deep-dive h2 { font-size: 16px; margin-bottom: 16px; }
+.agent-deep-dive .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+.agent-deep-dive .tab-btn { background: none; border: none; border-bottom: 2px solid transparent; color: var(--fg2); padding: 8px 16px; cursor: pointer; font-size: 13px; }
+.agent-deep-dive .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+.agent-deep-dive .tab-content { display: none; }
+.agent-deep-dive .tab-content.active { display: block; }
+.session-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.session-table th { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); color: var(--fg2); font-weight: 500; }
+.session-table td { padding: 6px 8px; border-bottom: 1px solid var(--bg3, #333); }
+.session-table tr:hover { background: var(--bg3, rgba(255,255,255,0.03)); }
+.session-table .status-badge { padding: 2px 6px; border-radius: 3px; font-size: 11px; }
+.session-table .status-badge.done { background: rgba(76,175,80,0.15); color: var(--green); }
+.session-table .status-badge.error { background: rgba(244,67,54,0.15); color: var(--red); }
+.session-table .status-badge.running { background: rgba(33,150,243,0.15); color: var(--accent); }
+.eval-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; }
+.eval-card { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 10px; text-align: center; }
+.eval-card .score { font-size: 20px; font-weight: 700; }
+.eval-card .label { font-size: 11px; color: var(--fg2); margin-top: 4px; }
+.sparkline { display: flex; align-items: flex-end; gap: 2px; height: 40px; }
+.sparkline .bar { flex: 1; min-width: 4px; max-width: 12px; border-radius: 2px 2px 0 0; background: var(--accent); transition: height 0.2s; }
+.delegation-list { list-style: none; padding: 0; }
+.delegation-list li { padding: 6px 0; border-bottom: 1px solid var(--bg3, #333); font-size: 13px; display: flex; justify-content: space-between; }
+.delegation-list .count { color: var(--fg2); font-size: 12px; }
+.file-list { list-style: none; padding: 0; max-height: 300px; overflow-y: auto; }
+.file-list li { padding: 4px 8px; font-family: monospace; font-size: 12px; border-bottom: 1px solid var(--bg3, #333); }
+.file-list li:hover { background: var(--bg3, rgba(255,255,255,0.03)); }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/marked@15.0.12/marked.min.js"></script>
 </head>
@@ -211,6 +241,7 @@
     <div id="digest-panel" style="margin-bottom:20px"></div>
     <div id="health-summary" class="health-summary"></div>
     <div id="agent-grid" class="agent-grid"></div>
+    <div id="agent-deep-dive" class="agent-deep-dive" style="display:none"></div>
     <div id="activity-timeline" class="timeline-section" style="display:none">
       <h3>
         Activity Timeline
@@ -399,17 +430,147 @@ async function loadAgentGrid() {
 function toggleAgentFilter(name) {
   if (selectedAgent === name) {
     selectedAgent = null;
+    hideAgentDeepDive();
   } else {
     selectedAgent = name;
+    loadAgentDeepDive(name);
   }
-  // Update filter dropdown to match
   const agentSelect = document.getElementById('f-agent');
   agentSelect.value = selectedAgent || '';
-  // Re-render grid to show selection
   loadAgentGrid();
-  // Reload requests with filter
   offset = 0;
   loadRequests();
+}
+
+function hideAgentDeepDive() {
+  document.getElementById('agent-deep-dive').style.display = 'none';
+}
+
+async function loadAgentDeepDive(name) {
+  const container = document.getElementById('agent-deep-dive');
+  container.style.display = 'block';
+  container.innerHTML = '<div style="color:var(--fg2);padding:20px">Loading agent details...</div>';
+
+  try {
+    const res = await fetch(`/api/agents/${encodeURIComponent(name)}/detail`);
+    const data = await res.json();
+
+    let html = `<button class="close-btn" onclick="selectedAgent=null;hideAgentDeepDive();loadAgentGrid()">✕</button>`;
+    html += `<h2>${esc(name)}</h2>`;
+
+    // Tabs
+    html += `<div class="tabs">
+      <button class="tab-btn active" onclick="switchDeepDiveTab(this,'dd-sessions')">Sessions</button>
+      <button class="tab-btn" onclick="switchDeepDiveTab(this,'dd-evals')">Evaluations</button>
+      <button class="tab-btn" onclick="switchDeepDiveTab(this,'dd-delegation')">Delegation</button>
+      <button class="tab-btn" onclick="switchDeepDiveTab(this,'dd-files')">Workspace</button>
+    </div>`;
+
+    // Tab 1: Sessions
+    html += `<div id="dd-sessions" class="tab-content active">`;
+    if (data.recentSessions && data.recentSessions.length) {
+      html += `<table class="session-table"><thead><tr><th>Time</th><th>Duration</th><th>Status</th><th>Ops</th><th>Task</th></tr></thead><tbody>`;
+      for (const s of data.recentSessions) {
+        const time = new Date(s.startedAt).toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+        const dur = s.duration != null ? (s.duration < 60 ? s.duration + 's' : Math.round(s.duration/60) + 'm') : '—';
+        html += `<tr style="cursor:pointer" onclick="loadSessionDetail('${esc(s.id)}')">
+          <td>${time}</td><td>${dur}</td>
+          <td><span class="status-badge ${s.status}">${s.status}</span></td>
+          <td>${s.opCount || '—'}</td>
+          <td title="${esc(s.task || '')}">${esc((s.task||'').slice(0,80))}</td>
+        </tr>`;
+      }
+      html += `</tbody></table>`;
+    } else {
+      html += '<div style="color:var(--fg2);font-size:13px">No recent sessions.</div>';
+    }
+    html += `</div>`;
+
+    // Tab 2: Evaluations
+    html += `<div id="dd-evals" class="tab-content">`;
+    if (data.evalTrend && data.evalTrend.length) {
+      const avgQ = (data.evalTrend.reduce((a,e) => a+e.quality, 0) / data.evalTrend.length).toFixed(1);
+      const avgE = (data.evalTrend.reduce((a,e) => a+e.efficiency, 0) / data.evalTrend.length).toFixed(1);
+      const verdictCounts = {};
+      data.evalTrend.forEach(e => { verdictCounts[e.verdict] = (verdictCounts[e.verdict]||0)+1; });
+      const topVerdict = Object.entries(verdictCounts).sort((a,b) => b[1]-a[1])[0];
+
+      html += `<div class="eval-grid" style="margin-bottom:16px">
+        <div class="eval-card"><div class="score">${avgQ}</div><div class="label">Avg Quality</div></div>
+        <div class="eval-card"><div class="score">${avgE}</div><div class="label">Avg Efficiency</div></div>
+        <div class="eval-card"><div class="score">${data.evalTrend.length}</div><div class="label">Evaluations</div></div>
+        <div class="eval-card"><div class="score" style="font-size:14px">${topVerdict ? topVerdict[0] : '—'}</div><div class="label">Top Verdict</div></div>
+      </div>`;
+
+      // Sparkline for quality trend (most recent on right)
+      const reversed = [...data.evalTrend].reverse();
+      const maxQ = Math.max(...reversed.map(e => e.quality), 1);
+      html += `<div style="margin-bottom:8px;font-size:12px;color:var(--fg2)">Quality trend (recent →)</div>`;
+      html += `<div class="sparkline">`;
+      for (const e of reversed) {
+        const h = Math.max(4, Math.round((e.quality / maxQ) * 40));
+        const color = e.quality >= 0.7 ? 'var(--green)' : e.quality >= 0.4 ? 'var(--yellow)' : 'var(--red)';
+        html += `<div class="bar" style="height:${h}px;background:${color}" title="Q:${e.quality} E:${e.efficiency}"></div>`;
+      }
+      html += `</div>`;
+    } else {
+      html += '<div style="color:var(--fg2);font-size:13px">No evaluations found.</div>';
+    }
+    html += `</div>`;
+
+    // Tab 3: Delegation
+    html += `<div id="dd-delegation" class="tab-content">`;
+    if (data.delegationMap) {
+      const { delegatesTo, delegatedFrom } = data.delegationMap;
+      html += `<h3 style="font-size:13px;margin-bottom:8px">${esc(name)} delegates to:</h3>`;
+      if (delegatesTo && delegatesTo.length) {
+        html += `<ul class="delegation-list">`;
+        for (const d of delegatesTo) {
+          html += `<li><span>→ ${esc(d.agent)}</span><span class="count">${d.count} sessions</span></li>`;
+        }
+        html += `</ul>`;
+      } else {
+        html += '<div style="color:var(--fg2);font-size:13px;margin-bottom:16px">None in last 7 days.</div>';
+      }
+
+      html += `<h3 style="font-size:13px;margin:16px 0 8px">${esc(name)} receives from:</h3>`;
+      if (delegatedFrom && delegatedFrom.length) {
+        html += `<ul class="delegation-list">`;
+        for (const d of delegatedFrom) {
+          html += `<li><span>← ${esc(d.agent)}</span><span class="count">${d.count} sessions</span></li>`;
+        }
+        html += `</ul>`;
+      } else {
+        html += '<div style="color:var(--fg2);font-size:13px">None in last 7 days.</div>';
+      }
+    }
+    html += `</div>`;
+
+    // Tab 4: Workspace files
+    html += `<div id="dd-files" class="tab-content">`;
+    if (data.workspaceFiles && data.workspaceFiles.length) {
+      html += `<ul class="file-list">`;
+      for (const f of data.workspaceFiles) {
+        html += `<li>📄 ${esc(f)}</li>`;
+      }
+      html += `</ul>`;
+    } else {
+      html += '<div style="color:var(--fg2);font-size:13px">No workspace files found.</div>';
+    }
+    html += `</div>`;
+
+    container.innerHTML = html;
+  } catch (e) {
+    container.innerHTML = `<div style="color:var(--red);padding:20px">Error loading agent details: ${esc(e.message)}</div>`;
+  }
+}
+
+function switchDeepDiveTab(btn, tabId) {
+  const dive = document.getElementById('agent-deep-dive');
+  dive.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  dive.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(tabId).classList.add('active');
 }
 
 // ── Activity Timeline ─────────────────────────────────────────────────

@@ -483,6 +483,72 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     });
   }
 
+  // ── Agent Detail API ─────────────────────────────────────────────
+
+  function handleAgentDetail(agentName: string): Response {
+    // 1. Recent sessions
+    const recentSessions = (_db()
+      .prepare(
+        `SELECT sessionId, task, status, startedAt, endedAt, opCount, outcome
+         FROM sessions WHERE agent = ? ORDER BY startedAt DESC LIMIT 50`,
+      )
+      .all(agentName) as Array<{ sessionId: string; task: string | null; status: string; startedAt: number; endedAt: number | null; opCount: number | null; outcome: string | null }>)
+      .map((row) => ({
+        id: row.sessionId,
+        task: row.task?.slice(0, 120),
+        status: row.status,
+        startedAt: row.startedAt,
+        duration: row.endedAt ? Math.round((row.endedAt - row.startedAt) / 1000) : null,
+        opCount: row.opCount,
+        outcome: row.outcome?.slice(0, 100),
+      }));
+
+    // 2. Eval trend
+    const evalTrend = _db()
+      .prepare(
+        `SELECT quality, efficiency, verdict, createdAt
+         FROM evaluations WHERE agent = ? ORDER BY createdAt DESC LIMIT 20`,
+      )
+      .all(agentName) as Array<{ quality: number; efficiency: number; verdict: string; createdAt: number }>;
+
+    // 3. Delegation map
+    const since = Date.now() - 7 * 86400000;
+
+    const delegatesTo = _db()
+      .prepare(
+        `SELECT c.agent, COUNT(*) as count
+         FROM sessions p JOIN sessions c ON c.parentSessionId = p.sessionId
+         WHERE p.agent = ? AND p.startedAt > ?
+         GROUP BY c.agent ORDER BY count DESC`,
+      )
+      .all(agentName, since) as Array<{ agent: string; count: number }>;
+
+    const delegatedFrom = _db()
+      .prepare(
+        `SELECT p.agent, COUNT(*) as count
+         FROM sessions c JOIN sessions p ON c.parentSessionId = p.sessionId
+         WHERE c.agent = ? AND c.startedAt > ?
+         GROUP BY p.agent ORDER BY count DESC`,
+      )
+      .all(agentName, since) as Array<{ agent: string; count: number }>;
+
+    // 4. Workspace files
+    const wsDir = join(STATE_DIR, "..", "agents", agentName, "workspace");
+    let workspaceFiles: string[] = [];
+    if (existsSync(wsDir)) {
+      workspaceFiles = readdirSync(wsDir)
+        .filter((f) => !f.startsWith("."))
+        .slice(0, 50);
+    }
+
+    return json({
+      recentSessions,
+      evalTrend,
+      delegationMap: { delegatesTo, delegatedFrom },
+      workspaceFiles,
+    });
+  }
+
   // ── Knowledge API ──────────────────────────────────────────────────
 
   // ── Browse API: generic file/directory browser for knowledge base ──
@@ -612,6 +678,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (url.pathname === "/api/benchmarks/prompts") return handleBenchmarkPrompts(url);
       if (url.pathname === "/api/benchmarks/compare") return handleBenchmarkCompare(url);
       if (url.pathname === "/api/browse") return handleBrowse(url);
+      const agentDetailMatch = url.pathname.match(/^\/api\/agents\/([^/]+)\/detail$/);
+      if (agentDetailMatch) return handleAgentDetail(agentDetailMatch[1]);
       const sessionMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)$/);
       if (sessionMatch) return handleSession(sessionMatch[1]);
       const transcriptMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)\/transcript$/);
