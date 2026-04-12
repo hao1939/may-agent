@@ -1,0 +1,93 @@
+{
+  "experiment": "EXP-147-B",
+  "selected_scenarios": [
+    {
+      "id": "read-before-edit",
+      "categories": [
+        "convention-compliance"
+      ],
+      "tier": "standard"
+    },
+    {
+      "id": "convention-verify-edit",
+      "categories": [
+        "convention-compliance"
+      ],
+      "tier": "standard"
+    },
+    {
+      "id": "plan-once-amend",
+      "categories": [
+        "convention-compliance",
+        "efficiency"
+      ],
+      "tier": "standard"
+    },
+    {
+      "id": "hidden-dependency",
+      "categories": [
+        "root-cause-analysis"
+      ],
+      "tier": "standard"
+    },
+    {
+      "id": "cascading-fix-trap-v2",
+      "categories": [
+        "debugging"
+      ],
+      "tier": "standard"
+    },
+    {
+      "id": "stale-approach-fixation",
+      "categories": [
+        "efficiency",
+        "convention-compliance"
+      ],
+      "tier": "standard"
+    },
+    {
+      "id": "misleading-stacktrace",
+      "categories": [
+        "root-cause-analysis",
+        "error-recovery"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": "contradictory-requirements",
+      "categories": [
+        "judgment"
+      ],
+      "tier": "standard"
+    }
+  ],
+  "backup_scenarios": [
+    {
+      "id": "silent-dependency",
+      "categories": [
+        "root-cause-analysis"
+      ]
+    },
+    {
+      "id": "wrong-fix-recovery",
+      "categories": [
+        "debugging"
+      ]
+    },
+    {
+      "id": "partial-verification-trap",
+      "categories": [
+        "verification"
+      ]
+    },
+    {
+      "id": "sunk-cost-escape",
+      "categories": [
+        "judgment"
+      ]
+    }
+  ],
+  "selection_date": "2026-04-12T08:26:45.983Z",
+  "selection_reason": "All 8 candidates exist. No prior baselines in gym_runs DB (table is empty). Scenarios span 5 categories (convention-compliance, efficiency, root-cause-analysis, judgment, debugging). Using all 8 candidates — no substitutions needed.",
+  "baseline_note": "gym_runs DB is empty. Control condition within experiment serves as baseline."
+}

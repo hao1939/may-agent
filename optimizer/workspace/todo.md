@@ -49,14 +49,17 @@
 ### may.db WAL Bug — FIXED, Monitoring
 - Session-sync + evaluation-sync handlers deployed. 1071 evals, 0 unevaluated (as of 17:10 UTC).
 
-### May Heartbeat Bloat — ANALYSIS COMPLETE, DRAFT READY
+### May Heartbeat Bloat — FIX DEPLOYED
 - May heartbeats avg 22.4 ops (n=96 in 48h), median 19, P90=42
 - **Structurally different from tech-lead/optimizer**: May IS a dispatcher by design — inline work is correct, just too deep per step
 - Root causes: over-thorough follow-up (peeking sessions), git commit/push every cycle, dashboard read+edit multiple times, improvement queue inline work
 - **Budget-capped approach**: Keep all 7 steps, add per-step op budgets (target ≤12 ops avg). Expected: 47-55% reduction (~500-600 ops/day, ~$25-30/day)
 - Analysis: `workspace/finding-may-heartbeat-dispatcher-analysis-0412.md`
 - Draft heartbeat: `workspace/draft-may-heartbeat-dispatcher-0412.md`
-- **NEXT**: Deploy draft to `agents/may/heartbeat.md` after review, then measure
+- Patch file: `workspace/patch-may-heartbeat-budget-caps.md`
+- **DEPLOYED**: 2026-04-12 ~08:28 UTC to `agents/may/heartbeat.md`. Budget caps added within existing 7-step structure (KE-008 compliant). Changes: global ≤12 op budget, per-step budget annotations, combined system snapshot query, no-peek rule, no-git-commit rule, fork-only enforcement, "MUST FORK" list, op budget reference table.
+- Baseline: avg 22.4 ops, median 19, P90=42 (n=96 in 48h ending 2026-04-12 ~08:00 UTC)
+- **NEXT**: Measure post-deployment. Check after 6-12h for avg ops reduction. Target: ≤12 ops avg.
 
 
 

@@ -1,0 +1,1130 @@
+{
+  "experiment": "EXP-147-B",
+  "generated": "2026-04-12T08:26:58.107Z",
+  "total_runs": 160,
+  "control_runs": 84,
+  "treatment_runs": 76,
+  "hash_formula": "SHA256(scenario_name + run_number + \"EXP147B\") last byte mod 2: 0=full, 1=scoped",
+  "assignments": [
+    {
+      "scenario": "read-before-edit",
+      "run_number": 1,
+      "condition": "scoped",
+      "hash_input": "read-before-edit1EXP147B",
+      "hash_last_byte": 59
+    },
+    {
+      "scenario": "read-before-edit",
+      "run_number": 2,
+      "condition": "scoped",
+      "hash_input": "read-before-edit2EXP147B",
+      "hash_last_byte": 227
+    },
+    {
+      "scenario": "read-before-edit",
+      "run_number": 3,
+      "condition": "full",
+      "hash_input": "read-before-edit3EXP147B",
+      "hash_last_byte": 2
+    },
+    {
+      "scenario": "read-before-edit",
+      "run_number": 4,
+      "condition": "full",
+      "hash_input": "read-before-edit4EXP147B",
+      "hash_last_byte": 8
+    },
+    {
+      "scenario": "read-before-edit",
+      "run_number": 5,
+      "condition": "scoped",
+      "hash_input": "read-before-edit5EXP147B",
+      "hash_last_byte": 159
+    },
+    {
+      "scenario": "read-before-edit",
+      "run_number": 6,
+      "condition": "full",
+      "hash_input": "read-before-edit6EXP147B",
+      "hash_last_byte": 150
+    },
+    {
+      "scenario": "read-before-edit",
+      "run_number": 7,
+      "condition": "full",
+      "hash_input": "read-before-edit7EXP147B",
+      "hash_last_byte": 166
+    },
+    {
+      "scenario": "read-before-edit",
+      "run_number": 8,
+      "condition": "scoped",
+      "hash_input": "read-before-edit8EXP147B",
+      "hash_last_byte": 187
+    },
+    {
+      "scenario": "read-before-edit",
+      "run_number": 9,
+      "condition": "full",
+      "hash_input": "read-before-edit9EXP147B",
+      "hash_last_byte": 218
+    },
+    {
+      "scenario": "read-before-edit",
+      "run_number": 10,
+      "condition": "full",
+      "hash_input": "read-before-edit10EXP147B",
+      "hash_last_byte": 44
+    },
+    {
+      "scenario": "read-before-edit",
+      "run_number": 11,
+      "condition": "scoped",
+      "hash_input": "read-before-edit11EXP147B",
+      "hash_last_byte": 117
+    },
+    {
+      "scenario": "read-before-edit",
+      "run_number": 12,
+      "condition": "full",
+      "hash_input": "read-before-edit12EXP147B",
+      "hash_last_byte": 74
+    },
+    {
+      "scenario": "read-before-edit",
+      "run_number": 13,
+      "condition": "full",
+      "hash_input": "read-before-edit13EXP147B",
+      "hash_last_byte": 162
+    },
+    {
+      "scenario": "read-before-edit",
+      "run_number": 14,
+      "condition": "full",
+      "hash_input": "read-before-edit14EXP147B",
+      "hash_last_byte": 164
+    },
+    {
+      "scenario": "read-before-edit",
+      "run_number": 15,
+      "condition": "scoped",
+      "hash_input": "read-before-edit15EXP147B",
+      "hash_last_byte": 233
+    },
+    {
+      "scenario": "read-before-edit",
+      "run_number": 16,
+      "condition": "full",
+      "hash_input": "read-before-edit16EXP147B",
+      "hash_last_byte": 14
+    },
+    {
+      "scenario": "read-before-edit",
+      "run_number": 17,
+      "condition": "scoped",
+      "hash_input": "read-before-edit17EXP147B",
+      "hash_last_byte": 243
+    },
+    {
+      "scenario": "read-before-edit",
+      "run_number": 18,
+      "condition": "scoped",
+      "hash_input": "read-before-edit18EXP147B",
+      "hash_last_byte": 109
+    },
+    {
+      "scenario": "read-before-edit",
+      "run_number": 19,
+      "condition": "scoped",
+      "hash_input": "read-before-edit19EXP147B",
+      "hash_last_byte": 53
+    },
+    {
+      "scenario": "read-before-edit",
+      "run_number": 20,
+      "condition": "scoped",
+      "hash_input": "read-before-edit20EXP147B",
+      "hash_last_byte": 51
+    },
+    {
+      "scenario": "convention-verify-edit",
+      "run_number": 1,
+      "condition": "full",
+      "hash_input": "convention-verify-edit1EXP147B",
+      "hash_last_byte": 70
+    },
+    {
+      "scenario": "convention-verify-edit",
+      "run_number": 2,
+      "condition": "full",
+      "hash_input": "convention-verify-edit2EXP147B",
+      "hash_last_byte": 120
+    },
+    {
+      "scenario": "convention-verify-edit",
+      "run_number": 3,
+      "condition": "full",
+      "hash_input": "convention-verify-edit3EXP147B",
+      "hash_last_byte": 122
+    },
+    {
+      "scenario": "convention-verify-edit",
+      "run_number": 4,
+      "condition": "full",
+      "hash_input": "convention-verify-edit4EXP147B",
+      "hash_last_byte": 0
+    },
+    {
+      "scenario": "convention-verify-edit",
+      "run_number": 5,
+      "condition": "scoped",
+      "hash_input": "convention-verify-edit5EXP147B",
+      "hash_last_byte": 211
+    },
+    {
+      "scenario": "convention-verify-edit",
+      "run_number": 6,
+      "condition": "full",
+      "hash_input": "convention-verify-edit6EXP147B",
+      "hash_last_byte": 208
+    },
+    {
+      "scenario": "convention-verify-edit",
+      "run_number": 7,
+      "condition": "scoped",
+      "hash_input": "convention-verify-edit7EXP147B",
+      "hash_last_byte": 149
+    },
+    {
+      "scenario": "convention-verify-edit",
+      "run_number": 8,
+      "condition": "scoped",
+      "hash_input": "convention-verify-edit8EXP147B",
+      "hash_last_byte": 111
+    },
+    {
+      "scenario": "convention-verify-edit",
+      "run_number": 9,
+      "condition": "full",
+      "hash_input": "convention-verify-edit9EXP147B",
+      "hash_last_byte": 108
+    },
+    {
+      "scenario": "convention-verify-edit",
+      "run_number": 10,
+      "condition": "full",
+      "hash_input": "convention-verify-edit10EXP147B",
+      "hash_last_byte": 196
+    },
+    {
+      "scenario": "convention-verify-edit",
+      "run_number": 11,
+      "condition": "full",
+      "hash_input": "convention-verify-edit11EXP147B",
+      "hash_last_byte": 28
+    },
+    {
+      "scenario": "convention-verify-edit",
+      "run_number": 12,
+      "condition": "full",
+      "hash_input": "convention-verify-edit12EXP147B",
+      "hash_last_byte": 254
+    },
+    {
+      "scenario": "convention-verify-edit",
+      "run_number": 13,
+      "condition": "scoped",
+      "hash_input": "convention-verify-edit13EXP147B",
+      "hash_last_byte": 181
+    },
+    {
+      "scenario": "convention-verify-edit",
+      "run_number": 14,
+      "condition": "scoped",
+      "hash_input": "convention-verify-edit14EXP147B",
+      "hash_last_byte": 243
+    },
+    {
+      "scenario": "convention-verify-edit",
+      "run_number": 15,
+      "condition": "scoped",
+      "hash_input": "convention-verify-edit15EXP147B",
+      "hash_last_byte": 147
+    },
+    {
+      "scenario": "convention-verify-edit",
+      "run_number": 16,
+      "condition": "scoped",
+      "hash_input": "convention-verify-edit16EXP147B",
+      "hash_last_byte": 13
+    },
+    {
+      "scenario": "convention-verify-edit",
+      "run_number": 17,
+      "condition": "full",
+      "hash_input": "convention-verify-edit17EXP147B",
+      "hash_last_byte": 218
+    },
+    {
+      "scenario": "convention-verify-edit",
+      "run_number": 18,
+      "condition": "full",
+      "hash_input": "convention-verify-edit18EXP147B",
+      "hash_last_byte": 102
+    },
+    {
+      "scenario": "convention-verify-edit",
+      "run_number": 19,
+      "condition": "scoped",
+      "hash_input": "convention-verify-edit19EXP147B",
+      "hash_last_byte": 237
+    },
+    {
+      "scenario": "convention-verify-edit",
+      "run_number": 20,
+      "condition": "full",
+      "hash_input": "convention-verify-edit20EXP147B",
+      "hash_last_byte": 50
+    },
+    {
+      "scenario": "plan-once-amend",
+      "run_number": 1,
+      "condition": "scoped",
+      "hash_input": "plan-once-amend1EXP147B",
+      "hash_last_byte": 201
+    },
+    {
+      "scenario": "plan-once-amend",
+      "run_number": 2,
+      "condition": "scoped",
+      "hash_input": "plan-once-amend2EXP147B",
+      "hash_last_byte": 145
+    },
+    {
+      "scenario": "plan-once-amend",
+      "run_number": 3,
+      "condition": "full",
+      "hash_input": "plan-once-amend3EXP147B",
+      "hash_last_byte": 60
+    },
+    {
+      "scenario": "plan-once-amend",
+      "run_number": 4,
+      "condition": "full",
+      "hash_input": "plan-once-amend4EXP147B",
+      "hash_last_byte": 250
+    },
+    {
+      "scenario": "plan-once-amend",
+      "run_number": 5,
+      "condition": "scoped",
+      "hash_input": "plan-once-amend5EXP147B",
+      "hash_last_byte": 233
+    },
+    {
+      "scenario": "plan-once-amend",
+      "run_number": 6,
+      "condition": "scoped",
+      "hash_input": "plan-once-amend6EXP147B",
+      "hash_last_byte": 249
+    },
+    {
+      "scenario": "plan-once-amend",
+      "run_number": 7,
+      "condition": "full",
+      "hash_input": "plan-once-amend7EXP147B",
+      "hash_last_byte": 70
+    },
+    {
+      "scenario": "plan-once-amend",
+      "run_number": 8,
+      "condition": "full",
+      "hash_input": "plan-once-amend8EXP147B",
+      "hash_last_byte": 52
+    },
+    {
+      "scenario": "plan-once-amend",
+      "run_number": 9,
+      "condition": "full",
+      "hash_input": "plan-once-amend9EXP147B",
+      "hash_last_byte": 164
+    },
+    {
+      "scenario": "plan-once-amend",
+      "run_number": 10,
+      "condition": "scoped",
+      "hash_input": "plan-once-amend10EXP147B",
+      "hash_last_byte": 139
+    },
+    {
+      "scenario": "plan-once-amend",
+      "run_number": 11,
+      "condition": "full",
+      "hash_input": "plan-once-amend11EXP147B",
+      "hash_last_byte": 208
+    },
+    {
+      "scenario": "plan-once-amend",
+      "run_number": 12,
+      "condition": "scoped",
+      "hash_input": "plan-once-amend12EXP147B",
+      "hash_last_byte": 197
+    },
+    {
+      "scenario": "plan-once-amend",
+      "run_number": 13,
+      "condition": "full",
+      "hash_input": "plan-once-amend13EXP147B",
+      "hash_last_byte": 188
+    },
+    {
+      "scenario": "plan-once-amend",
+      "run_number": 14,
+      "condition": "scoped",
+      "hash_input": "plan-once-amend14EXP147B",
+      "hash_last_byte": 39
+    },
+    {
+      "scenario": "plan-once-amend",
+      "run_number": 15,
+      "condition": "scoped",
+      "hash_input": "plan-once-amend15EXP147B",
+      "hash_last_byte": 7
+    },
+    {
+      "scenario": "plan-once-amend",
+      "run_number": 16,
+      "condition": "scoped",
+      "hash_input": "plan-once-amend16EXP147B",
+      "hash_last_byte": 17
+    },
+    {
+      "scenario": "plan-once-amend",
+      "run_number": 17,
+      "condition": "scoped",
+      "hash_input": "plan-once-amend17EXP147B",
+      "hash_last_byte": 107
+    },
+    {
+      "scenario": "plan-once-amend",
+      "run_number": 18,
+      "condition": "full",
+      "hash_input": "plan-once-amend18EXP147B",
+      "hash_last_byte": 12
+    },
+    {
+      "scenario": "plan-once-amend",
+      "run_number": 19,
+      "condition": "scoped",
+      "hash_input": "plan-once-amend19EXP147B",
+      "hash_last_byte": 197
+    },
+    {
+      "scenario": "plan-once-amend",
+      "run_number": 20,
+      "condition": "full",
+      "hash_input": "plan-once-amend20EXP147B",
+      "hash_last_byte": 72
+    },
+    {
+      "scenario": "hidden-dependency",
+      "run_number": 1,
+      "condition": "scoped",
+      "hash_input": "hidden-dependency1EXP147B",
+      "hash_last_byte": 9
+    },
+    {
+      "scenario": "hidden-dependency",
+      "run_number": 2,
+      "condition": "scoped",
+      "hash_input": "hidden-dependency2EXP147B",
+      "hash_last_byte": 163
+    },
+    {
+      "scenario": "hidden-dependency",
+      "run_number": 3,
+      "condition": "scoped",
+      "hash_input": "hidden-dependency3EXP147B",
+      "hash_last_byte": 65
+    },
+    {
+      "scenario": "hidden-dependency",
+      "run_number": 4,
+      "condition": "scoped",
+      "hash_input": "hidden-dependency4EXP147B",
+      "hash_last_byte": 3
+    },
+    {
+      "scenario": "hidden-dependency",
+      "run_number": 5,
+      "condition": "scoped",
+      "hash_input": "hidden-dependency5EXP147B",
+      "hash_last_byte": 199
+    },
+    {
+      "scenario": "hidden-dependency",
+      "run_number": 6,
+      "condition": "scoped",
+      "hash_input": "hidden-dependency6EXP147B",
+      "hash_last_byte": 95
+    },
+    {
+      "scenario": "hidden-dependency",
+      "run_number": 7,
+      "condition": "scoped",
+      "hash_input": "hidden-dependency7EXP147B",
+      "hash_last_byte": 91
+    },
+    {
+      "scenario": "hidden-dependency",
+      "run_number": 8,
+      "condition": "full",
+      "hash_input": "hidden-dependency8EXP147B",
+      "hash_last_byte": 254
+    },
+    {
+      "scenario": "hidden-dependency",
+      "run_number": 9,
+      "condition": "scoped",
+      "hash_input": "hidden-dependency9EXP147B",
+      "hash_last_byte": 37
+    },
+    {
+      "scenario": "hidden-dependency",
+      "run_number": 10,
+      "condition": "full",
+      "hash_input": "hidden-dependency10EXP147B",
+      "hash_last_byte": 110
+    },
+    {
+      "scenario": "hidden-dependency",
+      "run_number": 11,
+      "condition": "full",
+      "hash_input": "hidden-dependency11EXP147B",
+      "hash_last_byte": 74
+    },
+    {
+      "scenario": "hidden-dependency",
+      "run_number": 12,
+      "condition": "full",
+      "hash_input": "hidden-dependency12EXP147B",
+      "hash_last_byte": 150
+    },
+    {
+      "scenario": "hidden-dependency",
+      "run_number": 13,
+      "condition": "full",
+      "hash_input": "hidden-dependency13EXP147B",
+      "hash_last_byte": 100
+    },
+    {
+      "scenario": "hidden-dependency",
+      "run_number": 14,
+      "condition": "full",
+      "hash_input": "hidden-dependency14EXP147B",
+      "hash_last_byte": 180
+    },
+    {
+      "scenario": "hidden-dependency",
+      "run_number": 15,
+      "condition": "full",
+      "hash_input": "hidden-dependency15EXP147B",
+      "hash_last_byte": 34
+    },
+    {
+      "scenario": "hidden-dependency",
+      "run_number": 16,
+      "condition": "scoped",
+      "hash_input": "hidden-dependency16EXP147B",
+      "hash_last_byte": 205
+    },
+    {
+      "scenario": "hidden-dependency",
+      "run_number": 17,
+      "condition": "full",
+      "hash_input": "hidden-dependency17EXP147B",
+      "hash_last_byte": 240
+    },
+    {
+      "scenario": "hidden-dependency",
+      "run_number": 18,
+      "condition": "scoped",
+      "hash_input": "hidden-dependency18EXP147B",
+      "hash_last_byte": 13
+    },
+    {
+      "scenario": "hidden-dependency",
+      "run_number": 19,
+      "condition": "full",
+      "hash_input": "hidden-dependency19EXP147B",
+      "hash_last_byte": 54
+    },
+    {
+      "scenario": "hidden-dependency",
+      "run_number": 20,
+      "condition": "full",
+      "hash_input": "hidden-dependency20EXP147B",
+      "hash_last_byte": 50
+    },
+    {
+      "scenario": "cascading-fix-trap-v2",
+      "run_number": 1,
+      "condition": "full",
+      "hash_input": "cascading-fix-trap-v21EXP147B",
+      "hash_last_byte": 32
+    },
+    {
+      "scenario": "cascading-fix-trap-v2",
+      "run_number": 2,
+      "condition": "full",
+      "hash_input": "cascading-fix-trap-v22EXP147B",
+      "hash_last_byte": 56
+    },
+    {
+      "scenario": "cascading-fix-trap-v2",
+      "run_number": 3,
+      "condition": "full",
+      "hash_input": "cascading-fix-trap-v23EXP147B",
+      "hash_last_byte": 36
+    },
+    {
+      "scenario": "cascading-fix-trap-v2",
+      "run_number": 4,
+      "condition": "scoped",
+      "hash_input": "cascading-fix-trap-v24EXP147B",
+      "hash_last_byte": 241
+    },
+    {
+      "scenario": "cascading-fix-trap-v2",
+      "run_number": 5,
+      "condition": "full",
+      "hash_input": "cascading-fix-trap-v25EXP147B",
+      "hash_last_byte": 56
+    },
+    {
+      "scenario": "cascading-fix-trap-v2",
+      "run_number": 6,
+      "condition": "full",
+      "hash_input": "cascading-fix-trap-v26EXP147B",
+      "hash_last_byte": 124
+    },
+    {
+      "scenario": "cascading-fix-trap-v2",
+      "run_number": 7,
+      "condition": "scoped",
+      "hash_input": "cascading-fix-trap-v27EXP147B",
+      "hash_last_byte": 93
+    },
+    {
+      "scenario": "cascading-fix-trap-v2",
+      "run_number": 8,
+      "condition": "full",
+      "hash_input": "cascading-fix-trap-v28EXP147B",
+      "hash_last_byte": 48
+    },
+    {
+      "scenario": "cascading-fix-trap-v2",
+      "run_number": 9,
+      "condition": "full",
+      "hash_input": "cascading-fix-trap-v29EXP147B",
+      "hash_last_byte": 70
+    },
+    {
+      "scenario": "cascading-fix-trap-v2",
+      "run_number": 10,
+      "condition": "scoped",
+      "hash_input": "cascading-fix-trap-v210EXP147B",
+      "hash_last_byte": 181
+    },
+    {
+      "scenario": "cascading-fix-trap-v2",
+      "run_number": 11,
+      "condition": "scoped",
+      "hash_input": "cascading-fix-trap-v211EXP147B",
+      "hash_last_byte": 203
+    },
+    {
+      "scenario": "cascading-fix-trap-v2",
+      "run_number": 12,
+      "condition": "scoped",
+      "hash_input": "cascading-fix-trap-v212EXP147B",
+      "hash_last_byte": 245
+    },
+    {
+      "scenario": "cascading-fix-trap-v2",
+      "run_number": 13,
+      "condition": "full",
+      "hash_input": "cascading-fix-trap-v213EXP147B",
+      "hash_last_byte": 254
+    },
+    {
+      "scenario": "cascading-fix-trap-v2",
+      "run_number": 14,
+      "condition": "scoped",
+      "hash_input": "cascading-fix-trap-v214EXP147B",
+      "hash_last_byte": 119
+    },
+    {
+      "scenario": "cascading-fix-trap-v2",
+      "run_number": 15,
+      "condition": "full",
+      "hash_input": "cascading-fix-trap-v215EXP147B",
+      "hash_last_byte": 14
+    },
+    {
+      "scenario": "cascading-fix-trap-v2",
+      "run_number": 16,
+      "condition": "full",
+      "hash_input": "cascading-fix-trap-v216EXP147B",
+      "hash_last_byte": 12
+    },
+    {
+      "scenario": "cascading-fix-trap-v2",
+      "run_number": 17,
+      "condition": "full",
+      "hash_input": "cascading-fix-trap-v217EXP147B",
+      "hash_last_byte": 54
+    },
+    {
+      "scenario": "cascading-fix-trap-v2",
+      "run_number": 18,
+      "condition": "scoped",
+      "hash_input": "cascading-fix-trap-v218EXP147B",
+      "hash_last_byte": 211
+    },
+    {
+      "scenario": "cascading-fix-trap-v2",
+      "run_number": 19,
+      "condition": "scoped",
+      "hash_input": "cascading-fix-trap-v219EXP147B",
+      "hash_last_byte": 23
+    },
+    {
+      "scenario": "cascading-fix-trap-v2",
+      "run_number": 20,
+      "condition": "scoped",
+      "hash_input": "cascading-fix-trap-v220EXP147B",
+      "hash_last_byte": 239
+    },
+    {
+      "scenario": "stale-approach-fixation",
+      "run_number": 1,
+      "condition": "full",
+      "hash_input": "stale-approach-fixation1EXP147B",
+      "hash_last_byte": 206
+    },
+    {
+      "scenario": "stale-approach-fixation",
+      "run_number": 2,
+      "condition": "scoped",
+      "hash_input": "stale-approach-fixation2EXP147B",
+      "hash_last_byte": 31
+    },
+    {
+      "scenario": "stale-approach-fixation",
+      "run_number": 3,
+      "condition": "scoped",
+      "hash_input": "stale-approach-fixation3EXP147B",
+      "hash_last_byte": 241
+    },
+    {
+      "scenario": "stale-approach-fixation",
+      "run_number": 4,
+      "condition": "full",
+      "hash_input": "stale-approach-fixation4EXP147B",
+      "hash_last_byte": 78
+    },
+    {
+      "scenario": "stale-approach-fixation",
+      "run_number": 5,
+      "condition": "full",
+      "hash_input": "stale-approach-fixation5EXP147B",
+      "hash_last_byte": 144
+    },
+    {
+      "scenario": "stale-approach-fixation",
+      "run_number": 6,
+      "condition": "scoped",
+      "hash_input": "stale-approach-fixation6EXP147B",
+      "hash_last_byte": 129
+    },
+    {
+      "scenario": "stale-approach-fixation",
+      "run_number": 7,
+      "condition": "scoped",
+      "hash_input": "stale-approach-fixation7EXP147B",
+      "hash_last_byte": 1
+    },
+    {
+      "scenario": "stale-approach-fixation",
+      "run_number": 8,
+      "condition": "full",
+      "hash_input": "stale-approach-fixation8EXP147B",
+      "hash_last_byte": 162
+    },
+    {
+      "scenario": "stale-approach-fixation",
+      "run_number": 9,
+      "condition": "full",
+      "hash_input": "stale-approach-fixation9EXP147B",
+      "hash_last_byte": 8
+    },
+    {
+      "scenario": "stale-approach-fixation",
+      "run_number": 10,
+      "condition": "full",
+      "hash_input": "stale-approach-fixation10EXP147B",
+      "hash_last_byte": 48
+    },
+    {
+      "scenario": "stale-approach-fixation",
+      "run_number": 11,
+      "condition": "full",
+      "hash_input": "stale-approach-fixation11EXP147B",
+      "hash_last_byte": 142
+    },
+    {
+      "scenario": "stale-approach-fixation",
+      "run_number": 12,
+      "condition": "scoped",
+      "hash_input": "stale-approach-fixation12EXP147B",
+      "hash_last_byte": 123
+    },
+    {
+      "scenario": "stale-approach-fixation",
+      "run_number": 13,
+      "condition": "scoped",
+      "hash_input": "stale-approach-fixation13EXP147B",
+      "hash_last_byte": 145
+    },
+    {
+      "scenario": "stale-approach-fixation",
+      "run_number": 14,
+      "condition": "full",
+      "hash_input": "stale-approach-fixation14EXP147B",
+      "hash_last_byte": 194
+    },
+    {
+      "scenario": "stale-approach-fixation",
+      "run_number": 15,
+      "condition": "scoped",
+      "hash_input": "stale-approach-fixation15EXP147B",
+      "hash_last_byte": 167
+    },
+    {
+      "scenario": "stale-approach-fixation",
+      "run_number": 16,
+      "condition": "full",
+      "hash_input": "stale-approach-fixation16EXP147B",
+      "hash_last_byte": 94
+    },
+    {
+      "scenario": "stale-approach-fixation",
+      "run_number": 17,
+      "condition": "full",
+      "hash_input": "stale-approach-fixation17EXP147B",
+      "hash_last_byte": 110
+    },
+    {
+      "scenario": "stale-approach-fixation",
+      "run_number": 18,
+      "condition": "full",
+      "hash_input": "stale-approach-fixation18EXP147B",
+      "hash_last_byte": 120
+    },
+    {
+      "scenario": "stale-approach-fixation",
+      "run_number": 19,
+      "condition": "scoped",
+      "hash_input": "stale-approach-fixation19EXP147B",
+      "hash_last_byte": 169
+    },
+    {
+      "scenario": "stale-approach-fixation",
+      "run_number": 20,
+      "condition": "full",
+      "hash_input": "stale-approach-fixation20EXP147B",
+      "hash_last_byte": 44
+    },
+    {
+      "scenario": "misleading-stacktrace",
+      "run_number": 1,
+      "condition": "scoped",
+      "hash_input": "misleading-stacktrace1EXP147B",
+      "hash_last_byte": 33
+    },
+    {
+      "scenario": "misleading-stacktrace",
+      "run_number": 2,
+      "condition": "full",
+      "hash_input": "misleading-stacktrace2EXP147B",
+      "hash_last_byte": 216
+    },
+    {
+      "scenario": "misleading-stacktrace",
+      "run_number": 3,
+      "condition": "scoped",
+      "hash_input": "misleading-stacktrace3EXP147B",
+      "hash_last_byte": 111
+    },
+    {
+      "scenario": "misleading-stacktrace",
+      "run_number": 4,
+      "condition": "scoped",
+      "hash_input": "misleading-stacktrace4EXP147B",
+      "hash_last_byte": 185
+    },
+    {
+      "scenario": "misleading-stacktrace",
+      "run_number": 5,
+      "condition": "scoped",
+      "hash_input": "misleading-stacktrace5EXP147B",
+      "hash_last_byte": 191
+    },
+    {
+      "scenario": "misleading-stacktrace",
+      "run_number": 6,
+      "condition": "scoped",
+      "hash_input": "misleading-stacktrace6EXP147B",
+      "hash_last_byte": 93
+    },
+    {
+      "scenario": "misleading-stacktrace",
+      "run_number": 7,
+      "condition": "full",
+      "hash_input": "misleading-stacktrace7EXP147B",
+      "hash_last_byte": 42
+    },
+    {
+      "scenario": "misleading-stacktrace",
+      "run_number": 8,
+      "condition": "scoped",
+      "hash_input": "misleading-stacktrace8EXP147B",
+      "hash_last_byte": 43
+    },
+    {
+      "scenario": "misleading-stacktrace",
+      "run_number": 9,
+      "condition": "scoped",
+      "hash_input": "misleading-stacktrace9EXP147B",
+      "hash_last_byte": 87
+    },
+    {
+      "scenario": "misleading-stacktrace",
+      "run_number": 10,
+      "condition": "full",
+      "hash_input": "misleading-stacktrace10EXP147B",
+      "hash_last_byte": 32
+    },
+    {
+      "scenario": "misleading-stacktrace",
+      "run_number": 11,
+      "condition": "full",
+      "hash_input": "misleading-stacktrace11EXP147B",
+      "hash_last_byte": 208
+    },
+    {
+      "scenario": "misleading-stacktrace",
+      "run_number": 12,
+      "condition": "scoped",
+      "hash_input": "misleading-stacktrace12EXP147B",
+      "hash_last_byte": 183
+    },
+    {
+      "scenario": "misleading-stacktrace",
+      "run_number": 13,
+      "condition": "full",
+      "hash_input": "misleading-stacktrace13EXP147B",
+      "hash_last_byte": 74
+    },
+    {
+      "scenario": "misleading-stacktrace",
+      "run_number": 14,
+      "condition": "full",
+      "hash_input": "misleading-stacktrace14EXP147B",
+      "hash_last_byte": 156
+    },
+    {
+      "scenario": "misleading-stacktrace",
+      "run_number": 15,
+      "condition": "full",
+      "hash_input": "misleading-stacktrace15EXP147B",
+      "hash_last_byte": 204
+    },
+    {
+      "scenario": "misleading-stacktrace",
+      "run_number": 16,
+      "condition": "full",
+      "hash_input": "misleading-stacktrace16EXP147B",
+      "hash_last_byte": 116
+    },
+    {
+      "scenario": "misleading-stacktrace",
+      "run_number": 17,
+      "condition": "scoped",
+      "hash_input": "misleading-stacktrace17EXP147B",
+      "hash_last_byte": 229
+    },
+    {
+      "scenario": "misleading-stacktrace",
+      "run_number": 18,
+      "condition": "full",
+      "hash_input": "misleading-stacktrace18EXP147B",
+      "hash_last_byte": 202
+    },
+    {
+      "scenario": "misleading-stacktrace",
+      "run_number": 19,
+      "condition": "full",
+      "hash_input": "misleading-stacktrace19EXP147B",
+      "hash_last_byte": 196
+    },
+    {
+      "scenario": "misleading-stacktrace",
+      "run_number": 20,
+      "condition": "scoped",
+      "hash_input": "misleading-stacktrace20EXP147B",
+      "hash_last_byte": 211
+    },
+    {
+      "scenario": "contradictory-requirements",
+      "run_number": 1,
+      "condition": "full",
+      "hash_input": "contradictory-requirements1EXP147B",
+      "hash_last_byte": 138
+    },
+    {
+      "scenario": "contradictory-requirements",
+      "run_number": 2,
+      "condition": "scoped",
+      "hash_input": "contradictory-requirements2EXP147B",
+      "hash_last_byte": 141
+    },
+    {
+      "scenario": "contradictory-requirements",
+      "run_number": 3,
+      "condition": "full",
+      "hash_input": "contradictory-requirements3EXP147B",
+      "hash_last_byte": 214
+    },
+    {
+      "scenario": "contradictory-requirements",
+      "run_number": 4,
+      "condition": "scoped",
+      "hash_input": "contradictory-requirements4EXP147B",
+      "hash_last_byte": 81
+    },
+    {
+      "scenario": "contradictory-requirements",
+      "run_number": 5,
+      "condition": "scoped",
+      "hash_input": "contradictory-requirements5EXP147B",
+      "hash_last_byte": 67
+    },
+    {
+      "scenario": "contradictory-requirements",
+      "run_number": 6,
+      "condition": "scoped",
+      "hash_input": "contradictory-requirements6EXP147B",
+      "hash_last_byte": 225
+    },
+    {
+      "scenario": "contradictory-requirements",
+      "run_number": 7,
+      "condition": "full",
+      "hash_input": "contradictory-requirements7EXP147B",
+      "hash_last_byte": 58
+    },
+    {
+      "scenario": "contradictory-requirements",
+      "run_number": 8,
+      "condition": "scoped",
+      "hash_input": "contradictory-requirements8EXP147B",
+      "hash_last_byte": 99
+    },
+    {
+      "scenario": "contradictory-requirements",
+      "run_number": 9,
+      "condition": "full",
+      "hash_input": "contradictory-requirements9EXP147B",
+      "hash_last_byte": 80
+    },
+    {
+      "scenario": "contradictory-requirements",
+      "run_number": 10,
+      "condition": "scoped",
+      "hash_input": "contradictory-requirements10EXP147B",
+      "hash_last_byte": 83
+    },
+    {
+      "scenario": "contradictory-requirements",
+      "run_number": 11,
+      "condition": "full",
+      "hash_input": "contradictory-requirements11EXP147B",
+      "hash_last_byte": 54
+    },
+    {
+      "scenario": "contradictory-requirements",
+      "run_number": 12,
+      "condition": "full",
+      "hash_input": "contradictory-requirements12EXP147B",
+      "hash_last_byte": 68
+    },
+    {
+      "scenario": "contradictory-requirements",
+      "run_number": 13,
+      "condition": "scoped",
+      "hash_input": "contradictory-requirements13EXP147B",
+      "hash_last_byte": 47
+    },
+    {
+      "scenario": "contradictory-requirements",
+      "run_number": 14,
+      "condition": "full",
+      "hash_input": "contradictory-requirements14EXP147B",
+      "hash_last_byte": 192
+    },
+    {
+      "scenario": "contradictory-requirements",
+      "run_number": 15,
+      "condition": "scoped",
+      "hash_input": "contradictory-requirements15EXP147B",
+      "hash_last_byte": 201
+    },
+    {
+      "scenario": "contradictory-requirements",
+      "run_number": 16,
+      "condition": "scoped",
+      "hash_input": "contradictory-requirements16EXP147B",
+      "hash_last_byte": 7
+    },
+    {
+      "scenario": "contradictory-requirements",
+      "run_number": 17,
+      "condition": "full",
+      "hash_input": "contradictory-requirements17EXP147B",
+      "hash_last_byte": 138
+    },
+    {
+      "scenario": "contradictory-requirements",
+      "run_number": 18,
+      "condition": "scoped",
+      "hash_input": "contradictory-requirements18EXP147B",
+      "hash_last_byte": 201
+    },
+    {
+      "scenario": "contradictory-requirements",
+      "run_number": 19,
+      "condition": "full",
+      "hash_input": "contradictory-requirements19EXP147B",
+      "hash_last_byte": 134
+    },
+    {
+      "scenario": "contradictory-requirements",
+      "run_number": 20,
+      "condition": "full",
+      "hash_input": "contradictory-requirements20EXP147B",
+      "hash_last_byte": 222
+    }
+  ]
+}
