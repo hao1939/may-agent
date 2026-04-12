@@ -3,7 +3,7 @@
 <!-- KEEP THIS FILE UNDER 50 LINES. Move completed items to todo-archive.md. -->
 
 ## Active / In Progress
-- [x] **DD-750 SYNTHESIZED** — KE-157 written. Literature validates H-105 (0.72→0.75) and H-106 (0.68→0.70). Verbal overshadowing = new mechanism. 4 papers confirm 50-90% reasoning reduction w/o accuracy loss. (2026-04-12)
+- [x] **DD-750 SYNTHESIZED** — KE-157 written, KE-158 written. KE-158 synthesizes H-106 falsification + EXP-147 null + KE-156 paradox into difficulty threshold model. (2026-04-12)
 - [ ] **EXP-144 pilot** — Delegated to Coach (2026-04-12). Awaiting 10 calibration sessions → pilot-results.md. Then Phase 1 (N=50).
 - [ ] **INDEX cleanup** — EXP-145/146/147/148 need their own rows in INDEX.md. Low priority.
 - [ ] **H-097 PRIORITY-TRACKER minor update** — Row shows 0.55, Track B analysis says 0.53. Low priority.
