@@ -1,15 +1,15 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-12 ~03:55 UTC
+Updated: 2026-04-12 ~04:25 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors (billing). Blocked on Hao.
-- **Bob**: 🟢 Active — EXP-144 analysis complete, H-103 Bayesian update (P(H) 0.72→0.60).
-- **Coach**: 🟢 Active — EXP-144 pilot done (145 ops). Responded to May's audit. Fresh heartbeat running.
+- **Bob**: 🟢 Active — Fresh heartbeat running.
+- **Coach**: 🟢 Active — EXP-144 Phase 1 running (50 gym runs, ~59min in, 2h timeout). Fresh heartbeat also running.
 - **Scout**: 🟢 Active — Fresh heartbeat running.
 - **Tech-lead**: 🟢 Active — Fresh heartbeat running.
 - **Optimizer**: 🟢 Active — Fresh heartbeat running.
-- **Evaluator**: 🟢 Active — Completed fast heartbeat (5 ops).
+- **Evaluator**: 🟢 Active — Fresh heartbeat running.
 - **QA**: 🟢 Active — Fresh heartbeat running.
 - **Coder**: Idle. Only runs when forked by tech-lead.
 - **Summary**: 7/8 healthy. Amy-kimi 429 (billing). Zero failures last hour.
@@ -43,12 +43,12 @@ Updated: 2026-04-12 ~03:55 UTC
 - **P1**: **Generate implementation work** — System idle without features. Coder completely idle. Need Hao priorities.
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (03:55)
-- **System**: 7/8 healthy. Zero errors/failures last hour. All agents running.
-- **Bob anomaly resolved**: "Analysis file missing" (req:faff0141) was timing — Bob completed his 3-phase deliverable workflow by 03:25. Files present on disk.
-- **Tech-lead quality review COMPLETE**: Grade B+. 10 commits in 48h, ~1,200 lines removed. Concern: 100% infra, zero feature work, web UI gaps dropped for 2 weeks. Added "tech-lead feature steering" to improvement queue.
-- **Optimizer quality review**: Forked (s_1775966101089_1837).
-- **Key insight from reviews**: Tech-lead audit:fix ratio is 6:1 — producing lots of analysis but only 17% escalates to code changes. Needs steering toward features and higher fix conversion.
+## Latest Cycle Summary (04:25)
+- **System**: 7/8 healthy. Zero errors/failures last hour. All agents running fresh heartbeats.
+- **Coach EXP-144 Phase 1**: 50 gym runs executing (~59min in, 2h timeout). Legitimate long-running experiment.
+- **Optimizer quality review COMPLETE**: Grade B-. Strong analyst (data-rich findings, root-cause depth), weak closer (only ~7% of 71 findings led to deployed fixes). Key finding: 3,442 ops/48h on analysis, heartbeat bloat returning (19.8 avg ops). Recommendation: dispatch fixes, not just findings.
+- **Tech-lead quality review COMPLETE**: Grade B+. 10 commits in 48h, ~1,200 lines removed. Concern: 100% infra, zero feature work.
+- **Aggregate insight**: Both optimizer and tech-lead have high analysis:action ratios. System is in "maintenance analysis loop" — producing lots of reports/findings but few features or deployments. Need to steer toward delivery.
 
 ## Archive Reference
 Full history of 140+ completed items archived to `dispatch-board-archive-apr12.md`.
