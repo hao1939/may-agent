@@ -1,6 +1,6 @@
 # Hypothesis Priority Tracker
 
-**Updated**: 2026-04-12 (Bob: EXP-148 integrated — H-102 P(H) 0.65→0.55, 3/4 predictions failed, universal WF-Gated decline across ALL agent groups driven by Mar 30–31 infra changes. H-097 0.65→0.55 (EXP-147 P-120b moot). H-103 0.72→0.45 (EXP-144 partial). H-104 FALSIFIED (P:0.78→0.10, EXP-145). H-105 added (0.72). H-096 0.68→0.70 (EXP-143). Previously: INDEX integration, H-104 authored, H-101/H-102 registered, EXP-130 integrated.) | **Active hypotheses**: 27 | **Tested**: 24/27 | **Resolution ratio**: 19 resolved | **High-confidence (P≥0.70)**: 21
+**Updated**: 2026-04-12 (Bob: EXP-131 integrated — H-131 added at P(H) 0.70, Tier 1. Gate relevance > gate count: 3 unrelated 50% vs 3 related 86%, h=0.80. KE-135 written. Previously: EXP-148 integrated — H-102 P(H) 0.65→0.55, 3/4 predictions failed, universal WF-Gated decline across ALL agent groups driven by Mar 30–31 infra changes. H-097 0.65→0.55 (EXP-147 P-120b moot). H-103 0.72→0.45 (EXP-144 partial). H-104 FALSIFIED (P:0.78→0.10, EXP-145). H-105 added (0.72). H-096 0.68→0.70 (EXP-143). Previously: INDEX integration, H-104 authored, H-101/H-102 registered, EXP-130 integrated.) | **Active hypotheses**: 28 | **Tested**: 25/28 | **Resolution ratio**: 19 resolved | **High-confidence (P≥0.70)**: 22
 **Bayesian scorecard**: See `SCORECARD-bayesian-2026-04-09.md` for full reconciled methodology (supersedes 2026-04-04 version)
 
 > ✅ **MORATORIUM SATISFIED** (2026-04-07): 11 hypotheses resolved this session (H-001 disconfirmed, H-002 superseded, H-034/H-038/H-039/H-052 reclassified as design notes/truisms, H-046/H-048/H-051 archived for insufficient evidence/chain dependencies, H-064/H-065 already merged/out-of-domain). New hypotheses may now be created, subject to quality standards (falsifiable, P(H) prior ≥ 0.40, connected to empirical evidence).
@@ -32,6 +32,7 @@
 | H-101 | **Architectural Readiness Determines Guard Internalization** — Guards only transfer into autonomous behavior when the agent's architectural context (tools, workflow, feedback loops) supports the behavior independently. Without architectural readiness, guards become permanent infrastructure. | **UNTESTED** — Proposed from KE-137 (Guard Response Bifurcation). Theoretical framework for why some agents internalize guard behaviors and others become dependent. Connects H-098, H-102, H-104, KE-137, KE-144. | **0.72** |
 | H-105 | **Three-Layer Reasoning** — agent reasoning operates in three distinct layers: execution, recognition, and discovery, with different intervention channels effective at each layer. | **PROPOSED** (2026-04-12): EXP-146 designed but blocked. Extends H-099/H-098 channel theory. | **0.72** |
 | H-096 | Evaluation architecture determines quality ceiling — checkpoint decomposition + state-diff + adaptive rubrics will break 35% verification residual | **EXP-143 PARTIAL SUPPORT** (2026-04-12): Checkpoint decomposition +32.1pp FM-3.3 detection. Core signal validated; LLM-based replication needed. P(H) 0.68→0.70. | **0.70** |
+| H-131 | **Gate-Task Synergy** — gate relevance (not count) explains the EXP-129 hump curve. Unrelated gates degrade judgment; related gates scaffold it. Ch2 capacity is content-specific. | **EXP-131 SUPPORTED** (2026-04-12): 3 unrelated gates 50% vs 3 related 86% (36pp, h=0.80 large). All failures on `contradiction-identified` — judgment diluted, not implementation. Duration identical (584s vs 575s) — not time pressure. 5/5 directional predictions matched. p=0.28 (NS at N≈8/arm — power issue). Combined w/ EXP-129: 3-related 92% > 1-related 88% > 4-related 67% > 3-unrelated 50%. KE-135 written. | **0.70** |
 
 ## 🟡 Tier 2: Moderate Confidence — P(H) 0.50-0.69
 
@@ -212,8 +213,8 @@ EXP-026 production data confirms H-041's core prediction: **workflow benefit sca
 ## Meta-Process: H-066 (Bayesian Belief Management)
 
 The Bayesian scoring process itself is tracked as H-066. After 2026-04-07 corpus cleanup:
-- **21 high confidence** (≥0.70): H-055 (0.82), H-041 (0.72), H-053 (0.88), H-059 (0.72), H-085 (0.85), H-058 (0.87), H-009 (0.85), H-043 (0.85), H-054 (0.75), H-091 (0.93), H-089 (0.94), H-088 (0.80), H-092 (0.72), H-093 (0.72), H-087 (0.72), H-095 (0.88), H-096 (0.70), H-098 (0.80), H-099 (0.90), H-101 (0.72), H-105 (0.72)
-- **6 moderate** (0.50-0.70): H-014 (0.63), H-056 (0.61), H-047 (0.62), H-097 (0.55), H-102 (0.55)
+- **22 high confidence** (≥0.70): H-055 (0.82), H-041 (0.72), H-053 (0.88), H-059 (0.72), H-085 (0.85), H-058 (0.87), H-009 (0.85), H-043 (0.85), H-054 (0.75), H-091 (0.93), H-089 (0.94), H-088 (0.80), H-092 (0.72), H-093 (0.72), H-087 (0.72), H-095 (0.88), H-096 (0.70), H-098 (0.80), H-099 (0.90), H-101 (0.72), H-105 (0.72), H-131 (0.70)
+- **5 moderate** (0.50-0.70): H-014 (0.63), H-056 (0.61), H-047 (0.62), H-097 (0.55), H-102 (0.55)
 - **1 weak signal** (<0.50): H-103 (0.45)
 - **1 meta**: H-066 (Bayesian belief management)
 - **19 archived/resolved**: H-001 (disconfirmed), H-002 (superseded), H-034/H-038/H-039 (design principles), H-046/H-048/H-051 (insufficient evidence), H-052 (absorbed), H-064/H-065 (merged/out-of-domain), H-070 (refuted), H-094 (archived), H-068 (archived), H-128 (rejected), H-100 (superseded by H-101/H-102), H-104 (FALSIFIED — P:0.78→0.10, EXP-145)
