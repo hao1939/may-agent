@@ -1,6 +1,6 @@
 # Hypothesis Priority Tracker
 
-**Updated**: 2026-04-12 (Bob: EXP-148 integrated — H-102 P(H) 0.65→0.55, 3/4 predictions failed, universal WF-Gated decline across ALL agent groups driven by Mar 30–31 infra changes. H-097 0.65→0.55 (EXP-147 P-120b moot). H-103 0.72→0.45 (EXP-144 partial). H-104 FALSIFIED (P:0.78→0.10, EXP-145). H-105 added (0.72). H-096 0.68→0.70 (EXP-143). Previously: INDEX integration, H-104 authored, H-101/H-102 registered, EXP-130 integrated.) | **Active hypotheses**: 27 | **Tested**: 24/27 | **Resolution ratio**: 19 resolved | **High-confidence (P≥0.70)**: 20
+**Updated**: 2026-04-12 (Bob: EXP-148 integrated — H-102 P(H) 0.65→0.55, 3/4 predictions failed, universal WF-Gated decline across ALL agent groups driven by Mar 30–31 infra changes. H-097 0.65→0.55 (EXP-147 P-120b moot). H-103 0.72→0.45 (EXP-144 partial). H-104 FALSIFIED (P:0.78→0.10, EXP-145). H-105 added (0.72). H-096 0.68→0.70 (EXP-143). Previously: INDEX integration, H-104 authored, H-101/H-102 registered, EXP-130 integrated.) | **Active hypotheses**: 27 | **Tested**: 24/27 | **Resolution ratio**: 19 resolved | **High-confidence (P≥0.70)**: 21
 **Bayesian scorecard**: See `SCORECARD-bayesian-2026-04-09.md` for full reconciled methodology (supersedes 2026-04-04 version)
 
 > ✅ **MORATORIUM SATISFIED** (2026-04-07): 11 hypotheses resolved this session (H-001 disconfirmed, H-002 superseded, H-034/H-038/H-039/H-052 reclassified as design notes/truisms, H-046/H-048/H-051 archived for insufficient evidence/chain dependencies, H-064/H-065 already merged/out-of-domain). New hypotheses may now be created, subject to quality standards (falsifiable, P(H) prior ≥ 0.40, connected to empirical evidence).
@@ -212,7 +212,7 @@ EXP-026 production data confirms H-041's core prediction: **workflow benefit sca
 ## Meta-Process: H-066 (Bayesian Belief Management)
 
 The Bayesian scoring process itself is tracked as H-066. After 2026-04-07 corpus cleanup:
-- **20 high confidence** (≥0.70): H-055 (0.82), H-041 (0.72), H-053 (0.88), H-059 (0.72), H-085 (0.85), H-058 (0.87), H-009 (0.85), H-043 (0.85), H-054 (0.75), H-091 (0.93), H-089 (0.94), H-088 (0.80), H-092 (0.72), H-093 (0.72), H-087 (0.72), H-095 (0.84), H-096 (0.70), H-098 (0.80), H-099 (0.90), H-101 (0.72), H-105 (0.72)
+- **21 high confidence** (≥0.70): H-055 (0.82), H-041 (0.72), H-053 (0.88), H-059 (0.72), H-085 (0.85), H-058 (0.87), H-009 (0.85), H-043 (0.85), H-054 (0.75), H-091 (0.93), H-089 (0.94), H-088 (0.80), H-092 (0.72), H-093 (0.72), H-087 (0.72), H-095 (0.88), H-096 (0.70), H-098 (0.80), H-099 (0.90), H-101 (0.72), H-105 (0.72)
 - **6 moderate** (0.50-0.70): H-014 (0.63), H-056 (0.61), H-047 (0.62), H-097 (0.55), H-102 (0.55)
 - **1 weak signal** (<0.50): H-103 (0.45)
 - **1 meta**: H-066 (Bayesian belief management)
