@@ -36,7 +36,7 @@
 - Root cause: heartbeat.md encouraged inline exploration (multi-query DB analysis, file reads).
 - Fix: Rewrote heartbeat.md to "Dispatcher Mode" — observe in 1-2 ops, fork all analysis work. Target: ≤15 ops.
 - Baseline: 8 heartbeats in 12h, avg 56 ops, total 451. Post-fix: avg 23 ops (59% reduction). ✅ SUCCESS.
-- Last exploration mode: **C** (Efficiency gains scouting — Apr 12 ~13:54 UTC). Next rotation: **D**. Previous: B (Fresh tool gap scan — Apr 12 ~13:24), A (Bob 77-op & Coach 66/63-op outliers — Apr 12 ~12:54), D (D-o-R P1 budget cap + May HB budget cap measurement — Apr 12 ~12:24), C (efficient vs bloated session techniques — Apr 12 ~11:24), B (Coach investigation tool gaps — Apr 12 ~10:54).
+- Last exploration mode: **D** (Efficiency health check 6h measurement — Apr 12 ~14:24 UTC). Next rotation: **A**. Previous: C (Efficiency gains scouting — Apr 12 ~13:54), B (Fresh tool gap scan — Apr 12 ~13:24), A (Bob 77-op & Coach 66/63-op outliers — Apr 12 ~12:54), D (D-o-R P1 budget cap + May HB budget cap measurement — Apr 12 ~12:24).
 - **session-query tool BUILT** (`scripts/session-query.ts`). Replaces 15-25 bash archaeology pattern with single command. Supports: --agent, --since, --task, --status, --min-ops, --tools, --json, --sort. Tested with real data (911 sessions). Est. savings: 10-15 ops/session × 187 sessions = 1,870-2,805 ops.
 - **session-query adoption**: Still **zero active adoption** beyond optimizer (confirmed Apr 11 05:24 UTC). May + QA have passive mentions only. **Three blockers**: (1) filesystem history stale (through ~Apr 5), (2) zero agents have session-query in context.md, (3) may.db has 0 coach sessions. No change since last check. **gym-batch.sh MERGED to main** (cherry-pick 5ca3bdf, Apr 11 ~05:54 UTC) + coach context.md updated — but **gym-batch.sh also has ZERO adoption** despite being in context.md (see Coach Session Efficiency section). Findings: `workspace/finding-tool-gap-0411-b.md`, `workspace/finding-coach-experiment-technique-0411.md`, `workspace/finding-gym-batch-adoption-0411.md`
 - **ADOPTION FIX DIRECTION (Apr 12)**: Per tool adoption patterns finding — don't bother adding session-query to context.md (Level 4 = 0% adoption). Must fix may.db backend FIRST, then wire into workflow prompts/heartbeat dispatch templates (Level 1-3). Finding: `workspace/finding-tool-adoption-patterns-0412.md`
@@ -55,7 +55,7 @@
 - Root causes: over-thorough follow-up (peeking sessions), git commit/push every cycle, dashboard read+edit multiple times, improvement queue inline work
 - **Budget-capped approach**: Keep all 7 steps, add per-step op budgets (target ≤12 ops avg). Expected: 47-55% reduction (~500-600 ops/day, ~$25-30/day)
 - Analysis: `workspace/finding-may-heartbeat-dispatcher-analysis-0412.md`
-- **DEPLOYED**: ~08:29 UTC Apr 12. **4h EARLY SIGNAL: 7.3 avg ops (n=8) vs 22.7 baseline = -68%**. 7/8 heartbeats ≤7 ops. Projected ~740 ops/day saved (~$35/day). Check again at 24h (~08:29 Apr 13).
+- **DEPLOYED**: ~08:29 UTC Apr 12. **6h MEASUREMENT: 10.7 avg ops (n=15) vs 22.5 baseline = -52%**. 11/15 (73%) ≤12 ops. Median=7. 4h early signal was 7.3 (optimistic with n=8). Projected ~280 ops/day saved (~$13/day). Check again at 24h (~08:29 Apr 13).
 
 
 
@@ -106,7 +106,7 @@
 
 ## ✅ DONE
 
-- **D-o-R Phase 1 Budget Cap** — 86% reduction (29.7→4.9 avg ops). **Sustained at 24h+: avg 18.5 ops/run vs 45.7 baseline (-60%)**. P1 median=4 ops. 5 violations (9%), all Bob bulk INDEX tasks. ~343 ops/day saved (~$16/day). (2026-04-11)
+- **D-o-R Phase 1 Budget Cap** — **48h+ sustained**: Bob P1 avg 9.8 ops (n=40) vs 31.2 baseline = **-69%**. 90% compliance (≤15 ops). 4 violations: 2 INDEX.md bulk (90, 93 ops), 2 moderate (37, 40 ops). Full D-o-R runs avg 74.2 ops (n=20). P2 avg=19.5, P3 avg=6.7. (2026-04-12)
 - **D-o-R Nested Workflow Spawning** — 0/4 nesting incidents post-fix. (2026-04-12)
 - **Bob Research Thread Bloat** — 62% reduction via parallel-research budget caps. ~397 ops/day saved (~$19/day). (2026-04-12)
 - **Tech-Lead Heartbeat Bloat** — 89% reduction (30.8→3.5 avg ops). ~1,100 ops/day saved (~$52/day). (2026-04-11)
