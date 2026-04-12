@@ -667,7 +667,7 @@ import type { HandlerContext, HandlerModule } from "../lib/handler-context.js";
 import type { CronEntry } from "../lib/cron-tool.js";
 import { getDb, trackRequest } from "../lib/requests.js";
 import { loadAllSessionMetas } from "../lib/persistence.js";
-import { evaluateTask, writeSkippedEvaluations, writeHeuristicEvaluations } from "../lib/evaluator.js";
+import { evaluateTask } from "../lib/evaluator.js";
 import { log as globalLog } from "../lib/log.js";
 
 /**
@@ -714,8 +714,6 @@ export async function loadAgentHandlers(
       trackRequest: (reqOpts) => trackRequest(persistDir, reqOpts),
       loadAllSessionMetas: () => loadAllSessionMetas(persistDir),
       evaluateTask: (evalOpts) => evaluateTask(evalOpts),
-      writeSkippedEvaluations: (skipAgents) => writeSkippedEvaluations(persistDir, skipAgents),
-      writeHeuristicEvaluations: () => writeHeuristicEvaluations(persistDir),
     };
 
     // Group entries by handler file (multiple entries can share one handler file)
@@ -785,6 +783,70 @@ export async function loadAgentHandlers(
         bus.emit({ type: "info", message: `[handler] ⚠️ ${msg}` });
       }
     }
+
+    // Set up dynamic handler resolver for this agent's cron.
+    // This handles new handler entries added to cron.json after startup.
+    const _agentName = agentName;
+    const _agentsRoot = agentsRoot;
+    const _ctx = ctx;
+    const _cron = cron;
+    const _bus = bus;
+    cron.setHandlerResolver(async (entryName: string, entry: CronEntry): Promise<boolean> => {
+      if (!entry.handler) return false;
+
+      const handlerDir = resolve(_agentsRoot, _agentName, "handlers");
+      const jsPath = resolve(handlerDir, `${entry.handler}.js`);
+      const tsPath = resolve(handlerDir, `${entry.handler}.ts`);
+
+      let modulePath: string;
+      if (existsSync(jsPath)) {
+        modulePath = jsPath;
+      } else if (existsSync(tsPath)) {
+        modulePath = tsPath;
+      } else {
+        _bus.emit({
+          type: "info",
+          message: `[handler] ⚠️ Handler file not found for "${entryName}": ${handlerDir}/${entry.handler}.(js|ts)`,
+        });
+        return false;
+      }
+
+      try {
+        const mod: HandlerModule = await import(`${modulePath}?t=${Date.now()}`);
+        if (typeof mod.create !== "function") {
+          _bus.emit({
+            type: "info",
+            message: `[handler] ⚠️ Handler ${modulePath} does not export create() — cannot resolve "${entryName}"`,
+          });
+          return false;
+        }
+
+        const _modulePath = modulePath;
+        const _entry = { ...entry };
+        const hotHandler = async () => {
+          const freshMod: HandlerModule = await import(`${_modulePath}?t=${Date.now()}`);
+          if (typeof freshMod.create !== "function") {
+            throw new Error(`Handler ${_modulePath} no longer exports create()`);
+          }
+          const fn = freshMod.create(_ctx, _entry);
+          return fn();
+        };
+
+        _cron.registerHandler(entryName, hotHandler);
+        _bus.emit({
+          type: "info",
+          message: `[handler] Dynamically registered ${_agentName}:${entryName} → ${entry.handler}.ts (post-startup)`,
+        });
+        return true;
+      } catch (err) {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        _bus.emit({
+          type: "info",
+          message: `[handler] ⚠️ Failed to dynamically import handler for "${entryName}": ${errMsg}`,
+        });
+        return false;
+      }
+    });
   }
 
   return { registered, errors };

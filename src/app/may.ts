@@ -7,8 +7,6 @@ import type { ModelWithApiKey } from "../lib/types.js";
 import {
   SubagentManager,
   evaluateTask,
-  writeSkippedEvaluations,
-  writeHeuristicEvaluations,
   classifyError,
   readSessionMeta,
   learnFromSession,
@@ -539,22 +537,6 @@ const loaderOpts: AgentLoaderOptions = {
 
 const loadResult = await loadAgents(loaderOpts);
 bus.emit({ type: "info", message: `Loaded ${loadResult.added.length} agent(s): ${loadResult.added.join(", ")}` });
-
-writeSkippedEvaluations(PERSIST_DIR).then((skipped) => {
-  if (skipped > 0)
-    bus.emit({
-      type: "info",
-      message: `[eval] Wrote ${skipped} skipped evaluation(s) (meta-agents/no-transcript) — no LLM needed`,
-    });
-});
-
-writeHeuristicEvaluations(PERSIST_DIR).then((written) => {
-  if (written > 0)
-    bus.emit({
-      type: "info",
-      message: `[eval] Wrote ${written} heuristic evaluation(s) (deterministic scoring from transcripts)`,
-    });
-});
 
 // ── Event routing ──────────────────────────────────────────────────────
 
