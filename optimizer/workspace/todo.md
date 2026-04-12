@@ -16,20 +16,7 @@
 - Bypass exists at `src/app/may.ts:148-165`, needs `ANTHROPIC_API_KEY` env var.
 - **BLOCKED on operator.** Finding: `workspace/findings/2026-04-10-litellm-kills-prompt-caching.md`
 
-### D-o-R Phase 1 Budget Cap — ✅ CONFIRMED EFFECTIVE, CLOSING (n=7)
-- **FINAL VERDICT (Apr 11 09:55 UTC)**: P1 avg 4.9 ops (was 34.5 pre-fix) — **86% reduction**. All 7 P1s ≤7. Total run avg 24.6 (was 49.1) — **50% reduction**. 1 minor P2 nesting incident (24 ops), 0 P1-spawned nesting. Zero cap violations. ~343 ops/day saved (~$16/day).
-- **Residual**: P2 bloat outlier (1/7 runs, 57 ops). Separate optimization opportunity.
-- Findings: `workspace/finding-dor-p1-bloat-0411.md`, `workspace/finding-dor-p1-cap-measurement-0411.md`, `workspace/finding-dor-p1-cap-final-verdict-0411.md`
-- **→ MOVING TO DONE**
 
-### D-o-R Nested Workflow Spawning — ✅ CONFIRMED FIXED (n=4, 0 nesting incidents)
-- Bob 90-op session (s_...1119) was a **3-deep nested D-o-R workflow**: Phase 1 called callAgent → triggered another D-o-R → spawned another Phase 1. Total: 169 ops for 1 KB integration task.
-- **3 instances in 72h** pre-fix: 101 + 47 + 13 = 161 wasted ops (~54 ops/day, ~$2.50/day).
-- **FIX**: Added "DO NOT call callAgent() or spawn sub-agents" to Phase 1 strict rules (commit 60a844e3, deployed ~03:54 UTC Apr 12).
-- **Post-fix measurement (Apr 12 ~06:24 UTC)**: **0/4 Phase 1 sessions spawned children** (ops: 5, 90, 2, 3). The 90-op session was inline bloat (KB INDEX batch), NOT nesting — zero children. Nesting fix confirmed effective.
-- **Separate issue**: D-o-R P1 budget cap still unreliable (90-op violation despite "BUDGET: 15" text). Infra maxOps needed.
-- **→ MOVING TO DONE**
-- Finding: `workspace/finding-bob-90op-archaeology-0411.md`, `workspace/finding-dor-nesting-postfix-0412.md`, `workspace/finding-bob-research-postfix-measurement-0412b.md`
 
 ### Coach Session Efficiency — FINDING COMPLETE, FIX 2 DEPLOYED
 - 2,175 coach sessions analyzed. 50.3% zero-op, 64% of ops in top sessions are exploration waste.
@@ -82,12 +69,7 @@
 - **Fix needed**: May heartbeat dispatcher rewrite (same pattern as tech-lead/optimizer)
 - Finding: `workspace/finding-tool-adoption-pattern-mining-0412.md`
 
-### Bob Research Thread Bloat — ✅ CONFIRMED EFFECTIVE (n=4+ threads all within cap)
-- **parallel-research workflow** budget caps deployed Apr 12 ~04:54 UTC
-- **Post-fix threads**: 11, 18, 12, 11, 18, 12 ops — all within ≤25 cap. Synthesis 12 ops (≤15 cap). **62% reduction** from pre-fix avg 107.1 ops/invocation.
-- **Savings**: ~397 ops/day (~$19/day, ~$570/month)
-- **→ MOVING TO DONE**
-- Findings: `workspace/finding-bob-research-thread-structure-0412.md`, `workspace/finding-bob-research-thread-postfix-0412.md`, `workspace/finding-bob-research-postfix-measurement-0412b.md`
+
 
 ### Coder 104-op Outlier — Fewshot Injection False Positive
 - **Root cause**: Fewshot pattern `/binary|\.bin|compiled|executable|hexdump/i` matched `.bin` in `./node_modules/.bin/tsc` (the verification command) → injected irrelevant "binary file escalation" example into a dead code removal task
@@ -135,6 +117,10 @@
 
 ## ✅ DONE
 
+- **D-o-R Phase 1 Budget Cap** — 86% reduction (29.7→4.9 avg ops). ~343 ops/day saved (~$16/day). (2026-04-11)
+- **D-o-R Nested Workflow Spawning** — 0/4 nesting incidents post-fix. (2026-04-12)
+- **Bob Research Thread Bloat** — 62% reduction via parallel-research budget caps. ~397 ops/day saved (~$19/day). (2026-04-12)
+- **Tech-Lead Heartbeat Bloat** — 89% reduction (30.8→3.5 avg ops). ~1,100 ops/day saved (~$52/day). (2026-04-11)
 - **Bash Command Pattern Analysis** — 847 commands across 12 high-op sessions. Top 3 patterns (git-review-chain 91x, grep-then-read 87x, file-discovery-spiral 75x) = 52% of all commands. Concrete tool/script fixes sketched for each. Est. 125-220 ops/day savings. Finding: `workspace/finding-bash-command-patterns-0411.md` (2026-04-11)
 - **Gym Results Data Gap** — Both paths now record: `gym-helpers.ts` has `recordGymResult()` (commit 961d892f0), `run-gym.sh` pipes to `record-result.ts` (commit 2c8c7dcd). 22 runs + 156 checks verified in DB. (2026-04-10)
 

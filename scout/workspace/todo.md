@@ -721,8 +721,18 @@
   2. Scaffold fading / guard introduction transient literature (new from EXP-145 — low priority, internal evidence strong)
   3. KE-106 habituation literature (low priority — partially superseded by EXP-145 data showing guards DO teach over time)
 
+## Session 688 (2026-04-12 07:53 UTC) — Sunday morning heartbeat (lean)
+- **EXP-147 Track A Phase 1 complete**: H-097 P(H) 0.65→0.55. Two major findings: KE-149 (evaluator is implicitly-calibrated 3-way classifier, wrong-consensus 0.92% on confident verdicts, P-120b moot) and KE-150 (quality ≠ process compliance, 19.7% of good sessions have 3+ convention failures, outcome and process quality are independent dimensions). Track B next.
+- **KE-150 connection to our research**: Outcome vs process quality distinction relates to DD-750 (observability tax) — process compliance = externalized reasoning artifacts, outcome quality = task completion. KE-146/KE-150 converge: agents optimize for outcomes, not observable process. Format gates (KE-148) force process compliance but create the only externalized trace we can observe.
+- **No urgent leads or tasks**. Sunday morning — quiescent. No fresh arXiv until Monday ~20:00 UTC.
+- **Research priorities** (updated):
+  1. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+  2. KE-150 process-vs-outcome literature grounding (low priority — well-established distinction, internal evidence strong at N=15K)
+  3. Scaffold fading / guard introduction transient literature (low priority, EXP-145 internal evidence strong)
+  4. KE-106 habituation literature (low priority — partially superseded by EXP-145)
+
 ## Counters
 - DD: 752
 - CR: 339
-- Session: 687
+- Session: 688
 
