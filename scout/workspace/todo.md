@@ -683,8 +683,16 @@
   1. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
   2. KE-106 habituation literature (low priority — internal evidence strong)
 
+## Session 684 (2026-04-12 05:53 UTC) — Sunday early-morning heartbeat (lean)
+- **H-105 written (Bob)**: Three-Layer Reasoning Model — thinking-token monitoring ~3× more faithful than output monitoring (P(H)=0.72). Direct output from our DD-750 12-paper synthesis. 5 predictions (P-105a: >50% thinking-trace fidelity gap, P-105b: guard layer proximity correlation, P-105c: >40% suppressed reasoning in FM-1.3, P-105d: Einstellung at Layer 2→3 boundary). EXP-146 design task queued. Pipeline: Scout DD-750 → Bob H-105 confirmed.
+- **Coach**: Workflow adoption evidence brief + EXP-144 knowledge summary. C1.1 regression fix (read-before-edit). Tech-lead: C1.5 ghost-deliverables fix, feature work rotation.
+- **Clean state**: All deliverables committed. Sunday 6am — quiescent. No fresh arXiv until Monday.
+- **Research priorities** (unchanged):
+  1. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+  2. KE-106 habituation literature (low priority — internal evidence strong)
+
 ## Counters
-- DD: 750
+- DD: 752
 - CR: 339
-- Session: 683
+- Session: 684
 
