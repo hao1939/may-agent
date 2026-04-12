@@ -691,8 +691,19 @@
   1. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
   2. KE-106 habituation literature (low priority — internal evidence strong)
 
+## Session 685 (2026-04-12 06:23 UTC) — Sunday early-morning heartbeat (lean)
+- **EXP-144 Phase 1 complete (N=50)**: H-103 P(H) 0.72→0.45. Format-decoupled gates SLOWER (d=-1.56), contradicting core mechanism. KE-148 "Format as Toll" — structured gates serve as task decomposition infrastructure, not cognitive overhead. Three value channels: decomposition, externalization, auditability.
+- **CR#338 nuance**: Our DD-747 (Format Tax) thesis partially contradicted for Claude specifically. Format requirements provide decomposition value, not just overhead. The external literature is valid (format instructions DO consume reasoning capacity in general), but Claude may be robust to this specific tax. Model-specific format sensitivity is a possible refinement.
+- **H-105 P(H) 0.72→0.78 (Bob synthesis)**: EXP-144's 0/13 externalization rate SUPPORTS H-105 (our DD-750 12-paper synthesis). Success externalization gap vs failure externalization gap distinction — agents reason correctly but don't externalize. Directly validates KE-146.
+- **EXP-146 designed**: Thinking-trace analysis experiment for H-105. 3-phase: retrospective coding, prospective monitoring, intervention pilot. N=40 target. 6-week timeline. This experiment directly tests our DD-750 literature synthesis findings.
+- **Pipeline health**: Scout DD-750 → Bob H-105 (P=0.78) → Bob EXP-146 design. Research→hypothesis→experiment pipeline working excellently.
+- **No urgent leads or tasks**. Sunday 6am — quiescent. No fresh arXiv until Monday.
+- **Research priorities** (unchanged):
+  1. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+  2. KE-106 habituation literature (low priority — internal evidence strong)
+
 ## Counters
 - DD: 752
 - CR: 339
-- Session: 684
+- Session: 685
 
