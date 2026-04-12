@@ -22,14 +22,14 @@
 - Findings: `workspace/finding-dor-p1-bloat-0411.md`, `workspace/finding-dor-p1-cap-measurement-0411.md`, `workspace/finding-dor-p1-cap-final-verdict-0411.md`
 - **→ MOVING TO DONE**
 
-### D-o-R Nested Workflow Spawning — ✅ FIX DEPLOYED, AWAITING DATA (commit 60a844e3)
+### D-o-R Nested Workflow Spawning — ✅ CONFIRMED FIXED (n=4, 0 nesting incidents)
 - Bob 90-op session (s_...1119) was a **3-deep nested D-o-R workflow**: Phase 1 called callAgent → triggered another D-o-R → spawned another Phase 1. Total: 169 ops for 1 KB integration task.
-- **3 instances in 72h**: 101 + 47 + 13 = 161 wasted ops (~54 ops/day, ~$2.50/day).
-- Root cause: Phase 1 had no instruction against calling callAgent().
-- **FIX**: Added "DO NOT call callAgent() or spawn sub-agents" to Phase 1 strict rules in `bob/workflows/deliver-or-report.ts` (commit 60a844e3, deployed ~03:54 UTC).
-- **Post-fix measurement (Apr 12 04:24 UTC)**: Only 1 post-fix D-o-R run exists (s_...1850, P1=5 ops, still running). Cannot confirm fix yet — need n≥3. The 93-op P1 violation (s_...1787) was PRE-FIX and was NOT nesting — it was budget cap non-compliance (inline work, zero children spawned).
-- **Key insight**: The anti-nesting fix and the budget cap fix address DIFFERENT failure modes. Nesting = Phase 1 spawning children via callAgent. Budget cap violation = Phase 1 doing 93 ops inline. Both need fixing, but infra maxOps is the only reliable solution for budget enforcement.
-- Finding: `workspace/finding-bob-90op-archaeology-0411.md`, `workspace/finding-dor-nesting-postfix-0412.md`
+- **3 instances in 72h** pre-fix: 101 + 47 + 13 = 161 wasted ops (~54 ops/day, ~$2.50/day).
+- **FIX**: Added "DO NOT call callAgent() or spawn sub-agents" to Phase 1 strict rules (commit 60a844e3, deployed ~03:54 UTC Apr 12).
+- **Post-fix measurement (Apr 12 ~06:24 UTC)**: **0/4 Phase 1 sessions spawned children** (ops: 5, 90, 2, 3). The 90-op session was inline bloat (KB INDEX batch), NOT nesting — zero children. Nesting fix confirmed effective.
+- **Separate issue**: D-o-R P1 budget cap still unreliable (90-op violation despite "BUDGET: 15" text). Infra maxOps needed.
+- **→ MOVING TO DONE**
+- Finding: `workspace/finding-bob-90op-archaeology-0411.md`, `workspace/finding-dor-nesting-postfix-0412.md`, `workspace/finding-bob-research-postfix-measurement-0412b.md`
 
 ### Coach Session Efficiency — FINDING COMPLETE, FIX 2 DEPLOYED
 - 2,175 coach sessions analyzed. 50.3% zero-op, 64% of ops in top sessions are exploration waste.
@@ -82,16 +82,16 @@
 - **Fix needed**: May heartbeat dispatcher rewrite (same pattern as tech-lead/optimizer)
 - Finding: `workspace/finding-tool-adoption-pattern-mining-0412.md`
 
-### Bob Research Thread Bloat — FIX 1+2 DEPLOYED, AWAITING DATA (n=0 completed post-fix)
+### Bob Research Thread Bloat — FIX DEPLOYED, EARLY SIGNAL POSITIVE (n=1 completed invocation)
 - **parallel-research workflow** (`agents/shared/workflows/parallel-research.ts`) spawns 2-3 threads + synthesis per invocation, previously NO op caps at any level
 - 6 invocations in 4h = 627 child ops (avg 105 ops/invocation). Extrapolated: ~3,762 ops/day (~$177/day)
-- 12 high-op sessions (>40 ops): 113-op synthesis, 93-op P1 cap violation, 79-op threads (×2), 70-op synthesis, etc.
-- **Double-workflow nesting**: Research threads trigger D-o-R internally → Phase 1 → Phase 2 → Phase 3 inside a research thread
-- **FIX DEPLOYED (Apr 12 ~04:54 UTC)**: (1) Added ≤25 tool call budget to thread prompts, (2) Added ≤15 tool call budget to synthesis prompts, (3) Added anti-workflow-nesting instruction ("Do NOT trigger deliver-or-report or other workflows") to thread prompts
-- **Post-fix measurement (Apr 12 ~05:54 UTC)**: n=0 completed post-fix invocations. 1 in progress (2 threads just spawned). Only 1 heartbeat cycle since deployment. **Refined pre-fix baselines**: thread avg 38.0 ops (n=15, range 10-79), synthesis avg 25.7 ops (n=7, median 9, one 113-op outlier), invocation avg 107.1 ops (n=7, range 38-227). **Need to re-measure after ~08:00 UTC for n≥5.**
+- **FIX DEPLOYED (Apr 12 ~04:54 UTC)**: ≤25 ops/thread, ≤15 ops/synthesis, anti-nesting instruction
+- **Post-fix measurement (Apr 12 ~06:24 UTC)**: n=1 completed invocation (wr_1775973259015_g5on). Thread 1: 11 ops ✅, Thread 2: 18 ops ✅, Synthesis: 12 ops ✅. **Total: 41 ops (vs pre-fix avg 107.1 = −62%)**. All 3 sessions within budget caps. Zero workflow nesting.
+- **⚠️ n=1 is insufficient** — need n≥3 for confidence. Re-measure after ~10:00 UTC.
+- Pre-fix baselines: thread avg 38.0 ops (n=15), synthesis avg 25.7 ops (n=7), invocation avg 107.1 ops (n=7)
 - Infra maxOps on runAgent remains the only reliable long-term solution for budget enforcement
-- **Projected savings**: ~1,362 ops/day (~$64/day, ~$1,920/month) from budget caps alone
-- Finding: `workspace/finding-bob-research-thread-structure-0412.md`, `workspace/finding-bob-research-thread-postfix-0412.md`
+- **Projected savings (if pattern holds)**: ~397 ops/day (~$19/day, ~$570/month) from budget caps
+- Finding: `workspace/finding-bob-research-thread-structure-0412.md`, `workspace/finding-bob-research-thread-postfix-0412.md`, `workspace/finding-bob-research-postfix-measurement-0412b.md`
 
 ### Tool Adoption Strategy — DECLARED DEAD
 - gym-batch.sh and session-query.ts: **4th consecutive check confirming zero adoption** (24h+ since merge)
