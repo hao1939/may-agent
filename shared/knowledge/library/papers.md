@@ -1544,3 +1544,43 @@ Production multi-agent data management system with "three-track knowledge archit
 ### OrgForge: Hallucination Propagation in Multi-Agent Corpora — arXiv:2603.14997
 
 | 2603.14997 | OrgForge: A Multi-Agent Simulation Framework for Verifiable Synthetic Corporate Corpora (Flynt — Mar 2026) | ★★★★ EXCELLENT — **Cross-referenced in CR#335.** Empirical proof that "chaining propagates fabricated facts faithfully across documents without correcting them." 0.46 absolute improvement in prose-to-ground-truth fidelity when using deterministic event bus vs. chained LLM generation. Each document in a chain looks locally plausible but systemic consistency fails. Exactly our inherited confabulation: Agent A confabulates → writes to persistent state → Agent B inherits and faithfully reproduces the fabrication. (ref: DD-742) |
+
+## 2026-04-10 — Session 621: Literature Grounding for H-098 & H-099
+
+**Context**: External literature search to ground our novel hypotheses H-098 (Attention Channel Theory) and H-099 (Discovery Task Boundary) in the published research. Full analysis in `literature-grounding-H098-H099.md`.
+
+### AGENTIF: Benchmarking Instruction Following for LLM Agents — arXiv:2505.16944
+
+| 2505.16944 | AGENTIF: Benchmarking Instruction Following for LLM Agents (May 2025) | ★★★★★ CRITICAL — **Cross-referenced with H-098.** First comprehensive benchmark for agent instruction-following. Central finding: IF rates drop dramatically in agentic (multi-step tool use) vs single-turn settings. Directly supports H-098's Channel 1 mechanism. Documents the spectrum from well-followed structural instructions (effectively Ch2) to poorly-followed behavioral instructions (pure Ch1). We add the unifying channel explanation and the Ch2 prescription. (ref: literature-grounding-H098-H099.md) |
+
+### AgentIF-OneDay: Task-Level Instruction Following in the Wild — arXiv:2601.20613
+
+| 2601.20613 | AgentIF-OneDay: A Task-level Instruction-Following Benchmark for LLM Agents (Jan 2026) | ★★★★ EXCELLENT — **Cross-referenced with H-098 and H-099.** Studies progressive instruction forgetting in extended agent interactions. Instruction compliance degrades as task complexity increases — directly supports H-098's P-098d (Channel 1 inversely proportional to complexity). Tasks requiring creative problem-solving + constraint maintenance show worst IF — soft version of H-099's discovery boundary. (ref: literature-grounding-H098-H099.md) |
+
+### Diagnose, Localize, Align: Full-Stack IF Failure Analysis — arXiv:2509.23188
+
+| 2509.23188 | Diagnose, Localize, Align: A Full-Stack Framework for Instruction Following Failures (Sep 2025) | ★★★★★ CRITICAL — **Cross-referenced with H-098.** Identifies "goal displacement" (model displaces instructed goal with task-execution goal) and "shallow instruction processing" — both are independent descriptions of H-098's Channel 1 failure. Their alignment-based fixes (training) complement our intervention-based fixes (change channel). (ref: literature-grounding-H098-H099.md) |
+
+### Aegis: Taxonomy and Optimizations for Agent Oversight — arXiv:2508.19504
+
+| 2508.19504 | Aegis: Taxonomy and Optimizations for Oversight of LLM Agent Systems (Aug 2025) | ★★★★ EXCELLENT — **Cross-referenced with H-098 and H-099.** Distinguishes "behavioral compliance" (Ch1) from "structural compliance" (Ch2); finds structural consistently higher. Their "novel situation handling" section acknowledges difficulty without solving it — the gap H-099 fills. (ref: literature-grounding-H098-H099.md) |
+
+### Decision-Centric Design for LLM Systems — arXiv:2604.00414
+
+| 2604.00414 | Decision-Centric Design for LLM Systems (Sun — Apr 2026) | ★★★★★ CRITICAL — **Cross-referenced with H-098 and H-099.** Strongest external validation of H-098. Central claim: decisions implicit within generation entangle assessment with action. Their solution — explicit, inspectable decision layer — is our Channel 2 forced externalization. Their attribution framework (signal estimation / decision policy / execution) parallels our channel model. H-099 identifies the boundary where their approach breaks down (creative inference can't be separated from generation). (ref: literature-grounding-H098-H099.md) |
+
+### Auton Agentic AI Framework — arXiv:2602.23720
+
+| 2602.23720 | The Auton Agentic AI Framework (Cao, Chang, Li et al. — Feb 2026) | ★★★★ EXCELLENT — **Cross-referenced with H-098.** Architecture embodying H-098's Ch2 principle: strict separation of Cognitive Blueprint (declarative rules) from Runtime Engine (execution). "Constraint manifold formalism for safety via policy projection not post-hoc filtering" is the mathematical version of our Channel 2 structural gates. (ref: literature-grounding-H098-H099.md) |
+
+### FocalLoRA: Instruction Attention Boosting — OpenReview:o2y6BS6mm0
+
+| FocalLoRA (OpenReview) | Don't Forget the Enjoin: FocalLoRA for Instruction Following (2025-2026) | ★★★★ EXCELLENT — **Cross-referenced with H-098.** Entire premise is Channel 1 failure: instruction tokens are suppressed during generation. Their LoRA-based fix tries to boost Channel 1 bandwidth from the model side. Complementary to our approach (we abandon Channel 1, they try to fix it). Key test: does FocalLoRA work on judgment tasks? If no, confirms H-098's architectural claim. (ref: literature-grounding-H098-H099.md) |
+
+### CodeMem: Architecting Reproducible Agents — arXiv:2512.15813
+
+| 2512.15813 | CodeMem: Architecting Reproducible Agents (Dec 2025) | ★★★☆ GOOD — **Cross-referenced with H-098.** Emphasis on explicit state checkpointing aligns with Channel 2 principle. Reproducibility gains from converting implicit state management to explicit artifacts. (ref: literature-grounding-H098-H099.md) |
+
+### LARFT: Closing the Cognition-Action Gap for Length IF — arXiv:2603.19255
+
+| 2603.19255 | LARFT: Closing the Cognition-Action Gap for Length Instruction Following (Mar 2026) | ★★★☆ GOOD — **Cross-referenced with H-098.** "Cognition-action gap" = another name for Channel 1 failure. Models understand constraints but fail to implement them during generation. Supports H-098's mechanism from a different domain. (ref: literature-grounding-H098-H099.md) |

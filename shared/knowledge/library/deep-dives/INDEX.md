@@ -698,7 +698,8 @@
 5. DD#742 → DD#698 AEGIS (independent audit addresses verification gap)
 6. DD#743 → KE-101 Law 3 (memory pollution competes for finite attention)
 7. CR-335 → All above (5-phase Error Propagation Lifecycle unifies the findings)
-
+> 144 research deep dives, cross-reference syntheses, and reference documents.  
+> Last updated: 2026-04-10 | Maintained by Scout
 **Einstellung Effect / Exemplar-Induced Fixation** ★★★★★ — NEW (2026-04-11 Session 628)
 1. [dd744](DD-744-medeinst-einstellung-effect-benchmark.md) — ★★★★★ MedEinst: Counterfactual benchmark for Einstellung-induced fixation. "Bias Trap Rate" metric. 5,383 paired clinical cases. ECR-Agent architectural mitigation validates structural > content.
 2. [dd745](DD-745-manbench-mandela-effect-multi-agent-collective-fixation.md) — ★★★★★ MANBENCH (ICLR 2026): Collective false memory in multi-agent systems. Social influence amplifies individual fixation. Cognitive anchoring achieves 74.40% reduction. Validates CR#335 Error Propagation Lifecycle.
@@ -715,5 +716,65 @@
 5. DD#746 → H-099 (foundational explanation for why discovery tasks resist scaffolding)
 6. DD#746 → KE-002 (fixation operates below instruction-following level)
 7. CR#337 → All above (Template-as-Ceiling unified account)
-> 148 research deep dives, cross-reference syntheses, and reference documents.  
+**Constraint Paradox / Hump Curve Grounding** ★★★★★ — NEW (2026-04-11 Session 630)
+1. [dd747](DD-747-format-tax-structured-output-reasoning-degradation.md) — ★★★★ The Format Tax: Structured output requirements degrade reasoning. Format-requesting instructions (not decoding) cause most accuracy loss. Decoupling recovers accuracy. Explains RIGHT side of EXP-129 hump curve.
+2. [dd748](DD-748-bcr-task-scaling-implicit-budget-constraint.md) — ★★★★★ BCR "Free Lunch": Implicit budget constraints from concurrent problems improve efficiency AND accuracy. Emergent self-regulated efficiency eliminates redundant metacognitive loops. Explains LEFT side of EXP-129 hump curve.
+3. [CR-338](../cross-references/CR-338-constraint-paradox-hump-curve-grounding.md) — ★★★★★ The Constraint Paradox: Unified external grounding for EXP-129's hump curve. BCR explains scaffolding benefit (left side), Format Tax explains overhead cost (right side), DD-671 explains failure mode shift.
+| [dd747](DD-747-format-tax-structured-output-reasoning-degradation.md) | The Format Tax ★★★★ | Lee et al. 2026 — Structured output degrades reasoning, prompt-level not decoder-level |
+| [dd748](DD-748-bcr-task-scaling-implicit-budget-constraint.md) | BCR Task-Scaling ★★★★★ | Yang et al. 2026 — Implicit budget "free lunch", emergent self-regulation |
+**Cross-references (Session 630)**:
+1. DD#747 → KE-134 (explains RIGHT side of hump curve — format overhead)
+2. DD#748 → KE-134 (explains LEFT side of hump curve — implicit budget benefit)
+3. DD#748 → KE-064 (revises execution crowding: related gates synergize via BCR mechanism)
+4. CR#338 → EXP-131 prediction (unrelated gates should show lower peak, steeper decline)
+5. CR#338 → KE-101 Law 2 (structural scaffolding vs format overhead distinction)
+**Week-in-Review Capstone** ★★★★★ CRITICAL — NEW (2026-04-11 Session 614)
+1. [CR-339](../cross-references/CR-339-week-review-capstone-structure-all-the-way-down.md) — ★★★★★ CRITICAL: **Week-in-Review Capstone: "Structure All the Way Down"**. 88 deep dives (DD#656-743), 20 cross-references (CR#317-336), 29 experiments (EXP-099→127). Five convergence streams: Verification Architecture, Behavioral Failure Detection, External Validation of Five Laws, Intervention Validity Correction, Context Pollution & Error Propagation. Three breakthroughs: Cooperation-Calibration-Context Triad, Gym-Production Gap is Structural, Verification is Evidence Architecture. Unified theory: structure dominates content at every level of agent systems. Five critical open problems. Five predictions.
+**Cross-references (Session 614)**:
+1. CR#339 → KE-101 (external validation of "structure > content" with 50+ independent papers)
+2. CR#339 → KE-105 (all 5 verification orchestration gaps closed this week)
+3. CR#339 → CR#326 (gym-production gap is structural — 5-dimension model)
+4. CR#339 → CR#333 (intervention validity revision: Skill > Guard > Injection)
+5. CR#339 → CR#335 (5-phase error propagation lifecycle)
+> 150+ research deep dives, cross-reference syntheses, and reference documents.  
+> Last updated: 2026-04-11 | Maintained by Scout
+**Einstellung Effect / Exemplar-Induced Fixation** ★★★★★ — NEW (2026-04-11 Session 628)
+1. [dd744](DD-744-medeinst-einstellung-effect-benchmark.md) — ★★★★★ MedEinst: Counterfactual benchmark for Einstellung-induced fixation. "Bias Trap Rate" metric. 5,383 paired clinical cases. ECR-Agent architectural mitigation validates structural > content.
+2. [dd745](DD-745-manbench-mandela-effect-multi-agent-collective-fixation.md) — ★★★★★ MANBENCH (ICLR 2026): Collective false memory in multi-agent systems. Social influence amplifies individual fixation. Cognitive anchoring achieves 74.40% reduction. Validates CR#335 Error Propagation Lifecycle.
+3. [dd746](DD-746-red-herrings-einstellung-creative-problem-solving.md) — ★★★★ Red Herrings/OCW: Foundational paper establishing LLMs exhibit Einstellung fixation. Red herrings = deliberate misleading stimuli that block creative problem solving. Grounds H-099 discovery boundary.
+4. [CR-337](../cross-references/CR-337-exemplar-induced-fixation-einstellung-grounding.md) — ★★★★★ Template-as-Ceiling Synthesis: Unified account of why few-shot examples cause iatrogenic harm on discovery tasks. Einstellung mechanism → pattern activation → fixation → template matching → false completion.
+| [dd744](DD-744-medeinst-einstellung-effect-benchmark.md) | MedEinst Einstellung Benchmark ★★★★★ | Chen et al. 2026 — Bias Trap Rate, counterfactual methodology, ECR-Agent |
+| [dd745](DD-745-manbench-mandela-effect-multi-agent-collective-fixation.md) | MANBENCH Mandela Effect ★★★★★ | Xu et al. 2026 (ICLR) — Collective fixation, cognitive anchoring mitigation |
+| [dd746](DD-746-red-herrings-einstellung-creative-problem-solving.md) | Red Herrings/OCW Einstellung ★★★★ | Naeini et al. 2023 — Foundational Einstellung in LLMs, creative problem solving |
+**Cross-references (Session 628)**:
+1. DD#744 → EXP-130 (explains -67pp iatrogenic mechanism via Einstellung fixation)
+2. DD#744 → KE-101 Law 2 (ECR-Agent validates structural > content intervention)
+3. DD#745 → CR#335 (MANBENCH validates all 5 phases of Error Propagation Lifecycle)
+4. DD#745 → Session 597/599 (live case study of Mandela Effect in our system)
+5. DD#746 → H-099 (foundational explanation for why discovery tasks resist scaffolding)
+6. DD#746 → KE-002 (fixation operates below instruction-following level)
+7. CR#337 → All above (Template-as-Ceiling unified account)
+**Constraint Paradox / Hump Curve Grounding** ★★★★★ — NEW (2026-04-11 Session 630)
+1. [dd747](DD-747-format-tax-structured-output-reasoning-degradation.md) — ★★★★ The Format Tax: Structured output requirements degrade reasoning. Format-requesting instructions (not decoding) cause most accuracy loss. Decoupling recovers accuracy. Explains RIGHT side of EXP-129 hump curve.
+2. [dd748](DD-748-bcr-task-scaling-implicit-budget-constraint.md) — ★★★★★ BCR "Free Lunch": Implicit budget constraints from concurrent problems improve efficiency AND accuracy. Emergent self-regulated efficiency eliminates redundant metacognitive loops. Explains LEFT side of EXP-129 hump curve.
+3. [CR-338](../cross-references/CR-338-constraint-paradox-hump-curve-grounding.md) — ★★★★★ The Constraint Paradox: Unified external grounding for EXP-129's hump curve. BCR explains scaffolding benefit (left side), Format Tax explains overhead cost (right side), DD-671 explains failure mode shift.
+| [dd747](DD-747-format-tax-structured-output-reasoning-degradation.md) | The Format Tax ★★★★ | Lee et al. 2026 — Structured output degrades reasoning, prompt-level not decoder-level |
+| [dd748](DD-748-bcr-task-scaling-implicit-budget-constraint.md) | BCR Task-Scaling ★★★★★ | Yang et al. 2026 — Implicit budget "free lunch", emergent self-regulation |
+**Cross-references (Session 630)**:
+1. DD#747 → KE-134 (explains RIGHT side of hump curve — format overhead)
+2. DD#748 → KE-134 (explains LEFT side of hump curve — implicit budget benefit)
+3. DD#748 → KE-064 (revises execution crowding: related gates synergize via BCR mechanism)
+4. CR#338 → EXP-131 prediction (unrelated gates should show lower peak, steeper decline)
+5. CR#338 → KE-101 Law 2 (structural scaffolding vs format overhead distinction)
+**Multi-Agent Engineering at Scale** ★★★★★ CRITICAL — NEW (2026-04-11 Session 644)
+1. [dd749](DD-749-meta-fair-30k-agent-formalization.md) — ★★★★★ Meta FAIR 30K-Agent Textbook Formalization: Largest published multi-agent deployment. 30K Claude 4.5 Opus agents formalize 500-page graduate textbook in Lean. 130K lines, 340/340 theorems. Standard software engineering (git + PR review + merge queue) — no bespoke framework. 11% per-agent success rate by design. ~$100K cost. Resolves CR-290 MAS scaling paradox for partitionable domains.
+| [dd749](DD-749-meta-fair-30k-agent-formalization.md) | Meta FAIR 30K-Agent ★★★★★ | Gloeckle et al. 2026 — Git-based MAS coordination at scale, over-provision + filter |
+**Cross-references (Session 644)**:
+1. DD#749 → CR-290 (resolves MAS scaling paradox: partitionable domains + structural isolation)
+2. DD#749 → CR-301 (strongest validation of harness engineering thesis)
+3. DD#749 → KE-101 Law 1 (coordination cost dominates — 11% success rate manageable via structural isolation)
+4. DD#749 → KE-101 Law 3 (attention is zero-sum — solved by decomposing 500 pages into independent statements)
+5. DD#749 → DD-731 (capability ≠ cooperation — Meta FAIR shows cooperation via infrastructure, not agent intelligence)
+6. DD#749 → KE-120 CCC Triad (cooperation structurally enforced via merge queue, not assumed)
+> 151 research deep dives, cross-reference syntheses, and reference documents.  
 > Last updated: 2026-04-11 | Maintained by Scout

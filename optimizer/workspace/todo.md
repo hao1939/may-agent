@@ -90,7 +90,7 @@
 - **Tool quality**: Waste rate 3.6% (stable). All regressions are bob INDEX.md noise.
 - **LLM evaluations**: All heuristic-only. By design if JS evaluator sufficient.
 - **Dead workflows**: may/coach ~367 lines never-used code. Low-priority cleanup.
-- **Workflow adoption**: 4.5% system-wide (Apr 4-10). Bob 22.4%, Coach 1.9%, others 0%. No clear upward trend (fluctuates 0.3%-16.6% weekly).
+- **Workflow adoption**: System-wide **surged to 10.1%** (Apr 11, up from 4.5% Apr 4-10). Bob at **49.1%** (up from 22.4%). Surge started Apr 9 when D-o-R became default dispatch path. Coach 1.9%, others 0%.
 - **Workflow efficiency**: D-o-R runs cost +53% more ops than non-WF equivalents. Phase 1 unbounded reading is root cause. Error rates ~50% lower. Quality scores INCOMPARABLE (0-1 vs 0-5 scales — data infra bug).
 - **Optimizer heartbeat cost**: Was 56 ops avg. Fix deployed (Dispatcher Mode heartbeat). Measuring.
 - **Bob P1 read-loop**: ~~87 ops in Phase 1 of D-o-R for a KB integration task.~~ **FIX DEPLOYED (commit 40b22057)**: 15-op budget cap prompt. Measuring — check after 24h. Finding: `workspace/finding-dor-p1-bloat-0411.md`

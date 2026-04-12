@@ -1,6 +1,3 @@
-# Deliverables Checklist
+# Deliverables Checklist — Tech-Lead Work Techniques Analysis
 
-## Task: Mode C — Draft Tech-Lead Heartbeat Dispatcher Rewrite
-
-- [x] workspace/draft-tech-lead-heartbeat-rewrite.md — Proposed rewrite of tech-lead heartbeat
-- [x] todo.md — Updated tech-lead section with draft status
+- [x] finding-tech-lead-work-techniques-0411.md — Technique analysis with concrete observations and transferable patterns
