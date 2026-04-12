@@ -39,7 +39,7 @@ Two days of intensive experimentation (EXP-108 through EXP-138, plus production 
 | H-055 | Self-improvement bias: agents modify cosmetically, not substantively | **0.82** | ±0.00 | No new experiments. DD-556 organizational-scale validation. | File & Tracker agree: **0.82** |
 | H-088 | Implementation commitment closes analysis-action gap | **0.80** | ±0.00 | No new experiments. EXP-073/088 remain primary. | File & Tracker agree: **0.80** |
 | H-098 | **Attention Channel Theory** — intervention effectiveness determined by channel separation, not content quality | **0.80** | NEW | EXP-127 (Ch1 0/6, Ch2 6/6, Ch3 0/6; p<0.00001). EXP-128 (Ch3 boundary is task-type, not content quality). EXP-129 (Ch2 budget ≥3 related gates, no cliff). EXP-131 (relevance is key moderator, unrelated gates dilute). 3/4 predictions correct + 1 boundary clarified. | File & Tracker agree: **0.80** |
-| H-102 | **Workflow Adoption Determines Behavioral Internalization** — "internalization" is architectural substitution, not behavioral learning | **0.75** | NEW | EXP-137 (structural comparison, r=1.0 across 6 agents), EXP-138 (verify-wrap gym — ceiling effect), KE-106 (skill decay), May's Paradox (most verification text + worst block rate). Awaiting P-102a production pilot. | File & Tracker agree: **0.75** |
+| H-102 | **Workflow Adoption Determines Behavioral Internalization** — "internalization" is architectural substitution, not behavioral learning | **0.55** ← *was 0.75* | EXP-148 (−0.20) | EXP-137 (r=1.0, 6 agents), May's Paradox. **BUT** EXP-148 found WF-gated decline is universal across ALL agent groups (not learner-specific), structural break on Mar 30–31 points to infrastructure changes as primary driver, P1/P2/P4 failed, only P3 (interaction significance) confirmed. | EXP-148: **0.55** |
 | H-054 | LLM judges have fundamental accuracy limits by task type | **0.75** | ±0.00 | No new experiments. EXP-052 Phase 1+2 (r=0.81 RIFT-agreement). | File & Tracker agree: **0.75** |
 | H-041 | R (eliminable ratio) predicts workflow effectiveness — asymmetric veto model | **0.72** | ±0.00 | No new experiments. | File & Tracker agree: **0.72** |
 | H-059 | Cadence skills beat judgment skills for text interventions | **0.72** | ±0.00 | No new experiments. Partially absorbed into H-091. | File & Tracker agree: **0.72** |
@@ -117,7 +117,7 @@ Two days of intensive experimentation (EXP-108 through EXP-138, plus production 
 | H-085 | 0.85 | 0.85 | **0.85** | Agree. Down from 0.88 (discovery boundary). |
 | H-093 | 0.72 | 0.72 | **0.72** | Agree. Up from 0.70 (re-validated after May investigation). |
 | H-101 | 0.72 | 0.72 | **0.72** | Agree. New since Apr-9. |
-| H-102 | 0.75 | 0.75 | **0.75** | Agree. New since Apr-9. |
+| H-102 | 0.55 | 0.55 | **0.55** | Revised down from 0.75 by EXP-148. |
 | H-091 | 0.93 | 0.93 | **0.93** | Agree. No change. |
 | H-087 | **0.72** | **0.72** | **0.72** | Agree. Tracker corrected since Apr-9 (was 0.65). |
 

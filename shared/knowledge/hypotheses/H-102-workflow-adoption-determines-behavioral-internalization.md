@@ -198,16 +198,22 @@ Agents that do all work inline in heartbeats (no forked work sessions) cannot ad
 
 ## Bayesian Assessment
 
-**P(H) = 0.75**
+**P(H) = 0.55** *(revised 2026-04-12 — was 0.75)*
 
-### Evidence supporting (weight: strong)
+### Evidence supporting (weight: moderate → reduced from strong)
 - EXP-137 structural comparison: perfect correlation (1.0) between workflow adoption and learner status. N=6 agents, all features controlled.
 - May's Paradox: strongest possible falsification of the text-scaffolding alternative
 - KE-106: independently establishes that text doesn't produce behavioral change
 - EXP-138: gym ceiling effect confirms production/gym divergence (consistent with workflow-dependence of the effect)
 - Mechanistic clarity: the workflow substitution model makes specific, testable predictions
+- **EXP-148**: Statistically significant interaction effect (Learner × WF-Gated, Z = −4.91, p < 0.001). Largest absolute decline is in the Learner × WF-Gated cell (−31.3 pp). Cohen's h = 0.849 (large effect).
 
-### Evidence limiting confidence (why not higher?)
+### Evidence limiting confidence (why lower than 0.75?)
+- **EXP-148 critical finding: universal asymmetry.** The WF-Gated > WF-Indep decline pattern exists in ALL agent groups — not just learners. Neutral agents (optimizer: −33.6 pp, scout: −29.5 pp) show declines comparable to learners. Reliant agents also show 2.4× gated/indep asymmetry. This is fundamentally inconsistent with H-102's prediction that the effect should be learner-specific.
+- **EXP-148: structural break on Mar 30–31.** A 28 pp overnight drop in fire rates coincides with EventBus refactor, DbWriter, and agent calling infrastructure changes — suggesting infrastructure improvements, not gradual workflow adoption.
+- **EXP-148: learner–neutral gap converges to zero.** By Apr 10, learners and neutral agents have identical fire rates (~3%). No persistent learner advantage from workflow adoption.
+- **EXP-148: P1 failed** — Learner × WF-Gated decline is only 1.31× the next-largest cell (needed ≥ 2.0×)
+- **EXP-148: P4 failed** — Only 39.2% of aggregate decline attributable to Learner × WF-Gated (needed ≥ 60%)
 - **No prospective intervention test yet**: All evidence is retrospective correlation. P-102a (deploy verify-wrap to scout) is the critical test. Until it runs, the correlation might be spurious.
 - **Small N**: Only 6 agents in the structural comparison. Perfect correlation with N=6 is suggestive but could be coincidental.
 - **Confound: agent role**: Learner agents (bob/coach/TL) have architecturally complex roles that may independently drive verification behavior. The causal arrow might point from "role complexity" to both "workflow adoption" and "verification behavior."
