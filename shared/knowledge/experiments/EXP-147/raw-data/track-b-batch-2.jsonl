@@ -1,0 +1,5 @@
+{"scenario":"plan-once-amend","run":1,"condition":"scoped","passed":true,"elapsed":89,"db_run_id":"unknown","index":0}
+{"scenario":"plan-once-amend","run":2,"condition":"scoped","passed":true,"elapsed":103,"db_run_id":"unknown","index":1}
+{"scenario":"plan-once-amend","run":3,"condition":"full","passed":true,"elapsed":72,"db_run_id":"unknown","index":2}
+{"scenario":"plan-once-amend","run":4,"condition":"full","passed":true,"elapsed":81,"db_run_id":"unknown","index":3}
+{"scenario":"plan-once-amend","run":5,"condition":"scoped","passed":true,"elapsed":95,"db_run_id":"unknown","index":4}
