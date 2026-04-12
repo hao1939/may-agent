@@ -61,7 +61,7 @@
 - Root cause: heartbeat.md encouraged inline exploration (multi-query DB analysis, file reads).
 - Fix: Rewrote heartbeat.md to "Dispatcher Mode" — observe in 1-2 ops, fork all analysis work. Target: ≤15 ops.
 - Baseline: 8 heartbeats in 12h, avg 56 ops, total 451. Post-fix: avg 23 ops (59% reduction). ✅ SUCCESS.
-- Last exploration mode: **D** (D-o-R nesting post-fix + Bob research thread structure — forked Apr 12 ~04:24 UTC). Previous: C (coach experiment cost scouting — Apr 12 ~03:59), B (tool adoption pattern mining — Apr 12 ~03:28), A (Bob 93-op P1 cap violation — Apr 12 ~02:58).
+- Last exploration mode: **A** (Coder 104-op outlier archaeology — Apr 12 ~06:54 UTC). Previous: D (D-o-R nesting post-fix + Bob research thread structure — forked Apr 12 ~04:24 UTC), C (coach experiment cost scouting — Apr 12 ~03:59), B (tool adoption pattern mining — Apr 12 ~03:28), A (Bob 93-op P1 cap violation — Apr 12 ~02:58).
 - **session-query tool BUILT** (`scripts/session-query.ts`). Replaces 15-25 bash archaeology pattern with single command. Supports: --agent, --since, --task, --status, --min-ops, --tools, --json, --sort. Tested with real data (911 sessions). Est. savings: 10-15 ops/session × 187 sessions = 1,870-2,805 ops.
 - **session-query adoption**: Still **zero active adoption** beyond optimizer (confirmed Apr 11 05:24 UTC). May + QA have passive mentions only. **Three blockers**: (1) filesystem history stale (through ~Apr 5), (2) zero agents have session-query in context.md, (3) may.db has 0 coach sessions. No change since last check. **gym-batch.sh MERGED to main** (cherry-pick 5ca3bdf, Apr 11 ~05:54 UTC) + coach context.md updated — but **gym-batch.sh also has ZERO adoption** despite being in context.md (see Coach Session Efficiency section). Findings: `workspace/finding-tool-gap-0411-b.md`, `workspace/finding-coach-experiment-technique-0411.md`, `workspace/finding-gym-batch-adoption-0411.md`
 - **ADOPTION FIX DIRECTION (Apr 12)**: Per tool adoption patterns finding — don't bother adding session-query to context.md (Level 4 = 0% adoption). Must fix may.db backend FIRST, then wire into workflow prompts/heartbeat dispatch templates (Level 1-3). Finding: `workspace/finding-tool-adoption-patterns-0412.md`
@@ -92,6 +92,15 @@
 - Infra maxOps on runAgent remains the only reliable long-term solution for budget enforcement
 - **Projected savings (if pattern holds)**: ~397 ops/day (~$19/day, ~$570/month) from budget caps
 - Finding: `workspace/finding-bob-research-thread-structure-0412.md`, `workspace/finding-bob-research-thread-postfix-0412.md`, `workspace/finding-bob-research-postfix-measurement-0412b.md`
+
+### Coder 104-op Outlier — Fewshot Injection False Positive
+- **Root cause**: Fewshot pattern `/binary|\.bin|compiled|executable|hexdump/i` matched `.bin` in `./node_modules/.bin/tsc` (the verification command) → injected irrelevant "binary file escalation" example into a dead code removal task
+- Also matched `consumer` in code description → injected "escalation-judgment" example
+- Coder spent 104 ops / 10.3 min, produced **zero changes** ("No changes to the protected files")
+- Total tree cost: 134 ops (28 TL + 104 coder + 2 retry) for zero useful output
+- **Fix**: Change regex to `\.bin(?![/\\])` (negative lookahead excludes `.bin/` paths). Also strip verifyCommand before fewshot matching.
+- Only 1 coder session >75 ops in 14 days (besides gym runs) — likely one-off, but systemic risk exists for all implement-and-verify tasks
+- Finding: `workspace/finding-coder-104op-archaeology-0412.md`
 
 ### Tool Adoption Strategy — DECLARED DEAD
 - gym-batch.sh and session-query.ts: **4th consecutive check confirming zero adoption** (24h+ since merge)

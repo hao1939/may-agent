@@ -25,26 +25,20 @@ Updated: 2026-04-12 ~06:53 UTC
 | Issue | Status | Owner | Notes |
 |-------|--------|-------|-------|
 | Amy-kimi billing outage | 🔴 Blocked | Hao | Still 429, needs balance refill |
-| **EXP-105 Few-Shot Production Impact** | ⏳ WAITING | coach | Zero coder/optimizer work sessions since deployment (Apr 9). Baselines captured. Heartbeat exclusion bug fixed. |
-| **EXP-114a Tool Schema Guard Monitoring** | ⏳ INSUFFICIENT DATA | coach | T+2h: 57 sessions, 0 activations, 0 FP. Need 280+ sessions. |
-| **EXP-123 Verification-Depth Guard** | ✅ COMPLETE | coach | 38h data: Fleet C1.3 95.3% (552 checks). C1.5 regression was measurement artifact (fixed). Optimizer C1.3 dropped to 82% — needs investigation. |
+| **EXP-105 Few-Shot Production Impact** | ⏳ WAITING | coach | Zero coder/optimizer work sessions since deployment (Apr 9). Baselines captured. |
+| **EXP-114a Tool Schema Guard Monitoring** | ⏳ INSUFFICIENT DATA | coach | 57 sessions, 0 activations. Need 280+. |
 | **Web UI Agent Visualization Dashboard** | ⚠️ Branch stale | tech-lead | Source on main (`web.ts` 663 lines). Branch needs reconciliation. |
-| **Finish-Guard Git Ops False Positive** | ⚠️ Dispatched | tech-lead | FM-3.1 guard blocked git merge 4×. Dispatched (req:3623828c). |
-| **Bob H-097 CCC Triad Hypothesis** | ⏳ NEW | bob | P(H)=0.65. Multi-Agent CCC Triad. |
-| **H-098 Attention Channel Theory** | 🆕 FILED | bob | P(H)=0.78, Tier 1. Channel separation drives intervention effectiveness. |
-| **H-099 Discovery Task Boundary** | 🆕 FILED | bob | Creative inference irreducible to scaffolding. 5 failed interventions as evidence. |
-| **EXP-132 Path Hallucination Guard** | ⚠️ Needs rebuild | tech-lead | Code merged (be2a9317) but binary not rebuilt. |
-| **EXP-144 Pilot (Format-Decoupled Gate)** | ✅ COMPLETE | coach | Pilot done (145 ops). Bob analyzing in EXP-144 results thread. |
-| **C1.5 Checker Timing Bug** | ✅ FIXED | tech-lead | Commit 7d54e506: uses transcript instead of post-hoc disk check. 51 ops, clean. |
-| **Convention Regressions** | ⚠️ IN PROGRESS | coach | QA: C1.1 44.4%, C1.4 71.1%. Optimizer: C1.1 78.1%. May: C7.1 78.5%. Coach investigating + applying fixes. |
-| **Lens C: Eval Dead Code Removal** | ✅ MERGED | tech-lead | Commit c174fa3: -2,373 lines dead eval paths 2+3. |
-| **Deliver-or-Report Workflow Fix** | ⏳ IN PROGRESS | tech-lead | 41% done rate (23/39 escalated). Tech-lead working on sensitivity fix. |
-| **EXP-145 Guard Dependency Escalation** | ⏳ IN PROGRESS | coach | Phase 1: time-series retrospective analysis. |
-| **EXP-146 Thinking-Token Analysis** | ⏳ IN PROGRESS | bob | Designing for H-105 (Three-Layer Reasoning Model). |
-| **analyze-failures cron bug** | ✅ FIXED | tech-lead | Handler already uses `prepare`. Tech-lead now working on cron dynamic handler resolver (uncommitted `src/app/cron.ts`). |
-| **Coder Skill Pruning P0** | ✅ DONE | tech-lead | 3 disproven-as-text skills removed (16.3KB). Commit 6705a0b3. |
-| **Coder Skill Pruning P1** | ✅ DONE | tech-lead | 4 untested skills removed (14.4KB). Commit 2ea68a4b. Coder 10→3 skills (70% reduction). |
-| **EXP-147 CCC Triad Validation** | 🆕 DESIGNED | bob | Tests H-097 via P-120b + P-120c. Design complete. Ready for coach to execute. |
+| **Finish-Guard Git Ops False Positive** | ⚠️ Dispatched | tech-lead | FM-3.1 guard blocked git merge 4×. |
+| **Bob H-097 CCC Triad Hypothesis** | ⏳ NEW | bob | P(H)=0.65. EXP-147 designed, ready for coach execution. |
+| **H-098 Attention Channel Theory** | 🆕 FILED | bob | P(H)=0.78, Tier 1. |
+| **H-099 Discovery Task Boundary** | 🆕 FILED | bob | Creative inference irreducible to scaffolding. |
+| **EXP-132 Path Hallucination Guard** | ⚠️ Needs rebuild | tech-lead | Code merged but binary not rebuilt. |
+| **Convention Regressions** | ⚠️ IN PROGRESS | coach | QA: C1.1 44.4%, C1.4 71.1%. Optimizer: C1.1 78.1%, C1.3 82%. |
+| **Deliver-or-Report Workflow Fix** | ⏳ IN PROGRESS | tech-lead | 41% done rate. Sensitivity fix in progress. |
+| **EXP-145 Guard Dependency Escalation** | ✅ COMPLETE | coach | H-104 FALSIFIED (0.78→0.10). Fleet fire rate declined 25.1%→2.6%. |
+| **EXP-146 Thinking-Token Analysis** | ⏳ IN PROGRESS | bob | Designing for H-105. |
+| **EXP-147 CCC Triad Validation** | 🆕 DESIGNED | bob | Tests H-097 via P-120b + P-120c. Ready for coach. |
+| **Cron Handler Resolver** | ⏳ IN PROGRESS | tech-lead | Dynamic handler loading on reload. Uncommitted `src/app/cron.ts`. |
 
 ## Next Actions
 - **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. Saves $143-441/day. **Blocked on Hao since Mar 24**.

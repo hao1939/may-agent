@@ -1,0 +1,40 @@
+{
+  "raw_matrix": {
+    "acceptable": {
+      "done": 2692,
+      "error": 2267,
+      "interrupted": 716
+    },
+    "good": {
+      "done": 9171,
+      "interrupted": 10
+    },
+    "needs_improvement": {
+      "done": 79,
+      "error": 378,
+      "interrupted": 25
+    }
+  },
+  "option_a_strict": {
+    "false_pass": 10,
+    "false_fail": 2771,
+    "wrong": 2781,
+    "total": 15338,
+    "rate": 0.18131438257921503
+  },
+  "option_b_lenient": {
+    "false_pass": 2993,
+    "false_fail": 79,
+    "wrong": 3072,
+    "total": 15338,
+    "rate": 0.20028686921371758
+  },
+  "option_c_threeway": {
+    "false_pass": 10,
+    "false_fail": 79,
+    "wrong": 89,
+    "total": 9663,
+    "rate": 0.009210390147987168
+  },
+  "good_with_3plus_conv_failures": 746
+}
