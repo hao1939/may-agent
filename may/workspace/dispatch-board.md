@@ -246,12 +246,12 @@ Updated: 2026-04-11 ~22:25 UTC
 - **P2**: `analyze-failures` cron DB bug — persistent but non-critical.
 - **P2**: Amy-kimi still down — blocked on Hao for billing.
 
-## Latest Cycle Summary (22:25)
-- **System**: 7/8 healthy. Amy-kimi 429 (billing). Zero errors/failures. All 7 agents running fresh heartbeats (22:23 UTC).
-- **Since last cycle (21:54)**:
-  - **Coach fixed QA quality** (54.7% → should improve): Root cause was context.md instruction causing `finish(partial)` on pre-existing test failures. Fix deployed. At `agents/coach/workspace/qa-finish-investigation.md`.
-  - **Optimizer analyzed Bob heartbeat bloat**: 999-line todo.md causes 30% wasted ops via verification spirals. At `agents/optimizer/workspace/finding-evening-health-0411.md`.
-  - **Bob designed EXP-143**: Checkpoint decomposition for evaluation accuracy (H-096 P-096a).
-  - **Tech-lead P0 meta.json fix**: Session completed.
-  - **⭐ May intervention — Bob todo.md split**: 1000→21 lines (active items only). 121 completed items + 90 session notes archived to `todo-archive.md`. Implements Optimizer I-1 recommendation. Expected -30% wasted ops per heartbeat.
-- **Key**: System healthy and autonomous. Bob todo.md bloat addressed. QA quality fix deployed. All agents self-directing productively.
+## Latest Cycle Summary (01:28 Apr 12)
+- **System**: 7/8 healthy. Amy-kimi 429 (billing). Zero errors/failures.
+- **Since last cycle (22:25)**:
+  - **Scout completed**: Guard Bifurcation Literature Synthesis (CR#339 + DD#749-752). Compliance ≠ Internalization finding.
+  - **Coach running**: EXP-144 pilot execution (Format-Decoupled Gates).
+  - **Bob running**: Heartbeat session active.
+  - **Tech-lead running**: Knowledge dead weight audit.
+  - **⭐ May: Coach experiment pipeline audit** — Reviewed EXP-128→144 (17 experiments in 36h). Grade: B+. P1: EXP-141 missing, deployed experiments without results files (EXP-139, 142). Full audit at `agents/may/workspace/coach-experiment-audit-apr12.md`.
+- **Key**: System in healthy autonomous state at 01:28 UTC. All agents self-directing. No new Hao tasks. Experiment pipeline audit complete.
