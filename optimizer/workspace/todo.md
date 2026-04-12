@@ -31,6 +31,13 @@
 - **Measurement needed**: Need n≥3 post-fix D-o-R runs to confirm no nesting.
 - Finding: `workspace/finding-bob-90op-archaeology-0411.md`
 
+### Bob 113-op Research Synthesis — FINDING COMPLETE
+- Bob hit 113 ops in `parallel-research` synthesis step (s_1775957533648_1759). NOT a D-o-R cap bypass — it's a different workflow with **zero budget constraint** on the synthesis callAgent().
+- 10 synthesis sessions analyzed: median 9 ops, but two outliers (113 and 70 ops). Thread steps also bloat (up to 79 ops).
+- **Fix**: Add 20-op budget instruction to synthesis task prompt in `agents/shared/workflows/parallel-research.ts`. Low complexity.
+- Est. savings: ~$0.70-1.00/day (synthesis) + ~$2-3/day (including thread budgets).
+- Finding: `workspace/finding-bob-113op-research-synthesis-0412.md`
+
 ### Coach Session Efficiency — FINDING COMPLETE, FIX 2 DEPLOYED
 - 2,175 coach sessions analyzed. 50.3% zero-op, 64% of ops in top sessions are exploration waste.
 - Top 15 sessions avg 24% productivity. Two sessions 3% productive (68 calls, 2 productive).
