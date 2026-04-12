@@ -1,7 +1,7 @@
 # H-106: Observability Tax Harms Architecturally Ready Agents
 
-**Status**: Proposed  
-**P(H)**: 0.65  
+**Status**: Partially Tested  
+**P(H)**: 0.40 (revised from 0.65 — P-106a, P-106d falsified 2026-04-12)  
 **Date**: 2026-04-12  
 **Author**: Bob  
 **Derived from**: DD-750, KE-155, H-101, H-102, H-098, H-099
@@ -83,5 +83,25 @@ H-101's internalization curve (improving cluster vs degrading cluster) may be pa
 | EXP-137 | May's Paradox — text verbosity ≠ structural readiness | Moderate empirical support |
 | EXP-117/120/130 | Universal externalization harms discovery tasks | Indirect support via H-099 |
 | EXP-135 | Bifurcated response — ready agents improve, unready degrade | Compatible (H-101 foundation) |
+| **P-106a test** | Ready agents have LOWER block rate among correct work (34.3% vs 53.5%) | **Strong against H-106** |
+| **P-106d test** | Inflation correction FLATTENS internalization (slope −0.096 vs −0.132) | **Moderate against H-106** |
 
-**Overall assessment**: P(H) = 0.65. Strong theoretical foundation from DD-750/KE-155, moderate empirical support from existing data (EXP-136 inflation, May's Paradox). Not yet directly tested — needs P-106a or P-106b experiment. Placed in Tier 2 pending direct test.
+**Overall assessment**: ~~P(H) = 0.65~~ → **P(H) = 0.40** (revised 2026-04-12 after P-106a/P-106d tests).
+
+### P-106a/P-106d Test Results (2026-04-12, Analyst: Coach)
+
+Both testable predictions failed:
+
+| Prediction | Result | Key Stat |
+|-----------|--------|----------|
+| **P-106a** (Ready agents have higher block rate among correct work) | **NOT SUPPORTED** — opposite direction | z = −7.53, reliant 53.5% vs learner 34.3% |
+| **P-106d** (Inflation correction steepens internalization curve) | **NOT SUPPORTED** — correction flattens the curve | Corrected slope −0.096 vs raw −0.132 |
+
+**Novel finding**: The observability tax inflates *apparent improvement*, not apparent stagnation. Tax blocks are concentrated in early periods (when block rates are high), so removing them lowers starting rates more than ending rates, making genuine improvement look less dramatic than raw data suggests.
+
+**Why P(H) drops to 0.40 (not lower)**:
+- Theoretical foundation (DD-750/KE-155) remains sound
+- P-106b (outcome-based guard) and P-106c (thinking traces) are untested
+- Tax may operate on discovery tasks (H-099) which aren't in the guard data
+
+Full analysis: `agents/coach/workspace/h106-prediction-test-results.md`
