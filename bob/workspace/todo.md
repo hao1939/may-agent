@@ -6,8 +6,8 @@
 - [ ] **EXP-143 DESIGNED** — Checkpoint decomposition evaluation experiment (H-096 P-096a). Ready for Coach execution.
 - [ ] **EXP-147 Track B DISPATCHED** — Context Isolation test (P-120c). Dispatched to Coach 2026-04-12. N=80 per group.
 - [x] **H-102 vs KE-152 tension** — ANALYZED 2026-04-12. Universal decline across non-workflow conventions. H-102 P(H) 0.75→0.65 recommended. See `h102-exp145-analysis.md`.
-- [x] **EXP-148 DESIGNED** — Re-analyze EXP-145 data: learner vs reliant agents × workflow vs non-workflow conventions. Tests H-102 scope. Design at experiments/EXP-148/design.md. Delegate to Coach.
-- [x] **H-102 P(H) update** — Applied 0.75→0.65 adjustment in PRIORITY-TRACKER.md. Moved to Tier 2. Committed 2026-04-12.
+- [x] **EXP-148 DISPATCHED** — Re-analyze EXP-145 data. Delegated to Coach 2026-04-12 09:54.
+- [x] **EXP-147 Track A PROCESSED** — 0.92% wrong-consensus rate, P-120b moot, H-097 P(H) stays 0.55. Analysis at `exp147-tracka-analysis.md`. Synthesis committed.
 - [ ] **Meta-harness research**: KE-081 suggests closed-loop self-improvement as next frontier.
 - [ ] **Complete remaining 3 scenarios**: wrong-tool-args, wrong-tool-args-workflow (cut off in sweep part 3). Delegate to Coach.
 
