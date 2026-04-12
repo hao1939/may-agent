@@ -1,8 +1,8 @@
 # H-103: Format-Decoupled Gates Shift the Hump Curve Rightward
 
-**Status**: Active — UNTESTED
+**Status**: Active — PARTIALLY TESTED (EXP-144 Pilot)
 **Created**: 2026-04-11 (Bob, Session s_1775948091154_1679)
-**P(H)**: 0.72
+**P(H)**: 0.72 → **0.60** (updated 2026-04-12, see Pilot Evidence below)
 **Derived from**: CR-338 (Cognitive Overhead Budget), DD-747 (Format Tax), DD-748 (BCR), KE-134 (Hump Curve), KE-135 (Gate-Task Synergy)
 **Related**: H-085 (Forced Externalization), H-098 (Attention Channel Theory), H-093 (CIVC)
 
@@ -110,9 +110,45 @@ This tests P-103a directly and P-103d via secondary metrics.
 
 ---
 
+## Pilot Evidence (EXP-144, 2026-04-12)
+
+### What the pilot showed
+EXP-144 ran 10 pilot sessions (5 structured, 5 format-decoupled) across hidden-dependency and compound-edit scenarios. Key findings:
+
+| Finding | Implication for H-103 |
+|---------|----------------------|
+| Product outcomes identical (5/5 in all conditions) | P-103c **confirmed** — format doesn't affect outcomes at current gate counts |
+| Decoupled agents externalize **zero** reasoning artifacts | **Unexpected** — format-free agents skip visible reasoning entirely |
+| Structured gates: 4/4 process checks pass | Structured gates successfully mandate externalization |
+| Decoupled gates: 0-1/4 process checks | Not a reasoning failure — a *measurement* failure |
+
+### Bayesian Update: P(H) 0.72 → 0.60
+
+**Evidence for H-103 (upward pressure)**:
+- Product outcome equivalence directly confirms Claude's format tax on task completion is near-zero (addresses Open Q1)
+- This means format overhead IS pure waste from a product-outcome perspective
+
+**Evidence against H-103 (downward pressure, net dominant)**:
+- The core claim is that format-decoupled gates "shift the hump curve rightward" — but if Claude already has near-zero format tax on outcomes, there's no curve TO shift. The hump curve degradation at 4 gates may be from scaffolding saturation, not format tax.
+- Prediction P-103a ("format-decoupled 4 gates >> structured 4 gates") is now less likely: if format isn't hurting outcomes at 3 gates, removing it at 4 gates may not help either.
+- The "two-phase architecture" design implication loses urgency if format compliance isn't consuming meaningful cognitive capacity.
+
+**Net**: The specific mechanism (format tax consuming capacity) is weaker than expected for Claude. The hump curve may be driven by scaffolding saturation or session duration effects, not format overhead. Lowering P(H) from 0.72 to 0.60.
+
+### New dimension discovered: Reasoning Externalization Gap
+See **KE-146** for full analysis. The pilot revealed that agents don't externalize reasoning when not mandated — they think internally and act. This reframes the value of structured gates: not as reasoning aids, but as **observability infrastructure**. Guards and structured gates force agents to show their work, which matters for debugging and monitoring even if it doesn't improve outcomes.
+
+### Prediction status update
+- **P-103a**: Still untested (need 4-gate comparison). But weakened by near-zero format tax at current gate counts.
+- **P-103b**: Still untested. Less likely given the evidence.
+- **P-103c**: ✅ **CONFIRMED** — format-decoupled ≈ structured at equivalent gate counts on product outcomes.
+- **P-103d**: Still untested. The key remaining question.
+
+---
+
 ## Open Questions
 
-1. **Claude's format tax magnitude**: DD-747 says closed-weight models have largely closed the format tax gap. How much format tax does Claude actually incur? If near-zero, H-103 predicts are null.
+1. **~~Claude's format tax magnitude~~**: ✅ ANSWERED — Claude's format tax on product outcomes is near-zero in our gym scenarios. Agents get the right answer regardless of format mandates.
 2. **Interaction with gate relevance**: Does format decoupling differentially benefit related vs unrelated gates? (KE-135 found 36pp relevance effect — does decoupling reduce this gap?)
 3. **Post-processing cost**: The two-phase architecture adds a Phase 2 extraction step. Is this cost negligible, or does it consume meaningful capacity?
 4. **Production applicability**: Our production guards are post-hoc checks, not analytical gates. How much of the format tax finding applies to guard-style verification vs workflow-style analysis?

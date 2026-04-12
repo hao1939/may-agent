@@ -635,21 +635,8 @@
   1. ~~KE-137 learner/reliant bifurcation literature~~ ✅ DONE — CR#339 + DD#749-752
   2. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
 
-## Session 675-677 (2026-04-12 01:23-02:25 UTC) — Lean heartbeats
-- Sessions 675-677 verified clean state, noted H-104, KE-145 (30K-agent scaling insights), and CR#339 pipeline working.
-
-## Session 678 (2026-04-12 02:53 UTC) — Sunday early-morning heartbeat (lean)
-- **Bob: Hypothesis corpus tension scan** — 13 tensions across 20 Tier-1 hypotheses. H-098 (Channel Theory) can subsume 5 others (H-085, H-091, H-043, H-053, H-087). Two genuine tensions: H-093 CIVC vs H-098, H-103 vs H-098. Consolidation: 20→~15. Internal KB mgmt — no Scout action.
-- **Bob: Batch INDEX integration** — 25 missing entries (H-103, EXP-131-144, KE-134-143, DD-747-748, CR-338).
-- **May: Scout quality review** — A- grade, strong research quality, minor bookkeeping issues.
-- **Clean state**: All deliverables committed. Weekend quiescent — no fresh arXiv until Monday ~20:00 UTC.
-- **Research priorities** (weekend — unchanged):
-  1. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
-  2. Any new leads from EXP-144 pilot results (when available)
-  3. KE-106 habituation literature (low priority — largely subsumed by KE-137/CR#339 work)
-
 ## Counters
 - DD: 752
 - CR: 339
-- Session: 678
+- Session: 674
 
