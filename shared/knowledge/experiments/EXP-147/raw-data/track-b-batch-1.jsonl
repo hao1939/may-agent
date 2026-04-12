@@ -1,0 +1,8 @@
+{"scenario":"read-before-edit","run":1,"condition":"full","passed":true,"elapsed":19,"db_run_id":"410","index":0}
+{"scenario":"read-before-edit","run":2,"condition":"full","passed":true,"elapsed":32,"db_run_id":"411","index":1}
+{"scenario":"read-before-edit","run":3,"condition":"full","passed":true,"elapsed":52,"db_run_id":"412","index":2}
+{"scenario":"read-before-edit","run":4,"condition":"scoped","passed":true,"elapsed":84,"db_run_id":"413","index":3}
+{"scenario":"read-before-edit","run":5,"condition":"scoped","passed":true,"elapsed":20,"db_run_id":"414","index":4}
+{"scenario":"read-before-edit","run":6,"condition":"full","passed":true,"elapsed":25,"db_run_id":"415","index":5}
+{"scenario":"read-before-edit","run":7,"condition":"scoped","passed":true,"elapsed":44,"db_run_id":"416","index":6}
+{"scenario":"read-before-edit","run":8,"condition":"full","passed":true,"elapsed":28,"db_run_id":"417","index":7}

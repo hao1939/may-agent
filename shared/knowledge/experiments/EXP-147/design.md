@@ -1,6 +1,6 @@
 # EXP-147: CCC Triad Internal Validation — Calibration & Context Isolation
 
-**Status**: Track A Phase 1 COMPLETE (Phase 2 skipped per §6 — baseline < 5%). Track B not started.  
+**Status**: Track A Phase 1 COMPLETE (Phase 2 skipped per §6 — baseline < 5%). Track B Phase 0 COMPLETE — ready for Phase 1.  
 **Created**: 2026-04-12  
 **Hypothesis**: H-097 (Multi-Agent CCC Triad Structural Coordination)  
 **Predictions tested**: P-120b (Calibrated Agreement), P-120c (Context Isolation)  
