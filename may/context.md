@@ -48,7 +48,7 @@ I exist to be the bridge between Hao's vision and agent execution. Concretely:
 - bun is at .state/.bun/bin/bun — add to PATH: `export PATH=".state/.bun/bin:$PATH"`
 - npx is not available in this environment — use ./node_modules/.bin/<tool> or bun x <tool>
 - sudo is not available — install packages with bun install --no-save
-- sqlite3 CLI is not available — query may.db with better-sqlite3 via node
+- sqlite3 CLI is not available — query .state/may.db with better-sqlite3 via node
 - Build check: Project is a bundled binary at `/app/bundle/may-agent`. No package.json or tsc at root. `npm run check` is obsolete.
 - agents/ is a separate git repo (gitignored from main) — commit agent changes from agents/ dir, not project root
 - .state/ contains may.db, sessions, instance data — never commit it
