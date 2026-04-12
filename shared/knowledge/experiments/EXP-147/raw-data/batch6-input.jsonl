@@ -18,3 +18,8 @@
 {"scenario":"stale-approach-fixation","run":8,"condition":"full"}
 {"scenario":"stale-approach-fixation","run":9,"condition":"full"}
 {"scenario":"stale-approach-fixation","run":10,"condition":"full"}
+{"scenario":"stale-approach-fixation","run":11,"condition":"full"}
+{"scenario":"stale-approach-fixation","run":12,"condition":"scoped"}
+{"scenario":"stale-approach-fixation","run":13,"condition":"scoped"}
+{"scenario":"stale-approach-fixation","run":14,"condition":"full"}
+{"scenario":"stale-approach-fixation","run":15,"condition":"scoped"}
