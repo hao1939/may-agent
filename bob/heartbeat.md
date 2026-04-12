@@ -63,7 +63,7 @@ workflow.run("parallel-research", JSON.stringify({
     },
     {
       label: "Cost model update",
-      task: "Survey recent sessions in may.db for cost distribution. " +
+      task: "Survey recent sessions in .state/may.db for cost distribution. " +
             "Update agents/shared/knowledge/entries/KE-060*.md"
     },
     {
