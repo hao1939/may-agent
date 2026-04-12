@@ -1,18 +1,18 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-12 ~05:00 UTC
+Updated: 2026-04-12 ~05:53 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors (billing). Blocked on Hao.
-- **Bob**: 🟢 Active — Fresh heartbeat running.
-- **Coach**: 🟢 Active — EXP-144 Phase 1 running (50 gym runs, ~59min in, 2h timeout). Fresh heartbeat also running.
-- **Scout**: 🟢 Active — Fresh heartbeat running.
-- **Tech-lead**: 🟢 Active — Fresh heartbeat running.
-- **Optimizer**: 🟢 Active — Fresh heartbeat running.
-- **Evaluator**: 🟢 Active — Fresh heartbeat running.
-- **QA**: 🟢 Active — Fresh heartbeat running.
-- **Coder**: Idle. Only runs when forked by tech-lead.
-- **Summary**: 7/8 healthy. Amy-kimi 429 (billing). Zero failures last hour.
+- **Bob**: 🟢 Active — Heartbeat + 2 research threads (EXP-144 results, EXP-146 design).
+- **Coach**: 🟢 Active — Heartbeat + QA C1.4/C8.2 fix + EXP-145 Phase 1.
+- **Scout**: 🟢 Active — Completed lean heartbeat.
+- **Tech-lead**: 🟢 Active — Heartbeat + deliver-or-report workflow fix.
+- **Optimizer**: 🟢 Active — Heartbeat + post-fix measurement (Bob budget caps).
+- **Evaluator**: 🟢 Active.
+- **QA**: 🟢 Active.
+- **Coder**: Recently active — completed 2 sessions (eval dead code removal).
+- **Summary**: 7/8 healthy. Amy-kimi 429 (billing). 11 sessions running. High autonomy — all agents self-dispatching productive work.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -34,8 +34,13 @@ Updated: 2026-04-12 ~05:00 UTC
 | **H-098 Attention Channel Theory** | 🆕 FILED | bob | P(H)=0.78, Tier 1. Channel separation drives intervention effectiveness. |
 | **H-099 Discovery Task Boundary** | 🆕 FILED | bob | Creative inference irreducible to scaffolding. 5 failed interventions as evidence. |
 | **EXP-132 Path Hallucination Guard** | ⚠️ Needs rebuild | tech-lead | Code merged (be2a9317) but binary not rebuilt. |
-| **EXP-144 Pilot (Format-Decoupled Gate)** | ✅ COMPLETE | coach | Pilot done (145 ops). Bob analyzed results — H-103 P(H) dropped 0.72→0.60. |
-| **C1.5 Checker Timing Bug** | ⚠️ RETRY NEEDED | tech-lead | 100% of C1.5 failures are false positives (checker runs hours after session). First attempt tainted (58 turns, 7 tool errors, no commit). Need retry. Coach analysis: `finding-bob-c15-regression-0412.md` |
+| **EXP-144 Pilot (Format-Decoupled Gate)** | ✅ COMPLETE | coach | Pilot done (145 ops). Bob analyzing in EXP-144 results thread. |
+| **C1.5 Checker Timing Bug** | ✅ FIXED | tech-lead | Commit 7d54e506: uses transcript instead of post-hoc disk check. 51 ops, clean. |
+| **Convention Regressions** | ⚠️ IN PROGRESS | coach | QA: C1.1 44.4%, C1.4 71.1%. Optimizer: C1.1 78.1%. May: C7.1 78.5%. Coach investigating + applying fixes. |
+| **Lens C: Eval Dead Code Removal** | ✅ MERGED | tech-lead | Commit c174fa3: -2,373 lines dead eval paths 2+3. |
+| **Deliver-or-Report Workflow Fix** | ⏳ IN PROGRESS | tech-lead | 41% done rate (23/39 escalated). Tech-lead working on sensitivity fix. |
+| **EXP-145 Guard Dependency Escalation** | ⏳ IN PROGRESS | coach | Phase 1: time-series retrospective analysis. |
+| **EXP-146 Thinking-Token Analysis** | ⏳ IN PROGRESS | bob | Designing for H-105 (Three-Layer Reasoning Model). |
 | **analyze-failures cron bug** | ⚠️ Low priority | - | `db.query is not a function`. Persistent but non-critical. |
 
 ## Next Actions
@@ -44,11 +49,14 @@ Updated: 2026-04-12 ~05:00 UTC
 - **P1**: **Generate implementation work** — System idle without features. Coder completely idle. Need Hao priorities.
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (05:23)
-- **System**: 7/8 healthy. Zero errors/failures last hour. All agents running fresh heartbeats. Coder forked by tech-lead (active).
-- **Coach C1.5 finding dispatched**: Coach identified 100% of Bob's C1.5 failures as false positives (checker timing bug). Dispatched to tech-lead — first attempt failed (tainted session, 58 turns, no commit). Will retry next cycle.
-- **KE pushes committed** (last cycle): 4 verified KEs deployed to agent context.md files (commit 7ff2a6d8).
-- **Improvement queue**: 5 ready items. Picking "Tech-lead feature steering" this cycle.
+## Latest Cycle Summary (05:53)
+- **System**: 7/8 healthy. 11 sessions running. All agents autonomously dispatching productive work — best autonomy level I've observed.
+- **C1.5 fixed**: Tech-lead committed fix (7d54e506) — uses transcript instead of post-hoc disk check. 100% FP issue resolved.
+- **Lens C dead code**: -2,373 lines merged (c174fa3). Eval paths 2+3 removed.
+- **Convention regressions surfaced**: Coach found QA (C1.1 44.4%), optimizer (C1.1 78.1%), may (C7.1 78.5%). Already investigating and applying fixes.
+- **Active research**: Bob designing EXP-146, processing EXP-144 results. Coach running EXP-145 Phase 1. 
+- **Tech-lead working**: deliver-or-report workflow sensitivity fix (41% done rate).
+- **Improvement queue**: 3 ready items remaining (skill overlap audit, discovery task protection, skill sunset review).
 
 ## Archive Reference
 Full history of 140+ completed items archived to `dispatch-board-archive-apr12.md`.
