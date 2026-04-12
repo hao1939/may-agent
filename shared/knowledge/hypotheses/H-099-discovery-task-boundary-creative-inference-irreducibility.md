@@ -159,7 +159,7 @@ If the discovery task is run with a more capable model (e.g., future Claude vers
 
 2. **Can chain-of-thought prompting change *p* (inference probability per cycle)?** Unlike scaffolding, CoT might alter the processing dynamics rather than the information environment.
 
-3. **Does multi-agent deliberation help?** If two agents independently attempt discovery, P(at least one succeeds) = 1 - (1-p)^2. Redundancy might be the optimal "intervention" for discovery tasks.
+3. **Does multi-agent deliberation help?** If two agents independently attempt discovery, P(at least one succeeds) = 1 - (1-p)^2. Redundancy might be the optimal "intervention" for discovery tasks. **Update (2026-04-12, KE-147)**: ManBench (DD-745) predicts this is nuanced — *independent* parallel agents (no shared context) should help via redundancy, but *coordinated* multi-agent deliberation would amplify fixation through social influence (collective Einstellung). The key variable is context isolation: shared context enables fixation propagation. See P-147a/P-147b for experimental designs.
 
 4. **Is there a continuous spectrum between recognition and discovery?** The current model treats them as discrete categories, but there may be a gradient based on how much template-matching is possible.
 
