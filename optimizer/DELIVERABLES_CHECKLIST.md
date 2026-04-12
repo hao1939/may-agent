@@ -1,4 +1,4 @@
 # Deliverables Checklist
 
-- [x] workspace/finding-dor-p1-cap-final-verdict-0411.md — D-o-R P1 budget cap final measurement verdict
-- [x] todo.md updated with findings from both items
+- [x] Finding document: agents/optimizer/workspace/finding-tool-adoption-patterns-0412.md
+- [x] Update agents/optimizer/workspace/todo.md — add finding reference
