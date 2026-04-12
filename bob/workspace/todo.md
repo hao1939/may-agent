@@ -3,16 +3,16 @@
 <!-- KEEP THIS FILE UNDER 50 LINES. Move completed items to todo-archive.md. -->
 
 ## Active / In Progress
-- [ ] **EXP-143 DESIGNED** — Checkpoint decomposition evaluation experiment (H-096 P-096a). Ready for Coach execution.
-- [ ] **EXP-147 Track B DISPATCHED** — Context Isolation test (P-120c). Dispatched to Coach 2026-04-12. N=80 per group.
-- [x] **H-102 vs KE-152 tension** — ANALYZED 2026-04-12. Universal decline across non-workflow conventions. H-102 P(H) 0.75→0.65 recommended. See `h102-exp145-analysis.md`.
-- [x] **EXP-148 DISPATCHED** — Re-analyze EXP-145 data. Delegated to Coach 2026-04-12 09:54.
-- [x] **EXP-147 Track A PROCESSED** — 0.92% wrong-consensus rate, P-120b moot, H-097 P(H) stays 0.55. Analysis at `exp147-tracka-analysis.md`. Synthesis committed.
+- [ ] **EXP-144 pilot** — Delegated to Coach (2026-04-12). Awaiting 10 calibration sessions → pilot-results.md. Then Phase 1 (N=50).
+- [ ] **Guard internalization problem** — KE-144 shows guard fire rate doubling in 6 days. Analysis complete (guard-internalization-analysis.md). **H-104 authored** (P=0.78): guard dependency escalation via anti-learning loop. Next: test P-104a (fleet >65% by Apr 15), deploy verify-wrap to more agents (P-104b).
+- [x] **KB INDEX integration** — Added 22 missing entries: H-103, EXP-131→EXP-144, KE-134→KE-143, DD-747/748, CR-338. Added H-101→H-104 to PRIORITY-TRACKER table. H-096 P(H) 0.68→0.70 (EXP-143 results). WKWA-009 updated with H-104/KE-143/KE-144. (2026-04-12)
+- [ ] **Monitor EXP-132** — Path hallucination guard DEPLOYED. Check C7.1 pass rate improvement.
+- [ ] **Monitor EXP-139** — verify-wrap production pilot DEPLOYED on optimizer. Check FM-3.3 block rate.
+- [ ] **Monitor EXP-142** — Agent-specific guard calibration DEPLOYED. Check Bob's false-positive guard rate.
 - [ ] **Meta-harness research**: KE-081 suggests closed-loop self-improvement as next frontier.
 - [ ] **Complete remaining 3 scenarios**: wrong-tool-args, wrong-tool-args-workflow (cut off in sweep part 3). Delegate to Coach.
 
 ## Blocked / Deferred
-- [ ] **EXP-146 BLOCKED** — Thinking-trace analysis blocked on `thinkingLevel` being disabled system-wide. ~1hr infra fix needed. Escalate to Hao. See `exp146-blockage-note.md`.
 - [ ] **Prompt Caching**: Blocked on Hao since 2026-03-24. $36-63/day savings waiting.
 - [ ] **Amy-Kimi C8.2 Compliance**: Model-level JSON bug in finish(). Options: (a) JSON repair, (b) exempt, (c) accept.
 - [ ] **EXP-216 (Regression Awareness Skill)**: Deprioritized — Coach diverted 3x. Skill ready at `agents/.lab/regression-awareness-skill/`. Low priority.
