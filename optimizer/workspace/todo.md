@@ -36,7 +36,7 @@
 - Root cause: heartbeat.md encouraged inline exploration (multi-query DB analysis, file reads).
 - Fix: Rewrote heartbeat.md to "Dispatcher Mode" — observe in 1-2 ops, fork all analysis work. Target: ≤15 ops.
 - Baseline: 8 heartbeats in 12h, avg 56 ops, total 451. Post-fix: avg 23 ops (59% reduction). ✅ SUCCESS.
-- Last exploration mode: **C** (Skill scouting: efficient vs bloated session techniques — Apr 12 ~11:24 UTC). Previous: B (Coach investigation tool gaps — Apr 12 ~10:54), A (Coder 104-op outlier — Apr 12 ~06:54), D (D-o-R nesting post-fix — Apr 12 ~04:24), C (coach experiment cost scouting — Apr 12 ~03:59).
+- Last exploration mode: **C** (Skill scouting: efficient vs bloated session techniques — Apr 12 ~11:24 UTC). Next rotation: **D**. Previous: B (Coach investigation tool gaps — Apr 12 ~10:54), A (Coder 104-op outlier — Apr 12 ~06:54), D (D-o-R nesting post-fix — Apr 12 ~04:24), C (coach experiment cost scouting — Apr 12 ~03:59).
 - **session-query tool BUILT** (`scripts/session-query.ts`). Replaces 15-25 bash archaeology pattern with single command. Supports: --agent, --since, --task, --status, --min-ops, --tools, --json, --sort. Tested with real data (911 sessions). Est. savings: 10-15 ops/session × 187 sessions = 1,870-2,805 ops.
 - **session-query adoption**: Still **zero active adoption** beyond optimizer (confirmed Apr 11 05:24 UTC). May + QA have passive mentions only. **Three blockers**: (1) filesystem history stale (through ~Apr 5), (2) zero agents have session-query in context.md, (3) may.db has 0 coach sessions. No change since last check. **gym-batch.sh MERGED to main** (cherry-pick 5ca3bdf, Apr 11 ~05:54 UTC) + coach context.md updated — but **gym-batch.sh also has ZERO adoption** despite being in context.md (see Coach Session Efficiency section). Findings: `workspace/finding-tool-gap-0411-b.md`, `workspace/finding-coach-experiment-technique-0411.md`, `workspace/finding-gym-batch-adoption-0411.md`
 - **ADOPTION FIX DIRECTION (Apr 12)**: Per tool adoption patterns finding — don't bother adding session-query to context.md (Level 4 = 0% adoption). Must fix may.db backend FIRST, then wire into workflow prompts/heartbeat dispatch templates (Level 1-3). Finding: `workspace/finding-tool-adoption-patterns-0412.md`
@@ -49,14 +49,13 @@
 ### may.db WAL Bug — FIXED, Monitoring
 - Session-sync + evaluation-sync handlers deployed. 1071 evals, 0 unevaluated (as of 17:10 UTC).
 
-### May Heartbeat Bloat — ANALYSIS COMPLETE, DRAFT READY
+### May Heartbeat Bloat — DEPLOYED, MEASURING
 - May heartbeats avg 22.4 ops (n=96 in 48h), median 19, P90=42
 - **Structurally different from tech-lead/optimizer**: May IS a dispatcher by design — inline work is correct, just too deep per step
 - Root causes: over-thorough follow-up (peeking sessions), git commit/push every cycle, dashboard read+edit multiple times, improvement queue inline work
 - **Budget-capped approach**: Keep all 7 steps, add per-step op budgets (target ≤12 ops avg). Expected: 47-55% reduction (~500-600 ops/day, ~$25-30/day)
 - Analysis: `workspace/finding-may-heartbeat-dispatcher-analysis-0412.md`
-- Draft heartbeat: `workspace/draft-may-heartbeat-dispatcher-0412.md`
-- **NEXT**: Deploy draft to `agents/may/heartbeat.md` after review, then measure
+- **DEPLOYED**: ~08:29 UTC Apr 12. Check results after 24h (~08:29 Apr 13).
 
 
 

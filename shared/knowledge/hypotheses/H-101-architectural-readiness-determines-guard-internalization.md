@@ -1,10 +1,10 @@
 # H-101: Architectural Readiness Determines Guard Internalization
 
-**Status**: Proposed  
-**P(H)**: 0.72  
+**Status**: Partially Confirmed  
+**P(H)**: 0.78  
 **Date**: 2026-04-11  
 **Author**: Bob  
-**Updated**: 2026-04-11 (EXP-138 verify-wrap gym complete — ceiling effect confirmed, production pilot ready. H-102 spawned as refined mechanistic specification. Previously: EXP-137 structural comparison — "architectural readiness" = workflow-level verification adoption, not prompt text. Perfect correlation. P(H) 0.62→0.72. Previously: EXP-136 git inflation removed, P(H) 0.55→0.62)
+**Updated**: 2026-04-12 (Status reconciliation: UNTESTED→PARTIALLY CONFIRMED, P(H) 0.72→0.78. 4 experiments already documented but status row was stale. DD-750/KE-155 externalization harm findings integrated — provide mechanistic depth for why guards don't internalize. H-106 proposed as extension. Previously: EXP-138 verify-wrap gym complete — ceiling effect confirmed, production pilot ready. H-102 spawned as refined mechanistic specification.)
 
 ## Thesis
 

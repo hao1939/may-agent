@@ -1,1 +1,4 @@
 {"scenario":"stale-approach-fixation","run":3,"condition":"scoped","passed":true,"elapsed":128}
+{"scenario":"stale-approach-fixation","run":4,"condition":"full","passed":true,"elapsed":105}
+{"scenario":"contradictory-requirements","run":10,"condition":"scoped","passed":true,"elapsed":123}
+{"scenario":"stale-approach-fixation","run":5,"condition":"full","passed":true,"elapsed":101}
