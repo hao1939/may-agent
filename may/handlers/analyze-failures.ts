@@ -75,7 +75,7 @@ interface AgentBreakdown {
 // ── Pure logic ────────────────────────────────────────────────────────
 
 export function generateFailureAnalysis(
-  db: { query: (sql: string) => { all: (...args: any[]) => any[] } },
+  db: { prepare: (sql: string) => { all: (...args: any[]) => any[] } },
   agentsRoot: string,
 ): string {
   const now = Date.now();
@@ -84,24 +84,24 @@ export function generateFailureAnalysis(
   const oneWeekAgo = now - 7 * 24 * 60 * 60 * 1000;
 
   // 1. Load evaluations for last 24h and previous 24h
-  const recentEvals: EvalRow[] = db.query(
+  const recentEvals: EvalRow[] = db.prepare(
     `SELECT * FROM evaluations WHERE createdAt > ? ORDER BY createdAt DESC`
   ).all(oneDayAgo);
 
-  const prevEvals: EvalRow[] = db.query(
+  const prevEvals: EvalRow[] = db.prepare(
     `SELECT * FROM evaluations WHERE createdAt > ? AND createdAt <= ? ORDER BY createdAt DESC`
   ).all(twoDaysAgo, oneDayAgo);
 
-  const weekEvals: EvalRow[] = db.query(
+  const weekEvals: EvalRow[] = db.prepare(
     `SELECT * FROM evaluations WHERE createdAt > ? ORDER BY createdAt DESC`
   ).all(oneWeekAgo);
 
   // 2. Load session data for correlation
-  const recentSessions: SessionRow[] = db.query(
+  const recentSessions: SessionRow[] = db.prepare(
     `SELECT sessionId, agent, status, opCount, startedAt, endedAt FROM sessions WHERE startedAt > ?`
   ).all(oneDayAgo);
 
-  const prevSessions: SessionRow[] = db.query(
+  const prevSessions: SessionRow[] = db.prepare(
     `SELECT sessionId, agent, status, opCount, startedAt, endedAt FROM sessions WHERE startedAt > ? AND startedAt <= ?`
   ).all(twoDaysAgo, oneDayAgo);
 
