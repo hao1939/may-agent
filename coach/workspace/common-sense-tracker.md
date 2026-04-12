@@ -11,7 +11,7 @@ Tracks which rules from `agents/shared/common-sense.md` have been verified, when
 | C1.3 Verify every write | 2026-04-10 | ⚠️ Partial | tech-lead, coach, optimizer | Consecutive-edit clusters skip individual verification |
 | C1.7 Success Requires Evidence | 2026-04-09 | ✅ Pass | tech-lead, coach, may | See entry below |
 | C1.8 Match finish() status to reality | 2026-04-09 | ⚠️ Mostly pass | bob, qa, may, coach | 5/6 compliant; 1 borderline FM-2.6 overlap |
-| Environment Reality (C50) | - | ❓ Not verified | - | - |
+| Environment Reality (C50) | 2026-04-12 | ⚠️ Improving | may, bob, tech-lead, coach | 98.9% (879/889). 10 violations in 36h. May worst (5). See log. |
 | Two git repos | - | ❓ Not verified | - | - |
 | Commit before finish() | 2026-04-09 | ⚠️ Mostly pass | bob, hao, may, scout, coach, tech-lead | 8/9 compliant; 1 clear violation (bob sub-session) |
 | Simple first | - | ❓ Not verified | - | - |
@@ -210,3 +210,50 @@ Tracks which rules from `agents/shared/common-sense.md` have been verified, when
 **Recommendation**: The commit guard should be verified to operate on ALL sessions that write files, not just top-level sessions. The Phase 2 sub-session gap means files could be written and never committed if the parent session doesn't explicitly commit them later.
 
 **Overall: ⚠️ 8/9 compliant. 1 clear violation in a Phase 2 sub-session that bypassed the commit guard. The guard itself is effective for top-level sessions (2 caught violations, 100% recovery). Structural gap: sub-session commit enforcement.**
+
+### Environment Reality (C50) — 2026-04-12
+
+**Rule**: "C50 / C7.1 — You're in a container at `/app`. There is no `npm`/`npx`, no `~/` directory. Paths like `/Users/…` or `/home/…` don't exist."
+
+**Method**: Searched all 889 sessions from last 36h for assistant-generated tool calls containing `/Users/`, `/home/`, `/root/`, or `~/` paths. Filtered out system/user role text (rule quotations) and analysis-only mentions. Confirmed 10 sessions with actual tool-call violations.
+
+**Total sessions checked**: 889 (across all agents, 36h window 2026-04-10T15:00Z → 2026-04-12T03:00Z)
+
+**Violations found (10 sessions):**
+
+| Session | Agent | Violation | Path Used |
+|---------|-------|-----------|-----------|
+| s_1775899412475_1325 | may | `cd /home/hao/c3 && node -e ...` | `/home/hao/c3` |
+| s_1775908541927_1410 | bob | `cd /root/project && git add ...` | `/root/project` |
+| s_1775913810794_1434 | may | `cd /home/hao/c3 && git log` | `/home/hao/c3` |
+| s_1775926411854_1521 | may | `export PATH="/home/hao/.bun/bin:$PATH"` (×3) | `/home/hao/.bun/bin` |
+| s_1775942613230_1624 | may | `cd /Users/hao/c0d3 && git log` | `/Users/hao/c0d3` |
+| s_1775946213181_1652 | may | `export PATH="/root/.bun/bin:$PATH"` | `/root/.bun/bin` |
+| s_1775948074037_1678 | coach | `ls /root/.bun/bin/ 2>/dev/null` | `/root/.bun/bin` |
+| s_1775957048616_1752 | tech-lead | `cd /root/project && git add -A` | `/root/project` |
+| s_1775957068254_1756 | bob | `cd /home/user && git add -A` | `/home/user` |
+| s_1775957107963_1757 | coach | `ls /root/.bun/bin/ 2>/dev/null` | `/root/.bun/bin` |
+
+**Compliance by agent:**
+
+| Agent | Sessions (36h) | Violations | Rate |
+|-------|---------------|------------|------|
+| may | 80 | 5 | 93.8% |
+| bob | 180 | 2 | 98.9% |
+| coach | 121 | 2 | 98.3% |
+| tech-lead | 118 | 1 | 99.2% |
+| optimizer | 157 | 0 | 100% |
+| evaluator | 83 | 0 | 100% |
+| qa | 72 | 0 | 100% |
+| scout | 72 | 0 | 100% |
+
+**Overall compliance: 879/889 = 98.9%** (up from 97.1% on 2026-04-05)
+
+**Violation patterns:**
+1. **May is the worst offender (5/10)**: Hallucinating host machine paths (`/home/hao/c3`, `/Users/hao/c0d3`). These are likely training data bleed-through — the agent generates paths from what appears to be the human operator's local machine.
+2. **Bob & tech-lead (3/10)**: Using `cd /root/project` or `cd /home/user` before git commands. These agents seem to guess the project root path instead of using the working directory directly.
+3. **Coach (2/10)**: Searching for bun at `/root/.bun/bin/` — a reasonable guess but wrong for the container.
+
+**Trend**: 86.8% → 94.7% → 97.1% → 98.9% — steady improvement over time. The rule is working but May needs targeted reinforcement.
+
+**Recommendation**: May's violation rate (6.2%) is significantly worse than all other agents. Consider adding a May-specific environment reality reinforcement to the growth cycle. The other agents are near-clean.
