@@ -150,7 +150,7 @@ Constraints: Max 3 growth-cycles ($7/cycle budget)
 
 Objective: Identify root cause of C1.1 decline across all agents since Apr 3.
 Read: agents/coach/workspace/todo.md (see "Investigate C1.1 system-wide regression" entry)
-Query: may.db for C1.1 convention pass rates by day, by agent
+Query: .state/may.db for C1.1 convention pass rates by day, by agent
 
 Output: agents/coach/workspace/brief-c11-regression-analysis.md
 
