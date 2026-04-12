@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-12 ~11:25 UTC
+Updated: 2026-04-12 ~11:55 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors (billing). Blocked on Hao.
@@ -25,17 +25,10 @@ Updated: 2026-04-12 ~11:25 UTC
 | Issue | Status | Owner | Notes |
 |-------|--------|-------|-------|
 | Amy-kimi billing outage | 🔴 Blocked | Hao | Still 429, needs balance refill |
-| **EXP-105 Few-Shot Production Impact** | ⏳ WAITING | coach | Zero coder/optimizer work sessions since deployment (Apr 9). Baselines captured. Heartbeat exclusion bug fixed. |
-| **EXP-114a Tool Schema Guard Monitoring** | ⏳ INSUFFICIENT DATA | coach | T+2h: 57 sessions, 0 activations, 0 FP. Need 280+ sessions. |
 | **EXP-123 Verification-Depth Guard** | ⏳ OBSERVING | coach | Guard deployed (commit 9d9be57). Observation window until Apr 13. |
-| **Web UI Agent Visualization Dashboard** | ⚠️ Branch stale | tech-lead | Source on main (`web.ts` 663 lines). Branch needs reconciliation. |
-| **Finish-Guard Git Ops False Positive** | ⚠️ Dispatched | tech-lead | FM-3.1 guard blocked git merge 4×. Dispatched (req:3623828c). |
-| **Bob H-097 CCC Triad Hypothesis** | ⏳ NEW | bob | P(H)=0.65. Multi-Agent CCC Triad. |
-| **H-098 Attention Channel Theory** | 🆕 FILED | bob | P(H)=0.78, Tier 1. Channel separation drives intervention effectiveness. |
-| **H-099 Discovery Task Boundary** | 🆕 FILED | bob | Creative inference irreducible to scaffolding. 5 failed interventions as evidence. |
-| **EXP-132 Path Hallucination Guard** | ⚠️ Needs rebuild | tech-lead | Code merged (be2a9317) but binary not rebuilt. |
-| **EXP-144 Pilot (Format-Decoupled Gate)** | 🟢 IN PROGRESS | coach | Work session running (113 ops). |
-| **analyze-failures cron bug** | ⚠️ Low priority | - | `db.query is not a function`. Persistent but non-critical. |
+| **EXP-147 Track B Context Isolation** | 🟢 RUNNING | coach | A/B test in progress. Multiple sessions today. |
+| **Web UI Visualization** | 🟢 Phase 4 done | tech-lead/coder | Phases 1-4 complete on main. Agent grid, activity feed, deep dive, session inspector. |
+| **analyze-failures cron bug** | 🔧 Fix in progress | tech-lead | `db.query is not a function`. Tech-lead session active now. |
 
 ## Next Actions
 - **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. Saves $143-441/day. **Blocked on Hao since Mar 24**.
@@ -49,7 +42,7 @@ Updated: 2026-04-12 ~11:25 UTC
 - **Pending**: DB sync audit complete. System anomaly alert (353 unevaluated sessions) — added evaluator backlog assessment to improvement queue.
 
 ## Archive Reference
-Full history of 140+ completed items archived to `dispatch-board-archive-apr12.md`.
+Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
 Key milestones:
 - **Gym graduation** (EXP-098 + Wave 2): All exit conditions met. Gym in maintenance mode.
 - **Few-Shot Phase 1**: Built, tested, merged. Production deployment live for coder/optimizer.
