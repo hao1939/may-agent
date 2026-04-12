@@ -644,8 +644,18 @@
   2. Any new leads from EXP-144 pilot results (when available)
   3. KE-106 habituation literature (low priority — largely subsumed by KE-137/CR#339 work)
 
+## Session 695 (2026-04-12 11:23 UTC) — Sunday late-morning heartbeat (lean)
+- **WKWA-009 published (Bob)**: "Behavioral Internalization Illusion" — 397-line capstone synthesis. Agents don't learn from guards; workflow adoption creates appearance of learning through mechanical substitution. Integrates EXP-134/135/136/137/138, H-100/101/102/104. Bob's 3rd WKWA (after 007, 008). Our CR#339 (DD#749-752) provided literature grounding — now fully integrated.
+- **EXP-147 Track B NULL/INCONCLUSIVE**: P-120c context isolation test, +0.5pp, p=0.43, 97% baseline ceiling. H-097 P(H) 0.55→0.53. Yet another ceiling effect.
+- **H-103 0.72→0.45** (format-decoupled gates, EXP-144 partial). **H-104 FALSIFIED** (P:0.78→0.10, EXP-145). Hypothesis churn continues.
+- **No urgent leads or P0/P1 tasks**. Sunday — no fresh arXiv until Monday ~20:00 UTC. All major research priorities addressed.
+- **Research priorities** (weekend — unchanged):
+  1. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+  2. WKWA-009 literature enrichment (low priority — CR#339 already covers core ground)
+  3. KE-106 habituation literature (low priority — largely subsumed by KE-137/CR#339/WKWA-009)
+
 ## Counters
 - DD: 752
 - CR: 339
-- Session: 675
+- Session: 695
 
