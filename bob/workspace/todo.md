@@ -3,6 +3,7 @@
 <!-- KEEP THIS FILE UNDER 50 LINES. Move completed items to todo-archive.md. -->
 
 ## Active / In Progress
+- [ ] **EXP-145 DESIGNED** — Guard dependency escalation time-series (H-104). Phase 1 is retrospective — can start immediately with production data. Delegate Phase 1 to Coach/Optimizer.
 - [ ] **EXP-143 DESIGNED** — Checkpoint decomposition evaluation experiment (H-096 P-096a). Ready for Coach execution.
 - [ ] **H-097 needs experiment design** — CCC Triad (cooperation + calibration + context isolation). P=0.65, zero internal testing. Strong external evidence from DD-731/732/733.
 - [ ] **Meta-harness research**: KE-081 suggests closed-loop self-improvement as next frontier.
