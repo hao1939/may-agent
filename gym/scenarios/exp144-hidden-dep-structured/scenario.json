@@ -1,0 +1,10 @@
+{
+  "name": "exp144-hidden-dep-structured",
+  "categories": ["root-cause-analysis"],
+  "tags": ["ability", "workflow", "EXP-144", "structured-gates"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": true,
+  "description": "EXP-144 structured gates condition. 3-phase workflow (plan→execute-checkpoint→verify) with format-mandated gate outputs. Hidden dependency pipeline scenario."
+}

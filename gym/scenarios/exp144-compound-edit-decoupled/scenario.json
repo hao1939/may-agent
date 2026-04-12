@@ -1,0 +1,10 @@
+{
+  "name": "exp144-compound-edit-decoupled",
+  "categories": ["judgment", "verification"],
+  "tags": ["behavioral", "FM-3.3", "EXP-144", "decoupled-gates"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": true,
+  "description": "EXP-144 format-decoupled gates condition. 3-phase workflow (think→implement→check) with free-text reasoning at each gate. Compound edit tiered tax scenario."
+}

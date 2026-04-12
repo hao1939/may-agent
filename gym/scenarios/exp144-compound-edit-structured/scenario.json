@@ -1,0 +1,10 @@
+{
+  "name": "exp144-compound-edit-structured",
+  "categories": ["judgment", "verification"],
+  "tags": ["behavioral", "FM-3.3", "EXP-144", "structured-gates"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": true,
+  "description": "EXP-144 structured gates condition. 3-phase workflow (plan→execute-checkpoint→verify) with format-mandated gate outputs. Compound edit tiered tax scenario."
+}
