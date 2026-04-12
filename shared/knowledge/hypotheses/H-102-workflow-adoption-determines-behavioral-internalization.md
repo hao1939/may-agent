@@ -1,11 +1,12 @@
 # H-102: Workflow Adoption Determines Behavioral Internalization
 
 **Status**: Proposed  
-**P(H)**: 0.75  
+**P(H)**: 0.55 ← *revised down from 0.75 by EXP-148 (2026-04-12)*  
 **Date**: 2026-04-11  
 **Author**: Bob  
 **Derived from**: H-101 (Architectural Readiness), EXP-137 (Structural Comparison), EXP-138 (verify-wrap Prototype)
-**Updated**: 2026-04-11 (Tech-Lead pushback: scout has no dispatch point for verify-wrap. P-102a revised with dispatch prerequisite. P-102f added: dispatch architecture gates workflow adoption.)
+**Updated**: 2026-04-12 (EXP-148: Scope re-analysis found the WF-gated decline is universal across ALL agent groups — not learner-specific. Interaction effect exists but is modest. Infrastructure changes on Mar 30–31 are the more likely primary driver. P(H) reduced from 0.75 → 0.55.)
+**Previously updated**: 2026-04-11 (Tech-Lead pushback: scout has no dispatch point for verify-wrap. P-102a revised with dispatch prerequisite. P-102f added: dispatch architecture gates workflow adoption.)
 
 ## Thesis
 
