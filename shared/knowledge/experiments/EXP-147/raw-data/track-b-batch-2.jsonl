@@ -3,3 +3,8 @@
 {"scenario":"plan-once-amend","run":3,"condition":"full","passed":true,"elapsed":72,"db_run_id":"unknown","index":2}
 {"scenario":"plan-once-amend","run":4,"condition":"full","passed":true,"elapsed":81,"db_run_id":"unknown","index":3}
 {"scenario":"plan-once-amend","run":5,"condition":"scoped","passed":true,"elapsed":95,"db_run_id":"unknown","index":4}
+{"scenario":"plan-once-amend","run":6,"condition":"scoped","passed":true,"elapsed":81,"db_run_id":"unknown","index":5}
+{"scenario":"plan-once-amend","run":7,"condition":"full","passed":true,"elapsed":81,"db_run_id":"unknown","index":6}
+{"scenario":"plan-once-amend","run":8,"condition":"full","passed":false,"elapsed":189,"db_run_id":"unknown","index":7}
+{"scenario":"plan-once-amend","run":9,"condition":"full","passed":true,"elapsed":74,"db_run_id":"unknown","index":8}
+{"scenario":"plan-once-amend","run":10,"condition":"scoped","passed":true,"elapsed":104,"db_run_id":"unknown","index":9}

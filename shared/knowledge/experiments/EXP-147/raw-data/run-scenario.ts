@@ -1,18 +1,19 @@
 #!/usr/bin/env bun
 /**
- * EXP-147 Track B Phase 1 Runner
- * Runs gym scenarios with context swapping based on assignment table.
+ * EXP-147 Track B Phase 1 Runner - Resumable version
  * 
- * Usage: bun run-scenario.ts <scenario> <output_jsonl>
+ * Usage: bun run-scenario.ts <scenario> <output_jsonl> [start_run]
+ * start_run: 1-indexed run number to start from (default: 1)
  */
-import { readFileSync, writeFileSync, copyFileSync, appendFileSync } from 'fs';
+import { readFileSync, writeFileSync, copyFileSync, appendFileSync, existsSync } from 'fs';
 import { execSync } from 'child_process';
 
 const scenario = process.argv[2];
 const outputFile = process.argv[3];
+const startRun = parseInt(process.argv[4] || '1');
 
 if (!scenario || !outputFile) {
-  console.error('Usage: bun run-scenario.ts <scenario> <output_jsonl>');
+  console.error('Usage: bun run-scenario.ts <scenario> <output_jsonl> [start_run]');
   process.exit(1);
 }
 
@@ -26,12 +27,21 @@ const contextTarget = 'agents/bob/context.md';
 const originalContext = readFileSync(contextTarget);
 
 const assignments = assignmentTable.assignments.filter(
-  (a: any) => a.scenario === scenario
+  (a: any) => a.scenario === scenario && a.run_number >= startRun
 );
 
-console.log(`\n=== Running ${scenario}: ${assignments.length} runs ===\n`);
+// Count existing records to set index correctly
+let existingCount = 0;
+if (existsSync(outputFile)) {
+  const existing = readFileSync(outputFile, 'utf8').trim().split('\n').filter(Boolean);
+  existingCount = existing.filter(l => {
+    try { return JSON.parse(l).scenario === scenario; } catch { return false; }
+  }).length;
+}
 
-let runIndex = 0;
+console.log(`\n=== Running ${scenario}: ${assignments.length} runs (starting run ${startRun}, ${existingCount} existing) ===\n`);
+
+let runIndex = existingCount;
 for (const assignment of assignments) {
   const { run_number, condition } = assignment;
   
@@ -42,33 +52,24 @@ for (const assignment of assignments) {
     copyFileSync(contextFull, contextTarget);
   }
   
-  // Verify swap
-  const swappedSize = readFileSync(contextTarget).length;
-  const expectedSize = condition === 'scoped' ? 475 : 3574;
-  console.log(`Run ${run_number} [${condition}] ctx=${swappedSize}b (expect ~${expectedSize})`);
-  
   const startTime = Date.now();
   let output = '';
-  let exitCode = 0;
   
   try {
     output = execSync(`scripts/gym-run.sh ${scenario} --agent bob`, {
       encoding: 'utf8',
-      timeout: 180_000, // 3 min timeout per run
+      timeout: 180_000,
       env: { ...process.env, PATH: `.state/.bun/bin:${process.env.PATH}` }
     });
   } catch (e: any) {
     output = e.stdout || e.stderr || '';
-    exitCode = e.status || 1;
   }
   
   const elapsed = Math.round((Date.now() - startTime) / 1000);
   
-  // Parse pass/fail from JSON output
   let passed = false;
   let dbRunId = 'unknown';
   
-  // Try to find JSON result in output
   const jsonMatch = output.match(/"passed"\s*:\s*(true|false)/);
   if (jsonMatch) {
     passed = jsonMatch[1] === 'true';
@@ -77,29 +78,17 @@ for (const assignment of assignments) {
   }
   
   const runIdMatch = output.match(/"run_id"\s*:\s*(\d+)/);
-  if (runIdMatch) {
-    dbRunId = runIdMatch[1];
-  }
+  if (runIdMatch) dbRunId = runIdMatch[1];
   
-  const record = {
-    scenario,
-    run: run_number,
-    condition,
-    passed,
-    elapsed,
-    db_run_id: dbRunId,
-    index: runIndex
-  };
-  
+  const record = { scenario, run: run_number, condition, passed, elapsed, db_run_id: dbRunId, index: runIndex };
   appendFileSync(outputFile, JSON.stringify(record) + '\n');
   
   const icon = passed ? '✅' : '❌';
-  console.log(`  ${icon} passed=${passed} elapsed=${elapsed}s db_run_id=${dbRunId}`);
+  console.log(`Run ${run_number} [${condition}] ${icon} ${elapsed}s`);
   
   runIndex++;
 }
 
 // Restore original context
 writeFileSync(contextTarget, originalContext);
-console.log(`\nRestored context.md (${originalContext.length} bytes)`);
-console.log(`=== ${scenario} complete: ${runIndex} runs → ${outputFile} ===`);
+console.log(`\nRestored context.md. ${scenario} complete: ${runIndex} total runs.`);
