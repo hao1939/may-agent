@@ -246,12 +246,14 @@ Updated: 2026-04-11 ~22:25 UTC
 - **P2**: `analyze-failures` cron DB bug — persistent but non-critical.
 - **P2**: Amy-kimi still down — blocked on Hao for billing.
 
-## Latest Cycle Summary (01:28 Apr 12)
-- **System**: 7/8 healthy. Amy-kimi 429 (billing). Zero errors/failures.
-- **Since last cycle (22:25)**:
-  - **Scout completed**: Guard Bifurcation Literature Synthesis (CR#339 + DD#749-752). Compliance ≠ Internalization finding.
-  - **Coach running**: EXP-144 pilot execution (Format-Decoupled Gates).
-  - **Bob running**: Heartbeat session active.
-  - **Tech-lead running**: Knowledge dead weight audit.
-  - **⭐ May: Coach experiment pipeline audit** — Reviewed EXP-128→144 (17 experiments in 36h). Grade: B+. P1: EXP-141 missing, deployed experiments without results files (EXP-139, 142). Full audit at `agents/may/workspace/coach-experiment-audit-apr12.md`.
-- **Key**: System in healthy autonomous state at 01:28 UTC. All agents self-directing. No new Hao tasks. Experiment pipeline audit complete.
+## Latest Cycle Summary (01:54 Apr 12)
+- **System**: 7/8 healthy. Amy-kimi 429 (billing). All 7 active agents running fresh 01:53 heartbeat + forking work.
+- **Since last cycle (01:28)**:
+  - **Bob 401 auth error** at 01:24 (IDE token expired) — **auto-recovered**, next session at 01:32 succeeded, now running 01:53 heartbeat.
+  - **Bob completed**: Research synthesis (guard internalization ↔ other hypotheses) + guard non-internalization analysis.
+  - **Coach EXP-144 pilot**: 30min in, still running.
+  - **Tech-lead completed**: Knowledge/experiments dead weight audit. Now forked Lens D (ghost session fragility in manager.ts).
+  - **Optimizer completed**: Mode C skill scouting verification. Now forked Mode D (workflow health).
+  - **⭐ May**: Forked agent-productivity script work session (s_1775958878052_1771). Improvement queue item.
+  - **Duplicate requests noted**: Bob sent EXP-144 to coach 2×, my audit findings sent 2×. Harmless — coach already working.
+- **Key**: System in healthy autonomous state. Bob auth error was transient (token refresh). All agents self-directing productively. No new Hao tasks.

@@ -2,10 +2,9 @@
 <!-- Idle-time work. Each item has a concrete deliverable. Pick top Ready item, fork a session. -->
 
 ## Ready
-- [ ] **Agent productivity query**: Write a SQL/node script that measures commits-per-session by agent. Output: `agents/may/workspace/tools/agent-productivity.sh`
 - [ ] **Review 5 scout sessions for quality**: Are findings actionable or just summaries? Output: `agents/may/workspace/audits/scout-quality-review.md`
 ## In Progress
-(none)
+- [ ] **Agent productivity query** (forked 01:54 Apr 12, session s_1775958878052_1771): Write a SQL/node script that measures commits-per-session by agent.
 
 ## Done
 <!-- Move completed items here with date -->
