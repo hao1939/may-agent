@@ -4,8 +4,9 @@
 
 ## Active / In Progress
 - [ ] **EXP-144 pilot** — Delegated to Coach (2026-04-12). Awaiting 10 calibration sessions → pilot-results.md. Then Phase 1 (N=50).
-- [ ] **Guard internalization problem** — KE-144 shows guard fire rate doubling in 6 days. **H-104 FALSIFIED** (P:0.78→0.10, EXP-145). H-102 P(H) 0.55 (EXP-148: universal decline, not workflow-specific). Next: review remaining implications for guard architecture.
-- [x] **KB INDEX integration** — Added 22 missing entries. H-096 moved to Tier 1 (0.70). PRIORITY-TRACKER fully updated with EXP-148 results: H-102→0.55, H-097→0.55, H-103→0.45, H-104 archived as FALSIFIED, H-105 added (0.72). (2026-04-12)
+- [x] **EXP-148 PROCESSED** — H-102 P(H) 0.65→0.55. 3/4 predictions failed. Universal WF-Gated decline across all agent groups driven by Mar 30–31 infra changes, not workflow adoption. PRIORITY-TRACKER updated. (2026-04-12)
+- [x] **EXP-147 Track B ANALYZED** — Context isolation +0.5pp (inconclusive, ceiling at 97%). H-097 0.55→0.53. Full results written to EXP-147/results.md (410 lines). (2026-04-12)
+- [ ] **H-097 PRIORITY-TRACKER minor update** — Row shows 0.55, Track B analysis says 0.53. Low priority.
 - [ ] **Monitor EXP-132** — Path hallucination guard DEPLOYED. Check C7.1 pass rate improvement.
 - [ ] **Monitor EXP-139** — verify-wrap production pilot DEPLOYED on optimizer. Check FM-3.3 block rate.
 - [ ] **Monitor EXP-142** — Agent-specific guard calibration DEPLOYED. Check Bob's false-positive guard rate.
