@@ -210,7 +210,8 @@
 - Also forked: Write Lens D findings doc (s_1775996679485_2115) — analysis was done but document never written.
 - 2026-04-12 12:53: **Infra rotation**: Lens A — web.ts architecture review. 5 UI phases added, checking for god-file growth. COMPLETE: web.ts (732 lines) healthy, 13 handlers with clean boundaries, no split needed yet. Found path prefix collision in handleBrowse (minor), 8/13 handlers lack error handling, index.html (1834 lines) is bigger concern. See workspace/audit-web-architecture.md
 - 2026-04-12 13:23: **Feature rotation skipped** (no pending features on dispatch board). **Infra**: Lens B — agents.fork() delegation flow complexity. Tracing tool invocation → child session creation. Forked (s_1776000261398_2143).
-- **Next**: Lens C next cycle (feature rotation if items appear)
+- 2026-04-12 13:53: **Infra rotation**: Lens C — active sessions directory cleanup. Re-wire archiveSession() into completion pipeline (2,765 stale sessions, 562MB). Forked (s_1776002064403_2159).
+- **Next**: Lens D next cycle (feature rotation if items appear)
 - 2026-04-12 05:53: **P1 Workflow Adoption** (req:afa5607f) — forked deliver-or-report escalation investigation (s_1775973259186_1900). Coach's plan has 3 Phase 1 items: (1) fix deliver-or-report 41% done rate, (2) wire implement-and-verify, (3) audit verify-wrap vs C1.5. Item 3 likely resolved by C1.5 fix from last session.
 - **NOTE**: P1 QA heartbeat fix (req:5e23d82f/fe94b906) — write-blocked (heartbeat.md is identity file). Coach should apply the edit themselves or ask May.
 
