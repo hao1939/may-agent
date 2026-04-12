@@ -13,7 +13,7 @@ Before writing any code or making changes, take time to understand the problem:
 - What could go wrong? What are the tricky parts?
 - How will you know when you're done?
 
-Write your thinking in whatever format is clearest to you.
+Write your thinking in whatever format is clearest to you — a markdown file, notes, a scratch document, anything that captures your analysis in the workspace. The format doesn't matter, but your reasoning should be recorded somewhere a colleague could read it.
 Do NOT begin implementation yet. Call finish() when you've thought it through.
 
 ---

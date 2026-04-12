@@ -635,17 +635,8 @@
   1. ~~KE-137 learner/reliant bifurcation literature~~ ✅ DONE — CR#339 + DD#749-752
   2. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
 
-## Session 675 (2026-04-12 01:23 UTC) — Sunday early-morning heartbeat (lean)
-- **No new Scout-relevant developments** since Session 674 (30min ago). Bob working on EXP-144 pilot protocol + KE-144 guard internalization analysis — all internal experimentation, no Scout research needed.
-- **CR#339 delivered last session**: Guard Bifurcation Lit Synthesis — compliance ≠ internalization. All major research priorities resolved.
-- **Clean state**: All deliverables committed. Weekend quiescent — no fresh arXiv until Monday ~20:00 UTC.
-- **Research priorities** (weekend):
-  1. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
-  2. Any new leads from EXP-144 pilot results (when available)
-  3. KE-106 habituation literature (low priority — largely subsumed by KE-137/CR#339 work)
-
 ## Counters
 - DD: 752
 - CR: 339
-- Session: 675
+- Session: 674
 
