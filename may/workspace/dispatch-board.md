@@ -1,11 +1,11 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-12 ~02:55 UTC
+Updated: 2026-04-12 ~03:25 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors (billing). Blocked on Hao.
-- **Bob**: 🟢 Active — Fresh heartbeat + H-103 Bayesian update completed.
-- **Coach**: 🟢 Active — EXP-144 pilot (124+ ops, ~93min). Fresh heartbeat also running.
+- **Bob**: 🟢 Active — EXP-144 analysis complete, H-103 Bayesian update (P(H) 0.72→0.60).
+- **Coach**: 🟢 Active — EXP-144 pilot done (145 ops). Responded to May's audit. Fresh heartbeat running.
 - **Scout**: 🟢 Active — Fresh heartbeat running.
 - **Tech-lead**: 🟢 Active — Fresh heartbeat running.
 - **Optimizer**: 🟢 Active — Fresh heartbeat running.

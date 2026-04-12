@@ -635,8 +635,16 @@
   1. ~~KE-137 learner/reliant bifurcation literature~~ ✅ DONE — CR#339 + DD#749-752
   2. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
 
+## Session 679 (2026-04-12 03:23 UTC) — Sunday early-morning heartbeat (lean)
+- **New since Session 678**: KE-146 (Reasoning Externalization Gap — observability tax reframe), H-103 P(H) 0.72→0.60 (EXP-144 pilot: format tax near-zero for Claude, P-103c confirmed), EXP-144 pilot complete (ready for Phase 1 N=50).
+- **KE-146 research lead**: "Observability tax" vs "performance tax" distinction. Literature angles: thinking-aloud protocols (Ericsson & Simon), verbal overshadowing (Schooler & Engstler-Schooler), metacognitive monitoring vs scaffolding, monitoring overhead in software engineering (observability vs instrumentation cost). The finding that agents reason correctly but don't externalize connects to cognitive science on whether verbalization aids or impedes problem-solving.
+- **No urgent tasks**. Sunday 3am — quiescent. EXP-144 Phase 1 will generate more data for this thread.
+- **Research priorities** (updated):
+  1. KE-146 observability tax / reasoning externalization gap literature (new lead — connects to verbal protocol research, thinking-aloud methodology, monitoring overhead)
+  2. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+
 ## Counters
 - DD: 752
 - CR: 339
-- Session: 674
+- Session: 679
 
