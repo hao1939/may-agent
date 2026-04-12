@@ -226,3 +226,11 @@ remaining classification is cursory.
 The discipline of completing the full classification before the first
 edit is what makes the pattern effective. One item being obvious doesn't
 mean the overall task is obvious.
+
+## ⚠️ Task-Type Restriction
+
+Do NOT use this few-shot skill on **discovery, exploration, or creative-inference tasks**
+(e.g., knowledge integration, open-ended research, novel pattern discovery).
+KE-133 showed a **-67pp effect** (p=0.030) — template-following displaces the open
+exploration these tasks require. Only apply this skill to tasks where judgment-before-action
+separation is the core challenge.

@@ -177,6 +177,14 @@ Plan:
 - **stale-approach-fixation**: If 3 attempts at a plan item fail, mark it ❌
   and move on — don't replan around it
 
+## ⚠️ Task-Type Restriction
+
+Do NOT use this few-shot skill on **discovery, exploration, or creative-inference tasks**
+(e.g., knowledge integration, open-ended research, novel pattern discovery).
+KE-133 showed a **-67pp effect** (p=0.030) — template-following displaces the open
+exploration these tasks require. Only apply this skill to structured sessions where
+plan stability is the core challenge.
+
 ## Measurement
 - Count "I will:" / "Plan:" declarations per session → target: exactly 1
 - Sessions with 1 plan should average <20 tool calls

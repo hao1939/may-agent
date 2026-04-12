@@ -154,6 +154,13 @@ A session using this skill correctly will:
 4. **Minimal diff**: Total edits ≤ 3 for a single-issue fix
 5. **Report accurately**: finish() status matches actual verification results
 
+## ⚠️ Task-Type Restriction
+
+Do NOT use this few-shot skill on **discovery, exploration, or creative-inference tasks**
+(e.g., knowledge integration, open-ended research, novel pattern discovery).
+KE-133 showed a **-67pp effect** (p=0.030) — template-following displaces the open
+exploration these tasks require. Only apply this skill to well-defined debugging/fixing tasks.
+
 ## Inviolable Constraints
 - ⛔ Never edit a file you haven't read first
 - ⛔ Never claim a fix works without running verification

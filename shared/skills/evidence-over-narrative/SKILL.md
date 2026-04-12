@@ -204,3 +204,11 @@ fit the model, it's easier to explain away the evidence than update the model.
 **Prevention**: Gather evidence BEFORE reading comments (Step 1). This prevents
 anchoring. When evidence contradicts comments, trust the evidence — don't
 rationalize it away.
+
+## ⚠️ Task-Type Restriction
+
+Do NOT use this few-shot skill on **discovery, exploration, or creative-inference tasks**
+(e.g., knowledge integration, open-ended research, novel pattern discovery).
+KE-133 showed a **-67pp effect** (p=0.030) — template-following displaces the open
+exploration these tasks require. Only apply this skill to tasks where evidence-vs-narrative
+conflict is the core challenge.

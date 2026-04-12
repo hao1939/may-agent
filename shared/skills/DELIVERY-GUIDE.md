@@ -101,6 +101,10 @@ From WKWA-006 Section 6:
 1. **Temporal discipline** (when to use tools): Use L5 workflow enforcement instead
 2. **Cross-domain on hard tasks**: Write domain-specific variants, don't reuse
 3. **Execution crowding**: Don't inject 3+ skills simultaneously — pick the most relevant one
+4. **Discovery/exploration tasks**: Few-shot is ACTIVELY HARMFUL (-67pp, p=0.030).
+   Template-following displaces the open exploration these tasks require.
+   See KE-133. Do NOT inject few-shot skills for tasks requiring creative inference,
+   knowledge integration, open-ended exploration, or discovery of novel patterns.
 
 ## File Locations
 

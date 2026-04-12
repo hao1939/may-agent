@@ -121,3 +121,11 @@ False success claims (FM-3.3) waste everyone's time:
 
 An honest "blocked" status is **more valuable** than a false "success" — it 
 surfaces real problems that need human attention.
+
+## ⚠️ Task-Type Restriction
+
+Do NOT use this few-shot skill on **discovery, exploration, or creative-inference tasks**
+(e.g., knowledge integration, open-ended research, novel pattern discovery).
+KE-133 showed a **-67pp effect** (p=0.030) — template-following displaces the open
+exploration these tasks require. Only apply this skill to well-defined tasks where
+the blocked/impossible recognition pattern is relevant.
