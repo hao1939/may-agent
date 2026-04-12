@@ -1,4 +1,3 @@
-# Deliverables Checklist — Mode A: Session Archaeology (Apr 12, 14:54 UTC)
+# Deliverables Checklist
 
-## Expected Outputs
-- [x] `agents/optimizer/workspace/finding-outlier-archaeology-0412-b.md` — Findings with patterns and fix recommendations
+- [x] `agents/optimizer/workspace/finding-bob-10op-technique-scouting-0412.md` — Main finding with analysis of Bob's improvement drivers, comparison with coach, and transferable techniques
