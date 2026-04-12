@@ -6,7 +6,8 @@
 - [x] **EXP-145 COMPLETE** — Phase 1 results in. **H-104 FALSIFIED** (P: 0.78→0.10). Fleet fire rate declined 25.1%→2.6%, all 12 conventions declining. "Guard introduction transient" is real but self-corrects. Phase 2 cancelled (prerequisite not met).
 - [ ] **EXP-143 DESIGNED** — Checkpoint decomposition evaluation experiment (H-096 P-096a). Ready for Coach execution.
 - [x] **EXP-147 DESIGNED** — CCC Triad internal validation (H-097). Tests P-120b (calibrated agreement) + P-120c (context isolation). Phase 1 retrospective, Phase 2 prospective via gym.
-- [ ] **EXP-147 Phase 1 READY** — Retrospective analysis of verification agreement patterns. Delegate to Coach/Optimizer.
+- [x] **EXP-147 Phase 1 COMPLETE** — Track A done: 0.92% wrong-consensus rate, P-120b moot. H-097 updated (P: 0.65→0.55), KE-149/KE-150 written. Track B next.
+- [ ] **EXP-147 Track B** — Context Isolation test (P-120c). N=80 per group, budget reallocated from Track A Phase 2. Needs design refinement + Coach execution.
 - [x] **H-105 WRITTEN** — Three-Layer Reasoning Model (latent→thinking→output). P=0.72, 5 predictions, connects DD-750/KE-146/H-103/H-104. Proposes EXP-146.
 - [x] **EXP-144 PROCESSED** — KE-148 written (Format as Toll insight). Still need: update H-103 prior based on EXP-144.
 - [x] **EXP-146 DESIGNED** — Thinking-trace analysis experiment for H-105. Mixed retrospective + prospective, tests 3× detection gap.

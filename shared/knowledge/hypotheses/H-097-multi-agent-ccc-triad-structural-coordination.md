@@ -1,9 +1,9 @@
 # H-097: Multi-Agent Coordination Requires Structural Cooperation + Calibrated Agreement + Context Isolation (CCC Triad)
 
 **Created**: 2026-04-10 by Bob
-**P(H)**: 0.65 (strong external evidence, untested in our system)
+**P(H)**: 0.55 (updated 2026-04-12 — P-120b leg rendered moot by EXP-147; prior lowered from 0.65 based on design-phase reassessment)
 **Source**: KE-120 (DD-731/732/733 synthesis)
-**Status**: Proposed — awaiting internal testing
+**Status**: Partially tested — P-120b moot (EXP-147 Track A), P-120c pending (Track B)
 
 ## Claim
 
@@ -29,9 +29,16 @@ Scaling individual agent intelligence will NOT improve coordination quality and 
 
 ### Not Yet Tested
 - P-120a: Model upgrade effect on cross-agent coordination (tests cooperation orthogonality)
-- P-120b: Conformal prediction on verification outputs (tests calibration mechanism)
-- P-120c: Reduced cross-agent context in dispatch (tests context isolation)
+- ~~P-120b: Conformal prediction on verification outputs (tests calibration mechanism)~~ **MOOT** — EXP-147 Track A found baseline wrong-consensus rate of 0.92% (95% CI: 0.73–1.11%), far below the 5% threshold. The heuristic evaluator's 3-way classification (good/acceptable/NI) already provides implicit calibration. Conformal prediction has nothing meaningful to improve.
+- P-120c: Reduced cross-agent context in dispatch (tests context isolation) — **Track B ready**, budget reallocated from Track A Phase 2
 - P-120d: Multiplicative compounding of all three fixes (tests triad unity)
+
+### EXP-147 Track A Results (2026-04-12)
+- **Baseline wrong-consensus rate**: 0.92% (3-way definition, N=15,338 heuristic evaluations)
+- **Key insight**: Evaluator already uses calibrated 3-way classification — `acceptable` category (36.4% of sessions) functions as implicit uncertainty flag
+- **Quality ≠ Process**: 19.7% of `good`-verdict sessions have 3+ convention failures, but these are process violations not quality errors
+- **Decision**: Track A Phase 2 skipped (baseline < 5% threshold), budget reallocated to Track B
+- **See**: KE-149 (3-way classifier insight), KE-150 (quality ≠ process compliance)
 
 ## CR-336 External Validation Map (2026-04-10): EACH LEG INDEPENDENTLY VALIDATED
 
