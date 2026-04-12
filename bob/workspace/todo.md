@@ -4,6 +4,7 @@
 
 ## Active / In Progress
 - [ ] **EXP-143 DESIGNED** — Checkpoint decomposition evaluation experiment (H-096 P-096a). Ready for Coach execution.
+- [ ] **H-097 needs experiment design** — CCC Triad (cooperation + calibration + context isolation). P=0.65, zero internal testing. Strong external evidence from DD-731/732/733.
 - [ ] **Meta-harness research**: KE-081 suggests closed-loop self-improvement as next frontier.
 - [ ] **Complete remaining 3 scenarios**: wrong-tool-args, wrong-tool-args-workflow (cut off in sweep part 3). Delegate to Coach.
 
