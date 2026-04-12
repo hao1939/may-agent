@@ -384,7 +384,13 @@ export class SubagentManager {
             createCompletenessGuard(def.name),
             createFinishGuard(),
             createCommitGuard(def.name, this._projectRoot),
-            createVerificationDepthGuard(def.name),
+            createVerificationDepthGuard(def.name, {
+              // EXP-142: Per-agent guard calibration.
+              // Bob is actively harmed by FM-3.3 guard (-6.1pp quality, N=438).
+              // His deliver-or-report workflow provides superior verification.
+              // See: agents/shared/knowledge/experiments/EXP-142/design.md
+              exemptAgents: ["bob"],
+            }),
             createReadDedupGuard(),
             createSessionReadGuard(),
             createScrapeDedupGuard(),
@@ -436,6 +442,21 @@ export class SubagentManager {
     );
     if (commonSense) sections.push(commonSense);
 
+    // 2a. standing-orders.md — direct orders from Hao that all agents MUST follow
+    const standingOrders = loadFile(
+      def.projectRoot ? join(def.projectRoot, "agents", "shared", "standing-orders.md") : undefined,
+    );
+    if (standingOrders) sections.push(standingOrders);
+
+    // 2b. knowledge-essentials.md — distilled verified findings for all agents (~25 lines)
+    // Tier 1 of 3-tier knowledge sharing: universal essentials always in system prompt.
+    // Tier 2: task-matched knowledge routing (in buildSessionContext).
+    // Tier 3: on-demand deep reads (agent reads knowledge/<file> when needed).
+    const knowledgeEssentials = loadFile(
+      def.projectRoot ? join(def.projectRoot, "agents", "shared", "knowledge-essentials.md") : undefined,
+    );
+    if (knowledgeEssentials) sections.push(knowledgeEssentials);
+
     // 3. Skills — behavioral patches from skills/*.md
     if (agentDir) {
       const skillsDir = join(agentDir, "skills");
@@ -474,7 +495,7 @@ export class SubagentManager {
         envLines.push(`- Knowledge: ${relPath(def.knowledgeDir)}`);
       }
       // List which convention files are already in this prompt
-      envLines.push(`- Already in context (do NOT re-read): SOUL.md, common-sense.md, skills/*.md`);
+      envLines.push(`- Already in context (do NOT re-read): SOUL.md, common-sense.md, standing-orders.md, knowledge-essentials.md, skills/*.md`);
       envLines.push(
         `- Knowledge index: knowledge/INDEX.md (read when you need references)`,
         ``,
@@ -608,10 +629,10 @@ export class SubagentManager {
 
     // Knowledge routing: inject relevant knowledge entry pointers based on task text.
     // H-043: raising P(access) by auto-matching task keywords to verified entries.
-    // Per Hao's design decision: ONLY inject during heartbeat sessions — heartbeats
-    // are the natural "briefing" moment. Delegated tasks get context from the dispatcher.
-    const isHeartbeat = taskText?.startsWith("[heartbeat]") ?? false;
-    if (isHeartbeat && taskText && def.projectRoot) {
+    // Inject for ALL sessions — work sessions benefit most because the task text
+    // is specific enough for good keyword matches. Heartbeats also match against
+    // their injected pending tasks. Cost: ~50 tokens (1-3 bullet points).
+    if (taskText && def.projectRoot) {
       const knowledgeBlock = routeKnowledge(def.projectRoot, taskText, agentName, 3);
       if (knowledgeBlock) {
         ctxLines.push(``, knowledgeBlock);
@@ -789,7 +810,12 @@ export class SubagentManager {
 
     session.archiveStatus = outcome.archiveStatus;
     session.finishResult = outcome.finishResult;
-    this.registry.updateSessionStatus(session.sessionId, outcome.archiveStatus, session.error);
+    try {
+      this.registry.updateSessionStatus(session.sessionId, outcome.archiveStatus, session.error);
+    } catch (metaErr) {
+      log("error", `[completion] Failed to write meta.json for ${session.sessionId}: ${metaErr instanceof Error ? metaErr.message : String(metaErr)}`);
+      // Continue — still emit session_end so DB, digest, and other subscribers fire
+    }
 
     session.unsubscribe?.();
     session.endedAt = Date.now();

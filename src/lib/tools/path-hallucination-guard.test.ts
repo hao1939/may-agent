@@ -206,6 +206,43 @@ describe("path-hallucination-guard", () => {
       const result = await guard(bashCtx('ag "/home/" src/'));
       expect(result).toBeUndefined();
     });
+
+    test("sed replacing /home path pattern", async () => {
+      const result = await guard(bashCtx("sed -i 's|/home/user|/app|g' src/config.ts"));
+      expect(result).toBeUndefined();
+    });
+
+    test("sed searching for /Users pattern", async () => {
+      const result = await guard(bashCtx("sed -n '/\\/Users\\//p' file.txt"));
+      expect(result).toBeUndefined();
+    });
+  });
+
+  describe("inline scripts — should allow (string literals, not filesystem access)", () => {
+    test("bun -e with /home in string literal", async () => {
+      const result = await guard(bashCtx(`bun -e "const p = '/home/user'; console.log(p)"`));
+      expect(result).toBeUndefined();
+    });
+
+    test("node -e with /Users in code", async () => {
+      const result = await guard(bashCtx(`node -e "console.log('/Users/dev/project')"`));
+      expect(result).toBeUndefined();
+    });
+
+    test("python -c with /root in print", async () => {
+      const result = await guard(bashCtx(`python -c "print('/root/path')"`));
+      expect(result).toBeUndefined();
+    });
+
+    test("bun --eval with path string", async () => {
+      const result = await guard(bashCtx(`bun --eval "import {Database} from 'bun:sqlite'; const p = '/home/user';"`));
+      expect(result).toBeUndefined();
+    });
+
+    test("node --eval with tilde path in string", async () => {
+      const result = await guard(bashCtx(`node --eval "const home = '~/projects';"`));
+      expect(result).toBeUndefined();
+    });
   });
 
   describe("error message quality", () => {
