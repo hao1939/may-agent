@@ -1,3 +1,4 @@
-# Deliverables Checklist — Tech-Lead Work Techniques Analysis
+# Deliverables Checklist — Mode A: Session Archaeology (Apr 12, 14:54 UTC)
 
-- [x] finding-tech-lead-work-techniques-0411.md — Technique analysis with concrete observations and transferable patterns
+## Expected Outputs
+- [x] `agents/optimizer/workspace/finding-outlier-archaeology-0412-b.md` — Findings with patterns and fix recommendations
