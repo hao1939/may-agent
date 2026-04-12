@@ -1,6 +1,6 @@
 # Hypothesis Priority Tracker
 
-**Updated**: 2026-04-12 (Bob: H-102 P(H) 0.75→0.65 (EXP-145 universal decline across non-workflow conventions challenges workflow-only mechanism). H-104 FALSIFIED (P:0.78→0.10, EXP-145 fleet fire rate declined 25.1%→2.6%, guard introduction transient self-corrects). H-105 Three-Layer Reasoning added (P=0.72, EXP-146 blocked). H-097 updated (P:0.65→0.55, EXP-147 Phase 1 P-120b moot). H-103 updated (P:0.72→0.45, EXP-144 partial test). Previously: H-104 authored, H-101/H-102 registered, EXP-130 integrated, H-099 confirmed, EXP-128 Ch3 boundaries, EXP-127 channel separation.) | **Active hypotheses**: 27 | **Tested**: 24/27 | **Resolution ratio**: 19 resolved | **High-confidence (P≥0.70)**: 20  
+**Updated**: 2026-04-12 (Bob: H-102 P(H) 0.75→0.65 (EXP-145 universal decline across non-workflow conventions challenges workflow-only mechanism). H-104 FALSIFIED (P:0.78→0.10, EXP-145 fleet fire rate declined 25.1%→2.6%, guard introduction transient self-corrects). H-105 Three-Layer Reasoning added (P=0.72, EXP-146 blocked). H-097 updated (P:0.65→0.55, EXP-147 Phase 1 P-120b moot). H-103 updated (P:0.72→0.45, EXP-144 partial test; DD-750/KE-154 reframe: epistemic suppression mechanism). Previously: H-104 authored, H-101/H-102 registered, EXP-130 integrated, H-099 confirmed, EXP-128 Ch3 boundaries, EXP-127 channel separation.) | **Active hypotheses**: 27 | **Tested**: 24/27 | **Resolution ratio**: 19 resolved | **High-confidence (P≥0.70)**: 20  
 **Bayesian scorecard**: See `SCORECARD-bayesian-2026-04-09.md` for full reconciled methodology (supersedes 2026-04-04 version)
 
 > ✅ **MORATORIUM SATISFIED** (2026-04-07): 11 hypotheses resolved this session (H-001 disconfirmed, H-002 superseded, H-034/H-038/H-039/H-052 reclassified as design notes/truisms, H-046/H-048/H-051 archived for insufficient evidence/chain dependencies, H-064/H-065 already merged/out-of-domain). New hypotheses may now be created, subject to quality standards (falsifiable, P(H) prior ≥ 0.40, connected to empirical evidence).
@@ -48,7 +48,7 @@
 
 | ID | Claim | P(H) | Status |
 |----|-------|------|--------|
-| H-103 | Format-decoupled gates shift the hump curve rightward — separating format compliance from reasoning quality enables longer productive sessions | **0.45** | **PARTIALLY TESTED** (2026-04-12): EXP-144 Phase 1 (N=50) — P(H) dropped 0.72→0.60→0.45. Format overhead lower than predicted. |
+| H-103 | Format-decoupled gates shift the hump curve rightward — separating format compliance from reasoning quality enables longer productive sessions | **0.45** | **PARTIALLY TESTED** (2026-04-12): EXP-144 Phase 1 (N=50) — P(H) dropped 0.72→0.60→0.45. Format overhead lower than predicted. **DD-750 reframe (KE-154):** The "format tax" may be real but operates via *epistemic suppression* (degraded reasoning quality on complex tasks) rather than execution overhead. H-103's core claim may be more valid than P=0.45 suggests — needs re-evaluation targeting reasoning quality, not format overhead. |
 
 ### EXP-025 Prospective Validation Results (Final)
 - **63% binary accuracy** — below 70% threshold, but the asymmetry is the real finding

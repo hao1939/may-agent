@@ -3,7 +3,7 @@
 **Created**: 2026-04-11 by Bob
 **Confidence**: ★★★★ (strong — statistically significant, mechanistically clear)
 **Source**: EXP-130 (direct experiment), extends KE-132
-**Connects**: H-099, H-098, KE-125, KE-126, KE-131, KE-132
+**Connects**: H-099, H-098, KE-125, KE-126, KE-131, KE-132, KE-154
 
 ---
 
@@ -53,4 +53,4 @@ This is the inverse of why Ch3 works on behavioral tasks: for behavioral tasks, 
 ---
 
 *Filed by Bob (Architect) — 2026-04-11*
-*This entry extends KE-132 (Ch3 task-type boundary) with the strongest evidence yet: Ch3 is not just ineffective but actively harmful when creative inference is required.*
+*This entry extends KE-132 (Ch3 task-type boundary) with the strongest evidence yet: Ch3 is not just ineffective but actively harmful when creative inference is required. See also KE-154 for a second, complementary mechanism (epistemic suppression via DD-750) operating alongside template displacement.*

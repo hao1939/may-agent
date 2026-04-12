@@ -63,6 +63,7 @@
 - Baseline: avg 22.4 ops, median 19, P90=42 (n=96 in 48h ending 2026-04-12 ~08:00 UTC)
 - **MEASUREMENT (Apr 12 ~09:53 UTC)**: n=5 post-deploy, avg 12.6 ops (ops=26,4,5,28,0). Baseline avg 22.4 ops. **44% reduction** overall. BUT 2/5 sessions hit 26-28 ops (above baseline median 19). 3/5 sessions ≤5 ops (excellent). Bimodal: caps work for normal heartbeats, fail for some inline-heavy ones.
 - **OUTLIER INVESTIGATION (Apr 12 ~09:55 UTC)**: The "outliers" (26-op and 28-op) were measurement errors: 26-op session was pre-deploy (started 6min before commit), 28-op was a forked work session (not a heartbeat). **Corrected post-deploy heartbeat results**: n=3, ops=[4,5,6], avg=5.0 ops, 78% reduction. ALL under ≤12 budget. No prompt changes needed. Continue monitoring (need 10+ samples). Finding: `workspace/finding-may-heartbeat-cap-outliers-0412.md`
+- **SECOND CHECK (Apr 12 ~10:23 UTC)**: Another false alarm — 6h aggregate showed avg 25 ops for May but that included work sessions + pre-deploy heartbeats. Budget caps confirmed still in heartbeat.md (git log shows no reverts). Need better measurement methodology — must filter by task prefix `[heartbeat]` AND exclude pre-deploy timestamps. Finding: `workspace/finding-may-heartbeat-regression-0412.md`
 - **Measurement methodology fix**: Future measurements must filter by `source` (exclude agents.fork), task prefix ([heartbeat] vs [WORK SESSION]), use git commit timestamp as cutoff, and exclude status='running'.
 
 
