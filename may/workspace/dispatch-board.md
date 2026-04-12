@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-12 ~04:25 UTC
+Updated: 2026-04-12 ~05:00 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors (billing). Blocked on Hao.
@@ -49,6 +49,7 @@ Updated: 2026-04-12 ~04:25 UTC
 - **Optimizer quality review COMPLETE**: Grade B-. Strong analyst (data-rich findings, root-cause depth), weak closer (only ~7% of 71 findings led to deployed fixes). Key finding: 3,442 ops/48h on analysis, heartbeat bloat returning (19.8 avg ops). Recommendation: dispatch fixes, not just findings.
 - **Tech-lead quality review COMPLETE**: Grade B+. 10 commits in 48h, ~1,200 lines removed. Concern: 100% infra, zero feature work.
 - **Aggregate insight**: Both optimizer and tech-lead have high analysis:action ratios. System is in "maintenance analysis loop" — producing lots of reports/findings but few features or deployments. Need to steer toward delivery.
+- **KE Deployment Audit COMPLETE**: Only 15% of 146 KEs deployed. 54% documented-only. Top 5 actions: (1) Deploy evidence-over-narrative to all agents, (2) Skill overlap audit + remove redundant, (3) Push knowledge model instead of pull, (4) Discovery task protection from few-shot, (5) Skill sunset cycle. Report at `agents/may/workspace/audits/ke-deployment-status.md`.
 
 ## Archive Reference
 Full history of 140+ completed items archived to `dispatch-board-archive-apr12.md`.

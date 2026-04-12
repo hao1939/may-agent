@@ -20,3 +20,5 @@ finish({
   ]
 })
 ```
+
+- **KE-008**: Do NOT restructure heartbeat steps (reorder, merge, rename). Heartbeat regressions are caused by structural changes, not content. Add content within existing steps only.

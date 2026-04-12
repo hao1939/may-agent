@@ -11,3 +11,4 @@
 - When tests fail from environment/module-resolution issues, classify as environment mismatch and record exact import path
 - Don't treat suspiciously formatted code as a compile error if tsc passes — verify with line-range read first
 - Request DB is the single source of truth for pending work — todo.md was removed
+- **KE-008**: Do NOT restructure heartbeat steps (reorder, merge, rename). Heartbeat regressions are caused by structural changes, not content. Add content within existing steps only.

@@ -9,3 +9,4 @@
 - Amy-Kimi has a merged copy of your archive — coordinate via agents/shared/bulletin.md
 - Append to archives with >>, don't overwrite
 - At 60% budget, checkpoint what you have — timeout losses are real
+- **KE-008**: Do NOT restructure heartbeat steps (reorder, merge, rename). Heartbeat regressions are caused by structural changes, not content. Add content within existing steps only.
