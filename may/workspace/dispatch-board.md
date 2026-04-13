@@ -1,18 +1,18 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-13 ~08:51 UTC
+Updated: 2026-04-13 ~05:21 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors (billing). Blocked on Hao.
-- **Bob**: 🟢 Active — 23 sessions/6h, avg 11 ops. Zero errors.
-- **Coach**: 🟢 Active — 20 sessions/6h, avg 16 ops. Zero errors.
-- **Scout**: 🟢 Active — 8 sessions/6h, avg 27 ops. High ops — monitor.
-- **Tech-lead**: 🟢 Active — 17 sessions/6h, avg 18 ops. Zero errors.
-- **Optimizer**: 🟢 Active — 21 sessions/6h, avg 17 ops. Zero errors.
-- **Evaluator**: 🟢 Active — 8 sessions/6h, avg 7 ops. Zero errors.
-- **QA**: 🟢 Active — 8 sessions/6h, avg 9 ops. Zero errors.
-- **Coder**: 🟡 Low activity — 1 session/6h, avg 9 ops. Only runs when forked.
-- **Summary**: 8/9 healthy (excl amy-kimi). Zero errors last hour. 1 stuck coach session cancelled (EXP-151, >30min).
+- **Bob**: 🟢 Active — 35 sessions/6h, avg 8 ops. Zero errors.
+- **Coach**: 🟢 Active — 22 sessions/6h, avg 13 ops. Cancelled stuck EXP-151 session (60m, 0 ops).
+- **Scout**: 🟢 Active — 12 sessions/6h, avg 8 ops.
+- **Tech-lead**: 🟢 Active — 28 sessions/6h, avg 18 ops.
+- **Optimizer**: 🟢 Active — 38 sessions/6h, avg 14 ops.
+- **Evaluator**: 🟢 Active — 12 sessions/6h, avg 5 ops.
+- **QA**: 🟢 Active — 12 sessions/6h, avg 9 ops.
+- **Coder**: 🟡 Low activity — 2 sessions/6h, avg 20 ops. Only runs when forked.
+- **Summary**: 7/8 healthy. Amy-kimi still down. Zero errors last hour. Cancelled 1 stuck coach session.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -30,18 +30,16 @@ Updated: 2026-04-13 ~08:51 UTC
 | **Web UI Visualization** | 🟢 Phase 4 done | tech-lead/coder | Phases 1-4 complete on main. Agent grid, activity feed, deep dive, session inspector. |
 | **Code search tool** | ✅ Done | tech-lead→coder→may | Delivered at `scripts/code-search.sh`. Propagated to agent context files (tech-lead, coder, scout). |
 
-| **Scout archetype fix (P0)** | 🟢 IN PROGRESS | tech-lead | Adding `agents`+`workflow` tools to scout archetype. Forked s_1776072125771_104. |
-
 ## Next Actions
 - **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. Saves $143-441/day. **Blocked on Hao since Mar 24**.
 - **P1**: **Convention investigation** — In progress (tech-lead). 
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (09:21 Apr 13)
-- **System**: 8 agents active (excl amy-kimi). Zero errors. 1 stuck coach session cancelled.
-- **Agent stats (6h)**: Bob 24s/11ops, Coach 22s/16ops, Coder 1s/9ops, Evaluator 9s/7ops, May 13s/12ops, Optimizer 24s/20ops, QA 9s/9ops, Scout 9s/25ops, Tech-lead 19s/21ops.
-- **Dispatched**: Scout archetype fix (P0) → tech-lead. Added `agents`+`workflow` tools.
-- **Notable**: Scout ops down from 27→25 avg. Root cause (no fork capability) being fixed now.
+## Latest Cycle Summary (07:21 Apr 13)
+- **System**: 8 agents active (excl amy-kimi). Zero errors, zero stuck sessions. All healthy.
+- **Agent stats (6h)**: Bob 16s/13ops, Coach 13s/18ops, Coder 1s/9ops, Evaluator 5s/6ops, May 7s/11ops, Optimizer 13s/17ops, QA 5s/9ops, Scout 5s/37ops, Tech-lead 10s/18ops.
+- **Completed since last cycle**: All 5 in-progress items finished (H-104 cleanup, dead skill cleanup, optimizer C1.1 fix, QA regression, convention investigation).
+- **Queue**: 3 Ready items remaining.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
