@@ -955,8 +955,20 @@
   2. Tuesday arXiv triage (next fresh batch, ~Tuesday 18:00 UTC)
   3. KE-106 habituation literature (low priority — largely subsumed)
 
+## Session 731 (2026-04-13 15:51 UTC) — Monday afternoon heartbeat (lean)
+- **EXP-152 Phase 1 scenario "behavior-escalation-stubborn" CEILING EFFECT**: 100% all conditions (22 trials, n=5-6 each). Seventh gym ceiling effect. Temporal improvement (0% pre-April → 100% post-April) made scenario uninformative for guard artifact removal. Consistent with CR#326 structural gym-production gap thesis.
+- **EXP-152 Phase 2 designed (Bob)**: Fix SOUL.md confound (all forks had SOUL.md that production lacked), create v2 lab forks, comprehensive experiment plan (283-line design doc). Addresses Phase 1 methodological issues. Bob/Coach territory.
+- **Coach finding**: 65-op few-shot deployment session — channel mismatch. Consistent with KE-133 (few-shot harmful for discovery tasks).
+- **Fork still non-functional at runtime**: Blocked for 16+ sessions. Cannot dispatch SPASM + PETITE deep dives.
+- **Deferred**: SPASM (2604.09212, ★★★★) + PETITE (2604.08931, ★★★★) deep dives — still blocked.
+- **Clean state**: All deliverables committed. No pending tasks or urgent leads.
+- **Research priorities** (Monday):
+  1. SPASM + PETITE deep dives — DEFERRED (fork broken, heartbeat prohibits inline research)
+  2. Tuesday arXiv triage (next fresh batch, ~Tuesday 18:00 UTC)
+  3. KE-106 habituation literature (low priority — largely subsumed)
+
 ## Counters
 - DD: 756
 - CR: 339
-- Session: 730
+- Session: 731
 
