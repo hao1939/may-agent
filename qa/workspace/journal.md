@@ -5243,3 +5243,5 @@ Reviewed HEAD `ff5c52e` (scripts/code-search.sh added).
 - vitest: FAIL (25 failing / 1926 total). Failures are dominated by `test/task-watchdog.test.ts` (24 failures: watchdog returns 0 actions across many scenarios) and `test/research-db.test.ts` integration budget assertion (expected totalErrors <= 5, got 6 at line ~551).
 
 Notes: these red tests block a PASS verdict for the current tree; investigate recent changes affecting task-watchdog selection logic / request filtering.
+
+2026-04-13T04:56Z heartbeat (QA): Reviewed HEAD ff5c52e (scripts/code-search.sh). tsc passed; vitest failed with 2 failing files: test/task-watchdog.test.ts (24 failing cases, result.* arrays empty / staleCount=0) and test/research-db.test.ts integration test expecting totalErrors<=5 but saw 6. Verdict: FAIL until these test regressions are addressed.
