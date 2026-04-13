@@ -45,6 +45,7 @@
 | H-047 | No forgetting → inverted-U utilization | **0.62** | EXP-053 Phase 2: recency bias + density saturation confirmed; clean inverted-U not found. "Narrowing scope with compensation." |
 | H-097 | CCC Triad — multi-agent coordination requires structural cooperation + calibrated agreement + context isolation | **0.55** | **PARTIALLY TESTED** (2026-04-12): EXP-147 P-120b moot (0.92% wrong-consensus rate). P(H) 0.65→0.55. Track B in progress. |
 | H-102 | **Workflow Adoption Determines Behavioral Internalization** — declining guard rates reflect architectural substitution, not behavioral learning | **0.55** | **EXP-148 COMPLETE** (2026-04-12): 3/4 predictions failed. Universal decline driven by Mar 30–31 infra changes. P(H) 0.75→0.55. |
+| H-108 | **Guard Artifacts as Environmental Memory** — guard checkpoint files function as DD-755 artifacts, reducing downstream agent capacity requirements. Guard value = safety enforcement + environmental memory; removing guards loses the memory function even if agent "internalizes" the behavior. Reframes guard architecture from internalization to externalization. | **0.55** | **PROPOSED** (2026-04-13): Derived from DD-755 Artifact Reduction Theorem + DD-756 IEEC + KE-161 Permanent Linter Paradigm + synthesis-DD755-DD756. Five testable predictions (P-108a–e). Key discriminator: P-108c predicts guard value is larger in multi-agent pipelines than single-agent (memory function only manifests with downstream consumers). EXP-152 designed. |
 
 ## 🔴 Tier 3: Weak Signal — P(H) < 0.50
 
