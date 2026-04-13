@@ -6,6 +6,7 @@ services:
     container_name: may-agent-litellm
     hostname: litellm
     restart: unless-stopped
+    stop_grace_period: 5s
     logging:
       driver: k8s-file
     ports:
@@ -32,6 +33,7 @@ services:
     container_name: may-agent
     hostname: may-agent
     restart: unless-stopped
+    stop_grace_period: 10s
     logging:
       driver: k8s-file
     env_file: ../.env
