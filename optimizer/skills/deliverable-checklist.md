@@ -38,11 +38,29 @@ Task: [brief description]
 **After writing, verify with `read()` that the checklist was created correctly.** C1.3 requires every write() be verified — the checklist is no exception.
 
 ### Step 4: Check items off as you complete them
-After each deliverable, **read() the checklist first**, then edit() to check off the item. The read() is required by C1.1 (read-before-edit) — even if you just wrote the file, you must read() before edit().
 
+⚠️ **EVERY checklist edit MUST be preceded by read(). No exceptions.**  
+C1.1 compliance is at 80.5% because of this exact step — optimizer edits the checklist without reading it first.
+
+**MANDATORY two-call sequence** (you MUST do both calls, in this order):
 ```
-read("agents/optimizer/workspace/DELIVERABLES_CHECKLIST.md")  ← required before edit
-edit(path, "- [ ] Create src/lib/new-module.ts", "- [x] Create src/lib/new-module.ts ✅")
+read("agents/optimizer/workspace/DELIVERABLES_CHECKLIST.md")   // ← CALL 1: read first (C1.1)
+edit("agents/optimizer/workspace/DELIVERABLES_CHECKLIST.md",    // ← CALL 2: then edit
+     "- [ ] Create src/lib/new-module.ts", 
+     "- [x] Create src/lib/new-module.ts ✅")
+```
+
+❌ **WRONG** — editing without reading (even right after write):
+```
+write("agents/optimizer/workspace/DELIVERABLES_CHECKLIST.md", ...)
+edit("agents/optimizer/workspace/DELIVERABLES_CHECKLIST.md", ...)  // ← C1.1 VIOLATION!
+```
+
+✅ **RIGHT** — always read before edit:
+```
+write("agents/optimizer/workspace/DELIVERABLES_CHECKLIST.md", ...)
+read("agents/optimizer/workspace/DELIVERABLES_CHECKLIST.md")       // ← required
+edit("agents/optimizer/workspace/DELIVERABLES_CHECKLIST.md", ...)  // ← now safe
 ```
 
 Example checklist after updates:
