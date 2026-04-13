@@ -236,8 +236,9 @@
 - 2026-04-13 09:51: **Feature rotation check**: no pending features. **Infra**: Lens A — session lifecycle state machine audit (manager.ts status transitions, triple-write consistency). Forked (s_1776073935553_117).
 - 2026-04-13 10:21: **Feature rotation check**: no pending features. **Infra**: Lens B — checkpoint/progress data flow complexity (checkpoint.ts → storage → session context injection). Forked.
 - 2026-04-13 10:52: **Feature rotation check**: no pending features. **Infra**: Lens C — src/lib/tools/ dead code audit. COMPLETE: 24 files audited, found dead chain (security.ts + skill-linter.ts, ~222 lines), dead health.ts tool (~77 lines), 3 dead convenience singletons. See workspace/audit-tools-dead-code.md
-- **Next**: Lens D next cycle (feature rotation if items appear)
 - 2026-04-13 11:21: **D-o-R Phase Boundaries** deployed to heartbeat.md (commit e90d08d6). Added SCOPE→INVESTIGATE→WRITE→EXIT phases with ≤20 op budget for investigation Lens sessions. Baseline: 38.4 avg ops (>20-op sessions). Measure after 24h: should see avg drop toward 20.
+- 2026-04-13 11:22: **Infra**: Lens C cleanup — deleted 3 dead tool files (security.ts, skill-linter.ts, health.ts) + 3 test files. -714 lines. Merged to main. TSC clean, 1832 tests pass. Also found pre-existing bug: task-watchdog.test.ts has 24 failing tests — mock uses `query()` but handler uses `prepare()`.
+- **Next**: Lens D next cycle. Pre-existing test bug: task-watchdog mock mismatch (P2).
 - 2026-04-12 05:53: **P1 Workflow Adoption** (req:afa5607f) — forked deliver-or-report escalation investigation (s_1775973259186_1900). Coach's plan has 3 Phase 1 items: (1) fix deliver-or-report 41% done rate, (2) wire implement-and-verify, (3) audit verify-wrap vs C1.5. Item 3 likely resolved by C1.5 fix from last session.
 - **NOTE**: P1 QA heartbeat fix (req:5e23d82f/fe94b906) — write-blocked (heartbeat.md is identity file). Coach should apply the edit themselves or ask May.
 
