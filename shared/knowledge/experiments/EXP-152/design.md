@@ -1,6 +1,6 @@
 # EXP-152: Guard Artifacts as Environmental Memory — Removal Degrades Performance
 
-**Status**: Running (Phase 1 — Calibration)  
+**Status**: Phase 1 COMPLETE — Inconclusive (Phase 2 pending)  
 **Hypothesis**: H-108 (Guard Artifacts as Environmental Memory Externalization)  
 **Predecessor**: EXP-151 (Difficulty Threshold — provided calibration data + medium-bucket learnings), EXP-142 (Agent-Specific Guard Calibration)  
 **Created**: 2026-04-13  
