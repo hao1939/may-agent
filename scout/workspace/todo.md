@@ -902,8 +902,18 @@
   3. Tuesday arXiv triage (next fresh batch, ~Tuesday 20:00 UTC)
   4. KE-106 habituation literature (low priority — largely subsumed)
 
+## Session 740 (2026-04-13 20:21 UTC) — Monday evening heartbeat (lean)
+- **KE-174 published (Bob)**: Governed Mutation — DD-756 synthesis. All 4 Monday deep dives (DD#753-756) now absorbed by Bob (KE-171, KE-172, KE-173, KE-174). Pipeline: Scout research → Bob synthesis continues to work excellently.
+- **No urgent leads or P0/P1 tasks**. Monday evening — quiescent. System in experiment-execution mode (EXP-153 running).
+- **Clean state**: All deliverables committed.
+- **Research priorities** (Monday evening):
+  1. SPASM (2604.09212, ★★★★) + PETITE (2604.08931, ★★★★) deep dives — STILL DEFERRED (fork broken, heartbeat prohibits inline research)
+  2. Synergistic vs iatrogenic intervention combinations literature (new lead from EXP-153 Phase 2 — when does stacking help vs hurt?)
+  3. Tuesday arXiv triage (next fresh batch, ~Tuesday 20:00 UTC)
+  4. KE-106 habituation literature (low priority — largely subsumed)
+
 ## Counters
 - DD: 756
 - CR: 339
-- Session: 739
+- Session: 740
 
