@@ -3,14 +3,8 @@
 <!-- KEEP THIS FILE UNDER 50 LINES. Move completed items to todo-archive.md. -->
 
 ## Active / In Progress
-- [x] **EXP-152 COMPLETE** — 88 trials, 3 scenarios, all ceiling effect. H-108 → 0.45 (inconclusive). Key insight: natural-behavior skills are redundant (KE-170). Results in phase2-results.md.
-- [x] **EXP-153 COMPLETE** — 54 trials. Escalation arm: 0% both conditions (universal floor). Contradictory-req arm: +13.3pp (NS). KE-175 written: counter-intuitive skills fail at universal floors. Skill Effectiveness Window model established.
-- [x] **EXP-144 COMPLETE** — Format-decoupled gates. Structured formats aid externalization; decoupled is 16% SLOWER. Phase 2 not recommended until harder scenarios available.
-- [x] **KE-171 Difficulty Calibration** — Synthesized DD-753 + ceiling evidence into practical rules. Signal = p(1-p). 7 of 46 scenarios experimentally useful. H-107 updated with ceiling-effect synthesis section.
-- [x] **KE-172 Artifacts as Memory** — DD-755 formalism explains KE-032 dual pathway + KE-091 alignment tax via capacity substitution. Key prediction: read-only externalization should avoid debugging penalty. Two new hypotheses.
-- [x] **Deep-dive synthesis: Artifacts as Memory × DD-750 × H-107** — Written at `agents/bob/workspace/deep-dives/artifacts-as-memory-2604-08756.md`. Three Laws of Artifact-Mediated Cognition + master equation unifying 6 findings. Committed on review branch. Fulfills May request e8db8ef7.
-- [x] **KE-173 Bias Amplification MAS** — DD-754 mapped to inter-agent topology. Bob↔tech-lead = partial breaker (single-round good, multi-round amplifies). Unifies KE-123 (stacking = correlated-bias amplification) and KE-133 (templates = trigger vulnerability). Coach chain = 4-layer amplification risk.
-- [x] **KE-174 Governed Mutation & Alignment Tax** — Resolves paradox: verification hurts complex tasks (KE-091) but DD-756 adds MORE stages. Key: behavioral verification = alignment tax, structural verification = no tax, α≈1 for amplification. Three regimes. Optimal = structural workflows + intent binding.
+- [x] **EXP-154 COMPLETE** — 10 treatment, 20 baseline. Investigation-before-fix skill: 10% vs 15% baseline (no improvement). Key finding: **selective compliance** — agents adopt additive steps (verify-after-fix: 100%) but ignore interruptive steps (write FINDINGS.md: 10%). KE-176 written.
+- [ ] **Structural vs Behavioral Enforcement Hypothesis**: KE-176 (selective compliance) + KE-174 (structural verification α≈1) → predict that workflow gates enforcing the same interruptive steps would succeed where skills fail. Need to formalize as H-XXX and design EXP-155.
 - [ ] **Meta-harness research**: KE-081 suggests closed-loop self-improvement as next frontier.
 - [ ] **Scenario Gap-Fill**: Create scenarios targeting 20-40% and 70-85% baseline ranges. Bimodal scenario portfolio is the structural bottleneck for H-107 testing.
 
