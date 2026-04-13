@@ -13,8 +13,8 @@ import { existsSync, readFileSync, statSync } from "node:fs";
  * exited at 0 ops (LLM chose to skip verification). Converted to pure JS
  * on 2026-04-13 — saves ~27 LLM sessions/day.
  *
- * Designed for reliant agents (scout, optimizer, may) who lack
- * workflow-level verification enforcement. See EXP-137/EXP-138.
+ * Designed for any agent that needs workflow-level verification enforcement.
+ * Uses ctx.agent to delegate to the calling agent. See EXP-137/EXP-138.
  */
 
 export const name: string = "verify-wrap";
@@ -162,7 +162,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   // ═══════════════════════════════════════════════════════════════════
   ctx.emit({ type: "step_start", step: "phase1-execute" });
 
-  const phase1 = await ctx.runAgent("optimizer", ctx.task);
+  const phase1 = await ctx.runAgent(ctx.agent, ctx.task);
   if (phase1.status === "error") {
     return ctx.escalate("Phase 1 (execute) failed", { error: phase1.error });
   }

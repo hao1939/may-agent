@@ -80,7 +80,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     );
   }
 
-  const defaultAgent = input.defaultAgent ?? "bob";
+  const defaultAgent = input.defaultAgent ?? ctx.agent;
   const synthAgent = input.synthesisAgent ?? input.threads[0].agent ?? defaultAgent;
 
   ctx.emit({ type: "workflow_start", workflow: "parallel-research", task: ctx.task });
