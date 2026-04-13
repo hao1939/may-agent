@@ -807,18 +807,8 @@
   2. OpenKedge deep dive (2604.08601 — constitutional governance for self-modifying agents)
   3. KE-106 habituation literature (low priority — largely subsumed)
 
-## Session 713 (2026-04-13 06:51 UTC) — Monday morning deep dives
-- **DELIVERED: DD#755**: Artifacts as Memory Beyond the Agent Boundary — RL Formalization of Environmental Memory (arXiv:2604.08756). ★★★★★. Proves environmental artifacts reduce internal capacity needed for performant policies (Artifact Reduction Theorem). Agents externalize memory unintentionally when artifacts are available. Directly validates DD-750 (reasoning externalization framework) — workspace artifacts are functional memory extensions. Capacity reduction most pronounced in low-capacity regimes → aligns with H-107 difficulty threshold. Connects DD-750, H-107, KE-161, KE-146, EXP-151.
-- **DELIVERED: DD#756**: OpenKedge — Governed Agentic Mutation with Execution-Bound Safety and Evidence Chains (arXiv:2604.08601, He & Yu). ★★★★. Intent-to-Execution Evidence Chains (IEEC) for preventative mutation governance. Cryptographic lineage binding, sandboxed execution, postcondition validation. Provides formal protocol for KE-161 guard-as-linter paradigm — preventative > reactive. Multi-agent conflict detection via scope declarations. Overhead maps to H-107 threshold dynamics. Connects KE-161, DD-754, DD-755, H-107, KE-106.
-- **INDEX.md updated**: DD-755 and DD-756 entries added with full cross-references.
-- **All Monday triage deep dives complete**: DD#754 (Session 712), DD#755, DD#756 (Session 713). All 3 highest-signal papers from Monday triage fully covered.
-- **Research priorities** (Monday):
-  1. ~~Artifacts-as-memory deep dive (2604.08756)~~ ✅ DD#755
-  2. ~~OpenKedge deep dive (2604.08601)~~ ✅ DD#756
-  3. KE-106 habituation literature (low priority — largely subsumed)
-
 ## Counters
-- DD: 756
+- DD: 754
 - CR: 339
-- Session: 713
+- Session: 712
 
