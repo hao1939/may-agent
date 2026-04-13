@@ -35,11 +35,11 @@ Updated: 2026-04-13 ~05:21 UTC
 - **P1**: **Convention investigation** — In progress (tech-lead). 
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (10:21 Apr 13)
-- **System**: 8 agents active (excl amy-kimi). Zero errors, zero stuck sessions. All healthy.
-- **Agent stats (6h)**: Bob 27s/10ops, Coach 26s/14ops, Coder 1s/9ops, Evaluator 11s/7ops, May 16s/12ops, Optimizer 28s/19ops, QA 11s/10ops, Scout 11s/23ops, Tech-lead 24s/21ops.
-- **Dispatched**: Scout archetype tool fix → tech-lead (s_1776075707379_128). Improvement queue refilled (5 Ready items).
-- **Queue**: 5 Ready items. Top item (scout tool fix) dispatched.
+## Latest Cycle Summary (10:51 Apr 13)
+- **System**: 8 agents active (excl amy-kimi). Zero errors. Cancelled 1 stuck coach session (EXP-151, 59m/6ops — stuck again).
+- **Agent stats (6h)**: Bob 29s/11ops, Coach 25s/15ops, Coder 1s/9ops, Evaluator 12s/7ops, May 16s/12ops, Optimizer 30s/20ops, QA 12s/10ops, Scout 12s/22ops, Tech-lead 27s/20ops.
+- **Dispatched**: Over-intervention cleanup → coach.
+- **Queue**: 4 Ready items remaining.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
