@@ -170,7 +170,16 @@ function createMayAgentAdapter(): Adapter {
         cpSync(join(projectRoot, "agents"), gymAgents, { recursive: true });
         rmSync(join(gymAgents, ".lab"), { recursive: true, force: true });
         rmSync(join(gymAgents, ".git"), { recursive: true, force: true });
-        cpSync(labDir, join(gymAgents, opts.agentName), { recursive: true });
+        // FIX (EXP-152): cpSync merges directories — it does NOT delete files
+        // that exist in target but not in source. We must pre-remove target subdirs
+        // that the fork replaces, so fork's skills/ fully replaces agent's skills/.
+        const agentTarget = join(gymAgents, opts.agentName);
+        for (const entry of readdirSync(labDir, { withFileTypes: true })) {
+          if (entry.isDirectory()) {
+            rmSync(join(agentTarget, entry.name), { recursive: true, force: true });
+          }
+        }
+        cpSync(labDir, agentTarget, { recursive: true });
         agentsRoot = gymAgents;
       } else if (opts.sandboxAgents) {
         // Copy agents to gym-local dir so writes (e.g. context.md) don't pollute the real dir
