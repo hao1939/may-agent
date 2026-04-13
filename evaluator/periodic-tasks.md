@@ -49,7 +49,7 @@ See `agents/evaluator/periodic-tasks.md` for the definitions.
 - Do NOT update `agents/shared/knowledge/strategies.md` directly (Bob reviews first).
 - **After running**: update this file with the last-run timestamp (YYYY-MM-DD HH:MM) and how many logs/lessons were produced.
 
-**Last run**: 2026-04-13 04:52Z — DB canonical check: `.state/may.db` `MAX(evaluations.createdAt)=1776055896454` (eval pipeline live/recent at check time). Confirmed DB has no `llm_evaluations` table (Process #15 still appears disabled/unimplemented or renamed). Legacy `.state/evaluations/` artifacts still stale — newest mtime observed: 2026-03-24.
+**Last run**: 2026-04-13 05:52Z — DB canonical check: `.state/may.db` `MAX(evaluations.createdAt)=1776059208071` (2026-04-13T05:46:48Z; eval pipeline live/recent at check time). Confirmed DB has no `llm_evaluations` table (Process #15 still appears disabled/unimplemented or renamed). Legacy `.state/evaluations/` artifacts still stale — newest mtime observed: 2026-03-24.
 
 **Previous run**: 2026-04-12 11:53Z — DB canonical check: `.state/may.db` `max(evaluations.createdAt)=1775950088090` (≈2026-04-11T21:28:08Z; eval pipeline appears **stale ~14h25m** at check time). Querying `llm_evaluations` raised `no such table` (so Process #15 still appears disabled/unimplemented or renamed). Legacy `.state/evaluations/` artifacts still stale — newest mtime observed: 2026-03-24.
 
