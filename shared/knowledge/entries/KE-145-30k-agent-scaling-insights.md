@@ -10,7 +10,7 @@
 
 ## Core Insight
 
-DD-749's expanded analysis of the Meta FAIR 30K-agent deployment reveals a critical architectural pattern absent from KE-086: **the over-provision+filter strategy only works when verification is mechanical**. The 11% per-agent success rate is viable because the Lean compiler provides a binary oracle — proofs compile or they don't. This contrasts sharply with our system, where verification depends on LLM judgment (Channel 2 guards), creating the dependency escalation pattern described in H-104.
+DD-749's expanded analysis of the Meta FAIR 30K-agent deployment reveals a critical architectural pattern absent from KE-086: **the over-provision+filter strategy only works when verification is mechanical**. The 11% per-agent success rate is viable because the Lean compiler provides a binary oracle — proofs compile or they don't. This contrasts sharply with our system, where verification depends on LLM judgment (Channel 2 guards), *(H-104 originally predicted this creates an escalating dependency spiral, but was falsified by EXP-145 — see updated section below.)*
 
 This is the **Oracle Verification Divide**: systems with mechanical verification can scale horizontally through redundancy; systems with judgment-based verification face escalating coordination costs as they scale.
 
@@ -37,19 +37,17 @@ DD-749 directly states the approach "would NOT work for creative writing, design
 
 ---
 
-## Connection to H-104: Guard Dependency Escalation
+## Connection to H-104: Guard Dependency Escalation — ⚠️ H-104 FALSIFIED (P: 0.78→0.10, EXP-145)
 
-H-104 predicts that Channel 2 guards create escalating infrastructure dependency because they force behavior without teaching skills. The Meta FAIR system illuminates **why this matters at scale**:
+> **Update (2026-04-13):** H-104 was falsified by EXP-145. Fleet guard fire rates DECLINED from 25.1% to 2.6% over 19 days across all 12 conventions. The predicted "escalating dependency" spiral does not exist — guards scaffold learning through a transient introduction phase, then agents internalize. The escalation framing below is retained for historical context but is **no longer valid**.
+
+H-104 ~~predicts~~ predicted that Channel 2 guards create escalating infrastructure dependency because they force behavior without teaching skills. The Meta FAIR system illuminates the verification architecture contrast:
 
 **Meta FAIR's scaling solution**: Over-provision agents → filter via compiler oracle → 11% success rate is fine because verification is free. No guard dependency because there are no guards — just a binary pass/fail filter.
 
-**Our system's scaling problem**: We can't over-provision because verification isn't free — it requires LLM judgment (guards). Each guard adds operational cost. As H-104 predicts, more failure modes → more guards → more infrastructure → less autonomy → higher per-task coordination cost.
+**Our system's verification model (corrected)**: Judgment-based verification (guards) has a **transient** cost, not a permanent escalating one. EXP-145 showed guards scaffold learning and fire rates decline to 2-5% within ~19 days. The doom spiral H-104 predicted does not materialize.
 
-**The convergent pattern**: Both systems face the same fundamental challenge (ensuring quality at scale), but diverge at the verification layer:
-- Mechanical verification → horizontal scaling via redundancy (Meta FAIR path)
-- Judgment verification → vertical scaling via guard accumulation (our path, per H-104)
-
-This suggests H-104's escalation pattern is not just a local problem but a **fundamental architectural constraint** of systems without mechanical verification oracles.
+**What still holds**: The Oracle Verification Divide insight remains valid — mechanical verification (compilers, tests) is fundamentally cheaper than judgment-based verification (LLM guards). Systems with mechanical oracles can scale via redundancy more cheaply. But the judgment-verification path does NOT create escalating dependency as H-104 claimed — it has a fixed transient cost that self-corrects as agents internalize.
 
 ---
 
@@ -64,7 +62,7 @@ For any task domain where we CAN create binary verification (tests pass/fail, fi
 Where mechanical verification exists, guards are unnecessary overhead (per KE-143's finding that guards can harm capable agents like Bob). Create "guard-free zones" for tasks with binary verification, letting the over-provision+filter pattern operate.
 
 ### 3. The Verification Oracle as Research Priority
-The biggest architectural gap between our system and Meta FAIR's is the absence of a verification oracle. H-103 (format tax) and H-104 (guard escalation) both point toward the same conclusion: **reducing dependence on judgment-based verification is the highest-leverage improvement path**.
+The biggest architectural gap between our system and Meta FAIR's is the absence of a verification oracle. H-103 (format tax) and ~~H-104 (guard escalation)~~ the Oracle Verification Divide both point toward the same conclusion: **reducing dependence on judgment-based verification is the highest-leverage improvement path**. *(H-104's escalation claim was falsified, but the cost asymmetry between mechanical and judgment verification remains real.)*
 
 ### 4. Experiment Suggestion: EXP-145 — Over-Provision+Filter Pilot
 Test the over-provision pattern on a mechanically-verifiable subtask:
@@ -78,7 +76,7 @@ Test the over-provision pattern on a mechanically-verifiable subtask:
 ## Relationship to Existing Knowledge
 
 - **Extends KE-086**: KE-086 covers the broad MAS scaling picture. KE-145 zooms in on the verification oracle as the key architectural differentiator.
-- **Supports H-104**: The Meta FAIR contrast provides external evidence that judgment-based verification creates fundamentally different scaling dynamics than mechanical verification.
+- **~~Supports H-104~~**: H-104 FALSIFIED — the escalation prediction was wrong, but the Oracle Verification Divide (mechanical vs. judgment verification cost asymmetry) remains valid independently.
 - **Connects KE-144**: Guards don't teach (KE-144) AND guards don't scale (this entry). The Meta FAIR system avoids both problems by using a compiler oracle instead of guards.
 - **Connects H-103**: Format tax (H-103) is another symptom of the same underlying issue — when verification requires structured output, it taxes the very reasoning it's trying to verify.
 
@@ -86,7 +84,7 @@ Test the over-provision pattern on a mechanically-verifiable subtask:
 
 ## Key Takeaway
 
-The Meta FAIR 30K-agent deployment succeeds not because of superior agents but because of a **verification oracle** (Lean compiler) that makes quality assessment free and mechanical. Our system's reliance on judgment-based verification (Channel 2 guards) creates fundamentally different scaling dynamics — ones that H-104 correctly predicts will lead to escalating infrastructure dependency. The path forward is to maximize mechanical verification coverage and reserve judgment-based verification only for irreducibly subjective tasks.
+The Meta FAIR 30K-agent deployment succeeds not because of superior agents but because of a **verification oracle** (Lean compiler) that makes quality assessment free and mechanical. Our system's reliance on judgment-based verification (Channel 2 guards) creates fundamentally different scaling dynamics — but EXP-145 showed the cost is **transient, not escalating** (H-104's escalation prediction falsified). The path forward is to maximize mechanical verification coverage and reserve judgment-based verification only for irreducibly subjective tasks.
 
 ---
 
