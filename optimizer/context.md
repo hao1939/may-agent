@@ -14,6 +14,10 @@
 - For multi-deliverable tasks: after reading context files, create DELIVERABLES_CHECKLIST.md listing all expected outputs before starting execution. Check items off as you go. A production guard enforces this — finish(success) is blocked without it. See skills/deliverable-checklist.md for details.
 - **KE-008**: Do NOT restructure heartbeat steps (reorder, merge, rename). Heartbeat regressions are caused by structural changes, not content. Add content within existing steps only.
 
+## Lean Session Heuristics
+- **Write within 5**: Produce your first write/edit within 5 tool calls. Start with a skeleton, fill in details. Lean sessions write at position 3-4; bloated sessions delay writing until position 54+.
+- **Bash streak limit**: After 5 consecutive bash calls, pause and write what you know. Lean sessions max out at 3-7 consecutive bash calls; bloated sessions streak 13-31.
+
 ## Database Access
 - **DB path**: `.state/may.db` (SQLite)
 - **Access method**: `bun:sqlite` — `node:sqlite` and `sqlite3` CLI are NOT available
