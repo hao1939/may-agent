@@ -168,16 +168,16 @@ Example (c=0.10): beneficial when p ∈ [0.11, 0.89]
 
 **Key issues**: Severely underpowered (15% power for 6pp effect, need N=450/cell). Medium bucket heterogeneous (baselines 20-67%). Per-scenario inconsistency suggests scenario-specific confounds.
 
-**Impact on P(H)**: 0.80 → 0.72. See "Why P(H) = 0.72" section below.
+**Impact on P(H)**: 0.80 → 0.65. See "Why P(H) = 0.65" section below.
 
-### Why P(H) = 0.72 (Updated from 0.80 after EXP-151)
+### Why P(H) = 0.65 (Updated from 0.80 after EXP-151)
 
 **Prior**: P(H) = 0.80 (based on DD-753 external validation + retrospective internal evidence)
 
-**EXP-151 update (−0.08)**: The first direct prospective test of H-107 completed with 159 trials across all three difficulty buckets. Result: inconclusive — no statistically significant overhead effect at any level, with contradictory per-scenario directions in the Medium bucket.
+**EXP-151 update (−0.15)**: The first direct prospective test of H-107 completed with 159 trials across all three difficulty buckets. Result: inconclusive — no statistically significant overhead effect at any level, with contradictory per-scenario directions in the Medium bucket.
 
-1. **Null prospective result (−0.05)**: A well-designed experiment failing to find the predicted effect shifts probability downward, but this study had only ~15% power to detect the observed 6pp effect. An underpowered null is weak evidence against the hypothesis.
-2. **Per-scenario inconsistency (−0.03)**: M2 (contradictory-req-ext-4gate) shows the OPPOSITE direction (Full 67% > Minimal 50%). If the difficulty threshold were a clean mechanism, all medium scenarios should trend in the same direction. The inconsistency suggests scenario-specific confounds may dominate.
+1. **Null prospective result (−0.10)**: A well-designed experiment failing to find the predicted effect shifts probability downward. Even though the study had only ~15% power for the observed 6pp effect, the null is still informative because the experiment was designed to detect larger effects (the EXP-149 effect size of ~15pp).
+2. **Per-scenario inconsistency (−0.05)**: M2 (contradictory-req-ext-4gate) shows the OPPOSITE direction (Full 67% > Minimal 50%). If the difficulty threshold were a clean mechanism, all medium scenarios should trend in the same direction. The inconsistency suggests scenario-specific confounds may dominate.
 
 **Remaining reasons P(H) stays above 0.50**:
 1. **DD-753 external validation still strong**: 5 independent groups converging on ZPD/Beta kernel is powerful evidence the mechanism exists — EXP-151 doesn't refute that, it just fails to confirm it in our specific system

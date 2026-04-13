@@ -289,7 +289,7 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 - **Power analysis**: 15% power for observed effect. Need N≈450/condition for 80% power — not worth pursuing.
 - **Infrastructure issues**: mock-leak-trap scoring artifact (0% despite solving task), wrong-fix-recovery gym timeout
 - **Decision**: Phase 1 INCONCLUSIVE. No scale-up to N=30. Effect too small, Easy bucket broken, gym scenarios cluster at ceiling/floor (KE-167).
-- **H-107 update**: P(H) 0.80 → 0.72 (underpowered null = weak evidence against)
+- **H-107 update**: P(H) 0.80 → 0.65 (null prospective result + per-scenario inconsistency)
 - **Knowledge**: KE-167 (gym ceiling/floor clustering limits overhead studies)
 
 ### 0u. EXP-148: Re-analysis of EXP-145 for H-102 [COMPLETE ✅]

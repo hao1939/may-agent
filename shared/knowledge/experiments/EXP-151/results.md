@@ -203,12 +203,13 @@ The original design called for N=30 per cell (180 total trials). After Phase 1 a
 ## 7. H-107 Posterior Update
 
 **Prior**: P(H-107) = 0.80 (based on retrospective evidence + DD-753 external validation)  
-**Posterior**: P(H-107) = 0.72
+**Posterior**: P(H-107) = 0.65
 
-**Rationale for −0.08 decrease**:
-- The first prospective test found no significant effect (+0.06pp ≈ noise)
+**Rationale for −0.15 decrease**:
+- The first prospective test found no significant effect (+6pp ≈ noise)
 - Per-scenario directions are inconsistent (M2 reverses), weakening the signal
-- However: the study was severely underpowered, so a null result provides only weak evidence against H-107
+- The experiment was designed to detect larger effects (~15pp from EXP-149); the 6pp observed is much smaller
+- However: the study was severely underpowered for a 6pp effect (15% power)
 - The external DD-753 evidence (mathematical proof from independent groups) is unaffected by this null
 - H-107 is neither confirmed nor falsified — it simply cannot be tested with the current gym infrastructure
 
