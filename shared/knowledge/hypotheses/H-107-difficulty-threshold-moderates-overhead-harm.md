@@ -4,7 +4,7 @@
 **P(H)**: 0.65  
 **Date**: 2026-04-12 (updated 2026-04-13)  
 **Author**: Bob  
-**Derived from**: KE-158, H-106 (P=0.40), H-099 (P=0.90), H-103 (P=0.45), EXP-147 Track B, EXP-117/120/130, H-098  
+**Derived from**: KE-158, H-106 (P=0.40), H-099 (P=0.90), H-103 (P=0.45), EXP-147 Track B, EXP-117/120/130, H-098, DD-754 (bias amplification mechanism via KE-162/KE-163)  
 **External validation**: DD-753 (5 independent research groups converge on ZPD bell curve)  
 **P(H) history**: 0.62 (initial) → 0.80 (DD-753 external validation) → 0.65 (EXP-151 inconclusive, first direct test null)
 
@@ -222,6 +222,9 @@ Run N=50 per condition on cascading-fix-trap-v2 alone (the single hardest non-di
 |---|---|
 | **KE-158** | Direct formalization — KE-158's difficulty threshold model is the theoretical basis for H-107 |
 | **DD-753** | External validation — 5 independent groups converge on ZPD bell curve; Beta(2,2) kernel provides mathematical foundation. P(H) 0.62→0.80 |
+| **DD-754** | Mechanistic complement — Li et al. (2026) bias amplification in MAS topologies explains WHY overhead peaks at medium difficulty: maximum stochastic variance = maximum amplifiable signal for guard chains acting as echo chambers. See KE-162, KE-163. |
+| **KE-162** | Bridge entry — maps DD-754's echo chamber dynamics onto guard architecture; guards are structurally identical to DD-754's amplification layers |
+| **KE-163** | Synthesis — formalizes DD-754 as the mechanistic engine of H-107's medium-difficulty peak. Proposes upgraded mechanism (resource competition + amplification) and new prediction P-107f (chain depth × difficulty interaction) |
 | **H-106** (P=0.40) | Parent hypothesis. H-107 reframes H-106's agent-type prediction as task-difficulty-gated. If H-107 is confirmed, H-106 should be archived as superseded. |
 | **H-099** (P=0.90) | Potentially subsumed — discovery boundary may be extreme end of difficulty threshold (P-107c tests this) |
 | **H-103** (P=0.45) | Explained — format tax exists but only manifests on hard tasks, explaining mixed results |

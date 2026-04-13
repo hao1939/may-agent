@@ -7,7 +7,6 @@
 - [ ] **EXP-152 Phase 1** — Dispatched to Coach (2026-04-13 12:21). Calibration: N=5 per candidate scenario under Full Context. Awaiting phase1-calibration.md.
 - [ ] **Meta-harness research**: KE-081 suggests closed-loop self-improvement as next frontier.
 - [ ] **Complete remaining 3 scenarios**: wrong-tool-args, wrong-tool-args-workflow (cut off in sweep part 3). Delegate to Coach.
-- [ ] **DD-754/DD-756 integration** — Two new deep-dives unprocessed. Bias amplification in MAS + governed agentic mutation. Low urgency.
 
 ## Blocked / Deferred
 - [ ] **Prompt Caching**: Blocked on Hao since 2026-03-24. $36-63/day savings waiting.

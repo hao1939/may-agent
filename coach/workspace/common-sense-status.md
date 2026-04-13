@@ -1,6 +1,6 @@
 # Common-Sense Verification Status
 
-Last updated: 2026-04-13T08:55Z
+Last updated: 2026-04-13T12:51Z
 
 ## Item Index
 
@@ -25,7 +25,7 @@ Last updated: 2026-04-13T08:55Z
 | 17 | Creative solutions welcome | Quality (REMOVED) | 2026-03-27 | 🗑️ | Rule removed from common-sense.md. Was in original "Quality" section, now gone. Spirit persists (agents do propose alternatives). See details below. |
 | 18 | git add agents/ = NO | How We Think | 2026-04-12 | ⚠️ | Re-verified (8th): **88 sessions with `git add agents/` from wrong dir in 48h (Apr 10-12) across 1271 sessions (6.9%).** .gitignore blocks 100% — zero successful violations. Two retry storms: coach s_957 (11+ attempts, 166 ops!) and bob s_1335 (5+ attempts incl. REVIEW_GATE_BYPASS trick). All actual agents/ commits go through may-agent auto-commit. Correct pattern (`cd agents && git add`) used by some but not majority. See details below. |
 | 19 | Verify before finishing | How We Think | 2026-03-30 | 🗑️ | Rule removed from common-sense.md. The "verify-and-finish" workflow was never adopted (0 invocations across 250+ sessions). The C1.7 rule (#7) covers the spirit of this requirement. See details below. |
-| 20 | Environment Reality (C50) | How We Think | 2026-04-12 | ⚠️ | Re-verified (6th): 98.9% compliance (879/889 sessions, 36h). 10 violations: may 5 (worst — hallucinated host paths), bob 2 (`cd /root/project`, `cd /home/user`), coach 2 (`ls /root/.bun/bin`), tech-lead 1 (`cd /root/project`). Trend: 86.8%→94.7%→97.1%→98.9%. May needs targeted reinforcement (93.8%). See details below. |
+| 20 | Environment Reality (C50) | How We Think | 2026-04-13 | ⚠️ | Re-verified (7th): 97.2% pass rate (904/930, last 48h). 26 violations across 6 agents: may 9 (worst), tech-lead 6, bob 4, optimizer 3, scout 2, coach 2. 4 agents at 100% (amy-kimi, coder, qa, unknown). Patterns: hallucinated external paths (cd to nonexistent repos), home-prefix bun paths. PATH_HALLUCINATION guard catches all and agents recover. Trend: 93.8%→97.2% (improved from previous 48h). See details below. |
 | 21 | C1.8 Match finish() status to reality | How We Think | 2026-04-02 | ✅ | Re-verified (2nd): 0 violations in 20 sessions. 11/11 success claims match reality (deliverables verified, PIVOTs recovered). 3/3 partial (QA) correctly used for test failures. 2 sessions with PIVOTs still warranted success (trivial file-access issues, all recovered). See details below. |
 | 22 | C1.3 Verify every write | How We Think | 2026-04-13 | ⚠️→✅ | NEW. 5 sessions checked (Apr 13). 3/5 fully compliant, 1 partial, 1 non-compliant. Violations are in non-critical files (checklists, todo). Edit tool's built-in diff preview provides partial safety net. See details below. |
 | 23 | Commit before finish() | How We Think | — | ⏳ | Not yet verified |
@@ -1564,6 +1564,87 @@ The 86.0% dip in the 24-48h period is a blip; the last 24h shows the strongest c
 **Conclusion**: ⚠️→✅. 3/5 sessions fully compliant with explicit read-back verification. The violations are minor (todo.md, non-critical deliverables) and partially mitigated by the edit/write tool's built-in previews. The "wrap-up rush" antipattern is real but produces low-risk violations (checklist files, todo updates), not corruption of critical deliverables.
 
 **Action**: No Growth Cycle needed. Monitor for violations on critical deliverables (src/ changes, formal findings). The current compliance level is acceptable given the tool-level safety net. Next check: 2026-04-20.
+
+---
+
+### #20 — Environment Reality (C50) — Re-verified (7th) 2026-04-13T12:51Z
+
+**Rule**: "The filesystem root is /app. Do NOT use /Users/, /home/, or ~. They do not exist."
+
+**Method**: Queried may.db `convention_checks` table for C7.1 violations in last 48h (Apr 11–13). Classified violation patterns. Spot-checked 4 sessions (tech-lead, may, bob, scout) by extracting bash commands from session transcripts. Verified recovery behavior after PATH_HALLUCINATION guard blocks.
+
+**Quantitative summary (last 48h, Apr 11–13)**:
+
+| Metric | Value |
+|--------|-------|
+| Total C7.1 checks | 930 |
+| Passed | 904 |
+| Failed | 26 |
+| Pass rate | **97.2%** |
+| Previous 48h pass rate | 93.8% |
+| Trend | ↑ Improving |
+
+**By agent (last 48h)**:
+
+| Agent | Total | Passed | Failed | Pass Rate |
+|-------|-------|--------|--------|-----------|
+| may | 94 | 85 | 9 | 90.4% |
+| tech-lead | 154 | 148 | 6 | 96.1% |
+| scout | 73 | 71 | 2 | 97.3% |
+| bob | 191 | 187 | 4 | 97.9% |
+| optimizer | 189 | 186 | 3 | 98.4% |
+| coach | 134 | 132 | 2 | 98.5% |
+| amy-kimi | 2 | 2 | 0 | 100% |
+| coder | 9 | 9 | 0 | 100% |
+| qa | 73 | 73 | 0 | 100% |
+
+**Violation pattern classification (26 violations)**:
+
+| Pattern | Count | Description |
+|---------|-------|-------------|
+| Hallucinated external `/Users/` paths | 10 | Agents fabricate paths to non-existent repos (`/Users/mariozechner/anthropic/compactor`, `/Users/hao/code/evo`, `/Users/hao/ai-lab`, `/Users/badlogic/nicern/nicern`, `/Users/elliottburris/.config/claude/agents`) |
+| Home-prefixed paths | 12 | Agents use `/home/hao/may-agent/`, `/home/hao/aider/`, `/home/hao/aios/`, `/home/user/` |
+| Root paths | 5 | Agents try `/root/project/` or `/root/.bun/bin` |
+
+**Session deep-dives**:
+
+1. **Tech-lead s_169**: Hallucinated `cd /Users/mariozechner/anthropic/compactor && npx tsc --noEmit`. PATH_HALLUCINATION guard blocked immediately. All subsequent commands (10+) used correct `cd /app` paths. ✅ Clean recovery.
+
+2. **May s_1276**: Used `cd /home/hao/may-agent` twice to browse other agents' workspaces. The guard blocked both. May then switched to correct relative paths for remaining session. ⚠️ Moderate — 2 violations before learning.
+
+3. **Bob s_107**: Tried `cd /Users/hao/code/evo && git add agents/...` (hallucinated path), then `cd /app && git add agents/` (correct base, wrong repo), then `cd /app && git add -f agents/` (force flag), then `cd /app && git checkout -b review/...`, and finally `cd /app/agents && git add` (correct). Classic 5-attempt escalation with multiple path issues. ⚠️ Eventually correct but wasteful.
+
+4. **Scout s_5**: 2 commands with `/Users/hao/ai-lab` paths. Guard blocked both. Then 55 correct commands after recovery. ✅ Clean recovery.
+
+**Recovery behavior summary**: All 26 violations were caught by the PATH_HALLUCINATION guard. In all spot-checked sessions, agents recovered and used correct paths afterward. The guard is 100% effective as a safety net.
+
+**3-period trend**:
+
+| Period | Pass Rate | Violations |
+|--------|-----------|------------|
+| Apr 7-9 (prev prev 48h) | not measured | — |
+| Apr 9-11 (prev 48h) | 93.8% (742/791) | 49 |
+| **Apr 11-13 (curr 48h)** | **97.2% (904/930)** | **26** |
+
+Violations nearly halved (49→26) while total checks increased (791→930). Strong improvement.
+
+**Comparison with all checks**:
+
+| Check | Date | Pass Rate | Worst Agent | Status |
+|-------|------|-----------|-------------|--------|
+| 1st | 2026-03-27 | ~99% | coder | ⚠️ |
+| 2nd | 2026-03-30 | 100% | none | ✅ |
+| 3rd | 2026-04-02 | ~99% | bob | ⚠️ |
+| 4th | 2026-04-03 | 94.7% | may (81%) | ⚠️ |
+| 5th | 2026-04-05 | 97.1% | tech-lead (86.7%) | ⚠️ |
+| 6th | 2026-04-12 | 98.9% | may (93.8%) | ⚠️ |
+| **7th** | **2026-04-13** | **97.2%** | **may (90.4%)** | **⚠️** |
+
+**Conclusion**: ⚠️ Maintained. Overall pass rate is 97.2% — healthy but slightly below the 6th check's 98.9%. The regression is primarily in may (90.4%, the consistent worst offender) and tech-lead (96.1%). The PATH_HALLUCINATION guard provides 100% protection — no violation goes unblocked — and agents consistently recover. However, may continues to hallucinate host-machine paths at an unacceptable rate (9 violations in 48h). Cannot upgrade to ✅ while may is below 95%.
+
+**Key insight**: The violation patterns have shifted from "bun path discovery" (agents running `which bun` and getting wrong paths) to "hallucinated project paths" (agents fabricating entirely fictional directories like `/Users/mariozechner/...` or `/Users/hao/code/evo`). This suggests the bun-path issue has improved but a new class of path hallucination has emerged — agents guessing at "what directory might this project be in" and inventing plausible-looking paths.
+
+**Action**: No Growth Cycle needed — the PATH_HALLUCINATION guard catches all violations. May should be monitored for persistent path hallucination. Consider whether may's context.md needs stronger reinforcement about the `/app` root. Next check: 2026-04-20.
 
 ---
 

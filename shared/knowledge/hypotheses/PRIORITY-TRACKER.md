@@ -39,7 +39,7 @@
 | ID | Claim | P(H) | Status |
 |----|-------|------|--------|
 *(H-100 archived — see Archived section below)*
-| H-107 | **Difficulty Threshold Moderates Overhead Harm** — overhead only harms when task difficulty exceeds ~50% baseline. Reframes H-106 from agent-type to task-difficulty story. | **0.65** | **EXP-151 INCONCLUSIVE** (2026-04-13): All 3 buckets complete (159 trials). No significant effect (all p>0.70). Medium +6pp (NS), per-scenario inconsistent (M2 reversed). DD-753 external validation maintains floor. P(H) 0.80→0.65. Demoted from Tier 1. |
+| H-107 | **Difficulty Threshold Moderates Overhead Harm** — overhead only harms when task difficulty exceeds ~50% baseline. Reframes H-106 from agent-type to task-difficulty story. | **0.65** | **EXP-151 INCONCLUSIVE** (2026-04-13): All 3 buckets complete (159 trials). No significant effect (all p>0.70). Medium +6pp (NS), per-scenario inconsistent (M2 reversed). DD-753 external validation maintains floor. DD-754 (bias amplification) provides mechanistic complement via KE-162/KE-163. P(H) 0.80→0.65. Demoted from Tier 1. |
 | H-014 | Performance gap is delegation quality, not information regime | **0.63** | EXP-007 Phase 1 partial support |
 | H-056 | Cooperative convergence — system-level resistance to change | **0.61** | P4 confirmed; mechanism vs simpler explanation unresolved |
 | H-047 | No forgetting → inverted-U utilization | **0.62** | EXP-053 Phase 2: recency bias + density saturation confirmed; clean inverted-U not found. "Narrowing scope with compensation." |
