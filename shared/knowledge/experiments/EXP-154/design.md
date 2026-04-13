@@ -1,4 +1,4 @@
-# EXP-154: Process Skill Effectiveness on Medium-Baseline Scenarios
+# EXP-154: Process Skill Effectiveness — Investigation Before Fix
 
 **Date**: 2026-04-13
 **Status**: IN PROGRESS
@@ -8,62 +8,74 @@
 
 The last 3 experiments (EXP-151, 152, 153) all failed to find skill effects due to ceiling effects (scenarios too easy) or floor effects (scenarios too hard). KE-175 establishes a "skill effectiveness window" requiring baseline variance and process-type skills.
 
-**Key prior finding**: The coder agent has a `verify-after-edit` knowledge skill in production that explains *what* to verify after edits. Despite this, the agent fails the verify-after-edit check in 96% of `read-before-edit` runs (22/23). This suggests knowledge skills don't reliably change behavior (consistent with KE-021: process > knowledge > judgment skills).
+### Phase 1: read-before-edit (PIVOTED)
+Initial target was `read-before-edit` (4.3% baseline). Investigation revealed:
+1. The scenario's environment files had NO bugs — they were already fixed
+2. The success criteria required verify-after-edit, but since there were no edits to make, agents always failed
+3. After fixing the environment (adding the actual bugs), the scenario now easily passes — not a good treatment target
+
+### Phase 2: Pivoting to exp144-hidden-dep-decoupled
+
+**exp144-hidden-dep-decoupled** has a clear, targetable failure mode:
+- **Baseline**: 15% (3/20)
+- **Product checks**: 5/5 in most runs (agents CAN fix the code)
+- **Process checks**: Typically 1/4 (agents write a plan but don't document bugs or run pipeline after fixing)
+- **Specific failures**: P2 (planning doesn't mention typo bug), P3 (planning doesn't mention checksum), P4 (doesn't run pipeline after fixes)
+
+This is EXACTLY the kind of process failure a skill should address.
 
 ## Hypothesis
 
-**H-154**: A process-enforced workflow skill (with explicit step-by-step gates) improves agent behavior on medium-baseline scenarios by ≥20 percentage points over baseline, where a knowledge-only skill has already failed.
+**H-154**: An "investigation-before-fix" process skill that requires documenting all discovered bugs before editing improves the process check pass rate on `exp144-hidden-dep-decoupled` by ≥20pp over baseline.
 
 ## Design
 
-### Scenarios
+### Scenario
 
-| Scenario | Baseline | N (baseline) | Failure Mode | Why Selected |
-|----------|----------|-------------|--------------|--------------|
-| `read-before-edit` | 4.3% (1/23) | 23 | Agents pass ALL product/convention checks except C2.3 (verify-after-edit). Knowledge skill exists but doesn't work. | Perfect target: single clear failure, knowledge skill proven ineffective, process skill directly addresses gap |
+| Scenario | Baseline | N | Failure Mode | Why Selected |
+|----------|----------|---|--------------|--------------|
+| `exp144-hidden-dep-decoupled` | 15% (3/20) | 20 | Product passes (5/5) but process fails (1/4): agents don't document bugs or verify after fix | Process skill directly addresses the gap |
 
-**Note**: `conflicting-evidence` (53.6%) was considered as a second scenario but dropped to keep ONE intervention per experiment (KE-123). The atomic edit process skill doesn't directly help with conflicting-evidence's failure mode (wrong fix choice).
+### Treatment: Investigation-Before-Fix Skill
 
-### Treatment: Process Workflow Skill
+**Fork name**: `coder-exp154-investigate`
 
-**Fork name**: `coder-exp154-process`
+The treatment adds a process skill requiring agents to:
+1. Run the code first to see the error
+2. Write FINDINGS.md documenting EVERY bug found (name, location, effect, fix)
+3. Look for hidden dependencies (e.g., checksums)
+4. Fix all bugs only after documentation
+5. Run the code again after fixing to verify
 
-The treatment adds a **single process skill** that changes the agent's workflow, not just its knowledge. The key difference from existing knowledge skills:
-
-- **Knowledge skill** (existing): "You should read back files after editing them"
-- **Process skill** (treatment): "After EVERY edit() call, your literal next tool call MUST be read() of the same file. Do not proceed until you have confirmed the readback. This is step 2 of a 3-step atomic unit: read → edit → readback."
-
-The process skill frames each edit as an **atomic 3-step unit** rather than advice to follow.
+This directly targets all 3 failing process checks:
+- P2: Writing FINDINGS.md with bug details will mention the typo
+- P3: The "hidden dependencies" step will surface the checksum
+- P4: The "verify by running" step will trigger pipeline execution
 
 ### Control: Production Baseline
 
 **Fork name**: none (baseline runs)
 
-The baseline already includes the `verify-after-edit` knowledge skill in `agents/coder/skills/verify-after-edit.md` — this IS the control condition. If the process skill works where the knowledge skill doesn't, that's the finding.
+Existing 20 baseline runs at 15% pass rate.
 
 ### Sample Size
 
-- 10 treatment trials on `read-before-edit` (fork: `coder-exp154-process`)
-- 0 new control trials needed — we have 23 historical baseline runs (1/23 = 4.3%)
+- 10 treatment trials (fork: `coder-exp154-investigate`)
+- 0 new control needed (20 historical baseline runs)
 - Total new runs: 10
 
 ### Measurements
 
-**Primary**: Pass rate (% of trials passing all checks)
-**Secondary**: C2.3 verify-after-edit check pass rate specifically (the only failing check in baseline)
+**Primary**: Overall pass rate (% passing all checks)
+**Secondary**: Individual process check pass rates (P1-P4)
 
-### Controls
+### Predictions
 
-- ONE skill intervention per trial (KE-123: never stack)
-- NO few-shot examples for discovery tasks (KE-133)
-- Same scenario, same agent, same model — only the skill text differs
+1. Treatment ≥35% overall pass rate (vs 15% baseline)
+2. P2 and P3 pass rates ≥50% (vs ~20% baseline) — the documentation requirement directly forces bug identification
+3. P4 pass rate ≥70% — the "run after fixing" step is the easiest to follow
 
-## Process Skill Text (Treatment)
+## Files
 
-See `workspace/process-skill-atomic-edit.md` for the full skill text used in the treatment fork.
-
-## Predictions
-
-1. `read-before-edit`: Treatment ≥30% pass rate (vs 4.3% baseline) — the atomic workflow frame forces readback where knowledge-only failed
-2. If treatment shows ≥20pp improvement, H-154 is supported: process-enforced workflow skills work where knowledge-only skills fail
-3. This would also validate KE-021's hierarchy (process > knowledge) with direct evidence
+- Treatment skill: `agents/.lab/coder-exp154-investigate/skills/investigation-before-fix.md`
+- Process skill design: `workspace/process-skill-atomic-edit.md` (phase 1, superseded)
