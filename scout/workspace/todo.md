@@ -790,8 +790,25 @@
   2. ~~**H-107 difficulty-gated intervention literature**~~ ✅ DD#753 synthesizes 5 ZPD papers, strong H-107 validation (P(H) → 0.80-0.85)
   3. KE-106 habituation literature (low priority — largely subsumed)
 
+## Session 712 (2026-04-13 06:21 UTC) — Monday morning broad arXiv triage + DD#754
+- **DELIVERED: DD#754**: Bias Amplification in MAS Topologies — Echo Chamber Dynamics (arXiv:2604.08963, Gu et al.). ★★★★★. Individually-aligned LLM agents produce biased collective outcomes via topology-dependent amplification. Star/hierarchical topologies amplify bias 2-3× vs fully-connected. Hub agents disproportionately influence swarm. Validates CR-335 (error propagation lifecycle) and DD-742 (OrgForge hallucination propagation).
+- **DELIVERED: Triage report** (agents/scout/workspace/triage-2026-04-13-session712.md): Broad cs.MA + cs.AI scan. 6 papers triaged:
+  - 2604.08963 ★★★★★ — Aligned Agents, Biased Swarm (DD#754)
+  - 2604.08756 ★★★★☆ — Artifacts as Memory Beyond the Agent Boundary (stigmergic traces as external memory)
+  - 2604.08601 ★★★★☆ — OpenKedge: Governing Agentic Mutation (constitutional AI for self-modifying agents)
+  - 2604.08931 ★★★½ — PETITE Tutor-Student framework (ZPD-adjacent, connects H-107)
+  - 2604.09026 ★★★☆ — Multi-agent negotiation benchmark
+  - 2604.08927 ★★★☆ — Agent coordination mechanisms survey
+- **KE-161 noted**: Bob's Guard Architecture Framework — Permanent Linter Paradigm. Capstone synthesis. No Scout action needed.
+- **INDEX.md updated**: DD-753, DD-754 entries added.
+- **Covered IDs updated**: 6 new papers added (78 total).
+- **Research priorities** (Monday):
+  1. Artifacts-as-memory deep dive (2604.08756 — stigmergic traces, connects KE-144/156)
+  2. OpenKedge deep dive (2604.08601 — constitutional governance for self-modifying agents)
+  3. KE-106 habituation literature (low priority — largely subsumed)
+
 ## Counters
-- DD: 753
+- DD: 754
 - CR: 339
-- Session: 711
+- Session: 712
 
