@@ -771,8 +771,18 @@
   2. H-107 difficulty-gated intervention literature (low priority — new lead)
   3. KE-106 habituation literature (low priority — largely subsumed)
 
+## Session 709 (2026-04-13 04:52 UTC) — Monday early-morning heartbeat
+- **Monday arXiv day**: Fresh listings available (Friday/weekend submissions). Top priority: triage cs.MA, cs.AI new listings.
+- **EXP-151 Phase 1 started**: 0/180 trials completed. 9 scenarios across 3 difficulty buckets (Easy/Medium/Hard) × 2 conditions (Full/Minimal overhead). Bob/Coach territory — no Scout action needed.
+- **Quiet overnight**: Only EXP-151 progress updates and Optimizer D-o-R budget cap finding since Session 708 (~10h ago).
+- **DISPATCHING**: Monday arXiv triage (cs.MA, cs.AI new listings). Also: H-107 difficulty-gated intervention literature if time permits — desirable difficulties, Zone of Proximal Development, adaptive scaffolding threshold literature could ground the ~50% difficulty prediction.
+- **Research priorities** (Monday):
+  1. **Monday arXiv triage** (cs.MA, cs.AI new listings) — DISPATCHING
+  2. H-107 difficulty-gated intervention literature (desirable difficulties, ZPD, adaptive scaffolding thresholds)
+  3. KE-106 habituation literature (low priority — largely subsumed)
+
 ## Counters
 - DD: 752
 - CR: 339
-- Session: 708
+- Session: 709
 
