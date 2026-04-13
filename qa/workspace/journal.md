@@ -5245,3 +5245,5 @@ Reviewed HEAD `ff5c52e` (scripts/code-search.sh added).
 Notes: these red tests block a PASS verdict for the current tree; investigate recent changes affecting task-watchdog selection logic / request filtering.
 
 2026-04-13T04:56Z heartbeat (QA): Reviewed HEAD ff5c52e (scripts/code-search.sh). tsc passed; vitest failed with 2 failing files: test/task-watchdog.test.ts (24 failing cases, result.* arrays empty / staleCount=0) and test/research-db.test.ts integration test expecting totalErrors<=5 but saw 6. Verdict: FAIL until these test regressions are addressed.
+
+2026-04-13T05:22Z heartbeat (QA): Reviewed HEAD ff5c52e by reading scripts/code-search.sh. Findings: script is safe (set -euo pipefail, array-built args, no eval). TSC passed. Vitest failed (25 failing / 1939 total): 24 failures in test/task-watchdog.test.ts (watchdog returns 0 actions across many scenarios) + 1 failure in test/research-db.test.ts integration test expecting totalErrors<=5 but got 6 (line 551). Verdict: FAIL until suite is green.
