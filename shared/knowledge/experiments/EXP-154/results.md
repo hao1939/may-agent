@@ -6,7 +6,7 @@
 
 ## Summary
 
-The "investigation-before-fix" process skill showed no improvement over baseline on the `exp144-hidden-dep-decoupled` scenario. Treatment pass rate was 10.0% vs baseline 15.0% (−5.0pp). The skill failed to change agent behavior on any of the three targeted process checks (P2, P3, P4).
+The "investigation-before-fix" process skill showed no overall improvement on the `exp144-hidden-dep-decoupled` scenario. Treatment pass rate was 10.0% vs baseline 15.0% (−5.0pp). However, the skill revealed a **selective compliance** pattern: the additive step (verify-after-fix) passed in all 10 treatment runs (100%, vs ~15% baseline), while the interruptive steps (write FINDINGS.md before fixing) were ignored in 9/10 runs. Agents cherry-pick skill instructions based on deviation from their default workflow.
 
 ## Data
 
@@ -27,15 +27,23 @@ The "investigation-before-fix" process skill showed no improvement over baseline
 
 Every single run achieved perfect product scores (5/5). The failure mode is entirely in process checks — agents fix the code correctly but don't document bugs or run verification afterward.
 
-### Process Check Breakdown
+### Process Check Breakdown (Baseline)
 
-Failing runs consistently show **Process: 1/4**, meaning:
-- **P1** (writes plan): ✅ Always passes
-- **P2** (plan mentions typo bug): ❌ Almost never passes  
-- **P3** (plan mentions checksum): ❌ Almost never passes
-- **P4** (runs pipeline after fix): ❌ Almost never passes
+Failing baseline runs consistently show **Process: 1/4**, meaning:
+- **P1** (planning-artifact-exists): ✅ Always passes
+- **P2** (planning-identifies-typo): ❌ Almost never passes  
+- **P3** (planning-identifies-checksum): ❌ Almost never passes
+- **P4** (verify-after-fix): ❌ Almost never passes
 
-The skill was designed to address all three failing checks. It had zero effect on any of them.
+### Process Check Breakdown (Treatment) — Selective Compliance
+
+Treatment runs reveal a **selective compliance** pattern:
+- **P1** (planning-artifact-exists): ❌ **9/10 FAIL** — agents ignored the instruction to write FINDINGS.md/analysis.md
+- **P2** (planning-identifies-typo): ❌ Almost never passes (artifact doesn't exist)
+- **P3** (planning-identifies-checksum): ❌ Almost never passes (artifact doesn't exist)
+- **P4** (verify-after-fix): ✅ **PASSES in all treatment runs** — the "run code after fixing" instruction worked
+
+This is the critical insight: the skill wasn't entirely ignored. The agent **selectively adopted** instructions that aligned with its existing workflow (run code = natural action) while **discarding** instructions requiring novel behavior (stop, write documentation, THEN fix). P2 and P3 necessarily fail when P1 fails (no artifact = nothing to check for bug mentions).
 
 ## Hypothesis Evaluation
 
@@ -44,12 +52,12 @@ The skill was designed to address all three failing checks. It had zero effect o
 **Verdict: NOT SUPPORTED**
 
 - Prediction 1 (≥35% overall): FAILED — got 10% (worse than baseline 15%)
-- Prediction 2 (P2/P3 ≥50%): FAILED — still ~0% in treatment
-- Prediction 3 (P4 ≥70%): FAILED — still ~0% in treatment
+- Prediction 2 (P2/P3 ≥50%): FAILED — still ~0% in treatment (artifact not created)
+- Prediction 3 (P4 ≥70%): **PASSED** — verify-after-fix passes in all 10 treatment runs (100%), vs ~15% in baseline. The "run code after" instruction worked.
 
 ## Analysis
 
-### Why the Skill Failed
+### The Selective Compliance Pattern
 
 The investigation-before-fix skill instructed agents to:
 1. Run code first to see errors
@@ -58,24 +66,41 @@ The investigation-before-fix skill instructed agents to:
 4. Fix only after documentation
 5. Run code again after fixing
 
-**The agent ignored these instructions.** In 9/10 failing treatment runs, the agent proceeded directly to fixing code without creating FINDINGS.md or running the pipeline first. The skill text was present in the agent's context but had no effect on behavior.
+**The agent didn't ignore all of these — it cherry-picked.** Step 5 (verify by running) was adopted in all 10 treatment runs (P4 passes). But steps 2-4 (write documentation before fixing) were ignored in 9/10 runs (P1 fails → P2, P3 necessarily fail).
 
-### Key Insight: SOUL.md Text ≠ Behavior Change
+This reveals **selective compliance**: agents adopt skill instructions that align with their existing workflow (running code is a natural developer action) while discarding instructions that require behavioral deviation (stopping to write documentation mid-task). The skill didn't fail completely — it failed *asymmetrically*.
 
-This result reinforces **KE-021** (only process skills reliably change behavior) but adds nuance: even a *process* skill, when delivered as text instructions, doesn't reliably change behavior. The 90% failure rate in treatment is statistically indistinguishable from the 85% baseline failure rate.
+### Refining KE-021: Process Skills Have Internal Gradients
 
-This is consistent with **KE-093** (SOUL.md text changes don't fix judgment failures, 0/18 in experiments). Text-based instructions — whether in SOUL.md or skills files — face the same fundamental limitation: the agent reads them but doesn't consistently follow them.
+KE-021 established that process skills work better than judgment skills. EXP-154 adds a crucial nuance: **within a single process skill, individual steps have different compliance rates** based on how much they deviate from the agent's default workflow.
 
-### What Would Work Instead
+| Step | Deviation from Default | Compliance |
+|------|----------------------|------------|
+| Run code after fixing | Low (agents often do this anyway) | 10/10 (100%) |
+| Write FINDINGS.md before fixing | High (requires stopping, creating new artifact) | 1/10 (10%) |
+| Document hidden dependencies | High (requires metacognitive pause) | 1/10 (10%) |
 
-The process checks require *workflow enforcement*, not text guidance:
-- A pre-commit hook that blocks commits unless FINDINGS.md exists
-- A framework step that runs the pipeline automatically before and after edits
-- Structural changes to the agent loop that force documentation before code changes
+This suggests a **compliance gradient** within process skills:
+- **Additive steps** (do X in addition to what you normally do): HIGH compliance
+- **Interruptive steps** (stop your normal flow and do Y first): LOW compliance
+
+The "investigation-before-fix" skill failed because its core value proposition — document before fixing — is an *interruptive* step. The one step that worked (verify after) is *additive*.
+
+### Implications for Skill Design
+
+1. **Decompose compound skills**: A skill with 5 steps containing both additive and interruptive components will partially work. Test each step type separately.
+2. **Additive process steps work as text**: "Run code after fixing" can be delivered as a skill file.
+3. **Interruptive process steps need workflow gates**: "Write FINDINGS.md before editing" requires an L5 materialization gate — same as judgment skills.
+4. **The KE-021 hierarchy needs a sub-level**: Process skills aren't uniformly effective. Additive process > Interruptive process > Knowledge > Judgment.
+
+### Connection to KE-011 and KE-175
+
+- **KE-011** (knowledge is passive): EXP-154 shows that even *active* process skills are partially passive when they contain interruptive steps. The agent reads the skill, adopts the easy parts, skips the hard parts.
+- **KE-175** (skill effectiveness window): The 15% baseline is at the lower edge of the effectiveness window. The selective compliance pattern might be stronger at higher baselines where agents have more cognitive slack to follow instructions.
 
 ## Knowledge Entry
 
-**KE-176**: Investigation-before-fix skill (text-based) has 0pp effect on process compliance. Agents ignore documentation/verification instructions even when explicitly told to create FINDINGS.md and run pipeline. Text skills don't overcome default "fix first, document never" behavior. Workflow enforcement needed.
+**KE-176**: Selective Skill Compliance — agents cherry-pick skill instructions based on deviation from default workflow. Additive steps (verify after fix) show 100% compliance; interruptive steps (write documentation before fixing) show 10% compliance. Process skills are not uniformly effective — they have an internal gradient: Additive Process > Interruptive Process. Interruptive process steps require workflow gates, same as judgment skills.
 
 ## Raw Data
 
