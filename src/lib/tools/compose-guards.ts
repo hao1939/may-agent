@@ -27,6 +27,10 @@ export interface BeforeToolCallContext {
 export interface BeforeToolCallResult {
   block: boolean;
   reason: string;
+  /** Optional: suggest a workflow the agent should run instead. */
+  redirect?: { workflow: string; task: string };
+  /** Optional: inject a steering message for the agent's next turn. */
+  steer?: string;
 }
 
 type BeforeToolCallHook = (
