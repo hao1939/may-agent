@@ -2,8 +2,7 @@
 - bun is at .state/.bun/bin/bun — add to PATH: `export PATH=".state/.bun/bin:$PATH"`
 - npx is not available in this environment — use ./node_modules/.bin/<tool> or bun x <tool>
 - sudo is not available
-- sqlite3 CLI is not available — query .state/may.db with bun: `bun -e "import {Database} from 'bun:sqlite'; const db = new Database('.state/may.db', {readonly:true}); ..."`
-- node:sqlite is NOT available (requires Node 22+, this environment runs Node 18) — use bun:sqlite instead
+- sqlite3 CLI and node:sqlite are NOT available — see **Database Access** section below
 - Build check: npm run check (runs tsc --noEmit) — run after every code change
 - agents/ is a separate git repo (gitignored from main) — commit agent changes from agents/ dir
 - When delegating to coder: add explicit file scope boundaries ("ONLY modify X, do NOT touch Y")
@@ -22,6 +21,13 @@
 - C1.3 convention: After every write() call, you MUST read() the file back. write() now shows a diff for existing-file overwrites (deployed 2026-04-07), but read-back is still required for NEW files. Your pass rate improved from 50.9% → 98.6% — keep it up.
 - REVIEW GATE: Direct commits to main are BLOCKED by a pre-commit hook. For src/ changes, use: `git checkout -b review/<session-id> && git add -A && git commit -m "..."`. To bypass in emergencies: `REVIEW_GATE_BYPASS=1 git commit -m "hotfix: ..."`. Review branches get checked (tsc + vitest) and reviewed before merging to main.
 - **KE-008**: Do NOT restructure heartbeat steps (reorder, merge, rename). Heartbeat regressions are caused by structural changes, not content. Add content within existing steps only.
+
+## Database Access
+- **DB path**: `.state/may.db` (SQLite)
+- **Access method**: `bun:sqlite` — `node:sqlite` and `sqlite3` CLI are NOT available
+- **Example**: `bun -e "import{Database}from'bun:sqlite'; const db=new Database('.state/may.db',{readonly:true}); console.log(db.query('SELECT name FROM sqlite_master WHERE type=\"table\"').all());"`
+- **Key tables**: `sessions` (agent, status, startedAt, opCount, error, task), `evaluations`, `requests`
+- **npx** is NOT available — use `bun -e "..."` for inline scripts
 
 ## Operational Knowledge (from experiments)
 - **Never stack behavioral interventions** — combining 2+ interventions degrades performance by 12-15pp (KE-123). Use ONE targeted intervention per task.
