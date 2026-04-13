@@ -160,6 +160,56 @@ const defaultBashOperations: BashOperations = {
 	},
 };
 
+// ── Error-time nudges ───────────────────────────────────────────────────
+// When a bash command fails with a recognizable pattern, append an actionable
+// hint so the agent doesn't spiral trying the same broken approach.
+// Evidence: 16-18 ops wasted per session on DB tool confusion spirals.
+
+export interface ErrorNudge {
+	/** Regex to test against the combined stdout+stderr output */
+	pattern: RegExp;
+	/** Hint appended to the output when the pattern matches */
+	hint: string;
+}
+
+export const DEFAULT_ERROR_NUDGES: ErrorNudge[] = [
+	{
+		pattern: /sqlite3:\s*command not found/i,
+		hint: "\n\n💡 Hint: sqlite3 CLI is not available. Use `bun -e` with bun:sqlite. DB is at .state/may.db.",
+	},
+	{
+		pattern: /bun:\s*command not found/i,
+		hint: "\n\n💡 Hint: bun is at .state/.bun/bin/bun — add to PATH: export PATH='.state/.bun/bin:$PATH'",
+	},
+	{
+		pattern: /npx:\s*command not found/i,
+		hint: "\n\n💡 Hint: npx is not available. Use ./node_modules/.bin/<tool> or bun x <tool>",
+	},
+	{
+		pattern: /sudo:\s*command not found|sudo:.*not found/i,
+		hint: "\n\n💡 Hint: sudo is not available in this environment.",
+	},
+	{
+		pattern: /node:sqlite/i,
+		hint: "\n\n💡 Hint: node:sqlite is not available. Use bun:sqlite instead. Example: bun -e \"import{Database}from'bun:sqlite'; const db=new Database('.state/may.db',{readonly:true}); ...\"",
+	},
+];
+
+/**
+ * Scan output text for known failure patterns and append hints.
+ * Only fires when the command has a non-zero exit code (error path).
+ * Returns the original text with any matching hints appended.
+ */
+export function applyErrorNudges(output: string, nudges: ErrorNudge[] = DEFAULT_ERROR_NUDGES): string {
+	let result = output;
+	for (const nudge of nudges) {
+		if (nudge.pattern.test(output)) {
+			result += nudge.hint;
+		}
+	}
+	return result;
+}
+
 // ── P53 bash command guard REMOVED ──────────────────────────────────────
 // Removed per Hao's directive (2026-03-14): "bash guard is against our idea
 // of freedom and creativity." Cross-edit protection for SOUL.md/agent.json
@@ -327,6 +377,8 @@ export function createBashTool(cwd: string, options?: BashToolOptions): AgentToo
 
 						if (exitCode !== 0 && exitCode !== null) {
 							outputText += `\n\nCommand exited with code ${exitCode}`;
+							// Apply error-time nudges for common tool confusion patterns
+							outputText = applyErrorNudges(outputText);
 							reject(new Error(outputText));
 						} else {
 							resolve({ content: [{ type: "text", text: outputText }], details });
