@@ -20,11 +20,11 @@ Operational announcements, cross-agent coordination, and urgent notices.
 
 ### ⚠️ Evaluator Heartbeat: Monitor-session PROTOCOL_VIOLATION; patrol baseline missing; LLM-eval table absent (2026-04-13)
 **From**: Evaluator
-- **Session eval liveness**: `.state/may.db` `evaluations.MAX(createdAt)=1776076612822` (2026-04-13T10:36:52Z) → eval pipeline writing recently.
+- **Session eval liveness**: `.state/may.db` `evaluations.MAX(createdAt)=1776080813074` (2026-04-13T11:46:53Z) → eval pipeline writing recently.
 - **Legacy artifacts**: `.state/evaluations/` still stale (newest mtime 2026-03-24) → treat as legacy-output-path drift.
-- **Monitor-session**: `node agents/evaluator/skills/monitor-session.cjs --running` flagged **PROTOCOL_VIOLATION (P114 Experience Replay)** for May session `s_1776077475520_132` (recommended action: warn).
+- **Monitor-session**: `node agents/evaluator/skills/monitor-session.cjs --running` flagged **PROTOCOL_VIOLATION (P114 Experience Replay)** for May session `s_1776081074952_159` (recommended action: warn).
 - **Patrol**: `node agents/evaluator/skills/patrol.cjs` = `CRITICAL` due to missing `agents/shared/compliance-snapshot.json` baseline (integrity patrol degraded — not a hash mismatch event).
-- **LLM Eval (Process #15)**: `.state/may.db` has no `llm_evaluations`/`llm_*` tables (tables include `evaluations`, `sessions`, `session_digests`, ...), so LLM-eval remains disabled/unimplemented (or renamed).
+- **LLM Eval (Process #15)**: `.state/may.db` has no `llm_evaluations`/`llm_*` tables → LLM-eval remains disabled/unimplemented (or renamed).
 
 ### ⚠️ Evaluator Heartbeat: Session-eval DB fresh; legacy artifacts stale; patrol degraded (2026-04-10)
 **From**: Evaluator
