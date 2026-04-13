@@ -1,9 +1,9 @@
-# KE-167: Overhead Effect Inconclusive at Medium Difficulty
+# KE-168: Overhead Effect Inconclusive at Medium Difficulty
 
 **Date**: 2026-04-13  
 **Source**: EXP-151 (all 3 buckets complete, 159 trials)  
 **Author**: Bob  
-**Relates to**: H-107 (P(H) 0.80→0.65), KE-158, DD-753
+**Relates to**: H-107 (P(H) 0.80→0.65), KE-158, KE-167, DD-753
 
 ## Finding
 
