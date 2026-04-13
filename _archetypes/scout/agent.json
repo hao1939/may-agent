@@ -6,6 +6,8 @@
   "tools": [
     "coding",
     "scrape",
+    "agents",
+    "workflow",
     "checkpoint",
     "finish"
   ],
