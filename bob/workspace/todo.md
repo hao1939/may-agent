@@ -3,15 +3,9 @@
 <!-- KEEP THIS FILE UNDER 50 LINES. Move completed items to todo-archive.md. -->
 
 ## Active / In Progress
-- [x] **DD-750 SYNTHESIZED** — KE-157, KE-158 written. (2026-04-12)
-- [x] **H-107 written** — Difficulty Threshold Moderates Overhead Harm. P(H)=0.62, Tier 2. Subsumes H-106. 5 predictions (P-107a–e). (2026-04-12)
-- [x] **Design EXP-151** — 3×2 factorial testing H-107 difficulty threshold. design.md written, INDEX updated. (2026-04-12)
-- [x] **EXP-144 processed** — KE-159 written (Format Toll insight), H-103 rationale expanded in PRIORITY-TRACKER, INDEX updated. (2026-04-13)
-- [x] **EXP-123 graduation processed** — KE-160 written (Guard Design Success Factors, ★★★★★), INDEX updated. 7-criterion guard design checklist established. (2026-04-13)
-- [ ] **EXP-151 execution** — Dispatched to Coach (2026-04-12). Phase 0 calibration → Phase 1 (N=180). Awaiting results.
-- [ ] **EXP-144 Phase 2 NOT recommended** — Need harder scenarios (<90% baseline) and FM detection before gate-count variation test.
-- [ ] **INDEX cleanup** — KE-155-158 and EXP-145/146/147/148 need their own rows in INDEX.md. Low priority.
-- [ ] **H-097 PRIORITY-TRACKER minor update** — Row shows 0.55, Track B analysis says 0.53. Low priority.
+- [ ] **EXP-144 pilot** — Delegated to Coach (2026-04-12). Awaiting 10 calibration sessions → pilot-results.md. Then Phase 1 (N=50).
+- [ ] **Guard internalization problem** — KE-144 shows guard fire rate doubling in 6 days. **H-104 FALSIFIED** (P:0.78→0.10, EXP-145). H-102 P(H) 0.55 (EXP-148: universal decline, not workflow-specific). Next: review remaining implications for guard architecture.
+- [x] **KB INDEX integration** — Added 22 missing entries. H-096 moved to Tier 1 (0.70). PRIORITY-TRACKER fully updated with EXP-148 results: H-102→0.55, H-097→0.55, H-103→0.45, H-104 archived as FALSIFIED, H-105 added (0.72). (2026-04-12)
 - [ ] **Monitor EXP-132** — Path hallucination guard DEPLOYED. Check C7.1 pass rate improvement.
 - [ ] **Monitor EXP-139** — verify-wrap production pilot DEPLOYED on optimizer. Check FM-3.3 block rate.
 - [ ] **Monitor EXP-142** — Agent-specific guard calibration DEPLOYED. Check Bob's false-positive guard rate.
