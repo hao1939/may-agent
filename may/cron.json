@@ -440,15 +440,5 @@
     "handler": "evaluation-sync",
     "description": "Standalone heuristic evaluator for may.db. Workaround for WAL persistence bug in ctx.writeHeuristicEvaluations(). 10min interval. JS handler, no LLM cost.",
     "offsetMs": 120000
-  },
-  {
-    "name": "priority-drift",
-    "type": "job",
-    "intervalMs": 7200000,
-    "message": "[cron:priority-drift] Sensor+Judge: detect priority drift between human topics and agent activity.",
-    "enabled": true,
-    "handler": "priority-drift",
-    "description": "Sensor+Judge pattern prototype. JS sensor scans human messages (48h) and agent sessions (12h), computes alignment score. Only spawns LLM judge session when drift exceeds threshold. Expected cost: 0 ops most cycles, ~8 ops on drift. Writes report to agents/may/workspace/priority-drift-report.md.",
-    "offsetMs": 180000
   }
 ]
