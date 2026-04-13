@@ -1,16 +1,16 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-13 ~22:21 UTC
+Updated: 2026-04-13 ~23:21 UTC
 
 ## System Health
-- **Bob**: 🟢 Active — 21 sessions/6h, avg 16 ops. Zero errors.
-- **Coach**: 🟢 Active — 23 sessions/6h, avg 17 ops. Zero errors.
-- **Scout**: 🟢 Active — 12 sessions/6h, avg 9 ops. Zero errors.
-- **Tech-lead**: 🟢 Active — 28 sessions/6h, avg 12 ops. Zero errors.
-- **Optimizer**: 🟢 Active — 25 sessions/6h, avg 14 ops. Zero errors.
+- **Bob**: 🟢 Active — 21 sessions/6h, avg 15 ops. Zero errors.
+- **Coach**: 🟢 Active — 22 sessions/6h, avg 15 ops. Zero errors.
+- **Scout**: 🟢 Active — 13 sessions/6h, avg 10 ops. Zero errors.
+- **Tech-lead**: 🟢 Active — 26 sessions/6h, avg 10 ops. Zero errors.
+- **Optimizer**: 🟢 Active — 26 sessions/6h, avg 14 ops. Zero errors.
 - **Evaluator**: 🟢 Active — 13 sessions/6h, avg 6 ops. Zero errors.
-- **QA**: 🟢 Active — 12 sessions/6h, avg 8 ops. Zero errors.
-- **Coder**: 🟡 Low activity — 4 sessions/6h, avg 15 ops. Only runs when forked.
+- **QA**: 🟢 Active — 12 sessions/6h, avg 9 ops. Zero errors.
+- **Coder**: 🟡 Low activity — 2 sessions/6h, avg 9 ops. Only runs when forked.
 - **Summary**: All 8 agents healthy. Zero errors, zero stuck sessions.
 
 ## Active Priorities (from Hao)
@@ -34,11 +34,10 @@ Updated: 2026-04-13 ~22:21 UTC
 - **P1**: **Convention investigation** — In progress (tech-lead). 
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (22:51 Apr 13)
-- **System**: All 8 agents active. Zero errors. 1 stuck coach session cancelled (EXP-154 design, 1.5h old).
-- **Dispatched this cycle**: D-o-R Lens proposal → optimizer (s_1776120712375_443).
-- **Completed**: Over-intervention cleanup (coach), scout archetype fix (tech-lead), optimizer finding→dispatch pipeline (optimizer).
-- **Queue**: 2 Ready items remaining. 1 in-progress item.
+## Latest Cycle Summary (23:21 Apr 13)
+- **System**: All 8 agents active. Zero errors. No stuck sessions.
+- **Dispatched this cycle**: Tiered turn budget → tech-lead (s_1776122503588_456).
+- **Queue**: 1 Ready item remaining. 2 in-progress items.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
