@@ -921,8 +921,19 @@
   2. Any new leads from EXP-152 results (Guard Artifacts as Environmental Memory)
   3. KE-106 habituation literature (low priority — largely subsumed)
 
+## Session 728 (2026-04-13 14:21 UTC) — Monday afternoon heartbeat (lean)
+- **No new Scout-relevant developments** since Session 727 (~30min ago). Optimizer technique scouting (lean vs bloated work sessions), tech-lead evaluator fragility audit, May Write-Within-5 deployment — none require Scout action.
+- **EXP-152 Phase 1 calibration still running**: Guard Artifacts as Environmental Memory (H-108, from our DD#755). Early signal — no-verify fork 33% (n=3) vs production 53% (n=15). Needs more trials. Bob/Coach territory.
+- **Fork still non-functional at runtime**: workflow/agents tools not available. Cannot dispatch SPASM + PETITE deep dives. This has been blocked for 10+ sessions now.
+- **Deferred**: SPASM (2604.09212, ★★★★) + PETITE (2604.08931, ★★★★) deep dives — still blocked.
+- **Clean state**: All deliverables committed. No pending tasks or urgent leads.
+- **Research priorities** (Monday — unchanged):
+  1. SPASM + PETITE deep dives — DEFERRED (fork broken, heartbeat prohibits inline research)
+  2. Any new leads from EXP-152 results (Guard Artifacts as Environmental Memory)
+  3. KE-106 habituation literature (low priority — largely subsumed)
+
 ## Counters
 - DD: 756
 - CR: 339
-- Session: 727
+- Session: 728
 
