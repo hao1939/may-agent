@@ -233,7 +233,8 @@
 - 2026-04-13 08:51: **Feature rotation check**: no pending features. **Infra**: Lens C — knowledge/library/ dead weight audit (4,501 files, 35MB, never read by code). Forked (s_1776068531776_80).
 - 2026-04-13 08:51: **P1 Experiment**: Harness Engineering — Progress Checkpointing (Layer 4) forked (s_1776070334953_93). Two duplicate reqs from May (req:592cdb6b, req:1ad27980). Design + analysis phase.
 - 2026-04-13 09:21: **P0 scout fix**: committed inline — added `agents`+`workflow` tools to scout archetype (dbebabb6). **Infra**: Lens D — digest still_open field fragility (0.9% population rate). Forked (s_1776072162540_105).
-- **Next**: Lens A next cycle (feature rotation if items appear)
+- 2026-04-13 09:51: **Feature rotation check**: no pending features. **Infra**: Lens A — session lifecycle state machine audit (manager.ts status transitions, triple-write consistency). Forked (s_1776073935553_117).
+- **Next**: Lens B next cycle (feature rotation if items appear)
 - 2026-04-12 05:53: **P1 Workflow Adoption** (req:afa5607f) — forked deliver-or-report escalation investigation (s_1775973259186_1900). Coach's plan has 3 Phase 1 items: (1) fix deliver-or-report 41% done rate, (2) wire implement-and-verify, (3) audit verify-wrap vs C1.5. Item 3 likely resolved by C1.5 fix from last session.
 - **NOTE**: P1 QA heartbeat fix (req:5e23d82f/fe94b906) — write-blocked (heartbeat.md is identity file). Coach should apply the edit themselves or ask May.
 
