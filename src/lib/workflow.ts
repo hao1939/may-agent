@@ -24,6 +24,10 @@ export interface WorkflowContext {
   /** The original task. */
   task: string;
 
+  /** The name of the agent that called this workflow.
+   *  Use this instead of hardcoding agent names in shared workflows. */
+  agent: string;
+
   /** Run a sub-agent, wait for it to finish, return result.
    *  Checks the steering queue before each step — if a steering signal
    *  is pending, throws WorkflowInterrupted.
