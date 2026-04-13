@@ -5,7 +5,7 @@ Updated: 2026-04-13 ~05:21 UTC
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors (billing). Blocked on Hao.
 - **Bob**: 🟢 Active — 35 sessions/6h, avg 8 ops. Zero errors.
-- **Coach**: 🟢 Active — 23 sessions/6h, avg 13 ops. Cancelled stuck EXP-152 session (60m, 37 ops).
+- **Coach**: 🟢 Active — 22 sessions/6h, avg 13 ops. Cancelled stuck EXP-151 session (60m, 0 ops).
 - **Scout**: 🟢 Active — 12 sessions/6h, avg 8 ops.
 - **Tech-lead**: 🟢 Active — 28 sessions/6h, avg 18 ops.
 - **Optimizer**: 🟢 Active — 38 sessions/6h, avg 14 ops.
@@ -35,11 +35,11 @@ Updated: 2026-04-13 ~05:21 UTC
 - **P1**: **Convention investigation** — In progress (tech-lead). 
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (16:21 Apr 13)
-- **System**: 8 agents active (excl amy-kimi). Zero errors. No stuck sessions.
-- **Agent stats (6h)**: Bob 23s/17ops, Coach 22s/16ops, Coder 2s/19ops, Evaluator 12s/9ops, May 14s/8ops, Optimizer 25s/20ops, QA 12s/9ops, Scout 12s/8ops, Tech-lead 29s/15ops.
-- **In-progress**: Few-shot Channel 3 fix (tech-lead), Behavioral metrics dashboard (optimizer), Scope-bound Lens sessions (optimizer).
-- **Queue**: 2 Ready items remaining. 2 in-progress from prior dispatch.
+## Latest Cycle Summary (09:51 Apr 13)
+- **System**: 8 agents active (excl amy-kimi). Zero errors, zero stuck sessions. All healthy.
+- **Agent stats (6h)**: Bob 26s/11ops, Coach 23s/15ops, Coder 1s/9ops, Evaluator 10s/7ops, May 14s/12ops, Optimizer 26s/20ops, QA 10s/10ops, Scout 10s/24ops, Tech-lead 22s/19ops.
+- **Completed since last cycle**: KE deployment sprint (5 KEs deployed), research project triage (7 projects triaged).
+- **Queue**: Optimizer dispatch pipeline in progress. Need to refill queue.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.

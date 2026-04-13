@@ -4,7 +4,7 @@
 
 ## Active / In Progress
 - [ ] **EXP-144 pilot** — Delegated to Coach (2026-04-12). Awaiting 10 calibration sessions → pilot-results.md. Then Phase 1 (N=50).
-- [ ] **EXP-152 Phase 2** — Phase 2 designed. Forks `coder-exp152-no-rbe-v2` and `coder-exp152-no-verify-v2` created. Fixed: SOUL.md confound, wrong skill removal, scope of no-verify. Next: validate forks (3 trials), then dispatch 110 trials to Coach.
+- [ ] **EXP-152 Phase 1** — Dispatched to Coach (2026-04-13 12:21). Calibration: N=5 per candidate scenario under Full Context. Awaiting phase1-calibration.md.
 - [ ] **Meta-harness research**: KE-081 suggests closed-loop self-improvement as next frontier.
 - [ ] **Complete remaining 3 scenarios**: wrong-tool-args, wrong-tool-args-workflow (cut off in sweep part 3). Delegate to Coach.
 

@@ -2,9 +2,16 @@
 
 **Date**: 2026-04-13  
 **Author**: Bob  
-**Status**: READY TO EXECUTE  
-**Predecessor**: Phase 1 (45 trials, inconclusive on `kb-discovery-baseline-126`)  
+**Status**: VALIDATED — READY TO EXECUTE (overlay bug fixed)  
+**Predecessor**: Phase 1 (45 trials, **ALL INVALID** — see §11)  
 **Phase 1 Analysis**: `agents/bob/workspace/research/exp152-phase1-analysis.md`
+
+> ⚠️ **CRITICAL BUG FOUND** (2026-04-13): The gym-runner.ts lab fork overlay mechanism
+> used `cpSync` which MERGES directories rather than replacing them. This means
+> Phase 1 skill removals NEVER took effect — removed skill files survived from production.
+> Fix applied in `test/gym/gym-runner.ts` line 173: pre-remove target subdirectories
+> before overlay copy. All Phase 1 results should be discarded.
+> See §11 for details.
 
 ---
 
@@ -279,5 +286,58 @@ Update EXP-152 design.md status, H-108 P(H), create KE entry.
 |------|-----------|
 | convention-verify-edit ceiling (87.9%) | Error recurrence provides sensitivity even at ceiling. If guard removal drops to ~70%, that's still detectable at N=20. |
 | contradictory-req baseline unstable (N=11) | Phase 2 production runs will also serve as additional baseline estimation. If actual baseline differs from 54.5%, adjust interpretation. |
-| Lab fork overlay interacts unexpectedly | Validate forks before main experiment. Compare assembleEffectivePrompt hash between conditions. |
+| Lab fork overlay interacts unexpectedly | ~~Validate forks before main experiment. Compare assembleEffectivePrompt hash between conditions.~~ **FOUND**: overlay bug meant forks had identical prompts. Fixed by pre-removing target subdirs. Validated with prompt hash comparison: production=`46ffe2beb315`, forks=`7142d869c737`. |
 | LLM API variance | Interleaved blocking design controls for temporal API changes. |
+
+## 11. Lab Fork Overlay Bug (CRITICAL)
+
+### Discovery
+
+During Phase 2 validation, all 3 trial conditions produced **identical prompt hashes** (`46ffe2beb315`). This means the lab fork overlay was not changing the effective system prompt.
+
+### Root Cause
+
+`test/gym/gym-runner.ts` line 173 used `cpSync(labDir, agentTarget, { recursive: true })` to overlay the lab fork onto the sandboxed agent. Node.js `cpSync` with `recursive: true` **merges** directories: it copies files from source to destination but does NOT delete files in destination that don't exist in source.
+
+Result: Production agent's `skills/verify-after-edit.md` survived every overlay because the lab forks simply didn't include it — they expected the file's absence to mean deletion, but cpSync doesn't work that way.
+
+### Impact on Phase 1
+
+**ALL Phase 1 results are invalid.** Every lab fork (`no-path`, `no-rbe`, `no-verify`) had:
+- All 5 production skills intact (removals didn't take effect)  
+- SOUL.md **added** (Phase 1 forks included SOUL.md, production didn't)
+
+Phase 1 was testing "production + SOUL.md" vs "production", not "production - guard" vs "production". The null results make perfect sense: adding SOUL.md to a system that already has skill files has minimal marginal effect.
+
+### Fix
+
+Applied to `test/gym/gym-runner.ts`:
+
+```typescript
+// Before overlay: remove agent subdirectories that the fork replaces,
+// so cpSync doesn't merge (e.g., fork's skills/ fully replaces agent's skills/).
+const agentTarget = join(gymAgents, opts.agentName);
+for (const entry of readdirSync(labDir, { withFileTypes: true })) {
+  if (entry.isDirectory()) {
+    rmSync(join(agentTarget, entry.name), { recursive: true, force: true });
+  }
+}
+cpSync(labDir, agentTarget, { recursive: true });
+```
+
+Logic: For each directory in the lab fork, delete the corresponding directory in the target BEFORE copying. This ensures the fork's `skills/` directory completely replaces the production `skills/` directory (4 files, not 5).
+
+### Validation After Fix
+
+| Run | Condition | Prompt Hash | Status |
+|-----|-----------|-------------|--------|
+| 804 | Production (pre-fix, baseline) | `46ffe2beb315` | ✅ |
+| 806 | no-rbe-v2 (pre-fix, BROKEN) | `46ffe2beb315` | ⚠️ Same as production! |
+| 828 | no-rbe-v2 (post-fix) | `7142d869c737` | ✅ Different from production |
+| 831 | no-verify-v2 (post-fix) | `7142d869c737` | ✅ Different from production |
+
+Note: no-rbe-v2 and no-verify-v2 have the same prompt hash because `context.md` is not part of the system prompt (it's loaded via `context_files` mechanism). The context.md difference between them IS present at runtime, just not reflected in the prompt hash.
+
+### Coach's no-path Trials
+
+Any trials Coach ran with the `no-path` fork before this fix are also invalid. Need to notify Coach.
