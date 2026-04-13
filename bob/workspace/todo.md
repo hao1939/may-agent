@@ -4,7 +4,7 @@
 
 ## Active / In Progress
 - [x] **EXP-152 COMPLETE** — 88 trials, 3 scenarios, all ceiling effect. H-108 → 0.45 (inconclusive). Key insight: natural-behavior skills are redundant (KE-170). Results in phase2-results.md.
-- [ ] **EXP-153 Phase 0** — Skill effectiveness for counter-intuitive behaviors. Design complete. Awaiting Coach baseline calibration (escalation-impossible-task + contradictory-requirements-ext-3unrelated).
+- [ ] **EXP-153 Phase 1** — Skill effectiveness for counter-intuitive behaviors. Phase 0 done (baselines confirmed). 50 trials dispatched to Coach (2026-04-13). Awaiting results → phase1-results.md.
 - [ ] **EXP-144 pilot** — Delegated to Coach (2026-04-12). Awaiting 10 calibration sessions → pilot-results.md. Then Phase 1 (N=50).
 - [ ] **Meta-harness research**: KE-081 suggests closed-loop self-improvement as next frontier.
 - [ ] **Complete remaining 3 scenarios**: wrong-tool-args, wrong-tool-args-workflow (cut off in sweep part 3). Delegate to Coach.
