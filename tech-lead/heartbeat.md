@@ -85,53 +85,31 @@ Fork exploration using lens rotation. Track which lens you did last in todo.md.
 - **Lens C: Dead Weight** — Config nobody reads, protocols nobody follows, features not used in practice, defensive code for impossible scenarios.
 - **Lens D: Fragility** — Silent assumption failures, single-bug cascading failures, blast radius of common errors.
 
-### 📐 Lens Phase Boundaries (D-o-R for Investigations)
-
-Your Lens work sessions average 38 ops with a heavy tail to 96. **28% of sessions consume 72% of total Lens ops.** The cause: unbounded investigation with no stopping point. Use these phase boundaries:
-
-**Phase 1: SCOPE (≤3 ops)** — Define what you're looking at and what "done" means.
-- Read 1-3 target files. Count lines, identify boundaries.
-- Write a 1-sentence objective and a concrete deliverable path.
-- **GATE**: If scope is too broad (>3 files, >1000 lines), narrow it before proceeding.
-
-**Phase 2: INVESTIGATE (≤10 ops)** — Gather evidence. Read, grep, query. No writing yet.
-- Follow the code path. Count layers, find consumers, trace flows.
-- Take mental notes on findings, but do NOT start fixing or cleaning up.
-- **GATE**: At 10 ops, STOP investigating. You have enough. If you don't, the scope was too broad.
-
-**Phase 3: WRITE (≤5 ops)** — Produce the deliverable. One file, structured findings.
-- Write the findings doc to `agents/tech-lead/workspace/<finding-name>.md`.
-- Include: summary, evidence (with line numbers), severity, recommended action.
-- **GATE**: The deliverable exists and is non-empty. You are DONE.
-
-**Phase 4: EXIT (1 op)** — Call `finish()`. Do NOT start fixing what you found.
-- If you found something worth fixing, note it as a follow-up in the findings doc.
-- The fix is a SEPARATE session (fork it from the next heartbeat).
-
-**Total budget: ≤20 ops.** Investigation-only sessions should not exceed this. Sessions that also apply fixes (code changes, deletions) may use up to 30 ops via implement-and-verify.
-
-**The #1 anti-pattern**: "I found dead code, let me delete it now." → This doubles session ops. Write the finding, exit, fork the cleanup separately.
-
 ### Workflow routing for Lens sessions
 
-**Call `workflow.run()` directly from the heartbeat** — don't embed workflow hints in fork task text. The workflow blocks this session, which is fine (heartbeats have 30+ min gaps).
+**ALWAYS use `workflow.run("lens-analysis", ...)` for Lens investigations — never `agents.call()` or `agents.fork()`.**
 
-Investigation/analysis (most Lens sessions) — call verify-wrap directly:
+The `lens-analysis` workflow embeds D-o-R phase boundaries (SCOPE ≤3 ops → INVESTIGATE ≤10 → WRITE ≤5 → EXIT 1) directly into the child session's task string AND verifies the deliverable exists.
+
+Investigation/analysis (most Lens sessions):
 ```javascript
-workflow.run("verify-wrap", "Lens D: <specific target>. Scope: <1-3 files>. Done-when: findings doc written to agents/tech-lead/workspace/<name>.md with evidence and severity ratings. Budget: 20 ops max — scope/investigate/write/exit phases.")
+workflow.run("lens-analysis", `Lens ${lens}: ${specificTarget}
+deliverable: agents/tech-lead/workspace/${findingName}.md`)
 ```
 
-Code changes (cleanup, fix) — call implement-and-verify directly:
+Code changes (cleanup/fix from a prior finding):
 ```javascript
-workflow.run("implement-and-verify", "Lens C cleanup: <specific target from prior finding>. Files: <scope>. Verify: tsc --noEmit + test. Budget: 30 ops.")
+workflow.run("implement-and-verify", `Lens ${lens} cleanup: ${target}
+Prior finding: agents/tech-lead/workspace/${finding}.md
+Files: ${explicitList}. Verify: tsc --noEmit + test. Budget: 30 ops.`)
 ```
 
-Feature work — delegate to coder via implement-and-verify:
+Feature work:
 ```javascript
 workflow.run("implement-and-verify", "Implement <feature> from dispatch-board. Files: <scope>. Test: <how to verify>.")
 ```
 
-**Only use `agents.fork()` for**: fire-and-forget tasks where you don't need to block (e.g., non-blocking dispatches to other agents).
+**NEVER dispatch Lens work via `agents.call()` or `agents.fork()`.** Those create unstructured sessions.
 
 ### Rules for Work Sessions (not heartbeats)
 - Before every `edit()`: `read()` the file first.
