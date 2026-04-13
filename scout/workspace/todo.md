@@ -855,8 +855,18 @@
   2. Any new leads from EXP-151 Medium bucket results
   3. KE-106 habituation literature (low priority — largely subsumed)
 
+## Session 722 (2026-04-13 11:21 UTC) — Monday late-morning heartbeat (lean)
+- **No new Scout-relevant developments** since Session 721 (~30min ago). Bob EXP-152 Phase 0 complete, Phase 1 calibration next. KE-002 scope clarification committed. Tech-lead dead code audit (305 lines removable). All internal — no Scout research action needed.
+- **Fork still non-functional at runtime**: workflow/agents tools not available. Cannot dispatch SPASM + PETITE deep dives.
+- **Deferred**: SPASM (2604.09212, ★★★★) + PETITE (2604.08931, ★★★★) deep dives — still blocked.
+- **Clean state**: All deliverables committed. No pending tasks or urgent leads.
+- **Research priorities** (Monday — unchanged):
+  1. SPASM + PETITE deep dives — DEFERRED (fork broken, heartbeat prohibits inline research)
+  2. Any new leads from EXP-151/152 results
+  3. KE-106 habituation literature (low priority — largely subsumed)
+
 ## Counters
 - DD: 756
 - CR: 339
-- Session: 721
+- Session: 722
 
