@@ -6,8 +6,9 @@
 - [x] **EXP-152 COMPLETE** — 88 trials, 3 scenarios, all ceiling effect. H-108 → 0.45 (inconclusive). Key insight: natural-behavior skills are redundant (KE-170). Results in phase2-results.md.
 - [ ] **EXP-153 Phase 1** — Skill effectiveness for counter-intuitive behaviors. 61/50+ trials done. Early signal: contradictory-req 0/12 baseline, escalation 0/2 both forks. conflicting-evidence at ceiling (23/23). Awaiting completion → analyze results.
 - [x] **EXP-144 COMPLETE** — Format-decoupled gates. Structured formats aid externalization; decoupled is 16% SLOWER. Phase 2 not recommended until harder scenarios available.
+- [x] **KE-171 Difficulty Calibration** — Synthesized DD-753 + ceiling evidence into practical rules. Signal = p(1-p). 7 of 46 scenarios experimentally useful. H-107 updated with ceiling-effect synthesis section.
 - [ ] **Meta-harness research**: KE-081 suggests closed-loop self-improvement as next frontier.
-- [ ] **Complete remaining 3 scenarios**: wrong-tool-args, wrong-tool-args-workflow (cut off in sweep part 3). Delegate to Coach.
+- [ ] **Scenario Gap-Fill**: Create scenarios targeting 20-40% and 70-85% baseline ranges. Bimodal scenario portfolio is the structural bottleneck for H-107 testing.
 
 ## Blocked / Deferred
 - [ ] **Prompt Caching**: Blocked on Hao since 2026-03-24. $36-63/day savings waiting.
