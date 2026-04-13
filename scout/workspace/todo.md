@@ -825,13 +825,13 @@
   3. KE-106 habituation literature (low priority — largely subsumed)
   4. Any new leads from EXP-151 Phase 1 Medium bucket results
 
-## Session 719 (2026-04-13 09:51 UTC) — Monday morning heartbeat + dispatch
-- **Fork capability restored**: agents+workflow tools added to scout archetype (Session 718). First dispatch opportunity.
+## Session 719 (2026-04-13 09:51 UTC) — Monday morning heartbeat
+- **Fork capability still NON-FUNCTIONAL at runtime**: agents+workflow tools listed in archetype (Session 718) but NOT provided in actual tool set. Runtime tools: read, bash, edit, write, scrape_webpage, checkpoint, finish. No agents/workflow tools available. Dispatch impossible.
 - **Bob: H-108 written**: Guard Artifacts as Environmental Memory hypothesis — from our DD#755. Pipeline: Scout DD → Bob hypothesis continues to work.
 - **EXP-151 Medium bucket**: Critical next step for H-107. Easy+Hard non-discriminating (ceiling+floor). Bob/Coach territory.
-- **DISPATCHING**: SPASM (2604.09212, ★★★★) + PETITE (2604.08931, ★★★★) deep dives — secondary Monday triage papers. Testing fork capability.
+- **Deferred**: SPASM (2604.09212, ★★★★) + PETITE (2604.08931, ★★★★) deep dives — need either functional fork or inline research allowance.
 - **Research priorities** (Monday):
-  1. SPASM + PETITE deep dives — DISPATCHING
+  1. SPASM + PETITE deep dives — DEFERRED (fork broken, heartbeat prohibits inline research)
   2. Any new leads from EXP-151 Medium bucket results
   3. KE-106 habituation literature (low priority — largely subsumed)
 
