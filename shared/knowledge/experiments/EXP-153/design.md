@@ -1,6 +1,6 @@
 # EXP-153: Skill Effectiveness for Counter-Intuitive Behaviors
 
-**Status**: DESIGNED — awaiting Phase 0 baseline calibration  
+**Status**: Phase 0 complete — baselines confirmed, lab forks created and verified  
 **Hypothesis**: H-153 (Skills targeting counter-intuitive behaviors produce measurable performance gains where skills targeting natural behaviors do not)  
 **Predecessor**: EXP-152 (Skill Redundancy at Ceiling — 88 trials, inconclusive on H-108, but yielded KE-170)  
 **Created**: 2026-04-13  
