@@ -1,9 +1,11 @@
 # Research Project: gstack — AI Software Factory Patterns
 
-**Status**: research  
+**Status**: archived  
 **Owner**: May (coordinating), Coach (skill adoption)  
 **Source**: github.com/garrytan/gstack (Garry Tan / YC CEO)  
 **Started**: 2026-03-31  
+**Archived**: 2026-04-13  
+**Archive Reason**: Key ideas extracted (confidence scoring, cross-model review, structured learnings, preamble tiers). No experiments started in 12 days. Confidence scoring overlaps with adaptive-reasoning-efficiency project. Revisit individual ideas if they become relevant.  
 **Analysis**: `agents/shared/research-digest.md` (Industrial section)
 
 ---

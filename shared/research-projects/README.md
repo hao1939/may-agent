@@ -28,14 +28,19 @@ research → experiment → adopt → validate
 - **Adopt phase**: Tech-lead (integrates), May (coordinates)
 - **Validate phase**: Evaluator (measures), Optimizer (efficiency)
 
-## Active Projects
-1. **MetaClaw Self-Evolving Agent** — RL-based skill system (metaclaw-self-evolving-agent.md)
-2. **gstack Software Factory** — vertical pipeline analysis (gstack-software-factory.md)
-3. **Superpowers Composable Skills** — skill composition patterns (superpowers-composable-skills.md)
-4. **Adaptive Reasoning Efficiency** — budget-aware reasoning (adaptive-reasoning-efficiency.md)
-5. **Memory Architecture (Tiered)** — hierarchical memory systems (memory-architecture-tiered.md)
-6. **Harness Engineering for Long-Running Agents** — canonical harness patterns applied to OpenClaw (harness-engineering-long-running-agents.md) ⭐ HIGH PRIORITY
-7. **Federation Design** — local ↔ k3s instance coordination, git-based task dedup, knowledge sync (federation-design.md)
+## Experimenting (active work)
+1. **Superpowers Composable Skills** — 2 ideas adopted/proven, 2 remaining (superpowers-composable-skills.md)
+2. **Adaptive Reasoning Efficiency** — tiered subagent budget experiment in progress (adaptive-reasoning-efficiency.md) ⭐ PROMOTED 2026-04-13
+3. **Harness Engineering for Long-Running Agents** — formalizing progress checkpointing (harness-engineering-long-running-agents.md) ⭐ HIGH PRIORITY, PROMOTED 2026-04-13
+
+## Research (gathering ideas)
+4. **Memory Architecture (Tiered)** — hierarchical memory systems (memory-architecture-tiered.md)
+5. **Federation Design** — local ↔ k3s instance coordination (federation-design.md)
+6. **Autoresearch** — autonomous research loop patterns (autoresearch.md)
+
+## Archived
+7. **gstack Software Factory** — ideas extracted, no experiments started in 12 days (gstack-software-factory.md)
+8. **MetaClaw Self-Evolving Agent** — RL infeasible, actionable ideas absorbed into other projects (metaclaw-self-evolving-agent.md)
 
 ## Rules
 1. **One file per project** — keeps state across heartbeats

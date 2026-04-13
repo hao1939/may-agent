@@ -1,9 +1,11 @@
 # Research Project: MetaClaw — Self-Evolving Agent via RL
 
-**Status**: research  
+**Status**: archived  
 **Owner**: May (coordinating), Tech-lead (experiment phase)  
 **Source**: github.com/aiming-lab/MetaClaw (v0.4.1)  
 **Started**: 2026-03-14  
+**Archived**: 2026-04-13  
+**Archive Reason**: Core RL training (Idea 5) is "Very High" effort and not feasible for us. Actionable ideas (PRM scoring, memory consolidation, idle scheduling) have been absorbed into adaptive-reasoning-efficiency and memory-architecture-tiered projects. 30 days in research with no movement toward experimentation.  
 **Deep-dive**: `agents/shared/knowledge/library/posts/DEEPDIVE-metaclaw-architecture-analysis.md`
 
 ---

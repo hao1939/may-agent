@@ -1,8 +1,9 @@
 # Research Project: Harness Engineering for Long-Running Agents
 
-**Status**: research  
+**Status**: experimenting  
 **Owner**: Scout (discovery), Amy-Kimi (synthesis), Tech-lead (experiments)  
 **Created**: 2026-04-02  
+**Promoted**: 2026-04-13 — Our dispatcher pattern IS harness engineering. Experiment = formalize progress checkpointing (Layer 4) + measure session recovery quality.  
 **Priority**: HIGH — directly maps to our core architecture  
 **Primary Source**: [Anthropic Engineering Blog: Harness design for long-running apps](https://www.anthropic.com/engineering/harness-design-long-running-apps)
 

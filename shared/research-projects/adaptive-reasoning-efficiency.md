@@ -1,7 +1,8 @@
 # Research Project: Adaptive Reasoning — Budget-Aware Agent Efficiency
 
-**Status**: research  
+**Status**: experimenting  
 **Owner**: Optimizer (implementation), Scout (research)  
+**Promoted**: 2026-04-13 — Idea 3 (tiered subagent budget) is concrete, low-effort, and ready to build. BenVanik data provides safety constraint (reasoning floor). Start here.  
 **Sources**: 
 - Triadic Cognitive Architecture (arXiv:2603.30031) — HJB stopping boundary
 - DAST (arXiv:2503.04472) — Token budget by task difficulty
