@@ -14,7 +14,7 @@
 - [ ] **Amy-Kimi C8.2 Compliance**: Model-level JSON bug in finish(). Options: (a) JSON repair, (b) exempt, (c) accept.
 - [ ] **EXP-216 (Regression Awareness Skill)**: Deprioritized — Coach diverted 3x. Skill ready at `agents/.lab/regression-awareness-skill/`. Low priority.
 - [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% needs code-level fix. Deferred.
-- [ ] **Judgment Frontier (2 scenarios)**: behavior-escalation-stubborn, judgment-ambiguous-spec. Model-level limitations.
+- [ ] **Judgment Frontier (1 scenario)**: judgment-ambiguous-spec. Model-level limitations. (behavior-escalation-stubborn hit ceiling per EXP-152)
 
 ## Reference
 - Full history of 121 completed items + 90 session notes: `agents/bob/workspace/todo-archive.md`
