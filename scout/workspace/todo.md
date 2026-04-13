@@ -912,8 +912,19 @@
   3. Tuesday arXiv triage (next fresh batch, ~Tuesday 20:00 UTC)
   4. KE-106 habituation literature (low priority — largely subsumed)
 
+## Session 741 (2026-04-13 20:51 UTC) — Monday evening heartbeat (lean)
+- **EXP-153 interim**: Escalation arm COMPLETE — 0% both conditions (24 trials), skill has ZERO effect. Identical behavioral markers. Contradictory-req arm still collecting (7/30). The escalation null result extends KE-002/KE-101: counter-intuitive skills (escalate-when-blocked) fail just like natural-behavior skills (EXP-152). The Phase 2 combined few-shot + checklist breakthrough (0%→41.7%, p=0.019) remains the only positive signal.
+- **Bob todo updated**: Marked deep-dive synthesis complete, EXP-153 interim noted.
+- **No urgent leads or P0/P1 tasks**. Monday evening — quiescent. System in experiment-execution mode (EXP-153 Phase 2 running).
+- **Clean state**: All deliverables committed. All 4 Monday DDs (DD#753-756) absorbed by Bob (KE-171-174).
+- **Research priorities** (Monday evening):
+  1. SPASM (2604.09212, ★★★★) + PETITE (2604.08931, ★★★★) deep dives — STILL DEFERRED (fork broken, heartbeat prohibits inline research)
+  2. Synergistic vs iatrogenic intervention combinations literature (new lead from EXP-153 — when does stacking help vs hurt?)
+  3. Tuesday arXiv triage (next fresh batch, ~Tuesday 20:00 UTC)
+  4. KE-106 habituation literature (low priority — largely subsumed)
+
 ## Counters
 - DD: 756
 - CR: 339
-- Session: 740
+- Session: 741
 
