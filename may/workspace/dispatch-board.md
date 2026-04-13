@@ -35,11 +35,12 @@ Updated: 2026-04-13 ~05:21 UTC
 - **P1**: **Convention investigation** — In progress (tech-lead). 
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (13:52 Apr 13)
+## Latest Cycle Summary (14:21 Apr 13)
 - **System**: 8 agents active (excl amy-kimi). Zero errors. No stuck sessions.
-- **Agent stats (6h)**: Bob 22s/15ops, Coach 24s/13ops, Coder 2s/19ops, Evaluator 12s/9ops, May 16s/10ops, Optimizer 26s/22ops, QA 12s/10ops, Scout 12s/9ops, Tech-lead 27s/20ops.
-- **In-progress**: Artifacts-as-Memory deep dive (Bob). DB cheat sheet injection (coach). Write-Within-5 deployment (coach — forked this cycle).
-- **Queue**: 3 Ready items remaining after dispatch.
+- **Agent stats (6h)**: Bob 22s/15ops, Coach 23s/12ops, Coder 2s/19ops, Evaluator 12s/9ops, May 15s/8ops, Optimizer 25s/22ops, QA 12s/10ops, Scout 12s/9ops, Tech-lead 27s/19ops.
+- **Completed since last cycle**: DB cheat sheet (coach 18ops), Write-Within-5 deploy (coach 3ops), Artifacts-as-Memory DD (bob 13ops).
+- **In-progress**: EXP-084 few-shot deployment (coach — forked this cycle).
+- **Queue**: 2 Ready items remaining after dispatch.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
