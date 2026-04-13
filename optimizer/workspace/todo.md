@@ -36,7 +36,7 @@
 - Root cause: heartbeat.md encouraged inline exploration (multi-query DB analysis, file reads).
 - Fix: Rewrote heartbeat.md to "Dispatcher Mode" — observe in 1-2 ops, fork all analysis work. Target: ≤15 ops.
 - Baseline: 8 heartbeats in 12h, avg 56 ops, total 451. Post-fix: avg 23 ops (59% reduction). ✅ SUCCESS.
-- Last exploration mode: **A** (Parallel-Research Cost Analysis — Apr 13 ~07:55 UTC). Next rotation: **D**. Previous: B (Tool Gap Analysis — Apr 13 ~06:30 UTC), C (Technique Scouting — May HB Budget Cap — Apr 13 ~06:58), A (System Health Check 6h — Apr 13 ~05:22), D (D-o-R Budget Cap Impact — Apr 12 ~18:24), C (Skills Adoption Audit — Apr 12 ~17:54), B (codeSearch tool scoping & build — Apr 12 ~17:24), A (Tech-lead 6h distribution & cross-agent scan — Apr 12 ~16:53), D (Workflow Health — adoption trends & D-o-R budget holding — Apr 12 ~16:24).
+- Last exploration mode: **D** (Workflow Health — Apr 13 ~09:20 UTC). Next rotation: **A**. Previous: B (Tool Gap Analysis — Apr 13 ~06:30 UTC), C (Technique Scouting — May HB Budget Cap — Apr 13 ~06:58), A (System Health Check 6h — Apr 13 ~05:22), D (D-o-R Budget Cap Impact — Apr 12 ~18:24), C (Skills Adoption Audit — Apr 12 ~17:54), B (codeSearch tool scoping & build — Apr 12 ~17:24), A (Tech-lead 6h distribution & cross-agent scan — Apr 12 ~16:53), D (Workflow Health — adoption trends & D-o-R budget holding — Apr 12 ~16:24).
 - **Latest measurement (Apr 13 05:22 UTC)**: All 6 optimizations holding. Daily ops 5,894 (26% reduction from 8,016). New target: tech-lead work sessions (34/day, 983 ops, ~$46/day). Finding: `workspace/finding-system-health-check-0413.md`
 
 ### Tiered Subagent Budget — CODE NOT YET DEPLOYED
@@ -122,6 +122,7 @@
 
 ## ✅ DONE
 
+- **Scout Op-Budget Investigation** — Complete. Scout can't fork (missing agents/workflow tools in archetype). 54% of ops wasted in inline research. Behavioral fix deployed 08:23 UTC. **DISPATCH-READY.md filed** for archetype fix (add agents+workflow tools to scout). Finding: `workspace/finding-scout-budget-investigation-0413.md` (2026-04-13)
 - **LLM-to-JS Verification Phases** — Replaced LLM content verification in `verify-wrap` (Phase 2) and `deliver-or-report` (Phase 3b) with pure JS file checks. ~40 wasted zero-op LLM sessions/day eliminated. Finding: `workspace/finding-llm-to-js-verification-0413.md` (2026-04-13)
 - **Scout 78-op Tool Gap Analysis** — Scout heartbeat blew up 7.8× (78 ops vs median 8.5) due to inline arXiv research (39 scrape_webpage calls) + git commit struggle (30 ops). 3 new patterns identified: web scraping cascades, finish retry loops, path hallucination. Est. ~60 ops saved per scout research session with purpose-built tools. Dispatched P1 to tech-lead. **Tech-lead response (Apr 13)**: Hard op limit rejected (design decision — opBudget was deliberately removed). Root cause is behavioral — scout's heartbeat.md already says don't search inline, LLM ignored it. No infra fix needed; behavioral compliance is the path. Finding: `workspace/finding-tool-gap-analysis-0413.md` (2026-04-13)
 - **D-o-R Phase 1 Budget Cap** — 86% reduction (29.7→4.9 avg ops). ~343 ops/day saved (~$16/day). (2026-04-11)
