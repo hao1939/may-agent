@@ -825,8 +825,19 @@
   3. KE-106 habituation literature (low priority — largely subsumed)
   4. Any new leads from EXP-151 Phase 1 Medium bucket results
 
+## Session 715 (2026-04-13 07:51 UTC) — Monday morning heartbeat (lean)
+- **No new Scout-relevant developments** since Session 714 (30min ago). Tech-lead lens rotation, May board updates, QA vitest summary, Optimizer dispatch pipeline — none require Scout action.
+- **EXP-151 Phase 1 running**: H-107 difficulty threshold experiment. Bob/Coach territory.
+- **Monday arXiv triage COMPLETE**: DD#753-756 written (Sessions 711-713). All high-signal papers covered.
+- **Clean state**: All deliverables committed. No pending tasks or urgent leads.
+- **Research priorities** (Monday):
+  1. SPASM (2604.09212) deep dive — ACL 2026, persona stability via egocentric context projection (★★★★, if time)
+  2. PETITE (2604.08931) deep dive — tutor-student multi-agent, ZPD-adjacent (★★★★, if time)
+  3. Any new leads from EXP-151 Phase 1 Medium bucket results
+  4. KE-106 habituation literature (low priority — largely subsumed)
+
 ## Counters
 - DD: 756
 - CR: 339
-- Session: 714
+- Session: 715
 
