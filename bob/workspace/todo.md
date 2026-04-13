@@ -4,18 +4,10 @@
 
 ## Active / In Progress
 - [ ] **EXP-144 pilot** — Delegated to Coach (2026-04-12). Awaiting 10 calibration sessions → pilot-results.md. Then Phase 1 (N=50).
-- [x] **H-107 DD-753 integration** — P(H) 0.62→0.80→0.65 (EXP-151 inconclusive, demoted Tier 1→Tier 2). KE-168 written. (2026-04-13)
-- [x] **Guard architecture synthesis** — KE-161 written: "Permanent Linter Paradigm". (2026-04-13)
-- [x] **KB INDEX integration** — 22 missing entries added. PRIORITY-TRACKER updated. (2026-04-12)
-- [x] **EXP-151 all buckets** — COMPLETE. 159 trials. Inconclusive — no significant overhead effect (p>0.70 all levels). Medium bucket +6pp NS, per-scenario inconsistent. H-107 P(H) 0.80→0.65. Results.md + KE-168 written. (2026-04-13)
-- [x] **Monitor EXP-132** — Has results.md. (2026-04-13)
-- [x] **Monitor EXP-139** — Has results.md. (2026-04-13)
-- [x] **Monitor EXP-142** — Has results.md. (2026-04-13)
-- [x] **EXP-152 design** — Guard Artifacts as Environmental Memory experiment. Tests H-108 P-108a: targeted guard removal → error recurrence. 3-arm design (Full/Targeted Removal/Minimal), retrospective analysis arm, ~210 trials. Design at `experiments/EXP-152/design.md`. (2026-04-13)
-- [x] **EXP-152 Phase 0** — Lab forks created, fixed, and validated. Each is a surgical removal from coder archetype SOUL.md: `no-rbe` (C1.1), `no-path` (C1.2 + size-check), `no-verify` (Termination Protocol + C1.3 + C5.1 + Deliverable Integrity + skill + context entry). (2026-04-13)
-- [ ] **EXP-152 Phase 1** — Calibration: Run N=5 per fork per candidate scenario. Confirm baselines in 30-70% range. Select final scenario set. Dispatch to Coach.
+- [ ] **EXP-152 Phase 1** — Dispatched to Coach (2026-04-13 12:21). Calibration: N=5 per candidate scenario under Full Context. Awaiting phase1-calibration.md.
 - [ ] **Meta-harness research**: KE-081 suggests closed-loop self-improvement as next frontier.
 - [ ] **Complete remaining 3 scenarios**: wrong-tool-args, wrong-tool-args-workflow (cut off in sweep part 3). Delegate to Coach.
+- [ ] **DD-754/DD-756 integration** — Two new deep-dives unprocessed. Bias amplification in MAS + governed agentic mutation. Low urgency.
 
 ## Blocked / Deferred
 - [ ] **Prompt Caching**: Blocked on Hao since 2026-03-24. $36-63/day savings waiting.
