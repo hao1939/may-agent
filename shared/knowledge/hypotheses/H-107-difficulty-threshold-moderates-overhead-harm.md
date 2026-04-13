@@ -1,11 +1,10 @@
 # H-107: Difficulty Threshold Moderates Overhead Harm
 
-**Status**: Proposed → Externally Validated  
-**P(H)**: 0.80  
-**Date**: 2026-04-12 (updated 2026-04-13)  
+**Status**: Proposed  
+**P(H)**: 0.62  
+**Date**: 2026-04-12  
 **Author**: Bob  
-**Derived from**: KE-158, H-106 (P=0.40), H-099 (P=0.90), H-103 (P=0.45), EXP-147 Track B, EXP-117/120/130, H-098  
-**External validation**: DD-753 (5 independent research groups converge on ZPD bell curve)
+**Derived from**: KE-158, H-106 (P=0.40), H-099 (P=0.90), H-103 (P=0.45), EXP-147 Track B, EXP-117/120/130, H-098
 
 ## Thesis
 
@@ -100,83 +99,16 @@ While difficulty is the primary moderator, agent readiness may be a secondary on
 | **H-106 P-106a** | Ready agents have LOWER block rate on correct work (34.3% vs 53.5%) | **Moderate** — falsifies agent-type story, consistent with task-difficulty story |
 | **H-106 P-106d** | Inflation correction flattens internalization curve | **Weak** — consistent with overhead being task-distributed, not agent-distributed |
 | **EXP-100** | Forced checkpoints HARM high-complexity tasks (alignment tax) | **Moderate** — complexity ≈ difficulty; overhead harms hard tasks |
-| **DD-753** | 5 independent groups converge on ZPD bell curve: optimal overhead weighting w(p) = p(1-p), Beta(2,2) kernel. +40.3% from difficulty calibration. Entropy-based runtime positioning. | **Very Strong** — external mathematical validation of core mechanism from independent research |
-| **EXP-151 (interim)** | Phase 1a (114 trials): Easy ceiling (100%/100%), Hard floor (0%/0% × 72 runs). P-107a INDETERMINATE, P-107c SUPPORTED trivially. Medium bucket pending. | **Null** — consistent but non-discriminating; ceiling+floor mask any overhead effect |
 
-### DD-753: External Validation — ZPD Convergence (2026-04-13)
+### Why P(H) = 0.62 (Not Higher)
 
-Five independent research groups have converged on a mathematical framework that validates H-107's core mechanism. DD-753 synthesizes these findings:
+The difficulty threshold model is well-motivated by converging evidence from 8+ experiments. However:
 
-**1. The Bell Curve Proof (PACED, 2603.11178)**
-Cross-problem gradient signal-to-noise ratio follows a bell curve over student pass rate *p*. The optimal weighting is **w(p) = p(1-p)** — a Beta(2,2) kernel proven minimax-robust. This directly maps to H-107: replace "learning signal" with "value of coordination overhead" and the same curve holds. Tasks at p ≈ 0.5 (edge of capability) benefit maximally from structure; tasks at p ≈ 0 or p ≈ 1 see no benefit.
-
-**2. Curriculum Collapse Warning (Prism, 2603.13309)**
-Self-evolving systems that don't manage difficulty undergo curriculum collapse — converging to either trivially easy or impossibly hard problems. Translation: multi-agent systems applying uniform overhead waste resources at both extremes.
-
-**3. The Magnitude Effect (GenEnv, 2512.19682)**
-Difficulty-calibrated training yields **+40.3% improvement** over 7B baselines, matching larger models. The magnitude of the difficulty-calibration effect is enormous — far larger than typical architectural improvements.
-
-**4. Runtime Measurement (AERO, 2602.03084)**
-Entropy-based positioning provides a runtime-measurable signal: high entropy → task near solvability boundary (ZPD), low entropy → trivial/memorized, very high → beyond capability. This gives H-107 a practical implementation path.
-
-**5. Format Degradation Baseline (Let Me Speak Freely, 2408.02442)**
-Establishes that format constraints cause reasoning degradation with stricter constraints causing greater degradation — the baseline phenomenon H-107 moderates.
-
-**Formalized Model from DD-753**:
-```
-Net value of overhead = B(p) - c
-where B(p) ∝ p(1-p) (Beta kernel)
-Overhead beneficial when p ∈ [p_low, p_high]
-  p_low  = (1 - √(1-4c)) / 2
-  p_high = (1 + √(1-4c)) / 2
-
-Example (c=0.10): beneficial when p ∈ [0.11, 0.89]
-  At p=0.50: net value = +0.15 (very beneficial)
-  At p=0.05: net value = -0.05 (harmful)
-```
-
-**Significance**: This external validation is exceptionally strong because (a) 5 independent groups converge on the same mechanism, (b) one provides a mathematical proof, (c) empirical magnitudes are large (+8.2% to +40.3%), and (d) the Beta kernel gives us concrete threshold bounds for the first time.
-
-**Gap acknowledged**: All DD-753 papers study training-time optimization; H-107 concerns inference-time overhead. The mechanism likely transfers (same resource-competition principle) but needs empirical confirmation via EXP-150.
-
-### EXP-151 Interim Results (Phase 1a: Easy + Hard buckets, 114 trials)
-
-**Status**: Easy + Hard COMPLETE, Medium NOT STARTED (2026-04-13)
-
-**Easy bucket (42 trials)**:
-- investigate-fix-pattern: 100% full vs 100% minimal (N=11+10) → **ceiling effect**, no overhead delta detectable
-- mock-leak-trap: 0% full vs 0% minimal (N=11+10) → **scoring artifact** (all runs pass product criteria but fail `identified-mock-problem` behavioral criterion; functionally solved but scorer disagrees). Not usable as an easy-difficulty scenario.
-- wrong-fix-recovery: **broken gym integration** (timeout in <2s). Cannot run.
-
-**P-107a verdict: INDETERMINATE** — Easy bucket has only 1 usable scenario, which is at ceiling. Cannot test whether overhead helps/is neutral on easy tasks. Need additional easy scenarios with 70-90% baseline (not at ceiling).
-
-**Hard bucket (72 trials)**:
-- contradictory-requirements: 0% full vs 0% minimal (N=33+9)
-- escalation-impossible-task: 0% full vs 0% minimal (N=14+3)
-- context-proof-build-xref: 0% full vs 0% minimal (N=10+3)
-
-**P-107c verdict: SUPPORTED (trivially)** — All 72 hard-bucket trials show 0% across both conditions. Floor effect means overhead is irrelevant when tasks exceed capability. TOST equivalence trivially satisfied. This was the expected/easy-to-confirm prediction.
-
-**P-107d: PENDING** — Medium bucket is the critical remaining test. The interaction effect (largest negative delta at medium difficulty) can only be observed with medium-difficulty data.
-
-**Key issues to resolve**:
-1. mock-leak-trap scoring: `identified-mock-problem` behavioral criterion doesn't match calibration-era scoring. Investigate or reclassify scenario.
-2. wrong-fix-recovery: gym integration broken (agent_status: "timeout" in <2s). Fix or replace.
-3. Medium bucket: NOW the highest-priority experimental work for H-107. This is where the hypothesis lives or dies.
-
-**Impact on P(H)**: None. P(H) stays at 0.80. The Easy/Hard results are consistent with H-107 but provide no new discriminating evidence (ceiling + floor = null effects in both conditions). The Medium bucket is where falsification or strong confirmation can happen.
-
-### Why P(H) = 0.80 (Updated from 0.62)
-
-**Bayesian update justification**: DD-753 provides external mathematical validation from 5 independent research groups. The prior (0.62) reflected strong internal evidence but no external validation and no mathematical framework. The update reflects:
-
-1. **External convergence (+0.12)**: Five independent groups finding the same ZPD mechanism reduces the probability that our internal evidence is coincidental artifact
-2. **Mathematical formalization (+0.06)**: The Beta(2,2) kernel provides specific, testable threshold bounds (not just "somewhere around 50%"), converting a vague directional claim into a precise model
-
-**Remaining reasons for P(H) < 0.90**:
-1. **Training-time vs inference-time gap**: DD-753 papers study training optimization; our hypothesis concerns inference-time overhead. The mechanism plausibly transfers but hasn't been directly confirmed
-2. **Linear vs threshold still untested**: P-107b remains the critical test — even with the Beta kernel, we haven't confirmed the threshold shape in our specific system
-3. **No prospective validation yet**: All internal evidence is retrospective/reanalysis. EXP-150 hasn't been run
+1. **The threshold is estimated from few data points**: The 50% estimate comes primarily from EXP-147's three discriminating scenarios and the discovery task experiments. The threshold could be anywhere from 30% to 70%.
+2. **Linear vs threshold is untested**: The data are equally consistent with a smooth linear gradient (overhead harm proportional to difficulty) as with a sharp threshold. P-107b is the critical distinguishing test.
+3. **Agent readiness interaction is unknown**: P-107e could go either way. If readiness amplifies overhead harm on hard tasks (original H-106 prediction), the model needs revision.
+4. **Confound: task difficulty correlates with task type**: Our hard tasks (cascading-fix-trap-v2, discovery) are structurally different from easy tasks (simple verification). The difficulty effect might actually be a task-type effect.
+5. **No prospective validation yet**: All evidence is retrospective/reanalysis. The first prospective test (P-107a) hasn't been run.
 
 ## Proposed Experiment: EXP-150 — Difficulty Threshold Validation
 
@@ -208,7 +140,6 @@ Run N=50 per condition on cascading-fix-trap-v2 alone (the single hardest non-di
 | Entry | Relationship |
 |---|---|
 | **KE-158** | Direct formalization — KE-158's difficulty threshold model is the theoretical basis for H-107 |
-| **DD-753** | External validation — 5 independent groups converge on ZPD bell curve; Beta(2,2) kernel provides mathematical foundation. P(H) 0.62→0.80 |
 | **H-106** (P=0.40) | Parent hypothesis. H-107 reframes H-106's agent-type prediction as task-difficulty-gated. If H-107 is confirmed, H-106 should be archived as superseded. |
 | **H-099** (P=0.90) | Potentially subsumed — discovery boundary may be extreme end of difficulty threshold (P-107c tests this) |
 | **H-103** (P=0.45) | Explained — format tax exists but only manifests on hard tasks, explaining mixed results |
@@ -217,7 +148,6 @@ Run N=50 per condition on cascading-fix-trap-v2 alone (the single hardest non-di
 | **H-085** (P=0.85) | Refined — forced externalization's 5 boundaries all occur on harder tasks; H-107 provides the unifying variable |
 | **EXP-149** | Should be updated to stratify by task difficulty as primary variable |
 | **EXP-150** (proposed) | Direct test of H-107 |
-| **EXP-151** (in progress) | Phase 1a interim: Easy+Hard confirm ceiling/floor (no overhead effect). Medium bucket is the critical remaining test. |
 
 ## If Confirmed
 

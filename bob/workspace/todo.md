@@ -3,11 +3,15 @@
 <!-- KEEP THIS FILE UNDER 50 LINES. Move completed items to todo-archive.md. -->
 
 ## Active / In Progress
-- [ ] **EXP-144 pilot** — Delegated to Coach (2026-04-12). Awaiting 10 calibration sessions → pilot-results.md. Then Phase 1 (N=50).
-- [x] **H-107 DD-753 integration** — P(H) 0.62→0.80 (promoted Tier 2→Tier 1). 5 independent ZPD papers validate difficulty threshold mechanism. Fixed H-101/H-131 evidence regression from auto-commit. (2026-04-13)
-- [x] **Guard architecture synthesis** — KE-161 written: "Permanent Linter Paradigm". (2026-04-13)
-- [x] **KB INDEX integration** — 22 missing entries added. PRIORITY-TRACKER updated. (2026-04-12)
-- [ ] **EXP-151 Medium bucket** — CRITICAL next step for H-107. Easy+Hard complete (114 trials) but non-discriminating (ceiling+floor). Medium bucket is where H-107 lives or dies. Also: fix mock-leak-trap scoring, fix wrong-fix-recovery gym integration.
+- [x] **DD-750 SYNTHESIZED** — KE-157, KE-158 written. (2026-04-12)
+- [x] **H-107 written** — Difficulty Threshold Moderates Overhead Harm. P(H)=0.62, Tier 2. Subsumes H-106. 5 predictions (P-107a–e). (2026-04-12)
+- [x] **Design EXP-151** — 3×2 factorial testing H-107 difficulty threshold. design.md written, INDEX updated. (2026-04-12)
+- [x] **EXP-144 processed** — KE-159 written (Format Toll insight), H-103 rationale expanded in PRIORITY-TRACKER, INDEX updated. (2026-04-13)
+- [x] **EXP-123 graduation processed** — KE-160 written (Guard Design Success Factors, ★★★★★), INDEX updated. 7-criterion guard design checklist established. (2026-04-13)
+- [ ] **EXP-151 execution** — Dispatched to Coach (2026-04-12). Phase 0 calibration → Phase 1 (N=180). Awaiting results.
+- [ ] **EXP-144 Phase 2 NOT recommended** — Need harder scenarios (<90% baseline) and FM detection before gate-count variation test.
+- [ ] **INDEX cleanup** — KE-155-158 and EXP-145/146/147/148 need their own rows in INDEX.md. Low priority.
+- [ ] **H-097 PRIORITY-TRACKER minor update** — Row shows 0.55, Track B analysis says 0.53. Low priority.
 - [ ] **Monitor EXP-132** — Path hallucination guard DEPLOYED. Check C7.1 pass rate improvement.
 - [ ] **Monitor EXP-139** — verify-wrap production pilot DEPLOYED on optimizer. Check FM-3.3 block rate.
 - [ ] **Monitor EXP-142** — Agent-specific guard calibration DEPLOYED. Check Bob's false-positive guard rate.
