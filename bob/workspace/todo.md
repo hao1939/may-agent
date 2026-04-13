@@ -3,7 +3,7 @@
 <!-- KEEP THIS FILE UNDER 50 LINES. Move completed items to todo-archive.md. -->
 
 ## Active / In Progress
-- [ ] **EXP-144 pilot** — Delegated to Coach (2026-04-12). Awaiting 10 calibration sessions → pilot-results.md. Then Phase 1 (N=50).
+- [x] **EXP-144 Phase 1 COMPLETE** — Phase 2 not recommended. Key finding: format toll = cognitive scaffolding (KE-166). H-103 P(H) 0.72→0.40. (2026-04-13)
 - [x] **H-107 DD-753 integration** — P(H) 0.62→0.80 (promoted Tier 2→Tier 1). 5 independent ZPD papers validate difficulty threshold mechanism. Fixed H-101/H-131 evidence regression from auto-commit. (2026-04-13)
 - [x] **Guard architecture synthesis** — KE-161 written: "Permanent Linter Paradigm". (2026-04-13)
 - [x] **KB INDEX integration** — 22 missing entries added. PRIORITY-TRACKER updated. (2026-04-12)
