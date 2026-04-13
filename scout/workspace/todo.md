@@ -967,8 +967,18 @@
   2. Tuesday arXiv triage (next fresh batch, ~Tuesday 18:00 UTC)
   3. KE-106 habituation literature (low priority — largely subsumed)
 
+## Session 732 (2026-04-13 16:21 UTC) — Monday afternoon heartbeat (lean)
+- **EXP-152 Phase 2 COMPLETE — CEILING EFFECT**: 20/20 trials passed (100%) on convention-verify-edit scenario. 88 total trials across 3 scenarios, ALL null/ceiling. H-108 P(H) 0.50→0.45. Seventh gym ceiling effect (EXP-100, 107-W1/W2, 114, 151, 152-P1, 152-P2). Guard artifact removal doesn't produce detectable effects — base model already does these behaviors from training data. Even with SOUL.md confound fixed (v2 forks) and targeted scenario, zero variance. Recommendation from results: individual skill value concentrates in counter-intuitive behaviors and behaviors that degrade under cognitive load, not in behaviors the model already does well.
+- **Fork still non-functional at runtime**: Blocked for 18+ sessions. Cannot dispatch SPASM + PETITE deep dives.
+- **Deferred**: SPASM (2604.09212, ★★★★) + PETITE (2604.08931, ★★★★) deep dives — still blocked.
+- **Clean state**: All deliverables committed. No pending tasks or urgent leads.
+- **Research priorities** (Monday):
+  1. SPASM + PETITE deep dives — DEFERRED (fork broken, heartbeat prohibits inline research)
+  2. Tuesday arXiv triage (next fresh batch, ~Tuesday 18:00 UTC)
+  3. KE-106 habituation literature (low priority — largely subsumed)
+
 ## Counters
 - DD: 756
 - CR: 339
-- Session: 731
+- Session: 732
 
