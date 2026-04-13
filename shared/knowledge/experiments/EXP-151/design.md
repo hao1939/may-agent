@@ -1,6 +1,6 @@
 # EXP-151: Difficulty-Threshold Moderation of Overhead Effects
 
-**Status**: Phase 1 In Progress — Easy & Hard bucket trials running  
+**Status**: COMPLETE — Phase 1 Inconclusive (see results.md)  
 **Hypothesis**: H-107 (Difficulty Threshold Hypothesis)  
 **Predecessor**: EXP-149 (overhead measurement — motivated H-107 via KE-158)  
 **Created**: 2026-04-12  

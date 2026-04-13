@@ -277,6 +277,21 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
   2. Test active_recall as treatment variable (larger token manipulation)
   3. Design more scenarios with 30-60% baseline difficulty
 
+### 0v. EXP-151: Difficulty-Threshold Moderation of Overhead Effects [COMPLETE ✅ — INCONCLUSIVE]
+- **Design**: `agents/shared/knowledge/experiments/EXP-151/design.md`
+- **Results**: `agents/shared/knowledge/experiments/EXP-151/results.md`
+- **Hypothesis tested**: H-107 (Difficulty Threshold Hypothesis)
+- **Total trials**: 159 (9 scenarios × 2 overhead conditions across 3 difficulty buckets)
+- **Key finding**: **No significant overhead effect at any difficulty level** (all p > 0.70)
+  - Easy bucket: uninformative (ceiling/scoring artifact/broken infrastructure)
+  - Medium bucket: Full 44% vs Minimal 50%, Δ=+6pp, p=0.71 (NS), inconsistent per-scenario
+  - Hard bucket: 0% both conditions (floor effect, 72 runs)
+- **Power analysis**: 15% power for observed effect. Need N≈450/condition for 80% power — not worth pursuing.
+- **Infrastructure issues**: mock-leak-trap scoring artifact (0% despite solving task), wrong-fix-recovery gym timeout
+- **Decision**: Phase 1 INCONCLUSIVE. No scale-up to N=30. Effect too small, Easy bucket broken, gym scenarios cluster at ceiling/floor (KE-167).
+- **H-107 update**: P(H) 0.80 → 0.72 (underpowered null = weak evidence against)
+- **Knowledge**: KE-167 (gym ceiling/floor clustering limits overhead studies)
+
 ### 0u. EXP-148: Re-analysis of EXP-145 for H-102 [COMPLETE ✅]
 - **Results**: `agents/shared/knowledge/experiments/EXP-148/results.md`
 

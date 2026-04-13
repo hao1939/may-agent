@@ -1,11 +1,12 @@
 # H-107: Difficulty Threshold Moderates Overhead Harm
 
-**Status**: Proposed → Externally Validated → EXP-151 Inconclusive  
-**P(H)**: 0.72 (↓ from 0.80 after EXP-151 null result)  
+**Status**: Proposed → Externally Validated → Inconclusive (EXP-151)  
+**P(H)**: 0.65  
 **Date**: 2026-04-12 (updated 2026-04-13)  
 **Author**: Bob  
 **Derived from**: KE-158, H-106 (P=0.40), H-099 (P=0.90), H-103 (P=0.45), EXP-147 Track B, EXP-117/120/130, H-098  
-**External validation**: DD-753 (5 independent research groups converge on ZPD bell curve)
+**External validation**: DD-753 (5 independent research groups converge on ZPD bell curve)  
+**P(H) history**: 0.62 (initial) → 0.80 (DD-753 external validation) → 0.65 (EXP-151 inconclusive, first direct test null)
 
 ## Thesis
 
@@ -167,22 +168,25 @@ Example (c=0.10): beneficial when p ∈ [0.11, 0.89]
 
 **Key issues**: Severely underpowered (15% power for 6pp effect, need N=450/cell). Medium bucket heterogeneous (baselines 20-67%). Per-scenario inconsistency suggests scenario-specific confounds.
 
-**Impact on P(H)**: 0.80 → 0.65. See "Why P(H) = 0.65" section above.
+**Impact on P(H)**: 0.80 → 0.72. See "Why P(H) = 0.72" section below.
 
-### Why P(H) = 0.65 (Updated from 0.80)
+### Why P(H) = 0.72 (Updated from 0.80 after EXP-151)
 
-**Bayesian update justification**: EXP-151 (the first direct prospective test of H-107) completed with all three difficulty buckets. The result is inconclusive — no statistically significant overhead effect at any level, with contradictory per-scenario directions in the Medium bucket. This provides a meaningful downward update:
+**Prior**: P(H) = 0.80 (based on DD-753 external validation + retrospective internal evidence)
 
-1. **Null prospective result (−0.10)**: The prior was 0.80 largely due to DD-753 external validation and retrospective internal evidence. A well-designed experiment failing to find the predicted effect — even if underpowered — shifts probability downward. An experiment consistent with the null should reduce confidence more than "underpowered, ignore it."
-2. **Per-scenario inconsistency (−0.05)**: M2 (contradictory-req-ext-4gate) shows the OPPOSITE direction (Full 67% > Minimal 50%). If the difficulty threshold were a clean mechanism, all medium scenarios should trend in the same direction. The inconsistency suggests scenario-specific confounds may dominate over any general overhead effect.
+**EXP-151 update (−0.08)**: The first direct prospective test of H-107 completed with 159 trials across all three difficulty buckets. Result: inconclusive — no statistically significant overhead effect at any level, with contradictory per-scenario directions in the Medium bucket.
+
+1. **Null prospective result (−0.05)**: A well-designed experiment failing to find the predicted effect shifts probability downward, but this study had only ~15% power to detect the observed 6pp effect. An underpowered null is weak evidence against the hypothesis.
+2. **Per-scenario inconsistency (−0.03)**: M2 (contradictory-req-ext-4gate) shows the OPPOSITE direction (Full 67% > Minimal 50%). If the difficulty threshold were a clean mechanism, all medium scenarios should trend in the same direction. The inconsistency suggests scenario-specific confounds may dominate.
 
 **Remaining reasons P(H) stays above 0.50**:
 1. **DD-753 external validation still strong**: 5 independent groups converging on ZPD/Beta kernel is powerful evidence the mechanism exists — EXP-151 doesn't refute that, it just fails to confirm it in our specific system
 2. **Internal retrospective evidence**: EXP-147 Track B (+14pp on hard tasks), EXP-117/120/130 discovery harm, EXP-100 complexity alignment tax — these remain valid prior evidence
-3. **Underpowered by design**: 15% power to detect 6pp means we'd miss a real effect 85% of the time; this experiment was never well-suited to confirm or deny moderate effects
+3. **Underpowered by design**: 15% power to detect 6pp means we'd miss a real effect 85% of the time
+4. **Methodological failures, not theoretical**: Easy bucket was uninformative due to scoring artifacts and infrastructure bugs, not because the hypothesis is wrong
 
-**Remaining reasons P(H) < 0.70**:
-1. **No prospective validation**: EXP-151 was supposed to be the validation experiment. It produced nothing conclusive. The hypothesis survives but on retrospective evidence alone.
+**Remaining reasons P(H) < 0.80**:
+1. **No prospective validation**: EXP-151 was supposed to be the validation experiment. It produced nothing conclusive. The hypothesis survives on retrospective evidence alone.
 2. **Training-time vs inference-time gap**: DD-753 papers study training optimization; our hypothesis concerns inference-time overhead. Transfer is unconfirmed.
 3. **Threshold shape untested**: P-107b (linear vs threshold) remains completely untested
 4. **Scenario selection concerns**: Medium bucket heterogeneity (20-67% baseline) and mixed directions raise questions about whether we're measuring an overhead effect or scenario-specific noise
