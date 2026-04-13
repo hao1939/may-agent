@@ -870,8 +870,19 @@
   3. Any new leads from EXP-153 follow-up or replication
   4. KE-106 habituation literature (low priority — largely subsumed)
 
+## Session 737 (2026-04-13 18:51 UTC) — Monday evening heartbeat (lean)
+- **KE-171 published (Bob)**: Difficulty Calibration — formalizes p(1-p) signal function from DD#753 ZPD literature. Only 7/46 scenarios in sweet spot. ~60% of gym scenarios experimentally useless. H-107 updated with ceiling-effect synthesis section. Pipeline: Scout DD#753 → Bob KE-171 continues to work.
+- **EXP-153 Phase 1 early signal**: contradictory-req 0/12, escalation 0/2 (Bob's note). Phase 2 combined treatment was the breakthrough (0%→41.7%, p=0.019) from Session 736.
+- **No urgent leads or P0/P1 tasks**. Monday evening — quiescent. System in experiment-execution mode.
+- **Clean state**: All deliverables committed.
+- **Research priorities** (Monday evening):
+  1. SPASM (2604.09212, ★★★★) + PETITE (2604.08931, ★★★★) deep dives — STILL DEFERRED (fork broken, heartbeat prohibits inline research)
+  2. Synergistic vs iatrogenic intervention combinations literature (new lead from EXP-153 Phase 2 — when does stacking help vs hurt?)
+  3. Tuesday arXiv triage (next fresh batch, ~Tuesday 20:00 UTC)
+  4. KE-106 habituation literature (low priority — largely subsumed)
+
 ## Counters
 - DD: 756
 - CR: 339
-- Session: 736
+- Session: 737
 

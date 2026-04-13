@@ -54,6 +54,14 @@ Pick ONE thing to work on. Ask:
 - ANY code changes, refactoring, or PR work
 - Tracing end-to-end flows through the codebase
 
+### Pre-dispatch scope check for Lens work
+Before dispatching a Lens session, verify:
+- [ ] Target is ≤3 files
+- [ ] You can write the objective in 1 sentence
+- [ ] The deliverable filename is chosen (agents/tech-lead/workspace/<name>.md)
+
+If you can't satisfy these, the scope is too broad. Split into 2+ sessions.
+
 ## Step 3: ACT (budget: 1-2 ops — fork or quick inline)
 
 Fork exploration using lens rotation. Track which lens you did last in todo.md.
@@ -64,8 +72,8 @@ Fork exploration using lens rotation. Track which lens you did last in todo.md.
 
 | Work type | Workflow | Why |
 |-----------|----------|-----|
+| **Lens investigation** | `workflow.run('lens-analysis', task)` | **Embeds D-o-R phases + verifies deliverable** |
 | Any code change (refactor, delete, fix) | `workflow.run('implement-and-verify', task)` | Catches forgotten tsc/test — your #1 error source |
-| Investigation that produces a written finding | `workflow.run('verify-wrap', task)` | Ensures you actually wrote what you think you wrote |
 | Multiple independent questions | `workflow.run('parallel-research', JSON.stringify({...}))` | Parallel > sequential when questions are independent |
 
 **Only skip workflow for**: pure exploration (scanning code, reading logs) or quick inline tasks (< 3 ops).

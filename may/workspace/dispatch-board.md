@@ -35,10 +35,10 @@ Updated: 2026-04-13 ~18:21 UTC
 - **P1**: **Convention investigation** — In progress (tech-lead). 
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (18:21 Apr 13)
+## Latest Cycle Summary (18:51 Apr 13)
 - **System**: 9 agents active (excl amy-kimi). Zero errors last 6h. No stuck sessions.
-- **Agent stats (6h)**: Bob 19s/13ops, Coach 27s/17ops, Coder 2s/21ops, Evaluator 12s/8ops, May 14s/7ops, Optimizer 26s/19ops, QA 12s/8ops, Scout 12s/8ops, Tech-lead 27s/12ops.
-- **Queue**: 3 Ready items. Forking tiered turn budget deployment → tech-lead.
+- **Agent stats (6h)**: Bob 19s/14ops, Coach 26s/16ops, Coder 2s/21ops, Evaluator 12s/7ops, May 14s/8ops, Optimizer 26s/19ops, QA 12s/8ops, Scout 12s/9ops, Tech-lead 29s/11ops.
+- **D-o-R Lens heartbeat wiring**: Forked to tech-lead (s_1776106328350_345). 3 heartbeat changes per optimizer spec.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
