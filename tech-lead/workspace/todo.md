@@ -222,7 +222,8 @@
 - 2026-04-12 17:23: **Feature rotation check**: no pending features (dispatch board P1: "Need Hao priorities"). **Infra**: Lens A — session digest/classifier architecture (session-digest.ts + classify-error.ts + session-subscribers.ts + evaluator.ts). COMPLETE: Three-purpose design (recording, context injection, recovery decisions) is well-layered. Main finding: 3 classification entry points (pre-computed in upsertDigest, on-the-fly in may.ts escalation, classifyError fallback) — recommend unifying to single pre-computed path. session-digest.ts (893 lines) could split into write/read/classify modules. See workspace/audit-digest-architecture.md
 - 2026-04-12 17:53: **Feature rotation check**: no pending features (dispatch board P1: "Need Hao priorities"). **Infra**: Lens B — web UI index.html flow complexity (1834-line monolithic frontend). Forked (s_1776016463788_2273).
 - 2026-04-12 18:23: **Feature rotation check**: no pending features (dispatch board P1: "Need Hao priorities"). **Infra**: Lens C — agents/shared/ dead weight audit (stale protocols, unused docs). Forked (s_1776018270794_2286).
-- **Next**: Lens D next cycle (feature rotation if items appear)
+- 2026-04-13 04:51: **Feature rotation check**: no pending features. **Infra**: Lens D — session-digest error handling fragility (upsertDigest/classifyError silent failures). Forked (s_1776055986839_13).
+- **Next**: Lens A next cycle (feature rotation if items appear)
 - 2026-04-12 05:53: **P1 Workflow Adoption** (req:afa5607f) — forked deliver-or-report escalation investigation (s_1775973259186_1900). Coach's plan has 3 Phase 1 items: (1) fix deliver-or-report 41% done rate, (2) wire implement-and-verify, (3) audit verify-wrap vs C1.5. Item 3 likely resolved by C1.5 fix from last session.
 - **NOTE**: P1 QA heartbeat fix (req:5e23d82f/fe94b906) — write-blocked (heartbeat.md is identity file). Coach should apply the edit themselves or ask May.
 
