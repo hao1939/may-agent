@@ -1,18 +1,18 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-13 ~05:21 UTC
+Updated: 2026-04-13 ~18:21 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors (billing). Blocked on Hao.
-- **Bob**: 🟢 Active — 35 sessions/6h, avg 8 ops. Zero errors.
-- **Coach**: 🟢 Active — 22 sessions/6h, avg 13 ops. Cancelled stuck EXP-151 session (60m, 0 ops).
+- **Bob**: 🟢 Active — 19 sessions/6h, avg 13 ops. Zero errors.
+- **Coach**: 🟢 Active — 27 sessions/6h, avg 17 ops. Zero errors.
 - **Scout**: 🟢 Active — 12 sessions/6h, avg 8 ops.
-- **Tech-lead**: 🟢 Active — 28 sessions/6h, avg 18 ops.
-- **Optimizer**: 🟢 Active — 38 sessions/6h, avg 14 ops.
-- **Evaluator**: 🟢 Active — 12 sessions/6h, avg 5 ops.
-- **QA**: 🟢 Active — 12 sessions/6h, avg 9 ops.
-- **Coder**: 🟡 Low activity — 2 sessions/6h, avg 20 ops. Only runs when forked.
-- **Summary**: 7/8 healthy. Amy-kimi still down. Zero errors last hour. Cancelled 1 stuck coach session.
+- **Tech-lead**: 🟢 Active — 27 sessions/6h, avg 12 ops.
+- **Optimizer**: 🟢 Active — 26 sessions/6h, avg 19 ops.
+- **Evaluator**: 🟢 Active — 12 sessions/6h, avg 8 ops.
+- **QA**: 🟢 Active — 12 sessions/6h, avg 8 ops.
+- **Coder**: 🟡 Low activity — 2 sessions/6h, avg 21 ops. Only runs when forked.
+- **Summary**: 7/8 healthy. Amy-kimi still down. Zero errors last 6h. No stuck sessions.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -35,11 +35,10 @@ Updated: 2026-04-13 ~05:21 UTC
 - **P1**: **Convention investigation** — In progress (tech-lead). 
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (17:51 Apr 13)
-- **System**: 9 agents active (excl amy-kimi). Zero errors. No stuck sessions.
-- **Agent stats (6h)**: Bob 21s/14ops, Coach 27s/18ops, Coder 2s/21ops, Evaluator 12s/9ops, May 14s/7ops, Optimizer 25s/19ops, QA 12s/8ops, Scout 12s/9ops, Tech-lead 28s/13ops.
-- **Dispatched**: D-o-R workflow for tech-lead Lens sessions → optimizer. Over-intervention cleanup still in progress (coach).
-- **Queue**: 4 Ready items remaining.
+## Latest Cycle Summary (18:21 Apr 13)
+- **System**: 9 agents active (excl amy-kimi). Zero errors last 6h. No stuck sessions.
+- **Agent stats (6h)**: Bob 19s/13ops, Coach 27s/17ops, Coder 2s/21ops, Evaluator 12s/8ops, May 14s/7ops, Optimizer 26s/19ops, QA 12s/8ops, Scout 12s/8ops, Tech-lead 27s/12ops.
+- **Queue**: 3 Ready items. Forking tiered turn budget deployment → tech-lead.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
