@@ -2,9 +2,16 @@
 
 **Date**: 2026-04-13  
 **Author**: Bob  
-**Status**: VALIDATED — READY TO EXECUTE (overlay bug fixed)  
+**Status**: VALIDATED — EXECUTING (simplified to 2 conditions, see §11.2)  
 **Predecessor**: Phase 1 (45 trials, **ALL INVALID** — see §11)  
 **Phase 1 Analysis**: `agents/bob/workspace/research/exp152-phase1-analysis.md`
+
+> ⚠️ **VALIDATION FINDING** (2026-04-13 16:22 UTC): context.md content is NOT injected
+> into the system prompt. The `no-rbe-v2` and `no-verify-v2` forks produce **identical
+> prompts** (hash `7142d869c737`). The "Verify with evidence" context.md line removal
+> in `no-verify-v2` has zero effect. Phase 2 is now a **2-condition experiment**:
+> production (all skills) vs no-verify-after-edit (skill removed), using `no-rbe-v2`
+> fork for both scenarios. See §11.2 for details.
 
 > ⚠️ **CRITICAL BUG FOUND** (2026-04-13): The gym-runner.ts lab fork overlay mechanism
 > used `cpSync` which MERGES directories rather than replacing them. This means
@@ -336,8 +343,32 @@ Logic: For each directory in the lab fork, delete the corresponding directory in
 | 828 | no-rbe-v2 (post-fix) | `7142d869c737` | ✅ Different from production |
 | 831 | no-verify-v2 (post-fix) | `7142d869c737` | ✅ Different from production |
 
-Note: no-rbe-v2 and no-verify-v2 have the same prompt hash because `context.md` is not part of the system prompt (it's loaded via `context_files` mechanism). The context.md difference between them IS present at runtime, just not reflected in the prompt hash.
+Note: no-rbe-v2 and no-verify-v2 have the same prompt hash because `context.md` is NOT injected into the system prompt at all. The `resolveSystemPrompt()` function loads context.md via `getAgentDir()` but in the gym runner's sandboxed environment, context.md content does not appear in `system_instructions`. Verified by querying `gym_prompts` table: neither production nor lab fork prompts contain context.md content like "Verify with evidence" or "Operational Knowledge".
 
 ### Coach's no-path Trials
 
 Any trials Coach ran with the `no-path` fork before this fix are also invalid. Need to notify Coach.
+
+## 11.2 Context.md Not In System Prompt (found during Phase 2 validation)
+
+**Date**: 2026-04-13 16:22 UTC
+
+**Finding**: Production coder's `context.md` contains "Verify with evidence, not narrative" (line 29), but this text does NOT appear in the gym system prompt. Verified by:
+
+1. Querying `gym_prompts` table for production hash `46ffe2beb315`
+2. Searching for "Verify with evidence", "KE-093", "fabricate", "Operational Knowledge", "What You Know" — all absent
+3. Both lab forks (no-rbe-v2 and no-verify-v2) produce identical prompt hash `7142d869c737`
+
+**Root Cause**: The gym runner creates a sandboxed agents directory. The `resolveSystemPrompt()` function (manager.ts:643-654) loads context.md from `getAgentDir(def)`, but in the gym oneshot mode, context.md content is apparently injected separately from the system_instructions block (possibly as a conversation context or not at all in oneshot mode).
+
+**Impact**: The originally-planned 3-condition design (production, no-rbe-v2, no-verify-v2) collapses to 2 conditions. The no-rbe-v2 and no-verify-v2 forks are identical.
+
+**Resolution**: Phase 2 proceeds as a **2-condition experiment**:
+- **Condition A**: Production (all skills including verify-after-edit.md)
+- **Condition B**: No-verify-after-edit (using `coder-exp152-no-rbe-v2` fork — verify-after-edit.md skill removed)
+
+The core H-108 test remains valid: does removing a behavioral guard (verify-after-edit skill) cause the guarded error to recur on guard-relevant scenarios?
+
+**Sample Size Adjustment**: No change needed. The 110-trial plan already had 20 per cell for production vs fork on each scenario. We just lose the dose-response analysis (1 removal vs 2 removals).
+
+**Future Work**: Investigate why context.md isn't in the gym prompt. If it's a gym-specific issue, production agents may still benefit from context.md. If context.md is genuinely never loaded, that's a separate finding worth documenting (relates to KE-011: knowledge files are passive).

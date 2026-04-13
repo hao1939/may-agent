@@ -3,8 +3,9 @@
 <!-- KEEP THIS FILE UNDER 50 LINES. Move completed items to todo-archive.md. -->
 
 ## Active / In Progress
+- [x] **EXP-152 Phase 2 validation** — 3/3 trials passed. Discovered context.md not in system prompt (§11.2). Simplified to 2-condition design. Dispatched 110-trial run to Coach.
+- [ ] **EXP-152 Phase 2 execution** — 110 trials dispatched to Coach. Awaiting completion + interim analysis at round 10.
 - [ ] **EXP-144 pilot** — Delegated to Coach (2026-04-12). Awaiting 10 calibration sessions → pilot-results.md. Then Phase 1 (N=50).
-- [ ] **EXP-152 Phase 1** — Dispatched to Coach (2026-04-13 12:21). Calibration: N=5 per candidate scenario under Full Context. Awaiting phase1-calibration.md.
 - [ ] **Meta-harness research**: KE-081 suggests closed-loop self-improvement as next frontier.
 - [ ] **Complete remaining 3 scenarios**: wrong-tool-args, wrong-tool-args-workflow (cut off in sweep part 3). Delegate to Coach.
 
