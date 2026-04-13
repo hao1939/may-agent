@@ -1,136 +1,164 @@
 # H-107: Difficulty Threshold Moderates Overhead Harm
 
-**Status**: Proposed (derived from KE-158 synthesis)  
+**Status**: Proposed  
 **P(H)**: 0.62  
 **Date**: 2026-04-12  
 **Author**: Bob  
-**Derived from**: KE-158, H-106, H-098, H-099, EXP-147 Track B, EXP-149, DD-750
+**Derived from**: KE-158, H-106 (P=0.40), H-099 (P=0.90), H-103 (P=0.45), EXP-147 Track B, EXP-117/120/130, H-098
 
 ## Thesis
 
-Observability and guard overhead **does not uniformly harm agent performance**. Instead, its effect is moderated by task difficulty, measured by baseline pass rate (agent success rate without overhead). There exists a **difficulty threshold at approximately 50% baseline pass rate** below which overhead creates measurable harm, and above which overhead has negligible or even slightly positive effects.
+Observability and guard overhead harms agent performance **only when task difficulty exceeds a threshold** — approximately 50% baseline pass rate. Below this threshold (harder tasks), overhead displaces core reasoning and degrades outcomes. Above it (easier tasks), agents have sufficient processing headroom to absorb overhead with negligible impact. At the extreme (discovery tasks, <30% baseline), any structured overhead is actively destructive.
 
-This replaces H-106's agent-centric model (overhead harms *ready agents*) with a task-centric model (overhead harms on *hard tasks*). The same agent can absorb enormous overhead on easy tasks and be severely impaired by modest overhead on hard tasks.
+This reframes the overhead narrative from an agent-type story (H-106: "ready agents are harmed") to a **task-difficulty story**: the same agent absorbs massive overhead on easy tasks and is severely impaired by modest overhead on hard tasks. Agent readiness may interact with difficulty (as a secondary moderator), but difficulty is the primary gating variable.
 
 ## Mechanism
 
-### Resource Competition Model
+### Resource Competition Model (from KE-155/KE-158)
 
-Agent processing on any task can be decomposed into:
+Agent processing operates within a finite attention budget. Overhead (guards, context injection, format requirements) competes with core task reasoning for this budget:
 
 ```
-Total processing budget = Core task reasoning + Overhead compliance
+Total budget = Core task reasoning + Overhead compliance
+
+Easy tasks   (>90% baseline): Core needs ~30% → 70% headroom → overhead absorbed
+Medium tasks (50-90%):        Core needs ~60% → 40% headroom → overhead felt but manageable
+Hard tasks   (<50%):          Core needs ~90% → 10% headroom → overhead displaces reasoning
+Discovery    (<30%):          Core needs 100%+ → any overhead directly harmful
 ```
 
-The key insight is that core task reasoning demand is a function of task difficulty:
+This is consistent with:
+- **H-098** (Attention Channel Theory): Ch1 capacity is finite; overhead consumes Ch1/Ch2 budget
+- **H-099** (Discovery Boundary): Discovery tasks are the extreme case — maximally hard → maximally overhead-sensitive
+- **DD-750**: Forced externalization degrades reasoning when processing is constrained
+- **KE-155**: Externalization harm boundary — when format compliance competes with cognitive work
 
-| Task Difficulty | Core Task Budget | Headroom for Overhead | Predicted Effect |
-|---|---|---|---|
-| Easy (>90% baseline) | ~30% | ~70% | Null — overhead absorbed |
-| Medium (50-90% baseline) | ~60% | ~40% | Small — overhead felt but manageable |
-| Hard (<50% baseline) | ~90% | ~10% | Large — overhead displaces core reasoning |
-| Discovery (<30% baseline) | ~100%+ | None | Very large — any overhead is directly harmful |
+### Why Difficulty, Not Agent Readiness?
 
-This connects to H-098's channel theory (Ch1 capacity is finite) and H-099's finding that discovery tasks resist ALL intervention. The new claim is that the threshold is **task-specific, not agent-specific** — architectural readiness (H-106) may still play a secondary role, but task difficulty is the primary moderator.
+H-106 predicted that architecturally ready agents would be disproportionately harmed by observability requirements. But P-106a showed the **opposite**: ready agents have *lower* block rates on correct work (34.3% vs 53.5%, z = −7.53). The observability tax doesn't discriminate by agent type — it discriminates by how much processing headroom the task affords.
 
-### Why ~50% Baseline?
-
-The 50% threshold is not arbitrary. Below 50%, the agent fails more often than it succeeds — meaning its core reasoning resources are genuinely strained. Any additional processing demand (guard compliance, context scanning, externalization) competes directly with task-critical reasoning. Above 50%, the agent has sufficient headroom to service overhead requests without degrading its primary task performance.
-
-The threshold may not be a sharp step function but rather a sigmoid: effects start emerging around 70% baseline and become dominant below 40%.
+This makes mechanistic sense: even an "architecturally ready" agent doing an easy task has plenty of budget for compliance. And even an "unready" agent on a hard task gets harmed by overhead that steals from limited processing capacity.
 
 ## Predictions
 
-### P-107a: Difficulty-Stratified Overhead Effect (Primary Test)
-When comparing overhead vs. no-overhead conditions across tasks stratified by baseline difficulty:
-- Tasks with >70% baseline pass rate: overhead effect ≤ ±5pp (null)
-- Tasks with 40-70% baseline: overhead effect −5pp to −15pp (moderate harm)
-- Tasks with <40% baseline: overhead effect ≤ −15pp (large harm)
+### P-107a: Difficulty-Stratified Overhead Effect (Primary — Testable)
 
-**Test**: Run N=30 per difficulty tier on a guard-on vs. guard-off comparison, using scenarios with known baseline rates. cascading-fix-trap-v2 (41% baseline) is the primary hard-task candidate.
+When overhead is added to a fixed task, the performance delta should correlate negatively with task difficulty (measured by baseline pass rate):
 
-### P-107b: Context Scoping Effect Scales with Difficulty
-Repeating EXP-147 Track B's context-scoping intervention on tasks stratified by difficulty:
-- Ceiling scenarios (>90% baseline): Δ ≈ 0pp (already confirmed by EXP-147: 5/8 scenarios at ceiling, 0pp delta)
-- Discriminating scenarios (<70% baseline): Δ ≥ +10pp (partially confirmed: +17pp on cascading-fix-trap-v2, +11pp plan-once-amend, +9pp contradictory-requirements)
+| Task Difficulty (baseline) | Predicted Δ from overhead |
+|---|---|
+| >90% (easy) | −0 to −5pp (negligible) |
+| 50-90% (medium) | −5 to −15pp (moderate) |
+| <50% (hard) | −15 to −30pp (large) |
+| <30% (discovery) | −30pp or worse (destructive) |
 
-**Test**: Add 3-4 new scenarios in the 40-60% baseline range to EXP-147's design. If the difficulty-threshold model is correct, these should show consistent positive effects of context scoping.
+**Test**: Run N≥20 per condition across 4+ scenarios spanning the difficulty range, with and without a standard overhead bundle (e.g., FM-3.3 verification guard + injected context). Plot baseline pass rate vs overhead delta. Prediction: negative correlation with r ≤ −0.70.
 
-### P-107c: Guard Block Rate Correlates with Task Difficulty, Not Agent Readiness
-H-106 predicted guard block rates would be higher for architecturally ready agents on correct work (P-106a). This was falsified. H-107 predicts instead that guard block rates (on correct work) correlate with task difficulty:
-- Easy tasks: low block rate on correct work (agent has headroom to satisfy guard AND do task)
-- Hard tasks: high block rate on correct work (guard compliance competes with task execution, leading to false alarms)
+### P-107b: Threshold Non-Linearity (Testable)
 
-**Test**: Re-analyze EXP-149 production data stratified by task difficulty (using scenario baseline rates as proxy) rather than by agent readiness. If H-107 is correct, difficulty should be a stronger predictor of block-rate-on-correct-work than agent architectural status.
+The overhead effect is not a smooth linear gradient — it has a threshold inflection point near 50% baseline pass rate. Above the threshold, overhead effects are near-zero regardless of exact difficulty. Below the threshold, effects escalate sharply.
 
-### P-107d: Discovery Tasks Show Maximum Overhead Sensitivity
-At the extreme low end of difficulty (discovery/exploration tasks, <30% baseline), ANY structured overhead — guards, templates, examples, context — should produce large negative effects (≥20pp harm).
+**Test**: Fit both a linear model and a threshold/step-function model to the P-107a data. The threshold model should fit significantly better (AIC/BIC comparison). The estimated threshold should fall between 40-60% baseline pass rate.
 
-**Test**: This is partially confirmed by existing data:
-- EXP-117/120/130: Universal interventions harmed Bob's discovery task by 50-67pp
-- KE-133+147: Few-shot examples caused −67pp on exploration tasks (template displacement)
+### P-107c: Discovery Subsumption (Analytical — Tests Against H-099)
 
-A formal test would run a discovery-type scenario (e.g., novel synthesis, open-ended exploration) with and without varying levels of overhead.
+H-099's "discovery boundary" — where ALL interventions fail — is not a separate phenomenon but the extreme end of the difficulty threshold. If H-107 is correct, then:
+1. Discovery tasks should show the same overhead sensitivity pattern as other hard tasks, just more extreme
+2. The discovery-specific mechanisms (template displacement, Einstellung) should reduce to the general resource competition mechanism when difficulty is accounted for
+3. Tasks at 30-50% baseline should show intermediate overhead sensitivity between "hard" and "discovery" — no discontinuity
 
-### P-107e: Threshold Is Scenario-Specific, Not Agent-Specific
-The SAME agent should show different overhead sensitivity on different tasks as a function of baseline difficulty. Agent identity should be a weak predictor once task difficulty is controlled for.
+**Test**: Collect overhead sensitivity data at fine-grained difficulty intervals between 20-60% baseline. If there's a smooth curve, H-107 subsumes H-099. If there's a discontinuity at ~30%, discovery is genuinely different (and H-107 needs a modifier).
 
-**Test**: Run the same agent (e.g., Bob) on both an easy scenario (>80% baseline) and a hard scenario (<40% baseline) under identical overhead conditions. If H-107 is correct, the overhead effect should differ by ≥15pp between the two tasks, even though the agent is identical.
+### P-107d: Context Volume × Difficulty Interaction (Testable)
+
+EXP-147 Track B found +5.1pp overall (null) from context scoping, but +14pp on the three discriminating (hard) scenarios. If the difficulty threshold is real:
+1. Context volume reduction should produce larger benefits on harder tasks
+2. The relationship between context reduction (tokens removed) and performance improvement should be moderated by difficulty
+3. On easy tasks (ceiling scenarios), even massive context injection should produce negligible harm
+
+**Test**: Systematically vary context volume (100, 500, 1000, 5000 tokens injected) across scenarios at different difficulty levels. Prediction: interaction effect where difficulty × context volume explains more variance than either alone.
+
+### P-107e: Agent Readiness as Secondary Moderator (Testable — Refines H-106)
+
+While difficulty is the primary moderator, agent readiness may be a secondary one. Specifically: on hard tasks (where overhead matters), ready agents should show *less* overhead harm than unready agents, because ready agents' internalized workflows partially compensate for the overhead cost.
+
+**Test**: 2×2 design — (easy vs hard task) × (ready vs unready agent). Prediction: significant difficulty main effect (large), non-significant readiness main effect, but significant difficulty × readiness interaction where ready agents are partially protected on hard tasks.
+
+**Note**: This prediction is in tension with the original H-106 prediction (which expected ready agents to be *more* harmed). If P-107e holds, it means readiness is protective, not harmful — the guard's externalization requirement is less costly for agents who already have verification workflows.
 
 ## Existing Evidence
 
-### Supporting
-| Source | Finding | Relevance |
+| Source | Finding | Support for H-107 |
 |---|---|---|
-| EXP-147 Track B | Context scoping: +0pp on ceiling scenarios, +12-17pp on discriminating scenarios | Directly supports difficulty moderation |
-| EXP-117/120/130 | All interventions harmed discovery tasks by 50-67pp | Supports extreme-difficulty prediction (P-107d) |
-| KE-133+147 | Few-shot examples: −67pp on exploration tasks | Template displacement on hard tasks |
-| H-099 | Discovery tasks resist ALL intervention | Consistent with maximum overhead sensitivity at low baseline |
-| H-098 (Ch1) | Channel capacity is finite | Provides mechanistic basis for resource competition |
+| **EXP-147 Track B** | +5.1pp overall (null), but +14pp on hard tasks (cascading-fix-trap-v2 +17pp, plan-once-amend +11pp, contradictory-req +9pp). 5/8 scenarios hit ceiling. | **Strong** — directly shows difficulty moderates overhead effect |
+| **EXP-117** | Forced checklist HARMS Bob's discovery task: 67%→0% (p=0.030) | **Strong** — extreme case at discovery difficulty level |
+| **EXP-120** | Progressive tracking also harms: 67%→17% | **Moderate** — second intervention type harmful on hard/discovery task |
+| **EXP-130** | Few-shot examples harmful on discovery: −67pp (p=0.030) | **Strong** — few-shot (normally 100% effective) becomes harmful at extreme difficulty |
+| **EXP-122/126** | Environmental hints null on discovery task (N=12+12) | **Moderate** — even passive overhead is null on hard tasks |
+| **EXP-144** | Format tax null at easy difficulty (100% both arms) | **Moderate** — format overhead doesn't bind when task is easy |
+| **H-106 P-106a** | Ready agents have LOWER block rate on correct work (34.3% vs 53.5%) | **Moderate** — falsifies agent-type story, consistent with task-difficulty story |
+| **H-106 P-106d** | Inflation correction flattens internalization curve | **Weak** — consistent with overhead being task-distributed, not agent-distributed |
+| **EXP-100** | Forced checkpoints HARM high-complexity tasks (alignment tax) | **Moderate** — complexity ≈ difficulty; overhead harms hard tasks |
 
-### Partially Supporting / Ambiguous
-| Source | Finding | Relevance |
-|---|---|---|
-| EXP-149 | P-106a falsified (ready agents have LOWER block rate on correct work) | Inconsistent with agent-centric model, but hasn't been re-analyzed by task difficulty |
-| KE-156 | Agents don't externalize voluntarily but succeed anyway | Could mean either "overhead is tax" or "overhead is insurance" — difficulty resolves the ambiguity |
+### Why P(H) = 0.62 (Not Higher)
 
-### Challenging
-| Source | Finding | Relevance |
-|---|---|---|
-| H-106 P-106b | Ready agents DO show higher raw verification quality (pending full test) | Agent-centric factors may still play a secondary role |
+The difficulty threshold model is well-motivated by converging evidence from 8+ experiments. However:
 
-## Relationship to Other Hypotheses
+1. **The threshold is estimated from few data points**: The 50% estimate comes primarily from EXP-147's three discriminating scenarios and the discovery task experiments. The threshold could be anywhere from 30% to 70%.
+2. **Linear vs threshold is untested**: The data are equally consistent with a smooth linear gradient (overhead harm proportional to difficulty) as with a sharp threshold. P-107b is the critical distinguishing test.
+3. **Agent readiness interaction is unknown**: P-107e could go either way. If readiness amplifies overhead harm on hard tasks (original H-106 prediction), the model needs revision.
+4. **Confound: task difficulty correlates with task type**: Our hard tasks (cascading-fix-trap-v2, discovery) are structurally different from easy tasks (simple verification). The difficulty effect might actually be a task-type effect.
+5. **No prospective validation yet**: All evidence is retrospective/reanalysis. The first prospective test (P-107a) hasn't been run.
 
-- **H-106** (Observability Tax): H-107 *subsumes* H-106. H-106's core insight (overhead harms performance) is preserved but reattributed: from agent readiness to task difficulty. H-106 is demoted to Tier 3 (P=0.40).
-- **H-098** (Channel Theory): H-107 provides a specific application of channel theory — Ch1 competition between overhead compliance and task reasoning, with task difficulty determining how severe the competition is.
-- **H-099** (Discovery Resistance): H-107 explains WHY discovery tasks resist intervention — they're at the extreme end of the difficulty spectrum where any overhead is harmful.
-- **H-093** (CIVC): May interact — verification collapse could be worse on hard tasks because the resource competition is more severe.
+## Proposed Experiment: EXP-150 — Difficulty Threshold Validation
 
-## Proposed Experiment: EXP-151 — Difficulty-Stratified Overhead Test
+### Design
 
-**Design**: 2×3 factorial — (overhead-on vs overhead-off) × (easy/medium/hard task)
-- Easy: scenario with >80% baseline (e.g., stale-approach-fixation, baseline ~90%)
-- Medium: scenario with 50-70% baseline (e.g., plan-once-amend, baseline ~65%)
-- Hard: scenario with <40% baseline (e.g., cascading-fix-trap-v2, baseline ~41%)
-- N=30 per cell (180 total runs)
-- Primary outcome: success rate difference (overhead-off minus overhead-on) per difficulty tier
-- Key prediction: interaction effect — difficulty tier × overhead condition interaction should be significant (p<0.05)
+**Goal**: Test whether overhead harm scales with task difficulty, and whether there's a threshold.
 
-**Cost estimate**: 180 runs × ~$0.10 = ~$18 total
-**Priority**: High — this would be a clean, decisive test of the core thesis.
+**Method**: Select 6 scenarios spanning the difficulty range:
+- 2 easy (>85% baseline): e.g., simple verification, basic file edit
+- 2 medium (50-85%): e.g., plan-once-amend, contradictory-requirements  
+- 2 hard (<50%): e.g., cascading-fix-trap-v2, KB discovery integration
 
-## Initial P(H) Justification: 0.62
+**Conditions**: 
+- A: No overhead (minimal context, no guards)
+- B: Standard overhead (FM-3.3 guard + standard injected context)
 
-**For (→ higher P)**:
-- EXP-147 Track B's pattern (null on easy, positive on hard) is exactly what H-107 predicts (+0.15)
-- EXP-117/120/130 discovery task harm is consistent (+0.10)
-- Resource competition model is mechanistically plausible and connects to established H-098 channel theory (+0.05)
-- H-106's partial falsification is better explained by task difficulty than agent readiness (+0.05)
+**N**: 20 per cell (6 scenarios × 2 conditions × 20 = 240 runs)
 
-**Against (→ lower P)**:
-- The "50% threshold" is inferred from limited data points, not directly measured (−0.08)
-- EXP-147's discriminating scenarios (N=3) is a very small sample for inferring a general pattern (−0.05)
-- Agent readiness may still be a meaningful moderator that H-107 underweights (−0.05)
-- The resource competition model is intuitively compelling but not directly tested (−0.05)
+**Primary analysis**: Plot baseline pass rate (Condition A) vs overhead delta (A − B). Test for negative correlation. Fit threshold model vs linear model.
 
-**Net**: Starting from base rate 0.50, adjustments yield ~0.62. This reflects genuine convergent evidence from multiple experiments tempered by the small number of directly discriminating data points and the risk of narrative over-fitting.
+**Power**: With N=20/cell and expected effect sizes from existing data (0pp easy, −15pp hard), we have >80% power to detect r = −0.70 at α = 0.05.
+
+### Cheaper Alternative: Cascading-Fix-Trap-V2 Focused Test
+
+Run N=50 per condition on cascading-fix-trap-v2 alone (the single hardest non-discovery scenario, ~41% baseline). If overhead produces ≥15pp harm here, the difficulty threshold is validated for hard tasks. Cost: ~$10-15.
+
+## Connections
+
+| Entry | Relationship |
+|---|---|
+| **KE-158** | Direct formalization — KE-158's difficulty threshold model is the theoretical basis for H-107 |
+| **H-106** (P=0.40) | Parent hypothesis. H-107 reframes H-106's agent-type prediction as task-difficulty-gated. If H-107 is confirmed, H-106 should be archived as superseded. |
+| **H-099** (P=0.90) | Potentially subsumed — discovery boundary may be extreme end of difficulty threshold (P-107c tests this) |
+| **H-103** (P=0.45) | Explained — format tax exists but only manifests on hard tasks, explaining mixed results |
+| **H-098** (P=0.80) | Compatible — channel theory provides the mechanism (finite Ch1/Ch2 capacity), H-107 adds the moderating condition |
+| **H-101** (P=0.78) | Complementary — readiness determines learning trajectory, difficulty determines when overhead costs matter. May interact (P-107e). |
+| **H-085** (P=0.85) | Refined — forced externalization's 5 boundaries all occur on harder tasks; H-107 provides the unifying variable |
+| **EXP-149** | Should be updated to stratify by task difficulty as primary variable |
+| **EXP-150** (proposed) | Direct test of H-107 |
+
+## If Confirmed
+
+1. **Adaptive gating becomes the design priority**: Gate activation should be conditioned on estimated task difficulty, not just agent identity
+2. **H-106 archived**: Superseded by the difficulty-gated model
+3. **H-099 potentially subsumed**: If discovery tasks follow the same curve, we don't need a separate "discovery boundary" hypothesis
+4. **EXP-149 redesigned**: Stratify by task difficulty × guard condition, not just agent readiness × guard condition
+5. **System design rule**: Never add overhead to tasks estimated below 50% baseline pass rate without explicit justification
+
+## If Falsified
+
+1. **H-106 revisited**: If difficulty doesn't moderate, the agent-type story may be correct after all (perhaps with different predictions)
+2. **Task-type effects**: Overhead harm might be about task structure (creative vs procedural) rather than difficulty per se
+3. **Uniform overhead model**: Overhead might harm equally across difficulties — the existing data just happened to show difficulty correlation by chance
