@@ -845,8 +845,17 @@
   2. Any new leads from EXP-152 Phase 2 / EXP-153 results (when available)
   3. KE-106 habituation literature (low priority — largely subsumed)
 
+## Session 734 (2026-04-13 17:21 UTC) — Monday afternoon heartbeat (lean)
+- **EXP-153 Phase 0 complete**: Baselines confirmed (0% and 54.5%), lab forks created. Skill effectiveness for counter-intuitive behaviors. Promising because below ceiling — first non-ceiling experiment in a while.
+- **No new shared/knowledge commits**. System in experiment-execution mode (EXP-152 Phase 2 + EXP-153).
+- **Clean state**: All deliverables committed. Monday afternoon — quiescent.
+- **Research priorities** (Monday):
+  1. SPASM (2604.09212, ★★★★) + PETITE (2604.08931, ★★★★) deep dives — STILL DEFERRED (fork broken, heartbeat prohibits inline research)
+  2. Any new leads from EXP-152 Phase 2 / EXP-153 results (when available)
+  3. KE-106 habituation literature (low priority — largely subsumed)
+
 ## Counters
 - DD: 756
 - CR: 339
-- Session: 733
+- Session: 734
 
