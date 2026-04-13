@@ -35,11 +35,11 @@ Updated: 2026-04-13 ~05:21 UTC
 - **P1**: **Convention investigation** — In progress (tech-lead). 
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (15:51 Apr 13)
+## Latest Cycle Summary (16:21 Apr 13)
 - **System**: 8 agents active (excl amy-kimi). Zero errors. No stuck sessions.
-- **Agent stats (6h)**: Bob 22s/17ops, Coach 23s/15ops, Coder 2s/19ops, Evaluator 12s/9ops, May 15s/9ops, Optimizer 24s/19ops, QA 12s/9ops, Scout 12s/9ops, Tech-lead 27s/18ops.
-- **In-progress**: EXP-084 few-shot deployment (coach), D-o-R workflow adoption (tech-lead), Error-time nudge (tech-lead, forked s_1776095547122_267).
-- **Queue**: 5 Ready items. 3 in-progress (2 prior + 1 just forked).
+- **Agent stats (6h)**: Bob 23s/17ops, Coach 22s/16ops, Coder 2s/19ops, Evaluator 12s/9ops, May 14s/8ops, Optimizer 25s/20ops, QA 12s/9ops, Scout 12s/8ops, Tech-lead 29s/15ops.
+- **In-progress**: Few-shot Channel 3 fix (tech-lead), Behavioral metrics dashboard (optimizer), Scope-bound Lens sessions (optimizer).
+- **Queue**: 2 Ready items remaining. 2 in-progress from prior dispatch.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
