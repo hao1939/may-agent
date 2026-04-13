@@ -96,87 +96,33 @@ The #1 cause of bloat: **interactive SQL query loops** — writing one `bun -e` 
 
 **Only skip workflow for**: quick triage (< 5 ops), updating todo.md, responding to a dispatch.
 
-For each substantive task, fork a work session **with a workflow**:
+For each substantive task, call the workflow directly from this heartbeat:
 
-```javascript
-agents.call({
-  action: 'fork',
-  agent: 'coach',
-  task: `[WORK SESSION] <specific task description>
-
-Objective: <one sentence — what does "done" look like?>
-Read: <specific files to read for context>
-Output: <specific file path for deliverable>
-
-Use the appropriate workflow — growth-cycle for gym work, verify-wrap for investigations.
-
-Constraints:
-- <specific constraints>`
-})
-```
+**Call `workflow.run()` directly from the heartbeat** — don't embed workflow hints in fork task text. The workflow blocks this session, which is fine (heartbeats have 30+ min gaps).
 
 ### Coach Work Session Examples
 
-**Growth cycle (workflow):**
-```
-[WORK SESSION] Growth cycle: test classify-before-destructive-action skill on sycophants-dilemma
-
-Objective: Run growth-cycle workflow to measure if the new skill improves sycophants-dilemma pass rate.
-Read: agents/coach/workspace/todo.md (for context on prior sycophants-dilemma results)
-
-Run this workflow:
-workflow.run("growth-cycle", "Test classify-before-destructive-action skill on sycophants-dilemma scenario. Baseline is 3/6. Target: >4/6.")
-
-Output: Workflow will produce results. Write summary to workspace/growth-receipts/
+**Growth cycle** — call workflow directly:
+```javascript
+workflow.run("growth-cycle", "Test classify-before-destructive-action skill on sycophants-dilemma scenario. Baseline is 3/6. Target: >4/6. Write summary to workspace/growth-receipts/")
 ```
 
-**Training sprint (workflow):**
-```
-[WORK SESSION] Training sprint: batch-test 3 pending skill candidates
-
-Objective: Run training-sprint workflow to test pending skill candidates from todo.md backlog.
-Read: agents/coach/workspace/todo.md (for the 3 targets)
-
-Run this workflow:
-workflow.run("training-sprint", "Scan ERROR_LOGs for patterns, test methods against: misleading-test-fix, regression-from-fix, search-strategy-escalation")
-
-Output: Workflow produces results. Write summary to workspace/
-Constraints: Max 3 growth-cycles ($7/cycle budget)
+**Training sprint** — call workflow directly:
+```javascript
+workflow.run("training-sprint", "Scan ERROR_LOGs for patterns, test methods against: misleading-test-fix, regression-from-fix, search-strategy-escalation. Max 3 growth-cycles. Write summary to workspace/")
 ```
 
-**Error pattern analysis:**
-```
-[WORK SESSION] Analyze C1.1 system-wide regression
-
-Objective: Identify root cause of C1.1 decline across all agents since Apr 3.
-Read: agents/coach/workspace/todo.md (see "Investigate C1.1 system-wide regression" entry)
-Query: .state/may.db for C1.1 convention pass rates by day, by agent
-
-Output: agents/coach/workspace/brief-c11-regression-analysis.md
-
-Questions to answer:
-1. When exactly did the regression start?
-2. Is it correlated with any specific code change or SOUL.md update?
-3. Which agents are most affected?
-
-⚠️ ANALYSIS EFFICIENCY: Write ALL data queries in a SINGLE bun -e script per analysis phase.
-Do NOT write one bun script per question. Batch all queries into one invocation.
-Budget: ≤5 bash calls for all data collection. If you need more, you're exploring interactively — stop, plan your remaining questions, then batch them.
+**Investigation with written findings** — call workflow directly:
+```javascript
+workflow.run("verify-wrap", "Analyze C1.1 system-wide regression. Identify root cause of C1.1 decline across all agents since Apr 3. Query .state/may.db for C1.1 convention pass rates by day, by agent. Output: agents/coach/workspace/brief-c11-regression-analysis.md")
 ```
 
-**Scenario design:**
+**Scenario design** — call workflow directly:
+```javascript
+workflow.run("verify-wrap", "Design gym scenario for error-cascade-diagnosis. Create a new scenario that tests error tracing through multiple dependency layers. Must have clear success criteria. Output: agents/gym/scenarios/error-cascade-diagnosis-v2/")
 ```
-[WORK SESSION] Design gym scenario for error-cascade-diagnosis
 
-Objective: Create a new gym scenario that tests whether agents can trace errors through multiple dependency layers.
-Read: agents/gym/scenarios/error-cascade-diagnosis/ (existing scenario for reference)
-Output: agents/gym/scenarios/error-cascade-diagnosis-v2/
-
-Constraints:
-- Must have clear success criteria (not just "agent found the bug")
-- Include both product checks and behavioral checks
-- Verify it runs at baseline before finishing
-```
+**Only use `agents.fork()` for**: fire-and-forget tasks where you don't need to block (e.g., quick triage, non-blocking dispatches to other agents).
 
 **Skill regression testing:**
 ```

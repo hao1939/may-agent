@@ -82,26 +82,19 @@ workflow.run("parallel-research", JSON.stringify({
 - **Sequential agents.fork()**: Fire-and-forget tasks where you don't need combined results until next heartbeat
 - **verify-wrap**: Single focused work sessions that need verification guardrails
 
-For each substantive task, fork a work session:
+For each substantive task, **call `workflow.run()` directly** — don't embed workflow hints in fork task text:
 
 ```javascript
-agents.call({
-  action: 'fork',
-  agent: 'bob',
-  task: `[WORK SESSION] <specific task description>
+// Single focused work session with verification
+workflow.run("verify-wrap", "[WORK SESSION] <task description>. Objective: <done state>. Output: <file path>")
 
-Objective: <one sentence — what does "done" look like?>
-Read: agents/bob/workspace/todo.md first (for orientation), then <specific files>
-Output: <specific file path for deliverable>
-
-Questions to answer:
-1. <specific question>
-2. <specific question>`,
-  context_files: ['agents/bob/workspace/todo.md']
-})
+// Multiple independent research threads
+workflow.run("parallel-research", JSON.stringify({ threads: [...], defaultAgent: "bob" }))
 ```
 
-**Always include `context_files`** when dispatching. This pre-loads your workspace context into work sessions, ensuring orientation even when the task directs you to read shared knowledge files first.
+**Only use `agents.fork()` for**: fire-and-forget tasks where you don't need combined results until next heartbeat.
+
+**Always include `context_files`** when dispatching via fork. This pre-loads your workspace context into work sessions.
 
 ### Research Work Session Examples
 

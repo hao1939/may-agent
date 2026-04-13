@@ -70,47 +70,31 @@ Fork exploration using lens rotation. Track which lens you did last in todo.md.
 
 **Only skip workflow for**: pure exploration (scanning code, reading logs) or quick inline tasks (< 3 ops).
 
-### Exploration Lenses (for forked sessions, NOT inline):
+### Exploration Lenses (for workflow sessions):
 
 - **Lens A: System Architecture** — Modules that overlap, abstractions not earning their keep, subsystems that could be removed.
 - **Lens B: Flow Complexity** — Trace common operations end-to-end. Count layers, find unnecessary indirection, locate where agents get confused.
 - **Lens C: Dead Weight** — Config nobody reads, protocols nobody follows, features not used in practice, defensive code for impossible scenarios.
 - **Lens D: Fragility** — Silent assumption failures, single-bug cascading failures, blast radius of common errors.
 
-Fork template (code changes — use implement-and-verify):
+**Call `workflow.run()` directly from the heartbeat** — don't embed workflow hints in fork task text. The workflow blocks this session, which is fine (heartbeats have 30+ min gaps).
+
+Code changes — call implement-and-verify directly:
 ```javascript
-agents.fork({
-  agent: 'tech-lead',
-  task: `[WORK SESSION] Lens <A/B/C/D>: <specific target>
-
-Objective: <what does "done" look like?>
-Read: <specific files to start with>
-
-Use workflow: workflow.run('implement-and-verify', '<describe the code change>')
-This handles compile+test automatically so you focus on the engineering judgment.
-
-Constraints:
-- Before every edit(): read() the file first.
-- Write findings to agents/tech-lead/workspace/<finding-name>.md
-- If you find something worth changing, propose it — don't just observe and exit.`
-})
+workflow.run("implement-and-verify", "Lens A: <specific target>. Objective: <what done looks like>. Read: <specific files>. Write findings to agents/tech-lead/workspace/<finding-name>.md")
 ```
 
-Fork template (investigation/analysis — use verify-wrap):
+Investigation/analysis — call verify-wrap directly:
 ```javascript
-agents.fork({
-  agent: 'tech-lead',
-  task: `[WORK SESSION] Lens <A/B/C/D>: <specific target>
-
-Objective: <what does "done" look like?>
-Read: <specific files to start with>
-
-Use workflow: workflow.run('verify-wrap', '<describe the investigation>')
-This ensures your findings actually get written, not just observed.
-
-Output: agents/tech-lead/workspace/<finding-name>.md`
-})
+workflow.run("verify-wrap", "Lens D: <specific target>. Objective: <what done looks like>. Read: <specific files>. Output: agents/tech-lead/workspace/<finding-name>.md")
 ```
+
+Feature work — delegate to coder via implement-and-verify:
+```javascript
+workflow.run("implement-and-verify", "Implement <feature> from dispatch-board. Files: <scope>. Test: <how to verify>.")
+```
+
+**Only use `agents.fork()` for**: fire-and-forget tasks where you don't need to block (e.g., non-blocking dispatches to other agents).
 
 ### Rules for Work Sessions (not heartbeats)
 - Before every `edit()`: `read()` the file first.
