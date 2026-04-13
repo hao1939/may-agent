@@ -835,48 +835,21 @@
   2. Any new leads from EXP-151 Medium bucket results
   3. KE-106 habituation literature (low priority — largely subsumed)
 
-## Session 743 (2026-04-13 21:51 UTC) — Monday evening heartbeat (lean)
-- **KE-175 published (Bob)**: Counter-Intuitive Skills Fail at Universal Floors. EXP-153 final: escalation 0/24 (0pp), contradictory-req +13.3pp (p>0.4, NS). H-153 NOT SUPPORTED. Key insight: skill effectiveness requires 20-60% baseline variance — floor scenarios (0%) are as uninformative as ceiling scenarios (100%). Extends KE-171 (difficulty calibration) + KE-021 (judgment skills weakest).
-- **EXP-153 Phase 2 breakthrough stands**: Combined few-shot + checklist raised contradictory-req from 0%→41.7% (p=0.019) — Session 736's finding. But Phase 1 individual skill arm: 0/12 treatment, 0/12 control. The synergistic combination worked where individual channels failed.
-- **System quiescent**: Optimizer mode D adoption collapse (2.8%), tech-lead lens D audit — neither require Scout action. No new experiments designed/running.
-- **All 4 Monday DDs absorbed by Bob**: DD#753 → KE-171, DD#754 → KE-173, DD#755 → KE-172, DD#756 → KE-174. Pipeline healthy.
-- **Clean state**: All deliverables committed. Monday evening — quiescent.
+## Session 747 (2026-04-13 23:21 UTC) — **P0: Event-Native Guard-Workflow Architecture Research**
+- **DELIVERED: DD#757 + DD#758 + CR#340**: Event-Native Guard-Workflow Architecture prior art survey and design synthesis.
+  - **DD#757** (★★★★★): NeMo Guardrails / Colang 2.0 — Event-driven programmable guardrail architecture. Treats everything as events in unified stream. Guards fire on event patterns, inject alternative flows. 3×3 matrix of interception points. **Closest existing implementation to Hao's vision.** Limitations: single-agent, dialog-level only, no agent negotiation.
+  - **DD#758** (★★★★½): SHIELDA — Structured exception handling for LLM dialog agents. Try/catch/finally semantics. Typed exceptions, handler flows, recovery strategies. Formalizes interrupt-handle-resume pattern. Complementary to NeMo.
+  - **CR#340**: Synthesis of 6 prior art sources (NeMo, SHIELDA, AgentSentry, Temporal.io, Saga Pattern, AOP) against Hao's 5-step pattern. Core event data model (12 event types), guard lifecycle formalization, 5 design decisions with recommendations, 5-phase implementation roadmap.
+  - **Key finding**: Agent negotiation with guard triggers is our novel contribution — no existing system implements it.
+- **Source**: Coach IT-12 (P0) — Hao's directive on event-native guard-workflow architecture.
 - **Research priorities** (Tuesday):
   1. Tuesday arXiv triage (next fresh batch, ~Tuesday 20:00 UTC)
   2. SPASM (2604.09212, ★★★★) + PETITE (2604.08931, ★★★★) deep dives — STILL DEFERRED
-  3. Synergistic vs iatrogenic intervention combinations literature (when does stacking help vs hurt? — motivated by EXP-153 Phase 2 vs KE-123)
-  4. KE-106 habituation literature (low priority — largely subsumed)
-
-## Session 744 (2026-04-13 22:21 UTC) — Monday evening heartbeat (lean)
-- **No new Scout-relevant developments** since Session 743 (30min ago). Only auto-commits, tech-lead lens A audit, optimizer mode D finding, May board stats — none require Scout action.
-- **System quiescent**: No experiments running that produce Scout research leads. Monday arXiv triage complete (DD#753-756, all absorbed by Bob → KE-171-174).
-- **Clean state**: All deliverables committed. Monday evening — quiescent.
-- **Research priorities** (Tuesday):
-  1. Tuesday arXiv triage (next fresh batch, ~Tuesday 20:00 UTC)
-  2. SPASM (2604.09212, ★★★★) + PETITE (2604.08931, ★★★★) deep dives — STILL DEFERRED
-  3. Synergistic vs iatrogenic intervention combinations literature (when does stacking help vs hurt? — motivated by EXP-153 Phase 2 vs KE-123)
-  4. KE-106 habituation literature (low priority — largely subsumed)
-
-## Session 745 (2026-04-13 22:51 UTC) — Monday late-evening heartbeat (lean)
-- **No new Scout-relevant developments** since Session 744 (30min ago). System quiescent — no experiments running, no new knowledge entries.
-- **Clean state**: All deliverables committed. Monday arXiv triage complete. All 4 DDs absorbed by Bob (KE-171-175).
-- **Research priorities** (Tuesday):
-  1. Tuesday arXiv triage (next fresh batch, ~Tuesday 20:00 UTC)
-  2. SPASM (2604.09212, ★★★★) + PETITE (2604.08931, ★★★★) deep dives — STILL DEFERRED
-  3. Synergistic vs iatrogenic intervention combinations literature (when does stacking help vs hurt? — motivated by EXP-153 Phase 2 vs KE-123)
-  4. KE-106 habituation literature (low priority — largely subsumed)
-
-## Session 746 (2026-04-13 23:23 UTC) — Monday late-evening heartbeat (lean)
-- **No new Scout-relevant developments** since Session 745 (30min ago). No new commits since ~21:51 UTC (review-merge.sh tooling). System quiescent — no experiments running, no new knowledge entries.
-- **Clean state**: All deliverables committed. Monday arXiv triage complete. All 4 DDs absorbed by Bob (KE-171-175).
-- **Research priorities** (Tuesday):
-  1. Tuesday arXiv triage (next fresh batch, ~Tuesday 20:00 UTC)
-  2. SPASM (2604.09212, ★★★★) + PETITE (2604.08931, ★★★★) deep dives — STILL DEFERRED
-  3. Synergistic vs iatrogenic intervention combinations literature (when does stacking help vs hurt? — motivated by EXP-153 Phase 2 vs KE-123)
+  3. Synergistic vs iatrogenic intervention combinations literature
   4. KE-106 habituation literature (low priority — largely subsumed)
 
 ## Counters
-- DD: 756
-- CR: 339
-- Session: 746
+- DD: 758
+- CR: 340
+- Session: 747
 
