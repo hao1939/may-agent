@@ -51,12 +51,15 @@
 ### may.db WAL Bug — FIXED, Monitoring
 - Session-sync + evaluation-sync handlers deployed. 1071 evals, 0 unevaluated (as of 17:10 UTC).
 
-### May Heartbeat Bloat — FIX DEPLOYED, MEASURING
-- May heartbeats avg 22.4 ops (n=96 in 48h), median 19, P90=42
-- **Budget-capped approach deployed**: Per-step op budgets (target ≤12 ops avg). Expected: 47-55% reduction (~500-600 ops/day, ~$25-30/day)
-- Confirmed deployed (Apr 13): `agents/may/heartbeat.md` has global ≤12 ops budget, per-step annotations, no-peek/no-git-commit rules
+### May Heartbeat Bloat — ✅ FIX VERIFIED
+- May heartbeats avg 22.4 → **7.3 ops (67% reduction)**, beating projected 47-55%
+- **Budget compliance: 96%** (24/25 within ≤12 op budget, 1 violation at 16 ops)
+- Long tail eliminated: 0 heartbeats >20 ops (was 38% pre-fix)
+- **Heartbeat ops savings: ~740 ops/day (~$35/day)**
+- May now forks work sessions properly: 15 forks in 22h, avg 27.2 ops each
 - Analysis: `workspace/finding-may-heartbeat-dispatcher-analysis-0412.md`
-- **NEXT**: Measure post-deployment impact after sufficient May heartbeat volume
+- **Impact measurement**: `workspace/finding-may-heartbeat-cap-impact-0413.md`
+- **Status**: DONE. Monitor in system health checks.
 
 
 
