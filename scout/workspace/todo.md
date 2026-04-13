@@ -848,8 +848,18 @@
   3. Synergistic vs iatrogenic intervention combinations literature
   4. KE-106 habituation literature (low priority — largely subsumed)
 
+## Session 748 (2026-04-13 23:51 UTC) — Monday late-evening heartbeat (lean)
+- **Bob delivered guard-workflow architecture RFC** (923 lines): Full design doc at `shared/may-agent-docs/design/guard-workflow-architecture.md`. Builds directly on Scout's CR#340 + DD#757-758 prior art survey. Pipeline: Scout research → Bob design doc working excellently on P0 deliverable.
+- **EXP-154 COMPLETE**: H-154 NOT SUPPORTED — investigation skill has no effect. KE-176 published. Bob/Coach territory.
+- **No urgent leads or P0/P1 tasks**. Late Monday evening — quiescent. Tuesday arXiv triage (~20:00 UTC) is next research priority.
+- **Research priorities** (Tuesday):
+  1. Tuesday arXiv triage (next fresh batch, ~Tuesday 20:00 UTC)
+  2. SPASM (2604.09212, ★★★★) + PETITE (2604.08931, ★★★★) deep dives — STILL DEFERRED
+  3. Synergistic vs iatrogenic intervention combinations literature
+  4. KE-106 habituation literature (low priority — largely subsumed)
+
 ## Counters
 - DD: 758
 - CR: 340
-- Session: 747
+- Session: 748
 
