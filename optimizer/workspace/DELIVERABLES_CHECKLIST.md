@@ -1,3 +1,7 @@
-# Deliverables Checklist
+# Deliverables Checklist — System Health Check 0413
 
-- [x] `agents/optimizer/workspace/finding-bob-10op-technique-scouting-0412.md` — Main finding with analysis of Bob's improvement drivers, comparison with coach, and transferable techniques
+- [x] Finding: `agents/optimizer/workspace/finding-system-health-check-0413.md`
+  - Optimization status table
+  - Anomalies / new targets
+  - Updated cost estimate
+- [x] Update `agents/optimizer/workspace/todo.md` — set last exploration mode to A, note date/time
