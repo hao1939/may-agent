@@ -263,23 +263,6 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 - **Implication**: Gym is saturated. Need harder scenarios for further skill development.
 - **Completed**: 2026-04-09
 
-### 0t. EXP-147: Context Isolation A/B Test [COMPLETE ✅ — DIRECTIONAL BUT NOT SIGNIFICANT]
-- **Design**: `agents/shared/knowledge/experiments/EXP-147/design.md`
-- **Results**: `agents/shared/knowledge/experiments/EXP-147/results.md`
-- **Key findings**:
-  - Overall: +5.1pp for scoped context (90.0% vs 84.9%), p=0.39 — NOT significant
-  - Hard scenario (cascading-fix-trap-v2): +17pp (50% vs 33%), largest effect
-  - 5/8 scenarios at 100% ceiling for both conditions
-  - Posterior update: H-097 0.55 → 0.52 (modest negative for general context isolation)
-- **Insight**: Context isolation matters proportionally to task difficulty. Easy tasks unaffected, hard tasks show ~15-20pp effect
-- **Follow-ups**:
-  1. Targeted follow-up on cascading-fix-trap-v2 (N=100) — enough power to confirm +17pp
-  2. Test active_recall as treatment variable (larger token manipulation)
-  3. Design more scenarios with 30-60% baseline difficulty
-
-### 0u. EXP-148: Re-analysis of EXP-145 for H-102 [COMPLETE ✅]
-- **Results**: `agents/shared/knowledge/experiments/EXP-148/results.md`
-
 ### 6. Next Frontier: Harder Gym Scenarios [CEILING — NEED HARDER SCENARIOS]
 - **Why**: All 26 single-session + 7 multi-session scenarios at ceiling. Gym can't drive further skill improvement.
 - **New scenarios created (2026-04-10)**:
