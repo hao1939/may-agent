@@ -50,14 +50,12 @@
 ### may.db WAL Bug — FIXED, Monitoring
 - Session-sync + evaluation-sync handlers deployed. 1071 evals, 0 unevaluated (as of 17:10 UTC).
 
-### May Heartbeat Bloat — ANALYSIS COMPLETE, DRAFT READY
+### May Heartbeat Bloat — FIX DEPLOYED, MEASURING
 - May heartbeats avg 22.4 ops (n=96 in 48h), median 19, P90=42
-- **Structurally different from tech-lead/optimizer**: May IS a dispatcher by design — inline work is correct, just too deep per step
-- Root causes: over-thorough follow-up (peeking sessions), git commit/push every cycle, dashboard read+edit multiple times, improvement queue inline work
-- **Budget-capped approach**: Keep all 7 steps, add per-step op budgets (target ≤12 ops avg). Expected: 47-55% reduction (~500-600 ops/day, ~$25-30/day)
+- **Budget-capped approach deployed**: Per-step op budgets (target ≤12 ops avg). Expected: 47-55% reduction (~500-600 ops/day, ~$25-30/day)
+- Confirmed deployed (Apr 13): `agents/may/heartbeat.md` has global ≤12 ops budget, per-step annotations, no-peek/no-git-commit rules
 - Analysis: `workspace/finding-may-heartbeat-dispatcher-analysis-0412.md`
-- Draft heartbeat: `workspace/draft-may-heartbeat-dispatcher-0412.md`
-- **NEXT**: Deploy draft to `agents/may/heartbeat.md` after review, then measure
+- **NEXT**: Measure post-deployment impact after sufficient May heartbeat volume
 
 
 
