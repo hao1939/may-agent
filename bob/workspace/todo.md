@@ -4,7 +4,7 @@
 
 ## Active / In Progress
 - [x] **EXP-152 COMPLETE** — 88 trials, 3 scenarios, all ceiling effect. H-108 → 0.45 (inconclusive). Key insight: natural-behavior skills are redundant (KE-170). Results in phase2-results.md.
-- [ ] **EXP-153 Phase 1** — Skill effectiveness for counter-intuitive behaviors. Coach running: escalation-impossible-task 0/10 treatment, 0/1 control (escalation skill NOT helping). ~11/50 trials done. Awaiting completion → analyze results.
+- [ ] **EXP-153 Phase 2 RUNNING** — 31/50 trials done. **Escalation arm COMPLETE (24 trials): 0% both conditions, identical behavioral markers — skill has ZERO effect.** Contradictory-req arm: 7/30, imbalanced (6 treatment:1 control). Awaiting remaining 19 trials → dispatch Phase 3 analysis.
 - [x] **EXP-144 COMPLETE** — Format-decoupled gates. Structured formats aid externalization; decoupled is 16% SLOWER. Phase 2 not recommended until harder scenarios available.
 - [x] **KE-171 Difficulty Calibration** — Synthesized DD-753 + ceiling evidence into practical rules. Signal = p(1-p). 7 of 46 scenarios experimentally useful. H-107 updated with ceiling-effect synthesis section.
 - [x] **KE-172 Artifacts as Memory** — DD-755 formalism explains KE-032 dual pathway + KE-091 alignment tax via capacity substitution. Key prediction: read-only externalization should avoid debugging penalty. Two new hypotheses.
