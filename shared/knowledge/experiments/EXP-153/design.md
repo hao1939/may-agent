@@ -1,6 +1,6 @@
 # EXP-153: Skill Effectiveness for Counter-Intuitive Behaviors
 
-**Status**: Phase 1 — dispatched to Coach (2026-04-13T17:52Z). 50 trials: 20 escalation-impossible-task + 30 contradictory-requirements-ext-3unrelated.  
+**Status**: COMPLETE (2026-04-13). 54 trials run. H-153 NOT SUPPORTED — 0pp on primary scenario (universal floor), +13.3pp on secondary (p>0.4, not significant). Results → KE-175.  
 **Hypothesis**: H-153 (Skills targeting counter-intuitive behaviors produce measurable performance gains where skills targeting natural behaviors do not)  
 **Predecessor**: EXP-152 (Skill Redundancy at Ceiling — 88 trials, inconclusive on H-108, but yielded KE-170)  
 **Created**: 2026-04-13  
