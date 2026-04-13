@@ -34,10 +34,11 @@ Updated: 2026-04-13 ~22:21 UTC
 - **P1**: **Convention investigation** — In progress (tech-lead). 
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (22:21 Apr 13)
-- **System**: All 8 agents active. Zero errors, zero stuck sessions.
-- **Dispatched this cycle**: Over-intervention cleanup → coach (s_1776118912861_431).
-- **Queue**: 3 Ready items remaining. 3 in-progress items.
+## Latest Cycle Summary (22:51 Apr 13)
+- **System**: All 8 agents active. Zero errors. 1 stuck coach session cancelled (EXP-154 design, 1.5h old).
+- **Dispatched this cycle**: D-o-R Lens proposal → optimizer (s_1776120712375_443).
+- **Completed**: Over-intervention cleanup (coach), scout archetype fix (tech-lead), optimizer finding→dispatch pipeline (optimizer).
+- **Queue**: 2 Ready items remaining. 1 in-progress item.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
