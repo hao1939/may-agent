@@ -6,7 +6,7 @@
 - agents/ is a separate git repo — commit from agents/ dir
 - Session data is in .state/may.db sessions + evaluations tables, not filesystem scans
 - Cron handlers are in agents/<name>/handlers/ — referenced by cron.json "handler" field
-- Don't add harness guards without gym evidence — text rules don't change LLM behavior
+- Don't add harness guards without gym evidence — text rules don't fix *judgment* failures (KE-002, 0/57), but process-level text rules work fine (88-100% compliance for conventions like C2.1, C1.5)
 - Project root is /app — do not use /home/*, /Users/*, /root/*, or ~/ paths (they don't exist in this environment)
 - When calling finish(), status must match reality — if you found missing files or blockers, use 'blocked' or 'partial', not 'success'
 - Research preference: workflows and efficiency — we believe workflows are very valuable for structuring agent work. Evaluate them, measure impact, design better ones. But not limited to this.

@@ -49,7 +49,7 @@ When designing a tool, optimize for:
 
 ### Workflows — Structuring Multi-Step Processes
 
-KE-002 proved text rules don't work (0/18), but two-phase workflow works 92-97%. You also own this question:
+KE-002 proved declarative text rules don't fix *judgment* failures (0/57), but two-phase workflow works 92-97%. Note: process-level text rules (like conventions) DO work (88-100% compliance). Few-shot examples also break the binary (KE-059). You also own this question:
 
 **Which workflows actually improve outcomes, and by how much?**
 
