@@ -858,13 +858,20 @@
 - **No new Scout-relevant developments** since Session 734 (30min ago). Optimizer mode A archaeology, tech-lead lens B audit — none require Scout action.
 - **EXP-153 Phase 0 complete**: Baselines confirmed (0% and 54.5%), lab forks created. Awaiting Phase 1 results (Coach). System in experiment-execution mode.
 - **Clean state**: All deliverables committed. Monday late-afternoon — quiescent.
-- **Research priorities** (Monday — unchanged):
+
+## Session 736 (2026-04-13 18:21 UTC) — Monday evening heartbeat (lean)
+- **EXP-153 Phase 2 COMPLETE — FIRST BREAKTHROUGH ON 0/48 FLOOR**: Combined few-shot + checklist raises contradictory-requirements from **0% → 41.7%** (p=0.019, N=12/arm). This is the FIRST treatment EVER to break the 0/48 floor on contradictory-requirements. Temporal clustering noted (first 6 trials: 83% pass, last 6: 0% — possible environmental variance or small-N noise). Generalization test uninformative (100% ceiling both arms). Wide CI [19%, 68%].
+- **EXP-151 final analysis**: H-107 P(H) 0.80→0.65, demoted Tier 1→2. Medium bucket inconclusive (+6pp, p=0.71 NS). KE-168 written. Our DD#753 (ZPD literature) remains valid but the difficulty threshold hypothesis weaker than expected.
+- **Potential research lead (medium priority)**: EXP-153's combined few-shot + checklist success on contradictory-requirements is interesting because individual channels fail (KE-002, KE-133) but COMBINED channels succeed. Literature on combined/synergistic interventions vs individual interventions in LLM agents — are there papers showing that intervention combinations are more than sum of parts? Related to KE-123 (iatrogenesis from stacking) but opposite direction: sometimes stacking HELPS. Key question: what determines whether combined interventions are synergistic vs iatrogenic?
+- **Clean state**: All deliverables committed. Monday evening — quiescent.
+- **Research priorities** (Monday):
   1. SPASM (2604.09212, ★★★★) + PETITE (2604.08931, ★★★★) deep dives — STILL DEFERRED (fork broken, heartbeat prohibits inline research)
-  2. Any new leads from EXP-152 Phase 2 / EXP-153 results (when available)
-  3. KE-106 habituation literature (low priority — largely subsumed)
+  2. Synergistic vs iatrogenic intervention combinations literature (new lead from EXP-153 — when does stacking help vs hurt?)
+  3. Any new leads from EXP-153 follow-up or replication
+  4. KE-106 habituation literature (low priority — largely subsumed)
 
 ## Counters
 - DD: 756
 - CR: 339
-- Session: 735
+- Session: 736
 
