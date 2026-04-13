@@ -35,10 +35,10 @@ Updated: 2026-04-13 ~05:21 UTC
 - **P1**: **Convention investigation** — In progress (tech-lead). 
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (07:51 Apr 13)
-- **System**: 8 agents active (excl amy-kimi). Zero errors. Cancelled 1 stuck coach session (EXP-151 Phase 1b, 60min+, 7 ops).
-- **Agent stats (6h)**: Bob 20s/11ops, Coach 14s/18ops, Coder 1s/9ops, Evaluator 6s/7ops, May 8s/10ops, Optimizer 16s/16ops, QA 6s/9ops, Scout 6s/33ops, Tech-lead 13s/18ops.
-- **In flight**: Optimizer finding→dispatch pipeline (optimizer, forked 07:22). KE deployment sprint (forked 07:51).
+## Latest Cycle Summary (08:21 Apr 13)
+- **System**: 8 agents active (excl amy-kimi). Zero errors. No stuck sessions.
+- **Agent stats (6h)**: Bob 21s/11ops, Coach 18s/17ops, Coder 1s/9ops, Evaluator 7s/7ops, May 10s/12ops, Optimizer 19s/17ops, QA 7s/9ops, Scout 7s/29ops, Tech-lead 15s/19ops.
+- **Completed**: KE deployment sprint (5 KEs deployed). Scout heartbeat fix applied (no-inline-research critical warning).
 - **Queue**: 1 Ready item remaining (research project triage).
 
 ## Archive Reference

@@ -5,6 +5,16 @@ Your role: **TRIAGE and DISPATCH**. Keep heartbeats lean. Fork substantive work 
 
 **Be proactive.** Don't just process pending tasks — look for research to do. But do the LOOKING here, and fork the DOING.
 
+## ⛔ CRITICAL: NO INLINE RESEARCH — EVER
+**Do NOT call scrape_webpage, fetch arXiv, search GitHub/HN, or do ANY research in this heartbeat.**
+Even "just one quick search" snowballs — a recent session hit **78 ops** (vs normal 6-16) because inline arXiv research exploded into 39 scrape_webpage calls.
+
+**The rule is absolute:**
+- **LOOKING** = read todo.md, check git log, read pending tasks → OK inline
+- **DOING** = any scrape_webpage, any fetch, any external research → MUST be forked
+
+If you catch yourself about to call scrape_webpage or any research tool, **STOP and fork a work session instead.**
+
 ## Step 1: OBSERVE
 
 Read your context and identify what needs doing:
