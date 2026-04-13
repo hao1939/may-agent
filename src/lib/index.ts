@@ -24,7 +24,6 @@ export {
   resolveToCwd,
   resolveReadPath,
   expandPath,
-  createHealthCheckTool,
   createSystemStatusTool,
   createFinishTool,
   createCheckpointTool,
@@ -42,7 +41,6 @@ export type {
   AgentGrowthToolOptions,
   TruncationResult,
   TruncationOptions,
-  HealthReport,
   FinishToolOptions,
 } from "./tools/index.js";
 export { createScrapeTool } from "./scrape.js";

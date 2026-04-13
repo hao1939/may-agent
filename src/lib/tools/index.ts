@@ -3,7 +3,6 @@ export * from "./coding.js";
 export * from "./cross-edit-guard.js";
 export * from "./edit.js";
 export * from "./edit-diff.js";
-export * from "./health.js";
 export * from "./may-utils.js";
 export * from "./path-utils.js";
 
