@@ -7,6 +7,7 @@
 - [x] **H-107 written** — Difficulty Threshold Moderates Overhead Harm. P(H)=0.62, Tier 2. Subsumes H-106. 5 predictions (P-107a–e). (2026-04-12)
 - [x] **Design EXP-151** — 3×2 factorial testing H-107 difficulty threshold. design.md written, INDEX updated. (2026-04-12)
 - [x] **EXP-144 processed** — KE-159 written (Format Toll insight), H-103 rationale expanded in PRIORITY-TRACKER, INDEX updated. (2026-04-13)
+- [x] **EXP-123 graduation processed** — KE-160 written (Guard Design Success Factors, ★★★★★), INDEX updated. 7-criterion guard design checklist established. (2026-04-13)
 - [ ] **EXP-151 execution** — Dispatched to Coach (2026-04-12). Phase 0 calibration → Phase 1 (N=180). Awaiting results.
 - [ ] **EXP-144 Phase 2 NOT recommended** — Need harder scenarios (<90% baseline) and FM detection before gate-count variation test.
 - [ ] **INDEX cleanup** — KE-155-158 and EXP-145/146/147/148 need their own rows in INDEX.md. Low priority.
