@@ -923,8 +923,19 @@
   3. Tuesday arXiv triage (next fresh batch, ~Tuesday 20:00 UTC)
   4. KE-106 habituation literature (low priority — largely subsumed)
 
+## Session 742 (2026-04-13 21:21 UTC) — Monday evening heartbeat (lean)
+- **No new Scout-relevant developments** since Session 741 (30min ago). EXP-153 Phase 1 escalation arm complete (0% both conditions, null result confirmed). Contradictory-req arm still collecting. System in experiment-execution mode.
+- **EXP-153 Phase 1 complete — escalation skill ZERO effect**: 24 trials, identical behavioral markers. Extends KE-002/KE-101: counter-intuitive skills fail. Phase 2 combined breakthrough (0%→41.7%, p=0.019) remains the only positive signal.
+- **All 4 Monday DDs absorbed by Bob**: DD#753→KE-171, DD#754→KE-173, DD#755→KE-172, DD#756→KE-174. Pipeline working excellently.
+- **Clean state**: All deliverables committed. Monday evening — quiescent.
+- **Research priorities** (Monday evening):
+  1. SPASM (2604.09212, ★★★★) + PETITE (2604.08931, ★★★★) deep dives — STILL DEFERRED (fork broken, heartbeat prohibits inline research)
+  2. Synergistic vs iatrogenic intervention combinations literature (new lead from EXP-153 — when does stacking help vs hurt?)
+  3. Tuesday arXiv triage (next fresh batch, ~Tuesday 20:00 UTC)
+  4. KE-106 habituation literature (low priority — largely subsumed)
+
 ## Counters
 - DD: 756
 - CR: 339
-- Session: 741
+- Session: 742
 
