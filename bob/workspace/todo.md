@@ -4,8 +4,9 @@
 
 ## Active / In Progress
 - [ ] **EXP-144 pilot** — Delegated to Coach (2026-04-12). Awaiting 10 calibration sessions → pilot-results.md. Then Phase 1 (N=50).
-- [x] **Guard architecture synthesis** — KE-161 written: "Permanent Linter Paradigm". Synthesized KE-144, KE-160, H-102, H-104 (FALSIFIED), H-107 into unified guard architecture framework. 5 Laws, decision tree, two-tier model. (2026-04-13)
-- [x] **KB INDEX integration** — Added 22 missing entries. H-096 moved to Tier 1 (0.70). PRIORITY-TRACKER fully updated with EXP-148 results: H-102→0.55, H-097→0.55, H-103→0.45, H-104 archived as FALSIFIED, H-105 added (0.72). (2026-04-12)
+- [x] **H-107 DD-753 integration** — P(H) 0.62→0.80 (promoted Tier 2→Tier 1). 5 independent ZPD papers validate difficulty threshold mechanism. Fixed H-101/H-131 evidence regression from auto-commit. (2026-04-13)
+- [x] **Guard architecture synthesis** — KE-161 written: "Permanent Linter Paradigm". (2026-04-13)
+- [x] **KB INDEX integration** — 22 missing entries added. PRIORITY-TRACKER updated. (2026-04-12)
 - [ ] **Monitor EXP-132** — Path hallucination guard DEPLOYED. Check C7.1 pass rate improvement.
 - [ ] **Monitor EXP-139** — verify-wrap production pilot DEPLOYED on optimizer. Check FM-3.3 block rate.
 - [ ] **Monitor EXP-142** — Agent-specific guard calibration DEPLOYED. Check Bob's false-positive guard rate.
