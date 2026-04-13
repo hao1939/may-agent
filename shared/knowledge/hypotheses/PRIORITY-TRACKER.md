@@ -1,7 +1,7 @@
 # Hypothesis Priority Tracker
 
 **Updated**: 2026-04-13 (Bob: H-107 P(H) 0.80→0.65 — EXP-151 complete, all 3 buckets inconclusive (no significant overhead effect, p>0.70 all levels, per-scenario direction inconsistent). Demoted to Tier 2. KE-168 written. Previously: Added H-108 Guard Artifacts as Environmental Memory, P(H) 0.55, Tier 2. EXP-152 designed, Phase 0 complete. Previously: May: H-107 P(H) 0.62→0.80 (DD-753 ZPD convergence — 5 independent groups validate difficulty threshold mechanism). Restored H-101/H-105/H-131 evidence stripped by auto-commit 39818a84. Previously: Bob: H-107 proposed — Difficulty Threshold Moderates Overhead Harm, P(H) 0.62, Tier 2. Previously: EXP-144 processed — KE-159 written, H-103 rationale expanded. Previously: EXP-148 integrated — H-102 P(H) 0.65→0.55, H-097 0.65→0.55, H-103 0.72→0.45, H-104 FALSIFIED, H-105 added, H-096 0.68→0.70.) | **Active hypotheses**: 31 | **Tested**: 26/31 | **Resolution ratio**: 19 resolved | **High-confidence (P≥0.70)**: 22
-**Bayesian scorecard**: See `SCORECARD-bayesian-2026-04-09.md` for full reconciled methodology (supersedes 2026-04-04 version)
+**Bayesian scorecard**: See `SCORECARD-bayesian-2026-04-13.md` for full reconciled methodology (supersedes 2026-04-11 version)
 
 > ✅ **MORATORIUM SATISFIED** (2026-04-07): 11 hypotheses resolved this session (H-001 disconfirmed, H-002 superseded, H-034/H-038/H-039/H-052 reclassified as design notes/truisms, H-046/H-048/H-051 archived for insufficient evidence/chain dependencies, H-064/H-065 already merged/out-of-domain). New hypotheses may now be created, subject to quality standards (falsifiable, P(H) prior ≥ 0.40, connected to empirical evidence).
 

@@ -12,7 +12,7 @@ function parseCSV(input) {
     const values = line.split(DELIMITER);
     const obj = {};
     // Extract numeric values from cells
-    const pattern = /\d+/g;
+    const pattern = /\d+/;
     headers.forEach((h, i) => {
       const val = (values[i] || '').trim();
       const nums = val.match(pattern);

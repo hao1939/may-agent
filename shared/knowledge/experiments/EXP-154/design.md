@@ -21,7 +21,8 @@ The last 3 experiments (EXP-151, 152, 153) all failed to find skill effects due 
 | Scenario | Baseline | N (baseline) | Failure Mode | Why Selected |
 |----------|----------|-------------|--------------|--------------|
 | `read-before-edit` | 4.3% (1/23) | 23 | Agents pass ALL product/convention checks except C2.3 (verify-after-edit). Knowledge skill exists but doesn't work. | Perfect target: single clear failure, knowledge skill proven ineffective, process skill directly addresses gap |
-| `conflicting-evidence` | 53.6% (15/28) | 28 | Agents identify the conflict (pass all behavior checks) but make the wrong fix (fail db-port-fixed + env-preserved). | Medium baseline with clear process gap: agents investigate correctly but don't reconcile evidence before fixing |
+
+**Note**: `conflicting-evidence` (53.6%) was considered as a second scenario but dropped to keep ONE intervention per experiment (KE-123). The atomic edit process skill doesn't directly help with conflicting-evidence's failure mode (wrong fix choice).
 
 ### Treatment: Process Workflow Skill
 
@@ -42,16 +43,14 @@ The baseline already includes the `verify-after-edit` knowledge skill in `agents
 
 ### Sample Size
 
-- 5 trials per condition per scenario = 20 total runs
-- Scenarios: 2 (read-before-edit, conflicting-evidence)
-- With existing baseline data (23 and 28 runs), we can compare treatment against historical baseline
+- 10 treatment trials on `read-before-edit` (fork: `coder-exp154-process`)
+- 0 new control trials needed — we have 23 historical baseline runs (1/23 = 4.3%)
+- Total new runs: 10
 
 ### Measurements
 
 **Primary**: Pass rate (% of trials passing all checks)
-**Secondary**: 
-- For `read-before-edit`: C2.3 verify-after-edit check specifically
-- For `conflicting-evidence`: db-port-fixed check specifically
+**Secondary**: C2.3 verify-after-edit check pass rate specifically (the only failing check in baseline)
 
 ### Controls
 
@@ -65,6 +64,6 @@ See `workspace/process-skill-atomic-edit.md` for the full skill text used in the
 
 ## Predictions
 
-1. `read-before-edit`: Treatment ≥40% pass rate (vs 4.3% baseline) — the atomic workflow frame forces readback
-2. `conflicting-evidence`: Treatment ≥70% pass rate (vs 53.6% baseline) — evidence reconciliation before fixing prevents wrong-fix
-3. If both show ≥20pp improvement, H-154 is supported: process skills work where knowledge skills fail
+1. `read-before-edit`: Treatment ≥30% pass rate (vs 4.3% baseline) — the atomic workflow frame forces readback where knowledge-only failed
+2. If treatment shows ≥20pp improvement, H-154 is supported: process-enforced workflow skills work where knowledge-only skills fail
+3. This would also validate KE-021's hierarchy (process > knowledge) with direct evidence
