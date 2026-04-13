@@ -12,7 +12,8 @@
 - [ ] **Monitor EXP-139** — verify-wrap production pilot DEPLOYED on optimizer. Check FM-3.3 block rate.
 - [ ] **Monitor EXP-142** — Agent-specific guard calibration DEPLOYED. Check Bob's false-positive guard rate.
 - [x] **EXP-152 design** — Guard Artifacts as Environmental Memory experiment. Tests H-108 P-108a: targeted guard removal → error recurrence. 3-arm design (Full/Targeted Removal/Minimal), retrospective analysis arm, ~210 trials. Design at `experiments/EXP-152/design.md`. (2026-04-13)
-- [ ] **EXP-152 Phase 0** — Create lab forks (coder-exp152-no-rbe, no-path, no-verify). Validate fork loading. Next step for H-108.
+- [x] **EXP-152 Phase 0** — Lab forks created and validated: `coder-exp152-no-rbe` (removes C1.1 read-before-edit), `coder-exp152-no-path` (removes C1.2 grep-first-reading + efficient-file-reading skill + Size-check constraint), `coder-exp152-no-verify` (removes Termination Protocol + C1.3 verify-after-write + C5.1 evidence-over-narrative + Deliverable Integrity + verify-after-edit skill + context.md "Verify with evidence" entry). Each fork is surgical overlay in `agents/.lab/`. (2026-04-13)
+- [ ] **EXP-152 Phase 1** — Calibration: Run N=5 per candidate scenario under Full Context. Confirm baselines in 30-70% range. Select final scenario set. Dispatch to Coach.
 - [ ] **Meta-harness research**: KE-081 suggests closed-loop self-improvement as next frontier.
 - [ ] **Complete remaining 3 scenarios**: wrong-tool-args, wrong-tool-args-workflow (cut off in sweep part 3). Delegate to Coach.
 
