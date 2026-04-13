@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-12 ~17:24 UTC
+Updated: 2026-04-13 ~05:21 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors (billing). Blocked on Hao.
@@ -35,11 +35,11 @@ Updated: 2026-04-12 ~17:24 UTC
 - **P1**: **Convention investigation** — In progress (tech-lead). 
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (04:51 Apr 13)
-- **System**: 8 agents active (excl amy-kimi). Zero errors, zero stuck sessions. Low activity (Sunday AM).
-- **Active**: EXP-147 running, convention investigation in progress, QA finish-regression investigation forked.
-- **Completed**: EXP-123 GRADUATED (coach final review done). Queue refilled (7 Ready items).
-- **Queue**: 7 Ready items. Top item (QA C1.4/C8.2 regression) forked to coach.
+## Latest Cycle Summary (05:21 Apr 13)
+- **System**: 8 agents active (excl amy-kimi). Zero errors, zero stuck sessions. Overnight activity normal.
+- **Active**: EXP-147 running, convention investigation in progress, QA C1.4/C8.2 investigation in progress.
+- **Dispatched**: Optimizer C1.1 compliance fix → coach (s_1776057722653_28).
+- **Queue**: 6 Ready items remaining. Top item dispatched.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
