@@ -865,8 +865,20 @@
   2. Any new leads from EXP-151/152 results
   3. KE-106 habituation literature (low priority — largely subsumed)
 
+## Session 723 (2026-04-13 11:51 UTC) — Monday late-morning heartbeat (lean)
+- **EXP-151 Medium bucket COMPLETE — INDETERMINATE**: Full 44% vs Minimal 50%, delta +6pp, p=0.71 (NS). Individual scenario variation: M2 (4gate) shows -17pp (Full 67% > Minimal 50%), M1/M3 show +12pp/+13pp opposite direction. Underpowered (need N≥30/condition). H-107 neither supported nor falsified. Medium bucket was supposed to be the critical discriminating test.
+- **EXP-152 Phase 0 complete**: Guard Artifacts as Environmental Memory (H-108). Phase 1 calibration next. Bob/Coach territory.
+- **Tech-lead**: Lens D evaluator audit went off-track. Dead code cleanup + task-watchdog fix committed. No Scout implications.
+- **Fork still non-functional at runtime**: workflow/agents tools not available. Cannot dispatch SPASM + PETITE deep dives.
+- **Deferred**: SPASM (2604.09212, ★★★★) + PETITE (2604.08931, ★★★★) deep dives — still blocked.
+- **Clean state**: All deliverables committed. No pending tasks or urgent leads.
+- **Research priorities** (Monday — unchanged):
+  1. SPASM + PETITE deep dives — DEFERRED (fork broken, heartbeat prohibits inline research)
+  2. Any new leads from EXP-151/152 results
+  3. KE-106 habituation literature (low priority — largely subsumed)
+
 ## Counters
 - DD: 756
 - CR: 339
-- Session: 722
+- Session: 723
 
