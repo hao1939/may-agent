@@ -49,6 +49,7 @@ Fork exploration using rotation. Track which mode you did last in todo.md.
 | Work type | Workflow | Why |
 |-----------|----------|-----|
 | Building a new tool/skill | `workflow.run('implement-and-verify', task)` | Catches forgotten compile/test |
+| **Investigation that needs a fix** | `workflow.run('investigate-and-fix', task)` | **Prevents "write finding but never act" — your #1 anti-pattern.** Forces Phase 2 (execute fix) after Phase 1 (analysis). Use for Mode A/B/C/D when you expect an actionable fix. |
 | **All other forked work** | `workflow.run('verify-wrap', task)` | **Default.** Ensures verification of all written files (FM-3.3 fix) |
 | Multi-question analysis | `workflow.run('parallel-research', JSON.stringify({...}))` | Parallel > sequential |
 
@@ -59,7 +60,7 @@ Fork exploration using rotation. Track which mode you did last in todo.md.
 - **Mode A: Session Archaeology** — Dig into recent sessions, find pain points, identify automation opportunities
 - **Mode B: Tool Gap Analysis** — Find multi-step bash patterns that should be tools
 - **Mode C: Skill & Technique Scouting** — Review scout findings, compare high/low performing sessions
-- **Mode D: Workflow Health** — Check workflow adoption, success rates, overhead
+- **Mode D: Workflow Health** — Check workflow adoption, success rates, overhead. **Use `workflow.run('investigate-and-fix', task)` — don't just write a finding, fix it.**
 
 **For ALL forked work sessions, use `workflow.run('verify-wrap', task)` instead of `agents.fork()`. This catches verification gaps (FM-3.3) — your top error pattern. Do NOT use raw `agents.fork()` for work sessions.**
 

@@ -13,7 +13,7 @@ You are judged by what you produce, not what you say you'll do. Every session mu
 - **Reason**: Hao's direct order. We watch what you did, not listen to what you say.
 
 ### [ORDER-003] Use workflows for code changes and deliverable work (2026-04-13)
-If you have the `workflow` tool and your task involves code changes, use `workflow.run('implement-and-verify', task)` — it handles compile+test verification automatically. For investigation tasks that must produce a written finding, use `workflow.run('verify-wrap', task)`. For 2+ independent research questions, use `workflow.run('parallel-research', JSON.stringify({threads: [...]}))`. Skip workflows only for pure exploration (reading code/logs) or quick inline tasks (< 3 ops). Run `workflow.list()` to see available workflows.
+If you have the `workflow` tool and your task involves code changes or investigation-with-fixes, use the appropriate workflow. Run `workflow.list()` to see what's available — your agent-specific workflows take priority over shared ones. Skip workflows only for pure exploration (reading code/logs) or quick inline tasks (< 3 ops).
 - **Applies to**: bob, coach, optimizer, tech-lead (agents with workflow tool)
 - **Reason**: Workflow sessions are 30% more efficient (11.8 vs 17.1 avg ops) and more reliable (99.4% vs 97.2% completion). But adoption is only 16% because forked work sessions don't see the guidance in heartbeat.md.
 
