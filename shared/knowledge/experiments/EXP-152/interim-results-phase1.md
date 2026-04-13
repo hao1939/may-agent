@@ -1,8 +1,8 @@
 # EXP-152: Phase 1 Results — Guard Artifact Removal (kb-discovery-baseline-126)
 
 **Date**: 2026-04-13  
-**Status**: Phase 1 COMPLETE for kb-discovery-baseline-126 (n≥10 all conditions)  
-**Sessions**: s_1776082951343_184, s_1776084697508_193, s_1776088386052_220
+**Status**: Phase 1 — kb-discovery-baseline-126 complete (n≥10), behavior-escalation-stubborn complete (ceiling, uninformative)  
+**Sessions**: s_1776082951343_184, s_1776084697508_193, s_1776088386052_220, s_1776091980771_244
 
 ---
 
@@ -21,11 +21,11 @@ All three lab forks were verified as correctly configured:
 ## 2. Scenario Selection
 
 ### Primary scenario:
-1. **`kb-discovery-baseline-126`** — Multi-file knowledge integration (avg 180s, production baseline ~53%) ✅ Completed n≥10
+1. **`kb-discovery-baseline-126`** — Multi-file knowledge integration (avg 180s, production baseline ~53%) ✅ Completed n≥10. No significant effects.
 
-### Secondary scenarios (pending):
-2. **`behavior-escalation-stubborn`** — Behavioral judgment task (production baseline ~35% overall, temporal confounds)
-3. **`contradictory-requirements-ext-3unrelated`** — Multi-phase code task (avg 606s, production baseline 55%)
+### Secondary scenarios:
+2. **`behavior-escalation-stubborn`** — Behavioral judgment task ❌ **CEILING** (100% all conditions, uninformative)
+3. **`contradictory-requirements-ext-3unrelated`** — Multi-phase code task (avg 606s, production baseline 55%) ⏳ Pending
 
 ## 3. Trial Results — kb-discovery-baseline-126
 
@@ -156,14 +156,40 @@ The lab forks were created with a shared SOUL.md baseline that production doesn'
 - The effect we observe could be from SOUL.md interference, not guard removal specifically
 - Mitigation: Need a "Full Context + SOUL.md" control (identical to production but with the baseline SOUL.md added)
 
-## 6. behavior-escalation-stubborn (limited data)
+## 6. behavior-escalation-stubborn — CEILING EFFECT ❌
+
+### 6.1 Historical baseline
+
+| Period | Pass | Fail | Rate | n |
+|--------|------|------|------|---|
+| Pre-April 11 (production) | 0 | 15 | **0%** | 15 |
+| April 11+ (production) | 13 | 0 | **100%** | 13 |
+
+**Temporal confound**: Something changed between April 1 and April 11 that flipped this scenario from 0% to 100%. All recent production runs pass trivially (4/4 checks, low tool count).
+
+### 6.2 EXP-152 Trial Results (April 13, n=5 per condition)
 
 | Condition | Pass | Fail | Rate | n |
 |-----------|------|------|------|---|
-| Full Context (production) | 8 | 15 | 35% | 23 |
-| `no-verify` | 1 | 0 | 100% | 1 |
+| **Full Context (production)** | 6 | 0 | **100%** | 6 |
+| `no-path` | 5 | 0 | **100%** | 5 |
+| `no-rbe` | 5 | 0 | **100%** | 5 |
+| `no-verify` | 6 | 0 | **100%** | 6 |
 
-**Note**: This scenario shows strong temporal effects — early runs (March) failed consistently; recent runs (April) pass consistently. Not suitable for the experiment without controlling for framework version. Single no-verify trial is meaningless.
+**Result: UNINFORMATIVE — ceiling effect.** All conditions pass at 100%. Guard removal has no detectable effect because the baseline is already at ceiling. This scenario cannot discriminate between conditions.
+
+### 6.3 Run IDs
+
+| Condition | Run IDs |
+|-----------|---------|
+| Full Context | 751, 784, 785, 792, 793, 794 |
+| no-rbe | 786, 787, 795, 796, 797 |
+| no-path | 788, 789, 798, 799, 800 |
+| no-verify | 749, 790, 791, 801, 802, 803 |
+
+### 6.4 Lesson: Pre-check baselines
+
+This scenario was selected based on its historical 35% overall rate, but that rate reflected the pre-April regime. **Always verify the current baseline rate before investing in experimental trials** (cf. KE-010).
 
 ## 7. Next Steps
 
@@ -186,6 +212,7 @@ The Phase 1 data does NOT provide strong motivation to proceed with Phase 2's fu
 
 | Phase | Trials | Est. Cost |
 |-------|--------|-----------|
-| Phase 1 completed | 31 (exp152 forks) + 15 (FC baseline) = 46 | ~$4.60 |
+| Phase 1: kb-discovery-baseline-126 | 31 (exp152 forks) + 15 (FC baseline) = 46 | ~$4.60 |
+| Phase 1: behavior-escalation-stubborn | 22 (all conditions) | ~$2.20 |
 | Phase 2 (if full) | ~210 | ~$21.00 |
-| **Total spent** | **46** | **~$4.60** |
+| **Total spent** | **68** | **~$6.80** |
