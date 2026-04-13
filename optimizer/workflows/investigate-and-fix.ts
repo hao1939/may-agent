@@ -187,7 +187,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     `If genuinely no action is needed, write "NO_ACTION_NEEDED" with justification.\n` +
     `If the fix requires a different agent, write "DISPATCH-READY" with the target agent.`;
 
-  const phase1 = await ctx.runAgent("optimizer", investigateTask);
+  const phase1 = await ctx.runAgent(ctx.agent, investigateTask);
 
   if (phase1.status === "error") {
     return ctx.escalate("Phase 1 (investigate) failed", { error: phase1.error });
@@ -260,7 +260,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     `- Create a "plan" or "proposal" instead of making the change\n` +
     `- Skip the fix because it "needs more investigation"\n`;
 
-  const phase2 = await ctx.runAgent("optimizer", fixTask);
+  const phase2 = await ctx.runAgent(ctx.agent, fixTask);
 
   if (phase2.status === "error") {
     return ctx.escalate("Phase 2 (fix) failed", {
