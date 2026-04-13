@@ -5,7 +5,7 @@ Updated: 2026-04-13 ~05:21 UTC
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors (billing). Blocked on Hao.
 - **Bob**: 🟢 Active — 35 sessions/6h, avg 8 ops. Zero errors.
-- **Coach**: 🟢 Active — 22 sessions/6h, avg 13 ops. Cancelled stuck EXP-151 session (60m, 0 ops).
+- **Coach**: 🟢 Active — 23 sessions/6h, avg 13 ops. Cancelled stuck EXP-152 session (60m, 37 ops).
 - **Scout**: 🟢 Active — 12 sessions/6h, avg 8 ops.
 - **Tech-lead**: 🟢 Active — 28 sessions/6h, avg 18 ops.
 - **Optimizer**: 🟢 Active — 38 sessions/6h, avg 14 ops.
@@ -35,11 +35,11 @@ Updated: 2026-04-13 ~05:21 UTC
 - **P1**: **Convention investigation** — In progress (tech-lead). 
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (12:51 Apr 13)
-- **System**: 8 agents active (excl amy-kimi). Zero errors. No stuck sessions.
-- **Agent stats (6h)**: Bob 28s/15ops, Coach 22s/12ops, Coder 3s/15ops, Evaluator 12s/9ops, May 15s/10ops, Optimizer 27s/20ops, QA 12s/11ops, Scout 12s/12ops, Tech-lead 28s/21ops.
-- **In-progress**: Artifacts-as-Memory deep dive (Bob). Convention investigation (tech-lead).
-- **Queue**: Empty — refill session forked.
+## Latest Cycle Summary (13:21 Apr 13)
+- **System**: 8 agents active (excl amy-kimi). Zero errors. Cancelled 1 stuck coach session (EXP-152, 60m/37ops).
+- **Agent stats (6h)**: Bob 26s/13ops, Coach 23s/13ops, Coder 2s/19ops, Evaluator 12s/9ops, May 16s/10ops, Optimizer 27s/21ops, QA 12s/10ops, Scout 12s/10ops, Tech-lead 28s/21ops.
+- **In-progress**: Artifacts-as-Memory deep dive (Bob). DB cheat sheet injection (coach — forked).
+- **Queue**: 4 Ready items remaining after dispatch.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
