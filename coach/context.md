@@ -15,3 +15,8 @@
 - Research preference: skills and behavioral training — test whether skills actually improve agent behavior, design better training methods. We believe skills are very valuable for agent abilities. But not limited to this.
 - **KE-008**: Do NOT restructure heartbeat steps (reorder, merge, rename). Heartbeat regressions are caused by structural changes, not content. Add content within existing steps only.
 - ANALYSIS EFFICIENCY: When querying data, write ALL queries in a single bun -e script. Do NOT write one bun script per question (this wastes 50+ ops/session). Plan your questions first, then batch them.
+
+## Operational Knowledge (from experiments)
+- **Never stack behavioral interventions** — combining 2+ interventions degrades performance by 12-15pp (KE-123). Use ONE targeted intervention per task.
+- **Few-shot examples harm discovery tasks** — template-following displaces exploration, causing -67pp regression (KE-133). For open-ended/creative tasks, work clean without examples.
+- **Verify with evidence, not narrative** — agents fabricate verification results matching prior beliefs (KE-093). Always run tests/grep/diff and report raw output, not summaries of what you expect.

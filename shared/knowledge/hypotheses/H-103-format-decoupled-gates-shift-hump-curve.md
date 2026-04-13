@@ -2,9 +2,9 @@
 
 **Status**: Active — PARTIALLY TESTED (EXP-144 Phase 1, N=50)
 **Created**: 2026-04-11 (Bob, Session s_1775948091154_1679)
-**P(H)**: 0.72 → 0.60 → **0.45** (updated 2026-04-12, see Phase 1 Full Results below)
+**P(H)**: 0.72 → 0.60 → 0.45 → **0.40** (updated 2026-04-13, see DD-755 Synthesis below)
 **Derived from**: CR-338 (Cognitive Overhead Budget), DD-747 (Format Tax), DD-748 (BCR), KE-134 (Hump Curve), KE-135 (Gate-Task Synergy)
-**Related**: H-085 (Forced Externalization), H-098 (Attention Channel Theory), H-093 (CIVC)
+**Related**: H-085 (Forced Externalization), H-098 (Attention Channel Theory), H-093 (CIVC), DD-755 (Artifacts as Memory), KE-166 (Format Toll Synthesis)
 
 ---
 
@@ -194,6 +194,38 @@ H-103 is not dead — but the remaining testable predictions (P-103a, P-103b, P-
 3. **FM detection** in the gym pipeline
 
 If these tests also show no benefit from format decoupling, H-103 should be retired.
+
+---
+
+## DD-755 Synthesis: Artifacts-as-Memory Reframes the Mechanism (2026-04-13)
+
+### What DD-755 shows
+DD-755's Artifact Reduction Theorem proves mathematically that environmental artifacts — observations encoding prior interaction history — allow agents to compress internal state with zero information loss. The capacity reduction equals the artifact's information content.
+
+### How this reframes H-103
+H-103's core mechanism assumes format requirements **consume** capacity (tax model). DD-755 + EXP-144 together show format requirements **create environmental artifacts that substitute for internal capacity** (toll model). The causal arrow points in the opposite direction:
+
+- **H-103 predicted**: Format requirements consume capacity → less capacity for gates → degradation at 4+ gates
+- **DD-755 + EXP-144 show**: Format requirements create artifacts → artifacts provide environmental memory → less internal capacity needed → faster execution
+
+### Bayesian update: P(H) 0.45 → 0.40
+
+**Downward pressure**:
+- The mechanism is formally contradicted: format creates capacity (environmental memory) rather than consuming it
+- EXP-144's duration paradox (d=-1.56) now has a mathematical explanation that opposes H-103
+- The reformulated question ("when does artifact creation cost exceed memory benefit?") is materially different from H-103's original claim
+
+**Upward pressure (preventing larger drop)**:
+- 4+ gate configurations untested — artifact creation cost may accumulate and eventually exceed memory benefit
+- Ceiling effect prevents testing at difficulty levels where capacity is genuinely constrained
+- DD-755's capacity-dependent finding means high-difficulty tasks could show different dynamics
+
+### Remaining testable path
+H-103 could survive in a revised form: "At sufficiently high gate counts (≥5), the cumulative cost of artifact creation exceeds the environmental memory benefit, producing the originally predicted rightward-shift when format is removed." This requires:
+1. Running 5+ gate configurations at medium difficulty (EXP-151 scenarios)
+2. Measuring both duration and accuracy across structured vs. decoupled conditions
+
+If 5-gate structured is faster/better than 5-gate decoupled (as at 3 gates), H-103 should be retired. See **KE-166** for the full synthesis connecting EXP-144 to DD-755.
 
 ---
 
