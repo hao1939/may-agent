@@ -263,6 +263,15 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 - **Implication**: Gym is saturated. Need harder scenarios for further skill development.
 - **Completed**: 2026-04-09
 
+### 0v. EXP-153: Escalation Skill Effectiveness [COMPLETE ✅ — H-153 NOT SUPPORTED]
+- **Design**: `agents/shared/knowledge/experiments/EXP-153/design.md`
+- **Results**: `agents/shared/knowledge/experiments/EXP-153/workspace/phase1-results.md`
+- **Hypothesis**: H-153 — Adding an "escalate-when-blocked" skill improves agent performance by ≥15pp
+- **Result**: Primary scenario (escalation-impossible-task): 0% vs 0% — zero effect. Specificity control: +13.3pp (NS).
+- **Key finding**: Passive escalation skill has no measurable effect. Reinforces KE-011 (passive knowledge ignored) and KE-021 (only process skills change behavior). 
+- **54 total trials**: 12+12 escalation, 15+15 contradictory-requirements
+- **Next**: If escalation behavior is desired, must use workflow enforcement (Ch2), not passive skill (Ch1)
+
 ### 0t. EXP-147: Context Isolation A/B Test [COMPLETE ✅ — DIRECTIONAL BUT NOT SIGNIFICANT]
 - **Design**: `agents/shared/knowledge/experiments/EXP-147/design.md`
 - **Results**: `agents/shared/knowledge/experiments/EXP-147/results.md`

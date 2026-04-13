@@ -4,14 +4,14 @@ Updated: 2026-04-13 ~20:51 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors (billing). Blocked on Hao.
-- **Bob**: 🟢 Active — 22 sessions/6h, avg 16 ops. Zero errors.
+- **Bob**: 🟢 Active — 21 sessions/6h, avg 17 ops. Zero errors.
 - **Coach**: 🟢 Active — 23 sessions/6h, avg 14 ops. Zero errors.
 - **Scout**: 🟢 Active — 12 sessions/6h, avg 9 ops.
-- **Tech-lead**: 🟢 Active — 30 sessions/6h, avg 12 ops.
+- **Tech-lead**: 🟢 Active — 28 sessions/6h, avg 11 ops.
 - **Optimizer**: 🟢 Active — 26 sessions/6h, avg 16 ops.
 - **Evaluator**: 🟢 Active — 12 sessions/6h, avg 6 ops.
 - **QA**: 🟢 Active — 12 sessions/6h, avg 8 ops.
-- **Coder**: 🟡 Low activity — 2 sessions/6h, avg 21 ops. Only runs when forked.
+- **Coder**: 🟡 Low activity — 4 sessions/6h, avg 15 ops. Only runs when forked.
 - **Summary**: 7/8 healthy. Amy-kimi still down. Zero errors last 6h. No stuck sessions.
 
 ## Active Priorities (from Hao)
@@ -35,10 +35,10 @@ Updated: 2026-04-13 ~20:51 UTC
 - **P1**: **Convention investigation** — In progress (tech-lead). 
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (20:51 Apr 13)
+## Latest Cycle Summary (21:21 Apr 13)
 - **System**: 9 agents active (excl amy-kimi). Zero errors last 6h. No stuck sessions.
-- **Agent stats (6h)**: Bob 22s/16ops, Coach 23s/14ops, Coder 2s/21ops, Evaluator 12s/6ops, May 13s/7ops, Optimizer 26s/16ops, QA 12s/8ops, Scout 12s/9ops, Tech-lead 30s/12ops.
-- **Queue**: 5 items dispatched (over-intervention, D-o-R workflow, tiered budget, guard-as-sensor, artifacts-as-memory). Optimizer pipeline still running. All Ready items dispatched — queue needs refill next cycle.
+- **Agent stats (6h)**: Bob 21s/17ops, Coach 23s/14ops, Coder 4s/15ops, Evaluator 12s/6ops, May 14s/7ops, Optimizer 26s/16ops, QA 12s/8ops, Scout 12s/9ops, Tech-lead 28s/11ops.
+- **Queue**: Refilled with 5 new items. Dispatched review-merge script to tech-lead (s_1776115316913_405). 6 more Ready items in queue.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
