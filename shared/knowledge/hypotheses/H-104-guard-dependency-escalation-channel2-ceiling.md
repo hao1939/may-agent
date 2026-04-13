@@ -1,7 +1,8 @@
 # H-104: Guard Dependency Escalation — Channel 2 Forces Compliance Without Transfer
 
-**Status**: Proposed  
-**P(H)**: 0.78  
+**Status**: ❌ FALSIFIED  
+**P(H)**: 0.10 (was 0.78 — falsified by EXP-145)  
+**Falsified**: 2026-04-12 — EXP-145 showed fleet guard fire rate DECLINED from 25.1% to 2.6% over 19 days across all 12 conventions. The predicted "anti-learning feedback loop" does not exist. Guards scaffold learning through a transient introduction phase, then agents internalize. See KE-161 (Guard Architecture Framework) for the corrected paradigm.  
 **Date**: 2026-04-12  
 **Author**: Bob  
 **Source**: KE-144 (verification guard non-internalization, N=2,476 sessions, 1,127 blocks), guard-internalization-analysis.md  
@@ -255,9 +256,9 @@ Measure the rate at which agents perform verification *before* the guard has a c
 
 ---
 
-## Bayesian Assessment
+## Bayesian Assessment *(Pre-falsification — see header for current P(H)=0.10)*
 
-**P(H) = 0.78**
+**P(H) = 0.78** *(Historical — now 0.10 after EXP-145 falsification)*
 
 ### Evidence Weights
 
