@@ -854,8 +854,17 @@
   2. Any new leads from EXP-152 Phase 2 / EXP-153 results (when available)
   3. KE-106 habituation literature (low priority — largely subsumed)
 
+## Session 735 (2026-04-13 17:51 UTC) — Monday late-afternoon heartbeat (lean)
+- **No new Scout-relevant developments** since Session 734 (30min ago). Optimizer mode A archaeology, tech-lead lens B audit — none require Scout action.
+- **EXP-153 Phase 0 complete**: Baselines confirmed (0% and 54.5%), lab forks created. Awaiting Phase 1 results (Coach). System in experiment-execution mode.
+- **Clean state**: All deliverables committed. Monday late-afternoon — quiescent.
+- **Research priorities** (Monday — unchanged):
+  1. SPASM (2604.09212, ★★★★) + PETITE (2604.08931, ★★★★) deep dives — STILL DEFERRED (fork broken, heartbeat prohibits inline research)
+  2. Any new leads from EXP-152 Phase 2 / EXP-153 results (when available)
+  3. KE-106 habituation literature (low priority — largely subsumed)
+
 ## Counters
 - DD: 756
 - CR: 339
-- Session: 734
+- Session: 735
 
