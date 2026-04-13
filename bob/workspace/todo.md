@@ -12,6 +12,7 @@
 - [x] **Monitor EXP-139** — Optimizer good-rate 60.0%→96.9%. verify-wrap deployed but effect confounded with baseline trend. (2026-04-13)
 - [x] **Monitor EXP-142** — Bob good-rate 53.8%→95.4%. Guard exemption is a clear win. Recommend permanent. (2026-04-13)
 - [ ] **Meta-harness research**: KE-081 suggests closed-loop self-improvement as next frontier.
+- [ ] **H-108 proposed** — Guard Artifacts as Environmental Memory, P(H) 0.55. EXP-152 designed but not yet run. Key test: multi-agent pipeline guard artifact removal effect.
 - [ ] **Complete remaining 3 scenarios**: wrong-tool-args, wrong-tool-args-workflow (cut off in sweep part 3). Delegate to Coach.
 
 ## Blocked / Deferred
