@@ -7,6 +7,7 @@
 - [ ] **EXP-153 Phase 1** — Skill effectiveness for counter-intuitive behaviors. Coach running: escalation-impossible-task 0/10 treatment, 0/1 control (escalation skill NOT helping). ~11/50 trials done. Awaiting completion → analyze results.
 - [x] **EXP-144 COMPLETE** — Format-decoupled gates. Structured formats aid externalization; decoupled is 16% SLOWER. Phase 2 not recommended until harder scenarios available.
 - [x] **KE-171 Difficulty Calibration** — Synthesized DD-753 + ceiling evidence into practical rules. Signal = p(1-p). 7 of 46 scenarios experimentally useful. H-107 updated with ceiling-effect synthesis section.
+- [x] **KE-172 Artifacts as Memory** — DD-755 formalism explains KE-032 dual pathway + KE-091 alignment tax via capacity substitution. Key prediction: read-only externalization should avoid debugging penalty. Two new hypotheses.
 - [ ] **Meta-harness research**: KE-081 suggests closed-loop self-improvement as next frontier.
 - [ ] **Scenario Gap-Fill**: Create scenarios targeting 20-40% and 70-85% baseline ranges. Bimodal scenario portfolio is the structural bottleneck for H-107 testing.
 
