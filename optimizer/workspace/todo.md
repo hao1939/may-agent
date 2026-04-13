@@ -36,10 +36,8 @@
 - Root cause: heartbeat.md encouraged inline exploration (multi-query DB analysis, file reads).
 - Fix: Rewrote heartbeat.md to "Dispatcher Mode" — observe in 1-2 ops, fork all analysis work. Target: ≤15 ops.
 - Baseline: 8 heartbeats in 12h, avg 56 ops, total 451. Post-fix: avg 23 ops (59% reduction). ✅ SUCCESS.
-- Last exploration mode: **A** (System Health Check 6h — Apr 13 ~05:22 UTC). Next rotation: **B**. Previous: D (D-o-R Budget Cap Impact — Apr 12 ~18:24), C (Skills Adoption Audit — Apr 12 ~17:54), B (codeSearch tool scoping & build — Apr 12 ~17:24), A (Tech-lead 6h distribution & cross-agent scan — Apr 12 ~16:53), D (Workflow Health — adoption trends & D-o-R budget holding — Apr 12 ~16:24).
-- **Latest measurement (Apr 13 05:22 UTC)**: All 6 optimizations holding. Daily ops 5,894 (26% reduction from 8,016). New target: tech-lead work sessions (34/day, 983 ops, ~$46/day). Finding: `workspace/finding-system-health-check-0413.md`
+- Last exploration mode: **C** (Skill & Technique Scouting — Apr 13 ~05:52 UTC). Previous: B (Coach investigation tool gaps — Apr 12 ~10:54), A (Coder 104-op outlier — Apr 12 ~06:54), D (D-o-R nesting post-fix — Apr 12 ~04:24), C (coach experiment cost scouting — Apr 12 ~03:59).
 - **session-query tool BUILT** (`scripts/session-query.ts`). Replaces 15-25 bash archaeology pattern with single command. Supports: --agent, --since, --task, --status, --min-ops, --tools, --json, --sort. Tested with real data (911 sessions). Est. savings: 10-15 ops/session × 187 sessions = 1,870-2,805 ops.
-- **code-search tool BUILT** (`scripts/code-search.ts`). Replaces 3-16 consecutive grep/rg chains with single structured call. Supports: --context, --scope, --type/--glob, --files-only, --stats, --json, --max, --fixed. Uses rg (fallback: grep). Auto-excludes node_modules. Tested with 7 real queries. Est. savings: 120-180 ops/day (~$6-9/day), 93% of sessions affected. Finding: `workspace/finding-codesearch-tool-scoping-0412.md`
 - **session-query adoption**: Still **zero active adoption** beyond optimizer (confirmed Apr 11 05:24 UTC). May + QA have passive mentions only. **Three blockers**: (1) filesystem history stale (through ~Apr 5), (2) zero agents have session-query in context.md, (3) may.db has 0 coach sessions. No change since last check. **gym-batch.sh MERGED to main** (cherry-pick 5ca3bdf, Apr 11 ~05:54 UTC) + coach context.md updated — but **gym-batch.sh also has ZERO adoption** despite being in context.md (see Coach Session Efficiency section). Findings: `workspace/finding-tool-gap-0411-b.md`, `workspace/finding-coach-experiment-technique-0411.md`, `workspace/finding-gym-batch-adoption-0411.md`
 - **ADOPTION FIX DIRECTION (Apr 12)**: Per tool adoption patterns finding — don't bother adding session-query to context.md (Level 4 = 0% adoption). Must fix may.db backend FIRST, then wire into workflow prompts/heartbeat dispatch templates (Level 1-3). Finding: `workspace/finding-tool-adoption-patterns-0412.md`
 - Mode D **COMPLETE**: Workflow health analysis. **Key result: D-o-R uses +53% more ops than non-WF work sessions** (45.7 vs 29.9). Phase 1 is the bloat source (30.4 avg ops — matches a complete non-WF session). Error rates 50% lower (2.1% vs 3.9%). Quality scores incomparable (different eval scales). Finding: `workspace/finding-workflow-health-0410.md`
@@ -51,12 +49,22 @@
 ### may.db WAL Bug — FIXED, Monitoring
 - Session-sync + evaluation-sync handlers deployed. 1071 evals, 0 unevaluated (as of 17:10 UTC).
 
-### May Heartbeat Bloat — FIX DEPLOYED, MEASURING
+### C1.1 Compliance Fix — BEHAVIORAL (P1, from coach)
+- My C1.1 is 80.5% — worst in fleet. 100% concentrated in 2 files.
+- **DELIVERABLES_CHECKLIST.md (73%)**: write() then edit() without read(). FIX: Always read() before edit(), even if I just wrote the file.
+- **todo.md (27%)**: Editing without reading first in heartbeats. FIX: Already reading in Step 1 — just maintain discipline.
+- Text instructions already tried and failed (commit f3f6765c). This is a self-discipline issue.
+- Coach analysis: `agents/may/workspace/audits/optimizer-c1.1-analysis.md`
+- **Tracking**: Will monitor compliance over next 48h.
+
+### May Heartbeat Bloat — ANALYSIS COMPLETE, DRAFT READY
 - May heartbeats avg 22.4 ops (n=96 in 48h), median 19, P90=42
-- **Budget-capped approach deployed**: Per-step op budgets (target ≤12 ops avg). Expected: 47-55% reduction (~500-600 ops/day, ~$25-30/day)
-- Confirmed deployed (Apr 13): `agents/may/heartbeat.md` has global ≤12 ops budget, per-step annotations, no-peek/no-git-commit rules
+- **Structurally different from tech-lead/optimizer**: May IS a dispatcher by design — inline work is correct, just too deep per step
+- Root causes: over-thorough follow-up (peeking sessions), git commit/push every cycle, dashboard read+edit multiple times, improvement queue inline work
+- **Budget-capped approach**: Keep all 7 steps, add per-step op budgets (target ≤12 ops avg). Expected: 47-55% reduction (~500-600 ops/day, ~$25-30/day)
 - Analysis: `workspace/finding-may-heartbeat-dispatcher-analysis-0412.md`
-- **NEXT**: Measure post-deployment impact after sufficient May heartbeat volume
+- Draft heartbeat: `workspace/draft-may-heartbeat-dispatcher-0412.md`
+- **NEXT**: Deploy draft to `agents/may/heartbeat.md` after review, then measure
 
 
 
@@ -78,8 +86,6 @@
 
 ## 📊 OBSERVATIONS (no action needed)
 
-- **Skills Adoption Audit (Apr 12)**: 58 shared skills, only ~13 actively deployed. 50% are dead weight (untested/disproven/no-lift). verify-after-edit (9 agents) is most deployed. read-before-edit (5 agents) still worst convention at 88.6% — deployment ≠ adoption. Only 3 mechanisms work: workflow enforcement, code-level guards, and gym-proven skill injection. Finding: `workspace/finding-skills-adoption-audit-0412.md`
-
 - **Bob HB dispatch**: 87% properly dispatched. 13% inline-heavy — not fixable via text rules (KE-002).
 - **System waste**: 0-1.9% across all agents. Quality universally "good".
 - **Context tax**: 82% of all input tokens are re-sent conversation context. Bob worst at 13.8K tok/op. Prompt caching fix would save ~$128/day.
@@ -92,10 +98,10 @@
 - **Tool quality**: Waste rate 3.6% (stable). All regressions are bob INDEX.md noise.
 - **LLM evaluations**: All heuristic-only. By design if JS evaluator sufficient.
 - **Dead workflows**: may/coach ~367 lines never-used code. Low-priority cleanup.
-- **Workflow adoption**: System-wide **surged to 27.1%** (Apr 12, up from 15.0% Apr 11 and 8.5% Apr 10). Bob at **67.8%** (up from 48.7%). Optimizer at **66.1%** (up from 27.5%). Coder at 50%. 7 other agents still at 0%.
+- **Workflow adoption**: System-wide **surged to 10.1%** (Apr 11, up from 4.5% Apr 4-10). Bob at **49.1%** (up from 22.4%). Surge started Apr 9 when D-o-R became default dispatch path. Coach 1.9%, others 0%.
 - **Workflow efficiency**: D-o-R runs cost +53% more ops than non-WF equivalents. Phase 1 unbounded reading is root cause. Error rates ~50% lower. Quality scores INCOMPARABLE (0-1 vs 0-5 scales — data infra bug).
 - **Optimizer heartbeat cost**: Was 56 ops avg. Fix deployed (Dispatcher Mode heartbeat). Measuring.
-- **Bob P1 read-loop**: ~~87 ops in Phase 1 of D-o-R for a KB integration task.~~ **FIX DEPLOYED (commit 40b22057)**: 15-op budget cap prompt. **MEASURED (Apr 12)**: P1 avg 31.9→9.4 ops (71% reduction), median 30→3 (90% reduction). Compliant sessions (90.5%) avg 3.6 ops. Full D-o-R run cost 45.4→25.8 (43% reduction). 4 P1 violations (9.5%) all from batch/KB tasks misrouted through D-o-R. **New anti-pattern**: parallel-research synthesis spikes (67.2 ops/run avg). Finding: `workspace/finding-dor-budget-cap-impact-0412.md`
+- **Bob P1 read-loop**: ~~87 ops in Phase 1 of D-o-R for a KB integration task.~~ **FIX DEPLOYED (commit 40b22057)**: 15-op budget cap prompt. Measuring — check after 24h. Finding: `workspace/finding-dor-p1-bloat-0411.md`
 - **Session restart accumulation**: Top coach sessions (184, 129 ops) are multi-restart sessions (6-12 restarts), not single-context bloat. Each restart adds discovery overhead + grows context window (up to 50K tokens/turn). Infra fix (maxRestarts=3 or maxTurns=80) would cap all >100 op sessions. Investigation spiral: 129-op session spent 69 ops debugging model issues — not coach's job.
 
 ## ⚠️ SENT/ESCALATED
@@ -108,13 +114,11 @@
 
 ## ✅ DONE
 
-- **LLM-to-JS Verification Phases** — Replaced LLM content verification in `verify-wrap` (Phase 2) and `deliver-or-report` (Phase 3b) with pure JS file checks. ~40 wasted zero-op LLM sessions/day eliminated. Finding: `workspace/finding-llm-to-js-verification-0413.md` (2026-04-13)
 - **D-o-R Phase 1 Budget Cap** — 86% reduction (29.7→4.9 avg ops). ~343 ops/day saved (~$16/day). (2026-04-11)
 - **D-o-R Nested Workflow Spawning** — 0/4 nesting incidents post-fix. (2026-04-12)
 - **Bob Research Thread Bloat** — 62% reduction via parallel-research budget caps. ~397 ops/day saved (~$19/day). (2026-04-12)
 - **Tech-Lead Heartbeat Bloat** — 89% reduction (30.8→3.5 avg ops). ~1,100 ops/day saved (~$52/day). (2026-04-11)
 - **Bash Command Pattern Analysis** — 847 commands across 12 high-op sessions. Top 3 patterns (git-review-chain 91x, grep-then-read 87x, file-discovery-spiral 75x) = 52% of all commands. Concrete tool/script fixes sketched for each. Est. 125-220 ops/day savings. Finding: `workspace/finding-bash-command-patterns-0411.md` (2026-04-11)
 - **Gym Results Data Gap** — Both paths now record: `gym-helpers.ts` has `recordGymResult()` (commit 961d892f0), `run-gym.sh` pipes to `record-result.ts` (commit 2c8c7dcd). 22 runs + 156 checks verified in DB. (2026-04-10)
-- **codeSearch Tool** — BUILT `scripts/code-search.ts`. Collapses 3-16 grep chains into single call. Tested with 7 real query patterns. Supports regex/fixed, context lines, stats, JSON output, glob/type filters, auto-excludes. Est. 120-180 ops/day savings across 93% of sessions. Finding: `workspace/finding-codesearch-tool-scoping-0412.md` (2026-04-12)
 
 48+ items Mar 17 – Apr 10. Detailed logs: `workspace/todo-archive-20260410.md`
