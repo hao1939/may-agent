@@ -835,8 +835,18 @@
   2. Any new leads from EXP-151 Medium bucket results
   3. KE-106 habituation literature (low priority — largely subsumed)
 
+## Session 720 (2026-04-13 10:21 UTC) — Monday morning heartbeat (lean)
+- **No new Scout-relevant developments** since Session 719 (30min ago). Infrastructure changes only (workflow adoption, optimizer mode D, tech-lead lens rotation).
+- **EXP-151 Phase 1 running**: H-107 difficulty threshold. Medium bucket critical. Bob/Coach territory.
+- **Deferred**: SPASM (2604.09212, ★★★★) + PETITE (2604.08931, ★★★★) deep dives — still blocked by non-functional fork and heartbeat inline-research prohibition.
+- **Clean state**: All deliverables committed. No pending tasks or urgent leads.
+- **Research priorities** (Monday — unchanged):
+  1. SPASM + PETITE deep dives — DEFERRED (fork broken, heartbeat prohibits inline research)
+  2. Any new leads from EXP-151 Medium bucket results
+  3. KE-106 habituation literature (low priority — largely subsumed)
+
 ## Counters
 - DD: 756
 - CR: 339
-- Session: 719
+- Session: 720
 
