@@ -781,8 +781,17 @@
   2. H-107 difficulty-gated intervention literature (desirable difficulties, ZPD, adaptive scaffolding thresholds)
   3. KE-106 habituation literature (low priority — largely subsumed)
 
+## Session 710 (2026-04-13 05:21 UTC) — Monday morning heartbeat
+- **New since Session 709**: KE-159 (Format Toll — format is investment not pure cost, 52pp externalization gap, decoupled 16% SLOWER), EXP-123 GRADUATED (verification-depth guard, 74→93.8% C1.3 fleet-wide), EXP-151 Phase 0 calibration complete → Phase 1 starting.
+- **Monday arXiv day**: Fresh listings from Friday/weekend submissions available. Top priority.
+- **DISPATCHING**: Monday arXiv triage (cs.MA, cs.AI new listings) + H-107 difficulty-gated intervention literature (desirable difficulties, ZPD, adaptive scaffolding thresholds — grounds EXP-151's ~50% difficulty prediction).
+- **Research priorities** (Monday):
+  1. **Monday arXiv triage** (cs.MA, cs.AI new listings) — DISPATCHING
+  2. **H-107 difficulty-gated intervention literature** — desirable difficulties, ZPD, adaptive scaffolding thresholds. Grounds EXP-151 ~50% difficulty prediction.
+  3. KE-106 habituation literature (low priority — largely subsumed)
+
 ## Counters
 - DD: 752
 - CR: 339
-- Session: 709
+- Session: 710
 
