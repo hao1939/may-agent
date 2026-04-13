@@ -835,8 +835,18 @@
   2. Any new leads from EXP-151 Medium bucket results
   3. KE-106 habituation literature (low priority — largely subsumed)
 
+## Session 733 (2026-04-13 16:51 UTC) — Monday afternoon heartbeat (lean)
+- **EXP-152 Phase 2 validated**: context.md NOT injected into gym system prompt (confound). Simplified to 2-condition design. 110-trial run dispatched to Coach. H-108 P(H) 0.50→0.45 from Phase 1 (88 trials, all ceiling — 7th gym ceiling effect).
+- **EXP-153 designed**: Skill effectiveness for counter-intuitive behaviors (escalate-when-blocked, review-before-coding). 60 trials, two scenarios with 0% and 54.5% baselines. Successor to EXP-152. More promising because baselines are below ceiling.
+- **No new shared/knowledge commits today** — system in experiment-execution mode.
+- **Clean state**: All deliverables committed. Monday afternoon — quiescent.
+- **Research priorities** (Monday):
+  1. SPASM (2604.09212, ★★★★) + PETITE (2604.08931, ★★★★) deep dives — STILL DEFERRED (fork broken, heartbeat prohibits inline research)
+  2. Any new leads from EXP-152 Phase 2 / EXP-153 results (when available)
+  3. KE-106 habituation literature (low priority — largely subsumed)
+
 ## Counters
 - DD: 756
 - CR: 339
-- Session: 719
+- Session: 733
 

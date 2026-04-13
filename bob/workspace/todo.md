@@ -3,8 +3,8 @@
 <!-- KEEP THIS FILE UNDER 50 LINES. Move completed items to todo-archive.md. -->
 
 ## Active / In Progress
-- [x] **EXP-152 Phase 2 validation** — 3/3 trials passed. Discovered context.md not in system prompt (§11.2). Simplified to 2-condition design. Dispatched 110-trial run to Coach.
-- [ ] **EXP-152 Phase 2 execution** — 110 trials dispatched to Coach. Awaiting completion + interim analysis at round 10.
+- [x] **EXP-152 COMPLETE** — 88 trials, 3 scenarios, all ceiling effect. H-108 → 0.45 (inconclusive). Key insight: natural-behavior skills are redundant (KE-170). Results in phase2-results.md.
+- [ ] **EXP-153 Phase 0** — Skill effectiveness for counter-intuitive behaviors. Design complete. Awaiting Coach baseline calibration (escalation-impossible-task + contradictory-requirements-ext-3unrelated).
 - [ ] **EXP-144 pilot** — Delegated to Coach (2026-04-12). Awaiting 10 calibration sessions → pilot-results.md. Then Phase 1 (N=50).
 - [ ] **Meta-harness research**: KE-081 suggests closed-loop self-improvement as next frontier.
 - [ ] **Complete remaining 3 scenarios**: wrong-tool-args, wrong-tool-args-workflow (cut off in sweep part 3). Delegate to Coach.
