@@ -4,7 +4,7 @@
 
 ## Active / In Progress
 - [ ] **EXP-144 pilot** — Delegated to Coach (2026-04-12). Awaiting 10 calibration sessions → pilot-results.md. Then Phase 1 (N=50).
-- [ ] **Guard internalization problem** — KE-144 shows guard fire rate doubling in 6 days. **H-104 FALSIFIED** (P:0.78→0.10, EXP-145). H-102 P(H) 0.55 (EXP-148: universal decline, not workflow-specific). Next: review remaining implications for guard architecture.
+- [x] **Guard architecture synthesis** — KE-161 written: "Permanent Linter Paradigm". Synthesized KE-144, KE-160, H-102, H-104 (FALSIFIED), H-107 into unified guard architecture framework. 5 Laws, decision tree, two-tier model. (2026-04-13)
 - [x] **KB INDEX integration** — Added 22 missing entries. H-096 moved to Tier 1 (0.70). PRIORITY-TRACKER fully updated with EXP-148 results: H-102→0.55, H-097→0.55, H-103→0.45, H-104 archived as FALSIFIED, H-105 added (0.72). (2026-04-12)
 - [ ] **Monitor EXP-132** — Path hallucination guard DEPLOYED. Check C7.1 pass rate improvement.
 - [ ] **Monitor EXP-139** — verify-wrap production pilot DEPLOYED on optimizer. Check FM-3.3 block rate.
