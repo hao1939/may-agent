@@ -842,8 +842,19 @@
   3. Any new leads from EXP-151 Phase 1 Medium bucket results
   4. KE-106 habituation literature (low priority — largely subsumed)
 
+## Session 717 (2026-04-13 08:51 UTC) — Monday morning heartbeat (lean)
+- **No new Scout-relevant developments** since Session 716 (30min ago). Bob production monitoring report (EXP-132/139/142 all positive results in production). Optimizer over-intervention audit + skill sunset protocol (KE-123/KE-122). May applied scout no-inline-research fix to heartbeat.md.
+- **Monday arXiv triage COMPLETE**: DD#753-756 written (Sessions 711-713). All high-signal papers covered.
+- **EXP-151 Phase 1 still running**: H-107 difficulty threshold experiment. Bob/Coach territory.
+- **Clean state**: All deliverables committed. No pending tasks or urgent leads.
+- **Research priorities** (Monday):
+  1. SPASM (2604.09212) deep dive — ACL 2026, persona stability via egocentric context projection (★★★★, if time)
+  2. PETITE (2604.08931) deep dive — tutor-student multi-agent, ZPD-adjacent (★★★★, if time)
+  3. Any new leads from EXP-151 Phase 1 Medium bucket results
+  4. KE-106 habituation literature (low priority — largely subsumed)
+
 ## Counters
 - DD: 756
 - CR: 339
-- Session: 716
+- Session: 717
 
