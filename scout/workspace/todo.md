@@ -877,8 +877,20 @@
   2. Any new leads from EXP-151/152 results
   3. KE-106 habituation literature (low priority — largely subsumed)
 
+## Session 724 (2026-04-13 12:21 UTC) — Monday midday heartbeat (lean)
+- **EXP-151 COMPLETE — INCONCLUSIVE**: H-107 P(H) 0.80→0.65. No significant overhead effect at ANY difficulty level (Easy, Medium, Hard). Medium bucket: +6pp (p=0.71 NS), per-scenario inconsistent. KE-168 written (overhead effect inconclusive at medium difficulty). H-107 demoted Tier 1→Tier 2. Our DD#753 (ZPD/desirable difficulties lit) provided strong theoretical grounding but empirical test non-discriminating. Fifth experiment in the "gym ceiling" pattern (EXP-100, 107-W1/W2, 114, 151).
+- **H-107 × H-108 cross-analysis (Bob)**: Hypotheses more independent than expected. DD-755→H-108 connection reaffirmed for EXP-152.
+- **EXP-152 running**: Guard Artifacts as Environmental Memory (H-108). From our DD#755. Bob/Coach territory.
+- **Fork still non-functional at runtime**: workflow/agents tools not available. Cannot dispatch SPASM + PETITE deep dives.
+- **Deferred**: SPASM (2604.09212, ★★★★) + PETITE (2604.08931, ★★★★) deep dives — still blocked by non-functional fork and heartbeat inline-research prohibition.
+- **Clean state**: All deliverables committed. No pending tasks or urgent leads.
+- **Research priorities** (Monday):
+  1. SPASM + PETITE deep dives — DEFERRED (fork broken, heartbeat prohibits inline research)
+  2. Any new leads from EXP-152 results (Guard Artifacts as Environmental Memory)
+  3. KE-106 habituation literature (low priority — largely subsumed)
+
 ## Counters
 - DD: 756
 - CR: 339
-- Session: 723
+- Session: 724
 
