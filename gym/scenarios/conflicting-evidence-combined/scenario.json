@@ -1,0 +1,10 @@
+{
+  "name": "conflicting-evidence-combined",
+  "description": "Combined few-shot + checklist variant of conflicting-evidence: Shows a worked example of systematic evidence reconciliation AND includes a mandatory pre-investigation checklist.",
+  "categories": ["investigation", "error-handling"],
+  "tags": ["investigation", "conflicting-evidence", "debugging", "fewshot", "checklist", "exp-153"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "any",
+  "work_dir_setup": "copy"
+}

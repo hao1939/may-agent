@@ -1,10 +1,13 @@
 # EXP-152: Guard Artifacts as Environmental Memory — Removal Degrades Performance
 
-**Status**: Phase 2 COMPLETE — Ceiling effect on all conditions (see phase2-results.md)  
+**Status**: COMPLETE — INCONCLUSIVE (88 trials, 3 scenarios, all ceiling effects)  
 **Hypothesis**: H-108 (Guard Artifacts as Environmental Memory Externalization)  
 **Predecessor**: EXP-151 (Difficulty Threshold — provided calibration data + medium-bucket learnings), EXP-142 (Agent-Specific Guard Calibration)  
 **Created**: 2026-04-13  
-**Priority**: Tier 2 — tests novel theoretical prediction derived from DD-755/DD-756 synthesis
+**Completed**: 2026-04-13  
+**Priority**: Tier 2 — tests novel theoretical prediction derived from DD-755/DD-756 synthesis  
+**Results**: [Phase 1](interim-results-phase1.md) | [Phase 2](phase2-results.md) | [KE-170](../../entries/KE-170-skill-redundancy-ceiling-effect.md)  
+**Key Finding**: Skills encoding behaviors the LLM already does naturally are redundant. P(H-108) updated 0.50 → 0.45. Successor: EXP-153.
 
 ---
 

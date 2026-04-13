@@ -1,7 +1,7 @@
 # EXP-152: Phase 1 Results — Guard Artifact Removal (kb-discovery-baseline-126)
 
 **Date**: 2026-04-13  
-**Status**: Phase 1 — kb-discovery-baseline-126 complete (n≥10), behavior-escalation-stubborn complete (ceiling, uninformative)  
+**Status**: Phase 1 COMPLETE — see also [Phase 2 results](phase2-results.md) and [KE-170](../../entries/KE-170-skill-redundancy-ceiling-effect.md)  
 **Sessions**: s_1776082951343_184, s_1776084697508_193, s_1776088386052_220, s_1776091980771_244
 
 ---

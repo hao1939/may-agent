@@ -2,7 +2,7 @@
   "name": "contradictory-requirements-combined",
   "description": "Combined few-shot + checklist variant: Shows a worked example of correct reasoning AND includes a mandatory pre-work checklist with binary gates before coding.",
   "categories": ["judgment"],
-  "tags": ["behavior", "contradiction", "fewshot", "checklist", "exp-086"],
+  "tags": ["behavior", "contradiction", "fewshot", "checklist", "exp-086", "exp-153"],
   "tier": "standard",
   "timeout": 5,
   "agent_type": "coder",

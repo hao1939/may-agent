@@ -96,7 +96,7 @@
 - **Tool quality**: Waste rate 3.6% (stable). All regressions are bob INDEX.md noise.
 - **LLM evaluations**: All heuristic-only. By design if JS evaluator sufficient.
 - **Dead workflows**: may/coach ~367 lines never-used code. Low-priority cleanup.
-- **Workflow adoption**: System-wide **surged to 27.1%** (Apr 12, up from 15.0% Apr 11 and 8.5% Apr 10). Bob at **67.8%** (up from 48.7%). Optimizer at **66.1%** (up from 27.5%). Coder at 50%. 7 other agents still at 0%.
+- **Workflow adoption**: **Collapsed to 0.8%** (Apr 13 PM, down from 27.1% Apr 12 peak). Zero WF-tagged sessions across six consecutive 12h windows. Bob shifted to experiment-driven (EXP-152) and research-thread patterns. Work is still structured, just not tagged. Recommend retiring WF tag tracking as a health metric. Finding: `workspace/finding-workflow-adoption-trend-0413b.md`
 - **Workflow efficiency**: D-o-R runs cost +53% more ops than non-WF equivalents. Phase 1 unbounded reading is root cause. Error rates ~50% lower. Quality scores INCOMPARABLE (0-1 vs 0-5 scales — data infra bug).
 - **Optimizer heartbeat cost**: Was 56 ops avg. Fix deployed (Dispatcher Mode heartbeat). Measuring.
 - **Bob P1 read-loop**: ~~87 ops in Phase 1 of D-o-R for a KB integration task.~~ **FIX DEPLOYED (commit 40b22057)**: 15-op budget cap prompt. **MEASURED (Apr 12)**: P1 avg 31.9→9.4 ops (71% reduction), median 30→3 (90% reduction). Compliant sessions (90.5%) avg 3.6 ops. Full D-o-R run cost 45.4→25.8 (43% reduction). 4 P1 violations (9.5%) all from batch/KB tasks misrouted through D-o-R. **New anti-pattern**: parallel-research synthesis spikes (67.2 ops/run avg). Finding: `workspace/finding-dor-budget-cap-impact-0412.md`
