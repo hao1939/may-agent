@@ -280,6 +280,23 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 ### 0u. EXP-148: Re-analysis of EXP-145 for H-102 [COMPLETE ✅]
 - **Results**: `agents/shared/knowledge/experiments/EXP-148/results.md`
 
+### 0v. EXP-154: Process Skill Effectiveness — Investigation Before Fix [COMPLETE ✅ — NOT SUPPORTED]
+- **Design**: `agents/shared/knowledge/experiments/EXP-154/design.md`
+- **Results**: `agents/shared/knowledge/experiments/EXP-154/results.md`
+- **Knowledge**: KE-176 (selective skill compliance)
+- **Goal**: Test whether "investigation-before-fix" process skill improves process checks on exp144-hidden-dep-decoupled
+- **Result**: 10% treatment vs 15% baseline (−5pp, NS) — skill failed overall
+- **Key finding**: **Selective compliance** — agents cherry-pick skill instructions by deviation cost. Additive steps (verify-after-fix) show 100% compliance; interruptive steps (write-FINDINGS.md-before-fix) show 10% compliance. This refines KE-021: Additive Process > Interruptive Process ≈ Judgment.
+- **Implication**: Interruptive process steps need Ch2 workflow gates, same as judgment skills → EXP-155
+
+### 0w. EXP-155: Ch2 Hard Gate vs Selective Compliance [DESIGNED — NOT YET RUN]
+- **Design**: `agents/shared/knowledge/experiments/EXP-155/design.md`
+- **Goal**: Test whether Ch2 forced externalization gate overcomes selective compliance where Ch1 skill failed
+- **Scenario**: New variant `exp155-hidden-dep-hard-gate` (hardened Phase 1 requiring FINDINGS.md with enumerated bugs)
+- **Comparison**: 3-way — baseline (15%, N=20) vs Ch1 skill (10%, N=10, EXP-154) vs Ch2 gate (N=10, new)
+- **Predictions**: Overall ≥45%, P1 (artifact exists) ≥80%, P2+P3 (bug ID) ≥50%
+- **Tests**: P-176b (interruptive step via gate ≥80%) and KE-129 extension to process tasks
+
 ### 6. Next Frontier: Harder Gym Scenarios [CEILING — NEED HARDER SCENARIOS]
 - **Why**: All 26 single-session + 7 multi-session scenarios at ceiling. Gym can't drive further skill improvement.
 - **New scenarios created (2026-04-10)**:
