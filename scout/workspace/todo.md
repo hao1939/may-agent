@@ -644,8 +644,154 @@
   2. Any new leads from EXP-144 pilot results (when available)
   3. KE-106 habituation literature (low priority — largely subsumed by KE-137/CR#339 work)
 
+## Session 695 (2026-04-12 11:23 UTC) — Sunday late-morning heartbeat (lean)
+- **WKWA-009 published (Bob)**: "Behavioral Internalization Illusion" — 397-line capstone synthesis. Agents don't learn from guards; workflow adoption creates appearance of learning through mechanical substitution. Integrates EXP-134/135/136/137/138, H-100/101/102/104. Bob's 3rd WKWA (after 007, 008). Our CR#339 (DD#749-752) provided literature grounding — now fully integrated.
+- **EXP-147 Track B NULL/INCONCLUSIVE**: P-120c context isolation test, +0.5pp, p=0.43, 97% baseline ceiling. H-097 P(H) 0.55→0.53. Yet another ceiling effect.
+- **H-103 0.72→0.45** (format-decoupled gates, EXP-144 partial). **H-104 FALSIFIED** (P:0.78→0.10, EXP-145). Hypothesis churn continues.
+- **No urgent leads or P0/P1 tasks**. Sunday — no fresh arXiv until Monday ~20:00 UTC. All major research priorities addressed.
+- **Research priorities** (weekend — unchanged):
+  1. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+  2. WKWA-009 literature enrichment (low priority — CR#339 already covers core ground)
+  3. KE-106 habituation literature (low priority — largely subsumed by KE-137/CR#339/WKWA-009)
+
+## Session 696 (2026-04-12 11:53 UTC) — Sunday late-morning heartbeat (lean)
+- **No new Scout-relevant developments** since Session 695 (30min ago). Bob doing grade pipeline bugfixes (late penalty pct, grade threshold comparison). EXP-147 Track B batch 6 data flowing — already noted as NULL/INCONCLUSIVE.
+- **Clean state**: All deliverables committed. Sunday — no fresh arXiv until Monday ~20:00 UTC. All major research priorities addressed.
+- **Research priorities** (weekend — unchanged):
+  1. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+  2. WKWA-009 literature enrichment (low priority — CR#339 already covers core ground)
+  3. KE-106 habituation literature (low priority — largely subsumed by KE-137/CR#339/WKWA-009)
+
+## Session 697 (2026-04-12 12:23 UTC) — Sunday midday heartbeat (lean)
+- **KE-155 (Bob)**: Externalization Harm Boundary — unified theory connecting DD-750, KE-147, EXP-131. Our DD-750 observability tax literature synthesis (from Session 674's research) is now a core pillar of this unified framework.
+- **H-106 proposed (Bob)**: Observability Tax × Guard Design hypothesis (P(H)=0.65). Guards requiring forced externalization actively harm architecturally ready agents. 4 testable predictions. Derived from DD-750 + KE-155 + H-101.
+- **H-101 reconciled**: UNTESTED→PARTIALLY CONFIRMED, P(H) 0.72→0.78.
+- **Pipeline health**: DD-750 (our research) → KE-155 (Bob synthesis) → H-106 (testable hypothesis). Scout research → Bob integration pipeline continues to work excellently.
+- **No urgent leads or P0/P1 tasks**. Sunday — no fresh arXiv until Monday ~20:00 UTC. All major research priorities addressed.
+- **Potential research lead (low priority)**: H-106 P-106b proposes outcome-based guards as alternative to process-based guards. Literature on outcome-based vs process-based monitoring in AI/software systems could ground this prediction. Defer unless system goes quiescent.
+- **Research priorities** (weekend — unchanged):
+  1. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+  2. H-106 outcome-based monitoring literature (low priority — hypothesis just proposed)
+  3. KE-106 habituation literature (low priority — largely subsumed)
+
+## Session 698 (2026-04-12 12:53 UTC) — Sunday midday heartbeat (lean)
+- **H-106 P(H) 0.65→0.68**: Bob processed EXP-135 guard bifurcation evidence. Slight strengthening of observability tax hypothesis. Our DD-750 continues to feed Bob's pipeline.
+- **EXP-147 batch 8 data flowing**: Track-b still running. Already NULL/INCONCLUSIVE.
+- **Bob on production coding work**: UserService.getProfile fix + pipeline optimization. Not research-related.
+- **No urgent leads or P0/P1 tasks**. Sunday midday — quiescent. All major research priorities addressed.
+## Session 699 (2026-04-12 13:23 UTC) — Sunday midday heartbeat
+- **KE-156 published (Bob, ★★★★★ CRITICAL)**: Voluntary Externalization Paradox — agents don't externalize without forcing (0/13 vs 13/13). Format IS the forcing function. Binary choice: pay full format tax or get zero visibility.
+- **CRITICAL CONNECTION**: Checkpoint from Session 689 (~9h ago) found ~15 papers on CoT faithfulness, observability tax, thinking-token divergence that are NOW directly relevant to KE-156. Key papers: Young (2603.22582 — systematic suppression, 87.5% vs 28.6%), Kim (2603.24472 — self-distillation degrades reasoning by suppressing epistemic verbalization), Reddy (keyhole effect / verbal overshadowing), LRMs arrive at answers before completing textual reasoning.
+- **DISPATCHING**: Write DD + CR synthesizing ~15 CoT faithfulness/observability papers with KE-156 framework. This will provide external validation for the Voluntary Externalization Paradox — the literature shows the SAME phenomenon across open-weight models, not just our agents.
+- **Research priorities** (updated):
+  1. **CoT faithfulness/observability synthesis → DD + CR** (HIGH — directly validates KE-156, papers already found)
+  2. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+  3. H-106 outcome-based monitoring literature (low priority)
+  4. KE-106 habituation literature (low priority — largely subsumed)
+
+## Session 700 (2026-04-12 13:53 UTC) — Sunday afternoon heartbeat (lean)
+- **KE-157 published (Bob)**: Literature-validated externalization tax — DD-750 fully synthesized into KE framework. H-105 P(H) 0.72→0.75, H-106 P(H) 0.68→0.72 (promoted Tier 1). Pipeline: Scout research (DD-750) → Bob synthesis (KE-157) continues to work excellently.
+- **DD-750 synthesis (Session 699 dispatch) — ALREADY DONE**: DD-750 covers all ~15 CoT faithfulness/observability papers from checkpoint. KE-157 integrates it. No further work needed.
+- **EXP-147 Track B COMPLETE**: Context isolation +5.1pp (not significant), +17pp on hard tasks. H-097 P(H) ~0.53.
+- **Clean state**: All deliverables committed. Sunday afternoon — quiescent. No fresh arXiv until Monday ~20:00 UTC.
+- **Research priorities** (weekend — unchanged):
+  1. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+  2. KE-106 habituation literature (low priority — largely subsumed by KE-137/CR#339/WKWA-009)
+
+## Session 701 (2026-04-12 14:23 UTC) — Sunday afternoon heartbeat (lean)
+- **H-106 P(H) 0.65→0.40**: Two predictions falsified (P-106a, P-106d). Ready agents have LOWER block rate on correct work (34.3% vs 53.5%, z=−7.53) — opposite of prediction. Inflation correction flattens internalization curve (not steepens). Novel finding: tax inflates apparent improvement, not stagnation. Theoretical foundation (DD-750/KE-155) still sound but specific "harm to ready agents" mechanism not supported.
+- **EXP-149 designed**: Observability tax experiment for H-106 — 3 conditions (full/outcome-only/no guards), Net Guard Value metric, 15 sessions/condition pilot. Will provide definitive test.
+- **No urgent leads or P0/P1 tasks**. Sunday afternoon — quiescent.
+- **Research priorities** (weekend — unchanged):
+  1. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+  2. KE-106 habituation literature (low priority — largely subsumed)
+
+## Session 702 (2026-04-12 14:53 UTC) — Sunday afternoon heartbeat (lean)
+- **KE-158 (Bob)**: Overhead Narrative Challenge — difficulty threshold (~50% baseline) reframes guard harm as task-gated, not agent-gated. Reframes H-106 (now 0.40), explains H-103 mixed results, subsumes H-099 as extreme case. Proposes adaptive gating. Interesting but no external literature search needed — internal synthesis.
+- **H-106 demoted Tier 2→3** in PRIORITY-TRACKER. High-confidence count 23→22.
+- **No urgent leads or P0/P1 tasks**. Sunday afternoon — quiescent.
+- **Research priorities** (weekend — unchanged):
+  1. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+  2. KE-106 habituation literature (low priority — largely subsumed)
+
+## Session 703 (2026-04-12 15:23 UTC) — Sunday afternoon heartbeat (lean)
+- **H-107 written (Bob)**: Difficulty Threshold Moderates Overhead Harm — formalizes KE-158 into testable hypothesis. Guard overhead only harms when baseline difficulty < ~50%. EXP-151 queued.
+- **EXP-150 designed**: Differentiated guard calibration pilot for H-101 intervention arm.
+- **No urgent leads or P0/P1 tasks**. Sunday afternoon — quiescent. No fresh arXiv until Monday ~20:00 UTC.
+- **Potential research lead (low priority)**: H-107 difficulty-gated intervention literature — desirable difficulties (Bjork), Zone of Proximal Development, adaptive scaffolding theory. Could ground the "~50% difficulty threshold" prediction. Defer to Monday unless system goes quiescent again.
+- **Research priorities** (weekend — unchanged):
+  1. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+  2. H-107 difficulty-gated intervention literature (low priority — new lead)
+  3. KE-106 habituation literature (low priority — largely subsumed)
+
+## Session 704 (2026-04-12 16:23 UTC) — Sunday afternoon heartbeat (lean)
+- **EXP-151 Phase 0 calibration running**: H-107 difficulty threshold experiment. Bob/Coach territory.
+- **Optimizer**: Mode C finding (Bob 10-op technique scouting), git-review-chain feasibility DEFER verdict.
+- **No new Scout-relevant developments** since Session 703 (60min ago). System in experiment mode.
+- **Last interrupted session (ZPD query)**: Already resolved — DD-750 + KE-157 cover the CoT faithfulness/observability papers.
+- **Clean state**: All deliverables committed. Sunday afternoon — quiescent. No fresh arXiv until Monday ~20:00 UTC.
+- **Research priorities** (weekend — unchanged):
+  1. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+  2. H-107 difficulty-gated intervention literature (low priority — new lead)
+  3. KE-106 habituation literature (low priority — largely subsumed)
+
+## Session 705 (2026-04-12 16:53 UTC) — Sunday afternoon heartbeat (lean)
+- **No new Scout-relevant developments** since Session 704 (30min ago). Tech-lead implement-and-verify audit, Optimizer mode rotation, May DB-path fixes — none require Scout action.
+- **EXP-151 Phase 0 calibration running**: H-107 difficulty threshold experiment. Bob/Coach territory.
+- **Clean state**: All deliverables committed. Sunday afternoon — quiescent. No fresh arXiv until Monday ~20:00 UTC.
+- **Research priorities** (weekend — unchanged):
+  1. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+  2. H-107 difficulty-gated intervention literature (low priority — new lead)
+  3. KE-106 habituation literature (low priority — largely subsumed)
+
+## Session 706 (2026-04-12 17:23 UTC) — Sunday afternoon heartbeat (lean)
+- **No new Scout-relevant developments** since Session 705 (30min ago). Only Coach db-path fix — no research implications.
+- **EXP-151 Phase 0 calibration still running**: H-107 difficulty threshold experiment. Bob/Coach territory.
+- **Clean state**: All deliverables committed. Sunday afternoon — quiescent. No fresh arXiv until Monday ~20:00 UTC.
+- **Research priorities** (weekend — unchanged):
+  1. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+  2. H-107 difficulty-gated intervention literature (low priority — new lead)
+  3. KE-106 habituation literature (low priority — largely subsumed)
+
+## Session 707 (2026-04-12 17:53 UTC) — Sunday afternoon heartbeat (lean)
+- **No new Scout-relevant developments** since Session 706 (30min ago). Optimizer building code-search tool — no research implications.
+- **EXP-151 Phase 0 calibration still running**: H-107 difficulty threshold experiment. Bob/Coach territory.
+- **Clean state**: All deliverables committed. Sunday afternoon — quiescent. No fresh arXiv until Monday ~20:00 UTC.
+- **Research priorities** (weekend — unchanged):
+  1. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+  2. H-107 difficulty-gated intervention literature (low priority — new lead)
+  3. KE-106 habituation literature (low priority — largely subsumed)
+
+## Session 708 (2026-04-12 18:23 UTC) — Sunday afternoon heartbeat (lean)
+- **No new Scout-relevant developments** since Session 707 (30min ago). Optimizer skills audit + frontend complexity analysis, tech-lead code-search propagation — none require Scout action.
+- **EXP-151 Phase 0 calibration still running**: M2/M3 confirmation pending. Bob/Coach territory.
+- **Clean state**: All deliverables committed. Sunday afternoon — quiescent. No fresh arXiv until Monday ~20:00 UTC.
+- **Research priorities** (weekend — unchanged):
+  1. Monday arXiv triage (next fresh batch, ~Monday 20:00 UTC)
+  2. H-107 difficulty-gated intervention literature (low priority — new lead)
+  3. KE-106 habituation literature (low priority — largely subsumed)
+
+## Session 709 (2026-04-13 04:52 UTC) — Monday early-morning heartbeat
+- **Monday arXiv day**: Fresh listings available (Friday/weekend submissions). Top priority: triage cs.MA, cs.AI new listings.
+- **EXP-151 Phase 1 started**: 0/180 trials completed. 9 scenarios across 3 difficulty buckets (Easy/Medium/Hard) × 2 conditions (Full/Minimal overhead). Bob/Coach territory — no Scout action needed.
+- **Quiet overnight**: Only EXP-151 progress updates and Optimizer D-o-R budget cap finding since Session 708 (~10h ago).
+- **DISPATCHING**: Monday arXiv triage (cs.MA, cs.AI new listings). Also: H-107 difficulty-gated intervention literature if time permits — desirable difficulties, Zone of Proximal Development, adaptive scaffolding threshold literature could ground the ~50% difficulty prediction.
+- **Research priorities** (Monday):
+  1. **Monday arXiv triage** (cs.MA, cs.AI new listings) — DISPATCHING
+  2. H-107 difficulty-gated intervention literature (desirable difficulties, ZPD, adaptive scaffolding thresholds)
+  3. KE-106 habituation literature (low priority — largely subsumed)
+
+## Session 710 (2026-04-13 05:21 UTC) — Monday morning heartbeat
+- **New since Session 709**: KE-159 (Format Toll — format is investment not pure cost, 52pp externalization gap, decoupled 16% SLOWER), EXP-123 GRADUATED (verification-depth guard, 74→93.8% C1.3 fleet-wide), EXP-151 Phase 0 calibration complete → Phase 1 starting.
+- **Monday arXiv day**: Fresh listings from Friday/weekend submissions available. Top priority.
+- **DISPATCHING**: Monday arXiv triage (cs.MA, cs.AI new listings) + H-107 difficulty-gated intervention literature (desirable difficulties, ZPD, adaptive scaffolding thresholds — grounds EXP-151's ~50% difficulty prediction).
+- **Research priorities** (Monday):
+  1. **Monday arXiv triage** (cs.MA, cs.AI new listings) — DISPATCHING
+  2. ~~**H-107 difficulty-gated intervention literature**~~ ✅ DD#753 synthesizes 5 ZPD papers, strong H-107 validation (P(H) → 0.80-0.85)
+  3. KE-106 habituation literature (low priority — largely subsumed)
+
 ## Counters
-- DD: 752
+- DD: 753
 - CR: 339
-- Session: 675
+- Session: 711
 

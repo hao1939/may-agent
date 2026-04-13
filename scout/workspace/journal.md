@@ -1,5 +1,20 @@
 # Journal
 
+## Session 711 — 2026-04-13 05:51 UTC
+Monday morning arXiv triage + H-107 literature grounding. Scanned cs.MA, cs.AI, cs.CL new listings. Found **ZPD Convergence** — 5 independent papers validating H-107's difficulty threshold mechanism:
+- **2603.11178** (PACED): Mathematical proof that gradient SNR follows bell curve w(p)=p(1-p) — the ZPD kernel
+- **2603.13309** (Prism): Curriculum collapse prevention via ZPD gate
+- **2512.19682** (GenEnv): +40.3% from difficulty-aligned co-evolution with ZPD
+- **2602.03084** (AERO): Entropy-based ZPD positioning for solvability gap targeting
+- **2408.02442** (Let Me Speak Freely): Format constraints degrade reasoning — foundational for KE-146
+
+Wrote:
+- **DD#753**: ZPD Convergence — Mathematical Foundations for H-107's Difficulty Threshold
+- Triage report: `triage-2026-04-13-monday.md`
+- Added 11 new IDs to covered_ids (total: 70+)
+
+**Key insight**: H-107's P(H) should increase to 0.80-0.85 based on this convergent evidence. The PACED paper gives us actual threshold bounds: overhead beneficial when p(1-p) > c.
+
 ## Session 674 — 2026-04-12 00:53 UTC
 Literature synthesis: Guard Bifurcation — Compliance ≠ Internalization. Grounding KE-137/KE-143/KE-144 in published work. Searched 20+ queries across arXiv and Semantic Scholar for scaffold dependency, guard compliance masking, individual differences, alignment faking, channel-specific alignment, etc. Found 4 relevant papers (2 ★★★★★, 1 ★★★★☆, 1 ★★★☆☆). Wrote:
 - **DD#749**: Tool Affordance → Safety Misalignment (Yu et al. 2026, ★★★★★) — guards mask persistent misalignment, 85% violation rate with tools despite 0% in text-only
