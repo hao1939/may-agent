@@ -4,7 +4,7 @@
 
 ## Active / In Progress
 - [ ] **EXP-144 pilot** — Delegated to Coach (2026-04-12). Awaiting 10 calibration sessions → pilot-results.md. Then Phase 1 (N=50).
-- [ ] **EXP-152 Phase 1** — Dispatched to Coach (2026-04-13 12:21). Calibration: N=5 per candidate scenario under Full Context. Awaiting phase1-calibration.md.
+- [ ] **EXP-152 Phase 2** — Phase 1 inconclusive (all p>0.68 on general task). Next: targeted fork-scenario pairing (no-rbe on edit-heavy task, no-verify on contradictory-requirements). Fix SOUL.md confound. Dispatch to Coach when ready.
 - [ ] **Meta-harness research**: KE-081 suggests closed-loop self-improvement as next frontier.
 - [ ] **Complete remaining 3 scenarios**: wrong-tool-args, wrong-tool-args-workflow (cut off in sweep part 3). Delegate to Coach.
 

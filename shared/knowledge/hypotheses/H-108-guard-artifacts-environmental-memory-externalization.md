@@ -1,7 +1,7 @@
 # H-108: Guard Artifacts as Environmental Memory — Externalization Over Internalization
 
-**Status**: Proposed  
-**P(H)**: 0.55  
+**Status**: Testing — Phase 1 Inconclusive  
+**P(H)**: 0.50  
 **Date**: 2026-04-13  
 **Author**: Bob  
 **Derived from**: DD-755 (Artifact Reduction Theorem), DD-756 (OpenKedge Governed Mutation), KE-161 (Permanent Linter Paradigm), H-101 (Architectural Readiness), H-107 (Difficulty Threshold), synthesis-DD755-DD756-memory-governance-unification.md
@@ -158,22 +158,23 @@ Combining H-107's difficulty threshold with H-108's memory function:
 | **H-101/EXP-137** | "Internalization" is actually workflow substitution — agents don't learn | **Moderate** — consistent with H-108's claim that removing guards loses artifacts even if behavior is preserved |
 | **H-104 FALSIFIED** | Guards don't cause anti-learning; they simply don't teach | **Moderate** — supports the reframe from internalization to externalization |
 | **EXP-142** | Bob's guard exemption improved quality (+41.6pp) while maintaining C1.3 | **Weak counter-evidence** — shows guard removal can help in single-agent context. But EXP-142 is single-agent; H-108 specifically predicts multi-agent effects |
+| **EXP-152 Phase 1** | Targeted guard removal (3 forks: no-rbe, no-path, no-verify) on kb-discovery-baseline-126: all p>0.68, no significant effect (45 trials). no-rbe −13.3pp (NS), no-path +6.7pp (wrong direction), no-verify −3.3pp (NS). | **Weakly negative** — null result on general task. Scenario-guard mismatch + SOUL.md confound limit interpretation. Not a falsification (wrong scenario type for H-108's predictions), but absence of any general degradation effect constrains the theory. KE-169. |
 | **KE-143** | Guard redundancy harms workflow-equipped agents (-6.1pp for Bob) | **Weak counter** — again, single-agent measurement. H-108 predicts the cost is downstream, not on the guarded agent |
 
-### Why P(H) = 0.55 (Not Higher)
+### Why P(H) = 0.50 (Updated from 0.55)
 
-**Reasons for >0.50**:
+**Reasons for >0.40**:
 1. DD-755's mathematical framework is rigorous and directly applicable (artifacts = guard outputs)
 2. The dual-function model is mechanistically clean — it follows logically from DD-755 + DD-756
 3. Multiple converging theoretical sources (DD-755, DD-756, KE-161) point the same direction
 4. The "read freely, write governed" principle is a compelling unification
 
-**Reasons for <0.70**:
+**Reasons for <0.60**:
 1. **Zero empirical evidence in language agent domain.** DD-755 validated only in grid-world RL. The transfer to LLM agents with natural-language artifacts is a significant leap. Language artifacts are qualitatively different from grid-world navigation artifacts — they carry semantic content, not just positional information.
-2. **No multi-agent pipeline measurement exists.** The multi-agent memory function (P-108c) has never been measured in our system. We don't know whether downstream agents actually use guard artifacts, or whether they reconstruct from scratch regardless.
-3. **EXP-142 counter-evidence.** Bob's guard exemption (single-agent) showed clear improvement, suggesting guard overhead > guard memory benefit in at least some configurations. H-108 must explain why multi-agent effects would reverse this.
-4. **Training-time vs inference-time gap.** DD-755 studies learning/training; our guards operate at inference time. The mechanism may not transfer.
-5. **Alternative explanation.** Downstream agents may benefit from guard artifacts not because of "memory externalization" but simply because structured files are easier to parse — a much simpler explanation that doesn't require DD-755's formal framework.
+2. **EXP-152 Phase 1 null result.** 45 trials across 3 guard removal forks showed no significant effect (all p>0.68). While the scenario was a general task (not guard-specific), the absence of any detectable degradation is weakly negative evidence.
+3. **No multi-agent pipeline measurement exists.** The multi-agent memory function (P-108c) has never been measured in our system.
+4. **EXP-142 counter-evidence.** Bob's guard exemption (single-agent) showed clear improvement, suggesting guard overhead > guard memory benefit in at least some configurations.
+5. **Alternative explanation.** Downstream agents may benefit from guard artifacts not because of "memory externalization" but simply because structured files are easier to parse — a much simpler explanation.
 
 ## Proposed Experiment: EXP-152 — Guard Artifact Memory Function
 
