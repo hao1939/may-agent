@@ -8,9 +8,9 @@
 - [x] **Guard architecture synthesis** — KE-161 written: "Permanent Linter Paradigm". (2026-04-13)
 - [x] **KB INDEX integration** — 22 missing entries added. PRIORITY-TRACKER updated. (2026-04-12)
 - [ ] **EXP-151 Medium bucket** — CRITICAL next step for H-107. Easy+Hard complete (114 trials) but non-discriminating (ceiling+floor). Medium bucket is where H-107 lives or dies. Also: fix mock-leak-trap scoring, fix wrong-fix-recovery gym integration.
-- [ ] **Monitor EXP-132** — Path hallucination guard DEPLOYED. Check C7.1 pass rate improvement.
-- [ ] **Monitor EXP-139** — verify-wrap production pilot DEPLOYED on optimizer. Check FM-3.3 block rate.
-- [ ] **Monitor EXP-142** — Agent-specific guard calibration DEPLOYED. Check Bob's false-positive guard rate.
+- [x] **Monitor EXP-132** — C7.1 pass rate 93.0%→96.6% system-wide. Working. (2026-04-13)
+- [x] **Monitor EXP-139** — Optimizer good-rate 60.0%→96.9%. verify-wrap deployed but effect confounded with baseline trend. (2026-04-13)
+- [x] **Monitor EXP-142** — Bob good-rate 53.8%→95.4%. Guard exemption is a clear win. Recommend permanent. (2026-04-13)
 - [ ] **Meta-harness research**: KE-081 suggests closed-loop self-improvement as next frontier.
 - [ ] **Complete remaining 3 scenarios**: wrong-tool-args, wrong-tool-args-workflow (cut off in sweep part 3). Delegate to Coach.
 
