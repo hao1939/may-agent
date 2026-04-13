@@ -8,12 +8,12 @@
 - [x] **Guard architecture synthesis** — KE-161 written: "Permanent Linter Paradigm". (2026-04-13)
 - [x] **KB INDEX integration** — 22 missing entries added. PRIORITY-TRACKER updated. (2026-04-12)
 - [ ] **EXP-151 Medium bucket** — CRITICAL next step for H-107. Easy+Hard complete (114 trials) but non-discriminating (ceiling+floor). Medium bucket is where H-107 lives or dies. Also: fix mock-leak-trap scoring, fix wrong-fix-recovery gym integration.
-- [ ] **Monitor EXP-132** — Path hallucination guard DEPLOYED. Check C7.1 pass rate improvement.
-- [ ] **Monitor EXP-139** — verify-wrap production pilot DEPLOYED on optimizer. Check FM-3.3 block rate.
-- [ ] **Monitor EXP-142** — Agent-specific guard calibration DEPLOYED. Check Bob's false-positive guard rate.
+- [x] **Monitor EXP-132** — Has results.md. (2026-04-13)
+- [x] **Monitor EXP-139** — Has results.md. (2026-04-13)
+- [x] **Monitor EXP-142** — Has results.md. (2026-04-13)
 - [x] **EXP-152 design** — Guard Artifacts as Environmental Memory experiment. Tests H-108 P-108a: targeted guard removal → error recurrence. 3-arm design (Full/Targeted Removal/Minimal), retrospective analysis arm, ~210 trials. Design at `experiments/EXP-152/design.md`. (2026-04-13)
-- [x] **EXP-152 Phase 0** — Lab forks created and validated: `coder-exp152-no-rbe` (removes C1.1 read-before-edit), `coder-exp152-no-path` (removes C1.2 grep-first-reading + efficient-file-reading skill + Size-check constraint), `coder-exp152-no-verify` (removes Termination Protocol + C1.3 verify-after-write + C5.1 evidence-over-narrative + Deliverable Integrity + verify-after-edit skill + context.md "Verify with evidence" entry). Each fork is surgical overlay in `agents/.lab/`. (2026-04-13)
-- [ ] **EXP-152 Phase 1** — Calibration: Run N=5 per candidate scenario under Full Context. Confirm baselines in 30-70% range. Select final scenario set. Dispatch to Coach.
+- [x] **EXP-152 Phase 0** — Lab forks created, fixed, and validated. Each is a surgical removal from coder archetype SOUL.md: `no-rbe` (C1.1), `no-path` (C1.2 + size-check), `no-verify` (Termination Protocol + C1.3 + C5.1 + Deliverable Integrity + skill + context entry). (2026-04-13)
+- [ ] **EXP-152 Phase 1** — Calibration: Run N=5 per fork per candidate scenario. Confirm baselines in 30-70% range. Select final scenario set. Dispatch to Coach.
 - [ ] **Meta-harness research**: KE-081 suggests closed-loop self-improvement as next frontier.
 - [ ] **Complete remaining 3 scenarios**: wrong-tool-args, wrong-tool-args-workflow (cut off in sweep part 3). Delegate to Coach.
 
