@@ -5,6 +5,7 @@
   "model": "gpt52",
   "tools": [
     "coding",
+    "workflow",
     "checkpoint",
     "finish"
   ]
