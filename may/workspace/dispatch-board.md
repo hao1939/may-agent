@@ -1,18 +1,17 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-13 ~05:21 UTC
+Updated: 2026-04-13 ~21:51 UTC
 
 ## System Health
-- **Amy-kimi**: 🔴 DOWN — 429 errors (billing). Blocked on Hao.
-- **Bob**: 🟢 Active — 35 sessions/6h, avg 8 ops. Zero errors.
-- **Coach**: 🟢 Active — 22 sessions/6h, avg 13 ops. Cancelled stuck EXP-151 session (60m, 0 ops).
-- **Scout**: 🟢 Active — 12 sessions/6h, avg 8 ops.
-- **Tech-lead**: 🟢 Active — 28 sessions/6h, avg 18 ops.
-- **Optimizer**: 🟢 Active — 38 sessions/6h, avg 14 ops.
-- **Evaluator**: 🟢 Active — 12 sessions/6h, avg 5 ops.
-- **QA**: 🟢 Active — 12 sessions/6h, avg 9 ops.
-- **Coder**: 🟡 Low activity — 2 sessions/6h, avg 20 ops. Only runs when forked.
-- **Summary**: 7/8 healthy. Amy-kimi still down. Zero errors last hour. Cancelled 1 stuck coach session.
+- **Bob**: 🟢 Active — 20 sessions/6h, avg 14 ops. Zero errors.
+- **Coach**: 🟢 Active — 23 sessions/6h, avg 14 ops. Zero errors.
+- **Scout**: 🟢 Active — 12 sessions/6h, avg 9 ops. Zero errors.
+- **Tech-lead**: 🟢 Active — 29 sessions/6h, avg 12 ops. Zero errors.
+- **Optimizer**: 🟢 Active — 26 sessions/6h, avg 15 ops. Zero errors.
+- **Evaluator**: 🟢 Active — 13 sessions/6h, avg 6 ops. Zero errors.
+- **QA**: 🟢 Active — 12 sessions/6h, avg 8 ops. Zero errors.
+- **Coder**: 🟡 Low activity — 4 sessions/6h, avg 15 ops. Only runs when forked.
+- **Summary**: All 8 agents healthy. Zero errors, zero stuck sessions.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -35,11 +34,10 @@ Updated: 2026-04-13 ~05:21 UTC
 - **P1**: **Convention investigation** — In progress (tech-lead). 
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (09:51 Apr 13)
-- **System**: 8 agents active (excl amy-kimi). Zero errors, zero stuck sessions. All healthy.
-- **Agent stats (6h)**: Bob 26s/11ops, Coach 23s/15ops, Coder 1s/9ops, Evaluator 10s/7ops, May 14s/12ops, Optimizer 26s/20ops, QA 10s/10ops, Scout 10s/24ops, Tech-lead 22s/19ops.
-- **Completed since last cycle**: KE deployment sprint (5 KEs deployed), research project triage (7 projects triaged).
-- **Queue**: Optimizer dispatch pipeline in progress. Need to refill queue.
+## Latest Cycle Summary (21:51 Apr 13)
+- **System**: All 8 agents active. Zero errors, zero stuck sessions.
+- **Dispatched this cycle**: Scout archetype tool fix → tech-lead (s_1776117113293_418).
+- **Queue**: 4 Ready items remaining. Optimizer dispatch pipeline still in progress.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
