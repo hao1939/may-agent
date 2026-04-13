@@ -1,76 +1,96 @@
 # EXP-151 Phase 1: Trial Progress Tracker
 
 **Started**: 2026-04-12 18:25 UTC  
-**Target**: 180 trials (30 per cell × 6 cells)  
-**Method**: gym-batch.sh with --variants baseline,coder-minimal-exp096
+**Last Updated**: 2026-04-13 06:30 UTC  
+**Status**: Easy + Hard buckets COMPLETE. Medium bucket NOT STARTED.
 
 ---
 
-## Trial Matrix
+## Trial Matrix (Completed)
 
-| Cell | Bucket | Condition | Scenarios | Target N | Completed | Pass Rate |
-|------|--------|-----------|-----------|----------|-----------|-----------|
-| 1 | Easy | Full | E1,E2,E3 | 30 | 0 | — |
-| 2 | Easy | Minimal | E1,E2,E3 | 30 | 0 | — |
-| 3 | Medium | Full | M1,M2,M3 | 30 | 0 | — |
-| 4 | Medium | Minimal | M1,M2,M3 | 30 | 0 | — |
-| 5 | Hard | Full | H1,H2,H3 | 30 | 0 | — |
-| 6 | Hard | Minimal | H1,H2,H3 | 30 | 0 | — |
+| Cell | Bucket | Condition | Scenarios | Target N | Completed | Pass Rate | Notes |
+|------|--------|-----------|-----------|----------|-----------|-----------|-------|
+| 1 | Easy | Full | E1,E2 | 10+/bucket | 22 | 50% (11/22) | E3 broken |
+| 2 | Easy | Minimal | E1,E2 | 10+/bucket | 20 | 50% (10/20) | E3 broken |
+| 5 | Hard | Full | H1,H2,H3 | 3/scenario | 57 | 0% (0/57) | Floor |
+| 6 | Hard | Minimal | H1,H2,H3 | 3/scenario | 15 | 0% (0/15) | Floor |
 
-## Scenario Key
+## Per-Scenario Results
 
-| Code | Scenario | Bucket | Calibrated Rate |
-|------|----------|--------|-----------------|
-| E1 | mock-leak-trap | Easy | 100% (8/8) |
-| E2 | investigate-fix-pattern | Easy | 89% (8/9) |
-| E3 | wrong-fix-recovery | Easy | 78% (7/9) |
-| M1 | contradictory-requirements-ext-3unrelated | Medium | 50% (4/8) |
-| M2 | contradictory-requirements-ext-4gate | Medium | 67% (4/6) |
-| M3 | kb-integration-discovery-fewshot | Medium | 33% (2/6) |
-| H1 | contradictory-requirements | Hard | 0% (0/12) |
-| H2 | escalation-impossible-task | Hard | 0% (0/11) |
-| H3 | context-proof-build-xref | Hard | 0% (0/6) |
+| Scenario | Condition | Pass/N | Rate | Status |
+|----------|-----------|--------|------|--------|
+| **investigate-fix-pattern** | Full | 11/11 | 100% | Ceiling — no overhead effect |
+| **investigate-fix-pattern** | Minimal | 10/10 | 100% | Ceiling — no overhead effect |
+| **mock-leak-trap** | Full | 0/11 | 0% | ⚠️ See note below |
+| **mock-leak-trap** | Minimal | 0/10 | 0% | ⚠️ See note below |
+| **contradictory-requirements** | Full | 0/33 | 0% | Floor — as expected |
+| **contradictory-requirements** | Minimal | 0/9 | 0% | Floor — as expected |
+| **escalation-impossible-task** | Full | 0/14 | 0% | Floor — as expected |
+| **escalation-impossible-task** | Minimal | 0/3 | 0% | Floor — as expected |
+| **context-proof-build-xref** | Full | 0/10 | 0% | Floor — as expected |
+| **context-proof-build-xref** | Minimal | 0/3 | 0% | Floor — as expected |
 
-## Execution Plan
+## ⚠️ Critical Issues
 
-### Priority Order
-1. **Easy + Hard buckets first** — highest confidence calibration, most interpretable
-2. **Medium bucket later** — fragile calibration, may need adjustments
+### E1 (mock-leak-trap): Scoring Artifact
+All 21 runs PASS all product criteria (email-validation-fixed, valid-emails-work, invalid-emails-rejected, createuser-rejects-empty-email, tests-pass) but FAIL on a single behavior criterion: `identified-mock-problem`. The agent solves the functional task but doesn't explicitly articulate the mock identification in the way the scorer expects.
 
-### Batch Strategy
-- Use `gym-batch.sh` with `--variants baseline,coder-minimal-exp096`
-- Run 5 trials per scenario per condition initially (= 30 per bucket pair)
-- Check interim results before scaling to full N=30/cell
+**Impact**: mock-leak-trap is functionally a **behavior** test, not a product test. The 100% (8/8) calibration rate must have used different scoring or a different definition of "pass". With current gym scoring, this scenario is 0% for both conditions. This means:
+- The Easy bucket effectively has only 1 usable scenario (investigate-fix-pattern) at ceiling
+- mock-leak-trap data shows **no overhead effect** (0% = 0% for both conditions), but for a different reason than expected
 
-### Implementation Details
-- **Full overhead**: `--agent coder` (no --lab flag, baseline variant)
-- **Minimal overhead**: `--agent coder --lab coder-minimal-exp096`
-- All runs recorded to `gym_runs` table in may.db
-- lab_fork field distinguishes conditions: `NULL`/empty = Full, `coder-minimal-exp096` = Minimal
+### E3 (wrong-fix-recovery): Broken Gym Integration
+All gym-run.sh runs for this scenario complete in <2 seconds with `agent_status: "timeout"`. The agent session fails to start. The 78% (7/9) calibration data came from a non-gym source (results.jsonl). This scenario cannot be used until the infrastructure issue is fixed.
 
----
+### Investigation Needed
+- What changed in mock-leak-trap scoring since calibration?
+- Can wrong-fix-recovery gym integration be fixed?
+- Should the Easy bucket be supplemented with additional scenarios?
+
+## Hard Bucket: Confirmed Floor Effect
+All 72 Hard bucket runs (57 full + 15 minimal) show 0% pass rate across all conditions. This is consistent with calibration data and confirms P-107c prediction: overhead has no effect when tasks are at the capability floor.
 
 ## Batch Run Log
 
-### Batch 1: Easy Bucket (2026-04-12)
-- **Command**: `gym-batch.sh --scenario mock-leak-trap --scenario investigate-fix-pattern --scenario wrong-fix-recovery --agent coder --variants baseline,coder-minimal-exp096 --trials 5`
-- **Status**: PENDING
-- **Results**: TBD
+### Batch 1: Easy Bucket (2026-04-13 05:54-06:09)
+- **Batch ID**: batch_1776059668_3d77e319
+- **Command**: `gym-batch.sh --scenario mock-leak-trap --scenario investigate-fix-pattern --agent coder --variants baseline,coder-minimal-exp096 --trials 5`
+- **Results**: 20 runs. investigate-fix-pattern: 10/10 (100% both). mock-leak-trap: 0/10 (0% both, scoring artifact).
 
-### Batch 2: Hard Bucket (pending)
-- **Status**: NOT STARTED
+### Batch 2: Hard Bucket — Prior Sessions (2026-04-13 05:05-05:41)
+- From interrupted Phase 1a sessions
+- contradictory-requirements: 3 full + 3 minimal (all 0)
+- escalation-impossible-task: 3 full + 1 minimal (all 0)
+- context-proof-build-xref: 2 full (all 0)
+
+### Batch 3: Hard Gap Fill — escalation-impossible-task (2026-04-13 06:12-06:17)
+- **Batch ID**: batch_1776060720_58d5ce9f
+- escalation-impossible-task: 2 minimal (all 0)
+
+### Batch 4: Hard Gap Fill — context-proof-build-xref (2026-04-13 06:17-06:31)
+- **Batch ID**: batch_1776061039_b4aac5bc
+- context-proof-build-xref: 3 full + 3 minimal (all 0)
 
 ---
 
-## Interim Analysis Checkpoints
+## Preliminary Analysis (Easy + Hard only)
 
-After each 30 trials (per bucket pair), check:
-1. Are Easy baseline rates matching calibration (>70%)?
-2. Are Easy minimal rates also high? (If minimal is already high, overhead effect on Easy may be null)
-3. Are Hard rates still at floor? (Expected: both conditions ~0%)
-4. Any anomalies requiring investigation?
+### P-107a (Overhead helps easy tasks): INDETERMINATE
+- investigate-fix-pattern: 100% full vs 100% minimal → ceiling, no effect detectable
+- mock-leak-trap: 0% full vs 0% minimal → scoring artifact, no effect detectable
+- **Verdict**: Cannot test P-107a with current Easy bucket — ceiling/floor effects mask any overhead impact
 
-## Notes
-- The `coder-minimal-exp096` lab fork was created for EXP-096; reused here as the "minimal overhead" condition
-- It has a stripped SOUL.md (~12 lines) with no skills, no guards, no workflow requirements
-- The base `coder` agent has full SOUL.md (~42 lines) with 7 skills, constraints, and methodology sections
+### P-107c (Overhead neutral on hard tasks): SUPPORTED
+- All hard scenarios: 0% full vs 0% minimal → floor effect, overhead irrelevant
+- TOST equivalence test: trivially satisfied (both at 0%)
+
+### P-107d (Largest negative delta at medium): PENDING medium bucket data
+
+### Overall: Medium bucket is now the CRITICAL test
+The Easy and Hard buckets both show null effects (for different reasons). The Medium bucket is where the H-107 interaction effect would be most visible. The experiment's scientific value hinges on the Medium bucket results.
+
+## Next Steps
+1. **Investigate mock-leak-trap scoring** — determine if behavior criterion should be included in pass/fail for this experiment
+2. **Fix or replace wrong-fix-recovery** — either debug gym integration or select a replacement Easy scenario
+3. **Run Medium bucket** — this is now the highest priority for the experiment
+4. **Consider supplemental Easy scenarios** — find scenarios with 70-90% baseline that aren't at ceiling
