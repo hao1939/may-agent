@@ -1,18 +1,18 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-13 ~05:21 UTC
+Updated: 2026-04-13 ~08:51 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors (billing). Blocked on Hao.
-- **Bob**: 🟢 Active — 35 sessions/6h, avg 8 ops. Zero errors.
-- **Coach**: 🟢 Active — 22 sessions/6h, avg 13 ops. Cancelled stuck EXP-151 session (60m, 0 ops).
-- **Scout**: 🟢 Active — 12 sessions/6h, avg 8 ops.
-- **Tech-lead**: 🟢 Active — 28 sessions/6h, avg 18 ops.
-- **Optimizer**: 🟢 Active — 38 sessions/6h, avg 14 ops.
-- **Evaluator**: 🟢 Active — 12 sessions/6h, avg 5 ops.
-- **QA**: 🟢 Active — 12 sessions/6h, avg 9 ops.
-- **Coder**: 🟡 Low activity — 2 sessions/6h, avg 20 ops. Only runs when forked.
-- **Summary**: 7/8 healthy. Amy-kimi still down. Zero errors last hour. Cancelled 1 stuck coach session.
+- **Bob**: 🟢 Active — 23 sessions/6h, avg 11 ops. Zero errors.
+- **Coach**: 🟢 Active — 20 sessions/6h, avg 16 ops. Zero errors.
+- **Scout**: 🟢 Active — 8 sessions/6h, avg 27 ops. High ops — monitor.
+- **Tech-lead**: 🟢 Active — 17 sessions/6h, avg 18 ops. Zero errors.
+- **Optimizer**: 🟢 Active — 21 sessions/6h, avg 17 ops. Zero errors.
+- **Evaluator**: 🟢 Active — 8 sessions/6h, avg 7 ops. Zero errors.
+- **QA**: 🟢 Active — 8 sessions/6h, avg 9 ops. Zero errors.
+- **Coder**: 🟡 Low activity — 1 session/6h, avg 9 ops. Only runs when forked.
+- **Summary**: 8/9 healthy (excl amy-kimi). Zero errors last hour. No stuck sessions.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -35,11 +35,11 @@ Updated: 2026-04-13 ~05:21 UTC
 - **P1**: **Convention investigation** — In progress (tech-lead). 
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (08:21 Apr 13)
+## Latest Cycle Summary (08:51 Apr 13)
 - **System**: 8 agents active (excl amy-kimi). Zero errors. No stuck sessions.
-- **Agent stats (6h)**: Bob 21s/11ops, Coach 18s/17ops, Coder 1s/9ops, Evaluator 7s/7ops, May 10s/12ops, Optimizer 19s/17ops, QA 7s/9ops, Scout 7s/29ops, Tech-lead 15s/19ops.
-- **Completed**: KE deployment sprint (5 KEs deployed). Scout heartbeat fix applied (no-inline-research critical warning).
-- **Queue**: 1 Ready item remaining (research project triage).
+- **Agent stats (6h)**: Bob 23s/11ops, Coach 20s/16ops, Coder 1s/9ops, Evaluator 8s/7ops, May 12s/12ops, Optimizer 21s/17ops, QA 8s/9ops, Scout 8s/27ops, Tech-lead 17s/18ops.
+- **Completed this cycle**: Optimizer finding→dispatch pipeline (protocol + template delivered). Research project triage (7 projects triaged, 3 archived). KE deployment sprint tasks 1-3 done.
+- **Notable**: Scout avg 27 ops — well above budget. May want to review.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
