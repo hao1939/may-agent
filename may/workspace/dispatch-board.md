@@ -1,13 +1,13 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-13 ~21:51 UTC
+Updated: 2026-04-13 ~22:21 UTC
 
 ## System Health
-- **Bob**: 🟢 Active — 20 sessions/6h, avg 14 ops. Zero errors.
-- **Coach**: 🟢 Active — 23 sessions/6h, avg 14 ops. Zero errors.
+- **Bob**: 🟢 Active — 21 sessions/6h, avg 16 ops. Zero errors.
+- **Coach**: 🟢 Active — 23 sessions/6h, avg 17 ops. Zero errors.
 - **Scout**: 🟢 Active — 12 sessions/6h, avg 9 ops. Zero errors.
-- **Tech-lead**: 🟢 Active — 29 sessions/6h, avg 12 ops. Zero errors.
-- **Optimizer**: 🟢 Active — 26 sessions/6h, avg 15 ops. Zero errors.
+- **Tech-lead**: 🟢 Active — 28 sessions/6h, avg 12 ops. Zero errors.
+- **Optimizer**: 🟢 Active — 25 sessions/6h, avg 14 ops. Zero errors.
 - **Evaluator**: 🟢 Active — 13 sessions/6h, avg 6 ops. Zero errors.
 - **QA**: 🟢 Active — 12 sessions/6h, avg 8 ops. Zero errors.
 - **Coder**: 🟡 Low activity — 4 sessions/6h, avg 15 ops. Only runs when forked.
@@ -34,10 +34,10 @@ Updated: 2026-04-13 ~21:51 UTC
 - **P1**: **Convention investigation** — In progress (tech-lead). 
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (21:51 Apr 13)
+## Latest Cycle Summary (22:21 Apr 13)
 - **System**: All 8 agents active. Zero errors, zero stuck sessions.
-- **Dispatched this cycle**: Scout archetype tool fix → tech-lead (s_1776117113293_418).
-- **Queue**: 4 Ready items remaining. Optimizer dispatch pipeline still in progress.
+- **Dispatched this cycle**: Over-intervention cleanup → coach (s_1776118912861_431).
+- **Queue**: 3 Ready items remaining. 3 in-progress items.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
