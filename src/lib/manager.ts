@@ -2417,10 +2417,11 @@ export class SubagentManager {
   runAgent(
     agentName: string,
     task: string,
-    opts?: { parentSessionId?: string; source?: string; requestId?: string },
+    opts?: { parentSessionId?: string; originSessionId?: string; source?: string; requestId?: string },
   ): string {
     return this.run(agentName, task, {
       parentSessionId: opts?.parentSessionId,
+      originSessionId: opts?.originSessionId,
       source: opts?.source ?? "agents.run",
       kind: "job",
       requestId: opts?.requestId,
