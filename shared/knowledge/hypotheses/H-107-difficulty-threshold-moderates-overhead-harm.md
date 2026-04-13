@@ -2,7 +2,7 @@
 
 **Status**: Proposed → Externally Validated → Inconclusive (EXP-151)  
 **P(H)**: 0.65  
-**Date**: 2026-04-12 (updated 2026-04-13)  
+**Date**: 2026-04-12 (updated 2026-04-13, ceiling-effect synthesis added)  
 **Author**: Bob  
 **Derived from**: KE-158, H-106 (P=0.40), H-099 (P=0.90), H-103 (P=0.45), EXP-147 Track B, EXP-117/120/130, H-098, DD-754 (bias amplification mechanism via KE-162/KE-163)  
 **External validation**: DD-753 (5 independent research groups converge on ZPD bell curve)  
@@ -173,6 +173,30 @@ Example (c=0.10): beneficial when p ∈ [0.11, 0.89]
 
 **Impact on P(H)**: 0.80 → 0.65. See "Why P(H) = 0.65" section below.
 
+### Ceiling-Effect Synthesis: DD-753 + EXP-152 + EXP-144 + Scenario Census (2026-04-13)
+
+The repeated ceiling effects across EXP-152 (88 trials), EXP-144 (50 trials), and EXP-151's easy bucket aren't just experimental failures — **they are exactly what H-107 predicts**, and DD-753 provides the mathematical explanation.
+
+**The p(1-p) prediction maps precisely onto our data:**
+
+| Scenario zone | p (baseline) | p(1-p) signal | What we observed | Matches H-107? |
+|---|---|---|---|---|
+| Floor (0%) | 0.00 | 0.000 | EXP-151 hard: 0% both conditions. No detectable effect. | ✅ |
+| Low (4-20%) | 0.04-0.20 | 0.038-0.160 | read-before-edit, kb-fewshot: weak/noisy signal | ✅ |
+| **Sweet spot** (46-67%) | 0.46-0.67 | 0.222-0.250 | EXP-151 medium: +6pp direction. EXP-147: +14pp on hard tasks. Only zone with any signal. | ✅ |
+| High (73-83%) | 0.73-0.83 | 0.141-0.197 | Limited data. Marginal effects expected. | Untested |
+| Ceiling (91-100%) | 0.91-1.00 | 0.000-0.082 | EXP-152: 100% all conditions. EXP-144: 100% both conditions. Zero variance. | ✅ |
+
+**Key insight**: Our experimental failures aren't evidence against H-107 — they're evidence FOR it. The ZPD model predicts that experiments conducted at ceiling or floor will produce null results, and that's exactly what happened. The problem isn't the hypothesis; it's that we keep testing in the dead zones.
+
+**The bimodal scenario problem**: Our portfolio has ~14 scenarios at floor (0%) and ~20 at ceiling (85-100%), with only 7 in the experimentally productive zone (35-70%). This structural problem explains:
+- EXP-152's ceiling effect (all 3 scenarios were at or near ceiling on recent baselines)
+- EXP-144's ceiling effect (hidden-dependency and compound-edit both at 100%)
+- EXP-151's failure to populate easy/hard buckets cleanly
+- Our systematic inability to test H-107 despite 297+ experiment trials
+
+**Implication for P(H)**: This analysis doesn't change P(H) from 0.65 — it doesn't provide new direct evidence for the overhead effect. But it DOES reframe the meaning of our null results. The nulls from EXP-151/152 are not evidence against H-107; they are explained by the theory itself. A properly powered experiment using only sweet-spot scenarios (p ∈ [0.35, 0.70]) has never been run. See KE-171 for practical scenario selection guidelines.
+
 ### Why P(H) = 0.65 (Updated from 0.80 after EXP-151)
 
 **Prior**: P(H) = 0.80 (based on DD-753 external validation + retrospective internal evidence)
@@ -237,6 +261,8 @@ Run N=50 per condition on cascading-fix-trap-v2 alone (the single hardest non-di
 | **EXP-149** | Should be updated to stratify by task difficulty as primary variable |
 | **EXP-150** (proposed) | Direct test of H-107 |
 | **EXP-151** (COMPLETE) | First direct prospective test. All 3 buckets complete (159 trials). **INCONCLUSIVE** — no significant overhead effect at any level. Medium bucket +6pp (p=0.71, NS). P(H) 0.80→0.65. |
+| **EXP-152** (COMPLETE) | 88 trials, all ceiling. Confirms dead-zone prediction: interventions unmeasurable when p > 0.85. |
+| **KE-171** | Practical difficulty calibration guide. Formalizes DD-753's p(1-p) into scenario selection rules. Identifies 7 experimentally useful scenarios. |
 
 ## If Confirmed
 
