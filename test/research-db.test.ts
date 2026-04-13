@@ -17,9 +17,6 @@ import {
   syncHypotheses,
   syncExperiments,
   syncAll,
-  queryKnowledge,
-  getExperimentsByStatus,
-  getHypothesesByStatus,
 } from "../src/lib/research-db.js";
 
 // ── Schema (must match what requests.ts creates) ──────────────────────
@@ -457,56 +454,6 @@ describe("research-db", () => {
     });
   });
 
-  // ── Query Functions ───────────────────────────────────────────────
-
-  describe("queryKnowledge", () => {
-    it("searches across title, claim, and raw_content", () => {
-      writeFileSync(join(testDir, "entries", "KE-001.md"), KE_SAMPLE);
-      writeFileSync(join(testDir, "entries", "KE-010.md"), KE_SIMPLE);
-      syncKnowledgeEntries(db, join(testDir, "entries"));
-
-      // Search by claim content
-      const results = queryKnowledge(db, "environmental");
-      expect(results).toHaveLength(1);
-      expect((results[0] as any).id).toBe("KE-001");
-    });
-
-    it("returns empty array for no match", () => {
-      writeFileSync(join(testDir, "entries", "KE-001.md"), KE_SAMPLE);
-      syncKnowledgeEntries(db, join(testDir, "entries"));
-
-      const results = queryKnowledge(db, "nonexistent-keyword-xyz");
-      expect(results).toHaveLength(0);
-    });
-  });
-
-  describe("getExperimentsByStatus", () => {
-    it("filters experiments by normalized status", () => {
-      const expDir = join(testDir, "experiments", "EXP-030");
-      mkdirSync(expDir, { recursive: true });
-      writeFileSync(join(expDir, "design.md"), EXP_DESIGN_MD);
-      syncExperiments(db, join(testDir, "experiments"));
-
-      const completed = getExperimentsByStatus(db, "completed");
-      expect(completed).toHaveLength(1);
-      expect((completed[0] as any).id).toBe("EXP-030");
-
-      const designing = getExperimentsByStatus(db, "designed");
-      expect(designing).toHaveLength(0);
-    });
-  });
-
-  describe("getHypothesesByStatus", () => {
-    it("filters hypotheses by status", () => {
-      writeFileSync(join(testDir, "hypotheses", "H-001.md"), H_STANDARD);
-      syncHypotheses(db, join(testDir, "hypotheses"));
-
-      const untested = getHypothesesByStatus(db, "untested");
-      expect(untested).toHaveLength(1);
-      expect((untested[0] as any).id).toBe("H-001");
-    });
-  });
-
   // ── syncAll ───────────────────────────────────────────────────────
 
   describe("syncAll", () => {
@@ -549,12 +496,6 @@ describe("research-db", () => {
       ];
       // Allow up to 5 errors across 120+ files
       expect(totalErrors.length).toBeLessThanOrEqual(5);
-    });
-
-    it("can query real knowledge entries by keyword", () => {
-      syncKnowledgeEntries(db, "agents/shared/knowledge/entries");
-      const results = queryKnowledge(db, "context");
-      expect(results.length).toBeGreaterThan(0);
     });
   });
 });

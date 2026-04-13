@@ -381,60 +381,6 @@ export function syncExperiments(
   return { synced, errors };
 }
 
-// ── Query Functions ────────────────────────────────────────────────────
-
-/**
- * Search knowledge entries by keyword (LIKE search across title, claim, raw_content).
- */
-export function queryKnowledge(
-  db: SqliteDb,
-  search: string
-): Record<string, unknown>[] {
-  const pattern = `%${search}%`;
-  return db
-    .prepare(
-      `SELECT id, title, status, claim, evidence_refs, discovered, last_verified
-       FROM knowledge_entries
-       WHERE title LIKE ? OR claim LIKE ? OR raw_content LIKE ?
-       ORDER BY id`
-    )
-    .all(pattern, pattern, pattern);
-}
-
-/**
- * Get experiments filtered by status.
- */
-export function getExperimentsByStatus(
-  db: SqliteDb,
-  status: string
-): Record<string, unknown>[] {
-  return db
-    .prepare(
-      `SELECT id, title, status, hypothesis_ref, result_summary
-       FROM experiments
-       WHERE status = ?
-       ORDER BY id`
-    )
-    .all(status);
-}
-
-/**
- * Get all hypotheses filtered by status.
- */
-export function getHypothesesByStatus(
-  db: SqliteDb,
-  status: string
-): Record<string, unknown>[] {
-  return db
-    .prepare(
-      `SELECT id, title, status, priority, proposed_by, hypothesis
-       FROM hypotheses
-       WHERE status = ?
-       ORDER BY id`
-    )
-    .all(status);
-}
-
 /**
  * Run all sync operations against the standard directory layout.
  * Convenience function for syncing all research artifacts at once.
