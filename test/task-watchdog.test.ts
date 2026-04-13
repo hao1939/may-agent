@@ -71,7 +71,7 @@ function makeContext(tmpDir: string, opts: MockCtxOpts = {}): {
   //   1. Age-filtered: `... AND createdAt < ?` → returns requests older than threshold
   //   2. All open: no age filter → returns all requests
   const mockDb = {
-    query: (sql: string) => ({
+    prepare: (sql: string) => ({
       all: (...args: any[]) => {
         if (args.length > 0) {
           // Age-filtered query: createdAt < threshold
