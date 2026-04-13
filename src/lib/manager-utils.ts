@@ -157,6 +157,18 @@ export const TOOL_PIVOT_LIMIT = 3;
 /** @deprecated Turn limits removed — always 0 (unlimited). Watchdog handles runaway sessions. */
 export const RESTORED_MAX_TURNS_FALLBACK = 0;
 
+// ── EXP-TIERED-BUDGET: Tiered soft turn budgets ────────────────────────
+// Soft budget = inject "wrap up" message. Hard limit = abort after grace period.
+// See agents/optimizer/workspace/experiment-tiered-budget.md for design.
+export const TURN_BUDGET_TIERS = {
+  heartbeat: 8,
+  research: 15,
+  implementation: 25,
+} as const;
+
+/** Number of extra turns allowed after the soft budget message before force-close. */
+export const TURN_BUDGET_GRACE = 2;
+
 /** Consecutive error turns before injecting a stuck warning. */
 export const STUCK_WARNING_THRESHOLD = 3;
 
