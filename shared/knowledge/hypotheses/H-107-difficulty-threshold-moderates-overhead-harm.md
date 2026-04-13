@@ -1,7 +1,7 @@
 # H-107: Difficulty Threshold Moderates Overhead Harm
 
-**Status**: Proposed → Externally Validated  
-**P(H)**: 0.80  
+**Status**: Proposed → Externally Validated → EXP-151 Inconclusive  
+**P(H)**: 0.72 (↓ from 0.80 after EXP-151 null result)  
 **Date**: 2026-04-12 (updated 2026-04-13)  
 **Author**: Bob  
 **Derived from**: KE-158, H-106 (P=0.40), H-099 (P=0.90), H-103 (P=0.45), EXP-147 Track B, EXP-117/120/130, H-098  
@@ -101,7 +101,7 @@ While difficulty is the primary moderator, agent readiness may be a secondary on
 | **H-106 P-106d** | Inflation correction flattens internalization curve | **Weak** — consistent with overhead being task-distributed, not agent-distributed |
 | **EXP-100** | Forced checkpoints HARM high-complexity tasks (alignment tax) | **Moderate** — complexity ≈ difficulty; overhead harms hard tasks |
 | **DD-753** | 5 independent groups converge on ZPD bell curve: optimal overhead weighting w(p) = p(1-p), Beta(2,2) kernel. +40.3% from difficulty calibration. Entropy-based runtime positioning. | **Very Strong** — external mathematical validation of core mechanism from independent research |
-| **EXP-151 (interim)** | Phase 1a (114 trials): Easy ceiling (100%/100%), Hard floor (0%/0% × 72 runs). P-107a INDETERMINATE, P-107c SUPPORTED trivially. Medium bucket pending. | **Null** — consistent but non-discriminating; ceiling+floor mask any overhead effect |
+| **EXP-151 (COMPLETE)** | All 3 buckets complete (159 trials). Easy: ceiling/floor/scoring artifacts, uninformative. Hard: 0% both conditions (72 runs), trivially equivalent. **Medium (45 runs): Full 44% vs Minimal 50%, Δ=+6pp, p=0.71 (NS)**. Per-scenario inconsistent: M1 +12pp (minimal better), M2 −17pp (full better ⚠️), M3 +13pp (minimal better). Severely underpowered (N=18-27/cell, need N=450 for 6pp effect at 80% power). | **Inconclusive** — first direct prospective test of H-107 finds no statistically significant overhead effect. Direction inconsistent across scenarios. Neither confirms nor falsifies. |
 
 ### DD-753: External Validation — ZPD Convergence (2026-04-13)
 
@@ -139,44 +139,53 @@ Example (c=0.10): beneficial when p ∈ [0.11, 0.89]
 
 **Gap acknowledged**: All DD-753 papers study training-time optimization; H-107 concerns inference-time overhead. The mechanism likely transfers (same resource-competition principle) but needs empirical confirmation via EXP-150.
 
-### EXP-151 Interim Results (Phase 1a: Easy + Hard buckets, 114 trials)
+### EXP-151 Final Results (All Buckets Complete, 159 trials)
 
-**Status**: Easy + Hard COMPLETE, Medium NOT STARTED (2026-04-13)
+**Status**: COMPLETE (2026-04-13)
 
-**Easy bucket (42 trials)**:
-- investigate-fix-pattern: 100% full vs 100% minimal (N=11+10) → **ceiling effect**, no overhead delta detectable
-- mock-leak-trap: 0% full vs 0% minimal (N=11+10) → **scoring artifact** (all runs pass product criteria but fail `identified-mock-problem` behavioral criterion; functionally solved but scorer disagrees). Not usable as an easy-difficulty scenario.
-- wrong-fix-recovery: **broken gym integration** (timeout in <2s). Cannot run.
+| Bucket | Full (baseline) | Minimal | Delta (min−full) | p-value |
+|--------|----------------|---------|-------------------|---------|
+| Easy | 50% (11/22) | 50% (10/20) | 0pp | 1.00 |
+| Medium | 44% (12/27) | 50% (9/18) | +6pp | 0.71 |
+| Hard | 0% (0/63) | 0% (0/9) | 0pp | 1.00 |
 
-**P-107a verdict: INDETERMINATE** — Easy bucket has only 1 usable scenario, which is at ceiling. Cannot test whether overhead helps/is neutral on easy tasks. Need additional easy scenarios with 70-90% baseline (not at ceiling).
+**Easy bucket (42 trials)**: investigate-fix-pattern at ceiling (100%/100%), mock-leak-trap at floor due to scoring artifact (0%/0%), wrong-fix-recovery broken. No usable variance.
 
-**Hard bucket (72 trials)**:
-- contradictory-requirements: 0% full vs 0% minimal (N=33+9)
-- escalation-impossible-task: 0% full vs 0% minimal (N=14+3)
-- context-proof-build-xref: 0% full vs 0% minimal (N=10+3)
+**Medium bucket (45 trials)**: The critical test. Per-scenario breakdown:
+- M1 (3unrelated): Full 55% vs Minimal 67% → +12pp (minimal better)
+- M2 (4gate): Full 67% vs Minimal 50% → −17pp (full better ⚠️ REVERSED)
+- M3 (kb-fewshot): Full 20% vs Minimal 33% → +13pp (minimal better)
 
-**P-107c verdict: SUPPORTED (trivially)** — All 72 hard-bucket trials show 0% across both conditions. Floor effect means overhead is irrelevant when tasks exceed capability. TOST equivalence trivially satisfied. This was the expected/easy-to-confirm prediction.
+**Hard bucket (72 trials)**: All 0% across both conditions. Floor effect. Trivially equivalent.
 
-**P-107d: PENDING** — Medium bucket is the critical remaining test. The interaction effect (largest negative delta at medium difficulty) can only be observed with medium-difficulty data.
+**Prediction assessment**:
+- P-107a (overhead helps easy): INDETERMINATE (ceiling/floor artifacts)
+- P-107b (overhead hurts medium): WEAKLY SUPPORTED in direction but NOT significant (p=0.71); CONTRADICTED by M2 reversal
+- P-107c (overhead neutral on hard): SUPPORTED trivially (floor)
+- P-107d (largest delta at medium): NOT SUPPORTED (6pp is tiny, non-significant)
+- P-107e (50% baseline = max cost): INSUFFICIENT DATA
 
-**Key issues to resolve**:
-1. mock-leak-trap scoring: `identified-mock-problem` behavioral criterion doesn't match calibration-era scoring. Investigate or reclassify scenario.
-2. wrong-fix-recovery: gym integration broken (agent_status: "timeout" in <2s). Fix or replace.
-3. Medium bucket: NOW the highest-priority experimental work for H-107. This is where the hypothesis lives or dies.
+**Key issues**: Severely underpowered (15% power for 6pp effect, need N=450/cell). Medium bucket heterogeneous (baselines 20-67%). Per-scenario inconsistency suggests scenario-specific confounds.
 
-**Impact on P(H)**: None. P(H) stays at 0.80. The Easy/Hard results are consistent with H-107 but provide no new discriminating evidence (ceiling + floor = null effects in both conditions). The Medium bucket is where falsification or strong confirmation can happen.
+**Impact on P(H)**: 0.80 → 0.65. See "Why P(H) = 0.65" section above.
 
-### Why P(H) = 0.80 (Updated from 0.62)
+### Why P(H) = 0.65 (Updated from 0.80)
 
-**Bayesian update justification**: DD-753 provides external mathematical validation from 5 independent research groups. The prior (0.62) reflected strong internal evidence but no external validation and no mathematical framework. The update reflects:
+**Bayesian update justification**: EXP-151 (the first direct prospective test of H-107) completed with all three difficulty buckets. The result is inconclusive — no statistically significant overhead effect at any level, with contradictory per-scenario directions in the Medium bucket. This provides a meaningful downward update:
 
-1. **External convergence (+0.12)**: Five independent groups finding the same ZPD mechanism reduces the probability that our internal evidence is coincidental artifact
-2. **Mathematical formalization (+0.06)**: The Beta(2,2) kernel provides specific, testable threshold bounds (not just "somewhere around 50%"), converting a vague directional claim into a precise model
+1. **Null prospective result (−0.10)**: The prior was 0.80 largely due to DD-753 external validation and retrospective internal evidence. A well-designed experiment failing to find the predicted effect — even if underpowered — shifts probability downward. An experiment consistent with the null should reduce confidence more than "underpowered, ignore it."
+2. **Per-scenario inconsistency (−0.05)**: M2 (contradictory-req-ext-4gate) shows the OPPOSITE direction (Full 67% > Minimal 50%). If the difficulty threshold were a clean mechanism, all medium scenarios should trend in the same direction. The inconsistency suggests scenario-specific confounds may dominate over any general overhead effect.
 
-**Remaining reasons for P(H) < 0.90**:
-1. **Training-time vs inference-time gap**: DD-753 papers study training optimization; our hypothesis concerns inference-time overhead. The mechanism plausibly transfers but hasn't been directly confirmed
-2. **Linear vs threshold still untested**: P-107b remains the critical test — even with the Beta kernel, we haven't confirmed the threshold shape in our specific system
-3. **No prospective validation yet**: All internal evidence is retrospective/reanalysis. EXP-150 hasn't been run
+**Remaining reasons P(H) stays above 0.50**:
+1. **DD-753 external validation still strong**: 5 independent groups converging on ZPD/Beta kernel is powerful evidence the mechanism exists — EXP-151 doesn't refute that, it just fails to confirm it in our specific system
+2. **Internal retrospective evidence**: EXP-147 Track B (+14pp on hard tasks), EXP-117/120/130 discovery harm, EXP-100 complexity alignment tax — these remain valid prior evidence
+3. **Underpowered by design**: 15% power to detect 6pp means we'd miss a real effect 85% of the time; this experiment was never well-suited to confirm or deny moderate effects
+
+**Remaining reasons P(H) < 0.70**:
+1. **No prospective validation**: EXP-151 was supposed to be the validation experiment. It produced nothing conclusive. The hypothesis survives but on retrospective evidence alone.
+2. **Training-time vs inference-time gap**: DD-753 papers study training optimization; our hypothesis concerns inference-time overhead. Transfer is unconfirmed.
+3. **Threshold shape untested**: P-107b (linear vs threshold) remains completely untested
+4. **Scenario selection concerns**: Medium bucket heterogeneity (20-67% baseline) and mixed directions raise questions about whether we're measuring an overhead effect or scenario-specific noise
 
 ## Proposed Experiment: EXP-150 — Difficulty Threshold Validation
 
@@ -217,7 +226,7 @@ Run N=50 per condition on cascading-fix-trap-v2 alone (the single hardest non-di
 | **H-085** (P=0.85) | Refined — forced externalization's 5 boundaries all occur on harder tasks; H-107 provides the unifying variable |
 | **EXP-149** | Should be updated to stratify by task difficulty as primary variable |
 | **EXP-150** (proposed) | Direct test of H-107 |
-| **EXP-151** (in progress) | Phase 1a interim: Easy+Hard confirm ceiling/floor (no overhead effect). Medium bucket is the critical remaining test. |
+| **EXP-151** (COMPLETE) | First direct prospective test. All 3 buckets complete (159 trials). **INCONCLUSIVE** — no significant overhead effect at any level. Medium bucket +6pp (p=0.71, NS). P(H) 0.80→0.65. |
 
 ## If Confirmed
 
