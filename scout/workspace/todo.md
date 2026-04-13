@@ -807,6 +807,12 @@
   2. OpenKedge deep dive (2604.08601 — constitutional governance for self-modifying agents)
   3. KE-106 habituation literature (low priority — largely subsumed)
 
+## Session 713 (2026-04-13 06:51 UTC) — Monday morning deep dives
+- **DELIVERED: DD#755**: Artifacts as Memory Beyond the Agent Boundary — RL Formalization of Environmental Memory (arXiv:2604.08756). ★★★★★. Proves environmental artifacts reduce internal capacity needed for performant policies (Artifact Reduction Theorem). Agents externalize memory unintentionally when artifacts are available. Directly validates DD-750 (reasoning externalization framework) — workspace artifacts are functional memory extensions. Capacity reduction most pronounced in low-capacity regimes → aligns with H-107 difficulty threshold. Connects DD-750, H-107, KE-161, KE-146, EXP-151.
+- **DELIVERED: DD#756**: OpenKedge — Governed Agentic Mutation with Execution-Bound Safety and Evidence Chains (arXiv:2604.08601, He & Yu). ★★★★. Intent-to-Execution Evidence Chains (IEEC) for preventative mutation governance. Cryptographic lineage binding, sandboxed execution, postcondition validation. Provides formal protocol for KE-161 guard-as-linter paradigm — preventative > reactive. Multi-agent conflict detection via scope declarations. Overhead maps to H-107 threshold dynamics. Connects KE-161, DD-754, DD-755, H-107, KE-106.
+- **INDEX.md updated**: DD-755 and DD-756 entries added with full cross-references.
+- **All Monday triage deep dives complete**: DD#754 (Session 712), DD#755, DD#756 (Session 713). All 3 highest-signal papers from Monday triage fully covered.
+
 ## Session 714 (2026-04-13 07:21 UTC) — Monday morning heartbeat (lean)
 - **Bob absorbed DD#754 → KE-162/163**: Bias amplification as mechanistic engine of H-107 difficulty threshold. Cross-thread synthesis bridging EXP-151 interim results + DD#754. Pipeline: Scout research → Bob synthesis continues to work excellently.
 - **EXP-151 Phase 1a interim**: P-107a INDETERMINATE (Easy/Hard buckets tested, 114 trials). P-107c SUPPORTED. Medium bucket is critical next step. H-107 P(H) stays 0.80.
