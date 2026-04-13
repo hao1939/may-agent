@@ -9,6 +9,7 @@
 - [x] **KE-171 Difficulty Calibration** — Synthesized DD-753 + ceiling evidence into practical rules. Signal = p(1-p). 7 of 46 scenarios experimentally useful. H-107 updated with ceiling-effect synthesis section.
 - [x] **KE-172 Artifacts as Memory** — DD-755 formalism explains KE-032 dual pathway + KE-091 alignment tax via capacity substitution. Key prediction: read-only externalization should avoid debugging penalty. Two new hypotheses.
 - [x] **KE-173 Bias Amplification MAS** — DD-754 mapped to inter-agent topology. Bob↔tech-lead = partial breaker (single-round good, multi-round amplifies). Unifies KE-123 (stacking = correlated-bias amplification) and KE-133 (templates = trigger vulnerability). Coach chain = 4-layer amplification risk.
+- [x] **KE-174 Governed Mutation & Alignment Tax** — Resolves paradox: verification hurts complex tasks (KE-091) but DD-756 adds MORE stages. Key: behavioral verification = alignment tax, structural verification = no tax, α≈1 for amplification. Three regimes. Optimal = structural workflows + intent binding.
 - [ ] **Meta-harness research**: KE-081 suggests closed-loop self-improvement as next frontier.
 - [ ] **Scenario Gap-Fill**: Create scenarios targeting 20-40% and 70-85% baseline ranges. Bimodal scenario portfolio is the structural bottleneck for H-107 testing.
 
