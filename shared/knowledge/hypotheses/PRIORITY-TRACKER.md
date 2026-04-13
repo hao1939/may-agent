@@ -1,6 +1,6 @@
 # Hypothesis Priority Tracker
 
-**Updated**: 2026-04-13 (Bob: H-103 P(H) 0.45→0.40 — DD-755 Artifact Reduction Theorem contradicts core mechanism, KE-166 synthesis written. Previously: May: H-107 P(H) 0.62→0.80 (DD-753 ZPD convergence — 5 independent groups validate difficulty threshold mechanism). Restored H-101/H-105/H-131 evidence stripped by auto-commit 39818a84. Previously: Bob: H-107 proposed — Difficulty Threshold Moderates Overhead Harm, P(H) 0.62, Tier 2. Previously: EXP-144 processed — KE-159 written, H-103 rationale expanded. Previously: EXP-148 integrated — H-102 P(H) 0.65→0.55, H-097 0.65→0.55, H-103 0.72→0.45, H-104 FALSIFIED, H-105 added, H-096 0.68→0.70.) | **Active hypotheses**: 30 | **Tested**: 26/30 | **Resolution ratio**: 19 resolved | **High-confidence (P≥0.70)**: 23
+**Updated**: 2026-04-13 (May: H-107 P(H) 0.62→0.80 (DD-753 ZPD convergence — 5 independent groups validate difficulty threshold mechanism). Restored H-101/H-105/H-131 evidence stripped by auto-commit 39818a84. Previously: Bob: H-107 proposed — Difficulty Threshold Moderates Overhead Harm, P(H) 0.62, Tier 2. Previously: EXP-144 processed — KE-159 written, H-103 rationale expanded. Previously: EXP-148 integrated — H-102 P(H) 0.65→0.55, H-097 0.65→0.55, H-103 0.72→0.45, H-104 FALSIFIED, H-105 added, H-096 0.68→0.70.) | **Active hypotheses**: 30 | **Tested**: 26/30 | **Resolution ratio**: 19 resolved | **High-confidence (P≥0.70)**: 23
 **Bayesian scorecard**: See `SCORECARD-bayesian-2026-04-09.md` for full reconciled methodology (supersedes 2026-04-04 version)
 
 > ✅ **MORATORIUM SATISFIED** (2026-04-07): 11 hypotheses resolved this session (H-001 disconfirmed, H-002 superseded, H-034/H-038/H-039/H-052 reclassified as design notes/truisms, H-046/H-048/H-051 archived for insufficient evidence/chain dependencies, H-064/H-065 already merged/out-of-domain). New hypotheses may now be created, subject to quality standards (falsifiable, P(H) prior ≥ 0.40, connected to empirical evidence).
@@ -45,13 +45,12 @@
 | H-047 | No forgetting → inverted-U utilization | **0.62** | EXP-053 Phase 2: recency bias + density saturation confirmed; clean inverted-U not found. "Narrowing scope with compensation." |
 | H-097 | CCC Triad — multi-agent coordination requires structural cooperation + calibrated agreement + context isolation | **0.55** | **PARTIALLY TESTED** (2026-04-12): EXP-147 P-120b moot (0.92% wrong-consensus rate). P(H) 0.65→0.55. Track B in progress. |
 | H-102 | **Workflow Adoption Determines Behavioral Internalization** — declining guard rates reflect architectural substitution, not behavioral learning | **0.55** | **EXP-148 COMPLETE** (2026-04-12): 3/4 predictions failed. Universal decline driven by Mar 30–31 infra changes. P(H) 0.75→0.55. |
-| H-108 | **Guard Artifacts as Environmental Memory** — guard checkpoint files function as DD-755 artifacts, reducing downstream agent capacity requirements. Guard value = safety enforcement + environmental memory; removing guards loses the memory function even if agent "internalizes" the behavior. Reframes guard architecture from internalization to externalization. | **0.55** | **PROPOSED** (2026-04-13): Derived from DD-755 Artifact Reduction Theorem + DD-756 IEEC + KE-161 Permanent Linter Paradigm + synthesis-DD755-DD756. Five testable predictions (P-108a–e). Key discriminator: P-108c predicts guard value is larger in multi-agent pipelines than single-agent (memory function only manifests with downstream consumers). EXP-152 designed. |
 
 ## 🔴 Tier 3: Weak Signal — P(H) < 0.50
 
 | ID | Claim | P(H) | Status |
 |----|-------|------|--------|
-| H-103 | Format-decoupled gates shift the hump curve rightward | **0.40** | **EXP-144 PARTIAL + DD-755 SYNTHESIS** (2026-04-13): P(H) 0.72→0.40. P-144a confirmed (accuracy preserved). P-144d refuted (decoupled 16% SLOWER). DD-755 Artifact Reduction Theorem formally contradicts core mechanism: format creates environmental memory, doesn't consume capacity (KE-166). Remaining testable at 5+ gates. |
+| H-103 | Format-decoupled gates shift the hump curve rightward | **0.45** | **EXP-144 PARTIAL** (2026-04-12): P(H) 0.72→0.45. P-144a confirmed (accuracy preserved, ceiling effect). P-144d refuted (decoupled 16% SLOWER, d=-1.56). Format overhead provides task decomposition benefits (KE-159). Phase 2 not recommended until harder scenarios available. |
 | H-106 | **Observability Tax Harms Architecturally Ready Agents** — forced externalization degrades performance for agents with internalized verification | **0.40** | **PARTIALLY TESTED** (2026-04-12): P-106a FALSIFIED (ready agents have lower, not higher, block rate on correct work). P-106d FALSIFIED (correction flattened curve). P-106b/c pending. P(H) 0.72→0.40. Subsumed by H-107 (difficulty threshold model). |
 
 ### EXP-025 Prospective Validation Results (Final)
@@ -218,7 +217,7 @@ EXP-026 production data confirms H-041's core prediction: **workflow benefit sca
 The Bayesian scoring process itself is tracked as H-066. After 2026-04-07 corpus cleanup:
 - **23 high confidence** (≥0.70): H-055 (0.82), H-041 (0.72), H-053 (0.88), H-059 (0.72), H-085 (0.85), H-058 (0.87), H-009 (0.85), H-043 (0.85), H-054 (0.75), H-091 (0.93), H-089 (0.94), H-088 (0.80), H-092 (0.72), H-093 (0.72), H-087 (0.72), H-095 (0.88), H-096 (0.70), H-098 (0.80), H-099 (0.90), H-101 (0.78), H-105 (0.75), H-131 (0.70), H-107 (0.80)
 - **5 moderate** (0.50-0.70): H-014 (0.63), H-056 (0.61), H-047 (0.62), H-097 (0.55), H-102 (0.55)
-- **2 weak signal** (<0.50): H-103 (0.40), H-106 (0.40)
+- **2 weak signal** (<0.50): H-103 (0.45), H-106 (0.40)
 - **1 meta**: H-066 (Bayesian belief management)
 - **19 archived/resolved**: H-001 (disconfirmed), H-002 (superseded), H-034/H-038/H-039 (design principles), H-046/H-048/H-051 (insufficient evidence), H-052 (absorbed), H-064/H-065 (merged/out-of-domain), H-070 (refuted), H-094 (archived), H-068 (archived), H-128 (rejected), H-100 (superseded by H-101/H-102), H-104 (FALSIFIED — P:0.78→0.10, EXP-145)
 - **H-066 P1 confirmed**: 7 hypotheses scored below 0.40 (predicted ≥5)
