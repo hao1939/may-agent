@@ -20,7 +20,7 @@
  * Input: The original task string (passed through as ctx.task).
  */
 
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 
 export const name: string = "deliver-or-report";
 
