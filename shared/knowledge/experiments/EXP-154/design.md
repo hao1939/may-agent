@@ -1,7 +1,7 @@
 # EXP-154: Process Skill Effectiveness — Investigation Before Fix
 
 **Date**: 2026-04-13
-**Status**: IN PROGRESS
+**Status**: COMPLETE — H-154 NOT SUPPORTED (10% treatment vs 15% baseline, −5.0pp)
 **Hypothesis**: H-154
 
 ## Background
