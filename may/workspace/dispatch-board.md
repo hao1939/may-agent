@@ -35,11 +35,11 @@ Updated: 2026-04-13 ~05:21 UTC
 - **P1**: **Convention investigation** — In progress (tech-lead). 
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (09:51 Apr 13)
-- **System**: 8 agents active (excl amy-kimi). Zero errors, zero stuck sessions. All healthy.
-- **Agent stats (6h)**: Bob 26s/11ops, Coach 23s/15ops, Coder 1s/9ops, Evaluator 10s/7ops, May 14s/12ops, Optimizer 26s/20ops, QA 10s/10ops, Scout 10s/24ops, Tech-lead 22s/19ops.
-- **Completed since last cycle**: KE deployment sprint (5 KEs deployed), research project triage (7 projects triaged).
-- **Queue**: Optimizer dispatch pipeline in progress. Need to refill queue.
+## Latest Cycle Summary (16:51 Apr 13)
+- **System**: 9 agents active (excl amy-kimi). Zero errors. 1 tech-lead interrupt (minor). No stuck sessions.
+- **Agent stats (6h)**: Bob 23s/18ops, Coach 25s/18ops, Coder 4s/20ops, Evaluator 12s/9ops, May 14s/8ops, Optimizer 25s/18ops, QA 12s/8ops, Scout 12s/9ops, Tech-lead 28s/15ops.
+- **Dispatched**: Scout archetype tool fix → tech-lead (s_1776099116453_296). Adds `agents`+`workflow` tools to scout's agent.json.
+- **Queue**: 4 Ready items remaining after dispatch.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
