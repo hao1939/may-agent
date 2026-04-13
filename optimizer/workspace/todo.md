@@ -107,6 +107,7 @@
 
 ## ✅ DONE
 
+- **LLM-to-JS Verification Phases** — Replaced LLM content verification in `verify-wrap` (Phase 2) and `deliver-or-report` (Phase 3b) with pure JS file checks. ~40 wasted zero-op LLM sessions/day eliminated. Finding: `workspace/finding-llm-to-js-verification-0413.md` (2026-04-13)
 - **D-o-R Phase 1 Budget Cap** — 86% reduction (29.7→4.9 avg ops). ~343 ops/day saved (~$16/day). (2026-04-11)
 - **D-o-R Nested Workflow Spawning** — 0/4 nesting incidents post-fix. (2026-04-12)
 - **Bob Research Thread Bloat** — 62% reduction via parallel-research budget caps. ~397 ops/day saved (~$19/day). (2026-04-12)

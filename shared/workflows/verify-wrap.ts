@@ -1,14 +1,17 @@
 /// <reference path="../../../src/lib/workflow-defs.d.ts" />
 
+import { existsSync, readFileSync, statSync } from "node:fs";
+
 /**
  * verify-wrap — Minimal verification wrapper workflow
  *
  * Extracted from bob's deliver-or-report Phase 3b. Two phases:
  *   Phase 1: Agent executes task normally
- *   Phase 2: SEPARATE session reads back all written files, confirms content
+ *   Phase 2: JS-based file verification (existence, non-empty, no placeholders)
  *
- * This is the "minimum viable verification workflow" — no retry logic,
- * no early-exit, no plan extraction. Just execute → verify.
+ * Phase 2 was originally an LLM session but 93% of verification sessions
+ * exited at 0 ops (LLM chose to skip verification). Converted to pure JS
+ * on 2026-04-13 — saves ~27 LLM sessions/day.
  *
  * Designed for reliant agents (scout, optimizer, may) who lack
  * workflow-level verification enforcement. See EXP-137/EXP-138.
@@ -18,8 +21,8 @@ export const name: string = "verify-wrap";
 
 export const description: string =
   "Minimal 2-phase verification wrapper. Phase 1: agent executes task. " +
-  "Phase 2: separate session reads back all written/edited files and " +
-  "confirms contents match the task. Prevents FM-3.3 (skip verification).";
+  "Phase 2: pure JS verification — checks files exist, are non-empty, " +
+  "and have no placeholder content. No LLM cost for Phase 2.";
 
 /**
  * Extract file paths that were written/edited during a session.
@@ -77,6 +80,80 @@ function extractWrittenFiles(messages: any[]): string[] {
   return [...paths];
 }
 
+// ── JS-based file verification ─────────────────────────────────────────
+
+/** Patterns that indicate placeholder/stub content */
+const PLACEHOLDER_PATTERNS = [
+  /TODO[:\s]/i,
+  /FIXME[:\s]/i,
+  /XXX[:\s]/i,
+  /\bplaceholder\b/i,
+  /\bstub\b/i,
+  /lorem ipsum/i,
+  /insert .* here/i,
+  /\.\.\.\s*$/m, // trailing ellipsis (common stub pattern)
+];
+
+interface FileVerifyResult {
+  path: string;
+  exists: boolean;
+  sizeBytes: number;
+  issues: string[];
+  preview: string; // first ~200 chars for the report
+}
+
+/**
+ * Verify a single file: exists, non-empty, no obvious placeholders.
+ * Returns a structured result instead of using LLM judgment.
+ */
+function verifyFile(filePath: string): FileVerifyResult {
+  const result: FileVerifyResult = {
+    path: filePath,
+    exists: false,
+    sizeBytes: 0,
+    issues: [],
+    preview: "",
+  };
+
+  if (!existsSync(filePath)) {
+    result.issues.push("File does not exist");
+    return result;
+  }
+
+  result.exists = true;
+  try {
+    const stat = statSync(filePath);
+    result.sizeBytes = stat.size;
+
+    if (stat.size === 0) {
+      result.issues.push("File is empty (0 bytes)");
+      return result;
+    }
+
+    const content = readFileSync(filePath, "utf-8");
+    result.preview = content.slice(0, 200);
+
+    // Check for very small files (likely stubs)
+    const trimmed = content.trim();
+    if (trimmed.length < 10) {
+      result.issues.push(`File content too short (${trimmed.length} chars after trim)`);
+    }
+
+    // Check for placeholder patterns
+    for (const pattern of PLACEHOLDER_PATTERNS) {
+      const match = content.match(pattern);
+      if (match) {
+        result.issues.push(`Contains placeholder pattern: "${match[0]}"`);
+        break; // One placeholder flag is enough
+      }
+    }
+  } catch (err: any) {
+    result.issues.push(`Read error: ${err.message}`);
+  }
+
+  return result;
+}
+
 // ── Main workflow ──────────────────────────────────────────────────────
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
@@ -102,52 +179,55 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   }
 
   // ═══════════════════════════════════════════════════════════════════
-  // PHASE 2: Verify — separate session reads back every written file
+  // PHASE 2: Verify — pure JS reads back every written file
+  // (Replaces LLM session that was 93% zero-op — 2026-04-13)
   // ═══════════════════════════════════════════════════════════════════
   ctx.emit({ type: "step_start", step: "phase2-verify" });
 
-  const fileList = writtenFiles.map((f, i) => `${i + 1}. \`${f}\``).join("\n");
-  const verifyPrompt =
-    `## VERIFICATION TASK (READ-ONLY)\n\n` +
-    `A previous session completed this task:\n` +
-    `> ${ctx.task.slice(0, 500)}\n\n` +
-    `It wrote/edited these files:\n${fileList}\n\n` +
-    `### Your job: READ each file and verify its contents.\n\n` +
-    `For EACH file:\n` +
-    `1. Call \`read()\` to read its full contents.\n` +
-    `2. Confirm: file exists and is non-empty.\n` +
-    `3. Confirm: content matches the task requirements.\n` +
-    `4. Confirm: no placeholders, TODOs, or stub content.\n\n` +
-    `After reading ALL files, call finish() with:\n` +
-    `- status: "success" if all files pass\n` +
-    `- status: "failure" if any file has issues\n` +
-    `- verification_evidence: For each file, cite specific content you read\n\n` +
-    `⚠️ You MUST call read() on each file. Do NOT fabricate evidence.\n` +
-    `⚠️ Do NOT write or edit any files. This is READ-ONLY.`;
-
-  const phase2 = await ctx.runAgent("optimizer", verifyPrompt);
+  const results = writtenFiles.map(verifyFile);
+  const passed = results.filter((r) => r.issues.length === 0);
+  const failed = results.filter((r) => r.issues.length > 0);
 
   ctx.emit({ type: "step_done", step: "phase2-verify" } as any);
 
-  // Check if verification passed
-  const verifyText = phase2.lastAssistantText ?? "";
-  const verifyFailed =
-    phase2.status === "error" ||
-    verifyText.toLowerCase().includes("status: \"failure\"") ||
-    verifyText.toLowerCase().includes("status: 'failure'") ||
-    verifyText.toLowerCase().includes("verification failed");
+  // Build verification report
+  const reportLines: string[] = [];
+  for (const r of results) {
+    if (r.issues.length === 0) {
+      reportLines.push(`- ✅ \`${r.path}\` (${r.sizeBytes} bytes)`);
+    } else {
+      reportLines.push(
+        `- ❌ \`${r.path}\`: ${r.issues.join("; ")}`
+      );
+    }
+  }
+  const verificationReport = reportLines.join("\n");
 
-  if (verifyFailed) {
-    return ctx.escalate(
-      "Content verification failed in Phase 2",
-      { writtenFiles, verificationReport: verifyText.slice(0, 1000) }
+  if (failed.length > 0) {
+    // Only escalate if files are missing or empty — placeholder warnings
+    // are informational (many legit files mention "TODO" in context)
+    const hardFailures = failed.filter(
+      (r) => !r.exists || r.sizeBytes === 0
     );
+    if (hardFailures.length > 0) {
+      return ctx.escalate(
+        `Content verification failed: ${hardFailures.length} file(s) missing or empty`,
+        {
+          writtenFiles,
+          verificationReport,
+          failedFiles: hardFailures.map((r) => ({
+            path: r.path,
+            issues: r.issues,
+          })),
+        }
+      );
+    }
+    // Soft failures (placeholder patterns) — warn but don't block
   }
 
   return ctx.done(
-    `## Verified ${writtenFiles.length} file(s)\n\n` +
-      `### Files verified:\n` +
-      writtenFiles.map((f) => `- ✅ ${f}`).join("\n") +
-      `\n\n### Verification report:\n${verifyText.slice(0, 500)}`
+    `## Verified ${writtenFiles.length} file(s) — JS verification (no LLM cost)\n\n` +
+      `### Verification results:\n${verificationReport}\n\n` +
+      `### Phase 1 summary:\n${(phase1.lastAssistantText ?? "").slice(0, 500)}`
   );
 }

@@ -1,6 +1,6 @@
 # Hypothesis Priority Tracker
 
-**Updated**: 2026-04-12 (Bob: EXP-148 integrated — H-102 P(H) 0.65→0.55, 3/4 predictions failed, universal WF-Gated decline across ALL agent groups driven by Mar 30–31 infra changes. H-097 0.65→0.55 (EXP-147 P-120b moot). H-103 0.72→0.45 (EXP-144 partial). H-104 FALSIFIED (P:0.78→0.10, EXP-145). H-105 added (0.72). H-096 0.68→0.70 (EXP-143). Previously: INDEX integration, H-104 authored, H-101/H-102 registered, EXP-130 integrated.) | **Active hypotheses**: 27 | **Tested**: 24/27 | **Resolution ratio**: 19 resolved | **High-confidence (P≥0.70)**: 21
+**Updated**: 2026-04-13 (Bob: EXP-144 processed — KE-159 written, H-103 rationale expanded. Previously: EXP-148 integrated — H-102 P(H) 0.65→0.55, H-097 0.65→0.55, H-103 0.72→0.45, H-104 FALSIFIED, H-105 added, H-096 0.68→0.70.) | **Active hypotheses**: 27 | **Tested**: 24/27 | **Resolution ratio**: 19 resolved | **High-confidence (P≥0.70)**: 21
 **Bayesian scorecard**: See `SCORECARD-bayesian-2026-04-09.md` for full reconciled methodology (supersedes 2026-04-04 version)
 
 > ✅ **MORATORIUM SATISFIED** (2026-04-07): 11 hypotheses resolved this session (H-001 disconfirmed, H-002 superseded, H-034/H-038/H-039/H-052 reclassified as design notes/truisms, H-046/H-048/H-051 archived for insufficient evidence/chain dependencies, H-064/H-065 already merged/out-of-domain). New hypotheses may now be created, subject to quality standards (falsifiable, P(H) prior ≥ 0.40, connected to empirical evidence).
@@ -49,7 +49,7 @@
 
 | ID | Claim | P(H) | Status |
 |----|-------|------|--------|
-| H-103 | Format-decoupled gates shift the hump curve rightward | **0.45** | **EXP-144 PARTIAL** (2026-04-12): P(H) 0.72→0.45. Format overhead lower than predicted. |
+| H-103 | Format-decoupled gates shift the hump curve rightward | **0.45** | **EXP-144 PARTIAL** (2026-04-12): P(H) 0.72→0.45. P-144a confirmed (accuracy preserved, ceiling effect). P-144d refuted (decoupled 16% SLOWER, d=-1.56). Format overhead provides task decomposition benefits (KE-159). Phase 2 not recommended until harder scenarios available. |
 | H-106 | **Observability Tax Harms Architecturally Ready Agents** — forced externalization degrades performance for agents with internalized verification | **0.40** | **PARTIALLY TESTED** (2026-04-12): P-106a FALSIFIED (ready agents have lower, not higher, block rate on correct work). P-106d FALSIFIED (correction flattened curve). P-106b/c pending. P(H) 0.72→0.40. Subsumed by H-107 (difficulty threshold model). |
 
 ### EXP-025 Prospective Validation Results (Final)

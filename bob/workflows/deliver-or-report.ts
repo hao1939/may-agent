@@ -137,6 +137,74 @@ function extractWrittenFilePaths(messages: any[]): string[] {
   return [...paths];
 }
 
+// ── JS-based file verification (replaces LLM Phase 3b) ────────────────
+
+/** Patterns that indicate placeholder/stub content */
+const PLACEHOLDER_PATTERNS = [
+  /TODO[:\s]/i,
+  /FIXME[:\s]/i,
+  /XXX[:\s]/i,
+  /\bplaceholder\b/i,
+  /\bstub\b/i,
+  /lorem ipsum/i,
+  /insert .* here/i,
+  /\.\.\.\s*$/m,
+];
+
+interface FileVerifyResult {
+  path: string;
+  exists: boolean;
+  sizeBytes: number;
+  issues: string[];
+  preview: string;
+}
+
+function verifyFileContent(filePath: string): FileVerifyResult {
+  const result: FileVerifyResult = {
+    path: filePath,
+    exists: false,
+    sizeBytes: 0,
+    issues: [],
+    preview: "",
+  };
+
+  if (!existsSync(filePath)) {
+    result.issues.push("File does not exist");
+    return result;
+  }
+
+  result.exists = true;
+  try {
+    const stat = statSync(filePath);
+    result.sizeBytes = stat.size;
+
+    if (stat.size === 0) {
+      result.issues.push("File is empty (0 bytes)");
+      return result;
+    }
+
+    const content = readFileSync(filePath, "utf-8");
+    result.preview = content.slice(0, 200);
+
+    const trimmed = content.trim();
+    if (trimmed.length < 10) {
+      result.issues.push(`File content too short (${trimmed.length} chars after trim)`);
+    }
+
+    for (const pattern of PLACEHOLDER_PATTERNS) {
+      const match = content.match(pattern);
+      if (match) {
+        result.issues.push(`Contains placeholder pattern: "${match[0]}"`);
+        break;
+      }
+    }
+  } catch (err: any) {
+    result.issues.push(`Read error: ${err.message}`);
+  }
+
+  return result;
+}
+
 // ── Main workflow ──────────────────────────────────────────────────────
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
@@ -391,57 +459,38 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   }
 
   // ═══════════════════════════════════════════════════════════════════
-  // PHASE 3b: LLM-based content verification (anti-FM-3.3)
+  // PHASE 3b: JS-based content verification (anti-FM-3.3)
   //
-  // A SEPARATE session reads back every deliverable file and confirms
-  // contents match the plan. This catches fabricated verification
-  // evidence — the previous phases may CLAIM they verified, but this
-  // phase actually performs the verification in isolation.
+  // Reads back every deliverable file and checks: existence, non-empty,
+  // no placeholder patterns. Replaced LLM session on 2026-04-13 — the
+  // LLM version was 62% zero-op (skipped verification entirely).
+  // Saves ~13 LLM sessions/day.
   // ═══════════════════════════════════════════════════════════════════
   let verificationReport = "";
 
   if (finalVerified.length > 0) {
     ctx.emit({ type: "step_start", step: "phase3b-content-verify" });
 
-    const fileList = finalVerified.map((f, i) => `${i + 1}. \`${f}\``).join("\n");
-    const phase3bPrompt =
-      `## Phase 3: VERIFY Deliverable Contents (READ-ONLY)\n\n` +
-      `### Original Task\n${ctx.task}\n\n` +
-      `### Plan from Phase 1\n${planText}\n\n` +
-      `### Deliverable files to verify:\n${fileList}\n\n` +
-      `### Instructions — YOUR ONLY JOB IS TO VERIFY\n` +
-      `A previous phase wrote the deliverable files listed above.\n` +
-      `Your job is to READ each file and confirm its contents are correct.\n\n` +
-      `For EACH file:\n` +
-      `1. Call \`read("${finalVerified[0]}")\` (or the actual path) to read its full contents.\n` +
-      `2. Check: Does it match what the plan specified?\n` +
-      `3. Check: Is it well-formed (valid syntax, no placeholders, no TODO stubs)?\n` +
-      `4. Check: Does it actually address the original task?\n\n` +
-      `After reading ALL files, call finish() with:\n` +
-      `- status: "success" if ALL files pass verification\n` +
-      `- status: "failure" if ANY file has issues\n` +
-      `- verification_evidence: For each file, cite the EXACT content you read\n` +
-      `  (first 2-3 lines or key section) proving you actually read it.\n\n` +
-      `⚠️ You MUST actually call read() on each file. Do NOT fabricate evidence.\n` +
-      `⚠️ Do NOT write or edit any files. This phase is READ-ONLY.\n` +
-      `⚠️ If a file is empty, malformed, or doesn't match the plan, report failure.\n\n` +
-      `⛔ DO NOT call workflow.run(), callAgent(), or spawn sub-agents/sub-workflows. Your job is ONLY to read files and report pass/fail. Calling workflow.run() creates infinite nested workflows that waste hundreds of ops.`;
+    const verifyResults = finalVerified.map(verifyFileContent);
+    const hardFailures = verifyResults.filter(
+      (r) => !r.exists || r.sizeBytes === 0
+    );
 
-    const phase3b = await ctx.runAgent("bob", phase3bPrompt);
+    // Build report
+    const reportLines: string[] = [];
+    for (const r of verifyResults) {
+      if (r.issues.length === 0) {
+        reportLines.push(`- ✅ \`${r.path}\` (${r.sizeBytes} bytes)`);
+      } else {
+        reportLines.push(`- ❌ \`${r.path}\`: ${r.issues.join("; ")}`);
+      }
+    }
+    verificationReport = reportLines.join("\n");
 
-    // Extract the verification result
-    const phase3bText = phase3b.lastAssistantText ?? "";
-    const phase3bFailed = phase3b.status === "error" ||
-      phase3bText.toLowerCase().includes("status: \"failure\"") ||
-      phase3bText.toLowerCase().includes("status: 'failure'") ||
-      phase3bText.toLowerCase().includes("verification failed");
-
-    verificationReport = phase3bText;
-
-    if (phase3bFailed) {
+    if (hardFailures.length > 0) {
       ctx.emit({ type: "step_done", step: "phase3b-content-verify (FAILED)" } as any);
       return ctx.escalate(
-        "Content verification failed: Phase 3b found issues with deliverable contents",
+        `Content verification failed: ${hardFailures.length} file(s) missing or empty`,
         {
           verifiedFiles: finalVerified,
           verificationReport: verificationReport.slice(0, 1000),
