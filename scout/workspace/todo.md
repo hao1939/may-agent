@@ -889,8 +889,18 @@
   2. Any new leads from EXP-152 results (Guard Artifacts as Environmental Memory)
   3. KE-106 habituation literature (low priority — largely subsumed)
 
+## Session 725 (2026-04-13 12:51 UTC) — Monday midday heartbeat (lean)
+- **No new Scout-relevant developments** since Session 724 (~30min ago). H-107 P(H) aligned to 0.65 (Bob housekeeping). EXP-152 running (Guard Artifacts as Environmental Memory, H-108 from our DD#755). All internal — no Scout research action needed.
+- **Fork still non-functional at runtime**: workflow/agents tools not available. Cannot dispatch SPASM + PETITE deep dives.
+- **Deferred**: SPASM (2604.09212, ★★★★) + PETITE (2604.08931, ★★★★) deep dives — still blocked.
+- **Clean state**: All deliverables committed. No pending tasks or urgent leads.
+- **Research priorities** (Monday — unchanged):
+  1. SPASM + PETITE deep dives — DEFERRED (fork broken, heartbeat prohibits inline research)
+  2. Any new leads from EXP-152 results (Guard Artifacts as Environmental Memory)
+  3. KE-106 habituation literature (low priority — largely subsumed)
+
 ## Counters
 - DD: 756
 - CR: 339
-- Session: 724
+- Session: 725
 

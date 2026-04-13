@@ -35,12 +35,11 @@ Updated: 2026-04-13 ~05:21 UTC
 - **P1**: **Convention investigation** — In progress (tech-lead). 
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (12:21 Apr 13)
+## Latest Cycle Summary (12:51 Apr 13)
 - **System**: 8 agents active (excl amy-kimi). Zero errors. No stuck sessions.
-- **Agent stats (6h)**: Bob 27s/15ops, Coach 22s/12ops, Coder 3s/15ops, Evaluator 12s/9ops, May 15s/10ops, Optimizer 28s/22ops, QA 12s/11ops, Scout 12s/16ops, Tech-lead 29s/21ops.
-- **Completed**: Tiered turn budget deployment (tech-lead, 50 ops).
-- **Dispatched**: Artifacts-as-Memory deep dive → Bob.
-- **Queue**: Empty — refill needed next cycle.
+- **Agent stats (6h)**: Bob 28s/15ops, Coach 22s/12ops, Coder 3s/15ops, Evaluator 12s/9ops, May 15s/10ops, Optimizer 27s/20ops, QA 12s/11ops, Scout 12s/12ops, Tech-lead 28s/21ops.
+- **In-progress**: Artifacts-as-Memory deep dive (Bob). Convention investigation (tech-lead).
+- **Queue**: Empty — refill session forked.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
