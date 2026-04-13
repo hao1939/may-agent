@@ -181,6 +181,24 @@ export function wrapToolsWithReceipts(tools: AgentTool[], sessionId: string, ctx
             // Count blocked calls for heartbeat detection
             const blockedSession = getSession();
             if (blockedSession) blockedSession.totalToolCalls++;
+
+            // Guard redirect: inject a steering message suggesting a workflow
+            if (guardResult.redirect) {
+              const redirectSession = getSession();
+              if (redirectSession?.agent) {
+                redirectSession.agent.steer({
+                  role: "user",
+                  content: [{ type: "text", text:
+                    `🔄 **Guard redirect**: The "${guardResult.redirect.workflow}" workflow is recommended.\n\n` +
+                    `Reason: ${guardResult.reason}\n\n` +
+                    `Run: \`workflow("${guardResult.redirect.workflow}", "${guardResult.redirect.task}")\``
+                  }],
+                  timestamp: Date.now(),
+                  source: "system",
+                } as any);
+              }
+            }
+
             return {
               content: [
                 { type: "text" as const, text: `<tool_output name="${tool.name}">` },
@@ -190,6 +208,18 @@ export function wrapToolsWithReceipts(tools: AgentTool[], sessionId: string, ctx
               ],
               details: undefined,
             };
+          }
+          // Non-blocking steer: guard allowed the call but wants to inject guidance
+          if (guardResult?.steer) {
+            const steerSession = getSession();
+            if (steerSession?.agent) {
+              steerSession.agent.steer({
+                role: "user",
+                content: [{ type: "text", text: guardResult.steer }],
+                timestamp: Date.now(),
+                source: "system",
+              } as any);
+            }
           }
           if (guardResult) {
             guardWarning = guardResult.reason;

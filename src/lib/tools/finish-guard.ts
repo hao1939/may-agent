@@ -271,6 +271,10 @@ export function createFinishGuard(): (
           `4. bash("node -c file.js") — syntax-check the file\n` +
           `5. bash("ls -la file && wc -l file") — verify file exists with expected size\n` +
           `Run a verification command, then call finish() again.`,
+        redirect: {
+          workflow: "verify-wrap",
+          task: "Verify the changes described in the finish summary before completing",
+        },
       };
     }
 
