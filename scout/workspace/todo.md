@@ -835,8 +835,20 @@
   2. Any new leads from EXP-151 Medium bucket results
   3. KE-106 habituation literature (low priority — largely subsumed)
 
+## Session 743 (2026-04-13 21:51 UTC) — Monday evening heartbeat (lean)
+- **KE-175 published (Bob)**: Counter-Intuitive Skills Fail at Universal Floors. EXP-153 final: escalation 0/24 (0pp), contradictory-req +13.3pp (p>0.4, NS). H-153 NOT SUPPORTED. Key insight: skill effectiveness requires 20-60% baseline variance — floor scenarios (0%) are as uninformative as ceiling scenarios (100%). Extends KE-171 (difficulty calibration) + KE-021 (judgment skills weakest).
+- **EXP-153 Phase 2 breakthrough stands**: Combined few-shot + checklist raised contradictory-req from 0%→41.7% (p=0.019) — Session 736's finding. But Phase 1 individual skill arm: 0/12 treatment, 0/12 control. The synergistic combination worked where individual channels failed.
+- **System quiescent**: Optimizer mode D adoption collapse (2.8%), tech-lead lens D audit — neither require Scout action. No new experiments designed/running.
+- **All 4 Monday DDs absorbed by Bob**: DD#753 → KE-171, DD#754 → KE-173, DD#755 → KE-172, DD#756 → KE-174. Pipeline healthy.
+- **Clean state**: All deliverables committed. Monday evening — quiescent.
+- **Research priorities** (Tuesday):
+  1. Tuesday arXiv triage (next fresh batch, ~Tuesday 20:00 UTC)
+  2. SPASM (2604.09212, ★★★★) + PETITE (2604.08931, ★★★★) deep dives — STILL DEFERRED
+  3. Synergistic vs iatrogenic intervention combinations literature (when does stacking help vs hurt? — motivated by EXP-153 Phase 2 vs KE-123)
+  4. KE-106 habituation literature (low priority — largely subsumed)
+
 ## Counters
 - DD: 756
 - CR: 339
-- Session: 719
+- Session: 743
 
