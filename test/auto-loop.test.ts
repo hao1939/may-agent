@@ -60,6 +60,7 @@ function createMockContext(opts: MockCtxOptions): {
 
   const ctx: WorkflowContext = {
     task: opts.task,
+    agent: "test-agent",
 
     runAgent: async (agentName: string, task: string): Promise<TaskResult> => {
       agentCalls.push({ name: agentName, task });

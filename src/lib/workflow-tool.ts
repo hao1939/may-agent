@@ -170,6 +170,9 @@ export interface WorkflowToolOptions {
   /** The caller's session ID — used as parentSessionId for spawned sessions.
    *  Can be a string or a function returning a string (for lazy resolution). */
   callerSessionId?: string | (() => string);
+  /** The name of the agent that owns this workflow tool.
+   *  Exposed as `ctx.agent` so shared workflows can delegate to the calling agent. */
+  agentName?: string;
   /** Maximum workflow nesting depth (default: 3). */
   maxDepth?: number;
   onEvent?: (event: WorkflowEvent) => void;
@@ -227,6 +230,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
 
     const ctx: WorkflowContext = {
       task,
+      agent: opts.agentName ?? "unknown",
 
       runAgent: async (agentName: string, agentTask: string): Promise<TaskResult> => {
         const currentStep = stepCounter++;
