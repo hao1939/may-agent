@@ -48,7 +48,7 @@ Pick the highest-priority task(s). Ask:
 
 ## Step 3: DISPATCH
 
-**For WORK SESSION tasks, use `workflow.run('deliver-or-report', task)` to get structural verification guardrails.** This catches non-delivery (FM-3.1) and verification gaps (FM-3.3) — your top error patterns. Use it for all knowledge integration, hypothesis writing, experiment design, and synthesis work.
+**For WORK SESSION tasks, use `workflow.run('verify-wrap', task)` to get structural verification guardrails.** This catches non-delivery (FM-3.1) and verification gaps (FM-3.3) — your top error patterns. Use it for all knowledge integration, hypothesis writing, experiment design, and synthesis work.
 
 **For 2+ INDEPENDENT research tasks, use `workflow.run('parallel-research', ...)` to execute them simultaneously.** This fans out N threads in parallel, collects results (resilient to individual failures via Promise.allSettled), and runs a synthesis step that finds cross-thread connections. Max 5 threads.
 
@@ -80,7 +80,7 @@ workflow.run("parallel-research", JSON.stringify({
 **When to use parallel-research vs sequential forks:**
 - **parallel-research**: 2-5 independent questions where you want automatic synthesis of cross-thread connections
 - **Sequential agents.fork()**: Fire-and-forget tasks where you don't need combined results until next heartbeat
-- **deliver-or-report**: Single focused work sessions that need verification guardrails
+- **verify-wrap**: Single focused work sessions that need verification guardrails
 
 For each substantive task, fork a work session:
 
