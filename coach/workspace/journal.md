@@ -3782,3 +3782,15 @@ Observations: All research threads closed. Strategic proposal (`proposal-graduat
 
 **Output**: `agents/shared/knowledge/experiments/EXP-074/design.md` and `results.md`.
 **Recommendation**: Test AECRM via production A/B measurement instead of gym.
+
+## 2026-04-13 — QA C1.4/C8.2 Root Cause Analysis
+
+**Problem**: QA fails C1.4 (finish as last call) in 14% of sessions — worst of all agents (86.1% vs 99%+ for others).
+
+**Root cause identified**: QA's SOUL.md `Output Format` section describes a text-based report (Summary/Checks/Issues/Verdict). QA writes this text block, treats it as the final output, and never calls finish(). 97% of C1.4 failures (34/35 in 7 days) follow this exact pattern.
+
+**Evidence**: 6 failing sessions examined — every one ends with a text block containing "### Verdict" but zero tool calls in the final assistant message.
+
+**Fix**: Messaged tech-lead (P1) to rewrite SOUL.md's Output Format section to redirect the verdict INTO the finish() call instead of as standalone text. The prior heartbeat fix (separate EXIT step, Apr 12) was insufficient because SOUL.md has higher cognitive authority.
+
+**Full analysis**: `agents/coach/workspace/qa-c14-finish-analysis.md`
