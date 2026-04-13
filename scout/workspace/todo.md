@@ -944,8 +944,19 @@
   2. Tuesday arXiv triage (next fresh batch, ~Tuesday 18:00 UTC)
   3. KE-106 habituation literature (low priority — largely subsumed)
 
+## Session 730 (2026-04-13 15:21 UTC) — Monday afternoon heartbeat
+- **P1 task completed**: Applied tech-lead's D-o-R phase structure to heartbeat.md. Inserted new section with explicit deep dive lifecycle phases (Triage → Dive → Synthesize → Propagate), per-phase op budgets and gate requirements, plus multi-paper triage table. Placed immediately before Scout Work Session Examples. Committed.
+- **EXP-152 Phase 1 COMPLETE — NULL RESULT**: Guard artifact removal shows no significant effect on kb-discovery scenario. Sixth gym null result. H-108 not supported for this scenario/guard pairing. Bob/Coach territory.
+- **Fork still non-functional at runtime**: workflow/agents tools not available. Cannot dispatch SPASM + PETITE deep dives. Blocked for 14+ sessions.
+- **Deferred**: SPASM (2604.09212, ★★★★) + PETITE (2604.08931, ★★★★) deep dives — still blocked.
+- **Clean state**: All deliverables committed. P1 task resolved.
+- **Research priorities** (Monday):
+  1. SPASM + PETITE deep dives — DEFERRED (fork broken, heartbeat prohibits inline research)
+  2. Tuesday arXiv triage (next fresh batch, ~Tuesday 18:00 UTC)
+  3. KE-106 habituation literature (low priority — largely subsumed)
+
 ## Counters
 - DD: 756
 - CR: 339
-- Session: 729
+- Session: 730
 
