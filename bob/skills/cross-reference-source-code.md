@@ -91,3 +91,8 @@ Fix visible errors AND add any missing fields discovered through cross-referenci
 
 3. The agent does not rely solely on the config file's current contents to determine
    what fields should exist — external evidence (source code) is consulted.
+
+
+## ⚠️ Task-Type Restriction
+
+Do NOT use this skill's worked examples as templates on **discovery, exploration, or creative-inference tasks** (e.g., knowledge integration, open-ended research, novel pattern discovery). KE-133 showed a **-67pp effect** (p=0.030) — template-following displaces the open exploration these tasks require. Use this skill only for the specific task type it was designed for.

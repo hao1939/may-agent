@@ -107,3 +107,8 @@ This costs 1 extra tool call but saves 3-5 from the guess→fail→find→retry 
 Every `read()` of a file in an unfamiliar directory MUST be preceded by EITHER:
 - An `ls` of its parent directory in this session, OR
 - A read of INDEX.md that lists the file's path
+
+
+## ⚠️ Task-Type Restriction
+
+Do NOT use this skill's worked examples as templates on **discovery, exploration, or creative-inference tasks** (e.g., knowledge integration, open-ended research, novel pattern discovery). KE-133 showed a **-67pp effect** (p=0.030) — template-following displaces the open exploration these tasks require. Use this skill only for the specific task type it was designed for.

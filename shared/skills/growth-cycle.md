@@ -78,3 +78,8 @@ await agents.call("coach", "discard_agent('coder-v2')");
 - **Verification is mandatory**. You cannot promote without a passing `verify_agent` run.
 - **Reasoning Verification**: For reasoning changes (e.g., Bob's synthesis), verification must use a **Test Case + Judge** pattern. Create a test file with a scenario, run the agent, and have a Judge (Coach/Evaluator) confirm the output matches the new protocol.
 - **Clean up**. Always promote or discard.
+
+
+## ⚠️ Task-Type Restriction
+
+Do NOT use this skill's worked examples as templates on **discovery, exploration, or creative-inference tasks** (e.g., knowledge integration, open-ended research, novel pattern discovery). KE-133 showed a **-67pp effect** (p=0.030) — template-following displaces the open exploration these tasks require. Use this skill only for the specific task type it was designed for.

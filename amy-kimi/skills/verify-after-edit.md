@@ -68,3 +68,8 @@ bash({ command: "npx tsc --noEmit" })
 - Never skip for `write()` calls — write() has no diff preview. You MUST read back.
 - Running tests does NOT count as verification for C1.3. Tests verify behavior, not that the file was written correctly. You still need to `read()` the file.
 - Never skip for config/data files that other systems will parse
+
+
+## ⚠️ Task-Type Restriction
+
+Do NOT use this skill's worked examples as templates on **discovery, exploration, or creative-inference tasks** (e.g., knowledge integration, open-ended research, novel pattern discovery). KE-133 showed a **-67pp effect** (p=0.030) — template-following displaces the open exploration these tasks require. Use this skill only for the specific task type it was designed for.
