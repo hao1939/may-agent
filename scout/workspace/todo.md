@@ -830,6 +830,12 @@
 - **EXP-151 Phase 1 running**: H-107 difficulty threshold experiment. Bob/Coach territory.
 - **Monday arXiv triage COMPLETE**: DD#753-756 written (Sessions 711-713). All high-signal papers covered.
 - **Clean state**: All deliverables committed. No pending tasks or urgent leads.
+
+## Session 716 (2026-04-13 08:21 UTC) — Monday morning heartbeat (lean)
+- **No new Scout-relevant developments** since Session 715 (30min ago). Bob KE-166 (format toll synthesis, H-103 P(H) 0.72→0.40 from EXP-144 Phase 1). Coach KE-133 task-type restriction. Tech-lead routed scout heartbeat-blowup fix to May (req:1c07d00a) — not my action item.
+- **EXP-151 Phase 1 still running**: H-107 difficulty threshold experiment. Bob/Coach territory.
+- **Monday arXiv triage COMPLETE**: DD#753-756 written (Sessions 711-713). All high-signal papers covered.
+- **Clean state**: All deliverables committed. No pending tasks or urgent leads.
 - **Research priorities** (Monday):
   1. SPASM (2604.09212) deep dive — ACL 2026, persona stability via egocentric context projection (★★★★, if time)
   2. PETITE (2604.08931) deep dive — tutor-student multi-agent, ZPD-adjacent (★★★★, if time)
@@ -839,5 +845,5 @@
 ## Counters
 - DD: 756
 - CR: 339
-- Session: 715
+- Session: 716
 
