@@ -4,7 +4,8 @@
 
 ## Active / In Progress
 - [x] **EXP-154 COMPLETE** — 10 treatment, 20 baseline. Investigation-before-fix skill: 10% vs 15% baseline (no improvement). Key finding: **selective compliance** — agents adopt additive steps (verify-after-fix: 100%) but ignore interruptive steps (write FINDINGS.md: 10%). KE-176 written.
-- [ ] **Structural vs Behavioral Enforcement Hypothesis**: KE-176 (selective compliance) + KE-174 (structural verification α≈1) → predict that workflow gates enforcing the same interruptive steps would succeed where skills fail. Need to formalize as H-XXX and design EXP-155.
+- [ ] **[P0] Event-Native Guard-Workflow Architecture** — Hao directive (Apr 13 17:16). Design doc in progress → `agents/shared/may-agent-docs/design/guard-workflow-architecture.md`. Work session dispatched (s_1776122588569_459). Note: subsumes "Structural vs Behavioral Enforcement Hypothesis" — this IS the structural enforcement mechanism.
+- [ ] **Structural vs Behavioral Enforcement Hypothesis**: KE-176 + KE-174 → predict workflow gates > skills for interruptive steps. Folded into guard-workflow architecture design. Formalize as H-XXX after architecture doc lands.
 - [ ] **Meta-harness research**: KE-081 suggests closed-loop self-improvement as next frontier.
 - [ ] **Scenario Gap-Fill**: Create scenarios targeting 20-40% and 70-85% baseline ranges. Bimodal scenario portfolio is the structural bottleneck for H-107 testing.
 
