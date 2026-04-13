@@ -4,10 +4,10 @@
 
 ## Active / In Progress
 - [ ] **EXP-144 pilot** — Delegated to Coach (2026-04-12). Awaiting 10 calibration sessions → pilot-results.md. Then Phase 1 (N=50).
-- [x] **H-107 DD-753 integration** — P(H) 0.62→0.80 (promoted Tier 2→Tier 1). 5 independent ZPD papers validate difficulty threshold mechanism. Fixed H-101/H-131 evidence regression from auto-commit. (2026-04-13)
+- [x] **H-107 DD-753 integration** — P(H) 0.62→0.80→0.65 (EXP-151 inconclusive, demoted Tier 1→Tier 2). KE-168 written. (2026-04-13)
 - [x] **Guard architecture synthesis** — KE-161 written: "Permanent Linter Paradigm". (2026-04-13)
 - [x] **KB INDEX integration** — 22 missing entries added. PRIORITY-TRACKER updated. (2026-04-12)
-- [ ] **EXP-151 Medium bucket** — CRITICAL next step for H-107. Easy+Hard complete (114 trials) but non-discriminating (ceiling+floor). Medium bucket is where H-107 lives or dies. Also: fix mock-leak-trap scoring, fix wrong-fix-recovery gym integration.
+- [x] **EXP-151 all buckets** — COMPLETE. 159 trials. Inconclusive — no significant overhead effect (p>0.70 all levels). Medium bucket +6pp NS, per-scenario inconsistent. H-107 P(H) 0.80→0.65. Results.md + KE-168 written. (2026-04-13)
 - [x] **Monitor EXP-132** — Has results.md. (2026-04-13)
 - [x] **Monitor EXP-139** — Has results.md. (2026-04-13)
 - [x] **Monitor EXP-142** — Has results.md. (2026-04-13)
