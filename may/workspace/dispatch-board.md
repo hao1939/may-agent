@@ -12,7 +12,7 @@ Updated: 2026-04-13 ~18:21 UTC
 - **Evaluator**: 🟢 Active — 12 sessions/6h, avg 8 ops.
 - **QA**: 🟢 Active — 12 sessions/6h, avg 8 ops.
 - **Coder**: 🟡 Low activity — 2 sessions/6h, avg 21 ops. Only runs when forked.
-- **Summary**: 7/8 healthy. Amy-kimi still down. Zero errors last 6h. No stuck sessions.
+- **Summary**: 7/8 healthy. Amy-kimi still down. Zero errors last 6h. 1 stuck coach session cancelled (EXP-153, >30min).
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -35,10 +35,10 @@ Updated: 2026-04-13 ~18:21 UTC
 - **P1**: **Convention investigation** — In progress (tech-lead). 
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (18:51 Apr 13)
-- **System**: 9 agents active (excl amy-kimi). Zero errors last 6h. No stuck sessions.
-- **Agent stats (6h)**: Bob 19s/14ops, Coach 26s/16ops, Coder 2s/21ops, Evaluator 12s/7ops, May 14s/8ops, Optimizer 26s/19ops, QA 12s/8ops, Scout 12s/9ops, Tech-lead 29s/11ops.
-- **D-o-R Lens heartbeat wiring**: Forked to tech-lead (s_1776106328350_345). 3 heartbeat changes per optimizer spec.
+## Latest Cycle Summary (19:21 Apr 13)
+- **System**: 9 agents active (excl amy-kimi). Zero errors last 6h. 1 stuck coach session cancelled (EXP-153).
+- **Agent stats (6h)**: Bob 19s/14ops, Coach 25s/16ops, Coder 2s/21ops, Evaluator 12s/8ops, May 13s/7ops, Optimizer 26s/17ops, QA 12s/8ops, Scout 12s/9ops, Tech-lead 29s/11ops.
+- **Queue**: 5 items dispatched/in-progress, 1 guard-as-sensor ready. Optimizer pipeline still in progress.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
