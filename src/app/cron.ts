@@ -20,6 +20,7 @@ import { createHash } from "node:crypto";
 import { resolve, dirname } from "node:path";
 import type { SubagentManager } from "../lib/index.js";
 import { generateId } from "../lib/index.js";
+import { TURN_BUDGET_TIERS } from "../lib/manager-utils.js";
 import { getDb, trackRequest, updateRequest } from "../lib/requests.js";
 import { spawnDetachedAgent } from "../lib/detached.js";
 import {
@@ -737,12 +738,13 @@ export class Cron {
         );
       }
 
-      // DO NOT add maxTurns back. Turn limits were intentionally removed (commit c183312).
-      // The watchdog (60-90min timeout) handles runaway sessions.
-      // Turn limits killed 36 sessions mid-work with useful progress (up to 198 ops).
-      // If you see turn limit errors in the DB, they are from old sessions before deployment.
+      // EXP-TIERED-BUDGET: Soft turn budgets with grace period (replaces old hard-kill).
+      // Unlike the removed hard limit (commit c183312), this injects a "wrap up" message
+      // at the soft limit and only force-closes after a 2-turn grace period.
+      // See agents/optimizer/workspace/experiment-tiered-budget.md for design.
       const sessionId = this.manager.run(agentName, taskMessage, {
         kind: "job",
+        maxTurns: TURN_BUDGET_TIERS.heartbeat,
       });
       updateRequest(this.persistDir, requestId, { sessionId });
 
