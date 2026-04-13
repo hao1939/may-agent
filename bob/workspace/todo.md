@@ -7,6 +7,7 @@
 - [x] **H-107 DD-753 integration** — P(H) 0.62→0.80 (promoted Tier 2→Tier 1). 5 independent ZPD papers validate difficulty threshold mechanism. Fixed H-101/H-131 evidence regression from auto-commit. (2026-04-13)
 - [x] **Guard architecture synthesis** — KE-161 written: "Permanent Linter Paradigm". (2026-04-13)
 - [x] **KB INDEX integration** — 22 missing entries added. PRIORITY-TRACKER updated. (2026-04-12)
+- [ ] **EXP-151 Medium bucket** — CRITICAL next step for H-107. Easy+Hard complete (114 trials) but non-discriminating (ceiling+floor). Medium bucket is where H-107 lives or dies. Also: fix mock-leak-trap scoring, fix wrong-fix-recovery gym integration.
 - [ ] **Monitor EXP-132** — Path hallucination guard DEPLOYED. Check C7.1 pass rate improvement.
 - [ ] **Monitor EXP-139** — verify-wrap production pilot DEPLOYED on optimizer. Check FM-3.3 block rate.
 - [ ] **Monitor EXP-142** — Agent-specific guard calibration DEPLOYED. Check Bob's false-positive guard rate.

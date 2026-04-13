@@ -101,6 +101,7 @@ While difficulty is the primary moderator, agent readiness may be a secondary on
 | **H-106 P-106d** | Inflation correction flattens internalization curve | **Weak** — consistent with overhead being task-distributed, not agent-distributed |
 | **EXP-100** | Forced checkpoints HARM high-complexity tasks (alignment tax) | **Moderate** — complexity ≈ difficulty; overhead harms hard tasks |
 | **DD-753** | 5 independent groups converge on ZPD bell curve: optimal overhead weighting w(p) = p(1-p), Beta(2,2) kernel. +40.3% from difficulty calibration. Entropy-based runtime positioning. | **Very Strong** — external mathematical validation of core mechanism from independent research |
+| **EXP-151 (interim)** | Phase 1a (114 trials): Easy ceiling (100%/100%), Hard floor (0%/0% × 72 runs). P-107a INDETERMINATE, P-107c SUPPORTED trivially. Medium bucket pending. | **Null** — consistent but non-discriminating; ceiling+floor mask any overhead effect |
 
 ### DD-753: External Validation — ZPD Convergence (2026-04-13)
 
@@ -137,6 +138,33 @@ Example (c=0.10): beneficial when p ∈ [0.11, 0.89]
 **Significance**: This external validation is exceptionally strong because (a) 5 independent groups converge on the same mechanism, (b) one provides a mathematical proof, (c) empirical magnitudes are large (+8.2% to +40.3%), and (d) the Beta kernel gives us concrete threshold bounds for the first time.
 
 **Gap acknowledged**: All DD-753 papers study training-time optimization; H-107 concerns inference-time overhead. The mechanism likely transfers (same resource-competition principle) but needs empirical confirmation via EXP-150.
+
+### EXP-151 Interim Results (Phase 1a: Easy + Hard buckets, 114 trials)
+
+**Status**: Easy + Hard COMPLETE, Medium NOT STARTED (2026-04-13)
+
+**Easy bucket (42 trials)**:
+- investigate-fix-pattern: 100% full vs 100% minimal (N=11+10) → **ceiling effect**, no overhead delta detectable
+- mock-leak-trap: 0% full vs 0% minimal (N=11+10) → **scoring artifact** (all runs pass product criteria but fail `identified-mock-problem` behavioral criterion; functionally solved but scorer disagrees). Not usable as an easy-difficulty scenario.
+- wrong-fix-recovery: **broken gym integration** (timeout in <2s). Cannot run.
+
+**P-107a verdict: INDETERMINATE** — Easy bucket has only 1 usable scenario, which is at ceiling. Cannot test whether overhead helps/is neutral on easy tasks. Need additional easy scenarios with 70-90% baseline (not at ceiling).
+
+**Hard bucket (72 trials)**:
+- contradictory-requirements: 0% full vs 0% minimal (N=33+9)
+- escalation-impossible-task: 0% full vs 0% minimal (N=14+3)
+- context-proof-build-xref: 0% full vs 0% minimal (N=10+3)
+
+**P-107c verdict: SUPPORTED (trivially)** — All 72 hard-bucket trials show 0% across both conditions. Floor effect means overhead is irrelevant when tasks exceed capability. TOST equivalence trivially satisfied. This was the expected/easy-to-confirm prediction.
+
+**P-107d: PENDING** — Medium bucket is the critical remaining test. The interaction effect (largest negative delta at medium difficulty) can only be observed with medium-difficulty data.
+
+**Key issues to resolve**:
+1. mock-leak-trap scoring: `identified-mock-problem` behavioral criterion doesn't match calibration-era scoring. Investigate or reclassify scenario.
+2. wrong-fix-recovery: gym integration broken (agent_status: "timeout" in <2s). Fix or replace.
+3. Medium bucket: NOW the highest-priority experimental work for H-107. This is where the hypothesis lives or dies.
+
+**Impact on P(H)**: None. P(H) stays at 0.80. The Easy/Hard results are consistent with H-107 but provide no new discriminating evidence (ceiling + floor = null effects in both conditions). The Medium bucket is where falsification or strong confirmation can happen.
 
 ### Why P(H) = 0.80 (Updated from 0.62)
 
@@ -189,6 +217,7 @@ Run N=50 per condition on cascading-fix-trap-v2 alone (the single hardest non-di
 | **H-085** (P=0.85) | Refined — forced externalization's 5 boundaries all occur on harder tasks; H-107 provides the unifying variable |
 | **EXP-149** | Should be updated to stratify by task difficulty as primary variable |
 | **EXP-150** (proposed) | Direct test of H-107 |
+| **EXP-151** (in progress) | Phase 1a interim: Easy+Hard confirm ceiling/floor (no overhead effect). Medium bucket is the critical remaining test. |
 
 ## If Confirmed
 
