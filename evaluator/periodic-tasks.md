@@ -49,7 +49,9 @@ See `agents/evaluator/periodic-tasks.md` for the definitions.
 - Do NOT update `agents/shared/knowledge/strategies.md` directly (Bob reviews first).
 - **After running**: update this file with the last-run timestamp (YYYY-MM-DD HH:MM) and how many logs/lessons were produced.
 
-**Last run**: 2026-04-13 09:52Z — DB canonical check: `.state/may.db` `MAX(evaluations.createdAt)=1776073012830` (2026-04-13T09:36:52.830Z; eval pipeline live/recent at check time). Confirmed DB tables include `evaluations` but no `llm_evaluations`/`llm_evals` (no `llm_*` tables present; Process #15 appears disabled/unimplemented or renamed). Legacy `.state/evaluations/` artifacts still stale — newest mtime observed: 2026-03-24.
+**Last run**: 2026-04-13 13:21Z — DB canonical check: `.state/may.db` `MAX(evaluations.createdAt)=1776085614018` (2026-04-13T13:06:54.018Z; eval pipeline live/recent at check time). Confirmed DB tables include `evaluations` but no `llm_evaluations`/`llm_evals` (no `llm_*` tables present; Process #15 appears disabled/unimplemented or renamed). Legacy `.state/evaluations/` artifacts still stale — newest mtime observed: 2026-03-24.
+
+**Previous run**: 2026-04-13 09:52Z — DB canonical check: `.state/may.db` `MAX(evaluations.createdAt)=1776073012830` (2026-04-13T09:36:52.830Z; eval pipeline live/recent at check time). Confirmed DB tables include `evaluations` but no `llm_evaluations`/`llm_evals` (no `llm_*` tables present; Process #15 appears disabled/unimplemented or renamed). Legacy `.state/evaluations/` artifacts still stale — newest mtime observed: 2026-03-24.
 
 **Previous run**: 2026-04-13 07:51Z — DB canonical check: `.state/may.db` `MAX(evaluations.createdAt)=1776065811986` (2026-04-13T07:36:51.986Z; eval pipeline live/recent at check time). Also observed `.state/may.db` `MAX(requests.createdAt)=1776066697508` (2026-04-13T07:51:37.508Z; DB actively being written). Confirmed DB tables include `evaluations` but no `llm_evaluations`/`llm_evals` (Process #15 appears disabled/unimplemented or renamed). Legacy `.state/evaluations/` artifacts still stale — newest mtime observed: 2026-03-24.
 
