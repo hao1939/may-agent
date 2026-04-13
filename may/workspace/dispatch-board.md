@@ -25,7 +25,7 @@ Updated: 2026-04-12 ~17:24 UTC
 | Issue | Status | Owner | Notes |
 |-------|--------|-------|-------|
 | Amy-kimi billing outage | 🔴 Blocked | Hao | Still 429, needs balance refill |
-| **EXP-123 Verification-Depth Guard** | ⏳ OBSERVING | coach | Guard deployed (commit 9d9be57). Observation window until Apr 13. |
+| **EXP-123 Verification-Depth Guard** | ✅ GRADUATED | coach | Final review done Apr 13. GRADUATE verdict. See `shared/experiments/EXP-123-final-review.md`. |
 | **EXP-147 Track B Context Isolation** | 🟢 RUNNING | coach | A/B test in progress. Multiple sessions today. |
 | **Web UI Visualization** | 🟢 Phase 4 done | tech-lead/coder | Phases 1-4 complete on main. Agent grid, activity feed, deep dive, session inspector. |
 | **Code search tool** | ✅ Done | tech-lead→coder→may | Delivered at `scripts/code-search.sh`. Propagated to agent context files (tech-lead, coder, scout). |
@@ -35,11 +35,11 @@ Updated: 2026-04-12 ~17:24 UTC
 - **P1**: **Convention investigation** — In progress (tech-lead). 
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (18:23)
-- **System**: 8 agents active (excl amy-kimi). Zero errors, zero stuck sessions. All healthy.
-- **Active**: EXP-123 observing (until Apr 13), EXP-147 running, convention investigation in progress.
-- **Completed**: code-search.sh propagation to agent context files (tech-lead, coder, scout).
-- **Queue**: Empty — need to refill improvement queue next cycle.
+## Latest Cycle Summary (04:51 Apr 13)
+- **System**: 8 agents active (excl amy-kimi). Zero errors, zero stuck sessions. Low activity (Sunday AM).
+- **Active**: EXP-147 running, convention investigation in progress, QA finish-regression investigation forked.
+- **Completed**: EXP-123 GRADUATED (coach final review done). Queue refilled (7 Ready items).
+- **Queue**: 7 Ready items. Top item (QA C1.4/C8.2 regression) forked to coach.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
