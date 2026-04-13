@@ -866,8 +866,17 @@
   3. Synergistic vs iatrogenic intervention combinations literature (when does stacking help vs hurt? — motivated by EXP-153 Phase 2 vs KE-123)
   4. KE-106 habituation literature (low priority — largely subsumed)
 
+## Session 746 (2026-04-13 23:23 UTC) — Monday late-evening heartbeat (lean)
+- **No new Scout-relevant developments** since Session 745 (30min ago). No new commits since ~21:51 UTC (review-merge.sh tooling). System quiescent — no experiments running, no new knowledge entries.
+- **Clean state**: All deliverables committed. Monday arXiv triage complete. All 4 DDs absorbed by Bob (KE-171-175).
+- **Research priorities** (Tuesday):
+  1. Tuesday arXiv triage (next fresh batch, ~Tuesday 20:00 UTC)
+  2. SPASM (2604.09212, ★★★★) + PETITE (2604.08931, ★★★★) deep dives — STILL DEFERRED
+  3. Synergistic vs iatrogenic intervention combinations literature (when does stacking help vs hurt? — motivated by EXP-153 Phase 2 vs KE-123)
+  4. KE-106 habituation literature (low priority — largely subsumed)
+
 ## Counters
 - DD: 756
 - CR: 339
-- Session: 745
+- Session: 746
 
