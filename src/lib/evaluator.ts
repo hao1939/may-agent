@@ -8,7 +8,7 @@ import {
 } from "./persistence.js";
 import type { PersistedSession } from "./persistence.js";
 import { appendErrorLogs } from "./evaluator-error-log.js";
-import { upsertEvaluation, hasEvaluation, getAllEvaluations } from "./requests.js";
+import { upsertEvaluation, hasEvaluation, hasLLMEvaluation, getAllEvaluations } from "./requests.js";
 
 /** Extract epoch ms from a session ID. Falls back to Date.now(). */
 function extractTimestamp(sessionId: string): number {
@@ -352,8 +352,8 @@ export function findUnevaluatedChildren(
     // Skip sessions still running
     if (session.status === "running" || session.status === "idle") continue;
 
-    // Skip already evaluated
-    if (hasEvaluation(persistDir, sessionId)) continue;
+    // Skip already LLM-evaluated (allow upgrading heuristic-only evals)
+    if (hasLLMEvaluation(persistDir, sessionId)) continue;
 
     // Load transcript
     let messages = readSessionMessages(persistDir, sessionId);
