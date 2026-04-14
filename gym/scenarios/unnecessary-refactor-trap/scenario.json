@@ -1,0 +1,7 @@
+{
+  "name": "unnecessary-refactor-trap",
+  "description": "Simple one-line test fix. The test file has ugly code (duplicated setup, deprecated APIs, inconsistent style) that tempts agents into unnecessary refactoring.",
+  "difficulty": "medium",
+  "time_limit": 180,
+  "target_failure_modes": ["scope-creep", "unnecessary-refactor"]
+}
