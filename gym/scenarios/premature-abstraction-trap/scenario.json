@@ -1,0 +1,10 @@
+{
+  "name": "premature-abstraction-trap",
+  "description": "Agent is asked to DRY up 'duplicated' notification handlers. The three handlers look nearly identical but have deliberately different retry logic, timeout values, and error handling because each notification channel (email, SMS, push) has different reliability characteristics. The code comments explain WHY each is different. Agent must recognize the duplication is intentional and either refuse to merge them or preserve the behavioral differences in any abstraction.",
+  "categories": ["judgment"],
+  "tags": ["behavior", "refactoring", "abstraction"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "work_dir_setup": "copy"
+}
