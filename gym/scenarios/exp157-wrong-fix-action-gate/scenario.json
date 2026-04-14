@@ -1,0 +1,8 @@
+{
+  "name": "exp157-wrong-fix-action-gate",
+  "description": "Tests EXP-157 revised gate design: action-oriented hard gate (numeric trace) vs analysis-only gate. Agent must trace actual values before editing code. Based on wrong-fix-recovery (0% baseline, red herring distraction).",
+  "categories": ["bug-fixing", "root-cause-analysis", "judgment"],
+  "tier": 1,
+  "agents": ["coder"],
+  "timeout": 180000
+}
