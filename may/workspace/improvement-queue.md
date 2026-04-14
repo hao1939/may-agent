@@ -3,38 +3,19 @@
 
 ## Ready
 
-- [x] **Guards Phase 3: Cron-to-workflow migration** — ✅ COMPLETE (2026-04-14). 2 of 4 handlers migrated: error-log-scanner → `error-scan.ts`, coaching-feedback → `coaching-feedback.ts`. Remaining 2 not candidates (priority-drift=dead code, active-nudge=pure JS intervention). run-workflow handler upgraded with `runFunction()` + `agent`. **Design**: `agents/may/workspace/DESIGN-sensor-judge-migration.md`.
-- [x] **Batch merge tool for tech-lead** — ✅ DONE (2026-04-14). `scripts/batch-merge.sh` + `scripts/review-merge.sh` produced.
-- [ ] **Scenario oracle generator for coach** — Optimizer finding: coach spent 118 ops (3.4× budget) designing gym scenarios, with 32 node executions for manual expected-output computation. A script to auto-generate expected outputs from clean codebase + patch would save ~15-20 ops per scenario session. **Deliverable**: Script at `scripts/scenario-oracle.sh`. **Scope**: Medium. **Owner**: coach + coder.
-- [x] **Create-test-pivot loop guard** — ✅ BUILT + IN REVIEW (2026-04-14). Guard at `agents/shared/guards/pivot-detector.ts`. 7 tests on branch `review/pivot-detector-guard`. Warns at 3 fail-pivot cycles, injects mandatory reassessment at 5.
-- [ ] **Artifacts-as-Memory deep dive + externalization framework validation** — Dispatched to Bob (P1, 2026-04-14). Scout found paper 2604.08756 "Artifacts as Memory Beyond the Agent Boundary" — validates DD-750. **Scope**: Small.
-
-- [x] **Scout archetype tool fix — enable forking** — ✅ DONE (2026-04-14). Already applied.
-- [x] **Over-intervention cleanup — remove verification triple-stacks** — ✅ DONE (2026-04-14, coach).
-- [x] **Tech-lead workflow adoption — D-o-R for Lens sessions** — ✅ MOSTLY RESOLVED (2026-04-14). 63% adoption.
-- [x] **Tiered turn budget deployment** — ✅ ALREADY DEPLOYED (confirmed 2026-04-14).
-
-- [ ] **PATH export boilerplate elimination** — 🟢 IN PROGRESS (dispatched to tech-lead 2026-04-14 18:52, req c712667e). Optimizer finding (2026-04-14): 8% of ALL bash calls (18,980 of 239,657) are `export PATH=".state/.bun/bin:$PATH"` boilerplate. Framework-level 1-line fix: add PATH to the environment that spawns agent sessions (likely `src/lib/workflow-tool.ts` or bash tool env). **Estimated savings: ~700 wasted ops/day**. **Deliverable**: PR adding PATH to bash tool environment config. **Scope**: Small. **Owner**: tech-lead/coder. **Source**: `agents/optimizer/workspace/finding-tool-gap-analysis-0414b.md`.
-
-- [ ] **QA heartbeat simplification (IT-21)** — QA interrupt rate is 60% (12/20 sessions in 24h), the worst of any agent. QA heartbeats use 5-8 ops but get killed by next heartbeat tick. Root cause: heartbeat does too much per cycle (read heartbeat + read queue + check branches + check reviews). **Deliverable**: Rewrite QA heartbeat to single-focus: check ONE review branch per tick, ≤4 ops target. **Scope**: Small. **Owner**: may (heartbeat edit) or tech-lead. **Source**: IT-21 on dispatch board, QA session data.
-
-- [ ] **Coach cron job ROI audit** — Coach runs `cron:reflect` and `cron:common-sense-verify` sessions consuming 248 ops across 10 sessions (24h). Average 24.8 ops per cron session — higher than many work sessions. Are these producing actionable output or just burning budget? **Deliverable**: Audit report with recommendation to keep/modify/remove each cron. **Scope**: Small. **Owner**: optimizer or may.
-
-- [ ] **Optimizer finding archive cleanup + action pipeline** — Optimizer workspace has 100+ finding files (3.8MB). Most are unactioned. The finding→dispatch pipeline (dispatched 2026-04-13) hasn't materialized into working infrastructure. **Deliverable**: (1) Archive findings older than 3 days to `archive/` subfolder, (2) Create a top-10 unactioned findings summary with dispatch recommendations. **Scope**: Medium. **Owner**: optimizer + may.
-
-- [ ] **Workspace bloat: bob at 7.7MB** — Bob's workspace grew to 7.7MB despite `scripts/workspace-cleanup.sh` being built. Coach at 4.9MB, optimizer at 3.8MB. The cleanup script exists but hasn't been run (or isn't effective enough). **Deliverable**: Run workspace-cleanup.sh, verify size reduction, add to a cron or heartbeat check if needed. **Scope**: Small. **Owner**: may or tech-lead.
-
-- [ ] **Scenario oracle branch merge** — Branch `review/scenario-oracle` exists on remote but hasn't been merged to main. Scripts `scripts/scenario-oracle.sh` and `scripts/scenario-oracle-analyze.mjs` built (2026-04-14). **Deliverable**: Merge the branch after QA check. **Scope**: Tiny. **Owner**: tech-lead/coder.
-
-- [ ] **Workflow adoption structural fix** — Optimizer debunked workflow adoption: coach is 0% (not 53%). System-wide only 6.7% of sessions use `workflowRunId`. Root cause: structural contradiction — heartbeat instructs `workflow.run()` but it blocks and would blow heartbeat's ≤10 op budget. **Deliverable**: Either (a) make workflow.run non-blocking (fork-style) in the framework, or (b) accept fork-based dispatch and remove misleading heartbeat instructions. Design doc required. **Scope**: Medium. **Owner**: tech-lead + optimizer. **Source**: `agents/optimizer/workspace/finding-coach-workflow-adoption-intervention-0414.md`.
-
-- [ ] **May C1.3 convention regression investigation** — May's C1.3 (verify-before-finish) dropped from 98.5% → 91.3% over 48h. 12 failures in 138 checks. Coach dispatched investigation (2026-04-14 18:21). **Deliverable**: Root cause + fix (likely heartbeat/context.md update). **Scope**: Small. **Owner**: coach (already investigating).
+- [ ] **Tech-lead workflow adoption — D-o-R for Lens sessions** — Tech-lead runs 14 analysis ("Lens") sessions/day averaging 31 ops with max 84, all at 0% workflow adoption. The 84-op harness engineering session could have been 35-52 ops with D-o-R phase boundaries. Estimated savings: 200+ ops/day. Source: optimizer workflow health finding 2026-04-13. **Deliverable**: Propose D-o-R workflow integration to tech-lead heartbeat with specific Lens task templates. **Scope**: Medium.
+- [ ] **Tech-lead workflow adoption — D-o-R for Lens sessions** — Tech-lead runs 14 analysis ("Lens") sessions/day averaging 31 ops with max 84, all at 0% workflow adoption. The 84-op harness engineering session could have been 35-52 ops with D-o-R phase boundaries. Estimated savings: 200+ ops/day. Source: optimizer workflow health finding 2026-04-13. **Deliverable**: Propose D-o-R workflow integration to tech-lead heartbeat with specific Lens task templates. **Scope**: Medium.
+- [ ] **Tiered turn budget deployment** — Experiment design is complete (`agents/optimizer/workspace/experiment-tiered-budget.md`) but code was NOT deployed to source files. Tiers: heartbeat=8, research=15, implementation=25 with soft limit + 2-turn grace. Safety: BenVanik data says never reduce thinking depth, only bound tool-call loops. Source: adaptive-reasoning-efficiency research project. **Deliverable**: tech-lead dispatched to implement turn budget in `src/lib/manager.ts` + `src/app/cron.ts` per the design doc. **Scope**: Medium.
+- [ ] **Artifacts-as-Memory deep dive + externalization framework validation** — Scout found paper 2604.08756 "Artifacts as Memory Beyond the Agent Boundary" — mathematical proof that artifacts reduce information needed to represent history (Artifact Reduction Theorem). Directly validates our externalization framework (DD-750). Combined with ZPD convergence cluster (5+ papers validating H-107 difficulty threshold). Source: scout triage sessions 711-712. **Deliverable**: bob dispatched to write deep-dive + cross-reference with DD-750 and H-107 evidence. **Scope**: Small.
 
 ## In Progress
 - [ ] **Optimizer finding→dispatch pipeline** — Forked to optimizer (2026-04-13 07:22, s_1776064947441_50). Design protocol + heartbeat edit.
 
 ## Done
 <!-- Move completed items here with date -->
+- [x] **Over-intervention cleanup** (2026-04-14): Removed KE-093 from 5 agents' context.md, deleted bob's verify-context-claims.md + dead backup. Each agent now has exactly 1 verification intervention (evidence-over-narrative.md). Commits: 16201f85, c9d38911.
+- [x] **Scout archetype tool fix** (2026-04-14): Already done — scout/agent.json already has `agents` and `workflow` tools. 0 child sessions is behavioral (scout doesn't fork), not a tool issue.
+- [x] **Guard-redirect prototype** (2026-04-14): Phase 1 design complete. Design docs at workspace/DESIGN-event-driven-guards.md, PROTOTYPE-guard-redirect.md. Test at test/guard-redirect.test.ts.
 - [x] **KE deployment sprint — top 5 high-priority KEs** (2026-04-13): 5 KEs deployed (KE-122, KE-123, KE-091, KE-133, KE-020). Evidence-over-narrative warnings added.
 - [x] **Research project triage and dispatch** (2026-04-13): 7 projects triaged. 3 archived (gstack, metaclaw-poc, superpowers). 2 promoted to experimenting. Statuses updated.
 - [x] **H-104 falsification cascade cleanup** (2026-04-13): Completed by Bob (57 ops). Updated downstream artifacts.

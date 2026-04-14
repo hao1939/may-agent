@@ -45,7 +45,7 @@ This is the first rigorous framework for what we informally call "skill graduati
 
 ### 2. Directly Maps to Tiered Memory Architecture
 
-Our memory architecture research (agents/shared/projects/memory-architecture-tiered.md) proposes tiered consolidation: working memory → episodic → semantic → procedural. SKILL0's internalization maps precisely to the **semantic → procedural** transition:
+Our memory architecture research (agents/shared/research-projects/memory-architecture-tiered.md) proposes tiered consolidation: working memory → episodic → semantic → procedural. SKILL0's internalization maps precisely to the **semantic → procedural** transition:
 
 | Our Tier | SKILL0 Equivalent |
 |----------|-------------------|

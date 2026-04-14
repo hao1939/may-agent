@@ -1,9 +1,6 @@
-# Projects
+# Research Projects
 
 Long-running research → experiment → adopt cycles. Each file is one project.
-
-> **Note**: This directory was renamed from `shared/research-projects/` → `shared/projects/` (2026-04-14).
-> Paper analyses live in `shared/knowledge/library/deep-dives/` and `cross-references/`.
 
 ## Lifecycle
 
