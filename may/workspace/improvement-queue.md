@@ -14,6 +14,22 @@
 - [x] **Tech-lead workflow adoption — D-o-R for Lens sessions** — ✅ MOSTLY RESOLVED (2026-04-14). 63% adoption.
 - [x] **Tiered turn budget deployment** — ✅ ALREADY DEPLOYED (confirmed 2026-04-14).
 
+- [ ] **PATH export boilerplate elimination** — Optimizer finding (2026-04-14): 8% of ALL bash calls (18,980 of 239,657) are `export PATH=".state/.bun/bin:$PATH"` boilerplate. Framework-level 1-line fix: add PATH to the environment that spawns agent sessions (likely `src/lib/workflow-tool.ts` or bash tool env). **Estimated savings: ~700 wasted ops/day**. **Deliverable**: PR adding PATH to bash tool environment config. **Scope**: Small. **Owner**: tech-lead/coder. **Source**: `agents/optimizer/workspace/finding-tool-gap-analysis-0414b.md`.
+
+- [ ] **QA heartbeat simplification (IT-21)** — QA interrupt rate is 60% (12/20 sessions in 24h), the worst of any agent. QA heartbeats use 5-8 ops but get killed by next heartbeat tick. Root cause: heartbeat does too much per cycle (read heartbeat + read queue + check branches + check reviews). **Deliverable**: Rewrite QA heartbeat to single-focus: check ONE review branch per tick, ≤4 ops target. **Scope**: Small. **Owner**: may (heartbeat edit) or tech-lead. **Source**: IT-21 on dispatch board, QA session data.
+
+- [ ] **Coach cron job ROI audit** — Coach runs `cron:reflect` and `cron:common-sense-verify` sessions consuming 248 ops across 10 sessions (24h). Average 24.8 ops per cron session — higher than many work sessions. Are these producing actionable output or just burning budget? **Deliverable**: Audit report with recommendation to keep/modify/remove each cron. **Scope**: Small. **Owner**: optimizer or may.
+
+- [ ] **Optimizer finding archive cleanup + action pipeline** — Optimizer workspace has 100+ finding files (3.8MB). Most are unactioned. The finding→dispatch pipeline (dispatched 2026-04-13) hasn't materialized into working infrastructure. **Deliverable**: (1) Archive findings older than 3 days to `archive/` subfolder, (2) Create a top-10 unactioned findings summary with dispatch recommendations. **Scope**: Medium. **Owner**: optimizer + may.
+
+- [ ] **Workspace bloat: bob at 7.7MB** — Bob's workspace grew to 7.7MB despite `scripts/workspace-cleanup.sh` being built. Coach at 4.9MB, optimizer at 3.8MB. The cleanup script exists but hasn't been run (or isn't effective enough). **Deliverable**: Run workspace-cleanup.sh, verify size reduction, add to a cron or heartbeat check if needed. **Scope**: Small. **Owner**: may or tech-lead.
+
+- [ ] **Scenario oracle branch merge** — Branch `review/scenario-oracle` exists on remote but hasn't been merged to main. Scripts `scripts/scenario-oracle.sh` and `scripts/scenario-oracle-analyze.mjs` built (2026-04-14). **Deliverable**: Merge the branch after QA check. **Scope**: Tiny. **Owner**: tech-lead/coder.
+
+- [ ] **Workflow adoption structural fix** — Optimizer debunked workflow adoption: coach is 0% (not 53%). System-wide only 6.7% of sessions use `workflowRunId`. Root cause: structural contradiction — heartbeat instructs `workflow.run()` but it blocks and would blow heartbeat's ≤10 op budget. **Deliverable**: Either (a) make workflow.run non-blocking (fork-style) in the framework, or (b) accept fork-based dispatch and remove misleading heartbeat instructions. Design doc required. **Scope**: Medium. **Owner**: tech-lead + optimizer. **Source**: `agents/optimizer/workspace/finding-coach-workflow-adoption-intervention-0414.md`.
+
+- [ ] **May C1.3 convention regression investigation** — May's C1.3 (verify-before-finish) dropped from 98.5% → 91.3% over 48h. 12 failures in 138 checks. Coach dispatched investigation (2026-04-14 18:21). **Deliverable**: Root cause + fix (likely heartbeat/context.md update). **Scope**: Small. **Owner**: coach (already investigating).
+
 ## In Progress
 - [ ] **Optimizer finding→dispatch pipeline** — Forked to optimizer (2026-04-13 07:22, s_1776064947441_50). Design protocol + heartbeat edit.
 
