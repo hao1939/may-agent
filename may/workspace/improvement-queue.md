@@ -3,6 +3,12 @@
 
 ## Ready
 
+<<<<<<< Updated upstream
+- [ ] **Tech-lead workflow adoption — D-o-R for Lens sessions** — Tech-lead runs 14 analysis ("Lens") sessions/day averaging 31 ops with max 84, all at 0% workflow adoption. The 84-op harness engineering session could have been 35-52 ops with D-o-R phase boundaries. Estimated savings: 200+ ops/day. Source: optimizer workflow health finding 2026-04-13. **Deliverable**: Propose D-o-R workflow integration to tech-lead heartbeat with specific Lens task templates. **Scope**: Medium.
+- [ ] **Tech-lead workflow adoption — D-o-R for Lens sessions** — Tech-lead runs 14 analysis ("Lens") sessions/day averaging 31 ops with max 84, all at 0% workflow adoption. The 84-op harness engineering session could have been 35-52 ops with D-o-R phase boundaries. Estimated savings: 200+ ops/day. Source: optimizer workflow health finding 2026-04-13. **Deliverable**: Propose D-o-R workflow integration to tech-lead heartbeat with specific Lens task templates. **Scope**: Medium.
+- [ ] **Tiered turn budget deployment** — Experiment design is complete (`agents/optimizer/workspace/experiment-tiered-budget.md`) but code was NOT deployed to source files. Tiers: heartbeat=8, research=15, implementation=25 with soft limit + 2-turn grace. Safety: BenVanik data says never reduce thinking depth, only bound tool-call loops. Source: adaptive-reasoning-efficiency research project. **Deliverable**: tech-lead dispatched to implement turn budget in `src/lib/manager.ts` + `src/app/cron.ts` per the design doc. **Scope**: Medium.
+- [ ] **Artifacts-as-Memory deep dive + externalization framework validation** — Scout found paper 2604.08756 "Artifacts as Memory Beyond the Agent Boundary" — mathematical proof that artifacts reduce information needed to represent history (Artifact Reduction Theorem). Directly validates our externalization framework (DD-750). Combined with ZPD convergence cluster (5+ papers validating H-107 difficulty threshold). Source: scout triage sessions 711-712. **Deliverable**: bob dispatched to write deep-dive + cross-reference with DD-750 and H-107 evidence. **Scope**: Small.
+=======
 - [x] **Guards Phase 3: Cron-to-workflow migration** — ✅ COMPLETE (2026-04-14). 2 of 4 handlers migrated: error-log-scanner → `error-scan.ts`, coaching-feedback → `coaching-feedback.ts`. Remaining 2 not candidates (priority-drift=dead code, active-nudge=pure JS intervention). run-workflow handler upgraded with `runFunction()` + `agent`. **Design**: `agents/may/workspace/DESIGN-sensor-judge-migration.md`.
 - [ ] **Batch merge tool for tech-lead** — Dispatched to tech-lead (2026-04-14 16:21, s_1776183713962_246). Script at `scripts/batch-merge.sh` that takes a branch list/pattern, merges all with --ours conflict resolution. **Scope**: Small.
 - [ ] **Scenario oracle generator for coach** — Optimizer finding: coach spent 118 ops (3.4× budget) designing gym scenarios, with 32 node executions for manual expected-output computation. A script to auto-generate expected outputs from clean codebase + patch would save ~15-20 ops per scenario session. **Deliverable**: Script at `scripts/scenario-oracle.sh`. **Scope**: Medium. **Owner**: coach + coder.
@@ -13,12 +19,16 @@
 - [x] **Over-intervention cleanup — remove verification triple-stacks** — ✅ DONE (2026-04-14, coach).
 - [x] **Tech-lead workflow adoption — D-o-R for Lens sessions** — ✅ MOSTLY RESOLVED (2026-04-14). 63% adoption.
 - [x] **Tiered turn budget deployment** — ✅ ALREADY DEPLOYED (confirmed 2026-04-14).
+>>>>>>> Stashed changes
 
 ## In Progress
 - [ ] **Optimizer finding→dispatch pipeline** — Forked to optimizer (2026-04-13 07:22, s_1776064947441_50). Design protocol + heartbeat edit.
 
 ## Done
 <!-- Move completed items here with date -->
+- [x] **Over-intervention cleanup** (2026-04-14): Removed KE-093 from 5 agents' context.md, deleted bob's verify-context-claims.md + dead backup. Each agent now has exactly 1 verification intervention (evidence-over-narrative.md). Commits: 16201f85, c9d38911.
+- [x] **Scout archetype tool fix** (2026-04-14): Already done — scout/agent.json already has `agents` and `workflow` tools. 0 child sessions is behavioral (scout doesn't fork), not a tool issue.
+- [x] **Guard-redirect prototype** (2026-04-14): Phase 1 design complete. Design docs at workspace/DESIGN-event-driven-guards.md, PROTOTYPE-guard-redirect.md. Test at test/guard-redirect.test.ts.
 - [x] **KE deployment sprint — top 5 high-priority KEs** (2026-04-13): 5 KEs deployed (KE-122, KE-123, KE-091, KE-133, KE-020). Evidence-over-narrative warnings added.
 - [x] **Research project triage and dispatch** (2026-04-13): 7 projects triaged. 3 archived (gstack, metaclaw-poc, superpowers). 2 promoted to experimenting. Statuses updated.
 - [x] **H-104 falsification cascade cleanup** (2026-04-13): Completed by Bob (57 ops). Updated downstream artifacts.

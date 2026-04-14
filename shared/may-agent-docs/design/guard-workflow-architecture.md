@@ -1,11 +1,9 @@
 # Event-Native Guard-Workflow Architecture
 
-**Status**: SUPERSEDED — See `agents/may/workspace/DESIGN-workflow-guards.md` (guards) and `agents/may/workspace/DESIGN-sensor-judge-migration.md` (cron migration)  
+**Status**: RFC Draft  
 **Author**: Bob (design), per Hao directive 2026-04-13  
 **Date**: 2026-04-13  
 **Supersedes**: May's `DESIGN-session-event-flow.md` (session-level design — this elevates to workflow-level)
-
-> **⚠️ This RFC was the initial design exploration. The implemented system is documented in the shared designs above.**
 
 ---
 

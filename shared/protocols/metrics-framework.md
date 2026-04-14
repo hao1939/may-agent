@@ -47,7 +47,7 @@ Bob already reads the knowledge base, proposes hypotheses, and synthesizes findi
 | **Knowledge entries created** | `knowledge_entries` | New KEs per week, total count | Weekly |
 | **Hypotheses advanced** | `hypotheses` | Status transitions per week (PROPOSED→ACTIVE→SUPPORTED/DISCONFIRMED) | Weekly |
 | **Experiments completed** | `experiments` | Completed per week, pipeline velocity (designed→running→completed) | Weekly |
-| **Research project progress** | `agents/shared/projects/*.md` | Milestones hit, blockers | Weekly |
+| **Research project progress** | `agents/shared/research-projects/*.md` | Milestones hit, blockers | Weekly |
 | **Knowledge gaps** | Derived | Hypotheses with no experiments, stale KEs, abandoned research threads | Monthly |
 
 ### Bob's Research Report (weekly)

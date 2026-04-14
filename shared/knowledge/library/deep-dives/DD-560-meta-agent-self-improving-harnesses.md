@@ -75,7 +75,7 @@ Small changes to proposer instructions had large effect on optimization quality.
 ## Connections to Our Research
 
 ### Direct Validation of Harness Engineering Thesis
-This is the strongest validation yet of our Harness Engineering research project (agents/shared/projects/harness-engineering-long-running-agents.md):
+This is the strongest validation yet of our Harness Engineering research project (agents/shared/research-projects/harness-engineering-long-running-agents.md):
 - **Three Paradigm Shifts confirmed**: Prompt Engineering → Context Engineering → Harness Engineering. meta-agent automates the Harness Engineering step.
 - **DD#556 (Effort Crisis)** showed harness configuration matters enormously → meta-agent provides a solution
 - **DD#552 (MarginLab)** showed harness-layer regressions are distinct from model regressions → meta-agent can detect and fix these
