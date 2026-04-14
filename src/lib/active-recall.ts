@@ -29,7 +29,7 @@ interface ActiveRecallResult {
 /**
  * Run Active Recall pre-check for an agent before task execution.
  *
- * Reads agents/{agentName}/ERROR_LOG.jsonl for past failures (last 3 days).
+ * Reads agents/{agentName}/ERROR_LOG.jsonl for past failures (last 24 hours).
  * Returns structured warnings that should be injected into the agent's
  * system message context.
  *
@@ -54,20 +54,20 @@ export function runActiveRecall(agentName: string, projectRoot: string): ActiveR
 
     const content = readFileSync(errorLogPath, "utf-8");
     const lines = content.split("\n").filter((l: string) => l.trim());
-    // Only check last 100 entries to bound read cost
-    const tailLines = lines.slice(-100);
+    // Only check last 20 entries to bound read cost
+    const tailLines = lines.slice(-20);
 
-    const threeDaysAgo = Date.now() - 3 * 24 * 60 * 60 * 1000;
+    const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
     const matchingEntries: Array<{ failure_type?: string; error?: string; correction?: string; timestamp?: string }> =
       [];
 
     for (const line of tailLines) {
       try {
         const entry = JSON.parse(line);
-        // Filter to last 3 days
+        // Filter to last 24 hours
         if (entry.timestamp) {
           const ts = new Date(entry.timestamp).getTime();
-          if (ts < threeDaysAgo) continue;
+          if (ts < oneDayAgo) continue;
         }
         matchingEntries.push(entry);
       } catch {
@@ -119,11 +119,14 @@ export function runActiveRecall(agentName: string, projectRoot: string): ActiveR
       );
     }
 
+    // Cap to top 5 warnings to avoid flooding agent context
+    const cappedWarnings = warnings.slice(0, 5);
+
     return {
       triggered: true,
       matchCount: matchingEntries.length,
       failureTypes: [...failureTypes],
-      warnings,
+      warnings: cappedWarnings,
     };
   } catch (err) {
     // Active recall is best-effort — never block task execution
