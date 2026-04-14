@@ -53,6 +53,62 @@ This is Hao's 5-step pattern (guard-workflow-architecture.md §0) and it works b
 
 **Net**: Strong convergent signal from 5+ independent evidence sources, tempered by honest gaps in direct testing. P(H) = 0.78.
 
+## Experimental Evidence: EXP-155
+
+### EXP-155: Ch2 Hard Externalization Gate vs Selective Compliance (2026-04-14)
+
+**Design**: 3-arm comparison on hidden-dependency scenario (exp155-hidden-dep-hard-gate)
+
+| Arm | Condition | Channel | N | Overall Pass | P1 (artifact exists) |
+|-----|-----------|---------|---|-------------|---------------------|
+| A | Baseline (soft 3-phase) | None | 20 | 15.0% (3/20) | ~100% |
+| B | Ch1 Skill (investigation-before-fix) | Ch1 | 10 | 10.0% (1/10) | **10%** |
+| C | **Ch2 Hard Gate (FINDINGS.md required)** | **Ch2** | **10** | **100.0% (10/10)** | **100%** |
+
+**Effect size**: +85pp over baseline, +90pp over Ch1 skill. Fisher's exact p < 0.0001 for both comparisons.
+
+### Prediction Evaluation
+
+| Prediction | H-160 Target | EXP-155 Result | Verdict |
+|-----------|-------------|----------------|---------|
+| P-160a: Gate compliance ≥80% | ≥80% | **100% (10/10)** | ✅ **EXCEEDED** |
+| P-160b: Behavioral skill ≤20% | ≤20% | **10% (1/10)** | ✅ **CONFIRMED** |
+| P-160c: Compliance quality matches rate | ≥70% substantive | **100% (P2+P3 both 100%)** | ✅ **EXCEEDED** |
+| P-160d: No alignment tax | ≤5pp primary task reduction | **0pp (product checks 100%)** | ✅ **CONFIRMED** |
+
+All four specific predictions confirmed or exceeded. The effect size (+85pp) substantially exceeds the predicted >60pp.
+
+### Quality Beyond Compliance
+
+The most remarkable finding: Ch2 gates didn't just force artifact creation — they forced **quality thinking**. All 10 agents documented BOTH hidden bugs (RULES_PAH typo + checksum mismatch) when required to write structured FINDINGS.md. P2 and P3 went from ~0% (Ch1) to 100% (Ch2). This exceeds P-160c's prediction of ≥70% substantive compliance.
+
+### P(H) Update: 0.78 → 0.92
+
+**Bayesian update rationale**:
+- Prior: P(H) = 0.78 based on convergent indirect evidence (KE-176, KE-174, KE-007, KE-106, production guards)
+- Likelihood ratio: The 100% result (10/10) on the exact operationalized prediction is extremely strong evidence. P(data|H) ≈ 0.95 (expected ≥80%, got 100%). P(data|¬H) ≈ 0.02 (if structural enforcement doesn't reliably outperform, 10/10 at p<0.0001 is very unlikely).
+- LR ≈ 47.5. Posterior: 0.78 × 47.5 / (0.78 × 47.5 + 0.22 × 1) ≈ 0.994
+- **Tempered to 0.92** for honest uncertainty:
+  - Single scenario (hidden-dependency). Generalizability to other interruptive step types unproven.
+  - N=10 per arm (95% CI: 69-100% for Ch2 arm). True rate could be lower.
+  - Partial confound: treatment changed both delivery channel AND instruction content (structured output + "MULTIPLE bugs" hint).
+  - Gate-task synergy: this scenario has a natural 2-phase structure that maps cleanly to a gate. Tasks without clear decomposition may resist.
+
+### Remaining Caveats
+
+1. **Single scenario**: Only tested on exp155-hidden-dep-hard-gate. Need replication on a different interruptive step type (e.g., "write investigation plan before coding," "document assumptions before architecture").
+2. **Content confound**: The Ch2 gate included structured output instructions ("For EACH bug: name, file, location...") and hints ("MULTIPLE bugs"). Some of the quality improvement may come from instruction specificity, not just the gate mechanism.
+3. **Small N**: 10 runs per treatment arm. While the effect is overwhelming (p < 0.0001), the confidence interval for the true rate is 69-100%.
+4. **Scenario-gate fit**: The hidden-dependency task has a natural "investigate then fix" structure. Tasks where the interruptive step is more orthogonal to the primary objective may show weaker gate effects (per KE-135: unrelated gates degrade by 36pp).
+
+### Next Experiments for Generalizability
+
+1. **Cross-scenario replication**: Apply Ch2 gate to a different interruptive step type (e.g., "write ASSUMPTIONS.md before implementing" on an architecture task). Would test whether the gate mechanism generalizes beyond investigate-then-fix.
+2. **Gate-only vs gate+hints**: Isolate the gate mechanism by testing Ch2 gate WITHOUT the content hints ("MULTIPLE bugs", structured output format). If gate-only still achieves ≥80%, the mechanism is truly structural, not instruction quality.
+3. **Orthogonal-step test**: Apply Ch2 gate where the interruptive step is less naturally related to the primary task (e.g., "write risk assessment before implementing feature"). Tests the KE-135 gate relevance boundary.
+
+---
+
 ## Specific Predictions
 
 ### P-160a: Gate-Enforced Interruptive Compliance ≥80%
@@ -146,6 +202,8 @@ With N=10 per arm and expected effect size of 70pp (10% → 80%), Fisher's exact
 | **EXP-110** | Production evidence — FM-3.3 commit guard effectiveness |
 | **EXP-115** | Production evidence — FM-2.2 completeness guard effectiveness |
 | **EXP-131** | Gate relevance effect — related vs unrelated gates |
+| **EXP-155** | **Direct test — 100% Ch2 gate vs 10% Ch1 skill vs 15% baseline. Core prediction confirmed.** |
+| **KE-177** | **Ch2 hard gates overcome selective compliance on interruptive process steps** |
 
 ## Tags
 `structural-enforcement` `behavioral-signaling` `interruptive-steps` `workflow-gates` `selective-compliance` `KE-176` `KE-174` `compliance-gradient` `guard-workflow-architecture`
