@@ -26,6 +26,8 @@ Updated: 2026-04-14 ~09:55 UTC
 | Amy-kimi billing outage | 🔴 Blocked | Hao | Still down, needs balance refill |
 | **Guards-v2 Phase 1** | ✅ COMPLETE | may/tech-lead | All 4 gaps closed. 53 tests pass. Warning delivery, guard disable, demand dedup, auto-test guard. |
 | **Guards-v2 Phase 2: Integration test** | 🟢 IN PROGRESS | tech-lead (s_1776160529269_14) | Testing guards in a real workflow execution. Dispatched 09:55. |
+| **Pivot-detector guard** | 🟢 IN REVIEW | may | Detects create-test-fail loops (bob 280ops, coach 118ops). Warns at 3, intervenes at 5. 7 tests. Branch: review/pivot-detector-guard. |
+| **Batch merge tool** | 📋 P1 QUEUED | tech-lead | Script to automate review branch merges. Saves ~40 ops/session. |
 | **EXP-147 Track B Context Isolation** | 🟢 RUNNING | coach | A/B test in progress. |
 | **EXP-156 Hard Gate Generalization** | 🟢 RUNNING | coach | Phase 4 analysis underway. |
 | **Over-intervention dedup** | 📋 P2 QUEUED | coach | evidence-over-narrative.md exists in 5 agents + shared. Deduplicate. |
@@ -39,10 +41,11 @@ Updated: 2026-04-14 ~09:55 UTC
 - **P1**: **Guards Phase 3 planning** — cron-to-workflow migration design. After integration test lands.
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (09:55 Apr 14)
+## Latest Cycle Summary (10:03 Apr 14)
 - **Guards Phase 1**: ✅ COMPLETE. 53 tests pass. All runtime features working.
-- **Dispatched this cycle**: (1) Tech-lead: guards integration test. (2) Coach: P2 over-intervention dedup. (3) Bob: P1 artifacts-as-memory deep dive.
-- **Improvement queue**: Scout fix done (already applied). Over-intervention partially self-resolved. Tech-lead workflow adoption and tiered budget still ready.
+- **Pivot-detector guard**: ✅ BUILT + IN REVIEW. 60 tests total. Addresses 280-op bob and 118-op coach loops.
+- **Dispatched this cycle**: (1) Tech-lead: guards integration test. (2) Tech-lead: batch merge tool. (3) Coach: P2 over-intervention dedup. (4) Bob: P1 artifacts-as-memory deep dive.
+- **Queue refilled**: 4 new items (Phase 3 migration, batch merge, scenario oracle, pivot loop guard).
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
