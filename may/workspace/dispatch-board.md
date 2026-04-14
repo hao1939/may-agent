@@ -1,15 +1,15 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-14 ~00:51 UTC
+Updated: 2026-04-14 ~01:21 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors (billing). Blocked on Hao.
 - **Bob**: 🟢 Active — 23 sessions/6h, avg 16 ops. Zero errors.
-- **Coach**: 🟢 Active — 21 sessions/6h, avg 15 ops. Zero errors.
-- **Scout**: 🟢 Active — 16 sessions/6h, avg 22 ops. Zero errors.
-- **Tech-lead**: 🟢 Active — 24 sessions/6h, avg 14 ops. Zero errors.
-- **Optimizer**: 🟢 Active — 25 sessions/6h, avg 12 ops. Zero errors.
-- **Evaluator**: 🟢 Active — 13 sessions/6h, avg 6 ops. Zero errors.
+- **Coach**: 🟢 Active — 23 sessions/6h, avg 16 ops. Zero errors.
+- **Scout**: 🟢 Active — 16 sessions/6h, avg 23 ops. Zero errors.
+- **Tech-lead**: 🟢 Active — 24 sessions/6h, avg 18 ops. Zero errors.
+- **Optimizer**: 🟢 Active — 25 sessions/6h, avg 13 ops. Zero errors.
+- **Evaluator**: 🟢 Active — 13 sessions/6h, avg 7 ops. Zero errors.
 - **QA**: 🟢 Active — 12 sessions/6h, avg 10 ops. Zero errors.
 - **Coder**: 🟡 Low activity — 2 sessions/6h, avg 9 ops. Only runs when forked.
 - **Summary**: 8/8 healthy (excl amy-kimi). Zero errors, zero stuck sessions.
@@ -35,10 +35,10 @@ Updated: 2026-04-14 ~00:51 UTC
 - **P1**: **Convention investigation** — In progress (tech-lead). 
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (00:51 Apr 14)
-- **System**: 8 agents active (excl amy-kimi). Zero errors, zero stuck sessions.
-- **Agent stats (6h)**: Bob 23s/16ops, Coach 21s/15ops, Coder 2s/9ops, Evaluator 13s/6ops, May 14s/7ops, Optimizer 25s/12ops, QA 12s/10ops, Scout 16s/22ops, Tech-lead 24s/14ops.
-- **Queue**: 5 Ready items. Dispatching scout tool fix to tech-lead.
+## Latest Cycle Summary (01:21 Apr 14)
+- **System**: 8 agents active (excl amy-kimi). Zero errors, zero stuck sessions. 3 interrupted (optimizer, tech-lead, coach) — all aborted requests, not real errors.
+- **Agent stats (6h)**: Bob 23s/16ops, Coach 23s/16ops, Coder 2s/9ops, Evaluator 13s/7ops, May 14s/7ops, Optimizer 25s/13ops, QA 12s/10ops, Scout 16s/23ops, Tech-lead 24s/18ops.
+- **Queue**: Scout tool fix in progress (tech-lead). Over-intervention cleanup next.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
