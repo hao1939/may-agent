@@ -336,6 +336,80 @@ describe("workflow tool: run", () => {
   // can't be tested here. Verified manually with node --input-type=module.
 });
 
+describe("workflow tool: ctx.agent", () => {
+  it("exposes agentName as ctx.agent when provided", async () => {
+    writeWorkflow(
+      "agent-echo.ts",
+      `
+      export const name = "agent-echo";
+      export const description = "Returns ctx.agent";
+      export async function execute(ctx) {
+        return ctx.done("agent=" + ctx.agent);
+      }
+    `,
+    );
+
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")), infraRetryMax: 0 });
+    const tool = createWorkflowTool({ manager, workflowDir, agentName: "optimizer" });
+
+    const result = await tool.execute("tc1", { action: "run", name: "agent-echo", task: "test" });
+    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+
+    expect(parsed.type).toBe("done");
+    if (parsed.type === "done") {
+      expect(parsed.summary).toBe("agent=optimizer");
+    }
+  });
+
+  it("falls back to 'unknown' when agentName not provided", async () => {
+    writeWorkflow(
+      "agent-echo2.ts",
+      `
+      export const name = "agent-echo2";
+      export async function execute(ctx) {
+        return ctx.done("agent=" + ctx.agent);
+      }
+    `,
+    );
+
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")), infraRetryMax: 0 });
+    const tool = createWorkflowTool({ manager, workflowDir });
+
+    const result = await tool.execute("tc1", { action: "run", name: "agent-echo2", task: "test" });
+    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+
+    expect(parsed.type).toBe("done");
+    if (parsed.type === "done") {
+      expect(parsed.summary).toBe("agent=unknown");
+    }
+  });
+
+  it("rejects runAgent with undefined agent name (defensive guard)", async () => {
+    writeWorkflow(
+      "bad-agent.ts",
+      `
+      export const name = "bad-agent";
+      export async function execute(ctx) {
+        // Simulate the bug: ctx.agent is undefined (binary compiled before agent field existed)
+        await ctx.runAgent(undefined, "task");
+        return ctx.done("should not reach");
+      }
+    `,
+    );
+
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")), infraRetryMax: 0 });
+    const tool = createWorkflowTool({ manager, workflowDir });
+
+    const result = await tool.execute("tc1", { action: "run", name: "bad-agent", task: "test" });
+    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+
+    expect(parsed.type).toBe("error");
+    if (parsed.type === "error") {
+      expect(parsed.error).toContain("invalid agent name");
+    }
+  });
+});
+
 describe("workflow tool: steering", () => {
   it("steer() returns false when no workflow is running", () => {
     const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")), infraRetryMax: 0 });
