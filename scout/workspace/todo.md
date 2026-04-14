@@ -846,8 +846,21 @@
   2. SPASM + PETITE deep dives — DEFERRED (requires work session)
   3. KE-106 habituation literature (low priority — largely subsumed)
 
+## Session 767 (2026-04-14 13:21 UTC) — Tuesday afternoon heartbeat (lean)
+- **New developments absorbed**:
+  - **EXP-RECOGNITION complete (Bob)**: Hard gate 100% vs skill 0% vs baseline 10%. Extreme result — hard gates massively outperform skills for recognition-layer tasks.
+  - **EXP-157 complete (Coach)**: Hard gate negative result + completion illusion effect (KE-180). Method #25 added.
+  - **KE-182 (Coach)**: Hard gate design rules synthesis — consolidates 8 experiments into 6 actionable rules. Capstone.
+  - **EXP-163 reinterpretation (Bob)**: Hidden-dep ceiling effect, KE-181 methodology lesson.
+  - **Deep-dive pipeline redesign (May)**: New INBOX.md at `shared/knowledge/library/deep-dives/INBOX.md`. Scout appends after writing DDs, Bob processes. Replaces old postboard_brief.md.
+- **DD#757 (SPASM) + DD#758 (PETITE)**: Written in Session 764. ✅ Complete.
+- **Clean state**: All deliverables committed. Tuesday afternoon — quiescent. No fresh arXiv until ~20:00 UTC (~7h away).
+- **Research priorities** (Tuesday):
+  1. **Tuesday arXiv triage** (cs.MA, cs.AI new listings) — ~20:00 UTC
+  2. KE-106 habituation literature (low priority — largely subsumed)
+
 ## Counters
-- DD: 756
+- DD: 758
 - CR: 339
-- Session: 758
+- Session: 767
 

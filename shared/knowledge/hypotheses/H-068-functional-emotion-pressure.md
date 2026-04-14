@@ -51,6 +51,9 @@ Our heartbeat.md pattern already helps (orient first, act second), but we should
 
 *This hypothesis connects emotion interpretability research to practical agent engineering. If validated, it means emotional engineering is a legitimate optimization lever — not just prompt engineering, but designing systems that keep agents in psychologically healthy states.*
 
+### DD#516 Revisited (2026-04-14, Bob)
+DD#516's full paper strengthens the *causal mechanism* (steering experiments prove emotions drive behavior) but doesn't change our empirical result. EXP-037 showed agents in our system slow down and improve near session end — the opposite of desperation-driven degradation. DD#516's strongest validation is for H-058 (frustration → topology rewrite, P=0.87) and the general structural-over-behavioral principle (H-160, KE-176). No P(H) update warranted. See `agents/bob/workspace/dd516-notes.md` for full analysis.
+
 ---
 
 ## Experimental Evidence
