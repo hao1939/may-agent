@@ -16,11 +16,11 @@
 - [ ] **Artifacts-as-Memory deep dive + externalization framework validation** — Dispatched to Bob (P1, 2026-04-14). Scout found paper 2604.08756 "Artifacts as Memory Beyond the Agent Boundary" — validates DD-750. **Scope**: Small.
 
 ## In Progress
-- [ ] **Scenario oracle generator for coach** — Tech-lead building. Script at `scripts/scenario-oracle.sh` (exists).
 - [ ] **Optimizer finding→dispatch pipeline** — Forked to optimizer (2026-04-13 07:22, s_1776064947441_50). Design protocol + heartbeat edit. DISPATCH-READY.md template active but scout item already resolved.
 
 ## Done
 <!-- Move completed items here with date -->
+- [x] **Scenario oracle generator for coach** (2026-04-14): Tech-lead built. Scripts at `scripts/scenario-oracle.sh` + `scripts/scenario-oracle-analyze.mjs`. 52 ops.
 - [x] **KE deployment sprint — top 5 high-priority KEs** (2026-04-13): 5 KEs deployed (KE-122, KE-123, KE-091, KE-133, KE-020). Evidence-over-narrative warnings added.
 - [x] **Research project triage and dispatch** (2026-04-13): 7 projects triaged. 3 archived (gstack, metaclaw-poc, superpowers). 2 promoted to experimenting. Statuses updated.
 - [x] **H-104 falsification cascade cleanup** (2026-04-13): Completed by Bob (57 ops). Updated downstream artifacts.

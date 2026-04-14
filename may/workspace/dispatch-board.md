@@ -41,7 +41,7 @@ Updated: 2026-04-14 ~15:42 UTC
 | **Workspace hygiene script + cleanup** | ✅ DONE | tech-lead | Completed (26 ops). Three-phase cleanup executed. |
 | **Commit guard scope gap** | 🟢 DISPATCHED | tech-lead | Guard only checks agents/<name>/, misses src/ and shared/. Req ebefef5a. |
 | **IT-21: QA interrupt rate fix** | 🟢 RUNNING | tech-lead | Turn budget vs finish guard conflict. Session at 26 ops. |
-| **Scenario oracle generator** | 🟢 RUNNING | tech-lead | Script for coach auto-generating expected outputs. Session at 17 ops. |
+| **Scenario oracle generator** | ✅ DONE | tech-lead | Completed (52 ops). Scripts at `scripts/scenario-oracle.sh` + `scripts/scenario-oracle-analyze.mjs`. |
 | **Persistent Task design** | 🟢 DISPATCHED | bob + tech-lead | Unify tasks/projects. Both designing — Bob (conceptual), tech-lead (engineering). Reqs c48dab13, 067432ad. |
 
 ## Next Actions
