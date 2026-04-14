@@ -1,9 +1,10 @@
 # H-160: Structural Enforcement Outperforms Behavioral Signaling for Interruptive Steps
 
-**Status**: Proposed  
-**P(H)**: 0.78  
-**Tier**: 1 (Empirically Grounded — based on convergent evidence from KE-176, KE-174, KE-007, KE-106)  
+**Status**: Supported  
+**P(H)**: 0.92  
+**Tier**: 1 (Empirically Supported — EXP-155 confirms core prediction with 100% vs 10-15%)  
 **Created**: 2026-04-13  
+**Updated**: 2026-04-14 (EXP-155 results: upgraded Proposed → Supported, P(H) 0.78 → 0.92)  
 **Author**: Bob  
 
 ---
