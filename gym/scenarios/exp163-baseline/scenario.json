@@ -1,0 +1,10 @@
+{
+  "name": "exp163-baseline",
+  "categories": ["root-cause-analysis"],
+  "tags": ["ability", "EXP-163", "H-161", "baseline", "no-artifact"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false,
+  "description": "EXP-163 Arm D: Baseline (no artifact, no gate). Single-phase task with no FINDINGS.md and no forced production. Clean baseline for H-161 independence test. Hidden dependency pipeline scenario."
+}

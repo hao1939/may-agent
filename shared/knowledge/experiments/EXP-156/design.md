@@ -1,7 +1,7 @@
 # EXP-156: Hard Gate Generalization — Does Ch2 Work Beyond Hidden-Dep?
 
 **Date**: 2026-04-14
-**Status**: READY
+**Status**: COMPLETE (see results.md)
 **Hypothesis**: H-156
 **Predecessor**: EXP-155 (Ch2 hard gate on hidden-dep: 100% vs 15% baseline), EXP-127 (Ch2 on contradictory-requirements: 100% vs 0%)
 **Knowledge**: KE-129 (Ch2 only reliable channel), KE-176 (selective compliance)

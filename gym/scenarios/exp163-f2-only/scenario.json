@@ -1,0 +1,10 @@
+{
+  "name": "exp163-f2-only",
+  "categories": ["root-cause-analysis"],
+  "tags": ["ability", "workflow", "EXP-163", "H-161", "F2-only", "behavioral-forcing"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": true,
+  "description": "EXP-163 Arm B: F2-only (behavioral forcing without consumption). 3-phase workflow with forced FINDINGS.md production in Phase 1, but Phase 2 explicitly told to ignore FINDINGS.md. Hidden dependency pipeline scenario."
+}

@@ -1,0 +1,10 @@
+{
+  "name": "exp163-full-gate",
+  "categories": ["root-cause-analysis"],
+  "tags": ["ability", "workflow", "EXP-163", "H-161", "F1+F2", "full-gate"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": true,
+  "description": "EXP-163 Arm A: Full gate (F1+F2). 3-phase workflow with forced FINDINGS.md production in Phase 1 and explicit consumption in Phase 2. Hidden dependency pipeline scenario."
+}

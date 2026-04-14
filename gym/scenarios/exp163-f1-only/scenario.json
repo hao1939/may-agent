@@ -1,0 +1,10 @@
+{
+  "name": "exp163-f1-only",
+  "categories": ["root-cause-analysis"],
+  "tags": ["ability", "EXP-163", "H-161", "F1-only", "memory-compression"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false,
+  "description": "EXP-163 Arm C: F1-only (memory compression without behavioral forcing). Single-phase task with pre-written expert FINDINGS.md provided. No forced production gate. Hidden dependency pipeline scenario."
+}
