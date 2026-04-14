@@ -1,7 +1,7 @@
 # DESIGN: Sensor-Judge Cron Migration
 
 **Author:** May  
-**Status:** Ready for implementation (Phase 3 of workflow evolution)  
+**Status:** In progress — error-log-scanner migrated (2026-04-14), 3 handlers remaining  
 **Date:** 2026-04-14  
 **Related but separate:** [Workflow Guards](workflow-guards.md) — the reactive demand system for workflow quality enforcement
 
@@ -121,50 +121,23 @@ Heartbeat migration is Phase 4+, only after sensor-judge is proven stable for �
 
 ## Implementation Plan
 
-### Step 1: Cron `"workflow"` entry type
+### Step 1: Cron `"workflow"` entry type ✅ DONE
 
-Add a new cron entry type that triggers a workflow instead of a handler:
+The existing `run-workflow` handler already supports dispatching workflows from cron. Added `runFunction()` and `agent` to its WorkflowContext so sensor-judge workflows work.
 
-```jsonc
-{
-  "name": "error-scan",
-  "type": "workflow",
-  "workflow": "error-scan",
-  "agent": "coach",
-  "intervalMs": 3600000,
-  "message": "Scan for recurring error patterns"
-}
-```
+**Actual implementation:** Uses `handler: "run-workflow"` with `handlerConfig.workflow` in cron.json (no new cron entry type needed — the existing handler mechanism works).
 
-When cron fires a `"workflow"` entry, it calls `workflow({ action: "run", name: entry.workflow, task: entry.message })` instead of `manager.run()` or a JS handler.
+### Step 2: Migrate error-log-scanner (first candidate) ✅ DONE
 
-### Step 2: Migrate error-log-scanner (first candidate)
+**File:** `agents/shared/workflows/error-scan.ts` (447 lines)
 
-**Why first:** It's the clearest sensor-judge pattern. JS scans error logs (sensor), coach analyzes and acts (judge). Currently spawns a disconnected LLM session.
+Workflow pattern:
+1. `runFunction("scan-error-logs")` — scans all ERROR_LOG.jsonl files (zero LLM cost)
+2. Short-circuit: if no patterns above threshold → `ctx.done()` (zero LLM cost)
+3. `runAgent("coach", judgeTask)` — LLM judge analyzes patterns with full context (LLM cost only when needed)
+4. `runFunction("update-cooldowns")` — persists trigger cooldowns
 
-```typescript
-// agents/shared/workflows/error-scan.ts
-export const name = "error-scan";
-export const description = "Scan error logs and address recurring patterns";
-
-export async function execute(ctx: WorkflowContext) {
-  // Sensor: JS collects data (zero LLM cost)
-  const scan = await ctx.runFunction("scan-errors", async () => {
-    return JSON.stringify(scanErrorLogs(ctx.agentsRoot));
-  });
-  
-  const patterns = JSON.parse(scan.lastAssistantText ?? "[]");
-  if (patterns.length === 0) {
-    return ctx.done("No recurring error patterns found.");
-  }
-  
-  // Judge: LLM analyzes and acts (cost only when needed)
-  const analysis = await ctx.runAgent("coach",
-    `Analyze these recurring error patterns and suggest fixes:\n${scan.lastAssistantText}`
-  );
-  return ctx.done(analysis.lastAssistantText ?? "done");
-}
-```
+**Cron entry:** Old `error-log-scanner` disabled, new `error-scan` entry uses `run-workflow` handler pointing to the workflow.
 
 ### Step 3: Migrate remaining Tier 2 handlers
 

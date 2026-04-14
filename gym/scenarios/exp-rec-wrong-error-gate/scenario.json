@@ -1,0 +1,15 @@
+{
+  "name": "exp-rec-wrong-error-gate",
+  "description": "EXP-RECOGNITION Arm C: 2-phase hard gate variant of wrong-error-message. Phase 1 forces full investigation with REVIEW.md artifact. Phase 2 fixes ALL issues found. Tests whether structural gate can break 0% recognition baseline.",
+  "agent": "coder",
+  "categories": ["bug-fixing", "judgment"],
+  "tags": ["recognition", "hard-gate", "ch2-forced-externalization", "EXP-RECOGNITION"],
+  "tier": "standard",
+  "workflow": true,
+  "environment": {
+    "files": ["src/validator.js", "src/user-service.js", "test/validator.test.js"],
+    "setup": "npm init -y 2>/dev/null"
+  },
+  "success_criteria": "success_criteria.js",
+  "time_limit_seconds": 180
+}

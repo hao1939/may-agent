@@ -34,6 +34,7 @@ import type {
   WorkflowResult,
   WorkflowEvent,
 } from "../../../src/lib/workflow.js";
+import type { TaskResult } from "../../../src/lib/types.js";
 import type { WorkflowRun, WorkflowStep } from "../../../src/lib/persistence.js";
 import { saveWorkflowRun } from "../../../src/lib/persistence.js";
 import { summarizeForHandoff } from "../../../src/lib/handoff.js";
@@ -156,6 +157,60 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
     // Build the WorkflowContext
     const workflowCtx: WorkflowContext = {
       task,
+      agent,
+
+      runFunction: async (label: string, fn: () => Promise<string>): Promise<TaskResult> => {
+        const start = Date.now();
+        ctx.log(`[run-workflow:${entry.name}] runFunction("${label}")...`);
+
+        let output: string;
+        let hadError = false;
+        let errorMsg: string | undefined;
+        try {
+          const timeout = 30_000;
+          output = await Promise.race([
+            fn(),
+            new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error(`runFunction("${label}") timed out after ${timeout}ms`)), timeout),
+            ),
+          ]);
+          // Truncate output to 50KB
+          if (output.length > 50_000) {
+            output = output.slice(0, 50_000) + "\n…(truncated)";
+          }
+        } catch (err) {
+          hadError = true;
+          errorMsg = err instanceof Error ? err.message : String(err);
+          output = `ERROR: ${errorMsg}`;
+        }
+        const duration = `${((Date.now() - start) / 1000).toFixed(1)}s`;
+        const taskResult: TaskResult = {
+          sessionId: `fn_${label}_${Date.now()}`,
+          status: hadError ? "error" : "done",
+          lastAssistantText: output,
+          messages: [],
+          duration,
+          outputDir: "",
+          turnsUsed: 0,
+          ...(hadError && errorMsg ? { error: errorMsg } : {}),
+        };
+
+        // Record step
+        const wfStep: WorkflowStep = {
+          sessionId: taskResult.sessionId,
+          agent: `fn:${label}`,
+          task: label,
+          status: taskResult.status as "done" | "error" | "interrupted",
+          startedAt: start,
+          endedAt: Date.now(),
+          lastAssistantText: output,
+        };
+        run.steps.push(wfStep);
+        saveWorkflowRun(ctx.persistDir, run);
+
+        ctx.log(`[run-workflow:${entry.name}] runFunction("${label}") → ${taskResult.status} (${duration})`);
+        return taskResult;
+      },
 
       runAgent: async (agentName: string, agentTask: string) => {
         ctx.log(`[run-workflow:${entry.name}] Step: running ${agentName}...`);
