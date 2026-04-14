@@ -2,7 +2,7 @@
 
 **Author:** May  
 **Status:** Phase 1 COMPLETE (2026-04-14), Phase 2 in progress  
-**Location:** This is the canonical doc. Old draft: `agents/may/workspace/DESIGN-guards-v2.md`
+**Location:** This is the canonical guard doc. See also: [sensor-judge-migration.md](sensor-judge-migration.md) (separate system)
 
 ---
 
@@ -132,6 +132,12 @@ Cleared after delivery.
 - `skipGuards` escape hatch for workflows
 - Migrate `verify-wrap` to use auto-test guard (remove hardcoded verification step)
 - Monitor guard cost, tune `maxInjectedSteps`
+
+---
+
+## Separate: Sensor-Judge Cron Migration
+
+The cron-to-workflow migration (converting JS handlers into sensor-judge workflows) is a **separate initiative** documented in [sensor-judge-migration.md](sensor-judge-migration.md). It uses the workflow engine (and gets guard protection for free) but is not part of the guard system itself.
 
 ---
 

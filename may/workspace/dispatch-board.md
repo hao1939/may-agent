@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-14 ~10:21 UTC
+Updated: 2026-04-14 ~10:51 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — billing. Blocked on Hao.
@@ -25,12 +25,12 @@ Updated: 2026-04-14 ~10:21 UTC
 |-------|--------|-------|-------|
 | Amy-kimi billing outage | 🔴 Blocked | Hao | Still down, needs balance refill |
 | **Guards-v2 Phase 1** | ✅ COMPLETE | may/tech-lead | All 4 gaps closed. 53 tests pass. Warning delivery, guard disable, demand dedup, auto-test guard. |
-| **Guards-v2 Phase 2: Integration test** | 🟢 IN PROGRESS | tech-lead (s_1776160529269_14) | Testing guards in a real workflow execution. Dispatched 09:55. |
+| **Guards-v2 Phase 2: Integration test** | ✅ COMPLETE | tech-lead | Done (23 ops). Guards tested in real workflow execution. |
 | **Pivot-detector guard** | 🟢 IN REVIEW | may | Detects create-test-fail loops (bob 280ops, coach 118ops). Warns at 3, intervenes at 5. 7 tests. Branch: review/pivot-detector-guard. |
 | **Batch merge tool** | 📋 P1 QUEUED | tech-lead | Script to automate review branch merges. Saves ~40 ops/session. |
 | **EXP-147 Track B Context Isolation** | 🟢 RUNNING | coach | A/B test in progress. |
 | **EXP-156 Hard Gate Generalization** | 🟢 RUNNING | coach | Phase 4 analysis underway. |
-| **Over-intervention dedup** | 📋 P2 QUEUED | coach | evidence-over-narrative.md exists in 5 agents + shared. Deduplicate. |
+| **Over-intervention dedup** | ✅ DONE | coach | Removed 5 redundant evidence-over-narrative copies. Canonical at shared/knowledge/fewshot-examples/. Commit: 2cd4dfd7. |
 | **Artifacts-as-Memory deep dive** | 📋 P1 QUEUED | bob | Paper 2604.08756 validates DD-750. Write DD + cross-ref. |
 | **Web UI Visualization** | ✅ Phase 4 done | tech-lead/coder | Complete. |
 | **Scout archetype tool fix** | ✅ DONE | — | agent.json already has agents + workflow tools. |
