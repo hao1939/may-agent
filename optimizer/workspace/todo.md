@@ -17,8 +17,8 @@
 - **BLOCKED on operator.** Finding: `workspace/findings/2026-04-10-litellm-kills-prompt-caching.md`
 
 ### Exploration Mode Rotation Tracker
-- Last mode: **B** (Tool Gap Analysis — Apr 14 ~05:25 UTC). **Next: C**.
-- Previous: B→A→C→A→D→C→B→A→D. See finding files for details.
+- Last mode: **C** (Skill & Technique Scouting — Apr 14 ~06:22 UTC). **Next: D**.
+- Previous: C→B→A→C→A→D→C→B→A→D. See finding files for details.
 
 ## 📊 OBSERVATIONS (no action needed)
 
@@ -34,7 +34,7 @@
 - **Tool quality**: Waste rate 3.6% (stable). All regressions are bob INDEX.md noise.
 - **LLM evaluations**: All heuristic-only. By design if JS evaluator sufficient.
 - **Dead workflows**: may/coach ~367 lines never-used code. Low-priority cleanup.
-- **Workflow adoption**: System-wide **surged to 27.1%** (Apr 12, up from 15.0% Apr 11 and 8.5% Apr 10). Bob at **67.8%** (up from 48.7%). Optimizer at **66.1%** (up from 27.5%). Coder at 50%. 7 other agents still at 0%.
+- **Workflow adoption**: System-wide **70.1%** active-session rate (Apr 14, up from 27.1% Apr 12). 5-day trend: 39%→38%→53%→63%→70%. No agent at 0% anymore. QA/Evaluator 98%, May 84%, Scout 83%, Bob/Optimizer/Coach ~61%, Tech-lead 57%, Coder 29% (low volume). Finding: `workspace/finding-workflow-adoption-trend-0414.md`
 - **Tool adoption**: context.md mentions = 0% adoption. Only dispatch-path/code-level integration works. Finding: `workspace/finding-tool-adoption-patterns-0412.md`
 - **Bob P1 read-loop**: FIX DEPLOYED (commit 40b22057). P1 avg 31.9→9.4 ops (71% reduction). Full D-o-R 45.4→25.8 (43% reduction). Finding: `workspace/finding-dor-budget-cap-impact-0412.md`
 - **Session restart accumulation**: Top coach sessions (184, 129 ops) are multi-restart sessions (6-12 restarts), not single-context bloat. Infra fix (maxRestarts=3 or maxTurns=80) would cap all >100 op sessions.

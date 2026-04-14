@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-14 ~05:03 UTC
+Updated: 2026-04-14 ~06:21 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors (billing). Blocked on Hao.
@@ -36,11 +36,12 @@ Updated: 2026-04-14 ~05:03 UTC
 - **P1**: **Convention investigation** — In progress (tech-lead). 
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (05:51 Apr 14)
-- **System**: 8 agents active (excl amy-kimi). 1 coach interruption (restart). No stuck sessions. Otherwise clean.
-- **Agent stats (6h)**: Bob 27s/16ops, Coach 30s/16ops, Evaluator 12s/7ops/1err, May 15s/8ops, Optimizer 22s/13ops, QA 12s/8ops, Scout 21s/18ops, Tech-lead 19s/22ops.
-- **Pending from Hao**: (1) Auto-scroll toggle for web UI console (req:6c9f1044) — dispatched to tech-lead, 31 ops but implementation didn't land in src/web/. Needs retry. (2) Child sessions lost on restart (req:841173e0) — not yet dispatched, needs tech-lead.
-- **Queue**: Improvement queue items still pending.
+## Latest Cycle Summary (06:21 Apr 14)
+- **System**: 8 agents active (excl amy-kimi). 0 stuck sessions. 3 interruptions (restart artifacts — qa, optimizer, bob). Clean.
+- **Agent stats (6h)**: Bob 26s/17ops, Coach 29s/16ops, Evaluator 14s/6ops/1err, May 15s/9ops, Optimizer 21s/12ops, QA 12s/8ops, Scout 20s/17ops, Tech-lead 20s/22ops.
+- **Completed**: Child sessions lost on restart proposal — written at `agents/may/workspace/proposal-child-sessions-lost-on-restart.md` (req:5174eb76 ✅).
+- **Pending from Hao**: (1) Auto-scroll toggle for web UI console — dispatched to tech-lead previously, didn't land. Needs retry. (2) Enable prompt caching — blocked on Hao (API key).
+- **Queue**: Check improvement queue.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
