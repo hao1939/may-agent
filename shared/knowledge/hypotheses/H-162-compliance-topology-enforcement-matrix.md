@@ -1,12 +1,11 @@
 # H-162: Agent Compliance Follows a Behavioral Topology × Enforcement Mechanism Matrix
 
-**Status**: Supported  
-**P(H)**: 0.90 (↑ from 0.80 — EXP-162a Cell B confirmed: 10/10 both arms, 0pp gap. All 4 matrix cells now empirically validated.)  
-**Tier**: 1 (Empirically Supported — all 4 cells directly measured)  
+**Status**: Proposed → Strengthened  
+**P(H)**: 0.88  
+**Tier**: 1 (Empirically Grounded — all 4 cells now directly measured)  
 **Created**: 2026-04-14  
-**Updated**: 2026-04-14 (EXP-162a Bayesian update)  
 **Author**: Bob  
-**Derived from**: H-160 (Structural > Behavioral for Interruptive Steps), KE-176 (Selective Skill Compliance), KE-129 (Forced Externalization Only Reliable Channel), KE-174 (Governed Mutation / Alignment Tax), KE-091 (Alignment Tax), KE-106 (Guards Don't Train), KE-007 (Structural Enforcement Only Reliable Intervention), EXP-154, EXP-155, EXP-162a
+**Derived from**: H-160 (Structural > Behavioral for Interruptive Steps), KE-176 (Selective Skill Compliance), KE-129 (Forced Externalization Only Reliable Channel), KE-174 (Governed Mutation / Alignment Tax), KE-091 (Alignment Tax), KE-106 (Guards Don't Train), KE-007 (Structural Enforcement Only Reliable Intervention), EXP-154, EXP-155
 
 ---
 
@@ -95,15 +94,17 @@ The asymmetry is mechanistic: structural enforcement adds value only when there'
 
 ### Cell B (Additive + Structural): Measured — HIGH but unnecessary
 
+**EXP-162a (2026-04-14)**: Direct comparison of text-only (Arm A) vs. structural gate (Arm B) on verify-after-fix.
+
 | Evidence | Metric | Result |
 |----------|--------|--------|
-| **EXP-162a**: Structural gate (2-phase workflow) on verify-after-fix | Compliance | **100% (10/10)** — identical to Cell A |
-| **EXP-162a**: Cell A vs Cell B gap | Δ compliance | **0pp** (both 100%) |
-| **EXP-162a**: Time overhead | Duration | **1.5–1.8× overhead** (median 72s vs 46s) — pure waste |
-| EXP-155: Phase 3 verify-after-fix (structural workflow) | Compliance | 100% (10/10) — consistent with Cell B prediction |
-| KE-091: Alignment tax | Theoretical | Structural gates on additive behaviors consume architecture capacity without behavioral gain |
+| EXP-162a Arm A (Cell A, text) | runs-verification | **100% (10/10)** |
+| EXP-162a Arm B (Cell B, gate) | runs-verification | **100% (10/10)** |
+| EXP-162a: Compliance gap | A vs. B difference | **0pp** (both at ceiling) |
+| EXP-162a: Latency cost | Median duration B/A | **1.47× (excl. outlier)** |
+| EXP-162a: Phase 1 self-verification | Arm B agents verified in Phase 1 (unprompted) | **10/10** |
 
-**Measured**: 100% compliance, 0pp gain over Cell A. Structural gate adds only overhead. Cell B prediction fully confirmed.
+**Evidence quality**: Strong. Direct head-to-head comparison on identical environments, N=10/arm. The 0pp gap with 47% latency overhead confirms the prediction that structural enforcement is unnecessary for additive behaviors. Bonus finding: agents verified in Phase 1 even without instructions, confirming verify-after-fix is deeply additive.
 
 ### Cell C (Interruptive + Behavioral): Measured — VERY LOW
 
@@ -133,19 +134,18 @@ The asymmetry is mechanistic: structural enforcement adds value only when there'
 
 | | **Behavioral Signaling** | **Structural Enforcement** | **C→D Effect Size** |
 |---|---|---|---|
-| **Additive** | **~100%** (EXP-154 P4: 10/10) | **100%** (EXP-162a: 10/10) | **0pp** (no gap to close) ✅ |
+| **Additive** | **~100%** (EXP-154 P4: 10/10; EXP-162a A: 10/10) | **~100%** (EXP-162a B: 10/10) | **~0pp** (no gap to close) |
 | **Interruptive** | **~10%** (EXP-154 P1: 1/10; EXP-127: 0/18) | **~100%** (EXP-155: 10/10; EXP-127 Ch2: 10/10; EXP-043: 9/9) | **+85-100pp** |
 | **A→C Effect Size** | **−90pp** (topology drives the failure) | **~0pp** (structural enforcement equalizes) | |
 
-**Key reading**: All four cells now have direct empirical measurements. The bottom-left cell (Interruptive + Behavioral) is the danger zone — ~10% compliance despite explicit instructions. The Cell A→B comparison (EXP-162a: 0pp gap) confirms the asymmetry: enforcement mechanism is irrelevant for additive behaviors but critical for interruptive ones.
+**Key reading**: The bottom-left cell (Interruptive + Behavioral) is the danger zone — ~10% compliance despite explicit instructions. The entire knowledge base of failed text-based interventions (KE-007: 0/56) maps to this cell. The entire knowledge base of successful structural interventions (KE-007: 5/5 promoted) maps to the bottom-right cell.
 
 ## Specific Predictions
 
-### P-162a: Additive + Structural ≈ Additive + Behavioral (Cell B ≈ Cell A) — ✅ CONFIRMED
+### P-162a: Additive + Structural ≈ Additive + Behavioral (Cell B ≈ Cell A)
 - **Operationalization**: Take an additive behavior (e.g., "run tests after editing") and compare Ch1 skill delivery vs. Ch2 workflow gate delivery on the same scenario.
 - **Prediction**: ≤10pp difference between the two conditions. Both achieve ≥80%. The gate adds overhead without meaningful behavioral gain.
-- **Result (EXP-162a)**: Both arms 100% (10/10), 0pp gap. Prediction confirmed at maximum strength. Structural gate added 1.5–1.8× time overhead with zero compliance benefit.
-- **Falsification**: >25pp gap (gate substantially improves even additive behaviors) would invalidate the "asymmetry is the key insight" claim. **NOT FALSIFIED** — gap was 0pp.
+- **Falsification**: >25pp gap (gate substantially improves even additive behaviors) would invalidate the "asymmetry is the key insight" claim. It would suggest enforcement mechanism matters equally for both topologies.
 
 ### P-162b: Interruptive + Behavioral < 20% across new scenarios (Cell C generalizes)
 - **Operationalization**: Test a different interruptive behavior (e.g., "write ASSUMPTIONS.md before implementing an architecture task") delivered as a Ch1 skill. Must be on a scenario where the agent can successfully complete the task without the interruptive step (to prove it's the interruptive nature, not task difficulty, causing failure).
@@ -219,35 +219,24 @@ KE-174 distinguishes behavioral verification (alignment tax present) from struct
 
 The alignment tax is most relevant in borderline cases between additive and interruptive, where the agent sometimes complies (consuming capacity on the compliance decision) and sometimes doesn't.
 
-## Prior Probability: P(H) = 0.80 → **Posterior: P(H) = 0.90**
+## Prior Probability: P(H) = 0.88 (up from 0.80)
 
-### Bayesian Update (EXP-162a, 2026-04-14)
-- **Prior**: P(H) = 0.80
-- **P(data|H)**: 0.90 — Cell B prediction (both ≥90%, gap ≤10pp) confirmed at maximum strength (10/10 both, 0pp gap). This is the modal outcome under H.
-- **P(data|~H)**: 0.30 — Under alternatives where enforcement mechanism matters for all topologies, a 0pp gap is possible (ceiling effects) but unlikely. Most ~H alternatives predict structural gates add >10pp even on additive behaviors.
-- **Bayes factor**: 3.0 (moderate-strong confirmation)
-- **Posterior**: P(H|data) = 0.923, rounded to **0.90** accounting for: (1) single additive behavior tested (verify-after-fix), (2) ceiling effects prevent distinguishing 0pp from 3pp, (3) single agent/model.
-
-### For (strengthened):
-- **All 4 cells now directly measured**: Cell A 100% (EXP-154), Cell B 100% (EXP-162a), Cell C ~10% (EXP-154/127), Cell D ~100% (EXP-155/127/043). No extrapolation needed.
-- **The asymmetry is confirmed empirically**: Cell A→B: 0pp (enforcement irrelevant for additive). Cell C→D: +85-100pp (enforcement critical for interruptive). The core predictive claim holds.
-- **Alignment tax quantified**: EXP-162a measured 1.5-1.8× time overhead for the unnecessary Cell B gate. This is the first direct measurement of over-enforcement cost.
+### For (strong):
+- **All four cells directly measured**: Cell A (EXP-154: 100%), Cell B (EXP-162a: 100%), Cell C (EXP-154: 10%, EXP-127: 0%), Cell D (EXP-155: 100%, EXP-127: 100%, EXP-043: 100%). The complete matrix is now empirically grounded.
+- **Cell B confirmed prediction**: EXP-162a tested the matrix's weakest prediction (Cell B ≈ Cell A) and confirmed it: 0pp difference, both at ceiling. The structural gate added only latency cost (47% overhead), confirming KE-091's alignment tax.
 - **Meta-analysis convergence**: KE-007's 0/56 failed text interventions map to Cell C. 5/5 promoted structural interventions map to Cell D. The matrix explains the entire 56-experiment record.
-### Prior evidence (retained):
-- **Cells C and D directly measured**: EXP-154 (Cell C: 10%), EXP-155 (Cell D: 100%), EXP-127 (Cell C: 0%, Cell D: 100%), EXP-043 (Cell D: 100%). The interruptive column has overwhelming evidence: 29/29 structural vs. 2/28 behavioral.
-- **Cell A directly measured**: EXP-154's P4 result (100% compliance on additive verify-after-fix step via text skill) cleanly measures Cell A.
 - **Mechanistic grounding**: KE-176 (selective compliance gradient), KE-129 (Ch2 only reliable channel), KE-174 (structural ≠ behavioral verification), and H-161 (dual artifact functions) all converge on the same two-dimensional framework.
-- **Practical utility**: The matrix has correctly predicted every compliance result we've measured, including EXP-162a's prospective Cell B prediction.
+- **Phase 1 self-verification (EXP-162a bonus)**: In Arm B, agents verified in Phase 1 even without instructions, confirming verify-after-fix is deeply additive. The structural gate was literally redundant in 10/10 runs.
 
-### Against (honest uncertainty — reduced but still present):
-- **~~Cell B is untested~~**: ~~No experiment has directly tested structural enforcement on an additive behavior.~~ **RESOLVED by EXP-162a** — Cell B now directly measured.
-- **Topology classification is subjective**: "Additive" vs. "interruptive" is defined by deviation from the agent's default trajectory, but different agents/tasks may have different default trajectories. The topology dimension may not be as clean as the matrix implies.
-- **Single additive behavior in Cell B**: EXP-162a tested only verify-after-fix. Other additive behaviors (documentation, commit messages, file naming) might show different Cell A→B patterns. Generalizability of Cell B ≈ Cell A needs additional behaviors.
-- **Compliance ≠ quality**: The matrix predicts compliance rates, not task outcomes. Cell D achieves high compliance, but H-099 suggests that on discovery tasks, forced compliance may not produce quality outputs.
+### Against (honest uncertainty):
+- **Single additive behavior tested**: Cell B has only been tested on verify-after-fix. Other additive behaviors (e.g., "add docstrings," "grep for related files") may show different patterns. Cross-behavior replication needed.
+- **Topology classification is subjective**: "Additive" vs. "interruptive" is defined by deviation from the agent's default trajectory, but different agents/tasks may have different default trajectories. What's interruptive for one agent may be additive for another. The topology dimension may not be as clean as the matrix implies.
+- **Single scenario dominance**: Most interruptive-column evidence comes from one scenario family (hidden-dependency / contradictory-requirements). Cross-scenario replication is needed.
+- **Compliance ≠ quality**: The matrix predicts compliance rates, not task outcomes. Cell D achieves high compliance, but H-099 suggests that on discovery tasks, forced compliance may not produce quality outputs. The matrix might overstate the practical value of structural enforcement if compliance-without-quality is common.
 - **Two dimensions may be insufficient**: The matrix omits task difficulty (KE-091), gate relevance (KE-135), and behavior specificity. A 2×2 may be too simple for the full compliance landscape.
 
-### Net: P(H) = 0.90 (↑ from 0.80)
-All four cells now have direct empirical support. The primary uncertainty source (untested Cell B) has been resolved. Remaining uncertainties are generalizability (single additive behavior, single agent) and taxonomy clarity, which temper the raw Bayesian posterior (0.923) to 0.90.
+### Net: P(H) = 0.88 (up from 0.80)
+All four cells now have direct measurements. EXP-162a confirmed the weakest prediction (Cell B ≈ Cell A). The remaining risks are taxonomy clarity (additive/interruptive boundary), cross-scenario replication for the interruptive column, and quality-beyond-compliance. Updated from 0.80 → 0.88: the Cell B confirmation eliminates the largest source of uncertainty (untested prediction).
 
 ## Proposed Experiments
 

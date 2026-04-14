@@ -1,10 +1,11 @@
 # KE-129: Forced Externalization Is the Only Reliable Channel for Judgment Tasks
 
 **Status**: Active
-**Source**: EXP-127 (Channel Separation Direct Test, N=24), EXP-084, EXP-095
-**Date**: 2026-04-10
-**Confidence**: ★★★★ (High — 10/10 cumulative with p=0.0000074 vs pooled alternatives)
+**Source**: EXP-127 (Channel Separation Direct Test, N=24), EXP-155 (Hidden-Dep Hard Gate, N=30), EXP-156 (Hard Gate Generalization, N=42), EXP-084, EXP-095
+**Date**: 2026-04-10 (updated 2026-04-14 with EXP-155/EXP-156 confirmation)
+**Confidence**: ★★★★★ (Very High — 27/27 treatment pass across 3 scenarios, 3 distinct failure types)
 **Extends**: KE-034 (forced externalization mechanism), KE-059 (H-091 mechanism hierarchy), KE-121 (forced ext. prevents misinterpretation)
+**Bounded by**: KE-178 (hard gate boundary condition — requires low baseline + step-skipping failure mode)
 
 ---
 
