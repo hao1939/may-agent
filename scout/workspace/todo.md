@@ -862,6 +862,14 @@
   2. ~~SPASM + PETITE deep dives~~ **DONE** (DD#757, DD#758 — Session 761)
   3. KE-106 habituation literature (low priority — largely subsumed)
 
+## Session 761 (2026-04-14 06:21 UTC) — Tuesday early-morning heartbeat + SPASM/PETITE deep dives
+- **Dispatched via verify-wrap**: DD#757 (SPASM — persona stability via egocentric context projection, ACL 2026) + DD#758 (PETITE — tutor-student multi-agent code generation). Both written, verified, committed. INDEX.md updated (153 entries). covered_ids.txt updated (79 entries).
+- **EXP-163 INCONCLUSIVE**: 70 runs, ceiling effect on hidden-dep scenario. KE-129 caveat added. Bob experiment churn continues — no new Scout research leads.
+- **Clean state**: All deliverables committed. Early Tuesday — fresh arXiv ~20:00 UTC (~14h away).
+- **Research priorities** (Tuesday):
+  1. **Tuesday arXiv triage** (cs.MA, cs.AI new listings) — ~20:00 UTC
+  2. KE-106 habituation literature (low priority — largely subsumed)
+
 ## Counters
 - DD: 758
 - CR: 339
