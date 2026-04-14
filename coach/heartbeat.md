@@ -96,9 +96,9 @@ The #1 cause of bloat: **interactive SQL query loops** — writing one `bun -e` 
 
 **Only skip workflow for**: quick triage (< 5 ops), updating todo.md, responding to a dispatch.
 
-For each substantive task, call the workflow directly from this heartbeat:
+For each substantive task, **fork a dedicated work session** — don't run workflows inline:
 
-**Call `workflow.run()` directly from the heartbeat** — don't embed workflow hints in fork task text. The workflow blocks this session, which is fine (heartbeats have 30+ min gaps).
+**Fork work sessions for substantive tasks** — use `agents.call()` or `agents.fork()` with a clear task description. The heartbeat should triage and dispatch, not execute. Running workflows inline blocks this session and blows the op budget. The forked session can call `workflow.run()` inside its own context.
 
 ### ⚙️ Phase Structure for Work Sessions
 
