@@ -3,11 +3,21 @@
 
 ## Ready
 
+- [ ] **Batch review-merge script (`--batch` + `--auto-resolve=ours`)** — Extend `scripts/review-merge.sh` with batch mode to process all `review/*` branches in one call, plus `--auto-resolve=ours` for workspace files (todo.md, PRIORITY-TRACKER.md). Optimizer finding-tech-lead-tool-gap-0414 shows 35 ops wasted per batch merge (7 ops/branch × 5-8 branches). 65 review sessions/week → saves 100-200 ops/week. **Scope**: Small. **Owner**: tech-lead/coder.
+
+- [ ] **Coach workflow adoption structural fix (fork-with-workflow-instruction)** — Coach has 0% real workflow adoption (finding-coach-workflow-adoption-intervention-0414). Root cause: `workflow.run()` from heartbeat blows op budget. Fix: change coach heartbeat fork template to prepend `⚡ WORKFLOW REQUIRED: Call workflow.run('<name>', '<task>') as your FIRST action.` to forked task text. This moves workflow execution into the work session where budget allows it. **Scope**: Small. **Owner**: may (heartbeat edit) or coach (self-edit).
+
+- [ ] **Workflow adoption metric rebaseline** — Current metric counts task-text workflow mentions (reports 75%), but actual `workflowRunId` adoption is 6.7% system-wide (finding-coach-workflow-adoption-intervention-0414). Update `agents/may/workspace/tools/` with a correct adoption script using `workflowRunId IS NOT NULL`. Re-measure all agents. Without accurate measurement, we can't track improvement. **Scope**: Small. **Owner**: may or optimizer.
+
+- [ ] **Compaction-resistant summary scripts for Bob** — Bob wastes ~30% of ops re-reading files post-compaction (finding-tool-gap-bob84-scout43-0414). Build two scripts: (1) `scripts/hypothesis-summary.sh` — dumps all H-*.md files with P(H) values in one call; (2) `scripts/experiment-status.sh` — scans all EXP-* dirs, reports status/results/key metrics. Each replaces 10+ manual ops per session. **Scope**: Medium. **Owner**: tech-lead/coder.
+
+- [ ] **Trace-symbol code exploration tool** — Tech-lead spends 11-24 ops per audit doing grep→sed→grep chains for code exploration (finding-tech-lead-tool-gap-0414 Pattern 3). Build `scripts/trace-symbol.sh <symbol>` that shows definition + all import/usage sites + 3 lines context in one call. 14 Lens sessions/day × 3-5 ops saved = 42-70 ops/day. **Scope**: Small. **Owner**: tech-lead/coder.
+
 - [ ] **Artifacts-as-Memory deep dive + externalization framework validation** — Dispatched to Bob (P1, 2026-04-14). Scout found paper 2604.08756 "Artifacts as Memory Beyond the Agent Boundary" — validates DD-750. **Scope**: Small.
 
 ## In Progress
-- [ ] **Scenario oracle generator for coach** — Tech-lead building (session running, 17 ops). Script at `scripts/scenario-oracle.sh`.
-- [ ] **Optimizer finding→dispatch pipeline** — Forked to optimizer (2026-04-13 07:22, s_1776064947441_50). Design protocol + heartbeat edit.
+- [ ] **Scenario oracle generator for coach** — Tech-lead building. Script at `scripts/scenario-oracle.sh` (exists).
+- [ ] **Optimizer finding→dispatch pipeline** — Forked to optimizer (2026-04-13 07:22, s_1776064947441_50). Design protocol + heartbeat edit. DISPATCH-READY.md template active but scout item already resolved.
 
 ## Done
 <!-- Move completed items here with date -->
