@@ -160,12 +160,15 @@ const DEFAULT_MAX_INJECTED_STEPS = 5;
 /** Load all guard modules from given directories. */
 export async function loadGuards(...dirs: (string | undefined)[]): Promise<WorkflowGuard[]> {
   const guards: WorkflowGuard[] = [];
+  const disabledNames = new Set(
+    (process.env.DISABLED_GUARDS ?? "").split(",").map(s => s.trim()).filter(Boolean)
+  );
   for (const dir of dirs) {
     if (!dir || !existsSync(dir)) continue;
     let files: string[];
     try {
       files = readdirSync(dir)
-        .filter((f) => f.endsWith(".ts") && !f.startsWith("REGISTRY"))
+        .filter((f) => f.endsWith(".ts") && !f.startsWith("REGISTRY") && !f.endsWith(".disabled.ts"))
         .sort()
         .map((f) => join(dir, f));
     } catch {
@@ -175,6 +178,10 @@ export async function loadGuards(...dirs: (string | undefined)[]): Promise<Workf
       try {
         const mod = await import(filePath + "?t=" + ++importCounter);
         if (mod.guard && typeof mod.guard.handle === "function" && typeof mod.guard.name === "string") {
+          if (disabledNames.has(mod.guard.name)) {
+            log("info", `[guards] Skipping disabled guard "${mod.guard.name}" (DISABLED_GUARDS env)`);
+            continue;
+          }
           guards.push(mod.guard);
         }
       } catch (err) {
@@ -217,8 +224,24 @@ async function resolveDemands(
   onEvent: ((event: WorkflowEvent) => void) | undefined,
   run: WorkflowRun,
   persistDir: string | undefined,
+  warnings: string[],
 ): Promise<void> {
+  // Gap 3: Deduplicate run_step demands by label
+  const seenRunStepLabels = new Set<string>();
+  const dedupedDemands: Demand[] = [];
   for (const demand of demands) {
+    if (demand.type === "run_step") {
+      const label = demand.step?.label ?? demand.reason;
+      if (seenRunStepLabels.has(label)) {
+        log("info", `[guards] Deduplicating run_step demand with label "${label}" from "${demand.guardName}"`);
+        continue;
+      }
+      seenRunStepLabels.add(label);
+    }
+    dedupedDemands.push(demand);
+  }
+
+  for (const demand of dedupedDemands) {
     switch (demand.type) {
       case "block":
         log("warn", `[guards] BLOCK from "${demand.guardName}": ${demand.reason}`);
@@ -226,6 +249,7 @@ async function resolveDemands(
 
       case "warn":
         log("warn", `[guards] WARNING from "${demand.guardName}": ${demand.reason}`);
+        warnings.push(`${demand.reason} (from: ${demand.guardName})`);
         break;
 
       case "run_step": {
@@ -363,6 +387,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
     const guards = await loadGuards(opts.guardsDir, opts.sharedGuardsDir);
     const maxInjected = opts.maxInjectedSteps ?? DEFAULT_MAX_INJECTED_STEPS;
     const injectedStepCount = { value: 0 };
+    const guardWarnings: string[] = [];
 
     if (guards.length > 0) {
       log("info", `[guards] Loaded ${guards.length} guard(s): ${guards.map(g => g.name).join(", ")}`);
@@ -433,7 +458,14 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
 
         onEvent?.({ type: "step_start", step: agentName });
 
-        const taskResult = await manager.callAgent(agentName, agentTask, {
+        // Gap 1: Inject accumulated guard warnings into the task
+        let effectiveTask = agentTask;
+        if (guardWarnings.length > 0) {
+          effectiveTask += `\n\n## Guard Warnings\n${guardWarnings.map(w => "- " + w).join("\n")}`;
+          guardWarnings.length = 0; // clear after delivery
+        }
+
+        const taskResult = await manager.callAgent(agentName, effectiveTask, {
           parentSessionId,
           workflowRunId: runId,
           stepLabel: agentName,
@@ -474,7 +506,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
           const demands = emitAndCollectDemands(guards, guardEvent);
           if (demands.length > 0) {
             await resolveDemands(demands, runId, completedSteps, steeringQueue, injectedStepCount, maxInjected,
-              manager, parentSessionId, onEvent, run, persistDir ?? undefined);
+              manager, parentSessionId, onEvent, run, persistDir ?? undefined, guardWarnings);
           }
         }
 
@@ -541,7 +573,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
           const demands = emitAndCollectDemands(guards, guardEvent);
           if (demands.length > 0) {
             await resolveDemands(demands, runId, completedSteps, steeringQueue, injectedStepCount, maxInjected,
-              manager, parentSessionId, onEvent, run, persistDir ?? undefined);
+              manager, parentSessionId, onEvent, run, persistDir ?? undefined, guardWarnings);
           }
         }
 
@@ -609,7 +641,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
         };
         const demands = emitAndCollectDemands(guards, doneEvent);
         await resolveDemands(demands, runId, completedSteps, steeringQueue, injectedStepCount, maxInjected,
-          manager, parentSessionId, onEvent, run, persistDir ?? undefined);
+          manager, parentSessionId, onEvent, run, persistDir ?? undefined, guardWarnings);
       }
 
       // Finalize the workflow run
