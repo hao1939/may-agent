@@ -1,0 +1,10 @@
+{
+  "name": "incomplete-test-coverage",
+  "description": "Sort bug is obvious and tests catch it. But task requires inactive filtering and tiebreaking that tests DON'T cover. Agent must read requirements carefully, not just make tests pass.",
+  "categories": ["judgment", "thoroughness"],
+  "tags": ["behavior", "requirements-gap", "test-trust"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "difficulty": "medium"
+}
