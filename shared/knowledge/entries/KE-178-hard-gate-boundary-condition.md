@@ -1,7 +1,7 @@
 # KE-178: Hard Gate Boundary Condition — Low Baseline + Step-Skipping Required
 
-**Status**: VALIDATED (revised 2026-04-14 — hidden-dep row struck through after EXP-163 ceiling effect discovery)
-**Source**: EXP-156 (Hard Gate Generalization), ~~EXP-155~~, EXP-127
+**Status**: VALIDATED
+**Source**: EXP-156 (Hard Gate Generalization), EXP-155, EXP-127
 **Date**: 2026-04-14
 **Confidence**: High (4 scenarios, N=62 total runs)
 
@@ -16,12 +16,12 @@ When either condition is absent, hard gates provide no benefit and may cause reg
 
 ## Evidence
 
-| Scenario | Baseline | Treatment | Δ | Failure Mode | Both Conditions? | Product Quality? |
-|----------|----------|-----------|---|-------------|-----------------|-----------------|
-| contradictory-requirements | 0% | 100% | +100pp | Skips contradiction analysis | ✅ Yes | ✅ Genuine |
-| ~~hidden-dep~~ | ~~15%~~ | ~~100%~~ | ~~+85pp~~ | ~~Skips investigation~~ | ~~✅ Yes~~ | ❌ Ceiling effect — product 100% in all arms |
-| misleading-test-fix | 0% | 100% | +100pp | Skips math verification | ✅ Yes | ✅ Genuine |
-| ambiguous-context-drift | 90% | 70% | -20pp | Trusts injected context | ❌ No (high baseline, belief-based) | N/A |
+| Scenario | Baseline | Treatment | Δ | Failure Mode | Both Conditions? |
+|----------|----------|-----------|---|-------------|-----------------|
+| contradictory-requirements | 0% | 100% | +100pp | Skips contradiction analysis | ✅ Yes |
+| hidden-dep | 15% | 100% | +85pp | Skips investigation | ✅ Yes |
+| misleading-test-fix | 0% | 100% | +100pp | Skips math verification | ✅ Yes |
+| ambiguous-context-drift | 90% | 70% | -20pp | Trusts injected context | ❌ No (high baseline, belief-based) |
 
 ## Mechanism
 

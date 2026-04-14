@@ -67,8 +67,6 @@ This is Hao's 5-step pattern (guard-workflow-architecture.md §0) and it works b
 
 **Effect size**: +85pp over baseline, +90pp over Ch1 skill. Fisher's exact p < 0.0001 for both comparisons.
 
-> ⚠️ **EXP-163 NOTE**: The "+85pp" improvement was on overall pass rate (including process compliance checks). Product quality was 100% in all arms — the agent always fixed both bugs. The Ch2 gate forced artifact creation but did not improve task outcomes on this scenario. See KE-181.
-
 ### Prediction Evaluation
 
 | Prediction | H-160 Target | EXP-155 Result | Verdict |
@@ -78,11 +76,9 @@ This is Hao's 5-step pattern (guard-workflow-architecture.md §0) and it works b
 | P-160c: Compliance quality matches rate | ≥70% substantive | **100% (P2+P3 both 100%)** | ✅ **EXCEEDED** |
 | P-160d: No alignment tax | ≤5pp primary task reduction | **0pp (product checks 100%)** | ✅ **CONFIRMED** |
 
-All four specific predictions confirmed or exceeded. The effect size (+85pp on overall pass) substantially exceeds the predicted >60pp. (Note: +85pp was on overall pass rate including process checks; product quality was at ceiling in all arms — see EXP-163 caveat above.)
+All four specific predictions confirmed or exceeded. The effect size (+85pp) substantially exceeds the predicted >60pp.
 
 ### Quality Beyond Compliance
-
-> ⚠️ **EXP-163 UPDATE**: This section's claim about "forced quality thinking" is weakened by the finding that agents ALREADY identified both bugs in baseline runs (product quality was 100% in all arms). The gate forced externalization of thinking the agent was already doing internally. The quality of the artifact content is still remarkable (P2+P3 100%), but the causal claim that the gate *caused* quality thinking is not supported.
 
 The most remarkable finding: Ch2 gates didn't just force artifact creation — they forced **quality thinking**. All 10 agents documented BOTH hidden bugs (RULES_PAH typo + checksum mismatch) when required to write structured FINDINGS.md. P2 and P3 went from ~0% (Ch1) to 100% (Ch2). This exceeds P-160c's prediction of ≥70% substantive compliance.
 

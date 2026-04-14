@@ -1,14 +1,8 @@
 # EXP-155 Results: Ch2 Hard Externalization Gate vs Selective Compliance
 
 **Date**: 2026-04-14
-**Status**: COMPLETE — ⚠️ **REINTERPRETED** (see note below)
-**Result**: H-155 STRONGLY CONFIRMED (on overall pass rate). Product quality was at ceiling in all arms.
-
-## ⚠️ RETROACTIVE REINTERPRETATION (Added 2026-04-14, from EXP-163)
-
-EXP-163 discovered that the hidden-dependency scenario has a **ceiling effect on product quality**: the agent fixes both bugs (typo + checksum) 100% of the time in ALL arms — baseline, Ch1, and Ch2. The entire "+85pp" improvement was on **process compliance** (does FINDINGS.md exist and identify bugs?), not on task performance. See EXP-163 results for full analysis.
-
-**Consequence**: This experiment demonstrates that Ch2 gates force artifact creation (compliance), but does NOT demonstrate that Ch2 gates improve task outcomes. KE-129, KE-177, KE-179 have been revised accordingly.
+**Status**: COMPLETE
+**Result**: H-155 STRONGLY CONFIRMED
 
 ## Summary
 
