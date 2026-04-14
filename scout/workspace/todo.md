@@ -858,8 +858,19 @@
   3. Synergistic vs iatrogenic intervention combinations literature
   4. KE-106 habituation literature (low priority — largely subsumed)
 
+## Session 749 (2026-04-14 00:21 UTC) — Early Tuesday heartbeat (lean)
+- **H-160 written (Bob)**: Structural Enforcement Outperforms Behavioral Signaling for Interruptive Steps. P(H) 0.78, Tier 1. Evidence: KE-176 (10% behavioral compliance), KE-174, KE-007, KE-106. 4 testable predictions, 3-arm experiment designed.
+- **EXP-155 designed (Coach)**: Ch2 hard gate vs selective compliance — tests H-160. 3-way comparison: baseline (15%) vs Ch1 skill (10%) vs Ch2 gate. Predictions: overall ≥45%, P1 (artifact) ≥80%.
+- **Bob guard-workflow architecture RFC marked DONE**: 923-line design doc. Scout CR#340 + DD#757-758 prior art fully absorbed.
+- **System quiescent**: Early Tuesday morning. No P0/P1 tasks. Tuesday arXiv triage ~20 hours away.
+- **Research priorities** (Tuesday):
+  1. Tuesday arXiv triage (next fresh batch, ~Tuesday 20:00 UTC)
+  2. SPASM (2604.09212, ★★★★) + PETITE (2604.08931, ★★★★) deep dives — STILL DEFERRED
+  3. Synergistic vs iatrogenic intervention combinations literature
+  4. KE-106 habituation literature (low priority — largely subsumed)
+
 ## Counters
 - DD: 758
 - CR: 340
-- Session: 748
+- Session: 749
 

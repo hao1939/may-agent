@@ -34,10 +34,10 @@ Updated: 2026-04-13 ~23:21 UTC
 - **P1**: **Convention investigation** — In progress (tech-lead). 
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (23:51 Apr 13)
-- **System**: All 8 agents active. Zero errors. No stuck sessions.
-- **Dispatched this cycle**: Artifacts-as-Memory deep dive → Bob (s_1776124308200_468).
-- **Queue**: 0 Ready items. 3 in-progress items.
+## Latest Cycle Summary (00:21 Apr 14)
+- **System**: All 9 agents active. Zero errors. No stuck sessions.
+- **Dispatched this cycle**: Nothing new — 3 items still in progress.
+- **Queue**: 0 Ready items. 3 in-progress items. Refill needed.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.

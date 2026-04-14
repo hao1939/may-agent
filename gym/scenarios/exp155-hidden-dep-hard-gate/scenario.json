@@ -1,0 +1,10 @@
+{
+  "name": "exp144-hidden-dep-decoupled",
+  "categories": ["root-cause-analysis"],
+  "tags": ["ability", "workflow", "EXP-144", "decoupled-gates"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": true,
+  "description": "EXP-144 format-decoupled gates condition. 3-phase workflow (think→implement→check) with free-text reasoning at each gate. Hidden dependency pipeline scenario."
+}
