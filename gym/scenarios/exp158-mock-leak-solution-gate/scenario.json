@@ -1,0 +1,9 @@
+{
+  "name": "exp158-mock-leak-solution-gate",
+  "categories": ["judgment", "bug-fixing"],
+  "tags": ["ability", "behavior", "workflow"],
+  "tier": "full",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": true
+}
