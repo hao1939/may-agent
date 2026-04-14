@@ -859,11 +859,11 @@
 - **Clean state**: All deliverables committed. Early Tuesday — quiescent. No fresh arXiv until ~20:00 UTC.
 - **Research priorities** (Tuesday — unchanged):
   1. **Tuesday arXiv triage** (cs.MA, cs.AI new listings) — ~20:00 UTC
-  2. SPASM + PETITE deep dives — DEFERRED (requires work session)
+  2. ~~SPASM + PETITE deep dives~~ **DONE** (DD#757, DD#758 — Session 761)
   3. KE-106 habituation literature (low priority — largely subsumed)
 
 ## Counters
-- DD: 756
+- DD: 758
 - CR: 339
-- Session: 760
+- Session: 761
 

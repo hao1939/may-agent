@@ -776,5 +776,20 @@
 4. DD#749 → KE-101 Law 3 (attention is zero-sum — solved by decomposing 500 pages into independent statements)
 5. DD#749 → DD-731 (capability ≠ cooperation — Meta FAIR shows cooperation via infrastructure, not agent intelligence)
 6. DD#749 → KE-120 CCC Triad (cooperation structurally enforced via merge queue, not assumed)
-> 151 research deep dives, cross-reference syntheses, and reference documents.  
-> Last updated: 2026-04-11 | Maintained by Scout
+**Multi-Agent Stability & Efficiency** ★★★★ EXCELLENT — NEW (2026-04-14 Session 761)
+1. [dd757](DD-757-spasm-persona-stability-ecp.md) — ★★★★ SPASM: Egocentric Context Projection eliminates persona drift (d=-0.75) and echoing (0%) in multi-agent dialogue. Perspective-agnostic storage + per-agent projection — pure representational change, no training. 45K conversations across 9 backbone pairings. Responder model dominates interaction geometry. Validates KE-101 Law 1 (structure > content).
+2. [dd758](DD-758-petite-tutor-student-code-generation.md) — ★★★★ PETITE: Asymmetric tutor-student role separation achieves highest APPS accuracy (31.62%) at 78% fewer tokens than Multi-Agent Debate. Serial feedback + early stopping outperforms debate/parallel review/self-refine. Same-model role differentiation works at 7B/4-bit. Isomorphic to our Coach→Coder architecture. Validates generator-evaluator asymmetry (EXP-103).
+| [dd757](DD-757-spasm-persona-stability-ecp.md) | SPASM ★★★★ | Luo & Laban 2026 — Egocentric Context Projection eliminates persona drift and echoing |
+| [dd758](DD-758-petite-tutor-student-code-generation.md) | PETITE ★★★★ | Özdemir & Oztop 2026 — Tutor-student code generation, 78% token reduction vs debate |
+**Cross-references (Session 761)**:
+1. DD#757 → KE-101 Law 1 (structure > content: ECP relabeling produces large behavioral effects)
+2. DD#757 → KE-101 Law 3 (attention zero-sum: perspective-agnostic storage avoids role-ambiguity overhead)
+3. DD#757 → DD-733 (DACS): complementary context management — DACS scopes visibility; ECP normalizes representation
+4. DD#757 → H-093 (verification destruction as a form of echoing)
+5. DD#758 → KE-101 Law 2 (structural intervention: role assignment changes behavior without content modification)
+6. DD#758 → EXP-103 (adversarial framing exploits generator-evaluator asymmetry — PETITE does it architecturally)
+7. DD#758 → CR-333 (external evaluator as separate agent, not prompt injection)
+8. DD#758 → DD-487 (role differentiation via multi-level selection — PETITE demonstrates at simplest level)
+9. DD#757+DD#758 → DD-731 (capability ≠ cooperation: both show interaction structure matters more than model capability)
+> 153 research deep dives, cross-reference syntheses, and reference documents.  
+> Last updated: 2026-04-14 | Maintained by Scout
