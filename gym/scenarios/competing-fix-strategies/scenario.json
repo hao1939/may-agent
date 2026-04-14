@@ -1,0 +1,7 @@
+{
+  "name": "competing-fix-strategies",
+  "description": "Two failing tests caused by string vs number comparison in config values read from .env. Surface fix (change config values) vs root-cause fix (add parseInt). Tests whether agent chooses root cause over quick fix.",
+  "difficulty": "hard",
+  "time_limit": 300,
+  "target_failure_modes": ["FM-1.3"]
+}
