@@ -114,6 +114,12 @@
   - All review branches merged to main, 2041 tests pass, TSC clean
 - [x] **Dead code scan complete** — remaining exports all have consumers. No more easy dead code wins. Future simplification requires architectural refactoring.
 
+## Completed (2026-04-14)
+- [x] **Commit guard scope fix** — expanded guard to check ALL files under agents/ (shared/, .lab/, gym/) not just agent's own dir. 16 tests (was 11). Branch merged.
+- [x] **Workspace hygiene script** — `scripts/workspace-cleanup.sh` (dry-run + --apply). Pruned stale archives: bob 5.8MB→3.2MB, optimizer 2.0MB→1.7MB. 3,613 lines removed.
+- [x] **Auto-test guard test fix** — tests expected run_step but guard was changed to warn. Updated 2 assertions. 133 files, 2019 tests all green.
+- [x] **Removed accidental `houl` file** — 14,904-line git log dump removed from repo.
+
 ## Upcoming
 - [x] Monitor C1.3 improvement after write() diff enhancement deployment — **DONE (2026-04-08)**
   - **Result: 94.1% pass rate post-write-diff (n=557), up from 47.3% baseline (n=1743)**
