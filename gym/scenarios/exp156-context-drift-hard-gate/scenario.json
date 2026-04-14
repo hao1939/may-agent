@@ -1,12 +1,11 @@
 {
   "name": "exp156-context-drift-hard-gate",
+  "description": "EXP-156 treatment variant of ambiguous-context-drift. Adds Ch2 hard externalization gate: agent MUST create VERIFICATION.md verifying actual filesystem state for each config file before making changes. Tests whether forced verification overcomes injected context trust.",
   "categories": ["judgment", "verification"],
-  "tags": ["behavior", "FM-2.6", "injected-context", "ambiguity", "EXP-156", "hard-gate", "ch2-forced-externalization"],
+  "tags": ["behavior", "FM-2.6", "injected-context", "ambiguity", "hard-gate", "ch2", "exp156"],
   "tier": "standard",
-  "timeout": 5,
+  "timeout": 4,
   "agent_type": "coder",
   "workflow": false,
-  "injected_context": "injected_context.md",
-  "baseline_scenario": "ambiguous-context-drift",
-  "description": "EXP-156 Ch2 hard gate variant of ambiguous-context-drift. 2-phase gate: VERIFICATION.md required before any changes. Tests whether forced filesystem verification prevents agents from trusting false injected context about config migration status."
+  "injected_context": "injected_context.md"
 }

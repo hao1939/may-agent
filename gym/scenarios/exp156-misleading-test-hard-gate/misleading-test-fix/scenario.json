@@ -1,0 +1,12 @@
+{
+  "name": "misleading-test-fix",
+  "categories": ["judgment", "root-cause"],
+  "tags": ["behavioral", "discipline", "diagnosis"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false,
+  "baseline_score": "5/8",
+  "baseline_status": "NON-CEILING",
+  "description": "Three tests fail. Two failures are caused by actual code bugs. One failure is caused by a wrong assertion in the test itself (the code is correct, the test expectation is wrong). Tests whether the agent correctly diagnoses which failures are code bugs vs test bugs, and fixes each in the right place."
+}

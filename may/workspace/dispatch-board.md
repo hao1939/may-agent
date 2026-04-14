@@ -1,18 +1,17 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-13 ~05:21 UTC
+Updated: 2026-04-14 ~08:21 UTC
 
 ## System Health
-- **Amy-kimi**: 🔴 DOWN — 429 errors (billing). Blocked on Hao.
-- **Bob**: 🟢 Active — 35 sessions/6h, avg 8 ops. Zero errors.
-- **Coach**: 🟢 Active — 22 sessions/6h, avg 13 ops. Cancelled stuck EXP-151 session (60m, 0 ops).
-- **Scout**: 🟢 Active — 12 sessions/6h, avg 8 ops.
-- **Tech-lead**: 🟢 Active — 28 sessions/6h, avg 18 ops.
-- **Optimizer**: 🟢 Active — 38 sessions/6h, avg 14 ops.
-- **Evaluator**: 🟢 Active — 12 sessions/6h, avg 5 ops.
-- **QA**: 🟢 Active — 12 sessions/6h, avg 9 ops.
-- **Coder**: 🟡 Low activity — 2 sessions/6h, avg 20 ops. Only runs when forked.
-- **Summary**: 7/8 healthy. Amy-kimi still down. Zero errors last hour. Cancelled 1 stuck coach session.
+- **Amy-kimi**: 🔴 DOWN — billing. Blocked on Hao.
+- **Bob**: 🟢 Active — 25 sessions/6h, avg 24 ops. Zero errors.
+- **Coach**: 🟢 Active — 30 sessions/6h, avg 17 ops. Zero errors.
+- **Scout**: 🟢 Active — 18 sessions/6h, avg 9 ops. Zero errors.
+- **Tech-lead**: 🟢 Active — 22 sessions/6h, avg 14 ops. Zero errors.
+- **Optimizer**: 🟢 Active — 23 sessions/6h, avg 11 ops. Zero errors.
+- **Evaluator**: 🟢 Active — 24 sessions/6h, avg 3 ops. Zero errors.
+- **QA**: 🟢 Active — 12 sessions/6h, avg 7 ops. Zero errors.
+- **Summary**: 8/8 healthy. Amy-kimi still down. Zero errors, no stuck sessions.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -25,21 +24,20 @@ Updated: 2026-04-13 ~05:21 UTC
 | Issue | Status | Owner | Notes |
 |-------|--------|-------|-------|
 | Amy-kimi billing outage | 🔴 Blocked | Hao | Still 429, needs balance refill |
-| **EXP-123 Verification-Depth Guard** | ✅ GRADUATED | coach | Final review done Apr 13. GRADUATE verdict. See `shared/experiments/EXP-123-final-review.md`. |
-| **EXP-147 Track B Context Isolation** | 🟢 RUNNING | coach | A/B test in progress. Multiple sessions today. |
-| **Web UI Visualization** | 🟢 Phase 4 done | tech-lead/coder | Phases 1-4 complete on main. Agent grid, activity feed, deep dive, session inspector. |
-| **Code search tool** | ✅ Done | tech-lead→coder→may | Delivered at `scripts/code-search.sh`. Propagated to agent context files (tech-lead, coder, scout). |
+| **DESIGN-guards-v2** | 🟢 Approved w/ conditions | tech-lead | Review approved. C2 critical: need structured data from TaskResult for file-dependent guards. C3: per-workflow injection cap. Next: tech-lead implement C2 fix then build guards. |
+| **EXP-147 Track B Context Isolation** | 🟢 RUNNING | coach | A/B test in progress. |
+| **Web UI Visualization** | 🟢 Phase 4 done | tech-lead/coder | Phases 1-4 complete on main. |
 
 ## Next Actions
-- **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. Saves $143-441/day. **Blocked on Hao since Mar 24**.
-- **P1**: **Convention investigation** — In progress (tech-lead). 
+- **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. **Blocked on Hao since Mar 24**.
+- **P1**: **Guards-v2 implementation** — Design approved. Tech-lead to resolve C2 (TaskResult structured data) then build.
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (09:51 Apr 13)
-- **System**: 8 agents active (excl amy-kimi). Zero errors, zero stuck sessions. All healthy.
-- **Agent stats (6h)**: Bob 26s/11ops, Coach 23s/15ops, Coder 1s/9ops, Evaluator 10s/7ops, May 14s/12ops, Optimizer 26s/20ops, QA 10s/10ops, Scout 10s/24ops, Tech-lead 22s/19ops.
-- **Completed since last cycle**: KE deployment sprint (5 KEs deployed), research project triage (7 projects triaged).
-- **Queue**: Optimizer dispatch pipeline in progress. Need to refill queue.
+## Latest Cycle Summary (08:21 Apr 14)
+- **System**: 8 agents active (excl amy-kimi). Zero errors, no stuck sessions. All healthy.
+- **Agent stats (6h)**: Bob 25s/24ops, Coach 30s/17ops, Evaluator 24s/3ops, May 14s/7ops, Optimizer 23s/11ops, QA 12s/7ops, Scout 18s/9ops, Tech-lead 22s/14ops.
+- **Guards-v2 design review**: APPROVED with conditions by tech-lead. Ready for implementation.
+- **Queue**: 5 Ready items. Top: Scout archetype tool fix.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
