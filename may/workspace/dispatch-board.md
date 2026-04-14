@@ -1,18 +1,17 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-14 ~16:21 UTC
+Updated: 2026-04-14 ~12:21 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — billing. Blocked on Hao.
-- **Bob**: 🟢 Active — 29 sessions/6h, avg 13 ops, 0 errors.
-- **Coach**: 🟢 Active — 30 sessions/6h, avg 15 ops, 0 errors.
-- **Scout**: 🟢 Active — 12 sessions/6h, avg 6 ops, 0 errors.
-- **Tech-lead**: 🟢 Active — 25 sessions/6h, avg 20 ops, 0 errors.
-- **Optimizer**: 🟢 Active — 20 sessions/6h, avg 16 ops, 0 errors.
-- **Evaluator**: 🟢 Active — 66 sessions/6h, avg 1 op, 0 errors.
-- **QA**: 🟢 Active — 12 sessions/6h, avg 7 ops, 0 errors.
-- **Coder**: 🟢 Active — 11 sessions/6h, avg 18 ops, 0 errors.
-- **Summary**: 9/9 healthy. Amy-kimi still down. No stuck sessions. Only interrupts (request aborts), no real errors.
+- **Bob**: 🟢 Active — heartbeat running. Zero errors.
+- **Coach**: 🟢 Active — heartbeat running. 1 auth error (401, transient).
+- **Scout**: 🟢 Active — heartbeat running.
+- **Tech-lead**: 🟢 Active — heartbeat running + guards integration test session.
+- **Optimizer**: 🟢 Active — heartbeat running.
+- **Evaluator**: 🟢 Active — heartbeat running.
+- **QA**: 🟢 Active — heartbeat running.
+- **Summary**: 8/8 healthy. Amy-kimi still down. 71% success rate last hour.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -28,7 +27,7 @@ Updated: 2026-04-14 ~16:21 UTC
 | **Guards-v2 Phase 1** | ✅ COMPLETE | may/tech-lead | All 4 gaps closed. 53 tests pass. Warning delivery, guard disable, demand dedup, auto-test guard. |
 | **Guards-v2 Phase 2: Integration test** | ✅ COMPLETE | tech-lead | Done (23 ops). Guards tested in real workflow execution. |
 | **Pivot-detector guard** | 🟢 IN REVIEW | may | Detects create-test-fail loops (bob 280ops, coach 118ops). Warns at 3, intervenes at 5. 7 tests. Branch: review/pivot-detector-guard. |
-| **Batch merge tool** | 🟢 DISPATCHED | tech-lead | Forked s_1776183713962_246. Script to automate review branch merges. Saves ~40 ops/session. |
+| **Batch merge tool** | 📋 P1 QUEUED | tech-lead | Script to automate review branch merges. Saves ~40 ops/session. |
 | **EXP-147 Track B Context Isolation** | 🟢 RUNNING | coach | A/B test in progress. |
 | **EXP-156 Hard Gate Generalization** | 🟢 RUNNING | coach | Phase 4 analysis underway. |
 | **Over-intervention dedup** | ✅ DONE | coach | Removed 5 redundant evidence-over-narrative copies. Canonical at shared/knowledge/fewshot-examples/. Commit: 2cd4dfd7. |
