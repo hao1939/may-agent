@@ -398,16 +398,17 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
 
     const ctx: WorkflowContext = {
       task,
-      agent: opts.agentName ?? "unknown",
+      agent: (opts.agentName && opts.agentName !== "undefined") ? opts.agentName : "unknown",
 
       runAgent: async (agentName: string, agentTask: string): Promise<TaskResult> => {
         // Defensive guard: catch undefined/null agent names before they reach manager.callAgent()
         // where they'd produce the confusing "Agent \"undefined\" not registered" error.
         // This can happen when workflows use ctx.agent on a binary compiled before the agent field was added.
-        if (!agentName || typeof agentName !== "string") {
+        if (!agentName || typeof agentName !== "string" || agentName === "undefined" || agentName === "unknown") {
           throw new Error(
             `runAgent called with invalid agent name: ${JSON.stringify(agentName)}. ` +
-            `If using ctx.agent, ensure the workflow tool was created with agentName option.`
+            `If using ctx.agent, ensure the workflow tool was created with agentName option ` +
+            `and that the binary has been restarted after deploy.`
           );
         }
         const currentStep = stepCounter++;
