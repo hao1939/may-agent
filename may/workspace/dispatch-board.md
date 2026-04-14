@@ -41,11 +41,11 @@ Updated: 2026-04-14 ~10:51 UTC
 - **P1**: ~~Guards Phase 3 planning~~ ✅ COMPLETE — sensor-judge migration done. 2 of 4 handlers migrated (error-scan, coaching-feedback). Remaining 2 not candidates.
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (10:03 Apr 14)
-- **Guards Phase 1**: ✅ COMPLETE. 53 tests pass. All runtime features working.
-- **Pivot-detector guard**: ✅ BUILT + IN REVIEW. 60 tests total. Addresses 280-op bob and 118-op coach loops.
-- **Dispatched this cycle**: (1) Tech-lead: guards integration test. (2) Tech-lead: batch merge tool. (3) Coach: P2 over-intervention dedup. (4) Bob: P1 artifacts-as-memory deep dive.
-- **Queue refilled**: 4 new items (Phase 3 migration, batch merge, scenario oracle, pivot loop guard).
+## Latest Cycle Summary (11:51 Apr 14)
+- All agents healthy. 0 errors last hour. No stuck sessions.
+- Guards Phase 1+2 complete. Pivot-detector in review. Batch merge tool dispatched to tech-lead.
+- **Pending merge**: pivot-detector guard branch `review/pivot-detector-guard` needs merge session.
+- **Next dispatch candidate**: Scenario oracle generator (coach + coder).
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
