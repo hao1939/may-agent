@@ -111,6 +111,7 @@
 
 ## ✅ DONE
 
+- **Guards v2 Design Review (Round 2)** — Reviewed May's revised DESIGN-guards-v2.md after 25 changes from team feedback. Both parts approved: three-tier migration plan properly protects zero-LLM handlers, guard cost tracking is sound. Three minor suggestions raised (guard chaining cost, Tier 0 watchdog, migration dry-run). Finding: `workspace/finding-design-review-guards-v2-round2-0414.md` (2026-04-14)
 - **LLM-to-JS Verification Phases** — Replaced LLM content verification in `verify-wrap` (Phase 2) and `deliver-or-report` (Phase 3b) with pure JS file checks. ~40 wasted zero-op LLM sessions/day eliminated. Finding: `workspace/finding-llm-to-js-verification-0413.md` (2026-04-13)
 - **Scout 78-op Tool Gap Analysis** — Scout heartbeat blew up 7.8× (78 ops vs median 8.5) due to inline arXiv research (39 scrape_webpage calls) + git commit struggle (30 ops). 3 new patterns identified: web scraping cascades, finish retry loops, path hallucination. Est. ~60 ops saved per scout research session with purpose-built tools. Dispatched P1 to tech-lead. **Tech-lead response (Apr 13)**: Hard op limit rejected (design decision — opBudget was deliberately removed). Root cause is behavioral — scout's heartbeat.md already says don't search inline, LLM ignored it. No infra fix needed; behavioral compliance is the path. Finding: `workspace/finding-tool-gap-analysis-0413.md` (2026-04-13)
 - **D-o-R Phase 1 Budget Cap** — 86% reduction (29.7→4.9 avg ops). ~343 ops/day saved (~$16/day). (2026-04-11)
