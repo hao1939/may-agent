@@ -7,14 +7,14 @@
 
 ## Summary
 
-Ch2 hard externalization gates generalize beyond the original hidden-dep and contradictory-requirements scenarios. On misleading-test-fix, the hard gate produced a **+100pp improvement** (0% → 100%, p < 0.001). On ambiguous-context-drift, the improvement was **+13pp** (67% → 80%, NS). The combined effect across both scenarios is highly significant (p < 0.001).
+Ch2 hard externalization gates generalize beyond the original hidden-dep and contradictory-requirements scenarios. On misleading-test-fix, the hard gate produced a **+100pp improvement** (0% → 100%, p < 0.001). On ambiguous-context-drift, the improvement was **+13pp** (67% → 80%, NS). The combined effect across both scenarios is highly significant (p < 0.001). Total: 42 gym runs (22 baseline + 20 treatment).
 
 ## Results
 
 ### Arm A: misleading-test-fix (Control)
-- **N**: 10 runs (IDs 1189–1214)
-- **Pass rate**: 0/10 (0%)
-- **Note**: Historical baseline was 63% (EXP-016, 5/8). Current 0% reflects model/framework changes since then. All 10 runs fell into the trap: modifying applyDiscount code to produce 27.17 instead of fixing the test assertion.
+- **N**: 13 runs (IDs 1189–1214, 1240–1243)
+- **Pass rate**: 0/13 (0%)
+- **Note**: Historical baseline was 63% (EXP-016, 5/8). Current 0% reflects model/framework changes since then. All 13 runs fell into the trap: modifying applyDiscount code to produce 27.17 instead of fixing the test assertion.
 
 ### Arm B: exp156-misleading-test-hard-gate (Treatment)
 - **N**: 10 runs (IDs 1222–1235)
@@ -39,9 +39,9 @@ Ch2 hard externalization gates generalize beyond the original hidden-dep and con
 
 | Scenario | Control | Treatment | Δ | Fisher p (1-sided) | Cohen's h |
 |----------|---------|-----------|---|-------------------|-----------|
-| misleading-test-fix | 0/10 (0%) | 10/10 (100%) | **+100pp** | **5.4 × 10⁻⁶** | 3.14 (large) |
+| misleading-test-fix | 0/13 (0%) | 10/10 (100%) | **+100pp** | **8.7 × 10⁻⁷** | 3.14 (large) |
 | ambiguous-context-drift | 6/9 (67%) | 8/10 (80%) | +13pp | 0.44 (NS) | 0.30 (small) |
-| **Combined** | **6/19 (32%)** | **18/20 (90%)** | **+58pp** | **2.1 × 10⁻⁴** | — |
+| **Combined** | **6/22 (27%)** | **18/20 (90%)** | **+63pp** | **4.2 × 10⁻⁵** | — |
 
 ### Interpretation
 
@@ -49,7 +49,7 @@ Ch2 hard externalization gates generalize beyond the original hidden-dep and con
 
 2. **ambiguous-context-drift**: The effect is positive but not statistically significant (p = 0.44). The control already performs reasonably (67%) because agents naturally verify filesystem state in many cases. The hard gate's verification requirement adds marginal benefit. The two treatment failures suggest the gate helps with verification but doesn't always translate to accurate status documentation.
 
-3. **Combined**: The pooled effect (32% → 90%, p < 0.001) is highly significant, driven primarily by the misleading-test-fix result.
+3. **Combined**: The pooled effect (27% → 90%, p < 0.001) is highly significant, driven primarily by the misleading-test-fix result.
 
 ## Prediction Outcomes
 
@@ -110,4 +110,4 @@ They are less effective (+13pp, NS) when:
 - Design: `agents/shared/knowledge/experiments/EXP-156/design.md`
 - Results: `agents/shared/knowledge/experiments/EXP-156/results.md` (this file)
 - Treatment scenarios: `agents/gym/scenarios/exp156-misleading-test-hard-gate/`, `agents/gym/scenarios/exp156-context-drift-hard-gate/`
-- Run IDs: Baseline (1189–1221), Treatment (1222–1244)
+- Run IDs: Baseline (1189–1221, 1240–1243), Treatment (1222–1244)
