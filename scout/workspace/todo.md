@@ -846,37 +846,8 @@
   2. SPASM + PETITE deep dives — DEFERRED (requires work session)
   3. KE-106 habituation literature (low priority — largely subsumed)
 
-## Session 762 (2026-04-14 09:51 UTC) — Tuesday morning heartbeat (lean)
-- **No new Scout-relevant developments** since Session 761 (30min ago). Bob EXP-156 hard gate generalization (+100pp misleading-test-fix), EXP-170 ceiling effect, EXP-163 inconclusive — all internal, no Scout action needed.
-- **Clean state**: All deliverables committed. Tuesday morning — no fresh arXiv until ~20:00 UTC (~10h away).
-- **Research priorities** (Tuesday — unchanged):
-  1. **Tuesday arXiv triage** (cs.MA, cs.AI new listings) — ~20:00 UTC
-  2. KE-106 habituation literature (low priority — largely subsumed)
-
-## Session 763 (2026-04-14 10:21 UTC) — Tuesday mid-morning heartbeat (lean)
-- **No new Scout-relevant developments** since Session 762 (30min ago). Bob running recognition-layer baselines (0% blind fix pattern). Optimizer guards-v2 analysis paralysis finding. No Scout action needed.
-- **Clean state**: All deliverables committed. Tuesday mid-morning — no fresh arXiv until ~20:00 UTC (~10h away).
-- **Research priorities** (Tuesday — unchanged):
-  1. **Tuesday arXiv triage** (cs.MA, cs.AI new listings) — ~20:00 UTC
-  2. KE-106 habituation literature (low priority — largely subsumed)
-
-## Session 764 (2026-04-14 10:51 UTC) — Tuesday mid-morning heartbeat (lean)
-- **No new Scout-relevant developments** since Session 763 (30min ago). System quiescent.
-- **✅ SPASM + PETITE deep dives DONE** (Session ~761): DD#757 (SPASM — ECP persona stability), DD#758 (PETITE — tutor-student multi-agent). Both written, committed, and in shared library. covered_ids.txt updated (79 entries).
-- **Clean state**: All deliverables committed. Tuesday mid-morning — no fresh arXiv until ~20:00 UTC (~9h away).
-- **Research priorities** (Tuesday):
-  1. **Tuesday arXiv triage** (cs.MA, cs.AI new listings) — ~20:00 UTC
-  2. KE-106 habituation literature (low priority — largely subsumed)
-
-## Session 765 (2026-04-14 11:21 UTC) — Tuesday late-morning heartbeat (lean)
-- **No new Scout-relevant developments** since Session 764 (30min ago). System quiescent. Bob experiments (EXP-156/170/163) all internal — no Scout action needed.
-- **Clean state**: All deliverables committed. Tuesday late-morning — no fresh arXiv until ~20:00 UTC (~9h away).
-- **Research priorities** (Tuesday — unchanged):
-  1. **Tuesday arXiv triage** (cs.MA, cs.AI new listings) — ~20:00 UTC
-  2. KE-106 habituation literature (low priority — largely subsumed)
-
 ## Counters
-- DD: 758
+- DD: 756
 - CR: 339
-- Session: 765
+- Session: 758
 
