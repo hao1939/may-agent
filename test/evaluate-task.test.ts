@@ -26,10 +26,22 @@ vi.mock("../src/lib/db.js", () => {
     }
 
     // Parse "SELECT ... FROM <table> WHERE <col> = ?"
-    function parseSelect(sql: string): { table: string; cols: string | "*"; whereCol: string } | null {
-      const m = sql.match(/SELECT\s+(.+?)\s+FROM\s+(\w+)\s+WHERE\s+(\w+)\s*=\s*\?/i);
+    // Also handles "WHERE col1 = ? AND col2 = val AND col3 = val"
+    function parseSelect(sql: string): { table: string; cols: string | "*"; whereCol: string; extraConditions?: Array<{ col: string; val: string }> } | null {
+      const m = sql.match(/SELECT\s+(.+?)\s+FROM\s+(\w+)\s+WHERE\s+(\w+)\s*=\s*\?(?:\s+AND\s+(.+))?/i);
       if (!m) return null;
-      return { cols: m[1].trim(), table: m[2], whereCol: m[3] };
+      const result: { table: string; cols: string | "*"; whereCol: string; extraConditions?: Array<{ col: string; val: string }> } = {
+        cols: m[1].trim(), table: m[2], whereCol: m[3],
+      };
+      // Parse additional "AND col = val" conditions (literal values, not params)
+      if (m[4]) {
+        const extras = m[4].split(/\s+AND\s+/i);
+        result.extraConditions = extras.map(cond => {
+          const cm = cond.trim().match(/(\w+)\s*=\s*(.+)/);
+          return cm ? { col: cm[1], val: cm[2].trim() } : { col: "", val: "" };
+        }).filter(c => c.col);
+      }
+      return result;
     }
 
     const db = {
@@ -43,10 +55,18 @@ vi.mock("../src/lib/db.js", () => {
             if (!sel) return null;
             const tbl = getTable(sel.table);
             for (const row of tbl.values()) {
-              if (row[sel.whereCol] === params[0]) {
-                if (sel.cols === "1") return { "1": 1 };
-                return { ...row };
+              if (row[sel.whereCol] !== params[0]) continue;
+              // Check extra conditions (literal value comparisons)
+              if (sel.extraConditions) {
+                const allMatch = sel.extraConditions.every(ec => {
+                  const rowVal = row[ec.col];
+                  const expected = Number(ec.val);
+                  return rowVal === expected || String(rowVal) === ec.val;
+                });
+                if (!allMatch) continue;
               }
+              if (sel.cols === "1") return { "1": 1 };
+              return { ...row };
             }
             return null;
           },
@@ -103,7 +123,7 @@ vi.mock("../src/lib/db.js", () => {
 });
 
 import { findUnevaluatedChildren } from "../src/lib/evaluator.js";
-import { upsertEvaluation, hasEvaluation, closeDb } from "../src/lib/requests.js";
+import { upsertEvaluation, hasEvaluation, hasLLMEvaluation, closeDb } from "../src/lib/requests.js";
 import type { PersistedSession } from "../src/lib/persistence.js";
 
 function tmpDir(): string {
@@ -143,6 +163,19 @@ function writeEvaluation(persistDir: string, sessionId: string): void {
     quality: 0,
     efficiency: 0,
     verdict: "skipped",
+    createdAt: Date.now(),
+  });
+}
+
+/** Write a heuristic-only evaluation (as evaluation-sync does). */
+function writeHeuristicEvaluation(persistDir: string, sessionId: string): void {
+  upsertEvaluation(persistDir, {
+    sessionId,
+    agent: "test",
+    quality: 1.0,
+    efficiency: 0.8,
+    verdict: "good",
+    evaluatedByHeuristic: true,
     createdAt: Date.now(),
   });
 }
@@ -291,6 +324,51 @@ describe("findUnevaluatedChildren", () => {
     expect(children[0].task).toBe("implement foo");
     expect(children[0].messages).toHaveLength(2);
     expect(children[0].messages[0].role).toBe("user");
+  });
+
+  it("includes sessions with only heuristic evaluations (allows LLM upgrade)", () => {
+    const registry = makeRegistry({
+      "may-session": { agent: "may", status: "idle" },
+      "coder-1": { agent: "coder", status: "done", parentSessionId: "may-session" },
+      "coder-2": { agent: "coder", status: "done", parentSessionId: "may-session" },
+    });
+
+    writeSessionJsonl(persistDir, "coder-1", fakeMessages);
+    writeSessionJsonl(persistDir, "coder-2", fakeMessages);
+    writeHeuristicEvaluation(persistDir, "coder-1"); // heuristic-only → should be re-evaluated
+
+    const children = findUnevaluatedChildren(persistDir, registry, "may-session", skipAgents);
+    expect(children).toHaveLength(2); // Both should be included
+    const sessionIds = children.map(c => c.sessionId).sort();
+    expect(sessionIds).toEqual(["coder-1", "coder-2"]);
+  });
+
+  it("skips sessions with LLM evaluations (no double LLM eval)", () => {
+    const registry = makeRegistry({
+      "may-session": { agent: "may", status: "idle" },
+      "coder-1": { agent: "coder", status: "done", parentSessionId: "may-session" },
+      "coder-2": { agent: "coder", status: "done", parentSessionId: "may-session" },
+    });
+
+    writeSessionJsonl(persistDir, "coder-1", fakeMessages);
+    writeSessionJsonl(persistDir, "coder-2", fakeMessages);
+    writeEvaluation(persistDir, "coder-1"); // LLM-style eval (evaluatedByHeuristic=false)
+
+    const children = findUnevaluatedChildren(persistDir, registry, "may-session", skipAgents);
+    expect(children).toHaveLength(1);
+    expect(children[0].sessionId).toBe("coder-2");
+  });
+
+  it("hasLLMEvaluation returns false for heuristic evals", () => {
+    writeHeuristicEvaluation(persistDir, "test-session-1");
+    expect(hasEvaluation(persistDir, "test-session-1")).toBe(true);
+    expect(hasLLMEvaluation(persistDir, "test-session-1")).toBe(false);
+  });
+
+  it("hasLLMEvaluation returns true for LLM evals", () => {
+    writeEvaluation(persistDir, "test-session-2");
+    expect(hasEvaluation(persistDir, "test-session-2")).toBe(true);
+    expect(hasLLMEvaluation(persistDir, "test-session-2")).toBe(true);
   });
 });
 

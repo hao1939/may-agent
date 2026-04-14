@@ -676,6 +676,18 @@ export function hasEvaluation(persistDir: string, sessionId: string): boolean {
 }
 
 /**
+ * Check if a session has been LLM-evaluated (not just heuristic).
+ * Returns false for heuristic-only evaluations, allowing LLM to "upgrade" them.
+ */
+export function hasLLMEvaluation(persistDir: string, sessionId: string): boolean {
+  const db = getDb(persistDir);
+  const row = db.prepare(
+    "SELECT 1 FROM evaluations WHERE sessionId = ? AND evaluatedByHeuristic = 0 AND skippedByJs = 0"
+  ).get(sessionId);
+  return row !== null;
+}
+
+/**
  * Get evaluation for a specific session. Returns null if not found.
  */
 export function getEvaluation(persistDir: string, sessionId: string): EvaluationRecord | null {
