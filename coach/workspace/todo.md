@@ -263,36 +263,16 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 - **Implication**: Gym is saturated. Need harder scenarios for further skill development.
 - **Completed**: 2026-04-09
 
-### 0v. EXP-156: Hard Gate Generalization Study [COMPLETE ✅ — H-156 STRONGLY SUPPORTED]
+### 0v. EXP-156: Hard Gate Generalization Study [DESIGNED]
 - **Design**: `agents/shared/knowledge/experiments/EXP-156/design.md`
-- **Results**: `agents/shared/knowledge/experiments/EXP-156/results.md`
-- **Knowledge**: KE-179 (hard gate generalization across 4+ scenario types)
-- **Status**: COMPLETE — all 4 phases done, H-156 STRONGLY SUPPORTED
+- **Status**: DESIGNED — awaiting scenario creation + trial runs
 - **Goal**: Test whether Ch2 hard gates generalize beyond hidden-dep (EXP-155) and contradictory-req (EXP-127)
-- **Gym results**:
-  - misleading-test-fix: Baseline 0/13 (0%) → Treatment 10/10 (100%), **+100pp** (p < 0.001)
-  - ambiguous-context-drift: Baseline 6/9 (67%) → Treatment 8/10 (80%), **+13pp** (p = 0.44, NS)
-  - Combined: 6/22 (27%) → 18/20 (90%), p < 0.001
-- **Key finding**: Hard gates work best when baseline is low (<20%) and failure mode is "action without analysis." Effectiveness inversely correlates with baseline — agents who already naturally verify get less benefit.
-- **Mechanism validated across 4 scenarios**: contradictory-requirements (+100pp), hidden-dep (+85pp), misleading-test-fix (+100pp), ambiguous-context-drift (+13pp)
-- **All 4 predictions confirmed**: P-156a ✓, P-156b ✓, P-156c ✓, P-156d ✓
-- **Run IDs**: Baseline 1189–1221, Treatment 1222–1244
-
-### 0w. EXP-157: Hard Gate Production Deployment — Test Infrastructure Skepticism [COMPLETE ✅ — NEGATIVE RESULT]
-- **Design**: `agents/shared/knowledge/experiments/EXP-157/design.md`
-- **Results**: `agents/shared/knowledge/experiments/EXP-157/results.md`
-- **Knowledge**: KE-NEW (completion illusion effect)
-- **Status**: COMPLETE — NEGATIVE RESULT (gate harmful + baseline drift)
-- **Goal**: Deploy test infrastructure skepticism hard gate on mock-leak-trap
-- **Results**:
-  - Baseline (concurrent): 4/5 (80%) — **dramatic drift from historical 0/11 (0%)**
-  - Treatment: 0/10 (0%) — **significantly worse** (p = 0.004)
-  - Hard gate check compliance: TEST_ANALYSIS.md written 10/10, mock identified 10/10
-  - But: mock actually fixed 0/10 (vs 4/5 baseline without gate)
-- **Key finding**: "COMPLETION ILLUSION" — writing TEST_ANALYSIS.md identifying the mock problem satisfies the agent's cognitive need to address it, preventing actual remediation. The gate substitutes analysis-writing for action.
-- **Prediction assessment**: P-157a ❌ (0% not ≥70%), P-157b ✅ (100% ≥80%), P-157c ❌ (80% not ≤20%)
-- **Design rule**: Hard gate artifacts must be part of the solution, not separate analysis documents
-- **Implication**: Do NOT deploy test-trust-guard.ts. mock-leak-trap no longer useful as experiment target (80% baseline)
+- **Scenarios**: misleading-test-fix (63% baseline, math verification) + ambiguous-context-drift (~50% baseline, context trust)
+- **Arms**: 4 arms × 10 runs = 40 total (2 baseline + 2 treatment)
+- **Hypothesis**: H-156 — hard gate improves pass rate by ≥20pp on at least one new scenario
+- **Key question**: Is Ch2 universal (works on any analytical step-skipping) or scenario-specific?
+- **Phases**: (1) Create treatment scenarios, (2) Run baselines, (3) Run treatments, (4) Analysis
+- **Predecessor**: EXP-155 (+85pp), EXP-127 (+100pp) — both single-scenario Ch2 results
 
 ### 0t. EXP-147: Context Isolation A/B Test [COMPLETE ✅ — DIRECTIONAL BUT NOT SIGNIFICANT]
 - **Design**: `agents/shared/knowledge/experiments/EXP-147/design.md`
@@ -371,6 +351,14 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 - **Last regression run**: 2026-04-09 — all 3 promoted scenarios passing (efficient-file-reading, plan-once-amend, convention-verify-edit)
 
 ---
+
+### 0w. KE-182: Hard Gate Design Rules Synthesis [COMPLETE ✅]
+- **Entry**: `agents/shared/knowledge/entries/KE-182-hard-gate-design-rules-synthesis.md`
+- **Date**: 2026-04-14
+- **Scope**: Consolidates 8 experiments (EXP-127, 129, 131, 155, 156, 157, 163, RECOGNITION) into 6 actionable design rules
+- **Key rules**: (1) Artifact must be part of solution not analysis, (2) Baseline ≤50%, (3) Step-skipping failure mode, (4) 2-phase investigate→fix, (5) Relevance > count, (6) Product ≠ process metrics
+- **Next experiments**: 20-50% baseline zone, solution-producing vs analysis gates (controlled), non-judgment task gates
+- **Supersedes individual findings in**: KE-129, KE-134, KE-178, KE-179, KE-180, KE-181
 
 ## Knowledge Base Status
 
