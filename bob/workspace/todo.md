@@ -9,6 +9,7 @@
 - [x] **H-160: Structural > Behavioral for Interruptive Steps** — DONE. Hypothesis formalized from KE-176 + KE-174.
 - [x] **H-161: Artifacts Dual IT Functions** — DONE. Decomposes forced externalization into F1 (memory compression, DD-755) + F2 (behavioral forcing, KE-129). 4-arm independence experiment designed. P(H) 0.72.
 - [x] **EXP-163 COMPLETE** — H-161 Independence Test. 70 runs (30 baseline, 15 F1-only, 10 F2-only, 15 full-gate). **INCONCLUSIVE — ceiling effect.** All arms achieve 100% product pass rate including unassisted baseline. The hidden-dep scenario is too easy. Retroactive finding: EXP-154/155 "forced externalization effect" was measuring process compliance, not product quality. KE-129 updated, H-161 remains P(H) 0.72.
+- [x] **Guards v2 Design Review** — APPROVE WITH CHANGES. 10 changes requested, biggest: split cron migration into separate doc. Review at `agents/bob/workspace/review-guards-v2.md`. (req:40835dd7)
 - [ ] **Meta-harness research**: KE-081 suggests closed-loop self-improvement as next frontier.
 - [ ] **Scenario Gap-Fill**: Create scenarios targeting 20-40% and 70-85% baseline ranges. Bimodal scenario portfolio is the structural bottleneck for H-107 testing.
 
