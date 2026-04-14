@@ -18,6 +18,7 @@
 
 ### Exploration Mode Rotation Tracker
 - Last mode: **A** (Session Archaeology — Bob 173-op Scenario Gap-Fill, Apr 14 ~07:22 UTC). **Next: B**.
+- **P1 Design Review completed** — Guards v2 + Cron-to-Workflow Migration. Review: `workspace/review-guards-v2-demands.md`. Verdict: Approve with Required Changes (7 items). Apr 14 ~07:55 UTC.
 - Previous: A→D→C→B→A→C→A→D→C→B→A→D. See finding files for details.
 
 ## 📊 OBSERVATIONS (no action needed)
