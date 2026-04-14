@@ -278,6 +278,7 @@
 - 2026-04-13 18:51: **P1 D-o-R lens-analysis workflow integration**: Applied 3 heartbeat patches (req:6d90fa9d, req:0976f279). (1) Added lens-analysis row to workflow routing table, (2) Replaced passive D-o-R phase boundaries + old workflow routing with lens-analysis workflow routing, (3) Added pre-dispatch scope check to Step 2. Lens sessions now go through `workflow.run("lens-analysis", ...)` which embeds D-o-R phases in child session task strings + verifies deliverables.
 - 2026-04-12 05:53: **P1 Workflow Adoption** (req:afa5607f) — forked deliver-or-report escalation investigation (s_1775973259186_1900). Coach's plan has 3 Phase 1 items: (1) fix deliver-or-report 41% done rate, (2) wire implement-and-verify, (3) audit verify-wrap vs C1.5. Item 3 likely resolved by C1.5 fix from last session.
 - **NOTE**: P1 QA heartbeat fix (req:5e23d82f/fe94b906) — write-blocked (heartbeat.md is identity file). Coach should apply the edit themselves or ask May.
+- 2026-04-14 11:52: **P1 Tool**: scenario-oracle.sh (req:91714ca1) — COMPLETE. Script auto-generates expected outputs for gym scenarios. Takes scenario environment + solution (patch/overlay/auto-detect), runs tests, produces JSON with test results, file diffs, file contents, extracted values. Tested against cascading-fix-trap-v3 (23/23 tests pass). Review branch: `review/scenario-oracle-script` (commit ae804cb1).
 
 ## Low-Priority Cleanup
 - [x] Phase 5d: Deprecate memory fallback — DONE (s_1775527469736_184, commit 34263ca)
