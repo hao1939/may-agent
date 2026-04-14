@@ -11,6 +11,7 @@ import {
   INFRA_RETRY_MAX,
   RESTORED_MAX_TURNS_FALLBACK,
   TURN_BUDGET_GRACE,
+  resolveTurnBudget,
 } from "./manager-utils.js";
 import type { RegisteredAgent, ActiveSession, RunOptions, SubagentManagerOptions } from "./manager-utils.js";
 import { createFinishGuard } from "./tools/finish-guard.js";
@@ -1004,7 +1005,7 @@ export class SubagentManager {
       orderId: opts?.orderId,
       requestId: opts?.requestId,
       consecutiveErrorTurns: 0,
-      maxTurns: opts?.maxTurns ?? 0,
+      maxTurns: resolveTurnBudget(task, { maxTurns: opts?.maxTurns, kind: opts?.kind }, def.turnBudget),
       stuckWarningInjected: false,
       currentTurnErrors: 0,
       currentTurnSuccesses: 0,

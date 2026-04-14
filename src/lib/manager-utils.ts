@@ -166,8 +166,125 @@ export const TURN_BUDGET_TIERS = {
   implementation: 25,
 } as const;
 
+export type SessionTier = keyof typeof TURN_BUDGET_TIERS;
+
 /** Number of extra turns allowed after the soft budget message before force-close. */
 export const TURN_BUDGET_GRACE = 2;
+
+// ── Session tier classification ────────────────────────────────────────
+// Keywords used to auto-detect session tier from task description.
+// Order matters: implementation is checked first (most specific), then research,
+// then heartbeat. If none match, defaults to 'implementation' (most permissive).
+
+const HEARTBEAT_KEYWORDS = [
+  "heartbeat",
+  "[heartbeat]",
+  "read agents/",
+  "read your heartbeat",
+  "work through each section",
+] as const;
+
+const RESEARCH_KEYWORDS = [
+  "research",
+  "analyze",
+  "analysis",
+  "investigate",
+  "review",
+  "evaluate",
+  "assess",
+  "explore",
+  "hypothesis",
+  "experiment",
+  "finding",
+  "deep-dive",
+  "synthesis",
+  "literature",
+  "survey",
+] as const;
+
+const IMPLEMENTATION_KEYWORDS = [
+  "implement",
+  "build",
+  "create",
+  "add",
+  "fix",
+  "refactor",
+  "deploy",
+  "migrate",
+  "write code",
+  "feature",
+  "bug",
+  "patch",
+] as const;
+
+/**
+ * Classify a session's tier based on its task description.
+ * Used to auto-assign turn budgets when no explicit maxTurns is provided.
+ *
+ * Priority: heartbeat (exact patterns) > implementation (action verbs) > research > default (implementation).
+ * Heartbeat is checked first because heartbeat tasks have very distinctive patterns.
+ * Implementation gets a generous default because under-budgeting implementation is worse
+ * than over-budgeting research.
+ */
+export function classifySessionTier(task: string, kind?: string): SessionTier {
+  const lower = task.toLowerCase();
+
+  // Heartbeat sessions have very specific patterns
+  if (kind === "job" && HEARTBEAT_KEYWORDS.some((kw) => lower.includes(kw))) {
+    return "heartbeat";
+  }
+
+  // Check implementation keywords (action verbs indicating building/coding)
+  if (IMPLEMENTATION_KEYWORDS.some((kw) => lower.includes(kw))) {
+    return "implementation";
+  }
+
+  // Check research keywords
+  if (RESEARCH_KEYWORDS.some((kw) => lower.includes(kw))) {
+    return "research";
+  }
+
+  // Default to implementation (most permissive — don't under-budget unknown tasks)
+  return "implementation";
+}
+
+/**
+ * Resolve the turn budget for a session.
+ * Priority: explicit maxTurns option > agent-level turnBudget config > auto-classified tier.
+ * Returns 0 to disable budget enforcement (e.g., for chat sessions).
+ */
+export function resolveTurnBudget(
+  task: string,
+  opts?: { maxTurns?: number; kind?: string },
+  agentTurnBudget?: number | Record<string, number>,
+): number {
+  // 1. Explicit maxTurns from caller always wins
+  if (opts?.maxTurns !== undefined && opts.maxTurns > 0) {
+    return opts.maxTurns;
+  }
+
+  // 2. Chat sessions get no budget (interactive)
+  if (opts?.kind === "chat") {
+    return 0;
+  }
+
+  // 3. Agent-level turnBudget config
+  if (typeof agentTurnBudget === "number" && agentTurnBudget > 0) {
+    return agentTurnBudget;
+  }
+
+  // 4. Agent-level per-tier overrides: { heartbeat: 10, research: 20, implementation: 30 }
+  const tier = classifySessionTier(task, opts?.kind);
+  if (agentTurnBudget && typeof agentTurnBudget === "object") {
+    const override = agentTurnBudget[tier];
+    if (typeof override === "number" && override > 0) {
+      return override;
+    }
+  }
+
+  // 5. Fall back to global tier defaults
+  return TURN_BUDGET_TIERS[tier];
+}
 
 /** Consecutive error turns before injecting a stuck warning. */
 export const STUCK_WARNING_THRESHOLD = 3;

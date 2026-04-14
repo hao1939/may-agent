@@ -20,7 +20,7 @@ import { createHash } from "node:crypto";
 import { resolve, dirname } from "node:path";
 import type { SubagentManager } from "../lib/index.js";
 import { generateId } from "../lib/index.js";
-import { TURN_BUDGET_TIERS } from "../lib/manager-utils.js";
+// Budget tiers now auto-resolved in manager.run() — import no longer needed here
 import { getDb, trackRequest, updateRequest } from "../lib/requests.js";
 import { spawnDetachedAgent } from "../lib/detached.js";
 import {
@@ -738,13 +738,11 @@ export class Cron {
         );
       }
 
-      // EXP-TIERED-BUDGET: Soft turn budgets with grace period (replaces old hard-kill).
-      // Unlike the removed hard limit (commit c183312), this injects a "wrap up" message
-      // at the soft limit and only force-closes after a 2-turn grace period.
-      // See agents/optimizer/workspace/experiment-tiered-budget.md for design.
+      // EXP-TIERED-BUDGET: Turn budget is auto-resolved in manager.run() via
+      // resolveTurnBudget(). Heartbeat tasks are classified from task keywords.
+      // No need to pass explicit maxTurns here.
       const sessionId = this.manager.run(agentName, taskMessage, {
         kind: "job",
-        maxTurns: TURN_BUDGET_TIERS.heartbeat,
       });
       updateRequest(this.persistDir, requestId, { sessionId });
 
