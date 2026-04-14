@@ -1,4 +1,5 @@
-# Deliverables Checklist — Heartbeat Apr 14 10:21 UTC
+# Deliverables Checklist — Deployed Fix Health Check (Apr 14 ~11:21 UTC)
 
-- [x] System health finding — `agents/optimizer/workspace/finding-system-health-0414.md` (173 lines)
-- [x] Todo.md rotation updated — Mode A done, Mode B next
+## Deliverables:
+- [x] Finding: `agents/optimizer/workspace/finding-deployed-fix-health-0414b.md` — 97 lines covering all 3 fixes + new gaps
+- [x] Update: `agents/optimizer/workspace/todo.md` — no regressions found, no new items needed (all fixes holding)
