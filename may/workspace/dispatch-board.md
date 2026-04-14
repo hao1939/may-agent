@@ -37,15 +37,20 @@ Updated: 2026-04-14 ~10:51 UTC
 
 ## Next Actions
 - **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. **Blocked on Hao since Mar 24**.
-- **P1**: **Guards Phase 2 integration test** — tech-lead working now (s_1776160529269_14).
+- **P1**: ~~Guards Phase 2 integration test~~ ✅ COMPLETE.
 - **P1**: ~~Guards Phase 3 planning~~ ✅ COMPLETE — sensor-judge migration done. 2 of 4 handlers migrated (error-scan, coaching-feedback). Remaining 2 not candidates.
+- **P1**: **IT-21: QA interrupt rate (58%)** — Coach flagged. QA heartbeats timing out at 5-8 ops. Need to investigate/simplify QA heartbeat.
+- **P1**: **cost-limit guard** — Next improvement queue item. Fork to coder.
 - **P2**: Amy-kimi billing — blocked on Hao.
+- ⚠️ **HOLD**: Ch2-production-gates implementation — EXP-163 showed the evidence base (EXP-155 +85pp) was measuring process compliance, NOT product quality. All arms 100% product rate. Do NOT implement content quality gates until new evidence from EXP-170 or Bob's recognition-layer scenarios.
 
-## Latest Cycle Summary (11:51 Apr 14)
-- All agents healthy. 0 errors last hour. No stuck sessions.
-- Guards Phase 1+2 complete. Pivot-detector in review. Batch merge tool dispatched to tech-lead.
+## Latest Cycle Summary (09:42 Apr 14)
+- All agents healthy. 0 errors last hour. 3 interrupts (timeout, not bugs).
+- May averaging 29 ops/session (target ≤12). Contributing to 63% interrupt rate. Must be more disciplined.
+- EXP-163 COMPLETE — ceiling effect invalidates ch2-production-gates evidence. Hold on gate implementation.
+- Coach flagged IT-20 (new H-161 test), IT-21 (QA interrupts), IT-22 (reinterpret KE-129).
 - **Pending merge**: pivot-detector guard branch `review/pivot-detector-guard` needs merge session.
-- **Next dispatch candidate**: Scenario oracle generator (coach + coder).
+- **Next dispatch**: cost-limit guard (fork to coder), IT-21 QA investigation (fork to tech-lead/optimizer).
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
