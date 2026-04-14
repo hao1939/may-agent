@@ -18,8 +18,8 @@ import { TURN_BUDGET_TIERS, TURN_BUDGET_GRACE, classifySessionTier, resolveTurnB
 // ──────────────────────────────────────────────────────────────────────
 
 describe("TURN_BUDGET_TIERS", () => {
-  test("heartbeat tier is 8", () => {
-    expect(TURN_BUDGET_TIERS.heartbeat).toBe(8);
+  test("heartbeat tier is 12", () => {
+    expect(TURN_BUDGET_TIERS.heartbeat).toBe(12);
   });
 
   test("research tier is 15", () => {
