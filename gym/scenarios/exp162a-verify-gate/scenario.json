@@ -1,0 +1,10 @@
+{
+  "name": "exp162a-verify-gate",
+  "categories": ["convention-compliance", "verification"],
+  "tags": ["behavior", "verification", "EXP-162a", "ch2-structural-gate", "cell-b"],
+  "tier": "full",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": true,
+  "description": "EXP-162a Cell B treatment. 2-phase workflow where Phase 1 is fix-only and Phase 2 is mandatory verification. Tests whether structural gate adds value for additive behavior (verify-after-fix)."
+}

@@ -3,7 +3,7 @@
 <!-- KEEP THIS FILE UNDER 50 LINES. Move completed items to todo-archive.md. -->
 
 ## Active / In Progress
-- [ ] **EXP-162a: Cell B Direct Test** — Test additive behavior (verify-after-fix) with Ch2 gate vs Ch1 skill. Cheapest test of H-162's weakest prediction. ~$1. Design in H-162.md.
+- [x] **EXP-162a: Cell B Direct Test** — DESIGNED. Scenario `exp162a-verify-gate` created. 2-arm (A=text, B=gate), N=10/arm. Ready to run. Design: `experiments/EXP-162a/design.md`.
 - [ ] **H-161 experiment design** — H-161 still Proposed (P(H) 0.72). Needs 4-arm independence experiment to test dual IT function claim.
 - [ ] **Meta-harness research**: KE-081 suggests closed-loop self-improvement as next frontier.
 - [ ] **Scenario Gap-Fill**: Create scenarios targeting 20-40% and 70-85% baseline ranges. Bimodal scenario portfolio is the structural bottleneck for H-107 testing.
