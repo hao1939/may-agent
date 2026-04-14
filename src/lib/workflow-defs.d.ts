@@ -65,6 +65,11 @@ interface WorkflowContext {
   /** Run a sub-workflow by name. Enables workflow composition. */
   runWorkflow(name: string, task: string): Promise<WorkflowResult>;
 
+  /** Run a JS function as a workflow step. No LLM cost.
+   *  Returns a TaskResult-like object with the function's output.
+   *  Timeout: 30s. Output truncated to 50KB. */
+  runFunction(label: string, fn: () => Promise<string>): Promise<TaskResult>;
+
   /** Emit a workflow event (observable by subscribers). */
   emit(event: WorkflowEvent): void;
 
@@ -91,4 +96,48 @@ interface WorkflowContext {
 
   /** Escalate — workflow can't handle this, return to agent (slow mode). */
   escalate(reason: string, context?: unknown): WorkflowResult;
+}
+
+// ── Guard Types ──────────────────────────────────────────────────────────
+
+/** Completed step info passed to guards. */
+interface CompletedStep {
+  step: string;
+  sessionId: string;
+  result: TaskResult;
+}
+
+/** Demand: what a guard wants the workflow engine to do. */
+interface Demand {
+  type: "block" | "warn" | "run_step";
+  reason: string;
+  /** Name of the guard that issued this demand (set by engine). */
+  guardName?: string;
+  /** For run_step: details of the step to inject. */
+  step?: {
+    agent: string;
+    task: string;
+    label?: string;
+  };
+}
+
+/** Events that guards can subscribe to. */
+type WorkflowGuardEvent =
+  | { type: "workflow_start"; workflow: string; task: string }
+  | { type: "step_done"; source: "agent" | "function"; step: string; result: TaskResult; completedSteps: CompletedStep[]; task: string }
+  | { type: "workflow_done"; workflow: string; summary: string; completedSteps: CompletedStep[] };
+
+/** A guard module that inspects workflow events and returns demands. */
+interface WorkflowGuard {
+  /** Guard name for logging. */
+  name: string;
+  /** Optional: only receive specific event types. */
+  events?: WorkflowGuardEvent["type"][];
+  /** Inspect an event and return zero or more demands. */
+  handle(event: WorkflowGuardEvent): Demand[];
+}
+
+/** Guard module shape — export `guard` from a guard .ts file. */
+interface GuardModule {
+  guard: WorkflowGuard;
 }
