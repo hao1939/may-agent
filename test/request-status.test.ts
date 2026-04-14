@@ -69,11 +69,17 @@ vi.mock("../src/lib/requests.js", () => ({
   getEvaluationsSince: (_persistDir: string, sinceMs: number) => {
     return evalStore.filter((e) => e.createdAt >= sinceMs).sort((a, b) => a.createdAt - b.createdAt);
   },
+  hasEvaluation: (_persistDir: string, sessionId: string) => {
+    return evalStore.some((e) => e.sessionId === sessionId);
+  },
+  hasLLMEvaluation: (_persistDir: string, sessionId: string) => {
+    return evalStore.some((e) => e.sessionId === sessionId && !e.evaluatedByHeuristic && !e.skippedByJs);
+  },
   getDb: () => mockDb,
   getActiveRequests: () => [],
   getRequestsByAgent: () => [],
   getStaleRequests: () => [],
-  closeDb: () => {},
+  closeDb: () => { evalStore.length = 0; },
 }));
 
 import { printRequestStatus } from "../src/lib/tools/request-status.js";
