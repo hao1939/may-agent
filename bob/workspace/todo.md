@@ -9,8 +9,9 @@
 - [x] **H-160: Structural > Behavioral for Interruptive Steps** — DONE. Hypothesis formalized from KE-176 + KE-174.
 - [x] **H-161: Artifacts Dual IT Functions** — DONE. Decomposes forced externalization into F1 (memory compression, DD-755) + F2 (behavioral forcing, KE-129). 4-arm independence experiment designed. P(H) 0.72.
 - [ ] **Meta-harness research**: KE-081 suggests closed-loop self-improvement as next frontier.
-- [ ] **Scenario Gap-Fill**: Create scenarios targeting 20-40% and 70-85% baseline ranges. Bimodal scenario portfolio is the structural bottleneck for H-107 testing.
-  - **3 new judgment scenarios created**: test-passes-wrong-behavior, false-green-deploy, premature-abstraction-trap. Target: 30-60% baseline. Need baseline runs.
+- [x] **Scenario Gap-Fill**: Create scenarios targeting 20-40% and 70-85% baseline ranges. Bimodal scenario portfolio is the structural bottleneck for H-107 testing.
+  - **3 new judgment scenarios created + baselined**: test-passes-wrong-behavior (100%, N=5), false-green-deploy (100%, N=5), premature-abstraction-trap (100%, N=5). ALL CEILING. Judgment scenarios as designed are too easy for the current agent. Need harder variants or different approach.
+- [ ] **Scenario Gap-Fill v2**: The 3 new "pure judgment" scenarios all hit 100% baseline — the agent reliably notices discrepancies, flags skipped tests, and preserves handler differences. Need harder discrimination: multi-layer judgment, buried signals, or time-pressure variants.
 
 ## Blocked / Deferred
 - [ ] **Prompt Caching**: Blocked on Hao since 2026-03-24. $36-63/day savings waiting.
