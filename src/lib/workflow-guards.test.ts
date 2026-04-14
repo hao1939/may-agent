@@ -1018,3 +1018,128 @@ describe("auto-test guard integration", () => {
     expect(demands[0].type).toBe("run_step");
   });
 });
+
+// ──────────────────────────────────────────────────────────────────────
+// pivot-detector guard
+// ──────────────────────────────────────────────────────────────────────
+describe("pivot-detector guard", async () => {
+  const sharedDir = join(process.cwd(), "agents/shared/guards");
+  const guards = await loadGuards(sharedDir);
+  const pivotGuard = guards.find(g => g.name === "pivot-detector");
+  if (!pivotGuard) throw new Error("pivot-detector guard not found");
+
+  const resetGuard = () => {
+    emitAndCollectDemands([pivotGuard], {
+      type: "workflow_start",
+      workflow: "test",
+      task: "test",
+    } as WorkflowGuardEvent);
+  };
+
+  const makeStepDoneEvent = (
+    text: string,
+    overrides?: Partial<{ step: string; finishResult: { status: string; summary: string } }>,
+  ): WorkflowGuardEvent => ({
+    type: "step_done",
+    source: "agent",
+    step: overrides?.step ?? "coder",
+    result: {
+      sessionId: "s1",
+      status: "done" as const,
+      lastAssistantText: text,
+      messages: [],
+      duration: "1s",
+      outputDir: "",
+      turnsUsed: 1,
+      finishResult: overrides?.finishResult as any,
+    },
+    completedSteps: [],
+    task: "test task",
+  });
+
+  test("returns no demands for successful steps", () => {
+    resetGuard();
+    const event = makeStepDoneEvent("All 5 tests pass. Implementation working correctly.");
+    const demands = emitAndCollectDemands([pivotGuard], event);
+    expect(demands).toHaveLength(0);
+  });
+
+  test("returns no demands for first failure", () => {
+    resetGuard();
+    const event = makeStepDoneEvent("This approach failed. Let me try another.");
+    const demands = emitAndCollectDemands([pivotGuard], event);
+    expect(demands).toHaveLength(0);
+  });
+
+  test("warns after 3 consecutive failures", () => {
+    resetGuard();
+    for (let i = 0; i < 2; i++) {
+      emitAndCollectDemands([pivotGuard], makeStepDoneEvent("This failed. Trying different approach."));
+    }
+    const demands = emitAndCollectDemands([pivotGuard], makeStepDoneEvent("This didn't work either. Let me try another."));
+    expect(demands).toHaveLength(1);
+    expect(demands[0].type).toBe("warn");
+    expect(demands[0].reason).toContain("3 consecutive fail-pivot");
+  });
+
+  test("injects reassessment step after 5 consecutive failures", () => {
+    resetGuard();
+    for (let i = 0; i < 4; i++) {
+      emitAndCollectDemands([pivotGuard], makeStepDoneEvent("Failed again. Try a different approach."));
+    }
+    const demands = emitAndCollectDemands([pivotGuard], makeStepDoneEvent("This also doesn't work. Pivot to new strategy."));
+    expect(demands).toHaveLength(1);
+    expect(demands[0].type).toBe("run_step");
+    if (demands[0].type === "run_step") {
+      expect(demands[0].step!.label).toBe("guard:pivot-reassess");
+      expect(demands[0].step!.task).toContain("MANDATORY REASSESSMENT");
+    }
+  });
+
+  test("resets counter on successful step", () => {
+    resetGuard();
+    emitAndCollectDemands([pivotGuard], makeStepDoneEvent("This failed completely."));
+    emitAndCollectDemands([pivotGuard], makeStepDoneEvent("Also failed. Retrying."));
+    // 1 success — resets
+    emitAndCollectDemands([pivotGuard], makeStepDoneEvent("Success! All tests pass and it works."));
+    // 2 more failures — should not trigger warn (count restarted from 0)
+    emitAndCollectDemands([pivotGuard], makeStepDoneEvent("This new attempt failed."));
+    const demands = emitAndCollectDemands([pivotGuard], makeStepDoneEvent("Second failure after reset."));
+    expect(demands).toHaveLength(0);
+  });
+
+  test("detects failure from finish() status", () => {
+    resetGuard();
+    for (let i = 0; i < 3; i++) {
+      emitAndCollectDemands([pivotGuard], makeStepDoneEvent("", {
+        finishResult: { status: "failure", summary: "task failed" },
+      }));
+    }
+    // 3rd failure should have triggered warn — check it came from the last call
+    // Since we can't easily capture intermediate results, re-do cleanly:
+    resetGuard();
+    emitAndCollectDemands([pivotGuard], makeStepDoneEvent("", {
+      finishResult: { status: "failure", summary: "task failed" },
+    }));
+    emitAndCollectDemands([pivotGuard], makeStepDoneEvent("", {
+      finishResult: { status: "failure", summary: "task failed" },
+    }));
+    const demands = emitAndCollectDemands([pivotGuard], makeStepDoneEvent("", {
+      finishResult: { status: "failure", summary: "task failed" },
+    }));
+    expect(demands).toHaveLength(1);
+    expect(demands[0].type).toBe("warn");
+  });
+
+  test("skips guard-injected steps", () => {
+    resetGuard();
+    emitAndCollectDemands([pivotGuard], makeStepDoneEvent("Failed."));
+    emitAndCollectDemands([pivotGuard], makeStepDoneEvent("Failed again."));
+    // Guard-injected step (should not count)
+    emitAndCollectDemands([pivotGuard], makeStepDoneEvent("Failed from guard step.", { step: "guard:auto-test" }));
+    // Only 3rd real failure should trigger (this is the 3rd)
+    const demands = emitAndCollectDemands([pivotGuard], makeStepDoneEvent("Third real failure."));
+    expect(demands).toHaveLength(1);
+    expect(demands[0].type).toBe("warn");
+  });
+});
