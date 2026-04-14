@@ -105,5 +105,11 @@ Since the original EXP-127 result, two additional experiments have confirmed and
 - Small N per arm (6 runs each)
 - Confound: Ch1 interference may have suppressed Ch3 effectiveness
 
+## Caveat: EXP-155 Hidden-Dep Effect Reinterpreted (EXP-163)
+
+EXP-163 (N=63) discovered that the hidden-dep scenario has a **product quality ceiling**: the agent solves both bugs 100% of the time regardless of intervention (100% product pass rate across all arms including baseline). EXP-155's reported "+85pp" effect (15% → 100%) was entirely on **process compliance** (whether a planning artifact exists), not product quality. The agent doesn't need forced externalization to find the "hidden" dependency — sequential error discovery surfaces it reliably.
+
+**Impact on KE-129**: The hidden-dep row in the expanded evidence table should be interpreted as a process compliance effect, not a product quality effect. The core KE-129 finding remains strong — contradictory-requirements (EXP-127) and misleading-test-fix (EXP-156) both show genuine 0% → 100% product quality improvements from Ch2. The cumulative evidence adjusts from "27/27 across 3 failure types" to "17/17 across 2 confirmed failure types (judgment, verification) + 10/10 on process compliance for a 3rd (investigation)."
+
 ---
 *EXP-127 is the most decisive channel comparison experiment to date: 24 runs, 4 arms, with the starkest result pattern in the knowledge base (0% vs 0% vs 0% vs 100%).*
