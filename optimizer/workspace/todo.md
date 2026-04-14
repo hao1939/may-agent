@@ -17,8 +17,8 @@
 - **BLOCKED on operator.** Finding: `workspace/findings/2026-04-10-litellm-kills-prompt-caching.md`
 
 ### Exploration Mode Rotation Tracker
-- Last mode: **D** (Workflow Health — Apr 14 ~06:52 UTC). **Next: A**.
-- Previous: D→C→B→A→C→A→D→C→B→A→D. See finding files for details.
+- Last mode: **A** (Session Archaeology — Bob 173-op Scenario Gap-Fill, Apr 14 ~07:22 UTC). **Next: B**.
+- Previous: A→D→C→B→A→C→A→D→C→B→A→D. See finding files for details.
 
 ## 📊 OBSERVATIONS (no action needed)
 
