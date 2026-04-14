@@ -36,10 +36,10 @@ Updated: 2026-04-14 ~05:03 UTC
 - **P1**: **Convention investigation** — In progress (tech-lead). 
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (05:03 Apr 14)
-- **System**: 8 agents active (excl amy-kimi). 1 evaluator error, 1 bob zombie session. Otherwise clean.
-- **Agent stats (6h)**: Bob 28s/15ops, Coach 28s/15ops, Evaluator 12s/7ops, May 14s/9ops, Optimizer 22s/12ops, QA 12s/8ops, Scout 22s/20ops, Tech-lead 19s/22ops.
-- **Completed since last cycle**: Guard-redirect prototype (phase 1 design + test), event-driven guards design, session event flow design.
+## Latest Cycle Summary (05:21 Apr 14)
+- **System**: 8 agents active (excl amy-kimi). 1 evaluator error. Bob zombie (EXP-163, 50 ops/1h) cancelled. Otherwise clean.
+- **Agent stats (6h)**: Bob 28s/16ops, Coach 29s/16ops, Evaluator 12s/7ops/1err, May 14s/8ops, Optimizer 22s/12ops, QA 12s/8ops, Scout 22s/20ops, Tech-lead 19s/22ops.
+- **Completed this cycle**: Coach heartbeat workflow fix (replaced inline workflow.run() with fork pattern — req:d9e4683f, req:d232dd06).
 - **Queue**: 5 Ready items in improvement queue. Top: over-intervention cleanup, tech-lead workflow adoption, tiered turn budget.
 
 ## Archive Reference
