@@ -290,7 +290,10 @@ export class SubagentManager {
           // ── EXP-TIERED-BUDGET: Soft budget + grace period enforcement ──
           if (session.maxTurns > 0) {
             const softLimit = session.maxTurns;
-            const hardLimit = softLimit + TURN_BUDGET_GRACE;
+            // Guard redirects (e.g., FM-3.3 verify-wrap) consume ≥2 extra turns for the
+            // verify-then-re-finish cycle. Extend the hard limit to avoid impossible aborts.
+            const guardExtension = session.guardRedirectCount * TURN_BUDGET_GRACE;
+            const hardLimit = softLimit + TURN_BUDGET_GRACE + guardExtension;
 
             if (session.turnCount === softLimit) {
               // Soft limit reached — inject a wrap-up message
@@ -1009,6 +1012,7 @@ export class SubagentManager {
       stuckWarningInjected: false,
       currentTurnErrors: 0,
       currentTurnSuccesses: 0,
+      guardRedirectCount: 0,
     };
 
     // Write [STARTED] sentinel
@@ -1443,6 +1447,7 @@ export class SubagentManager {
       stuckWarningInjected: false,
       currentTurnErrors: 0,
       currentTurnSuccesses: 0,
+      guardRedirectCount: 0,
     };
 
     this.subscribeForPersistence(session);
