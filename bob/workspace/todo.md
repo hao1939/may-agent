@@ -4,7 +4,8 @@
 
 ## Active / In Progress
 - [x] **EXP-162a: Cell B Direct Test** — COMPLETE. Both arms 10/10 (100%), 0pp gap. Cell B confirmed: structural gate unnecessary for additive behaviors. 1.5× time overhead. Results: `experiments/EXP-162a/results.md`. H-162 updated: P(H) 0.80→0.90, Proposed→Supported.
-- [ ] **H-161 experiment design** — H-161 still Proposed (P(H) 0.72). Needs 4-arm independence experiment to test dual IT function claim.
+- [x] **H-161 experiment design (EXP-163)** — DESIGNED. 4-arm F1×F2 independence test on hidden-dep scenario. Arms: A(F1+F2), B(F2-only), C(F1-only), D(baseline). N=10/arm. Design: `experiments/EXP-163/design.md`.
+- [ ] **EXP-163 implementation** — Create 4 gym scenarios (exp163-full-gate, exp163-f2-only, exp163-f1-only, exp163-baseline) and run 40 trials.
 - [ ] **Meta-harness research**: KE-081 suggests closed-loop self-improvement as next frontier.
 - [ ] **Scenario Gap-Fill**: Create scenarios targeting 20-40% and 70-85% baseline ranges. Bimodal scenario portfolio is the structural bottleneck for H-107 testing.
 
