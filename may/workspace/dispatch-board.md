@@ -32,6 +32,7 @@ Updated: 2026-04-14 ~05:03 UTC
 
 ## Next Actions
 - **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. Saves $143-441/day. **Blocked on Hao since Mar 24**.
+- **P1**: **Workflow-guard integration Phase 2** — Design at `agents/may/workspace/DESIGN-workflow-guard-integration.md`. Key: add workflowContext to guards, auto-wrap with verify-wrap, retire redundant guards. Ready for tech-lead dispatch.
 - **P1**: **Convention investigation** — In progress (tech-lead). 
 - **P2**: Amy-kimi billing — blocked on Hao.
 
