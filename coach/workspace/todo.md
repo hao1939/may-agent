@@ -263,42 +263,16 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 - **Implication**: Gym is saturated. Need harder scenarios for further skill development.
 - **Completed**: 2026-04-09
 
-### 0v. EXP-156: Hard Gate Generalization Study [COMPLETE ✅ — PARTIALLY SUPPORTED]
+### 0v. EXP-156: Hard Gate Generalization Study [DESIGNED]
 - **Design**: `agents/shared/knowledge/experiments/EXP-156/design.md`
-- **Results**: `agents/shared/knowledge/experiments/EXP-156/results.md`
-- **Status**: COMPLETE ✅ — PARTIALLY SUPPORTED
+- **Status**: DESIGNED — awaiting scenario creation + trial runs
 - **Goal**: Test whether Ch2 hard gates generalize beyond hidden-dep (EXP-155) and contradictory-req (EXP-127)
-- **Key results**:
-  - misleading-test-fix: +100pp (0% → 100%, p < 0.001) — hard gate forces math verification
-  - ambiguous-context-drift: -20pp (90% → 70%, p = 0.587 NS) — hard gate adds overhead on high baseline
-- **Finding**: Hard gates work for step-skipping failures with low baselines (≤50%), producing +85-100pp effects. They DON'T work for belief-based failures or high-baseline scenarios.
-- **Knowledge**: KE-178 (hard gate boundary condition), KE-179 (hard gate generalization), KE-182 (synthesis)
-- **Predecessor**: EXP-155 (+85pp), EXP-127 (+100pp)
-
-### 0w. EXP-157: Hard Gate Production Deployment — Test Infrastructure Skepticism [COMPLETE ✅ — NEGATIVE RESULT]
-- **Design**: `agents/shared/knowledge/experiments/EXP-157/design.md`
-- **Results**: `agents/shared/knowledge/experiments/EXP-157/results.md`
-- **Status**: COMPLETE ✅ — NEGATIVE RESULT (gate harmful)
-- **Goal**: Test TEST_ANALYSIS.md hard gate on mock-leak-trap scenario
-- **Key results**:
-  - Baseline: 4/5 (80%) — baseline drifted from historical 0% due to model change
-  - Treatment: 0/10 (0%) — gate HARMFUL (p = 0.004)
-  - Completion illusion: agents write perfect analysis (10/10) but never fix the mock (0/10)
-- **Finding**: Writing analysis satisfies the cognitive need to "address" the problem, preventing actual remediation. Gate artifacts must be part of the solution, not separate analysis documents.
-- **Knowledge**: KE-180 (completion illusion effect), KE-182 (hard gate design rules synthesis)
-
-### 0x. EXP-162a: Structural Gate for Additive Behaviors [COMPLETE ✅ — Cell B ≈ Cell A]
-- **Status**: COMPLETE ✅ — Confirmed structural gate unnecessary for additive behaviors
-- **Finding**: Cell B ≈ Cell A. Structural gate adds no value when the behavior is additive (not judgment-based).
-
-### 0y. EXP-163: Hard Gate on Hidden-Dep Product Quality [COMPLETE ✅ — INCONCLUSIVE]
-- **Status**: COMPLETE ✅ — INCONCLUSIVE (ceiling effect)
-- **Finding**: Product quality was 100% in all arms. The "+85pp" from EXP-155 was process compliance, not product improvement. Gate forced artifact creation that the scorer checked for — tautological measurement.
-- **Knowledge**: KE-181 (process compliance vs product quality metrics)
-
-### 0z. EXP-170: [COMPLETE ✅ — CONCLUDED]
-- **Status**: COMPLETE ✅ — CONCLUDED (ceiling effect)
-- **Finding**: Ceiling effect prevented meaningful measurement.
+- **Scenarios**: misleading-test-fix (63% baseline, math verification) + ambiguous-context-drift (~50% baseline, context trust)
+- **Arms**: 4 arms × 10 runs = 40 total (2 baseline + 2 treatment)
+- **Hypothesis**: H-156 — hard gate improves pass rate by ≥20pp on at least one new scenario
+- **Key question**: Is Ch2 universal (works on any analytical step-skipping) or scenario-specific?
+- **Phases**: (1) Create treatment scenarios, (2) Run baselines, (3) Run treatments, (4) Analysis
+- **Predecessor**: EXP-155 (+85pp), EXP-127 (+100pp) — both single-scenario Ch2 results
 
 ### 0t. EXP-147: Context Isolation A/B Test [COMPLETE ✅ — DIRECTIONAL BUT NOT SIGNIFICANT]
 - **Design**: `agents/shared/knowledge/experiments/EXP-147/design.md`
