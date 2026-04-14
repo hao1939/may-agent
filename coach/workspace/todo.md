@@ -263,16 +263,16 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 - **Implication**: Gym is saturated. Need harder scenarios for further skill development.
 - **Completed**: 2026-04-09
 
-### 0v. EXP-156: Hard Gate Generalization Study [DESIGNED]
+### 0v. EXP-156: Hard Gate Generalization Study [COMPLETE ✅ — PARTIALLY SUPPORTED]
 - **Design**: `agents/shared/knowledge/experiments/EXP-156/design.md`
-- **Status**: DESIGNED — awaiting scenario creation + trial runs
+- **Results**: `agents/shared/knowledge/experiments/EXP-156/results.md`
 - **Goal**: Test whether Ch2 hard gates generalize beyond hidden-dep (EXP-155) and contradictory-req (EXP-127)
-- **Scenarios**: misleading-test-fix (63% baseline, math verification) + ambiguous-context-drift (~50% baseline, context trust)
-- **Arms**: 4 arms × 10 runs = 40 total (2 baseline + 2 treatment)
-- **Hypothesis**: H-156 — hard gate improves pass rate by ≥20pp on at least one new scenario
-- **Key question**: Is Ch2 universal (works on any analytical step-skipping) or scenario-specific?
-- **Phases**: (1) Create treatment scenarios, (2) Run baselines, (3) Run treatments, (4) Analysis
-- **Predecessor**: EXP-155 (+85pp), EXP-127 (+100pp) — both single-scenario Ch2 results
+- **Key findings**:
+  - misleading-test-fix: +100pp (0% → 100%, p < 0.001) — **hard gate works for verification step-skipping**
+  - ambiguous-context-drift: -20pp (90% → 70%, p = 0.587 NS) — **hard gate may hurt belief-based failures**
+  - **Boundary condition**: Hard gates work when baseline ≤ 50% AND failure is step-skipping. Don't help (may harm) high-baseline or belief-based failures.
+- **Knowledge**: KE-178 (hard gate boundary condition), KE-179 (hard gate generalization to 3 failure types)
+- **Cross-experiment**: 3/4 scenarios show 100% treatment rate (judgment, process, verification). 1/4 shows regression (belief-based at 90% baseline).
 
 ### 0t. EXP-147: Context Isolation A/B Test [COMPLETE ✅ — DIRECTIONAL BUT NOT SIGNIFICANT]
 - **Design**: `agents/shared/knowledge/experiments/EXP-147/design.md`
@@ -375,12 +375,16 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 
 | Skill | Promoted | Last Verified | Result |
 |-------|----------|--------------|--------|
-| efficient-file-reading | 2026-04-03 | 2026-04-14 | ✅ 8/8 PASS (4/4 product, 4/4 convention) |
-| structured-plan-writing (plan-once-amend) | 2026-04-03 | 2026-04-14 | ✅ 8/8 PASS (all product/behavior/efficiency) |
-| convention-verify-edit | 2026-04-03 | 2026-04-14 | ✅ 5/5 PASS (3/3 product, 2/2 convention — C2.3 verify-after-edit ✅, C3 validation-attempt ✅) |
+| efficient-file-reading | 2026-04-03 | 2026-04-11 | ✅ PASS (4/4 product, 2/4 convention — same as prior; convention checks are grep-usage which bob doesn't match) |
+| structured-plan-writing (plan-once-amend) | 2026-04-03 | 2026-04-11 | ✅ 8/8 PASS (all product/behavior/efficiency) |
+| convention-verify-edit | 2026-04-03 | 2026-04-11 | ⚠️ 3/5 — product 3/3 ✅, convention 0/2 ❌ (infrastructure: transcript.jsonl not written to workdir, so C2.3/C3 can't evaluate). NOT a regression — scenario criteria expects transcript at `envDir/transcript.jsonl` but gym runner writes `_transcript.txt` to separate path. |
 | cross-reference-source-code | 2026-04-09 | 2026-04-09 | Deployed to Bob, 3/4 scenarios pass |
 
-**Apr 14 regression check**: All 3 promoted skills pass at full marks. Previous convention-verify-edit infrastructure issue (transcript.jsonl path) is now resolved — convention checks fully functional. efficient-file-reading convention checks now pass 4/4 (previously 2/4). No regressions detected.
+**Apr 11 regression notes**:
+- Agent `coder` no longer registered in runtime binary — ran with `bob` instead
+- efficient-file-reading: bob passes all product checks; convention checks for grep usage fail because bob uses different reading strategy (still efficient, just not grep-based)
+- plan-once-amend: perfect pass, 8/8 all checks
+- convention-verify-edit: product perfect (3/3), but convention checks broken by infrastructure — `transcript.jsonl` never created in environment dir. This is a gym runner issue, not an agent regression. **TODO**: Fix gym runner to write transcript where success_criteria.js expects it.
 
 ---
 
