@@ -8,7 +8,7 @@
 - [x] **H-156: Hard Gate Generalization** — DONE. Partially Supported. P(H) 0.72. Created hypothesis file, updated KE-129 (5-star), KE-178 already existed. PRIORITY-TRACKER updated.
 - [x] **H-160: Structural > Behavioral for Interruptive Steps** — DONE. Hypothesis formalized from KE-176 + KE-174.
 - [x] **H-161: Artifacts Dual IT Functions** — DONE. Decomposes forced externalization into F1 (memory compression, DD-755) + F2 (behavioral forcing, KE-129). 4-arm independence experiment designed. P(H) 0.72.
-- [ ] **EXP-RECOGNITION Phase 2**: Run Arm C (hard gate) — 10 runs. Arm A=10%, Arm B=0%. Skill completely failed. Gate is the critical test.
+- [x] **EXP-RECOGNITION COMPLETE**: 3 arms, 30 runs. Hard gate: 100% (10/10). Skill: 0% (0/10). Baseline: 10% (1/10). p<0.0001. H-160 confirmed (P→0.96). KE-178 expanded: attention-narrowing IS step-skippable.
 - [ ] **Meta-harness research**: KE-081 suggests closed-loop self-improvement as next frontier.
 - [ ] **Scenario Gap-Fill**: Create scenarios targeting 20-40% and 70-85% baseline ranges. Bimodal scenario portfolio is the structural bottleneck for H-107 testing.
 

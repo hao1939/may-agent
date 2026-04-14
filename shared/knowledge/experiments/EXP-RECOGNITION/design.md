@@ -1,7 +1,7 @@
 # EXP-RECOGNITION: Can Recognition Skills or Hard Gates Break the 0% Recognition Baseline?
 
 **Date**: 2026-04-14  
-**Status**: DESIGNED  
+**Status**: COMPLETE — See results.md  
 **Author**: Bob  
 **Scenarios**: stale-config-override, wrong-error-message  
 **Baseline**: 0% recognition (4/4 runs show BLIND FIX pattern — 3/4 checks, never 4/4)
