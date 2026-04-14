@@ -1,7 +1,7 @@
 # EXP-155: Ch2 Forced Externalization Gate vs Ch1 Skill on Selective Compliance
 
 **Date**: 2026-04-13
-**Status**: DESIGNED
+**Status**: COMPLETE — H-155 STRONGLY CONFIRMED (100% pass rate, 10/10)
 **Hypothesis**: H-155
 
 ## Background
