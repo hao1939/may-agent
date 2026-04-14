@@ -1,207 +1,206 @@
-# Design Review: Guards as Workflow Demands + Cron-to-Workflow Migration
+# Design Review v2: Guards as Workflow Demands + Cron-to-Workflow Migration
 
 **Reviewer:** Bob (Architect)  
-**Document:** agents/may/workspace/DESIGN-guards-v2.md  
+**Document:** agents/may/workspace/DESIGN-guards-v2.md (v2)  
 **Date:** 2026-04-14  
-**Request:** req:40835dd7  
+**Review type:** Follow-up review — checking resolution of C1-C10, new concerns from added sections  
+**Previous review:** agents/bob/workspace/review-guards-v2.md (2026-04-14 morning)
 
 ---
 
-## Overall Assessment: APPROVE WITH CHANGES
+## Overall Assessment: APPROVE for Phase 1
 
-This is a strong design. The core insight — guards as event listeners returning demands, not imperative hooks — is the right abstraction. It cleanly separates observation (guards inspect events) from execution (runtime processes demands), which avoids the mutation/side-effect problems that plague `beforeToolCall` hooks. The `runFunction()` primitive is long overdue and well-motivated by verify-wrap's evolution.
+The v2 revision is substantially better. 8 of my 10 original concerns are fully addressed, 2 are partially addressed. The new sections (observability, testing, three-tier migration) are well-reasoned additions from coach, optimizer, and tech-lead. The design is ready for Phase 1 implementation with a small number of items to resolve during implementation (not blocking).
 
-However, there are issues with scope, some under-specified edges, and a tension with our existing design philosophy that needs explicit reconciliation. I'd approve this for Phase 1 implementation with the changes below.
-
----
-
-## Part-by-Part Review
-
-### Part 1: The Demand Model — ✅ Strong
-
-**What works:**
-- Three demand types (block/warn/run_step) cover the right space. I tried to think of a fourth and couldn't. `block` = hard stop, `warn` = soft signal, `run_step` = inject action. These map cleanly to the actual things you'd want a guard to do.
-- Pure-function constraint is realistic AND desirable. Guards inspect `WorkflowGuardEvent` data and return `Demand[]` — no tool calls, no state mutation, no async. This keeps them testable, fast, and predictable.
-- The event types are right: `step_done` (most common trigger), `step_start` (pre-flight checks), `workflow_start` (setup), `workflow_done` (cleanup/reporting).
-
-**One concern:** The `step_done` event passes `result: TaskResult` which contains the full `messages[]` array. Guards doing deep inspection of message content (like extracting changed files) are doing non-trivial work in a "pure function." This is fine architecturally but:
-
-> **Change 1:** Document explicitly that guards MAY do compute-heavy inspection of TaskResult (regex scanning, file list extraction) but MUST NOT do I/O (no fs reads, no DB queries, no network). The "pure" constraint is about side-effects, not computational cost.
-
-### Part 2: Workflow Runtime Changes — ✅ Good, needs edge case work
-
-The implementation sketch is clean and slots naturally into the existing `executeWorkflow()` flow. The demand resolution order (blocks → run_steps → warns) is correct.
-
-**Issues:**
-
-1. **`injectionDepth` reset timing.** The proposal resets `injectionDepth = 0` before the next planned step. But what if a guard produces a `run_step` demand from a `step_start` event? The `step_start` → guard → `run_step` → `step_done` → guard chain would also need depth tracking. The reset should happen at the top of each **planned** step cycle, not just after `resolveDemands`.
-
-> **Change 2:** Reset `injectionDepth` at the start of each planned step iteration, not after `resolveDemands`. This is actually what the code shows but the prose is ambiguous.
-
-2. **Warning delivery mechanism.** The proposal says warnings are "collected and passed to next step's context" but doesn't specify HOW. The `runAgent()` call takes a task string — are warnings appended to the task? Injected as a system message? This matters for whether agents actually see them.
-
-> **Change 3:** Specify that warnings are appended to the next step's task string as a `## Guard Warnings` section. Simple, visible, no runtime changes beyond string concatenation. Example:
-> ```
-> [original task]
-> 
-> ## Guard Warnings
-> - Consider adding error handling (from: guard-name)
-> ```
-
-3. **Demand deduplication.** If guard A returns `run_step("auto-test")` and guard B also returns `run_step("auto-test")` on the same event, do we run tests twice? Probably not.
-
-> **Change 4:** Deduplicate `run_step` demands by step label before execution. If two guards demand the same labeled step, run it once.
-
-### Part 3: Guard Registration — ✅ Clean
-
-Three sources (agent.json, workflow code, dynamic-future) make sense. The ordering is logical.
-
-**One note:** The agent.json `guards` field resolves to `agents/<name>/guards/` or `agents/shared/guards/`. This is a file-based lookup at workflow start time, which means guard code needs to be loadable as modules. The proposal doesn't show the file format.
-
-> **Change 5:** Show the guard module format. Suggestion: each guard file exports a `WorkflowGuard` object as default export, following the same pattern as workflow modules. E.g., `agents/shared/guards/auto-test.ts` exports `{ name, events, handle }`.
-
-### Part 4: Loop Protection — ⚠️ Adequate but brittle
-
-`MAX_INJECTION_DEPTH=3` plus step-label awareness is a reasonable starting point. But:
-
-1. **Depth=3 might be too generous.** In practice, an injected step that triggers another injected step that triggers another is already concerning. The expected pattern is depth=1 (guard injects step, step completes, continue). Depth=2 is unusual. Depth=3 means something is probably wrong.
-
-> **Recommendation:** Start with `MAX_INJECTION_DEPTH=2` and log a warning at depth=2. If we find legitimate depth=3 cases, increase it with evidence.
-
-2. **The label-based de-looping in the example is a convention, not an enforcement.** If a guard author forgets to check `event.step.startsWith("guard:")`, the depth limit is the only safety net.
-
-> **Change 6:** The runtime should enforce that guard-injected steps have labels starting with `guard:` (prefix the label automatically if not already present). This makes the convention structural.
-
-### Part 5: Example Guards — ✅ Good illustrations
-
-The auto-test, verify-files, and no-secret-leak examples are well-chosen and demonstrate all three demand types.
-
-**Observation:** `extractChangedFiles(event.result)` and `extractWrittenFiles(event.result)` are doing the same work that `verify-wrap.ts` already does (see its `extractWrittenFiles` function, lines 35-88). This SHOULD be a shared utility.
-
-> **Change 7:** Extract the file-extraction logic from verify-wrap.ts into a shared utility (e.g., `src/lib/workflow-utils.ts`). Guards and workflows both need it.
-
-### Part 6: Cron-to-Workflow Migration — ⚠️ Right direction, wrong scope for this design
-
-This is where I have the most feedback. The cron migration is a great idea but it's a SEPARATE initiative from the guard system. Including it here:
-- Doubles the implementation scope
-- Mixes two independent concerns (guard demand model + cron architecture)
-- Creates a dependency chain (Phase 3 depends on Phase 1+2, which means delays in guards block heartbeat migration)
-
-**The `runFunction()` primitive is the connective tissue** — it's needed by both guards and cron migration. So Phase 1 should include `runFunction()`, but the heartbeat migration should be its own design doc with its own phasing.
-
-> **Change 8:** Split the cron migration into a separate design doc. Keep `runFunction()` in this design (it's useful for guards too — e.g., a guard could demand a function step). Move Parts 6 and Phase 3-4 to `DESIGN-cron-workflow-migration.md`.
-
-**That said, the technical content is sound:**
-
-- The sensor→judge pattern is correct. JS collects data, LLM decides. This matches our finding that judgment requires LLM (KE-021) while data collection doesn't.
-- The migration categories are well-reasoned. DB sync and operational cleanup staying as JS handlers is exactly right — those are R < 0.1 tasks.
-- The heartbeat workflow sketch is clean. `runFunction("gather-context")` replacing the 170-line `fireHeartbeat()` is a significant simplification.
-- The error-scan example nicely shows the "zero LLM cost when nothing found" pattern.
-
-**One concern with the heartbeat migration:** The current `fireHeartbeat()` has accumulated significant complexity (auto-pause probes, tiered budgets, orphan injection, request tracking). A workflow version needs to handle all of this or we lose functionality. The design sketches a clean version but doesn't address the messy reality.
-
-> **Change 9:** When the cron migration design is written, it must include a migration checklist mapping every feature of current `fireHeartbeat()` to its workflow equivalent. Don't hand-wave the 170 lines — enumerate them.
-
-### Part 7: Summary Table — ✅ Accurate
-
-The "what does NOT change" section is important and correct. Explicitly noting that `beforeToolCall` hooks continue unchanged avoids confusion about the two guard systems coexisting.
-
-### Part 8: Implementation Plan — ⚠️ Needs adjustment per scope split
-
-If cron migration is split out, the phases simplify to:
-- **Phase 1:** Core demand system + `runFunction()` + one guard on one workflow (2-3 days)
-- **Phase 2:** Guard library + agent.json registration + verify-wrap migration (2-3 days)
-
-Phase 1 is the right test: ship auto-test or verify-files on implement-and-review, validate the demand model works, then expand.
+**Bottom line:** Ship Phase 1 (core demand system + auto-test guard). The remaining issues are implementation-time decisions, not design flaws.
 
 ---
 
-## Reconciliation with code-vs-data-decisions.md
+## Resolution of Original Concerns (C1-C10)
 
-The existing design philosophy doc (`agents/shared/may-agent-docs/design/code-vs-data-decisions.md`) explicitly warns against guards:
+### C1: TaskResult inspection / shared utilities — ✅ FULLY RESOLVED
 
-> "Guards hardcode assumptions into regexes... When the environment changes: find the regex, edit code, rebuild image"
+v2 adds:
+- Explicit note: "Guards MAY do compute-heavy inspection of TaskResult (regex scanning, file list extraction, JSON parsing of messages[]). Guards MUST NOT do I/O."
+- Shared `workflow-utils.ts` with `extractChangedFiles()` / `extractWrittenFiles()` (extracted from verify-wrap)
+- Future path: structured `deliverables` field on TaskResult
 
-This design needs to address why workflow-level guards are different from the `beforeToolCall` guards that doc criticizes. The answer is clear but unstated:
+This is exactly what I asked for. The future `deliverables` field is a nice forward-looking note.
 
-1. **Workflow guards operate on structured events**, not raw text. They inspect `TaskResult` objects, not regex-matching agent output.
-2. **Workflow guards are opt-in** (agent.json + workflow code), not universal.
-3. **Workflow guards produce demands** (which the runtime processes), not mutations (which change agent behavior invisibly).
-4. **The failure mode is different**: a bad `beforeToolCall` guard silently blocks a tool call; a bad workflow guard produces a visible demand that shows up in the workflow trace.
+### C2: `injectionDepth` reset timing — ✅ FULLY RESOLVED
 
-> **Change 10:** Add a section explicitly reconciling this design with code-vs-data-decisions.md. Explain why these guards don't have the problems that doc identifies. Update code-vs-data-decisions.md to distinguish between "session-level guards (fragile, avoid)" and "workflow-level guards (structured, use for process enforcement)."
+v2 explicitly states: "`injectionDepth` resets to 0 at the start of each planned step iteration — not after `resolveDemands()`." The code in Part 2 shows `injectionDepth = 0` reset at the right place. No ambiguity remains.
 
----
+### C3: "Pure function" clarification — ✅ FULLY RESOLVED
 
-## Open Questions — My Recommendations
+v2 adds a bold callout: **"'Pure' means no side effects, not no computation."** Then enumerates what guards MAY do (regex scanning, file list extraction, JSON parsing) and MUST NOT do (filesystem reads, database queries, network calls, state mutation). Clear and precise.
 
-### Q1: Guard ordering
+### C4: Warning delivery + demand deduplication — ✅ FULLY RESOLVED
 
-**Recommendation: Blocks always win, regardless of order.**
+v2 specifies:
+- Warnings appended to next step's task as `## Guard Warnings` section (with example)
+- `run_step` demands deduplicated by label before execution
+- `warnings.length = 0` after delivery (clear after use)
 
-The proposal already suggests this and it's correct. Scan all guards, collect all demands, then process. If any demand is a `block`, halt immediately — don't execute any `run_step` demands first. This is the simplest model and prevents a situation where a run_step executes before a block from a later guard would have caught a problem.
+All three sub-items addressed.
 
-Implementation: `resolveDemands` already does this (blocks check is first). Just document that guard evaluation order doesn't matter for correctness.
+### C5: Guard module file format — ✅ RESOLVED (differently than suggested)
 
-### Q2: Injected step failures
+I suggested agent.json registration. v2 goes with pure auto-discovery (per user requirement): scan `agents/shared/guards/*.ts` and `agents/<name>/guards/*.ts`, each file exports a `WorkflowGuard` object. This is simpler than my suggestion and consistent with how workflows are discovered. I prefer this.
 
-**Recommendation: Option (c) — let guards decide.**
+### C6: Auto-prefix `guard:` on labels — ✅ FULLY RESOLVED
 
-This is the most compositional answer. The auto-test guard's injected test step completes → emits `step_done` → guards react. The auto-test guard itself can check: "was this my test step, and did it fail?" → return `block`. This keeps the decision logic in the guard, not in the runtime.
+v2 adds structural enforcement in `resolveDemands()`:
+```typescript
+const prefixedLabel = label.startsWith("guard:") ? label : `guard:${label}`;
+```
+Guard authors can't forget the convention — the runtime enforces it.
 
-One nuance: the runtime should ensure the injected step's `result.status` is clearly visible in the event. Don't hide failure information.
+### C7: Shared file-extraction utility — ✅ FULLY RESOLVED
 
-### Q3: `runFunction()` and guards
+Phase 0 explicitly includes: "Extract `extractChangedFiles()` / `extractWrittenFiles()` from verify-wrap into `src/lib/workflow-utils.ts`". This is a prerequisite for Phase 1, which is the right ordering.
 
-**Recommendation: Events fire, all demand types processed.**
+### C8: Split cron migration into separate doc — ⚠️ PARTIALLY RESOLVED
 
-I disagree with the proposal's suggestion to skip `run_step` demands from function step events. A function step that discovers a problem (e.g., scan-errors finds critical patterns) might legitimately trigger a guard that demands an immediate step. Artificially restricting demand types from function events adds complexity without clear benefit.
+v2 keeps everything in one doc but defers heartbeat migration to Phase 4+ ("only after Phases 1-3 are stable and proven for ≥2 weeks"). This is an acceptable compromise. The three-tier migration framework (Optimizer's contribution) makes the scope clearer — Tier 1 stays as JS, only Tier 2 converts, Tier 3 is future.
 
-The loop protection (depth limit + label dedup) is sufficient to prevent runaway chains. If we find a real problem, restrict then.
+**My original concern was about scope creep.** The v2 phasing addresses this: Phase 1-2 are pure guard work, Phase 3 is Tier 2 migration, Phase 4 is heartbeat. Each phase validates before the next begins. I'm satisfied that the scope won't creep.
 
----
+**Remaining nit:** The doc is now 40KB+. For implementation, the coder will need a focused spec per phase, not this whole document. Recommend extracting a Phase 1 implementation spec before coding begins.
 
-## Alignment with Research Findings
+### C9: `fireHeartbeat()` migration checklist — ✅ FULLY RESOLVED
 
-This design aligns well with our empirical knowledge:
+Phase 4 now says: "Write detailed migration checklist mapping every feature of `fireHeartbeat()` to workflow equivalent." This is deferred to the right time (when we actually do the migration).
 
-- **KE-021 (Process > Knowledge > Judgment):** Guards are process enforcement — they add steps, not instructions. This is the highest-effectiveness category. Auto-test guard = "run tests after code changes" = process skill delivered structurally.
+### C10: Reconcile with code-vs-data-decisions.md — ⚠️ PARTIALLY RESOLVED
 
-- **KE-015 (Decision Topology):** Guards are appropriate for high-R tasks (verification, testing, file checks — all eliminable decisions). The design correctly scopes guards to workflows only, avoiding the R < 0.3 territory where structure hurts.
+v2 adds a "Relationship to existing `beforeToolCall` guards" section (Part 1) that explains coexistence. This is helpful but **doesn't update code-vs-data-decisions.md itself**, which still says:
+> "NOT text rules (0/18 proven), NOT guards (brittle)"
 
-- **The verify-wrap precedent:** The existing verify-wrap workflow already does exactly what auto-test and verify-files guards would do, but baked into a specific workflow. Guards generalize this pattern to any workflow. This is a natural evolution.
+The design doc explains why workflow-level guards are different from the brittle guards that doc criticizes (structured events vs. regex matching, demands vs. mutations, visible vs. invisible). But someone reading code-vs-data-decisions.md won't know this distinction exists.
 
----
-
-## Risk Assessment
-
-| Risk | Likelihood | Mitigation |
-|------|-----------|------------|
-| Guards add latency to every workflow step | Medium | Guards are sync pure functions — should be <1ms. Monitor. |
-| Guard-injected steps are expensive (LLM cost) | Medium | Guards should prefer `warn` over `run_step` when possible. Track guard-injected step cost separately. |
-| Two guard systems confuse developers | High | Add clear docs: `beforeToolCall` = session-level tool hooks, workflow guards = step-level event listeners. Different layers, different purposes. |
-| Scope creep into cron migration | High | Split the design doc (Change 8). Ship guards first. |
-
----
-
-## Summary of Required Changes
-
-1. Document that guards MUST NOT do I/O (clarify "pure" constraint)
-2. Clarify `injectionDepth` reset timing
-3. Specify warning delivery mechanism (append to task string)
-4. Add `run_step` demand deduplication by label
-5. Define guard module file format
-6. Auto-prefix `guard:` on injected step labels
-7. Extract shared file-extraction utility from verify-wrap
-8. **Split cron migration into separate design doc** (biggest structural change)
-9. Cron migration doc must include `fireHeartbeat()` feature migration checklist
-10. Reconcile with code-vs-data-decisions.md explicitly
-
-Changes 1-7 are small and can be addressed in a revision pass. Change 8 is a scoping decision. Changes 9-10 are documentation tasks.
+**Action needed (non-blocking):** Update code-vs-data-decisions.md to add a note: "Workflow-level guards (event-driven, pure functions returning demands) are a different pattern from session-level `beforeToolCall` hooks. See DESIGN-guards-v2.md." This is a 2-line addition and should happen during Phase 1.
 
 ---
 
-**Verdict:** Good design, right abstractions, needs scoping discipline. Ship Phase 1 (demand model + one guard) quickly and validate before expanding.
+## New Concerns from Added Sections
 
+### N1: Guard exception isolation (NEW, MEDIUM priority)
 
-[SIG: review-guards-v2:bob:2026-04-14]
+The testing strategy lists 8 test cases but doesn't cover: **what happens when a guard's `handle()` throws an exception?** A buggy guard that crashes shouldn't bring down the entire workflow.
+
+**Recommendation:** Wrap each `guard.handle(event)` call in try/catch. On exception, log the error with the guard name, skip that guard's demands, and continue. Add this as test case #9.
+
+```typescript
+// In emitAndCollectDemands():
+try {
+  const guardDemands = guard.handle(snapshot);
+  // ... process demands
+} catch (err) {
+  log("error", `[workflow:${runId}] guard "${guard.name}" threw: ${err}`);
+  // Skip this guard, continue with others
+}
+```
+
+### N2: DB schema for guard cost tracking (NEW, LOW priority)
+
+The observability section references `guard_name` column and `source = 'guard'` filtering in SQL, but the implementation plan doesn't mention DB schema changes. The `tagSessionAsGuardInjected()` function needs a place to store this data.
+
+**Recommendation:** Add to Phase 1: "Add `guard_name` column to sessions table (nullable, TEXT). Set when a session is created as a guard-injected step." This is a single ALTER TABLE + one column set at insert time.
+
+### N3: Auto-test guard needs failure-path example (NEW, LOW priority)
+
+Q2 resolved that injected step failures should be handled by guards themselves (option C — "let the guard decide"). This is the right answer. But the auto-test example in Part 5 only shows the fire-test path, not the block-on-failure path.
+
+**Recommendation:** Add an `auto-test-block` example showing the dual behavior:
+```typescript
+handle(event) {
+  // Path A: After a code step → demand tests
+  if (!event.step.startsWith("guard:") && hasCodeChanges(event)) {
+    return [{ type: "run_step", step: { label: "guard:auto-test", ... } }];
+  }
+  // Path B: After the test step → block if tests failed
+  if (event.step === "guard:auto-test" && event.result.status === "error") {
+    return [{ type: "block", reason: "Tests failed after code changes" }];
+  }
+  return [];
+}
+```
+
+This shows the complete lifecycle and validates the Q2 design decision.
+
+### N4: Tier 2 cost claim needs asterisk (NEW, LOW priority)
+
+The design claims "Estimated cost impact of this migration plan: +0 ops/day." This is approximately true for Tier 2 (replacing existing LLM cost), but guards will add additional LLM sessions to Tier 2 workflows that didn't previously have verification steps. The claim should say "net cost change: approximately zero, but individual Tier 2 workflows may see +1-2 guard-injected steps per run."
+
+Not blocking — this is a documentation accuracy issue.
+
+### N5: `skipGuards` granularity (NEW, LOW priority)
+
+The escape hatch is `skipGuards: true` (all-or-nothing at the workflow level). There's no way to skip a specific guard for a specific workflow invocation. This is fine for Phase 1, but if we find that one guard is problematic on one workflow, the only options are: (a) disable it globally, (b) add self-filtering to the guard, or (c) use `skipGuards: true` and lose all guards.
+
+**Recommendation for future:** Consider `skipGuards: string[]` (list of guard names to skip) as a Phase 2 option if needed. Don't build it now — wait for evidence.
+
+---
+
+## Implementation Readiness Assessment
+
+### Ready for Phase 1: YES ✅
+
+The design has sufficient detail to begin Phase 1 implementation:
+
+| Aspect | Ready? | Notes |
+|--------|--------|-------|
+| Types (`WorkflowGuard`, `Demand`, etc.) | ✅ | Fully specified in Part 1 |
+| Runtime changes (`emitAndCollectDemands`, `resolveDemands`) | ✅ | Code sketches are implementation-quality |
+| Guard discovery (`loadGuards`) | ✅ | Directory convention clear |
+| `runFunction()` | ✅ | Error handling, timeout, truncation all specified |
+| Loop protection | ✅ | Depth limit + auto-prefix + dedup |
+| `WorkflowBlocked` error type | ✅ | Clear definition, fits existing error handling |
+| Test cases | ✅ | 8 specific cases listed (add N1 for 9th) |
+| First guard (auto-test) | ✅ | Complete implementation example |
+| Where it plugs in (`workflow-tool.ts`) | ✅ | Shows exact line to change |
+
+### Phase 1 implementation checklist (suggested)
+
+1. Extract `extractChangedFiles` / `extractWrittenFiles` from verify-wrap → `workflow-utils.ts`
+2. Add types to `workflow.ts`
+3. Add `loadGuards()` to `workflow-tool.ts`
+4. Add `emitAndCollectDemands()` + `resolveDemands()` to `workflow-tool.ts`
+5. Add `runFunction()` to `WorkflowContext`
+6. Add `WorkflowBlocked` error + handling in `runOrResume()`
+7. Add guard exception isolation (N1)
+8. DB: add `guard_name` column to sessions table (N2)
+9. Ship `auto-test` guard in `agents/shared/guards/`
+10. Write unit tests (9 cases)
+11. Integration test: run a workflow with code changes, verify auto-test fires
+
+---
+
+## Risk Update
+
+| Risk | From v1 | v2 Status |
+|------|---------|-----------|
+| Guards add latency | Medium | **Low** — pure sync functions, <1ms expected. Unchanged. |
+| Guard-injected LLM cost | Medium | **Low** — `costTier` field + `maxInjectedSteps` cap + per-guard cost tracking. Well-mitigated. |
+| Two guard systems confuse devs | High | **Medium** — Part 1 coexistence table is clear, but code-vs-data-decisions.md not yet updated. |
+| Scope creep into cron | High | **Low** — three-tier migration + Phase 4+ deferral keeps focus on guards. |
+| **NEW:** Buggy guard crashes workflow | Medium | **Needs fix** — add try/catch (N1). |
+| **NEW:** DB schema not planned | Low | **Needs planning** — add to Phase 1 checklist (N2). |
+
+---
+
+## Summary
+
+**v2 is a well-revised design.** The 25 changes from team feedback (especially the three-tier migration, testing strategy, and observability additions) significantly strengthen the proposal. The core abstractions remain clean: guards are pure functions, events are workflow-level, demands feed back into the runtime.
+
+**Blocking items:** None.  
+**Should-fix before Phase 1 coding:** N1 (guard exception isolation), N2 (DB schema planning).  
+**Nice-to-have for Phase 1:** N3 (dual-path auto-test example), update to code-vs-data-decisions.md.  
+**Defer to Phase 2+:** N4, N5.
+
+**Verdict: APPROVE. Begin Phase 1 implementation.**
+
+---
+
+[SIG: review-guards-v2-followup:bob:2026-04-14]
