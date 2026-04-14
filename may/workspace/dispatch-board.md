@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-14 ~17:52 UTC
+Updated: 2026-04-14 ~18:22 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — billing. Blocked on Hao.
@@ -11,7 +11,7 @@ Updated: 2026-04-14 ~17:52 UTC
 - **Optimizer**: 🟢 Active — heartbeat running.
 - **Evaluator**: 🟢 Active — heartbeat running.
 - **QA**: 🟢 Active — heartbeat running.
-- **Summary**: 8/8 healthy. Amy-kimi still down. 71% success rate last hour.
+- **Summary**: 8/8 healthy. Amy-kimi still down. 0 errors last 6h. QA still interrupting (IT-21).
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
