@@ -362,6 +362,10 @@ export interface ActiveSession {
   currentTurnErrors: number;
   /** Tool successes in the current turn (reset each assistant message). */
   currentTurnSuccesses: number;
+  /** Number of guard redirects (e.g., FM-3.3 verify-wrap) that extended the grace period.
+   *  Each redirect adds TURN_BUDGET_GRACE extra turns to the hard limit so the agent
+   *  can complete the verify-then-re-finish cycle without being force-closed. */
+  guardRedirectCount: number;
 }
 
 /** Options for spawning a session with parent/workflow context. */
