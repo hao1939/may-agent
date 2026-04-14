@@ -1,17 +1,18 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-14 ~09:47 UTC
+Updated: 2026-04-13 ~05:21 UTC
 
 ## System Health
-- **Amy-kimi**: 🔴 DOWN — billing. Blocked on Hao.
-- **Bob**: 🟢 Active — 25 sessions/6h, avg 26 ops. Zero errors.
-- **Coach**: 🟢 Active — 31 sessions/6h, avg 17 ops. Cancelled 1 stuck session (EXP-156, 21 ops, >30min).
-- **Scout**: 🟢 Active — 16 sessions/6h, avg 9 ops. Zero errors.
-- **Tech-lead**: 🟢 Active — 22 sessions/6h, avg 15 ops. Zero errors.
-- **Optimizer**: 🟢 Active — 25 sessions/6h, avg 13 ops. Zero errors.
-- **Evaluator**: 🟢 Active — 27 sessions/6h, avg 3 ops. Zero errors.
-- **QA**: 🟢 Active — 12 sessions/6h, avg 6 ops. Zero errors.
-- **Summary**: 8/8 healthy. Amy-kimi still down. Zero errors. 1 stuck coach session cancelled (EXP-156).
+- **Amy-kimi**: 🔴 DOWN — 429 errors (billing). Blocked on Hao.
+- **Bob**: 🟢 Active — 35 sessions/6h, avg 8 ops. Zero errors.
+- **Coach**: 🟢 Active — 22 sessions/6h, avg 13 ops. Cancelled stuck EXP-151 session (60m, 0 ops).
+- **Scout**: 🟢 Active — 12 sessions/6h, avg 8 ops.
+- **Tech-lead**: 🟢 Active — 28 sessions/6h, avg 18 ops.
+- **Optimizer**: 🟢 Active — 38 sessions/6h, avg 14 ops.
+- **Evaluator**: 🟢 Active — 12 sessions/6h, avg 5 ops.
+- **QA**: 🟢 Active — 12 sessions/6h, avg 9 ops.
+- **Coder**: 🟡 Low activity — 2 sessions/6h, avg 20 ops. Only runs when forked.
+- **Summary**: 7/8 healthy. Amy-kimi still down. Zero errors last hour. Cancelled 1 stuck coach session.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -24,20 +25,21 @@ Updated: 2026-04-14 ~09:47 UTC
 | Issue | Status | Owner | Notes |
 |-------|--------|-------|-------|
 | Amy-kimi billing outage | 🔴 Blocked | Hao | Still 429, needs balance refill |
-| **DESIGN-guards-v2** | 🟢 Phase 1 COMPLETE, Phase 2 in progress | tech-lead/may | Phase 1: warning delivery, guard disable (.disabled.ts + DISABLED_GUARDS env), demand dedup, test fix all done. 39 tests pass. Phase 2: auto-test guard created. Tech-lead adding new tests (s_1776159865122_1). |
-| **EXP-147 Track B Context Isolation** | 🟢 RUNNING | coach | A/B test in progress. |
-| **Web UI Visualization** | 🟢 Phase 4 done | tech-lead/coder | Phases 1-4 complete on main. |
+| **EXP-123 Verification-Depth Guard** | ✅ GRADUATED | coach | Final review done Apr 13. GRADUATE verdict. See `shared/experiments/EXP-123-final-review.md`. |
+| **EXP-147 Track B Context Isolation** | 🟢 RUNNING | coach | A/B test in progress. Multiple sessions today. |
+| **Web UI Visualization** | 🟢 Phase 4 done | tech-lead/coder | Phases 1-4 complete on main. Agent grid, activity feed, deep dive, session inspector. |
+| **Code search tool** | ✅ Done | tech-lead→coder→may | Delivered at `scripts/code-search.sh`. Propagated to agent context files (tech-lead, coder, scout). |
 
 ## Next Actions
-- **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. **Blocked on Hao since Mar 24**.
-- **P1**: **Guards-v2 Phase 2 completion** — Auto-test guard created. Need: (1) new tests for disabled guards, dedup, warning delivery, auto-test guard; (2) integration test with a real workflow; (3) Phase 3 planning (cron-to-workflow migration).
+- **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. Saves $143-441/day. **Blocked on Hao since Mar 24**.
+- **P1**: **Convention investigation** — In progress (tech-lead). 
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (09:47 Apr 14)
-- **System**: 8 agents active (excl amy-kimi). Zero errors.
-- **Guards-v2 Phase 1**: ✅ COMPLETE. All 4 gaps closed: warning delivery (guardWarnings→`## Guard Warnings`), disabled guards (.disabled.ts + DISABLED_GUARDS), demand dedup, test fix (import.meta.dir→url). 39 tests pass.
-- **Guards-v2 Phase 2**: Auto-test guard created. Tech-lead (s_1776159865122_1) adding new tests.
-- **Queue**: Scout tool fix done. Guards Phase 1 done.
+## Latest Cycle Summary (09:51 Apr 13)
+- **System**: 8 agents active (excl amy-kimi). Zero errors, zero stuck sessions. All healthy.
+- **Agent stats (6h)**: Bob 26s/11ops, Coach 23s/15ops, Coder 1s/9ops, Evaluator 10s/7ops, May 14s/12ops, Optimizer 26s/20ops, QA 10s/10ops, Scout 10s/24ops, Tech-lead 22s/19ops.
+- **Completed since last cycle**: KE deployment sprint (5 KEs deployed), research project triage (7 projects triaged).
+- **Queue**: Optimizer dispatch pipeline in progress. Need to refill queue.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.

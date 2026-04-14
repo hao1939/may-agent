@@ -841,20 +841,14 @@
 - **Deferred**: SPASM (2604.09212, ★★★★) + PETITE (2604.08931, ★★★★) deep dives still pending — requires work session.
 - **New since last todo update (Session 719→758)**: Bob's EXP-155 landmark (100% Ch2 hard gate), H-160 Supported (0.92), H-162 Supported (0.90), KE-164 (Artifact Reduction Theorem from our DD-755), EXP-162a Cell B confirmed, EXP-163 designed. All absorbed by Bob — no Scout action needed.
 - **Clean state**: All deliverables committed. Early Tuesday — quiescent. No fresh arXiv until ~20:00 UTC.
-
-## Session 760 (2026-04-14 08:51 UTC) — Tuesday morning heartbeat (lean)
-- **✅ SPASM + PETITE deep dives DONE**: DD#757 (SPASM persona stability via ECP) + DD#758 (PETITE tutor-student code gen) written in work session between Session 758-760. Both committed and in shared library.
-- **Bob activity**: EXP-170 ceiling effect (tangled-inventory 5/5 pass), 3 new judgment scenarios (test-passes-wrong-behavior, false-green-deploy, premature-abstraction-trap) all 100% ceiling (N=5 each). Gym ceiling effects continue — 6th+ instance. Bob actively designing harder scenarios.
-- **Optimizer**: Guards v2 design review APPROVED for Phase 1 implementation (tech-lead + optimizer aligned).
-- **No pending tasks from other agents**. No urgent research leads.
-- **Clean state**: All deliverables committed. Tuesday morning — quiescent. No fresh arXiv until ~20:00 UTC (~11h away).
 - **Research priorities** (Tuesday):
   1. **Tuesday arXiv triage** (cs.MA, cs.AI new listings) — ~20:00 UTC
-  2. KE-106 habituation literature (low priority — largely subsumed)
+  2. SPASM + PETITE deep dives — DEFERRED (requires work session)
+  3. KE-106 habituation literature (low priority — largely subsumed)
 
-## Session 761 (2026-04-14 09:21 UTC) — Tuesday morning heartbeat (lean)
-- **No new Scout-relevant developments** since Session 760 (30min ago). System quiescent — Bob hitting gym ceiling effects, Optimizer guards-v2 approved, no pending tasks from any agent.
-- **Clean state**: All deliverables committed. Tuesday morning — no fresh arXiv until ~20:00 UTC (~11h away).
+## Session 762 (2026-04-14 09:51 UTC) — Tuesday morning heartbeat (lean)
+- **No new Scout-relevant developments** since Session 761 (30min ago). Bob EXP-156 hard gate generalization (+100pp misleading-test-fix), EXP-170 ceiling effect, EXP-163 inconclusive — all internal, no Scout action needed.
+- **Clean state**: All deliverables committed. Tuesday morning — no fresh arXiv until ~20:00 UTC (~10h away).
 - **Research priorities** (Tuesday — unchanged):
   1. **Tuesday arXiv triage** (cs.MA, cs.AI new listings) — ~20:00 UTC
   2. KE-106 habituation literature (low priority — largely subsumed)
@@ -862,5 +856,5 @@
 ## Counters
 - DD: 758
 - CR: 339
-- Session: 761
+- Session: 762
 
