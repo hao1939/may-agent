@@ -55,7 +55,7 @@ These files ALWAYS need a read before edit:
 - `agents/scout/todo.md` — your task list
 - `agents/shared/knowledge/library/papers.md` — shared library
 - `agents/shared/knowledge/library/discoveries.md` — shared library
-- `agents/shared/research-projects/*.md` — shared projects
+- `agents/shared/projects/*.md` — shared projects
 - `agents/shared/knowledge/library/deep-dives/*.md` — deep dive files
 
 ## Assertion

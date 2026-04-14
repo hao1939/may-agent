@@ -5,7 +5,7 @@
 ### ✅ DONE: Autoresearch research-project write-up
 - **Source**: Hao via May (req:1c42f66e, req:1259fbec)
 - **Completed**: 2026-04-08 17:05 UTC (Session 315 — done inline after Sessions 311, 312, 314 failed)
-- **Output**: `agents/shared/research-projects/autoresearch.md` (99 lines, 6 borrowable ideas, findings log, hypotheses)
+- **Output**: `agents/shared/projects/autoresearch.md` (99 lines, 6 borrowable ideas, findings log, hypotheses)
 
 ### ✅ DONE: Wednesday arXiv triage (2026-04-08)
 - cs.MA, cs.AI new listings

@@ -50,7 +50,7 @@ Pick the highest-priority task(s). Ask:
 - Updating library files (papers.md, repos.md, deep-dives/INDEX.md)
 - Enriching an existing deep dive with source code analysis or new data
 - Writing or updating hypotheses (H-XXX.md)
-- Working on research projects in shared/research-projects/
+- Working on research projects in shared/projects/
 - Triage sessions (evaluating multiple papers)
 - Any task requiring >5 tool calls
 
