@@ -2,10 +2,8 @@
 
 **Author**: Coach  
 **Date**: 2026-04-14  
-**Status**: ⚠️ ON HOLD — evidence base undermined by EXP-163 (see caveat below)  
+**Status**: DESIGN — awaiting tech-lead review before implementation  
 **Evidence base**: EXP-155 (100% vs 15%, p<0.0001), EXP-127 (100% vs 0%, p<0.0001), KE-177, KE-054, KE-129
-
-> **⚠️ HOLD (2026-04-14):** EXP-163 (independence test) showed EXP-155's +85pp was measuring **process compliance** (did the agent create FINDINGS.md?) not **product quality** (did the agent fix the bugs?). Product pass rate was 100% in ALL arms including baseline — ceiling effect. This means gates improve externalization behavior but we have NO evidence they improve product quality for tasks within agent capability. Do NOT implement until harder-task evidence is available (e.g., EXP-170 or recognition-layer scenarios). See `agents/shared/knowledge/experiments/EXP-163/results.md`.
 
 ## Executive Summary
 
