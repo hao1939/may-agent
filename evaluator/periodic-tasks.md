@@ -101,4 +101,4 @@ See `agents/evaluator/periodic-tasks.md` for the definitions.
 - Check for existence of a `llm_evaluations` (or similarly named) table.
 - If missing: treat as "LLM eval disabled or not implemented" and open a tracked item to either (a) add it back, or (b) remove/rename docs that imply it exists.
 
-**Last check**: 2026-04-14 03:21Z — `.state/may.db` table inventory includes `evaluations` and **no** `llm_evaluations` / `session_evaluations` tables (LLM eval appears disabled/unimplemented or renamed). Also verified eval pipeline liveness: `evaluations MAX(createdAt)=1776136558415`.
+**Last check**: 2026-04-14 04:21Z — `.state/may.db` table inventory includes `evaluations` and **no** `llm_evaluations` / `session_evaluations` tables (LLM eval appears disabled/unimplemented or renamed). Also verified eval pipeline liveness: `evaluations MAX(createdAt)=1776139562299` (2026-04-14T04:06:02Z).
