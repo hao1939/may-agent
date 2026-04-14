@@ -8,6 +8,7 @@ Each guard file must export a `guard` object matching the `WorkflowGuard` interf
 | Guard | File | Description |
 |-------|------|-------------|
 | build-check | build-check.ts | Warns if coding steps don't confirm build/test success |
+| auto-test | auto-test.ts | Injects a test step when src/ files are modified without test confirmation |
 
 ## Writing Guards
 
