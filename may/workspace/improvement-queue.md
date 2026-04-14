@@ -16,6 +16,7 @@
 - [ ] **Artifacts-as-Memory deep dive + externalization framework validation** — Dispatched to Bob (P1, 2026-04-14). Scout found paper 2604.08756 "Artifacts as Memory Beyond the Agent Boundary" — validates DD-750. **Scope**: Small.
 
 ## In Progress
+- [ ] **Persistent Task implementation** — Design complete (3 docs: Bob's spec, tech-lead's engineering analysis, Hao's amendments). Key decisions: maxIterations=200 (emergency brakes, not speed limit), owner monitors via heartbeat (primary safety net), tasks start immediately. ~180 LOC. Ready to dispatch to tech-lead. Docs: `agents/shared/may-agent-docs/design/persistent-task.md`, `persistent-task-engineering.md`, `persistent-task-amendments.md`.
 - [ ] **Optimizer finding→dispatch pipeline** — Forked to optimizer (2026-04-13 07:22, s_1776064947441_50). Design protocol + heartbeat edit. DISPATCH-READY.md template active but scout item already resolved.
 
 ## Done
