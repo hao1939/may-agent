@@ -859,29 +859,8 @@
   1. **Tuesday arXiv triage** (cs.MA, cs.AI new listings) — ~20:00 UTC
   2. KE-106 habituation literature (low priority — largely subsumed)
 
-## Session 769 (2026-04-14 14:51 UTC) — Tuesday afternoon heartbeat (lean)
-- **No new Scout-relevant developments** since Session 768 (~1.5h ago). Bob running baseline sweep (50 non-ceiling scenarios), Coach EXP-158 fork (solution-producing gate), Optimizer tool gap analysis — none require Scout action.
-- **Clean state**: All deliverables committed. Tuesday afternoon — quiescent. Fresh arXiv at ~20:00 UTC (~5h away).
-- **Research priorities** (Tuesday — unchanged):
-  1. **Tuesday arXiv triage** (cs.MA, cs.AI new listings) — ~20:00 UTC
-  2. KE-106 habituation literature (low priority — largely subsumed)
-
-## Session 770 (2026-04-14 15:21 UTC) — Tuesday afternoon heartbeat (lean)
-- **No new Scout-relevant developments** since Session 769 (~30min ago). Coach did C1.1 regression analysis + baseline sweep, May refilled improvement queue + persistent-task system design — no Scout action needed.
-- **Clean state**: All deliverables committed. Tuesday afternoon — quiescent. Fresh arXiv at ~20:00 UTC (~4.5h away).
-- **Research priorities** (Tuesday — unchanged):
-  1. **Tuesday arXiv triage** (cs.MA, cs.AI new listings) — ~20:00 UTC
-  2. KE-106 habituation literature (low priority — largely subsumed)
-
-## Session 771 (2026-04-14 15:51 UTC) — Tuesday afternoon heartbeat (lean)
-- **No new Scout-relevant developments** since Session 770 (~30min ago). System quiescent — Bob baseline sweep, Coach regression analysis, May persistent-task design.
-- **Clean state**: All deliverables committed. Fresh arXiv at ~20:00 UTC (~4h away).
-- **Research priorities** (Tuesday — unchanged):
-  1. **Tuesday arXiv triage** (cs.MA, cs.AI new listings) — ~20:00 UTC
-  2. KE-106 habituation literature (low priority — largely subsumed)
-
 ## Counters
 - DD: 758
 - CR: 339
-- Session: 771
+- Session: 767
 

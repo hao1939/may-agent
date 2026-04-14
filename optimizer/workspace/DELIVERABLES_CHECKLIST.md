@@ -1,3 +1,3 @@
-# Deliverables Checklist
+# Deliverables Checklist — Gym Cost/Value Analysis (Apr 14)
 
-- [x] `agents/optimizer/workspace/finding-tool-gap-6h-0414.md` — Tool gap analysis of high-op sessions from last 6h
+- [x] agents/optimizer/workspace/gym-cost-analysis.md — Gym cost/value analysis report for Hao

@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-14 ~15:42 UTC
+Updated: 2026-04-14 ~12:21 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — billing. Blocked on Hao.
@@ -27,7 +27,7 @@ Updated: 2026-04-14 ~15:42 UTC
 | **Guards-v2 Phase 1** | ✅ COMPLETE | may/tech-lead | All 4 gaps closed. 53 tests pass. Warning delivery, guard disable, demand dedup, auto-test guard. |
 | **Guards-v2 Phase 2: Integration test** | ✅ COMPLETE | tech-lead | Done (23 ops). Guards tested in real workflow execution. |
 | **Pivot-detector guard** | 🟢 IN REVIEW | may | Detects create-test-fail loops (bob 280ops, coach 118ops). Warns at 3, intervenes at 5. 7 tests. Branch: review/pivot-detector-guard. |
-| **Batch merge tool** | ✅ DONE | tech-lead | `scripts/batch-merge.sh` — 12KB, supports patterns/dry-run/--push/--no-test. Built 2026-04-14. |
+| **Batch merge tool** | 📋 P1 QUEUED | tech-lead | Script to automate review branch merges. Saves ~40 ops/session. |
 | **EXP-147 Track B Context Isolation** | 🟢 RUNNING | coach | A/B test in progress. |
 | **EXP-156 Hard Gate Generalization** | 🟢 RUNNING | coach | Phase 4 analysis underway. |
 | **Over-intervention dedup** | ✅ DONE | coach | Removed 5 redundant evidence-over-narrative copies. Canonical at shared/knowledge/fewshot-examples/. Commit: 2cd4dfd7. |
@@ -38,11 +38,8 @@ Updated: 2026-04-14 ~15:42 UTC
 | **Gym cost/value analysis** | 🟢 DISPATCHED | optimizer | 952 sessions/week cost analysis. Req 7e06acd1. |
 | **Web UI Visualization** | ✅ Phase 4 done | tech-lead/coder | Complete. |
 | **Scout archetype tool fix** | ✅ DONE | — | agent.json already has agents + workflow tools. |
-| **Workspace hygiene script + cleanup** | ✅ DONE | tech-lead | Completed (26 ops). Three-phase cleanup executed. |
+| **Workspace hygiene script + cleanup** | 🟢 DISPATCHED | tech-lead | Prune stale archives (bob 5.8MB, coach 2.3MB, optimizer 2.0MB). Req de6620e5. |
 | **Commit guard scope gap** | 🟢 DISPATCHED | tech-lead | Guard only checks agents/<name>/, misses src/ and shared/. Req ebefef5a. |
-| **IT-21: QA interrupt rate fix** | 🟢 RUNNING | tech-lead | Turn budget vs finish guard conflict. Session at 26 ops. |
-| **Scenario oracle generator** | ✅ DONE | tech-lead | Completed (52 ops). Scripts at `scripts/scenario-oracle.sh` + `scripts/scenario-oracle-analyze.mjs`. |
-| **Persistent Task PILOT** | 🟢 DISPATCHED | bob | Implementation done. Bob piloting with real research task (Artifacts-as-Memory or meta-harness). Feedback → `persistent-task-pilot-feedback.md`. Req 58d313cd. |
 
 ## Next Actions
 - **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. **Blocked on Hao since Mar 24**.

@@ -36,7 +36,7 @@
 - Root cause: heartbeat.md encouraged inline exploration (multi-query DB analysis, file reads).
 - Fix: Rewrote heartbeat.md to "Dispatcher Mode" — observe in 1-2 ops, fork all analysis work. Target: ≤15 ops.
 - Baseline: 8 heartbeats in 12h, avg 56 ops, total 451. Post-fix: avg 23 ops (59% reduction). ✅ SUCCESS.
-- Last exploration mode: **C** (Skill & Technique Scouting — Growth-Trigger Error Patterns — Apr 14 ~14:21 UTC). Next rotation: **D**. Previous: D (Workflow Health — Apr 13 ~09:52 UTC), C (Technique Scouting — May HB Budget Cap — Apr 13 ~06:58), A (System Health Check 6h — Apr 13 ~05:22), D (D-o-R Budget Cap Impact — Apr 12 ~18:24), C (Skills Adoption Audit — Apr 12 ~17:54), B (codeSearch tool scoping & build — Apr 12 ~17:24), A (Tech-lead 6h distribution & cross-agent scan — Apr 12 ~16:53), D (Workflow Health — adoption trends & D-o-R budget holding — Apr 12 ~16:24).
+- Last exploration mode: **A** (Session Archaeology — QA 58% Interrupt Rate — Apr 14 ~12:48 UTC). Next rotation: **B**. Previous: D (Workflow Health — Apr 13 ~09:52 UTC), C (Technique Scouting — May HB Budget Cap — Apr 13 ~06:58), A (System Health Check 6h — Apr 13 ~05:22), D (D-o-R Budget Cap Impact — Apr 12 ~18:24), C (Skills Adoption Audit — Apr 12 ~17:54), B (codeSearch tool scoping & build — Apr 12 ~17:24), A (Tech-lead 6h distribution & cross-agent scan — Apr 12 ~16:53), D (Workflow Health — adoption trends & D-o-R budget holding — Apr 12 ~16:24).
 - **Latest measurement (Apr 13 05:22 UTC)**: All 6 optimizations holding. Daily ops 5,894 (26% reduction from 8,016). New target: tech-lead work sessions (34/day, 983 ops, ~$46/day). Finding: `workspace/finding-system-health-check-0413.md`
 - **session-query tool BUILT** (`scripts/session-query.ts`). Replaces 15-25 bash archaeology pattern with single command. Supports: --agent, --since, --task, --status, --min-ops, --tools, --json, --sort. Tested with real data (911 sessions). Est. savings: 10-15 ops/session × 187 sessions = 1,870-2,805 ops.
 - **code-search tool BUILT** (`scripts/code-search.ts`). Replaces 3-16 consecutive grep/rg chains with single structured call. Supports: --context, --scope, --type/--glob, --files-only, --stats, --json, --max, --fixed. Uses rg (fallback: grep). Auto-excludes node_modules. Tested with 7 real queries. Est. savings: 120-180 ops/day (~$6-9/day), 93% of sessions affected. Finding: `workspace/finding-codesearch-tool-scoping-0412.md`
@@ -47,13 +47,6 @@
 - Mode A finding complete: `workspace/finding-coach-166op-archaeology-0410.md` — **Key result: high-op sessions are restart-accumulated, not single-context bloat. 184-op session had 6 restarts (7 segments). Primary fix is infra (cap restarts/turns), not behavioral.**
 - Mode A finding complete: `workspace/finding-dor-p1-bloat-0411.md` — **Key result: Phase 1 consumes 67% of all D-o-R ops. 14/14 bloated P1s (>40 ops) have "verified" in outcome — doing full delivery cycle in "plan" phase. 15-op cap would save 44% of D-o-R ops (259/day, ~$12/day). Fix: tighter P1 prompt with explicit 15-op budget.**
 - Mode A finding complete: `workspace/finding-coach-82op-qa-regression-0411.md` — Coach 82-op QA regression investigation (EXP-133). Completed Apr 11 ~08:29 UTC.
-- Mode B finding complete: `workspace/finding-tool-gap-6h-0414.md` — Tool gap analysis on 6h high-op sessions. Top patterns: git-review-gate-struggle (272-op tech-lead, 40+ ops on commit failures), iterative-file-discovery (may 575-op, reading files one-by-one), multi-step-verify-compile cycles. Completed Apr 14 ~13:59 UTC.
-
-### QA 58% Interrupt Rate — FIX DISPATCHED, NOT DEPLOYED
-- Root cause: EXP-TIERED-BUDGET (soft=8, grace=2, hard=10) + FM-3.3 verify-wrap guard = impossible when QA finishes near soft limit. Guard adds 2+ turns → exceeds hard limit → interrupted.
-- Dispatched to tech-lead (Apr 14 ~14:52 UTC, session s_1776178335615_187) — 38 ops, status "done" but **no code committed**. Fix not deployed.
-- **NEEDS RE-DISPATCH** or inline fix. Options: (1) increase heartbeat budget 8→10, (2) grant +2 grace on guard redirect, (3) exempt guard redirects from turn count.
-- Finding: checkpoint data from s_1776169082223_80 (Apr 14 ~12:48 UTC)
 
 ### may.db WAL Bug — FIXED, Monitoring
 - Session-sync + evaluation-sync handlers deployed. 1071 evals, 0 unevaluated (as of 17:10 UTC).
@@ -95,7 +88,7 @@
 - **Context tax**: 82% of all input tokens are re-sent conversation context. Bob worst at 13.8K tok/op. Prompt caching fix would save ~$128/day.
 - **Coach work sessions**: Highest per-session cost ($74/day total, 38 sessions at avg 46 ops). 5 sessions >60 ops = 35.6% of coach cost.
 - **Coach exploration waste**: 64% of tool calls in high-op sessions are file discovery/read. Two heartbeats were 3% productive (68 calls → 2 writes). 50.3% of all coach sessions are zero-op.
-- **Coach growth-trigger**: ~~52% error rate~~ **RESOLVED** — all 115 errors from single Mar 17 batch overload (33-38 concurrent sessions). Post-fix (MAX_TRIGGERS=1 + sensor-judge): **0% errors**. Finding: `workspace/finding-growth-trigger-error-patterns-0414.md`
+- **Coach growth-trigger**: 52% error rate (115/222 sessions fail). Needs precondition guards.
 - **Daily cost**: ~$302/day total. Bob $107, Coach $74, May $36, Scout $32.
 - **Bob quality scores**: Artificially low (2.47) due to Phase 1/2 double-penalization. Actual ~3.87. Low priority.
 - **Heartbeat bloat**: 61% of system ops in heartbeats. Only bob/coach dispatch effectively. Needs structural fix.
