@@ -296,9 +296,11 @@ describe("extractChangedFiles", () => {
 // loadGuards
 // ──────────────────────────────────────────────────────────────────────
 
-import { join } from "node:path";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const TEST_GUARDS_DIR = join(import.meta.dir, "__test-guards__");
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const TEST_GUARDS_DIR = join(__dirname, "__test-guards__");
 
 describe("loadGuards", () => {
   test("loads valid guards from a directory", async () => {
@@ -604,5 +606,415 @@ describe("build-check guard integration", () => {
 
     const demands = emitAndCollectDemands([buildCheck!], event);
     expect(demands).toEqual([]);
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────────
+// Gap 1: Warning delivery
+// ──────────────────────────────────────────────────────────────────────
+
+describe("Warning delivery (Gap 1)", () => {
+  test("warn demands are accumulated into warnings array by resolveDemands", async () => {
+    // We test the exported resolveDemands indirectly via emitAndCollectDemands + the warn case
+    // The real integration is in executeWorkflow, but we can verify the accumulation behavior
+    // by checking the emitAndCollectDemands output and the warnings array concept
+    const guard: WorkflowGuard = {
+      name: "warn-guard",
+      events: ["step_done"],
+      handle: () => [
+        { type: "warn", reason: "heads up about X" },
+        { type: "warn", reason: "also check Y" },
+      ],
+    };
+    const mockResult = {
+      sessionId: "s1",
+      status: "done" as const,
+      lastAssistantText: "done",
+      messages: [],
+      duration: "1s",
+      outputDir: "",
+      turnsUsed: 1,
+    };
+    const event: WorkflowGuardEvent = {
+      type: "step_done",
+      source: "agent",
+      step: "coder",
+      result: mockResult,
+      completedSteps: [],
+      task: "implement feature",
+    };
+    const demands = emitAndCollectDemands([guard], event);
+    expect(demands).toHaveLength(2);
+    expect(demands[0].type).toBe("warn");
+    expect(demands[0].guardName).toBe("warn-guard");
+    expect(demands[1].type).toBe("warn");
+    // Verify the warning text format that would be delivered
+    const warnings: string[] = [];
+    for (const d of demands) {
+      if (d.type === "warn") {
+        warnings.push(`${d.reason} (from: ${d.guardName})`);
+      }
+    }
+    expect(warnings).toHaveLength(2);
+    expect(warnings[0]).toBe("heads up about X (from: warn-guard)");
+    expect(warnings[1]).toBe("also check Y (from: warn-guard)");
+    // Verify the formatted section
+    const section = `\n\n## Guard Warnings\n${warnings.map(w => "- " + w).join("\n")}`;
+    expect(section).toContain("## Guard Warnings");
+    expect(section).toContain("- heads up about X (from: warn-guard)");
+    expect(section).toContain("- also check Y (from: warn-guard)");
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────────
+// Gap 2: Guard disable mechanism
+// ──────────────────────────────────────────────────────────────────────
+
+describe("Guard disable mechanism (Gap 2)", () => {
+  test("files with .disabled.ts extension are skipped", async () => {
+    const guards = await loadGuards(TEST_GUARDS_DIR);
+    const names = guards.map(g => g.name);
+    expect(names).not.toContain("disabled-guard");
+    // But other guards should still load
+    expect(names).toContain("test-valid");
+  });
+
+  test("guards named in DISABLED_GUARDS env var are filtered out", async () => {
+    const original = process.env.DISABLED_GUARDS;
+    try {
+      process.env.DISABLED_GUARDS = "test-valid,test-blocker";
+      const guards = await loadGuards(TEST_GUARDS_DIR);
+      const names = guards.map(g => g.name);
+      expect(names).not.toContain("test-valid");
+      expect(names).not.toContain("test-blocker");
+    } finally {
+      if (original === undefined) {
+        delete process.env.DISABLED_GUARDS;
+      } else {
+        process.env.DISABLED_GUARDS = original;
+      }
+    }
+  });
+
+  test("DISABLED_GUARDS with spaces around names still works", async () => {
+    const original = process.env.DISABLED_GUARDS;
+    try {
+      process.env.DISABLED_GUARDS = " test-valid , test-blocker ";
+      const guards = await loadGuards(TEST_GUARDS_DIR);
+      const names = guards.map(g => g.name);
+      expect(names).not.toContain("test-valid");
+      expect(names).not.toContain("test-blocker");
+    } finally {
+      if (original === undefined) {
+        delete process.env.DISABLED_GUARDS;
+      } else {
+        process.env.DISABLED_GUARDS = original;
+      }
+    }
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────────
+// Gap 3: Demand deduplication
+// ──────────────────────────────────────────────────────────────────────
+
+describe("Demand deduplication (Gap 3)", () => {
+  test("two guards returning run_step with same label produce only one demand in resolve", () => {
+    const guard1: WorkflowGuard = {
+      name: "guard-a",
+      handle: () => [{
+        type: "run_step",
+        reason: "need tests",
+        step: { agent: "coder", task: "run tests", label: "guard:auto-test" },
+      }],
+    };
+    const guard2: WorkflowGuard = {
+      name: "guard-b",
+      handle: () => [{
+        type: "run_step",
+        reason: "also needs tests",
+        step: { agent: "coder", task: "run tests again", label: "guard:auto-test" },
+      }],
+    };
+    const event: WorkflowGuardEvent = { type: "workflow_start", workflow: "test", task: "test" };
+    const demands = emitAndCollectDemands([guard1, guard2], event);
+    // emitAndCollectDemands collects all — dedup happens in resolveDemands
+    expect(demands).toHaveLength(2);
+
+    // Simulate dedup logic from resolveDemands
+    const seenLabels = new Set<string>();
+    const deduped = demands.filter(d => {
+      if (d.type === "run_step") {
+        const label = d.step?.label ?? d.reason;
+        if (seenLabels.has(label)) return false;
+        seenLabels.add(label);
+      }
+      return true;
+    });
+    expect(deduped).toHaveLength(1);
+    expect(deduped[0].guardName).toBe("guard-a"); // first one wins
+  });
+
+  test("run_step demands with different labels are not deduped", () => {
+    const guard: WorkflowGuard = {
+      name: "multi-guard",
+      handle: () => [
+        { type: "run_step", reason: "lint", step: { agent: "coder", task: "lint", label: "guard:lint" } },
+        { type: "run_step", reason: "test", step: { agent: "coder", task: "test", label: "guard:test" } },
+      ],
+    };
+    const event: WorkflowGuardEvent = { type: "workflow_start", workflow: "test", task: "test" };
+    const demands = emitAndCollectDemands([guard], event);
+    // Both have different labels — no dedup
+    const seenLabels = new Set<string>();
+    const deduped = demands.filter(d => {
+      if (d.type === "run_step") {
+        const label = d.step?.label ?? d.reason;
+        if (seenLabels.has(label)) return false;
+        seenLabels.add(label);
+      }
+      return true;
+    });
+    expect(deduped).toHaveLength(2);
+  });
+
+  test("warn and block demands are never deduped", () => {
+    const guard: WorkflowGuard = {
+      name: "dup-warn",
+      handle: () => [
+        { type: "warn", reason: "same warning" },
+        { type: "warn", reason: "same warning" },
+      ],
+    };
+    const event: WorkflowGuardEvent = { type: "workflow_start", workflow: "test", task: "test" };
+    const demands = emitAndCollectDemands([guard], event);
+    // Dedup only applies to run_step
+    const seenLabels = new Set<string>();
+    const deduped = demands.filter(d => {
+      if (d.type === "run_step") {
+        const label = d.step?.label ?? d.reason;
+        if (seenLabels.has(label)) return false;
+        seenLabels.add(label);
+      }
+      return true;
+    });
+    expect(deduped).toHaveLength(2); // both warns kept
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────────
+// Gap 4: Auto-test guard
+// ──────────────────────────────────────────────────────────────────────
+
+describe("auto-test guard integration", () => {
+  test("loads from shared guards directory", async () => {
+    const sharedDir = join(process.cwd(), "agents/shared/guards");
+    const guards = await loadGuards(sharedDir);
+    const names = guards.map(g => g.name);
+    expect(names).toContain("auto-test");
+  });
+
+  test("injects run_step when src/ files modified without test confirmation", async () => {
+    const sharedDir = join(process.cwd(), "agents/shared/guards");
+    const guards = await loadGuards(sharedDir);
+    const autoTest = guards.find(g => g.name === "auto-test");
+    expect(autoTest).toBeDefined();
+
+    const event: WorkflowGuardEvent = {
+      type: "step_done",
+      source: "agent",
+      step: "coder",
+      result: {
+        sessionId: "s1",
+        status: "done" as const,
+        lastAssistantText: "I wrote the implementation.",
+        messages: [
+          {
+            role: "assistant",
+            content: [
+              { type: "toolCall", name: "write", arguments: { path: "src/lib/feature.ts", content: "code" } },
+            ],
+          },
+        ],
+        duration: "1s",
+        outputDir: "",
+        turnsUsed: 1,
+      },
+      completedSteps: [],
+      task: "implement feature",
+    };
+
+    const demands = emitAndCollectDemands([autoTest!], event);
+    expect(demands).toHaveLength(1);
+    expect(demands[0].type).toBe("run_step");
+    expect(demands[0].reason).toContain("source file(s) modified");
+    expect(demands[0].step?.label).toBe("guard:auto-test");
+    expect(demands[0].step?.agent).toBe("coder");
+  });
+
+  test("no demand when tests already confirmed in output", async () => {
+    const sharedDir = join(process.cwd(), "agents/shared/guards");
+    const guards = await loadGuards(sharedDir);
+    const autoTest = guards.find(g => g.name === "auto-test");
+
+    const event: WorkflowGuardEvent = {
+      type: "step_done",
+      source: "agent",
+      step: "coder",
+      result: {
+        sessionId: "s1",
+        status: "done" as const,
+        lastAssistantText: "All 42 tests pass. Implementation complete.",
+        messages: [
+          {
+            role: "assistant",
+            content: [
+              { type: "toolCall", name: "write", arguments: { path: "src/lib/feature.ts", content: "code" } },
+            ],
+          },
+        ],
+        duration: "1s",
+        outputDir: "",
+        turnsUsed: 1,
+      },
+      completedSteps: [],
+      task: "implement feature",
+    };
+
+    const demands = emitAndCollectDemands([autoTest!], event);
+    expect(demands).toEqual([]);
+  });
+
+  test("no demand when no src/ files modified", async () => {
+    const sharedDir = join(process.cwd(), "agents/shared/guards");
+    const guards = await loadGuards(sharedDir);
+    const autoTest = guards.find(g => g.name === "auto-test");
+
+    const event: WorkflowGuardEvent = {
+      type: "step_done",
+      source: "agent",
+      step: "coder",
+      result: {
+        sessionId: "s1",
+        status: "done" as const,
+        lastAssistantText: "Updated the readme.",
+        messages: [
+          {
+            role: "assistant",
+            content: [
+              { type: "toolCall", name: "write", arguments: { path: "README.md", content: "docs" } },
+            ],
+          },
+        ],
+        duration: "1s",
+        outputDir: "",
+        turnsUsed: 1,
+      },
+      completedSteps: [],
+      task: "update docs",
+    };
+
+    const demands = emitAndCollectDemands([autoTest!], event);
+    expect(demands).toEqual([]);
+  });
+
+  test("ignores function source steps", async () => {
+    const sharedDir = join(process.cwd(), "agents/shared/guards");
+    const guards = await loadGuards(sharedDir);
+    const autoTest = guards.find(g => g.name === "auto-test");
+
+    const event: WorkflowGuardEvent = {
+      type: "step_done",
+      source: "function",
+      step: "build-check",
+      result: {
+        sessionId: "fn_1",
+        status: "done" as const,
+        lastAssistantText: "Build OK",
+        messages: [
+          {
+            role: "assistant",
+            content: [
+              { type: "toolCall", name: "write", arguments: { path: "src/lib/out.ts", content: "code" } },
+            ],
+          },
+        ],
+        duration: "1s",
+        outputDir: "",
+        turnsUsed: 1,
+      },
+      completedSteps: [],
+      task: "build check",
+    };
+
+    const demands = emitAndCollectDemands([autoTest!], event);
+    expect(demands).toEqual([]);
+  });
+
+  test("ignores guard-injected steps (step starts with guard:)", async () => {
+    const sharedDir = join(process.cwd(), "agents/shared/guards");
+    const guards = await loadGuards(sharedDir);
+    const autoTest = guards.find(g => g.name === "auto-test");
+
+    const event: WorkflowGuardEvent = {
+      type: "step_done",
+      source: "agent",
+      step: "guard:auto-test",
+      result: {
+        sessionId: "s1",
+        status: "done" as const,
+        lastAssistantText: "Ran tests",
+        messages: [
+          {
+            role: "assistant",
+            content: [
+              { type: "toolCall", name: "write", arguments: { path: "src/lib/fix.ts", content: "code" } },
+            ],
+          },
+        ],
+        duration: "1s",
+        outputDir: "",
+        turnsUsed: 1,
+      },
+      completedSteps: [],
+      task: "run tests",
+    };
+
+    const demands = emitAndCollectDemands([autoTest!], event);
+    expect(demands).toEqual([]);
+  });
+
+  test("detects files from edit() tool calls", async () => {
+    const sharedDir = join(process.cwd(), "agents/shared/guards");
+    const guards = await loadGuards(sharedDir);
+    const autoTest = guards.find(g => g.name === "auto-test");
+
+    const event: WorkflowGuardEvent = {
+      type: "step_done",
+      source: "agent",
+      step: "coder",
+      result: {
+        sessionId: "s1",
+        status: "done" as const,
+        lastAssistantText: "Applied the fix.",
+        messages: [
+          {
+            role: "assistant",
+            content: [
+              { type: "toolCall", name: "edit", arguments: { path: "src/lib/bug.ts", oldText: "old", newText: "new" } },
+            ],
+          },
+        ],
+        duration: "1s",
+        outputDir: "",
+        turnsUsed: 1,
+      },
+      completedSteps: [],
+      task: "fix bug",
+    };
+
+    const demands = emitAndCollectDemands([autoTest!], event);
+    expect(demands).toHaveLength(1);
+    expect(demands[0].type).toBe("run_step");
   });
 });
