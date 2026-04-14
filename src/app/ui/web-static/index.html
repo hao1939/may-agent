@@ -173,8 +173,9 @@
   .feed-type-end-good { border-left: 3px solid var(--green); }
   .feed-type-end-error { border-left: 3px solid var(--red); }
   .feed-type-notification { border-left: 3px solid var(--yellow); }
-  #feed-pause-btn { background: var(--bg); color: var(--fg); border: 1px solid var(--border); border-radius: 4px; padding: 2px 6px; font-size: 12px; cursor: pointer; }
-  #feed-pause-btn:hover { border-color: var(--accent); }
+  #feed-pause-btn, #scroll-toggle, #feed-scroll-toggle { background: var(--bg); color: var(--fg); border: 1px solid var(--border); border-radius: 4px; padding: 2px 6px; font-size: 12px; cursor: pointer; }
+  #feed-pause-btn:hover, #scroll-toggle:hover, #feed-scroll-toggle:hover { border-color: var(--accent); }
+  #scroll-toggle.off, #feed-scroll-toggle.off { color: var(--yellow); border-color: var(--yellow); }
 
   /* Mobile responsive */
   @media (max-width: 768px) {
@@ -314,7 +315,10 @@
     <div id="activity-feed" class="activity-feed-section">
       <h3>
         Live Activity Feed
-        <button id="feed-pause-btn" onclick="toggleFeedPause()">⏸ Pause</button>
+        <span style="display:flex;gap:4px">
+          <button id="feed-scroll-toggle" onclick="toggleFeedScroll()" title="Auto-scroll to bottom on new messages">⬇ Auto-scroll</button>
+          <button id="feed-pause-btn" onclick="toggleFeedPause()">⏸ Pause</button>
+        </span>
       </h3>
       <div id="feed-list" class="feed-list"></div>
     </div>
@@ -334,6 +338,7 @@
     <div class="chat-container">
       <div style="display:flex;align-items:center;gap:8px">
         <div class="chat-status" id="chat-status">Disconnected</div>
+        <button id="scroll-toggle" onclick="toggleChatScroll()" title="Auto-scroll to bottom on new messages">⬇ Auto-scroll</button>
         <button class="ask-btn" id="md-toggle" onclick="toggleMarkdown()" style="margin-left:auto;font-size:11px">Raw</button>
       </div>
       <div id="session-picker" style="display:flex;gap:4px;flex-wrap:wrap;padding:4px 0;font-size:12px"></div>
@@ -1147,11 +1152,85 @@ let activeSessions = [];
 let currentSessionId = null;
 let renderMd = true; // markdown rendering on by default
 let feedPaused = false;
+let chatAutoScroll = true;
+let feedAutoScroll = true;
 let feedItems = [];
+
+function toggleChatScroll() {
+  chatAutoScroll = !chatAutoScroll;
+  const btn = document.getElementById('scroll-toggle');
+  if (chatAutoScroll) {
+    btn.textContent = '⬇ Auto-scroll';
+    btn.classList.remove('off');
+    // Immediately scroll to bottom when re-enabled
+    const messages = document.getElementById('chat-messages');
+    messages.scrollTop = messages.scrollHeight;
+  } else {
+    btn.textContent = '⏸ Scroll paused';
+    btn.classList.add('off');
+  }
+}
+
+function chatScrollToBottom(el) {
+  if (chatAutoScroll) el.scrollTop = el.scrollHeight;
+}
+
+// Smart auto-scroll: pause when user scrolls up, resume when at bottom
+document.addEventListener('DOMContentLoaded', () => {
+  const messages = document.getElementById('chat-messages');
+  if (messages) {
+    messages.addEventListener('scroll', () => {
+      const atBottom = messages.scrollHeight - messages.scrollTop - messages.clientHeight < 40;
+      if (atBottom && !chatAutoScroll) {
+        chatAutoScroll = true;
+        const btn = document.getElementById('scroll-toggle');
+        btn.textContent = '⬇ Auto-scroll';
+        btn.classList.remove('off');
+      } else if (!atBottom && chatAutoScroll) {
+        chatAutoScroll = false;
+        const btn = document.getElementById('scroll-toggle');
+        btn.textContent = '⏸ Scroll paused';
+        btn.classList.add('off');
+      }
+    });
+  }
+
+  // Smart auto-scroll for activity feed: pause when user scrolls up, resume at bottom
+  const feedList = document.getElementById('feed-list');
+  if (feedList) {
+    feedList.addEventListener('scroll', () => {
+      const atBottom = feedList.scrollHeight - feedList.scrollTop - feedList.clientHeight < 40;
+      if (atBottom && !feedAutoScroll) {
+        feedAutoScroll = true;
+        const btn = document.getElementById('feed-scroll-toggle');
+        if (btn) { btn.textContent = '⬇ Auto-scroll'; btn.classList.remove('off'); }
+      } else if (!atBottom && feedAutoScroll) {
+        feedAutoScroll = false;
+        const btn = document.getElementById('feed-scroll-toggle');
+        if (btn) { btn.textContent = '⏸ Scroll paused'; btn.classList.add('off'); }
+      }
+    });
+  }
+});
 
 function toggleFeedPause() {
   feedPaused = !feedPaused;
   document.getElementById('feed-pause-btn').textContent = feedPaused ? '▶ Resume' : '⏸ Pause';
+}
+
+function toggleFeedScroll() {
+  feedAutoScroll = !feedAutoScroll;
+  const btn = document.getElementById('feed-scroll-toggle');
+  if (feedAutoScroll) {
+    btn.textContent = '⬇ Auto-scroll';
+    btn.classList.remove('off');
+    // Immediately scroll to bottom when re-enabled
+    const feedList = document.getElementById('feed-list');
+    if (feedList) feedList.scrollTop = feedList.scrollHeight;
+  } else {
+    btn.textContent = '⏸ Scroll paused';
+    btn.classList.add('off');
+  }
 }
 
 function addFeedItem(agent, text, type) {
@@ -1179,8 +1258,8 @@ function addFeedItem(agent, text, type) {
     if (feedList.firstChild) feedList.removeChild(feedList.firstChild);
   }
 
-  // Auto-scroll if not paused
-  if (!feedPaused) {
+  // Auto-scroll if enabled and not paused
+  if (feedAutoScroll && !feedPaused) {
     feedList.scrollTop = feedList.scrollHeight;
   }
 }
@@ -1280,7 +1359,7 @@ async function switchSession(sessionId) {
         }
       }
     } catch {}
-    messages.scrollTop = messages.scrollHeight;
+    chatScrollToBottom(messages);
   }
 
   renderSessionPicker();
@@ -1336,7 +1415,7 @@ function connectWs() {
           }
           currentAssistantRaw += event.text;
           renderAssistantMsg(currentAssistant, currentAssistantRaw);
-          messages.scrollTop = messages.scrollHeight;
+          chatScrollToBottom(messages);
           break;
         case 'tool_call': {
           currentAssistant = null;
@@ -1346,7 +1425,7 @@ function connectWs() {
           const argsStr = typeof event.args === 'string' ? event.args : JSON.stringify(event.args);
           div.textContent = `⚡ ${event.tool}(${argsStr.slice(0, 200)})`;
           messages.appendChild(div);
-          messages.scrollTop = messages.scrollHeight;
+          chatScrollToBottom(messages);
           break;
         }
         case 'tool_result': {
@@ -1354,7 +1433,7 @@ function connectWs() {
           div.className = `msg tool_result ${event.isError ? 'error' : ''}`;
           div.textContent = event.preview || '';
           messages.appendChild(div);
-          messages.scrollTop = messages.scrollHeight;
+          chatScrollToBottom(messages);
           break;
         }
         case 'turn_end':
@@ -1370,7 +1449,7 @@ function connectWs() {
             div.style.fontSize = '12px';
             div.textContent = `→ ${event.agent}: ${(event.task || '').slice(0, 100)}`;
             messages.appendChild(div);
-            messages.scrollTop = messages.scrollHeight;
+            chatScrollToBottom(messages);
           }
           // Update session picker
           if (event.sessionId && !activeSessions.find(s => s.sessionId === event.sessionId)) {
@@ -1387,7 +1466,7 @@ function connectWs() {
           div.style.fontSize = '12px';
           div.textContent = `✓ ${event.agent}: ${event.status}${event.duration ? ' (' + event.duration + ')' : ''}`;
           messages.appendChild(div);
-          messages.scrollTop = messages.scrollHeight;
+          chatScrollToBottom(messages);
           // Update session picker
           activeSessions = activeSessions.filter(s => s.sessionId !== event.sessionId);
           renderSessionPicker();
@@ -1402,7 +1481,7 @@ function connectWs() {
           div.style.fontSize = '12px';
           div.textContent = `📋 ${event.agent}: ${event.text.slice(0, 300)}`;
           messages.appendChild(div);
-          messages.scrollTop = messages.scrollHeight;
+          chatScrollToBottom(messages);
           addFeedItem(event.agent, event.text?.slice(0, 120) || '', 'notification');
           break;
         }
@@ -1451,7 +1530,14 @@ function sendChat() {
   div.className = 'msg user';
   div.textContent = msg;
   messages.appendChild(div);
-  messages.scrollTop = messages.scrollHeight;
+  messages.scrollTop = messages.scrollHeight; // Always scroll for user's own messages
+  // Re-enable auto-scroll when user sends a message (they want to see the response)
+  if (!chatAutoScroll) {
+    chatAutoScroll = true;
+    const btn = document.getElementById('scroll-toggle');
+    btn.textContent = '⬇ Auto-scroll';
+    btn.classList.remove('off');
+  }
 
   if (currentSessionId) {
     // Steer the selected session
