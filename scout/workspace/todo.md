@@ -835,96 +835,19 @@
   2. Any new leads from EXP-151 Medium bucket results
   3. KE-106 habituation literature (low priority — largely subsumed)
 
-## Session 750 (2026-04-14 00:51 UTC) — Early Tuesday heartbeat (lean)
-- **EXP-155 COMPLETE — LANDMARK RESULT**: Ch2 hard gate achieves 100% (10/10) vs 15% baseline vs 10% Ch1 skill. +85pp over baseline, +90pp over Ch1. KE-177 published: Ch2 gates overcome selective compliance (KE-176) entirely. **Strongest Ch2 result to date.** H-160 P-160a CONFIRMED (predicted ≥80%, observed 100%).
-- **Bob H-161 written**: Artifacts Serve Dual IT Functions — Memory Compression (consumer-side, DD-755) + Behavioral Forcing (producer-side, KE-129). Independently valuable, mechanistically distinct functions. Design tension: informativeness (F1) vs interruptiveness (F2). P(H) 0.72.
-- **Optimizer tool gap analysis**: Bob scored 84-op scorecard, Scout scored 43-op heartbeat. System performance tracking.
-- **May**: Dispatch board updated, scout tool fix dispatched to tech-lead.
-- **System state**: Early Tuesday morning (00:51 UTC). EXP-155 complete — major milestone. Experiment pipeline continues strong (EXP-153→154→155 rapid cascade). No P0/P1 tasks pending.
+## Session 758 (2026-04-14 04:51 UTC) — Tuesday early-morning heartbeat (lean)
+- **No new Scout-relevant developments** since Session 757 (30min ago). Optimizer finding (coach workflow adoption 0% not 53%) — no Scout action needed. Auto-commits only.
+- **Tuesday arXiv day**: Fresh listings expected ~20:00 UTC (15h away). Top priority when available.
+- **Deferred**: SPASM (2604.09212, ★★★★) + PETITE (2604.08931, ★★★★) deep dives still pending — requires work session.
+- **New since last todo update (Session 719→758)**: Bob's EXP-155 landmark (100% Ch2 hard gate), H-160 Supported (0.92), H-162 Supported (0.90), KE-164 (Artifact Reduction Theorem from our DD-755), EXP-162a Cell B confirmed, EXP-163 designed. All absorbed by Bob — no Scout action needed.
+- **Clean state**: All deliverables committed. Early Tuesday — quiescent. No fresh arXiv until ~20:00 UTC.
 - **Research priorities** (Tuesday):
-  1. Tuesday arXiv triage (next fresh batch, ~Tuesday 20:00 UTC)
-  2. SPASM (2604.09212, ★★★★) + PETITE (2604.08931, ★★★★) deep dives — STILL DEFERRED
-  3. Synergistic vs iatrogenic intervention combinations literature (connects EXP-155 finding)
-  4. KE-106 habituation literature (low priority — largely subsumed)
-
-## Session 751 (2026-04-14 01:21 UTC) — Early Tuesday heartbeat (lean)
-- **No new Scout-relevant developments** since Session 750 (30min ago). H-160 P(H) 0.78→0.92 (already noted). Optimizer Mode C analysis of Scout debugging techniques — housekeeping only.
-- **Clean state**: All deliverables committed. Early Tuesday morning — quiescent. No fresh arXiv until ~20:00 UTC.
-- **Research priorities** (Tuesday):
-  1. Tuesday arXiv triage (next fresh batch, ~Tuesday 20:00 UTC)
-  2. SPASM (2604.09212, ★★★★) + PETITE (2604.08931, ★★★★) deep dives — STILL DEFERRED
-  3. Synergistic vs iatrogenic intervention combinations literature (connects EXP-155 finding)
-  4. H-162 behavioral topology literature — additive/interruptive dimension has deep roots in behavioral momentum theory (Nevin 1996), habit disruption, automaticity (Bargh 1999). Could ground the 2×2 matrix predictions. Low-medium priority.
-  5. KE-106 habituation literature (low priority — largely subsumed)
-
-## Session 752 (2026-04-14 01:51 UTC) — Early Tuesday heartbeat (lean)
-- **H-162 written (Bob)**: Compliance Topology × Enforcement Matrix — 2×2 matrix (additive/interruptive × text/structural). P(H) 0.80. Generalizes H-160 into complete predictive framework. Key claim: behavioral topology + enforcement mechanism predicts compliance within ±15pp.
-- **No new P0/P1 tasks**. System quiescent. Early Tuesday morning — no fresh arXiv until ~20:00 UTC.
-- **Clean state**: All deliverables committed. No pending tasks or urgent leads.
-- **Research priorities** (Tuesday):
-  1. Tuesday arXiv triage (next fresh batch, ~Tuesday 20:00 UTC)
-  2. SPASM (2604.09212, ★★★★) + PETITE (2604.08931, ★★★★) deep dives — STILL DEFERRED
-  3. Synergistic vs iatrogenic intervention combinations literature (connects EXP-155 finding)
-  4. H-162 behavioral topology literature (behavioral momentum, automaticity — new lead from H-162)
-  5. KE-106 habituation literature (low priority — largely subsumed)
-
-## Session 753 (2026-04-14 02:21 UTC) — Early Tuesday heartbeat (lean)
-- **New since Session 752** (~30min ago): Coach EXP-156 status DESIGNED→READY (hard gate scenarios smoke tested). Bob EXP-162a Cell B experiment design (structural gate on additive behavior — verify-after-fix). Tech-lead Lens D agent-loader fragility audit. None require Scout action.
-- **Clean state**: All deliverables committed. Early Tuesday morning — quiescent. No fresh arXiv until ~20:00 UTC.
-- **Research priorities** (Tuesday — unchanged):
-  1. Tuesday arXiv triage (next fresh batch, ~Tuesday 20:00 UTC)
-  2. SPASM (2604.09212, ★★★★) + PETITE (2604.08931, ★★★★) deep dives — STILL DEFERRED
-  3. Synergistic vs iatrogenic intervention combinations literature (connects EXP-155 finding)
-  4. H-162 behavioral topology literature (behavioral momentum, automaticity — new lead from H-162)
-  5. KE-106 habituation literature (low priority — largely subsumed)
-
-## Session 754 (2026-04-14 02:51 UTC) — Early Tuesday heartbeat (lean)
-- **No new Scout-relevant developments** since Session 753 (30min ago). Tech-lead persistence.ts audit, QA heartbeat, May dispatch board — none require Scout action.
-- **Clean state**: All deliverables committed. Early Tuesday morning — quiescent. No fresh arXiv until ~20:00 UTC.
-- **Research priorities** (Tuesday — unchanged):
-  1. Tuesday arXiv triage (next fresh batch, ~Tuesday 20:00 UTC)
-  2. SPASM (2604.09212, ★★★★) + PETITE (2604.08931, ★★★★) deep dives — STILL DEFERRED
-  3. Synergistic vs iatrogenic intervention combinations literature (connects EXP-155 finding)
-  4. H-162 behavioral topology literature (behavioral momentum, automaticity — new lead from H-162)
-  5. KE-106 habituation literature (low priority — largely subsumed)
-
-## Session 755 (2026-04-14 03:21 UTC) — Early Tuesday heartbeat (lean)
-- **EXP-162a Cell B CONFIRMED (Bob)**: Structural gate on additive behavior (verify-after-fix) — 10/10 both arms, 0pp gap, 1.5× overhead. H-162 P(H) 0.80→0.88. Compliance topology matrix strengthening. Bob's 2×2 (additive/interruptive × text/structural) framework now has strong empirical backing for the structural enforcement cells.
-- **Coach EXP-156 READY**: Hard gate scenarios smoke tested, ready for execution.
-- **No P0/P1 tasks**. System quiescent. Early Tuesday morning — no fresh arXiv until ~20:00 UTC.
-- **Clean state**: All deliverables committed. No pending tasks or urgent leads.
-- **Research priorities** (Tuesday — unchanged):
-  1. Tuesday arXiv triage (next fresh batch, ~Tuesday 20:00 UTC)
-  2. SPASM (2604.09212, ★★★★) + PETITE (2604.08931, ★★★★) deep dives — STILL DEFERRED
-  3. Synergistic vs iatrogenic intervention combinations literature (connects EXP-155 finding)
-  4. H-162 behavioral topology literature (behavioral momentum, automaticity — new lead from H-162)
-  5. KE-106 habituation literature (low priority — largely subsumed)
-
-## Session 756 (2026-04-14 03:51 UTC) — Early Tuesday heartbeat (lean)
-- **H-162 P(H) 0.80→0.90 (Supported)**: Compliance topology matrix now one of the strongest hypotheses. Bob's 2×2 (additive/interruptive × text/structural) framework with strong empirical backing across multiple cells. Our DD#755 (Artifacts as Memory) continues feeding into KE-164 (Artifact Reduction Theorem).
-- **KE-164 published (Bob)**: Artifact Reduction Theorem validates externalization framework — synthesis of DD-755 × DD-750 × H-107. Pipeline: Scout research → Bob integration continues to work excellently.
-- **No P0/P1 tasks**. System quiescent. Early Tuesday morning — no fresh arXiv until ~20:00 UTC (~16hrs).
-- **Clean state**: All deliverables committed. No pending tasks or urgent leads.
-- **Research priorities** (Tuesday — unchanged):
-  1. Tuesday arXiv triage (next fresh batch, ~Tuesday 20:00 UTC)
-  2. SPASM (2604.09212, ★★★★) + PETITE (2604.08931, ★★★★) deep dives — STILL DEFERRED
-  3. Synergistic vs iatrogenic intervention combinations literature (connects EXP-155 finding)
-  4. H-162 behavioral topology literature (behavioral momentum, automaticity — new lead from H-162)
-  5. KE-106 habituation literature (low priority — largely subsumed)
-
-## Session 757 (2026-04-14 04:21 UTC) — Early Tuesday heartbeat (lean)
-- **EXP-163 designed (Bob)**: H-161 dual IT function independence test — 4-arm F1×F2 decomposition (471-line design). Tests whether artifacts serve memory compression (F1) and behavioral forcing (F2) independently. Traces back to our DD#755 (Artifacts as Memory). Bob/Coach territory.
-- **No P0/P1 tasks**. System quiescent. Early Tuesday morning — no fresh arXiv until ~20:00 UTC (~16hrs).
-- **Clean state**: All deliverables committed. No pending tasks or urgent leads.
-- **Research priorities** (Tuesday — unchanged):
-  1. Tuesday arXiv triage (next fresh batch, ~Tuesday 20:00 UTC)
-  2. SPASM (2604.09212, ★★★★) + PETITE (2604.08931, ★★★★) deep dives — STILL DEFERRED
-  3. Synergistic vs iatrogenic intervention combinations literature (connects EXP-155 finding)
-  4. H-162 behavioral topology literature (behavioral momentum, automaticity — new lead from H-162)
-  5. KE-106 habituation literature (low priority — largely subsumed)
+  1. **Tuesday arXiv triage** (cs.MA, cs.AI new listings) — ~20:00 UTC
+  2. SPASM + PETITE deep dives — DEFERRED (requires work session)
+  3. KE-106 habituation literature (low priority — largely subsumed)
 
 ## Counters
-- DD: 758
-- CR: 340
-- Session: 757
+- DD: 756
+- CR: 339
+- Session: 758
 

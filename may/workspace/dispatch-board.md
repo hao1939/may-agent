@@ -1,18 +1,18 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-14 ~03:22 UTC
+Updated: 2026-04-13 ~05:21 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors (billing). Blocked on Hao.
-- **Bob**: 🟢 Active — 24 sessions/6h, avg 16 ops. Zero errors.
-- **Coach**: 🟢 Active — 26 sessions/6h, avg 18 ops. Zero errors.
-- **Scout**: 🟢 Active — 19 sessions/6h, avg 22 ops. Zero errors.
-- **Tech-lead**: 🟢 Active — 21 sessions/6h, avg 17 ops. Zero errors.
-- **Optimizer**: 🟢 Active — 24 sessions/6h, avg 12 ops. Zero errors.
-- **Evaluator**: 🟡 Active — 13 sessions/6h, avg 7 ops. 1 auth error (LLM billing).
-- **QA**: 🟢 Active — 12 sessions/6h, avg 10 ops. Zero errors.
-- **Coder**: 🟡 Low activity — 2 sessions/6h, avg 9 ops. Only runs when forked.
-- **Summary**: 8/8 healthy (excl amy-kimi). 1 evaluator auth error (non-actionable). 1 stuck coach session (EXP-156, 59min — watchdog will handle).
+- **Bob**: 🟢 Active — 35 sessions/6h, avg 8 ops. Zero errors.
+- **Coach**: 🟢 Active — 22 sessions/6h, avg 13 ops. Cancelled stuck EXP-151 session (60m, 0 ops).
+- **Scout**: 🟢 Active — 12 sessions/6h, avg 8 ops.
+- **Tech-lead**: 🟢 Active — 28 sessions/6h, avg 18 ops.
+- **Optimizer**: 🟢 Active — 38 sessions/6h, avg 14 ops.
+- **Evaluator**: 🟢 Active — 12 sessions/6h, avg 5 ops.
+- **QA**: 🟢 Active — 12 sessions/6h, avg 9 ops.
+- **Coder**: 🟡 Low activity — 2 sessions/6h, avg 20 ops. Only runs when forked.
+- **Summary**: 7/8 healthy. Amy-kimi still down. Zero errors last hour. Cancelled 1 stuck coach session.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -35,10 +35,11 @@ Updated: 2026-04-14 ~03:22 UTC
 - **P1**: **Convention investigation** — In progress (tech-lead). 
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (04:21 Apr 14)
-- **System**: 8 agents active (excl amy-kimi). Zero errors last hour, zero stuck sessions.
-- **Agent stats (6h)**: Bob 26s/15ops, Coach 24s/13ops, Evaluator 12s/7ops (1 auth err), May 14s/8ops, Optimizer 22s/12ops, QA 12s/9ops, Scout 22s/20ops, Tech-lead 18s/17ops.
-- **Queue**: 4 items in progress (tiered turn budget, artifacts-as-memory, agent-commit.sh, coach workflow adoption). Forking EXP-155 Ch2 gate deployment this cycle.
+## Latest Cycle Summary (09:51 Apr 13)
+- **System**: 8 agents active (excl amy-kimi). Zero errors, zero stuck sessions. All healthy.
+- **Agent stats (6h)**: Bob 26s/11ops, Coach 23s/15ops, Coder 1s/9ops, Evaluator 10s/7ops, May 14s/12ops, Optimizer 26s/20ops, QA 10s/10ops, Scout 10s/24ops, Tech-lead 22s/19ops.
+- **Completed since last cycle**: KE deployment sprint (5 KEs deployed), research project triage (7 projects triaged).
+- **Queue**: Optimizer dispatch pipeline in progress. Need to refill queue.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
