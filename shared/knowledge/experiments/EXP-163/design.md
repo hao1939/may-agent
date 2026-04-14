@@ -1,7 +1,7 @@
 # EXP-163: H-161 Independence Test — Dual IT Function of Artifacts (F1 × F2)
 
 **Date**: 2026-04-14
-**Status**: DESIGNED
+**Status**: COMPLETE (INCONCLUSIVE — see results.md)
 **Hypothesis**: H-161 (Artifacts Serve Dual Information-Theoretic Functions — Memory Compression + Behavioral Forcing)
 **Predictions tested**: P-161a (F2 without F1), P-161b (F1 without F2)
 **Predecessor experiments**: EXP-155 (Cell D, Ch2 gate on hidden-dep), EXP-154 (baseline + Ch1 skill), EXP-162a (methodology model)
