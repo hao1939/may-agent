@@ -1,6 +1,6 @@
 # Common-Sense Verification Status
 
-Last updated: 2026-04-14T12:55Z
+Last updated: 2026-04-13T12:51Z
 
 ## Item Index
 
@@ -28,7 +28,7 @@ Last updated: 2026-04-14T12:55Z
 | 20 | Environment Reality (C50) | How We Think | 2026-04-13 | ⚠️ | Re-verified (7th): 97.2% pass rate (904/930, last 48h). 26 violations across 6 agents: may 9 (worst), tech-lead 6, bob 4, optimizer 3, scout 2, coach 2. 4 agents at 100% (amy-kimi, coder, qa, unknown). Patterns: hallucinated external paths (cd to nonexistent repos), home-prefix bun paths. PATH_HALLUCINATION guard catches all and agents recover. Trend: 93.8%→97.2% (improved from previous 48h). See details below. |
 | 21 | C1.8 Match finish() status to reality | How We Think | 2026-04-02 | ✅ | Re-verified (2nd): 0 violations in 20 sessions. 11/11 success claims match reality (deliverables verified, PIVOTs recovered). 3/3 partial (QA) correctly used for test failures. 2 sessions with PIVOTs still warranted success (trivial file-access issues, all recovered). See details below. |
 | 22 | C1.3 Verify every write | How We Think | 2026-04-13 | ⚠️→✅ | NEW. 5 sessions checked (Apr 13). 3/5 fully compliant, 1 partial, 1 non-compliant. Violations are in non-critical files (checklists, todo). Edit tool's built-in diff preview provides partial safety net. See details below. |
-| 23 | Commit before finish() | How We Think | 2026-04-14 | ⚠️ | FIRST CHECK. Guard works for agents/<name>/ but has scope gap — misses shared/, .lab/, gym/, cross-agent writes. 4 sessions bypassed guard. See details below. |
+| 23 | Commit before finish() | How We Think | — | ⏳ | Not yet verified |
 | 24 | Cross-agent help | How We Think | — | ⏳ | Not yet verified |
 
 Legend: ✅ = verified compliant, ❌ = violation found, ⚠️ = borderline, ⏳ = not yet checked, 🗑️ = rule removed from active set
@@ -1645,88 +1645,6 @@ Violations nearly halved (49→26) while total checks increased (791→930). Str
 **Key insight**: The violation patterns have shifted from "bun path discovery" (agents running `which bun` and getting wrong paths) to "hallucinated project paths" (agents fabricating entirely fictional directories like `/Users/mariozechner/...` or `/Users/hao/code/evo`). This suggests the bun-path issue has improved but a new class of path hallucination has emerged — agents guessing at "what directory might this project be in" and inventing plausible-looking paths.
 
 **Action**: No Growth Cycle needed — the PATH_HALLUCINATION guard catches all violations. May should be monitored for persistent path hallucination. Consider whether may's context.md needs stronger reinforcement about the `/app` root. Next check: 2026-04-20.
-
----
-
-
-### #23 — Commit before finish() — FIRST CHECK (2026-04-14 12:55Z)
-
-**Rule**: "Commit your work before calling finish(). The finish() guard blocks if you have uncommitted changes in agents/<your_name>/."
-
-**Method**: Analyzed 48 sessions with agents/ file writes from the last 48h. Cross-referenced git commit behavior, finish guard blocks, and file write targets. Deep-dived 4 sessions that bypassed the guard. Read the guard source code (`src/lib/tools/commit-guard.ts`).
-
-**Sessions analyzed**: 48 (with agents/ file writes)
-
-**Overview**:
-
-| Category | Count | Notes |
-|----------|-------|-------|
-| Sessions with agents/ writes | 48 | Full 48h window |
-| Interrupted (no chance to commit) | 11 | System abort before finish() |
-| Guard blocked + agent committed | 12+ | Guard working correctly |
-| Guard bypassed (no block, no commit) | 4 | **Scope gap in guard** |
-| Committed without guard block | 21 | Agent committed proactively |
-
-**Guard effectiveness for in-scope files**: When an agent writes to `agents/<agent_name>/`, the guard catches it 100% of the time. Agents then commit and call finish() again. This flow works well. Example:
-
-- **s_92 (coach)**: Wrote to agents/coach/ → guard blocked → `git add coach/ && git commit` → guard blocked AGAIN (verification depth) → `git log` → finish succeeded on 4th attempt. Committed with descriptive message.
-
-- **s_67 (optimizer)**: Wrote to agents/optimizer/ → guard blocked → committed → success.
-
-**The scope gap — 4 sessions that bypassed the guard**:
-
-| Session | Agent | Wrote To | Guard Fired? | Committed? |
-|---------|-------|----------|-------------|-----------|
-| s_80 | optimizer | agents/qa/ (cross-agent) | No | No |
-| s_81 | coach | agents/.lab/ | No | No |
-| s_91 | coder | agents/shared/ | No | No |
-| s_93 | coach | agents/.lab/ | No | No |
-
-**Root cause — source code analysis** (`src/lib/tools/commit-guard.ts`, line 79):
-
-```typescript
-["status", "--porcelain", "--untracked-files=all", "--", `${agentName}/`]
-```
-
-The guard runs `git status --porcelain -- ${agentName}/` in the agents/ sub-repo. This means it **only detects uncommitted changes under the agent's own directory** (e.g., `coach/`, `optimizer/`). It does NOT check:
-
-- `shared/` — common knowledge, rules, experiments
-- `.lab/` — experiment workspace
-- `gym/` — training scenarios
-- Other agents' directories (cross-agent writes)
-
-**Impact assessment**:
-
-| Path Not Checked | Risk Level | Frequency | Notes |
-|-----------------|------------|-----------|-------|
-| agents/shared/ | **High** | Moderate | Common-sense.md, knowledge base, experiments — critical shared state |
-| agents/.lab/ | Low | Low | Experiment workspace, often ephemeral |
-| agents/gym/ | Medium | Low | Training scenarios — should be committed |
-| agents/<other>/ | Medium | Rare | Cross-agent writes are uncommon |
-
-**Session deep-dives**:
-
-1. **s_80 (optimizer → agents/qa/)**: Optimizer edited QA's workspace files. Cross-agent write bypassed commit guard because guard only checks `optimizer/`.
-
-2. **s_81 (coach → agents/.lab/)**: Coach cleaned up .lab/ directory (deleted 58 dirs, 2 loose files, freed 2MB). Finished successfully without committing.
-
-3. **s_91 (coder → agents/shared/)**: Coder wrote to agents/shared/ (common files). Guard didn't fire because it only checks `coder/`.
-
-4. **s_93 (coach → agents/.lab/)**: Coach cleaned up .lab/ README.md. Same pattern as s_81.
-
-**Behavioral compliance (where guard works)**:
-
-When the guard IS in scope, agent behavior is excellent:
-- Agents respond to the guard block by committing immediately
-- Commit messages are descriptive
-- Some agents commit proactively before the guard fires (21 sessions)
-- Recovery: guard blocks → `git add <agent>/ && git commit -m "..."` → finish → success
-
-**Conclusion**: ⚠️ Borderline. The finish() commit guard works correctly within its designed scope (`agents/<agent_name>/`), catching 100% of in-scope violations. However, a **scope gap** allows writes to `shared/`, `.lab/`, `gym/`, and cross-agent directories to bypass the guard entirely. 4 of 48 sessions (8.3%) exploited this gap unintentionally. The `agents/shared/` gap is highest risk.
-
-**Recommendation**: Report guard scope gap to May for infrastructure fix. The fix is straightforward — change git status check from `${agentName}/` to all uncommitted files in agents/, or at minimum add `shared/` to the check.
-
-**Action**: Report guard scope gap to May. Next check: ~3 days after fix deployed.
 
 ---
 
