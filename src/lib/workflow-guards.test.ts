@@ -814,7 +814,7 @@ describe("auto-test guard integration", () => {
     expect(names).toContain("auto-test");
   });
 
-  test("injects run_step when src/ files modified without test confirmation", async () => {
+  test("warns when src/ files modified without test confirmation", async () => {
     const sharedDir = join(process.cwd(), "agents/shared/guards");
     const guards = await loadGuards(sharedDir);
     const autoTest = guards.find(g => g.name === "auto-test");
@@ -846,10 +846,8 @@ describe("auto-test guard integration", () => {
 
     const demands = emitAndCollectDemands([autoTest!], event);
     expect(demands).toHaveLength(1);
-    expect(demands[0].type).toBe("run_step");
+    expect(demands[0].type).toBe("warn");
     expect(demands[0].reason).toContain("source file(s) modified");
-    expect(demands[0].step?.label).toBe("guard:auto-test");
-    expect(demands[0].step?.agent).toBe("coder");
   });
 
   test("no demand when tests already confirmed in output", async () => {
@@ -1015,7 +1013,7 @@ describe("auto-test guard integration", () => {
 
     const demands = emitAndCollectDemands([autoTest!], event);
     expect(demands).toHaveLength(1);
-    expect(demands[0].type).toBe("run_step");
+    expect(demands[0].type).toBe("warn");
   });
 });
 
