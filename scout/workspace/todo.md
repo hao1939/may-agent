@@ -5,7 +5,7 @@
 ### ✅ DONE: Autoresearch research-project write-up
 - **Source**: Hao via May (req:1c42f66e, req:1259fbec)
 - **Completed**: 2026-04-08 17:05 UTC (Session 315 — done inline after Sessions 311, 312, 314 failed)
-- **Output**: `agents/shared/projects/autoresearch.md` (99 lines, 6 borrowable ideas, findings log, hypotheses)
+- **Output**: `agents/shared/research-projects/autoresearch.md` (99 lines, 6 borrowable ideas, findings log, hypotheses)
 
 ### ✅ DONE: Wednesday arXiv triage (2026-04-08)
 - cs.MA, cs.AI new listings
@@ -846,53 +846,8 @@
   2. SPASM + PETITE deep dives — DEFERRED (requires work session)
   3. KE-106 habituation literature (low priority — largely subsumed)
 
-## Session 767 (2026-04-14 13:21 UTC) — Tuesday afternoon heartbeat (lean)
-- **New developments absorbed**:
-  - **EXP-RECOGNITION complete (Bob)**: Hard gate 100% vs skill 0% vs baseline 10%. Extreme result — hard gates massively outperform skills for recognition-layer tasks.
-  - **EXP-157 complete (Coach)**: Hard gate negative result + completion illusion effect (KE-180). Method #25 added.
-  - **KE-182 (Coach)**: Hard gate design rules synthesis — consolidates 8 experiments into 6 actionable rules. Capstone.
-  - **EXP-163 reinterpretation (Bob)**: Hidden-dep ceiling effect, KE-181 methodology lesson.
-  - **Deep-dive pipeline redesign (May)**: New INBOX.md at `shared/knowledge/library/deep-dives/INBOX.md`. Scout appends after writing DDs, Bob processes. Replaces old postboard_brief.md.
-- **DD#757 (SPASM) + DD#758 (PETITE)**: Written in Session 764. ✅ Complete.
-- **Clean state**: All deliverables committed. Tuesday afternoon — quiescent. No fresh arXiv until ~20:00 UTC (~7h away).
-- **Research priorities** (Tuesday):
-  1. **Tuesday arXiv triage** (cs.MA, cs.AI new listings) — ~20:00 UTC
-  2. KE-106 habituation literature (low priority — largely subsumed)
-
-## Session 774 (2026-04-14 17:21 UTC) — Tuesday late-afternoon heartbeat (lean)
-- **No new Scout-relevant developments** since Session 773 (~30min ago). System quiescent.
-- **Clean state**: All deliverables committed. DD#757/758 written and in shared library.
-- **Tuesday arXiv triage**: Fresh listings expected ~20:00 UTC (~2.5h away). Top priority.
-- **Research priorities** (Tuesday — unchanged):
-  1. **Tuesday arXiv triage** (cs.MA, cs.AI new listings) — ~20:00 UTC
-  2. KE-106 habituation literature (low priority — largely subsumed)
-
-## Session 775 (2026-04-14 17:51 UTC) — Tuesday late-afternoon heartbeat (lean)
-- **No new Scout-relevant developments** since Session 774 (~30min ago). System quiescent.
-- **Clean state**: All deliverables committed. DD#757/758 written and in shared library.
-- **Tuesday arXiv triage**: Fresh listings expected ~20:00 UTC (~2h away). Top priority.
-- **Research priorities** (Tuesday — unchanged):
-  1. **Tuesday arXiv triage** (cs.MA, cs.AI new listings) — ~20:00 UTC
-  2. KE-106 habituation literature (low priority — largely subsumed)
-
-## Session 776 (2026-04-14 18:21 UTC) — Tuesday late-afternoon heartbeat (lean)
-- **No new Scout-relevant developments** since Session 775 (~30min ago). System quiescent.
-- **Clean state**: All deliverables committed. DD#757/758 written and in shared library.
-- **Tuesday arXiv triage**: Fresh listings expected ~20:00 UTC (~1.5h away). Top priority.
-- **Research priorities** (Tuesday — unchanged):
-  1. **Tuesday arXiv triage** (cs.MA, cs.AI new listings) — ~20:00 UTC
-  2. KE-106 habituation literature (low priority — largely subsumed)
-
-## Session 777 (2026-04-14 18:51 UTC) — Tuesday late-afternoon heartbeat (lean)
-- **No new Scout-relevant developments** since Session 776 (~30min ago). System quiescent.
-- **Clean state**: All deliverables committed. DD#757/758 written and in shared library.
-- **Tuesday arXiv triage**: Fresh listings expected ~20:00 UTC (~1h away). Top priority — next heartbeat should be the triage session.
-- **Research priorities** (Tuesday — unchanged):
-  1. **Tuesday arXiv triage** (cs.MA, cs.AI new listings) — ~20:00 UTC
-  2. KE-106 habituation literature (low priority — largely subsumed)
-
 ## Counters
-- DD: 758
+- DD: 756
 - CR: 339
-- Session: 777
+- Session: 758
 
