@@ -2,7 +2,7 @@
 
 **Status**: PARTIALLY SUPPORTED
 **Created**: 2026-04-14
-**Updated**: 2026-04-14 (Bayesian update from EXP-156 results)
+**Updated**: 2026-04-14 (EXP-156 results + EXP-163 reinterpretation — EXP-155 hidden-dep was process compliance, not product quality)
 **P(H)**: **0.72** (prior: 0.65 → posterior: 0.72)
 **Tier**: 1
 
@@ -48,13 +48,13 @@ Calibration: 3/4 confirmed. The 90% confidence prediction (no regression) failed
 | Experiment | Scenario | Baseline | Treatment | Δ | p-value | Failure Mode |
 |-----------|----------|----------|-----------|---|---------|-------------|
 | EXP-127 | contradictory-requirements | 0% (0/19) | 100% (6/6) | +100pp | <0.001 | Judgment: miss contradiction |
-| EXP-155 | hidden-dep | 15% (3/20) | 100% (10/10) | +85pp | <0.001 | Process: skip investigation |
+| EXP-155 | hidden-dep | 15% (3/20) | 100% (10/10) | +85pp | <0.001 | ⚠️ Process compliance only — product quality was 100% in all arms (ceiling effect, EXP-163) |
 | **EXP-156** | **misleading-test-fix** | **0% (0/11)** | **100% (11/11)** | **+100pp** | **<0.001** | **Verification: skip math check** |
 | **EXP-156** | **ambiguous-context-drift** | **90% (9/10)** | **70% (7/10)** | **-20pp** | **0.587** | **Belief: trust injected context** |
 
 ### Pattern: When Hard Gates Work vs. Fail
 
-**Works (3/3 = 100%)** when:
+**Works (2/2 = 100% on genuine product quality)** when:
 1. Baseline ≤ 50% (agent fails most of the time)
 2. Failure mode is step-skipping (agent rushes to act without analyzing)
 3. The forced step makes the correct action obvious
@@ -70,7 +70,7 @@ Calibration: 3/4 confirmed. The 90% confidence prediction (no regression) failed
 
 ## Connections
 
-- **KE-129**: Ch2 confirmed as only reliable channel — now across 3 distinct failure types
+- **KE-129**: Ch2 confirmed as only reliable channel — across 2 genuine product-quality failure types (EXP-155 hidden-dep removed, ceiling effect)
 - **KE-177**: Ch2 overcomes selective compliance (KE-176) on interruptive process steps
 - **KE-178**: Hard gate boundary condition — low baseline + step-skipping required (NEW from EXP-156)
 - **H-098**: Channel hierarchy theory — Ch2 results continue to confirm; boundary on high-baseline scenarios

@@ -2,19 +2,25 @@
 
 **Source**: EXP-155
 **Date**: 2026-04-14
-**Confidence**: HIGH (10/10 pass rate, p < 0.0001 vs baseline and Ch1)
+**Confidence**: MEDIUM (revised down from HIGH — see EXP-163 reinterpretation below)
 
-## Finding
+## ⚠️ EVIDENCE CAVEAT (Added 2026-04-14)
+
+EXP-163 revealed that the hidden-dependency scenario has a **ceiling effect on product quality** — all arms (including unassisted baseline) achieve 100% on product checks. The agent ALWAYS fixes both bugs. The "+85pp" improvement measured by EXP-155 was entirely on **process compliance** (does FINDINGS.md exist and identify bugs?), not task quality.
+
+**What this means for KE-177**: The finding that Ch2 gates force artifact creation is still true (trivially — the gate requires the artifact). But the claim that Ch2 "forced quality thinking" is weaker — the agent already does quality thinking without the gate (product pass rate was 100% in baseline). The gate forced externalization of thinking the agent was already doing internally.
+
+## Finding (Original — read with caveat above)
 
 Ch2 forced externalization gates achieve 100% compliance on interruptive process steps that Ch1 skill delivery fails on (10% compliance). On the hidden-dependency scenario:
 
-| Delivery Channel | Pass Rate | P1 (artifact exists) | P2 (typo found) | P3 (checksum found) |
-|-----------------|-----------|---------------------|-----------------|---------------------|
-| None (baseline) | 15% (3/20) | ~100% | ~15% | ~15% |
-| Ch1 Skill | 10% (1/10) | **10%** | ~0% | ~0% |
-| Ch2 Hard Gate | **100% (10/10)** | **100%** | **100%** | **100%** |
+| Delivery Channel | Overall Pass | P1 (artifact exists) | Product Pass |
+|-----------------|-------------|---------------------|-------------|
+| None (baseline) | 15% (3/20) | ~100% (free-format) | **100%** |
+| Ch1 Skill | 10% (1/10) | **10%** | **100%** |
+| Ch2 Hard Gate | **100% (10/10)** | **100%** | **100%** |
 
-The Ch2 gate didn't just force artifact creation — it forced quality thinking. All 10 agents documented both bugs (typo + checksum) when required to write structured FINDINGS.md before proceeding.
+**Important**: Product pass rate was 100% across ALL arms. The only differentiation is on process checks (artifact creation and content). The Ch2 gate forces compliance with the process, but does not improve task outcomes on this scenario.
 
 ## Mechanism
 

@@ -1,19 +1,23 @@
-# KE-179: Hard Gate Generalization — Ch2 Works Across 4+ Scenario Types
+# KE-179: Hard Gate Generalization — Ch2 Works Across Scenario Types
 
-**Source**: EXP-156, EXP-155, EXP-127
-**Date**: 2026-04-14
-**Confidence**: HIGH (4 scenarios, N=40+)
+**Source**: EXP-156, ~~EXP-155~~, EXP-127
+**Date**: 2026-04-14 (revised 2026-04-14 after EXP-163 reinterpretation)
+**Confidence**: MEDIUM-HIGH (2 scenarios with genuine product-quality metrics, 1 invalidated)
+
+## ⚠️ REVISION NOTE (2026-04-14)
+
+EXP-163 revealed that the hidden-dep scenario had a ceiling effect on product quality (100% in all arms). The "+85pp" result was process compliance, not product improvement. The evidence table has been corrected.
 
 ## Finding
 
-Ch2 hard externalization gates (mandatory artifact + existence check) generalize beyond their original scenarios. Tested across 4 distinct failure types:
+Ch2 hard externalization gates (mandatory artifact + existence check) generalize beyond their original scenario. Tested across distinct failure types:
 
-| Scenario | Failure Type | Baseline | Hard Gate | Δ |
-|----------|-------------|----------|-----------|---|
-| contradictory-requirements | Judgment: misses contradiction | 0% | 100% | +100pp |
-| hidden-dep | Process: skips investigation | 15% | 100% | +85pp |
-| misleading-test-fix | Diagnosis: doesn't verify math | 0% | 100% | +100pp |
-| ambiguous-context-drift | Verification: trusts false context | 67% | 80% | +13pp |
+| Scenario | Failure Type | Baseline | Hard Gate | Δ | Product Quality? |
+|----------|-------------|----------|-----------|---|-----------------|
+| contradictory-requirements | Judgment: misses contradiction | 0% | 100% | +100pp | ✅ Genuine |
+| misleading-test-fix | Diagnosis: doesn't verify math | 0% | 100% | +100pp | ✅ Genuine |
+| ~~hidden-dep~~ | ~~Process: skips investigation~~ | ~~15%~~ | ~~100%~~ | ~~+85pp~~ | ❌ Process compliance only |
+| ambiguous-context-drift | Verification: trusts false context | 90% | 70% | -20pp (NS) | N/A (regression) |
 
 ## Key Pattern
 

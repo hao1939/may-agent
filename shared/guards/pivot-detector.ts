@@ -15,12 +15,12 @@
  */
 
 /** Detect if a step result indicates failure/pivot pattern. */
-function isFailurePivot(result: { lastAssistantText?: string; finishResult?: { status?: string } }): boolean {
+function isFailurePivot(result: TaskResult): boolean {
   const text = result.lastAssistantText ?? "";
   const lower = text.toLowerCase();
 
-  // Explicit failure from finish()
-  if (result.finishResult?.status === "failure" || result.finishResult?.status === "blocked") {
+  // Explicit failure from task result status
+  if (result.status === "error") {
     return true;
   }
 
@@ -54,8 +54,9 @@ function isFailurePivot(result: { lastAssistantText?: string; finishResult?: { s
   return hasFailure && !hasSuccess;
 }
 
-// Track consecutive failures per workflow run (in-memory, resets each workflow)
-const consecutiveFailures = new Map<string, number>();
+// Track consecutive failures (resets each workflow start).
+// Guards are per-workflow-instance, so a simple counter suffices.
+let consecutiveFailures = 0;
 
 export const guard: WorkflowGuard = {
   name: "pivot-detector",
@@ -64,7 +65,7 @@ export const guard: WorkflowGuard = {
   handle(event: WorkflowGuardEvent): Demand[] {
     // Reset counter on workflow start
     if (event.type === "workflow_start") {
-      consecutiveFailures.delete(event.runId);
+      consecutiveFailures = 0;
       return [];
     }
 
@@ -73,21 +74,19 @@ export const guard: WorkflowGuard = {
     // Skip guard-injected steps (don't count reassessment steps as failures)
     if (event.step.startsWith("guard:")) return [];
 
-    const runId = event.runId;
-
     if (isFailurePivot(event.result)) {
-      const count = (consecutiveFailures.get(runId) ?? 0) + 1;
-      consecutiveFailures.set(runId, count);
+      consecutiveFailures += 1;
+      const count = consecutiveFailures;
 
       if (count >= 5) {
         // Hard intervention: inject a mandatory reassessment step
-        consecutiveFailures.set(runId, 0); // Reset after intervention
+        consecutiveFailures = 0; // Reset after intervention
         return [
           {
             type: "run_step",
             reason: `${count} consecutive fail-pivot cycles detected. Injecting mandatory reassessment.`,
             step: {
-              agent: event.agentName ?? "coder",
+              agent: "coder",
               task: [
                 "MANDATORY REASSESSMENT — Pivot loop detected.",
                 "",
@@ -118,7 +117,7 @@ export const guard: WorkflowGuard = {
       }
     } else {
       // Success resets the counter
-      consecutiveFailures.set(runId, 0);
+      consecutiveFailures = 0;
     }
 
     return [];

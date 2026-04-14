@@ -4,8 +4,9 @@
 
 ## Active / In Progress
 - [x] **EXP-154 COMPLETE** — 10 treatment, 20 baseline. Investigation-before-fix skill: 10% vs 15% baseline (no improvement). Key finding: **selective compliance** — agents adopt additive steps (verify-after-fix: 100%) but ignore interruptive steps (write FINDINGS.md: 10%). KE-176 written.
-- [x] **EXP-156 COMPLETE** — Hard Gate Generalization. misleading-test-fix: 0%→100% (+100pp). ambiguous-context-drift: 90%→70% (NS regression). Boundary: low-baseline + step-skipping required. H-156 created (P(H) 0.72). KE-178 written. KE-129 upgraded.
-- [x] **H-156: Hard Gate Generalization** — DONE. Partially Supported. P(H) 0.72. Created hypothesis file, updated KE-129 (5-star), KE-178 already existed. PRIORITY-TRACKER updated.
+- [x] **EXP-156 COMPLETE** — Hard Gate Generalization. misleading-test-fix: 0%→100% (+100pp). ambiguous-context-drift: 90%→70% (NS regression). Boundary: low-baseline + step-skipping required. H-156 created (P(H) 0.72). KE-178 written. ⚠️ KE-129 downgraded to 4★ after EXP-163 reinterpretation.
+- [x] **H-156: Hard Gate Generalization** — DONE. Partially Supported. P(H) 0.72. Created hypothesis file, updated KE-129, KE-178. PRIORITY-TRACKER updated. EXP-155 hidden-dep removed from product-quality evidence (ceiling effect).
+- [x] **EXP-163 REINTERPRETATION** — KE-129 revised (5★→4★, 27/27→17/17), KE-177 caveated, KE-179 corrected, EXP-155 retroactively reinterpreted, KE-181 written (process vs product metrics lesson).
 - [x] **H-160: Structural > Behavioral for Interruptive Steps** — DONE. Hypothesis formalized from KE-176 + KE-174.
 - [x] **H-161: Artifacts Dual IT Functions** — DONE. Decomposes forced externalization into F1 (memory compression, DD-755) + F2 (behavioral forcing, KE-129). 4-arm independence experiment designed. P(H) 0.72.
 - [x] **EXP-RECOGNITION COMPLETE**: 3 arms, 30 runs. Hard gate: 100% (10/10). Skill: 0% (0/10). Baseline: 10% (1/10). p<0.0001. H-160 confirmed (P→0.96). KE-178 expanded: attention-narrowing IS step-skippable.
