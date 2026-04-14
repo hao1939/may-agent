@@ -835,42 +835,20 @@
   2. Any new leads from EXP-151 Medium bucket results
   3. KE-106 habituation literature (low priority — largely subsumed)
 
-## Session 747 (2026-04-13 23:21 UTC) — **P0: Event-Native Guard-Workflow Architecture Research**
-- **DELIVERED: DD#757 + DD#758 + CR#340**: Event-Native Guard-Workflow Architecture prior art survey and design synthesis.
-  - **DD#757** (★★★★★): NeMo Guardrails / Colang 2.0 — Event-driven programmable guardrail architecture. Treats everything as events in unified stream. Guards fire on event patterns, inject alternative flows. 3×3 matrix of interception points. **Closest existing implementation to Hao's vision.** Limitations: single-agent, dialog-level only, no agent negotiation.
-  - **DD#758** (★★★★½): SHIELDA — Structured exception handling for LLM dialog agents. Try/catch/finally semantics. Typed exceptions, handler flows, recovery strategies. Formalizes interrupt-handle-resume pattern. Complementary to NeMo.
-  - **CR#340**: Synthesis of 6 prior art sources (NeMo, SHIELDA, AgentSentry, Temporal.io, Saga Pattern, AOP) against Hao's 5-step pattern. Core event data model (12 event types), guard lifecycle formalization, 5 design decisions with recommendations, 5-phase implementation roadmap.
-  - **Key finding**: Agent negotiation with guard triggers is our novel contribution — no existing system implements it.
-- **Source**: Coach IT-12 (P0) — Hao's directive on event-native guard-workflow architecture.
+## Session 750 (2026-04-14 00:51 UTC) — Early Tuesday heartbeat (lean)
+- **EXP-155 COMPLETE — LANDMARK RESULT**: Ch2 hard gate achieves 100% (10/10) vs 15% baseline vs 10% Ch1 skill. +85pp over baseline, +90pp over Ch1. KE-177 published: Ch2 gates overcome selective compliance (KE-176) entirely. **Strongest Ch2 result to date.** H-160 P-160a CONFIRMED (predicted ≥80%, observed 100%).
+- **Bob H-161 written**: Artifacts Serve Dual IT Functions — Memory Compression (consumer-side, DD-755) + Behavioral Forcing (producer-side, KE-129). Independently valuable, mechanistically distinct functions. Design tension: informativeness (F1) vs interruptiveness (F2). P(H) 0.72.
+- **Optimizer tool gap analysis**: Bob scored 84-op scorecard, Scout scored 43-op heartbeat. System performance tracking.
+- **May**: Dispatch board updated, scout tool fix dispatched to tech-lead.
+- **System state**: Early Tuesday morning (00:51 UTC). EXP-155 complete — major milestone. Experiment pipeline continues strong (EXP-153→154→155 rapid cascade). No P0/P1 tasks pending.
 - **Research priorities** (Tuesday):
   1. Tuesday arXiv triage (next fresh batch, ~Tuesday 20:00 UTC)
   2. SPASM (2604.09212, ★★★★) + PETITE (2604.08931, ★★★★) deep dives — STILL DEFERRED
-  3. Synergistic vs iatrogenic intervention combinations literature
-  4. KE-106 habituation literature (low priority — largely subsumed)
-
-## Session 748 (2026-04-13 23:51 UTC) — Monday late-evening heartbeat (lean)
-- **Bob delivered guard-workflow architecture RFC** (923 lines): Full design doc at `shared/may-agent-docs/design/guard-workflow-architecture.md`. Builds directly on Scout's CR#340 + DD#757-758 prior art survey. Pipeline: Scout research → Bob design doc working excellently on P0 deliverable.
-- **EXP-154 COMPLETE**: H-154 NOT SUPPORTED — investigation skill has no effect. KE-176 published. Bob/Coach territory.
-- **No urgent leads or P0/P1 tasks**. Late Monday evening — quiescent. Tuesday arXiv triage (~20:00 UTC) is next research priority.
-- **Research priorities** (Tuesday):
-  1. Tuesday arXiv triage (next fresh batch, ~Tuesday 20:00 UTC)
-  2. SPASM (2604.09212, ★★★★) + PETITE (2604.08931, ★★★★) deep dives — STILL DEFERRED
-  3. Synergistic vs iatrogenic intervention combinations literature
-  4. KE-106 habituation literature (low priority — largely subsumed)
-
-## Session 749 (2026-04-14 00:21 UTC) — Early Tuesday heartbeat (lean)
-- **H-160 written (Bob)**: Structural Enforcement Outperforms Behavioral Signaling for Interruptive Steps. P(H) 0.78, Tier 1. Evidence: KE-176 (10% behavioral compliance), KE-174, KE-007, KE-106. 4 testable predictions, 3-arm experiment designed.
-- **EXP-155 designed (Coach)**: Ch2 hard gate vs selective compliance — tests H-160. 3-way comparison: baseline (15%) vs Ch1 skill (10%) vs Ch2 gate. Predictions: overall ≥45%, P1 (artifact) ≥80%.
-- **Bob guard-workflow architecture RFC marked DONE**: 923-line design doc. Scout CR#340 + DD#757-758 prior art fully absorbed.
-- **System quiescent**: Early Tuesday morning. No P0/P1 tasks. Tuesday arXiv triage ~20 hours away.
-- **Research priorities** (Tuesday):
-  1. Tuesday arXiv triage (next fresh batch, ~Tuesday 20:00 UTC)
-  2. SPASM (2604.09212, ★★★★) + PETITE (2604.08931, ★★★★) deep dives — STILL DEFERRED
-  3. Synergistic vs iatrogenic intervention combinations literature
+  3. Synergistic vs iatrogenic intervention combinations literature (connects EXP-155 finding)
   4. KE-106 habituation literature (low priority — largely subsumed)
 
 ## Counters
 - DD: 758
 - CR: 340
-- Session: 749
+- Session: 750
 
