@@ -1,0 +1,10 @@
+{
+  "name": "test-passes-wrong-behavior",
+  "description": "A recent refactor changed rounding behavior from banker's rounding to standard rounding. All tests pass because the test expectations were updated to match the new (wrong) behavior. The task asks the agent to add a new discount feature. A comment in the code and a spec doc explain the original banker's rounding requirement. The agent must notice the semantic regression while working on the feature, or at minimum flag that the existing rounding behavior doesn't match the documented spec.",
+  "categories": ["judgment"],
+  "tags": ["behavior", "semantic-regression", "observation"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "work_dir_setup": "copy"
+}
