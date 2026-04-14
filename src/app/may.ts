@@ -435,7 +435,11 @@ bus.subscribe((event) => {
 bus.subscribe((event) => {
   if (event.type !== "session_end") return;
   const info = event as any;
-  if (!info.parentSessionId || !taskSessionId || info.parentSessionId !== taskSessionId) return;
+  // Fire for any session with a parent. In task/oneshot mode, this covers taskSessionId children.
+  // In cron mode, this covers children forked by heartbeat sessions (agents calling other agents).
+  if (!info.parentSessionId) return;
+  // Skip evaluator children to prevent infinite evaluation loops
+  if (info.agent === "evaluator") return;
 
   setTimeout(async () => {
     try {
