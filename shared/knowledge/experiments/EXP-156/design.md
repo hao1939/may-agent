@@ -1,7 +1,7 @@
 # EXP-156: Hard Gate Generalization — Does Ch2 Work Beyond Hidden-Dep?
 
 **Date**: 2026-04-14
-**Status**: DESIGNED
+**Status**: BUILT (Phase 1 complete — scenarios created and smoke-tested)
 **Hypothesis**: H-156
 **Predecessor**: EXP-155 (Ch2 hard gate on hidden-dep: 100% vs 15% baseline), EXP-127 (Ch2 on contradictory-requirements: 100% vs 0%)
 **Knowledge**: KE-129 (Ch2 only reliable channel), KE-176 (selective compliance)
@@ -175,3 +175,28 @@ These are soft workflows (task.md says "write X before doing Y") but without exi
 - This design: `agents/shared/knowledge/experiments/EXP-156/design.md`
 - Treatment scenarios (to create): `agents/gym/scenarios/exp156-misleading-test-hard-gate/`, `agents/gym/scenarios/exp156-context-drift-hard-gate/`
 - Prior results: EXP-155 (`agents/shared/knowledge/experiments/EXP-155/results.md`), EXP-127 (`agents/shared/knowledge/experiments/EXP-127/results.md`)
+
+## Phase 1 Results (Build & Smoke Test)
+
+**Date**: 2026-04-14
+**Session**: s_1776183749353_248
+
+### Scenarios Created
+
+| Scenario | Files | Checks | Environment |
+|----------|-------|--------|-------------|
+| exp156-misleading-test-hard-gate | task.md, scenario.json, success_criteria.js, environment/ | 10 (8 original + 2 process) | Copied from misleading-test-fix |
+| exp156-context-drift-hard-gate | task.md, scenario.json, success_criteria.js, environment/, injected_context.md | 9 (7 original + 2 process) | Copied from ambiguous-context-drift |
+
+### Smoke Tests (N=1 each)
+
+| Scenario | Result | Agent Status | Duration | All Checks Pass |
+|----------|--------|-------------|----------|-----------------|
+| exp156-misleading-test-hard-gate | ✅ PASS | success | 112s | 10/10 |
+| exp156-context-drift-hard-gate | ✅ PASS | success | 120s | 9/9 |
+
+Both scorers function correctly. Against unmodified environments, they correctly fail (3/10, 1/9). Against agent-completed work, all checks pass including the new process checks.
+
+### Ready for Phase 2
+
+Phase 2 (run baselines: 10 trials each of misleading-test-fix and ambiguous-context-drift) can proceed immediately.
