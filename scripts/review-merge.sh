@@ -5,6 +5,8 @@
 # Usage:
 #   scripts/review-merge.sh <branch>              Merge with pre-merge checks (tsc + test)
 #   scripts/review-merge.sh --no-checks <branch>  Skip tsc/test checks (agents-only changes)
+#   scripts/review-merge.sh --batch [--dry-run]   Process all review/* branches
+#   scripts/review-merge.sh --auto-resolve=ours <branch>  Auto-resolve workspace file conflicts
 #   scripts/review-merge.sh --help                Show this help
 #
 # Exit codes:
@@ -21,6 +23,17 @@
 #   5. Merges branch into main (with REVIEW_GATE_BYPASS for the pre-commit hook)
 #   6. Deletes the merged branch on success
 #   7. Restores stash; on failure, returns to original branch first
+#
+# Batch mode (--batch):
+#   Processes all review/* branches sequentially. Each branch gets the full
+#   merge logic. Reports a summary at the end (merged N, skipped M, failed K).
+#   Combine with --no-checks, --dry-run, --auto-resolve=ours as needed.
+#
+# Auto-resolve (--auto-resolve=ours):
+#   When a merge conflict occurs in workspace files (todo.md, PRIORITY-TRACKER.md,
+#   journal.md, dispatch-board.md), automatically resolve using --ours strategy
+#   (current branch version wins). These files are agent-local and the main branch
+#   version is always authoritative during merge.
 
 set -euo pipefail
 
@@ -69,42 +82,189 @@ usage() {
 review-merge.sh — Merge a review branch into main
 
 Usage:
-  scripts/review-merge.sh <branch>              Merge with pre-merge checks
-  scripts/review-merge.sh --no-checks <branch>  Skip tsc/test (agents-only changes)
-  scripts/review-merge.sh --help                Show this help
+  scripts/review-merge.sh <branch>                           Merge with pre-merge checks
+  scripts/review-merge.sh --no-checks <branch>               Skip tsc/test (agents-only changes)
+  scripts/review-merge.sh --batch [--dry-run] [--no-checks]  Process all review/* branches
+  scripts/review-merge.sh --auto-resolve=ours <branch>       Auto-resolve workspace conflicts
+  scripts/review-merge.sh --help                             Show this help
+
+Flags:
+  --batch              Process all review/* branches in one call
+  --dry-run            (With --batch) List branches without merging
+  --no-checks          Skip tsc/test pre-merge checks
+  --auto-resolve=ours  Auto-resolve conflicts in workspace files using ours strategy
+                       (todo.md, PRIORITY-TRACKER.md, journal.md, dispatch-board.md)
 
 Examples:
   scripts/review-merge.sh review/s_1776113498355_390
   scripts/review-merge.sh --no-checks review/ctx-agent-workflow
+  scripts/review-merge.sh --batch --dry-run
+  scripts/review-merge.sh --batch --no-checks --auto-resolve=ours
 
 Exit codes:
-  0 = success
+  0 = success (batch: all merged or skipped)
   1 = validation error
   2 = pre-merge checks failed (tsc/test)
-  3 = merge conflict or failure
+  3 = merge conflict or failure (batch: at least one failed)
 EOF
 }
 
 # --- Argument parsing ---
 
 SKIP_CHECKS=false
+BATCH_MODE=false
+DRY_RUN=false
+AUTO_RESOLVE_OURS=false
+BRANCH=""
+
+# Workspace files eligible for auto-resolve (agent-local, main version is authoritative)
+WORKSPACE_FILES=(
+  "todo.md"
+  "PRIORITY-TRACKER.md"
+  "journal.md"
+  "dispatch-board.md"
+)
 
 if [[ $# -eq 0 || "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
   usage
   exit 0
 fi
 
-if [[ "${1:-}" == "--no-checks" ]]; then
-  SKIP_CHECKS=true
-  shift
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --no-checks)
+      SKIP_CHECKS=true
+      shift
+      ;;
+    --batch)
+      BATCH_MODE=true
+      shift
+      ;;
+    --dry-run)
+      DRY_RUN=true
+      shift
+      ;;
+    --auto-resolve=ours)
+      AUTO_RESOLVE_OURS=true
+      shift
+      ;;
+    --auto-resolve=*)
+      err "Unsupported auto-resolve strategy: ${1#--auto-resolve=} (only 'ours' is supported)"
+      exit 1
+      ;;
+    --help|-h)
+      usage
+      exit 0
+      ;;
+    -*)
+      err "Unknown flag: $1"
+      usage
+      exit 1
+      ;;
+    *)
+      BRANCH="$1"
+      shift
+      ;;
+  esac
+done
+
+# --- Batch mode ---
+
+if [[ "$BATCH_MODE" == true ]]; then
+  # Collect all review/* branches
+  mapfile -t REVIEW_BRANCHES < <(git branch --list 'review/*' | sed 's/^[* ]*//')
+
+  if [[ ${#REVIEW_BRANCHES[@]} -eq 0 ]]; then
+    info "No review/* branches found — nothing to do"
+    exit 0
+  fi
+
+  echo ""
+  echo -e "${BOLD}=== Batch Mode: ${#REVIEW_BRANCHES[@]} review branch(es) ===${RESET}"
+  echo ""
+
+  for b in "${REVIEW_BRANCHES[@]}"; do
+    echo -e "  ${CYAN}•${RESET} $b"
+  done
+  echo ""
+
+  if [[ "$DRY_RUN" == true ]]; then
+    info "Dry run — would process ${#REVIEW_BRANCHES[@]} branch(es). Exiting."
+    exit 0
+  fi
+
+  # Process each branch, collecting results
+  MERGED=0
+  SKIPPED=0
+  FAILED=0
+  FAILED_BRANCHES=()
+
+  for b in "${REVIEW_BRANCHES[@]}"; do
+    echo ""
+    echo -e "${BOLD}--- Processing: ${b} ---${RESET}"
+    echo ""
+
+    # Build args for recursive call
+    ARGS=()
+    if [[ "$SKIP_CHECKS" == true ]]; then
+      ARGS+=(--no-checks)
+    fi
+    if [[ "$AUTO_RESOLVE_OURS" == true ]]; then
+      ARGS+=(--auto-resolve=ours)
+    fi
+    ARGS+=("$b")
+
+    # Call ourselves for each branch; capture exit code
+    set +e
+    bash "$0" "${ARGS[@]}"
+    rc=$?
+    set -e
+
+    case $rc in
+      0)
+        MERGED=$((MERGED + 1))
+        ;;
+      1)
+        # Validation error (no commits ahead, etc.) — count as skipped
+        SKIPPED=$((SKIPPED + 1))
+        ;;
+      *)
+        FAILED=$((FAILED + 1))
+        FAILED_BRANCHES+=("$b (exit $rc)")
+        ;;
+    esac
+  done
+
+  # --- Batch summary ---
+  echo ""
+  echo -e "${BOLD}=== Batch Summary ===${RESET}"
+  echo ""
+  echo -e "  ${GREEN}Merged:${RESET}  ${MERGED}"
+  echo -e "  ${YELLOW}Skipped:${RESET} ${SKIPPED}"
+  echo -e "  ${RED}Failed:${RESET}  ${FAILED}"
+
+  if [[ ${#FAILED_BRANCHES[@]} -gt 0 ]]; then
+    echo ""
+    echo -e "  ${RED}Failed branches:${RESET}"
+    for fb in "${FAILED_BRANCHES[@]}"; do
+      echo -e "    ${RED}•${RESET} $fb"
+    done
+  fi
+
+  echo ""
+
+  if [[ "$FAILED" -gt 0 ]]; then
+    exit 3
+  fi
+  exit 0
 fi
 
-if [[ $# -eq 0 ]]; then
+# --- Single branch mode (original behavior) ---
+
+if [[ -z "$BRANCH" ]]; then
   err "Missing branch name. Usage: scripts/review-merge.sh [--no-checks] <branch>"
   exit 1
 fi
-
-BRANCH="$1"
 
 # Validate branch exists
 if ! git rev-parse --verify "$BRANCH" &>/dev/null; then
@@ -223,13 +383,80 @@ info "Merging ${BRANCH} into main..."
 
 # REVIEW_GATE_BYPASS needed because the pre-commit hook blocks direct commits to main
 if ! REVIEW_GATE_BYPASS=1 git merge "$BRANCH" --no-edit -m "$MERGE_MSG" 2>&1; then
-  echo ""
-  err "Merge FAILED — likely a conflict"
-  git merge --abort 2>/dev/null || true
-  info "Conflict details would appear above. Resolve manually or abandon this branch."
-  exit 3
+  # Merge failed — check if we can auto-resolve
+  if [[ "$AUTO_RESOLVE_OURS" == true ]]; then
+    info "Merge had conflicts — attempting auto-resolve for workspace files..."
+
+    # Get list of conflicted files
+    CONFLICTED_FILES=()
+    mapfile -t CONFLICTED_FILES < <(git diff --name-only --diff-filter=U 2>/dev/null || true)
+
+    if [[ ${#CONFLICTED_FILES[@]} -eq 0 ]]; then
+      err "Merge FAILED but no conflicted files detected — aborting"
+      git merge --abort 2>/dev/null || true
+      exit 3
+    fi
+
+    # Check if ALL conflicts are in auto-resolvable workspace files
+    ALL_RESOLVABLE=true
+    RESOLVED_FILES=()
+    NON_RESOLVABLE=()
+
+    for cf in "${CONFLICTED_FILES[@]}"; do
+      IS_WORKSPACE=false
+      for wf in "${WORKSPACE_FILES[@]}"; do
+        # Match workspace files anywhere in path (e.g., agents/tech-lead/workspace/todo.md)
+        if [[ "$cf" == *"/$wf" || "$cf" == "$wf" ]]; then
+          IS_WORKSPACE=true
+          break
+        fi
+      done
+      if [[ "$IS_WORKSPACE" == true ]]; then
+        RESOLVED_FILES+=("$cf")
+      else
+        NON_RESOLVABLE+=("$cf")
+        ALL_RESOLVABLE=false
+      fi
+    done
+
+    # Resolve workspace file conflicts using ours (main's version)
+    for rf in "${RESOLVED_FILES[@]}"; do
+      git checkout --ours "$rf" 2>/dev/null
+      git add "$rf" 2>/dev/null
+      ok "Auto-resolved (ours): $rf"
+    done
+
+    if [[ "$ALL_RESOLVABLE" == true ]]; then
+      # All conflicts resolved — complete the merge
+      if REVIEW_GATE_BYPASS=1 git commit --no-edit -m "$MERGE_MSG" 2>&1; then
+        ok "Merge completed after auto-resolving ${#RESOLVED_FILES[@]} workspace file(s)"
+      else
+        err "Failed to commit after auto-resolve — aborting"
+        git merge --abort 2>/dev/null || true
+        exit 3
+      fi
+    else
+      # Some conflicts can't be auto-resolved
+      warn "Auto-resolved ${#RESOLVED_FILES[@]} workspace file(s), but ${#NON_RESOLVABLE[@]} conflict(s) remain:"
+      for nr in "${NON_RESOLVABLE[@]}"; do
+        echo -e "    ${RED}•${RESET} $nr"
+      done
+      echo ""
+      err "Cannot fully auto-resolve — aborting merge"
+      git merge --abort 2>/dev/null || true
+      exit 3
+    fi
+  else
+    echo ""
+    err "Merge FAILED — likely a conflict"
+    info "Tip: use --auto-resolve=ours to auto-resolve workspace file conflicts"
+    git merge --abort 2>/dev/null || true
+    info "Conflict details would appear above. Resolve manually or abandon this branch."
+    exit 3
+  fi
+else
+  ok "Merged successfully"
 fi
-ok "Merged successfully"
 
 # --- Step 4: Cleanup ---
 
