@@ -1,5 +1,7 @@
-# Deliverables Checklist — Heartbeat 2026-04-14 08:51
+# Deliverables Checklist — Tool Gap Analysis 0414
 
-- [x] Observe system snapshot — zero errors, Bob 187-op outlier identified
-- [x] Fork Mode A archaeology — `finding-bob-187op-scenario-gap-fill-0414.md` written (7.1KB, 115 lines)
-- [x] Rotation tracker updated — Next: B
+- [x] finding-tool-gap-analysis-0414.md with:
+  - [x] Session summaries (what they did, where ops went)
+  - [x] Identified tool gap patterns (with frequency counts)
+  - [x] Concrete tool/fix proposals (with estimated savings)
+  - [x] Cross-reference with existing findings to avoid duplicates
