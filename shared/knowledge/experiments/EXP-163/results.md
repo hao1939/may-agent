@@ -2,8 +2,8 @@
 
 **Date**: 2026-04-14
 **Status**: COMPLETE (INCONCLUSIVE — ceiling effect invalidates primary metric)
-**Runs**: 63 total (26 baseline, 15 F1-only, 7 F2-only, 15 full-gate)
-**Cost**: ~$4.40 (63 runs × ~$0.07)
+**Runs**: 70 total (30 baseline, 15 F1-only, 10 F2-only, 15 full-gate)
+**Cost**: ~$4.90 (70 runs × ~$0.07)
 
 ---
 
@@ -22,24 +22,24 @@
 | Arm | Label | Runs | Overall Pass | Rate | 95% CI |
 |-----|-------|------|-------------|------|--------|
 | A | Full Gate (F1+F2) | 15 | 15 | **100%** | [78%, 100%] |
-| B | F2-Only | 7 | 7 | **100%** | [59%, 100%] |
+| B | F2-Only | 10 | 10 | **100%** | [69%, 100%] |
 | C | F1-Only | 15 | 15 | **100%** | [78%, 100%] |
-| D | Baseline | 26 | 0 | **0%** | [0%, 13%] |
+| D | Baseline | 30 | 0 | **0%** | [0%, 12%] |
 
 ### Product Pass Rate (Primary Planned Metric)
 
 | Arm | Label | Runs | Product Pass | Rate |
 |-----|-------|------|-------------|------|
 | A | Full Gate (F1+F2) | 15 | 15 | **100%** |
-| B | F2-Only | 7 | 7 | **100%** |
+| B | F2-Only | 10 | 10 | **100%** |
 | C | F1-Only | 15 | 15 | **100%** |
-| D | Baseline | 26 | 26 | **100%** |
+| D | Baseline | 30 | 30 | **100%** |
 
 **All arms achieve 100% on all 5 product checks.** There is zero variance to analyze.
 
 ### Individual Check Pass Rates
 
-| Check | Category | Arm A (n=15) | Arm B (n=7) | Arm C (n=15) | Arm D (n=26) |
+| Check | Category | Arm A (n=15) | Arm B (n=10) | Arm C (n=15) | Arm D (n=30) |
 |-------|----------|-------------|-------------|-------------|-------------|
 | typo-fixed | product | 100% | 100% | 100% | 100% |
 | validation-intact | product | 100% | 100% | 100% | 100% |
@@ -98,7 +98,7 @@ The agent solves a two-bug pipeline task 100% of the time without assistance. Th
 - This is instruction-following, not behavioral change
 
 ### 3. The F2-Only Arm Shows Interesting Compliance
-In 7/7 F2-only runs, the agent produced FINDINGS.md (Phase 1) AND the process checks pass (meaning the artifact identifies both bugs). The transcripts were not stored, so we cannot verify whether Phase 2 read FINDINGS.md despite instructions not to. However, the product result is the same as baseline (100%), so it doesn't matter.
+In 10/10 F2-only runs, the agent produced FINDINGS.md (Phase 1) AND the process checks pass (meaning the artifact identifies both bugs). The transcripts were not stored, so we cannot verify whether Phase 2 read FINDINGS.md despite instructions not to. However, the product result is the same as baseline (100%), so it doesn't matter.
 
 ---
 
@@ -120,9 +120,9 @@ All comparisons are 100% vs 100% — no test is meaningful.
 
 | Comparison | Rates | p-value | Note |
 |-----------|-------|---------|------|
-| A vs D | 15/15 vs 0/26 | p < 0.0001 | Significant, but confounded (gate creates artifact definitionally) |
-| C vs D | 15/15 vs 0/26 | p < 0.0001 | Significant, but confounded (pre-written artifact provided) |
-| B vs D | 7/7 vs 0/26 | p < 0.0001 | Significant, but confounded (gate creates artifact in Phase 1) |
+| A vs D | 15/15 vs 0/30 | p < 0.0001 | Significant, but confounded (gate creates artifact definitionally) |
+| C vs D | 15/15 vs 0/30 | p < 0.0001 | Significant, but confounded (pre-written artifact provided) |
+| B vs D | 10/10 vs 0/30 | p < 0.0001 | Significant, but confounded (gate creates artifact in Phase 1) |
 
 These p-values are meaningless — they measure whether "a task that requires FINDINGS.md results in FINDINGS.md existing" vs "a task that doesn't mention FINDINGS.md results in FINDINGS.md not existing." This is tautological.
 
@@ -174,14 +174,30 @@ The success_criteria.js conflates process compliance (did the agent create a .md
 - Use **product checks only** as the primary outcome metric
 - Use process checks as **descriptive/diagnostic** metrics, not in the overall pass/fail
 
-### 4. Incomplete Runs
-The F2-only arm has only 7/10 planned runs (session was interrupted). Given the ceiling effect, completing the remaining 3 runs would not change any conclusions.
+### 4. Duration Cost of Workflow Overhead
+While product outcomes are identical, 3-phase workflow runs take significantly longer:
+
+| Arm | Avg Duration | Overhead vs Baseline |
+|-----|-------------|---------------------|
+| D (baseline, single-phase) | 50s | — |
+| C (F1-only, single-phase) | 44s | -12% (slightly faster with pre-written FINDINGS.md) |
+| A (full-gate, 3-phase) | 144s | +188% |
+| B (F2-only, 3-phase) | 165s | +230% |
+
+The 3-phase workflow costs ~2.5-3× more time for zero product quality improvement on this scenario. This is the "alignment tax" (KE-091) in action.
+
+### 5. Incomplete Runs → Completed
+All arms have reached or exceeded their target of 10 runs: Arm A (15), Arm B (10), Arm C (15), Arm D (30). The extra baseline runs (30 instead of 10) only reinforce the ceiling effect finding with even more certainty.
 
 ---
 
 ## Data Inventory
 
-- **62 gym runs** in .state/may.db (table: gym_runs, scenarios: exp163-*)
+- **70 gym runs** in .state/may.db (table: gym_runs, scenarios: exp163-*)
+  - 30 baseline (all Product 5/5, all Process 1/4 → 0% overall pass)
+  - 15 f1-only (all Product 5/5, all Process 4/4 → 100% overall pass)
+  - 10 f2-only (all Product 5/5, all Process 4/4 → 100% overall pass)
+  - 15 full-gate (all Product 5/5, all Process 4/4 → 100% overall pass)
 - **4 scenario directories** in agents/gym/scenarios/exp163-*
 - **No transcripts** stored (transcript column is empty)
 - **Design document**: agents/shared/knowledge/experiments/EXP-163/design.md
