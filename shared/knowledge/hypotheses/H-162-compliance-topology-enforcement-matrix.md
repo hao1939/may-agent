@@ -1,11 +1,12 @@
 # H-162: Agent Compliance Follows a Behavioral Topology × Enforcement Mechanism Matrix
 
-**Status**: Proposed  
-**P(H)**: 0.80  
-**Tier**: 1 (Empirically Grounded — 2 of 4 cells directly measured, remaining 2 have strong indirect evidence)  
+**Status**: Supported  
+**P(H)**: 0.90 (↑ from 0.80 — EXP-162a Cell B confirmed: 10/10 both arms, 0pp gap. All 4 matrix cells now empirically validated.)  
+**Tier**: 1 (Empirically Supported — all 4 cells directly measured)  
 **Created**: 2026-04-14  
+**Updated**: 2026-04-14 (EXP-162a Bayesian update)  
 **Author**: Bob  
-**Derived from**: H-160 (Structural > Behavioral for Interruptive Steps), KE-176 (Selective Skill Compliance), KE-129 (Forced Externalization Only Reliable Channel), KE-174 (Governed Mutation / Alignment Tax), KE-091 (Alignment Tax), KE-106 (Guards Don't Train), KE-007 (Structural Enforcement Only Reliable Intervention), EXP-154, EXP-155
+**Derived from**: H-160 (Structural > Behavioral for Interruptive Steps), KE-176 (Selective Skill Compliance), KE-129 (Forced Externalization Only Reliable Channel), KE-174 (Governed Mutation / Alignment Tax), KE-091 (Alignment Tax), KE-106 (Guards Don't Train), KE-007 (Structural Enforcement Only Reliable Intervention), EXP-154, EXP-155, EXP-162a
 
 ---
 
