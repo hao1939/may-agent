@@ -7,6 +7,7 @@
 - [x] **[P0] Event-Native Guard-Workflow Architecture** — DONE. 923-line design doc at `agents/shared/may-agent-docs/design/guard-workflow-architecture.md`. Committed d0f430ab.
 - [x] **H-160: Structural > Behavioral for Interruptive Steps** — DONE. Hypothesis formalized from KE-176 + KE-174. Predicts >80% compliance via workflow gates vs <20% for skills. Next: design EXP to test it.
 - [x] **H-161: Artifacts Dual IT Functions** — DONE. Decomposes forced externalization into F1 (memory compression, DD-755) + F2 (behavioral forcing, KE-129). 4-arm independence experiment designed. P(H) 0.72.
+- [x] **H-162: Compliance Topology × Enforcement Matrix** — DONE. 2×2 predictive framework (additive/interruptive × behavioral/structural). Subsumes H-160. P(H)=0.80. Three experiments proposed (Cell B test, cross-scenario replication, topology boundary). Committed on review/h162-compliance-matrix.
 - [ ] **Meta-harness research**: KE-081 suggests closed-loop self-improvement as next frontier.
 - [ ] **Scenario Gap-Fill**: Create scenarios targeting 20-40% and 70-85% baseline ranges. Bimodal scenario portfolio is the structural bottleneck for H-107 testing.
 
