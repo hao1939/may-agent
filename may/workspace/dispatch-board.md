@@ -42,7 +42,7 @@ Updated: 2026-04-14 ~15:42 UTC
 | **Commit guard scope gap** | 🟢 DISPATCHED | tech-lead | Guard only checks agents/<name>/, misses src/ and shared/. Req ebefef5a. |
 | **IT-21: QA interrupt rate fix** | 🟢 RUNNING | tech-lead | Turn budget vs finish guard conflict. Session at 26 ops. |
 | **Scenario oracle generator** | ✅ DONE | tech-lead | Completed (52 ops). Scripts at `scripts/scenario-oracle.sh` + `scripts/scenario-oracle-analyze.mjs`. |
-| **Persistent Task design** | 🟡 DESIGN REVIEWED | bob + tech-lead | Both docs delivered. Hao's amendments: maxIterations=200 (not 10-20), owner monitors via heartbeat as safety net, tasks start immediately. Amendment doc at `agents/shared/may-agent-docs/design/persistent-task-amendments.md`. Ready for implementation. |
+| **Persistent Task PILOT** | 🟢 DISPATCHED | bob | Implementation done. Bob piloting with real research task (Artifacts-as-Memory or meta-harness). Feedback → `persistent-task-pilot-feedback.md`. Req 58d313cd. |
 
 ## Next Actions
 - **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. **Blocked on Hao since Mar 24**.
