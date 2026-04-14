@@ -3,19 +3,21 @@
 
 ## Ready
 
-- [x] **Guards Phase 3: Cron-to-workflow migration** — ✅ COMPLETE (2026-04-14). 2 of 4 handlers migrated: error-log-scanner → `error-scan.ts`, coaching-feedback → `coaching-feedback.ts`. Remaining 2 not candidates (priority-drift=dead code, active-nudge=pure JS intervention). run-workflow handler upgraded with `runFunction()` + `agent`. **Design**: `agents/may/workspace/DESIGN-sensor-judge-migration.md`.
-- [ ] **Batch merge tool for tech-lead** — Optimizer finding: tech-lead spent 77 git ops (74% of session) on mechanical branch merges in a 94-op session. A `batch-merge.sh` script could save ~40 ops per merge session. **Deliverable**: Script at `scripts/batch-merge.sh` that takes a branch list/pattern, merges all with --ours conflict resolution. **Scope**: Small. **Owner**: tech-lead/coder.
-- [ ] **Scenario oracle generator for coach** — Optimizer finding: coach spent 118 ops (3.4× budget) designing gym scenarios, with 32 node executions for manual expected-output computation. A script to auto-generate expected outputs from clean codebase + patch would save ~15-20 ops per scenario session. **Deliverable**: Script at `scripts/scenario-oracle.sh`. **Scope**: Medium. **Owner**: coach + coder.
-- [x] **Create-test-pivot loop guard** — ✅ BUILT + IN REVIEW (2026-04-14). Guard at `agents/shared/guards/pivot-detector.ts`. 7 tests on branch `review/pivot-detector-guard`. Warns at 3 fail-pivot cycles, injects mandatory reassessment at 5.
+- [ ] **Batch review-merge script (`--batch` + `--auto-resolve=ours`)** — Extend `scripts/review-merge.sh` with batch mode to process all `review/*` branches in one call, plus `--auto-resolve=ours` for workspace files (todo.md, PRIORITY-TRACKER.md). Optimizer finding-tech-lead-tool-gap-0414 shows 35 ops wasted per batch merge (7 ops/branch × 5-8 branches). 65 review sessions/week → saves 100-200 ops/week. **Scope**: Small. **Owner**: tech-lead/coder.
+
+- [ ] **Coach workflow adoption structural fix (fork-with-workflow-instruction)** — Coach has 0% real workflow adoption (finding-coach-workflow-adoption-intervention-0414). Root cause: `workflow.run()` from heartbeat blows op budget. Fix: change coach heartbeat fork template to prepend `⚡ WORKFLOW REQUIRED: Call workflow.run('<name>', '<task>') as your FIRST action.` to forked task text. This moves workflow execution into the work session where budget allows it. **Scope**: Small. **Owner**: may (heartbeat edit) or coach (self-edit).
+
+- [ ] **Workflow adoption metric rebaseline** — Current metric counts task-text workflow mentions (reports 75%), but actual `workflowRunId` adoption is 6.7% system-wide (finding-coach-workflow-adoption-intervention-0414). Update `agents/may/workspace/tools/` with a correct adoption script using `workflowRunId IS NOT NULL`. Re-measure all agents. Without accurate measurement, we can't track improvement. **Scope**: Small. **Owner**: may or optimizer.
+
+- [ ] **Compaction-resistant summary scripts for Bob** — Bob wastes ~30% of ops re-reading files post-compaction (finding-tool-gap-bob84-scout43-0414). Build two scripts: (1) `scripts/hypothesis-summary.sh` — dumps all H-*.md files with P(H) values in one call; (2) `scripts/experiment-status.sh` — scans all EXP-* dirs, reports status/results/key metrics. Each replaces 10+ manual ops per session. **Scope**: Medium. **Owner**: tech-lead/coder.
+
+- [ ] **Trace-symbol code exploration tool** — Tech-lead spends 11-24 ops per audit doing grep→sed→grep chains for code exploration (finding-tech-lead-tool-gap-0414 Pattern 3). Build `scripts/trace-symbol.sh <symbol>` that shows definition + all import/usage sites + 3 lines context in one call. 14 Lens sessions/day × 3-5 ops saved = 42-70 ops/day. **Scope**: Small. **Owner**: tech-lead/coder.
+
 - [ ] **Artifacts-as-Memory deep dive + externalization framework validation** — Dispatched to Bob (P1, 2026-04-14). Scout found paper 2604.08756 "Artifacts as Memory Beyond the Agent Boundary" — validates DD-750. **Scope**: Small.
 
-- [x] **Scout archetype tool fix — enable forking** — ✅ DONE (2026-04-14). Already applied.
-- [x] **Over-intervention cleanup — remove verification triple-stacks** — ✅ DONE (2026-04-14, coach).
-- [x] **Tech-lead workflow adoption — D-o-R for Lens sessions** — ✅ MOSTLY RESOLVED (2026-04-14). 63% adoption.
-- [x] **Tiered turn budget deployment** — ✅ ALREADY DEPLOYED (confirmed 2026-04-14).
-
 ## In Progress
-- [ ] **Optimizer finding→dispatch pipeline** — Forked to optimizer (2026-04-13 07:22, s_1776064947441_50). Design protocol + heartbeat edit.
+- [ ] **Scenario oracle generator for coach** — Tech-lead building. Script at `scripts/scenario-oracle.sh` (exists).
+- [ ] **Optimizer finding→dispatch pipeline** — Forked to optimizer (2026-04-13 07:22, s_1776064947441_50). Design protocol + heartbeat edit. DISPATCH-READY.md template active but scout item already resolved.
 
 ## Done
 <!-- Move completed items here with date -->
