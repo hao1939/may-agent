@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-14 ~06:21 UTC
+Updated: 2026-04-14 ~06:51 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors (billing). Blocked on Hao.
@@ -36,12 +36,12 @@ Updated: 2026-04-14 ~06:21 UTC
 - **P1**: **Convention investigation** — In progress (tech-lead). 
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (06:21 Apr 14)
-- **System**: 8 agents active (excl amy-kimi). 0 stuck sessions. 3 interruptions (restart artifacts — qa, optimizer, bob). Clean.
-- **Agent stats (6h)**: Bob 26s/17ops, Coach 29s/16ops, Evaluator 14s/6ops/1err, May 15s/9ops, Optimizer 21s/12ops, QA 12s/8ops, Scout 20s/17ops, Tech-lead 20s/22ops.
-- **Completed**: Child sessions lost on restart proposal — written at `agents/may/workspace/proposal-child-sessions-lost-on-restart.md` (req:5174eb76 ✅).
-- **Pending from Hao**: (1) Auto-scroll toggle for web UI console — dispatched to tech-lead previously, didn't land. Needs retry. (2) Enable prompt caching — blocked on Hao (API key).
-- **Queue**: Check improvement queue.
+## Latest Cycle Summary (06:51 Apr 14)
+- **System**: 8 agents active (excl amy-kimi). 0 stuck sessions. 5 interruptions (restart artifacts — scout, optimizer, may, qa, optimizer). Clean.
+- **Agent stats (6h)**: Bob 26s/21ops, Coach 31s/19ops, Evaluator 16s/5ops/1err, May 14s/8ops, Optimizer 21s/11ops, QA 12s/7ops, Scout 20s/11ops, Tech-lead 19s/13ops.
+- **Dispatched**: Over-intervention cleanup → coach (s_1776149513722_36). Remove KE-093 triple-stacks from 5 agents per KE-123.
+- **Queue**: 3 Ready items remaining (tech-lead workflow adoption, tiered turn budget, artifacts-as-memory).
+- **Pending from Hao**: (1) Auto-scroll toggle for web UI console — needs retry. (2) Enable prompt caching — blocked on Hao (API key).
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
