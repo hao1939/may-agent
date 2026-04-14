@@ -352,14 +352,6 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 
 ---
 
-### 0w. KE-182: Hard Gate Design Rules Synthesis [COMPLETE ✅]
-- **Entry**: `agents/shared/knowledge/entries/KE-182-hard-gate-design-rules-synthesis.md`
-- **Date**: 2026-04-14
-- **Scope**: Consolidates 8 experiments (EXP-127, 129, 131, 155, 156, 157, 163, RECOGNITION) into 6 actionable design rules
-- **Key rules**: (1) Artifact must be part of solution not analysis, (2) Baseline ≤50%, (3) Step-skipping failure mode, (4) 2-phase investigate→fix, (5) Relevance > count, (6) Product ≠ process metrics
-- **Next experiments**: 20-50% baseline zone, solution-producing vs analysis gates (controlled), non-judgment task gates
-- **Supersedes individual findings in**: KE-129, KE-134, KE-178, KE-179, KE-180, KE-181
-
 ## Knowledge Base Status
 
 | Entry | Status | Last Updated |
