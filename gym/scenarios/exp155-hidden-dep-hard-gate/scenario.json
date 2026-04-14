@@ -1,10 +1,10 @@
 {
-  "name": "exp144-hidden-dep-decoupled",
+  "name": "exp155-hidden-dep-hard-gate",
   "categories": ["root-cause-analysis"],
-  "tags": ["ability", "workflow", "EXP-144", "decoupled-gates"],
+  "tags": ["ability", "workflow", "EXP-155", "hard-gate", "ch2-forced-externalization"],
   "tier": "standard",
   "timeout": 5,
   "agent_type": "coder",
   "workflow": true,
-  "description": "EXP-144 format-decoupled gates condition. 3-phase workflow (think→implement→check) with free-text reasoning at each gate. Hidden dependency pipeline scenario."
+  "description": "EXP-155 Ch2 hard externalization gate. 3-phase workflow with REQUIRED FINDINGS.md deliverable in Phase 1 and existence check in Phase 2. Hidden dependency pipeline scenario."
 }

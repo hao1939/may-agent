@@ -1,29 +1,34 @@
-## Phase 1: Think Through Your Approach — BUDGET: 15 TOOL CALLS MAX
+## Phase 1: Investigate ALL Bugs — BUDGET: 15 TOOL CALLS MAX
 
 ### Task
 The `process.js` pipeline is throwing an error. Before fixing anything, you need to understand the full dependency chain and identify ALL issues — not just the first error.
 
 Read `SPEC.md`, `process.js`, `lib/validate.js`, `rules/pricing.json`, and `data/transactions.csv`. Try running `node process.js` to see what error you get. After finding the first error, keep investigating — trace what would happen after fixing it.
 
-Before writing any code or making changes, take time to understand the problem:
-- What are you trying to accomplish and why?
-- What files will you need to read to understand the situation?
-- What will you likely need to change?
-- Walk through your approach step by step — what will you do first, second, third?
-- What could go wrong? What are the tricky parts?
-- How will you know when you're done?
+REQUIRED DELIVERABLE: Create `FINDINGS.md` in the project root listing EVERY bug you find.
 
-Write your thinking in whatever format is clearest to you — a markdown file, notes, a scratch document, anything that captures your analysis in the workspace. The format doesn't matter, but your reasoning should be recorded somewhere a colleague could read it.
-Do NOT begin implementation yet. Call finish() when you've thought it through.
+For EACH bug, document:
+- Bug name/description
+- File and approximate location
+- What error or incorrect behavior it causes
+- What fixing it would affect downstream
+
+IMPORTANT: There are MULTIPLE bugs in this codebase. The first error you see is NOT the only problem. After finding Bug 1, ask: "If I fix this, what else might break?" Trace the full dependency chain through validation, checksums, and data integrity checks.
+
+Do NOT fix anything yet. Write FINDINGS.md and call finish().
 
 ---
 
-## Phase 2: Implement Your Plan — BUDGET: 25 TOOL CALLS MAX
+## Phase 2: Fix All Bugs — BUDGET: 25 TOOL CALLS MAX
 
 ### Task
 The `process.js` pipeline is throwing an error. Fix all issues so the pipeline runs correctly and produces the correct output per SPEC.md. Do not bypass validation. Do not change the pricing rules.
 
-Read your Phase 1 thinking, then start implementing.
+Read your FINDINGS.md from Phase 1. If FINDINGS.md does not exist, STOP — go back to Phase 1.
+
+Your FINDINGS.md should list at least 2 distinct bugs. If it only lists 1, re-investigate before proceeding — you likely missed a hidden dependency.
+
+Fix ALL bugs listed in FINDINGS.md. Then continue to Phase 3.
 
 About halfway through, pause and reflect:
 - What's done so far? Did it go as expected?
