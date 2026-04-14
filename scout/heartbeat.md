@@ -103,6 +103,7 @@ Every work session should follow a phased approach. This prevents the #1 failure
 - **Write as you go.** Each phase produces a written artifact (candidate list, raw notes, deep dive, index updates). Don't hold everything in context until the end.
 - **Phase 1 cap: 8 ops.** Triage should be fast — if a paper doesn't look ★★★★+ in 2 ops, skip it and move on.
 - **Never skip Phase 4.** A deep dive that doesn't update INDEX.md or dispatch recommendations is invisible to the team.
+- **After writing a DD/CR to library/deep-dives/, append a checkbox entry to `agents/shared/knowledge/library/deep-dives/INBOX.md`** under the `## Unread` section. Format: `- [ ] DD#NNN — Title — ★★★★ — \`filename.md\` — 2026-MM-DD`
 
 **For multi-paper triage sessions:**
 
