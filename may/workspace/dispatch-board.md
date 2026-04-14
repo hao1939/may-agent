@@ -36,11 +36,11 @@ Updated: 2026-04-14 ~05:03 UTC
 - **P1**: **Convention investigation** — In progress (tech-lead). 
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (05:21 Apr 14)
-- **System**: 8 agents active (excl amy-kimi). 1 evaluator error. Bob zombie (EXP-163, 50 ops/1h) cancelled. Otherwise clean.
-- **Agent stats (6h)**: Bob 28s/16ops, Coach 29s/16ops, Evaluator 12s/7ops/1err, May 14s/8ops, Optimizer 22s/12ops, QA 12s/8ops, Scout 22s/20ops, Tech-lead 19s/22ops.
-- **Completed this cycle**: Coach heartbeat workflow fix (replaced inline workflow.run() with fork pattern — req:d9e4683f, req:d232dd06).
-- **Queue**: 5 Ready items in improvement queue. Top: over-intervention cleanup, tech-lead workflow adoption, tiered turn budget.
+## Latest Cycle Summary (05:51 Apr 14)
+- **System**: 8 agents active (excl amy-kimi). 1 coach interruption (restart). No stuck sessions. Otherwise clean.
+- **Agent stats (6h)**: Bob 27s/16ops, Coach 30s/16ops, Evaluator 12s/7ops/1err, May 15s/8ops, Optimizer 22s/13ops, QA 12s/8ops, Scout 21s/18ops, Tech-lead 19s/22ops.
+- **Pending from Hao**: (1) Auto-scroll toggle for web UI console (req:6c9f1044) — dispatched to tech-lead, 31 ops but implementation didn't land in src/web/. Needs retry. (2) Child sessions lost on restart (req:841173e0) — not yet dispatched, needs tech-lead.
+- **Queue**: Improvement queue items still pending.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
