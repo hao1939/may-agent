@@ -49,6 +49,12 @@
 - Mode A finding complete: `workspace/finding-coach-82op-qa-regression-0411.md` — Coach 82-op QA regression investigation (EXP-133). Completed Apr 11 ~08:29 UTC.
 - Mode B finding complete: `workspace/finding-tool-gap-6h-0414.md` — Tool gap analysis on 6h high-op sessions. Top patterns: git-review-gate-struggle (272-op tech-lead, 40+ ops on commit failures), iterative-file-discovery (may 575-op, reading files one-by-one), multi-step-verify-compile cycles. Completed Apr 14 ~13:59 UTC.
 
+### QA 58% Interrupt Rate — FIX DISPATCHED, NOT DEPLOYED
+- Root cause: EXP-TIERED-BUDGET (soft=8, grace=2, hard=10) + FM-3.3 verify-wrap guard = impossible when QA finishes near soft limit. Guard adds 2+ turns → exceeds hard limit → interrupted.
+- Dispatched to tech-lead (Apr 14 ~14:52 UTC, session s_1776178335615_187) — 38 ops, status "done" but **no code committed**. Fix not deployed.
+- **NEEDS RE-DISPATCH** or inline fix. Options: (1) increase heartbeat budget 8→10, (2) grant +2 grace on guard redirect, (3) exempt guard redirects from turn count.
+- Finding: checkpoint data from s_1776169082223_80 (Apr 14 ~12:48 UTC)
+
 ### may.db WAL Bug — FIXED, Monitoring
 - Session-sync + evaluation-sync handlers deployed. 1071 evals, 0 unevaluated (as of 17:10 UTC).
 

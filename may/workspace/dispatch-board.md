@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-14 ~14:51 UTC
+Updated: 2026-04-14 ~15:42 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — billing. Blocked on Hao.
@@ -38,8 +38,10 @@ Updated: 2026-04-14 ~14:51 UTC
 | **Gym cost/value analysis** | 🟢 DISPATCHED | optimizer | 952 sessions/week cost analysis. Req 7e06acd1. |
 | **Web UI Visualization** | ✅ Phase 4 done | tech-lead/coder | Complete. |
 | **Scout archetype tool fix** | ✅ DONE | — | agent.json already has agents + workflow tools. |
-| **Workspace hygiene script + cleanup** | 🟢 DISPATCHED | tech-lead | Prune stale archives (bob 5.8MB, coach 2.3MB, optimizer 2.0MB). Req de6620e5. |
+| **Workspace hygiene script + cleanup** | ✅ DONE | tech-lead | Completed (26 ops). Three-phase cleanup executed. |
 | **Commit guard scope gap** | 🟢 DISPATCHED | tech-lead | Guard only checks agents/<name>/, misses src/ and shared/. Req ebefef5a. |
+| **IT-21: QA interrupt rate fix** | 🟢 RUNNING | tech-lead | Turn budget vs finish guard conflict. Session at 26 ops. |
+| **Scenario oracle generator** | 🟢 RUNNING | tech-lead | Script for coach auto-generating expected outputs. Session at 17 ops. |
 
 ## Next Actions
 - **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. **Blocked on Hao since Mar 24**.

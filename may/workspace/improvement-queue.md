@@ -3,10 +3,10 @@
 
 ## Ready
 
-- [ ] **Scenario oracle generator for coach** — Optimizer finding: coach spent 118 ops (3.4× budget) designing gym scenarios, with 32 node executions for manual expected-output computation. A script to auto-generate expected outputs from clean codebase + patch would save ~15-20 ops per scenario session. **Deliverable**: Script at `scripts/scenario-oracle.sh`. **Scope**: Medium. **Owner**: coach + coder.
 - [ ] **Artifacts-as-Memory deep dive + externalization framework validation** — Dispatched to Bob (P1, 2026-04-14). Scout found paper 2604.08756 "Artifacts as Memory Beyond the Agent Boundary" — validates DD-750. **Scope**: Small.
 
 ## In Progress
+- [ ] **Scenario oracle generator for coach** — Tech-lead building (session running, 17 ops). Script at `scripts/scenario-oracle.sh`.
 - [ ] **Optimizer finding→dispatch pipeline** — Forked to optimizer (2026-04-13 07:22, s_1776064947441_50). Design protocol + heartbeat edit.
 
 ## Done
