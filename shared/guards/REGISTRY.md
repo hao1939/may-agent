@@ -9,6 +9,7 @@ Each guard file must export a `guard` object matching the `WorkflowGuard` interf
 |-------|------|-------------|
 | build-check | build-check.ts | Warns if coding steps don't confirm build/test success |
 | auto-test | auto-test.ts | Injects a test step when src/ files are modified without test confirmation |
+| pivot-detector | pivot-detector.ts | Detects create-test-fail-pivot loops; warns at 3 cycles, injects reassessment at 5 |
 
 ## Writing Guards
 
