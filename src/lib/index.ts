@@ -47,7 +47,7 @@ export { createScrapeTool } from "./scrape.js";
 export type { ScrapeToolOptions } from "./scrape.js";
 export { createWorkflowTool } from "./workflow-tool.js";
 export type { WorkflowToolOptions, WorkflowTool } from "./workflow-tool.js";
-export { WorkflowInterrupted } from "./workflow.js";
+export { WorkflowInterrupted, WorkflowBlocked } from "./workflow.js";
 export type {
   WorkflowContext,
   WorkflowResult,
@@ -58,7 +58,12 @@ export type {
   CompletedStep,
   TraceNode,
   SessionTrace,
+  WorkflowGuard,
+  WorkflowGuardEvent,
+  Demand,
+  GuardModule,
 } from "./workflow.js";
+export { extractWrittenFiles, extractChangedFiles } from "./workflow-utils.js";
 export { summarizeForHandoff, extractHandoff } from "./handoff.js";
 export type { HandoffOptions, HandoffData } from "./handoff.js";
 export { createCompactionTransform } from "./compaction.js";

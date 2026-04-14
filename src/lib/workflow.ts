@@ -10,6 +10,48 @@ export type WorkflowEvent =
   | { type: "workflow_done"; summary: string }
   | { type: "workflow_escalate"; reason: string };
 
+// ── Guard Events (workflow-level) ──────────────────────────────────────
+
+/** Events the workflow runtime emits. Guards subscribe to these. */
+export type WorkflowGuardEvent =
+  | { type: "step_done"; source: "agent" | "function"; step: string; result: TaskResult; completedSteps: CompletedStep[]; task: string }
+  | { type: "step_start"; source: "agent" | "function"; step: string; task: string; completedSteps: CompletedStep[] }
+  | { type: "workflow_start"; workflow: string; task: string }
+  | { type: "workflow_done"; workflow: string; summary: string; completedSteps: CompletedStep[] };
+
+// ── Guard Types ────────────────────────────────────────────────────────
+
+/** A demand returned by a guard in response to a workflow event. */
+export interface Demand {
+  type: "run_step" | "block" | "warn";
+  /** Human-readable reason. Included in logs, warnings, and block messages. */
+  reason: string;
+  /** Name of the guard that produced this demand. Auto-filled by runtime. */
+  guardName?: string;
+  /** For run_step: the step to inject. */
+  step?: {
+    agent: string;
+    task: string;
+    label?: string;
+  };
+}
+
+/** A guard is a pure event listener: event in → demands out. */
+export interface WorkflowGuard {
+  name: string;
+  /** Which events this guard listens to. If omitted, listens to all. */
+  events?: WorkflowGuardEvent["type"][];
+  /** Expected cost tier of injected steps. For monitoring/alerting. */
+  costTier?: "zero" | "low" | "medium";
+  /** Receive an event, return demands (or empty array). Must be pure (no I/O). */
+  handle(event: WorkflowGuardEvent): Demand[];
+}
+
+/** Guard module file shape — each guard .ts file exports this. */
+export interface GuardModule {
+  guard: WorkflowGuard;
+}
+
 // ── Workflow Result ────────────────────────────────────────────────────
 
 /** The outcome of a workflow execution — either successful completion with a summary, or an escalation with a reason. */
@@ -37,6 +79,11 @@ export interface WorkflowContext {
 
   /** Run a sub-workflow by name. Enables workflow composition. */
   runWorkflow(name: string, task: string): Promise<WorkflowResult>;
+
+  /** Run a JS function as a workflow step. No LLM cost.
+   *  Returns a TaskResult-like object with the function's output.
+   *  Timeout: 30s. Output truncated to 50KB. */
+  runFunction(label: string, fn: () => Promise<string>): Promise<TaskResult>;
 
   /** Emit a workflow event (observable by subscribers). */
   emit(event: WorkflowEvent): void;
@@ -95,6 +142,18 @@ export class WorkflowInterrupted extends Error {
   }
 }
 
+/** Thrown when a guard blocks a workflow with a hard-stop demand. */
+export class WorkflowBlocked extends Error {
+  constructor(
+    public readonly reason: string,
+    public readonly completedSteps: CompletedStep[],
+    public readonly workflowRunId: string,
+  ) {
+    super(`Workflow blocked by guard: ${reason}`);
+    this.name = "WorkflowBlocked";
+  }
+}
+
 // ── Session Trace ──────────────────────────────────────────────────────
 
 /** A node in the session tree — either a workflow run or a session. */
@@ -131,6 +190,13 @@ export type WorkflowToolResult =
       reason: string;
       context?: unknown;
       steps: WorkflowStepSummary[];
+    }
+  | {
+      type: "blocked";
+      workflow: string;
+      workflowRunId: string;
+      reason: string;
+      completedSteps: CompletedStep[];
     }
   | {
       type: "interrupted";
