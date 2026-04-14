@@ -9,6 +9,9 @@
  * If no guard returns a result, returns undefined (allow the tool call).
  */
 
+import { createCostLimitGuard } from "./cost-limit-guard.js";
+export { createCostLimitGuard } from "./cost-limit-guard.js";
+
 // TODO(pi-agent-core): Import from @mariozechner/pi-agent-core once it exports
 // BeforeToolCallContext / BeforeToolCallResult. Until then, define locally so
 // guard code compiles and is ready when the upstream hook ships.
@@ -43,12 +46,22 @@ type BeforeToolCallHook = (
  *
  * Evaluation order: first guard to return `{ block: true }` wins.
  * Warnings (block: false) from earlier guards are returned if no blocking guard fires.
+ *
+ * The cost-limit guard is automatically included as the last guard in the chain.
+ * It is instantiated once per composeGuards() call (one closure per session),
+ * so each composed hook gets its own independent call counter.
  */
 export function composeGuards(...guards: BeforeToolCallHook[]): BeforeToolCallHook {
+  // Instantiate cost-limit guard once per session (closure factory pattern)
+  const costLimitHook = createCostLimitGuard();
+
   return async (context: BeforeToolCallContext, signal?: AbortSignal): Promise<BeforeToolCallResult | undefined> => {
     let lastWarning: BeforeToolCallResult | undefined;
 
-    for (const guard of guards) {
+    // Run caller-provided guards first, then the built-in cost-limit guard
+    const allGuards = [...guards, costLimitHook];
+
+    for (const guard of allGuards) {
       let result: BeforeToolCallResult | undefined;
       try {
         result = await guard(context, signal);
