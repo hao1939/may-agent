@@ -125,8 +125,8 @@ describe("commit-guard", () => {
 
       expect(result).toBeDefined();
       expect(result!.block).toBe(true);
-      expect(result!.reason).toContain("finish() blocked [uncommitted changes]");
-      expect(result!.reason).toContain("agents/bob/");
+      expect(result!.reason).toContain("uncommitted");
+      expect(result!.reason).toContain("bob/");
       expect(result!.reason).toContain("analysis.md");
 
       // Clean up
@@ -184,6 +184,85 @@ describe("commit-guard", () => {
 
       // Clean up
       rmSync(aliceDir, { recursive: true, force: true });
+    });
+
+    it("blocks finish when agent has uncommitted changes in shared/", async () => {
+      // Create a new file in shared/
+      const sharedDir = join(agentsDir, "shared", "knowledge");
+      mkdirSync(sharedDir, { recursive: true });
+      writeFileSync(join(sharedDir, "entry.md"), "# Knowledge Entry\nSome content");
+
+      const guard = createCommitGuard("bob", tmpDir);
+      const result = await guard(makeFinishCtx({ status: "success", summary: "done" }));
+
+      expect(result).toBeDefined();
+      expect(result!.block).toBe(true);
+      expect(result!.reason).toContain("uncommitted");
+      expect(result!.reason).toContain("shared/");
+      expect(result!.reason).toContain("entry.md");
+      // git add instruction should include shared/
+      expect(result!.reason).toContain("git add bob/ shared/");
+
+      // Clean up
+      rmSync(join(agentsDir, "shared"), { recursive: true, force: true });
+    });
+
+    it("blocks finish when agent has uncommitted changes in .lab/", async () => {
+      const labDir = join(agentsDir, ".lab");
+      mkdirSync(labDir, { recursive: true });
+      writeFileSync(join(labDir, "experiment.md"), "# Experiment");
+
+      const guard = createCommitGuard("bob", tmpDir);
+      const result = await guard(makeFinishCtx({ status: "success", summary: "done" }));
+
+      expect(result).toBeDefined();
+      expect(result!.block).toBe(true);
+      expect(result!.reason).toContain(".lab/");
+
+      // Clean up
+      rmSync(labDir, { recursive: true, force: true });
+    });
+
+    it("blocks finish when agent has uncommitted changes in gym/", async () => {
+      const gymDir = join(agentsDir, "gym", "scenarios");
+      mkdirSync(gymDir, { recursive: true });
+      writeFileSync(join(gymDir, "scenario.md"), "# Scenario");
+
+      const guard = createCommitGuard("bob", tmpDir);
+      const result = await guard(makeFinishCtx({ status: "success", summary: "done" }));
+
+      expect(result).toBeDefined();
+      expect(result!.block).toBe(true);
+      expect(result!.reason).toContain("gym/");
+
+      // Clean up
+      rmSync(join(agentsDir, "gym"), { recursive: true, force: true });
+    });
+
+    it("includes both agent dir and shared dir in git add when both have changes", async () => {
+      // Create changes in both bob/ and shared/
+      const bobDir = join(agentsDir, "bob");
+      mkdirSync(bobDir, { recursive: true });
+      writeFileSync(join(bobDir, "work.md"), "my work");
+
+      const sharedDir = join(agentsDir, "shared");
+      mkdirSync(sharedDir, { recursive: true });
+      writeFileSync(join(sharedDir, "protocol.md"), "# Protocol");
+
+      const guard = createCommitGuard("bob", tmpDir);
+      const result = await guard(makeFinishCtx({ status: "success", summary: "done" }));
+
+      expect(result).toBeDefined();
+      expect(result!.block).toBe(true);
+      // Should list files from both directories
+      expect(result!.reason).toContain("work.md");
+      expect(result!.reason).toContain("protocol.md");
+      // git add should include both paths
+      expect(result!.reason).toContain("git add bob/ shared/");
+
+      // Clean up
+      rmSync(join(agentsDir, "bob"), { recursive: true, force: true });
+      rmSync(join(agentsDir, "shared"), { recursive: true, force: true });
     });
 
     it("includes file count and commit instructions in block message", async () => {

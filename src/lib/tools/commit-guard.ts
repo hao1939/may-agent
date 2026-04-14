@@ -2,8 +2,8 @@
  * finish() Commit Guard — beforeToolCall hook.
  *
  * Intercepts `finish()` calls (any status) and checks for uncommitted changes
- * in the agent's `agents/<name>/` directory. If found, blocks finish and tells
- * the agent to commit their work first.
+ * in the agent's directory AND cross-agent directories (shared/, .lab/, gym/).
+ * If found, blocks finish and tells the agent to commit their work first.
  *
  * This is L5 structural enforcement to fix the 74% auto-commit problem.
  * Agents must commit their own work with descriptive messages instead of
@@ -39,8 +39,8 @@ function runGit(args: string[], cwd: string, timeoutMs: number): Promise<string>
  * Create a beforeToolCall hook that guards finish() for uncommitted agent changes.
  *
  * Checks `git status --porcelain` in the agents/ sub-repo for files under
- * `<agentName>/`. If uncommitted changes exist, blocks the finish() call
- * with instructions to commit.
+ * `<agentName>/`, `shared/`, `.lab/`, and `gym/`. If uncommitted changes
+ * exist, blocks the finish() call with instructions to commit.
  *
  * @param agentName - The agent's name (e.g., "bob", "coach"). Empty = skip guard.
  * @param projectRoot - Absolute path to project root (agents/ is a sub-dir).
@@ -63,12 +63,22 @@ export function createCommitGuard(
     const agentsDir = resolve(projectRoot, "agents");
 
     try {
-      // Check for uncommitted changes in agent's directory.
-      // git status --porcelain shows everything: staged (M/A in col 1),
-      // unstaged (M in col 2), and untracked (??) files.
-      // --untracked-files=all shows individual files instead of just the directory.
+      // Check for uncommitted changes across ALL paths the agent may have written to.
+      // Previously only checked `${agentName}/`, which missed writes to shared/,
+      // .lab/, gym/, and cross-agent directories. Now we check:
+      // 1. The agent's own directory
+      // 2. shared/, .lab/, gym/ (common cross-agent write targets)
+      // We still don't check OTHER agent directories (e.g., bob checking alice/)
+      // to avoid blocking on another agent's uncommitted work.
+      const pathsToCheck = [
+        `${agentName}/`,
+        "shared/",
+        ".lab/",
+        "gym/",
+      ];
+
       const statusOutput = await runGit(
-        ["status", "--porcelain", "--untracked-files=all", "--", `${agentName}/`],
+        ["status", "--porcelain", "--untracked-files=all", "--", ...pathsToCheck],
         agentsDir,
         GIT_TIMEOUT_MS,
       );
@@ -84,13 +94,21 @@ export function createCommitGuard(
       // Format the file list (indent each line)
       const fileList = fileLines.map((line) => `  ${line}`).join("\n");
 
+      // Build git add command that covers all affected paths
+      const addPaths = [
+        `${agentName}/`,
+        ...["shared/", ".lab/", "gym/"].filter((p) =>
+          fileLines.some((line) => line.slice(3).startsWith(p)),
+        ),
+      ].join(" ");
+
       return {
         block: true,
         reason:
-          `finish() blocked [uncommitted changes]: You have ${fileCount} uncommitted file(s) in agents/${agentName}/:\n` +
+          `finish() blocked [uncommitted changes]: You have ${fileCount} uncommitted file(s) in agents/:\n` +
           `${fileList}\n\n` +
           `Commit them with a descriptive message before calling finish():\n` +
-          `  cd ${projectRoot}/agents && git add ${agentName}/ && git commit -m "${agentName}: <describe what you did>"\n\n` +
+          `  cd ${projectRoot}/agents && git add ${addPaths} && git commit -m "${agentName}: <describe what you did>"\n\n` +
           `Good messages: "${agentName}: H-045 Decision Topology hypothesis", "${agentName}: new skill for evidence-first debugging"\n` +
           `Bad messages: "update files", "changes"\n\n` +
           `Then call finish() again.`,
