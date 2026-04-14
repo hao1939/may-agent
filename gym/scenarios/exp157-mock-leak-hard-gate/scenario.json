@@ -1,0 +1,9 @@
+{
+  "name": "exp157-mock-leak-hard-gate",
+  "categories": ["judgment", "bug-fixing"],
+  "tags": ["ability", "behavior", "experiment"],
+  "tier": "standard",
+  "timeout": 3,
+  "agent_type": "coder",
+  "workflow": false
+}
