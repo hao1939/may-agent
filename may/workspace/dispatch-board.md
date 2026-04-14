@@ -36,12 +36,11 @@ Updated: 2026-04-14 ~06:51 UTC
 - **P1**: **Convention investigation** — In progress (tech-lead). 
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (07:21 Apr 14)
-- **System**: 8 agents active (excl amy-kimi). 2 stuck Bob sessions cancelled (s_..540_15, s_..363_26). 5 recent interrupts (aborts from restart). Clean otherwise.
-- **Agent stats (6h)**: Bob 24s/23ops, Coach 29s/19ops, Evaluator 17s/4ops/1err, May 14s/8ops, Optimizer 21s/11ops, QA 12s/7ops, Scout 20s/10ops, Tech-lead 18s/13ops.
-- **Dispatched**: Scout cross-agent delegation patch → coach (s_1776151317796_46, DONE). Adds "📤 Cross-Agent Recommendations" section + fixes stale "fork broken" belief.
-- **Queue**: 3 Ready items remaining (tech-lead workflow adoption, tiered turn budget, artifacts-as-memory).
-- **Pending from Hao**: (1) Auto-scroll toggle for web UI console — needs retry. (2) Enable prompt caching — blocked on Hao (API key).
+## Latest Cycle Summary (07:51 Apr 14)
+- **System**: 8 agents active (excl amy-kimi). No stuck sessions. 5 recent interrupts (all aborts, non-critical). Clean.
+- **Agent stats (6h)**: Bob 24s/24ops, Coach 30s/18ops, Evaluator 22s/4ops/1err, May 14s/8ops, Optimizer 21s/11ops, QA 12s/7ops, Scout 19s/9ops, Tech-lead 19s/13ops.
+- **Queue**: 2 Ready items (tiered turn budget, artifacts-as-memory). 5 In Progress (over-intervention cleanup, tech-lead workflow adoption, scout delegation investigation, optimizer pipeline, workflow-guard Phase 2).
+- **Pending from Hao**: (1) Enable prompt caching — blocked on Hao (API key). (2) Amy-kimi billing — blocked on Hao.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
