@@ -59,6 +59,20 @@ Every passing run (10/10 Ch2 runs) showed identical behavior:
 
 The write-before-act step is the entire mechanism.
 
+## Expanded Evidence (EXP-155 + EXP-156)
+
+Since the original EXP-127 result, two additional experiments have confirmed and extended the Ch2 finding:
+
+| Experiment | Scenario | Baseline | Ch2 Hard Gate | Δ | Failure Type |
+|-----------|----------|----------|---------------|---|-------------|
+| EXP-127 | contradictory-requirements | 0% (0/19) | 100% (6/6) | +100pp | Judgment: miss contradiction |
+| EXP-155 | hidden-dep | 15% (3/20) | 100% (10/10) | +85pp | Process: skip investigation |
+| EXP-156 | misleading-test-fix | 0% (0/11) | 100% (11/11) | +100pp | Verification: skip math check |
+
+**Cumulative Ch2 treatment pass rate: 27/27 (100%)** across three distinct failure modes (judgment, process, verification). Combined p < 10⁻¹⁵ vs pooled alternatives.
+
+**Boundary discovered** (EXP-156): Hard gate produced -20pp regression (90% → 70%, NS) on ambiguous-context-drift, where the failure mode is belief-based (trusting wrong context) rather than step-skipping, and the baseline was already 90%. See KE-178 for the formalized boundary condition.
+
 ## Relationship to Prior Findings
 
 | Experiment | Channel | Result | Consistent? |
