@@ -95,6 +95,19 @@ export class ChatSession {
         });
         return;
       }
+
+      // Only attach to sessions that can actually receive input.
+      // After a restart, persisted sessions come back as "interrupted" or "error" —
+      // sending input to these dead sessions goes nowhere, making chat unresponsive.
+      if (existing.status !== "running" && existing.status !== "idle") {
+        this.manager.close(existing.sessionId);
+        this.bus.emit({
+          type: "info",
+          message: `[chat] Closed stale ${existing.status} session ${existing.sessionId}. Ready for fresh conversation.`,
+        });
+        return;
+      }
+
       this.sessionId = existing.sessionId;
       this.trackCompletion(this.sessionId);
     }
