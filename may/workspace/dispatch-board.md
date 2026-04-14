@@ -39,6 +39,7 @@ Updated: 2026-04-14 ~12:21 UTC
 | **Web UI Visualization** | ✅ Phase 4 done | tech-lead/coder | Complete. |
 | **Scout archetype tool fix** | ✅ DONE | — | agent.json already has agents + workflow tools. |
 | **Workspace hygiene script + cleanup** | 🟢 DISPATCHED | tech-lead | Prune stale archives (bob 5.8MB, coach 2.3MB, optimizer 2.0MB). Req de6620e5. |
+| **Commit guard scope gap** | 🟢 DISPATCHED | tech-lead | Guard only checks agents/<name>/, misses src/ and shared/. Req ebefef5a. |
 
 ## Next Actions
 - **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. **Blocked on Hao since Mar 24**.
