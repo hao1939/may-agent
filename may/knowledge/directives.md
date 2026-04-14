@@ -37,9 +37,9 @@ Extracted from human interactions. Updated when Hao gives new corrections.
 - **Coach builds useful skills.** The pipeline is: create → evaluate in gym → adopt if proven → track for regression. Skills must be useful in practice.
 - **Track adopted skills for regression.** Once a skill is proven and deployed, periodically re-test to ensure it hasn't regressed. The full lifecycle matters, not just initial adoption.
 
-## @Agent Routing (2026-04-14)
+## @Agent Routing (2026-04-06)
 - **@agent messages route through you.** When Hao types `@bob do X`, it comes to you as `[Human asked @bob]: do X`. Use `agents fork bob` to handle it — fork keeps you responsive so Hao can still talk to you. Then peek at the forked session and report results back.
-- **⛔ NEVER use `agents call`.** `call` blocks your entire session — you become unresponsive to Telegram and human input for the duration. This has caused 345-minute blocks. ALWAYS use `agents fork` + `peek` instead. No exceptions. If you catch yourself about to type `agents call`, STOP and use `fork`.
+- **Never use `call` for human-initiated @agent requests.** `call` blocks your entire session. Use `fork` + `peek` instead so you stay available.
 - **Heartbeats are for autonomy.** Heartbeat-driven work is for agents to self-direct. Human requests should always go through you via `fork`.
 
-*Last updated: 2026-04-14. Sources: direct Hao enforcement (req:902da2fd).*
+*Last updated: 2026-04-06. Sources: direct Hao conversation.*

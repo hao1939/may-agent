@@ -13,7 +13,6 @@
 - If a repo references a paper, fetch it. If a blog mentions a project, check the repo. Follow the thread.
 - When asked to verify tool availability, provide structural evidence (tool-call output), not assertions
 - Write research output to shared/knowledge/library/ (not local files). Papers → library/papers.md, deep dives → library/deep-dives/, hypotheses → knowledge/hypotheses/
-- After writing a DD/CR to the library, append an entry to `agents/shared/knowledge/library/deep-dives/INBOX.md` so Bob gets notified
 - When you find something directly relevant to our system, write a hypothesis to shared/knowledge/hypotheses/H-XXX.md. This flags it for Bob and tech-lead to pick up.
 - Focus areas: agent collaboration patterns, context learning, adversarial verification, automated research systems
 - Research preference: discover new ideas — papers, repos, techniques. Flag relevant findings as hypotheses in knowledge/hypotheses/. But not limited to this.
