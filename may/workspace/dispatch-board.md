@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-14 ~08:21 UTC
+Updated: 2026-04-14 ~08:51 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — billing. Blocked on Hao.
@@ -24,20 +24,20 @@ Updated: 2026-04-14 ~08:21 UTC
 | Issue | Status | Owner | Notes |
 |-------|--------|-------|-------|
 | Amy-kimi billing outage | 🔴 Blocked | Hao | Still 429, needs balance refill |
-| **DESIGN-guards-v2** | 🟢 Approved w/ conditions | tech-lead | Review approved. C2 critical: need structured data from TaskResult for file-dependent guards. C3: per-workflow injection cap. Next: tech-lead implement C2 fix then build guards. |
+| **DESIGN-guards-v2** | 🟢 APPROVED → Ready for Phase 1 | tech-lead | Fully approved. All 6 concerns (C1-C6) resolved. Auto-discovery (Change #22-23) praised. Minor: injectionDepth reset timing doc/code mismatch (N1) — fix during impl. Next: dispatch Phase 1 implementation to tech-lead. |
 | **EXP-147 Track B Context Isolation** | 🟢 RUNNING | coach | A/B test in progress. |
 | **Web UI Visualization** | 🟢 Phase 4 done | tech-lead/coder | Phases 1-4 complete on main. |
 
 ## Next Actions
 - **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. **Blocked on Hao since Mar 24**.
-- **P1**: **Guards-v2 implementation** — Design approved. Tech-lead to resolve C2 (TaskResult structured data) then build.
+- **P1**: **Guards-v2 Phase 1 implementation** — Design fully approved (all C1-C6 resolved). Tech-lead to implement. Note: fix injectionDepth reset timing (N1) during build.
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (08:21 Apr 14)
+## Latest Cycle Summary (08:51 Apr 14)
 - **System**: 8 agents active (excl amy-kimi). Zero errors, no stuck sessions. All healthy.
-- **Agent stats (6h)**: Bob 25s/24ops, Coach 30s/17ops, Evaluator 24s/3ops, May 14s/7ops, Optimizer 23s/11ops, QA 12s/7ops, Scout 18s/9ops, Tech-lead 22s/14ops.
-- **Guards-v2 design review**: APPROVED with conditions by tech-lead. Ready for implementation.
-- **Queue**: 5 Ready items. Top: Scout archetype tool fix.
+- **Agent stats (6h)**: Bob 25s/27ops, Coach 30s/17ops, Evaluator 26s/3ops, May 14s/7ops, Optimizer 24s/12ops, QA 12s/6ops, Scout 17s/9ops, Tech-lead 22s/15ops.
+- **Guards-v2**: FULLY APPROVED by tech-lead. Ready for Phase 1 implementation.
+- **Queue**: Scout tool fix in progress. 4 more Ready items.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
