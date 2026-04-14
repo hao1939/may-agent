@@ -36,10 +36,10 @@ Updated: 2026-04-14 ~06:51 UTC
 - **P1**: **Convention investigation** — In progress (tech-lead). 
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (06:51 Apr 14)
-- **System**: 8 agents active (excl amy-kimi). 0 stuck sessions. 5 interruptions (restart artifacts — scout, optimizer, may, qa, optimizer). Clean.
-- **Agent stats (6h)**: Bob 26s/21ops, Coach 31s/19ops, Evaluator 16s/5ops/1err, May 14s/8ops, Optimizer 21s/11ops, QA 12s/7ops, Scout 20s/11ops, Tech-lead 19s/13ops.
-- **Dispatched**: Over-intervention cleanup → coach (s_1776149513722_36). Remove KE-093 triple-stacks from 5 agents per KE-123.
+## Latest Cycle Summary (07:21 Apr 14)
+- **System**: 8 agents active (excl amy-kimi). 2 stuck Bob sessions cancelled (s_..540_15, s_..363_26). 5 recent interrupts (aborts from restart). Clean otherwise.
+- **Agent stats (6h)**: Bob 24s/23ops, Coach 29s/19ops, Evaluator 17s/4ops/1err, May 14s/8ops, Optimizer 21s/11ops, QA 12s/7ops, Scout 20s/10ops, Tech-lead 18s/13ops.
+- **Dispatched**: Scout cross-agent delegation patch → coach (s_1776151317796_46, DONE). Adds "📤 Cross-Agent Recommendations" section + fixes stale "fork broken" belief.
 - **Queue**: 3 Ready items remaining (tech-lead workflow adoption, tiered turn budget, artifacts-as-memory).
 - **Pending from Hao**: (1) Auto-scroll toggle for web UI console — needs retry. (2) Enable prompt caching — blocked on Hao (API key).
 
