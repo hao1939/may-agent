@@ -1,3 +1,4 @@
-# Deliverables Checklist — Mode A: TL 272-op Guards-v2 (Apr 14 09:52 UTC)
+# Deliverables Checklist
 
-- [x] finding-tl-272op-guards-v2-0414.md — Root cause analysis with phase breakdown, waste quantification, and fix recommendations
+- [x] finding-system-health-0414.md — System health report with metrics, trends, action items
+- [x] todo.md updated if new action items found
