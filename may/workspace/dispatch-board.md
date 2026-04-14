@@ -38,7 +38,7 @@ Updated: 2026-04-14 ~10:51 UTC
 ## Next Actions
 - **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. **Blocked on Hao since Mar 24**.
 - **P1**: **Guards Phase 2 integration test** — tech-lead working now (s_1776160529269_14).
-- **P1**: ~~Guards Phase 3 planning~~ ✅ First migration DONE — `error-scan` sensor-judge workflow built. run-workflow handler upgraded. 3 handlers remaining.
+- **P1**: ~~Guards Phase 3 planning~~ ✅ COMPLETE — sensor-judge migration done. 2 of 4 handlers migrated (error-scan, coaching-feedback). Remaining 2 not candidates.
 - **P2**: Amy-kimi billing — blocked on Hao.
 
 ## Latest Cycle Summary (10:03 Apr 14)

@@ -402,13 +402,28 @@
     "type": "job",
     "intervalMs": 43200000,
     "message": "[cron:coaching-feedback] Analyze convention violations and send coaching briefs to coach.",
-    "enabled": true,
+    "enabled": false,
     "handler": "coaching-feedback",
-    "description": "Evaluation → Coaching feedback loop: reads convention_checks, groups violations by agent, sends top patterns to coach for targeted training. Every 12h.",
+    "description": "DEPRECATED — migrated to coaching-feedback-wf sensor-judge workflow. Kept for rollback.",
     "handlerConfig": {
       "lookbackMs": 86400000,
       "topN": 3,
       "minViolations": 3
+    },
+    "offsetMs": 7200000
+  },
+  {
+    "name": "coaching-feedback-wf",
+    "type": "job",
+    "intervalMs": 43200000,
+    "message": "[cron:coaching-feedback-wf] Sensor-judge coaching feedback workflow.",
+    "enabled": true,
+    "handler": "run-workflow",
+    "description": "Sensor-judge workflow: JS scans convention violations (zero LLM), coach LLM decides intervention strategy. Every 12h.",
+    "handlerConfig": {
+      "workflow": "coaching-feedback",
+      "agent": "coach",
+      "task": "Coaching feedback cycle — analyze convention violations and decide interventions."
     },
     "offsetMs": 7200000
   },

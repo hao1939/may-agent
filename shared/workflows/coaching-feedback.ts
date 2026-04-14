@@ -20,6 +20,8 @@
  *   handlerConfig: { workflow: "coaching-feedback", agent: "coach", task: "..." }
  */
 
+import { join } from "node:path";
+
 // ── Types ─────────────────────────────────────────────────────────────
 
 interface ViolationSummary {
@@ -43,25 +45,22 @@ interface ScanResult {
   scanTimestamp: string;
 }
 
+// ── Configuration ─────────────────────────────────────────────────────
+
+const LOOKBACK_MS = 86_400_000; // 24h
+const TOP_N = 3; // max violations per agent
+const MIN_VIOLATIONS = 3; // threshold to report
+const SKIP_AGENTS = new Set(["may", "coach"]); // meta-agents don't need coaching
+
 // ── Sensor: Query DB for violations (zero LLM cost) ───────────────────
 
-function scanViolations(ctx: WorkflowContext): ScanResult {
-  const lookbackMs = 86_400_000; // 24h
-  const topN = 3;
-  const minViolations = 3;
-  const skipAgents = new Set(["may", "coach"]); // meta-agents don't need coaching from coach
+function scanViolations(persistDir: string): ScanResult {
+  // Dynamic import to avoid hard dependency on DB module at load time
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { getDb } = require(join(process.cwd(), "src", "lib", "requests.js"));
+  const db = getDb(persistDir);
 
-  const db = ctx.db;
-  if (!db) {
-    return {
-      agentsWithViolations: [],
-      totalAgentsScanned: 0,
-      lookbackHours: lookbackMs / 3_600_000,
-      scanTimestamp: new Date().toISOString(),
-    };
-  }
-
-  const cutoff = Date.now() - lookbackMs;
+  const cutoff = Date.now() - LOOKBACK_MS;
 
   const rows = db.prepare(`
     SELECT agent, convention,
@@ -73,7 +72,7 @@ function scanViolations(ctx: WorkflowContext): ScanResult {
     GROUP BY agent, convention
     HAVING violations >= ?
     ORDER BY agent, violations DESC
-  `).all(cutoff, minViolations) as Array<{
+  `).all(cutoff, MIN_VIOLATIONS) as Array<{
     agent: string;
     convention: string;
     total: number;
@@ -87,10 +86,10 @@ function scanViolations(ctx: WorkflowContext): ScanResult {
 
   for (const row of rows) {
     allAgents.add(row.agent);
-    if (skipAgents.has(row.agent)) continue;
+    if (SKIP_AGENTS.has(row.agent)) continue;
 
     const list = byAgent.get(row.agent) ?? [];
-    if (list.length < topN) {
+    if (list.length < TOP_N) {
       const exampleTexts: string[] = [];
       if (row.examples) {
         for (const chunk of row.examples.split("|||")) {
@@ -138,7 +137,7 @@ function scanViolations(ctx: WorkflowContext): ScanResult {
   return {
     agentsWithViolations,
     totalAgentsScanned: allAgents.size,
-    lookbackHours: lookbackMs / 3_600_000,
+    lookbackHours: LOOKBACK_MS / 3_600_000,
     scanTimestamp: new Date().toISOString(),
   };
 }
@@ -178,10 +177,13 @@ export const description: string =
   "Coach LLM decides intervention strategy (cost only when patterns need coaching).";
 
 export async function execute(ctx: WorkflowContext): Promise<void> {
+  // Resolve persist dir from known location
+  const persistDir = join(process.cwd(), ".state");
+
   // ── Step 1: Sensor — scan convention violations (zero LLM cost) ──
 
   const sensorResult = await ctx.runFunction("scan-violations", async () => {
-    const scan = scanViolations(ctx);
+    const scan = scanViolations(persistDir);
 
     // Short-circuit: no significant violations
     if (scan.agentsWithViolations.length === 0) {
@@ -206,18 +208,18 @@ export async function execute(ctx: WorkflowContext): Promise<void> {
   });
 
   // Parse sensor output
-  const sensorText = sensorResult.lastAssistantText ?? sensorResult.messages?.[0]?.content ?? "";
-  let parsed: { shortCircuit: boolean; message?: string; report?: string; summary?: unknown };
+  const sensorText = sensorResult.lastAssistantText ?? "";
+  let parsed: { shortCircuit: boolean; message?: string; report?: string; summary?: { agentCount: number } };
   try {
     parsed = JSON.parse(sensorText);
   } catch {
-    ctx.done("error", `Sensor produced unparseable output: ${sensorText.slice(0, 200)}`);
+    ctx.done(`Sensor produced unparseable output: ${sensorText.slice(0, 200)}`);
     return;
   }
 
   // Short-circuit: clean scan
   if (parsed.shortCircuit) {
-    ctx.done("clean", parsed.message ?? "No violations found.");
+    ctx.done(parsed.message ?? "No violations found.");
     return;
   }
 
@@ -252,5 +254,5 @@ export async function execute(ctx: WorkflowContext): Promise<void> {
 
   await ctx.runAgent("coach", judgeTask);
 
-  ctx.done("done", `Coaching feedback cycle complete. Analyzed violations for ${(parsed.summary as { agentCount: number })?.agentCount ?? "?"} agents.`);
+  ctx.done(`Coaching feedback cycle complete. Analyzed violations for ${parsed.summary?.agentCount ?? "?"} agents.`);
 }

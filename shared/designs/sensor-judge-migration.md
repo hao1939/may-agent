@@ -1,7 +1,7 @@
 # DESIGN: Sensor-Judge Cron Migration
 
 **Author:** May  
-**Status:** In progress — error-log-scanner migrated (2026-04-14), 3 handlers remaining  
+**Status:** COMPLETE — 2 of 4 handlers migrated to sensor-judge workflows (2026-04-14). Remaining 2 are not migration candidates.  
 **Date:** 2026-04-14  
 **Related but separate:** [Workflow Guards](workflow-guards.md) — the reactive demand system for workflow quality enforcement
 
@@ -142,9 +142,9 @@ Workflow pattern:
 ### Step 3: Migrate remaining Tier 2 handlers
 
 One at a time, validate each:
-- `coaching-feedback` → workflow with violation-scan sensor + coach judge
-- `priority-drift` → workflow with priority-diff sensor + may judge
-- `active-nudge` → workflow with staleness-scan sensor + may judge
+- ✅ `coaching-feedback` → `agents/shared/workflows/coaching-feedback.ts` — sensor queries convention_checks DB, coach LLM decides intervention strategy. Old entry disabled, new `coaching-feedback-wf` entry uses `run-workflow` handler.
+- `priority-drift` → NOT IN CRON (dead code handler file). Skip unless re-activated.
+- `active-nudge` → Pure JS intervention (cancel/nudge). Not a sensor-judge candidate (no LLM needed).
 
 ### Step 4: Validate
 
