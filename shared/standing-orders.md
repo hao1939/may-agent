@@ -17,6 +17,11 @@ If you have the `workflow` tool and your task involves code changes or investiga
 - **Applies to**: bob, coach, optimizer, tech-lead (agents with workflow tool)
 - **Reason**: Workflow sessions are 30% more efficient (11.8 vs 17.1 avg ops) and more reliable (99.4% vs 97.2% completion). But adoption is only 16% because forked work sessions don't see the guidance in heartbeat.md.
 
+### [ORDER-004] Design docs live in YOUR workspace, not shared/ (2026-04-14)
+Design documents go in `agents/<you>/workspace/DESIGN-*.md`. Do NOT create or write to `agents/shared/designs/`. The `shared/` folder is for validated knowledge (knowledge/, guards/, workflows/, protocols/), not in-progress designs. If another agent needs your design, they reference it from your workspace.
+- **Applies to**: all
+- **Reason**: Hao's direct order. `shared/designs/` was a rogue convention that caused stale-copy overwrites and confusion. Deleted 2026-04-14.
+
 <!-- 
 FORMAT FOR ORDERS:
 
