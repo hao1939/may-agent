@@ -263,16 +263,20 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 - **Implication**: Gym is saturated. Need harder scenarios for further skill development.
 - **Completed**: 2026-04-09
 
-### 0v. EXP-156: Hard Gate Generalization Study [DESIGNED]
+### 0v. EXP-156: Hard Gate Generalization Study [COMPLETE ✅ — H-156 STRONGLY SUPPORTED]
 - **Design**: `agents/shared/knowledge/experiments/EXP-156/design.md`
-- **Status**: DESIGNED — awaiting scenario creation + trial runs
+- **Results**: `agents/shared/knowledge/experiments/EXP-156/results.md`
+- **Knowledge**: KE-179 (hard gate generalization across 4+ scenario types)
+- **Status**: COMPLETE — all 4 phases done, H-156 STRONGLY SUPPORTED
 - **Goal**: Test whether Ch2 hard gates generalize beyond hidden-dep (EXP-155) and contradictory-req (EXP-127)
-- **Scenarios**: misleading-test-fix (63% baseline, math verification) + ambiguous-context-drift (~50% baseline, context trust)
-- **Arms**: 4 arms × 10 runs = 40 total (2 baseline + 2 treatment)
-- **Hypothesis**: H-156 — hard gate improves pass rate by ≥20pp on at least one new scenario
-- **Key question**: Is Ch2 universal (works on any analytical step-skipping) or scenario-specific?
-- **Phases**: (1) Create treatment scenarios, (2) Run baselines, (3) Run treatments, (4) Analysis
-- **Predecessor**: EXP-155 (+85pp), EXP-127 (+100pp) — both single-scenario Ch2 results
+- **Gym results**:
+  - misleading-test-fix: Baseline 0/13 (0%) → Treatment 10/10 (100%), **+100pp** (p < 0.001)
+  - ambiguous-context-drift: Baseline 6/9 (67%) → Treatment 8/10 (80%), **+13pp** (p = 0.44, NS)
+  - Combined: 6/22 (27%) → 18/20 (90%), p < 0.001
+- **Key finding**: Hard gates work best when baseline is low (<20%) and failure mode is "action without analysis." Effectiveness inversely correlates with baseline — agents who already naturally verify get less benefit.
+- **Mechanism validated across 4 scenarios**: contradictory-requirements (+100pp), hidden-dep (+85pp), misleading-test-fix (+100pp), ambiguous-context-drift (+13pp)
+- **All 4 predictions confirmed**: P-156a ✓, P-156b ✓, P-156c ✓, P-156d ✓
+- **Run IDs**: Baseline 1189–1221, Treatment 1222–1244
 
 ### 0t. EXP-147: Context Isolation A/B Test [COMPLETE ✅ — DIRECTIONAL BUT NOT SIGNIFICANT]
 - **Design**: `agents/shared/knowledge/experiments/EXP-147/design.md`
