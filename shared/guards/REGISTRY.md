@@ -11,6 +11,7 @@ Each guard file must export a `guard` object matching the `WorkflowGuard` interf
 | auto-test | auto-test.ts | Warns when src/ files are modified without test confirmation (safety net for workflows lacking their own verify step) |
 | pivot-detector | pivot-detector.ts | Detects create-test-fail-pivot loops; warns at 3 cycles, injects reassessment at 5 |
 | no-secret-leak | no-secret-leak.ts | Blocks workflow if step output contains API key/secret patterns (OpenAI, Anthropic, AWS, GitHub, Stripe, private keys); warns on medium-confidence patterns (Bearer tokens, generic key assignments) |
+| cost-limit | cost-limit.ts | Tracks cumulative agent turns across workflow steps; warns at 40 total turns, blocks at 60 |
 
 ## Writing Guards
 
