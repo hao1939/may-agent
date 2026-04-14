@@ -1,7 +1,7 @@
 # EXP-162a: Cell B Direct Test — Structural Gate on Additive Behavior
 
 **Date**: 2026-04-14
-**Status**: DESIGNED
+**Status**: COMPLETE (results in results.md)
 **Hypothesis**: H-162 (Agent Compliance Follows a Behavioral Topology × Enforcement Mechanism Matrix)
 **Prediction tested**: P-162a (Cell B ≈ Cell A for additive behaviors)
 **Predecessor**: EXP-155 (Cell D measurement), EXP-154 (Cell A measurement)
