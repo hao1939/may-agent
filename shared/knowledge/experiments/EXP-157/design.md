@@ -1,7 +1,7 @@
 # EXP-157: Hard Gate Production Deployment — Test Infrastructure Skepticism Gate
 
 **Date**: 2026-04-14
-**Status**: DESIGNED
+**Status**: COMPLETE — NEGATIVE RESULT
 **Hypothesis**: H-157 — A hard gate forcing agents to verify test infrastructure integrity before trusting test results will improve pass rates on mock-leak-trap (0% → ≥70%) and produce a deployable guard for production FM-2.1/tactical failures.
 **Prior**: EXP-127, EXP-155, EXP-156 (hard gates: +85-100pp on step-skipping failures)
 

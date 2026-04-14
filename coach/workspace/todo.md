@@ -278,6 +278,22 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 - **All 4 predictions confirmed**: P-156a ✓, P-156b ✓, P-156c ✓, P-156d ✓
 - **Run IDs**: Baseline 1189–1221, Treatment 1222–1244
 
+### 0w. EXP-157: Hard Gate Production Deployment — Test Infrastructure Skepticism [COMPLETE ✅ — NEGATIVE RESULT]
+- **Design**: `agents/shared/knowledge/experiments/EXP-157/design.md`
+- **Results**: `agents/shared/knowledge/experiments/EXP-157/results.md`
+- **Knowledge**: KE-NEW (completion illusion effect)
+- **Status**: COMPLETE — NEGATIVE RESULT (gate harmful + baseline drift)
+- **Goal**: Deploy test infrastructure skepticism hard gate on mock-leak-trap
+- **Results**:
+  - Baseline (concurrent): 4/5 (80%) — **dramatic drift from historical 0/11 (0%)**
+  - Treatment: 0/10 (0%) — **significantly worse** (p = 0.004)
+  - Hard gate check compliance: TEST_ANALYSIS.md written 10/10, mock identified 10/10
+  - But: mock actually fixed 0/10 (vs 4/5 baseline without gate)
+- **Key finding**: "COMPLETION ILLUSION" — writing TEST_ANALYSIS.md identifying the mock problem satisfies the agent's cognitive need to address it, preventing actual remediation. The gate substitutes analysis-writing for action.
+- **Prediction assessment**: P-157a ❌ (0% not ≥70%), P-157b ✅ (100% ≥80%), P-157c ❌ (80% not ≤20%)
+- **Design rule**: Hard gate artifacts must be part of the solution, not separate analysis documents
+- **Implication**: Do NOT deploy test-trust-guard.ts. mock-leak-trap no longer useful as experiment target (80% baseline)
+
 ### 0t. EXP-147: Context Isolation A/B Test [COMPLETE ✅ — DIRECTIONAL BUT NOT SIGNIFICANT]
 - **Design**: `agents/shared/knowledge/experiments/EXP-147/design.md`
 - **Results**: `agents/shared/knowledge/experiments/EXP-147/results.md`
