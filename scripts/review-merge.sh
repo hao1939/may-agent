@@ -3,23 +3,24 @@
 # Replaces the manual 7-8 step git review branch merge workflow.
 #
 # Usage:
-#   scripts/review-merge.sh <branch>        Merge the given branch into main
-#   scripts/review-merge.sh --help          Show this help
+#   scripts/review-merge.sh <branch>              Merge with pre-merge checks (tsc + test)
+#   scripts/review-merge.sh --no-checks <branch>  Skip tsc/test checks (agents-only changes)
+#   scripts/review-merge.sh --help                Show this help
 #
 # Exit codes:
 #   0 = success
 #   1 = validation error (missing branch, bad args, etc.)
 #   2 = pre-merge checks failed (tsc or tests)
-#   3 = merge failed
+#   3 = merge conflict or merge failure
 #
 # What it does:
-#   1. Validates the branch exists
+#   1. Validates the branch exists and has commits ahead of main
 #   2. Shows commit summary and changed files
-#   3. Runs pre-merge checks (tsc --noEmit, bun test) on the branch
+#   3. Runs pre-merge checks (tsc --noEmit, bun test) on the branch [unless --no-checks]
 #   4. Auto-stashes dirty working tree if needed
-#   5. Merges branch into main with descriptive commit message
-#   6. Deletes the merged branch
-#   7. Restores stash and original branch on failure
+#   5. Merges branch into main (with REVIEW_GATE_BYPASS for the pre-commit hook)
+#   6. Deletes the merged branch on success
+#   7. Restores stash; on failure, returns to original branch first
 
 set -euo pipefail
 
@@ -40,16 +41,21 @@ err()   { echo -e "${RED}✗${RESET}  $*" >&2; }
 # State tracking for cleanup
 STASHED=false
 ORIGINAL_BRANCH=""
-CHECKED_OUT_MAIN=false
+ON_TEMP_BRANCH=false  # true when we've checked out a branch other than the original
 
 cleanup() {
   local exit_code=$?
-  if [[ "$CHECKED_OUT_MAIN" == true && -n "$ORIGINAL_BRANCH" ]]; then
+  # Return to original branch if we moved away and are failing
+  if [[ "$ON_TEMP_BRANCH" == true && -n "$ORIGINAL_BRANCH" && "$exit_code" -ne 0 ]]; then
     git checkout "$ORIGINAL_BRANCH" --quiet 2>/dev/null || true
   fi
+  # Restore stash
   if [[ "$STASHED" == true ]]; then
     warn "Restoring stashed changes..."
-    git stash pop --quiet 2>/dev/null || warn "Failed to restore stash — run 'git stash pop' manually"
+    if ! git stash pop --quiet 2>/dev/null; then
+      warn "git stash pop had conflicts — your changes are in stash@{0}"
+      warn "Run 'git stash show' to inspect, 'git checkout -- <file> && git stash pop' to resolve"
+    fi
   fi
   exit "$exit_code"
 }
@@ -59,27 +65,43 @@ trap cleanup EXIT
 # --- Usage ---
 
 usage() {
-  echo "review-merge.sh — Merge a review branch into main"
-  echo ""
-  echo "Usage:"
-  echo "  scripts/review-merge.sh <branch>   Merge the given branch into main"
-  echo "  scripts/review-merge.sh --help     Show this help"
-  echo ""
-  echo "Example:"
-  echo "  scripts/review-merge.sh review/s_1776113498355_390"
-  echo ""
-  echo "Exit codes:"
-  echo "  0 = success"
-  echo "  1 = validation error"
-  echo "  2 = pre-merge checks failed"
-  echo "  3 = merge failed"
+  cat <<'EOF'
+review-merge.sh — Merge a review branch into main
+
+Usage:
+  scripts/review-merge.sh <branch>              Merge with pre-merge checks
+  scripts/review-merge.sh --no-checks <branch>  Skip tsc/test (agents-only changes)
+  scripts/review-merge.sh --help                Show this help
+
+Examples:
+  scripts/review-merge.sh review/s_1776113498355_390
+  scripts/review-merge.sh --no-checks review/ctx-agent-workflow
+
+Exit codes:
+  0 = success
+  1 = validation error
+  2 = pre-merge checks failed (tsc/test)
+  3 = merge conflict or failure
+EOF
 }
 
-# --- Argument validation ---
+# --- Argument parsing ---
+
+SKIP_CHECKS=false
 
 if [[ $# -eq 0 || "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
   usage
   exit 0
+fi
+
+if [[ "${1:-}" == "--no-checks" ]]; then
+  SKIP_CHECKS=true
+  shift
+fi
+
+if [[ $# -eq 0 ]]; then
+  err "Missing branch name. Usage: scripts/review-merge.sh [--no-checks] <branch>"
+  exit 1
 fi
 
 BRANCH="$1"
@@ -87,6 +109,9 @@ BRANCH="$1"
 # Validate branch exists
 if ! git rev-parse --verify "$BRANCH" &>/dev/null; then
   err "Branch '${BRANCH}' does not exist"
+  echo ""
+  info "Available review branches:"
+  git branch --list 'review/*' | sed 's/^/    /'
   exit 1
 fi
 
@@ -96,109 +121,139 @@ if ! git rev-parse --verify main &>/dev/null; then
   exit 1
 fi
 
-# Record where we are now
-ORIGINAL_BRANCH="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")"
+ORIGINAL_BRANCH="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main")"
 
-# --- Step 1-2: Show summary ---
-
-echo ""
-echo -e "${BOLD}=== Review Branch Summary: ${BRANCH} ===${RESET}"
-echo ""
-
-info "Commits on ${BRANCH} (not on main):"
-echo ""
-git log "$BRANCH" --oneline --not main | sed 's/^/    /'
-echo ""
-
-info "Changed files (vs main):"
-echo ""
-git diff "main...${BRANCH}" -- src/ test/ --stat | sed 's/^/    /'
-echo ""
-
-# --- Step 3: Pre-merge checks on the branch ---
-
-echo -e "${BOLD}=== Pre-merge Checks ===${RESET}"
-echo ""
-
-# Stash if dirty (need clean tree to checkout branch for checks)
-if ! git diff --quiet 2>/dev/null || ! git diff --cached --quiet 2>/dev/null; then
-  warn "Dirty working tree detected — stashing changes..."
-  git stash push -m "review-merge: auto-stash before merging ${BRANCH}" --quiet
-  STASHED=true
-  ok "Changes stashed"
+# Check if branch has any commits ahead of main
+AHEAD_COUNT=$(git rev-list "main..${BRANCH}" --count 2>/dev/null || echo "0")
+if [[ "$AHEAD_COUNT" -eq 0 ]]; then
+  warn "Branch '${BRANCH}' has no commits ahead of main — nothing to merge"
+  info "Cleaning up the empty branch..."
+  git branch -d "$BRANCH" --quiet 2>/dev/null || true
+  ok "Branch deleted"
+  exit 0
 fi
 
-# Checkout the review branch to run checks
-info "Checking out ${BRANCH} for pre-merge checks..."
-git checkout "$BRANCH" --quiet
-CHECKED_OUT_MAIN=true  # enables cleanup to return to original branch
+# --- Step 1: Show summary ---
 
-info "Running TypeScript check (tsc --noEmit)..."
-if ! ./node_modules/.bin/tsc --noEmit 2>&1; then
+echo ""
+echo -e "${BOLD}=== Review Branch: ${BRANCH} ===${RESET}"
+echo ""
+
+info "${AHEAD_COUNT} commit(s) ahead of main:"
+echo ""
+git log "${BRANCH}" --oneline --not main | sed 's/^/    /'
+echo ""
+
+info "Changed files:"
+echo ""
+git diff --stat "main...${BRANCH}" | sed 's/^/    /'
+echo ""
+
+# --- Step 2: Pre-merge checks (unless --no-checks) ---
+
+if [[ "$SKIP_CHECKS" == true ]]; then
+  warn "Skipping pre-merge checks (--no-checks)"
   echo ""
-  err "TypeScript check failed — aborting merge"
-  exit 2
-fi
-ok "TypeScript check passed"
-
-info "Running tests (bun test)..."
-export PATH=".state/.bun/bin:$PATH"
-if ! bun test 2>&1; then
+else
+  echo -e "${BOLD}=== Pre-merge Checks ===${RESET}"
   echo ""
-  err "Tests failed — aborting merge"
-  exit 2
+
+  # Need clean tree to checkout branch
+  if ! git diff --quiet 2>/dev/null || ! git diff --cached --quiet 2>/dev/null; then
+    warn "Dirty working tree — stashing changes..."
+    git stash push -m "review-merge: auto-stash before checking ${BRANCH}" --quiet
+    STASHED=true
+    ok "Changes stashed"
+  fi
+
+  info "Checking out ${BRANCH}..."
+  git checkout "$BRANCH" --quiet
+  ON_TEMP_BRANCH=true
+
+  info "Running tsc --noEmit..."
+  if ! ./node_modules/.bin/tsc --noEmit 2>&1; then
+    echo ""
+    err "TypeScript check FAILED on ${BRANCH} — aborting merge"
+    exit 2
+  fi
+  ok "TypeScript check passed"
+
+  export PATH=".state/.bun/bin:$PATH"
+  info "Running bun test..."
+  if ! bun test 2>&1; then
+    echo ""
+    err "Tests FAILED on ${BRANCH} — aborting merge"
+    exit 2
+  fi
+  ok "Tests passed"
+  echo ""
 fi
-ok "Tests passed"
 
-echo ""
+# --- Step 3: Stash + checkout main for merge ---
 
-# --- Step 4-5: Merge ---
+# If we haven't stashed yet (--no-checks path), stash now
+if [[ "$STASHED" == false ]]; then
+  if ! git diff --quiet 2>/dev/null || ! git diff --cached --quiet 2>/dev/null; then
+    warn "Dirty working tree — stashing changes..."
+    git stash push -m "review-merge: auto-stash before merging ${BRANCH}" --quiet
+    STASHED=true
+    ok "Changes stashed"
+  fi
+fi
 
 echo -e "${BOLD}=== Merging ===${RESET}"
 echo ""
 
-# Build a descriptive commit message from the branch commits
-COMMIT_COUNT=$(git log "$BRANCH" --oneline --not main | wc -l | tr -d ' ')
-FIRST_COMMIT_MSG=$(git log "$BRANCH" --oneline --not main --reverse | head -1 | sed 's/^[a-f0-9]* //')
-
-if [[ "$COMMIT_COUNT" -eq 1 ]]; then
-  MERGE_MSG="merge ${BRANCH}: ${FIRST_COMMIT_MSG}"
-else
-  MERGE_MSG="merge ${BRANCH}: ${FIRST_COMMIT_MSG} (+$((COMMIT_COUNT - 1)) more)"
+# Make sure we're on main
+if [[ "$(git rev-parse --abbrev-ref HEAD)" != "main" ]]; then
+  info "Checking out main..."
+  git checkout main --quiet
+  ON_TEMP_BRANCH=true
 fi
 
-info "Checking out main..."
-git checkout main --quiet
+# Build merge commit message from branch commits
+FIRST_MSG=$(git log "${BRANCH}" --oneline --not main --reverse | head -1 | sed 's/^[a-f0-9]* //')
+if [[ "$AHEAD_COUNT" -eq 1 ]]; then
+  MERGE_MSG="merge ${BRANCH}: ${FIRST_MSG}"
+else
+  MERGE_MSG="merge ${BRANCH}: ${FIRST_MSG} (+$((AHEAD_COUNT - 1)) more)"
+fi
 
-info "Merging ${BRANCH}..."
-if ! git merge "$BRANCH" -m "$MERGE_MSG" 2>&1; then
+info "Merging ${BRANCH} into main..."
+
+# REVIEW_GATE_BYPASS needed because the pre-commit hook blocks direct commits to main
+if ! REVIEW_GATE_BYPASS=1 git merge "$BRANCH" --no-edit -m "$MERGE_MSG" 2>&1; then
   echo ""
-  err "Merge failed (conflict?) — aborting"
+  err "Merge FAILED — likely a conflict"
   git merge --abort 2>/dev/null || true
-  # cleanup trap will restore original branch + stash
+  info "Conflict details would appear above. Resolve manually or abandon this branch."
   exit 3
 fi
 ok "Merged successfully"
 
-# --- Step 6: Delete branch ---
+# --- Step 4: Cleanup ---
 
 info "Deleting branch ${BRANCH}..."
 git branch -d "$BRANCH" --quiet 2>/dev/null || git branch -D "$BRANCH" --quiet 2>/dev/null || warn "Could not delete branch"
 ok "Branch deleted"
 
-# --- Step 7: Restore ---
+# We're on main now, which is the desired state after a successful merge
+ON_TEMP_BRANCH=false
 
-# Stay on main after successful merge (don't go back to original branch)
-CHECKED_OUT_MAIN=false
-
+# Restore stash if we had one
 if [[ "$STASHED" == true ]]; then
   info "Restoring stashed changes..."
-  git stash pop --quiet
-  STASHED=false
-  ok "Stash restored"
+  if git stash pop --quiet 2>/dev/null; then
+    STASHED=false
+    ok "Stash restored"
+  else
+    STASHED=false  # prevent double-pop in cleanup
+    warn "Stash pop had conflicts with merged changes"
+    warn "Your changes are still in git stash — run 'git stash show' to inspect"
+  fi
 fi
 
 echo ""
 echo -e "${GREEN}${BOLD}✓ Done!${RESET} Merged ${BRANCH} into main"
-echo -e "  Commit message: ${MERGE_MSG}"
+echo -e "  Commit: ${MERGE_MSG}"
 echo ""
