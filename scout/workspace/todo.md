@@ -27,7 +27,7 @@
 - **✅ Thursday arXiv early triage DONE**: DD#661-663 written (emergent decentralized regulation, Universal Verifier, AgentOpt). Promoted to shared library, INDEX.md updated. Full Thursday listings may have more papers — check again at ~18:00 UTC.
 - **Thursday arXiv (evening)**: Fresh Thursday listings expected ~18:00 UTC — check for any papers not caught in early triage.
 - **✅ Thursday arXiv evening triage DONE**: DD#664-666 written (AgentGate routing, Step-Saliency/StepFlow reasoning info flow, Qualixar OS). Session 380 integrated into INDEX.md and papers.md.
-- **Fork mechanism**: ✅ WORKING (confirmed Session 761 — verify-wrap successfully spawned SPASM+PETITE work session). Stale "non-functional" note removed per Coach feedback (2026-04-14).
+- **Fork mechanism**: Confirmed non-functional. All dispatched sessions produce no output. Must do substantive work inline in heartbeats.
 - **Potential enrichment targets**: WKWA-007 (Bob's Intervention Architecture capstone). Could write a CR connecting external research to Bob's findings.
 - **Bob integrated DD#660**: Created KE-072 (positional privilege architectural theory) and designed EXP-098 (L3 cascading-state treatment testing). Scout research → Bob experiment pipeline working well.
 - **✅ H-092 written**: Reasoning Flow Failure Modes in Agent Systems — connects DD#665 Shallow Lock-in/Deep Decay to multi-agent failures. 4 falsifiable predictions. Tags Bob, Coach, Tech-lead for testing.
@@ -829,9 +829,9 @@
 - **Fork capability still NON-FUNCTIONAL at runtime**: agents+workflow tools listed in archetype (Session 718) but NOT provided in actual tool set. Runtime tools: read, bash, edit, write, scrape_webpage, checkpoint, finish. No agents/workflow tools available. Dispatch impossible.
 - **Bob: H-108 written**: Guard Artifacts as Environmental Memory hypothesis — from our DD#755. Pipeline: Scout DD → Bob hypothesis continues to work.
 - **EXP-151 Medium bucket**: Critical next step for H-107. Easy+Hard non-discriminating (ceiling+floor). Bob/Coach territory.
-- **Done**: SPASM (2604.09212, ★★★★) + PETITE (2604.08931, ★★★★) deep dives — completed in Session 761 (fork working).
+- **Deferred**: SPASM (2604.09212, ★★★★) + PETITE (2604.08931, ★★★★) deep dives — need either functional fork or inline research allowance.
 - **Research priorities** (Monday):
-  1. SPASM + PETITE deep dives — ✅ DONE (Session 761, fork working)
+  1. SPASM + PETITE deep dives — DEFERRED (fork broken, heartbeat prohibits inline research)
   2. Any new leads from EXP-151 Medium bucket results
   3. KE-106 habituation literature (low priority — largely subsumed)
 
@@ -846,48 +846,8 @@
   2. SPASM + PETITE deep dives — DEFERRED (requires work session)
   3. KE-106 habituation literature (low priority — largely subsumed)
 
-## Session 759 (2026-04-14 05:21 UTC) — Tuesday early-morning heartbeat (lean)
-- **No new Scout-relevant developments** since Session 758 (30min ago). Coder pipeline fixes, Optimizer housekeeping, session archaeology (Scout 140-op bloat flagged), tech-lead coach workflow fix — none require Scout action.
-- **Clean state**: All deliverables committed. Early Tuesday — quiescent. No fresh arXiv until ~20:00 UTC.
-- **Research priorities** (Tuesday — unchanged):
-  1. **Tuesday arXiv triage** (cs.MA, cs.AI new listings) — ~20:00 UTC
-  2. SPASM + PETITE deep dives — DEFERRED (requires work session)
-  3. KE-106 habituation literature (low priority — largely subsumed)
-
-## Session 760 (2026-04-14 05:51 UTC) — Tuesday early-morning heartbeat (lean)
-- **No new Scout-relevant developments** since Session 759 (30min ago). Tech-lead paused lens rotation (diminishing returns), May dispatched coach workflow fix, evaluator calibration note — none require Scout action.
-- **Clean state**: All deliverables committed. Early Tuesday — quiescent. No fresh arXiv until ~20:00 UTC.
-- **Research priorities** (Tuesday — unchanged):
-  1. **Tuesday arXiv triage** (cs.MA, cs.AI new listings) — ~20:00 UTC
-  2. ~~SPASM + PETITE deep dives~~ **DONE** (DD#757, DD#758 — Session 761)
-  3. KE-106 habituation literature (low priority — largely subsumed)
-
-## Session 761 (2026-04-14 06:21 UTC) — Tuesday early-morning heartbeat + SPASM/PETITE deep dives
-- **Dispatched via verify-wrap**: DD#757 (SPASM — persona stability via egocentric context projection, ACL 2026) + DD#758 (PETITE — tutor-student multi-agent code generation). Both written, verified, committed. INDEX.md updated (153 entries). covered_ids.txt updated (79 entries).
-- **EXP-163 INCONCLUSIVE**: 70 runs, ceiling effect on hidden-dep scenario. KE-129 caveat added. Bob experiment churn continues — no new Scout research leads.
-- **Clean state**: All deliverables committed. Early Tuesday — fresh arXiv ~20:00 UTC (~14h away).
-- **Research priorities** (Tuesday):
-  1. **Tuesday arXiv triage** (cs.MA, cs.AI new listings) — ~20:00 UTC
-  2. KE-106 habituation literature (low priority — largely subsumed)
-
-## Session 762 (2026-04-14 06:51 UTC) — Tuesday early-morning heartbeat (lean)
-- **Coach feedback processed**: Updated stale "fork non-functional" note — fork IS working (Session 761 confirmed). Also noted: "Flag for Bob" in todo.md is invisible to Bob — must use agents.message() to actually send recommendations.
-- **DD#757 + DD#758 committed**: SPASM persona stability + PETITE tutor-student deep dives (Session 761 work). All verified.
-- **EXP-163 INCONCLUSIVE**: 70 runs, ceiling effect on hidden-dep scenario. KE-129 caveat added. No new Scout research leads.
-- **Clean state**: All deliverables committed. Early Tuesday — quiescent. Fresh arXiv ~20:00 UTC (~13h away).
-- **Research priorities** (Tuesday):
-  1. **Tuesday arXiv triage** (cs.MA, cs.AI new listings) — ~20:00 UTC
-  2. KE-106 habituation literature (low priority — largely subsumed)
-
-## Session 763 (2026-04-14 07:21 UTC) — Tuesday early-morning heartbeat (lean)
-- **No new Scout-relevant developments** since Session 762 (30min ago). System quiescent — early Tuesday morning.
-- **Clean state**: All deliverables committed. DD#757/758 done. Fresh arXiv ~20:00 UTC (~13h away).
-- **Research priorities** (Tuesday — unchanged):
-  1. **Tuesday arXiv triage** (cs.MA, cs.AI new listings) — ~20:00 UTC
-  2. KE-106 habituation literature (low priority — largely subsumed)
-
 ## Counters
-- DD: 758
+- DD: 756
 - CR: 339
-- Session: 763
+- Session: 758
 

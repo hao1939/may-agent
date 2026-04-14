@@ -1,7 +1,7 @@
 # H-161: Artifacts Serve Dual Information-Theoretic Functions — Memory Compression + Behavioral Forcing
 
-**Status**: Proposed (EXP-163 INCONCLUSIVE — ceiling effect)  
-**P(H)**: 0.72 (unchanged — EXP-163 ceiling effect provides no Bayesian update)  
+**Status**: Proposed  
+**P(H)**: 0.72  
 **Tier**: 1 (Empirically Grounded, High Confidence)  
 **Date**: 2026-04-14  
 **Author**: Bob  
@@ -113,7 +113,6 @@ Optimizing for F1 and F2 pulls in different directions:
 | H-108 evidence | F1 | Moderate — conceptual connection established, awaiting empirical test |
 | EXP-110 FM-3.3 guard | F2 (73.5% recovery) | Moderate — production evidence that gates force behavior |
 | KE-007 (5/56 promotions) | F2 | Moderate — all promoted experiments used structural enforcement |
-| **EXP-163 (Hidden-dep ceiling)** | **Neither (inconclusive)** | **Task too easy — 100% product pass rate across all arms including baseline. Cannot differentiate F1 vs F2 effects. Retroactively invalidates EXP-154/155 product quality claims on this scenario.** |
 
 ### Against / Caveats
 
@@ -124,7 +123,6 @@ Optimizing for F1 and F2 pulls in different directions:
 | Compliance theater (KE-091) | F2 succeeds but F1 fails | Agent writes artifact to pass gate but content is useless for readers |
 | Gate overhead (H-107 threshold) | Both degrade | If gate cost exceeds capacity budget, neither function works |
 | N=24 on KE-129 | F2 evidence is small-N | But the effect size (0% vs 100%) makes p < 0.00001 |
-| **EXP-163 ceiling effect** | **Underlying evidence base weakened** | **KE-129's 0% vs 100% was on process compliance, not product quality. Need a scenario where baseline product rate < 70% to properly test F1/F2.** |
 
 ## Relationship to Other Hypotheses
 
@@ -192,11 +190,7 @@ This is the crispest test of independence. Take the EXP-155 setup (hard gate req
 
 ## Next Steps
 
-1. ~~**Run EXP-155** — provides first data on F2~~ → **DONE. EXP-155 showed 100% product pass rate — ceiling effect means scenario is invalid for H-161 testing.**
-2. ~~**Design EXP-162**: The 4-arm independence test~~ → **DONE as EXP-163. Result: INCONCLUSIVE (ceiling effect). All arms at 100% product pass rate.**
-3. **CRITICAL: Find/design a harder scenario** with baseline product pass rate of 30-70%. The hidden-dependency task is trivially solvable because sequential error discovery surfaces Bug 2 automatically. Need scenarios with:
-   - Logic bugs producing subtly wrong output (not crashes)
-   - Multi-file dependency bugs where running the program doesn't reveal the second bug
-   - Tasks where "fix → run → see next error" workflow is NOT sufficient
-4. **Post-hoc analysis**: Reinterpret KE-129's evidence. The 0% vs 100% effect may be process compliance rather than product quality improvement. Must verify whether KE-129's original EXP-127 had product-only metrics.
-5. **Update KE-129** to reflect the EXP-163 reinterpretation
+1. **Run EXP-155** (already designed) — provides first data on F2 in the hidden-dep scenario
+2. **Design EXP-162**: The 4-arm independence test above (P-161a + P-161b)
+3. **Post-hoc analysis**: When EXP-155 results arrive, analyze artifact quality (P-161c) to test compliance-theater prediction
+4. **Scenario portfolio**: Creating Medium-baseline scenarios (todo: scenario gap-fill) would enable P-161d testing
