@@ -24,6 +24,11 @@ function isFailurePivot(result: TaskResult): boolean {
     return true;
   }
 
+  // Check finishResult status if available
+  if (result.finishResult?.status === "failure" || result.finishResult?.status === "blocked") {
+    return true;
+  }
+
   // Failure indicators in text
   const failurePatterns = [
     /\bfail(ed|ure)?\b/i,
