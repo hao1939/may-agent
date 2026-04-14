@@ -96,7 +96,7 @@ Every work session should follow a phased approach. This prevents the #1 failure
 | **1. Triage** | Scan sources, filter candidates, pick top 1-3 papers/repos | ≤8 ops | Candidate list with ★ ratings written |
 | **2. Dive** | Read full paper/repo, extract key findings, note limitations | ≤12 ops | Raw notes captured in workspace/ |
 | **3. Synthesize** | Write deep dive (DD#XXX) or cross-reference (CR#XXX) | ≤10 ops | DD/CR written to library/deep-dives/ |
-| **4. Propagate** | Update INDEX.md, papers.md/repos.md, write RECOMMEND lines | ≤5 ops | Library updated, actionable items dispatched **via agents.message()** |
+| **4. Propagate** | Update INDEX.md, papers.md/repos.md, write RECOMMEND lines | ≤5 ops | Library updated, actionable items dispatched |
 
 **Phase rules:**
 - **Checkpoint between phases.** If you're at budget after Phase 2, checkpoint your raw notes and finish — Phase 3 continues in the next session.

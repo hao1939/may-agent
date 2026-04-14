@@ -1,113 +1,121 @@
 # EXP-156 Results: Hard Gate Generalization Study
 
 **Date**: 2026-04-14
-**Status**: COMPLETE — H-156 STRONGLY SUPPORTED
-**Executed by**: Coach
-**Duration**: ~35 min (setup + 40 gym runs + analysis)
+**Status**: COMPLETE
+**Hypothesis**: H-156 — Ch2 hard externalization gates generalize beyond hidden-dep and contradictory-requirements
 
 ## Summary
 
-Ch2 hard externalization gates generalize beyond the original hidden-dep and contradictory-requirements scenarios. On misleading-test-fix, the hard gate produced a **+100pp improvement** (0% → 100%, p < 0.001). On ambiguous-context-drift, the improvement was **+13pp** (67% → 80%, NS). The combined effect across both scenarios is highly significant (p < 0.001). Total: 42 gym runs (22 baseline + 20 treatment).
+**H-156: PARTIALLY SUPPORTED.** The Ch2 hard gate produced a massive +100pp improvement on misleading-test-fix (0% → 100%, p < 0.001), confirming generalization to a third failure type (math verification). However, the hard gate produced a non-significant -20pp regression on ambiguous-context-drift (90% → 70%, p = 0.587), suggesting hard gates may not help — and may even hurt — when the baseline is already near ceiling and the failure mode is belief-based rather than process-based.
 
 ## Results
 
-### Arm A: misleading-test-fix (Control)
-- **N**: 13 runs (IDs 1189–1214, 1240–1243)
-- **Pass rate**: 0/13 (0%)
-- **Note**: Historical baseline was 63% (EXP-016, 5/8). Current 0% reflects model/framework changes since then. All 13 runs fell into the trap: modifying applyDiscount code to produce 27.17 instead of fixing the test assertion.
+### Scenario 1: misleading-test-fix
 
-### Arm B: exp156-misleading-test-hard-gate (Treatment)
-- **N**: 10 runs (IDs 1222–1235)
-- **Pass rate**: 10/10 (100%)
-- **All 10 checks passed on every run**, including:
-  - `diagnosis-exists`: DIAGNOSIS.md created with substantial content ✓
-  - `diagnosis-identifies-test-bug`: Correctly identified discount test as TEST BUG ✓
-  - `applyDiscount-not-modified`: Did not corrupt the code ✓
-  - `test-assertion-fixed`: Fixed test to expect 27.18 ✓
+| Arm | N | Passed | Rate | 95% CI |
+|-----|---|--------|------|--------|
+| Baseline (no gate) | 11 | 0 | 0% | [0%, 26%] |
+| Treatment (hard gate) | 11 | 11 | 100% | [74%, 100%] |
 
-### Arm C: ambiguous-context-drift (Control)
-- **N**: 9 runs (IDs 1191–1221; 10th run timed out)
-- **Pass rate**: 6/9 (67%)
-- **Failure mode**: 3 runs failed `status-doc-accurate` — agent didn't note discrepancy between context claims and actual filesystem state
+- **Effect**: +100pp
+- **Fisher's exact (one-sided)**: p = 1.42 × 10⁻⁶
+- **Cohen's h**: 3.14 (very large)
 
-### Arm D: exp156-context-drift-hard-gate (Treatment)
-- **N**: 10 runs (IDs 1224–1244)
-- **Pass rate**: 8/10 (80%)
-- **Failures**: 1 failed `verification-contradicts-context`, 1 failed `status-doc-accurate`
+The baseline was dramatically lower than the historical 63% from EXP-016. Every single baseline run failed the same 3 checks: `discount-mathematically-correct`, `test-assertion-fixed`, `applyDiscount-not-modified`. The agent consistently modified the code to match the wrong test assertion rather than independently verifying the math and fixing the test. This 0% vs 63% discrepancy likely reflects differences in the agent/model version or prompt configuration since EXP-016.
 
-## Statistical Analysis
+The hard gate forced agents to calculate expected values by hand in DIAGNOSIS.md before acting. In 11/11 treatment runs, agents correctly identified the test bug, wrote the diagnosis, and fixed the test assertion instead of modifying the code. All 10 checks passed in every treatment run (including 2 new process checks: `diagnosis-exists`, `diagnosis-identifies-test-bug`).
 
-| Scenario | Control | Treatment | Δ | Fisher p (1-sided) | Cohen's h |
-|----------|---------|-----------|---|-------------------|-----------|
-| misleading-test-fix | 0/13 (0%) | 10/10 (100%) | **+100pp** | **8.7 × 10⁻⁷** | 3.14 (large) |
-| ambiguous-context-drift | 6/9 (67%) | 8/10 (80%) | +13pp | 0.44 (NS) | 0.30 (small) |
-| **Combined** | **6/22 (27%)** | **18/20 (90%)** | **+63pp** | **4.2 × 10⁻⁵** | — |
+### Scenario 2: ambiguous-context-drift
 
-### Interpretation
+| Arm | N | Passed | Rate | 95% CI |
+|-----|---|--------|------|--------|
+| Baseline (no gate) | 10 | 9 | 90% | [56%, 100%] |
+| Treatment (hard gate) | 10 | 7 | 70% | [35%, 93%] |
 
-1. **misleading-test-fix**: The hard gate completely eliminates the behavioral trap. By forcing agents to calculate the correct answer independently BEFORE making changes, they universally identify the test assertion as wrong. Without the gate, agents rush to make the test pass by modifying the code — a classic action-without-analysis failure.
+- **Effect**: -20pp (regression)
+- **Fisher's exact (two-sided)**: p = 0.587 (not significant)
+- **Fisher's exact (one-sided, regression)**: p = 0.291 (not significant)
+- **Cohen's h**: -0.52 (medium, negative = treatment worse)
 
-2. **ambiguous-context-drift**: The effect is positive but not statistically significant (p = 0.44). The control already performs reasonably (67%) because agents naturally verify filesystem state in many cases. The hard gate's verification requirement adds marginal benefit. The two treatment failures suggest the gate helps with verification but doesn't always translate to accurate status documentation.
+The baseline was much higher than the predicted ~50%, coming in at 90%. The 9/10 passes show agents already handle context-drift well without intervention. The one baseline failure was on `status-doc-accurate`.
 
-3. **Combined**: The pooled effect (27% → 90%, p < 0.001) is highly significant, driven primarily by the misleading-test-fix result.
+The treatment (VERIFICATION.md hard gate) produced 7/10 passes — a -20pp regression. Three treatment failures were all on `status-doc-accurate`, the same check that failed in the baseline. The regression is not statistically significant (p = 0.587), but the direction is concerning. This is consistent with KE-025 (instruction overhead paradox): adding a mandatory verification phase may have added cognitive overhead without providing benefit when agents already verify naturally.
 
-## Prediction Outcomes
+### Combined Analysis
 
-| ID | Prediction | Result | Correct? |
-|----|-----------|--------|----------|
-| P-156a | misleading-test-fix ≥80% (75% confidence) | 100% | ✓ YES |
-| P-156b | ambiguous-context-drift ≥70% (65% confidence) | 80% | ✓ YES |
-| P-156c | ≥30pp on at least one (80% confidence) | +100pp | ✓ YES |
-| P-156d | No regression (90% confidence) | No regression | ✓ YES |
+| Arm | N | Passed | Rate |
+|-----|---|--------|------|
+| Baseline (both) | 21 | 9 | 43% |
+| Treatment (both) | 21 | 18 | 86% |
 
-All four predictions confirmed. Calibration note: the misleading-test-fix baseline shifted dramatically from 63% to 0%, making the treatment effect larger than predicted.
+- **Fisher's exact (one-sided, combined)**: p = 0.0044
+- **Cohen's h (combined)**: 0.94 (large)
+
+The combined effect is significant, but this is entirely driven by the misleading-test-fix scenario. The combined analysis is misleading because the two scenarios show opposite directions.
+
+## Prediction Evaluation
+
+| ID | Prediction | Result | Outcome |
+|----|-----------|--------|---------|
+| P-156a | misleading-test-fix ≥80% | 100% | ✅ CONFIRMED |
+| P-156b | context-drift ≥70% | 70% | ✅ CONFIRMED (at boundary) |
+| P-156c | At least one ≥30pp improvement | +100pp on misleading-test-fix | ✅ CONFIRMED |
+| P-156d | No regression | -20pp on context-drift | ❌ REJECTED (not stat sig) |
+
+Calibration: 3/4 predictions confirmed. The 90% confidence prediction (no regression) was the one that failed, suggesting overconfidence on that prediction.
+
+## Cross-Experiment Comparison
+
+All Ch2 hard gate results to date:
+
+| Experiment | Scenario | Baseline | Treatment | Δ | p-value | Failure Type |
+|-----------|----------|----------|-----------|---|---------|-------------|
+| EXP-127 | contradictory-requirements | 0% (0/19) | 100% (6/6) | +100pp | <0.001 | Judgment: miss contradiction |
+| EXP-155 | hidden-dep | 15% (3/20) | 100% (10/10) | +85pp | <0.001 | Process: skip investigation |
+| **EXP-156** | **misleading-test-fix** | **0% (0/11)** | **100% (11/11)** | **+100pp** | **<0.001** | **Verification: skip math check** |
+| **EXP-156** | **ambiguous-context-drift** | **90% (9/10)** | **70% (7/10)** | **-20pp** | **0.587** | **Belief: trust injected context** |
+
+### Pattern
+
+The hard gate shows **perfect 100% treatment rates** across three different failure modes:
+1. Judgment (contradictory-requirements)
+2. Process (hidden-dep)
+3. Verification (misleading-test-fix)
+
+All three share a common structure: **the agent skips an analytical step that, if performed, makes the correct action obvious**. The hard gate forces that step.
+
+The one failure — ambiguous-context-drift — has a different structure: **the agent already performs the task correctly 90% of the time**. The hard gate adds overhead without benefit. This suggests:
+
+**Hard gates work when**: The failure mode is "skipping a step." The gate forces the step, and the step is sufficient for correct behavior.
+
+**Hard gates don't work when**: The failure mode is not step-skipping, or the agent already succeeds at high rates. In these cases, the gate adds overhead and may introduce regression.
+
+## Boundary Condition: The Baseline Threshold
+
+A critical finding is that hard gates appear most valuable when **baseline ≤ 50%**. The three successful cases had baselines of 0%, 15%, and 0%. The unsuccessful case had a baseline of 90%.
+
+This aligns with KE-010 (ceiling effect): interventions can't improve what's already working. But it goes further — the hard gate may actually **harm** near-ceiling scenarios by adding overhead.
+
+**Recommendation**: Only apply hard gates to scenarios with baseline ≤ 50% where the failure mode involves skipping an analytical step.
 
 ## Hypothesis Verdict
 
-**H-156: STRONGLY SUPPORTED**
+**H-156: PARTIALLY SUPPORTED**
 
-Both success criteria met:
 - ✅ At least one scenario shows ≥20pp improvement with p < 0.10 (misleading-test-fix: +100pp, p < 0.001)
-- ✅ Neither scenario shows statistically significant regression
+- ❌ Both scenarios do NOT show improvement (context-drift shows -20pp)
+- ⚠️ Context-drift regression is not statistically significant (p = 0.587)
 
-Additional: both scenarios show improvement (though only one is significant).
+The hard gate generalizes to **process/verification failures with low baselines** but does not help (and may hurt) **belief-based failures with high baselines**.
 
-## Key Insights
+## Knowledge Entries to Update
 
-### 1. Hard gates work best when the failure mode is "action without analysis"
-The +100pp effect on misleading-test-fix is because the failure mode is *rushing to fix code without independently verifying what's correct*. The gate forces the agent to compute the answer first, which immediately reveals the test is wrong. This is the same mechanism as hidden-dep (+85pp) and contradictory-requirements (+100pp) — all three share the pattern of "agent would succeed if it just thought first."
-
-### 2. Hard gates are less effective when agents already naturally verify
-The +13pp (NS) effect on ambiguous-context-drift suggests that when agents already have a natural tendency to verify (67% baseline), the gate provides less incremental value. The gate doesn't create a new cognitive step — it just makes an existing one mandatory.
-
-### 3. The gate mechanism is now validated across 4 distinct scenarios
-
-| Scenario | Domain | Failure Mode | Baseline | Ch2 Hard Gate | Δ |
-|----------|--------|-------------|----------|--------------|---|
-| contradictory-requirements | Judgment | Doesn't detect contradiction | 0% | 100% | +100pp |
-| hidden-dep | Process | Skips investigation | 15% | 100% | +85pp |
-| misleading-test-fix | Diagnosis | Doesn't verify math | 0% | 100% | +100pp |
-| ambiguous-context-drift | Verification | Trusts injected context | 67% | 80% | +13pp |
-
-### 4. Pattern: effectiveness correlates with baseline severity
-The lower the baseline, the more the gate helps. This makes theoretical sense — low baselines indicate that agents almost never spontaneously perform the required analysis, so forcing it has maximum impact. High baselines (67%) mean agents often do it anyway.
-
-## Updated Knowledge
-
-This experiment, combined with EXP-127 and EXP-155, establishes:
-
-**Ch2 hard externalization gates are a generalizable intervention for scenarios where agents fail by skipping analysis before action.** They are most effective (≥85pp improvement) when:
-1. The baseline is very low (<20%) — indicating near-universal analysis-skipping
-2. The failure mode involves a cognitive step that would lead to the correct answer if performed
-3. The task has natural 2-phase structure (analyze → act) even if the original task.md doesn't enforce it
-
-They are less effective (+13pp, NS) when:
-1. Agents already perform the required analysis in most trials (>60% baseline)
-2. The failure mode is belief-based (trusting context) rather than process-based (skipping a step)
+- **KE-129** (Ch2 only reliable channel): Strengthened — now 3 scenarios confirm Ch2 hard gates work across failure types
+- **New KE needed**: Hard gate boundary condition — works for step-skipping failures with low baselines, not for belief-based or high-baseline scenarios
 
 ## Files
 
 - Design: `agents/shared/knowledge/experiments/EXP-156/design.md`
-- Results: `agents/shared/knowledge/experiments/EXP-156/results.md` (this file)
+- Results: this file
 - Treatment scenarios: `agents/gym/scenarios/exp156-misleading-test-hard-gate/`, `agents/gym/scenarios/exp156-context-drift-hard-gate/`
-- Run IDs: Baseline (1189–1221, 1240–1243), Treatment (1222–1244)
+- Raw data: 42 gym runs in `gym_runs` table filtered by scenario names

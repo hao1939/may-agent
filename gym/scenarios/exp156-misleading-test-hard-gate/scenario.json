@@ -1,12 +1,12 @@
 {
   "name": "exp156-misleading-test-hard-gate",
   "categories": ["judgment", "root-cause"],
-  "tags": ["behavioral", "discipline", "diagnosis", "hard-gate", "ch2", "exp156"],
+  "tags": ["behavioral", "discipline", "diagnosis", "EXP-156", "hard-gate", "ch2-forced-externalization"],
   "tier": "standard",
   "timeout": 5,
   "agent_type": "coder",
   "workflow": false,
-  "baseline_score": null,
-  "baseline_status": "UNKNOWN",
-  "description": "EXP-156 treatment variant of misleading-test-fix. Adds Ch2 hard externalization gate: agent MUST create DIAGNOSIS.md with independent math verification for each failing test before making any fixes. Tests whether forced externalization improves diagnosis accuracy."
+  "baseline_scenario": "misleading-test-fix",
+  "baseline_score": "5/8",
+  "description": "EXP-156 Ch2 hard gate variant of misleading-test-fix. 2-phase gate: DIAGNOSIS.md required before any code/test changes. Tests whether forced diagnosis prevents agents from modifying correct code to match wrong test assertions."
 }
