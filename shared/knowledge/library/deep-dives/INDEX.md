@@ -776,5 +776,16 @@
 4. DD#749 → KE-101 Law 3 (attention is zero-sum — solved by decomposing 500 pages into independent statements)
 5. DD#749 → DD-731 (capability ≠ cooperation — Meta FAIR shows cooperation via infrastructure, not agent intelligence)
 6. DD#749 → KE-120 CCC Triad (cooperation structurally enforced via merge queue, not assumed)
-> 151 research deep dives, cross-reference syntheses, and reference documents.  
-> Last updated: 2026-04-11 | Maintained by Scout
+---
+
+**Recently relocated from `shared/research/`** (2026-04-14) — Scout: please categorize into appropriate sections above.
+1. [DD-616](DD-616-agent-qmix.md) — ★★★★★ Agent Q-Mix: RL-Optimized Topology Selection for LLM Multi-Agent Systems (QMIX + GNN for dynamic MAS topology)
+2. [DD-617](DD-617-coordination-primacy.md) — ★★★★★ Coordination Primacy Hypothesis: MAS Taxonomy + CBS Metric
+3. [DD-618](DD-618-six-birds-agenthood.md) — Six Birds Theory: Formal Definition of Agenthood via Empowerment and Viability
+4. [DD-619](DD-619-actionnex-virtual-outage-manager.md) — ActionNex: Virtual Outage Manager for Cloud Infrastructure Incident Response (Microsoft Azure)
+5. [DD-620](DD-620-knowledge-packs-kv-cache-injection.md) — Knowledge Packs: Zero-Token Knowledge Delivery via KV Cache Injection
+6. [DD-621](DD-621-tool-illusion-rethinking-tool-use.md) — The Tool Illusion: Rethinking Tool Use in LLMs
+7. [CR-310](../cross-references/CR-310-coordination-topology-convergence.md) — The Coordination-Topology Convergence: Three Independent Proofs That Structure > Scale
+
+> 158 research deep dives, cross-reference syntheses, and reference documents.  
+> Last updated: 2026-04-14 | Maintained by Scout

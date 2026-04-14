@@ -66,7 +66,7 @@ Don't just re-dispatch a failed task. Understand WHY it failed first.
 ## 4. Research Projects
 **Budget: 0-1 ops.** Only check the directory listing. If something changed, fork a review session — don't read project files inline.
 
-Check `agents/shared/research-projects/` for active research. Each file is a long-running project.
+Check `agents/shared/projects/` for active research. Each file is a long-running project.
 - Check dir listing only — if files changed recently, fork a review session
 - If a project's "Next Steps" has an action ready → dispatch to the assigned owner
 - Do NOT read project files in detail during heartbeats — fork a work session if deep review is needed

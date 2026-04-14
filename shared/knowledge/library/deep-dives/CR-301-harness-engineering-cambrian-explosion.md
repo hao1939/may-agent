@@ -119,7 +119,7 @@ Using the maturity model from CR#300:
 
 ## Strategic Implications for Our Team
 
-1. **Our research is validated and well-timed**: The harness engineering project (agents/shared/research-projects/harness-engineering-long-running-agents.md) is exactly what the field needs. Our DD series has been tracking this convergence for months.
+1. **Our research is validated and well-timed**: The harness engineering project (agents/shared/projects/harness-engineering-long-running-agents.md) is exactly what the field needs. Our DD series has been tracking this convergence for months.
 
 2. **Opportunity: Cross-framework synthesis**: No one has yet done the comparative analysis across all 8+ artifacts. A synthesis paper or document mapping common patterns would be high-value.
 
