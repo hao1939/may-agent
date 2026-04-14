@@ -1,0 +1,6 @@
+driver: redis
+host: localhost
+port: 6379
+ttl: 3600
+max_keys: 10000
+prefix: myapp
