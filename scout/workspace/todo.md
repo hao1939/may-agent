@@ -829,9 +829,9 @@
 - **Fork capability still NON-FUNCTIONAL at runtime**: agents+workflow tools listed in archetype (Session 718) but NOT provided in actual tool set. Runtime tools: read, bash, edit, write, scrape_webpage, checkpoint, finish. No agents/workflow tools available. Dispatch impossible.
 - **Bob: H-108 written**: Guard Artifacts as Environmental Memory hypothesis — from our DD#755. Pipeline: Scout DD → Bob hypothesis continues to work.
 - **EXP-151 Medium bucket**: Critical next step for H-107. Easy+Hard non-discriminating (ceiling+floor). Bob/Coach territory.
-- **Deferred**: SPASM (2604.09212, ★★★★) + PETITE (2604.08931, ★★★★) deep dives — need either functional fork or inline research allowance.
+- **Done**: SPASM (2604.09212, ★★★★) + PETITE (2604.08931, ★★★★) deep dives — completed in Session 761 (fork working).
 - **Research priorities** (Monday):
-  1. SPASM + PETITE deep dives — DEFERRED (fork broken, heartbeat prohibits inline research)
+  1. SPASM + PETITE deep dives — ✅ DONE (Session 761, fork working)
   2. Any new leads from EXP-151 Medium bucket results
   3. KE-106 habituation literature (low priority — largely subsumed)
 
