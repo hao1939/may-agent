@@ -1,6 +1,6 @@
 # Event-Native Guard-Workflow Architecture
 
-**Status**: SUPERSEDED — See `agents/shared/designs/workflow-guards.md` (guards) and `agents/shared/designs/sensor-judge-migration.md` (cron migration)  
+**Status**: SUPERSEDED — See `agents/shared/may-agent-docs/design/workflow-guards.md` (guards) and `agents/shared/may-agent-docs/design/sensor-judge-migration.md` (cron migration)  
 **Author**: Bob (design), per Hao directive 2026-04-13  
 **Date**: 2026-04-13  
 **Supersedes**: May's `DESIGN-session-event-flow.md` (session-level design — this elevates to workflow-level)

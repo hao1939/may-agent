@@ -126,12 +126,71 @@ Cleared after delivery.
 
 **Tests**: 60+ unit tests in `src/lib/workflow-guards.test.ts`
 
-## What's Next (Phase 2)
+## When to Use Guards vs Workflow Steps
 
-- More guards: verify-files, no-secret-leak
-- `skipGuards` escape hatch for workflows
-- Migrate `verify-wrap` to use auto-test guard (remove hardcoded verification step)
-- Monitor guard cost, tune `maxInjectedSteps`
+This is the most important design question. Get it wrong and you waste LLM sessions on redundant work.
+
+### ✅ Guards are RIGHT for:
+
+1. **Emergent runtime behaviors** that no single workflow can self-detect.
+   - `pivot-detector`: detects unbounded fail-retry loops *across* arbitrary steps. No workflow author thinks "what if my coder step fails 5 times in a row?" — that's an emergent property of execution.
+   - A hypothetical `cost-limit` guard could track cumulative ops across steps and block when a budget is exceeded.
+
+2. **Cross-workflow invariants** — things that must be true regardless of which workflow is running.
+   - Secret leak detection (block if any step output contains API keys)
+   - A "no-new-dependencies" guard for production code paths
+
+3. **Fallback safety nets** for workflows that lack their own verification — but ONLY targeting the gap.
+   - If a workflow is just `runAgent("coder", task)` with no verify step, `auto-test` adds value.
+   - If a workflow already runs `tsc && vitest` in its own verify phase, `auto-test` is pure waste.
+
+### ❌ Guards are WRONG for:
+
+1. **Verification logic.** That's what workflow phases are for. `implement-and-verify` has shell verification. `implement-and-review` has QA review. A guard that injects MORE verification is redundant.
+
+2. **Process steps.** If you want "always run tests after coding," put it in the workflow definition.
+
+3. **Things every serious workflow already handles.** `auto-test` fires after the coder step in `implement-and-verify`, injecting an LLM session to run tests. Then the workflow's own verify step runs `tsc + vitest` in a shell for free. That's double-testing — one costs an LLM session, the other costs nothing.
+
+### The Litmus Test
+
+Before writing a guard, ask:
+> "Will this fire on a well-designed workflow that already handles this concern?"
+
+If yes → it's workflow-level logic, not a guard.
+If no → it catches a real gap that workflows can't self-handle. That's a guard.
+
+### Practical Implication: `auto-test` needs fixing
+
+`auto-test` currently injects an LLM test step after ANY coder step that modifies src/ files. But:
+- `implement-and-verify` already runs shell verification
+- `implement-and-review` already has QA review
+- `verified-coder` already has verification
+
+The guard should ONLY fire when the WORKFLOW doesn't have its own verification. Two approaches:
+1. **Workflow opt-out**: Workflows declare `guards: { skip: ["auto-test"] }` — too verbose.
+2. **Guard awareness**: `auto-test` checks if the workflow has a following verify step — but guards can't see future steps.
+3. **Best approach**: Make `auto-test` MUCH cheaper — instead of injecting an LLM session (`run_step`), inject a shell test (`warn` with instructions, or use `runFunction`). Since guards already have `runFunction` via the workflow runtime, a shell test costs zero LLM.
+
+## What's Next (Phase 2 — revised)
+
+**Priority 1: Fix auto-test to not waste LLM sessions**
+- Convert from `run_step` (LLM session) to `warn` demand that just flags the gap
+- Workflows that need testing should have their own verification steps
+- auto-test becomes a safety net that warns, not a duplicate test runner
+
+**Priority 2: Valuable new guards**
+- `no-secret-leak` — scans step output for API key patterns. Block demand. Cross-cutting invariant, no workflow handles this.
+- `cost-limit` — tracks cumulative ops per workflow run, warns at threshold, blocks at hard limit. Emergent behavior guard.
+
+**Priority 3: Guard skip mechanism**
+- Simple env-var based: `DISABLED_GUARDS=name1,name2` (already exists)
+- Per-workflow: workflow can export `disableGuards?: string[]` property
+- No complex `skipGuards` config needed — keep it simple
+
+**Removed from plan:**
+- ~~verify-files~~ — redundant with verify-wrap and finish-guard
+- ~~Migrate verify-wrap to use auto-test~~ — backwards; verify-wrap's shell check is cheaper than auto-test's LLM session
 
 ---
 

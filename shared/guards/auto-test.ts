@@ -1,11 +1,16 @@
 /// <reference path="../../../src/lib/workflow-defs.d.ts" />
 /**
- * auto-test guard — injects a test step when source files are modified
- * without test confirmation.
+ * auto-test guard — warns when source files are modified without test confirmation.
  *
  * Listens to step_done events from agent steps. If the step modified .ts/.js
- * files under src/ but the output doesn't mention test results, it injects
- * a run_step demand to run the test suite.
+ * files under src/ but the output doesn't mention test results, it emits a
+ * warn demand so downstream verification steps (which most workflows already
+ * have) can address it. This avoids wasting an LLM session on a duplicate
+ * test run — see DESIGN-guards-v2.md "guards vs workflow verification" analysis.
+ *
+ * Previously this injected a run_step (full LLM coder session). That was
+ * redundant with implement-and-verify's shell verify step, implement-and-review's
+ * QA step, and verified-coder's built-in verification.
  */
 
 /**
@@ -66,13 +71,8 @@ export const guard: WorkflowGuard = {
 
     return [
       {
-        type: "run_step",
-        reason: `${srcFiles.length} source file(s) modified without test confirmation`,
-        step: {
-          agent: "coder",
-          task: `Run the test suite to verify the changes to: ${srcFiles.join(", ")}. Run: bun test. Report pass/fail counts.`,
-          label: "guard:auto-test",
-        },
+        type: "warn",
+        reason: `${srcFiles.length} source file(s) modified without test confirmation: ${srcFiles.join(", ")}. Ensure a verification step runs tests.`,
       },
     ];
   },
