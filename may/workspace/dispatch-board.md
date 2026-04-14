@@ -33,11 +33,10 @@ Updated: 2026-04-14 ~09:21 UTC
 - **P1**: **Guards-v2 Phase 1 implementation** — Design fully approved (all C1-C6 resolved). Tech-lead to implement. Note: fix injectionDepth reset timing (N1) during build.
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (08:51 Apr 14)
-- **System**: 8 agents active (excl amy-kimi). Zero errors, no stuck sessions. All healthy.
-- **Agent stats (6h)**: Bob 25s/27ops, Coach 30s/17ops, Evaluator 26s/3ops, May 14s/7ops, Optimizer 24s/12ops, QA 12s/6ops, Scout 17s/9ops, Tech-lead 22s/15ops.
-- **Guards-v2**: FULLY APPROVED by tech-lead. Ready for Phase 1 implementation.
-- **Queue**: Scout tool fix in progress. 4 more Ready items.
+## Latest Cycle Summary (09:21 Apr 14)
+- **System**: 8 agents active (excl amy-kimi). Zero errors. 1 stuck coach session cancelled (EXP-156, 21 ops).
+- **Guards-v2 Phase 1**: DISPATCHED to tech-lead (s_1776158541712_115, req:38c75694). Implementation in progress.
+- **Queue**: Scout tool fix in progress (tech-lead). 4 more Ready items.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
