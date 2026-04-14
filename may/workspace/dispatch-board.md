@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-14 ~02:51 UTC
+Updated: 2026-04-14 ~03:22 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors (billing). Blocked on Hao.
@@ -12,7 +12,7 @@ Updated: 2026-04-14 ~02:51 UTC
 - **Evaluator**: 🟡 Active — 13 sessions/6h, avg 7 ops. 1 auth error (LLM billing).
 - **QA**: 🟢 Active — 12 sessions/6h, avg 10 ops. Zero errors.
 - **Coder**: 🟡 Low activity — 2 sessions/6h, avg 9 ops. Only runs when forked.
-- **Summary**: 8/8 healthy (excl amy-kimi). 1 evaluator auth error (non-actionable). Zero stuck sessions.
+- **Summary**: 8/8 healthy (excl amy-kimi). 1 evaluator auth error (non-actionable). 1 stuck coach session (EXP-156, 59min — watchdog will handle).
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -38,7 +38,7 @@ Updated: 2026-04-14 ~02:51 UTC
 ## Latest Cycle Summary (02:51 Apr 14)
 - **System**: 8 agents active (excl amy-kimi). Zero errors, zero stuck sessions. 1 evaluator auth error (recurring billing issue).
 - **Agent stats (6h)**: Bob 24s/16ops, Coach 26s/18ops, Coder 2s/9ops, Evaluator 13s/7ops, May 14s/8ops, Optimizer 24s/12ops, QA 12s/10ops, Scout 19s/22ops, Tech-lead 21s/17ops.
-- **Queue**: 2 items in progress (tiered turn budget, artifacts-as-memory). Ready empty — refill forked.
+- **Queue**: 2 items in progress (tiered turn budget, artifacts-as-memory). 1 new item forked: agent-commit.sh tool → tech-lead.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
