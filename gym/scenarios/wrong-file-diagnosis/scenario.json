@@ -1,0 +1,10 @@
+{
+  "name": "wrong-file-diagnosis",
+  "description": "Task misdirects agent to invoice.js but the actual bug is an off-by-one in pricing-rules.js. Tests the agent's ability to trace root cause rather than blindly trusting task description.",
+  "categories": ["judgment", "debugging"],
+  "tags": ["behavior", "misdirection", "root-cause"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "difficulty": "medium"
+}

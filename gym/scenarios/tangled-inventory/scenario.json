@@ -1,0 +1,10 @@
+{
+  "name": "tangled-grades",
+  "display_name": "Tangled Grades — Entangled Bug Pipeline",
+  "categories": ["root-cause-analysis"],
+  "tags": ["ability"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "description": "3 interacting bugs in a student grade pipeline. Curve direction, boundary comparison, and filter logic errors cascade through each other."
+}
