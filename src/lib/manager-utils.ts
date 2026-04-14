@@ -161,7 +161,7 @@ export const RESTORED_MAX_TURNS_FALLBACK = 0;
 // Soft budget = inject "wrap up" message. Hard limit = abort after grace period.
 // See agents/optimizer/workspace/experiment-tiered-budget.md for design.
 export const TURN_BUDGET_TIERS = {
-  heartbeat: 8,
+  heartbeat: 10,
   research: 15,
   implementation: 25,
 } as const;
