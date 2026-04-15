@@ -13,7 +13,7 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-15T20:19)
+# Your Context (auto-generated 2026-04-15T20:49)
 
 **System:** 1 sessions/6h, 0% error rate
 
@@ -22,9 +22,9 @@
 
 **Your active error patterns:**
 - FM-3.3: 7x
-- FM-2.6: 2x
-- FM-4.1: 2x
 - FM-1.3: 1x
+- FM-2.6: 1x
+- FM-4.1: 1x
 
 **📊 Your Metrics:**
 - Avg ops per session (24h): **15.6** count → 25 count

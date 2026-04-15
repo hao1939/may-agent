@@ -1,7 +1,8 @@
 # DESIGN: Automated Review Gate — Code Merge Requires QA
 
-**Author:** May · **Date:** 2026-04-15 · **Status:** Draft — awaiting Hao's approval  
-**Requested by:** Hao · **Refs:** may-gatekeeper.md, guard-escalation.md
+**Author:** May · **Date:** 2026-04-15 · **Status:** Draft — Bob approved with notes, awaiting Hao's approval  
+**Requested by:** Hao · **Refs:** may-gatekeeper.md, guard-escalation.md  
+**Reviewed by:** Bob (2026-04-15) — Verdict: Approve with notes. Full review at `agents/bob/workspace/REVIEW-review-gate-design.md`
 
 ---
 
@@ -22,16 +23,18 @@ The gatekeeper operates in three modes, each catching different scenarios:
 | Mode | Mechanism | When | Catches |
 |------|-----------|------|---------|
 | **A: Workflow Guard** | `step_done` → inject QA review | During workflows | System-scope code changes in workflow steps |
-| **B: Proactive Cron Scan** | Periodic scan (every 10-15 min) | Between workflows | Unreviewed merges, stale branches, bypass commits |
+| **B: Session-End Review Subscriber** | `session_end` subscriber | After each session | Agents merging their own review branches without review |
 | **C: Design Review** | May's heartbeat judgment | During heartbeats | Designs/proposals that need Hao's approval |
 
 No single mode is sufficient. Mode A is **preventive** (blocks bad changes inline). Mode B is **detective** (finds things that slipped through). Mode C is **judgmental** (catches subtle design risks that code scanning misses).
 
-### Mode B: Review Gate Subscriber (code changes)
+### Mode B: Session-End Review Subscriber (code changes)
 
-A new `session_end` subscriber that auto-dispatches QA when a session produces a review branch.
+A `session_end` subscriber that auto-dispatches QA when a session produces a review branch.
 
 **Trigger:** `session_end` event where a `review/*` branch exists for the session.
+
+**Scope filter:** Only triggers for branches touching system-scope files (see Definitions below). Workspace-only branches (markdown in `agents/*/workspace/`) pass through without review.
 
 **Flow:**
 ```
@@ -121,15 +124,19 @@ Check for system-scope designs that need approval before implementation:
 
 This is behavioral — no code change, just a heartbeat update.
 
+## Mode A: Deferred
+
+Mode A (workflow guard) is deferred until Modes B+C prove the concept and reveal which workflow steps need inline interception. Per Bob's review: flesh this out only after behavioral validation.
+
 ## Coverage Analysis
 
-**Mode A (workflow guard)** catches changes during workflows. **Mode B (cron scan)** catches everything else:
-- Direct merges via `git merge` in bash → Mode B detects new system-scope commits on main
-- Emergency bypass commits → Mode B flags for post-hoc audit
-- Stale review branches → Mode B dispatches review for abandoned branches
-- Changes during heartbeats → Mode B scans periodically
+**Mode B (session subscriber)** catches the primary failure mode: agents merging their own review branches without review.
+**Mode C (heartbeat judgment)** catches design/proposal risks that automated scanning misses.
 
-The three modes are complementary — Mode A is preventive (blocks during workflow), Mode B is detective (scans after the fact), Mode C is judgmental (May's human-like review of designs/proposals).
+Together B+C cover:
+- Agent merges own review branch without review → Mode B catches at session_end
+- System-scope designs/proposals proceeding without approval → Mode C catches during heartbeat
+- Mode A (deferred) would add inline prevention during workflows if needed
 
 ## What This Prevents
 
@@ -144,17 +151,28 @@ The three modes are complementary — Mode A is preventive (blocks during workfl
 - May still has gatekeeper authority (existing role)
 - Hao is final authority for system-scope changes (existing chain)
 
-5. **May's heartbeat update:** Bob — what should the exact heartbeat text say for the proactive design review?
-
 ## Implementation Order
 
 1. **Phase 1:** Update May's heartbeat with design review checklist (Mode C) — zero code, behavioral
-2. **Phase 2:** Write the `gatekeeper` workflow guard (Mode A) — ~80 lines
-3. **Phase 3:** Build the proactive cron scan / session subscriber (Mode B) — ~60 lines + state file
-4. **Phase 4:** Add review metrics to DB (optional) — track what got reviewed, who approved, catch rate
+2. **Phase 2:** Build the session-end review subscriber (Mode B) — ~60 lines in `src/lib/session-subscribers.ts`
+3. **Phase 3:** Add review metrics to DB (optional) — track what got reviewed, who approved, catch rate
+4. **Phase 4 (if needed):** Write the workflow guard (Mode A) — only if B+C prove insufficient
 
-## Open Questions
+## Definitions
 
-1. **Review scope:** Should ALL review branches trigger QA, or only those touching `src/` (code)? Agent workspace changes on review branches are lower risk.
-2. **Who reviews?** May dispatches to herself currently. Should there be a dedicated QA agent?
-3. **Merge authority:** Can May merge autonomously for agent-scope changes? Or does every merge need explicit approval?
+**System-scope** = changes to:
+- `src/` (runtime code)
+- `agents/shared/protocols/` (cross-agent contracts)
+- Workflow definitions, guard logic, session management
+- Another agent's heartbeat, context, or SOUL files
+
+**Agent-scope** = changes to:
+- `agents/<name>/` (single agent's own workspace, context, skills)
+- Knowledge entries (`knowledge/entries/`)
+- Experiment results and workspace markdown
+
+## Resolved Questions (from Bob's review)
+
+1. **Review scope:** Only branches touching system-scope files trigger review. Workspace-only markdown changes pass through without review.
+2. **Who reviews?** May reviews. A dedicated QA agent is premature — no evidence May's reviews are bottlenecked or low quality.
+3. **Merge authority:** May merges agent-scope autonomously. System-scope requires Hao approval.

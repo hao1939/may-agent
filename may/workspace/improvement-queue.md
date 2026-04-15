@@ -13,7 +13,7 @@
 
 - [x] **Tech-lead post-dispatch finish guard** — ✅ DONE (2026-04-15). Added "⚡ Post-dispatch rule" to tech-lead heartbeat.md Step 2: "After any agents.fork() or workflow.run(), call finish() within 3 ops."
 
-- [ ] **QA heartbeat simplification (IT-21)** — QA interrupt rate is 67% and worsening (was 58% last cycle per coach reflection 2026-04-15-06). QA heartbeats time out at 5-8 ops. The heartbeat is likely doing too much work per cycle. **Fix**: Investigate QA heartbeat structure, identify bottleneck (likely: journal parsing, large unreviewed-findings.md at 152KB, or expensive queries), simplify to dispatcher pattern. **Deliverable**: Simplified `agents/qa/heartbeat.md` + evidence of reduced interrupt rate. **Size**: Medium. **Owner**: tech-lead or coach.
+- [x] **QA heartbeat simplification (IT-21)** — ✅ SELF-RESOLVED (2026-04-15). QA interrupt rate dropped from 67% to 0% (12/12 done, 0 interrupted in last 6h). Tech-lead root cause analysis confirmed it was system-wide external session abortion, not a QA heartbeat issue.
 
 - [x] **KE-180/KE-182 production deployment — hard gate design rules** — ✅ DONE (2026-04-15, commit 62ece090). Deployed to production artifacts.
 

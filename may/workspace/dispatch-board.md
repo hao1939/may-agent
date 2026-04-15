@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-15 ~20:27 UTC
+Updated: 2026-04-15 ~20:53 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — billing. Blocked on Hao.
@@ -29,7 +29,7 @@ Updated: 2026-04-15 ~20:27 UTC
 | **Metric System Phase 3 — Adoption** | ⏳ Active | multiple | Phase 3 dispatched: research_log adoption (bob+scout), quality investigation (coach), threshold fix (tech-lead ✅ DONE). |
 | **Model Diversity Review** | ⏳ Active | bob | Design review: which agent on which model? (req:c56a6ae4) |
 | **Fix compose-guards.ts (RETRY)** | ✅ DONE+MERGED | tech-lead | Merged to main (2705e8ce). finish(blocked/failure) bypasses guards, finish(success) blocked by quality gate. |
-| **Gatekeeper Review Gate design** | 📋 Review | bob+tech-lead | Merge conflicts resolved by May. Sent clean version back to Bob for design review. Still awaiting Hao approval for implementation. |
+| **Gatekeeper Review Gate design** | ✅ Design reviewed | bob | Bob approved with notes. All feedback incorporated: Mode B renamed, system-scope defined, open questions resolved, Mode A deferred. Awaiting Hao approval → then dispatch Phase 1 (behavioral) to may, Phase 2 (code) to tech-lead. |
 | **Heartbeat commit instruction fix** | ✅ DONE | may | Fixed Step 7 of heartbeat.md — was telling me NOT to commit (stale 10min auto-commit reference). Now says commit first, auto-commit is 2h safety net. |
 | ⚠️ **Hao task truncated** | ❓ Need info | Hao | req:7a936dcb was truncated at 500 chars. Only issue #1 (threshold inversion) visible+dispatched. May have more issues. |
 
@@ -57,10 +57,10 @@ Updated: 2026-04-15 ~20:27 UTC
 - **P2**: Amy-kimi billing — blocked on Hao.
 - ⚠️ **HOLD**: Ch2-production-gates implementation — Hold for EXP-170.
 
-## Latest Cycle Summary (20:27 Apr 15)
-- **RESOLVED**: 4 merge conflicts in review-gate.md — merged 2-mechanism and 3-mode approaches into clean 3-mode design. Dispatched to Bob for review.
-- **STEADY**: 9/9 agents active. Zero errors. No stuck sessions. Bob had 1 interrupted (abort), not concerning.
-- **WAITING**: Gatekeeper Review Gate needs Hao approval. Hao task truncation (req:7a936dcb) still unresolved.
+## Latest Cycle Summary (20:53 Apr 15)
+- **PROCESSED**: Bob's design review of review-gate.md (Approve with notes). Incorporated all feedback: Mode B renamed to "Session-End Review Subscriber", system-scope defined concretely, open questions resolved, Mode A deferred, orphaned text cleaned.
+- **STEADY**: 9/9 agents active. Zero errors. Zero stuck sessions.
+- **WAITING**: Gatekeeper Review Gate needs Hao approval to begin implementation. Hao task truncation (req:7a936dcb) still unresolved.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
