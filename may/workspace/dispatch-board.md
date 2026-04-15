@@ -25,8 +25,15 @@ Updated: 2026-04-15 ~14:00 UTC
 | Issue | Status | Owner | Notes |
 |-------|--------|-------|-------|
 | Amy-kimi billing outage | 🔴 Blocked | Hao | Still down, needs balance refill |
-| **Unified Metric System Design** | 🟢 RUNNING | bob | Design request from Hao (req:cc18d652 + f8aac33f). Forked session s_1776261740281_26. |
-| **Metric System Brainstorm** | ✅ ALL 5 IN → SYNTHESIZING | bob | All 5 responses received. Bob forked to synthesize unified proposal (s_1776263498059_17). Output → `unified-metric-system-proposal.md`. |
+| **Metric System Phase 3 — Adoption** | ⏳ BLOCKED | may/tech-lead | Phase 1+2 complete. Phase 3 blocked on process restart for new handlers (heartbeat-context metrics injection, proof-of-life metrics). |
+| **Wire gym-batch.sh into coach growth-cycle** | 🟡 Ready | tech-lead | Top improvement queue item. Small scope. |
+| **Tech-lead post-dispatch finish guard** | 🟡 Ready | may | Heartbeat edit to prevent 100+ op heartbeats. |
+| **QA heartbeat simplification (IT-21)** | 🟡 Ready | tech-lead | QA interrupt rate 67%. Needs investigation + simplification. |
+
+## Completed This Cycle
+| Issue | Status | Owner | Notes |
+|-------|--------|-------|-------|
+| **Metric System Phase 2** | ✅ DONE | tech-lead | system_status agent param, proof-of-life metrics, heartbeat-context injection (s_1776269084528_9, 32 ops) |
 | **EXP-163 Results Processing** | ✅ DONE | bob | KE-129 reinterpreted, H-161 updated, KE-184 written (ceiling effect methodology). |
 | **Research Conclusion Sprint** | ✅ DONE | bob | All 6 threads concluded (Batch 1: H-098/099/091, Batch 2: H-085/095/093). Synthesis written. |
 | **EXP-147 Track B Context Isolation** | ✅ DONE | coach | All experiments COMPLETE or CANCELLED per coach. |
@@ -35,6 +42,7 @@ Updated: 2026-04-15 ~14:00 UTC
 | **Scenario oracle generator** | ✅ MERGED | tech-lead | Merged to main (c197286d). |
 | **Pivot-detector guard** | ✅ MERGED | may | Previously merged (8fdb18db). |
 | **Verify-wrap "undefined" bug** | ✅ MERGED | may | Previously merged (8fdb18db). |
+| **Unified Metric System Design** | ✅ DONE | bob | All 5 brainstorm responses synthesized. Approved by Hao. |
 
 ## Next Actions
 - **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. **Blocked on Hao since Mar 24**.
