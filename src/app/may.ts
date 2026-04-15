@@ -165,27 +165,6 @@ const models: Record<string, ModelWithApiKey> = {
     baseUrl: MODEL_BASE_URL,
     apiKey: LITELLM_API_KEY,
   },
-  gpt54: {
-    ...getModel("openai", "gpt-5.2"),
-    api: "openai-responses" as const,
-    id: "gpt-5.4",
-    baseUrl: MODEL_BASE_URL,
-    apiKey: LITELLM_API_KEY,
-  },
-  gemini3pro: {
-    ...getModel("openai", "gpt-4o"),
-    api: "openai-completions" as const,
-    id: "gemini-3.1-pro-preview",
-    baseUrl: MODEL_BASE_URL,
-    apiKey: LITELLM_API_KEY,
-  },
-  gemini3flash: {
-    ...getModel("openai", "gpt-4o"),
-    api: "openai-completions" as const,
-    id: "gemini-3-flash-preview",
-    baseUrl: MODEL_BASE_URL,
-    apiKey: LITELLM_API_KEY,
-  },
   kimi: {
     ...getModel("openai", "gpt-4o"),
     api: "openai-completions" as const,
