@@ -1,0 +1,12 @@
+{
+    "name": "exp165-f2-only",
+    "categories": ["debugging", "root-cause-analysis"],
+    "tags": ["behavioral", "discipline", "cascading-bugs", "EXP-165", "F2-only", "behavioral-forcing"],
+    "tier": "standard",
+    "timeout": 5,
+    "agent_type": "coder",
+    "workflow": true,
+    "baseline_scenario": "cascading-fix-trap-v2",
+    "phase_cleanup": ["ROOT_CAUSE_ANALYSIS.md"],
+    "description": "EXP-165 Arm B (F2-only): Forced ROOT_CAUSE_ANALYSIS.md production in Phase 1, deleted before Phase 2. Tests behavioral forcing without information provision."
+}
