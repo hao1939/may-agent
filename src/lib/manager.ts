@@ -10,8 +10,6 @@ import {
   truncateForPrompt,
   INFRA_RETRY_MAX,
   RESTORED_MAX_TURNS_FALLBACK,
-  TURN_BUDGET_GRACE,
-  resolveTurnBudget,
 } from "./manager-utils.js";
 import type { RegisteredAgent, ActiveSession, RunOptions, SubagentManagerOptions } from "./manager-utils.js";
 import { createFinishGuard } from "./tools/finish-guard.js";
@@ -286,35 +284,6 @@ export class SubagentManager {
 
         if (event.message.role === "assistant") {
           session.turnCount++;
-
-          // ── EXP-TIERED-BUDGET: Soft budget + grace period enforcement ──
-          if (session.maxTurns > 0) {
-            const softLimit = session.maxTurns;
-            // Guard redirects (e.g., FM-3.3 verify-wrap) consume ≥2 extra turns for the
-            // verify-then-re-finish cycle. Extend the hard limit to avoid impossible aborts.
-            const guardExtension = session.guardRedirectCount * TURN_BUDGET_GRACE;
-            const hardLimit = softLimit + TURN_BUDGET_GRACE + guardExtension;
-
-            if (session.turnCount === softLimit) {
-              // Soft limit reached — inject a wrap-up message
-              bus?.emit({
-                type: "info",
-                message: `[turn-budget] Session ${sessionId} (${session.agentName}) reached soft limit (${softLimit} turns). Injecting wrap-up message.`,
-              });
-              session.agent.steer({
-                role: "user",
-                content: `⚠️ **Turn budget reached** (${softLimit}/${softLimit} turns used). You have ${TURN_BUDGET_GRACE} more turns before this session is force-closed. Please wrap up your current work and call \`finish()\` now. If you have incomplete work, use status "partial" with next_steps describing what remains.`,
-              });
-            } else if (session.turnCount >= hardLimit) {
-              // Hard limit — force-close the session
-              bus?.emit({
-                type: "warn",
-                message: `[turn-budget] Session ${sessionId} (${session.agentName}) exceeded hard limit (${hardLimit} turns). Force-closing.`,
-              });
-              session.abortController.abort();
-              session.agent.abort();
-            }
-          }
         }
       }
     });
@@ -422,6 +391,12 @@ export class SubagentManager {
               // His deliver-or-report workflow provides superior verification.
               // See: agents/shared/knowledge/experiments/EXP-142/design.md
               exemptAgents: ["bob"],
+              // EXP-150: Tier 2 warn-only mode for agents with improving trajectories.
+              // Coach (34.7% → declining) and tech-lead (21.4% → declining) have
+              // implicit verification via workflow structure. Warn-only logs events
+              // without blocking, allowing measurement of guard necessity.
+              // See: agents/shared/knowledge/experiments/EXP-150/design.md §3.1
+              warnOnlyAgents: ["coach", "tech-lead"],
             }),
             createReadDedupGuard(),
             createSessionReadGuard(),
@@ -1008,7 +983,7 @@ export class SubagentManager {
       orderId: opts?.orderId,
       requestId: opts?.requestId,
       consecutiveErrorTurns: 0,
-      maxTurns: resolveTurnBudget(task, { maxTurns: opts?.maxTurns, kind: opts?.kind }, def.turnBudget),
+      maxTurns: opts?.maxTurns ?? 0,
       stuckWarningInjected: false,
       currentTurnErrors: 0,
       currentTurnSuccesses: 0,

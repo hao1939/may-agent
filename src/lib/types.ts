@@ -67,12 +67,7 @@ export interface SubagentDefinition {
    */
   opBudget?: number;
 
-  /**
-   * Turn budget override for this agent.
-   * - number: flat limit for all session types (e.g., 12)
-   * - object: per-tier overrides (e.g., { heartbeat: 10, research: 20, implementation: 30 })
-   * - 0 or undefined: use global TURN_BUDGET_TIERS defaults with auto-classification
-   */
+  /** @deprecated Turn budget enforcement removed. Field kept for type compat. */
   turnBudget?: number | Record<string, number>;
 }
 
