@@ -13,7 +13,6 @@
 
 ---
 
-<<<<<<< Updated upstream
 # Your Context (auto-generated 2026-04-14T13:21)
 
 **System:** 9 sessions/6h, 0% error rate
@@ -25,19 +24,3 @@
 - tech-lead: 1s, 81KB
 - qa: 1s, 66KB
 - evaluator: 1s, 54KB
-=======
-# Your Context (auto-generated 2026-04-15T06:30)
-
-**System:** 8 sessions/6h, 0% error rate
-**You:** 1 sessions, 26KB total (26KB avg)
-
-**Top spenders:**
-- scout: 1s, 33KB
-- may: 1s, 32KB
-- coach: 1s, 29KB
-- bob: 1s, 29KB
-- tech-lead: 1s, 27KB
-
-**Your active error patterns:**
-- FM-3.3: 1x
->>>>>>> Stashed changes
