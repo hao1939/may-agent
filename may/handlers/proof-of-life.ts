@@ -13,6 +13,9 @@
 
 import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
 import type { CronEntry } from "../../../src/lib/cron-tool.js";
+import { Database } from "bun:sqlite";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 
 // ── Constants ─────────────────────────────────────────────────────────
 
@@ -36,6 +39,38 @@ interface PersistentTaskRow {
   agent: string;
   task: string;
   sessionId: string;
+}
+
+interface HealthMetricRow {
+  name: string;
+  current: number | null;
+  target: number | null;
+  threshold: number | null;
+  unit: string | null;
+  type: string;
+}
+
+function getHealthMetrics(baseDir: string): HealthMetricRow[] {
+  const dbPath = join(baseDir, ".state", "may.db");
+  if (!existsSync(dbPath)) return [];
+  let db: Database | null = null;
+  try {
+    db = new Database(dbPath, { readonly: true });
+    const tableCheck = db.prepare(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='metrics'"
+    ).get();
+    if (!tableCheck) return [];
+    return db.prepare(
+      `SELECT name, current, target, threshold, unit, type
+       FROM metrics
+       WHERE status = 'active' AND type = 'health' AND current IS NOT NULL
+       ORDER BY id`
+    ).all() as HealthMetricRow[];
+  } catch {
+    return [];
+  } finally {
+    try { db?.close(); } catch { /* ignore */ }
+  }
 }
 
 // ── Factory ───────────────────────────────────────────────────────────
@@ -132,6 +167,20 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       for (const row of persistentRows) {
         const taskSnip = (row.task || "").replace(/\n/g, " ").slice(0, 60);
         lines.push(`  ${row.agent}: ${taskSnip}`);
+      }
+    }
+
+    // Health metrics summary from may.db
+    const baseDir = process.cwd();
+    const healthMetrics = getHealthMetrics(baseDir);
+    if (healthMetrics.length > 0) {
+      lines.push("");
+      lines.push("📊 Health metrics:");
+      for (const m of healthMetrics) {
+        const unit = m.unit ? m.unit : "";
+        const warn = m.threshold != null && m.current != null && m.current < m.threshold ? " ⚠️" : "";
+        const targetStr = m.target != null ? `/${m.target}` : "";
+        lines.push(`  ${m.name}: ${m.current}${targetStr} ${unit}${warn}`);
       }
     }
 

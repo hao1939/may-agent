@@ -1,18 +1,18 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-15 ~15:00 UTC
+Updated: 2026-04-15 ~15:30 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — billing. Blocked on Hao.
-- **Bob**: 🟢 Active — 30 sessions/6h, avg 14 ops. Zero errors.
-- **Coach**: 🟢 Active — 25 sessions/6h, avg 15 ops. Zero errors.
+- **Bob**: 🟢 Active — 31 sessions/6h, avg 17 ops. Zero errors.
+- **Coach**: 🟢 Active — 26 sessions/6h, avg 15 ops. Zero errors.
 - **Scout**: 🟢 Active — 14 sessions/6h, avg 6 ops. Zero errors.
-- **Tech-lead**: 🟢 Active — 35 sessions/6h, avg 18 ops. Zero errors.
-- **Optimizer**: 🟢 Active — 26 sessions/6h, avg 10 ops. Zero errors.
-- **Evaluator**: 🟢 Active — 49 sessions/6h, avg 0 ops. Zero errors.
+- **Tech-lead**: 🟢 Active — 30 sessions/6h, avg 19 ops. Zero errors.
+- **Optimizer**: 🟢 Active — 25 sessions/6h, avg 12 ops. Zero errors.
+- **Evaluator**: 🟢 Active — 42 sessions/6h, avg 0 ops. Zero errors.
 - **QA**: 🟢 Active — 12 sessions/6h, avg 6 ops. (IT-21 known).
-- **Coder**: 🟢 Active — 11 sessions/6h, avg 20 ops. Zero errors.
-- **Summary**: 9/9 healthy. Amy-kimi still down. 1 bob interrupt (abort, not real error). No stuck sessions.
+- **Coder**: 🟢 Active — 8 sessions/6h, avg 23 ops. Zero errors.
+- **Summary**: 9/9 healthy. Amy-kimi still down. 1 bob interrupt (abort). No stuck sessions.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -27,6 +27,7 @@ Updated: 2026-04-15 ~15:00 UTC
 | Amy-kimi billing outage | 🔴 Blocked | Hao | Still down, needs balance refill |
 | **Unified Metric System Design** | ✅ APPROVED | may | Hao approved. Phase 1 implementation dispatched to tech-lead. Project: `agents/shared/projects/metric-system.md`. |
 | **Metric System Brainstorm** | ✅ DONE | bob | All 5 responses synthesized → `unified-metric-system-proposal.md`. Approved by Hao. |
+| **KE-181 Common-Sense Rule** | ✅ DONE | may | Coach proposed, approved + added to common-sense.md. |
 | **Metric System Phase 1** | 🟢 RUNNING | tech-lead | Schema + snapshot handler + seed metrics. Forked ~14:55 UTC. |
 | **KE-180/182 Hard Gate Rules Deployment** | 🟢 RUNNING | coach | Deploy hard gate design rules to production artifact. Forked ~15:00 UTC. |
 | **TL Post-Dispatch Finish Guard** | ✅ DONE | may | Added "finish within 3 ops after fork" to tech-lead heartbeat Step 3. |
@@ -47,11 +48,12 @@ Updated: 2026-04-15 ~15:00 UTC
 - **P2**: Amy-kimi billing — blocked on Hao.
 - ⚠️ **HOLD**: Ch2-production-gates implementation — EXP-163 showed the evidence base (EXP-155 +85pp) was measuring process compliance, NOT product quality. All arms 100% product rate. Do NOT implement content quality gates until new evidence from EXP-170 or Bob's recognition-layer scenarios.
 
-## Latest Cycle Summary (15:00 Apr 15)
-- **Metric System Phase 1**: Still running with tech-lead. No errors.
-- **DISPATCHED**: KE-180/182 hard gate design rules → coach (knowledge APPLICATION priority).
-- **DONE**: Tech-lead post-dispatch finish guard — added to heartbeat Step 3.
-- **STATUS**: 9/9 agents healthy. No errors. No stuck sessions. 5 pending requests all completed or in-progress.
+## Latest Cycle Summary (15:30 Apr 15)
+- **Metric System Phase 1**: Still running with tech-lead (session _53, 13 ops, 9min). Phase 2 in progress.
+- **KE-181**: Approved coach's common-sense rule proposal. Added "Measure product, not process" to `agents/shared/common-sense.md`.
+- **Coach duplicate requests**: req:13164607 + req:6475aaf0 are duplicates — same KE-181 proposal. Both resolved.
+- **Metric system project file requests**: req:6ef7fa20 + req:fd333372 already completed last cycle.
+- **STATUS**: 9/9 agents healthy. No errors. No stuck sessions (bob/coach heartbeats borderline at 30min but still active).
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.

@@ -29,6 +29,7 @@ import {
   mkdirSync,
 } from "node:fs";
 import { join } from "node:path";
+import { Database } from "bun:sqlite";
 import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
 import type { CronEntry } from "../../../src/lib/cron-tool.js";
 
@@ -341,6 +342,64 @@ function formatAgentContext(snap: SystemSnapshot, agentName: string): string {
   return lines.join("\n");
 }
 
+// ── Metrics Integration ───────────────────────────────────────────────
+
+interface MetricRow {
+  id: string;
+  name: string;
+  current: number | null;
+  target: number | null;
+  unit: string | null;
+  type: string;
+  threshold: number | null;
+  last_value: number | null;
+  measured_at: number | null;
+}
+
+function getAgentMetrics(baseDir: string, agentName: string): MetricRow[] {
+  const dbPath = join(baseDir, ".state", "may.db");
+  if (!existsSync(dbPath)) return [];
+  let db: Database | null = null;
+  try {
+    db = new Database(dbPath, { readonly: true });
+    // Check if metrics table exists
+    const tableCheck = db.prepare(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='metrics'"
+    ).get();
+    if (!tableCheck) return [];
+
+    return db.prepare(
+      `SELECT m.id, m.name, m.current, m.target, m.unit, m.type, m.threshold,
+              s.value as last_value, s.measured_at
+       FROM metrics m
+       LEFT JOIN metric_snapshots s ON m.id = s.metric_id
+         AND s.measured_at = (SELECT MAX(measured_at) FROM metric_snapshots WHERE metric_id = m.id)
+       WHERE m.owner = ? AND m.status = 'active'
+       ORDER BY m.type, m.id`
+    ).all(agentName) as MetricRow[];
+  } catch {
+    return [];
+  } finally {
+    try { db?.close(); } catch { /* ignore */ }
+  }
+}
+
+function formatMetricsContext(metrics: MetricRow[]): string {
+  if (metrics.length === 0) return "";
+  const lines: string[] = [];
+  lines.push("");
+  lines.push("**📊 Your Metrics:**");
+  for (const m of metrics) {
+    const val = m.current != null ? `${m.current}` : (m.last_value != null ? `~${m.last_value}` : "unmeasured");
+    const unit = m.unit ? ` ${m.unit}` : "";
+    const targetStr = m.target != null ? ` → ${m.target}${unit}` : "";
+    const warn = m.type === "health" && m.threshold != null && m.current != null && m.current < m.threshold ? " ⚠️" : "";
+    lines.push(`- ${m.name}: **${val}**${unit}${targetStr}${warn}`);
+  }
+  lines.push("");
+  return lines.join("\n");
+}
+
 // ── Handler Module (correct HandlerModule["create"] signature) ────────
 
 export const create: HandlerModule["create"] = (
@@ -385,6 +444,13 @@ export const create: HandlerModule["create"] = (
         }
 
         agentContext += formatAgentContext(snap, agentName);
+
+        // Inject owned metrics from may.db
+        const metrics = getAgentMetrics(baseDir, agentName);
+        if (metrics.length > 0) {
+          agentContext += formatMetricsContext(metrics);
+        }
+
         writeFileSync(
           join(agentWorkspace, "heartbeat-context.md"),
           agentContext,
@@ -396,7 +462,7 @@ export const create: HandlerModule["create"] = (
 
     // Log result via notify (shows in cron output)
     const nudgeNote = nudgesInjected > 0 ? ` ${nudgesInjected} active nudge(s) injected.` : "";
-    const summary = `Generated system context: ${snap.totalSessions} sessions, ${snap.totalKB}KB in ${snap.windowHours}h window. Context files written for ${written} agents.${nudgeNote}`;
+    const summary = `Generated system context: ${snap.totalSessions} sessions, ${snap.totalKB}KB in ${snap.windowHours}h window. Context files written for ${written} agents (with metrics injection).${nudgeNote}`;
     ctx.log(summary);
   };
 };
