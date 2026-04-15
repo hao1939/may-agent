@@ -408,6 +408,54 @@ describe("workflow tool: ctx.agent", () => {
       expect(parsed.error).toContain("invalid agent name");
     }
   });
+
+  it("rejects runAgent with the literal string 'undefined' as agent name", async () => {
+    writeWorkflow(
+      "bad-agent-str.ts",
+      `
+      export const name = "bad-agent-str";
+      export async function execute(ctx) {
+        // Simulate serialization bug: agentName becomes the string "undefined"
+        await ctx.runAgent("undefined", "task");
+        return ctx.done("should not reach");
+      }
+    `,
+    );
+
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")), infraRetryMax: 0 });
+    const tool = createWorkflowTool({ manager, workflowDir });
+
+    const result = await tool.execute("tc1", { action: "run", name: "bad-agent-str", task: "test" });
+    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+
+    expect(parsed.type).toBe("error");
+    if (parsed.type === "error") {
+      expect(parsed.error).toContain("invalid agent name");
+    }
+  });
+
+  it("coerces ctx.agent to 'unknown' when agentName is string 'undefined'", async () => {
+    writeWorkflow(
+      "agent-echo-undef.ts",
+      `
+      export const name = "agent-echo-undef";
+      export async function execute(ctx) {
+        return ctx.done("agent=" + ctx.agent);
+      }
+    `,
+    );
+
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")), infraRetryMax: 0 });
+    const tool = createWorkflowTool({ manager, workflowDir, agentName: "undefined" });
+
+    const result = await tool.execute("tc1", { action: "run", name: "agent-echo-undef", task: "test" });
+    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+
+    expect(parsed.type).toBe("done");
+    if (parsed.type === "done") {
+      expect(parsed.summary).toBe("agent=unknown");
+    }
+  });
 });
 
 describe("workflow tool: steering", () => {
