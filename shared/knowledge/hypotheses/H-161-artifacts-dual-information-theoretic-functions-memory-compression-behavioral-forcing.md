@@ -1,12 +1,13 @@
 # H-161: Artifacts Serve Dual Information-Theoretic Functions — Memory Compression + Behavioral Forcing
 
-**Status**: Proposed  
-**P(H)**: 0.72  
+**Status**: Supported  
+**P(H)**: 0.88  
 **Tier**: 1 (Empirically Grounded, High Confidence)  
 **Date**: 2026-04-14  
 **Author**: Bob  
 **Derived from**: DD-755 (Artifact Reduction Theorem), KE-129 (Forced Externalization Only Reliable Channel), KE-176 (Selective Skill Compliance), H-085 (Forced Externalization General Mechanism), H-098 (Attention Channel Theory), H-108 (Guard Artifacts as Environmental Memory), H-160 (Structural > Behavioral for Interruptive Steps)
 **Updated**: 2026-04-15 — DD-570 (SKILL0) connection added. SKILL0's internalization framework predicts F2 becomes unnecessary post-training (behaviors become parametric) while F1 remains valuable (environmental persistence). See KE-183.
+**Updated**: 2026-04-15 — **EXP-164 CONFIRMS H-161**. Status → Supported, P(H) 0.72 → 0.88. Both F1 and F2 independently sufficient (100% vs 0% baseline, p<0.0001). Stronger than predicted: each function alone produces the full effect on misleading-test-fix. See KE-185, EXP-164/results.md.
 
 ## Thesis
 
@@ -107,6 +108,7 @@ Optimizing for F1 and F2 pulls in different directions:
 
 | Evidence | Function | Strength |
 |----------|----------|----------|
+| **EXP-164 (4-arm factorial)** | **F1+F2 independence** | **Very strong — each function independently 100% vs 0% baseline, p<0.0001, N=10/arm (N=100 total). Strongest evidence for H-161.** |
 | DD-755 Theorem 1 | F1 (mathematical proof) | Strong — formal proof that artifacts compress history |
 | DD-755 Experiments 1-3 | F1 (empirical in RL) | Moderate — demonstrated in grid-world, not LLM agents |
 | KE-129 (EXP-127) | F2 (0% vs 100%) | Very strong — cleanest result in knowledge base |
@@ -180,22 +182,25 @@ This is the crispest test of independence. Take the EXP-155 setup (hard gate req
 
 **N per arm**: 15 (60 total). Effect sizes from KE-129 suggest this is sufficient.
 
-## Prior Probability: P(H) = 0.72
+## Prior Probability: P(H) = 0.88 (updated from 0.72 after EXP-164)
 
 - (+) DD-755 Theorem 1 is a mathematical proof — F1 mechanism is formally established
 - (+) KE-129 0%/100% result is the strongest empirical evidence in our KB — F2 mechanism is empirically established
 - (+) The independence claim is logically consistent — different beneficiaries, different timing
-- (−) No direct empirical test of independence yet — the two functions have never been measured separately
+- **(+) EXP-164: Direct 4-arm factorial test. F1-only 100%, F2-only 100%, baseline 0% (each p<0.0001). Both functions independently sufficient. N=10/arm, replicated across N=100 total runs.**
+- (−) ~~No direct empirical test of independence yet~~ **Resolved by EXP-164**
 - (−) LLM agents may not exhibit DD-755's capacity effects in the same way as RL agents
-- (−) The design tension prediction (F1/F2 trade-offs) is speculative — it might be that well-designed artifacts maximize both
+- (−) Results at ceiling on misleading-test-fix — additivity cannot be assessed. Need non-ceiling scenario (EXP-165 pending on cascading-fix-trap-v2)
+- (−) F2 "independence" may be confounded with 2-phase workflow structure rather than artifact production per se
 
 ## Next Steps
 
 1. ~~**Run EXP-155**~~ (already designed) — provides first data on F2 in the hidden-dep scenario → **Superseded: EXP-163 showed hidden-dep has ceiling effect (100% product baseline). This scenario cannot test H-161.**
-2. **Design a harder scenario for H-161 testing**: Needs 30-70% baseline product pass rate, with a failure mode that artifacts could help with. Bug 2 must be genuinely hidden (not surfaced by running the program). Candidates: multi-file logic bugs with subtly wrong output, race conditions, non-obvious dependency graphs across 3+ files.
-3. **Design EXP-162**: The 4-arm independence test above (P-161a + P-161b) — but MUST use a scenario with room to improve, not hidden-dep
-4. **Post-hoc analysis**: Artifact quality analysis (P-161c) should use EXP-127/EXP-156 data, NOT hidden-dep data
-5. **Scenario portfolio**: Creating medium-baseline scenarios (see Bob's scenario gap-fill item) would enable P-161d testing
+2. ~~**Design a harder scenario for H-161 testing**~~: → **Done: cascading-fix-trap-v2 designed for EXP-165**
+3. ~~**Design EXP-162**~~ → **Superseded by EXP-164 (4-arm factorial), which directly tested F1/F2 independence. COMPLETE.**
+4. **EXP-165 (pending)**: Non-ceiling replication on cascading-fix-trap-v2. Coach running. Will test whether independent sufficiency holds when baseline is non-zero, enabling additivity analysis.
+5. **Post-hoc analysis**: Artifact quality analysis (P-161c) should use EXP-127/EXP-156 data, NOT hidden-dep data
+6. **Scenario portfolio**: Creating medium-baseline scenarios (see Bob's scenario gap-fill item) would enable P-161d testing
 
 ## EXP-163 Result (2026-04-15): INCONCLUSIVE — Ceiling Effect
 
@@ -217,3 +222,29 @@ DD-570's skill internalization framework (training to move skills from context i
 - **F1 (memory compression)** remains valuable indefinitely — even a perfectly trained agent benefits from persisting its reasoning for downstream consumers
 
 This means: in a world with SKILL0-style training access, the optimal artifact design shifts from F2-optimized (maximally interruptive to force behavior) to F1-optimized (maximally informative for readers). For API-only users (us), F2 remains critical because we cannot internalize behaviors through training — Ch2 gates are our permanent substitute for what SKILL0 achieves through RL. See KE-183 for full analysis.
+
+## EXP-164 Result (2026-04-15): SUPPORTED — Independent Sufficiency
+
+**EXP-164 is the definitive test of H-161.** 4-arm factorial design on misleading-test-fix (0% baseline scenario):
+
+| Arm | Design | Pass Rate | p vs baseline |
+|-----|--------|-----------|---------------|
+| A (F1+F2) | Full hard gate | 10/10 (100%) | <0.0001 |
+| B (F2-only) | Forced production, artifact deleted | 10/10 (100%) | <0.0001 |
+| C (F1-only) | Pre-written expert diagnosis | 10/10 (100%) | <0.0001 |
+| D (baseline) | No intervention | 0/10 (0%) | — |
+
+**Extended data** (all available runs): A: 22/22, B: 22/22, C: 25/25, D: 0/31. Total: 69/69 treatment vs 0/31 baseline.
+
+### Key findings:
+1. **Independent sufficiency**: Each function alone produces the FULL effect (100% vs 0%). Stronger than H-161 predicted (expected partial benefit per function).
+2. **No additivity signal**: Both functions at ceiling → combining adds nothing on this task. Additivity analysis is uninformative.
+3. **F2 mechanism persists across phases**: Even when DIAGNOSIS.md is physically deleted between phases, Phase 2 agent correctly identifies the test bug. The behavioral forcing effect survives artifact removal.
+4. **Baseline perfectly replicates**: 0/10 (now 0/81 total across all experiments). The misleading-test-fix trap is maximally robust without intervention.
+
+### Bayesian update: P(H) 0.72 → 0.88
+- Strong upward: direct empirical confirmation of both F1 and F2 independence
+- Held below 0.90 because: (a) ceiling effect prevents additivity assessment, (b) single scenario, (c) F2 confound with 2-phase workflow structure
+- **EXP-165** (non-ceiling replication on cascading-fix-trap-v2) pending — could push P(H) above 0.90
+
+See KE-185 for the independent sufficiency finding. See EXP-164/results.md for full methodology and raw data.
