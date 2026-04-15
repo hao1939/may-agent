@@ -31,8 +31,9 @@ export function createContextUpdater(projectRoot: string): (event: AgentEvent) =
       let content = "";
       try {
         content = readFileSync(contextPath, "utf-8");
-      } catch {
+      } catch (err) {
         /* file doesn't exist yet */
+        log("warn", `[context-updater] could not read context file for ${event.agent}: ${err}`);
       }
 
       for (const update of updates) {
@@ -50,8 +51,9 @@ export function createContextUpdater(projectRoot: string): (event: AgentEvent) =
 
       mkdirSync(dirname(contextPath), { recursive: true });
       writeFileSync(contextPath, content);
-    } catch {
+    } catch (err) {
       /* best-effort */
+      log("warn", `[context-updater] failed to apply context updates for ${event.agent}: ${err}`);
     }
   };
 }
@@ -79,12 +81,14 @@ export function createRequestTracker(persistDir: string): (event: AgentEvent) =>
               method: "message",
               source: "finish",
             });
-          } catch {
+          } catch (err) {
             /* best-effort */
+            log("warn", `[request-tracker] failed to track new item for ${event.agent}: ${err}`);
           }
         }
-      } catch {
+      } catch (err) {
         /* best-effort */
+        log("warn", `[request-tracker] failed to process new_items for ${event.agent}: ${err}`);
       }
     }
 
@@ -121,8 +125,9 @@ export function createRequestTracker(persistDir: string): (event: AgentEvent) =>
             });
           }
         }
-      } catch {
+      } catch (err) {
         /* best-effort */
+        log("warn", `[request-tracker] failed to process completed_items for ${event.agent}: ${err}`);
       }
     }
   };
@@ -203,7 +208,7 @@ export function createStuckDetector(
         log("info", `[stuck] decision=kill source=fallback session=${event.sessionId} agent=${event.agent}`);
         emitCancel(event.sessionId, reason);
         if (onCircuitBreak) {
-          try { onCircuitBreak(event.agent, event.sessionId, reason); } catch { /* best-effort */ }
+          try { onCircuitBreak(event.agent, event.sessionId, reason); } catch (err) { log("warn", `[stuck] onCircuitBreak failed for ${event.sessionId}: ${err}`); }
         }
       };
 
@@ -219,12 +224,12 @@ export function createStuckDetector(
           if (action === "kill" || action === "nothing") {
             emitCancel(event.sessionId, reason);
             if (onCircuitBreak) {
-              try { onCircuitBreak(event.agent, event.sessionId, reason); } catch { /* best-effort */ }
+              try { onCircuitBreak(event.agent, event.sessionId, reason); } catch (err) { log("warn", `[stuck] onCircuitBreak failed for ${event.sessionId}: ${err}`); }
             }
           } else if (action === "escalate") {
             emitCancel(event.sessionId, reason);
             if (onCircuitBreak) {
-              try { onCircuitBreak(event.agent, event.sessionId, `${reason} (escalated by classifier)`); } catch { /* best-effort */ }
+              try { onCircuitBreak(event.agent, event.sessionId, `${reason} (escalated by classifier)`); } catch (err) { log("warn", `[stuck] onCircuitBreak failed for ${event.sessionId}: ${err}`); }
             }
           }
           // "resume" or "requeue" → don't cancel, classifier says session has recoverable work
@@ -348,7 +353,7 @@ export function createDigestWriter(persistDir: string): (event: AgentEvent) => v
         createStartDigest(persistDir, event.sessionId, event.agent, event.task ?? "");
       } catch (err) {
         /* best-effort — digest system shouldn't break sessions */
-        try { log("warn", `[digest-subscriber] start failed: ${err}`); } catch {}
+        try { log("warn", `[digest-subscriber] start failed: ${err}`); } catch (logErr) { console.error("[digest-subscriber] start logging failed:", logErr); }
       }
       return;
     }
@@ -387,7 +392,7 @@ export function createDigestWriter(persistDir: string): (event: AgentEvent) => v
         });
       } catch (err) {
         /* best-effort */
-        try { log("warn", `[digest-subscriber] end failed: ${err}`); } catch {}
+        try { log("warn", `[digest-subscriber] end failed: ${err}`); } catch (logErr) { console.error("[digest-subscriber] end logging failed:", logErr); }
       }
     }
   };
