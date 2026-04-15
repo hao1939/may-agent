@@ -36,3 +36,17 @@ export const guard: WorkflowGuard = {
 - **warn**: Logs a warning but allows the workflow to continue.
 - **block**: Stops the workflow immediately with a `WorkflowBlocked` error.
 - **run_step**: Injects an additional agent step into the workflow (max 5 per run).
+
+## Hard Gate Design Rules (KE-182)
+
+Before designing or modifying guards that act as hard gates (blocking or injecting steps), apply these evidence-based rules:
+
+1. **Gate artifact must BE the solution** — not describe the problem. Analysis-only gates cause "completion illusion" (-80pp regression, KE-180).
+2. **Only gate low baselines (≤50%)** — on high baselines, gates add overhead or regress performance.
+3. **Match step-skipping failure modes** — gates fix "rush to action" failures, not belief errors or competence gaps.
+4. **Prefer 2-phase investigate→fix** — Phase 1 writes findings, Phase 2 reads them and acts. This is the strongest pattern (+90pp).
+5. **All gates must be relevant** — unrelated gates dilute attention (92% vs 50% for related vs unrelated at same count).
+6. **Max 3 related gates** — performance degrades at 4+ gates regardless of relevance.
+7. **Measure product quality** — "Did the fix work?" not "Did the agent write ARTIFACT.md?" (KE-181).
+
+Full details: `agents/shared/knowledge/entries/KE-182-hard-gate-design-rules-synthesis.md`

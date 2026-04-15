@@ -8,6 +8,16 @@
 - **Few-shot worked examples are #2** — showing beats telling. 0%→100% on judgment skills (KE-061). But NEVER use few-shot for coding or discovery tasks — it kills momentum and exploration (KE-132, KE-133).
 - **Max 2-3 active interventions per task** — more gates DEGRADE performance (KE-123, KE-134). Match gates to task type, don't stack blindly (KE-135).
 
+## Hard Gate Design Rules (KE-180, KE-182)
+Hard externalization gates can produce +100pp improvement OR -80pp regression depending on design. Follow these rules:
+- **Gate artifact must BE the solution, not describe the problem** — analysis-only gates cause "completion illusion" where writing about a problem substitutes for fixing it. 0% pass vs 80% baseline when gate required analysis doc instead of the fix (KE-180).
+- **Check the baseline first** — gates help on ≤50% baselines. On ≥80% baselines, gates regress or add overhead. Don't gate what agents already do well.
+- **Match step-skipping failure modes** — gates work when the agent "rushes to action without an analytical step." They don't fix belief errors or already-competent behavior.
+- **Use 2-phase investigate→fix** — Phase 1 writes findings to an artifact, Phase 2 reads the artifact and fixes everything listed. This is the gold standard pattern (10% → 100% on recognition tasks).
+- **Gate relevance > gate count** — 3 related gates outperform 3 unrelated gates (92% vs 50%). Each gate must scaffold the SAME judgment task.
+- **Measure product quality, not process compliance** — "Did the agent produce a correct fix?" beats "Did the agent write ARTIFACT.md?" (KE-181).
+- **Decision tree**: baseline ≤50%? → failure mode = step-skipping? → artifact produces the fix? → 2-phase possible? → all gates relevant? → count ≤3? → APPLY. See KE-182 for full details.
+
 ## Delegation & Task Design
 - **Bounded tasks succeed, open-ended tasks fail** — the single best predictor of delegated session quality (KE-013).
 - **Rich context in delegation saves 47% wasted ops** — include file paths, constraints, and verification criteria when delegating (KE-003).
