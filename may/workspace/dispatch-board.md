@@ -1,17 +1,17 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-15 ~21:30 UTC
+Updated: 2026-04-15 ~22:00 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — billing. Blocked on Hao.
-- **Bob**: 🟢 Active — 31 sessions/6h, avg 14 ops. Zero errors.
-- **Coach**: 🟢 Active — 22 sessions/6h, avg 21 ops. Zero errors.
-- **Scout**: 🟢 Active — 14 sessions/6h, avg 14 ops. Zero errors.
-- **Tech-lead**: 🟢 Active — 34 sessions/6h, avg 21 ops. Zero errors.
+- **Bob**: 🟢 Active — 33 sessions/6h, avg 13 ops. Zero errors.
+- **Coach**: 🟢 Active — 23 sessions/6h, avg 20 ops. Zero errors.
+- **Scout**: 🟢 Active — 14 sessions/6h, avg 13 ops. Zero errors.
+- **Tech-lead**: 🟢 Active — 36 sessions/6h, avg 22 ops. Zero errors.
 - **Optimizer**: 🟢 Active — 24 sessions/6h, avg 14 ops. Zero errors.
-- **Evaluator**: 🟢 Active — 45 sessions/6h, avg 0 ops. Zero errors.
+- **Evaluator**: 🟢 Active — 48 sessions/6h, avg 0 ops. Zero errors.
 - **QA**: 🟢 Active — 12 sessions/6h, avg 7 ops. Zero errors.
-- **Coder**: 🟢 Active — 2 sessions/6h, avg 13 ops. Zero errors.
+- **Coder**: 🟢 Active — 1 session/6h, avg 14 ops. Zero errors.
 - **Summary**: 9/9 healthy. Amy-kimi still down. Zero errors across the board.
 
 ## Active Priorities (from Hao)
@@ -32,7 +32,7 @@ Updated: 2026-04-15 ~21:30 UTC
 | **Gatekeeper Review Gate design** | ✅ Design reviewed | bob | Bob approved with notes. All feedback incorporated: Mode B renamed, system-scope defined, open questions resolved, Mode A deferred. Awaiting Hao approval → then dispatch Phase 1 (behavioral) to may, Phase 2 (code) to tech-lead. |
 | **Heartbeat commit instruction fix** | ✅ DONE | may | Fixed Step 7 of heartbeat.md — was telling me NOT to commit (stale 10min auto-commit reference). Now says commit first, auto-commit is 2h safety net. |
 | ⚠️ **Hao task truncated** | ❓ Need info | Hao | req:7a936dcb was truncated at 500 chars. Only issue #1 (threshold inversion) visible+dispatched. May have more issues. |
-| **Two-tier eval gap fix** | ⏳ Active | tech-lead | Increase JS eval coverage to ≥30% for all agents. Forked s_1776288668585_124. |
+| **Two-tier eval gap fix** | ✅ DONE — needs merge | tech-lead | Implemented `evaluateStandaloneSession()` (121 lines). Branch: `review/standalone-eval-coverage`. 1968 tests pass. Needs code review + merge. |
 
 ## Completed This Cycle
 | Issue | Status | Owner | Notes |

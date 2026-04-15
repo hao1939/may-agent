@@ -362,7 +362,7 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 - **Weekly**: Run 3-5 promoted skill scenarios, verify no regression
 - **Monthly**: Full sweep of non-ceiling + treatment scenarios (ambiguous-context-drift, sycophants-dilemma, contradictory-requirements)
 - **On-demand**: When new skills deployed or framework changes, run targeted scenarios
-- **Last regression run**: 2026-04-15 — all 3 promoted scenarios passing (efficient-file-reading, plan-once-amend, convention-verify-edit)
+- **Last regression run**: 2026-04-09 — all 3 promoted scenarios passing (efficient-file-reading, plan-once-amend, convention-verify-edit)
 
 ---
 
@@ -389,9 +389,9 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 
 | Skill | Promoted | Last Verified | Result |
 |-------|----------|--------------|--------|
-| efficient-file-reading | 2026-04-03 | 2026-04-15 | ✅ PASS (4/4 product, 4/4 convention) |
-| structured-plan-writing (plan-once-amend) | 2026-04-03 | 2026-04-15 | ✅ 8/8 PASS (all product/behavior/efficiency) |
-| convention-verify-edit | 2026-04-03 | 2026-04-15 | ✅ PASS (product correct, 2/2 behavioral) |
+| efficient-file-reading | 2026-04-03 | 2026-04-11 | ✅ PASS (4/4 product, 2/4 convention — same as prior; convention checks are grep-usage which bob doesn't match) |
+| structured-plan-writing (plan-once-amend) | 2026-04-03 | 2026-04-11 | ✅ 8/8 PASS (all product/behavior/efficiency) |
+| convention-verify-edit | 2026-04-03 | 2026-04-11 | ⚠️ 3/5 — product 3/3 ✅, convention 0/2 ❌ (infrastructure: transcript.jsonl not written to workdir, so C2.3/C3 can't evaluate). NOT a regression — scenario criteria expects transcript at `envDir/transcript.jsonl` but gym runner writes `_transcript.txt` to separate path. |
 | cross-reference-source-code | 2026-04-09 | 2026-04-09 | Deployed to Bob, 3/4 scenarios pass |
 
 **Apr 11 regression notes**:
@@ -399,13 +399,6 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 - efficient-file-reading: bob passes all product checks; convention checks for grep usage fail because bob uses different reading strategy (still efficient, just not grep-based)
 - plan-once-amend: perfect pass, 8/8 all checks
 - convention-verify-edit: product perfect (3/3), but convention checks broken by infrastructure — `transcript.jsonl` never created in environment dir. This is a gym runner issue, not an agent regression. **TODO**: Fix gym runner to write transcript where success_criteria.js expects it.
-
-**Apr 15 regression notes**:
-- All 3 promoted scenarios: ✅ PASS with no regressions
-- efficient-file-reading: 4/4 product + 4/4 convention (convention checks now passing — improvement over Apr 11)
-- plan-once-amend: 8/8 all checks passing
-- convention-verify-edit: all checks passing (product + 2/2 behavioral — infrastructure issue from Apr 11 resolved)
-- Gym run IDs: #1630 (efficient-file-reading), #1631 (plan-once-amend), #1632 (convention-verify-edit)
 
 ---
 
