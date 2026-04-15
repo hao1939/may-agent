@@ -1,0 +1,921 @@
+{
+  "generated": "2026-03-15T15:33:42.307Z",
+  "totalSessions": 8574,
+  "totalCost": 9600.740146900012,
+  "byAgent": {
+    "coach": {
+      "sessions": 941,
+      "totalCost": 2393.2522,
+      "avgCost": 2.5433,
+      "avgTurns": 24.7,
+      "cacheReadRate": 0,
+      "inputTokens": 767419498,
+      "outputTokens": 6066245,
+      "cacheRead": 0
+    },
+    "may": {
+      "sessions": 2023,
+      "totalCost": 1597.1634,
+      "avgCost": 0.7895,
+      "avgTurns": 9.6,
+      "cacheReadRate": 0,
+      "inputTokens": 510940419,
+      "outputTokens": 4289473,
+      "cacheRead": 0
+    },
+    "tech-lead": {
+      "sessions": 659,
+      "totalCost": 1210.7663,
+      "avgCost": 1.8373,
+      "avgTurns": 17.3,
+      "cacheReadRate": 0,
+      "inputTokens": 390724462,
+      "outputTokens": 2572863,
+      "cacheRead": 0
+    },
+    "scout": {
+      "sessions": 429,
+      "totalCost": 1063.179,
+      "avgCost": 2.4783,
+      "avgTurns": 22.1,
+      "cacheReadRate": 0,
+      "inputTokens": 335207113,
+      "outputTokens": 3837179,
+      "cacheRead": 0
+    },
+    "bob": {
+      "sessions": 1002,
+      "totalCost": 918.4189,
+      "avgCost": 0.9166,
+      "avgTurns": 15.5,
+      "cacheReadRate": 79.6,
+      "inputTokens": 113849835,
+      "outputTokens": 8003176,
+      "cacheRead": 443010020
+    },
+    "unknown": {
+      "sessions": 504,
+      "totalCost": 671.8752,
+      "avgCost": 1.3331,
+      "avgTurns": 12,
+      "cacheReadRate": 3.7,
+      "inputTokens": 211600697,
+      "outputTokens": 2317752,
+      "cacheRead": 8164439
+    },
+    "optimizer": {
+      "sessions": 540,
+      "totalCost": 533.9429,
+      "avgCost": 0.9888,
+      "avgTurns": 13.9,
+      "cacheReadRate": 0,
+      "inputTokens": 169255714,
+      "outputTokens": 1745052,
+      "cacheRead": 0
+    },
+    "amy": {
+      "sessions": 538,
+      "totalCost": 423.2875,
+      "avgCost": 0.7868,
+      "avgTurns": 11.7,
+      "cacheReadRate": 0,
+      "inputTokens": 133379383,
+      "outputTokens": 1543291,
+      "cacheRead": 0
+    },
+    "amy-kimi": {
+      "sessions": 447,
+      "totalCost": 379.3079,
+      "avgCost": 0.8486,
+      "avgTurns": 19,
+      "cacheReadRate": 91.9,
+      "inputTokens": 20959477,
+      "outputTokens": 3032303,
+      "cacheRead": 237079808
+    },
+    "evaluator": {
+      "sessions": 1111,
+      "totalCost": 202.3234,
+      "avgCost": 0.1821,
+      "avgTurns": 5.9,
+      "cacheReadRate": 71.6,
+      "inputTokens": 37285789,
+      "outputTokens": 1392376,
+      "cacheRead": 93818880
+    },
+    "coder": {
+      "sessions": 154,
+      "totalCost": 154.0461,
+      "avgCost": 1.0003,
+      "avgTurns": 15.9,
+      "cacheReadRate": 0,
+      "inputTokens": 48622321,
+      "outputTokens": 545273,
+      "cacheRead": 0
+    },
+    "coach-p114": {
+      "sessions": 4,
+      "totalCost": 10.0126,
+      "avgCost": 2.5032,
+      "avgTurns": 22.8,
+      "cacheReadRate": 0,
+      "inputTokens": 3213856,
+      "outputTokens": 24738,
+      "cacheRead": 0
+    },
+    "qa": {
+      "sessions": 62,
+      "totalCost": 7.3396,
+      "avgCost": 0.1184,
+      "avgTurns": 5.2,
+      "cacheReadRate": 63.3,
+      "inputTokens": 1509483,
+      "outputTokens": 40922,
+      "cacheRead": 2601600
+    },
+    "optimizer-v2": {
+      "sessions": 7,
+      "totalCost": 4.5485,
+      "avgCost": 0.6498,
+      "avgTurns": 7.1,
+      "cacheReadRate": 0,
+      "inputTokens": 1459633,
+      "outputTokens": 11308,
+      "cacheRead": 0
+    },
+    "bob-v2": {
+      "sessions": 4,
+      "totalCost": 2.5024,
+      "avgCost": 0.6256,
+      "avgTurns": 10.3,
+      "cacheReadRate": 84.3,
+      "inputTokens": 238539,
+      "outputTokens": 29926,
+      "cacheRead": 1285397
+    },
+    "scout-v2": {
+      "sessions": 6,
+      "totalCost": 1.8701,
+      "avgCost": 0.3117,
+      "avgTurns": 5,
+      "cacheReadRate": 0,
+      "inputTokens": 570229,
+      "outputTokens": 10626,
+      "cacheRead": 0
+    },
+    "coder-p114": {
+      "sessions": 8,
+      "totalCost": 1.8433,
+      "avgCost": 0.2304,
+      "avgTurns": 5.3,
+      "cacheReadRate": 0,
+      "inputTokens": 546843,
+      "outputTokens": 13520,
+      "cacheRead": 0
+    },
+    "tech-lead-drill-p53": {
+      "sessions": 1,
+      "totalCost": 1.7515,
+      "avgCost": 1.7515,
+      "avgTurns": 24,
+      "cacheReadRate": 0,
+      "inputTokens": 543717,
+      "outputTokens": 8020,
+      "cacheRead": 0
+    },
+    "scout-growth-test": {
+      "sessions": 4,
+      "totalCost": 1.7207,
+      "avgCost": 0.4302,
+      "avgTurns": 6.3,
+      "cacheReadRate": 0,
+      "inputTokens": 543181,
+      "outputTokens": 6077,
+      "cacheRead": 0
+    },
+    "coder-p114-drill": {
+      "sessions": 2,
+      "totalCost": 1.532,
+      "avgCost": 0.766,
+      "avgTurns": 15.5,
+      "cacheReadRate": 0,
+      "inputTokens": 472232,
+      "outputTokens": 7687,
+      "cacheRead": 0
+    },
+    "optimizer-v5": {
+      "sessions": 6,
+      "totalCost": 1.4929,
+      "avgCost": 0.2488,
+      "avgTurns": 6.2,
+      "cacheReadRate": 0,
+      "inputTokens": 456282,
+      "outputTokens": 8273,
+      "cacheRead": 0
+    },
+    "may-v3": {
+      "sessions": 7,
+      "totalCost": 1.4804,
+      "avgCost": 0.2115,
+      "avgTurns": 4.6,
+      "cacheReadRate": 0,
+      "inputTokens": 468863,
+      "outputTokens": 4919,
+      "cacheRead": 0
+    },
+    "may-v2": {
+      "sessions": 6,
+      "totalCost": 1.3922,
+      "avgCost": 0.232,
+      "avgTurns": 5,
+      "cacheReadRate": 0,
+      "inputTokens": 438799,
+      "outputTokens": 5052,
+      "cacheRead": 0
+    },
+    "amy-v2": {
+      "sessions": 5,
+      "totalCost": 1.2147,
+      "avgCost": 0.2429,
+      "avgTurns": 5.4,
+      "cacheReadRate": 0,
+      "inputTokens": 381941,
+      "outputTokens": 4593,
+      "cacheRead": 0
+    },
+    "may-path-fix": {
+      "sessions": 3,
+      "totalCost": 1.0343,
+      "avgCost": 0.3448,
+      "avgTurns": 8,
+      "cacheReadRate": 0,
+      "inputTokens": 322999,
+      "outputTokens": 4353,
+      "cacheRead": 0
+    },
+    "evaluator-v4": {
+      "sessions": 4,
+      "totalCost": 1.0272,
+      "avgCost": 0.2568,
+      "avgTurns": 7,
+      "cacheReadRate": 57.4,
+      "inputTokens": 210090,
+      "outputTokens": 6889,
+      "cacheRead": 282880
+    },
+    "coder-v3": {
+      "sessions": 5,
+      "totalCost": 1.0177,
+      "avgCost": 0.2035,
+      "avgTurns": 5.8,
+      "cacheReadRate": 0,
+      "inputTokens": 310188,
+      "outputTokens": 5812,
+      "cacheRead": 0
+    },
+    "evaluator-v2": {
+      "sessions": 4,
+      "totalCost": 0.7902,
+      "avgCost": 0.1976,
+      "avgTurns": 10.5,
+      "cacheReadRate": 75.2,
+      "inputTokens": 137130,
+      "outputTokens": 5893,
+      "cacheRead": 414976
+    },
+    "evaluator-v7": {
+      "sessions": 2,
+      "totalCost": 0.7715,
+      "avgCost": 0.3857,
+      "avgTurns": 12.5,
+      "cacheReadRate": 68.5,
+      "inputTokens": 149297,
+      "outputTokens": 4834,
+      "cacheRead": 324480
+    },
+    "tech-lead-v5": {
+      "sessions": 1,
+      "totalCost": 0.6631,
+      "avgCost": 0.6631,
+      "avgTurns": 13,
+      "cacheReadRate": 0,
+      "inputTokens": 197006,
+      "outputTokens": 4808,
+      "cacheRead": 0
+    },
+    "may-v5": {
+      "sessions": 3,
+      "totalCost": 0.6046,
+      "avgCost": 0.2015,
+      "avgTurns": 3,
+      "cacheReadRate": 0,
+      "inputTokens": 174610,
+      "outputTokens": 5387,
+      "cacheRead": 0
+    },
+    "optimizer-c23": {
+      "sessions": 1,
+      "totalCost": 0.4985,
+      "avgCost": 0.4985,
+      "avgTurns": 12,
+      "cacheReadRate": 0,
+      "inputTokens": 151932,
+      "outputTokens": 2846,
+      "cacheRead": 0
+    },
+    "evaluator-v3": {
+      "sessions": 1,
+      "totalCost": 0.4899,
+      "avgCost": 0.4899,
+      "avgTurns": 11,
+      "cacheReadRate": 58.1,
+      "inputTokens": 106477,
+      "outputTokens": 2344,
+      "cacheRead": 147456
+    },
+    "coder-v5": {
+      "sessions": 8,
+      "totalCost": 0.4043,
+      "avgCost": 0.0505,
+      "avgTurns": 2,
+      "cacheReadRate": 0,
+      "inputTokens": 114439,
+      "outputTokens": 4066,
+      "cacheRead": 0
+    },
+    "may-c21-fix": {
+      "sessions": 2,
+      "totalCost": 0.384,
+      "avgCost": 0.192,
+      "avgTurns": 6,
+      "cacheReadRate": 0,
+      "inputTokens": 118296,
+      "outputTokens": 1941,
+      "cacheRead": 0
+    },
+    "tech-lead-v10": {
+      "sessions": 3,
+      "totalCost": 0.375,
+      "avgCost": 0.125,
+      "avgTurns": 3.7,
+      "cacheReadRate": 0,
+      "inputTokens": 115923,
+      "outputTokens": 1816,
+      "cacheRead": 0
+    },
+    "coder-p114-soul": {
+      "sessions": 4,
+      "totalCost": 0.3702,
+      "avgCost": 0.0926,
+      "avgTurns": 4,
+      "cacheReadRate": 0,
+      "inputTokens": 110129,
+      "outputTokens": 2655,
+      "cacheRead": 0
+    },
+    "coder-drill-p82": {
+      "sessions": 1,
+      "totalCost": 0.3426,
+      "avgCost": 0.3426,
+      "avgTurns": 6,
+      "cacheReadRate": 0,
+      "inputTokens": 109279,
+      "outputTokens": 987,
+      "cacheRead": 0
+    },
+    "may-c24": {
+      "sessions": 2,
+      "totalCost": 0.323,
+      "avgCost": 0.1615,
+      "avgTurns": 4,
+      "cacheReadRate": 0,
+      "inputTokens": 95033,
+      "outputTokens": 2529,
+      "cacheRead": 0
+    },
+    "qa-v3": {
+      "sessions": 1,
+      "totalCost": 0.3205,
+      "avgCost": 0.3205,
+      "avgTurns": 12,
+      "cacheReadRate": 69.9,
+      "inputTokens": 68007,
+      "outputTokens": 975,
+      "cacheRead": 157568
+    },
+    "evaluator-v8": {
+      "sessions": 1,
+      "totalCost": 0.3073,
+      "avgCost": 0.3073,
+      "avgTurns": 9,
+      "cacheReadRate": 53.5,
+      "inputTokens": 68482,
+      "outputTokens": 1429,
+      "cacheRead": 78848
+    },
+    "coder-v4": {
+      "sessions": 4,
+      "totalCost": 0.3047,
+      "avgCost": 0.0762,
+      "avgTurns": 3,
+      "cacheReadRate": 0,
+      "inputTokens": 88389,
+      "outputTokens": 2637,
+      "cacheRead": 0
+    },
+    "tech-lead-c22": {
+      "sessions": 1,
+      "totalCost": 0.302,
+      "avgCost": 0.302,
+      "avgTurns": 8,
+      "cacheReadRate": 0,
+      "inputTokens": 86613,
+      "outputTokens": 2808,
+      "cacheRead": 0
+    },
+    "master-v2": {
+      "sessions": 3,
+      "totalCost": 0.2904,
+      "avgCost": 0.0968,
+      "avgTurns": 4,
+      "cacheReadRate": 0,
+      "inputTokens": 53501,
+      "outputTokens": 8662,
+      "cacheRead": 0
+    },
+    "tech-lead-v1": {
+      "sessions": 1,
+      "totalCost": 0.2835,
+      "avgCost": 0.2835,
+      "avgTurns": 6,
+      "cacheReadRate": 0,
+      "inputTokens": 89906,
+      "outputTokens": 917,
+      "cacheRead": 0
+    },
+    "bob-v3": {
+      "sessions": 1,
+      "totalCost": 0.2614,
+      "avgCost": 0.2614,
+      "avgTurns": 6,
+      "cacheReadRate": 67.5,
+      "inputTokens": 44191,
+      "outputTokens": 3621,
+      "cacheRead": 91747
+    },
+    "bob-lab-test": {
+      "sessions": 1,
+      "totalCost": 0.2554,
+      "avgCost": 0.2554,
+      "avgTurns": 14,
+      "cacheReadRate": 79.3,
+      "inputTokens": 27089,
+      "outputTokens": 5772,
+      "cacheRead": 103964
+    },
+    "may-v1": {
+      "sessions": 1,
+      "totalCost": 0.2435,
+      "avgCost": 0.2435,
+      "avgTurns": 8,
+      "cacheReadRate": 0,
+      "inputTokens": 73667,
+      "outputTokens": 1503,
+      "cacheRead": 0
+    },
+    "evaluator-v6": {
+      "sessions": 1,
+      "totalCost": 0.232,
+      "avgCost": 0.232,
+      "avgTurns": 8,
+      "cacheReadRate": 69.3,
+      "inputTokens": 42194,
+      "outputTokens": 1821,
+      "cacheRead": 95360
+    },
+    "bob-growth-test": {
+      "sessions": 1,
+      "totalCost": 0.2313,
+      "avgCost": 0.2313,
+      "avgTurns": 11,
+      "cacheReadRate": 70.8,
+      "inputTokens": 30308,
+      "outputTokens": 6367,
+      "cacheRead": 73522
+    },
+    "amy-v4": {
+      "sessions": 3,
+      "totalCost": 0.2057,
+      "avgCost": 0.0686,
+      "avgTurns": 3,
+      "cacheReadRate": 0,
+      "inputTokens": 62704,
+      "outputTokens": 1173,
+      "cacheRead": 0
+    },
+    "tech-lead-v9": {
+      "sessions": 2,
+      "totalCost": 0.1938,
+      "avgCost": 0.0969,
+      "avgTurns": 5,
+      "cacheReadRate": 0,
+      "inputTokens": 55544,
+      "outputTokens": 1810,
+      "cacheRead": 0
+    },
+    "may-dispatch-fix": {
+      "sessions": 1,
+      "totalCost": 0.1783,
+      "avgCost": 0.1783,
+      "avgTurns": 5,
+      "cacheReadRate": 0,
+      "inputTokens": 54399,
+      "outputTokens": 1006,
+      "cacheRead": 0
+    },
+    "master": {
+      "sessions": 6,
+      "totalCost": 0.1733,
+      "avgCost": 0.0289,
+      "avgTurns": 3.7,
+      "cacheReadRate": 0,
+      "inputTokens": 40676,
+      "outputTokens": 3419,
+      "cacheRead": 0
+    },
+    "tech-lead-v2": {
+      "sessions": 2,
+      "totalCost": 0.133,
+      "avgCost": 0.0665,
+      "avgTurns": 3,
+      "cacheReadRate": 0,
+      "inputTokens": 37947,
+      "outputTokens": 1278,
+      "cacheRead": 0
+    },
+    "tech-lead-v6": {
+      "sessions": 1,
+      "totalCost": 0.1257,
+      "avgCost": 0.1257,
+      "avgTurns": 4,
+      "cacheReadRate": 0,
+      "inputTokens": 35381,
+      "outputTokens": 1306,
+      "cacheRead": 0
+    },
+    "amy-kimi-v2": {
+      "sessions": 2,
+      "totalCost": 0.116,
+      "avgCost": 0.058,
+      "avgTurns": 3,
+      "cacheReadRate": 64.3,
+      "inputTokens": 21213,
+      "outputTokens": 1528,
+      "cacheRead": 38144
+    },
+    "qa-v2": {
+      "sessions": 1,
+      "totalCost": 0.1016,
+      "avgCost": 0.1016,
+      "avgTurns": 7,
+      "cacheReadRate": 63.4,
+      "inputTokens": 21700,
+      "outputTokens": 444,
+      "cacheRead": 37632
+    },
+    "coder-write-test": {
+      "sessions": 1,
+      "totalCost": 0.0938,
+      "avgCost": 0.0938,
+      "avgTurns": 5,
+      "cacheReadRate": 0,
+      "inputTokens": 27437,
+      "outputTokens": 764,
+      "cacheRead": 0
+    },
+    "coder-edit-safety": {
+      "sessions": 1,
+      "totalCost": 0.0932,
+      "avgCost": 0.0932,
+      "avgTurns": 5,
+      "cacheReadRate": 0,
+      "inputTokens": 26926,
+      "outputTokens": 826,
+      "cacheRead": 0
+    },
+    "coach-micro-reward": {
+      "sessions": 1,
+      "totalCost": 0.0883,
+      "avgCost": 0.0883,
+      "avgTurns": 4,
+      "cacheReadRate": 0,
+      "inputTokens": 24233,
+      "outputTokens": 1037,
+      "cacheRead": 0
+    },
+    "scout-c23": {
+      "sessions": 1,
+      "totalCost": 0.0881,
+      "avgCost": 0.0881,
+      "avgTurns": 4,
+      "cacheReadRate": 0,
+      "inputTokens": 23866,
+      "outputTokens": 1103,
+      "cacheRead": 0
+    },
+    "optimizer-drill-p14": {
+      "sessions": 1,
+      "totalCost": 0.0825,
+      "avgCost": 0.0825,
+      "avgTurns": 3,
+      "cacheReadRate": 0,
+      "inputTokens": 23891,
+      "outputTokens": 720,
+      "cacheRead": 0
+    },
+    "tech-lead-c23": {
+      "sessions": 2,
+      "totalCost": 0.08,
+      "avgCost": 0.04,
+      "avgTurns": 2,
+      "cacheReadRate": 0,
+      "inputTokens": 24585,
+      "outputTokens": 418,
+      "cacheRead": 0
+    },
+    "optimizer-v4": {
+      "sessions": 2,
+      "totalCost": 0.0762,
+      "avgCost": 0.0381,
+      "avgTurns": 2,
+      "cacheReadRate": 0,
+      "inputTokens": 20519,
+      "outputTokens": 979,
+      "cacheRead": 0
+    },
+    "coach-v2": {
+      "sessions": 2,
+      "totalCost": 0.0742,
+      "avgCost": 0.0371,
+      "avgTurns": 2,
+      "cacheReadRate": 0,
+      "inputTokens": 20600,
+      "outputTokens": 830,
+      "cacheRead": 0
+    },
+    "tech-lead-v3": {
+      "sessions": 2,
+      "totalCost": 0.0741,
+      "avgCost": 0.037,
+      "avgTurns": 2,
+      "cacheReadRate": 0,
+      "inputTokens": 21439,
+      "outputTokens": 652,
+      "cacheRead": 0
+    },
+    "coder-c26": {
+      "sessions": 1,
+      "totalCost": 0.0671,
+      "avgCost": 0.0671,
+      "avgTurns": 3,
+      "cacheReadRate": 0,
+      "inputTokens": 17467,
+      "outputTokens": 980,
+      "cacheRead": 0
+    },
+    "coder-v2": {
+      "sessions": 2,
+      "totalCost": 0.0618,
+      "avgCost": 0.0309,
+      "avgTurns": 1.5,
+      "cacheReadRate": 0,
+      "inputTokens": 15925,
+      "outputTokens": 938,
+      "cacheRead": 0
+    },
+    "amy-kimi-v9": {
+      "sessions": 2,
+      "totalCost": 0.0507,
+      "avgCost": 0.0253,
+      "avgTurns": 1,
+      "cacheReadRate": 36.5,
+      "inputTokens": 12032,
+      "outputTokens": 1193,
+      "cacheRead": 6912
+    },
+    "may-v6": {
+      "sessions": 1,
+      "totalCost": 0.0448,
+      "avgCost": 0.0448,
+      "avgTurns": 2,
+      "cacheReadRate": 0,
+      "inputTokens": 12856,
+      "outputTokens": 414,
+      "cacheRead": 0
+    },
+    "scout-v3": {
+      "sessions": 2,
+      "totalCost": 0.029,
+      "avgCost": 0.0145,
+      "avgTurns": 1,
+      "cacheReadRate": 0,
+      "inputTokens": 8446,
+      "outputTokens": 243,
+      "cacheRead": 0
+    },
+    "bob-synth": {
+      "sessions": 1,
+      "totalCost": 0.0267,
+      "avgCost": 0.0267,
+      "avgTurns": 1,
+      "cacheReadRate": 0,
+      "inputTokens": 5197,
+      "outputTokens": 1375,
+      "cacheRead": 0
+    },
+    "coder-strict": {
+      "sessions": 1,
+      "totalCost": 0.0261,
+      "avgCost": 0.0261,
+      "avgTurns": 4,
+      "cacheReadRate": 0,
+      "inputTokens": 5924,
+      "outputTokens": 557,
+      "cacheRead": 0
+    },
+    "evaluator-v5": {
+      "sessions": 1,
+      "totalCost": 0.0258,
+      "avgCost": 0.0258,
+      "avgTurns": 1,
+      "cacheReadRate": 0,
+      "inputTokens": 6487,
+      "outputTokens": 109,
+      "cacheRead": 0
+    },
+    "amy-v3": {
+      "sessions": 1,
+      "totalCost": 0.0192,
+      "avgCost": 0.0192,
+      "avgTurns": 1,
+      "cacheReadRate": 0,
+      "inputTokens": 5312,
+      "outputTokens": 220,
+      "cacheRead": 0
+    },
+    "optimizer-v3": {
+      "sessions": 1,
+      "totalCost": 0.0192,
+      "avgCost": 0.0192,
+      "avgTurns": 1,
+      "cacheReadRate": 0,
+      "inputTokens": 5069,
+      "outputTokens": 264,
+      "cacheRead": 0
+    }
+  },
+  "top20Expensive": [
+    {
+      "agent": "may",
+      "sid": "s_1772649590298_0",
+      "cost": 808.3605,
+      "turns": 4467,
+      "model": "claude-opus-4.6"
+    },
+    {
+      "agent": "bob",
+      "sid": "s_1773443932454_1705",
+      "cost": 59.9363,
+      "turns": 477,
+      "model": "gemini-3-pro-preview"
+    },
+    {
+      "agent": "unknown",
+      "sid": "s_1772498922456_0",
+      "cost": 52.2764,
+      "turns": 239,
+      "model": "claude-opus-4.6"
+    },
+    {
+      "agent": "unknown",
+      "sid": "s_1772563618925_0",
+      "cost": 48.8073,
+      "turns": 168,
+      "model": "claude-opus-4.6"
+    },
+    {
+      "agent": "may",
+      "sid": "s_1773497499476_0",
+      "cost": 26.0797,
+      "turns": 221,
+      "model": "claude-opus-4.6"
+    },
+    {
+      "agent": "may",
+      "sid": "s_1773470593760_550",
+      "cost": 21.8277,
+      "turns": 184,
+      "model": "claude-opus-4.6"
+    },
+    {
+      "agent": "tech-lead",
+      "sid": "s_1773308542016_2",
+      "cost": 20.5983,
+      "turns": 98,
+      "model": "claude-opus-4.6"
+    },
+    {
+      "agent": "coach",
+      "sid": "s_1773384584573_659",
+      "cost": 20.0389,
+      "turns": 98,
+      "model": "claude-opus-4.6"
+    },
+    {
+      "agent": "coach",
+      "sid": "s_1773095110652_32",
+      "cost": 18.1986,
+      "turns": 94,
+      "model": "claude-opus-4.6"
+    },
+    {
+      "agent": "coach",
+      "sid": "s_1773098892982_45",
+      "cost": 18.051,
+      "turns": 89,
+      "model": "claude-opus-4.6"
+    },
+    {
+      "agent": "bob",
+      "sid": "s_1773343814630_204",
+      "cost": 16.7561,
+      "turns": 174,
+      "model": "gemini-3-pro-preview"
+    },
+    {
+      "agent": "tech-lead",
+      "sid": "s_1773080274002_14",
+      "cost": 16.4177,
+      "turns": 90,
+      "model": "claude-opus-4.6"
+    },
+    {
+      "agent": "tech-lead",
+      "sid": "s_1773581666505_110",
+      "cost": 16.376,
+      "turns": 68,
+      "model": "claude-opus-4.6"
+    },
+    {
+      "agent": "may",
+      "sid": "s_1773410404965_0",
+      "cost": 15.592,
+      "turns": 132,
+      "model": "claude-opus-4.6"
+    },
+    {
+      "agent": "bob",
+      "sid": "s_1773412121838_730",
+      "cost": 15.2964,
+      "turns": 91,
+      "model": "gemini-3-pro-preview"
+    },
+    {
+      "agent": "scout",
+      "sid": "s_1773407284095_600",
+      "cost": 14.1096,
+      "turns": 145,
+      "model": "claude-opus-4.6"
+    },
+    {
+      "agent": "coach",
+      "sid": "s_1773397980740_290",
+      "cost": 14.0195,
+      "turns": 123,
+      "model": "claude-opus-4.6"
+    },
+    {
+      "agent": "bob",
+      "sid": "s_1773448882888_1928",
+      "cost": 13.7028,
+      "turns": 125,
+      "model": "gemini-3-pro-preview"
+    },
+    {
+      "agent": "unknown",
+      "sid": "s_1772394503619_0",
+      "cost": 13.4884,
+      "turns": 49,
+      "model": "claude-opus-4.6"
+    },
+    {
+      "agent": "tech-lead",
+      "sid": "s_1773334966110_96",
+      "cost": 13.2316,
+      "turns": 68,
+      "model": "claude-opus-4.6"
+    }
+  ],
+  "outlierCount": 1274,
+  "zeroCostCount": 130
+}
