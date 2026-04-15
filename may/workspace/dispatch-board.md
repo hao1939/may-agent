@@ -1,17 +1,17 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-15 ~21:01 UTC
+Updated: 2026-04-15 ~21:05 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — billing. Blocked on Hao.
-- **Bob**: 🟢 Active — 35 sessions/6h, avg 21 ops. Zero errors.
-- **Coach**: 🟢 Active — 27 sessions/6h, avg 20 ops. Zero errors.
-- **Scout**: 🟢 Active — 16 sessions/6h, avg 12 ops. Zero errors.
-- **Tech-lead**: 🟢 Active — 37 sessions/6h, avg 23 ops. Zero errors.
-- **Optimizer**: 🟢 Active — 25 sessions/6h, avg 13 ops. Zero errors.
-- **Evaluator**: 🟢 Active — 48 sessions/6h, avg 0 ops. Zero errors.
+- **Bob**: 🟢 Active — 27 sessions/6h, avg 19 ops. Zero errors.
+- **Coach**: 🟢 Active — 21 sessions/6h, avg 21 ops. Zero errors.
+- **Scout**: 🟢 Active — 14 sessions/6h, avg 14 ops. Zero errors.
+- **Tech-lead**: 🟢 Active — 36 sessions/6h, avg 22 ops. Zero errors.
+- **Optimizer**: 🟢 Active — 24 sessions/6h, avg 14 ops. Zero errors.
+- **Evaluator**: 🟢 Active — 47 sessions/6h, avg 0 ops. Zero errors.
 - **QA**: 🟢 Active — 12 sessions/6h, avg 8 ops. Zero errors.
-- **Coder**: 🟢 Active — 6 sessions/6h, avg 20 ops. Zero errors.
+- **Coder**: 🟢 Active — 4 sessions/6h, avg 13 ops. Zero errors.
 - **Summary**: 9/9 healthy. Amy-kimi still down. Zero errors across the board.
 
 ## Active Priorities (from Hao)
@@ -50,18 +50,17 @@ Updated: 2026-04-15 ~21:01 UTC
 | **Wire gym-batch.sh** | ✅ Done | tech-lead | Closed (req:a3787a7c). |
 
 ## Next Actions
-- **P0**: ~~Merge compose-guards.ts fix~~ — ✅ DONE (2705e8ce on main).
+- **P1**: **Two-tier evaluation gap** — Optimizer found heuristic eval gives 0.997 quality vs JS eval 0.706. 71% of sessions get lenient heuristic only. Coach (0.52 JS Q) and Bob (0.67) are lowest when actually examined. → Dispatch to tech-lead: increase JS evaluation coverage for agents currently 100% heuristic (qa, may, scout).
 - **P1**: **Gatekeeper Review Gate** — Design complete, Bob+tech-lead reviewed. Needs Hao approval → then dispatch to tech-lead for implementation.
-- **P1**: **QA heartbeat simplification (IT-21)** — Tech-lead found root cause is system-wide abort, not QA heartbeat. May have self-resolved. Monitor.
-- ~~**P1**: **Common-sense #23 auto-commit bypass**~~ — ✅ DONE. All 4 layers complete: (1) auto-commit interval 10min→2h, (2) heartbeat.md Step 7 fixed, (3) commit-guard.ts merged to main (blocks finish() with uncommitted changes), (4) health-check display aligned.
+- **P1**: **Metric System Phase 3** — Blocked on process restart for new handlers. Monitor.
 - **P2**: Amy-kimi billing — blocked on Hao.
 - ⚠️ **HOLD**: Ch2-production-gates implementation — Hold for EXP-170.
 
-## Latest Cycle Summary (21:01 Apr 15)
-- **HOUSEKEEPING**: Closed 14 stale CREATED requests (all previously processed — guard escalation conversation, Bob's review-gate feedback).
-- **QUEUE**: Marked 2 improvement items done (Artifacts-as-Memory, gym-batch.sh). Queue empty — forked refill session.
-- **STEADY**: 9/9 agents active. Zero errors. Zero stuck sessions. No system-scope changes detected.
-- **WAITING**: Gatekeeper Review Gate needs Hao approval to begin implementation.
+## Latest Cycle Summary (21:05 Apr 15)
+- **SYSTEM**: 9/9 healthy. Zero errors. Zero stuck sessions. May avg 37 ops (too high — staying lean this cycle).
+- **OPTIMIZER FINDINGS**: Two critical findings today: (1) Two-tier evaluation problem — heuristic eval inflates quality scores, (2) Workflow adoption at 28% not 68% as claimed. Both documented in optimizer workspace.
+- **QUEUE**: All improvement items completed. Forking refill session.
+- **WAITING**: Gatekeeper Review Gate needs Hao approval. Metric System Phase 3 needs process restart.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
