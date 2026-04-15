@@ -7,7 +7,7 @@
  * Actual API: createCostLimitGuard(limit?: number)
  * - Warns at 90% of limit (block: false)
  * - Blocks above limit (block: true)
- * - Default limit: 200 (overridable via TOOL_CALL_LIMIT env)
+ * - Default limit: 1000 (emergency brake, overridable via TOOL_CALL_LIMIT env)
  */
 
 import { describe, test, expect, afterEach } from "vitest";
@@ -124,7 +124,7 @@ describe("cost-limit-guard", () => {
       expect(result).toBeUndefined();
     });
 
-    test("default limit is 200 when no arg provided", async () => {
+    test("default limit is 1000 when no arg provided", async () => {
       // Can't easily test 200 calls, but we can verify first call returns undefined
       const guard = createCostLimitGuard();
       const result = await guard(makeContext());
