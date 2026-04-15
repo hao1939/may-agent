@@ -1,3 +1,3 @@
 # Deliverables Checklist
 
-- [x] agents/optimizer/workspace/finding-tech-lead-100op-bash-gaps-0415.md
+- [x] agents/optimizer/workspace/finding-coder-success-patterns-0415.md — Analysis of coder success techniques from high-quality sessions
