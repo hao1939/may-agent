@@ -1,0 +1,9 @@
+{
+  "name": "cascading-fix-trap-v2-f1",
+  "description": "EXP-166 Arm C (F1-only, content-first): Pre-written expert ROOT_CAUSE_ANALYSIS.md provided. Agent reads analysis and fixes accordingly. Replicates EXP-165 Arm C to test content-first generalization.",
+  "difficulty": "hard",
+  "time_limit": 300,
+  "target_failure_modes": ["FM-1.3"],
+  "tags": ["EXP-166", "F1-only", "content-first", "cascading-bugs"],
+  "baseline_scenario": "cascading-fix-trap-v2"
+}

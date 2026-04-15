@@ -1,0 +1,15 @@
+{
+  "name": "sql-injection-in-query-builder-f2",
+  "description": "EXP-166 Arm B (F2-only, process-first): Agent forced to write ANALYSIS.md in Phase 1, then it's deleted and agent fixes bugs in Phase 2. Tests whether forced analysis production alone improves recognition of SQL injection.",
+  "agent": "coder",
+  "categories": ["bug-fixing", "judgment"],
+  "tags": ["recognition", "sql-injection", "security", "null-handling", "EXP-166", "F2-only", "process-first"],
+  "tier": "standard",
+  "environment": {
+    "files": ["src/product-search.js", "src/db.js", "test/product-search.test.js"],
+    "setup": "npm init -y 2>/dev/null"
+  },
+  "success_criteria": "success_criteria.js",
+  "time_limit_seconds": 120,
+  "baseline_scenario": "sql-injection-in-query-builder"
+}
