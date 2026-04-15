@@ -391,12 +391,6 @@ export class SubagentManager {
               // His deliver-or-report workflow provides superior verification.
               // See: agents/shared/knowledge/experiments/EXP-142/design.md
               exemptAgents: ["bob"],
-              // EXP-150: Tier 2 warn-only mode for agents with improving trajectories.
-              // Coach (34.7% → declining) and tech-lead (21.4% → declining) have
-              // implicit verification via workflow structure. Warn-only logs events
-              // without blocking, allowing measurement of guard necessity.
-              // See: agents/shared/knowledge/experiments/EXP-150/design.md §3.1
-              warnOnlyAgents: ["coach", "tech-lead"],
             }),
             createReadDedupGuard(),
             createSessionReadGuard(),
