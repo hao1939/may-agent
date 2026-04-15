@@ -16,9 +16,68 @@
 - Bypass exists at `src/app/may.ts:148-165`, needs `ANTHROPIC_API_KEY` env var.
 - **BLOCKED on operator.** Finding: `workspace/findings/2026-04-10-litellm-kills-prompt-caching.md`
 
-### Exploration Mode Rotation Tracker
-- Last mode: **D** (Workflow Health — Apr 15 ~07:30 UTC). **Next: A**.
-- Previous: D→A→C→A→D→C→B→A→D. See finding files for details.
+
+
+### Coach Session Efficiency — FINDING COMPLETE, FIX 2 DEPLOYED
+- 2,175 coach sessions analyzed. 50.3% zero-op, 64% of ops in top sessions are exploration waste.
+- Top 15 sessions avg 24% productivity. Two sessions 3% productive (68 calls, 2 productive).
+- Key waste: file discovery spirals (32.7%), gym run proliferation (11.2%), growth-trigger 52% error rate.
+- 5 concrete fixes identified: state index, gym batch runner, growth-trigger guards, fast nothing-to-do path, read-then-act discipline.
+- **Fix 2 DEPLOYED**: `scripts/gym-batch.sh` — batch comparison runner. Replaces 10-26 manual gym-run.sh calls with single command. Supports --variants (baseline vs forks), --trials N, --tier/--category, comparison summary table. Est. savings: ~10 ops/session for gym-heavy sessions.
+- **gym-batch.sh ADOPTION: ZERO** (confirmed Apr 11 11:30 UTC). Coach reads it from context.md but never executes. EXP-130 (88 ops, post-merge) made 31 individual gym-run.sh calls, 0 gym-batch. Root cause: passive context mention insufficient — needs integration into experiment templates + explicit instruction in heartbeat.md. Finding: `workspace/finding-gym-batch-adoption-0411.md`
+- **TOOL ADOPTION PATTERN IDENTIFIED (Apr 12)**: Context.md mentions = 0% adoption. Dispatch path integration = non-zero adoption. The fix is to wire gym-batch into growth-cycle.ts prompt (structural enforcement), NOT add more context.md text. See 5-level adoption hierarchy. Finding: `workspace/finding-tool-adoption-patterns-0412.md`
+- Estimated savings: ~750 ops/day, ~$35/day.
+- Finding: `workspace/finding-coach-session-efficiency-0410.md`
+- **DEEPER ANALYSIS (Apr 12)**: 183 EXP-tagged sessions. Primary cost driver is gym run count × serial overhead (2-4 ops/run). EXP-144 Pilot (145 ops) ran 54 gym runs + debugged broken environments. EXP-143 (35 ops, same day) batched 200 evaluations into a single script invocation. The cost is driven by experiment TYPE, not execution quality. Three concrete techniques: gym batch runner (saves 20-70 ops/session), pre-flight env validation (saves 20-40 ops when envs are broken, ~25% of gym sessions), pre-specified analysis scripts (saves 20-40 ops on analysis sessions). Total projected: ~1,860-3,720 ops across experiment sessions.
+- Finding: `workspace/finding-coach-experiment-cost-scouting-0412.md`
+
+### Optimizer Heartbeat Bloat — FIX DEPLOYED
+- Avg 56 ops/heartbeat (highest of any agent). Bob avg 4 ops. My min was 19 — proves lean is possible.
+- Root cause: heartbeat.md encouraged inline exploration (multi-query DB analysis, file reads).
+- Fix: Rewrote heartbeat.md to "Dispatcher Mode" — observe in 1-2 ops, fork all analysis work. Target: ≤15 ops.
+- Baseline: 8 heartbeats in 12h, avg 56 ops, total 451. Post-fix: avg 23 ops (59% reduction). ✅ SUCCESS.
+- Last exploration mode: **A** (Session Archaeology — Coach & Bob 24h — Apr 15 ~08:00 UTC). Next rotation: **B**. Previous: A (QA 58% Interrupt Rate — Apr 14), D (Workflow Health — Apr 13), C (Technique Scouting — Apr 13), A (System Health Check — Apr 13), D (D-o-R Budget Cap — Apr 12), C (Skills Audit — Apr 12), B (codeSearch — Apr 12), A (Tech-lead 6h — Apr 12), D (Workflow Health — Apr 12).
+- **Latest measurement (Apr 13 05:22 UTC)**: All 6 optimizations holding. Daily ops 5,894 (26% reduction from 8,016). New target: tech-lead work sessions (34/day, 983 ops, ~$46/day). Finding: `workspace/finding-system-health-check-0413.md`
+- **session-query tool BUILT** (`scripts/session-query.ts`). Replaces 15-25 bash archaeology pattern with single command. Supports: --agent, --since, --task, --status, --min-ops, --tools, --json, --sort. Tested with real data (911 sessions). Est. savings: 10-15 ops/session × 187 sessions = 1,870-2,805 ops.
+- **code-search tool BUILT** (`scripts/code-search.ts`). Replaces 3-16 consecutive grep/rg chains with single structured call. Supports: --context, --scope, --type/--glob, --files-only, --stats, --json, --max, --fixed. Uses rg (fallback: grep). Auto-excludes node_modules. Tested with 7 real queries. Est. savings: 120-180 ops/day (~$6-9/day), 93% of sessions affected. Finding: `workspace/finding-codesearch-tool-scoping-0412.md`
+- **session-query adoption**: Still **zero active adoption** beyond optimizer (confirmed Apr 11 05:24 UTC). May + QA have passive mentions only. **Three blockers**: (1) filesystem history stale (through ~Apr 5), (2) zero agents have session-query in context.md, (3) may.db has 0 coach sessions. No change since last check. **gym-batch.sh MERGED to main** (cherry-pick 5ca3bdf, Apr 11 ~05:54 UTC) + coach context.md updated — but **gym-batch.sh also has ZERO adoption** despite being in context.md (see Coach Session Efficiency section). Findings: `workspace/finding-tool-gap-0411-b.md`, `workspace/finding-coach-experiment-technique-0411.md`, `workspace/finding-gym-batch-adoption-0411.md`
+- **ADOPTION FIX DIRECTION (Apr 12)**: Per tool adoption patterns finding — don't bother adding session-query to context.md (Level 4 = 0% adoption). Must fix may.db backend FIRST, then wire into workflow prompts/heartbeat dispatch templates (Level 1-3). Finding: `workspace/finding-tool-adoption-patterns-0412.md`
+- Mode D **COMPLETE**: Workflow health analysis. **Key result: D-o-R uses +53% more ops than non-WF work sessions** (45.7 vs 29.9). Phase 1 is the bloat source (30.4 avg ops — matches a complete non-WF session). Error rates 50% lower (2.1% vs 3.9%). Quality scores incomparable (different eval scales). Finding: `workspace/finding-workflow-health-0410.md`
+- Mode C finding complete: `workspace/finding-workflow-adoption-gap-0410.md`
+- Mode A finding complete: `workspace/finding-coach-166op-archaeology-0410.md` — **Key result: high-op sessions are restart-accumulated, not single-context bloat. 184-op session had 6 restarts (7 segments). Primary fix is infra (cap restarts/turns), not behavioral.**
+- Mode A finding complete: `workspace/finding-dor-p1-bloat-0411.md` — **Key result: Phase 1 consumes 67% of all D-o-R ops. 14/14 bloated P1s (>40 ops) have "verified" in outcome — doing full delivery cycle in "plan" phase. 15-op cap would save 44% of D-o-R ops (259/day, ~$12/day). Fix: tighter P1 prompt with explicit 15-op budget.**
+- Mode A finding complete: `workspace/finding-coach-82op-qa-regression-0411.md` — Coach 82-op QA regression investigation (EXP-133). Completed Apr 11 ~08:29 UTC.
+
+### may.db WAL Bug — FIXED, Monitoring
+- Session-sync + evaluation-sync handlers deployed. 1071 evals, 0 unevaluated (as of 17:10 UTC).
+
+### May Heartbeat Bloat — ✅ FIX VERIFIED
+- May heartbeats avg 22.4 → **7.3 ops (67% reduction)**, beating projected 47-55%
+- **Budget compliance: 96%** (24/25 within ≤12 op budget, 1 violation at 16 ops)
+- Long tail eliminated: 0 heartbeats >20 ops (was 38% pre-fix)
+- **Heartbeat ops savings: ~740 ops/day (~$35/day)**
+- May now forks work sessions properly: 15 forks in 22h, avg 27.2 ops each
+- Analysis: `workspace/finding-may-heartbeat-dispatcher-analysis-0412.md`
+- **Impact measurement**: `workspace/finding-may-heartbeat-cap-impact-0413.md`
+- **Status**: DONE. Monitor in system health checks.
+
+
+
+### Coder 104-op Outlier — Fewshot Injection False Positive
+- **Root cause**: Fewshot pattern `/binary|\.bin|compiled|executable|hexdump/i` matched `.bin` in `./node_modules/.bin/tsc` (the verification command) → injected irrelevant "binary file escalation" example into a dead code removal task
+- Also matched `consumer` in code description → injected "escalation-judgment" example
+- Coder spent 104 ops / 10.3 min, produced **zero changes** ("No changes to the protected files")
+- Total tree cost: 134 ops (28 TL + 104 coder + 2 retry) for zero useful output
+- **Fix**: Change regex to `\.bin(?![/\\])` (negative lookahead excludes `.bin/` paths). Also strip verifyCommand before fewshot matching.
+- Only 1 coder session >75 ops in 14 days (besides gym runs) — likely one-off, but systemic risk exists for all implement-and-verify tasks
+- **Dispatched → tech-lead (Apr 12 ~07:24 UTC)**: P2 fix for `.bin` regex + verifyCommand stripping
+- Finding: `workspace/finding-coder-104op-archaeology-0412.md`
+
+### Tool Adoption Strategy — DECLARED DEAD
+- gym-batch.sh and session-query.ts: **4th consecutive check confirming zero adoption** (24h+ since merge)
+- Context.md references don't drive adoption. Only viable paths: embed in workflow JS code or handler code
+- **Recommendation**: Remove context.md references to reduce bloat, abandon prompt-based adoption strategy
+- Finding: `workspace/finding-tool-adoption-pattern-mining-0412.md`
 
 ## 📊 OBSERVATIONS (no action needed)
 
