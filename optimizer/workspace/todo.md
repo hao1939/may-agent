@@ -122,3 +122,10 @@
 - **codeSearch Tool** — BUILT `scripts/code-search.ts`. Collapses 3-16 grep chains into single call. Tested with 7 real query patterns. Supports regex/fixed, context lines, stats, JSON output, glob/type filters, auto-excludes. Est. 120-180 ops/day savings across 93% of sessions. Finding: `workspace/finding-codesearch-tool-scoping-0412.md` (2026-04-12)
 
 48+ items Mar 17 – Apr 10. Detailed logs: `workspace/todo-archive-20260410.md`
+
+### Heartbeat Health Metrics (owner: optimizer) — NEW
+- 3 new metrics in may.db: `efficiency.heartbeat-lines`, `efficiency.heartbeat-inline-queries`, `efficiency.heartbeat-ops`
+- **Target**: total heartbeat lines < 800, inline queries = 0, avg ops/heartbeat < 12
+- **Current**: 1228 lines (threshold 1200 ⚠️), 3 remaining inline queries, ops TBD
+- Auto-measured by metrics-snapshot handler
+- **Action**: When heartbeat lines drift above threshold, propose trimming to May. Track which agents bloat fastest.
