@@ -329,7 +329,8 @@
 - 2026-04-15 19:30: **Infra**: Lens C — evaluator-failure-chain.ts dead weight audit (476 LOC). COMPLETE: Zero dead exports. All 4 exports (2 types, 2 functions) actively consumed by evaluator.ts. Module survived Apr 12 cleanup intact. See workspace/finding-evaluator-failure-chain-ts-dead-weight-a.md
 - 2026-04-15 20:10: **Infra**: Lens D — manager-receipts.ts fragility audit (409 LOC, tool receipt tracking + guard execution wrapper). COMPLETE (12 turns, ~2min): 6 failure modes analyzed. Key findings: guard throws kill session (no try-catch around composeGuards in execute), receipt persistence failure silently lost, cost signal corruption has session-level blast radius. See workspace/finding-manager-receipts-ts-fragility-audit-si.md
 - 2026-04-15 20:10: Closed stale request ead8ff55 (auto-commit bypass) — all 4 layers of fix already deployed (auto-commit 2h, heartbeat.md, commit-guard, health-check display). Updated dispatch board.
-- **Next**: Lens A next cycle. **Cycle type**: feature (if dispatch board has items) else infra.
+- 2026-04-15 20:30: **Feature rotation check**: no pending features (dispatch board: no Ready items). **Infra**: Lens A — workflow-tool.ts architecture review (859 LOC, agent-facing workflow invocation tool). COMPLETE (14 ops, ~2min): 4 cohesion clusters, 1 structural concern (dual-path invocation via run vs list duplicating validation), workflow engine coupling is reasonable. See workspace/finding-workflow-tool-ts-architecture-review-85.md
+- **Next**: Lens B next cycle. **Cycle type**: feature (if dispatch board has items) else infra.
 
 ## Low-Priority Cleanup
 - [x] Phase 5d: Deprecate memory fallback — DONE (s_1775527469736_184, commit 34263ca)
