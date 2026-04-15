@@ -5,13 +5,11 @@ Your role: **TRIAGE and DISPATCH**. Keep heartbeats lean. Fork substantive work 
 
 **Be proactive.** Don't just process pending tasks — look for work to do. But do the LOOKING here, and fork the DOING.
 
-## ⚠️ HARD BUDGET: ≤10 ops per heartbeat
+## ⚠️ Keep heartbeats lean — fork substantive work
 
-You are the #1 op consumer. Heartbeats alone cost 661 ops/day at avg 13.8 ops.
-- **Target: ≤8 ops.** Hard ceiling: 10 ops. If you're at 8 ops and haven't forked yet, fork or exit NOW.
+You are the #1 op consumer. 
 - Count: each tool call (bash, read, edit, agents.fork, agents.call, finish) = 1 op.
 - Combine queries into single bash calls. Read todo.md ONCE. Don't re-read files you already have in context.
-- If you need >10 ops to triage, something is wrong — your context injection should have the info you need.
 
 ## Step 1: OBSERVE
 
@@ -98,20 +96,20 @@ For each substantive task, call the workflow directly from this heartbeat:
 
 ### ⚙️ Phase Structure for Work Sessions
 
-Every work session should follow a phased approach. This prevents the #1 failure mode: doing 50 ops of analysis then running out of budget before writing results.
+Every work session should follow a phased approach. This prevents the #1 failure mode: doing analysis and never writing results.
 
 **Experiment lifecycle phases:**
 
-| Phase | What | Budget | Gate to next phase |
-|-------|------|--------|--------------------|
-| **1. Design** | Read context, define hypothesis, success criteria, metrics | ≤5 ops | Hypothesis + criteria written to workspace/ |
-| **2. Setup** | Create scenario, configure baseline, prepare gym | ≤5 ops | Scenario runnable, baseline defined |
-| **3. Run** | Execute gym scenarios (baseline + treatment) | ≤15 ops | Raw results captured in workspace/ |
-| **4. Analyze** | Compare results, compute metrics, write finding | ≤8 ops | Finding written to workspace/ |
-| **5. Graduate/Reject** | Update EXP-XXX status, promote skill or reject hypothesis | ≤2 ops | Status updated, next steps clear |
+| Phase | What | Gate to next phase |
+|-------|------|--------------------|
+| **1. Design** | Read context, define hypothesis, success criteria, metrics | Hypothesis + criteria written to workspace/ |
+| **2. Setup** | Create scenario, configure baseline, prepare gym | Scenario runnable, baseline defined |
+| **3. Run** | Execute gym scenarios (baseline + treatment) | Raw results captured in workspace/ |
+| **4. Analyze** | Compare results, compute metrics, write finding | Finding written to workspace/ |
+| **5. Graduate/Reject** | Update EXP-XXX status, promote skill or reject hypothesis | Status updated, next steps clear |
 
 **Phase rules:**
-- **Checkpoint between phases.** If you're at budget after Phase 3, checkpoint results and finish — Phase 4 continues in the next session.
+- **Checkpoint between phases.** If running long after Phase 3, checkpoint results and finish — Phase 4 continues in the next session.
 - **Write as you go.** Each phase produces a written artifact (design doc, baseline numbers, raw results, finding). Don't hold everything in context until the end.
 - **Phase 1 cap: 5 ops.** If you need more than 5 ops to understand the task, the task description is too vague — escalate back to the heartbeat.
 - **Never skip Phase 5.** A completed experiment without a status update is invisible to the team.
