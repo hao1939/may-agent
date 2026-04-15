@@ -3,6 +3,15 @@
 *.log
 *.bak
 
+# Removed directories — these were consolidated elsewhere, don't re-add
+shared/protocols/
+shared/research/
+shared/research-projects/
+shared/projects/
+shared/deep-dives/
+shared/designs/
+shared/tasks/
+
 # Federation conflict artifacts — ephemeral, reviewed manually
 *.conflict-k3s
 *.conflict-local
