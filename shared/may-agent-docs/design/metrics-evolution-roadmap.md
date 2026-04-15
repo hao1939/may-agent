@@ -2,7 +2,8 @@
 
 **Author:** Hao  
 **Date:** 2026-04-15  
-**Status:** Vision document (not for implementation now)
+**Status:** Vision document (not for implementation now)  
+**Related:** [Phase 1 Design](metrics-system.md) | [Project File](../../may/workspace/projects/metric-system.md)
 
 ---
 
@@ -45,3 +46,11 @@ Keep this in mind as you build Phase 1:
 - Make metric queries fast and easy — if it's friction, agents won't use it
 - Record good snapshot notes — Level 4 needs historical context to find correlations
 - **Focus on adoption first, features later**
+
+## Progression Criteria
+
+| Level | Prerequisite | Signal to Advance |
+|-------|-------------|-------------------|
+| 1 → 2 | 5+ agents using metrics for 2+ weeks | Patterns for auto-dispatch are obvious from data |
+| 2 → 3 | Auto-dispatch running reliably for 1+ month | Agents have demonstrated they understand what metrics matter |
+| 3 → 4 | 20+ metrics with 1+ month of dense snapshot history | Enough data for meaningful correlation analysis |
