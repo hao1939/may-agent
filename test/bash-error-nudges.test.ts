@@ -14,7 +14,7 @@ describe("applyErrorNudges", () => {
 		const output = "bash: bun: command not found";
 		const result = applyErrorNudges(output);
 		expect(result).toContain("💡 Hint:");
-		expect(result).toContain(".state/.bun/bin/bun");
+		expect(result).toContain(".state/.bun/bin");
 		expect(result).toContain("PATH");
 	});
 

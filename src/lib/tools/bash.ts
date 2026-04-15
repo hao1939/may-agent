@@ -187,7 +187,7 @@ export const DEFAULT_ERROR_NUDGES: ErrorNudge[] = [
 	},
 	{
 		pattern: /bun:\s*command not found/i,
-		hint: "\n\n💡 Hint: bun is at .state/.bun/bin/bun — add to PATH: export PATH='.state/.bun/bin:$PATH'",
+		hint: "\n\n💡 Hint: bun should be on PATH automatically (.state/.bun/bin). If not found, check that .state/.bun/bin/bun exists.",
 	},
 	{
 		pattern: /npx:\s*command not found/i,
