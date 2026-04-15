@@ -12,7 +12,15 @@ function getShellConfig(): { shell: string; args: string[] } {
 }
 
 function getShellEnv(): NodeJS.ProcessEnv {
-	return { ...process.env };
+	const env = { ...process.env };
+	// Prepend .state/.bun/bin to PATH so agents can run `bun` without
+	// manually exporting PATH every time. This eliminates ~8% of all bash
+	// calls that were pure boilerplate `export PATH=".state/.bun/bin:$PATH"`.
+	const bunDir = join(process.cwd(), ".state", ".bun", "bin");
+	if (existsSync(bunDir)) {
+		env.PATH = `${bunDir}:${env.PATH ?? ""}`;
+	}
+	return env;
 }
 
 function killProcessTree(pid: number): void {
