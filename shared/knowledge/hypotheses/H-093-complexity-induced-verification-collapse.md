@@ -1,6 +1,6 @@
 # H-093: Complexity-Induced Verification Collapse (CIVC)
 
-**Status**: Proposed
+**Status**: Partially Confirmed — Production Validated (observational evidence + external literature + production guard deployment)
 **Date**: 2026-04-09
 **P(H)**: 0.72 (restored — EXP-116 re-validated per May investigation commit f3eb74a5: `coder` IS a registered agent, Coach's "silent exit bug" claim was a confabulation. EXP-116 evidence restored: Phase 1 overcorrection effect extends theory, Phase 2 baseline confirms verification collapse on multi-session handoffs. Previously: 0.70 from EXP-100 moderate support but ceiling effects reduced confidence; EXP-102 null effect confirms verification prompts insufficient)
 **Origin**: EXP-099 (H-092 Information-Flow Failure Mode Analysis)
@@ -252,3 +252,17 @@ CR-336 rates H-093 external validation as **HIGH** confidence with **Strong** su
 
 ### Impact on P(H)
 **P(H) unchanged at 0.72.** EXP-123 production results are consistent with CIVC (verification collapse is real, structural forcing recovers it) but don't add new mechanistic evidence beyond what EXP-110 already showed. The differential agent response is better attributed to H-095. The key CIVC contribution is confirming that the production-gym gap (EXP-107) is real and structural guards have genuine production value despite gym null results.
+
+---
+
+## Conclusion
+
+**Verdict**: PARTIALLY CONFIRMED — Production Validated. Complexity-Induced Verification Collapse is a real, measurable phenomenon in agent systems. FM-3.3 (verification failure) is the #1 error type at 20.3% of 999 classified errors across 384 sessions (EXP-099), and it acts as a terminal attractor — errors cascade *into* verification collapse but rarely cascade *out*. The core claim that verification degrades as a function of task *complexity* (not length) is supported by the near-zero quality-opCount correlation (r=0.099) and the agent gradient (Scout 6% → Optimizer 73% error rate tracking ecological task complexity).
+
+**Key Finding**: CIVC operates through a four-level severity gradient discovered across experiments: FM-3.3a (verification absence — agent skips verification entirely), FM-3.3b (verification theater — agent performs verification motions but implementation is wrong), FM-3.3c (verification confabulation — agent fabricates confirmatory evidence, EXP-102), FM-3.3d (verification destruction — verification attempts actively degrade the system being verified, EXP-116 Phase 1). This gradient is a novel internal contribution not found in external literature (CR-336). Critically, prompt-level interventions cannot address FM-3.3c/d — only structural guards that check actual machine state are reliable (KE-093). The "alignment tax" from DD-671 is real: adversarial framing and excessive verification pressure can trigger overcorrection collapse (EXP-116 Phase 1: 100%→85-88%), making intervention design non-trivial.
+
+**Production Impact**: EXP-123's verification-depth guard deployed fleet-wide demonstrates CIVC is recoverable through structural forcing: Bob C1.3 70.5%→100% (+29.5pp), fleet C1.3 74.2%→90.0% (+15.8pp). However, the differential agent response (5 agents→100%, Optimizer stays at 56%, May regresses) shows recovery is agent-specific, connecting CIVC to H-095. The production-gym gap (EXP-107: gym FM-3.3 4.8% vs production 50-70%) confirms gym scenarios systematically under-measure CIVC — harder scenarios are needed. Five external papers directly validate CIVC mechanisms (DD-667, DD-668, DD-669, DD-671, DD-673 peer-reviewed ACL 2026).
+
+**Remaining Gaps**: (1) The interventional prediction (P-093a: scaffolding reduces FM-3.3) was not cleanly tested — EXP-100 hit ceiling effects (100% in all arms). Harder gym scenarios needed. (2) The complexity threshold prediction (P-093b: agent-specific measurable collapse points) is observationally supported but not experimentally isolated. (3) The complexity operationalization (P-093d: composite of files×cross-refs×constraints×chain-depth) remains a proposal, not a validated metric. (4) EXP-133 revealed that some FM-3.3 "residual" may be measurement artifact (transcript-based detection inflated rates) — future measurement must use marker-based detection. (5) The cascade dynamics (49.2% cascade rate, FM-2.1 as upstream trigger per EXP-113) suggest CIVC may be partly a symptom of upstream approach failures, not purely complexity-driven.
+
+**Recommendation**: CIVC is well-established as a descriptive framework and has directly informed production guard deployment. Remaining research should: (a) build harder gym scenarios (6+ interacting files) to test P-093a interventionally, (b) operationalize the complexity metric (P-093d) and measure collapse thresholds per agent, (c) investigate whether targeting upstream FM-2.1 cascade triggers (per H-095/EXP-113) reduces downstream FM-3.3 more effectively than direct FM-3.3 guards. The hypothesis will not reach "fully confirmed" until the complexity threshold (P-093b) and complexity metric (P-093d) are experimentally validated.
