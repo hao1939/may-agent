@@ -134,17 +134,8 @@ function computeEvaluation(meta: SessionMeta, sessionDir: string): {
   const status = meta.status || "unknown";
   const opCount = meta.opCount || 0;
 
-  // Skip evaluator sessions (meta agents)
-  if (agent === "evaluator") {
-    return {
-      quality: 0, efficiency: 0,
-      productiveCalls: 0, wastedCalls: 0,
-      verdict: "skipped",
-      issues: [`meta_agent_skipped (${agent})`],
-      evaluatedByHeuristic: false,
-      skippedByJs: true,
-    };
-  }
+  // NOTE: evaluator sessions are filtered out in the query (agent != 'evaluator')
+  // so we don't need a skip check here anymore.
 
   // Skip 0-op interrupted sessions
   if (status === "interrupted" && opCount === 0) {
@@ -265,9 +256,12 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       const rows = db.prepare("SELECT sessionId FROM evaluations").all() as Array<{ sessionId: string }>;
       for (const r of rows) evaluatedIds.add(r.sessionId);
 
-      // Get all session IDs from the sessions table
+      // Get all session IDs from the sessions table.
+      // Exclude evaluator sessions entirely — they are meta agents that should not
+      // receive quality scores. Previously they got quality=0, verdict="skipped",
+      // which dragged down quality.system average (P-eval-zero bug).
       const sessions = db.prepare(
-        "SELECT sessionId, agent, status, opCount FROM sessions WHERE status IN ('done', 'error', 'interrupted')"
+        "SELECT sessionId, agent, status, opCount FROM sessions WHERE status IN ('done', 'error', 'interrupted') AND agent != 'evaluator'"
       ).all() as Array<{ sessionId: string; agent: string; status: string; opCount: number }>;
 
       const unevaluated = sessions.filter(s => !evaluatedIds.has(s.sessionId));
@@ -296,26 +290,25 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
           const meta = existsSync(metaPath) ? loadSessionMeta(metaPath) : null;
           if (!meta) {
             // Minimal evaluation from DB data only
-            const isEvaluator = session.agent === "evaluator";
             const isError = session.status === "error";
             upsert.run(
               session.sessionId,
               session.agent,
-              isEvaluator ? 0 : isError ? 0.1 : 1.0,
-              isEvaluator ? 0 : isError ? 0.4 : 0.8,
+              isError ? 0.1 : 1.0,
+              isError ? 0.4 : 0.8,
               0, 0,
-              isEvaluator ? "skipped" : isError ? "needs_improvement" : "good",
-              isEvaluator ? JSON.stringify([`meta_agent_skipped (${session.agent})`]) : "[]",
+              isError ? "needs_improvement" : "good",
+              "[]",
               JSON.stringify({
-                quality: isEvaluator ? 0 : isError ? 0.1 : 1.0,
-                efficiency: isEvaluator ? 0 : isError ? 0.4 : 0.8,
-                verdict: isEvaluator ? "skipped" : isError ? "needs_improvement" : "good",
-                result_delivered: !isEvaluator && !isError,
+                quality: isError ? 0.1 : 1.0,
+                efficiency: isError ? 0.4 : 0.8,
+                verdict: isError ? "needs_improvement" : "good",
+                result_delivered: !isError,
               }),
               JSON.stringify({ inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalTokens: 0, cost: 0 }),
               "[]",
-              isEvaluator ? 0 : 1,
-              isEvaluator ? 1 : 0,
+              1,
+              0,
               Date.now(),
             );
             synced++;
