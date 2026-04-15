@@ -1,3 +1,6 @@
-# Deliverables Checklist — Tech-Lead D-o-R Proposal (Apr 14)
+# Deliverables Checklist — Skill Scouting 0415
 
-- [x] `agents/optimizer/workspace/tech-lead-dor-proposal.md` — Complete D-o-R workflow integration proposal
+- [x] finding-skill-scouting-0415.md with:
+  - [x] Top 3 technique patterns found
+  - [x] Skill deployment recommendations
+  - [x] Evidence from session data
