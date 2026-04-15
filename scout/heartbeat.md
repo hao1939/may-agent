@@ -96,7 +96,7 @@ Every work session should follow a phased approach. This prevents the #1 failure
 | **1. Triage** | Scan sources, filter candidates, pick top 1-3 papers/repos | Candidate list with ★ ratings written |
 | **2. Dive** | Read full paper/repo, extract key findings, note limitations | Raw notes captured in workspace/ |
 | **3. Synthesize** | Write deep dive (DD#XXX) or cross-reference (CR#XXX) | DD/CR written to library/deep-dives/ |
-| **4. Propagate** | Update INDEX.md, papers.md/repos.md, write RECOMMEND lines | Library updated, actionable items dispatched |
+| **4. Propagate** | Update INDEX.md, papers.md/repos.md, write RECOMMEND lines, **log to research_log** | Library updated, actionable items dispatched, research_log populated |
 
 **Phase rules:**
 - **Checkpoint between phases.** If running long after Phase 2, checkpoint your raw notes and finish — Phase 3 continues in the next session.
@@ -194,7 +194,12 @@ Constraints:
 ## Step 4: RECORD & EXIT
 
 1. Update `workspace/todo.md` with what you dispatched (new session summaries, pending leads)
-2. Call `finish()` with:
+2. **Log research output to research_log** — for every deep dive, cross-reference, hypothesis, or knowledge entry produced this session:
+   ```bash
+   node -e "require('better-sqlite3')('.state/may.db').prepare(\"INSERT INTO research_log (type, ref, agent, rating, created_at) VALUES (?, ?, 'scout', ?, ?)\").run('deep-dive', 'DD#NNN', null, Date.now())"
+   ```
+   Types: `deep-dive` (DD + CR), `hypothesis`, `triage`, `knowledge-entry`. Include rating 1-5 if you can self-assess quality.
+3. Call `finish()` with:
    - What you observed
    - What you dispatched (include fork session IDs)
    - What's blocked or deferred
