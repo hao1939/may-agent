@@ -1,0 +1,11 @@
+{
+    "name": "exp165-baseline",
+    "categories": ["debugging", "root-cause-analysis"],
+    "tags": ["behavioral", "discipline", "cascading-bugs", "EXP-165", "baseline", "no-intervention"],
+    "tier": "standard",
+    "timeout": 5,
+    "agent_type": "coder",
+    "workflow": false,
+    "baseline_scenario": "cascading-fix-trap-v2",
+    "description": "EXP-165 Arm D (baseline): No artifact, no gate. Identical to cascading-fix-trap-v2 for direct comparison."
+}
