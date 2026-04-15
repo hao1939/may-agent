@@ -992,8 +992,42 @@
   2. KE-106 habituation literature (low priority — largely subsumed)
   3. Any new leads from ongoing experiments
 
+## Session 795 (2026-04-15 19:00 UTC) — Wednesday arXiv triage (dispatched via verify-wrap)
+- **✅ Wednesday arXiv triage DONE**: 23 papers triaged from cs.AI + cs.MA April 14 listings. 6 deep dives written (DD#763-768). 
+  - DD#763 (2604.12986): Parallax — Cognitive-Executive Separation. RTOS-style separation of cognitive reasoning from executable actions with formal verification gate. ★★★★★
+  - DD#764 (2604.12948): Dual-Trace Memory Encoding. Episodic + semantic memory channels with cooperation-aware retrieval. ★★★★
+  - DD#765 (2604.12376): Cooperative Memory Paging with Bookmarks. Bounded-context agents share memory via bookmark-based cooperative paging. ★★★★
+  - DD#766 (2604.12177): PhantomPolicy — Policy-Invisible Violations. Identifies class of agent violations undetectable by standard policy monitors; sentinel architecture remedy. ★★★★★
+  - DD#767 (2604.11767): λ_A — Typed Calculus for Agent Composition. Static type-checking for agent pipelines, formal verification of composition correctness. ★★★★
+  - DD#768 (2604.12285): GAM — Hierarchical Graph Agentic Memory. Dynamic importance scoring in graph-structured memory with hierarchical retrieval. ★★★★
+- **Two strong clusters**: (1) Agent safety architecture (Parallax, PhantomPolicy, λ_A) — multiple independent validations of architectural enforcement thesis. (2) Memory engineering (dual-trace, cooperative paging, GAM) — 3 different approaches to bounded-context memory management.
+- **Propagation**: DDs promoted to shared library. INDEX.md updated with new cluster + 6 cross-references. Covered IDs: 416. research_log: 7 entries logged.
+- **Flag for Bob**: DD#766 PhantomPolicy directly validates KE-106 (guards don't train behavior — agents find policy-invisible workarounds). DD#763 Parallax validates KE-101 Law 2 (structural enforcement > prompting).
+- **Research priorities** (updated):
+  1. Production-first eval methodology (extend CR#326 Path A)
+  2. Multi-session context authority / inherited confabulation (EXP-116 lead — demoted, motivation weakened)
+  3. KE-106 habituation literature (low priority — largely subsumed)
+  4. Any new leads from ongoing experiments
+
+## Session 796 (2026-04-15 19:30 UTC) — Wednesday evening heartbeat (lean)
+- **No new Scout-relevant developments** since Session 795 (30min ago). Wednesday arXiv triage complete (DD#763-768). System quiescent.
+- **Clean state**: All deliverables committed. Wednesday evening — quiescent. No fresh arXiv until Thursday ~20:00 UTC.
+- **Research priorities** (Wednesday):
+  1. Production-first eval methodology (extend CR#326 Path A)
+  2. KE-106 habituation literature (low priority — largely subsumed)
+  3. Thursday arXiv triage (~20:00 UTC Thursday)
+
+## Session 797 (2026-04-15 20:00 UTC) — Wednesday evening heartbeat (lean)
+- **No new Scout-relevant developments** since Session 796 (30min ago). System quiescent — tech-lead auto-commit bypass, optimizer high-op archaeology, no Scout-relevant items.
+- **Wednesday arXiv triage complete** (Session 795): DD#763-768 written and propagated.
+- **Clean state**: All deliverables committed. No pending tasks or urgent leads. No fresh arXiv until Thursday ~20:00 UTC.
+- **Research priorities** (unchanged):
+  1. Production-first eval methodology (extend CR#326 Path A)
+  2. KE-106 habituation literature (low priority — largely subsumed)
+  3. Thursday arXiv triage (~20:00 UTC Thursday)
+
 ## Counters
-- DD: 762
+- DD: 768
 - CR: 339
-- Session: 792
+- Session: 797
 
