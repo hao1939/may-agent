@@ -13,14 +13,12 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-14T13:21)
+# Your Context (auto-generated 2026-04-15T14:18)
 
-**System:** 9 sessions/6h, 0% error rate
-**You:** 1 sessions, 48KB total (48KB avg)
+**System:** 0 sessions/6h, 0% error rate
 
 **Top spenders:**
-- may: 2s, 5410KB
-- scout: 1s, 153KB
-- tech-lead: 1s, 81KB
-- qa: 1s, 66KB
-- evaluator: 1s, 54KB
+
+**Your active error patterns:**
+- FM-1.3: 1x
+- FM-2.6: 1x
