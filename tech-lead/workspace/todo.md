@@ -327,7 +327,9 @@
 - 2026-04-15 18:58: **Gatekeeper Guard Feasibility** (req:9ec176d3, req:07e980a9) — Responded to May with technical assessment. Design is sound: getChangedFiles() is pure (scans in-memory messages), per-step review preferred over batch, use finish status instead of regex-matching QA response.
 - 2026-04-15 19:30: **Merged 2 review branches** (compose-guards finish bypass + eval quality fix) to main, pushed. TSC clean, 13 compose-guards tests pass. Deleted 5 stale review branches.
 - 2026-04-15 19:30: **Infra**: Lens C — evaluator-failure-chain.ts dead weight audit (476 LOC). COMPLETE: Zero dead exports. All 4 exports (2 types, 2 functions) actively consumed by evaluator.ts. Module survived Apr 12 cleanup intact. See workspace/finding-evaluator-failure-chain-ts-dead-weight-a.md
-- **Next**: Lens D next cycle. **Cycle type**: feature (if dispatch board has items) else infra.
+- 2026-04-15 20:10: **Infra**: Lens D — manager-receipts.ts fragility audit (409 LOC, tool receipt tracking + guard execution wrapper). COMPLETE (12 turns, ~2min): 6 failure modes analyzed. Key findings: guard throws kill session (no try-catch around composeGuards in execute), receipt persistence failure silently lost, cost signal corruption has session-level blast radius. See workspace/finding-manager-receipts-ts-fragility-audit-si.md
+- 2026-04-15 20:10: Closed stale request ead8ff55 (auto-commit bypass) — all 4 layers of fix already deployed (auto-commit 2h, heartbeat.md, commit-guard, health-check display). Updated dispatch board.
+- **Next**: Lens A next cycle. **Cycle type**: feature (if dispatch board has items) else infra.
 
 ## Low-Priority Cleanup
 - [x] Phase 5d: Deprecate memory fallback — DONE (s_1775527469736_184, commit 34263ca)

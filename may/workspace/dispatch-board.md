@@ -53,7 +53,7 @@ Updated: 2026-04-15 ~20:00 UTC
 - **P0**: ~~Merge compose-guards.ts fix~~ — ✅ DONE (2705e8ce on main).
 - **P1**: **Gatekeeper Review Gate** — Design complete, Bob+tech-lead reviewed. Needs Hao approval → then dispatch to tech-lead for implementation.
 - **P1**: **QA heartbeat simplification (IT-21)** — Tech-lead found root cause is system-wide abort, not QA heartbeat. May have self-resolved. Monitor.
-- **P1**: **Common-sense #23 auto-commit bypass** — Heartbeat.md fixed (step 7). Broader enforcement (guard that rejects finish() with uncommitted changes) still needs tech-lead work.
+- ~~**P1**: **Common-sense #23 auto-commit bypass**~~ — ✅ DONE. All 4 layers complete: (1) auto-commit interval 10min→2h, (2) heartbeat.md Step 7 fixed, (3) commit-guard.ts merged to main (blocks finish() with uncommitted changes), (4) health-check display aligned.
 - **P2**: Amy-kimi billing — blocked on Hao.
 - ⚠️ **HOLD**: Ch2-production-gates implementation — Hold for EXP-170.
 
