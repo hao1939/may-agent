@@ -93,14 +93,11 @@
   },
   {
     "name": "heartbeat-evaluator",
-    "type": "heartbeat",
+    "type": "job",
     "intervalMs": 1800000,
-    "agent": "evaluator",
-    "message": "[heartbeat] You are Evaluator. Your files are in agents/evaluator/. Read agents/evaluator/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you evaluated or calibrated.",
+    "handler": "evaluator-heartbeat",
     "enabled": true,
-    "description": "Evaluator's heartbeat — calibration, criteria evolution, signal quality (2h)",
-    "lastModified": "2026-03-12T15:11:42.302Z",
-    "notifyBrief": true
+    "description": "Evaluator calibration gate — JS checks DB for stale evals/criteria, only spawns LLM session when calibration needed. Replaces LLM heartbeat that was 100% skipped (~250 wasted ops/day)."
   },
   {
     "name": "heartbeat-scout",

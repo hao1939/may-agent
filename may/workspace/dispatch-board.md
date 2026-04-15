@@ -1,18 +1,17 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-15 ~07:00 UTC
+Updated: 2026-04-15 ~08:30 UTC
 
 ## System Health
-- **Amy-kimi**: 🔴 DOWN — 429 errors (billing). Blocked on Hao.
-- **Bob**: 🟢 Active — 6 sessions/6h, avg 14 ops. Zero errors.
-- **Coach**: 🟢 Active — 7 sessions/6h, avg 16 ops. Zero errors.
-- **Scout**: 🟢 Active — 5 sessions/6h, avg 15 ops. Zero errors.
-- **Tech-lead**: 🟢 Active — 6 sessions/6h, avg 7 ops. Zero errors.
-- **Optimizer**: 🟢 Active — 7 sessions/6h, avg 13 ops. Zero errors.
-- **Evaluator**: 🟢 Active — 17 sessions/6h, avg 1 ops. Zero errors.
-- **QA**: 🟢 Active — 5 sessions/6h, avg 5 ops. Zero errors.
-- **Coder**: 🟡 Low activity — Only runs when forked by tech-lead.
-- **Summary**: 7/8 healthy. Amy-kimi still down. No errors, no stuck sessions. All agents active and productive.
+- **Amy-kimi**: 🔴 DOWN — billing. Blocked on Hao.
+- **Bob**: 🟢 Active — 10 sessions/6h, avg 13 ops. Zero errors.
+- **Coach**: 🟢 Active — 10 sessions/6h, avg 13 ops. Zero errors.
+- **Scout**: 🟢 Active — 8 sessions/6h, avg 12 ops. Zero errors.
+- **Tech-lead**: 🟢 Active — 10 sessions/6h, avg 8 ops. Zero errors.
+- **Optimizer**: 🟢 Active — 12 sessions/6h, avg 12 ops. Zero errors.
+- **Evaluator**: 🟢 Active — 24 sessions/6h, avg 1 op. Zero errors.
+- **QA**: 🟢 Active — 8 sessions/6h, avg 4 ops. Zero errors.
+- **Summary**: 8/8 healthy. Amy-kimi still down. Zero errors across all agents in 6h.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -51,12 +50,18 @@ Updated: 2026-04-15 ~07:00 UTC
 - **P2**: Amy-kimi billing — blocked on Hao.
 - ⚠️ **HOLD**: Ch2-production-gates implementation — EXP-163 showed the evidence base (EXP-155 +85pp) was measuring process compliance, NOT product quality. All arms 100% product rate. Do NOT implement content quality gates until new evidence from EXP-170 or Bob's recognition-layer scenarios.
 
-## Latest Cycle Summary (07:30 Apr 15)
-- **System**: All agents active. Zero errors, no stuck sessions.
-- **Agent stats (6h)**: Bob 7s/14ops, Coach 8s/15ops, Evaluator 18s/1ops, May 5s/6ops, Optimizer 8s/13ops, QA 6s/5ops, Scout 6s/13ops, Tech-lead 7s/7ops.
-- **Queue**: Refilled — 10 unchecked Ready items. Top item: Evaluator JS handler replacement (saves 250 ops/day).
-- **Dispatched**: Evaluator JS handler replacement → tech-lead (this cycle).
-- **In Progress**: Tiered turn budget (tech-lead), Optimizer finding→dispatch pipeline, Tech-lead workflow D-o-R.
+## Latest Cycle Summary (12:38 Apr 14)
+- **BUG FIX**: verify-wrap 50% error rate — string "undefined" in ctx.agent. Fix on review branch `review/fix-verify-wrap-undefined` (commit fa5d279d). Two changes: ctx.agent rejects string "undefined", runAgent validation catches "undefined"/"unknown". 97 tests pass.
+- **GYM/LAB REVIEW**: Dispatched 3 workstreams per Hao's review:
+  - Bob → gym scenario triage criteria + lab→gym merge spec (req b0d82f98)
+  - Coach → audit .lab/ forks, delete stale ones (req c724e8ee)
+  - Optimizer → gym cost/value analysis, 952 sessions/week (req 7e06acd1)
+- Tech-lead items (gym.db + CI smoke runner) deferred until Bob's design lands.
+- EXP-163 HOLD on ch2-production-gates still in effect.
+- IT-21 (QA interrupt rate) dispatched to optimizer. IT-22 (KE-129 reinterpretation) dispatched to Bob.
+- Coach flagged IT-20 (new H-161 test), IT-21 (QA interrupts), IT-22 (reinterpret KE-129).
+- **Pending merge**: pivot-detector guard branch `review/pivot-detector-guard` needs merge session.
+- **Next dispatch**: cost-limit guard (fork to coder), IT-21 QA investigation (fork to tech-lead/optimizer).
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
