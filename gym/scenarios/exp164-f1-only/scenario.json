@@ -1,0 +1,11 @@
+{
+  "name": "exp164-f1-only",
+  "categories": ["judgment", "root-cause"],
+  "tags": ["behavioral", "discipline", "diagnosis", "EXP-164", "F1-only", "information-provision"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false,
+  "baseline_scenario": "misleading-test-fix",
+  "description": "EXP-164 Arm C (F1-only): Pre-written expert DIAGNOSIS.md provided. Agent reads the diagnosis and fixes accordingly. No forced production — tests whether information provision alone improves judgment."
+}

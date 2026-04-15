@@ -1,0 +1,11 @@
+{
+  "name": "exp164-baseline",
+  "categories": ["judgment", "root-cause"],
+  "tags": ["behavioral", "discipline", "diagnosis", "EXP-164", "baseline", "no-intervention"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false,
+  "baseline_scenario": "misleading-test-fix",
+  "description": "EXP-164 Arm D (baseline): Clean single-phase, no artifact, no gate. Identical to misleading-test-fix for direct comparison."
+}
