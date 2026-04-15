@@ -18,7 +18,19 @@ Agents can make system-scope changes (guards, manager code, workflow definitions
 - **No review before merge** — any agent can `git merge` a review branch ❌
 - May's heartbeat says review branches are "agent-scope (no action)" ❌
 
-## Solution: Gatekeeper Guard (Workflow-Level)
+## Solution: Three Complementary Modes
+
+The gatekeeper operates in three modes, each catching different scenarios:
+
+| Mode | Mechanism | When | Catches |
+|------|-----------|------|---------|
+| **A: Workflow Guard** | `step_done` → inject QA review | During workflows | System-scope code changes in workflow steps |
+| **B: Proactive Cron Scan** | Periodic scan (every 10-15 min) | Between workflows | Unreviewed merges, stale branches, bypass commits |
+| **C: Design Review** | May's heartbeat judgment | During heartbeats | Designs/proposals that need Hao's approval |
+
+No single mode is sufficient. Mode A is **preventive** (blocks bad changes inline). Mode B is **detective** (finds things that slipped through). Mode C is **judgmental** (catches subtle design risks that code scanning misses).
+
+## Mode A: Gatekeeper Guard (Workflow-Level)
 
 A **workflow guard** in `agents/shared/guards/` that triggers on `step_done` events, detects system-scope file changes, and injects a QA review step into the workflow.
 
@@ -304,9 +316,10 @@ If an agent modifies `agents/shared/guards/gatekeeper.ts`, the gatekeeper guard 
 
 ## Implementation Order
 
-1. **Phase 1:** Write the `gatekeeper` guard in `agents/shared/guards/gatekeeper.ts` — ~80 lines
-2. **Phase 2:** Update May's heartbeat with design review instructions — 0 code
-3. **Phase 3:** Add review metrics to DB (optional) — track what got reviewed, who approved
+1. **Phase 1:** Write the `gatekeeper` workflow guard in `agents/shared/guards/gatekeeper.ts` (Mode A) — ~80 lines
+2. **Phase 2:** Build the proactive cron scan (Mode B) — May cron job or session subscriber, ~60 lines + state file
+3. **Phase 3:** Update May's heartbeat with design review instructions (Mode C) — 0 code, behavioral
+4. **Phase 4:** Add review metrics to DB (optional) — track what got reviewed, who approved, catch rate
 
 ## References
 
