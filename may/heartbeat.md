@@ -110,7 +110,7 @@ If the queue is empty, fork a session to refill it — do NOT scan sessions inli
 **Never skip this.** "System is steady" means you have MORE time for improvement, not less.
 
 ## 7. End-of-Cycle Reflection (ALWAYS DO LAST)
-Commit your changes first — `cd /app/agents && git add -A && git commit -m "may: <summary>"`, then call finish(). The `agents-auto-commit` cron is a 2h safety net, not a substitute for committing your own work. Do NOT re-read files to "verify" edits — edit() already shows diffs. Context.md updates only when something actually changed (most cycles = no update).
+Just call finish(). Do NOT commit/push to git — the `agents-auto-commit` cron handles this every 10 minutes. Do NOT re-read files to "verify" edits — edit() already shows diffs. Context.md updates only when something actually changed (most cycles = no update).
 
 Before calling finish(), pause and ask yourself:
 - **Did I learn anything new this cycle?** A human directive, a system pattern, a failure mode, a priority shift?

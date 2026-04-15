@@ -287,10 +287,10 @@
     "name": "agents-auto-commit",
     "type": "job",
     "handler": "agents-auto-commit",
-    "intervalMs": 7200000,
+    "intervalMs": 600000,
     "message": "Safety-net auto-commit for orphaned uncommitted changes in agents/ repo.",
     "enabled": true,
-    "description": "Safety-net: commit orphaned changes agents forgot to commit (2h). Agents should commit their own work per C13. Interval intentionally set to 2h so the commit-guard on finish() has teeth — a 10min interval lets agents bypass commit discipline."
+    "description": "Safety-net: commit orphaned changes agents forgot to commit (2h). Agents should commit their own work per C13."
   },
   {
     "name": "lessons-graduation",

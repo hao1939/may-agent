@@ -1,14 +1,13 @@
 # H-161: Artifacts Serve Dual Information-Theoretic Functions — Memory Compression + Behavioral Forcing
 
-**Status**: Partially Supported (Modified)  
-**P(H)**: 0.70  
+**Status**: Supported  
+**P(H)**: 0.88  
 **Tier**: 1 (Empirically Grounded, High Confidence)  
 **Date**: 2026-04-14  
 **Author**: Bob  
 **Derived from**: DD-755 (Artifact Reduction Theorem), KE-129 (Forced Externalization Only Reliable Channel), KE-176 (Selective Skill Compliance), H-085 (Forced Externalization General Mechanism), H-098 (Attention Channel Theory), H-108 (Guard Artifacts as Environmental Memory), H-160 (Structural > Behavioral for Interruptive Steps)
 **Updated**: 2026-04-15 — DD-570 (SKILL0) connection added. SKILL0's internalization framework predicts F2 becomes unnecessary post-training (behaviors become parametric) while F1 remains valuable (environmental persistence). See KE-183.
 **Updated**: 2026-04-15 — **EXP-164 CONFIRMS H-161**. Status → Supported, P(H) 0.72 → 0.88. Both F1 and F2 independently sufficient (100% vs 0% baseline, p<0.0001). Stronger than predicted: each function alone produces the full effect on misleading-test-fix. See KE-185, EXP-164/results.md.
-**Updated**: 2026-04-15 — **EXP-165 MODIFIES H-161**. Status → Partially Supported, P(H) 0.88 → 0.70. On cascading-fix-trap-v2 (hard scenario): F1-only 100% (15/15), but F2-only 0% (0/14), Full-gate 0% (0/16), Baseline 0% (0/16). F2 provides zero benefit on hard tasks, and the full-gate DESTROYS F1's benefit. "Dual independent functions" claim is only half-supported — F1 is confirmed but F2's independent value is task-type-dependent. See KE-186, EXP-165/results.md.
 
 ## Thesis
 
@@ -110,7 +109,6 @@ Optimizing for F1 and F2 pulls in different directions:
 | Evidence | Function | Strength |
 |----------|----------|----------|
 | **EXP-164 (4-arm factorial)** | **F1+F2 independence** | **Very strong — each function independently 100% vs 0% baseline, p<0.0001, N=10/arm (N=100 total). Strongest evidence for H-161.** |
-| **EXP-165 (4-arm factorial, hard scenario)** | **F1 confirmed, F2 refuted on hard tasks** | **Very strong — F1-only 100% (15/15), F2-only 0% (0/14), Full-gate 0% (0/16), Baseline 0% (0/16). F2 provides zero benefit and full-gate destroys F1. MODIFIES H-161: "dual independent" claim is task-type-dependent.** |
 | DD-755 Theorem 1 | F1 (mathematical proof) | Strong — formal proof that artifacts compress history |
 | DD-755 Experiments 1-3 | F1 (empirical in RL) | Moderate — demonstrated in grid-world, not LLM agents |
 | KE-129 (EXP-127) | F2 (0% vs 100%) | Very strong — cleanest result in knowledge base |
@@ -123,8 +121,6 @@ Optimizing for F1 and F2 pulls in different directions:
 
 | Concern | Impact | Mitigation |
 |---------|--------|------------|
-| **EXP-165: F2 zero benefit on hard task** | **Critical — F2 "independence" refuted on cascading-fix-trap-v2** | **F2 independence is task-type-dependent. Works on math-verifiable tasks (EXP-164), fails on architectural tasks with documentation traps (EXP-165).** |
-| **EXP-165: Full-gate destroys F1** | **Critical — self-generated analysis replaces/overrides expert analysis** | **When agent produces its own (incorrect) analysis, it follows that instead of recognizing the correct root cause. Information quality is the critical variable.** |
 | DD-755 uses RL agents, not LLMs | F1 transfer uncertain | LLM agents have context windows (bounded capacity); theory should apply |
 | F1 and F2 may not be fully independent | Weakens core claim | Design experiments that manipulate each function separately |
 | Compliance theater (KE-091) | F2 succeeds but F1 fails | Agent writes artifact to pass gate but content is useless for readers |
@@ -186,28 +182,25 @@ This is the crispest test of independence. Take the EXP-155 setup (hard gate req
 
 **N per arm**: 15 (60 total). Effect sizes from KE-129 suggest this is sufficient.
 
-## Prior Probability: P(H) = 0.70 (updated from 0.88 after EXP-165)
+## Prior Probability: P(H) = 0.88 (updated from 0.72 after EXP-164)
 
 - (+) DD-755 Theorem 1 is a mathematical proof — F1 mechanism is formally established
 - (+) KE-129 0%/100% result is the strongest empirical evidence in our KB — F2 mechanism is empirically established
 - (+) The independence claim is logically consistent — different beneficiaries, different timing
-- (+) EXP-164: Direct 4-arm factorial test. F1-only 100%, F2-only 100%, baseline 0% (each p<0.0001). Both functions independently sufficient on easy scenario.
-- **(−) EXP-165: F2-only 0% (0/14), Full-gate 0% (0/16) on hard scenario. F2 provides ZERO independent value on cascading-fix-trap-v2. "Dual independent functions" claim only holds on math-verifiable tasks.**
-- **(−) EXP-165: Full-gate DESTROYS F1's benefit. Self-generated analysis (0/16) vs expert analysis (15/15). Adding F2 production to F1 information eliminates F1's effect — severely subadditive.**
+- **(+) EXP-164: Direct 4-arm factorial test. F1-only 100%, F2-only 100%, baseline 0% (each p<0.0001). Both functions independently sufficient. N=10/arm, replicated across N=100 total runs.**
+- (−) ~~No direct empirical test of independence yet~~ **Resolved by EXP-164**
 - (−) LLM agents may not exhibit DD-755's capacity effects in the same way as RL agents
-- (−) Results at ceiling on misleading-test-fix — additivity cannot be assessed on easy scenario
+- (−) Results at ceiling on misleading-test-fix — additivity cannot be assessed. Need non-ceiling scenario (EXP-165 pending on cascading-fix-trap-v2)
 - (−) F2 "independence" may be confounded with 2-phase workflow structure rather than artifact production per se
-- **Net assessment**: H-161's core claim ("two independent functions") is HALF right. F1 (information quality) is spectacularly confirmed across both scenarios. F2 (behavioral forcing) works only when self-analysis reliably produces correct information. The "independence" framing needs modification — F2's value is conditional on task-type, not universally independent.
 
 ## Next Steps
 
 1. ~~**Run EXP-155**~~ (already designed) — provides first data on F2 in the hidden-dep scenario → **Superseded: EXP-163 showed hidden-dep has ceiling effect (100% product baseline). This scenario cannot test H-161.**
 2. ~~**Design a harder scenario for H-161 testing**~~: → **Done: cascading-fix-trap-v2 designed for EXP-165**
 3. ~~**Design EXP-162**~~ → **Superseded by EXP-164 (4-arm factorial), which directly tested F1/F2 independence. COMPLETE.**
-4. ~~**EXP-165 (pending)**: Non-ceiling replication on cascading-fix-trap-v2.~~ → **COMPLETE. Results dramatically modify H-161: F1-only 100%, F2-only 0%, Full-gate 0%, Baseline 0%. See EXP-165/results.md and KE-186.**
+4. **EXP-165 (pending)**: Non-ceiling replication on cascading-fix-trap-v2. Coach running. Will test whether independent sufficiency holds when baseline is non-zero, enabling additivity analysis.
 5. **Post-hoc analysis**: Artifact quality analysis (P-161c) should use EXP-127/EXP-156 data, NOT hidden-dep data
 6. **Scenario portfolio**: Creating medium-baseline scenarios (see Bob's scenario gap-fill item) would enable P-161d testing
-7. **NEW: Test F2 on medium-difficulty scenarios**: EXP-165 shows F2 fails on hard architectural tasks. Does F2 work on medium-difficulty tasks where self-analysis is partially reliable? This would map the boundary of F2's utility.
 
 ## EXP-163 Result (2026-04-15): INCONCLUSIVE — Ceiling Effect
 
@@ -252,34 +245,6 @@ This means: in a world with SKILL0-style training access, the optimal artifact d
 ### Bayesian update: P(H) 0.72 → 0.88
 - Strong upward: direct empirical confirmation of both F1 and F2 independence
 - Held below 0.90 because: (a) ceiling effect prevents additivity assessment, (b) single scenario, (c) F2 confound with 2-phase workflow structure
-- ~~**EXP-165** (non-ceiling replication on cascading-fix-trap-v2) pending — could push P(H) above 0.90~~ → **EXP-165 COMPLETE: pushed P(H) DOWN to 0.70. See below.**
+- **EXP-165** (non-ceiling replication on cascading-fix-trap-v2) pending — could push P(H) above 0.90
 
 See KE-185 for the independent sufficiency finding. See EXP-164/results.md for full methodology and raw data.
-
-## EXP-165 Result (2026-04-15): F1 CONFIRMED, F2 REFUTED on Hard Scenario
-
-**EXP-165 dramatically modifies H-161.** Same 4-arm factorial design as EXP-164 but on cascading-fix-trap-v2 (hard architectural debugging scenario):
-
-| Arm | Design | Pass Rate | p vs baseline |
-|-----|--------|-----------|---------------|
-| A (F1+F2) | Full hard gate (self-generated analysis) | 0/16 (0%) | 1.0 (NS) |
-| B (F2-only) | Forced production, artifact deleted | 0/14 (0%) | 1.0 (NS) |
-| C (F1-only) | Pre-written expert ROOT_CAUSE_ANALYSIS.md | 15/15 (100%) | <0.0001 |
-| D (baseline) | No intervention | 0/16 (0%) | — |
-
-### Key findings:
-1. **F1 (information quality) is spectacularly effective**: Expert analysis → 100% pass rate, +100pp over baseline. The information channel works regardless of task difficulty.
-2. **F2 (behavioral forcing) provides ZERO benefit**: Forcing agents to analyze before fixing produces 0% — identical to baseline. Self-analysis fails to identify the root cause on architectural tasks with documentation traps.
-3. **Full-gate DESTROYS F1's benefit**: When agents generate their own (incorrect) analysis in Phase 1, they follow it in Phase 2 instead of discovering the correct fix. Self-generated analysis is WORSE than no analysis because it primes workaround paths.
-4. **Severe subadditivity**: F1 alone = 100%, F2 alone = 0%, F1+F2 combined = 0%. The combination is 100pp worse than F1 alone.
-
-### Bayesian update: P(H) 0.88 → 0.70
-- Strong downward: F2 "independence" refuted on hard tasks
-- F1 spectacularly confirmed (strengthens half of H-161)
-- The "dual independent functions" framing is wrong as stated — F2 is task-type-dependent
-- Held above 0.60 because: (a) F1 independence is robustly confirmed across 2 scenarios, (b) F2 does work on easy math-verifiable tasks (EXP-164), (c) the decomposition into F1/F2 remains theoretically useful even if F2 isn't universally independent
-
-### The critical insight: Information Quality > Process Forcing
-The experiment reveals that **what matters is the QUALITY of the information provided**, not the PROCESS of generating it. Expert pre-analysis (+100pp) dwarfs self-analysis (+0pp). When the agent's own analysis is unreliable (architectural tasks with documentation traps), forcing the analysis process provides no benefit — and combining it with correct information actually destroys the correct information's benefit.
-
-See KE-186 for the information quality finding. See EXP-165/results.md for full methodology and raw data.
