@@ -98,4 +98,46 @@ describe("composeGuards", () => {
     // The throwing guard is skipped; last warning wins
     expect(result).toEqual({ block: false, reason: "warning after" });
   });
+
+  // --- finish() status-aware blocking ---
+
+  function makeFinishCtx(status: string): BeforeToolCallContext {
+    return {
+      toolCall: { id: "tc-1", name: "finish", arguments: {} },
+      args: { status },
+      context: { systemPrompt: "", messages: [], tools: [] },
+    } as unknown as BeforeToolCallContext;
+  }
+
+  it("finish(success) CAN be blocked by guards (quality gate)", async () => {
+    const composed = composeGuards(
+      async () => ({ block: true, reason: "missing verification" }),
+    );
+    const result = await composed(makeFinishCtx("success"));
+    expect(result).toEqual({ block: true, reason: "missing verification" });
+  });
+
+  it("finish(blocked) downgrades block to warning", async () => {
+    const composed = composeGuards(
+      async () => ({ block: true, reason: "missing verification" }),
+    );
+    const result = await composed(makeFinishCtx("blocked"));
+    expect(result).toEqual({ block: false, reason: "missing verification" });
+  });
+
+  it("finish(failure) downgrades block to warning", async () => {
+    const composed = composeGuards(
+      async () => ({ block: true, reason: "missing verification" }),
+    );
+    const result = await composed(makeFinishCtx("failure"));
+    expect(result).toEqual({ block: false, reason: "missing verification" });
+  });
+
+  it("finish(partial) CAN be blocked by guards", async () => {
+    const composed = composeGuards(
+      async () => ({ block: true, reason: "incomplete work" }),
+    );
+    const result = await composed(makeFinishCtx("partial"));
+    expect(result).toEqual({ block: true, reason: "incomplete work" });
+  });
 });

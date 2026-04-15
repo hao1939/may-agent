@@ -61,13 +61,16 @@ export function composeGuards(...guards: BeforeToolCallHook[]): BeforeToolCallHo
       }
       if (!result) continue;
 
-      // finish() is never blocked — guards are advisors, not jailers.
-      // Convert blocks to warnings so the agent gets the message but can still exit.
-      // This prevents trapped-agent loops where guards block finish() indefinitely.
+      // finish(blocked) and finish(failure) are never blocked — agents must be able to exit.
+      // finish(success) CAN be blocked — this is the quality gate.
       if (result.block && isFinish) {
-        console.error(`[composeGuards] guard tried to block finish() — downgrading to warning: ${result.reason}`);
-        lastWarning = { ...result, block: false };
-        continue;
+        const finishStatus = context.args?.status as string;
+        if (finishStatus === 'blocked' || finishStatus === 'failure') {
+          console.error(`[composeGuards] guard tried to block finish(${finishStatus}) — downgrading to warning: ${result.reason}`);
+          lastWarning = { ...result, block: false };
+          continue;
+        }
+        // finish(success) or finish(partial) — let the block proceed (quality gate)
       }
 
       // Blocking result — return immediately
