@@ -5363,3 +5363,5 @@ Notes: these red tests block a PASS verdict for the current tree; investigate re
 
 2026-04-15T21:00Z heartbeat (QA): Proactive scan of HEAD 2705e8ce. Re-verified mandatory checks: ./node_modules/.bin/tsc --noEmit PASS (exit 0; no output). ./node_modules/.bin/vitest --run PASS — 1968 tests / 133 files. No additional code changes reviewed beyond compose-guards.
 
+2026-04-15T21:30Z heartbeat (QA): Proactive scan of HEAD 2b9ab506 ("coach: weekly gym regression run — all 3 promoted skills passing (Apr 15)"). Read changed file: agents/coach/workspace/todo.md (only change in commit). Mandatory checks: ./node_modules/.bin/tsc --noEmit PASS (exit 0; no output). ./node_modules/.bin/vitest --run PASS — 1968 tests / 133 files. Findings: No new issues in this commit; note git status shows multiple modified agent workspace files not part of HEAD (local working tree).
+
