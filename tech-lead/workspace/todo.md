@@ -335,7 +335,8 @@
 - 2026-04-15 22:30: **P1 req:e01d5d20 closed** — workflow error rate investigation already done (s_1776290567108_147). Deliverable at agents/may/workspace/audits/wf-error-rate-analysis.md. Closed CREATED→COMPLETED.
 - 2026-04-15 22:30: **Infra**: Lens D — research-db.ts fragility audit (401 LOC). COMPLETE (9 ops, ~1.5min): 5 findings. Key: fail-open try-catch swallows ALL errors silently (no logging), syncAll() is non-transactional (partial writes on crash), no SQL injection risk (parameterized), no concurrent access guard. See workspace/finding-research-db-ts-fragility-audit-401-loc.md
 - 2026-04-15 23:00: **P1 Coder Task Queue** (req:741222cf) — Designed 4 bounded tasks from backlog findings. Dispatched Tasks 1-3 via implement-and-verify workflow: (1) delete leaked gym test artifact, (2) add logging to 10 silent catch blocks in session-subscribers.ts, (3) add logging to EventBus catch block. All 3 completed — TSC clean, all tests pass. Review branch: `review/observability-catchblocks` (commit 4a2fb4f5). Task 4 (review branch merges) deferred — branches overlap and need careful judgment.
-- **Next**: Lens A next cycle. **Cycle type**: feature (if dispatch board has items) else infra.
+- 2026-04-15 23:30: **Infra**: Lens A — compaction.ts architecture review (659 LOC). COMPLETE (inline, ~6 ops): Well-isolated leaf module, zero internal dependencies. 7 subsystems, 8 exports (5 over-exported for tests only). Architecture sound — no split needed. Only finding: P3 reduce exported surface (mark 5 test-only exports @internal). Prior audit aligned. See workspace/finding-compaction-ts-architecture-review-659-l.md
+- **Next**: Lens B next cycle. **Cycle type**: feature (if dispatch board has items) else infra.
 
 ## Low-Priority Cleanup
 - [x] Phase 5d: Deprecate memory fallback — DONE (s_1775527469736_184, commit 34263ca)
