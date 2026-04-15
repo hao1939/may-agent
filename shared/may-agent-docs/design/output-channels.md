@@ -1,8 +1,9 @@
 # DESIGN: Output Channel Redesign — Telegram & Web Console
 
-**Status:** DRAFT — awaiting Hao review  
+**Status:** ✅ APPROVED — implementing Phase 1  
 **Date:** 2026-04-15  
-**Authors:** Bob (notification design), Tech-lead (engineering analysis), May (synthesis)
+**Authors:** Bob (notification design), Tech-lead (engineering analysis), May (synthesis)  
+**Revision:** Approved by Hao. Changed "silence = healthy" to periodic proof-of-life digests.
 
 ---
 
@@ -100,22 +101,38 @@ May classifies every notification into 3 levels:
 ## Part D: Periodic Digest
 
 ### Cadence
-- **Alert digest:** Every 2 hours (or when 5+ alerts accumulate)
+- **Proof-of-life digest:** Every 2 hours, always sent (never suppressed)
 - **Daily summary:** Once per day, all activity including INFO
-- **Silence:** If nothing changed since last digest, suppress. After 2 suppressions: "All quiet — agents working normally. I'll notify you when something changes." Then true radio silence until a genuine alert.
 
-### Format
+### Format (scales with activity)
+
+**Normal** (one line):
+```
+📋 2h: 12 sessions, 3 deliverables, $1.47. Top: tech-lead shipped persistent-task fix.
+```
+
+**Low activity** (attention needed):
+```
+⚠️ 2h: Only 2 sessions — below normal. Check system.
+```
+
+**No activity** (alarm):
+```
+🔴 2h: No sessions — system may be stuck.
+```
+
+**Has alerts** (detailed):
 ```
 📋 2h Digest (11:00–13:00)
 ALERTS: Bob: E-041 disconfirmed H-097 • Coder: failed "refactor guards" (retry queued)
 DONE: Tech-lead: 2 PRs approved • Bob: notification-design doc
-SYSTEM: Healthy. 12 sessions, $1.47. Next digest: 15:00.
+SYSTEM: 12 sessions, $1.47.
 ```
 
 ### Anti-Fatigue
-- **Deduplication:** If 3 consecutive digests would say "system healthy," collapse to one silence message
+- **Short when normal, detailed when noteworthy.** Don't suppress digests — make them brief instead. The digest itself is proof the system is alive.
 - **Delta-only:** Report what CHANGED since last digest, not current state
-- **Silence as signal:** If telegram is silent, things are fine. Notification = something happened.
+- **Deduplication:** If the same alert appeared in a prior digest, don't repeat it
 
 ---
 
@@ -165,7 +182,7 @@ These are independent, can be done in parallel. Total noise reduction: ~80%.
 |---------|----------|
 | 200-400 raw notifications/day | 2-5 URGENT (immediate) + 4-6 digests + 1 daily |
 | 50+ messages per coder session | 1 summary message |
-| Same "healthy" message 14×/day | Silence = healthy |
+| Same "healthy" message 14×/day | Brief proof-of-life digest every 2h, detailed when noteworthy |
 | Human ignores everything | Human reads everything that arrives |
 
 ---
