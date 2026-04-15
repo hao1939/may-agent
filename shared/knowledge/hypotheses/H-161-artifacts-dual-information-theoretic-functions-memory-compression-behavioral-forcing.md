@@ -191,10 +191,23 @@ This is the crispest test of independence. Take the EXP-155 setup (hard gate req
 
 ## Next Steps
 
-1. **Run EXP-155** (already designed) — provides first data on F2 in the hidden-dep scenario
-2. **Design EXP-162**: The 4-arm independence test above (P-161a + P-161b)
-3. **Post-hoc analysis**: When EXP-155 results arrive, analyze artifact quality (P-161c) to test compliance-theater prediction
-4. **Scenario portfolio**: Creating Medium-baseline scenarios (todo: scenario gap-fill) would enable P-161d testing
+1. ~~**Run EXP-155**~~ (already designed) — provides first data on F2 in the hidden-dep scenario → **Superseded: EXP-163 showed hidden-dep has ceiling effect (100% product baseline). This scenario cannot test H-161.**
+2. **Design a harder scenario for H-161 testing**: Needs 30-70% baseline product pass rate, with a failure mode that artifacts could help with. Bug 2 must be genuinely hidden (not surfaced by running the program). Candidates: multi-file logic bugs with subtly wrong output, race conditions, non-obvious dependency graphs across 3+ files.
+3. **Design EXP-162**: The 4-arm independence test above (P-161a + P-161b) — but MUST use a scenario with room to improve, not hidden-dep
+4. **Post-hoc analysis**: Artifact quality analysis (P-161c) should use EXP-127/EXP-156 data, NOT hidden-dep data
+5. **Scenario portfolio**: Creating Medium-baseline scenarios (todo: scenario gap-fill) would enable P-161d testing
+
+## EXP-163 Result (2026-04-15): INCONCLUSIVE — Ceiling Effect
+
+**EXP-163 cannot adjudicate H-161** because the hidden-dependency scenario has a 100% product pass rate across ALL arms (including unassisted baseline, N=30). The agent solves both bugs every time regardless of whether artifacts, gates, or information are provided.
+
+- **70 runs** (30 baseline, 15 F1-only, 10 F2-only, 15 full-gate): all 100% on product checks
+- **Only differentiation** was on process checks (artifact existence), which is a design property, not a behavioral outcome
+- **No Bayesian update**: H-161 remains at P(H) = 0.72 — the experiment provided no evidence for or against
+
+The hidden-dep scenario is too easy: Bug 2 surfaces deterministically when the agent runs `node process.js` after fixing Bug 1. The "hidden" dependency is not actually hidden from the agent's natural verify-after-fix workflow. See EXP-163/results.md for full analysis and KE-181 for the process-vs-product methodological lesson.
+
+**Retroactive implication**: EXP-154/EXP-155 data used in H-161's evidence base (KE-176, voluntary compliance rates) is still valid for F2 behavioral forcing evidence (agents don't voluntarily create artifacts). But the product quality claims are confounded — we cannot use hidden-dep to demonstrate that artifacts improve outcomes.
 
 ## DD-570 (SKILL0) Connection (added 2026-04-15)
 

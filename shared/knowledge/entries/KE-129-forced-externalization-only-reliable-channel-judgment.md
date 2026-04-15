@@ -3,7 +3,7 @@
 **Status**: Active
 **Source**: EXP-127 (Channel Separation Direct Test, N=24), EXP-155 (Hidden-Dep Hard Gate, N=30), EXP-156 (Hard Gate Generalization, N=42), EXP-084, EXP-095
 **Date**: 2026-04-10 (updated 2026-04-14 with EXP-155/EXP-156 confirmation)
-**Confidence**: ★★★★★ (Very High — 27/27 treatment pass across 3 scenarios, 3 distinct failure types)
+**Confidence**: ★★★★☆ (High — 27/27 treatment pass across 3 scenarios, but 1 scenario confounded by ceiling effect; see Reinterpretation below)
 **Extends**: KE-034 (forced externalization mechanism), KE-059 (H-091 mechanism hierarchy), KE-121 (forced ext. prevents misinterpretation)
 **Bounded by**: KE-178 (hard gate boundary condition — requires low baseline + step-skipping failure mode)
 
@@ -72,6 +72,33 @@ Since the original EXP-127 result, two additional experiments have confirmed and
 **Cumulative Ch2 treatment pass rate: 27/27 (100%)** across three distinct failure modes (judgment, process, verification). Combined p < 10⁻¹⁵ vs pooled alternatives.
 
 **Boundary discovered** (EXP-156): Hard gate produced -20pp regression (90% → 70%, NS) on ambiguous-context-drift, where the failure mode is belief-based (trusting wrong context) rather than step-skipping, and the baseline was already 90%. See KE-178 for the formalized boundary condition.
+
+## ⚠️ Reinterpretation (EXP-163, 2026-04-15)
+
+**EXP-163 revealed that the hidden-dependency scenario has a ceiling effect: 100% product pass rate across ALL arms, including unassisted baseline (N=30).** The agent solves both bugs (typo fix + checksum recomputation) every time because Bug 2 surfaces deterministically when the agent runs the pipeline after fixing Bug 1. The "hidden" dependency is not actually hidden from the agent's natural workflow.
+
+### What this means for EXP-154/EXP-155 evidence
+
+EXP-155's reported "+85pp improvement" (15% baseline → 100% treatment) was **entirely measuring process compliance** — whether FINDINGS.md existed — not product quality improvement. The gate definitionally creates the artifact it checks for. This is tautological evidence. See KE-181 for the full methodological lesson.
+
+| Originally Reported | Actual Mechanism |
+|---|---|
+| EXP-154 baseline: 15% overall | 100% product quality, 15% process compliance (few agents voluntarily create FINDINGS.md) |
+| EXP-155 treatment: 100% overall | 100% product quality, 100% process compliance (gate forces FINDINGS.md creation) |
+| "+85pp improvement from forced externalization" | +0pp product quality improvement; +85pp artifact compliance (tautological) |
+
+### What is NOT affected
+
+**EXP-127 (contradictory-requirements) evidence is fully intact.** That scenario has a 0% baseline product pass rate — agents genuinely fail to detect the contradiction without forced externalization. The 0% → 100% result measures real judgment improvement, not process compliance. Similarly, **EXP-156 (misleading-test-fix) evidence is intact** — 0% baseline is a genuine product failure.
+
+### Revised evidence base
+
+The "3 scenarios, 3 distinct failure types" claim in the Expanded Evidence table above is now:
+- **1 clean scenario** (EXP-127 contradictory-requirements): 0% → 100%, genuine judgment improvement
+- **1 clean scenario** (EXP-156 misleading-test-fix): 0% → 100%, genuine verification improvement
+- **1 confounded scenario** (EXP-155 hidden-dep): 100% → 100% on product quality; the "+85pp" was process compliance only
+
+**Confidence downgraded from ★★★★★ to ★★★★☆.** The core finding (Ch2 structural gates are the only reliable channel for judgment tasks) remains strongly supported by EXP-127 alone (p = 0.0000074). The breadth of evidence across scenarios is narrower than originally claimed.
 
 ## Relationship to Prior Findings
 
