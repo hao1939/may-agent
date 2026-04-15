@@ -1,7 +1,7 @@
 # EXP-165: H-161 Independence Retest — Non-Ceiling Scenario (Cascading-Fix-Trap-v2)
 
 **Date**: 2026-04-15
-**Status**: IN PROGRESS
+**Status**: COMPLETE — See results.md
 **Hypothesis**: H-161 (Artifacts Serve Dual Information-Theoretic Functions — Memory Compression + Behavioral Forcing)
 **Predictions tested**: P-161a (F2 without F1), P-161b (F1 without F2)
 **Predecessor experiments**: EXP-164 (same design, misleading-test-fix scenario — SUPPORTED but ceiling), EXP-163 (hidden-dep — INCONCLUSIVE, ceiling)

@@ -13,23 +13,23 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-15T18:49)
+# Your Context (auto-generated 2026-04-15T19:19)
 
-**System:** 3 sessions/6h, 0% error rate
+**System:** 5 sessions/6h, 0% error rate
 
 **Top spenders:**
-- tech-lead: 1s, 739KB
-- may: 1s, 664KB
-- coach: 1s, 31KB
+- may: 1s, 1401KB
+- bob: 2s, 190KB
+- coach: 2s, 156KB
 
 **Your active error patterns:**
-- FM-3.3: 5x
+- FM-3.3: 6x
 - FM-1.3: 2x
 - FM-2.6: 2x
 - FM-4.1: 1x
 
 **📊 Your Metrics:**
-- Avg ops per session (24h): **14.2** count → 25 count
+- Avg ops per session (24h): **15.2** count → 25 count
 - Heartbeat inline DB read queries: **0** count → 0 count ⚠️
 - Total heartbeat line count: **1228** lines → 800 lines
 - Avg ops per heartbeat session: **0** ops → 12 ops ⚠️
