@@ -62,13 +62,14 @@ function findSocket(persistDir: string): string | null {
 /**
  * Track the send in the request DB (soft-coupled — failure is non-fatal).
  */
-function trackInDb(persistDir: string, agent: string, message: string): string | undefined {
+function trackInDb(persistDir: string, agent: string, message: string, source?: string): string | undefined {
   try {
     return trackRequest(persistDir, {
       fromEntity: "human",
       toAgent: agent,
       task: message.slice(0, 500),
       method: "message",
+      source: source ?? "cli",
     });
   } catch {
     // DB unavailable — non-fatal
@@ -89,16 +90,13 @@ export async function cliSend(opts: SendOptions): Promise<void> {
     }
   }
 
-  // Track in DB
-  const requestId = trackInDb(persistDir, agent, message);
-
   // Build the full message with artifact context
   let fullMessage = message;
   if (artifact) {
     fullMessage = `${message}\n\nArtifact: ${artifact}`;
   }
 
-  // Try socket delivery first
+  // Try socket delivery first — chatSession.handleInput will track in DB
   const socketPath = findSocket(persistDir);
   if (socketPath) {
     try {
@@ -112,10 +110,9 @@ export async function cliSend(opts: SendOptions): Promise<void> {
 
       if (result.type === "ok") {
         console.log(`Sent to ${agent} via socket (${socketPath})`);
-        if (requestId) console.log(`Request: ${requestId}`);
         return;
       }
-      // Fall through — task is already tracked in DB
+      // Socket returned error — fall through to DB-only tracking
       console.error(`Socket returned error: ${result.message}. Task tracked in DB, will appear in next heartbeat.`);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -123,7 +120,9 @@ export async function cliSend(opts: SendOptions): Promise<void> {
     }
   }
 
-  // No socket available — task is tracked in DB and will show up in agent's next heartbeat
+  // No socket or socket failed — track directly in DB as fallback
+  const requestId = trackInDb(persistDir, agent, message, source);
+
   if (!socketPath) {
     console.log(`No live socket found. Task tracked in DB, will appear in ${agent}'s next heartbeat.`);
   }
