@@ -7,9 +7,9 @@
 - [x] **Batch merge tool for tech-lead** — ✅ DONE (2026-04-15). Script at `scripts/batch-merge.sh` already existed and verified complete.
 - [x] **Scenario oracle generator for coach** — ✅ MERGED (2026-04-15, c197286d). Script at `scripts/scenario-oracle.sh`. Rewritten with before/after patch diffing + success_criteria evaluation.
 - [x] **Create-test-pivot loop guard** — ✅ BUILT + IN REVIEW (2026-04-14). Guard at `agents/shared/guards/pivot-detector.ts`. 7 tests on branch `review/pivot-detector-guard`. Warns at 3 fail-pivot cycles, injects mandatory reassessment at 5.
-- [ ] **Artifacts-as-Memory deep dive + externalization framework validation** — Dispatched to Bob (P1, 2026-04-14). Scout found paper 2604.08756 "Artifacts as Memory Beyond the Agent Boundary" — validates DD-750. **Scope**: Small.
+- [x] **Artifacts-as-Memory deep dive + externalization framework validation** — ✅ DONE (Bob, 2026-04-14). Paper 2604.08756 reviewed, validates DD-750.
 
-- [ ] **Wire gym-batch.sh into coach growth-cycle.ts** — ⏳ IN PROGRESS. Dispatched to tech-lead (s_1776270793622_24, 2026-04-15). Optimizer ROI playbook (2026-04-13) identified this as highest-ROI next intervention. Coach runs 10-26 individual `gym-run.sh` calls per gym session; `scripts/gym-batch.sh` exists but has 0% adoption despite context.md mention (advisory interventions never work per KE-008). **Fix**: Edit `agents/coach/workflows/growth-cycle.ts` Step 1 prompt to inject `gym-batch.sh` usage directly into the workflow instruction text. **Deliverable**: Modified growth-cycle.ts with batch command wired in. **Size**: Small. **Owner**: tech-lead.
+- [x] **Wire gym-batch.sh into coach growth-cycle.ts** — ✅ DONE (tech-lead, 2026-04-15). Completed per req tracking.
 
 - [x] **Tech-lead post-dispatch finish guard** — ✅ DONE (2026-04-15). Added "⚡ Post-dispatch rule" to tech-lead heartbeat.md Step 2: "After any agents.fork() or workflow.run(), call finish() within 3 ops."
 
