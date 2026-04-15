@@ -318,6 +318,9 @@
 - [x] **Merged review/track-human-inputs** to main (799b223f) — trackRequest added to @agent delegation + subsequent message paths in chat-session.ts. Closed req:96ef7a71.
 - 2026-04-15 17:30: **Infra**: Lens A — chat-session.ts architecture review. COMPLETE: 295-line clean module with well-defined boundaries. See workspace/finding-chat-session-ts-architecture-review-t.md
 - 2026-04-15 17:35: **Human Input Logging** (req:6cbb085c) — cli-send.ts fix: added source to trackInDb(), moved DB tracking to fallback-only path to eliminate double-inserts when socket delivery succeeds. Branch: review/cli-send-source-fix.
+- 2026-04-15 18:10: **P0: Remove cost-limit-guard** (req:dcaeb50b) — Deleted cost-limit-guard.ts + test. Removed from compose-guards.ts + manager.ts. Merged to main (93b54e0f).
+- 2026-04-15 18:10: **Lens A: Guard Escalation Override** (req:5d60c9da) — Review of Bob's design. Recommend Phase 1 only (finish never blocked). Design doc: `workspace/design-guard-escalation-override.md`.
+- 2026-04-15 18:10: **Phase 1: finish() never blocked** — Implemented in compose-guards.ts. Guards that try to block finish() are downgraded to warnings. Branch: review/guard-escalation-analysis.
 
 ## Low-Priority Cleanup
 - [x] Phase 5d: Deprecate memory fallback — DONE (s_1775527469736_184, commit 34263ca)
