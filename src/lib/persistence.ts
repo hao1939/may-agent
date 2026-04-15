@@ -56,8 +56,6 @@ export interface PersistedSession {
   opCount?: number;
   /** Order ID linking this session to a persisted human order (P209). */
   orderId?: string;
-  /** Maximum turns allowed for this session (0 = no limit). Persisted for crash recovery. */
-  maxTurns?: number;
 }
 
 /** Shape of the registry data (in-memory view).

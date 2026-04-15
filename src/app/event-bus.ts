@@ -19,7 +19,7 @@ export type AgentCommand =
       agent: string;
       task: string;
       originSessionId?: string;
-      opts?: { kind?: string; requestId?: string; source?: string; maxTurns?: number };
+      opts?: { kind?: string; requestId?: string; source?: string };
     }
   | { type: "message"; from: string; to: string; task: string; priority?: string; source?: string }
   | { type: "input"; sessionId?: string; text?: string; message?: string; source?: string }
