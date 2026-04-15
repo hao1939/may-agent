@@ -90,19 +90,19 @@ If this finding has a concrete fix (specific file, specific change):
 
 **Skip dispatch only if**: the finding is observational (no clear fix), requires design discussion first, or is already tracked.
 
-### Cross-Cycle Dispatch — DISPATCH-READY.md
+### Cross-Cycle Dispatch
 
-When a finding is actionable but you can't or shouldn't fork inline (e.g., the work session is ending, you're over budget, or the fix needs May to coordinate):
+When a finding is actionable but you can't or shouldn't fork inline (e.g., the work session is ending, or the fix needs a different agent):
 
-1. Copy `agents/shared/protocols/DISPATCH-READY-TEMPLATE.md` → `agents/optimizer/workspace/DISPATCH-READY.md`
-2. Fill in all fields (finding reference, summary, action, target agent, files, priority, evidence, verification)
-3. May's heartbeat will scan for this file and dispatch it
+Use `agents.message()` to dispatch directly:
+```
+agents.message({ agent: "tech-lead", message: "Finding: [summary]. Fix: [action]. Files: [paths]. Evidence: [what you measured]." })
+```
 
 **Rules:**
-- Only one `DISPATCH-READY.md` at a time — if one already exists, queue in todo.md
-- Every field must be concrete — vague dispatches get rejected
+- Every dispatch must be concrete — vague dispatches get rejected
 - Don't use this for things you can fix in <3 ops (just do it inline)
-- Protocol details: `agents/shared/protocols/optimizer-dispatch-pipeline.md`
+- For system-scope changes, route through May instead
 
 ### Rules for Building (in forked sessions)
 - **Always measure before AND after.** No baseline = no evidence.
