@@ -1,9 +1,0 @@
-[
-  {
-    "name": "flexnodehelper",
-    "path": "/home/hao/flexnodehelper",
-    "socket": ".state/instances/default/assistant.sock",
-    "description": "AKS FlexNode helper — explores and assists with the FlexNode project",
-    "agent": "assistant"
-  }
-]

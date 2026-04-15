@@ -299,10 +299,25 @@
     "name": "error-log-scanner",
     "type": "job",
     "intervalMs": 14400000,
-    "message": "[cron:error-log-scanner] Scan ERROR_LOG.jsonl files for repeated patterns.",
-    "enabled": true,
+    "message": "[cron:error-log-scanner] DEPRECATED — replaced by error-scan workflow.",
+    "enabled": false,
     "handler": "error-log-scanner",
-    "description": "Scan all agents' ERROR_LOG.jsonl for repeated error patterns (≥3 same type in 7d). Triggers Coach growth-cycle if found. JS handler, 4h interval, 7d cooldown.",
+    "description": "DEPRECATED: Replaced by error-scan sensor-judge workflow. Kept for rollback.",
+    "offsetMs": 480000
+  },
+  {
+    "name": "error-scan",
+    "type": "job",
+    "intervalMs": 14400000,
+    "message": "[cron:error-scan] Sensor-judge workflow: scan error logs for recurring patterns.",
+    "enabled": true,
+    "handler": "run-workflow",
+    "description": "Sensor-judge migration of error-log-scanner. Step 1: JS scans ERROR_LOG.jsonl (zero LLM). Step 2: Coach LLM judges patterns (only when needed). 4h interval.",
+    "handlerConfig": {
+      "workflow": "error-scan",
+      "agent": "may",
+      "task": "Scan error logs for recurring patterns and address them."
+    },
     "offsetMs": 480000
   },
   {
@@ -387,13 +402,28 @@
     "type": "job",
     "intervalMs": 43200000,
     "message": "[cron:coaching-feedback] Analyze convention violations and send coaching briefs to coach.",
-    "enabled": true,
+    "enabled": false,
     "handler": "coaching-feedback",
-    "description": "Evaluation → Coaching feedback loop: reads convention_checks, groups violations by agent, sends top patterns to coach for targeted training. Every 12h.",
+    "description": "DEPRECATED — migrated to coaching-feedback-wf sensor-judge workflow. Kept for rollback.",
     "handlerConfig": {
       "lookbackMs": 86400000,
       "topN": 3,
       "minViolations": 3
+    },
+    "offsetMs": 7200000
+  },
+  {
+    "name": "coaching-feedback-wf",
+    "type": "job",
+    "intervalMs": 43200000,
+    "message": "[cron:coaching-feedback-wf] Sensor-judge coaching feedback workflow.",
+    "enabled": true,
+    "handler": "run-workflow",
+    "description": "Sensor-judge workflow: JS scans convention violations (zero LLM), coach LLM decides intervention strategy. Every 12h.",
+    "handlerConfig": {
+      "workflow": "coaching-feedback",
+      "agent": "coach",
+      "task": "Coaching feedback cycle — analyze convention violations and decide interventions."
     },
     "offsetMs": 7200000
   },
