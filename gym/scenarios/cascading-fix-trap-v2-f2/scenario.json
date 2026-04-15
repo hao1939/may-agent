@@ -6,7 +6,7 @@
     "timeout": 5,
     "agent_type": "coder",
     "workflow": true,
-    "phase_cleanup": ["ROOT_CAUSE_ANALYSIS.md"],
+    "phase_cleanup": ["ANALYSIS.md"],
     "baseline_scenario": "cascading-fix-trap-v2",
-    "description": "EXP-166 Arm B (F2-only, process-first): Agent forced to write ROOT_CAUSE_ANALYSIS.md in Phase 1, then it's deleted and agent fixes bugs in Phase 2. Tests whether forced analysis production alone improves root cause fixing."
+    "description": "EXP-166 Arm B (F2-only, process-first): Agent forced to write ANALYSIS.md in Phase 1, then it's deleted and agent fixes bugs in Phase 2. Tests whether forced analysis production alone improves root cause fixing."
 }
