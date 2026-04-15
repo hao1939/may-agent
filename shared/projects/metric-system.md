@@ -2,7 +2,7 @@
 
 **Owner:** May (system oversight)  
 **Worker:** Tech-lead (implementation)  
-**Status:** Phase 1 — IN PROGRESS  
+**Status:** Phase 1 — COMPLETE, Phase 2 — NEXT  
 **Created:** 2026-04-15  
 **Approved by:** Hao (2026-04-15 ~14:50 UTC)
 
@@ -30,13 +30,13 @@ Replace scattered tracking (dispatch board, todo.md, ad-hoc queries) with a unif
 
 ## Phases
 
-### Phase 1: Foundation (~250 LOC) ← CURRENT
-- [ ] Create 4 tables in `may.db`: `metrics`, `metric_snapshots`, `metric_alerts`, `research_log`
-- [ ] Build `metrics-snapshot.ts` handler (auto-measure SQL + shell metrics, record snapshots, threshold alerts w/ dedup, regression w/ sensitivity, staleness detection)
-- [ ] Add cron entry (1h interval)
-- [ ] Seed initial metrics (~15 auto-measurable: quality scores, gym rate, convention compliance, error rate, heartbeat success, etc.)
-- [ ] **EXCLUDED from initial set:** `cost.daily`, `efficiency.daily-ops` (per Hao)
-- [ ] Validate: run handler once, verify snapshots recorded correctly
+### Phase 1: Foundation (~250 LOC) ✅ COMPLETE
+- [x] Create 4 tables in `may.db`: `metrics`, `metric_snapshots`, `metric_alerts`, `research_log`
+- [x] Build `metrics-snapshot.ts` handler (auto-measure SQL + shell metrics, record snapshots, threshold alerts w/ dedup, regression w/ sensitivity, staleness detection)
+- [x] Add cron entry (1h interval)
+- [x] Seed initial metrics (20 seeded, 15 snapshots recorded)
+- [x] **EXCLUDED from initial set:** `cost.daily`, `efficiency.daily-ops` (per Hao)
+- [x] Validate: handler running, snapshots recording correctly
 
 ### Phase 2: Agent Integration (~50 LOC each)
 - [ ] Add metrics query to each agent's heartbeat observation step
@@ -61,3 +61,5 @@ Replace scattered tracking (dispatch board, todo.md, ad-hoc queries) with a unif
 | 2026-04-15 | Pre | Design brainstorm (5 agents) | All 5 responses synthesized |
 | 2026-04-15 | Pre | Design approved by Hao | Proceed with Phase 1 |
 | 2026-04-15 | 1 | Forked tech-lead for Phase 1 implementation | Pending |
+| 2026-04-15 | 1 | Phase 1 COMPLETE — 4 tables, 20 metrics, 15 snapshots, cron active | ✅ Done |
+| 2026-04-15 | — | Evolution roadmap saved (Hao's L1→L4 vision) | `metrics-evolution-roadmap.md` |

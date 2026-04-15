@@ -1,18 +1,18 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-15 ~15:30 UTC
+Updated: 2026-04-15 ~16:00 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — billing. Blocked on Hao.
-- **Bob**: 🟢 Active — 31 sessions/6h, avg 17 ops. Zero errors.
-- **Coach**: 🟢 Active — 26 sessions/6h, avg 15 ops. Zero errors.
+- **Bob**: 🟢 Active — 31 sessions/6h, avg 18 ops. Zero errors.
+- **Coach**: 🟢 Active — 25 sessions/6h, avg 15 ops. Zero errors.
 - **Scout**: 🟢 Active — 14 sessions/6h, avg 6 ops. Zero errors.
-- **Tech-lead**: 🟢 Active — 30 sessions/6h, avg 19 ops. Zero errors.
+- **Tech-lead**: 🟢 Active — 29 sessions/6h, avg 20 ops. Zero errors.
 - **Optimizer**: 🟢 Active — 25 sessions/6h, avg 12 ops. Zero errors.
-- **Evaluator**: 🟢 Active — 42 sessions/6h, avg 0 ops. Zero errors.
-- **QA**: 🟢 Active — 12 sessions/6h, avg 6 ops. (IT-21 known).
-- **Coder**: 🟢 Active — 8 sessions/6h, avg 23 ops. Zero errors.
-- **Summary**: 9/9 healthy. Amy-kimi still down. 1 bob interrupt (abort). No stuck sessions.
+- **Evaluator**: 🟢 Active — 41 sessions/6h, avg 0 ops. Zero errors.
+- **QA**: 🟢 Active — 12 sessions/6h, avg 7 ops. Zero errors.
+- **Coder**: 🟢 Active — 7 sessions/6h, avg 20 ops. Zero errors.
+- **Summary**: 9/9 healthy. Amy-kimi still down. No stuck sessions.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -28,7 +28,8 @@ Updated: 2026-04-15 ~15:30 UTC
 | **Unified Metric System Design** | ✅ APPROVED | may | Hao approved. Phase 1 implementation dispatched to tech-lead. Project: `agents/shared/projects/metric-system.md`. |
 | **Metric System Brainstorm** | ✅ DONE | bob | All 5 responses synthesized → `unified-metric-system-proposal.md`. Approved by Hao. |
 | **KE-181 Common-Sense Rule** | ✅ DONE | may | Coach proposed, approved + added to common-sense.md. |
-| **Metric System Phase 1** | 🟢 RUNNING | tech-lead | Schema + snapshot handler + seed metrics. Forked ~14:55 UTC. |
+| **Metric System Phase 1** | ✅ DONE | tech-lead | 4 tables, 20 metrics, 15 snapshots, cron active (1h). |
+| **Metric System Evolution Roadmap** | ✅ DONE | may | Hao's L1→L4 vision saved to `metrics-evolution-roadmap.md`. Project file updated. |
 | **KE-180/182 Hard Gate Rules Deployment** | 🟢 RUNNING | coach | Deploy hard gate design rules to production artifact. Forked ~15:00 UTC. |
 | **TL Post-Dispatch Finish Guard** | ✅ DONE | may | Added "finish within 3 ops after fork" to tech-lead heartbeat Step 3. |
 | **EXP-163 Results Processing** | ✅ DONE | bob | KE-129 reinterpreted, H-161 updated, KE-184 written (ceiling effect methodology). |
@@ -41,19 +42,19 @@ Updated: 2026-04-15 ~15:30 UTC
 | **Verify-wrap "undefined" bug** | ✅ MERGED | may | Previously merged (8fdb18db). |
 
 ## Next Actions
+- **P0**: **Unified Metric System Phase 2** — Agent integration: add metrics query to each agent's heartbeat. Need to dispatch to tech-lead.
 - **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. **Blocked on Hao since Mar 24**.
-- **P0**: **Unified Metric System Phase 1** — Tech-lead implementing. Schema + snapshot handler + seed metrics. Track in `agents/shared/projects/metric-system.md`.
 - **P1**: **IT-21: QA interrupt rate (58%)** — Coach flagged. QA heartbeats timing out at 5-8 ops. Need to investigate/simplify QA heartbeat.
 - **P1**: **cost-limit guard** — Next improvement queue item. Already on main (6ac310b6).
 - **P2**: Amy-kimi billing — blocked on Hao.
 - ⚠️ **HOLD**: Ch2-production-gates implementation — EXP-163 showed the evidence base (EXP-155 +85pp) was measuring process compliance, NOT product quality. All arms 100% product rate. Do NOT implement content quality gates until new evidence from EXP-170 or Bob's recognition-layer scenarios.
 
-## Latest Cycle Summary (15:30 Apr 15)
-- **Metric System Phase 1**: Still running with tech-lead (session _53, 13 ops, 9min). Phase 2 in progress.
-- **KE-181**: Approved coach's common-sense rule proposal. Added "Measure product, not process" to `agents/shared/common-sense.md`.
-- **Coach duplicate requests**: req:13164607 + req:6475aaf0 are duplicates — same KE-181 proposal. Both resolved.
-- **Metric system project file requests**: req:6ef7fa20 + req:fd333372 already completed last cycle.
-- **STATUS**: 9/9 agents healthy. No errors. No stuck sessions (bob/coach heartbeats borderline at 30min but still active).
+## Latest Cycle Summary (16:00 Apr 15)
+- **Metric System Phase 1**: ✅ COMPLETE — 4 tables, 20 metrics, 15 snapshots, cron active.
+- **Evolution Roadmap**: Written per Hao's request. Saved to `agents/shared/may-agent-docs/design/metrics-evolution-roadmap.md`. Project file updated.
+- **Phase 2 next**: Agent integration — add metrics query to heartbeats. Ready to dispatch to tech-lead.
+- **Pending requests**: Both roadmap requests (req:c5f33d7a, req:b082ecc7) completed.
+- **STATUS**: 9/9 agents healthy. Zero errors. No stuck sessions.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
