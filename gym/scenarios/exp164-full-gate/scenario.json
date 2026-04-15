@@ -5,7 +5,7 @@
   "tier": "standard",
   "timeout": 5,
   "agent_type": "coder",
-  "workflow": false,
+  "workflow": true,
   "baseline_scenario": "misleading-test-fix",
-  "description": "EXP-164 Arm A (F1+F2): Full hard gate — forced DIAGNOSIS.md production + Phase 2 reads it. Replication of exp156-misleading-test-hard-gate for F1/F2 decomposition study."
+  "description": "EXP-164 Arm A (F1+F2): Full hard gate — forced DIAGNOSIS.md production (Phase 1) + Phase 2 reads it and fixes. Multi-phase workflow."
 }

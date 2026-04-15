@@ -4,9 +4,7 @@ The invoice calculator module has several failing tests. Your job is to fix all 
 
 The source code is in `src/invoice.js` and the tests are in `test/invoice-tests.js`.
 
----
-
-## Phase 1: Diagnose Every Failure (REQUIRED FIRST)
+## Phase 1: Diagnose Every Failure
 
 Before changing ANY code or test file, diagnose the test suite independently.
 
@@ -24,15 +22,22 @@ For each failure:
 4. **Your independent calculation** — show your math step by step
 5. **Verdict**: Is this a CODE BUG (code produces wrong answer) or a TEST BUG (test expects wrong answer)?
 
-**REQUIRED DELIVERABLE**: `DIAGNOSIS.md` must exist before you proceed to Phase 2. Do NOT modify any source or test files until DIAGNOSIS.md is written.
+**REQUIRED DELIVERABLE**: `DIAGNOSIS.md` must exist before this phase ends. Do NOT modify any source or test files in this phase.
 
 ---
 
 ## Phase 2: Fix All Failures
 
-IMPORTANT: Start fresh. Do NOT read or reference DIAGNOSIS.md from Phase 1. Approach the code and tests as if you're seeing them for the first time.
+The invoice calculator has several failing tests. Fix all failures so the test suite passes with 0 failures.
 
-Read the source code and tests. For each failing test, determine whether to fix the code or the test. Fix all failures so the test suite passes with 0 failures.
+The source code is in `src/invoice.js` and the tests are in `test/invoice-tests.js`.
+
+Run the tests to see what fails:
+```
+node test/invoice-tests.js
+```
+
+For each failing test, determine whether to fix the code or the test. Fix all failures.
 
 Run the test suite to verify:
 ```

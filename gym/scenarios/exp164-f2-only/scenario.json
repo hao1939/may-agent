@@ -5,7 +5,8 @@
   "tier": "standard",
   "timeout": 5,
   "agent_type": "coder",
-  "workflow": false,
+  "workflow": true,
+  "phase_cleanup": ["DIAGNOSIS.md"],
   "baseline_scenario": "misleading-test-fix",
-  "description": "EXP-164 Arm B (F2-only): Forced DIAGNOSIS.md production in Phase 1, but Phase 2 told to start fresh and NOT reference DIAGNOSIS.md. Tests whether behavioral forcing alone (without artifact consumption) improves judgment."
+  "description": "EXP-164 Arm B (F2-only): Forced DIAGNOSIS.md production in Phase 1, then DIAGNOSIS.md is deleted before Phase 2. Phase 2 must fix from scratch without the artifact. Tests behavioral forcing independent of information provision."
 }
