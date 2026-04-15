@@ -9,6 +9,9 @@
  * If no guard returns a result, returns undefined (allow the tool call).
  */
 
+// cost-limit-guard: emergency brake at 1000 calls (ORDER-004 compliant).
+// This is NOT a turn budget — it catches infinite loops / stuck agents.
+// For session cost control, use persistent tasks + owner review.
 import { createCostLimitGuard } from "./cost-limit-guard.js";
 export { createCostLimitGuard } from "./cost-limit-guard.js";
 
@@ -47,19 +50,12 @@ type BeforeToolCallHook = (
  * Evaluation order: first guard to return `{ block: true }` wins.
  * Warnings (block: false) from earlier guards are returned if no blocking guard fires.
  *
- * The cost-limit guard is automatically included as the last guard in the chain.
- * It is instantiated once per composeGuards() call (one closure per session),
- * so each composed hook gets its own independent call counter.
  */
 export function composeGuards(...guards: BeforeToolCallHook[]): BeforeToolCallHook {
-  // Instantiate cost-limit guard once per session (closure factory pattern)
-  const costLimitHook = createCostLimitGuard();
-
   return async (context: BeforeToolCallContext, signal?: AbortSignal): Promise<BeforeToolCallResult | undefined> => {
     let lastWarning: BeforeToolCallResult | undefined;
 
-    // Run caller-provided guards first, then the built-in cost-limit guard
-    const allGuards = [...guards, costLimitHook];
+    const allGuards = guards;
 
     for (const guard of allGuards) {
       let result: BeforeToolCallResult | undefined;
