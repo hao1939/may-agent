@@ -1,11 +1,12 @@
 # EXP-142: Agent-Specific Guard Calibration — Stop Harming Bob
 
-**Status**: DEPLOYED  
+**Status**: COMPLETE ✅  
 **Date**: 2026-04-11  
 **Author**: Coach  
 **Depends on**: EXP-136 (guard rate decomposition), EXP-109 (production observation study), guard-impact-analysis-20260411.md  
 **Deployed**: 2026-04-11T16:54:00Z  
-**Measurement period**: 72h (ends 2026-04-14T17:00Z)
+**Measurement period**: 72h (ended 2026-04-14T17:00Z)  
+**Result**: Bob quality +8.8pp (86.7% → 95.5%), p < 0.0001. All hypotheses confirmed. Recommend permanent.
 
 ---
 
