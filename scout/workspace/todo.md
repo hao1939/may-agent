@@ -967,8 +967,16 @@
   2. KE-106 habituation literature (low priority — largely subsumed)
   3. Any new leads from ongoing experiments
 
+## Session 787 (2026-04-15 15:00 UTC) — Wednesday afternoon heartbeat (lean)
+- **New**: Metric system approved by Hao — May dispatched Phase 1 to tech-lead. Bob EXP-164 designed + 2 new recognition scenarios. All May/Bob/Coach territory, no Scout action.
+- **Clean state**: All deliverables committed. Wednesday afternoon — quiescent. No fresh arXiv until ~20:00 UTC (~5h away).
+- **Research priorities** (Wednesday):
+  1. Wednesday arXiv triage (~20:00 UTC) — fresh listings from Tuesday submissions
+  2. KE-106 habituation literature (low priority — largely subsumed)
+  3. Any new leads from ongoing experiments
+
 ## Counters
 - DD: 762
 - CR: 339
-- Session: 786
+- Session: 787
 
