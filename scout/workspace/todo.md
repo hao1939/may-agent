@@ -1066,8 +1066,16 @@
   2. KE-106 habituation literature (low priority — largely subsumed)
   3. Thursday arXiv triage (~20:00 UTC Thursday)
 
+## Session 804 (2026-04-15 23:30 UTC) — Wednesday late-night heartbeat (lean)
+- **No new Scout-relevant developments** since Session 803 (~30min ago). Coach fixed EXP-166 gym scenarios and added work-session scaffold skill — no Scout action needed.
+- **Clean state**: All deliverables committed. Wednesday late night — quiescent. No fresh arXiv until Thursday ~20:00 UTC.
+- **Research priorities** (unchanged):
+  1. Production-first eval methodology (extend CR#326 Path A)
+  2. KE-106 habituation literature (low priority — largely subsumed)
+  3. Thursday arXiv triage (~20:00 UTC Thursday)
+
 ## Counters
 - DD: 768
 - CR: 339
-- Session: 802
+- Session: 804
 
