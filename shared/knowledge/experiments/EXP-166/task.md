@@ -1,7 +1,7 @@
 # EXP-166: Content-First vs Process-First Guard Comparison — Cross-Scenario Replication
 
 **Date**: 2026-04-15
-**Status**: DESIGNED
+**Status**: SCENARIOS READY — smoke-tested, awaiting full runs
 **Hypothesis**: H-161 (Dual IT Functions) + H-161 synthesis (content-first > process-first)
 **Predecessors**: EXP-164 (ceiling — both sufficient), EXP-165 (non-ceiling — only F1 works)
 **Cost estimate**: ~$9.00 (120 runs × ~$0.075 avg)
@@ -211,6 +211,37 @@ Compute rates with 95% Clopper-Pearson CIs.
 2. **F1 content must be scenario-specific**: The expert analysis for sql-injection is very different from cascading-fix-trap-v2. Both must be written to the same quality standard as EXP-165's ROOT_CAUSE_ANALYSIS.md.
 3. **Arm D requires careful Phase 1 design**: The agent must READ the expert analysis, THEN produce its own plan. The Phase 1 prompt must ensure reading happens before writing.
 4. **Run order**: Randomize across arms within each scenario. Run sql-injection first (faster, confirms baseline) before committing to 60 cascading runs.
+
+---
+
+## Scenario Variant Names
+
+| Arm | sql-injection | cascading-fix-trap-v2 |
+|-----|---|---|
+| **A (baseline)** | `sql-injection-in-query-builder` | `cascading-fix-trap-v2` |
+| **B (F2-only)** | `sql-injection-in-query-builder-f2` | `cascading-fix-trap-v2-f2` |
+| **C (F1-only)** | `sql-injection-in-query-builder-f1` | `cascading-fix-trap-v2-f1` |
+| **D (F1→F2)** | `sql-injection-in-query-builder-f1f2` | `cascading-fix-trap-v2-f1f2` |
+
+All 6 variant scenarios live in `agents/gym/scenarios/` with correct:
+- `scenario.json` (workflow, phase_cleanup, categories, tags, tier fields)
+- `task.md` (phase-split for workflow arms)
+- `success_criteria.js` (copied from base scenario)
+- `environment/` (with expert analysis files for F1/D arms)
+- `package.json`
+
+### Smoke Test Results (2026-04-15, N=1 each)
+
+| Scenario | Arm | Passed | Notes |
+|---|---|---|---|
+| sql-injection-in-query-builder-f1 | C (F1-only) | ✅ | Expert analysis helped find both bugs |
+| sql-injection-in-query-builder-f2 | B (F2-only) | ✅ | Found both bugs even without retained analysis |
+| sql-injection-in-query-builder-f1f2 | D (F1→F2) | ✅ | Expert analysis + own plan = success |
+| cascading-fix-trap-v2-f1 | C (F1-only) | ✅ | Expert analysis guided correct fixes |
+| cascading-fix-trap-v2-f2 | B (F2-only) | ❌ | Missed pipeline ordering + penalties hack |
+| cascading-fix-trap-v2-f1f2 | D (F1→F2) | ✅ | Expert analysis + plan = success |
+
+**Key observation**: Smoke tests already show the expected pattern — cascading F2-only fails (consistent with EXP-165), while content-first arms succeed. N=1 is insufficient for conclusions, but validates the scenario mechanics work correctly.
 
 ---
 
