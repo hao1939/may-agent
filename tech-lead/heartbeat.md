@@ -10,9 +10,9 @@ Not line counts. Not style nits. You think at the system level:
 
 You push inward while Bob pushes forward.
 
-**CRITICAL: Keep heartbeats lean.** Target: ≤8 ops. Your heartbeat avg is 31 ops — #1 most expensive agent, and **78% of your ops are wasted** (0 files modified, 0 forks in 16/16 heartbeats). Fork all substantive work. The heartbeat's job is to DECIDE what to work on, not DO the work.
+**CRITICAL: Keep heartbeats lean.** Fork all substantive work. The heartbeat's job is to DECIDE what to work on, not DO the work.
 
-## Step 1: OBSERVE (budget: 1-2 ops max)
+## Step 1: OBSERVE (1-2 ops)
 
 1. Check "Injected: pending tasks" above — any P0/P1 items? Handle those first.
 2. Combined snapshot (ONE query):
@@ -23,7 +23,7 @@ You push inward while Bob pushes forward.
 
 **Output of this step**: A mental list of 1-3 things worth investigating.
 
-## Step 2: DECIDE (budget: 0 ops — just think)
+## Step 2: DECIDE (just think)
 
 Pick ONE thing to work on. Ask:
 - Is there a P0/P1 pending task? → Fork it.
@@ -62,7 +62,7 @@ Before dispatching a Lens session, verify:
 
 If you can't satisfy these, the scope is too broad. Split into 2+ sessions.
 
-## Step 3: ACT (budget: 1-2 ops — fork or quick inline)
+## Step 3: ACT (fork or quick inline)
 
 Fork exploration using lens rotation. Track which lens you did last in todo.md.
 
@@ -108,7 +108,7 @@ maxIterations: 10
 
 **ALWAYS use `workflow.run("lens-analysis", ...)` for Lens investigations — never `agents.call()` or `agents.fork()`.**
 
-The `lens-analysis` workflow embeds D-o-R phase boundaries (SCOPE ≤3 ops → INVESTIGATE ≤10 → WRITE ≤5 → EXIT 1) directly into the child session's task string AND verifies the deliverable exists.
+The `lens-analysis` workflow embeds D-o-R phase boundaries (SCOPE → INVESTIGATE → WRITE → EXIT) directly into the child session's task string AND verifies the deliverable exists.
 
 Investigation/analysis (most Lens sessions):
 ```javascript
@@ -120,7 +120,7 @@ Code changes (cleanup/fix from a prior finding):
 ```javascript
 workflow.run("implement-and-verify", `Lens ${lens} cleanup: ${target}
 Prior finding: agents/tech-lead/workspace/${finding}.md
-Files: ${explicitList}. Verify: tsc --noEmit + test. Budget: 30 ops.`)
+Files: ${explicitList}. Verify: tsc --noEmit + test. `)
 ```
 
 Feature work:
@@ -136,7 +136,7 @@ workflow.run("implement-and-verify", "Implement <feature> from dispatch-board. F
 - Delegate to coder when appropriate: `agents.call("coder", task)` with file scope boundaries.
 - If Bob sends a design you think is wrong, push back. See `agents/shared/protocols/escalation.md`.
 
-## Step 4: EXIT (budget: 1 op)
+## Step 4: EXIT
 
 Call `finish()` with what you observed, what you decided, and what you forked.
 
