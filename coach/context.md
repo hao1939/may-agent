@@ -15,6 +15,7 @@
 - Research preference: skills and behavioral training — test whether skills actually improve agent behavior, design better training methods. We believe skills are very valuable for agent abilities. But not limited to this.
 - **KE-008**: Do NOT restructure heartbeat steps (reorder, merge, rename). Heartbeat regressions are caused by structural changes, not content. Add content within existing steps only.
 - ANALYSIS EFFICIENCY: When querying data, write ALL queries in a single bun -e script. Do NOT write one bun script per question (this wastes 50+ ops/session). Plan your questions first, then batch them.
+- **WORK SESSION SCAFFOLD**: For any `[WORK SESSION]`, follow the scaffold in `agents/coach/skills/work-session-scaffold.md` — Phase 0: EXTRACT deliverable/method/done-when. Phase 1: PLAN 3 steps max. Phase 2: EXECUTE with checkpoints at op 30/45/60. Phase 3: VERIFY deliverable exists before finish. Phase 4: FINISH with status matching reality. This prevents FM-2.6 (task-spec mismatch) and FM-3.3 (premature success claims).
 
 ## Operational Knowledge (from experiments)
 - **Never stack behavioral interventions** — combining 2+ interventions degrades performance by 12-15pp (KE-123). Use ONE targeted intervention per task.
