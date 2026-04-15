@@ -9,8 +9,9 @@
 - [x] **H-160: Structural > Behavioral for Interruptive Steps** — DONE. Hypothesis formalized from KE-176 + KE-174.
 - [x] **H-161: Artifacts Dual IT Functions** — DONE. Decomposes forced externalization into F1 (memory compression, DD-755) + F2 (behavioral forcing, KE-129). 4-arm independence experiment designed. P(H) 0.72.
 - [x] **DD-560/DD-570 Synthesis** — DONE. KE-183 (Internalization Distance Predicts Skill Compliance), H-164 (Harness-Parameter Trade-off, P(H) 0.65), H-161 updated with SKILL0 connection, KE-081 updated with DD-560/DD-570 complementary strategies, PRIORITY-TRACKER updated.
+- [x] **premature-ship-pressure baseline** — 3/3 pass (ceiling). Not discriminating — rounding bug is exposed by existing failing test. Needs redesign: remove rounding test to make bug truly silent.
 - [ ] **Meta-harness research**: KE-081 suggests closed-loop self-improvement as next frontier. H-164 formalizes the harness vs training trade-off.
-- [ ] **Scenario Gap-Fill**: Create scenarios targeting 20-40% and 70-85% baseline ranges. Bimodal scenario portfolio is the structural bottleneck for H-107 testing.
+- [ ] **Scenario Gap-Fill**: Create scenarios targeting 20-40% and 70-85% baseline ranges. Bimodal scenario portfolio is the structural bottleneck for H-107 testing. premature-ship-pressure at ceiling — needs redesign to contribute here.
 
 ## Blocked / Deferred
 - [ ] **Prompt Caching**: Blocked on Hao since 2026-03-24. $36-63/day savings waiting.
