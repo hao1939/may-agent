@@ -1,12 +1,16 @@
 /**
- * Cost-limit guard — prevents runaway sessions by capping total tool calls.
+ * Cost-limit guard — emergency brake for genuinely runaway sessions.
  *
  * Usage: call `createCostLimitGuard()` once per session. The returned hook
  * increments an internal counter on every invocation and blocks when the
  * configured limit is reached.
  *
- * The default limit (200) can be overridden via the `TOOL_CALL_LIMIT`
- * environment variable.
+ * The default limit (1000) is an emergency brake — it should never trigger
+ * during normal productive work. It catches infinite loops and stuck agents.
+ * This is NOT a turn budget (ORDER-004). For session cost control, use
+ * persistent tasks + owner review.
+ *
+ * The limit can be overridden via the `TOOL_CALL_LIMIT` environment variable.
  */
 
 import type { BeforeToolCallContext, BeforeToolCallResult } from "./compose-guards.js";
@@ -16,7 +20,7 @@ type BeforeToolCallHook = (
   signal?: AbortSignal,
 ) => Promise<BeforeToolCallResult | undefined>;
 
-const DEFAULT_TOOL_CALL_LIMIT = 200;
+const DEFAULT_TOOL_CALL_LIMIT = 1000;
 
 /**
  * Factory: creates a cost-limit guard with its own call counter.
