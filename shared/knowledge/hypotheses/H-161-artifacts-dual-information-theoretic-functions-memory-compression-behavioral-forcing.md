@@ -186,25 +186,28 @@ This is the crispest test of independence. Take the EXP-155 setup (hard gate req
 
 **N per arm**: 15 (60 total). Effect sizes from KE-129 suggest this is sufficient.
 
-## Prior Probability: P(H) = 0.88 (updated from 0.72 after EXP-164)
+## Prior Probability: P(H) = 0.70 (updated from 0.88 after EXP-165)
 
 - (+) DD-755 Theorem 1 is a mathematical proof — F1 mechanism is formally established
 - (+) KE-129 0%/100% result is the strongest empirical evidence in our KB — F2 mechanism is empirically established
 - (+) The independence claim is logically consistent — different beneficiaries, different timing
-- **(+) EXP-164: Direct 4-arm factorial test. F1-only 100%, F2-only 100%, baseline 0% (each p<0.0001). Both functions independently sufficient. N=10/arm, replicated across N=100 total runs.**
-- (−) ~~No direct empirical test of independence yet~~ **Resolved by EXP-164**
+- (+) EXP-164: Direct 4-arm factorial test. F1-only 100%, F2-only 100%, baseline 0% (each p<0.0001). Both functions independently sufficient on easy scenario.
+- **(−) EXP-165: F2-only 0% (0/14), Full-gate 0% (0/16) on hard scenario. F2 provides ZERO independent value on cascading-fix-trap-v2. "Dual independent functions" claim only holds on math-verifiable tasks.**
+- **(−) EXP-165: Full-gate DESTROYS F1's benefit. Self-generated analysis (0/16) vs expert analysis (15/15). Adding F2 production to F1 information eliminates F1's effect — severely subadditive.**
 - (−) LLM agents may not exhibit DD-755's capacity effects in the same way as RL agents
-- (−) Results at ceiling on misleading-test-fix — additivity cannot be assessed. Need non-ceiling scenario (EXP-165 pending on cascading-fix-trap-v2)
+- (−) Results at ceiling on misleading-test-fix — additivity cannot be assessed on easy scenario
 - (−) F2 "independence" may be confounded with 2-phase workflow structure rather than artifact production per se
+- **Net assessment**: H-161's core claim ("two independent functions") is HALF right. F1 (information quality) is spectacularly confirmed across both scenarios. F2 (behavioral forcing) works only when self-analysis reliably produces correct information. The "independence" framing needs modification — F2's value is conditional on task-type, not universally independent.
 
 ## Next Steps
 
 1. ~~**Run EXP-155**~~ (already designed) — provides first data on F2 in the hidden-dep scenario → **Superseded: EXP-163 showed hidden-dep has ceiling effect (100% product baseline). This scenario cannot test H-161.**
 2. ~~**Design a harder scenario for H-161 testing**~~: → **Done: cascading-fix-trap-v2 designed for EXP-165**
 3. ~~**Design EXP-162**~~ → **Superseded by EXP-164 (4-arm factorial), which directly tested F1/F2 independence. COMPLETE.**
-4. **EXP-165 (pending)**: Non-ceiling replication on cascading-fix-trap-v2. Coach running. Will test whether independent sufficiency holds when baseline is non-zero, enabling additivity analysis.
+4. ~~**EXP-165 (pending)**: Non-ceiling replication on cascading-fix-trap-v2.~~ → **COMPLETE. Results dramatically modify H-161: F1-only 100%, F2-only 0%, Full-gate 0%, Baseline 0%. See EXP-165/results.md and KE-186.**
 5. **Post-hoc analysis**: Artifact quality analysis (P-161c) should use EXP-127/EXP-156 data, NOT hidden-dep data
 6. **Scenario portfolio**: Creating medium-baseline scenarios (see Bob's scenario gap-fill item) would enable P-161d testing
+7. **NEW: Test F2 on medium-difficulty scenarios**: EXP-165 shows F2 fails on hard architectural tasks. Does F2 work on medium-difficulty tasks where self-analysis is partially reliable? This would map the boundary of F2's utility.
 
 ## EXP-163 Result (2026-04-15): INCONCLUSIVE — Ceiling Effect
 
