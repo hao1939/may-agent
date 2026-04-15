@@ -17,6 +17,8 @@ import { existsSync, readdirSync, readFileSync, statSync, openSync, readSync, cl
 import { join } from "node:path";
 import type { PersistedSession } from "../persistence.js";
 import { getDb } from "../requests.js";
+import { openDatabase } from "../db.js";
+import type { SqliteDb } from "../db.js";
 
 // ── Tail utility ────────────────────────────────────────────────────────
 
@@ -82,6 +84,114 @@ interface JobHistoryEntry {
   startedAt: string;
   endedAt: string;
   durationMs: number;
+}
+
+// ── Metrics data types ──────────────────────────────────────────────────
+
+interface MetricRow {
+  id: string;
+  name: string;
+  current: number | null;
+  target: number;
+  unit: string | null;
+  type: string;
+  status: string;
+  threshold: number | null;
+  last_value: number | null;
+  measured_at: number | null;
+}
+
+// ── Metrics fetcher ─────────────────────────────────────────────────────
+
+function getAgentMetrics(stateDir: string, agent: string): MetricRow[] {
+  const dbPath = join(stateDir, "may.db");
+  if (!existsSync(dbPath)) return [];
+  let db: SqliteDb | null = null;
+  try {
+    db = openDatabase(dbPath);
+    // Check if metrics table exists
+    const tableCheck = db
+      .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='metrics'")
+      .get();
+    if (!tableCheck) return [];
+
+    const rows = db
+      .prepare(
+        `SELECT m.id, m.name, m.current, m.target, m.unit, m.type, m.status, m.threshold,
+                s.value as last_value, s.measured_at
+         FROM metrics m
+         LEFT JOIN metric_snapshots s ON m.id = s.metric_id
+           AND s.measured_at = (SELECT MAX(measured_at) FROM metric_snapshots WHERE metric_id = m.id)
+         WHERE m.owner = ? AND m.status = 'active'
+         ORDER BY m.type, m.id`,
+      )
+      .all(agent) as unknown as MetricRow[];
+    return rows;
+  } catch {
+    return [];
+  } finally {
+    try {
+      db?.close();
+    } catch {
+      // ignore close errors
+    }
+  }
+}
+
+function getAllActiveMetrics(stateDir: string): MetricRow[] {
+  const dbPath = join(stateDir, "may.db");
+  if (!existsSync(dbPath)) return [];
+  let db: SqliteDb | null = null;
+  try {
+    db = openDatabase(dbPath);
+    const tableCheck = db
+      .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='metrics'")
+      .get();
+    if (!tableCheck) return [];
+
+    const rows = db
+      .prepare(
+        `SELECT m.id, m.name, m.current, m.target, m.unit, m.type, m.status, m.threshold,
+                s.value as last_value, s.measured_at
+         FROM metrics m
+         LEFT JOIN metric_snapshots s ON m.id = s.metric_id
+           AND s.measured_at = (SELECT MAX(measured_at) FROM metric_snapshots WHERE metric_id = m.id)
+         WHERE m.status = 'active'
+         ORDER BY m.type, m.id`,
+      )
+      .all() as unknown as MetricRow[];
+    return rows;
+  } catch {
+    return [];
+  } finally {
+    try {
+      db?.close();
+    } catch {
+      // ignore close errors
+    }
+  }
+}
+
+function formatMetricsSection(metrics: MetricRow[], agent?: string): string {
+  const lines: string[] = [];
+  const label = agent ? `My Metrics` : `All Active Metrics`;
+  lines.push(`## 📊 ${label} (${metrics.length})`);
+
+  if (metrics.length === 0) {
+    lines.push("- (no owned metrics)");
+  } else {
+    for (const m of metrics) {
+      const currentDisplay = m.current != null ? `${m.current}` : "unmeasured";
+      const unitDisplay = m.unit ? ` ${m.unit}` : "";
+      const targetPart = `target: ${m.target}`;
+      const thresholdPart = m.threshold != null ? `, threshold: ${m.threshold}` : "";
+      const warn =
+        m.type === "health" && m.threshold != null && m.current != null && m.current < m.threshold ? " ⚠️" : "";
+      lines.push(`- **${m.name}**: ${currentDisplay}${unitDisplay} (${targetPart}${thresholdPart})${warn}`);
+    }
+  }
+  lines.push("");
+  return lines.join("\n");
 }
 
 // ── Core data fetchers ──────────────────────────────────────────────────
@@ -258,6 +368,7 @@ function formatMarkdown(
   focus: string,
   todoSummary: string,
   windowMinutes: number,
+  metricsSection?: string,
 ): string {
   const now = new Date();
   const lines: string[] = [];
@@ -380,6 +491,11 @@ function formatMarkdown(
   }
   lines.push("");
 
+  // ── Metrics ─────────────────────────────────────────────────────
+  if (metricsSection) {
+    lines.push(metricsSection);
+  }
+
   // ── Strategic Context ──────────────────────────────────────────
   lines.push(`## 🎯 Strategic Context`);
   lines.push(`- **Focus**: ${focus}`);
@@ -411,9 +527,16 @@ export function createSystemStatusTool(stateDir: string, agentsRoot: string): Ag
           default: 60,
         }),
       ),
+      agent: Type.Optional(
+        Type.String({
+          description:
+            "Agent name to show metrics for. If omitted, shows all active metrics.",
+        }),
+      ),
     }),
     execute: async (_toolCallId, params) => {
-      const windowMinutes = (params as { windowMinutes?: number }).windowMinutes ?? 60;
+      const { windowMinutes: wm, agent } = params as { windowMinutes?: number; agent?: string };
+      const windowMinutes = wm ?? 60;
       const windowMs = windowMinutes * 60 * 1000;
 
       const active = getActiveSessions(stateDir);
@@ -423,7 +546,13 @@ export function createSystemStatusTool(stateDir: string, agentsRoot: string): Ag
       const focus = readFocusTasks(agentsRoot);
       const todoSummary = readTodoSummary(stateDir);
 
-      const markdown = formatMarkdown(active, history, delegations, jobs, focus, todoSummary, windowMinutes);
+      // Fetch metrics — filtered by agent if provided, otherwise all active
+      const metrics = agent
+        ? getAgentMetrics(stateDir, agent)
+        : getAllActiveMetrics(stateDir);
+      const metricsSection = formatMetricsSection(metrics, agent);
+
+      const markdown = formatMarkdown(active, history, delegations, jobs, focus, todoSummary, windowMinutes, metricsSection);
 
       return {
         content: [{ type: "text", text: markdown }],
