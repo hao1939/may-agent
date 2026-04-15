@@ -1,253 +1,179 @@
-# DESIGN: Gatekeeper Guard — Automated Review for System-Scope Changes
+# DESIGN: Automated Review Gate — Code Merge Requires QA
 
-**Author:** May · **Date:** 2026-04-15 · **Status:** Draft — discussion with Bob & Tech-lead  
-**Requested by:** Hao · **Refs:** guard-escalation.md, may-gatekeeper.md, Bob's DESIGN-pre-merge-review-gate.md
+**Author:** May · **Date:** 2026-04-15 · **Status:** Draft — awaiting Hao's approval  
+**Requested by:** Hao · **Refs:** may-gatekeeper.md, guard-escalation.md
 
 ---
 
 ## Problem
 
-Agents can make system-scope changes (guards, manager code, workflow definitions, cross-agent protocols) that get merged to main without review. The guard escalation incident proved this — tech-lead's EXP-150 warn-only code bypassed both May's gatekeeper role and any QA check.
+Agents commit code to `review/<sessionId>` branches. Nothing prevents those branches from being merged to `main` without review. Today:
 
-**What exists today:**
-- Pre-commit hook blocks `git commit` directly on `main` ✅
-- Agents commit to `review/<sessionId>` branches ✅
-- Guards enforce quality at tool-call level (beforeToolCall hooks) ✅
-- Workflow guards enforce quality at step level (warn/block/inject) ✅
-- **No automated trigger** when a workflow step produces system-scope changes ❌
-- **No review before merge** — any agent can `git merge` a review branch ❌
-- May's heartbeat says review branches are "agent-scope (no action)" ❌
+1. Tech-lead or the dispatching agent merges review branches manually
+2. May is *supposed to* catch system-scope changes during heartbeats (gatekeeper role)
+3. But there's no automated trigger — heartbeats can miss things, and agents can merge before May's next cycle
 
-## Solution: Gatekeeper Guard (Workflow-Level)
+<<<<<<< Updated upstream
+The guard-escalation revert showed this gap: tech-lead's review branch was merged to main before any QA or gatekeeper review.
 
-A **workflow guard** in `agents/shared/guards/` that triggers on `step_done` events, detects system-scope file changes, and injects a QA review step into the workflow.
+## Solution: Two Mechanisms
 
-This is NOT a subscriber, NOT a cron handler, NOT a heartbeat convention. It's a guard — a pure function that returns demands, processed by the workflow runtime. It fits the existing guard system exactly.
+### Mechanism B: Review Gate Subscriber (code changes)
 
-### Why a Guard (Not a Subscriber)
+A new `session_end` subscriber that auto-dispatches QA when a session produces a review branch.
+=======
+## Solution: Three Complementary Modes
 
-| Approach | When it runs | Can inject work | Can block | Integrated |
-|----------|-------------|----------------|-----------|------------|
-| Subscriber (session_end) | After session closes | No (fire-and-forget) | No | Loose |
-| Cron handler | Every N minutes | Yes (dispatch) | No | External |
-| **Workflow guard (step_done)** | **After each step** | **Yes (run_step demand)** | **Yes (block demand)** | **Native** |
+The gatekeeper operates in three modes, each catching different scenarios:
 
-The workflow guard is the only approach that can **inject a review step directly into the running workflow** and **block if review fails**. Subscribers and cron handlers are after-the-fact — they can't prevent a bad merge.
+| Mode | Mechanism | When | Catches |
+|------|-----------|------|---------|
+| **A: Workflow Guard** | `step_done` → inject QA review | During workflows | System-scope code changes in workflow steps |
+| **B: Proactive Cron Scan** | Periodic scan (every 10-15 min) | Between workflows | Unreviewed merges, stale branches, bypass commits |
+| **C: Design Review** | May's heartbeat judgment | During heartbeats | Designs/proposals that need Hao's approval |
 
-### How It Works
+No single mode is sufficient. Mode A is **preventive** (blocks bad changes inline). Mode B is **detective** (finds things that slipped through). Mode C is **judgmental** (catches subtle design risks that code scanning misses).
+>>>>>>> Stashed changes
 
+**Trigger:** `session_end` event where a `review/*` branch exists for the session.
+
+**Flow:**
 ```
-Workflow Step: tech-lead implements code
+Agent session ends
     │
-    step_done event fires
+    session_end event fires
     │
-    gatekeeper guard inspects changed files:
-      - src/lib/manager.ts → SYSTEM-SCOPE
-      - src/lib/tools/compose-guards.ts → SYSTEM-SCOPE
+    createReviewGate subscriber checks:
+      1. Does branch `review/<sessionId>` exist?
+      2. Does it have commits ahead of main?
     │
-    Returns: run_step demand
-      → { type: "run_step", step: { agent: "qa", label: "guard:review", task: "..." } }
+    YES → dispatch QA review session (fork may with review task)
+          May reviews diff, runs tsc + tests, checks for system-scope changes
+          If clean → merge to main
+          If system-scope → flag for Hao approval first
     │
-    Workflow runtime executes injected QA step:
-      QA reviews the diff, checks correctness, checks for regressions
-    │
-    Next step_done fires (QA's result)
-    │
-    Gatekeeper guard checks QA's verdict:
-      - If QA approved → no demand (workflow continues normally)
-      - If QA rejected → block demand (workflow stops)
+    NO → no action (no review branch = nothing to review)
 ```
 
-### System-Scope Detection
-
-Files that are **system-scope** (require review before merge):
+**Implementation:** New function in `src/lib/session-subscribers.ts`:
 
 ```typescript
-const SYSTEM_SCOPE_PATTERNS = [
-  // Runtime code
-  /^src\/lib\/manager/,
-  /^src\/lib\/workflow/,
-  /^src\/lib\/tools\//,
-  /^src\/lib\/session-subscribers/,
-  /^src\/lib\/evaluator/,
-  /^src\/app\//,
-  
-  // Guard system itself
-  /^agents\/shared\/guards\//,
-  
-  // Cross-agent protocols
-  /^agents\/shared\/protocols?\//,
-  /^agents\/shared\/may-agent-docs\//,
-  
-  // Agent definitions (another agent's heartbeat/context/SOUL)
-  // Detected dynamically: file is in agents/<X>/ but step agent is not X
-];
+export function createReviewGate(
+  persistDir: string,
+  emitFork: (agent: string, task: string, opts?: { kind?: string }) => void,
+): (event: AgentEvent) => void {
+  return (event: AgentEvent) => {
+    if (event.type !== "session_end") return;
+    if (event.status === "error" || event.status === "interrupted") return;
+    
+    // Check for review branch
+    const branchName = `review/${event.sessionId}`;
+    try {
+      const result = execSync(
+        `git log ${branchName} --not main --oneline 2>/dev/null | head -5`,
+        { encoding: "utf-8", timeout: 5000 }
+      ).trim();
+      
+      if (!result) return; // No commits ahead of main
+      
+      // Dispatch QA review
+      emitFork("may", 
+        `[review-gate] Review branch ${branchName} from ${event.agent}. ` +
+        `Session: ${event.sessionId}. ` +
+        `Diff: run \`git diff main..${branchName}\`. ` +
+        `Check: tsc, tests, system-scope changes. ` +
+        `If clean: merge to main. If system-scope: flag Hao first.`,
+        { kind: "review" }
+      );
+    } catch {
+      // Branch doesn't exist or git error — no action
+    }
+  };
+}
 ```
 
-Everything else is **agent-scope** (own workspace, knowledge files, experiment data) — no review needed.
-
-### Guard Implementation Sketch
-
+Registered in `src/app/may.ts`:
 ```typescript
-/// <reference path="../../../src/lib/workflow-defs.d.ts" />
-
-const SYSTEM_SCOPE_PATTERNS = [
-  /^src\/lib\/manager/,
-  /^src\/lib\/workflow/,
-  /^src\/lib\/tools\//,
-  /^src\/lib\/session-subscribers/,
-  /^src\/lib\/evaluator/,
-  /^src\/app\//,
-  /^agents\/shared\/guards\//,
-  /^agents\/shared\/protocols?\//,
-  /^agents\/shared\/may-agent-docs\//,
-];
-
-function getChangedFiles(result: TaskResult): string[] {
-  // Same as auto-test.ts — scan messages for write/edit tool calls
-  const files = new Set<string>();
-  for (const msg of result.messages ?? []) {
-    if (!Array.isArray(msg.content)) continue;
-    for (const part of msg.content) {
-      if (part.type === "toolCall" && (part.name === "write" || part.name === "edit")) {
-        const p = part.arguments?.path;
-        if (typeof p === "string") files.add(p.replace(/^\/app\//, ""));
-      }
-    }
-  }
-  return [...files];
-}
-
-function isSystemScope(file: string, stepAgent?: string): boolean {
-  // Pattern match
-  if (SYSTEM_SCOPE_PATTERNS.some(p => p.test(file))) return true;
-  
-  // Cross-agent edit detection: agent X editing agent Y's files
-  if (stepAgent) {
-    const agentMatch = file.match(/^agents\/([^/]+)\//);
-    if (agentMatch && agentMatch[1] !== stepAgent && agentMatch[1] !== "shared") {
-      return true; // Editing another agent's files
-    }
-  }
-  
-  return false;
-}
-
-export const guard: WorkflowGuard = {
-  name: "gatekeeper",
-  events: ["step_done"],
-
-  handle(event: WorkflowGuardEvent): Demand[] {
-    if (event.type !== "step_done") return [];
-    if (event.source === "function") return [];
-    
-    // Don't re-review guard-injected review steps
-    if (event.step.startsWith("guard:review")) return [];
-    
-    // Check QA review result (if this is the injected QA step)
-    if (event.step === "guard:gatekeeper-review") {
-      const text = event.result.lastAssistantText ?? "";
-      const rejected = /reject|block|fail|not approved/i.test(text) 
-        && !/approved|pass|clean/i.test(text);
-      if (rejected) {
-        return [{ type: "block", reason: "QA review rejected the changes" }];
-      }
-      return []; // Approved, continue
-    }
-    
-    const changedFiles = getChangedFiles(event.result);
-    const systemFiles = changedFiles.filter(f => isSystemScope(f));
-    
-    if (systemFiles.length === 0) return [];
-    
-    // Build review task for QA
-    const fileList = systemFiles.join("\n  - ");
-    const reviewTask = [
-      `[GUARD:GATEKEEPER] Review system-scope changes from step "${event.step}".`,
-      ``,
-      `## System-scope files modified:`,
-      `  - ${fileList}`,
-      ``,
-      `## Review checklist:`,
-      `1. Read the diff for each file (use \`git diff\` or read the file)`,
-      `2. Check: Does this change break existing behavior?`,
-      `3. Check: Is this a reasonable change for the task at hand?`,
-      `4. Check: Are there tests for the changes?`,
-      `5. If all checks pass: finish(status: "success", summary: "APPROVED: ...")`,
-      `6. If issues found: finish(status: "failure", summary: "REJECTED: ...")`,
-    ].join("\n");
-
-    return [{
-      type: "run_step",
-      reason: `${systemFiles.length} system-scope file(s) modified: ${systemFiles.join(", ")}`,
-      step: {
-        agent: "qa",
-        label: "guard:gatekeeper-review",
-        task: reviewTask,
-      },
-    }];
-  },
-};
+bus.subscribe(createReviewGate(PERSIST_DIR, (agent, task, opts) => {
+  bus.emit({ type: "fork", agent, task, ...opts });
+}));
 ```
 
-### Mechanism C: May Proactive Design Review (Heartbeat)
+### Mechanism C: May Proactive Design Review (heartbeat)
 
-Separate from the workflow guard, May's heartbeat should also proactively check for designs/proposals that could break the system and need extra approval. This catches things that don't go through workflows (direct commits, manual changes).
+May's heartbeat already has a "Proactive Review (Gatekeeper)" step. Extend it to explicitly check for:
+
+<<<<<<< Updated upstream
+1. **New/modified design docs** — any `.md` in `designs/`, `workspace/design-*`, or project files with status changes
+2. **System-scope proposals** — guard changes, workflow changes, cross-agent protocol changes
+3. **Pending review branches** — branches not yet reviewed by the gate
+=======
+### Mode C: May Proactive Design Review (Heartbeat)
+
+Separate from the automated systems, May's heartbeat should also proactively check for designs/proposals that could break the system and need extra approval. This catches judgment calls that automated scanning can't make.
 
 **What May should check during heartbeats:**
 1. New/modified design docs with proposals that affect system behavior
-2. Pending review branches that haven't been picked up by the guard
-3. Experiment designs that propose changing system behavior (like EXP-150)
+2. Experiment designs that propose changing system behavior (like EXP-150)
+3. Proposals from agents that need Hao's approval before implementation proceeds
 
-**Implementation:** Update May's heartbeat instructions — behavioral change, no code needed.
+**Implementation:** Update May's heartbeat instructions — behavioral change, no code needed. This is the human-judgment layer that complements the automated modes.
 
 ## Design Decisions
+>>>>>>> Stashed changes
 
-### Q1: What about changes that bypass workflows?
+**Heartbeat addition** (step 3 extension):
+```markdown
+### Design/Proposal Review
+Check for system-scope designs that need approval before implementation:
+- `git log --all --diff-filter=AM --name-only -- '*/design*' '*/designs/*' | head -20`
+- Review any new designs for system-scope impact
+- If system-scope: set status to pending-review, notify Hao
+- If agent-scope: no action needed
+```
 
-If an agent uses `bash` to run `git merge` directly, the guard doesn't fire. But:
-- The pre-commit hook blocks direct commits to main
-- The merge itself isn't a workflow step
-- **Mitigation:** The pre-merge hook (future) or May's heartbeat catch these
+<<<<<<< Updated upstream
+This is behavioral — no code change, just a heartbeat update.
 
-### Q2: Won't this make workflows slower?
+## What This Prevents
+=======
+**Mode A (workflow guard)** catches changes during workflows. **Mode B (cron scan)** catches everything else:
+- Direct merges via `git merge` in bash → Mode B detects new system-scope commits on main
+- Emergency bypass commits → Mode B flags for post-hoc audit
+- Stale review branches → Mode B dispatches review for abandoned branches
+- Changes during heartbeats → Mode B scans periodically
 
-Yes — system-scope changes add one QA session (~30-60 seconds). This is the point. The alternative is broken production code. Agent-scope changes (vast majority) are unaffected.
+The three modes are complementary — Mode A is preventive (blocks during workflow), Mode B is detective (scans after the fact), Mode C is judgmental (May's human-like review of designs/proposals).
+>>>>>>> Stashed changes
 
-### Q3: What if QA is wrong?
+- ❌ Agent merges own review branch without review
+- ❌ System-scope code changes slip past May's heartbeat gap
+- ❌ Designs that break system-wide behavior proceed without Hao's approval
 
-The escalation chain applies: if QA blocks incorrectly, the agent escalates to its owner, who escalates to May, who escalates to Hao. The guard stays enforced — nobody bypasses, but the decision can be overridden through the chain.
+## What This Doesn't Change
 
-### Q4: Should guard changes review themselves?
-
-If an agent modifies `agents/shared/guards/gatekeeper.ts`, the gatekeeper guard will trigger a review of itself. This is intentional — the guard system should be self-protecting.
-
-### Q5: What about the auto-test guard overlap?
-
-`auto-test` checks if tests were run. `gatekeeper` checks if the change was reviewed. They're orthogonal — both can fire on the same step. The workflow runtime handles multiple demands correctly (deduplication, ordering).
-
-## Open Questions (For Bob & Tech-Lead)
-
-1. **File detection accuracy:** The `getChangedFiles` approach scans messages for tool calls. Should we also check `git diff` in the review branch? (Tech-lead: is this feasible in a guard's pure-function constraint?)
-
-2. **Review quality:** QA's review is an LLM session — it could hallucinate approval. Should we add structural checks (e.g., require QA to cite specific files it read)?
-
-3. **Workflow-done event:** Should the guard also fire on `workflow_done` to do a final review of all changes across all steps? Or is per-step review sufficient?
-
-4. **Cost:** Each system-scope step adds a QA session. For workflows with 3 system-scope steps, that's 3 QA sessions. Should we batch reviews (one QA session at workflow end)?
+- Agents still commit to `review/*` branches (existing pattern)
+- Guards still enforce quality at tool-call level (existing guards)
+- May still has gatekeeper authority (existing role)
+- Hao is final authority for system-scope changes (existing chain)
 
 5. **May's heartbeat update:** Bob — what should the exact heartbeat text say for the proactive design review?
 
 ## Implementation Order
 
-1. **Phase 1:** Write the `gatekeeper` guard in `agents/shared/guards/gatekeeper.ts` — ~80 lines
-2. **Phase 2:** Update May's heartbeat with design review instructions — 0 code
-3. **Phase 3:** Add review metrics to DB (optional) — track what got reviewed, who approved
+<<<<<<< Updated upstream
+1. **Phase 1:** Update May's heartbeat with design review checklist (mechanism C) — zero code
+2. **Phase 2:** Build `createReviewGate` subscriber (mechanism B) — ~50 lines of code
+3. **Phase 3:** Add review status tracking (optional) — track which branches have been reviewed in the DB
+=======
+1. **Phase 1:** Write the `gatekeeper` workflow guard in `agents/shared/guards/gatekeeper.ts` (Mode A) — ~80 lines
+2. **Phase 2:** Build the proactive cron scan (Mode B) — May cron job or session subscriber, ~60 lines + state file
+3. **Phase 3:** Update May's heartbeat with design review instructions (Mode C) — 0 code, behavioral
+4. **Phase 4:** Add review metrics to DB (optional) — track what got reviewed, who approved, catch rate
+>>>>>>> Stashed changes
 
-## References
+## Open Questions
 
-- Bob's pre-merge design: `agents/bob/workspace/archive/2026-04/DESIGN-pre-merge-review-gate.md`
-- Guard system design: `agents/may/workspace/DESIGN-workflow-guards.md`
-- Bob's guard review: `agents/bob/workspace/review-guards-v2.md`
-- Guard escalation: `agents/shared/may-agent-docs/design/guard-escalation.md`
-- Gatekeeper role: `agents/shared/may-agent-docs/design/may-gatekeeper.md`
+1. **Review scope:** Should ALL review branches trigger QA, or only those touching `src/` (code)? Agent workspace changes on review branches are lower risk.
+2. **Who reviews?** May dispatches to herself currently. Should there be a dedicated QA agent?
+3. **Merge authority:** Can May merge autonomously for agent-scope changes? Or does every merge need explicit approval?

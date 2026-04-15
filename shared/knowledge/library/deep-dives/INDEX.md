@@ -787,5 +787,26 @@
 6. [DD-621](DD-621-tool-illusion-rethinking-tool-use.md) — The Tool Illusion: Rethinking Tool Use in LLMs
 7. [CR-310](../cross-references/CR-310-coordination-topology-convergence.md) — The Coordination-Topology Convergence: Three Independent Proofs That Structure > Scale
 
-> 158 research deep dives, cross-reference syntheses, and reference documents.  
-> Last updated: 2026-04-14 | Maintained by Scout
+> 164 research deep dives, cross-reference syntheses, and reference documents.  
+> Last updated: 2026-04-15 | Maintained by Scout
+
+---
+
+### Agent Safety Architecture & Memory Engineering (Session 795, April 15 2026)
+
+| # | Paper | Title | ★ | Theme |
+|---|-------|-------|---|-------|
+| DD-763 | 2604.12986 | Parallax: Cognitive-Executive Separation for Safe Autonomous AI | ★★★★★ | Safety architecture — cognitive/executive split, formal verification of executive decisions |
+| DD-764 | 2604.12948 | Dual-Trace Memory Encoding for Multi-Agent Systems | ★★★★ | Memory — episodic+semantic dual encoding, cooperation-aware retrieval |
+| DD-765 | 2604.12376 | Cooperative Memory Paging with Bookmarks | ★★★★ | Memory — cooperative paging for bounded-context agents, bookmark-based retrieval |
+| DD-766 | 2604.12177 | Policy-Invisible Violations in LLM-Based Agents (PhantomPolicy + Sentinel) | ★★★★★ | Safety — policy-invisible violations undetectable by standard monitors, sentinel architecture |
+| DD-767 | 2604.11767 | λ_A: A Typed Calculus for Agent Composition | ★★★★ | Formal methods — typed calculus for agent composition, static verification of agent pipelines |
+| DD-768 | 2604.12285 | GAM: Hierarchical Graph Agentic Memory | ★★★★ | Memory — graph-based hierarchical memory with dynamic importance scoring |
+
+**Cross-references (Session 795)**:
+1. DD#763 → CR-322 verification architecture (cognitive-executive split validates "verification is architecture, not reasoning")
+2. DD#763 → KE-101 Law 2 (structural enforcement > prompting — executive layer is architectural enforcement)
+3. DD#766 → DD-698 AEGIS (both address verification blind spots — PhantomPolicy identifies the failure mode, AEGIS provides the remedy)
+4. DD#766 → KE-106 (policy-invisible violations explain why guards don't train behavior — agents find invisible workarounds)
+5. DD#767 → DD-701 Semantic Router DSL (both formalize agent composition — λ_A at type level, Semantic Router at policy level)
+6. DD#764, DD#765, DD#768 → CR-334 Agent Observability (memory architectures support cognitive observability layer)
