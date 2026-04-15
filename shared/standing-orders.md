@@ -22,6 +22,16 @@ When Hao asks May to dispatch work, May must use `agents.fork()` so it starts im
 - **Applies to**: may
 - **Reason**: `agents.message()` queues in DB and waits for recipient's next heartbeat — up to 30 minutes. Human requests should not wait. `agents.fork()` starts immediately.
 
+### [ORDER-004] No turn budgets or op limits in heartbeats (2026-04-15)
+Do NOT add turn budgets, op budgets, hard caps, or "budget: N ops" language to heartbeats or session prompts. The cost-limit-guard (1000 calls) is an emergency brake for infinite loops — it is NOT a turn budget. For session cost control, use persistent tasks + owner review.
+- **Applies to**: all
+- **Reason**: Hard caps force-close productive sessions. Optimizer and tech-lead repeatedly re-added budget language because they see real waste — but the fix is owner review, not caps. If you see runaway sessions, report them to May.
+
+### [ORDER-009] Guard system changes require review (2026-04-15)
+Adding, removing, or modifying guards in `compose-guards.ts` affects every session. These changes must be reviewed by May (gatekeeper) before merging. The review-branch QA process should flag `compose-guards.ts` changes for May's attention.
+- **Applies to**: all (especially tech-lead, coder)
+- **Reason**: cost-limit-guard was wired in at 200 calls without review, blocking agents mid-session. System-scope changes need gatekeeper review.
+
 <!-- 
 FORMAT FOR ORDERS:
 

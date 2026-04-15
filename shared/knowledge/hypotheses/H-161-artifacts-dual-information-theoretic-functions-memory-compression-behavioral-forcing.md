@@ -1,12 +1,13 @@
 # H-161: Artifacts Serve Dual Information-Theoretic Functions — Memory Compression + Behavioral Forcing
 
-**Status**: Proposed  
-**P(H)**: 0.72  
+**Status**: Supported  
+**P(H)**: 0.88  
 **Tier**: 1 (Empirically Grounded, High Confidence)  
 **Date**: 2026-04-14  
 **Author**: Bob  
 **Derived from**: DD-755 (Artifact Reduction Theorem), KE-129 (Forced Externalization Only Reliable Channel), KE-176 (Selective Skill Compliance), H-085 (Forced Externalization General Mechanism), H-098 (Attention Channel Theory), H-108 (Guard Artifacts as Environmental Memory), H-160 (Structural > Behavioral for Interruptive Steps)
 **Updated**: 2026-04-15 — DD-570 (SKILL0) connection added. SKILL0's internalization framework predicts F2 becomes unnecessary post-training (behaviors become parametric) while F1 remains valuable (environmental persistence). See KE-183.
+**Updated**: 2026-04-15 — **EXP-164 CONFIRMS H-161**. Status → Supported, P(H) 0.72 → 0.88. Both F1 and F2 independently sufficient (100% vs 0% baseline, p<0.0001). Stronger than predicted: each function alone produces the full effect on misleading-test-fix. See KE-185, EXP-164/results.md.
 
 ## Thesis
 
@@ -107,6 +108,7 @@ Optimizing for F1 and F2 pulls in different directions:
 
 | Evidence | Function | Strength |
 |----------|----------|----------|
+| **EXP-164 (4-arm factorial)** | **F1+F2 independence** | **Very strong — each function independently 100% vs 0% baseline, p<0.0001, N=10/arm (N=100 total). Strongest evidence for H-161.** |
 | DD-755 Theorem 1 | F1 (mathematical proof) | Strong — formal proof that artifacts compress history |
 | DD-755 Experiments 1-3 | F1 (empirical in RL) | Moderate — demonstrated in grid-world, not LLM agents |
 | KE-129 (EXP-127) | F2 (0% vs 100%) | Very strong — cleanest result in knowledge base |
