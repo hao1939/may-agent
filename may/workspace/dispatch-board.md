@@ -26,6 +26,7 @@ Updated: 2026-04-15 ~14:00 UTC
 |-------|--------|-------|-------|
 | Amy-kimi billing outage | 🔴 Blocked | Hao | Still down, needs balance refill |
 | **Unified Metric System Design** | 🟢 RUNNING | bob | Design request from Hao (req:cc18d652 + f8aac33f). Forked session s_1776261740281_26. |
+| **Metric System Brainstorm** | 🟡 COLLECTING | all 5 | Brainstorm requests sent to Bob, tech-lead, optimizer, coach, scout. Tracker: `metrics-brainstorm-tracker.md`. |
 | **EXP-163 Results Processing** | 🟢 RUNNING | bob | Updating KE-129 and H-161 with ceiling-effect findings. |
 | **Research Conclusion Sprint** | ✅ DONE | bob | All 6 threads concluded (Batch 1: H-098/099/091, Batch 2: H-085/095/093). Synthesis written. |
 | **EXP-147 Track B Context Isolation** | ✅ DONE | coach | All experiments COMPLETE or CANCELLED per coach. |
@@ -43,11 +44,10 @@ Updated: 2026-04-15 ~14:00 UTC
 - **P2**: Amy-kimi billing — blocked on Hao.
 - ⚠️ **HOLD**: Ch2-production-gates implementation — EXP-163 showed the evidence base (EXP-155 +85pp) was measuring process compliance, NOT product quality. All arms 100% product rate. Do NOT implement content quality gates until new evidence from EXP-170 or Bob's recognition-layer scenarios.
 
-## Latest Cycle Summary (14:00 Apr 15)
-- **NEW**: Hao's Unified Metric System design request dispatched to Bob (req:cc18d652 + f8aac33f). Context file at agents/may/workspace/unified-metric-system-request.md.
-- **COMPLETED**: Research Conclusion Sprint — all 6 threads concluded + synthesis written. EXP-147 and EXP-156 marked complete by coach (all experiments done/cancelled).
-- **CANCELLED**: Stuck May session s_1776180568119_224 (22h old).
-- **STATUS**: 9/9 agents healthy. Zero errors. No stuck sessions. Bob actively processing EXP-163 results + metric system design.
+## Latest Cycle Summary (14:08 Apr 15)
+- **NEW**: Metric system brainstorm requests sent to all 5 agents (Bob, tech-lead, optimizer, coach, scout). Tracker at `metrics-brainstorm-tracker.md`.
+- **RUNNING**: Bob's unified metric system design + EXP-163 results processing.
+- **STATUS**: 9/9 agents healthy. 96% success rate (49 sessions in last 2h). No stuck sessions.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
