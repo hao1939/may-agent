@@ -9,12 +9,6 @@
  * If no guard returns a result, returns undefined (allow the tool call).
  */
 
-// cost-limit-guard: emergency brake at 1000 calls (ORDER-004 compliant).
-// This is NOT a turn budget — it catches infinite loops / stuck agents.
-// For session cost control, use persistent tasks + owner review.
-import { createCostLimitGuard } from "./cost-limit-guard.js";
-export { createCostLimitGuard } from "./cost-limit-guard.js";
-
 // TODO(pi-agent-core): Import from @mariozechner/pi-agent-core once it exports
 // BeforeToolCallContext / BeforeToolCallResult. Until then, define locally so
 // guard code compiles and is ready when the upstream hook ships.
@@ -55,9 +49,7 @@ export function composeGuards(...guards: BeforeToolCallHook[]): BeforeToolCallHo
   return async (context: BeforeToolCallContext, signal?: AbortSignal): Promise<BeforeToolCallResult | undefined> => {
     let lastWarning: BeforeToolCallResult | undefined;
 
-    const allGuards = guards;
-
-    for (const guard of allGuards) {
+    for (const guard of guards) {
       let result: BeforeToolCallResult | undefined;
       try {
         result = await guard(context, signal);
