@@ -263,16 +263,15 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 - **Implication**: Gym is saturated. Need harder scenarios for further skill development.
 - **Completed**: 2026-04-09
 
-### 0v. EXP-156: Hard Gate Generalization Study [DESIGNED]
+### 0v. EXP-156: Hard Gate Generalization Study [COMPLETE ✅ — PARTIALLY SUPPORTED]
 - **Design**: `agents/shared/knowledge/experiments/EXP-156/design.md`
-- **Status**: DESIGNED — awaiting scenario creation + trial runs
+- **Results**: `agents/shared/knowledge/experiments/EXP-156/results.md`
 - **Goal**: Test whether Ch2 hard gates generalize beyond hidden-dep (EXP-155) and contradictory-req (EXP-127)
-- **Scenarios**: misleading-test-fix (63% baseline, math verification) + ambiguous-context-drift (~50% baseline, context trust)
-- **Arms**: 4 arms × 10 runs = 40 total (2 baseline + 2 treatment)
-- **Hypothesis**: H-156 — hard gate improves pass rate by ≥20pp on at least one new scenario
-- **Key question**: Is Ch2 universal (works on any analytical step-skipping) or scenario-specific?
-- **Phases**: (1) Create treatment scenarios, (2) Run baselines, (3) Run treatments, (4) Analysis
-- **Predecessor**: EXP-155 (+85pp), EXP-127 (+100pp) — both single-scenario Ch2 results
+- **Result**: H-156 PARTIALLY SUPPORTED — hard gates generalize to process-based failures (+100pp on misleading-test-fix, p < 0.001) but NOT belief-based ones (-20pp on ambiguous-context-drift, NS)
+- **misleading-test-fix**: Baseline 0% → Treatment 100% (h=3.14). Gate forced manual math verification → correct diagnosis.
+- **ambiguous-context-drift**: Baseline 90% → Treatment 70% (NS, p=0.587). Gate may hurt near-ceiling belief tasks.
+- **Key insight**: Ch2 hard gates work when the failure is skipping a process step (verification, analysis). They don't help when the failure is a belief error (trusting wrong context).
+- **Predecessor**: EXP-155 (+85pp), EXP-127 (+100pp) — now 3/4 scenarios show strong Ch2 effect on process failures
 
 ### 0t. EXP-147: Context Isolation A/B Test [COMPLETE ✅ — DIRECTIONAL BUT NOT SIGNIFICANT]
 - **Design**: `agents/shared/knowledge/experiments/EXP-147/design.md`
