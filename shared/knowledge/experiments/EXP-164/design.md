@@ -1,7 +1,7 @@
 # EXP-164: H-161 Independence Test — Misleading-Test-Fix Domain (F1 × F2)
 
 **Date**: 2026-04-15
-**Status**: DESIGNED
+**Status**: COMPLETE (see results.md)
 **Hypothesis**: H-161 (Artifacts Serve Dual Information-Theoretic Functions — Memory Compression + Behavioral Forcing)
 **Predictions tested**: P-161a (F2 without F1), P-161b (F1 without F2)
 **Predecessor experiments**: EXP-163 (same design, hidden-dep scenario — INCONCLUSIVE due to ceiling), EXP-156 (hard gate on misleading-test-fix), EXP-155 (hard gate on hidden-dep)
