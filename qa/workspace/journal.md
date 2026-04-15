@@ -5361,3 +5361,5 @@ Notes: these red tests block a PASS verdict for the current tree; investigate re
 
 2026-04-15T20:30Z heartbeat (QA): Proactive scan of HEAD 2705e8ce ("fix: compose-guards only bypasses finish(blocked|failure), blocks finish(success)"). Read changed files: src/lib/tools/compose-guards.ts, test/compose-guards.test.ts. Mandatory checks: ./node_modules/.bin/tsc --noEmit PASS (exit 0). ./node_modules/.bin/vitest --run PASS — 1968 tests / 133 files. Findings: IMPORTANT — composeGuards now inspects finish status via context.args?.status (cast to string). If the runtime tool payload uses a different shape (e.g., toolCall.arguments.status) this could misclassify and block finish(blocked|failure), regressing the "agents must be able to exit" guarantee; current unit tests cover the context.args form only.
 
+2026-04-15T21:00Z heartbeat (QA): Proactive scan of HEAD 2705e8ce. Re-verified mandatory checks: ./node_modules/.bin/tsc --noEmit PASS (exit 0; no output). ./node_modules/.bin/vitest --run PASS — 1968 tests / 133 files. No additional code changes reviewed beyond compose-guards.
+
