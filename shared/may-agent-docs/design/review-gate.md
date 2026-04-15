@@ -13,15 +13,8 @@ Agents commit code to `review/<sessionId>` branches. Nothing prevents those bran
 2. May is *supposed to* catch system-scope changes during heartbeats (gatekeeper role)
 3. But there's no automated trigger — heartbeats can miss things, and agents can merge before May's next cycle
 
-<<<<<<< Updated upstream
 The guard-escalation revert showed this gap: tech-lead's review branch was merged to main before any QA or gatekeeper review.
 
-## Solution: Two Mechanisms
-
-### Mechanism B: Review Gate Subscriber (code changes)
-
-A new `session_end` subscriber that auto-dispatches QA when a session produces a review branch.
-=======
 ## Solution: Three Complementary Modes
 
 The gatekeeper operates in three modes, each catching different scenarios:
@@ -33,7 +26,10 @@ The gatekeeper operates in three modes, each catching different scenarios:
 | **C: Design Review** | May's heartbeat judgment | During heartbeats | Designs/proposals that need Hao's approval |
 
 No single mode is sufficient. Mode A is **preventive** (blocks bad changes inline). Mode B is **detective** (finds things that slipped through). Mode C is **judgmental** (catches subtle design risks that code scanning misses).
->>>>>>> Stashed changes
+
+### Mode B: Review Gate Subscriber (code changes)
+
+A new `session_end` subscriber that auto-dispatches QA when a session produces a review branch.
 
 **Trigger:** `session_end` event where a `review/*` branch exists for the session.
 
@@ -99,28 +95,19 @@ bus.subscribe(createReviewGate(PERSIST_DIR, (agent, task, opts) => {
 }));
 ```
 
-### Mechanism C: May Proactive Design Review (heartbeat)
+### Mode C: May Proactive Design Review (Heartbeat)
 
 May's heartbeat already has a "Proactive Review (Gatekeeper)" step. Extend it to explicitly check for:
 
-<<<<<<< Updated upstream
 1. **New/modified design docs** — any `.md` in `designs/`, `workspace/design-*`, or project files with status changes
 2. **System-scope proposals** — guard changes, workflow changes, cross-agent protocol changes
 3. **Pending review branches** — branches not yet reviewed by the gate
-=======
-### Mode C: May Proactive Design Review (Heartbeat)
 
-Separate from the automated systems, May's heartbeat should also proactively check for designs/proposals that could break the system and need extra approval. This catches judgment calls that automated scanning can't make.
-
-**What May should check during heartbeats:**
-1. New/modified design docs with proposals that affect system behavior
-2. Experiment designs that propose changing system behavior (like EXP-150)
-3. Proposals from agents that need Hao's approval before implementation proceeds
+Separate from the automated systems, May's heartbeat should also proactively catch judgment calls that automated scanning can't make.
 
 **Implementation:** Update May's heartbeat instructions — behavioral change, no code needed. This is the human-judgment layer that complements the automated modes.
 
 ## Design Decisions
->>>>>>> Stashed changes
 
 **Heartbeat addition** (step 3 extension):
 ```markdown
@@ -132,11 +119,10 @@ Check for system-scope designs that need approval before implementation:
 - If agent-scope: no action needed
 ```
 
-<<<<<<< Updated upstream
 This is behavioral — no code change, just a heartbeat update.
 
-## What This Prevents
-=======
+## Coverage Analysis
+
 **Mode A (workflow guard)** catches changes during workflows. **Mode B (cron scan)** catches everything else:
 - Direct merges via `git merge` in bash → Mode B detects new system-scope commits on main
 - Emergency bypass commits → Mode B flags for post-hoc audit
@@ -144,7 +130,8 @@ This is behavioral — no code change, just a heartbeat update.
 - Changes during heartbeats → Mode B scans periodically
 
 The three modes are complementary — Mode A is preventive (blocks during workflow), Mode B is detective (scans after the fact), Mode C is judgmental (May's human-like review of designs/proposals).
->>>>>>> Stashed changes
+
+## What This Prevents
 
 - ❌ Agent merges own review branch without review
 - ❌ System-scope code changes slip past May's heartbeat gap
@@ -161,16 +148,10 @@ The three modes are complementary — Mode A is preventive (blocks during workfl
 
 ## Implementation Order
 
-<<<<<<< Updated upstream
-1. **Phase 1:** Update May's heartbeat with design review checklist (mechanism C) — zero code
-2. **Phase 2:** Build `createReviewGate` subscriber (mechanism B) — ~50 lines of code
-3. **Phase 3:** Add review status tracking (optional) — track which branches have been reviewed in the DB
-=======
-1. **Phase 1:** Write the `gatekeeper` workflow guard in `agents/shared/guards/gatekeeper.ts` (Mode A) — ~80 lines
-2. **Phase 2:** Build the proactive cron scan (Mode B) — May cron job or session subscriber, ~60 lines + state file
-3. **Phase 3:** Update May's heartbeat with design review instructions (Mode C) — 0 code, behavioral
+1. **Phase 1:** Update May's heartbeat with design review checklist (Mode C) — zero code, behavioral
+2. **Phase 2:** Write the `gatekeeper` workflow guard (Mode A) — ~80 lines
+3. **Phase 3:** Build the proactive cron scan / session subscriber (Mode B) — ~60 lines + state file
 4. **Phase 4:** Add review metrics to DB (optional) — track what got reviewed, who approved, catch rate
->>>>>>> Stashed changes
 
 ## Open Questions
 

@@ -15,7 +15,7 @@
 
 - [ ] **QA heartbeat simplification (IT-21)** — QA interrupt rate is 67% and worsening (was 58% last cycle per coach reflection 2026-04-15-06). QA heartbeats time out at 5-8 ops. The heartbeat is likely doing too much work per cycle. **Fix**: Investigate QA heartbeat structure, identify bottleneck (likely: journal parsing, large unreviewed-findings.md at 152KB, or expensive queries), simplify to dispatcher pattern. **Deliverable**: Simplified `agents/qa/heartbeat.md` + evidence of reduced interrupt rate. **Size**: Medium. **Owner**: tech-lead or coach.
 
-- [ ] **KE-180/KE-182 production deployment — hard gate design rules** — KE-182 (Hard Gate Design Rules) synthesizes 8 experiments into actionable rules, and KE-180 (Completion Illusion) identifies a critical anti-pattern where analysis gates harm performance. Both are Active but NOT deployed to any production artifact. **Fix**: Distill the 3 key design rules from KE-182 into coach's growth-cycle.ts or a guard that checks experiment designs before gym runs (e.g., reject analysis-document gates, require product-quality metrics). **Deliverable**: Design rules injected into coach workflow or standing order. **Size**: Medium. **Owner**: coach.
+- [x] **KE-180/KE-182 production deployment — hard gate design rules** — ✅ DONE (2026-04-15, commit 62ece090). Deployed to production artifacts.
 
 - [x] **Common-sense rule #23 auto-commit bypass cleanup** — ✅ DONE (2026-04-15). All 4 layers complete: auto-commit interval 10min→2h, heartbeat Step 7 fixed, commit-guard.ts merged, health-check aligned.
 
