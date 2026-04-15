@@ -1,0 +1,11 @@
+{
+    "name": "exp165-full-gate",
+    "categories": ["debugging", "root-cause-analysis"],
+    "tags": ["behavioral", "discipline", "cascading-bugs", "EXP-165", "full-gate", "F1-plus-F2"],
+    "tier": "standard",
+    "timeout": 5,
+    "agent_type": "coder",
+    "workflow": true,
+    "baseline_scenario": "cascading-fix-trap-v2",
+    "description": "EXP-165 Arm A (full gate, F1+F2): Forced ROOT_CAUSE_ANALYSIS.md production in Phase 1, available in Phase 2 for reference. Tests combined information provision + behavioral forcing."
+}
