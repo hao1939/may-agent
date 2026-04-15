@@ -252,6 +252,34 @@ This means: in a world with SKILL0-style training access, the optimal artifact d
 ### Bayesian update: P(H) 0.72 → 0.88
 - Strong upward: direct empirical confirmation of both F1 and F2 independence
 - Held below 0.90 because: (a) ceiling effect prevents additivity assessment, (b) single scenario, (c) F2 confound with 2-phase workflow structure
-- **EXP-165** (non-ceiling replication on cascading-fix-trap-v2) pending — could push P(H) above 0.90
+- ~~**EXP-165** (non-ceiling replication on cascading-fix-trap-v2) pending — could push P(H) above 0.90~~ → **EXP-165 COMPLETE: pushed P(H) DOWN to 0.70. See below.**
 
 See KE-185 for the independent sufficiency finding. See EXP-164/results.md for full methodology and raw data.
+
+## EXP-165 Result (2026-04-15): F1 CONFIRMED, F2 REFUTED on Hard Scenario
+
+**EXP-165 dramatically modifies H-161.** Same 4-arm factorial design as EXP-164 but on cascading-fix-trap-v2 (hard architectural debugging scenario):
+
+| Arm | Design | Pass Rate | p vs baseline |
+|-----|--------|-----------|---------------|
+| A (F1+F2) | Full hard gate (self-generated analysis) | 0/16 (0%) | 1.0 (NS) |
+| B (F2-only) | Forced production, artifact deleted | 0/14 (0%) | 1.0 (NS) |
+| C (F1-only) | Pre-written expert ROOT_CAUSE_ANALYSIS.md | 15/15 (100%) | <0.0001 |
+| D (baseline) | No intervention | 0/16 (0%) | — |
+
+### Key findings:
+1. **F1 (information quality) is spectacularly effective**: Expert analysis → 100% pass rate, +100pp over baseline. The information channel works regardless of task difficulty.
+2. **F2 (behavioral forcing) provides ZERO benefit**: Forcing agents to analyze before fixing produces 0% — identical to baseline. Self-analysis fails to identify the root cause on architectural tasks with documentation traps.
+3. **Full-gate DESTROYS F1's benefit**: When agents generate their own (incorrect) analysis in Phase 1, they follow it in Phase 2 instead of discovering the correct fix. Self-generated analysis is WORSE than no analysis because it primes workaround paths.
+4. **Severe subadditivity**: F1 alone = 100%, F2 alone = 0%, F1+F2 combined = 0%. The combination is 100pp worse than F1 alone.
+
+### Bayesian update: P(H) 0.88 → 0.70
+- Strong downward: F2 "independence" refuted on hard tasks
+- F1 spectacularly confirmed (strengthens half of H-161)
+- The "dual independent functions" framing is wrong as stated — F2 is task-type-dependent
+- Held above 0.60 because: (a) F1 independence is robustly confirmed across 2 scenarios, (b) F2 does work on easy math-verifiable tasks (EXP-164), (c) the decomposition into F1/F2 remains theoretically useful even if F2 isn't universally independent
+
+### The critical insight: Information Quality > Process Forcing
+The experiment reveals that **what matters is the QUALITY of the information provided**, not the PROCESS of generating it. Expert pre-analysis (+100pp) dwarfs self-analysis (+0pp). When the agent's own analysis is unreliable (architectural tasks with documentation traps), forcing the analysis process provides no benefit — and combining it with correct information actually destroys the correct information's benefit.
+
+See KE-186 for the information quality finding. See EXP-165/results.md for full methodology and raw data.
