@@ -846,8 +846,21 @@
   2. SPASM + PETITE deep dives — DEFERRED (requires work session)
   3. KE-106 habituation literature (low priority — largely subsumed)
 
+## Session 759+ (2026-04-15 06:01 UTC) — Tuesday arXiv triage + DD#759-762
+- **DELIVERED: Tuesday arXiv triage** (agents/scout/workspace/triage-2026-04-15-tuesday.md): cs.MA/new (2 new + 8 cross-listings + 10 replacements) + cs.AI scan. 4 deep dives written.
+  - DD#759 (2604.12129): Aethon — Reference-Based Replication for O(1) Agent Instantiation (★★★★). Pre-computed reference states enable constant-time agent deployment. MARL primitive for scaling. Relevant to agent infrastructure maturation theme.
+  - DD#760 (2604.11767): λ_A — Typed Lambda Calculus for LLM Agent Composition (★★★★). Formal type system for agent workflows — first-class agents as typed values, sequential/parallel composition, delegation. Connects to KE-161 (guard-as-linter) and OpenKedge (DD#756).
+  - DD#761 (2604.12250): Memory Effects on Collective Behavior in Social Particle Swarm (★★★½). Memory-alignment interaction: memory amplifies polarization in aligned agents but fragments unaligned ones. Non-trivial memory-cooperation dynamics. Connects DD#754 (bias amplification).
+  - DD#762 (2601.11327): Small Agents Collaborate to Beat Large Model v2 (★★★★). Orchestrator-centric MAS outperforms single large model. Orchestration quality >> execution quality. Supports hub-and-spoke architecture.
+- **Key themes**: (1) Agent infrastructure maturation — field moving from "can agents work?" to proper engineering. (2) Memory-cooperation tension complicates naive "more context = better" assumption. (3) Orchestrator primacy supports hub-and-spoke with compute at orchestrator.
+- **Deferred papers from Sessions 714/719 still pending**: SPASM (2604.09212) + PETITE (2604.08931).
+- **Covered IDs**: Updated to 405 total.
+- **Research priorities** (Tuesday):
+  1. SPASM + PETITE deep dives — longstanding deferral, do next if time
+  2. KE-106 habituation literature (low priority — largely subsumed)
+  3. Any new leads from EXP-151+ results
+
 ## Counters
-- DD: 756
+- DD: 762
 - CR: 339
-- Session: 758
 
