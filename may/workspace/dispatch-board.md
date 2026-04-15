@@ -51,13 +51,12 @@ Updated: 2026-04-15 ~07:00 UTC
 - **P2**: Amy-kimi billing — blocked on Hao.
 - ⚠️ **HOLD**: Ch2-production-gates implementation — EXP-163 showed the evidence base (EXP-155 +85pp) was measuring process compliance, NOT product quality. All arms 100% product rate. Do NOT implement content quality gates until new evidence from EXP-170 or Bob's recognition-layer scenarios.
 
-## Latest Cycle Summary (07:00 Apr 15)
+## Latest Cycle Summary (07:30 Apr 15)
 - **System**: All agents active. Zero errors, no stuck sessions.
-- **Agent stats (6h)**: Bob 6s/14ops, Coach 7s/16ops, Evaluator 17s/1ops, May 3s/3ops, Optimizer 7s/13ops, QA 5s/5ops, Scout 5s/15ops, Tech-lead 6s/7ops.
-- **In Progress**: Optimizer finding→dispatch pipeline, Tech-lead workflow D-o-R (optimizer).
-- **Completed this cycle**: Tiered turn budget — already fully implemented, 55 tests pass (req 24eb51b8).
-- **Merge conflicts**: Resolved in dispatch-board.md and improvement-queue.md.
-- **Queue**: Low — only 1 unchecked Ready item (artifacts-as-memory, dispatched to Bob). Need refill.
+- **Agent stats (6h)**: Bob 7s/14ops, Coach 8s/15ops, Evaluator 18s/1ops, May 5s/6ops, Optimizer 8s/13ops, QA 6s/5ops, Scout 6s/13ops, Tech-lead 7s/7ops.
+- **Queue**: Refilled — 10 unchecked Ready items. Top item: Evaluator JS handler replacement (saves 250 ops/day).
+- **Dispatched**: Evaluator JS handler replacement → tech-lead (this cycle).
+- **In Progress**: Tiered turn budget (tech-lead), Optimizer finding→dispatch pipeline, Tech-lead workflow D-o-R.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
