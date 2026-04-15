@@ -240,7 +240,8 @@ function buildReviewPrompt(
   workerSummary: string,
   recentProgress: string,
 ): string {
-  let prompt = `You are reviewing iteration ${iteration} of a persistent task.\n\n`;
+  let prompt = `[REVIEW ONLY — no file edits expected. You are assessing worker output, not writing code.]\n\n`;
+  prompt += `You are reviewing iteration ${iteration} of a persistent task.\n\n`;
   prompt += `## Goal\n${goal}\n\n`;
 
   if (recentProgress) {
@@ -311,10 +312,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     const updatedMatch = content.match(/^\*\*Updated\*\*:\s*(.+)$/m);
     if (updatedMatch) {
       const lastUpdated = new Date(updatedMatch[1].trim()).getTime();
-      if (Date.now() - lastUpdated < 10 * 60_000) {
+      if (Date.now() - lastUpdated < 30 * 60_000) {
         return ctx.escalate(
           `Project appears to be actively running (updated ${updatedMatch[1].trim()}). ` +
-          `Wait 10 minutes or manually set Status to paused.`
+          `Wait 30 minutes or manually set Status to paused.`
         );
       }
     }
@@ -383,18 +384,25 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
       // Persist worker output BEFORE review (crash safety §4.5)
       const workerSummary = ctx.summarize(workerResult, { maxLength: 3000 });
-      const workerText = workerResult.lastAssistantText ?? "(no output)";
-      const truncatedResult = workerText.length > 500 ? workerText.slice(0, 500) + "..." : workerText;
+      const truncatedResult = ctx.summarize(workerResult, { maxLength: 1500 });
+
+      // Extract file paths from worker result
+      const workerText = workerResult.lastAssistantText ?? "";
+      const fileMatches = workerText.match(/(?:^|\s)((?:[\w./-]+\/)*[\w.-]+\.\w{1,10})(?=[\s,;:)]|$)/gm);
+      const filesTouched = fileMatches
+        ? [...new Set(fileMatches.map((f: string) => f.trim()))].slice(0, 20).join(", ")
+        : "(see worker session)";
 
       content = appendIterationWorker(
         content,
         iteration,
         `Iteration ${iteration} — work toward goal`,
         truncatedResult,
-        "(see worker session)",
+        filesTouched,
       );
       content = updateField(content, "Updated", new Date().toISOString());
       content = updateField(content, "Iteration", String(iteration));
+      content = updateCurrentState(content, `Iteration ${iteration} complete. ${truncatedResult.slice(0, 200)}`);
       writeProjectFile(config.projectPath, content);
     }
     skipWorkerPhase = false; // only skip once (crash recovery)
