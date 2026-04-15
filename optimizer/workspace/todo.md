@@ -2,12 +2,10 @@
 
 ## 🟢 FOCUS AREAS (from Hao — these define your mission)
 
-**Priority: Productive output over cost.** Don't just cut waste — find ways to make agents produce MORE creative, high-quality work per session.
-
-1. **Creative Productivity** — How do we get more novel ideas, better designs, deeper research per session? Measure output quality, not just op counts.
-2. **Proven Patterns → Workflows / Tools / Skills** — Turn reliable patterns into permanent workflows, tools, or skills that amplify creative output.
-3. **Output Amplification** — Find what makes sessions productive (not just efficient). Which patterns lead to breakthroughs? Which lead to busywork?
-4. **Smart Resource Use** — Spend more on high-value creative work, less on routine. Not "spend less" but "spend better."
+1. **Proven Patterns → Workflows / Tools / Skills** — Turn reliable patterns into permanent workflows, tools, or skills.
+2. **Performance & Efficiency Investigation** — Find what's slow or wasteful: costly sessions, redundant reads, unnecessary round-trips.
+3. **Tool Efficiency — Right Tools, Fewer Tools** — Remove unused tools, fix misuse patterns, reduce tool count per agent.
+4. **Waste Elimination** — Kill idle heartbeats, redundant reads, failed tool calls, work that belongs in JS handlers.
 
 **When other agents send you tasks that don't fit these areas → push back or ignore.**
 
@@ -38,7 +36,7 @@
 - Root cause: heartbeat.md encouraged inline exploration (multi-query DB analysis, file reads).
 - Fix: Rewrote heartbeat.md to "Dispatcher Mode" — observe in 1-2 ops, fork all analysis work. Target: ≤15 ops.
 - Baseline: 8 heartbeats in 12h, avg 56 ops, total 451. Post-fix: avg 23 ops (59% reduction). ✅ SUCCESS.
-- Last exploration mode: **P1** (Heartbeat Efficiency & Cost Analysis for May/Hao — Apr 15 ~17:00 UTC). Next rotation: **C**. Previous: B (Tool Gap 24h Bash Pattern Scan — Apr 15 ~16:30 UTC), A (Tech-Lead 100+ Op Heartbeat Regression — Apr 15 ~14:30 UTC), D (Workflow Health — Tech-Lead 100-op & System Efficiency — Apr 15 ~14:00 UTC), A (QA 58% Interrupt Rate — Apr 14), D (Workflow Health — Apr 13), C (Technique Scouting — Apr 13), A (System Health Check — Apr 13), D (D-o-R Budget Cap — Apr 12), C (Skills Audit — Apr 12), B (codeSearch — Apr 12), A (Tech-lead 6h — Apr 12), D (Workflow Health — Apr 12).
+- Last exploration mode: **B** (Tool Gap 24h Bash Pattern Scan — Apr 15 ~16:30 UTC). Next rotation: **C**. Previous: A (Tech-Lead 100+ Op Heartbeat Regression — Apr 15 ~14:30 UTC), D (Workflow Health — Tech-Lead 100-op & System Efficiency — Apr 15 ~14:00 UTC), A (QA 58% Interrupt Rate — Apr 14), D (Workflow Health — Apr 13), C (Technique Scouting — Apr 13), A (System Health Check — Apr 13), D (D-o-R Budget Cap — Apr 12), C (Skills Audit — Apr 12), B (codeSearch — Apr 12), A (Tech-lead 6h — Apr 12), D (Workflow Health — Apr 12).
 - **Latest measurement (Apr 13 05:22 UTC)**: All 6 optimizations holding. Daily ops 5,894 (26% reduction from 8,016). New target: tech-lead work sessions (34/day, 983 ops, ~$46/day). Finding: `workspace/finding-system-health-check-0413.md`
 - **session-query tool BUILT** (`scripts/session-query.ts`). Replaces 15-25 bash archaeology pattern with single command. Supports: --agent, --since, --task, --status, --min-ops, --tools, --json, --sort. Tested with real data (911 sessions). Est. savings: 10-15 ops/session × 187 sessions = 1,870-2,805 ops.
 - **code-search tool BUILT** (`scripts/code-search.ts`). Replaces 3-16 consecutive grep/rg chains with single structured call. Supports: --context, --scope, --type/--glob, --files-only, --stats, --json, --max, --fixed. Uses rg (fallback: grep). Auto-excludes node_modules. Tested with 7 real queries. Est. savings: 120-180 ops/day (~$6-9/day), 93% of sessions affected. Finding: `workspace/finding-codesearch-tool-scoping-0412.md`
@@ -124,9 +122,3 @@
 - **codeSearch Tool** — BUILT `scripts/code-search.ts`. Collapses 3-16 grep chains into single call. Tested with 7 real query patterns. Supports regex/fixed, context lines, stats, JSON output, glob/type filters, auto-excludes. Est. 120-180 ops/day savings across 93% of sessions. Finding: `workspace/finding-codesearch-tool-scoping-0412.md` (2026-04-12)
 
 48+ items Mar 17 – Apr 10. Detailed logs: `workspace/todo-archive-20260410.md`
-
-### Heartbeat Productivity (owner: optimizer) — NEW
-- 3 tracking metrics in may.db: `efficiency.heartbeat-lines`, `efficiency.heartbeat-inline-queries`, `efficiency.heartbeat-ops`
-- **Goal**: Heartbeats should maximize creative/strategic output, not just minimize cost
-- Auto-measured by metrics-snapshot handler
-- **Action**: Track what heartbeats PRODUCE (dispatches, ideas, decisions) vs busywork (queries, status checks). Propose ways to increase creative output per heartbeat.

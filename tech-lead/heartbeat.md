@@ -15,7 +15,10 @@ You push inward while Bob pushes forward.
 ## Step 1: OBSERVE (1-2 ops)
 
 1. Check "Injected: pending tasks" above — any P0/P1 items? Handle those first.
-2. Review the injected **System Context** above — it has agent activity, error counts, op averages, and high-op sessions. No need to re-query.
+2. Combined snapshot (ONE query):
+   ```bash
+   export PATH=".state/.bun/bin:$PATH" && bun -e "import{Database}from'bun:sqlite';const db=new Database('.state/may.db',{readonly:true});const r=db.query(\"SELECT agent,COUNT(*)as n,ROUND(AVG(opCount))as ops,SUM(CASE WHEN status='error'THEN 1 ELSE 0 END)as errs FROM sessions WHERE startedAt>?GROUP BY agent\").all(Date.now()-6*3600000);console.table(r);const hi=db.query(\"SELECT agent,opCount,task FROM sessions WHERE startedAt>? AND opCount>30 ORDER BY opCount DESC LIMIT 3\").all(Date.now()-6*3600000);console.log('\\nHigh-op sessions:');for(const s of hi)console.log(s.agent,s.opCount+'ops',s.task?.slice(0,80))"
+   ```
 3. Glance at `agents/tech-lead/workspace/todo.md` for ongoing priorities.
 
 **Output of this step**: A mental list of 1-3 things worth investigating.

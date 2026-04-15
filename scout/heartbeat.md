@@ -194,7 +194,10 @@ Constraints:
 ## Step 4: RECORD & EXIT
 
 1. Update `workspace/todo.md` with what you dispatched (new session summaries, pending leads)
-2. **Log research output to research_log** — use the injected System Context for read queries. For writes, use `bun -e` with `bun:sqlite` (not `better-sqlite3` or `node -e`).
+2. **Log research output to research_log** — for every deep dive, cross-reference, hypothesis, or knowledge entry produced this session:
+   ```bash
+   node -e "require('better-sqlite3')('.state/may.db').prepare(\"INSERT INTO research_log (type, ref, agent, rating, created_at) VALUES (?, ?, 'scout', ?, ?)\").run('deep-dive', 'DD#NNN', null, Date.now())"
+   ```
    Types: `deep-dive` (DD + CR), `hypothesis`, `triage`, `knowledge-entry`. Include rating 1-5 if you can self-assess quality.
 3. Call `finish()` with:
    - What you observed

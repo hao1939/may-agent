@@ -20,7 +20,10 @@ Read your context and identify what needs doing:
    ```bash
    ls -lt agents/shared/knowledge/experiments/ | head -8
    ```
-3. Error patterns are in the injected **System Context** above — no need to re-query.
+3. Check for new error patterns (quick grep, not full analysis):
+   ```bash
+   export PATH=".state/.bun/bin:$PATH" && bun -e "import{Database}from'bun:sqlite';const db=new Database('.state/may.db',{readonly:true});const r=db.query(\"SELECT agent,COUNT(*)as n,SUM(CASE WHEN status='error'THEN 1 ELSE 0 END)as errs FROM sessions WHERE startedAt>?GROUP BY agent\").all(Date.now()-6*3600000);console.table(r)"
+   ```
 4. Read `agents/coach/workspace/todo.md` for ongoing priorities.
 
 **Output of this step**: A mental list of 1-3 candidate tasks.
