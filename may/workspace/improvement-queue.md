@@ -5,9 +5,9 @@
 
 - [x] **Increase JS evaluation coverage to ≥30% for all agents** — ✅ DONE (s_1776288668585_124, 75 ops). Implemented `evaluateStandaloneSession()` in evaluator.ts (121 lines) + updated evaluator-heartbeat.ts handler. Branch: `review/standalone-eval-coverage`. Needs code review merge.
 
-- [ ] **Investigate workflow session error rates for Bob and Coach** — ⏳ DISPATCHED to tech-lead (s_1776290567108_147).
+- [x] **Investigate workflow session error rates for Bob and Coach** — ✅ DONE (s_1776290567108_147, 18 ops). Deliverable at `agents/may/workspace/audits/wf-error-rate-analysis.md`.
 
-- [ ] **Coder utilization push — structured task pipeline** — Coder running 20 sessions/24h at 19.6 avg ops, 0 errors, 74% JS-evaluated with 0.63 quality. Volume is up but quality is mediocre. Bob's gym baselines show coder struggles on misleading-test-fix (0%, N=28), wrong-fix-recovery (11%, N=9), read-before-edit (12%, N=25). Need structured task dispatch with clearer completion criteria. Owner: may (pipeline design) → tech-lead (dispatch). Deliverable: 3+ concrete coder tasks queued from current backlog with explicit success criteria.
+- [x] **Coder utilization push — structured task pipeline** — ⏳ IN PROGRESS, dispatched to tech-lead (s_1776292339351_164). Deliverable: `agents/may/workspace/audits/coder-task-pipeline.md`.
 
 - [ ] **May ops diet — reduce heartbeat bloat below 12 avg** — May averaging 14.4 ops/session (24h), with 8 sessions >25 ops. Target is ≤12. Top bloat sources: heartbeat steps that read too many files, multi-step commit sequences, improvement-queue management inline. Audit the top 5 highest-op heartbeat sessions, identify which steps can be cut or deferred to forked sessions. Owner: may. Deliverable: Heartbeat.md edits that remove unnecessary inline work + before/after avg ops comparison.
 

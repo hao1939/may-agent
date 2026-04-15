@@ -1,15 +1,11 @@
 {
-  "name": "sql-injection-in-query-builder-f1f2",
-  "description": "EXP-166 Arm D (F1→F2, content-then-produce): Expert ANALYSIS.md provided, agent must read it then write own PLAN.md in Phase 1. Phase 2: both files available, fix bugs. Tests whether anchoring to expert analysis before self-production preserves F1 benefit.",
-  "agent": "coder",
-  "categories": ["bug-fixing", "judgment"],
-  "tags": ["recognition", "sql-injection", "security", "null-handling", "EXP-166", "F1-then-F2", "content-then-produce"],
-  "tier": "standard",
-  "environment": {
-    "files": ["src/product-search.js", "src/db.js", "test/product-search.test.js", "ANALYSIS.md"],
-    "setup": "npm init -y 2>/dev/null"
-  },
-  "success_criteria": "success_criteria.js",
-  "time_limit_seconds": 120,
-  "baseline_scenario": "sql-injection-in-query-builder"
+    "name": "sql-injection-in-query-builder-f1f2",
+    "categories": ["bug-fixing", "judgment"],
+    "tags": ["recognition", "sql-injection", "security", "EXP-166", "F1-F2", "content-then-produce"],
+    "tier": "standard",
+    "timeout": 5,
+    "agent_type": "coder",
+    "workflow": true,
+    "baseline_scenario": "sql-injection-in-query-builder",
+    "description": "EXP-166 Arm D (F1→F2, content-then-produce): Expert ANALYSIS.md provided, agent reads it then writes own PLAN.md in Phase 1. Phase 2: both files available, fix bugs. Tests anchoring hypothesis."
 }
