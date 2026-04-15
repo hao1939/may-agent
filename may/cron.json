@@ -48,6 +48,16 @@
     "description": "Operational status check every 4h (JS handler)"
   },
   {
+    "name": "proof-of-life",
+    "type": "job",
+    "intervalMs": 7200000,
+    "message": "[cron:proof-of-life] Send periodic activity digest to Telegram.",
+    "enabled": true,
+    "handler": "proof-of-life",
+    "description": "2h periodic proof-of-life digest — sends compact system summary to Telegram. JS handler, no LLM cost.",
+    "offsetMs": 600000
+  },
+  {
     "name": "daily-brief",
     "type": "job",
     "intervalMs": 86400000,
