@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-15 ~19:30 UTC
+Updated: 2026-04-15 ~20:00 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — billing. Blocked on Hao.
@@ -28,8 +28,9 @@ Updated: 2026-04-15 ~19:30 UTC
 | Amy-kimi billing outage | 🔴 Blocked | Hao | Still down, needs balance refill |
 | **Metric System Phase 3 — Adoption** | ⏳ Active | multiple | Phase 3 dispatched: research_log adoption (bob+scout), quality investigation (coach), threshold fix (tech-lead ✅ DONE). |
 | **Model Diversity Review** | ⏳ Active | bob | Design review: which agent on which model? (req:c56a6ae4) |
-| **Fix compose-guards.ts (RETRY)** | ✅ DONE | tech-lead | Branch `review/s_1776279623142_43`: finish(blocked/failure) bypasses guards, finish(success) blocked (quality gate). Ready to merge. |
+| **Fix compose-guards.ts (RETRY)** | ✅ DONE+MERGED | tech-lead | Merged to main (2705e8ce). finish(blocked/failure) bypasses guards, finish(success) blocked by quality gate. |
 | **Gatekeeper Review Gate design** | 📋 Review | bob+tech-lead | Design at `agents/shared/may-agent-docs/design/review-gate.md`. Bob reviewed. Tech-lead answered open Qs (pure fn confirmed, review quality addressed). Awaiting Hao approval. |
+| **Heartbeat commit instruction fix** | ✅ DONE | may | Fixed Step 7 of heartbeat.md — was telling me NOT to commit (stale 10min auto-commit reference). Now says commit first, auto-commit is 2h safety net. |
 | ⚠️ **Hao task truncated** | ❓ Need info | Hao | req:7a936dcb was truncated at 500 chars. Only issue #1 (threshold inversion) visible+dispatched. May have more issues. |
 
 ## Completed This Cycle
@@ -49,17 +50,18 @@ Updated: 2026-04-15 ~19:30 UTC
 | **Wire gym-batch.sh** | ✅ Done | tech-lead | Closed (req:a3787a7c). |
 
 ## Next Actions
-- **P0**: **Merge compose-guards.ts fix** — Branch `review/s_1776279623142_43` verified correct. Needs merge to main (system-scope change, but straightforward — verified diff is clean).
+- **P0**: ~~Merge compose-guards.ts fix~~ — ✅ DONE (2705e8ce on main).
 - **P1**: **Gatekeeper Review Gate** — Design complete, Bob+tech-lead reviewed. Needs Hao approval → then dispatch to tech-lead for implementation.
 - **P1**: **QA heartbeat simplification (IT-21)** — Tech-lead found root cause is system-wide abort, not QA heartbeat. May have self-resolved. Monitor.
-- **P1**: **Common-sense #23 auto-commit bypass** — 50% bypass rate. Ready to dispatch to tech-lead.
+- **P1**: **Common-sense #23 auto-commit bypass** — Heartbeat.md fixed (step 7). Broader enforcement (guard that rejects finish() with uncommitted changes) still needs tech-lead work.
 - **P2**: Amy-kimi billing — blocked on Hao.
 - ⚠️ **HOLD**: Ch2-production-gates implementation — Hold for EXP-170.
 
-## Latest Cycle Summary (19:30 Apr 15)
-- **COMPLETED**: compose-guards.ts fix verified on branch (finish(blocked/failure) bypass, finish(success) quality gate). KE-180/KE-182 deployed to coach production (e59189f6).
-- **RECEIVED**: Tech-lead answered gatekeeper review gate open questions — getChangedFiles is pure (no disk I/O), review quality addressed.
-- **STEADY**: 9/9 agents active. Zero errors. 4 borderline-long sessions (37-42m) but all progressing (>10 ops each).
+## Latest Cycle Summary (20:00 Apr 15)
+- **FIXED**: Heartbeat.md Step 7 — removed stale "do NOT commit" instruction, replaced with "commit first" per C13 convention. Auto-commit is 2h safety net, not substitute.
+- **CANCELLED**: Bob stuck session (s_1776279045013_37, >70min, 12 ops). Will restart on next heartbeat.
+- **VERIFIED**: compose-guards.ts already merged to main (2705e8ce). KE-180/KE-182 already deployed (62ece090).
+- **STEADY**: 9/9 agents active. Zero errors. Evaluator avg 0 ops = correct (JS handler, no LLM).
 - **WAITING**: Gatekeeper Review Gate needs Hao approval. Hao task truncation (req:7a936dcb) still unresolved.
 
 ## Archive Reference
