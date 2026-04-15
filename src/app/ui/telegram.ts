@@ -230,13 +230,14 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       if (!watchedSessions.has(event.sessionId)) return;
     }
 
-    // Accumulate text from the chat session tree
-    if (event.type === "text" && "sessionId" in event) {
+    // ── Root chat session: accumulate text & flush on turn_end ──
+    // Only stream text from the root chat session (May's direct conversation).
+    // Child sessions (delegated coder, tech-lead, etc.) get ONE summary instead.
+    if (event.type === "text" && "sessionId" in event && event.sessionId === chatSid) {
       pendingText += event.text;
     }
 
-    // When a turn ends in the chat session tree, flush
-    if (event.type === "turn_end" && "sessionId" in event) {
+    if (event.type === "turn_end" && "sessionId" in event && event.sessionId === chatSid) {
       const hadText = pendingText.trim().length > 0;
       flushPendingText();
 
@@ -247,8 +248,24 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       }
     }
 
-    // When a watched session ends with an error, notify user
-    if (event.type === "session_end" && "sessionId" in event && event.error && pendingChatId) {
+    // ── Child session completion: send ONE summary ──
+    // When a child session in the watched tree ends, send a single
+    // summary message instead of streaming all its individual turns.
+    if (event.type === "session_end" && "sessionId" in event && event.sessionId !== chatSid) {
+      if (pendingChatId) {
+        const fp = event.finishParams as Record<string, unknown> | undefined;
+        const summary = (fp?.summary as string) ?? event.outcome?.slice(0, 200) ?? "completed";
+        const fpStatus = (fp?.status as string) ?? event.status;
+        if (fpStatus === "failure" || fpStatus === "blocked") {
+          sendMessage(pendingChatId, `❌ ${event.agent} BLOCKED: ${summary}`).catch(() => {});
+        } else {
+          sendMessage(pendingChatId, `✅ ${event.agent}: ${summary}`).catch(() => {});
+        }
+      }
+    }
+
+    // When the root chat session ends with an error, notify user
+    if (event.type === "session_end" && "sessionId" in event && event.sessionId === chatSid && event.error && pendingChatId) {
       const errMsg = event.error.length > 200 ? event.error.slice(0, 200) + "…" : event.error;
       sendMessage(pendingChatId, `❌ Session ended (${event.agent}): ${errMsg}`).catch(() => {});
     }
