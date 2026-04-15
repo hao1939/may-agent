@@ -44,6 +44,7 @@ Updated: 2026-04-15 ~08:30 UTC
 
 ## Next Actions
 - **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. **Blocked on Hao since Mar 24**.
+- **P0**: **Research Conclusion Sprint** — Bob should write formal conclusions for 6 mature threads (H-098, H-099, H-085, H-095, H-091, H-093). See `agents/may/workspace/research-lifecycle-audit.md`. NO thread currently has a Step 5 conclusion. Estimated 1-2 sessions.
 - **P1**: ~~Guards Phase 2 integration test~~ ✅ COMPLETE.
 - **P1**: ~~Guards Phase 3 planning~~ ✅ COMPLETE — sensor-judge migration done. 2 of 4 handlers migrated (error-scan, coaching-feedback). Remaining 2 not candidates.
 - **P1**: **IT-21: QA interrupt rate (58%)** — Coach flagged. QA heartbeats timing out at 5-8 ops. Need to investigate/simplify QA heartbeat.
