@@ -67,8 +67,6 @@ export interface SubagentDefinition {
    */
   opBudget?: number;
 
-  /** @deprecated Turn budget enforcement removed. Field kept for type compat. */
-  turnBudget?: number | Record<string, number>;
 }
 
 /** Runtime info about a session. */

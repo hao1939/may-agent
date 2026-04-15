@@ -225,8 +225,6 @@ export interface ActiveSession {
   finishResult?: import("./types.js").FinishResult;
   /** Number of consecutive turns where every tool call errored (Stuck Detection). */
   consecutiveErrorTurns: number;
-  /** Maximum number of turns before the session is gracefully terminated. 0 = unlimited. */
-  maxTurns: number;
   /** Whether a stuck warning has been injected (avoids duplicate warnings). */
   stuckWarningInjected: boolean;
   /** Tool errors in the current turn (reset each assistant message). */
@@ -263,8 +261,6 @@ export interface RunOptions {
   kind?: SessionKind;
   /** @deprecated opBudget removed — always 0 (unlimited). Field kept for type compat. */
   opBudget?: number;
-  /** Maximum number of turns (assistant messages) before the session is gracefully terminated. */
-  maxTurns?: number;
   /** Order ID linking this session to a persisted human order (P209). */
   orderId?: string;
   /** Request ID linking this session to the unified request tracker. */

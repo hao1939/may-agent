@@ -815,7 +815,6 @@ bus.subscribe((event) => {
           const sessionId = manager.run(event.agent, event.task, {
             kind: (event.opts?.kind as "chat" | "job" | "call" | undefined) ?? "job",
             requestId: event.opts?.requestId ?? requestId,
-            maxTurns: event.opts?.maxTurns,
           });
           bus.emit({ type: "log", level: "info", message: `[fork] Started ${event.agent} session: ${sessionId}` });
         }

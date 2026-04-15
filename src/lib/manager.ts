@@ -977,7 +977,6 @@ export class SubagentManager {
       orderId: opts?.orderId,
       requestId: opts?.requestId,
       consecutiveErrorTurns: 0,
-      maxTurns: opts?.maxTurns ?? 0,
       stuckWarningInjected: false,
       currentTurnErrors: 0,
       currentTurnSuccesses: 0,
@@ -1012,7 +1011,6 @@ export class SubagentManager {
       kind: session.kind,
       autoClose: session.autoClose,
       orderId: session.orderId,
-      maxTurns: session.maxTurns || undefined,
     });
 
     // Set up timeout if configured
@@ -1412,7 +1410,6 @@ export class SubagentManager {
       filesModified: new Set(),
       orderId: persisted.orderId,
       consecutiveErrorTurns: 0,
-      maxTurns: persisted.maxTurns ?? RESTORED_MAX_TURNS_FALLBACK,
       stuckWarningInjected: false,
       currentTurnErrors: 0,
       currentTurnSuccesses: 0,
