@@ -767,6 +767,127 @@ export async function evaluateTask(opts: EvaluateTaskOptions): Promise<TaskEvalu
   return result;
 }
 
+// ── Standalone session evaluation (top-level sessions) ─────────────────
+
+export interface EvaluateStandaloneOptions {
+  manager: SubagentManager;
+  persistDir: string;
+  /** Session ID to evaluate. */
+  sessionId: string;
+  /** Agent name. */
+  agent: string;
+  /** Task description (from meta or sessions table). */
+  task: string;
+  /** Session status. */
+  status: string;
+  /** Pre-loaded messages. If not provided, reads from disk. */
+  messages?: AgentMessage[];
+}
+
+/**
+ * LLM-evaluate a single top-level session (no parent required).
+ *
+ * This fills the gap where evaluateTask() only handles child sessions.
+ * Top-level heartbeat sessions (coach, qa, scout, etc.) are evaluated here.
+ *
+ * Returns the parsed scores or null on failure.
+ */
+export async function evaluateStandaloneSession(
+  opts: EvaluateStandaloneOptions,
+): Promise<{ quality: number; efficiency: number; verdict: string; issues: string[] } | null> {
+  const { manager, persistDir, sessionId, agent, task, status } = opts;
+
+  // Skip if already LLM-evaluated
+  if (hasLLMEvaluation(persistDir, sessionId)) return null;
+
+  // Load messages if not provided
+  let messages = opts.messages;
+  if (!messages || messages.length === 0) {
+    messages = readSessionMessages(persistDir, sessionId);
+    if (messages.length === 0) {
+      messages = readArchivedSessionMessages(persistDir, sessionId);
+    }
+  }
+  if (messages.length === 0) return null;
+
+  // Build transcript (capped at 10KB like evaluateTask)
+  let transcript = formatTranscript(messages);
+  const MAX_TRANSCRIPT_CHARS = 10_000;
+  if (transcript.length > MAX_TRANSCRIPT_CHARS) {
+    const headSize = 3_000;
+    const tailSize = 7_000;
+    transcript =
+      transcript.slice(0, headSize) +
+      `\n\n[... ${((transcript.length - headSize - tailSize) / 1024).toFixed(0)}KB truncated ...]\n\n` +
+      transcript.slice(-tailSize);
+  }
+
+  const usage = extractUsage(messages);
+  const chains = extractFailureChains(messages);
+  const chainsSection = formatFailureChains(chains);
+
+  const agentTranscript = [
+    `\n# Agent: ${agent} (session ${sessionId})`,
+    `## Task: ${task || "heartbeat"}`,
+    `## Status: ${status}`,
+    `## Usage: $${usage.cost.toFixed(3)}, ${usage.turns} turns`,
+    chainsSection ? `\n${chainsSection}` : "",
+    `\n## Transcript\n${transcript}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const prompt = buildEvalPrompt(
+    [{ agent, sessionId }],
+    [agentTranscript],
+    usage,
+  );
+
+  // Run evaluator
+  const evalSessionId = manager.run("evaluator", prompt);
+  const evalResult = await manager.waitFor(evalSessionId);
+  const responseText = evalResult?.lastAssistantText ?? "";
+  const parsed = parseTaskEvaluation(responseText);
+
+  // Extract scores for this agent
+  const sessionLabel = `${agent} (session ${sessionId})`;
+  const agentScores = parsed.agents[sessionLabel] ?? parsed.agents[agent];
+
+  if (!agentScores) return null;
+
+  const createdAt = extractTimestamp(sessionId);
+
+  // Save evaluation (overwrites any heuristic evaluation via INSERT OR REPLACE)
+  upsertEvaluation(persistDir, {
+    sessionId,
+    agent,
+    quality: agentScores.quality,
+    efficiency: agentScores.efficiency,
+    productiveCalls: agentScores.productive_calls,
+    wastedCalls: agentScores.wasted_calls,
+    verdict: agentScores.verdict,
+    issues: agentScores.issues,
+    overall: {
+      quality: parsed.overall.quality,
+      efficiency: parsed.overall.efficiency,
+      verdict: parsed.overall.verdict,
+      result_delivered: parsed.overall.result_delivered,
+    },
+    usage: usage as unknown as Record<string, unknown>,
+    failureChains: chains,
+    evaluatedByHeuristic: false,
+    skippedByJs: false,
+    createdAt,
+  });
+
+  return {
+    quality: agentScores.quality,
+    efficiency: agentScores.efficiency,
+    verdict: agentScores.verdict,
+    issues: agentScores.issues,
+  };
+}
+
 export interface AgentScoreSummary {
   avgEfficiency: number;
   avgQuality: number;
