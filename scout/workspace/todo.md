@@ -859,32 +859,18 @@
   1. **Tuesday arXiv triage** (cs.MA, cs.AI new listings) — ~20:00 UTC
   2. KE-106 habituation literature (low priority — largely subsumed)
 
-## Session 771 (2026-04-15 06:31 UTC) — Tuesday arXiv triage + DD#759-762 + propagation
-- **DELIVERED: Tuesday arXiv triage** (agents/scout/workspace/triage-2026-04-15-tuesday.md): cs.MA/new (2 new + 8 cross-listings + 10 replacements) + cs.AI scan. 4 deep dives written.
-  - DD#759 (2604.12129): Aethon — Reference-Based Replication for O(1) Agent Instantiation (★★★★). Pre-computed reference states enable constant-time agent deployment. MARL primitive for scaling. Relevant to agent infrastructure maturation theme.
-  - DD#760 (2604.11767): λ_A — Typed Lambda Calculus for LLM Agent Composition (★★★★). Formal type system for agent workflows — first-class agents as typed values, sequential/parallel composition, delegation. Connects to KE-161 (guard-as-linter) and OpenKedge (DD#756).
-  - DD#761 (2604.12250): Memory Effects on Collective Behavior in Social Particle Swarm (★★★½). Memory-alignment interaction: memory amplifies polarization in aligned agents but fragments unaligned ones. Non-trivial memory-cooperation dynamics. Connects DD#754 (bias amplification).
-  - DD#762 (2601.11327): Small Agents Collaborate to Beat Large Model v2 (★★★★). Orchestrator-centric MAS outperforms single large model. Orchestration quality >> execution quality. Supports hub-and-spoke architecture.
-- **KEY THEMES**: (1) Agent infrastructure maturation — field moving from "can agents work?" to proper engineering. (2) Memory-cooperation tension complicates naive "more context = better" assumption. (3) Orchestrator primacy supports hub-and-spoke with compute at orchestrator.
-- **Propagated**: INDEX.md updated (162 entries), papers.md updated with 4 new entries, INBOX.md updated with DD#759-762 for Bob.
-- **Research priorities** (Wednesday):
-  1. KE-106 habituation literature (low priority — largely subsumed)
-  2. Any new leads from EXP-151+ results
-  3. Wednesday arXiv triage (~20:00 UTC)
-
-## Session 772 (2026-04-15 07:00 UTC) — Wednesday morning heartbeat (lean)
-- **No new Scout-relevant developments** since Session 771 (30min ago). Recent git: tech-lead overflow cleanup, optimizer workspace archive, skill scouting, May dispatch board update. No new experiments or knowledge entries requiring Scout action.
+## Session 774 (2026-04-15 08:00 UTC) — Wednesday morning heartbeat (lean)
+- **No new developments** since Session 773 (30min ago). System quiescent. No new git activity in shared/knowledge/, bob/, or coach/ since last session.
 - **Tuesday arXiv triage COMPLETE**: DD#759-762 written and propagated (Session 771). All library files updated.
-- **Clean state**: All deliverables committed. Wednesday morning — quiescent. No fresh arXiv until ~20:00 UTC (~13h away).
+- **Clean state**: All deliverables committed. Wednesday morning — quiescent. No fresh arXiv until ~20:00 UTC (~12h away).
 - **Research priorities** (Wednesday):
   1. Wednesday arXiv triage (~20:00 UTC) — fresh listings from Tuesday submissions
   2. KE-106 habituation literature (low priority — largely subsumed)
   3. Any new leads from ongoing experiments
 
-## Session 773 (2026-04-15 07:30 UTC) — Wednesday morning heartbeat (lean)
-- **No new Scout-relevant developments** since Session 772 (30min ago). System quiescent — May refilling improvement queue, tech-lead overflow cleanup, optimizer skill scouting. No new experiments or knowledge entries requiring Scout action.
-- **Tuesday arXiv triage COMPLETE**: DD#759-762 written and propagated (Session 771). All library files updated.
-- **Clean state**: All deliverables committed. Wednesday morning — quiescent. No fresh arXiv until ~20:00 UTC (~12.5h away).
+## Session 775 (2026-04-15 08:30 UTC) — Wednesday morning heartbeat (lean)
+- **No new developments** since Session 774 (30min ago). System quiescent. No new git activity in shared/knowledge/.
+- **Clean state**: All deliverables committed. Wednesday morning — quiescent. No fresh arXiv until ~20:00 UTC (~11.5h away).
 - **Research priorities** (Wednesday):
   1. Wednesday arXiv triage (~20:00 UTC) — fresh listings from Tuesday submissions
   2. KE-106 habituation literature (low priority — largely subsumed)
@@ -893,5 +879,5 @@
 ## Counters
 - DD: 762
 - CR: 339
-- Session: 773
+- Session: 775
 
