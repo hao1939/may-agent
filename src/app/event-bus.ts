@@ -10,6 +10,8 @@
  * See: agents/shared/may-agent-docs/design/architecture-redesign.md
  */
 
+import { log } from "../lib/log.js";
+
 // ── Event Types ────────────────────────────────────────────────────────
 
 /** Agent commands (to core) */
@@ -132,8 +134,9 @@ export class EventBus {
     for (const fn of this.subscribers) {
       try {
         fn(event);
-      } catch {
+      } catch (err) {
         /* subscriber errors never break the bus */
+        log("warn", `[event-bus] subscriber threw on event '${event.type}': ${err}`);
       }
     }
   }
