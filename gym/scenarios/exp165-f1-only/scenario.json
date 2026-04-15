@@ -1,0 +1,11 @@
+{
+    "name": "exp165-f1-only",
+    "categories": ["debugging", "root-cause-analysis"],
+    "tags": ["behavioral", "discipline", "cascading-bugs", "EXP-165", "F1-only", "information-provision"],
+    "tier": "standard",
+    "timeout": 5,
+    "agent_type": "coder",
+    "workflow": false,
+    "baseline_scenario": "cascading-fix-trap-v2",
+    "description": "EXP-165 Arm C (F1-only): Pre-written expert ROOT_CAUSE_ANALYSIS.md provided. Agent reads analysis and fixes accordingly. No forced production — tests whether information provision alone improves root cause fixing."
+}
