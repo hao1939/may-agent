@@ -1,71 +1,129 @@
 /**
- * watchdog.ts — Monitors running sessions and cancels those exceeding timeouts.
+ * Watchdog — stale session detector and canceller.
  *
- * Checks all running sessions, warns at >75% of timeout, and cancels at 100%.
- * Skips persistent agent sessions (may without parentSessionId).
+ * Runs periodically (every 10 min) and checks for sessions that have been
+ * "running" longer than their allowed threshold. Cancels them to prevent
+ * resource leaks and stuck delegation chains.
+ *
+ * Thresholds are configurable per-agent via handlerConfig.agentTimeouts,
+ * with a sensible default of 30 minutes for most agents.
+ *
+ * Persistent sessions (autoClose: "never") are never cancelled — they're
+ * long-lived by design. Only "running" non-persistent sessions are eligible.
+ *
+ * Exports create() conforming to HandlerModule.
  */
 
-import type { HandlerContext } from "../../../src/lib/handler-context.js";
+import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
+import type { CronEntry } from "../../../src/lib/cron-tool.js";
 
-const DEFAULT_TIMEOUT_MS = 60 * 60 * 1000; // 60 minutes
+/** Default max runtime for any session (60 minutes). */
+const DEFAULT_TIMEOUT_MS = 60 * 60 * 1000;
 
-/** Per-agent default timeouts (can be overridden via config) */
-const AGENT_TIMEOUTS: Record<string, number> = {
-  evaluator: 90 * 60 * 1000, // 90 minutes
+/** Per-agent overrides — agents that do heavier work get more time. */
+const DEFAULT_AGENT_TIMEOUTS: Record<string, number> = {
+  evaluator: 90 * 60 * 1000,   // evaluator can be slower (LLM-as-judge)
+  optimizer: 90 * 60 * 1000,   // optimizer does complex refactoring
+  bob: 90 * 60 * 1000,         // bob does analysis + multi-file changes
+  coach: 90 * 60 * 1000,       // coach runs exercises with sub-agents
+  scout: 90 * 60 * 1000,       // scout does deep research that takes time
+  "tech-lead": 90 * 60 * 1000, // tech-lead reviews can be thorough
 };
-
-export interface WatchdogConfig {
-  agentTimeouts?: Record<string, number>;
-  dryRun?: boolean;
-}
-
-interface SessionInfo {
-  agent: string;
-  sessionId: string;
-  status: string;
-  startedAt: number;
-  parentSessionId?: string;
-  autoClose?: string;
-}
 
 export interface WatchdogResult {
   checked: number;
-  cancelled: Array<{ sessionId: string; agent: string; runtime: number }>;
-  warned: Array<{ sessionId: string; agent: string; runtime: number }>;
+  cancelled: Array<{ sessionId: string; agent: string; runningMinutes: number }>;
+  warned: Array<{ sessionId: string; agent: string; runningMinutes: number }>;
 }
 
-export function runWatchdog(ctx: HandlerContext, config: WatchdogConfig): WatchdogResult {
-  const now = Date.now();
-  const sessions: SessionInfo[] = ctx.manager.status();
-  const agentTimeouts = { ...AGENT_TIMEOUTS, ...(config.agentTimeouts ?? {}) };
+export interface WatchdogConfig {
+  /** Per-agent timeout overrides in ms. Merged with defaults. */
+  agentTimeouts?: Record<string, number>;
+  /** Global default timeout in ms (overrides DEFAULT_TIMEOUT_MS). */
+  defaultTimeoutMs?: number;
+  /** Dry run — log but don't actually cancel. */
+  dryRun?: boolean;
+}
 
-  let checked = 0;
-  const cancelled: WatchdogResult["cancelled"] = [];
-  const warned: WatchdogResult["warned"] = [];
+// ── Factory ───────────────────────────────────────────────────────────
+
+export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: CronEntry) => {
+  const config: WatchdogConfig = (entry as any).handlerConfig ?? {};
+
+  return async () => {
+    const result = runWatchdog(ctx, config);
+
+    if (result.cancelled.length > 0) {
+      const details = result.cancelled
+        .map((s) => `${s.agent}/${s.sessionId} (${s.runningMinutes}min)`)
+        .join(", ");
+      ctx.log(`[watchdog] ⚠️ Cancelled ${result.cancelled.length} stale session(s): ${details}`);
+    }
+    if (result.warned.length > 0) {
+      const details = result.warned
+        .map((s) => `${s.agent}/${s.sessionId} (${s.runningMinutes}min)`)
+        .join(", ");
+      ctx.log(`[watchdog] ⏳ ${result.warned.length} long-running session(s): ${details}`);
+    }
+  };
+};
+
+// ── Pure logic ────────────────────────────────────────────────────────
+
+/**
+ * Check all active sessions and cancel those exceeding their timeout.
+ * Also warns about sessions at >75% of their timeout.
+ */
+export function runWatchdog(ctx: HandlerContext, config: WatchdogConfig): WatchdogResult {
+  const { manager } = ctx;
+  const now = Date.now();
+
+  const defaultTimeout = config.defaultTimeoutMs ?? DEFAULT_TIMEOUT_MS;
+  const agentTimeouts: Record<string, number> = {
+    ...DEFAULT_AGENT_TIMEOUTS,
+    ...(config.agentTimeouts ?? {}),
+  };
+
+  const sessions = manager.status();
+  const result: WatchdogResult = {
+    checked: 0,
+    cancelled: [],
+    warned: [],
+  };
 
   for (const session of sessions) {
-    // Skip non-running
+    // Skip non-running sessions
     if (session.status !== "running") continue;
 
-    // Skip persistent agent sessions (may without parentSessionId, autoClose=never)
-    if (session.autoClose === "never" && !session.parentSessionId) continue;
+    // Skip persistent/chat sessions (autoClose: "never") — they're long-lived by design.
+    // Detected by session config rather than agent name (P44: no hardcoded agent names).
+    if (session.autoClose === "never") continue;
 
-    checked++;
+    result.checked++;
 
-    const timeout = agentTimeouts[session.agent] ?? DEFAULT_TIMEOUT_MS;
-    const runtime = now - session.startedAt;
+    const runningMs = now - session.startedAt;
+    const timeoutMs = agentTimeouts[session.agent] ?? defaultTimeout;
+    const runningMinutes = Math.round(runningMs / 60_000);
 
-    if (runtime >= timeout) {
-      // Cancel
-      cancelled.push({ sessionId: session.sessionId, agent: session.agent, runtime });
+    if (runningMs >= timeoutMs) {
+      // Session has exceeded its timeout — cancel it
       if (!config.dryRun) {
-        ctx.manager.cancel(session.sessionId);
+        manager.cancel(session.sessionId);
       }
-    } else if (runtime >= timeout * 0.75) {
-      // Warn
-      warned.push({ sessionId: session.sessionId, agent: session.agent, runtime });
+      result.cancelled.push({
+        sessionId: session.sessionId,
+        agent: session.agent,
+        runningMinutes,
+      });
+    } else if (runningMs >= timeoutMs * 0.75) {
+      // Session is at >75% of timeout — warn
+      result.warned.push({
+        sessionId: session.sessionId,
+        agent: session.agent,
+        runningMinutes,
+      });
     }
   }
 
-  return { checked, cancelled, warned };
+  return result;
 }

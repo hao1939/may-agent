@@ -1,7 +1,6 @@
 # EXP-150: Architectural Readiness Guard Calibration Pilot
 
-**Status**: DEPLOYED (Phase 1 — Tier 2 warn-only)  
-**Deployed**: 2026-04-15T10:32:00Z  
+**Status**: DESIGNED  
 **Created**: 2026-04-12  
 **Author**: Coach  
 **Hypothesis**: H-101 (Architectural Readiness Determines Guard Internalization)  
