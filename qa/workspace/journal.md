@@ -5347,3 +5347,5 @@ Notes: these red tests block a PASS verdict for the current tree; investigate re
 
 2026-04-15T17:00Z heartbeat (QA): Proactive scan of HEAD a11ca397. Read changed file: agents/may/handlers/proof-of-life.ts. Mandatory checks: ./node_modules/.bin/tsc --noEmit PASS (no output). ./node_modules/.bin/vitest --run PASS — 1973 tests / 134 files. Findings: IMPORTANT — multiple silent catch blocks in proof-of-life.ts may mask production errors (DB open/schema queries/metric_alerts query/sessions queries). Recommend logging caught errors at least in debug mode to avoid silent failure.
 
+2026-04-15T17:30Z heartbeat (QA): Proactive scan of HEAD 0a71e082 ("may: update context to DB-based human input tracking"). Read changed file: agents/may/context.md (+ new agents/may/workspace/human-input-log.md). Checks: ./node_modules/.bin/tsc --noEmit PASS (no output). ./node_modules/.bin/vitest --run PASS — 1973 tests / 134 files. Findings: MINOR — context.md states human input is tracked in DB, but a new human-input-log.md file still exists/gets updated; ensure source-of-truth is consistent (either remove file logging or clearly label file as deprecated/for manual notes only).
+

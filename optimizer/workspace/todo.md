@@ -2,10 +2,12 @@
 
 ## 🟢 FOCUS AREAS (from Hao — these define your mission)
 
-1. **Proven Patterns → Workflows / Tools / Skills** — Turn reliable patterns into permanent workflows, tools, or skills.
-2. **Performance & Efficiency Investigation** — Find what's slow or wasteful: costly sessions, redundant reads, unnecessary round-trips.
-3. **Tool Efficiency — Right Tools, Fewer Tools** — Remove unused tools, fix misuse patterns, reduce tool count per agent.
-4. **Waste Elimination** — Kill idle heartbeats, redundant reads, failed tool calls, work that belongs in JS handlers.
+**Priority: Productive output over cost.** Don't just cut waste — find ways to make agents produce MORE creative, high-quality work per session.
+
+1. **Creative Productivity** — How do we get more novel ideas, better designs, deeper research per session? Measure output quality, not just op counts.
+2. **Proven Patterns → Workflows / Tools / Skills** — Turn reliable patterns into permanent workflows, tools, or skills that amplify creative output.
+3. **Output Amplification** — Find what makes sessions productive (not just efficient). Which patterns lead to breakthroughs? Which lead to busywork?
+4. **Smart Resource Use** — Spend more on high-value creative work, less on routine. Not "spend less" but "spend better."
 
 **When other agents send you tasks that don't fit these areas → push back or ignore.**
 
@@ -123,9 +125,8 @@
 
 48+ items Mar 17 – Apr 10. Detailed logs: `workspace/todo-archive-20260410.md`
 
-### Heartbeat Health Metrics (owner: optimizer) — NEW
-- 3 new metrics in may.db: `efficiency.heartbeat-lines`, `efficiency.heartbeat-inline-queries`, `efficiency.heartbeat-ops`
-- **Target**: total heartbeat lines < 800, inline queries = 0, avg ops/heartbeat < 12
-- **Current**: 1228 lines (threshold 1200 ⚠️), 3 remaining inline queries, ops TBD
+### Heartbeat Productivity (owner: optimizer) — NEW
+- 3 tracking metrics in may.db: `efficiency.heartbeat-lines`, `efficiency.heartbeat-inline-queries`, `efficiency.heartbeat-ops`
+- **Goal**: Heartbeats should maximize creative/strategic output, not just minimize cost
 - Auto-measured by metrics-snapshot handler
-- **Action**: When heartbeat lines drift above threshold, propose trimming to May. Track which agents bloat fastest.
+- **Action**: Track what heartbeats PRODUCE (dispatches, ideas, decisions) vs busywork (queries, status checks). Propose ways to increase creative output per heartbeat.
