@@ -76,7 +76,26 @@ Fork exploration using lens rotation. Track which lens you did last in todo.md.
 | Any code change (refactor, delete, fix) | `workflow.run('implement-and-verify', task)` | Catches forgotten tsc/test — your #1 error source |
 | Multiple independent questions | `workflow.run('parallel-research', JSON.stringify({...}))` | Parallel > sequential when questions are independent |
 
+| **Multi-step code delivery** | `workflow.run('persistent-task', task)` | **Owner→worker loop with state persistence. Use for features spanning multiple iterations.** |
+
 **Only skip workflow for**: pure exploration (scanning code, reading logs) or quick inline tasks (< 3 ops).
+
+### Active Persistent Tasks
+Check `agents/tech-lead/workspace/projects/` for files with Status: active or paused.
+- For **active** tasks: resume with `workflow.run("persistent-task", "project: <path>\nowner: tech-lead\nworker: coder\ngoal: <from file>")`
+- For **paused** tasks: read the project file, decide whether to resume or cancel
+- For **blocked** tasks: read the blocker, dispatch a fix, then resume
+
+```javascript
+// Multi-iteration code delivery: tech-lead reviews each coder iteration
+workflow.run("persistent-task", `
+project: agents/tech-lead/workspace/projects/<feature>.md
+owner: tech-lead
+worker: coder
+goal: <implementation goal>
+maxIterations: 10
+`)
+```
 
 ### Exploration Lenses (for workflow sessions):
 

@@ -263,16 +263,16 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 - **Implication**: Gym is saturated. Need harder scenarios for further skill development.
 - **Completed**: 2026-04-09
 
-### 0v. EXP-156: Hard Gate Generalization Study [COMPLETE ✅ — PARTIALLY SUPPORTED]
+### 0v. EXP-156: Hard Gate Generalization Study [DESIGNED]
 - **Design**: `agents/shared/knowledge/experiments/EXP-156/design.md`
-- **Results**: `agents/shared/knowledge/experiments/EXP-156/results.md`
+- **Status**: DESIGNED — awaiting scenario creation + trial runs
 - **Goal**: Test whether Ch2 hard gates generalize beyond hidden-dep (EXP-155) and contradictory-req (EXP-127)
-- **Key findings**:
-  - misleading-test-fix: +100pp (0% → 100%, p < 0.001) — **hard gate works for verification step-skipping**
-  - ambiguous-context-drift: -20pp (90% → 70%, p = 0.587 NS) — **hard gate may hurt belief-based failures**
-  - **Boundary condition**: Hard gates work when baseline ≤ 50% AND failure is step-skipping. Don't help (may harm) high-baseline or belief-based failures.
-- **Knowledge**: KE-178 (hard gate boundary condition), KE-179 (hard gate generalization to 3 failure types)
-- **Cross-experiment**: 3/4 scenarios show 100% treatment rate (judgment, process, verification). 1/4 shows regression (belief-based at 90% baseline).
+- **Scenarios**: misleading-test-fix (63% baseline, math verification) + ambiguous-context-drift (~50% baseline, context trust)
+- **Arms**: 4 arms × 10 runs = 40 total (2 baseline + 2 treatment)
+- **Hypothesis**: H-156 — hard gate improves pass rate by ≥20pp on at least one new scenario
+- **Key question**: Is Ch2 universal (works on any analytical step-skipping) or scenario-specific?
+- **Phases**: (1) Create treatment scenarios, (2) Run baselines, (3) Run treatments, (4) Analysis
+- **Predecessor**: EXP-155 (+85pp), EXP-127 (+100pp) — both single-scenario Ch2 results
 
 ### 0t. EXP-147: Context Isolation A/B Test [COMPLETE ✅ — DIRECTIONAL BUT NOT SIGNIFICANT]
 - **Design**: `agents/shared/knowledge/experiments/EXP-147/design.md`

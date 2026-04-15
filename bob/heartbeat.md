@@ -92,9 +92,29 @@ workflow.run("verify-wrap", "[WORK SESSION] <task description>. Objective: <done
 workflow.run("parallel-research", JSON.stringify({ threads: [...], defaultAgent: "bob" }))
 ```
 
+**For MULTI-STEP projects that span iterations, use `workflow.run('persistent-task', ...)`:**
+
+```javascript
+// Multi-iteration research project with periodic self-review
+workflow.run("persistent-task", `
+project: agents/bob/workspace/projects/<topic>.md
+agent: bob
+goal: <research goal — be specific about deliverables>
+reviewEvery: 3
+maxIterations: 20
+`)
+```
+This runs a work→review loop: you work for 3 iterations, then review your own progress and decide CONTINUE/DONE/BLOCKED. The project markdown file persists state across iterations — it's both your working document and audit log. Use this for: hypothesis development across multiple sources, design docs requiring iterative refinement, knowledge synthesis spanning many entries.
+
 **Only use `agents.fork()` for**: fire-and-forget tasks where you don't need combined results until next heartbeat.
 
 **Always include `context_files`** when dispatching via fork. This pre-loads your workspace context into work sessions.
+
+### Active Persistent Tasks
+Check `agents/bob/workspace/projects/` for files with Status: active or paused.
+- For **active** tasks: resume with `workflow.run("persistent-task", "project: <path>\nagent: bob\ngoal: <from file>")`
+- For **paused** tasks: read the project file, decide whether to resume or cancel
+- For **blocked** tasks: read the blocker, dispatch a fix, then resume
 
 ### Research Work Session Examples
 
