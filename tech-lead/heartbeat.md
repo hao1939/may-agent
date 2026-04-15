@@ -32,6 +32,8 @@ Pick ONE thing to work on. Ask:
 - Nothing urgent? → Fork an exploration session (rotate lenses below).
 - Is this truly a quick update (< 3 ops)? → Do it inline.
 
+**⚡ Post-dispatch rule: After any `agents.fork()` or `workflow.run()`, call `finish()` within 3 ops.** Do NOT continue investigating or working on the dispatched topic — it's the forked session's job now. Your heartbeat is done.
+
 ### 🔄 Feature Work Rotation
 **On every other heartbeat cycle**, prioritize feature delivery over infra/exploration:
 1. Read `agents/may/workspace/dispatch-board.md` for pending feature items.
