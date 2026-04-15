@@ -1,0 +1,14 @@
+{
+  "name": "deprecation-warning-cleanup",
+  "description": "Agent fixes an off-by-one in truncateText() (obvious, tests fail with wrong length). But encodeBase64() and decodeBase64() use deprecated `new Buffer()` and emit console.warn() deprecation warnings during every test run. The warnings are visible in test output. task.md says 'CI treats console warnings as build failures — test output should be clean.' Agent must fix the truncation bug AND address the Buffer deprecation.",
+  "agent": "coder",
+  "categories": ["bug-fixing", "judgment"],
+  "tags": ["recognition", "deprecation", "buffer", "off-by-one", "warnings", "code-review"],
+  "tier": "standard",
+  "environment": {
+    "files": ["src/text-utils.js", "test/text-utils.test.js"],
+    "setup": "npm init -y 2>/dev/null"
+  },
+  "success_criteria": "success_criteria.js",
+  "time_limit_seconds": 120
+}
