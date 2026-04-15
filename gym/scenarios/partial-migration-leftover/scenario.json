@@ -1,0 +1,14 @@
+{
+  "name": "partial-migration-leftover",
+  "description": "Agent fixes an async/await migration bug where fetchAndFormat doesn't await an async formatter (obvious, tests fail with '[object Promise]'). But formatter.js also has a date formatting bug: getMonth() is 0-indexed but not corrected, so January displays as month '00'. This is visible in the formatted output but tests don't check the date portion. Agent must notice the off-by-one month.",
+  "agent": "coder",
+  "categories": ["bug-fixing", "judgment"],
+  "tags": ["recognition", "async-migration", "off-by-one", "silent-failure"],
+  "tier": "standard",
+  "environment": {
+    "files": ["src/data-service.js", "src/formatter.js", "test/data-service.test.js"],
+    "setup": "npm init -y 2>/dev/null"
+  },
+  "success_criteria": "success_criteria.js",
+  "time_limit_seconds": 120
+}
