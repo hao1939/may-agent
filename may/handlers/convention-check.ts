@@ -46,7 +46,7 @@ interface CheckResult {
 // ── Configuration ─────────────────────────────────────────────────────
 
 /** Agents exempt from workspace-isolation checks (they write everywhere). */
-const WORKSPACE_EXEMPT_AGENTS = new Set(["may", "tech-lead", "bob", "coach", "optimizer"]);
+const WORKSPACE_EXEMPT_AGENTS = new Set(["may", "tech-lead", "bob", "coach", "optimizer", "coder"]);
 
 /** Allowed write prefixes for all agents. */
 const ALLOWED_WRITE_PREFIXES = [".state/", "tmp/", "/tmp/", "agents/shared/", "agents/gym/", "agents/.lab/"];
