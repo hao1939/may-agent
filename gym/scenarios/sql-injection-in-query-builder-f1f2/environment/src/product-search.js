@@ -17,6 +17,7 @@ function searchProducts(query) {
   const sql = `SELECT * FROM products WHERE name LIKE '%${query}%'`;
   
   const rows = executeQuery(sql);
+  if (!rows || rows.length === 0) return [];
   
   // Format results for the API response
   const formatted = rows.map(row => ({
@@ -38,6 +39,7 @@ function searchByCategory(category) {
   const sql = `SELECT * FROM products WHERE category = '${category}'`;
   
   const rows = executeQuery(sql);
+  if (!rows || rows.length === 0) return [];
   
   const formatted = rows.map(row => ({
     id: row.id,
