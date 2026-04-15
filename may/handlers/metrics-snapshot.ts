@@ -37,6 +37,7 @@ interface MetricRow {
   current: number | null;
   target: number;
   threshold: number | null;
+  alert_direction: string | null; // 'below' (default) or 'above' — controls threshold breach direction
   source: string | null;
   source_query: string | null;
   source_command: string | null;
@@ -112,6 +113,12 @@ CREATE INDEX IF NOT EXISTS idx_research_log_agent ON research_log(agent, type, c
 
 function ensureTables(db: SqliteDb): void {
   db.exec(SCHEMA_SQL);
+  // Migration: add alert_direction column if not present
+  try {
+    db.exec("ALTER TABLE metrics ADD COLUMN alert_direction TEXT DEFAULT 'below'");
+  } catch {
+    // Column already exists — ignore
+  }
 }
 
 /**
@@ -173,7 +180,7 @@ function checkRegression(
 function resolveRecoveredAlerts(db: SqliteDb, now: number): void {
   // Find all unresolved alerts where the metric is now above threshold
   const unresolvedAlerts = db.prepare(`
-    SELECT ma.id as alert_id, ma.metric_id, m.current, m.threshold, m.type
+    SELECT ma.id as alert_id, ma.metric_id, m.current, m.threshold, m.type, m.alert_direction
     FROM metric_alerts ma
     JOIN metrics m ON m.id = ma.metric_id
     WHERE ma.resolved_at IS NULL
@@ -183,14 +190,18 @@ function resolveRecoveredAlerts(db: SqliteDb, now: number): void {
     current: number | null;
     threshold: number | null;
     type: string;
+    alert_direction: string | null;
   }>;
 
   for (const alert of unresolvedAlerts) {
     let resolved = false;
 
     if (alert.type === "health" && alert.threshold != null && alert.current != null) {
-      // Health metric: resolve if current >= threshold
-      resolved = alert.current >= alert.threshold;
+      // Health metric: resolve based on alert direction
+      const alertAbove = alert.alert_direction === 'above';
+      resolved = alertAbove
+        ? alert.current <= alert.threshold  // Was above, now at or below
+        : alert.current >= alert.threshold; // Was below, now at or above
     } else if (alert.current != null) {
       // Regression alert: resolve if current is back within 7d average range
       // (simplified: just check if current is no longer below threshold)
@@ -278,17 +289,22 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         }
 
         // Check health threshold
-        if (m.type === "health" && m.threshold != null && value < m.threshold) {
-          recordAlertWithDedup(
-            db,
-            m.id,
-            "yellow",
-            `${m.id} below threshold: ${value} < ${m.threshold}`,
-            value,
-            m.threshold,
-            now,
-          );
-          alertsFired++;
+        if (m.type === "health" && m.threshold != null) {
+          const alertAbove = m.alert_direction === 'above';
+          const breaching = alertAbove ? value > m.threshold : value < m.threshold;
+          if (breaching) {
+            const direction = alertAbove ? 'above' : 'below';
+            recordAlertWithDedup(
+              db,
+              m.id,
+              "yellow",
+              `${m.id} ${direction} threshold: ${value} ${alertAbove ? '>' : '<'} ${m.threshold}`,
+              value,
+              m.threshold,
+              now,
+            );
+            alertsFired++;
+          }
         }
 
         // Check regression
@@ -332,17 +348,22 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         cmdMeasured++;
 
         // Check health threshold
-        if (m.type === "health" && m.threshold != null && value < m.threshold) {
-          recordAlertWithDedup(
-            db,
-            m.id,
-            "yellow",
-            `${m.id} below threshold: ${value} < ${m.threshold}`,
-            value,
-            m.threshold,
-            now,
-          );
-          alertsFired++;
+        if (m.type === "health" && m.threshold != null) {
+          const alertAbove = m.alert_direction === 'above';
+          const breaching = alertAbove ? value > m.threshold : value < m.threshold;
+          if (breaching) {
+            const direction = alertAbove ? 'above' : 'below';
+            recordAlertWithDedup(
+              db,
+              m.id,
+              "yellow",
+              `${m.id} ${direction} threshold: ${value} ${alertAbove ? '>' : '<'} ${m.threshold}`,
+              value,
+              m.threshold,
+              now,
+            );
+            alertsFired++;
+          }
         }
 
         // Check regression
