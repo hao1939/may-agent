@@ -75,13 +75,9 @@ if(running.length>0){console.log('⛔ BLOCKED — work session already running:'
 - **Never skip this check.** The #1 cause of wasted ops is overlapping work sessions (e.g., 6 concurrent EXP-147 sessions costing ~100 ops).
 
 ### ⚡ Work Session Efficiency
-**Op budget for work sessions: ≤35 ops.** Efficient sessions complete in 18-35 ops; bloated ones hit 50-60.
 The #1 cause of bloat: **interactive SQL query loops** — writing one `bun -e` per question wastes 50+ ops/session.
-- Design tasks: ≤30 ops
-- Gym execution: ≤40 ops
-- Data analysis: ≤30 ops (use BATCH scripts — one bun -e per analysis phase, not per question)
-- If hitting budget: CHECKPOINT progress and finish. Resume in next session.
 - Plan your queries FIRST, then run them all at once.
+- If running long: CHECKPOINT progress and finish. Resume in next session.
 
 ### ⚡ Default: Use workflows for all forked work
 
