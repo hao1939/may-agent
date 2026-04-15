@@ -7,7 +7,6 @@
 - [x] **Scenario Gap-Fill: 2 recognition scenarios** — Created + baselined. Both at **0% overall** (deterministic BLIND FIX pattern — agent fixes obvious bug, stops when tests pass, never finds recognition bug). 6 trials partial-migration, 5 trials type-mismatch. Good for intervention testing but NOT in 30-70% target range.
 - [x] **Scenario Gap-Fill v2: 2 new recognition scenarios** — sql-injection-in-query-builder: **33% baseline (1/3)** ✅ IN TARGET RANGE. deprecation-warning-cleanup: **100% baseline (3/3)** ❌ too easy (warnings visible in output). See RECOGNITION-GAPFILL-BASELINE-RESULTS.md.
 - [ ] **Scenario Gap-Fill** [MEDIUM]: sql-injection (33%) is ready for intervention experiments. deprecation-warning needs redesign (remove console.warn to make recognition harder) or replacement. Consider 1-2 more scenarios to increase portfolio.
-- [ ] **H-161 Ceiling Analysis**: Ceiling pattern documented in `workspace/h161-ceiling-analysis.md`. **Next**: Wait for EXP-165 results (cascading-fix-trap-v2, 41% baseline). If EXP-165 also ceilings, test sql-injection (33% baseline) or design "diagnosis-resistant" scenario. If EXP-165 discriminates F1 vs F2, write KE on function-specific effectiveness.
 - [ ] **Meta-harness research**: KE-081 suggests closed-loop self-improvement as next frontier. H-164 formalizes the harness vs training trade-off.
 
 ## Blocked / Deferred
