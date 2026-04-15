@@ -186,9 +186,7 @@ export function wrapToolsWithReceipts(tools: AgentTool[], sessionId: string, ctx
             if (guardResult.redirect) {
               const redirectSession = getSession();
               if (redirectSession?.agent) {
-                // EXP-TIERED-BUDGET fix: extend hard limit when a guard redirect occurs
-                // during the grace period. The verify-then-re-finish cycle needs ≥2 extra
-                // turns, so without this the agent hits the hard abort before it can comply.
+                // Track guard redirects for diagnostics (turn budget enforcement removed).
                 redirectSession.guardRedirectCount++;
 
                 redirectSession.agent.steer({

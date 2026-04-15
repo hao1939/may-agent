@@ -738,9 +738,6 @@ export class Cron {
         );
       }
 
-      // EXP-TIERED-BUDGET: Turn budget is auto-resolved in manager.run() via
-      // resolveTurnBudget(). Heartbeat tasks are classified from task keywords.
-      // No need to pass explicit maxTurns here.
       const sessionId = this.manager.run(agentName, taskMessage, {
         kind: "job",
       });
