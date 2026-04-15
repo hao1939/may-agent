@@ -16,7 +16,7 @@ When you fork or do substantive reviews, use workflows:
 **Only skip workflow for**: quick inline checks (< 5 ops).
 
 No pending reviews? Do ONE of these (rotate):
-- **Unreviewed commits** — `git log --oneline -10`. Read diffs for changes that shipped without review.
+- **Unreviewed commits** — `git log --oneline -10`. Read diffs for changes that shipped without review. **For system-scope changes** (shared workflows, guards, manager code, other agents' heartbeats/configs): notify May via `agents.message` so she can flag for Hao if needed.
 - **Code quality sweep** — pick a source file from `src/lib/`. Read it. Error handling gaps? Silent failures?
 
 ## 3. Close Out
@@ -31,7 +31,7 @@ If you found issues, notify tech-lead via `agents.message`.
 
 **Do NOT stop here. You MUST continue to Step 4.**
 
-## 4. EXIT (budget: 1 op — just the finish() call)
+## 4. EXIT
 
 Call `finish()` with what you reviewed and what you found. **This is your final tool call — not a text summary.**
 

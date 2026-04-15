@@ -46,7 +46,24 @@ b. Review status of each active item using the DB snapshot data (agent activity,
    - Stale (>1h with no progress) → cancel and retry
 c. `edit()` the board using exact text from step (a) to update ALL statuses in ONE edit
 
-## 3. Triage Failures
+## 3. Proactive Review (Gatekeeper)
+You are Hao's gatekeeper for system-scope changes. During each cycle, actively check what agents are doing:
+- Read agent workspace plans and recent outputs — not just your dispatch board
+- Peek at active/recent sessions to understand what's in progress
+- Check what agents changed since your last review (recent commits, new workspace files)
+
+Ask for each agent's current work: **"Would this change how OTHER agents or sessions behave?"**
+
+**System-scope** (flag for Hao): changes to shared workflows, guards, manager code, another agent's heartbeat/context/SOUL, cross-agent protocols, deletion of shared infrastructure.  
+**Agent-scope** (no action): own workspace, own knowledge entries, code on review branches.
+
+If you spot a system-scope change:
+- **Still planned** → set project Status to `pending-review`, notify Hao via telegram: "🔒 Review needed: [agent] plans [change]. See [file path]."
+- **Already implemented** → notify Hao with what changed. Revert if rejected.
+
+Most cycles = no flags. That's fine. The review is quick when nothing is system-scope.
+
+## 4. Triage Failures
 Use the error data from the system snapshot query. Do NOT run another query — it's already done. Just route failures to the right helper.
 
 Check for recent agent failures (already in your system snapshot — refer to it):
@@ -72,7 +89,7 @@ Check `agents/shared/projects/` for active research. Each file is a long-running
 - Do NOT read project files in detail during heartbeats — fork a work session if deep review is needed
 - Report research project progress to Hao periodically
 
-## 5. System Health
+## 6. System Health
 Already covered by the system snapshot query. Just review the stuck sessions data you already have.
 
 Quick check (use system snapshot data — do NOT run new queries):

@@ -1,8 +1,8 @@
 # DESIGN: May-as-Gatekeeper (v4 — Decoupled Supervision)
 
-**Status:** REVISED — awaiting Hao approval  
+**Status:** ✅ APPROVED & IMPLEMENTED  
 **Date:** 2026-04-15  
-**Revision:** v4 per Hao feedback. Fully decoupled from agent work. May supervises async on her own schedule.
+**Revision:** v4 — fully decoupled async supervision. Approved by Hao with two additions: proactive review + code review gate.
 
 ---
 
