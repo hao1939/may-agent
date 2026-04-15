@@ -22,8 +22,14 @@
 - **DB path**: `.state/may.db` (SQLite)
 - **Access method**: `bun:sqlite` — `node:sqlite` and `sqlite3` CLI are NOT available
 - **Example**: `bun -e "import{Database}from'bun:sqlite'; const db=new Database('.state/may.db',{readonly:true}); console.log(db.query('SELECT name FROM sqlite_master WHERE type=\"table\"').all());"`
-- **Key tables**: `sessions` (agent, status, startedAt, opCount, error, task), `evaluations`, `requests`
 - **npx** is NOT available — use `bun -e "..."` for inline scripts
+- **Defensive practice**: When querying a table for the first time in a session, run `PRAGMA table_info(<table>)` first to confirm column names. Do NOT guess column names (e.g., `id` vs `sessionId`).
+- **Key table schemas** (PK marked with *):
+  - `sessions`: *sessionId, agent, task, status, kind, source, parentSessionId, requestId, workflowRunId, startedAt(INT), endedAt(INT), error, outcome, opCount(INT)
+  - `evaluations`: *sessionId, agent, quality(REAL), efficiency(REAL), productiveCalls(INT), wastedCalls(INT), verdict, issues, overall, usage, failureChains, evaluatedByHeuristic(INT), skippedByJs(INT), createdAt(INT)
+  - `requests`: *requestId, parentRequestId, fromEntity, toAgent, method, task, status, sessionId, createdAt(INT), updatedAt(INT), completedAt(INT), durationMs(INT), summary, error, errorClass, retryable(INT), artifact, context, expectations, notify, source
+  - `gym_runs`: *id(INT), timestamp, agent_name, lab_fork, scenario, passed(INT), duration_ms(INT), score_summary, session_id, cost_usd(REAL), total_ops(INT), total_turns(INT), method, prompt_hash, framework_sha, model, batch_id, run_tag, categories, tags, tier, transcript
+- **Quoting for bun -e**: Use double quotes for the outer shell string, single quotes for SQL strings inside. For complex queries, use a heredoc: `bun -e "$(cat <<'SCRIPT' ... SCRIPT)"`
 
 ## Operational Knowledge (from experiments)
 - **Never stack behavioral interventions** — combining 2+ interventions degrades performance by 12-15pp (KE-123). Use ONE targeted intervention per task.
