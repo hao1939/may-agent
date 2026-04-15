@@ -1,0 +1,14 @@
+{
+  "name": "type-mismatch-silent-coercion",
+  "description": "Agent fixes a string concatenation bug where DB-returned string amounts are added with += instead of being converted to numbers (obvious, tests fail with garbled totals). But invoice.js also has applyDiscount() using == instead of === to check for zero discount, meaning falsy values like false or '' silently skip discount logic. Agent should notice the loose equality issue.",
+  "agent": "coder",
+  "categories": ["bug-fixing", "judgment"],
+  "tags": ["recognition", "type-coercion", "loose-equality", "silent-failure"],
+  "tier": "standard",
+  "environment": {
+    "files": ["src/invoice.js", "src/billing-db.js", "test/invoice.test.js"],
+    "setup": "npm init -y 2>/dev/null"
+  },
+  "success_criteria": "success_criteria.js",
+  "time_limit_seconds": 120
+}
