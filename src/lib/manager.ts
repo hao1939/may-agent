@@ -22,7 +22,7 @@ import { createPathHallucinationGuard } from "./tools/path-hallucination-guard.j
 import { createCommitGuard } from "./tools/commit-guard.js";
 import { createCompletenessGuard } from "./tools/completeness-guard.js";
 import { createVerificationDepthGuard } from "./tools/verification-depth-guard.js";
-import { composeGuards, createCostLimitGuard } from "./tools/compose-guards.js";
+import { composeGuards } from "./tools/compose-guards.js";
 import {
   detectErrors,
   clearPostFinishErrors,
@@ -401,7 +401,6 @@ export class SubagentManager {
             createReadDedupGuard(),
             createSessionReadGuard(),
             createScrapeDedupGuard(),
-            createCostLimitGuard(), // Emergency brake at 1000 calls — not a turn budget
           ),
         }),
         ...(opts?.messages ? { messages: opts.messages } : {}),
