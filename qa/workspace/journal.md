@@ -8,3 +8,5 @@
 
 Verdict: CONDITIONAL — patch-specific tests look reasonable and TS builds, but overall vitest run is currently failing due to missing agent handler/workflow modules.
 
+2026-04-15T10:01Z — Proactive QA scan: reviewed commit 1115e7d8 adding `test/workflow-tool.test.ts` (workflow tool list/run/steering/ctx.agent). Mandatory gates: `./node_modules/.bin/tsc --noEmit` PASS; `./node_modules/.bin/vitest --run` PASS (124 files, 1898 tests). No new issues found in the test logic aside from some non-critical commentary mismatch inside the “steer() queues…” test (test expects error because steering can’t happen in time — consistent with comment).
+
