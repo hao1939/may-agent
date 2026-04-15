@@ -5,7 +5,7 @@
 ### ✅ DONE: Autoresearch research-project write-up
 - **Source**: Hao via May (req:1c42f66e, req:1259fbec)
 - **Completed**: 2026-04-08 17:05 UTC (Session 315 — done inline after Sessions 311, 312, 314 failed)
-- **Output**: `agents/shared/research-projects/autoresearch.md` (99 lines, 6 borrowable ideas, findings log, hypotheses)
+- **Output**: `agents/shared/projects/autoresearch.md` (99 lines, 6 borrowable ideas, findings log, hypotheses)
 
 ### ✅ DONE: Wednesday arXiv triage (2026-04-08)
 - cs.MA, cs.AI new listings
@@ -846,21 +846,43 @@
   2. SPASM + PETITE deep dives — DEFERRED (requires work session)
   3. KE-106 habituation literature (low priority — largely subsumed)
 
-## Session 759+ (2026-04-15 06:01 UTC) — Tuesday arXiv triage + DD#759-762
+## Session 767 (2026-04-14 13:21 UTC) — Tuesday afternoon heartbeat (lean)
+- **New developments absorbed**:
+  - **EXP-RECOGNITION complete (Bob)**: Hard gate 100% vs skill 0% vs baseline 10%. Extreme result — hard gates massively outperform skills for recognition-layer tasks.
+  - **EXP-157 complete (Coach)**: Hard gate negative result + completion illusion effect (KE-180). Method #25 added.
+  - **KE-182 (Coach)**: Hard gate design rules synthesis — consolidates 8 experiments into 6 actionable rules. Capstone.
+  - **EXP-163 reinterpretation (Bob)**: Hidden-dep ceiling effect, KE-181 methodology lesson.
+  - **Deep-dive pipeline redesign (May)**: New INBOX.md at `shared/knowledge/library/deep-dives/INBOX.md`. Scout appends after writing DDs, Bob processes. Replaces old postboard_brief.md.
+- **DD#757 (SPASM) + DD#758 (PETITE)**: Written in Session 764. ✅ Complete.
+- **Clean state**: All deliverables committed. Tuesday afternoon — quiescent. No fresh arXiv until ~20:00 UTC (~7h away).
+- **Research priorities** (Tuesday):
+  1. **Tuesday arXiv triage** (cs.MA, cs.AI new listings) — ~20:00 UTC
+  2. KE-106 habituation literature (low priority — largely subsumed)
+
+## Session 771 (2026-04-15 06:31 UTC) — Tuesday arXiv triage + DD#759-762 + propagation
 - **DELIVERED: Tuesday arXiv triage** (agents/scout/workspace/triage-2026-04-15-tuesday.md): cs.MA/new (2 new + 8 cross-listings + 10 replacements) + cs.AI scan. 4 deep dives written.
   - DD#759 (2604.12129): Aethon — Reference-Based Replication for O(1) Agent Instantiation (★★★★). Pre-computed reference states enable constant-time agent deployment. MARL primitive for scaling. Relevant to agent infrastructure maturation theme.
   - DD#760 (2604.11767): λ_A — Typed Lambda Calculus for LLM Agent Composition (★★★★). Formal type system for agent workflows — first-class agents as typed values, sequential/parallel composition, delegation. Connects to KE-161 (guard-as-linter) and OpenKedge (DD#756).
   - DD#761 (2604.12250): Memory Effects on Collective Behavior in Social Particle Swarm (★★★½). Memory-alignment interaction: memory amplifies polarization in aligned agents but fragments unaligned ones. Non-trivial memory-cooperation dynamics. Connects DD#754 (bias amplification).
   - DD#762 (2601.11327): Small Agents Collaborate to Beat Large Model v2 (★★★★). Orchestrator-centric MAS outperforms single large model. Orchestration quality >> execution quality. Supports hub-and-spoke architecture.
-- **Key themes**: (1) Agent infrastructure maturation — field moving from "can agents work?" to proper engineering. (2) Memory-cooperation tension complicates naive "more context = better" assumption. (3) Orchestrator primacy supports hub-and-spoke with compute at orchestrator.
-- **Deferred papers from Sessions 714/719 still pending**: SPASM (2604.09212) + PETITE (2604.08931).
-- **Covered IDs**: Updated to 405 total.
-- **Research priorities** (Tuesday):
-  1. SPASM + PETITE deep dives — longstanding deferral, do next if time
+- **KEY THEMES**: (1) Agent infrastructure maturation — field moving from "can agents work?" to proper engineering. (2) Memory-cooperation tension complicates naive "more context = better" assumption. (3) Orchestrator primacy supports hub-and-spoke with compute at orchestrator.
+- **Propagated**: INDEX.md updated (162 entries), papers.md updated with 4 new entries, INBOX.md updated with DD#759-762 for Bob.
+- **Research priorities** (Wednesday):
+  1. KE-106 habituation literature (low priority — largely subsumed)
+  2. Any new leads from EXP-151+ results
+  3. Wednesday arXiv triage (~20:00 UTC)
+
+## Session 772 (2026-04-15 07:00 UTC) — Wednesday morning heartbeat (lean)
+- **No new Scout-relevant developments** since Session 771 (30min ago). Recent git: tech-lead overflow cleanup, optimizer workspace archive, skill scouting, May dispatch board update. No new experiments or knowledge entries requiring Scout action.
+- **Tuesday arXiv triage COMPLETE**: DD#759-762 written and propagated (Session 771). All library files updated.
+- **Clean state**: All deliverables committed. Wednesday morning — quiescent. No fresh arXiv until ~20:00 UTC (~13h away).
+- **Research priorities** (Wednesday):
+  1. Wednesday arXiv triage (~20:00 UTC) — fresh listings from Tuesday submissions
   2. KE-106 habituation literature (low priority — largely subsumed)
-  3. Any new leads from EXP-151+ results
+  3. Any new leads from ongoing experiments
 
 ## Counters
 - DD: 762
 - CR: 339
+- Session: 772
 
