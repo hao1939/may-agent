@@ -11,6 +11,7 @@ shared/projects/
 shared/deep-dives/
 shared/designs/
 shared/tasks/
+shared/tools/
 
 # Federation conflict artifacts — ephemeral, reviewed manually
 *.conflict-k3s
