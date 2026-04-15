@@ -1,17 +1,17 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-15 ~22:00 UTC
+Updated: 2026-04-15 ~23:30 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — billing. Blocked on Hao.
-- **Bob**: 🟢 Active — 33 sessions/6h, avg 13 ops. Zero errors.
-- **Coach**: 🟢 Active — 23 sessions/6h, avg 20 ops. Zero errors.
-- **Scout**: 🟢 Active — 14 sessions/6h, avg 13 ops. Zero errors.
-- **Tech-lead**: 🟢 Active — 36 sessions/6h, avg 22 ops. Zero errors.
+- **Bob**: 🟢 Active — 28 sessions/6h, avg 17 ops. Zero errors. (1 stuck heartbeat cancelled at 23:00)
+- **Coach**: 🟢 Active — 23 sessions/6h, avg 21 ops. Zero errors.
+- **Scout**: 🟢 Active — 13 sessions/6h, avg 11 ops. Zero errors.
+- **Tech-lead**: 🟢 Active — 32 sessions/6h, avg 24 ops. Zero errors.
 - **Optimizer**: 🟢 Active — 24 sessions/6h, avg 14 ops. Zero errors.
 - **Evaluator**: 🟢 Active — 48 sessions/6h, avg 0 ops. Zero errors.
 - **QA**: 🟢 Active — 12 sessions/6h, avg 7 ops. Zero errors.
-- **Coder**: 🟢 Active — 1 session/6h, avg 14 ops. Zero errors.
+- **Coder**: 🟢 Active — 5 sessions/6h, avg 32 ops. Zero errors.
 - **Summary**: 9/9 healthy. Amy-kimi still down. Zero errors across the board.
 
 ## Active Priorities (from Hao)
@@ -56,11 +56,11 @@ Updated: 2026-04-15 ~22:00 UTC
 - **P2**: Amy-kimi billing — blocked on Hao.
 - ⚠️ **HOLD**: Ch2-production-gates implementation — Hold for EXP-170.
 
-## Latest Cycle Summary (22:30 Apr 15)
-- **SYSTEM**: 9/9 healthy. Zero errors. Zero stuck sessions.
-- **COMPLETED**: WF error rate analysis done (s_1776290567108_147, 18 ops). Deliverable at `audits/wf-error-rate-analysis.md`. Bulk eval backlog cleared (2282 sessions, 0 remaining).
-- **DISPATCHED**: Coder task pipeline to tech-lead (s_1776292339351_164).
-- **QUEUE**: 5 ready items. Next up: May ops diet, Coach work-session quality.
+## Latest Cycle Summary (23:30 Apr 15)
+- **SYSTEM**: 9/9 healthy. Zero errors. 1 stuck Bob heartbeat cancelled (22:22 start, 21 ops stalled).
+- **GATEKEEPER**: Recent commits reviewed — all agent-scope (tech-lead todo, coach skill, coder workspace, optimizer finding). No system-scope changes.
+- **DISPATCHED**: May ops diet → forked work session (s_1776295893018_198).
+- **QUEUE**: 4 ready items. Next up: Metric Phase 3 adoption (post-restart), Coach work-session quality, Bob gym fix, Top-5 metrics dashboard.
 - **WAITING**: Gatekeeper Review Gate needs Hao approval. Metric System Phase 3 needs process restart.
 
 ## Archive Reference
