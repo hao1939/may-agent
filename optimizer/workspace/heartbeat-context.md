@@ -13,18 +13,19 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-15T15:49)
+# Your Context (auto-generated 2026-04-15T16:49)
 
 **System:** 3 sessions/6h, 0% error rate
 
 **Top spenders:**
-- coach: 3s, 250KB
+- coach: 2s, 156KB
+- may: 1s, 50KB
 
 **Your active error patterns:**
+- FM-3.3: 3x
 - FM-2.6: 2x
 - FM-1.3: 1x
-- FM-3.3: 1x
 - FM-4.1: 1x
 
 **📊 Your Metrics:**
-- Avg ops per session (24h): **12.6** count → 25 count
+- Avg ops per session (24h): **12.7** count → 25 count

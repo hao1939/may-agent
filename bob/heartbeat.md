@@ -163,6 +163,21 @@ Questions to answer:
 
 Call `finish()` with what you observed and dispatched.
 
+**Research log**: If this session (or any dispatched work session) produced a research artifact, log it to `.state/may.db`:
+```bash
+export PATH=".state/.bun/bin:$PATH"
+bun -e "
+import {Database} from 'bun:sqlite';
+const db = new Database('.state/may.db');
+// type: 'experiment' | 'hypothesis' | 'knowledge-entry' | 'deep-dive' | 'triage'
+// ref: 'EXP-164', 'H-097', 'KE-187', 'DD-710' etc.
+// rating: 1-5 self-quality rating
+db.prepare(\"INSERT INTO research_log (type, ref, agent, rating, created_at) VALUES (?, ?, 'bob', ?, ?)\")
+  .run('experiment', 'EXP-XXX', 3, Date.now());
+"
+```
+Do this for EACH artifact produced. Skip if the session was purely dispatch/triage with no new artifacts.
+
 **DO NOT update journal.md or todo.md as busywork.** If you didn't dispatch anything or produce something new, that's a signal to look harder — not to write a journal entry about looking.
 
 **If you found nothing to dispatch:** Before exiting, ask yourself:

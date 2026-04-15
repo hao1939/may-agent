@@ -41,21 +41,16 @@ interface PersistentTaskRow {
   sessionId: string;
 }
 
-<<<<<<< HEAD
 // ── Metrics Summary ───────────────────────────────────────────────────
 
 interface MetricWithSnapshotRow {
   id: string;
-=======
-interface HealthMetricRow {
->>>>>>> review/metrics-phase2-integration
   name: string;
   current: number | null;
   target: number | null;
   threshold: number | null;
   unit: string | null;
   type: string;
-<<<<<<< HEAD
   last_value: number | null;
   measured_at: number | null;
 }
@@ -146,28 +141,6 @@ function getMetricsSummary(baseDir: string): string {
     return lines.join("\n");
   } catch {
     return "";
-=======
-}
-
-function getHealthMetrics(baseDir: string): HealthMetricRow[] {
-  const dbPath = join(baseDir, ".state", "may.db");
-  if (!existsSync(dbPath)) return [];
-  let db: Database | null = null;
-  try {
-    db = new Database(dbPath, { readonly: true });
-    const tableCheck = db.prepare(
-      "SELECT name FROM sqlite_master WHERE type='table' AND name='metrics'"
-    ).get();
-    if (!tableCheck) return [];
-    return db.prepare(
-      `SELECT name, current, target, threshold, unit, type
-       FROM metrics
-       WHERE status = 'active' AND type = 'health' AND current IS NOT NULL
-       ORDER BY id`
-    ).all() as HealthMetricRow[];
-  } catch {
-    return [];
->>>>>>> review/metrics-phase2-integration
   } finally {
     try { db?.close(); } catch { /* ignore */ }
   }
@@ -270,26 +243,11 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       }
     }
 
-<<<<<<< HEAD
     // Metrics summary from may.db
     const baseDir = process.cwd();
     const metricsSummary = getMetricsSummary(baseDir);
     if (metricsSummary) {
       lines.push(metricsSummary);
-=======
-    // Health metrics summary from may.db
-    const baseDir = process.cwd();
-    const healthMetrics = getHealthMetrics(baseDir);
-    if (healthMetrics.length > 0) {
-      lines.push("");
-      lines.push("📊 Health metrics:");
-      for (const m of healthMetrics) {
-        const unit = m.unit ? m.unit : "";
-        const warn = m.threshold != null && m.current != null && m.current < m.threshold ? " ⚠️" : "";
-        const targetStr = m.target != null ? `/${m.target}` : "";
-        lines.push(`  ${m.name}: ${m.current}${targetStr} ${unit}${warn}`);
-      }
->>>>>>> review/metrics-phase2-integration
     }
 
     // Footer

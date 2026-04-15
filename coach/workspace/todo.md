@@ -273,6 +273,21 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 - **Key insight**: Ch2 hard gates work when the failure is skipping a process step (verification, analysis). They don't help when the failure is a belief error (trusting wrong context).
 - **Predecessor**: EXP-155 (+85pp), EXP-127 (+100pp) — now 3/4 scenarios show strong Ch2 effect on process failures
 
+### 0w. EXP-164: H-161 Independence Test — F1 × F2 Factorial [COMPLETE ✅ — H-161 SUPPORTED]
+- **Design**: `agents/shared/knowledge/experiments/EXP-164/design.md`
+- **Results**: `agents/shared/knowledge/experiments/EXP-164/results.md`
+- **Goal**: Test whether F1 (memory compression) and F2 (behavioral forcing) are independently valuable
+- **Result**: H-161 SUPPORTED — both functions independently SUFFICIENT (stronger than predicted)
+- **Baseline (D)**: 0/10 (0%) — replicates misleading-test-fix 0% (0/81 total)
+- **F1-only (C)**: 10/10 (100%) — pre-written expert DIAGNOSIS.md fully effective
+- **F2-only (B)**: 10/10 (100%) — forced production + artifact deletion still works
+- **Full-gate (A)**: 10/10 (100%) — replicates EXP-156 (~90%)
+- **All comparisons vs baseline**: p < 0.0001 (Fisher's exact)
+- **Key insight**: Both F1 and F2 independently produce the full behavioral correction. The misleading-test trap is fragile — ANY diagnostic reasoning breaks it.
+- **Additivity**: Uninformative (ceiling artifact — each function alone hits 100%)
+- **Follow-up needed**: Harder scenario where individual functions don't hit ceiling, to test additivity
+- **Predecessor**: EXP-163 (same design, hidden-dep — INCONCLUSIVE due to ceiling), EXP-156 (hard gate generalization)
+
 ### 0t. EXP-147: Context Isolation A/B Test [COMPLETE ✅ — DIRECTIONAL BUT NOT SIGNIFICANT]
 - **Design**: `agents/shared/knowledge/experiments/EXP-147/design.md`
 - **Results**: `agents/shared/knowledge/experiments/EXP-147/results.md`
