@@ -56,10 +56,10 @@ Updated: 2026-04-15 ~22:00 UTC
 - **P2**: Amy-kimi billing — blocked on Hao.
 - ⚠️ **HOLD**: Ch2-production-gates implementation — Hold for EXP-170.
 
-## Latest Cycle Summary (21:30 Apr 15)
+## Latest Cycle Summary (22:00 Apr 15)
 - **SYSTEM**: 9/9 healthy. Zero errors. Zero stuck sessions.
-- **DISPATCHED**: Two-tier eval gap fix to tech-lead (s_1776288668585_124) — increase JS eval coverage to ≥30% for all agents.
-- **QUEUE**: 7 ready items. Top item dispatched this cycle.
+- **COMPLETED**: Two-tier eval gap fix done (75 ops). Code on `review/standalone-eval-coverage` — needs merge.
+- **QUEUE**: 6 ready items. Next up: WF error rates investigation (Bob/Coach).
 - **WAITING**: Gatekeeper Review Gate needs Hao approval. Metric System Phase 3 needs process restart.
 
 ## Archive Reference

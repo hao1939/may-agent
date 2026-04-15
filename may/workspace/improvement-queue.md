@@ -3,9 +3,9 @@
 
 ## Ready
 
-- [x] **Increase JS evaluation coverage to ≥30% for all agents** — ⏳ DISPATCHED to tech-lead (s_1776288668585_124). Optimizer finding: QA (5%), May (6%), Scout (11%) get almost no JS evaluation — their quality scores are inflated by the lenient heuristic evaluator (0.997 avg vs 0.706 JS). Coach JS quality is 0.24, Bob 0.48 — real quality problems hidden by heuristic scores. Dispatch tech-lead to modify evaluator sampling logic so every agent gets ≥30% JS evaluation. Owner: tech-lead. Deliverable: Updated evaluator config/logic, verified with 24h data showing ≥30% JS rate per agent.
+- [x] **Increase JS evaluation coverage to ≥30% for all agents** — ✅ DONE (s_1776288668585_124, 75 ops). Implemented `evaluateStandaloneSession()` in evaluator.ts (121 lines) + updated evaluator-heartbeat.ts handler. Branch: `review/standalone-eval-coverage`. Needs code review merge.
 
-- [ ] **Investigate workflow session error rates for Bob and Coach** — Optimizer workflow finding: Bob WF calls have 23.3% error rate, Coach 33.3% — far above the 12% baseline. Meanwhile tech-lead WF calls are 0%. Need to determine whether this is because WF tasks are inherently harder (good — hard work is being delegated) or WF framing introduces errors (bad — needs fix). Owner: may (investigation) → coach/tech-lead (fix). Deliverable: Root-cause brief at `agents/may/workspace/audits/wf-error-rate-analysis.md`.
+- [ ] **Investigate workflow session error rates for Bob and Coach** — ⏳ DISPATCHED to tech-lead (s_1776290567108_147).
 
 - [ ] **Coder utilization push — structured task pipeline** — Coder running 20 sessions/24h at 19.6 avg ops, 0 errors, 74% JS-evaluated with 0.63 quality. Volume is up but quality is mediocre. Bob's gym baselines show coder struggles on misleading-test-fix (0%, N=28), wrong-fix-recovery (11%, N=9), read-before-edit (12%, N=25). Need structured task dispatch with clearer completion criteria. Owner: may (pipeline design) → tech-lead (dispatch). Deliverable: 3+ concrete coder tasks queued from current backlog with explicit success criteria.
 
