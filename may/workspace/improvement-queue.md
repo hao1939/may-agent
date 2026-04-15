@@ -3,7 +3,7 @@
 
 ## Ready
 
-- [ ] **Increase JS evaluation coverage to ≥30% for all agents** — Optimizer finding: QA (5%), May (6%), Scout (11%) get almost no JS evaluation — their quality scores are inflated by the lenient heuristic evaluator (0.997 avg vs 0.706 JS). Coach JS quality is 0.24, Bob 0.48 — real quality problems hidden by heuristic scores. Dispatch tech-lead to modify evaluator sampling logic so every agent gets ≥30% JS evaluation. Owner: tech-lead. Deliverable: Updated evaluator config/logic, verified with 24h data showing ≥30% JS rate per agent.
+- [x] **Increase JS evaluation coverage to ≥30% for all agents** — ⏳ DISPATCHED to tech-lead (s_1776288668585_124). Optimizer finding: QA (5%), May (6%), Scout (11%) get almost no JS evaluation — their quality scores are inflated by the lenient heuristic evaluator (0.997 avg vs 0.706 JS). Coach JS quality is 0.24, Bob 0.48 — real quality problems hidden by heuristic scores. Dispatch tech-lead to modify evaluator sampling logic so every agent gets ≥30% JS evaluation. Owner: tech-lead. Deliverable: Updated evaluator config/logic, verified with 24h data showing ≥30% JS rate per agent.
 
 - [ ] **Investigate workflow session error rates for Bob and Coach** — Optimizer workflow finding: Bob WF calls have 23.3% error rate, Coach 33.3% — far above the 12% baseline. Meanwhile tech-lead WF calls are 0%. Need to determine whether this is because WF tasks are inherently harder (good — hard work is being delegated) or WF framing introduces errors (bad — needs fix). Owner: may (investigation) → coach/tech-lead (fix). Deliverable: Root-cause brief at `agents/may/workspace/audits/wf-error-rate-analysis.md`.
 

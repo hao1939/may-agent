@@ -1,17 +1,17 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-15 ~21:05 UTC
+Updated: 2026-04-15 ~21:30 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — billing. Blocked on Hao.
-- **Bob**: 🟢 Active — 27 sessions/6h, avg 19 ops. Zero errors.
-- **Coach**: 🟢 Active — 21 sessions/6h, avg 21 ops. Zero errors.
+- **Bob**: 🟢 Active — 31 sessions/6h, avg 14 ops. Zero errors.
+- **Coach**: 🟢 Active — 22 sessions/6h, avg 21 ops. Zero errors.
 - **Scout**: 🟢 Active — 14 sessions/6h, avg 14 ops. Zero errors.
-- **Tech-lead**: 🟢 Active — 36 sessions/6h, avg 22 ops. Zero errors.
+- **Tech-lead**: 🟢 Active — 34 sessions/6h, avg 21 ops. Zero errors.
 - **Optimizer**: 🟢 Active — 24 sessions/6h, avg 14 ops. Zero errors.
-- **Evaluator**: 🟢 Active — 47 sessions/6h, avg 0 ops. Zero errors.
-- **QA**: 🟢 Active — 12 sessions/6h, avg 8 ops. Zero errors.
-- **Coder**: 🟢 Active — 4 sessions/6h, avg 13 ops. Zero errors.
+- **Evaluator**: 🟢 Active — 45 sessions/6h, avg 0 ops. Zero errors.
+- **QA**: 🟢 Active — 12 sessions/6h, avg 7 ops. Zero errors.
+- **Coder**: 🟢 Active — 2 sessions/6h, avg 13 ops. Zero errors.
 - **Summary**: 9/9 healthy. Amy-kimi still down. Zero errors across the board.
 
 ## Active Priorities (from Hao)
@@ -32,6 +32,7 @@ Updated: 2026-04-15 ~21:05 UTC
 | **Gatekeeper Review Gate design** | ✅ Design reviewed | bob | Bob approved with notes. All feedback incorporated: Mode B renamed, system-scope defined, open questions resolved, Mode A deferred. Awaiting Hao approval → then dispatch Phase 1 (behavioral) to may, Phase 2 (code) to tech-lead. |
 | **Heartbeat commit instruction fix** | ✅ DONE | may | Fixed Step 7 of heartbeat.md — was telling me NOT to commit (stale 10min auto-commit reference). Now says commit first, auto-commit is 2h safety net. |
 | ⚠️ **Hao task truncated** | ❓ Need info | Hao | req:7a936dcb was truncated at 500 chars. Only issue #1 (threshold inversion) visible+dispatched. May have more issues. |
+| **Two-tier eval gap fix** | ⏳ Active | tech-lead | Increase JS eval coverage to ≥30% for all agents. Forked s_1776288668585_124. |
 
 ## Completed This Cycle
 | Issue | Status | Owner | Notes |
@@ -50,16 +51,15 @@ Updated: 2026-04-15 ~21:05 UTC
 | **Wire gym-batch.sh** | ✅ Done | tech-lead | Closed (req:a3787a7c). |
 
 ## Next Actions
-- **P1**: **Two-tier evaluation gap** — Optimizer found heuristic eval gives 0.997 quality vs JS eval 0.706. 71% of sessions get lenient heuristic only. Coach (0.52 JS Q) and Bob (0.67) are lowest when actually examined. → Dispatch to tech-lead: increase JS evaluation coverage for agents currently 100% heuristic (qa, may, scout).
 - **P1**: **Gatekeeper Review Gate** — Design complete, Bob+tech-lead reviewed. Needs Hao approval → then dispatch to tech-lead for implementation.
 - **P1**: **Metric System Phase 3** — Blocked on process restart for new handlers. Monitor.
 - **P2**: Amy-kimi billing — blocked on Hao.
 - ⚠️ **HOLD**: Ch2-production-gates implementation — Hold for EXP-170.
 
-## Latest Cycle Summary (21:05 Apr 15)
-- **SYSTEM**: 9/9 healthy. Zero errors. Zero stuck sessions. May avg 37 ops (too high — staying lean this cycle).
-- **OPTIMIZER FINDINGS**: Two critical findings today: (1) Two-tier evaluation problem — heuristic eval inflates quality scores, (2) Workflow adoption at 28% not 68% as claimed. Both documented in optimizer workspace.
-- **QUEUE**: All improvement items completed. Forking refill session.
+## Latest Cycle Summary (21:30 Apr 15)
+- **SYSTEM**: 9/9 healthy. Zero errors. Zero stuck sessions.
+- **DISPATCHED**: Two-tier eval gap fix to tech-lead (s_1776288668585_124) — increase JS eval coverage to ≥30% for all agents.
+- **QUEUE**: 7 ready items. Top item dispatched this cycle.
 - **WAITING**: Gatekeeper Review Gate needs Hao approval. Metric System Phase 3 needs process restart.
 
 ## Archive Reference
