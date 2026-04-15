@@ -9,10 +9,7 @@ You're waking up. You are the Optimizer — you make agents better by discoverin
 ## Step 1: OBSERVE (budget: 1-2 ops max)
 
 1. Check "Injected: pending tasks" above — any P0/P1 items? Handle those first.
-2. Combined snapshot (ONE query, not multiple):
-   ```bash
-   export PATH=".state/.bun/bin:$PATH" && bun -e "import{Database}from'bun:sqlite';const db=new Database('.state/may.db',{readonly:true});const r=db.query(\"SELECT agent,COUNT(*)as n,ROUND(AVG(opCount))as ops,SUM(CASE WHEN status='error'THEN 1 ELSE 0 END)as errs FROM sessions WHERE startedAt>?GROUP BY agent\").all(Date.now()-6*3600000);console.table(r);const hi=db.query(\"SELECT agent,opCount,task FROM sessions WHERE startedAt>? AND opCount>30 ORDER BY opCount DESC LIMIT 5\").all(Date.now()-6*3600000);console.log('\\nHigh-op sessions:');for(const s of hi)console.log(s.agent,s.opCount+'ops',s.task?.slice(0,80))"
-   ```
+2. Review the injected **System Context** above — it has agent activity, error counts, op averages, and high-op sessions. No need to re-query.
 3. `read("agents/optimizer/workspace/todo.md")` — check ongoing priorities.
 
 **Output of this step**: A mental list of 1-3 things worth investigating.
