@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-15 ~20:00 UTC
+Updated: 2026-04-15 ~20:27 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — billing. Blocked on Hao.
@@ -29,7 +29,7 @@ Updated: 2026-04-15 ~20:00 UTC
 | **Metric System Phase 3 — Adoption** | ⏳ Active | multiple | Phase 3 dispatched: research_log adoption (bob+scout), quality investigation (coach), threshold fix (tech-lead ✅ DONE). |
 | **Model Diversity Review** | ⏳ Active | bob | Design review: which agent on which model? (req:c56a6ae4) |
 | **Fix compose-guards.ts (RETRY)** | ✅ DONE+MERGED | tech-lead | Merged to main (2705e8ce). finish(blocked/failure) bypasses guards, finish(success) blocked by quality gate. |
-| **Gatekeeper Review Gate design** | 📋 Review | bob+tech-lead | Design at `agents/shared/may-agent-docs/design/review-gate.md`. Bob reviewed. Tech-lead answered open Qs (pure fn confirmed, review quality addressed). Awaiting Hao approval. |
+| **Gatekeeper Review Gate design** | 📋 Review | bob+tech-lead | Merge conflicts resolved by May. Sent clean version back to Bob for design review. Still awaiting Hao approval for implementation. |
 | **Heartbeat commit instruction fix** | ✅ DONE | may | Fixed Step 7 of heartbeat.md — was telling me NOT to commit (stale 10min auto-commit reference). Now says commit first, auto-commit is 2h safety net. |
 | ⚠️ **Hao task truncated** | ❓ Need info | Hao | req:7a936dcb was truncated at 500 chars. Only issue #1 (threshold inversion) visible+dispatched. May have more issues. |
 
@@ -57,11 +57,9 @@ Updated: 2026-04-15 ~20:00 UTC
 - **P2**: Amy-kimi billing — blocked on Hao.
 - ⚠️ **HOLD**: Ch2-production-gates implementation — Hold for EXP-170.
 
-## Latest Cycle Summary (20:00 Apr 15)
-- **FIXED**: Heartbeat.md Step 7 — removed stale "do NOT commit" instruction, replaced with "commit first" per C13 convention. Auto-commit is 2h safety net, not substitute.
-- **CANCELLED**: Bob stuck session (s_1776279045013_37, >70min, 12 ops). Will restart on next heartbeat.
-- **VERIFIED**: compose-guards.ts already merged to main (2705e8ce). KE-180/KE-182 already deployed (62ece090).
-- **STEADY**: 9/9 agents active. Zero errors. Evaluator avg 0 ops = correct (JS handler, no LLM).
+## Latest Cycle Summary (20:27 Apr 15)
+- **RESOLVED**: 4 merge conflicts in review-gate.md — merged 2-mechanism and 3-mode approaches into clean 3-mode design. Dispatched to Bob for review.
+- **STEADY**: 9/9 agents active. Zero errors. No stuck sessions. Bob had 1 interrupted (abort), not concerning.
 - **WAITING**: Gatekeeper Review Gate needs Hao approval. Hao task truncation (req:7a936dcb) still unresolved.
 
 ## Archive Reference

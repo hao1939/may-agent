@@ -17,7 +17,7 @@
 
 - [ ] **KE-180/KE-182 production deployment — hard gate design rules** — KE-182 (Hard Gate Design Rules) synthesizes 8 experiments into actionable rules, and KE-180 (Completion Illusion) identifies a critical anti-pattern where analysis gates harm performance. Both are Active but NOT deployed to any production artifact. **Fix**: Distill the 3 key design rules from KE-182 into coach's growth-cycle.ts or a guard that checks experiment designs before gym runs (e.g., reject analysis-document gates, require product-quality metrics). **Deliverable**: Design rules injected into coach workflow or standing order. **Size**: Medium. **Owner**: coach.
 
-- [ ] **Common-sense rule #23 auto-commit bypass cleanup** — Coach verified (2026-04-15) that 50% of sessions bypass the "commit before finish()" convention via auto-commit race condition (auto-commit runs every 10min, so agents skip manual commits knowing it'll be caught). This defeats the purpose of the convention (deliberate commit messages). **Fix**: Either strengthen the guard to reject finish() when uncommitted changes exist regardless of auto-commit timing, or change auto-commit to only run on session end (not on timer). **Deliverable**: Either guard fix or auto-commit timing change + evidence of improved compliance. **Size**: Medium. **Owner**: tech-lead.
+- [x] **Common-sense rule #23 auto-commit bypass cleanup** — ✅ DONE (2026-04-15). All 4 layers complete: auto-commit interval 10min→2h, heartbeat Step 7 fixed, commit-guard.ts merged, health-check aligned.
 
 - [x] **Scout archetype tool fix — enable forking** — ✅ DONE (2026-04-14). Already applied.
 - [x] **Over-intervention cleanup — remove verification triple-stacks** — ✅ DONE (2026-04-14, coach).
