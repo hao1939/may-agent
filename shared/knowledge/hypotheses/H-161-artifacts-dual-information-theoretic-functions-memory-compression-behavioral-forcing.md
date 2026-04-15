@@ -195,7 +195,7 @@ This is the crispest test of independence. Take the EXP-155 setup (hard gate req
 2. **Design a harder scenario for H-161 testing**: Needs 30-70% baseline product pass rate, with a failure mode that artifacts could help with. Bug 2 must be genuinely hidden (not surfaced by running the program). Candidates: multi-file logic bugs with subtly wrong output, race conditions, non-obvious dependency graphs across 3+ files.
 3. **Design EXP-162**: The 4-arm independence test above (P-161a + P-161b) — but MUST use a scenario with room to improve, not hidden-dep
 4. **Post-hoc analysis**: Artifact quality analysis (P-161c) should use EXP-127/EXP-156 data, NOT hidden-dep data
-5. **Scenario portfolio**: Creating Medium-baseline scenarios (todo: scenario gap-fill) would enable P-161d testing
+5. **Scenario portfolio**: Creating medium-baseline scenarios (see Bob's scenario gap-fill item) would enable P-161d testing
 
 ## EXP-163 Result (2026-04-15): INCONCLUSIVE — Ceiling Effect
 
