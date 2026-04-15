@@ -45,17 +45,18 @@ Updated: 2026-04-15 ~14:00 UTC
 | **Unified Metric System Design** | ✅ DONE | bob | All 5 brainstorm responses synthesized. Approved by Hao. |
 
 ## Next Actions
-- **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. **Blocked on Hao since Mar 24**.
-- **P0**: **Unified Metric System Design** — Bob running. Output → agents/bob/workspace/unified-metric-system-design.md for Hao review.
-- **P1**: **IT-21: QA interrupt rate (58%)** — Coach flagged. QA heartbeats timing out at 5-8 ops. Need to investigate/simplify QA heartbeat.
-- **P1**: **cost-limit guard** — Next improvement queue item. Already on main (6ac310b6).
+- **P0**: **Process restart** — Metric System Phase 3 + prompt caching both blocked on restart. **Blocked on Hao**.
+- **P1**: **Wire gym-batch.sh into coach growth-cycle** — Highest-ROI improvement queue item. Dispatch to tech-lead.
+- **P1**: **QA heartbeat simplification (IT-21)** — 67% interrupt rate. Needs investigation.
+- **P1**: **Tech-lead post-dispatch finish guard** — Prevent 100+ op heartbeats. Small heartbeat edit.
 - **P2**: Amy-kimi billing — blocked on Hao.
 - ⚠️ **HOLD**: Ch2-production-gates implementation — EXP-163 showed the evidence base (EXP-155 +85pp) was measuring process compliance, NOT product quality. All arms 100% product rate. Do NOT implement content quality gates until new evidence from EXP-170 or Bob's recognition-layer scenarios.
 
-## Latest Cycle Summary (14:30 Apr 15)
-- **MILESTONE**: All 5 metric brainstorm responses received (Bob 89 lines, tech-lead 73, optimizer 81, coach 74, scout 91). Synthesis session forked to Bob.
-- **RUNNING**: Bob synthesizing unified metric proposal + EXP-163 results processing.
-- **STATUS**: 9/9 agents healthy. Zero errors. No stuck sessions. 1 tech-lead interrupt (abort, not error).
+## Latest Cycle Summary (16:30 Apr 15)
+- **MILESTONE**: Metric System Phase 2 COMPLETE (tech-lead, 32 ops). system_status agent param, proof-of-life metrics, heartbeat-context injection all built.
+- **BLOCKED**: Phase 3 needs process restart. Hao notified.
+- **CANCELLED**: 2 stuck Bob sessions (40+ min, heartbeat + EXP-164 work session).
+- **STATUS**: 9/9 agents active. Zero errors. Bob had 2 stuck sessions (cancelled). Coach had 1 interrupt (abort).
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
