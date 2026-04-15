@@ -46,6 +46,21 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     `- Scripts: /app/scripts/\n` +
     `- Do NOT use /root/, /home/, /Users/, or ~/ paths\n\n`;
 
+  // Hard gate design rules (KE-180/KE-182) — prevents designing ineffective gates
+  const HARD_GATE_RULES =
+    `## ⚠️ HARD GATE DESIGN RULES (KE-180/KE-182)\n` +
+    `If your intervention uses a forced-externalization gate (requiring the agent to write an artifact):\n` +
+    `1. **Artifact = solution, NOT report.** Gate artifacts must PRODUCE the fix (e.g., FIXED_TESTS.md ` +
+    `with corrected code), not DESCRIBE the problem (e.g., ANALYSIS.md). "Completion illusion" (KE-180) ` +
+    `causes agents to write analysis, feel done, then skip the fix — 0% pass rate in EXP-157.\n` +
+    `2. **Measure product quality, not process compliance.** Success = "does the fix work?" not ` +
+    `"did the agent create a file?" Process metrics inflate results (EXP-163: 100% process, 100% baseline).\n` +
+    `3. **Never gate implementation-bottleneck tasks.** Gates help recognition/investigation tasks ` +
+    `(diagnosis, root cause analysis). They hurt debugging/refactoring tasks (KE-054).\n` +
+    `4. **For multi-step tasks, use 2-phase with session boundary.** Phase 1: investigate → write artifact. ` +
+    `Phase 2 (new session): read artifact → implement fix. Single-session gates are weaker.\n` +
+    `5. **One gate per experiment.** Never stack multiple gates (KE-123: -12pp from stacking).\n\n`;
+
   // Step 1: Diagnose / Study
   const step1Prompt = isLearning
     ? ENV_FACTS +
@@ -66,6 +81,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       `5. Design a small experiment: what change will you make using this method?\n` +
       `6. Report: what you learned about the method, your experiment plan.`
     : ENV_FACTS +
+      HARD_GATE_RULES +
       `## ⚠️ TURN BUDGET: MAX 25 TOOL CALLS\n` +
       `Budget 25 tool calls. If you can't finish, call finish({status: "partial"}).\n\n` +
       `Diagnose an error pattern and select an improvement method.\n\n` +
@@ -137,6 +153,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   // Step 2: Fork and apply
   const patch = await ctx.runAgent("coach",
     ENV_FACTS +
+    HARD_GATE_RULES +
     `## ⚠️ TURN BUDGET: MAX 20 TOOL CALLS\n` +
     `Budget 20 tool calls. Fork, patch, verify — be efficient.\n\n` +
     `Fork the target agent and apply exactly ONE improvement method.\n\n` +
