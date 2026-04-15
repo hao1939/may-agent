@@ -13,7 +13,7 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-15T20:49)
+# Your Context (auto-generated 2026-04-15T21:19)
 
 **System:** 1 sessions/6h, 0% error rate
 
@@ -21,7 +21,7 @@
 - may: 1s, 1401KB
 
 **Your active error patterns:**
-- FM-3.3: 7x
+- FM-3.3: 8x
 - FM-1.3: 1x
 - FM-2.6: 1x
 - FM-4.1: 1x
