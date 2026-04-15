@@ -477,5 +477,15 @@
     "handler": "evaluation-sync",
     "description": "Standalone heuristic evaluator for may.db. Workaround for WAL persistence bug in ctx.writeHeuristicEvaluations(). 10min interval. JS handler, no LLM cost.",
     "offsetMs": 120000
+  },
+  {
+    "name": "metrics-snapshot",
+    "type": "job",
+    "intervalMs": 3600000,
+    "message": "[cron:metrics-snapshot] Measure all active metrics and record snapshots.",
+    "enabled": true,
+    "handler": "metrics-snapshot",
+    "description": "Unified Metric System snapshot handler. Auto-measures SQL and command-based metrics, records time-series snapshots, checks thresholds and regressions, fires/resolves alerts. JS handler, 1h interval, no LLM cost.",
+    "offsetMs": 180000
   }
 ]
