@@ -331,7 +331,8 @@
 - 2026-04-15 20:10: Closed stale request ead8ff55 (auto-commit bypass) — all 4 layers of fix already deployed (auto-commit 2h, heartbeat.md, commit-guard, health-check display). Updated dispatch board.
 - 2026-04-15 20:30: **Feature rotation check**: no pending features (dispatch board: no Ready items). **Infra**: Lens A — workflow-tool.ts architecture review (859 LOC, agent-facing workflow invocation tool). COMPLETE (14 ops, ~2min): 4 cohesion clusters, 1 structural concern (dual-path invocation via run vs list duplicating validation), workflow engine coupling is reasonable. See workspace/finding-workflow-tool-ts-architecture-review-85.md
 - 2026-04-15 21:00: **Feature rotation check**: no pending features (dispatch board: no Ready items). **Infra**: Lens B — metrics-snapshot.ts measurement flow complexity (409 LOC, new Phase 1 handler). COMPLETE (11 ops, ~2min): 5-hop flow from cron tick to persisted measurement. Clean separation of concerns. Key findings: no per-measurement error isolation (one throw aborts batch), regression detection is statistically naive (single-point comparison, no trend window), shell command measurements have no timeout guard. See workspace/finding-metrics-snapshot-ts-measurement-flow-com.md
-- **Next**: Lens C next cycle. **Cycle type**: feature (if dispatch board has items) else infra.
+- 2026-04-15 21:30: **Feature rotation check**: no pending features (dispatch board: no Ready items). **Infra**: Lens C — cli-agents.ts dead weight audit (562 LOC). COMPLETE (16 ops, ~2min): 1 unreachable line, 3 re-exported-but-unused utilities, significant code duplication across 3 tool factories. See workspace/finding-cli-agents-ts-dead-weight-audit.md
+- **Next**: Lens D next cycle. **Cycle type**: feature (if dispatch board has items) else infra.
 
 ## Low-Priority Cleanup
 - [x] Phase 5d: Deprecate memory fallback — DONE (s_1775527469736_184, commit 34263ca)
