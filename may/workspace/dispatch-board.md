@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-15 ~11:00 UTC
+Updated: 2026-04-15 ~12:00 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — billing. Blocked on Hao.
@@ -35,6 +35,9 @@ Updated: 2026-04-15 ~11:00 UTC
 | **Gym cost/value analysis** | ✅ DONE | coach | Completed (4 ops). |
 | **Workspace hygiene script + cleanup** | ✅ DONE | optimizer | Completed (6 ops). |
 | **Commit guard scope gap** | ✅ DONE | tech-lead | Completed (6 ops). |
+| **Output Channel Phase 1** | ✅ DONE | tech-lead | Socket fix + telegram child summarization. Cherry-picked to main (5978a052). |
+| **Output Channel Design** | ✅ APPROVED | may | Proof-of-life digests approved. Design at may-agent-docs/design/output-channels.md. |
+| **May-Gatekeeper v4** | ✅ IMPLEMENTED | may | Proactive review in heartbeat (Step 3). QA code review gate. Zero code. |
 | **Research Conclusion Sprint** | 🟢 RUNNING | bob | Batch 1 done (H-098, H-099, H-091). Batch 2 running (H-085, H-095, H-093). |
 
 ## Next Actions
