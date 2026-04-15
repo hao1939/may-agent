@@ -1,5 +1,3 @@
-# Deliverables Checklist — Heartbeat Apr 15 14:00 UTC
+# Deliverables Checklist
 
-- [x] Observe system snapshot — 0 errors, tech-lead 100-op spike identified
-- [x] Fork Mode D Workflow Health → `finding-workflow-health-0415.md` (via verify-wrap)
-- [x] Update rotation tracking in `todo.md` (C→D, next A)
+- [x] agents/optimizer/workspace/finding-coder-success-patterns-0415.md — Analysis of coder success techniques from high-quality sessions

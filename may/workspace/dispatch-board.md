@@ -1,18 +1,18 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-15 ~14:00 UTC
+Updated: 2026-04-15 ~16:00 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — billing. Blocked on Hao.
-- **Bob**: 🟢 Active — 25 sessions/6h, avg 12 ops. Zero errors.
-- **Coach**: 🟢 Active — 20 sessions/6h, avg 11 ops. Zero errors.
-- **Scout**: 🟢 Active — 12 sessions/6h, avg 7 ops. Zero errors.
-- **Tech-lead**: 🟢 Active — 37 sessions/6h, avg 16 ops. Zero errors.
-- **Optimizer**: 🟢 Active — 24 sessions/6h, avg 10 ops. Zero errors.
-- **Evaluator**: 🟢 Active — 50 sessions/6h, avg 0 ops. Zero errors.
-- **QA**: 🟢 Active — 12 sessions/6h, avg 6 ops. (IT-21 known).
-- **Coder**: 🟢 Active — 15 sessions/6h, avg 20 ops. Zero errors.
-- **Summary**: 9/9 healthy. Amy-kimi still down. Zero errors across the board.
+- **Bob**: 🟢 Active — 31 sessions/6h, avg 18 ops. Zero errors.
+- **Coach**: 🟢 Active — 25 sessions/6h, avg 15 ops. Zero errors.
+- **Scout**: 🟢 Active — 14 sessions/6h, avg 6 ops. Zero errors.
+- **Tech-lead**: 🟢 Active — 29 sessions/6h, avg 20 ops. Zero errors.
+- **Optimizer**: 🟢 Active — 25 sessions/6h, avg 12 ops. Zero errors.
+- **Evaluator**: 🟢 Active — 41 sessions/6h, avg 0 ops. Zero errors.
+- **QA**: 🟢 Active — 12 sessions/6h, avg 7 ops. Zero errors.
+- **Coder**: 🟢 Active — 7 sessions/6h, avg 20 ops. Zero errors.
+- **Summary**: 9/9 healthy. Amy-kimi still down. No stuck sessions.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -25,15 +25,13 @@ Updated: 2026-04-15 ~14:00 UTC
 | Issue | Status | Owner | Notes |
 |-------|--------|-------|-------|
 | Amy-kimi billing outage | 🔴 Blocked | Hao | Still down, needs balance refill |
-| **Metric System Phase 3 — Adoption** | ⏳ BLOCKED | may/tech-lead | Phase 1+2 complete. Phase 3 blocked on process restart for new handlers (heartbeat-context metrics injection, proof-of-life metrics). |
-| **Wire gym-batch.sh into coach growth-cycle** | 🟡 Ready | tech-lead | Top improvement queue item. Small scope. |
-| **Tech-lead post-dispatch finish guard** | 🟡 Ready | may | Heartbeat edit to prevent 100+ op heartbeats. |
-| **QA heartbeat simplification (IT-21)** | 🟡 Ready | tech-lead | QA interrupt rate 67%. Needs investigation + simplification. |
-
-## Completed This Cycle
-| Issue | Status | Owner | Notes |
-|-------|--------|-------|-------|
-| **Metric System Phase 2** | ✅ DONE | tech-lead | system_status agent param, proof-of-life metrics, heartbeat-context injection (s_1776269084528_9, 32 ops) |
+| **Unified Metric System Design** | ✅ APPROVED | may | Hao approved. Phase 1 implementation dispatched to tech-lead. Project: `agents/shared/projects/metric-system.md`. |
+| **Metric System Brainstorm** | ✅ DONE | bob | All 5 responses synthesized → `unified-metric-system-proposal.md`. Approved by Hao. |
+| **KE-181 Common-Sense Rule** | ✅ DONE | may | Coach proposed, approved + added to common-sense.md. |
+| **Metric System Phase 1** | ✅ DONE | tech-lead | 4 tables, 20 metrics, 15 snapshots, cron active (1h). |
+| **Metric System Phase 2** | 🟢 RUNNING | tech-lead | seed-metrics.ts + heartbeat query snippet + integration guide. Forked ~16:01 UTC (s_..._9). |
+| **KE-180/182 Hard Gate Rules Deployment** | 🟢 RUNNING | coach | Deploy hard gate design rules to production artifact. Forked ~15:00 UTC. |
+| **TL Post-Dispatch Finish Guard** | ✅ DONE | may | Added "finish within 3 ops after fork" to tech-lead heartbeat Step 3. |
 | **EXP-163 Results Processing** | ✅ DONE | bob | KE-129 reinterpreted, H-161 updated, KE-184 written (ceiling effect methodology). |
 | **Research Conclusion Sprint** | ✅ DONE | bob | All 6 threads concluded (Batch 1: H-098/099/091, Batch 2: H-085/095/093). Synthesis written. |
 | **EXP-147 Track B Context Isolation** | ✅ DONE | coach | All experiments COMPLETE or CANCELLED per coach. |
@@ -42,21 +40,21 @@ Updated: 2026-04-15 ~14:00 UTC
 | **Scenario oracle generator** | ✅ MERGED | tech-lead | Merged to main (c197286d). |
 | **Pivot-detector guard** | ✅ MERGED | may | Previously merged (8fdb18db). |
 | **Verify-wrap "undefined" bug** | ✅ MERGED | may | Previously merged (8fdb18db). |
-| **Unified Metric System Design** | ✅ DONE | bob | All 5 brainstorm responses synthesized. Approved by Hao. |
 
 ## Next Actions
-- **P0**: **Process restart** — Metric System Phase 3 + prompt caching both blocked on restart. **Blocked on Hao**.
-- **P1**: **Wire gym-batch.sh into coach growth-cycle** — Highest-ROI improvement queue item. Dispatch to tech-lead.
-- **P1**: **QA heartbeat simplification (IT-21)** — 67% interrupt rate. Needs investigation.
-- **P1**: **Tech-lead post-dispatch finish guard** — Prevent 100+ op heartbeats. Small heartbeat edit.
+- **P0**: **Unified Metric System Phase 2** — Agent integration: add metrics query to each agent's heartbeat. Need to dispatch to tech-lead.
+- **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. **Blocked on Hao since Mar 24**.
+- **P1**: **IT-21: QA interrupt rate (58%)** — Coach flagged. QA heartbeats timing out at 5-8 ops. Need to investigate/simplify QA heartbeat.
+- **P1**: **cost-limit guard** — Next improvement queue item. Already on main (6ac310b6).
 - **P2**: Amy-kimi billing — blocked on Hao.
 - ⚠️ **HOLD**: Ch2-production-gates implementation — EXP-163 showed the evidence base (EXP-155 +85pp) was measuring process compliance, NOT product quality. All arms 100% product rate. Do NOT implement content quality gates until new evidence from EXP-170 or Bob's recognition-layer scenarios.
 
-## Latest Cycle Summary (16:30 Apr 15)
-- **MILESTONE**: Metric System Phase 2 COMPLETE (tech-lead, 32 ops). system_status agent param, proof-of-life metrics, heartbeat-context injection all built.
-- **BLOCKED**: Phase 3 needs process restart. Hao notified.
-- **CANCELLED**: 2 stuck Bob sessions (40+ min, heartbeat + EXP-164 work session).
-- **STATUS**: 9/9 agents active. Zero errors. Bob had 2 stuck sessions (cancelled). Coach had 1 interrupt (abort).
+## Latest Cycle Summary (16:00 Apr 15)
+- **Metric System Phase 1**: ✅ COMPLETE — 4 tables, 20 metrics, 15 snapshots, cron active.
+- **Evolution Roadmap**: Written per Hao's request. Saved to `agents/shared/may-agent-docs/design/metrics-evolution-roadmap.md`. Project file updated.
+- **Phase 2 next**: Agent integration — add metrics query to heartbeats. Ready to dispatch to tech-lead.
+- **Pending requests**: Both roadmap requests (req:c5f33d7a, req:b082ecc7) completed.
+- **STATUS**: 9/9 agents healthy. Zero errors. No stuck sessions.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
