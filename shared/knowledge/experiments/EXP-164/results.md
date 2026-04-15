@@ -3,7 +3,7 @@
 **Date**: 2026-04-15
 **Status**: COMPLETE
 **Duration**: ~4 hours (design, smoke test, 40+ batch trials, analysis)
-**Cost**: ~$2.80 estimated (68 total runs including overruns)
+**Cost**: ~$7.00 estimated (100 total runs including overruns and prior batches)
 
 ---
 
@@ -20,8 +20,9 @@ Both F1 (memory compression / information provision) and F2 (behavioral forcing 
 | C (F1-only) | ✓ | ✗ | **10/10 (100%)** | [69.2%, 100%] |
 | D (baseline) | ✗ | ✗ | **0/10 (0%)** | [0%, 30.8%] |
 
-Robustness across all available batch runs (beyond N=10 protocol):
-- A: 12/12 (100%), B: 12/12 (100%), C: 17/17 (100%), D: 0/27 (0%)
+Robustness across all available batch runs (beyond N=10 protocol, verified from DB):
+- A: 22/22 (100%), B: 22/22 (100%), C: 25/25 (100%), D: 0/31 (0%)
+- Total: 69/69 treatment runs (100%) vs 0/31 baseline (0%)
 
 ---
 
