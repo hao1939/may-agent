@@ -24,23 +24,17 @@ Updated: 2026-04-15 ~08:30 UTC
 | Issue | Status | Owner | Notes |
 |-------|--------|-------|-------|
 | Amy-kimi billing outage | 🔴 Blocked | Hao | Still down, needs balance refill |
-| **Guards-v2 Phase 1** | ✅ COMPLETE | may/tech-lead | All 4 gaps closed. 53 tests pass. Warning delivery, guard disable, demand dedup, auto-test guard. |
-| **Guards-v2 Phase 2: Integration test** | ✅ COMPLETE | tech-lead | Done (23 ops). Guards tested in real workflow execution. |
-| **Pivot-detector guard** | 🟢 IN REVIEW | may | Detects create-test-fail loops (bob 280ops, coach 118ops). Warns at 3, intervenes at 5. 7 tests. Branch: review/pivot-detector-guard. |
-| **Batch merge tool** | 📋 P1 QUEUED | tech-lead | Script to automate review branch merges. Saves ~40 ops/session. |
+| **Pivot-detector guard** | 🟢 IN REVIEW | may | Detects create-test-fail loops. Branch: review/pivot-detector-guard. |
+| **Batch merge tool** | ✅ DONE | coder | Completed (14 ops). |
 | **EXP-147 Track B Context Isolation** | 🟢 RUNNING | coach | A/B test in progress. |
 | **EXP-156 Hard Gate Generalization** | 🟢 RUNNING | coach | Phase 4 analysis underway. |
-| **Over-intervention dedup** | ✅ DONE | coach | Removed 5 redundant evidence-over-narrative copies. Canonical at shared/knowledge/fewshot-examples/. Commit: 2cd4dfd7. |
-| **Artifacts-as-Memory deep dive** | 📋 P1 QUEUED | bob | Paper 2604.08756 validates DD-750. Write DD + cross-ref. |
 | **Verify-wrap "undefined" bug** | 🟡 IN REVIEW | may | Fix on branch `review/fix-verify-wrap-undefined`. 97 tests pass. Needs QA merge. |
-| **Persistent-task workflow pilot** | ✅ COMPLETE | tech-lead | Pilot done. 3 iterations ran. 5 issues found + fixed (commit 4879642b). Heartbeats updated for bob + tech-lead adoption. |
-| **Gym scenario triage + lab merge** | 🟢 DISPATCHED | bob | Design doc for 295→30-50 scenarios + lab→gym merge. Req b0d82f98. |
-| **Lab fork cleanup** | 🟢 DISPATCHED | coach | Audit 55 .lab/ forks, delete stale. Req c724e8ee. |
-| **Gym cost/value analysis** | 🟢 DISPATCHED | optimizer | 952 sessions/week cost analysis. Req 7e06acd1. |
-| **Web UI Visualization** | ✅ Phase 4 done | tech-lead/coder | Complete. |
-| **Scout archetype tool fix** | ✅ DONE | — | agent.json already has agents + workflow tools. |
-| **Workspace hygiene script + cleanup** | 🟢 DISPATCHED | tech-lead | Prune stale archives (bob 5.8MB, coach 2.3MB, optimizer 2.0MB). Req de6620e5. |
-| **Commit guard scope gap** | 🟢 DISPATCHED | tech-lead | Guard only checks agents/<name>/, misses src/ and shared/. Req ebefef5a. |
+| **Gym scenario triage + lab merge** | ✅ DONE | coach | Completed (4 ops). |
+| **Lab fork cleanup** | ✅ DONE | coach | Completed (7 ops). |
+| **Gym cost/value analysis** | ✅ DONE | coach | Completed (4 ops). |
+| **Workspace hygiene script + cleanup** | ✅ DONE | optimizer | Completed (6 ops). |
+| **Commit guard scope gap** | ✅ DONE | tech-lead | Completed (6 ops). |
+| **Research Conclusion Sprint** | 🟢 RUNNING | bob | Batch 1 done (H-098, H-099, H-091). Batch 2 running (H-085, H-095, H-093). |
 
 ## Next Actions
 - **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. **Blocked on Hao since Mar 24**.
