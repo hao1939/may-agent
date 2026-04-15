@@ -245,6 +245,36 @@ All 6 variant scenarios live in `agents/gym/scenarios/` with correct:
 
 ---
 
+## Results (In Progress)
+
+### sql-injection-in-query-builder
+
+| Arm | Scenario | N | Pass | Fail | Rate | 95% CI |
+|-----|----------|---|------|------|------|--------|
+| **A (baseline)** | sql-injection-in-query-builder | 15 | 10 | 5 | **67%** | [38%, 88%] |
+| **B (F2-only)** | sql-injection-in-query-builder-f2 | 7/15 | 7 | 0 | **100%** | [59%, 100%] |
+| **C (F1-only)** | sql-injection-in-query-builder-f1 | 0/15 | — | — | — | — |
+| **D (F1→F2)** | sql-injection-in-query-builder-f1f2 | 0/15 | — | — | — | — |
+
+### cascading-fix-trap-v2
+
+| Arm | Scenario | N | Pass | Fail | Rate | 95% CI |
+|-----|----------|---|------|------|------|--------|
+| **A (baseline)** | cascading-fix-trap-v2 | 0/15 | — | — | — | — |
+| **B (F2-only)** | cascading-fix-trap-v2-f2 | 0/15 | — | — | — | — |
+| **C (F1-only)** | cascading-fix-trap-v2-f1 | 0/15 | — | — | — | — |
+| **D (F1→F2)** | cascading-fix-trap-v2-f1f2 | 0/15 | — | — | — | — |
+
+### Early Observations (2026-04-15)
+
+1. **Arm A baseline is HIGHER than predicted**: 67% vs predicted 25-40%. The sql-injection scenario is easier than expected — agents frequently catch both bugs even without intervention.
+2. **Arm B (F2-only) is showing 100% at N=7**: This is OPPOSITE to the prediction that F2 would barely improve over baseline. The forced analysis phase may actually help for recognition tasks (sql-injection is a recognition task). More runs needed to confirm.
+3. **Surprising implication**: If B ≈ 100% and A ≈ 67%, the F2 effect (+33pp) is substantial for recognition tasks. This would mean the EXP-165 finding (F2 fails on architectural tasks) is *task-type-specific*, not universal.
+
+**Total runs completed**: 22/120
+
+---
+
 ## Cross-References
 
 | Entry | Relationship |

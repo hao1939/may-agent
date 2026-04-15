@@ -13,17 +13,18 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-15T23:19)
+# Your Context (auto-generated 2026-04-15T23:49)
 
-**System:** 4 sessions/6h, 0% error rate
+**System:** 5 sessions/6h, 0% error rate
 
 **Top spenders:**
 - may: 1s, 1494KB
-- bob: 2s, 198KB
-- amy: 1s, 14KB
+- bob: 2s, 214KB
+- coach: 1s, 145KB
+- amy: 1s, 90KB
 
 **Your active error patterns:**
-- FM-3.3: 7x
+- FM-3.3: 8x
 - FM-2.6: 3x
 - FM-4.1: 1x
 - FM-1.3: 1x
