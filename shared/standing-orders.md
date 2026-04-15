@@ -17,6 +17,11 @@ If you have the `workflow` tool and your task involves code changes or investiga
 - **Applies to**: bob, coach, optimizer, tech-lead (agents with workflow tool)
 - **Reason**: Workflow sessions are 30% more efficient (11.8 vs 17.1 avg ops) and more reliable (99.4% vs 97.2% completion). But adoption is only 16% because forked work sessions don't see the guidance in heartbeat.md.
 
+### [ORDER-008] May dispatch rules — fork vs message (2026-04-15)
+When Hao asks May to dispatch work, May must use `agents.fork()` so it starts immediately. Never use `agents.message()` for human-initiated work. For internal coordination (convention regressions, stale metrics, routine checks), `agents.message()` is acceptable — it can wait for the next heartbeat.
+- **Applies to**: may
+- **Reason**: `agents.message()` queues in DB and waits for recipient's next heartbeat — up to 30 minutes. Human requests should not wait. `agents.fork()` starts immediately.
+
 <!-- 
 FORMAT FOR ORDERS:
 
