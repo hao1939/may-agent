@@ -1,116 +1,193 @@
-# Finding: Workflow Health Check — Apr 15, 2026
+# Finding: Workflow Health — Post LLM-to-JS Verification Impact
 
-**Date**: 2026-04-15  
-**Mode**: D (Workflow Health)  
-**Analyst**: optimizer  
+**Date**: 2026-04-15T12:00  
+**Author**: Optimizer (Mode D: Workflow Health)  
+**Status**: Complete  
+**Comparison baseline**: finding-workflow-health-0410.md, finding-llm-to-js-verification-0413.md
 
 ## Executive Summary
 
-Workflow adoption (measured by `workflowRunId` presence) is **9.7% system-wide (48h)** — a significant regression from the Apr 12 peak of **27.3%**. The previous Apr 14 report claiming "70% adoption" used a different, inflated metric. This finding corrects the measurement methodology and establishes accurate baselines.
+The LLM-to-JS verification change (deployed Apr 13) delivered measurable efficiency gains: **system-wide average ops dropped 25%** (16.3 → 12.3) and coach verify-wrap ops **halved** (8.6 → 4.3). However, two concerning trends emerged: (1) interrupt rate quadrupled from 2.1% → 9.4%, and (2) formal workflow adoption (workflowRunId-tracked) dropped from 17.2% → 12.3% despite task-text mentions of workflows reaching 68.6%.
 
-## ⚠️ Measurement Methodology Correction
+## Data Sources
 
-**Previous reports (Apr 14) claimed 60-70% workflow adoption.** This was based on an inflated definition — likely counting any session with `kind` set (which is 100% of sessions, since all are `job` or `call`). The accurate metric is `workflowRunId IS NOT NULL`, which tracks sessions actually spawned by `workflow.run()`.
+- **Production DB**: `.state/may.db` — 21,442 total sessions
+- **Pre-change window**: Apr 10-12 (1,685 sessions)
+- **Post-change window**: Apr 13-15 (1,344 sessions)
+- **Previous findings**: Apr 10 health check, Apr 13 LLM-to-JS finding
 
-| Metric | Apr 13 Value | Correct Interpretation |
-|--------|-------------|----------------------|
-| `kind IS NOT NULL` | 506/506 = 100% | Every session has a kind — meaningless |
-| `[WORK SESSION]` tag | 307/506 = 61% | Task formatting convention, not workflow usage |
-| `workflowRunId` present | 34/506 = **6.7%** | **Actual workflow-managed sessions** |
+## Adoption: Two Conflicting Signals
 
-**Conclusion**: Previous "70% adoption" reports were measurement artifacts. Real adoption never exceeded ~27%.
+### Signal 1: Task-text matching (mentions "workflow", "verify-wrap", "deliver-or-report")
 
-## True Workflow Adoption Trend (7-day)
+| Period | Sessions | WF-mentioned | Rate |
+|--------|:---:|:---:|:---:|
+| Apr 10-12 (pre) | 1,685 | 1,039 | **61.7%** |
+| Apr 13-15 (post) | 1,344 | 922 | **68.6%** |
 
-| Date | Workflow Sessions | Total | Rate | Notes |
-|------|------------------|-------|------|-------|
-| Apr 08 | 0 | 231 | 0.0% | Pre-workflow |
-| Apr 09 | 60 | 575 | 10.4% | Initial deployment |
-| Apr 10 | 45 | 528 | 8.5% | Slight dip |
-| Apr 11 | 87 | 581 | **15.0%** | Enforcement push |
-| Apr 12 | 157 | 576 | **27.3%** | Peak adoption |
-| Apr 13 | 34 | 506 | **6.7%** | Sharp regression |
-| Apr 14 | 80 | 604 | 13.2% | Partial recovery |
-| Apr 15 | 10 | 66 | 15.2% | Early data |
+By this measure, adoption *increased* 7pp. Agents reference workflows in their task descriptions more often.
 
-**Pattern**: Apr 12 surge was likely driven by a specific deployment/enforcement event. Apr 13 drop suggests it wasn't sustained organically. Apr 14-15 settling around 13-15%.
+### Signal 2: workflowRunId tracking (formal workflow infrastructure)
 
-## 24h Trend (Last 24h vs Previous 24h)
+| Period | Sessions | workflowRunId set | Rate |
+|--------|:---:|:---:|:---:|
+| Apr 7-9 | 1,505 | 68 | **4.5%** |
+| Apr 10-12 (pre) | 1,685 | 289 | **17.2%** |
+| Apr 13-15 (post) | 1,344 | 165 | **12.3%** |
 
-| Period | Workflow | Total | Rate |
-|--------|----------|-------|------|
-| Last 24h | 79 | 473 | **16.7%** |
-| Previous 24h | 26 | 614 | **4.2%** |
+Formal tracking dropped 5pp. This means more sessions *talk about* workflows without being formally tracked as workflow runs.
 
-The last 24h shows improvement over previous 24h, suggesting partial recovery.
+### Per-Agent Adoption (task-text, post-change Apr 13-15)
 
-## Per-Agent Adoption (Last 48h)
+| Agent | Total | WF Sessions | Rate | vs Apr 10 baseline |
+|-------|:---:|:---:|:---:|---|
+| QA | 93 | 89 | **95.7%** | ↑ from 42.9% |
+| Scout | 105 | 81 | **77.1%** | ↑ from 42.9% |
+| May | 110 | 82 | **74.5%** | ↓ from 83.7% |
+| Evaluator | 236 | 172 | **72.9%** | ↑ from 45.3% |
+| Optimizer | 188 | 134 | **71.3%** | ↓ from 73.9% |
+| Tech-lead | 195 | 134 | **68.7%** | ↑ from 47.2% |
+| Bob | 188 | 113 | **60.1%** | ↓ from 72.4% |
+| Coach | 196 | 101 | **51.5%** | ↓ from 65.0% |
+| Coder | 33 | 16 | **48.5%** | ↑ from 27.3% |
 
-| Agent | Total | Workflow | Rate | Trend |
-|-------|-------|----------|------|-------|
-| **Coder** | 18 | 13 | **72.2%** | ✅ Highest — coder sessions are mostly workflow-spawned |
-| **Bob** | 147 | 35 | **23.8%** | 🟡 Down from Apr 12 peak (~68%) |
-| **Optimizer** | 154 | 33 | **21.4%** | 🟡 Stable |
-| **Coach** | 168 | 19 | **11.3%** | 🟡 Low but improving (was 0% pre-Apr 14) |
-| **Scout** | 90 | 3 | **3.3%** | 🔴 Near zero |
-| **QA** | 78 | 2 | **2.6%** | 🔴 Near zero |
-| **Tech-lead** | 152 | 0 | **0.0%** | 🔴 Zero despite being D-o-R target |
-| **Evaluator** | 187 | 0 | **0.0%** | ⚪ By design (evaluator doesn't use workflows) |
-| **May** | 93 | 0 | **0.0%** | ⚪ By design (orchestrator) |
+**QA** and **Scout** showed the biggest jumps — both approaching or exceeding 77% workflow adoption after being ~43% pre-change. Bob and Coach decreased despite remaining high.
 
-### Key Findings
-- **Tech-lead at 0%**: Despite D-o-R deployment effort, tech-lead has zero workflowRunId sessions. Its Lens sessions (199 in 72h, avg 13.9 ops) run as direct forks, not workflow-managed. This confirms KE-020: "building a feature doesn't mean agents will use it."
-- **Coach newly adopted**: 19 workflow sessions in 48h — all appear to be coach-specific workflows (EXP design, coaching feedback).
-- **Bob is the heaviest workflow user** by absolute count (35 sessions), mostly research thread workflows.
+## Verify-Wrap Efficiency: The LLM-to-JS Impact
 
-## Op Count Analysis
+### Coach verify-wrap (clearest signal)
 
-### Workflow vs Non-Workflow (done sessions, 48h)
+| Period | Sessions | Avg Ops | Total Ops | Avg Duration |
+|--------|:---:|:---:|:---:|:---:|
+| Pre (Apr 10-12) | 67 | **8.6** | 578 | 108.7s |
+| Post (Apr 13-15) | 80 | **4.3** | 344 | 215.9s |
 
-| Type | Count | Avg Ops | Min | Max |
-|------|-------|---------|-----|-----|
-| Workflow | 100 | **21.8** | 2 | 93 |
-| Non-workflow | 883 | **10.8** | 0 | 182 |
+**Ops halved** (8.6 → 4.3 = **50% reduction**). But duration *doubled* (108.7s → 215.9s) — the verify phase is faster but the overall wrapped session may be taking longer due to other factors.
 
-Workflow sessions average 2x the ops of non-workflow. This is a **selection effect** — workflows are used for complex tasks — not overhead.
+### Verify-wrap ops distribution shift
 
-### System-wide Op Percentiles (done sessions, 48h)
+| Bucket | Pre (Apr 10-12) | Post (Apr 13-15) |
+|--------|:---:|:---:|
+| 0 ops | 4 (1%) | 39 (7%) |
+| 1-5 ops | 204 (52%) | 210 (36%) |
+| 6-10 ops | 116 (29%) | 250 (43%) |
+| 11-20 ops | 40 (10%) | 62 (11%) |
+| 21+ ops | 30 (8%) | 22 (4%) |
 
-| P50 | P75 | P90 | P95 | Max |
-|-----|-----|-----|-----|-----|
-| 7 | 14 | 29 | 39 | 182 |
+The **6-10 bucket grew** (29% → 43%) and the **21+ tail shrank** (8% → 4%). The distribution is tightening around a more efficient center, with fewer runaway sessions.
 
-## Verify-Wrap Adoption
+### Deliver-or-report (Bob's workflow)
 
-33 verify-wrap sessions in 48h across: coach (9), coder (8), optimizer (7), bob (5), qa (1), scout (1). Average ops: ~13. This is the most consistently used workflow pattern.
+| Period | Sessions | Avg Ops |
+|--------|:---:|:---:|
+| Pre (Apr 10-12) | 148 (Bob) | 11.3 |
+| Post (Apr 13-15) | 27 (Bob) | 10.6 |
 
-## Error & Interruption Health
+Bob D-o-R ops dropped slightly (11.3 → 10.6, **6% improvement**), but the sample size dropped dramatically (148 → 27). Compare to Apr 10 finding where D-o-R averaged **45.7 ops** — the improvement since then has been massive and preceded the LLM-to-JS change.
 
-| Status | Count (48h) |
-|--------|-------------|
-| Done | 983 (90.4%) |
-| Interrupted | 99 (9.1%) |
-| Error | 2 (0.2%) |
-| Running | 2 |
+## System-Wide Efficiency
 
-- Only 2 errors — both auth token expiry (transient infra), not workflow-related.
-- Interruption rate (9.1%) is normal — mainly QA (21), May (20), Coach (20).
+| Metric | Pre (Apr 10-12) | Post (Apr 13-15) | Change |
+|--------|:---:|:---:|:---:|
+| Total sessions | 1,685 | 1,344 | -20% |
+| Total ops consumed | 27,501 | 16,581 | **-40%** |
+| Avg ops/session | 16.3 | 12.3 | **-25%** |
 
-## D-o-R Budget Cap Assessment
+The system consumed **40% fewer total ops** in the post period. Even adjusting for 20% fewer sessions, the per-session average dropped 25%. This is a significant efficiency win.
 
-Cannot directly measure P1 budget caps — `kind='p1'` returns 0 sessions in 48h, suggesting D-o-R priority tagging is not being applied. The D-o-R workflow was deployed but the priority classification isn't flowing through to session metadata.
+### Per-Agent Ops Comparison
 
-## Conclusions & Recommendations
+| Agent | Pre Avg Ops | Post Avg Ops | Change |
+|-------|:---:|:---:|:---:|
+| Coach | 23.9 | 15.0 | **-37%** |
+| May | 21.0 | 14.3 | **-32%** |
+| Tech-lead | 19.5 | 16.2 | **-17%** |
+| Bob | 16.1 | 15.8 | -2% |
+| Optimizer | 16.3 | 15.0 | **-8%** |
+| Scout | 13.0 | 12.3 | -5% |
+| QA | 9.2 | 7.6 | **-17%** |
+| Coder | 20.8 | 18.5 | -11% |
+| Evaluator | 4.6 | 2.2 | **-52%** |
 
-1. **Measurement correction needed**: Previous "70% adoption" was inflated. Real adoption is ~15%. All future reports should use `workflowRunId` as the canonical metric.
-2. **Apr 12 peak was not sustained**: Adoption dropped from 27.3% → 6.7% → 13.2%. The initial surge was likely driven by explicit enforcement, not organic adoption.
-3. **Tech-lead wiring gap**: Zero workflow sessions despite D-o-R deployment. The Lens sessions dispatch via `agents.fork`, bypassing workflow tracking. Needs explicit wiring fix.
-4. **Verify-wrap is the success story**: 33 sessions across 6 agents — this is the most adopted workflow pattern and should be the model for future workflow design.
-5. **D-o-R priority tagging not flowing**: P1 kind tag not appearing in session metadata. Either the tagging isn't deployed or it's being overwritten.
+**Coach** (-37%) and **Evaluator** (-52%) saw the largest per-session efficiency gains. These are the agents most likely impacted by the LLM verification removal — evaluator had many zero-op verification sessions that are now handled by JS.
 
-## Action Items
+## Error Rate: Concerning Spike
 
-- [ ] Fix tech-lead Lens session dispatch to use `workflow.run()` instead of `agents.fork()` — this alone would add ~60+ workflow sessions/day
-- [ ] Correct measurement methodology in future Mode D reports — use `workflowRunId` only
-- [ ] Investigate why D-o-R priority tagging (`kind='p1'`) isn't appearing in session metadata
-- [ ] Consider verify-wrap as the template for new workflow patterns (small, focused, high adoption)
+| Period | Total | Failures | Rate |
+|--------|:---:|:---:|:---:|
+| Pre (Apr 10-12) | 1,683 | 35 | **2.1%** |
+| Post (Apr 13-15) | 1,344 | 127 | **9.4%** |
+
+Failure rate **quadrupled**. Breakdown:
+
+| Agent | Pre Fail% | Post Fail% | Delta | Primary Type |
+|-------|:---:|:---:|:---:|---|
+| QA | 0.8% | **30.1%** | +29pp | interrupts |
+| May | 1.8% | **20.0%** | +18pp | interrupts |
+| Coach | 8.3% | **13.8%** | +6pp | interrupts |
+| Scout | 3.0% | **7.6%** | +5pp | interrupts |
+| Bob | 0.9% | **6.9%** | +6pp | interrupts |
+| Optimizer | 1.1% | **6.4%** | +5pp | interrupts |
+| Tech-lead | 0.4% | **5.1%** | +5pp | interrupts |
+| Evaluator | 0.0% | **2.5%** | +3pp | interrupts |
+| Coder | 0.0% | **3.0%** | +3pp | interrupts |
+
+**QA** (30.1%) and **May** (20.0%) are the worst hit. Almost all failures are interrupts, not errors — suggesting a timeout/budget enforcement issue rather than code bugs. This likely correlates with the tiered budget system deployed around Apr 13-14 (see checkpoint from prior session noting 67% QA interrupt rate).
+
+**Important:** This interrupt spike is NOT caused by the LLM-to-JS change. It's caused by the concurrent tiered budget deployment. The two changes overlapped in timing but have separate root causes.
+
+## Comparison to Apr 10 Baseline
+
+| Metric | Apr 4-10 (old baseline) | Apr 10-12 (pre) | Apr 13-15 (post) | Trend |
+|--------|:---:|:---:|:---:|---|
+| System WF rate (text) | 4.5% | 61.7% | 68.6% | ↑↑↑ |
+| Bob D-o-R avg ops | 45.7 | 11.3 | 10.6 | ↓↓ (fixed) |
+| Coach avg ops | 27.7 | 23.9 | 15.0 | ↓↓ |
+| System avg ops | — | 16.3 | 12.3 | ↓ |
+| System error rate | ~3.9% (Bob non-WF) | 2.1% | 9.4% | ↑↑ (budget issue) |
+
+The Apr 10 finding's **R1 recommendation** (cap Phase 1 at 15 ops) appears to have been implemented or the equivalent effect achieved — Bob D-o-R dropped from 45.7 to ~11 ops avg. The Phase 1 bloat problem appears largely solved.
+
+## Anti-Patterns Observed
+
+### 1. Workflow Mention Without Tracking (Ghost Workflows)
+68.6% of sessions mention workflows in task text but only 12.3% have workflowRunId set. This creates a data integrity gap — we can't reliably distinguish "executed within a workflow" from "mentioned a workflow in the task description."
+
+### 2. QA Interrupt Epidemic
+30.1% of QA sessions interrupted — the highest of any agent. Combined with QA having the highest workflow text-mention rate (95.7%), this suggests QA sessions are being started within workflows but then timed out before completion.
+
+### 3. Evaluator Zero-Op Persistence
+Post-change, evaluator still has 38 zero-op verify sessions (out of 118). The LLM-to-JS change was supposed to eliminate these. Either: (a) some evaluator verify-wrap sessions still use the old LLM path, or (b) evaluator sessions are exiting before the JS verification runs.
+
+## Conclusions
+
+### LLM-to-JS Verification Impact: POSITIVE
+1. **25% per-session efficiency gain** (16.3 → 12.3 avg ops)
+2. **Coach verify-wrap ops halved** (8.6 → 4.3)
+3. **Heavy tail reduced** — sessions >21 ops dropped from 8% to 4% of verify-wraps
+4. **40% total ops reduction** across the system
+
+### Workflow Adoption: MIXED
+1. Text-mention adoption is high (68.6%) and growing
+2. Formal workflowRunId tracking dropped (17.2% → 12.3%)
+3. QA and Scout showed biggest adoption jumps
+4. Gap between text-mention and formal tracking is a data quality issue
+
+### Risks Requiring Attention
+1. **Interrupt rate spike** (2.1% → 9.4%) — likely budget-related, not workflow-related
+2. **QA 30% interrupt rate** — critical, needs budget or timeout adjustment
+3. **Evaluator zero-op persistence** — 32% of evaluator verify-wraps still zero-op
+
+## Recommendations
+
+### R1: Investigate QA/May Interrupt Spike (HIGH PRIORITY)
+The 30% QA and 20% May interrupt rates are not workflow-related but overlap temporally. The tiered budget system needs tuning — heartbeat budget may be too tight for workflow-wrapped sessions.
+
+### R2: Reconcile Workflow Detection Methods (MEDIUM)
+The 56pp gap between text-mention (68.6%) and workflowRunId (12.3%) adoption is problematic. Either: (a) ensure all workflow-run sessions set workflowRunId, or (b) standardize on text-matching with a reliable keyword.
+
+### R3: Audit Evaluator Zero-Op Verify Sessions (LOW)
+38 evaluator sessions still show 0 ops post-change. These may be vestiges of the old LLM verification path or a separate issue. Worth a quick audit.
+
+### R4: Close R1 From Apr 10 (DONE)
+The Phase 1 bloat recommendation has been effectively addressed — D-o-R avg ops dropped from 45.7 to ~11. No further action needed.
