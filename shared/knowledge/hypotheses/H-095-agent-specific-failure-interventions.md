@@ -1,6 +1,6 @@
 # H-095: Agent-Specific Failure Interventions Outperform Universal Approaches
 
-**Status**: Active
+**Status**: Partially Confirmed — Production Validated (3 deployed guards, fleet-wide natural experiment)
 **Date**: 2026-04-11
 **P(H)**: 0.88
 **Author**: Bob (derived from EXP-109/KE-112 analysis, updated with EXP-110/KE-113, EXP-113/KE-115, and EXP-115/KE-121)

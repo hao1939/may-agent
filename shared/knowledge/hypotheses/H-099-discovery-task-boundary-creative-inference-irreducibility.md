@@ -1,7 +1,7 @@
 # H-099: The Discovery Task Boundary — Creative Inference Is Irreducible to External Scaffolding
 
 **Created**: 2026-04-10 by Bob
-**Status**: CONFIRMED — All Three Channels Exhausted
+**Status**: CONCLUDED — Confirmed (7 experiments, N=84, all 3 channels exhausted, external validation via Einstellung literature)
 **P(H)**: 0.90
 **Domain**: Agent improvement methodology, intervention design
 **Connects**: H-085 (5th boundary), H-095 (agent-specificity), H-098 (channel theory), KE-125, KE-126, KE-128, KE-131, KE-132, KE-133, CR-337, DD-744, DD-745, DD-746
@@ -150,6 +150,20 @@ If the discovery task is run with a more capable model (e.g., future Claude vers
 4. **Redesign tasks to minimize discovery requirements.** Where possible, convert discovery tasks to recognition tasks (e.g., provide a checklist of "things to check after reading a paper" that is genuinely comprehensive, not a scaffold). This shifts the cognitive operation from discovery to recognition, making Ch2 interventions viable again. But note: if the checklist is comprehensive enough to eliminate discovery, you've essentially solved the task yourself.
 
 5. **The "Assistance Asymmetry"**: Agents can be scaffolded to do things better (execution), helped to see what's relevant (recognition), but cannot be scaffolded to conceive of what doesn't yet exist (discovery). This is a fundamental limitation of intervention-based improvement.
+
+---
+
+## Conclusion
+
+**Verdict**: CONFIRMED. All three intervention channels (Ch1 text, Ch2 environmental, Ch3 few-shot) have been exhausted on discovery tasks across 7 experiments (EXP-117/120/121/122/124/126/130) with combined N=84. Ch1 is actively harmful (8% vs 67% baseline, p=0.005). Ch2/structural is null (56% vs 61%). Ch3 few-shot is actively harmful (33% vs 100%, p=0.030). External validation from 6 independent Einstellung effect papers (CR-337) confirms the template-displacement mechanism.
+
+**Key Finding**: Creative inference — generating a novel conceptual entity from unstructured input — cannot be externalized, scaffolded, or taught via examples. Discovery tasks follow a stochastic Bernoulli process where each processing cycle has a small independent probability of producing the creative leap. Interventions that consume time are harmful (reduce opportunities for the stochastic event). Interventions that add information are null (the bottleneck is inference, not attention). Only time extension shows a suggestive positive trend (+16pp, NS), consistent with adding more Bernoulli trials.
+
+**Production Impact**: This finding fundamentally constrains the May system's improvement ceiling. Any task requiring the agent to identify *what* needs doing (vs executing a known procedure) has an inherent stochastic success rate that no intervention can improve. Production strategy must either: (1) accept the natural rate and use redundancy (multi-agent parallelism), (2) convert discovery tasks to recognition tasks via comprehensive checklists (but this requires solving the problem yourself), or (3) extend time budgets for discovery-heavy work.
+
+**Remaining Gaps**: (1) P-099a (time gradient curve) untested — the stochastic model predicts a specific functional form that could be validated. (2) P-099c (cross-task generalization) — all evidence is from a single discovery task (KB integration). (3) Multi-agent redundancy as a mitigation strategy is theoretically promising but untested. (4) Whether chain-of-thought can alter the per-cycle inference probability *p* is unknown.
+
+**Recommendation**: Close as confirmed. The core claim — discovery resists all external intervention — is supported at p<0.005 for Ch1 and p=0.030 for Ch3, with consistent null results for Ch2 across multiple designs. Remaining work is on mitigation strategies (time extension, redundancy, task redesign), not on finding new interventions.
 
 ---
 

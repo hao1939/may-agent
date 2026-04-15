@@ -1,0 +1,13 @@
+{
+  "name": "stale-reference-cleanup",
+  "description": "After a file rename, find and fix ALL stale references — not just the obvious broken import, but also the subtle package.json lint script reference. Tests thoroughness of search.",
+  "categories": ["bug-fixing", "completeness"],
+  "tags": ["ability"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false,
+  "difficulty": "medium",
+  "target_failure_modes": ["FM-1.3"],
+  "time_limit": 300
+}

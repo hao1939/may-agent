@@ -2,7 +2,7 @@
 
 **Created**: 2026-04-10 by Bob
 **P(H)**: 0.80 (updated from 0.78 after EXP-127 direct test: 3/4 predictions correct, Ch3 miss. EXP-128 confirms Ch3 miss is task-type boundary, not content quality → KE-132)
-**Status**: Partially Confirmed — Unifying Theory (two direct tests complete, Ch3 boundary clarified)
+**Status**: CONCLUDED — Confirmed with refinements (4 direct tests, 13/15 predictions supported, P-098c rejected/revised)
 **Depends on**: KE-101, H-085, H-091, H-095, KE-025, KE-064, KE-002, KE-031, KE-132
 **Supersedes**: None (synthesizes existing findings into new explanatory framework)
 
@@ -157,6 +157,20 @@ Prediction: ~100%, ~50%, ~10%, ~0% task completion. Cliff between 1-2 gates.
 Design: Forced externalization (Channel 2) with 10KB, 25KB, 50KB, 100KB system prompts.
 Prediction: No effect of prompt length on Channel 2 effectiveness (all ~100%).
 N=3 per condition.
+
+---
+
+## Conclusion
+
+**Verdict**: CONFIRMED with refinements. The three-channel model is the most explanatory framework we have for intervention effectiveness. 13 supporting findings, 1 neutral, 1 contradicting (P-098c — Ch2 budget is larger than predicted). Three direct experimental tests (EXP-127, EXP-128, EXP-129) plus one refinement (EXP-131) confirm the core architecture while refining boundary conditions.
+
+**Key Finding**: Intervention effectiveness is categorically determined by delivery channel, not content quality. Channel 1 (text instructions) achieves 0% on judgment tasks (N=32+). Channel 2 (environmental state gates) achieves 87-100%. Channel 3 (task-message positional privilege) is task-type-dependent: 100% on behavioral, 0% on analytical judgment, and actively harmful (-67pp) on discovery tasks. Content quality within a channel is irrelevant — EXP-128 proved three content variants all produce identical 0% results through Ch3 on analytical tasks.
+
+**Production Impact**: This framework is now the default decision tool for all intervention design in the May system. It eliminates entire categories of wasted effort (prompt engineering for judgment, SOUL.md refinement for behavioral change) and directs investment toward Channel 2 infrastructure (forced externalization, workflow gates, artifact-based checkpoints). The Ch2 budget refinement (EXP-129/131: up to 3 related gates, relevance > count) enables richer scaffolding than originally thought possible.
+
+**Remaining Gaps**: (1) P-098d untested — does Ch1 capacity vary with task complexity? (2) P-098e untested — are Ch2 interventions truly immune to prompt length? (3) Generalization to other LLM families unknown. (4) Channel 1-2 boundary interventions (e.g., echo-back at ~33%) need mechanistic explanation.
+
+**Recommendation**: Close as confirmed. Remaining gaps are refinements, not challenges to the core theory. The channel model should be treated as established infrastructure knowledge, not an active research hypothesis. Future work should focus on expanding Ch2 design patterns and mapping the Ch3 task-type boundary more precisely.
 
 ---
 
