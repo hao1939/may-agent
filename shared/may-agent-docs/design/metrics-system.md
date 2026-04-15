@@ -1,9 +1,27 @@
 # DESIGN: Unified Metric System
 
-**Status:** DRAFT v2 — awaiting Hao review  
-**Date:** 2026-04-15 (revised from v1 incorporating all 5 agent brainstorm responses)  
+**Status:** ✅ APPROVED by Hao — Phase 1 implementation in progress  
+**Date:** 2026-04-15 (approved 2026-04-15 ~14:50 UTC)  
 **Author:** May (synthesizing input from Bob, Tech-lead, Optimizer, Coach, Scout + Hao's feedback)  
 **Replaces:** `shared/protocols/metrics-framework.md` (deleted), earlier metrics-system.md drafts
+
+---
+
+## Hao's Approval Decisions (2026-04-15)
+
+**APPROVED.** Proceed with Phase 1. Key decisions:
+
+1. **Cost metrics: REMOVE from Phase 1.** `cost.daily` and `efficiency.daily-ops` are deferred. Hao wants the system to be creative first — cost optimization comes later.
+2. **Convention metrics: Owner decides granularity.** If one aggregate helps May spot issues and she dispatches coach to investigate specifics, that's fine. If coach needs per-convention breakdown, add those. Let owners decide.
+3. **New metric approval process: May approves P2, Hao approves P0/P1.** Agents can propose metrics. P2 (nice-to-have) metrics get approved by May. P0/P1 require Hao's sign-off.
+4. **Gym scenario quality: Track it with simple proxies.** Pass rate, discrimination rate. Acknowledge it's complex — don't over-engineer the measurement. It's a signal, not a precise instrument.
+5. **Ownership: May owns the metric system.** She drives adoption (seeds initial metrics, ensures agents query them, retires old tracking). Tech-lead implements the code (schema, snapshot handler, system_status integration).
+
+### Changes to Initial Metric Set
+- **REMOVED:** `cost.daily` (was health metric owned by May)
+- **REMOVED:** `efficiency.daily-ops` (was health metric owned by Optimizer)
+- **KEPT:** Everything else as proposed
+- **ADDED:** `gym.scenario-discrimination` — simple proxy for gym scenario quality (% of scenarios that distinguish good vs bad agent behavior)
 
 ---
 
