@@ -1,16 +1,16 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-15 ~19:00 UTC
+Updated: 2026-04-15 ~17:30 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — billing. Blocked on Hao.
-- **Bob**: 🟢 Active — 37 sessions/6h, avg 20 ops. Zero errors.
-- **Coach**: 🟢 Active — 28 sessions/6h, avg 18 ops. Zero errors.
-- **Scout**: 🟢 Active — 15 sessions/6h, avg 9 ops. Zero errors.
-- **Tech-lead**: 🟢 Active — 37 sessions/6h, avg 27 ops. Zero errors.
-- **Optimizer**: 🟢 Active — 25 sessions/6h, avg 13 ops. Zero errors.
-- **Evaluator**: 🟢 Active — 46 sessions/6h, avg 0 ops. Zero errors.
-- **QA**: 🟢 Active — 12 sessions/6h, avg 8 ops. Zero errors.
+- **Bob**: 🟢 Active — 31 sessions/6h, avg 18 ops. Zero errors.
+- **Coach**: 🟢 Active — 25 sessions/6h, avg 15 ops. Zero errors.
+- **Scout**: 🟢 Active — 15 sessions/6h, avg 8 ops. Zero errors.
+- **Tech-lead**: 🟢 Active — 31 sessions/6h, avg 20 ops. Zero errors.
+- **Optimizer**: 🟢 Active — 25 sessions/6h, avg 12 ops. Zero errors.
+- **Evaluator**: 🟢 Active — 39 sessions/6h, avg 0 ops. Zero errors.
+- **QA**: 🟢 Active — 12 sessions/6h, avg 7 ops. (IT-21 known).
 - **Coder**: 🟢 Active — 6 sessions/6h, avg 20 ops. Zero errors.
 - **Summary**: 9/9 healthy. Amy-kimi still down. Zero errors across the board.
 
@@ -27,41 +27,41 @@ Updated: 2026-04-15 ~19:00 UTC
 |-------|--------|-------|-------|
 | Amy-kimi billing outage | 🔴 Blocked | Hao | Still down, needs balance refill |
 | **Metric System Phase 3 — Adoption** | ⏳ Active | multiple | Phase 3 dispatched: research_log adoption (bob+scout), quality investigation (coach), threshold fix (tech-lead ✅ DONE). |
+| **Heartbeat System Review** | ✅ Done | optimizer | Full analysis delivered: `agents/optimizer/workspace/finding-heartbeat-efficiency-analysis-0415.md`. 47% of ops on heartbeats, ~1280 ops/day saveable. Hao redirected: productive output > cost. |
 | **Model Diversity Review** | ⏳ Active | bob | Design review: which agent on which model? (req:c56a6ae4) |
-| **Fix compose-guards.ts (RETRY)** | ⏳ Re-dispatched | tech-lead | Previous attempt (14 ops) didn't change code. Re-forked s_1776279623142_43 with explicit instructions. |
-| **Gatekeeper Review Gate design** | 📋 Review | bob+tech-lead | Design at `agents/shared/may-agent-docs/design/review-gate.md`. Bob reviewed. Awaiting Hao approval before implementation. |
+| **Wire gym-batch.sh into coach growth-cycle** | ⏳ Dispatched | tech-lead | Forked (req:a3787a7c). |
+| **Human Input DB Logging** | ⏳ Dispatched | tech-lead | Fork s_1776274344039_67 — INSERT human messages to requests table (req:99d045dd). |
+| **Optimizer mission reframe** | ✅ Done | may (Hao's session) | "Productive output over cost" — focus areas rewritten. Committed. |
+| **Tech-lead post-dispatch finish guard** | 🟡 Ready | may | Heartbeat edit to prevent 100+ op heartbeats. |
+| **QA heartbeat simplification (IT-21)** | 🟡 Ready | tech-lead | QA interrupt rate 67%. Needs investigation + simplification. |
 | ⚠️ **Hao task truncated** | ❓ Need info | Hao | req:7a936dcb was truncated at 500 chars. Only issue #1 (threshold inversion) visible+dispatched. May have more issues. |
+| ⚠️ **Heartbeat.md conflict** | 🟡 Review | Hao | Hao's session re-added inline queries to may/heartbeat.md after tech-lead slimmed them. heartbeat-context handler already injects this data. Needs Hao decision: keep inline or trust pre-computed? |
 
 ## Completed This Cycle
 | Issue | Status | Owner | Notes |
 |-------|--------|-------|-------|
-| **Evaluator quality=0.00 (IT-28)** | ✅ DONE | tech-lead | 3 fixes: metric query excludes skippedByJs, eval-sync stops zero-quality rows, getAgentScoreSummary filters skipped. Branch: review/fix-evaluator-quality (108 ops). |
-| **Guard Escalation Design v2** | ✅ DONE | bob | Updated to Hao's chain (Agent→owner→May→Hao). Design at `agents/shared/may-agent-docs/design/guard-escalation.md`. |
-| **QA IT-21 Root Cause** | ✅ DONE | tech-lead | NOT a QA heartbeat problem — system-wide external session abortion. QA heartbeat is lean (6-10 ops, 49 lines). May have self-resolved. |
 | **Error-rate threshold fix** | ✅ DONE | tech-lead | Inverted threshold logic fixed (11 ops, req:7eae2c5e). |
 | **Metric System Phase 2** | ✅ DONE | tech-lead | system_status agent param, proof-of-life metrics, heartbeat-context injection (s_1776269084528_9, 32 ops) |
 | **EXP-163 Results Processing** | ✅ DONE | bob | KE-129 reinterpreted, H-161 updated, KE-184 written (ceiling effect methodology). |
 | **Research Conclusion Sprint** | ✅ DONE | bob | All 6 threads concluded (Batch 1: H-098/099/091, Batch 2: H-085/095/093). Synthesis written. |
 | **Unified Metric System Design** | ✅ DONE | bob | All 5 brainstorm responses synthesized. Approved by Hao. |
-| **Heartbeat System Review** | ✅ Done | optimizer | 47% of ops on heartbeats, ~1280 ops/day saveable. Hao redirected: productive output > cost. |
-| **Optimizer mission reframe** | ✅ Done | may | "Productive output over cost" — focus areas rewritten. |
-| **Human Input DB Logging** | ✅ Done | tech-lead | Merged to main (799b223f). |
-| **Wire gym-batch.sh** | ✅ Done | tech-lead | Closed (req:a3787a7c). |
 
 ## Next Actions
-- **P0**: **Fix compose-guards.ts (RETRY)** — Re-forked to tech-lead (s_1776279623142_43). Must change finish bypass to only allow finish(blocked/failure) through.
-- **P1**: **Gatekeeper Review Gate** — Design complete, Bob reviewed. Needs Hao approval → then dispatch to tech-lead for implementation.
-- **P1**: **KE-180/KE-182 production deployment** — Hard gate design rules from improvement queue. Ready to dispatch to coach.
-- **P1**: **Common-sense #23 auto-commit bypass** — 50% bypass rate. Ready to dispatch to tech-lead.
+- **P0**: ⚠️ **Heartbeat.md conflict** — Hao's session re-added inline queries after tech-lead slimmed them. Need Hao decision.
+- **P0**: ⚠️ **Check Hao's full message** — req:7a936dcb truncated at 500 chars. Issue #1 dispatched+completed. Need Hao to re-send or confirm if there are more issues.
+- **P1**: **Human Input DB Logging** — Dispatched to tech-lead. Awaiting completion.
+- **P1**: **Wire gym-batch.sh** — Dispatched to tech-lead.
+- **P1**: **QA heartbeat simplification (IT-21)** — 67% interrupt rate. Ready to dispatch.
+- **P1**: **Tech-lead post-dispatch finish guard** — Prevent 100+ op heartbeats. Small heartbeat edit.
 - **P2**: Amy-kimi billing — blocked on Hao.
-- ⚠️ **HOLD**: Ch2-production-gates implementation — Hold for EXP-170.
+- ⚠️ **HOLD**: Ch2-production-gates implementation — Evidence base was measuring compliance not quality. Hold for EXP-170.
 
-## Latest Cycle Summary (19:00 Apr 15)
-- **COMPLETED**: IT-28 evaluator quality bug (3 fixes, branch review/fix-evaluator-quality). Guard escalation design v2 (Bob). QA IT-21 root cause (NOT heartbeat — system-wide abort issue).
-- **RE-DISPATCHED**: compose-guards.ts fix → tech-lead (s_1776279623142_43). Previous attempt (14 ops) didn't change the code.
-- **RECEIVED**: Bob's review of guard escalation + gatekeeper review gate. Both designs complete.
-- **NEW DESIGN**: Gatekeeper Review Gate at `agents/shared/may-agent-docs/design/review-gate.md` — workflow guard for system-scope changes. Needs Hao approval.
-- **STATUS**: 9/9 agents active. Zero errors. 0 stuck sessions. 1 P0 in progress (compose-guards retry).
+## Latest Cycle Summary (17:30 Apr 15)
+- **RECEIVED**: Optimizer heartbeat efficiency analysis (excellent — 47% of ops on heartbeats, ~1280/day saveable). Hao redirected: "productive output over cost."
+- **DISPATCHED**: Human Input DB Logging to tech-lead (s_1776274344039_67).
+- **REFRAMED**: Optimizer mission — "spend better not less", focus areas rewritten by Hao.
+- **FLAGGED**: Heartbeat.md conflict — Hao's session re-added inline queries after tech-lead slimmed them.
+- **STATUS**: 9/9 agents active. Zero errors. 93% success rate. Bob long session (39m) in progress.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
