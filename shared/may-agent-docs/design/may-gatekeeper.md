@@ -1,58 +1,75 @@
-# DESIGN: May-as-Gatekeeper (v3 — Workflow IS the Process)
+# DESIGN: May-as-Gatekeeper (v4 — Decoupled Supervision)
 
 **Status:** REVISED — awaiting Hao approval  
 **Date:** 2026-04-15  
-**Revision:** v3 per Hao feedback. The gatekeeper is not a system — it's one judgment call inside the persistent-task owner review step.
+**Revision:** v4 per Hao feedback. Fully decoupled from agent work. May supervises async on her own schedule.
 
 ---
 
-## Core Insight
+## How It Works
 
-Persistent-task already has a structural review loop: worker does work → output persisted to project file → owner reviews → decides CONTINUE / DONE / BLOCKED. The loop can't proceed without owner review — it's structural, not optional.
+Agents work independently. May reviews asynchronously. Intervention is the exception.
 
-The gatekeeper is May adding one question during her owner review: **"Did this iteration change system behavior?"** If yes → `pending-review` → Hao decides. The workflow handles pause/resume. No new process to remember.
-
-## Changes (3 items)
-
-### 1. `persistent-task.ts`: Add `pending-review` status (~8 LOC)
-
-```typescript
-// In the iteration loop status check:
-if (state.status === "pending-review") {
-  return ctx.done(`Paused for human review. See ${config.projectPath}.`);
-}
+```
+Agents work normally (heartbeats, forks, persistent tasks)
+    │
+    ├── Write plans, produce outputs, commit code
+    │
+    └── Meanwhile, on her own schedule:
+        │
+        May reads what agents are doing
+            │
+            ├── Normal work → no action
+            │
+            └── System-scope change detected
+                    │
+                    ├── Already done → notify Hao, revert if rejected
+                    └── Still planned → set pending-review, notify Hao
+                            → Hao approves/rejects via telegram
+                            → May resumes or reverts
 ```
 
-Same mechanism as `paused`/`cancelled` — workflow exits, resumes on next cron cycle when status changes back to `active`.
+## What May Looks At
 
-### 2. May's owner review prompt: Add system-scope check
+Things she already reads during her heartbeat — no new sources:
 
-In the persistent-task owner review step (the prompt that asks May to evaluate the iteration), add:
+- **Project files** — persistent-task project markdown (status, iteration logs, planned changes)
+- **Workspace files** — agent plans, design docs, research outputs
+- **Session outcomes** — finish() summaries from recent sessions (visible in system_status)
+- **Dispatch board** — her own tracking of what she dispatched and what came back
 
-> If this iteration changed shared workflows, other agents' configs, guards, or core runtime code, respond with PENDING_REVIEW instead of CONTINUE. Add a note explaining what needs human approval.
+## System-Scope vs Agent-Scope
 
-**System-scope** = affects other agents: shared workflows, guards, manager code, another agent's heartbeat/context/SOUL, cross-agent protocols.  
-**Agent-scope** = own workspace, own knowledge entries, code on review branches. Proceed normally.
+**System-scope** (flag for Hao):
+- Changes to shared workflows, guards, or manager code
+- Edits to another agent's heartbeat, context.md, or SOUL.md
+- New cross-agent protocols or conventions
+- Deletion of shared infrastructure
 
-### 3. Telegram: `/approve` and `/reject` flow naturally
+**Agent-scope** (proceed, no review needed):
+- Own workspace files, own config
+- Knowledge base content (hypotheses, experiments, deep dives)
+- Code on review branches (already gated by tsc + tests + QA)
 
-Hao sends `/approve` or `/reject` → reaches May as natural language → May reads the pending project file, updates Status from `pending-review` to `active` (or `cancelled`). No command parser needed.
+## How May Intervenes
 
-## What's NOT needed
+When May spots a system-scope change:
 
-- ~~Git diff polling~~ — workflow brings results to May structurally
-- ~~REVIEW_REQUEST protocol~~ — owner review IS the review request
-- ~~Approval ledger~~ — project file tracks status
-- ~~Protected path lists~~ — May's judgment, not file rules
-- ~~Heartbeat instructions for agents~~ — agents don't gate themselves; the owner (May) gates them
-- ~~Separate review step in May's heartbeat~~ — persistent-task owner review IS the review step
+1. **If still planned/in-progress:** Edit the project file Status to `pending-review`. Don't dispatch the next step. Send telegram: "🔒 Review needed: [agent] plans [change]. See [file path]."
+
+2. **If already implemented:** Notify Hao with what changed and where. May can revert (git revert, undo edit) if Hao rejects.
+
+## How Hao Responds
+
+Hao sends `/approve` or `/reject` via telegram → reaches May as natural language → May updates the project file Status back to `active` (or reverts the change). No command parser needed.
+
+## What's NOT in This Design
+
+- ~~Anything in the persistent-task loop~~ — agents and workflows run independently
+- ~~New polling mechanisms~~ — May reads what she already reads
+- ~~New agent protocols~~ — agents don't need to know about gating
+- ~~New infrastructure~~ — zero code changes
 
 ## Implementation Cost
 
-| Change | Where | LOC |
-|--------|-------|-----|
-| `pending-review` status handling | persistent-task.ts | ~8 |
-| System-scope check in owner review prompt | persistent-task.ts (owner prompt template) | ~2 |
-| **Total** | | **~10 lines of code** |
-
-Zero behavioral/context changes. The workflow encodes the process.
+**Zero lines of code.** This is a behavioral pattern for May, encoded in her existing supervision workflow. The `pending-review` status in project files is a convention, not enforcement — May edits the file, the agent reads it next iteration.
