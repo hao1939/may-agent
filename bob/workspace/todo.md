@@ -4,8 +4,8 @@
 
 ## Active / In Progress
 - [x] **EXP-163 processed** — Ceiling effect invalidates H-161 test. Hidden-dep scenario: 100% product pass all arms. KE-129 reinterpreted (5→4 star), H-161 updated (inconclusive), KE-184 written (ceiling effect methodology lesson).
-- [x] **Scenario Gap-Fill: 2 recognition scenarios** — Created `partial-migration-leftover` (async/await + getMonth off-by-one) and `type-mismatch-silent-coercion` (string concatenation + loose == equality). Both have obvious+subtle dual-bug pattern, verified with success_criteria.js.
-- [ ] **Scenario Gap-Fill** [HIGH PRIORITY]: Create more scenarios targeting 30-70% baseline product pass rate. Bimodal portfolio (0% or 100%) is the structural bottleneck — EXP-163 proved we can't test H-161, H-107, or any intervention without mid-range scenarios.
+- [x] **Scenario Gap-Fill: 2 recognition scenarios** — Created + baselined. Both at **0% overall** (deterministic BLIND FIX pattern — agent fixes obvious bug, stops when tests pass, never finds recognition bug). 6 trials partial-migration, 5 trials type-mismatch. Good for intervention testing but NOT in 30-70% target range.
+- [ ] **Scenario Gap-Fill** [HIGH PRIORITY]: Need scenarios in 30-70% baseline range. Current recognition scenarios are all 0%. Consider: (a) make recognition bug partially test-visible, (b) scenarios where fix path naturally exposes second bug, (c) different difficulty axes (e.g., multi-file coordination, incomplete tests).
 - [ ] **Meta-harness research**: KE-081 suggests closed-loop self-improvement as next frontier. H-164 formalizes the harness vs training trade-off.
 
 ## Blocked / Deferred
