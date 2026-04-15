@@ -206,6 +206,79 @@ export function runGym(scenario: string, agent: string, labFork?: string, opts?:
   return result;
 }
 
+/**
+ * Run a batch of gym scenarios via gym-batch.sh.
+ * Replaces sequential runGym() loops with a single batch invocation.
+ * Returns parsed GymResult[] from --json output.
+ */
+export function runGymBatch(
+  scenarios: string[],
+  agent: string,
+  labFork?: string,
+): GymResult[] {
+  const variants = labFork ? `baseline,${labFork}` : "baseline";
+  const args = scenarios.flatMap(s => ["--scenario", s]);
+  args.push("--agent", agent, "--variants", variants, "--trials", "1", "--json");
+  const cmd = `scripts/gym-batch.sh ${args.map(a => `'${a}'`).join(" ")}`;
+
+  try {
+    const stdout = execSync(cmd, {
+      encoding: "utf-8",
+      timeout: scenarios.length * 4 * 60 * 1000, // 4 min per scenario
+      cwd: PROJECT_ROOT,
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+
+    // --json outputs JSONL (one JSON object per line)
+    const results: GymResult[] = [];
+    for (const line of stdout.trim().split("\n")) {
+      if (!line.trim()) continue;
+      try {
+        const parsed = JSON.parse(line);
+        // Remove batch metadata fields added by gym-batch.sh
+        const result: GymResult = {
+          scenario: parsed._scenario ?? parsed.scenario,
+          agent: parsed.agent ?? agent,
+          lab_fork: parsed._variant === "baseline" ? null : (parsed._variant ?? parsed.lab_fork ?? null),
+          passed: parsed.passed ?? false,
+          checks: parsed.checks ?? [],
+          summary: parsed.summary ?? "",
+          agent_status: parsed.agent_status ?? "unknown",
+          duration: parsed.duration ?? "0s",
+          duration_ms: parsed.duration_ms,
+          gym_root: parsed.gym_root ?? "",
+          session_id: parsed.session_id,
+          cost_usd: parsed.cost_usd,
+          total_ops: parsed.total_ops,
+        };
+        results.push(result);
+      } catch {
+        // Skip unparseable lines
+      }
+    }
+
+    // Record each result to DB
+    for (const result of results) {
+      recordGymResult(result);
+    }
+
+    return results;
+  } catch (err: any) {
+    // On batch failure, return error results for each scenario
+    return scenarios.map(s => ({
+      scenario: s,
+      agent,
+      lab_fork: labFork ?? null,
+      passed: false,
+      checks: [],
+      summary: `gym-batch error: ${(err.stderr ?? err.message ?? "unknown").toString().slice(0, 500)}`,
+      agent_status: "error",
+      duration: "0s",
+      gym_root: "",
+    }));
+  }
+}
+
 /** List known gym scenario names. */
 export function listScenarios(): string[] {
   try {

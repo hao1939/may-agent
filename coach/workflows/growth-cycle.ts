@@ -9,6 +9,7 @@ import {
 } from "../../../src/lib/growth.js";
 import {
   runGym,
+  runGymBatch,
   listScenarios,
   findLabForks,
   extractScenarios,
@@ -206,17 +207,12 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     scenarios = listScenarios().slice(0, 3);
   }
 
-  // Run baseline tests
-  const baselineResults: GymResult[] = [];
-  for (const scenario of scenarios) {
-    baselineResults.push(runGym(scenario, agentName));
-  }
+  // Run baseline + patched via single batch invocation
+  const allResults = runGymBatch(scenarios, agentName, forkName);
 
-  // Run patched (fork) tests
-  const patchedResults: GymResult[] = [];
-  for (const scenario of scenarios) {
-    patchedResults.push(runGym(scenario, agentName, forkName));
-  }
+  // Separate results into baseline vs patched by lab_fork field
+  const baselineResults = allResults.filter(r => r.lab_fork === null);
+  const patchedResults = allResults.filter(r => r.lab_fork !== null);
 
   const gymResultsText = formatGymResults(baselineResults, patchedResults, forkName);
 
