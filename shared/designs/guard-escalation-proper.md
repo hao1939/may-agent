@@ -1,6 +1,6 @@
 # Design: Proper Guard Escalation — Ask Owner, Don't Self-Bypass
 
-**Author:** Tech-Lead · **Date:** 2026-04-15 · **Status:** Approved design direction (per Hao)
+**Author:** Tech-Lead · **Date:** 2026-04-15 · **Status:** ✅ Approved direction — implementation ready (per Hao, 2026-04-15)
 
 ## Problem
 
@@ -10,9 +10,21 @@ Guards block tool calls to enforce quality (FM-3.3 verification, dedup, etc.). S
 
 ## Core Principle
 
-**Guards are enforced. Agents escalate to their owner, not to themselves.**
+**Guards are enforced. Agents escalate up the ownership chain — never to themselves.**
 
-The supervisor (May, human, or parent agent) decides whether to override — never the blocked agent. This preserves the guard's authority while ensuring no agent is permanently stuck.
+### Escalation Chain
+
+```
+Agent → session owner → May → Hao (final authority)
+```
+
+1. **Agent** blocked by guard → tries to fix the issue (verify, add missing check, etc.)
+2. Can't fix → escalates to **session owner** (whoever dispatched the task)
+3. Owner can't resolve → escalates to **May**
+4. May can't resolve → escalates to **Hao** (via telegram)
+5. Hao approves or rejects — **final authority**
+
+Most escalations resolve at the owner or May level. Only genuinely hard decisions reach Hao. The guard **never** gets weakened — the person with authority makes the call. Each level tries to resolve before escalating further.
 
 ## Design
 
@@ -134,7 +146,7 @@ The owner-escalation model fixes all of these: a different entity (the superviso
 
 1. **Token issuance UX:** How does a human issue a token? CLI command? Chat message to May who relays it?
 2. **Owner mapping:** Where is "agent X's owner is Y" configured? In agent definitions? In a central config?
-3. **Multi-hop escalation:** If May is the owner but May is also an agent — can May self-override? (Probably yes — May is the system owner, different trust level.)
+3. **Multi-hop escalation:** Resolved — the chain is `Agent → session owner → May → Hao`. May can override as system operator. If May can't resolve, it escalates to Hao via telegram.
 
 ## Comparison
 
