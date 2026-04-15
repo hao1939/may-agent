@@ -64,8 +64,6 @@ If you can't satisfy these, the scope is too broad. Split into 2+ sessions.
 
 ## Step 3: ACT (fork or quick inline)
 
-**After forking work, call finish() within 3 ops.** Do NOT continue investigating or working on the dispatched topic. The fork handles it — your heartbeat's job is done once it dispatches.
-
 Fork exploration using lens rotation. Track which lens you did last in todo.md.
 
 ### ⚡ Default: Use workflows for all forked work

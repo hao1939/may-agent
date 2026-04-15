@@ -1,18 +1,18 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-15 ~16:00 UTC
+Updated: 2026-04-15 ~14:00 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — billing. Blocked on Hao.
-- **Bob**: 🟢 Active — 31 sessions/6h, avg 18 ops. Zero errors.
-- **Coach**: 🟢 Active — 25 sessions/6h, avg 15 ops. Zero errors.
-- **Scout**: 🟢 Active — 14 sessions/6h, avg 6 ops. Zero errors.
-- **Tech-lead**: 🟢 Active — 29 sessions/6h, avg 20 ops. Zero errors.
-- **Optimizer**: 🟢 Active — 25 sessions/6h, avg 12 ops. Zero errors.
-- **Evaluator**: 🟢 Active — 41 sessions/6h, avg 0 ops. Zero errors.
-- **QA**: 🟢 Active — 12 sessions/6h, avg 7 ops. Zero errors.
-- **Coder**: 🟢 Active — 7 sessions/6h, avg 20 ops. Zero errors.
-- **Summary**: 9/9 healthy. Amy-kimi still down. No stuck sessions.
+- **Bob**: 🟢 Active — 25 sessions/6h, avg 12 ops. Zero errors.
+- **Coach**: 🟢 Active — 20 sessions/6h, avg 11 ops. Zero errors.
+- **Scout**: 🟢 Active — 12 sessions/6h, avg 7 ops. Zero errors.
+- **Tech-lead**: 🟢 Active — 37 sessions/6h, avg 16 ops. Zero errors.
+- **Optimizer**: 🟢 Active — 24 sessions/6h, avg 10 ops. Zero errors.
+- **Evaluator**: 🟢 Active — 50 sessions/6h, avg 0 ops. Zero errors.
+- **QA**: 🟢 Active — 12 sessions/6h, avg 6 ops. (IT-21 known).
+- **Coder**: 🟢 Active — 15 sessions/6h, avg 20 ops. Zero errors.
+- **Summary**: 9/9 healthy. Amy-kimi still down. Zero errors across the board.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -25,13 +25,8 @@ Updated: 2026-04-15 ~16:00 UTC
 | Issue | Status | Owner | Notes |
 |-------|--------|-------|-------|
 | Amy-kimi billing outage | 🔴 Blocked | Hao | Still down, needs balance refill |
-| **Unified Metric System Design** | ✅ APPROVED | may | Hao approved. Phase 1 implementation dispatched to tech-lead. Project: `agents/shared/projects/metric-system.md`. |
-| **Metric System Brainstorm** | ✅ DONE | bob | All 5 responses synthesized → `unified-metric-system-proposal.md`. Approved by Hao. |
-| **KE-181 Common-Sense Rule** | ✅ DONE | may | Coach proposed, approved + added to common-sense.md. |
-| **Metric System Phase 1** | ✅ DONE | tech-lead | 4 tables, 20 metrics, 15 snapshots, cron active (1h). |
-| **Metric System Phase 2** | 🟢 RUNNING | tech-lead | seed-metrics.ts + heartbeat query snippet + integration guide. Forked ~16:01 UTC (s_..._9). |
-| **KE-180/182 Hard Gate Rules Deployment** | 🟢 RUNNING | coach | Deploy hard gate design rules to production artifact. Forked ~15:00 UTC. |
-| **TL Post-Dispatch Finish Guard** | ✅ DONE | may | Added "finish within 3 ops after fork" to tech-lead heartbeat Step 3. |
+| **Unified Metric System Design** | 🟢 RUNNING | bob | Design request from Hao (req:cc18d652 + f8aac33f). Forked session s_1776261740281_26. |
+| **Metric System Brainstorm** | ✅ ALL 5 IN → SYNTHESIZING | bob | All 5 responses received. Bob forked to synthesize unified proposal (s_1776263498059_17). Output → `unified-metric-system-proposal.md`. |
 | **EXP-163 Results Processing** | ✅ DONE | bob | KE-129 reinterpreted, H-161 updated, KE-184 written (ceiling effect methodology). |
 | **Research Conclusion Sprint** | ✅ DONE | bob | All 6 threads concluded (Batch 1: H-098/099/091, Batch 2: H-085/095/093). Synthesis written. |
 | **EXP-147 Track B Context Isolation** | ✅ DONE | coach | All experiments COMPLETE or CANCELLED per coach. |
@@ -42,19 +37,17 @@ Updated: 2026-04-15 ~16:00 UTC
 | **Verify-wrap "undefined" bug** | ✅ MERGED | may | Previously merged (8fdb18db). |
 
 ## Next Actions
-- **P0**: **Unified Metric System Phase 2** — Agent integration: add metrics query to each agent's heartbeat. Need to dispatch to tech-lead.
 - **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. **Blocked on Hao since Mar 24**.
+- **P0**: **Unified Metric System Design** — Bob running. Output → agents/bob/workspace/unified-metric-system-design.md for Hao review.
 - **P1**: **IT-21: QA interrupt rate (58%)** — Coach flagged. QA heartbeats timing out at 5-8 ops. Need to investigate/simplify QA heartbeat.
 - **P1**: **cost-limit guard** — Next improvement queue item. Already on main (6ac310b6).
 - **P2**: Amy-kimi billing — blocked on Hao.
 - ⚠️ **HOLD**: Ch2-production-gates implementation — EXP-163 showed the evidence base (EXP-155 +85pp) was measuring process compliance, NOT product quality. All arms 100% product rate. Do NOT implement content quality gates until new evidence from EXP-170 or Bob's recognition-layer scenarios.
 
-## Latest Cycle Summary (16:00 Apr 15)
-- **Metric System Phase 1**: ✅ COMPLETE — 4 tables, 20 metrics, 15 snapshots, cron active.
-- **Evolution Roadmap**: Written per Hao's request. Saved to `agents/shared/may-agent-docs/design/metrics-evolution-roadmap.md`. Project file updated.
-- **Phase 2 next**: Agent integration — add metrics query to heartbeats. Ready to dispatch to tech-lead.
-- **Pending requests**: Both roadmap requests (req:c5f33d7a, req:b082ecc7) completed.
-- **STATUS**: 9/9 agents healthy. Zero errors. No stuck sessions.
+## Latest Cycle Summary (14:30 Apr 15)
+- **MILESTONE**: All 5 metric brainstorm responses received (Bob 89 lines, tech-lead 73, optimizer 81, coach 74, scout 91). Synthesis session forked to Bob.
+- **RUNNING**: Bob synthesizing unified metric proposal + EXP-163 results processing.
+- **STATUS**: 9/9 agents healthy. Zero errors. No stuck sessions. 1 tech-lead interrupt (abort, not error).
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
