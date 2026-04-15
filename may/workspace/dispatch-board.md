@@ -1,18 +1,18 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-14 ~05:03 UTC
+Updated: 2026-04-15 ~06:30 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — 429 errors (billing). Blocked on Hao.
-- **Bob**: 🟢 Active — 28 sessions/6h, avg 15 ops. Zero errors. 1 zombie session (EXP-163, harmless).
-- **Coach**: 🟢 Active — 28 sessions/6h, avg 15 ops. Zero errors.
-- **Scout**: 🟢 Active — 22 sessions/6h, avg 20 ops. Zero errors. Still 0 child sessions (behavioral, not tool issue — tools already fixed).
-- **Tech-lead**: 🟢 Active — 19 sessions/6h, avg 22 ops. Zero errors.
-- **Optimizer**: 🟢 Active — 22 sessions/6h, avg 12 ops. Zero errors.
-- **Evaluator**: 🟢 Active — 12 sessions/6h, avg 7 ops. 1 error (non-critical).
-- **QA**: 🟢 Active — 12 sessions/6h, avg 8 ops. Zero errors.
+- **Bob**: 🟢 Active — 4 sessions/6h, avg 10 ops. Zero errors.
+- **Coach**: 🟢 Active — 5 sessions/6h, avg 13 ops. Zero errors.
+- **Scout**: 🟢 Active — 3 sessions/6h, avg 12 ops. Zero errors.
+- **Tech-lead**: 🟢 Active — 3 sessions/6h, avg 4 ops. Zero errors.
+- **Optimizer**: 🟢 Active — 5 sessions/6h, avg 11 ops. Zero errors.
+- **Evaluator**: 🟢 Active — 8 sessions/6h, avg 1 ops. Zero errors.
+- **QA**: 🟢 Active — 4 sessions/6h, avg 5 ops. Zero errors.
 - **Coder**: 🟡 Low activity — Only runs when forked by tech-lead.
-- **Summary**: 7/8 healthy. Amy-kimi still down. 1 evaluator error, 1 bob zombie session. Otherwise clean.
+- **Summary**: 7/8 healthy. Amy-kimi still down. No errors, no stuck sessions. All agents running normally. Lower session counts reflect overnight period.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -35,11 +35,11 @@ Updated: 2026-04-14 ~05:03 UTC
 - **P1**: **Convention investigation** — In progress (tech-lead). 
 - **P2**: Amy-kimi billing — blocked on Hao.
 
-## Latest Cycle Summary (05:03 Apr 14)
-- **System**: 8 agents active (excl amy-kimi). 1 evaluator error, 1 bob zombie session. Otherwise clean.
-- **Agent stats (6h)**: Bob 28s/15ops, Coach 28s/15ops, Evaluator 12s/7ops, May 14s/9ops, Optimizer 22s/12ops, QA 12s/8ops, Scout 22s/20ops, Tech-lead 19s/22ops.
-- **Completed since last cycle**: Guard-redirect prototype (phase 1 design + test), event-driven guards design, session event flow design.
-- **Queue**: 5 Ready items in improvement queue. Top: over-intervention cleanup, tech-lead workflow adoption, tiered turn budget.
+## Latest Cycle Summary (06:30 Apr 15)
+- **System**: 8 agents active (excl amy-kimi). Zero errors, no stuck sessions. Clean overnight.
+- **Agent stats (6h)**: Bob 4s/10ops, Coach 5s/13ops, Evaluator 8s/1ops, May 2s/2ops, Optimizer 5s/11ops, QA 4s/5ops, Scout 3s/12ops, Tech-lead 3s/4ops.
+- **In Progress**: Optimizer finding→dispatch pipeline, Tech-lead workflow D-o-R (optimizer).
+- **Queue**: 2 Ready items. Top: tiered turn budget deployment (dispatching to tech-lead), artifacts-as-memory deep dive (bob).
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.

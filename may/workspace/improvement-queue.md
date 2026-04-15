@@ -3,10 +3,10 @@
 
 ## Ready
 
-- [ ] **Tiered turn budget deployment** — Experiment design is complete (`agents/optimizer/workspace/experiment-tiered-budget.md`) but code was NOT deployed to source files. Tiers: heartbeat=8, research=15, implementation=25 with soft limit + 2-turn grace. Safety: BenVanik data says never reduce thinking depth, only bound tool-call loops. Source: adaptive-reasoning-efficiency research project. **Deliverable**: tech-lead dispatched to implement turn budget in `src/lib/manager.ts` + `src/app/cron.ts` per the design doc. **Scope**: Medium.
 - [ ] **Artifacts-as-Memory deep dive + externalization framework validation** — Scout found paper 2604.08756 "Artifacts as Memory Beyond the Agent Boundary" — mathematical proof that artifacts reduce information needed to represent history (Artifact Reduction Theorem). Directly validates our externalization framework (DD-750). Combined with ZPD convergence cluster (5+ papers validating H-107 difficulty threshold). Source: scout triage sessions 711-712. **Deliverable**: bob dispatched to write deep-dive + cross-reference with DD-750 and H-107 evidence. **Scope**: Small.
 
 ## In Progress
+- [ ] **Tiered turn budget deployment** — Forked to tech-lead (2026-04-15 06:31, s_1776234674261_37). Implementing tier limits in manager.ts + cron.ts per optimizer design doc.
 - [ ] **Optimizer finding→dispatch pipeline** — Forked to optimizer (2026-04-13 07:22, s_1776064947441_50). Design protocol + heartbeat edit.
 - [ ] **Tech-lead workflow adoption — D-o-R for Lens sessions** — Forked to optimizer (2026-04-15 06:01, s_1776232873559_15). Proposal for D-o-R phase boundaries on Lens sessions.
 
