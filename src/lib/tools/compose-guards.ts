@@ -48,6 +48,7 @@ type BeforeToolCallHook = (
 export function composeGuards(...guards: BeforeToolCallHook[]): BeforeToolCallHook {
   return async (context: BeforeToolCallContext, signal?: AbortSignal): Promise<BeforeToolCallResult | undefined> => {
     let lastWarning: BeforeToolCallResult | undefined;
+    const isFinish = context.toolCall.name === "finish";
 
     for (const guard of guards) {
       let result: BeforeToolCallResult | undefined;
@@ -59,6 +60,15 @@ export function composeGuards(...guards: BeforeToolCallHook[]): BeforeToolCallHo
         continue;
       }
       if (!result) continue;
+
+      // finish() is never blocked — guards are advisors, not jailers.
+      // Convert blocks to warnings so the agent gets the message but can still exit.
+      // This prevents trapped-agent loops where guards block finish() indefinitely.
+      if (result.block && isFinish) {
+        console.error(`[composeGuards] guard tried to block finish() — downgrading to warning: ${result.reason}`);
+        lastWarning = { ...result, block: false };
+        continue;
+      }
 
       // Blocking result — return immediately
       if (result.block) return result;
