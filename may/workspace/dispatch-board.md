@@ -29,7 +29,7 @@ Updated: 2026-04-15 ~16:00 UTC
 | **Metric System Brainstorm** | ✅ DONE | bob | All 5 responses synthesized → `unified-metric-system-proposal.md`. Approved by Hao. |
 | **KE-181 Common-Sense Rule** | ✅ DONE | may | Coach proposed, approved + added to common-sense.md. |
 | **Metric System Phase 1** | ✅ DONE | tech-lead | 4 tables, 20 metrics, 15 snapshots, cron active (1h). |
-| **Metric System Evolution Roadmap** | ✅ DONE | may | Hao's L1→L4 vision saved to `metrics-evolution-roadmap.md`. Project file updated. |
+| **Metric System Phase 2** | 🟢 RUNNING | tech-lead | seed-metrics.ts + heartbeat query snippet + integration guide. Forked ~16:01 UTC (s_..._9). |
 | **KE-180/182 Hard Gate Rules Deployment** | 🟢 RUNNING | coach | Deploy hard gate design rules to production artifact. Forked ~15:00 UTC. |
 | **TL Post-Dispatch Finish Guard** | ✅ DONE | may | Added "finish within 3 ops after fork" to tech-lead heartbeat Step 3. |
 | **EXP-163 Results Processing** | ✅ DONE | bob | KE-129 reinterpreted, H-161 updated, KE-184 written (ceiling effect methodology). |
