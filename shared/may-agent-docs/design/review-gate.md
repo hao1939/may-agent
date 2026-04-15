@@ -190,25 +190,89 @@ export const guard: WorkflowGuard = {
 };
 ```
 
-### Mechanism C: May Proactive Design Review (Heartbeat)
+### Mode B: Proactive Cron Scan (Catching What the Guard Can't)
 
-Separate from the workflow guard, May's heartbeat should also proactively check for designs/proposals that could break the system and need extra approval. This catches things that don't go through workflows (direct commits, manual changes).
+The workflow guard only fires during workflows. Many changes happen outside workflows — direct sessions, heartbeats, manual intervention. Bob's pre-merge design identified this gap: you need a **periodic scan** that catches unreviewed changes.
+
+**What it catches that Mode A can't:**
+
+| Scenario | Why Mode A misses it | Mode B catches it |
+|----------|---------------------|-------------------|
+| Agent runs `git merge review/X` in bash | Not a workflow step | Scans main for new system-scope commits |
+| Emergency bypass commit (`REVIEW_GATE_BYPASS=1`) | Pre-commit hook skipped | Detects unreviewed commits on main |
+| Stale review branches (agent session crashed) | Workflow never completed | Finds branches with no recent activity |
+| Design doc committed during heartbeat | Heartbeats aren't workflows | Scans for new design docs |
+| Direct `agents.call()` outside a workflow | No workflow guard context | Scans branch state |
+
+**Implementation:** A session subscriber (or May cron job) that runs every 10-15 minutes:
+
+```typescript
+// Pseudocode — runs as a cron subscriber or May heartbeat check
+function proactiveScan() {
+  // 1. Check main for unreviewed system-scope commits since last scan
+  const lastScanned = readState("gatekeeper-last-scanned-commit");
+  const newCommits = git("log", lastScanned + "..HEAD", "--name-only");
+  const unreviewed = newCommits.filter(c => hasSystemScopeFiles(c) && !hasReviewTag(c));
+  
+  if (unreviewed.length > 0) {
+    // Dispatch QA review of unreviewed commits
+    dispatch("qa", buildReviewTask(unreviewed));
+    // Or flag for Hao if critical
+  }
+  
+  // 2. Find stale review branches (>30 min with no review)
+  const staleBranches = git("branch", "--list", "review/*")
+    .filter(b => branchAge(b) > 30 * 60 * 1000 && !hasBeenReviewed(b));
+  
+  if (staleBranches.length > 0) {
+    // Dispatch QA review for each stale branch
+    for (const branch of staleBranches) {
+      dispatch("qa", buildBranchReviewTask(branch));
+    }
+  }
+  
+  // 3. Detect bypass commits (committed to main with REVIEW_GATE_BYPASS)
+  // These need post-hoc audit
+  const bypassCommits = git("log", "--grep=BYPASS", "--grep=hotfix", lastScanned + "..HEAD");
+  if (bypassCommits.length > 0) {
+    flag("hao", `${bypassCommits.length} bypass commits need post-hoc review`);
+  }
+  
+  updateState("gatekeeper-last-scanned-commit", "HEAD");
+}
+```
+
+**Where it lives:** This can be:
+- A **session subscriber** listening to a periodic timer event (new event type)
+- A **May cron job** (simplest — May already has cron infrastructure)
+- A **dedicated handler** in May's handlers (like Bob's design proposes)
+
+The recommended approach is **May's cron** — it's the simplest, already exists, and May is the gatekeeper. The cron job dispatches reviews; it doesn't do the review itself.
+
+**State tracking:** Uses `.state/gatekeeper-last-scanned-commit` (a single file with the last commit hash scanned). Simple, no DB needed for Phase 1.
+
+### Mode C: May Proactive Design Review (Heartbeat)
+
+Separate from the automated systems, May's heartbeat should also proactively check for designs/proposals that could break the system and need extra approval. This catches judgment calls that automated scanning can't make.
 
 **What May should check during heartbeats:**
 1. New/modified design docs with proposals that affect system behavior
-2. Pending review branches that haven't been picked up by the guard
-3. Experiment designs that propose changing system behavior (like EXP-150)
+2. Experiment designs that propose changing system behavior (like EXP-150)
+3. Proposals from agents that need Hao's approval before implementation proceeds
 
-**Implementation:** Update May's heartbeat instructions — behavioral change, no code needed.
+**Implementation:** Update May's heartbeat instructions — behavioral change, no code needed. This is the human-judgment layer that complements the automated modes.
 
 ## Design Decisions
 
 ### Q1: What about changes that bypass workflows?
 
-If an agent uses `bash` to run `git merge` directly, the guard doesn't fire. But:
-- The pre-commit hook blocks direct commits to main
-- The merge itself isn't a workflow step
-- **Mitigation:** The pre-merge hook (future) or May's heartbeat catch these
+**Mode A (workflow guard)** catches changes during workflows. **Mode B (cron scan)** catches everything else:
+- Direct merges via `git merge` in bash → Mode B detects new system-scope commits on main
+- Emergency bypass commits → Mode B flags for post-hoc audit
+- Stale review branches → Mode B dispatches review for abandoned branches
+- Changes during heartbeats → Mode B scans periodically
+
+The three modes are complementary — Mode A is preventive (blocks during workflow), Mode B is detective (scans after the fact), Mode C is judgmental (May's human-like review of designs/proposals).
 
 ### Q2: Won't this make workflows slower?
 
