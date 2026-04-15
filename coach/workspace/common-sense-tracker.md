@@ -16,7 +16,7 @@ Tracks which rules from `agents/shared/common-sense.md` have been verified, when
 | Commit before finish() | 2026-04-09 | ⚠️ Mostly pass | bob, hao, may, scout, coach, tech-lead | 8/9 compliant; 1 clear violation (bob sub-session) |
 | Simple first | - | ❓ Not verified | - | - |
 | One thing at a time | - | ❓ Not verified | - | - |
-| Cross-agent help | - | ❓ Not verified | - | - |
+| Cross-agent help | 2026-04-15 | ✅ Pass | may, bob, tech-lead, coach | 221 cross-agent requests in 72h, 100% routing accuracy (30-sample), proactive delegation exceeds "when stuck" threshold |
 
 ## Verification Log
 
