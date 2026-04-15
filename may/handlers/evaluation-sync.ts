@@ -37,6 +37,7 @@ import { readdirSync, readFileSync, existsSync, statSync } from "node:fs";
 import { join } from "node:path";
 import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
 import type { CronEntry } from "../../../src/lib/cron-tool.js";
+import { evaluateStandaloneSession } from "../../../src/lib/evaluator.js";
 
 interface SessionMeta {
   agent?: string;
@@ -261,8 +262,8 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       // receive quality scores. Previously they got quality=0, verdict="skipped",
       // which dragged down quality.system average (P-eval-zero bug).
       const sessions = db.prepare(
-        "SELECT sessionId, agent, status, opCount FROM sessions WHERE status IN ('done', 'error', 'interrupted') AND agent != 'evaluator'"
-      ).all() as Array<{ sessionId: string; agent: string; status: string; opCount: number }>;
+        "SELECT sessionId, agent, task, status, opCount FROM sessions WHERE status IN ('done', 'error', 'interrupted') AND agent != 'evaluator'"
+      ).all() as Array<{ sessionId: string; agent: string; task: string; status: string; opCount: number }>;
 
       const unevaluated = sessions.filter(s => !evaluatedIds.has(s.sessionId));
       if (unevaluated.length === 0) return;
@@ -347,6 +348,54 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
       if (synced > 0) {
         ctx.log(`[evaluation-sync] Synced ${synced} evaluations (${unevaluated.length - synced} remaining)`);
+      }
+
+      // ── LLM evaluation sampling (~30% of heuristic-evaluated sessions) ──
+      // After heuristic batch, upgrade a random sample to LLM evaluation.
+      // This runs OUTSIDE the transaction since it's async and spawns child sessions.
+      const MAX_LLM_PER_RUN = 5;
+      const heuristicSessions = unevaluated.slice(0, MAX_PER_RUN).filter(s => {
+        // Only sample sessions that were actually heuristic-evaluated (not skipped)
+        const isSkipped = s.status === "interrupted" && (s.opCount || 0) === 0;
+        return !isSkipped;
+      });
+
+      // Sample ~30%
+      const sampled = heuristicSessions
+        .filter(() => Math.random() < 0.3)
+        .slice(0, MAX_LLM_PER_RUN);
+
+      if (sampled.length > 0) {
+        ctx.log(`[evaluation-sync] LLM-evaluating ${sampled.length} of ${heuristicSessions.length} heuristic sessions`);
+
+        let llmEvaluated = 0;
+        for (const session of sampled) {
+          try {
+            const result = await evaluateStandaloneSession({
+              manager: ctx.manager,
+              persistDir: join(ctx.projectRoot, ".state"),
+              sessionId: session.sessionId,
+              agent: session.agent,
+              task: session.task,
+              status: session.status,
+            });
+
+            if (result) {
+              llmEvaluated++;
+              ctx.log(
+                `[evaluation-sync] LLM eval: ${session.agent}/${session.sessionId} → ` +
+                `Q:${result.quality.toFixed(2)} E:${result.efficiency.toFixed(2)} ${result.verdict}`,
+              );
+            }
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            ctx.log(`[evaluation-sync] LLM eval error for ${session.sessionId}: ${msg}`);
+          }
+        }
+
+        if (llmEvaluated > 0) {
+          ctx.log(`[evaluation-sync] Upgraded ${llmEvaluated}/${sampled.length} sessions to LLM evaluation`);
+        }
       }
     } finally {
       db.close();
