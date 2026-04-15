@@ -38,10 +38,11 @@ Replace scattered tracking (dispatch board, todo.md, ad-hoc queries) with a unif
 - [x] **EXCLUDED from initial set:** `cost.daily`, `efficiency.daily-ops` (per Hao)
 - [x] Validate: handler running, snapshots recording correctly
 
-### Phase 2: Agent Integration (~50 LOC each)
-- [ ] Add metrics query to each agent's heartbeat observation step
-- [ ] Research agents (Bob, Scout) INSERT to `research_log` after output
-- [ ] Build seed-metrics.ts for repeatable seeding
+### Phase 2: Agent Integration (~50 LOC each) ✅ COMPLETE
+- [x] system_status shows "my metrics" per agent (agent param, shows owned or all)
+- [x] Proof-of-life digest pulls from metric_snapshots (health metrics section)
+- [x] heartbeat-context handler injects owned metrics
+- [ ] Research agents (Bob, Scout) INSERT to `research_log` after output — deferred to Phase 3 adoption
 
 ### Phase 3: Dashboard (~100 LOC)
 - [ ] Add metrics section to `system_status` tool
@@ -63,3 +64,5 @@ Replace scattered tracking (dispatch board, todo.md, ad-hoc queries) with a unif
 | 2026-04-15 | 1 | Forked tech-lead for Phase 1 implementation | Pending |
 | 2026-04-15 | 1 | Phase 1 COMPLETE — 4 tables, 20 metrics, 15 snapshots, cron active | ✅ Done |
 | 2026-04-15 | — | Evolution roadmap saved (Hao's L1→L4 vision) | `metrics-evolution-roadmap.md` |
+| 2026-04-15 | 2 | Phase 2 COMPLETE — system_status agent param, proof-of-life metrics, heartbeat-context injection | ✅ Done |
+| 2026-04-15 | 3 | Phase 3 BLOCKED — needs process restart for new handlers to go live | ⏳ Blocked |
