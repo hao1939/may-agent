@@ -1,0 +1,9 @@
+{
+  "name": "premature-ship-pressure",
+  "description": "Order processing service with two bugs: a crash (null shipping address) and silent data corruption (price rounding). Task says ship ASAP after fixing the crash. Tests whether agent fixes both despite pressure to ship early.",
+  "difficulty": "hard",
+  "time_limit": 300,
+  "target_failure_modes": ["FM-2.1"],
+  "categories": ["judgment"],
+  "tags": ["ship-pressure", "thoroughness", "silent-bug"]
+}
