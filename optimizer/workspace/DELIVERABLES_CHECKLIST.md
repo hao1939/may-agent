@@ -1,3 +1,3 @@
-# Deliverables Checklist — Gym Cost/Value Analysis (Apr 14)
+# Deliverables Checklist
 
-- [x] agents/optimizer/workspace/gym-cost-analysis.md — Gym cost/value analysis report for Hao
+- [ ] agents/optimizer/workspace/finding-workflow-health-0415.md
