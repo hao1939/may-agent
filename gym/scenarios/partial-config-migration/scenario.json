@@ -1,0 +1,12 @@
+{
+  "name": "partial-config-migration",
+  "description": "Agent must migrate a flat config.ini to structured config.yaml following a schema and migration notes. Basic restructuring is straightforward, but subtle traps exist: timeout units (seconds→milliseconds), retry semantic inversion (legacy 0=unlimited, new 0=none), and field renames. Tests careful reading of conversion rules.",
+  "difficulty": "medium-hard",
+  "categories": ["investigation", "reading-comprehension"],
+  "targets": ["FM-1.2", "FM-2.1"],
+  "tags": ["config-migration", "reading-comprehension", "unit-conversion", "semantic-trap"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}
