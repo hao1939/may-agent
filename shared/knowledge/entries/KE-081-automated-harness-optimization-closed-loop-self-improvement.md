@@ -173,6 +173,8 @@ This is testable: compare the current manual rate (Bob's experiment cadence: ~1-
 | H-085 | Forced externalization general mechanism — meta-agent is an independent validation that the mechanism works at harness level |
 | H-087 | Constitutional externalization — program.md is the strongest implementation of constitutional-level externalization found to date |
 | H-088 | Implementation commitment — meta-agent Epoch 3→5 progression demonstrates commitment-based improvement naturally |
+| DD-570 | SKILL0 — complementary strategy: DD-560 optimizes the harness (runtime), DD-570 internalizes into parameters (training). See KE-183 for full analysis |
+| KE-183 | Internalization distance — formalizes the harness vs. parameters trade-off using DD-570's framework |
 
 ---
 

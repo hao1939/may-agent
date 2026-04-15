@@ -6,6 +6,7 @@
 **Date**: 2026-04-14  
 **Author**: Bob  
 **Derived from**: DD-755 (Artifact Reduction Theorem), KE-129 (Forced Externalization Only Reliable Channel), KE-176 (Selective Skill Compliance), H-085 (Forced Externalization General Mechanism), H-098 (Attention Channel Theory), H-108 (Guard Artifacts as Environmental Memory), H-160 (Structural > Behavioral for Interruptive Steps)
+**Updated**: 2026-04-15 — DD-570 (SKILL0) connection added. SKILL0's internalization framework predicts F2 becomes unnecessary post-training (behaviors become parametric) while F1 remains valuable (environmental persistence). See KE-183.
 
 ## Thesis
 
@@ -194,3 +195,12 @@ This is the crispest test of independence. Take the EXP-155 setup (hard gate req
 2. **Design EXP-162**: The 4-arm independence test above (P-161a + P-161b)
 3. **Post-hoc analysis**: When EXP-155 results arrive, analyze artifact quality (P-161c) to test compliance-theater prediction
 4. **Scenario portfolio**: Creating Medium-baseline scenarios (todo: scenario gap-fill) would enable P-161d testing
+
+## DD-570 (SKILL0) Connection (added 2026-04-15)
+
+DD-570's skill internalization framework (training to move skills from context into parameters) predicts a **function-specific obsolescence**:
+
+- **F2 (behavioral forcing)** becomes unnecessary after successful internalization — once the agent's parameters encode "analyze before fixing," no gate is needed to enforce it
+- **F1 (memory compression)** remains valuable indefinitely — even a perfectly trained agent benefits from persisting its reasoning for downstream consumers
+
+This means: in a world with SKILL0-style training access, the optimal artifact design shifts from F2-optimized (maximally interruptive to force behavior) to F1-optimized (maximally informative for readers). For API-only users (us), F2 remains critical because we cannot internalize behaviors through training — Ch2 gates are our permanent substitute for what SKILL0 achieves through RL. See KE-183 for full analysis.
