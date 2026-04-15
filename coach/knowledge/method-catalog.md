@@ -1026,6 +1026,14 @@ workflow WORSE at 5/9 — needs three-phase or progressive-checkpoint approach),
 convention-verify-edit (skill approach partially works at 60%, workflow
 variant untested).
 
+**⚠️ Hard Gate Design Rules (KE-182)**: When designing workflow phases as
+hard externalization gates, follow the 6 rules in `knowledge/growth-cycle.md
+§ Hard Gate Design Rules`. Critical violations: (1) Gate artifact must BE the
+solution, not describe the problem — "completion illusion" (KE-180) causes
+-80pp regression when the artifact is descriptive rather than productive;
+(2) Only apply to baselines ≤50%; (3) Measure PRODUCT quality, not process
+compliance (KE-181). Full decision tree in growth-cycle.md.
+
 **How**:
 1. Design a workflow with ≥2 steps (phases)
 2. Each step calls the agent with a focused task (only that phase's work)

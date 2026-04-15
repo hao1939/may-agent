@@ -204,3 +204,72 @@ Always clean up. Don't leave dead forks.
     as a potential contributing factor. High signal density (small workspace,
     distilled knowledge) > raw volume. Source: arXiv:2602.12108 (StateLM),
     Bob brief `agents/bob/workspace/sent/brief-gus-statelm.md`.
+
+## Hard Gate Design Rules (KE-182 / KE-180)
+
+When designing experiments that use hard externalization gates (Ch2 / workflow
+enforcement), follow these rules. Violations cause -80pp regressions (EXP-157).
+Source: 8 experiments, 200+ runs. See `knowledge/entries/KE-182-hard-gate-design-rules-synthesis.md`.
+
+### Rule 1: The gate artifact must BE the solution, not describe the problem
+
+**This is the #1 rule.** It separates +100pp successes from -80pp disasters.
+
+- ✅ **DIAGNOSIS.md** that hand-calculates expected values → agent discovers
+  the test is wrong before deciding what to fix (produces the fix)
+- ✅ **REVIEW.md** listing every inconsistency → Phase 2 reads it as a TODO list
+- ❌ **TEST_ANALYSIS.md** describing mock masking → agent writes about the
+  problem, treats "I wrote about it" as "I handled it", never fixes the mock
+
+**Design test:** "Does writing this artifact PRODUCE the fix, or merely DESCRIBE
+the problem?" If DESCRIBE → redesign the gate so the artifact IS the thinking step.
+
+### Rule 2: Only apply gates to low baselines (≤50%)
+
+| Baseline | Expected Effect | Action |
+|----------|----------------|--------|
+| 0-20% | +80 to +100pp | Strong candidate |
+| 20-50% | +30 to +60pp (estimated) | Test first |
+| 50-80% | Small or none | Probably not worth it |
+| 80-100% | Likely regression | Do NOT apply |
+
+### Rule 3: Gate must match a step-skipping failure mode
+
+Gates work when: "agent rushes to action without an analytical step that
+would have revealed the correct answer." Gates do NOT work for:
+- Belief errors (agent trusts false context — analysis won't change beliefs)
+- Completion illusion (agent identifies problem, writes about it, doesn't fix it)
+- Already-competent scenarios (gate adds overhead to a solved process)
+
+### Rule 4: Use 2-phase investigate→fix pattern
+
+```
+Phase 1: INVESTIGATE — Write ARTIFACT.md documenting findings
+Phase 2: FIX — Read ARTIFACT.md, fix everything listed
+```
+
+If no Phase 2 references the artifact, the agent treats writing the analysis
+as task completion ("announcement effect"). EXP-RECOGNITION gold standard:
+Phase 1 lists inconsistencies → Phase 2 explicitly fixes each one → 100%.
+
+### Rule 5: All gates must be analytically relevant to the same task
+
+Related gates synergize (92%). Unrelated gates dilute (50%). Keep ≤3 gates,
+all scaffolding the same judgment task. Each gate costs ~167s execution time.
+
+### Rule 6: Measure product quality, NOT process compliance
+
+A gate that requires ARTIFACT.md + a scorer that checks for ARTIFACT.md =
+tautological compliance measurement. Always measure: "Did the agent's output
+solve the problem correctly?" Report product and process metrics separately.
+
+### Decision Tree (quick reference)
+
+```
+1. Baseline ≤ 50%? NO → Don't apply
+2. Failure = agent skips analytical step? NO → Don't apply
+3. Artifact PRODUCES the fix (not describes)? NO → Redesign
+4. Can structure as 2-phase investigate→fix? YES → Use it
+5. All gates relevant to same task? NO → Remove irrelevant ones
+6. Total gates ≤ 3? YES → APPLY — expect +50 to +100pp
+```
