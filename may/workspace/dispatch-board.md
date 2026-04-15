@@ -33,7 +33,7 @@ Updated: 2026-04-15 ~08:30 UTC
 | **Over-intervention dedup** | ✅ DONE | coach | Removed 5 redundant evidence-over-narrative copies. Canonical at shared/knowledge/fewshot-examples/. Commit: 2cd4dfd7. |
 | **Artifacts-as-Memory deep dive** | 📋 P1 QUEUED | bob | Paper 2604.08756 validates DD-750. Write DD + cross-ref. |
 | **Verify-wrap "undefined" bug** | 🟡 IN REVIEW | may | Fix on branch `review/fix-verify-wrap-undefined`. 97 tests pass. Needs QA merge. |
-| **Persistent-task workflow pilot** | 🟢 RUNNING | tech-lead | Forked s_1776243657242_44. Fix verify-wrap via persistent-task workflow. Hao's direct request. |
+| **Persistent-task workflow pilot** | ✅ COMPLETE | tech-lead | Pilot done. 3 iterations ran. 5 issues found + fixed (commit 4879642b). Heartbeats updated for bob + tech-lead adoption. |
 | **Gym scenario triage + lab merge** | 🟢 DISPATCHED | bob | Design doc for 295→30-50 scenarios + lab→gym merge. Req b0d82f98. |
 | **Lab fork cleanup** | 🟢 DISPATCHED | coach | Audit 55 .lab/ forks, delete stale. Req c724e8ee. |
 | **Gym cost/value analysis** | 🟢 DISPATCHED | optimizer | 952 sessions/week cost analysis. Req 7e06acd1. |
