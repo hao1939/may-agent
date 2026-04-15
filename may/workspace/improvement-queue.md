@@ -4,7 +4,7 @@
 ## Ready
 
 - [x] **Guards Phase 3: Cron-to-workflow migration** — ✅ COMPLETE (2026-04-14). 2 of 4 handlers migrated: error-log-scanner → `error-scan.ts`, coaching-feedback → `coaching-feedback.ts`. Remaining 2 not candidates (priority-drift=dead code, active-nudge=pure JS intervention). run-workflow handler upgraded with `runFunction()` + `agent`. **Design**: `agents/may/workspace/DESIGN-sensor-judge-migration.md`.
-- [ ] **Batch merge tool for tech-lead** — 🟢 IN PROGRESS (forked to tech-lead 2026-04-15 08:32, s_1776241927088_24). Optimizer finding: tech-lead spent 77 git ops (74% of session) on mechanical branch merges in a 94-op session. A `batch-merge.sh` script could save ~40 ops per merge session. **Deliverable**: Script at `scripts/batch-merge.sh` that takes a branch list/pattern, merges all with --ours conflict resolution. **Scope**: Small. **Owner**: tech-lead/coder.
+- [x] **Batch merge tool for tech-lead** — ✅ DONE (2026-04-15). Script at `scripts/batch-merge.sh` already existed and verified complete.
 - [x] **Scenario oracle generator for coach** — ✅ MERGED (2026-04-15, c197286d). Script at `scripts/scenario-oracle.sh`. Rewritten with before/after patch diffing + success_criteria evaluation.
 - [x] **Create-test-pivot loop guard** — ✅ BUILT + IN REVIEW (2026-04-14). Guard at `agents/shared/guards/pivot-detector.ts`. 7 tests on branch `review/pivot-detector-guard`. Warns at 3 fail-pivot cycles, injects mandatory reassessment at 5.
 - [ ] **Artifacts-as-Memory deep dive + externalization framework validation** — Dispatched to Bob (P1, 2026-04-14). Scout found paper 2604.08756 "Artifacts as Memory Beyond the Agent Boundary" — validates DD-750. **Scope**: Small.
@@ -15,7 +15,7 @@
 - [x] **Tiered turn budget deployment** — ✅ ALREADY DEPLOYED (confirmed 2026-04-14).
 
 ## In Progress
-- [ ] **Optimizer finding→dispatch pipeline** — Forked to optimizer (2026-04-13 07:22, s_1776064947441_50). Design protocol + heartbeat edit.
+- [x] **Optimizer finding→dispatch pipeline** — ✅ DONE (session completed). Design protocol delivered.
 
 ## Done
 <!-- Move completed items here with date -->
