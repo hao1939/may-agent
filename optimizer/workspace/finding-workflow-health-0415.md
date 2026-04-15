@@ -1,193 +1,110 @@
-# Finding: Workflow Health — Post LLM-to-JS Verification Impact
+# Finding: Workflow Health Check — Apr 15
 
-**Date**: 2026-04-15T12:00  
-**Author**: Optimizer (Mode D: Workflow Health)  
-**Status**: Complete  
-**Comparison baseline**: finding-workflow-health-0410.md, finding-llm-to-js-verification-0413.md
+**Date**: 2026-04-15  
+**Mode**: D (Workflow Health Check)  
+**Focus**: Tech-lead 100-op heartbeat spike + workflow adoption trends + error patterns
 
-## Executive Summary
+---
 
-The LLM-to-JS verification change (deployed Apr 13) delivered measurable efficiency gains: **system-wide average ops dropped 25%** (16.3 → 12.3) and coach verify-wrap ops **halved** (8.6 → 4.3). However, two concerning trends emerged: (1) interrupt rate quadrupled from 2.1% → 9.4%, and (2) formal workflow adoption (workflowRunId-tracked) dropped from 17.2% → 12.3% despite task-text mentions of workflows reaching 68.6%.
+## 1. Tech-Lead 100-op Heartbeat Analysis
 
-## Data Sources
+**Session**: `s_1776259835111_5`  
+**When**: Apr 15, 13:30–13:54 UTC (23.9 min)  
+**OpCount**: 100 (hit budget ceiling)  
+**Status**: done (no error)  
+**Children**: 0 (all 100 ops spent in the heartbeat itself, no delegation)
 
-- **Production DB**: `.state/may.db` — 21,442 total sessions
-- **Pre-change window**: Apr 10-12 (1,685 sessions)
-- **Post-change window**: Apr 13-15 (1,344 sessions)
-- **Previous findings**: Apr 10 health check, Apr 13 LLM-to-JS finding
+### Context
+- Tech-lead heartbeat average over 7 days: **11.7 ops** (338 sessions)
+- This session is **8.5x the average** — a significant outlier
+- No workflowRunId — this was a raw heartbeat, not a workflow-dispatched session
 
-## Adoption: Two Conflicting Signals
+### Diagnosis
+The session hit the 100-op budget cap, spending 24 minutes on a single heartbeat with zero child sessions. This is the classic "heartbeat doing work directly instead of dispatching" anti-pattern. The tech-lead heartbeat is designed as a "Dispatcher Mode" (per task text: "Simplification Engine (Dispatcher Mode)"), meaning it should delegate work, not execute it inline.
 
-### Signal 1: Task-text matching (mentions "workflow", "verify-wrap", "deliver-or-report")
+**Verdict**: This is a genuine inefficiency — the heartbeat did inline work that should have been dispatched to child sessions. Not a restart accumulation issue (session started fresh at 13:30) and not a workflow issue (no workflowRunId). It's the heartbeat exceeding its intended role.
 
-| Period | Sessions | WF-mentioned | Rate |
-|--------|:---:|:---:|:---:|
-| Apr 10-12 (pre) | 1,685 | 1,039 | **61.7%** |
-| Apr 13-15 (post) | 1,344 | 922 | **68.6%** |
+---
 
-By this measure, adoption *increased* 7pp. Agents reference workflows in their task descriptions more often.
+## 2. Workflow Adoption Trend
 
-### Signal 2: workflowRunId tracking (formal workflow infrastructure)
+| Time Window | Total Sessions | Workflow Sessions | Rate (excl evaluator) |
+|---|---|---|---|
+| 36–48h ago | 305 | 6 | **2.1%** |
+| 24–36h ago | 371 | 47 | **16.1%** |
+| 12–24h ago | 179 | 31 | **24.4%** |
+| 0–12h ago | 277 | 57 | **27.7%** |
 
-| Period | Sessions | workflowRunId set | Rate |
-|--------|:---:|:---:|:---:|
-| Apr 7-9 | 1,505 | 68 | **4.5%** |
-| Apr 10-12 (pre) | 1,685 | 289 | **17.2%** |
-| Apr 13-15 (post) | 1,344 | 165 | **12.3%** |
+**Trend**: Workflow adoption has surged from 2% → 28% in 48 hours. This is a dramatic acceleration — the Apr 12 baseline was 27%, meaning adoption held steady in the most recent window rather than being a one-off spike.
 
-Formal tracking dropped 5pp. This means more sessions *talk about* workflows without being formally tracked as workflow runs.
+### Agent-Level Adoption (last 24h)
 
-### Per-Agent Adoption (task-text, post-change Apr 13-15)
+| Agent | Sessions | Workflow | Rate | Avg Ops | Max Ops |
+|---|---|---|---|---|---|
+| coder | 18 | 15 | **83%** | 20.2 | 34 |
+| optimizer | 55 | 24 | **44%** | 11.8 | 39 |
+| bob | 55 | 21 | **38%** | 10.4 | 38 |
+| coach | 57 | 19 | **33%** | 12.4 | 48 |
+| tech-lead | 66 | 7 | **11%** | 13.6 | 100 |
+| scout | 30 | 2 | **7%** | 8.2 | 28 |
+| qa | 30 | 2 | **7%** | 6.1 | 8 |
+| evaluator | 123 | 0 | 0% | 0.5 | 8 |
+| may | 33 | 0 | 0% | 7.2 | 40 |
 
-| Agent | Total | WF Sessions | Rate | vs Apr 10 baseline |
-|-------|:---:|:---:|:---:|---|
-| QA | 93 | 89 | **95.7%** | ↑ from 42.9% |
-| Scout | 105 | 81 | **77.1%** | ↑ from 42.9% |
-| May | 110 | 82 | **74.5%** | ↓ from 83.7% |
-| Evaluator | 236 | 172 | **72.9%** | ↑ from 45.3% |
-| Optimizer | 188 | 134 | **71.3%** | ↓ from 73.9% |
-| Tech-lead | 195 | 134 | **68.7%** | ↑ from 47.2% |
-| Bob | 188 | 113 | **60.1%** | ↓ from 72.4% |
-| Coach | 196 | 101 | **51.5%** | ↓ from 65.0% |
-| Coder | 33 | 16 | **48.5%** | ↑ from 27.3% |
+**Key observations**:
+- **Coder at 83%** — highest adopter, nearly all sessions use workflows
+- **Optimizer/bob/coach** in the 33–44% band — solid adoption
+- **Tech-lead at 11%** — low for a dispatcher role, consistent with the 100-op heartbeat issue
+- **Scout/QA** barely using workflows (7%)
+- **May/evaluator** at 0% — evaluator is automated; may is infrastructure
 
-**QA** and **Scout** showed the biggest jumps — both approaching or exceeding 77% workflow adoption after being ~43% pre-change. Bob and Coach decreased despite remaining high.
+---
 
-## Verify-Wrap Efficiency: The LLM-to-JS Impact
+## 3. Workflow Efficiency Impact
 
-### Coach verify-wrap (clearest signal)
+### Coder: Workflow vs Non-Workflow (48h)
+| Metric | With Workflow | Without Workflow | Improvement |
+|---|---|---|---|
+| Avg Ops | 17.2 | 26.6 | **-35%** (fewer ops = better) |
+| Avg Duration | 209s (3.5min) | 337s (5.6min) | **-38%** (faster) |
 
-| Period | Sessions | Avg Ops | Total Ops | Avg Duration |
-|--------|:---:|:---:|:---:|:---:|
-| Pre (Apr 10-12) | 67 | **8.6** | 578 | 108.7s |
-| Post (Apr 13-15) | 80 | **4.3** | 344 | 215.9s |
+Workflows save coder sessions ~9 ops and ~2 minutes per session. This is strong evidence of efficiency gains from workflow adoption.
 
-**Ops halved** (8.6 → 4.3 = **50% reduction**). But duration *doubled* (108.7s → 215.9s) — the verify phase is faster but the overall wrapped session may be taking longer due to other factors.
+### Workflow Session Status Distribution (48h)
+- **done**: 130 (avgOps 20.2)
+- **interrupted**: 11 (avgOps 39.3)  
+- **running**: 3
 
-### Verify-wrap ops distribution shift
+**90.3% completion rate** for workflow sessions. Interrupted sessions average nearly 2x the ops of completed ones — likely hitting budget caps.
 
-| Bucket | Pre (Apr 10-12) | Post (Apr 13-15) |
-|--------|:---:|:---:|
-| 0 ops | 4 (1%) | 39 (7%) |
-| 1-5 ops | 204 (52%) | 210 (36%) |
-| 6-10 ops | 116 (29%) | 250 (43%) |
-| 11-20 ops | 40 (10%) | 62 (11%) |
-| 21+ ops | 30 (8%) | 22 (4%) |
+---
 
-The **6-10 bucket grew** (29% → 43%) and the **21+ tail shrank** (8% → 4%). The distribution is tightening around a more efficient center, with fewer runaway sessions.
+## 4. Error Patterns
 
-### Deliver-or-report (Bob's workflow)
+All 11 interrupted workflow sessions had `error: Request was aborted.` — this is the standard timeout/budget-exceeded signal, not workflow-specific failures. Affected agents: coder(1), coach(3), optimizer(2), bob(3).
 
-| Period | Sessions | Avg Ops |
-|--------|:---:|:---:|
-| Pre (Apr 10-12) | 148 (Bob) | 11.3 |
-| Post (Apr 13-15) | 27 (Bob) | 10.6 |
+No new workflow-specific error patterns. The interruption pattern is consistent with normal budget enforcement.
 
-Bob D-o-R ops dropped slightly (11.3 → 10.6, **6% improvement**), but the sample size dropped dramatically (148 → 27). Compare to Apr 10 finding where D-o-R averaged **45.7 ops** — the improvement since then has been massive and preceded the LLM-to-JS change.
+### Non-Workflow Concerns
+- **QA**: 18 interrupted sessions (60% interrupt rate) — ongoing issue, unrelated to workflows
+- **Coach**: 10 interrupted sessions — possibly from coaching-feedback sessions hitting budget caps
+- Status is all `done`/`interrupted` — no `success` status used (framework uses `done` for success)
 
-## System-Wide Efficiency
+---
 
-| Metric | Pre (Apr 10-12) | Post (Apr 13-15) | Change |
-|--------|:---:|:---:|:---:|
-| Total sessions | 1,685 | 1,344 | -20% |
-| Total ops consumed | 27,501 | 16,581 | **-40%** |
-| Avg ops/session | 16.3 | 12.3 | **-25%** |
+## 5. Summary & Recommendations
 
-The system consumed **40% fewer total ops** in the post period. Even adjusting for 20% fewer sessions, the per-session average dropped 25%. This is a significant efficiency win.
+### What's Working
+1. **Workflow adoption climbing rapidly**: 2% → 28% in 48h, sustained at ~28%
+2. **Coder efficiency gains are real**: -35% ops, -38% duration with workflows
+3. **No workflow-specific errors**: All interruptions are normal budget caps
+4. **90% workflow completion rate**: Healthy reliability
 
-### Per-Agent Ops Comparison
+### Concerns
+1. **Tech-lead 100-op heartbeat**: Dispatcher doing inline work instead of dispatching — should be investigated for heartbeat instruction clarity
+2. **Scout/QA low adoption** (7%): May need workflow templates designed for their use cases
+3. **QA interrupt rate** remains high (60%) — separate from workflow health but worth tracking
 
-| Agent | Pre Avg Ops | Post Avg Ops | Change |
-|-------|:---:|:---:|:---:|
-| Coach | 23.9 | 15.0 | **-37%** |
-| May | 21.0 | 14.3 | **-32%** |
-| Tech-lead | 19.5 | 16.2 | **-17%** |
-| Bob | 16.1 | 15.8 | -2% |
-| Optimizer | 16.3 | 15.0 | **-8%** |
-| Scout | 13.0 | 12.3 | -5% |
-| QA | 9.2 | 7.6 | **-17%** |
-| Coder | 20.8 | 18.5 | -11% |
-| Evaluator | 4.6 | 2.2 | **-52%** |
-
-**Coach** (-37%) and **Evaluator** (-52%) saw the largest per-session efficiency gains. These are the agents most likely impacted by the LLM verification removal — evaluator had many zero-op verification sessions that are now handled by JS.
-
-## Error Rate: Concerning Spike
-
-| Period | Total | Failures | Rate |
-|--------|:---:|:---:|:---:|
-| Pre (Apr 10-12) | 1,683 | 35 | **2.1%** |
-| Post (Apr 13-15) | 1,344 | 127 | **9.4%** |
-
-Failure rate **quadrupled**. Breakdown:
-
-| Agent | Pre Fail% | Post Fail% | Delta | Primary Type |
-|-------|:---:|:---:|:---:|---|
-| QA | 0.8% | **30.1%** | +29pp | interrupts |
-| May | 1.8% | **20.0%** | +18pp | interrupts |
-| Coach | 8.3% | **13.8%** | +6pp | interrupts |
-| Scout | 3.0% | **7.6%** | +5pp | interrupts |
-| Bob | 0.9% | **6.9%** | +6pp | interrupts |
-| Optimizer | 1.1% | **6.4%** | +5pp | interrupts |
-| Tech-lead | 0.4% | **5.1%** | +5pp | interrupts |
-| Evaluator | 0.0% | **2.5%** | +3pp | interrupts |
-| Coder | 0.0% | **3.0%** | +3pp | interrupts |
-
-**QA** (30.1%) and **May** (20.0%) are the worst hit. Almost all failures are interrupts, not errors — suggesting a timeout/budget enforcement issue rather than code bugs. This likely correlates with the tiered budget system deployed around Apr 13-14 (see checkpoint from prior session noting 67% QA interrupt rate).
-
-**Important:** This interrupt spike is NOT caused by the LLM-to-JS change. It's caused by the concurrent tiered budget deployment. The two changes overlapped in timing but have separate root causes.
-
-## Comparison to Apr 10 Baseline
-
-| Metric | Apr 4-10 (old baseline) | Apr 10-12 (pre) | Apr 13-15 (post) | Trend |
-|--------|:---:|:---:|:---:|---|
-| System WF rate (text) | 4.5% | 61.7% | 68.6% | ↑↑↑ |
-| Bob D-o-R avg ops | 45.7 | 11.3 | 10.6 | ↓↓ (fixed) |
-| Coach avg ops | 27.7 | 23.9 | 15.0 | ↓↓ |
-| System avg ops | — | 16.3 | 12.3 | ↓ |
-| System error rate | ~3.9% (Bob non-WF) | 2.1% | 9.4% | ↑↑ (budget issue) |
-
-The Apr 10 finding's **R1 recommendation** (cap Phase 1 at 15 ops) appears to have been implemented or the equivalent effect achieved — Bob D-o-R dropped from 45.7 to ~11 ops avg. The Phase 1 bloat problem appears largely solved.
-
-## Anti-Patterns Observed
-
-### 1. Workflow Mention Without Tracking (Ghost Workflows)
-68.6% of sessions mention workflows in task text but only 12.3% have workflowRunId set. This creates a data integrity gap — we can't reliably distinguish "executed within a workflow" from "mentioned a workflow in the task description."
-
-### 2. QA Interrupt Epidemic
-30.1% of QA sessions interrupted — the highest of any agent. Combined with QA having the highest workflow text-mention rate (95.7%), this suggests QA sessions are being started within workflows but then timed out before completion.
-
-### 3. Evaluator Zero-Op Persistence
-Post-change, evaluator still has 38 zero-op verify sessions (out of 118). The LLM-to-JS change was supposed to eliminate these. Either: (a) some evaluator verify-wrap sessions still use the old LLM path, or (b) evaluator sessions are exiting before the JS verification runs.
-
-## Conclusions
-
-### LLM-to-JS Verification Impact: POSITIVE
-1. **25% per-session efficiency gain** (16.3 → 12.3 avg ops)
-2. **Coach verify-wrap ops halved** (8.6 → 4.3)
-3. **Heavy tail reduced** — sessions >21 ops dropped from 8% to 4% of verify-wraps
-4. **40% total ops reduction** across the system
-
-### Workflow Adoption: MIXED
-1. Text-mention adoption is high (68.6%) and growing
-2. Formal workflowRunId tracking dropped (17.2% → 12.3%)
-3. QA and Scout showed biggest adoption jumps
-4. Gap between text-mention and formal tracking is a data quality issue
-
-### Risks Requiring Attention
-1. **Interrupt rate spike** (2.1% → 9.4%) — likely budget-related, not workflow-related
-2. **QA 30% interrupt rate** — critical, needs budget or timeout adjustment
-3. **Evaluator zero-op persistence** — 32% of evaluator verify-wraps still zero-op
-
-## Recommendations
-
-### R1: Investigate QA/May Interrupt Spike (HIGH PRIORITY)
-The 30% QA and 20% May interrupt rates are not workflow-related but overlap temporally. The tiered budget system needs tuning — heartbeat budget may be too tight for workflow-wrapped sessions.
-
-### R2: Reconcile Workflow Detection Methods (MEDIUM)
-The 56pp gap between text-mention (68.6%) and workflowRunId (12.3%) adoption is problematic. Either: (a) ensure all workflow-run sessions set workflowRunId, or (b) standardize on text-matching with a reliable keyword.
-
-### R3: Audit Evaluator Zero-Op Verify Sessions (LOW)
-38 evaluator sessions still show 0 ops post-change. These may be vestiges of the old LLM verification path or a separate issue. Worth a quick audit.
-
-### R4: Close R1 From Apr 10 (DONE)
-The Phase 1 bloat recommendation has been effectively addressed — D-o-R avg ops dropped from 45.7 to ~11. No further action needed.
+### Actionable
+- The 100-op heartbeat is the most interesting signal. The tech-lead heartbeat says "Dispatcher Mode" but spent 100 ops doing work inline. This could indicate the heartbeat instructions aren't clear enough about when to dispatch vs do inline, or the work encountered didn't fit available delegation targets.
+- Workflow adoption appears self-sustaining at ~28%. No intervention needed to maintain trajectory.
