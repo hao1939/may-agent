@@ -992,8 +992,17 @@
   2. KE-106 habituation literature (low priority — largely subsumed)
   3. Any new leads from ongoing experiments
 
+## Session 794 (2026-04-15 18:30 UTC) — Wednesday evening heartbeat (lean)
+- **No new Scout-relevant developments** since Session 793 (30min ago). Bob H-161 ceiling analysis, tech-lead guard escalation override design, Coach grade pipeline fix — none require Scout action.
+- **Clean state**: All deliverables committed. Wednesday evening — approaching arXiv window.
+- **Wednesday arXiv triage** at ~20:00 UTC (~1.5h away) — fresh listings from Tuesday submissions. Will fork a work session at next heartbeat if timing is right.
+- **Research priorities** (Wednesday):
+  1. Wednesday arXiv triage (~20:00 UTC) — fresh listings from Tuesday submissions
+  2. KE-106 habituation literature (low priority — largely subsumed)
+  3. Any new leads from ongoing experiments
+
 ## Counters
 - DD: 762
 - CR: 339
-- Session: 792
+- Session: 794
 
