@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-15 ~14:00 UTC
+Updated: 2026-04-15 ~14:55 UTC
 
 ## System Health
 - **Amy-kimi**: 🔴 DOWN — billing. Blocked on Hao.
@@ -25,8 +25,9 @@ Updated: 2026-04-15 ~14:00 UTC
 | Issue | Status | Owner | Notes |
 |-------|--------|-------|-------|
 | Amy-kimi billing outage | 🔴 Blocked | Hao | Still down, needs balance refill |
-| **Unified Metric System Design** | 🟢 RUNNING | bob | Design request from Hao (req:cc18d652 + f8aac33f). Forked session s_1776261740281_26. |
-| **Metric System Brainstorm** | ✅ ALL 5 IN → SYNTHESIZING | bob | All 5 responses received. Bob forked to synthesize unified proposal (s_1776263498059_17). Output → `unified-metric-system-proposal.md`. |
+| **Unified Metric System Design** | ✅ APPROVED | may | Hao approved. Phase 1 implementation dispatched to tech-lead. Project: `agents/shared/projects/metric-system.md`. |
+| **Metric System Brainstorm** | ✅ DONE | bob | All 5 responses synthesized → `unified-metric-system-proposal.md`. Approved by Hao. |
+| **Metric System Phase 1** | 🟢 RUNNING | tech-lead | Schema + snapshot handler + seed metrics. Forked ~14:55 UTC. |
 | **EXP-163 Results Processing** | ✅ DONE | bob | KE-129 reinterpreted, H-161 updated, KE-184 written (ceiling effect methodology). |
 | **Research Conclusion Sprint** | ✅ DONE | bob | All 6 threads concluded (Batch 1: H-098/099/091, Batch 2: H-085/095/093). Synthesis written. |
 | **EXP-147 Track B Context Isolation** | ✅ DONE | coach | All experiments COMPLETE or CANCELLED per coach. |
@@ -38,16 +39,16 @@ Updated: 2026-04-15 ~14:00 UTC
 
 ## Next Actions
 - **P0**: **Enable prompt caching** — Set ANTHROPIC_API_KEY in .env + restart. **Blocked on Hao since Mar 24**.
-- **P0**: **Unified Metric System Design** — Bob running. Output → agents/bob/workspace/unified-metric-system-design.md for Hao review.
+- **P0**: **Unified Metric System Phase 1** — Tech-lead implementing. Schema + snapshot handler + seed metrics. Track in `agents/shared/projects/metric-system.md`.
 - **P1**: **IT-21: QA interrupt rate (58%)** — Coach flagged. QA heartbeats timing out at 5-8 ops. Need to investigate/simplify QA heartbeat.
 - **P1**: **cost-limit guard** — Next improvement queue item. Already on main (6ac310b6).
 - **P2**: Amy-kimi billing — blocked on Hao.
 - ⚠️ **HOLD**: Ch2-production-gates implementation — EXP-163 showed the evidence base (EXP-155 +85pp) was measuring process compliance, NOT product quality. All arms 100% product rate. Do NOT implement content quality gates until new evidence from EXP-170 or Bob's recognition-layer scenarios.
 
-## Latest Cycle Summary (14:30 Apr 15)
-- **MILESTONE**: All 5 metric brainstorm responses received (Bob 89 lines, tech-lead 73, optimizer 81, coach 74, scout 91). Synthesis session forked to Bob.
-- **RUNNING**: Bob synthesizing unified metric proposal + EXP-163 results processing.
-- **STATUS**: 9/9 agents healthy. Zero errors. No stuck sessions. 1 tech-lead interrupt (abort, not error).
+## Latest Cycle Summary (14:55 Apr 15)
+- **MILESTONE**: Unified Metric System APPROVED by Hao. All 5 brainstorm responses synthesized, design reviewed, Phase 1 dispatched.
+- **RUNNING**: Tech-lead implementing Phase 1 (schema + snapshot handler + seed metrics).
+- **STATUS**: 9/9 agents healthy. Zero errors. No stuck sessions.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
