@@ -39,17 +39,6 @@ export interface VerificationDepthGuardOptions {
   exemptAgents?: string | string[];
 
   /**
-   * Agent(s) in warn-only mode. The guard evaluates normally but logs
-   * instead of blocking — the agent's session continues uninterrupted.
-   * Takes precedence over `block` but not over `exemptAgents`.
-   *
-   * EXP-150: Tier 2 agents (coach, tech-lead) get warn-only mode to measure
-   * whether the guard is still needed as they internalize verification habits.
-   * Warn events are logged with [WARN-ONLY] tag for measurement queries.
-   */
-  warnOnlyAgents?: string | string[];
-
-  /**
    * Whether to block the finish call (true) or just warn (false).
    * Default: true
    */
@@ -366,17 +355,11 @@ export function createVerificationDepthGuard(
   const exemptAgents = options.exemptAgents
     ? (Array.isArray(options.exemptAgents) ? options.exemptAgents : [options.exemptAgents])
     : []; // EXP-142: per-agent exemptions
-  const warnOnlyAgents = options.warnOnlyAgents
-    ? (Array.isArray(options.warnOnlyAgents) ? options.warnOnlyAgents : [options.warnOnlyAgents])
-    : []; // EXP-150: Tier 2 warn-only mode
   const shouldBlock = options.block !== false; // default true
   const onBlock = options.onBlock;
 
   // Pre-check: is this agent exempt? (EXP-142: takes precedence over targetAgents)
   const isExempt = exemptAgents.includes(agentName);
-
-  // Pre-check: is this agent in warn-only mode? (EXP-150: log but don't block)
-  const isWarnOnly = !isExempt && warnOnlyAgents.includes(agentName);
 
   // Pre-check: is this agent targeted?
   const isTargeted = !isExempt && (targetAgents ? targetAgents.includes(agentName) : true);
@@ -419,24 +402,6 @@ export function createVerificationDepthGuard(
         } catch {
           // Callback errors don't block the guard
         }
-      }
-
-      // EXP-150: Warn-only mode — log the event but don't block
-      if (isWarnOnly) {
-        const warnReason =
-          `[WARN-ONLY] 🔍 VERIFICATION DEPTH: finish(status: "success") would have been blocked — superficial verification detected.\n\n` +
-          `**Rule violated**: ${triggered.rule}\n` +
-          `${triggered.message}\n\n` +
-          `[EXP-150] This agent is in warn-only mode. The guard logged this event but did NOT block.\n` +
-          `Consider verifying your deliverables before finishing.`;
-
-        // Log to stderr for measurement queries (searchable in session digests)
-        console.error(`[EXP-150][WARN-ONLY] FM-3.3 would-block for ${agentName}: ${triggered.rule}`);
-
-        return {
-          block: false,
-          reason: warnReason,
-        };
       }
 
       const reason =
