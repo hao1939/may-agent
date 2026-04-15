@@ -111,8 +111,9 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
     if ("sessionId" in event && typeof event.sessionId === "string") {
       return client.filter.has(event.sessionId);
     }
-    // notification events always forwarded to filtered clients
-    if (event.type === "notification") return true;
+    // notification events: skip for filtered clients (they pollute session-scoped streams).
+    // Firehose clients already get them via the `return true` above.
+    if (event.type === "notification") return false;
     // system events (log, info, prompt, eval, workflow) only in firehose
     return false;
   }
