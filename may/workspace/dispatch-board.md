@@ -47,23 +47,23 @@ Updated: 2026-04-15 ~17:30 UTC
 | **Unified Metric System Design** | ✅ DONE | bob | All 5 brainstorm responses synthesized. Approved by Hao. |
 
 ## Next Actions
-- **P0**: **Remove cost-limit-guard** — Dispatched to tech-lead (s_1776276121668_13). Awaiting completion.
-- **P0**: **Guard Escalation Override Design** — Dispatched to bob (s_1776276121698_14). For Hao review.
-- **P1**: ⚠️ **Workflow cost-limit guard** — `agents/shared/guards/cost-limit.ts` blocks at 60 turns. Flag for Hao: remove or keep?
-- **P1**: **Human Input DB Logging** — Dispatched to tech-lead.
+- **P0**: **Fix compose-guards.ts** — finish(success) stays guarded, finish(blocked/failure) passes. Forked to tech-lead (s_1776278050544_32).
+- **P0**: **Guard Escalation Design v2** — Update to Hao's chain (Agent→owner→May→Hao). Forked to bob (s_1776277963821_30).
+- **P0**: **Evaluator quality=0.00 (IT-28)** — Root cause investigation. Forked to tech-lead (s_1776277963790_29).
+- **P1**: **Human Input DB Logging** — Dispatched to tech-lead. Awaiting completion.
 - **P1**: **Wire gym-batch.sh** — Dispatched to tech-lead.
 - **P1**: **QA heartbeat simplification (IT-21)** — 67% interrupt rate. Ready to dispatch.
-- **P1**: **Tech-lead post-dispatch finish guard** — Prevent 100+ op heartbeats.
+- **P1**: **Tech-lead post-dispatch finish guard** — Prevent 100+ op heartbeats. Small heartbeat edit.
 - **P2**: Amy-kimi billing — blocked on Hao.
-- ⚠️ **HOLD**: Ch2-production-gates implementation — Hold for EXP-170.
+- ⚠️ **HOLD**: Ch2-production-gates implementation — Evidence base was measuring compliance not quality. Hold for EXP-170.
 
-## Latest Cycle Summary (18:00 Apr 15)
-- **RECEIVED**: 4 Hao directives — ORDER-004 enforcement (optimizer budget, cost-limit-guard removal, guard review process, escalation override design).
-- **DISPATCHED**: cost-limit-guard removal → tech-lead (s_1776276121668_13). Escalation override design → bob (s_1776276121698_14).
-- **COMPLETED**: Guard Review Process doc written (`agents/shared/designs/guard-review-process.md`). Optimizer budget language already clean.
-- **FLAGGED**: Workflow-level cost-limit guard (`agents/shared/guards/cost-limit.ts`) also blocks at 60 turns — same ORDER-004 issue. Awaiting Hao decision.
-- **GATEKEEPER NOTE**: This was a gatekeeper miss — cost-limit-guard was wired without review. Process doc now prevents recurrence.
-- **STATUS**: 9/9 agents active. Zero errors. 2 P0 tasks dispatched.
+## Latest Cycle Summary (18:30 Apr 15)
+- **RECEIVED**: 2 Hao directives (req:7f8b7fc2, req:6179b3fa) — Guard revert + proper escalation chain. 2 coach P0s (IT-28 evaluator quality bug).
+- **DISPATCHED**: compose-guards fix → tech-lead. Escalation design v2 → bob. IT-28 investigation → tech-lead.
+- **COMPLETED**: Guard warn-only revert (commit cf797144). Cost-limit removal done earlier.
+- **CANCELLED**: Stuck coach EXP-165 session (38min).
+- **KEY FINDING**: compose-guards.ts still had blanket finish() bypass — Hao wants finish(success) guarded, only finish(blocked/failure) through.
+- **STATUS**: 9/9 agents active. Zero errors. 3 P0 tasks in progress.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
