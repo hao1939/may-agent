@@ -16,6 +16,10 @@ Replace scattered tracking (dispatch board, todo.md, ad-hoc queries) with a unif
 
 `agents/shared/may-agent-docs/design/metrics-system.md` — APPROVED by Hao.
 
+## Evolution Roadmap
+
+`agents/shared/may-agent-docs/design/metrics-evolution-roadmap.md` — Hao's long-term vision (Levels 1→4). Not for implementation now — guides Phase 1 design decisions.
+
 ## Hao's Key Decisions
 
 1. **No cost metrics in Phase 1** — creativity first, cost optimization later
