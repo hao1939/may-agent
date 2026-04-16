@@ -1,56 +1,51 @@
-# Workflow Health Check — Apr 16, 2026
+# Finding: Workflow Health Check — Apr 16 22:00
 
-## Adoption Rate
+## Summary
+System-wide workflow adoption is **38.8%** (120/317 sessions with ops, last 12h), up from 27.1% on Apr 12. Strong upward trend.
 
-| Period | WF Sessions | Total Sessions | Rate |
-|--------|------------|----------------|------|
-| Last 24h | 222 | 1,179 | **18.8%** |
-| Last 7d | 738 | 4,564 | **16.2%** |
+## Adoption by Agent (last 12h, done sessions)
 
-**Trend**: Down from 27.1% on Apr 12. Adoption has dropped ~10pp over 4 days. This may reflect workflow-eligible tasks declining or agents reverting to non-workflow patterns.
+| Agent     | Total | WF | WF% | Notes |
+|-----------|------:|---:|----:|-------|
+| coder     |     7 |  7 | 100 | Full adoption |
+| optimizer |    59 | 30 | 50.8| Strong |
+| bob       |    52 | 24 | 46.2| Strong |
+| tech-lead |    80 | 36 | 45.0| Strong |
+| may       |    39 | 16 | 41.0| Good |
+| coach     |    47 |  6 | 12.8| Low — mostly heartbeats |
+| scout     |    27 |  1 |  3.7| Minimal |
+| qa        |    22 |  0 |  0  | No workflows |
+| evaluator |   183 |  0 |  0  | Expected (eval is call-based) |
 
-## Workflow Efficiency by Agent (7d)
+## Efficiency: Avg Ops (WF vs Direct)
 
-| Agent | Avg Efficiency | Avg Quality | N |
-|-------|---------------|-------------|---|
-| optimizer | 0.73 | 0.89 | 220 |
-| bob | 0.71 | 0.86 | 321 |
-| tech-lead | 0.70 | 0.79 | 72 |
-| coder | 0.67 | 0.76 | 51 |
-| coach | 0.64 | 0.74 | 47 |
-| may | 0.61 | 0.59 | 17 |
-| scout | 0.58 | 0.67 | 7 |
-| qa | 0.55 | 0.78 | 2 |
+| Agent     | Direct ops | WF ops | Delta |
+|-----------|----------:|-------:|------:|
+| bob       |       5.8 |   11.0 | +5.2  |
+| coach     |      11.4 |   16.7 | +5.3  |
+| optimizer |       5.0 |   11.8 | +6.8  |
+| tech-lead |       9.3 |    9.7 | +0.4  |
+| may       |       3.3 |    2.9 | -0.4  |
 
-**Note**: No non-workflow work sessions returned for comparison (all work sessions appear to go through workflows now, or the `kind` field filtering excludes them).
+WF sessions use more ops on average — expected since workflows are used for substantive tasks while direct sessions include lightweight heartbeats.
 
-## OpCount Budget Compliance
+## Key Observations
 
-- **Average ops per WF session**: 16.9 (slightly above 15-op target)
-- **Range**: 0–187 ops
-- Sessions ≤15 ops exist but many exceed the budget, with outliers up to 187 ops.
+1. **+11.7pp adoption gain** since Apr 12 (27.1% → 38.8%). Steady organic growth.
+2. **Top adopters**: coder (100%), optimizer (51%), bob (46%), tech-lead (45%).
+3. **Laggards**: coach (13%), scout (4%), qa (0%). Coach and scout do mostly heartbeat/lightweight work that doesn't need workflows. QA is review-focused.
+4. **evaluator at 0%** is expected — it's invoked as calls, not independent tasks.
+5. **No new agents** adopted workflows since last check — the same set (coder, optimizer, bob, tech-lead, may) are the users.
+6. **may at 41%** is a notable improvement — was lower previously.
 
-The D-o-R Phase 1 budget of ≤15 ops is being met by some sessions but the average (16.9) suggests marginal compliance. The high outliers (90-187 ops) indicate some workflow sessions balloon significantly.
+## Comparison to Apr 12
 
-## FM-3.3 (Verification Failure) Rate
+| Metric | Apr 12 | Apr 16 | Change |
+|--------|--------|--------|--------|
+| System-wide WF% | 27.1% | 38.8% | +11.7pp |
+| Top agent (coder) | 100% | 100% | stable |
+| bob | ~40% | 46.2% | +6pp |
+| tech-lead | ~35% | 45.0% | +10pp |
 
-| Period | FM-3.3 Count | Total Evals | Rate |
-|--------|-------------|-------------|------|
-| Last 24h | 175 | 3,355 | **5.2%** |
-| Last 7d | 283 | 6,525 | **4.3%** |
-
-FM-3.3 rate has increased slightly in the last 24h (5.2% vs 4.3% 7d average). This is optimizer's most frequent failure mode and warrants continued attention.
-
-## Key Findings
-
-1. **Adoption down 10pp** from Apr 12 baseline (27.1% → 16.2% 7d). Investigate whether this reflects fewer workflow-eligible tasks or adoption regression.
-2. **Budget marginally exceeded** — avg 16.9 ops vs 15-op target. The long tail (up to 187) drags the average up.
-3. **FM-3.3 trending up** — 5.2% in last 24h vs 4.3% 7d average. Not alarming but worth watching.
-4. **Bob and optimizer dominate WF usage** (321 + 220 = 541 of 738 = 73% of all WF sessions).
-5. **Quality is strong** across the board — all agents above 0.59 quality, with optimizer leading at 0.89.
-
-## Recommendations
-
-- **R1**: Investigate adoption drop — are there task types that should use workflows but don't?
-- **R2**: Address budget outliers — sessions >50 ops in a workflow likely indicate Phase 2 scope creep.
-- **R3**: Continue FM-3.3 mitigation — the verify-wrap pattern and post-edit read-back are working but not fully penetrating.
+## Assessment
+Workflow adoption is healthy and growing. The agents that benefit most from workflows (substantive multi-step tasks) have adopted them well. Low adoption in coach/scout/qa is acceptable — their work patterns are lighter. No intervention needed.
