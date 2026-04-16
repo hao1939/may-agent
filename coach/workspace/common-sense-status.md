@@ -1,6 +1,6 @@
 # Common-Sense Verification Status
 
-Last updated: 2026-04-16T06:00Z
+Last updated: 2026-04-16T10:00Z
 
 ## Item Index
 
@@ -26,7 +26,7 @@ Last updated: 2026-04-16T06:00Z
 | 18 | git add agents/ = NO | How We Think | 2026-04-12 | ⚠️ | Re-verified (8th): **88 sessions with `git add agents/` from wrong dir in 48h (Apr 10-12) across 1271 sessions (6.9%).** .gitignore blocks 100% — zero successful violations. Two retry storms: coach s_957 (11+ attempts, 166 ops!) and bob s_1335 (5+ attempts incl. REVIEW_GATE_BYPASS trick). All actual agents/ commits go through may-agent auto-commit. Correct pattern (`cd agents && git add`) used by some but not majority. See details below. |
 | 19 | Verify before finishing | How We Think | 2026-03-30 | 🗑️ | Rule removed from common-sense.md. The "verify-and-finish" workflow was never adopted (0 invocations across 250+ sessions). The C1.7 rule (#7) covers the spirit of this requirement. See details below. |
 | 20 | Environment Reality (C50) | How We Think | 2026-04-16 | ⚠️ | Re-verified (8th): 98.5% pass rate (894/908, last 48h). 14 violations across 4 agents: amy 8 (worst, all `cd /home/user`), coach 3, tech-lead 2, bob 1. may now 100% (was worst). New problem: amy repeatedly uses `cd /home/user && node test/...`. Guard catches all. Trend: 97.2%→98.5% (best ever). See details below. |
-| 21 | C1.8 Match finish() status to reality | How We Think | 2026-04-02 | ✅ | Re-verified (2nd): 0 violations in 20 sessions. 11/11 success claims match reality (deliverables verified, PIVOTs recovered). 3/3 partial (QA) correctly used for test failures. 2 sessions with PIVOTs still warranted success (trivial file-access issues, all recovered). See details below. |
+| 21 | C1.8 Match finish() status to reality | How We Think | 2026-04-16 | ✅ | Re-verified (3rd): 0 violations in 15 success sessions (Apr 16). All summaries describe completed work (QA reviews, heartbeats, research). Keyword false positives (git log output, context text) — no real error-hiding. Infrastructure guards (FM-3.3, commit-guard) catch process issues before they become C1.8 violations. See details below. |
 | 22 | C1.3 Verify every write | How We Think | 2026-04-16 | ⚠️ | Re-verified (2nd): Coder s_1776258024054_26 (Apr 15): 3 edit() calls → finish() with ZERO read-back. Infra FM-3.3 guard caught it (finish blocked, forced recovery bash). Regression from Apr 13 ✅. See details below. |
 | 23 | Commit before finish() | How We Think | 2026-04-15 | ⚠️ | Initial verification: 22 sessions examined (Apr 14-15). 50% agent-intentional commits (4 proactive + 7 guard-forced). 50% escaped via auto-commit race condition. Guard works mechanically but auto-commit (every 10min) creates bypass. Zero data loss. See details below. |
 | 24 | Cross-agent help | How We Think | 2026-04-15 | ✅ | Initial verification: 221 cross-agent requests in 72h across 8 agent pairs. Routing mostly correct (scout=research, tech-lead=code, coach=training). May dominates as coordinator (69 forks to tech-lead). Bob actively seeks help (→may, →coach, →tech-lead). No evidence of agents struggling alone when help was available. See details below. |
@@ -1478,6 +1478,54 @@ The 86.0% dip in the 24-48h period is a blip; the last 24h shows the strongest c
 
 ---
 
+
+### #21 — C1.8: Match finish() status to reality — RE-VERIFICATION #3 (2026-04-16 10:00Z)
+
+**Rule**: "If you identified blockers, unresolved errors, or missing inputs during the session, call `finish(status: "blocked")` or `finish(status: "partial")` — NOT `finish(status: "success")`. Success means *all* objectives were met and verified."
+
+**Method**: Extracted 15 most recent finish(success) sessions (Apr 16). Scanned each for error keywords (blocker, blocked, failed, unable, cannot proceed) and PIVOTs. Spot-checked highest-keyword sessions to classify as true violations vs false positives (context text, git log output, rule descriptions).
+
+**Sessions checked**: 15 finish(success) sessions
+
+**Keyword scan results**:
+
+| Session | Agent | Keywords | PIVOTs | Verdict |
+|---------|-------|----------|--------|---------|
+| s_637 | qa | 6 | 2 | ✅ FP — keywords from git log output; PIVOTs were FM-3.3 + commit-guard blocks (both recovered) |
+| s_638 | tech-lead | 7 | 0 | ✅ FP — "failed" in code analysis context, not session state |
+| s_632 | may | 2 | 1 | ✅ FP — summary says "zero errors, zero stuck sessions" |
+| s_622 | tech-lead | 6 | 0 | ✅ FP — "buggy" describes code being reviewed, not session |
+| s_617 | optimizer | 5 | 0 | ✅ FP — "0 errors" in health report |
+| s_619 | tech-lead | 5 | 1 | ✅ FP — PIVOT from ls on nonexistent path, recovered |
+| s_620 | qa | 5 | 1 | ✅ FP — PIVOT was FM-3.3 guard, recovered with verification |
+| s_630 | bob | 4 | 2 | ✅ FP — PIVOTs from read truncation, recovered |
+| s_628 | bob | 3 | 0 | ✅ Legit success — updated hypothesis + todo |
+| s_629 | coach | 3 | 2 | ✅ Legit success — clean heartbeat |
+| s_621 | optimizer | 2 | 0 | ✅ Legit success — wrote finding |
+| s_616 | may | 2 | 1 | ✅ Legit success — heartbeat, minor PIVOT |
+| s_613 | coach | 4 | 2 | ✅ Legit success — clean heartbeat |
+| s_618 | scout | 1 | 0 | ✅ Legit success — nothing to dispatch |
+| s_635 | scout | 1 | 0 | ✅ Legit success — nothing to dispatch |
+
+**True C1.8 violations: 0/15**
+
+**Key observation — Infrastructure guards reinforce C1.8**: QA session s_637 had finish() blocked twice before succeeding:
+1. FM-3.3 blocked for missing post-write verification → agent ran verification
+2. Commit-guard blocked for uncommitted changes → agent committed
+
+Both guards enforced process compliance, ensuring the final finish(success) was legitimate. This "guard → recover → succeed" pattern means agents' success claims are mechanically validated.
+
+**Comparison**:
+
+| Check | Date | Sample | Violations | Status |
+|-------|------|--------|------------|--------|
+| 1st | 2026-03-29 | 40 sessions | 0 | ✅ |
+| 2nd | 2026-04-02 | 20 sessions | 0 | ✅ |
+| **3rd** | **2026-04-16** | **15 sessions** | **0** | **✅** |
+
+**Conclusion**: ✅ Confirmed. Zero C1.8 violations across 3 checks spanning 18 days. Infrastructure guards (FM-3.3, commit-guard) provide mechanical reinforcement. Agents accurately match finish status to reality. Next check: 2026-04-30.
+
+---
 
 ### #21 — C1.8: Match finish() status to reality — RE-VERIFICATION #2 (2026-04-02 05:06Z)
 
