@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776379932005_153
+- **Session:** s_1776381732324_172
 - **Status:** done
-- **When:** 2026-04-16T23:11:21.304Z
-- **Duration:** 19m9s
+- **When:** 2026-04-16T23:22:53.241Z
+- **Duration:** 40s
 
 ## What Happened
-The growth-cycle workflow wasn't the right fit — it tried to create a fork/patch rather than just running baselines. The results were empty. Let me fork a proper work session instead.
+EXP-176 needs a harder scenario (20-40% baseline). The last session's growth-cycle workflow didn't fit. Let me fork a proper work session.
