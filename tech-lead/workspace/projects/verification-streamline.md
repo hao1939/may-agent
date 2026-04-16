@@ -58,3 +58,27 @@ Next iteration:
    - Specific code changes to reduce friction while maintaining safety
 4. **If time permits**, implement the lowest-risk improvement (e.g., better error messages, smarter spot-check detection).
 
+
+### Iteration 2 — 2026-04-16T12:47:13.423Z
+**Worker task**: Iteration 2 — work toward goal
+**Worker result**: **Status:** done (2m13s)
+
+**Files modified:**
+- agents/may/workspace/guard-friction-analysis.md
+
+**Files read (not modified):**
+- src/lib/tools/verification-depth-guard.ts
+- src/lib/tools/finish-guard.ts
+- test/finish-guard.test.ts
+
+**Agent response:**
+The guard itself is blocking me because the git commit was a bash write. Let me do a quick verification:
+**Files touched**: (see worker session)
+**Owner assessment**: DONE — — Solid analysis delivered. The doc correctly identifies:
+
+1. **Redundancy** between finish-guard Gate 2 and verification-depth-guard T2 (double-blocking)
+2. **Orchestration gap** — verification-depth-guard doesn't recognize `agents` tool usage
+3. **Three concrete recommendations** (R1: deduplicate, R2: orchestration exemption, R3: better errors) with risk levels and priority
+
+The analysis is data-grounded (references specific gate/rule logic from source code) and actionable. Ready to dispatch implementation of R1 and R2 to tech-lead.
+
