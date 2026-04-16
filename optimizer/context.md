@@ -31,6 +31,8 @@
   - `gym_runs`: *id(INT), timestamp, agent_name, lab_fork, scenario, passed(INT), duration_ms(INT), score_summary, session_id, cost_usd(REAL), total_ops(INT), total_turns(INT), method, prompt_hash, framework_sha, model, batch_id, run_tag, categories, tags, tier, transcript
 - **Quoting for bun -e**: Use double quotes for the outer shell string, single quotes for SQL strings inside. For complex queries, use a heredoc: `bun -e "$(cat <<'SCRIPT' ... SCRIPT)"`
 
+- Always `read()` a file before `edit()` — even files you just created earlier in the session. The C1.1 convention checker flags any edit without a prior read.
+
 ## Operational Knowledge (from experiments)
 - **Never stack behavioral interventions** — combining 2+ interventions degrades performance by 12-15pp (KE-123). Use ONE targeted intervention per task.
 - **Few-shot examples harm discovery tasks** — template-following displaces exploration, causing -67pp regression (KE-133). For open-ended/creative tasks, work clean without examples.
