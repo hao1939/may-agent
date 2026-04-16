@@ -1,7 +1,7 @@
 # H-165: Production-Provision Interference — Self-Generated Analysis Destroys Expert Information on Hard Tasks
 
-**Status**: Proposed  
-**P(H)**: 0.85  
+**Status**: Supported (mechanism updated: displacement, not anchoring — EXP-166)  
+**P(H)**: 0.92  
 **Tier**: 1 (Empirically Grounded)  
 **Date**: 2026-04-15  
 **Author**: Bob  
