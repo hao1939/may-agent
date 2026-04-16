@@ -273,6 +273,69 @@ function extractDecision(text: string): { status: "done" | "blocked" | "continue
   return { status: "continue", detail: detail || "Continue working toward the goal." };
 }
 
+// ── Pruning: collapse old iterations to keep file bounded ──────────────
+
+const KEEP_RECENT = 5; // keep last N iterations in full detail
+
+function pruneOldIterations(content: string, currentIteration: number): string {
+  if (currentIteration <= KEEP_RECENT) return content;
+
+  const cutoff = currentIteration - KEEP_RECENT;
+
+  // Find all iteration blocks to collapse (1..cutoff)
+  const summaryLines: string[] = [];
+  for (let i = 1; i <= cutoff; i++) {
+    // Extract one-line summary from each old iteration
+    const regex = new RegExp(
+      `### Iteration ${i}[\\s\\S]*?(?=### Iteration \\d+|## Current State|## Outcome|$)`
+    );
+    const match = content.match(regex);
+    if (!match) continue;
+
+    // Extract the assessment line (most useful summary)
+    const assessMatch = match[0].match(/\*\*Owner assessment\*\*:\s*(.+)/);
+    const resultMatch = match[0].match(/\*\*Worker result\*\*:\s*(.{0,120})/);
+    const brief = assessMatch
+      ? assessMatch[1].trim().slice(0, 120)
+      : resultMatch
+        ? resultMatch[1].trim().slice(0, 120)
+        : "(no summary)";
+    summaryLines.push(`- **${i}**: ${brief}`);
+  }
+
+  if (summaryLines.length === 0) return content;
+
+  // Remove old iteration blocks from content
+  for (let i = 1; i <= cutoff; i++) {
+    const regex = new RegExp(
+      `### Iteration ${i} —[\\s\\S]*?(?=### Iteration \\d+|## Current State|## Outcome)`,
+    );
+    content = content.replace(regex, "");
+  }
+
+  // Insert or update the collapsed summary section
+  const collapsedHeader = "### Iterations 1–" + cutoff + " (collapsed)\n";
+  const collapsedBlock = collapsedHeader + summaryLines.join("\n") + "\n\n";
+
+  // Replace existing collapsed section if present
+  const existingCollapsed = /### Iterations \d+–\d+ \(collapsed\)\n[\s\S]*?\n\n/;
+  if (existingCollapsed.test(content)) {
+    content = content.replace(existingCollapsed, collapsedBlock);
+  } else {
+    // Insert after ## Progress Log
+    const logIdx = content.indexOf("## Progress Log");
+    if (logIdx !== -1) {
+      const afterLog = content.indexOf("\n", logIdx) + 1;
+      content = content.slice(0, afterLog) + "\n" + collapsedBlock + content.slice(afterLog);
+    }
+  }
+
+  // Clean up excessive blank lines
+  content = content.replace(/\n{4,}/g, "\n\n\n");
+
+  return content;
+}
+
 // ── Extract recent guidance from project content ───────────────────────
 
 function getLastGuidance(content: string, iteration: number): string | null {
@@ -403,6 +466,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       content = updateField(content, "Updated", new Date().toISOString());
       content = updateField(content, "Iteration", String(iteration));
       content = updateCurrentState(content, `Iteration ${iteration} complete. ${truncatedResult.slice(0, 200)}`);
+      // Prune old iterations to prevent unbounded file growth
+      content = pruneOldIterations(content, iteration);
       writeProjectFile(config.projectPath, content);
     }
     skipWorkerPhase = false; // only skip once (crash recovery)
