@@ -1,21 +1,21 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776380501646_162
+- **Session:** s_1776380515785_163
 - **Status:** done
-- **When:** 2026-04-16T23:01:48.466Z
-- **Duration:** 6s
+- **When:** 2026-04-16T23:02:03.438Z
+- **Duration:** 7s
 
 ## What Happened
 ```json
 {
   "agents": {
-    "tech-lead": {
-      "role": "Builder",
+    "may": {
+      "role": "Supervisor",
       "capability_level": "L2",
-      "efficiency": 0.83,
-      "quality": 0.86,
-      "verdict": "good",
+      "efficiency": 0.35,
+      "quality": 0.7,
+      "verdict": "needs_improvement",
       "issues": [
-        "[MINOR_WASTE] One bash grep returned exit code 1 (no matches) and was recorded as an unresolved failure chain, but it was an expected outcome given the hypothesis (“spawnAgent” doesn’t exist) and did not impact progress.",
-        "[EVIDENCE_GAP_MINOR] The finding asserts specific line numbers for 
+        "[ORDER-004_VIOLATION] Heartbeat injected/contained an op-budget line (“⚡ Op Budget: ≤12 ops per heartbeat”), which is explicitly disallowed (standing order ORDER-004). Even if pre-existing, May did not flag/escalate it and proceeded under it.",
+        "[FM-1.3/LOOPING] Repeated finish() a
