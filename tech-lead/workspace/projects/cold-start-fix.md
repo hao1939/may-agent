@@ -3,7 +3,7 @@
 **Owner:** tech-lead
 **Goal:** Reduce session startup waste from 20-30% to under 10% of budget.
 **Created:** 2026-04-16
-**Status:** Active
+**Status:** Complete
 **Master project:** [system-evolution.md](../../may/workspace/projects/system-evolution.md) → Gap 1
 **Source feedback:** [tech-lead](../system-gaps.md), [optimizer](../../optimizer/workspace/system-gaps.md), [coach](../../coach/workspace/system-gaps.md)
 **Tracked metrics:** `system.agent-utilization`
