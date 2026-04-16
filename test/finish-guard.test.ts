@@ -383,7 +383,7 @@ describe("finish-guard", () => {
 
   // === FM-3.3 Verification Guard Tests ===
 
-  it("blocks finish(success) when write exists but no verification after it", async () => {
+  it("allows finish(success) when write exists (self-verifying — returns preview)", async () => {
     const ctx = makeCtx(
       {
         status: "success",
@@ -393,13 +393,10 @@ describe("finish-guard", () => {
       [assistantWithToolCall("write", { path: "src/foo.ts", content: "hello" })],
     );
     const result = await guard(ctx);
-    expect(result).toBeDefined();
-    expect(result!.block).toBe(true);
-    expect(result!.reason).toContain("FM-3.3");
-    expect(result!.reason).toContain("no verification AFTER");
+    expect(result).toBeUndefined();
   });
 
-  it("blocks finish(success) when edit exists but no verification after it", async () => {
+  it("allows finish(success) when edit exists (self-verifying — returns diff)", async () => {
     const ctx = makeCtx(
       {
         status: "success",
@@ -409,12 +406,10 @@ describe("finish-guard", () => {
       [assistantWithToolCall("edit", { path: "src/foo.ts", oldText: "a", newText: "b" })],
     );
     const result = await guard(ctx);
-    expect(result).toBeDefined();
-    expect(result!.block).toBe(true);
-    expect(result!.reason).toContain("FM-3.3");
+    expect(result).toBeUndefined();
   });
 
-  it("blocks when verification exists BEFORE but not AFTER last write", async () => {
+  it("allows when last write is self-verifying write() even without post-verification", async () => {
     const ctx = makeCtx(
       {
         status: "success",
@@ -424,13 +419,11 @@ describe("finish-guard", () => {
       [
         assistantWithToolCall("write", { path: "src/foo.ts", content: "v1" }),
         assistantWithToolCall("read", { path: "src/foo.ts" }), // verification for first write
-        assistantWithToolCall("write", { path: "src/foo.ts", content: "v2" }), // second write — no verification after
+        assistantWithToolCall("write", { path: "src/foo.ts", content: "v2" }), // second write — self-verifying
       ],
     );
     const result = await guard(ctx);
-    expect(result).toBeDefined();
-    expect(result!.block).toBe(true);
-    expect(result!.reason).toContain("FM-3.3");
+    expect(result).toBeUndefined();
   });
 
   it("allows when verification exists after the LAST write in multi-write sequence", async () => {
@@ -498,7 +491,7 @@ describe("finish-guard", () => {
     expect(result).toBeUndefined();
   });
 
-  it("blocks when bash after write is not a verification command", async () => {
+  it("allows bash-write without verification (Gate 2 removed — covered by verification-depth-guard)", async () => {
     const ctx = makeCtx(
       {
         status: "success",
@@ -506,14 +499,13 @@ describe("finish-guard", () => {
         deliverables: [{ path: "src/foo.ts", description: "new file" }],
       },
       [
-        assistantWithToolCall("write", { path: "src/foo.ts", content: "hello" }),
+        assistantWithToolCall("bash", { command: "cat > src/foo.ts << 'EOF'\nhello\nEOF" }),
         assistantWithToolCall("bash", { command: "echo done" }),
       ],
     );
     const result = await guard(ctx);
-    expect(result).toBeDefined();
-    expect(result!.block).toBe(true);
-    expect(result!.reason).toContain("FM-3.3");
+    // Gate 2 was removed (deduplicated with verification-depth-guard T2)
+    expect(result).toBeUndefined();
   });
 
   it("allows bash redirect write + cat verification", async () => {

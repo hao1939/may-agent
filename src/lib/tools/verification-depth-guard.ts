@@ -296,7 +296,15 @@ function detectNoPostWriteVerification(calls: ToolCallRecord[]): DetectionResult
     return { rule: "T2-no-post-write-verification", detected: false, message: "" };
   }
 
-  const lastWriteIndex = Math.max(...writeCalls.map(c => c.index));
+  const lastWrite = writeCalls.reduce((a, b) => a.index > b.index ? a : b);
+
+  // edit() and write() are self-verifying — they return diffs/previews inline.
+  // Only bash-based writes (redirects, sed -i) need separate post-write verification.
+  if (lastWrite.name === "edit" || lastWrite.name === "write") {
+    return { rule: "T2-no-post-write-verification", detected: false, message: "" };
+  }
+
+  const lastWriteIndex = lastWrite.index;
 
   // Any verification call after the last write?
   const postWriteVerification = calls.filter(c =>
@@ -384,6 +392,14 @@ export function createVerificationDepthGuard(
 
       // Extract tool calls from transcript
       const calls = extractToolCalls(ctx.context.messages);
+
+      // Orchestration exemption: if the session used agents/workflow tools,
+      // writes happened in child sessions — skip verification check.
+      // Matches finish-guard's existing logic for delegated work.
+      const usedOrchestration = calls.some(c =>
+        c.name === "agents" || c.name === "workflow"
+      );
+      if (usedOrchestration) return undefined;
 
       // Run detection rules
       const results: DetectionResult[] = [
