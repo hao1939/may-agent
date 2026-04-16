@@ -260,6 +260,7 @@ function buildReviewPrompt(
   workerSummary: string,
   recentProgress: string,
   projectContent?: string,
+  ownerAgent?: string,
 ): string {
   let prompt = `[REVIEW ONLY — no file edits expected. You are assessing worker output, not writing code.]\n\n`;
   prompt += `You are reviewing iteration ${iteration} of a persistent task.\n\n`;
@@ -277,6 +278,21 @@ function buildReviewPrompt(
         }
       }
       prompt += `\n⚠️ DONE means ALL milestones complete. If any milestone is still unchecked, respond CONTINUE.\n\n`;
+    }
+  }
+
+  // Inject owner's review rubric if it exists
+  if (ownerAgent) {
+    try {
+      const rubricPath = `agents/${ownerAgent}/workspace/review-rubric.md`;
+      const fs = require("fs");
+      if (fs.existsSync(rubricPath)) {
+        const rubric = fs.readFileSync(rubricPath, "utf-8").trim();
+        prompt += `## Review Rubric (best practices)\n${rubric}\n\n`;
+        prompt += `In addition to milestone progress, assess whether the worker followed the best practices above. Include specific suggestions in your CONTINUE response.\n\n`;
+      }
+    } catch {
+      // No rubric — that's fine
     }
   }
 
@@ -531,6 +547,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         recentBlocks[recentBlocks.length - 1] ?? "(no worker output)",
         recentBlocks.join("\n\n"),
         content,
+        config.owner,
       );
 
       const reviewResult = await ctx.runAgent(config.owner, reviewPrompt);
