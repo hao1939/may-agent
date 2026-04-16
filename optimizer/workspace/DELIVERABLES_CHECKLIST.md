@@ -1,2 +1,3 @@
 # Deliverables Checklist
-- [x] agents/optimizer/workspace/finding-bob-59op-archaeology-0416.md
+
+- [x] finding-tool-gap-analysis-0416.md — 6h bash pattern scan with automation opportunities
