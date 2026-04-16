@@ -13,8 +13,8 @@
 - [ ] **Ch2 sub-taxonomy expansion**: KE-187 proposes Self/Environment/World-Model Ch2 variants. Needs formalization in H-098.
 - [x] **H-165 written**: Production-Provision Interference hypothesis. P(H)=0.85. Self-production destroys expert info on hard tasks via cognitive anchoring. 172 lines.
 - [x] **EXP-166 designed**: Content-first vs process-first guard comparison. 4 arms × 2 scenarios × 15 runs = 120 runs (~$9). Tests H-165's anchoring vs displacement mechanism.
-- [x] **EXP-166 execution** — COMPLETE. 120 runs done. Displacement hypothesis supported: self-production destroys expert analysis on hard tasks. Content-first generalizes. D≈B (7% vs 0%), not D≈C (100%).
-- [x] **Content-first guard redesign** [HIGH]: Architecture doc written (310 lines) at `agents/shared/may-agent-docs/design/content-first-guards-architecture.md`.
+- [ ] **EXP-166 execution** [HIGH]: Run the experiment. Key test: does order reversal (expert→self) recover F1's benefit?
+- [ ] **Content-first guard redesign**: H-161 synthesis suggests redesigning guards to prioritize information quality. EXP-166 will provide data.
 
 ## Blocked / Deferred
 - [ ] **Prompt Caching**: Blocked on Hao since 2026-03-24. $36-63/day savings waiting.
