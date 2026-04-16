@@ -11,10 +11,11 @@ const { executeQuery } = require('./db');
  * @returns {{id: number, name: string, price: string}}
  */
 function formatProduct(row) {
+  const price = typeof row.price === 'number' ? row.price : 0;
   return {
     id: row.id,
     name: row.name,
-    price: `$${row.price.toFixed(2)}`,
+    price: `$${price.toFixed(2)}`,
   };
 }
 
