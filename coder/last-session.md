@@ -1,12 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776361993747_0
+- **Session:** s_1776361991744_0
 - **Status:** done
-- **When:** 2026-04-16T17:54:21.816Z
-- **Duration:** 1m8s
+- **When:** 2026-04-16T17:54:44.967Z
+- **Duration:** 1m33s
 
 ## What Happened
-Now I see a second issue. `penalties.js` computes `adjusted_pct` from `record.score / record.max_score` (raw score), but `normalize` already ran and set `pct`. The penalties module ignores the `pct` field from normalization and recalculates from raw. Also, for non-late records, it recalculates `adjusted_pct` from raw score, not using the already-normalized `pct`.
-
-But the key issue: after penalties, `normalize` already set `pct`, and penalties sets `adjusted_pct`. Then `homework.js` uses `adjust
+Now I see the full picture. The penalties module recalculates pct from raw scores (ignoring that normalize already set `pct`), and doesn't update the `pct` field. But `grades.js` uses `r.pct` for exams. Since penalties recalculates from raw `score/max_score`, and normalize already did this... actually for non-late records, `adjusted_pct` equals `pct`. For late records, `adjusted_pct` has the penalty but `pct` doesn't. So exams with late days would be affected, but no exams have late days in the 
