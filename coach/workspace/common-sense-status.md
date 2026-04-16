@@ -1,6 +1,6 @@
 # Common-Sense Verification Status
 
-Last updated: 2026-04-15T22:00Z
+Last updated: 2026-04-16T06:00Z
 
 ## Item Index
 
@@ -27,7 +27,7 @@ Last updated: 2026-04-15T22:00Z
 | 19 | Verify before finishing | How We Think | 2026-03-30 | 🗑️ | Rule removed from common-sense.md. The "verify-and-finish" workflow was never adopted (0 invocations across 250+ sessions). The C1.7 rule (#7) covers the spirit of this requirement. See details below. |
 | 20 | Environment Reality (C50) | How We Think | 2026-04-16 | ⚠️ | Re-verified (8th): 98.5% pass rate (894/908, last 48h). 14 violations across 4 agents: amy 8 (worst, all `cd /home/user`), coach 3, tech-lead 2, bob 1. may now 100% (was worst). New problem: amy repeatedly uses `cd /home/user && node test/...`. Guard catches all. Trend: 97.2%→98.5% (best ever). See details below. |
 | 21 | C1.8 Match finish() status to reality | How We Think | 2026-04-02 | ✅ | Re-verified (2nd): 0 violations in 20 sessions. 11/11 success claims match reality (deliverables verified, PIVOTs recovered). 3/3 partial (QA) correctly used for test failures. 2 sessions with PIVOTs still warranted success (trivial file-access issues, all recovered). See details below. |
-| 22 | C1.3 Verify every write | How We Think | 2026-04-13 | ⚠️→✅ | NEW. 5 sessions checked (Apr 13). 3/5 fully compliant, 1 partial, 1 non-compliant. Violations are in non-critical files (checklists, todo). Edit tool's built-in diff preview provides partial safety net. See details below. |
+| 22 | C1.3 Verify every write | How We Think | 2026-04-16 | ⚠️ | Re-verified (2nd): Coder s_1776258024054_26 (Apr 15): 3 edit() calls → finish() with ZERO read-back. Infra FM-3.3 guard caught it (finish blocked, forced recovery bash). Regression from Apr 13 ✅. See details below. |
 | 23 | Commit before finish() | How We Think | 2026-04-15 | ⚠️ | Initial verification: 22 sessions examined (Apr 14-15). 50% agent-intentional commits (4 proactive + 7 guard-forced). 50% escaped via auto-commit race condition. Guard works mechanically but auto-commit (every 10min) creates bypass. Zero data loss. See details below. |
 | 24 | Cross-agent help | How We Think | 2026-04-15 | ✅ | Initial verification: 221 cross-agent requests in 72h across 8 agent pairs. Routing mostly correct (scout=research, tech-lead=code, coach=training). May dominates as coordinator (69 forks to tech-lead). Bob actively seeks help (→may, →coach, →tech-lead). No evidence of agents struggling alone when help was available. See details below. |
 
