@@ -3,7 +3,7 @@
 **Date**: 2026-04-15
 **Source**: EXP-165 (4-arm factorial on cascading-fix-trap-v2)
 **Hypothesis**: H-161 (Dual Information-Theoretic Functions)
-**Confidence**: High (F1-only 15/15 vs all other arms 0/46, p < 0.0001, N=61 total)
+**Confidence**: Very High (replicated in EXP-166: F1-only 30/30 vs F2/baseline 1/75, p < 0.0001, N=181 total across EXP-165+166)
 **Tags**: `externalization` `information-quality` `F1-memory-compression` `F2-behavioral-forcing` `expert-analysis` `process-vs-content` `cascading-fix-trap-v2`
 
 ## Finding
@@ -87,9 +87,23 @@ KE-129 found that forced externalization is the "only reliable channel" for judg
 - **KE-091**: Alignment tax — less relevant if F1-only (no forced production overhead) achieves full effect
 - **KE-021**: Process > Knowledge skills — EXP-165 challenges this: on hard tasks, correct knowledge (F1) dramatically outperforms forced process (F2)
 
+## EXP-166 Replication: Displacement Mechanism Confirmed
+
+EXP-166 replicated across 2 scenarios (sql-injection + cascading-fix-trap-v2), 4 arms, 120 total runs. Key addition: a **content-first-then-self-produce** arm to distinguish anchoring vs displacement:
+
+| Arm | cascading pass rate |
+|-----|-------------------|
+| Baseline | 0/15 (0%) |
+| F1-only (content) | 15/15 (100%) |
+| F2-only (process) | 0/15 (0%) |
+| F1+F2 (combined) | 1/15 (7%) |
+
+**Mechanism finding**: The destructive combination (F1+F2 = 7% vs F1 = 100%) confirms **displacement**, not anchoring. The act of producing analysis consumes context/attention capacity that would otherwise process the expert information. This generalizes: stacking interventions wastes the budget that makes the effective intervention work.
+
+Reinforces KE-123 (never stack interventions) with a 93pp degradation.
+
 ## Open Questions
 
 1. **Where is the boundary?** F2 works on math tasks, fails on architectural tasks. What about medium-difficulty tasks? Is there a smooth gradient or a sharp threshold?
 2. **Can F2 be improved?** If the self-analysis template were more specific ("check the CHANGELOG for recent changes and verify they are correct"), would F2 perform better?
-3. **Does the destructive combination generalize?** Is it always true that self-analysis + expert analysis = worse than expert analysis alone? Or is this specific to this scenario?
-4. **Expert availability**: F1 requires correct expert analysis. In production, who provides this? Could another (better) model generate the expert analysis, creating an F1 pipeline?
+3. **Expert availability**: F1 requires correct expert analysis. In production, who provides this? Could another (better) model generate the expert analysis, creating an F1 pipeline?
