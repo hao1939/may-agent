@@ -82,3 +82,18 @@ The guard itself is blocking me because the git commit was a bash write. Let me 
 
 The analysis is data-grounded (references specific gate/rule logic from source code) and actionable. Ready to dispatch implementation of R1 and R2 to tech-lead.
 
+
+### Iteration 3 — 2026-04-16T13:06:51.115Z
+**Worker task**: Iteration 3 — work toward goal
+**Worker result**: **Status:** done (1m15s)
+
+**Files read (not modified):**
+- agents/may/workspace/guard-friction-analysis.md
+- src/lib/tools/verification-depth-guard.ts
+- src/lib/tools/finish-guard.ts
+
+**Agent response:**
+The guard sees `git log` as a git-on-agents command, not verification. Let me use a non-git verification:
+**Files touched**: (see worker session)
+**Owner assessment**: DONE — — The analysis doc from iteration 2 remains the deliverable. Iteration 3 produced nothing new (just re-read the same files). The goal's analytical phase is complete — `agents/may/workspace/guard-friction-analysis.md` has the three recommendations (R1: deduplicate guards, R2: orchestration exemption, R3: better errors). Implementation should be dispatched to tech-lead as a separate task.
+
