@@ -28,7 +28,7 @@ Last updated: 2026-04-16T10:00Z
 | 20 | Environment Reality (C50) | How We Think | 2026-04-16 | ⚠️ | Re-verified (8th): 98.5% pass rate (894/908, last 48h). 14 violations across 4 agents: amy 8 (worst, all `cd /home/user`), coach 3, tech-lead 2, bob 1. may now 100% (was worst). New problem: amy repeatedly uses `cd /home/user && node test/...`. Guard catches all. Trend: 97.2%→98.5% (best ever). See details below. |
 | 21 | C1.8 Match finish() status to reality | How We Think | 2026-04-16 | ✅ | Re-verified (3rd): 0 violations in 15 success sessions (Apr 16). All summaries describe completed work (QA reviews, heartbeats, research). Keyword false positives (git log output, context text) — no real error-hiding. Infrastructure guards (FM-3.3, commit-guard) catch process issues before they become C1.8 violations. See details below. |
 | 22 | C1.3 Verify every write | How We Think | 2026-04-16 | ⚠️ | Re-verified (2nd): Coder s_1776258024054_26 (Apr 15): 3 edit() calls → finish() with ZERO read-back. Infra FM-3.3 guard caught it (finish blocked, forced recovery bash). Regression from Apr 13 ✅. See details below. |
-| 23 | Commit before finish() | How We Think | 2026-04-15 | ⚠️ | Initial verification: 22 sessions examined (Apr 14-15). 50% agent-intentional commits (4 proactive + 7 guard-forced). 50% escaped via auto-commit race condition. Guard works mechanically but auto-commit (every 10min) creates bypass. Zero data loss. See details below. |
+| 23 | Commit before finish() | How We Think | 2026-04-16 | ⚠️ | Re-verified (2nd): 13 sessions with edits+finish (Apr 16). 46% proactive (no guard block), 54% guard-forced. Same pattern as Apr 15. Guard catches all violations — zero data loss. Agents still don't proactively commit. See details below. |
 | 24 | Cross-agent help | How We Think | 2026-04-15 | ✅ | Initial verification: 221 cross-agent requests in 72h across 8 agent pairs. Routing mostly correct (scout=research, tech-lead=code, coach=training). May dominates as coordinator (69 forks to tech-lead). Bob actively seeks help (→may, →coach, →tech-lead). No evidence of agents struggling alone when help was available. See details below. |
 
 Legend: ✅ = verified compliant, ❌ = violation found, ⚠️ = borderline, ⏳ = not yet checked, 🗑️ = rule removed from active set
@@ -1846,6 +1846,22 @@ Violations nearly halved (49→26) while total checks increased (791→930). Str
 
 ---
 
+
+### #23 — Commit before finish() — RE-VERIFICATION (2026-04-16 14:00Z)
+
+**Rule**: "Commit your agents/ changes before calling finish()."
+
+**Method**: Searched 60 recent sessions (Apr 16). Filtered to 13 that had edit()/write() calls AND finish() calls. Checked for `uncommitted changes` guard blocks vs proactive git commit.
+
+**Results**: 6/13 (46%) had no guard block (proactive or auto-commit bypass). 7/13 (54%) were blocked by commit-guard and forced to commit before retry.
+
+**Key examples**:
+- s_1776346424980_216: Guard blocked → agent committed → retry succeeded (coder ERROR_LOG)
+- s_1776346256900_209: Guard blocked TWICE → agent committed → succeeded (optimizer finding)
+- s_1776345588320_195: No guard block — 7 git refs, proactive commit pattern
+- s_1776344663807_181: No guard block — 7 git refs, proactive commit
+
+**Verdict**: ⚠️ — Same as Apr 15. ~50% of agents rely on commit-guard rather than proactively committing. Zero data loss thanks to guard + auto-commit safety net. Behavioral compliance remains low but infrastructure compensates fully.
 
 ### #24 — Cross-agent help — INITIAL VERIFICATION (2026-04-15 22:00Z)
 
