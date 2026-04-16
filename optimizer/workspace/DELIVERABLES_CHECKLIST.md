@@ -1,3 +1,2 @@
 # Deliverables Checklist
-
-- [x] finding-tool-gap-analysis-0416.md — 6h bash pattern scan with automation opportunities
+- [x] agents/optimizer/workspace/finding-bob-efficiency-gap-0416.md
