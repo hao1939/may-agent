@@ -1,56 +1,42 @@
-# Audit: evaluator-failure-chain.ts Dead Weight
+# Finding: evaluator-failure-chain.ts Dead Weight Audit
 
-**Date**: 2026-04-15  
-**Target**: `src/lib/evaluator-failure-chain.ts` (476 lines)  
-**Method**: Enumerate all exports → search for production consumers in `src/` and `agents/`
+**File**: `src/lib/evaluator-failure-chain.ts` (476 LOC)
+**Lens**: C (Dead Weight)
+**Date**: 2026-04-16
 
 ## Summary
 
-**No dead exports found.** All 4 exports from `evaluator-failure-chain.ts` are actively consumed by `src/lib/evaluator.ts`, which re-exports them via `src/lib/index.ts`. The module is lean — only 4 exports and 9 internal helper functions, all called within the two exported functions.
+**No significant dead weight found.** This file is well-structured and fully consumed.
 
-## Export Inventory
+## Evidence
 
-| Export | Type | Direct Consumer | Used At |
-|--------|------|----------------|---------|
-| `FailureStep` | interface | `evaluator.ts:98` (import type + re-export) | Type used in FailureChain fields |
-| `FailureChain` | interface | `evaluator.ts:98` (import type + re-export) | `evaluator.ts:60,458,471` |
-| `extractFailureChains` | function | `evaluator.ts:97,471` | Called in `evaluateTask()` per child session |
-| `formatFailureChains` | function | `evaluator.ts:97,499` | Called in `evaluateTask()` to format for prompt |
+### Exports (all consumed)
+- `FailureStep` (interface, L14) — imported by `src/lib/evaluator.ts:98`, re-exported at L100, used in test files
+- `FailureChain` (interface, L22) — imported by `src/lib/evaluator.ts:98`, re-exported at L100, used in test files
+- `extractFailureChains` (function, L260) — imported by `src/lib/evaluator.ts:97`, called at L471 and L826; also re-exported via `src/lib/index.ts:74`
+- `formatFailureChains` (function, L447) — imported by `src/lib/evaluator.ts:97`, called at L499 and L827; also re-exported via `src/lib/index.ts:76`
 
-All 4 are re-exported through `src/lib/index.ts:74-86`.
+### Internal helpers (all called within file)
+- `isFindWithNoResults` (L46) — called in `isToolOwnError` at ~L238
+- `isTestOrBuildRunner` (L96) — called in `isExpectedNonZeroExit` at ~L185
+- `isExistenceCheck` (L121) — called in `isExpectedNonZeroExit` at ~L192
+- `isExpectedNonZeroExit` (L139) — called in `isToolOwnError` at ~L232
+- `isToolOwnError` (L218) — called in `extractFailureChains` pair-building loop at ~L301
+- `pairToStep` (L352) — called in chain extraction loop (L316, L332, L329)
+- `detectIntent` (L365) — called in chain extraction at L324
+- `isRecoveryAttempt` (L378) — called in chain extraction at L328
+- `matchesOriginalIntent` (L403) — called in chain extraction at L330
+- `diagnoseRootCause` (L419) — called in chain extraction at L340
 
-## Consumer Chain
+### Test coverage
+Two test files exercise this module:
+- `test/evaluator-failure-chain.test.ts` — direct import tests
+- `test/failure-chains.test.ts` — tests via re-export from evaluator.ts
 
-```
-evaluator-failure-chain.ts
-  └── evaluator.ts (imports all 4, uses extractFailureChains + formatFailureChains in evaluateTask())
-       └── index.ts (re-exports all 4 for public API)
-```
+## Severity
 
-No other file in `src/` imports directly from `evaluator-failure-chain.ts` — the module is exclusively consumed through `evaluator.ts`.
+**None** — no dead code, no unused exports, no redundant logic.
 
-## Internal Helpers (not exported — not dead weight)
+## Recommended Action
 
-9 private functions, all called within `extractFailureChains()` or `formatFailureChains()`:
-- `isFindWithNoResults` (line 43) — called in `extractFailureChains`
-- `isTestOrBuildRunner` (line 99) — called in error classification
-- `isExistenceCheck` (line 135) — called in error classification
-- `isExpectedNonZeroExit` (line 154) — called in error classification
-- `isToolOwnError` (line 227) — called in error classification
-- `pairToStep` (line 351) — called in chain building
-- `detectIntent` (line 365) — called in chain building
-- `isRecoveryAttempt` (line 378) — called in chain building
-- `matchesOriginalIntent` (line 403) — called in chain building
-- `diagnoseRootCause` (line 419) — called in chain building
-
-## Related Finding: Type Duplication
-
-`agents/may/handlers/tool-quality-scan.ts` defines its own `FailureChain` interface (line 33) rather than importing from the canonical module. This is a duplication, not dead weight, but worth noting for future cleanup.
-
-## Verdict
-
-**No action needed.** The module has zero dead exports. The Apr 12 evaluator cleanup did not orphan any code in this file. The module is well-scoped: 2 functions + 2 types, all consumed.
-
-## Recommended Follow-up (low priority)
-
-- Consider whether `tool-quality-scan.ts` should import `FailureChain` from the canonical source instead of redefining it.
+No action needed. This file is clean.
