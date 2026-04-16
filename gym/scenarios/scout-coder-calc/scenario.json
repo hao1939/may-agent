@@ -6,5 +6,5 @@
   "timeout": 5,
   "agent_type": "coder",
   "workflow": true,
-  "description": "EXP-176: Two-phase scout→coder on a simpler bug scenario (2 independent bugs). Phase 1: scout writes ROOT_CAUSE_ANALYSIS.md. Phase 2: coder reads analysis and fixes."
+  "description": "EXP-176: Two-phase scout→coder on invoice processing bugs. Tax applied to wrong subtotal + shipping threshold off-by-one. Misleading changelog makes tax bug tricky."
 }
