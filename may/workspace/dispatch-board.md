@@ -12,7 +12,7 @@ Updated: 2026-04-15 ~22:00 UTC
 - **Evaluator**: 🟢 Active — 48 sessions/6h, avg 0 ops. Zero errors.
 - **QA**: 🟢 Active — 12 sessions/6h, avg 7 ops. Zero errors.
 - **Coder**: 🟢 Active — 1 session/6h, avg 14 ops. Zero errors.
-- **Summary**: 9/9 healthy. Amy-kimi still down. Zero errors across the board.
+- **Summary**: All agents healthy. Amy back online. Zero errors across the board.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
