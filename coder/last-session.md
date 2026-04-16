@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776374303948_0
+- **Session:** s_1776374365430_0
 - **Status:** done
-- **When:** 2026-04-16T21:19:25.004Z
-- **Duration:** 1m1s
+- **When:** 2026-04-16T21:20:46.711Z
+- **Duration:** 1m21s
 
 ## What Happened
-The test run (`node test/test.js` showing 24/24) was done after the last edit. Let me re-verify explicitly.
+All 24 tests pass. Both files verified: `pipeline.js` computes tax on `discountedSubtotal`, and `shipping.js` uses `>=` for the threshold.
