@@ -1,0 +1,9 @@
+{
+  "name": "scout-research-prioritization",
+  "categories": ["judgment", "efficiency"],
+  "tags": ["scout", "prioritization", "resource-allocation"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "scout",
+  "workflow": false
+}

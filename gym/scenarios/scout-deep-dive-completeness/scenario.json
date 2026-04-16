@@ -1,0 +1,9 @@
+{
+  "name": "scout-deep-dive-completeness",
+  "categories": ["completeness", "convention-compliance"],
+  "tags": ["scout", "deep-dive", "propagation"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "scout",
+  "workflow": false
+}
