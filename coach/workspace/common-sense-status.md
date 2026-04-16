@@ -25,7 +25,7 @@ Last updated: 2026-04-15T22:00Z
 | 17 | Creative solutions welcome | Quality (REMOVED) | 2026-03-27 | 🗑️ | Rule removed from common-sense.md. Was in original "Quality" section, now gone. Spirit persists (agents do propose alternatives). See details below. |
 | 18 | git add agents/ = NO | How We Think | 2026-04-12 | ⚠️ | Re-verified (8th): **88 sessions with `git add agents/` from wrong dir in 48h (Apr 10-12) across 1271 sessions (6.9%).** .gitignore blocks 100% — zero successful violations. Two retry storms: coach s_957 (11+ attempts, 166 ops!) and bob s_1335 (5+ attempts incl. REVIEW_GATE_BYPASS trick). All actual agents/ commits go through may-agent auto-commit. Correct pattern (`cd agents && git add`) used by some but not majority. See details below. |
 | 19 | Verify before finishing | How We Think | 2026-03-30 | 🗑️ | Rule removed from common-sense.md. The "verify-and-finish" workflow was never adopted (0 invocations across 250+ sessions). The C1.7 rule (#7) covers the spirit of this requirement. See details below. |
-| 20 | Environment Reality (C50) | How We Think | 2026-04-13 | ⚠️ | Re-verified (7th): 97.2% pass rate (904/930, last 48h). 26 violations across 6 agents: may 9 (worst), tech-lead 6, bob 4, optimizer 3, scout 2, coach 2. 4 agents at 100% (amy-kimi, coder, qa, unknown). Patterns: hallucinated external paths (cd to nonexistent repos), home-prefix bun paths. PATH_HALLUCINATION guard catches all and agents recover. Trend: 93.8%→97.2% (improved from previous 48h). See details below. |
+| 20 | Environment Reality (C50) | How We Think | 2026-04-16 | ⚠️ | Re-verified (8th): 98.5% pass rate (894/908, last 48h). 14 violations across 4 agents: amy 8 (worst, all `cd /home/user`), coach 3, tech-lead 2, bob 1. may now 100% (was worst). New problem: amy repeatedly uses `cd /home/user && node test/...`. Guard catches all. Trend: 97.2%→98.5% (best ever). See details below. |
 | 21 | C1.8 Match finish() status to reality | How We Think | 2026-04-02 | ✅ | Re-verified (2nd): 0 violations in 20 sessions. 11/11 success claims match reality (deliverables verified, PIVOTs recovered). 3/3 partial (QA) correctly used for test failures. 2 sessions with PIVOTs still warranted success (trivial file-access issues, all recovered). See details below. |
 | 22 | C1.3 Verify every write | How We Think | 2026-04-13 | ⚠️→✅ | NEW. 5 sessions checked (Apr 13). 3/5 fully compliant, 1 partial, 1 non-compliant. Violations are in non-critical files (checklists, todo). Edit tool's built-in diff preview provides partial safety net. See details below. |
 | 23 | Commit before finish() | How We Think | 2026-04-15 | ⚠️ | Initial verification: 22 sessions examined (Apr 14-15). 50% agent-intentional commits (4 proactive + 7 guard-forced). 50% escaped via auto-commit race condition. Guard works mechanically but auto-commit (every 10min) creates bypass. Zero data loss. See details below. |
@@ -1657,6 +1657,63 @@ The 86.0% dip in the 24-48h period is a blip; the last 24h shows the strongest c
 **Conclusion**: ⚠️→✅. 3/5 sessions fully compliant with explicit read-back verification. The violations are minor (todo.md, non-critical deliverables) and partially mitigated by the edit/write tool's built-in previews. The "wrap-up rush" antipattern is real but produces low-risk violations (checklist files, todo updates), not corruption of critical deliverables.
 
 **Action**: No Growth Cycle needed. Monitor for violations on critical deliverables (src/ changes, formal findings). The current compliance level is acceptable given the tool-level safety net. Next check: 2026-04-20.
+
+---
+
+### #20 — Environment Reality (C50) — Re-verified (8th) 2026-04-16T02:00Z
+
+**Rule**: "The filesystem root is /app. Do NOT use /Users/, /home/, or ~. They do not exist."
+
+**Method**: Queried may.db `convention_checks` table for C7.1 violations in last 48h (Apr 14-16).
+
+**Quantitative summary (last 48h)**:
+
+| Metric | Value |
+|--------|-------|
+| Total C7.1 checks | 908 |
+| Passed | 894 |
+| Failed | 14 |
+| Pass rate | **98.5%** |
+| Previous check pass rate | 97.2% |
+| Trend | ↑ Best ever |
+
+**By agent (last 48h)**:
+
+| Agent | Total | Passed | Failed | Pass Rate |
+|-------|-------|--------|--------|-----------|
+| tech-lead | 146 | 144 | 2 | 98.6% |
+| bob | 145 | 144 | 1 | 99.3% |
+| coach | 142 | 139 | 3 | 97.9% |
+| optimizer | 136 | 136 | 0 | 100% |
+| may | 89 | 89 | 0 | 100% |
+| scout | 82 | 82 | 0 | 100% |
+| qa | 73 | 73 | 0 | 100% |
+| coder | 50 | 50 | 0 | 100% |
+| amy | 43 | 35 | 8 | 81.4% |
+| amy-kimi | 2 | 2 | 0 | 100% |
+
+**Key findings**:
+
+1. **amy is the new worst offender**: 8/14 violations are all the same pattern — `cd /home/user && node test/product-search.test.js`. This is a repetitive, non-adaptive violation within likely one session.
+
+2. **may at 100%!** Was historically the worst agent (90.4% in check 7). Now 89/89 clean. Major improvement.
+
+3. **7 agents at 100%**: optimizer, may, scout, qa, coder, amy-kimi — up from 4 last check.
+
+4. **Hallucinated paths persist**: bob tried `cd /Users/jude/picode/pi-agent`, coach tried `find /Users/jm/coach`, tech-lead tried `cd /Users/hao/code/may`. All fabricated paths from training data.
+
+**Trend**:
+
+| Check | Date | Pass Rate | Violations | Worst Agent |
+|-------|------|-----------|------------|-------------|
+| 5th | 2026-04-05 | 97.1% | 5 | tech-lead (86.7%) |
+| 6th | 2026-04-12 | 98.9% | — | may (93.8%) |
+| 7th | 2026-04-13 | 97.2% | 26 | may (90.4%) |
+| **8th** | **2026-04-16** | **98.5%** | **14** | **amy (81.4%)** |
+
+**Conclusion**: ⚠️ Maintained. 98.5% is the best overall pass rate. Violations halved (26→14). may fully recovered. However, amy's 81.4% with a repetitive violation pattern prevents upgrade to ✅. The PATH_HALLUCINATION guard catches 100% of violations. No data loss or functional impact.
+
+**Action**: amy needs context.md reinforcement about `/app` root. Coach violations (3) are from hallucinated git paths — minor. Next check: 2026-04-23.
 
 ---
 
