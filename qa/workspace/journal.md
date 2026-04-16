@@ -5426,3 +5426,9 @@ Issues:
 Issues:
 - IMPORTANT: pruneCompletedSteps mutates step.result to clear messages. Later code uses taskResult.messages[0]?.timestamp for startedAt when persisting. This is safe for newly added steps (prune is called after push), but replayed steps also call prune; ensure no code later expects older steps’ messages for timestamps/guard logic beyond keep window.
 - MINOR: pruneCompletedSteps only truncates lastAssistantText if messages existed; consider truncating regardless (large lastAssistantText without messages could still bloat memory).
+
+2026-04-16T12:00Z — QA heartbeat: Proactive scan of HEAD 4cee1ca8 (src/lib/workflow-tool.ts). Read file and focused on new MAX_DETAILED_STEPS pruning logic: buildStepSummaries now slices to last 20 steps; pruneCompletedSteps replaces older step.result.messages with [] and truncates lastAssistantText to 200 chars when messages existed. Gates: ./node_modules/.bin/tsc --noEmit PASS (EXIT_CODE:0). ./node_modules/.bin/vitest --run PASS (134 files, 1979 tests).
+Verdict: CONDITIONAL (minor hardening suggested).
+Findings:
+- IMPORTANT: pruneCompletedSteps can erase messages for earlier steps; any later logic that relies on completedSteps[*].result.messages (e.g., for startedAt derivation) must tolerate empty arrays. Current persistence code takes startedAt from messages[0] at the time of persisting the step, so it appears safe, but guard handlers that inspect completedSteps may see missing message detail for older steps.
+- MINOR: pruneCompletedSteps only truncates lastAssistantText if messages existed; a TaskResult with large lastAssistantText but empty messages will not be truncated.
