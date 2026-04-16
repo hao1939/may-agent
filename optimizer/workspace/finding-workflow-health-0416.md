@@ -1,52 +1,51 @@
-# Workflow Health Check — Apr 16 Early
+# Finding: Workflow Health Check — Apr 16, 2026 (03:30 UTC)
 
-**Date**: 2026-04-16 01:30 UTC  
-**Window**: Last 12 hours (since ~13:30 Apr 15)  
-**Baseline**: 27.1% system-wide adoption (Apr 12)
+## Summary
+System-wide workflow adoption has **dropped sharply** from 27.1% (Apr 12) to **5.2%** (last 6h). This is a significant regression worth investigating.
 
-## System-Wide Adoption
+## Data (Last 6h Window)
 
-**Current: 18.7%** (100/535 sessions used workflows)
+### Overall
+- **Total sessions**: 22,156
+- **Workflow sessions**: 1,153
+- **Adoption rate**: 5.2% (down from 27.1% on Apr 12)
 
-This is a **regression from 27.1%** measured Apr 12. Adoption has dropped ~8pp.
+### By Agent (core agents only)
+| Agent | Total | Workflow | Rate |
+|-------|-------|----------|------|
+| coder | 393 | 174 | **44.3%** |
+| optimizer | 2,061 | 250 | 12.1% |
+| bob | 2,963 | 340 | 11.5% |
+| qa | 970 | 100 | 10.3% |
+| coach | 2,984 | 255 | 8.5% |
+| tech-lead | 2,403 | 27 | 1.1% |
+| scout | 1,223 | 7 | 0.6% |
+| may | 4,395 | 0 | 0.0% |
+| evaluator | 2,504 | 0 | 0.0% |
+| amy/amy-kimi | 1,944 | 0 | 0.0% |
 
-## Per-Agent Breakdown
+### Efficiency: Workflow vs Non-Workflow
+- **Non-workflow avg ops**: 15.3 (n=10,078)
+- **Workflow avg ops**: 19.8 (n=938)
+- Workflow sessions use **29% more ops** on average — opposite of what we'd hope
 
-| Agent | Total | Workflow | Adoption % | Trend vs Apr 12 |
-|-------|-------|----------|------------|------------------|
-| evaluator | 122 | 0 | 0% | — (never used) |
-| tech-lead | 63 | 17 | 27.0% | stable |
-| bob | 61 | 38 | 62.3% | **highest adopter** |
-| coder | 54 | 11 | 20.4% | moderate |
-| amy | 49 | 0 | 0% | — (never used) |
-| optimizer | 49 | 23 | 46.9% | strong |
-| coach | 48 | 10 | 20.8% | moderate |
-| may | 37 | 0 | 0% | — (never used) |
-| scout | 28 | 1 | 3.6% | minimal |
-| qa | 24 | 0 | 0% | — (never used) |
+### High-Op Workflow Sessions (>20 ops)
+Top offenders: bob (187, 113, 100, 93, 93, 90, 90 ops), coder (104 ops), coach (98, 96 ops). These are mostly research/planning workflows that don't benefit from structure (aligns with KE-015/KE-016 — workflows help eliminable decisions, hurt essential/exploratory ones).
 
-**High adopters** (>40%): bob (62.3%), optimizer (46.9%)  
-**Moderate** (15-40%): tech-lead (27.0%), coach (20.8%), coder (20.4%)  
-**Non-adopters** (0-5%): evaluator, amy, may, qa, scout
+## Analysis
 
-## Efficiency: Workflow vs Freeform
+1. **Adoption collapse**: 27.1% → 5.2% is dramatic. The denominator grew (many test/variant agents with 0% adoption), but even core agents show low rates. Only coder (44.3%) has strong adoption.
 
-| Mode | Sessions | Avg Efficiency | Avg Quality | Avg Productive Calls | Avg Wasted |
-|------|----------|---------------|-------------|---------------------|------------|
-| Freeform | 381 | 0.54 | 0.70 | 14.7 | 0.2 |
-| Workflow | 98 | **0.64** | **0.76** | 0.6 | 0.0 |
+2. **Efficiency concern**: Workflows averaging 19.8 ops vs 15.3 for non-workflow suggests they're adding overhead, not reducing it. The high-op outliers (bob 187 ops) inflate this, but the pattern is clear.
 
-Workflows show **+10pp efficiency** and **+6pp quality** advantage over freeform sessions. The low productive call count (0.6) for workflows suggests many are lightweight orchestration sessions that dispatch to child agents.
+3. **Agent stratification**: Clear tiers — coder is a workflow-heavy agent, bob/optimizer/qa/coach are moderate adopters (8-12%), and may/evaluator/amy never use workflows.
 
-## Key Observations
-
-1. **Adoption regressed** from 27.1% → 18.7%. The volume of non-workflow agents (evaluator=122, amy=49, may=37, qa=24) drags the average down — these agents have zero workflow integration.
-2. **Bob is the star adopter** at 62.3% — well above everyone else. Worth studying what makes Bob's workflow usage sticky.
-3. **Quality/efficiency gains confirmed**: workflow sessions consistently outperform freeform on both metrics, validating KE-007 (workflow enforcement is the only reliable behavioral intervention).
-4. **Scout regression**: only 3.6% adoption despite being a research agent where workflows could help structure exploration.
+4. **Exploratory tasks don't benefit**: The highest-op workflow sessions are research synthesis, scenario design, and sprint planning — exactly the task types KE-015 predicts workflows hurt (high decision topology R).
 
 ## Recommendations
+- Investigate why adoption dropped — was it a deployment change, or natural selection away from workflows?
+- Focus workflow use on structured/repetitive tasks (coder's pattern), not open-ended research
+- Consider removing workflow wrapping from research/synthesis tasks to reduce overhead
 
-- **Priority**: Add workflow support for scout and coach — moderate-adopter agents with room to grow
-- **Investigation**: Why did system-wide adoption drop? Check if new session types were added that don't use workflows
-- **Leave alone**: evaluator, amy, may, qa — these may have architectural reasons for freeform operation
+## Conclusion
+Workflow adoption has regressed significantly. The remaining workflow usage shows higher ops than non-workflow, suggesting current workflow designs add overhead for the task types they're applied to. Coder is the success story; research-heavy agents should likely reduce workflow use.
