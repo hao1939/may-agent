@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776380740525_168
+- **Session:** s_1776381056487_169
 - **Status:** done
-- **When:** 2026-04-16T23:05:46.686Z
-- **Duration:** 6s
+- **When:** 2026-04-16T23:11:01.778Z
+- **Duration:** 5s
 
 ## What Happened
 ```json
@@ -13,9 +13,9 @@
     "coach": {
       "role": "Builder",
       "capability_level": "L2",
-      "efficiency": 0.76,
-      "quality": 0.84,
+      "efficiency": 0.74,
+      "quality": 0.83,
       "verdict": "good",
       "issues": [
-        "[MINOR_GYM_METHOD_MISMATCH] Task instruction said run 5 baseline trials via scripts/gym-batch.sh; coach used 1 direct run + 4 more direct runs (gym-run.sh loop) instead. This still establishes the baseline, but deviates from the specified measurement method.",
-        "[UNRESOLVED_TOOL_ERROR] Attempted
+        "[METHOD_MISMATCH] Did not follow the instruction to fork via `fork_agent({source,dest})`; instead used a custom `node -e` recursive copy. It worked, but deviated from the prescribed method and adds avoidable risk/variance.",
+        "[MINOR_SPEC_DRIFT] Wrote a skill that references a specific domain ex
