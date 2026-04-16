@@ -18,6 +18,7 @@ Read your context and identify what needs doing:
    echo "=== Recent experiments ===" && ls -lt agents/shared/knowledge/experiments/ | head -8 && echo "=== Recent deep-dives ===" && ls -lt agents/shared/knowledge/library/deep-dives/ | head -5 && echo "=== Recent KB commits ===" && cd agents && git log --oneline -5 -- shared/knowledge/
    ```
 3. Read `agents/bob/workspace/todo.md` for ongoing priorities.
+4. **Check your metrics.** Look at "Injected: metrics" above. Fast metrics = every heartbeat, daily = once/day, slow = weekly. If any metric is trending badly, note it as a candidate task. Don't compute metrics yourself — just read what's provided.
 
 **Do NOT read INDEX.md here** — save deep KB exploration for work sessions.
 

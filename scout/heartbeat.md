@@ -25,7 +25,8 @@ Read your context and identify what needs doing:
    cd agents && git log --oneline -5 -- shared/knowledge/
    ```
 3. Read `agents/scout/workspace/todo.md` for ongoing priorities and pending handoffs.
-4. Note the day of the week — Monday-Friday means fresh arXiv listings; weekends mean targeted search, synthesis, or enrichment.
+4. **Check your metrics.** Look at "Injected: metrics" above. Fast metrics = every heartbeat, daily = once/day, slow = weekly. If any metric is trending badly, note it as a candidate task.
+5. Note the day of the week — Monday-Friday means fresh arXiv listings; weekends mean targeted search, synthesis, or enrichment.
 
 **Output of this step**: A mental list of 1-3 candidate tasks.
 

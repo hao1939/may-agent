@@ -20,7 +20,8 @@ Read your context and identify what needs doing:
    ```bash
    ls -lt agents/shared/knowledge/experiments/ | head -8
    ```
-3. Check for new error patterns (quick grep, not full analysis):
+3. **Check your metrics.** Look at "Injected: metrics" above. Fast metrics = every heartbeat, daily = once/day, slow = weekly. If any metric is trending badly, note it as a candidate task.
+4. Check for new error patterns (quick grep, not full analysis):
    ```bash
    export PATH=".state/.bun/bin:$PATH" && bun -e "import{Database}from'bun:sqlite';const db=new Database('.state/may.db',{readonly:true});const r=db.query(\"SELECT agent,COUNT(*)as n,SUM(CASE WHEN status='error'THEN 1 ELSE 0 END)as errs FROM sessions WHERE startedAt>?GROUP BY agent\").all(Date.now()-6*3600000);console.table(r)"
    ```

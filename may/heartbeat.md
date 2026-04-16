@@ -24,6 +24,8 @@ else console.log('\\nNo stuck sessions');
 ```
 This gives you agent activity, errors, AND stuck sessions. **Do NOT run any more DB queries this cycle.** All decisions come from this data.
 
+**Check your metrics.** Look at "Injected: metrics" above. Fast metrics = every heartbeat, daily = once/day, slow = weekly. If system.stuck-requests or system.request-throughput are trending badly, prioritize accordingly.
+
 ## 1. Board: Read + Dispatch + Follow Up (1 read + 1 edit = 2 ops)
 Combines dispatching new work AND following up on active items in ONE board pass.
 

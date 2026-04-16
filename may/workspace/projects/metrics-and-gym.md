@@ -30,5 +30,5 @@
 - **Result:** 20 scout-specific scenarios created (2x target). Covers: paper eval, synthesis, hypothesis, dedup, credibility, prioritization, coverage, literature gaps.
 
 ### M6: Agent Heartbeat Integration — all
-- **Status:** ⏳ Dispatched to tech-lead (s_1776334501697_0)
-- **Scope:** Each agent queries their metrics in heartbeat. Fast=every heartbeat, medium=daily, slow=weekly.
+- **Status:** ✅ Done (2026-04-16)
+- **Result:** All 6 agent heartbeats (bob, coach, optimizer, scout, tech-lead, may) updated with metric observation step.
