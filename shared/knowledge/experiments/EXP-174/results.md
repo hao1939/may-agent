@@ -14,14 +14,14 @@ Scout→coder achieves 0% even with verified-clean environments. The EXP-172 res
 
 | Metric | Value |
 |--------|-------|
-| Total trials | 22 |
+| Total trials | 37 |
 | Passed | 0 |
-| Failed | 22 |
-| Pass rate | **0%** (0/22) |
-| Run IDs | 2114–2135 |
+| Failed | 37 |
+| Pass rate | **0%** (0/37) |
+| Run IDs | 2114–2150 |
 
 ### Failure pattern
-All 22 trials show identical failure: `pipeline-order-fixed = false` ("FAIL: Pipeline applies penalties before normalization"). The scout phase investigates but fails to identify pipeline ordering as the root cause. The coder phase then fixes surface-level issues (grade threshold) but misses the deep bug.
+All 37 trials show identical failure: `pipeline-order-fixed = false` ("FAIL: Pipeline applies penalties before normalization"). The scout phase investigates but fails to identify pipeline ordering as the root cause. The coder phase then fixes surface-level issues (grade threshold) but misses the deep bug.
 
 ### Reference data (from EXP-173, clean environments)
 | Arm | Pass rate |
@@ -29,7 +29,7 @@ All 22 trials show identical failure: `pipeline-order-fixed = false` ("FAIL: Pip
 | Expert F1 (full analysis) | 100% (10/10) |
 | Moderate hint | 100% (9/9) |
 | Base (no hint) | 0% (0/11) |
-| **Scout→coder** | **0% (0/22)** |
+| **Scout→coder** | **0% (0/37)** |
 
 ## Environment Verification
 
@@ -70,6 +70,8 @@ This is the hard part — it's essentially asking the scout to solve the problem
 ## Cost
 
 22 trials × 2 phases × ~$0.07 ≈ $3.08
++15 trials (EXP-174 replication) ≈ $2.10
+**Total: ~$5.18 for 37 trials**
 
 ## Tags
 `EXP-174` `H-174b` `scout-coder` `quality-gap` `cascading-fix-trap-v2` `H-166`
