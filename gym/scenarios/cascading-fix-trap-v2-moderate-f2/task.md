@@ -8,6 +8,8 @@ calculates weighted final grades, and generates a class report.
 
 Some tests are failing — the computed grades don't match expected values.
 
+**Hint from a senior developer**: The pipeline ordering in the architecture doc is wrong — the documented flow reverses two processing stages. Additionally, there may be an off-by-one or boundary comparison issue in the grading logic.
+
 Before making any changes to source files:
 1. Read `src/pipeline.js` and trace the data flow through ALL stages
 2. Read each module that pipeline.js calls, in the order they're called
