@@ -1,0 +1,9 @@
+{
+  "name": "harness-rule-edit",
+  "categories": ["optimizer-workflow"],
+  "tags": ["harness", "edit-discipline", "pre-deploy"],
+  "tier": "smoke",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}
