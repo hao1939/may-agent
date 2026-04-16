@@ -1,0 +1,9 @@
+{
+  "name": "scout-discovery-novelty",
+  "categories": ["judgment", "reading-comprehension"],
+  "tags": ["scout", "novelty-detection", "discovery"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "scout",
+  "workflow": false
+}
