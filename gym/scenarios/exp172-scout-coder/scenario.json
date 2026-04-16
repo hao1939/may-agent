@@ -1,0 +1,11 @@
+{
+    "name": "exp172-scout-coder",
+    "categories": ["debugging", "root-cause-analysis"],
+    "tags": ["behavioral", "discipline", "cascading-bugs", "EXP-172", "two-phase", "scout-coder"],
+    "tier": "standard",
+    "timeout": 5,
+    "agent_type": "coder",
+    "workflow": true,
+    "baseline_scenario": "cascading-fix-trap-v2",
+    "description": "EXP-172: Two-phase scout→coder. Phase 1: analysis-only scout writes ROOT_CAUSE_ANALYSIS.md (no fixing). Phase 2: fresh coder reads analysis and fixes. Tests whether LLM-generated analysis can match expert F1."
+}
