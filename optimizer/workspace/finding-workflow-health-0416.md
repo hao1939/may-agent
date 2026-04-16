@@ -1,51 +1,46 @@
-# Finding: Workflow Health Check — Apr 16, 2026 (03:30 UTC)
+# Finding: Workflow Health Check — Apr 16, 2026
 
-## Summary
-System-wide workflow adoption has **dropped sharply** from 27.1% (Apr 12) to **5.2%** (last 6h). This is a significant regression worth investigating.
+## Workflow Adoption (last 24h)
 
-## Data (Last 6h Window)
+**System-wide: 18.4%** (187/1019 sessions) — DOWN from 27.1% on Apr 12.
 
-### Overall
-- **Total sessions**: 22,156
-- **Workflow sessions**: 1,153
-- **Adoption rate**: 5.2% (down from 27.1% on Apr 12)
-
-### By Agent (core agents only)
 | Agent | Total | Workflow | Rate |
 |-------|-------|----------|------|
-| coder | 393 | 174 | **44.3%** |
-| optimizer | 2,061 | 250 | 12.1% |
-| bob | 2,963 | 340 | 11.5% |
-| qa | 970 | 100 | 10.3% |
-| coach | 2,984 | 255 | 8.5% |
-| tech-lead | 2,403 | 27 | 1.1% |
-| scout | 1,223 | 7 | 0.6% |
-| may | 4,395 | 0 | 0.0% |
-| evaluator | 2,504 | 0 | 0.0% |
-| amy/amy-kimi | 1,944 | 0 | 0.0% |
+| bob | 110 | 62 | 56% |
+| optimizer | 98 | 46 | 47% |
+| tech-lead | 120 | 31 | 26% |
+| coder | 120 | 23 | 19% |
+| coach | 93 | 19 | 20% |
+| scout | 55 | 4 | 7% |
+| qa | 50 | 2 | 4% |
+| evaluator | 261 | 0 | 0% |
+| may | 63 | 0 | 0% |
+| amy | 49 | 0 | 0% |
 
-### Efficiency: Workflow vs Non-Workflow
-- **Non-workflow avg ops**: 15.3 (n=10,078)
-- **Workflow avg ops**: 19.8 (n=938)
-- Workflow sessions use **29% more ops** on average — opposite of what we'd hope
+### Key observations
+- **Adoption dropped ~9pp** from 27.1% → 18.4%. The evaluator's 261 zero-workflow sessions dilute the system rate heavily. Excluding evaluator: 187/758 = **24.7%** — still down from Apr 12.
+- **bob** leads at 56%, **optimizer** at 47%. These two account for 58% of all workflow sessions.
+- **scout, qa** remain low adopters despite having workflows available.
+- **evaluator, may, amy** have 0% — evaluator is expected (automated), may/amy may lack workflow definitions.
 
-### High-Op Workflow Sessions (>20 ops)
-Top offenders: bob (187, 113, 100, 93, 93, 90, 90 ops), coder (104 ops), coach (98, 96 ops). These are mostly research/planning workflows that don't benefit from structure (aligns with KE-015/KE-016 — workflows help eliminable decisions, hurt essential/exploratory ones).
+## Cost / Efficiency
 
-## Analysis
+| Agent | n | Avg Efficiency | Avg Quality |
+|-------|---|---------------|-------------|
+| amy | 49 | 0.75 | 0.99 |
+| may | 61 | 0.73 | 0.93 |
+| scout | 54 | 0.73 | 0.94 |
+| tech-lead | 119 | 0.71 | 0.90 |
+| coach | 92 | 0.71 | 0.86 |
+| coder | 120 | 0.70 | 0.82 |
+| optimizer | 96 | 0.69 | 0.88 |
+| qa | 49 | 0.68 | 0.81 |
+| bob | 109 | 0.63 | 0.77 |
 
-1. **Adoption collapse**: 27.1% → 5.2% is dramatic. The denominator grew (many test/variant agents with 0% adoption), but even core agents show low rates. Only coder (44.3%) has strong adoption.
-
-2. **Efficiency concern**: Workflows averaging 19.8 ops vs 15.3 for non-workflow suggests they're adding overhead, not reducing it. The high-op outliers (bob 187 ops) inflate this, but the pattern is clear.
-
-3. **Agent stratification**: Clear tiers — coder is a workflow-heavy agent, bob/optimizer/qa/coach are moderate adopters (8-12%), and may/evaluator/amy never use workflows.
-
-4. **Exploratory tasks don't benefit**: The highest-op workflow sessions are research synthesis, scenario design, and sprint planning — exactly the task types KE-015 predicts workflows hurt (high decision topology R).
+- **opCount data sparse** — only coach (23.3 avg, n=8), optimizer (20.0, n=1), bob (8.0, n=1) reported non-zero opCounts for cron sessions. Most sessions don't populate opCount.
+- D-o-R budget cap check inconclusive due to sparse opCount data. Coach's 23.3 avg suggests some sessions exceed the 9.4 target, but sample size is small.
 
 ## Recommendations
-- Investigate why adoption dropped — was it a deployment change, or natural selection away from workflows?
-- Focus workflow use on structured/repetitive tasks (coder's pattern), not open-ended research
-- Consider removing workflow wrapping from research/synthesis tasks to reduce overhead
-
-## Conclusion
-Workflow adoption has regressed significantly. The remaining workflow usage shows higher ops than non-workflow, suggesting current workflow designs add overhead for the task types they're applied to. Coder is the success story; research-heavy agents should likely reduce workflow use.
+1. **Investigate adoption drop** — why did workflow usage fall from 27.1% to 18.4%? Check if workflow definitions were removed or if routing changed.
+2. **scout/qa workflow nudge** — both at <10% adoption despite available workflows. Consider adding workflow routing to their handlers.
+3. **opCount tracking** — most sessions report 0 opCount, making budget analysis unreliable. Fix opCount population for accurate D-o-R monitoring.
