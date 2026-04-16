@@ -1,0 +1,12 @@
+{
+    "name": "cascading-fix-trap-v2-moderate-f2",
+    "categories": ["debugging", "root-cause-analysis"],
+    "tags": ["behavioral", "cascading-bugs", "EXP-171", "moderate-hint", "F2-workflow"],
+    "tier": "standard",
+    "timeout": 5,
+    "agent_type": "coder",
+    "workflow": true,
+    "phase_cleanup": ["ANALYSIS.md"],
+    "baseline_scenario": "cascading-fix-trap-v2",
+    "description": "EXP-171: Combines moderate hints (problem identification without fix details) with F2-style two-phase workflow. Tests whether hints + structured execution > either alone."
+}
