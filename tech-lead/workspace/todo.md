@@ -340,7 +340,9 @@
 - 2026-04-16 02:30: **Infra**: Lens B — evaluation-sync.ts flow complexity audit (404 LOC). COMPLETE. Moderate complexity (3 phases, 7 decision points). Key findings: heuristic eval duplicates evaluator.ts logic, standalone sampling integrates cleanly, no dead branches, throw in handler could skip remaining sessions in batch. See workspace/finding-evaluation-sync-ts-flow-complexity-audit.md
 - 2026-04-16 03:00: **Feature rotation** — No new features on dispatch board (Gatekeeper still blocked on Hao approval). Fell back to Lens C.
 - 2026-04-16 03:00: **Infra**: Lens C — evaluator.ts dead weight audit (952 LOC). COMPLETE. Key findings: unused `extractToolErrors` import, 45-line `buildRubric()` duplicated between evaluateTask/evaluateStandaloneSession, vestigial scoring normalization code, defensive null checks on always-present fields. See workspace/finding-evaluator-ts-dead-weight-audit-952-loc.md
-- **Next**: Lens D next cycle. **Cycle type**: infra.
+- 2026-04-16 03:30: **Feature rotation** — No new features on dispatch board (Gatekeeper still blocked on Hao approval). Fell back to Lens D.
+- 2026-04-16 03:30: **Infra**: Lens D — manager.ts fragility audit (2443 LOC). COMPLETE. Key findings: silent swallow of DB/meta write failures in completion path, unguarded session map growth (no cleanup of aborted sessions), callAgent error propagation can orphan child sessions, single retry with no backoff on DB locks. See workspace/finding-manager-ts-fragility-audit-2443-loc.md
+- **Next**: Lens A next cycle. **Cycle type**: feature rotation.
 
 ## Low-Priority Cleanup
 - [x] Phase 5d: Deprecate memory fallback — DONE (s_1775527469736_184, commit 34263ca)
