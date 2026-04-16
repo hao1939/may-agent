@@ -13,13 +13,14 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-16T04:19)
+# Your Context (auto-generated 2026-04-16T04:49)
 
-**System:** 8 sessions/6h, 0% error rate
+**System:** 9 sessions/6h, 0% error rate
 
 **Top spenders:**
 - coder: 6s, 363KB
 - amy: 2s, 261KB
+- coach: 1s, 45KB
 
 **Your active error patterns:**
 - FM-3.3: 9x
