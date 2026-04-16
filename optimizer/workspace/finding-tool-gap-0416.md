@@ -1,51 +1,53 @@
-# Tool Gap Analysis — Apr 16 Early (6h Window)
+# Tool Gap Analysis — Apr 16, 2026
 
-**Period**: 2026-04-16 ~22:30–04:30 UTC
-**Total sessions**: ~270 across all agents
+## Sessions Analyzed
+| Session | Agent | Ops | Task | Key Issues |
+|---------|-------|-----|------|------------|
+| s_…1849_392 | bob | 59 | EXP-167 gym trials (35 runs) | FM-3.3, over-execution (35 vs 30) |
+| s_…9980_185 | coder | 74 | 3 bounded tasks (delete+logging+logging) | FM-1.3 (rm/ls loops), FM-2.6, grep failures |
+| s_…6770_153 | coach | 101 | EXP-166 scenario creation + smoke test | Path confusion, wasted discovery |
+| s_…7714_571 | scout | 50 | 10 scout gym scenarios | Interrupted |
+| s_…4487_188 | bob | 40 | EXP-166 gym trials | FM-3.3, path flailing |
 
-## Session Volume Summary (last 6h)
+## Pattern 1: Sequential Gym Runs (Bob 59-op, Bob 40-op)
 
-| Agent | Sessions | Avg Ops | Max Ops | Total Ops |
-|-------|----------|---------|---------|-----------|
-| coder | 98 | 10.9 | 74 | 1070 |
-| amy | 49 | 12.2 | 33 | 599 |
-| bob | 18 | 17.8 | 44 | 321 |
-| coach | 24 | 9.8 | 36 | 236 |
-| tech-lead | 22 | 10.4 | 37 | 228 |
-| optimizer | 22 | 9.4 | 31 | 206 |
+**Problem:** Running 35 gym trials sequentially costs 35+ bash calls — one per `gym-run.sh` invocation. Each run is independent and takes 30-120s. The agent spends its entire session as a loop executor.
 
-## Key Patterns Observed
+**Estimated waste:** ~25 ops per session (35 runs when only 30 needed, plus orchestration overhead). At 1.7 ops/trial, reducing to batch execution would save ~30 ops.
 
-### 1. Gym Trial Repetition (bob: 18 sessions, 321 ops)
-Bob ran EXP-166 and EXP-167 gym trials across 9+ iterations, each ~27-44 ops. Each iteration calls `gym-run.sh` repeatedly. The `gym-batch.sh` script already exists for batching, but bob's persistent-task workflow still spawns individual iterations.
+**Fix:** Create `scripts/gym-batch.sh <scenario> --count N --run-tag TAG` that runs N trials in a single bash call and emits a summary table. The agent calls it once per scenario instead of N times. **Expected savings: 50-70% of ops for gym-trial sessions.**
 
-**Gap**: No gap — `gym-batch.sh` exists. Bob's high ops come from the experiment workflow design (deliberate iteration), not missing tooling.
+## Pattern 2: Path Discovery / ENOENT Loops (Coder 74-op, Coach 101-op)
 
-### 2. Coder 74-op Outlier
-The 74-op coder session had a "reference: how an experienced engineer handled an impossible task" prefix — this is an experiment prompt variant. The high op count is experimental, not a tooling gap.
+**Problem:** Agents repeatedly `ls`, `find`, and `grep` to discover file paths that don't exist or are in unexpected locations. Coder tried to delete a file multiple times after it was already gone. Coach used relative paths that failed, then switched to absolute, wasting several calls.
 
-### 3. Repeated Gym Scenarios Dominate
-- 31 sessions: "Fix failing tests in student grade processing pipeline"
-- 23 sessions: "Fix the Product Search Service" (amy)
-- 17 sessions: same (coder)
-- 15 sessions: Phase 1 ANALYZE variants
-- 12 sessions: Phase 2 FIX variants
+**Examples from evaluations:**
+- Coder: "Repeated ENOENT checks + rm/ls loops around test/product-search.test.js (multiple ls/rm attempts after file was already missing)"
+- Coach: "Minor path confusion early (used relative paths instead of absolute), causing several wasted discovery commands"
 
-These are all gym runs, not production work. No multi-step bash patterns to automate here — the gym runner already handles orchestration.
+**Estimated waste:** 3-8 ops per session.
 
-### 4. Tech-lead Task Planning (37 ops)
-Tech-lead spent 37 ops "designing and queuing 3+ concrete coder tasks." This involves reading backlog, checking coder status, writing task specs, dispatching. Could potentially benefit from a task-template tool, but 37 ops for 3+ tasks is reasonable.
+**Fix:** Not a tool gap — this is a judgment gap. Path confusion is best addressed by ensuring task descriptions include absolute paths. For coder gym scenarios, verify task.md files use absolute paths to all referenced files.
 
-### 5. Existing Tool Coverage
-Current scripts cover the main automation needs:
-- `gym-run.sh` / `gym-batch.sh` — gym orchestration ✓
-- `session-query.ts` — session data queries ✓
-- `code-search.sh` — codebase search ✓
-- `gym-stats.ts` — experiment analysis ✓
-- `health-check.sh` / `status.sh` — system monitoring ✓
+## Pattern 3: FM-3.3 Verification Tax (All 5 sessions)
 
-## Conclusion
+**Problem:** Every session that writes files must then read them back to satisfy the verification guard. This is ~2 extra ops per session (write checklist + verify checklist). In Bob's 59-op session, it attempted finish(success) without verification, got blocked, then had to verify.
 
-**No significant tool gaps found.** The last 6h was dominated by gym experiment runs (EXP-166, EXP-167), which are well-served by existing tooling. The high-op outliers (coder 74, bob 44, tech-lead 37) are all explainable by task complexity, not missing automation.
+**Estimated waste:** 2-3 ops per session × all sessions = systemic.
 
-**Minor opportunity**: A `session-summary` helper that takes a sessionId and returns task+status+opCount+outcome in one call (vs. manual DB queries) could save optimizer/coach 2-3 ops per archaeology session. Low priority — the bun -e pattern works fine.
+**Fix:** Already addressed by process — this is working as designed. The guard catches real omissions. No tool change needed; the cost is worth the reliability.
+
+## Recommendations (Prioritized)
+
+1. **[HIGH] Build `gym-batch.sh`** — single biggest op saver. Bob-style gym trial sessions are common (EXP-165, 166, 167, 168 all use them). A batch runner would cut 30-40 ops per batch session.
+
+2. **[MEDIUM] Absolute paths in task.md** — audit gym scenario task.md files to use absolute `/app/...` paths instead of relative paths. Low effort, prevents 3-8 wasted ops per coder session.
+
+3. **[LOW] No action on FM-3.3** — verification overhead is acceptable cost for reliability.
+
+## Impact Estimate
+
+If gym-batch.sh existed for the Bob sessions alone:
+- Bob 59-op → ~20 ops (save 39)
+- Bob 40-op → ~15 ops (save 25)
+- **64 ops saved across 2 sessions** = significant cost reduction for experiment execution

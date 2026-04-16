@@ -1,5 +1,2 @@
-# Deliverables Checklist — M4: Pre-deploy Battery
-
-- [x] 5 scenarios identified/created
-- [x] Battery run with baseline pass rates (1/5, 20%)
-- [x] `pre-deploy-battery.md` with scenarios, results, run instructions, thresholds
+# DELIVERABLES_CHECKLIST.md
+- [x] agents/optimizer/workspace/finding-tool-gap-0416.md — tool gap analysis with 3 patterns and prioritized recommendations
