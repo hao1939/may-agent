@@ -49,6 +49,14 @@ Review the errors from your snapshot. Do NOT run another query. Route failures:
 
 Don't investigate WHY inline — fork an investigation if needed.
 
+## 2b. Accountability: Metric Owner Nudges (0 ops — use injected metrics)
+Check "Injected: metrics" for ALL system metrics (not just yours). Look for:
+- **One-off metrics stuck at "active" for 3+ days** → nudge the owner. Fork a message: "Your metric X hasn't moved in N days. What's blocking?"
+- **Continuous metrics flat for 1+ week** → investigate. Is the owner working on it? Did they forget?
+- **Health metrics below threshold** → urgent. Dispatch fix to owner immediately.
+
+This is your accountability role. You don't fix metrics — you ensure owners are fixing theirs.
+
 ## 3. Gatekeeper Check (1 op max)
 One quick check for system-scope changes:
 ```bash
