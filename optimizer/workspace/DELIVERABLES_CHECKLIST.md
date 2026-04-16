@@ -1,3 +1,3 @@
-# Deliverables Checklist
+# DELIVERABLES_CHECKLIST
 
-- [x] agents/optimizer/workspace/finding-evaluator-quality-bug-archaeology-0415.md
+- [x] agents/optimizer/workspace/gym-feedback-design.md — Gym-as-fast-feedback design doc answering all 5 questions
