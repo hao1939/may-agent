@@ -33,3 +33,10 @@ Agents manually repeat templated work every session: Bob creates hypothesis file
 **Agent response:**
 Now verify the checklist and finish:
 **Files touched**: (see worker session)
+**Owner assessment**: CONTINUE — — Iteration 1 produced empty/nonexistent deliverables. No analysis was actually written. Next iteration:
+
+1. **Analyze real data**: Run `SELECT agent, task, COUNT(*) as cnt FROM (SELECT agent, substr(task, 1, 80) as task FROM sessions WHERE createdAt > '2026-04-09') GROUP BY agent, task ORDER BY cnt DESC LIMIT 30` against `.state/may.db` using `node -e "const db = require('better-sqlite3')('.state/may.db'); ..."` to find the most repeated session tasks.
+2. **Also grep heartbeat files**: `cat agents/*/heartbeat.md` to see what each agent does every cycle that could be automated or simplified.
+3. **Write the analysis** to `agents/may/workspace/repetitive-task-analysis.md` with: (a) top 3 repetitive tasks with frequency data, (b) for each, a concrete automation plan.
+4. **Implement at least one automation** — e.g., a shared shell script, a cron job addition, or a heartbeat simplification. Don't just analyze; ship something.
+
