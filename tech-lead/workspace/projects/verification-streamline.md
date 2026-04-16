@@ -19,3 +19,42 @@ Guards currently treat all file operations equally. Creating a new file and edit
 
 ## Progress Log
 <!-- Append entries as milestones are completed -->
+
+### Iteration 1 — 2026-04-16T12:44:52.432Z
+**Worker task**: Iteration 1 — work toward goal
+**Worker result**: **Status:** done (8m37s)
+
+**Files read (not modified):**
+- src/lib/tools/verification-depth-guard.ts
+- src/lib/tools/verification-depth-guard.test.ts
+- test/finish-guard.test.ts
+- src/lib/tools/finish-guard.ts
+
+**Errors encountered:**
+- [bash] 1 | 
+2 | import{Database}from'bun:sqlite';
+3 | const db=new Database('.state/may.db',{readonly:true});
+4 | // Find sessions where finish was blocked multiple times (FM-3.3 retries)
+5 | const rows = db.query(`
+                    ^
+SQLiteError: no such column: s.id
+      errno: 1,
+ byteOffset: 10,
+
+ 
+
+**Agent response:**
+The guard running in this session is the *old compiled version*, not the one I just edited. The irony. Let me satisfy it with an explicit read:
+**Files touched**: (see worker session)
+**Owner assessment**: CONTINUE — — Iteration 1 produced no deliverables. The worker read guard source files and hit a SQL error, but didn't produce any analysis or code changes.
+
+Next iteration:
+
+1. **Skip DB queries** — the schema doesn't have what you need. Instead, analyze the guard source code directly.
+2. **Read** `src/lib/tools/verification-depth-guard.ts` and `src/lib/tools/finish-guard.ts` — identify specific conditions that cause false positives (FM-3.3 = declaring DONE without sufficient verification).
+3. **Produce a concrete analysis doc** at `agents/may/workspace/guard-friction-analysis.md` with:
+   - Each guard's trigger conditions
+   - Which conditions cause false positives (block legitimate work)
+   - Specific code changes to reduce friction while maintaining safety
+4. **If time permits**, implement the lowest-risk improvement (e.g., better error messages, smarter spot-check detection).
+
