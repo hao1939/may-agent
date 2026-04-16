@@ -671,46 +671,71 @@ WHERE h.created_at > (strftime('%s','now')*1000 - 2592000000) -- last 30 days
 4. **Drill-down query library** — companion doc for each continuous metric
 5. **Op-level instrumentation** (from Optimizer) — `tool_calls` table for deeper efficiency analysis
 
-## Initial Metric Set (Phase 1 seed data)
+## Authoritative Metric Assignments (from Hao, 2026-04-16)
 
-### Auto-measured from DB (`source = 'auto'`)
+### May — System Oversight
+| ID | Type | Threshold |
+|----|------|-----------|
+| `system.request-throughput` | health | - |
+| `system.stuck-requests` | health | < 3 |
+| `system.agent-utilization` | continuous | > 80% |
 
-| ID | Name | Type | Owner | P | Target | Sensitivity |
-|----|------|------|-------|---|--------|-------------|
-| `quality.coder` | Coder quality score | continuous | coach | P1 | 0.90 | 15% |
-| `quality.bob` | Bob quality score | continuous | coach | P1 | 0.90 | 15% |
-| `quality.system` | System avg quality | health | may | P1 | > 0.85 | 10% |
-| `cost.daily` | Daily total cost | health | may | P1 | < $50 | 20% |
-| `gym.pass-rate` | Gym pass rate | continuous | coach | P1 | 70% | 10% |
-| `convention.aggregate` | Convention compliance | health | may | P1 | > 90% | 10% |
-| `health.error-rate` | System error rate | health | may | P0 | < 2% | — |
-| `efficiency.ops-per-session` | Avg ops/session (24h) | continuous | optimizer | P2 | ≤ 25 | 15% |
-| `efficiency.daily-ops` | Total daily ops | health | optimizer | P2 | < 5000 | 20% |
-| `research.experiments-rate` | Experiments completed/week | health | bob | P2 | ≥ 2 | — |
-| `research.hypotheses-concluded` | Hypothesis conclusion rate | continuous | bob | P1 | 80% | 15% |
+### Bob — Architect
+| ID | Type |
+|----|------|
+| `bob.hypotheses-resolved` | continuous |
+| `bob.designs-implemented` | continuous |
+| `bob.experiment-completion` | health |
 
-### Auto-measured from research_log (`source = 'auto'`, requires agents to INSERT)
+### Tech-lead — Engineer
+| ID | Type |
+|----|------|
+| `tech-lead.build-health` | health |
+| `tech-lead.features-shipped` | continuous |
+| `tech-lead.codebase-weight` | continuous |
 
-| ID | Name | Type | Owner | P | Target |
-|----|------|------|-------|---|--------|
-| `research.dd-rate` | Deep dives per week | health | scout | P2 | ≥ 15 |
-| `research.hypothesis-generation` | Hypotheses proposed (30d) | continuous | scout | P2 | ongoing |
+### Coach — Trainer
+| ID | Type |
+|----|------|
+| `coach.quality-improvement` | continuous |
+| `coach.skill-effectiveness` | continuous |
+| `coach.gym-discrimination` | continuous |
 
-### Command-measured (`source = 'command'`)
+### Optimizer — Tool & Workflow Builder
+| ID | Type |
+|----|------|
+| `optimizer.tool-adoption` | continuous |
+| `optimizer.waste-reduction` | continuous |
+| `optimizer.quality-preserved` | health |
 
-| ID | Name | Type | Owner | P | Threshold | Command |
-|----|------|------|-------|---|-----------|---------|
-| `health.tsc-clean` | TypeScript errors | health | tech-lead | P1 | 0 | `tsc --noEmit 2>&1 \| grep -c error \|\| echo 0` |
-| `health.test-pass-rate` | Test pass rate | health | tech-lead | P1 | 100% | *(vitest command TBD)* |
+### Scout — Explorer
+| ID | Type |
+|----|------|
+| `scout.discovery-rate` | health |
+| `scout.findings-used` | continuous |
+| `scout.coverage` | health |
 
-### Manual (`source = 'manual'`)
+### Coder — Builder
+| ID | Type |
+|----|------|
+| `coder.quality` | continuous |
+| `coder.first-pass-rate` | continuous |
 
-| ID | Name | Type | Owner | P | Target | measure_interval |
-|----|------|------|-------|---|--------|-----------------|
-| `ops.prompt-caching` | Enable prompt caching | one-off | tech-lead | P1 | 1 | — |
-| `infra.persistent-task-adoption` | Projects using persistent-task | continuous | tech-lead | P2 | 10 | 168h (weekly) |
-| `skill.effectiveness` | Skills that move quality | continuous | coach | P1 | 60% | 72h |
-| `research.novelty-ratio` | % DDs rated ★★★★+ | continuous | scout | P2 | > 40% | 168h (weekly) |
+### Evaluator — Scorer
+| ID | Type |
+|----|------|
+| `evaluator.calibration` | health |
+| `evaluator.coverage` | health |
+
+### QA — Reviewer
+| ID | Type |
+|----|------|
+| `qa.review-coverage` | health |
+| `qa.false-positive-rate` | continuous |
+
+### Tension Pairs
+- **Bob ↔ Tech-lead:** "What to build" vs "How to build it well"
+- **Coach ↔ Optimizer:** "Agent quality" vs "Agent efficiency"
 
 ## Relationship to Persistent Tasks
 

@@ -27,6 +27,25 @@ Replace scattered tracking (dispatch board, todo.md, ad-hoc queries) with a unif
 3. **Metric approval: May approves P2, Hao approves P0/P1**
 4. **Gym quality: simple proxies** (pass rate, discrimination) — don't over-engineer
 5. **May owns the system**, tech-lead implements the code
+6. **Authoritative metric assignments** — Hao specified exact metric names per agent (2026-04-16)
+
+## Authoritative Metric Assignments (from Hao, 2026-04-16)
+
+| Agent | Metrics | Types |
+|-------|---------|-------|
+| May | `system.request-throughput`, `system.stuck-requests`, `system.agent-utilization` | health, health, continuous |
+| Bob | `bob.hypotheses-resolved`, `bob.designs-implemented`, `bob.experiment-completion` | continuous, continuous, health |
+| Tech-lead | `tech-lead.build-health`, `tech-lead.features-shipped`, `tech-lead.codebase-weight` | health, continuous, continuous |
+| Coach | `coach.quality-improvement`, `coach.skill-effectiveness`, `coach.gym-discrimination` | continuous, continuous, continuous |
+| Optimizer | `optimizer.tool-adoption`, `optimizer.waste-reduction`, `optimizer.quality-preserved` | continuous, continuous, health |
+| Scout | `scout.discovery-rate`, `scout.findings-used`, `scout.coverage` | health, continuous, health |
+| Coder | `coder.quality`, `coder.first-pass-rate` | continuous, continuous |
+| Evaluator | `evaluator.calibration`, `evaluator.coverage` | health, health |
+| QA | `qa.review-coverage`, `qa.false-positive-rate` | health, continuous |
+
+### Tension Pairs
+- **Bob ↔ Tech-lead:** "What to build" vs "How to build it well"
+- **Coach ↔ Optimizer:** "Agent quality" vs "Agent efficiency"
 
 ## Phases
 

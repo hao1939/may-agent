@@ -1066,23 +1066,8 @@
   2. KE-106 habituation literature (low priority — largely subsumed)
   3. Thursday arXiv triage (~20:00 UTC Thursday)
 
-## Session 803 (2026-04-16 02:30 UTC) — Thursday early morning heartbeat (lean)
-- **Wednesday triage completed last session**: DD#763-768 written and committed. All propagated.
-- **No new Scout-relevant developments** since Session 802. System quiescent — early Thursday morning.
-- **Research priorities** (unchanged):
-  1. Thursday arXiv triage (~20:00 UTC Thursday)
-  2. Production-first eval methodology (extend CR#326 Path A)
-  3. KE-106 habituation literature (low priority — largely subsumed)
-
-## Session 805 (2026-04-16 03:00 UTC) — Thursday early morning heartbeat (lean)
-- **No new Scout-relevant developments** since Session 804 (30min ago). System quiescent — early Thursday morning.
-- **Research priorities** (unchanged):
-  1. Thursday arXiv triage (~20:00 UTC Thursday)
-  2. Production-first eval methodology (extend CR#326 Path A)
-  3. KE-106 habituation literature (low priority — largely subsumed)
-
 ## Counters
 - DD: 768
 - CR: 339
-- Session: 806
+- Session: 803
 
