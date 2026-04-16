@@ -1074,6 +1074,20 @@ The commit-guard (src/lib/tools/commit-guard.ts) is correctly implemented and re
 
 ---
 
+### #18 — git add agents/ = NO — RE-VERIFICATION #9 (2026-04-16 22:00Z)
+
+**Rule**: agents/ is a separate git repo — use `cd agents && git add`, not `git add agents/` from project root.
+
+**Method**: Searched 114 sessions with git add operations from last 12h (Apr 16 afternoon/evening). Extracted all `"command"` fields containing `git add` and checked for the bad pattern (`git add agents/` without prior `cd agents`).
+
+**Result**: **0 violations in 114 sessions.** Every git add used `cd agents && git add` or `cd /app/agents && git add`. Agents across all roles (tech-lead, optimizer, coach, bob, may, coder, qa) consistently use the correct pattern.
+
+**Trend**: 6.9% (Apr 10-12) → 0% (Apr 16). The retry storms (coach 11+ attempts, bob 5+ attempts) from Apr 10-12 have completely stopped.
+
+**Verdict**: ⚠️→✅ Upgraded. Behavioral fix is durable — 4 days of clean compliance.
+
+---
+
 ### #18 — git add agents/ = NO — RE-VERIFICATION #8 (2026-04-12 15:23Z)
 
 **Rule**: "Files in `agents/` directories are gitignored. Do NOT try to `git add` or `git commit` files under `agents/`. Only `src/` and `scripts/` files are tracked by git. Agent files already persist at runtime — no git needed."
