@@ -263,6 +263,69 @@ function getSampleSize(db: SqliteDb, sourceQuery: string): number | null {
   }
 }
 
+/**
+ * After recording a snapshot, check if the metric regressed and notify the owner.
+ * Regression = value moved in the wrong direction compared to previous snapshot.
+ * For "below" alert_direction: regression means value dropped below threshold.
+ * For "above" alert_direction: regression means value rose above threshold.
+ * For metrics without thresholds: regression means value moved away from target.
+ */
+function notifyOwnerOnRegression(
+  ctx: HandlerContext,
+  db: SqliteDb,
+  metric: MetricRow,
+  newValue: number,
+): void {
+  try {
+    // Get previous snapshot (the one before the one we just inserted)
+    const prev = db.prepare(
+      `SELECT value FROM metric_snapshots WHERE metric_id = ? ORDER BY measured_at DESC LIMIT 1 OFFSET 1`,
+    ).get(metric.id) as { value: number } | null;
+    if (!prev) return; // First snapshot, nothing to compare
+
+    const oldValue = prev.value;
+    if (oldValue === newValue) return; // No change
+
+    // Determine if this is a regression
+    let regressed = false;
+    let explanation = "";
+
+    if (metric.threshold != null) {
+      // Health metric with threshold
+      const alertAbove = metric.alert_direction === "above";
+      if (alertAbove) {
+        // Bad when value goes above threshold — regressed if new > old AND new > threshold
+        regressed = newValue > metric.threshold && newValue > oldValue;
+        explanation = `threshold: ${metric.threshold}`;
+      } else {
+        // Bad when value drops below threshold — regressed if new < old AND new < threshold
+        regressed = newValue < metric.threshold && newValue < oldValue;
+        explanation = `threshold: ${metric.threshold}`;
+      }
+    } else {
+      // No threshold — regress if moving away from target
+      const oldDist = Math.abs(oldValue - metric.target);
+      const newDist = Math.abs(newValue - metric.target);
+      regressed = newDist > oldDist && newDist > oldDist * 1.05; // 5% tolerance
+      explanation = `target: ${metric.target}`;
+    }
+
+    if (!regressed) return;
+
+    const task = `⚠️ Metric '${metric.name}' regressed: ${oldValue} → ${newValue} (${explanation}). Investigate and fix.`;
+
+    ctx.trackRequest({
+      fromEntity: "metrics-snapshot",
+      toAgent: metric.owner,
+      method: "message",
+      task,
+      source: "metrics-snapshot",
+    });
+  } catch {
+    // Best-effort — don't break snapshot recording
+  }
+}
+
 // ── Factory ───────────────────────────────────────────────────────────
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
@@ -304,6 +367,9 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         db.prepare("UPDATE metrics SET current = ?, updated_at = ? WHERE id = ?").run(value, now, m.id);
 
         autoMeasured++;
+
+        // Check for regression and notify owner
+        notifyOwnerOnRegression(ctx, db, m, value);
 
         // Check one-off completion
         if (m.type === "one-off" && value >= 1) {
@@ -353,6 +419,9 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         db.prepare("UPDATE metrics SET current = ?, updated_at = ? WHERE id = ?").run(value, now, m.id);
 
         cmdMeasured++;
+
+        // Check for regression and notify owner
+        notifyOwnerOnRegression(ctx, db, m, value);
 
         // Check health threshold
         if (checkThresholdAlert(db, m, value, now)) alertsFired++;
