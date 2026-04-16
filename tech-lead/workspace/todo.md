@@ -335,7 +335,8 @@
 - 2026-04-15 22:30: **P1 req:e01d5d20 closed** — workflow error rate investigation already done (s_1776290567108_147). Deliverable at agents/may/workspace/audits/wf-error-rate-analysis.md. Closed CREATED→COMPLETED.
 - 2026-04-15 22:30: **Infra**: Lens D — research-db.ts fragility audit (401 LOC). COMPLETE (9 ops, ~1.5min): 5 findings. Key: fail-open try-catch swallows ALL errors silently (no logging), syncAll() is non-transactional (partial writes on crash), no SQL injection risk (parameterized), no concurrent access guard. See workspace/finding-research-db-ts-fragility-audit-401-loc.md
 - 2026-04-16 06:53: **P0 Incident Response**: Recovered force-deleted `review/metric-tension-pairs` branch (2f11dc15). Reviewed May's branch-safety-protocol.md — adopted Fix 1 (never `git branch -D` on others' branches) as permanent behavioral rule. tsc issue (req:b9f54c86) already resolved in prior session.
-- **Next**: Lens A next cycle. **Cycle type**: feature (if dispatch board has items) else infra.
+- 2026-04-16 07:30: **Infra**: Lens A — requests.ts architecture review (863 LOC). COMPLETE: 6+ responsibilities in one module, medium severity. See workspace/finding-requests-ts-architecture-review-863-loc.md
+- **Next**: Lens B next cycle. **Cycle type**: feature (if dispatch board has items) else infra.
 
 ## Low-Priority Cleanup
 - [x] Phase 5d: Deprecate memory fallback — DONE (s_1775527469736_184, commit 34263ca)
