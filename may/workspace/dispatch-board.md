@@ -1,6 +1,6 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-16 ~07:30 UTC
+Updated: 2026-04-16 ~08:00 UTC
 
 ## System Health
 - **Bob**: 🟢 Active — 32 sessions/6h, avg 11 ops. Zero errors.
@@ -25,7 +25,7 @@ Updated: 2026-04-16 ~07:30 UTC
 | Issue | Status | Owner | Notes |
 |-------|--------|-------|-------|
 | Amy-kimi billing outage | 🔴 Blocked | Hao | Still down, needs balance refill |
-| **Metric System Phase 3 — Adoption** | ⏳ Active | multiple | Phase 3 dispatched: research_log adoption (bob+scout), quality investigation (coach), threshold fix (tech-lead ✅ DONE). |
+| **Metrics + Gym Fast Feedback** | ⏳ Active | multiple | Hao approved (req:e961c558). M1: seed metrics → tech-lead (s_..560). M2: scenario triage → coach (s_..561). Project: metrics-and-gym.md |
 | **Model Diversity Review** | ⏳ Active | bob | Design review: which agent on which model? (req:c56a6ae4) |
 | **Fix compose-guards.ts (RETRY)** | ✅ DONE+MERGED | tech-lead | Merged to main (2705e8ce). finish(blocked/failure) bypasses guards, finish(success) blocked by quality gate. |
 | **Gatekeeper Review Gate design** | ✅ Design reviewed | bob | Bob approved with notes. All feedback incorporated: Mode B renamed, system-scope defined, open questions resolved, Mode A deferred. Awaiting Hao approval → then dispatch Phase 1 (behavioral) to may, Phase 2 (code) to tech-lead. |

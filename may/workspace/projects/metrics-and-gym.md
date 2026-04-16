@@ -1,19 +1,25 @@
-# Task: Metrics + Gym Fast Feedback
+# Metrics + Gym Fast Feedback — Project Tracker
 
-**Status**: active
-**Owner**: may
-**Started**: 2026-04-16
+**Created:** 2026-04-16  
+**Approved by:** Hao (req:e961c558)  
+**Design:** agents/shared/may-agent-docs/design/metric-tension-pairs.md
 
 ## Milestones
-- [x] M1: Seed role-aligned metrics (tech-lead) — 25 metrics in may.db, done 2026-04-16
-- [ ] M2: Scenario triage (coach) — run baseline on 295 scenarios, tag/triage to ~100
-- [ ] M3: Coach fast loop pilot (coach) — one A/B cycle proving gym→metric loop
-- [ ] M4: Optimizer pre-deploy gate (optimizer)
-- [ ] M5: Scout scenario creation (scout + coder)
-- [ ] M6: Agent heartbeat integration (all)
 
-## Notes
-- M2+M3 can overlap (M3 starts once M2 identifies candidate scenarios)
-- M4+M5 can overlap
-- M6 is ongoing adoption after M1-M5
-- Supersedes metric-system.md (which tracked Phase 1-3 of the old metric system)
+### M1: Seed Role-Aligned Metrics — tech-lead
+- **Status:** ⏳ Dispatched
+- **Scope:** Implement the 25 metrics from the design into the metric system DB tables. Wire fast metrics to heartbeat snapshots.
+- **Design ref:** metric-tension-pairs.md Part 1
+
+### M2: Scenario Triage — coach  
+- **Status:** ⏳ Dispatched
+- **Scope:** Baseline 295 gym scenarios. Tag each by discrimination power and role relevance. Identify which scenarios give fast feedback for which metrics.
+- **Design ref:** metric-tension-pairs.md Part 2
+
+### M3: Wire Gym → Metrics (future)
+- **Status:** Not started
+- **Scope:** Connect gym results to metric updates. 20-min validation loops.
+
+### M4: Dashboard + Alerts (future)
+- **Status:** Not started
+- **Scope:** Surface metrics in system_status, heartbeat injection, threshold alerts.
