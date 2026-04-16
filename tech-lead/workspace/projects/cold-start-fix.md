@@ -57,3 +57,37 @@ tsc clean (no errors), 8/8 tests pass.
 **Files touched**: (see worker session)
 **Owner assessment**: DONE — — Milestone 2 ("Diff since last session" tool) is fully implemented. `src/lib/session-diff.ts` provides `getSessionDiff()` and `formatSessionDiff()` with git file changes, completed/new requests, and recent sessions since a timestamp. Supports agent filtering and limits. 8/8 tests pass, tsc clean. Clean, well-structured code. Next step would be integrating this into session startup (wiring it into manager.ts to inject the diff into agent context).
 
+
+### Iteration 3 — 2026-04-16T12:33:46.703Z
+**Worker task**: Iteration 3 — work toward goal
+**Worker result**: **Status:** done (2m35s)
+
+**Files modified:**
+- /app/scripts/split-todo.ts
+
+**Files read (not modified):**
+- /app/agents/scout/workspace/todo.md
+- /app/agents/coach/workspace/todo.md
+- /app/agents/tech-lead/workspace/todo.md
+
+**Agent response:**
+tsc clean. Let me verify the line counts show real improvement:
+**Files touched**: (see worker session)
+**Owner assessment**: CONTINUE — — The worker created `scripts/split-todo.ts` but didn't actually run it to split the todo files. The milestone goal is "Split bloated todo.md files" — we need the actual splitting done, not just a script. Next iteration:
+
+1. Run the split script against all agent todo.md files: `bun scripts/split-todo.ts`
+2. Verify the output — each agent should have a lean active-priorities file separate from historical log
+3. Ensure agents' heartbeat/startup reads the new lean file instead of the full todo.md (or that todo.md itself is now slim)
+4. Show before/after line counts as evidence of reduction
+
+
+### Iteration 4 — 2026-04-16T12:35:35.131Z
+**Worker task**: Iteration 4 — work toward goal
+**Worker result**: **Status:** done (1m35s)
+
+**Files read (not modified):**
+- /app/scripts/split-todo.ts
+
+**Agent response:**
+Hmm, tech-lead says "17 completed/historical sections" but earlier output said 1 section. That's because it was already split before (bob has an archive too). The reference link is there. All good.
+**Files touched**: (see worker session)
