@@ -125,3 +125,52 @@ Now commit in the agents repo:
 **Files touched**: (see worker session)
 **Owner assessment**: CONTINUE — auto (review skipped)
 
+
+### Iteration 2 — 2026-04-16T18:11:34.214Z
+**Worker task**: Iteration 2 — work toward goal
+**Worker result**: **Status:** done (2m36s)
+
+**Files modified:**
+- agents/shared/scripts/commit-and-merge.sh
+
+**Files read (not modified):**
+- agents/may/handlers/review-auto-merge.ts
+- agents/may/workspace/projects/review-branch-merge.md
+
+**Errors encountered:**
+- [bash] (no output)
+
+Command exited with code 1
+- [bash] (no output)
+
+Command exited with code 2
+- [bash] The following paths are ignored by one of your .gitignore files:
+shared/scripts
+hint: Use -f if you really want to add them.
+hint: Turn this message off by running
+hint: "git config advice.addIgnoredFile false"
+
+
+Command exited with code 1
+- [bash] On branch main
+Your branch is ahead of 'k3s/main' by 60 commits.
+  (use "git push" to publish your local commits)
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   coder/la
+
+**Agent response:**
+The persistent-task.ts wasn't staged properly — it seems clean now. Only coder/last-session.md is dirty (not mine).
+**Files touched**: persistent-task.ts, coder/last-session.md
+**Owner assessment**: CONTINUE — — 0/5 milestones complete. Iteration 2 had multiple errors (gitignore blocking `shared/scripts`, failed commits). The worker is struggling with approach.
+
+**Guidance for next iteration:**
+
+1. **M1 first**: Create `commitAndMerge()` in `agents/shared/lib/git-utils.ts` (not a shell script — the milestone says TypeScript). It should: create a review branch, commit, merge to main, delete the branch. Check if `shared/lib/` exists; if not, create it.
+
+2. **Fix the gitignore issue**: Run `cat agents/.gitignore` to see what's blocking. Either adjust the ignore pattern or use `git add -f`.
+
+3. **Don't try to do all 5 milestones at once** — focus on M1 (the utility function) and M2 (integrate into persistent-task.ts). Get those committed before moving on.
+
