@@ -191,10 +191,14 @@ import {
   createStuckDetector,
   createAutoResume,
   createDigestWriter,
+  createLastSessionWriter,
+  createFileReadTracker,
 } from "../lib/session-subscribers.js";
 bus.subscribe(createContextUpdater(PROJECT_ROOT));
 bus.subscribe(createRequestTracker(PERSIST_DIR));
 bus.subscribe(createDigestWriter(PERSIST_DIR));
+bus.subscribe(createLastSessionWriter(PROJECT_ROOT));
+bus.subscribe(createFileReadTracker(PERSIST_DIR));
 bus.subscribe(createStuckDetector(
   (sessionId, _reason) => {
     bus.emit({ type: "cancel", sessionId } as any);
