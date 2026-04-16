@@ -679,6 +679,52 @@ export class Cron {
           // Non-fatal: fall back silently if DB unavailable
         }
 
+        // Inject owned metrics for this agent
+        try {
+          const db = getDb(this.persistDir);
+          const tableCheck = db
+            .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='metrics'")
+            .get();
+          if (tableCheck) {
+            const metrics = db
+              .prepare(
+                `SELECT m.name, m.current, m.target, m.unit, m.type, m.status, m.threshold, m.speed,
+                        s.value as last_value, s.measured_at
+                 FROM metrics m
+                 LEFT JOIN metric_snapshots s ON m.id = s.metric_id
+                   AND s.measured_at = (SELECT MAX(measured_at) FROM metric_snapshots WHERE metric_id = m.id)
+                 WHERE m.owner = ? AND m.status = 'active'
+                 ORDER BY CASE m.speed WHEN 'fast' THEN 0 WHEN 'daily' THEN 1 ELSE 2 END, m.type, m.name`,
+              )
+              .all(agentName) as {
+              name: string; current: number | null; target: number | null; unit: string | null;
+              type: string; status: string; threshold: number | null; speed: string;
+              last_value: number | null; measured_at: number | null;
+            }[];
+            if (metrics.length > 0) {
+              const lines = metrics.map((m) => {
+                const val = m.current != null ? `${m.current}` : "unmeasured";
+                const unit = m.unit ? ` ${m.unit}` : "";
+                const tgt = m.target != null ? ` → target: ${m.target}` : "";
+                const warn =
+                  m.type === "health" && m.threshold != null && m.current != null && m.current < m.threshold
+                    ? " ⚠️ BELOW THRESHOLD"
+                    : "";
+                return `- [${m.speed}] **${m.name}**: ${val}${unit}${tgt}${warn}`;
+              });
+              const redCount = metrics.filter(
+                (m) => m.type === "health" && m.threshold != null && m.current != null && m.current < m.threshold,
+              ).length;
+              const header = redCount > 0
+                ? `## Injected: metrics (${metrics.length} owned, ${redCount} ⚠️ RED)\n\n**${redCount} metric(s) below threshold — these are your top priority this cycle.**`
+                : `## Injected: metrics (${metrics.length} owned)`;
+              injections.push(`${header}\n\n${lines.join("\n")}`);
+            }
+          }
+        } catch {
+          // Non-fatal
+        }
+
         // common-sense.md is now loaded in the system prompt (manager.ts resolveSystemPrompt)
         // instead of here, so Anthropic prompt caching can cache it across sessions.
 
