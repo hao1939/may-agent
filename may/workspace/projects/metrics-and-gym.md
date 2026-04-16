@@ -16,8 +16,9 @@
 - **Deliverable:** agents/gym/TRIAGE.md
 
 ### M3: Coach Fast Loop Pilot — coach
-- **Status:** ⏳ Dispatching now
-- **Scope:** Pick one low-pass scenario, design intervention, run 10-trial A/B, record as coach.intervention-hit-rate snapshot.
+- **Status:** ✅ Done (2026-04-16)
+- **Result:** A/B on read-before-edit: 50%→70% (+20pp). C1 failures eliminated. Metric snapshot #258 recorded.
+- **Deliverable:** agents/coach/workspace/fast-loop-pilot.md
 
 ### M4: Optimizer Pre-deploy Gate — optimizer
 - **Status:** ✅ Done (2026-04-16)
@@ -25,9 +26,9 @@
 - **Deliverable:** agents/optimizer/workspace/pre-deploy-battery.md
 
 ### M5: Scout Scenario Creation — scout + coder
-- **Status:** ⏳ Dispatching now
-- **Scope:** Create 10 scout-specific gym scenarios (paper eval, synthesis, hypothesis, duplicate detection).
+- **Status:** ✅ Done (2026-04-16)
+- **Result:** 20 scout-specific scenarios created (2x target). Covers: paper eval, synthesis, hypothesis, dedup, credibility, prioritization, coverage, literature gaps.
 
 ### M6: Agent Heartbeat Integration — all
-- **Status:** Not started
+- **Status:** ⏳ Dispatched to tech-lead (s_1776334501697_0)
 - **Scope:** Each agent queries their metrics in heartbeat. Fast=every heartbeat, medium=daily, slow=weekly.
