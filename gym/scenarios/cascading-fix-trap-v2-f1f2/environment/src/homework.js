@@ -29,7 +29,7 @@ function aggregateHomework(records) {
     const kept = sorted.slice(policy.drop_lowest_hw);
 
     // Average the kept percentages
-    const sum = kept.reduce((acc, r) => acc + r.pct, 0);
+    const sum = kept.reduce((acc, r) => acc + (r.adjusted_pct !== undefined ? r.adjusted_pct : r.pct), 0);
     const avg = sum / kept.length;
 
     result[sid] = {
