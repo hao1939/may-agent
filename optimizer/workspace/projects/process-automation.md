@@ -99,3 +99,11 @@ Command exited with code 1
 **Agent response:**
 Now verify the edit stuck:
 **Files touched**: (see worker session)
+**Owner assessment**: DONE — — Good work across 3 iterations. Deliverables:
+
+1. **Analysis** (`agents/may/workspace/repetitive-task-analysis.md`): Data-driven identification of top 3 budget wastes — echo/probe sessions (148 ops), evaluator JSON retries (371 ops), coach reflect frequency (12,300 ops).
+2. **Shell script** (`agents/shared/scripts/extract-json-scores.sh`): JSON extraction helper for evaluator output.
+3. **Code fix** (`src/lib/evaluator.ts`): Added bare-JSON fallback regex to `parseTaskEvaluation` so evaluator responses without ```json fencing are still parsed — directly addresses the 53 retry sessions/week.
+
+The evaluator.ts change is the highest-value item — small, targeted, and reduces real retry waste. The analysis doc provides a roadmap for the other two automations (probe filtering, coach staleness check).
+
