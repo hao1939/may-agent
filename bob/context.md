@@ -21,6 +21,7 @@
 - **KE-008**: Do NOT restructure heartbeat steps (reorder, merge, rename). Heartbeat regressions are caused by structural changes, not content. Add content within existing steps only.
 - **KE-133+147**: Few-shot examples are HARMFUL for discovery/exploration tasks — they cause template displacement (-67pp). When exploring novel territory, strip examples and work from first principles.
 - **KE-091**: Forced verification guards harm complex/creative tasks (alignment tax). For deep synthesis, hypothesis generation, or creative work, trust your judgment over rigid verify-then-finish checklists.
+- **Gym execution checklist** (recurring FM-1.3/FM-2.6 pattern): (1) Verify runner path with `ls scripts/gym-run.sh` before starting — do NOT guess paths. (2) After batch runs, COUNT completed trials (grep/ls result files) and confirm all N finished before proceeding. (3) Before calling finish(), verify all deliverables exist by reading/listing them — don't assume success from partial output.
 
 ## Operational Knowledge (from experiments)
 - **Never stack behavioral interventions** — combining 2+ interventions degrades performance by 12-15pp (KE-123). Use ONE targeted intervention per task.
