@@ -1,50 +1,69 @@
-# Finding: Tool Gap Analysis — 6h Bash Pattern Scan (Apr 16 afternoon)
+# Tool Gap Analysis — Bash Pattern Scan
+**Date**: 2026-04-16  
+**Mode**: B (Tool Gap Analysis)  
+**Window**: 6h sessions + recent transcripts (17 sessions, ~1800 transcript lines analyzed)
 
-**Date**: 2026-04-16 15:00 UTC  
-**Scope**: Sessions from last 6h (since ~09:00 UTC), opCount > 5, non-may agents  
-**Method**: Queried sessions DB, reviewed op counts and waste metrics
+## Method
+Extracted bash tool calls from all sessions with local transcripts (17 sessions with >50 lines). Sorted by frequency and identified multi-step patterns appearing 3+ times.
 
-## Sessions Analyzed
+## Top Repeated Bash Patterns
 
-| Agent | OpCount | Productive | Wasted | Task Summary |
-|-------|---------|-----------|--------|-------------|
-| optimizer | 289 | 250 | 0 | Heartbeat work session |
-| tech-lead | 272 | 314 | 1 | Guards-v2 Phase 1 implementation |
-| coach | 252 | 298 | 1 | EXP-070 Phase 2 |
-| tech-lead | 202 | 228 | 10 | Heartbeat |
-| coach | 188 | 215 | 0 | EXP-117 investigation |
-| bob | 187 | 0 | 0 | Scenario gap-fill |
-| coach | 184 | 196 | 1 | Training resume |
-| tech-lead | 182 | 245 | 1 | Fix broken evaluator |
-| optimizer | 176 | 233 | 0 | Optimization analysis |
-| coach | 166 | 183 | 1 | EXP-123 investigation |
+### 1. PATH Setup Boilerplate (228 occurrences)
+```bash
+export PATH=".state/.bun/bin:$PATH"
+```
+**Every** bun -e call requires this prefix. It's pure waste — injected into context.md but agents still prepend it manually to each bash call.
 
-**Total**: ~2,098 ops across top 10 sessions. Waste rate: 15/2098 = **0.7%** — extremely low.
+**Fix**: The harness could auto-prepend PATH to bash environments, or bun could be symlinked to /usr/local/bin at startup.
 
-## Key Finding: No New Tool Gaps
+### 2. Git Add/Commit Retry Chains (12+ occurrences across sessions)
+Pattern: agents try `git add -A && git commit`, it fails (nothing to commit, wrong dir, file not tracked), then retry with `git add -f`, then `git add specific-file`. One session (s_1776336175530_25) had **5 consecutive git commit attempts** for the same file.
 
-The last 6h shows near-zero waste. Previous analyses (Apr 15 evening, Apr 16 early) identified three recurring patterns:
+Example chain:
+```
+git add -A && git commit -m "..."      → fails (nothing to commit)
+git add agents/may/... && git commit   → fails (pathspec error)
+git add may/... && git commit          → fails (not in agents/ dir)
+git add -f may/... && git commit       → succeeds
+```
 
-1. **PATH setup boilerplate** (`export PATH=".state/.bun/bin:$PATH"`) — still unaddressed in infrastructure
-2. **DB query boilerplate** (long `bun -e "import{Database}..."` one-liners) — still unaddressed
-3. **`cd /app` prefix** — unnecessary since cwd is always /app
+**Fix**: A `commit-agents.sh <message>` script that: (1) cds to agents/, (2) does git add -A, (3) checks if anything staged, (4) commits. Would save 2-4 ops per commit cycle.
 
-### Status of Prior Recommendations
+### 3. DB Path/Schema Discovery (8+ occurrences)
+Agents repeatedly discover:
+- Where may.db lives (try `may.db`, `agents/may.db`, `agents/.state/may.db`, `.state/may.db`)
+- What columns exist (`PRAGMA table_info(...)`)
+- How to import bun:sqlite
 
-| Recommendation | Status | Impact if Fixed |
-|---------------|--------|----------------|
-| Add `.state/.bun/bin` to session PATH automatically | ❌ Not implemented | Saves ~1 op/session across all agents |
-| Create `scripts/db-query.sh` wrapper | ❌ Not implemented | Saves boilerplate in ~30% of sessions |
-| Document cwd is always `/app` | ❌ Not implemented | Minor — agents mostly know this now |
+Despite being in context.md, agents still spend 2-3 turns finding the DB.
 
-### Why Waste Is So Low
+**Fix**: Already mitigated by context.md injection. Low additional value from tooling.
 
-The system is mature. High-op sessions (200-290 ops) are doing real work (implementing guards, running experiments, fixing evaluator). The waste that exists (tech-lead 10 wasted in heartbeat) is typical heartbeat overhead, not tool gaps.
+### 4. File Discovery grep chains (15+ occurrences)
+```bash
+grep -r "pattern" src/ --include="*.ts" -l
+find . -name "*.ts" -path "*/db*"
+grep -rl "metric" src/ --include="*.ts"
+```
+Agents do 3-5 grep/find calls to locate relevant files before reading them.
+
+**Fix**: `scripts/code-search.sh` already exists but agents don't always use it. Low-priority.
+
+### 5. Multi-file Status Check (5+ occurrences)
+```bash
+for f in agents/*/heartbeat.md; do echo "=== $f ==="; grep "pattern" "$f"; done
+find agents/*/workspace/projects/*.md | while read f; do grep "Status" "$f"; done
+```
+
+**Fix**: Low priority — these are contextual one-offs.
+
+## Highest-Impact Recommendations
+
+| Priority | Pattern | Wasted Ops/Session | Fix |
+|----------|---------|-------------------|-----|
+| **P1** | Git commit retry chains | 2-4 ops | `scripts/commit-agents.sh` |
+| **P2** | PATH boilerplate | 0.5 ops (overhead per call) | Symlink bun to standard path |
+| **P0** | — | — | No critical gaps found |
 
 ## Conclusion
-
-**No new tool gaps identified.** The three previously-identified patterns remain the only actionable items. Given the 0.7% waste rate, the ROI of building new tools is minimal. The biggest remaining win is the automatic PATH setup, which would save ~1 redundant bash call per session across hundreds of sessions/day.
-
-## Recommendation
-
-Implement the PATH fix (highest ROI of the three). The other two are nice-to-haves. No new scripting/tooling investment warranted at this time.
+The biggest automated opportunity is **git commit chains** — agents waste 2-4 ops per commit due to wrong directory, wrong add flags, and nothing-to-commit false starts. A single `commit-agents.sh` script would eliminate this. Other patterns are already partially mitigated by context.md injection. No critical tool gaps found — the system's tooling is reasonably mature.
