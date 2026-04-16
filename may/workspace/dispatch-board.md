@@ -3,7 +3,7 @@
 Updated: 2026-04-15 ~22:00 UTC
 
 ## System Health
-- **Amy-kimi**: 🔴 DOWN — billing. Blocked on Hao.
+- **Amy-kimi**: 🟢 Active — 49 sessions/6h, avg 12 ops. Zero errors.
 - **Bob**: 🟢 Active — 33 sessions/6h, avg 13 ops. Zero errors.
 - **Coach**: 🟢 Active — 23 sessions/6h, avg 20 ops. Zero errors.
 - **Scout**: 🟢 Active — 14 sessions/6h, avg 13 ops. Zero errors.
