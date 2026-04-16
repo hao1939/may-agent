@@ -1,7 +1,7 @@
 # EXP-171: Moderate Hints + F2 Workflow on Cascading Bugs
 
 **Date**: 2026-04-16
-**Status**: Running
+**Status**: Complete
 **Scenario**: cascading-fix-trap-v2 (0% baseline)
 **Parent**: EXP-168 (F1 dose-response)
 
