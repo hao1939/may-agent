@@ -1,20 +1,21 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776378715694_144
+- **Session:** s_1776378722127_145
 - **Status:** done
-- **When:** 2026-04-16T22:32:02.124Z
-- **Duration:** 6s
+- **When:** 2026-04-16T22:32:09.696Z
+- **Duration:** 7s
 
 ## What Happened
 ```json
 {
   "agents": {
-    "bob": {
-      "role": "Researcher",
+    "may": {
+      "role": "Supervisor",
       "capability_level": "L2",
-      "efficiency": 0.88,
-      "quality": 0.55,
-      "verdict": "acceptable",
+      "efficiency": 0.35,
+      "quality": 0.25,
+      "verdict": "needs_improvement",
       "issues": [
-        "[ORDER-001/002 tension] Heartbeat produced no dispatch and no artifact; concluded 'nothing to dispatch' despite todo.md containing at least one actionable medium item ('Scenario Gap-Fill: sql-injection (33%) is ready for intervention experiments'). This is a judgment miss on what counts as dispa
+        "[ORDER-004 violation] Heartbeat prompt included an explicit op budget ('≤12 ops per heartbeat'), which is disallowed by Standing Order ORDER-004. May did not correct/escalate this and proceeded under the constraint.",
+        "[WORKFLOW NONCOMPLIANCE] Heartbeat.md explicitly instructs: 'B
