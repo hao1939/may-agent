@@ -91,3 +91,4 @@ tsc clean. Let me verify the line counts show real improvement:
 **Agent response:**
 Hmm, tech-lead says "17 completed/historical sections" but earlier output said 1 section. That's because it was already split before (bob has an archive too). The reference link is there. All good.
 **Files touched**: (see worker session)
+**Owner assessment**: CONTINUE — Split done for 4 agents. Now focus on Milestone 4: pre-computed context injection — wire session-diff and last-session into manager.ts so agents get startup context automatically.
