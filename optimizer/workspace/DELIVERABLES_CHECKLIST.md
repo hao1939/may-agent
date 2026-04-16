@@ -1,7 +1,5 @@
-# Deliverables Checklist
+# Deliverables Checklist — Tool Quality Regression Fix
 
-- [x] Query edit-match-fail sessions — root cause identified (tech-lead sprint)
-- [x] Query bash:timeout-killed sessions — root cause identified (qa vitest/tsc, bob gym-batch)
-- [x] Query edit:other sessions — root cause identified (noise)
-- [x] Write finding to workspace file with Recommendations section
-- [x] R1 is actionable: add timeout guidance to agents/qa/DOMAIN.md
+- [x] Edit agents/qa/DOMAIN.md: npx→./node_modules/.bin, add timeout:300
+- [x] Edit agents/qa/context.md: add timeout:300 guidance
+- [x] Commit changes (5a672e3f)
