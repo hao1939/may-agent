@@ -1584,3 +1584,26 @@ Production multi-agent data management system with "three-track knowledge archit
 ### LARFT: Closing the Cognition-Action Gap for Length IF — arXiv:2603.19255
 
 | 2603.19255 | LARFT: Closing the Cognition-Action Gap for Length Instruction Following (Mar 2026) | ★★★☆ GOOD — **Cross-referenced with H-098.** "Cognition-action gap" = another name for Channel 1 failure. Models understand constraints but fail to implement them during generation. Supports H-098's mechanism from a different domain. (ref: literature-grounding-H098-H099.md) |
+
+### Wednesday April 16 Triage (Session 804)
+
+| ID | Title | Assessment |
+|----|-------|------------|
+| 2604.11840 | When Reasoning Models Hurt Behavioral Simulation: Solver-Sampler Mismatch (Apr 2026) | ★★★★★ ESSENTIAL — **DD#769.** Stronger reasoning collapses behavioral diversity in multi-agent negotiation. GPT-5.2 native: 45/45 authority decisions, zero compromise. Bounded reflection recovers diversity. "Solver-sampler mismatch" is a fundamental tension. Connects to CIVC, intervention architecture. |
+| 2604.13759 | Cognitive Companion: Parallel Monitoring for Reasoning Degradation (Apr 2026) | ★★★★½ — **DD#770.** Hidden-state probes detect reasoning degradation (looping, drift) at zero overhead. AUROC 0.840. Task-type dependent: helps on loop-prone tasks, hurts on structured ones. Directly relevant to FM-3.3 verification collapse. |
+| 2604.13052 | Form Without Function: Agent Social Behavior in Moltbook (Mar 2026) | ★★★★½ — **DD#771.** 1.3M-post all-agent social network: 3.3% reciprocity, 91% authors never return to threads, soft guidance ignored. "Form reproduced, function absent." Validates KE-026 (pull-model dead), hard constraints > soft guidance. |
+| 2604.13705 | Beyond Arrow's Impossibility: Fairness as Emergent Multi-Agent Property (Apr 2026) | ★★★★ — **DD#772.** Neither agent fair alone; joint allocation satisfies fairness. Contestation > override. System-level evaluation principle. |
+| 2603.13417 | Bridging Protocol and Production: MCP Design Patterns (Mar 2026) | ★★★★ — **DD#773.** Three missing MCP primitives: identity propagation, adaptive tool budgeting, structured error recovery. Enterprise field lessons. |
+| 2604.12213 | Modality-Native Routing in A2A Networks (Apr 2026) | ★★★½ — Multimodal routing in agent-to-agent networks. +20pp accuracy over text-bottleneck, but only with capable reasoning agents. Routing as first-order design variable. |
+| 2604.13151 | Exploration and Exploitation Errors Are Measurable for LM Agents (Apr 2026) | ★★★½ — Controllable environments + metrics to quantify explore/exploit errors from agent actions without policy access. Reasoning models do better. |
+| 2604.13472 | CMAT: Latent Consensus for Order-Independent Multi-Agent Transformer (Apr 2026) | ★★★½ — Bridges MARL to SARL via hierarchical consensus vector. Avoids action-generation order sensitivity. |
+| 2604.13699 | MIND: AI Co-Scientist for Materials Research (Apr 2026) | ★★★ — Multi-agent pipeline for automated hypothesis validation in materials science. Debate-based validation + in-silico experiments. |
+| 2604.13098 | C2T: LLM Common-Sense Reward for Traffic Coordination (Apr 2026) | ★★★ — Distills LLM common sense into MARL reward for traffic light + CAV coordination. CVPR 2026. |
+| 2604.13128 | Learning Probabilistic Responsibility Allocations (Apr 2026) | ★★½ — Learns responsibility distributions in multi-agent driving. Interesting formulation but domain-specific. |
+| 2604.13914 | ANAC 2025 Competition Results (Apr 2026) | ★★ — Competition summary, not novel research. |
+| 2604.13103 | Fairness in MAS for Software Engineering (Apr 2026) | ★★½ — Rapid review of fairness in MAS. Finds evaluation practices fragmented. |
+| 2604.13488 | LAMO: Scalable Lightweight GUI Agents via Multi-role Orchestration (Apr 2026) | ★★★ — 3B model with role-based orchestration for GUI automation. Plug-and-play executor. ACL 2026. |
+| 2604.13757 | Tri-Spirit: Three-Layer Cognitive Architecture for Autonomous Agents (Apr 2026) | ★★★ — Planning/reasoning/execution decomposition across hardware. 75.6% latency reduction. Interesting architectural idea. |
+| 2604.13206 | Numerical Instability and Chaos in LLMs (Apr 2026) | ★★★ — Rounding errors in transformers create chaotic avalanche effects. Three regimes: stable, chaotic, signal-dominated. |
+| 2604.13504 | Chain of Uncertain Rewards with LLMs for RL (Apr 2026) | ★★½ — Reward function design via LLM + Bayesian optimization. Domain-specific (robotics). |
+| 2604.13318 | WebXSkill: Executable Skills for Web Agents (Apr 2026) | ★★★ — Bridges textual and code skills with parameterized programs + NL guidance. +9.8pp on WebArena. |
