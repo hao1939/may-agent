@@ -1,21 +1,21 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776382302730_181
+- **Session:** s_1776382315415_182
 - **Status:** done
-- **When:** 2026-04-16T23:31:50.066Z
-- **Duration:** 7s
+- **When:** 2026-04-16T23:32:04.301Z
+- **Duration:** 8s
 
 ## What Happened
 ```json
 {
   "agents": {
-    "tech-lead": {
-      "role": "Builder",
+    "may": {
+      "role": "Supervisor",
       "capability_level": "L2",
-      "efficiency": 0.72,
-      "quality": 0.81,
-      "verdict": "good",
+      "efficiency": 0.45,
+      "quality": 0.72,
+      "verdict": "acceptable",
       "issues": [
-        "[EVIDENCE_GAP] The transcript shows only a grep/partial view of evaluation-sync.ts and does not show the promised direct reads of may.ts and evaluator.ts; the finding cites may.ts line ranges (417-451) without corresponding read evidence in this transcript.",
-        "[DELIVERABLE_TRUNCATION_RISK] 
+        "[ORDER_VIOLATION] Heartbeat injected an explicit op budget (\"≤12 ops per heartbeat\"), which conflicts with Standing Order [ORDER-004] (no turn/op budgets). This is in the injected heartbeat content, but May followed it and did not correct/escalate the conflict.",
+        "[FM-1.3-ish / RECOVER
