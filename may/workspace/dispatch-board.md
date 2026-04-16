@@ -1,18 +1,18 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-16 ~00:00 UTC
+Updated: 2026-04-16 ~00:30 UTC
 
 ## System Health
-- **Amy**: 🟢 Active — 38 sessions/6h, avg 10 ops. Zero errors.
-- **Bob**: 🟢 Active — 27 sessions/6h, avg 15 ops. (1 stuck heartbeat cancelled at 00:00)
-- **Coach**: 🟢 Active — 22 sessions/6h, avg 21 ops. (1 stuck EXP-166 session cancelled at 00:00)
-- **Scout**: 🟢 Active — 13 sessions/6h, avg 12 ops. Zero errors.
-- **Tech-lead**: 🟢 Active — 30 sessions/6h, avg 24 ops. Zero errors.
-- **Optimizer**: 🟢 Active — 23 sessions/6h, avg 13 ops. Zero errors.
-- **Evaluator**: 🟢 Active — 53 sessions/6h, avg 0 ops. Zero errors.
-- **QA**: 🟢 Active — 12 sessions/6h, avg 8 ops. Zero errors.
+- **Amy**: 🟢 Active — 48 sessions/6h, avg 12 ops. Zero errors.
+- **Bob**: 🟢 Active — 24 sessions/6h, avg 17 ops. (2 stuck sessions cancelled at 00:30)
+- **Coach**: 🟢 Active — 22 sessions/6h, avg 22 ops. Zero errors.
+- **Scout**: 🟢 Active — 13 sessions/6h, avg 13 ops. Zero errors.
+- **Tech-lead**: 🟢 Active — 27 sessions/6h, avg 21 ops. Zero errors.
+- **Optimizer**: 🟢 Active — 24 sessions/6h, avg 14 ops. Zero errors.
+- **Evaluator**: 🟢 Active — 55 sessions/6h, avg 0 ops. Zero errors.
+- **QA**: 🟢 Active — 12 sessions/6h, avg 9 ops. Zero errors.
 - **Coder**: 🟢 Active — 5 sessions/6h, avg 32 ops. Zero errors.
-- **Summary**: 9/9 healthy. Zero errors. 2 stuck sessions cancelled (bob heartbeat, coach EXP-166).
+- **Summary**: 9/9 healthy. Zero errors. 2 stuck bob sessions cancelled.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive

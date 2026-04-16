@@ -16,38 +16,45 @@ const products = [
 
 /**
  * Execute a SQL-like query against the product database.
- * Supports basic WHERE clauses: LIKE, category =, id =.
+ * Supports basic WHERE clauses with parameterized queries: LIKE ?, category = ?, id = ?.
  * 
- * @param {string} sql - SQL query string
- * @returns {Array|null} - matching rows, or null if no matches
+ * @param {string} sql - SQL query string with ? placeholders
+ * @param {Array} [params=[]] - Parameter values to bind to ? placeholders
+ * @returns {Array} - matching rows (empty array if no matches)
  */
-function executeQuery(sql) {
+function executeQuery(sql, params = []) {
   let results = [...products];
 
+  // Replace ? placeholders with indexed markers for safe matching
+  let paramIndex = 0;
+  const boundSql = sql.replace(/\?/g, () => {
+    const value = params[paramIndex++];
+    if (typeof value === 'number') return String(value);
+    return `'${String(value)}'`;
+  });
+
   // Handle WHERE id = N
-  const idMatch = sql.match(/WHERE\s+id\s*=\s*(\d+)/i);
+  const idMatch = boundSql.match(/WHERE\s+id\s*=\s*(\d+)/i);
   if (idMatch) {
     const id = parseInt(idMatch[1], 10);
     results = results.filter(p => p.id === id);
   }
   
   // Handle WHERE name LIKE '%...%'
-  const likeMatch = sql.match(/LIKE\s+'%(.+)%'/i);
+  const likeMatch = boundSql.match(/LIKE\s+'%(.+)%'/i);
   if (likeMatch) {
     const pattern = likeMatch[1].toLowerCase();
     results = results.filter(p => p.name.toLowerCase().includes(pattern));
   }
   
   // Handle WHERE category = '...'
-  const categoryMatch = sql.match(/category\s*=\s*'([^']+)'/i);
+  const categoryMatch = boundSql.match(/category\s*=\s*'([^']+)'/i);
   if (categoryMatch) {
     const cat = categoryMatch[1].toLowerCase();
     results = results.filter(p => p.category === cat);
   }
   
-  // Return null when no results found (simulates DB driver behavior)
-  if (results.length === 0) return null;
-  
+  // Return empty array when no results found (consistent array return type)
   return results;
 }
 
