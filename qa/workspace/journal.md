@@ -5432,3 +5432,9 @@ Verdict: CONDITIONAL (minor hardening suggested).
 Findings:
 - IMPORTANT: pruneCompletedSteps can erase messages for earlier steps; any later logic that relies on completedSteps[*].result.messages (e.g., for startedAt derivation) must tolerate empty arrays. Current persistence code takes startedAt from messages[0] at the time of persisting the step, so it appears safe, but guard handlers that inspect completedSteps may see missing message detail for older steps.
 - MINOR: pruneCompletedSteps only truncates lastAssistantText if messages existed; a TaskResult with large lastAssistantText but empty messages will not be truncated.
+2026-04-16T13:00Z — QA heartbeat: Proactive scan of HEAD 34e27864 ("Reduce FM-3.3 guard friction" changes across src/lib and agent heartbeats). Read src/lib/tools/verification-depth-guard.ts and reviewed new exemptions + process-artifact handling.
+Gates: ./node_modules/.bin/tsc --noEmit PASS (no output, exit 0). ./node_modules/.bin/vitest --run FAIL (136 files): test/file-read-tracker.test.ts imports "bun:test" which vitest cannot resolve (Error: Cannot find package 'bun:test').
+Verdict: FAIL (IMPORTANT).
+Findings:
+- IMPORTANT: test/file-read-tracker.test.ts uses bun's test API (import from "bun:test") but the suite is executed with vitest in CI/QA; this breaks the test run. Needs port to vitest (import from "vitest") or run under bun instead.
+- MINOR/NOISE: vitest output contains repeated "fatal: not a git repository" lines during some tests; appears to be tests intentionally running git in temp dirs. Not a failure, but makes logs noisy.
