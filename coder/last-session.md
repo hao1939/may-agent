@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776364183329_0
+- **Session:** s_1776364180304_0
 - **Status:** done
-- **When:** 2026-04-16T18:30:41.293Z
-- **Duration:** 57s
+- **When:** 2026-04-16T18:30:51.623Z
+- **Duration:** 1m11s
 
 ## What Happened
-S002 weighted score is exactly 80. With `score > threshold`, 80 > 80 is false, so it falls to C. The test expects B. The changelog v3.0 says "strict comparison" but the grade scale defines B as 80 — conventionally ≥80 earns B. The bug is `>` should be `>=`.
+S002's weighted score passes the `✓ S002 weighted score` test, meaning the score is correct. The only bug is `>` should be `>=` in `getLetterGrade`.
