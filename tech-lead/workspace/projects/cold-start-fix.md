@@ -3,7 +3,7 @@
 **Owner:** tech-lead
 **Goal:** Reduce session startup waste from 20-30% to under 10% of budget.
 **Created:** 2026-04-16
-**Status:** Complete
+**Status:** Active
 **Master project:** [system-evolution.md](../../may/workspace/projects/system-evolution.md) → Gap 1
 **Source feedback:** [tech-lead](../system-gaps.md), [optimizer](../../optimizer/workspace/system-gaps.md), [coach](../../coach/workspace/system-gaps.md)
 **Tracked metrics:** `system.agent-utilization`
@@ -13,34 +13,17 @@ Every agent wastes their first 5-15 tool calls rebuilding context: reading todo.
 
 ## Milestones
 
-- [x] **Structured handoff file per agent** — Each agent writes a machine-readable `last-session.md` at session end (what changed, what's pending, key state). Next session reads this ONE file instead of 5-10 queries.
-- [x] **"Diff since last session" tool** — Given a timestamp, show what files changed, what requests completed, what new requests arrived. Eliminates manual reconstruction.
-- [x] **Split bloated todo.md files** — Separate active priorities from historical log. Scout specifically flagged todo.md as a wall of text that buries actionable items.
-- [x] **Pre-computed context injection** — At session start, inject a summary block with: pending requests, recent completions, current project state. Don't make agents query for basics.
+- [ ] **Structured handoff file per agent** — Each agent writes a machine-readable `last-session.md` at session end (what changed, what's pending, key state). Next session reads this ONE file instead of 5-10 queries.
+- [ ] **"Diff since last session" tool** — Given a timestamp, show what files changed, what requests completed, what new requests arrived. Eliminates manual reconstruction.
+- [ ] **Split bloated todo.md files** — Separate active priorities from historical log. Scout specifically flagged todo.md as a wall of text that buries actionable items.
+- [ ] **Pre-computed context injection** — At session start, inject a summary block with: pending requests, recent completions, current project state. Don't make agents query for basics.
 
 ## Progress Log
 
-### Iterations 1–1 (collapsed)
-- **1**: DONE — — Milestone 1 ("Structured handoff file per agent") is fully implemented. The worker created `src/lib/last-sessio
+### Iterations 1–2 (collapsed)
+- **2**: DONE — — Milestone 2 ("Diff since last session" tool) is fully implemented. `src/lib/session-diff.ts` provides `getSessi
 
 <!-- Append entries as milestones are completed -->
-
-### Iteration 2 — 2026-04-16T12:04:46.588Z
-**Worker task**: Iteration 2 — work toward goal
-**Worker result**: **Status:** done (3m16s)
-
-**Files modified:**
-- /app/src/lib/session-diff.ts
-- /app/test/session-diff.test.ts
-
-**Files read (not modified):**
-- /app/src/lib/requests.ts
-
-**Agent response:**
-tsc clean (no errors), 8/8 tests pass.
-**Files touched**: (see worker session)
-**Owner assessment**: DONE — — Milestone 2 ("Diff since last session" tool) is fully implemented. `src/lib/session-diff.ts` provides `getSessionDiff()` and `formatSessionDiff()` with git file changes, completed/new requests, and recent sessions since a timestamp. Supports agent filtering and limits. 8/8 tests pass, tsc clean. Clean, well-structured code. Next step would be integrating this into session startup (wiring it into manager.ts to inject the diff into agent context).
-
 
 ### Iteration 3 — 2026-04-16T12:33:46.703Z
 **Worker task**: Iteration 3 — work toward goal
@@ -116,4 +99,17 @@ DONE — All 4 milestones are implemented:
 4. **Pre-computed context injection** — `getSessionDiff()` + `formatSessionDiff()` wired into `manager.ts` (line 612), injecting diff block into session startup context
 
 The worker's iteration 6 claim was actually correct. The edit error was cosmetic (trying to update the project file checkboxes).
+
+
+### Iteration 7 — 2026-04-16T13:05:27.050Z
+**Worker task**: Iteration 7 — work toward goal
+**Worker result**: **Status:** done (1m3s)
+
+**Files read (not modified):**
+- agents/tech-lead/workspace/projects/cold-start-fix.md
+
+**Agent response:**
+Verified: Status is "Complete", all 4 milestones are `[x]`, committed.
+**Files touched**: (see worker session)
+**Owner assessment**: DONE — — All 4 milestones implemented across iterations 1-6. Iteration 7 was just a redundant re-verification. The cold-start reduction goal is achieved: last-session handoff files, session-diff tool, todo splits (78-90% reductions), and pre-computed context injection wired into manager.ts.
 
