@@ -159,12 +159,7 @@ function checkRegression(
   ).get(metric.id, now - MS_7D) as { avg_val: number | null } | null;
 
   if (avg7d?.avg_val != null && avg7d.avg_val > 0) {
-    const alertAbove = metric.alert_direction === 'above';
-    // For "below" metrics (e.g., quality): regression = value drops below avg
-    // For "above" metrics (e.g., error rate): regression = value rises above avg
-    const changeRatio = alertAbove
-      ? (currentValue - avg7d.avg_val) / avg7d.avg_val  // positive when value rises
-      : (avg7d.avg_val - currentValue) / avg7d.avg_val; // positive when value drops
+    const changeRatio = (avg7d.avg_val - currentValue) / avg7d.avg_val;
     if (changeRatio > sensitivity) {
       recordAlertWithDedup(
         db,
@@ -177,24 +172,6 @@ function checkRegression(
       );
     }
   }
-}
-
-/**
- * Check if a health metric's value breaches its threshold and record an alert.
- * Returns true if an alert was fired.
- */
-function checkThresholdAlert(db: SqliteDb, metric: MetricRow, value: number, now: number): boolean {
-  if (metric.type !== "health" || metric.threshold == null) return false;
-  const alertAbove = metric.alert_direction === 'above';
-  const breaching = alertAbove ? value > metric.threshold : value < metric.threshold;
-  if (breaching) {
-    const direction = alertAbove ? 'above' : 'below';
-    recordAlertWithDedup(db, metric.id, "yellow",
-      `${metric.id} ${direction} threshold: ${value} ${alertAbove ? '>' : '<'} ${metric.threshold}`,
-      value, metric.threshold, now);
-    return true;
-  }
-  return false;
 }
 
 /**
@@ -312,7 +289,23 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         }
 
         // Check health threshold
-        if (checkThresholdAlert(db, m, value, now)) alertsFired++;
+        if (m.type === "health" && m.threshold != null) {
+          const alertAbove = m.alert_direction === 'above';
+          const breaching = alertAbove ? value > m.threshold : value < m.threshold;
+          if (breaching) {
+            const direction = alertAbove ? 'above' : 'below';
+            recordAlertWithDedup(
+              db,
+              m.id,
+              "yellow",
+              `${m.id} ${direction} threshold: ${value} ${alertAbove ? '>' : '<'} ${m.threshold}`,
+              value,
+              m.threshold,
+              now,
+            );
+            alertsFired++;
+          }
+        }
 
         // Check regression
         checkRegression(db, m, value, now);
@@ -355,7 +348,23 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         cmdMeasured++;
 
         // Check health threshold
-        if (checkThresholdAlert(db, m, value, now)) alertsFired++;
+        if (m.type === "health" && m.threshold != null) {
+          const alertAbove = m.alert_direction === 'above';
+          const breaching = alertAbove ? value > m.threshold : value < m.threshold;
+          if (breaching) {
+            const direction = alertAbove ? 'above' : 'below';
+            recordAlertWithDedup(
+              db,
+              m.id,
+              "yellow",
+              `${m.id} ${direction} threshold: ${value} ${alertAbove ? '>' : '<'} ${m.threshold}`,
+              value,
+              m.threshold,
+              now,
+            );
+            alertsFired++;
+          }
+        }
 
         // Check regression
         checkRegression(db, m, value, now);
