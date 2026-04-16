@@ -229,7 +229,13 @@ function buildWorkerPrompt(
 
   prompt += `## Instructions\n`;
   prompt += `Do a meaningful chunk of work toward the goal. `;
-  prompt += `When done, summarize what you accomplished and what files you modified.`;
+  prompt += `When done, summarize what you accomplished and what files you modified.\n\n`;
+  prompt += `### Git: For src/ changes (review-gated repo)\n`;
+  prompt += `If you modify files in the main repo (src/, not agents/), use the commitAndMerge utility instead of raw git:\n`;
+  prompt += `\`\`\`typescript\nimport { commitAndMerge } from "../../shared/lib/git-utils.js";\n`;
+  prompt += `const result = commitAndMerge("feat: description", ["src/path/to/file.ts"], "/app", sessionId);\n`;
+  prompt += `// result.merged === true means it passed tsc and landed on main\n\`\`\`\n`;
+  prompt += `This creates a review branch, runs tsc, and auto-merges if it passes. For agents/ repo changes, commit directly.`;
 
   return prompt;
 }
