@@ -91,4 +91,7 @@ tsc clean. Let me verify the line counts show real improvement:
 **Agent response:**
 Hmm, tech-lead says "17 completed/historical sections" but earlier output said 1 section. That's because it was already split before (bob has an archive too). The reference link is there. All good.
 **Files touched**: (see worker session)
-**Owner assessment**: CONTINUE — Split done for 4 agents. Now focus on Milestone 4: pre-computed context injection — wire session-diff and last-session into manager.ts so agents get startup context automatically.
+**Owner assessment**: CONTINUE — Before/after: scout 1082→105, coach 416→91, tech-lead 368→55. Massive reductions. The split was done in iteration 3 (the git diff confirms it), and iteration 4 just verified. My earlier review was wrong — the worker DID run the script.
+
+DONE — Milestone "Split bloated todo.md files" is complete. Before/after line counts: scout 1082→105 (90% reduction), coach 416→91 (78%), tech-lead 368→55 (85%). The split script was run in iteration 3 and the working tree reflects the splits. Archive files exist for historical content.
+
