@@ -553,6 +553,42 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   // ── Knowledge API ──────────────────────────────────────────────────
 
   // ── Browse API: generic file/directory browser for knowledge base ──
+  function handleMetrics(_url: URL): Response {
+    const db = _db();
+    const metrics = db.prepare(`
+      SELECT m.id, m.name, m.type, m.owner, m.current, m.target, m.threshold,
+             m.unit, m.priority, m.status, m.speed, m.description, m.alert_direction,
+             m.source, m.updated_at
+      FROM metrics m WHERE m.status = 'active' ORDER BY m.owner, m.priority, m.name
+    `).all() as any[];
+
+    const snapshots = db.prepare(`
+      SELECT ms.metric_id, ms.value, ms.sample_size, ms.measured_at, ms.note
+      FROM metric_snapshots ms
+      INNER JOIN (
+        SELECT metric_id, MAX(measured_at) as max_at
+        FROM metric_snapshots GROUP BY metric_id
+      ) latest ON ms.metric_id = latest.metric_id AND ms.measured_at = latest.max_at
+      ORDER BY ms.measured_at DESC
+    `).all() as any[];
+
+    const recentSnapshots = db.prepare(`
+      SELECT ms.metric_id, ms.value, ms.sample_size, ms.measured_at, ms.measured_by, ms.note
+      FROM metric_snapshots ms ORDER BY ms.measured_at DESC LIMIT 50
+    `).all() as any[];
+
+    // Compute alerts: metrics past threshold
+    const alerts = metrics.filter((m: any) => {
+      if (m.threshold == null || m.current == null) return false;
+      if (m.alert_direction === 'above') return m.current > m.threshold;
+      return m.current < m.threshold; // default: 'below'
+    });
+
+    return new Response(JSON.stringify({ metrics, latestSnapshots: snapshots, recentSnapshots, alerts }), {
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
   function handleBrowse(url: URL): Response {
     const relPath = url.searchParams.get("path") ?? "";
     const sharedDir = join(STATE_DIR, "..", "agents", "shared");
@@ -679,6 +715,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (url.pathname === "/api/benchmarks/prompts") return handleBenchmarkPrompts(url);
       if (url.pathname === "/api/benchmarks/compare") return handleBenchmarkCompare(url);
       if (url.pathname === "/api/browse") return handleBrowse(url);
+      if (url.pathname === "/api/metrics") return handleMetrics(url);
       const agentDetailMatch = url.pathname.match(/^\/api\/agents\/([^/]+)\/detail$/);
       if (agentDetailMatch) return handleAgentDetail(agentDetailMatch[1]);
       const sessionMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)$/);
