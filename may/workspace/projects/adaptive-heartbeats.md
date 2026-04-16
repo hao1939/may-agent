@@ -39,3 +39,5 @@ Agents fire heartbeats on fixed intervals regardless of whether there's work. Sc
 **Agent response:**
 Now verify and commit:
 **Files touched**: (see worker session)
+**Owner assessment**: DONE — — Solid design doc produced. It has data-driven problem analysis (65% idle heartbeats across agents), a layered solution (fast-exit gate → adaptive frequency → scout windowing), concrete implementation phases, estimated savings (~45 sessions/day, ~425 ops/day), and risk mitigations. Phase 1 is actionable immediately as a prompt-only change. Ready for review and Phase 1 deployment.
+
