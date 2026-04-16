@@ -3,7 +3,7 @@
 **Created**: 2026-04-10 by Bob
 **P(H)**: 0.80 (updated from 0.78 after EXP-127 direct test: 3/4 predictions correct, Ch3 miss. EXP-128 confirms Ch3 miss is task-type boundary, not content quality → KE-132)
 **Status**: CONCLUDED — Confirmed with refinements (4 direct tests, 13/15 predictions supported, P-098c rejected/revised)
-**Depends on**: KE-101, H-085, H-091, H-095, KE-025, KE-064, KE-002, KE-031, KE-132
+**Depends on**: KE-101, H-085, H-091, H-095, KE-025, KE-064, KE-002, KE-031, KE-132, KE-187
 **Supersedes**: None (synthesizes existing findings into new explanatory framework)
 
 ---
@@ -29,6 +29,20 @@ This is not a metaphor. LLMs process all text inputs through the same transforme
 - **Attention dynamics**: Environmental state creates hard decision points ("does ANALYSIS.md exist? → if not, write it") that cannot be attention-competed away
 - **Effectiveness**: 87-100% (KE-031: 17/17 forced externalization, KE-007: 92-97% workflow enforcement)
 - **Why it works**: The agent must process the gate condition before it can proceed. This is a structural bottleneck, not a textual suggestion. The gate exists in the execution trace, not in the prompt.
+
+#### Ch2 Sub-Taxonomy (from KE-187)
+
+Channel 2 is not monolithic. KE-187 identifies three sub-types, distinguished by the **information source** of the verification gate. Effectiveness scales with the richness of that source:
+
+| Sub-Type | Verification Source | Mechanism | Example | Effectiveness | Boundary |
+|---|---|---|---|---|---|
+| **Ch2-Self** | Agent's own reasoning | Agent writes artifact → gate reads → allow/block | ANALYSIS.md + workflow gate (H-085) | 87-100% when agent can self-diagnose | Fails on absent-information (EXP-078: 0%, EXP-098: 0%) — agent can't verify what it doesn't know |
+| **Ch2-Environment** | Local system state | System checks observable state → allow/block | Path hallucination guard (EXP-132), test results, git status | High for verifiable facts | Limited to file-system / tool-output facts |
+| **Ch2-World-Model** | External knowledge representation | System simulates post-action state against knowledge graph → allow/block | Sentinel (DD-766: 93%), cross-reference intervention (EXP-079: 100%) | 93-100% even on absent-information | Bounded by completeness of knowledge representation |
+
+**Key insight**: The absent-information boundary (EXP-078: 0%, EXP-098: 0%) is NOT a fundamental limit of Ch2 — it's a limit of **Ch2-Self** specifically. Ch2-World-Model succeeds exactly where Ch2-Self fails, because the verification source has information the agent lacks. Our cross-reference intervention (EXP-079: 100% on absent-field tasks) is a lightweight Ch2-World-Model — the codebase serves as the "knowledge graph."
+
+**The progression**: Ch2-Self → Ch2-Environment → Ch2-World-Model tracks increasing information richness of the verification source, with corresponding expansion of catchable failure modes. Forced externalization (H-085) is the degenerate case where the verifier is the same agent that might be wrong.
 
 ### Channel 3: Positional-Privilege Channel (Task-Message vs System-Prompt)
 - **Carrier**: Task-message content (inline in the specific task description)
@@ -75,6 +89,12 @@ Environmental-state interventions have their own attention budget, distinct from
 
 ### P-098d: System-Prompt Channel 1 Capacity Is Inversely Proportional to Task Complexity
 For simple tasks (high R), Channel 1 text interventions may show marginal effect because task-execution tokens are less demanding, leaving spare attention for behavioral modifiers. For complex tasks (low R), Channel 1 effectiveness drops to zero because all attention is consumed by task execution. **Testable**: Measure text-rule effectiveness across tasks binned by complexity — expect interaction between intervention type and task difficulty.
+
+### P-098f: Ch2 Sub-Type Effectiveness Gradient (from KE-187)
+For absent-information tasks specifically, Ch2-Self ≈ 0%, Ch2-Environment ≈ 0% (no relevant local state), Ch2-World-Model ≈ 90%+. For present-but-wrong tasks, all three sub-types converge at 87-100% (self-diagnosis is sufficient). **Testable**: Run absent-information gym scenarios with each sub-type gate. Existing evidence: EXP-078/098 (Ch2-Self 0%), EXP-079 (Ch2-World-Model 100%), DD-766 (Ch2-World-Model 93%). Prediction is already partially confirmed.
+
+### P-098g: Ch2-World-Model Can Be Approximated by Cross-Reference
+Lightweight cross-reference interventions (grep codebase, check reference spec) capture most of Ch2-World-Model's benefit without requiring a full knowledge graph. **Testable**: Compare cross-reference gate vs full-spec-checking gate on absent-information tasks. If EXP-079's 100% holds across more task types, cross-reference is the practical Ch2-World-Model for our system.
 
 ### P-098e: Channel 2 Interventions Are Immune to Prompt Length
 Because Channel 2 operates through environmental state (not text competition), adding more text to the system prompt should NOT degrade Channel 2 intervention effectiveness. Forced externalization should work equally well with a 10KB prompt and a 100KB prompt. **Testable**: Run forced externalization experiments with varying prompt sizes — expect no correlation between prompt length and externalization effectiveness.

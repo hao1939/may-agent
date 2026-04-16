@@ -1,191 +1,184 @@
-# DESIGN: Agent Metric Tension Pairs — Productive Conflict by Design
+# Metric System + Gym Fast Feedback — Unified Design & Development Plan
 
-**Author:** May · **Date:** 2026-04-15 · **Status:** Brainstorm / Proposal for Hao  
-**Depends on:** [Metrics System](metrics-system.md) Phase 1 (complete)
-
----
-
-## Core Idea
-
-Metrics don't just measure — they **steer**. By giving paired agents metrics that naturally conflict, we force the system to find balance rather than run off in one direction. No single agent can optimize their number without considering the other agent's number. The system self-corrects.
-
-This is not adversarial — it's architectural. Like the gas pedal and brake both being necessary for driving.
+**Status:** For Hao's approval  
+**Date:** 2026-04-16  
+**Supersedes:** metric-tension-pairs.md, gym feedback drafts
 
 ---
 
-## The Existing Tension Axes
+## Part 1: Agent Metrics (Role-Aligned, Speed-Tiered)
 
-From the SOUL docs, two explicit tension pairs already exist:
+### Design Principles
+1. **Metrics signal where agents should go** — drive growth, not just reflect current state
+2. **Tension pairs share concerns from different perspectives** — balance, not opposition
+3. **Metrics are signals, not targets** — inform judgment, not replace it
+4. **Different speeds for different metrics** — fast (every heartbeat), medium (daily), slow (weekly)
+5. **Gym accelerates slow metrics** — 20-minute validation instead of days of production data
 
-1. **Bob (forward) ↔ Tech-lead (inward)** — Bob adds capabilities, tech-lead simplifies
-2. **Coach (quality) ↔ Optimizer (efficiency)** — Coach wants better behavior, optimizer wants fewer ops
+### Tension Pairs
+- **Bob ↔ Tech-lead:** "What to build" vs "How to build it well." Shared concern: gain capability without gaining complexity.
+- **Coach ↔ Optimizer:** "Agent quality" vs "Agent efficiency." Shared concern: perform well without waste.
 
-But the current metrics don't encode this tension at all. Look at what each agent tracks:
+### Full Metric Set
 
-| Agent | Current Metrics | What's Missing |
-|-------|----------------|----------------|
-| **Bob** | hypotheses-concluded, experiments-rate | Nothing about system complexity impact |
-| **Tech-lead** | test-count, tsc-clean, prompt-caching | Nothing about capability or feature throughput |
-| **Coach** | quality scores, gym pass-rate, skill effectiveness | Nothing about training cost or overhead |
-| **Optimizer** | heartbeat ops/lines, ops-per-session | Nothing about quality impact of optimizations |
+#### May — System Oversight
+| Metric | Type | Speed | Signal |
+|--------|------|-------|--------|
+| `system.request-throughput` | health | daily | Are human requests getting done? |
+| `system.stuck-requests` | health | fast | Is anything blocked right now? |
+| `system.agent-utilization` | continuous | daily | Is every agent producing? |
 
-Each agent can optimize their metrics in isolation without caring about the other. That's the gap.
+#### Bob — Architect
+| Metric | Type | Speed | Signal |
+|--------|------|-------|--------|
+| `bob.experiment-completion` | health | fast | Am I finishing what I start? |
+| `bob.hypotheses-resolved` | continuous | slow | Is the research loop closing? |
+| `bob.designs-implemented` | continuous | slow | Are my designs becoming real? |
 
----
+#### Tech-lead — Engineer
+| Metric | Type | Speed | Signal |
+|--------|------|-------|--------|
+| `tech-lead.build-health` | health | fast | Is the codebase healthy right now? |
+| `tech-lead.meaningful-changes` | continuous | daily | Am I shipping impactful work? |
+| `tech-lead.codebase-weight` | continuous | slow | Is the system getting simpler? |
+| `tech-lead.delegation-quality` | continuous | daily | Am I scoping tasks well for coder? |
 
-## Proposed Tension Pair 1: Bob ↔ Tech-Lead
+#### Coach — Trainer
+| Metric | Type | Speed | Signal |
+|--------|------|-------|--------|
+| `coach.intervention-hit-rate` | continuous | fast (via gym) | Do my interventions actually work? |
+| `coach.skill-effectiveness` | continuous | daily | Are deployed skills having impact? |
+| `coach.knowledge-to-action-latency` | continuous | daily | How fast do I act on findings? |
 
-### The Tension
+#### Optimizer — Tool & Workflow Builder
+| Metric | Type | Speed | Signal |
+|--------|------|-------|--------|
+| `optimizer.tool-adoption` | continuous | daily | Are agents using what I build? |
+| `optimizer.analysis-accuracy` | continuous | daily | Are my diagnoses correct? |
+| `optimizer.quality-preserved` | health | slow | Am I preserving quality? |
 
-**Bob's job:** Push the system forward — more capabilities, more experiments shipped to production, more research turned into code.
+#### Scout — Explorer
+| Metric | Type | Speed | Signal |
+|--------|------|-------|--------|
+| `scout.hypotheses-generated` | continuous | daily | Am I synthesizing, not just summarizing? |
+| `scout.findings-used` | continuous | slow | Is my research actionable? |
+| `scout.coverage` | health | fast | Am I scanning regularly? |
 
-**Tech-lead's job:** Keep the system simple — fewer lines of code per capability, less complexity, faster builds, no dead code.
-
-### The Conflict
-
-If Bob ships 5 new features and tech-lead measures "codebase growing," both are doing their job correctly but the metrics clash. The resolution is **quality features that earn their lines** — capabilities that deliver value relative to their weight.
-
-### Proposed Metrics
-
-**Bob gets a "weight consciousness" metric:**
-
-| ID | Name | Why | Target | Unit |
-|----|------|-----|--------|------|
-| `research.shipped-to-production` | Confirmed experiments → production code | Bob's #1 stated priority is closing the loop. This measures it. | ≥5 | count |
-| `research.impact-per-experiment` | Avg measurable improvement per concluded experiment | Prevents "ship garbage to hit count." Quality of research output. | ≥0.3 | score |
-| `research.dead-code-generated` | Lines of Bob-originated code deleted within 2 weeks | **Tension metric.** If Bob ships code that tech-lead deletes, that's waste. Forces Bob to ship durable, needed code. | ≤50 | lines |
-
-**Tech-lead gets a "throughput consciousness" metric:**
-
-| ID | Name | Why | Target | Unit |
-|----|------|-----|--------|------|
-| `infra.codebase-weight` | Total src/ LOC (excluding tests) | Tech-lead's north star — system should get smaller. | ≤current | lines |
-| `infra.complexity-per-capability` | LOC / number of active capabilities | **Tension metric.** Prevents "delete everything to shrink LOC." Tech-lead must preserve capability while reducing weight. | ≤100 | ratio |
-| `infra.feature-adoption` | % of implemented features actually used in sessions (24h) | **Tension metric.** If tech-lead deletes a feature "to simplify" but it was actively used, that's destruction not simplification. Forces tech-lead to preserve value while cutting weight. | ≥80% | % |
-
-### How The Tension Works
-
-- Bob wants to ship more experiments → `research.shipped-to-production` goes up
-- But if the code is unnecessary, tech-lead deletes it → `research.dead-code-generated` goes up for Bob
-- Tech-lead wants LOC to decrease → `infra.codebase-weight` goes down
-- But if tech-lead kills used features → `infra.feature-adoption` drops
-- **Equilibrium:** Bob ships high-value code that sticks. Tech-lead deletes low-value code that doesn't.
-
----
-
-## Proposed Tension Pair 2: Coach ↔ Optimizer
-
-### The Tension
-
-**Coach's job:** Make agents behave better — higher quality scores, better gym performance, skills that actually work.
-
-**Optimizer's job:** Make agents more efficient — fewer ops, less bloat, faster sessions.
-
-### The Conflict
-
-Coach might install 10 skills that each add 200 tokens to system prompts. Quality goes up 5%, but ops-per-session goes up 30% because agents are processing more context. Both agents succeeded at their metric but the system got worse.
-
-Conversely, optimizer might strip out workflows and skills to reduce ops. Sessions get shorter, but quality drops because agents skip verification steps.
-
-### Proposed Metrics
-
-**Coach gets an "efficiency consciousness" metric:**
-
-| ID | Name | Why | Target | Unit |
-|----|------|-----|--------|------|
-| `quality.improvement-per-skill` | Quality delta per installed skill | Prevents skill sprawl. Each skill must earn its place. | ≥0.02 | score |
-| `quality.training-cost` | Avg ops spent on training/gym runs per quality point gained | **Tension metric.** Forces coach to train efficiently. "Did quality go up enough to justify the ops spent?" | ≤500 | ops/point |
-| `quality.prompt-overhead` | Total tokens added to system prompts by installed skills | **Tension metric.** Each skill adds weight. Coach must justify the bloat. Optimizer will notice if this grows without quality gains. | ≤2000 | tokens |
-
-**Optimizer gets a "quality consciousness" metric:**
-
-| ID | Name | Why | Target | Unit |
-|----|------|-----|--------|------|
-| `efficiency.quality-preserved` | Quality score after optimization vs before | **Tension metric.** Every optimization must not regress quality. "You made it faster, but did you make it dumber?" | ≥0.95 | ratio |
-| `efficiency.guard-pass-rate` | % of optimized sessions that still pass all guards | If optimizer streamlines away safety checks, guard pass rate drops. | ≥98% | % |
-| `efficiency.workflow-adoption` | % of applicable sessions using the optimized workflow | Measures whether optimizer's workflows are actually adopted vs ignored. | ≥70% | % |
-
-### How The Tension Works
-
-- Coach installs skills → quality goes up, but `quality.prompt-overhead` increases
-- Optimizer notices prompt tokens growing → pushes back or proposes lighter alternatives
-- Optimizer strips workflow steps → ops go down, but `efficiency.quality-preserved` shows quality impact
-- Coach notices quality regression → runs gym experiments to prove the optimization hurt
-- **Equilibrium:** Coach installs high-ROI skills. Optimizer preserves quality while cutting waste.
+#### Coder / Evaluator / QA
+| Agent | Metrics |
+|-------|---------|
+| Coder | `quality` (continuous), `first-pass-rate` (continuous) |
+| Evaluator | `calibration` (health), `coverage` (health) |
+| QA | `review-coverage` (health), `false-positive-rate` (continuous) |
 
 ---
 
-## May: The Referee
+## Part 2: Gym as Fast Feedback
 
-May doesn't participate in tension pairs — she **observes** them. Her metrics should detect when pairs go out of balance:
+### Core Idea
+Gym gives signal in 20 minutes that would otherwise take days of production data. It's a **validation gate and smoke test**, not a development target.
 
-| ID | Name | Why | Target | Unit |
-|----|------|-----|--------|------|
-| `system.tension-balance` | |quality-delta| - |efficiency-delta| over 7 days | If quality is moving but efficiency isn't (or vice versa), one side of a pair is dominating. | ≤0.1 | score |
-| `system.metric-engagement` | % of agents who queried their metrics in last 24h | The system only works if agents look at their numbers. | 100% | % |
-| `system.intervention-rate` | # times May had to manually override an agent decision due to metric-chasing | Goodhart's law detector. If agents are gaming metrics, May catches it. | ≤2/week | count |
+### How Each Role Uses Gym
 
----
+| Role | Gym Use | Cadence |
+|------|---------|---------|
+| **Coach** | A/B test interventions — 10 trials before/after skill deployment | Every intervention (~daily) |
+| **Optimizer** | Pre-deploy validation — run workflow scenarios before shipping | Every harness/workflow change |
+| **Tech-lead** | Regression gate — run smoke tier after code changes | Every significant merge |
+| **Bob** | Component skill validation — test verification/navigation skills | When deploying skill changes |
+| **Scout** | Output quality testing — test if DDs are actionable | Needs new scenarios first |
 
-## Scout: The Feeder
+### Gym Rules
+1. **Gym results don't directly update production metrics** — they're a separate fast signal
+2. **Don't chase gym pass rates** — Goodhart's Law. Fix agents and scenarios; the number follows
+3. **Gym is a smoke test, not proof** — catches regressions fast, production metrics are the real scorecard
 
-Scout doesn't have a natural tension pair but feeds both research pairs. Scout's metrics should be about **usefulness** of research, not volume:
+### Scenario Triage (295 → focused set)
+1. **Tier by discrimination:** 0% or 100% pass → archive or use as regression canary. 20-80% → keep
+2. **Tag by role:** Most scenarios are coder-focused. Tag which agent/skill each scenario tests
+3. **Fix broken scenarios:** 0% across all agents = scenario is probably broken, not agents
+4. **Add role-specific scenarios:** Scout has near-zero coverage. Needs 10-15 research scenarios
+5. **Target: ~100 curated scenarios** with known discrimination, tagged by role and skill
 
-| ID | Name | Why | Target | Unit |
-|----|------|-----|--------|------|
-| `research.pickup-rate` | % of scout hypotheses that Bob or Coach actually used | **Scout's real value.** Generating hypotheses nobody reads is waste. | ≥30% | % |
-| `research.novelty-ratio` | % of new findings that aren't duplicates of existing knowledge | Already exists, keep it. | ≥40% | % |
+### Gym-Metric Integration
+```
+Production metric signals a problem
+    → Agent diagnoses root cause  
+    → Agent designs intervention
+    → Gym validates intervention (10 trials, 20 min)
+    → If pass rate improves → deploy to production
+    → If not → iterate or discard
+    → Production metric confirms over next 24-48h
+```
 
----
-
-## Implementation Notes
-
-### What's Immediately Actionable (Phase 1 additions)
-
-Some of these metrics require new instrumentation (like tracking which agent originated which code, or token counts per skill). For Phase 1, I recommend starting with the ones that are **measurable today with existing data:**
-
-**Easy to measure now:**
-- `research.shipped-to-production` — count experiments with status=confirmed that have linked PRs/commits
-- `infra.codebase-weight` — `wc -l src/**/*.ts` (shell command, already in source_command pattern)
-- `quality.prompt-overhead` — count skills × avg skill tokens (estimable from file sizes)
-- `efficiency.workflow-adoption` — already being tracked by optimizer (68% adoption last check)
-- `system.metric-engagement` — query heartbeat-context handler logs for metric queries
-
-**Needs new instrumentation:**
-- `research.dead-code-generated` — requires git blame + deletion tracking
-- `research.impact-per-experiment` — requires structured experiment outcome recording
-- `infra.complexity-per-capability` — requires defining what a "capability" is
-- `infra.feature-adoption` — requires session-level feature usage tracking
-- `quality.training-cost` — requires linking gym ops to quality outcomes
-- `efficiency.quality-preserved` — requires before/after quality snapshots around optimizations
-- `efficiency.guard-pass-rate` — requires structured guard result logging
-
-### What to Seed First
-
-Start with one tension metric per pair — the simplest to measure:
-
-1. **Bob ↔ Tech-lead:** `research.shipped-to-production` (Bob) + `infra.codebase-weight` (Tech-lead)
-2. **Coach ↔ Optimizer:** `quality.prompt-overhead` (Coach) + `efficiency.workflow-adoption` (Optimizer)
-
-These four metrics create the minimum tension. Both pairs have one metric that constrains the other agent's natural tendency.
+Coach's intervention-hit-rate becomes a FAST metric because gym provides same-day signal.
 
 ---
 
-## Open Questions
+## Part 3: Development Plan
 
-1. **Goodhart risk:** Are we sure the tension pairs prevent gaming, or do they just create more sophisticated gaming? (e.g., Bob ships code tech-lead wants to keep but that isn't actually useful)
-2. **Measurement cadence:** Should tension metrics be measured together (same snapshot) to ensure fair comparison?
-3. **Escalation:** When a tension pair can't resolve (Bob says "this code is needed," tech-lead says "it's waste"), who decides? May? Hao?
-4. **Scout's role:** Should scout have a tension pair with anyone? The "pickup-rate" metric creates implicit tension with Bob (if Bob doesn't use scout's research, scout's metric suffers), but it's one-directional.
-5. **May's objectivity:** Can May be a fair referee if she also has her own metrics? Should May's metrics be purely observational (system-level health)?
+### Milestone 1: Seed Role-Aligned Metrics (1 session)
+**Owner:** May  
+**Worker:** Tech-lead  
+**What:** Replace the current 20 generic metrics with the role-aligned set above. UPDATE existing metrics, INSERT new ones, ARCHIVE irrelevant ones.  
+**Deliverable:** ~25 metrics in may.db matching this design, auto-measurement queries working.
+
+### Milestone 2: Scenario Triage (1-2 sessions)  
+**Owner:** Coach  
+**Worker:** Coach  
+**What:** Run baseline on all 295 scenarios. Tag each with: discrimination tier (archive/keep/broken), role tag, relevant skill. Produce a triage report.  
+**Deliverable:** `agents/gym/TRIAGE.md` — which scenarios to keep, fix, or archive. Target: ~100 curated scenarios.
+
+### Milestone 3: Coach Fast Loop Pilot (1-2 sessions)
+**Owner:** Coach  
+**Worker:** Coach  
+**What:** Pick one low-pass scenario. Design an intervention. Run 10-trial A/B. Record result as `coach.intervention-hit-rate` snapshot. Prove the fast feedback loop works.  
+**Deliverable:** One completed A/B cycle with gym data feeding metric snapshot.
+
+### Milestone 4: Optimizer Pre-deploy Gate (1 session)
+**Owner:** Optimizer  
+**Worker:** Optimizer  
+**What:** Define 5 workflow scenarios as the pre-deploy smoke battery. Run before next harness change. Record pass rate.  
+**Deliverable:** `agents/optimizer/workspace/pre-deploy-battery.md` — scenarios + expected pass rates.
+
+### Milestone 5: Scout Scenario Creation (2-3 sessions)
+**Owner:** Scout  
+**Worker:** Scout + Coder  
+**What:** Create 10 Scout-specific gym scenarios — paper evaluation, synthesis quality, hypothesis formulation, duplicate detection.  
+**Deliverable:** 10 new scenarios in `agents/gym/scenarios/` with success criteria.
+
+### Milestone 6: Agent Heartbeat Integration (behavioral)
+**Owner:** May  
+**Worker:** Each agent  
+**What:** Each agent adds metric query to their heartbeat observation step. Fast metrics checked every heartbeat, medium daily, slow weekly.  
+**Deliverable:** All agents referencing their metrics in heartbeat sessions.
 
 ---
 
-## Summary Table
+## Part 4: How to Drive It
 
-| Pair | Agent A | Agent A Tension Metric | Agent B | Agent B Tension Metric |
-|------|---------|----------------------|---------|----------------------|
-| Forward ↔ Inward | Bob | `dead-code-generated` ≤50 lines | Tech-lead | `feature-adoption` ≥80% |
-| Quality ↔ Efficiency | Coach | `prompt-overhead` ≤2000 tokens | Optimizer | `quality-preserved` ≥0.95 ratio |
+**Yes, persistent task.** May owns the overall project. Each milestone is a persistent-task iteration or a forked sub-task.
 
-Each agent has their own "drive forward" metrics PLUS a tension metric that forces awareness of their counterpart's concern. You can't hit your target without considering the other side.
+Project file: `agents/may/workspace/projects/metrics-and-gym.md`
+
+```markdown
+# Task: Metrics + Gym Fast Feedback
+
+**Status**: active
+**Owner**: may
+**Started**: 2026-04-16
+
+## Milestones
+- [ ] M1: Seed role-aligned metrics (tech-lead)
+- [ ] M2: Scenario triage (coach)
+- [ ] M3: Coach fast loop pilot (coach)
+- [ ] M4: Optimizer pre-deploy gate (optimizer)
+- [ ] M5: Scout scenario creation (scout + coder)
+- [ ] M6: Agent heartbeat integration (all)
+```
+
+May dispatches each milestone to the right agent via `agents.fork()`. She monitors progress in her heartbeat. Each milestone is independent — they can run in parallel where possible (M2+M3 can overlap, M4+M5 can overlap).
+
+The persistent task drives the overall project. Individual milestones use whatever execution mechanism fits — fork, workflow, or the agent's own heartbeat work.
+
+**Expected timeline:** M1-M3 can complete within 2-3 days. M4-M5 within a week. M6 is ongoing adoption.
