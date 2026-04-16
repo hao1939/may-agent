@@ -1,10 +1,7 @@
 {
   "name": "scout-coder-logstats",
   "categories": ["debugging", "root-cause-analysis"],
-  "tags": ["two-phase", "scout-coder", "EXP-176"],
+  "tags": ["multi-bug", "cross-file", "misleading-changelog"],
   "tier": "standard",
-  "timeout": 5,
-  "agent_type": "coder",
-  "workflow": true,
-  "description": "Two-phase scout→coder on log analytics pipeline. Inverted session-splitting condition + conversion rate denominator bug. Misleading changelog entries add difficulty."
+  "description": "Log analytics pipeline with 3 bugs across 2 files: parser column swap, double-counting in average, and wrong error threshold. CHANGELOG provides misleading context."
 }
