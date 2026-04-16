@@ -89,6 +89,8 @@ import { createAgentsTool as createAgentsToolFn, type CreateAgentsToolOptions } 
 import { upsertDigest, logShadowComparison, getRecentDigests, formatDigestContext, getCrossAgentDigests, getUnresolvedDigests } from "./session-digest.js";
 import { isOverflowError } from "./overflow.js";
 import { summarizeForHandoff } from "./handoff.js";
+import { readLastSession } from "./last-session.js";
+import { getSessionDiff, formatSessionDiff } from "./session-diff.js";
 // classifyError is re-exported directly from classify-error.ts (no local import needed)
 
 export { isRetryableInfraError, runAgentWithRetry } from "./manager-retry.js";
@@ -583,6 +585,42 @@ export class SubagentManager {
     const recallBlock = formatRecallWarnings(recall);
     if (recallBlock) {
       ctxLines.push(``, recallBlock);
+    }
+
+    // Last-session injection: load agents/<name>/last-session.md if it exists.
+    // Written by createLastSessionWriter at session end — gives next session
+    // a structured summary of what happened, what's pending, and what to do next.
+    {
+      const lsAgentDir = getAgentDir(def);
+      if (lsAgentDir) {
+        const lsContent = readLastSession(lsAgentDir);
+        if (lsContent) {
+          ctxLines.push(``, `## Previous Session Summary`, lsContent);
+        }
+      }
+    }
+
+    // Session-diff injection: show what changed since this agent's last session.
+    // Part of cold-start-fix milestone 4.
+    {
+      try {
+        const db = getDb(persistDir);
+        const lastRow = db.prepare(
+          `SELECT startedAt FROM sessions WHERE agent = ? AND status IN ('completed','success','partial') ORDER BY startedAt DESC LIMIT 1`
+        ).get(agentName) as { startedAt: number } | undefined;
+        if (lastRow?.startedAt) {
+          const diff = getSessionDiff(persistDir, lastRow.startedAt, {
+            agent: agentName,
+            limit: 20,
+          });
+          const diffBlock = formatSessionDiff(diff);
+          if (diffBlock) {
+            ctxLines.push(``, diffBlock);
+          }
+        }
+      } catch {
+        // Non-critical — skip silently if DB unavailable
+      }
     }
 
     // P3.5 Checkpoint injection: if this agent has a previous checkpoint,

@@ -90,6 +90,7 @@ function hasBashWriteEvidence(messages: BeforeToolCallContext["context"]["messag
 function hasVerificationAfterLastWrite(messages: BeforeToolCallContext["context"]["messages"]): boolean {
   // Walk messages to find indices of tool calls
   let lastWriteIdx = -1;
+  let lastWriteName = "";
   let hasVerifyAfterWrite = false;
 
   for (let i = 0; i < messages.length; i++) {
@@ -105,6 +106,7 @@ function hasVerificationAfterLastWrite(messages: BeforeToolCallContext["context"
       // Is this a write/edit?
       if (WRITE_TOOL_NAMES.has(name)) {
         lastWriteIdx = i;
+        lastWriteName = name;
         hasVerifyAfterWrite = false; // Reset — need new verification after this write
         continue;
       }
@@ -116,6 +118,7 @@ function hasVerificationAfterLastWrite(messages: BeforeToolCallContext["context"
           const cmd = args.command;
           if (BASH_WRITE_PATTERNS.test(cmd)) {
             lastWriteIdx = i;
+            lastWriteName = "bash";
             hasVerifyAfterWrite = false;
             continue;
           }
@@ -145,6 +148,10 @@ function hasVerificationAfterLastWrite(messages: BeforeToolCallContext["context"
 
   // No writes found — nothing to verify, safe to proceed
   if (lastWriteIdx === -1) return true;
+
+  // edit() and write() are self-verifying — they return diffs/previews inline.
+  // Only bash-based writes need separate post-write verification.
+  if (lastWriteName === "write" || lastWriteName === "edit") return true;
 
   return hasVerifyAfterWrite;
 }
@@ -257,26 +264,9 @@ export function createFinishGuard(): (
       };
     }
 
-    // ── Gate 2: Write evidence exists but no verification after last write — block (FM-3.3) ──
-    if (!hasVerificationAfterLastWrite(ctx.context.messages)) {
-      return {
-        block: true,
-        reason:
-          `finish(status: "success") blocked [FM-3.3]: You edited/wrote files but your transcript ` +
-          `contains no verification AFTER your last edit. Before calling finish(), you must verify ` +
-          `your changes using at least one of:\n` +
-          `1. read() — read back the changed file to confirm correctness\n` +
-          `2. bash("npx vitest --run test/...") — run the relevant test\n` +
-          `3. bash("npx tsc --noEmit") — type-check the project\n` +
-          `4. bash("node -c file.js") — syntax-check the file\n` +
-          `5. bash("ls -la file && wc -l file") — verify file exists with expected size\n` +
-          `Run a verification command, then call finish() again.`,
-        redirect: {
-          workflow: "verify-wrap",
-          task: "Verify the changes described in the finish summary before completing",
-        },
-      };
-    }
+    // Gate 2 (FM-3.3 post-write verification) removed — deduplicated.
+    // verification-depth-guard.ts T2 covers this with better per-call-index tracking.
+    // Keeping both caused double-blocking: agents saw two error messages for one issue.
 
     // All gates passed — allow
     return undefined;

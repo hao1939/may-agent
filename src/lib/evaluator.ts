@@ -268,7 +268,9 @@ function parseTaskEvaluation(text: string): {
     lessons: null as string | null,
   };
 
-  const jsonMatch = text.match(/```json\s*\n([\s\S]*?)\n\s*```/);
+  // Try ```json fenced block first, then fall back to bare JSON object with "agents" key
+  const jsonMatch = text.match(/```json\s*\n([\s\S]*?)\n\s*```/)
+    ?? text.match(/(\{[\s\S]*"agents"\s*:\s*\{[\s\S]*\}[\s\S]*\})/);
   if (jsonMatch) {
     try {
       const parsed = JSON.parse(jsonMatch[1]);

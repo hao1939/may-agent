@@ -96,10 +96,10 @@ describe("verification-depth-guard", () => {
   });
 
   describe("T1: git on gitignored paths", () => {
-    test("blocks when only verification is git commands on agents/", async () => {
+    test("blocks when only verification is git commands on agents/ (bash write)", async () => {
       const guard = createVerificationDepthGuard("bob");
       const ctx = makeContext([
-        { name: "edit", args: { path: "agents/shared/common-sense.md", oldText: "old", newText: "new" } },
+        { name: "bash", args: { command: "sed -i 's/old/new/' agents/shared/common-sense.md" } },
         { name: "bash", args: { command: "git diff agents/shared/common-sense.md" } },
         { name: "bash", args: { command: "git status agents/shared/" } },
       ]);
@@ -112,7 +112,7 @@ describe("verification-depth-guard", () => {
     test("allows when real verification exists alongside git commands", async () => {
       const guard = createVerificationDepthGuard("bob");
       const ctx = makeContext([
-        { name: "edit", args: { path: "agents/shared/common-sense.md", oldText: "old", newText: "new" } },
+        { name: "bash", args: { command: "sed -i 's/old/new/' agents/shared/common-sense.md" } },
         { name: "bash", args: { command: "git diff agents/shared/common-sense.md" } },
         { name: "read", args: { path: "agents/shared/common-sense.md" } }, // real verification
       ]);
@@ -120,15 +120,24 @@ describe("verification-depth-guard", () => {
       expect(result).toBeUndefined();
     });
 
-    test("single git command still triggers T2 (no meaningful post-write verification)", async () => {
+    test("single git command doesn't trigger for self-verifying edit()", async () => {
       const guard = createVerificationDepthGuard("bob");
       const ctx = makeContext([
         { name: "edit", args: { path: "agents/shared/common-sense.md", oldText: "old", newText: "new" } },
         { name: "bash", args: { command: "git status agents/shared/" } },
       ]);
       const result = await guard(ctx);
-      // Even with one git command, git on agents/ isn't real verification,
-      // so T2 fires because there's no post-write verification
+      // edit() is self-verifying — returns diff inline
+      expect(result).toBeUndefined();
+    });
+
+    test("single git command triggers T2 for bash writes", async () => {
+      const guard = createVerificationDepthGuard("bob");
+      const ctx = makeContext([
+        { name: "bash", args: { command: "sed -i 's/old/new/' agents/shared/common-sense.md" } },
+        { name: "bash", args: { command: "git status agents/shared/" } },
+      ]);
+      const result = await guard(ctx);
       expect(result).toBeDefined();
       expect(result!.block).toBe(true);
       expect(result!.reason).toContain("T2-no-post-write-verification");
@@ -136,17 +145,36 @@ describe("verification-depth-guard", () => {
   });
 
   describe("T2: no post-write verification", () => {
-    test("blocks when write exists but no verification after", async () => {
+    test("blocks when bash write exists but no verification after", async () => {
       const guard = createVerificationDepthGuard("bob");
       const ctx = makeContext([
         { name: "read", args: { path: "agents/bob/todo.md" } }, // pre-write read
-        { name: "edit", args: { path: "agents/bob/todo.md", oldText: "old", newText: "new" } },
+        { name: "bash", args: { command: "sed -i 's/old/new/' agents/bob/todo.md" } },
         // No post-write verification
       ]);
       const result = await guard(ctx);
       expect(result).toBeDefined();
       expect(result!.block).toBe(true);
       expect(result!.reason).toContain("T2-no-post-write-verification");
+    });
+
+    test("edit() is self-verifying (returns diff), no separate verification needed", async () => {
+      const guard = createVerificationDepthGuard("bob");
+      const ctx = makeContext([
+        { name: "read", args: { path: "agents/bob/todo.md" } },
+        { name: "edit", args: { path: "agents/bob/todo.md", oldText: "old", newText: "new" } },
+      ]);
+      const result = await guard(ctx);
+      expect(result).toBeUndefined();
+    });
+
+    test("write() is self-verifying (returns preview), no separate verification needed", async () => {
+      const guard = createVerificationDepthGuard("bob");
+      const ctx = makeContext([
+        { name: "write", args: { path: "agents/bob/todo.md", content: "new content" } },
+      ]);
+      const result = await guard(ctx);
+      expect(result).toBeUndefined();
     });
 
     test("allows when read() follows write()", async () => {
@@ -179,12 +207,12 @@ describe("verification-depth-guard", () => {
       expect(result).toBeUndefined();
     });
 
-    test("blocks when only verification is before the write (not after)", async () => {
+    test("blocks when only verification is before the bash write (not after)", async () => {
       const guard = createVerificationDepthGuard("bob");
       const ctx = makeContext([
         { name: "read", args: { path: "src/pricing.ts" } }, // pre-write read
         { name: "bash", args: { command: "node test-pricing.js" } }, // pre-write test
-        { name: "edit", args: { path: "src/pricing.ts", oldText: "old", newText: "new" } },
+        { name: "bash", args: { command: "sed -i 's/old/new/' src/pricing.ts" } },
         // No post-write verification!
       ]);
       const result = await guard(ctx);
@@ -192,10 +220,10 @@ describe("verification-depth-guard", () => {
       expect(result!.block).toBe(true);
     });
 
-    test("bash redirect is treated as write, not verification", async () => {
+    test("bash redirect after edit is treated as write, not verification", async () => {
       const guard = createVerificationDepthGuard("bob");
       const ctx = makeContext([
-        { name: "edit", args: { path: "agents/bob/todo.md", oldText: "old", newText: "new" } },
+        { name: "bash", args: { command: "sed -i 's/old/new/' agents/bob/todo.md" } },
         { name: "bash", args: { command: "echo 'done' >> agents/bob/journal.md" } },
         // The bash redirect is a write, not a verification
       ]);
@@ -209,7 +237,7 @@ describe("verification-depth-guard", () => {
     test("warns instead of blocking when block=false", async () => {
       const guard = createVerificationDepthGuard("bob", { block: false });
       const ctx = makeContext([
-        { name: "edit", args: { path: "agents/bob/todo.md", oldText: "old", newText: "new" } },
+        { name: "bash", args: { command: "sed -i 's/old/new/' agents/bob/todo.md" } },
         // No post-write verification
       ]);
       const result = await guard(ctx);
@@ -225,7 +253,7 @@ describe("verification-depth-guard", () => {
         onBlock: (a, s, r) => { captured = { agent: a, session: s, rule: r }; },
       });
       const ctx = makeContext([
-        { name: "write", args: { path: "test.md", content: "hello" } },
+        { name: "bash", args: { command: "sed -i 's/old/new/' test.md" } },
       ]);
       await guard(ctx);
       expect(captured).not.toBeNull();
@@ -256,11 +284,11 @@ describe("verification-depth-guard", () => {
       expect(result).toBeUndefined();
     });
 
-    test("still blocks when real deliverable is unverified alongside process artifact", async () => {
+    test("still blocks when real bash deliverable is unverified alongside process artifact", async () => {
       const guard = createVerificationDepthGuard("optimizer");
       const ctx = makeContext([
         { name: "write", args: { path: "agents/optimizer/DELIVERABLES_CHECKLIST.md", content: "- [ ] task 1" } },
-        { name: "edit", args: { path: "src/pricing.ts", oldText: "old", newText: "new" } },
+        { name: "bash", args: { command: "sed -i 's/old/new/' src/pricing.ts" } },
         // No verification after the real deliverable write
       ]);
       const result = await guard(ctx);
@@ -273,7 +301,7 @@ describe("verification-depth-guard", () => {
       const guard = createVerificationDepthGuard("optimizer");
       const ctx = makeContext([
         { name: "write", args: { path: "agents/optimizer/DELIVERABLES_CHECKLIST.md", content: "- [ ] task 1" } },
-        { name: "edit", args: { path: "src/pricing.ts", oldText: "old", newText: "new" } },
+        { name: "bash", args: { command: "sed -i 's/old/new/' src/pricing.ts" } },
         { name: "read", args: { path: "src/pricing.ts" } }, // verifies the real deliverable
       ]);
       const result = await guard(ctx);
