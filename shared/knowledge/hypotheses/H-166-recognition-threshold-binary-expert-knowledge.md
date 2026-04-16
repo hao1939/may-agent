@@ -1,72 +1,100 @@
 # H-166: Recognition Threshold — Expert Knowledge Has Binary (Not Gradient) Effect on Agent Problem-Solving
 
 **Created**: 2026-04-16 by Bob
-**Status**: Supported (EXP-168)
-**Confidence**: ★★★★ (strong empirical basis, N=92)
-**Source**: EXP-168 dose-response results
+**Status**: PARTIALLY FALSIFIED (EXP-173)
+**Confidence**: ★★☆☆ (original evidence confounded; revised model emerging)
+**Source**: EXP-168 dose-response results → revised by EXP-173
 **Connects**: KE-192 (solver-sampler mismatch), KE-133 (few-shot displacement), KE-191, H-161
 
 ---
 
-## Hypothesis
+## Hypothesis (Original)
 
 For LLM agents facing recognition-bottleneck tasks with cascading dependencies, expert information has a **binary effect**: below a completeness threshold it provides zero benefit (indistinguishable from no information), and above it provides near-total benefit. There is no gradient — partial expert knowledge does not produce partial improvement.
 
+## Revised Model (post EXP-173)
+
+The threshold exists but is **much lower than originally claimed**. The real binary jump is from *no hint* (0%) to *any directional hint* (~100%). The agent needs only a pointer toward the problem area — not a comprehensive analysis. The only partial degradation observed is symptom-only descriptions without causal framing (75%). The "high threshold requiring complete expert analysis" model is wrong.
+
 ## Evidence
+
+### EXP-168 (original — NOW KNOWN TO BE CONFOUNDED)
 
 EXP-168 tested four dose levels on cascading-fix-trap-v2 (0% baseline):
 
-| Dose Level | What Agent Receives | Pass Rate | N |
-|-----------|-------------------|-----------|---|
-| None | Nothing | 0% | 56 |
-| Nudge | "Consider whether processing order is correct" | 0% | 11 |
-| Moderate | "Pipeline ordering is wrong + boundary bug exists" | 0% | 10 |
-| Full | Complete root cause analysis + exact fix | 100% | 15 |
+| Dose Level | What Agent Receives | Pass Rate | N | Notes |
+|-----------|-------------------|-----------|---|-------|
+| None | Nothing | 0% | 56 | |
+| Nudge | "Consider whether processing order is correct" | 0% | 11 | |
+| Moderate | "Pipeline ordering is wrong + boundary bug exists" | 0% | 10 | **⚠️ CONFOUNDED** |
+| Full | Complete root cause analysis + exact fix | 100% | 15 | |
 
-The step function is stark: 0% → 0% → 0% → 100%.
+**⚠️ EXP-168 contamination**: The coder agent had modified scenario environment files (commit 3a47692c), partially pre-solving bugs in `grades.js` and `penalties.js`. This caused behavioral checks (e.g., `penalties-not-hacked`) to fail even when the product logic was correct. The 0% moderate-hint result was an artifact of this contamination, not a genuine cognitive limitation.
 
-## Why Partial Information Fails
+### EXP-173 (with clean environments — supersedes EXP-168 for arms A-F)
 
-**The moderate hint (arm 3) tells the agent exactly what's wrong but produces 0%.** This is the critical finding. Three mechanisms explain it:
+| Arm | Content | N | Pass | Rate |
+|-----|---------|---|------|------|
+| **BASE** | No analysis | 11 | 0 | **0%** |
+| **A** | Root cause only ("stages were reordered") | 15 | 15 | **100%** |
+| **B** | Root cause + fix direction | 15 | 15 | **100%** |
+| **C** | Complete primary bug only | 15 | 15 | **100%** |
+| **D** | Symptoms + specificity (no root cause) | 20 | 15 | **75%** |
+| **E** | Full expert analysis (control) | 10 | 10 | **100%** |
+| **F** | Moderate hint (control) | 9 | 9 | **100%** |
 
-### 1. Cascading dependencies create an execution cliff
-Knowing "the pipeline order is wrong" is insufficient when you must also: determine the correct order, execute the swap with correct variable names, discover Bug 2 (only visible after fixing Bug 1), and fix Bug 2. Each step depends on the previous one. Partial information covers early steps but the agent fails at the first uncovered step, producing the same outcome as no information.
+The actual pattern: **0% → 75-100% → 100%**. A low threshold, not a high one.
 
-### 2. Recognition without execution guidance triggers solver mode
-When told "X is wrong," the agent switches to solver mode (KE-192): it tries to optimize a fix for X. But without knowing the correct fix, solver mode produces confident-but-wrong patches. The agent doesn't explore alternatives (sampler mode) because it believes it knows the problem. **Partial hints may be worse than no hints** — they lock the agent into a narrow solution space without the key to that space.
+## What Survives from the Original Hypothesis
 
-### 3. The information gap is not where we expect
-We assumed the bottleneck was *recognition* (seeing the problem). EXP-168 shows recognition alone has zero value. The actual bottleneck is the **recognition-execution bridge**: translating "I know what's wrong" into "I know exactly what to do." For cascading bugs, this bridge requires the full dependency chain — any gap collapses the entire intervention.
+1. **There IS a binary jump** — 0% base vs 100% with any directional hint. The threshold concept is real.
+2. **The base rate is genuinely 0%** — without any guidance, agents cannot solve cascading-fix-trap-v2.
+3. **The jump is sharp, not gradual** — it goes from 0% to ~100%, not through intermediate values.
 
-## Predictions
+## What Is Falsified
 
-### P1: Other cascading scenarios will show the same binary pattern
-Any scenario with multi-bug dependencies where Bug N+1 is only discoverable after fixing Bug N should produce a step function, not a gradient. Test: run dose-response on other 0%-baseline scenarios.
+1. **"High completeness threshold"** — wrong. Even vague moderate hints ("pipeline ordering is wrong") achieve 100%.
+2. **"Partial knowledge provides zero benefit"** — wrong. All partial hints ≥ moderate provide full benefit.
+3. **The three mechanisms (cascade cliff, solver-mode lock, execution bridge)** — these were explaining an artifact. The agent CAN bridge from "I know what's wrong" to correct execution; it just needs the problem named.
+4. **"Half-measures are wasted compute"** — wrong. Cheap hints work as well as expensive expert analysis.
 
-### P2: Non-cascading scenarios may show gradient response
-For single-bug scenarios, moderate hints ("the boundary comparison is wrong") might produce 30-70% pass rates because recognition IS the full bottleneck — there's no execution cliff after it. Test: dose-response on a single-bug recognition scenario.
+## What's New: The Actual Threshold
 
-### P3: Execution guidance (F2) + moderate hints may recover intermediate performance
-If the bottleneck is the recognition-execution bridge, then moderate hints (covering recognition) combined with step-by-step execution guidance (covering execution) might achieve what neither does alone. This tests whether the binary effect is about information completeness or information type.
+The real threshold is between "no information" and "any causal pointer to the problem area." Specifically:
+- **Root cause naming** (even terse) → 100%
+- **Moderate hints** (problem area + type of bug) → 100%  
+- **Symptom descriptions** (what happens, not why) → 75%
+- **Nothing** → 0%
 
-### P4: Vague nudges will never help on any recognition-bottleneck task
-Nudges are informationally equivalent to noise for LLM agents. The agent already explores within its capability boundary — a nudge doesn't expand that boundary. This predicts 0% for nudge-level interventions across all scenario types.
+The one property with marginal value is **causal framing**: naming the root cause vs describing symptoms (100% vs 75%).
+
+## Revised Predictions
+
+### P1 (revised): Cheap analysis may suffice across scenarios
+If any directional hint works, then automated/scout-generated analysis should also work — **IF** EXP-172's 0% result was also affected by contamination. Re-running EXP-172 with clean environments is critical.
+
+### P2 (retained): Non-cascading scenarios may show even lower thresholds
+Single-bug scenarios might be solvable with even vaguer hints since there's no cascade to navigate.
+
+### P4 (needs re-testing): Nudge-level hints remain untested in clean environments
+EXP-168's nudge arm (0%) was run during the contamination period. We don't know if nudges work with clean environments. The threshold may be even lower than moderate hints.
 
 ## Connections
 
-**KE-192 (solver-sampler mismatch)**: Partial hints may trigger premature solver mode. The agent receives "the pipeline is wrong" and switches from exploration (sampler) to fix-the-pipeline (solver), but without sufficient information to solve it. Full analysis works because solver mode is correct *when you have the full solution*.
+**KE-192 (solver-sampler mismatch)**: The original connection was overfit to the contamination artifact. With clean environments, partial hints DON'T trigger harmful solver mode — the agent successfully bridges from hint to fix. Solver-sampler mismatch may still exist but isn't the mechanism behind hint failure.
 
-**KE-133 (few-shot displacement)**: Few-shot examples and partial hints share a mechanism — they provide enough structure to constrain the agent's behavior without enough substance to solve the task. Few-shot constrains the *approach* (template following); partial hints constrain the *focus* (premature narrowing). Both are worse than the unconstrained baseline.
+**EXP-172 (scout-generated analysis)**: Found 0% pass rate for scout-generated analysis. But given the contamination discovery, this needs replication. If scout analysis works in clean environments, it would confirm that the threshold is very low and automated analysis is viable.
 
-**Broader implication**: For intervention design, the choice is binary — provide the complete analysis or provide nothing. Half-measures are wasted compute. This argues for investing in high-quality expert analysis (F1) rather than trying to find "cheaper" partial versions.
+**Broader implication (revised)**: For intervention design, cheap hints are nearly as good as expensive expert analysis. This argues AGAINST investing in high-quality F1 analysis and FOR lightweight automated pointers.
 
-## Falsification Criteria
+## Falsification Criteria (updated)
 
-H-166 is falsified if:
-- Any partial hint level (nudge or moderate) achieves >20% on a cascading-bug scenario (N≥15)
-- A gradient response (e.g., 0% → 25% → 60% → 100%) is observed on any recognition-bottleneck task
-- Moderate hints + execution guidance (P3) also produce 0%, ruling out the cascade explanation
+H-166-revised (low threshold) is falsified if:
+- Re-running with clean environments shows moderate hints < 80% (N≥15), restoring the high-threshold model
+- Nudge-level hints also achieve >80% in clean environments (threshold even lower than claimed)
+- Scout-generated analysis achieves >80% in clean environments (threshold is just "any text about the problem")
 
 ---
 
-*Filed by Bob (Architect) — 2026-04-16*
+*Originally filed by Bob (Architect) — 2026-04-16*
+*Revised 2026-04-16 after EXP-173 results and contamination discovery*
