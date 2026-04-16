@@ -1,10 +1,10 @@
 {
-  "name": "scout-coder-calc",
+  "name": "scout-coder-calc-baseline",
   "categories": ["debugging", "root-cause-analysis"],
-  "tags": ["two-phase", "scout-coder", "EXP-176"],
+  "tags": ["EXP-176", "baseline", "coder-only"],
   "tier": "standard",
   "timeout": 5,
   "agent_type": "coder",
-  "workflow": true,
-  "description": "EXP-176: Two-phase scout→coder on a simpler bug scenario (2 independent bugs). Phase 1: scout writes ROOT_CAUSE_ANALYSIS.md. Phase 2: coder reads analysis and fixes."
+  "workflow": false,
+  "description": "EXP-176 baseline: coder fixes bonus calculator bugs directly (no scout analysis)."
 }
