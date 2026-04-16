@@ -5386,5 +5386,7 @@ Notes: these red tests block a PASS verdict for the current tree; investigate re
 - src/db.js: LIKE handler coerces param with String() and strips leading/trailing % only; uses includes() for in-memory match; category param lowercased.
 Mandatory checks:
 - ./node_modules/.bin/tsc --noEmit: FAIL (exit 2) with TS1470/TS1309 (CommonJS output while repo uses import.meta + top-level await) in src/app/bundle-mode.ts, src/app/may.ts, src/app/ui/web.ts, and some workflow guard test files. This appears pre-existing config mismatch, not caused by product-search JS additions.
-- ./node_modules/.bin/vitest --run: FAIL overall despite 1968 tests passing; 1 failed suite: test/product-search.test.js fails because it calls process.exit(0) (Vitest reports "process.exit unexpectedly called with 0"). Action: rewrite test/product-search.test.js as real Vitest tests (describe/it/expect) or exclude from Vitest run.
+- ./node_modules/.bin/vitest --run: FAIL overall: 1968 tests passed, but 1 suite failed: test/product-search.test.js calls process.exit(0) → Vitest error "process.exit unexpectedly called with \"0\"". Action: rewrite test/product-search.test.js as real Vitest tests (describe/it/expect) and remove manual process.exit/console harness, or exclude this file from Vitest.
+
+2026-04-16T03:01Z — Proactive scan: reviewed uncommitted product-search scenario additions (src/product-search.js, src/db.js). Verified parameter binding usage; noted formatting defaults (missing/NaN price coerced to $0.00). Logged mandatory check results above.
 
