@@ -1,0 +1,9 @@
+{
+  "name": "experiment-analysis-report",
+  "categories": ["optimizer-workflow"],
+  "tags": ["analysis", "reporting", "pre-deploy"],
+  "tier": "smoke",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}
