@@ -12,10 +12,12 @@ const policy = require("./policy");
 
 function applyLatePenalty(record) {
   if (record.late_days <= 0) {
+    const pct = (record.score / record.max_score) * 100;
     return {
       ...record,
       penalty_applied: 0,
-      adjusted_pct: (record.score / record.max_score) * 100,
+      adjusted_pct: pct,
+      pct: Math.round(pct * 100) / 100,
     };
   }
 
@@ -35,6 +37,7 @@ function applyLatePenalty(record) {
     score: Math.round(adjustedScore * 100) / 100,
     penalty_applied: penalty,
     adjusted_pct: Math.round(adjustedPct * 100) / 100,
+    pct: Math.round(adjustedPct * 100) / 100,
   };
 }
 
