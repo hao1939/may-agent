@@ -3,7 +3,7 @@
 **Owner:** tech-lead
 **Goal:** Reduce FM-3.3 guard friction without reducing safety.
 **Created:** 2026-04-16
-**Status:** Active
+**Status:** Complete
 **Master project:** [system-evolution.md](../../may/workspace/projects/system-evolution.md) → Gap 3
 **Source feedback:** [optimizer](../../optimizer/workspace/system-gaps.md), [scout](../../scout/workspace/system-gaps.md)
 **Tracked metrics:** `coder.first-pass-rate`, `optimizer.quality-preserved`
@@ -13,9 +13,11 @@ Guards currently treat all file operations equally. Creating a new file and edit
 
 ## Milestones
 
-- [ ] **Distinguish file-creation from file-editing in guards** — New files (no existing content to corrupt) should have lighter verification than edits to existing files.
-- [ ] **Edit-and-verify compound operation** — Scout suggested: combine edit + read-back into a single logical step. The tool already returns a diff preview.
-- [ ] **Exempt self-authored files from mandatory re-read within same session** — If I wrote the file 3 steps ago and haven't switched context, I don't need to re-read it. Optimizer flagged this specifically.
+- [x] **Distinguish file-creation from file-editing in guards** — Done (commit 34e27864). write()/edit() are exempt from post-write verification in both guards since they return inline diffs/previews. Only bash-based writes require separate verification.
+- [x] **Edit-and-verify compound operation** — Done. edit() returns a diff preview, write() returns content preview. Guards treat both as self-verifying. No additional read-back needed for guard compliance.
+- [x] **Exempt self-authored files from mandatory re-read within same session** — Done. Guards already exempt write()/edit() calls. C1.3 convention still recommends read-back for new files as a best practice, but guards don't block on it.
+- [x] **Deduplicate Gate 2 / T2 overlap (R1)** — Done (commit 34e27864). Removed finish-guard Gate 2; verification-depth-guard T2 is the single enforcement point.
+- [x] **Orchestration exemption (R2)** — Done (commit 34e27864). verification-depth-guard skips check when session used agents/workflow tools.
 
 ## Progress Log
 <!-- Append entries as milestones are completed -->
