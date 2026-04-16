@@ -1,12 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776378639154_140
+- **Session:** s_1776380458375_161
 - **Status:** done
-- **When:** 2026-04-16T22:32:33.119Z
-- **Duration:** 1m53s
+- **When:** 2026-04-16T23:01:38.100Z
+- **Duration:** 39s
 
 ## What Happened
-System healthy, no errors, no pending tasks. Build clean. Last lenses: A→B→D, next is C.
-
-Lens C target: dead weight in cron handlers — are all registered handlers actually doing useful work?
+Now I have enough. `run()` is fire-and-forget (returns sessionId string), `callAgent()` wraps `run()` + awaits completion + depth tracking. No `spawnAgent` exists.
