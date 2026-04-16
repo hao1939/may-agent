@@ -342,7 +342,9 @@
 - 2026-04-16 03:00: **Infra**: Lens C — evaluator.ts dead weight audit (952 LOC). COMPLETE. Key findings: unused `extractToolErrors` import, 45-line `buildRubric()` duplicated between evaluateTask/evaluateStandaloneSession, vestigial scoring normalization code, defensive null checks on always-present fields. See workspace/finding-evaluator-ts-dead-weight-audit-952-loc.md
 - 2026-04-16 03:30: **Feature rotation** — No new features on dispatch board (Gatekeeper still blocked on Hao approval). Fell back to Lens D.
 - 2026-04-16 03:30: **Infra**: Lens D — manager.ts fragility audit (2443 LOC). COMPLETE. Key findings: silent swallow of DB/meta write failures in completion path, unguarded session map growth (no cleanup of aborted sessions), callAgent error propagation can orphan child sessions, single retry with no backoff on DB locks. See workspace/finding-manager-ts-fragility-audit-2443-loc.md
-- **Next**: Lens A next cycle. **Cycle type**: feature rotation.
+- 2026-04-16 04:00: **Feature rotation** — No new features on dispatch board (Gatekeeper still blocked on Hao approval). Fell back to Lens A.
+- 2026-04-16 04:00: **Infra**: Lens A — may.ts architecture review (1243 LOC). COMPLETE. Key findings: 7 responsibilities in one file, evaluateTask() is 150+ lines of business logic belonging in evaluator.ts, handler registration inline-defines complex logic instead of importing from handler files. See workspace/finding-may-ts-architecture-review-1243-loc.md
+- **Next**: Lens B next cycle. **Cycle type**: feature rotation.
 
 ## Low-Priority Cleanup
 - [x] Phase 5d: Deprecate memory fallback — DONE (s_1775527469736_184, commit 34263ca)
