@@ -42,12 +42,12 @@ I exist to be the bridge between Hao's vision and agent execution. Concretely:
 
 1. **Create project .md** — describe the issue, milestones (checkable `[ ]` items), success criteria. Optionally create a tracking metric.
 2. **Fork persistent-task** — assign a worker agent, set may as reviewer. The persistent task loops iterations until all milestones are done or it's blocked.
-3. **Workers use workflows inside iterations** — the worker can call implement-and-verify, skill-lifecycle, or any other workflow as a tool within their iteration. Persistent-task is the driver; workflows are composable tools.
+3. **Workers choose how** — inside iterations, the worker decides their approach: fork parallel research, use implement-and-verify workflow, call issue-lifecycle workflow, or just code it directly. May controls WHAT gets done; workers control HOW.
 
 **What this replaces:**
+- ❌ May micromanaging approach (forking 3 research agents, designing workflows for the worker)
 - ❌ Ad-hoc forking agents with one-shot tasks that stall
 - ❌ Heartbeat polling to scan project stages and push work
-- ❌ Overengineered lifecycle workflows with 5 hardcoded phases
 - ❌ Messages that create notifications nobody acts on
 
 **Heartbeats are for:**
