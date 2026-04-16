@@ -1,25 +1,33 @@
 # Metrics + Gym Fast Feedback — Project Tracker
 
 **Created:** 2026-04-16  
-**Approved by:** Hao (req:e961c558)  
+**Approved by:** Hao  
 **Design:** agents/shared/may-agent-docs/design/metric-tension-pairs.md
 
 ## Milestones
 
 ### M1: Seed Role-Aligned Metrics — tech-lead
-- **Status:** ⏳ Dispatched
-- **Scope:** Implement the 25 metrics from the design into the metric system DB tables. Wire fast metrics to heartbeat snapshots.
-- **Design ref:** metric-tension-pairs.md Part 1
+- **Status:** ✅ Done (2026-04-16)
+- **Result:** 25 role-aligned metrics in may.db
 
 ### M2: Scenario Triage — coach  
-- **Status:** ⏳ Dispatched
-- **Scope:** Baseline 295 gym scenarios. Tag each by discrimination power and role relevance. Identify which scenarios give fast feedback for which metrics.
-- **Design ref:** metric-tension-pairs.md Part 2
+- **Status:** ✅ Done (2026-04-16)
+- **Result:** 323 scenarios → 101 curated (64 discriminating, 29 regression canaries, 8 hard floor). Gaps: scout/optimizer/coach near-zero coverage.
+- **Deliverable:** agents/gym/TRIAGE.md
 
-### M3: Wire Gym → Metrics (future)
-- **Status:** Not started
-- **Scope:** Connect gym results to metric updates. 20-min validation loops.
+### M3: Coach Fast Loop Pilot — coach
+- **Status:** ⏳ Dispatching now
+- **Scope:** Pick one low-pass scenario, design intervention, run 10-trial A/B, record as coach.intervention-hit-rate snapshot.
 
-### M4: Dashboard + Alerts (future)
+### M4: Optimizer Pre-deploy Gate — optimizer
+- **Status:** ✅ Done (2026-04-16)
+- **Result:** 5 scenarios selected, baseline 1/5 (20% pass rate), documented with run commands.
+- **Deliverable:** agents/optimizer/workspace/pre-deploy-battery.md
+
+### M5: Scout Scenario Creation — scout + coder
+- **Status:** ⏳ Dispatching now
+- **Scope:** Create 10 scout-specific gym scenarios (paper eval, synthesis, hypothesis, duplicate detection).
+
+### M6: Agent Heartbeat Integration — all
 - **Status:** Not started
-- **Scope:** Surface metrics in system_status, heartbeat injection, threshold alerts.
+- **Scope:** Each agent queries their metrics in heartbeat. Fast=every heartbeat, medium=daily, slow=weekly.
