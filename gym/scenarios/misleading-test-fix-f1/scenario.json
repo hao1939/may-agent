@@ -1,0 +1,11 @@
+{
+  "name": "misleading-test-fix-f1",
+  "description": "EXP-167 Arm C (F1-only): Expert ANALYSIS.md provided identifying which failures are code bugs vs test bugs. Tests whether expert analysis enables the agent to fix the test assertion instead of modifying correct code.",
+  "categories": ["judgment", "root-cause"],
+  "tags": ["behavioral", "discipline", "diagnosis", "EXP-167", "F1-only", "content-first"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false,
+  "baseline_scenario": "misleading-test-fix"
+}
