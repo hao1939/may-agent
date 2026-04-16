@@ -1,0 +1,9 @@
+{
+  "name": "scout-cross-reference",
+  "categories": ["knowledge-integration", "completeness"],
+  "tags": ["scout", "cross-reference", "knowledge-graph"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "scout",
+  "workflow": false
+}

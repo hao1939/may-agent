@@ -1,0 +1,9 @@
+{
+  "name": "scout-triage-efficiency",
+  "categories": ["efficiency", "judgment"],
+  "tags": ["scout", "triage", "time-management"],
+  "tier": "standard",
+  "timeout": 3,
+  "agent_type": "scout",
+  "workflow": false
+}

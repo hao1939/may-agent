@@ -1,0 +1,9 @@
+{
+  "name": "scout-source-credibility",
+  "categories": ["judgment", "reading-comprehension"],
+  "tags": ["scout", "credibility", "source-evaluation"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "scout",
+  "workflow": false
+}

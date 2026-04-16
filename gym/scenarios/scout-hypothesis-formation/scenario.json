@@ -1,0 +1,9 @@
+{
+  "name": "scout-hypothesis-formation",
+  "categories": ["judgment", "knowledge-integration"],
+  "tags": ["scout", "hypothesis", "formalization"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "scout",
+  "workflow": false
+}
