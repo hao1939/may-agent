@@ -1,18 +1,18 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-15 ~23:30 UTC
+Updated: 2026-04-16 ~00:00 UTC
 
 ## System Health
-- **Amy-kimi**: 🔴 DOWN — billing. Blocked on Hao.
-- **Bob**: 🟢 Active — 28 sessions/6h, avg 17 ops. Zero errors. (1 stuck heartbeat cancelled at 23:00)
-- **Coach**: 🟢 Active — 23 sessions/6h, avg 21 ops. Zero errors.
-- **Scout**: 🟢 Active — 13 sessions/6h, avg 11 ops. Zero errors.
-- **Tech-lead**: 🟢 Active — 32 sessions/6h, avg 24 ops. Zero errors.
-- **Optimizer**: 🟢 Active — 24 sessions/6h, avg 14 ops. Zero errors.
-- **Evaluator**: 🟢 Active — 48 sessions/6h, avg 0 ops. Zero errors.
-- **QA**: 🟢 Active — 12 sessions/6h, avg 7 ops. Zero errors.
+- **Amy**: 🟢 Active — 38 sessions/6h, avg 10 ops. Zero errors.
+- **Bob**: 🟢 Active — 27 sessions/6h, avg 15 ops. (1 stuck heartbeat cancelled at 00:00)
+- **Coach**: 🟢 Active — 22 sessions/6h, avg 21 ops. (1 stuck EXP-166 session cancelled at 00:00)
+- **Scout**: 🟢 Active — 13 sessions/6h, avg 12 ops. Zero errors.
+- **Tech-lead**: 🟢 Active — 30 sessions/6h, avg 24 ops. Zero errors.
+- **Optimizer**: 🟢 Active — 23 sessions/6h, avg 13 ops. Zero errors.
+- **Evaluator**: 🟢 Active — 53 sessions/6h, avg 0 ops. Zero errors.
+- **QA**: 🟢 Active — 12 sessions/6h, avg 8 ops. Zero errors.
 - **Coder**: 🟢 Active — 5 sessions/6h, avg 32 ops. Zero errors.
-- **Summary**: 9/9 healthy. Amy-kimi still down. Zero errors across the board.
+- **Summary**: 9/9 healthy. Zero errors. 2 stuck sessions cancelled (bob heartbeat, coach EXP-166).
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -56,10 +56,10 @@ Updated: 2026-04-15 ~23:30 UTC
 - **P2**: Amy-kimi billing — blocked on Hao.
 - ⚠️ **HOLD**: Ch2-production-gates implementation — Hold for EXP-170.
 
-## Latest Cycle Summary (23:30 Apr 15)
-- **SYSTEM**: 9/9 healthy. Zero errors. 1 stuck Bob heartbeat cancelled (22:22 start, 21 ops stalled).
-- **GATEKEEPER**: Recent commits reviewed — all agent-scope (tech-lead todo, coach skill, coder workspace, optimizer finding). No system-scope changes.
-- **DISPATCHED**: May ops diet → forked work session (s_1776295893018_198).
+## Latest Cycle Summary (00:00 Apr 16)
+- **SYSTEM**: 9/9 healthy. Zero errors. Amy back online (38 sessions, avg 10 ops). 2 stuck sessions cancelled (bob heartbeat, coach EXP-166).
+- **GATEKEEPER**: Only system-scope commit = my own ops diet heartbeat rewrite. Safe.
+- **OPS DIET**: ✅ Complete. Heartbeat rewritten to ≤10 ops target. This is the first heartbeat under the new regime.
 - **QUEUE**: 4 ready items. Next up: Metric Phase 3 adoption (post-restart), Coach work-session quality, Bob gym fix, Top-5 metrics dashboard.
 - **WAITING**: Gatekeeper Review Gate needs Hao approval. Metric System Phase 3 needs process restart.
 

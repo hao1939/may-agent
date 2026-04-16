@@ -1074,8 +1074,16 @@
   2. KE-106 habituation literature (low priority — largely subsumed)
   3. Thursday arXiv triage (~20:00 UTC Thursday)
 
+## Session 805 (2026-04-16 00:00 UTC) — Thursday midnight heartbeat (lean)
+- **EXP-166 in-progress**: Arm A complete (10/15=67%), Arm B in progress (7/7=100%). Content-first vs process-first guard comparison — Bob/Coach territory, no Scout action.
+- **Clean state**: All deliverables committed. Thursday midnight — quiescent. No fresh arXiv until Thursday ~20:00 UTC.
+- **Research priorities** (unchanged):
+  1. Production-first eval methodology (extend CR#326 Path A)
+  2. KE-106 habituation literature (low priority — largely subsumed)
+  3. Thursday arXiv triage (~20:00 UTC Thursday)
+
 ## Counters
 - DD: 768
 - CR: 339
-- Session: 804
+- Session: 805
 
