@@ -1,0 +1,10 @@
+{
+  "name": "scout-coder-event-flow",
+  "categories": ["debugging", "root-cause-analysis"],
+  "tags": ["two-phase", "scout-coder", "EXP-176"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": true,
+  "description": "EXP-176: Two-phase scout→coder on event pipeline. Enricher uses wrong field name (userId vs user_id), causing all users to get defaults. Symptoms look like routing/channel bugs but root cause is in enricher."
+}
