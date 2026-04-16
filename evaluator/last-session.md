@@ -1,21 +1,21 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776382315415_182
+- **Session:** s_1776382324303_183
 - **Status:** done
-- **When:** 2026-04-16T23:32:04.301Z
-- **Duration:** 8s
+- **When:** 2026-04-16T23:32:09.536Z
+- **Duration:** 5s
 
 ## What Happened
 ```json
 {
   "agents": {
-    "may": {
-      "role": "Supervisor",
+    "coach": {
+      "role": "Builder",
       "capability_level": "L2",
-      "efficiency": 0.45,
-      "quality": 0.72,
+      "efficiency": 0.72,
+      "quality": 0.68,
       "verdict": "acceptable",
       "issues": [
-        "[ORDER_VIOLATION] Heartbeat injected an explicit op budget (\"≤12 ops per heartbeat\"), which conflicts with Standing Order [ORDER-004] (no turn/op budgets). This is in the injected heartbeat content, but May followed it and did not correct/escalate the conflict.",
-        "[FM-1.3-ish / RECOVER
+        "[ORDER_VIOLATION] Heartbeat followed an injected op-budget framing (\"Count: each tool call = 1 op\") despite Standing Order [ORDER-004] banning op/turn budgets in heartbeats; coach did not note/correct/escalate the conflict.",
+        "[FM-3.3 / VERIFICATION_FAILURE] Called finish(status=\"succe
