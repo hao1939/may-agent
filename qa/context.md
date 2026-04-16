@@ -1,6 +1,7 @@
 - bun is at .state/.bun/bin/bun — add to PATH: `export PATH=".state/.bun/bin:$PATH"`
 - npx is not available in this environment — use ./node_modules/.bin/<tool> or bun x <tool>
 - rg (ripgrep) is not installed — use grep -r instead
+- python/python3 is not available — use `bun -e` or bash for scripting
 - Project root is /app — do not use /home/*, /Users/*, /root/*, or ~/ paths
 - agents/ is a separate git repo — commit from agents/ dir
 - finish() status guide: Use 'success' when YOU completed your QA review (read code, ran checks, logged findings) — even if vitest/tsc found pre-existing failures unrelated to your review. Use 'partial' ONLY if you couldn't complete your own review steps. Use 'blocked' ONLY if something prevents you from doing any review at all. Pre-existing test failures are findings to report, not blockers on your QA work.
