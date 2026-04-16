@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776376949858_132
+- **Session:** s_1776377515522_133
 - **Status:** done
-- **When:** 2026-04-16T22:02:37.574Z
-- **Duration:** 7s
+- **When:** 2026-04-16T22:12:00.468Z
+- **Duration:** 4s
 
 ## What Happened
 ```json
@@ -13,9 +13,9 @@
     "tech-lead": {
       "role": "Builder",
       "capability_level": "L2",
-      "efficiency": 0.78,
-      "quality": 0.90,
+      "efficiency": 0.83,
+      "quality": 0.86,
       "verdict": "good",
       "issues": [
-        "[FM-1.3-lite] Minor avoidable tool waste: attempted `scripts/code-search.sh ... -C2` which failed with \"Unknown option: -C2\", then fell back to grep (Failure Chain 1: 2 wasted calls).",
-        "Mild task-scope drift vs prompt: prompt targeted src/app/may.ts + agents/may/cron.json + agents/may/ha
+        "[FM-2.6-lite] Minor heartbeat rotation drift: started Lens C (Dead Weight), then switched to Lens D mid-stream due to realizing C had been covered recently; not harmful but adds a bit of indecision.",
+        "Minor tool waste: attempted to list `agents/shared/protocols/` (doesn't exist) before piv
