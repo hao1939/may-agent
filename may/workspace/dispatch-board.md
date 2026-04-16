@@ -3,7 +3,7 @@
 Updated: 2026-04-15 ~22:00 UTC
 
 ## System Health
-- **Amy-kimi**: 🟢 Active — 49 sessions/6h, avg 12 ops. Zero errors.
+- **Amy-kimi**: 🔴 DOWN — billing. Blocked on Hao.
 - **Bob**: 🟢 Active — 33 sessions/6h, avg 13 ops. Zero errors.
 - **Coach**: 🟢 Active — 23 sessions/6h, avg 20 ops. Zero errors.
 - **Scout**: 🟢 Active — 14 sessions/6h, avg 13 ops. Zero errors.
@@ -12,7 +12,7 @@ Updated: 2026-04-15 ~22:00 UTC
 - **Evaluator**: 🟢 Active — 48 sessions/6h, avg 0 ops. Zero errors.
 - **QA**: 🟢 Active — 12 sessions/6h, avg 7 ops. Zero errors.
 - **Coder**: 🟢 Active — 1 session/6h, avg 14 ops. Zero errors.
-- **Summary**: All agents healthy. Amy back online. Zero errors across the board.
+- **Summary**: 9/9 healthy. Amy-kimi still down. Zero errors across the board.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -25,7 +25,7 @@ Updated: 2026-04-15 ~22:00 UTC
 ## Active Items
 | Issue | Status | Owner | Notes |
 |-------|--------|-------|-------|
-| Amy-kimi billing outage | ✅ Resolved | — | Back online (49 sessions/6h) |
+| Amy-kimi billing outage | 🔴 Blocked | Hao | Still down, needs balance refill |
 | **Metric System Phase 3 — Adoption** | ⏳ Active | multiple | Phase 3 dispatched: research_log adoption (bob+scout), quality investigation (coach), threshold fix (tech-lead ✅ DONE). |
 | **Model Diversity Review** | ⏳ Active | bob | Design review: which agent on which model? (req:c56a6ae4) |
 | **Fix compose-guards.ts (RETRY)** | ✅ DONE+MERGED | tech-lead | Merged to main (2705e8ce). finish(blocked/failure) bypasses guards, finish(success) blocked by quality gate. |
@@ -56,10 +56,11 @@ Updated: 2026-04-15 ~22:00 UTC
 - **P2**: Amy-kimi billing — blocked on Hao.
 - ⚠️ **HOLD**: Ch2-production-gates implementation — Hold for EXP-170.
 
-## Latest Cycle Summary (06:30 Apr 16)
-- **SYSTEM**: All agents healthy. Zero errors. Zero stuck. Coder very active (95 sessions/6h).
-- **DISPATCHED**: tsc --noEmit fix to tech-lead (s_1776321049303_482).
-- **IN PROGRESS**: Top-5 dashboard (tech-lead), Coach work-session quality, Bob gym reliability (coach).
+## Latest Cycle Summary (22:30 Apr 15)
+- **SYSTEM**: 9/9 healthy. Zero errors. Zero stuck sessions.
+- **COMPLETED**: WF error rate analysis done (s_1776290567108_147, 18 ops). Deliverable at `audits/wf-error-rate-analysis.md`. Bulk eval backlog cleared (2282 sessions, 0 remaining).
+- **DISPATCHED**: Coder task pipeline to tech-lead (s_1776292339351_164).
+- **QUEUE**: 5 ready items. Next up: May ops diet, Coach work-session quality.
 - **WAITING**: Gatekeeper Review Gate needs Hao approval. Metric System Phase 3 needs process restart.
 
 ## Archive Reference
