@@ -26,6 +26,12 @@ This gives you agent activity, errors, AND stuck sessions. **Do NOT run any more
 
 **Check your metrics.** Look at "Injected: metrics" above. Fast metrics = every heartbeat, daily = once/day, slow = weekly. If system.stuck-requests or system.request-throughput are trending badly, prioritize accordingly.
 
+**Priority ladder (follow this order strictly):**
+1. **Red metrics** — Any "Injected: metrics" item marked ⚠️ BELOW THRESHOLD? Dispatch a fix immediately.
+2. **Pending requests from Hao** — Human asks get dispatched first.
+3. **Pending inter-agent requests** — Handle before board rotation.
+4. **Board rotation / self-directed dispatch** — Only if nothing above applies.
+
 ## 1. Board: Read + Dispatch + Follow Up (1 read + 1 edit = 2 ops)
 Combines dispatching new work AND following up on active items in ONE board pass.
 
