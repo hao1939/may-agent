@@ -1,18 +1,17 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-15 ~22:00 UTC
+Updated: 2026-04-16 ~07:00 UTC
 
 ## System Health
-- **Amy-kimi**: 🔴 DOWN — billing. Blocked on Hao.
-- **Bob**: 🟢 Active — 33 sessions/6h, avg 13 ops. Zero errors.
-- **Coach**: 🟢 Active — 23 sessions/6h, avg 20 ops. Zero errors.
-- **Scout**: 🟢 Active — 14 sessions/6h, avg 13 ops. Zero errors.
-- **Tech-lead**: 🟢 Active — 36 sessions/6h, avg 22 ops. Zero errors.
-- **Optimizer**: 🟢 Active — 24 sessions/6h, avg 14 ops. Zero errors.
-- **Evaluator**: 🟢 Active — 48 sessions/6h, avg 0 ops. Zero errors.
-- **QA**: 🟢 Active — 12 sessions/6h, avg 7 ops. Zero errors.
-- **Coder**: 🟢 Active — 1 session/6h, avg 14 ops. Zero errors.
-- **Summary**: 9/9 healthy. Amy-kimi still down. Zero errors across the board.
+- **Bob**: 🟢 Active — 32 sessions/6h, avg 11 ops. Zero errors.
+- **Coach**: 🟢 Active — 31 sessions/6h, avg 10 ops. Zero errors.
+- **Scout**: 🟢 Active — 13 sessions/6h, avg 5 ops. Zero errors.
+- **Tech-lead**: 🟢 Active — 26 sessions/6h, avg 7 ops. Zero errors.
+- **Optimizer**: 🟢 Active — 25 sessions/6h, avg 8 ops. Zero errors.
+- **Evaluator**: 🟢 Active — 114 sessions/6h, avg 0 ops. Zero errors.
+- **QA**: 🟢 Active — 12 sessions/6h, avg 6 ops. Zero errors.
+- **Coder**: 🟢 Active — 86 sessions/6h, avg 10 ops. Zero errors.
+- **Summary**: 9/9 healthy. Zero errors. Coder utilization dramatically up (86 sessions vs 1 yesterday).
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
