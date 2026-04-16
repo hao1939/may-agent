@@ -55,3 +55,5 @@ All passing. Let me update the progress log in the project file:
 **Agent response:**
 tsc clean (no errors), 8/8 tests pass.
 **Files touched**: (see worker session)
+**Owner assessment**: DONE — — Milestone 2 ("Diff since last session" tool) is fully implemented. `src/lib/session-diff.ts` provides `getSessionDiff()` and `formatSessionDiff()` with git file changes, completed/new requests, and recent sessions since a timestamp. Supports agent filtering and limits. 8/8 tests pass, tsc clean. Clean, well-structured code. Next step would be integrating this into session startup (wiring it into manager.ts to inject the diff into agent context).
+
