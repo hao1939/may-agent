@@ -22,9 +22,9 @@ Keep orchestrator lean:
 - Prune old iterations in project file (collapse to one-liners)
 
 ## Milestones
+- [x] Implement context-lean orchestration (summarize worker output)
+- [x] Prune old iterations in project file
 - [ ] Measure current max iterations before overflow
-- [ ] Implement context-lean orchestration (summarize worker output)
-- [ ] Prune old iterations in project file
 - [ ] Test: 50+ iterations without overflow
 - [ ] Document the pattern for other workflows
 
@@ -34,3 +34,10 @@ Keep orchestrator lean:
 - Added `pruneOldIterations()` to persistent-task.ts — collapses old iterations to one-line summaries, keeps last 5 full
 - Verified 60% file size reduction at 25 iterations
 - Compiles clean
+
+### 2026-04-16 — completedSteps pruning (4cee1ca8)
+- **Root cause found**: `completedSteps` array in `workflow-tool.ts` grows unboundedly — each `ctx.runAgent()` pushes a full `TaskResult` (with all messages). For 50 iterations × 2 calls = 100 entries × ~2KB each = 200KB in memory, passed to guards at every step.
+- **Fix**: Added `pruneCompletedSteps()` — replaces full TaskResult with lightweight stub (empty messages, truncated text) for steps older than 20. Called after every push (4 call sites).
+- **Also**: `buildStepSummaries()` now only returns last 20 steps in the final workflow result, preventing the tool response from overflowing the parent session context.
+- **Milestones update**: ✅ Prune old iterations in project file (prior), ✅ Implement context-lean orchestration (completedSteps pruning)
+- TSC clean, 94 workflow tests pass
