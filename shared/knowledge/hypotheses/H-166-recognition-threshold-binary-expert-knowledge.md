@@ -70,8 +70,8 @@ The one property with marginal value is **causal framing**: naming the root caus
 
 ## Revised Predictions
 
-### P1 (revised): Cheap analysis may suffice across scenarios
-If any directional hint works, then automated/scout-generated analysis should also work — **IF** EXP-172's 0% result was also affected by contamination. Re-running EXP-172 with clean environments is critical.
+### P1 (revised): ~~Cheap analysis may suffice across scenarios~~ → **FALSIFIED by EXP-174**
+EXP-174 replicated with verified-clean environments: scout→coder = 0/22 (0%). Scout-generated analysis does NOT cross the threshold even without contamination. The threshold discriminates on *causal specificity* (does the hint name the mechanism?), not information quantity. Scout output ≈ base (0%), far below even symptom descriptions (75%). See KE-203.
 
 ### P2 (retained): Non-cascading scenarios may show even lower thresholds
 Single-bug scenarios might be solvable with even vaguer hints since there's no cascade to navigate.

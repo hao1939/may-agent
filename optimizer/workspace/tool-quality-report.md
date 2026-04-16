@@ -1,92 +1,94 @@
 # Tool Quality Report
 
-**Generated**: 2026-04-16T10:19  
+**Generated**: 2026-04-16T18:19  
 **Window**: 24h  
-**Total calls**: 6801  
-**Wasted calls**: 680  
-**Waste rate**: 10.0% ↑  
-**Sessions with failures**: 156  
+**Total calls**: 3148  
+**Wasted calls**: 733  
+**Waste rate**: 23.3% ↑  
+**Sessions with failures**: 178  
 
 ## Waste Rate Trend
 
-0.0% → 0.0% → 0.0% → 8.5% → 9.8% → **10.0%**
+0.0% → 8.5% → 9.8% → 10.0% → 13.8% → **23.3%**
 
 ## Top Issues (by wasted calls)
 
 ### bash:exit-code-nonzero
-- **Count**: 169
-- **Wasted**: 344
-- **Agents**: optimizer(40), bob(39), coach(31), coder(23), tech-lead(18), may(16), scout(2)
+- **Count**: 170
+- **Wasted**: 404
+- **Agents**: tech-lead(37), bob(34), optimizer(31), may(26), coach(21), coder(19), scout(2)
 - **Examples**:
-  - `[bob] exec failed: {"command":"grep -n \"H-085\\|H-093\\|H-095\\|conclusion\\|Conclusion\" agents/b — (no output)
+  - `[tech-lead] exec failed: {"command":"export PATH=\".state/.bun/bin:$PATH\"; bun -e \"import{Database}from — 1 | import{Database}from`
+  - `[coach] exec failed: {"command":"scripts/gym-run.sh exp165-f2-only --agent coder --trials 8 2>&1","ti — Unknown flag: --trials
 
-Command exi`
-  - `[optimizer] exec failed: {"command":"export PATH=\".state/.bun/bin:$PATH\"; bun -e \"\nimport{Database}fr — 1 | 
-2 | import{Database`
-  - `[bob] exec failed: {"command":"cd /app/agents && grep -n \"^Status:\" shared/knowledge/hypotheses/H — (no output)
-
-Command exi`
+`
+  - `[coach] exec failed: {"command":"scripts/gym-batch.sh --scenario exp165-f2-only --agent coder --trial — ╔═══════════════════════`
 
 ### bash:nonexistent-path
 - **Count**: 26
-- **Wasted**: 114
-- **Agents**: coder(10), bob(10), qa(2), scout(2), coach(1), tech-lead(1)
+- **Wasted**: 112
+- **Agents**: bob(12), coder(7), qa(2), scout(2), optimizer(2), tech-lead(1)
 - **Examples**:
-  - `[coder] exec failed: {"command":"cd /app; rm -f src/lib/turn-budget.test.ts; ls src/lib/turn-budget.t — ls: cannot access 'src/l`
-  - `[coder] exec failed: {"command":"export PATH=\".state/.bun/bin:$PATH\"; ls src/app/cron-handlers/"} — ls: cannot access 'src/app`
-  - `[coach] exec failed: {"command":"ls agents/lab/experiments/EXP-16[34]*"} — ls: cannot access 'agents/lab/experiments/EXP-16[34]*`
+  - `[bob] exec failed: {"command":"ls agents/gym/src/"} — ls: cannot access 'agents/gym/src/': No such file or directory
+
+
+Command`
+  - `[bob] exec failed: {"command":"ls agents/gym/src/"} — ls: cannot access 'agents/gym/src/': No such file or directory
+
+
+Command`
+  - `[bob] exec failed: {"command":"ls agents/src/gym/scenarios/ | grep -E \"sql-injection|cascading\" 2 — ls: cannot access 'agent`
 
 ### bash:git-error
-- **Count**: 50
-- **Wasted**: 75
-- **Agents**: bob(15), coach(10), optimizer(8), coder(6), tech-lead(6), scout(4), qa(1)
+- **Count**: 54
+- **Wasted**: 74
+- **Agents**: bob(11), coach(11), optimizer(11), tech-lead(6), may(6), coder(4), scout(4), qa(1)
 - **Examples**:
-  - `[bob] exec failed: {"command":"cd /app/agents && git add bob/workspace/synthesis-hypothesis-conclus — The following paths are `
-  - `[optimizer] exec failed: {"command":"cd /app/agents && git add optimizer/workspace/finding-efficiency-pat — The following paths are `
-  - `[bob] exec failed: {"command":"cd agents && git add -A gym/scenarios/stale-reference-cleanup/succes — The following paths are `
+  - `[bob] exec failed: {"command":"cd agents && git add bob/workspace/h161-ceiling-analysis.md bob/work — The following paths are `
+  - `[coach] exec failed: {"command":"cd agents && git add shared/knowledge/experiments/EXP-165/results.md — On branch main
+Your bran`
+  - `[bob] exec failed: {"command":"cd /app/agents && git add bob/workspace/exp165-arm-a-results.md && g — The following paths are `
+
+### bash:timeout-killed
+- **Count**: 18
+- **Wasted**: 37
+- **Agents**: qa(11), coach(4), bob(2), optimizer(1)
+- **Examples**:
+  - `[qa] exec failed: {"command":"./node_modules/.bin/vitest --run","timeout":120} — 
+ RUN  v3.2.4 /app
+
+(node:157308) Experiment`
+  - `[bob] exec failed: {"command":"export PATH=\".state/.bun/bin:$PATH\" && cd /app && bun /tmp/run-exp — Command timed out after `
+  - `[qa] exec failed: {"command":"./node_modules/.bin/tsc --noEmit","timeout":120} — src/app/bundle-mode.ts(18,10): error TS1470:`
 
 ### bash:test-failure
-- **Count**: 21
-- **Wasted**: 51
-- **Agents**: bob(13), coder(7), coach(1)
+- **Count**: 12
+- **Wasted**: 35
+- **Agents**: coder(7), bob(4), coach(1)
 - **Examples**:
-  - `[bob] exec failed: {"command":"cd agents/gym/scenarios/type-mismatch-silent-coercion && echo \"===  — === 1. ORIGINAL (broken)`
-  - `[bob] exec failed: {"command":"cd agents/gym/scenarios/sql-injection-in-query-builder/environment & — Product Search Tests
-
+  - `[bob] exec failed: {"command":"export PATH=\".state/.bun/bin:$PATH\"\n# Run 7 of 13 trials of exp16 — === F2-ONLY RUN 1 ===
   `
-  - `[bob] exec failed: {"command":"cd agents/gym/scenarios/sql-injection-in-query-builder/environment & — Product Search Tests
-
+  - `[bob] exec failed: {"command":"export PATH=\".state/.bun/bin:$PATH\"\n# Run 5 more trials of exp165 — === F2-ONLY RUN 1 ===
   `
-
-### read:nonexistent-path
-- **Count**: 16
-- **Wasted**: 28
-- **Agents**: coder(7), bob(5), tech-lead(3), coach(1)
-- **Examples**:
-  - `[tech-lead] read tool returned ENOENT for {"path":"src/lib/tools/cost-limit-guard.ts"} with no path hint — agent could not find the `
-  - `[bob] read tool returned ENOENT for {"path":"agents/bob/todo.md"} with no path hint — agent could not find the file`
-  - `[coach] read tool returned ENOENT for {"path":"agents/shared/knowledge/entries/KE-180.md"} with no path hint — agent could not f`
-
-## ⚠️ Regressions
-
-- **bash:timeout-killed**: 11 (was 9, +22%)
+  - `[bob] exec failed: {"command":"export PATH=\".state/.bun/bin:$PATH\"\nexport GYM_AGENT_BIN=\"/app/a — Keeping work dir: /tmp/g`
 
 ## All Categories
 
 | Category | Count | Wasted | Top Agent |
 |----------|------:|-------:|-----------|
-| bash:exit-code-nonzero | 169 | 344 | optimizer(40) |
-| bash:nonexistent-path | 26 | 114 | coder(10) |
-| bash:git-error | 50 | 75 | bob(15) |
-| bash:test-failure | 21 | 51 | bob(13) |
-| read:nonexistent-path | 16 | 28 | coder(7) |
-| bash:timeout-killed | 11 | 15 | qa(8) |
-| bash:cmd-not-found | 8 | 13 | bob(3) |
-| bash:cmd-aborted | 9 | 9 | bob(8) |
-| bash:path-is-directory | 1 | 9 | coach(1) |
-| bash:module-not-found | 4 | 9 | coder(3) |
-| edit:edit-match-fail | 4 | 4 | coder(2) |
-| edit:schema-violation | 3 | 3 | optimizer(1) |
-| read:other | 3 | 3 | bob(2) |
-| read:path-is-directory | 1 | 2 | coach(1) |
-| edit:other | 1 | 1 | optimizer(1) |
+| bash:exit-code-nonzero | 170 | 404 | tech-lead(37) |
+| bash:nonexistent-path | 26 | 112 | bob(12) |
+| bash:git-error | 54 | 74 | bob(11) |
+| bash:timeout-killed | 18 | 37 | qa(11) |
+| bash:test-failure | 12 | 35 | coder(7) |
+| read:nonexistent-path | 18 | 31 | bob(7) |
+| bash:module-not-found | 3 | 8 | coder(3) |
+| bash:cmd-not-found | 2 | 7 | bob(2) |
+| bash:cmd-aborted | 7 | 7 | bob(6) |
+| edit:edit-match-fail | 6 | 6 | tech-lead(4) |
+| edit:schema-violation | 3 | 3 | bob(1) |
+| read:other | 2 | 2 | bob(1) |
+| bash:python-error | 1 | 2 | tech-lead(1) |
+| edit:other | 2 | 2 | tech-lead(2) |
+| bash:syntax-error | 1 | 2 | optimizer(1) |
+| bash:convention-block | 1 | 1 | coach(1) |
