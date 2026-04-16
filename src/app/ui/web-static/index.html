@@ -289,6 +289,7 @@
     <div class="tab" data-tab="knowledge">Knowledge</div>
     <div class="tab" data-tab="benchmarks">Benchmarks</div>
     <div class="tab" data-tab="requests">Requests</div>
+    <div class="tab" data-tab="metrics">Metrics</div>
   </div>
 </div>
 
@@ -399,6 +400,13 @@
       <div class="req-pagination" id="req-pagination" style="display:flex;align-items:center;gap:8px;padding:8px 0"></div>
     </div>
   </div>
+
+  <!-- Metrics -->
+  <div id="metrics" class="hidden">
+    <div id="metrics-alerts" style="margin-bottom:16px"></div>
+    <div id="metrics-by-owner"></div>
+    <div id="metrics-recent" style="margin-top:20px"></div>
+  </div>
 </div>
 
 <script>
@@ -429,10 +437,12 @@ document.querySelectorAll('.tab').forEach(tab => {
     document.getElementById('benchmarks').classList.toggle('hidden', currentTab !== 'benchmarks');
     document.getElementById('knowledge').classList.toggle('hidden', currentTab !== 'knowledge');
     document.getElementById('requests').classList.toggle('hidden', currentTab !== 'requests');
+    document.getElementById('metrics').classList.toggle('hidden', currentTab !== 'metrics');
     if (currentTab === 'chat') initChat();
     if (currentTab === 'benchmarks') loadBenchmarks();
     if (currentTab === 'knowledge') loadKnowledge();
     if (currentTab === 'requests') loadRequestsTab();
+    if (currentTab === 'metrics') loadMetricsTab();
   });
 });
 
@@ -2093,6 +2103,91 @@ document.getElementById('req-agent-filter').addEventListener('change', (e) => {
   reqOffset = 0;
   loadRequestsTab();
 });
+
+// ── Metrics Tab ───────────────────────────────────────────────────────
+async function loadMetricsTab() {
+  try {
+    const res = await fetch('/api/metrics');
+    const data = await res.json();
+    renderMetricsAlerts(data.alerts);
+    renderMetricsByOwner(data.metrics, data.latestSnapshots);
+    renderRecentSnapshots(data.recentSnapshots);
+  } catch (e) {
+    document.getElementById('metrics-by-owner').innerHTML = `<p style="color:var(--red)">Failed to load metrics: ${e.message}</p>`;
+  }
+}
+
+function renderMetricsAlerts(alerts) {
+  const el = document.getElementById('metrics-alerts');
+  if (!alerts || alerts.length === 0) {
+    el.innerHTML = '<div style="padding:8px 12px;background:rgba(76,175,80,0.1);border:1px solid rgba(76,175,80,0.3);border-radius:6px;color:var(--green);font-size:13px">✓ All metrics within thresholds</div>';
+    return;
+  }
+  el.innerHTML = alerts.map(a => `<div style="padding:8px 12px;background:rgba(244,67,54,0.1);border:1px solid rgba(244,67,54,0.3);border-radius:6px;margin-bottom:6px;font-size:13px;color:var(--red)">⚠ <b>${a.name}</b> (${a.owner}): ${a.current}${a.unit||''} — threshold ${a.alert_direction === 'above' ? '>' : '<'} ${a.threshold}${a.unit||''}</div>`).join('');
+}
+
+function renderMetricsByOwner(metrics, snapshots) {
+  const snapMap = {};
+  for (const s of snapshots) snapMap[s.metric_id] = s;
+  const byOwner = {};
+  for (const m of metrics) {
+    if (!byOwner[m.owner]) byOwner[m.owner] = [];
+    byOwner[m.owner].push(m);
+  }
+  let html = '';
+  for (const [owner, ms] of Object.entries(byOwner).sort()) {
+    html += `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:12px">`;
+    html += `<h3 style="margin:0 0 10px;font-size:14px;color:var(--fg)">${owner} <span style="color:var(--fg2);font-weight:normal;font-size:12px">(${ms.length} metrics)</span></h3>`;
+    html += `<table style="width:100%;border-collapse:collapse;font-size:12px">`;
+    html += `<tr style="border-bottom:1px solid var(--border)"><th style="text-align:left;padding:4px 8px;color:var(--fg2)">Metric</th><th style="padding:4px 8px;color:var(--fg2)">Current</th><th style="padding:4px 8px;color:var(--fg2)">Target</th><th style="padding:4px 8px;color:var(--fg2)">Threshold</th><th style="padding:4px 8px;color:var(--fg2)">Speed</th><th style="padding:4px 8px;color:var(--fg2)">Type</th><th style="padding:4px 8px;color:var(--fg2)">Last Measured</th></tr>`;
+    for (const m of ms) {
+      const snap = snapMap[m.id];
+      const val = m.current != null ? m.current : (snap ? snap.value : '—');
+      const isAlert = m.threshold != null && m.current != null && (m.alert_direction === 'above' ? m.current > m.threshold : m.current < m.threshold);
+      const valStyle = isAlert ? 'color:var(--red);font-weight:bold' : 'color:var(--fg)';
+      const ago = snap ? timeAgo(snap.measured_at) : '—';
+      html += `<tr style="border-bottom:1px solid var(--bg3,#333)">`;
+      html += `<td style="padding:4px 8px" title="${m.description||''}">${m.name}<br><span style="color:var(--fg2);font-size:11px">${m.id}</span></td>`;
+      html += `<td style="padding:4px 8px;text-align:center;${valStyle}">${val}${m.unit||''}</td>`;
+      html += `<td style="padding:4px 8px;text-align:center;color:var(--fg2)">${m.target}${m.unit||''}</td>`;
+      html += `<td style="padding:4px 8px;text-align:center;color:var(--fg2)">${m.threshold != null ? m.threshold + (m.unit||'') : '—'}</td>`;
+      html += `<td style="padding:4px 8px;text-align:center"><span style="padding:1px 6px;border-radius:3px;font-size:11px;background:var(--bg3,#333)">${m.speed||'—'}</span></td>`;
+      html += `<td style="padding:4px 8px;text-align:center;color:var(--fg2)">${m.type}</td>`;
+      html += `<td style="padding:4px 8px;text-align:center;color:var(--fg2);font-size:11px">${ago}</td>`;
+      html += `</tr>`;
+    }
+    html += `</table></div>`;
+  }
+  document.getElementById('metrics-by-owner').innerHTML = html;
+}
+
+function renderRecentSnapshots(snapshots) {
+  let html = `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px">`;
+  html += `<h3 style="margin:0 0 10px;font-size:14px;color:var(--fg)">Recent Snapshots <span style="color:var(--fg2);font-weight:normal;font-size:12px">(last 50)</span></h3>`;
+  html += `<table style="width:100%;border-collapse:collapse;font-size:12px">`;
+  html += `<tr style="border-bottom:1px solid var(--border)"><th style="text-align:left;padding:4px 8px;color:var(--fg2)">Metric</th><th style="padding:4px 8px;color:var(--fg2)">Value</th><th style="padding:4px 8px;color:var(--fg2)">Samples</th><th style="padding:4px 8px;color:var(--fg2)">Measured By</th><th style="padding:4px 8px;color:var(--fg2)">When</th><th style="text-align:left;padding:4px 8px;color:var(--fg2)">Note</th></tr>`;
+  for (const s of snapshots) {
+    html += `<tr style="border-bottom:1px solid var(--bg3,#333)">`;
+    html += `<td style="padding:4px 8px">${s.metric_id}</td>`;
+    html += `<td style="padding:4px 8px;text-align:center">${s.value}</td>`;
+    html += `<td style="padding:4px 8px;text-align:center;color:var(--fg2)">${s.sample_size ?? '—'}</td>`;
+    html += `<td style="padding:4px 8px;text-align:center;color:var(--fg2);font-size:11px">${s.measured_by||'—'}</td>`;
+    html += `<td style="padding:4px 8px;text-align:center;color:var(--fg2);font-size:11px">${timeAgo(s.measured_at)}</td>`;
+    html += `<td style="padding:4px 8px;color:var(--fg2);font-size:11px">${s.note||''}</td>`;
+    html += `</tr>`;
+  }
+  html += `</table></div>`;
+  document.getElementById('metrics-recent').innerHTML = html;
+}
+
+function timeAgo(ts) {
+  if (!ts) return '—';
+  const diff = Date.now() - ts;
+  if (diff < 60000) return 'just now';
+  if (diff < 3600000) return Math.floor(diff/60000) + 'm ago';
+  if (diff < 86400000) return Math.floor(diff/3600000) + 'h ago';
+  return Math.floor(diff/86400000) + 'd ago';
+}
 </script>
 </body>
 </html>
