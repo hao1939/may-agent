@@ -5421,3 +5421,8 @@ Mandatory checks:
 2026-04-16T11:00Z — Proactive QA: reviewed HEAD d9bbabd0 (src/app/cron.ts) adding "Injected: metrics" to heartbeat tasks (DB read + render into task message). Checks: ./node_modules/.bin/tsc --noEmit PASS (exit 0). ./node_modules/.bin/vitest --run PASS (133 test files, 1968 tests).
 Issues:
 - IMPORTANT: metrics injection only checks for `metrics` table existence, but the query always LEFT JOINs `metric_snapshots`. If `metrics` exists but `metric_snapshots` does not, the query will throw and injection will be silently skipped due to the outer try/catch. Consider checking both tables in sqlite_master or guarding the join.
+
+2026-04-16T11:30Z — Proactive QA: reviewed HEAD 4cee1ca8 (src/lib/workflow-tool.ts) adding pruning of completedSteps to prevent workflow context overflow (MAX_DETAILED_STEPS=20; buildStepSummaries slices; pruneCompletedSteps stubs out older results’ messages + truncates lastAssistantText). Checks: ./node_modules/.bin/tsc --noEmit PASS (exit 0). ./node_modules/.bin/vitest --run PASS (134 test files, 1979 tests).
+Issues:
+- IMPORTANT: pruneCompletedSteps mutates step.result to clear messages. Later code uses taskResult.messages[0]?.timestamp for startedAt when persisting. This is safe for newly added steps (prune is called after push), but replayed steps also call prune; ensure no code later expects older steps’ messages for timestamps/guard logic beyond keep window.
+- MINOR: pruneCompletedSteps only truncates lastAssistantText if messages existed; consider truncating regardless (large lastAssistantText without messages could still bloat memory).
