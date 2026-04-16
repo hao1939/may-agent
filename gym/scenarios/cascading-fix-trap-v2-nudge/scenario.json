@@ -1,0 +1,11 @@
+{
+    "name": "cascading-fix-trap-v2-nudge",
+    "categories": ["debugging", "root-cause-analysis"],
+    "tags": ["behavioral", "cascading-bugs", "EXP-168", "dose-response", "nudge"],
+    "tier": "standard",
+    "timeout": 5,
+    "agent_type": "coder",
+    "workflow": false,
+    "baseline_scenario": "cascading-fix-trap-v2",
+    "description": "EXP-168 Arm 2 (nudge): Vague hint that documented architecture may be wrong. Tests whether directing attention without specifics helps."
+}

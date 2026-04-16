@@ -1,0 +1,11 @@
+{
+    "name": "cascading-fix-trap-v2-moderate-hint",
+    "categories": ["debugging", "root-cause-analysis"],
+    "tags": ["behavioral", "cascading-bugs", "EXP-168", "dose-response", "moderate-hint"],
+    "tier": "standard",
+    "timeout": 5,
+    "agent_type": "coder",
+    "workflow": false,
+    "baseline_scenario": "cascading-fix-trap-v2",
+    "description": "EXP-168 Arm 3 (moderate hint): Reveals the pipeline ordering is wrong and a boundary comparison issue exists, but doesn't provide the fix. Tests partial information."
+}
