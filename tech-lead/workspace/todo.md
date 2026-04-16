@@ -335,7 +335,8 @@
 - 2026-04-15 22:30: **P1 req:e01d5d20 closed** — workflow error rate investigation already done (s_1776290567108_147). Deliverable at agents/may/workspace/audits/wf-error-rate-analysis.md. Closed CREATED→COMPLETED.
 - 2026-04-15 22:30: **Infra**: Lens D — research-db.ts fragility audit (401 LOC). COMPLETE (9 ops, ~1.5min): 5 findings. Key: fail-open try-catch swallows ALL errors silently (no logging), syncAll() is non-transactional (partial writes on crash), no SQL injection risk (parameterized), no concurrent access guard. See workspace/finding-research-db-ts-fragility-audit-401-loc.md
 - 2026-04-16 01:30: **Feature rotation** — No new feature items on dispatch board (Gatekeeper blocked on Hao approval). Merged 6 review branches to main (fast-forward): dead-code-cleanup, eval-coverage-30pct, metrics-regression-fix, observability-catchblocks, remove-dead-maxturns. Cleaned 8 stale branches total. Pushed to origin.
-- **Next**: Lens A next cycle. **Cycle type**: infra.
+- 2026-04-16 02:00: **Infra**: Lens A — agent-loader.ts architecture review (854 LOC). COMPLETE. 5 responsibilities crammed into one file. Key findings: handler-building duplicates manager-agents-tool logic, 55-line resolveTools() is dead code (tools come from agent config), formatToolResult switch duplicates session-digest formatting, AgentTool type is agent-loader-specific but used in manager. See workspace/finding-agent-loader-ts-architecture-review-854.md
+- **Next**: Lens B next cycle. **Cycle type**: feature rotation (check dispatch board).
 
 ## Low-Priority Cleanup
 - [x] Phase 5d: Deprecate memory fallback — DONE (s_1775527469736_184, commit 34263ca)
