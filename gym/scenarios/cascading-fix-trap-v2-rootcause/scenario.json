@@ -1,0 +1,11 @@
+{
+    "name": "cascading-fix-trap-v2-rootcause",
+    "categories": ["debugging", "root-cause-analysis"],
+    "tags": ["behavioral", "cascading-bugs", "EXP-173", "arm-A", "rootcause-only"],
+    "tier": "standard",
+    "timeout": 5,
+    "agent_type": "coder",
+    "workflow": false,
+    "baseline_scenario": "cascading-fix-trap-v2",
+    "description": "EXP-173 Arm A: Root cause identification only — names the bug (pipeline reorder) but provides no fix direction or Bug 2 info."
+}

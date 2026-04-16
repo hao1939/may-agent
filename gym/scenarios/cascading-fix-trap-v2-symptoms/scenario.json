@@ -1,0 +1,11 @@
+{
+    "name": "cascading-fix-trap-v2-symptoms",
+    "categories": ["debugging", "root-cause-analysis"],
+    "tags": ["behavioral", "cascading-bugs", "EXP-173", "arm-D", "symptoms-only"],
+    "tier": "standard",
+    "timeout": 5,
+    "agent_type": "coder",
+    "workflow": false,
+    "baseline_scenario": "cascading-fix-trap-v2",
+    "description": "EXP-173 Arm D: Symptoms + specificity — points to exact location but frames as symptoms, no root cause naming or fix direction."
+}

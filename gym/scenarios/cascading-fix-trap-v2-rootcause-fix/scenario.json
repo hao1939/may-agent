@@ -1,0 +1,11 @@
+{
+    "name": "cascading-fix-trap-v2-rootcause-fix",
+    "categories": ["debugging", "root-cause-analysis"],
+    "tags": ["behavioral", "cascading-bugs", "EXP-173", "arm-B", "rootcause-fix"],
+    "tier": "standard",
+    "timeout": 5,
+    "agent_type": "coder",
+    "workflow": false,
+    "baseline_scenario": "cascading-fix-trap-v2",
+    "description": "EXP-173 Arm B: Root cause + fix direction — names the bug and tells how to fix it, but no Bug 2 info."
+}

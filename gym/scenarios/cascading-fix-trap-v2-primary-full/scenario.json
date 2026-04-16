@@ -1,0 +1,11 @@
+{
+    "name": "cascading-fix-trap-v2-primary-full",
+    "categories": ["debugging", "root-cause-analysis"],
+    "tags": ["behavioral", "cascading-bugs", "EXP-173", "arm-C", "primary-full"],
+    "tier": "standard",
+    "timeout": 5,
+    "agent_type": "coder",
+    "workflow": false,
+    "baseline_scenario": "cascading-fix-trap-v2",
+    "description": "EXP-173 Arm C: Complete primary bug analysis with file/line specificity and fix direction, but NO mention of Bug 2 (grade threshold)."
+}
