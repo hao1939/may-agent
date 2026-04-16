@@ -25,7 +25,7 @@ Updated: 2026-04-15 ~22:00 UTC
 ## Active Items
 | Issue | Status | Owner | Notes |
 |-------|--------|-------|-------|
-| Amy-kimi billing outage | 🔴 Blocked | Hao | Still down, needs balance refill |
+| Amy-kimi billing outage | ✅ Resolved | — | Back online (49 sessions/6h) |
 | **Metric System Phase 3 — Adoption** | ⏳ Active | multiple | Phase 3 dispatched: research_log adoption (bob+scout), quality investigation (coach), threshold fix (tech-lead ✅ DONE). |
 | **Model Diversity Review** | ⏳ Active | bob | Design review: which agent on which model? (req:c56a6ae4) |
 | **Fix compose-guards.ts (RETRY)** | ✅ DONE+MERGED | tech-lead | Merged to main (2705e8ce). finish(blocked/failure) bypasses guards, finish(success) blocked by quality gate. |
