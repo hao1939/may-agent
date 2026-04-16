@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776382252551_179
+- **Session:** s_1776382236520_175
 - **Status:** done
-- **When:** 2026-04-16T23:32:26.919Z
-- **Duration:** 1m34s
+- **When:** 2026-04-16T23:32:56.802Z
+- **Duration:** 2m20s
 
 ## What Happened
-Now let me write the finding. The data shows: coach dominates with 120+109 op experiment sessions, tech-lead has persistent task iterations, and the patterns match prior scans (gym loops, path confusion, verification tax). No transcripts available, so I'll analyze from evaluations and task patterns.
+Now update the rotation tracker in todo.md:
