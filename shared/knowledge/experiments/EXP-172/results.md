@@ -32,6 +32,38 @@ Total gym_runs for scenario `exp172-scout-coder`: 31 (includes parallel duplicat
 
 This supports a "**hard reasoning bottleneck**" interpretation: the cascading-fix-trap requires understanding that pipeline stage ordering affects downstream calculations, and this insight is equally hard to discover whether you're a "fixer" or a "reviewer." The expert F1 works because it *gives* this insight; no amount of prompt engineering makes the LLM reliably *find* it.
 
+## Replication with Clean Environments (EXP-172b)
+
+**Date**: 2026-04-16 (later same day)
+**Context**: EXP-173 discovered that commit 3a47692c had contaminated the exp172-scout-coder environment — `grades.js` already had `>=` (the fix) instead of `>` (the bug), and `homework.js` had workaround code. The pipeline ordering bug was still present, but the grade threshold bug was pre-fixed.
+
+### Environment Fix
+Restored clean buggy versions of `grades.js` and `homework.js` from `cascading-fix-trap-v2` base scenario. Verified both bugs are present before running.
+
+### Results
+
+| Arm | Pass Rate | N | Notes |
+|-----|-----------|---|-------|
+| Scout→Coder (clean env) | **0/12 (0%)** | 12 | All fail on `pipeline-order-fixed` |
+| Baseline (no analysis) | **0/5 (0%)** | 5 | Confirms scenario discriminates |
+
+All 12 clean-env trials show the exact same pattern as the original 15:
+- ✓ all-tests-pass (agent makes tests pass via workaround)
+- ✗ pipeline-order-fixed (agent does NOT reorder pipeline stages)  
+- ✓ grade-threshold-fixed (agent fixes `>` to `>=`)
+
+### Interpretation
+
+**Original EXP-172 result CONFIRMED** — contamination did not affect the outcome. Even with both bugs properly present, the scout→coder approach fails at 0%. The contamination only affected `grades.js` threshold, which was already being fixed by the coder anyway.
+
+The core finding stands: **LLM-generated analysis cannot reliably identify pipeline ordering as the root cause**, regardless of environment state. The hard reasoning bottleneck is real.
+
+**Contrast with EXP-173**: EXP-173 showed that human-written hints (even moderate) achieve 100% on clean envs. The discrimination is specifically between LLM-generated vs human-written analysis, not between contaminated vs clean environments.
+
+### DB References
+- Clean-env runs: gym_runs IDs 2114-2125 (scenario=exp172-scout-coder, all failed)
+- Baseline runs: gym_runs IDs 2109-2113 (scenario=cascading-fix-trap-v2, all failed)
+
 ## Cost
 
-~$2.10 estimated (15 trials × 2 phases × ~$0.07)
+~$2.10 estimated (15 trials × 2 phases × ~$0.07) + ~$1.70 for 12 replication trials
