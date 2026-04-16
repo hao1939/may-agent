@@ -234,15 +234,51 @@ function buildWorkerPrompt(
   return prompt;
 }
 
+function extractMilestones(content: string): { total: number; done: number; pending: string[] } {
+  const milestones: { done: boolean; text: string }[] = [];
+  const lines = content.split("\n");
+  let inMilestones = false;
+  for (const line of lines) {
+    if (/^##\s*Milestones/i.test(line)) { inMilestones = true; continue; }
+    if (inMilestones && /^##\s/.test(line)) break;
+    if (!inMilestones) continue;
+    const checkMatch = line.match(/^\s*-\s*\[([ x])\]\s*(.+)/i);
+    if (checkMatch) {
+      milestones.push({ done: checkMatch[1].toLowerCase() === "x", text: checkMatch[2].trim() });
+    }
+  }
+  return {
+    total: milestones.length,
+    done: milestones.filter(m => m.done).length,
+    pending: milestones.filter(m => !m.done).map(m => m.text),
+  };
+}
+
 function buildReviewPrompt(
   goal: string,
   iteration: number,
   workerSummary: string,
   recentProgress: string,
+  projectContent?: string,
 ): string {
   let prompt = `[REVIEW ONLY — no file edits expected. You are assessing worker output, not writing code.]\n\n`;
   prompt += `You are reviewing iteration ${iteration} of a persistent task.\n\n`;
   prompt += `## Goal\n${goal}\n\n`;
+
+  // Include milestone checklist so reviewer knows what's left
+  if (projectContent) {
+    const ms = extractMilestones(projectContent);
+    if (ms.total > 0) {
+      prompt += `## Milestone Progress: ${ms.done}/${ms.total} complete\n`;
+      if (ms.pending.length > 0) {
+        prompt += `**Remaining milestones (NOT done yet):**\n`;
+        for (const p of ms.pending) {
+          prompt += `- [ ] ${p}\n`;
+        }
+      }
+      prompt += `\n⚠️ DONE means ALL milestones complete. If any milestone is still unchecked, respond CONTINUE.\n\n`;
+    }
+  }
 
   if (recentProgress) {
     prompt += `## Recent Progress\n${recentProgress}\n\n`;
@@ -252,9 +288,9 @@ function buildReviewPrompt(
 
   prompt += `## Your Assessment\n`;
   prompt += `Assess the current state:\n`;
-  prompt += `1. Is the goal achieved? If yes, respond starting with DONE and a summary.\n`;
+  prompt += `1. Are ALL milestones complete? If yes, respond starting with DONE and a summary.\n`;
   prompt += `2. Is the task blocked on something the worker can't resolve? If yes, respond starting with BLOCKED and the reason.\n`;
-  prompt += `3. Otherwise, respond starting with CONTINUE and specific guidance for the next iteration.\n\n`;
+  prompt += `3. Otherwise, respond starting with CONTINUE and specific guidance for the NEXT unchecked milestone.\n\n`;
   prompt += `Your response MUST start with one of: DONE, BLOCKED, CONTINUE`;
 
   return prompt;
@@ -494,6 +530,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         iteration,
         recentBlocks[recentBlocks.length - 1] ?? "(no worker output)",
         recentBlocks.join("\n\n"),
+        content,
       );
 
       const reviewResult = await ctx.runAgent(config.owner, reviewPrompt);
