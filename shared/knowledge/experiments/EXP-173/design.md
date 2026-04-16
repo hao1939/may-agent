@@ -1,7 +1,7 @@
 # EXP-173: Isolating Which Properties of Expert Analysis Cross the Recognition Threshold
 
 **Date**: 2026-04-16
-**Status**: DESIGNED
+**Status**: IN_PROGRESS (Phase 1 complete — ceiling effect detected, see agents/coach/workspace/exp173-phase1-results.md)
 **Hypothesis**: H-166 (Recognition Threshold — binary expert knowledge effect)
 **Predecessors**: EXP-165 (F1=100%, F2=0%), EXP-166 (displacement confirmed), EXP-167 (F1 generalizes), EXP-168 (dose-response: 0/0/0/100%), EXP-172 (scout-generated=0%)
 **Cost estimate**: ~$9.00 (120 runs × ~$0.075)
