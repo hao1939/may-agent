@@ -1,0 +1,9 @@
+{
+  "name": "scout-synthesis-crossref",
+  "categories": ["completeness", "knowledge-integration"],
+  "tags": ["scout", "synthesis", "cross-reference"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "scout",
+  "workflow": false
+}

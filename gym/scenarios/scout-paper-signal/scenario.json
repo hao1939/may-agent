@@ -1,0 +1,9 @@
+{
+  "name": "scout-paper-signal",
+  "categories": ["judgment", "reading-comprehension"],
+  "tags": ["scout", "paper-evaluation", "signal-detection"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "scout",
+  "workflow": false
+}

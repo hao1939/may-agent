@@ -1,0 +1,9 @@
+{
+  "name": "scout-dedup-detection",
+  "categories": ["convention-compliance", "efficiency"],
+  "tags": ["scout", "dedup", "knowledge-management"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "scout",
+  "workflow": false
+}
