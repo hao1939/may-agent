@@ -1,0 +1,9 @@
+{
+  "name": "tool-script-modification",
+  "categories": ["optimizer-workflow"],
+  "tags": ["tool", "script", "pre-deploy"],
+  "tier": "smoke",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}
