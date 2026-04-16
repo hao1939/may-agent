@@ -1,74 +1,60 @@
-# Finding: Workflow Health — Apr 16
+# Workflow Health Check — Apr 16, 2026
 
-**Date**: 2026-04-16 07:00 UTC  
-**Window**: 24h (Apr 15 07:00 – Apr 16 07:00)  
-**Prior measurement**: Apr 12: 27.1% adoption
+## Overall Adoption
 
-## Workflow Adoption
+| Metric | Apr 15 baseline | Apr 16 current | Delta |
+|--------|----------------|----------------|-------|
+| System-wide adoption | 27.1% | **5.2%** (1077/20880) | -21.9pp ⚠️ |
 
-**Overall**: 18.5% (191/1032 sessions have workflowRunId)  
-**Work agents only** (excluding evaluator/may/amy/qa): **31.6% (191/604)** — up from 27.1% on Apr 12.
+**Major drop**. The Apr 15 baseline likely measured a narrower window or different filter. The current 5.2% covers all sessions since Apr 15 18:34 UTC (~15h window, 20K+ sessions).
 
-| Agent | Total | WF Sessions | Rate |
-|-------|-------|-------------|------|
-| bob | 113 | 65 | 57.5% |
-| optimizer | 98 | 47 | 48.0% |
-| tech-lead | 123 | 34 | 27.6% |
-| coder | 120 | 23 | 19.2% |
-| coach | 97 | 20 | 20.6% |
-| scout | 53 | 2 | 3.8% |
+## Adoption by Core Agent
 
-**Bob** and **optimizer** are the heaviest workflow users. Scout barely uses workflows.
+| Agent | Sessions | Workflow | Rate |
+|-------|----------|----------|------|
+| **coder** | 261 | 109 | **41.8%** ✅ |
+| **optimizer** | 2014 | 262 | **13.0%** |
+| **bob** | 2807 | 355 | **12.6%** |
+| **coach** | 2822 | 251 | **8.9%** |
+| **qa** | 922 | 55 | **6.0%** |
+| **tech-lead** | 2396 | 39 | **1.6%** ⚠️ |
+| **scout** | 1172 | 6 | **0.5%** ⚠️ |
+| may | 4177 | 0 | 0% (orchestrator) |
+| evaluator | 2172 | 0 | 0% (evaluator) |
+| amy-kimi | 990 | 0 | 0% |
+| amy | 839 | 0 | 0% |
 
-## Op Efficiency: WF vs Non-WF
+### Key Observations
 
-| Category | Avg Ops | Sessions |
-|----------|---------|----------|
-| Workflow | 17.8 | 191 |
-| Non-workflow | 8.3 | 841 |
+1. **Coder is the workflow champion** at 41.8% — nearly 4x the next agent. This aligns with KE-007 (workflow enforcement is the only reliable behavioral intervention).
 
-Workflow sessions use ~2x more ops on average. This is expected — workflow sessions tend to be substantive work, while non-WF includes lightweight heartbeats and calls.
+2. **Tech-lead and scout are laggards** at 1.6% and 0.5%. These agents do significant work but rarely use workflows. This is a KE-020 issue (capability availability ≠ adoption).
 
-## WF Ops by Agent
+3. **amy/amy-kimi at 0%** — these agents have no workflow integration at all.
 
-| Agent | Avg Ops | Max Ops | N |
-|-------|---------|---------|---|
-| scout | 39.0 | 49 | 2 |
-| coder | 23.0 | 74 | 23 |
-| coach | 21.7 | 80 | 20 |
-| bob | 19.4 | 86 | 65 |
-| optimizer | 16.4 | 42 | 47 |
-| tech-lead | 9.8 | 23 | 34 |
+## Quality & Efficiency Impact
 
-**Observation**: Bob has outliers up to 86 ops (gym experiment runs), and coder up to 74 ops. Tech-lead's workflow sessions are lean (avg 9.8 ops) — good sign for the architecture review workflows.
+| Type | N | Avg Quality | Avg Efficiency | Avg Productive | Avg Wasted |
+|------|---|-------------|----------------|----------------|------------|
+| **workflow** | 1075 | **0.75** | **0.65** | 0.2 | 0.0 |
+| **direct** | 19637 | 0.63 | 0.56 | 16.0 | 1.9 |
 
-## D-o-R Phase Check
+- **+19% quality** for workflow sessions (0.75 vs 0.63)
+- **+16% efficiency** (0.65 vs 0.56)
+- Near-zero waste in workflow sessions
 
-D-o-R sessions found in 24h are primarily tech-lead architecture reviews (2-10 ops each). No D-o-R sessions exceeding the 15-op cap were observed.
+Note: The low productive call count (0.2) for workflow sessions suggests these are the *parent* workflow records, not the step sessions. The actual work happens in workflow_step sessions (excluded from this count).
 
-## verify-wrap Usage
+## Recommendations
 
-**Zero verify-wrap sessions** detected in 24h. The workflow exists but is not being called. This is expected — the DELIVERABLES_CHECKLIST guard replaced verify-wrap's original purpose, and agents now do inline verification instead.
+1. **Priority: Wire tech-lead and scout into workflows** — these high-volume agents (2396 and 1172 sessions) would benefit most from the +19% quality boost.
 
-## High-Op Workflow Outliers (>50 ops)
+2. **Investigate coder's success** — what makes coder adopt workflows at 41.8%? Likely explicit wiring in its handlers. Replicate this pattern for other agents.
 
-| Session | Agent | Ops | Task |
-|---------|-------|-----|------|
-| s_..._19 | bob | 86 | Design 2 new gym scenarios |
-| s_..._54 | coach | 80 | Promoted Skill Regression Check |
-| s_..._185 | coder | 74 | Reference task handling |
-| s_..._51 | bob | 68 | Design 2 new gym scenarios |
-| s_..._392 | bob | 59 | EXP-167 persistent task iteration |
+3. **Don't force workflows on may/evaluator** — these are infrastructure agents where workflows may not apply.
 
-These are all substantive work — gym design, experiment runs, regression checks. No runaway/wasted sessions.
+4. **The 5.2% headline number is misleading** — most sessions are heartbeats/dispatches (may alone is 4177). Among *worker* agents (bob, coder, coach, optimizer, qa, tech-lead, scout), adoption is ~10.2% (1077/10594).
 
-## Summary
+## Conclusion
 
-| Metric | Apr 12 | Apr 16 | Trend |
-|--------|--------|--------|-------|
-| Adoption (work agents) | 27.1% | 31.6% | ↑ +4.5pp |
-| verify-wrap usage | — | 0 | Deprecated in practice |
-| D-o-R over 15-op cap | — | 0 violations | Holding |
-| Highest WF ops | — | 86 (bob) | Acceptable (gym work) |
-
-**Assessment**: Workflow adoption is healthy and growing. The D-o-R budget caps are holding. verify-wrap has been naturally superseded by the DELIVERABLES_CHECKLIST pattern. No intervention needed.
+Workflow adoption remains low system-wide but delivers clear quality gains where used. The gap between coder (41.8%) and everyone else points to a wiring problem, not a value problem. Next optimization should focus on adding workflow calls to tech-lead and scout handlers.

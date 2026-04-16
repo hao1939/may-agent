@@ -1,5 +1,3 @@
-# Deliverables Checklist
+# DELIVERABLES_CHECKLIST
 
-- [x] Observe system snapshot — all agents healthy, no anomalies
-- [x] Fork Mode C exploration — `finding-technique-scouting-0416.md` written and verified
-- [x] Update todo.md rotation tracker — Mode C complete, next D
+- [x] finding-workflow-health-0416.md — workflow adoption & efficiency analysis
