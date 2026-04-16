@@ -5390,3 +5390,5 @@ Mandatory checks:
 
 2026-04-16T03:01Z — Proactive scan: reviewed uncommitted product-search scenario additions (src/product-search.js, src/db.js). Verified parameter binding usage; noted formatting defaults (missing/NaN price coerced to $0.00). Logged mandatory check results above.
 
+2026-04-16T03:30Z — Proactive scan: reviewed src/app/event-bus.ts change from commit 4a2fb4f5 (silent catch blocks). Confirmed catch now logs warn-level message and continues, which matches comment intent (subscriber errors shouldn't break bus). Ran QA gates: tsc FAIL (TS1470/TS1309 CommonJS config vs import.meta/top-level await in src/app/*); vitest FAIL due to test/product-search.test.js calling process.exit(0) under Vitest.
+
