@@ -1,21 +1,21 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776380515785_163
+- **Session:** s_1776380523440_164
 - **Status:** done
-- **When:** 2026-04-16T23:02:03.438Z
-- **Duration:** 7s
+- **When:** 2026-04-16T23:02:10.388Z
+- **Duration:** 6s
 
 ## What Happened
 ```json
 {
   "agents": {
-    "may": {
-      "role": "Supervisor",
+    "scout": {
+      "role": "Researcher",
       "capability_level": "L2",
-      "efficiency": 0.35,
-      "quality": 0.7,
-      "verdict": "needs_improvement",
+      "efficiency": 0.72,
+      "quality": 0.52,
+      "verdict": "acceptable",
       "issues": [
-        "[ORDER-004_VIOLATION] Heartbeat injected/contained an op-budget line (“⚡ Op Budget: ≤12 ops per heartbeat”), which is explicitly disallowed (standing order ORDER-004). Even if pre-existing, May did not flag/escalate it and proceeded under it.",
-        "[FM-1.3/LOOPING] Repeated finish() a
+        "[FM-2.6/REASONING-ACTION_MISMATCH] Heartbeat instruction says: read agents/scout/heartbeat.md and work through each section top-to-bottom. Transcript shows no read() of agents/scout/heartbeat.md; instead ran git log and tailed workspace/todo.md, then declared 'system is quiescent'.",
+        "
