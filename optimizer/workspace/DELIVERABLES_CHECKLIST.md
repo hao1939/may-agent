@@ -1,3 +1,4 @@
-# Deliverables Checklist
+# Deliverables Checklist — Heartbeat Apr 16 00:00 UTC
 
-- [x] `agents/optimizer/workspace/finding-high-op-outliers-0416.md` — Investigation of May 146-op guard escalation and Tech-lead 108-op evaluator bug sessions ✅
+- [x] Mode A finding: `agents/optimizer/workspace/finding-high-op-outliers-0416.md` (235 lines, verified)
+- [x] Rotation tracking updated in todo.md (next=B)
