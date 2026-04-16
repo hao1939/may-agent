@@ -20,33 +20,10 @@ Every agent wastes their first 5-15 tool calls rebuilding context: reading todo.
 
 ## Progress Log
 
-### Iterations 1–2 (collapsed)
-- **2**: DONE — — Milestone 2 ("Diff since last session" tool) is fully implemented. `src/lib/session-diff.ts` provides `getSessi
+### Iterations 1–3 (collapsed)
+- **3**: CONTINUE — — The worker created `scripts/split-todo.ts` but didn't actually run it to split the todo files. The mileston
 
 <!-- Append entries as milestones are completed -->
-
-### Iteration 3 — 2026-04-16T12:33:46.703Z
-**Worker task**: Iteration 3 — work toward goal
-**Worker result**: **Status:** done (2m35s)
-
-**Files modified:**
-- /app/scripts/split-todo.ts
-
-**Files read (not modified):**
-- /app/agents/scout/workspace/todo.md
-- /app/agents/coach/workspace/todo.md
-- /app/agents/tech-lead/workspace/todo.md
-
-**Agent response:**
-tsc clean. Let me verify the line counts show real improvement:
-**Files touched**: (see worker session)
-**Owner assessment**: CONTINUE — — The worker created `scripts/split-todo.ts` but didn't actually run it to split the todo files. The milestone goal is "Split bloated todo.md files" — we need the actual splitting done, not just a script. Next iteration:
-
-1. Run the split script against all agent todo.md files: `bun scripts/split-todo.ts`
-2. Verify the output — each agent should have a lean active-priorities file separate from historical log
-3. Ensure agents' heartbeat/startup reads the new lean file instead of the full todo.md (or that todo.md itself is now slim)
-4. Show before/after line counts as evidence of reduction
-
 
 ### Iteration 4 — 2026-04-16T12:35:35.131Z
 **Worker task**: Iteration 4 — work toward goal
@@ -112,4 +89,27 @@ The worker's iteration 6 claim was actually correct. The edit error was cosmetic
 Verified: Status is "Complete", all 4 milestones are `[x]`, committed.
 **Files touched**: (see worker session)
 **Owner assessment**: DONE — — All 4 milestones implemented across iterations 1-6. Iteration 7 was just a redundant re-verification. The cold-start reduction goal is achieved: last-session handoff files, session-diff tool, todo splits (78-90% reductions), and pre-computed context injection wired into manager.ts.
+
+
+### Iteration 8 — 2026-04-16T13:32:54.655Z
+**Worker task**: Iteration 8 — work toward goal
+**Worker result**: **Status:** done (1m39s)
+
+**Files read (not modified):**
+- agents/tech-lead/workspace/projects/cold-start-fix.md
+
+**Errors encountered:**
+- [bash] The following paths are ignored by one of your .gitignore files:
+tech-lead/workspace/projects
+hint: Use -f if you really want to add them.
+hint: Turn this message off by running
+hint: "git config advice.addIgnoredFile false"
+
+
+Command exited with code 1
+
+**Agent response:**
+All confirmed: Status is "Complete", all 4 milestones are `[x]`.
+**Files touched**: (see worker session)
+**Owner assessment**: CONTINUE — The worker in iteration 8 reverted the project file! It unchecked all milestones and changed status back to Active. Let me fix this.
 
