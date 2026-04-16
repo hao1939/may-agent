@@ -14,6 +14,7 @@ import { log } from "./log.js";
 import { createStartDigest, createEndDigest, upsertDigest, logShadowComparison } from "./session-digest.js";
 import { trackRequest, updateRequest, getDb } from "./requests.js";
 import type { SubagentManager } from "./manager.js";
+import { writeLastSession } from "./last-session.js";
 
 // ── Context Updater ─────────────────────────────────────────────────────
 // Applies context_updates from finish() to agents/<name>/context.md.
@@ -396,5 +397,108 @@ export function createDigestWriter(persistDir: string): (event: AgentEvent) => v
       }
     }
   };
+}
+
+// ── Last-Session Writer ─────────────────────────────────────────────────
+// Writes agents/<name>/last-session.md at session end so the next session
+// can read a single file instead of querying DB + scanning files.
+// Part of: cold-start-fix milestone 1.
+
+export function createLastSessionWriter(projectRoot: string): (event: AgentEvent) => void {
+  return (event: AgentEvent) => {
+    if (event.type !== "session_end") return;
+
+    const finishParams = event.finishParams as any;
+    // Only write if we have meaningful session data (finish() was called or we have a summary)
+    const summary = finishParams?.summary ?? event.outcome ?? "";
+    if (!summary) return;
+
+    const agentDir = join(projectRoot, "agents", event.agent);
+    const status = finishParams?.status ?? event.status ?? "interrupted";
+    const filesModified = finishParams?.deliverables?.map((d: any) => d.path).filter(Boolean) ?? event.filesModified ?? [];
+    const nextSteps = finishParams?.next_steps ?? null;
+    const blockers = finishParams?.blockers ?? null;
+    const completedItems = finishParams?.completed_items ?? null;
+    const newItems = finishParams?.new_items ?? null;
+
+    try {
+      writeLastSession(agentDir, {
+        sessionId: event.sessionId,
+        agent: event.agent,
+        status,
+        summary,
+        duration: event.duration ?? (event as any).runtime,
+        filesModified,
+        nextSteps,
+        blockers,
+        completedItems,
+        newItems,
+        timestamp: Date.now(),
+      });
+    } catch (err) {
+      log("warn", `[last-session-writer] failed for ${event.agent}: ${err}`);
+    }
+  };
+}
+
+// ── File Read Tracker ───────────────────────────────────────────────────
+// Tracks which agents read which files, enabling "unread reports" detection.
+// Listens for tool_call events where tool === "read".
+
+const AGENT_PATH_RE = /^(?:\.\/)?agents\/([^/]+)\//;
+
+/** Derive the "producer" agent from a file path, if it lives under agents/<name>/. */
+function producerFromPath(filePath: string): string | null {
+  const m = filePath.match(AGENT_PATH_RE);
+  return m ? m[1] : null;
+}
+
+export function createFileReadTracker(persistDir: string): (event: AgentEvent) => void {
+  return (event: AgentEvent) => {
+    if (event.type !== "tool_call") return;
+    if ((event as any).tool !== "read") return;
+
+    const args = (event as any).args as { path?: string } | undefined;
+    const filePath = args?.path;
+    if (!filePath) return;
+
+    const agent = (event as any).agent as string;
+    const sessionId = (event as any).sessionId as string;
+    const producer = producerFromPath(filePath);
+
+    // Skip self-reads (agent reading its own files)
+    if (producer === agent) return;
+
+    try {
+      const db = getDb(persistDir);
+      db.prepare(
+        `INSERT INTO file_reads (sessionId, agent, filePath, readAt, producerAgent)
+         VALUES (?, ?, ?, ?, ?)`,
+      ).run(sessionId, agent, filePath, Date.now(), producer);
+    } catch (err) {
+      log("warn", `[file-read-tracker] failed to record read: ${err}`);
+    }
+  };
+}
+
+/** Get cross-agent read statistics: which agents read which other agents' files. */
+export function getFileReadStats(
+  persistDir: string,
+  sinceDaysAgo = 7,
+): Array<{ reader: string; producer: string; fileCount: number; readCount: number }> {
+  const db = getDb(persistDir);
+  const since = Date.now() - sinceDaysAgo * 24 * 60 * 60 * 1000;
+
+  return db
+    .prepare(
+      `SELECT agent AS reader, producerAgent AS producer,
+              COUNT(DISTINCT filePath) AS fileCount,
+              COUNT(*) AS readCount
+       FROM file_reads
+       WHERE producerAgent IS NOT NULL AND readAt > ?
+       GROUP BY agent, producerAgent
+       ORDER BY readCount DESC`,
+    )
+    .all(since) as Array<{ reader: string; producer: string; fileCount: number; readCount: number }>;
 }
 

@@ -285,6 +285,17 @@ CREATE TABLE IF NOT EXISTS experiments (
 
 CREATE INDEX IF NOT EXISTS idx_exp_status ON experiments(status);
 CREATE INDEX IF NOT EXISTS idx_exp_hyp    ON experiments(hypothesis_ref);
+
+CREATE TABLE IF NOT EXISTS file_reads (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  sessionId       TEXT NOT NULL,
+  agent           TEXT NOT NULL,
+  filePath        TEXT NOT NULL,
+  readAt          INTEGER NOT NULL,
+  producerAgent   TEXT             -- agent who "owns" the file (derived from path)
+);
+CREATE INDEX IF NOT EXISTS idx_file_reads_agent ON file_reads(agent);
+CREATE INDEX IF NOT EXISTS idx_file_reads_path  ON file_reads(filePath);
 `;
 
 // ── Database Management ────────────────────────────────────────────────
