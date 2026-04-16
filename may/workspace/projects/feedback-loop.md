@@ -78,3 +78,14 @@ Everything is fully implemented and working. The only issue was the DB table had
 4. **Wired up**: Subscribed to event bus in `src/app/may.ts`
 5. **Tests**: 5/5 passing, tsc clean
 
+
+### Iteration 3 — 2026-04-16T13:09:57.218Z
+**Worker task**: Iteration 3 — work toward goal
+**Worker result**: **Status:** done (2m43s)
+
+**Errors encountered:**
+- [edit] No changes made to src/lib/session-subscribers.ts. The replacement produced identical content. This might indicate an issue with special characters or the text not existing as expected.
+
+**Agent response:**
+The unread deliverables query correctly returns only the QA report (scout's report was read by tech-lead).
+**Files touched**: (see worker session)
