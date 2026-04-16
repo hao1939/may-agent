@@ -101,6 +101,7 @@
   3. Revisit CR#322/CR#323 framing re: EXP-104 confound
   4. KE-106 habituation literature (low priority — internal evidence already strong)
   5. Production-first evaluation literature (new lead from CR#326)
+- **✅ Wed/Thu arXiv triage (April 15-16) DONE**: Session 794. Triaged cs.MA/new + cs.AI/new. No ★★★★+ papers found — mostly lower-signal for our threads. Notable: CONCORD (2604.13348, A2A privacy), SciFi (2604.13180, safety agent loops), RiskWebWorld (2604.13531, GUI agent benchmark with RL). All ★★★ or below. Next arXiv: Friday April 17 ~20:00 UTC.
 
 ---
 *4 completed/historical sections moved to [todo-archive.md](./todo-archive.md)*
