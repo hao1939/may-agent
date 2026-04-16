@@ -20,4 +20,4 @@ Agents manually repeat templated work every session: Bob creates hypothesis file
 - [ ] **Coach: experiment templates** — Quick-setup templates for common experiment types so coach doesn't rebuild scaffolding each time.
 
 ## Progress Log
-<!-- Append entries as milestones are completed -->
+- **2026-04-16**: Optimizer saved query library DONE — `agents/optimizer/workspace/saved-queries.sh` with 6 commands (session-stats, high-op, error-sessions, workflow-adoption, agent-cost, quality-scores). All tested and working.
