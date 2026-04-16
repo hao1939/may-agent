@@ -362,7 +362,7 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 - **Weekly**: Run 3-5 promoted skill scenarios, verify no regression
 - **Monthly**: Full sweep of non-ceiling + treatment scenarios (ambiguous-context-drift, sycophants-dilemma, contradictory-requirements)
 - **On-demand**: When new skills deployed or framework changes, run targeted scenarios
-- **Last regression run**: 2026-04-09 — all 3 promoted scenarios passing (efficient-file-reading, plan-once-amend, convention-verify-edit)
+- **Last regression run**: 2026-04-16 — all 3 promoted scenarios passing (efficient-file-reading, plan-once-amend, convention-verify-edit)
 
 ---
 
@@ -389,10 +389,14 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 
 | Skill | Promoted | Last Verified | Result |
 |-------|----------|--------------|--------|
-| efficient-file-reading | 2026-04-03 | 2026-04-11 | ✅ PASS (4/4 product, 2/4 convention — same as prior; convention checks are grep-usage which bob doesn't match) |
-| structured-plan-writing (plan-once-amend) | 2026-04-03 | 2026-04-11 | ✅ 8/8 PASS (all product/behavior/efficiency) |
-| convention-verify-edit | 2026-04-03 | 2026-04-11 | ⚠️ 3/5 — product 3/3 ✅, convention 0/2 ❌ (infrastructure: transcript.jsonl not written to workdir, so C2.3/C3 can't evaluate). NOT a regression — scenario criteria expects transcript at `envDir/transcript.jsonl` but gym runner writes `_transcript.txt` to separate path. |
-| cross-reference-source-code | 2026-04-09 | 2026-04-09 | Deployed to Bob, 3/4 scenarios pass |
+| efficient-file-reading | 2026-04-03 | 2026-04-16 | ✅ PASS |
+| structured-plan-writing (plan-once-amend) | 2026-04-03 | 2026-04-16 | ✅ PASS |
+| convention-verify-edit | 2026-04-03 | 2026-04-16 | ✅ PASS |
+| cross-reference-source-code | 2026-04-09 | 2026-04-09 | Deployed to Bob, 3/4 scenarios pass (no gym scenario exists to retest) |
+
+**Apr 16 regression notes**:
+- All 3 testable promoted skills pass (bob agent). No regressions detected.
+- cross-reference-source-code has no standalone gym scenario; cannot retest.
 
 **Apr 11 regression notes**:
 - Agent `coder` no longer registered in runtime binary — ran with `bob` instead
