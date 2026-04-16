@@ -1,0 +1,9 @@
+{
+  "name": "scout-hypothesis-formulation",
+  "categories": ["judgment", "research-quality"],
+  "tags": ["scout", "hypothesis", "actionability"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "scout",
+  "workflow": false
+}

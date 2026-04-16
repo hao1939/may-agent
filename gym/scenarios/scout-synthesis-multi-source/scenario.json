@@ -1,0 +1,9 @@
+{
+  "name": "scout-synthesis-multi-source",
+  "categories": ["judgment", "research-quality"],
+  "tags": ["scout", "synthesis", "multi-source"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "scout",
+  "workflow": false
+}

@@ -1,0 +1,9 @@
+{
+  "name": "scout-paper-evaluation",
+  "categories": ["judgment", "research-quality"],
+  "tags": ["scout", "paper-evaluation", "signal-vs-noise"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "scout",
+  "workflow": false
+}

@@ -1,0 +1,9 @@
+{
+  "name": "scout-actionability-assessment",
+  "categories": ["judgment", "research-quality"],
+  "tags": ["scout", "actionability", "findings-used"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "scout",
+  "workflow": false
+}

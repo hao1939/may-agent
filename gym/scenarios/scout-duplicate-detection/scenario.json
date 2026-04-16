@@ -1,0 +1,9 @@
+{
+  "name": "scout-duplicate-detection",
+  "categories": ["judgment", "convention-compliance"],
+  "tags": ["scout", "duplicate-detection", "dedup"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "scout",
+  "workflow": false
+}

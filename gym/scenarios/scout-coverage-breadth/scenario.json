@@ -1,0 +1,9 @@
+{
+  "name": "scout-coverage-breadth",
+  "categories": ["completeness", "research-quality"],
+  "tags": ["scout", "coverage", "breadth"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "scout",
+  "workflow": false
+}
