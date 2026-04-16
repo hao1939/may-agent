@@ -1,7 +1,7 @@
 # EXP-167: Content-First Guard Generalization — New Scenario Types
 
 **Date**: 2026-04-16
-**Status**: DESIGNED — smoke tests pass, ready for batch runs
+**Status**: COMPLETE — see results.md
 **Hypothesis**: Content-first (F1) expert analysis injection generalizes to 0%-baseline scenarios beyond cascading-fix-trap-v2
 **Predecessors**: EXP-165 (F1 +100pp on cascading), EXP-166 (F1 generalizes to sql-injection, displacement confirmed)
 

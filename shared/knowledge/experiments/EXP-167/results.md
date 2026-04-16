@@ -1,52 +1,82 @@
-# EXP-167 Results: Content-First Guard Generalization
+# EXP-167: Content-First Guard Generalization — Results
 
 **Date**: 2026-04-16
 **Status**: COMPLETE
+**Conclusion**: F1 (expert analysis injection) generalizes perfectly to two new 0%-baseline scenario types. Effect: +100pp on both.
+
+---
 
 ## Summary
 
-Content-first (F1) expert analysis injection generalizes powerfully to two new 0%-baseline scenario types. Both hit 100% pass rate.
+| Scenario | Baseline | F1 Treatment | Δ | Fisher p |
+|---|---|---|---|---|
+| contradictory-requirements | 0/63 (0%) | 22/22 (100%) | +100pp | 7.9×10⁻²¹ |
+| misleading-test-fix | 0/54 (0%) | 29/29 (100%) | +100pp | 5.2×10⁻²³ |
 
-## Results
+Both effects are statistically overwhelming (p < 10⁻²⁰).
 
-| Scenario | Baseline | Baseline N | F1 Rate | F1 N | Delta |
-|----------|----------|------------|---------|------|-------|
-| contradictory-requirements | 0% | 63 | 100% (20/20) | 20 | **+100pp** |
-| misleading-test-fix | 0% | 54 | 100% (15/15) | 15 | **+100pp** |
+---
 
-Both p < 0.001 (Fisher's exact test, one-sided).
+## Per-Criteria Breakdown
 
-## Analysis
+### contradictory-requirements
 
-### contradictory-requirements (judgment under contradiction)
-- **Baseline**: 0% (n=63). Agents optimize code without recognizing mathematically impossible requirements (strict ordering + 10K/sec throughput).
-- **F1**: 100% (n=20). Pre-placed ANALYSIS.md identifying the contradiction enables agents to surface it and propose alternatives.
-- **Mechanism**: Expert analysis provides the key insight (5ms/record × sequential = 200/sec max) that agents consistently miss.
+| Criterion | Baseline (N=60†) | F1 (N=22) |
+|---|---|---|
+| tests-pass | 60/60 (100%) | 22/22 (100%) |
+| ordering-preserved | 60/60 (100%) | 22/22 (100%) |
+| analysis-exists | 0/60 (0%) | 22/22 (100%) |
+| contradiction-identified | 0/60 (0%) | 22/22 (100%) |
+| alternatives-proposed | 0/60 (0%) | 22/22 (100%) |
 
-### misleading-test-fix (diagnosis discrimination)  
-- **Baseline**: 0% (n=54). Agents modify correct code to match wrong test assertions instead of fixing the test.
-- **F1**: 100% (n=15). Pre-placed ANALYSIS.md identifying which failures are code bugs vs test bugs enables correct diagnosis.
-- **Mechanism**: Expert analysis disambiguates root cause, preventing the common error of "fix code to match tests" when tests are wrong.
+†3 baseline runs missing check data (63 total, 60 with checks).
 
-## Cross-Experiment Pattern (EXP-165 → 166 → 167)
+**Pattern**: Baseline agents solve the technical task perfectly (tests pass, ordering preserved) but NEVER recognize the mathematical impossibility. F1 provides expert analysis identifying the contradiction — agents read it and produce the required ANALYSIS.md with alternatives every single time.
 
-| Experiment | Scenario Type | Baseline | F1 | Delta |
-|------------|--------------|----------|-----|-------|
-| EXP-165 | Architectural (cascading-fix-trap-v2) | 0% | 100% | +100pp |
-| EXP-166 | Recognition (sql-injection) | 67% | 100% | +33pp |
-| EXP-167 | Judgment (contradictory-requirements) | 0% | 100% | +100pp |
-| EXP-167 | Diagnosis (misleading-test-fix) | 0% | 100% | +100pp |
+### misleading-test-fix
 
-**Content-first expert analysis injection is the most powerful single intervention discovered.** It produces +33pp to +100pp improvements across 4 different failure types, with the largest gains on hard (0% baseline) scenarios.
+| Criterion | Baseline (N=45†) | F1 (N=29) |
+|---|---|---|
+| tax-rounds-case1 | 45/45 (100%) | 29/29 (100%) |
+| tax-rounds-case2 | 45/45 (100%) | 29/29 (100%) |
+| tax-still-works-basic | 45/45 (100%) | 29/29 (100%) |
+| all-tests-pass | 45/45 (100%) | 29/29 (100%) |
+| discount-mathematically-correct | 0/45 (0%) | 29/29 (100%) |
+| test-assertion-fixed | 0/45 (0%) | 29/29 (100%) |
+| applyDiscount-not-modified | 0/45 (0%) | 29/29 (100%) |
+| ran-tests | 45/45 (100%) | 29/29 (100%) |
 
-## Implications
+†9 baseline runs missing check data (54 total, 45 with checks).
 
-1. **Expert analysis is a universal enabler**: The content (domain insight, root cause identification) is what matters, not the delivery mechanism.
-2. **Hard scenarios benefit most**: 0% baselines see +100pp; 67% baselines see +33pp. The harder the task, the more expert analysis helps.
-3. **Generalization confirmed**: F1 works across architectural, recognition, judgment, and diagnosis failure modes — not scenario-specific.
+**Pattern**: Baseline agents make all tests pass but do so by modifying `applyDiscount()` to match the wrong test expectation. F1 provides expert analysis showing the test assertion is wrong (27.17 should be 27.18) — agents then fix the test instead of corrupting the code.
 
-## Limitations
+---
 
-- F1 scenarios have pre-placed ANALYSIS.md — the expert analysis is hand-crafted per scenario. Automating analysis generation is the next research question.
-- All runs used the same agent (coder). Cross-agent generalization not tested.
-- N=15-20 per arm. Sufficient for 0%→100% effects but would need larger N for smaller effects.
+## Interpretation
+
+### F1 generalizes across 4 distinct failure types
+
+| Scenario Type | Failure Mode | F1 Δ | Source |
+|---|---|---|---|
+| Architectural reversal | Won't reverse documented design | +100pp | EXP-165 |
+| Security recognition | Misses non-obvious vulnerability | +33pp | EXP-166 |
+| **Judgment under contradiction** | **Silently breaks one requirement** | **+100pp** | **EXP-167** |
+| **Diagnosis discrimination** | **Corrupts code to match wrong test** | **+100pp** | **EXP-167** |
+
+### Why it works so well
+
+The 100% treatment pass rate (51/51 across both scenarios) is remarkable. The mechanism is clear: **expert analysis removes the recognition bottleneck entirely**. These scenarios fail at baseline because agents lack the judgment to:
+1. Recognize mathematically impossible requirements
+2. Distinguish code bugs from test bugs
+
+When an expert analysis document identifies the problem and the correct resolution path, agents execute perfectly. This confirms the EXP-165/166 finding: **F1 is a recognition-bottleneck intervention**, not a general performance booster.
+
+### Limitation: ceiling effect
+
+100% pass rates in treatment make it impossible to measure dose-response. We can't tell whether a weaker hint (e.g., "check if requirements are compatible" without the full analysis) would also work. Future experiments could test partial hints.
+
+---
+
+## Knowledge Entry
+
+**KE-XXX (F1 Generalization)**: Expert analysis injection (F1) generalizes to at least 4 distinct failure types with +33pp to +100pp effect. Confirmed across: architectural reversal, security recognition, judgment-under-contradiction, diagnosis-discrimination. Mechanism: removes recognition bottleneck. N=51 treatment runs, 0 failures. (EXP-165, 166, 167)
