@@ -5392,3 +5392,5 @@ Mandatory checks:
 
 2026-04-16T03:30Z — Proactive scan: reviewed src/app/event-bus.ts change from commit 4a2fb4f5 (silent catch blocks). Confirmed catch now logs warn-level message and continues, which matches comment intent (subscriber errors shouldn't break bus). Ran QA gates: tsc FAIL (TS1470/TS1309 CommonJS config vs import.meta/top-level await in src/app/*); vitest FAIL due to test/product-search.test.js calling process.exit(0) under Vitest.
 
+2026-04-16T04:01Z — Proactive scan: reviewed commit 4a2fb4f5 file src/lib/session-subscribers.ts (context updater + request tracker + stuck detector + auto-resume + digest writer). Observed catch blocks now log warnings (best-effort) rather than silent swallow. QA gates: tsc FAIL with TS1470/TS1309 (CommonJS output disallows import.meta + top-level await in src/app/bundle-mode.ts, src/app/may.ts, src/app/ui/web.ts, and a few tests); vitest FAIL overall: most suites pass but run fails because test/product-search.test.js calls process.exit(0) under Vitest. Verdict: CONDITIONAL on environment/test harness fixes; patch content reviewed looks reasonable.
+
