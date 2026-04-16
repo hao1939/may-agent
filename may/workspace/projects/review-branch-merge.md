@@ -102,3 +102,26 @@ This catches the edge case where an agent session dies mid-merge.
 
 1. Should `commitAndMerge()` run vitest or just tsc? Vitest is slower but catches more.  
 2. Should we keep the pre-commit hook at all? If agents always use `commitAndMerge()`, the hook is redundant safety.
+
+### Iteration 1 — 2026-04-16T18:08:57.678Z
+**Worker task**: Iteration 1 — work toward goal
+**Worker result**: **Status:** done (1m53s)
+
+**Files modified:**
+- /app/agents/may/handlers/review-auto-merge.ts
+
+**Files read (not modified):**
+- /app/agents/may/handlers/repo-gate-check.ts
+- /app/agents/may/handlers/agents-auto-commit.ts
+
+**Errors encountered:**
+- [bash] error TS5112: tsconfig.json is present but will not be loaded if files are specified on commandline. Use '--ignoreConfig' to skip this error.
+
+
+Command exited with code 1
+
+**Agent response:**
+Now commit in the agents repo:
+**Files touched**: (see worker session)
+**Owner assessment**: CONTINUE — auto (review skipped)
+
