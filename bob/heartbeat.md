@@ -32,10 +32,13 @@ Read your context and identify what needs doing:
 3. **Daily/weekly metrics** trending badly — Fork investigation if a metric is declining.
 4. **Self-directed work** — Only if nothing above applies. Use the rotation below.
 
-Pick the highest-priority task(s). Ask:
-- Is this a quick response (< 5 ops)? → Do it inline, then exit.
-- Is this substantive work (synthesis, hypothesis writing, deep analysis)? → Fork it.
-- Is this blocked or waiting on someone else? → Note it and move on.
+Pick the highest-priority task(s). Follow this order — **stop at the first match**:
+
+1. **P0/P1 pending task?** → Fork it NOW. This is your #1 job.
+2. **Active persistent task?** → Check `agents/bob/workspace/projects/` for Status: active. Resume it with `workflow.run("persistent-task", ...)`. Don't start new work when old work is unfinished.
+3. **Red/declining metric?** → Fork investigation or fix.
+4. **Nothing above?** → Fork self-directed work using rotation below.
+5. **Quick response (< 5 ops)?** → Do it inline, then exit.
 
 **Quick inline tasks** (OK to do without forking):
 - Responding to a simple question from another agent

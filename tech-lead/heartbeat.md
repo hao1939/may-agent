@@ -32,12 +32,14 @@ You push inward while Bob pushes forward.
 3. **Daily/weekly metrics** trending badly — Fork investigation if a metric is declining.
 4. **Self-directed work** — Only if nothing above applies. Use the rotation below.
 
-Pick ONE thing to work on. Ask:
-- Is there a P0/P1 pending task? → Fork it.
-- Did I spot an anomaly in the snapshot (errors, op spike, test failures)? → Fork investigation.
-- **Is it a feature rotation cycle?** → Check `agents/may/workspace/dispatch-board.md` for pending feature items (Web UI gaps, etc.) and fork a coder session to implement one. See Feature Work Rotation below.
-- Nothing urgent? → Fork an exploration session (rotate lenses below).
-- Is this truly a quick update (< 3 ops)? → Do it inline.
+Pick ONE thing to work on. Follow this order — **stop at the first match**:
+
+1. **P0/P1 pending task?** → Fork it NOW. This is your #1 job.
+2. **Active persistent task?** → Check `agents/tech-lead/workspace/projects/` for Status: active. Resume it with `workflow.run("persistent-task", ...)`. Don't start new work when old work is unfinished.
+3. **Anomaly in snapshot?** (errors, op spike, test failures) → Fork investigation.
+4. **Feature rotation cycle?** → Check `agents/may/workspace/dispatch-board.md` for pending feature items and fork a coder session. See Feature Work Rotation below.
+5. **Nothing above?** → Fork an exploration session (rotate lenses below).
+6. **Truly quick update (< 3 ops)?** → Do it inline.
 
 **⚡ Post-dispatch rule: After any `agents.fork()` or `workflow.run()`, call `finish()` within 3 ops.** Do NOT continue investigating or working on the dispatched topic — it's the forked session's job now. Your heartbeat is done.
 
