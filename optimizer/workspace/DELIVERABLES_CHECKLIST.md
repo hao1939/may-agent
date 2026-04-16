@@ -1,3 +1,5 @@
-# DELIVERABLES_CHECKLIST
+# Deliverables Checklist — M4: Pre-deploy Battery
 
-- [x] agents/optimizer/workspace/gym-feedback-design.md — Gym-as-fast-feedback design doc answering all 5 questions
+- [x] 5 scenarios identified/created
+- [x] Battery run with baseline pass rates (1/5, 20%)
+- [x] `pre-deploy-battery.md` with scenarios, results, run instructions, thresholds
