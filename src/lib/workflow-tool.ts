@@ -76,14 +76,43 @@ function generateRunId(): string {
   return `wr_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
 }
 
+/** Max completed steps to keep full detail for. Older steps get trimmed to save memory. */
+const MAX_DETAILED_STEPS = 20;
+
 function buildStepSummaries(completedSteps: CompletedStep[]): WorkflowStepSummary[] {
-  return completedSteps.map((step) => ({
+  // For large step arrays, only include last MAX_DETAILED_STEPS in the returned result
+  // to prevent context overflow when workflows run many iterations (e.g. persistent-task)
+  const steps = completedSteps.length > MAX_DETAILED_STEPS
+    ? completedSteps.slice(-MAX_DETAILED_STEPS)
+    : completedSteps;
+  return steps.map((step) => ({
     agent: step.step,
     sessionId: step.sessionId ?? "unknown",
     status: step.result.status,
     output: truncate(step.result.lastAssistantText ?? "(no output)", 2000),
     duration: step.result.duration,
   }));
+}
+
+/**
+ * Trim old completed steps to prevent unbounded memory growth.
+ * Replaces full TaskResult with a lightweight stub for steps beyond the keep window.
+ * This preserves step count/metadata for guards while freeing memory.
+ */
+function pruneCompletedSteps(completedSteps: CompletedStep[]): void {
+  if (completedSteps.length <= MAX_DETAILED_STEPS) return;
+  const pruneCount = completedSteps.length - MAX_DETAILED_STEPS;
+  for (let i = 0; i < pruneCount; i++) {
+    const step = completedSteps[i];
+    if (step.result.messages && step.result.messages.length > 0) {
+      // Replace full result with lightweight stub — keep status + summary only
+      step.result = {
+        ...step.result,
+        messages: [], // free the large messages array
+        lastAssistantText: truncate(step.result.lastAssistantText ?? "", 200),
+      };
+    }
+  }
 }
 
 async function loadWorkflow(filePath: string): Promise<WorkflowModule> {
@@ -276,6 +305,7 @@ async function resolveDemands(
 
         const step: CompletedStep = { step: label, sessionId: taskResult.sessionId, result: taskResult };
         completedSteps.push(step);
+        pruneCompletedSteps(completedSteps);
 
         // Persist step
         const wfStep: WorkflowStep = {
@@ -425,6 +455,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
               const step: CompletedStep = { step: agentName, sessionId: prevStep.sessionId, result: taskResult };
               localSteps.push(step);
               completedSteps.push(step);
+              pruneCompletedSteps(completedSteps);
 
               // Record the replayed step in the new run
               const wfStep: WorkflowStep = {
@@ -478,6 +509,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
         const step: CompletedStep = { step: agentName, sessionId: sid, result: taskResult };
         localSteps.push(step);
         completedSteps.push(step);
+        pruneCompletedSteps(completedSteps);
 
         // Persist step to the workflow run
         const wfStep: WorkflowStep = {
@@ -558,6 +590,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
         const step: CompletedStep = { step: `fn:${label}`, sessionId: taskResult.sessionId, result: taskResult };
         localSteps.push(step);
         completedSteps.push(step);
+        pruneCompletedSteps(completedSteps);
 
         onEvent?.({ type: "step_done", step: `fn:${label}`, sessionId: taskResult.sessionId, result: taskResult });
 
