@@ -1,0 +1,9 @@
+{
+  "name": "knowledge-entry-creation",
+  "categories": ["optimizer-workflow"],
+  "tags": ["knowledge", "documentation", "pre-deploy"],
+  "tier": "smoke",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}
