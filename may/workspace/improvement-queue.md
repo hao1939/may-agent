@@ -3,21 +3,37 @@
 
 ## Ready
 
+- [x] **Increase JS evaluation coverage to ≥30% for all agents** — ✅ DONE (s_1776288668585_124, 75 ops). Implemented `evaluateStandaloneSession()` in evaluator.ts (121 lines) + updated evaluator-heartbeat.ts handler. Branch: `review/standalone-eval-coverage`. Needs code review merge.
+
+- [x] **Investigate workflow session error rates for Bob and Coach** — ✅ DONE (s_1776290567108_147, 18 ops). Deliverable at `agents/may/workspace/audits/wf-error-rate-analysis.md`.
+
+- [x] **Coder utilization push — structured task pipeline** — ⏳ IN PROGRESS, dispatched to tech-lead (s_1776292339351_164). Deliverable: `agents/may/workspace/audits/coder-task-pipeline.md`.
+
+- [ ] **May ops diet — reduce heartbeat bloat below 12 avg** — May averaging 14.4 ops/session (24h), with 8 sessions >25 ops. Target is ≤12. Top bloat sources: heartbeat steps that read too many files, multi-step commit sequences, improvement-queue management inline. Audit the top 5 highest-op heartbeat sessions, identify which steps can be cut or deferred to forked sessions. Owner: may. Deliverable: Heartbeat.md edits that remove unnecessary inline work + before/after avg ops comparison.
+
+- [ ] **Metric system Phase 3 adoption verification (post-restart)** — Phase 2 complete but blocked on process restart: heartbeat-context metrics injection and proof-of-life metrics are code-on-disk only. After restart: verify 5+ agents see their owned metrics in heartbeat context, verify proof-of-life Telegram digest includes health metrics section, verify research_log is being used (currently Scout=225, Bob=29 entries — good). Owner: may. Deliverable: Phase 3 checklist updated in `agents/may/workspace/projects/metric-system.md` with green checks + evidence.
+
+- [ ] **Coach work-session quality intervention** — Coach JS quality is 0.24 (worst in system). Bimodal: structured heartbeats/cron are near-perfect, but open-ended work sessions fail hard (regression check 80 ops interrupted, investigation sessions produce inconclusive analysis). Coach needs a work-session scaffold template: read task → plan 3 steps → execute → verify each → finish with evidence. Owner: coach (self-improvement) or may (heartbeat edit). Deliverable: Coach heartbeat or skill file updated with work-session checklist, quality tracked for 48h after.
+
+- [ ] **Bob gym execution reliability fix** — 6 needs_improvement sessions related to gym work. Recurring patterns: FM-1.3 path confusion finding gym runner, FM-2.6 incomplete trial runs (starts 10, finishes 4-5 without noticing), incomplete deliverables. Needs a persistent context entry or skill for "gym execution checklist" — verify runner path, count completed trials, verify all results before finish. Owner: coach (skill design) → bob (adopt). Deliverable: Skill or context entry deployed, tracked via next gym batch results.
+
+- [ ] **Top-5 metrics dashboard prototype for proof-of-life** — From metric-system.md reflection section: raw numbers aren't useful to Hao. Prototype a "top 5 at a glance" section in the proof-of-life digest: pick 5 metrics (e.g., session success rate, JS eval quality, test count, error rate, creative output count), add trend arrows (↑↓→) and simple good/bad indicators. Get Hao feedback on whether these are the RIGHT 5 metrics. Owner: tech-lead (implement) + may (metric selection). Deliverable: Enhanced proof-of-life output with trend-annotated top-5 section.
+
 - [x] **Guards Phase 3: Cron-to-workflow migration** — ✅ COMPLETE (2026-04-14). 2 of 4 handlers migrated: error-log-scanner → `error-scan.ts`, coaching-feedback → `coaching-feedback.ts`. Remaining 2 not candidates (priority-drift=dead code, active-nudge=pure JS intervention). run-workflow handler upgraded with `runFunction()` + `agent`. **Design**: `agents/may/workspace/DESIGN-sensor-judge-migration.md`.
 - [x] **Batch merge tool for tech-lead** — ✅ DONE (2026-04-15). Script at `scripts/batch-merge.sh` already existed and verified complete.
 - [x] **Scenario oracle generator for coach** — ✅ MERGED (2026-04-15, c197286d). Script at `scripts/scenario-oracle.sh`. Rewritten with before/after patch diffing + success_criteria evaluation.
 - [x] **Create-test-pivot loop guard** — ✅ BUILT + IN REVIEW (2026-04-14). Guard at `agents/shared/guards/pivot-detector.ts`. 7 tests on branch `review/pivot-detector-guard`. Warns at 3 fail-pivot cycles, injects mandatory reassessment at 5.
-- [ ] **Artifacts-as-Memory deep dive + externalization framework validation** — Dispatched to Bob (P1, 2026-04-14). Scout found paper 2604.08756 "Artifacts as Memory Beyond the Agent Boundary" — validates DD-750. **Scope**: Small.
+- [x] **Artifacts-as-Memory deep dive + externalization framework validation** — ✅ DONE (Bob, 2026-04-14). Paper 2604.08756 reviewed, validates DD-750.
 
-- [ ] **Wire gym-batch.sh into coach growth-cycle.ts** — ⏳ IN PROGRESS. Dispatched to tech-lead (s_1776270793622_24, 2026-04-15). Optimizer ROI playbook (2026-04-13) identified this as highest-ROI next intervention. Coach runs 10-26 individual `gym-run.sh` calls per gym session; `scripts/gym-batch.sh` exists but has 0% adoption despite context.md mention (advisory interventions never work per KE-008). **Fix**: Edit `agents/coach/workflows/growth-cycle.ts` Step 1 prompt to inject `gym-batch.sh` usage directly into the workflow instruction text. **Deliverable**: Modified growth-cycle.ts with batch command wired in. **Size**: Small. **Owner**: tech-lead.
+- [x] **Wire gym-batch.sh into coach growth-cycle.ts** — ✅ DONE (tech-lead, 2026-04-15). Completed per req tracking.
 
 - [x] **Tech-lead post-dispatch finish guard** — ✅ DONE (2026-04-15). Added "⚡ Post-dispatch rule" to tech-lead heartbeat.md Step 2: "After any agents.fork() or workflow.run(), call finish() within 3 ops."
 
-- [ ] **QA heartbeat simplification (IT-21)** — QA interrupt rate is 67% and worsening (was 58% last cycle per coach reflection 2026-04-15-06). QA heartbeats time out at 5-8 ops. The heartbeat is likely doing too much work per cycle. **Fix**: Investigate QA heartbeat structure, identify bottleneck (likely: journal parsing, large unreviewed-findings.md at 152KB, or expensive queries), simplify to dispatcher pattern. **Deliverable**: Simplified `agents/qa/heartbeat.md` + evidence of reduced interrupt rate. **Size**: Medium. **Owner**: tech-lead or coach.
+- [x] **QA heartbeat simplification (IT-21)** — ✅ SELF-RESOLVED (2026-04-15). QA interrupt rate dropped from 67% to 0% (12/12 done, 0 interrupted in last 6h). Tech-lead root cause analysis confirmed it was system-wide external session abortion, not a QA heartbeat issue.
 
-- [ ] **KE-180/KE-182 production deployment — hard gate design rules** — KE-182 (Hard Gate Design Rules) synthesizes 8 experiments into actionable rules, and KE-180 (Completion Illusion) identifies a critical anti-pattern where analysis gates harm performance. Both are Active but NOT deployed to any production artifact. **Fix**: Distill the 3 key design rules from KE-182 into coach's growth-cycle.ts or a guard that checks experiment designs before gym runs (e.g., reject analysis-document gates, require product-quality metrics). **Deliverable**: Design rules injected into coach workflow or standing order. **Size**: Medium. **Owner**: coach.
+- [x] **KE-180/KE-182 production deployment — hard gate design rules** — ✅ DONE (2026-04-15, commit 62ece090). Deployed to production artifacts.
 
-- [ ] **Common-sense rule #23 auto-commit bypass cleanup** — Coach verified (2026-04-15) that 50% of sessions bypass the "commit before finish()" convention via auto-commit race condition (auto-commit runs every 10min, so agents skip manual commits knowing it'll be caught). This defeats the purpose of the convention (deliberate commit messages). **Fix**: Either strengthen the guard to reject finish() when uncommitted changes exist regardless of auto-commit timing, or change auto-commit to only run on session end (not on timer). **Deliverable**: Either guard fix or auto-commit timing change + evidence of improved compliance. **Size**: Medium. **Owner**: tech-lead.
+- [x] **Common-sense rule #23 auto-commit bypass cleanup** — ✅ DONE (2026-04-15). All 4 layers complete: auto-commit interval 10min→2h, heartbeat Step 7 fixed, commit-guard.ts merged, health-check aligned.
 
 - [x] **Scout archetype tool fix — enable forking** — ✅ DONE (2026-04-14). Already applied.
 - [x] **Over-intervention cleanup — remove verification triple-stacks** — ✅ DONE (2026-04-14, coach).
