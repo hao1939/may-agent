@@ -9,7 +9,7 @@
 
 - [x] **Coder utilization push — structured task pipeline** — ⏳ IN PROGRESS, dispatched to tech-lead (s_1776292339351_164). Deliverable: `agents/may/workspace/audits/coder-task-pipeline.md`.
 
-- [ ] **May ops diet — reduce heartbeat bloat below 12 avg** — May averaging 14.4 ops/session (24h), with 8 sessions >25 ops. Target is ≤12. Top bloat sources: heartbeat steps that read too many files, multi-step commit sequences, improvement-queue management inline. Audit the top 5 highest-op heartbeat sessions, identify which steps can be cut or deferred to forked sessions. Owner: may. Deliverable: Heartbeat.md edits that remove unnecessary inline work + before/after avg ops comparison.
+- [ ] **May ops diet — reduce heartbeat bloat below 12 avg** — ⏳ IN PROGRESS (s_1776324808746_541). Forked 07:30 UTC.
 
 - [ ] **Metric system Phase 3 adoption verification (post-restart)** — Phase 2 complete but blocked on process restart: heartbeat-context metrics injection and proof-of-life metrics are code-on-disk only. After restart: verify 5+ agents see their owned metrics in heartbeat context, verify proof-of-life Telegram digest includes health metrics section, verify research_log is being used (currently Scout=225, Bob=29 entries — good). Owner: may. Deliverable: Phase 3 checklist updated in `agents/may/workspace/projects/metric-system.md` with green checks + evidence.
 
