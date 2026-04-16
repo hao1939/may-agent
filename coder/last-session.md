@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776362305080_0
+- **Session:** s_1776362192663_0
 - **Status:** done
-- **When:** 2026-04-16T17:58:51.391Z
-- **Duration:** 26s
+- **When:** 2026-04-16T18:02:20.245Z
+- **Duration:** 5m47s
 
 ## What Happened
-All 23 tests pass.
+I think the gate is stuck tracking old writes and not resetting. Let me try `status: "partial"` instead:
