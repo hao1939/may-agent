@@ -1,21 +1,20 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776378729698_146
+- **Session:** s_1776378749444_147
 - **Status:** done
-- **When:** 2026-04-16T22:32:17.194Z
+- **When:** 2026-04-16T22:32:36.489Z
 - **Duration:** 7s
 
 ## What Happened
 ```json
 {
   "agents": {
-    "scout": {
-      "role": "Researcher",
+    "tech-lead": {
+      "role": "Builder",
       "capability_level": "L2",
-      "efficiency": 0.55,
-      "quality": 0.35,
-      "verdict": "needs_improvement",
+      "efficiency": 0.83,
+      "quality": 0.86,
+      "verdict": "good",
       "issues": [
-        "[FM-3.3/VERIFICATION_FAILURE] Attempted finish(status:'success') without providing required verification_evidence; finish() hard-failed ('verification_evidence' is required). This indicates the session did not successfully complete per system gate.",
-        "[ORDER-002 risk: no deliver
+        "[EVIDENCE_GAP] Findings about \"no visible output\" for `system-status`/`coaching-report` rely on claimed `ls` results and DB queries that are not shown in the provided transcript snippet (they are only referenced in finish() verification_evidence). Under skeptical-auditor rules, this weakens confi
