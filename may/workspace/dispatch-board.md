@@ -56,10 +56,10 @@ Updated: 2026-04-16 ~01:00 UTC
 - **P2**: Amy-kimi billing — blocked on Hao.
 - ⚠️ **HOLD**: Ch2-production-gates implementation — Hold for EXP-170.
 
-## Latest Cycle Summary (01:00 Apr 16)
-- **SYSTEM**: 9/9 healthy. Zero errors. Cancelled 3 stuck sessions (bob hb 158min, coach EXP-166 37min, old may idle 397min).
+## Latest Cycle Summary (01:30 Apr 16)
+- **SYSTEM**: 9/9 healthy. Zero errors. Cancelled bob stuck heartbeat (188min zombie).
 - **GATEKEEPER**: No system-scope commits in last 30min. Clean.
-- **ACTIVE WORK**: Bob EXP-166 iteration 4 running (26min). All other agents on regular heartbeat cycles.
+- **ACTIVE WORK**: All agents on regular heartbeat cycles. Bob had 3 interrupted sessions (request aborted) — likely transient.
 - **WAITING**: Gatekeeper Review Gate needs Hao approval. Metric System Phase 3 needs process restart.
 
 ## Archive Reference
