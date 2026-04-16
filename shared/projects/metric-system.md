@@ -29,19 +29,21 @@ Replace scattered tracking (dispatch board, todo.md, ad-hoc queries) with a unif
 5. **May owns the system**, tech-lead implements the code
 6. **Authoritative metric assignments** — Hao specified exact metric names per agent (2026-04-16)
 
-## Authoritative Metric Assignments (from Hao, 2026-04-16)
+## Authoritative Metric Assignments (from Hao, 2026-04-16 — revised round 2)
 
-| Agent | Metrics | Types |
-|-------|---------|-------|
-| May | `system.request-throughput`, `system.stuck-requests`, `system.agent-utilization` | health, health, continuous |
-| Bob | `bob.hypotheses-resolved`, `bob.designs-implemented`, `bob.experiment-completion` | continuous, continuous, health |
-| Tech-lead | `tech-lead.build-health`, `tech-lead.features-shipped`, `tech-lead.codebase-weight` | health, continuous, continuous |
-| Coach | `coach.quality-improvement`, `coach.skill-effectiveness`, `coach.gym-discrimination` | continuous, continuous, continuous |
-| Optimizer | `optimizer.tool-adoption`, `optimizer.waste-reduction`, `optimizer.quality-preserved` | continuous, continuous, health |
-| Scout | `scout.discovery-rate`, `scout.findings-used`, `scout.coverage` | health, continuous, health |
-| Coder | `coder.quality`, `coder.first-pass-rate` | continuous, continuous |
-| Evaluator | `evaluator.calibration`, `evaluator.coverage` | health, health |
-| QA | `qa.review-coverage`, `qa.false-positive-rate` | health, continuous |
+| Agent | Metrics | Types | Speed |
+|-------|---------|-------|-------|
+| May | `system.request-throughput`, `system.stuck-requests`, `system.agent-utilization` | health, health, continuous | daily, fast, daily |
+| Bob | `bob.experiment-completion`, `bob.hypotheses-resolved`, `bob.designs-implemented` | health, continuous, continuous | fast, slow, slow |
+| Tech-lead | `tech-lead.build-health`, `tech-lead.meaningful-changes`, `tech-lead.codebase-weight`, `tech-lead.delegation-quality` | health, continuous, continuous, continuous | fast, daily, slow, daily |
+| Coach | `coach.intervention-hit-rate`, `coach.skill-effectiveness`, `coach.knowledge-to-action-latency` | continuous, continuous, continuous | fast, daily, daily |
+| Optimizer | `optimizer.tool-adoption`, `optimizer.analysis-accuracy`, `optimizer.quality-preserved` | continuous, continuous, health | daily, daily, slow |
+| Scout | `scout.hypotheses-generated`, `scout.findings-used`, `scout.coverage` | continuous, continuous, health | daily, slow, fast |
+| Coder | `coder.quality`, `coder.first-pass-rate` | continuous, continuous | daily, daily |
+| Evaluator | `evaluator.calibration`, `evaluator.coverage` | health, health | daily, daily |
+| QA | `qa.review-coverage`, `qa.false-positive-rate` | health, continuous | daily, slow |
+
+Total: 26 metrics (was 24). Key renames: `features-shipped`→`meaningful-changes`, `quality-improvement`→`intervention-hit-rate`, `gym-discrimination`→`knowledge-to-action-latency`, `waste-reduction`→`analysis-accuracy`, `discovery-rate`→`hypotheses-generated`. New: `tech-lead.delegation-quality`.
 
 ### Tension Pairs
 - **Bob ↔ Tech-lead:** "What to build" vs "How to build it well"

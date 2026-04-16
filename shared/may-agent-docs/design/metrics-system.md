@@ -671,71 +671,82 @@ WHERE h.created_at > (strftime('%s','now')*1000 - 2592000000) -- last 30 days
 4. **Drill-down query library** — companion doc for each continuous metric
 5. **Op-level instrumentation** (from Optimizer) — `tool_calls` table for deeper efficiency analysis
 
-## Authoritative Metric Assignments (from Hao, 2026-04-16)
+## Authoritative Metric Assignments (from Hao, 2026-04-16 — revised round 2)
 
 ### May — System Oversight
-| ID | Type | Threshold |
-|----|------|-----------|
-| `system.request-throughput` | health | - |
-| `system.stuck-requests` | health | < 3 |
-| `system.agent-utilization` | continuous | > 80% |
+| ID | Type | Speed |
+|----|------|-------|
+| `system.request-throughput` | health | daily |
+| `system.stuck-requests` | health | fast |
+| `system.agent-utilization` | continuous | daily |
 
 ### Bob — Architect
-| ID | Type |
-|----|------|
-| `bob.hypotheses-resolved` | continuous |
-| `bob.designs-implemented` | continuous |
-| `bob.experiment-completion` | health |
+| ID | Type | Speed |
+|----|------|-------|
+| `bob.experiment-completion` | health | fast |
+| `bob.hypotheses-resolved` | continuous | slow |
+| `bob.designs-implemented` | continuous | slow |
 
 ### Tech-lead — Engineer
-| ID | Type |
-|----|------|
-| `tech-lead.build-health` | health |
-| `tech-lead.features-shipped` | continuous |
-| `tech-lead.codebase-weight` | continuous |
+| ID | Type | Speed |
+|----|------|-------|
+| `tech-lead.build-health` | health | fast |
+| `tech-lead.meaningful-changes` | continuous | daily |
+| `tech-lead.codebase-weight` | continuous | slow |
+| `tech-lead.delegation-quality` | continuous | daily |
 
 ### Coach — Trainer
-| ID | Type |
-|----|------|
-| `coach.quality-improvement` | continuous |
-| `coach.skill-effectiveness` | continuous |
-| `coach.gym-discrimination` | continuous |
+| ID | Type | Speed |
+|----|------|-------|
+| `coach.intervention-hit-rate` | continuous | fast |
+| `coach.skill-effectiveness` | continuous | daily |
+| `coach.knowledge-to-action-latency` | continuous | daily |
 
 ### Optimizer — Tool & Workflow Builder
-| ID | Type |
-|----|------|
-| `optimizer.tool-adoption` | continuous |
-| `optimizer.waste-reduction` | continuous |
-| `optimizer.quality-preserved` | health |
+| ID | Type | Speed |
+|----|------|-------|
+| `optimizer.tool-adoption` | continuous | daily |
+| `optimizer.analysis-accuracy` | continuous | daily |
+| `optimizer.quality-preserved` | health | slow |
 
 ### Scout — Explorer
-| ID | Type |
-|----|------|
-| `scout.discovery-rate` | health |
-| `scout.findings-used` | continuous |
-| `scout.coverage` | health |
+| ID | Type | Speed |
+|----|------|-------|
+| `scout.hypotheses-generated` | continuous | daily |
+| `scout.findings-used` | continuous | slow |
+| `scout.coverage` | health | fast |
 
 ### Coder — Builder
-| ID | Type |
-|----|------|
-| `coder.quality` | continuous |
-| `coder.first-pass-rate` | continuous |
+| ID | Type | Speed |
+|----|------|-------|
+| `coder.quality` | continuous | daily |
+| `coder.first-pass-rate` | continuous | daily |
 
 ### Evaluator — Scorer
-| ID | Type |
-|----|------|
-| `evaluator.calibration` | health |
-| `evaluator.coverage` | health |
+| ID | Type | Speed |
+|----|------|-------|
+| `evaluator.calibration` | health | daily |
+| `evaluator.coverage` | health | daily |
 
 ### QA — Reviewer
-| ID | Type |
-|----|------|
-| `qa.review-coverage` | health |
-| `qa.false-positive-rate` | continuous |
+| ID | Type | Speed |
+|----|------|-------|
+| `qa.review-coverage` | health | daily |
+| `qa.false-positive-rate` | continuous | slow |
 
 ### Tension Pairs
 - **Bob ↔ Tech-lead:** "What to build" vs "How to build it well"
 - **Coach ↔ Optimizer:** "Agent quality" vs "Agent efficiency"
+
+### Key Changes (round 2)
+- `tech-lead.features-shipped` → `tech-lead.meaningful-changes` (refactors count too)
+- NEW: `tech-lead.delegation-quality` (coder first-pass rate on delegated tasks)
+- `coach.quality-improvement` → `coach.intervention-hit-rate` (more specific)
+- `coach.gym-discrimination` → `coach.knowledge-to-action-latency` (speed of acting on findings)
+- `optimizer.waste-reduction` → `optimizer.analysis-accuracy` (accuracy over speed)
+- `scout.discovery-rate` → `scout.hypotheses-generated` (synthesis not volume)
+- Added Speed column: fast/daily/slow matching natural feedback loops
+- Total: 26 metrics (was 24)
 
 ## Relationship to Persistent Tasks
 
