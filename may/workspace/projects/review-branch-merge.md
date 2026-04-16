@@ -1,0 +1,104 @@
+# Design: Review Branch Auto-Merge
+
+**Status**: active
+**Owner**: may
+**Worker**: tech-lead
+**Created**: 2026-04-16
+
+## Problem
+
+Agents commit to `review/*` branches (enforced by pre-commit hook on main). But nothing merges them after. Branches accumulate forever. The review gate was built without a merge step.
+
+### Current flow (broken)
+```
+Agent commits → pre-commit hook blocks main → agent creates review/xxx branch → commits there → session ends → branch sits forever
+```
+
+### Evidence
+- 4 stale review branches found today (fix-premature-done, guard-friction-r1-r2, metric-tension-pairs, s_1776334636841_3)
+- repo-gate-check handler runs tsc+vitest but only writes results to .state/qa-gate-results.json — never merges
+- No code anywhere calls `git merge` on review branches
+
+## Root Cause Analysis
+
+The review gate was designed in 3 modes (Bob's review in `REVIEW-review-gate-design.md`):
+- **Mode A**: Workflow guard (intercept at commit time) — not built
+- **Mode B**: Session-end subscriber (detect review branches when session closes) — not built  
+- **Mode C**: Behavioral heartbeat check (QA reviews on heartbeat) — partially built via repo-gate-check
+
+The merge step was an assumed part of Mode B/C but was never implemented.
+
+## Design: Close the Loop
+
+### Principle
+**Don't add complexity.** The pre-commit hook + deterministic checks already exist. We just need to wire the merge step.
+
+### Option A: Handler-based auto-merge (cron every 30 min)
+A May handler scans `review/*` branches periodically, runs tsc+vitest, merges passing ones.
+
+**Pros**: Simple, self-contained, catches stale branches  
+**Cons**: Checkout-based (switches working tree — dangerous if other processes are writing), 30min delay, tsc+vitest runs are expensive if frequent
+
+### Option B: Session-end subscriber merge
+When a session ends that created a `review/*` branch, immediately test + merge it.
+
+**Pros**: Instant merge, no polling, runs in context of the session that created the branch  
+**Cons**: Needs session subscriber infrastructure, agent's session is already ended
+
+### Option C: Agent merges own branch before session ends ← **RECOMMENDED**
+Instead of creating a review branch and leaving it, the agent:
+1. Commits to `review/*` branch
+2. Runs `tsc --noEmit` 
+3. Runs `vitest --run`
+4. If both pass → `REVIEW_GATE_BYPASS=1 git checkout main && git merge review/xxx && git branch -d review/xxx`
+5. If checks fail → leave branch for investigation
+
+**Pros**: No new infrastructure, no polling, no working tree conflicts, instant, the agent who made the change also validates it  
+**Cons**: Relies on agents following the protocol (but we can enforce via workflow helper)
+
+### Option D: Remove the pre-commit hook entirely
+Agents commit directly to main. The repo-gate-check handler catches regressions after the fact.
+
+**Pros**: Simplest possible, eliminates the whole problem  
+**Cons**: Regressions land on main, harder to revert
+
+## Recommendation: Option C + Safety Net
+
+### Primary: Option C — Agent self-merge
+Add a shared utility function that agents call after committing:
+
+```typescript
+// agents/shared/lib/git-utils.ts
+export function commitAndMerge(message: string, files: string[]): { merged: boolean; error?: string } {
+  // 1. Create review branch from main
+  // 2. Stage and commit files
+  // 3. Run tsc --noEmit
+  // 4. Run vitest --run  
+  // 5. If both pass: checkout main, merge, delete branch
+  // 6. If either fails: stay on review branch, return error
+  // 7. Always end on main branch
+}
+```
+
+Workers call `commitAndMerge()` instead of raw git commands. The function handles the full cycle.
+
+### Safety net: Stale branch cleanup (low-priority cron)
+A lightweight handler (no checkout, just `git branch -d`) that:
+- Every 6 hours, lists `review/*` branches
+- Deletes any that are fully merged (0 commits ahead)
+- Logs warnings for branches older than 48h that aren't merged (they have test failures)
+
+This catches the edge case where an agent session dies mid-merge.
+
+## Milestones
+
+- [ ] M1: Write `commitAndMerge()` utility in `agents/shared/lib/git-utils.ts`
+- [ ] M2: Update persistent-task.ts worker prompt to use `commitAndMerge()` for code changes
+- [ ] M3: Write stale-branch-cleanup handler (safety net)
+- [ ] M4: Verify: run a persistent task, confirm branches don't accumulate
+- [ ] M5: Create metric `workflow.stale-review-branches` — count of review/* branches older than 2h
+
+## Open Questions
+
+1. Should `commitAndMerge()` run vitest or just tsc? Vitest is slower but catches more.  
+2. Should we keep the pre-commit hook at all? If agents always use `commitAndMerge()`, the hook is redundant safety.

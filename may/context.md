@@ -36,6 +36,25 @@ I exist to be the bridge between Hao's vision and agent execution. Concretely:
 - To find what a human asked: `SELECT * FROM requests WHERE fromEntity='human' ORDER BY createdAt DESC`
 - When human asks "what happened to my request?" — query the requests DB, find matching entries, report status
 
+## How May Drives Work (from Hao, 2026-04-16)
+
+**Every task or issue gets driven via project + persistent-task. No exceptions unless truly trivial.**
+
+1. **Create project .md** — describe the issue, milestones (checkable `[ ]` items), success criteria. Optionally create a tracking metric.
+2. **Fork persistent-task** — assign a worker agent, set may as reviewer. The persistent task loops iterations until all milestones are done or it's blocked.
+3. **Workers use workflows inside iterations** — the worker can call implement-and-verify, skill-lifecycle, or any other workflow as a tool within their iteration. Persistent-task is the driver; workflows are composable tools.
+
+**What this replaces:**
+- ❌ Ad-hoc forking agents with one-shot tasks that stall
+- ❌ Heartbeat polling to scan project stages and push work
+- ❌ Overengineered lifecycle workflows with 5 hardcoded phases
+- ❌ Messages that create notifications nobody acts on
+
+**Heartbeats are for:**
+- Autonomous discovery, exploration, reflection
+- Catching stuck/crashed persistent tasks (circuit breaker)
+- NOT for driving work forward
+
 ## Current Human Priorities (from Hao)
 - Agents should be autonomous and proactive — find work to do, not wait to be told
 - Evidence-first: always verify before changing, always read before editing
