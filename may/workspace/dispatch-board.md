@@ -1,18 +1,18 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-16 ~00:30 UTC
+Updated: 2026-04-16 ~01:00 UTC
 
 ## System Health
-- **Amy**: 🟢 Active — 48 sessions/6h, avg 12 ops. Zero errors.
-- **Bob**: 🟢 Active — 24 sessions/6h, avg 17 ops. (2 stuck sessions cancelled at 00:30)
-- **Coach**: 🟢 Active — 22 sessions/6h, avg 22 ops. Zero errors.
+- **Amy**: 🟢 Active — 49 sessions/6h, avg 12 ops. Zero errors.
+- **Bob**: 🟢 Active — 21 sessions/6h, avg 18 ops. (1 stuck heartbeat cancelled at 01:00)
+- **Coach**: 🟢 Active — 20 sessions/6h, avg 20 ops. (1 stuck EXP-166 cancelled)
 - **Scout**: 🟢 Active — 13 sessions/6h, avg 13 ops. Zero errors.
-- **Tech-lead**: 🟢 Active — 27 sessions/6h, avg 21 ops. Zero errors.
-- **Optimizer**: 🟢 Active — 24 sessions/6h, avg 14 ops. Zero errors.
-- **Evaluator**: 🟢 Active — 55 sessions/6h, avg 0 ops. Zero errors.
+- **Tech-lead**: 🟢 Active — 24 sessions/6h, avg 18 ops. Zero errors.
+- **Optimizer**: 🟢 Active — 24 sessions/6h, avg 13 ops. Zero errors.
+- **Evaluator**: 🟢 Active — 59 sessions/6h, avg 0 ops. Zero errors.
 - **QA**: 🟢 Active — 12 sessions/6h, avg 9 ops. Zero errors.
-- **Coder**: 🟢 Active — 5 sessions/6h, avg 32 ops. Zero errors.
-- **Summary**: 9/9 healthy. Zero errors. 2 stuck bob sessions cancelled.
+- **Coder**: 🟢 Active — 14 sessions/6h, avg 21 ops. Zero errors.
+- **Summary**: 9/9 healthy. Zero errors. 3 stuck sessions cancelled (bob hb, coach EXP-166, old may idle).
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -56,11 +56,10 @@ Updated: 2026-04-16 ~00:30 UTC
 - **P2**: Amy-kimi billing — blocked on Hao.
 - ⚠️ **HOLD**: Ch2-production-gates implementation — Hold for EXP-170.
 
-## Latest Cycle Summary (00:00 Apr 16)
-- **SYSTEM**: 9/9 healthy. Zero errors. Amy back online (38 sessions, avg 10 ops). 2 stuck sessions cancelled (bob heartbeat, coach EXP-166).
-- **GATEKEEPER**: Only system-scope commit = my own ops diet heartbeat rewrite. Safe.
-- **OPS DIET**: ✅ Complete. Heartbeat rewritten to ≤10 ops target. This is the first heartbeat under the new regime.
-- **QUEUE**: 4 ready items. Next up: Metric Phase 3 adoption (post-restart), Coach work-session quality, Bob gym fix, Top-5 metrics dashboard.
+## Latest Cycle Summary (01:00 Apr 16)
+- **SYSTEM**: 9/9 healthy. Zero errors. Cancelled 3 stuck sessions (bob hb 158min, coach EXP-166 37min, old may idle 397min).
+- **GATEKEEPER**: No system-scope commits in last 30min. Clean.
+- **ACTIVE WORK**: Bob EXP-166 iteration 4 running (26min). All other agents on regular heartbeat cycles.
 - **WAITING**: Gatekeeper Review Gate needs Hao approval. Metric System Phase 3 needs process restart.
 
 ## Archive Reference
