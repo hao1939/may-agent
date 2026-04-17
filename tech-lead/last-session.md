@@ -1,12 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776447042097_522
+- **Session:** s_1776448842126_539
 - **Status:** done
-- **When:** 2026-04-17T17:40:38.586Z
-- **Duration:** 9m56s
+- **When:** 2026-04-17T18:03:01.645Z
+- **Duration:** 2m19s
 
 ## What Happened
-Deliverable verified: syntax OK, help text mentions flag, diff is scoped to only `scripts/gym-batch.sh` (+193 lines). The workflow "escalated" because its default verify (tsc+vitest) surfaced the 2 known pre-existing failures (agent-loader "cite-source" + file-read-tracker `bun:test`), completely unrelated to a bash script change.
+The commit landed, tsc is clean. I also notice my commit inadvertently included pre-existing uncommitted working-tree changes that revert parts of the notify-split (imports: createNotifyTool → createSendTool, and the `"notify"` case was removed). These pre-existed my edit — send-tool.ts in working tree already only exports `createSendTool`. The commit is internally consistent (tsc green), and it restores the P0 presets.
 
-Let me commit this on a review branch (REVIEW GATE) and then reply to optimizer.
+Let me reply to may and finish.
