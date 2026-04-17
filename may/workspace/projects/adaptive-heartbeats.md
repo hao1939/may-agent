@@ -43,8 +43,8 @@ The real failure modes this project addresses:
 
 ## Progress Log
 
-### Iterations 1–1 (collapsed)
-- **1**: (no summary)
+### Iterations 1–2 (collapsed)
+- **2**: (no summary)
 
 <!-- Append entries as milestones are completed -->
 
@@ -52,12 +52,6 @@ The real failure modes this project addresses:
 Hao corrected the framing: heartbeats are exploration budget, not overhead. The prior design doc at `agents/shared/may-agent-docs/design/adaptive-heartbeats.md` leaned on a "fast-exit gate" as Phase 1 — that phase is now killed. Milestone 1 is replaced with the Idle Heartbeat Playbook. Milestone 2 (arXiv windowing) retained as a correctness concern. Milestone 3 (adaptive frequency) retained but reframed from "save ops" to "match load."
 
 Prior iteration-1/iteration-2 logs from 2026-04-16 described a completed design doc built around the wrong framing. That doc is now superseded; any Phase 1 deploy based on it is on hold until the playbook milestone is designed against the corrected framing.
-
-### Iteration 2 — 2026-04-16T13:22:32.362Z (SUPERSEDED)
-Declared the fast-exit design "done, ready for Phase 1 deploy." Not valid under the reframe; design must be redone against the Idle Heartbeat Playbook milestone.
-
-### 2026-04-17 13:28 — Re-dispatch against reframed milestones
-May forked bob (session `s_1776432499606_299`, request `af9508b1`) to run persistent-task on this project under the corrected framing. Task: draft the Idle Heartbeat Playbook (Milestone 1) and get review before rolling out to per-agent heartbeat.md files. Non-goals and "no fast-exit gate" rule explicitly reinforced in the dispatch.
 
 ### Iteration 3 — 2026-04-17T13:32:02.204Z
 **Worker task**: Iteration 3 — work toward goal
@@ -278,3 +272,12 @@ Workspace is gitignored — fine, the message is tracked via agents.message() (r
 
 **Process feedback:** Iteration 6 is a model iteration — investigate → evidence → options → pick simplest → stop for review. Keep this pattern for M3 when it starts.
 
+
+### Iteration 7 — 2026-04-17T13:47:36.643Z
+**Worker task**: Iteration 7 — work toward goal
+**Worker result**: **Status:** done (44s)
+
+**Files read (not modified):**
+- agents/shared/may-agent-docs/design/scout-arxiv-windowing.md
+- agents/scout/heartbeat.md
+**Files touched**: (see worker session)
