@@ -39,6 +39,10 @@ import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-con
 import type { CronEntry } from "../../../src/lib/cron-tool.js";
 import { evaluateStandaloneSession } from "../../../src/lib/evaluator.js";
 
+// Keep in sync with evaluator-heartbeat.ts: meta agents must never be
+// upgraded to LLM evaluation (they produce low-quality scored rows).
+const SKIP_LLM_EVAL_AGENTS = new Set(["evaluator", "may"]);
+
 interface SessionMeta {
   agent?: string;
   task?: string;
@@ -388,7 +392,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       const heuristicSessions = unevaluated.slice(0, MAX_PER_RUN).filter(s => {
         // Only sample sessions that were actually heuristic-evaluated (not skipped)
         const isSkipped = s.status === "interrupted" && (s.opCount || 0) === 0;
-        return !isSkipped;
+        return !isSkipped && !SKIP_LLM_EVAL_AGENTS.has(s.agent);
       });
 
       // Sample ~30%
