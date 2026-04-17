@@ -1,7 +1,7 @@
 # Deep Dives Index
 
-> 127 research deep dives, cross-reference syntheses, and reference documents.  
-> Last updated: 2026-04-09 | Maintained by Scout
+> 167 research deep dives, cross-reference syntheses, and reference documents.  
+> Last updated: 2026-04-17 | Maintained by Scout
 
 ## How to Use This Index
 - **DD#NNN** = Deep Dive on a single paper
@@ -787,8 +787,8 @@
 6. [DD-621](DD-621-tool-illusion-rethinking-tool-use.md) — The Tool Illusion: Rethinking Tool Use in LLMs
 7. [CR-310](../cross-references/CR-310-coordination-topology-convergence.md) — The Coordination-Topology Convergence: Three Independent Proofs That Structure > Scale
 
-> 164 research deep dives, cross-reference syntheses, and reference documents.  
-> Last updated: 2026-04-15 | Maintained by Scout
+> 167 research deep dives, cross-reference syntheses, and reference documents.  
+> Last updated: 2026-04-17 | Maintained by Scout
 
 ---
 
