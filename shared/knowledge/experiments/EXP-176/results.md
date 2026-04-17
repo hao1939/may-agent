@@ -48,6 +48,22 @@ This mirrors the invoice scenario finding from earlier (5/5 baseline). The bugs 
 
 See: `baseline-event-flow.md` for details.
 
+## Scenario 3: scout-coder-stale-cache
+
+### Status: CEILING EFFECT — scenario too easy (3/3 pass)
+
+- **Bugs**: Multiple interacting bugs — stale cache, sort comparator, window counting, event dedup, anomaly threshold
+- **Symptoms**: 10 test failures across multiple modules
+- **Date**: 2026-04-17
+
+| Trial | Product (5/5) | Behavior (3/3) | Overall |
+|-------|--------------|----------------|---------|
+| 1     | 5/5          | 3/3            | PASS    |
+| 2     | 5/5          | 3/3            | PASS    |
+| 3     | 5/5          | 3/3            | PASS    |
+
+**Baseline: 3/3 (100%)** — Yet another ceiling. Even with 5 bugs across multiple files and 10 test failures, the coder fixes everything.
+
 ## Next Steps
 
 To test scout analysis quality, we need a scenario where:
