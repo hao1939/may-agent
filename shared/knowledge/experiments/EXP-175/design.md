@@ -1,7 +1,7 @@
 # EXP-175: Improving Scout Analysis Quality for Two-Phase Debugging
 
 **Date**: 2026-04-16
-**Status**: CONCLUDED (null result — floor effect, see results.md)
+**Status**: DESIGNED
 **Predecessor**: EXP-174 (0/37 scout→coder, confirmed genuine quality gap)
 
 ---

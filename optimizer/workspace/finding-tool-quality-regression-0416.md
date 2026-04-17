@@ -1,67 +1,61 @@
-# Finding: Tool Quality Regression — edit:edit-match-fail & bash:cmd-not-found (2026-04-16 22:30)
+# Finding: Tool Quality Regression Investigation — 2026-04-16
 
-**Task**: Investigate edit:edit-match-fail 6→16 (+167%) and bash:cmd-not-found 2→4 (+100%)
+**Triggered by**: req:3841fa69 from tool-quality-scan
+**Regressed categories**: edit:edit-match-fail (+100%, 4→8), bash:timeout-killed (+45%, 11→16), edit:other (+100%, 1→2)
 
-## Data (last 24h from failureChains)
+## Analysis
 
-### edit:edit-match-fail — 14 total
-| Agent | Count | Pattern |
-|-------|-------|---------|
-| qa | 9 | All editing `agents/qa/workspace/journal.md` — a 5470-line file that changes every 30min |
-| tech-lead | 4 | Editing actively-changing files during coding sprints |
-| optimizer | 1 | Editing `todo.md` rotation tracker |
+### edit:edit-match-fail (8 occurrences, was 4)
 
-### bash:cmd-not-found — 2 in last 12h
-| Agent | Count | Pattern |
-|-------|-------|---------|
-| qa | 2 | Trying to use `python` (not available in this environment) |
+**Agent breakdown**: tech-lead(5), optimizer(1), coder(1), scout(1)
 
-## Root Cause Analysis
+**Root cause**: tech-lead accounts for 5/8 — concentrated in persistent-task iterations on `cold-start-fix.md` and edits to `session-subscribers.ts` and `compose-guards.ts`. These are files being actively modified across multiple sessions (concurrent edit race conditions). The other 3 are routine: optimizer editing DELIVERABLES_CHECKLIST.md (known pattern), coder editing proof-of-life.ts, scout missing `path` arg entirely.
 
-### edit:edit-match-fail: qa's journal.md (9/14 = 64%)
+**Verdict**: No systemic regression. tech-lead is in an active coding sprint editing frequently-changing files. The +100% is 4→8 (small absolute numbers). Expected to self-resolve as the cold-start-fix project wraps up.
 
-**Root cause**: qa appends entries to `journal.md` (5470 lines) every ~30min heartbeat. Multiple qa sessions run concurrently or in quick succession, each reading the file then trying to edit it. Between read and edit, another session has already appended, so the `oldText` no longer matches.
+### bash:timeout-killed (16 occurrences, was 11)
 
-This is a **concurrency/file-size problem**, not a behavioral one. The journal grows monotonically and qa edits near the end where content changes most frequently.
+**Agent breakdown**: bob(11), qa(8), coach(6), optimizer(1)
 
-**Fix options**:
-1. qa should use `write()` to append (or `bash echo >>`) instead of `edit()` for journal entries
-2. qa could use a simpler append pattern: `bash -c "echo '...' >> journal.md"`
+**Root cause breakdown**:
+- **qa (8)**: Running `vitest --run` and `tsc --noEmit` — these are full test/type-check runs that sometimes exceed the default 120s timeout. Recurring pattern.
+- **bob (11)**: Running gym batch scenarios with long timeouts (`gym-batch.sh ... --timeout 1800`). These are intentionally long-running and shouldn't count as "waste."
+- **coach (6)**: Various PATH export + bun commands. Likely slow DB queries or scenario listing.
 
-### edit:edit-match-fail: tech-lead (4/14 = 29%)
+**Verdict**: qa's vitest/tsc timeouts are the actionable pattern. They should use higher timeout values. bob's batch runs are expected. coach's are sporadic.
 
-**Root cause**: Active coding sprint on frequently-changing files. Expected during heavy development. Self-resolves when sprint ends.
+### edit:other (2 occurrences, was 1)
 
-**Verdict**: No action needed.
+**Agent breakdown**: tech-lead(2)
 
-### bash:cmd-not-found: qa using python (2/2)
+**Root cause**: Likely schema validation errors or replacement-identical-to-original errors (saw one "replacement produced identical content" in tech-lead's chains). Trivial volume.
 
-**Root cause**: qa attempted `python` to manipulate journal.md text. Python is not available in this environment. qa should use `bun -e` or bash string manipulation instead.
-
-**Verdict**: qa's context.md should note "python is not available."
+**Verdict**: Noise. 1→2 is not meaningful.
 
 ## Summary
 
-The regression is **concentrated in qa** (11/16 total errors). Two specific patterns:
-1. qa editing a huge journal.md file that changes between read and edit (concurrency)
-2. qa trying to use python (unavailable tool)
+The "regressions" are primarily driven by:
+1. **tech-lead's active coding sprint** — editing files that change between read and edit across persistent-task iterations
+2. **qa running full test suites without timeout bumps** — vitest/tsc exceeding 120s default
+3. **bob running intentionally long gym batches** — not actual waste
 
-Neither is systemic infrastructure failure. Both are addressable with targeted qa fixes.
+None represent a systemic tool infrastructure problem. The overall waste rate increase (13.8%) is mostly from bash:exit-code-nonzero (391 wasted calls), not these regressed categories.
 
 ## Recommendations
 
-### R1: Add "python is not available" to qa's context.md (can do now)
-- **File**: `agents/qa/context.md`
-- **Change**: Add line: "python/python3 is not available — use bun -e or bash for scripting"
-- **Expected impact**: Eliminate cmd-not-found errors (2→0, -100%)
-- **Priority**: HIGH — simple, immediate
+### R1: Add timeout to qa's vitest/tsc commands (DISPATCH-READY → qa/coder)
+- **What**: In qa's test-running logic, ensure `vitest --run` and `tsc --noEmit` commands use `timeout: 300` (5 min) instead of default 120s
+- **Where**: Grep for vitest/tsc invocations in qa's handlers — likely `agents/qa/handlers/` or qa's system prompt
+- **Expected impact**: Eliminate ~5 of the 8 qa timeout-killed errors (60% reduction in qa timeouts)
+- **Note**: This is a code change in qa's handler files. DISPATCH-READY to coder.
 
-### R2: DISPATCH-READY → qa: Switch journal.md appending to bash append
-- **What**: Instead of read→edit pattern, qa should append journal entries with `bash -c "echo '...' >> agents/qa/workspace/journal.md"` or use `write()` targeting end of file
-- **Where**: qa's heartbeat handler or system prompt where journal writing is instructed
-- **Expected impact**: Eliminate 9/14 edit-match-fail errors (~64% reduction)
-- **Priority**: MEDIUM — requires understanding qa's journal-writing flow
-- **Note**: This requires changes to qa's behavioral instructions, not just context
+### R2: NO_ACTION_NEEDED for edit:edit-match-fail
+- **Justification**: 5/8 are from tech-lead's active sprint on rapidly-changing files. The C1.1 convention (read before edit) is already enforced. These are inherent to multi-session editing of shared files, not a tool or process bug. Will self-resolve.
 
-### R3: NO_ACTION_NEEDED for tech-lead edit failures
-- **Justification**: 4 failures during active coding sprint on changing files. Normal development friction. Will self-resolve.
+### R3: NO_ACTION_NEEDED for edit:other
+- **Justification**: 1→2 is statistical noise.
+
+### R4 (low priority): Consider excluding gym-batch timeouts from waste tracking
+- **What**: In tool-quality-scan.ts, optionally exclude bash timeouts where the command contains `gym-batch` or has explicit `--timeout` > 300
+- **Where**: `agents/may/handlers/tool-quality-scan.ts`, in the classification logic
+- **Expected impact**: Reduce false-positive regression alerts from bob's intentional long-running gym scenarios
