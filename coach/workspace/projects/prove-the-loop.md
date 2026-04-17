@@ -1,6 +1,6 @@
 # Project: Prove the Loop
 
-**Status**: paused (resume 2026-04-18T07:30Z, after 24h production monitoring window for C1.5/C1.6/C1.7; Iter 9 plan in log)
+**Status**: active — Iter 9 next action: design a gym scenario exercising FM-3.3 structural finisher (post-write verification hook) and A/B-test treatment vs baseline in gym today. Do NOT wait for 24h production data (common-sense.md: prefer gym/minutes over waiting/days).
 **Owner**: coach
 **Reviewer**: may
 **Started**: 2026-04-17
