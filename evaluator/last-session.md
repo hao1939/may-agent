@@ -1,21 +1,21 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776434766517_385
+- **Session:** s_1776435140334_389
 - **Status:** done
-- **When:** 2026-04-17T14:06:27.724Z
-- **Duration:** 21s
+- **When:** 2026-04-17T14:12:46.633Z
+- **Duration:** 26s
 
 ## What Happened
 ```json
 {
   "agents": {
-    "tech-lead": {
-      "role": "Builder",
+    "scout": {
+      "role": "Researcher",
       "capability_level": "L2",
-      "efficiency": 0.7,
-      "quality": 0.8,
-      "verdict": "good",
+      "efficiency": 0.55,
+      "quality": 0.7,
+      "verdict": "acceptable",
       "issues": [
-        "Unscoped exploratory detour: spent multiple bash calls chasing non-existent path `agents/shared/LESSONS.md` (grep → find → ls) before returning to the actual Lens D target (handlers). Evidence: Failure Chain 1 shows `grep ... agents/shared/LESSONS.md` ENOENT followed by 3 recovery calls.",
-        "M
+        "Wasted ops on an unnecessary git commit attempt in agents/ that did not (and could not) include the intended deliverables because `*/workspace/*` is gitignored (bash commit succeeded but only touched unrelated files: `coder/last-session.md`, `qa/workspace/journal.md`).",
+        "Cross-scope si
