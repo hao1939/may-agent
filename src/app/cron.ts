@@ -661,7 +661,7 @@ export class Cron {
           const pending = db
             .prepare(
               `SELECT task, fromEntity, createdAt, requestId FROM requests
-               WHERE toAgent = ? AND status IN ('CREATED', 'IN_PROGRESS') AND method IN ('message', 'notify', 'send', 'fork', 'run')
+               WHERE toAgent = ? AND status IN ('CREATED', 'IN_PROGRESS') AND method IN ('message', 'send', 'fork', 'run')
                ORDER BY createdAt ASC`,
             )
             .all(agentName) as { task: string; fromEntity: string; createdAt: number; requestId: string }[];
@@ -716,8 +716,8 @@ export class Cron {
                 (m) => m.type === "health" && m.threshold != null && m.current != null && m.current < m.threshold,
               ).length;
               const header = redCount > 0
-                ? `## Injected: metrics (${metrics.length} owned, ${redCount} ⚠️ RED)\n\n**${redCount} metric(s) below threshold — these are your top priority this cycle.**`
-                : `## Injected: metrics (${metrics.length} owned)`;
+                ? `## Injected: metrics (${metrics.length} owned, ${redCount} ⚠️ RED)\n\n**${redCount} metric(s) below threshold — these are your top priority this cycle.**\n\n**Action rule (not optional):** Your concrete action this turn must either (a) fork/dispatch a fix targeting one of the ⚠️ metrics, (b) start or advance a project whose goal is to move one of these metrics, or (c) if you believe a ⚠️ metric is a false alarm, write a one-paragraph evidence note (file + commit) and flag it to may via notify. Do NOT finish this turn with "observed, nothing to do" — that is the exact failure mode these metrics exist to prevent.`
+                : `## Injected: metrics (${metrics.length} owned)\n\n*No red metrics. If you also have no pending request and no active project task, use this heartbeat for exploration: investigate a hypothesis, sample recent sessions for patterns, or audit one of your own past deliverables. Heartbeats are autonomy time — find something concrete to do, don't just finish.*`;
               injections.push(`${header}\n\n${lines.join("\n")}`);
             }
           }
