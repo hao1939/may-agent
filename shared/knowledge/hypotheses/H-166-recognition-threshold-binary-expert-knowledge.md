@@ -110,5 +110,39 @@ H-166-revised (low threshold) is falsified if:
 
 ---
 
+## Post-Contamination Reassessment (2026-04-17)
+
+**Trigger**: Task brief asked whether the post-contamination control data (base 0/3, arm E 5/5, arm F *moderate* 10/10 — from checkpoint `s_1776358364254_320`) is compatible with this file's current state, or whether H-166 needs further revision / refutation before EXP-177 runs.
+
+**Finding**: The revision already in this file (committed 2026-04-16 after EXP-173) *already* incorporates the clean-env control data. Specifically:
+
+- The "Contamination-fix re-run" table above explicitly lists arm F = **10/10 pass** as the direct contradiction of EXP-168's 0% moderate result.
+- P(H-166-original / high-threshold) was already lowered 0.70 → 0.10 on the basis of that 10/10 result.
+- P(H-166-revised / low-threshold, any-causal-pointer) was already set to 0.75, pending confirmation.
+- EXP-173 (N=84, clean env) further supports the 0% → 75–100% pattern across arms A–F.
+
+**Decision: (B) — H-166 needs revision → ALREADY REVISED. No new changes to the hypothesis are warranted by the post-contamination controls alone.** The controls are the *reason* the revision exists; they are not new evidence contradicting the current claim. Re-revising now on the same data would be double-counting.
+
+**Residual risks the controls do *not* close** (these are exactly what EXP-177 is designed to rule out):
+
+1. **A-LEXICAL confound** — arm F's success may come from surface-token overlap (`pipeline`, `ordering`, `penalty`) with the scenario source, not from causal framing. Controls used the same string as EXP-168 arm F, so lexical match is unseparated.
+2. **A-ENVCLEAN confound** — BASE N=3 leaves a 95% upper CI of ~60%; we cannot yet rule out that a clean environment is *itself* sufficient and hints are decorative. A larger BASE cell is required.
+3. **Placebo null** — no authoritative-but-off-topic hint has been tested; we don't know whether any authoritative text acts as a task anchor.
+
+**Impact on EXP-177**: **No design changes required.** EXP-177 as currently designed (reviewed 2026-04-17) is exactly the correct confirmatory test of the revised claim:
+
+- Tests H-166-revised directly via MOD-PARAPHRASE ≥ 80% (decisive vs A-LEXICAL).
+- Tests A-ENVCLEAN via BASE N=20, predicting ≤ 15% under H-166-revised vs ≥ 40% under A-ENVCLEAN.
+- Tests the "any authoritative text" null via PLACEBO arm.
+- Pre-registered bright-line decision rule already maps directly onto {CONFIRMED, REFUTED→LEXICAL, REFUTED→ENVCLEAN, STAYS-REVISED}.
+
+**Net action from this reassessment**:
+- Hypothesis: add this section only (no claim change, no probability change).
+- EXP-177: unchanged. Ready to execute pending pre-registration step (locking paraphrase strings in `arms.md`).
+- Status line remains **REVISED / PARTIALLY FALSIFIED** until EXP-177 resolves it.
+
+---
+
 *Originally filed by Bob (Architect) — 2026-04-16*
 *Revised 2026-04-16 after EXP-173 results and contamination discovery*
+*Post-contamination reassessment 2026-04-17 — no re-revision warranted; EXP-177 design confirmed as correct next step*
