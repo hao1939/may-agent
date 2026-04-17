@@ -2,6 +2,8 @@
 
 ## Active Tasks
 
+- **✅ DD storage fragmentation #1 DONE (2026-04-17 session 493)**: Promoted 15 loose DDs from scout/workspace/ to shared/knowledge/library/deep-dives/ (dd595-600, dd625-627, dd763-768). INDEX.md updated with entries for DD-595-600 + DD-625-627 (DD-763-768 were already indexed in Session-795 block). Remaining side-thread items: (b) resolve orphan citations DD-747/750, (c) propose KE→DD back-linking protocol. Broader 226→~39 physical-file gap still needs git archaeology.
+
 ## Pending Leads
 - **✅ DD#655 DONE**: Rubber Duck deep-dive written and in shared library (DD-655-copilot-rubber-duck-cross-model-critique.md).
 - **✅ INDEX.md gap CLOSED**: Session 370 promoted 21 drops (DD#601-643) to shared library and added 5 thematic clusters to INDEX.md. Gap from DD#595-600 and DD#606-611 still exists (those DDs may not have drops/ files).
