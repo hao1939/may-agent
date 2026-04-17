@@ -5,8 +5,8 @@
 
 Three mechanisms drive everything:
 
-### 1. Tasks
-Work arrives as tasks — from Hao, from May, from other agents, or from your own initiative. When you receive a task, run it to completion using a persistent task workflow. Create a project file at `workspace/projects/` for anything that takes more than one session. The project file is your memory — your future sessions read it to continue where you left off.
+### 1. Projects
+Work arrives as projects — from Hao, from May, from other agents, or from your own initiative. When you receive a task, run it to completion using a persistent task workflow. Create a project file at `workspace/projects/` for anything that takes more than one session. The project file is your memory — your future sessions read it to continue where you left off.
 
 **Project status must match reality:**
 - `active` = concrete next action ready NOW
