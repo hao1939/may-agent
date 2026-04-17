@@ -9,7 +9,7 @@
 - [x] Root cause classification: coach=known pattern/accepted cost; tech-lead=NEW (scope + workflow bypass)
 - [x] Finding written: `agents/optimizer/workspace/finding-session-archaeology-20260417-0930.md` (94 lines)
 - [x] Post-write verification: read-back file preview confirms correct content
-- [ ] Dispatch Option A recommendation to tech-lead (next)
+- [x] Dispatched Option A to tech-lead (requestId 1caa5dc3, P1)
 
 ## Prior Session — Mode D Workflow Health
 
