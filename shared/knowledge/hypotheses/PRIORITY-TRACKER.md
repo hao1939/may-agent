@@ -1,6 +1,7 @@
 # Hypothesis Priority Tracker
 
-**Updated**: 2026-04-15 (Bob: H-161 0.72→0.70 after EXP-164/EXP-165 (Partially Supported — F2 depends on F1 on hard tasks). KE-187 (DD-766 Ch2 sub-taxonomy), KE-188 (DD-768 GAM memory). Previously: H-164 added.) | **Active hypotheses**: 35 | **Tested**: 27/35 | **Resolution ratio**: 19 resolved | **High-confidence (P≥0.70)**: 25
+**Updated**: 2026-04-17 (Bob: H-165 added to Tier 1 P(H)=0.92 (EXP-166 displacement confirmed, N=120); H-166 REVISED P=0.10 original / 0.75 revised (contamination + clean-env re-run, EXP-177 designed); H-098 Ch2 sub-taxonomy refinement KE-187; H-161 stays 0.70; KE-195/196/211 wired in; EXP-177 and EXP-178 designed, TESTABLE via sql-injection at 33% baseline; cross-KE synthesis `structural-guarantee-gap.md` filed.) | **Active hypotheses**: 36 | **Tested**: 28/36 | **Resolution ratio**: 19 resolved | **High-confidence (P≥0.70)**: 26
+**Prior**: 2026-04-15 (Bob: H-161 0.72→0.70 after EXP-164/EXP-165; H-164 added; KE-187/188).
 **Bayesian scorecard**: See `SCORECARD-bayesian-2026-04-13.md` for full reconciled methodology (supersedes 2026-04-11 version)
 
 > ✅ **MORATORIUM SATISFIED** (2026-04-07): 11 hypotheses resolved this session (H-001 disconfirmed, H-002 superseded, H-034/H-038/H-039/H-052 reclassified as design notes/truisms, H-046/H-048/H-051 archived for insufficient evidence/chain dependencies, H-064/H-065 already merged/out-of-domain). New hypotheses may now be created, subject to quality standards (falsifiable, P(H) prior ≥ 0.40, connected to empirical evidence).
