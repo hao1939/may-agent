@@ -102,13 +102,18 @@ export function createCommitGuard(
         ),
       ].join(" ");
 
+      // If any changed path is under */workspace/*, use `git add -f` because
+      // agents/.gitignore ignores workspace/ contents.
+      const needsForce = fileLines.some((line) => line.slice(3).includes("/workspace/"));
+      const addCmd = needsForce ? `git add -f ${addPaths}` : `git add ${addPaths}`;
+
       return {
         block: true,
         reason:
           `finish() blocked [uncommitted changes]: You have ${fileCount} uncommitted file(s) in agents/:\n` +
           `${fileList}\n\n` +
           `Commit them with a descriptive message before calling finish():\n` +
-          `  cd ${projectRoot}/agents && git add ${addPaths} && git commit -m "${agentName}: <describe what you did>"\n\n` +
+          `  cd ${projectRoot}/agents && ${addCmd} && git commit -m "${agentName}: <describe what you did>"\n\n` +
           `Good messages: "${agentName}: H-045 Decision Topology hypothesis", "${agentName}: new skill for evidence-first debugging"\n` +
           `Bad messages: "update files", "changes"\n\n` +
           `Then call finish() again.`,
