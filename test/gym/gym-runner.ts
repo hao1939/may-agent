@@ -140,6 +140,14 @@ interface AdapterOpts {
   gymRoot: string;
   /** Copy agents to gym-local dir so context.md persists between phases. */
   sandboxAgents?: boolean;
+  /**
+   * Path to a custom common-sense.md to overlay into the sandboxed agents
+   * directory, replacing agents/shared/common-sense.md. Enables clean A/B of
+   * per-agent rules that duplicate framework-level common-sense text
+   * (coach Iter 7 infra: unblocks measurement for C1.6/C1.7 ceiling effect).
+   * When set without --lab or sandboxAgents, a sandbox copy is created.
+   */
+  commonSensePath?: string;
 }
 
 // ── Paths ──────────────────────────────────────────────────────────────
@@ -181,8 +189,9 @@ function createMayAgentAdapter(): Adapter {
         }
         cpSync(labDir, agentTarget, { recursive: true });
         agentsRoot = gymAgents;
-      } else if (opts.sandboxAgents) {
-        // Copy agents to gym-local dir so writes (e.g. context.md) don't pollute the real dir
+      } else if (opts.sandboxAgents || opts.commonSensePath) {
+        // Copy agents to gym-local dir so writes (e.g. context.md) don't pollute the real dir.
+        // Also required when overlaying a custom common-sense.md so we don't mutate the real one.
         const gymAgents = join(opts.gymRoot, "agents-sandbox");
         cpSync(join(projectRoot, "agents"), gymAgents, { recursive: true });
         rmSync(join(gymAgents, ".lab"), { recursive: true, force: true });
@@ -190,6 +199,18 @@ function createMayAgentAdapter(): Adapter {
         agentsRoot = gymAgents;
       } else {
         agentsRoot = join(projectRoot, "agents");
+      }
+
+      // Overlay custom common-sense.md (coach Iter 7 infra)
+      if (opts.commonSensePath) {
+        const src = opts.commonSensePath;
+        if (!existsSync(src)) {
+          throw new Error(`--common-sense file not found: ${src}`);
+        }
+        const dest = join(agentsRoot, "shared", "common-sense.md");
+        mkdirSync(join(agentsRoot, "shared"), { recursive: true });
+        cpSync(src, dest);
+        console.error(`  Overlaid common-sense.md from: ${src}`);
       }
 
       // Verify agent exists
@@ -769,6 +790,7 @@ function runMultiSessionScenario(
   agentName: string,
   labFork: string,
   timeoutOverride?: number,
+  commonSensePath?: string,
 ): RunResult {
   const scenarioDir = join(SCENARIOS_DIR, scenarioName);
   const meta = loadScenarioMeta(scenarioDir)!;
@@ -794,7 +816,7 @@ function runMultiSessionScenario(
   }
 
   // Setup adapter with sandboxed agents (context.md persists between sessions)
-  adapter.setup(PROJECT_ROOT, { agentName, labFork, gymRoot, sandboxAgents: true });
+  adapter.setup(PROJECT_ROOT, { agentName, labFork, gymRoot, sandboxAgents: true, commonSensePath });
 
   const startMs = Date.now();
   const allSessionResults: AdapterResult[] = [];
@@ -871,7 +893,7 @@ function runMultiSessionScenario(
       const durationMs = Date.now() - startMs;
       console.error(`    ABORT: agent failed to launch in ${sessionId} — skipping remaining sessions and scoring`);
 
-      const effectiveAgentsRoot = labFork ? join(gymRoot, "agents-lab") : join(PROJECT_ROOT, "agents");
+      const effectiveAgentsRoot = labFork ? join(gymRoot, "agents-lab") : (commonSensePath ? join(gymRoot, "agents-sandbox") : join(PROJECT_ROOT, "agents"));
       const frameworkSha = computeFrameworkSha();
       const model = readAgentModel(effectiveAgentsRoot, agentName);
       const prompt = assembleEffectivePrompt(effectiveAgentsRoot, agentName);
@@ -990,7 +1012,7 @@ function runMultiSessionScenario(
   const judgeSummary =
     judgments.length > 0 ? ` | judge: ${judgments.filter((j) => j.verdict === "pass").length}/${judgments.length}` : "";
 
-  const effectiveAgentsRoot = labFork ? join(gymRoot, "agents-lab") : join(PROJECT_ROOT, "agents");
+  const effectiveAgentsRoot = labFork ? join(gymRoot, "agents-lab") : (commonSensePath ? join(gymRoot, "agents-sandbox") : join(PROJECT_ROOT, "agents"));
   const frameworkSha = computeFrameworkSha();
   const model = readAgentModel(effectiveAgentsRoot, agentName);
   const prompt = assembleEffectivePrompt(effectiveAgentsRoot, agentName);
@@ -1029,13 +1051,14 @@ function runScenario(
   agentName: string,
   labFork: string,
   timeoutOverride?: number,
+  commonSensePath?: string,
 ): RunResult {
   const scenarioDir = join(SCENARIOS_DIR, scenarioName);
   const meta = loadScenarioMeta(scenarioDir);
 
   // Multi-session scenarios use a separate code path
   if (meta?.sessions && meta.sessions.length > 0) {
-    return runMultiSessionScenario(scenarioName, adapter, agentName, labFork, timeoutOverride);
+    return runMultiSessionScenario(scenarioName, adapter, agentName, labFork, timeoutOverride, commonSensePath);
   }
 
   // Validate single-session scenario
@@ -1060,7 +1083,7 @@ function runScenario(
   cpSync(join(scenarioDir, "environment"), workDir, { recursive: true });
 
   // Setup adapter
-  adapter.setup(PROJECT_ROOT, { agentName, labFork, gymRoot, sandboxAgents: learnBetween });
+  adapter.setup(PROJECT_ROOT, { agentName, labFork, gymRoot, sandboxAgents: learnBetween, commonSensePath });
 
   // Load injected context (simulates production session context for FM-2.6/FM-3.1 testing)
   const injectedContextFile = meta?.injected_context
@@ -1246,7 +1269,7 @@ function runScenario(
   // Compute benchmark identity
   // Derive the effective agentsRoot the same way the adapter does:
   // lab fork → gymRoot/agents-lab, otherwise → PROJECT_ROOT/agents
-  const effectiveAgentsRoot = labFork ? join(gymRoot, "agents-lab") : join(PROJECT_ROOT, "agents");
+  const effectiveAgentsRoot = labFork ? join(gymRoot, "agents-lab") : (commonSensePath ? join(gymRoot, "agents-sandbox") : join(PROJECT_ROOT, "agents"));
   const frameworkSha = computeFrameworkSha();
   const model = readAgentModel(effectiveAgentsRoot, agentName);
   const prompt = assembleEffectivePrompt(effectiveAgentsRoot, agentName);
@@ -1424,6 +1447,7 @@ function parseArgs(argv: string[]) {
     adapter: "may-agent",
     agent: "coder",
     lab: "",
+    commonSense: "",
     timeout: undefined as number | undefined,
     tier: "",
     category: "",
@@ -1444,6 +1468,9 @@ function parseArgs(argv: string[]) {
         break;
       case "--lab":
         args.lab = argv[++i];
+        break;
+      case "--common-sense":
+        args.commonSense = argv[++i];
         break;
       case "--timeout":
         args.timeout = parseInt(argv[++i]);
@@ -1522,7 +1549,7 @@ function main() {
           process.exit(1);
         }
         const adapter = adapterFactory();
-        const result = runScenario(name, adapter, args.agent, args.lab, args.timeout);
+        const result = runScenario(name, adapter, args.agent, args.lab, args.timeout, args.commonSense || undefined);
         results.push(result);
         if (result.passed) {
           passCount++;
@@ -1589,7 +1616,7 @@ function main() {
   }
 
   const adapter = adapterFactory();
-  const result = runScenario(args.scenario, adapter, args.agent, args.lab, args.timeout);
+  const result = runScenario(args.scenario, adapter, args.agent, args.lab, args.timeout, args.commonSense || undefined);
   console.log(JSON.stringify(result, null, 2));
 
   if (!result.passed) process.exit(1);

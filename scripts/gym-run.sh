@@ -11,6 +11,7 @@
 #   --adapter <name>      may-agent (default), claude-code, generic
 #   --agent <name>        Agent name passed to adapter (default: coder)
 #   --lab <fork>          Lab fork name (may-agent adapter only)
+#   --common-sense <path> Overlay a custom common-sense.md (may-agent adapter)
 #   --timeout <min>       Override timeout in minutes
 #   --tier <tier>         Filter: smoke, standard, full
 #   --category <cat>      Filter by category
