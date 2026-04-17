@@ -1,3 +1,3 @@
 # Deliverables Checklist
 
-- [x] finding-workflow-health-0417.md written with adoption rates, budget check, patterns (73 lines, 3326 bytes)
+- [ ] finding-exp176-efficiency-patterns-0417.md — EXP-176 efficiency pattern analysis
