@@ -23,12 +23,12 @@ Last updated: 2026-04-16T10:00Z
 | 15 | Verified > confident | Quality | 2026-03-30 | ✅ | Re-verified: 4/4 sessions have verification_evidence fields with specific tool output references. All quantitative claims traced to bash/grep output. Strong improvement since 3/25. See details below. |
 | 16 | Small and working > big and untested | Quality | 2026-03-27 | ✅ | 5/5 src/ changes are small (1-3 files) with 4/5 tested. Non-src work shows incremental create-test-fix cycles. See details below. |
 | 17 | Creative solutions welcome | Quality (REMOVED) | 2026-03-27 | 🗑️ | Rule removed from common-sense.md. Was in original "Quality" section, now gone. Spirit persists (agents do propose alternatives). See details below. |
-| 18 | git add agents/ = NO | How We Think | 2026-04-16 | ⚠️→✅ | Re-verified (9th): **0 violations in 114 sessions with git ops (last 12h, Apr 16).** All agents now use correct pattern (`cd agents && git add` or `cd /app/agents && git add`). Massive improvement from 6.9% violation rate (Apr 10-12). .gitignore still blocks as safety net. Upgraded. See details below. |
+| 18 | git add agents/ = NO | How We Think | 2026-04-12 | ⚠️ | Re-verified (8th): **88 sessions with `git add agents/` from wrong dir in 48h (Apr 10-12) across 1271 sessions (6.9%).** .gitignore blocks 100% — zero successful violations. Two retry storms: coach s_957 (11+ attempts, 166 ops!) and bob s_1335 (5+ attempts incl. REVIEW_GATE_BYPASS trick). All actual agents/ commits go through may-agent auto-commit. Correct pattern (`cd agents && git add`) used by some but not majority. See details below. |
 | 19 | Verify before finishing | How We Think | 2026-03-30 | 🗑️ | Rule removed from common-sense.md. The "verify-and-finish" workflow was never adopted (0 invocations across 250+ sessions). The C1.7 rule (#7) covers the spirit of this requirement. See details below. |
 | 20 | Environment Reality (C50) | How We Think | 2026-04-16 | ⚠️ | Re-verified (8th): 98.5% pass rate (894/908, last 48h). 14 violations across 4 agents: amy 8 (worst, all `cd /home/user`), coach 3, tech-lead 2, bob 1. may now 100% (was worst). New problem: amy repeatedly uses `cd /home/user && node test/...`. Guard catches all. Trend: 97.2%→98.5% (best ever). See details below. |
 | 21 | C1.8 Match finish() status to reality | How We Think | 2026-04-16 | ✅ | Re-verified (3rd): 0 violations in 15 success sessions (Apr 16). All summaries describe completed work (QA reviews, heartbeats, research). Keyword false positives (git log output, context text) — no real error-hiding. Infrastructure guards (FM-3.3, commit-guard) catch process issues before they become C1.8 violations. See details below. |
 | 22 | C1.3 Verify every write | How We Think | 2026-04-16 | ⚠️ | Re-verified (2nd): Coder s_1776258024054_26 (Apr 15): 3 edit() calls → finish() with ZERO read-back. Infra FM-3.3 guard caught it (finish blocked, forced recovery bash). Regression from Apr 13 ✅. See details below. |
-| 23 | Commit before finish() | How We Think | 2026-04-17 | ⚠️ | Re-verified (4th): 10 sessions with edits+finish (Apr 17 overnight). 6/10 committed before finish (proactive), 2/10 commit after finish (guard-forced), 1/10 no commit at all (QA s_234), 1 ambiguous. ~60% proactive. Pattern stable: guards prevent data loss but agents don't consistently self-commit. See details below. |
+| 23 | Commit before finish() | How We Think | 2026-04-16 | ⚠️ | Re-verified (3rd): 10 sessions with edits+finish (Apr 16 afternoon). Pattern unchanged — optimizer s_347 guard-blocked for uncommitted todo.md, tech-lead s_341 guard-blocked for stale file. ~50% proactive, ~50% guard-forced. Zero data loss. See details below. |
 | 24 | Cross-agent help | How We Think | 2026-04-15 | ✅ | Initial verification: 221 cross-agent requests in 72h across 8 agent pairs. Routing mostly correct (scout=research, tech-lead=code, coach=training). May dominates as coordinator (69 forks to tech-lead). Bob actively seeks help (→may, →coach, →tech-lead). No evidence of agents struggling alone when help was available. See details below. |
 
 Legend: ✅ = verified compliant, ❌ = violation found, ⚠️ = borderline, ⏳ = not yet checked, 🗑️ = rule removed from active set
@@ -1071,20 +1071,6 @@ The commit-guard (src/lib/tools/commit-guard.ts) is correctly implemented and re
 **Conclusion**: ⚠️ Maintained. The structural enforcement (edit requiring exact text) provides a natural compliance mechanism. The remaining 22% gap and the inability to measure narrate-before-act rigorously keep this at ⚠️. No regression detected.
 
 **Action**: No Growth Cycle needed. Next check: 2026-04-22.
-
----
-
-### #18 — git add agents/ = NO — RE-VERIFICATION #9 (2026-04-16 22:00Z)
-
-**Rule**: agents/ is a separate git repo — use `cd agents && git add`, not `git add agents/` from project root.
-
-**Method**: Searched 114 sessions with git add operations from last 12h (Apr 16 afternoon/evening). Extracted all `"command"` fields containing `git add` and checked for the bad pattern (`git add agents/` without prior `cd agents`).
-
-**Result**: **0 violations in 114 sessions.** Every git add used `cd agents && git add` or `cd /app/agents && git add`. Agents across all roles (tech-lead, optimizer, coach, bob, may, coder, qa) consistently use the correct pattern.
-
-**Trend**: 6.9% (Apr 10-12) → 0% (Apr 16). The retry storms (coach 11+ attempts, bob 5+ attempts) from Apr 10-12 have completely stopped.
-
-**Verdict**: ⚠️→✅ Upgraded. Behavioral fix is durable — 4 days of clean compliance.
 
 ---
 
