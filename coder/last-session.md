@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776418379304_0
+- **Session:** s_1776418407517_0
 - **Status:** done
-- **When:** 2026-04-17T09:33:24.484Z
-- **Duration:** 25s
+- **When:** 2026-04-17T09:33:54.705Z
+- **Duration:** 27s
 
 ## What Happened
-Two bugs: typo `lenght` → `length`, and missing initial value `0` for reduce.
+Two bugs: `r.value.lenght` (typo) and no initial value for `reduce` (crashes on empty array).
