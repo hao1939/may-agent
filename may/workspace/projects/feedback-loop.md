@@ -3,8 +3,8 @@
 **Owner:** may
 **Goal:** Every agent output gets a signal on whether it was useful.
 **Created:** 2026-04-16
-**Status:** paused — M2 dispatched to tech-lead (s_1776437912999_423, req:b75b3e96) 2026-04-17; will resume on completion
-**Next:** Await tech-lead M2 delivery (citations table + cite_source tool + heartbeat digest line). Design doc: agents/may/workspace/design/bidirectional-citations.md. On return, verify table exists, tool callable, M2 checkbox + commit SHA, then move to M3 (findings → tracked requests).
+**Status:** active — M2 shipped (commits 2854dedf + 23920774). M3 next.
+**Next:** M3 — findings → tracked requests auto-creation. First action: enumerate sources of "findings" in the system (scout findings md, bob design docs, may audit reports) and decide which should auto-create tracked requests with what triage. Draft design doc before implementing.
 **Master project:** [system-evolution.md](./system-evolution.md) → Gap 2
 **Source feedback:** [bob](../../bob/workspace/system-gaps.md), [scout](../../scout/workspace/system-gaps.md), [tech-lead](../../tech-lead/workspace/system-gaps.md)
 **Tracked metrics:** `scout.findings-used`, `bob.designs-implemented`, `system.stuck-requests`

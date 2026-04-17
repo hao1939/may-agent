@@ -13,11 +13,12 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-17T15:49)
+# Your Context (auto-generated 2026-04-17T16:19)
 
-**System:** 0 sessions/6h, 0% error rate
+**System:** 1 sessions/6h, 0% error rate
 
 **Top spenders:**
+- tech-lead: 1s, 109KB
 
 **Your active error patterns:**
 - FM-3.3: 4x

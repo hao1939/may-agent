@@ -1,10 +1,10 @@
 # Metric Reaction Investigation
 
-**Status:** paused — M1-M4 done, M5 dispatched to tech-lead. Waiting on implementation.
+**Status:** active — M5a (Phase 1 backfill) shipped by tech-lead. Observation window open.
 **Owner:** may
 **Created:** 2026-04-17
 **Master project:** system-evolution
-**Next:** tech-lead implements the data+renderer fix (see M4 below). When implementation committed, reopen this project to run M5 gym-test + deploy step. Cron should SKIP (status=paused).
+**Next:** May verifies red markers appear in next heartbeat batch; 48h observation window for real-work-ratio change; if insufficient, proceed to Phase 2 (add direction column + broaden predicate).
 
 ## Goal
 Understand why agents see metrics in their heartbeat context but don't act on them. Propose fixes based on evidence.
@@ -21,7 +21,8 @@ Understand why agents see metrics in their heartbeat context but don't act on th
 - [x] M2: Classify by bucket (not-seen / seen-ignored / seen-mentioned / seen-acted) with transcript excerpts
 - [x] M3: Findings report with concrete evidence per bucket
 - [x] M4: Propose 2-3 interventions, pick simplest
-- [ ] M5: Implement + gym-test + deploy with kill switch (dispatched to tech-lead)
+- [x] M5a: Phase 1 backfill — set `threshold` column on active health metrics (dispatched to tech-lead, shipped commit `0e22b256`)
+- [ ] M5b: Phase 2 — add `direction` column + broaden predicate to continuous metrics (gated on 48h observation of M5a)
 
 ## Success criteria
 - Real-work ratio (sessions with persistent task started or project milestone closed / total) rises from ~10% → ≥25% within 48h of intervention.
@@ -200,3 +201,44 @@ Dispatched to tech-lead via message (see request tracker). Payload:
 
 ## Report to s_1776336175530_25 (parent project)
 Issued as a separate message after commit.
+
+---
+
+## M5a — Phase 1 Backfill Iteration Log (2026-04-17, tech-lead session s_1776442519721_477)
+
+**Commit:** `0e22b256` (main repo, on branch `review/s_1776442615172_478`)
+**Script:** `scripts/backfill-metric-thresholds.ts` (idempotent; re-runnable with `--apply`, `--force` to overwrite)
+**Applied:** 8 UPDATEs (+1 skip for `system.stuck-requests` — zero-is-ideal, needs Phase 2 direction column)
+
+### Backfill table
+
+| metric_id | current | target | old_threshold | new_threshold | expected_red? |
+|---|---|---|---|---|---|
+| bob.experiment-completion | 0 | 0 | NULL | 1 | **⚠️ yes** |
+| evaluator.calibration | null | 0 | NULL | 0.5 | no (unmeasured) |
+| evaluator.coverage | 100 | 0 | NULL | 80 | no |
+| optimizer.quality-preserved | null | 0 | NULL | 0.9 | no (unmeasured) |
+| qa.review-coverage | 0 | 0 | NULL | 1 | **⚠️ yes** |
+| scout.coverage | 53 | 0 | NULL | 50 | no |
+| system.request-throughput | 0 | 0 | NULL | 1 | **⚠️ yes** |
+| system.stuck-requests | 0 | 0 | NULL | SKIP | — (Phase 2) |
+| tech-lead.build-health | 1 | 0 | NULL | 1 | no |
+
+### Rendered sample (bob, simulated via production query in `src/app/cron.ts:691`)
+
+```
+## Injected: metrics (3 owned, 1 ⚠️ RED)
+
+**1 metric(s) below threshold — these are your top priority this cycle.**
+
+- [fast] **Experiment completion**: 0 → target: 0 ⚠️ BELOW THRESHOLD
+- [slow] **Designs implemented**: unmeasured → target: 0
+- [slow] **Hypotheses resolved**: unmeasured → target: 0
+```
+
+qa and may render similarly with 1 ⚠️ RED each on `Review coverage` and `Request throughput` respectively.
+
+### What happens next
+- Next cron cycle (fast metrics) for bob/qa/may will include the new ⚠️ RED header.
+- May: observe reaction rate over 48h. Success criterion: real-work-ratio ≥ 25% (up from ~10%).
+- If agents still ignore red metrics, escalate to M5b (Option B: direction column + broaden predicate) and/or M4 Option C (per-metric action hint).
