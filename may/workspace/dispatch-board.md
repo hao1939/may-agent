@@ -32,7 +32,7 @@ Updated: 2026-04-16 ~08:00 UTC
 | **Heartbeat commit instruction fix** | ✅ DONE | may | Fixed Step 7 of heartbeat.md — was telling me NOT to commit (stale 10min auto-commit reference). Now says commit first, auto-commit is 2h safety net. |
 | ⚠️ **Hao task truncated** | ❓ Need info | Hao | req:7a936dcb was truncated at 500 chars. Only issue #1 (threshold inversion) visible+dispatched. May have more issues. |
 | **Two-tier eval gap fix** | ✅ DONE — needs merge | tech-lead | Implemented `evaluateStandaloneSession()` (121 lines). Branch: `review/standalone-eval-coverage`. 1968 tests pass. Needs code review + merge. |
-| **P0 notify-tool-split regression** | 🔴 Dispatched | tech-lead | Branch `review/notify-tool-split` HEAD d15c5249 dropped cite-source/cite_source from VALID_TOOL_PRESETS → may loads 0 agents, gym broken. Msg sent 17:31 (req:987c672b) per coach reports 0191825e/3190c8d4. |
+| **P0 notify-tool-split regression** | ✅ FIXED | tech-lead | Branch `review/restore-cite-source-preset`, commit 2b7bf30e. VALID_TOOL_PRESETS restored w/ cite-source + cite_source. tsc clean. (req:906c6686/4b14ea93 reported 18:02). Caveat: pre-existing uncommitted notify-split revert on their branch — FYI, not part of this fix. Needs merge. |
 
 ## Completed This Cycle
 | Issue | Status | Owner | Notes |
