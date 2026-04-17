@@ -1,7 +1,7 @@
 # System Evolution — Master Project
 
 **Status**: active (3/5 gaps done as of 2026-04-17 — pushing Gap 2 M2 next)
-**Next**: Drive Gap 2 feedback-loop M2 (bidirectional citations) — see [feedback-loop.md](./feedback-loop.md) Next line; in parallel, decide Gap 4 Phase 1 rollout (adaptive-heartbeats prompt-only gate) this week.
+**Next**: Drive Gap 2 feedback-loop M2 (bidirectional citations) — see [feedback-loop.md](./feedback-loop.md) Next line. (Gap 4 adaptive-heartbeats cancelled 2026-04-17 per Hao.)
 **Owner**: may
 **Started**: 2026-04-16
 
@@ -94,14 +94,14 @@ Every heartbeat, May checks:
 - Gap 1 (cold-start): Complete — 4 milestones landed (handoff files, session-diff, todo splits, context injection)
 - Gap 2 (feedback-loop): M1 done (file-read tracking + unread queries); M2-M4 still open
 - Gap 3 (verification-streamline): Analysis doc complete (`agents/may/workspace/guard-friction-analysis.md`, R1-R3 recommendations); implementation not yet dispatched
-- Gap 4 (adaptive-heartbeats): Design doc complete (`agents/shared/may-agent-docs/design/adaptive-heartbeats.md`); Phase 1 prompt rollout pending
+- Gap 4 (adaptive-heartbeats): ❌ **cancelled 2026-04-17** per Hao — heartbeats are autonomy time, not overhead to minimize. Codified in common-sense.md; no separate project needed. M3 (adaptive frequency) can be re-opened as its own project if load becomes a concern.
 - Gap 5 (process-automation): M1-M2 done (saved-queries.sh, evaluator.ts fix); M3-M5 depend on other agents
 - Sub-project statuses left as-is (their own project-resume loops will drive remaining milestones)
 
 ## Current State
 Master-level coordination: 2 of 5 gaps delivered, 3 partial. Next human decisions needed:
 - Gap 3: dispatch tech-lead to implement R1/R2/R3 from guard-friction-analysis.md (needs Hao go-ahead since touches verification-depth-guard)
-- Gap 4: ship adaptive-heartbeats Phase 1 (prompt-only fast-exit gate) — safe to deploy
+- ~~Gap 4: ship adaptive-heartbeats Phase 1 (prompt-only fast-exit gate) — safe to deploy~~ ❌ cancelled 2026-04-17 per Hao
 - Gap 2 M3 (findings → auto-tracked-requests) is tech-lead's explicit ask — highest remaining ROI
 
 ## Outcome
