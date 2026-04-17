@@ -64,7 +64,8 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 - **Weekly**: Run 3-5 promoted skill scenarios, verify no regression
 - **Monthly**: Full sweep of non-ceiling + treatment scenarios (ambiguous-context-drift, sycophants-dilemma, contradictory-requirements)
 - **On-demand**: When new skills deployed or framework changes, run targeted scenarios
-- **Last regression run**: 2026-04-09 — all 3 promoted scenarios passing (efficient-file-reading, plan-once-amend, convention-verify-edit)
+- **Last regression run**: 2026-04-17 — all 3 promoted scenarios passing (efficient-file-reading, plan-once-amend, convention-verify-edit)
+- Previous: 2026-04-09 — all 3 passing
 
 ---
 
