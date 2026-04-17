@@ -1,15 +1,14 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776433287346_322
+- **Session:** s_1776433549710_332
 - **Status:** done
-- **When:** 2026-04-17T13:42:48.979Z
-- **Duration:** 1m21s
+- **When:** 2026-04-17T13:46:52.320Z
+- **Duration:** 1m2s
 
 ## What Happened
-CONTINUE — Milestone 1 is now complete and verified, but M2 and M3 remain.
+CONTINUE — Iteration 6 delivered a solid M2 design doc. M1 done, M2 design ready, M3 not started.
 
-**Structural evidence (iteration 5):**
-- `grep -c "idle-playbook" agents/*/heartbeat.md` → 1 for all **12/12** agents (amy, amy-kimi, bob, coach, coder, evaluator, master, may, optimizer, qa, scout, tech-lead). ✅
-- Playbook file exists at `agents/shared/may-agent-docs/idle-playbook.md` (canonical path chosen per iteration-4 recommendation). ✅
-- Commit `0e256b6c9` ("coder: heartbeat update") added pointers to amy-kimi/coa
+**Structural evidence (iteration 6):**
+- `agents/shared/may-agent-docs/design/scout-arxiv-windowing.md` exists, 64 lines, created 13:45. ✅
+- Contains: problem statement, data-driven evidence from `.state/may.db` (563 jobs / 21 days, hour-of-day distribution, Thu/Fri no-op rate 36%/29%), verified arXiv window (Mon–Fri 00:00 UTC), two options weighed, recommendation (b) with rationale, proposed surgi

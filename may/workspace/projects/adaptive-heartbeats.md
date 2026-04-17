@@ -249,3 +249,32 @@ Workspace is gitignored — fine, the message is tracked via agents.message() (r
 **Files modified:**
 - agents/shared/may-agent-docs/design/scout-arxiv-windowing.md
 **Files touched**: (see worker session)
+**Owner assessment**: CONTINUE — — Iteration 6 delivered a solid M2 design doc. M1 done, M2 design ready, M3 not started.
+
+**Structural evidence (iteration 6):**
+- `agents/shared/may-agent-docs/design/scout-arxiv-windowing.md` exists, 64 lines, created 13:45. ✅
+- Contains: problem statement, data-driven evidence from `.state/may.db` (563 jobs / 21 days, hour-of-day distribution, Thu/Fri no-op rate 36%/29%), verified arXiv window (Mon–Fri 00:00 UTC), two options weighed, recommendation (b) with rationale, proposed surgical edit, explicit non-goals, success metric with measurable threshold (≥50% no-op drop over 2 weeks), and two flagged open questions. ✅
+- Worker correctly STOPPED before editing `scout/heartbeat.md` — matches iteration-5 guidance ("STOP for review before editing"). ✅
+- Milestone 1 still ticked in project file; M2/M3 still unchecked. ✅
+
+**Rubric check:**
+- Investigated before implementing ✅ (opCount distribution query, heartbeat read)
+- Scoped narrowly — no M3 bleed ✅ (KE-123 compliance)
+- Evidence-first ✅ (real DB numbers, not vibes)
+- Simple approach ✅ (option b reuses M1 plumbing, no new cron mechanism)
+
+**Design approvals (for next iteration):**
+1. **Approve option (b)** — fast-path to idle-playbook outside window. Matches M1 framing, leaves cron for M3.
+2. **Window end: 06:00 UTC is fine.** Open question 1 resolved — 2-hour buffer past arXiv's ~04:00 settle is reasonable; if scout's Thu/Fri no-op rate doesn't drop as predicted, tune in a follow-up.
+3. **Open question 2 (Mon 00:00):** Yes, treat Mon 00:00 as window-start. Weekend backlog is already processed; Mon is the first fresh drop of the week and should be in-window.
+
+**Next iteration (M2 rollout):**
+1. `read()` then surgical `edit()` of `agents/scout/heartbeat.md` — insert the one sentence from the "Proposed edit" section. No reordering (KE-008).
+2. Verify: `grep -n "arXiv window" agents/scout/heartbeat.md` → 1 match; `grep -n "idle-playbook" agents/scout/heartbeat.md` → still present.
+3. Commit from `agents/` with message `scout: M2 arXiv windowing fast-path to idle-playbook`.
+4. Tick M2 `[x]` in `agents/may/workspace/projects/adaptive-heartbeats.md`, commit.
+5. Record the baseline no-op rate (Thu 36%, Fri 29%) in the project file so the 2-week success check has a reference.
+6. **STOP. Do NOT start M3.** M3 (adaptive frequency) is May-owned cron work and a separate iteration.
+
+**Process feedback:** Iteration 6 is a model iteration — investigate → evidence → options → pick simplest → stop for review. Keep this pattern for M3 when it starts.
+
