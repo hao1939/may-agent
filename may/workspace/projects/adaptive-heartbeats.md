@@ -1,53 +1,56 @@
 # Adaptive Heartbeats
 
 **Owner:** may
-**Goal:** Stop wasting sessions when there's nothing to do.
+**Goal:** When an agent wakes with no assigned task, it should do something autonomous and useful — not exit fast. Idle heartbeats are the system's *exploration budget*.
 **Created:** 2026-04-16
+**Updated:** 2026-04-17 (reframed per Hao)
 **Status:** Active
 **Master project:** [system-evolution.md](./system-evolution.md) → Gap 4
 **Source feedback:** [scout](../../scout/workspace/system-gaps.md), [coach](../../coach/workspace/system-gaps.md)
 **Tracked metrics:** `system.agent-utilization`, `system.request-throughput`
 
+> **Framing correction (Hao, 2026-04-17):**
+> "Heartbeats is by design for agent to explore and try. It's OK to waste tokens as long as it provides chance for agent to be autonomous."
+>
+> An earlier version of this project treated idle heartbeats as overhead to minimize and proposed a "fast exit" gate. That framing is **wrong** and has been replaced. Exiting fast in 2 ops when nothing is assigned is the failure, not the fix. The failure mode is agents waking up and *doing nothing*, not agents waking up and burning tokens to explore.
+
 ## Why
-Agents fire heartbeats on fixed intervals regardless of whether there's work. Scout runs every 30min even when arXiv hasn't updated. Coach checks in when no experiments are running. Each idle heartbeat costs 5-15 ops for zero value.
+Heartbeats are an exploration budget. If an agent wakes and there's no assigned work, it should pick from a prioritized list of autonomous options — probe a metric, work a system-gap, test a hypothesis, clean workspace, investigate a stale project, read a paper, draft a KE. Tokens spent on autonomous exploration are cheap relative to a missed opportunity to catch a bug, notice drift, or push an improvement forward.
+
+The real failure modes this project addresses:
+1. **Idle-exit failures** — agent wakes with no assigned task, does ≤2 ops, exits. That's a wasted chance at autonomy.
+2. **Correctness-level waste** — scout polling arXiv between windows (no new data possible). This is about correctness (can't find what isn't there), not about idleness.
+3. **Load management** — system-wide cron density should scale with active work, so heartbeat storms don't mask signal or spike ops during quiet hours.
 
 ## Milestones
 
-- [ ] **Conditional heartbeat — fast exit** — If nothing needs attention (no new requests, no stale work, no errors), exit in ≤2 ops. Don't read 5 files to confirm there's nothing to do.
-- [ ] **Scout: skip heartbeats between arXiv windows** — arXiv updates at known times. Scout shouldn't poll between them.
-- [ ] **Adaptive frequency** — Run more often during active periods (when Hao is online, when work is dispatched), less during quiet hours. May controls the cron intervals dynamically.
+- [ ] **Idle heartbeat playbook** — When an agent wakes with no assigned task and no failing health check, it consults a prioritized exploration list:
+  1. Pick the highest-impact item from its own `system-gaps.md`
+  2. Poke a metric that looks off / stale / regressing
+  3. Work a dropped thread from the project files (stalled owner, blocked sub-task)
+  4. Test an outstanding hypothesis from `workspace/hypotheses/` (if any)
+  5. Clean workspace / archive stale artifacts / tighten own tooling
+  6. Read something new (paper, KE, peer's recent report) and draft a follow-up
+  Deliverable: per-agent heartbeat prompt updated to include this playbook + an explicit "don't just exit" rule. Evidence: ≥X% of idle heartbeats produce a measurable artifact (file written, request created, KE drafted).
+
+- [ ] **Scout: skip heartbeats between arXiv windows** — Correctness concern. arXiv publishes on a known schedule; polling between windows cannot find new work. Scout's cron should align to arXiv windows, or the scout heartbeat should fast-path to the idle-exploration playbook between windows instead of re-polling.
+
+- [ ] **Adaptive frequency (load management)** — Run heartbeats denser during active periods (Hao online, fresh dispatches, active gym batches), sparser during quiet hours. This is about matching system load to available signal, *not* about saving ops. May controls cron intervals dynamically. Idle-but-alive heartbeats still run; they just don't run as densely when nobody's around to consume output.
+
+## Non-Goals
+- Do **not** add a generic "nothing to do → exit" gate to heartbeats. That inverts the design.
+- Do **not** measure success by "reduced ops per idle heartbeat." Measure by useful-artifact-per-idle-heartbeat.
 
 ## Progress Log
 <!-- Append entries as milestones are completed -->
 
-### Iteration 1 — 2026-04-16T12:38:05.252Z
-**Worker task**: Iteration 1 — work toward goal
-**Worker result**: **Status:** done (1m54s)
+### 2026-04-17 — Reframe
+Hao corrected the framing: heartbeats are exploration budget, not overhead. The prior design doc at `agents/shared/may-agent-docs/design/adaptive-heartbeats.md` leaned on a "fast-exit gate" as Phase 1 — that phase is now killed. Milestone 1 is replaced with the Idle Heartbeat Playbook. Milestone 2 (arXiv windowing) retained as a correctness concern. Milestone 3 (adaptive frequency) retained but reframed from "save ops" to "match load."
 
-**Files modified:**
-- agents/shared/may-agent-docs/design/adaptive-heartbeats.md
+Prior iteration-1/iteration-2 logs from 2026-04-16 described a completed design doc built around the wrong framing. That doc is now superseded; any Phase 1 deploy based on it is on hold until the playbook milestone is designed against the corrected framing.
 
-**Files read (not modified):**
-- agents/may/workspace/projects/adaptive-heartbeats.md
+### Iteration 1 — 2026-04-16T12:38:05.252Z (SUPERSEDED)
+Produced design doc at `agents/shared/may-agent-docs/design/adaptive-heartbeats.md` centered on a fast-exit gate. Retained for historical reference only; do not deploy Phase 1 from it.
 
-**Errors encountered:**
-- [bash] 1 | 
-2 | import {Database} from 'bun:sqlite';
-3 | const db = new Database('.state/may.db', {readonly:true});
-4 | const rows = db.query(`SELECT created_at, substr(task,1,60) as task, duration_seconds, status FROM sessions WHERE agent='bob' AND task LIKE '%heartbeat%' ORDER BY created_at DESC LIMIT 30
-
-**Agent response:**
-Now verify and commit:
-**Files touched**: (see worker session)
-**Owner assessment**: DONE — — Solid design doc produced. It has data-driven problem analysis (65% idle heartbeats across agents), a layered solution (fast-exit gate → adaptive frequency → scout windowing), concrete implementation phases, estimated savings (~45 sessions/day, ~425 ops/day), and risk mitigations. Phase 1 is actionable immediately as a prompt-only change. Ready for review and Phase 1 deployment.
-
-
-### Iteration 2 — 2026-04-16T13:22:32.362Z
-**Worker task**: Iteration 2 — work toward goal
-**Worker result**: **Status:** done (10s)
-
-**Agent response:**
-The owner guidance says "DONE" — the design doc is complete and ready for review/Phase 1 deployment. There's no more work needed on this task.
-**Files touched**: (see worker session)
-**Owner assessment**: DONE — — Design doc complete at `agents/shared/may-agent-docs/design/adaptive-heartbeats.md`. Iteration 2 correctly recognized no further work needed. Ready for Hao review and Phase 1 deployment.
-
+### Iteration 2 — 2026-04-16T13:22:32.362Z (SUPERSEDED)
+Declared the fast-exit design "done, ready for Phase 1 deploy." Not valid under the reframe; design must be redone against the Idle Heartbeat Playbook milestone.

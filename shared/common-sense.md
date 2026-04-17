@@ -65,6 +65,30 @@ The `project-resume` handler forks agents every 5 minutes for every active proje
 
 When you finish a session's concrete work on an active project and the next step is time-gated, flip the status to `paused` before calling `finish()`. Your future self will thank you.
 
+### Idle heartbeat = exploration budget
+
+If you wake up with no assigned task and no failing health check, that's **NOT** a reason to exit in 2 ops. Use the time:
+- pick the highest-impact item from your own `workspace/system-gaps.md`
+- poke at a metric that looks off, stale, or regressing
+- test an outstanding hypothesis
+- work a dropped thread on one of your active projects
+- improve your own tooling (saved queries, templates, scripts)
+- read a recent paper / KE / peer report and draft a follow-up
+
+Heartbeats are the system's exploration budget. Exiting fast is a *failure to be autonomous*, not a virtue. Tokens spent exploring are cheap; missed autonomy opportunities are expensive. The design intent (from Hao): "Heartbeats is by design for agent to explore and try. It's OK to waste tokens as long as it provides chance for agent to be autonomous."
+
+The project-level Status-Discipline rule above still applies: don't re-run a project whose `Status: active` next step is genuinely time-gated — pause it. But "the current *project* has nothing to do right now" is **not** the same as "this *heartbeat* has nothing to do." When a project is correctly paused, the heartbeat still has the whole exploration menu available.
+
+### "Wait" is not a valid next action
+
+If a project says `Status: active` with next step "wait" / "wait 24h" / "monitor for a while" — that's a bug. Every "wait" must have an explicit **resume trigger** attached. Pick one of:
+
+- **Deadline** — e.g. "wait until 2026-04-18T07:30Z." Set `Status: paused (resume 2026-04-18T07:30Z, after 24h monitoring window)`. The agent or May resumes it at that time.
+- **Event** — e.g. "wait for gym batch s_XXX to complete." Set `Status: paused (resume when gym batch s_XXX completes)`. Resume when the event fires.
+- **Measurable condition** — e.g. "wait until coder.quality has ≥20 new evaluations in the window." Set `Status: paused (resume when coder.quality window has ≥20 evals since 2026-04-17T07:25Z)`. Resume when the condition is met.
+
+Bare "wait," "wait 24h," "monitor production for a while," or "next check in N hours" with **no resume trigger** is forbidden. Either the next action is runnable NOW (`Status: active`) or the resume trigger is explicit (`Status: paused` with a concrete deadline / event / condition).
+
 ## How We Work Together
 
 - **Metrics are signals, not targets.** A metric regression is a signal to investigate, not an automatic trigger to "fix the number." Your judgment decides whether to act, wait, or ignore.

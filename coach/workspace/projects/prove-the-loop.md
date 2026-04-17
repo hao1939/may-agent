@@ -1,6 +1,6 @@
 # Project: Prove the Loop
 
-**Status**: active
+**Status**: paused (resume 2026-04-18T07:30Z, after 24h production monitoring window for C1.5/C1.6/C1.7; Iter 9 plan in log)
 **Owner**: coach
 **Reviewer**: may
 **Started**: 2026-04-17
