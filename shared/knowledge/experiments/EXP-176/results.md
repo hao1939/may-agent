@@ -28,6 +28,26 @@ The scenario has a **ceiling effect** — the coder solves both bugs 100% of the
 
 This mirrors the invoice scenario finding from earlier (5/5 baseline). The bugs (tax on wrong subtotal, shipping >= vs >) are straightforward enough that the coder identifies and fixes them without needing scout guidance.
 
+---
+
+## Scenario 2: scout-coder-event-flow
+
+### Status: CEILING EFFECT — scenario too easy (3/3 pass)
+
+- **Bug**: enricher.js uses `event.userId` instead of `event.user_id`
+- **Symptoms**: Look like routing/channel bugs (all users get default tier)
+- **Date**: 2026-04-17
+
+| Trial | Product (5/5) | Behavior (3/3) | Overall |
+|-------|--------------|----------------|---------|
+| 1     | 5/5          | 3/3            | PASS    |
+| 2     | 5/5          | 3/3            | PASS    |
+| 3     | 5/5          | 3/3            | PASS    |
+
+**Baseline: 3/3 (100%)** — Another ceiling. Misdirection doesn't confuse the agent.
+
+See: `baseline-event-flow.md` for details.
+
 ## Next Steps
 
 To test scout analysis quality, we need a scenario where:
