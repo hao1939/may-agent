@@ -230,6 +230,8 @@ function buildWorkerPrompt(
   prompt += `## Instructions\n`;
   prompt += `Do a meaningful chunk of work toward the goal. `;
   prompt += `When done, summarize what you accomplished and what files you modified.\n\n`;
+  prompt += `### Budget\n`;
+  prompt += `Most iterations should fit in ≤20 tool calls. If your plan needs more, split work across iterations: end this iteration at a clean checkpoint, record progress to the project file, and let the loop pick up next iteration. Exception: iterations that run gym trials or other bulk external commands — those are allowed to exceed the budget.\n\n`;
   prompt += `### Git: For src/ changes (review-gated repo)\n`;
   prompt += `If you modify files in the main repo (src/, not agents/), use the commitAndMerge utility instead of raw git:\n`;
   prompt += `\`\`\`typescript\nimport { commitAndMerge } from "../../shared/lib/git-utils.js";\n`;
