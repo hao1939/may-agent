@@ -1,19 +1,17 @@
-# Deliverables Checklist — Mode A Session Archaeology (2026-04-17 ~18:30 UTC)
+# Deliverables Checklist — Mode B Tool Gap (2026-04-17 ~19:00 UTC)
 
-Task: 6h high-op session dig on two outlier sessions (coach 76-op weekly-skill regression check; tech-lead 74-op notify-tool split).
+Task: 6h bash pattern scan; find 1–2 multi-step bash patterns ≥3 consecutive calls across ≥2 sessions; propose fix; dispatch if actionable.
 
 ## Required deliverables
 
-- [x] **Finding file** `agents/optimizer/workspace/finding-mode-a-0417-1830.md`
-  — Sections: Session IDs/total ops, top-5 tool-call signatures per session, dominant waste pattern, fix recommendation, dispatch decision. ✅ 116 lines / 8201 bytes.
-- [x] **Rotation marker updated** in `agents/optimizer/workspace/todo.md` under "Optimizer Heartbeat Bloat — FIX DEPLOYED"
-  — Line 39 now "Last exploration mode: **A** (Session Archaeology … Apr 17 ~18:30 UTC). Next rotation: **B**". Diff confirmed.
-- [x] **Dispatch decision**: **No dispatch** this cycle. Rationale documented in finding (KE-123 anti-stacking: Mode B dispatch landed Apr 17 17:40; 3rd-occurrence rule for promoted patterns — this is 2nd; coach's own P1 escalation already covers root-cause repair).
+- [x] **Finding file** `agents/optimizer/workspace/finding-tool-gap-mode-b-0417-2.md`
+  — Pattern: "git-when" archaeology (log → show → pickaxe chain). Evidence: 49 git calls across 7 top sessions in 6h; one session burned 20 calls for one question. Proposed fix: `scripts/git-when.sh <path> <pattern>`. Est. savings: 30–60 ops/day. ✅ 125 lines / 8492 bytes.
+- [x] **Rotation marker updated** in `agents/optimizer/workspace/todo.md`
+  — "Last exploration mode: B (git-when archaeology pattern — Apr 17 ~19:00 UTC). Next rotation: C."
+- [x] **Dispatch to tech-lead** P2 with finding path cited.
 
 ## Verification evidence
 
-- write tool: finding-mode-a-0417-1830.md 116 lines / 8201 bytes.
-- edit tool diff: todo.md line 39 shows new Mode A marker prepended before prior D marker.
-- bun:sqlite query returned 2 sessions with opCount>70 in last 6h (coach 502, tech-lead 479).
-- session.jsonl parse: coach 76 bash / 36-max-streak; tech-lead 56 bash / 12-max-streak (healthy refactor).
-- coach session finish was already `blocked` with P1 dispatch to may; no additional optimizer dispatch needed.
+- write tool: finding-tool-gap-mode-b-0417-2.md 125 lines / 8492 bytes.
+- bash extraction: 49 git-log+git-show calls across 7 top-opCount sessions in 6h window.
+- Prior-work cross-check: excluded gym-transcript (0417), gitignore-detective (0417-1030), scenario-inspect (0417-1430), gym-batch-inspect (0417 17:40 merged).
