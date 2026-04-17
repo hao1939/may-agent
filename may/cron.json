@@ -137,7 +137,7 @@
     "type": "job",
     "intervalMs": 86400000,
     "agent": "optimizer",
-    "message": "[cron:optimize] Read agents/bob/workspace/analysis.md and agents/optimizer/workspace/todo.md. Work on the top TODO item or top finding. Check for LLM-to-JS replacement opportunities. One fix per run.",
+    "message": "[cron:optimize] Pick the #1 item from agents/optimizer/workspace/todo.md (or top finding in agents/bob/workspace/analysis.md if todo is empty). If it needs >15 ops, write a 1-paragraph plan to workspace/ and finish. Otherwise implement + verify. ONE fix per run — do not scope-drift.",
     "enabled": true,
     "description": "Optimizer implements one fix per day (via run-agent-task)",
     "handler": "run-agent-task",
