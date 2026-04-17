@@ -33,6 +33,7 @@ Updated: 2026-04-16 ~08:00 UTC
 | ⚠️ **Hao task truncated** | ❓ Need info | Hao | req:7a936dcb was truncated at 500 chars. Only issue #1 (threshold inversion) visible+dispatched. May have more issues. |
 | **Two-tier eval gap fix** | ✅ DONE — needs merge | tech-lead | Implemented `evaluateStandaloneSession()` (121 lines). Branch: `review/standalone-eval-coverage`. 1968 tests pass. Needs code review + merge. |
 | **writeSkippedEvaluations recurring + Premature DONE tick** | ⏳ Dispatched | tech-lead | req:4b126aed (2026-04-17 10:30). Anomaly keeps returning (211 skippable); PD rate 7→8. Asked for scheduled job + structural investigation. |
+| **Status:active rule (P0 from Hao)** | ✅ DONE | coach | Codified in `agents/shared/common-sense.md` "Project Status Discipline" section (commit 4b858b6). active=WORKING-NOW, paused/blocked distinctions, no "wait 24h" in active projects. |
 
 ## Completed This Cycle
 | Issue | Status | Owner | Notes |
