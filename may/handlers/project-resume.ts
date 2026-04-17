@@ -30,8 +30,12 @@ import { join, resolve } from "node:path";
 import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
 import type { CronEntry } from "../../../src/lib/cron-tool.js";
 
-/** Regex for `**Status**: <value>` — only the first whitespace-delimited token matters. */
-const STATUS_RE = /^\*\*Status\*\*:\s*(\S+)/m;
+/**
+ * Regex for Status line — matches both `**Status**: value` and `**Status:** value`
+ * (colon inside or outside the bold markers). Case-insensitive on the key;
+ * the captured value is lowercased by the caller.
+ */
+const STATUS_RE = /^[\s*]*Status[\s*:]*\s+(\S+)/mi;
 
 interface ProjectFile {
   owner: string;
