@@ -391,6 +391,14 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
           }
 
           case "message": {
+            // ORDER-008: may must use fork, not message (message waits for heartbeats, fork dispatches immediately)
+            const callerMsg = getCallerAgentName?.();
+            if (callerMsg === "may") {
+              return textResult(JSON.stringify({
+                error: "May cannot use agents.message — use agents.fork instead. Fork starts immediately; message waits for heartbeats.",
+              }));
+            }
+
             if (!params.agent || !params.message) {
               return textResult(JSON.stringify({ error: "'message' requires 'agent' and 'message'" }));
             }
