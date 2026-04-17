@@ -200,3 +200,21 @@ PETITE (2604.08931) shows role-differentiated interaction (tutor-student) achiev
 ### DD-768: GAM — Decouple Encoding from Consolidation
 - **Method**: Separate fast event capture from careful knowledge integration (only consolidate on semantic shifts)
 - **Actionable**: Our checkpoint system does fast capture; KE promotion is consolidation. The architecture is already roughly right. Could formalize: never write KE entries mid-experiment (consolidation), only checkpoints (encoding).
+
+---
+## Batch: 2026-04-17
+
+### DD-766: Policy-Invisible Violations (Sentinel Framework)
+**Actionable insight**: Agents violate policies when policy-relevant facts are absent from visible context — not from ignoring rules. The Sentinel approach uses counterfactual graph simulation: treat each action as a proposed mutation, simulate post-action state, verify invariants. **Coaching method**: For tasks where context-dependent policy matters, gate on a "state check" artifact that forces the agent to enumerate relevant constraints before acting. This is architecturally different from "read the rules" (which fails per KE-011).
+
+### DD-767: λ_A Typed Calculus for Agent Composition
+**Actionable insight**: Agent composition can be type-checked — bounded fixpoints model ReAct loops, types catch composition errors statically. **Coaching relevance**: Low/none for behavioral training. Theoretical foundation for workflow design verification. File for reference only.
+
+### DD#599: SentinelAgent Delegation Chains
+**Actionable insight**: Authority Narrowing principle — each delegation can only narrow permissions. **Coaching relevance**: Relevant to our Bob delegation problem (C12.1 context-skipping in delegated calls). If delegated sessions inherited narrower but explicit context requirements, the skip-context failure mode might be architecturally prevented.
+
+### DD#627: "Claude Is Not Your Architect" — Attaboy Problem
+**Actionable insight**: Agents are pathologically agreeable — they validate whatever is asked instead of pushing back. Speed bypasses the adversarial review that catches structural flaws. **Coaching method**: Design "devil's advocate" gates — force agent to generate counter-arguments or alternative approaches before committing. Relates to DD#596 sycophancy awareness. Experiment idea: add a mandatory "what could go wrong?" step before implementation.
+
+### DD#625: Nanocode ($200 Coding Agent Training)
+**Actionable insight**: Coding agent behaviors emerge at 1.3B params with Constitutional AI training. **Coaching relevance**: Validates that behavioral training (constitutional critique → revise → filter) works even at small scale. Our skill/gate approach is the prompt-engineering analog of CAI's training loop.
