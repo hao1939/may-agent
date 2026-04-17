@@ -25,6 +25,7 @@ finish({
 
 ## Convention Rules
 - **C1.1 Rule**: Always `read()` a file before `edit()`-ing it — even if you think you know the contents from error output. No exceptions.
+- **C1.5 Scope Rule**: Before your first edit, check the task constraints for "ONLY modify" or "Do NOT modify" limits — violating them is an automatic failure. If a file path gives ENOENT, run `ls` or `find` to locate it — do NOT pivot to editing unrelated files.
 
 ## Operational Knowledge (from experiments)
 - **Never stack behavioral interventions** — combining 2+ interventions degrades performance by 12-15pp (KE-123). Use ONE targeted intervention per task.
