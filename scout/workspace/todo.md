@@ -2,8 +2,6 @@
 
 ## Active Tasks
 
-- **✅ DD storage fragmentation #1 DONE (2026-04-17 session 493)**: Promoted 15 loose DDs from scout/workspace/ to shared/knowledge/library/deep-dives/ (dd595-600, dd625-627, dd763-768). INDEX.md updated with entries for DD-595-600 + DD-625-627 (DD-763-768 were already indexed in Session-795 block). Remaining side-thread items: (b) resolve orphan citations DD-747/750, (c) propose KE→DD back-linking protocol. Broader 226→~39 physical-file gap still needs git archaeology.
-
 ## Pending Leads
 - **✅ DD#655 DONE**: Rubber Duck deep-dive written and in shared library (DD-655-copilot-rubber-duck-cross-model-critique.md).
 - **✅ INDEX.md gap CLOSED**: Session 370 promoted 21 drops (DD#601-643) to shared library and added 5 thematic clusters to INDEX.md. Gap from DD#595-600 and DD#606-611 still exists (those DDs may not have drops/ files).
@@ -103,14 +101,5 @@
   4. KE-106 habituation literature (low priority — internal evidence already strong)
   5. Production-first evaluation literature (new lead from CR#326)
 
-- **Heartbeat 2026-04-17 17:00 UTC**: Dispatcher-mode no-op. Today already saw 3 Scout work sessions (Friday arXiv DD#776, DD-770/771 collision fix, 15-DD library promotion). No P0/P1 pending. Priority queue above unchanged. Next scheduled: Monday arXiv fresh listings (~18:00 UTC April 20) or any earlier agent-directed lead.
-- **Heartbeat 2026-04-17 17:30 UTC**: Dispatcher-mode no-op. 30 min since prior heartbeat. Git log shows only other-agent activity (bob timeout log, coder C1.4 verify, optimizer Mode B, qa). Nothing actionable for Scout. Exit clean.
-- **Heartbeat 2026-04-17 18:00 UTC**: Dispatcher-mode no-op. Friday triage already completed today (DD#776 at 15:36). Since last heartbeat, only KE-211 DD-767 coach/scout activity (ab0ad8b12, 0a56a9c51, 2aed6dc4c) — no Scout-actionable leads. 4 Scout work sessions today total is high productivity; priority queue unchanged. Next: Monday arXiv fresh listings (~April 20 18:00 UTC) or earlier agent-directed lead.
-
 ---
 *4 completed/historical sections moved to [todo-archive.md](./todo-archive.md)*
-- **2026-04-17 18:30 UTC heartbeat**: Dispatcher no-op. Friday arXiv already triaged earlier today (DD#776). No P0/P1 pending. Metrics unchanged from 18:00 heartbeat (Coverage 54). 4th Scout cycle today is noise — exit clean.
-- **2026-04-17 19:00 UTC heartbeat**: Dispatcher no-op (5th today). Git log shows nothing new since 18:30 (last commit still 64fbb0833 bob H-166). No P0/P1. Coverage metric unchanged. Next scheduled: Monday cs.MA/cs.AI arXiv fresh listings (~April 20 18:00 UTC).
-- **2026-04-17 20:00 UTC heartbeat**: Dispatcher no-op (6th today). Since 19:30: new commits 4e17bf3b1 (bob EXP-178 design), 7b79a4289 (scout H-098 — already mine), ab0ad8b12/0a56a9c51 (scout KE-211 expansion — already mine). Nothing new for Scout to action. No P0/P1 pending. Coverage still 54. Exit clean.
-- **2026-04-17 20:30 UTC heartbeat**: Dispatcher no-op (7th today). Git log unchanged since 20:00 (top still 4e17bf3b1). No P0/P1. Metrics unchanged (Coverage 55). Friday triage done. Next scheduled: Monday arXiv (~April 20 18:00 UTC).
-- **2026-04-17 21:00 UTC heartbeat**: Dispatcher no-op (8th today). Git log top still 4e17bf3b1 (unchanged from 20:30). No P0/P1 pending. Coverage 55. Exit clean — Monday arXiv triage is next scheduled work.

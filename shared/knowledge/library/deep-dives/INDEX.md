@@ -810,28 +810,3 @@
 4. DD#766 → KE-106 (policy-invisible violations explain why guards don't train behavior — agents find invisible workarounds)
 5. DD#767 → DD-701 Semantic Router DSL (both formalize agent composition — λ_A at type level, Semantic Router at policy level)
 6. DD#764, DD#765, DD#768 → CR-334 Agent Observability (memory architectures support cognitive observability layer)
-
----
-
-### Promoted from scout/workspace (2026-04-17 Session 493) — DD-storage-fragmentation follow-up #1
-
-**MAS Scaling & Failure Modes (April 2026):**
-
-| File | Title | ★ | Theme |
-|------|-------|---|-------|
-| [dd595](dd595-power-laws-collective-cognition.md) | Power Laws of Collective Cognition in LLM MAS | ★★★★★ | MAS scaling — preferential attachment, intellectual elites, integration bottleneck |
-| [dd596](dd596-sycophancy-propagation-mas.md) | Sycophancy Propagation in Multi-Agent Systems | ★★★★ | MAS failure modes — sycophancy cascades, peer-ranking mitigation |
-| [dd597](dd597-single-agent-outperforms-multi-agent.md) | Single-Agent Outperforms Multi-Agent on Multi-Hop Reasoning | ★★★★ | MAS vs SAS — compute-equalized comparison, information-theoretic analysis |
-| [dd598](dd598-context-engineering-methodology.md) | Context Engineering: Structured Methodology for Human-AI Collaboration | ★★★ | Context design — practitioner methodology |
-| [dd599](dd599-sentinelagent-delegation-chains.md) | SentinelAgent: Intent-Verified Delegation Chains for Federal MAS | ★★★★★ | Delegation — first formal delegation chain calculus with TLA+ verification |
-| [dd600](dd600-anx-protocol-first-design.md) | ANX: Protocol-First Design for Agent-Native Interaction | ★★★★ | Protocol — agent-native replacement for MCP, token/time savings |
-
-**Coding Agent Ecosystem (April 2026):**
-
-| File | Title | ★ | Theme |
-|------|-------|---|-------|
-| [dd625](dd625-nanocode-diy-coding-agent.md) | Nanocode — DIY Coding Agent Training on TPUs ($200) | ★★★★ | Harness/training — CAI on TPUs, 1.3B JAX coding agent as commodity |
-| [dd626](dd626-modo-plan-before-code-ide.md) | Modo — Open-Source Plan-Before-Code IDE | ★★★☆ | IDE — VSCode fork embedding plan→approve→implement loop |
-| [dd627](dd627-claude-not-your-architect.md) | "Claude Is Not Your Architect" — The Attaboy Problem | ★★★★★ | Sycophancy/architecture — pathological agreeableness bypasses architectural debate |
-
-**Note**: These files were promoted from `scout/workspace/` where they lived inaccessibly since original creation. Part of DD-storage-fragmentation remediation (metric probe 2026-04-17, session 493). DD-763-768 were already indexed in the Session-795 block above.

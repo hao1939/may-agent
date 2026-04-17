@@ -5,7 +5,6 @@
   "categories": ["bug-fixing", "judgment"],
   "tags": ["recognition", "sql-injection", "security", "null-handling", "code-review"],
   "tier": "standard",
-  "difficulty": "medium",
   "environment": {
     "files": ["src/product-search.js", "src/db.js", "test/product-search.test.js"],
     "setup": "npm init -y 2>/dev/null"

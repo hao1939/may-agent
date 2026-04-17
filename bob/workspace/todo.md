@@ -10,14 +10,11 @@
 - [x] **DD-766/DD-768 → KE synthesis**: KE-187 (policy-invisible violations → Ch2 sub-taxonomy), KE-188 (GAM memory addresses P(access) not P(applies)). Committed.
 - [x] **H-161 post-mortem synthesis**: Guard design implications doc written. Content-first > process-first for hard tasks. Full-gate HARMFUL on hard tasks.
 - [ ] **Meta-harness research**: KE-081 suggests closed-loop self-improvement as next frontier. H-164 formalizes the harness vs training trade-off.
-- [x] **Ch2 sub-taxonomy formalized in H-098** (2026-04-17): Added "Ch2 Sub-Channel Refinement" section (Self/Environment/World-Model sub-channels, effectiveness table by failure mode, evidence remapping of EXP-166/115/083/131, discriminating experiment proposal). Commit `7b79a4289`.
+- [ ] **Ch2 sub-taxonomy expansion**: KE-187 proposes Self/Environment/World-Model Ch2 variants. Needs formalization in H-098.
 - [x] **H-165 written**: Production-Provision Interference hypothesis. P(H)=0.85. Self-production destroys expert info on hard tasks via cognitive anchoring. 172 lines.
 - [x] **EXP-166 designed**: Content-first vs process-first guard comparison. 4 arms × 2 scenarios × 15 runs = 120 runs (~$9). Tests H-165's anchoring vs displacement mechanism.
 - [x] **EXP-166 execution**: COMPLETE. 120/120 runs. Displacement confirmed (D=7% vs C=100% on cascading). KE-195, KE-196 written.
-- [x] **KE-211 written (DD-767 → λ_A typed composition)**: 104 lines connecting structural incompleteness to FM-3.3 (KE-208), policy-invisible violations (KE-187), GAM access/applies split (KE-188), and production displacement (KE-195/196). Proposes typed `verification_evidence` as a pre-runtime FM-3.3 dam. Committed.
-- [x] **Content-first guard design doc** [HIGH]: Difficulty-adaptive proposal written. Easy→production-mode, Hard→passive-injection. Scenario-tag signal, 4-arm pilot (G1/G2/G3/G4) against sql-injection + cascading-fix-trap-v2. Output: `agents/shared/may-agent-docs/design/difficulty-adaptive-content-first-guards.md` (140 lines).
-- [x] **EXP-178 designed (2026-04-17)**: Difficulty-Adaptive Content-First Guard Pilot. 4 arms (G1/G2/G3/G4) × 2 scenarios (sql-injection medium, cascading-fix-trap-v2 hard) × N=15 = 120 runs, ~$9-12. Pre-registered bright-line decision rules. One open blocker: sql-injection scenario.json lacks `difficulty` tag (fallback works — G4 defaults non-hard to production-mode). 205 lines.
-- [x] **H-166 post-contamination reassessment (2026-04-17)**: Decision (B)-already-executed. Clean-env controls (base 0/3, E 5/5, F 10/10) are the evidence already backing the current revision; no new claim change. EXP-177 design confirmed correct — tests H-166-revised vs A-LEXICAL (via MOD-PARAPHRASE) and A-ENVCLEAN (via BASE N=20) with bright-line pre-reg rule. Added "Post-Contamination Reassessment" section to H-166.
+- [ ] **Content-first guard design doc** [HIGH]: Use EXP-166 findings (KE-195/196) to design passive-injection guards. Difficulty-adaptive: passive for hard tasks, production OK for easy tasks.
 
 ## Blocked / Deferred
 - [ ] **Prompt Caching**: Blocked on Hao since 2026-03-24. $36-63/day savings waiting.

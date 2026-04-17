@@ -1,8 +1,5 @@
-# Deliverables Checklist — Mode A Session Archaeology 0417-3
+# Deliverables Checklist
 
-- [x] Pull top-5 high-op 6h sessions via `.state/may.db` sessions table
-- [x] Transcript archaeology for coach s_1776444880857_502 (76op) and s_1776451760999_560 (59op)
-- [x] Cross-check against known anti-patterns in `todo.md` (broken-gym-env, git-archaeology)
-- [x] Both candidates classified as KNOWN — no new dispatch per KE-123 + 3rd-occurrence rule
-- [x] Write `agents/optimizer/workspace/finding-session-archaeology-mode-a-0417-3.md`
-- [x] Append Mode A line under "Optimizer Heartbeat Bloat" section of `todo.md`, next rotation = B
+- [x] Forked Mode C exploration session — DONE
+- [x] Finding written: `finding-bob-efficiency-gap-0416.md` (69 lines) — DONE
+- [x] Rotation tracker updated in `todo.md` — DONE

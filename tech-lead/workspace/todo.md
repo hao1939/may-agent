@@ -32,7 +32,6 @@
     - H-070 P3 updated to PARTIALLY SUPPORTED
   - [ ] Follow-up: Test updated implement-and-verify (no State Approach) on production tasks to confirm lower overhead
 - [ ] Deploy recent merges (R39 auto-pause, research-db, write-diff, etc.) — needs process restart. 14 commits undeployed since Apr 6.
-- [x] gym-batch.sh --inspect flag (req:8f94dc49 + req:47c744cd) — DONE 2026-04-17, branch `review/gym-batch-inspect` c6f79c8c. This cycle: **feature** (next cycle: infra).
 
 ## Low-Priority Cleanup
 - [x] Phase 5d: Deprecate memory fallback — DONE (s_1775527469736_184, commit 34263ca)
