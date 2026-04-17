@@ -16,6 +16,7 @@
 - [x] **EXP-166 execution**: COMPLETE. 120/120 runs. Displacement confirmed (D=7% vs C=100% on cascading). KE-195, KE-196 written.
 - [x] **Content-first guard design doc** [HIGH]: Completed. See agents/shared/may-agent-docs/design/content-first-guard-design.md
 - [x] **DD-769/770 synthesis**: Already covered by KE-197 (DD-769→H-165) and KE-202 (DD-769+DD-770 unified as cognitive mode interference).
+- [x] **H-166 revised**: Post-contamination clean-env controls (base 0/3, arm E 5/5, arm F 10/10) flip EXP-168's moderate=0% to 100%. Updated hypothesis file with new evidence section, P(H-orig): 0.70→0.10, P(H-revised low-threshold): 0.75, status REVISED/PARTIALLY FALSIFIED.
 - [x] **KE-208 written**: DD-771 bi-predictability / silent uncoupling IS the mechanism behind FM-3.3 verification confabulation. Seeds P-771a (lower P in FM-3.3 turns) and P-771b (P-monitor detects earlier than entropy/hedging). Sketches lightweight P-monitor for finish-guard. Flags DD-771 naming collision (KE-190 cites a different arXiv paper; 3-way collision at DD-771 filename). See `agents/shared/knowledge/entries/KE-208-silent-uncoupling-is-fm33-mechanism.md`.
 
 ## Blocked / Deferred

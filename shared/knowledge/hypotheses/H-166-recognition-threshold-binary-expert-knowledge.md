@@ -1,9 +1,11 @@
 # H-166: Recognition Threshold — Expert Knowledge Has Binary (Not Gradient) Effect on Agent Problem-Solving
 
 **Created**: 2026-04-16 by Bob
-**Status**: PARTIALLY FALSIFIED (EXP-173)
-**Confidence**: ★★☆☆ (original evidence confounded; revised model emerging)
-**Source**: EXP-168 dose-response results → revised by EXP-173
+**Status**: REVISED / PARTIALLY FALSIFIED (EXP-173, contamination-fix re-run)
+**Confidence**: ★★☆☆ (original evidence confounded; revised low-threshold model supported)
+**P(H-166 original / high-threshold)**: 0.70 → **0.10** (post-contamination evidence)
+**P(H-166-revised / low-threshold, any-causal-pointer)**: **0.75** (0% → ~100% jump holds across A/B/C/E/F arms; open on nudge)
+**Source**: EXP-168 dose-response → contamination discovered (checkpoint s_1776358364254_320) → EXP-173 clean-env re-run
 **Connects**: KE-192 (solver-sampler mismatch), KE-133 (few-shot displacement), KE-191, H-161
 
 ---
@@ -30,6 +32,18 @@ EXP-168 tested four dose levels on cascading-fix-trap-v2 (0% baseline):
 | Full | Complete root cause analysis + exact fix | 100% | 15 | |
 
 **⚠️ EXP-168 contamination**: The coder agent had modified scenario environment files (commit 3a47692c), partially pre-solving bugs in `grades.js` and `penalties.js`. This caused behavioral checks (e.g., `penalties-not-hacked`) to fail even when the product logic was correct. The 0% moderate-hint result was an artifact of this contamination, not a genuine cognitive limitation.
+
+### Contamination-fix re-run (checkpoint s_1776358364254_320)
+
+After the coder-contamination fix was committed to cascading-fix-trap-v2 scenario files, a clean-env control sweep produced:
+
+| Arm | Content | Result |
+|-----|---------|--------|
+| Base (no hint) | Nothing | **0/3 pass** |
+| Arm E (full expert analysis) | — | **5/5 pass** |
+| Arm F (moderate hint) | "Pipeline ordering is wrong + boundary bug exists" | **10/10 pass** |
+
+Arm F had been reported as **0%** in EXP-168 (N=10); in a clean environment it is **100%** (N=10). This is the direct evidence that EXP-168's moderate-hint result was an environment confound, not a cognitive cliff, and is the primary basis for revising P(H-166-original) from 0.70 → 0.10.
 
 ### EXP-173 (with clean environments — supersedes EXP-168 for arms A-F)
 
