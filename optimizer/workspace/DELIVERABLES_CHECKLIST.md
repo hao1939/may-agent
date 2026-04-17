@@ -13,6 +13,7 @@ Task: [WORK SESSION] Mode D — 6h workflow health scan; identify regression; wr
 - [x] todo.md rotation marker updated: Latest=D → Next rotation=A
 - [x] **R1 executed**: 2-line budget stanza appended to `[cron:project-resume]` task string in `agents/may/handlers/project-resume.ts:152-157` — verified via edit-diff
 - [x] Committed in /app/agents: `790eeca70` "project-resume: add ≤20 op soft budget to cron task string"
+- [x] Parent heartbeat verified all deliverables present (finding 7449b on disk, checklist lines 3+11, todo.md rotation marker)
 
 ## Prior Session — P0 LLM-to-JS Conversion Investigation (2026-04-17 15:30)
 
