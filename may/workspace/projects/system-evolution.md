@@ -11,11 +11,11 @@ A self-improving agent system where: metrics signal problems, workflows enforce 
 
 | # | Gap | Impact | Owner | Status | Sub-project | Key Metrics |
 |---|-----|--------|-------|--------|-------------|-------------|
-| 1 | **Cold start / no memory** | 20-30% of every session wasted rebuilding context | tech-lead | not started | [cold-start-fix.md](../../tech-lead/workspace/projects/cold-start-fix.md) | `system.agent-utilization` |
-| 2 | **No feedback loop** | Agents produce output nobody reads, can't improve | may | not started | [feedback-loop.md](./feedback-loop.md) | `scout.findings-used`, `bob.designs-implemented` |
-| 3 | **Verification overhead** | FM-3.3 guard adds 15-20% overhead on simple tasks | tech-lead | not started | [verification-streamline.md](../../tech-lead/workspace/projects/verification-streamline.md) | `coder.first-pass-rate`, `optimizer.quality-preserved` |
-| 4 | **Idle heartbeats** | 40% of heartbeats produce nothing | may | not started | [adaptive-heartbeats.md](./adaptive-heartbeats.md) | `system.agent-utilization`, `system.request-throughput` |
-| 5 | **Process automation** | Repetitive bookkeeping wastes 5-10 ops per session | optimizer | not started | [process-automation.md](../../optimizer/workspace/projects/process-automation.md) | `optimizer.tool-adoption` |
+| 1 | **Cold start / no memory** | 20-30% of every session wasted rebuilding context | tech-lead | complete | [cold-start-fix.md](../../tech-lead/workspace/projects/cold-start-fix.md) | `system.agent-utilization` |
+| 2 | **No feedback loop** | Agents produce output nobody reads, can't improve | may | M1 done, M2-M4 open | [feedback-loop.md](./feedback-loop.md) | `scout.findings-used`, `bob.designs-implemented` |
+| 3 | **Verification overhead** | FM-3.3 guard adds 15-20% overhead on simple tasks | tech-lead | analysis complete, impl pending | [verification-streamline.md](../../tech-lead/workspace/projects/verification-streamline.md) | `coder.first-pass-rate`, `optimizer.quality-preserved` |
+| 4 | **Idle heartbeats** | 40% of heartbeats produce nothing | may | design complete, Phase 1 pending | [adaptive-heartbeats.md](./adaptive-heartbeats.md) | `system.agent-utilization`, `system.request-throughput` |
+| 5 | **Process automation** | Repetitive bookkeeping wastes 5-10 ops per session | optimizer | M1-M2 done, M3-M5 open | [process-automation.md](../../optimizer/workspace/projects/process-automation.md) | `optimizer.tool-adoption` |
 
 ## Source Documents (agent self-assessments)
 
@@ -77,8 +77,20 @@ Every heartbeat, May checks:
 - Metrics DB updated: `project` field set for all mapped metrics
 - Sub-project files updated with back-links to master + source docs
 
+### 2026-04-17 — Status sync
+- Reviewed all 5 sub-projects against master table
+- Gap 1 (cold-start): Complete — 4 milestones landed (handoff files, session-diff, todo splits, context injection)
+- Gap 2 (feedback-loop): M1 done (file-read tracking + unread queries); M2-M4 still open
+- Gap 3 (verification-streamline): Analysis doc complete (`agents/may/workspace/guard-friction-analysis.md`, R1-R3 recommendations); implementation not yet dispatched
+- Gap 4 (adaptive-heartbeats): Design doc complete (`agents/shared/may-agent-docs/design/adaptive-heartbeats.md`); Phase 1 prompt rollout pending
+- Gap 5 (process-automation): M1-M2 done (saved-queries.sh, evaluator.ts fix); M3-M5 depend on other agents
+- Sub-project statuses left as-is (their own project-resume loops will drive remaining milestones)
+
 ## Current State
-Waiting for M6 to land. Without it, agents can't see metrics and the signal layer is disconnected.
+Master-level coordination: 2 of 5 gaps delivered, 3 partial. Next human decisions needed:
+- Gap 3: dispatch tech-lead to implement R1/R2/R3 from guard-friction-analysis.md (needs Hao go-ahead since touches verification-depth-guard)
+- Gap 4: ship adaptive-heartbeats Phase 1 (prompt-only fast-exit gate) — safe to deploy
+- Gap 2 M3 (findings → auto-tracked-requests) is tech-lead's explicit ask — highest remaining ROI
 
 ## Outcome
 (pending)
