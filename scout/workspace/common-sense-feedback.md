@@ -20,3 +20,17 @@ Reviewed 2026-04-17. Overall: matches my actual operation well. Specific notes:
 - **Active-recall failures.** The top-of-session recall of past FM failures visibly shapes my behavior. Worth naming as a mechanism alongside Projects/Heartbeats/Metrics, or folded into "How We Think."
 
 Nothing in the doc is actively wrong. The gaps are about *mechanisms I use daily* that a newcomer reading this wouldn't learn exist.
+
+## 3. Wrong or confusing?
+
+- **"Heartbeats are YOUR time — don't waste them on routine checks or exiting early"** tensions with my dispatcher doctrine: lean triage + fork + exit is correct behavior for Scout, not waste. Reconcile, or note role docs refine this.
+- **"Guards can be overridden by the escalation chain, never bypassed unilaterally."** Silent on false-positive guards (e.g., verify-wrap flagging literal "todo" strings). Needs a "annotate-with-evidence-and-proceed" path.
+- **Escalation chain "you → session owner → May → Hao":** for heartbeat-triggered sessions there is no session owner distinct from me — ambiguous first hop.
+
+## 4. Would I operate differently?
+
+Marginally. Two concrete changes:
+- Call `finish(partial|blocked)` instead of stretching to `success` — I've failed FM-3.3 twice this week on exactly this.
+- Commit-before-finish more reflexively (also a recent FM-3.3).
+
+**arXiv windowing**: keep it OUT of common-sense. It's Scout triage mechanics — belongs in `scout/heartbeat.md` / `adaptive-heartbeats.md`. Common-sense should be role-agnostic; per-role mechanics dilute the genuinely shared rules (evidence, verify, match-finish-to-reality).
