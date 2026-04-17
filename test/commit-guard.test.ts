@@ -277,7 +277,7 @@ describe("commit-guard", () => {
       expect(result).toBeDefined();
       expect(result!.block).toBe(true);
       expect(result!.reason).toContain("2 uncommitted file(s)");
-      expect(result!.reason).toContain("git add bob/");
+      expect(result!.reason).toContain("git add -f bob/");
       expect(result!.reason).toContain('git commit -m "bob:');
       expect(result!.reason).toContain("Good messages:");
       expect(result!.reason).toContain("Bad messages:");
@@ -303,6 +303,38 @@ describe("commit-guard", () => {
       // Should now allow
       const allowed = await guard(makeFinishCtx({ status: "success", summary: "done" }));
       expect(allowed).toBeUndefined();
+    });
+
+    it("uses `git add -f` when any uncommitted path is under workspace/ (ignored by agents/.gitignore)", async () => {
+      const wsDir = join(agentsDir, "bob", "workspace");
+      mkdirSync(wsDir, { recursive: true });
+      writeFileSync(join(wsDir, "note.md"), "wip");
+
+      const guard = createCommitGuard("bob", tmpDir);
+      const result = await guard(makeFinishCtx({ status: "success", summary: "done" }));
+
+      expect(result).toBeDefined();
+      expect(result!.block).toBe(true);
+      expect(result!.reason).toContain("git add -f bob/");
+      expect(result!.reason).not.toMatch(/git add bob\/(?! )/); // no bare `git add bob/` without -f
+
+      rmSync(join(agentsDir, "bob"), { recursive: true, force: true });
+    });
+
+    it("uses plain `git add` (no -f) when no workspace paths are involved", async () => {
+      const bobDir = join(agentsDir, "bob");
+      mkdirSync(bobDir, { recursive: true });
+      writeFileSync(join(bobDir, "top.md"), "top-level");
+
+      const guard = createCommitGuard("bob", tmpDir);
+      const result = await guard(makeFinishCtx({ status: "success", summary: "done" }));
+
+      expect(result).toBeDefined();
+      expect(result!.block).toBe(true);
+      expect(result!.reason).toContain("git add bob/");
+      expect(result!.reason).not.toContain("git add -f");
+
+      rmSync(bobDir, { recursive: true, force: true });
     });
 
     it("detects staged but uncommitted changes", async () => {
