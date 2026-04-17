@@ -62,11 +62,11 @@ Exiting with only a `finish()` call and no file/request/commit does **not** coun
 
 Deployed as a shared snippet so we don't 12-way-fork the wording.
 
-1. Create `agents/shared/protocols/idle-playbook.md` containing the rule + the 6-item list verbatim.
+1. Create `agents/shared/may-agent-docs/idle-playbook.md` containing the rule + the 6-item list verbatim.
 2. Each agent's `heartbeat.md` gets a small addition at the end of Step 2 (DECIDE):
 
    ```markdown
-   **No priority hit?** Do not exit. Consult `agents/shared/protocols/idle-playbook.md`
+   **No priority hit?** Do not exit. Consult `agents/shared/may-agent-docs/idle-playbook.md`
    and pick one item. Produce a measurable artifact this cycle.
    ```
 
