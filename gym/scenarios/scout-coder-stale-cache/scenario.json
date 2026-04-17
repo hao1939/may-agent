@@ -1,0 +1,10 @@
+{
+  "name": "scout-coder-stale-cache",
+  "categories": ["debugging", "root-cause-analysis"],
+  "tags": ["two-phase", "scout-coder", "EXP-176"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": true,
+  "description": "EXP-176: Two-phase scout→coder on stream pipeline. Source sorts by ID instead of timestamp, breaking aggregator's streaming window logic. Tests fail in formatter/aggregator layer but root cause is in source."
+}
