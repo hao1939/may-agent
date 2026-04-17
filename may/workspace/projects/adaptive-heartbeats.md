@@ -58,5 +58,66 @@ Declared the fast-exit design "done, ready for Phase 1 deploy." Not valid under 
 ### 2026-04-17 13:28 — Re-dispatch against reframed milestones
 May forked bob (session `s_1776432499606_299`, request `af9508b1`) to run persistent-task on this project under the corrected framing. Task: draft the Idle Heartbeat Playbook (Milestone 1) and get review before rolling out to per-agent heartbeat.md files. Non-goals and "no fast-exit gate" rule explicitly reinforced in the dispatch.
 
-### Iteration 3 — 2026-04-17T13:30Z — Playbook draft delivered
-Bob drafted Milestone 1 design: `agents/shared/may-agent-docs/design/idle-heartbeat-playbook.md`. Old `adaptive-heartbeats.md` now carries a SUPERSEDED banner at the top. Design is review-ready, not deployed — rollout (12-file `heartbeat.md` edit + 1 new `agents/shared/protocols/idle-playbook.md`) waits on tech-lead + may approval of (a) the playbook text, (b) the 2-line heartbeat addition pattern, (c) success metric + baseline sampling plan, (d) 4 open questions listed in the doc. KE-008 respected: rollout is a content addition inside existing Step 2, not a structural reorder. Next iteration: send review request to tech-lead via `reviewed-delivery` workflow (brief includes the draft path + the 4 open questions).
+### Iteration 3 — 2026-04-17T13:32:02.204Z
+**Worker task**: Iteration 3 — work toward goal
+**Worker result**: **Status:** done (2m58s)
+
+**Files modified:**
+- agents/shared/may-agent-docs/design/idle-heartbeat-playbook.md
+
+**Files read (not modified):**
+- agents/may/workspace/projects/adaptive-heartbeats.md
+- agents/shared/may-agent-docs/design/adaptive-heartbeats.md
+- agents/bob/heartbeat.md
+
+**Errors encountered:**
+- [bash] The following paths are ignored by one of your .gitignore files:
+may/workspace/projects
+hint: Use -f if you really want to add them.
+hint: Turn this message off by running
+hint: "git config advice.addIgnoredFile false"
+
+
+Command exited with code 1
+- [bash] On branch main
+Your branch is ahead of 'k3s/main' by 53 commits.
+  (use "git push" to publish your local commits)
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   may/last
+- [bash] On branch main
+Your branch is up to date with 'k3s/main'.
+
+nothing to commit, working tree clean
+
+
+Command exited with code 1
+
+**Agent response:**
+All three changes verified on disk. Now finish — not resurrecting fast-exit, not rolling out to heartbeats (review-gated per task instructions "get review before rolling out").
+**Files touched**: (see worker session)
+**Owner assessment**: CONTINUE — Iteration 3 delivered a solid design draft for the Idle Heartbeat Playbook at `agents/shared/may-agent-docs/design/idle-heartbeat-playbook.md` (127 lines, verified on disk). The worker correctly did NOT resurrect the fast-exit gate and correctly gated rollout on review. Good stop.
+
+**Review verdict: Design APPROVED with minor answers to the open questions. Proceed to rollout in the next iteration.**
+
+Answers to the 4 open questions (use these, don't re-litigate):
+1. **idle-log.md one-liner counts as artifact** — yes, keep the <10% guardrail. Don't force real work; the point is exploration budget, not make-work.
+2. **Tailoring** — centrally drafted 2-line addition (bob writes), per-agent owners can add their own tailoring below later. Don't block rollout on per-agent review — make it opt-out not opt-in.
+3. **Metric** — May will build the query post-rollout. Not a blocker for deploying. Just add a TODO to `agents/may/workspace/projects/adaptive-heartbeats.md` for the idle-artifact metric.
+4. **Enforcement** — norm-only for M1. Revisit after 1 week of data. Agreed.
+
+**Next iteration (Milestone 1 completion) — concrete steps:**
+1. Create `agents/shared/protocols/idle-playbook.md` with the rule + 6-item list verbatim from the design.
+2. Add the 2-line snippet to the end of Step 2 (DECIDE) in each of the 12 agents' `heartbeat.md`. Use `edit()` for each (not `write()`), preceded by `read()` per C1.1. Respect KE-008 — content addition only, no reordering.
+3. Commit in `agents/` repo with a clear message referencing the design doc.
+4. Update project file milestone 1 checkbox to `[x]`.
+5. Then move to M2 (scout arXiv windowing) — investigate scout's current cron schedule and arXiv publication windows before designing.
+
+**Process feedback for worker:**
+- Good: read-before-edit, stopped for review, did not resurrect superseded design.
+- Minor: the two git errors (gitignored path add, "up to date" on an unrelated dir) were harmless but noisy — next iteration, `cd agents/` before git ops to avoid the .gitignore conflict.
+
+Do not combine M1 rollout with M3 (adaptive frequency) — KE-123 stacking penalty applies.
+
