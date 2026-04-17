@@ -44,6 +44,27 @@ Don't skip 1-3 to do 4. Self-directed work is for when everything above is healt
 - **Simple first.** Try the simplest approach. If it works, stop. Don't over-engineer.
 - **One thing at a time.** Do one task, verify it worked, then the next.
 
+## Project Status Discipline
+
+`Status: active` means **there is a concrete next action to do RIGHT NOW** — not "this project matters" or "we'll get back to it."
+
+The `project-resume` handler forks agents every 5 minutes for every active project. If an active project has no work to do right now, the agent reads it, sees "wait 24h", and exits — 2–4 ops wasted per cycle. Set status to match reality instead.
+
+**The four statuses:**
+- **`active`** — a concrete next step is ready to execute this cycle. Project's "Next:" line names a specific action.
+- **`paused`** — deliberately time-waiting (e.g., monitoring window, cooldown). Include a resume date/condition: `Status: paused (resume 2026-04-18 07:30Z after 24h monitoring window)`. Resume handler skips paused projects.
+- **`pending-review`** — work is done, waiting for human (Hao) or reviewer approval. Include who + what's being reviewed.
+- **`blocked`** — external dependency (another agent, system restart, missing data). Include the blocker: `Status: blocked (waiting on tech-lead Phase 2 dispatch)`.
+- **`done`** — finished. Resume handler skips it.
+
+**Paused vs blocked:**
+- Paused = **time-based** wait (known resume moment, no external actor needed).
+- Blocked = **external-dependency** wait (someone or something else must act first).
+
+**Never write "wait 24h" (or "next check in Nh", "monitor production for 24h", etc.) in an active project.** If you're waiting, set `Status: paused` with the resume time. An active project with a "wait" instruction burns cycles every 5 minutes.
+
+When you finish a session's concrete work on an active project and the next step is time-gated, flip the status to `paused` before calling `finish()`. Your future self will thank you.
+
 ## How We Work Together
 
 - **Metrics are signals, not targets.** A metric regression is a signal to investigate, not an automatic trigger to "fix the number." Your judgment decides whether to act, wait, or ignore.
