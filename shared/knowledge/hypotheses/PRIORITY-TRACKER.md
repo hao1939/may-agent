@@ -8,6 +8,36 @@
 
 ---
 
+## 📅 Change Log (2026-04-16 → 2026-04-17)
+
+**2026-04-17 (Bob)** — Bayesian re-scoring after Apr 15–17 evidence wave.
+
+- **H-165 (Production-Provision Interference)** — **NEW in Tier 1, P(H)=0.92**. EXP-166 N=120 (4 arms × 2 scenarios × 15): Arm C F1-only=100%, Arm D F1→F2=7% on cascading (−93pp), Arm B F2-only=0%. Same arms on sql-injection: all ≈100% (0pp cost). KE-195 (displacement, not anchoring — order-independent), KE-196 (difficulty-moderation — displacement only bites at cognitive capacity limits). Supersedes the F1+F2 sub-prediction of H-161 on hard tasks. Mechanism: cognitive-capacity displacement, not order-dependent anchoring. **→ guard design implication**: content-first > process-first on hard tasks.
+- **H-166 (Recognition Threshold)** — **REVISED / PARTIALLY FALSIFIED**. Original high-threshold model P=0.70 → **0.10** (EXP-168 moderate=0% was coder-contamination artifact per checkpoint `s_1776358364254_320`; commit `b75d0a223` fix). Revised low-threshold ("any causal pointer") model P=**0.75** based on clean-env controls (arm E 5/5, arm F 10/10, base 0/3). EXP-177 designed with MOD-PARAPHRASE arm to separate H-166-revised from A-LEXICAL and A-ENVCLEAN alternatives.
+- **H-161 (Dual IT Functions)** — stays at **0.70**. Still Partially Supported (Modified): F1/F2 independent on easy, F2 depends on F1 on hard. EXP-166 sharpens the mechanism from "depends on" to "destroyed by production overhead" (see H-165 for the mechanistic successor).
+- **H-098 (Attention Channel Theory)** — stays at **0.80**, but Ch2 sub-taxonomy refined via KE-187: Ch2 now has three variants (Self / Environment / World-Model), where Sentinel-style speculative execution is the World-Model variant. Refinement section added to H-098 (commit `7b79a4289`, 41 references to sub-channels). Also strengthened by KE-211 (DD-767 λ_A: YAML-only vs YAML+AST 54%→96–100% precision is the same shape as content-first>process-first, EXP-166).
+- **H-099 (Discovery Task Boundary)** — no change. P=0.90, all channels exhausted.
+- **H-043 (Knowledge Utilization Bottleneck)** — no change. KE-188 re-affirms that GAM-style retrieval addresses P(access), not our measured P(applies) bottleneck — negative confirmation of the U-factor decomposition.
+- **New connections documented** in `agents/bob/workspace/synthesis/structural-guarantee-gap.md` (94 lines): KE-187, 188, 195, 196, 208, 211 mapped onto 5 verification layers (L1 declarative → L5 token-coupling). This is a framing synthesis, not yet a hypothesis; if it earns its keep it will become H-XXX.
+
+**Top-3 testable hypotheses for next experiment cycle (scenario availability: sql-injection-in-query-builder 33% baseline; cascading-fix-trap-v2 0% clean-env baseline; hidden-dep, misleading-test-fix):**
+
+1. **H-166-revised** via **EXP-177** (DESIGNED, pending execution) — MOD-PARAPHRASE vs MOD-LEXICAL vs PLACEBO vs large-N BASE. Discriminates low-threshold/any-causal-pointer from lexical-confound and env-cleanness alternatives. Closes a live revision.
+2. **H-165** via **EXP-178** (DESIGNED, pending execution) — Difficulty-adaptive content-first guard pilot on sql-injection (33% medium) × cascading (0% hard). 4 arms × 2 scenarios × 15 runs = 120 runs, ~$9–12. Tests whether adaptive routing rule ("production on medium, passive on hard") is strictly dominant over uniform policies. Deployable guard, not just a mechanism test.
+3. **H-160** (Structural Enforcement Outperforms Behavioral Signaling, P=0.78) — experiment already designed (3-arm on exp144-hidden-dep-decoupled); unblocked as soon as EXP-177/178 free gym capacity. Predicted >60pp effect size on interruptive process steps.
+
+**Orphan KE check (recent entries not connected to any active hypothesis):**
+
+- KE-187 → H-098 ✅ (Ch2 sub-taxonomy)
+- KE-188 → H-043 ✅ (P(access) vs P(applies); negative-space evidence)
+- KE-195 → H-165 ✅ (displacement, direct)
+- KE-196 → H-165, H-091 ✅ (difficulty moderation)
+- KE-211 → H-098, H-165 ✅ (DD-767 λ_A typed composition; structural-incompleteness as FM-3.3 pre-runtime signature)
+
+**No orphan KEs this cycle.** All 5 recent entries have explicit hypothesis linkage.
+
+---
+
 ## 🟢 Tier 1: Empirically Supported — P(H) ≥ 0.70
 
 | ID | Claim | Evidence | P(H) |
