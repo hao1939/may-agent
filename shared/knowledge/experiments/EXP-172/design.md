@@ -1,7 +1,7 @@
 # EXP-172: LLM-Generated F1 Analysis (Two-Phase Scout → Coder)
 
 **Date**: 2026-04-16
-**Status**: DESIGNED
+**Status**: COMPLETE
 **Predecessor**: EXP-165 (F1=100%, F2=0%, Full-gate=0%, Baseline=0%)
 
 ---
