@@ -1,10 +1,15 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776433032023_317
+- **Session:** s_1776433287346_322
 - **Status:** done
-- **When:** 2026-04-17T13:42:41.276Z
-- **Duration:** 5m29s
+- **When:** 2026-04-17T13:42:48.979Z
+- **Duration:** 1m21s
 
 ## What Happened
-All 12 heartbeats confirmed referencing idle-playbook.md. (amy/amy-kimi/coach/coder/evaluator were swept into an auto-commit `e4c9d23c0` at 13:39, the other 6 + project file in my explicit commit `4457f8c95`.) M1 fully deployed.
+CONTINUE — Milestone 1 is now complete and verified, but M2 and M3 remain.
+
+**Structural evidence (iteration 5):**
+- `grep -c "idle-playbook" agents/*/heartbeat.md` → 1 for all **12/12** agents (amy, amy-kimi, bob, coach, coder, evaluator, master, may, optimizer, qa, scout, tech-lead). ✅
+- Playbook file exists at `agents/shared/may-agent-docs/idle-playbook.md` (canonical path chosen per iteration-4 recommendation). ✅
+- Commit `0e256b6c9` ("coder: heartbeat update") added pointers to amy-kimi/coa
