@@ -1,4 +1,5 @@
-# Deliverables — Mode B Tool Gap Analysis (20260417-2300)
+# Deliverables — Mode C Skill & Technique Scouting (20260417-2330)
 
-- [x] agents/optimizer/workspace/finding-mode-b-tool-gap-20260417-2300.md (written, 99 lines)
-- [x] agents/optimizer/workspace/todo.md — rotation line "Last exploration mode: B (...)" appended under Optimizer Heartbeat Bloat block (line 39)
+- [x] agents/optimizer/workspace/finding-mode-c-technique-scouting-20260417-2330.md (written, 137 lines)
+- [x] agents/optimizer/workspace/todo.md — rotation line updated: "Last exploration mode: C", "Next rotation: D" (line 39)
+- [x] Dispatched P2 prompt tweak to tech-lead via agents.message()
