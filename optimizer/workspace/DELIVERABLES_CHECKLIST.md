@@ -1,6 +1,15 @@
 # Deliverables Checklist
 
-## Current Session — Mode A Session Archaeology (2026-04-17 09:30)
+## Current Session — process-automation iteration 5 (2026-04-17 09:39)
+
+- [x] agents/bob/workspace/scripts/new-hypothesis.sh (+x, tested — produced H-167 with correct 2026-04-17 frontmatter)
+- [x] agents/bob/workspace/scripts/new-ke.sh (+x, tested — produced KE-208)
+- [x] agents/bob/workspace/scripts/new-experiment.sh (+x, tested — produced EXP-177/ with design.md+results.md)
+- [x] agents/bob/context.md: added pointer to the three scripts so they're not dead code (verified in `git show HEAD:bob/context.md`)
+- [x] agents/optimizer/workspace/projects/process-automation.md: milestones 1 (Bob scripts) and 2 (saved-queries) checked, iteration 5 logged
+- [x] Committed at agents/: 721e41289 "process-automation it5: Bob template scripts..."
+
+## Prior Session — Mode A Session Archaeology (2026-04-17 09:30)
 
 - [x] Queried sessions + evaluations for both target sessions (coach s_1776399785799_320, tech-lead s_1776398501274_313)
 - [x] Op-breakdown for coach EXP-156: 43 gym runs in window accounts for 110–130 of 143 ops (gym-heavy pattern, matches 2026-04-12 scouting finding)
