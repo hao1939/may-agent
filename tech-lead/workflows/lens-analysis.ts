@@ -98,8 +98,9 @@ You are running in a D-o-R (Definition-of-Ready) phased workflow. These op budge
 
 ### Phase 3: WRITE (≤5 ops)
 - Write findings to: \`${parsed.deliverable}\`
-- Include: summary, evidence (with file paths + line numbers), severity, recommended action.
-- **GATE**: The deliverable file exists and is non-empty. You are DONE.
+- Include: summary, evidence, severity, recommended action. **Every non-trivial claim MUST carry an inline \`path:line\` citation** (e.g. \`compose-guards.ts:48\`) pointing to the exact source location.
+- If a claim has no citation, you must \`read()\` the file to locate the relevant line and add the \`path:line\` reference before writing it. No uncited concrete claims.
+- **GATE**: The deliverable file exists, is non-empty, and every concrete claim has a \`path:line\` citation. You are DONE.
 
 ### Phase 4: EXIT (1 op)
 - Call finish(). Do NOT start fixing what you found.
