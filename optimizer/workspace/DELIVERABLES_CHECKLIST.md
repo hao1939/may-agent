@@ -1,6 +1,19 @@
 # Deliverables Checklist
 
-## Current Session — Mode D Workflow Health 6h (2026-04-17 16:00)
+## Current Session — Mode A Session Archaeology 6h (2026-04-17 16:30)
+
+Task: [WORK SESSION] Mode A — rank top-5 sessions last 6h by opCount, classify intended vs regression, write finding with R1 decision. Budget ≤25 ops.
+
+- [x] Read `agents/optimizer/workspace/todo.md` for prior Mode A context and active fixes (confirmed project-resume stanza dispatched at 16:00, persistent-task per-iter cap holding)
+- [x] Confirmed `finding-workflow-health-20260417-1600.md` exists (prior-slot baseline)
+- [x] Queried may.db sessions last 6h ORDER BY opCount DESC LIMIT 8 — pulled sessionId/agent/kind/source/parentSessionId/opCount/task
+- [x] Classified top-5: all INTENDED (coach prove-the-loop ×3, tech-lead P0 notify refactor, coder-under-lean-HB via workflow)
+- [x] Pulled task/parent/outcome for non-obvious #4 (coder 51-op): parent HB was 6 ops → lean-dispatcher pattern working as designed
+- [x] Finding written: `agents/optimizer/workspace/finding-session-archaeology-20260417-1630.md` (41 lines, ≤80 req, 3519 bytes) — verified via write() preview
+- [x] Includes top-5 table, per-session root cause for top 2, project-resume cohort regression check, R1=NO_ACTION with KE-123 rationale, watch-list for next Mode A
+- [x] todo.md rotation marker updated: Latest=A (this session) → Next rotation=B
+
+## Prior Session — Mode D Workflow Health 6h (2026-04-17 16:00)
 
 Task: [WORK SESSION] Mode D — 6h workflow health scan; identify regression; write finding with R1 decision.
 
