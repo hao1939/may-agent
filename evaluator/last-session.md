@@ -1,21 +1,20 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776445633224_511
+- **Session:** s_1776445706573_513
 - **Status:** done
-- **When:** 2026-04-17T17:07:21.631Z
-- **Duration:** 8s
+- **When:** 2026-04-17T17:08:38.406Z
+- **Duration:** 11s
 
 ## What Happened
 ```json
 {
   "agents": {
-    "optimizer": {
+    "coder": {
       "role": "Builder",
       "capability_level": "L2",
-      "efficiency": 0.74,
-      "quality": 0.9,
-      "verdict": "good",
+      "efficiency": 0.55,
+      "quality": 0.45,
+      "verdict": "acceptable",
       "issues": [
-        "Minor wasted bash due to brittle `find ...; find ...` command returning exit code 1 when one pattern misses, then doing follow-up inspection anyway (failure chain shows 6 wasted calls).",
-        "Git hygiene/process leak: commit included unrelated files (coach/last-session.md, coach/workspace/todo.
+        "Significant avoidable git flailing around `agents/` being gitignored (11-call failure chain). Evidence: initial `git add agents/may/handlers/convention-check.ts` failed with 'paths are ignored by .gitignore: agents', followed by multiple investigative git commands before finally using `git add -f
