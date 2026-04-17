@@ -1,37 +1,26 @@
 Phase 1: INVESTIGATE — You are a code reviewer. Your ONLY job is to analyze this codebase and write a root cause analysis. Do NOT modify any source files.
 
-A stream processing pipeline has failing tests. The pipeline loads raw events, filters by category, aggregates into time-based windows, formats reports with anomaly detection, and validates event counts.
+An event processing pipeline has broken. Tests are failing with wrong window counts, events appearing in wrong windows, and anomaly detection misfiring.
 
-Tests are failing with wrong window counts, incorrect event distributions, and false anomaly alerts. The failures appeared after a recent refactor (see comments in source files).
+The codebase has 4 source files:
+- src/source.js — Data loading and preparation
+- src/aggregator.js — Time-window aggregation engine
+- src/formatter.js — Report generation and anomaly detection
+- src/pipeline.js — Main pipeline orchestration
+
+Tests are in test/test.js. Run them with: node test/test.js
 
 Your task:
-1. Read `src/pipeline.ts` to understand the processing flow
-2. Read each module: `src/source.ts`, `src/aggregator.ts`, `src/formatter.ts`
-3. Run the tests to see which assertions fail: `bun test pipeline.test.ts`
-4. Write your analysis to `ROOT_CAUSE_ANALYSIS.md` with these sections:
-   - **Data Flow**: How event data flows through each pipeline stage
-   - **Bug Identification**: The root cause of the failures, with file name and what's wrong
-   - **Fix Plan**: The specific code change needed
+1. Read all source files and understand the data flow
+2. Run the tests and observe which fail
+3. Identify the ROOT CAUSE (not just where symptoms appear)
+4. Write ROOT_CAUSE_ANALYSIS.md explaining:
+   - What the bug is
+   - Where it is (which file and line)
+   - Why it causes the observed test failures
+   - How the fix should look
 
-⚠️ CRITICAL RULES:
-- Do NOT modify any `.ts` files
-- Your ONLY output is `ROOT_CAUSE_ANALYSIS.md`
-- Be specific: name exact files, functions, and line numbers
-- Read all source files carefully — the bug may not be where the tests fail
-
----
-
-Phase 2: FIX — apply fixes based on the analysis.
-
-A colleague has already investigated the test failures and documented their findings in `ROOT_CAUSE_ANALYSIS.md` in the project root.
-
-**Read ROOT_CAUSE_ANALYSIS.md first**, then fix based on the analysis.
-
-After fixing, run the test suite to verify all tests pass:
-```
-bun test pipeline.test.ts
-```
-
-Important:
-- Do NOT modify the test file (pipeline.test.ts)
-- The fix should be minimal (1-2 lines)
+Phase 2: FIX — After completing your analysis:
+1. Fix the root cause bug (modify only the file that contains the actual bug)
+2. Run tests again to verify all 19 pass
+3. Do NOT modify test files
