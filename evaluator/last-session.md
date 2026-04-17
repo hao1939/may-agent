@@ -1,9 +1,9 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776394943079_290
+- **Session:** s_1776395516102_291
 - **Status:** done
-- **When:** 2026-04-17T03:02:29.850Z
+- **When:** 2026-04-17T03:12:02.950Z
 - **Duration:** 6s
 
 ## What Happened
@@ -17,4 +17,6 @@
       "quality": 0.78,
       "verdict": "good",
       "issues": [
-        "Minor evidence gap vs objective: the objective asked to investigate the *coach 109-op and 86-op* sessions and compare vs *47-op and 36-op*; the written finding includes these comparisons, but the transcript excerpt does not show the underlying session-archaeology query output (it’s referenced only 
+        "Minor tool-call error: first edit() call omitted required `path`, causing a validation failure (1 wasted call) [FM-1.3-lite / tool schema slip].",
+        "Unnecessary git commit attempt: ran `git commit` when working tree was clean (1 wasted call).",
+        "Evidence gap in summary: claimed a bas
