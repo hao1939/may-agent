@@ -102,5 +102,7 @@
   4. KE-106 habituation literature (low priority — internal evidence already strong)
   5. Production-first evaluation literature (new lead from CR#326)
 
+- **[2026-04-17 13:30] common-sense.md feedback loop closed** (reqs 5dd07962, 9a91cc97 from May/Hao): Scout's feedback (common-sense-feedback.md) was integrated into common-sense.md. Dispatcher doctrine (lean triage + fork + exit) affirmed as valid role-specific pattern, not waste. Already reviewed updated doc in 13:03 session and appended addendum. No further action.
+
 ---
 *4 completed/historical sections moved to [todo-archive.md](./todo-archive.md)*
