@@ -114,10 +114,8 @@ export function pickPerOwner(projects: ProjectFile[]): Map<string, ProjectFile> 
 export function runningAgents(ctx: HandlerContext): Set<string> {
   const db = ctx.getDb();
   const rows = db
-    .query<{ agent: string }, []>(
-      `SELECT DISTINCT agent FROM sessions WHERE status = 'running'`,
-    )
-    .all();
+    .prepare(`SELECT DISTINCT agent FROM sessions WHERE status = 'running'`)
+    .all() as Array<{ agent: string }>;
   return new Set(rows.map((r) => r.agent));
 }
 

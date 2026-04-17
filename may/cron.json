@@ -284,6 +284,16 @@
     "offsetMs": 1800000
   },
   {
+    "name": "project-resume",
+    "type": "job",
+    "intervalMs": 300000,
+    "message": "[cron:project-resume] Scan active projects; fork owners whose sessions are idle.",
+    "enabled": true,
+    "handler": "project-resume",
+    "description": "Ignition for persistent project tasks. Every 5min, scan agents/*/workspace/projects/*.md; if Status=active and owner has no running session, fork the owner to resume. Set DRY_RUN=1 env to log without forking.",
+    "offsetMs": 90000
+  },
+  {
     "name": "agents-auto-commit",
     "type": "job",
     "handler": "agents-auto-commit",
