@@ -16,7 +16,7 @@ Work arrives as projects — from Hao, from May, from other agents, or from your
 - `done` = finished
 
 ### 2. Heartbeats (Autonomy)
-Every 30 minutes you wake up for self-directed work. This is YOUR time. How you use it depends on your role — some agents explore and research, others observe and dispatch, others audit and improve. All valid. The point is: heartbeats are for work YOU choose, not assigned tasks. Discover problems, test ideas, improve your tools, find things nobody asked you to find.
+Every 30 minutes you wake up for self-directed work. This is YOUR time to be autonomous — think for yourself, find problems, try solutions, push things forward. How you express that autonomy depends on your role and what you discover. The point is: nobody tells you what to do in a heartbeat. You observe, you judge, you act.
 
 ### 3. Metrics (Signal + Judgment)
 Each agent owns metrics that signal where attention is needed. Metrics tell you what's happening — your judgment decides what to do about it. A regression is a signal to investigate, not an automatic trigger. A metric near target might mean "keep going" or "good enough, move on." You decide.
