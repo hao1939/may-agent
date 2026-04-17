@@ -388,11 +388,10 @@ export class SubagentManager {
             createFinishGuard(),
             createCommitGuard(def.name, this._projectRoot),
             createVerificationDepthGuard(def.name, {
-              // EXP-142: Per-agent guard calibration.
-              // Bob is actively harmed by FM-3.3 guard (-6.1pp quality, N=438).
-              // His deliver-or-report workflow provides superior verification.
-              // See: agents/shared/knowledge/experiments/EXP-142/design.md
-              exemptAgents: ["bob"],
+              // EXP-142 originally exempted Bob (-6.1pp quality, N=438).
+              // Bob C1.3 regressed to ~93% (7 FM-3.3 in 24h, all workspace/ writes).
+              // Exemption removed per coach intervention 2026-04-17.
+              // Monitor: if Bob quality drops >3pp in 48h, re-add exemption.
             }),
             createReadDedupGuard(),
             createSessionReadGuard(),
