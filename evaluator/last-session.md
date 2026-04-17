@@ -1,21 +1,20 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776456292476_607
+- **Session:** s_1776457790299_611
 - **Status:** done
-- **When:** 2026-04-17T20:05:00.988Z
-- **Duration:** 8s
+- **When:** 2026-04-17T20:30:01.576Z
+- **Duration:** 11s
 
 ## What Happened
 ```json
 {
   "agents": {
-    "coder": {
-      "role": "Builder",
+    "coach": {
+      "role": "Builder (Quality Focus)",
       "capability_level": "L2",
-      "efficiency": 0.55,
-      "quality": 0.78,
-      "verdict": "acceptable",
+      "efficiency": 0.68,
+      "quality": 0.9,
+      "verdict": "good",
       "issues": [
-        "[FM-3.1] finish() was blocked 3 times for 'Ghost Deliverable' / 'summary implies code changes' mismatch before a compliant finish summary was produced.",
-        "[FM-2.6-lite] Task asked to fix full verification failure (`vitest --run`), but coder narrowed to running only `test/commit-guard.test
+        "[FM-1.3-lite] Avoidable initial dead-end: attempted to validate tool-preset presence by grepping a compiled binary with `strings ... | grep`, which failed (exit code 1) and led to a small recovery chain before switching to the correct fix path (rebuild bundle + run gym). Evidence: Failur
