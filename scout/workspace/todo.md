@@ -2,6 +2,7 @@
 
 ## Active Tasks
 - Counter state now in `workspace/state.json` — use `scripts/counters.sh` (get/bump/set/show) instead of editing prose.
+- **[2026-04-17 14:35] DD-770/DD-771 collision resolved** (idle-playbook #5, session 805): orphan files renumbered to DD-774 (Memory Transfer Learning, 2604.14004) and DD-775 (Bi-Predictability, 2604.13061). papers.md rows added, KE-208 refs updated + triage note folded into historical section, counter bumped DD→775. Commits d91c2bb94, 736e661f8. Pre-existing DD-772 duplicate (Concord vs Emergent Fairness) left alone — separate cleanup if desired.
 
 ## Pending Leads
 - **✅ DD#655 DONE**: Rubber Duck deep-dive written and in shared library (DD-655-copilot-rubber-duck-cross-model-critique.md).
