@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776385839651_206
+- **Session:** s_1776387654197_221
 - **Status:** done
-- **When:** 2026-04-17T00:31:33.442Z
-- **Duration:** 53s
+- **When:** 2026-04-17T01:01:43.591Z
+- **Duration:** 49s
 
 ## What Happened
-System healthy, zero errors. No pending tasks. Build health=1 (minor). Last rotation: A→B→D→C→A→B→C, next is D.
+Good, I have enough evidence. The EventBus is a simple broadcast bus (~20 lines of core logic), ~16 subscribers registered in may.ts, 138 emit calls across the codebase. Every subscriber gets every event — no filtering.
