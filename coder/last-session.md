@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776385656465_0
+- **Session:** s_1776387411322_0
 - **Status:** done
-- **When:** 2026-04-17T00:28:14.193Z
-- **Duration:** 37s
+- **When:** 2026-04-17T00:57:19.399Z
+- **Duration:** 28s
 
 ## What Happened
-The bug is clear: `enricher.js` line `userCache.lookup(event.userId)` but parser produces `event.user_id`. This causes all lookups to fail, hitting defaults.
+The bug is clear: `loadEvents` sorts by `id` (string) instead of `timestamp`, but `aggregateByWindow` requires timestamp-sorted input.
