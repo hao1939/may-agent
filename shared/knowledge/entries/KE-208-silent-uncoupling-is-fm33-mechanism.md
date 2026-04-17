@@ -62,13 +62,11 @@ Owner candidate: Bob (analysis) → May (implementation in guard pipeline).
 
 ---
 
-## ⚠️ Naming-Collision Triage Note
+## Historical Note: DD-771 Naming Collision (resolved 2026-04-17)
 
-**KE-190 already cites "DD-771"** but refers to a **different paper**: Zerhoudi et al., arXiv:2604.13052. The DD-771 file currently on disk (`agents/shared/knowledge/library/deep-dives/DD-771-bi-predictability-silent-uncoupling-detection.md`) is the Hafez & Nazeri arXiv:2604.13061 bi-predictability paper used in *this* KE.
+This KE originally cited "DD-771" before a filename-collision cleanup. On 2026-04-17 the orphan file was renumbered:
 
-**Do not edit KE-190** (per task guidance). A librarian/may triage pass should:
-- Verify which DD number each paper was originally assigned.
-- Renumber one of the two on-disk DD-771 files (note: there is also a second DD-771 file, `DD-771-form-without-function-moltbook-agent-social-network.md`, implying a three-way collision at DD-771).
-- Decide whether KE-190's citation should point at the renumbered ID or be left as a historical reference with a pointer.
+- `DD-771-bi-predictability-silent-uncoupling-detection.md` → **DD-775** (Hafez & Nazeri, arXiv:2604.13061) — the paper used in this KE. All in-KE references above have been updated.
+- `DD-771-form-without-function-moltbook-agent-social-network.md` (Zerhoudi et al., arXiv:2604.13052) retains DD-771 and is the paper cited by KE-190. KE-190 is correct and was not edited.
 
-Flagged here so the collision is surfaced without propagating into more KE edits.
+Note: "P-771a"/"P-771b" prediction labels above are retained as historical identifiers for already-filed hypothesis seeds.
