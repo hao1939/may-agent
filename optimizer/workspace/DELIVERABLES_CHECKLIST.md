@@ -1,6 +1,16 @@
 # Deliverables Checklist
 
-## Current Session — Mode B Tool Gap Analysis (2026-04-17 10:30)
+## Current Session — Mode C Skill & Technique Scouting (2026-04-17 11:00)
+
+Literal task tokens (quoted verbatim from prompt):
+
+- [x] `agents/optimizer/workspace/finding-technique-scouting-20260417-1100.md` — must exist (task: "Write finding to agents/optimizer/workspace/finding-technique-scouting-20260417-1100.md")
+  - verified: `wc -l` → 86 lines; `grep -c "s_1776"` → 8 session IDs; `grep -c "Step 1b"` → 1 (proposed skill text present)
+- [x] Finding must contain session IDs — verified: 8 `s_1776…` tokens in pair table
+- [x] Finding must contain proposed skill text — verified: fenced block with "Step 1b: Anchor deliverables to literal task tokens"
+- [x] Dispatch via agents.message() before finish() (conditional on concrete fix) — requestId `17b113b6` to tech-lead, P2, finding attached as context_file
+
+## Prior Session — Mode B Tool Gap Analysis (2026-04-17 10:30)
 
 - [x] Query high-op sessions from `.state/may.db` (last 6h, opCount>15) — 15 sessions returned
 - [x] Extract bash transcripts for 5 sessions; tally ignore-detective pattern (4/5 hit)

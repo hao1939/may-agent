@@ -135,8 +135,19 @@ function computeEvaluation(meta: SessionMeta, sessionDir: string): {
   const status = meta.status || "unknown";
   const opCount = meta.opCount || 0;
 
-  // NOTE: evaluator sessions are filtered out in the query (agent != 'evaluator')
-  // so we don't need a skip check here anymore.
+  // Evaluator sessions are meta agents — skip them (don't assign quality scores).
+  // We still write a skip row so they don't pile up as "unevaluated" backlog
+  // (see system-status anomaly: writeSkippedEvaluations may need to run).
+  if (agent === "evaluator") {
+    return {
+      quality: 0, efficiency: 0,
+      productiveCalls: 0, wastedCalls: 0,
+      verdict: "skipped",
+      issues: [],
+      evaluatedByHeuristic: false,
+      skippedByJs: true,
+    };
+  }
 
   // Skip 0-op interrupted sessions
   if (status === "interrupted" && opCount === 0) {
@@ -258,11 +269,11 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       for (const r of rows) evaluatedIds.add(r.sessionId);
 
       // Get all session IDs from the sessions table.
-      // Exclude evaluator sessions entirely — they are meta agents that should not
-      // receive quality scores. Previously they got quality=0, verdict="skipped",
-      // which dragged down quality.system average (P-eval-zero bug).
+      // Include evaluator sessions — they get a skip row (via computeEvaluation
+      // early branch) so they don't accumulate as unevaluated backlog. Previously
+      // they were filtered here, causing the system-status anomaly to fire forever.
       const sessions = db.prepare(
-        "SELECT sessionId, agent, task, status, opCount FROM sessions WHERE status IN ('done', 'error', 'interrupted') AND agent != 'evaluator'"
+        "SELECT sessionId, agent, task, status, opCount FROM sessions WHERE status IN ('done', 'error', 'interrupted')"
       ).all() as Array<{ sessionId: string; agent: string; task: string; status: string; opCount: number }>;
 
       const unevaluated = sessions.filter(s => !evaluatedIds.has(s.sessionId));
@@ -291,7 +302,27 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
           const meta = existsSync(metaPath) ? loadSessionMeta(metaPath) : null;
           if (!meta) {
             // Minimal evaluation from DB data only
+            const isEvaluator = session.agent === "evaluator";
             const isError = session.status === "error";
+            if (isEvaluator) {
+              // Evaluator sessions: write skip row so they don't become permanent backlog.
+              upsert.run(
+                session.sessionId,
+                session.agent,
+                0, 0,
+                0, 0,
+                "skipped",
+                "[]",
+                JSON.stringify({ quality: 0, efficiency: 0, verdict: "skipped", result_delivered: false }),
+                JSON.stringify({ inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalTokens: 0, cost: 0 }),
+                "[]",
+                0, // evaluatedByHeuristic
+                1, // skippedByJs
+                Date.now(),
+              );
+              synced++;
+              continue;
+            }
             upsert.run(
               session.sessionId,
               session.agent,
