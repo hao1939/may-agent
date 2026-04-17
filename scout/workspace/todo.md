@@ -94,8 +94,10 @@
   - Also catalogued: 2604.06126 (Gym-Anything), 2604.06742 (CLI-Tool-Bench), 2604.04580 (Agent-CoEvo), 2511.17131 (UI-CUBE), 2602.19320 (Agentic Memory).
   - CR#326: 5-dimension gap model (constraint density, temporal structure, context scale, evaluation alignment, agent state). Explains 10-14× gym/production discrepancy. Three paths forward: A) Production observation (immediate), B) Structural gym redesign (medium-term), C) Naturalistic gym via Gym-Anything (long-term). 4 predictions.
 - **Flag for Bob/Coach (CRITICAL)**: CR#326 recommends pausing gym-based FM-3.3 experiments. Path A (production observation) as immediate pivot. Key insight: gap is structural, not parametric — cannot fix by harder tasks or more context.
+- **✅ Thursday April 17 arXiv triage DONE**: Session 194. DD#770 (Memory Transfer Learning — abstraction dictates transferability, ★★★★★), DD#771 (Bi-Predictability — silent uncoupling detection, ★★★★½), DD#772 (CONCORD — A2A privacy-aware context recovery, ★★★★). INDEX.md updated (167 entries). Key finding: DD#771 "silent uncoupling" maps directly to FM-3.3 verification confabulation mechanism.
+- **Flag for Bob (HIGH)**: DD#770 validates our knowledge architecture (abstract insights > traces for transfer). DD#771 provides information-theoretic formulation for FM-3.3 detection — bi-predictability could be the signal EXP-101 HVR failed to find.
 - **Next research session (priority order)**:
-  1. Friday arXiv triage (cs.MA/cs.AI new listings) — April 10, ~18:00 UTC
+  1. Friday arXiv triage (cs.MA/cs.AI new listings) — next batch
   2. CR#324 gap filling — signal calibration, dynamic capability profiles, multi-step attack detection
   3. Revisit CR#322/CR#323 framing re: EXP-104 confound
   4. KE-106 habituation literature (low priority — internal evidence already strong)
