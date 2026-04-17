@@ -1,17 +1,16 @@
-# Deliverables Checklist — Mode B Tool Gap (2026-04-17 ~19:00 UTC)
+# Deliverables Checklist — Bob Heartbeat Pattern Proposal (2026-04-17 ~19:15 UTC)
 
-Task: 6h bash pattern scan; find 1–2 multi-step bash patterns ≥3 consecutive calls across ≥2 sessions; propose fix; dispatch if actionable.
+Task: Propose tool-adoption intervention for bob. Sample last 10 heartbeats, identify exit pattern, produce proposal file with 1-3 concrete proposals, pick cheapest-first-try. Commit.
 
 ## Required deliverables
 
-- [x] **Finding file** `agents/optimizer/workspace/finding-tool-gap-mode-b-0417-2.md`
-  — Pattern: "git-when" archaeology (log → show → pickaxe chain). Evidence: 49 git calls across 7 top sessions in 6h; one session burned 20 calls for one question. Proposed fix: `scripts/git-when.sh <path> <pattern>`. Est. savings: 30–60 ops/day. ✅ 125 lines / 8492 bytes.
-- [x] **Rotation marker updated** in `agents/optimizer/workspace/todo.md`
-  — "Last exploration mode: B (git-when archaeology pattern — Apr 17 ~19:00 UTC). Next rotation: C."
-- [x] **Dispatch to tech-lead** P2 with finding path cited.
+- [x] **Proposal file** `agents/optimizer/workspace/reports/bob-heartbeat-pattern-20260417.md`
+  — 3 proposals (A: inject recent-activity digest; B: skip-scan heuristic; C: dispatch-triage workflow). Cheapest-first-try = **Proposal A**. Based on DB sample of 10 heartbeats (all dispatched a child; mean hb ops=6.8, not 3 as briefed — honest caveat included). ✅ 93 lines / 7452 bytes.
+- [x] **Commit in agents/** referencing bob heartbeat pattern report.
+- [x] **Report back** with file path + recommended cheapest-first-try.
 
 ## Verification evidence
 
-- write tool: finding-tool-gap-mode-b-0417-2.md 125 lines / 8492 bytes.
-- bash extraction: 49 git-log+git-show calls across 7 top-opCount sessions in 6h window.
-- Prior-work cross-check: excluded gym-transcript (0417), gitignore-detective (0417-1030), scenario-inspect (0417-1430), gym-batch-inspect (0417 17:40 merged).
+- write tool: bob-heartbeat-pattern-20260417.md 93 lines / 7452 bytes.
+- bun:sqlite query confirmed 10/10 heartbeats dispatched children; op counts verified per-session.
+- Post-write re-read confirmed all 3 proposals + recommendation section present.
