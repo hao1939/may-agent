@@ -1,21 +1,20 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776391315961_257
+- **Session:** s_1776391326696_258
 - **Status:** done
-- **When:** 2026-04-17T02:02:06.694Z
-- **Duration:** 10s
+- **When:** 2026-04-17T02:02:14.061Z
+- **Duration:** 7s
 
 ## What Happened
 ```json
 {
   "agents": {
-    "coach": {
-      "role": "Builder (Quality Focus)",
+    "may": {
+      "role": "Supervisor",
       "capability_level": "L2",
-      "efficiency": 0.58,
-      "quality": 0.54,
+      "efficiency": 0.78,
+      "quality": 0.62,
       "verdict": "acceptable",
       "issues": [
-        "[FM-2.6 / Reasoning-Action mismatch] Heartbeat mandate is triage+dispatch, but coach did inline DB investigation (2 bash queries) before dispatch. This is minor but violates the 'keep heartbeats lean' intent.",
-        "[FM-3.3 / VERIFICATION_FAILURE] Attempted finish(status='succ
+        "[FM-3.3 / VERIFICATION_FAILURE (process)] Initial required snapshot command errored (bun eval syntax: \"Unexpected else\"), and May proceeded to gatekeeper check without resolving the snapshot failure first; this violates the heartbeat's own instruction that all decisions come from the snapshot.
