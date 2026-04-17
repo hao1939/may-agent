@@ -57,3 +57,6 @@ Declared the fast-exit design "done, ready for Phase 1 deploy." Not valid under 
 
 ### 2026-04-17 13:28 — Re-dispatch against reframed milestones
 May forked bob (session `s_1776432499606_299`, request `af9508b1`) to run persistent-task on this project under the corrected framing. Task: draft the Idle Heartbeat Playbook (Milestone 1) and get review before rolling out to per-agent heartbeat.md files. Non-goals and "no fast-exit gate" rule explicitly reinforced in the dispatch.
+
+### Iteration 3 — 2026-04-17T13:30Z — Playbook draft delivered
+Bob drafted Milestone 1 design: `agents/shared/may-agent-docs/design/idle-heartbeat-playbook.md`. Old `adaptive-heartbeats.md` now carries a SUPERSEDED banner at the top. Design is review-ready, not deployed — rollout (12-file `heartbeat.md` edit + 1 new `agents/shared/protocols/idle-playbook.md`) waits on tech-lead + may approval of (a) the playbook text, (b) the 2-line heartbeat addition pattern, (c) success metric + baseline sampling plan, (d) 4 open questions listed in the doc. KE-008 respected: rollout is a content addition inside existing Step 2, not a structural reorder. Next iteration: send review request to tech-lead via `reviewed-delivery` workflow (brief includes the draft path + the 4 open questions).
