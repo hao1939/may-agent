@@ -15,9 +15,9 @@ Agents manually repeat templated work every session: Bob creates hypothesis file
 
 - [x] **Bob: template scripts** — `new-hypothesis.sh`, `new-experiment.sh`, `new-ke.sh` — scaffold files with correct format, auto-increment IDs, link to related entries.
 - [x] **Optimizer: saved query library** — A `.sql` file or script with common queries (session stats, agent ops, error rates). Stop rewriting from scratch.
-- [ ] **Scout: structured counter management** — Move paper counters, search state, and tracking out of todo.md prose into a machine-readable file.
-- [ ] **Tech-lead: delegation templates** — Standard task descriptions for common coder dispatches (fix test, implement feature, refactor). Reduce delegation overhead.
-- [ ] **Coach: experiment templates** — Quick-setup templates for common experiment types so coach doesn't rebuild scaffolding each time.
+- [x] **Scout: structured counter management** — DONE. `agents/scout/workspace/state.json` + `agents/scout/workspace/scripts/counters.sh` (get|bump|set|show, atomic writes). Verified 2026-04-17.
+- [x] **Tech-lead: delegation templates** — DONE. `agents/tech-lead/workspace/templates/{delegate-fix-test,delegate-implement,delegate-refactor}.md`. Verified 2026-04-17.
+- [ ] **Coach: experiment templates** — Dispatch req:4abeafee auto-injected into coach heartbeat s_1776421386811_97 (2 ops, no output). Coach heartbeat is saturated by prove-the-loop P1 tasks. Re-dispatching as agents.message (P2) so it sits in queue until coach has slack.
 
 ## Progress Log
 - **2026-04-16**: Optimizer saved query library DONE — `agents/optimizer/workspace/saved-queries.sh` with 6 commands (session-stats, high-op, error-sessions, workflow-adoption, agent-cost, quality-scores). All tested and working.
