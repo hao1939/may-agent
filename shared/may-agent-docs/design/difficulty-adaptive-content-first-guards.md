@@ -9,6 +9,12 @@
 
 Verification guards face a two-sided tax. **Forced verification guards harm hard/creative tasks** (KE-091 "alignment tax"): requiring agents to produce structured verification evidence on complex synthesis work degrades outcomes. EXP-166 sharpens this into a specific, measured failure mode: **production-based guards displace expert content on hard tasks** (KE-195/196). When an agent reads expert analysis and is then required to produce its own analysis before fixing, pass rate collapses from 100% (F1-only) to 7% (F1→F2) on cascading-fix-trap-v2 — a **−93pp drop** with the same information available. The mechanism is capacity displacement, not anchoring: on hard tasks the agent has no slack, and the production step consumes the capacity it would have used to *apply* the expert knowledge during fixing. **Process-first guards (analyze-then-fix, plan-then-execute) therefore fail precisely when we need them most.** Yet on easy tasks (sql-injection, 67% baseline), the same production step costs 0pp — it's absorbed by slack capacity. A single guard policy across difficulties is strictly wrong: passive hurts accountability on easy work, active destroys performance on hard work.
 
+### 1.1 What this design does and doesn't address
+
+- **Addresses**: the C-vs-D gap in EXP-166 — how to preserve expert-content benefit without losing verification auditability on easier tasks.
+- **Does not address**: FM-3.3 verification-evidence gaps on easy tasks (production mode stays on there). Judge-evaluation reliability on hard tasks (assumed orthogonal). Content curation costs for the injection payload (noted as a risk in §6).
+- **Relationship to prior guards**: complements rather than replaces T2-post-write-verification (file existence) and evidence-gate (pre-delivery review). Those fire on artifact presence, not on produced-narrative presence, so they remain safe on hard tasks.
+
 ## 2. Proposal: Difficulty-Adaptive Content-First Guard
 
 Branch guard behavior on task difficulty rather than shipping a single uniform policy.
