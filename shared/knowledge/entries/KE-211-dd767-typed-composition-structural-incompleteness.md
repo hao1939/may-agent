@@ -13,6 +13,13 @@ DD-767 proves that a typed lambda calculus over (oracles, bounded fixpoints, pro
 
 Put more sharply: **54% → 96–100% precision jump from YAML-only to YAML+AST is the same shape as our content-first-over-process-first result (EXP-166).** Both say: verification that only sees the declared surface catches about half; verification that sees the realized computation catches nearly all.
 
+### Headline claims we are importing from DD-767
+
+- A typed calculus with (oracles, bounded fixpoints, probabilistic choice, mutable env) is *sufficient* to embed LangGraph, CrewAI, AutoGen, OpenAI SDK, and Dify as typed fragments.
+- Type-safety, termination of bounded fixpoints, and lint-rule soundness are **Coq-mechanized** (1,519 lines, 42 theorems, 0 Admitted) — the result is not hand-waved.
+- Field evidence: **94.1% of 835 real GitHub configs are structurally incomplete**; YAML-only lint precision 54%, joint YAML+Python-AST 96–100%.
+- The delta (54% → 96%) is not incremental — it *doubles* defect detection by crossing the declarative/imperative boundary.
+
 ## Mechanism: What λ_A's Types Map to in Our Stack
 
 DD-767's core objects, translated into Bob/May vocabulary:
@@ -44,6 +51,19 @@ EXP-166 showed F1→F2 (read expert analysis, then self-produce) collapses to 7%
 ### KE-188 (GAM addresses P(access), not P(applies))
 
 λ_A's type system is explicitly a P(access) / structural-availability check. KE-188 already warned that access ≠ application. So **λ_A's 94.1% finding is consistent with KE-188**: structural incompleteness is access-layer breakage. The 5.9% of configs that *are* structurally complete still have a P(applies) problem, which is where KE-208 / KE-202 live.
+
+### Summary table: which failure modes does λ_A reach?
+
+| Failure mode | KE | Static types catch? | Why / why not |
+|---|---|---|---|
+| Config declares a source it doesn't wire | KE-187 (access slice) | **Yes** | Pure structural-incompleteness |
+| Wired source lacks the required node at runtime | KE-187 (applies slice) | No | Runtime world-model check needed (Sentinel) |
+| Finish block cites a read that never happened | KE-208 / FM-3.3 | **Yes, via typed evidence refs** | `verification_evidence: Array<ToolCallId>` forces unforgeable references |
+| Mid-generation coupling collapse | KE-208 / FM-3.3 residue | No | Requires runtime bi-predictability measurement |
+| F1→F2 capacity displacement on hard tasks | KE-195 / KE-196 | No | Lives in probabilistic-choice/oracle-cost layer |
+| Stacked intervention degradation | KE-123 | **Partial** | Independence violations flaggable; capacity cost is not |
+| Heartbeat loop that iterates without progress | FM-2.6 | **Yes** | Bounded-fixpoint measure obligation |
+| Edit without prior read (C1.1) | skill → type | **Yes** | Mutable-environment read-before-write dependency |
 
 ## Predictions (Testable)
 
