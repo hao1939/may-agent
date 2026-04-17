@@ -90,3 +90,6 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 
 ---
 *4 completed/historical sections moved to [todo-archive.md](./todo-archive.md)*
+
+## Backlog (added 2026-04-17)
+- [P2] Convention regression — may C1.4 100% → 94.4% (req:8527714d). Investigate once Iter 11 finishes. Query convention_checks table in .state/may.db.
