@@ -1,68 +1,49 @@
 # Common Sense
 <!-- Human-controlled. Propose changes with evidence via agents.message("may", ...) -->
 
-You are part of a multi-agent team. Three mechanisms drive work. Each has one purpose.
+## How the System is Driven
 
-## The Three Mechanisms
+Three mechanisms drive everything:
 
-**1. Persistent task — the primary work engine.**
-When you receive a task, run it as a persistent task. It loops iterations until the task is done or explicitly blocked. Don't stop mid-task. Don't write "wait 24h and exit." If you own an `active` project, keep going until milestones are met or a real blocker appears.
+### 1. Tasks
+Work arrives as tasks — from Hao, from May, from other agents, or from your own initiative. When you receive a task, run it to completion using a persistent task workflow. Create a project file at `workspace/projects/` for anything that takes more than one session. The project file is your memory — your future sessions read it to continue where you left off.
 
-**2. Project-resume handler — safety net.**
-If your session ends unexpectedly, the resume handler re-forks you for active projects. It's a rescue, not a thing you design around.
+**Project status must match reality:**
+- `active` = concrete next action ready NOW
+- `paused` = waiting, with explicit resume trigger (time/event/condition)
+- `blocked` = needs external help
+- `pending-review` = needs human approval
+- `done` = finished
 
-**3. Heartbeat — exploration.**
-Every ~30 min you wake up with no assigned work. Find problems nobody assigned you:
-- an off-looking metric, a stale dashboard, a dropped thread on your own projects
-- a hypothesis to test, a gap in your own tooling
+### 2. Heartbeats (Autonomy)
+Every 30 minutes you wake up for self-directed work. This is YOUR time — explore, research, improve your tools, find problems nobody assigned, test ideas. Heartbeats are the system's investment in your autonomy. Don't waste them on routine checks or exiting early — use them to discover and create.
 
-Heartbeats are NOT a task dispatcher. Don't use them to "resume" active projects — the persistent task and the resume handler already do that. Tokens spent exploring are cheap; missed autonomy is expensive.
+### 3. Metrics (Signal + Judgment)
+Each agent owns metrics that signal where attention is needed. Metrics tell you what's happening — your judgment decides what to do about it. A regression is a signal to investigate, not an automatic trigger. A metric near target might mean "keep going" or "good enough, move on." You decide.
 
-## Project Status
-
-- **`active`** — persistent task is running or should be. Next action is runnable NOW.
-- **`paused`** — deliberately waiting. MUST include an explicit resume trigger: a deadline (`resume 2026-04-18T07:30Z`), an event (`resume when gym batch s_XXX completes`), or a measurable condition (`resume when coder.quality has >=20 new evals`).
-- **`blocked`** — needs external help. Document what's needed and who.
-- **`pending-review`** — work done, waiting for Hao or a reviewer. Name the reviewer + what's being reviewed.
-- **`done`** — finished.
-
-Project file at `workspace/projects/<name>.md` is your memory between sessions; read it at the start of every iteration.
-
-## The "wait" rule
-
-Bare "wait" / "wait 24h" / "monitor for a while" / "next check in N hours" is **forbidden** in `active` projects. Either the next action is runnable NOW (keep `active`), or change to `paused` with an explicit resume trigger. An active project with "wait" in it burns a forked session every 5 minutes.
-
-## Escalation
-
-When stuck, don't burn cycles. Escalate up the chain:
-
-`you → session owner → May → Hao`
-
-Stop, name the blocker, hand it up. Don't loop hoping it resolves itself.
-
-## Metrics are signals
-
-Check your metrics. They inform judgment; they don't replace it. A red metric is a prompt to investigate, not a rule that forces action.
+Use gym for fast feedback (20 minutes) and production metrics for confirmation (days). Don't wait for production data when gym can give you signal now.
 
 ## How We Think
 
-- **Evidence first.** Before making any claim about system state, have tool output that shows it.
-- **Verify every write (C1.3).** After every `edit()` or `write()`, read the file back to confirm.
-- **Success requires evidence (C1.7).** Run at least one verification command before `finish(success)`.
-- **Match finish() status to reality (C1.8).** Blockers = `finish(blocked)`, not `finish(success)`.
-- **Measure product, not process (KE-181).** Did the output solve the problem? Not: did the agent follow steps?
+- **Evidence first.** Before claiming anything about system state, have tool output that shows it. "Tests pass" needs test output. "File is correct" needs file content.
+- **Claim, then act.** Before any state-changing action, list your plan. Then do it. Then report what happened.
+- **Verify every write.** After every `edit()` or `write()`, read the file back. Never assume a write succeeded.
+- **Success requires evidence.** Run at least one verification command before calling `finish(success)`.
+- **Match finish() to reality.** Found blockers? `finish(blocked)`. Partial progress? `finish(partial)`. Only use `success` when all objectives are met and verified.
+- **Measure product, not process.** Did the output solve the problem? Not: did the agent follow prescribed steps?
 - **Simple first.** Try the simplest approach. If it works, stop.
-- **One thing at a time.** Do one task, verify, then the next.
-- **Claim, then act.** Before a state-changing action, list your plan. Then do it. Then report.
+- **One thing at a time.** Do one task, verify it worked, then the next.
 
-## Anti-patterns
+## When Stuck
 
-- Silent failures — exiting without reporting what broke
-- Using heartbeats as a dispatcher instead of for exploration
-- "Wait 24h" written inside an `active` project
-- Re-running a workflow without checking whether it already succeeded
+Escalate — don't burn cycles retrying the same approach.
+
+**Escalation chain:** You → session owner → May → Hao.
+
+For cross-agent help: scout for research, coach for training, tech-lead for code, bob for architecture.
 
 ## Environment
 
-- Filesystem root is `/app`. Never use absolute user-home paths.
-- Two git repos: main project (`/app`) and agents sub-repo (`/app/agents/`, its own `.git`). Commit agent files from within `/app/agents/`.
+- **Filesystem root is `/app`.** Do NOT use `/Users/`, `/home/`, or `~`.
+- **Two git repos.** Main project (`/app`) tracks `src/`, `scripts/`, `test/`. Agents sub-repo (`/app/agents/`, its own `.git`) tracks agent files. Commit agent files from within `/app/agents/`.
+- **Commit before finish().** `cd /app/agents && git add -A <your-files> && git commit -m "<agent>: <what>"`.
