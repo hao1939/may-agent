@@ -228,6 +228,9 @@ H-070 (Workflow Fixed Cost) added despite moratorium because it directly formali
 | ✅ | **EXP-053** | **H-047: Inverted-U knowledge utilization** | **PHASE 2 COMPLETE** | Recency bias + density saturation confirmed. Clean inverted-U not found. P(H) 0.56→0.62. Phase 1 (controlled gym test ~$3-5) and Phase 3 (minimal intervention) remain available. |
 | ✅ | **EXP-155** | **H-156: Ch2 Hard Gate on Hidden-Dep (Replication + Extension)** | **COMPLETE — +85pp (15%→100%, p<0.001)** | Ch2 hard gate (FINDINGS.md required) on hidden-dep: 10/10 treatment pass. Extends EXP-127 from judgment to process discipline. Ch1 skill 10% (=baseline). KE-177 written. |
 | ✅ | **EXP-156** | **H-156: Hard Gate Generalization — Two New Scenarios** | **COMPLETE — PARTIALLY SUPPORTED** | misleading-test-fix: 0%→100% (+100pp, p<0.001) — 3rd failure type. ambiguous-context-drift: 90%→70% (-20pp, NS) — boundary on high-baseline belief-based. Cumulative Ch2: 27/27 across 3 failure types. KE-178 (boundary condition), KE-129 updated. H-156 P(H) 0.65→0.72. |
+| ✅ | **EXP-166** | **H-161/H-165: Content-First vs Process-First Guard Comparison (4 arms × 2 scenarios)** | **COMPLETE — DISPLACEMENT CONFIRMED (N=120)** | Arm C F1-only=100%/100% (cascading/sql-inj); Arm D F1→F2=7%/100%; Arm B F2-only=0%/87%; Arm A baseline=0%/33%. Mechanism: cognitive-capacity displacement (KE-195), difficulty-moderated (KE-196). Promotes H-165 to Tier 1 P(H)=0.92. Rules out anchoring in favor of displacement. Guard design implication: content-first > process-first on hard tasks. |
+| **P1** | **EXP-177** | **H-166-revised: Recognition Threshold Confirmatory Test** | **DESIGNED — pending execution** | 4 arms (BASE N=20, MOD-LEXICAL N=10, MOD-PARAPHRASE N=10, PLACEBO N=10) on cascading-fix-trap-v2 clean env. MOD-PARAPHRASE is the single separating prediction (≥80% if H-166-revised; ≤40% if A-LEXICAL). Converts H-166 from REVISED→RESOLVED. |
+| **P1** | **EXP-178** | **H-165: Difficulty-Adaptive Content-First Guard Pilot** | **DESIGNED — pending execution** | 4 arms (G1 no-guard, G2 production uniform, G3 passive uniform, G4 adaptive) × 2 scenarios (sql-injection 33% baseline, cascading 0% baseline) × 15 runs = 120 runs, ~$9–12. Tests whether adaptive routing rule ("production on medium, passive on hard") strictly dominates uniform policies. First deployable-guard test of H-165. |
 
 ## Key Insight (Updated 2026-04-05)
 
@@ -255,7 +258,7 @@ EXP-026 production data confirms H-041's core prediction: **workflow benefit sca
 ## Meta-Process: H-066 (Bayesian Belief Management)
 
 The Bayesian scoring process itself is tracked as H-066. After 2026-04-07 corpus cleanup:
-- **22 high confidence** (≥0.70): H-055 (0.82), H-041 (0.72), H-053 (0.88), H-059 (0.72), H-085 (0.85), H-058 (0.87), H-009 (0.85), H-043 (0.85), H-054 (0.75), H-091 (0.93), H-089 (0.94), H-088 (0.80), H-092 (0.72), H-093 (0.72), H-087 (0.72), H-095 (0.88), H-096 (0.70), H-098 (0.80), H-099 (0.90), H-101 (0.78), H-105 (0.75), H-131 (0.70), H-156 (0.72)
+- **25 high confidence** (≥0.70): H-055 (0.82), H-041 (0.72), H-053 (0.88), H-059 (0.72), H-085 (0.85), H-058 (0.87), H-009 (0.85), H-043 (0.85), H-054 (0.75), H-091 (0.93), H-089 (0.94), H-088 (0.80), H-092 (0.72), H-093 (0.72), H-087 (0.72), H-095 (0.88), H-096 (0.70), H-098 (0.80), H-099 (0.90), H-101 (0.78), H-105 (0.75), H-131 (0.70), H-156 (0.72), **H-165 (0.92 NEW)**, **H-166-revised (0.75 REVISED)**, H-160 (0.78)
 - **6 moderate** (0.50-0.70): H-107 (0.65), H-014 (0.63), H-056 (0.61), H-047 (0.62), H-097 (0.55), H-102 (0.55)
 - **2 weak signal** (<0.50): H-103 (0.45), H-106 (0.40)
 - **1 meta**: H-066 (Bayesian belief management)
