@@ -1,6 +1,15 @@
 # Deliverables Checklist
 
-## Current Session — process-automation iteration 5 (2026-04-17 09:39)
+## Current Session — Mode B Tool Gap Analysis (2026-04-17 10:30)
+
+- [x] Query high-op sessions from `.state/may.db` (last 6h, opCount>15) — 15 sessions returned
+- [x] Extract bash transcripts for 5 sessions; tally ignore-detective pattern (4/5 hit)
+- [x] Cross-reference against existing tools (session-query, code-search, gym-batch, scenario-oracle) — gap confirmed
+- [x] Write finding: `agents/optimizer/workspace/finding-tool-gap-mode-b-20260417-1030.md` (94 lines)
+- [x] Dispatch P2 proposal to tech-lead (requestId bbc0ef14)
+- [x] Post-write verification: `wc -l` = 94 lines; `head -3` matches expected title
+
+## Prior Session — process-automation iteration 5 (2026-04-17 09:39)
 
 - [x] agents/bob/workspace/scripts/new-hypothesis.sh (+x, tested — produced H-167 with correct 2026-04-17 frontmatter)
 - [x] agents/bob/workspace/scripts/new-ke.sh (+x, tested — produced KE-208)
