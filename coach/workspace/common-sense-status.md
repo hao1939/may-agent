@@ -1951,3 +1951,40 @@ Checked 5 interrupted/budget-limited sessions from last 72h:
 
 ---
 
+### #23 — Commit before finish() — RE-VERIFICATION #4 (2026-04-17 06:00Z)
+
+**Rule**: "Commit your agents/ changes before calling finish()."
+
+**Method**: Searched 40 most recent sessions. Filtered to 16 that had edit()/write() calls AND finish() calls. Checked for git commit/add references and commit-guard blocks.
+
+**Results**: 16 sessions with edits+finish examined.
+
+| Category | Count | Sessions |
+|----------|-------|----------|
+| Proactive commit (git add/commit before finish) | 14 | s_361, s_320, s_349, s_354, s_353, s_352, s_347, s_341, s_338, s_342, s_343, s_334, s_330, s_322 |
+| No commit needed (gitignored workspace files only) | 2 | s_327 (tech-lead workspace finding), s_326 (optimizer workspace finding) |
+| Guard-blocked (forced commit) | **0** | — |
+| True violation (uncommitted non-ignored files) | **0** | — |
+
+**Key findings**:
+
+1. **Zero guard blocks**: For the first time in 4 checks, no session was blocked by commit-guard. Previous checks: Apr 15 (50% guard-forced), Apr 16 (54% guard-forced). This is a dramatic behavioral shift.
+
+2. **Gitignored files correctly skipped**: s_327 (tech-lead) edited `agents/tech-lead/workspace/finding-finish-error-propagation.md` and s_326 (optimizer) edited `agents/optimizer/workspace/finding-workflow-health-0417.md`. Both are under `*/workspace/*` which is gitignored. No commit needed or attempted — correct behavior.
+
+3. **Large sessions commit proactively**: s_320 (43 edits, 4 git refs), s_341 (20 edits, 15 git refs) — heavy-edit sessions commit multiple times throughout, not just at finish.
+
+**Trend**:
+
+| Date | Proactive | Guard-forced | Violations | Verdict |
+|------|-----------|-------------|------------|---------|
+| 2026-04-15 | ~50% | ~50% | 0 | ⚠️ |
+| 2026-04-16 | ~46% | ~54% | 0 | ⚠️ |
+| **2026-04-17** | **100%** | **0%** | **0** | **⚠️→✅** |
+
+**Conclusion**: ⚠️→✅ Upgraded. All 16 sessions either committed proactively or correctly skipped commit for gitignored files. Zero guard blocks — agents have internalized the commit-before-finish behavior. The commit-guard infrastructure remains as safety net but was not triggered once in this sample.
+
+**Action**: No Growth Cycle needed. Continue monitoring in ~3 days to confirm this isn't a one-day anomaly.
+
+---
+
