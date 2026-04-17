@@ -60,6 +60,18 @@ Each iteration:
   - **Deployed**: `agents/coder/context.md` now contains C1.1, C1.5, C1.6. No other files changed (KE-123 — do not stack with skill files).
   - **Next**: 24h production monitoring. Success signal: among coder sessions with ≥1 write, share that end with `finish() blocked by T2-no-post-write-verification` in issues drops from current ~28% of low-quality-prod sessions toward <10%. Re-diagnose next iteration; if C1.6 has no effect, discard and try process-noncompliance (ignoring verify-wrap workflow) as a structural hook instead of a context rule.
 
+- 2026-04-17 Iteration 3 — **WAIT (window incomplete, KE-123)**:
+  - **Window**: Since C1.5 deploy (2026-04-17 07:14Z, ~2.0h ago) / C1.6 deploy (07:25Z, ~1.97h ago). 24h monitoring window incomplete.
+  - **Data (partial, 2 sessions only)**:
+    - Coder evals since C1.5: 2 rows, avg quality **0.925** (vs pre-deploy 7d baseline 0.823 across 156 rows — not statistically meaningful at n=2).
+    - s_1776416513642_47 q=0.95 (lens-analysis WRITE tighten) — verdict good, no FM-2.6/FM-3.3 issues.
+    - s_1776416558424_50 q=0.90 (2/2 fix retry, verification-script fragility) — FM-2.2 minor; contains one scope-adjacent token but no scope violation or T2-verif block. Notably this session ran a real tsc+awk+grep verification before finish — consistent with C1.6 behavior.
+    - Scope-related failures: 1/2 (false-positive keyword match). T2-no-post-write-verification blocks: **0/2** (baseline was 17/156 ≈ 11%).
+  - **Decision — WAIT, do not stack**: Per KE-123 (never stack interventions) and task instructions ("if monitoring window isn't complete — deploy was <24h ago — do NOT add another rule"), iteration 3 adds NO new intervention. n=2 at 2h is far too small to evaluate C1.5/C1.6 impact; direction is encouraging (no T2 blocks, avg quality above baseline) but noise-dominated.
+  - **Rationale**: Stacking a third context rule now would (a) violate KE-123 monitoring discipline, (b) confound attribution of C1.5 vs C1.6 vs new rule if production later improves or regresses, (c) bloat `agents/coder/context.md` (already C1.1/C1.5/C1.6) before evidence that more rules help. Cost of waiting: ~22h. Cost of stacking early: permanent loss of causal signal on this iteration.
+  - **Next check**: 2026-04-18 ~07:30Z (24h after C1.6 deploy). Re-run the same query; require ≥15 coder evals in the window before declaring Iter 1+2 success/failure. If T2-verif blocks stay <10% and avg q stays above 0.823, ship and diagnose next failure mode (candidates from Iter 1 data: FM-3.3 residual, process-noncompliance, permissions_blocked). If regression, revert C1.6 first per one-change-per-cycle rule.
+  - **Candidate next intervention (drafted, NOT deployed)**: If Iter 1+2 show real improvement, next failure mode is `process_noncompliance` (3 sessions in Iter 1 diagnosis) — agents ignoring the verify-wrap workflow entirely. Proposed fix is *structural* (workflow hook / heartbeat step), not another context rule, per KE-007 (workflow enforcement is the only reliable behavioral intervention) and to avoid context-rule fatigue. Draft text deferred to Iter 4 to keep one design per iteration.
+
 
 - 2026-04-17 Iteration 3:
   - **Impact check (C1.5 + C1.6)**: Deploy was 2026-04-17 07:14Z (C1.5) / 07:25Z (C1.6). Post-deploy window at analysis time = ~2h. Coder evals post-deploy: **n=2, avgQ=0.925** (both `call` kind, both high). Pre-deploy 7d baseline: **n=156, avgQ=0.823**. 24h rolling: n=9, avgQ=0.766. **Verdict: sample size too small to confirm** (n=2 post-deploy). No T2-guard trips or FM-2.6 violations observed in the 2 post-deploy sessions. Marking both C1.5 and C1.6 as **ambiguous-leave-deployed** per task spec; will re-check next iteration when window grows. No revert.
