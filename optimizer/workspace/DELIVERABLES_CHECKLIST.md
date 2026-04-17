@@ -6,3 +6,5 @@
 - [x] Finding written: `finding-workflow-health-20260417-0900.md` (119 lines) — DONE
 - [x] Recommendations section with R1 (persistent-task budget cap), R2 (iter-1 scope), R3 (monitor) — DONE
 - [x] R1 is actionable by optimizer directly (agents/shared/workflows/persistent-task.ts edit) — DONE
+- [x] R1 executed: Budget section added to buildWorkerPrompt() in persistent-task.ts — DONE
+- [x] Committed: agents commit 1b6d8242e "persistent-task: add soft ≤20 op budget to worker prompt" — DONE
