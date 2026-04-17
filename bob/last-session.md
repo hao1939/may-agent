@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776405126571_360
+- **Session:** s_1776405204110_0
 - **Status:** done
-- **When:** 2026-04-17T05:52:17.838Z
-- **Duration:** 11s
+- **When:** 2026-04-17T05:54:11.722Z
+- **Duration:** 47s
 
 ## What Happened
-No new deep-dives or experiments since last check. Metrics at target. No pending tasks injected. Quiet cycle.
+The bug is `>` vs `>=` in `getLetterGrade`. S002 has exactly 80, so `score > 80` is false → gets C instead of B.
