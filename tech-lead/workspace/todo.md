@@ -1,7 +1,7 @@
 # TODO
 
 ## Upcoming
-- Last lens: **B** (2026-04-17) → next: C. Finding: `finding-flow-complexity-trace-the-finish-gu.md`
+- Last lens: **C** (2026-04-17) → next: D. Finding: `finding-dead-weight-evaluator-duplication-betw.md`
 - [x] cron:optimize scope-drift fix (req:fa859a73/f2403c4b) — DONE 2026-04-17. Bounded task text in agents/may/cron.json optimize job per optimizer's Part 1 recommendation. Did NOT stack Part 2 (KE-123).
 
 - [x] Monitor C1.3 improvement after write() diff enhancement deployment — **DONE (2026-04-08)**
