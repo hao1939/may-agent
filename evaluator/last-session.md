@@ -1,21 +1,21 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776461719707_647
+- **Session:** s_1776461838948_648
 - **Status:** done
-- **When:** 2026-04-17T21:35:26.665Z
-- **Duration:** 6s
+- **When:** 2026-04-17T21:37:29.435Z
+- **Duration:** 10s
 
 ## What Happened
 ```json
 {
   "agents": {
-    "optimizer": {
+    "coder": {
       "role": "Builder",
       "capability_level": "L2",
-      "efficiency": 0.62,
-      "quality": 0.88,
-      "verdict": "good",
+      "efficiency": 0.25,
+      "quality": 0.45,
+      "verdict": "acceptable",
       "issues": [
-        "[FM-3.3-lite/VERIFICATION_GUARD_HIT] First finish() attempt was blocked due to uncommitted changes (DELIVERABLES_CHECKLIST.md). Agent recovered by committing and re-finishing with evidence.",
-        "[MINOR_WASTE] One bun/sqlite query attempt appears to have errored/truncated (file_reads table_inf
+        "[FM-3.1/GHOST_DELIVERABLE] Multiple finish(status:\"success\") attempts claimed/strongly implied code changes or deliverables despite no write/edit/file-producing commands in this session; the finish guard blocked four times before switching to partial.",
+        "[FM-1.3-lite/RETRY_STORM] Repeat
