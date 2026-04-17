@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776390715886_244
+- **Session:** s_1776390723935_245
 - **Status:** done
-- **When:** 2026-04-17T01:52:03.932Z
-- **Duration:** 8s
+- **When:** 2026-04-17T01:52:14.342Z
+- **Duration:** 10s
 
 ## What Happened
 ```json
@@ -13,9 +13,9 @@
     "coach": {
       "role": "Builder (Quality Focus)",
       "capability_level": "L2",
-      "efficiency": 0.58,
-      "quality": 0.66,
+      "efficiency": 0.62,
+      "quality": 0.54,
       "verdict": "acceptable",
       "issues": [
-        "[ORDER-009 RISK] Made a system-scope guard pipeline change (removed Bob exemption in src/lib/manager.ts) without any evidence of May review/approval in-session. Even if correct, this violates the standing order process expectation for guard changes.",
-        "[FM-1.3-lite / Unpro
+        "[FM-2.6 / Reasoning-Action mismatch] Heartbeat mandate is triage+dispatch, but coach did inline DB investigation (2 bash queries) before dispatch; still within reason, but not the leanest path given the heartbeat instructions.",
+        "[FM-1.3-lite] Two separate SQL/bash attempt
