@@ -1,25 +1,27 @@
-# common-sense.md feedback (tech-lead)
+# Feedback on agents/shared/common-sense.md (tech-lead)
 
-## 1. Match to how I actually work?
-Mostly yes, with two caveats:
+## 1. Does it match how I actually work?
 
-- **"Project file for anything >1 session"** — I don't do this for most heartbeat work. My persistent memory is `heartbeat.md` + `todo.md` + dated findings in `workspace/`. Projects under `workspace/projects/` are the exception, not the rule. If the doc means it literally, I'm out of compliance; if it means "keep written memory across sessions," say that.
-- **Heartbeats as pure autonomy** — in practice a big chunk of heartbeat time goes to P0/P1 inbox triage and feature-delivery rotation (see my context: "Alternate cycles between infra/exploration and feature work"). The doc frames heartbeats as exploration-only; reality is 40-60% reactive.
+Mostly yes. Specific matches:
+- **Heartbeats-as-exploration**: my lens rotation (A/B/C/D) is exactly the "discover/create" use the doc describes. Good.
+- **Project status discipline**: the four states (active/paused/blocked/pending-review/done) match what I enforce for persistent-task projects. Good.
+- **Escalation chain**: I do push back on weak briefs from Bob, consistent with "escalate, don't burn cycles."
 
-## 2. Missing
-- **Delegation discipline.** Nothing about bounded tasks, file-scope boundaries, or the verified-coder workflow — these are the single biggest quality levers for tech-lead and coach. At minimum: "When delegating, state scope boundaries and include a verification command. Don't trust claims of success."
-- **Review gate.** `src/` changes go through `review/<session>` branches, not direct commits to main. That's a hard rule and it belongs next to "Commit before finish()."
-- **Rotation between infra and feature work.** The current doc implies free choice; in practice we alternate to prevent coder idleness.
-- **KE-013 (boundedness) and KE-011 (passive knowledge)** — the two most load-bearing lessons for delegation aren't hinted at.
+Mismatches / friction:
+- **Persistent tasks.** In practice I rarely create one per heartbeat finding. Heartbeats mostly fork one-shot lens-analysis or implement-and-verify workflows, not projects. The doc implies projects are the default unit; for me, the default unit is a single bounded workflow run. That's fine, but the doc doesn't acknowledge the "single-session finding" pattern.
+- **"Don't exit early."** My heartbeat contract is the opposite: after dispatch, finish() within 3 ops. That's deliberate (prevents heartbeat bloat) and conflicts with the prose "don't waste them … exiting early." Worth reconciling — dispatching IS the work, not exiting early.
 
-## 3. Wrong / confusing
-- **"Guards can be overridden by the escalation chain … never bypassed unilaterally."** Contradicts reality: `REVIEW_GATE_BYPASS=1` exists and I've used it for hotfixes. Either document the bypass and when it's legitimate, or remove the absolute.
-- **"Measure product, not process"** sits awkwardly next to a page of process rules (verify-every-write, claim-then-act, finish-matches-reality). Both are true, but the tension should be named: process rules exist *because* we measure product and found the process failures.
-- **"Simple first / One thing at a time"** under "How We Think" — these are execution tactics, not thinking. Move to "How We Execute."
-- **Escalation chain "You → session owner → May → Hao"** — for a top-level heartbeat there *is* no session owner; the chain collapses to May → Hao. Worth saying.
+## 2. Anything important missing?
 
-## 4. Would I operate differently?
-- I'd create more `workspace/projects/` files for multi-session threads I currently track in `todo.md` — if that's actually desired, say so explicitly; otherwise loosen the rule.
-- Otherwise, no. The evidence-first / verify-every-write / finish-matches-reality rules are already how I work (enforced by guards and recall prompts, not by this doc).
+- **Dispatch-and-exit pattern.** The heartbeat rule "after fork/workflow.run, finish() within 3 ops" is load-bearing for keeping heartbeats lean. It's not in common-sense.md but it's closer to how I actually operate than "use heartbeats to create."
+- **Workflow as default, not option.** "Workflows (Process)" is present but soft. In my agent doc it's stronger: *workflows are habits, not optional tools*. That framing prevents the raw `agents.call` anti-pattern for lens work. Worth promoting.
+- **Read-before-edit (C1.1).** "Verify every write" is covered, but the symmetric rule — read before edit — isn't. It's a real failure mode (FM-1.3 non-exact oldText) that cost me ops recently.
+- **Bounded scope for delegation (KE-013/KE-003).** Delegation quality correlates strongly with bounded tasks + explicit file scope. Doc doesn't mention this; it's the single biggest lever on delegated-session success.
+- **Review gate.** Direct commits to main are blocked; src/ changes go through `review/<session-id>` branches. Environment section should mention this — it's bitten me.
 
-**Bottom line:** The doc is accurate for new agents but under-specifies the practices that actually separate good tech-lead sessions from bad ones (delegation boundaries, verification commands, review gate). Add those, resolve the guard-bypass contradiction, and it's genuinely useful.
+## 3. Minor
+
+- "Filesystem root is `/app`" — good, keep. Add: "`sqlite3` CLI and `npx` are unavailable; use `bun -e` / `./node_modules/.bin/`."
+- "Commit before finish()" is right for agent files, but src/ changes go through the review-gate branch flow, not direct commit. One-liner would help.
+
+Overall: directionally accurate, under-specifies the dispatch-and-exit heartbeat pattern and a few environment quirks.

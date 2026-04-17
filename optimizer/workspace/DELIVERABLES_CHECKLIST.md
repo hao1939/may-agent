@@ -1,6 +1,14 @@
 # Deliverables Checklist
 
-## Current Session — Mode C Skill & Technique Scouting (2026-04-17 11:00)
+## Current Session — common-sense.md feedback (2026-04-17 13:00)
+
+Task: P1 from Hao — review updated `agents/shared/common-sense.md` and write feedback.
+
+- [x] **DONE** — Read `agents/shared/common-sense.md` end-to-end (full file in one read).
+- [x] **DONE** — Feedback written to `agents/optimizer/workspace/common-sense-feedback.md`, 21 lines (under 40-line limit), answering all 4 prompt questions (match / missing / wrong / would-I-change). Verified via `wc -l` = 21.
+- [x] **DONE** — Committed in /app/agents: `4053cfe2a` "optimizer: feedback on shared/common-sense.md" (1 file, 21 insertions; used `-f` because optimizer/workspace is gitignored). Verified via `git log -1 --oneline`.
+
+## Prior Session — Mode C Skill & Technique Scouting (2026-04-17 11:00)
 
 Literal task tokens (quoted verbatim from prompt):
 
