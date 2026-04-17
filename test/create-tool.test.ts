@@ -149,7 +149,7 @@ describe("createAgentsTool()", () => {
   });
 
   describe("action: message", () => {
-    it("returns 'removed' error (use notify instead)", async () => {
+    it("tracks task and returns confirmation", async () => {
       const tool = manager.createAgentsTool({
         agentsRoot,
         getCallerAgentName: () => "may",
@@ -161,11 +161,11 @@ describe("createAgentsTool()", () => {
         message: "review the API docs",
       });
       const parsed = parseResult(result);
-      expect(parsed.error).toContain("removed");
-      expect(parsed.error).toContain("notify");
+      expect(parsed.sent).toBe("researcher");
+      expect(parsed.message).toBe("review the API docs");
     });
 
-    it("returns 'removed' for multiple sends too", async () => {
+    it("returns confirmation for multiple sends", async () => {
       const tool = manager.createAgentsTool({
         agentsRoot,
         getCallerAgentName: () => "bob",
@@ -173,11 +173,11 @@ describe("createAgentsTool()", () => {
 
       const r1 = parseResult(await tool.execute("tc1", { action: "message", agent: "researcher", message: "first" }));
       const r2 = parseResult(await tool.execute("tc2", { action: "message", agent: "researcher", message: "second" }));
-      expect(r1.error).toContain("removed");
-      expect(r2.error).toContain("removed");
+      expect(r1.sent).toBe("researcher");
+      expect(r2.sent).toBe("researcher");
     });
 
-    it("does NOT call triggerHeartbeat (action is removed)", async () => {
+    it("calls triggerHeartbeat callback", async () => {
       let triggered: string | null = null;
       const tool = manager.createAgentsTool({
         agentsRoot,
@@ -193,38 +193,38 @@ describe("createAgentsTool()", () => {
         message: "do stuff",
       });
       const parsed = parseResult(result);
-      expect(triggered).toBe(null);
-      expect(parsed.error).toContain("removed");
+      expect(triggered).toBe("researcher");
+      expect(parsed.heartbeatTriggered).toBe(true);
     });
 
-    it("returns 'removed' regardless of missing params", async () => {
+    it("returns error when agent or message missing", async () => {
       const tool = manager.createAgentsTool({ agentsRoot });
 
       const r1 = await tool.execute("tc1", { action: "message", agent: "researcher" });
-      expect(parseResult(r1).error).toContain("removed");
+      expect(parseResult(r1).error).toContain("requires");
 
       const r2 = await tool.execute("tc2", { action: "message", message: "hi" });
-      expect(parseResult(r2).error).toContain("removed");
+      expect(parseResult(r2).error).toContain("requires");
     });
 
-    it("returns 'removed' for unregistered agent", async () => {
+    it("returns error for unregistered agent", async () => {
       const tool = manager.createAgentsTool({ agentsRoot });
       const result = await tool.execute("tc1", {
         action: "message",
         agent: "nonexistent",
         message: "do stuff",
       });
-      expect(parseResult(result).error).toContain("removed");
+      expect(parseResult(result).error).toContain("not registered");
     });
 
-    it("returns 'removed' when agentsRoot not configured", async () => {
+    it("returns error when agentsRoot not configured", async () => {
       const tool = manager.createAgentsTool(); // no agentsRoot
       const result = await tool.execute("tc1", {
         action: "message",
         agent: "researcher",
         message: "do stuff",
       });
-      expect(parseResult(result).error).toContain("removed");
+      expect(parseResult(result).error).toContain("agentsRoot");
     });
   });
 

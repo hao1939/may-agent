@@ -121,13 +121,13 @@ describe("V2 agents tool", () => {
   it("send without agent or message returns error", async () => {
     const tool = manager.createAgentsTool({ agentsRoot });
     const result = await callTool(tool, { action: "message", agent: "coder" });
-    expect(result.error).toContain("removed");
+    expect(result.error).toContain("requires");
   });
 
   it("send to unregistered agent returns error", async () => {
     const tool = manager.createAgentsTool({ agentsRoot });
     const result = await callTool(tool, { action: "message", agent: "nonexistent", message: "do stuff" });
-    expect(result.error).toContain("removed");
+    expect(result.error).toContain("not registered");
   });
 
   it("send tracks task and returns confirmation", async () => {
@@ -145,8 +145,8 @@ describe("V2 agents tool", () => {
     });
 
     const result = await callTool(tool, { action: "message", agent: "coder", message: "fix the login bug" });
-    expect(result.error).toContain("removed");
-    expect(result.error).toContain("notify");
+    expect(result.sent).toBe("coder");
+    expect(result.message).toBe("fix the login bug");
   });
 
   it("send returns confirmation for multiple sends", async () => {
@@ -165,8 +165,10 @@ describe("V2 agents tool", () => {
 
     const r1 = await callTool(tool, { action: "message", agent: "coder", message: "first task" });
     const r2 = await callTool(tool, { action: "message", agent: "coder", message: "second task" });
-    expect(r1.error).toContain("removed");
-    expect(r2.error).toContain("removed");
+    expect(r1.sent).toBe("coder");
+    expect(r2.sent).toBe("coder");
+    expect(r1.message).toBe("first task");
+    expect(r2.message).toBe("second task");
   });
 
   it("send calls triggerHeartbeat callback", async () => {
@@ -188,9 +190,8 @@ describe("V2 agents tool", () => {
     });
 
     const result = await callTool(tool, { action: "message", agent: "coder", message: "do stuff" });
-    // message action is removed — no heartbeat should fire, error returned instead
-    expect(triggeredAgent).toBe(null);
-    expect(result.error).toContain("removed");
+    expect(triggeredAgent).toBe("coder");
+    expect(result.heartbeatTriggered).toBe(true);
   });
 
   it("send without agentsRoot returns error", async () => {
@@ -204,7 +205,7 @@ describe("V2 agents tool", () => {
 
     const tool = manager.createAgentsTool(); // no agentsRoot
     const result = await callTool(tool, { action: "message", agent: "coder", message: "do stuff" });
-    expect(result.error).toContain("removed");
+    expect(result.error).toContain("agentsRoot");
   });
 
   it("unknown action returns error", async () => {
@@ -271,7 +272,8 @@ describe("V2 agents tool", () => {
 
     // "checkpoint" is NOT a registered agent, but IS a tool in bob's toolset
     const result = await callTool(tool, { action: "message", agent: "checkpoint", message: "save state" });
-    expect(result.error).toContain("removed");
+    expect(result.error).toContain("is a tool, not an agent");
+    expect(result.error).toContain("checkpoint({ ... })");
   });
 
   it("call allows when target is an agent, not a tool", async () => {
