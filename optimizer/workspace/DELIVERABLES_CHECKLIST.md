@@ -1,8 +1,8 @@
-# Deliverables Checklist — Mode D Workflow Health 0417-2
+# Deliverables Checklist — Mode A Session Archaeology 0417-3
 
-- [x] Query DB: current 6h adoption by agent (total forks, workflow forks, pct)
-- [x] Query DB: prior 6h adoption for delta
-- [x] Query DB: verify-wrap and investigate-and-fix usage + avg ops
-- [x] Write agents/optimizer/workspace/finding-workflow-health-mode-d-0417-2.md
-- [x] Update agents/optimizer/workspace/todo.md with Mode D Apr 17 20:00 marker
-- [x] Dispatch fix OR explicit "no regression" note in finding → "No dispatch this cycle" documented in finding §5
+- [x] Pull top-5 high-op 6h sessions via `.state/may.db` sessions table
+- [x] Transcript archaeology for coach s_1776444880857_502 (76op) and s_1776451760999_560 (59op)
+- [x] Cross-check against known anti-patterns in `todo.md` (broken-gym-env, git-archaeology)
+- [x] Both candidates classified as KNOWN — no new dispatch per KE-123 + 3rd-occurrence rule
+- [x] Write `agents/optimizer/workspace/finding-session-archaeology-mode-a-0417-3.md`
+- [x] Append Mode A line under "Optimizer Heartbeat Bloat" section of `todo.md`, next rotation = B
