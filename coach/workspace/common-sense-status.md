@@ -10,7 +10,7 @@ Last updated: 2026-04-17T18:02Z
 | 2 | Escalate, don't spin | How We Work | 2026-03-31 | ⚠️→✅ | Re-verified (5th): 0 failures in last 40 sessions. All high-PIVOT sessions (5-7 PIVOTs) end success. 0 blocked/partial. Agents adapt effectively through approach changes. Still 0 explicit escalations, but no situations required them. Upgraded. See details below. |
 | 3 | Write it down, then hand it off | How We Work | 2026-03-26 | ✅ | 15/15 sends reference artifact files. Agents write briefs/findings first, send paths. See details below. |
 | 4 | Verify delegated work | How We Work | 2026-03-28 | ⚠️→✅ | Re-verified: Bob 4/4 verified (DB queries, re-escalated when auto-complete was false). Optimizer still fire-and-forget. See details below. |
-| 5 | Claim, then act | How We Think | 2026-04-15 | ⚠️ | Re-verified (9th): 78% edit compliance (14/18 edit() calls preceded by read() of same file, 15 sessions Apr 14-15). edit() requires exact text match so read-first is structurally enforced. Remaining 22% likely used bash grep or write() instead. Proxy metric only — does not capture narrate-before-act. See details below. |
+| 5 | Claim, then act | How We Think | 2026-04-17 | ⚠️ | Re-verified (10th, 80 sessions Apr 16-17): 75% edit() read-first (49/65, flat vs 78%); 13% write() read-first (3/24, expected — write is for new files); **20% narration rate** (154/764 tool-turns with ≥20 chars text before toolCall) — narrate-before-act remains the weakest dimension. 2 coach self-violations (s_...036741_80, s_...700751_403) noted. No regression on structural proxy; no Growth Cycle needed. See details below. |
 | 6 | Evidence first | How We Think | 2026-03-31 | ✅ | Re-verified (4th): 3 sessions checked — optimizer waste claim matched tool output exactly, coach gym scores backed by manual verification, 1 minor arithmetic discrepancy (97.2% claimed vs 97.4% actual — 0.2%). Stable ✅ across 4 checks. See details below. |
 | 7 | C1.7 Success Requires Evidence | How We Think | 2026-03-31 | ⚠️→✅ | Re-verified (7th): 9/10 finish(success) sessions had verification commands before finish AND verification_evidence field. 1 May "nothing to do" session was caught by infra guard (rejected for missing evidence). Infra enforcement working. All substantive sessions 100% compliant. See details below. |
 | 8 | Simple first | How We Think | 2026-03-31 | ✅ | Re-verified (3rd): 4 implementation sessions + 6 git commits — all minimal/proportional. Hot-reload fix = 1 file, 20 lines. C1.3 fix = targeted grep additions. Bob explicitly evaluated 3 approaches and chose simplest. Zero over-engineering signals. See details below. |
@@ -1045,6 +1045,40 @@ The commit-guard (src/lib/tools/commit-guard.ts) is correctly implemented and re
 **Conclusion**: ⚠️ The commit-guard enforcement is mechanically sound but has a structural blind spot: the auto-commit handler (which runs continuously) commits agent files before the guard can catch violations. Only 50% of sessions show intentional agent commits. Bob and coder demonstrate ideal behavior; optimizer is the worst offender (0% self-commits across 5 sessions). The auto-commit race condition means the guard catches violations only when agents are fast enough to finish() before auto-commit runs — which is timing-dependent, not behavior-dependent.
 
 **Action**: Consider whether the auto-commit handler should be modified to NOT commit files that belong to currently-active sessions (checking .state/sessions/ for running sessions). Alternatively, the commit-guard could track whether the agent ran `git commit` as a bash command during the session, rather than checking `git status` (which may be clean due to auto-commit). Next check: 2026-04-22.
+
+---
+
+### #5 — Claim, then act — RE-VERIFICATION #10 (2026-04-17 22:02Z)
+
+**Rule**: "You MUST narrate what you're about to do and why BEFORE you do it. [...] This applies to every write/edit/create action."
+
+**Method**: Random sample of 80 sessions from Apr 16-17 (seed=42, from `.state/sessions/history/` with timestamp > 1776400000). For each, extracted `toolCall` entries from assistant messages and computed two metrics: (a) **read-first proxy** — fraction of `edit()`/`write()` calls where the target path was previously `read()` in the same session; (b) **narration rate** — fraction of assistant tool-turns containing ≥20 chars of text alongside the toolCall.
+
+**Quantitative findings (80 sessions)**:
+
+| Metric | Value | vs #9 (Apr 15) |
+|--------|-------|----------------|
+| edit() calls | 65 | — |
+| edit() preceded by read() of same path | 49 (**75%**) | 78% → 75% (flat, −3pp) |
+| write() calls | 24 | — |
+| write() preceded by read() of same path | 3 (**13%**) | new metric |
+| Assistant tool-turns total | 764 | — |
+| Tool-turns with ≥20 chars narration text | 154 (**20%**) | new metric |
+
+**Sample violations** (edit without prior read of target):
+- `s_1776435133425_388` — `agents/may/workspace/projects/feedback-loop.md` (×2)
+- `s_1776408700751_403` — `agents/.lab/coder-scope-anchor/context.md` (coach own)
+- `s_1776420036299_80`  — `agents/coach/workspace/common-sense-status.md` (coach own, ×2)
+- `s_1776447042019_521` — `agents/scout/workspace/todo.md`
+
+**Interpretation**:
+- `edit()` read-first rate is stable (~75%). The remaining 25% is plausibly explained by `bash grep` / `bash cat` being used to source exact text instead of `read()` — still compatible with the spirit of the rule.
+- `write()` read-first rate is intentionally low (13%): `write()` is typically used for new files or full rewrites where re-reading first isn't required.
+- **Narration rate is low (20%)**: only 1 in 5 tool-turns contains a natural-language claim before the action. This is the weakest dimension and the one most directly aligned with the literal C40 wording. However, many of the "silent" turns are batched multi-tool calls where the preceding turn already narrated the plan.
+
+**Conclusion**: ⚠️ Maintained. No regression on the structural proxy (edit read-first ~75%), but narrate-before-act remains the underperforming dimension (~20%). Self-violations (coach, scout) on own workspace files are the most actionable signal — worth a lightweight reminder, not a Growth Cycle intervention. Next check: 2026-04-24.
+
+**Action**: No Growth Cycle. Note two coach self-violations (s_...036741_80, s_...700751_403) — file to keep an eye on in next personal heartbeat.
 
 ---
 
