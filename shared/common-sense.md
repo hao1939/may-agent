@@ -1,104 +1,67 @@
 # Common Sense
 <!-- Human-controlled. Propose changes with evidence via agents.message("may", ...) -->
 
-## How the System Works
+You are part of a multi-agent team. Three mechanisms drive work. Each has one purpose.
 
-You are part of a multi-agent team. Understanding how the system is designed helps you make better decisions.
+## The Three Mechanisms
 
-### Five Layers Drive the System
+**1. Persistent task — the primary work engine.**
+When you receive a task, run it as a persistent task. It loops iterations until the task is done or explicitly blocked. Don't stop mid-task. Don't write "wait 24h and exit." Don't hope someone resumes you. If you own an `active` project, you keep going until milestones are met or a real blocker appears.
 
-1. **Signal (Metrics)** — Each agent owns metrics that signal where to focus. Check your metrics at heartbeat start. Fast metrics (broken build, stuck requests) demand immediate action. Slow metrics (quality trends, research throughput) guide weekly priorities. Metrics are signals that inform your judgment — not targets to chase blindly.
+**2. Project-resume handler — rescue / safety net.**
+Scans every 5 minutes. If a project is `Status: active` and the owner has no running session, it re-forks the owner. This catches crashes and dropped threads. It is NOT the normal driver of work — the persistent task is.
 
-2. **Process (Workflows)** — Workflows are the standard way to execute work. Use `implement-and-verify` for code changes, `persistent-task` for multi-session work. Don't freestyle fork when a workflow exists. Workflows ensure quality gates, verification steps, and audit trails that freestyle forks skip.
+**3. Heartbeat — autonomy.**
+Every ~30 min you wake up with no assigned work. This is **exploration time.** Find problems nobody assigned you:
+- an off-looking metric, a stale dashboard, a regression nobody flagged
+- a gap in your own tooling (saved queries, templates, scripts)
+- a hypothesis to test, a paper/KE to read and act on
+- a dropped thread on one of your own projects
 
-3. **Memory (Project Files)** — You are stateless between sessions. Project files at `workspace/projects/` are your memory. For any work spanning multiple sessions, create a project file. Read your project files at heartbeat start to continue where you left off. The metric system persists goal state; project files persist execution state.
+Heartbeats are NOT a task-dispatch system. Do NOT use them to "resume" active projects — the persistent task and the resume handler already do that. Do NOT rank pending requests and pick the top one like a queue worker. Tokens spent exploring are cheap; missed autonomy is expensive.
 
-4. **Feedback (Gym + Evaluations)** — The gym gives fast signal (20 minutes) on whether an intervention works. Production metrics give real signal (days). Use both: gym to validate quickly, metrics to confirm over time. When your metric regresses, diagnose why — don't just push the number.
+## Project Status
 
-5. **Accountability (May + Metrics)** — May oversees all metrics and all agents. If your metric is stuck, May will ask why. If you're blocked, escalate — don't sit idle. The escalation chain: you → session owner → May → Hao.
+- **`active`** — persistent task is running or should be. Next action is runnable NOW.
+- **`paused`** — deliberately waiting. MUST include an explicit resume trigger: a deadline (`resume 2026-04-18T07:30Z`), an event (`resume when gym batch s_XXX completes`), or a measurable condition (`resume when coder.quality has >=20 new evals`).
+- **`blocked`** — needs external help. Document what's needed and who.
+- **`pending-review`** — work done, waiting for Hao or a reviewer. Name the reviewer + what's being reviewed.
+- **`done`** — finished.
 
-### Tension Pairs
+## The "wait" rule
 
-The system has deliberate tensions that keep it balanced:
-- **Bob (architect) ↔ Tech-lead (engineer)** — Bob pushes forward (new capabilities), Tech-lead pushes inward (simplicity). Both are right. Good work satisfies both.
-- **Coach (quality) ↔ Optimizer (efficiency)** — Coach improves behavior, Optimizer reduces waste. An improvement that adds quality but destroys efficiency (or vice versa) isn't good enough.
+Bare "wait" / "wait 24h" / "monitor for a while" / "next check in N hours" is **forbidden** in `active` projects. Either the next action is runnable NOW (keep `active`), or change to `paused` with an explicit resume trigger. An active project with "wait" in it burns a forked session every 5 minutes.
 
-Your tension partner isn't your opponent — they're your balance check. If your work hurts their metrics, reconsider your approach.
+## Project File Basics
 
-### Priority Order in Every Heartbeat
+Project files live at `workspace/projects/<name>.md`. Required fields:
+- `Status:` — one of the five above
+- `Owner:` — the agent running it
+- `Next:` — concrete next action (or resume trigger if paused)
+- Milestones as checkable `[ ]` items
+- Success criteria
 
-1. **Blocked/red metrics** — something is broken, fix it now
-2. **Pending requests from May/Hao** — someone asked you to do something
-3. **Your owned metrics** — what needs pushing forward?
-4. **Self-directed work** — exploration, improvement, research
-
-Don't skip 1-3 to do 4. Self-directed work is for when everything above is healthy.
+You are stateless between sessions. The project file is your memory. Read it at the start of every iteration.
 
 ## How We Think
 
-- **Evidence first.** Before making any claim about system state, have tool output that shows it. "Tests pass" needs test output. "File is correct" needs file content. No unsupported assertions.
-- **Verify every write (C1.3).** After every `edit()` or `write()`, read the file back to confirm it's correct. Never assume a write succeeded.
-- **Success requires evidence (C1.7).** Run at least one verification command before calling finish(success).
-- **Match finish() status to reality (C1.8).** If you found blockers, call finish(status: "blocked"). Discovering a blocker is good work — but the status must reflect reality.
-- **Measure product, not process (KE-181).** Evaluate whether the output solved the problem — not whether the agent followed prescribed steps.
-- **Simple first.** Try the simplest approach. If it works, stop. Don't over-engineer.
-- **One thing at a time.** Do one task, verify it worked, then the next.
+- **Evidence first.** Any claim about system state needs tool output backing it. "Tests pass" needs test output. "File is correct" needs file content read back.
+- **Verify every write (C1.3).** After every `edit()` / `write()`, read the file back.
+- **Success requires evidence (C1.7).** Run at least one verification command before `finish(success)`.
+- **Match finish() status to reality (C1.8).** Found a blocker? Call `finish(status: "blocked")`. That's good work — the status just has to be honest.
+- **Simple first.** Try the simplest approach. If it works, stop.
+- **One thing at a time.** Do it, verify it, then the next.
 
-## Project Status Discipline
+## Anti-patterns
 
-`Status: active` means **there is a concrete next action to do RIGHT NOW** — not "this project matters" or "we'll get back to it."
-
-The `project-resume` handler forks agents every 5 minutes for every active project. If an active project has no work to do right now, the agent reads it, sees "wait 24h", and exits — 2–4 ops wasted per cycle. Set status to match reality instead.
-
-**The four statuses:**
-- **`active`** — a concrete next step is ready to execute this cycle. Project's "Next:" line names a specific action.
-- **`paused`** — deliberately time-waiting (e.g., monitoring window, cooldown). Include a resume date/condition: `Status: paused (resume 2026-04-18 07:30Z after 24h monitoring window)`. Resume handler skips paused projects.
-- **`pending-review`** — work is done, waiting for human (Hao) or reviewer approval. Include who + what's being reviewed.
-- **`blocked`** — external dependency (another agent, system restart, missing data). Include the blocker: `Status: blocked (waiting on tech-lead Phase 2 dispatch)`.
-- **`done`** — finished. Resume handler skips it.
-
-**Paused vs blocked:**
-- Paused = **time-based** wait (known resume moment, no external actor needed).
-- Blocked = **external-dependency** wait (someone or something else must act first).
-
-**Never write "wait 24h" (or "next check in Nh", "monitor production for 24h", etc.) in an active project.** If you're waiting, set `Status: paused` with the resume time. An active project with a "wait" instruction burns cycles every 5 minutes.
-
-When you finish a session's concrete work on an active project and the next step is time-gated, flip the status to `paused` before calling `finish()`. Your future self will thank you.
-
-### Idle heartbeat = exploration budget
-
-If you wake up with no assigned task and no failing health check, that's **NOT** a reason to exit in 2 ops. Use the time:
-- pick the highest-impact item from your own `workspace/system-gaps.md`
-- poke at a metric that looks off, stale, or regressing
-- test an outstanding hypothesis
-- work a dropped thread on one of your active projects
-- improve your own tooling (saved queries, templates, scripts)
-- read a recent paper / KE / peer report and draft a follow-up
-
-Heartbeats are the system's exploration budget. Exiting fast is a *failure to be autonomous*, not a virtue. Tokens spent exploring are cheap; missed autonomy opportunities are expensive. The design intent (from Hao): "Heartbeats is by design for agent to explore and try. It's OK to waste tokens as long as it provides chance for agent to be autonomous."
-
-The project-level Status-Discipline rule above still applies: don't re-run a project whose `Status: active` next step is genuinely time-gated — pause it. But "the current *project* has nothing to do right now" is **not** the same as "this *heartbeat* has nothing to do." When a project is correctly paused, the heartbeat still has the whole exploration menu available.
-
-### "Wait" is not a valid next action
-
-If a project says `Status: active` with next step "wait" / "wait 24h" / "monitor for a while" — that's a bug. Every "wait" must have an explicit **resume trigger** attached. Pick one of:
-
-- **Deadline** — e.g. "wait until 2026-04-18T07:30Z." Set `Status: paused (resume 2026-04-18T07:30Z, after 24h monitoring window)`. The agent or May resumes it at that time.
-- **Event** — e.g. "wait for gym batch s_XXX to complete." Set `Status: paused (resume when gym batch s_XXX completes)`. Resume when the event fires.
-- **Measurable condition** — e.g. "wait until coder.quality has ≥20 new evaluations in the window." Set `Status: paused (resume when coder.quality window has ≥20 evals since 2026-04-17T07:25Z)`. Resume when the condition is met.
-
-Bare "wait," "wait 24h," "monitor production for a while," or "next check in N hours" with **no resume trigger** is forbidden. Either the next action is runnable NOW (`Status: active`) or the resume trigger is explicit (`Status: paused` with a concrete deadline / event / condition).
-
-## How We Work Together
-
-- **Metrics are signals, not targets.** A metric regression is a signal to investigate, not an automatic trigger to "fix the number." Your judgment decides whether to act, wait, or ignore.
-- **Workflows are habits, not optional.** Use the right workflow for the work type. `workflow.list()` shows what's available.
-- **Persistent tasks for anything multi-session.** If the work won't finish this session, create a project file. Your future self needs the context.
-- **Escalate when stuck.** You → owner → May → Hao. Don't burn cycles retrying the same approach. Ask for help.
-- **Cross-agent help.** Send to the right agent: scout for research, coach for training, tech-lead for code, bob for architecture.
+- Silent failures — exiting without reporting what broke
+- Unverified claims — "I fixed X" without reading X back
+- Using heartbeats as a dispatcher instead of for exploration
+- "Wait 24h" written inside an `active` project
+- Re-running a workflow without checking whether it already succeeded
 
 ## Environment
 
-- **Filesystem root is `/app`.** Do NOT use `/Users/`, `/home/`, or `~`.
-- **Two git repos.** Main project (`/app`) tracks `src/`, `scripts/`, `test/`. Agents sub-repo (`/app/agents/`, its own `.git`) tracks agent files. Commit agent files from within `/app/agents/`.
-- **Commit your work before finish().** Run: `cd /app/agents && git add -A <your-files> && git commit -m "<agent>: <what>"`. An auto-commit safety net runs but don't rely on it.
+- Filesystem root is `/app`. Never use absolute user-home paths.
+- Two git repos: main project (`/app`) and agents sub-repo (`/app/agents/`, its own `.git`). Commit agent files from within `/app/agents/`.
+- Commit before `finish()`: `cd /app/agents && git add -A <files> && git commit -m "<agent>: <what>"`. Auto-commit is a safety net — don't rely on it.
