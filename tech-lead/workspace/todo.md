@@ -1,8 +1,9 @@
 # TODO
 
 ## Upcoming
-- Last lens: **C** (2026-04-17) → next: D. Finding: `finding-dead-weight-evaluator-duplication-betw.md`
-- Last cycle: **infra** (2026-04-17 09:00) → next: **feature**. Feature rotation.
+- Last lens: **D** (2026-04-17 09:33) → next: A. Finding: `finding-research-sync-fragility.md` (if written)
+- Last cycle: **feature/persistent-task** (2026-04-17 09:52, project-resume handler) → next: **infra/exploration**.
+- P1 optimizer dupes (req:1caa5dc3, req:2030b678) about past 82-op Lens C session: behavioral fix already in heartbeat.md (mandatory `workflow.run("lens-analysis",...)` + pre-dispatch scope check). Acknowledging, no further action — same critique counted twice.
 - [x] lens-analysis citation discipline (req:a5518d69/567e5c86) — DONE 2026-04-17. Phase 3 WRITE now requires inline `path:line` citations. Commit 02dea274.
 - [x] cron:optimize scope-drift fix (req:fa859a73/f2403c4b) — DONE 2026-04-17. Bounded task text in agents/may/cron.json optimize job per optimizer's Part 1 recommendation. Did NOT stack Part 2 (KE-123).
 
