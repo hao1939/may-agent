@@ -972,6 +972,8 @@ function checkC1_7_verificationEvidence(toolCalls: ToolCall[]): CheckResult {
       /\bdiff\b/,
       /\btsc\b/,
       /\bvitest\b/,
+      /\bhead\b/,
+      /\btail\b/,
     ];
 
     let hasVerification = false;
