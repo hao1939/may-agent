@@ -20,7 +20,7 @@ export interface TrackRequestOpts {
   fromEntity: string;
   toAgent: string;
   task: string;
-  method: "chat" | "call" | "message" | "workflow";
+  method: "chat" | "call" | "message" | "notify" | "workflow";
   sessionId?: string;
   parentRequestId?: string;
   source?: string;

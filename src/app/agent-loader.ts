@@ -36,7 +36,7 @@ import {
   createCheckpointTool,
 } from "../lib/index.js";
 import { createAgentGrowthTools } from "../lib/tools/agent-growth.js";
-import { createSendTool } from "../lib/tools/send-tool.js";
+import { createNotifyTool } from "../lib/tools/send-tool.js";
 import type { EventBus } from "./event-bus.js";
 import { Cron } from "./cron.js";
 
@@ -209,10 +209,11 @@ async function buildTools(config: AgentConfig, opts: AgentLoaderOptions): Promis
         break;
       }
 
-      case "message-only": {
-        // Lightweight message-only tool for leaf agents — no call/peek/cancel
+      case "message-only":
+      case "notify": {
+        // Notify tool — universal one-way notifications (replaces old send-tool "message")
         tools.push(
-          createSendTool({
+          createNotifyTool({
             agentName: config.name,
             agentsRoot: opts.agentsRoot,
             persistDir,
@@ -468,6 +469,7 @@ const VALID_TOOL_PRESETS = new Set([
   "system-status",
   "system_status",
   "message-only",
+  "notify",
 ]);
 
 const REQUIRED_FIELDS: (keyof AgentConfig)[] = ["name", "description", "domain", "model", "tools"];

@@ -930,7 +930,7 @@ export class SubagentManager {
           fromEntity: session.agentName,
           toAgent: parentName,
           task: escalationTask,
-          method: "message",
+          method: "notify",
           sessionId: session.sessionId,
         });
       } catch {

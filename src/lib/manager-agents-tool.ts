@@ -95,36 +95,36 @@ function textResult(text: string): AgentToolResult<string> {
 
 const AgentsToolParams = Type.Object({
   action: StringEnum(
-    ["call", "fork", "message", "context", "list", "peek", "cancel", "requests"] as const,
+    ["call", "fork", "context", "list", "peek", "cancel", "requests"] as const,
     {
       description: [
         "'call': run an agent synchronously and get the result (blocks your session until the agent finishes). Creates a child session in your call tree.",
         "'fork': start an agent in a new independent session (non-blocking). Returns sessionId. You continue immediately. The forked session can query your context via origin link.",
-        "'message': fire-and-forget task for an agent to pick up on their next heartbeat. No result returned. Use for background work.",
         "'context': query session context — parent's summary, origin session, workflow steps. Use when you need more context than your task provides.",
         "'list': show all available agents with descriptions and any running sessions.",
         "'peek': view recent messages from a running session (requires sessionId).",
         "'cancel': kill a running session (requires sessionId).",
         "'requests': query the request tracking database (optionally filter by agent or status).",
+        "To send a one-way FYI notification, use the separate `notify` tool instead of this action list.",
       ].join(" "),
     },
   ),
   agent: Type.Optional(
     Type.String({
       description:
-        "Target agent name. Required for 'call' and 'message'. Optional for 'requests' (filters by agent). Use 'list' first to see available agents if unsure.",
+        "Target agent name. Required for 'call' and 'fork'. Optional for 'requests' (filters by agent). Use 'list' first to see available agents if unsure.",
     }),
   ),
   task: Type.Optional(
     Type.String({
       description:
-        "Task description for 'call'. Be specific: include file paths, expected outcomes, and constraints. The agent runs to completion and returns a summary.",
+        "Task description for 'call' or 'fork'. Be specific: include file paths, expected outcomes, and constraints. The agent runs to completion and returns a summary (call) or session id (fork).",
     }),
   ),
   message: Type.Optional(
     Type.String({
       description:
-        "Message to send for 'message'. Creates a tracked request in the DB and triggers the target agent's next heartbeat. Include artifact file paths if the agent needs to read your output.",
+        "DEPRECATED — use the `notify` tool for FYI notifications, or `task` for 'call'/'fork'. Kept only for backward compatibility.",
     }),
   ),
   sessionId: Type.Optional(
@@ -145,24 +145,24 @@ const AgentsToolParams = Type.Object({
   force: Type.Optional(
     Type.Boolean({
       description:
-        "For 'message' only: skip duplicate detection. Use when you intentionally want to re-send a similar message to the same agent.",
+        "For 'fork': skip duplicate detection. Use when you intentionally want to re-dispatch a similar task to the same agent.",
     }),
   ),
   context_files: Type.Optional(
     Type.Array(Type.String(), {
       description:
-        "For 'message'/'call': file paths the receiver MUST read for context. Included in the tracked request and appended to the message.",
+        "For 'call'/'fork': file paths the receiver MUST read for context. Included in the tracked request and appended to the task.",
     }),
   ),
   success_criteria: Type.Optional(
     Type.Array(Type.String(), {
       description:
-        "For 'message'/'call': bullet points describing how to verify the task is done correctly. Included in the tracked request.",
+        "For 'call'/'fork': bullet points describing how to verify the task is done correctly. Included in the tracked request.",
     }),
   ),
   priority: Type.Optional(
     StringEnum(["P0", "P1", "P2"] as const, {
-      description: "For 'message': task priority. P0 = urgent/blocking, P1 = important, P2 = nice-to-have. Default: P1.",
+      description: "For 'fork': task priority. P0 = urgent/blocking, P1 = important, P2 = nice-to-have. Default: P1.",
     }),
   ),
   scope: Type.Optional(
@@ -174,7 +174,7 @@ const AgentsToolParams = Type.Object({
 });
 
 interface AgentsToolParamsType {
-  action: "call" | "fork" | "message" | "context" | "list" | "peek" | "cancel" | "requests";
+  action: "call" | "fork" | "context" | "list" | "peek" | "cancel" | "requests";
   agent?: string;
   task?: string;
   message?: string;
@@ -206,11 +206,21 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
     name: "agents",
     label: "Agents",
     description:
-      "Cooperate with other agents. Use 'list' to see available agents, 'call' to run one synchronously, 'fork' to start one in the background, 'message' to dispatch async work, 'peek'/'cancel' to monitor sessions, 'requests' to query the tracking DB.",
+      "Cooperate with other agents. Use 'list' to see available agents, 'call' to run one synchronously, 'fork' to start one in the background, 'peek'/'cancel' to monitor sessions, 'requests' to query the tracking DB. For one-way FYI notifications, use the separate `notify` tool.",
     parameters: AgentsToolParams,
     execute: async (_toolCallId, _params) => {
       const params = _params as AgentsToolParamsType;
       try {
+        // Back-compat: the 'message' action is removed. Return a clear error
+        // pointing callers to notify() or agents.fork().
+        if ((params as { action?: string }).action === "message") {
+          return textResult(
+            JSON.stringify({
+              error:
+                "The agents.message action has been removed. Use notify({ agent, message }) for one-way notifications, or agents.fork({ agent, task }) to dispatch work that should start immediately.",
+            }),
+          );
+        }
         switch (params.action) {
           case "call": {
             if (!params.agent || !params.task) {
@@ -388,120 +398,6 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
               const msg = err instanceof Error ? err.message : String(err);
               return textResult(JSON.stringify({ error: msg }));
             }
-          }
-
-          case "message": {
-            // ORDER-008: may must use fork, not message (message waits for heartbeats, fork dispatches immediately)
-            const callerMsg = getCallerAgentName?.();
-            if (callerMsg === "may") {
-              return textResult(JSON.stringify({
-                error: "May cannot use agents.message — use agents.fork instead. Fork starts immediately; message waits for heartbeats.",
-              }));
-            }
-
-            if (!params.agent || !params.message) {
-              return textResult(JSON.stringify({ error: "'message' requires 'agent' and 'message'" }));
-            }
-
-            const caller = getCallerAgentName?.() ?? "unknown";
-
-            // Guard: reject if target matches a tool in caller's toolset
-            if (caller !== "unknown") {
-              const callerRegSend = manager.agents.get(caller);
-              if (callerRegSend) {
-                const toolNames = callerRegSend.definition.tools.map((t) => t.name);
-                if (toolNames.includes(params.agent)) {
-                  return textResult(
-                    JSON.stringify({
-                      error: `"${params.agent}" is a tool, not an agent. Call it directly as: ${params.agent}({ ... }) — do NOT use agents.message("${params.agent}", ...).`,
-                    }),
-                  );
-                }
-              }
-            }
-
-            if (!manager.agents.has(params.agent)) {
-              return textResult(JSON.stringify({ error: `Agent "${params.agent}" not registered` }));
-            }
-            if (!agentsRoot) {
-              return textResult(JSON.stringify({ error: "send not available (agentsRoot not configured)" }));
-            }
-
-            // Dedup check: skip if identical active request exists
-            if (!params.force) {
-              try {
-                const existingReqId = isDuplicate(
-                  manager.registry.persistDir,
-                  caller,
-                  params.agent,
-                  params.message.slice(0, 500),
-                );
-                if (existingReqId) {
-                  return textResult(
-                    JSON.stringify({
-                      status: "skipped",
-                      reason: `Duplicate request already active (req: ${existingReqId.slice(0, 8)})`,
-                      sent: params.agent,
-                      message: params.message,
-                      deduplicated: true,
-                      heartbeatTriggered: false,
-                    }),
-                  );
-                }
-              } catch {
-                // Non-fatal: dedup failure shouldn't block send
-              }
-            }
-
-            // Build structured message: append context_files and success_criteria
-            // so the receiver sees them in their heartbeat injection.
-            let structuredMessage = params.message;
-            if (params.priority) {
-              structuredMessage = `[${params.priority}] ${structuredMessage}`;
-            }
-            if (params.context_files && params.context_files.length > 0) {
-              structuredMessage += `\nContext files: ${params.context_files.join(", ")}`;
-            }
-            if (params.success_criteria && params.success_criteria.length > 0) {
-              structuredMessage += `\nSuccess criteria:\n${params.success_criteria.map((c: string) => `- ${c}`).join("\n")}`;
-            }
-
-            // Track the request in SQLite
-            let requestId: string | undefined;
-            try {
-              requestId = trackRequest(manager.registry.persistDir, {
-                fromEntity: caller,
-                toAgent: params.agent,
-                task: structuredMessage,
-                method: "message",
-                sessionId: getCallerSessionId?.(),
-                context: params.context_files ? JSON.stringify(params.context_files) : undefined,
-                expectations: params.success_criteria ? JSON.stringify(params.success_criteria) : undefined,
-              });
-            } catch {
-              // Non-fatal: tracking failure shouldn't block message
-            }
-
-            // Trigger target agent's heartbeat
-            const triggered = triggerHeartbeat?.(params.agent) ?? false;
-
-            // Emit message_created for observability (bus subscribers can react)
-            bus?.emit({
-              type: "message_created",
-              from: caller,
-              to: params.agent,
-              task: structuredMessage,
-              requestId: requestId ?? "",
-            });
-
-            return textResult(
-              JSON.stringify({
-                sent: params.agent,
-                message: structuredMessage,
-                heartbeatTriggered: triggered,
-                requestId: requestId?.slice(0, 8),
-              }),
-            );
           }
 
           case "cancel": {

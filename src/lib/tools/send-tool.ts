@@ -1,12 +1,19 @@
 /**
- * message-tool.ts — Lightweight message-only tool for leaf agents
+ * send-tool.ts — `notify` tool (one-way async notifications)
  *
- * Lets leaf agents (coder, evaluator, qa, amy-kimi) send messages
- * and deliver artifacts to other agents WITHOUT call/peek/cancel capability.
- * This preserves the agent hierarchy: leaf agents can report results
- * but cannot orchestrate other agents.
+ * Universal tool for agents and cron handlers to send a one-way FYI
+ * notification to another agent. Writes a request row with
+ * `method: "notify"` and triggers the target's heartbeat. No session
+ * is started, no result is returned — the receiver picks up the message
+ * on their next heartbeat context injection.
  *
- * Phase 6 of request-tracking plan.
+ * This is NOT for dispatching work — use agents.fork for that. Notify
+ * is for: status updates, completion pings, cron alerts, regression
+ * reports. Anywhere a sender would say "FYI, here's what happened".
+ *
+ * Previously named `message` (createSendTool). The split (notify vs.
+ * fork vs. call) prevents the common anti-pattern of using message to
+ * dispatch work, which queues silently instead of starting immediately.
  */
 
 import { existsSync } from "node:fs";
@@ -15,7 +22,7 @@ import { Type, type Static } from "@mariozechner/pi-ai";
 import type { AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
 import { isDuplicate, trackRequest } from "../requests.js";
 
-export interface SendToolOptions {
+export interface NotifyToolOptions {
   /** Name of the calling agent */
   agentName: string;
   /** Root directory containing agent folders */
@@ -30,45 +37,42 @@ export interface SendToolOptions {
   allowedTargets?: string[];
 }
 
-const sendParams = Type.Object({
+const notifyParams = Type.Object({
   agent: Type.String({
-    description: "Target agent name. The message is injected into this agent's next heartbeat session.",
+    description:
+      "Target agent name. The notification is injected into this agent's next heartbeat session.",
   }),
   message: Type.String({
     description:
-      "Message to send. Be specific: include file paths to artifacts, what you need the target to do, and any context they'll need. Tracked in the request DB.",
+      "Notification text. One-way FYI — include everything the recipient needs (file paths, result summary, context). Tracked in the request DB.",
   }),
   artifact: Type.Optional(
     Type.String({
       description:
-        "Path to an artifact file to reference. The file must exist. Write your output to a file first, then pass the path here so the target agent knows where to read it.",
+        "Optional path to an artifact file. The file must exist. Write your output to a file first, then pass the path here so the recipient knows where to read it.",
     }),
   ),
   force: Type.Optional(
     Type.Boolean({
       description:
-        "Skip duplicate detection. Use when you intentionally want to re-send a similar message to the same agent.",
+        "Skip duplicate detection. Use when you intentionally want to re-send a similar notification to the same agent.",
     }),
   ),
   context_files: Type.Optional(
     Type.Array(Type.String(), {
-      description: "File paths the receiver MUST read for context. Appended to the message so the receiver sees them.",
+      description: "File paths the recipient should read for context. Appended to the message.",
     }),
-  ),
-  success_criteria: Type.Optional(
-    Type.Array(Type.String(), { description: "Bullet points describing how to verify the task is done correctly." }),
   ),
   priority: Type.Optional(
     Type.Union([Type.Literal("P0"), Type.Literal("P1"), Type.Literal("P2")], {
-      description: "Task priority. P0 = urgent/blocking, P1 = important, P2 = nice-to-have.",
+      description: "Priority tag. P0 = urgent/blocking, P1 = important, P2 = nice-to-have.",
     }),
   ),
 });
 
-type SendParams = Static<typeof sendParams> & {
+type NotifyParams = Static<typeof notifyParams> & {
   force?: boolean;
   context_files?: string[];
-  success_criteria?: string[];
   priority?: "P0" | "P1" | "P2";
 };
 
@@ -77,18 +81,21 @@ function textResult(text: string): AgentToolResult<undefined> {
 }
 
 /**
- * Create a message-only tool for leaf agents.
- * Supports sending messages and optional artifact paths.
+ * Create the `notify` tool. This is the universal one-way notification
+ * tool — all agents get it, and cron handlers can call the underlying
+ * trackRequest({ method: "notify" }) directly.
+ *
+ * NOTE: Use agents.fork to dispatch work. Use notify to send FYI only.
  */
-export function createSendTool(opts: SendToolOptions): AgentTool {
+export function createNotifyTool(opts: NotifyToolOptions): AgentTool {
   return {
-    name: "message",
-    label: "Send",
+    name: "notify",
+    label: "Notify",
     description:
-      "Send a message or artifact to another agent. The message is tracked in the request DB and injected into the target's next heartbeat. You cannot call, peek, or cancel — only send.",
-    parameters: sendParams,
+      "Send a one-way notification to another agent. The message is tracked in the request DB and injected into the target's next heartbeat. FYI only — no session is started and no result is returned. To dispatch work that should start immediately, use agents.fork instead.",
+    parameters: notifyParams,
     execute: async (_toolCallId: string, _params: unknown): Promise<AgentToolResult<undefined>> => {
-      const params = _params as SendParams;
+      const params = _params as NotifyParams;
 
       if (!params.agent || !params.message) {
         return textResult(JSON.stringify({ error: "'agent' and 'message' are required" }));
@@ -98,7 +105,7 @@ export function createSendTool(opts: SendToolOptions): AgentTool {
       if (opts.allowedTargets && !opts.allowedTargets.includes(params.agent)) {
         return textResult(
           JSON.stringify({
-            error: `Cannot send to "${params.agent}". Allowed targets: ${opts.allowedTargets.join(", ")}`,
+            error: `Cannot notify "${params.agent}". Allowed targets: ${opts.allowedTargets.join(", ")}`,
           }),
         );
       }
@@ -135,11 +142,11 @@ export function createSendTool(opts: SendToolOptions): AgentTool {
           }
         } catch (e) {
           // Non-fatal: dedup is best-effort (DB may not be available)
-          if (process.env.DEBUG) console.warn(`[message-tool] dedup check failed: ${e}`);
+          if (process.env.DEBUG) console.warn(`[notify-tool] dedup check failed: ${e}`);
         }
       }
 
-      // Build structured message: append context_files and success_criteria
+      // Build structured message
       let structuredMessage = params.message;
       if (params.priority) {
         structuredMessage = `[${params.priority}] ${structuredMessage}`;
@@ -147,29 +154,25 @@ export function createSendTool(opts: SendToolOptions): AgentTool {
       if (params.context_files && params.context_files.length > 0) {
         structuredMessage += `\nContext files: ${params.context_files.join(", ")}`;
       }
-      if (params.success_criteria && params.success_criteria.length > 0) {
-        structuredMessage += `\nSuccess criteria:\n${params.success_criteria.map((c: string) => `- ${c}`).join("\n")}`;
-      }
 
-      // Track in SQLite
+      // Track in SQLite with method="notify"
       let requestId: string | undefined;
       try {
         requestId = trackRequest(opts.persistDir, {
           fromEntity: caller,
           toAgent: params.agent,
           task: structuredMessage,
-          method: "message",
+          method: "notify",
           sessionId: opts.getCallerSessionId?.(),
           artifact: params.artifact,
           context: params.context_files ? JSON.stringify(params.context_files) : undefined,
-          expectations: params.success_criteria ? JSON.stringify(params.success_criteria) : undefined,
         });
       } catch (e) {
         // Non-fatal: tracking is best-effort (DB may not be available)
-        if (process.env.DEBUG) console.warn(`[message-tool] tracking failed: ${e}`);
+        if (process.env.DEBUG) console.warn(`[notify-tool] tracking failed: ${e}`);
       }
 
-      // Trigger heartbeat
+      // Trigger heartbeat so recipient picks it up next cycle
       const triggered = opts.triggerHeartbeat?.(params.agent) ?? false;
 
       return textResult(
@@ -183,3 +186,9 @@ export function createSendTool(opts: SendToolOptions): AgentTool {
     },
   };
 }
+
+// ── Back-compat aliases ────────────────────────────────────────────────
+// Preserved in case any downstream code still imports the old names.
+// Prefer `createNotifyTool` / `NotifyToolOptions` in new code.
+export { createNotifyTool as createSendTool };
+export type SendToolOptions = NotifyToolOptions;
