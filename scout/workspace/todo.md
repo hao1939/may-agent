@@ -104,6 +104,7 @@
   5. Production-first evaluation literature (new lead from CR#326)
 
 - **Heartbeat 2026-04-17 17:00 UTC**: Dispatcher-mode no-op. Today already saw 3 Scout work sessions (Friday arXiv DD#776, DD-770/771 collision fix, 15-DD library promotion). No P0/P1 pending. Priority queue above unchanged. Next scheduled: Monday arXiv fresh listings (~18:00 UTC April 20) or any earlier agent-directed lead.
+- **Heartbeat 2026-04-17 17:30 UTC**: Dispatcher-mode no-op. 30 min since prior heartbeat. Git log shows only other-agent activity (bob timeout log, coder C1.4 verify, optimizer Mode B, qa). Nothing actionable for Scout. Exit clean.
 
 ---
 *4 completed/historical sections moved to [todo-archive.md](./todo-archive.md)*
