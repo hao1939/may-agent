@@ -45,6 +45,7 @@ Each iteration:
 - Evaluations are in `.state/may.db` evaluations table
 
 ## Log
+- 2026-04-17 — Hao review: Iter 9 on track, coach building structural finish-guard (evidence-count-guard)
 - 2026-04-17: Project created. coder.quality at 0.82.
 - 2026-04-17 Iteration 1:
   - **Diagnosis**: Overall quality 0.82, but production-only quality is 0.755 (gym inflates average to 0.867). 23 evals <0.5 quality, 10 production. Top failure: FM-2.6 scope violations (editing forbidden files, wrong directories, ENOENT→pivot to unrelated work).

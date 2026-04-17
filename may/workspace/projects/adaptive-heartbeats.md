@@ -1,10 +1,17 @@
 # Adaptive Heartbeats
 
 **Owner:** may
-**Goal:** When an agent wakes with no assigned task, it should do something autonomous and useful — not exit fast. Idle heartbeats are the system's *exploration budget*.
+**Goal:** ~~When an agent wakes with no assigned task, it should do something autonomous and useful — not exit fast.~~ (Superseded — this is already codified in `common-sense.md`; no separate project needed.)
 **Created:** 2026-04-16
-**Updated:** 2026-04-17 (M2 landed, paused for success check)
-**Status:** Paused — awaiting M2 2-week success check (resume ~2026-05-01). M3 (adaptive frequency) deferred until M2 baseline delta is measured.
+**Updated:** 2026-04-17 (closed per Hao)
+**Status:** cancelled
+**Next:** (closed)
+
+## Closure note (2026-04-17)
+
+Closed per Hao: heartbeats are autonomy time, not overhead to minimize. Agents exiting idle heartbeats early = failing to be autonomous, not being efficient. Common-sense.md codifies this ("Heartbeat — exploration. Tokens spent exploring are cheap; missed autonomy is expensive."). No separate adaptive-heartbeats project needed. M2 (scout arXiv windowing) was a correctness concern — if it still matters, scout owns it under their own project, not under an idleness project. M3 (adaptive frequency) is load management and can be re-opened as a separate project if load becomes a problem.
+
+Request ref: `02717e42-9c6d-4e76-b0b5-86c7ceccc35c`.
 **Master project:** [system-evolution.md](./system-evolution.md) → Gap 4
 **Source feedback:** [scout](../../scout/workspace/system-gaps.md), [coach](../../coach/workspace/system-gaps.md)
 **Tracked metrics:** `system.agent-utilization`, `system.request-throughput`
@@ -24,7 +31,9 @@ The real failure modes this project addresses:
 
 ## Milestones
 
-- [x] **Idle heartbeat playbook** — (Done — commit `4457f8c95`, all 12 agents wired to `agents/shared/may-agent-docs/idle-playbook.md`.) Original spec: When an agent wakes with no assigned task and no failing health check, it consults a prioritized exploration list:
+> All milestones below are closed per the 2026-04-17 closure note above. Retained for history.
+
+- [x] ~~**Idle heartbeat playbook**~~ — (Wrong direction per Hao. The playbook shipped in commit `4457f8c95`, but the underlying "fast-exit gate" framing was rejected. Idle autonomy is now governed by `common-sense.md`, not a playbook file.) Original spec: When an agent wakes with no assigned task and no failing health check, it consults a prioritized exploration list:
   1. Pick the highest-impact item from its own `system-gaps.md`
   2. Poke a metric that looks off / stale / regressing
   3. Work a dropped thread from the project files (stalled owner, blocked sub-task)
@@ -33,9 +42,9 @@ The real failure modes this project addresses:
   6. Read something new (paper, KE, peer's recent report) and draft a follow-up
   Deliverable: per-agent heartbeat prompt updated to include this playbook + an explicit "don't just exit" rule. Evidence: ≥X% of idle heartbeats produce a measurable artifact (file written, request created, KE drafted).
 
-- [x] **Scout: skip heartbeats between arXiv windows** — (Done 2026-04-17 — `agents/scout/heartbeat.md` line 50 now carries the explicit UTC window definition from the approved design `agents/shared/may-agent-docs/design/scout-arxiv-windowing.md`.) Correctness concern: arXiv publishes on a known schedule; polling between windows cannot find new work. Scout's heartbeat now fast-paths to the idle-exploration playbook outside the Mon–Fri 00:00–06:00 UTC window.
+- [x] ~~**Scout: skip heartbeats between arXiv windows**~~ — (Closed. Correctness concern belongs to scout under their own project if it still matters. Edit to `agents/scout/heartbeat.md` line 50 stays in place as a scout artifact; not tracked here anymore.)
 
-- [ ] **Adaptive frequency (load management)** — Run heartbeats denser during active periods (Hao online, fresh dispatches, active gym batches), sparser during quiet hours. This is about matching system load to available signal, *not* about saving ops. May controls cron intervals dynamically. Idle-but-alive heartbeats still run; they just don't run as densely when nobody's around to consume output.
+- [ ] ~~**Adaptive frequency (load management)**~~ — (Closed as part of this project. Can be re-opened as a separate project if system load becomes an actual problem. Not pursued here.)
 
 ## Non-Goals
 - Do **not** add a generic "nothing to do → exit" gate to heartbeats. That inverts the design.
