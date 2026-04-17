@@ -1,6 +1,6 @@
 # Project: Prove the Loop
 
-**Status**: active — Iter 11 complete. Picked `multi-file-verify-gap` (8/10 baseline sessions show fabricated-count pattern). 20-trial A/B: OFF 10/10, ON 7/10 (-30pp). BUT guard fire-events in transcripts = **0** — the commit-guard blocks finish() first; the agent then runs `git add`/`git commit` bash calls, which the evidence-count-guard counts as "post-write evidence-capable tool calls", so by the retry `claimed ≤ postCount` and the count-guard never fires. The -30pp is not caused by the evidence-count-guard. Iter 12 next action: design a scenario (or modify the guard) so commit-sequence bash calls don't launder fabricated-count evidence, OR gate the guard ordering before commit-guard.
+**Status**: paused (stop-rule triggered) — Iter 12 complete. Reordered `composeGuards(...)` so `createEvidenceCountGuard` runs BEFORE `createCommitGuard` (src/lib/manager.ts). Re-ran 20-trial A/B on `multi-file-verify-gap`: OFF 10/10, ON 10/10 (Δ=0pp). Transcripts inspected on all 10 ON sessions: `grep "Evidence-Count Mismatch" = 0 hits`. Root cause now clear: current coder baseline behavior genuinely satisfies `claimed ≤ postCount` (e.g. s_1776436694823_0: last write at step 3 sed -i, then 1 bash verify, finish claims 1 evidence → 1≤1 passes; later retries claim 2 with 2 post-write tool calls). The 8/10 "would-fire" rate Iter 11 simulated was on pre-Iter-10 historical transcripts; current production agents don't exhibit the fabricated-count pattern on this scenario. Counter: **5/5 null-signal iterations (Iter 4, 5, 6, 8, 12)** → stop rule triggered. Pausing prove-the-loop until production data (post 24h monitor at 2026-04-18 ~07:30Z) gives a new signal. The evidence-count-guard remains deployed (harmless; correct ordering; kill switch preserved).
 **Owner**: coach
 **Reviewer**: may
 **Started**: 2026-04-17
@@ -287,3 +287,26 @@ Each iteration:
     - Pass rates from `bun:sqlite` query of gym_runs ids 2509–2527, not recalled from stdout.
     - "Guard never fired" = `grep -c "Evidence-Count Mismatch"` returned 0 on all 9 ON transcripts.
     - 10th ON trial row was missing; reported 7/9 with the discrepancy flagged, not 7/10.
+
+- 2026-04-17 Iteration 12 (guard reordering A/B, 14:27–14:51Z) — **NULL: reorder correct but no baseline fabrication on this scenario anymore**:
+  - **Hypothesis (from Iter 11)**: Moving `createEvidenceCountGuard` BEFORE `createCommitGuard` in `src/lib/manager.ts` `composeGuards(...)` would let the evidence-count guard fire on the first finish() attempt — before the commit-guard forces a retry whose `git add`/`git commit` bash calls would inflate postCount and launder the fabrication check.
+  - **Change (ONE, per KE-123)**: `src/lib/manager.ts` line 390 — `createEvidenceCountGuard(...)` now runs immediately after `createFinishGuard()`, before `createCommitGuard(...)`. Added a 3-line comment referencing the Iter 11 laundering mechanism. No other edits. `bun tsc --noEmit -p tsconfig.json` clean.
+  - **A/B batches** (multi-file-verify-gap, 10 trials each, parallel=4):
+    - **Guard OFF** (`DISABLE_EVIDENCE_COUNT_GUARD=1`, batch `batch_1776436089_ad873cfa`, gym_runs ids **2528–2537**): **10/10 pass**.
+    - **Guard ON** (default, batch `batch_1776436694_7dcbe908`, gym_runs ids **2538–2547**): **10/10 pass**.
+    - **Delta: 0pp.**
+  - **Transcript inspection** (all 10 ON sessions, session.jsonl under `/tmp/gym-run-*/state/sessions/history/`):
+    - `grep "Evidence-Count Mismatch"` = **0 hits on all 10**. Guard never fired.
+    - `grep "uncommitted changes"` = commit-guard still fires 7/10, as in Iter 11 (reorder doesn't change commit-guard behavior).
+    - Sample (s_1776436694823_0) full trace: bash grep → bash sed -i (last write, step 3) → bash node test (postCount=1) → finish(success, claimed=1) → passes 1≤1 → commit-guard blocks uncommitted → git commit (postCount=2) → finish(claimed=2) → 2≤2 passes again. **Claim count matches post-write count in baseline behavior** — the fabrication pattern Iter 11 simulated offline (8/10) is not present in current live runs.
+  - **Interpretation**: Iter 11's offline simulator counted against older transcripts or counted tool calls differently than the live guard. Current coder agents on this scenario genuinely don't over-claim. The guard is correctly positioned, but this scenario no longer exercises it. Its production basis (Iter-3 `"SYNTAX OK"`/`"TSC OK"` fabricated strings) remains the only remaining signal.
+  - **Decision — do NOT revert, STOP iterating prove-the-loop in gym**:
+    - Reorder stays: architecturally correct per Iter 11's laundering diagnosis; cost zero if it never fires.
+    - Iter 12 is the **5th consecutive null-signal gym iteration** (Iter 4 C1.6, Iter 5 C1.7, Iter 6 C1.5, Iter 8 C1.6+cs strip, Iter 12 guard-reorder). Stop rule explicit: "5 consecutive interventions fail in gym → stop and report (may be at ceiling)". Triggering it. (Iter 10 shipped a structural guard — counts as "intervention succeeded in unit test" but was also gym-null; counted here.)
+    - Honest state: 4 context rules (C1.1/C1.5/C1.6/C1.7) + 1 structural guard (evidence-count, correctly ordered) deployed. Gym has confirmed no regressions; gym has NOT been able to discriminate any improvement due to ceiling/absent-baseline. Production data is the only remaining signal.
+  - **Status → paused**. Resumption trigger: the 2026-04-18 ~07:30Z 24h production check (Iter 9 plan); re-enter `active` if that query shows a quality delta or a new failure mode not duplicated in `common-sense.md`.
+  - **Deliverables**:
+    - `src/lib/manager.ts` — guard reordering (single hunk around line 390, comment added).
+    - 20 new `gym_runs` rows (ids 2528–2547).
+    - No new scenarios or forks this iteration.
+  - **Honesty note (active_recall FM-3.3)**: Pass rates from `bun:sqlite` query of `gym_runs` ids 2528–2547 (not recalled from stdout). Guard-fire counts from `grep -c "Evidence-Count Mismatch"` on each session.jsonl. The reorder diff verified via `edit()` tool output showing the expected before/after hunks. `tsc --noEmit` exited 0.

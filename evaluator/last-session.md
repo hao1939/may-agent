@@ -1,24 +1,21 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776436933774_415
+- **Session:** s_1776437518003_416
 - **Status:** done
-- **When:** 2026-04-17T14:42:32.209Z
+- **When:** 2026-04-17T14:52:16.727Z
 - **Duration:** 18s
 
 ## What Happened
 ```json
 {
   "agents": {
-    "tech-lead": {
-      "role": "Builder",
+    "may": {
+      "role": "Supervisor",
       "capability_level": "L2",
-      "efficiency": 0.82,
-      "quality": 0.86,
-      "verdict": "good",
+      "efficiency": 0.6,
+      "quality": 0.72,
+      "verdict": "acceptable",
       "issues": [
-        "[MINOR_PROCESS_SLIP] Called finish() before committing; guard blocked and tech-lead recovered cleanly via git add/commit then finish()."
-      ],
-      "metrics": {
-        "code_correctness": "n/a (no product code changes in this heartbeat)",
-        "process_compliance": "high (used workflow; res
+        "[FM-1.3-ish / RECOVERY_THRASH] Multiple git add / ignore-diagnosis commands after hitting expected gitignore; recovery succeeded but with avoidable churn.",
+        "[INSTRUCTION_MISS] Required report asked for 5 file paths touched; May’s message admits only 4 real edits and invents a 5th entry (

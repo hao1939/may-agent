@@ -1,7 +1,7 @@
 # System Evolution — Master Project
 
-**Status**: active (3/5 gaps done as of 2026-04-17 — pushing Gap 2 M2 next)
-**Next**: Drive Gap 2 feedback-loop M2 (bidirectional citations) — see [feedback-loop.md](./feedback-loop.md) Next line. (Gap 4 adaptive-heartbeats cancelled 2026-04-17 per Hao.)
+**Status**: paused (3/5 gaps done; Gap 2 M2 driven by feedback-loop.md own project-resume loop; Gap 4 cancelled)
+**Next**: Master-level idle — re-flip to `active` when (a) feedback-loop sub-project completes and needs roll-up, or (b) Hao decides on Gap 3 follow-ups. Gap 2 M2 progress tracked in [feedback-loop.md](./feedback-loop.md).
 **Owner**: may
 **Started**: 2026-04-16
 
