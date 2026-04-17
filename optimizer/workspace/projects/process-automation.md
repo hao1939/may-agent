@@ -17,7 +17,7 @@ Agents manually repeat templated work every session: Bob creates hypothesis file
 - [x] **Optimizer: saved query library** — A `.sql` file or script with common queries (session stats, agent ops, error rates). Stop rewriting from scratch.
 - [x] **Scout: structured counter management** — DONE. `agents/scout/workspace/state.json` + `agents/scout/workspace/scripts/counters.sh` (get|bump|set|show, atomic writes). Verified 2026-04-17.
 - [x] **Tech-lead: delegation templates** — DONE. `agents/tech-lead/workspace/templates/{delegate-fix-test,delegate-implement,delegate-refactor}.md`. Verified 2026-04-17.
-- [ ] **Coach: experiment templates** — Dispatch req:4abeafee auto-injected into coach heartbeat s_1776421386811_97 (2 ops, no output). Coach heartbeat is saturated by prove-the-loop P1 tasks. Re-dispatching as agents.message (P2) so it sits in queue until coach has slack.
+- [x] **Coach: experiment templates** — DONE 2026-04-17. Optimizer shipped directly after two coach dispatches (req:4abeafee, req:6ccdef77) were auto-injected but coach didn't produce output due to heartbeat saturation. Templates at `agents/coach/workspace/templates/{experiment-design,experiment-results,README}.md`, derived from EXP-084/088/153 patterns.
 
 ## Progress Log
 - **2026-04-16**: Optimizer saved query library DONE — `agents/optimizer/workspace/saved-queries.sh` with 6 commands (session-stats, high-op, error-sessions, workflow-adoption, agent-cost, quality-scores). All tested and working.
