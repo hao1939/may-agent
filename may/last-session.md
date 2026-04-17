@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776434832410_386
+- **Session:** s_1776435133425_388
 - **Status:** done
-- **When:** 2026-04-17T14:08:23.857Z
-- **Duration:** 1m11s
+- **When:** 2026-04-17T14:13:13.315Z
+- **Duration:** 59s
 
 ## What Happened
-Status regex will read first token `paused` → handler skips. Done.
+Status first token is `paused` → cron handler will skip. M1 checkbox updated to reflect iteration 2-3 reality.
