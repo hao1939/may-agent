@@ -65,6 +65,7 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 - **Monthly**: Full sweep of non-ceiling + treatment scenarios (ambiguous-context-drift, sycophants-dilemma, contradictory-requirements)
 - **On-demand**: When new skills deployed or framework changes, run targeted scenarios
 - **Last regression run**: 2026-04-09 — all 3 promoted scenarios passing (efficient-file-reading, plan-once-amend, convention-verify-edit)
+- **2026-04-17 attempt**: BLOCKED — gym runner cannot launch any agent. Infra regression in `src/app/agent-loader.ts :: VALID_TOOL_PRESETS` (missing `cite-source`/`cite_source`; both `/usr/local/bin/may-agent` and rebuilt bundle reject current agent.json files — "Loaded 0 agent(s)"). Per-skill status: efficient-file-reading=UNKNOWN, plan-once-amend=UNKNOWN, convention-verify-edit=UNKNOWN. Details + fix sketch in `workspace/gym-infra-blocker-2026-04-17.md` — flagged P1 for may/tech-lead. Re-run required after fix.
 
 ---
 
