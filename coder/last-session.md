@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776433224424_0
+- **Session:** s_1776443737095_495
 - **Status:** done
-- **When:** 2026-04-17T13:40:56.686Z
-- **Duration:** 32s
+- **When:** 2026-04-17T16:37:21.020Z
+- **Duration:** 1m43s
 
 ## What Happened
-The file already has the correct text (sed already fixed it). Let me use the edit() tool to make the system recognize the change.
+Both test failures are pre-existing on main (confirmed by reverting src/ files to main `eadb0cb1` and reproducing the same `cite-source` failure at step above). The notify-tool-split work is already committed as `d15c5249` on branch `review/notify-tool-split`. tsc is clean (exit 0).
