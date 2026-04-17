@@ -1,6 +1,6 @@
 # Common-Sense Verification Status
 
-Last updated: 2026-04-17T10:00Z
+Last updated: 2026-04-17T14:05Z
 
 ## Item Index
 
@@ -23,7 +23,7 @@ Last updated: 2026-04-17T10:00Z
 | 15 | Verified > confident | Quality | 2026-03-30 | ✅ | Re-verified: 4/4 sessions have verification_evidence fields with specific tool output references. All quantitative claims traced to bash/grep output. Strong improvement since 3/25. See details below. |
 | 16 | Small and working > big and untested | Quality | 2026-03-27 | ✅ | 5/5 src/ changes are small (1-3 files) with 4/5 tested. Non-src work shows incremental create-test-fix cycles. See details below. |
 | 17 | Creative solutions welcome | Quality (REMOVED) | 2026-03-27 | 🗑️ | Rule removed from common-sense.md. Was in original "Quality" section, now gone. Spirit persists (agents do propose alternatives). See details below. |
-| 18 | git add agents/ = NO | How We Think | 2026-04-12 | ⚠️ | Re-verified (8th): **88 sessions with `git add agents/` from wrong dir in 48h (Apr 10-12) across 1271 sessions (6.9%).** .gitignore blocks 100% — zero successful violations. Two retry storms: coach s_957 (11+ attempts, 166 ops!) and bob s_1335 (5+ attempts incl. REVIEW_GATE_BYPASS trick). All actual agents/ commits go through may-agent auto-commit. Correct pattern (`cd agents && git add`) used by some but not majority. See details below. |
+| 18 | git add agents/ = NO | How We Think | 2026-04-17 | ⚠️→✅ | Re-verified (9th, Apr 15-17): **23 sessions violated (~37 wrong-dir `git add agents/...` attempts) out of 2402 sessions — 0.96% violation rate.** vs **1173 sessions using correct `cd agents && git add` pattern.** .gitignore still blocks 100% (zero successful bypasses). Largest retry storm only 2-3 attempts (down from 11+). Correct pattern now dominant (~50× more common than wrong pattern). Upgraded ⚠️→✅. See details below. |
 | 19 | Verify before finishing | How We Think | 2026-03-30 | 🗑️ | Rule removed from common-sense.md. The "verify-and-finish" workflow was never adopted (0 invocations across 250+ sessions). The C1.7 rule (#7) covers the spirit of this requirement. See details below. |
 | 20 | Environment Reality (C50) | How We Think | 2026-04-16 | ⚠️ | Re-verified (8th): 98.5% pass rate (894/908, last 48h). 14 violations across 4 agents: amy 8 (worst, all `cd /home/user`), coach 3, tech-lead 2, bob 1. may now 100% (was worst). New problem: amy repeatedly uses `cd /home/user && node test/...`. Guard catches all. Trend: 97.2%→98.5% (best ever). See details below. |
 | 21 | C1.8 Match finish() status to reality | How We Think | 2026-04-16 | ✅ | Re-verified (3rd): 0 violations in 15 success sessions (Apr 16). All summaries describe completed work (QA reviews, heartbeats, research). Keyword false positives (git log output, context text) — no real error-hiding. Infrastructure guards (FM-3.3, commit-guard) catch process issues before they become C1.8 violations. See details below. |
@@ -1074,7 +1074,48 @@ The commit-guard (src/lib/tools/commit-guard.ts) is correctly implemented and re
 
 ---
 
-### #18 — git add agents/ = NO — RE-VERIFICATION #8 (2026-04-12 15:23Z)
+### #18 — git add agents/ = NO — RE-VERIFICATION #9 (2026-04-17 14:05Z)
+
+**Rule**: "Files in `agents/` directories are gitignored. Do NOT try to `git add` or `git commit` files under `agents/`. Only `src/` and `scripts/` files are tracked by git. Agent files already persist at runtime — no git needed."
+
+**Method**: Searched 2402 sessions with `mtime > 2026-04-15`. Filtered to 93 sessions that mention the text `git add agents/`. Extracted every bash tool call matching `git add agents/` via jq; classified each as "correct" (prefixed by `cd agents && ...`) or "wrong" (no `cd agents` prefix in the same shell command). Cross-counted all sessions using the correct pattern (`cd agents && git add` OR `cd /app/agents && git add`) across the full 2402-session window.
+
+**Quantitative findings (Apr 15-17, 48h window)**:
+
+| Metric | Apr 10-12 (#8) | **Apr 15-17 (#9)** | Trend |
+|--------|---------------|--------------------|-------|
+| Total sessions analysed | 1271 | **2402** | ↑ 1.9× activity |
+| Sessions mentioning `git add agents` text | 88 | **93** | ~flat |
+| **Sessions with wrong-dir `git add agents/...` bash call** | ~88 | **23** | ↓↓ **74% reduction** |
+| Wrong-dir call attempts (total) | ~100+ | **37** | ↓↓ |
+| **Sessions using correct `cd agents && git add` pattern** | "10+" | **1173** | ↑ dominant |
+| Successful bypasses (reached main repo) | 0 | **0** | ✅ stable |
+| Max retries per session | 11+ (coach s_957) | **2-3** | ↓ no retry storms |
+| Violation rate (wrong / total sessions) | 6.9% | **0.96%** | ↓↓ 7× better |
+
+**Evidence of correct pattern dominance**: 1173 sessions use `cd agents && git add` vs 23 sessions with wrong-dir attempts — **~50:1 ratio** in favour of the correct pattern.
+
+**Evidence of wrong-dir blocking (from sampled sessions)**:
+
+| Session | Guard-hint displayed | Outcome |
+|---------|---------------------|---------|
+| s_1776232890126_17 (scout) | "not a git repository" (ran from `/root`) then commit-guard hint `cd /app/agents && git add scout/` | Recovered, correct commit via cd agents/. |
+| s_1776271379806_27 | 2× `ignored by one of your .gitignore files` + 12× hint `/app/agents && git add ...` | Recovered. |
+| s_1776276218931_15 (tech-lead) | 2× ignored msg + 3× hint | Recovered. |
+| s_1776180568119_224 | 3× ignored + 34× commit-guard hints | Heavy hint-loop but no bypass. |
+| cron_1776261634279_21 | 1× ignored + 4× hint | Recovered. |
+
+Every single violation was caught either by (a) `.gitignore` refusing to stage the path, or (b) the finish() commit-guard explicitly printing the correct recovery command `cd /app/agents && git add ...`. The commit-guard hint now appears in at least 21/23 violating sessions (92%), up from ~0 in earlier checks. This is what's producing the recovery rate.
+
+**Why did violation rate drop ~7× since Apr 12?**
+
+1. **Commit-guard hint**: Infrastructure now always emits `cd /app/agents && git add ...` as part of the block message — agents follow it on first retry.
+2. **Context propagation**: Prior recall messages ("coach failed today due to …") include path-related failures, priming agents to avoid wrong-dir attempts.
+3. **Tooling**: `agents/` is now more reliably referenced via its own git repo. No retry-storm sessions this window (all retries ≤ 3).
+
+**Verdict**: ⚠️ → **✅**. With violations below 1% and the correct pattern used 50× more often than the wrong one, this rule is compliantly practiced. Keep `.gitignore` + commit-guard hint infra in place — they are doing the work. Downgrade again only if violation rate climbs back above 3% or a successful bypass appears.
+
+
 
 **Rule**: "Files in `agents/` directories are gitignored. Do NOT try to `git add` or `git commit` files under `agents/`. Only `src/` and `scripts/` files are tracked by git. Agent files already persist at runtime — no git needed."
 
