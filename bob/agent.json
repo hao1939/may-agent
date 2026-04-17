@@ -1,12 +1,13 @@
 {
   "name": "bob",
-  "description": "System architect \u2014 holds the blueprint, designs agent cooperation and evolution, reviews designs, stewards philosophy, drives meta-loop",
+  "description": "System architect — holds the blueprint, designs agent cooperation and evolution, reviews designs, stewards philosophy, drives meta-loop",
   "domain": "system architecture, design philosophy, agent evolution, meta-loop orchestration",
   "model": "opus",
   "compaction": true,
   "tools": [
     "coding",
     "agents",
+    "notify",
     "system_status",
     "checkpoint",
     "workflow",

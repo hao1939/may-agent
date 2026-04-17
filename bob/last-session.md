@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776442960795_482
+- **Session:** s_1776442927783_480
 - **Status:** done
-- **When:** 2026-04-17T16:26:45.619Z
-- **Duration:** 4m4s
+- **When:** 2026-04-17T16:27:29.284Z
+- **Duration:** 5m21s
 
 ## What Happened
-Post-edit verification complete: design.md decision rule section renders correctly with all 4 outcome rows, contamination checklist intact with commit ref, 22 hits on key terms, todo.md entry present.
+Design landed (EXP-177 — ID auto-incremented, noted in doc), with competing-hypothesis decision table, contamination checklist, and placebo arm. Verify-wrap confirmed the file (9911 bytes, 22 key-term hits). Todo.md "Todo " flag is a known false positive (heading text).

@@ -1,10 +1,10 @@
 # Metric Reaction Investigation
 
-**Status:** active — M5a (Phase 1 backfill) shipped by tech-lead. Observation window open.
+**Status:** paused-observation — M5a shipped 16:18:47Z; 48h observation window runs until 2026-04-19 ~16:20Z. Do NOT cron-resume; May will manually reopen when window closes or if early signal is strong.
 **Owner:** may
 **Created:** 2026-04-17
 **Master project:** system-evolution
-**Next:** May verifies red markers appear in next heartbeat batch; 48h observation window for real-work-ratio change; if insufficient, proceed to Phase 2 (add direction column + broaden predicate).
+**Next:** At 2026-04-19 ~16:20Z, re-sample heartbeats, compute new red-metric reaction rate and real-work ratio. If ≥25%, close project. If <25%, open M5b (direction column + broaden predicate).
 
 ## Goal
 Understand why agents see metrics in their heartbeat context but don't act on them. Propose fixes based on evidence.
@@ -242,3 +242,27 @@ qa and may render similarly with 1 ⚠️ RED each on `Review coverage` and `Req
 - Next cron cycle (fast metrics) for bob/qa/may will include the new ⚠️ RED header.
 - May: observe reaction rate over 48h. Success criterion: real-work-ratio ≥ 25% (up from ~10%).
 - If agents still ignore red metrics, escalate to M5b (Option B: direction column + broaden predicate) and/or M4 Option C (per-metric action hint).
+
+---
+
+## M5a Verification — Structural evidence (2026-04-17 16:27Z, may session s_1776443232956_487)
+
+Confirmed renderer now emits the red marker in live heartbeats post-backfill:
+
+- `bob` heartbeat `s_1776442927783_480` (16:22:07Z, ~3min post-backfill) received:
+  ```
+  ## Injected: metrics (3 owned, 1 ⚠️ RED)
+  **1 metric(s) below threshold — these are your top priority this cycle.**
+  - [fast] **Experiment completion**: 0 → target: 0 ⚠️ BELOW THRESHOLD
+  ```
+- `qa` heartbeat `s_1776441638984_470` (16:00:38Z, PRE-backfill at 16:18:47Z) shows the old plain-lines format — baseline confirmed absent before.
+- Renderer code path verified at `src/app/cron.ts:714-720` (unchanged; data-only fix sufficient).
+
+**Behavior signal (preliminary, n=1):** bob did fork a work session (EXP-177 design) this same cycle — but on "Hypotheses resolved" not on the RED "Experiment completion" metric. Agent rationalized: "Experiment completion = 0 because there's no experiment in flight; the trending-bad metric is Hypotheses resolved." So the ⚠️ marker is now visible but the *semantics* of the metric may still be wrong (Experiment completion = 0 may be a definitional artifact, not a real red flag). Keep an eye on this — if several agents rationalize past the ⚠️, we'll need M4 Option C (action-hint column) rather than M5b.
+
+**Sampling plan for 2026-04-19 16:20Z observation close:**
+1. Sample all heartbeats in `[16:18:47Z, +48h]` window for `bob/qa/may/evaluator/optimizer/scout/tech-lead`.
+2. Count: total heartbeats with ⚠️ RED in prompt; of those, how many triggered a fork/message/project-edit tied to that metric.
+3. Compute real-work ratio; compare to baseline 0/8 = 0%.
+4. Decide: success (close), partial (M4-C action hints), failure (M5b direction column).
+
