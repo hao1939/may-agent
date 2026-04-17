@@ -1,12 +1,5 @@
-# Deliverables Checklist
+# Deliverables Checklist — Mode C Skills Audit (Apr 17 ~17:30 UTC)
 
-## Current: Mode B Tool Gap Analysis — Apr 17 ~17:00 UTC
-
-- [x] Finding written: `agents/optimizer/workspace/finding-tool-gap-mode-b-0417.md`
-- [x] `todo.md` rotation line updated to note B (Tool Gap Analysis — Apr 17 ~17:00 UTC)
-- [x] `todo.md` OBSERVATIONS entry added referencing finding
-- [x] P2 dispatch to tech-lead (gym-batch.sh `--inspect` flag)
-
-## Previous
-- [x] Forked Mode C exploration session — DONE
-- [x] Finding written: `finding-bob-efficiency-gap-0416.md` — DONE
+- [x] `agents/optimizer/workspace/finding-skills-audit-mode-c-0417.md` — delete-list (5), promote-list (3), before/after sizing, dispatch plan
+- [x] Update `agents/optimizer/workspace/todo.md` rotation marker: last mode = C (Skills Audit — Apr 17 ~17:30 UTC), next = D
+- [x] Dispatch to tech-lead via `agents.message` with finding path + concrete actions
