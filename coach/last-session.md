@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776385331873_200
+- **Session:** s_1776387132353_214
 - **Status:** done
-- **When:** 2026-04-17T00:30:04.947Z
-- **Duration:** 7m53s
+- **When:** 2026-04-17T00:52:53.352Z
+- **Duration:** 40s
 
 ## What Happened
-Another ceiling. This is consistent with the pattern — agents are too good at these debugging tasks. The key challenge for EXP-176 is designing a scenario that's actually hard enough.
+The situation is clear: EXP-176 needs a scenario that's actually hard (20-40% baseline). All attempts so far hit ceiling. Safe to fork.
