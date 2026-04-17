@@ -1,6 +1,16 @@
 # Deliverables Checklist
 
-## Current Session — Mode A Session Archaeology (2026-04-17 14:00)
+## Current Session — Mode B Tool Gap Analysis (2026-04-17 14:30)
+
+- [x] Query `.state/may.db` sessions (last 6h, opCount ≥ 15) — 20 sessions returned via bun-sqlite
+- [x] Extract bash sequences for top-7 high-op transcripts (session.jsonl grep)
+- [x] Classify patterns against prior findings (0800, 1030) — P1 gitignore-detective 4 incidents (coach×3, bob×1); P2–P5 below threshold or one-off
+- [x] Confirm prior dispatch status: req 1835ad96 + bbc0ef14 both COMPLETED via HB-injection; `scripts/git-track.sh` absent (verified `ls scripts/git-track*` — no match)
+- [x] R1 verdict = NO_ACTION_NEEDED (KE-123: don't restack dispatches)
+- [x] Finding written: `agents/optimizer/workspace/finding-tool-gap-mode-b-20260417-1430.md` — 6411 bytes / 71 lines (verified via write-tool preview)
+- [x] todo.md rotation marker updated Last=B Next=C (verified via edit diff)
+
+## Prior Session — Mode A Session Archaeology (2026-04-17 14:00)
 
 - [x] Read todo.md for context (focus areas + last rotation = D → A)
 - [x] Query sessions+evaluations for last 6h (top 15 by opCount)
