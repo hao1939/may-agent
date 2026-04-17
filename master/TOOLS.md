@@ -1,7 +1,6 @@
 <!-- SYNC:TOOLS_START -->
 ## Available Tools (auto-generated from agent.json)
-`claude_code`, `gemini_cli`, `codex_cli`, `finish`
-
+`claude_code`, `gemini_cli`, `codex_cli`, `cite-source`, `finish`
 <!-- SYNC:TOOLS_END -->
 
 # Master — Tools

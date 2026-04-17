@@ -1,7 +1,6 @@
 <!-- SYNC:TOOLS_START -->
 ## Available Tools (auto-generated from agent.json)
-`read`, `write`, `edit`, `bash`, `agents`, `system_status`, `checkpoint`, `workflow`, `finish`
-
+`read`, `write`, `edit`, `bash`, `agents`, `notify`, `system_status`, `checkpoint`, `workflow`, `cite-source`, `finish`
 <!-- SYNC:TOOLS_END -->
 
 # Tools
