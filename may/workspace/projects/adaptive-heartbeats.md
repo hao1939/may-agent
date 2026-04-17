@@ -141,3 +141,20 @@ M2 still not applied. Per iter-9/10 guidance: finish blocked immediately.
 **Worker task**: Iteration 12 — work toward goal
 **Worker result**: **Status:** done (11s)
 **Files touched**: (see worker session)
+**Owner assessment**: BLOCKED — — Iteration 12 is the 5th consecutive no-op (iters 8, 9, 10, 11, 12 all closed in 11-24s with no scout/heartbeat.md edit). This is a confirmed ping-pong, not transient.
+
+**Structural evidence (iter 12):**
+- `git log --oneline -3 -- agents/scout/heartbeat.md` → top is still `4457f8c95` (M1 rollout). No M2 commit. ❌
+- `grep -n "arXiv\|window" agents/scout/heartbeat.md` → only the generic M1 line 50 ("between arXiv windows") exists — no M2 fast-path / cron-alignment copy. ❌
+- Worker summary: "M2 still not applied. Per iter-9/10 guidance: finish blocked immediately." — worker itself acknowledges the block but persistent-task keeps re-firing.
+
+**Block diagnosis:**
+Worker reports permission/queue issue writing to `agents/scout/heartbeat.md` (see iter 8 — 4 queued May requests `ea2ba105`, `0afa0b83`, `d3ca09d4`, `88e5182a`). The worker cannot self-resolve; each iteration burns cycles re-discovering the same block.
+
+**Recommended next actions (for May / owner, not worker):**
+1. **Stop the persistent-task loop** — it's generating noise, not progress. Either pause this project or cancel the worker session.
+2. **Unblock the write path** — drain/dismiss the 4 stale May requests to scout, or have May edit `agents/scout/heartbeat.md` directly (supervisor has write access; this is a 3-line surgical edit referencing the existing M2 design doc at `agents/shared/may-agent-docs/design/scout-arxiv-windowing.md`).
+3. **Resume worker on M3** once M2 is landed.
+
+Since M2's design is already complete and the only remaining work is a mechanical heartbeat edit that workers keep failing to perform, the fastest path is for May to apply the edit in the next supervisor turn, mark M2 done, and let the worker focus on M3 (adaptive frequency).
+

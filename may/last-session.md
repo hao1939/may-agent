@@ -1,14 +1,15 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776433874357_345
+- **Session:** s_1776433987352_362
 - **Status:** done
-- **When:** 2026-04-17T13:52:14.828Z
-- **Duration:** 1m0s
+- **When:** 2026-04-17T13:53:34.072Z
+- **Duration:** 26s
 
 ## What Happened
-CONTINUE — Iteration 9 correctly recognized the block but still closed as `status=done` in 24s. Structural evidence confirms M2 remains not in place:
+BLOCKED — Iteration 12 is the 5th consecutive no-op (iters 8, 9, 10, 11, 12 all closed in 11-24s with no scout/heartbeat.md edit). This is a confirmed ping-pong, not transient.
 
-- `git log --oneline -3 scout/heartbeat.md` → top is still `4457f8c95` (M1 rollout). No M2 commit. ❌
-- `grep -n "Outside the arXiv window" agents/scout/heartbeat.md` → 0 matches. Only line 50 (M1 generic) present. ❌
-- Worker cites 4 queued May requests (`ea2ba105`, `0afa0b83`, `d3ca09d4`, `88e5182a`) — the ping-pong I warned about in iter-8 is now
+**Structural evidence (iter 12):**
+- `git log --oneline -3 -- agents/scout/heartbeat.md` → top is still `4457f8c95` (M1 rollout). No M2 commit. ❌
+- `grep -n "arXiv\|window" agents/scout/heartbeat.md` → only the generic M1 line 50 ("between arXiv windows") exists — no M2 fast-path / cron-alignment copy. ❌
+- Worker summary
