@@ -121,6 +121,15 @@ All three deliverables exist and the evaluator.ts fix is in place. Task was mark
 **Owner assessment**: DONE — — Task was already marked complete in iteration 3. Iteration 4 just confirmed the deliverables still exist. No further work needed.
 
 
+### Iteration 6 — 2026-04-17T10:00Z
+**Worker task**: Dispatch remaining 3 milestones to owning agents.
+**Result**: Sent P2 messages to:
+- scout (M3 counters) — req:8a071995
+- tech-lead (M4 delegation templates) — req:3d776608
+- coach (M5 experiment templates) — req:4abeafee
+
+**Owner assessment**: IN-FLIGHT — optimizer's own milestones (M1 Bob scripts, M2 saved-queries) are done. Remaining milestones are owned by other agents; they now have concrete P2 tasks. Project stays Active until those three complete.
+
 ### Iteration 5 — 2026-04-17T09:39Z
 **Worker task**: Ship Bob template scripts milestone + update saved-queries checkbox.
 **Worker result**: **Status:** done
