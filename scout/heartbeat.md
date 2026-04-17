@@ -25,7 +25,6 @@ Read your context and identify what needs doing:
    cd agents && git log --oneline -5 -- shared/knowledge/
    ```
 3. Read `agents/scout/workspace/todo.md` for ongoing priorities and pending handoffs.
-   - Canonical counters (DD / CR / Session / H) live in `workspace/state.json`. Use `workspace/scripts/counters.sh show` instead of grepping journal/todo prose.
 4. **Check your metrics.** Look at "Injected: metrics" above. Fast metrics = every heartbeat, daily = once/day, slow = weekly. If any metric is trending badly, note it as a candidate task.
 5. Note the day of the week — Monday-Friday means fresh arXiv listings; weekends mean targeted search, synthesis, or enrichment.
 
@@ -46,8 +45,6 @@ Pick the highest-priority task(s). Follow this order — **stop at the first mat
 3. **Red/declining metric?** → Fork investigation or fix.
 4. **Nothing above?** → Fork self-directed work using rotation below.
 5. **Quick response (< 5 ops)?** → Do it inline, then exit.
-
-**Outside the arXiv window?** (UTC Mon–Fri 00:00–06:00 = fresh-listings window. Sat/Sun or Mon–Fri 06:00–23:59 = outside.) If no priority hit and no rotation item ready, skip the batch-scan block and go straight to `agents/shared/may-agent-docs/idle-playbook.md` item. Produce one artifact.
 
 **Quick inline tasks** (OK to do without forking):
 - Responding to a simple question from another agent

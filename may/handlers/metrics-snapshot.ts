@@ -317,7 +317,7 @@ function notifyOwnerOnRegression(
     ctx.trackRequest({
       fromEntity: "metrics-snapshot",
       toAgent: metric.owner,
-      method: "notify",
+      method: "message",
       task,
       source: "metrics-snapshot",
     });

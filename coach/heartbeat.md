@@ -45,8 +45,6 @@ Pick the highest-priority task(s). Follow this order — **stop at the first mat
 4. **Nothing above?** → Fork self-directed work.
 5. **Quick response (< 5 ops)?** → Do it inline, then exit.
 
-**No priority hit?** Do not exit. Consult `agents/shared/may-agent-docs/idle-playbook.md` and pick one item. Produce a measurable artifact this cycle.
-
 **Quick inline tasks** (OK to do without forking):
 - Responding to a simple question from another agent
 - Updating todo.md with a brief note

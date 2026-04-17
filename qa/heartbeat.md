@@ -19,8 +19,6 @@ No pending reviews? Do ONE of these (rotate):
 - **Unreviewed commits** — `git log --oneline -10`. Read diffs for changes that shipped without review. **For system-scope changes** (shared workflows, guards, manager code, other agents' heartbeats/configs): notify May via `agents.message` so she can flag for Hao if needed.
 - **Code quality sweep** — pick a source file from `src/lib/`. Read it. Error handling gaps? Silent failures?
 
-**Nothing in the rotation actionable this cycle?** Do not exit. Consult `agents/shared/may-agent-docs/idle-playbook.md` and pick one item. Produce a measurable artifact.
-
 ## 3. Close Out
 Append your findings to `workspace/journal.md`. It's append-only — **never use `write()`** on it.
 
