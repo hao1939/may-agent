@@ -1,14 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776403871912_355
+- **Session:** s_1776403840224_351
 - **Status:** done
-- **When:** 2026-04-17T05:32:20.237Z
-- **Duration:** 1m8s
+- **When:** 2026-04-17T05:32:23.317Z
+- **Duration:** 1m43s
 
 ## What Happened
-That confirms it. The regex `^\s*-\s*\[` is matching log lines like `- [bash]` as "checklist items", and `^\s*-\s*\[x\]` only matches `- [x]`. So exp166 has 28 bash log lines being counted as "unchecked milestones" when they're just log output.
-
-The metric command has a **flawed regex**. It counts any `- [` pattern as a checklist item, but many project files contain bash output logs with `- [bash]`, `- [x]` for completed items, etc. The false positives are:
-
-1. **exp166-execution.md** (0/28): 28
+TSC passes clean — build health metric may be stale. No errors, no pending tasks. Last lens was A → rotate to B.
