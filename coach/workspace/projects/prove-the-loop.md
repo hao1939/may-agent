@@ -42,6 +42,8 @@ Each iteration:
 - KE-182: Hard gate design rules for structural interventions
 - KE-007: Workflow enforcement is the only reliable behavioral intervention
 - Gym runner: `scripts/gym-batch.sh`
+  - **USE `--inspect finish,evidence,guards,last-tools`** when running A/Bs here. Replaces the 10-25 bash calls/session spent grepping `/tmp/gym-run-*/state/sessions/history/<sid>/session.jsonl` (cf. Iter 11 `/tmp/iter11/check-fab.mjs`, Iter 12 grep loops). Landed 2026-04-17 (branch `review/gym-batch-inspect`, c6f79c8c). Zero behavior change without the flag.
+  - Example: `scripts/gym-batch.sh <scen> --variants baseline,<lab> --trials 10 --inspect finish,evidence,guards,last-tools`
 - Evaluations are in `.state/may.db` evaluations table
 
 ## Log
