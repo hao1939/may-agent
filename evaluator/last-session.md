@@ -1,20 +1,21 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776389515524_237
+- **Session:** s_1776389533291_238
 - **Status:** done
-- **When:** 2026-04-17T01:32:08.830Z
-- **Duration:** 13s
+- **When:** 2026-04-17T01:32:21.573Z
+- **Duration:** 8s
 
 ## What Happened
 ```json
 {
   "agents": {
-    "coach": {
-      "role": "Builder (Quality Focus)",
+    "tech-lead": {
+      "role": "Builder",
       "capability_level": "L2",
-      "efficiency": 0.63,
+      "efficiency": 0.82,
       "quality": 0.78,
-      "verdict": "acceptable",
+      "verdict": "good",
       "issues": [
-        "[FM-3.3-lite] Verification gap: after write() to agents/coach/workspace/projects/EXP-176.md, coach relied on the write preview but did not read the file back (no read() call) before finish(success). Evidence: tool sequence shows write() then immediate git add attempt then finish()
+        "[SCOPE_DRIFT] Task requested trace starting from src/app/may.ts (agent registration), but transcript evidence only shows manager/persistence/requests tracing; may.ts was not evidenced in tool outputs.",
+        "[EVIDENCE_GAP] Findings doc cites callAgent() at manager.ts:2338, but transcript eviden
