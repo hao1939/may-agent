@@ -34,6 +34,8 @@ Pick ONE thing to work on. Follow this order — **stop at the first match**:
 4. **Nothing above?** → Fork an exploration session (rotate modes A/B/C/D).
 5. **Truly quick update (< 3 ops)?** → Do it inline.
 
+**No priority hit and no rotation item queued?** Do not exit. Consult `agents/shared/may-agent-docs/idle-playbook.md` and pick one item. Produce a measurable artifact this cycle.
+
 **Quick inline tasks** (OK without forking):
 - Updating todo.md with a brief note
 - Acknowledging a dispatch from another agent

@@ -41,6 +41,8 @@ Pick ONE thing to work on. Follow this order — **stop at the first match**:
 5. **Nothing above?** → Fork an exploration session (rotate lenses below).
 6. **Truly quick update (< 3 ops)?** → Do it inline.
 
+**No priority hit and no lens rotation item queued?** Do not exit. Consult `agents/shared/may-agent-docs/idle-playbook.md` and pick one item. Produce a measurable artifact this cycle.
+
 **⚡ Post-dispatch rule: After any `agents.fork()` or `workflow.run()`, call `finish()` within 3 ops.** Do NOT continue investigating or working on the dispatched topic — it's the forked session's job now. Your heartbeat is done.
 
 ### 🔄 Feature Work Rotation

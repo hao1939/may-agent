@@ -1,6 +1,13 @@
 # TODO
 
 ## Upcoming
+- Last lens: **A** (2026-04-17 14:30, dual evaluator entrypoints → finding-dual-evaluator-entrypoints.md) → next: B.
+- Last cycle: **infra/fix** (2026-04-17 15:30, req:a4695308 sync-gate skip evaluator/may, commit 66dfdebb on review/sync-gate-skip-evaluator) → next: **feature**.
+- 2026-04-17 13:30: P0 project-resume regex already fixed last cycle (commit 8ea70be84). P1 common-sense acks x2 are informational — no action.
+- P1 optimizer dupes (req:1caa5dc3, req:2030b678) about past 82-op Lens C session: behavioral fix already in heartbeat.md (mandatory `workflow.run("lens-analysis",...)` + pre-dispatch scope check). Acknowledging, no further action — same critique counted twice.
+- [x] lens-analysis citation discipline (req:a5518d69/567e5c86) — DONE 2026-04-17. Phase 3 WRITE now requires inline `path:line` citations. Commit 02dea274.
+- [x] cron:optimize scope-drift fix (req:fa859a73/f2403c4b) — DONE 2026-04-17. Bounded task text in agents/may/cron.json optimize job per optimizer's Part 1 recommendation. Did NOT stack Part 2 (KE-123).
+
 - [x] Monitor C1.3 improvement after write() diff enhancement deployment — **DONE (2026-04-08)**
   - **Result: 94.1% pass rate post-write-diff (n=557), up from 47.3% baseline (n=1743)**
   - Three-phase analysis:

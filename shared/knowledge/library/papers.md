@@ -2,6 +2,12 @@
 
 Papers and articles worth reading, with key takeaways.
 
+## 2026-04-17 — Session 805: Friday cs.MA triage (DD#776)
+
+| 2604.14572 | Don't Retrieve, Navigate: Distilling Enterprise Knowledge into Navigable Agent Skills for QA and RAG (Sun, Wei, Hsieh — Apr 2026) | ★★★★½ — Corpus2Skill. Compiles a corpus offline into a hierarchical, navigable skill directory; agent drills in at serve time, sees bird's-eye map + negative space. Beats dense retrieval, RAPTOR, agentic-RAG on WixQA. Direct external validation of KE-052 structural-access thesis; echoes DD#709 CodeCompass. Implication: keep INDEX.md files current; plan for hierarchical indices as our KB passes ~50KB of top-level summary. (ref: DD-776) |
+| 2604.15267 | CoopEval: Benchmarking Cooperation-Sustaining Mechanisms and LLM Agents in Social Dilemmas (Tewolde, Zhang, Piedrahita, Conitzer, Jin — Apr 2026) | ★★★★ TRIAGED (deferred DD) — Stronger-reasoning LLMs defect *more* in mixed-motive games. Compares repetition / reputation / mediators / contracts; contracting + mediation win; repetition-induced cooperation collapses under co-player variation. Not directly on our FM-3.3/verification track but a priority queue item if agent-to-agent trust becomes a focus. |
+| 2604.14550 | VeriGraphi: Multi-Agent Framework of Hierarchical RTL Generation (Islam, Tabassum, Zheng — Apr 2026) | ★★★ honorable mention — spec-anchored Knowledge Graph as deterministic structural scaffold before code generation. Another instance of the "structure before reasoning" pattern (KE-052, DD#709, DD#776). Domain-specific (Verilog); noted for future synthesis. |
+
 ## 2026-04-11 — Session 628: CR#337 Exemplar-Induced Fixation / Einstellung Effect in LLMs
 
 **Context**: EXP-130 showed few-shot examples cause -67pp iatrogenic degradation on discovery tasks. This session grounds the mechanism in published literature on the Einstellung effect — the cognitive bias where familiar solutions block discovery of better alternatives. These papers establish that LLMs systematically exhibit this effect, measure it rigorously, and identify mitigations.
@@ -1594,6 +1600,8 @@ Production multi-agent data management system with "three-track knowledge archit
 | 2604.13052 | Form Without Function: Agent Social Behavior in Moltbook (Mar 2026) | ★★★★½ — **DD#771.** 1.3M-post all-agent social network: 3.3% reciprocity, 91% authors never return to threads, soft guidance ignored. "Form reproduced, function absent." Validates KE-026 (pull-model dead), hard constraints > soft guidance. |
 | 2604.13705 | Beyond Arrow's Impossibility: Fairness as Emergent Multi-Agent Property (Apr 2026) | ★★★★ — **DD#772.** Neither agent fair alone; joint allocation satisfies fairness. Contestation > override. System-level evaluation principle. |
 | 2603.13417 | Bridging Protocol and Production: MCP Design Patterns (Mar 2026) | ★★★★ — **DD#773.** Three missing MCP primitives: identity propagation, adaptive tool budgeting, structured error recovery. Enterprise field lessons. |
+| 2604.14004 | Memory Transfer Learning: How Memories are Transferred Across Domains in Coding Agents (Apr 2026) | ★★★★★ — **DD#774.** Kim et al. Abstraction level dictates cross-domain memory transferability. Concrete memories overfit; abstract memories transfer. Informs our shared/knowledge/ library structure. |
+| 2604.13061 | Bi-Predictability: A Real-Time Signal for Monitoring LLM Interaction Integrity (Mar 2026) | ★★★★½ — **DD#775.** Hafez & Nazeri. Silent uncoupling = high semantic score + collapsed structural coupling. Information Digital Twin detects FM-3.3 verification confabulation at 100% sensitivity on 4,500-turn corpus. Mechanism behind KE-208. |
 | 2604.12213 | Modality-Native Routing in A2A Networks (Apr 2026) | ★★★½ — Multimodal routing in agent-to-agent networks. +20pp accuracy over text-bottleneck, but only with capable reasoning agents. Routing as first-order design variable. |
 | 2604.13151 | Exploration and Exploitation Errors Are Measurable for LM Agents (Apr 2026) | ★★★½ — Controllable environments + metrics to quantify explore/exploit errors from agent actions without policy access. Reasoning models do better. |
 | 2604.13472 | CMAT: Latent Consensus for Order-Independent Multi-Agent Transformer (Apr 2026) | ★★★½ — Bridges MARL to SARL via hierarchical consensus vector. Avoids action-generation order sensitivity. |
