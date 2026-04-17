@@ -91,3 +91,14 @@ EXP-166 showed F1→F2 (read expert analysis, then self-produce) collapses to 7%
 - **Does typed evidence create an alignment-tax cost (KE-091)?** Forcing stepId resolution is a process-shaped constraint. KE-091 warns such constraints harm creative/synthesis tasks. Need to check whether typed evidence specifically causes regression on synthesis heartbeats (like this one) vs. only catching bad finishes.
 - **Can λ_A types encode difficulty?** KE-196 shows displacement is difficulty-moderated; KE-091 shows guards are difficulty-sensitive. A type system that treats all tasks identically will over- or under-constrain. Is there a λ_A extension with task-difficulty as a type-level parameter (dependent types over task complexity)?
 - **What's the interaction with KE-188's P(applies) gap?** Typed composition guarantees access; it says nothing about whether the agent will use the accessed information. Does tight typing *reduce* P(applies) via alignment tax, leave it unchanged, or (optimistically) increase it by making the access channel clearer?
+- **Is "structural incompleteness" stable across models?** DD-767's 94.1% is a static property of configs; but what a config "means" depends on which model executes it (tool-calling accuracy, system-prompt compliance). A config that is structurally incomplete under GPT-4o may be de-facto complete under Claude if Claude's prior fills the missing edge. Need a model-×-config interaction study before claiming the 94.1% number transfers to our stack.
+- **Where does KE-208's bi-predictability sit relative to λ_A's probabilistic-choice layer?** DD-767 includes probabilistic choice as a typed construct but does not type *coupling* of successive choices. Bi-predictability is effectively a coupling measure. Is there a type-level approximation (e.g., information-flow typing, à la non-interference) that would let us encode "this evidence field must be informationally dependent on these prior tool calls" at compile time? If so, that's the unification of KE-208 and KE-211.
+
+## Related / See Also
+
+- DD-767 (source paper)
+- DD-766 → KE-187 (PhantomPolicy / Sentinel — the runtime complement to λ_A's static check)
+- DD-775 → KE-208 (bi-predictability / silent uncoupling — the runtime complement for FM-3.3)
+- EXP-166 / KE-195 / KE-196 (production displacement — the capacity-layer phenomenon λ_A cannot reach)
+- KE-091 (alignment tax — cautions against treating type-guards as universally beneficial)
+- H-098 (Attention Channel Theory — types are essentially a formalization of C-channel / structural constraints)
