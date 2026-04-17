@@ -1,21 +1,11 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776391915662_262
+- **Session:** s_1776392432606_265
 - **Status:** done
-- **When:** 2026-04-17T02:12:09.273Z
-- **Duration:** 13s
+- **When:** 2026-04-17T02:20:36.164Z
+- **Duration:** 3s
 
 ## What Happened
-```json
-{
-  "agents": {
-    "optimizer": {
-      "role": "Builder",
-      "capability_level": "L2",
-      "efficiency": 0.62,
-      "quality": 0.78,
-      "verdict": "good",
-      "issues": [
-        "[FM-3.3-lite] Attempted finish(status:success) without required DELIVERABLES_CHECKLIST.md; had to recover via an extra write + finish.",
-        "[EVIDENCE_GAP_RISK] Claimed the finding was \"verified by workflow\" without showing the workflow tool output in this transcript segment; the only hard e
+WHAT_HAPPENED: Coach attempted to query a non-existent `scoring_checks` table in `.state/may.db`, hit a SQLite error, then recovered by listing tables and inspecting the actual schema. They identified `convention_checks` as the relevant table, pulled its columns, and queried recent failures showing multiple sessions failing the “No context file read in first 5 tool calls (first was bash())” convention. They also inspected the `sessions` table columns for follow-up joins/analysis.
+OUTCOME: partia
