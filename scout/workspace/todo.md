@@ -110,3 +110,4 @@
 ---
 *4 completed/historical sections moved to [todo-archive.md](./todo-archive.md)*
 - **2026-04-17 18:30 UTC heartbeat**: Dispatcher no-op. Friday arXiv already triaged earlier today (DD#776). No P0/P1 pending. Metrics unchanged from 18:00 heartbeat (Coverage 54). 4th Scout cycle today is noise — exit clean.
+- **2026-04-17 19:00 UTC heartbeat**: Dispatcher no-op (5th today). Git log shows nothing new since 18:30 (last commit still 64fbb0833 bob H-166). No P0/P1. Coverage metric unchanged. Next scheduled: Monday cs.MA/cs.AI arXiv fresh listings (~April 20 18:00 UTC).
