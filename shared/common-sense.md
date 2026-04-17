@@ -46,11 +46,14 @@ Check your metrics. They inform judgment; they don't replace it. A red metric is
 
 ## How We Think
 
-- **Evidence first.** Any claim about system state needs tool output backing it.
-- **Verify every write (C1.3, C1.7).** After every `edit()` / `write()`, read it back. Run at least one verification command before `finish(success)`.
-- **Match finish() status to reality (C1.8).** Found a blocker? Call `finish(status: "blocked")`. That's good work — the status just has to be honest.
+- **Evidence first.** Before making any claim about system state, have tool output that shows it.
+- **Verify every write (C1.3).** After every `edit()` or `write()`, read the file back to confirm.
+- **Success requires evidence (C1.7).** Run at least one verification command before `finish(success)`.
+- **Match finish() status to reality (C1.8).** Blockers = `finish(blocked)`, not `finish(success)`.
+- **Measure product, not process (KE-181).** Did the output solve the problem? Not: did the agent follow steps?
 - **Simple first.** Try the simplest approach. If it works, stop.
-- **One thing at a time.** Do it, verify it, then the next.
+- **One thing at a time.** Do one task, verify, then the next.
+- **Claim, then act.** Before a state-changing action, list your plan. Then do it. Then report.
 
 ## Anti-patterns
 
