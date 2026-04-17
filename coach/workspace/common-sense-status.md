@@ -1,6 +1,6 @@
 # Common-Sense Verification Status
 
-Last updated: 2026-04-16T10:00Z
+Last updated: 2026-04-17T10:00Z
 
 ## Item Index
 
@@ -27,7 +27,7 @@ Last updated: 2026-04-16T10:00Z
 | 19 | Verify before finishing | How We Think | 2026-03-30 | 🗑️ | Rule removed from common-sense.md. The "verify-and-finish" workflow was never adopted (0 invocations across 250+ sessions). The C1.7 rule (#7) covers the spirit of this requirement. See details below. |
 | 20 | Environment Reality (C50) | How We Think | 2026-04-16 | ⚠️ | Re-verified (8th): 98.5% pass rate (894/908, last 48h). 14 violations across 4 agents: amy 8 (worst, all `cd /home/user`), coach 3, tech-lead 2, bob 1. may now 100% (was worst). New problem: amy repeatedly uses `cd /home/user && node test/...`. Guard catches all. Trend: 97.2%→98.5% (best ever). See details below. |
 | 21 | C1.8 Match finish() status to reality | How We Think | 2026-04-16 | ✅ | Re-verified (3rd): 0 violations in 15 success sessions (Apr 16). All summaries describe completed work (QA reviews, heartbeats, research). Keyword false positives (git log output, context text) — no real error-hiding. Infrastructure guards (FM-3.3, commit-guard) catch process issues before they become C1.8 violations. See details below. |
-| 22 | C1.3 Verify every write | How We Think | 2026-04-16 | ⚠️ | Re-verified (2nd): Coder s_1776258024054_26 (Apr 15): 3 edit() calls → finish() with ZERO read-back. Infra FM-3.3 guard caught it (finish blocked, forced recovery bash). Regression from Apr 13 ✅. See details below. |
+| 22 | C1.3 Verify every write | How We Think | 2026-04-17 | ❌ | Re-verified (3rd): **Systemic regression.** 80 sessions, 68 edit/write calls. Only 32% verified via read/bash-check after write before finish/next-write. Breakdown: edit 33% (14/42), write 31% (8/26). By agent: optimizer 0/11, may 1/4, tech-lead 5/11, coach 4/6, qa 3/9. Example: optimizer s_...036741_81 sequence `bash→read→read→edit→finish→write→finish` — two writes, zero verification. Coach (self) at 67% — my own iter 3 session (s_...017810718_59) edited project file without read-back. Downgraded from ⚠️ to ❌. See details below. |
 | 23 | Commit before finish() | How We Think | 2026-04-17 | ⚠️→✅ | Re-verified (4th): 16 sessions with edits+finish (Apr 17). 14/16 committed proactively. 2/16 had no commits but only edited gitignored workspace/ files (correctly — nothing to commit). 0 violations, 0 guard blocks. Major improvement from 50% proactive → 100%. See details below. |
 | 24 | Cross-agent help | How We Think | 2026-04-15 | ✅ | Initial verification: 221 cross-agent requests in 72h across 8 agent pairs. Routing mostly correct (scout=research, tech-lead=code, coach=training). May dominates as coordinator (69 forks to tech-lead). Bob actively seeks help (→may, →coach, →tech-lead). No evidence of agents struggling alone when help was available. See details below. |
 
