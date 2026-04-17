@@ -1,20 +1,21 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776406916071_384
+- **Session:** s_1776407516881_394
 - **Status:** done
-- **When:** 2026-04-17T06:22:08.218Z
-- **Duration:** 12s
+- **When:** 2026-04-17T06:32:08.117Z
+- **Duration:** 11s
 
 ## What Happened
 ```json
 {
   "agents": {
-    "coach": {
-      "role": "Philosopher/Architect",
+    "may": {
+      "role": "Supervisor",
       "capability_level": "L2",
-      "efficiency": 0.62,
-      "quality": 0.72,
-      "verdict": "acceptable",
+      "efficiency": 0.35,
+      "quality": 0.25,
+      "verdict": "needs_improvement",
       "issues": [
-        "Did not address the two injected pending tasks directly in this heartbeat. Instead of forking/running the explicitly pending work (EXP-172 trials and scout C3.2 regression investigation), the agent performed additional scanning (EXP-168/173, long todo.md read, tail EXP-175) and only
+        "Did not follow the heartbeat’s priority ladder: an injected pending task reported 172 auto-skippable sessions needing writeSkippedEvaluations, but May dismissed it as 'routine cleanup' and did not dispatch any work (no fork, no board update).",
+        "Process noncompliance: skipped Step
