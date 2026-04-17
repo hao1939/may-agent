@@ -3,7 +3,8 @@
 **Owner:** may
 **Goal:** Every agent output gets a signal on whether it was useful.
 **Created:** 2026-04-16
-**Status:** paused (M1 done; M2–M4 deferred while metric-system is primary focus)
+**Status:** active (M1 done; metric-system dep satisfied 2026-04-17 — resuming with M2)
+**Next:** M2 Bidirectional citations — fork tech-lead to add a `citations` table (`citerSessionId`, `citerAgent`, `sourceRef`, `sourceAgent`, `createdAt`) + `citeSource()` tool wrapper agents call when they consume another agent's output; surface "my output was cited N times" in each agent's heartbeat digest. Start by writing a 1-page design doc at `agents/may/workspace/design/bidirectional-citations.md` (schema + tool API + heartbeat hook), then dispatch to tech-lead via fork().
 **Master project:** [system-evolution.md](./system-evolution.md) → Gap 2
 **Source feedback:** [bob](../../bob/workspace/system-gaps.md), [scout](../../scout/workspace/system-gaps.md), [tech-lead](../../tech-lead/workspace/system-gaps.md)
 **Tracked metrics:** `scout.findings-used`, `bob.designs-implemented`, `system.stuck-requests`

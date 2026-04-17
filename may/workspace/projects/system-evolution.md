@@ -1,6 +1,7 @@
 # System Evolution — Master Project
 
-**Status**: paused (awaiting human decisions + sub-project loops)
+**Status**: active (3/5 gaps done as of 2026-04-17 — pushing Gap 2 M2 next)
+**Next**: Drive Gap 2 feedback-loop M2 (bidirectional citations) — see [feedback-loop.md](./feedback-loop.md) Next line; in parallel, decide Gap 4 Phase 1 rollout (adaptive-heartbeats prompt-only gate) this week.
 **Owner**: may
 **Started**: 2026-04-16
 
