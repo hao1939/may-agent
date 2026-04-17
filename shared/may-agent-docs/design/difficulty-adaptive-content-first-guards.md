@@ -111,7 +111,14 @@ If the pilot falsifies the design, rollback is trivial: remove the metadata fiel
 
 **Success criterion**: G3 achieves ≥85% on cascading AND ≥G2 performance on sql-injection with verification_evidence populated in ≥90% of easy-arm sessions.
 
-**Falsification**: if G3 < 70% on cascading, the difficulty-adaptive design is no better than production-uniform and the mechanism needs re-examination (likely injection-payload quality rather than the adaptive policy itself).
+**Falsification**: if G3 < 70% on cascading, the difficulty-adaptive design is no better than production-uniform and the mechanism needs re-examination (likely injection-payload quality rather than the adaptive policy itself). If G3 > G1 on cascading by ≥10pp, adaptive may be introducing helpful structure beyond pure passivity — worth a follow-up ablation.
+
+### 5.1 Assumptions carried from EXP-166
+
+- Baseline pass rates for both scenarios are stable (measured repeatedly, not a one-shot outlier).
+- The displacement effect is robust to prompt paraphrasing — the content of "produce analysis first" matters less than the production step itself. Untested but aligned with capacity-model mechanism (KE-196).
+- The injection payload is high-quality and task-relevant. Using EXP-166's F1 artifact verbatim avoids a confound; changing payload content would be a separate study.
+- Judge evaluation on hard-mode sessions (no verification_evidence) is reliable enough to score pass/fail. If judge reliability is the bottleneck, adaptive guards won't show their benefit regardless.
 
 ## 6. Open Questions / Risks
 

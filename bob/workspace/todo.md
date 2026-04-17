@@ -15,7 +15,7 @@
 - [x] **EXP-166 designed**: Content-first vs process-first guard comparison. 4 arms × 2 scenarios × 15 runs = 120 runs (~$9). Tests H-165's anchoring vs displacement mechanism.
 - [x] **EXP-166 execution**: COMPLETE. 120/120 runs. Displacement confirmed (D=7% vs C=100% on cascading). KE-195, KE-196 written.
 - [x] **KE-211 written (DD-767 → λ_A typed composition)**: 104 lines connecting structural incompleteness to FM-3.3 (KE-208), policy-invisible violations (KE-187), GAM access/applies split (KE-188), and production displacement (KE-195/196). Proposes typed `verification_evidence` as a pre-runtime FM-3.3 dam. Committed.
-- [ ] **Content-first guard design doc** [HIGH]: Use EXP-166 findings (KE-195/196) to design passive-injection guards. Difficulty-adaptive: passive for hard tasks, production OK for easy tasks.
+- [x] **Content-first guard design doc** [HIGH]: Difficulty-adaptive proposal written. Easy→production-mode, Hard→passive-injection. Scenario-tag signal, 4-arm pilot (G1/G2/G3/G4) against sql-injection + cascading-fix-trap-v2. Output: `agents/shared/may-agent-docs/design/difficulty-adaptive-content-first-guards.md` (140 lines).
 
 ## Blocked / Deferred
 - [ ] **Prompt Caching**: Blocked on Hao since 2026-03-24. $36-63/day savings waiting.
