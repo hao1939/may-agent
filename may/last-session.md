@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776419440771_74
+- **Session:** s_1776419741554_78
 - **Status:** done
-- **When:** 2026-04-17T09:53:21.989Z
-- **Duration:** 2m41s
+- **When:** 2026-04-17T09:57:34.395Z
+- **Duration:** 1m52s
 
 ## What Happened
-Projects dir is gitignored — file changes persist locally without commit. Done.
+Master project file synced with reality. Sub-projects already have their own persistent-task loops driving remaining work, so the master doesn't need to re-dispatch. Keeping status=active since 3 gaps still have open milestones.

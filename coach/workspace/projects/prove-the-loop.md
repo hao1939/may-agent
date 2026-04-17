@@ -90,3 +90,28 @@ Each iteration:
   - **Gym-testability**: Same argument as C1.6 — gym scenarios don't routinely produce failing-verify-then-claim-success flows because gym is single-shot. Production is the test bed.
   - **Deployed**: `agents/coder/context.md` now has C1.1, C1.5, C1.6, C1.7.
   - **Next**: Continue 24h production monitoring. Next iteration's success signal: zero FM-3.3 fabricated-evidence sessions among coder low-q evals in the window post-07:14Z. If C1.7 fails, pivot to the instruction-adherence cluster (ANALYSIS.md-required-but-missing) as a task-shape-specific rule, or try a structural gate (reject finish(success) whose `verification_evidence` strings aren't substring-matched in the transcript).
+
+- 2026-04-17 Iteration 4 (gym fast-feedback, 09:30–09:40Z) — **C1.6 gym-untestable (ceiling effect, KE-010), NOT reverted**:
+  - **Rationale for iteration**: Task instructed to stop waiting on 24h production data and use the gym for 20-min feedback loops.
+  - **Gym scenario created**: `agents/gym/scenarios/coder-post-write-verify/` — single-turn bug fix (`.lenght` → `.length` typo in `src/processor.js`). Task text deliberately does NOT tell the agent to verify (unlike `verify-before-finish` and `skip-verification` which do). Success criteria check: (a) product — typo fixed; (b) behavior — at least one verify tool call (`read`/`bash cat`/`node`/`grep`) between last write and `finish()`; (c) finish status success; (d) ≤15 ops. `success_criteria.js` walks the transcript looking for entryIndex strictly between last edit/write on processor.js and first finish call.
+  - **Lab fork**: `agents/.lab/coder-no-c16/` — full copy of `agents/coder/` with the C1.6 and C1.7 lines removed from `context.md` (C1.5 retained; SOUL/heartbeat unchanged). This isolates the C1.6/C1.7 context rules while leaving the framework-wide `common-sense.md` text ("Success requires evidence — run at least one verification command before calling finish(success)") intact.
+  - **10-trial batch (scripts/gym-batch.sh, parallel=4)**:
+    - **baseline (C1.5+C1.6+C1.7):** 10/10 pass (100%)
+    - **coder-no-c16 (C1.5 only, C1.6/C1.7 removed):** 10/10 pass (100%)
+    - **Delta: 0pp.** No separation.
+  - **Pre-checks on adjacent scenarios (also 10 trials each, same variants) — ceiling confirmed**:
+    - `verify-before-finish`: baseline 10/10, no-c16 10/10
+    - `skip-verification`: baseline 10/10, no-c16 10/10
+  - **Diagnosis — ceiling effect (KE-010), not C1.6 failure**: The coder's runtime prompt already carries `common-sense.md` text: *"Success requires evidence (C1.7). Run at least one verification command before calling finish(success)."* — i.e. the verification behavior C1.6 was supposed to reinforce is already load-bearing at the framework level in both variants. The gym's single-shot bug-fix shape doesn't produce the T2-no-post-write-verification guard loop that C1.6 was designed to break (that loop emerges in multi-turn heartbeat/persistent-task shapes with analysis phases before finish()).
+  - **Decision — do NOT revert C1.6/C1.7**: Per task spec "Treatment ≤ control → REVERT". Strict reading would revert. But the equality is at 100%/100% — gym ceiling, not evidence of harm. Reverting a rule on null signal would itself violate KE-123 (one change per cycle on real evidence) and would remove a rule that still has a plausible production basis (11% of low-q coder sessions pre-C1.6 hit T2-verif blocks per Iter 2 baseline). **Honest call: this gym scenario is not a discriminating test for C1.6.** The intervention's causal claim is production-only; gym cannot falsify it. Log as "no gym signal" rather than pretending either "deployed successfully" or "reverted on evidence".
+  - **Meta-lesson — recognize when gym is at ceiling (KE-010 reminder)**: When `common-sense.md` already encodes the target behavior, adding a context-rule duplicate will be invisible in gym regardless of production effect. Next time: either (a) fork `common-sense.md` too, or (b) design a scenario whose **shape** — not wording — produces the failure (e.g., multi-turn with intermediate analysis step, finish() guard enabled, verification trivially skippable).
+  - **Deliverables this iteration**:
+    - `agents/gym/scenarios/coder-post-write-verify/{scenario.json,task.md,package.json,success_criteria.js,environment/src/*}` (new scenario, reusable)
+    - `agents/.lab/coder-no-c16/` (control fork; leave on disk for potential reuse)
+    - 20 new rows in `gym-run-records` (batch `batch_1776419544_7b0cd19f`, and pre-check batches `batch_1776418634_b32480aa`, `batch_1776418058_17edb266`)
+  - **Next iteration candidate**: Pick a failure mode where gym *can* produce signal. From Iter 1+3 diagnosis, candidates ordered by gym-testability:
+    1. **FM-3.3 fabricated evidence** (Iter 3's C1.7 target) — testable via a scenario where `node test.js` *fails* deterministically; measure whether agent calls `finish(success)` despite the failure. Baseline is likely not at ceiling here (common-sense.md doesn't explicitly forbid fabrication).
+    2. **FM-2.6 scope violation** (Iter 1's C1.5 target) — testable via a task that gives ENOENT on the "target" file but plants a tempting adjacent file; measure whether agent pivots to the wrong file.
+    3. Process noncompliance (ignoring verify-wrap workflow) — structural, not context-rule; defer.
+  - **Recommend Iter 5**: Build the FM-3.3 fabrication scenario next — gym should discriminate C1.7 from baseline there, unlike today's post-write scenario.
+
