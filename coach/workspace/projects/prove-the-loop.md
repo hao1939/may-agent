@@ -172,4 +172,24 @@ Each iteration:
     3. **Heartbeat step for persistent tasks** ("Before `finish()`, ensure at least one tool call after last edit has occurred") — KE-008 warns against restructuring heartbeat; only add CONTENT within existing steps.
   - **Recommend Iter 7**: Start infra track (#1). Rationale: unblocks accurate measurement of already-deployed interventions without adding more unmeasurable rules. Cheaper than chasing more scenarios that hit the same ceiling.
 
+- 2026-04-17 Iteration 7 (infra: `--common-sense <path>` flag, 12:05–12:12Z) — **SHIPPED**:
+  - **Problem (from Iter 4/5/6)**: All three context-rule A/B tests (C1.6, C1.7, C1.5) hit a 100%/100% gym ceiling because `agents/shared/common-sense.md` is injected framework-wide and already encodes the target behaviors. Lab forks (`coder-no-c16`, `coder-no-c15`) can only shadow per-agent files, not `agents/shared/`. Without a way to also swap common-sense in gym, we cannot measure whether per-agent C1.x rules add value beyond the framework text.
+  - **Intervention (infra, NOT a behavioral change)**: Added `--common-sense <path>` flag to `test/gym/gym-runner.ts` and documented it in `scripts/gym-run.sh`. When set, the runner sandbox-copies `agents/` into `gymRoot/agents-sandbox/`, overlays the caller-provided file at `shared/common-sense.md`, and updates `effectiveAgentsRoot` so `assembleEffectivePrompt` reads the overlay (so `prompt_text` / `prompt_hash` reflect the substitution). Works with or without `--lab`; composes cleanly with the existing sandbox/lab-fork code paths. Real `agents/shared/common-sense.md` is never mutated.
+  - **Plumbing changes (all in `test/gym/gym-runner.ts`)**:
+    - `AdapterOpts`: added optional `commonSensePath`.
+    - `createMayAgentAdapter().setup()`: trigger sandbox copy when `commonSensePath` is set (even without `--lab`/`sandboxAgents`); after sandbox creation, `cpSync(commonSensePath, <agentsRoot>/shared/common-sense.md)`.
+    - `runScenario()` + `runMultiSessionScenario()`: new `commonSensePath?` parameter threaded through to `adapter.setup()`.
+    - `effectiveAgentsRoot` triad: now `labFork ? agents-lab : (commonSensePath ? agents-sandbox : PROJECT_ROOT/agents)` at all 3 call sites (single-run, multi-session, runAll prompt capture).
+    - `parseArgs()`: new `--common-sense` flag; `main()` and `--run-all` both pass `args.commonSense` into `runScenario`.
+  - **Verification** (this session):
+    - Unit-level: standalone script replicated the new setup path (sandbox + overlay), confirmed overlay content lands at `<sandbox>/shared/common-sense.md` (52 bytes test file vs 6599-byte real file), and real file unchanged.
+    - End-to-end: `bun test/gym/gym-runner.ts coder-post-write-verify --agent coder --common-sense /tmp/minimal-common-sense.md --timeout 3` passed with status=success; `prompt_text` in the result begins with the 52-byte overlay instead of the 6599-byte real common-sense.md, proving the overlay flows all the way into `assembleEffectivePrompt()`.
+    - Post-check: `wc -l agents/shared/common-sense.md` still 80 lines, first two lines unchanged → no accidental mutation of production file.
+    - Typecheck: `bun tsc --noEmit -p tsconfig.json` passes (no errors).
+  - **Deliverables**:
+    - `test/gym/gym-runner.ts` (modified — 3 hunks: AdapterOpts, adapter.setup, runScenario/runMultiSessionScenario signatures + effectiveAgentsRoot; parseArgs + main).
+    - `scripts/gym-run.sh` (help banner updated).
+  - **Next (Iter 8)**: Now that `--common-sense` works, re-run the FM-3.3 A/B (`fm33-verify-broken` scenario) with a minimal common-sense.md that OMITS the C1.7 line ("Success requires evidence — run at least one verification command before calling finish(success)"). Variants: (a) baseline + stock common-sense, (b) `coder-no-c16` + stripped common-sense. If (b) drops below 100% and (a) holds, we have our first gym-measurable signal for the verify-before-finish class of rules; if both stay at 100%, the behavior is encoded somewhere else (SOUL.md? heartbeat?) and we continue the hunt. This is the cleanest discriminating test available for the C1.6/C1.7 production basis.
+  - **Stop-condition note**: Iter 7 is infra, not a behavioral intervention, so it does NOT count toward the "5 consecutive interventions fail in gym" stop rule. Counter stays at 3 null-signal iterations (Iter 4/5/6).
+
 
