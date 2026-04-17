@@ -64,8 +64,15 @@ The gym graduation pivot is DONE. Coach now operates as a production observation
 - **Weekly**: Run 3-5 promoted skill scenarios, verify no regression
 - **Monthly**: Full sweep of non-ceiling + treatment scenarios (ambiguous-context-drift, sycophants-dilemma, contradictory-requirements)
 - **On-demand**: When new skills deployed or framework changes, run targeted scenarios
-- **Last regression run**: 2026-04-09 — all 3 promoted scenarios passing (efficient-file-reading, plan-once-amend, convention-verify-edit)
-- **2026-04-17 attempt**: BLOCKED — gym runner cannot launch any agent. Infra regression in `src/app/agent-loader.ts :: VALID_TOOL_PRESETS` (missing `cite-source`/`cite_source`; both `/usr/local/bin/may-agent` and rebuilt bundle reject current agent.json files — "Loaded 0 agent(s)"). Per-skill status: efficient-file-reading=UNKNOWN, plan-once-amend=UNKNOWN, convention-verify-edit=UNKNOWN. Details + fix sketch in `workspace/gym-infra-blocker-2026-04-17.md` — flagged P1 for may/tech-lead. Re-run required after fix.
+- **Last regression run**: 2026-04-17 — all 3 promoted scenarios passing. See `workspace/regression-check-2026-04-17.md`.
+
+### Promoted Skills — Weekly Status
+
+| Date | efficient-file-reading | plan-once-amend | convention-verify-edit | Notes |
+|------|------------------------|-----------------|------------------------|-------|
+| 2026-04-09 | ✅ PASS | ✅ PASS | ✅ PASS | baseline |
+| 2026-04-17 (AM) | ⏸ BLOCKED | ⏸ BLOCKED | ⏸ BLOCKED | gym infra: `cite-source` missing from `VALID_TOOL_PRESETS` |
+| 2026-04-17 (PM) | ✅ PASS (runId 2559) | ✅ PASS (runId 2560) | ✅ PASS (runId 2561) | infra fixed (rebuilt bundle); `uses-targeted-reads` sub-check soft-fail on #1 — worth watching |
 
 ---
 
