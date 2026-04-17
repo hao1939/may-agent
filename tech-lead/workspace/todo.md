@@ -1,6 +1,8 @@
 # TODO
 
 ## Upcoming
+- Last lens: **B** (2026-04-17) → next: C. Finding: `finding-flow-complexity-trace-the-finish-gu.md`
+
 - [x] Monitor C1.3 improvement after write() diff enhancement deployment — **DONE (2026-04-08)**
   - **Result: 94.1% pass rate post-write-diff (n=557), up from 47.3% baseline (n=1743)**
   - Three-phase analysis:
