@@ -1,21 +1,21 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776464748618_667
+- **Session:** s_1776464758245_668
 - **Status:** done
-- **When:** 2026-04-17T22:25:58.306Z
-- **Duration:** 9s
+- **When:** 2026-04-17T22:26:07.047Z
+- **Duration:** 8s
 
 ## What Happened
 ```json
 {
   "agents": {
-    "bob": {
+    "coach": {
       "role": "Builder",
       "capability_level": "L2",
-      "efficiency": 0.78,
-      "quality": 0.93,
-      "verdict": "good",
+      "efficiency": 0.55,
+      "quality": 0.72,
+      "verdict": "acceptable",
       "issues": [
-        "[FM-1.3-adjacent/WASTED_CALL] One avoidable failed scaffold call due to wrong working directory/repo boundary: ran `cd agents && ...new-ke.sh ...` and got `agents/shared/knowledge/entries not found. Run from repo root.` (auto-extracted failure chain shows 1 wasted call).",
-        "[PROCESS_DRIFT_MINOR] 
+        "[FM-1.3/RECOVERY_FRICTION] Multiple failed bun:sqlite one-liners early (failure chain 1 + 2) were abandoned rather than corrected, creating avoidable waste before switching approaches.",
+        "[VERIFICATION_FAILURE_CAUGHT_BY_GUARD] Attempted finish(success) without post-write verification; gua
