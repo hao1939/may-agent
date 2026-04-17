@@ -153,7 +153,8 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         `[cron:project-resume] Resume your active project.\n\n` +
         `Project file: ${project.relPath}\n\n` +
         `Read the project file, check Status, and continue the work. ` +
-        `If blocked or done, update Status in the file so this handler stops re-forking you.`;
+        `If blocked or done, update Status in the file so this handler stops re-forking you.\n\n` +
+        `Budget: aim for ≤20 ops this resume. If the work truly needs more (e.g., the project file says "do not exit early"), you may continue — but start each resume by reading the project file and planning the smallest next step.`;
 
       if (dryRun) {
         ctx.log(`[project-resume] DRY_RUN would fork ${owner} for ${project.relPath}`);
