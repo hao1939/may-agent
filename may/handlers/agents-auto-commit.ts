@@ -640,12 +640,19 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       }
 
       // Parse changed files from porcelain output
-      const changedFiles = status
-        .split("\n")
+      const lines = status.split("\n").filter(Boolean);
+      const changedFiles = lines
         .map(line => line.slice(3).trim()) // Remove status prefix (e.g., " M ", "?? ")
         .filter(f => f && !f.endsWith(".bak")); // Skip .bak files
 
       if (changedFiles.length === 0) return;
+
+      // SAFETY: Abort if mass deletions detected (prevents nuking repo from partial checkouts)
+      const deletions = lines.filter(line => line.trimStart().startsWith("D")).length;
+      if (deletions > 50) {
+        ctx.log(`[agents-auto-commit] ⚠️ ABORT: ${deletions} deletions detected — likely partial checkout. Skipping commit.`);
+        return;
+      }
 
       // Group by agent
       const groups = groupByAgent(changedFiles);
