@@ -24,7 +24,7 @@ The real failure modes this project addresses:
 
 ## Milestones
 
-- [ ] **Idle heartbeat playbook** — When an agent wakes with no assigned task and no failing health check, it consults a prioritized exploration list:
+- [x] **Idle heartbeat playbook** — When an agent wakes with no assigned task and no failing health check, it consults a prioritized exploration list:
   1. Pick the highest-impact item from its own `system-gaps.md`
   2. Poke a metric that looks off / stale / regressing
   3. Work a dropped thread from the project files (stalled owner, blocked sub-task)
@@ -163,3 +163,66 @@ Verify deliverables on disk:
 - Iteration 4 declared "done" after touching only 1 of 12 agents. Before calling finish(success), verify scope — `ls agents/*/heartbeat.md | wc -l` vs. files you edited. This is exactly the FM-3.3 pattern flagged in active_recall.
 - Pick the canonical path before writing any file, not after.
 
+
+### Iteration 5 — 2026-04-17T13:41:27.345Z
+**Worker task**: Iteration 5 — work toward goal
+**Worker result**: **Status:** done (3m22s)
+
+**Files modified:**
+- agents/bob/workspace/sent/2026-04-17-m1-rollout-request-to-may.md
+
+**Files read (not modified):**
+- agents/bob/heartbeat.md
+- agents/amy/heartbeat.md
+- agents/amy-kimi/heartbeat.md
+- agents/coach/heartbeat.md
+- agents/coder/heartbeat.md
+- agents/evaluator/heartbeat.md
+- agents/master/heartbeat.md
+- agents/may/heartbeat.md
+- agents/optimizer/heartbeat.md
+- agents/qa/heartbeat.md
+- agents/scout/heartbeat.md
+- agents/tech-lead/heartbeat.md
+- agents/may/workspace/projects/adaptive-heartbeats.md
+
+**Errors encountered:**
+- [bash] agents/amy-kimi/heartbeat.md
+agents/amy/heartbeat.md
+agents/bob/heartbeat.md
+agents/coach/heartbeat.md
+agents/coder/heartbeat.md
+agents/evaluator/heartbeat.md
+agents/master/heartbeat.md
+agents/may/heartbeat.md
+agents/optimizer/heartbeat.md
+agents/qa/heartbeat.md
+agents/scout/heartbeat.md
+agents/tech
+- [bash] The following paths are ignored by one of your .gitignore files:
+bob/workspace/sent
+hint: Use -f if you really want to add them.
+hint: Turn this message off by running
+hint: "git config advice.addIgnoredFile false"
+
+
+Command exited with code 1
+
+**Agent response:**
+Workspace is gitignored — fine, the message is tracked via agents.message() (request `a48fa2be`) independent of git. Let me verify and finish.
+**Files touched**: (see worker session)
+
+### 2026-04-17 13:40 — May: M1 rollout complete (all 12 agents)
+May (not a forked worker) applied the idle-playbook pointer to the remaining 11 heartbeat.md files: amy, amy-kimi, coach, coder, evaluator, master, may, optimizer, qa, scout, tech-lead. Wording adapted per agent structure but preserves the core rule: "no priority hit → don't exit; consult `agents/shared/may-agent-docs/idle-playbook.md`; produce a measurable artifact."
+
+**Structural evidence** (current session):
+- `grep -l idle-playbook.md agents/*/heartbeat.md` → 12 files (all of them).
+- Each edit() preceded by a read() of the same file (C1.1).
+- Content addition only, no step reordering (KE-008).
+
+Milestone 1 is **deployed**. Tick `[x]` pending commit.
+
+**Next (open TODOs):**
+- Build idle-artifact metric — `% of idle heartbeats (Steps 1-2 yielded no priority) that produce a measurable artifact`. Target ≥60% at 2 weeks. Guardrail: idle-log.md one-liners <10% of artifacts.
+- M2 (scout arXiv windowing) — separate iteration, don't stack (KE-123).
+- M3 (adaptive frequency) — later, don't stack.

@@ -11,7 +11,7 @@ You're waking up autonomously. You are the Senior Engineer — use CLI coding ag
 
 ## 1. Check Pending Tasks
 Check the "Injected: pending tasks" section above. Process the top item.
-If no pending tasks, check `agents/shared/LESSONS.md` for context, then idle.
+If no pending tasks, check `agents/shared/LESSONS.md` for context, then consult `agents/shared/may-agent-docs/idle-playbook.md` — pick one exploration item and produce a measurable artifact. Do not exit idle.
 
 ## 2. Understand & Plan
 - What is the task? Is it a quick fix, deep refactor, or analysis?

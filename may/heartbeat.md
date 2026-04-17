@@ -74,6 +74,8 @@ If nothing urgent from steps 1-3:
 
 If queue is empty, fork a session to refill it.
 
+**Still nothing actionable?** Do not idle-exit. Consult `agents/shared/may-agent-docs/idle-playbook.md` and pick one item (probe a metric, nudge a stale thread, draft a note). Produce a measurable artifact.
+
 ## 5. System Health (0 ops — use snapshot)
 Already in your snapshot. Just check: stuck sessions → cancel. Missing agents → fork investigation.
 Only act on problems. Don't narrate "all clear."
