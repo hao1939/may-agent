@@ -2,6 +2,12 @@
 
 Papers and articles worth reading, with key takeaways.
 
+## 2026-04-17 — Session 805: Friday cs.MA triage (DD#776)
+
+| 2604.14572 | Don't Retrieve, Navigate: Distilling Enterprise Knowledge into Navigable Agent Skills for QA and RAG (Sun, Wei, Hsieh — Apr 2026) | ★★★★½ — Corpus2Skill. Compiles a corpus offline into a hierarchical, navigable skill directory; agent drills in at serve time, sees bird's-eye map + negative space. Beats dense retrieval, RAPTOR, agentic-RAG on WixQA. Direct external validation of KE-052 structural-access thesis; echoes DD#709 CodeCompass. Implication: keep INDEX.md files current; plan for hierarchical indices as our KB passes ~50KB of top-level summary. (ref: DD-776) |
+| 2604.15267 | CoopEval: Benchmarking Cooperation-Sustaining Mechanisms and LLM Agents in Social Dilemmas (Tewolde, Zhang, Piedrahita, Conitzer, Jin — Apr 2026) | ★★★★ TRIAGED (deferred DD) — Stronger-reasoning LLMs defect *more* in mixed-motive games. Compares repetition / reputation / mediators / contracts; contracting + mediation win; repetition-induced cooperation collapses under co-player variation. Not directly on our FM-3.3/verification track but a priority queue item if agent-to-agent trust becomes a focus. |
+| 2604.14550 | VeriGraphi: Multi-Agent Framework of Hierarchical RTL Generation (Islam, Tabassum, Zheng — Apr 2026) | ★★★ honorable mention — spec-anchored Knowledge Graph as deterministic structural scaffold before code generation. Another instance of the "structure before reasoning" pattern (KE-052, DD#709, DD#776). Domain-specific (Verilog); noted for future synthesis. |
+
 ## 2026-04-11 — Session 628: CR#337 Exemplar-Induced Fixation / Einstellung Effect in LLMs
 
 **Context**: EXP-130 showed few-shot examples cause -67pp iatrogenic degradation on discovery tasks. This session grounds the mechanism in published literature on the Einstellung effect — the cognitive bias where familiar solutions block discovery of better alternatives. These papers establish that LLMs systematically exhibit this effect, measure it rigorously, and identify mitigations.
