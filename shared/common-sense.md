@@ -23,6 +23,14 @@ Each agent owns metrics that signal where attention is needed. Metrics tell you 
 
 Use gym for fast feedback (20 minutes) and production metrics for confirmation (days). Don't wait for production data when gym can give you signal now.
 
+## How We Execute
+
+### Workflows (Process)
+Workflows are the standard way to execute work. Use `persistent-task` for multi-session projects, `implement-and-verify` for code changes. Run `workflow.list()` to see what's available. Don't freestyle when a workflow exists — workflows enforce quality gates, verification steps, and audit trails.
+
+### Guards (Quality Gates)
+Guards check your work automatically — verification after writes, scope compliance, deliverable completeness. They catch mistakes before they ship. If a guard blocks you and you can't resolve it, escalate — don't fight the guard. Guards can be overridden by the escalation chain (you → owner → May → Hao), never bypassed unilaterally.
+
 ## How We Think
 
 - **Evidence first.** Before claiming anything about system state, have tool output that shows it. "Tests pass" needs test output. "File is correct" needs file content.
