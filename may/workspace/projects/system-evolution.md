@@ -1,8 +1,14 @@
 # System Evolution — Master Project
 
-**Status**: active
+**Status**: paused (awaiting human decisions + sub-project loops)
 **Owner**: may
 **Started**: 2026-04-16
+
+> **Why paused at master level**: All 5 sub-projects have their own `project-resume` loops
+> driving their remaining milestones. Master-level coordination is idle until either
+> (a) a sub-project completes and needs re-roll-up, or (b) Hao decides on Gap 3
+> (dispatch tech-lead for R1/R2/R3) or Gap 4 (ship Phase 1 prompt rollout).
+> Flip Status back to `active` when a new master-level action is needed.
 
 ## Vision
 A self-improving agent system where: metrics signal problems, workflows enforce process, memory provides continuity, feedback closes the loop, and accountability ensures progress.
