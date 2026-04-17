@@ -1,10 +1,10 @@
 # Metric Reaction Investigation
 
-**Status:** active — M1+M2 done, next: M3 (write findings report) and propose simplest intervention
+**Status:** paused — M1-M4 done, M5 dispatched to tech-lead. Waiting on implementation.
 **Owner:** may
 **Created:** 2026-04-17
 **Master project:** system-evolution
-**Next:** M3 — write findings report. Leading hypothesis to test: "Agents use the literal word 'red' as the trigger; since the prompt never marks any metric red (only shows `val → target: tgt`), agents conclude 'no red metrics' and skip action." Simplest intervention: add a ⚠️/🔴 marker in the metric-injection renderer when `value != target` (and value != 'unmeasured').
+**Next:** tech-lead implements the data+renderer fix (see M4 below). When implementation committed, reopen this project to run M5 gym-test + deploy step. Cron should SKIP (status=paused).
 
 ## Goal
 Understand why agents see metrics in their heartbeat context but don't act on them. Propose fixes based on evidence.
@@ -19,9 +19,9 @@ Understand why agents see metrics in their heartbeat context but don't act on th
 ## Milestones
 - [x] M1: Sample ≥20 recent heartbeat sessions; record: metric visible, metric red, agent reacted (fork/message or project edit)
 - [x] M2: Classify by bucket (not-seen / seen-ignored / seen-mentioned / seen-acted) with transcript excerpts
-- [ ] M3: Findings report with concrete evidence per bucket
-- [ ] M4: Propose 2-3 interventions, pick simplest
-- [ ] M5: Implement + gym-test + deploy with kill switch
+- [x] M3: Findings report with concrete evidence per bucket
+- [x] M4: Propose 2-3 interventions, pick simplest
+- [ ] M5: Implement + gym-test + deploy with kill switch (dispatched to tech-lead)
 
 ## Success criteria
 - Real-work ratio (sessions with persistent task started or project milestone closed / total) rises from ~10% → ≥25% within 48h of intervention.
@@ -130,6 +130,73 @@ Corroborating: the heartbeat prompts themselves tell agents *"Any \"Injected: me
 - tech-lead and scout lean heavily on self-directed rotations (lens A/B/C/D, idle-playbook items). These workflows don't consult the metric block at all. A metric-to-action map is needed for those agents.
 
 ---
+
+## Report to s_1776336175530_25 (parent project)
+Issued as a separate message after commit.
+
+## M3 — Findings Report
+
+### TL;DR
+**Agents literally cannot see "red" metrics because the code path that emits the ⚠️ BELOW THRESHOLD marker almost never fires.** Across 27 active metrics in the DB, **only 1 has a non-null `threshold` column**. The renderer in `src/app/cron.ts:714-720` requires `type='health' AND threshold != null AND current < threshold`. With 26/27 rows missing the threshold, the marker is effectively dead code. Agents see `- [fast] Coverage: 52 → target: 0` and — per the cross-agent prompt instruction "*Any 'Injected: metrics' item marked ⚠️ BELOW THRESHOLD?*" — correctly answer "no" because no ⚠️ is present.
+
+### Evidence chain
+
+1. **Renderer code** — `src/app/cron.ts:714` only emits ⚠️ when `m.type === "health" && m.threshold != null && m.current != null && m.current < m.threshold`. Header only says "⚠️ RED" when `redCount > 0` (same filter).
+2. **Data inventory** (`.state/may.db` metrics table, status='active'):
+   - 27 active metrics across 9 agents.
+   - **Only 1** has a non-null threshold (`may.Premature DONE rate` = 11, threshold = 0.1; current>threshold so not red).
+   - Therefore `redCount` for every agent every cycle = **0**. The "top priority this cycle" header NEVER renders.
+3. **Target values are placeholder**: 22/27 active metrics have `target=0` (mechanically assigned, not semantic). So the `→ target: 0` suffix in the prompt teaches agents to treat `target` as noise.
+4. **Transcript evidence** (from M2): bob (s_…417) and scout (s_…426, s_…376) wrote the literal string "**no red metrics**" in their first turn. They are correctly reading the prompt — the prompt genuinely has no red markers.
+5. **Reaction rate**: 0 of 8 "value ≠ target" sessions triggered any action. 0 of 25 sessions across 7 agents triggered a metric-attributed dispatch. Null result is the result.
+
+### Per-bucket summary (from M2)
+
+- **seen-ignored (4/8)**: Agent read the metric block, generated the negation "no red metrics" or "system healthy", pivoted to idle-playbook/lens-rotation. Root cause: no red marker in prompt.
+- **not-seen (2/8)**: Agent never referenced metrics. Root cause: heartbeat steps prioritize other injected sections (workflow, lens, idle-playbook) above metrics.
+- **seen-mentioned (2/8)**: Agent cited the value but did not act. Root cause: metric has no mapped action — prompt shows number but not "if red → do X".
+- **seen-acted (0/8)**: None.
+
+### Why this is actionable
+Every bucket traces to a concrete, low-cost fix in `src/app/cron.ts` plus a one-time data backfill of thresholds. No agent-side training, no prompt rewrite, no new workflows.
+
+---
+
+## M4 — Interventions
+
+### Proposals considered
+
+**Option A — Fix the data (backfill thresholds) + keep renderer.**
+One-shot SQL/script: for each active `health` metric, set `threshold` to a sensible default (e.g. `target * 0.9` for ratios, a hand-picked floor for counters). Once thresholds exist, the existing renderer immediately starts emitting ⚠️ BELOW THRESHOLD and the "⚠️ RED" header.
+- Pros: smallest diff, no code change, exercises existing code path, instantly testable.
+- Cons: requires per-metric judgment on what "red" means. Only affects `health`-type metrics — `continuous` stays unmarked.
+
+**Option B — Broaden the red predicate (value ≠ target for all types).**
+Change `cron.ts:714` to also flag non-health metrics when `current != null && target != null && current < target` (or > target for "lower is better" — needs a direction column). Add a leading `🔴` at line start so agents scanning vertically see it.
+- Pros: covers all metric types.
+- Cons: needs a direction/polarity column on the metrics table (target=0 meaning "zero is ideal" is not reliable — coder.Quality=0.82, target=0 is clearly "higher is better"). Larger change, risk of false reds.
+
+**Option C — Attach named action per metric.**
+Add `metric.action_hint` column ("fork tech-lead to investigate X", "run coach review"). Render under each red line. Teaches agents what to DO, not just what's wrong.
+- Pros: closes the biggest prompt gap ("seen-mentioned" bucket).
+- Cons: requires author effort per metric; premature without first proving red-marker works.
+
+### Picked: A first, then B (sequenced)
+
+**Phase 1 (M5a, simplest):** Backfill `threshold` on active `health`-type metrics. Also set `threshold` on the 4 may-owned metrics explicitly (PD rate ≤ 0.1 already set; util, throughput, stuck_requests need values). Estimated ~10-15 UPDATE rows. Zero code change. Immediately validates the hypothesis: if red marker now fires and agents react, we're done. If agents still don't react, Option B/C needed.
+
+**Phase 2 (M5b, if Phase 1 insufficient):** Add `metric.direction` column + broaden red predicate in `cron.ts` to cover continuous metrics. Only do this after observing Phase 1 outcomes in 48h window.
+
+**Kill switch:** Both phases are DB-only or cron.ts-only — revert is a single SQL UPDATE or `git revert`.
+
+---
+
+## M5 — Dispatch
+
+Dispatched to tech-lead via message (see request tracker). Payload:
+1. Backfill thresholds on active health metrics (list provided by tech-lead's own judgment or a follow-up with may).
+2. Commit + redeploy (or let next cron cycle pick up — since renderer is unchanged, just data, effect is immediate on next heartbeat).
+3. Report back when done; may reopens this project for M5 verification window.
 
 ## Report to s_1776336175530_25 (parent project)
 Issued as a separate message after commit.
