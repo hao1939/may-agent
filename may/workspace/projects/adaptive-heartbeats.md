@@ -24,7 +24,7 @@ The real failure modes this project addresses:
 
 ## Milestones
 
-- [ ] **Idle heartbeat playbook** — When an agent wakes with no assigned task and no failing health check, it consults a prioritized exploration list:
+- [x] **Idle heartbeat playbook** — (Done — commit `4457f8c95`, all 12 agents wired to `agents/shared/may-agent-docs/idle-playbook.md`.) Original spec: When an agent wakes with no assigned task and no failing health check, it consults a prioritized exploration list:
   1. Pick the highest-impact item from its own `system-gaps.md`
   2. Poke a metric that looks off / stale / regressing
   3. Work a dropped thread from the project files (stalled owner, blocked sub-task)
@@ -33,7 +33,7 @@ The real failure modes this project addresses:
   6. Read something new (paper, KE, peer's recent report) and draft a follow-up
   Deliverable: per-agent heartbeat prompt updated to include this playbook + an explicit "don't just exit" rule. Evidence: ≥X% of idle heartbeats produce a measurable artifact (file written, request created, KE drafted).
 
-- [ ] **Scout: skip heartbeats between arXiv windows** — Correctness concern. arXiv publishes on a known schedule; polling between windows cannot find new work. Scout's cron should align to arXiv windows, or the scout heartbeat should fast-path to the idle-exploration playbook between windows instead of re-polling.
+- [x] **Scout: skip heartbeats between arXiv windows** — (Done 2026-04-17 — `agents/scout/heartbeat.md` line 50 now carries the explicit UTC window definition from the approved design `agents/shared/may-agent-docs/design/scout-arxiv-windowing.md`.) Correctness concern: arXiv publishes on a known schedule; polling between windows cannot find new work. Scout's heartbeat now fast-paths to the idle-exploration playbook outside the Mon–Fri 00:00–06:00 UTC window.
 
 - [ ] **Adaptive frequency (load management)** — Run heartbeats denser during active periods (Hao online, fresh dispatches, active gym batches), sparser during quiet hours. This is about matching system load to available signal, *not* about saving ops. May controls cron intervals dynamically. Idle-but-alive heartbeats still run; they just don't run as densely when nobody's around to consume output.
 
@@ -209,3 +209,18 @@ On the next non-REVIEW heartbeat, May must:
 
 **Worker guidance (iter-12, if it fires before May pauses):** Same as iter-11. `finish(status=blocked)` in ≤10s. Do not read any files. Do not send any more requests to May.
 
+
+### Iteration 13 — 2026-04-17T13:57Z — M2 LANDED (by may directly)
+**Action**: May (supervisor) made the surgical edit to `agents/scout/heartbeat.md` line 50 after 6 consecutive blocked worker iterations (8/9/10/11/12 + iter 7 no-op). Worker ping-pong is a known FM; supervisor unblocking heartbeat prose is in-scope (heartbeat.md is agent config, not src/).
+
+**Files changed:**
+- `agents/scout/heartbeat.md` line 50 — replaced generic "between arXiv windows" note with explicit UTC window definition from approved design (`scout-arxiv-windowing.md`).
+- `agents/may/workspace/projects/adaptive-heartbeats.md` — M1 & M2 ticked `[x]`.
+
+**Structural verification:**
+- `grep -n "Outside the arXiv window" agents/scout/heartbeat.md` → line 50 ✓
+- `grep "UTC Mon–Fri 00:00–06:00" agents/scout/heartbeat.md` → present ✓
+
+**Pre-deploy baseline for M2 success metric (from design doc):** Thu 36% no-op (37/104), Fri 29% (23/80), Wed 12% (9/77). Re-check in 2 weeks.
+
+**Remaining:** M3 (adaptive frequency) — separate effort, not blocking.
