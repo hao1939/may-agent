@@ -1,12 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776423639250_131
+- **Session:** s_1776425059505_165
 - **Status:** done
-- **When:** 2026-04-17T11:07:01.647Z
-- **Duration:** 6m22s
+- **When:** 2026-04-17T11:24:58.282Z
+- **Duration:** 38s
 
 ## What Happened
-Root cause found: 220 evaluator-agent sessions accumulate unevaluated because evaluation-sync.ts explicitly excludes `agent != 'evaluator'` and never writes skip rows for them. They trigger the `unevalAutoSkippable > 150` anomaly every cycle forever. Fix: insert skip evaluations for evaluator sessions (they already have `skippedByJs` semantics).
-
-Let me fork the fix via implement-and-verify.
+The fix is already landed — commit `b00ea81e3` includes the head/tail additions (lines 975-976 of convention-check.ts). TSC clean, patterns verified present.
