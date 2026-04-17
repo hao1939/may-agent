@@ -27,3 +27,6 @@ If you need a design decision or the spec is unclear, write your question to `ag
 
 ## If Done With Current Phase
 Move to the next phase in the spec. If all phases are done, look at `agents/coder/workspace/` for other tasks, or propose improvements to the dashboard.
+
+## If Nothing Assigned
+If no pending tasks, no active phase, and no spec work is possible this cycle: do not exit. Consult `agents/shared/may-agent-docs/idle-playbook.md` and pick one item (clean workspace, tighten a skill, draft a note). Produce a measurable artifact.

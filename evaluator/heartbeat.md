@@ -32,6 +32,8 @@ If you pivot mid-session, say "PIVOT: replacing promise N with [new action] beca
 ## 1. Pending Tasks
 Check the "Injected: pending tasks" section above. Process pending items first.
 
+**No pending items AND nothing below is actionable?** Do not exit. Consult `agents/shared/may-agent-docs/idle-playbook.md` and pick one item (probe a metric, nudge a stale thread, draft a KE). Produce a measurable artifact this cycle.
+
 ## 1b. Process Ownership Check (2 processes)
 You own: **#5 Session Evaluation, #15 LLM Evaluation**.
 
