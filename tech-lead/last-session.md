@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776425059505_165
+- **Session:** s_1776425439588_171
 - **Status:** done
-- **When:** 2026-04-17T11:24:58.282Z
-- **Duration:** 38s
+- **When:** 2026-04-17T11:31:44.940Z
+- **Duration:** 1m5s
 
 ## What Happened
-The fix is already landed — commit `b00ea81e3` includes the head/tail additions (lines 975-976 of convention-check.ts). TSC clean, patterns verified present.
+Edit verified (234→254 lines, +20, new section at line 93). Both duplicate P2 requests satisfied with one bounded inline edit.
