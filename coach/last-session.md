@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776387166541_215
+- **Session:** s_1776388932327_228
 - **Status:** done
-- **When:** 2026-04-17T01:19:18.315Z
-- **Duration:** 26m31s
+- **When:** 2026-04-17T01:22:31.516Z
+- **Duration:** 19s
 
 ## What Happened
-Buggy code correctly shows 10 failures and scorer correctly reports most checks failing. The scenario works as designed.
+The new hard scenario is built. Time to run baselines on it.
