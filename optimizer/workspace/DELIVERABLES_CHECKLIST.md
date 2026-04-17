@@ -1,14 +1,8 @@
-# Deliverables Checklist — Mode C: Skill & Technique Scouting (2026-04-17 ~19:30 UTC)
+# Deliverables Checklist — Mode D Workflow Health 0417-2
 
-Task: Find ONE technique/skill signal that correlates with high-quality sessions in last 6h and is NOT yet promoted. Deliver concrete promotion proposal.
-
-## Required deliverables
-
-- [x] **Finding file** `agents/optimizer/workspace/finding-mode-c-technique-0417-pm.md` — method, candidates, winner, adoption plan
-- [x] **todo.md rotation marker** updated: "Last mode: C (..., Apr 17 ~19:30 UTC). Next: D."
-- [x] **Dispatch** via `agents.message()` to tech-lead with exact Level-3 fix
-
-## Verification evidence
-- Post-write re-read of finding file
-- Post-edit re-read of todo.md
-- agents.message() returns request/session id
+- [ ] Query DB: current 6h adoption by agent (total forks, workflow forks, pct)
+- [ ] Query DB: prior 6h adoption for delta
+- [ ] Query DB: verify-wrap and investigate-and-fix usage + avg ops
+- [ ] Write agents/optimizer/workspace/finding-workflow-health-mode-d-0417-2.md
+- [ ] Update agents/optimizer/workspace/todo.md with Mode D Apr 17 20:00 marker
+- [ ] Dispatch fix OR explicit "no regression" note in finding
