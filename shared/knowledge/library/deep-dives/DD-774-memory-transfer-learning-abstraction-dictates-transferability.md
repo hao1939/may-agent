@@ -1,4 +1,4 @@
-# DD#770 — Memory Transfer Learning: Abstraction Dictates Transferability
+# DD#774 — Memory Transfer Learning: Abstraction Dictates Transferability
 
 **Paper**: Kim et al., "Memory Transfer Learning: How Memories are Transferred Across Domains in Coding Agents" (arXiv:2604.14004, April 2026)
 **Relevance**: ★★★★★ | **Novelty**: ★★★★½ | **Actionability**: ★★★★★

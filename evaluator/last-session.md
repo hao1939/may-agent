@@ -1,21 +1,20 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776436318568_407
+- **Session:** s_1776436380872_408
 - **Status:** done
-- **When:** 2026-04-17T14:32:11.023Z
-- **Duration:** 12s
+- **When:** 2026-04-17T14:33:24.573Z
+- **Duration:** 23s
 
 ## What Happened
 ```json
 {
   "agents": {
-    "may": {
-      "role": "Supervisor",
+    "tech-lead": {
+      "role": "Builder",
       "capability_level": "L2",
-      "efficiency": 0.45,
-      "quality": 0.55,
-      "verdict": "acceptable",
+      "efficiency": 0.8,
+      "quality": 0.75,
+      "verdict": "good",
       "issues": [
-        "[ORDER-004 VIOLATION] Heartbeat injected an op budget ('≤12 ops per heartbeat'), which is explicitly disallowed ('No turn budgets or op limits in heartbeats'). Even if May didn't author it, May should treat it as invalid guidance rather than comply/echo it.",
-        "[FM-1.3 / WASTE] Two failed
+        "[CITATION_INTEGRITY_RISK] The deliverable makes concrete claims with inline path:line citations, but the transcript does not show read() outputs for the two key handler files (agents/may/handlers/evaluator-heartbeat.ts, agents/may/handlers/evaluation-sync.ts). Because the evaluation is evidence-base

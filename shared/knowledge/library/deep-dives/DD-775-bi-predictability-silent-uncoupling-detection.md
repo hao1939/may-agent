@@ -1,4 +1,4 @@
-# DD#771 — Bi-Predictability: Detecting Silent Uncoupling in LLM Interactions
+# DD#775 — Bi-Predictability: Detecting Silent Uncoupling in LLM Interactions
 
 **Paper**: Hafez & Nazeri, "Bi-Predictability: A Real-Time Signal for Monitoring LLM Interaction Integrity" (arXiv:2604.13061, March 2026)
 **Relevance**: ★★★★½ | **Novelty**: ★★★★★ | **Actionability**: ★★★★
