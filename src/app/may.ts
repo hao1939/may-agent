@@ -148,14 +148,14 @@ const models: Record<string, ModelWithApiKey> = {
   opus: process.env.ANTHROPIC_API_KEY
     ? {
         ...getModel("anthropic", "claude-sonnet-4-20250514"),
-        id: "claude-opus-4.6",
+        id: "claude-opus-4.7",
         contextWindow: 200000,
         baseUrl: ANTHROPIC_DIRECT.baseUrl,
         apiKey: ANTHROPIC_DIRECT.apiKey,
       }
     : {
         ...getModel("anthropic", "claude-sonnet-4-20250514"),
-        id: "claude-opus-4.6",
+        id: "claude-opus-4.7",
         contextWindow: 72000,
         baseUrl: MODEL_BASE_URL,
         apiKey: LITELLM_API_KEY,
