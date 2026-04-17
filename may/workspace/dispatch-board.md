@@ -32,6 +32,7 @@ Updated: 2026-04-16 ~08:00 UTC
 | **Heartbeat commit instruction fix** | ✅ DONE | may | Fixed Step 7 of heartbeat.md — was telling me NOT to commit (stale 10min auto-commit reference). Now says commit first, auto-commit is 2h safety net. |
 | ⚠️ **Hao task truncated** | ❓ Need info | Hao | req:7a936dcb was truncated at 500 chars. Only issue #1 (threshold inversion) visible+dispatched. May have more issues. |
 | **Two-tier eval gap fix** | ✅ DONE — needs merge | tech-lead | Implemented `evaluateStandaloneSession()` (121 lines). Branch: `review/standalone-eval-coverage`. 1968 tests pass. Needs code review + merge. |
+| **writeSkippedEvaluations recurring + Premature DONE tick** | ⏳ Dispatched | tech-lead | req:4b126aed (2026-04-17 10:30). Anomaly keeps returning (211 skippable); PD rate 7→8. Asked for scheduled job + structural investigation. |
 
 ## Completed This Cycle
 | Issue | Status | Owner | Notes |
