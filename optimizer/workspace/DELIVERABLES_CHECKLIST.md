@@ -12,7 +12,7 @@ Task: [WORK SESSION] Mode D — 6h workflow health scan; identify regression; wr
 - [x] Includes 6h snapshot table, comparison to 1130 baseline, R1 decision = ACT (2-line edit to `agents/may/handlers/project-resume.ts:150-155` task-string budget stanza), R2 deferred, R3 closed
 - [x] todo.md rotation marker updated: Latest=D → Next rotation=A
 - [x] **R1 executed**: 2-line budget stanza appended to `[cron:project-resume]` task string in `agents/may/handlers/project-resume.ts:152-157` — verified via edit-diff
-- [x] Committed in /app/agents (pending)
+- [x] Committed in /app/agents: `790eeca70` "project-resume: add ≤20 op soft budget to cron task string"
 
 ## Prior Session — P0 LLM-to-JS Conversion Investigation (2026-04-17 15:30)
 
