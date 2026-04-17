@@ -34,7 +34,7 @@ Updated: 2026-04-16 ~08:00 UTC
 | **Two-tier eval gap fix** | ✅ DONE — needs merge | tech-lead | Implemented `evaluateStandaloneSession()` (121 lines). Branch: `review/standalone-eval-coverage`. 1968 tests pass. Needs code review + merge. |
 | **writeSkippedEvaluations recurring + Premature DONE tick** | ⏳ Dispatched | tech-lead | req:4b126aed (2026-04-17 10:30). Anomaly keeps returning (211 skippable); PD rate 7→8. Asked for scheduled job + structural investigation. |
 | **Status:active rule (P0 from Hao)** | ✅ DONE | coach | Codified in `agents/shared/common-sense.md` "Project Status Discipline" section (commit 4b858b6). active=WORKING-NOW, paused/blocked distinctions, no "wait 24h" in active projects. |
-| **C1.7 checker false-positives (head/tail)** | ⏳ Dispatched | tech-lead | s_1776425059505_165 (req:61691fdb). Coach root-caused PD metric=8 inflation: `VERIFICATION_PATTERNS` in `convention-check.ts:962` missing `head`/`tail`. 12/16 recent C1.7 failures false positives. Brief: agents/coach/workspace/brief-c17-regression.md |
+| **C1.7 checker false-positives (head/tail)** | ✅ DONE | tech-lead | Fixed — `head`/`tail` added to VERIFICATION_PATTERNS (convention-check.ts:975-976, commit b00ea81e3). Coach req:c58eacb9 closed. Expect PD rate 95.3% → 98-99%. |
 
 ## Completed This Cycle
 | Issue | Status | Owner | Notes |

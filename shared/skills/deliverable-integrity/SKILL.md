@@ -90,6 +90,26 @@ contract with the evaluator. You'll be judged against it.
 what "done" looks like. You'll drift into tangential work and lose track of
 what was actually asked for.
 
+### Step 1b: ANCHOR — Quote literal deliverable tokens
+
+After listing deliverables, **quote the literal path/filename tokens from the
+task** in your reasoning within your first 3–5 ops. Don't paraphrase or
+"normalize" the name.
+
+- Task says `agents/foo/workspace/bar-report.md` → use that exact string.
+- Don't rename to `bar_report.md`, `bar-analysis.md`, or `reports/bar.md`.
+- If the task gives a path, that IS the deliverable path. Treat it as a
+  literal token, not a suggestion.
+
+**Evidence** (matched-pair scout, 2026-04-17): 5/5 low-scoring sessions
+never referenced the task's literal deliverable path in their first 5 ops
+and produced paraphrased/similarly-named artifacts. 5/5 high-scoring
+counterparts quoted the literal token within ops 3–5.
+
+**Why this matters**: Paraphrased filenames are ghost deliverables — they
+look right to you but fail downstream lookups and evaluator checks. Quoting
+the literal token early makes any drift immediately visible to you.
+
 ### Step 2: TRACK — Note each deliverable as you produce it
 
 As you work, keep a running tally of which promised deliverables you've
