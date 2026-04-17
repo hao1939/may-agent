@@ -1,6 +1,7 @@
 # Scout Todo
 
 ## Active Tasks
+- Counter state now in `workspace/state.json` — use `scripts/counters.sh` (get/bump/set/show) instead of editing prose.
 
 ## Pending Leads
 - **✅ DD#655 DONE**: Rubber Duck deep-dive written and in shared library (DD-655-copilot-rubber-duck-cross-model-critique.md).
