@@ -1,21 +1,21 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776393131421_278
+- **Session:** s_1776394915665_288
 - **Status:** done
-- **When:** 2026-04-17T02:32:17.288Z
-- **Duration:** 5s
+- **When:** 2026-04-17T03:02:02.683Z
+- **Duration:** 7s
 
 ## What Happened
 ```json
 {
   "agents": {
-    "tech-lead": {
-      "role": "Builder",
+    "bob": {
+      "role": "Supervisor",
       "capability_level": "L2",
-      "efficiency": 0.72,
-      "quality": 0.83,
-      "verdict": "good",
+      "efficiency": 0.85,
+      "quality": 0.35,
+      "verdict": "needs_improvement",
       "issues": [
-        "3 wasted bash calls from failed bun:sqlite one-liners (auto-extracted failure chains show two separate exec failures that were not fully debugged in-line).",
-        "Some evidence claims are slightly stronger than the shown outputs: the query output shown includes status/opCount/task but not expli
+        "Did not follow heartbeat Step 1 fully: did not read `agents/bob/workspace/todo.md` and did not check for active persistent tasks in `agents/bob/workspace/projects/` (both explicitly required by the injected heartbeat).",
+        "Did not dispatch any work despite the heartbeat’s explicit 
