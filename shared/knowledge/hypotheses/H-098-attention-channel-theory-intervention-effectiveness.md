@@ -207,3 +207,96 @@ H-098 is not just a description of what works — it's a **prescriptive decision
 4. **Budget Channel 2 interventions**: ~~One structural gate per task.~~ **EXP-129 update**: Up to 3 related analytical gates per task with no degradation. At 4 gates, mild degradation (67%) manifests as implementation quality loss, not judgment loss. Choose gates that are analytically related to the task. Duration cost is real: +167s/gate. More gates = longer execution, which may matter more than accuracy loss.
 
 The channel model predicts that future intervention research should focus on expanding Channel 2 capacity (can we chain gates without crowding?) and understanding Channel 3 task-type boundaries (behavioral=100%, analytical=0%, discovery=harmful — what's the distinguishing feature?), rather than finding better Channel 1 content (which is provably futile for judgment tasks) or better Channel 3 content (which EXP-128/130 shows is futile or harmful for non-behavioral tasks).
+
+---
+
+## Ch2 Sub-Channel Refinement (2026-04-17)
+
+**Status**: REFINEMENT — not a new hypothesis. H-098 ID, P(H)=0.80, and CONCLUDED status are preserved. What changes is the *granularity* at which Ch2 is modeled: the existing KE-187 sub-taxonomy table (Self/Environment/World-Model) is lifted from a single informational footnote into a first-class structural commitment with its own predictions and evidence map. P(H) is not revised: all new claims here are about the internal structure of Ch2, not about whether channel separation predicts effectiveness.
+
+### 1. Operational Definitions of the Three Ch2 Sub-Channels
+
+The unifying criterion across the three sub-channels is the **information source** of the gate's verification condition — i.e. what the blocking/allowing decision reads from. Ch2 is still characterized by structural separation from the text-generation stream; the sub-channels differ in *where the ground truth for the gate lives*.
+
+- **Ch2-Self** — *Source: the agent's own produced artifact.* The gate condition is computed from text the agent wrote in an earlier step (ANALYSIS.md, a plan file, a self-rating, a filled-in checklist). Canonical example: workflow reads "does ANALYSIS.md exist and is it non-empty?" before allowing coding. **What counts**: any gate whose truth value is a function of the current agent's output only. Failure signature: the agent can only catch what it can self-diagnose; on absent-information tasks the artifact is wrong in the same way the agent is wrong (EXP-078/098 → 0%).
+
+- **Ch2-Environment** — *Source: externally observable, non-knowledge-bearing system state.* The gate condition is computed from state the agent did not write and that carries no semantic judgment about the task — e.g. "does this file path exist", "did the test suite return exit 0", "is `git status` clean", "does this symbol resolve". Canonical example: path-hallucination guard (EXP-132), test-pass precondition, commit-clean guard. **What counts**: facts that can be checked by a dumb, non-reasoning observer (filesystem, process exit code, linter). Failure signature: catches syntactic/referential errors but is silent on semantic wrongness.
+
+- **Ch2-World-Model** — *Source: a structured representation of task/domain state that the gate's operator has but the agent may not.* The gate simulates the post-action world against invariants encoded outside the agent: a reference spec, a knowledge graph, a cross-reference index, an expert-supplied F1 analysis treated as ground truth. Canonical example: Sentinel's counterfactual graph simulation (DD-766: 93%); our cross-reference intervention where the codebase itself serves as a lightweight knowledge graph (EXP-079: 100% on absent-field). **What counts**: gates whose verification source contains information the agent did not originate and cannot derive from its context window. Failure signature: bounded by the completeness of the external model; wrong model → confidently wrong gate.
+
+**Disambiguating edge cases**:
+- A gate that reads a file the *agent just wrote* and greps it for a keyword is Ch2-Self, even though the read is "from the environment" — the information source originated with the agent.
+- A gate that reads `tests/` output is Ch2-Environment (no semantic judgment), but a gate that reads a human-authored reference doc and compares to the agent's output is Ch2-World-Model.
+- F1 content-injection (KE-186, KE-195: expert analysis provided passively) is *not itself* a gate; it becomes Ch2-World-Model only when a gate enforces consistency between agent output and the F1 content. Passive injection is channel-agnostic information flow.
+
+### 2. Predicted Effectiveness by Failure Mode × Sub-Channel
+
+The core refinement claim is that the three sub-channels have **systematically different profiles** across task types, and lumping them as "Ch2: 87-100%" hides real structure. Predictions below are the formalization of P-098f extended across the full task grid.
+
+Task-type axis uses our existing taxonomy (H-099 + KE-132 + KE-133): **Execution** (apply known solution), **Recognition/Analytical** (detect a condition; e.g. FM-3.3 verification collapse, contradiction detection), **Discovery** (creatively infer the target).
+
+FM-3.3 variants split by information posture:
+- **FM-3.3-present** — relevant info is in-context; agent just skips checking (classic verification collapse).
+- **FM-3.3-absent** — relevant info is not in-context; agent cannot verify without external source (policy-invisible, absent-field).
+
+| Task × FM variant | Ch2-Self | Ch2-Environment | Ch2-World-Model | Discriminating evidence |
+|---|---|---|---|---|
+| Execution / straightforward | ~90% | ~95% | ~95% | Ceiling — all sub-channels converge (ceiling effect, KE-010) |
+| Recognition / FM-3.3-present | **87-100%** | 30-60% | **87-100%** | EXP-127 Ch2 6/6 (Self); externment-only guards can't judge semantic correctness |
+| Recognition / FM-3.3-absent (policy-invisible) | **~0%** | **~0%** | **~90%+** | EXP-078 0/3, EXP-098 0/3 (Ch2-Self); EXP-079 100%, DD-766 93% (Ch2-World-Model) |
+| Recognition / hard task w/ production requirement | **7%** (*destructive*) | n/a | **100%** (*passive F1-only*) | EXP-166 Arm D 1/15 (F1→F2 = Ch2-Self re-production) vs Arm C 15/15 (Ch2-World-Model as passive injection). KE-195. |
+| Discovery / novel | **~0%** (may harm) | ~0% | **~0%** (model can't encode unknown target) | H-099 boundary; Ch2-World-Model also fails because the world-model would itself need to contain the discovery target |
+
+Key asymmetries predicted by the refinement:
+- **Ch2-Self is not merely weaker than Ch2-World-Model on hard+absent tasks — it is *actively destructive* when it requires self-production atop available expert content** (KE-195: 93pp drop, C→D). This is a novel prediction that falls out of treating production cost as a Ch2-Self-specific tax: the agent spends capacity writing its own analysis instead of applying the expert analysis already provided. Ch2-World-Model gates that are *passive* (read existing external source) do not pay this cost.
+- **Ch2-Environment is strong for referential/syntactic errors but near-zero for semantic judgment**, because its verification source carries no task-level knowledge. This predicts that path-guard-style interventions should show a flat ~0% on contradiction-detection or policy-compliance scenarios — testable.
+- **All three sub-channels collapse to ~0% on Discovery**, consistent with H-099. The sub-channel distinction does *not* rescue the discovery boundary; only changing the task to have a locatable target does.
+
+### 3. Re-mapping Existing Evidence to Sub-Channels
+
+The existing evidence summary table in H-098 attributes results to "Ch2" monolithically. Re-mapping:
+
+| Experiment | Original attribution | Refined attribution | Rationale |
+|---|---|---|---|
+| EXP-127 (contradiction-detection forced-ext) | Ch2 6/6 | **Ch2-Self 6/6** | Gate reads agent's own written analysis artifact. Task is FM-3.3-present (contradictions are in-context). Matches Ch2-Self column in §2. |
+| EXP-115 (optimizer completeness checklist) | Ch2 (structural guard) | **Ch2-Self** primarily, with **Ch2-Environment** verification steps | Checklist artifact is agent-produced (Self); individual line items that reference test results or file existence are Environment. Mixed design — which is why it is broadly effective but not absent-info-robust. |
+| EXP-083 (cross-reference on truncated-env / absent-field) | Ch2 (+cross-ref) | **Ch2-World-Model (lightweight)** | Codebase serves as the external knowledge source; gate enforces "check `src/config.js` before declaring done". Matches the FM-3.3-absent row. |
+| EXP-131 (gate-task synergy, unrelated vs related gates) | Ch2 budget | **Ch2-Self, varied by relevance** | All four gates are self-produced artifacts; relevance moderates *within* Ch2-Self. The hump/drop reflects capacity allocation among Ch2-Self gates, not a sub-channel switch. |
+| EXP-166 Arm C (F1-only, 15/15 on cascading-fix-trap-v2) | Ch2 / content quality | **Ch2-World-Model via passive injection** (no active gate, but functions as one) | Expert analysis acts as a ground-truth source distinct from agent's reasoning. No production step → no Ch2-Self tax. |
+| EXP-166 Arm D (F1→F2, 1/15) | (not previously mapped to channels) | **Ch2-Self *stacked on top of* Ch2-World-Model injection** | Production step reintroduces the Ch2-Self tax; KE-195's displacement effect is this refinement's most important falsifiable prediction. |
+| DD-766 Sentinel (93%) | Ch2 | **Ch2-World-Model (canonical)** | Full knowledge-graph counterfactual simulation. |
+| EXP-132 path-hallucination guard | Ch2 | **Ch2-Environment (canonical)** | Filesystem resolvability check — no semantic content. |
+
+**Headline reinterpretation**: the "Ch2: 87-100%" aggregate in H-098's original evidence table conflates three effect sizes. Once split: **Ch2-Self ≈ 80-90% on present-info tasks, ~0% on absent-info, destructive on hard+production**; **Ch2-Environment ≈ 90%+ on referential, ~0% on semantic**; **Ch2-World-Model ≈ 90-100% across both present and absent info, provided a model exists.** The original aggregate was a weighted average dominated by present-info self-verification experiments.
+
+### 4. One Discriminating Experiment: Ch2-Self vs Ch2-Environment on a Hard Task
+
+**Research question**: On a hard recognition task with production requirement, does an environment-only gate (Ch2-Environment) avoid the Ch2-Self displacement tax observed in EXP-166 Arm D?
+
+**Design** (reuses existing scenarios — no new gym work):
+- Scenario: `cascading-fix-trap-v2` (hard, 0% baseline, the EXP-166 task)
+- F1 expert content injected passively in all arms (reproduce Arm C condition as floor).
+- **Arm S (Ch2-Self)** — replicates EXP-166 Arm D: after F1, require agent to write ANALYSIS.md summarizing the trap before fixing. Predicted pass rate: ~7% (replication of KE-195).
+- **Arm E (Ch2-Environment)** — after F1, require a gate check that reads agent's *proposed patch* against environmental state only: does the patch compile? do pre-existing tests still pass? path of touched files exists? No artifact production by the agent, just a pre-commit environmental check. Predicted pass rate: ~70-100% (no production tax; gate catches referential errors but does not itself force displacement).
+- **Arm C (Ch2-World-Model passive floor)** — F1 only, no gate. Predicted pass rate: 100% (EXP-166 replication).
+- N = 10 per arm (cost-manageable; scenario is ~$0.10/trial).
+
+**Falsification conditions**:
+- If Arm E ≈ Arm S (~7%): the displacement tax is not specific to Ch2-Self — any additional gate on a hard task is destructive. Refinement §2 prediction for Ch2-Environment row wrong; treat Ch2-Environment as equally hazardous on hard tasks.
+- If Arm E ≈ Arm C (~100%): Ch2-Environment gates are safely stackable on top of Ch2-World-Model passive injection without paying the Ch2-Self tax. Strong evidence for the sub-channel split as a real mechanistic distinction, not just a relabeling.
+- If Arm E is intermediate (~40-60%): partial tax; sub-channels differ in cost but not categorically. Would motivate a capacity model that weights sub-channels differently rather than treating them as distinct mechanisms.
+
+**Why this is the right experiment**: it uses the scenario where the Ch2-Self problem is largest (93pp displacement) and adds exactly one arm that differs from EXP-166 Arm D only in the *sub-channel* of the gate. Any behavioral difference is attributable to sub-channel, not content or task. Reusing `cascading-fix-trap-v2` also avoids re-litigating task difficulty.
+
+### 5. Connects — Updates
+
+This refinement extends (not replaces) the existing Connects list. Additions / emphases:
+
+- **KE-187** — source of the sub-taxonomy proposal; this section promotes that table from footnote to first-class structural commitment.
+- **KE-195** — production-displacement effect; recast here as the *Ch2-Self tax on hard tasks with passive F1 available*. Provides the sharpest quantitative prediction (93pp) distinguishing Ch2-Self from Ch2-World-Model.
+- **KE-196** — difficulty moderation of the displacement effect; constrains §2 predictions to the "hard task" rows and explains why easy-task data (EXP-115, EXP-083 easy arms) does not discriminate sub-channels.
+- **KE-188** — GAM memory access/applies split; the access/applies distinction is structurally parallel to Ch2-World-Model passive-injection vs Ch2-Self active-reapplication and may be a second instance of the same displacement mechanism, worth cross-testing.
+- **DD-766** — canonical Ch2-World-Model reference.
+- **EXP-166** — the experiment that, re-read through this refinement, is the strongest existing evidence for sub-channel distinctions; Arms C vs D differ precisely in sub-channel and produce a 93pp gap.
+
+**This is a refinement of H-098, not a new hypothesis.** The claim "channel separation predicts effectiveness" is unchanged. What this section adds is the structural interior of Ch2: three sub-channels with distinct information sources, distinct failure boundaries, and distinct interaction effects (notably the Ch2-Self displacement tax on hard tasks). P(H) remains 0.80; the refinement's own claims sit at roughly P≈0.65 pending the experiment in §4 — they are well-supported by EXP-166 and DD-766 but under-replicated on the Ch2-Environment leg.
