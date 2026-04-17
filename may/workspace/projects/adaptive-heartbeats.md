@@ -281,3 +281,27 @@ Workspace is gitignored — fine, the message is tracked via agents.message() (r
 - agents/shared/may-agent-docs/design/scout-arxiv-windowing.md
 - agents/scout/heartbeat.md
 **Files touched**: (see worker session)
+**Owner assessment**: CONTINUE — — Iteration 7 was a no-op. Worker read `scout-arxiv-windowing.md` and `scout/heartbeat.md` but made zero edits. No commits touching scout/heartbeat.md since `4457f8c95` (M1 rollout); M2 is **not** in place.
+
+**Structural evidence:**
+- `git log --oneline -5 scout/heartbeat.md` → top commit is M1 rollout, no M2 edit. ❌
+- `grep -n "arXiv window" agents/scout/heartbeat.md` → no match for the proposed sentence. The only "arXiv window" mention is line 50 (idle-playbook generic) and pre-existing line 30 note. ❌
+- `agents/may/workspace/projects/adaptive-heartbeats.md` line 36 still `[ ]` for M2. ❌
+- Worker's own summary: "Files read (not modified)" — nothing written, nothing committed, session ended in 44s claiming "done". This is a false success.
+
+**Rubric failure:** Worker marked status=done with no deliverable. That's FM-class "claimed completion without artifact". Call this out in the next dispatch.
+
+**Next iteration — M2 rollout, explicit steps (design is already approved in iter-6 review):**
+
+1. `read agents/scout/heartbeat.md` around line 30 (DECIDE step, near day-of-week note on line 30).
+2. **Surgical `edit()`** — insert this exact sentence from the approved design:
+   > **Outside the arXiv window?** (UTC Mon–Fri 00:00–06:00 = fresh-listings window. Sat/Sun or Mon–Fri 06:00–23:59 = outside.) If no priority hit and no rotation item ready, skip the batch-scan block and go straight to `agents/shared/may-agent-docs/idle-playbook.md` item. Produce one artifact.
+
+   Place it adjacent to the existing day-of-week note (line 30) — not as a new section, not a reordering (KE-008).
+3. Verify: `grep -n "Outside the arXiv window" agents/scout/heartbeat.md` → 1 match. `grep -n "idle-playbook" agents/scout/heartbeat.md` → still ≥1 match (line 50 preserved).
+4. Commit from `agents/`: `scout: M2 arXiv windowing fast-path to idle-playbook`.
+5. Tick M2 `[x]` in `agents/may/workspace/projects/adaptive-heartbeats.md` line 36. Add a Progress Log entry with the pre-deploy baseline: **Thu 36% (37/104), Fri 29% (23/80), Wed 12% (9/77)** so the 2-week success check has a reference. Commit.
+6. **STOP. Do NOT start M3.**
+
+**Anti-pattern callout for the worker:** Iteration 7 claimed `done` in 44s with zero files modified. If you only read files, status is `partial` with explicit "ran out of time" or `blocked`, not `done`. Reading without editing is not an iteration deliverable. Next time: do the edit, verify with grep, commit — then finish.
+
