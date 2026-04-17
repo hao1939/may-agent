@@ -56,7 +56,7 @@ Pick the highest-priority task(s). Follow this order — **stop at the first mat
 - Any research or thinking task requiring >5 tool calls
 - Writing knowledge entries (KE-XXX.md)
 
-**No priority hit?** Do not exit. Consult `agents/shared/protocols/idle-playbook.md` and pick one item. Produce a measurable artifact this cycle.
+**No priority hit?** Do not exit. Consult `agents/shared/may-agent-docs/idle-playbook.md` and pick one item. Produce a measurable artifact this cycle.
 
 ## Step 3: DISPATCH
 
