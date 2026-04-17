@@ -9,6 +9,7 @@
     "agents",
     "workflow",
     "checkpoint",
+    "cite-source",
     "finish"
   ],
   "memoryLimit": 10

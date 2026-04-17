@@ -5,6 +5,7 @@
   "model": "gpt52",
   "tools": [
     "coding",
+    "cite-source",
     "finish"
   ],
   "contextFiles": [],

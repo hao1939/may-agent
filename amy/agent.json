@@ -7,6 +7,7 @@
   "compaction": true,
   "tools": [
     "coding",
+    "cite-source",
     "finish"
   ]
 }

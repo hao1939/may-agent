@@ -15,7 +15,7 @@ Agents produce reports, KEs, analyses — then get zero signal on whether anyone
 ## Milestones
 
 - [x] **Track file reads by other agents** — Surface "unread reports" so May can nudge consumers or tell producers to stop. *(Done in iter 2–3: `file_reads` table + cross-agent tracker in `src/lib/session-subscribers.ts`, unread-deliverables query verified.)*
-- [ ] **Bidirectional citations** — When Bob uses DD-766 from Scout, Scout can see its output had impact. Simple cross-reference tracking.
+- [x] **Bidirectional citations** — When Bob uses DD-766 from Scout, Scout can see its output had impact. Simple cross-reference tracking.
 - [ ] **Findings → tracked requests automatically** — When scout/bob produce actionable findings, auto-create tracked requests so tech-lead picks them up. Tech-lead specifically asked for this.
 - [ ] **Periodic output quality review** — May samples agent outputs weekly, rates usefulness, feeds back to agents via heartbeat directives.
 

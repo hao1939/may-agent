@@ -5,6 +5,7 @@
   "model": "opus",
   "tools": [
     "coding",
+    "cite-source",
     "finish"
   ],
   "memoryLimit": 0
