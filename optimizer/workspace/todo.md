@@ -11,6 +11,12 @@
 
 ## 🔴 ACTIVE
 
+### 🏗️ LLM-to-JS Conversion — STARTED (2026-04-17 15:35)
+- P0 from Hao via may: agents doing 90% observation vs output. Convert recurring LLM aggregation tasks to JS handlers (the `analyze-failures.ts`→`bob/workspace/analysis.md` pattern).
+- Finding: `workspace/finding-llm-to-js-conversion-20260417.md` — top 5 candidates, ~400 ops/day addressable.
+- **Dispatched** P1 req `c4cdeb41` → tech-lead: build `agents/coach/handlers/common-sense-audit.ts` (candidate #1, ~110 ops/day).
+- Next after #1 ships: candidate #2 (`project-resume` pre-flight) + candidate #5 (tool-adoption metric handler).
+
 ### 🚨 LiteLLM Strips Prompt Caching — $143/day Waste
 - LiteLLM proxy strips `cache_control` → 0% Anthropic cache hits. $143/day (~$4,300/month) savings with 70% cache rate.
 - Bypass exists at `src/app/may.ts:148-165`, needs `ANTHROPIC_API_KEY` env var.
