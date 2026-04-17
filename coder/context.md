@@ -26,6 +26,7 @@ finish({
 ## Convention Rules
 - **C1.1 Rule**: Always `read()` a file before `edit()`-ing it — even if you think you know the contents from error output. No exceptions.
 - **C1.5 Scope Rule**: Before your first edit, check the task constraints for "ONLY modify" or "Do NOT modify" limits — violating them is an automatic failure. If a file path gives ENOENT, run `ls` or `find` to locate it — do NOT pivot to editing unrelated files.
+- **C1.6 Post-Write Verification Rule**: After your LAST write/edit and before `finish()`, you MUST run one verification command that confirms the change landed correctly. Pick one: `read()` the file you just wrote, OR run the task's test/build/tsc command, OR `bash cat <file>` / `git diff <file>`. If `finish()` is blocked with `T2-no-post-write-verification`, do NOT retry `finish()` with different wording — run an actual verification tool call first, then retry. Narrative claims in the finish summary do NOT satisfy the guard; only a real tool output after your last write does.
 
 ## Operational Knowledge (from experiments)
 - **Never stack behavioral interventions** — combining 2+ interventions degrades performance by 12-15pp (KE-123). Use ONE targeted intervention per task.
