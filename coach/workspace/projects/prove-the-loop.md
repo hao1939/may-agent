@@ -46,3 +46,9 @@ Each iteration:
 
 ## Log
 - 2026-04-17: Project created. coder.quality at 0.82.
+- 2026-04-17 Iteration 1:
+  - **Diagnosis**: Overall quality 0.82, but production-only quality is 0.755 (gym inflates average to 0.867). 23 evals <0.5 quality, 10 production. Top failure: FM-2.6 scope violations (editing forbidden files, wrong directories, ENOENT→pivot to unrelated work).
+  - **Infrastructure fix**: Fixed `scripts/gym-batch.sh` JSON parsing bug — batch runner was reporting all runs as ERROR due to extra JSON line in gym output. Now correctly parses results.
+  - **Intervention**: Added C1.5 Scope Rule to `agents/coder/context.md` — instructs coder to check task constraints before first edit and handle ENOENT gracefully. Deployed to production (not gym-testable; production failure mode doesn't match gym scenarios).
+  - **Lab fork**: `agents/.lab/coder-scope-anchor/` created for reference.
+  - **Next**: Monitor production quality over next 24h to measure impact. If scope violations decrease, iterate on next failure mode.
