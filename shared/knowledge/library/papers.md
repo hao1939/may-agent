@@ -1607,10 +1607,3 @@ Production multi-agent data management system with "three-track knowledge archit
 | 2604.13206 | Numerical Instability and Chaos in LLMs (Apr 2026) | ★★★ — Rounding errors in transformers create chaotic avalanche effects. Three regimes: stable, chaotic, signal-dominated. |
 | 2604.13504 | Chain of Uncertain Rewards with LLMs for RL (Apr 2026) | ★★½ — Reward function design via LLM + Bayesian optimization. Domain-specific (robotics). |
 | 2604.13318 | WebXSkill: Executable Skills for Web Agents (Apr 2026) | ★★★ — Bridges textual and code skills with parameterized programs + NL guidance. +9.8pp on WebArena. |
-
-### Session 194 (April 17, 2026) — Memory Transfer, Interaction Integrity, A2A
-| arXiv ID | Title | ★ | DD# | Tags |
-|-----------|-------|---|-----|------|
-| 2604.14004 | Memory Transfer Learning: Abstraction Dictates Transferability | ★★★★★ | DD-770 | memory, transfer-learning, abstraction |
-| 2604.13061 | Bi-Predictability: Silent Uncoupling Detection | ★★★★½ | DD-771 | monitoring, information-theory, integrity |
-| 2604.13348 | CONCORD: Privacy-Aware A2A Context Recovery | ★★★★ | DD-772 | a2a, privacy, context-recovery |

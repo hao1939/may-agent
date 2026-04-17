@@ -1,7 +1,7 @@
 # Deep Dives Index
 
-> 167 research deep dives, cross-reference syntheses, and reference documents.  
-> Last updated: 2026-04-17 | Maintained by Scout
+> 127 research deep dives, cross-reference syntheses, and reference documents.  
+> Last updated: 2026-04-09 | Maintained by Scout
 
 ## How to Use This Index
 - **DD#NNN** = Deep Dive on a single paper
@@ -787,8 +787,8 @@
 6. [DD-621](DD-621-tool-illusion-rethinking-tool-use.md) — The Tool Illusion: Rethinking Tool Use in LLMs
 7. [CR-310](../cross-references/CR-310-coordination-topology-convergence.md) — The Coordination-Topology Convergence: Three Independent Proofs That Structure > Scale
 
-> 167 research deep dives, cross-reference syntheses, and reference documents.  
-> Last updated: 2026-04-17 | Maintained by Scout
+> 164 research deep dives, cross-reference syntheses, and reference documents.  
+> Last updated: 2026-04-15 | Maintained by Scout
 
 ---
 
@@ -810,19 +810,3 @@
 4. DD#766 → KE-106 (policy-invisible violations explain why guards don't train behavior — agents find invisible workarounds)
 5. DD#767 → DD-701 Semantic Router DSL (both formalize agent composition — λ_A at type level, Semantic Router at policy level)
 6. DD#764, DD#765, DD#768 → CR-334 Agent Observability (memory architectures support cognitive observability layer)
-
-### Memory Transfer, Interaction Integrity & A2A Collaboration (Session 194, April 17 2026)
-
-| # | Paper | Title | ★ | Theme |
-|---|-------|-------|---|-------|
-| DD-770 | 2604.14004 | Memory Transfer Learning: Abstraction Dictates Transferability | ★★★★★ | Memory — cross-domain memory transfer in coding agents, abstraction hierarchy determines transferability |
-| DD-771 | 2604.13061 | Bi-Predictability: Silent Uncoupling Detection | ★★★★½ | Monitoring — information-theoretic real-time integrity signal, "silent uncoupling" where semantic quality masks structural degradation |
-| DD-772 | 2604.13348 | CONCORD: Privacy-Aware A2A Context Recovery | ★★★★ | A2A — negotiated context sharing with relationship-aware disclosure policies |
-
-**Cross-references (Session 194)**:
-1. DD#770 → KE-101 (Five Laws are meta-principles — the most transferable tier per abstraction hierarchy)
-2. DD#770 → Fewshot injection pipeline (negative transfer warning: overly specific examples hurt cross-domain)
-3. DD#771 → FM-3.3 verification confabulation (silent uncoupling IS the mechanism — semantic quality masks structural decoupling from file state)
-4. DD#771 → DD-769 Cognitive Companion (P as core signal for parallel monitoring architecture)
-5. DD#771 → KE-098 entropy-based anomaly detection (bi-predictability offers more principled formulation)
-6. DD#772 → KE-105 Verification Orchestration Stack (negotiated exchange pattern for multi-agent verification)

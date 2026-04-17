@@ -1,3 +1,5 @@
 # Deliverables Checklist
 
-- [x] finding-exp176-efficiency-patterns-0417.md — EXP-176 efficiency pattern analysis (70 lines, 4724 bytes)
+- [x] Forked Mode C exploration session — DONE
+- [x] Finding written: `finding-bob-efficiency-gap-0416.md` (69 lines) — DONE
+- [x] Rotation tracker updated in `todo.md` — DONE
