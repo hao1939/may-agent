@@ -13,8 +13,8 @@ Agents manually repeat templated work every session: Bob creates hypothesis file
 
 ## Milestones
 
-- [ ] **Bob: template scripts** — `new-hypothesis.sh`, `new-experiment.sh`, `new-ke.sh` — scaffold files with correct format, auto-increment IDs, link to related entries.
-- [ ] **Optimizer: saved query library** — A `.sql` file or script with common queries (session stats, agent ops, error rates). Stop rewriting from scratch.
+- [x] **Bob: template scripts** — `new-hypothesis.sh`, `new-experiment.sh`, `new-ke.sh` — scaffold files with correct format, auto-increment IDs, link to related entries.
+- [x] **Optimizer: saved query library** — A `.sql` file or script with common queries (session stats, agent ops, error rates). Stop rewriting from scratch.
 - [ ] **Scout: structured counter management** — Move paper counters, search state, and tracking out of todo.md prose into a machine-readable file.
 - [ ] **Tech-lead: delegation templates** — Standard task descriptions for common coder dispatches (fix test, implement feature, refactor). Reduce delegation overhead.
 - [ ] **Coach: experiment templates** — Quick-setup templates for common experiment types so coach doesn't rebuild scaffolding each time.
