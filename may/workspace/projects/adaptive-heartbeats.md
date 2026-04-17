@@ -3,8 +3,8 @@
 **Owner:** may
 **Goal:** When an agent wakes with no assigned task, it should do something autonomous and useful — not exit fast. Idle heartbeats are the system's *exploration budget*.
 **Created:** 2026-04-16
-**Updated:** 2026-04-17 (reframed per Hao)
-**Status:** Active
+**Updated:** 2026-04-17 (M2 landed, paused for success check)
+**Status:** Paused — awaiting M2 2-week success check (resume ~2026-05-01). M3 (adaptive frequency) deferred until M2 baseline delta is measured.
 **Master project:** [system-evolution.md](./system-evolution.md) → Gap 4
 **Source feedback:** [scout](../../scout/workspace/system-gaps.md), [coach](../../coach/workspace/system-gaps.md)
 **Tracked metrics:** `system.agent-utilization`, `system.request-throughput`
