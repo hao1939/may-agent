@@ -1,21 +1,24 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776461838948_648
+- **Session:** s_1776462965241_652
 - **Status:** done
-- **When:** 2026-04-17T21:37:29.435Z
-- **Duration:** 10s
+- **When:** 2026-04-17T21:56:12.769Z
+- **Duration:** 7s
 
 ## What Happened
 ```json
 {
   "agents": {
-    "coder": {
+    "bob": {
       "role": "Builder",
       "capability_level": "L2",
-      "efficiency": 0.25,
-      "quality": 0.45,
-      "verdict": "acceptable",
+      "efficiency": 0.9,
+      "quality": 0.95,
+      "verdict": "good",
       "issues": [
-        "[FM-3.1/GHOST_DELIVERABLE] Multiple finish(status:\"success\") attempts claimed/strongly implied code changes or deliverables despite no write/edit/file-producing commands in this session; the finish guard blocked four times before switching to partial.",
-        "[FM-1.3-lite/RETRY_STORM] Repeat
+        "[SCOPE_NIT] Commit included an unrelated file change (coach/last-session.md) alongside the requested KE entry; likely auto-generated but still adds noise to the deliverable set."
+      ],
+      "metrics": {
+        "task_completion": "high",
+        "deliverable_integrity": "high (file path, line count, c
