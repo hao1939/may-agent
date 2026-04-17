@@ -1,12 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776455528422_593
+- **Session:** s_1776457328337_608
 - **Status:** done
-- **When:** 2026-04-17T19:57:08.919Z
-- **Duration:** 5m0s
+- **When:** 2026-04-17T20:23:22.262Z
+- **Duration:** 1m13s
 
 ## What Happened
-No red metrics actionable (0→0), no pending P0/P1 requests. Self-directed rotation: the design doc for difficulty-adaptive content-first guards exists but the 4-arm pilot experiment (EXP) hasn't been formalized. sql-injection (33% baseline) is explicitly flagged as ready for intervention.
-
-Dispatching a work session to formalize that as an EXP design doc.
+Red metric "Experiment completion 0→0" is degenerate (target 0). No pending P0/P1. The EXP-178 design had one open blocker noted: sql-injection scenario lacked `difficulty` tag. Handled inline — added `"difficulty": "medium"` and committed (46cbbdd24). Since it's a lean heartbeat, I'll wrap here rather than dispatch the N=120 execution without a review cycle.
