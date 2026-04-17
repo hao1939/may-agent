@@ -1,10 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776424241906_145
+- **Session:** s_1776424762528_155
 - **Status:** done
-- **When:** 2026-04-17T11:11:01.541Z
-- **Duration:** 19s
+- **When:** 2026-04-17T11:23:12.145Z
+- **Duration:** 3m49s
 
 ## What Happened
-This is the 10th consecutive short-cadence cron re-fork since Iter 5 completed at 10:27Z (~43 min ago). Iter 6 (build FM-2.6 scope scenario + `coder-no-c15` fork + A/B batch) is a fresh work-session-sized task that the `[PERSISTENT TASK RESUME]` handler runs on its own longer cadence — not the 5-min cron. Project Status is correctly `active`; no file edit needed. Deferring cleanly per established pattern.
+Found the root cause clearly. The checker's VERIFICATION_PATTERNS list includes `cat`, `grep`, `ls`, `wc`, `find`, `tail`... wait let me re-check for `head`/`tail`:
+
+Patterns: `grep, ls, test, curl, node, python, cat, wc, find, diff, tsc, vitest`. **`head` and `tail` are missing.** Every recent may failure is `bash "head -50 <file>"` followed by `finish(success)` — a valid verification that the checker mislabels as non-verification.
