@@ -284,6 +284,12 @@ function tryPull(
     }).trim();
 
     if (hasChanges) {
+      // SAFETY: Abort if mass deletions detected
+      const delCount = hasChanges.split("\n").filter(l => l.trimStart().startsWith("D")).length;
+      if (delCount > 50) {
+        log(`[agents-auto-commit] ⚠️ ABORT pre-sync commit: ${delCount} deletions detected`);
+        return;
+      }
       git("git add -A", { cwd: agentsDir, timeout: 10_000 });
       try {
         git('git commit -m "chore(auto): commit before sync" --no-verify', {
