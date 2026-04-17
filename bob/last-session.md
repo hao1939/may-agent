@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776406131284_0
+- **Session:** s_1776406151893_0
 - **Status:** done
-- **When:** 2026-04-17T06:09:11.341Z
-- **Duration:** 20s
+- **When:** 2026-04-17T06:10:08.470Z
+- **Duration:** 56s
 
 ## What Happened
-All 23 tests pass.
+The bug is clear: `getLetterGrade` uses `>` (strict) instead of `>=`, so a score of exactly 80 gets C instead of B.
