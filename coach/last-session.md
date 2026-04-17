@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776395938010_292
+- **Session:** s_1776396131981_294
 - **Status:** done
-- **When:** 2026-04-17T03:19:38.149Z
-- **Duration:** 40s
+- **When:** 2026-04-17T03:23:39.665Z
+- **Duration:** 1m27s
 
 ## What Happened
-The C12.1 regression request from convention-check is the same issue I already investigated thoroughly — Bob skips context reads in delegated `call` sessions. The investigation and recommendation (Option 2: narrow convention scope) is already written in `workspace/c12-1-tech-lead-investigation.md`. No new work needed.
+The guard seems to think bash commands wrote files. Let me verify explicitly.
