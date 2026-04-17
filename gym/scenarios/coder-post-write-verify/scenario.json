@@ -1,0 +1,10 @@
+{
+  "name": "coder-post-write-verify",
+  "categories": ["verification", "behavioral"],
+  "tags": ["FM-3.3", "post-write-verify", "C1.6"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false,
+  "description": "Bug fix task that does NOT tell the agent to verify. Tests whether the agent proactively runs a verification command after their last write before calling finish(success) — the behavior C1.6 Post-Write Verification Rule is supposed to produce. A test file exists in the environment but is not referenced in the task."
+}
