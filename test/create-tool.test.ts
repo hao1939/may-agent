@@ -149,82 +149,43 @@ describe("createAgentsTool()", () => {
   });
 
   describe("action: message", () => {
-    it("tracks task and returns confirmation", async () => {
+    // The agents.message action was removed in commit d15c5249 (notify-split).
+    // It now returns a fixed deprecation error regardless of inputs. Callers should
+    // use notify({ agent, message }) or agents.fork({ agent, task }) instead.
+    it("returns deprecation error regardless of inputs", async () => {
+      const deprecation = "agents.message action has been removed";
+
+      // With full config
       const tool = manager.createAgentsTool({
         agentsRoot,
         getCallerAgentName: () => "may",
+        triggerHeartbeat: () => true,
       });
+      const r1 = parseResult(
+        await tool.execute("tc1", { action: "message", agent: "researcher", message: "review the API docs" }),
+      );
+      expect(r1.error).toContain(deprecation);
+      expect(r1.sent).toBeUndefined();
+      expect(r1.heartbeatTriggered).toBeUndefined();
 
-      const result = await tool.execute("tc1", {
-        action: "message",
-        agent: "researcher",
-        message: "review the API docs",
-      });
-      const parsed = parseResult(result);
-      expect(parsed.sent).toBe("researcher");
-      expect(parsed.message).toBe("review the API docs");
-    });
+      // Missing fields — still the same deprecation error, no "requires" validation
+      const r2 = parseResult(await tool.execute("tc2", { action: "message", agent: "researcher" }));
+      expect(r2.error).toContain(deprecation);
+      const r3 = parseResult(await tool.execute("tc3", { action: "message", message: "hi" }));
+      expect(r3.error).toContain(deprecation);
 
-    it("returns confirmation for multiple sends", async () => {
-      const tool = manager.createAgentsTool({
-        agentsRoot,
-        getCallerAgentName: () => "bob",
-      });
+      // Unregistered agent — same deprecation error, no "not registered" lookup
+      const r4 = parseResult(
+        await tool.execute("tc4", { action: "message", agent: "nonexistent", message: "do stuff" }),
+      );
+      expect(r4.error).toContain(deprecation);
 
-      const r1 = parseResult(await tool.execute("tc1", { action: "message", agent: "researcher", message: "first" }));
-      const r2 = parseResult(await tool.execute("tc2", { action: "message", agent: "researcher", message: "second" }));
-      expect(r1.sent).toBe("researcher");
-      expect(r2.sent).toBe("researcher");
-    });
-
-    it("calls triggerHeartbeat callback", async () => {
-      let triggered: string | null = null;
-      const tool = manager.createAgentsTool({
-        agentsRoot,
-        triggerHeartbeat: (name) => {
-          triggered = name;
-          return true;
-        },
-      });
-
-      const result = await tool.execute("tc1", {
-        action: "message",
-        agent: "researcher",
-        message: "do stuff",
-      });
-      const parsed = parseResult(result);
-      expect(triggered).toBe("researcher");
-      expect(parsed.heartbeatTriggered).toBe(true);
-    });
-
-    it("returns error when agent or message missing", async () => {
-      const tool = manager.createAgentsTool({ agentsRoot });
-
-      const r1 = await tool.execute("tc1", { action: "message", agent: "researcher" });
-      expect(parseResult(r1).error).toContain("requires");
-
-      const r2 = await tool.execute("tc2", { action: "message", message: "hi" });
-      expect(parseResult(r2).error).toContain("requires");
-    });
-
-    it("returns error for unregistered agent", async () => {
-      const tool = manager.createAgentsTool({ agentsRoot });
-      const result = await tool.execute("tc1", {
-        action: "message",
-        agent: "nonexistent",
-        message: "do stuff",
-      });
-      expect(parseResult(result).error).toContain("not registered");
-    });
-
-    it("returns error when agentsRoot not configured", async () => {
-      const tool = manager.createAgentsTool(); // no agentsRoot
-      const result = await tool.execute("tc1", {
-        action: "message",
-        agent: "researcher",
-        message: "do stuff",
-      });
-      expect(parseResult(result).error).toContain("agentsRoot");
+      // No agentsRoot configured — still the same deprecation error
+      const bareTool = manager.createAgentsTool();
+      const r5 = parseResult(
+        await bareTool.execute("tc5", { action: "message", agent: "researcher", message: "do stuff" }),
+      );
+      expect(r5.error).toContain(deprecation);
     });
   });
 
