@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776447433798_526
+- **Session:** s_1776450929628_555
 - **Status:** done
-- **When:** 2026-04-17T17:38:49.497Z
-- **Duration:** 1m35s
+- **When:** 2026-04-17T18:37:43.554Z
+- **Duration:** 2m13s
 
 ## What Happened
-The two test failures are pre-existing on HEAD (reproduced with src/ reverted via stash). My task is scoped to ONLY `scripts/gym-batch.sh`, and that file's verification passes.
+Confirmed: `test/file-read-tracker.test.ts` failure is pre-existing on HEAD (reproduces with src/ reverted). Unrelated to agent-loader scope.
