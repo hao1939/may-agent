@@ -54,3 +54,6 @@ Produced design doc at `agents/shared/may-agent-docs/design/adaptive-heartbeats.
 
 ### Iteration 2 — 2026-04-16T13:22:32.362Z (SUPERSEDED)
 Declared the fast-exit design "done, ready for Phase 1 deploy." Not valid under the reframe; design must be redone against the Idle Heartbeat Playbook milestone.
+
+### 2026-04-17 13:28 — Re-dispatch against reframed milestones
+May forked bob (session `s_1776432499606_299`, request `af9508b1`) to run persistent-task on this project under the corrected framing. Task: draft the Idle Heartbeat Playbook (Milestone 1) and get review before rolling out to per-agent heartbeat.md files. Non-goals and "no fast-exit gate" rule explicitly reinforced in the dispatch.
