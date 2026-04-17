@@ -26,7 +26,7 @@ Use gym for fast feedback (20 minutes) and production metrics for confirmation (
 ## How We Execute
 
 ### Workflows (Process)
-Workflows are the standard way to execute work. Use `persistent-task` for multi-session projects, `implement-and-verify` for code changes. Run `workflow.list()` to see what's available. Don't freestyle when a workflow exists — workflows enforce quality gates, verification steps, and audit trails.
+Workflows structure how work gets done. `persistent-task` for multi-session projects, `implement-and-verify` for code changes. The workflow enforces quality gates, verification steps, and audit trails — you focus on the work, the workflow handles the process.
 
 ### Guards (Quality Gates)
 Guards check your work automatically — verification after writes, scope compliance, deliverable completeness. They catch mistakes before they ship. If a guard blocks you and you can't resolve it, escalate — don't fight the guard. Guards can be overridden by the escalation chain (you → owner → May → Hao), never bypassed unilaterally.
