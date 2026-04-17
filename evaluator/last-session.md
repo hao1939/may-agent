@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776391360980_261
+- **Session:** s_1776391915662_262
 - **Status:** done
-- **When:** 2026-04-17T02:02:47.595Z
-- **Duration:** 6s
+- **When:** 2026-04-17T02:12:09.273Z
+- **Duration:** 13s
 
 ## What Happened
 ```json
@@ -17,5 +17,5 @@
       "quality": 0.78,
       "verdict": "good",
       "issues": [
-        "[MINOR_WASTE] Tried to commit after workflow had already committed; 3 follow-up commands to confirm state (git status/ls, wc/grep).",
-        "[EVIDENCE_GAP_RISK] Claimed 'already committed' based on clean working tree, but did not show `git log -1` / commit hash including the new file; clean tree 
+        "[FM-3.3-lite] Attempted finish(status:success) without required DELIVERABLES_CHECKLIST.md; had to recover via an extra write + finish.",
+        "[EVIDENCE_GAP_RISK] Claimed the finding was \"verified by workflow\" without showing the workflow tool output in this transcript segment; the only hard e
