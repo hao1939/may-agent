@@ -1,8 +1,10 @@
 # Design: Adaptive Heartbeats
 
+> **⚠️ SUPERSEDED 2026-04-17.** The Phase 1 "fast-exit gate" in this doc is **killed** by Hao's reframe: heartbeats are an exploration budget, not overhead. Do **not** deploy Phase 1 from this document. Milestone 1 is replaced by [idle-heartbeat-playbook.md](./idle-heartbeat-playbook.md). Phases 2-3 (adaptive frequency, arXiv windowing) are retained as Milestones 2-3 but reframed in the [project file](../../../may/workspace/projects/adaptive-heartbeats.md).
+
 **Author:** bob  
 **Date:** 2026-04-16  
-**Status:** Draft  
+**Status:** Superseded (Phase 1); Phases 2-3 retained as future milestones  
 **Project:** [adaptive-heartbeats](../../may/workspace/projects/adaptive-heartbeats.md)
 
 ## Problem

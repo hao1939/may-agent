@@ -3,7 +3,8 @@
 **Owner:** optimizer
 **Goal:** Automate repetitive agent tasks that waste budget every session.
 **Created:** 2026-04-16
-**Status:** Active
+**Status:** Done
+**Completed:** 2026-04-17
 **Master project:** [system-evolution.md](../../may/workspace/projects/system-evolution.md) → Gap 5
 **Source feedback:** [bob](../../bob/workspace/system-gaps.md), [optimizer](../system-gaps.md), [scout](../../scout/workspace/system-gaps.md), [tech-lead](../../tech-lead/workspace/system-gaps.md), [coach](../../coach/workspace/system-gaps.md)
 **Tracked metrics:** `optimizer.tool-adoption`
