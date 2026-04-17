@@ -209,7 +209,7 @@ bus.subscribe(createStuckDetector(
       type: "message_created",
       fromEntity: "system:circuit-breaker",
       toAgent: "may",
-      method: "message",
+      method: "notify",
       task: `[circuit-breaker] Agent "${agent}" terminated (session ${sessionId}): ${reason}. Investigate the root cause — check the session transcript, recent errors, and whether the agent needs guidance or a code fix.`,
       source: "circuit-breaker",
       priority: "P1",
@@ -490,7 +490,7 @@ bus.subscribe((event) => {
         fromEntity: info.agent,
         toAgent: "may",
         task: `[escalation] ${info.agent} session ${info.sessionId} — ${fp.status}: ${fp.summary}`,
-        method: "message",
+        method: "notify",
         sessionId: info.sessionId,
       });
     } catch {
@@ -813,7 +813,7 @@ bus.subscribe((event) => {
             fromEntity: (event as any).from ?? "human",
             toAgent: (event as any).to,
             task: (event as any).task,
-            method: "message",
+            method: "notify",
             source: (event as any).source ?? "socket",
           });
           bus.emit({

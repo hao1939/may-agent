@@ -661,7 +661,7 @@ export class Cron {
           const pending = db
             .prepare(
               `SELECT task, fromEntity, createdAt, requestId FROM requests
-               WHERE toAgent = ? AND status IN ('CREATED', 'IN_PROGRESS') AND method IN ('message', 'send', 'fork', 'run')
+               WHERE toAgent = ? AND status IN ('CREATED', 'IN_PROGRESS') AND method IN ('message', 'notify', 'send', 'fork', 'run')
                ORDER BY createdAt ASC`,
             )
             .all(agentName) as { task: string; fromEntity: string; createdAt: number; requestId: string }[];

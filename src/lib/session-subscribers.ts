@@ -79,7 +79,7 @@ export function createRequestTracker(persistDir: string): (event: AgentEvent) =>
               fromEntity: event.agent,
               toAgent: event.agent,
               task: String(item).slice(0, 500),
-              method: "message",
+              method: "notify",
               source: "finish",
             });
           } catch (err) {
@@ -100,7 +100,7 @@ export function createRequestTracker(persistDir: string): (event: AgentEvent) =>
         const pending = db
           .prepare(
             `SELECT requestId, task FROM requests
-             WHERE toAgent = ? AND status IN ('CREATED', 'IN_PROGRESS') AND method IN ('message', 'send', 'fork', 'run')`,
+             WHERE toAgent = ? AND status IN ('CREATED', 'IN_PROGRESS') AND method IN ('message', 'notify', 'send', 'fork', 'run')`,
           )
           .all(event.agent) as { requestId: string; task: string }[];
 

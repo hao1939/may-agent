@@ -325,7 +325,7 @@ function readTodoSummary(stateDir: string): string {
     const row = db
       .prepare(
         `SELECT COUNT(*) as count FROM requests
-         WHERE toAgent = 'may' AND status IN ('CREATED', 'IN_PROGRESS') AND method = 'message'`,
+         WHERE toAgent = 'may' AND status IN ('CREATED', 'IN_PROGRESS') AND method IN ('message', 'notify')`,
       )
       .get() as { count: number } | null;
     return `${row?.count ?? 0} pending task(s)`;

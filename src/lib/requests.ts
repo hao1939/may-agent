@@ -18,7 +18,7 @@ import { randomUUID } from "node:crypto";
 
 type RequestStatus = "CREATED" | "IN_PROGRESS" | "COMPLETED" | "FAILED" | "BLOCKED";
 
-type RequestMethod = "chat" | "call" | "message" | "fork" | "workflow";
+type RequestMethod = "chat" | "call" | "message" | "notify" | "fork" | "workflow";
 
 // ErrorClass and classifyError are now in classify-error.ts (pure, no bun:sqlite deps)
 export type { ErrorClass } from "./classify-error.js";

@@ -54,7 +54,7 @@ export class DbWriter {
             fromEntity: event.from,
             toAgent: event.to,
             task: event.task,
-            method: "message",
+            method: "notify",
           });
           break;
 

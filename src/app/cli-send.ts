@@ -68,7 +68,7 @@ function trackInDb(persistDir: string, agent: string, message: string, source?: 
       fromEntity: "human",
       toAgent: agent,
       task: message.slice(0, 500),
-      method: "message",
+      method: "notify",
       source: source ?? "cli",
     });
   } catch {

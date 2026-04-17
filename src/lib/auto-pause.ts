@@ -265,7 +265,7 @@ export function createPauseEscalation(
   return trackRequest(persistDir, {
     fromEntity: "cron",
     toAgent: config.escalationAgent,
-    method: "message",
+    method: "notify",
     task: `Agent "${agentName}" auto-paused after ${config.threshold} consecutive errors. ` +
       `Last error: ${lastErrorSummary}. ` +
       `Probe scheduled in ${probeScheduleDesc}. TTL: ${ttlDesc}.`,
@@ -300,7 +300,7 @@ export function createRecoveryNotification(
   return trackRequest(persistDir, {
     fromEntity: "cron",
     toAgent: config.escalationAgent,
-    method: "message",
+    method: "notify",
     task: `Agent "${agentName}" recovered from auto-pause after ${probeCount} probe(s) ` +
       `(${durationDesc} total pause time).`,
     artifact: `auto-pause-recovery:${agentName}`,
