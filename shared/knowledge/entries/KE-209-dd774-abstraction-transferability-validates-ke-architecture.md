@@ -26,6 +26,17 @@ Headline numbers:
 
 The paper frames an **abstraction-transferability tradeoff**: the more abstract a memory, the more it transfers, but the less task-specific lift it provides in-domain.
 
+## Mechanism: Why Abstraction Governs Transfer
+
+DD-774's proposed causal story (and ours, refined by the sampling above):
+
+1. **Specificity is a retrieval hazard.** A concrete trace matches on surface features (file names, arm labels, tool ontology) rather than underlying structure. When retrieved in a new context, those surface features either (a) fail to match and are ignored, or (b) match spuriously and mislead. Both failure modes are worse than having no memory at all — hence *negative* transfer, not just zero.
+2. **Meta-principles compress on structure, not surface.** KE-011's claim ("agents have task-focused attention") has no tokens tied to a specific experiment; its signal survives any context shift.
+3. **Summarized experiences are the dangerous middle.** They feel abstract (prose, claims, takeaways) but carry enough scenario-specific anchors (arm C, cascading-fix-trap-v2, "0% → 0% → 0% → 100%") that a new agent may treat the scenario as representative of its own task. This matches our read of KE-199 above.
+4. **Cross-model transfer works (DD-774 §4) because models share the same abstract-feature substrate** — tokens about "validation routines" or "production-displacement" land on similar attention patterns across architectures. Tokens about "arm C of EXP-166" do not.
+
+The practical consequence: an author writing a KE is implicitly choosing a *transfer profile*, and right now that choice is invisible in our corpus. The `tier:` field (Proposed Action) makes it visible.
+
 ## Classification of Sampled KEs
 
 Spot-check of 5 entries against DD-774's four-tier spectrum:
