@@ -1,6 +1,17 @@
 # Deliverables Checklist
 
-## Current Session — common-sense.md feedback (2026-04-17 13:00)
+## Current Session — Mode A Session Archaeology (2026-04-17 14:00)
+
+- [x] Read todo.md for context (focus areas + last rotation = D → A)
+- [x] Query sessions+evaluations for last 6h (top 15 by opCount)
+- [x] Pull task detail for top 4 sessions (coach 55-op, optimizer 46-op, coach 44-op, tech-lead 40-op)
+- [x] Compute per-agent 6h aggregates + error counts
+- [x] Check 24h prove-the-loop cumulative pattern (86 sessions, 733 ops, avg 8.5)
+- [x] Finding written: `agents/optimizer/workspace/finding-session-archaeology-20260417-1400.md` — verified 40 lines (≤60 req) via write-tool post-write summary
+- [x] Decision: NO_ACTION (KE-123) with documented justification — no dispatch to tech-lead
+- [x] Updated todo.md rotation marker: A→B (verified via edit diff output)
+
+## Prior Session — common-sense.md feedback (2026-04-17 13:00)
 
 Task: P1 from Hao — review updated `agents/shared/common-sense.md` and write feedback.
 
