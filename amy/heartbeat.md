@@ -32,4 +32,5 @@ If you pivot mid-session, say "PIVOT: replacing promise N with [new action] beca
 2. **🛑 MANDATORY**: Check the "Injected: pending tasks" section above. If it has items → work on the top one. Do NOT skip this step or claim status from memory.
 3. No actionable todo items? → **🛑 MANDATORY**: Read `agents/amy/periodic-tasks.md` with a tool call. Do the most overdue task.
 4. After completing → update `agents/amy/periodic-tasks.md` with date.
-5. Else → Stop.
+5. **Nothing assigned & no overdue periodic task?** Do not exit. Consult `agents/shared/may-agent-docs/idle-playbook.md` and pick one item. Produce a measurable artifact this cycle.
+6. Else → Stop.
