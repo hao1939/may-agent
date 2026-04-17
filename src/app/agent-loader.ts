@@ -209,7 +209,8 @@ async function buildTools(config: AgentConfig, opts: AgentLoaderOptions): Promis
         break;
       }
 
-      case "message-only": {
+      case "message-only":
+      case "notify": {
         // Lightweight message-only tool for leaf agents — no call/peek/cancel
         tools.push(
           createSendTool({
@@ -468,6 +469,7 @@ const VALID_TOOL_PRESETS = new Set([
   "system-status",
   "system_status",
   "message-only",
+  "notify",
   "cite-source",
   "cite_source",
 ]);
