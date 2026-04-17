@@ -42,15 +42,16 @@ The real failure modes this project addresses:
 - Do **not** measure success by "reduced ops per idle heartbeat." Measure by useful-artifact-per-idle-heartbeat.
 
 ## Progress Log
+
+### Iterations 1–1 (collapsed)
+- **1**: (no summary)
+
 <!-- Append entries as milestones are completed -->
 
 ### 2026-04-17 — Reframe
 Hao corrected the framing: heartbeats are exploration budget, not overhead. The prior design doc at `agents/shared/may-agent-docs/design/adaptive-heartbeats.md` leaned on a "fast-exit gate" as Phase 1 — that phase is now killed. Milestone 1 is replaced with the Idle Heartbeat Playbook. Milestone 2 (arXiv windowing) retained as a correctness concern. Milestone 3 (adaptive frequency) retained but reframed from "save ops" to "match load."
 
 Prior iteration-1/iteration-2 logs from 2026-04-16 described a completed design doc built around the wrong framing. That doc is now superseded; any Phase 1 deploy based on it is on hold until the playbook milestone is designed against the corrected framing.
-
-### Iteration 1 — 2026-04-16T12:38:05.252Z (SUPERSEDED)
-Produced design doc at `agents/shared/may-agent-docs/design/adaptive-heartbeats.md` centered on a fast-exit gate. Retained for historical reference only; do not deploy Phase 1 from it.
 
 ### Iteration 2 — 2026-04-16T13:22:32.362Z (SUPERSEDED)
 Declared the fast-exit design "done, ready for Phase 1 deploy." Not valid under the reframe; design must be redone against the Idle Heartbeat Playbook milestone.
@@ -240,3 +241,11 @@ Workspace is gitignored — fine, the message is tracked via agents.message() (r
 
 **Also — commit the evaluator/last-session.md churn** if it's stable, or ignore it if it's an active write.
 
+
+### Iteration 6 — 2026-04-17T13:45:49.709Z
+**Worker task**: Iteration 6 — work toward goal
+**Worker result**: **Status:** done (3m0s)
+
+**Files modified:**
+- agents/shared/may-agent-docs/design/scout-arxiv-windowing.md
+**Files touched**: (see worker session)
