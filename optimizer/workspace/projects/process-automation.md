@@ -120,3 +120,19 @@ All three deliverables exist and the evaluator.ts fix is in place. Task was mark
 **Files touched**: evaluator.ts
 **Owner assessment**: DONE — — Task was already marked complete in iteration 3. Iteration 4 just confirmed the deliverables still exist. No further work needed.
 
+
+### Iteration 5 — 2026-04-17T09:39Z
+**Worker task**: Ship Bob template scripts milestone + update saved-queries checkbox.
+**Worker result**: **Status:** done
+
+**Files modified:**
+- agents/optimizer/workspace/projects/process-automation.md (checked M1+M2)
+- agents/bob/workspace/scripts/new-hypothesis.sh (new, chmod +x)
+- agents/bob/workspace/scripts/new-ke.sh (new, chmod +x)
+- agents/bob/workspace/scripts/new-experiment.sh (new, chmod +x)
+- agents/bob/context.md (added pointer to the three scripts so they're not dead code)
+
+**Test evidence:** Dry-run in a /tmp mirror of knowledge dirs produced H-167, KE-208, EXP-177 with correct frontmatter dates (2026-04-17) and auto-incremented IDs. ID detection correctly found the max across the existing corpus (H-166, KE-207, EXP-176).
+
+**Owner assessment**: DONE for milestones 1 & 2. Three remaining (scout counters, tech-lead delegation, coach experiment templates) are owned by other agents — dispatching them is a future iteration. No blockers.
+
