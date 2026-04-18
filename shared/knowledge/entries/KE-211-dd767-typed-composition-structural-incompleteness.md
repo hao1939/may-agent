@@ -3,7 +3,8 @@
 **Date**: 2026-04-17
 **Source**: DD-767 (λ_A: A Typed Lambda Calculus for LLM Agent Composition, arXiv:2604.11767; Coq-mechanized, 835-config study)
 **Confidence**: Medium-High (DD-767 N=835 configs, 42 theorems, 0 Admitted; mapping to our agent stack is theoretically grounded but not yet empirically tested)
-**Connects**: KE-187 (policy-invisible violations), KE-188 (GAM memory / access vs. applies), KE-195 (production displacement), KE-196 (displacement difficulty moderation), KE-208 (silent uncoupling is FM-3.3 mechanism), H-098, H-165, FM-3.3
+**Connects**: KE-187 (policy-invisible violations), KE-188 (GAM memory / access vs. applies), KE-195 (production displacement), KE-196 (displacement difficulty moderation), KE-208 (silent uncoupling is FM-3.3 mechanism), H-098, H-165, **H-167 (Typed-Contract Discriminability — KE-211 is the 4th evidence pillar; structural incompleteness *is* discriminability at the composition layer, see P-167e)**, FM-3.3
+**Cited by**: H-167 (evidence pillar #4 alongside KE-212/213/214; underwrote the 0.70 → 0.73 P(H) bump on 2026-04-18 and the new P-167e prediction about structural-incompleteness residuals in EXP-166/EXP-179)
 
 ---
 

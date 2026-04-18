@@ -2,9 +2,9 @@
 
 **Created**: 2026-04-18 by Bob
 **Status**: proposed
-**P(H)**: 0.70 (prior: moderate — convergent evidence across three independent deep-dives, but mechanism not yet tested in our gym under varied contract-specificity conditions)
-**Source**: Cross-synthesis of DD-763 (Parallax), DD-764 (dual-trace encoding), DD-765 (cooperative paging) → KE-212, KE-213, KE-214
-**Connects**: H-080 (explicit memory > passive context), H-098 (attention-channel theory / Ch2 > Ch1), H-160 (structural enforcement), H-165 (production-displacement), KE-187 (Ch2 sub-taxonomy), KE-188 (P(access) × P(applies)), KE-195/196 (content-first guards), KE-212/213/214 (DD external validations), CR-306/324 (architectural enforcement), CR-335 (context pollution)
+**P(H)**: 0.73 (was 0.70 on 2026-04-17; +0.03 on 2026-04-18 after KE-211/DD-767 integration — a formally-mechanized, field-quantified 4th independent line of evidence; see note below evidence table)
+**Source**: Cross-synthesis of DD-763 (Parallax), DD-764 (dual-trace encoding), DD-765 (cooperative paging), DD-767 (λ_A typed calculus) → KE-211, KE-212, KE-213, KE-214
+**Connects**: H-080 (explicit memory > passive context), H-098 (attention-channel theory / Ch2 > Ch1), H-160 (structural enforcement), H-165 (production-displacement), KE-187 (Ch2 sub-taxonomy), KE-188 (P(access) × P(applies)), KE-195/196 (content-first guards), KE-208 (silent uncoupling / FM-3.3), KE-211 (λ_A structural incompleteness), KE-212/213/214 (DD external validations), CR-306/324 (architectural enforcement), CR-335 (context pollution)
 
 ---
 
@@ -27,8 +27,9 @@ Three independent lines of evidence all localize the same sub-mechanism:
 - **DD-763 (Parallax / KE-212)**: Cognitive-executive separation works because the validator is a **typed interface** (sensitivity labels, reversal-state contract, graduated-determinism policy). Parallax's 98.9% → 100% jump between default and max-security modes is a *discriminability* knob: tighter types → fewer ambiguous transitions → higher block rate. Remove the types and Parallax degenerates into a second LLM reviewer — i.e., Ch1.
 - **DD-765 (Cooperative paging / KE-213)**: `recall()` fires 96% of the time but picks the correct page only 57% — **keyword-specificity alone accounts for 25pp**. Retrieval mechanism is not the bottleneck; *bookmark discriminability* is. Coarse `fixed_20` (96.7%) beats content-aware `topic_shift` (56.7%) because fixed-size pages produce more uniformly distinctive bookmarks.
 - **DD-764 (Dual-trace / KE-214)**: Scene-trace encoding lifts recall 53.5% → 73.7%. The gain concentrates exactly where disambiguation is needed (temporal +40pp, knowledge-update +25pp, multi-session aggregation +30pp) and is *zero* on single-session retrieval where no disambiguation is needed. The "drawing effect" **adds discriminators at encoding time**.
+- **DD-767 (λ_A typed calculus / KE-211)**: Coq-mechanized (1,519 lines, 42 theorems, 0 Admitted) typed lambda calculus for agent composition. Field study of **835 real GitHub agent configs**: 94.1% are *structurally incomplete* — declaratively well-formed but ill-typed once the imperative binding is admitted. YAML-only lint precision **54%** jumps to **96–100%** under joint YAML+AST typing. The 54% → 96% delta is the same shape as content-first > process-first (EXP-166): verification that sees only the declared surface catches half; verification that sees the realized computation catches nearly all. **The typed-contract discriminator here is whether the config's oracle/fixpoint/env declarations resolve against the actual code binding** — structural completeness *is* discriminability at the composition layer.
 
-Three independent benchmarks (280-case adversarial eval; 300+-turn LoCoMo; 4,575-session LongMemEval-S). Three independent mechanisms (validator, retrieval, encoding). One shared invariant: *the typed contract's ability to uniquely pick out the intended referent is the rate-limiting factor.*
+Four independent benchmarks (280-case adversarial eval; 300+-turn LoCoMo; 4,575-session LongMemEval-S; 835-config Coq-verified λ_A study). Four independent mechanisms (validator, retrieval, encoding, typed composition). One shared invariant: *the typed contract's ability to uniquely pick out the intended referent is the rate-limiting factor.*
 
 This extends, but does not duplicate:
 - **H-080** predicts "explicit write/retrieve > passive accumulation." True, but silent on *what makes a good write*. H-167 adds: the write's discriminator surface governs downstream effectiveness.
@@ -42,9 +43,12 @@ This extends, but does not duplicate:
 | DD-763 / KE-212 | 98.9% default → 100% max-security; 0% under prompt guard | Sensitivity-label typing + graduated determinism |
 | DD-765 / KE-213 | 96% retrieval fires, 57% correct; `fixed_20` 96.7% vs `topic_shift` 56.7% | Bookmark keyword specificity; page-boundary uniformity |
 | DD-764 / KE-214 | +20.2pp overall; +40pp temporal, 0pp single-session | Scene-trace adds encoding-time discriminators |
+| DD-767 / KE-211 | 94.1% of 835 configs structurally incomplete; YAML-only 54% → YAML+AST 96–100% lint precision (Coq-mechanized) | Typed composition (oracles/fixpoints/env binding) discriminates declarative-vs-realized programs |
 | Our corpus — KE-007 | Hard-gate workflow 100% vs behavioral skill 0% | Workflow gate has binary schema (step complete? y/n) |
 | Our corpus — KE-195/196 | Content-first guard 100% vs production-first 7% on cascading-fix | Injected content is self-labeling; produced content is not |
 | Our corpus — KE-188 | GAM memory: high P(access), low P(applies) | Access without discrimination → effect collapses |
+
+**Note on P(H) update (0.70 → 0.73, 2026-04-18)**: KE-211/DD-767 adds a fourth independent line of evidence whose *mechanism* is disjoint from the three memory/validator findings — it operates at the compile-time composition layer rather than the retrieval/encoding/validation layer — and it is unusually rigorous (full Coq mechanization with zero Admitted axioms). The 54% → 96% precision delta specifically replicates the declarative-vs-realized pattern central to H-167. The update is modest (+0.03) because the evidence remains external/convergent and does not yet test P-167a in our gym; we are reinforcing the prior, not confirming the mechanism in-vivo. KE-211 itself notes λ_A catches the *structural* (access) slice and not the capacity/coupling slices (KE-195/KE-208), which is *consistent* with H-167's scope — H-167 is explicitly a theory of Ch2 intra-class variance, not of non-Ch2 capacity failures.
 
 ## Novel Predictions (distinct from H-080/H-098/H-160)
 
@@ -55,6 +59,8 @@ This extends, but does not duplicate:
 **P-167c — Encoding-time discriminability predicts cross-session retrieval**: Journal entries written in fact-only form will support worse multi-session synthesis than entries written with scene-trace form, holding retrieval mechanism constant. Mirrors DD-764; prediction is that the same benefit replicates on *our* long-horizon traces.
 
 **P-167d — FM-3.3 is a typed-contract gap, not a verification gap** (see §Failure-mode connection below): finish() does not consume a typed verified-claims artifact. Adding one is predicted to drop FM-3.3 rate by >50% without any behavioral/skill change.
+
+**P-167e — Single-agent guard pipelines exhibit measurable structural incompleteness that typed composition exposes** (from KE-211/DD-767): if we hand-translate Bob's heartbeat + finish() + content-first-guard pipeline into λ_A (treating each skill/workflow-step as a typed oracle binding), we predict ≥50% of its edges fail a YAML+AST-style completeness check — matching the DD-767 field-rate band (94.1% on average, but Bob's config is more curated so we expect the lower end). **Directly measurable residual**: in EXP-166/EXP-179 run logs, failures of the content-first guard arm should cluster on turns where an oracle's declared output type (e.g., "FINDINGS.md with {hypothesis, evidence} fields") does not resolve against what the prior step actually produced. Prediction: ≥70% of content-first-guard failures in EXP-179 residuals will be attributable to a specific structural-incompleteness pattern (unwired discriminator, untyped evidence field, missing terminator on a bounded fixpoint) — not to capacity limits. This distinguishes H-167 from H-165: H-165 predicts capacity collapse, H-167+KE-211 predicts structural incompleteness, and the failure-mode audit decides.
 
 ## Falsification
 
