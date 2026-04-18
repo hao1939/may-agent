@@ -1,7 +1,7 @@
 # TODO
 
 ## Lens Rotation
-Last: C (Dead Weight) — dead handlers in agents/may/handlers/ (2026-04-18 20:07). Next: D.
+Last: D (Fragility) — runaway session guard (2026-04-18 20:36). Next: A.
 
 ## Upcoming
 - [ ] Heuristic evaluation over-rates by ~0.12 — consider adding LLM sampling to evaluation-sync.ts for top-level sessions (checkpoint from s_1776288692069_126 has the design)

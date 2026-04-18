@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776542755646_572
+- **Session:** s_1776544583646_599
 - **Status:** done
-- **When:** 2026-04-18T20:07:48.408Z
-- **Duration:** 1m52s
+- **When:** 2026-04-18T20:37:28.112Z
+- **Duration:** 1m4s
 
 ## What Happened
-Good target: 34 handler files — are all wired into cron.json? Scope: ≤3 files (cron.json + handler dir listing + cross-reference). Objective: identify handler files not referenced by any cron job. Deliverable: `agents/tech-lead/workspace/finding-dead-handlers.md`.
+Now I have enough evidence. The system has: (1) stuck detector (consecutive error turns → warn at 4, kill at 6), (2) timeout (5min default for oneshot), (3) per-agent timeoutMs. But NO max-ops guard — a session that keeps making successful tool calls (not errors) can run indefinitely.

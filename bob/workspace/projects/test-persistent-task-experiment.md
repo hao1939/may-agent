@@ -1,6 +1,6 @@
 # Project: Investigate Session Startup Overhead
 
-**Status**: active (Iter 19 — still n=1 post-v2, ~2.5h wall clock remaining; 4th consecutive wall-clock-blocked iter)
+**Status**: deferred-on-wall-clock (Iter 21 — bob post-v2 still n=1; gate ≥6, ETA ~2.5h. DO NOT re-iterate on this project until the trigger query returns ≥6. See Iter 21 for the one-line check.)
 **Owner**: bob
 **Previously closed**: 2026-04-18 (Iter 9), reopened Iter 10 on data, re-closed Iter 11
 
