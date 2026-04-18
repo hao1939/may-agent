@@ -1,24 +1,21 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776495615559_964
+- **Session:** s_1776495772714_972
 - **Status:** done
-- **When:** 2026-04-18T07:00:24.515Z
-- **Duration:** 8s
+- **When:** 2026-04-18T07:02:58.683Z
+- **Duration:** 5s
 
 ## What Happened
 ```json
 {
   "agents": {
-    "coach": {
+    "tech-lead": {
       "role": "Builder",
       "capability_level": "L2",
-      "efficiency": 0.75,
-      "quality": 0.9,
+      "efficiency": 0.82,
+      "quality": 0.92,
       "verdict": "good",
       "issues": [
-        "[FM-1.3-lite] Minor recovery waste on git add due to gitignored coach/workspace/projects; required retry with -f (2 wasted calls).",
-        "Slight process deviation: created a .raw artifact then later added the proper jsonl (small extra work, but resolved)."
-      ],
-      "metrics": {
-        "code_c
+        "Minor instruction drift: scope list said evaluation-sync.ts *or* evaluator-heartbeat.ts, but agent relied on both plus may.ts + evaluator.ts (still within overall ≤3-file spirit only if evaluator-heartbeat truly replaced evaluation-sync; as written, it exceeded the stated 3-file scope).",
+        "
