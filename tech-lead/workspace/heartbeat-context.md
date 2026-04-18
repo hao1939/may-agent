@@ -13,7 +13,7 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-18T11:49)
+# Your Context (auto-generated 2026-04-18T12:19)
 
 **System:** 2 sessions/6h, 0% error rate
 
@@ -21,11 +21,11 @@
 - coach: 2s, 49KB
 
 **Your active error patterns:**
-- FM-2.6: 2x
+- FM-2.6: 3x
 - FM-3.3: 1x
 
 **📊 Your Metrics:**
 - Codebase weight: **31435** lines → 32000 lines
 - Delegation quality: **0.8** ratio → 0.85 ratio
-- Meaningful changes: **85** commits/week → 10 commits/week
+- Meaningful changes: **84** commits/week → 10 commits/week
 - Build health: **1** bool → 1 bool

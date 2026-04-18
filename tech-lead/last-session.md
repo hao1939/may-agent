@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776513677868_160
+- **Session:** s_1776513643708_157
 - **Status:** done
-- **When:** 2026-04-18T12:03:16.928Z
-- **Duration:** 1m59s
+- **When:** 2026-04-18T12:03:42.112Z
+- **Duration:** 2m58s
 
 ## What Happened
-Now I understand the full picture. The "86 sessions/6h" on the dispatch board was a gym/benchmark run (95 job-kind sessions on Apr 16), not organic coder utilization. Today's organic rate (11 workflow-dispatched sessions) is actually normal compared to most days.
+Good — the "drop" was an artifact (yesterday's 86 was a gym batch, not organic). Now update todo.md and finish.
