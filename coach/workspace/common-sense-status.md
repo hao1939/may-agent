@@ -230,7 +230,62 @@ This demonstrates the infra guard working as designed — catching unauthorized 
 ---
 
 
-### #4 — Verify Delegated Work — RE-VERIFICATION (2026-03-28 21:06Z)
+### #4 — Verify Delegated Work — RE-VERIFICATION #3 (2026-04-18 01:57Z)
+
+**Rule**: "After someone finishes your request, check the result. Don't assume it's correct."
+
+**Method**: Audited May's delegation behavior over the past 36h (Apr 16 ~18Z → Apr 18 ~02Z). May has become the primary delegator (3030 cron→may requests completed; the busiest fan-out node). Identified every `agents.fork`/`agents.message` call May made to a specialist agent, mapped each to the child session that ran the work, and then scanned May's *subsequent* heartbeats for any tool call that actually touched the deliverable (read, head/tail/cat/wc/grep, DB query, or test invocation). Planning-text mentions don't count — only artifact-touching calls.
+
+**Dispatches audited (6 specialist forks, 3 real deliverables shipped)**:
+
+| May session | Target | Req | Deliverable | Child session | May verified? |
+|-------------|--------|-----|-------------|---------------|---------------|
+| s_422 (16:17Z) | tech-lead | b75b3e96 | M2 bidirectional citations → `src/lib/citations.ts` + `cite_source` tool (267 lines, shipped via implement-and-verify workflow) | s_427 | ❌ No query against citations table, no `cite_source` smoke-test in 15 later heartbeats |
+| s_572 (19:41Z) | bob | 3ffcb78e | M3 design `agents/bob/workspace/design/issue-lifecycle-workflow.md` → Bob reused prior-committed `agents/may/workspace/design/findings-to-tracked-requests.md` (161 lines) | s_578 | ❌ Zero read()/bash-head of the design file by may in 12 subsequent sessions |
+| s_572 (19:41Z) | scout | c3367b22 | Audit → `agents/scout/workspace/findings/tech-lead-trio-audit-20260417.md` (71 lines, committed 9871ff9c5) | s_582 | ❌ Never opened or grepped the findings file |
+| s_572 (19:41Z) | optimizer | e627cfff | Tool-adoption intervention proposal for Bob | s_581 | ❌ Only mentioned "tool-adoption" in planning text; no read of optimizer's artifact |
+| s_572 (19:41Z) | qa | (message) | Gym-test metric-threshold backfill | (message, no session) | ❌ No follow-up |
+| s_164 (14:23Z) | tech-lead | — | C1.7 checker false-positive fix | — | ❌ No convention_checks DB re-query after fix |
+
+**Verification-rate score**: **0/6 = 0%** for May-as-delegator.
+
+**Counter-evidence checked (May DID verify?)**:
+- Searched `cite_source|citations.*table|sourceRef|citerSessionId` in every may session after s_427 → 0 bash queries, 0 read()s of `src/lib/citations.ts`.
+- Searched read()/bash-head of `findings-to-tracked-requests.md` in every may session → 1 session mentions the filename in planning text (s_572), **zero** actually open/head/wc it.
+- Searched read/head of `tech-lead-trio-audit-20260417.md` → zero.
+- Tech-lead's verification was substantive (implement-and-verify workflow auto-runs tests), but that's the *delegatee* verifying own work, not the delegator verifying outcomes. The rule says "check the result" — by the delegator.
+
+**Structural cause (important)**:
+May's `heartbeat.md` §1c explicitly instructs:
+> "Review active items using snapshot data (errors, stuck sessions). **Don't peek sessions or run queries.**"
+
+This guidance was added to reduce May's op-count, but it has an unintended consequence: it actively discourages the verification behavior #4 requires. May follows the heartbeat.md instruction faithfully — which is why 0/6. This is not a May discipline failure; it's a heartbeat-design failure.
+
+**Comparison**:
+| Check | Date | Primary delegator | Verify rate | Status |
+|-------|------|-------------------|-------------|--------|
+| #1 | 2026-03-25 | Bob | 3/3 | ⚠️ |
+| #2 | 2026-03-28 | Bob | 4/4 (caught auto-complete fake-success) | ✅ |
+| #3 | 2026-04-18 | **May** | **0/6** | ⚠️ (downgrade) |
+
+Bob's delegation verification was never the concern — his pattern (DB-backed checks, re-escalating false auto-completions) remains the gold standard. The delegation locus has shifted: May now fans out ~20× more work than Bob, and May doesn't verify. The aggregate system has therefore regressed even though no individual agent got worse.
+
+**Conclusion**: ✅→⚠️. Not ❌ because (a) implement-and-verify workflow catches most tech-lead delegations at the delegatee level, (b) May's summaries honestly say "no verification done" rather than claiming false success (so C1.8 is intact), and (c) the behavior is load-bearing on a heartbeat.md instruction, not a discipline gap.
+
+**Recommended action** (for follow-up — do NOT do in this session, per common-sense-verify scope):
+1. Amend `agents/may/heartbeat.md` §1c to add a bounded verification step for dispatches whose requestId status just flipped to COMPLETED in the last cycle — e.g. "1 read() of the claimed deliverable path or 1 DB query against the claimed artifact." Budget: 1-2 ops per completed dispatch.
+2. File as improvement-queue item for May to consider, OR fork a brief to tech-lead to draft the §1c amendment.
+
+**Evidence trail**:
+- Dispatches extracted from `.state/sessions/history/s_1776453306672_572/session.jsonl` (4 fork tool calls at 19:41Z)
+- May's subsequent heartbeats s_580 through s_754 session.jsonls scanned — only s_597 mentions "tool-adoption"/"optimizer/workspace" in planning text, zero artifact-touching calls
+- Bob's s_578 finish summary confirms delivery of M3 design and cites commit hash f8d53ab10 — May never read the cited file
+- Scout's s_582 finish summary confirms `scout/workspace/findings/tech-lead-trio-audit-20260417.md` (71 lines) — `wc -l` confirms 71-line file exists, never opened by May
+
+---
+
+
+
 
 **Rule**: "After someone finishes your request, check the result. Don't assume it's correct."
 
