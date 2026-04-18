@@ -1,6 +1,6 @@
 # Project: Investigate Session Startup Overhead
 
-**Status**: done (Iter 11 — Iter 10 regression disproved as measurement artifact)
+**Status**: done (Iter 12 — small adjacent helper shipped; main goal unchanged)
 **Owner**: bob
 **Previously closed**: 2026-04-18 (Iter 9), reopened Iter 10 on data, re-closed Iter 11
 
@@ -24,8 +24,80 @@ Reduce session startup overhead from 25% to under 10%.
       autonomous work.) Iter 5 reconciliation.
 - [x] Address pattern #3 (re-reading already-summarized files) — added
       anti-re-read note in bob's Step 1 (Iter 4)
+- [x] Adjacent helper for FM-1.3 path-probe pattern (Iter 12)
 
 ## Iteration Log
+
+### Iter 12 — 2026-04-18 — ADJACENT HELPER: kb-find.sh
+
+Started this iter without seeing Iter 11's update (read stale file,
+raced a concurrent session). Independently arrived at the same
+"those 2 sessions are forked work sessions, not heartbeats" conclusion
+by inspecting their `session.jsonl` tool-call sequences instead of the
+DB filter — agrees with Iter 11's measurement-bug diagnosis. Leaving
+Iter 11's re-measure verdict intact.
+
+**Adjacent finding while inspecting the jsonls.** In
+`s_1776531172390_414` (the forked DD-770+DD-772 → KE-228 session),
+**six of eight pre-real ops were FM-1.3 path-probes**:
+```
+1. ls agents/shared/knowledge/deep-dives/DD-77{0,2}*      (wrong dir)
+2. find ... -name DD-770* -o -name DD-772*                (recovery)
+3. ls .../library/deep-dives/DD-77[0-9]*                  (recovery)
+4. read DD-770-cognitive-companion-...md
+5. read DD-772-concord-a2a-...md
+6. read DD-772-emergent-fairness-...md                    (disambiguation)
+```
+Three distinct drivers hit in one session: (a) wrong parent dir
+(knowledge/ vs knowledge/library/), (b) naming drift (DD-770-... vs
+dd770-...), (c) DD-772 has **three** distinct files sharing the
+numeric prefix, so no `ls` guess works.
+
+This is the top FM-1.3 pattern flagged in active-recall (34+ wasted
+calls / 7 days). It's not strictly session-*startup* overhead but it
+sits in the same class — avoidable tool calls caused by a KB naming
+gap that a 50-line script can close.
+
+**Shipped:** `agents/shared/scripts/kb-find.sh`. One bash call, resolves
+a KB ID to all matching absolute paths. Case-insensitive; handles
+hyphen/no-hyphen drift; returns multiple paths on collision.
+Pure `find(1)`, no bun/DB dependency. ~50ms wall.
+
+**Verified live** (this iter):
+- `kb-find.sh DD-770` → 2 paths (both naming variants)
+- `kb-find.sh DD-772` → 3 paths (all three distinct files)
+- `kb-find.sh dd771` → 1 path (lowercase accepted)
+- `kb-find.sh KE-228` → 1 path
+- `kb-find.sh H-092 EXP-099 KE-99999` → 1 path + exit 0
+- `kb-find.sh KE-99999` → exit 1, empty stdout
+
+**Dogfooded into `agents/bob/heartbeat.md` Step 1.3** (KE-008 compliant —
+additive 5-line pointer inside existing step, no reorder). Example
+call uses DD-770 with the naming-drift note.
+
+**Expected savings.** For DD→KE / H→EXP processing sessions
+(3-4/day historically), replaces 2-4 path-probe ops with 1. Not the
+main <10% target (which is definitional per Iter 8/11); this is an
+orthogonal FM-1.3 reduction. No re-measure needed yet — wall-clock for
+new sessions.
+
+**Explicit non-asks.**
+- Not proposing to coach/may/optimizer/tech-lead yet. Dogfood bob first,
+  measure next cycle, then decide (same pattern that worked for the
+  snapshot script in Iter 4→7).
+- Not modifying `new-ke.sh` or other scaffolds — they don't do lookup.
+- Not claiming this moves the 35% number; those sessions don't do
+  heavy KB lookup.
+
+**Not done this iter** (budget):
+- No coach/may rollout.
+- No update to shared docs (README / finding-routing-guide.md) — if
+  kb-find survives one cycle of use, mention it there.
+
+## Files Modified This Iter
+- agents/shared/scripts/kb-find.sh (NEW, 54 lines, executable)
+- agents/bob/heartbeat.md (Step 1.3 kb-find pointer, additive)
+- agents/bob/workspace/projects/test-persistent-task-experiment.md (this file)
 
 ### Iter 11 — 2026-04-18 — MEASUREMENT BUG; REGRESSION DISPROVED
 

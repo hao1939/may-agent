@@ -1,9 +1,9 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776538455766_517
+- **Session:** s_1776538509821_5
 - **Status:** done
-- **When:** 2026-04-18T18:54:23.267Z
+- **When:** 2026-04-18T18:55:17.331Z
 - **Duration:** 7s
 
 ## What Happened
@@ -11,10 +11,11 @@
 {
   "agents": {
     "bob": {
-      "role": "Researcher/Builder (synthesize KE-227–KE-238 into cross-cutting pattern → produce new hypothesis or WKWA doc)",
+      "role": "Researcher/Builder (persistent-task worker under review)",
       "capability_level": "L2",
-      "efficiency": 0.85,
-      "quality": 0.86,
-      "verdict": "good",
+      "efficiency": 0.15,
+      "quality": 0.1,
+      "verdict": "needs_improvement",
       "issues": [
-        "Hypothesis generation was evidence-light in-process: the transcript shows no tool calls reading KE-227..KE-238 or the SCORECARD/synthesis directory. He may have read them earlier in omitted context, but 
+        "[FM-2.6] Reasoning-action mismatch: task required inspecting two non-snapshot session JSONLs; worker only read a project doc and attempted to git-add a gitignored path.",
+        "[FM-3.3] Declared 'Done' without producing required investigatio
