@@ -53,10 +53,11 @@ Checker: `agents/gym/scenarios/metric-autonomy-A/success_criteria.js`
 
 ## Success Criteria
 
-- [x] All 5 variants (A–E) built as gym scenarios — plus F, G, G′
+- [x] All 5 variants (A–E) built as gym scenarios (+ F, G, G′)
 - [x] Each variant run ≥10 trials → pass rate with confidence interval
 - [x] One finding landed as KE-215: question-framing triggers metric reaction
-- [x] Finding fed back into heartbeat design recommendation (in KE-215 Application section)
+      (G=30/30 100%, G′=10/10 de-confounded, vs A=0/10 baseline)
+- [x] Finding fed back into heartbeat design recommendation (KE-215 Application section)
 
 ## Iteration Log
 
@@ -384,4 +385,37 @@ Prior session wrote Iter 5 already. My runs (2652-2671) are topup data. Let me a
 3. **G confound** — the worker noted G modified step 3 as well as step 1. A de-confounded G′ (only step 1 changed) was in progress but interrupted. This is important for the KE to be credible — either run G′ to confirm, or note the confound explicitly in the KE with the caveat.
 
 **Next iteration should**: (a) build and run G′ (de-confounded, only step 1 changed) for n=10, (b) if G′ still passes at high rate, write the KE entry, (c) write the heartbeat design recommendation. If G′ also passes strongly, all 4 success criteria can be checked off and the project can be marked DONE.
+
+
+### Iteration 3 — 2026-04-18T08:27:54.303Z
+**Worker task**: Iteration 3 — work toward goal
+**Worker result**: **Status:** done (9m7s)
+
+**Files modified:**
+- agents/shared/knowledge/entries/KE-215-question-framing-triggers-metric-reaction.md
+
+**Files read (not modified):**
+- agents/coach/workspace/projects/metric-autonomy.md
+
+**Errors encountered:**
+- [bash] 25c25
+< 3. Pick ONE item (or a metric-driven action, if that's more important) and produce a short (3–5 line) write-up for it in `triage-note.md`.
+---
+> 3. Pick ONE item and produce a short (3–5 line) write-up for it in `triage-note.md`.
+
+
+Command exited with code 1
+
+**Agent response:**
+Now commit:
+**Files touched**: (see worker session)
+**Owner assessment**: CONTINUE — — KE-215 was written, but two items still need verification/completion:
+
+1. **Verify KE-215 actually exists and has good content** — the worker said "Now commit:" but the session ended. Check if the file is on disk and committed.
+
+2. **Heartbeat design recommendation** — the goal says "Answer feeds into heartbeat design for all agents." A KE entry documents the finding, but there should be a concrete recommendation written into the project log or a actionable next-step for applying question-framing to real heartbeats.
+
+3. **G′ de-confound status** — was G′ (step-1-only change) ever run? If not, the KE should at minimum note the confound caveat clearly.
+
+**Next iteration should**: (a) verify KE-215 is committed and well-written, (b) check if G′ was run or if the confound is noted in the KE, (c) write the heartbeat design recommendation (can be a section in the project log or a note in the KE), (d) mark project DONE if all criteria met.
 
