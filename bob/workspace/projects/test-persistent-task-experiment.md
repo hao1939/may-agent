@@ -74,10 +74,41 @@ sessions on startup, half the time taking no action at all.
    field that's not summarized."*
 
 ## Current State
-Iter 6 done. **Bob re-measure confirms the predicted improvement.** Overhead
-45% → 33%, avg total 19.2 → 11.0, avg pre-real 8.6 → 3.7, zero-real 1/6 → 0/6.
-Snapshot script used in 4/6 most-recent bob heartbeats. Next: propose to
-coach/may.
+Iter 7 done. Proposal brief with bob's measured 45%→33% delta sent to
+coach and may. All milestones complete for this phase; next iter (if any)
+would be a re-measure of coach/may after they adopt (or explicit decline).
+
+### Iter 7 — 2026-04-18 (this iter)
+**Goal:** Close the last open milestone — formally propose the snapshot
+script to coach + may with bob's Iter 6 measurement evidence in hand.
+
+**Deliverables:**
+- `agents/bob/workspace/sent/2026-04-18-heartbeat-snapshot-proposal.md`
+  — proposal brief. TL;DR is bob's 19.2 → 11.0 avg ops, 45% → 33%
+  overhead, 4/6 adoption. Per-agent ask:
+  - coach: replace Step 1.4 `bun -e` + Step 3 running-session guard with
+    one snapshot call up front (~3-5 ops saved/heartbeat).
+  - may: replace the existing inline `bun -e` snapshot block with the
+    shared script (same 1 op, adds pending-requests + my-recent-sessions,
+    consistent format across agents).
+- Notifications sent to may + coach pointing at the brief.
+
+**Explicit non-asks** (in the brief, KE-008 compliant):
+- Not asking for structural heartbeat reorders.
+- Not asking for immediate adoption — it's a proposal with evidence,
+  not a mandate.
+- Not extending to optimizer/tech-lead (lower overhead, lower ROI).
+
+**What would close the project:** coach or may adopts, then a re-measure
+confirms (or refutes) a similar drop. If they decline, that's also a
+valid endpoint — the project's value was the measurement + script, not
+forced compliance.
+
+## Files Modified This Iter
+- agents/bob/workspace/sent/2026-04-18-heartbeat-snapshot-proposal.md (NEW)
+- agents/bob/workspace/projects/test-persistent-task-experiment.md (this file)
+
+## Current State (Iter 6)
 
 ### Iter 6 — 2026-04-18 (this iter)
 **Goal:** Re-measure bob after the Iter 4 heartbeat change has had ~4h of wall
