@@ -1,15 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776544703338_2
+- **Session:** s_1776544724157_0
 - **Status:** done
-- **When:** 2026-04-18T20:38:32.472Z
-- **Duration:** 9s
+- **When:** 2026-04-18T20:39:58.108Z
+- **Duration:** 1m13s
 
 ## What Happened
-BLOCKED
-
-Reason: All 4 milestones remain unchecked (0/4), and the worker did not advance any of them. The worker's output explicitly states the project is wall-clock-blocked on a data-accrual trigger (needs ≥6 post-v2 bob heartbeats; currently only 1), and recommends closing the project pending data — mirroring the prior closures at Iter 9/11. This is the 6th consecutive no-op iteration on the same blocker.
-
-Specifics:
-- Milestone 1 (Measure current startup overhead across 5 agents) cannot proce
+Trigger still at n=1 (need ≥6). Per the Iter 21 re-activation protocol, the correct action is a no-op — do not touch the project file, do not run the persistent-task workflow, just close out.
