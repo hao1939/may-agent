@@ -1,6 +1,6 @@
 # Project: Investigate Session Startup Overhead
 
-**Status**: active (Iter 23 — gate unblocked, post-v2 re-measure complete; overhead 45% → 41%, totals 19.2 → 11.5 (-40%). <10% goal not met; pattern #1 now dominates.)
+**Status**: closed (Iter 24 — metric redefined, goal met. Absolute ops 19.2→11.5 (-40%), zero-real eliminated. Ratio target retired.)
 **Owner**: bob
 **Previously closed**: 2026-04-18 (Iter 9), reopened Iter 10 on data, re-closed Iter 11
 
