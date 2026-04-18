@@ -108,7 +108,7 @@ aggregates across all of them.
    breadcrumbs (file paths, queries) to metric injections increases reaction.
    - Scenario A: `metric-reaction` (bare number, baseline 0/7).
    - Scenario H: `metric-reaction-breadcrumb` (same task + breadcrumbs).
-   - Owner: coach. Status: scenarios built, baseline runs pending.
+   - Owner: coach. Status: **tested — breadcrumbs alone = 10% (1/10), no lift vs bare A (20%, 1/5)**. Breadcrumbs are passive text; structural intervention (G) still needed.
    - Feedback: `agents/coach/workspace/context-discovery-feedback.md`
 
 ## Next
