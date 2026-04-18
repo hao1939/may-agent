@@ -1,12 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776531982578_431
+- **Session:** s_1776531955642_429
 - **Status:** done
-- **When:** 2026-04-18T17:08:11.245Z
-- **Duration:** 1m48s
+- **When:** 2026-04-18T17:08:36.885Z
+- **Duration:** 2m41s
 
 ## What Happened
-129 evaluator sessions out of 167 non-evaluator sessions = 77% sampling rate, way above target 30%. The issue: evaluation-sync runs on cron repeatedly, and each run samples 30% of the *unevaluated* batch. But since evaluator sessions themselves become "done" sessions, they could be re-evaluated... wait, `SKIP_LLM_EVAL_AGENTS` includes "evaluator" (`evaluation-sync.ts:10`). The high rate is because cron fires frequently and each run gets a fresh batch.
+No red metrics. P0 stuck-requests already fixed last session. No active projects. Last lens: D, next: A.
 
-Now let me write the finding.
+Interesting signal: evaluator has 129 sessions with 0 avg ops in 6h. Let me dispatch a Lens A investigation on that.

@@ -13,20 +13,20 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-18T16:50)
+# Your Context (auto-generated 2026-04-18T17:20)
 
 **System:** 0 sessions/6h, 0% error rate
 
 **Top spenders:**
 
 **Your active error patterns:**
-- FM-3.3: 6x
+- FM-3.3: 7x
 - FM-1.3: 2x
 - FM-2.6: 2x
 
 **📊 Your Metrics:**
 - Codebase weight: **31435** lines → 32000 lines
 - Delegation quality: **0.8** ratio → 0.85 ratio
-- Meaningful changes: **84** commits/week → 10 commits/week
+- Meaningful changes: **83** commits/week → 10 commits/week
   → Quick check: git log --since='7 days ago' --oneline -- src/ 2>/dev/null | wc -l | tr -d ' '
 - Build health: **1** bool → 1 bool
