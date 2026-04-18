@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776542006074_560
+- **Session:** s_1776542027340_561
 - **Status:** done
-- **When:** 2026-04-18T19:53:33.765Z
-- **Duration:** 7s
+- **When:** 2026-04-18T19:53:53.856Z
+- **Duration:** 6s
 
 ## What Happened
 ```json
@@ -13,8 +13,8 @@
     "bob": {
       "role": "Researcher/Builder (write KE + commit hygiene)",
       "capability_level": "L2",
-      "efficiency": 0.55,
-      "quality": 0.62,
-      "verdict": "acceptable",
+      "efficiency": 0.72,
+      "quality": 0.78,
+      "verdict": "good",
       "issues": [
-        "[SCOPE/DELIVERABLE_MISMATCH] Task requested: read DD-773 via `bash agents/shared/scripts/kb-find.sh DD-773` before writing. Transcript shows no such command; bob went straight to `new-ke.sh` and wrote from prior context/recall, so provenance is weaker than req
+        "[PROCESS_DEVIATION] Task explicitly required reading DD-769 and DD-770 via `bash agents/shared/scripts/kb-find.sh ...` before scaffolding/writing; the provided transcript excerpt does not show those kb-find tool calls (so provenance is weaker than requested). Note: 
