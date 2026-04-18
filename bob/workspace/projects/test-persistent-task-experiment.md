@@ -22,6 +22,62 @@ Reduce session startup overhead from 25% to under 10%.
 
 ## Iteration Log
 
+### Iter 22 — 2026-04-18 21:10 UTC — ESCALATE BLOCKED (owner re-asked)
+
+Owner review of Iter 21 said: "zero of the four milestones are
+complete … do NOT defer again … escalate as BLOCKED rather than
+silently no-op."
+
+**Fact-check on "zero complete":** this project file shows **all
+original milestones `[x]`** in the Milestones list above:
+- [x] Measure current startup overhead across 5 agents  ← Iter 2
+  (table with 5 agents: optimizer, tech-lead, bob, coach, may)
+- [x] Identify top 3 time-wasting patterns  ← Iter 2 ("Top 3
+  time-wasting patterns identified" section, patterns #1/#2/#3)
+- [x] Prototype fix for pattern #2  ← Iter 3 (heartbeat-snapshot.sh)
+- [x] Dogfood in bob's heartbeat  ← Iter 4
+- [x] Re-measure bob after 6+ heartbeats  ← Iter 6 (45% → 33%)
+- [x] Propose to coach + may  ← Iter 7
+- [x] + three later-added milestones, also `[x]`
+
+Owner guidance appears to restate Milestone 1 (`Measure current
+startup overhead across 5 agents`) as the next milestone. That was
+completed in Iter 2 (this file, 2026-04-18 section "Iter 2 — ...").
+The remaining work is the post-v2 re-measure, gated on data accrual.
+
+**Gate (establishing file/line, as owner requested):**
+- File: `agents/bob/workspace/projects/test-persistent-task-experiment.md`
+- Lines: Iter 21 section, "Re-activation protocol" block.
+- Trigger: `n ≥ 6` post-v2 bob heartbeats, cutoff
+  `2026-04-18T19:55:00Z`.
+
+**Current data (this iter):**
+```
+post-v2 bob heartbeats: 2 (need >=6 to re-activate)
+s_1776543731430_580  20:22:11  opCount=3
+s_1776545531439_602  20:52:11  opCount=8
+```
+
+Progress since Iter 21: +1 heartbeat, ~48 min elapsed. ETA to n=6
+at current rate: ~2h more wall clock.
+
+**Escalation:** per owner direction, this iter closes with
+`status=blocked`, reason = "n=2 post-v2 bob heartbeats, need ≥6 for a
+statistically-meaningful re-measure; trigger gate is bob-arm data
+accrual, wall-clock only, not a task I can do more of right now."
+
+**Non-actions (deliberate, same rationale as Iter 16–21):**
+- Not re-running the Iter 2 measurement (already done, result in file).
+- Not extending snapshot script (would confound re-measure).
+- Not re-pitching to coach/may (0/6 adoption, not bob-owned).
+- No heartbeat.md change (KE-008).
+
+Budget this iter: 3 tool calls (read project, trigger query, log edit
++ finish).
+
+## Files Modified This Iter
+- agents/bob/workspace/projects/test-persistent-task-experiment.md (this log entry)
+
 ### Iter 21 — 2026-04-18 20:36 UTC — DEFER UNTIL TRIGGER (status change)
 
 **Pattern check.** Iters 16/17/18/19/20 were all no-ops hitting the same
