@@ -1,16 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776533793835_460
+- **Session:** s_1776533755589_457
 - **Status:** done
-- **When:** 2026-04-18T17:38:34.762Z
-- **Duration:** 2m0s
+- **When:** 2026-04-18T17:38:57.844Z
+- **Duration:** 3m2s
 
 ## What Happened
-Now I have enough evidence. Let me write the finding.
+Delegation quality at 0.8 (below 0.85 target) is worth a Lens B. Let me trace the optimizer flow — 23 sessions, 6 avg ops. What's the end-to-end complexity?
 
-Key flow:
-1. **Creation**: `trackRequest()` called in `manager-agents-tool.ts` for both `call` (line 261) and `fork` (line 338)
-2. **Completion path 1** (call): `updateRequest()` inline after `callAgent()` returns (`manager-agents-tool.ts:284`)
-3. **Completion path 2** (fork): `finish()` in `lifecycle.ts:268` updates via `requestId` passed through `runAgent()`
-4. **Completion path 3** (completed_items): fuzzy-match in `session-subscribers.ts
+Actually, a more impactful Lens B: trace what happens in the request lifecycle — creation to completion to metric. The stuck-requests metric was just broken, suggesting this flow is complex.
