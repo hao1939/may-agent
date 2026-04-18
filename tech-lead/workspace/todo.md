@@ -1,7 +1,7 @@
 # TODO
 
 ## Lens Rotation
-Last: B (Flow Complexity) — request lifecycle flow (2026-04-18 17:36). Next: C.
+Last: C (Dead Weight) — research-sync value (2026-04-18 18:06). Next: D.
 
 ## Upcoming
 - [ ] Heuristic evaluation over-rates by ~0.12 — consider adding LLM sampling to evaluation-sync.ts for top-level sessions (checkpoint from s_1776288692069_126 has the design)
