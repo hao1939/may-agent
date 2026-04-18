@@ -1,8 +1,8 @@
 # TODO
 
 ## Upcoming
-- Last lens: **C** (2026-04-18 10:30, handler dead weight audit → finding-handler-dead-weight.md) → next: D.
-- Last cycle: **infra** (2026-04-18 10:30, Lens C handler dead weight) → next: **feature**.
+- Last lens: **D** (2026-04-18 11:02, eval-sync fragility → finding-eval-sync-fragility.md) → next: A.
+- Last cycle: **infra** (2026-04-18 11:02, Lens D eval-sync fragility) → next: **feature**.
 - 2026-04-17 13:30: P0 project-resume regex already fixed last cycle (commit 8ea70be84). P1 common-sense acks x2 are informational — no action.
 - P1 optimizer dupes (req:1caa5dc3, req:2030b678) about past 82-op Lens C session: behavioral fix already in heartbeat.md (mandatory `workflow.run("lens-analysis",...)` + pre-dispatch scope check). Acknowledging, no further action — same critique counted twice.
 - [x] lens-analysis citation discipline (req:a5518d69/567e5c86) — DONE 2026-04-17. Phase 3 WRITE now requires inline `path:line` citations. Commit 02dea274.
