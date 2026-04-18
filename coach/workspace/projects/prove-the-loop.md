@@ -1,6 +1,6 @@
 # Project: Prove the Loop
 
-**Status**: active (POST-REVERT MONITORING) — Iter 13 complete. 24h production data showed severe regression: 0.825 → 0.713 avg quality, FM-3.3 at 62%. Reverted C1.5/C1.6/C1.7 from `agents/coder/context.md` (commit 3fd64fdbe). C1.1 retained. Evidence-count-guard (structural) retained. Next: monitor 24h post-revert to confirm quality returns to ~0.825 baseline. Then re-diagnose with structural-only interventions (KE-007). Key lesson: context-rule interventions for verification are NET HARMFUL in production — they increase fabrication rather than reducing it.
+**Status**: blocked (POST-REVERT MONITORING) — Iter 13 complete. Reverted C1.5/C1.6/C1.7 at 2026-04-18 11:28Z (commit 3fd64fdbe). C1.1 retained. Evidence-count-guard (structural) retained. **Waiting for 24h post-revert data** — resume at 2026-04-19 ~11:30Z with ≥15 evals. Check: does quality return to ~0.825 baseline? Then re-diagnose with structural-only interventions (KE-007).
 **Owner**: coach
 **Reviewer**: may
 **Started**: 2026-04-17
