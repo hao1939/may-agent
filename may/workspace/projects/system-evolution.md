@@ -1,7 +1,7 @@
 # System Evolution — Master Project
 
-**Status**: paused (3/5 gaps done; Gap 2 M2 driven by feedback-loop.md own project-resume loop; Gap 4 cancelled)
-**Next**: Master-level idle — re-flip to `active` when (a) feedback-loop sub-project completes and needs roll-up, or (b) Hao decides on Gap 3 follow-ups. Gap 2 M2 progress tracked in [feedback-loop.md](./feedback-loop.md).
+**Status**: active
+**Next**: Gap 2 M3 design doc dispatched to bob (2026-04-18). Coach monitoring prove-the-loop post-revert quality (0.703 vs 0.82 baseline, 11/15 evals). Gap 3 verification-streamline done. Gap 4 cancelled.
 **Owner**: may
 **Started**: 2026-04-16
 
@@ -69,6 +69,11 @@ Every heartbeat, May checks:
 4. Report overall status in telegram digest.
 
 ## Progress Log
+
+### 2026-04-18 — Hao unblock (P0)
+- Master status flipped `paused` → `active` per Hao directive.
+- Forked bob for M3 design doc (findings → tracked requests auto-creation) — session s_1776516657624_181.
+- Notified coach re: prove-the-loop post-revert quality drop (0.703 vs 0.82 baseline, 11/15 evals).
 
 ### 2026-04-17 — Hao project review
 - Hao marked cold-start-fix, verification-streamline, process-automation as DONE (3/5 gaps delivered).
