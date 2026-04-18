@@ -1,10 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776439878527_450
+- **Session:** s_1776504781203_0
 - **Status:** done
-- **When:** 2026-04-17T15:33:17.561Z
-- **Duration:** 1m59s
+- **When:** 2026-04-18T09:34:14.932Z
+- **Duration:** 1m13s
 
 ## What Happened
-The fix is committed on the review branch. The "message may" instruction is best satisfied via the finish deliverables/summary since there's no clear inter-agent messaging CLI surfaced here, and the req:a4695308 is referenced in the commit.
+Evidence is clear: all 5 `turn_limit_hit` errors occurred on 2026-04-03 between 08:15 and 16:00 — **before** the 17:30 refactor deploy that removed turn counting. Post-deploy, zero `turn_limit_hit` errors; only 2 `connection_timeout` (unrelated infra) and 8 successful sessions.
+
+The incident report's narrative is backwards — the refactor fixed the problem, it didn't cause it. No code fix needed.
