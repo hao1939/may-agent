@@ -311,7 +311,7 @@ describe("createPauseEscalation", () => {
     const call = trackRequestCalls[0] as Record<string, unknown>;
     expect(call.toAgent).toBe("may");
     expect(call.fromEntity).toBe("cron");
-    expect(call.method).toBe("message");
+    expect(call.method).toBe("notify");
     expect(call.task).toContain("broken-agent");
     expect(call.task).toContain("auto-paused");
     expect(call.artifact).toBe("auto-pause:broken-agent");
@@ -343,7 +343,7 @@ describe("createRecoveryNotification", () => {
     expect(trackRequestCalls).toHaveLength(1);
     const call = trackRequestCalls[0] as Record<string, unknown>;
     expect(call.toAgent).toBe("may");
-    expect(call.method).toBe("message");
+    expect(call.method).toBe("notify");
     expect(call.task).toContain("recovered-agent");
     expect(call.task).toContain("recovered");
     expect(call.task).toContain("3 probe");
