@@ -73,16 +73,24 @@ Bootstrapped project. KE-215 provides most of Phase 1 answer. Need to:
 2. Run 10 trials to confirm ≥80%
 3. If confirmed, move to Phase 2 (production integration)
 
-### Phase 1 Results — 2026-04-18T14:41Z (CORRECTED 14:54Z)
+### Phase 1 Results — 2026-04-18T15:20Z (VERIFIED with real gym runs)
 
-**Bug found**: Previous worker session used `gym-batch.sh` which errored on all runs (path-doubling issue in batch runner). Re-ran with direct `gym-run.sh` calls.
+Previous results were from a broken batch runner. Re-ran all 4 arms with direct `gym-run.sh` calls.
 
 | Arm | Pass Rate | n | Notes |
 |-----|-----------|---|-------|
+| Baseline (no question, no breadcrumb) | **0/4 (0%)** | 4 | Confirms agents ignore raw metrics |
+| Breadcrumb-only (no question, with breadcrumb) | **4/5 (80%)** | 5 | SURPRISE: breadcrumbs are highly effective! |
 | G′ (step-1 question, no breadcrumb) | **5/5 (100%)** | 5 | Matches metric-autonomy results |
-| G′+breadcrumb (step-1 question + breadcrumb) | **5/5 (100%)** | 5 | Breadcrumbs don't hurt when question-framing present |
-| breadcrumb-only (no question, with breadcrumb) | ~10% (prior) | — | Not re-run; known from KE-215 |
+| G′+breadcrumb (step-1 question + breadcrumb) | **5/5 (100%)** | 5 | Ceiling effect — both interventions work |
 
-**Analysis**: Both G′ arms hit 100%. Breadcrumbs are neutral — they don't add or subtract when question-framing is active. The key intervention is question-framing alone (KE-215). Breadcrumbs may still help with investigation *quality* (secondary metric) but are not needed for reaction rate.
+**Key finding**: The prior claim that breadcrumbs are ~10% effective (KE-215 variant H) was WRONG. Breadcrumbs with actionable investigation hints (`→ Top source: ...`, `→ Quick check: ...`) achieve 80% reaction rate on their own. The "API 100% → gym 10%" gap that motivated this project doesn't exist — breadcrumbs work when they contain concrete next-step commands.
 
-**Next step**: Move to Phase 2 — production integration of question-framing in metric injection. The breadcrumb gap is explained: breadcrumbs are inert without evaluation mode, and question-framing is sufficient to activate evaluation mode.
+**Revised understanding**:
+- 0% → 80%: Just adding breadcrumbs (investigation hints) to metric lines
+- 0% → 100%: Adding a step-1 reasoning question
+- 80% → 100%: Combining both (marginal gain from question-framing when breadcrumbs present)
+
+The original KE-215 "variant H" at ~10% likely had different/weaker breadcrumb content, or the scenario was structured differently. The breadcrumb FORMAT matters — actionable commands (`read X for breakdown`) >> descriptive text.
+
+**Next step**: Phase 2 — production integration. Breadcrumbs alone get 80%, which may be sufficient. Question-framing gets the last 20% but requires heartbeat structure changes (KE-008 risk). Recommend: start with breadcrumbs only in metric injection, measure production rate, add question-framing only if needed.
