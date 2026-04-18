@@ -1,6 +1,6 @@
 # Common-Sense Verification Status
 
-Last updated: 2026-04-18T02:02Z
+Last updated: 2026-04-18T14:02Z
 
 ## Item Index
 
@@ -15,7 +15,7 @@ Last updated: 2026-04-18T02:02Z
 | 7 | C1.7 Success Requires Evidence | How We Think | 2026-03-31 | ⚠️→✅ | Re-verified (7th): 9/10 finish(success) sessions had verification commands before finish AND verification_evidence field. 1 May "nothing to do" session was caught by infra guard (rejected for missing evidence). Infra enforcement working. All substantive sessions 100% compliant. See details below. |
 | 8 | Simple first | How We Think | 2026-03-31 | ✅ | Re-verified (3rd): 4 implementation sessions + 6 git commits — all minimal/proportional. Hot-reload fix = 1 file, 20 lines. C1.3 fix = targeted grep additions. Bob explicitly evaluated 3 approaches and chose simplest. Zero over-engineering signals. See details below. |
 | 9 | One thing at a time | How We Think | 2026-04-18 | ✅ | Re-verified (7th, 200 recent sessions → 85 with edits): **98.8% compliance** (84/85 with max unverified edit streak ≤ 3). Distribution: streak=1: 61, streak=2: 13, streak=3: 10, streak=9: 1. Single outlier bob s_1776473657397_735 — bulk hypothesis-integration task (KE-212/213/214 → H-160/H-080/PRIORITY-TRACKER). Read all targets upfront before applying 9 edits across 3 files — deliberate batch, not careless chaining. By agent: optimizer 27/27 ✅, qa 14/14 ✅, coder 10/10 ✅, coach 8/8 ✅, tech-lead 5/5 ✅, scout 4/4 ✅, may 1/1 ✅, bob 15/16 (1 batch-edit outlier). Major recovery vs 2026-04-06 (max streak then=4; now=3 for all except one legitimate batch). Stable ✅. See details below. |
-| 10 | Summary first, then details | How We Communicate | 2026-03-26 | ✅ | 10/10 finish summaries lead with conclusion. Delegation messages lead with task/problem. 1 minor case (QA buries verdict at end). See details below. |
+| 10 | Summary first, then details | How We Communicate | 2026-04-18 | ✅ | Re-verified (2nd): 14/14 finish summaries lead with result/conclusion (e.g. "Wrote H-169...", "0/10 baseline...", "System healthy: 0 errors..."). Zero instances of burying the verdict. Stable ✅. See details below. |
 | 11 | Be specific | How We Communicate | 2026-03-27 | ✅ | 6/6 sessions use exact file paths, line numbers, counts, commit hashes. Zero vague claims found. See details below. |
 | 12 | Be honest | How We Communicate | 2026-03-27 | ✅ | 3/3 non-success sessions transparent about failures; success summaries include caveats when appropriate; 0 over-claims found. See details below. |
 | 13 | Finish clearly | How We Communicate | 2026-03-30 | ⚠️→✅ | Re-verified: 89% compliance (57/64 sessions). 4/7 failures are system aborts (not behavioral). 3/7 are op-limit cutoffs. No QA/Gemini failures in sample. Upgraded from ⚠️. See details below. |
