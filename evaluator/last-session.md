@@ -1,9 +1,9 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776552860465_681
+- **Session:** s_1776552895869_682
 - **Status:** done
-- **When:** 2026-04-18T22:54:30.311Z
+- **When:** 2026-04-18T22:55:05.187Z
 - **Duration:** 9s
 
 ## What Happened
@@ -13,8 +13,8 @@
     "bob": {
       "role": "Builder",
       "capability_level": "L2",
-      "efficiency": 0.62,
-      "quality": 0.76,
-      "verdict": "acceptable",
+      "efficiency": 0.72,
+      "quality": 0.78,
+      "verdict": "good",
       "issues": [
-        "[FM-1.3/RECOVERY_WASTE] Repeated wrong-path assumptions caused avoidable error chains before finding the correct deep-dives location and INBOX file (e.g., tried `agents/shared/knowledge/deep-dives/` and `agents/bob/INBOX.md`, both missing; then had to `find`/re-grep to recover). Evidence: failure c
+        "[FM-1.3/RECOVERY_WASTE] Avoidable wrong-path lookup: tried `cat bob/workspace/deep-dives/INBOX.md` (exit 1) before using the already-available commit hash context; led to an extra recovery command (`git show ... | head`). Evidence: tool calls `bash cd /app/agents && cat bob/workspace/deep-dives/INBOX.md 
