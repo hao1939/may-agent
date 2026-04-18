@@ -824,3 +824,6 @@
 | DD-771 | 2604.11462 | Active Context Curation via RL (ContextCurator) | ★★★★★ | Context — RL-trained lightweight curator manages working memory; 7B matches GPT-4o; 8× token reduction |
 | DD-772 | 2604.12231 | Thought-Retriever: Retrieve Thoughts Not Raw Data | ★★★★ | Memory — self-evolving thought memory; +7.6% F1; TMLR published; validates DD/CR architecture |
 | DD-773 | 2604.13630 | SafeHarness: Lifecycle-Integrated Agent Security | ★★★★ | Safety — four defense layers woven into agent lifecycle; tiered verification; ~42% ASR reduction |
+
+### Weekly Synthesis (Session 796)
+- **[CR-340](cr340-week-apr14-18-synthesis.md)** — ★★★★★ Week of April 14-18 synthesis. 11 DDs (763-773), 5 themes: Memory Architecture Convergence, Architectural Enforcement Non-Negotiable, Context as Managed Resource, Formal Methods Meet Agents, Existing Systems Validate Our Architecture. 5 RECOMMENDs, 3 predictions. Key insight: DD/CR library IS a thought-retrieval system (DD#772); citation ratio is an index/bookmark problem (DD#765).
