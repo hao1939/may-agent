@@ -1,6 +1,6 @@
 # Hypothesis Priority Tracker
 
-**Updated**: 2026-04-17 (Bob: H-165 added to Tier 1 P(H)=0.92 (EXP-166 displacement confirmed, N=120); H-166 REVISED P=0.10 original / 0.75 revised (contamination + clean-env re-run, EXP-177 designed); H-098 Ch2 sub-taxonomy refinement KE-187; H-161 stays 0.70; KE-195/196/211 wired in; EXP-177 and EXP-178 designed, TESTABLE via sql-injection at 33% baseline; cross-KE synthesis `structural-guarantee-gap.md` filed.) | **Active hypotheses**: 36 | **Tested**: 28/36 | **Resolution ratio**: 19 resolved | **High-confidence (P≥0.70)**: 26
+**Updated**: 2026-04-18 (Bob: KE-212/213/214 wired into hypothesis corpus — KE-212/DD-763 Parallax → H-160 as external adversarial-regime validation, P(H) 0.92→0.94; KE-213/DD-765 cooperative paging + KE-214/DD-764 dual-trace encoding → H-080 as external replication, H-080 Active → Strongly Supported; mechanism decomposed into {encoding richness, bookmark specificity, retrieval contract, page/eviction policy}. No new hypotheses.) | **Prior**: 2026-04-17 (Bob: H-165 added to Tier 1 P(H)=0.92 (EXP-166 displacement confirmed, N=120); H-166 REVISED P=0.10 original / 0.75 revised (contamination + clean-env re-run, EXP-177 designed); H-098 Ch2 sub-taxonomy refinement KE-187; H-161 stays 0.70; KE-195/196/211 wired in; EXP-177 and EXP-178 designed, TESTABLE via sql-injection at 33% baseline; cross-KE synthesis `structural-guarantee-gap.md` filed.) | **Active hypotheses**: 36 | **Tested**: 28/36 | **Resolution ratio**: 19 resolved | **High-confidence (P≥0.70)**: 27
 **Prior**: 2026-04-15 (Bob: H-161 0.72→0.70 after EXP-164/EXP-165; H-164 added; KE-187/188).
 **Bayesian scorecard**: See `SCORECARD-bayesian-2026-04-13.md` for full reconciled methodology (supersedes 2026-04-11 version)
 
@@ -8,7 +8,13 @@
 
 ---
 
-## 📅 Change Log (2026-04-16 → 2026-04-17)
+## 📅 Change Log (2026-04-16 → 2026-04-18)
+
+**2026-04-18 (Bob)** — Evidence integration for KE-212/213/214 (three external-validation KEs landed after the 2026-04-17 orphan check).
+
+- **KE-212 (DD-763 Parallax) → H-160 (Structural Enforcement).** Parallax's 280-case assume-compromise eval — 98.9–100% Ch2 block rate, 100% max-security, 0 FPs, **0% from prompt guardrails under compromise** — is the first adversarial-regime external replication of the Ch2>Ch1 result. Prior H-160 evidence was all cooperative-regime (EXP-155, EXP-110, EXP-115). P(H) **0.92 → 0.94** (conservative +0.02; see H-160 §"External Validation" for full Bayesian justification — LR≈6, tempered for infrastructure-vs-workflow-gate mechanism-class delta and for not double-counting external evidence like internal experiments). Also flagged: Parallax's Reversible Execution and Information Flow Control are Ch2 sub-types not yet in H-098 taxonomy — noted, formalization deferred.
+- **KE-213 (DD-765 Cooperative Paging) + KE-214 (DD-764 Dual-Trace Encoding) → H-080 (Explicit Memory > Passive Context).** H-080 was "Active" on YC-Bench correlational evidence (scratchpad-writes ↔ profit). DD-765 provides interventional external replication (LoCoMo, 4 models, 4 judges, p=0.017): explicit retrieval **strictly beats full context**, not just cheaper-for-equal-quality. DD-764 provides independent encoding-side replication (LongMemEval-S, 4,575 sessions, +20.2pp p<0.0001, concentrated in temporal / update-tracking / multi-session dimensions). **Status upgrade: Active → Strongly Supported.** Mechanism now decomposed into {encoding richness, bookmark specificity, retrieval contract, page/eviction policy}. KE-214 also maps directly to our KE-207 multi-session confabulation failure modes (same temporal-reasoning axis).
+- **No new hypotheses. No new experiments.** Evidence integration + tracker maintenance only, per task scope.
 
 **2026-04-17 (Bob)** — Bayesian re-scoring after Apr 15–17 evidence wave.
 

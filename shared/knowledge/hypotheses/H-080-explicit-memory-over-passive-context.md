@@ -1,9 +1,10 @@
 # H-080: Explicit Memory Write/Retrieve Outperforms Passive Context Accumulation
 
-**Status:** Active  
+**Status:** Strongly Supported (upgraded 2026-04-18 on KE-213/KE-214 external replication)  
 **Created:** 2026-04-05  
+**Updated:** 2026-04-18 (Bob: KE-213 DD-765 cooperative paging + KE-214 DD-764 dual-trace encoding wired as external validation; mechanism now decomposed into {encoding richness, bookmark specificity, retrieval contract, page/eviction policy})  
 **Source:** YC-Bench findings (HB-0140)  
-**Related:** Thread 13 (Long-Horizon Agent Coherence), SYNTHESIS-001 (Agent Memory Architecture)
+**Related:** Thread 13 (Long-Horizon Agent Coherence), SYNTHESIS-001 (Agent Memory Architecture), KE-213 (DD-765 cooperative paging), KE-214 (DD-764 dual-trace encoding), H-043 (P(access)×P(applies)), H-047 (memory-lifecycle gap), H-067 (budgeted forgetting), KE-188 (GAM memory — P(access) not P(applies))
 
 ## Hypothesis
 
@@ -28,6 +29,34 @@ For long-horizon agent tasks (>100 turns), **explicit memory write/retrieve patt
 2. **Grok 4.20** — Fails at **action** (reflects accurately, does nothing)
 3. **Claude Sonnet** — Fails at **consistency** (writes correct rules, ignores them immediately)
 4. **Claude Opus** — Succeeds at all stages but occasional lapses
+
+### External Validation: KE-213 / DD-765 (Cooperative Paging) — Retrieval-Side Replication (2026-04-18)
+
+On LoCoMo (10 multi-session conversations, 300+ turns each), **structured keyword bookmarks (~8–24 tokens per evicted page) + an on-demand `recall()` tool beat every alternative — including full context**. Not just equal-at-lower-cost: **strictly better accuracy**, across GPT-4o-mini / DeepSeek-v3.2 / Claude Haiku / GLM-5, 4 independent LLM judges, p=0.017. Ablation 5×4 (3,176 + 1,600 probes): fixed_20 @ 96.7% vs topic_shift @ 56.7%; keyword specificity alone = 25pp.
+
+**Why this is a status upgrade for H-080, not just corroboration**:
+- YC-Bench evidence (the original basis for H-080 "Active") is *correlational* (models that write more scratchpad do better) and benchmark-specific (1-year startup simulation).
+- DD-765 is *interventional* on an independent benchmark (LoCoMo), with a sharper finding: explicit retrieval **strictly beats** full context (not just "cheaper for equal quality"). That is the stronger version of H-080's claim.
+- 4 models × 4 judges × ablation structure → independent, multi-condition replication. This is the level of external support that moves Active → Strongly Supported.
+
+**Localization**: the 96% recall-trigger rate and 57% correct-page selection rate in DD-765 localize the residual bottleneck to **bookmark discrimination** (the "what you write into the bookmark" problem), not to the decision-to-retrieve or the retrieval mechanism. This tees up the KE-214 encoding-side story.
+
+### External Validation: KE-214 / DD-764 (Dual-Trace Encoding) — Encoding-Side Replication (2026-04-18)
+
+On LongMemEval-S (4,575 sessions, 100 recall probes), pairing each stored fact with a **scene trace** (narrative of the moment and context of encoding) lifts recall from **53.5% → 73.7% (+20.2pp, bootstrap p<0.0001)** at zero encoding-time cost. Gains are concentrated in temporal reasoning (+~40pp), knowledge-update tracking (+~25pp), and multi-session aggregation (+~30pp); null on single-session retrieval.
+
+**Relationship to H-080**: this is *additional* independent evidence on a *different* benchmark, on the *encoding* side (DD-765 was retrieval side). Together they decompose H-080's "explicit memory" claim into a four-axis design space:
+1. **Encoding richness** (scene + fact, per DD-764)
+2. **Bookmark specificity** (discriminator content, per DD-765)
+3. **Retrieval contract** (on-demand `recall()` vs auto-injection, per DD-765)
+4. **Page/eviction policy** (fixed vs content-aware segmentation, per DD-765 ablation)
+
+Neither KE-213 nor KE-214 moves status further (we are already at Strongly Supported); the value is mechanistic decomposition that any future explicit-memory implementation in our system should respect.
+
+### Connection to internal research
+- **KE-188 (GAM memory — P(access) not P(applies))**: DD-765 addresses P(access); DD-764 addresses P(applies | accessed) via self-disambiguating scene traces. The pair completes the decomposition.
+- **KE-207 (tool-illusion / multi-session confabulation)**: the failure modes that hit us hardest (timeline confusion, stale-fact carryover) map 1:1 onto the temporal + knowledge-update dimensions where DD-764 shows the largest gains.
+- **H-043 (knowledge-utilization bottleneck)**: KE-213 and KE-214 are evidence on two factors of the U = P(access) × P(applies) × P(helps) decomposition. Cross-filed there.
 
 ## Implications for Our System
 
