@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776550192459_651
+- **Session:** s_1776550259604_655
 - **Status:** done
-- **When:** 2026-04-18T22:10:03.303Z
-- **Duration:** 10s
+- **When:** 2026-04-18T22:11:06.361Z
+- **Duration:** 6s
 
 ## What Happened
 ```json
@@ -13,9 +13,8 @@
     "bob": {
       "role": "Builder",
       "capability_level": "L2",
-      "efficiency": 0.62,
-      "quality": 0.83,
+      "efficiency": 0.78,
+      "quality": 0.62,
       "verdict": "acceptable",
       "issues": [
-        "Scenario discovery/path mistake at start: assumed /app/scenarios existed, then had to recover by finding agents/gym/scenarios (Failure Chain 1; 4 wasted calls; FM-1.3-lite/PATH).",
-        "Several dead-end verification/analysis attempts due to brittle command choices: grep -c with a missing file o
+        "[FM-3.3 / evidence hygiene] finish() lists verification evidence 'bash: cat design.md showed full results table' but no such bash output exists in the provided transcript for this session; only git commit + DB insert are evidenced. This is an unverified verification claim (HB#389 risk if repeated).
