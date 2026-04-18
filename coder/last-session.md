@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776545811992_0
+- **Session:** s_1776545773090_0
 - **Status:** done
-- **When:** 2026-04-18T20:58:53.588Z
-- **Duration:** 2m1s
+- **When:** 2026-04-18T21:00:13.555Z
+- **Duration:** 4m0s
 
 ## What Happened
-The evidence is unambiguous — this matches the reference "stale narrative" pattern exactly. Let me write the diagnosis.
+All 23 tests pass. The bug was in `src/grades.js` — `getLetterGrade` used strict `>` comparison, so a score exactly equal to a threshold (e.g., 80.0 for B) fell through to the next lower grade. Changed to `>=`.
