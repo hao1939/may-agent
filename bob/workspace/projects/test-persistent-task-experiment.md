@@ -74,9 +74,78 @@ sessions on startup, half the time taking no action at all.
    field that's not summarized."*
 
 ## Current State
-Iter 7 done. Proposal brief with bob's measured 45%→33% delta sent to
-coach and may. All milestones complete for this phase; next iter (if any)
-would be a re-measure of coach/may after they adopt (or explicit decline).
+Iter 8 done (2026-04-18 17:45 UTC). Re-measurement of coach + may after
+proposal brief: **0/6 adoption each**. Coach overhead 48% → 71% (n=6,
+tot=9.8, pre=7.0); worst-case tail collapsed (no more 65-op sessions) but
+pre-real ops didn't improve. May overhead still 100% (6/6 zero-action
+heartbeats, tot=9.5, all ops are overhead). Proposal appears to not have
+landed; see Iter 8 log below for the nuance and next-step options.
+
+### Iter 8 — 2026-04-18 (this iter)
+**Goal:** Close-the-loop re-measure of coach and may after Iter 7's
+proposal brief + notifications. Same method as Iter 2/6.
+
+**Results (6 most-recent heartbeats per agent, started within the last
+~2.5h):**
+
+| agent | avg tot | avg pre | zero-real | snap adopt | overhead |
+|-------|---------|---------|-----------|------------|----------|
+| coach | 9.8     | 7.0     | 4/6       | 0/6        | **71%**  |
+| may   | 9.5     | 9.5     | 6/6       | 0/6        | **100%** |
+
+**Compare to Iter 2 baseline:**
+- coach: 24.3 → 9.8 total (the 65-op tail is gone), but overhead ratio
+  went *up* (48% → 71%). Shorter sessions, same absolute overhead ~7 ops,
+  so the ratio worsens as totals shrink. Not a regression — a
+  denominator artifact.
+- may: 13.2 → 9.5 total; overhead ratio already at the ceiling (100%),
+  unchanged. All 6 sessions exited with zero real action.
+
+**Adoption: 0/6 for both.** Neither agent called
+`heartbeat-snapshot.sh` in its 6 most-recent heartbeats. Either (a) the
+proposal brief hasn't been read, (b) was read and declined implicitly,
+or (c) is queued behind other work. No explicit reply observed.
+
+**Reframing — the data says the script isn't the bottleneck for
+coach/may:**
+- coach's pre-real average is 7.0 ops, spread across ~4 zero-action
+  exits. Those are pattern-#1 (pure-overhead heartbeats), which the
+  project explicitly retired (Iter 5) per Hao's
+  idle-heartbeat-playbook directive. Asking coach to adopt the snapshot
+  doesn't change this — the overhead *is* the exploration budget.
+- may is the same story, harder: 6/6 zero-real, avg 9.5 read/bash ops
+  looking for something to do. This is exactly the "exploration, not
+  overhead" regime the playbook describes.
+
+**Implication for the <10% goal:** the original 25% baseline and <10%
+target were computed before the idle-heartbeat reframe. Under the
+reframed definition (overhead = ops *when there is real work to do*,
+excluding exploration heartbeats), the relevant numerator is bob's
+Iter 6 snapshot-using sessions: pre-real = 2.5 ops, total ~9, overhead
+~28%. Still above 10%, but the gap is tractable. **Proposing a formal
+redefinition of the goal metric as "startup overhead on
+action-producing heartbeats only" (exclude zero-real sessions) is the
+honest next step** — the current metric conflates two different
+regimes and makes may look like a 100% regression that isn't.
+
+**Recommendation (not actioned this iter, avoiding scope creep):**
+1. Write this redefinition up as a short note and send to the same
+   audience (may + coach + tech-lead). This is an iter-9 deliverable,
+   not an iter-8 one.
+2. Alternatively, declare the project **done** at its current state —
+   bob went from 45% → 33%, a script was built and proven, and the
+   remaining gap is a metric-definition question rather than an
+   engineering one. The original milestones are all `[x]`; further
+   measurement is observation, not goal progress.
+
+**Not done this iter** (deliberate):
+- Did not send redefinition note; will evaluate whether to do so next
+  iter or declare project complete.
+- Did not attempt to force coach/may adoption — the proposal brief
+  stands; it's their call per Iter 7's explicit non-ask.
+
+## Files Modified This Iter
+- agents/bob/workspace/projects/test-persistent-task-experiment.md (this file)
 
 ### Iter 7 — 2026-04-18 (this iter)
 **Goal:** Close the last open milestone — formally propose the snapshot
