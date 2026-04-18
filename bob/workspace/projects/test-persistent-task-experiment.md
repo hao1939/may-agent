@@ -1,6 +1,8 @@
 # Project: Investigate Session Startup Overhead
 
-**Status**: closed (Iter 24 — metric redefined, goal met. Absolute ops 19.2→11.5 (-40%), zero-real eliminated. Ratio target retired.)
+**Status**: done
+<!-- Closed at Iter 24 — metric redefined, goal met. Absolute ops 19.2→11.5 (-40%), zero-real eliminated. Ratio target retired. Iter 25 fixed snapshot-regex false-positive. Iter 26 changed Status from "closed (...)" → "done" so project-resume.ts (VALID_STATUSES = {active,paused,blocked,pending-review,done}) stops treating it as garbled and re-dispatching. -->
+**Previously-closed-notes**: Iter 24 metric-redefinition; Iter 25 regex bug fix; Iter 26 status-value normalization.
 **Owner**: bob
 **Previously closed**: 2026-04-18 (Iter 9), reopened Iter 10 on data, re-closed Iter 11
 
