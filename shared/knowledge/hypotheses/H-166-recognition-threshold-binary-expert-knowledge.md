@@ -6,7 +6,7 @@
 **P(H-166 original / high-threshold)**: 0.70 → **0.10** (post-contamination evidence)
 **P(H-166-revised / low-threshold, any-causal-pointer)**: **0.75** (0% → ~100% jump holds across A/B/C/E/F arms; open on nudge)
 **Source**: EXP-168 dose-response → contamination discovered (checkpoint s_1776358364254_320) → EXP-173 clean-env re-run
-**Connects**: KE-192 (solver-sampler mismatch), KE-133 (few-shot displacement), KE-191, H-161
+**Connects**: KE-192 (solver-sampler mismatch), KE-133 (few-shot displacement), KE-191, KE-199 (deprecated), KE-199b (revised low-threshold model), H-161
 
 ---
 

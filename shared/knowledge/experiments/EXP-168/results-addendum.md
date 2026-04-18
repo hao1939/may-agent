@@ -59,7 +59,7 @@ Base's stability (0% both regimes) rules out a naïve "clean env is itself suffi
 - [x] Write this addendum.
 - [x] Confirm H-166 already carries the contamination revision (it does; see `Post-Contamination Reassessment` section).
 - [x] Add deprecation banner to KE-199.
-- [ ] After EXP-177 resolves, either retire KE-199 or issue KE-199b with corrected numbers.
+- [x] Issue KE-199b with corrected numbers (2026-04-18, commit `ba950f84b` — `entries/KE-199b-low-threshold-causal-pointer-sufficient.md`). KE-199 deprecation banner added. Final retirement of KE-199 deferred pending EXP-177 resolution.
 
 ---
 
