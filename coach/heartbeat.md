@@ -159,17 +159,27 @@ Run each promoted skill's gym scenario once. Record pass/fail.
 Output: Update workspace/todo.md Promoted Skills table with today's date and result.
 ```
 
-## Step 4: EXIT
+## Step 4: EXIT (autonomy rubric)
 
-Call `finish()` with what you observed and dispatched. EXIT WITHOUT JOURNALING. Your `finish()` summary IS your record — do not also write to `workspace/journal.md`.
+**Short heartbeats are a regression, not efficiency.** Autonomy time always has something to do. A <2-min heartbeat is almost always a failure to look, not a genuine empty state.
 
-**DO NOT update journal.md or todo.md as busywork.** If you didn't dispatch anything, that's a signal to look harder — not to write a journal entry about looking.
+Before calling `finish()`, your session MUST end in exactly ONE of these three legal states:
 
-**If you found nothing to dispatch:** Before exiting, ask yourself:
-- Are there experiments in EXP-XXX/ with design but no results? → Fork to run them
-- Are there untested hypotheses that could use a gym scenario? → Fork to design one
-- Are there convention regressions that need investigation? → Fork to investigate
-- Are there promoted skills that haven't been verified recently? → Fork a verification run
+**(a) DISPATCHED WORK** — you forked a work session or filed a new IT. Include the session id / IT id in `finish()` summary.
+
+**(b) SELF-DIRECTED INVESTIGATION** — you wrote a file (skill note, observation, post-mortem, reflection follow-up, IT progress). Include the file path in `finish()` summary. Sources of work when nothing is dispatchable:
+- Open IT items in the most recent `workspace/reflections/*-reflection.md` (status NOT STARTED or PARTIAL)
+- Experiments in EXP-XXX/ with design but no results → fork to run
+- Untested hypotheses that could use a gym scenario → fork to design
+- Convention regressions that need investigation → fork
+- Promoted skills that haven't been verified recently → fork verification
+- Silent cron/handler failures in may.db (status='FAILED', last 6h) → file an IT
+
+**(c) EXPLICIT SHORT-CADENCE WAIT** — you exit without action ONLY if tied to a named trigger (e.g., "prove-the-loop paused until 07:30Z prod check", "waiting on tech-lead notify-refactor to land"). The trigger must be concrete, time-bounded, and named in `finish()` summary.
+
+**ILLEGAL exit:** "Clean state, nothing to do, exiting" with no trigger named. If you find yourself writing that, you haven't looked hard enough — re-open the most recent reflection file and pick an IT.
+
+Call `finish()`. EXIT WITHOUT JOURNALING. Your `finish()` summary IS your record — do not also write to `workspace/journal.md`. **DO NOT update journal.md or todo.md as busywork.**
 
 **DO NOT start experiments or analysis after dispatching.** Exit cleanly.
 
