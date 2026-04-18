@@ -2,6 +2,13 @@
 
 ## Active Tasks
 
+## Citation Improvement Actions (from citation-audit.md, 2026-04-18)
+- [ ] Stop writing DDs for tools/repos/blogs — catalog in discoveries.md only
+- [ ] Pre-filter DD candidates: "Would Bob create a KE from this?" If no → skip DD
+- [ ] Write H-XXX hypotheses for high-relevance DDs (forces Bob to respond = guaranteed citation)
+- [ ] Add "Maps to: KE-XXX / EXP-XXX" lines in DD headers for explicit connection
+- [ ] CR RECOMMENDs must name agent + specific action (e.g., "RECOMMEND(bob): Test X in EXP-Y")
+
 ## Pending Leads
 - **✅ DD#655 DONE**: Rubber Duck deep-dive written and in shared library (DD-655-copilot-rubber-duck-cross-model-critique.md).
 - **✅ INDEX.md gap CLOSED**: Session 370 promoted 21 drops (DD#601-643) to shared library and added 5 thematic clusters to INDEX.md. Gap from DD#595-600 and DD#606-611 still exists (those DDs may not have drops/ files).
