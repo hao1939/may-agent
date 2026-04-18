@@ -115,3 +115,14 @@ Modified `agents/may/handlers/heartbeat-context.ts` to inject breadcrumb investi
 - No heartbeat step restructuring (KE-008 safe)
 
 **Next step**: Phase 3 — add `coach.breadcrumb-action-rate` metric to track production effectiveness.
+
+### Phase 3 — Metric Tracking — 2026-04-18T16:25Z
+
+Registered `coach.breadcrumb-action-rate` metric:
+- **ID**: `coach.breadcrumb-action-rate` in metrics table
+- **Measurement**: `agents/coach/scripts/measure-breadcrumb-action-rate.sh` — scans heartbeat sessions (7d window) for ⚠️ metrics in task context, checks if session digest shows investigative action
+- **Target**: 0.8 (based on Phase 1 gym results showing 80% with breadcrumbs alone)
+- **Threshold**: 0.5 (alert if below)
+- **Current**: 0 (expected — breadcrumbs just deployed in Phase 2, no data yet)
+
+All 3 phases complete. Project ready for monitoring — check metric in ~1 week for meaningful data.
