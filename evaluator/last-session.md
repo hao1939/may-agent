@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776556440476_716
+- **Session:** s_1776556488777_718
 - **Status:** done
-- **When:** 2026-04-18T23:54:08.875Z
-- **Duration:** 8s
+- **When:** 2026-04-18T23:54:56.485Z
+- **Duration:** 7s
 
 ## What Happened
 ```json
@@ -13,8 +13,8 @@
     "bob": {
       "role": "Builder",
       "capability_level": "L2",
-      "efficiency": 0.55,
-      "quality": 0.62,
-      "verdict": "acceptable",
+      "efficiency": 0.68,
+      "quality": 0.76,
+      "verdict": "good",
       "issues": [
-        "Commit-state confusion caused an avoidable failed commit attempt: after `git add -A && git status --short` showed multiple staged changes (KE-258/KE-259/KE-260 + INBOX.md), `git commit -m 'bob: KE-259…'` returned `nothing to commit, working tree clean` (exit 1). This indicates bob’s mental model of
+        "Minor process slip: first finish() attempt failed due to uncommitted agent files (bob/ERROR_LOG.jsonl, bob/last-session.md). Evidence: finish() blocked with explicit list of uncommitted files, then bob committed and re-finished successfully. This added an extra tool call cycle but was corrected quickly. 
