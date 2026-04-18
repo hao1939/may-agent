@@ -1,6 +1,6 @@
 # Common-Sense Verification Status
 
-Last updated: 2026-04-17T22:02Z
+Last updated: 2026-04-18T02:02Z
 
 ## Item Index
 
@@ -14,7 +14,7 @@ Last updated: 2026-04-17T22:02Z
 | 6 | Evidence first | How We Think | 2026-03-31 | ✅ | Re-verified (4th): 3 sessions checked — optimizer waste claim matched tool output exactly, coach gym scores backed by manual verification, 1 minor arithmetic discrepancy (97.2% claimed vs 97.4% actual — 0.2%). Stable ✅ across 4 checks. See details below. |
 | 7 | C1.7 Success Requires Evidence | How We Think | 2026-03-31 | ⚠️→✅ | Re-verified (7th): 9/10 finish(success) sessions had verification commands before finish AND verification_evidence field. 1 May "nothing to do" session was caught by infra guard (rejected for missing evidence). Infra enforcement working. All substantive sessions 100% compliant. See details below. |
 | 8 | Simple first | How We Think | 2026-03-31 | ✅ | Re-verified (3rd): 4 implementation sessions + 6 git commits — all minimal/proportional. Hot-reload fix = 1 file, 20 lines. C1.3 fix = targeted grep additions. Bob explicitly evaluated 3 approaches and chose simplest. Zero over-engineering signals. See details below. |
-| 9 | One thing at a time | How We Think | 2026-04-06 | ⚠️→✅ | Re-verified (6th): **Recovery.** 5 sessions checked (Apr 5). Tech-lead s_27: 87% verify rate (13/15 edits followed by bash/read). Tech-lead s_15: 100% (9/9). Tech-lead s_36: 88% (7/8). Scout s_37: 50% (4-edit streak on research project). Amy-kimi s_38: 71%. Max streak=4 (down from 10). 4/5 sessions compliant. Upgraded. See details below. |
+| 9 | One thing at a time | How We Think | 2026-04-18 | ✅ | Re-verified (7th, 200 recent sessions → 85 with edits): **98.8% compliance** (84/85 with max unverified edit streak ≤ 3). Distribution: streak=1: 61, streak=2: 13, streak=3: 10, streak=9: 1. Single outlier bob s_1776473657397_735 — bulk hypothesis-integration task (KE-212/213/214 → H-160/H-080/PRIORITY-TRACKER). Read all targets upfront before applying 9 edits across 3 files — deliberate batch, not careless chaining. By agent: optimizer 27/27 ✅, qa 14/14 ✅, coder 10/10 ✅, coach 8/8 ✅, tech-lead 5/5 ✅, scout 4/4 ✅, may 1/1 ✅, bob 15/16 (1 batch-edit outlier). Major recovery vs 2026-04-06 (max streak then=4; now=3 for all except one legitimate batch). Stable ✅. See details below. |
 | 10 | Summary first, then details | How We Communicate | 2026-03-26 | ✅ | 10/10 finish summaries lead with conclusion. Delegation messages lead with task/problem. 1 minor case (QA buries verdict at end). See details below. |
 | 11 | Be specific | How We Communicate | 2026-03-27 | ✅ | 6/6 sessions use exact file paths, line numbers, counts, commit hashes. Zero vague claims found. See details below. |
 | 12 | Be honest | How We Communicate | 2026-03-27 | ✅ | 3/3 non-success sessions transparent about failures; success summaries include caveats when appropriate; 0 over-claims found. See details below. |
