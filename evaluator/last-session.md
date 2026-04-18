@@ -1,20 +1,21 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776521324456_269
+- **Session:** s_1776521473174_275
 - **Status:** done
-- **When:** 2026-04-18T14:08:55.391Z
-- **Duration:** 10s
+- **When:** 2026-04-18T14:11:21.705Z
+- **Duration:** 8s
 
 ## What Happened
 ```json
 {
   "agents": {
-    "optimizer": {
-      "role": "Builder",
+    "qa": {
+      "role": "Builder (Quality Focus)",
       "capability_level": "L2",
-      "efficiency": 0.35,
-      "quality": 0.55,
-      "verdict": "acceptable",
+      "efficiency": 0.8,
+      "quality": 0.35,
+      "verdict": "needs_improvement",
       "issues": [
-        "[FM-1.3-lite/ERROR_RECOVERY_WASTE] Multiple wrong-path / wrong-location assumptions caused a long recovery chain (tried .state/sessions/<sid>/ then later discovered history/). Evidence: failure chain 2 shows 10 wasted calls including initial `ls .state/sessions/s_...` code 2 and later pivot t
+        "[FM-3.3/VERIFICATION_FAILURE] finish() claims read(agents/may/handlers/convention-check.ts) and running tsc+vitest, but transcript shows only: edit(journal.md), git commit, finish(). No read/tsc/vitest tool outputs are present.",
+        "[FM-2.6] Reasoning-action mismatch: sum
