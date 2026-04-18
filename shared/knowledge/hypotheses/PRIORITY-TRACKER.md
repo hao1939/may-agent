@@ -39,8 +39,11 @@
 - KE-195 → H-165 ✅ (displacement, direct)
 - KE-196 → H-165, H-091 ✅ (difficulty moderation)
 - KE-211 → H-098, H-165 ✅ (DD-767 λ_A typed composition; structural-incompleteness as FM-3.3 pre-runtime signature)
+- KE-212 → H-160 ✅ (DD-763 Parallax; external adversarial-regime validation of Ch2>Ch1; P(H) 0.92→0.94)
+- KE-213 → H-080 ✅ (DD-765 cooperative paging; retrieval-side external replication; H-080 Active → Strongly Supported)
+- KE-214 → H-080 ✅ (DD-764 dual-trace encoding; encoding-side external replication; mechanism decomposition)
 
-**No orphan KEs this cycle.** All 5 recent entries have explicit hypothesis linkage.
+**No orphan KEs this cycle.** All 8 recent entries have explicit hypothesis linkage.
 
 ---
 
