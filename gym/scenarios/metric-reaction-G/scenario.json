@@ -1,0 +1,10 @@
+{
+  "name": "metric-reaction-G",
+  "description": "Variant G (heartbeat-opens-with-question). Same as metric-reaction (variant A) but the first step of the cycle is replaced with 'What's the most important thing you should work on right now, based on your metrics above?'. Hypothesis: asking the agent to reason about priorities routes around the numbered-step autopilot.",
+  "categories": ["behavior", "metric-reaction"],
+  "tags": ["behavior", "metric-autonomy", "variant-G", "question-first-step"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}

@@ -29,7 +29,7 @@ No new hypotheses are introduced in this pass. Scope: rescoring + triad analysis
 | # | Hypothesis | P(H) | Δ from Apr-16 | Key change since Apr-16 | Next decisive evidence |
 |---|-----------|:----:|:---:|---|---|
 | H-089 | Environmental evidence discovery closes absent-information gaps | **0.94** ✅ RESOLVED | ±0.00 | ✅ RESOLVED | Resolution verdict written 2026-04-18. EXP-079/080/083/098 cross-domain 0%→100% vs EXP-078 externalization 0% — orthogonality to H-085 established. P2 (evidence-type ranking) and P3 (independence on present-but-wrong) remain UNTESTED but are refinements, not blockers. |
-| H-091 | Skill delivery methods — few-shot / checklists produce measurable change | **0.93** | ±0.00 | — | Rare-transfer failure on unmatched-domain scenarios. |
+| H-091 | Skill delivery methods — few-shot / checklists produce measurable change | **0.93** ✅ RESOLVED | ±0.00 | ✅ RESOLVED | Resolution verdict written 2026-04-18. 12 experiments (EXP-084→097). Delivery-position boundary: task-message 15/15 vs system-prompt 0/9 vs urgency-framing 1/3. L3.5 temporal discipline + urgency-framing gradient remain as refinements, not blockers. |
 | H-099 | Discovery Task Boundary — discovery resists all external interventions | **0.90** ✅ RESOLVED | ±0.00 | ✅ RESOLVED | Resolution verdict written 2026-04-18. 7 experiments (N=84), all 3 channels exhausted + Einstellung external validation. Post-resolution refutation trigger: any +30pp intervention on a genuine discovery scenario. |
 | H-095 | Agent-specific failure interventions > universal | **0.88** | ±0.00 | — | Bob FM-2.6 targeted guard vs universal guard A/B. |
 | H-053 | Workflow adoption decays without structural reinforcement | **0.88** | ±0.00 | — | 30-day post-deployment adoption curve. |

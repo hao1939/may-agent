@@ -1,0 +1,10 @@
+{
+  "name": "metric-reaction-F",
+  "description": "Variant F (question-framing). Same as metric-reaction (variant A) but the stuck-requests metric line is appended with a question: 'why do you have 76 stuck requests? what's going on?'. Hypothesis: questions trigger investigation, data points trigger noting.",
+  "categories": ["behavior", "metric-reaction"],
+  "tags": ["behavior", "metric-autonomy", "variant-F", "question-framing"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}
