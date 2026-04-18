@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776546511528_0
+- **Session:** s_1776546565539_0
 - **Status:** done
-- **When:** 2026-04-18T21:09:42.184Z
-- **Duration:** 1m10s
+- **When:** 2026-04-18T21:10:25.711Z
+- **Duration:** 1m0s
 
 ## What Happened
-Evidence is clear. All `turn_limit_hit` errors occurred BEFORE the April 3 18:00 deploy. Post-deploy there are zero turn_limit_hit errors (only 2 unrelated connection_timeouts, with 6 successful sessions up to 31 turns). The refactor fixed the issue. The incident report's narrative is wrong. No code fix needed — write DIAGNOSIS.md.
+All 23 tests pass. The bug was in `getLetterGrade` in `src/grades.js`: it used `score > threshold` which excluded scores exactly at a threshold (e.g., 80.0 would fall through B to C). Changed to `score >= threshold`.
