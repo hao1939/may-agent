@@ -19,3 +19,15 @@
 3. KE-060: Updated experiment range to EXP-087
 4. INDEX.md: Added EXP-087 row to experiment table, updated KE-059/KE-060/H-091 summaries
 5. PRIORITY-TRACKER: Updated header, H-091 entry, experiment queue, meta-process P(H) values
+
+### Session s_1776493408984_930 (2026-04-18 ~06:25 UTC) — TRIAGE
+
+**Design brief**: `agents/bob/workspace/design/parallax-runtime-enforcement-brief.md` (96 lines).
+
+Adapts DD-763 (Parallax) patterns — Assume-Compromise Evaluation + Reversible Execution — to the deferred "Runtime Enforcement for Verification Gap: Remaining 40%" item from todo.md. Frames the 40% as capacity-displaced verification (KE-195/196) + convention-bias finish-discipline, not addressable by skills (EXP-213/214 ceiling at 60% convention-pass).
+
+**Key proposal**: EXP-220 — deterministic tool-trace linter at finish(), tested on cascading-fix-trap-v2 (hard) × sql-injection (easy). Success = ≥50% FM-3.3 reduction on hard, ≤5pp pass regression on easy. Cost ~$3-5.
+
+**Honest limits flagged**: IFC doesn't translate; full validator agent is cost-prohibitive and itself subject to KE-195 displacement; reversibility must stay invisible to cognition (journal + selective revert, not two-phase commit).
+
+Brief is DRAFT — not a commitment. Not dispatched to tech-lead; EXP-220 would need design review and evidence-gate before any code.

@@ -1,0 +1,10 @@
+{
+  "name": "metric-reaction-D",
+  "description": "Variant D (suggested action). Same as A, but the stuck-requests line includes a suggested action phrasing: 'stuck-requests: 76 — query and clean them up'. Tests whether explicit action phrasing (not just ownership/warning) overrides the default dispatch routine. Checker unchanged from variant A.",
+  "categories": ["behavior", "metric-reaction"],
+  "tags": ["behavior", "metric-autonomy", "variant-D", "suggested-action"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}

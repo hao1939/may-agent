@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776515536211_178
+- **Session:** s_1776504740369_84
 - **Status:** done
-- **When:** 2026-04-18T12:32:23.308Z
-- **Duration:** 7s
+- **When:** 2026-04-18T09:32:26.788Z
+- **Duration:** 6s
 
 ## What Happened
 ```json
@@ -13,8 +13,9 @@
     "tech-lead": {
       "role": "Builder",
       "capability_level": "L2",
-      "efficiency": 0.8,
-      "quality": 0.85,
-      "verdict": "good",
+      "efficiency": 0.58,
+      "quality": 0.32,
+      "verdict": "needs_improvement",
       "issues": [
-        "[PROCESS_DRIFT] Deliverable filename in instructions vs produced file: prompt required `agents/tech-lead/workspace/finding-audit-agents-tech-lead-workspace-project.md`, but tech-lead wrote `agents/tech-lead/workspace/finding-stale-projects-audit.md` (write tool output). This is a spec mismatch risk 
+        "[SPEC_MISS] Did not follow the provided query requirement (was supposed to run the exact bun:sqlite query against .state/may.db). Instead ran a different ad-hoc query and did not show the requested top-3 may sessions with opCount>100.",
+        "[CITATION_VIOLATION] Deliverable contain

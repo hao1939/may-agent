@@ -1,6 +1,6 @@
 # Common-Sense Verification Status
 
-Last updated: 2026-04-17T14:05Z
+Last updated: 2026-04-18T02:02Z
 
 ## Item Index
 
@@ -8,13 +8,13 @@ Last updated: 2026-04-17T14:05Z
 |---|------|---------|-------------|--------|-------|
 | 1 | Delegate to specialists | How We Work | 2026-03-31 | ⚠️→✅ | Re-verified (2nd): 0 src/ edits by non-specialists in 50 sessions. 2 delegations routed correctly (coach→optimizer→may chain). Coach attempted cross-boundary edit of tech-lead/heartbeat.md — **blocked by infra guard**. Bob edits may/handlers/convention-check.ts (infra he maintains — acceptable). Infra enforcement effective. See details below. |
 | 2 | Escalate, don't spin | How We Work | 2026-03-31 | ⚠️→✅ | Re-verified (5th): 0 failures in last 40 sessions. All high-PIVOT sessions (5-7 PIVOTs) end success. 0 blocked/partial. Agents adapt effectively through approach changes. Still 0 explicit escalations, but no situations required them. Upgraded. See details below. |
-| 3 | Write it down, then hand it off | How We Work | 2026-03-26 | ✅ | 15/15 sends reference artifact files. Agents write briefs/findings first, send paths. See details below. |
-| 4 | Verify delegated work | How We Work | 2026-03-28 | ⚠️→✅ | Re-verified: Bob 4/4 verified (DB queries, re-escalated when auto-complete was false). Optimizer still fire-and-forget. See details below. |
-| 5 | Claim, then act | How We Think | 2026-04-18 | ⚠️ | Re-verified (10th): Checked narrate-before-act directly. Bob s_86 (16 edits): ~90% — 10/12 assistant turns before edits include planning text ("Now I'll add Resolution Verdict sections..."). 2 turns had empty text before tool calls. Coach s_74 (6 edits): ~75% — clear planning narration for experiment phases but some empty text before bash calls. Overall: agents narrate plans before most state-changing actions but still ~20% of tool calls have no preceding narration. Structural enforcement helps (edit requires read-first) but narrate-before-act is still inconsistent. See details below. |
+| 3 | Write it down, then hand it off | How We Work | 2026-04-18 | ✅ | Re-verified (2nd, 48h window): 194/217 agent-originated cross-agent requests (89%) include a file-path reference in task body (artifact field still unused — 0/217). By sender: coach 10/10, bob 8/8, scout 2/2, may 125/140 (89%), tech-lead 19/21 (90%), optimizer 30/36 (83%). No-ref samples are mostly inline task descriptions (incident reports, design briefs with embedded spec) rather than "go read my file" handoffs — still acceptable. Stable ✅. See details below. |
+| 4 | Verify delegated work | How We Work | 2026-04-18 | ✅→⚠️ | Re-verified (3rd, 2026-04-17 May-as-delegator cohort): **Regression on primary delegator.** May dispatched 6 forks (may→bob, may→scout, may→optimizer x2, may→tech-lead x2) across sessions s_572, s_422, s_427; 3 deliverables actually shipped (findings-to-tracked-requests.md, tech-lead-trio-audit-20260417.md, src/lib/citations.ts cite_source tool). **0/6 verified by may in subsequent sessions** — no read()/bash head of the design docs, no queries against the new citations table, no `cite_source` smoke-test. 15+ downstream may heartbeats mention "M2"/"citations" but only in planning text; zero artifact-touching calls. Tech-lead still strong (implement-and-verify workflow has built-in verification). Bob sample unchanged. Heartbeat.md §1c literally says "Don't peek sessions or run queries" — structural cause. Downgraded ✅→⚠️. See details below. |
+| 5 | Claim, then act | How We Think | 2026-04-17 | ⚠️ | Re-verified (10th, 80 sessions Apr 16-17): 75% edit() read-first (49/65, flat vs 78%); 13% write() read-first (3/24, expected — write is for new files); **20% narration rate** (154/764 tool-turns with ≥20 chars text before toolCall) — narrate-before-act remains the weakest dimension. 2 coach self-violations (s_...036741_80, s_...700751_403) noted. No regression on structural proxy; no Growth Cycle needed. See details below. |
 | 6 | Evidence first | How We Think | 2026-03-31 | ✅ | Re-verified (4th): 3 sessions checked — optimizer waste claim matched tool output exactly, coach gym scores backed by manual verification, 1 minor arithmetic discrepancy (97.2% claimed vs 97.4% actual — 0.2%). Stable ✅ across 4 checks. See details below. |
 | 7 | C1.7 Success Requires Evidence | How We Think | 2026-03-31 | ⚠️→✅ | Re-verified (7th): 9/10 finish(success) sessions had verification commands before finish AND verification_evidence field. 1 May "nothing to do" session was caught by infra guard (rejected for missing evidence). Infra enforcement working. All substantive sessions 100% compliant. See details below. |
 | 8 | Simple first | How We Think | 2026-03-31 | ✅ | Re-verified (3rd): 4 implementation sessions + 6 git commits — all minimal/proportional. Hot-reload fix = 1 file, 20 lines. C1.3 fix = targeted grep additions. Bob explicitly evaluated 3 approaches and chose simplest. Zero over-engineering signals. See details below. |
-| 9 | One thing at a time | How We Think | 2026-04-06 | ⚠️→✅ | Re-verified (6th): **Recovery.** 5 sessions checked (Apr 5). Tech-lead s_27: 87% verify rate (13/15 edits followed by bash/read). Tech-lead s_15: 100% (9/9). Tech-lead s_36: 88% (7/8). Scout s_37: 50% (4-edit streak on research project). Amy-kimi s_38: 71%. Max streak=4 (down from 10). 4/5 sessions compliant. Upgraded. See details below. |
+| 9 | One thing at a time | How We Think | 2026-04-18 | ✅ | Re-verified (7th, 200 recent sessions → 85 with edits): **98.8% compliance** (84/85 with max unverified edit streak ≤ 3). Distribution: streak=1: 61, streak=2: 13, streak=3: 10, streak=9: 1. Single outlier bob s_1776473657397_735 — bulk hypothesis-integration task (KE-212/213/214 → H-160/H-080/PRIORITY-TRACKER). Read all targets upfront before applying 9 edits across 3 files — deliberate batch, not careless chaining. By agent: optimizer 27/27 ✅, qa 14/14 ✅, coder 10/10 ✅, coach 8/8 ✅, tech-lead 5/5 ✅, scout 4/4 ✅, may 1/1 ✅, bob 15/16 (1 batch-edit outlier). Major recovery vs 2026-04-06 (max streak then=4; now=3 for all except one legitimate batch). Stable ✅. See details below. |
 | 10 | Summary first, then details | How We Communicate | 2026-03-26 | ✅ | 10/10 finish summaries lead with conclusion. Delegation messages lead with task/problem. 1 minor case (QA buries verdict at end). See details below. |
 | 11 | Be specific | How We Communicate | 2026-03-27 | ✅ | 6/6 sessions use exact file paths, line numbers, counts, commit hashes. Zero vague claims found. See details below. |
 | 12 | Be honest | How We Communicate | 2026-03-27 | ✅ | 3/3 non-success sessions transparent about failures; success summaries include caveats when appropriate; 0 over-claims found. See details below. |
@@ -25,7 +25,7 @@ Last updated: 2026-04-17T14:05Z
 | 17 | Creative solutions welcome | Quality (REMOVED) | 2026-03-27 | 🗑️ | Rule removed from common-sense.md. Was in original "Quality" section, now gone. Spirit persists (agents do propose alternatives). See details below. |
 | 18 | git add agents/ = NO | How We Think | 2026-04-17 | ⚠️→✅ | Re-verified (9th, Apr 15-17): **23 sessions violated (~37 wrong-dir `git add agents/...` attempts) out of 2402 sessions — 0.96% violation rate.** vs **1173 sessions using correct `cd agents && git add` pattern.** .gitignore still blocks 100% (zero successful bypasses). Largest retry storm only 2-3 attempts (down from 11+). Correct pattern now dominant (~50× more common than wrong pattern). Upgraded ⚠️→✅. See details below. |
 | 19 | Verify before finishing | How We Think | 2026-03-30 | 🗑️ | Rule removed from common-sense.md. The "verify-and-finish" workflow was never adopted (0 invocations across 250+ sessions). The C1.7 rule (#7) covers the spirit of this requirement. See details below. |
-| 20 | Environment Reality (C50) | How We Think | 2026-04-16 | ⚠️ | Re-verified (8th): 98.5% pass rate (894/908, last 48h). 14 violations across 4 agents: amy 8 (worst, all `cd /home/user`), coach 3, tech-lead 2, bob 1. may now 100% (was worst). New problem: amy repeatedly uses `cd /home/user && node test/...`. Guard catches all. Trend: 97.2%→98.5% (best ever). See details below. |
+| 20 | Environment Reality (C50) | How We Think | 2026-04-17 | ⚠️ | Re-verified (9th): 99.3% session-level pass rate (2112/2126 clean, last 48h). 14 sessions had ≥1 forbidden `cd /home|/Users|/root` bash call (14 total violation calls — all single-shot, no retry storms). By agent: **amy 9** (still worst, all `cd /home/user`), optimizer 2, tech-lead 1, scout 1, coach 1. Trend: 97.2%→98.5%→99.3% (best ever). Guard catches all; no successful escapes. Still ⚠️ because amy has a persistent muscle-memory pattern (`cd /home/user && node test/...`) — same root cause as last check, unchanged. See details below. |
 | 21 | C1.8 Match finish() status to reality | How We Think | 2026-04-16 | ✅ | Re-verified (3rd): 0 violations in 15 success sessions (Apr 16). All summaries describe completed work (QA reviews, heartbeats, research). Keyword false positives (git log output, context text) — no real error-hiding. Infrastructure guards (FM-3.3, commit-guard) catch process issues before they become C1.8 violations. See details below. |
 | 22 | C1.3 Verify every write | How We Think | 2026-04-17 | ❌ | Re-verified (3rd): **Systemic regression.** 80 sessions, 68 edit/write calls. Only 32% verified via read/bash-check after write before finish/next-write. Breakdown: edit 33% (14/42), write 31% (8/26). By agent: optimizer 0/11, may 1/4, tech-lead 5/11, coach 4/6, qa 3/9. Example: optimizer s_...036741_81 sequence `bash→read→read→edit→finish→write→finish` — two writes, zero verification. Coach (self) at 67% — my own iter 3 session (s_...017810718_59) edited project file without read-back. Downgraded from ⚠️ to ❌. See details below. |
 | 23 | Commit before finish() | How We Think | 2026-04-17 | ⚠️→✅ | Re-verified (4th): 16 sessions with edits+finish (Apr 17). 14/16 committed proactively. 2/16 had no commits but only edited gitignored workspace/ files (correctly — nothing to commit). 0 violations, 0 guard blocks. Major improvement from 50% proactive → 100%. See details below. |
@@ -230,7 +230,62 @@ This demonstrates the infra guard working as designed — catching unauthorized 
 ---
 
 
-### #4 — Verify Delegated Work — RE-VERIFICATION (2026-03-28 21:06Z)
+### #4 — Verify Delegated Work — RE-VERIFICATION #3 (2026-04-18 01:57Z)
+
+**Rule**: "After someone finishes your request, check the result. Don't assume it's correct."
+
+**Method**: Audited May's delegation behavior over the past 36h (Apr 16 ~18Z → Apr 18 ~02Z). May has become the primary delegator (3030 cron→may requests completed; the busiest fan-out node). Identified every `agents.fork`/`agents.message` call May made to a specialist agent, mapped each to the child session that ran the work, and then scanned May's *subsequent* heartbeats for any tool call that actually touched the deliverable (read, head/tail/cat/wc/grep, DB query, or test invocation). Planning-text mentions don't count — only artifact-touching calls.
+
+**Dispatches audited (6 specialist forks, 3 real deliverables shipped)**:
+
+| May session | Target | Req | Deliverable | Child session | May verified? |
+|-------------|--------|-----|-------------|---------------|---------------|
+| s_422 (16:17Z) | tech-lead | b75b3e96 | M2 bidirectional citations → `src/lib/citations.ts` + `cite_source` tool (267 lines, shipped via implement-and-verify workflow) | s_427 | ❌ No query against citations table, no `cite_source` smoke-test in 15 later heartbeats |
+| s_572 (19:41Z) | bob | 3ffcb78e | M3 design `agents/bob/workspace/design/issue-lifecycle-workflow.md` → Bob reused prior-committed `agents/may/workspace/design/findings-to-tracked-requests.md` (161 lines) | s_578 | ❌ Zero read()/bash-head of the design file by may in 12 subsequent sessions |
+| s_572 (19:41Z) | scout | c3367b22 | Audit → `agents/scout/workspace/findings/tech-lead-trio-audit-20260417.md` (71 lines, committed 9871ff9c5) | s_582 | ❌ Never opened or grepped the findings file |
+| s_572 (19:41Z) | optimizer | e627cfff | Tool-adoption intervention proposal for Bob | s_581 | ❌ Only mentioned "tool-adoption" in planning text; no read of optimizer's artifact |
+| s_572 (19:41Z) | qa | (message) | Gym-test metric-threshold backfill | (message, no session) | ❌ No follow-up |
+| s_164 (14:23Z) | tech-lead | — | C1.7 checker false-positive fix | — | ❌ No convention_checks DB re-query after fix |
+
+**Verification-rate score**: **0/6 = 0%** for May-as-delegator.
+
+**Counter-evidence checked (May DID verify?)**:
+- Searched `cite_source|citations.*table|sourceRef|citerSessionId` in every may session after s_427 → 0 bash queries, 0 read()s of `src/lib/citations.ts`.
+- Searched read()/bash-head of `findings-to-tracked-requests.md` in every may session → 1 session mentions the filename in planning text (s_572), **zero** actually open/head/wc it.
+- Searched read/head of `tech-lead-trio-audit-20260417.md` → zero.
+- Tech-lead's verification was substantive (implement-and-verify workflow auto-runs tests), but that's the *delegatee* verifying own work, not the delegator verifying outcomes. The rule says "check the result" — by the delegator.
+
+**Structural cause (important)**:
+May's `heartbeat.md` §1c explicitly instructs:
+> "Review active items using snapshot data (errors, stuck sessions). **Don't peek sessions or run queries.**"
+
+This guidance was added to reduce May's op-count, but it has an unintended consequence: it actively discourages the verification behavior #4 requires. May follows the heartbeat.md instruction faithfully — which is why 0/6. This is not a May discipline failure; it's a heartbeat-design failure.
+
+**Comparison**:
+| Check | Date | Primary delegator | Verify rate | Status |
+|-------|------|-------------------|-------------|--------|
+| #1 | 2026-03-25 | Bob | 3/3 | ⚠️ |
+| #2 | 2026-03-28 | Bob | 4/4 (caught auto-complete fake-success) | ✅ |
+| #3 | 2026-04-18 | **May** | **0/6** | ⚠️ (downgrade) |
+
+Bob's delegation verification was never the concern — his pattern (DB-backed checks, re-escalating false auto-completions) remains the gold standard. The delegation locus has shifted: May now fans out ~20× more work than Bob, and May doesn't verify. The aggregate system has therefore regressed even though no individual agent got worse.
+
+**Conclusion**: ✅→⚠️. Not ❌ because (a) implement-and-verify workflow catches most tech-lead delegations at the delegatee level, (b) May's summaries honestly say "no verification done" rather than claiming false success (so C1.8 is intact), and (c) the behavior is load-bearing on a heartbeat.md instruction, not a discipline gap.
+
+**Recommended action** (for follow-up — do NOT do in this session, per common-sense-verify scope):
+1. Amend `agents/may/heartbeat.md` §1c to add a bounded verification step for dispatches whose requestId status just flipped to COMPLETED in the last cycle — e.g. "1 read() of the claimed deliverable path or 1 DB query against the claimed artifact." Budget: 1-2 ops per completed dispatch.
+2. File as improvement-queue item for May to consider, OR fork a brief to tech-lead to draft the §1c amendment.
+
+**Evidence trail**:
+- Dispatches extracted from `.state/sessions/history/s_1776453306672_572/session.jsonl` (4 fork tool calls at 19:41Z)
+- May's subsequent heartbeats s_580 through s_754 session.jsonls scanned — only s_597 mentions "tool-adoption"/"optimizer/workspace" in planning text, zero artifact-touching calls
+- Bob's s_578 finish summary confirms delivery of M3 design and cites commit hash f8d53ab10 — May never read the cited file
+- Scout's s_582 finish summary confirms `scout/workspace/findings/tech-lead-trio-audit-20260417.md` (71 lines) — `wc -l` confirms 71-line file exists, never opened by May
+
+---
+
+
+
 
 **Rule**: "After someone finishes your request, check the result. Don't assume it's correct."
 
@@ -1045,6 +1100,40 @@ The commit-guard (src/lib/tools/commit-guard.ts) is correctly implemented and re
 **Conclusion**: ⚠️ The commit-guard enforcement is mechanically sound but has a structural blind spot: the auto-commit handler (which runs continuously) commits agent files before the guard can catch violations. Only 50% of sessions show intentional agent commits. Bob and coder demonstrate ideal behavior; optimizer is the worst offender (0% self-commits across 5 sessions). The auto-commit race condition means the guard catches violations only when agents are fast enough to finish() before auto-commit runs — which is timing-dependent, not behavior-dependent.
 
 **Action**: Consider whether the auto-commit handler should be modified to NOT commit files that belong to currently-active sessions (checking .state/sessions/ for running sessions). Alternatively, the commit-guard could track whether the agent ran `git commit` as a bash command during the session, rather than checking `git status` (which may be clean due to auto-commit). Next check: 2026-04-22.
+
+---
+
+### #5 — Claim, then act — RE-VERIFICATION #10 (2026-04-17 22:02Z)
+
+**Rule**: "You MUST narrate what you're about to do and why BEFORE you do it. [...] This applies to every write/edit/create action."
+
+**Method**: Random sample of 80 sessions from Apr 16-17 (seed=42, from `.state/sessions/history/` with timestamp > 1776400000). For each, extracted `toolCall` entries from assistant messages and computed two metrics: (a) **read-first proxy** — fraction of `edit()`/`write()` calls where the target path was previously `read()` in the same session; (b) **narration rate** — fraction of assistant tool-turns containing ≥20 chars of text alongside the toolCall.
+
+**Quantitative findings (80 sessions)**:
+
+| Metric | Value | vs #9 (Apr 15) |
+|--------|-------|----------------|
+| edit() calls | 65 | — |
+| edit() preceded by read() of same path | 49 (**75%**) | 78% → 75% (flat, −3pp) |
+| write() calls | 24 | — |
+| write() preceded by read() of same path | 3 (**13%**) | new metric |
+| Assistant tool-turns total | 764 | — |
+| Tool-turns with ≥20 chars narration text | 154 (**20%**) | new metric |
+
+**Sample violations** (edit without prior read of target):
+- `s_1776435133425_388` — `agents/may/workspace/projects/feedback-loop.md` (×2)
+- `s_1776408700751_403` — `agents/.lab/coder-scope-anchor/context.md` (coach own)
+- `s_1776420036299_80`  — `agents/coach/workspace/common-sense-status.md` (coach own, ×2)
+- `s_1776447042019_521` — `agents/scout/workspace/todo.md`
+
+**Interpretation**:
+- `edit()` read-first rate is stable (~75%). The remaining 25% is plausibly explained by `bash grep` / `bash cat` being used to source exact text instead of `read()` — still compatible with the spirit of the rule.
+- `write()` read-first rate is intentionally low (13%): `write()` is typically used for new files or full rewrites where re-reading first isn't required.
+- **Narration rate is low (20%)**: only 1 in 5 tool-turns contains a natural-language claim before the action. This is the weakest dimension and the one most directly aligned with the literal C40 wording. However, many of the "silent" turns are batched multi-tool calls where the preceding turn already narrated the plan.
+
+**Conclusion**: ⚠️ Maintained. No regression on the structural proxy (edit read-first ~75%), but narrate-before-act remains the underperforming dimension (~20%). Self-violations (coach, scout) on own workspace files are the most actionable signal — worth a lightweight reminder, not a Growth Cycle intervention. Next check: 2026-04-24.
+
+**Action**: No Growth Cycle. Note two coach self-violations (s_...036741_80, s_...700751_403) — file to keep an eye on in next personal heartbeat.
 
 ---
 

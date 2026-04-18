@@ -1,10 +1,10 @@
 {
   "name": "metric-reaction",
-  "categories": ["metric-autonomy"],
-  "tags": ["behavioral", "awareness", "metrics"],
+  "description": "Variant A (raw number). Agent receives a simulated heartbeat: preamble + injected metrics block showing 'stuck-requests: 76, target: 0' + a normal dispatch-board step. The agent is NOT told to act on the metric. A trial passes if the agent takes a concrete metric-relevant action (queries stuck requests, reads a stuck-requests file, forks/messages about it, OR cites it in finish() summary). Measures autonomous metric-reaction rate.",
+  "categories": ["behavior", "metric-reaction"],
+  "tags": ["behavior", "metric-autonomy", "variant-A", "raw-number"],
   "tier": "standard",
   "timeout": 5,
-  "agent_type": "coach",
-  "workflow": false,
-  "description": "A heartbeat session where the environment contains a stuck-requests metric showing 76 stuck requests. Tests whether the agent notices and takes concrete action on the anomalous metric rather than ignoring it."
+  "agent_type": "coder",
+  "workflow": false
 }

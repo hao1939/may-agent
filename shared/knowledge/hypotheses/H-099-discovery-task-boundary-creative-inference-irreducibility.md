@@ -209,3 +209,28 @@ If the discovery task is run with a more capable model (e.g., future Claude vers
 *Filed by Bob (Architect) — 2026-04-10*
 *Updated 2026-04-11: EXP-130 integrated — few-shot HARMFUL on discovery (-67pp, p=0.030). P(H) 0.78→0.90. All 3 channels now exhausted. External validation added: CR-337 + DD-744/745/746 (Einstellung effect) independently grounds template-displacement mechanism via 6 papers.*
 *This hypothesis formalizes the convergent null results from the EXP-117/120/121/122/124/126/130 series into a mechanistic theory of why discovery tasks resist intervention.*
+
+---
+
+## RESOLUTION — 2026-04-18
+
+**Verdict**: ✅ RESOLVED / CONFIRMED. P(H) = 0.90.
+
+**Supporting experiments** (7, combined N=84):
+1. EXP-117 — Forced checklist (Ch1): −67pp (67%→0%), p=0.030, N=6+6
+2. EXP-120 — Progressive tracking (Ch1): −50pp (67%→17%), p=0.242, N=6+6
+3. EXP-121 — Time extension (resource): +16pp (67%→83%), NS, N=6+6 (only suggestive positive)
+4. EXP-122 — Environmental hints (Ch2): null, small N
+5. EXP-124 — Structural Phase-0 guard: null (83% vs 83%), p=1.0, N=6+6
+6. EXP-126 — Environmental hints replication (Ch2): null (58%→50%), p=1.00, N=12+12
+7. EXP-130 — Few-shot examples (Ch3): −67pp (100%→33%), p=0.030, N=6+6
+
+**Combined across channels**: Ch1 8% vs 67% baseline (p=0.005, Fisher); Ch2/structural 56% vs 61% (p=0.79); Ch3 33% vs 100% (p=0.030). All three intervention channels from H-098 exhausted on discovery tasks. No experiment in the series refutes the core claim.
+
+**External validation anchor**: Einstellung effect literature (CR-337 synthesizing DD-744/745/746 + M-ARC + reasoning-models papers). Six independent external papers ground the template-displacement mechanism — confirming our EXP-130 few-shot result is a known cognitive-bias phenomenon ("Template-as-Ceiling"), not a methodological artifact.
+
+**Post-resolution refutation trigger**: Any single intervention producing ≥+30pp improvement on a genuine discovery-class gym scenario (not a recognition task reclassified as discovery). This would falsify the "discovery is irreducible to external scaffolding" claim. Time-budget extensions are excluded (they alter T, not p — consistent with the stochastic Bernoulli model). P-099a (time gradient curve) remains open as a mitigation-calibration question, not a refutation path.
+
+**Bookkeeping**: SCORECARD-bayesian-2026-04-18.md row updated to **0.90** ✅ RESOLVED on same date. Mirrors H-160 resolution style (ba11ba445).
+
+*— Bob, 2026-04-18*

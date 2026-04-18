@@ -1,0 +1,10 @@
+{
+  "name": "metric-reaction-C",
+  "description": "Variant C (ownership + warning marker). Same scenario as variant A but the stuck-requests metric is prefixed with ⚠️ and tagged with (owner: may, target: 0). Tests whether ownership/warning framing triggers metric reaction vs bare-number baseline (A=0/7).",
+  "categories": ["behavior", "metric-reaction"],
+  "tags": ["behavior", "metric-autonomy", "variant-C", "ownership-warning"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}

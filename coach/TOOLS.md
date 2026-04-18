@@ -1,7 +1,6 @@
 <!-- SYNC:TOOLS_START -->
 ## Available Tools (auto-generated from agent.json)
 
-
 <!-- SYNC:TOOLS_END -->
 
 # TOOLS — Coach

@@ -1,8 +1,41 @@
 # H-091: Skill Delivery Methods Exist Between Text-Rules and Workflow Enforcement
 
-**Status**: ✅ RESOLVED — Confirmed (12 experiments, cumulative matched few-shot 18/18, three boundaries mapped, positional privilege mechanism identified)
+**Status**: SUPPORTED ✅ RESOLVED — Delivery-position boundary characterized (task-message 15/15 vs system-prompt 0/9 vs urgency-framing 1/3). Mechanism hierarchy L1→L5 established across 12 experiments (EXP-084–EXP-097).
 **Date**: 2026-04-09
+**Updated**: 2026-04-18 (Resolution verdict formalized; P(H) = 0.93)
 **P(H)**: 0.93
+
+---
+
+## Resolution Verdict (2026-04-18)
+
+**Verdict**: SUPPORTED (RESOLVED)
+**Date**: 2026-04-18
+**P(H) at resolution**: 0.93
+
+**Decisive evidence (12 experiments, EXP-084 → EXP-097)**:
+- **Delivery-position boundary (load-bearing)**: task-message delivery **15/15 (100%)** vs system-prompt (no framing) **0/9 (0%)** vs system-prompt (urgency framing) **1/3 (33%)** across EXP-094/095/096/097. The position effect is categorical, not a gradient — attention-dilution was REJECTED by EXP-096 (77% prompt reduction, still 0/3).
+- **Cross-scenario judgment generalization**: Matched few-shot 9/9 (100%) across contradictory-requirements, escalation-judgment, sycophants-dilemma (EXP-084/085/086/087). Two-level transfer model: general principles ~67%, specific procedures ~100% (EXP-086).
+- **Scope expansion to process discipline**: Few-shot on reproduce-first 3/3 (100%) vs 0/7 text-rule baseline (EXP-091). Scope widened from judgment-only to judgment + process.
+- **Synergistic composition**: Few-shot + checklist 2/3 (67%) > few-shot alone 1/3 + checklist alone 0/3 (EXP-089).
+- **Domain-proximity refinement**: Cross-domain hard scenarios 0/3, domain-matched narrative 3/3 on same scenario (EXP-094).
+- **Mechanism hierarchy**: L1 text-rule 0% → L2 echo-back → L2.5 checklist → L3 few-shot (task-level) 100% → L5 workflow 100%. All L3 results condition on task-level delivery.
+
+**Aggregate**: 15/15 matched few-shot at task-level on judgment + process + hard-scenario domain-matched narrative. 0/9 system-prompt regardless of content variation (v1.0/v2.0, narrative/structured, length 48KB/11KB).
+
+**Mechanism confirmed**: Skill delivery has a dominant **positional privilege** axis — the model treats system-prompt content as "general rules" and task-message content as "what to do NOW." DD-660 provides theoretical grounding (U-shaped attention bias in causal decoders — architectural, not a training artifact). Method choice (few-shot vs checklist vs echo-back) sets a secondary magnitude axis; position sets the binary on/off.
+
+**Refutation trigger (what would reopen this)**: Any task-level few-shot delivery dropping below **80% on a matched-domain judgment scenario** would refute the core claim. Equivalently: any system-prompt-only few-shot reaching **≥80% on a hard scenario** (behavior-escalation-stubborn class) without task-level injection would refute the position boundary. Neither has been observed across 18+ task-level and 9+ system-prompt runs.
+
+**What remains as refinements (NOT blockers to resolution)**:
+- **L3.5 — Temporal discipline boundary** (EXP-093): Few-shot teaches *what* to validate (C3 +40pp) but not *when* to verify in a tool-call sequence (C2.3 −20pp). Verify-after-edit likely requires L5 workflow enforcement. This narrows scope but does not falsify the hypothesis; it was incorporated into the 0.93 posterior.
+- **Urgency-framing gradient** (EXP-097): System-prompt-end framing shows ~33% activation — the position effect is a steep gradient, not strictly binary. Practically binary for production, but the mechanism admits a small amount of simulation.
+- **Method composition space**: Only one pair tested (few-shot + checklist synergistic). Full composition lattice (few-shot × checklist × echo-back × urgency) unmapped.
+- **Evidence-type and domain-class taxonomy**: What counts as "structurally matched" vs "same domain class" vs "cross-domain" is currently pattern-matched case-by-case (EXP-086/094). A formal taxonomy would sharpen deployment guidance but does not affect the boundary claim.
+
+**Bookkeeping**: SCORECARD-bayesian-2026-04-18.md row updated to **0.93** ✅ RESOLVED on same date. Mirrors H-160 (ba11ba445), H-099 (436d088b2), H-089 (510a04b96) resolution style.
+
+---
 
 ## Statement
 
@@ -94,18 +127,6 @@ L5: Workflow enforcement → +3.0 score (EXP-045)
 - Theoretically grounded by: DD-660 (positional privilege explained by U-shaped attention — architectural property of causal decoders, four papers synthesized)
 - Related: H-085 (forced externalization), H-089 (evidence discovery)
 - Experiments: EXP-084 (method comparison), EXP-085 (matched generalization), EXP-086 (mismatched boundary), EXP-087 (sycophants-dilemma ceiling test), EXP-091 (process discipline), EXP-093 (verify-after-edit temporal boundary), EXP-095 (delivery position effect — task-message vs system-prompt), EXP-096 (attention dilution REJECTED — positional privilege confirmed), EXP-097 (simulated positional privilege — urgency framing 33% vs task-message 100%)
-
-## Resolution Verdict
-
-**Verdict**: CONFIRMED
-**Final P(H)**: 0.93
-**Date**: 2026-04-18
-
-**Key evidence**: 12 experiments (EXP-084/085/086/087/089/090/091/093/094/095/096/097) spanning judgment, process discipline, and temporal discipline tasks. Cumulative domain-matched few-shot: 18/18 (100%). Mechanism hierarchy established: text rules 0% → echo-back +1.3 → checklist +2.0 → few-shot +2.3 → workflow +3.0. Three boundaries mapped: (1) temporal discipline — few-shot teaches "what" not "when", (2) domain proximity — cross-domain fails on hard scenarios, (3) delivery position — system-prompt 0/9, task-message 15/15. Positional privilege mechanism confirmed by EXP-096 (attention dilution rejected) and grounded by DD-660 (U-shaped attention bias is architectural property of causal decoders).
-
-**Remaining open questions**: (1) Can methods be composed beyond EXP-089's initial synergy test? (2) Does position effect generalize beyond hardest scenario? (3) Production task-level injection infrastructure (RAG for behavioral examples).
-
----
 
 ### EXP-089: Combined Few-Shot + Checklist (Synergy Test)
 - **Scenario**: contradictory-requirements (0% baseline)

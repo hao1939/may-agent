@@ -292,9 +292,19 @@ export function runConventionChecks(opts: {
       // Also treat sessions with no session record as interrupted (orphans —
       // gym runs or sessions that died before session record creation)
       const sessionRow = db.prepare(
-        `SELECT status FROM sessions WHERE sessionId = ?`
-      ).get(sessionId) as { status: string } | undefined;
-      const isInterrupted = !sessionRow || sessionRow.status === "interrupted" || sessionRow.status === "error";
+        `SELECT status, kind, source, task FROM sessions WHERE sessionId = ?`
+      ).get(sessionId) as { status: string; kind: string | null; source: string | null; task: string | null } | undefined;
+      // Review-only workflow calls are one-shot synchronous assessments whose
+      // deliverable IS the response; they never call finish(). Exempt them from
+      // finish-dependent convention checks (C1.4, C8.2, C1.5, C1.7) — same as
+      // interrupted sessions. See agents/coach/workspace/brief-c14-may-regression.md.
+      const isReviewOnlyCall = sessionRow?.kind === "call"
+        && sessionRow?.source === "workflow"
+        && /^\[REVIEW ONLY/i.test(sessionRow?.task ?? "");
+      const isInterrupted = !sessionRow
+        || sessionRow.status === "interrupted"
+        || sessionRow.status === "error"
+        || isReviewOnlyCall;
 
       const checks = runAllChecks(toolCalls, agent, isInterrupted);
       result.sessionsChecked++;

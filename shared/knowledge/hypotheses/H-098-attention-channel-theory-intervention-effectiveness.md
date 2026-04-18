@@ -51,6 +51,48 @@ Channel 2 is not monolithic. KE-187 identifies three sub-types, distinguished by
 - **Effectiveness**: 33-100% depending on domain match (KE-059, H-091)
 - **Evidence for positional privilege over attention dilution**: EXP-096 — reducing system prompt by 77% (48KB→11KB) has ZERO effect (0/3→0/3). The mechanism is categorical (system vs task position), not gradient (prompt length). H-091 cumulative: task-message 15/15, system-prompt 0/9.
 
+## Ch2 Sub-Taxonomy (from KE-187)
+
+KE-187 (DD-766 / Sentinel) surfaces that Channel 2 is not monolithic. The brief table in the Channel 2 subsection above summarizes the split by *verification source* (Self / Environment / World-Model). This section formalizes the three sub-variants along a second, orthogonal axis — the **locus of the policy being violated** — so that downstream experiments can target specific sub-channels. The two axes converge: each verification source is best suited to catching violations at a particular locus.
+
+The three sub-variants are distinguished by *what kind of invariant is being violated* at the moment of the policy-invisible action:
+
+### 1. Ch2-Self (Self-directed)
+
+**(a) Definition.** A Ch2-Self violation occurs when the agent's next action violates a constraint the *agent itself* has just declared — its own plan, ANALYSIS.md, CHECKLIST.md, or stated intent. The verification gate therefore only needs to read the agent's own artifact and compare it to the proposed action; no external world-model is required. Effectiveness is high (87-100%) whenever the agent can self-diagnose, and collapses to 0% on absent-information tasks (EXP-078, EXP-098) because the agent cannot externalize what it does not know. This is the degenerate Ch2 case: the verifier is the same cognitive system that produced the candidate action.
+
+**(b) Canonical example.** `cascading-fix-trap` — the agent declares a plan ("if tests still fail after 2 attempts, stop and re-analyze"), then silently violates its own stop-condition by continuing to patch. The policy is *self-imposed* and fully visible in the agent's own trace; the failure is a plan/action mismatch, not a knowledge gap. Compare KE-199 (f1 all-or-nothing cascading bugs) and KE-054 (externalization boundary: judgment vs debugging) — both are Self-directed: the agent's plan exists, the action diverges from it.
+
+**(c) Unique prediction.** Plan-echo gates (require the agent to re-emit the relevant plan line immediately before acting, and diff it against the declared plan) should lift Ch2-Self failures to ≥85% while producing ~0 benefit on Ch2-Environment and Ch2-World-Model failures — because the missing information in those sub-variants is not in the agent's artifact. Conversely, world-model graph simulation (Sentinel-style) should be *no better* than artifact gates on Ch2-Self, because the missing constraint already lives in the agent's own plan.
+
+**(d) Scenarios / experiments.** `cascading-fix-trap`, `cascading-fix-trap-v2`, `stale-approach-fixation`, `plan-once-amend`. Experiments: EXP-127 (forced-externalization on contradictory-requirements, 6/6 = Ch2-Self succeeding when agent *has* the info), EXP-129/131 (Ch2 budget curve — all gates were Self-directed), H-085 canonical cases (KE-031: 17/17).
+
+### 2. Ch2-Environment (Environment-directed)
+
+**(a) Definition.** A Ch2-Environment violation occurs when the agent's proposed action violates a constraint on the **external executable system** — file-system state, tool output, git status, command-injection-free shell strings, compiler/type rules, test outcomes. The policy is encoded in the local environment, not in the agent's plan, and can be verified by a lightweight deterministic check at tool-call time (static analysis, regex, path `stat`, dry-run, test runner). No rich knowledge graph is required; only observable system state. Effectiveness is high for *verifiable* facts but strictly bounded by what the local environment exposes — the check cannot catch violations whose constraints live outside the file system or tool-call surface.
+
+**(b) Canonical example.** `sql-injection-in-query-builder` — the agent concatenates user input into a SQL string. The violated constraint ("parameterize all user-sourced values") is a property of the *external system* (the DB + query builder) rather than of the agent's plan. A static check on the emitted string (detect string-concatenation of an untrusted symbol into a SQL literal) catches this deterministically, without needing world-model simulation. EXP-132's path-hallucination guard (`stat` the path before using it) is the same pattern at the file-system level.
+
+**(c) Unique prediction.** Lightweight pre-action linters / environment probes (the SQL-literal check above, path `stat`, `git status` gate, `tsc --noEmit`) should lift Ch2-Environment failures to ≥85% at near-zero cost, while producing **~0 benefit on Ch2-Self** (the agent's plan isn't what's wrong) and **only partial benefit on Ch2-World-Model** (local state doesn't encode the missing org/domain fact). Prediction: adding a SQL-injection linter will fix `sql-injection-in-query-builder` without moving the needle on `hallucinated-API-call`.
+
+**(d) Scenarios / experiments.** `sql-injection-in-query-builder`, `path-hallucination`, `command-injection-in-shell-wrapper`, any scenario whose failure is caught by `tsc`/lint/test. Experiments: EXP-132 (path hallucination guard), the environment-probe family. Maps to Law 1-of-environment in KE-172 (artifacts-as-memory externalization formalism).
+
+### 3. Ch2-World-Model (World-Model-directed)
+
+**(a) Definition.** A Ch2-World-Model violation occurs when the agent's proposed action is consistent with both its own plan *and* the local environment, yet **violates reality** — specifically, a fact that lives in an external knowledge representation the agent's context does not contain. The violated constraint is a property of the world-model (API surface, organizational policy graph, domain ontology, reference spec). Verification requires *information the agent does not have*, so neither plan-echo (Self) nor local linters (Environment) can catch it. This is the sub-variant DD-766's Sentinel targets directly (93% vs content-DLP 68.8%), and the one EXP-079's cross-reference intervention also addresses (100% on absent-field tasks). Effectiveness is bounded by the *completeness* of the knowledge representation.
+
+**(b) Canonical example.** `hallucinated-API-call` — the agent invokes `library.frobnicate(x)` where `frobnicate` does not exist in the library. The agent's plan is consistent ("call the frobnication API"), the file system is fine (the string compiles if types are loose), but the action violates reality: no such function exists. A world-model check — grep the library source, read the reference spec, query a knowledge graph — catches this. DD-766's organizational policy-invisible violations are the same shape: the constraint lives in entity attributes / session history / org state that the agent's context never included.
+
+**(c) Unique prediction.** World-model verification (cross-reference grep, spec-check, Sentinel-style graph simulation) should lift Ch2-World-Model failures from ~0% (Self baseline on absent-info: EXP-078/098 0/3) to ≥90% — while producing **only marginal benefit on Ch2-Self** (the info is already in the agent's plan, so plan-echo is cheaper) and **only marginal benefit on Ch2-Environment** (the local linter is cheaper and catches it). Strong form: on absent-information scenarios, Ch2-World-Model effectiveness is determined by the *recall of the knowledge source* with respect to the violated fact, not by gate design. This is testable by varying the knowledge source (partial vs full spec) while holding the gate mechanism constant.
+
+**(d) Scenarios / experiments.** `hallucinated-API-call`, `absent-field-reference` (EXP-079 target), `policy-invisible-violation` family (DD-766 / PhantomPolicy), any scenario where the fix requires info outside the agent's context window. Experiments: EXP-079 (cross-reference → 100% on absent-field), EXP-078 / EXP-098 (Self baseline at 0% on these — motivates the sub-taxonomy), KE-186 (information quality trumps process forcing), KE-191 (f1 generalization across four failure types). External: DD-766 Sentinel 93.0%.
+
+### Cross-sub-variant Prediction (P-098f, refined)
+
+The three gate families (plan-echo, environment-lint, world-model-check) should each be **high-specificity**: each fixes its own sub-variant and leaves the other two approximately unchanged. A crossed 3×3 design (3 scenarios × 3 gates) should show a diagonal pattern, not a uniform lift. If we instead see uniform lift, the sub-taxonomy collapses and Ch2 is effectively one channel with a shared mechanism. This is the strongest test of whether KE-187's sub-taxonomy is carving reality at the joints.
+
+---
+
 ## The Unifying Explanation
 
 This three-channel model explains every major experimental finding in our corpus:

@@ -10,15 +10,13 @@
 - [x] **DD-766/DD-768 → KE synthesis**: KE-187 (policy-invisible violations → Ch2 sub-taxonomy), KE-188 (GAM memory addresses P(access) not P(applies)). Committed.
 - [x] **H-161 post-mortem synthesis**: Guard design implications doc written. Content-first > process-first for hard tasks. Full-gate HARMFUL on hard tasks.
 - [ ] **Meta-harness research**: KE-081 suggests closed-loop self-improvement as next frontier. H-164 formalizes the harness vs training trade-off.
-- [ ] **Ch2 sub-taxonomy expansion**: KE-187 proposes Self/Environment/World-Model Ch2 variants. Needs formalization in H-098.
+- [x] **Ch2 sub-taxonomy expansion**: KE-187 proposes Self/Environment/World-Model Ch2 variants. Formalized in H-098 as new section with definitions, canonical examples (cascading-fix-trap / sql-injection / hallucinated-API), unique predictions, and scenario mappings. Committed.
 - [x] **H-165 written**: Production-Provision Interference hypothesis. P(H)=0.85. Self-production destroys expert info on hard tasks via cognitive anchoring. 172 lines.
 - [x] **EXP-166 designed**: Content-first vs process-first guard comparison. 4 arms × 2 scenarios × 15 runs = 120 runs (~$9). Tests H-165's anchoring vs displacement mechanism.
 - [x] **EXP-166 execution**: COMPLETE. 120/120 runs. Displacement confirmed (D=7% vs C=100% on cascading). KE-195, KE-196 written.
-- [x] **Content-first guard design doc** [HIGH]: Completed. See agents/shared/may-agent-docs/design/content-first-guard-design.md
-- [x] **DD-769/770 synthesis**: Already covered by KE-197 (DD-769→H-165) and KE-202 (DD-769+DD-770 unified as cognitive mode interference).
-- [x] **H-166 revised**: Post-contamination clean-env controls (base 0/3, arm E 5/5, arm F 10/10) flip EXP-168's moderate=0% to 100%. Updated hypothesis file with new evidence section, P(H-orig): 0.70→0.10, P(H-revised low-threshold): 0.75, status REVISED/PARTIALLY FALSIFIED.
-- [x] **KE-210 written**: DD-776 Corpus2Skill → navigable skill directory beats passive retrieval. Validates KE-052 externally (WixQA benchmark) and gives concrete fix path for KE-011: replace 127KB flat INDEX.md with clustered hierarchy. 3 testable predictions (P-210a/b/c), connects KE-011/052/001/002/034 + DD-709. See `agents/shared/knowledge/entries/KE-210-dd776-navigable-skill-directory-over-passive-retrieval.md`.
-- [x] **KE-208 written**: DD-771 bi-predictability / silent uncoupling IS the mechanism behind FM-3.3 verification confabulation. Seeds P-771a (lower P in FM-3.3 turns) and P-771b (P-monitor detects earlier than entropy/hedging). Sketches lightweight P-monitor for finish-guard. Flags DD-771 naming collision (KE-190 cites a different arXiv paper; 3-way collision at DD-771 filename). See `agents/shared/knowledge/entries/KE-208-silent-uncoupling-is-fm33-mechanism.md`.
+- [x] **Content-first guard design doc** [HIGH]: `agents/shared/may-agent-docs/design/difficulty-adaptive-content-first-guards.md` — 93 lines, references KE-195/196/H-165.
+- [x] **EXP-168 contamination addendum** [HIGH]: results-addendum.md written, H-166-original refuted, H-166-revised at 0.75.
+- [ ] **EXP-180 execution** [MEDIUM]: Dead Ends Memory experiment for Project 2. Needs gym runs.
 
 ## Blocked / Deferred
 - [ ] **Prompt Caching**: Blocked on Hao since 2026-03-24. $36-63/day savings waiting.

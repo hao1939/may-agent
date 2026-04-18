@@ -52,6 +52,31 @@ finish({ status: "success", ... })
 - Running an unrelated command
 - The write/edit call itself (edit's diff preview is fine for C1.3, but C1.7 needs a *separate* check near finish)
 
+## Scout-specific: dispatcher-no-op heartbeats
+
+**The #1 C1.7 violation pattern for Scout is the "zero-op heartbeat"**: you read the briefing, decide nothing is actionable, and call `finish(success)` immediately — or only after `bash(git log)` / `bash(git commit)`.
+
+Neither `git log` nor `git commit` match the C1.7 verification patterns (`grep|ls|test|read|cat|wc|head|tail|find|diff|curl|node|python|tsc|vitest`). A bare commit does not prove you checked state.
+
+### ✅ GOOD: No-op heartbeat with a real state check
+```
+bash({ command: "ls agents/scout/inbox/ 2>/dev/null; tail -20 agents/scout/workspace/todo.md" })
+→ [confirms no P0/P1 pending]
+bash({ command: "cd agents && git commit -am 'scout: heartbeat no-op'" })
+finish({ status: "success", summary: "Dispatcher no-op...", verification_evidence: ["ls+tail confirmed empty inbox, no active P0/P1"] })
+```
+
+### ❌ BAD: Zero-op or commit-only finish
+```
+bash({ command: "cd agents && git log --oneline -5 && date -u" })   # git log alone ≠ verification
+finish({ status: "success", ... })
+```
+```
+finish({ status: "success", summary: "No action needed." })          # zero tool calls before finish
+```
+
+**Rule for Scout heartbeats**: if your last tool call before `finish(success)` is a `git` command or nothing at all, insert one `ls`/`cat`/`tail` on inbox, todo.md, or a project status file first. One extra op. Takes 2 seconds.
+
 ## When to Skip
 
 - `finish(failure)` or `finish(blocked)` — no deliverable to verify

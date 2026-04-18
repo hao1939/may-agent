@@ -29,12 +29,25 @@ Your LAST text output MUST map back to each promise:
 ```
 If you pivot mid-session, say "PIVOT: replacing promise N with [new action] because [reason]".
 
-## 1. Pending Tasks
+## 1. React to Red Metrics (0-3 ops — DO THIS FIRST)
+
+**This is the first concrete step, not a principle.** Look at "Injected: metrics" above. For EACH metric you own marked ⚠️ BELOW THRESHOLD or far from target:
+
+**Owned active metrics → concrete handling this cycle:**
+- **`Coverage` low** → fewer sessions are getting evaluated than should be. Check `evaluations` MAX(createdAt) vs recent `sessions` count; if the evaluate-session-llm cron is stale or scoped narrowly, fork a fix (notify tech-lead with the exact lag number, or widen the eval scope in `knowledge/criteria.md`). Don't just note the gap.
+
+**If a metric owned by another agent is red** → one `agents.message` to that owner; don't fix it for them.
+
+**Only when every red metric you own has been acted on, move to section 2.**
+
+Exit rule: if you acted on a red metric (dispatched a coverage fix or edited criteria/scope), that's valid heartbeat output. Commit and finish.
+
+## 2. Pending Tasks
 Check the "Injected: pending tasks" section above. Process pending items first.
 
 **No pending items AND nothing below is actionable?** Do not exit. Consult `agents/shared/may-agent-docs/idle-playbook.md` and pick one item (probe a metric, nudge a stale thread, draft a KE). Produce a measurable artifact this cycle.
 
-## 1b. Process Ownership Check (2 processes)
+## 2b. Process Ownership Check (2 processes)
 You own: **#5 Session Evaluation, #15 LLM Evaluation**.
 
 **Known chronic issues (2026-04):**
@@ -48,7 +61,7 @@ You own: **#5 Session Evaluation, #15 LLM Evaluation**.
 
 Quick — 1 bash call to check DB recency (python3/sqlite). Move on.
 
-## 2. Signal Quality Review
+## 3. Signal Quality Review
 
 ### ⚡ Default: Use workflows for substantive work
 
@@ -69,15 +82,15 @@ Your consumers (Coach, Optimizer, Bob) act on your scores. Make sure you're meas
 - Read 2-3 of your recent evaluations in `.state/evaluations/`. Are the scores actionable? Could Coach or Optimizer actually use them to make a specific change?
 - If any criteria need updating, edit `knowledge/criteria.md` with the new dimension and rationale.
 
-## 3. Calibration
+## 4. Calibration
 - `workspace/consistency-flags.jsonl` — any new flags since last check? Investigate: is your scoring inconsistent or is the flag a false positive?
 - `workspace/human-reviews.jsonl` — any new human disagreements? Study them: what did you miss? Should `knowledge/criteria.md` be updated?
 - `workspace/re-evaluations.jsonl` — verdict disagreements on re-evaluation? Sharpen the ambiguous criteria.
 
-## 4. Periodic Tasks
+## 5. Periodic Tasks
 Check `agents/evaluator/periodic-tasks.md`. Do the most overdue task. Update dates after completion.
 
-## 5. Close Out
+## 6. Close Out
 End with a 2-3 sentence brief of what you calibrated, improved, or found.
 **Workspace hygiene**: If `workspace/journal.md` exceeds ~500 lines, run the consolidation task (`agents/shared/tasks/consolidate-memory.md`) before finishing.
 

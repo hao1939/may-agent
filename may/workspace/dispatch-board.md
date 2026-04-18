@@ -1,17 +1,18 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-17 ~15:30 UTC
+Updated: 2026-04-18 ~08:30 UTC
 
 ## System Health
-- **Bob**: 🟢 Active — 32 sessions/6h, avg 11 ops. Zero errors.
-- **Coach**: 🟢 Active — 31 sessions/6h, avg 10 ops. Zero errors.
-- **Scout**: 🟢 Active — 13 sessions/6h, avg 5 ops. Zero errors.
-- **Tech-lead**: 🟢 Active — 26 sessions/6h, avg 7 ops. Zero errors.
-- **Optimizer**: 🟢 Active — 25 sessions/6h, avg 8 ops. Zero errors.
-- **Evaluator**: 🟢 Active — 114 sessions/6h, avg 0 ops. Zero errors.
-- **QA**: 🟢 Active — 12 sessions/6h, avg 6 ops. Zero errors.
-- **Coder**: 🟢 Active — 86 sessions/6h, avg 10 ops. Zero errors.
-- **Summary**: 9/9 healthy. Zero errors. Coder utilization dramatically up (86 sessions vs 1 yesterday).
+- **Bob**: 🟢 Active — 26 sessions/6h, avg 14 ops. Zero errors.
+- **Coach**: 🟢 Active — 41 sessions/6h, avg 12 ops. Zero errors (4 interrupts — transient aborts).
+- **Scout**: 🟢 Active — 14 sessions/6h, avg 6 ops. Zero errors.
+- **Tech-lead**: 🟢 Active — 21 sessions/6h, avg 7 ops. Zero errors.
+- **Optimizer**: 🟢 Active — 25 sessions/6h, avg 14 ops. Zero errors.
+- **Evaluator**: 🟢 Active — 98 sessions/6h, avg 0 ops. Zero errors.
+- **QA**: 🟢 Active — 12 sessions/6h, avg 9 ops. Zero errors.
+- **Coder**: 🟢 Active — 5 sessions/6h, avg 27 ops. Zero errors.
+- **May**: 🟢 Active — 15 sessions/6h, avg 14 ops. Zero errors.
+- **Summary**: 9/9 healthy. Zero errors. No stuck sessions. Coder sessions down (5 vs 86) but ops up (27 avg).
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -32,13 +33,6 @@ Updated: 2026-04-17 ~15:30 UTC
 | **Heartbeat commit instruction fix** | ✅ DONE | may | Fixed Step 7 of heartbeat.md — was telling me NOT to commit (stale 10min auto-commit reference). Now says commit first, auto-commit is 2h safety net. |
 | ⚠️ **Hao task truncated** | ❓ Need info | Hao | req:7a936dcb was truncated at 500 chars. Only issue #1 (threshold inversion) visible+dispatched. May have more issues. |
 | **Two-tier eval gap fix** | ✅ DONE — needs merge | tech-lead | Implemented `evaluateStandaloneSession()` (121 lines). Branch: `review/standalone-eval-coverage`. 1968 tests pass. Needs code review + merge. |
-| **writeSkippedEvaluations recurring + Premature DONE tick** | ⏳ Dispatched | tech-lead | req:4b126aed (2026-04-17 10:30). Anomaly keeps returning (211 skippable); PD rate 9→11. Asked for scheduled job + structural investigation. |
-| **metric-reaction-investigation** | ⏳ Active | may+tech-lead | M1+M2 done (req:bc6e9f5c): 0/8 red-metric heartbeats forked a fix. Tech-lead dispatched for M3 (fix design). Project: metric-reaction-investigation.md |
-| **Evaluator quality regression (apparent)** | ✅ FIX READY — needs merge | tech-lead | Sync-gate gap fixed. Branch `review/sync-gate-skip-evaluator` (66dfdebb). `SKIP_LLM_EVAL_AGENTS={evaluator,may}` added at evaluation-sync.ts:44, gated at line 395. tsc+vitest pass. Reported 15:33 (reqs c4ba7da6/0ca53939). Needs code review + merge. |
-| **Adaptive Heartbeats M1 (idle-playbook)** | ✅ DONE | may | Rolled out 2-line snippet to 11 peer heartbeats (bob req:9b46f02a/c0fbf603/a48fa2be/68e43a2c). Verified: 12/12 agents have idle-playbook reference. |
-| **Adaptive Heartbeats M2 (scout arXiv windowing)** | ✅ DONE | may | Applied approved design (option b) to `agents/scout/heartbeat.md` line 50 (commit bbf00648f). Closes bob reqs 88e5182a/d3ca09d4/0afa0b83/ea2ba105. M3 remains open. |
-| **Status:active rule (P0 from Hao)** | ✅ DONE | coach | Codified in `agents/shared/common-sense.md` "Project Status Discipline" section (commit 4b858b6). active=WORKING-NOW, paused/blocked distinctions, no "wait 24h" in active projects. |
-| **C1.7 checker false-positives (head/tail)** | ✅ DONE | tech-lead | Fixed — `head`/`tail` added to VERIFICATION_PATTERNS (convention-check.ts:975-976, commit b00ea81e3). Coach req:c58eacb9 closed. Expect PD rate 95.3% → 98-99%. |
 
 ## Completed This Cycle
 | Issue | Status | Owner | Notes |
@@ -62,11 +56,11 @@ Updated: 2026-04-17 ~15:30 UTC
 - **P2**: Amy-kimi billing — blocked on Hao.
 - ⚠️ **HOLD**: Ch2-production-gates implementation — Hold for EXP-170.
 
-## Latest Cycle Summary (09:00 Apr 16)
-- **SYSTEM**: 9/9 healthy. Zero errors. Zero stuck sessions. 1 scout interrupt (transient).
-- **DISPATCHED**: Bob gym execution reliability → coach (s_1776330087330_606).
-- **QUEUE**: 2 ready items remaining. Next: Top-5 metrics dashboard, Metric Phase 3 (post-restart).
-- **WAITING**: Gatekeeper Review Gate needs Hao approval. Metric System Phase 3 needs process restart.
+## Latest Cycle Summary (08:30 Apr 18)
+- **SYSTEM**: 9/9 healthy. Zero errors. Zero stuck sessions. Coach has 4 transient interrupts (aborts, not bugs).
+- **PENDING REQUESTS**: Coach investigating premature DONE rate metric. Optimizer investigating tool adoption regression. May instruction-following task pending.
+- **QUEUE**: Ready items: Coach work-session quality intervention, Top-5 metrics dashboard, Metric Phase 3 verification.
+- **WAITING**: Gatekeeper Review Gate needs Hao approval.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.

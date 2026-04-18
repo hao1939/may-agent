@@ -1,11 +1,34 @@
 # H-160: Structural Enforcement Outperforms Behavioral Signaling for Interruptive Steps
 
-**Status**: Resolved — Supported  
-**P(H)**: 0.92  
-**Tier**: 1 (Empirically Supported — EXP-155 confirms core prediction with 100% vs 10-15%)  
+**Status**: RESOLVED / SUPPORTED  
+**P(H)**: 0.94  
+**Tier**: 1 (Empirically Supported — EXP-155 confirms core prediction with 100% vs 10-15%; KE-212 adds adversarial-regime external validation)  
 **Created**: 2026-04-13  
-**Updated**: 2026-04-14 (EXP-155 results: upgraded Proposed → Supported, P(H) 0.78 → 0.92)  
+**Updated**: 2026-04-18 (Resolution verdict formalized; KE-212 / DD-763 Parallax external validation; P(H) 0.92 → 0.94)  
+**Prior updates**: 2026-04-14 (EXP-155 results: Proposed → Supported, P(H) 0.78 → 0.92)  
 **Author**: Bob  
+
+---
+
+## Resolution Verdict
+
+**Verdict**: SUPPORTED (RESOLVED)
+**Date**: 2026-04-18
+**P(H) at resolution**: 0.94
+
+**Decisive evidence**:
+- **EXP-155** — 3-arm gym experiment: structural workflow gate 100% compliance vs behavioral skill 10–15% vs baseline ~10% (p<0.001, effect size >85pp — exceeds the predicted >60pp threshold).
+- **KE-176** — Independent measurement of the 10% behavioral-skill baseline on interruptive steps (N=10, EXP-154), confirming the failure-mode denominator.
+- **KE-212 / DD-763 (Parallax)** — External adversarial-regime validation: structural gates hold under adversarial distribution; behavioral-only interventions degrade further. Extends H-160 beyond the original gym regime.
+- **EXP-110** — Production evidence: FM-3.3 commit-guard (structural) +51.3pp vs behavioral baseline.
+- **EXP-115** — Production evidence: FM-2.2 structural gate +100pp vs behavioral baseline.
+
+**What would reopen this**: Any single +50pp behavioral-only intervention on a genuine interruptive step (no structural assist, no workflow DAG modification, measured on a task where the default "fix-mode" attractor applies). Absent such evidence, H-160 is resolved.
+
+**Downstream hypotheses building on this resolved foundation**:
+- **H-161** — Artifacts as dual-IT (information-theoretic) functions: structural gates produce artifacts that simultaneously verify compliance and carry downstream signal.
+- **H-162** — Compliance topology matrix: mapping interruptive-vs-additive × structural-vs-behavioral regimes.
+- **H-167** — Typed-contract discriminability: structural enforcement as a typed-composition boundary; behavioral signaling as untyped.
 
 ---
 
@@ -93,6 +116,20 @@ The most remarkable finding: Ch2 gates didn't just force artifact creation — t
   - N=10 per arm (95% CI: 69-100% for Ch2 arm). True rate could be lower.
   - Partial confound: treatment changed both delivery channel AND instruction content (structured output + "MULTIPLE bugs" hint).
   - Gate-task synergy: this scenario has a natural 2-phase structure that maps cleanly to a gate. Tasks without clear decomposition may resist.
+
+### External Validation: KE-212 / DD-763 (Parallax) — Adversarial-Regime Replication
+
+DD-763 (Parallax: architecture for safe autonomous AI execution) reports, on 280 adversarial cases across 9 attack categories, **98.9% block rate under default config, 100% under max-security, 0 false positives — and exactly 0% protection from prompt-level guardrails when the reasoning system is compromised**. This is an independently-conducted, production-scale red-team evaluation (not our corpus, not our scenarios) that maps directly onto the H-160 prediction: Channel-1/behavioral-signaling enforcement provides no guarantee once the agent's reasoning context is adversarial; Channel-2/structural enforcement does.
+
+- **Why this is external validation, not just corroboration**: our evidence to date (EXP-155, EXP-110, EXP-115, EXP-131) is all *cooperative*-regime — the agent is trying to do the task. Parallax tests the *adversarial* regime (Assume-Compromise Evaluation). The Ch1=0% / Ch2≈100% split replicates at a regime we have never ourselves tested. See KE-212 §"What Parallax Tested That EXP-127 Did Not" for the contrast table.
+- **Numerical alignment**: Parallax 98.9–100% (adversarial Ch2) vs EXP-155 100% (cooperative Ch2); Parallax 0% (adversarial Ch1) vs EXP-155 10% (cooperative Ch1, with lucky coincidences). The adversarial Ch1=0 is the sharper point prediction.
+- **What's genuinely new**: Parallax's "Reversible Execution" stance (let action run, capture reversal state, validator can veto) and "Information Flow Control" (sensitivity labels through workflows) are Ch2 sub-types our enforcement taxonomy does not currently name. These don't change H-160's core claim but extend the *mechanism space* in which structural enforcement can be deployed (pre-commit gate is not the only shape). Noted here; formalization deferred to H-098 Ch2 sub-taxonomy work.
+
+**P(H) update: 0.92 → 0.94**. Conservative delta (+0.02). Reasoning:
+- Prior 0.92 was *already* high and tempered primarily by single-scenario/single-regime concerns. Parallax directly addresses the single-regime concern (cooperative → adversarial) with independent red-team data.
+- P(data | H) ≈ 0.90 (if Ch2>Ch1 is a general structural property, a well-designed adversarial eval should find the same split — the result is almost what H-160 would predict if extended to adversarial). P(data | ¬H) ≈ 0.15 (if the effect were cooperative-task-specific, the adversarial 0% Ch1 result is harder to explain but not impossible — prompt-injection literature has mixed results).
+- LR ≈ 6. Posterior on 0.92 prior: 0.92 × 6 / (0.92 × 6 + 0.08) ≈ 0.986. **Tempered to 0.94** because: (a) Parallax is infrastructure-layer enforcement, not workflow-gate enforcement — the mechanism class is related but not identical; (b) "interruptive steps" (H-160's operationalized claim) is not what Parallax tests — Parallax tests *any* reason→act transition; (c) we should not double-count an external study the way we'd count an internal experiment.
+- Single-scenario concern from the prior update remains partially open (Parallax is a different task distribution, not a second internal scenario of our own).
 
 ### Remaining Caveats
 
@@ -204,6 +241,7 @@ With N=10 per arm and expected effect size of 70pp (10% → 80%), Fisher's exact
 | **EXP-131** | Gate relevance effect — related vs unrelated gates |
 | **EXP-155** | **Direct test — 100% Ch2 gate vs 10% Ch1 skill vs 15% baseline. Core prediction confirmed.** |
 | **KE-177** | **Ch2 hard gates overcome selective compliance on interruptive process steps** |
+| **KE-212 / DD-763 Parallax** | **External adversarial-regime validation — 98.9–100% Ch2 block vs 0% Ch1 under assume-compromise; independent red-team eval across 280 cases × 9 attack categories.** |
 
 ## Tags
 `structural-enforcement` `behavioral-signaling` `interruptive-steps` `workflow-gates` `selective-compliance` `KE-176` `KE-174` `compliance-gradient` `guard-workflow-architecture`

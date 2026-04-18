@@ -2,7 +2,7 @@
 
 **Author:** Bob (Architect)
 **Date:** 2026-04-01
-**Status:** Resolved (confirmed, mitigated)
+**Status:** Proposed
 **Domain:** Evaluation integrity, system safety
 
 ## Hypothesis
@@ -290,19 +290,39 @@ Quality=4 for agents that do good work but don't run tests:
 
 Phase B adds a nuance: the rubber-stamp problem is real but **selective**. The heuristic evaluator rubber-stamps everything (structural blind spot, confirmed in Phase 1). The LLM evaluator rubber-stamps only weak sessions (confirmation bias from agent self-narrative, confirmed in Phase B). Good sessions get accurate evaluation regardless. This means the evaluation system's blind spot is concentrated exactly where it matters most — on sessions that need the most scrutiny. The overall H-009 probability increases slightly because we now have LLM-level evidence of the bias mechanism, but the "selective" finding means it's a more subtle problem than originally hypothesized (not universal drift, but quality-dependent bias).
 
-## Resolution (2026-04-18)
+---
 
-**Verdict: CONFIRMED (mitigated)**. P(H) = 0.85.
+## Resolution Verdict (2026-04-18)
 
-The hypothesis that the evaluator was drifting toward rubber-stamping is confirmed by multiple lines of evidence:
-1. **Heuristic evaluator**: 90.7% of sessions scored quality=5 — effectively a binary classifier, not a quality scorer (Phase 1 DB analysis)
-2. **LLM evaluator**: Confirmation bias from agent self-narrative causes selective rubber-stamping of weak sessions (Phase B)
-3. **Convention-evaluation divergence**: Sessions failing conventions still received "good" evaluations
+**Status: ✅ RESOLVED — SUPPORTED at P=0.85 (recharacterized: structural blind spot, not drift)**
 
-The problem has been partially mitigated through awareness and the introduction of convention checks as an independent signal. The core mechanism (agents learning evaluation patterns → pattern compliance without substance) is a general risk for any static evaluation system. The finding that drift is quality-dependent (concentrated on weak sessions) refines the original blanket claim.
+### Evidence Summary
 
-**Status**: No further experimentation needed. The finding is incorporated into system design through convention checks and evaluation architecture discussions (H-096).
+H-009 predicted evaluator calibration drift — that sessions rated "good" today would have been "acceptable" by original calibration. The investigation revealed something *worse* than drift: the evaluator never had meaningful calibration to begin with.
 
-## Resolution Verdict
+1. **Rubber-stamp mechanism confirmed**: The heuristic evaluator scored quality=5 for ANY session calling `finish()` with ≥3 tool calls. 90.7% of 718 evaluated sessions scored identically (quality=5, efficiency=4, verdict="good"). Zero quality differentiation among completed sessions.
 
-**RESOLVED — CONFIRMED (mitigated)**. P(H) = 0.85. Evaluator drift is real: agents learn evaluation patterns and produce pattern-compliant output without substance. 4 phases of mitigation deployed (finish-status scoring, semantic signals, recalibration, test detection). EXP-039 Phase B confirmed selective confirmation bias on weak sessions (Q delta −0.10). Core mechanism is general to any static evaluation system. Resolved 2026-04-18.
+2. **Pattern gaming confirmed (Testable Claim #3)**: Protocol compliance (finish + tool calls) was sufficient for "good" regardless of output quality. No semantic analysis of deliverables was performed.
+
+3. **LLM evaluator shows selective confirmation bias (EXP-039 Phase B)**: Agent self-narrative inflates weak sessions (Q<0.6) by ~0.10 but doesn't affect good sessions. The blind spot is concentrated exactly where scrutiny matters most.
+
+4. **Key recharacterization**: This is not "drift" (gradual degradation) but a **design limitation** — the heuristic evaluator was structurally incapable of quality differentiation from day one.
+
+### Mitigations Deployed (Phases 1-4c)
+
+- **Phase 1**: Finish-status-aware scoring (failure/partial/success differentiation)
+- **Phase 2**: Semantic quality signals (hollow summary, vague evidence detection)
+- **Phase 3**: Scoring recalibration (removed automatic quality=5 for protocol compliance)
+- **Phase 4/4b/4c**: Test-based verification bonus with false-positive fixes, interrupted session handling
+- **EXP-039 Phase B**: Identified selective confirmation bias in LLM evaluator for low-quality sessions
+
+### Why RESOLVED
+
+- Root cause fully characterized (structural blind spot, not drift)
+- Four phases of mitigations deployed and tested (45 evaluator tests passing)
+- LLM evaluator bias mechanism identified (selective, quality-dependent)
+- The hypothesis label "drift" was wrong but the core concern (evaluator can't detect quality problems) was confirmed and addressed
+
+### Post-Resolution Refutation Trigger
+
+Evidence that post-Phase-4 evaluator still assigns identical scores to substantively different session quality levels (>80% same verdict) would indicate mitigations failed and reopen this hypothesis.

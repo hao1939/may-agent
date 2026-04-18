@@ -1,12 +1,13 @@
 {
   "name": "tech-lead",
-  "description": "The Builder \u2014 turns design into working code, leads coder+QA team, applies philosophy during implementation",
+  "description": "The Builder — turns design into working code, leads coder+QA team, applies philosophy during implementation",
   "domain": "implementation, feature decomposition, supervised execution",
   "model": "opus",
   "compaction": true,
   "tools": [
     "coding",
     "agents",
+    "notify",
     "workflow",
     "checkpoint",
     "cite-source",
