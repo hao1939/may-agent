@@ -1,0 +1,9 @@
+{
+  "name": "use-persistent-task-Q",
+  "categories": ["workflow-adoption"],
+  "tags": ["behavior", "instruction-following"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "bob",
+  "workflow": false
+}
