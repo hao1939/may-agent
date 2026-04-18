@@ -1,10 +1,14 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776555742281_6
+- **Session:** s_1776556055921_2
 - **Status:** done
-- **When:** 2026-04-18T23:42:30.665Z
-- **Duration:** 8s
+- **When:** 2026-04-18T23:47:46.762Z
+- **Duration:** 10s
 
 ## What Happened
-DONE — Project is closed (Iter 24); all milestones checked. Goal met: absolute ops reduced 19.2→11.5 (-40%), zero-real-action sessions eliminated. The worker correctly identified that re-dispatch is stale (due to now-fixed regex bug in heartbeat-snapshot.sh Iter 25) and correctly took a no-op to avoid log-accumulation churn. No further work needed.
+CONTINUE — No milestones are checked yet. Iteration 1 only read a few files and did not produce measurements. Next worker iteration must tackle milestone 1: "Measure current startup overhead across 5 agents."
+
+Specific guidance for next iteration:
+1. Pick 5 agents (e.g., bob, may, and 3 others from `agents/` directory — list it first to confirm names).
+2. For each agent, quantify startup overhead. Concretely: sample recent sessions from the request/session DB or session logs and compute the rati
