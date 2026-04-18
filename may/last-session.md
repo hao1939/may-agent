@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776488657671_867
+- **Session:** s_1776490234305_875
 - **Status:** done
-- **When:** 2026-04-18T05:07:36.595Z
-- **Duration:** 3m18s
+- **When:** 2026-04-18T05:32:51.727Z
+- **Duration:** 2m17s
 
 ## What Happened
-agents/ has its own git repo; the /app root gitignores agents/. Commit inside agents/.
+Scout's metrics already applied. Close scout's report requests too.
