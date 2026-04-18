@@ -13,7 +13,9 @@ Reduce session startup overhead from 25% to under 10%.
 - [x] Roll out: dogfood in bob's heartbeat (Iter 4)
 - [x] Re-measure bob after 6+ heartbeat sessions to confirm impact
       (Iter 6: 45% → 33% overhead, avg total 19.2 → 11.0, snapshot adopted 4/6)
-- [ ] Propose snapshot script to coach + may heartbeats (Iter 7)
+- [x] Propose snapshot script to coach + may heartbeats (Iter 7 —
+      brief sent: agents/bob/workspace/sent/2026-04-18-heartbeat-snapshot-proposal.md,
+      notifications sent to may + coach 2026-04-18)
 - [x] ~~Design fix for pattern #1 (pure-overhead heartbeats)~~ —
       **superseded** by existing `agents/shared/may-agent-docs/design/idle-heartbeat-playbook.md`
       (Hao 2026-04-17: idle heartbeats are an exploration budget, not
