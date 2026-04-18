@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776546937718_617
+- **Session:** s_1776547247390_619
 - **Status:** done
-- **When:** 2026-04-18T21:15:47.134Z
-- **Duration:** 9s
+- **When:** 2026-04-18T21:20:56.027Z
+- **Duration:** 8s
 
 ## What Happened
 ```json
@@ -13,9 +13,8 @@
     "bob": {
       "role": "Builder",
       "capability_level": "L2",
-      "efficiency": 0.72,
-      "quality": 0.83,
+      "efficiency": 0.78,
+      "quality": 0.92,
       "verdict": "good",
       "issues": [
-        "Initial scenario path check failed due to wrong directory assumption: `ls scripts/gym/scenarios/` returned ENOENT (\"No such file or directory\"), then the session continued anyway rather than immediately locating the correct scenarios directory (Failure Chain 1).",
-        "Commit hygiene miss: first `g
+        "Heartbeat instruction deviation: did not run the Step-1 snapshot scan command from heartbeat.md; instead acted directly on an asserted active project (\"learn-from-existing-systems\"). This increases risk of missing pending tasks / red metrics, though the injected metrics explicitly said \"No red metrics

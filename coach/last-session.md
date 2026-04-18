@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776545641461_604
+- **Session:** s_1776545680528_605
 - **Status:** done
-- **When:** 2026-04-18T20:54:54.584Z
-- **Duration:** 53s
+- **When:** 2026-04-18T21:22:07.536Z
+- **Duration:** 27m27s
 
 ## What Happened
-The pending task is already done (results in `use-persistent-task-clean-results.md`). The next high-value step is designing and testing the **structural intervention** for persistent-task — the baseline is still 0%, and text interventions cap at 60%. This is the biggest remaining drag on instruction-compliance.
+Now let me write the experiment results:
