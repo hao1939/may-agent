@@ -137,15 +137,70 @@ clear signal.
 
 **Status**: Iter 2 DONE. Baseline = 0/7 on coder (variant A).
 
-## Next (iter 3)
+### Iter 3 — 2026-04-18 — variant A topup + variant C (ownership + ⚠️)
 
-1. Run 3 more variant-A trials to reach n=10 (mechanical, confirms 0%).
-2. Build **variant C** (ownership + ⚠️ framing) — smallest-change contrast:
-   same number, but shown as `⚠️ stuck-requests: 76 (owner: may, target: 0)`.
-   Run 10 trials. If >30% react, ownership is the lever. If still 0%,
-   build variant D (explicit suggested action) and E (budget framing).
-3. Fix `gym-batch.sh` parser (or add `--quiet` to gym-run.sh) so variant
-   comparison can use the standard tool. File as a may follow-up task.
+**Scope**: (a) run 3 more variant-A trials to bring n to 10; (b) build
+variant C = same scenario as A but stuck-requests line prefixed with ⚠️ and
+tagged `(owner: may, target: 0)`; (c) run variant C n=10 on coder; (d) compare.
+
+**Built**: `agents/gym/scenarios/metric-reaction-C/`
+- Duplicated `metric-reaction/` and changed exactly one line in `task.md`:
+  - A: `stuck-requests: 76, target: 0`
+  - C: `⚠️ stuck-requests: 76 (owner: may, target: 0)`
+- scenario.json `name` and `tags` updated; description notes the delta.
+- Checker (`success_criteria.js`) unchanged — same pass condition.
+
+**Ran**:
+- Variant A topup (n=3): runIds 2580, 2581, 2582 — all FAIL.
+- Variant C (n=10): runIds 2583–2592. One pass (2590).
+
+**Results**:
+
+| variant | pass | n  | rate | 95% CI (Wilson)          |
+|---------|------|----|------|--------------------------|
+| A       | 0    | 10 | 0%   | [0.0%, 27.8%]            |
+| C       | 1    | 10 | 10%  | [1.8%, 40.4%]            |
+
+Artifacts:
+- `agents/coach/workspace/projects/metric-autonomy/variantA-topup-n3.jsonl` (raw runner footer lines)
+- `agents/coach/workspace/projects/metric-autonomy/variantC-n10.jsonl`
+
+Evidence in `.state/may.db` gym_runs:
+- A topup: ids 2580–2582, scenario=`metric-reaction`, passed=0 for all.
+- C: ids 2583–2592, scenario=`metric-reaction-C`, passed=1 only for id 2590.
+
+**Reading**: Ownership + ⚠️ framing moves reaction rate from 0/10 → 1/10.
+That is **not** the >30pp jump we pre-registered as a clear lever, and the
+confidence intervals for A and C overlap heavily (both compatible with the
+true rate being anywhere in ~0–30%). So C is **not** a lever on its own at
+this scenario difficulty. The single pass (run 2590) is worth spot-checking
+for what tipped it, but it's one observation — not a robust signal.
+
+Takeaway: single-axis framing tweaks (ownership + warning marker) are
+insufficient to override the default dispatch routine in coder. This matches
+the /tmp/why-no-reaction.md hypothesis that **presentation alone is not the
+bottleneck** — the agent follows numbered instructional steps regardless of
+metric decoration. Next iter should either (a) combine framing axes (C+D:
+ownership + suggested action) to test whether interactions matter, or (b)
+test variant D (explicit suggested action) which is a stronger signal than
+ownership, per hao's intuition. Variant E (position-first) is cheap and
+remains on the list.
+
+**Status**: Iter 3 DONE. C beats A by +10pp, not statistically meaningful
+at n=10.
+
+## Next (iter 4)
+
+1. Spot-check run 2590 (the one C pass) to confirm it's a real metric
+   reaction, not a grader false-positive.
+2. Build variant D (explicit suggested action: `stuck-requests: 76 —
+   query and clean them up`) and run n=10 on coder.
+3. Build variant E (metric block as FIRST item in task.md, above the
+   dispatch board) and run n=10 on coder.
+4. If D and E both stay <30%, build a combined variant (C+D: ownership +
+   suggested action) to test interaction. If any single variant ≥30%, stop
+   and write up the lever.
+5. Fix `gym-batch.sh` parser — still open, still worth a tech-lead task.
 
 ## Comments
 
