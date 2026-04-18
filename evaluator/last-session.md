@@ -1,21 +1,21 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776529494852_398
+- **Session:** s_1776529842237_400
 - **Status:** done
-- **When:** 2026-04-18T16:25:04.766Z
-- **Duration:** 9s
+- **When:** 2026-04-18T16:30:52.515Z
+- **Duration:** 10s
 
 ## What Happened
 ```json
 {
   "agents": {
-    "bob": {
-      "role": "Philosopher/Architect",
+    "coach": {
+      "role": "Builder",
       "capability_level": "L2",
-      "efficiency": 0.78,
-      "quality": 0.82,
+      "efficiency": 0.83,
+      "quality": 0.9,
       "verdict": "good",
       "issues": [
-        "[FM-1.3-lite/WASTED_CALL] One avoidable bash glob/brace expansion attempt produced a non-zero exit and was not needed for the synthesis (bash: ls /app/agents/shared/knowledge/entries/KE-22{5,6,7}* … → exit code 2).",
-        "[FM-3.3-lite/VERIFICATION_EVIDENCE_GAP] Final finish() lists read
+        "[FM-1.3-lite/RECOVERY_FRICTION] Initial `git add` failed due to ignored paths; required retry with `git add -f` (bash exit code 1, then success).",
+        "[RISK/MEASUREMENT_VALIDITY] The new metric measured 0 immediately after Phase 2; coach asserted this is expected because no production sessions con
