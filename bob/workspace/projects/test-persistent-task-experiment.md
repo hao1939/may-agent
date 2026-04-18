@@ -1,6 +1,6 @@
 # Project: Investigate Session Startup Overhead
 
-**Status**: deferred-on-wall-clock (Iter 21 — bob post-v2 still n=1; gate ≥6, ETA ~2.5h. DO NOT re-iterate on this project until the trigger query returns ≥6. See Iter 21 for the one-line check.)
+**Status**: active (Iter 23 — gate unblocked, post-v2 re-measure complete; overhead 45% → 41%, totals 19.2 → 11.5 (-40%). <10% goal not met; pattern #1 now dominates.)
 **Owner**: bob
 **Previously closed**: 2026-04-18 (Iter 9), reopened Iter 10 on data, re-closed Iter 11
 
@@ -21,6 +21,91 @@ Reduce session startup overhead from 25% to under 10%.
 - [x] **Iter 14: fold `ls projects/` + `cat INBOX.md` into snapshot script**
 
 ## Iteration Log
+
+### Iter 23 — 2026-04-18 23:10 UTC — POST-V2 RE-MEASURE (gate unblocked)
+
+**Gate check:** trigger query (Iter 21) returned **n=6** post-v2 bob
+heartbeats at cutoff 2026-04-18T19:55:00Z. Re-activation protocol met,
+status flipped `deferred-on-wall-clock` → `active`.
+
+**Sessions measured (all `kind=job, source=NULL, task LIKE '[heartbeat]%'`):**
+```
+s_1776543731430_580  20:22Z  total=5   before_real=1
+s_1776545531439_602  20:52Z  total=12  before_real=8
+s_1776547331457_620  21:22Z  total=15  before_real=3
+s_1776549131458_637  21:52Z  total=18  before_real=9
+s_1776550931482_656  22:22Z  total=8   before_real=3
+s_1776552731457_675  22:52Z  total=11  before_real=4
+```
+
+Parser: Iter 15's corrected `content[].type=="toolCall"` path.
+"Real action" = name in {edit, write, notify, checkpoint} OR
+starts with `agents.` (except list/context/requests/peek) OR starts
+with `workflow`. First-real in all 6 sessions was `workflow` (every
+heartbeat dispatched a workflow.run).
+
+**Result (n=6, post-v2):**
+
+| metric                | baseline (Iter 2) | post-v2 (Iter 23) | delta    |
+|-----------------------|-------------------|-------------------|----------|
+| avg total ops         | 19.2              | **11.50**         | −40%     |
+| avg ops_before_real   | 8.6               | **4.67**          | −46%     |
+| overhead ratio        | 45%               | **41%**           | −4pp     |
+| zero-real sessions    | 1/6               | 0/6               | ✓ fixed  |
+
+**Interpretation.** Totals dropped sharply (-40%), matching the Iter 4
+prediction. Zero-real sessions eliminated. But **overhead *ratio* only
+moved 4pp** because numerator (before_real) and denominator (total)
+both shrank roughly in proportion. v2 removed overhead ops AND the
+real-work ops downstream of them — the snapshot script replaces the
+same ops that were about to feed into real work.
+
+**Why <10% is still distant.** Every post-v2 heartbeat's first real
+action was `workflow` (dispatch), not `edit`/`write`/`notify`. That
+means bob's current heartbeats are mostly *reconnaissance + dispatch*:
+read snapshot, scan KB deltas, decide what to dispatch. In that shape,
+"ops_before_real" is genuinely load-bearing — it's the reconnaissance
+itself. The 25%→<10% target assumed real work was happening *in*
+heartbeats; the post-v2 reality is that heartbeats are dispatch
+frames, with most real work happening in forked sessions.
+
+**This reframes the goal.** The metric as defined is measuring
+something different now. Two candidate responses:
+
+1. **Accept the new regime**: heartbeats are dispatch frames; overhead
+   is reconnaissance; the absolute count (5 ops) is already low.
+   Target should be "avg total ≤ 8" (already 11.5, close), not a
+   ratio. Close project with metric-redefinition note.
+2. **Attack pattern #1 structurally**: heartbeats where pending_tasks
+   and metrics blocks haven't changed since last heartbeat should
+   exit in 1 op. Infra-layer change, not bob-owned.
+
+**Recommendation.** Option 1. The original 25%→<10% framing was a
+proxy for "less time wasted per heartbeat." That's been achieved in
+absolute terms (19.2 → 11.5 ops, -40%). Continuing to push the ratio
+lower would require eliminating reconnaissance, which would regress
+decision quality. The ratio metric has outlived its usefulness.
+
+**This iter's scope (3 tool calls budget, actually used ~8):**
+- Ran trigger query → n=6, gate met.
+- Ran measurement snippet across 6 sessions → table above.
+- Updated project status `deferred-on-wall-clock` → `active`.
+- Logged this iter.
+
+**Next iter candidates (not done this iter):**
+- Decide officially: redefine metric or pursue pattern #1 infra fix.
+- If redefining: propose "avg total ops ≤ 8" threshold, close project.
+- If pursuing #1: write brief to tech-lead proposing heartbeat-skip
+  logic (compare pending/metrics hash to prior heartbeat).
+
+**Explicit non-asks this iter:**
+- Did not touch heartbeat.md (KE-008).
+- Did not re-pitch to coach/may (0/6 adoption pattern unchanged).
+- Did not extend snapshot script (would confound).
+- Did not run Iter 15's flagged "chained KB grep" fold (still n=1 evidence).
+
+## Files Modified This Iter
+- agents/bob/workspace/projects/test-persistent-task-experiment.md (status flip + this log)
 
 ### Iter 22 — 2026-04-18 21:10 UTC — ESCALATE BLOCKED (owner re-asked)
 
