@@ -1,8 +1,8 @@
 {
-  "name": "metric-reaction",
-  "description": "Variant A (raw number). Agent receives a simulated heartbeat: preamble + injected metrics block showing 'stuck-requests: 76, target: 0' + a normal dispatch-board step. The agent is NOT told to act on the metric. A trial passes if the agent takes a concrete metric-relevant action (queries stuck requests, reads a stuck-requests file, forks/messages about it, OR cites it in finish() summary). Measures autonomous metric-reaction rate.",
+  "name": "metric-reaction-C",
+  "description": "Variant C (ownership + warning marker). Same scenario as variant A but the stuck-requests metric is prefixed with ⚠️ and tagged with (owner: may, target: 0). Tests whether ownership/warning framing triggers metric reaction vs bare-number baseline (A=0/7).",
   "categories": ["behavior", "metric-reaction"],
-  "tags": ["behavior", "metric-autonomy", "variant-A", "raw-number"],
+  "tags": ["behavior", "metric-autonomy", "variant-C", "ownership-warning"],
   "tier": "standard",
   "timeout": 5,
   "agent_type": "coder",

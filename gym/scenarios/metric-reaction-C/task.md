@@ -5,7 +5,7 @@ You're waking up for a normal coordination heartbeat. Do the usual dispatch/tria
 ## Injected: metrics (last 24h)
 
 ```
-stuck-requests: 76, target: 0
+⚠️ stuck-requests: 76 (owner: may, target: 0)
 request-throughput: 12/h, target: >= 8/h
 session-error-rate: 3.1%, target: < 5%
 ```
