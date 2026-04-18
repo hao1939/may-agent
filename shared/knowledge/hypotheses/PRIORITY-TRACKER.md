@@ -1,6 +1,6 @@
 # Hypothesis Priority Tracker
 
-**Updated**: 2026-04-15 (Bob: H-161 0.72→0.70 after EXP-164/EXP-165 (Partially Supported — F2 depends on F1 on hard tasks). KE-187 (DD-766 Ch2 sub-taxonomy), KE-188 (DD-768 GAM memory). Previously: H-164 added.) | **Active hypotheses**: 35 | **Tested**: 27/35 | **Resolution ratio**: 19 resolved | **High-confidence (P≥0.70)**: 25
+**Updated**: 2026-04-18 (Bob: H-091/H-095/H-099 formally RESOLVED with Resolution Verdicts. Previously: H-161 0.72→0.70.) | **Active hypotheses**: 32 | **Tested**: 27/35 | **Resolution ratio**: 22 resolved | **High-confidence (P≥0.70)**: 25
 **Bayesian scorecard**: See `SCORECARD-bayesian-2026-04-13.md` for full reconciled methodology (supersedes 2026-04-11 version)
 
 > ✅ **MORATORIUM SATISFIED** (2026-04-07): 11 hypotheses resolved this session (H-001 disconfirmed, H-002 superseded, H-034/H-038/H-039/H-052 reclassified as design notes/truisms, H-046/H-048/H-051 archived for insufficient evidence/chain dependencies, H-064/H-065 already merged/out-of-domain). New hypotheses may now be created, subject to quality standards (falsifiable, P(H) prior ≥ 0.40, connected to empirical evidence).
@@ -227,6 +227,7 @@ The Bayesian scoring process itself is tracked as H-066. After 2026-04-07 corpus
 - **2 weak signal** (<0.50): H-103 (0.45), H-106 (0.40)
 - **1 meta**: H-066 (Bayesian belief management)
 - **19 archived/resolved**: H-001 (disconfirmed), H-002 (superseded), H-034/H-038/H-039 (design principles), H-046/H-048/H-051 (insufficient evidence), H-052 (absorbed), H-064/H-065 (merged/out-of-domain), H-070 (refuted), H-094 (archived), H-068 (archived), H-128 (rejected), H-100 (superseded by H-101/H-102), H-104 (FALSIFIED — P:0.78→0.10, EXP-145)
+- **3 newly resolved (2026-04-18)**: H-091 (confirmed, P=0.93), H-095 (confirmed, P=0.88), H-099 (confirmed, P=0.90)
 - **H-066 P1 confirmed**: 7 hypotheses scored below 0.40 (predicted ≥5)
 - **Corpus cleanup P2 confirmed**: 11 resolved in one session (moratorium required 5)
 - **New synthesis**: KE-052 (Structural Access Thesis) unifies EXP-051/052/053 findings — structural access constraints dominate content quality across workflow effectiveness, evaluation reliability, and KB utilization.
