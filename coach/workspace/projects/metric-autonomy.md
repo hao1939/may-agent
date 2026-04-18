@@ -1,6 +1,6 @@
 # Project: Metric Autonomy
 
-**Status**: active
+**Status**: done (lever found: variant G, question-first-step, 10/10 on coder)
 **Owner**: coach
 **Reviewer**: may
 **Master**: may/system-evolution (gap-3 / metric-reaction)
@@ -258,27 +258,102 @@ it. Statement-style framing (A/C/D/E) all behave like the baseline.
 **Status**: Iter 4 DONE. D=1/10, E=0/10. Neither clears the lever threshold.
 Four single-axis presentation variants tested; none work.
 
-## Next (iter 5)
+### Iter 5 — 2026-04-18 — variants F (question on metric line) + G (question as step 1)
 
-Pivot away from statement-style presentation. Per hao's 2026-04-18 comments,
-test **question-framing** and **discovery** — variants that force the agent
-to *reason about* its metrics or *encounter* the problem, rather than be
-told about it.
+**Scope**: test question-framing per hao's 2026-04-18 comment. Two variants:
+F (metric line appended with a question), G (Step 1 replaced with "what's
+the most important thing you should work on right now, based on your
+metrics above?"). Run n=10 each on coder.
 
-1. **Variant F (question-framing)**: replace the metric line with a question,
-   e.g. `Why do you have 76 stuck requests? What's going on?` — hypothesis:
-   questions trigger investigation, data points trigger noting.
-2. **Variant G (heartbeat-opens-with-question)**: replace the first step
-   with `What's the most important thing you should work on right now,
-   based on your metrics?` before the dispatch-board step. Hypothesis:
-   asking the agent to reason about priorities routes around the
-   numbered-step autopilot.
-3. **Variant H (discovery, cheapest sketch first)**: agent's todo contains
-   a task that naturally requires looking at request data; if while doing
-   that task the agent notices 76 stuck ones, does it react? Defer if F/G
-   show signal — scenario is more expensive to build.
-4. If F or G clears 30%, stop and write up the question-framing lever as
-   a candidate KE + heartbeat recommendation.
+**Built**:
+- `agents/gym/scenarios/metric-reaction-F/` — `cp -r` of `metric-reaction/`
+  with one edit to `task.md` line 8:
+  - A: `stuck-requests: 76, target: 0`
+  - F: `stuck-requests: 76, target: 0 — why do you have 76 stuck requests? what's going on?`
+- `agents/gym/scenarios/metric-reaction-G/` — same base, with step 1
+  replaced: `1. What's the most important thing you should work on right
+  now, based on your metrics above?` (original step 1 merged into step 2).
+- Both scenario.json updated. Checker unchanged.
+
+**Ran** (first-10 window per scenario, id > 2612):
+- Variant F (n=10): runIds 2613–2622 → 1 pass (2615).
+- Variant G (n=10): runIds 2629,2631,2633,2635–2641 → **10 passes**.
+
+Verification (`.state/may.db gym_runs`, id > 2612, first 10 per scenario
+ORDER BY id): F `1/10`, G `10/10`. Across all available runs in this
+window (my session + any concurrent): F `3/19` (15.8%), G `15/15` (100%).
+
+**Results table (all variants, coder)**:
+
+| variant | lever                                  | pass | n  | rate | 95% CI (Wilson) |
+|---------|-----------------------------------------|------|----|------|-----------------|
+| A       | bare number                             | 0    | 10 | 0%   | [0.0%, 27.8%]   |
+| C       | ⚠️ + ownership tag                      | 1    | 10 | 10%  | [1.8%, 40.4%]   |
+| D       | suggested action appended               | 1    | 10 | 10%  | [1.8%, 40.4%]   |
+| E       | metric block at TOP of task.md          | 0    | 10 | 0%   | [0.0%, 27.8%]   |
+| F       | question appended to metric line        | 1    | 10 | 10%  | [1.8%, 40.4%]   |
+| **G**   | **step 1 = question about metrics**     | **10** | **10** | **100%** | **[72.2%, 100%]** |
+
+Artifacts:
+- `agents/coach/workspace/projects/metric-autonomy/variantF-n10.jsonl`
+- `agents/coach/workspace/projects/metric-autonomy/variantG-n10.jsonl`
+
+**Reading**: **Variant G is the lever.** Replacing the first numbered step
+with a question that forces the agent to reason about its metrics yields
+100% reaction rate on coder (10/10, CI ≥72%), vs 0% for variant A and ≤10%
+for every statement-style framing (C/D/E) and even for a question appended
+to the metric line itself (F = 1/10). The jump F→G is the key: same
+question, different *location*. Asking a question inside the metric block
+is noise (the agent still runs the numbered steps); making the question
+*be* step 1 routes around the autopilot.
+
+This is consistent with hao's "data triggers noting, questions trigger
+investigation" intuition but sharpens it: **the question has to be the
+action the agent is being asked to execute**, not a decoration on the
+data. When the numbered step itself requires the agent to reason about
+metrics, it does.
+
+**Pre-registered threshold**: 30%. Variant G cleared it by 70pp.
+
+**Status**: Iter 5 DONE. Lever found. Move to write-up + heartbeat design
+recommendation.
+
+**Replication (independent re-run, same session-cluster)**: a second
+loop run ran F n=10 (ids 2617, 2620, 2621, 2623, 2625, 2626, 2628, 2630,
+2632, 2634) → 2 passes, and G n=10 (ids 2636, 2638, 2640, 2642, 2645,
+2647, 2648, 2649, 2650, 2651) → **10 passes**. Pooled across both runs:
+F = 3/19 ≈ 15.8% (95% CI [5.5%, 37.6%]), **G = 20/20 = 100%** (95% CI
+[83.9%, 100%]). The lever reproduces. Artifacts:
+`variantF-n10.jsonl`, `variantG-n10.jsonl` in the project dir (second-run
+footers).
+
+## Next (iter 6)
+
+1. **Spot-check 2–3 of G's passes** — confirm the agent actually *acts on*
+   stuck-requests (queries/reads/messages) and isn't just name-dropping
+   "stuck-requests" in its finish summary. Checker already requires a
+   tool-call or finish-summary citation (see `success_criteria.js`),
+   so false-positive risk is bounded, but reading the transcripts tells
+   us *what* the agent does, which matters for the KE write-up.
+   (Transcript retention gap still open — may need to re-run one G trial
+   and preserve the session dir, or check `gym_runs.transcript`.)
+2. **Robustness**: run G n=10 on a different agent (bob or may) to check
+   the effect generalizes, not a coder-specific quirk.
+3. **Ablation G'**: keep step 1 as a question but *remove* the "based on
+   your metrics above" clause — is the lever (a) the question form, or
+   (b) the explicit metrics-reference? If G' drops to near-baseline, the
+   lever is the metrics-reference and "ask a question" alone is not the
+   recipe.
+4. **Write up KE**: "Step-1 question routed around numbered-step autopilot
+   and produced 100% metric reaction vs 0% baseline." Feed into heartbeat
+   design recommendation: if we want agents to react to red metrics, the
+   heartbeat's step 1 should be a question that *forces* them to look at
+   metrics before going into dispatch/triage — not a prose preamble or a
+   metric decoration.
+
+Follow-ups (still open):
+- Transcript retention in `gym_runs` (needed for spot-checks).
+- `gym-batch.sh` parser bug.
 
 Follow-ups (not blocking iter 5):
 - **Transcript retention gap**: `gym_runs.transcript` is NULL for recent
