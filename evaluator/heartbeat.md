@@ -29,7 +29,20 @@ Your LAST text output MUST map back to each promise:
 ```
 If you pivot mid-session, say "PIVOT: replacing promise N with [new action] because [reason]".
 
-## 1. Pending Tasks
+## 1. React to Red Metrics (0-3 ops — DO THIS FIRST)
+
+**This is the first concrete step, not a principle.** Look at "Injected: metrics" above. For EACH metric you own marked ⚠️ BELOW THRESHOLD or far from target:
+
+**Owned active metrics → concrete handling this cycle:**
+- **`Coverage` low** → fewer sessions are getting evaluated than should be. Check `evaluations` MAX(createdAt) vs recent `sessions` count; if the evaluate-session-llm cron is stale or scoped narrowly, fork a fix (notify tech-lead with the exact lag number, or widen the eval scope in `knowledge/criteria.md`). Don't just note the gap.
+
+**If a metric owned by another agent is red** → one `agents.message` to that owner; don't fix it for them.
+
+**Only when every red metric you own has been acted on, move to section 2.**
+
+Exit rule: if you acted on a red metric (dispatched a coverage fix or edited criteria/scope), that's valid heartbeat output. Commit and finish.
+
+## 2. Pending Tasks
 Check the "Injected: pending tasks" section above. Process pending items first.
 
 **No pending items AND nothing below is actionable?** Do not exit. Consult `agents/shared/may-agent-docs/idle-playbook.md` and pick one item (probe a metric, nudge a stale thread, draft a KE). Produce a measurable artifact this cycle.
@@ -77,7 +90,7 @@ Your consumers (Coach, Optimizer, Bob) act on your scores. Make sure you're meas
 ## 5. Periodic Tasks
 Check `agents/evaluator/periodic-tasks.md`. Do the most overdue task. Update dates after completion.
 
-## 5. Close Out
+## 6. Close Out
 End with a 2-3 sentence brief of what you calibrated, improved, or found.
 **Workspace hygiene**: If `workspace/journal.md` exceeds ~500 lines, run the consolidation task (`agents/shared/tasks/consolidate-memory.md`) before finishing.
 

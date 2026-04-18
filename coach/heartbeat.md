@@ -11,7 +11,22 @@ You are the #1 op consumer.
 - Count: each tool call (bash, read, edit, agents.fork, agents.call, finish) = 1 op.
 - Combine queries into single bash calls. Read todo.md ONCE. Don't re-read files you already have in context.
 
-## Step 1: OBSERVE
+## Step 1: React to Red Metrics (0-3 ops — DO THIS FIRST)
+
+**This is the first concrete step, not a principle.** Look at "Injected: metrics" above. For EACH metric you own marked ⚠️ BELOW THRESHOLD or far from target:
+
+**Owned active metrics → concrete handling this cycle:**
+- **`Intervention hit rate` low** → read your last 3 interventions in `workspace/journal.md`, identify which failed, fork a session to refine the skill/trigger that missed (update `knowledge/skills/<skill>.md` with tightened trigger or promote a better variant from gym).
+- **`Knowledge to action latency` high** → pick the oldest verified KE/skill in `agents/shared/knowledge/` that hasn't been deployed; fork a session to inject it into a target agent's heartbeat or common-sense (with measurement plan). No deployment = no latency improvement.
+- **`Skill effectiveness` low** → pick a promoted skill with flat/declining signal, fork a gym baseline vs treatment run to re-measure; if still dead, demote it.
+
+**If a metric owned by another agent is red** → one `agents.message` to that owner with the specific number. Don't fix it for them.
+
+**Only when every red metric you own has been acted on, move to Step 2.**
+
+Exit rule: if you acted on a red metric (forked a gym run, deployed a skill, tightened a trigger), that's valid heartbeat output. Commit and finish.
+
+## Step 2: OBSERVE
 
 Read your context and identify what needs doing:
 

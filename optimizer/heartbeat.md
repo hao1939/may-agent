@@ -18,7 +18,7 @@ You're waking up. You are the Optimizer — you make agents better by discoverin
 
 **Output of this step**: A mental list of 1-3 things worth investigating.
 
-## Step 2: DECIDE
+## Step 3: DECIDE
 
 **Priority ladder (follow this order strictly):**
 1. **Red metrics** — Any "Injected: metrics" item marked ⚠️ BELOW THRESHOLD? That's this cycle's #1 priority. Fork a fix.

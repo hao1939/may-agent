@@ -15,7 +15,22 @@ Even "just one quick search" snowballs — a recent session hit **78 ops** (vs n
 
 If you catch yourself about to call scrape_webpage or any research tool, **STOP and fork a work session instead.**
 
-## Step 1: OBSERVE
+## Step 1: React to Red Metrics (0-3 ops — DO THIS FIRST)
+
+**This is the first concrete step, not a principle.** Look at "Injected: metrics" above. For EACH metric you own marked ⚠️ BELOW THRESHOLD or far from target:
+
+**Owned active metrics → concrete handling this cycle:**
+- **`CRs produced (7d)` low** → fork a session to write ONE cross-reference connecting 2+ existing deep-dives or KEs. Target: CR filed in `agents/shared/knowledge/library/cross-references/` this cycle (via verify-wrap).
+- **`Findings cited downstream` low** → fork a session to pick your best un-cited recent DD/CR and dispatch it to the agent(s) it would help most (tech-lead, bob, coach) with a concrete "try X because Y" message. Citation requires the finding leaving the library.
+- **`Heartbeat coverage (sessions/24h)` low** → your own heartbeats are too thin. Continue to Step 2 but this cycle MUST end in a forked work session, not an early finish.
+
+**If a metric owned by another agent is red** → one `agents.message` to that owner; don't fix it for them.
+
+**Only when every red metric you own has been acted on, move to Step 2.**
+
+Exit rule: if you acted on a red metric (forked a CR, dispatched a finding), that's valid heartbeat output. Commit and finish. Remember: this heartbeat is LOOKING only — the metric action happens in a forked session.
+
+## Step 2: OBSERVE
 
 Read your context and identify what needs doing:
 
