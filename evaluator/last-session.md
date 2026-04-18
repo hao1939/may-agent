@@ -1,21 +1,21 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776471943845_721
+- **Session:** s_1776472401824_730
 - **Status:** done
-- **When:** 2026-04-18T00:25:49.929Z
-- **Duration:** 6s
+- **When:** 2026-04-18T00:33:29.701Z
+- **Duration:** 7s
 
 ## What Happened
 ```json
 {
   "agents": {
-    "bob": {
+    "coder": {
       "role": "Builder",
       "capability_level": "L2",
-      "efficiency": 0.78,
-      "quality": 0.9,
-      "verdict": "good",
+      "efficiency": 0.62,
+      "quality": 0.83,
+      "verdict": "acceptable",
       "issues": [
-        "[FM-3.3 / VERIFICATION_GUARD_TRIGGER] Attempted to finish(success) immediately after edits/commit without any post-write verification; guard blocked (SIG: 1776471924:b9c6703f). Recovered correctly by reading back modified files and then finishing successfully (SIG: 1776471939:1669b73a).",
-        "[REPO_H
+        "[FM-2.2 / SCOPE-DRIFT-RISK] Dirty working tree included many unrelated modified files at commit time; although commit only included src/lib/evaluator.ts, this created avoidable risk/confusion (git status showed many agents/* and other files modified).",
+        "[FM-3.3 / VERIFICATION_GUARD_TRIGG
