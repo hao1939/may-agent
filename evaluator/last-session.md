@@ -1,21 +1,21 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776538509821_5
+- **Session:** s_1776538845094_519
 - **Status:** done
-- **When:** 2026-04-18T18:55:17.331Z
-- **Duration:** 7s
+- **When:** 2026-04-18T19:00:54.204Z
+- **Duration:** 9s
 
 ## What Happened
 ```json
 {
   "agents": {
-    "bob": {
-      "role": "Researcher/Builder (persistent-task worker under review)",
+    "coach": {
+      "role": "Supervisor/Dispatcher (heartbeat triage + dispatch)",
       "capability_level": "L2",
-      "efficiency": 0.15,
-      "quality": 0.1,
-      "verdict": "needs_improvement",
+      "efficiency": 0.55,
+      "quality": 0.45,
+      "verdict": "acceptable",
       "issues": [
-        "[FM-2.6] Reasoning-action mismatch: task required inspecting two non-snapshot session JSONLs; worker only read a project doc and attempted to git-add a gitignored path.",
-        "[FM-3.3] Declared 'Done' without producing required investigatio
+        "[FM-1.3-adjacent] Repeated finish() attempts were blocked by guards multiple times before adapting; several wasted ops.",
+        "[FM-3.3-risk] Early finish() summaries attempted to claim 'success' without a concrete artifact/deliverable; guard correct
