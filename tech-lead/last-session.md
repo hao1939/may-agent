@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776501042863_31
+- **Session:** s_1776502501367_48
 - **Status:** done
-- **When:** 2026-04-18T08:36:38.880Z
-- **Duration:** 5m56s
+- **When:** 2026-04-18T08:56:32.667Z
+- **Duration:** 1m31s
 
 ## What Happened
-Deliverable verified with concrete citations.
+Confirmed: `isBreach` checks `alert_direction === "above" ? current > threshold : current < threshold`. Query includes `m.alert_direction`. Both `warn` and `redCount` use `isBreach(m)`.
