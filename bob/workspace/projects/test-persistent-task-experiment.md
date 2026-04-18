@@ -22,6 +22,59 @@ Reduce session startup overhead from 25% to under 10%.
 
 ## Iteration Log
 
+### Iter 20 — 2026-04-18 20:32 UTC — SCOPE CHECK (non-confounding DB query)
+
+Owner prompted: "are the other 4 agents being measured, or only bob?"
+Answered by **reading `.state/may.db` directly** — no instrumentation
+change, no new scripts. This does not confound the bob measurement.
+
+**Finding: `heartbeat-snapshot.sh` is adopted in bob only.**
+`grep -l heartbeat-snapshot agents/*/heartbeat.md` → 1/12 agents
+(only `agents/bob/heartbeat.md`). Iter 7/8 proposal had 0/6 adoption
+and this is unchanged at Iter 20. So the v2 re-measure, by
+construction, can only validate the **bob** arm — the other 4 agents
+never adopted the intervention and their baselines are unchanged.
+
+**But: we can still opportunistically snapshot post-19:55Z op counts
+for all active heartbeat agents** (natural-experiment baseline for
+when/if they adopt later). Query: `sessions` table, `kind='job'`,
+`startedAt > 2026-04-18T19:55:00Z`, `opCount IS NOT NULL`.
+
+| agent     | post-v2 n | avg opCount | ops                |
+|-----------|-----------|-------------|--------------------|
+| bob       | 1         | 3.0         | [3]                |
+| coach     | 3         | 9.7         | [5, 6, 18]         |
+| may       | 1         | 4.0         | [4]                |
+| tech-lead | 1         | 6.0         | [6]                |
+| optimizer | 1         | 4.0         | [4]                |
+
+**Observations (directional, n too small for any claim):**
+- All 5 agents' post-v2 heartbeats are well under their 24h avg
+  (bob 10.1, coach 13.1, may 6.9, tech-lead 8.0, optimizer 6.2).
+  Could be (a) genuine across-the-board improvement from unrelated
+  changes, (b) time-of-day selection, or (c) coincidence at n=1–3.
+- **Coach is the only non-bob agent with n≥3 post-v2.** One of its 3
+  sessions is 18 ops (>24h avg of 13.1), the other two (5, 6) are
+  well below. That's consistent with coach's known bimodal
+  distribution (idle-heartbeat vs real-work sessions), not a trend.
+- No non-bob agent will yield a valid intervention signal until it
+  adopts the snapshot script. Re-pushing adoption is **out of scope**
+  for this project (0/6 adoption after Iter 7 proposal is a
+  cross-agent coordination problem, not a bob-owned startup-overhead
+  problem — see Iter 8/11 rationale).
+
+**Action taken:** none beyond this query + log. The bob-arm wall-clock
+gate (≥6 post-v2 bob heartbeats, currently 1) is still the binding
+constraint. ETA unchanged (~2.5h more wall clock).
+
+**Trigger for Iter 21 unchanged** from Iter 16: ≥6 post-v2 bob
+heartbeats in `.state/may.db` (cutoff `2026-04-18T19:55:00Z`).
+Snapshot query in this iter can be re-run alongside to track
+non-bob agents as a courtesy baseline, not a deliverable.
+
+## Files Modified This Iter
+- agents/bob/workspace/projects/test-persistent-task-experiment.md (this file; log entry only)
+
 ### Iter 19 — 2026-04-18 20:31 UTC — STILL BLOCKED (no-op, 4th consecutive)
 
 Re-ran the trigger query (same as Iter 16/17/18). Still **1** post-v2
