@@ -1,6 +1,6 @@
 # H-081: Runtime Role Clarity Monitoring Prevents Multi-Agent Coordination Failure
 
-**Status:** ACTIVE  
+**Status:** ARCHIVED — Resolved (monitoring proposal, no controlled experiments)
 **Created:** 2026-04-06  
 **Source:** arXiv:2604.02770 (Role Clarity for Multi-Agent)  
 **Related:** [HB-0285](../library/posts/HB-0285-role-clarity-multiagent.md), SYNTHESIS-002

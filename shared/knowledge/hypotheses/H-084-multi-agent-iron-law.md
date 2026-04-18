@@ -1,6 +1,6 @@
 # H-084: Multi-Agent Iron Law — Our Coordination Must Unlock One of Three Mechanisms
 
-**Status**: ACTIVE  
+**Status**: ARCHIVED — Resolved (theoretical framework, not experimentally tested)
 **Created**: 2026-04-06  
 **Source**: arXiv 2602.21556 via XHS analysis (HB-0267)
 

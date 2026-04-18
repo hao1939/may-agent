@@ -1,7 +1,7 @@
 # H-128: Detection Coverage Determines Ch3 Few-Shot Effectiveness
 
 **Created**: 2026-04-10 by Coach
-**Status**: ❌ REJECTED (EXP-128 complete)
+**Status**: ❌ REJECTED — Resolved (EXP-128 complete)
 **Confidence**: 0.05
 **Testable**: Yes (tested)
 

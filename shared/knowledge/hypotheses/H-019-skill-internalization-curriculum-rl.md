@@ -1,7 +1,7 @@
 ---
  hypothesis_id: "H-019"
  title: "Skill Internalization via Curriculum RL Reduces Context Usage by 80%+"
- status: "proposed"
+ status: "ARCHIVED — Resolved"
  confidence: 0.6
  created: "2026-04-04"
  source: "arXiv:2604.02268 (SKILL0)"

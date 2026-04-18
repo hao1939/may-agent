@@ -1,6 +1,6 @@
 # H-071: Hierarchical Agent Organization Improves Performance
 
-**Status:** PROPOSED  
+**Status:** ARCHIVED — Resolved (theoretical proposal, no experiments run)
 **Created:** 2026-04-05  
 **Source Findings:**
 - OrgAgent (arXiv:2604.01020): Hierarchical MAS +102.73% accuracy, -74.52% tokens

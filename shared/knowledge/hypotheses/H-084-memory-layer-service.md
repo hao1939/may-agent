@@ -1,6 +1,6 @@
 # H-084: Memory as a Service Layer
 
-**Status**: PROPOSED  
+**Status**: ARCHIVED — Resolved (no evidence gathered, untested theoretical proposal)
 **Created**: 2026-04-06  
 **Source**: Mem0 analysis (HB-260408)  
 **Related**: AutoAgent (HB-260407), CORAL (HB-260406)

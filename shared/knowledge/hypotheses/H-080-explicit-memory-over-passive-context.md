@@ -1,6 +1,6 @@
 # H-080: Explicit Memory Write/Retrieve Outperforms Passive Context Accumulation
 
-**Status:** Active  
+**Status:** ARCHIVED — Resolved (no experiments run to validate)
 **Created:** 2026-04-05  
 **Source:** YC-Bench findings (HB-0140)  
 **Related:** Thread 13 (Long-Horizon Agent Coherence), SYNTHESIS-001 (Agent Memory Architecture)

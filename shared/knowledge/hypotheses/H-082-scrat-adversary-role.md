@@ -2,7 +2,7 @@
 hypothesis_id: H-082
 title: Adversary Role Reduces Silent Failures in Multi-Agent Systems
 date: 2026-04-06
-status: proposed
+status: "MERGED into H-001 — Resolved"
 source_papers: [arXiv:2604.03201]
 source_posts: [HB-250406-scrat-memory-control-verify]
 ---
