@@ -1,21 +1,21 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776501212422_36
+- **Session:** s_1776501229317_37
 - **Status:** done
-- **When:** 2026-04-18T08:33:38.703Z
-- **Duration:** 6s
+- **When:** 2026-04-18T08:33:59.893Z
+- **Duration:** 10s
 
 ## What Happened
 ```json
 {
   "agents": {
-    "coach": {
+    "tech-lead": {
       "role": "Builder",
       "capability_level": "L2",
-      "efficiency": 0.82,
-      "quality": 0.92,
-      "verdict": "good",
+      "efficiency": 0.15,
+      "quality": 0.0,
+      "verdict": "needs_improvement",
       "issues": [
-        "[PROCESS_GUARD_HIT] First finish(success) attempt was blocked due to uncommitted changes (finish blocked with 2 modified files: coach/last-session.md, coach/workspace/projects/metric-autonomy.md). Coach immediately recovered by git add/commit and re-finish (bash commit 9f1ad4c63).",
-        "[MINOR_SCO
+        "[DRIFT/FM-2.6] Reasoning-action mismatch: assigned task was to trace cron dispatch flow and write agents/tech-lead/workspace/finding-trace-the-cron-handler-dispatch-flow-end.md, but transcript shows editing May's dispatch dashboard and committing it instead.",
+        "[DELIVERABLE_MISS
