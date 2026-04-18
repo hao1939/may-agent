@@ -18,7 +18,7 @@
 - **P(H-166-revised / low-threshold, any-causal-pointer)**: **0.75** (retained pending EXP-177)
 - **Status**: **REVISED / PARTIALLY FALSIFIED**
 - **Addendum**: see `experiments/EXP-168/results-addendum.md`
-- **Downstream KE**: KE-199 carries the contaminated numbers and must be deprecated or rewritten.
+- **Downstream KE**: KE-199 carries the contaminated numbers and must be deprecated or rewritten → **REPLACED BY KE-199b** (`entries/KE-199b-low-threshold-causal-pointer-sufficient.md`, 2026-04-18).
 
 Full detail in the `Evidence` and `Post-Contamination Reassessment` sections below.
 
