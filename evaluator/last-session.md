@@ -1,24 +1,20 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776511558948_137
+- **Session:** s_1776511964072_147
 - **Status:** done
-- **When:** 2026-04-18T11:26:03.854Z
-- **Duration:** 4s
+- **When:** 2026-04-18T11:32:55.603Z
+- **Duration:** 11s
 
 ## What Happened
 ```json
 {
   "agents": {
-    "bob": {
-      "role": "Philosopher/Architect",
+    "tech-lead": {
+      "role": "Builder",
       "capability_level": "L2",
-      "efficiency": 0.78,
-      "quality": 0.92,
-      "verdict": "good",
+      "efficiency": 0.6,
+      "quality": 0.35,
+      "verdict": "needs_improvement",
       "issues": [
-        "Minor bash/grep mis-assumption: initial `grep -n \"^Status:\" ...` returned code 1 because the files use `**Status**:` (markdown emphasis), not `Status:`; led to a small recovery chain (3 wasted calls)."
-      ],
-      "metrics": {
-        "code_correctness": "n/a (doc edits)",
-        "pro
+        "[SCOPE_MISS] Did not follow requested investigation steps: no reads in src/lib/metrics/ were performed, and no DB query for 'recent low-scoring delegations (last 24h)' was shown; instead queried 7-day window and focused on heuristic vs LLM averages (transcript: only bun sqlite bash quer
