@@ -1,7 +1,7 @@
 # EXP-181: Dead Ends Memory
 
 **Date**: 2026-04-18
-**Status**: RUNNING
+**Status**: COMPLETE — FALSIFIED
 **Predecessor**: none
 **Hypothesis**: H-166 (FM-1.3 path-guessing pattern)
 
