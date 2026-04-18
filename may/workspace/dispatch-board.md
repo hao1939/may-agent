@@ -55,7 +55,17 @@ Updated: 2026-04-16 ~08:00 UTC
 - **P2**: Amy-kimi billing — blocked on Hao.
 - ⚠️ **HOLD**: Ch2-production-gates implementation — Hold for EXP-170.
 
-## Latest Cycle Summary (09:00 Apr 16)
+## Latest Cycle Summary (05:30 Apr 18)
+- **SYSTEM**: 9/9 healthy. 0 errors, 0 stuck sessions across 6h window.
+- **RED METRIC FIX**: `Stuck requests` was 76 (threshold 20). Root cause: 78 CREATED requests addressed to may, 67 of them historical human/agent messages >12h old already processed in prior sessions but never marked COMPLETED. Bulk-closed → 11 remain. Regression alert (req:92dd58cb) also closed.
+- **METRIC FIXES APPLIED TO DB**:
+  - coder.quality: target=1.0 unit=ratio
+  - coder.first-pass-rate: target=100 unit=pct
+  - qa.false-positive-rate: status=inactive (no collector, current=null)
+  - scout already self-reported + applied (hypotheses-generated, findings-used, coverage all renamed/retargeted).
+- **CLOSED**: scout report-backs (d3e93c7b, 05d9b36d) and addendum requests (12363ad3, 503717d9).
+
+## Earlier Cycle Summary (09:00 Apr 16)
 - **SYSTEM**: 9/9 healthy. Zero errors. Zero stuck sessions. 1 scout interrupt (transient).
 - **DISPATCHED**: Bob gym execution reliability → coach (s_1776330087330_606).
 - **QUEUE**: 2 ready items remaining. Next: Top-5 metrics dashboard, Metric Phase 3 (post-restart).
