@@ -1,20 +1,20 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776540315823_542
+- **Session:** s_1776540657783_546
 - **Status:** done
-- **When:** 2026-04-18T19:25:24.704Z
-- **Duration:** 8s
+- **When:** 2026-04-18T19:31:03.954Z
+- **Duration:** 6s
 
 ## What Happened
 ```json
 {
   "agents": {
     "bob": {
-      "role": "Researcher/Builder (synthesis writer + commit)",
+      "role": "Researcher/Builder (heartbeat dispatcher; choose work + dispatch; ensure deliverables/verification/commit hygiene)",
       "capability_level": "L2",
-      "efficiency": 0.75,
-      "quality": 0.8,
+      "efficiency": 0.7,
+      "quality": 0.85,
       "verdict": "good",
       "issues": [
-        "[EVIDENCE_GAP] Thread 3 (DD-766+767) produced no visible output in the provided transcript segment; synthesis appears to rely on KE-239–244 set instead. Not necessarily wrong, but the task prompt asked to cross-reference “6 new KEs” from the thread results and the tr
+        "[FM-3.3/VERIFICATION_FRICTION] bob attempted finish(success) with an uncommitted file (M bob/ERROR_LOG.jsonl), got blocked, then committed and re-finished. Evidence: finish() blocked on uncommitted c
