@@ -160,3 +160,13 @@ For each pattern scout brings back, experiments follow this format:
 
 ## Comments
 
+## Conclusion (2026-04-18)
+
+**Result: 1/4 patterns adopted.** The learn-from-existing-systems project tested 4 patterns from EvoHarness and OpenClaw. Three behavioral/knowledge interventions (dead ends memory, fragility tracking, dreaming/consolidation) produced 0pp improvement across 60 total trials. The one structural process change (prescreen gate) showed 100% accuracy on 19 retrospective arms and was adopted.
+
+**Key meta-finding (KE-256):** External system patterns don't transfer as behavioral interventions. They work in their source systems because of structural loops that force their use. When transplanted as injected knowledge/advice, agents ignore them — consistent with KE-002 (text rules 0%) and KE-007 (only workflows work). The intervention hierarchy (structural > knowledge > behavioral) appears to be a general property of LLM agents, not system-specific.
+
+**Patterns #5-7 skipped** (layered config precedence, surface decomposition, per-agent skill allowlists) — low expected impact and the meta-finding suggests behavioral patterns won't transfer anyway.
+
+**Adopted:** Prescreen gate — use 3-trial prescreen before full gym batches to prune ineffective interventions early.
+
