@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776522979489_297
+- **Session:** s_1776522953673_294
 - **Status:** done
-- **When:** 2026-04-18T14:37:43.995Z
-- **Duration:** 1m24s
+- **When:** 2026-04-18T14:38:09.524Z
+- **Duration:** 2m15s
 
 ## What Happened
-Now I have enough evidence. Key finding: **heuristic systematically over-rates quality by ~0.12 points** (0.74 avg vs 0.62 avg for LLM non-skipped). The heuristic defaults to Q:1.0 for all "done" sessions and only drops to 0.75 for high waste — it has no way to assess actual output quality.
+Good finding — heuristic over-rates by ~0.12 points. Let me update todo.md and finish.
