@@ -120,6 +120,23 @@ aggregates across all of them.
      reach 40-60%, but not the 80% target. The remaining gap requires
      **structural intervention** in the agent's own config (heartbeat
      handler, auto-detection), not just better task prompts.
+   - **Iter 4 — structural interventions** (2026-04-18):
+     Two structural approaches tested via lab fork `struct-persistent-task`:
+     (a) Heartbeat bash block modification (added active-project detection
+     script with ASCII banner + exact workflow.run command): **0/5 = 0%**.
+     Failed because oneshot gym agents skip the heartbeat bash flow entirely.
+     (b) Context.md CRITICAL instruction (first line of persistent context):
+     **2/4 = 50%**. Better than baseline but not reliable.
+     Full results: `agents/coach/workspace/experiments/use-persistent-task-structural-results.md`
+   - Interpretation: Even structural interventions in agent config files
+     max out at ~50-60%. The intervention hierarchy is: task.md instructions
+     (~60%) > context.md injection (~50%) > heartbeat bash (0%) > text rules
+     (0%). Reaching 80% likely requires **runtime-level enforcement** (e.g.,
+     auto-detect active projects in the session loop, or guard that rejects
+     finish() without workflow use).
+   - **Status**: Paused. All prompt/config-level interventions exhausted at
+     ≤60%. Runtime enforcement needed — this is an infrastructure change,
+     not a coaching intervention. Filing as recommendation.
 
 3. **order-compliance** — NEW. Do standing orders like ORDER-008
    ("may fork, not message") stick once set?
