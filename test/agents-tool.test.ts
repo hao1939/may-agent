@@ -118,19 +118,11 @@ describe("V2 agents tool", () => {
     expect(result.error).toContain("requires");
   });
 
-  it("send without agent or message returns error", async () => {
-    const tool = manager.createAgentsTool({ agentsRoot });
-    const result = await callTool(tool, { action: "message", agent: "coder" });
-    expect(result.error).toContain("requires");
-  });
-
-  it("send to unregistered agent returns error", async () => {
-    const tool = manager.createAgentsTool({ agentsRoot });
-    const result = await callTool(tool, { action: "message", agent: "nonexistent", message: "do stuff" });
-    expect(result.error).toContain("not registered");
-  });
-
-  it("send tracks task and returns confirmation", async () => {
+  // The agents.message action was removed in commit d15c5249 (notify-split).
+  // It now returns a fixed deprecation error regardless of inputs. Callers should
+  // use notify({ agent, message }) or agents.fork({ agent, task }) instead.
+  it("message action returns deprecation error regardless of inputs", async () => {
+    const deprecation = "agents.message action has been removed";
     manager.register({
       name: "coder",
       description: "Writes code",
@@ -139,73 +131,35 @@ describe("V2 agents tool", () => {
       tools: [echoTool()],
     });
 
-    const tool = manager.createAgentsTool({
+    // Missing message — deprecation error (not "requires")
+    const t1 = manager.createAgentsTool({ agentsRoot });
+    const r1 = await callTool(t1, { action: "message", agent: "coder" });
+    expect(r1.error).toContain(deprecation);
+
+    // Unregistered agent — deprecation error (not "not registered")
+    const r2 = await callTool(t1, { action: "message", agent: "nonexistent", message: "do stuff" });
+    expect(r2.error).toContain(deprecation);
+
+    // With full config — deprecation error, no sent/message confirmation
+    let triggeredAgent: string | null = null;
+    const t2 = manager.createAgentsTool({
       agentsRoot,
       getCallerAgentName: () => "may",
-    });
-
-    const result = await callTool(tool, { action: "message", agent: "coder", message: "fix the login bug" });
-    expect(result.sent).toBe("coder");
-    expect(result.message).toBe("fix the login bug");
-  });
-
-  it("send returns confirmation for multiple sends", async () => {
-    manager.register({
-      name: "coder",
-      description: "Writes code",
-      domain: "coding",
-      model: mockModel(),
-      tools: [echoTool()],
-    });
-
-    const tool = manager.createAgentsTool({
-      agentsRoot,
-      getCallerAgentName: () => "bob",
-    });
-
-    const r1 = await callTool(tool, { action: "message", agent: "coder", message: "first task" });
-    const r2 = await callTool(tool, { action: "message", agent: "coder", message: "second task" });
-    expect(r1.sent).toBe("coder");
-    expect(r2.sent).toBe("coder");
-    expect(r1.message).toBe("first task");
-    expect(r2.message).toBe("second task");
-  });
-
-  it("send calls triggerHeartbeat callback", async () => {
-    manager.register({
-      name: "coder",
-      description: "Writes code",
-      domain: "coding",
-      model: mockModel(),
-      tools: [echoTool()],
-    });
-
-    let triggeredAgent: string | null = null;
-    const tool = manager.createAgentsTool({
-      agentsRoot,
       triggerHeartbeat: (name) => {
         triggeredAgent = name;
         return true;
       },
     });
+    const r3 = await callTool(t2, { action: "message", agent: "coder", message: "fix the login bug" });
+    expect(r3.error).toContain(deprecation);
+    expect(r3.sent).toBeUndefined();
+    expect(r3.heartbeatTriggered).toBeUndefined();
+    expect(triggeredAgent).toBeNull();
 
-    const result = await callTool(tool, { action: "message", agent: "coder", message: "do stuff" });
-    expect(triggeredAgent).toBe("coder");
-    expect(result.heartbeatTriggered).toBe(true);
-  });
-
-  it("send without agentsRoot returns error", async () => {
-    manager.register({
-      name: "coder",
-      description: "Writes code",
-      domain: "coding",
-      model: mockModel(),
-      tools: [echoTool()],
-    });
-
-    const tool = manager.createAgentsTool(); // no agentsRoot
-    const result = await callTool(tool, { action: "message", agent: "coder", message: "do stuff" });
-    expect(result.error).toContain("agentsRoot");
+    // No agentsRoot — still deprecation error (not "agentsRoot")
+    const t3 = manager.createAgentsTool();
+    const r4 = await callTool(t3, { action: "message", agent: "coder", message: "do stuff" });
+    expect(r4.error).toContain(deprecation);
   });
 
   it("unknown action returns error", async () => {
@@ -245,7 +199,10 @@ describe("V2 agents tool", () => {
     expect(result.error).toContain("checkpoint({ ... })");
   });
 
-  it("send rejects when target matches a tool in caller's toolset", async () => {
+  it("message action returns deprecation error even when target is a tool", async () => {
+    // Since the message action now short-circuits with a deprecation error
+    // (commit d15c5249), the tool-vs-agent guard is not reached. Callers
+    // that attempt message on a tool name still get the deprecation error.
     const checkpointTool: AgentTool = {
       name: "checkpoint",
       label: "Checkpoint",
@@ -270,10 +227,8 @@ describe("V2 agents tool", () => {
       getCallerAgentName: () => "bob",
     });
 
-    // "checkpoint" is NOT a registered agent, but IS a tool in bob's toolset
     const result = await callTool(tool, { action: "message", agent: "checkpoint", message: "save state" });
-    expect(result.error).toContain("is a tool, not an agent");
-    expect(result.error).toContain("checkpoint({ ... })");
+    expect(result.error).toContain("agents.message action has been removed");
   });
 
   it("call allows when target is an agent, not a tool", async () => {
