@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776524084877_317
+- **Session:** s_1776524462532_321
 - **Status:** done
-- **When:** 2026-04-18T14:54:50.945Z
-- **Duration:** 6s
+- **When:** 2026-04-18T15:01:09.999Z
+- **Duration:** 7s
 
 ## What Happened
 ```json
@@ -13,9 +13,8 @@
     "bob": {
       "role": "Philosopher/Architect",
       "capability_level": "L2",
-      "efficiency": 0.78,
-      "quality": 0.88,
-      "verdict": "good",
+      "efficiency": 0.62,
+      "quality": 0.15,
+      "verdict": "needs_improvement",
       "issues": [
-        "[PROCESS] Minor guard friction: first finish() was blocked due to uncommitted changes (bob/ERROR_LOG.jsonl), requiring an extra git commit step. Evidence: finish() blocked message, then subsequent git commit.",
-        "[DELIVERABLE_HYGIENE] Deliverable written into agents/bob/workspace/ (l
+        "[FM-3.3][DELIVERABLE_INTEGRITY] Declared deliverables agents/shared/knowledge/hypotheses/H-171.md and agents/shared/knowledge/entries/KE-219.md, but finish() hard-failed: \"Deliverables not found on disk\". This is an evidence mismatch between claims (deliverables exist) and th

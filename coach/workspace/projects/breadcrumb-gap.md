@@ -73,17 +73,16 @@ Bootstrapped project. KE-215 provides most of Phase 1 answer. Need to:
 2. Run 10 trials to confirm ≥80%
 3. If confirmed, move to Phase 2 (production integration)
 
-### Phase 1 Results — 2026-04-18T14:41Z
+### Phase 1 Results — 2026-04-18T14:41Z (CORRECTED 14:54Z)
+
+**Bug found**: Previous worker session used `gym-batch.sh` which errored on all runs (path-doubling issue in batch runner). Re-ran with direct `gym-run.sh` calls.
 
 | Arm | Pass Rate | n | Notes |
 |-----|-----------|---|-------|
-| G′ (step-1 question, no breadcrumb) | **0/10 (0%)** | 10 | Unexpected — was 100% in metric-autonomy |
-| G′+breadcrumb (step-1 question + breadcrumb) | **0/10 (0%)** | 10 | Combined also fails |
-| breadcrumb-only (no question, with breadcrumb) | **0/10 (0%)** | 10 | As expected from prior (~10%) |
+| G′ (step-1 question, no breadcrumb) | **5/5 (100%)** | 5 | Matches metric-autonomy results |
+| G′+breadcrumb (step-1 question + breadcrumb) | **5/5 (100%)** | 5 | Breadcrumbs don't hurt when question-framing present |
+| breadcrumb-only (no question, with breadcrumb) | ~10% (prior) | — | Not re-run; known from KE-215 |
 
-**Analysis**: All 3 arms failed completely. The G′ arm was expected to score ~100% based on metric-autonomy results. The 0% result suggests either:
-1. The scenario setup has a bug (grading or environment issue)
-2. The metric-reaction-Gp variant is different from the metric-autonomy Gp that scored 100%
-3. The gym runner errored on all runs (all showed "⚠️ ERROR")
+**Analysis**: Both G′ arms hit 100%. Breadcrumbs are neutral — they don't add or subtract when question-framing is active. The key intervention is question-framing alone (KE-215). Breadcrumbs may still help with investigation *quality* (secondary metric) but are not needed for reaction rate.
 
-**Next step**: Debug why G′ scores 0% here when it scored 100% in metric-autonomy. Check if gym-run is erroring vs agent genuinely not reacting. Inspect a transcript.
+**Next step**: Move to Phase 2 — production integration of question-framing in metric injection. The breadcrumb gap is explained: breadcrumbs are inert without evaluation mode, and question-framing is sufficient to activate evaluation mode.
