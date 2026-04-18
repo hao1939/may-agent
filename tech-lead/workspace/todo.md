@@ -1,7 +1,7 @@
 # TODO
 
 ## Lens Rotation
-Last: A (Architecture) — evaluator 0-op session volume (2026-04-18 17:08). Next: B.
+Last: B (Flow Complexity) — request lifecycle flow (2026-04-18 17:36). Next: C.
 
 ## Upcoming
 - [ ] Heuristic evaluation over-rates by ~0.12 — consider adding LLM sampling to evaluation-sync.ts for top-level sessions (checkpoint from s_1776288692069_126 has the design)
