@@ -143,7 +143,9 @@ For each pattern scout brings back, experiments follow this format:
 - ✅ Bob triaged 7 patterns, mapped to FMs, ranked by impact×feasibility (2026-04-18)
 - ✅ Experiment designs written for top 3: dead-ends memory, fragility tracking, prescreen gate
 - ⏳ Awaiting scout briefs on Pi skills + Hermes agent
-- **Next:** Run EXP batch for pattern #1 (dead ends memory) — highest expected ROI
+- ✅ DD-769 delivered: Claude Skills + Hermes FC survey (2026-04-18)
+- ✅ EXP-180 designed: Dead Ends Memory experiment (2026-04-18)
+- **Next:** Run EXP-180 baseline + treatment arms
 
 ## Next Steps
 
