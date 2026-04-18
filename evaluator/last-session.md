@@ -1,20 +1,20 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776519576126_245
+- **Session:** s_1776519660518_249
 - **Status:** done
-- **When:** 2026-04-18T13:39:48.946Z
-- **Duration:** 12s
+- **When:** 2026-04-18T13:41:11.190Z
+- **Duration:** 10s
 
 ## What Happened
 ```json
 {
   "agents": {
-    "scout": {
-      "role": "Researcher",
+    "tech-lead": {
+      "role": "Builder",
       "capability_level": "L2",
-      "efficiency": 0.74,
-      "quality": 0.86,
+      "efficiency": 0.62,
+      "quality": 0.76,
       "verdict": "good",
       "issues": [
-        "[FM-1.3/ERROR_RECOVERY_WASTE] Avoidable error-recovery churn on grep/exit-code-1 paths (treated as failure rather than a normal 'no matches' outcome). Evidence: failure chain shows `bash(grep -E ... covered_ids.txt)` exited code 1 then additional probing commands were run (ls + grep -l), with no dem
+        "[HEARTBEAT_ADHERENCE_GAP] Step 1 requires a combined snapshot + glance todo.md; session only verified 'no active projects' via grep and then jumped to dispatch. Evidence: only Step-1-like op was `grep -l \"Status: active\" ...` before workflow dispatch; todo.md was read only after dispatch (first 3

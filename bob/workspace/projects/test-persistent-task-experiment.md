@@ -12,8 +12,13 @@ Reduce session startup overhead from 25% to under 10%.
 - [x] Prototype fix for pattern #2 (heartbeat-snapshot.sh)
 - [x] Roll out: dogfood in bob's heartbeat (Iter 4)
 - [ ] Re-measure bob after 6+ heartbeat sessions to confirm impact
+      (Iter 5: still too early — only 0/6 most-recent heartbeats are post-dogfood)
 - [ ] Propose snapshot script to coach + may heartbeats
-- [ ] Design fix for pattern #1 (pure-overhead heartbeats)
+- [x] ~~Design fix for pattern #1 (pure-overhead heartbeats)~~ —
+      **superseded** by existing `agents/shared/may-agent-docs/design/idle-heartbeat-playbook.md`
+      (Hao 2026-04-17: idle heartbeats are an exploration budget, not
+      overhead. Don't add fast-exit gates; replace exit with prioritized
+      autonomous work.) Iter 5 reconciliation.
 - [x] Address pattern #3 (re-reading already-summarized files) — added
       anti-re-read note in bob's Step 1 (Iter 4)
 
@@ -67,7 +72,54 @@ sessions on startup, half the time taking no action at all.
    field that's not summarized."*
 
 ## Current State
-Iter 4 done. Snapshot script in production for bob; pattern #3 mitigation in place.
+Iter 5 done. Pattern #1 milestone retired (superseded by idle-heartbeat-playbook.md). Waiting on heartbeat clock for the bob re-measure.
+
+### Iter 5 — 2026-04-18 (this iter)
+**Goal:** Check whether Iter 4's bob heartbeat changes have moved the metric
+yet, and clear the stale pattern-#1 milestone.
+
+**Re-measure bob (6 most-recent heartbeats, same method as Iter 2):**
+
+| metric                       | Iter 2 baseline | Iter 5 |
+|------------------------------|-----------------|--------|
+| avg total ops                | 19.2            | 19.5   |
+| avg ops_before_first_real    | 8.6             | 9.4    |
+| sessions with 0 real actions | 1/6             | 1/6    |
+
+**No movement, as expected.** Iter 4's heartbeat.md edit landed at 13:37
+UTC; the most-recent bob heartbeat in this window started at 13:22 UTC
+(s_1776518529764_224). **0 of the 6 measured sessions ran the new
+Step 1.** Re-measure is premature; needs ~3h of wall clock to accumulate 6
+post-change heartbeats. Re-check after 17:00 UTC today.
+
+**Pattern #1 milestone retired.** While re-reading the project I found
+that `agents/shared/may-agent-docs/design/idle-heartbeat-playbook.md`
+(bob, 2026-04-17, draft awaiting tech-lead+may review) already addresses
+pattern #1 — and **explicitly rejects** the fast-exit-gate fix this
+project's milestone implies. Per Hao 2026-04-17: *"heartbeats is by
+design for agent to explore and try. It's OK to waste tokens as long as
+it provides chance for agent to be autonomous."* "Pure-overhead
+heartbeat" is a misframing — what looks like overhead is the agent's
+exploration budget. The correct fix is not to gate idle heartbeats but to
+replace `nothing-to-do → finish` with `nothing-assigned → pick one
+exploration item`. Adding a separate design here would duplicate that
+work and risk reintroducing the killed gate.
+
+Action: marked the milestone `[x]` with a pointer to the playbook.
+Project's pattern-#1 work is now "land idle-heartbeat-playbook.md
+review" rather than "design new fix" — that's a may/tech-lead concern,
+not an additional bob deliverable.
+
+**Bonus observation (worth flagging, not acting on this iter):** in the
+6 measured sessions, the only zero-real session
+(s_1776516746914_185) ended with **3 separate finish() calls** —
+finish() was being rejected and retried. That matches FM-3.3 (dirty-repo
+guard) from active-recall. Not chasing it here, but if the pattern
+recurs after Iter 4 lands, it's worth a small KE on "finish-loop as a
+zero-real-action signal."
+
+## Files Modified This Iter
+- agents/bob/workspace/projects/test-persistent-task-experiment.md (this file)
 
 ### Iter 4 — 2026-04-18 (this iter)
 **Dogfooded** the snapshot script into `agents/bob/heartbeat.md` Step 1
