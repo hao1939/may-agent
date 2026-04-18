@@ -30,6 +30,9 @@ Prefer fast feedback — use gym (minutes) over waiting for production data (day
 ### Workflows (Process)
 Workflows structure how work gets done. `persistent-task` for multi-session projects, `implement-and-verify` for code changes. The workflow enforces quality gates, verification steps, and audit trails — you focus on the work, the workflow handles the process.
 
+### Dispatch Verb Rule (KE-214)
+When dispatching work, the **verb determines the tool**. "Run the persistent-task workflow for X" → workflow. "Read X and continue" → read. Don't mix verbs in the same instruction — the first verb wins.
+
 ### Guards (Quality Gates)
 Guards check your work automatically — verification after writes, scope compliance, deliverable completeness. They catch mistakes before they ship. If a guard blocks you, satisfy it (do what it asks — verify, read back, fix the issue). If you genuinely can't satisfy it, escalate through the chain (you → owner → May → Hao) — don't fight it, don't retry with wording changes, ask for help.
 
