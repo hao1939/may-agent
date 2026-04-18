@@ -1,0 +1,5 @@
+{
+  "name": "grade-pipeline-v3",
+  "version": "2.1.0",
+  "description": "Student grade processing pipeline with penalty marking and normalization"
+}

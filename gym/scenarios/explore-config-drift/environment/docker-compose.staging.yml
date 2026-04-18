@@ -1,0 +1,33 @@
+# Staging overrides
+# Last updated: 2026-01-15 (migration to AWS)
+version: '3.8'
+
+services:
+  auth-service:
+    environment:
+      - NODE_ENV=staging
+      - DB_HOST=auth-staging.cluster-abc123.us-east-1.rds.amazonaws.com
+      - DB_SSL=true
+      - REDIS_URL=rediss://auth-staging.abc123.cache.amazonaws.com:6380
+      # NOTE: Redis URL uses rediss:// (TLS) on port 6380
+      # but .env.staging has redis:// on port 6379 (no TLS)
+    volumes:
+      - /etc/ssl/staging:/app/certs:ro
+      # DRIFT: cert mount path differs from .env.staging TLS_CERT_PATH
+      # .env.staging says /etc/ssl/certs/staging.crt
+      # but this mounts to /app/certs/ — so actual path would be /app/certs/staging.crt
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          memory: 512M
+
+  nginx:
+    volumes:
+      - ./nginx/nginx-staging.conf:/etc/nginx/nginx.conf:ro
+      - /etc/ssl/staging:/etc/nginx/certs:ro
+    environment:
+      - UPSTREAM_HOST=auth-service
+      - UPSTREAM_PORT=3000
+      # DRIFT: nginx upstream expects port 3000 but uses HTTPS upstream
+      # which means auth-service must also serve HTTPS — but it only does HTTP

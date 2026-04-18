@@ -1,0 +1,46 @@
+{
+  "weights": {
+    "homework": 0.25,
+    "midterm": 0.25,
+    "final": 0.35,
+    "participation": 0.15
+  },
+  "curve": {
+    "enabled": true,
+    "method": "boost_below_average",
+    "boost_points": 5
+  },
+  "late_penalty": {
+    "points_per_day": 2,
+    "max_penalty": 10,
+    "applies_to": "final"
+  },
+  "grade_boundaries": {
+    "A": 93,
+    "A-": 90,
+    "B+": 87,
+    "B": 83,
+    "B-": 80,
+    "C+": 77,
+    "C": 73,
+    "C-": 70,
+    "D": 60,
+    "F": 0
+  },
+  "honors": {
+    "min_score": 85,
+    "min_gpa_equivalent": 3.5
+  },
+  "gpa_map": {
+    "A": 4.0,
+    "A-": 3.7,
+    "B+": 3.3,
+    "B": 3.0,
+    "B-": 2.7,
+    "C+": 2.3,
+    "C": 2.0,
+    "C-": 1.7,
+    "D": 1.0,
+    "F": 0.0
+  }
+}

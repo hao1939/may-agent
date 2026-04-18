@@ -1,0 +1,11 @@
+{
+  "name": "user-management",
+  "version": "2.3.0",
+  "description": "User management service with role-based access",
+  "dependencies": {
+    "better-sqlite3": "^9.4.3"
+  },
+  "scripts": {
+    "test": "node test/check.js"
+  }
+}

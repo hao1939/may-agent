@@ -1,0 +1,10 @@
+2026-03-01 10:00:00 INFO Server started on port 3000
+2026-03-01 10:00:01 INFO Loading configuration...
+2026-03-01 10:00:02 INFO Database connection established
+2026-03-01 10:05:00 WARN High memory usage: 85%
+2026-03-01 10:10:00 ERROR Connection timeout to redis:6379
+2026-03-01 10:10:01 INFO Retrying redis connection...
+2026-03-01 10:10:02 INFO Redis reconnected
+2026-03-01 11:00:00 INFO Health check OK
+2026-03-01 12:00:00 INFO Health check OK
+2026-03-01 13:00:00 INFO Health check OK

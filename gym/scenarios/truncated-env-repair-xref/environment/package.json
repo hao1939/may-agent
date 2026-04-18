@@ -1,0 +1,12 @@
+{
+  "name": "notification-service",
+  "version": "1.0.0",
+  "description": "Notification service for deployment check",
+  "dependencies": {
+    "dotenv": "^16.3.1"
+  },
+  "scripts": {
+    "check": "node test/check.js",
+    "start": "node src/config.js"
+  }
+}

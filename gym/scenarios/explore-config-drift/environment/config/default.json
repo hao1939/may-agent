@@ -1,0 +1,31 @@
+{
+  "server": {
+    "port": 3000,
+    "host": "0.0.0.0",
+    "gracefulShutdownTimeout": 10000
+  },
+  "auth": {
+    "bcryptRounds": 12,
+    "maxLoginAttempts": 5,
+    "lockoutDuration": 900000,
+    "tokenAlgorithm": "HS256"
+  },
+  "session": {
+    "store": "redis",
+    "prefix": "sess:",
+    "ttl": 86400
+  },
+  "cors": {
+    "origins": ["http://localhost:8080", "https://staging.example.com"],
+    "credentials": true
+  },
+  "tls": {
+    "minVersion": "TLSv1.2",
+    "ciphers": "ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256",
+    "rejectUnauthorized": false
+  },
+  "healthCheck": {
+    "path": "/health",
+    "interval": 30000
+  }
+}

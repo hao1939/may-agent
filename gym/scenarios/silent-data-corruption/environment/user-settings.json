@@ -1,0 +1,24 @@
+{
+  "user-101": {
+    "color": "#FF5733",
+    "theme": "dark",
+    "language": "en"
+  },
+  "user-102": {
+    "color": "#3498DB",
+    "theme": "light",
+    "language": "fr"
+  },
+  "user-103": {
+    "color": "#2ECC71",
+    "theme": "dark",
+    "language": "de"
+  },
+  "test-user-999": {
+    "color": {
+      "r": 0,
+      "g": 0,
+      "b": 128
+    }
+  }
+}

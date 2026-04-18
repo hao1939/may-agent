@@ -1,0 +1,6 @@
+{
+  "cacheTtlSeconds": 600,
+  "maxCacheSize": 1000,
+  "cacheEnabled": true,
+  "logLevel": "info"
+}

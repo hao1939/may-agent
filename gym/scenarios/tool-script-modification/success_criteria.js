@@ -1,0 +1,26 @@
+const fs = require('fs');
+const path = require('path');
+
+module.exports = async function checkSuccess(workDir) {
+  const scriptPath = path.join(workDir, 'scripts', 'metric-collector.ts');
+  const testPath = path.join(workDir, 'scripts', 'metric-collector.test.ts');
+
+  if (!fs.existsSync(scriptPath)) return { passed: false, reason: 'metric-collector.ts not found' };
+  if (!fs.existsSync(testPath)) return { passed: false, reason: 'test file not found' };
+
+  const script = fs.readFileSync(scriptPath, 'utf-8');
+  const test = fs.readFileSync(testPath, 'utf-8');
+
+  // Check --csv flag implementation
+  if (!script.includes('--csv')) return { passed: false, reason: 'No --csv flag in script' };
+  if (!script.includes('formatTable')) return { passed: false, reason: 'Original formatTable removed' };
+
+  // Check CSV output logic exists
+  const hasCsvFormat = script.includes('csv') && (script.includes(',') || script.includes('join'));
+  if (!hasCsvFormat) return { passed: false, reason: 'No CSV formatting logic found' };
+
+  // Check tests updated
+  if (!test.includes('csv') && !test.includes('CSV')) return { passed: false, reason: 'Tests not updated for --csv' };
+
+  return { passed: true, reason: 'CSV flag added with tests' };
+};

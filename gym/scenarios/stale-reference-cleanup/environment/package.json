@@ -1,0 +1,11 @@
+{
+  "name": "user-processor",
+  "version": "1.0.0",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "node test/index.test.js",
+    "lint": "echo 'Linting src/index.js src/utils/string-helpers.js src/utils/validators.js' && echo 'No issues found'",
+    "build": "echo 'Building user-processor...'"
+  }
+}

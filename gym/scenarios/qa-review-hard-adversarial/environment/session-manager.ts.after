@@ -1,0 +1,105 @@
+// session-manager.ts — AFTER the change (v2: performance optimization + role-based permissions)
+
+const crypto = require('crypto');
+
+const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+
+interface Session {
+  userId: string;
+  permissions: string[];
+  createdAt: number;
+  expiresAt: number;
+  lastAccessedAt: number;
+}
+
+// OPTIMIZATION: Use object for O(1) lookups instead of Map iteration
+const sessions: Record<string, Session> = {};
+
+// Cache for permission checks to avoid repeated array scans
+const permissionCache = new Map<string, Set<string>>();
+
+export function createSession(userId: string, permissions: string[]): string {
+  const token = crypto.randomBytes(32).toString('base64url');
+  const now = Date.now();
+  sessions[token] = {
+    userId,
+    permissions: [...permissions], // defensive copy
+    createdAt: now,
+    expiresAt: now + SESSION_TIMEOUT_MS,
+    lastAccessedAt: now,
+  };
+  // Pre-cache permissions for fast lookup
+  permissionCache.set(token, new Set(permissions));
+  return token;
+}
+
+export function validateSession(token: string): Session | null {
+  const session = sessions[token];
+  if (!session) return null;
+
+  const now = Date.now();
+  if (now > session.expiresAt) {
+    return null;
+  }
+
+  session.lastAccessedAt = now;
+  session.expiresAt = now + SESSION_TIMEOUT_MS;
+  return session;
+}
+
+export function hasPermission(token: string, permission: string): boolean {
+  // Fast path: use permission cache
+  const cached = permissionCache.get(token);
+  if (cached) {
+    return cached.has(permission);
+  }
+
+  // Fallback: validate and check
+  const session = validateSession(token);
+  if (!session) return false;
+  return session.permissions.includes(permission);
+}
+
+export function revokeSession(token: string): boolean {
+  if (token in sessions) {
+    delete sessions[token];
+    permissionCache.delete(token);
+    return true;
+  }
+  return false;
+}
+
+export function cleanupExpired(): number {
+  const now = Date.now();
+  let removed = 0;
+  for (const token in sessions) {
+    if (now > sessions[token].expiresAt) {
+      delete sessions[token];
+      removed++;
+    }
+  }
+  return removed;
+}
+
+export function getActiveSessions(userId: string): Session[] {
+  const now = Date.now();
+  const active: Session[] = [];
+  for (const token in sessions) {
+    const session = sessions[token];
+    if (session.userId === userId && now <= session.expiresAt) {
+      active.push(session);
+    }
+  }
+  return active;
+}
+
+export function getStoreSize(): number {
+  return Object.keys(sessions).length;
+}
+
+export function resetStore(): void {
+  for (const key in sessions) {
+    delete sessions[key];
+  }
+  permissionCache.clear();
+}

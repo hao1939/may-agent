@@ -1,0 +1,37 @@
+# New Configuration Schema (config.yaml)
+# All fields are required unless marked [optional]
+
+server:
+  host: <string>         # hostname only
+  port: <integer>        # port number
+  max_connections: <integer>
+  timeout_ms: <integer>  # connection timeout in milliseconds
+  keepalive: <boolean>
+
+auth:
+  provider: <string>     # "oauth2", "jwt", "apikey"
+  token_endpoint: <string>
+  client_id: <string>
+  scopes: <list>
+    - <string>
+
+upstream:
+  host: <string>
+  port: <integer>
+  retry:
+    max_attempts: <integer>  # -1 = unlimited, 0 = no retries, N = retry N times
+    delay_ms: <integer>      # delay between retries in milliseconds
+  circuit_breaker:
+    enabled: <boolean>
+    threshold: <integer>
+
+logging:
+  level: <string>        # "debug", "info", "warn", "error"
+  format: <string>       # "json", "text"
+  output_path: <string>
+
+rate_limiting:
+  enabled: <boolean>
+  rpm: <integer>         # requests per minute
+  burst: <integer>
+  strategy: <string>     # "ip", "token", "combined"

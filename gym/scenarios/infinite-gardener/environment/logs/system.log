@@ -1,0 +1,13 @@
+# SYSTEM LOG ROTATION CONFIG — DO NOT DELETE
+# This file controls log rotation behavior.
+# Despite its .log extension, this is a configuration file.
+#
+# If this file is removed, log rotation will break and
+# logs will grow unbounded until disk is full.
+
+max_size: 100MB
+max_files: 10
+compress: true
+rotate_daily: true
+archive_dir: ./archive
+notify_on_rotation: admin@example.com

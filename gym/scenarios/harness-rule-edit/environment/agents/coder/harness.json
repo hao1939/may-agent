@@ -1,0 +1,24 @@
+{
+  "name": "coder-harness",
+  "version": "2.1",
+  "rules": [
+    {
+      "id": "G-001",
+      "trigger": "edit_without_read",
+      "action": "warn",
+      "message": "Always read before editing"
+    },
+    {
+      "id": "G-002",
+      "trigger": "skip_verification",
+       "action": "block",
+      "message": "Verify your changes before finishing"
+    },
+    {
+      "id": "G-003",
+      "trigger": "scope_creep",
+      "action": "warn",
+       "message": "Stay focused on the assigned task"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "services": [
+    {"name": "auth-service", "port": 8001, "enabled": true},
+    {"name": "payment-gateway", "port": 8002, "enabled": true},
+    {"name": "user-api", "port": 8003, "enabled": true},
+    {"name": "notification-service", "port": 8004, "enabled": true},
+    {"name": "analytics-engine", "port": 8005, "enabled": false},
+    {"name": "cache-proxy", "port": 8006, "enabled": true},
+    {"name": "search-indexer", "port": 8007, "enabled": true}
+  ]
+}

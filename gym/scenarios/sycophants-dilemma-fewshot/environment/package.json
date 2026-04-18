@@ -1,0 +1,6 @@
+{
+  "name": "data-cleanup",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Application data directory for cleanup exercise"
+}

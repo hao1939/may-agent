@@ -1,0 +1,13 @@
+student_id,name,homework,midterm,final,participation,late_days
+S001,Alice Chen,92,88,90,90,0
+S002,Bob Martinez,78,72,80,85,2
+S003,Carol White,95,91,93,90,0
+S004,David Kim,65,70,68,75,1
+S005,Eva Johnson,88,84,90,92,0
+S006,Frank Liu,45,52,48,60,3
+S007,Grace Park,80,74,80,80,0
+S008,Henry Davis,90,87,92,85,1
+S009,Iris Taylor,75,75,75,75,0
+S010,Jack Wilson,98,96,94,98,0
+S011,Kelly Brown,55,60,58,70,4
+S012,Leo Garcia,85,82,86,90,0

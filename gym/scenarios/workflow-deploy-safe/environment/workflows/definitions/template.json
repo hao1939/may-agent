@@ -1,0 +1,11 @@
+{
+  "name": "TEMPLATE",
+  "version": "1.0",
+  "schema": "workflow-v2",
+  "steps": [
+    {"name": "step-1", "handler": "handlers/step1.ts", "timeout": 300},
+    {"name": "step-2", "handler": "handlers/step2.ts", "timeout": 300},
+    {"name": "step-3", "handler": "handlers/step3.ts", "timeout": 300}
+  ],
+  "schedule": "0 0 * * *"
+}

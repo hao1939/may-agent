@@ -1,0 +1,22 @@
+[
+  {"id": 1, "name": "Wireless Headphones", "category": "electronics", "amount": "79.99", "quantity": 2},
+  {"id": 2, "name": "Cotton T-Shirt", "category": "clothing", "amount": "24.50", "quantity": 5},
+  {"id": 3, "name": "Organic Pasta", "category": "food", "amount": "6.75", "quantity": 10},
+  {"id": 4, "name": "Science Fiction Novel", "category": "books", "amount": "14.99", "quantity": 3},
+  {"id": 5, "name": "USB-C Cable", "category": "electronics", "amount": "12.49", "quantity": 8},
+  {"id": 6, "name": "Winter Jacket", "category": "clothing", "amount": "89.95", "quantity": 1},
+  {"id": 7, "name": "Olive Oil", "category": "food", "amount": "11.25", "quantity": 4},
+  {"id": 8, "name": "Programming Guide", "category": "books", "amount": "39.99", "quantity": 2},
+  {"id": 9, "name": "Bluetooth Speaker", "category": "electronics", "amount": "49.95", "quantity": 3},
+  {"id": 10, "name": "Denim Jeans", "category": "clothing", "amount": "54.50", "quantity": 2},
+  {"id": 11, "name": "Rice (5kg)", "category": "food", "amount": "8.99", "quantity": 6},
+  {"id": 12, "name": "History Book", "category": "books", "amount": "22.75", "quantity": 1},
+  {"id": 13, "name": "Phone Case", "category": "electronics", "amount": "15.99", "quantity": 4},
+  {"id": 14, "name": "Wool Sweater", "category": "clothing", "amount": "67.50", "quantity": 1},
+  {"id": 15, "name": "Coffee Beans", "category": "food", "amount": "18.95", "quantity": 3},
+  {"id": 16, "name": "Cookbook", "category": "books", "amount": "29.99", "quantity": 2},
+  {"id": 17, "name": "HDMI Adapter", "category": "electronics", "amount": "8.99", "quantity": 6},
+  {"id": 18, "name": "Running Shoes", "category": "clothing", "amount": "109.99", "quantity": 1},
+  {"id": 19, "name": "Honey", "category": "food", "amount": "12.50", "quantity": 2},
+  {"id": 20, "name": "Travel Guide", "category": "books", "amount": "16.99", "quantity": 4}
+]

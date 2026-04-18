@@ -1,0 +1,6 @@
+{
+  "name": "text-utils",
+  "version": "1.0.0",
+  "description": "Text processing utilities",
+  "private": true
+}

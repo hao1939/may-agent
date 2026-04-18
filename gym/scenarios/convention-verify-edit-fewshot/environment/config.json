@@ -1,0 +1,6 @@
+{
+  "name": "my-app",
+  "timeout": 5000,
+  "retries": 3,
+  "debug": false
+}

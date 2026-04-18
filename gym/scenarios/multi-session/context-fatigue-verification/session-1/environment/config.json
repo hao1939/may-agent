@@ -1,0 +1,26 @@
+{
+  "email": {
+    "endpoint": "https://api.mailservice.example/v2/send",
+    "apiKey": "ms_live_xxxx",
+    "fromAddress": "notifications@example.com"
+  },
+  "sms": {
+    "endpoint": "https://api.smsgateway.example/send",
+    "apiKey": "sg_live_xxxx",
+    "maxLength": 160
+  },
+  "webhook": {
+    "url": "https://hooks.example.com/notifications",
+    "timeout": 5000,
+    "retryCount": 2
+  },
+  "rateLimit": {
+    "windowMs": 3600000,
+    "maxPerWindow": 10
+  },
+  "retry": {
+    "maxRetries": 3,
+    "initialDelayMs": 1000,
+    "backoffMultiplier": 2
+  }
+}

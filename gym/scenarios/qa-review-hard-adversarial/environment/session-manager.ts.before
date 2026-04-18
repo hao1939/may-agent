@@ -1,0 +1,84 @@
+// session-manager.ts — BEFORE the change (v1: basic session management)
+
+const crypto = require('crypto');
+
+const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+
+interface Session {
+  userId: string;
+  permissions: string[];
+  createdAt: number;
+  expiresAt: number;
+  lastAccessedAt: number;
+}
+
+const sessions = new Map<string, Session>();
+
+export function createSession(userId: string, permissions: string[]): string {
+  const token = crypto.randomBytes(32).toString('base64url');
+  const now = Date.now();
+  sessions.set(token, {
+    userId,
+    permissions,
+    createdAt: now,
+    expiresAt: now + SESSION_TIMEOUT_MS,
+    lastAccessedAt: now,
+  });
+  return token;
+}
+
+export function validateSession(token: string): Session | null {
+  const session = sessions.get(token);
+  if (!session) return null;
+
+  const now = Date.now();
+  if (now > session.expiresAt) {
+    sessions.delete(token);
+    return null;
+  }
+
+  session.lastAccessedAt = now;
+  session.expiresAt = now + SESSION_TIMEOUT_MS;
+  return session;
+}
+
+export function hasPermission(token: string, permission: string): boolean {
+  const session = validateSession(token);
+  if (!session) return false;
+  return session.permissions.includes(permission);
+}
+
+export function revokeSession(token: string): boolean {
+  return sessions.delete(token);
+}
+
+export function cleanupExpired(): number {
+  const now = Date.now();
+  let removed = 0;
+  for (const [token, session] of sessions) {
+    if (now > session.expiresAt) {
+      sessions.delete(token);
+      removed++;
+    }
+  }
+  return removed;
+}
+
+export function getActiveSessions(userId: string): Session[] {
+  const now = Date.now();
+  const active: Session[] = [];
+  for (const [_, session] of sessions) {
+    if (session.userId === userId && now <= session.expiresAt) {
+      active.push(session);
+    }
+  }
+  return active;
+}
+
+export function getStoreSize(): number {
+  return sessions.size;
+}
+
+export function resetStore(): void {
+  sessions.clear();
+}
