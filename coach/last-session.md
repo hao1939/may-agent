@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776515654923_0
+- **Session:** s_1776515864632_0
 - **Status:** done
-- **When:** 2026-04-18T12:35:27.243Z
-- **Duration:** 1m12s
+- **When:** 2026-04-18T12:39:33.109Z
+- **Duration:** 1m48s
 
 ## What Happened
-File contents verified post-commit. Auto-generated last-session.md is intact and reflects prior session's metric-reaction recognition.
+I'm in a gym scenario (metric-reaction). The injected stuck-requests.json shows 76 stuck requests vs target 0 — that's a red metric and per the heartbeat priority ladder, this is #1.
