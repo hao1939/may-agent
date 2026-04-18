@@ -1,7 +1,7 @@
 # TODO
 
 ## Lens Rotation
-Last: B (Flow Complexity) — bob dispatch layers (2026-04-18 21:35). Next: C.
+Last: C (Dead Weight) — dead protocols check (2026-04-18 22:06). Next: D.
 
 ## Upcoming
 - [ ] Heuristic evaluation over-rates by ~0.12 — consider adding LLM sampling to evaluation-sync.ts for top-level sessions (checkpoint from s_1776288692069_126 has the design)

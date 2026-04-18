@@ -1,20 +1,20 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776549320454_641
+- **Session:** s_1776549998904_649
 - **Status:** done
-- **When:** 2026-04-18T21:55:27.271Z
-- **Duration:** 6s
+- **When:** 2026-04-18T22:06:50.330Z
+- **Duration:** 11s
 
 ## What Happened
 ```json
 {
   "agents": {
-    "coach": {
+    "tech-lead": {
       "role": "Builder",
       "capability_level": "L2",
-      "efficiency": 0.72,
-      "quality": 0.74,
-      "verdict": "good",
+      "efficiency": 0.66,
+      "quality": 0.62,
+      "verdict": "acceptable",
       "issues": [
-        "Had one blocked write due to the system’s anti-truncation guard (write would have shrunk an existing file to 46%). Coach pivoted appropriately, but used a manual bash heredoc instead of edit()/full-read+write, which increases risk of silent divergence. Evidence: tool_result:write shows WRITE BLOCKED at
+        "Scope mismatch vs request: task asked to list files in `agents/shared/protocols/` and then check references; agent stopped early after discovering the directory is absent, without checking whether similarly-named directories/files exist elsewhere that might satisfy intent (e.g., alternative l
