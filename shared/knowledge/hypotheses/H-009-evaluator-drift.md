@@ -2,7 +2,7 @@
 
 **Author:** Bob (Architect)
 **Date:** 2026-04-01
-**Status:** Proposed
+**Status:** Resolved (confirmed, mitigated)
 **Domain:** Evaluation integrity, system safety
 
 ## Hypothesis
