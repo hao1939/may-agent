@@ -116,8 +116,10 @@ if [[ -n "$AGENT" && -d "agents/${AGENT}/workspace/projects" ]]; then
   found=0
   for f in agents/"${AGENT}"/workspace/projects/*.md; do
     [[ -e "$f" ]] || continue
-    # Match "Status: active" or "**Status**: active" (case/bold tolerant)
-    if grep -iE '^\s*(\*\*)?Status[:[:space:]*]' "$f" | grep -i 'active' >/dev/null 2>&1; then
+    # Match "Status: active" or "**Status**: active" on a single line, in
+    # the first 10 lines only (real status headers; not prose referencing
+    # the word "active"). Requires `active` to follow the colon, word-bounded.
+    if head -10 "$f" | grep -iE '^\s*(\*\*)?status(\*\*)?[[:space:]]*:[[:space:]]*\**[[:space:]]*active\b' >/dev/null 2>&1; then
       # First line is usually "# Project: ..."; show that + path
       title=$(head -1 "$f" | sed 's/^#\+\s*//')
       echo "  ${f#agents/${AGENT}/workspace/projects/} | ${title:0:80}"
