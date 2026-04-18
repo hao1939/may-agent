@@ -856,7 +856,7 @@ export async function evaluateStandaloneSession(
   );
 
   // Run evaluator
-  const evalSessionId = manager.run("evaluator", prompt);
+  const evalSessionId = manager.run("evaluator", prompt, { source: "standalone-eval" });
   const evalResult = await manager.waitFor(evalSessionId);
   let responseText = evalResult?.lastAssistantText ?? "";
   let parsed = parseTaskEvaluation(responseText);
@@ -866,7 +866,7 @@ export async function evaluateStandaloneSession(
   // retry pattern in evaluateTask (~lines 395-415).
   let parseErrored = false;
   if (parsed.overall.quality === 0 && parsed.overall.efficiency === 0) {
-    const retrySessionId = manager.run("evaluator", prompt);
+    const retrySessionId = manager.run("evaluator", prompt, { source: "standalone-eval" });
     const retryResult = await manager.waitFor(retrySessionId);
     const retryText = retryResult?.lastAssistantText ?? "";
     const retryParsed = parseTaskEvaluation(retryText);
