@@ -47,7 +47,7 @@ Pick ONE thing to work on. Follow this order — **stop at the first match**:
 - ANY building, coding, or experimentation
 - Reading experiment results and writing findings
 
-## Step 3: ACT
+## Step 4: ACT
 
 Fork exploration using rotation. Track which mode you did last in todo.md.
 

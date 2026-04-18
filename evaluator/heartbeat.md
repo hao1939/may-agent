@@ -82,7 +82,7 @@ Your consumers (Coach, Optimizer, Bob) act on your scores. Make sure you're meas
 - Read 2-3 of your recent evaluations in `.state/evaluations/`. Are the scores actionable? Could Coach or Optimizer actually use them to make a specific change?
 - If any criteria need updating, edit `knowledge/criteria.md` with the new dimension and rationale.
 
-## 3. Calibration
+## 4. Calibration
 - `workspace/consistency-flags.jsonl` — any new flags since last check? Investigate: is your scoring inconsistent or is the flag a false positive?
 - `workspace/human-reviews.jsonl` — any new human disagreements? Study them: what did you miss? Should `knowledge/criteria.md` be updated?
 - `workspace/re-evaluations.jsonl` — verdict disagreements on re-evaluation? Sharpen the ambiguous criteria.
