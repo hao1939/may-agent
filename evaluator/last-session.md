@@ -1,21 +1,20 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776515150665_168
+- **Session:** s_1776515536211_178
 - **Status:** done
-- **When:** 2026-04-18T12:25:58.009Z
+- **When:** 2026-04-18T12:32:23.308Z
 - **Duration:** 7s
 
 ## What Happened
 ```json
 {
   "agents": {
-    "bob": {
-      "role": "Philosopher/Architect",
+    "tech-lead": {
+      "role": "Builder",
       "capability_level": "L2",
-      "efficiency": 0.74,
-      "quality": 0.86,
+      "efficiency": 0.8,
+      "quality": 0.85,
       "verdict": "good",
       "issues": [
-        "[FM-1.3-adjacent] Minor bash flailing / non-productive grep chain: ran a multi-grep that ended with an incomplete path/listing and followed with extra `ls`/`head`/`grep` before moving on; one grep exited code 1 and was left unresolved (failure chain notes 4 wasted calls).",
-        "[EVIDEN
+        "[PROCESS_DRIFT] Deliverable filename in instructions vs produced file: prompt required `agents/tech-lead/workspace/finding-audit-agents-tech-lead-workspace-project.md`, but tech-lead wrote `agents/tech-lead/workspace/finding-stale-projects-audit.md` (write tool output). This is a spec mismatch risk 
