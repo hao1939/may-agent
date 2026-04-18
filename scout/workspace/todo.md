@@ -2,6 +2,10 @@
 
 ## Active Tasks
 
+## Dispatches 2026-04-18
+- **→ tech-lead | DD-767 (λ_A typed calculus)** | 2026-04-18: Try λ_A-style YAML+Python AST joint lint on our agent configs — DD-767 found 94.1% of 835 real GitHub agent configs are structurally incomplete (YAML-only lint: 54% precision → 96-100% with joint AST). Direct fit for tech-lead's audit-* workstream.
+- **→ bob | DD-763 (Parallax cognitive-executive separation)** | 2026-04-18: Try Assume-Compromise evaluation + reversible-execution pattern for the deferred "Runtime Enforcement for Verification Gap" (remaining 40%) — DD-763 shows prompt guardrails = 0% under compromise, architectural separation = 98.9-100% across 280 adversarial cases. Formalizes KE-195/196 content-first gates at infra level.
+
 ## Pending Leads
 - **✅ DD#655 DONE**: Rubber Duck deep-dive written and in shared library (DD-655-copilot-rubber-duck-cross-model-critique.md).
 - **✅ INDEX.md gap CLOSED**: Session 370 promoted 21 drops (DD#601-643) to shared library and added 5 thematic clusters to INDEX.md. Gap from DD#595-600 and DD#606-611 still exists (those DDs may not have drops/ files).
