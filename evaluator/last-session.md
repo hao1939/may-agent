@@ -1,21 +1,20 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776486801096_849
+- **Session:** s_1776486844462_851
 - **Status:** done
-- **When:** 2026-04-18T04:33:31.491Z
+- **When:** 2026-04-18T04:34:14.643Z
 - **Duration:** 10s
 
 ## What Happened
 ```json
 {
   "agents": {
-    "optimizer": {
+    "coder": {
       "role": "Builder",
       "capability_level": "L2",
-      "efficiency": 0.74,
-      "quality": 0.82,
-      "verdict": "good",
+      "efficiency": 0.56,
+      "quality": 0.78,
+      "verdict": "acceptable",
       "issues": [
-        "[FM-1.3-lite/RECOVERY_WASTE] Tried to `git add` a gitignored finding file, causing an avoidable git error and a follow-up commit command. Evidence: `git add ... finding-...` returned code 1 with 'ignored by .gitignore', then agent re-ran `git add` without the finding and committed successfully.",
- 
+        "[FM-3.3/HB#389] Initially attempted to finish(success) multiple times with claims not supported by in-session artifacts; finish guard correctly blocked twice for missing edits/deliverables before the agent produced a verifiable deliverable via write(). Evidence: two consecutive finish blocks: (1)
