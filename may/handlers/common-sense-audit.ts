@@ -12,10 +12,14 @@
  * Exports create() conforming to HandlerModule.
  */
 
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { writeFileSync, mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
 import type { CronEntry } from "../../../src/lib/cron-tool.js";
+
+// Source of truth: agents/may/handlers/convention-check.ts (which rules it implements).
+// Keep in sync manually — common-sense.md is narrative prose and no longer carries C-IDs.
+const RULES = ['C1.1','C1.3','C1.4','C1.5','C1.7','C2.1','C3.2','C3.3','C6.1','C7.1','C8.2','C12.1'];
 
 // ── Factory ───────────────────────────────────────────────────────────
 
@@ -24,37 +28,17 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     const outPath = join(ctx.agentsRoot, "coach", "workspace", "common-sense-audit.md");
     mkdirSync(dirname(outPath), { recursive: true });
 
-    // 1. Load common-sense.md
-    const csPath = join(ctx.agentsRoot, "shared", "common-sense.md");
-    let csContent: string;
-    try {
-      csContent = readFileSync(csPath, "utf-8");
-    } catch (err) {
-      ctx.log(`[cron:common-sense-audit] common-sense.md missing at ${csPath}: ${(err as Error).message}`);
-      const report = `# Common-Sense Audit\n\n_Generated ${new Date().toISOString()}_\n\n**Error:** could not read \`${csPath}\`.\n`;
-      writeFileSync(outPath, report, "utf-8");
-      return;
-    }
+    // Rules come from hardcoded RULES (source of truth = convention-check.ts).
+    const rules = RULES;
 
-    // 2. Parse rule IDs (C\d+ or C\d+.\d+) appearing as heading/bullet/bold.
-    const rules = parseRuleIds(csContent);
-
-    // 3. If no rules, still write a report.
-    if (rules.length === 0) {
-      const report = formatEmptyReport(csPath);
-      writeFileSync(outPath, report, "utf-8");
-      ctx.log(`[cron:common-sense-audit] No rule IDs found in ${csPath}; wrote placeholder report.`);
-      return;
-    }
-
-    // 4. Pick by day-of-year rotation.
+    // Pick by day-of-year rotation.
     const now = new Date();
     const dayOfYear = Math.floor(
       (Date.now() - new Date(now.getUTCFullYear(), 0, 0).getTime()) / 86400000,
     );
     const rule = rules[dayOfYear % rules.length];
 
-    // 5. Query convention_checks for last 7d.
+    // Query convention_checks for last 7d.
     const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
     const db = ctx.getDb();
     const rows: ConventionCheckRow[] = db.prepare(
@@ -183,7 +167,7 @@ function formatReport(
   // Rule picked
   lines.push(`## Rule picked`);
   lines.push(``);
-  lines.push(`**${rule}** — selected by day-of-year rotation from ${rules.length} rule ID(s) found in \`agents/shared/common-sense.md\`.`);
+  lines.push(`**${rule}** — selected by day-of-year rotation from ${rules.length} hardcoded rule ID(s) (source: \`agents/may/handlers/convention-check.ts\`).`);
   lines.push(``);
   lines.push(`_All rules parsed:_ ${rules.map(r => `\`${r}\``).join(", ")}`);
   lines.push(``);
