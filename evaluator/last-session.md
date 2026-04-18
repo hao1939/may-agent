@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776524017807_314
+- **Session:** s_1776524084877_317
 - **Status:** done
-- **When:** 2026-04-18T14:53:50.028Z
-- **Duration:** 12s
+- **When:** 2026-04-18T14:54:50.945Z
+- **Duration:** 6s
 
 ## What Happened
 ```json
@@ -13,8 +13,9 @@
     "bob": {
       "role": "Philosopher/Architect",
       "capability_level": "L2",
-      "efficiency": 0.72,
+      "efficiency": 0.78,
       "quality": 0.88,
       "verdict": "good",
       "issues": [
-        "[EFFICIENCY][FM-1.3-lite] Repeated an avoidable scaffolding error by running new-hypothesis.sh/new-ke.sh from the wrong working directory first (both scripts explicitly said “Run from repo root”). Evidence: session 310 failure chain shows new-hypothesis.sh error; session 311 failure chain s
+        "[PROCESS] Minor guard friction: first finish() was blocked due to uncommitted changes (bob/ERROR_LOG.jsonl), requiring an extra git commit step. Evidence: finish() blocked message, then subsequent git commit.",
+        "[DELIVERABLE_HYGIENE] Deliverable written into agents/bob/workspace/ (l
