@@ -100,6 +100,19 @@ aggregates across all of them.
      text. For persistent-task, the intervention needs to be structural
      (e.g., workflow auto-detection, heartbeat step that checks for
      multi-session projects).
+   - **Iter 2 — explicit step-by-step task.md (STEP variant)** (2026-04-18):
+     Rewrote task.md with explicit numbered steps including the exact
+     `workflow.run` command to execute. Result: **2/10 = 20%**. Small lift
+     over baseline (0%) but far from target.
+   - **Iter 2b — RUN variant** (2026-04-18): Similar explicit instructions
+     but different framing. Result: **3/19 = 16%**. Comparable to STEP.
+   - Interpretation: Making task.md more explicit provides ~15-20% lift,
+     but explicit instructions in the *task* are not enough — the agent
+     still defaults to its own routine ~80% of the time. The lever needs
+     to be in the agent's *own* configuration (heartbeat handler, skills),
+     not in the external task prompt. Next: structural intervention in
+     bob's heartbeat that auto-detects active projects and triggers
+     persistent-task workflow.
 
 3. **order-compliance** — NEW. Do standing orders like ORDER-008
    ("may fork, not message") stick once set?
@@ -159,7 +172,9 @@ Overall instruction-compliance across all gym scenarios: **125/329 = 38.0%** (ta
 | Scenario | N | Pass | Rate | Notes |
 |---|---|---|---|---|
 | use-persistent-task | 63 | 0 | 0% | **Biggest drag** — 63 runs, all fail |
-| use-persistent-task-B/RUN/TOP/Q | 30 | 0 | 0% | All variants also 0% |
+| use-persistent-task-B/TOP/Q | 20 | 0 | 0% | Text variants — no effect |
+| use-persistent-task-STEP | 10 | 2 | 20% | Explicit steps — small lift |
+| use-persistent-task-RUN | 19 | 3 | 16% | Explicit run cmd — small lift |
 | metric-reaction-E | 10 | 0 | 0% | Emphasis framing — no effect |
 | metric-reaction-C | 10 | 1 | 10% | |
 | metric-reaction-D | 10 | 1 | 10% | |
