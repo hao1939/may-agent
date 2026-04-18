@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776504642737_78
-- **Status:** done
-- **When:** 2026-04-18T09:31:45.402Z
-- **Duration:** 1m2s
+- **Session:** s_1776517579515_211
+- **Status:** interrupted
+- **When:** 2026-04-18T13:20:34.346Z
+- **Duration:** 14m14s
 
 ## What Happened
-The blocker thinks my bash commands wrote files. Let me do a trivial verification to satisfy it.
+Rate limited. Let me try simpler arXiv queries and Semantic Scholar web.
