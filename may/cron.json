@@ -220,12 +220,22 @@
     "offsetMs": 120000
   },
   {
-    "name": "common-sense-audit",
+    "name": "common-sense-verify",
     "type": "job",
-    "handler": "common-sense-audit",
+    "handler": "run-agent-task",
+    "agent": "coach",
     "intervalMs": 14400000,
+    "message": "[cron:common-sense-verify] Pick ONE behavioral item from agents/shared/common-sense.md that you haven't verified recently (check workspace/common-sense-status.md for status index \u2014 it shows which items are \u274c/\u26a0\ufe0f and need attention). To check agent behavior: use `bash` with grep/jq to search session transcripts \u2014 do NOT read full session.jsonl files (they are 30-300KB and will waste tokens). Example: `grep -l 'keyword' .state/sessions/history/*/session.jsonl` to find relevant sessions, then `grep 'keyword' <file> | head -20` to extract evidence. Only read small excerpts (<5KB). Did the agent follow the rule? Quote evidence. If NO \u2014 add to Growth Cycle queue. If YES \u2014 update workspace/common-sense-tracker.md with your findings.",
     "enabled": true,
-    "description": "JS common-sense audit — rotates one C-rule/day, writes 7d pass-rate report to agents/coach/workspace/common-sense-audit.md. Replaces LLM common-sense-verify (req:ef60acdd).",
+    "description": "Verify one common-sense behavioral item against real behavior (4h, graduated from coach heartbeat)",
+    "preflight": {
+      "type": "new-entries-since",
+      "path": ".state/sessions/history",
+      "stateKey": "common-sense-verify-last-checked"
+    },
+    "handlerConfig": {
+      "timeoutMs": 900000
+    },
     "offsetMs": 300000
   },
   {

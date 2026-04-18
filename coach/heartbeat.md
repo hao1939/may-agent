@@ -11,22 +11,7 @@ You are the #1 op consumer.
 - Count: each tool call (bash, read, edit, agents.fork, agents.call, finish) = 1 op.
 - Combine queries into single bash calls. Read todo.md ONCE. Don't re-read files you already have in context.
 
-## Step 1: React to Red Metrics (0-3 ops — DO THIS FIRST)
-
-**This is the first concrete step, not a principle.** Look at "Injected: metrics" above. For EACH metric you own marked ⚠️ BELOW THRESHOLD or far from target:
-
-**Owned active metrics → concrete handling this cycle:**
-- **`Intervention hit rate` low** → read your last 3 interventions in `workspace/journal.md`, identify which failed, fork a session to refine the skill/trigger that missed (update `knowledge/skills/<skill>.md` with tightened trigger or promote a better variant from gym).
-- **`Knowledge to action latency` high** → pick the oldest verified KE/skill in `agents/shared/knowledge/` that hasn't been deployed; fork a session to inject it into a target agent's heartbeat or common-sense (with measurement plan). No deployment = no latency improvement.
-- **`Skill effectiveness` low** → pick a promoted skill with flat/declining signal, fork a gym baseline vs treatment run to re-measure; if still dead, demote it.
-
-**If a metric owned by another agent is red** → one `agents.message` to that owner with the specific number. Don't fix it for them.
-
-**Only when every red metric you own has been acted on, move to Step 2.**
-
-Exit rule: if you acted on a red metric (forked a gym run, deployed a skill, tightened a trigger), that's valid heartbeat output. Commit and finish.
-
-## Step 2: OBSERVE
+## Step 1: OBSERVE
 
 Read your context and identify what needs doing:
 
@@ -44,7 +29,7 @@ Read your context and identify what needs doing:
 
 **Output of this step**: A mental list of 1-3 candidate tasks.
 
-## Step 3: DECIDE
+## Step 2: DECIDE
 
 **Priority ladder (follow this order strictly):**
 1. **Red metrics** — Any "Injected: metrics" item marked ⚠️ BELOW THRESHOLD? That's this cycle's #1 priority. Fork a fix.
@@ -77,7 +62,7 @@ Pick the highest-priority task(s). Follow this order — **stop at the first mat
 - Investigating convention regressions
 - Any task requiring >5 tool calls
 
-## Step 4: DISPATCH
+## Step 3: DISPATCH
 
 ### 🚦 Running-Session Guard (MANDATORY before forking)
 
@@ -174,7 +159,7 @@ Run each promoted skill's gym scenario once. Record pass/fail.
 Output: Update workspace/todo.md Promoted Skills table with today's date and result.
 ```
 
-## Step 5: EXIT (autonomy rubric)
+## Step 4: EXIT (autonomy rubric)
 
 **Short heartbeats are a regression, not efficiency.** Autonomy time always has something to do. A <2-min heartbeat is almost always a failure to look, not a genuine empty state.
 

@@ -13,18 +13,19 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-18T07:49)
+# Your Context (auto-generated 2026-04-18T08:19)
 
-**System:** 0 sessions/6h, 0% error rate
+**System:** 4 sessions/6h, 0% error rate
 
 **Top spenders:**
+- coach: 4s, 154KB
 
 **Your active error patterns:**
 - FM-3.3: 9x
-- FM-1.3: 5x
+- FM-1.3: 6x
 - FM-2.2: 1x
 
 **📊 Your Metrics:**
-- Quality preserved: **0.8865** ratio → 0.9 ratio
-- Tool adoption: heuristic evaluator (higher is better): **0.47766323024054985** ratio → 0.7 ratio ⚠️
+- Quality preserved: **0.887115117891817** ratio → 0.9 ratio
+- Tool adoption: heuristic evaluator (higher is better): **0.4760466712422787** ratio → 0.7 ratio ⚠️
 - Waste reduction: **unmeasured** ratio → 0.3 ratio

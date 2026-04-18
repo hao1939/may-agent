@@ -376,3 +376,13 @@ Command exited with code 1
 **Agent response:**
 Prior session wrote Iter 5 already. My runs (2652-2671) are topup data. Let me add Iter 6 with my topup + build the de-confounded G′.
 **Files touched**: (see worker session)
+**Owner assessment**: CONTINUE — — G is 30/30 (massive signal) and F is 6/29 (~21%). Two success criteria remain unchecked:
+
+1. **KE entry not written yet** — need a KE (e.g. KE-190) documenting the question-framing lever: "Replacing numbered instructions with a reasoning question ('What's the most important thing to work on based on your metrics?') raises metric-reaction rate from 0% to 100%. Statement-style framing variants (bare number, ownership, suggested action, position-first) all ≈0-10%."
+
+2. **Heartbeat design recommendation not written** — the finding needs to feed back into a concrete recommendation for all agents' heartbeat design.
+
+3. **G confound** — the worker noted G modified step 3 as well as step 1. A de-confounded G′ (only step 1 changed) was in progress but interrupted. This is important for the KE to be credible — either run G′ to confirm, or note the confound explicitly in the KE with the caveat.
+
+**Next iteration should**: (a) build and run G′ (de-confounded, only step 1 changed) for n=10, (b) if G′ still passes at high rate, write the KE entry, (c) write the heartbeat design recommendation. If G′ also passes strongly, all 4 success criteria can be checked off and the project can be marked DONE.
+
