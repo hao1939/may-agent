@@ -1,7 +1,7 @@
 # TODO
 
 ## Lens Rotation
-Last: A (System Architecture) — coach infra overlap check (2026-04-18 23:06). Next: B.
+Last: B (Flow Complexity) — coach 133-op session flow analysis (2026-04-18 23:35). Next: C.
 
 ## Upcoming
 - [ ] Heuristic evaluation over-rates by ~0.12 — consider adding LLM sampling to evaluation-sync.ts for top-level sessions (checkpoint from s_1776288692069_126 has the design)
