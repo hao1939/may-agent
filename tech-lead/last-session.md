@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776530175335_406
+- **Session:** s_1776530226612_409
 - **Status:** done
-- **When:** 2026-04-18T16:36:51.881Z
-- **Duration:** 36s
+- **When:** 2026-04-18T16:39:47.950Z
+- **Duration:** 2m41s
 
 ## What Happened
-Now I have enough evidence. The heuristic batch is inside a single `db.transaction()` with no per-item try/catch — one DB error rolls back all. The LLM loop has per-item try/catch. File-reading helpers have internal error handling.
+Fixed. The metric now returns 0. Let me verify:
