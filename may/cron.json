@@ -473,9 +473,9 @@
     "type": "job",
     "intervalMs": 600000,
     "message": "[cron:evaluation-sync] Sync heuristic evaluations into may.db.",
-    "enabled": true,
+    "enabled": false,
     "handler": "evaluation-sync",
-    "description": "Standalone heuristic evaluator for may.db. Workaround for WAL persistence bug in ctx.writeHeuristicEvaluations(). 10min interval. JS handler, no LLM cost.",
+    "description": "DISABLED 2026-04-18 — handler file deleted in commit 608709124; see agents/tech-lead/workspace/it-27-evaluation-sync-enoent.md",
     "offsetMs": 120000
   },
   {
