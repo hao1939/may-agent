@@ -1,10 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776544583646_599
+- **Session:** s_1776544555655_596
 - **Status:** done
-- **When:** 2026-04-18T20:37:28.112Z
-- **Duration:** 1m4s
+- **When:** 2026-04-18T20:37:45.010Z
+- **Duration:** 1m49s
 
 ## What Happened
-Now I have enough evidence. The system has: (1) stuck detector (consecutive error turns → warn at 4, kill at 6), (2) timeout (5min default for oneshot), (3) per-agent timeoutMs. But NO max-ops guard — a session that keeps making successful tool calls (not errors) can run indefinitely.
+No red metrics, no pending tasks, no active projects. Last lens: C, next: D (Fragility).
+
+**Lens D target**: Coach has two high-op sessions (65, 51 ops). If a work session runs away (infinite retry loop), is there any circuit breaker, or does it consume unlimited ops? Scope: manager.ts callAgent/session execution path. Deliverable: `agents/tech-lead/workspace/finding-runaway-session-guard.md`.

@@ -22,6 +22,59 @@ Reduce session startup overhead from 25% to under 10%.
 
 ## Iteration Log
 
+### Iter 21 — 2026-04-18 20:36 UTC — DEFER UNTIL TRIGGER (status change)
+
+**Pattern check.** Iters 16/17/18/19/20 were all no-ops hitting the same
+wall-clock gate in a ~12 min window (20:25–20:35). Iter 20 additionally
+ran a courtesy cross-agent query. Iter 18 flagged the owner-layer
+re-firing as a meta-problem; that's still not bob-owned, but the
+correct bob-side response is to change this project's **status** so the
+iteration loop stops picking it as "active work" until the data gate
+unblocks.
+
+**Change this iter:** status `active` → `deferred-on-wall-clock` with
+an explicit "do not iterate" instruction in the header. No engineering
+change, no new measurement, no log-accumulation churn. This is the
+smallest bob-side intervention that stops the churn observed in
+Iter 16–20.
+
+**Trigger query (copy/paste, re-run before re-activating):**
+
+```bash
+bun -e "
+import {Database} from 'bun:sqlite';
+const db = new Database('.state/may.db',{readonly:true});
+const cutoff = new Date('2026-04-18T19:55:00Z').getTime();
+const n = db.query(\"SELECT COUNT(*) c FROM sessions WHERE agent='bob' AND parentSessionId IS NULL AND task LIKE '[heartbeat]%' AND startedAt > ?\").get(cutoff).c;
+console.log('post-v2 bob heartbeats:', n, '(need >=6 to re-activate)');
+"
+```
+
+Current value at Iter 21 open: **n=1** (s_1776543731430_580, 20:22:11Z).
+Cross-agent courtesy values from Iter 20 snapshot (post-v2, opCount
+only): coach n=1/avg 6.0, may n=2/avg 3.5, tech-lead n=2/avg 3.0,
+optimizer n=2/avg 2.0. All well under 24h averages but n too small.
+
+**Re-activation protocol** (for whichever session next picks this up):
+1. Run the trigger query above.
+2. If `n >= 6`: flip status back to `active`, open Iter 22 as the
+   post-v2 re-measure (method in Iter 15's updated snippet).
+3. If `n < 6`: do nothing. Close the heartbeat without touching this
+   file. The earlier iters (16–20) prove that re-running the query or
+   adding a log entry is not productive work.
+
+**Explicit non-asks this iter:**
+- Not re-running the Iter 2 measurement (already done, milestone `[x]`).
+- Not extending the snapshot script (confound-hazard per Iter 16).
+- Not re-pitching to coach/may (Iter 8/11: 0/6 adoption, not bob-owned).
+- Not notifying may again (Iter 19 already did).
+
+**Budget this iter:** 6 tool calls (read project, trigger query, status
+edit, log edit, finish). Well under 20.
+
+## Files Modified This Iter
+- agents/bob/workspace/projects/test-persistent-task-experiment.md (status change + this log entry)
+
 ### Iter 20 — 2026-04-18 20:32 UTC — SCOPE CHECK (non-confounding DB query)
 
 Owner prompted: "are the other 4 agents being measured, or only bob?"
