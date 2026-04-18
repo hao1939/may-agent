@@ -1,20 +1,20 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776543645631_579
+- **Session:** s_1776543789818_587
 - **Status:** done
-- **When:** 2026-04-18T20:20:54.788Z
-- **Duration:** 9s
+- **When:** 2026-04-18T20:23:17.949Z
+- **Duration:** 8s
 
 ## What Happened
 ```json
 {
   "agents": {
-    "coach": {
-      "role": "Builder (investigate + fix gym scenario infra; commit + verify)",
+    "bob": {
+      "role": "Researcher/Builder (write KEs from deep-dives; scaffold + locate DD + write file; commit when needed)",
       "capability_level": "L2",
-      "efficiency": 0.68,
-      "quality": 0.86,
+      "efficiency": 0.72,
+      "quality": 0.85,
       "verdict": "good",
       "issues": [
-        "[FM-1.3/RECOVERY_FRICTION] Wasted call: used `file` in `bash(\"file scripts/gym-run.sh …\")` which failed (command not found, exit 127), then spent several greps on `scripts/gym-run.sh` that produced no actionable info before moving to the real im
+        "[FM-3.3/RISK] In session s_1776543748696_583, claimed the KE-252 file was 'committed' based on a failed commit attempt returning 'nothing to commit, working tree clean' (exit code 1). This is plausible given pri
