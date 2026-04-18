@@ -1,6 +1,6 @@
 # Project: Investigate Session Startup Overhead
 
-**Status**: active (Iter 16 — first post-v2 heartbeat in, n=1 signal positive; waiting for 5 more)
+**Status**: active (Iter 17 — still n=1 post-v2, waiting for ≥6; ~2.5h wall clock remaining)
 **Owner**: bob
 **Previously closed**: 2026-04-18 (Iter 9), reopened Iter 10 on data, re-closed Iter 11
 
@@ -21,6 +21,30 @@ Reduce session startup overhead from 25% to under 10%.
 - [x] **Iter 14: fold `ls projects/` + `cat INBOX.md` into snapshot script**
 
 ## Iteration Log
+
+### Iter 17 — 2026-04-18 20:29 UTC — BLOCKED ON WALL-CLOCK (no-op)
+
+Ran the Iter 16 trigger query. Still **1** post-v2 bob heartbeat in
+`.state/may.db` (s_1776543731430_580 at 20:22, same session as Iter 16
+counted). Only ~30min has elapsed since Iter 16; trigger needs ≥6,
+ETA ~2.5h more wall clock.
+
+**Iteration-owner guidance for this iter was stale**: it asked the
+worker to "measure current startup overhead across 5 agents" — that
+is Milestone 1, completed in Iter 2 (2026-04-18, table in Iter 2 log).
+All 7 original milestones are `[x]`. The open work is the post-v2
+re-measure, which is gated on data accrual, not on more analysis.
+
+**Correct action:** no-op. Don't re-run the Iter 2 measurement;
+don't ship the v3 candidate (compound-confound hazard per Iter 16);
+don't churn on coach/may (Iter 8 showed 0/6 adoption, not bob-owned).
+
+**Trigger for Iter 18 unchanged from Iter 16:** ≥6 post-v2 bob
+heartbeats in DB, cutoff `2026-04-18T19:55:00Z`. Re-use the query
+block in Iter 16.
+
+## Files Modified This Iter
+- agents/bob/workspace/projects/test-persistent-task-experiment.md (this file; status + log entry)
 
 ### Iter 16 — 2026-04-18 20:25 UTC — FIRST POST-V2 HEARTBEAT
 
