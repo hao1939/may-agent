@@ -1,21 +1,21 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776495218720_959
+- **Session:** s_1776495224323_960
 - **Status:** done
-- **When:** 2026-04-18T06:53:44.320Z
-- **Duration:** 5s
+- **When:** 2026-04-18T06:53:50.413Z
+- **Duration:** 6s
 
 ## What Happened
 ```json
 {
   "agents": {
-    "tech-lead": {
+    "coach": {
       "role": "Builder",
       "capability_level": "L2",
-      "efficiency": 0.78,
+      "efficiency": 0.55,
       "quality": 0.9,
       "verdict": "good",
       "issues": [
-        "[FM-3.3/VERIFICATION_GUARD_TRIGGER] finish(success) initially blocked due to uncommitted changes (M tech-lead/last-session.md); recovered correctly by committing then re-finishing.",
-        "Minor drift risk: \"build is actually healthy\" claim is supported by the workflow verification evidence in 
+        "[FM-2.6] Ran a DB query assuming a `sessions.method` column; tool output shows `SQLiteError: no such column: method`, indicating schema mismatch rather than checking schema first.",
+        "[FM-1.3-lite] Minor inefficiency: repeated/extended bun:sqlite one-liners after an error; the failure chain notes
