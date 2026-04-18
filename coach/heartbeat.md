@@ -159,7 +159,7 @@ Run each promoted skill's gym scenario once. Record pass/fail.
 Output: Update workspace/todo.md Promoted Skills table with today's date and result.
 ```
 
-## Step 4: EXIT (autonomy rubric)
+## Step 5: EXIT (autonomy rubric)
 
 **Short heartbeats are a regression, not efficiency.** Autonomy time always has something to do. A <2-min heartbeat is almost always a failure to look, not a genuine empty state.
 
