@@ -1,12 +1,16 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776544148198_4
+- **Session:** s_1776544264848_2
 - **Status:** done
-- **When:** 2026-04-18T20:29:59.968Z
-- **Duration:** 51s
+- **When:** 2026-04-18T20:31:17.454Z
+- **Duration:** 12s
 
 ## What Happened
-The project is far more advanced than the owner's guidance suggests — milestones 1-3 are complete, the current iteration's trigger condition (≥6 post-v2 heartbeats) requires ~3h wall clock and only 1 post-v2 heartbeat exists (same session as Iter 16 checked). The owner's guidance to "measure current startup overhead across 5 agents" is stale — that was Iter 2, done in 2026-04-18.
+CONTINUE
 
-Adding a brief Iter 17 log entry noting the wall-clock block, then finishing partial.
+The worker's reasoning is sound but the task remains far from done — 0/4 milestones complete. The project is correctly in a wall-clock wait for the v2 measurement to accrue sample size (currently n=1, need ≥6 post-v2 heartbeats).
+
+**Guidance for next iteration:**
+
+The next unchecked milestone is **"Measure current startup overhead across 5 agents"**. The worker is correctly waiting on sample accrual for *bob*, but the milestone explicitly says **5 agents** — not just bob. Two productiv

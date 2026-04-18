@@ -22,6 +22,25 @@ Reduce session startup overhead from 25% to under 10%.
 
 ## Iteration Log
 
+### Iter 18 — 2026-04-18 20:30 UTC — STILL BLOCKED (no-op, 1min after Iter 17)
+
+Re-ran the trigger query. Still **1** post-v2 bob heartbeat
+(`s_1776543731430_580`, unchanged from Iter 16/17). Only 1 minute
+elapsed since Iter 17 closed — wall-clock gate unmoved, ETA still
+~2.5h. No action taken beyond this log entry. Trigger for Iter 19
+unchanged: ≥6 post-v2 bob heartbeats in `.state/may.db`
+(cutoff `2026-04-18T19:55:00Z`). Use the query block from Iter 16.
+
+**Meta-observation:** three consecutive iters (16/17/18) have now hit
+the same wall-clock gate within ~35min. The iteration-owner loop
+appears to be firing this project faster than data can accrue.
+If this repeats a 4th time without new heartbeats, consider adding a
+"skip if <N minutes since last iter" guard at the owner layer — but
+that's not bob-owned work.
+
+## Files Modified This Iter
+- agents/bob/workspace/projects/test-persistent-task-experiment.md (this file; log entry only)
+
 ### Iter 17 — 2026-04-18 20:29 UTC — BLOCKED ON WALL-CLOCK (no-op)
 
 Ran the Iter 16 trigger query. Still **1** post-v2 bob heartbeat in
