@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776529438337_395
+- **Session:** s_1776529494852_398
 - **Status:** done
-- **When:** 2026-04-18T16:24:05.622Z
-- **Duration:** 7s
+- **When:** 2026-04-18T16:25:04.766Z
+- **Duration:** 9s
 
 ## What Happened
 ```json
@@ -13,8 +13,9 @@
     "bob": {
       "role": "Philosopher/Architect",
       "capability_level": "L2",
-      "efficiency": 0.62,
-      "quality": 0.78,
+      "efficiency": 0.78,
+      "quality": 0.82,
       "verdict": "good",
       "issues": [
-        "[FM-3.3-lite/VERIFICATION_EVIDENCE_MISMATCH] The final finish() message lists verification evidence steps (read(dd778), bash new-ke.sh, read(KE-225)) that are not present in the provided transcript segment; earlier content is explicitly omitted ('...17KB of transcript omitted...'), so this 
+        "[FM-1.3-lite/WASTED_CALL] One avoidable bash glob/brace expansion attempt produced a non-zero exit and was not needed for the synthesis (bash: ls /app/agents/shared/knowledge/entries/KE-22{5,6,7}* … → exit code 2).",
+        "[FM-3.3-lite/VERIFICATION_EVIDENCE_GAP] Final finish() lists read
