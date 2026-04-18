@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776538253946_513
+- **Session:** s_1776540037145_531
 - **Status:** done
-- **When:** 2026-04-18T19:01:36.604Z
-- **Duration:** 10m42s
+- **When:** 2026-04-18T19:22:01.150Z
+- **Duration:** 1m23s
 
 ## What Happened
-Now I have everything. Let me write the experiment summary:
+The most impactful next step is investigating why `workflow.run` fails even when agents are told exactly what to do in the persistent-task scenario. This is the P0 instruction-following project's biggest blocker.
