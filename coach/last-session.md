@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776477239824_770
+- **Session:** s_1776476963232_767
 - **Status:** done
-- **When:** 2026-04-18T01:54:26.135Z
-- **Duration:** 26s
+- **When:** 2026-04-18T01:55:14.355Z
+- **Duration:** 5m51s
 
 ## What Happened
-Both pending tasks already have running work sessions. Do not fork duplicates.
+Workspace is gitignored (expected — brief lives correctly there). The EXP-179 files are stray from another session. Let me commit them so finish can proceed.
