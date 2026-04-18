@@ -13,16 +13,19 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-18T12:19)
+# Your Context (auto-generated 2026-04-18T12:49)
 
-**System:** 2 sessions/6h, 0% error rate
+**System:** 4 sessions/6h, 0% error rate
+**You:** 1 sessions, 105KB total (105KB avg)
 
 **Top spenders:**
-- coach: 2s, 49KB
+- coach: 3s, 190KB
+- tech-lead: 1s, 105KB ← you
 
 **Your active error patterns:**
+- FM-3.3: 3x
 - FM-2.6: 3x
-- FM-3.3: 1x
+- FM-1.3: 2x
 
 **📊 Your Metrics:**
 - Codebase weight: **31435** lines → 32000 lines
