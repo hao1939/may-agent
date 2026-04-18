@@ -1,4 +1,4 @@
-# KE-248: Heartbeat Scheduling Independently Validated as Cognitive Architecture Primitive
+# KE-249: Heartbeat Scheduling Independently Validated as Cognitive Architecture Primitive
 
 **Date**: 2026-04-18
 **Source**: DD-770 (Su 2026, arXiv 2604.14178)
