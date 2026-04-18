@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776490792071_883
+- **Session:** s_1776490239736_876
 - **Status:** done
-- **When:** 2026-04-18T05:41:36.338Z
-- **Duration:** 1m44s
+- **When:** 2026-04-18T05:42:33.741Z
+- **Duration:** 11m54s
 
 ## What Happened
-R1 is complete and committed. Handler restored at 05:36, last FAILED was 05:33 (pre-restore). Next cron tick at ~05:42 will produce the first post-restore OK row.
+Note: correct handler path is `agents/may/handlers/evaluation-sync.ts` (not `scripts/handlers/`).

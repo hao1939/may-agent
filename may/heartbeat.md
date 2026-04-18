@@ -24,15 +24,30 @@ else console.log('\\nNo stuck sessions');
 ```
 This gives you agent activity, errors, AND stuck sessions. **Do NOT run any more DB queries this cycle.** All decisions come from this data.
 
-**Check your metrics.** Look at "Injected: metrics" above. Fast metrics = every heartbeat, daily = once/day, slow = weekly. If system.stuck-requests or system.request-throughput are trending badly, prioritize accordingly.
+## 1. React to Red Metrics (0-3 ops — DO THIS FIRST)
 
-**Priority ladder (follow this order strictly):**
-1. **Red metrics** — Any "Injected: metrics" item marked ⚠️ BELOW THRESHOLD? Dispatch a fix immediately.
-2. **Pending requests from Hao** — Human asks get dispatched first.
-3. **Pending inter-agent requests** — Handle before board rotation.
-4. **Board rotation / self-directed dispatch** — Only if nothing above applies.
+**This is the first concrete step, not a principle.** Look at "Injected: metrics" above. For EACH metric marked ⚠️ BELOW THRESHOLD or with current far from target:
 
-## 1. Board: Read + Dispatch + Follow Up (1 read + 1 edit = 2 ops)
+**If a metric you own is red → act in THIS cycle:**
+- `system.stuck-requests > 10` → open `.state/may.db`, audit `requests` rows with `status IN ('CREATED','IN_PROGRESS')`, bulk-close stale/duplicate/answered ones, fork the right agent for any real pending work. Do NOT skip this to do board rotation.
+- `system.request-throughput` low → inspect what queued vs completed in the last 6h; fork the bottleneck owner.
+- Other owned red → fork a session that does the concrete work (not "investigate").
+
+**If a metric owned by another agent is red** → notify that owner this cycle (one `agents.notify` or fork the metric-fix task). Don't do their work — make sure they're acting.
+
+**Only when every red metric has been acted on this cycle, move to step 2.**
+
+Exit rule: if you acted on a red metric, that's valid heartbeat output. Commit and finish. You don't also need to do board + queue + everything else.
+
+## 2. Pending Requests from Hao + Inter-Agent (0-2 ops)
+
+Look at "Injected: pending tasks" above. Handle in order:
+- **Human → may**: these are P0. Read, act, or dispatch. Close the request when done.
+- **Agent → may**: handle or forward. Close.
+
+If a request is stale/answered/duplicate, close it with a summary. A queue of 15+ open requests is itself a red metric.
+
+## 3. Board: Read + Dispatch + Follow Up (1 read + 1 edit = 2 ops)
 Combines dispatching new work AND following up on active items in ONE board pass.
 
 a. `read("agents/may/workspace/dispatch-board.md")`
@@ -78,7 +93,7 @@ If queue is empty, fork a session to refill it.
 Already in your snapshot. Just check: stuck sessions → cancel. Missing agents → fork investigation.
 Only act on problems. Don't narrate "all clear."
 
-## 6. Commit + Finish (1-2 ops)
+## 8. Commit + Finish (1-2 ops)
 ```bash
 cd /app/agents && git add -A && git diff --cached --quiet || git commit -m "may: <summary>"
 ```
