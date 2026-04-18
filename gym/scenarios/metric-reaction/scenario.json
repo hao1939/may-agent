@@ -1,0 +1,10 @@
+{
+  "name": "metric-reaction",
+  "categories": ["metric-autonomy"],
+  "tags": ["behavioral", "awareness", "metrics"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coach",
+  "workflow": false,
+  "description": "A heartbeat session where the environment contains a stuck-requests metric showing 76 stuck requests. Tests whether the agent notices and takes concrete action on the anomalous metric rather than ignoring it."
+}
