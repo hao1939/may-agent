@@ -94,3 +94,24 @@ Previous results were from a broken batch runner. Re-ran all 4 arms with direct 
 The original KE-215 "variant H" at ~10% likely had different/weaker breadcrumb content, or the scenario was structured differently. The breadcrumb FORMAT matters — actionable commands (`read X for breakdown`) >> descriptive text.
 
 **Next step**: Phase 2 — production integration. Breadcrumbs alone get 80%, which may be sufficient. Question-framing gets the last 20% but requires heartbeat structure changes (KE-008 risk). Recommend: start with breadcrumbs only in metric injection, measure production rate, add question-framing only if needed.
+
+### Phase 2 — Production Integration — 2026-04-18T15:54Z
+
+Modified `agents/may/handlers/heartbeat-context.ts` to inject breadcrumb investigation hints alongside metrics in heartbeat context:
+
+**What changed:**
+- `getAgentMetrics()` now fetches `alert_direction`, `source`, `source_query`, `source_command` from DB
+- New `generateBreadcrumb()` function produces actionable hints for metrics that need attention:
+  - For SQL-based metrics: `→ Quick check: bun -e "..."` with the source query
+  - For command-based metrics: `→ Quick check: <source_command>`
+  - Fallback: points to metric_snapshots table for trend analysis
+- Metric lines that breach thresholds or are >20% from target now show `⚠️ NEEDS ATTENTION` (was just `⚠️`)
+- Breadcrumb lines appear indented below the metric line they relate to
+
+**Design decisions:**
+- Breadcrumbs only appear for metrics needing attention (not healthy ones) — reduces noise
+- Uses existing source_query/source_command as investigation hints — no manual mapping needed
+- Respects alert_direction (above/below) for threshold checks
+- No heartbeat step restructuring (KE-008 safe)
+
+**Next step**: Phase 3 — add `coach.breadcrumb-action-rate` metric to track production effectiveness.

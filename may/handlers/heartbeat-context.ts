@@ -389,6 +389,43 @@ function getAgentMetrics(baseDir: string, agentName: string): MetricRow[] {
   }
 }
 
+/**
+ * Generate a breadcrumb investigation hint for a metric that needs attention.
+ * Returns empty string if metric is healthy or no useful hint can be generated.
+ */
+function generateBreadcrumb(m: MetricRow): string {
+  // Only generate breadcrumbs for metrics that need attention
+  const needsAttention = (() => {
+    if (m.current == null) return false;
+    if (m.threshold != null) {
+      const alertAbove = m.alert_direction === 'above';
+      return alertAbove ? m.current > m.threshold : m.current < m.threshold;
+    }
+    if (m.target != null) {
+      // More than 20% away from target
+      const dist = Math.abs(m.current - m.target);
+      const scale = Math.max(Math.abs(m.target), 1);
+      return dist / scale > 0.2;
+    }
+    return false;
+  })();
+
+  if (!needsAttention) return "";
+
+  // Generate hint based on source type
+  if (m.source === 'auto' && m.source_query) {
+    // Simplify the SQL query into a quick-check command
+    const safeQuery = m.source_query.replace(/'/g, "\\'");
+    return `  → Quick check: bun -e "import{Database}from'bun:sqlite';const db=new Database('.state/may.db',{readonly:true});console.log(JSON.stringify(db.prepare('${safeQuery}').all()))"`;
+  }
+  if (m.source === 'command' && m.source_command) {
+    return `  → Quick check: ${m.source_command}`;
+  }
+
+  // Fallback: suggest looking at the metric's data
+  return `  → Quick check: search .state/may.db metric_snapshots for ${m.id} trends`;
+}
+
 function formatMetricsContext(metrics: MetricRow[]): string {
   if (metrics.length === 0) return "";
   const lines: string[] = [];
@@ -398,8 +435,13 @@ function formatMetricsContext(metrics: MetricRow[]): string {
     const val = m.current != null ? `${m.current}` : (m.last_value != null ? `~${m.last_value}` : "unmeasured");
     const unit = m.unit ? ` ${m.unit}` : "";
     const targetStr = m.target != null ? ` → ${m.target}${unit}` : "";
-    const warn = m.type === "health" && m.threshold != null && m.current != null && m.current < m.threshold ? " ⚠️" : "";
+    const alertAbove = m.alert_direction === 'above';
+    const warn = m.type === "health" && m.threshold != null && m.current != null
+      ? (alertAbove ? m.current > m.threshold : m.current < m.threshold) ? " ⚠️ NEEDS ATTENTION" : ""
+      : "";
     lines.push(`- ${m.name}: **${val}**${unit}${targetStr}${warn}`);
+    const breadcrumb = generateBreadcrumb(m);
+    if (breadcrumb) lines.push(breadcrumb);
   }
   lines.push("");
   return lines.join("\n");
