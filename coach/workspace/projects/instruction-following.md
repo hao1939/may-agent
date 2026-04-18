@@ -106,13 +106,20 @@ aggregates across all of them.
      over baseline (0%) but far from target.
    - **Iter 2b — RUN variant** (2026-04-18): Similar explicit instructions
      but different framing. Result: **3/19 = 16%**. Comparable to STEP.
-   - Interpretation: Making task.md more explicit provides ~15-20% lift,
-     but explicit instructions in the *task* are not enough — the agent
-     still defaults to its own routine ~80% of the time. The lever needs
-     to be in the agent's *own* configuration (heartbeat handler, skills),
-     not in the external task prompt. Next: structural intervention in
-     bob's heartbeat that auto-detects active projects and triggers
-     persistent-task workflow.
+   - **Iter 3 — Clean re-run post infrastructure fix** (2026-04-18):
+     FM-1 (workflow tool not visible) and FM-2 (file not found) bugs fixed.
+     Re-ran all three arms with n=5-7:
+     - Baseline: **0/7 = 0%** (unchanged)
+     - STEP: **2/5 = 40%** (up from 20%)
+     - RUN: **3/5 = 60%** (up from 16%)
+     Infrastructure fixes tripled explicit-instruction pass rates. Baseline
+     unaffected (behavioral problem, not infra). RUN > STEP suggests agents
+     execute specific commands better than multi-step plans.
+     Full results: `agents/coach/workspace/experiments/use-persistent-task-clean-results.md`
+   - Interpretation: Explicit task instructions + working infrastructure
+     reach 40-60%, but not the 80% target. The remaining gap requires
+     **structural intervention** in the agent's own config (heartbeat
+     handler, auto-detection), not just better task prompts.
 
 3. **order-compliance** — NEW. Do standing orders like ORDER-008
    ("may fork, not message") stick once set?
