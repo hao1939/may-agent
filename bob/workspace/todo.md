@@ -10,11 +10,11 @@
 - [x] **DD-766/DD-768 → KE synthesis**: KE-187 (policy-invisible violations → Ch2 sub-taxonomy), KE-188 (GAM memory addresses P(access) not P(applies)). Committed.
 - [x] **H-161 post-mortem synthesis**: Guard design implications doc written. Content-first > process-first for hard tasks. Full-gate HARMFUL on hard tasks.
 - [ ] **Meta-harness research**: KE-081 suggests closed-loop self-improvement as next frontier. H-164 formalizes the harness vs training trade-off.
-- [ ] **Ch2 sub-taxonomy expansion**: KE-187 proposes Self/Environment/World-Model Ch2 variants. Needs formalization in H-098.
+- [x] **Ch2 sub-taxonomy expansion**: Formalized in H-098 (Self/Environment/World-Model, +42 lines, KE-187 integrated).
 - [x] **H-165 written**: Production-Provision Interference hypothesis. P(H)=0.85. Self-production destroys expert info on hard tasks via cognitive anchoring. 172 lines.
 - [x] **EXP-166 designed**: Content-first vs process-first guard comparison. 4 arms × 2 scenarios × 15 runs = 120 runs (~$9). Tests H-165's anchoring vs displacement mechanism.
 - [x] **EXP-166 execution**: COMPLETE. 120/120 runs. Displacement confirmed (D=7% vs C=100% on cascading). KE-195, KE-196 written.
-- [ ] **Content-first guard design doc** [HIGH]: Use EXP-166 findings (KE-195/196) to design passive-injection guards. Difficulty-adaptive: passive for hard tasks, production OK for easy tasks.
+- [x] **Content-first guard design doc** [HIGH]: `design/difficulty-adaptive-content-first-guards.md` (140 lines) + `content-first-guards.md` (194 lines). Difficulty-adaptive passive-injection design from KE-195/196/H-165.
 
 ## Blocked / Deferred
 - [ ] **Prompt Caching**: Blocked on Hao since 2026-03-24. $36-63/day savings waiting.
