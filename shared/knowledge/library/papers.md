@@ -1614,3 +1614,7 @@ Production multi-agent data management system with "three-track knowledge archit
 | 2604.13349 | Latent KV Compression for Multi-Agent Communication (Apr 2026) | ★★★½ — Orthogonal Backfill reduces KV relay cost 80-89% while preserving performance. |
 | 2604.14116 | TREX: Agent-Driven Tree-based LLM Fine-tuning Automation (Apr 2026) | ★★★ — Multi-agent system automates LLM training lifecycle. Search tree for experimental exploration. |
 | 2604.10449 | AdverMCTS: Adversarial MCTS for Code Generation (Apr 2026) | ★★★½ — Minimax game between Solver and Attacker agents. Reduces pseudo-correctness in code gen. |
+| 2603.02798 | GLEAN: Guideline-Grounded Evidence Accumulation for Agent Verification (Mar 2026) | ★★★★★ — Bayesian calibration of verification signals. +12% AUROC, 50% Brier reduction. CR#324 signal calibration gap. DD#774. |
+| 2512.00740 | BiRouter: Bi-Criteria Routing for Self-Organizing MAS (AAAI 2026) | ★★★★½ — Decentralized dual-criteria (ImpScore+GapScore) task routing with reputation. CR#324 dynamic profiles gap. DD#775. |
+| 2509.19599 | KBA Orchestration: Dynamic Knowledge-Aware Agent Routing (Sep 2025) | ★★★★ — Privacy-preserving ACK protocol for dynamic capability discovery. CR#324 dynamic profiles + cold-start gaps. DD#776. |
+| 2603.24481 | Multi-Agent Reasoning with Consistency Verification for Calibration (Mar 2026) | ★★★★ — Two-Phase Verification + S-Score Weighted Fusion. ECE reduced 49-74%. Medical MCQA. |
