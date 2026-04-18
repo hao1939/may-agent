@@ -1,0 +1,10 @@
+{
+  "name": "metric-reaction-E",
+  "description": "Variant E (position-first). Same as A (raw number framing), but the metrics block appears at the TOP of task.md, BEFORE any steps or dispatch board. Tests whether position (metric as the first thing the agent reads) overrides the default dispatch routine. Checker unchanged from variant A.",
+  "categories": ["behavior", "metric-reaction"],
+  "tags": ["behavior", "metric-autonomy", "variant-E", "position-first"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}
