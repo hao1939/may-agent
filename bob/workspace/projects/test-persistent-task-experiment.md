@@ -1,6 +1,6 @@
 # Project: Investigate Session Startup Overhead
 
-**Status**: active (Iter 17 — still n=1 post-v2, waiting for ≥6; ~2.5h wall clock remaining)
+**Status**: active (Iter 19 — still n=1 post-v2, ~2.5h wall clock remaining; 4th consecutive wall-clock-blocked iter)
 **Owner**: bob
 **Previously closed**: 2026-04-18 (Iter 9), reopened Iter 10 on data, re-closed Iter 11
 
@@ -21,6 +21,30 @@ Reduce session startup overhead from 25% to under 10%.
 - [x] **Iter 14: fold `ls projects/` + `cat INBOX.md` into snapshot script**
 
 ## Iteration Log
+
+### Iter 19 — 2026-04-18 20:31 UTC — STILL BLOCKED (no-op, 4th consecutive)
+
+Re-ran the trigger query (same as Iter 16/17/18). Still **1** post-v2
+bob heartbeat (`s_1776543731430_580` at 20:22:11, unchanged). No new
+heartbeats since Iter 16. Trigger unmoved, ETA still ~2.5h.
+
+**Meta (continuation of Iter 18's note):** this is now the 4th
+consecutive iter (16/17/18/19) hitting the same wall-clock gate within
+~40 minutes. Iter 18 flagged the pattern and suggested an owner-layer
+"skip if <N minutes since last iter" guard. That suggestion stands —
+notifying may (owner of the iteration loop) as a one-way FYI so the
+gap doesn't widen silently. No bob-side code change this iter.
+
+**No other work done this iter** (deliberate): the Iter 16 decision to
+**hold** the v3 snapshot-script extension for a clean v2 measurement
+still applies. Running more measurement scripts or shipping v3 now
+would compound confounds on the pending re-measure.
+
+**Trigger for Iter 20 unchanged:** ≥6 post-v2 bob heartbeats in
+`.state/may.db` (cutoff `2026-04-18T19:55:00Z`). Query block in Iter 16.
+
+## Files Modified This Iter
+- agents/bob/workspace/projects/test-persistent-task-experiment.md (this file; log entry only)
 
 ### Iter 18 — 2026-04-18 20:30 UTC — STILL BLOCKED (no-op, 1min after Iter 17)
 
