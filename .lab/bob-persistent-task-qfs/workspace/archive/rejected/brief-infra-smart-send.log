@@ -1,1 +1,0 @@
-REJECTED: 2026-03-19 by Tech-Lead. Rationale: 'Already solved. No new tool needed. Use write() + agents.send() pattern.'

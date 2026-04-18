@@ -1,5 +1,0 @@
-- bun is at .state/.bun/bin/bun — add to PATH: `export PATH=".state/.bun/bin:$PATH"`
-- npx is not available in this environment — use ./node_modules/.bin/<tool> or bun x <tool>
-- Project root is /app — do not use /home/*, /Users/*, /root/*, or ~/ paths
-- agents/ is a separate git repo — commit from agents/ dir, not project root
-- When calling finish(), status must match reality — if you found missing files or blockers, use 'blocked' or 'partial', not 'success'

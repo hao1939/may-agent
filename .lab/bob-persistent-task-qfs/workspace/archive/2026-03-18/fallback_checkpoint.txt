@@ -1,1 +1,0 @@
-This is a fallback checkpoint attempt via bash since the tool schema is missing from my context.

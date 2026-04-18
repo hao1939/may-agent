@@ -1,1 +1,0 @@
-import { getDb } from './src/lib/requests.ts'; const db = getDb('.state'); const rows = db.prepare('SELECT sessionId,agent,verdict,score,summary,createdAt FROM evaluations ORDER BY createdAt DESC LIMIT 10').all(); console.log(JSON.stringify(rows, null, 2));
