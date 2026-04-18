@@ -1,7 +1,7 @@
 # TODO
 
 ## Lens Rotation
-Last: A (System Architecture) — optimizer/coach overlap (2026-04-18 19:06). Next: B.
+Last: B (Flow Complexity) — coach high-op sessions (2026-04-18 19:36). Next: C.
 
 ## Upcoming
 - [ ] Heuristic evaluation over-rates by ~0.12 — consider adding LLM sampling to evaluation-sync.ts for top-level sessions (checkpoint from s_1776288692069_126 has the design)
