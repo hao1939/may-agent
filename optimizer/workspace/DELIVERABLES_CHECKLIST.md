@@ -1,6 +1,10 @@
-# Deliverables — Mode C Skill & Technique Scouting (20260418-0130)
+# Deliverables Checklist — Mode A: Coach 73-op C1.7 regression (2026-04-18 02:30)
 
-- [x] `agents/optimizer/workspace/finding-mode-c-technique-scouting-20260418-0130.md` (written, verified via read + wc -l)
-- [x] `agents/optimizer/workspace/todo.md` — rotation line 39 updated: "Last exploration mode: **C**", "Next rotation: **D**"; also restores history chain clobbered by coder auto-commit 193bbba2b
-- [x] NO_DISPATCH (R1 in finding §5): KE-002 judgment + KE-026 Level-4 + KE-123 stacking against 23:30 tech-lead and 00:30 may dispatches
-- [ ] Commit todo.md + checklist (finding is gitignored — workspace/ ignore pattern, known pattern)
+- [ ] Read prior finding: `workspace/finding-mode-a-coach-convention-regression-20260418-0030.md`
+- [ ] Query 73-op coach session (sessions WHERE agent='coach' AND opCount=73 AND startedAt>Date.now()-6h)
+- [ ] Read transcript/jsonl of that session
+- [ ] Check if `scripts/convention-check.ts` VERIFICATION_PATTERNS was patched per prior P1
+- [ ] Write finding: `workspace/finding-mode-a-coach-c17-regression-20260418-0230.md` with TL;DR, op breakdown, patch-applied?, R1 decision
+- [ ] Update `workspace/todo.md` with one-line rotation (Mode A done, next B)
+- [ ] Commit both files from `agents/` dir
+- [ ] Post-write verification (wc -l, git log) before finish(success)
