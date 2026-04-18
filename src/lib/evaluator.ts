@@ -307,6 +307,16 @@ function parseTaskEvaluation(text: string): {
     if (lessons) defaultResult.lessons = lessons;
   }
 
+  // Warn on silent zero-score returns (either no JSON match, JSON.parse failure,
+  // or evaluator literally returned zeros). Surfaces the fragility noted in
+  // agents/tech-lead/workspace/finding-fragility-find-the-highest-risk-silent.md
+  if (defaultResult.overall.quality === 0 && defaultResult.overall.efficiency === 0) {
+    const prefix = (text ?? "").slice(0, 200).replace(/\s+/g, " ");
+    console.warn(
+      `[evaluator] parseTaskEvaluation returned zero overall scores (likely parse failure). Raw prefix: ${JSON.stringify(prefix)}`,
+    );
+  }
+
   return defaultResult;
 }
 
@@ -846,10 +856,29 @@ export async function evaluateStandaloneSession(
   );
 
   // Run evaluator
-  const evalSessionId = manager.run("evaluator", prompt);
+  const evalSessionId = manager.run("evaluator", prompt, { source: "standalone-eval" });
   const evalResult = await manager.waitFor(evalSessionId);
-  const responseText = evalResult?.lastAssistantText ?? "";
-  const parsed = parseTaskEvaluation(responseText);
+  let responseText = evalResult?.lastAssistantText ?? "";
+  let parsed = parseTaskEvaluation(responseText);
+
+  // Retry once if the evaluator returned the default-zero signature
+  // (overall.quality === 0 AND overall.efficiency === 0). Matches the
+  // retry pattern in evaluateTask (~lines 395-415).
+  let parseErrored = false;
+  if (parsed.overall.quality === 0 && parsed.overall.efficiency === 0) {
+    const retrySessionId = manager.run("evaluator", prompt, { source: "standalone-eval" });
+    const retryResult = await manager.waitFor(retrySessionId);
+    const retryText = retryResult?.lastAssistantText ?? "";
+    const retryParsed = parseTaskEvaluation(retryText);
+    if (retryParsed.overall.quality === 0 && retryParsed.overall.efficiency === 0) {
+      // Retry also produced zeros — mark as parse_error so it's distinguishable
+      // from a genuine needs_improvement verdict and can be re-evaluated later.
+      parseErrored = true;
+    } else {
+      responseText = retryText;
+      parsed = retryParsed;
+    }
+  }
 
   // Extract scores for this agent
   const sessionLabel = `${agent} (session ${sessionId})`;
@@ -859,6 +888,9 @@ export async function evaluateStandaloneSession(
 
   const createdAt = extractTimestamp(sessionId);
 
+  const effectiveAgentVerdict = parseErrored ? "parse_error" : agentScores.verdict;
+  const effectiveOverallVerdict = parseErrored ? "parse_error" : parsed.overall.verdict;
+
   // Save evaluation (overwrites any heuristic evaluation via INSERT OR REPLACE)
   upsertEvaluation(persistDir, {
     sessionId,
@@ -867,12 +899,12 @@ export async function evaluateStandaloneSession(
     efficiency: agentScores.efficiency,
     productiveCalls: agentScores.productive_calls,
     wastedCalls: agentScores.wasted_calls,
-    verdict: agentScores.verdict,
+    verdict: effectiveAgentVerdict,
     issues: agentScores.issues,
     overall: {
       quality: parsed.overall.quality,
       efficiency: parsed.overall.efficiency,
-      verdict: parsed.overall.verdict,
+      verdict: effectiveOverallVerdict,
       result_delivered: parsed.overall.result_delivered,
     },
     usage: usage as unknown as Record<string, unknown>,
@@ -885,7 +917,7 @@ export async function evaluateStandaloneSession(
   return {
     quality: agentScores.quality,
     efficiency: agentScores.efficiency,
-    verdict: agentScores.verdict,
+    verdict: effectiveAgentVerdict,
     issues: agentScores.issues,
   };
 }
