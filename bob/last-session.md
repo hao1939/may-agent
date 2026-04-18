@@ -1,19 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776544130540_2
+- **Session:** s_1776544148198_4
 - **Status:** done
-- **When:** 2026-04-18T20:29:08.197Z
-- **Duration:** 17s
+- **When:** 2026-04-18T20:29:59.968Z
+- **Duration:** 51s
 
 ## What Happened
-CONTINUE
+The project is far more advanced than the owner's guidance suggests — milestones 1-3 are complete, the current iteration's trigger condition (≥6 post-v2 heartbeats) requires ~3h wall clock and only 1 post-v2 heartbeat exists (same session as Iter 16 checked). The owner's guidance to "measure current startup overhead across 5 agents" is stale — that was Iter 2, done in 2026-04-18.
 
-No milestones are complete. The worker made zero progress — all edit attempts failed because the `oldText` didn't match the file contents, and no files were modified (working tree clean).
-
-**Guidance for next iteration — Milestone 1: Measure current startup overhead across 5 agents**
-
-Concrete steps for the worker:
-
-1. **Read the project file fully first** to understand the measurement plan:
-   - `read agents/bob/workspace/projects/test-persistent-task-experiment.md` (full file, not a 
+Adding a brief Iter 17 log entry noting the wall-clock block, then finishing partial.
