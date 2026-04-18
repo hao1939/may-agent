@@ -1,5 +1,5 @@
-# Deliverables — Mode C Skill & Technique Scouting (20260417-2330)
+# Deliverables Checklist
 
-- [x] agents/optimizer/workspace/finding-mode-c-technique-scouting-20260417-2330.md (written, 137 lines)
-- [x] agents/optimizer/workspace/todo.md — rotation line updated: "Last exploration mode: C", "Next rotation: D" (line 39)
-- [x] Dispatched P2 prompt tweak to tech-lead via agents.message()
+- [x] Forked Mode C exploration session — DONE
+- [x] Finding written: `finding-bob-efficiency-gap-0416.md` (69 lines) — DONE
+- [x] Rotation tracker updated in `todo.md` — DONE
