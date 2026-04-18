@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776552851420_679
+- **Session:** s_1776552860465_681
 - **Status:** done
-- **When:** 2026-04-18T22:54:21.475Z
-- **Duration:** 10s
+- **When:** 2026-04-18T22:54:30.311Z
+- **Duration:** 9s
 
 ## What Happened
 ```json
@@ -13,9 +13,8 @@
     "bob": {
       "role": "Builder",
       "capability_level": "L2",
-      "efficiency": 0.72,
-      "quality": 0.78,
-      "verdict": "good",
+      "efficiency": 0.62,
+      "quality": 0.76,
+      "verdict": "acceptable",
       "issues": [
-        "[FM-1.3-lite/WASTE] Unnecessary failure-chain churn around new-ke.sh invocation: ran it from /app/agents (2 separate attempts) despite script error saying “Run from repo root”, then switched to manual write instead of correcting invocation (failure chains 1–2; 5 wasted calls total).",
-        "[GIT/DELIV
+        "[FM-1.3/RECOVERY_WASTE] Repeated wrong-path assumptions caused avoidable error chains before finding the correct deep-dives location and INBOX file (e.g., tried `agents/shared/knowledge/deep-dives/` and `agents/bob/INBOX.md`, both missing; then had to `find`/re-grep to recover). Evidence: failure c
