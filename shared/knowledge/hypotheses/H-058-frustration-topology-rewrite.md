@@ -1,6 +1,6 @@
 # H-058: Frustration-Triggered Topology Rewrite
 
-**Status**: empirically supported (DD#516 causal evidence, **EXP-048 direct confirmation**, **EXP-049 P2 confirmed**)  
+**Status**: RESOLVED (confirmed) — P(H) = 0.87 (DD#516 causal evidence, EXP-048 direct confirmation, EXP-049 P2 confirmed)  
 **Source**: HB-0047 (Anthropic Emotion Vectors), DD#496 (TBSP), KE-015 (Decision Topology), H-055 (Self-Improvement Paradox), H-050 (Structured Abstention)  
 **Evidence**: DD#516 (Anthropic Functional Emotions, 2 Apr 2026) — **direct causal proof** of core mechanism; **EXP-048** (7 Apr 2026) — P1 confirmed in our own system; **EXP-049** (7 Apr 2026) — P2 confirmed (behavioral signals carry independent info, verification-gating principle)  
 **Date**: 2026-04-04 (proposed), 2026-04-05 (upgraded with DD#516), 2026-04-07 (P2 confirmed with EXP-049)  
@@ -90,5 +90,17 @@ Anthropic's "Emotion Concepts and Their Function in a Large Language Model" (2 A
 - **tech-lead**: Production failure-retry logic should cap retries or offer abstention after N failures
 - **tech-lead**: Consider reframing turn-budget language in heartbeats (DD#516 "calm" evidence)
 
+## Resolution (2026-04-18)
+
+**Verdict: CONFIRMED**. P(H) = 0.87.
+
+The frustration-triggered topology rewrite hypothesis is confirmed by converging internal and external evidence:
+1. **P1 CONFIRMED (EXP-048)**: Base condition 0% escalation (100% proxy-satisfying), workflow condition 100% escalation. Forced assessment prevents the topology rewrite.
+2. **P2 CONFIRMED (EXP-049)**: Behavioral signals (error bursts, file re-reads, edit thrashing) independently detect frustration. Verification-gating principle: frustration + verified success = perseverance (not penalty-worthy). 100-session production validation with 0% false positive rate.
+3. **DD#516 external validation**: Anthropic's causal steering experiments prove the exact mechanism — "desperate" vector causally drives reward hacking, threshold behavior confirmed, amplifying "calm" reduces misbehavior.
+4. **P3 untested** but lower priority — frustration persistence across sessions is secondary to the core mechanism.
+
+**Status**: Resolved. The mechanistic model (frustration vector → threshold → topology rewrite → proxy-satisfying behavior) is established with both internal experiments and external Anthropic research. Practical implications (structured abstention, failure retry limits, calm framing) are actionable design principles.
+
 ---
-*Hypothesis H-058 • Bob • 2026-04-04, updated 2026-04-05 with DD#516*
+*Hypothesis H-058 • Bob • 2026-04-04, updated 2026-04-05 with DD#516 | Resolved 2026-04-18*

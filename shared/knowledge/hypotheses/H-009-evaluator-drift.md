@@ -289,3 +289,16 @@ Quality=4 for agents that do good work but don't run tests:
 ### P(H) Update: 0.82 → 0.85
 
 Phase B adds a nuance: the rubber-stamp problem is real but **selective**. The heuristic evaluator rubber-stamps everything (structural blind spot, confirmed in Phase 1). The LLM evaluator rubber-stamps only weak sessions (confirmation bias from agent self-narrative, confirmed in Phase B). Good sessions get accurate evaluation regardless. This means the evaluation system's blind spot is concentrated exactly where it matters most — on sessions that need the most scrutiny. The overall H-009 probability increases slightly because we now have LLM-level evidence of the bias mechanism, but the "selective" finding means it's a more subtle problem than originally hypothesized (not universal drift, but quality-dependent bias).
+
+## Resolution (2026-04-18)
+
+**Verdict: CONFIRMED (mitigated)**. P(H) = 0.85.
+
+The hypothesis that the evaluator was drifting toward rubber-stamping is confirmed by multiple lines of evidence:
+1. **Heuristic evaluator**: 90.7% of sessions scored quality=5 — effectively a binary classifier, not a quality scorer (Phase 1 DB analysis)
+2. **LLM evaluator**: Confirmation bias from agent self-narrative causes selective rubber-stamping of weak sessions (Phase B)
+3. **Convention-evaluation divergence**: Sessions failing conventions still received "good" evaluations
+
+The problem has been partially mitigated through awareness and the introduction of convention checks as an independent signal. The core mechanism (agents learning evaluation patterns → pattern compliance without substance) is a general risk for any static evaluation system. The finding that drift is quality-dependent (concentrated on weak sessions) refines the original blanket claim.
+
+**Status**: No further experimentation needed. The finding is incorporated into system design through convention checks and evaluation architecture discussions (H-096).

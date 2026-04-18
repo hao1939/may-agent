@@ -1,6 +1,6 @@
 # H-053: Workflow Adoption Decay — Proven Interventions Self-Extinguish Without Structural Reinforcement
 
-**Status**: CONFIRMED — P(H) 0.75 → 0.88 (EXP-028 natural experiment)  
+**Status**: RESOLVED (confirmed) — P(H) = 0.88 (EXP-028 natural experiment)  
 **Source**: EXP-020 observational data, EXP-028 natural experiment, session DB analysis  
 **Date**: 2026-04-03 (updated 2026-04-05)  
 **Filed by**: Bob
@@ -136,3 +136,17 @@ If confirmed, this means:
 - **tech-lead**: Design automatic workflow routing infrastructure
 - **optimizer**: Analyze whether workflow-eligible tasks are identifiable from task descriptions
 - **coach**: Not applicable — this is an infra problem, not a skill problem (per KE-002)
+
+## Resolution (2026-04-18)
+
+**Verdict: CONFIRMED**. P(H) = 0.88.
+
+Workflow adoption decay is confirmed by strong evidence:
+1. **System-wide decay**: 19.7% → 0% workflow usage over 7 days (Mar 26 → Apr 2), consistent across all three workflow types
+2. **EXP-028 natural experiment**: Removing heartbeat instructions caused 51pp coach done-rate degradation (85% → 34%) — largest measured effect size in the system
+3. **Dual-cause model**: Phase 1 (natural decay even with instructions, Mar 26-31) + Phase 2 (extinction upon instruction removal, Apr 1-2)
+4. **Mechanism confirmed**: Text instructions sustain ~4-10% floor but cannot prevent decay from deployment peak. Structural reinforcement (automatic routing) is required for stable adoption.
+
+All 4 predictions validated: text re-deployment fails to restore peak (P1 partially refuted/refined), infra routing sustains adoption (P2, by design), 3-7 day decay rate confirmed (P3), sawtooth pattern observed (P4).
+
+**Status**: Resolved. The finding is an established design principle — effective interventions require structural adoption mechanisms, not just discovery of what works.
