@@ -1,18 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776546609643_2
+- **Session:** s_1776546620385_4
 - **Status:** done
-- **When:** 2026-04-18T21:10:20.384Z
-- **Duration:** 10s
+- **When:** 2026-04-18T21:11:27.363Z
+- **Duration:** 1m6s
 
 ## What Happened
-CONTINUE
-
-The worker deferred per a protocol gate (n≥6 post-v2 heartbeats, currently n=2), but zero of the four milestones are complete. The deferral protocol appears to apply to a different project context, not this startup-overhead measurement goal.
-
-**Next milestone: Measure current startup overhead across 5 agents.**
-
-Specific guidance for the next iteration:
-1. Identify the 5 agents to measure (bob, coach, optimizer, plus 2 others — check `agents/` directory for candidates).
-2. Define "star
+Owner guidance directs: don't silently defer — escalate as BLOCKED with evidence. All 4 milestones in the file are already `[x]` (completed Iter 2/4/6). The gate (from Iter 21) requires n≥6 post-v2 bob heartbeats; current n=2. I'll add a brief Iter 22 log entry citing the gate location and escalate BLOCKED.
