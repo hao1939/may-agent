@@ -22,6 +22,71 @@ Reduce session startup overhead from 25% to under 10%.
 
 ## Iteration Log
 
+### Iter 16 — 2026-04-18 20:25 UTC — FIRST POST-V2 HEARTBEAT
+
+**Wall-clock:** v2 shipped 19:55 UTC (Iter 14). Iter 15 (20:10) confirmed
+only pre-v2 heartbeats were in the DB. This iter (20:25) the **first**
+post-v2 bob heartbeat has landed:
+
+| sessionId                | startedAt (UTC) | status |
+|--------------------------|-----------------|--------|
+| s_1776543731430_580      | 20:22:11        | done   |
+
+**Per-op trace (reparsed with the corrected `content[].toolCall` path
+from Iter 15):**
+
+```
+ 1 bash       -     heartbeat-snapshot.sh bob && ls experiments/ && git log KB/  ← the bundled pipeline
+ 2 workflow   REAL  threads=[KE for DD-777 ...]
+ 3 bash       -     ls KE-25* KE-24*
+ 4 bash       -     bun -e sqlite query
+ 5 finish     -
+```
+
+**Metrics (n=1, not statistically meaningful, directional only):**
+
+| metric                       | Iter 2 base | Iter 6 | **Iter 16** |
+|------------------------------|-------------|--------|-------------|
+| total ops                    | 19.2        | 11.0   | **5**       |
+| ops_before_first_real        | 8.6         | 3.7    | **1**       |
+| overhead ratio               | 45%         | 33%    | **20%**     |
+| snapshot-script adoption     | 0/6         | 4/6    | **1/1**     |
+
+**Signal:** single session is perfectly compliant (one snapshot bash
+call → straight to a real `workflow` action on op 2). Overhead ratio
+20% is directionally on-track for the <10% goal but **n=1 is not a
+measurement** — the 6 previous "snapshot-using" sessions averaged 2.5
+ops_before_real (Iter 6 detail), so 1 is either the low end of normal
+variance or a real v2 improvement. Need n≥6 to tell.
+
+**Decision — hold script changes.** Iter 15 flagged a candidate
+extension (fold recent-KB-activity greps into the snapshot), and
+op 3 (`ls KE-25* KE-24*`) in this session is exactly that pattern.
+Tempting to ship it now, but that would compound confounds on the
+v2 measurement — re-measuring then would conflate v2 vs v3. Hold.
+
+**Trigger for Iter 17:** ≥6 post-v2 bob heartbeats exist in
+`.state/may.db`. At the current rate (1 in the 30 min since v2
+shipped), that's ~3 hours wall clock, matching Iter 5's rule of
+thumb. Quick check command for next session:
+
+```bash
+bun -e "
+import {Database} from 'bun:sqlite';
+const db = new Database('.state/may.db',{readonly:true});
+const cutoff = new Date('2026-04-18T19:55:00Z').getTime();
+const n = db.query(\"SELECT COUNT(*) c FROM sessions WHERE agent='bob' AND task LIKE '%heartbeat%' AND startedAt > ?\").get(cutoff).c;
+console.log('post-v2 bob heartbeats:', n, '(need >=6 for Iter 17 re-measure)');
+"
+```
+
+**Turn budget this iter:** ~8 tool calls. Deliberately lean — the
+whole iter is "observe, log, don't ship." Iter 15's discipline
+(hold v3 for clean measurement) continues to apply.
+
+## Files Modified This Iter
+- agents/bob/workspace/projects/test-persistent-task-experiment.md (this file; status + log entry)
+
 ### Iter 15 — 2026-04-18 — V2 VERIFICATION + NEW PATTERN SPOTTED
 
 **Wall-clock gap:** Iter 14 shipped v2 at 19:55 UTC. The 6 most-recent

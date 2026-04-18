@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776543731430_580
+- **Session:** s_1776543901665_0
 - **Status:** done
-- **When:** 2026-04-18T20:24:04.844Z
-- **Duration:** 1m53s
+- **When:** 2026-04-18T20:27:12.759Z
+- **Duration:** 2m11s
 
 ## What Happened
-Good — KE-250, 251, 252 created. Log them and finish.
+This is a sparse test environment — only `bob` exists. Let me do Iter 2: measure bob's startup overhead based on what's readable, then update the project.
