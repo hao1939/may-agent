@@ -21,3 +21,6 @@
   "tier": "standard"
 }
 {"recorded":true,"runId":2652,"scenario":"metric-reaction-F","passed":true}
+  "tier": "standard"
+}
+{"recorded":true,"runId":2653,"scenario":"metric-reaction-F","passed":false}
