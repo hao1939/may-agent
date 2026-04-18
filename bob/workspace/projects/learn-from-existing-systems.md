@@ -124,7 +124,7 @@ For each pattern scout brings back, experiments follow this format:
 |---|---------|--------|-------|--------|--------|---------|
 | 1 | Dead ends memory | EvoHarness | 2026-04-18 | 2026-04-18 | FAIL (0pp, 30 trials) | rejected |
 | 2 | Fragility tracking | EvoHarness | 2026-04-18 | | | |
-| 3 | Prescreen gate | EvoHarness | 2026-04-18 | | | |
+| 3 | Prescreen gate | EvoHarness | 2026-04-18 | 2026-04-18 | PASS (100% accuracy, 19/19 arms) | **adopted** |
 | 4 | Dreaming/consolidation | OpenClaw | 2026-04-18 | | | |
 | 5 | Layered config precedence | OpenClaw | 2026-04-18 | | | |
 | 6 | Surface decomposition | EvoHarness | 2026-04-18 | | | |
