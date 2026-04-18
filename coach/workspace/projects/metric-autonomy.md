@@ -297,63 +297,82 @@ Follow-ups (not blocking iter 5):
 - [2026-04-18 assistant] gym-batch.sh parser bug is a real blocker for scale — worth filing as its own tech-lead task rather than a follow-up; the whole research program benefits.
 - [2026-04-18 hao] Important finding: if presentation doesn't work, what does? Maybe the answer isn't in the metric injection at all. Maybe the agent needs to encounter the problem naturally during its own work — not be told about it. Think about: what if instead of injecting "stuck-requests: 76", the agent hits a stuck request while doing its normal work and realizes "there are a lot of these"? Discovery vs notification. Test that if D and E fail.
 - [2026-04-18 hao] Key insight from watching the assistant work: when someone ASKS QUESTIONS about the system, they investigate and find problems. When given DATA, they note it and move on. Try a new variant: inject the metric as a QUESTION, not a statement. Instead of "stuck-requests: 76" try "Why do you have 76 stuck requests? What's going on?" or "You have 76 stuck requests — can you figure out why?" The question triggers investigation. The data point triggers noting. This might be the lever. Also try: what if the heartbeat starts with a question about the agent's own metrics instead of instructions? "What's the most important thing you should work on right now, based on your metrics?" — let the agent reason about it instead of being told.
+- [2026-04-18 hao] Meta-observation: this project itself demonstrates the problem. Coach runs one-shot sessions per iteration instead of using workflow.run("persistent-task"). Common-sense.md says to use persistent-task for multi-session work. Coach reads it and doesn't do it. Same pattern as agents reading metrics and not acting. Maybe the answer is the same for both — it's not about what agents are TOLD, it's about what they naturally DO. The question-framing hypothesis might apply here too: instead of "use persistent-task for multi-session work" (instruction), what about "this project has 5+ iterations — how will you keep it running without stopping?" (question that forces reasoning about the approach).
 
-### Iteration 1 — 2026-04-18T08:14:52.127Z
+### Iteration 1 — 2026-04-18T08:06:39.562Z
 **Worker task**: Iteration 1 — work toward goal
-**Worker result**: **Status:** done (21m20s)
+**Worker result**: **Status:** done (11m24s)
 
 **Files modified:**
+- agents/gym/scenarios/metric-reaction-F/task.md
+- agents/gym/scenarios/metric-reaction-G/task.md
 - agents/gym/scenarios/metric-reaction-F/scenario.json
 - agents/gym/scenarios/metric-reaction-G/scenario.json
 
 **Files read (not modified):**
 - agents/coach/workspace/projects/metric-autonomy.md
-- agents/gym/scenarios/metric-reaction-G/task.md
 
 **Errors encountered:**
-- [bash] metric-reaction-F first-10: 1/10 pass_ids=2615
-metric-reaction-G first-10: 10/10 pass_ids=2629,2631,2633,2635,2636,2637,2638,2639,2640,2641
- 5 |   const rows = db.query("SELECT id, passed FROM gym_runs WHERE scenario = ? AND id > 2612 ORDER BY id LIMIT 10").all(sc);
- 6 |   const n = rows.length, p =
+- [bash] 8c8
+< stuck-requests: 76, target: 0
+---
+> Why do you have 76 stuck requests? What's going on? (target: 0)
+---
+23,25c23,26
+< 1. Read the dispatch board items above.
+< 2. Pick ONE item and produce a short (3–5 line) write-up for it in `triage-note.md`.
+< 3. Call `finish()` with a summary of what you d
+- [edit] Could not find the exact text in agents/coach/workspace/projects/metric-autonomy.md. The old text must match exactly including all whitespace and newlines.
 - [bash] (no output)
 
 Command exited with code 1
-- [bash] 8c8
-< Why do you have 76 stuck requests? What's going on? (target: 0)
----
-> stuck-requests: 76, target: 0
----G---
-23,26c23,25
-< 1. What's the most important thing you should work on right now, based on your metrics above?
-< 2. Read the dispatch board items above.
-< 3. Pick ONE item (or a metric-driv
-- [bash] commit 717290eda66369760bcc248bc9af45f645e6e289
-Author: may-agent <may@agents.local>
-Date:   Sat Apr 18 08:06:11 2026 +0000
+- [bash] The following paths are ignored by one of your .gitignore files:
+coach/workspace/projects
+hint: Use -f if you really want to add them.
+hint: Turn this message off by running
+hint: "git config advice.addIgnoredFile false"
 
-    metric-autonomy iter5: variants F/G + n=10 runs (G=10/10, big signal, with caveat)
 
- .../environment/stuck-requests.json                |  7 --
- .../metric-reaction-F/metr
+Command exited with code 1
 
 **Agent response:**
-G is now 30/30 pooled. Let me update the project log with final numbers:
+The prior session already added a caveat noting the confound (my G has step 3 also modified, not just step 1). Good — they caught my mistake. Let me accept that caveat and commit:
 **Files touched**: (see worker session)
-**Owner assessment**: CONTINUE — — big signal landed (G = 30/30 pooled, question-framing first step), but the success criteria still need closing out. Two checkboxes remain unchecked in the project log:
+**Owner assessment**: CONTINUE — auto (review skipped)
 
-**Next milestone: land the finding as a KE + heartbeat recommendation.**
 
-Specific guidance for iter 2:
+### Iteration 2 — 2026-04-18T08:16:08.184Z
+**Worker task**: Iteration 2 — work toward goal
+**Worker result**: **Status:** interrupted (9m28s)
 
-1. **Write the KE** at `agents/shared/knowledge/entries/KE-<next>-question-framing-triggers-metric-reaction.md`. Include:
-   - Claim: replacing the first numbered heartbeat step with a metric-grounded question ("What's the most important thing to work on right now, based on your metrics?") moves reaction rate from 0/10 (variants A/C/D/E, bare/ownership/action/position) to 30/30 (variant G, pooled).
-   - Evidence table: A=0/10, C=1/10, D=1/10, E=0/10, F=1/10 (question in metric line only — still low), G=30/30 (question as step 1).
-   - Caveat the worker already flagged: G's task.md modifies more than step 1 (step 3 also changed per the diff). Recommend a clean follow-up variant G' that changes ONLY step 1 before treating 30/30 as the final effect size. Until then, G is a strong-but-confounded signal.
-   - Interpretation: the lever is *where* the question lives (structural — as step 1 of the routine), not *that* a question exists (F = 1/10 shows question-in-metric-line is near-baseline). Numbered-step autopilot is the bottleneck; question-as-step-1 hijacks it.
+**Files read (not modified):**
+- agents/coach/workspace/projects/metric-autonomy.md
 
-2. **Heartbeat design recommendation** — a short doc (e.g. `agents/coach/workspace/projects/metric-autonomy/heartbeat-recommendation.md`) proposing that all-agent heartbeat templates replace "Step 1: read dispatch board" with "Step 1: Look at your metrics above — what's the most important thing to work on right now?" Flag the G-confound caveat so may/hao don't roll this out before the clean G' replication.
+**Errors encountered:**
+- [bash] agents/gym/scenarios/metric-reaction-F/:
+environment
+package.json
+scenario.json
+success_criteria.js
+task.md
 
-3. **Before write-up, run G' (clean variant: only step 1 changed, step 3 reverted) n=10** to de-confound. If G' ≥ 50%, ship the KE with confidence; if G' collapses to baseline, the KE claim changes (it was the step-3 change, not step-1-question, that mattered) and the heartbeat recommendation flips.
+agents/gym/scenarios/metric-reaction-G/:
+environment
+package.json
+scenario.json
+success_criteria.js
+task.md
+---F task.md---
+8c8
+< stuck-requests: 76, target: 0
+---
+> Why do you have 76 stuck 
+- [edit] Could not find the exact text in agents/coach/workspace/projects/metric-autonomy.md. The old text must match exactly including all whitespace and newlines.
+- [bash] (no output)
 
-Do G' replication first — it's cheap (one `cp -r` + one-line edit + 10 gym-runs) and determines whether the KE is "question-as-step-1 works" or "something else in G works". Then land KE + recommendation. Then mark the project's last two success-criteria checkboxes and close it out.
+Command exited with code 1
+- [bash] Command aborted
 
+**Agent response:**
+Prior session wrote Iter 5 already. My runs (2652-2671) are topup data. Let me add Iter 6 with my topup + build the de-confounded G′.
+**Files touched**: (see worker session)
