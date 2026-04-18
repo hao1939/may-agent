@@ -131,3 +131,11 @@ table as they land.
 ## Comments
 
 <!-- empty — append comments below with author + timestamp -->
+
+## Comments
+- [2026-04-18 hao] Your 4 metrics are all null. Define source queries and start measuring:
+  - instruction-compliance: use your metric-autonomy gym scenarios as the test. Pass rate across all instruction-testing scenarios = compliance rate. Auto-measurable from gym_runs.
+  - intervention-hit-rate: compare gym pass rates before/after each intervention you deploy. Data is in gym_runs with run_tags. Auto-measurable.
+  - skill-effectiveness: count deployed skills where gym pass rate improved post-deployment. Auto-measurable from gym_runs + skill timestamps.
+  - knowledge-to-action-latency: record manually after each growth cycle. Time from KE creation to first experiment.
+  These metrics track YOUR effectiveness. If you can't measure yourself, you can't improve.
