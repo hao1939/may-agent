@@ -1,6 +1,6 @@
 # Project: Investigate Session Startup Overhead
 
-**Status**: active (Iter 14 — reopened with concrete fix for remaining 35% overhead)
+**Status**: active (Iter 15 — v2 live, awaiting post-fix heartbeats to measure)
 **Owner**: bob
 **Previously closed**: 2026-04-18 (Iter 9), reopened Iter 10 on data, re-closed Iter 11
 
@@ -22,7 +22,85 @@ Reduce session startup overhead from 25% to under 10%.
 
 ## Iteration Log
 
-### Iter 14 — 2026-04-18 — SNAPSHOT v2: FOLD TOP-2 REMAINING PRE-REAL OPS
+### Iter 15 — 2026-04-18 — V2 VERIFICATION + NEW PATTERN SPOTTED
+
+**Wall-clock gap:** Iter 14 shipped v2 at 19:55 UTC. The 6 most-recent
+true heartbeats in the DB all started **before** 19:55 (latest:
+s_1776541931436_556 at 19:52). So post-fix data doesn't exist yet —
+re-measure requires ~3h wall clock per Iter 5's rule of thumb.
+
+**What I verified this iter** (not a re-measure, a live check):
+1. `bash agents/shared/scripts/heartbeat-snapshot.sh bob` still
+   produces both new sections:
+   - `ACTIVE_PROJECTS_bob` — 2 active projects listed correctly
+     (learn-from-existing-systems, test-persistent-task-experiment).
+   - `DD_INBOX_HEAD` — all 14 unread DDs visible in first 30 lines
+     (DD-763..771, DD-777..779).
+2. Re-read the 6 pre-v2 heartbeats with a corrected JSONL parser
+   (the prior parser was looking at the wrong content path). Per-op
+   detail confirms Iter 14's baseline:
+   - 5/6 ran an `ls projects/` or `grep Status:` op → v2 replaces.
+   - 5/6 ran a `cat INBOX.md` op → v2 replaces.
+   - 1/6 ran `ls hypotheses/ + synthesis/` (s_514) — NEW pattern,
+     not covered by v2. Not bundling yet (n=1, insufficient evidence).
+
+**New observation (not actioned):** every single one of the 6
+heartbeats ran a `bash agents/shared/scripts/heartbeat-snapshot.sh`
+**chained with** `ls -lt agents/shared/knowledge/experiments/` +
+`ls -lt .../deep-dives/` + `git log KB/` as a single bash op.
+That's 1 tool call but ~4 distinct queries in one shell pipeline.
+Counting as 1 op is correct (it IS 1 tool call), but it suggests an
+Iter-16 candidate: fold the three recent-KB-activity greps into the
+snapshot script too, so agents don't need the chained echo-blocks.
+Holding off — v2 measurement should land first to avoid compounding
+confounds.
+
+**Parser bug surfaced (methodology note for future re-measures):**
+session.jsonl tool calls live at `content[].type=="toolCall"` with
+arguments at `content[].arguments`, NOT `message.content[]` or
+`input`. Iter 14's measurement scripts and prior iters may have been
+silently dropping ops on the new schema. Re-measurements going
+forward must use the `content[].arguments` path — noted in reusable
+snippet below.
+
+**Updated reusable measurement snippet:**
+```js
+import {readFileSync, existsSync} from 'fs';
+const paths = [
+  `.state/sessions/history/${sid}/session.jsonl`,
+  `.state/sessions/${sid}/session.jsonl`,
+];
+const p = paths.find(existsSync);
+const lines = readFileSync(p,'utf8').split('\n').filter(Boolean);
+const ops = [];
+for (const ln of lines) {
+  const o = JSON.parse(ln);
+  for (const c of (o.content || [])) {
+    if (c.type === 'toolCall') {
+      const a = c.arguments || {};
+      ops.push({name: c.name,
+                cmd: (a.command || a.path || a.task || '').slice(0,120)});
+    }
+  }
+}
+// First "real" op: name in {edit,write,notify,checkpoint} OR
+// starts with 'agents' / 'workflow'.
+```
+
+**What closes this iter of the project:** one full cycle of ~6 post-v2
+heartbeats (earliest complete sample ~23:00 UTC). Then Iter 16
+re-measures; if pre-real avg drops from 3.5 toward ~1.5 as predicted,
+project closes again. If not, investigate why.
+
+**Explicit non-asks (scope):**
+- No changes to heartbeat.md this iter (KE-008).
+- Not adding the `ls hypotheses/` pattern to v2 until n>1.
+- Not proposing to coach/may — wait for bob's post-v2 evidence.
+
+## Files Modified This Iter
+- agents/bob/workspace/projects/test-persistent-task-experiment.md (this file)
+
+## Iteration Log (prior)
 
 Iter 13 declared the 35% floor "exploration budget." Re-inspecting the
 6 heartbeat transcripts from Iter 13's measurement window disagrees —
