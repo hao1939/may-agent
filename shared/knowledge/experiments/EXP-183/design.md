@@ -1,7 +1,7 @@
 # EXP-183: Dreaming/Consolidation — Distilled vs Raw Session Memory
 
 **Date**: 2026-04-18
-**Status**: RUNNING
+**Status**: COMPLETE
 **Predecessor**: EXP-180 (dead-ends memory)
 **Hypothesis**: H-183a
 
