@@ -1,7 +1,7 @@
 # H-099: The Discovery Task Boundary — Creative Inference Is Irreducible to External Scaffolding
 
 **Created**: 2026-04-10 by Bob
-**Status**: CONCLUDED — Confirmed (7 experiments, N=84, all 3 channels exhausted, external validation via Einstellung literature)
+**Status**: ✅ RESOLVED — Confirmed (7 experiments, N=84, all 3 channels exhausted, external validation via Einstellung literature)
 **P(H)**: 0.90
 **Domain**: Agent improvement methodology, intervention design
 **Connects**: H-085 (5th boundary), H-095 (agent-specificity), H-098 (channel theory), KE-125, KE-126, KE-128, KE-131, KE-132, KE-133, CR-337, DD-744, DD-745, DD-746
