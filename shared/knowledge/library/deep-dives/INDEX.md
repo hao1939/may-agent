@@ -810,3 +810,41 @@
 4. DD#766 → KE-106 (policy-invisible violations explain why guards don't train behavior — agents find invisible workarounds)
 5. DD#767 → DD-701 Semantic Router DSL (both formalize agent composition — λ_A at type level, Semantic Router at policy level)
 6. DD#764, DD#765, DD#768 → CR-334 Agent Observability (memory architectures support cognitive observability layer)
+
+---
+
+### Promoted from Scout Workspace (April 18 2026 — fragmentation cleanup)
+
+Restored orphan DDs (previously deleted by unrelated commit):
+- DD-747: Format Tax — structured output reasoning degradation (2604.03616) ★★★★★ — 86+ citations
+- DD-748: BCR Task-Scaling — implicit budget constraint (2604.02322) ★★★★
+
+Promoted from `scout/workspace/deep-dives/` (23 DDs):
+
+| # | Title | Citations |
+|---|-------|-----------|
+| DD-622 | Filegram Agent Personalization Hypergraph | 0 |
+| DD-623 | Human Oversight Strategies for Agents | 0 |
+| DD-624 | AI Aggregation Knowledge Epistemic | 0 |
+| DD-644 | Springdrift Persistent Agent Runtime | 0 |
+| DD-645 | Memmachine Ground Truth Memory | 0 |
+| DD-646 | MIA Memory Intelligence Agent | 0 |
+| DD-647 | SuperLocalMemory v33 Zero LLM | 0 |
+| DD-648 | Agent Reading Test Benchmark | 0 |
+| DD-649 | Cognitive Fabric Nodes MAS Middleware | 0 |
+| DD-650 | Contextual Control Without Memory Growth | 0 |
+| DD-651 | Agentic Federated Learning | 0 |
+| DD-652 | SVAF Mesh Memory Collective | 0 |
+| DD-705 | Oral Assessments — Architecture Not Prompting | 0 |
+| DD-706 | RIFT Structural Sensitivity Fundamental Limitation | 2 |
+| DD-707 | NSVIF Neuro-Symbolic Instruction Verification | 0 |
+| DD-708 | Beyond Resolution Rates Behavioral Drivers | 0 |
+| DD-709 | CodeCompass Navigation Paradox | 3 |
+| DD-749 | Tool Affordance Safety Misalignment | 7 |
+| DD-750 | Illusion of Compliance — Cost of Compliance | 92 |
+| DD-751 | Natural Emergent Misalignment Reward Hacking | 0 |
+| DD-752 | Surface Deep Learning Individual Differences | 0 |
+| DD-757 | NeMo Guardrails Event-Driven Architecture | 0 |
+| DD-758 | ShieldA Structured Exception Handling | 0 |
+
+Total physical DDs in library: 24 → 55 (including 6 restored DD-763-768, 2 restored DD-747/748, 23 promoted)
