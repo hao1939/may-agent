@@ -55,11 +55,80 @@ For each pattern scout brings back, experiments follow this format:
 **Decision:** [pending | adopt | reject | modify-and-retest]
 ```
 
+## Pattern Triage (2026-04-18)
+
+### FM Mapping
+
+| Pattern | Source | Maps to FM | Expected Impact | Feasibility | Rank |
+|---------|--------|-----------|----------------|-------------|------|
+| Dead ends memory | EvoHarness | **FM-1.3** (path guessing, repeating failures) | HIGH — 34+ wasted calls in 7 days from repeated mistakes | HIGH — just a file + context injection | **#1** |
+| Fragility tracking | EvoHarness | **FM-3.3** (verification gaps on risky surfaces) | MED-HIGH — tells us where NOT to change | MED — needs tracking infra | **#2** |
+| Prescreen gate | EvoHarness | **FM-2.6** (wasted effort on bad approaches) | MED — saves cost on doomed experiments | HIGH — simple 3-trial filter | **#3** |
+| Dreaming/consolidation | OpenClaw | Context bloat / memory quality | MED — heartbeats already do this manually | MED — needs scoring gates | #4 |
+| Layered config precedence | OpenClaw | Config/skill management | LOW — not a current pain point | HIGH | #5 |
+| Surface decomposition | EvoHarness | General optimization | MED — useful framing but not directly testable | LOW — conceptual | #6 |
+| Per-agent skill allowlists | OpenClaw | Over-broad capabilities | LOW — not a current FM | HIGH | #7 |
+
+### Top 3 → Experiment Designs
+
+---
+
+### Pattern: Dead Ends Memory
+**Source:** EvoHarness — `dead_ends.md` research notebook
+**What it does there:** Each proposer iteration reads a `dead_ends.md` file listing previously-rejected approaches with reasons. Prevents re-exploring known failures.
+**Hypothesis:** Injecting a structured dead-ends file into agent context reduces FM-1.3 (path guessing/flailing) errors by ≥20% on scenarios that involve path discovery or multi-attempt problem solving.
+**Gym test design:**
+- Scenario(s): `stale-approach-fixation`, `stale-error-misdiagnosis-v2`, `cascading-fix-trap-v2`
+- Baseline: Current performance (no dead-ends file) — 5 trials per scenario
+- Treatment: Add a `dead_ends.md` to agent context with 3-5 known-bad approaches for the scenario domain (NOT scenario-specific answers — general patterns like "don't guess paths, use ls first")
+- Trials: 5 per scenario per arm (30 total)
+**Success criteria:** ≥15pp improvement on at least 2 of 3 scenarios, no regression on canary
+**Result:** pending
+**Decision:** pending
+
+---
+
+### Pattern: Fragility Tracking
+**Source:** EvoHarness — surface fragility scores (rejection rate per edit surface)
+**What it does there:** Tracks acceptance/rejection rate per "surface" (system prompt, tool defs, etc). Surfaces with >50% rejection rate are flagged HIGH risk; proposer avoids them.
+**Hypothesis:** Tracking which agent config surfaces (context.md, prompt.md, skills, heartbeat structure) have historically caused regressions will reduce FM-3.3 incidents by making agents more cautious about fragile surfaces.
+**Gym test design:**
+- Scenario(s): `compound-edit-verification`, `multi-file-verify-gap`, `partial-verification-trap`
+- Baseline: Agent with no fragility info — 5 trials per scenario
+- Treatment: Inject fragility ratings into context: "prompt.md edits: HIGH risk (3/4 regressions). context.md: LOW risk (0/5 regressions). heartbeat structure: CRITICAL (KE-008)."
+- Trials: 5 per scenario per arm (30 total)
+**Success criteria:** ≥15pp improvement on verification scenarios; agent avoids editing high-fragility surfaces when alternative exists
+**Result:** pending
+**Decision:** pending
+
+---
+
+### Pattern: Prescreen Gate
+**Source:** EvoHarness — 3-task prescreen before full eval ($9 vs $75)
+**What it does there:** Before running a full evaluation suite, tests a proposed change on just 3 failing tasks. If none flip to passing, the proposal is pruned immediately.
+**Hypothesis:** Adding a 3-trial prescreen step before full gym batches will save ≥50% of experiment cost by pruning ineffective interventions early.
+**Gym test design:**
+- This is a META-experiment about our experiment process, not a gym scenario
+- Method: Retroactively analyze our last 10 experiments. For each, check: would a 3-trial prescreen on failing scenarios have correctly predicted the full result?
+- If ≥80% of full-eval failures would have been caught by prescreen → adopt
+- Trials: Retrospective analysis (no new gym runs needed)
+**Success criteria:** ≥80% of historically-failed experiments would have been correctly pruned by 3-trial prescreen
+**Result:** pending
+**Decision:** pending
+
+---
+
 ## Tracking Table
 
 | # | Pattern | Source | Found | Tested | Result | Adopted |
 |---|---------|--------|-------|--------|--------|---------|
-| | | | | | | |
+| 1 | Dead ends memory | EvoHarness | 2026-04-18 | | | |
+| 2 | Fragility tracking | EvoHarness | 2026-04-18 | | | |
+| 3 | Prescreen gate | EvoHarness | 2026-04-18 | | | |
+| 4 | Dreaming/consolidation | OpenClaw | 2026-04-18 | | | |
+| 5 | Layered config precedence | OpenClaw | 2026-04-18 | | | |
+| 6 | Surface decomposition | EvoHarness | 2026-04-18 | | | |
+| 7 | Per-agent skill allowlists | OpenClaw | 2026-04-18 | | | |
 
 *Scout fills "Found". Bob fills "Tested/Result". Tech-lead implements "Adopted".*
 
@@ -70,17 +139,22 @@ For each pattern scout brings back, experiments follow this format:
 
 ## Current Status
 
-- Scout forked by assistant to research all four systems (2026-04-18)
-- Awaiting first research briefs from scout
-- Bob will design first experiment batch when briefs arrive
+- ✅ Scout delivered research on OpenClaw + EvoHarness (2026-04-18)
+- ✅ Bob triaged 7 patterns, mapped to FMs, ranked by impact×feasibility (2026-04-18)
+- ✅ Experiment designs written for top 3: dead-ends memory, fragility tracking, prescreen gate
+- ⏳ Awaiting scout briefs on Pi skills + Hermes agent
+- **Next:** Run EXP batch for pattern #1 (dead ends memory) — highest expected ROI
 
 ## Next Steps
 
-1. Scout delivers research briefs on pattern mechanisms
-2. Bob triages patterns by relevance to our known failure modes (FM-1.3, FM-3.3, etc.)
-3. Bob designs experiments for top 3-5 patterns
-4. Run experiments in gym
-5. Verified patterns go to tech-lead for implementation
+1. ~~Scout delivers research briefs on pattern mechanisms~~ ✅ (OpenClaw + EvoHarness done)
+2. ~~Bob triages patterns by relevance to our known failure modes~~ ✅
+3. ~~Bob designs experiments for top 3 patterns~~ ✅
+4. **Run experiment: Dead Ends Memory** — design dead_ends.md, run gym baseline + treatment
+5. Run experiment: Fragility Tracking
+6. Run experiment: Prescreen Gate (retrospective analysis)
+7. Scout delivers Pi skills + Hermes briefs → triage cycle #2
+8. Verified patterns go to tech-lead for implementation
 
 ## Comments
 
