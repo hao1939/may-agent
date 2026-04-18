@@ -35,7 +35,7 @@ No new hypotheses are introduced in this pass. Scope: rescoring + triad analysis
 | H-053 | Workflow adoption decays without structural reinforcement | **0.88** ✅ RESOLVED | ±0.00 | ✅ RESOLVED | Resolution verdict written 2026-04-18. 19.7%→0% adoption decay over 7 days (3 workflow families). EXP-028 natural experiment: −51pp done-rate on instruction removal. Dual-cause model (organic decay + instruction removal). |
 | H-058 | Frustration → topology rewrite; forced assessment prevents it | **0.87** | ±0.00 | — | Replication in a second agent archetype. |
 | H-098 | Attention Channel Theory — channel separation gates effectiveness | **0.83** | ±0.00 | H-167 refines (intra-Ch2 variance) but does not contradict. | P-167a (schema-checked vs bare Ch2 gate) result. |
-| H-043 | Knowledge utilization: U = P(access) × P(applies) × P(helps) | **0.85** | ±0.00 | — | — |
+| H-043 | Knowledge utilization: U = P(access) × P(applies) × P(helps) | **0.85** | ±0.00 | ✅ RESOLVED — SUPPORTED (3/5 predictions confirmed, 11+ evidence sources) | — |
 | H-009 | Evaluator was a rubber stamp (mitigated) | **0.85** ✅ RESOLVED | ±0.00 | ✅ RESOLVED | Resolution verdict written 2026-04-18. Structural blind spot confirmed, 4 mitigation phases deployed, EXP-039 Phase B confirmed selective LLM bias. |
 | H-055 | Self-improvement bias: cosmetic over substantive | **0.82** | ±0.00 | — | Longitudinal self-mod audit. |
 | H-088 | Implementation commitment closes analysis-action gap | **0.80** | ±0.00 | — | — |

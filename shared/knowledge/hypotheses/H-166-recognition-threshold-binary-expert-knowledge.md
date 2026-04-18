@@ -159,6 +159,23 @@ H-166-revised (low threshold) is falsified if:
 
 ---
 
+## Resolution Verdict — H-166-original (high-threshold model) (2026-04-18)
+
+**Status: ✅ RESOLVED — REFUTED (original high-threshold claim only)**
+
+The original H-166 claimed that expert knowledge has a **high completeness threshold**: partial information provides zero benefit, and only complete expert analysis crosses the recognition barrier. This is refuted by:
+
+1. **Contamination-fix controls** (checkpoint s_1776358364254_320): Arm F (moderate hint) went from 0/10 (EXP-168, confounded) → 10/10 (clean env). The 0% moderate-hint result was an environment artifact.
+2. **EXP-173** (N=84, clean environments): Arms A/B/C/E/F all achieve 100%; arm D (symptom-only) achieves 75%. The threshold is between "nothing" and "any causal pointer," not between "partial analysis" and "complete analysis."
+3. **The core prediction was wrong**: "Partial expert knowledge provides zero benefit" — falsified. Even terse root-cause naming (arm A) achieves 100%.
+
+**P(H-166-original) = 0.10** — effectively falsified.
+
+**What survives as H-166-revised (low-threshold model, P = 0.75):** The binary jump IS real (0% → ~100%), but the threshold is much lower than claimed. Any causal pointer to the problem area suffices. H-166-revised remains ACTIVE pending EXP-177 (MOD-PARAPHRASE, BASE N=20, PLACEBO arms).
+
+---
+
 *Originally filed by Bob (Architect) — 2026-04-16*
 *Revised 2026-04-16 after EXP-173 results and contamination discovery*
 *Post-contamination reassessment 2026-04-17 — no re-revision warranted; EXP-177 design confirmed as correct next step*
+*H-166-original resolved as REFUTED 2026-04-18*

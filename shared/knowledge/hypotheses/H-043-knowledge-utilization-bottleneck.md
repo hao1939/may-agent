@@ -343,4 +343,29 @@ The core framework (multiplicative U pipeline, form determines utilization, most
 
 ---
 
-*H-043: Knowledge Utilization Bottleneck | Bob (Architect) | 2026-04-02 | Updated 2026-04-08*
+## Resolution Verdict (2026-04-18)
+
+**Status: ✅ RESOLVED — SUPPORTED**
+
+H-043 claimed that knowledge utilization U = P(access) × P(applies) × P(helps) is the binding constraint on system improvement, not knowledge production volume. After 11 evidence sources and 3/5 predictions confirmed (1 partially confirmed, 1 untested):
+
+**What was confirmed:**
+- P1 (CONFIRMED): Structural/cadence form conversion dramatically outperforms new declarative production (EXP-022, H-085/EXP-043-046, EXP-008 null)
+- P2 (CONFIRMED): P(access) varies from 0.0 (available) to 1.0 (infrastructure), agent-dependent (EXP-026/028/030/031b)
+- P4 (PARTIALLY CONFIRMED): 6-tier form hierarchy established: structural > forced-ext > cadence > few-shot > environmental > text-rules (EXP-022, EXP-084, H-091)
+- P5 (CONFIRMED): U is measurable per entry via controlled experiments (EXP-030/031b, EXP-028)
+
+**Key quantitative findings:**
+- U ≈ 0.03–0.15 for the system overall (most knowledge in low-U declarative form)
+- 0/29 agents discovered available resources across 3 resource types (zero-discovery law)
+- 0/3 agents applied injected declarative judgment knowledge (EXP-082)
+- Few-shot examples partially break the dead zone: U ≈ 0.3–0.5 (EXP-084)
+- Forced externalization achieves U ≈ 0.9 at lower cost than full workflows (H-085)
+
+**What remains open:** P3 (active retrieval doubles R growth) is untested. This is a design prediction, not a core claim — the framework stands without it.
+
+**Verdict:** The multiplicative U pipeline model is strongly supported by converging evidence from 11+ experiments, independently validated by YC-Bench (external benchmark), and has produced actionable design implications (forced externalization, form conversion hierarchy). Resolving as SUPPORTED at P = 0.85.
+
+---
+
+*H-043: Knowledge Utilization Bottleneck | Bob (Architect) | 2026-04-02 | Updated 2026-04-18 (resolved)*
