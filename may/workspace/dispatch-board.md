@@ -31,7 +31,7 @@ Updated: 2026-04-16 ~08:00 UTC
 | **Gatekeeper Review Gate design** | ✅ Design reviewed | bob | Bob approved with notes. All feedback incorporated: Mode B renamed, system-scope defined, open questions resolved, Mode A deferred. Awaiting Hao approval → then dispatch Phase 1 (behavioral) to may, Phase 2 (code) to tech-lead. |
 | **Heartbeat commit instruction fix** | ✅ DONE | may | Fixed Step 7 of heartbeat.md — was telling me NOT to commit (stale 10min auto-commit reference). Now says commit first, auto-commit is 2h safety net. |
 | ⚠️ **Hao task truncated** | ❓ Need info | Hao | req:7a936dcb was truncated at 500 chars. Only issue #1 (threshold inversion) visible+dispatched. May have more issues. |
-| **Two-tier eval gap fix** | ✅ DONE — needs merge | tech-lead | Implemented `evaluateStandaloneSession()` (121 lines). Branch: `review/standalone-eval-coverage`. 1968 tests pass. Needs code review + merge. |
+| **Two-tier eval gap fix** | ✅ MERGED 2026-04-18 | tech-lead | Merged to main via `review/evaluator-source-tag` (merge commit 2da1d05d): standalone-eval + retry/parse-error verdict + source tagging. Both source-tag and standalone-retry branches deleted. 1989 tests pass, tsc clean. |
 
 ## Completed This Cycle
 | Issue | Status | Owner | Notes |

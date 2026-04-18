@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776472401170_729
+- **Session:** s_1776488527590_863
 - **Status:** done
-- **When:** 2026-04-18T00:36:16.091Z
-- **Duration:** 2m54s
+- **When:** 2026-04-18T05:06:01.301Z
+- **Duration:** 3m53s
 
 ## What Happened
-The 9 failures reproduce on pristine `origin/main` — they're completely unrelated to the evaluator source-tag change. Verifying the actual commit is fine:
+Both evaluator branches deleted, merge commit on main, tsc clean, 1989/1989 tests pass.
