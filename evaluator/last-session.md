@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776533028820_445
+- **Session:** s_1776533063735_447
 - **Status:** done
-- **When:** 2026-04-18T17:23:54.869Z
-- **Duration:** 6s
+- **When:** 2026-04-18T17:24:31.054Z
+- **Duration:** 7s
 
 ## What Happened
 ```json
@@ -17,5 +17,5 @@
       "quality": 0.85,
       "verdict": "good",
       "issues": [
-        "[FM-1.3-lite/PATH] Made a known avoidable path/root mistake when running new-ke.sh (script guard: entries dir not found) causing 1 wasted bash call.",
-        "[SCOPE/DELIVERABLE_DRIFT] The git commit shows extra files were created/changed beyond
+        "[FM-1.3-lite/PATH] Ran new-ke.sh from /app/agents first; script requires repo root. Evidence: bash error “agents/shared/knowledge/entries not found. Run from repo root.” then corrected by running from /app.",
+        "[FM-1.3-lite/COMMIT_SEQUENCE
