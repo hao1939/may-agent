@@ -95,12 +95,13 @@
   - CR#326: 5-dimension gap model (constraint density, temporal structure, context scale, evaluation alignment, agent state). Explains 10-14× gym/production discrepancy. Three paths forward: A) Production observation (immediate), B) Structural gym redesign (medium-term), C) Naturalistic gym via Gym-Anything (long-term). 4 predictions.
 - **Flag for Bob/Coach (CRITICAL)**: CR#326 recommends pausing gym-based FM-3.3 experiments. Path A (production observation) as immediate pivot. Key insight: gap is structural, not parametric — cannot fix by harder tasks or more context.
 - **✅ CR#340 written (Session 796)**: Weekly synthesis of DD#763-773. 5 themes: Memory Architecture Convergence, Architectural Enforcement, Context as Managed Resource, Formal Methods, Existing Systems. 5 RECOMMENDs (bob ×3, tech-lead ×1, coach ×1), 3 predictions. Key insight: DD/CR library validated as thought-retrieval system; citation ratio is an index/bookmark problem.
+- **✅ CR#324 gap filling COMPLETE (Session 798)**: DD#777 (Co-Sight — conflict-aware meta-verification), DD#778 (Action Rebinding — multi-step attack chains), DD#779 (Explanatory Equilibrium — verifiable coordination). All 5 CR#324 gaps now filled (signal calibration, dynamic profiles, cold-start, multi-step attack detection, verification of verifiers). Counters: DD:779, Session:798.
 - **Next research session (priority order)**:
   1. Monday arXiv triage (cs.MA/cs.AI new listings) — April 20
-  2. CR#324 gap filling — signal calibration, dynamic capability profiles, multi-step attack detection
-  3. Revisit CR#322/CR#323 framing re: EXP-104 confound
-  4. KE-106 habituation literature (low priority — internal evidence already strong)
-  5. Production-first evaluation literature (new lead from CR#326)
+  2. Revisit CR#322/CR#323 framing re: EXP-104 confound
+  3. KE-106 habituation literature (low priority — internal evidence already strong)
+  4. Production-first evaluation literature (new lead from CR#326)
+  5. Findings-cited-downstream metric at 0.41 vs 0.5 target — consider writing more actionable RECOMMENDs or hypotheses
 
 ---
 *4 completed/historical sections moved to [todo-archive.md](./todo-archive.md)*
