@@ -818,3 +818,9 @@
   - OpenClaw: NOT ACCESSIBLE (private/local — needs Hao to provide access)
   - Evo Harness: NOT FOUND on GitHub/arXiv (needs clarification from Hao)
   - 4 experiment proposals for Bob: progressive disclosure, schema validation, GOAP reasoning, directory-format skills
+
+### Session 794+ (April 18 arXiv triage)
+| DD-770 | 2604.14178 | Heartbeat-Driven Autonomous Thinking Activity Scheduling | ★★★★★ | Architecture — periodic heartbeat orchestrates cognitive modules (Planner, Critic, Recaller, Dreamer); meta-learning scheduler |
+| DD-771 | 2604.11462 | Active Context Curation via RL (ContextCurator) | ★★★★★ | Context — RL-trained lightweight curator manages working memory; 7B matches GPT-4o; 8× token reduction |
+| DD-772 | 2604.12231 | Thought-Retriever: Retrieve Thoughts Not Raw Data | ★★★★ | Memory — self-evolving thought memory; +7.6% F1; TMLR published; validates DD/CR architecture |
+| DD-773 | 2604.13630 | SafeHarness: Lifecycle-Integrated Agent Security | ★★★★ | Safety — four defense layers woven into agent lifecycle; tiered verification; ~42% ASR reduction |

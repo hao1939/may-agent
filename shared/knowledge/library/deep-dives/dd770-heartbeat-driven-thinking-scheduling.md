@@ -1,4 +1,4 @@
-# DD#769: Heartbeat-Driven Autonomous Thinking Activity Scheduling
+# DD#770: Heartbeat-Driven Autonomous Thinking Activity Scheduling
 
 **Paper**: Simulating Human Cognition: Heartbeat-Driven Autonomous Thinking Activity Scheduling for LLM-based AI systems
 **arXiv**: 2604.14178 | **Author**: Hong Su | **Submitted**: 2026-03-28

@@ -1607,3 +1607,10 @@ Production multi-agent data management system with "three-track knowledge archit
 | 2604.13206 | Numerical Instability and Chaos in LLMs (Apr 2026) | ★★★ — Rounding errors in transformers create chaotic avalanche effects. Three regimes: stable, chaotic, signal-dominated. |
 | 2604.13504 | Chain of Uncertain Rewards with LLMs for RL (Apr 2026) | ★★½ — Reward function design via LLM + Bayesian optimization. Domain-specific (robotics). |
 | 2604.13318 | WebXSkill: Executable Skills for Web Agents (Apr 2026) | ★★★ — Bridges textual and code skills with parameterized programs + NL guidance. +9.8pp on WebArena. |
+| 2604.14178 | Heartbeat-Driven Autonomous Thinking Activity Scheduling (Mar 2026) | ★★★★★ — Periodic heartbeat orchestrates cognitive modules via meta-learning. Directly validates our architecture. DD#770. |
+| 2604.11462 | Active Context Curation via RL — ContextCurator (Apr 2026) | ★★★★★ — RL-trained 7B curator manages working memory, matches GPT-4o. 8× token reduction. DD#771. |
+| 2604.12231 | Thought-Retriever: Retrieve Thoughts Not Raw Data (Apr 2026, TMLR) | ★★★★ — Self-evolving thought memory. +7.6% F1. Validates DD/CR library architecture. DD#772. |
+| 2604.13630 | SafeHarness: Lifecycle-Integrated Agent Security (Apr 2026) | ★★★★ — Four defense layers in agent lifecycle. ~42% ASR reduction. DD#773. |
+| 2604.13349 | Latent KV Compression for Multi-Agent Communication (Apr 2026) | ★★★½ — Orthogonal Backfill reduces KV relay cost 80-89% while preserving performance. |
+| 2604.14116 | TREX: Agent-Driven Tree-based LLM Fine-tuning Automation (Apr 2026) | ★★★ — Multi-agent system automates LLM training lifecycle. Search tree for experimental exploration. |
+| 2604.10449 | AdverMCTS: Adversarial MCTS for Code Generation (Apr 2026) | ★★★½ — Minimax game between Solver and Attacker agents. Reduces pseudo-correctness in code gen. |

@@ -1,4 +1,4 @@
-# DD#772: SafeHarness — Lifecycle-Integrated Security for LLM Agent Deployment
+# DD#773: SafeHarness — Lifecycle-Integrated Security for LLM Agent Deployment
 
 **Paper**: SafeHarness: Lifecycle-Integrated Security Architecture for LLM-based Agent Deployment
 **arXiv**: 2604.13630 | **Authors**: Xixun Lin et al. (12 authors) | **Submitted**: 2026-04-15

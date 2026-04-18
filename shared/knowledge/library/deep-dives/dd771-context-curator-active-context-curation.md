@@ -1,4 +1,4 @@
-# DD#770: Escaping the Context Bottleneck — Active Context Curation via RL
+# DD#771: Escaping the Context Bottleneck — Active Context Curation via RL
 
 **Paper**: Escaping the Context Bottleneck: Active Context Curation for LLM Agents via Reinforcement Learning
 **arXiv**: 2604.11462 | **Authors**: Xiaozhe Li et al. (9 authors) | **Submitted**: 2026-04-13

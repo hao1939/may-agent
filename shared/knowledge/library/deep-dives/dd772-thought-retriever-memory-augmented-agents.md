@@ -1,4 +1,4 @@
-# DD#771: Thought-Retriever — Retrieve Thoughts, Not Raw Data
+# DD#772: Thought-Retriever — Retrieve Thoughts, Not Raw Data
 
 **Paper**: Thought-Retriever: Don't Just Retrieve Raw Data, Retrieve Thoughts for Memory-Augmented Agentic Systems
 **arXiv**: 2604.12231 | **Authors**: Tao Feng et al. | **Published**: TMLR 04/2026
