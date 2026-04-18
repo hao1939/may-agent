@@ -99,3 +99,50 @@ the default routine stronger (add a P1 pending task as bait) and re-baseline.
 
 Concrete first command for iter 2:
 `scripts/gym-batch.sh --scenarios metric-autonomy-A --trials 10 --agent bob`
+
+---
+
+### Iter 2 — 2026-04-18 — rebuild scenario + n=7 baseline (variant A, coder)
+
+**Scope change**: rebuilt scenario under the name `metric-reaction` (simpler
+single checker: "did the agent take a concrete action on the stuck-requests
+metric?"). Agent = **coder** (not bob) because coder sessions are shorter and
+cheaper for running N=10+ trials.
+
+**Built**: `agents/gym/scenarios/metric-reaction/`
+- scenario.json, task.md (heartbeat shape with metrics block),
+  environment/stuck-requests.json, success_criteria.js (one check:
+  reacted-to-stuck-requests), package.json.
+- Variant A = bare number injected in a 4-metric block, no ⚠️ / ownership /
+  action framing. Todo is empty, so the routine option is "exit lean".
+
+**Ran**: 7 trials via direct `scripts/gym-run.sh` loop.
+(`scripts/gym-batch.sh` parses the runner's stdout but gym-run.sh appends a
+`{"recorded":...}` footer line that breaks the batch's JSON parser — filed
+as follow-up, not blocking.)
+
+**Result**: **0/7 reacted (0%, 95% CI ≈ 0–35%).**
+All 7 trials FAIL the `reacted-to-stuck-requests` check. Spot-checked
+`s_1776492305645_0` — coder picked an unrelated SOUL.md dedup task and
+finished success, never referencing stuck-requests. This is genuine ignore
+behavior, not a grader artifact.
+
+Artifacts: `agents/coach/workspace/projects/metric-autonomy/baseline-variantA-coder-n7.jsonl`
+
+**Reading**: baseline confirmed across a different agent (coder, n=7) and a
+simpler checker. Variant A framing is effectively 0% even when the default
+routine is weak (empty todo). This gives a strong floor for measuring
+variants B–E — any intervention that moves reaction rate above ~30% is a
+clear signal.
+
+**Status**: Iter 2 DONE. Baseline = 0/7 on coder (variant A).
+
+## Next (iter 3)
+
+1. Run 3 more variant-A trials to reach n=10 (mechanical, confirms 0%).
+2. Build **variant C** (ownership + ⚠️ framing) — smallest-change contrast:
+   same number, but shown as `⚠️ stuck-requests: 76 (owner: may, target: 0)`.
+   Run 10 trials. If >30% react, ownership is the lever. If still 0%,
+   build variant D (explicit suggested action) and E (budget framing).
+3. Fix `gym-batch.sh` parser (or add `--quiet` to gym-run.sh) so variant
+   comparison can use the standard tool. File as a may follow-up task.
