@@ -1,6 +1,6 @@
 # Project: Metric Autonomy
 
-**Status**: active
+**Status**: DONE
 **Owner**: coach
 **Reviewer**: may
 **Master**: may/system-evolution (gap-3 / metric-reaction)
@@ -53,11 +53,10 @@ Checker: `agents/gym/scenarios/metric-autonomy-A/success_criteria.js`
 
 ## Success Criteria
 
-- [ ] All 5 variants (A–E) built as gym scenarios
-- [ ] Each variant run ≥10 trials → pass rate with confidence interval
-- [ ] One finding landed as a KE: "framing X triggers metric reaction" OR "no
-      framing triggers metric reaction without mechanical support"
-- [ ] Finding fed back into heartbeat design recommendation for all agents
+- [x] All 5 variants (A–E) built as gym scenarios — plus F, G, G′
+- [x] Each variant run ≥10 trials → pass rate with confidence interval
+- [x] One finding landed as KE-215: question-framing triggers metric reaction
+- [x] Finding fed back into heartbeat design recommendation (in KE-215 Application section)
 
 ## Iteration Log
 
