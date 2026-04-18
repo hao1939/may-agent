@@ -27,6 +27,18 @@ Agent-specific interventions targeting each agent's dominant failure mode (FM fi
 13. **EXP-132 (Path Hallucination Guard for Coder C7.1)**: ✅ **DEPLOYED — 3rd AGENT-SPECIFIC GUARD** — Ch2 structural guard (`beforeToolCall` hook) intercepts hallucinated paths in bash commands. 41 tests, 65 assertions. Targets Coder×C7.1 path hallucination — a distinct agent-specific failure mode. Restores 3-guard portfolio: Coder×FM-3.3 commit guard, Optimizer×FM-2.2 completeness checklist, Coder×C7.1 path hallucination interceptor. Each guard targets a different agent×failure-mode pair with a Ch2 structural mechanism. **P(H) 0.84→0.86**: Third independent agent-specific guard validates the approach pattern.
 14. **EXP-123 (Verification-Depth Guard — Production Deployment)**: ✅ **STRONGEST NATURAL EXPERIMENT FOR AGENT-SPECIFICITY** — Same structural guard (verification-depth check at finish()) deployed fleet-wide, with dramatically different outcomes per agent. Bob/Coach/Scout/TechLead → 100% C1.3 (up from 70.5% fleet average), but Optimizer stayed at 56%, May regressed slightly. ⚠️ Gym measurement was artifact (EXP-133: transcript-based detection), BUT production effect is REAL: Bob C1.3 70.5%→100% (+29.5pp), Fleet C1.3 74.2%→90.0% (+15.8pp). Guard works as RECOVERY mechanism — forces verification when agents forget (consistent with EXP-110/KE-113). The differential response is the clearest demonstration that identical interventions produce agent-specific outcomes: same guard, same mechanism, 7 agents, 3 different response profiles (strong benefit, no effect, regression). **P(H) 0.86→0.88**: Production-scale natural experiment with N=7 agents showing 3 distinct response profiles to identical intervention.
 
+## Resolution Verdict
+
+**Verdict**: CONFIRMED
+**Final P(H)**: 0.88
+**Date**: 2026-04-18
+
+**Key evidence**: 14 experiments spanning observational (EXP-109, EXP-113) and interventional (EXP-110, EXP-115, EXP-117, EXP-123, EXP-132) designs. Three agent-specific guards deployed in production: Coder×FM-3.3 commit guard (recovery +51.3pp), Optimizer×FM-2.2 completeness checklist (+100pp), Coder×C7.1 path hallucination interceptor. Strongest evidence: (1) EXP-117 differential — same forced-checklist mechanism gives optimizer +100pp but Bob −67pp (p=0.030), proving interventions must be agent×task-specific. (2) EXP-123 natural experiment — identical verification-depth guard deployed fleet-wide produces 3 distinct response profiles across 7 agents (strong benefit, no effect, regression). (3) EXP-113 at N=398 confirms truly distinct agent FM fingerprints at scale. Universal interventions consistently null or harmful (EXP-108 −5.6pp, EXP-117 −67pp on Bob).
+
+**Remaining open questions**: (1) FM-2.1 approach guard for coach (highest priority per KE-115) untested in production. (2) FM fingerprint stability over 30-day windows unvalidated. (3) Post-guard residual population (N=16, 88% FM-3.3) resistant to current guards.
+
+---
+
 ### Counterevidence / Risk Factors
 1. **Common cause hypothesis**: All failure modes may share a root cause (e.g., context overload) → agent-specific treatments would be no better than addressing root cause
 2. **KE-109 structural gap**: If production failures are driven by environmental factors (context scale, temporal structure), agent-specific interventions may be insufficient

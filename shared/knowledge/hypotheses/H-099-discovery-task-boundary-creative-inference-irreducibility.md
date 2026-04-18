@@ -167,6 +167,18 @@ If the discovery task is run with a more capable model (e.g., future Claude vers
 
 ---
 
+## Resolution Verdict
+
+**Verdict**: CONFIRMED
+**Final P(H)**: 0.90
+**Date**: 2026-04-18
+
+**Key evidence**: 7 experiments (EXP-117/120/121/122/124/126/130) with combined N=84 on the same discovery task. All 3 intervention channels exhausted: Ch1 actively harmful (8% vs 67% baseline, p=0.005), Ch2/structural null (56% vs 61%), Ch3 actively harmful (33% vs 100%, p=0.030). External validation from 6 independent Einstellung effect papers (CR-337, DD-744/745/746) confirms the template-displacement mechanism. The stochastic Bernoulli model explains the asymmetry: time-consuming interventions harm, information-adding interventions are null, only time extension shows marginal positive trend.
+
+**Remaining open questions**: (1) Time gradient curve (P-099a) untested. (2) Cross-task generalization (P-099c) — all evidence from single discovery task. (3) Multi-agent redundancy as mitigation untested. (4) Whether CoT can alter per-cycle inference probability unknown.
+
+---
+
 ## Open Questions
 
 1. **Is the ~67% natural rate a model-level constant or task-specific?** Different discovery tasks might have different base rates of creative inference.

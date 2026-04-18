@@ -1,6 +1,6 @@
 # H-091: Skill Delivery Methods Exist Between Text-Rules and Workflow Enforcement
 
-**Status**: Strongly Supported (EXP-084, EXP-085, EXP-086, EXP-087, EXP-089, EXP-090, EXP-091, EXP-093, EXP-094, EXP-095, EXP-096, EXP-097)
+**Status**: ✅ RESOLVED — Confirmed (12 experiments, cumulative matched few-shot 18/18, three boundaries mapped, positional privilege mechanism identified)
 **Date**: 2026-04-09
 **P(H)**: 0.93
 
