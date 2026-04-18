@@ -347,11 +347,11 @@ not one. Next iter must build a clean G and re-measure before claiming
 **Replication (independent re-run, same session-cluster)**: a second
 loop run ran F n=10 (ids 2617, 2620, 2621, 2623, 2625, 2626, 2628, 2630,
 2632, 2634) → 2 passes, and G n=10 (ids 2636, 2638, 2640, 2642, 2645,
-2647, 2648, 2649, 2650, 2651) → **10 passes**. Pooled across both runs:
-F = 3/19 ≈ 15.8% (95% CI [5.5%, 37.6%]), **G = 20/20 = 100%** (95% CI
-[83.9%, 100%]). The lever reproduces. Artifacts:
-`variantF-n10.jsonl`, `variantG-n10.jsonl` in the project dir (second-run
-footers).
+2647, 2648, 2649, 2650, 2651) → **10 passes**. A third independent loop
+added G n=10 more → **10/10 passes**. Pooled across all loops (id>2612):
+F = 6/29 ≈ 20.7% (95% CI [9.8%, 38.4%]), **G = 30/30 = 100%** (95% CI
+[88.6%, 100%]). The lever reproduces robustly. Artifacts:
+`variantF-n10.jsonl`, `variantG-n10.jsonl` in the project dir.
 
 ## Next (iter 6)
 
