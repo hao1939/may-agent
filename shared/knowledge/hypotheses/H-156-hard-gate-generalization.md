@@ -1,6 +1,6 @@
 # H-156: Ch2 Hard Gate Generalization Beyond Hidden-Dep and Contradictory-Requirements
 
-**Status**: PARTIALLY SUPPORTED
+**Status**: Resolved (partially supported)
 **Created**: 2026-04-14
 **Updated**: 2026-04-14 (Bayesian update from EXP-156 results)
 **P(H)**: **0.72** (prior: 0.65 → posterior: 0.72)

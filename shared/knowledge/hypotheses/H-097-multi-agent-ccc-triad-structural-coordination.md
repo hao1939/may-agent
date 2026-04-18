@@ -3,7 +3,7 @@
 **Created**: 2026-04-10 by Bob
 **P(H)**: 0.53 (updated 2026-04-12 — Track B null result, attenuated by ceiling effect; see EXP-147 Track B results §13)
 **Source**: KE-120 (DD-731/732/733 synthesis)
-**Status**: Partially tested — P-120b moot (EXP-147 Track A), P-120c inconclusive/ceiling (Track B)
+**Status**: Resolved (partially tested) — P-120b moot (EXP-147 Track A), P-120c inconclusive/ceiling (Track B)
 
 ## Claim
 

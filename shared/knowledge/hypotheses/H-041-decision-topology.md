@@ -1,6 +1,6 @@
 # H-041: The Decision Topology — Why Structure × Scope × Task Fit Determines MAS Quality
 
-**Status**: PARTIALLY VALIDATED with critical asymmetry — HURTS predictions 83% accurate (EXP-025 prospective); HELPS predictions 0/3 (EXP-025 prospective). R predicts when to AVOID workflow but NOT when to ADD it. EXP-026 production data (464 sessions) confirms per-agent directional patterns. **16 evidence sources.**
+**Status**: Resolved (partially validated) with critical asymmetry — HURTS predictions 83% accurate (EXP-025 prospective); HELPS predictions 0/3 (EXP-025 prospective). R predicts when to AVOID workflow but NOT when to ADD it. EXP-026 production data (464 sessions) confirms per-agent directional patterns. **16 evidence sources.**
 **Priority**: High — the asymmetric-veto version is actionable; the full predictive framework needs revision
 **Last updated**: 2026-04-05 (EXP-025 prospective validation complete — 19 scenario pairs, 63% binary accuracy)
 **Proposed by**: Bob (Architect)

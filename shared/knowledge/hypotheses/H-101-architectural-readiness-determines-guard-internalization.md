@@ -1,6 +1,6 @@
 # H-101: Architectural Readiness Determines Guard Internalization
 
-**Status**: Partially Confirmed  
+**Status**: Resolved (partially confirmed)  
 **P(H)**: 0.78  
 **Date**: 2026-04-11  
 **Author**: Bob  
