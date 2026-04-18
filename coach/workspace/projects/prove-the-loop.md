@@ -310,3 +310,32 @@ Each iteration:
     - 20 new `gym_runs` rows (ids 2528–2547).
     - No new scenarios or forks this iteration.
   - **Honesty note (active_recall FM-3.3)**: Pass rates from `bun:sqlite` query of `gym_runs` ids 2528–2547 (not recalled from stdout). Guard-fire counts from `grep -c "Evidence-Count Mismatch"` on each session.jsonl. The reorder diff verified via `edit()` tool output showing the expected before/after hunks. `tsc --noEmit` exited 0.
+
+- 2026-04-18 Iteration 13 (24h production monitoring, 11:24Z) — **REGRESSION: 0.825 → 0.713, FM-3.3 dominant**:
+  - **Window**: C1.5 deploy 2026-04-17 07:14Z → 2026-04-18 06:32Z (latest eval). 28h elapsed. n=34 post-deploy evals (≥15 threshold met).
+  - **Pre-deploy 7d baseline**: n=164, avg quality **0.825**.
+  - **Post-deploy combined (C1.5+C1.6+C1.7)**: n=34, avg quality **0.713** (Δ = **-0.112**, severe regression).
+  - **Split on C1.7 boundary (09:24Z)**:
+    - Pre-C1.7 (C1.5+C1.6 only): n=2, avg **0.925** — too small to interpret.
+    - Post-C1.7 (all three): n=32, avg **0.700** — regression concentrated here.
+  - **Failure mode breakdown (post-deploy)**:
+    - FM-3.3 (verification/fabrication): **21/34** (62%) — UP massively from baseline.
+    - FM-2.6 (scope violation): **4/34** (12%).
+    - T2-no-post-write-verification blocks: **4/34** (12%) — similar to pre-deploy 11%.
+  - **Quality distribution**: 18/34 below 0.8 (53%), vs baseline ~35% below 0.8. Median ≈ 0.78 vs baseline ~0.86.
+  - **Diagnosis — C1.5/C1.6/C1.7 context rules are NET HARMFUL**:
+    - FM-3.3 went from moderate (baseline) to dominant (62% of post-deploy sessions). The context rules telling agents about verification appear to be *triggering* more verification-related failures, not fewer. Possible mechanisms:
+      1. **Attention displacement**: 4 C1.x rules in context.md crowd out other instructions, reducing overall quality.
+      2. **Over-compliance → fabrication**: Rules telling agents "you must verify" cause agents to claim verification even when they haven't done it properly (FM-3.3).
+      3. **Rule bloat → confusion**: 4 rules is too many; agents fixate on rule-following over task-completion.
+    - T2-block rate stayed ~12% (no improvement from C1.6 which targeted this).
+    - The 2 pre-C1.7 evals (0.925 avg) hint C1.5+C1.6 alone may not have been harmful, but n=2 is meaningless.
+  - **DECISION — REVERT ALL C1.x rules (C1.5, C1.6, C1.7)**:
+    - Per project rules: "If regression → revert oldest rule first per one-change-per-cycle."
+    - Given severity (-0.112 avg quality, 62% FM-3.3) and inability to attribute to individual rules (all 3 deployed within 2.25h), reverting all 3 simultaneously is justified. Keeping some and reverting others would require another 24h window per rule — too slow given the damage.
+    - The evidence-count-guard (structural, in `src/lib/tools/`) is SEPARATE from the context rules and showed no harm in gym. Keep it deployed.
+  - **Action items**:
+    1. **IMMEDIATE**: Remove C1.5, C1.6, C1.7 from `agents/coder/context.md`. Keep C1.1 (pre-existing).
+    2. Monitor for 24h post-revert to confirm quality returns to baseline (~0.825).
+    3. Re-diagnose: the original failure modes (FM-2.6 scope, FM-3.3 verification) need structural fixes (KE-007), NOT context rules. This validates KE-007/KE-011 (text injections don't work / are ignored or harmful).
+  - **Key lesson**: Context-rule interventions for verification behavior are **net negative** in production. They increase FM-3.3 (fabricated verification) rather than reducing it. This is consistent with KE-011 (context.md text injections are ignored) but worse — they're not just ignored, they're actively harmful at scale. Future interventions must be structural (guards, workflow hooks) only.
