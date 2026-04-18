@@ -1,17 +1,18 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-16 ~08:00 UTC
+Updated: 2026-04-18 ~08:30 UTC
 
 ## System Health
-- **Bob**: 🟢 Active — 32 sessions/6h, avg 11 ops. Zero errors.
-- **Coach**: 🟢 Active — 31 sessions/6h, avg 10 ops. Zero errors.
-- **Scout**: 🟢 Active — 13 sessions/6h, avg 5 ops. Zero errors.
-- **Tech-lead**: 🟢 Active — 26 sessions/6h, avg 7 ops. Zero errors.
-- **Optimizer**: 🟢 Active — 25 sessions/6h, avg 8 ops. Zero errors.
-- **Evaluator**: 🟢 Active — 114 sessions/6h, avg 0 ops. Zero errors.
-- **QA**: 🟢 Active — 12 sessions/6h, avg 6 ops. Zero errors.
-- **Coder**: 🟢 Active — 86 sessions/6h, avg 10 ops. Zero errors.
-- **Summary**: 9/9 healthy. Zero errors. Coder utilization dramatically up (86 sessions vs 1 yesterday).
+- **Bob**: 🟢 Active — 26 sessions/6h, avg 14 ops. Zero errors.
+- **Coach**: 🟢 Active — 41 sessions/6h, avg 12 ops. Zero errors (4 interrupts — transient aborts).
+- **Scout**: 🟢 Active — 14 sessions/6h, avg 6 ops. Zero errors.
+- **Tech-lead**: 🟢 Active — 21 sessions/6h, avg 7 ops. Zero errors.
+- **Optimizer**: 🟢 Active — 25 sessions/6h, avg 14 ops. Zero errors.
+- **Evaluator**: 🟢 Active — 98 sessions/6h, avg 0 ops. Zero errors.
+- **QA**: 🟢 Active — 12 sessions/6h, avg 9 ops. Zero errors.
+- **Coder**: 🟢 Active — 5 sessions/6h, avg 27 ops. Zero errors.
+- **May**: 🟢 Active — 15 sessions/6h, avg 14 ops. Zero errors.
+- **Summary**: 9/9 healthy. Zero errors. No stuck sessions. Coder sessions down (5 vs 86) but ops up (27 avg).
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
@@ -55,11 +56,11 @@ Updated: 2026-04-16 ~08:00 UTC
 - **P2**: Amy-kimi billing — blocked on Hao.
 - ⚠️ **HOLD**: Ch2-production-gates implementation — Hold for EXP-170.
 
-## Latest Cycle Summary (09:00 Apr 16)
-- **SYSTEM**: 9/9 healthy. Zero errors. Zero stuck sessions. 1 scout interrupt (transient).
-- **DISPATCHED**: Bob gym execution reliability → coach (s_1776330087330_606).
-- **QUEUE**: 2 ready items remaining. Next: Top-5 metrics dashboard, Metric Phase 3 (post-restart).
-- **WAITING**: Gatekeeper Review Gate needs Hao approval. Metric System Phase 3 needs process restart.
+## Latest Cycle Summary (08:30 Apr 18)
+- **SYSTEM**: 9/9 healthy. Zero errors. Zero stuck sessions. Coach has 4 transient interrupts (aborts, not bugs).
+- **PENDING REQUESTS**: Coach investigating premature DONE rate metric. Optimizer investigating tool adoption regression. May instruction-following task pending.
+- **QUEUE**: Ready items: Coach work-session quality intervention, Top-5 metrics dashboard, Metric Phase 3 verification.
+- **WAITING**: Gatekeeper Review Gate needs Hao approval.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
