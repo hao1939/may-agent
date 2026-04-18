@@ -26,6 +26,13 @@ Read your context and identify what needs doing:
    The snapshot script returns running sessions, recent errors, pending
    requests, your recent sessions, and last-hour activity in one call —
    replaces 4-8 separate `bun -e` SQL one-liners.
+
+   **To locate a KB file by ID** (DD/KE/H/EXP/CR), use
+   `bash agents/shared/scripts/kb-find.sh DD-770` instead of probing paths
+   with `ls`/`find`. It resolves case + naming variants in one call and
+   returns all matching paths (some IDs like DD-772 have multiple files).
+   This eliminates the top FM-1.3 pattern (34+ wasted path-probe calls in
+   the last 7 days).
 4. **Check your metrics.** Look at "Injected: metrics" above. Fast metrics = every heartbeat, daily = once/day, slow = weekly. If any metric is trending badly, note it as a candidate task. Don't compute metrics yourself — just read what's provided.
 
 **Do NOT read INDEX.md here** — save deep KB exploration for work sessions.
