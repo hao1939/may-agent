@@ -189,18 +189,104 @@ remains on the list.
 **Status**: Iter 3 DONE. C beats A by +10pp, not statistically meaningful
 at n=10.
 
-## Next (iter 4)
+### Iter 4 — 2026-04-18 — variant D (suggested action) + variant E (position-first)
 
-1. Spot-check run 2590 (the one C pass) to confirm it's a real metric
-   reaction, not a grader false-positive.
-2. Build variant D (explicit suggested action: `stuck-requests: 76 —
-   query and clean them up`) and run n=10 on coder.
-3. Build variant E (metric block as FIRST item in task.md, above the
-   dispatch board) and run n=10 on coder.
-4. If D and E both stay <30%, build a combined variant (C+D: ownership +
-   suggested action) to test interaction. If any single variant ≥30%, stop
-   and write up the lever.
-5. Fix `gym-batch.sh` parser — still open, still worth a tech-lead task.
+**Scope**: (a) spot-check run 2590 (C's one pass); (b) build D = A with an
+explicit suggested-action phrase appended to the metric line (`… — query and
+clean them up`); (c) build E = A with the entire metrics block moved to the
+TOP of task.md, before any heading or steps; (d) run n=10 each on coder.
+
+**Built**:
+- `agents/gym/scenarios/metric-reaction-D/` — `cp -r` of `metric-reaction/`
+  with exactly one edit to `task.md` line 8:
+  - A: `stuck-requests: 76, target: 0`
+  - D: `stuck-requests: 76, target: 0 — query and clean them up`
+  - scenario.json `name`/`tags`/`description` updated. Checker unchanged.
+- `agents/gym/scenarios/metric-reaction-E/` — `cp -r` of `metric-reaction/`
+  with `task.md` restructured so the metrics block is the first thing in the
+  file, above the `# Heartbeat Cycle` heading and above the dispatch board.
+  Metric line text is identical to variant A. scenario.json updated.
+
+**Spot-check of run 2590 (C's lone pass)**: Could not locate the transcript.
+`gym_runs.transcript` is NULL for all ids 2580–2592 in `.state/may.db`, and
+session `s_1776495490514_0` is not present in `.state/sessions/` or
+`.state/sessions/history/` (checked with `find` and `grep`). Mitigation:
+the checker is deterministic tool-call-based (see
+`agents/gym/scenarios/metric-reaction/success_criteria.js` — it requires an
+actual `bash`/`read`/`agents`/file-tool call whose args match `/stuck/i`, or
+`finish()` summary citing `stuck` + `76`). It cannot pass on "agent
+mentioned the metric in prose"; it only passes on a concrete tool action.
+False-positive risk is therefore low. Noting as a gap (transcript retention
+would let us spot-check in future iters) rather than a blocker — filing as
+follow-up.
+
+**Ran**:
+- Variant D (n=10): runIds 2593–2602. One pass (2599).
+- Variant E (n=10): runIds 2603–2612. Zero passes.
+
+Grouped verification (SQL on `.state/may.db`, id > 2592):
+
+```
+metric-reaction-D: passed=1, n=10
+metric-reaction-E: passed=0, n=10
+```
+
+**Results table (all variants, n=10 each on coder)**:
+
+| variant | lever                              | pass | n  | rate | 95% CI (Wilson) |
+|---------|-------------------------------------|------|----|------|-----------------|
+| A       | bare number                         | 0    | 10 | 0%   | [0.0%, 27.8%]   |
+| C       | ⚠️ + ownership tag                  | 1    | 10 | 10%  | [1.8%, 40.4%]   |
+| D       | suggested action appended           | 1    | 10 | 10%  | [1.8%, 40.4%]   |
+| E       | metric block at TOP of task.md      | 0    | 10 | 0%   | [0.0%, 27.8%]   |
+
+Artifacts:
+- `agents/coach/workspace/projects/metric-autonomy/variantD-n10.jsonl`
+- `agents/coach/workspace/projects/metric-autonomy/variantE-n10.jsonl`
+
+**Reading**: None of the single-axis framing tweaks (ownership+⚠️,
+suggested-action, position-first) move the reaction rate meaningfully above
+the 0% baseline. All three point estimates sit within each other's 95% CIs
+and well below the pre-registered 30% "clear lever" threshold. Notable: E
+(position-first) produced 0/10, same as baseline — putting the metric at the
+very top of the context is *not* sufficient to displace the numbered-step
+routine. This is consistent with the `/tmp/why-no-reaction.md` hypothesis
+that the bottleneck is **not presentation** but that the agent commits to
+the numbered-step plan the moment it sees one, regardless of what surrounds
+it. Statement-style framing (A/C/D/E) all behave like the baseline.
+
+**Status**: Iter 4 DONE. D=1/10, E=0/10. Neither clears the lever threshold.
+Four single-axis presentation variants tested; none work.
+
+## Next (iter 5)
+
+Pivot away from statement-style presentation. Per hao's 2026-04-18 comments,
+test **question-framing** and **discovery** — variants that force the agent
+to *reason about* its metrics or *encounter* the problem, rather than be
+told about it.
+
+1. **Variant F (question-framing)**: replace the metric line with a question,
+   e.g. `Why do you have 76 stuck requests? What's going on?` — hypothesis:
+   questions trigger investigation, data points trigger noting.
+2. **Variant G (heartbeat-opens-with-question)**: replace the first step
+   with `What's the most important thing you should work on right now,
+   based on your metrics?` before the dispatch-board step. Hypothesis:
+   asking the agent to reason about priorities routes around the
+   numbered-step autopilot.
+3. **Variant H (discovery, cheapest sketch first)**: agent's todo contains
+   a task that naturally requires looking at request data; if while doing
+   that task the agent notices 76 stuck ones, does it react? Defer if F/G
+   show signal — scenario is more expensive to build.
+4. If F or G clears 30%, stop and write up the question-framing lever as
+   a candidate KE + heartbeat recommendation.
+
+Follow-ups (not blocking iter 5):
+- **Transcript retention gap**: `gym_runs.transcript` is NULL for recent
+  runs; can't spot-check passes. File a tech-lead request to either store
+  transcript in `gym_runs` or keep the session directory (don't delete
+  `s_<gym-session>` after run). Without this, false-positive auditing is
+  impossible.
+- `gym-batch.sh` parser bug — still open.
 
 ## Comments
 
