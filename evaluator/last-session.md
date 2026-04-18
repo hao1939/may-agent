@@ -1,9 +1,9 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776529412295_393
+- **Session:** s_1776529438337_395
 - **Status:** done
-- **When:** 2026-04-18T16:23:39.892Z
+- **When:** 2026-04-18T16:24:05.622Z
 - **Duration:** 7s
 
 ## What Happened
@@ -17,4 +17,4 @@
       "quality": 0.78,
       "verdict": "good",
       "issues": [
-        "[FM-3.3-lite/VERIFICATION_EVIDENCE_MISMATCH] finish() verification_evidence claims earlier read()s of DD-777/DD-779 and an edit() diff step, but the provided transcript only shows a read() of the final KE-226 plus a git commit. This is a mild evidence overclaim risk (even if earlier steps o
+        "[FM-3.3-lite/VERIFICATION_EVIDENCE_MISMATCH] The final finish() message lists verification evidence steps (read(dd778), bash new-ke.sh, read(KE-225)) that are not present in the provided transcript segment; earlier content is explicitly omitted ('...17KB of transcript omitted...'), so this 
