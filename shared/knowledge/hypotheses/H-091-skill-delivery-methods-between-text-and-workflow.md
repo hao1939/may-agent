@@ -95,6 +95,18 @@ L5: Workflow enforcement → +3.0 score (EXP-045)
 - Related: H-085 (forced externalization), H-089 (evidence discovery)
 - Experiments: EXP-084 (method comparison), EXP-085 (matched generalization), EXP-086 (mismatched boundary), EXP-087 (sycophants-dilemma ceiling test), EXP-091 (process discipline), EXP-093 (verify-after-edit temporal boundary), EXP-095 (delivery position effect — task-message vs system-prompt), EXP-096 (attention dilution REJECTED — positional privilege confirmed), EXP-097 (simulated positional privilege — urgency framing 33% vs task-message 100%)
 
+## Resolution Verdict
+
+**Verdict**: CONFIRMED
+**Final P(H)**: 0.93
+**Date**: 2026-04-18
+
+**Key evidence**: 12 experiments (EXP-084/085/086/087/089/090/091/093/094/095/096/097) spanning judgment, process discipline, and temporal discipline tasks. Cumulative domain-matched few-shot: 18/18 (100%). Mechanism hierarchy established: text rules 0% → echo-back +1.3 → checklist +2.0 → few-shot +2.3 → workflow +3.0. Three boundaries mapped: (1) temporal discipline — few-shot teaches "what" not "when", (2) domain proximity — cross-domain fails on hard scenarios, (3) delivery position — system-prompt 0/9, task-message 15/15. Positional privilege mechanism confirmed by EXP-096 (attention dilution rejected) and grounded by DD-660 (U-shaped attention bias is architectural property of causal decoders).
+
+**Remaining open questions**: (1) Can methods be composed beyond EXP-089's initial synergy test? (2) Does position effect generalize beyond hardest scenario? (3) Production task-level injection infrastructure (RAG for behavioral examples).
+
+---
+
 ### EXP-089: Combined Few-Shot + Checklist (Synergy Test)
 - **Scenario**: contradictory-requirements (0% baseline)
 - **Combined treatment**: 2/3 (67%) — significantly outperforms baseline (p=0.001)
