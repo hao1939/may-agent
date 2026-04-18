@@ -84,12 +84,22 @@ aggregates across all of them.
    - Subject: coder. Baseline 0/7. Current lever: variant G = 30/30 pooled
      (with compound caveat).
 
-2. **persistent-task-adoption** — NEW. When an agent sees a multi-session
-   project in its context, does it invoke the persistent-task workflow, or
-   does it do a one-shot?
-   - Scenario shape: put a "this is iteration N of M" signal in the task and
-     measure whether the agent uses the workflow scaffold.
-   - Owner: coach. To be forked after consolidation step.
+2. **persistent-task-adoption** — When an agent sees a multi-session
+   project in its context, does it invoke the persistent-task workflow?
+   - Scenario: `use-persistent-task` (gym). Agent gets "resume your active project"
+     with a project file showing iteration N of M.
+   - Subject: bob. Baseline: **0/10** (never uses persistent-task workflow).
+   - **Iter 1 — question-first-step framing** (2026-04-18): Reframed
+     common-sense.md entries to ask "What workflow will keep state across
+     sessions?" before stating the answer. Result: **0/9 (0%)**. No lift.
+     Fork `bob-question-framing` discarded.
+   - Interpretation: Question-framing in common-sense text has zero effect on
+     persistent-task adoption. This is consistent with KE-007 (text ≈ 0%).
+     The question-first lever that worked for metric-reaction (variant G)
+     succeeded because it modified the heartbeat *step structure*, not just
+     text. For persistent-task, the intervention needs to be structural
+     (e.g., workflow auto-detection, heartbeat step that checks for
+     multi-session projects).
 
 3. **order-compliance** — NEW. Do standing orders like ORDER-008
    ("may fork, not message") stick once set?
