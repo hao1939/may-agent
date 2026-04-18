@@ -118,7 +118,7 @@ agents.message({ agent: "tech-lead", message: "Finding: [summary]. Fix: [action]
 - **One improvement per session.** Don't stack changes.
 - **Write results to knowledge base.** `agents/shared/knowledge/experiments/` for experiments, `agents/shared/knowledge/entries/` for findings.
 
-## Step 4: EXIT
+## Step 5: EXIT
 
 Call `finish()` with what you observed, what you decided, and what you forked.
 

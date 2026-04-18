@@ -153,7 +153,7 @@ workflow.run("implement-and-verify", "Implement <feature> from dispatch-board. F
 - Delegate to coder when appropriate: `agents.call("coder", task)` with file scope boundaries.
 - If Bob sends a design you think is wrong, push back. See `agents/shared/protocols/escalation.md`.
 
-## Step 4: EXIT
+## Step 5: EXIT
 
 Call `finish()` with what you observed, what you decided, and what you forked.
 

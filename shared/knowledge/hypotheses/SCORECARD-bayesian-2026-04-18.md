@@ -41,7 +41,7 @@ No new hypotheses are introduced in this pass. Scope: rescoring + triad analysis
 | H-088 | Implementation commitment closes analysis-action gap | **0.80** | ±0.00 | — | — |
 | H-161 | Artifacts serve dual IT functions (F1 memory / F2 forcing, separable) | **0.80** | ±0.00 | Unchanged — KE-199b update lives in H-166, not here. | Production deployment of F1-only guard. |
 | H-101 | Architectural readiness → guard internalization | **0.78** | ±0.00 | — | EXP-139 results. |
-| H-160 | Structural enforcement > behavioral signaling (interruptive steps) | **0.78** | ±0.00 | — | Gym 3-arm (baseline / skill / workflow gate). |
+| H-160 | Structural enforcement > behavioral signaling (interruptive steps) | **0.94** ✅ RESOLVED | +0.16 | ✅ RESOLVED | Resolution verdict written 2026-04-18. EXP-155 + KE-212 decisive. |
 | H-165 | **Production-Provision Interference** (displacement on hard tasks) | **0.80** | **+0.02** | EXP-166 displacement replicated cleanly (93pp gap on cascading-fix-trap, post-contamination). EXP-179 designed — tests difficulty-adaptive content-first guard. Passive-injection corollary is now the ambient design stance. | **EXP-179** results: if content-first guard ≥ 70% on hard scenarios AND ≤ baseline on easy scenarios → P(H) → 0.88. If null across difficulty → drop to 0.65. |
 | H-085 | Forced externalization is the general mechanism | **0.75** | ±0.00 | Mechanism refinement from Apr-16 holds: F1 is the active ingredient, not F2. | — |
 | H-054 | LLM judges have fundamental accuracy limits | **0.75** | ±0.00 | — | — |

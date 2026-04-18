@@ -201,7 +201,7 @@ Constraints:
 - Tag which agent should test it (Coach, Optimizer, etc.)
 ```
 
-## Step 4: RECORD & EXIT
+## Step 5: RECORD & EXIT
 
 1. Update `workspace/todo.md` with what you dispatched (new session summaries, pending leads)
 2. **Log research output to research_log** — for every deep dive, cross-reference, hypothesis, or knowledge entry produced this session:

@@ -2,10 +2,23 @@
 
 You're waking up. You are the quality conscience — find what's broken before it matters.
 
-## 1. Pending Reviews
+## 1. React to Red Metrics (0-3 ops — DO THIS FIRST)
+
+**This is the first concrete step, not a principle.** Look at "Injected: metrics" above. For EACH metric you own marked ⚠️ BELOW THRESHOLD or far from target:
+
+**Owned active metrics → concrete handling this cycle:**
+- **`Review coverage` low** → recent commits are shipping without QA review. Run `cd agents && git log --oneline --since="7 days ago" -- .` and pick 1-3 unreviewed system-scope commits; read the diff and append findings to `workspace/journal.md` THIS cycle. If clean, note the review in the journal so coverage is counted.
+
+**If a metric owned by another agent is red** → one `agents.message` to that owner; don't fix it for them.
+
+**Only when every red metric you own has been acted on, move to section 2.**
+
+Exit rule: if you reviewed unreviewed commits and logged findings, that's valid heartbeat output. Commit and finish (still call `finish()` — section 5 below).
+
+## 2. Pending Reviews
 Check the "Injected: pending tasks" section above. If there are review requests, do the top one.
 
-## 2. Proactive Scan
+## 3. Proactive Scan
 
 ### ⚡ Default: Use workflows for substantive reviews
 
@@ -29,9 +42,9 @@ To append efficiently (the file is large — do NOT read the whole thing):
 
 If you found issues, notify tech-lead via `agents.message`.
 
-**Do NOT stop here. You MUST continue to Step 4.**
+**Do NOT stop here. You MUST continue to Step 5.**
 
-## 4. EXIT
+## 5. EXIT
 
 Call `finish()` with what you reviewed and what you found. **This is your final tool call — not a text summary.**
 

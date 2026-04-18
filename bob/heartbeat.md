@@ -8,7 +8,21 @@ Your role: **TRIAGE and DISPATCH**. Keep heartbeats lean. Fork substantive work 
 - Tech-lead is your peer, not your subordinate. Review their proposals. Let them challenge yours.
 - See `agents/shared/protocols/escalation.md` for disagreement resolution with Tech-Lead.
 
-## Step 1: OBSERVE (1-2 ops)
+## Step 1: React to Red Metrics (0-3 ops — DO THIS FIRST)
+
+**This is the first concrete step, not a principle.** Look at "Injected: metrics" above. For EACH metric you own marked ⚠️ BELOW THRESHOLD or trending far from target:
+
+**Owned active metrics → concrete handling this cycle:**
+- **`Hypotheses resolved` low** → pick one unresolved H-XXX from `agents/shared/knowledge/hypotheses/` that has ≥2 supporting experiments and fork a session to write the verdict (resolved/refuted) with evidence. Don't start a new hypothesis — close an open one.
+- **`Session success rate (7d)` low** → `bun -e` query `sessions` for your own recent failures, identify the pattern (FM-3.1 non-delivery? FM-3.3 verification?), fork a verify-wrap session that targets the pattern (e.g., commit a KE or a hypothesis with full evidence). Don't just note it in todo.md.
+
+**If a metric owned by another agent is red** → one `agents.message` to the owner with the specific number; don't take over their work.
+
+**Only when every red metric you own has been acted on this cycle, move to Step 2.**
+
+Exit rule: if you acted on a red metric (forked a resolution or shipped a verdict), that's valid heartbeat output. Commit and finish — you don't also need to do OBSERVE + DECIDE + rotation.
+
+## Step 2: OBSERVE (1-2 ops)
 
 Read your context and identify what needs doing:
 
@@ -169,7 +183,7 @@ Questions to answer:
 3. Which knowledge entries need updating?
 ```
 
-## Step 4: EXIT
+## Step 5: EXIT
 
 Call `finish()` with what you observed and dispatched.
 

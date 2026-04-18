@@ -74,7 +74,7 @@ Your consumers (Coach, Optimizer, Bob) act on your scores. Make sure you're meas
 - `workspace/human-reviews.jsonl` — any new human disagreements? Study them: what did you miss? Should `knowledge/criteria.md` be updated?
 - `workspace/re-evaluations.jsonl` — verdict disagreements on re-evaluation? Sharpen the ambiguous criteria.
 
-## 4. Periodic Tasks
+## 5. Periodic Tasks
 Check `agents/evaluator/periodic-tasks.md`. Do the most overdue task. Update dates after completion.
 
 ## 5. Close Out

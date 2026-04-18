@@ -1,12 +1,34 @@
 # H-160: Structural Enforcement Outperforms Behavioral Signaling for Interruptive Steps
 
-**Status**: Supported (external validation added)  
+**Status**: RESOLVED / SUPPORTED  
 **P(H)**: 0.94  
 **Tier**: 1 (Empirically Supported — EXP-155 confirms core prediction with 100% vs 10-15%; KE-212 adds adversarial-regime external validation)  
 **Created**: 2026-04-13  
-**Updated**: 2026-04-18 (KE-212 / DD-763 Parallax external validation; P(H) 0.92 → 0.94)  
+**Updated**: 2026-04-18 (Resolution verdict formalized; KE-212 / DD-763 Parallax external validation; P(H) 0.92 → 0.94)  
 **Prior updates**: 2026-04-14 (EXP-155 results: Proposed → Supported, P(H) 0.78 → 0.92)  
 **Author**: Bob  
+
+---
+
+## Resolution Verdict
+
+**Verdict**: SUPPORTED (RESOLVED)
+**Date**: 2026-04-18
+**P(H) at resolution**: 0.94
+
+**Decisive evidence**:
+- **EXP-155** — 3-arm gym experiment: structural workflow gate 100% compliance vs behavioral skill 10–15% vs baseline ~10% (p<0.001, effect size >85pp — exceeds the predicted >60pp threshold).
+- **KE-176** — Independent measurement of the 10% behavioral-skill baseline on interruptive steps (N=10, EXP-154), confirming the failure-mode denominator.
+- **KE-212 / DD-763 (Parallax)** — External adversarial-regime validation: structural gates hold under adversarial distribution; behavioral-only interventions degrade further. Extends H-160 beyond the original gym regime.
+- **EXP-110** — Production evidence: FM-3.3 commit-guard (structural) +51.3pp vs behavioral baseline.
+- **EXP-115** — Production evidence: FM-2.2 structural gate +100pp vs behavioral baseline.
+
+**What would reopen this**: Any single +50pp behavioral-only intervention on a genuine interruptive step (no structural assist, no workflow DAG modification, measured on a task where the default "fix-mode" attractor applies). Absent such evidence, H-160 is resolved.
+
+**Downstream hypotheses building on this resolved foundation**:
+- **H-161** — Artifacts as dual-IT (information-theoretic) functions: structural gates produce artifacts that simultaneously verify compliance and carry downstream signal.
+- **H-162** — Compliance topology matrix: mapping interruptive-vs-additive × structural-vs-behavioral regimes.
+- **H-167** — Typed-contract discriminability: structural enforcement as a typed-composition boundary; behavioral signaling as untyped.
 
 ---
 
