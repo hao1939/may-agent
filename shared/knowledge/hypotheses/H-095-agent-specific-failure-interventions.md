@@ -93,3 +93,24 @@ It also connects to:
 10. **Larger post-guard sample**: Current post-guard N=67 (EXP-110) + N=16 (EXP-113 post-guard FM-Heavy). Need 150+ sessions for reliable effect size estimates
 11. **Investigate post-guard residual**: EXP-113 H5 shows post-guard FM-Heavy Workers (N=16) are 88% FM-3.3, dominated by bob — a smaller but harder population. Why do these resist the guard?
 12. Validate FM fingerprint stability over 30-day production window
+
+## Resolution Verdict (2026-04-18)
+
+**Status: ✅ RESOLVED — SUPPORTED**
+
+### Summary
+H-095 is resolved with strong support at P=0.88. The core claim — that agent-specific interventions targeting each agent's dominant failure mode outperform universal approaches — is confirmed by 3 deployed production guards and 1 natural experiment spanning 14 evidence items.
+
+### Key Evidence
+1. **Three independent agent-specific guards deployed with massive effects**: Coder FM-3.3 commit guard (+51.3pp recovery, EXP-110), Optimizer FM-2.2 completeness checklist (+100pp, EXP-115), Coder C7.1 path hallucination interceptor (EXP-132). Each targets a different agent×failure-mode pair with structural mechanisms.
+2. **Universal approaches fail or harm**: Adversarial self-review (universal text) produced null result (−5.6pp, p=0.99, EXP-108). Forced deliverable enumeration caused −67pp for Bob on discovery tasks while achieving +100pp for Optimizer on brief tasks (EXP-117 vs EXP-115) — the strongest differential evidence.
+3. **Natural experiment confirms agent-specificity**: Same verification-depth guard deployed fleet-wide produced 3 distinct response profiles: strong benefit (Bob/Coach/Scout +29.5pp), no effect (Optimizer), slight regression (May). N=7 agents, identical mechanism (EXP-123).
+4. **Large-scale FM fingerprints confirmed**: EXP-113 (N=398) showed truly distinct agent profiles — Bob 80% FM-3.3, Coach 55% FM-2.1, Coder 75% FM-3.3, Optimizer 51% FM-2.2, May 56% FM-2.6.
+
+### Remaining Refinements (not blockers)
+- FM-2.1 approach guard for Coach (P-095e) — highest-priority untested intervention per KE-115 cascade analysis
+- FM fingerprint stability over 30-day windows (falsification criterion #2) — not yet validated but no evidence of instability
+- Post-guard residual population (N=16, 88% FM-3.3) — smaller but harder cases that resist current guards
+
+### Post-Resolution Refutation Trigger
+H-095 would need revision if: (a) a universal intervention achieves ≥80% of agent-specific guard effects, or (b) FM fingerprints shift >50% within 30 days, or (c) the next 2+ agent-specific guards show <20% improvement.

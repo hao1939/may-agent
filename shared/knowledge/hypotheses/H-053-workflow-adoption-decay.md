@@ -136,3 +136,25 @@ If confirmed, this means:
 - **tech-lead**: Design automatic workflow routing infrastructure
 - **optimizer**: Analyze whether workflow-eligible tasks are identifiable from task descriptions
 - **coach**: Not applicable — this is an infra problem, not a skill problem (per KE-002)
+
+## Resolution Verdict (2026-04-18)
+
+**Status: ✅ RESOLVED — SUPPORTED**
+
+### Summary
+H-053 is resolved with strong support at P=0.88. The core claim — that proven workflow interventions self-extinguish without structural reinforcement — is confirmed by quantitative adoption data showing 19.7%→0% decay over 7 days, plus the EXP-028 natural experiment revealing a 51pp done-rate degradation when workflow instructions were removed.
+
+### Key Evidence
+1. **Complete adoption extinction documented**: System-wide workflow usage fell from 19.7% (Mar 26) to 0% (Apr 2) — a 7-day decay to zero despite 15× lower error rates during active use.
+2. **EXP-028 natural experiment**: Heartbeat rewrite removing `workflow.run()` instructions caused coach done-rate to crash from ~85% to ~34% (−51pp), the largest measured single-intervention effect in the system.
+3. **Dual-cause model**: Phase 1 = organic adoption decay (19.7%→1.8% over 6 days even with instructions present). Phase 2 = instruction removal extinction (1.8%→0% in 1 day). Text instructions sustain a floor (~4-10%) but cannot prevent decay from peak.
+4. **Three independent workflow families extinct**: code-review-loop (coder+qa), coach training workflows, optimizer workflows — all followed the same ~7-day decay pattern.
+5. **Theoretical grounding**: Decision Topology (KE-015) explains workflow usage as a low-R decision; KE-002 (20/20 text intervention failures) predicts text-based adoption encouragement fails.
+
+### Remaining Refinements (not blockers)
+- Automatic workflow routing (infrastructure-level fix) not yet implemented — the structural solution is identified but unbuilt
+- Prediction 5 (restoration to floor but not peak) not yet tested
+- Whether sawtooth pattern (Prediction 4) holds across multiple redeployment cycles
+
+### Post-Resolution Refutation Trigger
+H-053 would need revision if: (a) text-based redeployment sustains >15% adoption for >14 days, or (b) a workflow maintains >10% organic adoption for >30 days without structural enforcement.

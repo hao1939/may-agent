@@ -78,7 +78,7 @@ No new hypotheses are introduced in this pass. Scope: rescoring + triad analysis
 | H-102 | Workflow adoption = internalization | **0.55** | ±0.00 | EXP-148 demoted it; EXP-139 pending. | EXP-139. |
 | H-097 | CCC Triad | **0.55** | ±0.00 | Possibly moot. | — |
 | H-108 | Guard artifacts as environmental memory | **0.55** | ±0.00 | Blocked by ceiling/floor. | Medium-difficulty gym scenarios. |
-| H-166-original | High-threshold (complete-analysis-required) recognition | **0.10** | −0.72 | **EFFECTIVELY REFUTED** — arm F clean-env 10/10 inverts EXP-168's 0/10. Retained in table as a historical marker, not as an active hypothesis. | None planned. Archive candidate once EXP-177 confirms revised frame. |
+| H-166-original | High-threshold (complete-analysis-required) recognition | **0.10** | −0.72 | ✅ RESOLVED — REFUTED. Arm F clean-env 10/10 inverts EXP-168's 0/10; EXP-173 N=84 confirms low threshold. H-166-revised (P=0.75) remains active. | None planned. Archived. |
 
 ---
 
