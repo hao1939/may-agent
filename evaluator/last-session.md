@@ -1,9 +1,9 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776500962056_24
+- **Session:** s_1776501005725_27
 - **Status:** done
-- **When:** 2026-04-18T08:29:28.322Z
+- **When:** 2026-04-18T08:30:11.865Z
 - **Duration:** 6s
 
 ## What Happened
@@ -13,9 +13,9 @@
     "coach": {
       "role": "Builder",
       "capability_level": "L2",
-      "efficiency": 0.78,
-      "quality": 0.9,
+      "efficiency": 0.82,
+      "quality": 0.89,
       "verdict": "good",
       "issues": [
-        "[FM-3.3/VERIFICATION_EARLY] Initially attempted finish(success) with verification evidence that included claims not shown in tool output in this transcript slice (\"cat KE-215\", \"git log\"), though the critical verification (git show of success criteria) was present.",
-        "[MINOR_EFFICIENCY] Extr
+        "[MINOR_EFFICIENCY] Attempted to commit an ignored path without checking .gitignore first; required an extra git add -f attempt (bash showed ignored-path hint, then follow-up attempts).",
+        "[PROCESS_GUARD_HIT] finish(success) was initially blocked due to uncommitted changes (coach/ERROR_LOG.jsonl

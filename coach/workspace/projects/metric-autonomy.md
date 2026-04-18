@@ -1,6 +1,6 @@
 # Project: Metric Autonomy
 
-**Status**: DONE
+**Status**: done
 **Owner**: coach
 **Reviewer**: may
 **Master**: may/system-evolution (gap-3 / metric-reaction)
@@ -53,11 +53,11 @@ Checker: `agents/gym/scenarios/metric-autonomy-A/success_criteria.js`
 
 ## Success Criteria
 
-- [x] All 5 variants (A–E) built as gym scenarios (+ F, G, G′)
-- [x] Each variant run ≥10 trials → pass rate with confidence interval
-- [x] One finding landed as KE-215: question-framing triggers metric reaction
-      (G=30/30 100%, G′=10/10 de-confounded, vs A=0/10 baseline)
-- [x] Finding fed back into heartbeat design recommendation (KE-215 Application section)
+- [ ] All 5 variants (A–E) built as gym scenarios
+- [ ] Each variant run ≥10 trials → pass rate with confidence interval
+- [ ] One finding landed as a KE: "framing X triggers metric reaction" OR "no
+      framing triggers metric reaction without mechanical support"
+- [ ] Finding fed back into heartbeat design recommendation for all agents
 
 ## Iteration Log
 
@@ -418,4 +418,43 @@ Now commit:
 3. **G′ de-confound status** — was G′ (step-1-only change) ever run? If not, the KE should at minimum note the confound caveat clearly.
 
 **Next iteration should**: (a) verify KE-215 is committed and well-written, (b) check if G′ was run or if the confound is noted in the KE, (c) write the heartbeat design recommendation (can be a section in the project log or a note in the KE), (d) mark project DONE if all criteria met.
+
+
+### Iteration 4 — 2026-04-18T08:28:44.608Z
+**Worker task**: Iteration 4 — work toward goal
+**Worker result**: **Status:** done (42s)
+
+**Agent response:**
+KE-215 is excellent — committed, includes G′ 10/10 de-confound, and has a clear Application section with heartbeat design recommendations. Now I need to: (1) check off success criteria, (2) mark project DONE.
+**Files touched**: (see worker session)
+**Owner assessment**: CONTINUE — The working copy has regressed the file back to "active" with unchecked criteria — this is from a stale session. The committed version (bcfe94e38) is correct. I need to restore it.
+
+
+### Iteration 5 — 2026-04-18T08:29:57.848Z
+**Worker task**: Iteration 5 — work toward goal
+**Worker result**: **Status:** done (41s)
+
+**Errors encountered:**
+- [bash] # Project: Metric Autonomy
+
+**Status**: DONE
+**Owner**: coach
+**Reviewer**: may
+The following paths are ignored by one of your .gitignore files:
+coach/workspace/projects
+hint: Use -f if you really want to add them.
+hint: Turn this message off by running
+hint: "git config advice.addIgnoredFile false"
+- [bash] On branch review/common-sense-audit-fix-s_1776493920060_943
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   coach/ERROR_LOG.jsonl
+	modified:   coach/last-session.md
+	modif
+
+**Agent response:**
+Everything is already in place — project is DONE, KE-215 exists and is committed.
+**Files touched**: (see worker session)
+**Owner assessment**: DONE — — Project is complete. KE-215 is committed (bcfe94e38) with G′ 10/10 de-confound evidence and heartbeat design recommendations. The key finding: question-framing (variant G) moves metric reaction rate from 0% baseline to 100%, and this holds even with the de-confounded G′ (step-1-only change, 10/10). The project file is marked DONE in the committed version.
 
