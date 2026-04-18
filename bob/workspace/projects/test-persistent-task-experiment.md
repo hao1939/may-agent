@@ -28,6 +28,40 @@ Reduce session startup overhead from 25% to under 10%.
 
 ## Iteration Log
 
+### Iter 13 — 2026-04-18 — STABILITY RE-CHECK (no-op)
+
+Previous session's CONTINUE asked to investigate "two non-snap sessions"
+from Iter 10. That investigation was already completed in Iter 11
+(measurement-query bug: those were forked work sessions, not heartbeats).
+The CONTINUE was operating on stale context.
+
+Re-measured 6 most-recent true heartbeats (same corrected filter as
+Iter 11: `parentSessionId IS NULL AND task LIKE '[heartbeat]%'`):
+
+| metric           | Iter 11 | **Iter 13** |
+|------------------|---------|-------------|
+| avg total ops    | 9.17    | **8.83**    |
+| avg pre-real     | 3.17    | **3.50**    |
+| overhead ratio   | 35%     | **40%**     |
+| snap adoption    | 6/6     | **6/6**     |
+
+Per-session:
+```
+s_1776538331345_514 tot=8  pre=5 snap=true
+s_1776536531368_489 tot=9  pre=3 snap=true
+s_1776534731420_467 tot=9  pre=6 snap=true
+s_1776532931430_441 tot=8  pre=2 snap=true
+s_1776531131353_413 tot=9  pre=3 snap=true
+s_1776529330437_390 tot=10 pre=2 snap=true
+```
+
+Stable. Snap compliance holding at 6/6; overhead ratio drift 35%→40%
+is within single-session noise (one new session at pre=5). No new
+pattern. Project stays closed, same rationale as Iter 9/11.
+
+## Files Modified This Iter
+- agents/bob/workspace/projects/test-persistent-task-experiment.md (this file)
+
 ### Iter 12 — 2026-04-18 — ADJACENT HELPER: kb-find.sh
 
 Started this iter without seeing Iter 11's update (read stale file,
