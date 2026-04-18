@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776470008180_705
+- **Session:** s_1776469928651_704
 - **Status:** done
-- **When:** 2026-04-17T23:55:58.816Z
-- **Duration:** 2m30s
+- **When:** 2026-04-17T23:56:21.990Z
+- **Duration:** 4m13s
 
 ## What Happened
-251 vs 209 orig = +42 ✅; Ch2/sub-taxonomy grep = 37 ≥ 8 ✅; KE-187 = 7 ≥ 2 ✅. Now update todo and commit.
+Committed. Only modified is auto-generated `bob/last-session.md` (expected).
