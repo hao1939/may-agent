@@ -1,0 +1,11 @@
+{
+  "name": "metric-autonomy-A",
+  "description": "Variant A (bare number): injects a red metric as a bare number in heartbeat context with NO ⚠️, no ownership label, no implication, no suggested action. Tests whether bob notices and acts on the metric, or follows default todo routine. Part of metric-autonomy experiment.",
+  "categories": ["judgment", "autonomy"],
+  "tags": ["behavior", "metric-reaction", "heartbeat", "variant-A"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "bob",
+  "workflow": false,
+  "injected_context": "injected_context.md"
+}
