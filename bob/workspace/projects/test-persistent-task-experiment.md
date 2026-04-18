@@ -9,8 +9,10 @@ Reduce session startup overhead from 25% to under 10%.
 ## Milestones
 - [x] Measure current startup overhead across 5 agents
 - [x] Identify top 3 time-wasting patterns
-- [ ] Design fix for #1 pattern
-- [ ] Implement and verify fix
+- [x] Prototype fix for pattern #2 (heartbeat-snapshot.sh)
+- [ ] Roll out: get 1-2 agents to actually call it; re-measure
+- [ ] Design fix for pattern #1 (pure-overhead heartbeats)
+- [ ] Design fix for pattern #3 (re-reading already-summarized files)
 
 ## Iteration Log
 
@@ -62,12 +64,32 @@ sessions on startup, half the time taking no action at all.
    field that's not summarized."*
 
 ## Current State
-Iter 2 done. Measurement infra reusable (the bun script in this iteration).
-Top 3 patterns documented. Iter 3: design + prototype the heartbeat-snapshot
-script (pattern #2) — biggest single win because it directly attacks coach,
-the worst offender.
+Iter 3 done. Snapshot script prototyped + tested.
+
+### Iter 3 — 2026-04-18 (this iter)
+Built and verified `agents/shared/scripts/heartbeat-snapshot.sh`. One bash
+call now returns the 5 standard triage sections (running sessions, recent
+errors, pending requests, my recent sessions, activity-last-hour) that
+agents currently fetch with 4-8 separate `bun -e` SQL one-liners.
+
+Verified live: `bash agents/shared/scripts/heartbeat-snapshot.sh bob`
+returned all 5 sections in ~1s with proper formatting (epoch ms rendered as
+"Nm" age, long strings truncated). Script handles missing bun and missing DB
+with clear errors.
+
+**Expected impact** (from Iter 2 measurements):
+- coach worst case (s_1776515111675_166 = 65 ops, ~12 SQL one-liners) →
+  collapses to 1 op for the snapshot. ~10 ops saved per heartbeat.
+- bob/may equivalent: 3-5 ops saved per heartbeat.
+
+**Not done this iter** (deliberate scope limit):
+- Did not modify any agent's heartbeat.md to call the script. Rollout is a
+  separate iter — needs to update bob first (eat own dogfood), measure, then
+  propose to coach/may. Avoids the FM-2.6 multi-agent-edit scope blowup.
+- Did not redesign for patterns #1 or #3.
 
 ## Files Modified This Iter
+- agents/shared/scripts/heartbeat-snapshot.sh (NEW, 110 lines, executable)
 - agents/bob/workspace/projects/test-persistent-task-experiment.md (this file)
 
 ## Reusable Measurement Snippet

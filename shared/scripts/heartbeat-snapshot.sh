@@ -1,0 +1,109 @@
+#!/usr/bin/env bash
+# heartbeat-snapshot.sh — one-call triage snapshot for agent heartbeats.
+#
+# Replaces the typical sequence of 4-8 individual `bun -e` SQL one-liners that
+# agents (especially coach/bob/may) run at the start of every heartbeat.
+# See agents/bob/workspace/projects/test-persistent-task-experiment.md (Iter 2,
+# pattern #2) for the measurement showing this is the single biggest startup
+# overhead win.
+#
+# Usage:
+#   bash agents/shared/scripts/heartbeat-snapshot.sh [agent_name]
+#
+# If agent_name is provided, sections are filtered to that agent where it
+# makes sense. Otherwise prints global view.
+#
+# Output is plain text in stable section order so an agent can grep/awk it
+# without re-running queries.
+
+set -euo pipefail
+
+AGENT="${1:-}"
+DB=".state/may.db"
+BUN="${BUN:-.state/.bun/bin/bun}"
+
+if [[ ! -x "$BUN" ]]; then
+  if command -v bun >/dev/null 2>&1; then
+    BUN="bun"
+  else
+    echo "ERROR: bun not found at $BUN or on PATH" >&2
+    exit 2
+  fi
+fi
+
+if [[ ! -f "$DB" ]]; then
+  echo "ERROR: $DB not found (run from repo root /app)" >&2
+  exit 2
+fi
+
+"$BUN" -e "
+import {Database} from 'bun:sqlite';
+const db = new Database('$DB', {readonly:true});
+const AGENT = '${AGENT}';
+const now = Date.now();
+const dayAgo = now - 24*3600*1000;
+const hourAgo = now - 3600*1000;
+
+function print(title, rows, cols) {
+  console.log('=== ' + title + ' (' + rows.length + ') ===');
+  if (rows.length === 0) { console.log('(none)'); console.log(''); return; }
+  for (const r of rows) {
+    const parts = cols.map(c => {
+      const v = r[c];
+      if (v == null) return c+'=-';
+      if (typeof v === 'number' && v > 1e12) {
+        const ageMin = Math.round((now - v) / 60000);
+        return c+'='+ageMin+'m';
+      }
+      const s = String(v).replace(/\s+/g,' ').trim();
+      return c+'='+(s.length>80?s.slice(0,77)+'...':s);
+    });
+    console.log('  ' + parts.join(' | '));
+  }
+  console.log('');
+}
+
+// 1. Currently running sessions (global — you almost always want this)
+print('RUNNING_SESSIONS',
+  db.query(\`SELECT sessionId, agent, startedAt, opCount
+            FROM sessions WHERE status='running'
+            ORDER BY startedAt DESC LIMIT 20\`).all(),
+  ['sessionId','agent','startedAt','opCount']);
+
+// 2. Recent errors (last 24h)
+print('RECENT_ERRORS_24H',
+  db.query(\`SELECT sessionId, agent, error, endedAt
+            FROM sessions WHERE status='error' AND endedAt > ?
+            ORDER BY endedAt DESC LIMIT 10\`).all(dayAgo),
+  ['sessionId','agent','endedAt','error']);
+
+// 3. Pending requests for this agent (or all if no agent)
+const pendQ = AGENT
+  ? db.query(\`SELECT requestId, fromEntity, task, createdAt
+              FROM requests WHERE status='pending' AND toAgent=?
+              ORDER BY createdAt DESC LIMIT 20\`).all(AGENT)
+  : db.query(\`SELECT requestId, fromEntity, toAgent, task, createdAt
+              FROM requests WHERE status='pending'
+              ORDER BY createdAt DESC LIMIT 20\`).all();
+print('PENDING_REQUESTS' + (AGENT?'_FOR_'+AGENT:''), pendQ,
+  AGENT ? ['requestId','fromEntity','createdAt','task']
+        : ['requestId','fromEntity','toAgent','createdAt','task']);
+
+// 4. Agent's own recent sessions (last 6) — context for 'what did I just do'
+if (AGENT) {
+  print('MY_RECENT_SESSIONS',
+    db.query(\`SELECT sessionId, status, opCount, startedAt, endedAt
+              FROM sessions WHERE agent=?
+              ORDER BY startedAt DESC LIMIT 6\`).all(AGENT),
+    ['sessionId','status','opCount','startedAt','endedAt']);
+}
+
+// 5. Activity heatmap last hour (who's been busy?)
+print('ACTIVITY_LAST_HOUR',
+  db.query(\`SELECT agent, COUNT(*) as n, SUM(opCount) as ops
+            FROM sessions WHERE startedAt > ?
+            GROUP BY agent ORDER BY n DESC\`).all(hourAgo),
+  ['agent','n','ops']);
+
+console.log('-- snapshot generated at ' + new Date(now).toISOString() + ' --');
+"
