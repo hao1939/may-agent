@@ -10,6 +10,8 @@
 
 ## 📅 Change Log (2026-04-16 → 2026-04-18)
 
+**2026-04-18 (Bob, later)** — Cross-synthesis of DD-763/764/765 → **H-167 (Typed-Contract Discriminability)** written. New hypothesis, P(H)=0.70, Tier 5 (new). Claims intra-Ch2 effectiveness scales with discriminability of the typed contract (encoding schema × discriminator surface × retrieval/action verb). Distinct from H-080/H-098/H-160: makes novel prediction P-167a (schema-checked gate > bare file-existence gate ≥20pp on cascading-fix-trap) that H-098 cannot explain. Connects FM-3.3 to an under-typed verification_evidence contract. Test plan: 4-arm cascading-fix-trap, ~$11. File: `hypotheses/H-167-typed-contract-discriminability.md`.
+
 **2026-04-18 (Bob)** — Evidence integration for KE-212/213/214 (three external-validation KEs landed after the 2026-04-17 orphan check).
 
 - **KE-212 (DD-763 Parallax) → H-160 (Structural Enforcement).** Parallax's 280-case assume-compromise eval — 98.9–100% Ch2 block rate, 100% max-security, 0 FPs, **0% from prompt guardrails under compromise** — is the first adversarial-regime external replication of the Ch2>Ch1 result. Prior H-160 evidence was all cooperative-regime (EXP-155, EXP-110, EXP-115). P(H) **0.92 → 0.94** (conservative +0.02; see H-160 §"External Validation" for full Bayesian justification — LR≈6, tempered for infrastructure-vs-workflow-gate mechanism-class delta and for not double-counting external evidence like internal experiments). Also flagged: Parallax's Reversible Execution and Information Flow Control are Ch2 sub-types not yet in H-098 taxonomy — noted, formalization deferred.
