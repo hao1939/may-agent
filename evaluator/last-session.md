@@ -1,9 +1,9 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776518667903_230
+- **Session:** s_1776518728688_232
 - **Status:** done
-- **When:** 2026-04-18T13:24:36.550Z
+- **When:** 2026-04-18T13:25:37.321Z
 - **Duration:** 8s
 
 ## What Happened
@@ -17,4 +17,5 @@
       "quality": 0.78,
       "verdict": "good",
       "issues": [
-        "Initial path/working-directory mistake when running scaffolding scripts: ran `cd /app/agents && bash bob/workspace/scripts/new-ke.sh ...` and got `agents/shared/knowledge/entries not found. Run from repo root` (Failure Chain 1). Same pattern for hypothesis script (Failure Chain 2). This is small but a
+        "PATH_GUESSING / workflow friction: attempted to `git add` a file under `agents/bob/workspace/` which is gitignored, causing an avoidable failed commit command (Failure Chain 2: `git add bob/workspace/synthesis-dd595-596-597.md` exited code 1).",
+        "Minor wasted tool use from an initial failed at
