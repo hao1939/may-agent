@@ -105,19 +105,9 @@ aggregates across all of them.
 
 ## Next
 
-Concrete first action: **fork a consolidation sub-task** that produces a
-hypothesis table for this project. Deliverable is a single markdown file:
-
-`agents/coach/workspace/instruction-following-hypotheses.md`
-
-Contents: unified table of (mechanism, evidence, source KE / experiment,
-expected compliance effect, open question). Pull from KE-002, KE-007, KE-123,
-KE-133, KE-180, KE-182, metric-autonomy iter 1–5. Do NOT run experiments.
-
-Fork it as a coach sub-session — do not do it inline in a heartbeat.
-
-After consolidation lands, next session designs and builds the
-persistent-task-adoption gym scenario (smallest new child).
+- [x] ~~Consolidation sub-task~~ → `instruction-following-hypotheses.md` written (2026-04-18)
+- [ ] Design and build **persistent-task-adoption** gym scenario (smallest new child experiment)
+- [ ] Define source queries for the 4 coach metrics (see Hao's comment below)
 
 ## Status of existing metric-autonomy session
 
