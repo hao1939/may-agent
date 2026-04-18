@@ -70,7 +70,7 @@ Pick the highest-priority task(s). Follow this order — **stop at the first mat
 - Any research or thinking task requiring >5 tool calls
 - Writing knowledge entries (KE-XXX.md)
 
-## Step 3: DISPATCH
+## Step 4: DISPATCH
 
 **For WORK SESSION tasks, use `workflow.run('verify-wrap', task)` to get structural verification guardrails.** This catches non-delivery (FM-3.1) and verification gaps (FM-3.3) — your top error patterns. Use it for all knowledge integration, hypothesis writing, experiment design, and synthesis work.
 

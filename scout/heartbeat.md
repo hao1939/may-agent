@@ -79,7 +79,7 @@ Pick the highest-priority task(s). Follow this order — **stop at the first mat
 - Triage sessions (evaluating multiple papers)
 - Any task requiring >5 tool calls
 
-## Step 3: DISPATCH
+## Step 4: DISPATCH
 
 ### ⚡ Default: Use workflows for all forked work
 

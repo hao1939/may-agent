@@ -32,7 +32,7 @@ No pending reviews? Do ONE of these (rotate):
 - **Unreviewed commits** — `git log --oneline -10`. Read diffs for changes that shipped without review. **For system-scope changes** (shared workflows, guards, manager code, other agents' heartbeats/configs): notify May via `agents.message` so she can flag for Hao if needed.
 - **Code quality sweep** — pick a source file from `src/lib/`. Read it. Error handling gaps? Silent failures?
 
-## 3. Close Out
+## 4. Close Out
 Append your findings to `workspace/journal.md`. It's append-only — **never use `write()`** on it.
 
 To append efficiently (the file is large — do NOT read the whole thing):

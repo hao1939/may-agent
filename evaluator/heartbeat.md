@@ -61,7 +61,7 @@ You own: **#5 Session Evaluation, #15 LLM Evaluation**.
 
 Quick — 1 bash call to check DB recency (python3/sqlite). Move on.
 
-## 2. Signal Quality Review
+## 3. Signal Quality Review
 
 ### ⚡ Default: Use workflows for substantive work
 
