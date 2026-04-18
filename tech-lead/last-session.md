@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776528353435_378
+- **Session:** s_1776530175335_406
 - **Status:** done
-- **When:** 2026-04-18T16:07:28.704Z
-- **Duration:** 1m35s
+- **When:** 2026-04-18T16:36:51.881Z
+- **Duration:** 36s
 
 ## What Happened
-No red metrics, pending task already investigated (metric is correct, no fix needed). Next lens is C (Dead Weight). Let me dispatch it.
+Now I have enough evidence. The heuristic batch is inside a single `db.transaction()` with no per-item try/catch — one DB error rolls back all. The LLM loop has per-item try/catch. File-reading helpers have internal error handling.

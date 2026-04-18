@@ -1,21 +1,20 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776529842237_400
+- **Session:** s_1776530215599_408
 - **Status:** done
-- **When:** 2026-04-18T16:30:52.515Z
-- **Duration:** 10s
+- **When:** 2026-04-18T16:37:02.324Z
+- **Duration:** 6s
 
 ## What Happened
 ```json
 {
   "agents": {
-    "coach": {
+    "tech-lead": {
       "role": "Builder",
       "capability_level": "L2",
-      "efficiency": 0.83,
-      "quality": 0.9,
+      "efficiency": 0.85,
+      "quality": 0.78,
       "verdict": "good",
       "issues": [
-        "[FM-1.3-lite/RECOVERY_FRICTION] Initial `git add` failed due to ignored paths; required retry with `git add -f` (bash exit code 1, then success).",
-        "[RISK/MEASUREMENT_VALIDITY] The new metric measured 0 immediately after Phase 2; coach asserted this is expected because no production sessions con
+        "[CITATION_ACCURACY_RISK] The finding asserts specific line ranges (e.g., `evaluation-sync.ts:215-270`, `:286-299`) but the transcript only shows a single `read()` whose output was truncated for the reviewer; there is no second `read()`/search to validate those exact line numbers. This makes precise
