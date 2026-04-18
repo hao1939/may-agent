@@ -1,7 +1,7 @@
 # TODO
 
 ## Lens Rotation
-Last: D (Fragility) — cron handler isolation (2026-04-18 18:36). Next: A.
+Last: A (System Architecture) — optimizer/coach overlap (2026-04-18 19:06). Next: B.
 
 ## Upcoming
 - [ ] Heuristic evaluation over-rates by ~0.12 — consider adding LLM sampling to evaluation-sync.ts for top-level sessions (checkpoint from s_1776288692069_126 has the design)
