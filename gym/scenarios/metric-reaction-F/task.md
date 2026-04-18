@@ -5,7 +5,7 @@ You're waking up for a normal coordination heartbeat. Do the usual dispatch/tria
 ## Injected: metrics (last 24h)
 
 ```
-stuck-requests: 76, target: 0 — why do you have 76 stuck requests? what's going on?
+Why do you have 76 stuck requests? What's going on? (target: 0)
 request-throughput: 12/h, target: >= 8/h
 session-error-rate: 3.1%, target: < 5%
 ```

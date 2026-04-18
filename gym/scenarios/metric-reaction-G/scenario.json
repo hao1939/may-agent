@@ -1,6 +1,6 @@
 {
   "name": "metric-reaction-G",
-  "description": "Variant G (heartbeat-opens-with-question). Same as metric-reaction (variant A) but the first step of the cycle is replaced with 'What's the most important thing you should work on right now, based on your metrics above?'. Hypothesis: asking the agent to reason about priorities routes around the numbered-step autopilot.",
+  "description": "Variant G (heartbeat opens with a question about metrics). Identical metric line to variant A, but step 1 asks the agent to reason about which metric is most important before reading the dispatch board. Hypothesis: forcing reasoning about priorities routes around numbered-step autopilot. A trial passes if the agent takes a concrete metric-relevant action (queries stuck requests, reads a stuck-requests file, forks/messages about it, OR cites it in finish() summary).",
   "categories": ["behavior", "metric-reaction"],
   "tags": ["behavior", "metric-autonomy", "variant-G", "question-first-step"],
   "tier": "standard",

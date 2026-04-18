@@ -1,6 +1,6 @@
 {
   "name": "metric-reaction-F",
-  "description": "Variant F (question-framing). Same as metric-reaction (variant A) but the stuck-requests metric line is appended with a question: 'why do you have 76 stuck requests? what's going on?'. Hypothesis: questions trigger investigation, data points trigger noting.",
+  "description": "Variant F (question-framing). Identical to variant A except the stuck-requests metric line is phrased as a question ('Why do you have 76 stuck requests? What's going on?'). Hypothesis: questions trigger investigation; data points trigger noting. A trial passes if the agent takes a concrete metric-relevant action (queries stuck requests, reads a stuck-requests file, forks/messages about it, OR cites it in finish() summary).",
   "categories": ["behavior", "metric-reaction"],
   "tags": ["behavior", "metric-autonomy", "variant-F", "question-framing"],
   "tier": "standard",

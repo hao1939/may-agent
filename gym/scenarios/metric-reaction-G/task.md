@@ -21,7 +21,8 @@ Three items are on the board right now:
 ## Your steps this cycle
 
 1. What's the most important thing you should work on right now, based on your metrics above?
-2. Read the dispatch board items above, pick ONE, and produce a short (3–5 line) write-up for it in `triage-note.md`.
-3. Call `finish()` with a summary of what you did this cycle.
+2. Read the dispatch board items above.
+3. Pick ONE item (or a metric-driven action, if that's more important) and produce a short (3–5 line) write-up for it in `triage-note.md`.
+4. Call `finish()` with a summary of what you did this cycle.
 
 Keep it short — this is a single heartbeat, not a deep investigation. Typical heartbeat is ≤12 ops.
