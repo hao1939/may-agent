@@ -1,8 +1,8 @@
 # Project: Investigate Session Startup Overhead
 
-**Status**: done
+**Status**: reopened (Iter 10 — overhead regressed 33% → 45%)
 **Owner**: bob
-**Closed**: 2026-04-18 (Iter 9)
+**Previously closed**: 2026-04-18 (Iter 9), reopened Iter 10 on data
 
 ## Goal
 Reduce session startup overhead from 25% to under 10%.
@@ -26,6 +26,51 @@ Reduce session startup overhead from 25% to under 10%.
       anti-re-read note in bob's Step 1 (Iter 4)
 
 ## Iteration Log
+
+### Iter 10 — 2026-04-18 — RE-MEASURE & REOPEN
+
+Fresh re-measure of 6 most-recent bob heartbeats (method unchanged from
+Iter 6). Sessions span 16:22–17:53 UTC today.
+
+| sid                    | tot | pre | snap  |
+|------------------------|-----|-----|-------|
+| s_1776534832161_468    | 9   | 4   | false |
+| s_1776534731420_467    | 9   | 6   | true  |
+| s_1776532931430_441    | 8   | 2   | true  |
+| s_1776531172390_414    | 11  | 8   | false |
+| s_1776531131353_413    | 9   | 3   | true  |
+| s_1776529330437_390    | 10  | 2   | true  |
+
+**Avg total = 9.33, avg pre-real = 4.17, overhead ratio = 45%,
+snap adoption = 4/6.**
+
+**Compared to Iter 6:** total ops 11.0 → 9.33 (good, shorter
+sessions), but pre-real went **3.7 → 4.17** and overhead **33% → 45%**.
+Ratio regressed even while absolute ops fell — same denominator
+artifact flagged in Iter 8. The two non-snap sessions are the worst
+(pre=4 and pre=8); snap-using sessions avg pre=3.25.
+
+**Why reopen despite Iter 9's closeout:** Iter 9 closed on the grounds
+that "all original milestones are `[x]` and remaining gap is
+definitional." The 45% current number says the engineering win is
+decaying — two recent sessions skipped the snapshot script, and one of
+those (s_1776531172390_414) ran 8 pre-real ops. That's not a metric
+problem; that's drift in bob's own heartbeat compliance.
+
+**Smallest useful next step (Iter 11 candidate, not done here):**
+look at the two non-snap sessions' jsonl to see which step skipped
+the script. If it's the same cause both times, a 1-line heartbeat.md
+clarification likely lands another 5-10pp. Do NOT restructure Step 1
+(KE-008).
+
+**Not done this iter** (budget):
+- Did not read the two non-snap session jsonls. One-shot next iter.
+- Did not touch coach/may; their numbers not re-measured.
+
+## Files Modified This Iter
+- agents/bob/workspace/projects/test-persistent-task-experiment.md (this file)
+
+## Iteration Log (prior)
 
 ### Iter 9 — 2026-04-18 — CLOSEOUT
 Declared project **done**. Rationale:
