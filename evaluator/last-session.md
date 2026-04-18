@@ -1,21 +1,20 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776475703972_753
+- **Session:** s_1776476066752_762
 - **Status:** done
-- **When:** 2026-04-18T01:28:31.709Z
-- **Duration:** 7s
+- **When:** 2026-04-18T01:34:35.353Z
+- **Duration:** 8s
 
 ## What Happened
 ```json
 {
   "agents": {
-    "bob": {
+    "coder": {
       "role": "Builder",
       "capability_level": "L2",
-      "efficiency": 0.8,
-      "quality": 0.85,
-      "verdict": "good",
+      "efficiency": 0.62,
+      "quality": 0.74,
+      "verdict": "acceptable",
       "issues": [
-        "[FM-1.3/RECOVERY] One wasted tool call: ran scaffolding script from the wrong directory; error: “agents/shared/knowledge/hypotheses not found. Run from repo root.” (failure chain root cause).",
-        "[VERIFICATION_GAP] Verification described in finish() (grep counts, P(H)/Falsification presence, workin
+        "[SCOPE_DRIFT] Task required creating review branch `review/fix-auto-pause-notify-assertions` from a clean main; coder initially hit checkout/stash errors due to unrelated local changes and did not clearly show a clean starting state before editing (failure chains show unresolved checkout issues).
