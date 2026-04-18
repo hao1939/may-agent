@@ -315,8 +315,34 @@ metrics, it does.
 
 **Pre-registered threshold**: 30%. Variant G cleared it by 70pp.
 
-**Status**: Iter 5 DONE. Lever found. Move to write-up + heartbeat design
-recommendation.
+**⚠️ CAVEAT — actual on-disk content at run time differed from my designed
+edits** (discovered post-hoc via `diff` against backup copies at
+`metric-reaction-{F,G}/metric-reaction/`):
+
+- Variant F: my edit was to *append* `— why do you have 76 stuck requests?
+  what's going on?` to the metric line, keeping `stuck-requests: 76, target: 0`
+  as a prefix. The version that actually ran **replaced** the metric line
+  with `Why do you have 76 stuck requests? What's going on? (target: 0)` —
+  the metric-name token `stuck-requests` is gone. So F tested
+  "question-only, no metric-name token", not "metric line + question".
+- Variant G: my edit replaced step 1 with the question and left steps 2/3
+  as the original (read dispatch, pick one). The version that actually
+  ran had **4 steps** and step 3 was changed to `Pick ONE item (or a
+  metric-driven action, if that's more important)` — i.e. step 3 was ALSO
+  modified to explicitly license a metric action.
+
+File mtimes: task.md `07:55:44`, which is after my edits landed but within
+this session's window. No other session owns these files in my session
+log; likely cause is an unobserved concurrent process or a cp-preserved
+later edit. Not fully explained. **The 10/10 G result therefore tests a
+compound intervention (step 1 question + step 3 "metric-driven action"
+opt-in), not my intended isolated "step 1 question only"**. The lever may
+be either step alone or both together — my data cannot disambiguate.
+
+**Status**: Iter 5 DONE. Strong signal observed (G=10/10, F=1/10, vs A=0/10)
+but with a critical confound: the G variant that ran had two modifications,
+not one. Next iter must build a clean G and re-measure before claiming
+"step-1 question is the lever".
 
 **Replication (independent re-run, same session-cluster)**: a second
 loop run ran F n=10 (ids 2617, 2620, 2621, 2623, 2625, 2626, 2628, 2630,
