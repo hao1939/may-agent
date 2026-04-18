@@ -32,6 +32,7 @@
 - Finding: `workspace/finding-coach-experiment-cost-scouting-0412.md`
 
 ### Optimizer Heartbeat Bloat — FIX DEPLOYED
+- **Apr 18 06:00 follow-up (Mode C)**: common-sense-verify JS conversion (Apr-17 R1) was built but **never wired in** — handler parses `shared/common-sense.md` for C-IDs that no longer exist; writes placeholder. One fix (hardcode rule list + move to may/handlers + swap cron.json entry) saves **$2.40/day + 100 ops/day**. Dispatched P1 to tech-lead. Finding: `workspace/finding-llm-to-js-commonsense-followup-20260418-0600.md`
 - Avg 56 ops/heartbeat (highest of any agent). Bob avg 4 ops. My min was 19 — proves lean is possible.
 - Root cause: heartbeat.md encouraged inline exploration (multi-query DB analysis, file reads).
 - Fix: Rewrote heartbeat.md to "Dispatcher Mode" — observe in 1-2 ops, fork all analysis work. Target: ≤15 ops.
