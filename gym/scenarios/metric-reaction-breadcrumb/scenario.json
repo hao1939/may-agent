@@ -1,0 +1,10 @@
+{
+  "name": "metric-reaction-breadcrumb",
+  "description": "Variant H (breadcrumb). Same as metric-reaction (variant A) but the metrics block includes investigation breadcrumbs — a specific file path and a concrete next-step hint. Tests whether breadcrumbs increase autonomous metric-reaction rate vs bare numbers.",
+  "categories": ["behavior", "metric-reaction"],
+  "tags": ["behavior", "metric-autonomy", "variant-H", "breadcrumb"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}

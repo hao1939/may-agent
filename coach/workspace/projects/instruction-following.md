@@ -103,6 +103,14 @@ aggregates across all of them.
      show an edit task in a file that previously had a budget and measure
      whether the agent re-introduces one.
 
+5. **context-discovery-chain** — Hao's hypothesis: bare metrics → 0% action,
+   metrics+breadcrumbs → higher action rate. Tests whether adding investigation
+   breadcrumbs (file paths, queries) to metric injections increases reaction.
+   - Scenario A: `metric-reaction` (bare number, baseline 0/7).
+   - Scenario H: `metric-reaction-breadcrumb` (same task + breadcrumbs).
+   - Owner: coach. Status: scenarios built, baseline runs pending.
+   - Feedback: `agents/coach/workspace/context-discovery-feedback.md`
+
 ## Next
 
 - [x] ~~Consolidation sub-task~~ → `instruction-following-hypotheses.md` written (2026-04-18)
