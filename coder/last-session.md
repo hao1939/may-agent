@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776486842286_850
+- **Session:** s_1776472401170_729
 - **Status:** done
-- **When:** 2026-04-18T04:38:13.135Z
-- **Duration:** 4m10s
+- **When:** 2026-04-18T00:36:16.091Z
+- **Duration:** 2m54s
 
 ## What Happened
-Full verification passes: tsc clean + all 1989 tests (137 files) pass.
+The 9 failures reproduce on pristine `origin/main` — they're completely unrelated to the evaluator source-tag change. Verifying the actual commit is fine:

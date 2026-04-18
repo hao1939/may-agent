@@ -58,12 +58,16 @@ Pick ONE thing to work on. Follow this order — **stop at the first match**:
 - Checking a single metric
 
 **Must-fork tasks** (always dispatch — these cause heartbeat bloat):
-- Running the test suite
+- Running the test suite (`vitest run`, `npm test`)
+- Running `tsc --noEmit` / `npm run check` inline to "pre-check" before dispatch
+- Multi-file `grep`/`rg` across `src/` to "scope" a fork (let the forked session scope itself)
 - Multi-file code analysis
 - Architecture review across modules
 - Investigating dead code or fragile patterns
 - ANY code changes, refactoring, or PR work
 - Tracing end-to-end flows through the codebase
+
+> **Anti-pattern** (observed in bloated heartbeats, 16–25 ops): running `tsc`, `vitest`, or multi-file `grep src/` inline to "scope" a dispatch. Don't. The fork target scopes itself — your job is to name the target and dispatch.
 
 ### Pre-dispatch scope check for Lens work
 Before dispatching a Lens session, verify:

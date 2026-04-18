@@ -32,7 +32,6 @@
     - H-070 P3 updated to PARTIALLY SUPPORTED
   - [ ] Follow-up: Test updated implement-and-verify (no State Approach) on production tasks to confirm lower overhead
 - [ ] Deploy recent merges (R39 auto-pause, research-db, write-diff, etc.) — needs process restart. 14 commits undeployed since Apr 6.
-- [x] **Review-branch cleanup sweep (2026-04-18)** — 18→8 branches. Deleted 9 already-merged; merged `review/fix-auto-pause-notify-assertions` (3 test fixups, tsc clean, 1989 tests pass). Workflow wr_1776486725605_xos5. Remaining 8 still need triage per `review-branch-backlog.md` §2 (evaluator-source-tag superset, sync-gate-skip-evaluator family, etc.).
 
 ## Low-Priority Cleanup
 - [x] Phase 5d: Deprecate memory fallback — DONE (s_1775527469736_184, commit 34263ca)
