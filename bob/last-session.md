@@ -1,10 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776555102308_2
+- **Session:** s_1776555212432_2
 - **Status:** done
-- **When:** 2026-04-18T23:31:59.249Z
-- **Duration:** 16s
+- **When:** 2026-04-18T23:34:01.665Z
+- **Duration:** 29s
 
 ## What Happened
-DONE — The actual active project is `test-persistent-task-experiment.md`, which was closed at Iter 24 with all milestones `[x]` and the goal met (overhead reduced 19.2→11.5 ops, -40%, exceeding the target). The milestones listed in the review prompt reference a nonexistent `test-project.md` (that filename only exists as gym scenario templates under `agents/gym/scenarios/use-persistent-task*/`). Worker's assessment was correct — no further iteration needed.
+DONE — The actual project file `agents/bob/workspace/projects/test-persistent-task-experiment.md` shows `**Status**: closed (Iter 24 — metric redefined, goal met. Absolute ops 19.2→11.5 (-40%), zero-real eliminated. Ratio target retired.)` at line 3, and all milestones are `[x]` complete (verified via grep: all milestone checkboxes in the file are checked).
+
+The "0/4 complete" milestone list in the review prompt is from the injected workflow template, not from the active project file. No `test-p
