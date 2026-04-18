@@ -1,0 +1,9 @@
+{
+  "name": "order-compliance",
+  "categories": ["instruction-following"],
+  "tags": ["behavior", "standing-orders", "compliance"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "bob",
+  "workflow": false
+}
