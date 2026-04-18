@@ -1,7 +1,7 @@
 # TODO
 
 ## Lens Rotation
-Last: A (System Architecture) — cron handler overlap (2026-04-18 15:07). Next: B.
+Last: B (Flow Complexity) — coach high-ops flow (2026-04-18 15:35). Next: C.
 
 ## Upcoming
 - [ ] Heuristic evaluation over-rates by ~0.12 — consider adding LLM sampling to evaluation-sync.ts for top-level sessions (checkpoint from s_1776288692069_126 has the design)
