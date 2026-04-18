@@ -2,6 +2,9 @@
 
 ## Active Tasks
 
+## Heartbeat log
+- 2026-04-18 07:00 UTC: Observation-only heartbeat. Citations metric 0.3125 still red but acted on at 06:06 (DD-767 → tech-lead, DD-763 → bob); citation lag measured in days. Acknowledged 2 P1 coach messages re: C1.7 21% no-op rate — skill in place, issue is KE-011 (passive skill in heartbeat mode), not a Scout action gap.
+
 ## Dispatches 2026-04-18
 - **→ tech-lead | DD-767 (λ_A typed calculus)** | 2026-04-18: Try λ_A-style YAML+Python AST joint lint on our agent configs — DD-767 found 94.1% of 835 real GitHub agent configs are structurally incomplete (YAML-only lint: 54% precision → 96-100% with joint AST). Direct fit for tech-lead's audit-* workstream.
 - **→ bob | DD-763 (Parallax cognitive-executive separation)** | 2026-04-18: Try Assume-Compromise evaluation + reversible-execution pattern for the deferred "Runtime Enforcement for Verification Gap" (remaining 40%) — DD-763 shows prompt guardrails = 0% under compromise, architectural separation = 98.9-100% across 280 adversarial cases. Formalizes KE-195/196 content-first gates at infra level.
