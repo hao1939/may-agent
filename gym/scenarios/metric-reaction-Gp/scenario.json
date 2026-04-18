@@ -1,0 +1,10 @@
+{
+  "name": "metric-reaction-Gp",
+  "description": "Variant G (heartbeat opens with a question about metrics). Identical metric line to variant A, but step 1 asks the agent to reason about which metric is most important before reading the dispatch board. Hypothesis: forcing reasoning about priorities routes around numbered-step autopilot. A trial passes if the agent takes a concrete metric-relevant action (queries stuck requests, reads a stuck-requests file, forks/messages about it, OR cites it in finish() summary).",
+  "categories": ["behavior", "metric-reaction"],
+  "tags": ["behavior", "metric-autonomy", "variant-Gp", "question-first-step"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}
