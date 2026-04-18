@@ -71,3 +71,7 @@ If confirmed, this has profound implications:
 - **Some things should not be evaluated by LLMs** — the system needs explicit R-classification of evaluation tasks
 - **Objective metrics should be preferred** wherever possible — shift rubric design toward measurable outcomes
 - **Human evaluation remains necessary** for R < 0.3 decisions — no amount of automation replaces this
+
+## Resolution Verdict
+
+**RESOLVED — CONFIRMED**. P(H) = 0.75. LLM judges have fundamental accuracy limits determined by decision topology. EXP-052 Phase 1+2: RIFT ratio correlates with inter-rater agreement at r=0.81 (N=5). Both kappa thresholds confirmed. 19 rubrics classified (RIFT 0.17–1.00). The R-ceiling is a structural property of the evaluation task, not a model limitation. Resolved 2026-04-18.

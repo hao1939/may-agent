@@ -207,3 +207,7 @@ H-098 is not just a description of what works — it's a **prescriptive decision
 4. **Budget Channel 2 interventions**: ~~One structural gate per task.~~ **EXP-129 update**: Up to 3 related analytical gates per task with no degradation. At 4 gates, mild degradation (67%) manifests as implementation quality loss, not judgment loss. Choose gates that are analytically related to the task. Duration cost is real: +167s/gate. More gates = longer execution, which may matter more than accuracy loss.
 
 The channel model predicts that future intervention research should focus on expanding Channel 2 capacity (can we chain gates without crowding?) and understanding Channel 3 task-type boundaries (behavioral=100%, analytical=0%, discovery=harmful — what's the distinguishing feature?), rather than finding better Channel 1 content (which is provably futile for judgment tasks) or better Channel 3 content (which EXP-128/130 shows is futile or harmful for non-behavioral tasks).
+
+## Resolution Verdict
+
+**RESOLVED — CONFIRMED WITH REFINEMENTS**. P(H) = 0.80. Channel separation, not content quality, determines intervention effectiveness. EXP-127 direct test: Ch1 0/6 ✅, Ch2 6/6 ✅, Ch3 0/6 (task-type boundary). EXP-128 confirms Ch3 miss is NOT content quality (3 variants all 0/6). 13/15 predictions supported across 4 direct tests. Ch2 is the only reliable channel (p=0.0000074). Ch3 works for behavioral tasks only. Status: CONCLUDED. Resolved 2026-04-18.

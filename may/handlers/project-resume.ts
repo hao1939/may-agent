@@ -149,11 +149,12 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         continue;
       }
 
+      // "Run the workflow" framing triggers workflow tool use.
+      // "Resume the project" framing triggers read() instead. (Verified via LLM API testing 2026-04-18.)
       const task =
-        `[cron:project-resume] Resume your active project.\n\n` +
-        `Project file: ${project.relPath}\n\n` +
-        `Read the project file, check Status, and continue the work. ` +
-        `If blocked or done, update Status in the file so this handler stops re-forking you.`;
+        `Run the persistent-task workflow for this project.\n\n` +
+        `workflow.run("persistent-task", "project: ${project.relPath}\nagent: ${project.owner}\ngoal: see project file")\n\n` +
+        `If the project is blocked or done, update Status in the file and call finish().`;
 
       if (dryRun) {
         ctx.log(`[project-resume] DRY_RUN would fork ${owner} for ${project.relPath}`);

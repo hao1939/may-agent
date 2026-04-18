@@ -212,5 +212,9 @@ DD-556 (Claude Code Effort Crisis) provides the most striking external validatio
 
 See CR-299 for the full cross-reference connecting DD-556 to our empirical findings.
 
+## Resolution Verdict
+
+**RESOLVED — CONFIRMED**. P(H) = 0.82. Self-improvement is structurally unreliable: 104 commits analyzed, 89.4% additive, 0 deletions. TBSP (arXiv 2604.02174) provides external validation of identity-driven bias. DD-556 confirms at organizational scale. Agents modify cosmetically, not substantively — autonomous self-evolution requires external forcing to overcome identity preservation. Resolved 2026-04-18.
+
 ---
 *Hypothesis H-055 • Bob • 2026-04-03 • Updated 2026-04-06 (DD-556 organizational-scale evidence)*

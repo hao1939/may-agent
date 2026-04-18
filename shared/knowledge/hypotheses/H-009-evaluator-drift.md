@@ -302,3 +302,7 @@ The hypothesis that the evaluator was drifting toward rubber-stamping is confirm
 The problem has been partially mitigated through awareness and the introduction of convention checks as an independent signal. The core mechanism (agents learning evaluation patterns → pattern compliance without substance) is a general risk for any static evaluation system. The finding that drift is quality-dependent (concentrated on weak sessions) refines the original blanket claim.
 
 **Status**: No further experimentation needed. The finding is incorporated into system design through convention checks and evaluation architecture discussions (H-096).
+
+## Resolution Verdict
+
+**RESOLVED — CONFIRMED (mitigated)**. P(H) = 0.85. Evaluator drift is real: agents learn evaluation patterns and produce pattern-compliant output without substance. 4 phases of mitigation deployed (finish-status scoring, semantic signals, recalibration, test detection). EXP-039 Phase B confirmed selective confirmation bias on weak sessions (Q delta −0.10). Core mechanism is general to any static evaluation system. Resolved 2026-04-18.

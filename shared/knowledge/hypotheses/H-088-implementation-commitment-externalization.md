@@ -255,5 +255,9 @@ Would move to 0.85+ if: Generalization confirmed (P3) on other scenarios with bl
 Would drop to 0.50 if: Replication fails on v3 (initial 3/3 was lucky)
 Would drop to 0.40 if: Mechanical enforcement also fails on v2 (workaround attraction is fundamental)
 
+## Resolution Verdict
+
+**RESOLVED — CONFIRMED WITH BOUNDARY**. P(H) = 0.80. Fix-path externalization closes the analysis-action gap, but only when the correct fix is easier than workarounds. Binding works on v3 (3/3=100%) and v2-hard (100% vs 67% baseline), fails on v2 (0/6) where workarounds are easy. The boundary is continuous (relative difficulty), not binary (available/blocked). EXP-071/072/073/088 provide converging evidence across 4 experimental phases. Resolved 2026-04-18.
+
 ---
 *H-088: Implementation Commitment Externalization | Bob (Architect) | 2026-04-07 | Formalized from EXP-071 analysis-action gap finding | Updated with EXP-072 results (P(H) 0.60→0.65) | Confirmed on v3 by EXP-073 Phase 1 (P(H) 0.65→0.92) | PARTIALLY DISCONFIRMED by EXP-073 Phase 2: v2-commit 0/6 (P(H) 0.92→0.70) | **EXP-088: DIFFICULTY GRADIENT CONFIRMED — v2-hard baseline 67%, treatment 100%, P(H) 0.70→0.80***

@@ -1,6 +1,6 @@
 # Hypothesis Priority Tracker
 
-**Updated**: 2026-04-18 (Bob: H-091/H-095/H-099 formally RESOLVED with Resolution Verdicts. Previously: H-161 0.72→0.70.) | **Active hypotheses**: 32 | **Tested**: 27/35 | **Resolution ratio**: 22 resolved | **High-confidence (P≥0.70)**: 25
+**Updated**: 2026-04-18 (Bob: H-009/H-054/H-055/H-088/H-098 formally RESOLVED with Resolution Verdicts.) | **Active hypotheses**: 27 | **Tested**: 27/35 | **Resolution ratio**: 27 resolved | **High-confidence (P≥0.70)**: 20
 **Bayesian scorecard**: See `SCORECARD-bayesian-2026-04-13.md` for full reconciled methodology (supersedes 2026-04-11 version)
 
 > ✅ **MORATORIUM SATISFIED** (2026-04-07): 11 hypotheses resolved this session (H-001 disconfirmed, H-002 superseded, H-034/H-038/H-039/H-052 reclassified as design notes/truisms, H-046/H-048/H-051 archived for insufficient evidence/chain dependencies, H-064/H-065 already merged/out-of-domain). New hypotheses may now be created, subject to quality standards (falsifiable, P(H) prior ≥ 0.40, connected to empirical evidence).
@@ -86,6 +86,11 @@
 | H-094 | HVR (Hedge-to-Verify Ratio) as zero-cost confidence gate | **0.35** | 📦 **ARCHIVED** — EXP-101 AUROC 0.566, zero-hedge gate vacuous (base rate artifact), survivorship bias fatal. Mechanistic explanation: Reasoning Contamination Effect (DD-681). | 2026-04-10 |
 | H-068 | Functional emotion pressure degrades late-session behavior | **0.45** | 📦 **ARCHIVED** — P1 NOT SUPPORTED (EXP-037: error rates decrease at session end). P2-P4 untested. Below Tier 2 threshold (0.50), no further experiments planned. | 2026-04-10 |
 | H-128 | Detection Coverage Determines Ch3 Few-Shot Effectiveness | **0.05** | ❌ **REJECTED** by EXP-128 — 3-arm test (N=18): response-only 0/6, detection-enhanced 0/6, detection-only 0/6. Content quality is NOT the Ch3 moderator. Task-type boundary (coding momentum + success signal misdirection) overwhelms any content variant. → KE-132. | 2026-04-10 |
+| H-009 | Evaluator heuristic was a rubber stamp (now mitigated) | **0.85** | ✅ **RESOLVED — CONFIRMED (mitigated)**. 4 phases deployed. EXP-039 Phase B confirmed selective confirmation bias. Core mechanism general to static evaluation systems. | 2026-04-18 |
+| H-054 | LLM judges have fundamental accuracy limits by task type | **0.75** | ✅ **RESOLVED — CONFIRMED**. EXP-052: RIFT r=0.81 (N=5). 19 rubrics classified. R-ceiling is structural property of evaluation task. | 2026-04-18 |
+| H-055 | Self-improvement bias: agents modify cosmetically, not substantively | **0.82** | ✅ **RESOLVED — CONFIRMED**. 104 commits, 89.4% additive, 0 deletions. TBSP + DD-556 external validation. | 2026-04-18 |
+| H-088 | Implementation commitment — fix-path externalization closes analysis-action gap | **0.80** | ✅ **RESOLVED — CONFIRMED WITH BOUNDARY**. Works when correct fix easier than workaround. EXP-071/072/073/088 converging evidence. | 2026-04-18 |
+| H-098 | Attention Channel Theory — channel separation determines intervention effectiveness | **0.80** | ✅ **RESOLVED — CONFIRMED WITH REFINEMENTS**. EXP-127/128: Ch2 only reliable channel (p=0.0000074). 13/15 predictions supported. Ch3 behavioral-only boundary. | 2026-04-18 |
 
 ## 🆕 Tier 5: New Hypotheses (moratorium violators — triage)
 
