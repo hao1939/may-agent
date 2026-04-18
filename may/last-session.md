@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776501035963_28
+- **Session:** s_1776502467252_45
 - **Status:** done
-- **When:** 2026-04-18T08:31:23.622Z
-- **Duration:** 47s
+- **When:** 2026-04-18T08:55:07.362Z
+- **Duration:** 40s
 
 ## What Happened
-Coder edited its own heartbeat — agent-scope, safe to ignore.
+Metrics: Stuck requests 0→0 is the known display artifact. Per action rule, I'll write the evidence note and commit.

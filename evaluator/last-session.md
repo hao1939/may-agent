@@ -1,20 +1,21 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776501383453_41
+- **Session:** s_1776502495007_47
 - **Status:** done
-- **When:** 2026-04-18T08:36:32.709Z
-- **Duration:** 9s
+- **When:** 2026-04-18T08:55:02.618Z
+- **Duration:** 7s
 
 ## What Happened
 ```json
 {
   "agents": {
-    "tech-lead": {
+    "bob": {
       "role": "Builder",
       "capability_level": "L2",
-      "efficiency": 0.78,
-      "quality": 0.74,
+      "efficiency": 0.72,
+      "quality": 0.76,
       "verdict": "good",
       "issues": [
-        "[FM-2.6/RISK] Some claims in the deliverable are not fully supported by visible transcript evidence: finish() summary asserts a specific root cause (“default verification runs all tests, pre-existing failures trigger false retries”) but the provided transcript excerpt does not show the supporting c
+        "[FM-3.3-adjacent] Verification is present but shallow: only greps for pattern strings + table header, not for correctness/completeness of the 3 experiment templates or the FM-mapping table content.",
+        "[SCOPE_DRIFT] Commit indicates 6 files changed and adds gym scenario files (gym/scenarios/use-pe
