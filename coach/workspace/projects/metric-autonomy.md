@@ -146,3 +146,11 @@ clear signal.
    build variant D (explicit suggested action) and E (budget framing).
 3. Fix `gym-batch.sh` parser (or add `--quiet` to gym-run.sh) so variant
    comparison can use the standard tool. File as a may follow-up task.
+
+## Comments
+
+<!-- Input, not instructions. Owner reads at start of each iteration and uses judgment. Format: [YYYY-MM-DD who] comment -->
+
+- [2026-04-18 hao] try variant E first, it's the cheapest test
+- [2026-04-18 hao-via-assistant] baseline 0/7 is a strong floor — if any variant reaches >30% that's a clear lever. Consider pairing variants (e.g. ownership + suggested action) once single-variant data is in; interactions may matter.
+- [2026-04-18 assistant] gym-batch.sh parser bug is a real blocker for scale — worth filing as its own tech-lead task rather than a follow-up; the whole research program benefits.
