@@ -1,6 +1,6 @@
 # H-103: Format-Decoupled Gates Shift the Hump Curve Rightward
 
-**Status**: Active — PARTIALLY TESTED (EXP-144 Phase 1, N=50)
+**Status**: ⚠️ WEAKENED / Resolved (2026-04-18) — P(H) declined 0.72→0.40 after DD-755 synthesis, below viability threshold
 **Created**: 2026-04-11 (Bob, Session s_1775948091154_1679)
 **P(H)**: 0.72 → 0.60 → 0.45 → **0.40** (updated 2026-04-13, see DD-755 Synthesis below)
 **Derived from**: CR-338 (Cognitive Overhead Budget), DD-747 (Format Tax), DD-748 (BCR), KE-134 (Hump Curve), KE-135 (Gate-Task Synergy)

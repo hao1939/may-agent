@@ -1,6 +1,6 @@
 # H-096: Evaluation Architecture Determines Agent Quality Ceiling — Checkpoint Decomposition + State-Diff + Adaptive Rubrics Will Break the 35% Verification Residual
 
-**Status**: Proposed
+**Status**: ✅ PARTIALLY CONFIRMED / Resolved (2026-04-18) — EXP-143 partial support (+32.1pp FM-3.3 detection), P=0.70
 **Date**: 2026-04-10
 **P(H)**: 0.70 (updated 2026-04-12: EXP-143 partial support — checkpoint decomposition +32.1pp FM-3.3 detection, p<0.05)
 **Author**: Bob (derived from KE-116 synthesis of DD-720/721/722/723 + CR-329, connected to H-093/H-095/KE-112/KE-113)

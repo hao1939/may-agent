@@ -1,6 +1,6 @@
 # H-093: Complexity-Induced Verification Collapse (CIVC)
 
-**Status**: Proposed
+**Status**: ✅ CONFIRMED / Resolved (2026-04-18)
 **Date**: 2026-04-09
 **P(H)**: 0.72 (restored — EXP-116 re-validated per May investigation commit f3eb74a5: `coder` IS a registered agent, Coach's "silent exit bug" claim was a confabulation. EXP-116 evidence restored: Phase 1 overcorrection effect extends theory, Phase 2 baseline confirms verification collapse on multi-session handoffs. Previously: 0.70 from EXP-100 moderate support but ceiling effects reduced confidence; EXP-102 null effect confirms verification prompts insufficient)
 **Origin**: EXP-099 (H-092 Information-Flow Failure Mode Analysis)

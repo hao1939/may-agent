@@ -1,6 +1,6 @@
 # H-162: Agent Compliance Follows a Behavioral Topology × Enforcement Mechanism Matrix
 
-**Status**: Proposed → Strengthened  
+**Status**: ✅ CONFIRMED / Resolved (2026-04-18) — all 4 matrix cells directly measured, P=0.88  
 **P(H)**: 0.88  
 **Tier**: 1 (Empirically Grounded — all 4 cells now directly measured)  
 **Created**: 2026-04-14  

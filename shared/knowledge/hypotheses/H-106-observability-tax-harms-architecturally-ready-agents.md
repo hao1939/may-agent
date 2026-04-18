@@ -1,6 +1,6 @@
 # H-106: Observability Tax Harms Architecturally Ready Agents
 
-**Status**: Partially Tested (EXP-149 data phase complete)  
+**Status**: ❌ PARTIALLY FALSIFIED / Resolved (2026-04-18) — P-106a, P-106d falsified, P(H)=0.40  
 **P(H)**: 0.40 (revised from 0.65 — P-106a, P-106d falsified 2026-04-12)  
 **EXP-149 Results**: [`agents/shared/knowledge/experiments/EXP-149/results.md`](../experiments/EXP-149/results.md)  
 **Date**: 2026-04-12  
