@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776526552728_346
+- **Session:** s_1776528353325_375
 - **Status:** done
-- **When:** 2026-04-18T15:36:49.724Z
-- **Duration:** 56s
+- **When:** 2026-04-18T16:06:59.182Z
+- **Duration:** 1m5s
 
 ## What Happened
-The stuck-requests metric keeps escalating (0→1→2→12) while DB consistently shows 0. Time to actually fix this. Let me dispatch to tech-lead.
+Stuck-requests fix already dispatched to tech-lead (req:baaae56e, 30m ago, CREATED). Tech-lead is in a heartbeat now — should pick it up. No gatekeeper changes. System healthy.

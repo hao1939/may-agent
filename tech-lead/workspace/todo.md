@@ -1,7 +1,7 @@
 # TODO
 
 ## Lens Rotation
-Last: B (Flow Complexity) — coach high-ops flow (2026-04-18 15:35). Next: C.
+Last: C (Dead Weight) — cron dead weight audit (2026-04-18 16:07). Next: D.
 
 ## Upcoming
 - [ ] Heuristic evaluation over-rates by ~0.12 — consider adding LLM sampling to evaluation-sync.ts for top-level sessions (checkpoint from s_1776288692069_126 has the design)
