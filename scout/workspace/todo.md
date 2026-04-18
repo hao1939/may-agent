@@ -17,7 +17,7 @@
 5. **KE-106 habituation literature** — LOW priority, internal evidence strong.
 
 ### Active side threads
-- **DD storage fragmentation** (metric probe 2026-04-17): 226 cited DDs, only 24 physical files in shared/library/deep-dives/. Three follow-ups: (a) promote loose DDs from workspace, (b) resolve orphan citations DD-747/750, (c) propose KE→DD back-linking protocol. Candidate next idle-playbook work.
+- **DD storage fragmentation** (metric probe 2026-04-17): ✅ (a) loose DDs already promoted by prior sessions, (b) DD-747/748 orphans restored from git (commit f06364d35), DD-750 was already present as dd750 in workspace/deep-dives/. 55 physical files now in library. Remaining: (c) propose KE→DD back-linking protocol — LOW priority.
 - **Bob pipeline healthy**: Scout research → Bob KE integration working (KE-072, KE-076-078, KE-098, KE-105 all pulled from Scout DDs/CRs). No intervention needed.
 - **Fork mechanism**: still non-functional. Substantive work must be inline or via `workflow.run('verify-wrap', ...)`. Verified across sessions.
 
