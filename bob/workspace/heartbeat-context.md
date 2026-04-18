@@ -13,7 +13,7 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-18T08:49)
+# Your Context (auto-generated 2026-04-18T09:19)
 
 **System:** 2 sessions/6h, 0% error rate
 
@@ -27,5 +27,5 @@
 - FM-2.6: 1x
 
 **📊 Your Metrics:**
-- Hypotheses resolved: **0.5238** ratio → 0.65 ratio
+- Hypotheses resolved: **0.5714** ratio → 0.65 ratio
 - Session success rate (7d, higher is better): **0.9533834586466166** ratio → 0.9 ratio
