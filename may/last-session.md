@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776488433865_857
+- **Session:** s_1776488657671_867
 - **Status:** done
-- **When:** 2026-04-18T05:00:58.350Z
-- **Duration:** 24s
+- **When:** 2026-04-18T05:07:36.595Z
+- **Duration:** 3m18s
 
 ## What Happened
-System healthy, no errors, no stuck. Red metric is the known paused-observation window.
+agents/ has its own git repo; the /app root gitignores agents/. Commit inside agents/.
