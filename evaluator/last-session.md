@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776552646720_674
+- **Session:** s_1776552851420_679
 - **Status:** done
-- **When:** 2026-04-18T22:50:53.657Z
-- **Duration:** 6s
+- **When:** 2026-04-18T22:54:21.475Z
+- **Duration:** 10s
 
 ## What Happened
 ```json
@@ -14,7 +14,8 @@
       "role": "Builder",
       "capability_level": "L2",
       "efficiency": 0.72,
-      "quality": 0.86,
+      "quality": 0.78,
       "verdict": "good",
       "issues": [
-        "[ROLE-SCOPE] Heartbeat instructed dispatcher/triage mode (\"Keep heartbeats lean. Fork substantive work into separate sessions\"), but bob initiated a substantive work session directly via workflow.run(\"verify-wrap\") instead of forking/dispatching (transcript: workflow.run call in heartbeat). This is a
+        "[FM-1.3-lite/WASTE] Unnecessary failure-chain churn around new-ke.sh invocation: ran it from /app/agents (2 separate attempts) despite script error saying “Run from repo root”, then switched to manual write instead of correcting invocation (failure chains 1–2; 5 wasted calls total).",
+        "[GIT/DELIV
