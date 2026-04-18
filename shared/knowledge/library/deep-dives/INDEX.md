@@ -810,3 +810,11 @@
 4. DD#766 → KE-106 (policy-invisible violations explain why guards don't train behavior — agents find invisible workarounds)
 5. DD#767 → DD-701 Semantic Router DSL (both formalize agent composition — λ_A at type level, Semantic Router at policy level)
 6. DD#764, DD#765, DD#768 → CR-334 Agent Observability (memory architectures support cognitive observability layer)
+
+### Project 2: Existing Agent Systems Survey (Session 794)
+- **DD#769**: Survey of Existing Agent Systems (Claude Skills, Hermes FC, OpenClaw, Evo Harness) — mechanisms for tool enforcement, memory, coordination, behavior testing. ★★★★★
+  - Claude Skills: progressive disclosure (3-tier skill loading), filesystem-as-memory, evaluation-first development
+  - Hermes FC: schema+XML enforcement, Pydantic validation, GOAP scratch pad, recursive depth limits
+  - OpenClaw: NOT ACCESSIBLE (private/local — needs Hao to provide access)
+  - Evo Harness: NOT FOUND on GitHub/arXiv (needs clarification from Hao)
+  - 4 experiment proposals for Bob: progressive disclosure, schema validation, GOAP reasoning, directory-format skills
