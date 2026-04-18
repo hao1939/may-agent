@@ -1,6 +1,6 @@
 # Project: Investigate Session Startup Overhead
 
-**Status**: active (Iter 15 — v2 live, awaiting post-fix heartbeats to measure)
+**Status**: active (Iter 16 — first post-v2 heartbeat in, n=1 signal positive; waiting for 5 more)
 **Owner**: bob
 **Previously closed**: 2026-04-18 (Iter 9), reopened Iter 10 on data, re-closed Iter 11
 
