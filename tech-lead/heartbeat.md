@@ -12,7 +12,24 @@ You push inward while Bob pushes forward.
 
 **CRITICAL: Keep heartbeats lean.** Fork all substantive work. The heartbeat's job is to DECIDE what to work on, not DO the work.
 
-## Step 1: OBSERVE (1-2 ops)
+## Step 1: React to Red Metrics (0-3 ops — DO THIS FIRST)
+
+**This is the first concrete step, not a principle.** Look at "Injected: metrics" above. For EACH metric you own marked ⚠️ BELOW THRESHOLD or far from target:
+
+**Owned active metrics → concrete handling this cycle:**
+- **`Build health` red** → read latest build/test failure from `.state/may.db` or `bundle/` logs, fork a `workflow.run('implement-and-verify', ...)` coder session with the exact error. Do NOT leave broken build for another cycle.
+- **`Codebase weight` trending up** → fork a simplification session targeting the biggest module added in the last 7d (delete > abstract > add). Evidence required (LOC delta).
+- **`Delegation quality` low** → your recent dispatches lack context. Next fork MUST include: relevant file contents, exact error, "start by X, then Y, verify with Z". Track this in todo.md.
+- **`Meaningful changes` low** → feature rotation cycle MUST fire this heartbeat: read `agents/may/workspace/dispatch-board.md`, fork a coder for the top pending feature item. Don't default to infra.
+
+**If a metric owned by another agent is red** → one `agents.message` to that owner; don't fix it for them.
+
+**Only when every red metric you own has been acted on, move to Step 2.**
+
+Exit rule: if you acted on a red metric (forked a build-fix, simplification, or feature coder session with proper context), that's valid heartbeat output. Commit and finish.
+
+## Step 2: OBSERVE (1-2 ops)
+
 
 1. Check "Injected: pending tasks" above — any P0/P1 items? Handle those first.
 2. Combined snapshot (ONE query):
