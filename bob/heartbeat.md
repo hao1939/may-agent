@@ -25,7 +25,10 @@ Read your context and identify what needs doing:
    ```
    The snapshot script returns running sessions, recent errors, pending
    requests, your recent sessions, and last-hour activity in one call —
-   replaces 4-8 separate `bun -e` SQL one-liners.
+   replaces 4-8 separate `bun -e` SQL one-liners. **It also now prints
+   `ACTIVE_PROJECTS_bob` and `DD_INBOX_HEAD` (first 30 lines of
+   deep-dives/INBOX.md)** — do NOT additionally `ls workspace/projects/`
+   or `cat INBOX.md`; that info is in the snapshot output above.
 
    **To locate a KB file by ID** (DD/KE/H/EXP/CR), use
    `bash agents/shared/scripts/kb-find.sh DD-770` instead of probing paths

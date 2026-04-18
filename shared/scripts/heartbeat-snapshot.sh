@@ -107,3 +107,33 @@ print('ACTIVITY_LAST_HOUR',
 
 console.log('-- snapshot generated at ' + new Date(now).toISOString() + ' --');
 "
+
+# 6. Active persistent-task projects for this agent (folds an `ls projects/` +
+#    `grep Status:` pair into the snapshot). Bob's heartbeats showed 4/6
+#    recent sessions running this as a separate op — bundling saves ~1 op.
+if [[ -n "$AGENT" && -d "agents/${AGENT}/workspace/projects" ]]; then
+  echo "=== ACTIVE_PROJECTS_${AGENT} ==="
+  found=0
+  for f in agents/"${AGENT}"/workspace/projects/*.md; do
+    [[ -e "$f" ]] || continue
+    # Match "Status: active" or "**Status**: active" (case/bold tolerant)
+    if grep -iE '^\s*(\*\*)?Status[:[:space:]*]' "$f" | grep -i 'active' >/dev/null 2>&1; then
+      # First line is usually "# Project: ..."; show that + path
+      title=$(head -1 "$f" | sed 's/^#\+\s*//')
+      echo "  ${f#agents/${AGENT}/workspace/projects/} | ${title:0:80}"
+      found=$((found+1))
+    fi
+  done
+  [[ $found -eq 0 ]] && echo "  (none)"
+  echo ""
+fi
+
+# 7. Deep-dive INBOX head (folds a `cat INBOX.md` op into the snapshot).
+#    5/6 recent bob heartbeats read this as a separate op. Show just the
+#    first ~30 lines — the unread section — which is what agents scan.
+INBOX="agents/shared/knowledge/library/deep-dives/INBOX.md"
+if [[ -f "$INBOX" ]]; then
+  echo "=== DD_INBOX_HEAD (first 30 lines of $INBOX) ==="
+  head -30 "$INBOX" | sed 's/^/  /'
+  echo ""
+fi

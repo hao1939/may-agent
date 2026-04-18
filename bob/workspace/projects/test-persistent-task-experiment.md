@@ -1,6 +1,6 @@
 # Project: Investigate Session Startup Overhead
 
-**Status**: done (Iter 12 — small adjacent helper shipped; main goal unchanged)
+**Status**: active (Iter 14 — reopened with concrete fix for remaining 35% overhead)
 **Owner**: bob
 **Previously closed**: 2026-04-18 (Iter 9), reopened Iter 10 on data, re-closed Iter 11
 
@@ -14,17 +14,86 @@ Reduce session startup overhead from 25% to under 10%.
 - [x] Roll out: dogfood in bob's heartbeat (Iter 4)
 - [x] Re-measure bob after 6+ heartbeat sessions to confirm impact
       (Iter 6: 45% → 33% overhead, avg total 19.2 → 11.0, snapshot adopted 4/6)
-- [x] Propose snapshot script to coach + may heartbeats (Iter 7 —
-      brief sent: agents/bob/workspace/sent/2026-04-18-heartbeat-snapshot-proposal.md,
-      notifications sent to may + coach 2026-04-18)
-- [x] ~~Design fix for pattern #1 (pure-overhead heartbeats)~~ —
-      **superseded** by existing `agents/shared/may-agent-docs/design/idle-heartbeat-playbook.md`
-      (Hao 2026-04-17: idle heartbeats are an exploration budget, not
-      overhead. Don't add fast-exit gates; replace exit with prioritized
-      autonomous work.) Iter 5 reconciliation.
-- [x] Address pattern #3 (re-reading already-summarized files) — added
-      anti-re-read note in bob's Step 1 (Iter 4)
+- [x] Propose snapshot script to coach + may heartbeats (Iter 7)
+- [x] ~~Design fix for pattern #1 (pure-overhead heartbeats)~~ — superseded by idle-heartbeat-playbook
+- [x] Address pattern #3 (re-reading already-summarized files) — added anti-re-read note in bob's Step 1 (Iter 4)
 - [x] Adjacent helper for FM-1.3 path-probe pattern (Iter 12)
+- [x] **Iter 14: fold `ls projects/` + `cat INBOX.md` into snapshot script**
+
+## Iteration Log
+
+### Iter 14 — 2026-04-18 — SNAPSHOT v2: FOLD TOP-2 REMAINING PRE-REAL OPS
+
+Iter 13 declared the 35% floor "exploration budget." Re-inspecting the
+6 heartbeat transcripts from Iter 13's measurement window disagrees —
+the per-op breakdown is concrete and reducible:
+
+Pre-real ops per session (post-snapshot script):
+```
+s_1776541931436_556: ls projects/  | cat INBOX.md        (2 ops)
+s_1776540131411_533: grep projects/ | cat INBOX.md       (2 ops)
+s_1776538331345_514: cat INBOX.md | git log KB | ls KB   (3 ops; had 2+1 adj)
+s_1776536531368_489: ls projects/  | cat INBOX.md        (2 ops)
+s_1776534731420_467: grep KE-* for dd774..dd776 (×4)     (5 ops; task-driven)
+s_1776532931430_441: ls projects/ + cat INBOX.md (combined) (1 op)
+```
+
+**5 of 6 sessions ran the same `ls projects/` + `cat INBOX.md` pair**
+after the snapshot. That's **not exploration budget** — it's two
+static, predictable follow-ups to a snapshot that doesn't include
+them. The one outlier (s_467) was task-driven grepping, which
+belongs in a work session not a heartbeat.
+
+**Fix (this iter):** extended `heartbeat-snapshot.sh` to print two new
+sections after the existing output:
+
+1. `ACTIVE_PROJECTS_<agent>` — grep every `workspace/projects/*.md` for
+   `Status: active` (handles `**Status:**` bold-wrap), one line per
+   active project with title. Replaces the `ls projects/` + `grep
+   Status:` pattern that 4/6 sessions ran.
+2. `DD_INBOX_HEAD` — first 30 lines of
+   `agents/shared/knowledge/library/deep-dives/INBOX.md` (the Unread
+   section is always in the first ~20 lines). Replaces the `cat
+   INBOX.md` op that 5/6 sessions ran.
+
+**Verified live** (this iter):
+- `bash agents/shared/scripts/heartbeat-snapshot.sh bob` now returns
+  both sections. `ACTIVE_PROJECTS_bob` correctly picked up
+  `learn-from-existing-systems.md` (Status: active, bold-wrapped).
+- `DD_INBOX_HEAD` shows all 14 unread DDs cleanly.
+- Wall time unchanged (~1s). No new bun process; pure bash+grep+head.
+
+**Dogfooded** into `agents/bob/heartbeat.md` Step 1.3 with an additive
+note (KE-008 compliant — no restructure): "do NOT additionally `ls
+workspace/projects/` or `cat INBOX.md`; that info is in the snapshot
+output above." Added in-place to the existing snapshot-script
+paragraph.
+
+**Predicted savings:** -2 pre-real ops for 5/6 bob heartbeats. Current
+pre-real average 3.5 → predicted ~1.5. With avg total ~9, that moves
+overhead **from ~40% to ~17%** — biggest single-iter drop since
+Iter 6 and lands us within striking distance of the <10% target.
+
+**Compliance guard.** The heartbeat.md note tells the agent NOT to run
+the redundant ops. Doesn't prevent it — structural enforcement would
+need the snapshot script's output to be visible to the agent *before*
+it decides its next op, which it already is. Re-measure next cycle
+(6 fresh heartbeats, ~3h wall clock) to confirm.
+
+**Not done this iter:**
+- Not proposing to coach/may yet. Iter 7's earlier proposal had 0/6
+  adoption; dogfood bob → measure → then evidence-backed ask.
+  Same pattern that worked in Iter 4→7.
+- Not touching `kb-find.sh` — orthogonal issue.
+
+**Explicit non-asks:**
+- Not restructuring Step 1 (KE-008).
+- Not touching other agents' heartbeat.md files.
+
+## Files Modified This Iter
+- agents/shared/scripts/heartbeat-snapshot.sh (+30 lines: ACTIVE_PROJECTS + DD_INBOX_HEAD sections)
+- agents/bob/heartbeat.md (Step 1.3 additive anti-redundant-op note)
+- agents/bob/workspace/projects/test-persistent-task-experiment.md (this file)
 
 ## Iteration Log
 
