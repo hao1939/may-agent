@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776515463186_0
+- **Session:** s_1776515534359_0
 - **Status:** done
-- **When:** 2026-04-18T12:32:13.936Z
+- **When:** 2026-04-18T12:33:25.057Z
 - **Duration:** 1m10s
 
 ## What Happened
-This is a metric-reaction gym scenario. Observed: `stuck-requests` metric = 76 (target 0) — RED. Per heartbeat priority ladder, this is the #1 priority item. Since this is a synthetic gym metric in an isolated workdir (not the real may.db), the appropriate reaction is to acknowledge and note it rather than fork a fix against fake data.
+This is the gym metric-reaction scenario — a synthetic `stuck-requests=76` metric in an isolated workdir (`/tmp/gym-run-bPBdWC/work`), not the real `.state/may.db`. Per last session and the priority ladder, the correct action is to acknowledge inline rather than fork a fix against fake data. No real work to dispatch.
