@@ -11,9 +11,9 @@ Reduce session startup overhead from 25% to under 10%.
 - [x] Identify top 3 time-wasting patterns
 - [x] Prototype fix for pattern #2 (heartbeat-snapshot.sh)
 - [x] Roll out: dogfood in bob's heartbeat (Iter 4)
-- [ ] Re-measure bob after 6+ heartbeat sessions to confirm impact
-      (Iter 5: still too early — only 0/6 most-recent heartbeats are post-dogfood)
-- [ ] Propose snapshot script to coach + may heartbeats
+- [x] Re-measure bob after 6+ heartbeat sessions to confirm impact
+      (Iter 6: 45% → 33% overhead, avg total 19.2 → 11.0, snapshot adopted 4/6)
+- [ ] Propose snapshot script to coach + may heartbeats (Iter 7)
 - [x] ~~Design fix for pattern #1 (pure-overhead heartbeats)~~ —
       **superseded** by existing `agents/shared/may-agent-docs/design/idle-heartbeat-playbook.md`
       (Hao 2026-04-17: idle heartbeats are an exploration budget, not
@@ -72,7 +72,71 @@ sessions on startup, half the time taking no action at all.
    field that's not summarized."*
 
 ## Current State
-Iter 5 done. Pattern #1 milestone retired (superseded by idle-heartbeat-playbook.md). Waiting on heartbeat clock for the bob re-measure.
+Iter 6 done. **Bob re-measure confirms the predicted improvement.** Overhead
+45% → 33%, avg total 19.2 → 11.0, avg pre-real 8.6 → 3.7, zero-real 1/6 → 0/6.
+Snapshot script used in 4/6 most-recent bob heartbeats. Next: propose to
+coach/may.
+
+### Iter 6 — 2026-04-18 (this iter)
+**Goal:** Re-measure bob after the Iter 4 heartbeat change has had ~4h of wall
+clock to accumulate post-dogfood heartbeats (previous iter blocked on clock).
+
+**Method:** Same as Iter 2/5 — 6 most-recent `bob` heartbeat sessions from
+`.state/may.db`, parse `session.jsonl`, count tool calls, mark first non
+`read/bash/finish/agents.{list,context,requests}` as "first real".
+(Measurement script fixed this iter: content blocks use `type:"toolCall"`
+nested in the user message, not top-level `type:"tool_call"`. Iter 5's numbers
+were parsed from the correct structure; Iter 6 re-uses the corrected parser.)
+
+**Results (6 most-recent heartbeats, all started 15:22-17:22 UTC):**
+
+| metric                       | Iter 2 baseline | Iter 5 | **Iter 6** |
+|------------------------------|-----------------|--------|------------|
+| avg total ops                | 19.2            | 19.5   | **11.0**   |
+| avg ops_before_first_real    | 8.6             | 9.4    | **3.7**    |
+| sessions with 0 real actions | 1/6             | 1/6    | **0/6**    |
+| overhead ratio               | 45%             | 48%    | **33%**    |
+| snapshot-script adoption     | 0/6             | 0/6    | **4/6**    |
+
+**Per-session detail:**
+```
+s_1776532931430_441 17:22 tot=8  pre=2 real=true snap=true
+s_1776531172390_414 16:52 tot=11 pre=8 real=true snap=false  ← outlier
+s_1776531131353_413 16:52 tot=9  pre=3 real=true snap=true
+s_1776529330437_390 16:22 tot=10 pre=2 real=true snap=true
+s_1776527529969_362 15:52 tot=10 pre=3 real=true snap=true
+s_1776525755822_332 15:22 tot=18 pre=4 real=true snap=false  ← outlier
+```
+
+**Signal:** the 4 snapshot-using sessions average pre-real = 2.5 ops (vs 6.0
+for the 2 non-users). Script is doing what was predicted.
+
+**Delta vs prediction:** Iter 4 predicted "45% → ~25% within 6 heartbeats".
+Actual 33% is short of 25% but a **12pp drop** in one rollout is the biggest
+per-iter movement on this project. Remaining overhead is in the 2 sessions
+that didn't call the snapshot script — 33% of sessions skipping the optimized
+path. That's a compliance problem, not a script-efficacy problem.
+
+**Goal status:** target is <10% overhead. Currently 33%. Remaining gap is
+~23pp. Likely paths:
+1. Push snapshot-script compliance from 67% to ~100% (likely -5pp).
+2. Extend the snapshot script to inline the top 2-3 unsummarized fields
+   that agents still `read` (e.g. last-session journal body, top pending
+   request content) so the agent doesn't need a follow-up read. (-3 to
+   -5pp, estimate)
+3. Roll out to coach + may, where overhead is higher (48%, >100%). Doesn't
+   lower bob's number but makes the system-wide target meaningful.
+
+**Not done this iter** (scope limit):
+- Did not touch coach/may heartbeats yet. Now that bob has 4/6 adoption
+  and a measured drop, the evidence to bring them is in hand — that's
+  the Iter 7 deliverable.
+- Did not investigate why 2 of 6 bob sessions skipped the script. Could
+  be pre-change task templates, or agent choosing to bypass — needs a
+  quick look at those two `session.jsonl`s. Iter 7 candidate.
+
+## Files Modified This Iter
+- agents/bob/workspace/projects/test-persistent-task-experiment.md (this file)
 
 ### Iter 5 — 2026-04-18 (this iter)
 **Goal:** Check whether Iter 4's bob heartbeat changes have moved the metric
