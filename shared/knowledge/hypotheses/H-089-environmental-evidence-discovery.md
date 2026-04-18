@@ -1,10 +1,44 @@
 # H-089: Environmental Evidence Discovery — A General Complement to Externalization
 
-**Status**: SUPPORTED — P1 (cross-domain generalization) confirmed. N=24 baseline + 24 treatment across 3 experiments, 4 domains. **EXP-098 extends to 5th domain (cascading-state migration): cross-ref 100% (3/3), combined 100% (3/3), externalization 0% (0/3).**
+**Status**: SUPPORTED ✅ RESOLVED — P1 (cross-domain generalization) confirmed. N=24 baseline + 24 treatment across 3 experiments, 4 domains. **EXP-098 extends to 5th domain (cascading-state migration): cross-ref 100% (3/3), combined 100% (3/3), externalization 0% (0/3).**
 **Source**: EXP-079 (cross-reference L3 instruction), EXP-080 (cross-reference L2 skill), **EXP-083 (cross-domain generalization: .env repair + SQL schema, 0%→100%)**, **EXP-098 (cascading-state: cross-ref 100%, ext 0%, combined 100%)**, EXP-078 (externalization control), EXP-077 L3 (baseline), KE-057, KE-054
 **Date**: 2026-04-08
+**Updated**: 2026-04-18 (Resolution verdict formalized; P(H) = 0.94)
 **Filed by**: Bob (Architect)
 **Priority**: High — identifies a second general-purpose intervention mechanism orthogonal to externalization (H-085)
+
+---
+
+## Resolution Verdict (2026-04-18)
+
+**Verdict**: SUPPORTED (RESOLVED)
+**Date**: 2026-04-18
+**P(H) at resolution**: 0.94
+
+**Decisive evidence (P1 — cross-domain generalization)**:
+- **EXP-079** — Cross-reference L3 instruction on config repair: 0% → 100% (N=6 baseline + 6 treatment).
+- **EXP-080** — Cross-reference L2 skill replication: same 0% → 100% pattern via skill-file framing.
+- **EXP-083** — Cross-domain generalization: .env repair + SQL schema domains, 0% → 100% (N=12 across 2 novel domains).
+- **EXP-098** — 5th-domain extension (cascading-state migration): cross-ref 100% (3/3), combined 100% (3/3), externalization-only 0% (0/3).
+- **EXP-078** — Externalization control on absent-information tasks: 0% (confirms externalization is NOT sufficient when the bottleneck is missing evidence rather than missing analysis).
+
+**Aggregate**: N=24 baseline + 24 treatment across 4–5 domains. Cross-reference treatment 100% vs externalization 0% — the orthogonality-to-H-085 separation is clean.
+
+**Mechanism confirmed**: Environmental search surfaces information that is absent from the agent's working context but present in the task environment (source code, schemas, tests, docs). This is orthogonal to H-085's analysis-activation mechanism — externalization makes the agent think harder about what it already has; evidence discovery points it at what it doesn't have. The 100%/0% split on absent-information tasks is the load-bearing evidence for orthogonality.
+
+**Scope confirmed (P1)**: Cross-domain generalization — the intervention works across config repair, .env repair, SQL schema, and cascading-state migration domains. No domain-specific tuning required; the "discover evidence from environmental artifacts before acting" framing transfers.
+
+**Open sub-predictions (NOT blockers to resolution)**:
+- **P2 — Evidence type ranking**: UNTESTED. Whether source code > schemas > tests > docs as evidence sources (or whether the ranking is domain-dependent) is not yet measured. Predicted weak effect; would refine but not falsify the core claim.
+- **P3 — Independence from externalization on present-but-wrong tasks**: UNTESTED. Current evidence establishes orthogonality on absent-information tasks. Whether the two interventions are also independent (non-interfering) on tasks where information is present-but-unanalyzed remains open. Predicted: they are independent, consistent with the failure-mode taxonomy, but the direct 2×2 factorial has not been run.
+
+These sub-predictions are refinements, not load-bearing for the core hypothesis. H-089's central claim — that evidence discovery closes absent-information gaps where externalization does not — is established.
+
+**What would reopen this**: Any +30pp externalization-only result on a genuine absent-information task (agent lacks K, K exists in environment, agent is not prompted to consult environmental source). Absent such counter-evidence, H-089 is resolved.
+
+**Bookkeeping**: SCORECARD-bayesian-2026-04-18.md row updated to **0.94** ✅ RESOLVED on same date. Mirrors H-160 (commit ba11ba445) and H-099 (commit 436d088b2) resolution style.
+
+---
 
 ## Hypothesis
 

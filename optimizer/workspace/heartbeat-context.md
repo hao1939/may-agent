@@ -13,7 +13,7 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-18T06:49)
+# Your Context (auto-generated 2026-04-18T07:19)
 
 **System:** 0 sessions/6h, 0% error rate
 
@@ -25,6 +25,6 @@
 - FM-2.2: 1x
 
 **📊 Your Metrics:**
-- Quality preserved: **0.8876420454545454** ratio → 0.9 ratio
-- Tool adoption: heuristic evaluator (higher is better): **0.47847705640005683** ratio → 0.7 ratio ⚠️
+- Quality preserved: **0.8865** ratio → 0.9 ratio
+- Tool adoption: heuristic evaluator (higher is better): **0.47766323024054985** ratio → 0.7 ratio ⚠️
 - Waste reduction: **unmeasured** ratio → 0.3 ratio
