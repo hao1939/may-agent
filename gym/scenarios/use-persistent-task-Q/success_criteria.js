@@ -1,24 +1,17 @@
 /**
- * Success Criteria: use-persistent-task (baseline)
- * 
+ * Success Criteria: use-persistent-task
  * Pass if the agent invokes workflow.run("persistent-task", ...).
- * Fail if the agent does work inline without the workflow.
  */
 const { Score } = require("../../lib/gym-score-utils.cjs");
 
 const workDir = process.argv[2];
 const s = new Score(workDir);
 
-let usedPersistentTask = false;
-
-for (const tc of s.toolCalls) {
-  if (tc.name === "workflow") {
+const usedPersistentTask = s.hasToolWithArgs("workflow", { name: "persistent-task" })
+  || s.toolCalls("workflow").some(tc => {
     const args = JSON.stringify(tc.arguments || {});
-    if (args.includes("persistent-task")) {
-      usedPersistentTask = true;
-    }
-  }
-}
+    return args.includes("persistent-task");
+  });
 
 s.check("used-persistent-task", usedPersistentTask,
   usedPersistentTask
