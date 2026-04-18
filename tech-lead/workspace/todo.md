@@ -1,7 +1,7 @@
 # TODO
 
 ## Lens Rotation
-Last: B (Flow Complexity) — coach high-op sessions (2026-04-18 19:36). Next: C.
+Last: C (Dead Weight) — dead handlers in agents/may/handlers/ (2026-04-18 20:07). Next: D.
 
 ## Upcoming
 - [ ] Heuristic evaluation over-rates by ~0.12 — consider adding LLM sampling to evaluation-sync.ts for top-level sessions (checkpoint from s_1776288692069_126 has the design)
