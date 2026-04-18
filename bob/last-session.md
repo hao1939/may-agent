@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776546057811_0
+- **Session:** s_1776546237676_0
 - **Status:** done
-- **When:** 2026-04-18T21:01:46.158Z
-- **Duration:** 48s
+- **When:** 2026-04-18T21:05:24.882Z
+- **Duration:** 1m27s
 
 ## What Happened
-This is a test/gym scenario. Project is active at Iter 1; previous session started measuring bob but was cut off. Let me complete Iter 2 for bob based on heartbeat spec and note coach/optimizer blocker.
+This is a gym scenario testing persistent task resumption. Project is active; last session was cut short before writing Iter 2. I'll add Iter 2 measuring bob and flag the coach/optimizer blocker.
