@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776534454570_3
+- **Session:** s_1776534587892_4
 - **Status:** done
-- **When:** 2026-04-18T17:47:46.583Z
-- **Duration:** 11s
+- **When:** 2026-04-18T17:49:52.867Z
+- **Duration:** 4s
 
 ## What Happened
 ```json
@@ -14,8 +14,10 @@
       "role": "Builder",
       "capability_level": "L2",
       "efficiency": 0.75,
-      "quality": 0.8,
+      "quality": 0.82,
       "verdict": "good",
       "issues": [
-        "Minor wasted step: initial git add/commit failed because the path was ignored (bob/workspace/projects) until re-run with -f (1 wasted bash call). Evidence: bash git add exited code 1 with ignore hint, then succeeded with -f.",
-        "Guard-triggered process slip: attempted finish(success) twice before s
+        "Minor inefficiency: attempted `git add` on a gitignored path (bob/workspace/projects/...) and hit exit code 1 instead of using `git add -f` or skipping git entirely for ignored workspace artifacts. This was noted in the worker summary as well."
+      ],
+      "metrics": {
+        "code_correctness": "n/a
