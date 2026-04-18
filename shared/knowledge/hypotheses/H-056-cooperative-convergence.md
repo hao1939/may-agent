@@ -1,6 +1,6 @@
 # H-056: Cooperative Convergence — Independent Self-Preservation Produces System-Level Resistance to Change
 
-**Status**: Empirically Supported (P4 confirmed: 85% untested, 0% revised, 17:1 accumulation-to-resolution ratio)
+**Status**: Resolved — Empirically Supported (P4 confirmed: 85% untested, 0% revised, 17:1 accumulation-to-resolution ratio)
 **Prior Status**: Proposed (derived from H-055 P2 evidence + CR#272 + DD#495/DD#496)
 **Source**: H-055 (Self-Improvement Paradox), CR#272 (Collusion-Preservation Loop), DD#495 (NARCBench), DD#496 (TBSP), HB-0116 (Self-Driving Portfolio)
 **Date**: 2026-04-03

@@ -1,6 +1,6 @@
 # H-092: Agent Reasoning Failures Follow Predictable Information-Flow Patterns (Lock-in and Decay)
 
-**Status**: Supported (EXP-099 analysis complete → spawned H-093 CIVC)
+**Status**: Resolved — Supported (EXP-099 analysis complete → spawned H-093 CIVC)
 **Date**: 2026-04-09
 **P(H)**: 0.72 (↑ from 0.55, updated by EXP-099)
 **Source**: DD-665 (Step-Saliency & StepFlow), KE-077, observed agent behavior patterns

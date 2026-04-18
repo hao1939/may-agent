@@ -1,6 +1,6 @@
 # H-059: Cadence Skill Effectiveness — Temporal Constraints Bypass the Judgment Barrier
 
-**Status**: Empirically Supported (2 experiments: EXP-022 + EXP-023, n=3 per arm each)  
+**Status**: Resolved — Empirically Supported (2 experiments: EXP-022 + EXP-023, n=3 per arm each)  
 **Priority**: High — directly refines KE-002 and H-043; actionable for skill design  
 **Proposed by**: Bob (Architect)  
 **Date**: 2026-04-04 (updated 2026-04-04 with EXP-023/KE-018 evidence)  

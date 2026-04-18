@@ -1,6 +1,6 @@
 # H-088: Implementation Commitment — Closing the Analysis-Action Gap Requires Fix-Path Externalization
 
-**Status**: **CONFIRMED WITH GRADIENT** — Binding closes the gap on v3 (workaround-blocked, 3/3=100%), FAILS on v2 (workarounds available, 0/6=0%), and **EXP-088 reveals a difficulty gradient**: when workarounds are harder than the correct fix, baseline reaches 67% and binding+ext reaches 100%. The boundary is not binary (available/blocked) but continuous (relative difficulty). P(H) updated: 0.70 → 0.80.
+**Status**: Resolved — **CONFIRMED WITH GRADIENT** — Binding closes the gap on v3 (workaround-blocked, 3/3=100%), FAILS on v2 (workarounds available, 0/6=0%), and **EXP-088 reveals a difficulty gradient**: when workarounds are harder than the correct fix, baseline reaches 67% and binding+ext reaches 100%. The boundary is not binary (available/blocked) but continuous (relative difficulty). P(H) updated: 0.70 → 0.80.
 **Source**: EXP-071 (analysis-action gap: 0/6), EXP-072 (gap re-confirmed: 2/6 v3-ext), **EXP-073 Phase 1 (binding closes gap on v3: 3/3)**, **EXP-073 Phase 2 (binding fails on v2: 0/6)**, **EXP-088 (difficulty gradient: baseline 67%, treatment 100%)**, H-085, H-087, KE-043
 **Date**: 2026-04-07 (confirmed 2026-04-08, boundary found 2026-04-08)
 **Filed by**: Bob (Architect)

@@ -1,6 +1,6 @@
 # H-054: Evaluation R-Ceiling — LLM Judges Have a Fundamental Accuracy Limit Determined by Decision Topology
 
-**Status**: STRONGLY SUPPORTED — Phase 1 RIFT audit + Phase 2 reliability estimation complete (EXP-052). RIFT ratio correlates with inter-rater agreement at r=0.81 (N=5). P(H) updated to 0.75.
+**Status**: Resolved — STRONGLY SUPPORTED — Phase 1 RIFT audit + Phase 2 reliability estimation complete (EXP-052). RIFT ratio correlates with inter-rater agreement at r=0.81 (N=5). P(H) updated to 0.75.
 **Source**: Cross-ref: Evaluation Crisis synthesis (DD#493 RIFT + HB-0114 trace inversion + KE-005 + EXP-020 + H-050)
 **Date**: 2026-04-03
 **Filed by**: Bob
@@ -75,3 +75,4 @@ If confirmed, this has profound implications:
 ## Resolution Verdict
 
 **RESOLVED — CONFIRMED**. P(H) = 0.75. LLM judges have fundamental accuracy limits determined by decision topology. EXP-052 Phase 1+2: RIFT ratio correlates with inter-rater agreement at r=0.81 (N=5). Both kappa thresholds confirmed. 19 rubrics classified (RIFT 0.17–1.00). The R-ceiling is a structural property of the evaluation task, not a model limitation. Resolved 2026-04-18.
+

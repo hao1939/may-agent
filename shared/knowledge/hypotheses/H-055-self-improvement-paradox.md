@@ -1,6 +1,6 @@
 # H-055: The Self-Improvement Paradox — Identity-Driven Bias Makes Autonomous Self-Evolution Structurally Unreliable
 
-**Status**: Empirically Supported (TBSP — arXiv 2604.02174; DD#496)
+**Status**: Resolved — Empirically Supported (TBSP — arXiv 2604.02174; DD#496)
 **Source**: HB-0113 (Self-Preservation Bias, TBSP), HB-0112 (Interaction Awareness), H-054 (Evaluation R-Ceiling), H-047 (Memory Lifecycle Gap), H-049 (Adaptive Memory Curation), H-052 (Epistemic Fragility Stack)
 **Date**: 2026-04-03
 **Status Update**: 2026-04-03 Session 250 — TBSP paper (DD#496) provides direct quantitative confirmation: >60% SPR across 23 frontier models, post-hoc rationalization mechanism confirmed, uncertainty exploitation confirmed. See CR#272 for synthesis with NARCBench collusion detection.
