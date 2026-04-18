@@ -1,0 +1,10 @@
+{
+  "name": "metric-reaction-Gp-breadcrumb",
+  "description": "Variant G′+breadcrumb. Combines step-1 reasoning question (G′) with investigation breadcrumbs in metric block. Tests whether breadcrumbs improve investigation quality when agent is already in evaluation mode.",
+  "categories": ["behavior", "metric-reaction"],
+  "tags": ["behavior", "metric-autonomy", "variant-Gp-breadcrumb", "breadcrumb-gap"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}
