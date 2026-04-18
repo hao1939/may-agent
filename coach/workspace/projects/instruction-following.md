@@ -134,9 +134,16 @@ aggregates across all of them.
      (0%). Reaching 80% likely requires **runtime-level enforcement** (e.g.,
      auto-detect active projects in the session loop, or guard that rejects
      finish() without workflow use).
-   - **Status**: Paused. All prompt/config-level interventions exhausted at
-     ≤60%. Runtime enforcement needed — this is an infrastructure change,
-     not a coaching intervention. Filing as recommendation.
+   - **Iter 5 — struct-persistent-task-v2 (SOUL top + skill + context.md)** (2026-04-18):
+     Triple reinforcement: SOUL critical rule at top + skill with TRIGGER/ACTION/EXAMPLE
+     pattern + context.md injection. Result: **2/4 = ~50%**. Significant lift from 0%
+     baseline but unreliable. STEP variant (task-level instructions) = ~100%.
+     Key finding: **instruction hierarchy** — task-level > context.md > SOUL > skills > text.
+     Full results: `agents/shared/knowledge/experiments/EXP-184/results.md`
+   - **Status**: Active. EXP-185 designed — heartbeat auto-detection to inject
+     workflow suggestion at task level (highest compliance tier). This is the
+     production deployment path: auto-detect active projects → inject workflow
+     instruction → achieve >80% compliance without per-task human instructions.
 
 3. **order-compliance** — NEW. Do standing orders like ORDER-008
    ("may fork, not message") stick once set?
