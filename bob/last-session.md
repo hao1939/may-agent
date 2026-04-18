@@ -1,10 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776534574527_2
+- **Session:** s_1776534475860_0
 - **Status:** done
-- **When:** 2026-04-18T17:49:44.873Z
-- **Duration:** 10s
+- **When:** 2026-04-18T17:50:01.829Z
+- **Duration:** 2m5s
 
 ## What Happened
-DONE — Iter 9 closeout is in place: Status is `done`, all 7 milestones are `[x]`, and the closeout log records the rationale (declare-done over metric-redefinition-note, with Iter 8 analysis preserved for anyone re-opening). Concrete artifacts shipped: `agents/shared/scripts/heartbeat-snapshot.sh`, bob overhead 45% → 33% (19.2 → 11.0 avg ops), Iter 7 proposal brief on record for may/coach. The gitignore error on the worker's git-add was benign — the project file lives in a gitignored path by des
+All milestones are complete. Iter 8 explicitly offered two endpoints: send a redefinition note, or declare the project done. The previous session summary's claim that "no milestones are complete" is stale/incorrect — the file shows all `[x]`.
+
+Following the instructions to use the persistent-task workflow:
