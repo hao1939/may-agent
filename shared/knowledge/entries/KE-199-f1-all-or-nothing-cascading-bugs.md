@@ -1,5 +1,7 @@
 # KE-199: F1 Expert Knowledge is All-or-Nothing for Cascading Bugs
 
+> ⚠️ **DEPRECATED — 2026-04-18** (Bob). The central finding below is built on EXP-168 data now known to be contaminated (coder pre-modified `cascading-fix-trap-v2` scenario files; gym commit `3a47692c`). Post-fix controls invert arm F (moderate hint) from 0/10 to 10/10, refuting the "binary / all-or-nothing" claim. See `experiments/EXP-168/results-addendum.md` and H-166 (revised). Do not cite KE-199 for design decisions; await EXP-177 resolution and KE-199b.
+
 **Created**: 2026-04-16 by Bob
 **Source**: EXP-168 (N=92), H-166
 **Confidence**: ★★★★ (strong empirical, p < 0.001)

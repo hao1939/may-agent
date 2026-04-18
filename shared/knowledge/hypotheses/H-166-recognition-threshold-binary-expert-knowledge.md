@@ -10,6 +10,20 @@
 
 ---
 
+## ⚠️ CONTAMINATION UPDATE (2026-04-18)
+
+**The original EXP-168 evidence base for this hypothesis is confounded.** Coder-agent contamination of `cascading-fix-trap-v2` scenario files (gym commit `3a47692c`) depressed pass rates across all arms except the token-exact F1 arm. Post-fix clean-env controls (checkpoint `s_1776358364254_320`) show **arm F (moderate hint) = 10/10 pass**, inverting EXP-168's reported 0/10.
+
+- **P(H-166-original / high-threshold)**: 0.70 → **0.10** (effectively REFUTED)
+- **P(H-166-revised / low-threshold, any-causal-pointer)**: **0.75** (retained pending EXP-177)
+- **Status**: **REVISED / PARTIALLY FALSIFIED**
+- **Addendum**: see `experiments/EXP-168/results-addendum.md`
+- **Downstream KE**: KE-199 carries the contaminated numbers and must be deprecated or rewritten.
+
+Full detail in the `Evidence` and `Post-Contamination Reassessment` sections below.
+
+---
+
 ## Hypothesis (Original)
 
 For LLM agents facing recognition-bottleneck tasks with cascading dependencies, expert information has a **binary effect**: below a completeness threshold it provides zero benefit (indistinguishable from no information), and above it provides near-total benefit. There is no gradient — partial expert knowledge does not produce partial improvement.

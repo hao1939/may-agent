@@ -14,7 +14,8 @@
 - [x] **H-165 written**: Production-Provision Interference hypothesis. P(H)=0.85. Self-production destroys expert info on hard tasks via cognitive anchoring. 172 lines.
 - [x] **EXP-166 designed**: Content-first vs process-first guard comparison. 4 arms × 2 scenarios × 15 runs = 120 runs (~$9). Tests H-165's anchoring vs displacement mechanism.
 - [x] **EXP-166 execution**: COMPLETE. 120/120 runs. Displacement confirmed (D=7% vs C=100% on cascading). KE-195, KE-196 written.
-- [ ] **Content-first guard design doc** [HIGH]: Use EXP-166 findings (KE-195/196) to design passive-injection guards. Difficulty-adaptive: passive for hard tasks, production OK for easy tasks.
+- [x] **Content-first guard design doc** [HIGH]: `agents/shared/may-agent-docs/design/difficulty-adaptive-content-first-guards.md` — 93 lines, references KE-195/196/H-165.
+- [ ] **EXP-168 contamination addendum** [HIGH]: Checkpoint found moderate-hint arm = 10/10 pass with clean env (vs 0/0 reported). Binary-threshold H-166 may be wrong. Write results-addendum.md + update H-166.
 
 ## Blocked / Deferred
 - [ ] **Prompt Caching**: Blocked on Hao since 2026-03-24. $36-63/day savings waiting.
