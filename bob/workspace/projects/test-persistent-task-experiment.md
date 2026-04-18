@@ -7,6 +7,66 @@
 ## Goal
 Reduce session startup overhead from 25% to under 10%.
 
+## Iteration Log
+
+### Iter 25 — 2026-04-18 23:36 UTC — SNAPSHOT REGEX BUG (root cause for loop churn)
+
+**Observed.** Project was re-picked by the persistent-task loop as
+"active" this session despite header `**Status**: closed (Iter 24…)`.
+Investigated by running `heartbeat-snapshot.sh bob` directly.
+
+**Root cause found in `agents/shared/scripts/heartbeat-snapshot.sh`
+(ACTIVE_PROJECTS block, old lines 119–120):**
+```bash
+if grep -iE '^\s*(\*\*)?Status[:[:space:]*]' "$f" | grep -i 'active' ...
+```
+Two flaws:
+1. The first grep matched any line starting with "Status" then
+   colon/space/`*` — which scans the **whole file**, not the header.
+2. Then piped through a plain `grep -i 'active'`, which would fire if
+   **any** of those matched lines mentioned the word active anywhere.
+
+In this file, Iter 23's log line `status flipped \`deferred-on-wall-clock\` → \`active\`.`
+matches the first grep (it begins with lowercase "status"), and the
+word "active" appears on it → false positive. The closed project was
+reported as `ACTIVE_PROJECTS_bob`, so may's loop kept re-dispatching it.
+
+**Fix shipped** (one edit, 2 lines changed):
+```bash
+if head -10 "$f" | grep -iE '^\s*(\*\*)?status(\*\*)?[[:space:]]*:[[:space:]]*\**[[:space:]]*active\b' ...
+```
+- `head -10` restricts to real header region.
+- Single-regex, single-line match: `Status[:]` followed by `active`
+  with `\b` word-boundary.
+
+**Verified** (all this iter):
+- `bash heartbeat-snapshot.sh bob` after fix → `ACTIVE_PROJECTS_bob: (none)`.
+- Sweep across 8 agents' projects dirs: **1 false-positive fixed**
+  (this file), **0 regressions** on genuinely-active projects.
+- Synthetic tests: `Status: active` → matches; `**Status:** active`
+  → matches; "Later the status flipped to active" → does NOT match.
+
+**Impact.** This is a direct hit on the project's goal:
+- Every bob heartbeat since Iter 14 has been shown an incorrect
+  ACTIVE_PROJECTS hint, which is load-bearing signal the iteration
+  loop reads. Closed project re-dispatch = pure overhead sessions
+  (like this one would have been without the detour).
+- Fix removes that channel of false work entirely — prevents
+  zero-value "resume closed project" iterations from being created.
+- Complementary to the Iter 23 absolute-ops win (−40%), targets a
+  different failure mode (selection, not execution).
+
+**Scope discipline:**
+- Did NOT touch heartbeat.md (KE-008).
+- Did NOT reopen this project's engineering goal (Iter 24 closure
+  stands; this is maintenance on the artifact that project shipped).
+- Status line left as `closed` — the tool that was misreading it is
+  now fixed.
+
+## Files Modified This Iter
+- agents/shared/scripts/heartbeat-snapshot.sh (ACTIVE_PROJECTS regex + scope-to-head)
+- agents/bob/workspace/projects/test-persistent-task-experiment.md (this log entry)
+
 ## Milestones
 - [x] Measure current startup overhead across 5 agents
 - [x] Identify top 3 time-wasting patterns
