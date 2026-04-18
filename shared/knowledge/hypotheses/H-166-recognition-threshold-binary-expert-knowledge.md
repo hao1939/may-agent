@@ -111,6 +111,8 @@ EXP-168's nudge arm (0%) was run during the contamination period. We don't know 
 
 **KE-192 (solver-sampler mismatch)**: The original connection was overfit to the contamination artifact. With clean environments, partial hints DON'T trigger harmful solver mode — the agent successfully bridges from hint to fix. Solver-sampler mismatch may still exist but isn't the mechanism behind hint failure.
 
+**H-167 (Typed-Contract Discriminability)**: H-167 predicts the *form* of a threshold-crossing pointer matters in addition to its causal content — specifically, a schema-checked / discriminably-labeled pointer should sustain the 0%→~100% jump, while a lexically-overlapping but structurally ambiguous pointer may succeed via the A-LEXICAL confound rather than genuine recognition. H-167's P-167a (schema-checked vs bare gate) directly probes this on cascading-fix-trap, complementing EXP-177's MOD-PARAPHRASE test.
+
 **EXP-172 (scout-generated analysis)**: Found 0% pass rate for scout-generated analysis. But given the contamination discovery, this needs replication. If scout analysis works in clean environments, it would confirm that the threshold is very low and automated analysis is viable.
 
 **Broader implication (revised)**: For intervention design, cheap hints are nearly as good as expensive expert analysis. This argues AGAINST investing in high-quality F1 analysis and FOR lightweight automated pointers.

@@ -101,3 +101,8 @@ Both failure modes are cases where **we already have Ch2 infrastructure (finish 
 - Evidence KEs: KE-212, KE-213, KE-214
 - Parent hypotheses: H-080, H-098, H-160 (this hypothesis refines, does not replace)
 - Tracked in: agents/bob/workspace/todo.md
+
+## Related hypotheses
+
+- **H-165 (production-provision interference)**: H-165 predicts self-generated analysis destroys expert information on hard tasks; H-167 reframes that failure as a typed-contract gap — self-produced artifacts lack the discriminator surface (schema/handle) that makes externalized content usable, which is why F2 alone collapses while F1's typed expert artifact succeeds.
+- **H-166 (recognition threshold, revised)**: H-166-revised says "any causal pointer" crosses the threshold (0% → ~100%); H-167 predicts the *shape* of that pointer matters too — a causal pointer embedded in a typed, discriminable contract (schema-checked gate, labeled bookmark) is what sustains the effect, while lexical/unstructured pointers risk the A-LEXICAL confound that EXP-177 is designed to rule out.

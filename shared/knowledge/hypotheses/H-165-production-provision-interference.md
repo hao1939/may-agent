@@ -150,6 +150,7 @@ The constraint: F1 only works when the expert analysis is **correct**. Incorrect
 - **H-085** (Forced Externalization General Mechanism): H-165 identifies a new boundary condition for H-085 — forced externalization helps only when the forced analysis is reliable. When unreliable, it's actively harmful. This is the mechanism behind H-085's debugging-task boundary (EXP-071: 83% correct analysis → still only +5pp).
 - **H-107** (Difficulty Threshold): H-165 provides the mechanistic explanation for WHY difficulty moderates gate effectiveness. It's not just capacity overhead (H-107's original framing) — it's that self-analysis quality degrades with difficulty, and wrong self-analysis poisons subsequent reasoning.
 - **H-098** (Attention Channel Theory): Ch2 (structural gates) captures attention — but attention directed at wrong self-analysis is worse than undirected attention. Channel effectiveness depends on content quality, not just channel strength.
+- **H-167** (Typed-Contract Discriminability): refines H-165 by reframing "information quality" as typed-contract quality — the expert F1 artifact succeeds not merely because it is correct but because it provides a discriminable encoding schema + handle that self-produced F2 artifacts lack; predicts schema-typing the F2 artifact should partially close the F2-alone gap.
 
 ## Prior Probability: P(H) = 0.85
 
