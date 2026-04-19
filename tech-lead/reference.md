@@ -1,4 +1,4 @@
-# Tech Lead Reference
+# Tech-Lead Reference
 
 ### Exploration Lens Details
 
@@ -65,3 +65,5 @@ Check `agents/tech-lead/workspace/projects/` for Status: active/paused/blocked.
 - Active: resume with `workflow.run("persistent-task", ...)`
 - Paused: read file, decide resume or cancel
 - Blocked: read blocker, dispatch fix, then resume
+
+---
