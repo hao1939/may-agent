@@ -263,3 +263,19 @@ Command exited with code 2
 
 **Agent response:**
 Amy-kimi is disabled, so that's fine. All 7 enabled heartbeats now route through the workflow.
+**Reviewer**: CONTINUE — The data shows milestone 4 is actually complete. All 7 enabled heartbeats have `"workflow": "heartbeat"` in cron.json, and the heartbeat workflow is registered in REGISTRY.md. The worker's iteration 4 output was misleading — it claimed to modify only DELIVERABLES_CHECKLIST.md, but the actual changes (to cron.json and REGISTRY.md) were likely made in iteration 3 or earlier and already persisted.
+
+CONTINUE — **Milestone 4 is complete.** Progress is now 4/5 (audit ✓, freestyle patterns ✓, heartbeat workflow ✓, heartbeat routing ✓).
+
+**Guidance for iteration 5 — Complete milestone 5 (Measure coverage improvement):**
+
+The task is straightforward: calculate the new workflow coverage % and write a summary.
+
+1. Count total enabled cron entries that spawn LLM sessions (exclude pure JS handlers that have no LLM). From cron.json, LLM sessions come from: `type: "heartbeat"` entries AND `handler: "run-agent-task"` or `handler: "run-workflow"` entries.
+2. Of those, count how many route through a workflow (`"workflow"` key present, OR `handler: "run-workflow"`).
+3. Calculate: `coverage = workflow_sessions / total_llm_sessions * 100`
+4. Write results to `agents/optimizer/workspace/workflow-coverage-report.md` with: before (31%), after (calculated), breakdown by category, and what would be needed to reach higher.
+5. Update DELIVERABLES_CHECKLIST.md with milestone 5 status.
+
+**Expected output**: `agents/optimizer/workspace/workflow-coverage-report.md` showing coverage ≥ 80%.
+
