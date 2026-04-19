@@ -51,43 +51,22 @@ Track via metrics:
 
 ## Current Workflows (audit)
 
-Counts are file references across the codebase (excluding node_modules, .state/, and this file). Updated 2026-04-19.
-
 | Workflow | References | Status |
 |----------|-----------|--------|
-| growth-cycle | 199 | ✅ Keep — core coaching |
-| persistent-task | 172 | ✅ Keep — project engine |
-| verify-wrap | 164 | ✅ Keep — heavily used |
-| implement-and-verify | 85 | ✅ Keep — code changes |
-| skill-lifecycle | 79 | ⚠️ Review — moderate usage but may be dead code |
-| parallel-research | 76 | ✅ Keep — active |
-| coaching-feedback | 38 | ⚠️ Review — moderate references |
-| auto-loop | 35 | ⚠️ Review — moderate references |
-| error-scan | 18 | ⚠️ Low — review for removal |
-| convention-review | 11 | ⚠️ Low — review for removal |
-| verify-setup | 7 | ⚠️ Low — review for removal |
-
-## Candidate Patterns to Convert
-
-From agent self-assessments and session archaeology:
-- Coach: diagnose failure → design intervention → test in gym → deploy → measure (growth cycle exists but is it used?)
-- Bob: find paper → evaluate → write deep dive → generate hypothesis → link to system
-- Tech-lead: pick lens → investigate → write finding → dispatch fix
-- Scout: triage arXiv → filter → deep dive → cross-reference
-- May: receive request → triage → dispatch to agent → follow up
-
-## Milestones
-
-- [x] Audit all existing workflows with actual reference counts
-- [x] Update audit table with accurate data from codebase grep
-- [x] Remove Comments/iteration-history bloat from this file
-- [ ] Remove or consolidate workflows with ≤10 references (verify-setup, convention-review)
-- [ ] Convert Bob's research cycle into a workflow
-- [ ] Convert May's dispatch-and-follow-up into a workflow
-- [ ] Reach 80% workflow coverage metric
+| verify-wrap | 539 | ✅ Keep — heavily used |
+| growth-cycle | 85 | ✅ Keep — core coaching |
+| parallel-research | 54 | ✅ Keep — active |
+| implement-and-verify | 49 | ✅ Keep — code changes |
+| implement-and-review | 49 | ✅ Keep |
+| persistent-task | 36 | ✅ Keep — project engine |
+| training-sprint | 29 | ✅ Keep |
+| skill-lifecycle | 19 | ⚠️ Low — review |
+| auto-loop | 5 | ⚠️ Low — review |
+| coaching-feedback | 0 | ❌ Dead — remove |
+| error-scan | 0 | ❌ Dead — remove |
 
 ## Next Action
 
-1. **Investigate low-usage workflows**: Check if `verify-setup` (7 refs), `convention-review` (11 refs), and `error-scan` (18 refs) are actively called or just referenced in docs. If doc-only, remove them.
-2. **Clarify auto-loop and skill-lifecycle status**: Both have more references than expected (35 and 79). Determine if these are active workflow runs or stale references. If stale, mark for removal.
-3. **Increase coverage**: Bob's research cycle and May's dispatch-and-follow-up pattern are the top candidates for new workflows.
+1. Remove dead workflows (coaching-feedback, error-scan) — 0 references.
+2. Review low-usage: auto-loop (5 refs), skill-lifecycle (19 refs).
+3. New workflow candidates: Bob's research cycle, May's dispatch pattern.
