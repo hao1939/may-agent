@@ -1,12 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776579419671_0
+- **Session:** s_1776579455033_0
 - **Status:** done
-- **When:** 2026-04-19T06:17:34.800Z
+- **When:** 2026-04-19T06:18:10.363Z
 - **Duration:** 35s
 
 ## What Happened
-
-
-**No — forced externalization actually hurts debugging tasks.** Per **KE-054**, externalization has a sharp domain boundary: it helps judgment/evaluation tasks but degrades performance on debugging tasks like cascading-fix-trap by ~15 percentage points. The overhead of forced written reasoning disrupts the rapid hypothesis-testing flow that debugging requires.
+**No, structural guards do not train agents to self-verify without the guard.** Per **KE-106**, after 26 days of operation, agents continued attempting the guarded behavior at 50–70% of sessions with the error rate actually *increasing* over time (27% → 70%), demonstrating that guards catch errors at runtime but produce zero internalization. The entry concludes that guards are "brakes, not driving lessons" — they are necessary permanent infrastructure, not temporary training wheels that can be r
