@@ -120,9 +120,10 @@
     "agent": "scout",
     "message": "[heartbeat] You are Scout. Your files are in agents/scout/. Read agents/scout/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you researched and found.",
     "enabled": true,
-    "description": "Scout's heartbeat \u2014 research and discovery (30min)",
-    "lastModified": "2026-03-18T22:26:00.000Z",
+    "description": "Scout's heartbeat \u2014 research and discovery (30min). Routes through heartbeat workflow.",
+    "lastModified": "2026-04-19T17:00:00.000Z",
     "notifyBrief": true,
+    "workflow": "heartbeat",
     "offsetMs": 1260000
   },
   {
