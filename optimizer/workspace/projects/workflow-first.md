@@ -49,18 +49,39 @@ Track via metrics:
 - Does it complete successfully? (workflow run records)
 - Is it better than freestyle? (compare quality/efficiency)
 
-## Current Workflows (audit)
+## Milestones
 
-| Workflow | Usage | Keep? |
-|----------|-------|-------|
-| persistent-task | Active, core | ✅ Keep — project engine |
-| implement-and-verify | Some usage | ✅ Keep — code changes |
-| verify-wrap | Some usage | Review — may overlap with guards |
-| parallel-research | Rare | Review — is it used? |
-| auto-loop | 0 usage | ❌ Remove |
-| coaching-feedback | Rare | Review |
-| error-scan | Rare | Review |
-| skill-lifecycle | 0 usage | ❌ Remove |
+- [x] Audit table created with all known workflows
+- [x] Dead workflows identified and confirmed removed (auto-loop, skill-lifecycle, coaching-feedback, error-scan — no workflow files exist)
+- [x] Audit table updated with accurate usage data from codebase scan
+- [ ] Convert top candidate pattern to a new workflow
+- [ ] Measure workflow-coverage metric baseline
+
+## Current Workflows (audit — updated 2026-04-19)
+
+| Workflow | Location | Usage | Status |
+|----------|----------|-------|--------|
+| persistent-task | shared/workflows/ | Active, core | ✅ Keep |
+| implement-and-verify | shared/workflows/ | Active | ✅ Keep |
+| implement-and-review | shared/workflows/ | Active | ✅ Keep |
+| verify-wrap | shared/workflows/ | Active | ✅ Keep |
+| parallel-research | shared/workflows/ | Low | ⚠️ Monitor |
+| growth-cycle | coach/workflows/ | Active | ✅ Keep |
+| training-sprint | coach/workflows/ | Active | ✅ Keep |
+| verified-coder | tech-lead/workflows/ | Active | ✅ Keep |
+| lens-analysis | tech-lead/workflows/ | Active | ✅ Keep |
+| project-monitor | may/workflows/ | Active | ✅ Keep |
+| vet-skill | qa/workflows/ | Active | ✅ Keep |
+| safe-edit | optimizer/workflows/ | Active | ✅ Keep |
+| design-review | optimizer/workflows/ | Active | ✅ Keep |
+| investigate-and-fix | optimizer/workflows/ | Active | ✅ Keep |
+| enhance-cron | optimizer/workflows/ | Active | ✅ Keep |
+
+### Removed (confirmed no workflow files exist)
+- ~~auto-loop~~ — never implemented as workflow
+- ~~skill-lifecycle~~ — only a skill dir, not a workflow
+- ~~coaching-feedback~~ — no workflow file found
+- ~~error-scan~~ — no workflow file found
 
 ## Candidate Patterns to Convert
 
