@@ -716,6 +716,16 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (url.pathname === "/api/benchmarks/compare") return handleBenchmarkCompare(url);
       if (url.pathname === "/api/browse") return handleBrowse(url);
       if (url.pathname === "/api/metrics") return handleMetrics(url);
+      const metricHistoryMatch = url.pathname.match(/^\/api\/metrics\/([^/]+)\/history$/);
+      if (metricHistoryMatch) {
+        const metricId = decodeURIComponent(metricHistoryMatch[1]);
+        const days = parseInt(url.searchParams.get("days") || "7", 10);
+        const since = Date.now() - days * 86400000;
+        const rows = _db().prepare(
+          `SELECT value, sample_size, measured_at, measured_by, note FROM metric_snapshots WHERE metric_id = ? AND measured_at > ? ORDER BY measured_at ASC`
+        ).all(metricId, since);
+        return json({ metricId, days, snapshots: rows });
+      }
       const agentDetailMatch = url.pathname.match(/^\/api\/agents\/([^/]+)\/detail$/);
       if (agentDetailMatch) return handleAgentDetail(agentDetailMatch[1]);
       const sessionMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)$/);
