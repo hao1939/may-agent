@@ -189,6 +189,8 @@ function extractComments(content: string): string {
 }
 
 // Clear the Comments section in project.md after processing
+// Track false-done signals for metrics (reset per execute call)
+
 function clearComments(content: string): string {
   // Comments is the last section — replace everything after the heading
   const idx = content.indexOf("## Comments\n");
@@ -345,6 +347,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   let consecutiveFailures = 0;
   let continueWithoutProgress = 0;
   let lastMilestoneDone = extractMilestones(projectContent).done;
+  let falseDoneCount = 0;
 
   // Mark active (field-level update)
   projectContent = updateField(projectContent, "Status", "active");
@@ -395,9 +398,19 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       writeFileSync(config.projectPath, projectContent, "utf-8");
 
       if (decision.status === "done") {
+        const finalMs = extractMilestones(projectContent);
+        if (finalMs.total > 0 && finalMs.done < finalMs.total) {
+          falseDoneCount++;
+          const overrideNote = `**Auto-check**: Reviewer said DONE but only ${finalMs.done}/${finalMs.total} milestones checked. ` +
+            `Overriding to CONTINUE. (false-done #${falseDoneCount})`;
+          if (!config.isLegacy) appendFileSync(config.journalPath, overrideNote + "\n\n");
+          iteration++;
+          continue;
+        }
         projectContent = updateField(projectContent, "Status", "done");
         projectContent = updateSection(projectContent, "Current State", decision.detail);
         writeFileSync(config.projectPath, projectContent, "utf-8");
+        ctx.emit({ type: "metric", name: "project.false-done", value: falseDoneCount });
         return ctx.done(`Complete after comment at iteration ${iteration}: ${decision.detail}`);
       }
       if (decision.status === "blocked") {
@@ -490,11 +503,27 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       }
 
       if (decision.status === "done") {
+        const finalMs = extractMilestones(projectContent);
+        if (finalMs.total > 0 && finalMs.done < finalMs.total) {
+          falseDoneCount++;
+          const overrideNote = `**Auto-check**: Reviewer said DONE but only ${finalMs.done}/${finalMs.total} milestones checked. ` +
+            `Overriding to CONTINUE. (false-done #${falseDoneCount})\n\n`;
+          if (config.isLegacy) {
+            projectContent += overrideNote;
+            writeFileSync(config.projectPath, projectContent, "utf-8");
+          } else {
+            appendFileSync(config.journalPath, overrideNote);
+          }
+          continueWithoutProgress++;
+          iteration++;
+          continue;
+        }
         projectContent = updateField(projectContent, "Status", "done");
         projectContent = updateSection(projectContent, "Current State", decision.detail);
         projectContent = appendToSection(projectContent, "Iteration Summary",
           `- **Iter ${iteration}**: ${decision.detail.slice(0, 100)}\n`);
         writeFileSync(config.projectPath, projectContent, "utf-8");
+        ctx.emit({ type: "metric", name: "project.false-done", value: falseDoneCount });
         return ctx.done(`Complete after ${iteration} iterations: ${decision.detail}`);
       }
 
