@@ -362,6 +362,22 @@ CONDITIONAL — sampled code appears coherent and `tsc` is green, but the suite 
 ### Files reviewed (evidence)
 - `test/gym/gym-runner.ts` (read lines 1–1413): confirmed may-agent adapter sandboxes `agents/<name>` into `_workDir/agents/<name>` before running oneshot; also reviewed the multi-session runner’s additional `workDir` existence guards and combined transcript export.
 
+---
+## 2026-04-19 — QA Heartbeat
+### Proactive scan
+- Reviewed latest agents repo auto-update commit `dced16b26` (file list only): updated `agents/shared/federation/heartbeats/local.json` timestamp/agents list; no functional code changes observed.
+- Read `agents/shared/federation/heartbeats/local.json` (full file): validated JSON structure and values.
+
+### Checks (repo health)
+- `./node_modules/.bin/tsc --noEmit`: FAIL — no `node_modules` present at `/app` or `/app/agents` (`No such file or directory`).
+- `./node_modules/.bin/vitest --run`: FAIL — no `node_modules` present at `/app/agents` (`No such file or directory`).
+
+### Issues
+- IMPORTANT: Cannot run TypeScript compile/tests in this environment because dependencies are missing (no `package.json` and no `node_modules` found under `/app`); this blocks standard verification.
+
+### Verdict
+CONDITIONAL — file-level review OK, but CI-style verification cannot be performed due to missing JS toolchain in this runtime.
+
 ### Mandatory gates
 - `./node_modules/.bin/tsc --noEmit`: PASS (no output)
 - `./node_modules/.bin/vitest --run`: FAIL — **4 failed files | 137 passed (141)**; **21 failed | 2089 passed (2110)**
