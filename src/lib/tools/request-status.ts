@@ -63,6 +63,8 @@ interface AttentionItem {
 }
 
 // ── Key processes to track ───────────────────────────────────────────
+// NOTE: This list should eventually be dynamic (read from cron.json).
+// For now, manually add critical handlers here.
 
 const KEY_PROCESSES: Array<{ name: string; intervalMs: number; label: string }> = [
   { name: "evaluate-sessions", intervalMs: 30 * 60_000, label: "evaluate-sessions" },
@@ -75,6 +77,12 @@ const KEY_PROCESSES: Array<{ name: string; intervalMs: number; label: string }> 
   { name: "lessons-graduation", intervalMs: DAY, label: "lessons-graduation" },
   { name: "agents-auto-commit", intervalMs: 10 * 60_000, label: "agents-auto-commit" },
   { name: "convention-check", intervalMs: 30 * 60_000, label: "convention-check" },
+  { name: "project-resume", intervalMs: 5 * 60_000, label: "project-resume" },
+  { name: "standing-orders-check", intervalMs: 30 * 60_000, label: "standing-orders-check" },
+  { name: "metrics-snapshot", intervalMs: HOUR, label: "metrics-snapshot" },
+  { name: "heartbeat-context", intervalMs: 30 * 60_000, label: "heartbeat-context" },
+  { name: "session-sync", intervalMs: 5 * 60_000, label: "session-sync" },
+  { name: "evaluation-sync", intervalMs: 10 * 60_000, label: "evaluation-sync" },
 ];
 
 // ── Data loading ─────────────────────────────────────────────────────
