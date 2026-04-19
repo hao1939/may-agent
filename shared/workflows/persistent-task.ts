@@ -348,6 +348,61 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     // Read journal for context
     const journalContent = config.isLegacy ? projectContent : (readFile(config.journalPath) ?? "");
 
+    // ── Comment iteration ─────────────────────────────────────────
+    // If new comments arrived since last iteration, run reviewer on them
+    const currentComments = extractComments(projectContent);
+    if (currentComments && currentComments !== lastSeenComments) {
+      const newComments = currentComments.replace(lastSeenComments, "").trim();
+      if (newComments) {
+        ctx.emit({ type: "step_start", step: `comment-iteration-${iteration}` });
+
+        const commentReviewPrompt = buildReviewPrompt(
+          config.goal, iteration,
+          `[COMMENT ITERATION] New comments received:\n${newComments}`,
+          projectContent, journalContent, continueWithoutProgress
+        );
+
+        const reviewResult = await ctx.runAgent(config.owner, commentReviewPrompt);
+        const decision = extractDecision(reviewResult.status === "error"
+          ? "CONTINUE — review errored, auto-continuing"
+          : (reviewResult.lastAssistantText ?? ""));
+
+        const now = new Date().toISOString();
+        const commentEntry = `### Iteration ${iteration} (comment) — ${now}\n` +
+          `**Comment**: ${newComments}\n` +
+          `**Reviewer**: ${decision.status.toUpperCase()} — ${decision.detail}\n\n`;
+
+        if (config.isLegacy) {
+          projectContent += commentEntry;
+          writeFileSync(config.projectPath, projectContent, "utf-8");
+        } else {
+          appendFileSync(config.journalPath, commentEntry);
+        }
+
+        projectContent = updateField(projectContent, "Iteration", String(iteration));
+        writeFileSync(config.projectPath, projectContent, "utf-8");
+        lastSeenComments = currentComments;
+
+        if (decision.status === "done") {
+          projectContent = updateField(projectContent, "Status", "done");
+          projectContent = updateSection(projectContent, "Current State", decision.detail);
+          writeFileSync(config.projectPath, projectContent, "utf-8");
+          return ctx.done(`Complete after comment at iteration ${iteration}: ${decision.detail}`);
+        }
+        if (decision.status === "blocked") {
+          projectContent = updateField(projectContent, "Status", "blocked");
+          projectContent = updateSection(projectContent, "Current State", `Blocked: ${decision.detail}`);
+          writeFileSync(config.projectPath, projectContent, "utf-8");
+          return ctx.escalate(`Blocked by comment at iteration ${iteration}: ${decision.detail}`);
+        }
+
+        // CONTINUE — increment iteration, worker gets reviewer guidance next
+        iteration++;
+        continue;
+      }
+    }
+    lastSeenComments = currentComments;
+
     // ── Worker phase ─────────────────────────────────────────────
     ctx.emit({ type: "step_start", step: `worker-iteration-${iteration}` });
 
