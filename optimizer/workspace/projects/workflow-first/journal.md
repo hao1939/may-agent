@@ -399,3 +399,15 @@ All 15 LLM cron entries are now workflow-routed (100%). Let me update the measur
 All 5 target entries (optimize, reflect, common-sense-verify, common-sense-infra, research-intake) now have `"workflow": "verify-wrap"`. The remaining 3 nulls (training-sprint, error-scan, coaching-feedback-wf) have their own specific workflows in `handlerConfig` and weren't in scope.
 
 Now update the measurement report:
+**Reviewer**: CONTINUE — OK — those 3 have `workflow` inside `handlerConfig`, so they ARE workflow-routed, just structured differently. So all 8 `run-workflow` entries are properly configured.
+
+**Guidance for iteration 8:**
+
+The 5 cron fixes are confirmed. Now the worker needs to:
+
+1. Update `agents/optimizer/workspace/coverage-measurement.md` with accurate final numbers: all 8 `run-workflow` handler entries are properly workflow-routed (5 via top-level `workflow` field, 3 via `handlerConfig.workflow`). Calculate the actual coverage percentage across all LLM cron entries (count entries that are workflow-routed vs total LLM-driven entries).
+2. Check off the measurement milestone in `DELIVERABLES_CHECKLIST.md` if coverage ≥ 80%.
+3. Summarize which milestones from the original 5 are now complete and which remain.
+
+**Output**: Updated measurement report with final verified numbers.
+
