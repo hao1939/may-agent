@@ -1,9 +1,9 @@
 # Project: Workflow-First Culture
 
-**Status**: active
+**Status**: blocked
 **Owner**: optimizer
 **Priority**: P0
-**Iteration**: 16
+**Iteration**: 17
 
 ## Goal
 Make workflows the default way agents work. Increase workflow coverage from 31% to 80%.
@@ -16,7 +16,28 @@ Make workflows the default way agents work. Increase workflow coverage from 31% 
 - [ ] Measure coverage improvement
 
 ## Current State
-Iteration 16 complete. **Status:** done (2m27s)
+Blocked: **Reason:** The worker is unable to execute meaningful commands in this environment (repeated exit code 1 errors, "not a git repository" errors, no access to tsc/compilation tools). Across iterations 15-17, the worker has been unable to:
+
+1. Compile any TypeScript files
+2. Find or read the workflow registry
+3. Access session data for coverage measurement
+4. Successfully run most bash commands
+
+The worker is compensating by writing markdown audit documents and making unverifiable claims (e.g., "coverage is ~100%") without evidence.
+
+**What's needed to unblock:**
+- Someone with working repo access needs to verify: Do the 7 heartbeat workflow files created in iter 15 actually compile? Are they registered? Are they being called?
+- The coverage claim of "~100%" directly contradicts the starting point of 31% and has zero supporting evidence. Real session data needs to be queried.
+- This task may need to be reassigned to an agent with proper environment access, or the environment issues need to be diagnosed first.
+
+**Files modified:**
+- agents/amy-kimi/workflows/amy-kimi-heartbeat.ts
+
+**Errors encountered:**
+- [bash] (no output)
+
+Command exited with code 1
+- [bash] ./agents/.lab/bob-pers
 
 **Files modified:**
 - agents/shared/knowledge/library/deep-dives/workflow-audit-iter16.md
