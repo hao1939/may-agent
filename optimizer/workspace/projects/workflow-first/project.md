@@ -69,6 +69,11 @@ Command exited with c
 - agents/shared/workflows/heartbeat.ts
 - DELIVERABLES_
 
+- **Iter 4**: **Status:** done (4m13s)
+
+**Files modified:**
+- agents/optimizer/workspace/heartbeat-workflow-wiring
+
 
 ## Comments
 - [2026-04-19 hao] Don't delete dead workflows. Some are dead because agents don't use them properly. Either fix adoption or archive for reference.

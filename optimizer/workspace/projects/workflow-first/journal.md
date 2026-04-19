@@ -230,3 +230,19 @@ Command exited with code 1
 
 **Agent response:**
 Now notify May to apply the heartbeat.md changes:
+**Reviewer**: CONTINUE — — Milestone 4 is substantially complete. The cron.json already has `"workflow": "heartbeat"` on 10 entries, and the registry includes heartbeat. The heartbeat.md annotations are nice-to-have, not required for coverage. **Progress: 4/5 milestones complete.**
+
+**Guidance for iteration 5 — Complete milestone 5 (Measure coverage improvement):**
+
+Do NOT edit any files except a measurement report. Calculate the new workflow coverage:
+
+1. Read `agents/may/cron.json` fully. Count total cron entries and how many have a `"workflow"` field.
+2. Query `.state/sessions.db` — count recent sessions (last 7 days) that used a workflow vs freestyle. Use: `sqlite3 .state/sessions.db "SELECT workflow, COUNT(*) FROM sessions GROUP BY workflow"` (adapt column names as needed — first run `.schema sessions` to find them).
+3. Write a brief measurement report to `agents/optimizer/workspace/coverage-measurement.md` with:
+   - Cron-level coverage: X/Y entries have workflow routing = Z%
+   - Session-level coverage (if DB data available): X/Y sessions used workflows = Z%
+   - Comparison to 31% baseline
+   - Whether 80% target is met or projected
+
+**Output**: `agents/optimizer/workspace/coverage-measurement.md` with concrete numbers.
+
