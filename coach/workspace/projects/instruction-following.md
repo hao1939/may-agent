@@ -365,54 +365,44 @@ Next iteration MUST:
 Critical: use `cd /app/agents && git add -f coach/workspace/projects/prove-the-loop.md` — the `-f` flag is mandatory.
 
 
-### Iteration 4 — 2026-04-19T06:34:46.183Z
+### Iteration 4 — 2026-04-19T06:36:21.530Z
 **Worker task**: Iteration 4 — work toward goal
-**Worker result**: **Status:** done (1m6s)
+**Worker result**: **Status:** done (1m54s)
 
 **Files read (not modified):**
 - agents/coach/workspace/projects/prove-the-loop.md
 
 **Errors encountered:**
-- [bash] Post-Iter16 production: {"n":0,"avg_q":null}
-Daily production: [{"day":"2026-04-12","n":4,"avg_q":1},{"day":"2026-04-13","n":7,"avg_q":1},{"day":"2026-04-14","n":12,"avg_q":0.65},{"day":"2026-04-15","n":25,"avg_q":0.653},{"day":"2026-04-16","n":7,"avg_q":0.72},{"day":"2026-04-17","n":23,"avg_q":0.71
+- [bash] Post-Iter16: {"n":0,"avg_q":null}
+Prod 7d: {"n":90,"avg_q":0.726}
+Daily: [{"day":"2026-04-16","n":7,"avg_q":0.72},{"day":"2026-04-17","n":23,"avg_q":0.718},{"day":"2026-04-18","n":11,"avg_q":0.703},{"day":"2026-04-19","n":1,"avg_q":0.9}]
+15 | // Daily breakdown last 3 days
+16 | const days = db.query
+- [bash] On branch main
+Your branch is ahead of 'k3s/main' by 65 commits.
+  (use "git push" to publish your local commits)
+
+nothing to commit, working tree clean
+
+
+Command exited with code 1
+- [bash] On branch main
+Your branch is ahead of 'k3s/main' by 67 commits.
+  (use "git push" to publish your local commits)
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   bob/last
+- [bash] On branch main
+Your branch is ahead of 'k3s/main' by 70 commits.
+  (use "git push" to publish your local commits)
+
+nothing to commit, working tree clean
+
+
+Command exited with code 1
 
 **Agent response:**
-Now commit:
+Clean now. The guard was stale.
 **Files touched**: (see worker session)
-**Owner assessment**: CONTINUE — — Four iterations, zero deliverables. The worker reads the project file and runs queries but never edits anything. The pattern is identical every time: read → query → say "Now commit:" → no actual file edit.
-
-**The worker appears unable to complete this task.** However, before escalating, one more attempt with maximally explicit instructions:
-
-Next iteration MUST follow these exact steps IN ORDER:
-1. `read("agents/coach/workspace/projects/prove-the-loop.md")` — find the first `- [ ]` line
-2. Run ONE bun query to get the data needed for that milestone
-3. Call `edit("agents/coach/workspace/projects/prove-the-loop.md", oldText="- [ ] <milestone text>", newText="- [x] <milestone text>")` — this is the critical step that has been skipped 4 times
-4. Call `finish()` with the file listed in deliverables
-
-**Do NOT run git commands.** Do NOT say "Now commit." The ONLY success criterion is: did you call `edit()` on the project file? If you don't call `edit()`, the iteration is a failure.
-
-
-### Iteration 5 — 2026-04-19T06:35:48.100Z
-**Worker task**: Iteration 5 — work toward goal
-**Worker result**: **Status:** done (53s)
-
-**Files read (not modified):**
-- agents/coach/workspace/projects/prove-the-loop.md
-
-**Errors encountered:**
-- [bash] Post-Iter16 production: {"n":0,"avg_q":null}
-Production 7d: {"n":90,"avg_q":0.726}
-12 | const now = Date.now();
-13 | const base = db.query('SELECT COUNT(*) as n, ROUND(AVG(e.quality),3) as avg_q FROM evaluations e JOIN sessions s ON e.sessionId=s.sessionId WHERE s.agent="coder" AND s.startedAt > ? A
-
-**Agent response:**
-File is clean. There's already an Iter 18 entry from the previous worker. No new data (n=0 post-deploy). The project file is up to date.
-**Files touched**: (see worker session)
-**Owner assessment**: CONTINUE — — Five iterations, zero file edits. The worker claims "file is up to date" but never verifies by checking off milestones.
-
-This task appears fundamentally stuck — the worker repeatedly reads the file, runs queries, and declares completion without editing anything. The goal "see project file" may be too vague to drive action.
-
-**Next iteration instructions (final attempt before escalating):**
-
-Read `agents/coach/workspace/projects/prove-the-loop.md` and respond with its FULL CONTENTS so I can see what milestones exist and their status. Do NOT run any queries. Do NOT say "Now commit." Just read the file and paste its contents. That is the entire task.
-
