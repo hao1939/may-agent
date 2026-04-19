@@ -1,10 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776578785119_0
+- **Session:** s_1776578823165_0
 - **Status:** done
-- **When:** 2026-04-19T06:07:02.916Z
-- **Duration:** 37s
+- **When:** 2026-04-19T06:07:15.693Z
+- **Duration:** 12s
 
 ## What Happened
-Forced externalization does **not** work primarily because it provides correct information — it works through two independent pathways: a **writing path** (commitment/articulation that engages deliberative reasoning) and a **reading path** (context anchoring that overrides default compliance bias). Either pathway alone achieves 100% pass rates, and notably, the question of whether *incorrect* analysis would still help remained untested at the time of the finding, meaning correctness may not be t
+
+
+**Structural access is more important than content quality for knowledge utilization.** KE-052 establishes that structural access constraints dominate content quality — it doesn't matter how good knowledge is if agents can't reach it at decision time. This means optimizing *when and how* knowledge is delivered matters more than perfecting *what* the knowledge says.
