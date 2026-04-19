@@ -1,40 +1,37 @@
-# Finding: Cron Dead Weight Audit
+# Finding: Cron Dead Weight
 
-**Date**: 2026-04-18  
+**Date**: 2026-04-19  
 **Lens**: C (Dead Weight)  
-**Severity**: Low — no active harm, but maintenance/cognitive burden
+**Severity**: Low (no runtime cost, but adds cognitive load and disk clutter)
 
 ## Summary
 
-42 cron entries exist in `agents/may/cron.json`. 39 are enabled, 3 are disabled. Of 34 handler files in `agents/may/handlers/`, 3 are orphaned (no cron entry references them). The disabled cron entries retain "kept for rollback" rationale but the replacements have been stable for 2+ weeks.
+3 handler files on disk have no corresponding cron.json entry (orphans). 2 cron entries are explicitly marked DEPRECATED and disabled. 1 entry is disabled for environment reasons. All enabled entries have existing handlers and produce observable effects.
 
-## Evidence
+## Orphan Handler Files (no cron entry)
 
-### Disabled cron entries (dead weight in cron.json)
+These `.ts` files exist in `agents/may/handlers/` but are never referenced by any `"handler"` field in `agents/may/cron.json`:
 
-| Entry | Status | Notes |
-|-------|--------|-------|
-| `error-log-scanner` | disabled | `agents/may/cron.json:~line 200` — "DEPRECATED — replaced by error-scan workflow. Kept for rollback." Handler file still exists: `agents/may/handlers/error-log-scanner.ts` |
-| `coaching-feedback` | disabled | `agents/may/cron.json:~line 280` — "DEPRECATED — migrated to coaching-feedback-wf sensor-judge workflow. Kept for rollback." Handler file still exists: `agents/may/handlers/coaching-feedback.ts` |
-| `heartbeat-amy-kimi` | disabled | `agents/may/cron.json:~line 170` — "Amy-Kimi runs on k3s only. Disabled locally to avoid duplicate work." No orphan handler (uses heartbeat type). |
+1. **`agents/may/handlers/common-sense-audit.ts`** (244 lines) — No cron entry. Likely superseded by the `common-sense-verify` cron entry which uses `run-agent-task` handler instead.
+2. **`agents/may/handlers/priority-drift.ts`** (401 lines) — No cron entry. Never invoked.
+3. **`agents/may/handlers/project-resume.ts`** (410 lines) — No cron entry. Never invoked.
 
-### Orphaned handler files (no cron entry)
+**Total dead code: ~1,055 lines** across 3 files.
 
-| File | Notes |
-|------|-------|
-| `agents/may/handlers/common-sense-audit.ts` | No cron.json entry references handler `common-sense-audit`. Likely superseded by `common-sense-verify` (which uses `run-agent-task`). |
-| `agents/may/handlers/priority-drift.ts` | No cron.json entry references handler `priority-drift`. Dead code. |
-| `agents/may/handlers/project-resume.ts` | No cron.json entry references handler `project-resume`. Known removed feature (see prior tech-lead sessions). |
+## Deprecated/Disabled Cron Entries
 
-### Scale check
+These entries in `agents/may/cron.json` are disabled and self-document as deprecated:
 
-- **42 cron entries** total — high count but most are JS-only (no LLM cost)
-- **39 enabled** — all fired sessions in the last 6h (verified via `sessions` table query showing all agent heartbeats + evaluator sessions active)
-- **Highest-frequency**: `session-sync` and `active-nudge` at 5min intervals; `evaluation-sync` at 10min
-- All enabled entries have corresponding handler files in `agents/may/handlers/`
+1. **`error-log-scanner`** (`agents/may/cron.json` line ~200, `enabled: false`) — Description says "DEPRECATED: Replaced by error-scan sensor-judge workflow." Handler file `agents/may/handlers/error-log-scanner.ts` (384 lines) still exists as rollback.
+2. **`coaching-feedback`** (`agents/may/cron.json` line ~260, `enabled: false`) — Description says "DEPRECATED — migrated to coaching-feedback-wf sensor-judge workflow." Handler file `agents/may/handlers/coaching-feedback.ts` (161 lines) still exists as rollback.
+3. **`heartbeat-amy-kimi`** (`agents/may/cron.json`, `enabled: false`) — Description says "Disabled locally to avoid duplicate work." Not deprecated, just environment-specific. Not dead weight.
 
-## Recommended Actions (for separate sessions)
+## Enabled Entries: All Active
 
-1. **Delete orphaned handlers**: Remove `common-sense-audit.ts`, `priority-drift.ts`, `project-resume.ts` — they are unreachable dead code.
-2. **Remove deprecated cron entries**: The `error-log-scanner` and `coaching-feedback` entries + their handler files can be removed. Their replacements (`error-scan` workflow, `coaching-feedback-wf` workflow) have been stable.
-3. **Low priority**: `heartbeat-amy-kimi` is intentionally disabled for environment reasons — keep as-is.
+All 37 enabled cron entries have valid handlers (either built-in `heartbeat` type, or matching `.ts` file in `handlers/`). DB query confirmed 13 cron-sourced sessions in the last 24h (`sessions` table, `source='cron'`), plus ~599 null-source sessions (heartbeats lack source tagging but are clearly cron-driven).
+
+## Recommended Actions (do NOT implement now)
+
+1. **Delete orphan files**: Remove `common-sense-audit.ts`, `priority-drift.ts`, `project-resume.ts` — 1,055 lines of unreachable code.
+2. **Delete deprecated entries + handlers**: Remove `error-log-scanner` and `coaching-feedback` cron entries and their handler files (545 lines) once rollback window has passed.
+3. **No action needed** for `heartbeat-amy-kimi` — valid environment toggle.
