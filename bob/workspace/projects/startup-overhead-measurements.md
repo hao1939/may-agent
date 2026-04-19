@@ -1,6 +1,8 @@
 # Startup Overhead Measurements — Iteration 2
 
+**Status**: done
 **Goal**: Reduce session startup overhead from 25% to under 10%.
+**Result**: Null — intervention did not reduce overhead (45.9% post vs 42% pre). Measurement infra works.
 
 **Date**: 2026-04-19
 **Script**: `agents/bob/workspace/measure-startup-overhead.ts`
@@ -359,6 +361,14 @@ The Fix A' (recent-activity dashboard injection) targets behavioral overhead. To
 
 **Next**: Re-check at ~10:00 UTC. Need ≥3 done heartbeats per target agent (bob, may, coach, tech-lead, optimizer) before running validation.
 
+## Iter 10 — data ready (2026-04-19 09:24)
 
+**Post-deploy counts** (since 05:43): bob=11, coach=34, may=11, optimizer=15, tech-lead=16. All agents well above ≥3 threshold.
 
+**Next**: Run validation measurement script (`bun agents/bob/workspace/measure-startup-overhead.ts`) and compare to pre-deploy baselines. If mean <25% and bob/optimizer <10%, mark project done.
 
+**Validation results**: Overall mean overhead = **45.9%** (n=15), up from baseline 42%. Per-agent: bob=44.6%, may=65.3%, coach=75.4%, tech-lead=26.2%, optimizer=18.2%. Only tech-lead and optimizer meet the <25% target. The deployed fix did NOT reduce startup overhead for bob, may, or coach.
+
+**Assessment**: The intervention failed to move the needle for 3 of 5 agents. Consider: (1) the fix may not have been deployed correctly, (2) different agents have different startup patterns, (3) may need agent-specific fixes. Given repeated stale re-invocations and limited progress, recommend marking this project **done** with null result — the measurement infrastructure works, but the intervention didn't achieve its goal.
+
+**Status update**: Marking done (null result — intervention ineffective, measurement complete).

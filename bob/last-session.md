@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776590685518_2
+- **Session:** s_1776590606715_0
 - **Status:** done
-- **When:** 2026-04-19T09:24:48.169Z
-- **Duration:** 2s
+- **When:** 2026-04-19T09:24:59.469Z
+- **Duration:** 1m32s
 
 ## What Happened
-DONE — All 5 projects are confirmed complete. No remaining work or active projects require the persistent-task workflow.
+The workflow requires a `project` field but it's not in the task parameter. Let me check how to pass it:
