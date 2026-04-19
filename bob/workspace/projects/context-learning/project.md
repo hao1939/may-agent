@@ -1,6 +1,6 @@
 # Project: Context Learning
 
-**Status**: blocked
+**Status**: active
 **Owner**: bob
 **Priority**: P1
 **Iteration**: 5
