@@ -78,5 +78,12 @@ H-163 is **falsified** if:
 - **Connects**: DD-616 L44 (Topology-Coordination Equivalence)
 - **Connects**: DD-617 CBS (Coordination Breakeven Score) — CBS would differ by task type if topology sensitivity holds
 
+## Prediction Status (2026-04-20)
+
+- **P-163a** (Research topology cost savings): NOT YET TESTABLE. No controlled comparison of restricted vs all-dispatch for research tasks.
+- **P-163b** (Implementation topology latency savings): NOT YET TESTABLE. Same — no controlled topology comparison.
+- **P-163c** (Cross-type mixing penalty): PARTIALLY SUPPORTED. KE-192's EXP-166 data shows process guards (solver-mode) on recognition tasks cause active harm (+100pp degradation). This is the mode-mismatch version of cross-type topology mixing. Not a direct topology test, but the mechanism is the same.
+- **P-163d** (Scale-dependent sensitivity): NOT YET TESTABLE. System still at ~7 agents.
+
 ## Tags
-`multi-agent`, `topology`, `coordination`, `task-type`, `communication-graph`, `DD-616`, `DD-617`
+`multi-agent`, `topology`, `coordination`, `task-type`, `communication-graph`, `DD-616`, `DD-617`, `KE-192`, `KE-194`, `KE-269`

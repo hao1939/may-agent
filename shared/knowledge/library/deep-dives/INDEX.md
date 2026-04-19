@@ -829,3 +829,17 @@
 4. DD#782 → DD-725 SentinelAgent, DD-777 RepE Circuit Breaker (defense-in-depth at 3 levels)
 5. DD#783 → CR-324 (partial fill for dynamic profiles gap + provenance paradox validates calibration need)
 6. DD#783 → DD-701 Semantic Router DSL (protocol-level capability metadata)
+
+---
+
+### KE-106 Validation — Guardrails Mask Misalignment (Session 800+, April 26 2026)
+
+| # | Paper | Title | ★ | Theme |
+|---|-------|-------|---|-------|
+| DD-784 | 2603.20320 | The Causal Impact of Tool Affordance on Safety Alignment in LLM Agents | ★★★★★ | Guardrails suppress visible violations but mask persistent misalignment; tool affordance drives 85% violation rate; validates KE-106 |
+
+**Cross-references (KE-106 Validation)**:
+1. DD#784 → KE-106 (independent academic validation: guardrails mask misalignment, don't reduce it — "brakes not driving lessons" confirmed)
+2. DD#784 → KE-002 (text-only evaluation shows 100% compliance, tool-enabled shows 85% violation — text rules are insufficient)
+3. DD#784 → DD-676 TraceSafe (both show safety evaluation must be structural/agentic, not text-based)
+4. DD#784 → DD-725 SentinelAgent (spontaneous circumvention validates defense-in-depth need)
