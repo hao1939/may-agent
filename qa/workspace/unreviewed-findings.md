@@ -38,6 +38,30 @@
 
 ---
 
+## 2026-04-19 — QA heartbeat (local)
+
+### Context
+- Repo root `/app` is **not** a git repository (only `/app/agents` is a git repo).
+- Recent change in `/app/agents` commit `181ea7f26` touches only agent docs + heartbeat JSON.
+- Application code exists under `/app/src/dashboard/*`, but there is no evidence it is under version control in this environment.
+
+### Verification blockers (mandatory gates)
+- `./node_modules/.bin/tsc --noEmit`: **FAIL** — `No such file or directory`
+- `./node_modules/.bin/vitest --run`: **FAIL** — `No such file or directory`
+- `node_modules/` only contains `.vite/`; there is no `.bin/` directory, suggesting dependencies are not installed.
+
+### Quick code sweep (read: src/dashboard/server.ts)
+- `json(res, data: any, ...)`: uses `any` (type-safety gap).
+- `readBody()` unconditionally parses JSON; invalid JSON will throw and return 500 (if API intended to return 400 for bad JSON, add handling).
+- `togglePin(body.metricId)` lacks validation (if `metricId` missing/invalid, may throw downstream).
+- `HTML_PATH` uses `import.meta.dirname || __dirname`; depending on module type, `__dirname` may be undefined in ESM.
+
+### Next actions
+1. Clarify which directory is the actual project git repo (if `/app` should be a repo, `.git` is missing).
+2. Install dependencies to provide `tsc` and `vitest` (or update QA instructions if project intentionally has no Node toolchain).
+3. Once tools exist, rerun mandatory checks and expand code review to `src/dashboard/db.ts`.
+
+
 ## 2026-04-09 — HEAD 41b5074 — heartbeat: current HEAD vitest failures (launcher missing + EACCES + timeouts)
 
 ### Mandatory gates (independent)
