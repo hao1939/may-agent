@@ -2098,3 +2098,21 @@ HEAD deletes `final-test-temp.txt` (temp artifact cleanup). No functional code c
 
 ### Minor noise
 - Many suites print `fatal: not a git repository` to stderr during vitest runs (appears non-fatal).
+
+---
+
+## 2026-04-19 — heartbeat — environment not a git repo; missing tsc/vitest binaries
+
+### Mandatory gates (attempted)
+- `./node_modules/.bin/tsc --noEmit`: FAIL — `./node_modules/.bin/tsc: No such file or directory`
+- `./node_modules/.bin/vitest --run`: FAIL — `./node_modules/.bin/vitest: No such file or directory`
+
+### Environment notes
+- `git log` / `git status` fail: `fatal: not a git repository`.
+- No `package.json`/`tsconfig.json`/`vitest.config.*` found at project root.
+- `node_modules/` contains only `.vite/` and no `.bin/`.
+
+### Files reviewed (read)
+- `src/pipeline.js`
+  - Docstring says normalization must precede penalties, but code applies penalties before normalization.
+  - Either fix the order (normalize then apply penalties) or update docs/comments to match intended behavior.

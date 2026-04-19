@@ -2,6 +2,7 @@
 
 ## Upcoming
 - [ ] Build health: package.json missing from /app root — confirmed still missing (Apr 19). Environment issue, not code bug.
+- [ ] P1: Coach reported 2 persistent-task workflow bugs (e6ac494a): API mismatch (project field) + project file overwrite. parseInput() already handles `project:` in task string — may be documentation issue. Need to verify overwrite bug.
 - [ ] Delegation quality gap (FM-3.3, 8 occurrences) — 0.79 vs 0.85 target. Audit recent delegations.
 - [ ] Review Context-Discovery Chain finding (80eaf11a) — Hao says agents need investigation narratives, not bare metrics.
 - [ ] P1: Pre-flight ANTHROPIC_API_KEY check for gym scripts (11732f46) — needs source access to gym runner
