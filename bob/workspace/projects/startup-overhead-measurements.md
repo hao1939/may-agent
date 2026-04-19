@@ -266,7 +266,7 @@ Next iter: write the actual patch, open a review branch via `commitAndMerge`.
 
 **Purpose**: Capture a fresh baseline immediately before the daemon swap, so the post-deploy comparison isolates Fix A''s effect.
 
-**Deploy status confirmed still pending**: `grep -c "Injected: recent activity" /usr/local/bin/may-agent` = 0; `bundle/may-agent` mtime Apr 19 02:33; daemon PID 16 still on Apr 18 08:17 build. Notification to may (request `8e6cc5c3`) is `CREATED` — not yet picked up.
+**Deploy status confirmed still pending**: `grep -c "Injected: recent activity" /usr/local/bin/may-agent` = 0; `bundle/may-agent` mtime Apr 19 02:33; daemon PID 16 still on Apr 18 08:17 build. Original notification not found in DB. Re-sent as request `b1963f10` on 2026-04-19 02:41.
 
 **Fresh run** of `bun agents/bob/workspace/measure-startup-overhead.ts` (n=15, 3 latest heartbeats × 5 agents):
 
