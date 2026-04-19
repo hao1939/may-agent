@@ -9,10 +9,62 @@
 ## Goal
 Improve coder quality metric from current 0.82 toward 0.9+ by systematically diagnosing and fixing failure modes. This proves the full loop: metrics signal → persistent task executes → gym validates → production improves.
 
+
+### Iteration 1 — 2026-04-19T11:31:28.379Z
+**Worker task**: Iteration 1 — work toward goal
+**Worker result**: **Status:** done (4m46s)
+
+**Files read (not modified):**
+- agents/coach/workspace/projects/prove-the-loop.md
+
+**Errors encountered:**
+- [bash] /bin/bash: line 1: sqlite3: command not found
+
+
+Command exited with code 127
+
+💡 Hint: sqlite3 CLI is not available. Use `bun -e` with bun:sqlite. DB is at .state/may.db.
+- [bash] src/lib/tools/commit-guard.ts
+src/lib/tools/completeness-guard.ts
+src/lib/tools/compose-guards.ts
+src/lib/tools/cross-edit-guard.ts
+src/lib/tools/empty-args-guard.ts
+src/lib/tools/finish-guard.ts
+src/lib/tools/path-hallucination-guard.test.ts
+src/lib/tools/path-hallucination-guard.ts
+src/lib/tools/r
+
+**Agent response:**
+Now update the success criteria to reflect reality:
+**Files touched**: (see worker session)
+
+**Owner assessment**: CONTINUE — — Iteration 1 produced no actual changes. The worker spent time exploring but didn't edit any files or improve anything. Here's what iteration 2 must do:
+
+**Next step: Diagnose failure modes from the metrics DB, then make one concrete fix.**
+
+1. **Query the metrics DB** to understand what's driving the 0.82 score:
+   ```
+   bun -e "import { Database } from 'bun:sqlite'; const db = new Database('.state/may.db'); console.log(JSON.stringify(db.query('SELECT * FROM sqlite_master').all(), null, 2))"
+   ```
+   Then query whatever tables exist to find coder quality breakdowns — what types of failures are most common.
+
+2. **If the DB doesn't have granular failure data**, check `agents/coach/workspace/projects/prove-the-loop.md` for clues about what the 0.82 metric measures and what failure modes exist.
+
+3. **Pick the single highest-impact failure mode** and make a concrete code fix — edit an actual guard, prompt, or tool file. Do NOT just read files and plan.
+
+4. **Deliverable**: At least one file must be edited with a meaningful change that addresses a specific failure pattern. Report exactly which file was changed and why.
+
 ## Current State
-- `coder.quality` metric: **0.82** (7-day rolling average from evaluations)
-- Target: **0.90**
-- Source: `SELECT ROUND(AVG(e.quality), 2) FROM evaluations e JOIN sessions s ON e.sessionId = s.sessionId WHERE s.agent='coder' AND s.startedAt > (strftime('%s','now')*1000 - 604800000) AND e.quality IS NOT NULL AND e.skippedByJs = 0`
+Iteration 1 complete. **Status:** done (4m46s)
+
+**Files read (not modified):**
+- agents/coach/workspace/projects/prove-the-loop.md
+
+**Errors encountered:**
+- [bash] /bin/bash: line 1: sqlite3: command not found
+
+
+Command e
 
 ## Iteration Loop
 Each iteration:
@@ -25,7 +77,7 @@ Each iteration:
 7. **Loop** to next iteration
 
 ## Success Criteria
-- [ ] coder.quality reaches 0.80 production-only (milestone 1 — revised from 0.85; true baseline is 0.716 prod-only, not 0.82)
+- [ ] coder.quality reaches 0.85 (milestone 1)
 - [ ] coder.quality reaches 0.90 (milestone 2)
 - [x] At least 2 interventions tested in gym (C1.5, C1.6, C1.7, evidence-count-guard — 4+ gym A/Bs across Iters 4-12)
 - [ ] At least 1 intervention deployed to production with measured improvement
@@ -420,19 +472,3 @@ Each iteration:
   - **Production 7d (unchanged)**: n=90, avg 0.726.
   - **Decision — WAIT**: No data. Resume when n≥15 post-Iter16 evals available.
   - **Next (Iter 20)**: Re-query at next heartbeat.
-
-- 2026-04-19 Iteration 20 (fresh diagnosis, 11:28Z) — **Corrected baseline, identified guard gap**:
-  - **Current metric**: Production-only 7d avg quality **0.716** (n=96). Daily trend flat at ~0.70 since Apr 14.
-  - **Post-Iter16 (retry scope-escape fix)**: n=8, avg **0.675** — no improvement visible yet, but n too small and includes pre-existing sessions. Need more data.
-  - **Failure mode census (41 sessions <0.75, 7d prod-only)**:
-    - Scope violations: 25/41 (61%)
-    - FM-3.3 verification fabrication: 28/41 (68%)
-    - Process issues: 27/41 (66%)
-    - Heavy overlap — most low-q sessions have multiple failure modes.
-  - **Critical finding — evidence-count-guard from Iter 10 is MISSING from disk**: `src/lib/tools/evidence-count-guard.ts` does NOT exist. The Iter 10 log says it was shipped, but the file was either never committed or was deleted. The verification-depth-guard (T2-no-post-write-verification) IS deployed and active, but it only checks WHETHER verification happened, NOT whether claimed evidence matches actual output.
-  - **Gap analysis on FM-3.3**: Session s_1776591764540_84 (q=0.2) shows the exact FM-3.3 pattern: agent ran 2 bash + 1 read + 1 edit, then finish(success) claiming "bun test showed 10 pass, 0 fail" — but NO bun test command appears in transcript. The verification-depth-guard did NOT fire because the agent DID make post-write bash calls (satisfies T2). The missing check: **do the verification_evidence strings match actual tool output?**
-  - **Concrete next step — build and deploy evidence-string-match guard**:
-    - On `finish(status:"success")`, check each `verification_evidence[i]` string for substring overlap with actual tool results in transcript.
-    - If an evidence string contains a quoted claim (e.g., "10 pass, 0 fail") that doesn't appear in any tool result text, block with remediation message.
-    - This is the Iter 10 guard done right — structural (KE-007), targeting the actual production failure pattern.
-  - **Decision**: Build evidence-string-match guard as next deliverable. This iteration's deliverable is the updated diagnosis + project file.
