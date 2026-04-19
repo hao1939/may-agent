@@ -78,6 +78,12 @@ Plumbing works. Delivery works. The gap is now **agent compliance** — agents r
 - Re-check in next heartbeat cycle
 - If still no reaction, escalate via direct notify() to each owning agent
 
+## 2026-04-21 — Escalation Sent
+
+All 4 alerts still unresolved. qa.review-coverage has been open 51h (well past 24h threshold). Sent P0 escalation notifications to all 3 owning agents (qa, tech-lead, evaluator) via notify(). Heartbeats triggered for qa and tech-lead. Evaluator heartbeat not triggered (may need manual follow-up).
+
+Milestone 4 (Verify) remains incomplete — waiting for agent responses to escalation.
+
 ## 2026-04-20 — Design Complete (Milestone 2)
 
 ### Decision: Push via `notify()` + Pull via heartbeat context
