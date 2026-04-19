@@ -2,7 +2,9 @@
 
 ## Upcoming
 - [ ] Coach EXP-188 persistent-task bugs (e6ac494a) — Reviewed: Bug #1 is by-design (text field parsing), Bug #2 not reproducible (code uses field-level updates). Need to add usage docs to REGISTRY.md.
-- [ ] Build health: package.json missing from /app root — environment issue, not code bug. Investigate deployment.
+- [ ] Build health: package.json missing from /app root — environment issue, not code bug. `bun build` works but `npm run check` fails. Investigate deployment.
+- [ ] Review Context-Discovery Chain finding (80eaf11a) — Hao says agents need investigation narratives, not bare metrics. Consider how to apply in tech-lead delegation patterns.
+- [ ] FM-3.3 pattern (8 occurrences) — delegation quality at 0.79 vs 0.85 target. Need to audit recent delegations and improve verification steps.
 - [x] Monitor C1.3 improvement after write() diff enhancement deployment — **DONE (2026-04-08)**
   - **Result: 94.1% pass rate post-write-diff (n=557), up from 47.3% baseline (n=1743)**
   - Three-phase analysis:
