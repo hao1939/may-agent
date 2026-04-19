@@ -13,24 +13,24 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-19T16:40)
+# Your Context (auto-generated 2026-04-19T17:10)
 
-**System:** 13 sessions/6h, 0% error rate
-**You:** 1 sessions, 25KB total (25KB avg)
+**System:** 10 sessions/6h, 0% error rate
+**You:** 1 sessions, 27KB total (27KB avg)
 
 **Top spenders:**
-- may: 2s, 174KB
-- optimizer: 4s, 130KB
+- may: 2s, 156KB
 - coach: 2s, 43KB
-- scout: 2s, 35KB
-- bob: 1s, 27KB
+- scout: 1s, 31KB
+- tech-lead: 1s, 27KB ← you
+- optimizer: 2s, 27KB
 
 **Your active error patterns:**
-- FM-3.3: 2x
+- FM-3.3: 3x
 - FM-1.3: 1x
 
 **📊 Your Metrics:**
-- Codebase weight: **31534** lines → 32000 lines
+- Codebase weight: **30354** lines → 32000 lines
 - Delegation quality: **0.79** ratio → 0.85 ratio
 - Meaningful changes: **0** commits/week → 10 commits/week
   → Quick check: git log --since='7 days ago' --oneline -- agents/ 2>/dev/null | wc -l | tr -d ' '

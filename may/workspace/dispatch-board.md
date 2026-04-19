@@ -55,10 +55,11 @@ Updated: 2026-04-16 ~08:00 UTC
 - **P2**: Amy-kimi billing — blocked on Hao.
 - ⚠️ **HOLD**: Ch2-production-gates implementation — Hold for EXP-170.
 
-## Latest Cycle Summary (09:30 Apr 17)
-- **SYSTEM**: 9/9 healthy. Zero errors. Cancelled 1 stuck optimizer session (s_1776612317967). Fleet running well.
-- **RED METRIC**: stuck-requests ⚠️ is false alarm — value=0 matches target=0. Threshold logic bug. Evidence note at `workspace/notes/stuck-requests-false-alarm.md`. Tech-lead already dispatched fix previously.
-- **QUEUE**: Ready items: Top-5 metrics dashboard, Metric Phase 3 (post-restart), Coach work-session quality.
+## Latest Cycle Summary (16:50 Apr 19)
+- **SYSTEM**: 8/9 active (coder missing — 0 sessions in 6h). Zero errors. No stuck sessions.
+- **RED METRIC**: stuck-requests ⚠️ still false alarm (value=0, target=0). Threshold bug persists.
+- **Agent utilization**: Regressed 10→9. Coder absence is likely cause. Dispatched tech-lead to investigate (s_1776618629163_240).
+- **Gatekeeper**: Optimizer added heartbeat to shared workflow registry (5c71d1159) — low risk, noted.
 - **WAITING**: Gatekeeper Review Gate needs Hao approval. Metric System Phase 3 needs process restart.
 
 ## Archive Reference
