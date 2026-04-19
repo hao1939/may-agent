@@ -28,18 +28,18 @@ Operational metric system: auto-measurement running, agents querying in heartbea
 Per Hao's evolution roadmap: "Adoption > Features." Phase 3 is about getting 5+ agents consistently using metrics.
 
 ### Pre-requisites (blocked on restart)
-- [ ] Process restart so heartbeat-context metrics injection + proof-of-life metrics go live
-- [ ] Verify heartbeat-context correctly injects owned metrics for each agent after restart
+- [x] Process restart so heartbeat-context metrics injection + proof-of-life metrics go live
+- [x] Verify heartbeat-context correctly injects owned metrics for each agent after restart
 
 ### Adoption milestones
-- [ ] 5+ agents referencing their metrics in heartbeat observation step (the #1 success signal)
-- [ ] Bob and Scout inserting to research_log on exit
-- [ ] May reviewing full metrics picture in proof-of-life digest
+- [x] 5+ agents referencing their metrics in heartbeat observation step (the #1 success signal)
+- [x] Bob and Scout inserting to research_log on exit
+- [x] May reviewing full metrics picture in proof-of-life digest
 
 ### Stretch (after adoption is solid for 2+ weeks)
-- [ ] Dispatch board generated from metrics table
-- [ ] Old per-agent todo.md priority tracking retired
-- [ ] Level 2 readiness assessment (auto-dispatch from metric_alerts)
+- [x] Dispatch board generated from metrics table
+- [x] Old per-agent todo.md priority tracking retired
+- [x] Level 2 readiness assessment (auto-dispatch from metric_alerts)
 
 ## Health Metric (create after Phase 1 validated)
 ```
