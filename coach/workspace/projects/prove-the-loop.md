@@ -27,7 +27,7 @@ Each iteration:
 ## Success Criteria
 - [ ] coder.quality reaches 0.85 (milestone 1)
 - [ ] coder.quality reaches 0.90 (milestone 2)
-- [ ] At least 2 interventions tested in gym
+- [x] At least 2 interventions tested in gym (C1.5, C1.6, C1.7, evidence-count-guard — 4+ gym A/Bs across Iters 4-12)
 - [ ] At least 1 intervention deployed to production with measured improvement
 
 ## Stop Conditions
@@ -400,3 +400,11 @@ Each iteration:
   - **NOT gym-testable**: This targets a production-only task shape (multi-turn verify-wrap retry with conflicting scope + verification). Gym scenarios don't generate this pattern.
   - **Expected impact**: If ~50% of the 22% retry-task volume benefits (scope conflicts become partial instead of violations), estimated quality lift: +0.02–0.04 on production avg (from 0.726 toward 0.75–0.77).
   - **Next (Iter 17)**: Monitor production for 24h. Success signal: retry task avg quality rises from 0.62 toward 0.70+, and FM-2.6 scope violations in retry sessions decrease.
+
+- 2026-04-19 Iteration 17 (post-Iter16 monitoring, 06:33Z) — **WAITING: n=0 post-deploy evals**:
+  - **Window**: Iter 16 deploy ~2026-04-19 06:31Z → 06:33Z. Only 2 minutes elapsed — no new coder evals yet.
+  - **Production daily trend (production-only, source != gym)**: Apr 14: 0.65 (n=12), Apr 15: 0.653 (n=25), Apr 16: 0.72 (n=7), Apr 17: 0.718 (n=23), Apr 18: 0.703 (n=11), Apr 19: 0.9 (n=1). Flat at ~0.70 since Apr 14 (corrected baseline from Iter 15).
+  - **Milestone checked**: "At least 2 interventions tested in gym" — ✅ (4+ A/B tests across Iters 4-12).
+  - **Current deployed interventions**: evidence-count-guard (structural, in src/), retry scope-escape fix (in agents/shared/workflows/ and agents/tech-lead/workflows/). C1.5/C1.6/C1.7 reverted.
+  - **Decision — WAIT**: Need ≥15 post-Iter16 production evals before measuring retry scope-escape impact. Resume at next heartbeat when n≥15.
+  - **Next (Iter 18)**: Re-query when n≥15. Check retry-task quality specifically (need to find right column name — `taskSummary` doesn't exist, try `summary` or grep task text). If retry quality improves from 0.62 → 0.70+, declare production improvement and check off milestone.

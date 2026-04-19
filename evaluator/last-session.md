@@ -1,21 +1,21 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776580423586_43
+- **Session:** s_1776580462945_52
 - **Status:** done
-- **When:** 2026-04-19T06:33:53.168Z
-- **Duration:** 9s
+- **When:** 2026-04-19T06:34:30.840Z
+- **Duration:** 7s
 
 ## What Happened
 ```json
 {
   "agents": {
     "coach": {
-      "role": "Builder",
+      "role": "Supervisor",
       "capability_level": "L2",
-      "efficiency": 0.62,
-      "quality": 0.78,
-      "verdict": "acceptable",
+      "efficiency": 0.78,
+      "quality": 0.76,
+      "verdict": "good",
       "issues": [
-        "[FM-2.6] Reasoning–action mismatch early: Iter 1/2 repeatedly read the project file and ran DB-query attempts that errored, but produced no artifact/milestone progress (\"Now append the Iter 14 log entry\" / \"Now commit\" with no corresponding deliverables).",
-        "[FM-1.3] Step repetition: 
+        "Skipped scout intervention based on narrative-only reasoning (“skill already deployed, known ineffective per KE-023”) without any supporting evidence in this session (no read/grep of agents/scout/skills). This is an evidence gap under the Evidence Hierarchy (tool outputs > claims).",
+        "Did no
