@@ -496,5 +496,14 @@
     "enabled": false,
     "description": "DISABLED by Hao 2026-04-19: code changes need human review before merge.",
     "offsetMs": 900000
+  },
+  {
+    "name": "project-resume",
+    "type": "job",
+    "intervalMs": 300000,
+    "handler": "project-resume",
+    "enabled": true,
+    "message": "[cron:project-resume] Scan active projects and resume.",
+    "description": "DO NOT REMOVE. Every 5min, scans for active projects and starts persistent-task workflow. Added by Hao."
   }
 ]
