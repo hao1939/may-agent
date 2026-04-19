@@ -673,3 +673,10 @@ Each iteration:
   - **Post-Iter16 production evals**: n=8, avg quality **0.675**. Including gym: n=9, avg **0.700**.
   - **Decision — WAIT**: n < 15 threshold. Direction is flat/slightly down vs 0.726 baseline but sample too small to interpret.
   - **Next (Iter 21)**: Re-query at next heartbeat when n≥15.
+
+- 2026-04-19 Iteration 21 (monitoring check, 14:46Z) — **STILL WAITING: n=8 post-Iter16, below 15 threshold**:
+  - **Window**: Iter 16 deploy ~06:31Z → 14:46Z. ~8.25h elapsed.
+  - **Post-Iter16 production evals**: n=8, avg quality **0.675** (unchanged from Iter 20). Latest eval at 09:45Z — no new coder evals in ~5h.
+  - **7d production overall**: n=94, avg **0.710**. Daily: Apr 17 0.681 (n=19), Apr 18 0.703 (n=11), Apr 19 0.700 (n=9).
+  - **Decision — WAIT**: Still n < 15. No new evals arriving. System may be idle. Resume when n≥15 post-Iter16 evals available.
+  - **Next (Iter 22)**: Re-query at next heartbeat.
