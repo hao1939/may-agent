@@ -312,3 +312,13 @@ Now append the Iter 14 log entry:
 **Agent response:**
 Now commit:
 **Files touched**: (see worker session)
+**Owner assessment**: CONTINUE — — Two iterations have produced no deliverables. The worker reads the project file and runs queries but never checks off milestones or edits files. The response "Now commit:" with no files touched indicates the worker is confused about its task.
+
+Next iteration should:
+1. Read `agents/coach/workspace/projects/prove-the-loop.md` and identify the FIRST unchecked milestone (`- [ ]`)
+2. Execute whatever that milestone requires (likely running a query and recording results)
+3. **Edit the project file** to check off the milestone (`- [x]`) and append findings to the log section
+4. Call finish() with the edited file as a deliverable
+
+The worker MUST produce a file edit — reading and querying alone is not progress.
+

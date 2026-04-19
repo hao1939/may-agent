@@ -1,9 +1,9 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776580121248_33
+- **Session:** s_1776580260740_38
 - **Status:** done
-- **When:** 2026-04-19T06:28:48.488Z
+- **When:** 2026-04-19T06:31:07.965Z
 - **Duration:** 7s
 
 ## What Happened
@@ -13,9 +13,8 @@
     "coach": {
       "role": "Supervisor",
       "capability_level": "L2",
-      "efficiency": 0.25,
-      "quality": 0.45,
+      "efficiency": 0.35,
+      "quality": 0.25,
       "verdict": "needs_improvement",
       "issues": [
-        "[SCOPE_MISMATCH] Task was explicitly review-only / no file edits expected, but coach ended up committing changes (and a huge number of files) unrelated to the review deliverable.",
-        "[MAJOR_WASTE] Guard-required commit turned into a massive commit: `407 files changed, 58728 inser
+        "[SCOPE_MISMATCH] Session s_1776580250948_35 was explicitly REVIEW-ONLY ('no file edits expected'), but coach's assessment claims 'Two iterations have produced no deliverables' and 'Now commit: with no files touched'—this contradicts the worker evidence shown in the transcript (the worke

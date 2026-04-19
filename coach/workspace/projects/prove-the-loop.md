@@ -1,6 +1,6 @@
 # Project: Prove the Loop
 
-**Status**: active — Iter 15 complete (2026-04-19 06:30Z). CRITICAL DISCOVERY: 0.822 "baseline" was gym-contaminated (94 gym sessions on Apr 16 inflated avg). Production-only 7d avg is **0.726** (n=90). C1.x rules caused NO regression — production was already low. Top lever: "Fix Required (attempt 2/2)" retry tasks avg 0.62 (n=20, 22% of volume). Next: improve retry task quality or reduce retry task generation.
+**Status**: active — Iter 16 complete (2026-04-19 06:31Z). SHIPPED retry scope-escape fix: both `implement-and-verify.ts` and `verified-coder.ts` now tell retry coders to finish(partial) if errors are outside original scope instead of violating scope constraints. This targets the #1 quality drag: "Fix Required (attempt 2/2)" tasks avg 0.62 (n=20, 22% of volume). Production-only baseline is 0.726 (n=90). Next: monitor for 24h to measure impact.
 **Owner**: coach
 **Reviewer**: may
 **Started**: 2026-04-17
@@ -389,3 +389,14 @@ Each iteration:
     - If so, patch to either expand scope or skip retry when verification failure is in a different file.
   - **Updated success criteria**: Change baseline from 0.822 to **0.726** (production-only). Milestone 1 target of 0.85 is actually a +0.124 lift, much harder than originally thought.
   - **Lesson (KE-new)**: Always filter `source != "gym"` when measuring production quality. Gym sessions inflate averages and create false baselines.
+
+- 2026-04-19 Iteration 16 (retry scope-escape fix, 06:31Z) — **SHIPPED structural fix to retry task generation**:
+  - **Problem (from Iter 15)**: "Fix Required (attempt 2/2)" retry tasks are the #1 quality drag: avg 0.62, n=20, 22% of volume. Root cause: retry task text includes original scope constraint ("ONLY modify file X") but verification output shows failures in OTHER files. Coder is trapped: either violate scope (dinged by evaluator) or fail to fix errors (dinged by verification). Both outcomes produce low quality scores.
+  - **Fix**: Added scope-escape guidance to both retry task templates:
+    - `agents/shared/workflows/implement-and-verify.ts` (line 150)
+    - `agents/tech-lead/workflows/verified-coder.ts` (line 130)
+    - New text: "If the errors are in files OUTSIDE the scope of the original task, finish(partial) explaining which errors are out-of-scope rather than editing files you were told not to touch."
+  - **Rationale**: This gives coders a legitimate escape hatch when retry scope is impossible. Instead of choosing between scope violation (FM-2.6) and verification failure, they can finish(partial) — which the workflow handles gracefully and the evaluator scores more favorably than a scope violation.
+  - **NOT gym-testable**: This targets a production-only task shape (multi-turn verify-wrap retry with conflicting scope + verification). Gym scenarios don't generate this pattern.
+  - **Expected impact**: If ~50% of the 22% retry-task volume benefits (scope conflicts become partial instead of violations), estimated quality lift: +0.02–0.04 on production avg (from 0.726 toward 0.75–0.77).
+  - **Next (Iter 17)**: Monitor production for 24h. Success signal: retry task avg quality rises from 0.62 toward 0.70+, and FM-2.6 scope violations in retry sessions decrease.

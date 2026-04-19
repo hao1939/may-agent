@@ -147,7 +147,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         `### Original Task\n${task}\n\n` +
         `### Verification Command\n\`\`\`\n${verifyCommand}\n\`\`\`\n\n` +
         `### Verification Output (FAILED)\n\`\`\`\n${lastVerifyOutput}\n\`\`\`\n\n` +
-        `Read the error output carefully. Fix the root cause.`;
+        `Read the error output carefully. Fix the root cause.\n\n` +
+        `**Important**: If the errors are in files OUTSIDE the scope of the original task, ` +
+        `finish(partial) explaining which errors are out-of-scope rather than editing files you were told not to touch.`;
     }
 
     let coder = await ctx.runAgent("coder", coderTask);
