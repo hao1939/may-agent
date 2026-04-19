@@ -49,38 +49,25 @@ Track via metrics:
 - Does it complete successfully? (workflow run records)
 - Is it better than freestyle? (compare quality/efficiency)
 
-## Current Workflows (audit — updated iter 29 with real data from 980 workflow runs)
+## Current Workflows (audit)
 
-| Workflow | Runs | Owner | Keep? |
-|----------|------|-------|-------|
-| verify-wrap | 558 | shared | ✅ Keep — most used by far |
-| lens-analysis | 143 | tech-lead | ✅ Keep — core tech-lead workflow |
-| persistent-task | 64 | shared | ✅ Keep — project engine |
-| deliver-or-report | 53 | bob | ✅ Keep — bob's primary workflow |
-| parallel-research | 49 | shared | ✅ Keep — actively used |
-| implement-and-verify | 48 | shared | ✅ Keep — code changes |
-| error-scan | 29 | optimizer | ✅ Keep — moderate usage |
-| growth-cycle | 13 | coach | ✅ Keep — coach core |
-| investigate-and-fix | 12 | optimizer | ✅ Keep |
-| coaching-feedback | 10 | coach | ✅ Keep — low but active |
-| verified-coder | 1 | tech-lead | ⚠️ Review — barely used |
+| Workflow | Usage | Keep? |
+|----------|-------|-------|
+| persistent-task | Active, core | ✅ Keep — project engine |
+| implement-and-verify | Some usage | ✅ Keep — code changes |
+| verify-wrap | Some usage | Review — may overlap with guards |
+| parallel-research | Rare | Review — is it used? |
+| coaching-feedback | Rare | Review |
+| error-scan | Rare | Review |
 
-**Removed (confirmed dead, 0 runs):** auto-loop, skill-lifecycle
-
-**Additional workflow files with no run data:** safe-edit, design-review, enhance-cron, implement-and-review, fewshot-inject-helpers, training-sprint, gym-helpers, project-monitor, vet-skill
+**Next candidate for workflow conversion:** Tech-lead's investigate-and-fix cycle (pick lens → investigate → write finding → dispatch fix) — highest repetition pattern across sessions.
 
 ## Candidate Patterns to Convert
 
 From agent self-assessments and session archaeology:
-- Coach: diagnose failure → design intervention → test in gym → deploy → measure (growth-cycle exists, 13 runs ✅)
+- Coach: diagnose failure → design intervention → test in gym → deploy → measure (growth cycle exists but is it used?)
 - Bob: find paper → evaluate → write deep dive → generate hypothesis → link to system
-- Tech-lead: pick lens → investigate → write finding → dispatch fix (lens-analysis exists, 143 runs ✅)
+- Tech-lead: pick lens → investigate → write finding → dispatch fix
 - Scout: triage arXiv → filter → deep dive → cross-reference
 - May: receive request → triage → dispatch to agent → follow up
 
-### 🎯 Top candidate for next workflow: **Scout research pipeline**
-Scout has 1009 sessions, 0 workflow adoption (only 2 runs total), and a clear repeating pattern: triage arXiv → filter relevance → deep dive on selected papers → cross-reference with system knowledge → produce synthesis. This is the highest-volume agent without a workflow. May's project-monitor workflow file exists but has 0 runs — that's the #2 candidate.
-
-## Log
-
-- **Iter 29**: Updated audit table with real run counts (980 total runs across 11 workflows). Removed auto-loop and skill-lifecycle (0 runs). Identified Scout research pipeline as top candidate for next workflow.
