@@ -1,7 +1,7 @@
 # TODO
 
 ## Lens Rotation
-Last: D (Fragility) — request tracking fragility (2026-04-19 06:34). Next: A.
+Last: A (System Architecture) — eval-sync vs evaluator-heartbeat overlap (2026-04-19 07:04). Next: B.
 
 ## Upcoming
 - [ ] Heuristic evaluation over-rates by ~0.12 — consider adding LLM sampling to evaluation-sync.ts for top-level sessions (checkpoint from s_1776288692069_126 has the design)
