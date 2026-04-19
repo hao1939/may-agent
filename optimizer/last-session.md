@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776576840885_3
-- **Status:** done
-- **When:** 2026-04-19T05:36:04.778Z
-- **Duration:** 2m3s
+- **Session:** s_1776578436745_4
+- **Status:** interrupted
+- **When:** 2026-04-19T06:01:23.484Z
+- **Duration:** 46s
 
 ## What Happened
-Now update the rotation tracker in todo.md:
+19 sessions scored q=0 due to "duplicate agent name" bug. That's a real quality drag. Let me find the evaluator code causing this.
