@@ -1,15 +1,14 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776594859930_24
+- **Session:** s_1776594913191_28
 - **Status:** done
-- **When:** 2026-04-19T10:34:39.814Z
-- **Duration:** 19s
+- **When:** 2026-04-19T10:35:30.214Z
+- **Duration:** 17s
 
 ## What Happened
-CONTINUE — The worker failed to add the actual synthesis content. The file only contains progress log metadata, not the findings/recommendations requested. The edit failed and the "rewrite" just produced the progress log template again.
+The file still just contains progress log metadata with no actual synthesis content. The worker failed again — 3 iterations and the file still doesn't have findings, recommendations, or conclusions.
 
-Next iteration should:
+CONTINUE — The worker has failed 3 times to produce the actual synthesis content. The file is still just a progress log template. This iteration MUST succeed:
 
-1. **Rewrite `workspace/projects/instruction-following.md`** using `write()` (not `edit()`) with these sections:
-   - **Key Findings**: EXP-188 is COMPLETE (baseline 0/3, treatment 3/3 — finish-guard works). Compliance hierarchy: structur
+1. **Use `write()` (NOT `edit()`)** to completely replace `workspace/projects/instruction-following.md` with a proper research synthesis doc
