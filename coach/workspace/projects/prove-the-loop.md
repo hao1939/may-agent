@@ -467,8 +467,12 @@ Each iteration:
   - **Decision — WAIT**: No data to evaluate. Resume when n≥15 post-Iter16 evals available.
   - **Next (Iter 19)**: Same as Iter 18 plan — re-query at next heartbeat.
 
-- 2026-04-19 Iteration 19 (monitoring check, 06:36Z) — **STILL WAITING: n=0 post-Iter16**:
-  - **Window**: Iter 16 deploy ~06:31Z → 06:36Z. 5 minutes. Still n=0 post-deploy coder evals.
-  - **Production 7d (unchanged)**: n=90, avg 0.726.
-  - **Decision — WAIT**: No data. Resume when n≥15 post-Iter16 evals available.
-  - **Next (Iter 20)**: Re-query at next heartbeat.
+- 2026-04-19 Iteration 20 (evidence-grounding guard, 11:34Z):
+  - **Diagnosis**: Queried evaluations DB — top failure mode is FM-3.3 (verification confabulation). Agents claim "all tests pass" or cite fabricated tool output in verification_evidence. Existing guards check verification *happened* but not that evidence *matches actual output*.
+  - **Fix**: Created `src/lib/tools/evidence-grounding-guard.ts` — new beforeToolCall hook that intercepts finish(success) and validates each verification_evidence string against actual toolResult text from session transcript. Uses substring matching with multiple strategies (direct, quoted, 5-gram). Blocks when evidence contains known fabrication patterns ("all tests pass") not found in any tool output.
+  - **Registered**: Added to composeGuards() chain in manager.ts after existing guards.
+  - **Tests**: 7/7 pass in evidence-grounding-guard.test.ts. TSC clean.
+  - **Files modified**: src/lib/tools/evidence-grounding-guard.ts (new), src/lib/tools/evidence-grounding-guard.test.ts (new), src/lib/manager.ts (import + registration).
+  - **Expected impact**: Blocks FM-3.3 confabulation at finish()-time, forcing agents to produce real verification. Should reduce needs_improvement verdicts from fabricated evidence.
+  - **Current metric**: coder.quality = 0.79. Target: 0.9+.
+  - **Next (Iter 21)**: Monitor post-deploy evals. Need n≥15 to measure impact.
