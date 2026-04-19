@@ -41,3 +41,13 @@ The code supports per-agent `cron.json` files at `agents/<name>/cron.json`. Curr
 - If a handler doesn't appear in process health, it failed to load (check for runtime errors)
 - Keep handlers under 100 lines — complex handlers fail silently
 - Test handlers with `bun -e "const m = await import('path'); m.create(mockCtx, entry)"` 
+
+## Health Metric
+
+`system.handler-health` — ratio of critical handlers completing successfully (last hour).
+- Owner: May
+- Threshold: 0.8 (alert if <80% healthy)
+- Measured: auto via metrics-snapshot handler
+- Critical handlers tracked: project-resume, watchdog, metrics-snapshot, heartbeat-context, session-sync, standing-orders-check
+
+When this metric drops, May investigates which handler failed and why.
