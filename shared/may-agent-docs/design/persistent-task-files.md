@@ -18,60 +18,23 @@ agents/<owner>/workspace/projects/<name>/
   comments.md      — external feedback (append-only)
 ```
 
-### project.md (read by worker, written by orchestrator only)
+### project.md (the spec)
 
-```markdown
-# Project: Workflow-First Culture
+**Read by:** worker, reviewer, orchestrator, anyone
+**Written by:** orchestrator (status, iteration, current state), owner agent (milestones, goal — during planning), human (goal changes, priority)
+**Append/overwrite:** overwrite by orchestrator for status fields; owner and human edit milestones and goal directly
 
-**Status**: active
-**Owner**: optimizer
-**Iteration**: 20
+### log.md (iteration history)
 
-## Goal
-Make workflows the default way agents work.
+**Read by:** worker (last 3 entries), reviewer, anyone
+**Written by:** orchestrator only (appends after each worker/reviewer phase)
+**Append/overwrite:** append only — never rewrite, only prune old entries by collapsing
 
-## Milestones
-- [x] Audit existing workflows
-- [ ] Build review-output workflow
-- [ ] Increase coverage from 31% to 80%
+### comments.md (external feedback)
 
-## Current State
-Audit complete. Top freestyle pattern identified. Next: build new workflow.
-```
-
-**Who writes:** Only the persistent-task orchestrator updates status, iteration count, current state.
-**Who reads:** Worker reads it to know the goal, milestones, current state.
-**Worker CANNOT edit this file.** Worker produces output in its own session. Orchestrator records the summary to log.md.
-
-### log.md (append-only by orchestrator)
-
-```markdown
-# Iteration Log
-
-### Iteration 20 — 2026-04-19T16:01Z
-**Worker result**: Fixed workflow-first.md. 39 lines clean.
-**Owner assessment**: CONTINUE — move to actual work, remove dead refs.
-
-### Iteration 19 — 2026-04-19T16:01Z
-**Worker result**: Created freestyle-patterns finding. Identified review-output as top candidate.
-**Owner assessment**: CONTINUE — good analysis, fix the bloated project file.
-```
-
-**Who writes:** Only the persistent-task orchestrator appends entries.
-**Who reads:** Worker sees last 3 entries in its prompt for context.
-
-### comments.md (append-only by anyone)
-
-```markdown
-# Comments
-
-- [2026-04-19 hao] Don't delete dead workflows. Archive or fix adoption.
-- [2026-04-19 hao] Optimizer must close the loop, not just measure.
-- [2026-04-19 may] Consider coach's growth-cycle as model for new workflows.
-```
-
-**Who writes:** Anyone appends. Nobody overwrites.
-**Who reads:** Worker sees comments in its prompt at the start of each iteration.
+**Read by:** worker (at start of each iteration), owner, anyone
+**Written by:** human (Hao), May, other agents — anyone with feedback
+**Append/overwrite:** append only — never delete or rewrite others' comments. Owner reads and uses judgment.
 
 ## Changes to persistent-task.ts
 
@@ -88,10 +51,10 @@ Note: directory path, not file path. The workflow reads project.md, log.md, comm
 4. Owner guidance from last review
 5. "What You Must Produce" expectations
 
-### Worker CANNOT:
-- Edit project.md (orchestrator does it)
-- Edit log.md (orchestrator does it)
-- Edit comments.md (external only)
+### Worker CANNOT edit:
+- project.md (orchestrator and owner/human manage it)
+- log.md (orchestrator manages it)
+- comments.md (external feedback, append-only by others)
 
 ### Worker CAN:
 - Read any file
