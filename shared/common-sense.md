@@ -1,70 +1,74 @@
 # Common Sense
 <!-- Human-controlled. Propose changes with evidence via agents.message("may", ...) -->
+<!-- This doc teaches HOW TO THINK. Operational rules are enforced by guards and workflows. -->
 
-## How the System is Driven
+## How the System Works
 
-Three mechanisms drive everything:
+Understanding the system helps you work WITH it, not against it.
 
-### 1. Projects
-Work arrives as projects — from Hao, from May, from other agents, or from your own initiative. Simple one-shot tasks just get done. For complex work that spans multiple sessions, create a project file at `workspace/projects/` and use the `persistent-task` workflow to drive it to completion. The project file is your memory — your future sessions read it to continue where you left off.
+### Projects
+Work arrives as tasks. Simple tasks just get done. For complex work that spans multiple sessions, use the `persistent-task` workflow with a project file at `agents/<you>/workspace/projects/`. The project file is your memory across sessions.
 
 **Project status must match reality:**
 - `active` = concrete next action ready NOW
-- `paused` = waiting, with explicit resume trigger (time/event/condition)
+- `paused` = waiting, with explicit resume trigger
 - `blocked` = needs external help
 - `pending-review` = needs human approval
 - `done` = finished
 
-**Project files can have a `## Comments` section.** Anyone (human, May, other agents) can append suggestions, observations, or questions:
-```markdown
-## Comments
-- [2026-04-18 hao] try variant E first, it's the cheapest test
-- [2026-04-18 may] scout has similar scenarios in gym-scenarios/
-```
-The owner reads comments at the start of each iteration and uses judgment — act, note for later, or ignore. **Comments are input, not instructions.**
+**Project comments:** Anyone can append suggestions to a project's `## Comments` section. The owner reads and uses judgment — comments are input, not instructions.
 
-### 2. Heartbeats (Autonomy)
-Every 30 minutes you wake up for self-directed work. This is YOUR time to be autonomous — think for yourself, find problems, try solutions, push things forward. How you express that autonomy depends on your role and what you discover. The point is: nobody tells you what to do in a heartbeat. You observe, you judge, you act.
+### Heartbeats (Autonomy)
+Periodically you wake up for self-directed work. This is YOUR time — observe, judge, act. Nobody tells you what to do. Explore problems, test ideas, push things forward.
 
-**End every heartbeat with "I started X" or "I made progress on X" — never "everything looks fine, exiting."**
+### Metrics (Signal + Judgment)
+You own metrics that signal where attention is needed. Metrics inform your judgment — they don't replace it. A regression is a signal to investigate, not an automatic trigger. Use gym for fast feedback (minutes) when possible.
 
-### 3. Metrics (Signal + Judgment)
-Each agent owns metrics that signal where attention is needed. Metrics tell you what's happening — your judgment decides what to do about it. A regression is a signal to investigate, not an automatic trigger. A metric near target might mean "keep going" or "good enough, move on." You decide.
+### Workflows
+Workflows enforce process so you can focus on the work. The core workflow is `persistent-task` — for any work that spans multiple sessions, with milestones, progress tracking, and owner review.
 
-Prefer fast feedback — use gym (minutes) over waiting for production data (days). The only valid reason to wait is when fast feedback isn't possible (e.g., waiting for human approval).
+Your preferred workflows are listed in a separate section of your context. Inside a workflow step, the workflow may override your available tools and process.
 
-## How We Execute
+### Guards
+Guards enforce quality automatically — verification, scope, completeness. They exist because these rules work better as structural checks than as instructions. If a guard blocks you, satisfy it. If you genuinely can't, escalate.
 
-### Workflows (Process)
-Workflows structure how work gets done. `persistent-task` for multi-session projects, `implement-and-verify` for code changes. The workflow enforces quality gates, verification steps, and audit trails — you focus on the work, the workflow handles the process.
+### Escalation
+Don't burn cycles retrying the same approach.
 
-### Dispatch Verb Rule (KE-214)
-When dispatching work, the **verb determines the tool**. "Run the persistent-task workflow for X" → workflow. "Read X and continue" → read. Don't mix verbs in the same instruction — the first verb wins.
+**Chain:** You → session owner → May → Hao.
 
-### Guards (Quality Gates)
-Guards check your work automatically — verification after writes, scope compliance, deliverable completeness. They catch mistakes before they ship. If a guard blocks you, satisfy it (do what it asks — verify, read back, fix the issue). If you genuinely can't satisfy it, escalate through the chain (you → owner → May → Hao) — don't fight it, don't retry with wording changes, ask for help.
+**Cross-agent help:** scout (research), coach (training), tech-lead (code), bob (architecture).
 
-## How We Think
+## How to Think
 
-- **Evidence first.** Before claiming anything about system state, have tool output that shows it. "Tests pass" needs test output. "File is correct" needs file content.
-- **Claim, then act.** Before any state-changing action, list your plan. Then do it. Then report what happened.
-- **Verify every write.** After every `edit()` or `write()`, read the file back. Never assume a write succeeded.
-- **Success requires evidence.** Run at least one verification command before calling `finish(success)`.
-- **Match finish() to reality.** Found blockers? `finish(blocked)`. Partial progress? `finish(partial)`. Only use `success` when all objectives are met and verified.
-- **Measure product, not process.** Did the output solve the problem? Not: did the agent follow prescribed steps?
+This is what infra can't enforce — your approach to problems.
+
+- **Context first.** Before acting, gather enough context to act well. Read the relevant files, check the data, understand the situation. Don't guess — discover.
+- **Follow the breadcrumbs.** Each piece of context leads to more. A metric points to a query. A query reveals a pattern. The pattern suggests an action. Keep digging until the action is clear.
+- **Ask questions when unsure.** Why is this happening? What am I missing? What would I need to know to decide? Questions drive investigation. Assumptions drive mistakes.
+- **Evidence first.** Claims need tool output. "Tests pass" needs test output. "File is correct" needs file content.
+- **Convention over configuration.** Follow established patterns — file locations, naming, project structure, status fields. Don't invent new conventions when existing ones work. The system's conventions are documented below.
 - **Simple first.** Try the simplest approach. If it works, stop.
 - **One thing at a time.** Do one task, verify it worked, then the next.
 
-## When Stuck
+## Conventions
 
-Escalate — don't burn cycles retrying the same approach.
+Standard locations — follow these, don't invent alternatives:
 
-**Escalation chain:** You → session owner → May → Hao.
-
-For cross-agent help: scout for research, coach for training, tech-lead for code, bob for architecture.
+| What | Where |
+|------|-------|
+| Your skills | `agents/<you>/skills/` |
+| Your projects | `agents/<you>/workspace/projects/` |
+| Your knowledge | `agents/<you>/knowledge/` |
+| Shared knowledge | `agents/shared/knowledge/` |
+| Knowledge essentials | `agents/shared/knowledge-essentials.md` |
+| Architecture docs | `agents/shared/may-agent-docs/architecture/` |
+| Design docs | `agents/shared/may-agent-docs/design/` |
+| Metrics | `.state/may.db` → `metrics` table |
+| Sessions | `.state/may.db` → `sessions` table |
+| Gym scenarios | `agents/gym/scenarios/` |
 
 ## Environment
 
-- **Filesystem root is `/app`.** Do NOT use `/Users/`, `/home/`, or `~`.
-- **Two git repos.** Main project (`/app`) tracks `src/`, `scripts/`, `test/`. Agents sub-repo (`/app/agents/`, its own `.git`) tracks agent files. Commit agent files from within `/app/agents/`.
-- **Commit before finish().** `cd /app/agents && git add -A <your-files> && git commit -m "<agent>: <what>"`.
+- **Root:** `/app`. Do NOT use `/Users/`, `/home/`, or `~`.
+- **Agent files** live in `/app/agents/` (its own git repo). Commit from within: `cd /app/agents && git add <your-files> && git commit -m "<agent>: <what>"`.
