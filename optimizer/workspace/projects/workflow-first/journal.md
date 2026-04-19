@@ -165,3 +165,17 @@ Changes not staged for commit:
 
 **Agent response:**
 The freestyle-patterns file was committed in an earlier commit. Everything is committed.
+**Reviewer**: CONTINUE — This is excellent work. The analysis is thorough, data-driven, and includes a critical insight about the coverage metric. Milestone 2 is complete.
+
+**Guidance for iteration 3 — Complete milestone 3 (Build one new workflow for the top freestyle pattern):**
+
+Build the `task-tree-eval` workflow (Pattern 2). This is the highest-value target with ~2,200 structured, repetitive sessions.
+
+1. Look at 3-5 existing evaluator freestyle sessions in `.state/may.db` to understand the exact input/output shape (task field, outcome field, what gets produced).
+2. Study an existing workflow TS file (e.g., `agents/workflows/research.ts` or similar) to understand the workflow definition format.
+3. Create `agents/workflows/task-tree-eval.ts` implementing the workflow with appropriate steps.
+4. Register it in whatever workflow index/registry exists.
+5. Write a brief note in `agents/optimizer/workspace/task-tree-eval-workflow-notes.md` explaining the design decisions.
+
+**Output**: The new workflow file + registration + design notes. Do NOT modify heartbeats yet (that's milestone 4).
+
