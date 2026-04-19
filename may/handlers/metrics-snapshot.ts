@@ -24,7 +24,7 @@ import type { SqliteDb } from "../../../src/lib/db.js";
 
 const MS_7D = 7 * 24 * 60 * 60 * 1000;
 const MS_48H = 48 * 60 * 60 * 1000;
-const CMD_TIMEOUT_MS = 10_000;
+const CMD_TIMEOUT_MS = 30_000;
 const DEFAULT_SENSITIVITY = 0.15; // 15%
 
 // ── Types ─────────────────────────────────────────────────────────────
