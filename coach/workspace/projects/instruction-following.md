@@ -391,3 +391,20 @@ Next iteration MUST follow these exact steps IN ORDER:
 
 **Do NOT run git commands.** Do NOT say "Now commit." The ONLY success criterion is: did you call `edit()` on the project file? If you don't call `edit()`, the iteration is a failure.
 
+
+### Iteration 5 — 2026-04-19T06:35:48.100Z
+**Worker task**: Iteration 5 — work toward goal
+**Worker result**: **Status:** done (53s)
+
+**Files read (not modified):**
+- agents/coach/workspace/projects/prove-the-loop.md
+
+**Errors encountered:**
+- [bash] Post-Iter16 production: {"n":0,"avg_q":null}
+Production 7d: {"n":90,"avg_q":0.726}
+12 | const now = Date.now();
+13 | const base = db.query('SELECT COUNT(*) as n, ROUND(AVG(e.quality),3) as avg_q FROM evaluations e JOIN sessions s ON e.sessionId=s.sessionId WHERE s.agent="coder" AND s.startedAt > ? A
+
+**Agent response:**
+File is clean. There's already an Iter 18 entry from the previous worker. No new data (n=0 post-deploy). The project file is up to date.
+**Files touched**: (see worker session)
