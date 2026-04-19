@@ -36,6 +36,7 @@ export interface TrackRequestOpts {
   context?: string;
   expectations?: string;
   notify?: string[];
+  source_finding?: string;
 }
 
 interface UpdateRequestOpts {
@@ -70,6 +71,7 @@ export interface RequestRecord {
   context: string | null;
   expectations: string | null;
   notify: string | null;
+  source_finding: string | null;
 }
 
 // ── Schema ─────────────────────────────────────────────────────────────
@@ -96,13 +98,15 @@ CREATE TABLE IF NOT EXISTS requests (
   artifact        TEXT,
   context         TEXT,
   expectations    TEXT,
-  notify          TEXT
+  notify          TEXT,
+  source_finding  TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_status    ON requests(status);
 CREATE INDEX IF NOT EXISTS idx_to_agent  ON requests(toAgent);
 CREATE INDEX IF NOT EXISTS idx_parent    ON requests(parentRequestId);
 CREATE INDEX IF NOT EXISTS idx_created   ON requests(createdAt);
+CREATE INDEX IF NOT EXISTS idx_source_finding ON requests(source_finding);
 
 -- Sessions: queryable index of per-session meta.json files.
 -- Source of truth is meta.json on disk; this table is for SQL queries and joins.
@@ -377,6 +381,11 @@ export function getDb(persistDir: string): SqliteDb {
   } catch {
     /* already exists */
   }
+  try {
+    db.exec("ALTER TABLE requests ADD COLUMN source_finding TEXT");
+  } catch {
+    /* already exists */
+  }
   // Indexes on migrated columns (must come after ALTER TABLE)
   try {
     db.exec("CREATE INDEX IF NOT EXISTS idx_gym_runs_batch ON gym_runs(batch_id)");
@@ -418,8 +427,8 @@ export function trackRequest(persistDir: string, opts: TrackRequestOpts): string
     `INSERT INTO requests (
       requestId, parentRequestId, fromEntity, toAgent, method, task,
       status, sessionId, source, createdAt, updatedAt,
-      artifact, context, expectations, notify
-    ) VALUES (?, ?, ?, ?, ?, ?, 'CREATED', ?, ?, ?, ?, ?, ?, ?, ?)`,
+      artifact, context, expectations, notify, source_finding
+    ) VALUES (?, ?, ?, ?, ?, ?, 'CREATED', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       requestId,
       opts.parentRequestId ?? null,
@@ -435,6 +444,7 @@ export function trackRequest(persistDir: string, opts: TrackRequestOpts): string
       opts.context ?? null,
       opts.expectations ?? null,
       opts.notify ? JSON.stringify(opts.notify) : null,
+      opts.source_finding ?? null,
     ],
   );
 
