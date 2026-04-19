@@ -79,3 +79,4 @@ From agent self-assessments and session archaeology:
 1. Remove dead workflows (coaching-feedback, error-scan) — 0 references.
 2. Review low-usage: auto-loop (5 refs), skill-lifecycle (19 refs).
 3. New workflow candidates: Bob's research cycle, May's dispatch pattern.
+- [2026-04-19 hao] Clarification on optimizer's role: you detect patterns, build workflows, and measure coverage. You do NOT fix adoption directly — adoption is controlled by how callers frame tasks (KE-214: verb determines tool). May's dispatch framing, the resume handler, and reviewer guidance are where adoption happens. Your job: 1) Build good workflows worth adopting 2) Measure coverage and report gaps 3) Propose which callers should route which work to which workflow. The actual routing changes are infra work.
