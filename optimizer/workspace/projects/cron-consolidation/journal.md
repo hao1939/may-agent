@@ -70,6 +70,26 @@
 
 **Total reduction: 29 → 20 JS entries (9 fewer)**
 
+## 2026-04-20 — Milestones 3-4: Build & Deploy Combined Handlers
+
+Built 6 combined handler files:
+- `agents/may/handlers/fast-sync.ts` — session-sync + evaluation-sync (5min)
+- `agents/may/handlers/compliance-check.ts` — convention-check + standing-orders-check (30min)
+- `agents/may/handlers/system-maintenance.ts` — zombie-cleanup + task-watchdog + metrics-snapshot (60min)
+- `agents/may/handlers/daily-reports.ts` — daily-brief + daily-digest + analyze-failures + coaching-report (24h)
+- `agents/may/handlers/daily-cleanup.ts` — workspace-compaction + memory-trimmer + lessons-graduation (24h)
+- `agents/may/handlers/periodic-maintenance.ts` — agents-auto-commit + audit-requests (2h)
+
+Each combined handler:
+- Imports sub-handlers via `create()` function
+- Runs them sequentially with try/catch isolation (one failure doesn't block others)
+- Logs start/end and any errors
+
+Updated `agents/may/cron.json`:
+- Disabled 16 individual entries (marked with `_replaced_by` field)
+- Added 6 new combined entries (enabled)
+- Net change: 47 → 53 entries total (16 disabled + 6 new active = same work, fewer active entries)
+
 ### Handlers that should stay independent
 - active-nudge (5min) — intervention, timing-critical
 - project-resume (5min) — dispatches LLM work
