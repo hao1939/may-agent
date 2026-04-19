@@ -1,12 +1,14 @@
-# Stuck Requests ⚠️ — False Alarm Evidence
+# Stuck Requests Metric — False Alarm Note
 
 **Date**: 2026-04-17 ~09:30 UTC
-**Metric**: system.stuck-requests = 0, target = 0, flagged ⚠️ BELOW THRESHOLD
+**Metric**: system.stuck-requests
+**Value**: 0, **Target**: 0, **Status**: ⚠️ BELOW THRESHOLD
 
-## Evidence
+## Evidence This Is a False Alarm
 
-This is a threshold inversion bug, not a real problem. Value 0 with target 0 means zero stuck requests — the healthy state. The metric system incorrectly flags this because it treats "lower-is-better" metrics with inverted comparison logic.
+The metric value IS the target (0 stuck requests = 0 target = healthy). The threshold comparison logic has an inversion bug where "value == target" triggers ⚠️ instead of ✅.
 
-**Already dispatched**: Threshold inversion fix → tech-lead (s_1776609644674_10), visible on dispatch board under "Latest Cycle Summary (09:00 Apr 17)". Tech-lead session history confirms work on this: "The 'stuck-requests' metric (value=0, target=0) is…" (59 ops).
+This was already identified and dispatched to tech-lead (s_1776609644674_10) in the previous cycle. The fix for threshold inversion was completed (req:7eae2c5e) but apparently the stuck-requests specific case persists or the fix hasn't propagated.
 
-**Action**: No further dispatch needed. Will clear once tech-lead's fix lands.
+## Action
+No new dispatch needed — tech-lead already working this. Will clear once the comparison logic fix is deployed and process restarts.

@@ -13,23 +13,27 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-19T15:10)
+# Your Context (auto-generated 2026-04-19T15:40)
 
-**System:** 10 sessions/6h, 0% error rate
-**You:** 1 sessions, 21KB total (21KB avg)
+**System:** 14 sessions/6h, 0% error rate
+**You:** 4 sessions, 91KB total (23KB avg)
 
 **Top spenders:**
+- may: 2s, 144KB
+- optimizer: 4s, 91KB ← you
 - tech-lead: 2s, 52KB
-- coach: 2s, 49KB
-- scout: 2s, 35KB
-- bob: 1s, 27KB
-- optimizer: 1s, 21KB ← you
+- coach: 2s, 50KB
+- scout: 2s, 39KB
 
 **Your active error patterns:**
+- FM-3.3: 6x
 - FM-2.6: 1x
 - FM-1.3: 1x
 
 **📊 Your Metrics:**
+- Workflow coverage — % multi-step work using workflows: **0.308** % → 0.8 %
+  → Quick check: bun -e "import{Database}from'bun:sqlite';const db=new Database('.state/may.db',{readonly:true});console.log(JSON.stringify(db.prepare('SELECT ROUND(100.0 * SUM(CASE WHEN workflowRunId IS NOT NULL THEN 1 ELSE 0 END) / NULLIF(COUNT(*),0), 1) FROM sessions WHERE startedAt > (strftime("%%s","now")*1000 - 604800000) AND opCount > 3 AND kind != "chat"').all()))"
 - Quality preserved: **0.8974506828528073** ratio → 0.9 ratio
 - Tool adoption: heuristic evaluator (higher is better): **0.9891245241979336** ratio → 0.7 ratio
+- Workflow effectiveness — % workflow runs completing successfully: **0.964** % → 0.9 %
 - Waste reduction: **unmeasured** ratio → 0.3 ratio
