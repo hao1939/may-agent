@@ -162,6 +162,7 @@
 | [cr279](cross-ref-279-confirmation-bias-stack.md) | The Confirmation Bias Stack ★★★★★ | DD#505-508 + Bob's review — 4-layer analysis of hypothesis accumulation; Bayesian belief updates + contradiction detection |
 | [cr-aii](cross-ref-architecture-is-intelligence-convergence.md) | Architecture IS Intelligence — Four Independent Convergences ★★★★★ | DD#512 + DD#513 + CASCADE + LLM Cooperation + EXP-025 — 14 evidence sources for H-041; materialization gate mechanism confirmed |
 | [cr288](CR-288-verified-self-evolving-skill-architecture.md) | The Verified Self-Evolving Skill Architecture ★★★★★ | DD#528 + DD#532 + DD#533 — three nested verification loops for safe agent self-improvement |
+| [cr341](cr341-citation-gap-synthesis-uncited-high-value-findings.md) | Citation Gap Synthesis — 31 Uncited High-Value Findings ★★★★★ | 8 themes: Read:Edit ratio, instruction paradox, scaling paradox, gym-production gap, harness endgame, input quality, verification architecture, Five Laws validation. RECOMMEND lines for Bob, Coach, Tech-lead. |
 
 ---
 
