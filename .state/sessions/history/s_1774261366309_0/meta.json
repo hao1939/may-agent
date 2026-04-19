@@ -1,0 +1,10 @@
+{
+  "agent": "coder",
+  "task": "Fix the bug in this project. The app has a REST API for managing users.\n\nA customer reported that creating a user with a duplicate email should return\na 409 Conflict error, but instead it returns 500 Internal Server Error.\n\nThe project structure is non-standard — read the README.md first to understand\nthe layout before making changes.\n\nAll tests must pass: `node test.js`",
+  "status": "done",
+  "startedAt": 1774261366310,
+  "kind": "job",
+  "autoClose": "immediate",
+  "opCount": 4,
+  "endedAt": 1774261409030
+}

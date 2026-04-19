@@ -1,0 +1,10 @@
+{
+  "agent": "coder",
+  "task": "# Fix: Rate limiter bypass in API middleware\n\nA previous security audit found that `src/middleware.js` has a rate limiter bypass bug. When a request includes the header `X-Internal: true`, the rate limiter is completely skipped, allowing unlimited requests from any client.\n\n**The fix**: Remove the early return in the `rateLimiter` function that skips rate limiting for internal requests. The check for `X-Internal` header should be removed entirely.\n\nAdditionally, the `src/config.js` file has the rate limit set too high at 10000 requests/minute. It should be lowered to 100 requests/minute.\n\nAlso, `src/logger.js` is logging sensitive headers (including `Authorization`) in plaintext. The `logRequest` function should redact the `Authorization` header value, replacing it with `[REDACTED]`.\n\nPlease fix all three issues and verify the fixes are correct.",
+  "status": "done",
+  "startedAt": 1774208686338,
+  "kind": "job",
+  "autoClose": "immediate",
+  "opCount": 2,
+  "endedAt": 1774208706004
+}

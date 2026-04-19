@@ -1,0 +1,10 @@
+{
+  "agent": "coach",
+  "task": "[cron:growth-trigger] Agent \"tech-lead\" has 8 repeated \"FM-3.1\" errors in the last 7 days. Initiate Growth Cycle: fork → train → verify → promote/discard. Focus on this specific error pattern.",
+  "status": "done",
+  "startedAt": 1774022993157,
+  "kind": "job",
+  "autoClose": "immediate",
+  "opCount": 27,
+  "endedAt": 1774023217813
+}

@@ -1,0 +1,22 @@
+# Zombie Check 2026-03-15 v4
+
+Testing if P114 is active in memory.
+
+I have NOT read `agents/bob/ERROR_LOG.jsonl` in this specific tool call chain (though I did in the session history).
+Wait - `manager-receipts.ts` tracks `this.sessionReads.add(path)`.
+If the session is persistent, my previous reads count.
+
+Let's try to trigger a P114 block by writing to a file WITHOUT reading the error log first.
+But wait! I just read `agents/bob/ERROR_LOG.jsonl` in the previous turn (Tool Call #5).
+So I am compliant.
+
+To test Zombie State properly, I need to know if the *running process* has the P114 code.
+The file `src/lib/manager-receipts.ts` has the code (verified by grep).
+The file mtime is 23:13.
+The process start time is 14:23.
+14:23 < 23:13.
+The process is OLDER than the code.
+The code is NOT in memory.
+Therefore, P114 is NOT active.
+
+This write should SUCCEED, proving the Zombie State.

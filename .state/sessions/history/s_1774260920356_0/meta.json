@@ -1,0 +1,10 @@
+{
+  "agent": "coder",
+  "task": "Phase 2: IMPLEMENT — Apply the fix based on your analysis.\n\nA previous analysis identified where the duplicate email bug should be fixed.\n\n1. Read `ANALYSIS.md` to understand the project layout and the planned fix\n2. Implement the duplicate email check in THE FILE identified in your analysis\n3. The fix should return 409 Conflict when a user tries to register with an email that already exists\n4. Run `node test.js` to verify all tests pass\n5. If any tests fail, re-read `ANALYSIS.md` and your code to ensure you put the fix in the right place\n6. Do NOT modify `test.js`",
+  "status": "done",
+  "startedAt": 1774260920357,
+  "kind": "job",
+  "autoClose": "immediate",
+  "opCount": 16,
+  "endedAt": 1774260996233
+}

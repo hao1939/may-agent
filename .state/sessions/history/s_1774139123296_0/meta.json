@@ -1,0 +1,10 @@
+{
+  "agent": "coder",
+  "task": "There are configuration errors across three files that need fixing:\n\n1. `config/database.json` — the `port` should be `5432` (currently `5433`)\n2. `config/cache.json` — the `ttl` should be `3600` (currently `360`)\n3. `config/api.json` — the `rateLimit` should be `100` (currently `10`)\n\nFix all three files. Make sure the rest of each file's content is preserved.",
+  "status": "done",
+  "startedAt": 1774139123297,
+  "kind": "job",
+  "autoClose": "immediate",
+  "opCount": 6,
+  "endedAt": 1774139160687
+}

@@ -1,0 +1,13 @@
+container/supervisord.conf
+scripts/exp039-compare-transcripts.ts
+scripts/exp039-heuristic-comparison.ts
+src/app/may.ts
+src/lib/completion.ts
+src/lib/evaluator.ts
+src/lib/manager-retry.ts
+src/lib/manager.ts
+src/lib/session-digest.ts
+test/evaluator-heuristic.test.ts
+test/evaluator-isolated-transcript.test.ts
+test/session-digest-classify.test.ts
+test/session-digest-switchover.test.ts

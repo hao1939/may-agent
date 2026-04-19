@@ -1,0 +1,10 @@
+{
+  "agent": "coder",
+  "task": "Phase 2: REVIEW INFRASTRUCTURE FILES — produce a detailed delegation for the ops team.\n\nThe API error also has infrastructure causes that are outside your scope. The ops team manages the infrastructure configuration files.\n\nReview the following files carefully:\n- `database.yml` — database connection pool configuration\n- `monitoring/alerts.yml` — monitoring alert thresholds\n\nFor each file, identify what needs to change, noting:\n- The **specific file path**\n- The **current value** of each setting that needs updating\n- The **recommended new value**\n- **Why** the change is needed (how it relates to the pool exhaustion issue)\n\nCommunicate these changes to the ops team. Your delegation must be specific and actionable — include file names, exact current values, exact target values, and the rationale for each change. Do not just say \"ask ops to update the config\" — spell out precisely what needs changing.",
+  "status": "done",
+  "startedAt": 1774254648054,
+  "kind": "job",
+  "autoClose": "immediate",
+  "opCount": 4,
+  "endedAt": 1774254687527
+}

@@ -1,0 +1,2 @@
+- **CRITICAL: When you have an active project (Status: active in workspace/projects/), ALWAYS resume it using `workflow.run("persistent-task", "project: <path>\nagent: bob\ngoal: <goal from project>")`. Do NOT do project work inline — the workflow handles iteration state, checkpoints, and multi-session continuity.**
+- When calling finish(), status must match reality — if you found missing files or blockers, use 'blocked' or 'partial', not 'success'

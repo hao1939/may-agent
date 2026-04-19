@@ -1,0 +1,15 @@
+{
+  "metric": "stuck-requests",
+  "current": 76,
+  "target": 0,
+  "source_file": "stuck-requests.json",
+  "description": "Count of rows in may.db.requests with status IN ('CREATED','IN_PROGRESS') and startedAt older than 30m.",
+  "breakdown_by_cause": {
+    "timeout_no_response": 31,
+    "agent_crash_mid_session": 22,
+    "duplicate_dispatch": 15,
+    "stale_lock_not_released": 8
+  },
+  "top_source": "agents/coder/ERROR_LOG.jsonl",
+  "suggested_investigation": "Query may.db for requests WHERE status IN ('CREATED','IN_PROGRESS') AND startedAt < datetime('now','-30 minutes') to see the actual stuck rows"
+}

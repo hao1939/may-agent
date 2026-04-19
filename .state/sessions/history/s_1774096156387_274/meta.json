@@ -1,0 +1,13 @@
+{
+  "agent": "coach",
+  "task": "Diagnose an error pattern and select an improvement method.\n\n## Error Pattern\nTARGET AGENT: tech-lead (NOT optimizer, NOT coder, NOT bob — ONLY tech-lead). ERROR: FM-2.4 SILENT_FAIL. SCENARIO: exit-code-misread. INSTRUCTIONS: 1) Run gym baseline with agent=tech-lead on scenario exit-code-misread. 2) If baseline FAILS, create fork of agents/tech-lead/ (copy to agents/.lab/tech-lead-fm24-fix/), add a SOUL guard in the fork's SOUL.md about interpreting empty grep/find results correctly. 3) Run patched test with the fork. 4) Promote or discard. CRITICAL: The agent to fork is agents/tech-lead/, not agents/optimizer/ or agents/coder/. The fork name must start with \"tech-lead\".\n\n## Instructions\n1. Read the error examples from the task description above. Identify the behavioral pattern.\n2. Read `agents/coach/knowledge/method-catalog.md` — understand available methods.\n3. Read `agents/coach/workspace/experiments.jsonl` (if it exists) — check if this pattern was already tested.\n4. Choose ONE method from the catalog that best fits this error pattern.\n   - If the catalog has evidence for this pattern → use the proven method.\n   - If no evidence → pick the method you think fits best (you'll test it).\n5. Identify which agent needs the fix.\n6. Identify which gym scenarios can test this fix (check `agents/gym/scenarios/` with `ls`).\n7. Report:\n   - Error pattern (FM code + description)\n   - Target agent\n   - Selected method (from catalog)\n   - Why this method (reasoning)\n   - Gym scenarios to test against\n   - What specifically you'll change",
+  "status": "done",
+  "startedAt": 1774096156387,
+  "parentSessionId": "s_1774095941197_273",
+  "workflowRunId": "wr_1774096156386_ufv1",
+  "stepLabel": "coach",
+  "kind": "call",
+  "autoClose": "immediate",
+  "opCount": 16,
+  "endedAt": 1774096250926
+}

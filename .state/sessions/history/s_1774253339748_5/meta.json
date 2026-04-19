@@ -1,0 +1,11 @@
+{
+  "agent": "coach",
+  "task": "[cron:research-intake] Check for NEW files in agents/scout/workspace/ and agents/amy-kimi/knowledge/ since your last check. Only read files modified in the last 24h. Extract actionable coaching methods (not academic summaries). Max 5 files. Write to workspace/research-notes.md.",
+  "status": "interrupted",
+  "startedAt": 1774253339749,
+  "kind": "job",
+  "autoClose": "immediate",
+  "opCount": 8,
+  "endedAt": 1774253377688,
+  "error": "Request was aborted."
+}

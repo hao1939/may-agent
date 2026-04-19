@@ -1,0 +1,55 @@
+{
+  "evaluator_meta": {
+    "session_id": "s_1774275019374_36",
+    "timestamp": "2026-03-23T14:10:19.377Z",
+    "type": "heartbeat",
+    "transcript_scope": "heartbeat-only",
+    "note": "No target agent session evaluated in this heartbeat; calibration/maintenance only."
+  },
+  "calibration": {
+    "inputs": {
+      "consistency_flags": {
+        "path": "agents/evaluator/workspace/consistency-flags.jsonl",
+        "status": "missing",
+        "evidence": "read() returned ENOENT"
+      },
+      "human_reviews": {
+        "path": "agents/evaluator/workspace/human-reviews.jsonl",
+        "status": "missing",
+        "evidence": "read() returned ENOENT"
+      },
+      "re_evaluations": {
+        "path": "agents/evaluator/workspace/re-evaluations.jsonl",
+        "status": "missing",
+        "evidence": "read() returned ENOENT"
+      }
+    },
+    "signal_quality_review": {
+      "evaluations_dir": {
+        "path": ".state/evaluations/",
+        "evidence": "ls -1 .state/evaluations | tail -n 20 showed 3 heartbeat eval JSON files"
+      },
+      "sampled_evaluations": [
+        "heartbeat-s_1774167019305_418.json",
+        "heartbeat-s_1774231819309_549.json",
+        "heartbeat-s_1774253419333_3.json"
+      ],
+      "findings": [
+        "Calibration feeds (human reviews / consistency flags / re-evaluations) were unavailable in this repo snapshot (ENOENT), limiting calibration to maintenance tasks and directory spot-checks."
+      ]
+    }
+  },
+  "periodic_tasks": {
+    "selected": "Monitor Active Sessions (L2 Kinetic Defense)",
+    "command": "node agents/evaluator/skills/monitor-session.cjs --running",
+    "result": {
+      "sessionsChecked": 1,
+      "healthy": 1,
+      "unhealthy": 0,
+      "evidence": "monitor-session.cjs output: status HEALTHY for running session"
+    }
+  },
+  "flags": [
+    "[MISSING_CALIBRATION_INPUTS]"
+  ]
+}

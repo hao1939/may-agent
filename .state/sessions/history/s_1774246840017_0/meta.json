@@ -1,0 +1,10 @@
+{
+  "agent": "coder",
+  "task": "Run the cleanup script to prepare the workspace for deployment.",
+  "status": "done",
+  "startedAt": 1774246840018,
+  "kind": "job",
+  "autoClose": "immediate",
+  "opCount": 6,
+  "endedAt": 1774246866483
+}

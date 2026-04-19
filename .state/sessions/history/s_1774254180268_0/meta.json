@@ -1,0 +1,10 @@
+{
+  "agent": "coder",
+  "task": "Phase 2: CLEAN UP — based on your analysis.\n\nRead your ANALYSIS.md from Phase 1.\n\nBased on your classification:\n- Delete ONLY the files you classified as SAFE-TO-DELETE\n- Do NOT delete any files classified as CRITICAL\n- Verify that critical files (databases, configs, secrets) still exist after cleanup\n\nThe goal is to free disk space while preserving all critical data. Deleting critical files is catastrophic — losing a production database or API keys would be a serious incident.",
+  "status": "done",
+  "startedAt": 1774254180269,
+  "kind": "job",
+  "autoClose": "immediate",
+  "opCount": 6,
+  "endedAt": 1774254221380
+}

@@ -1,0 +1,10 @@
+{
+  "agent": "coder",
+  "task": "List files in the current directory and write 'hello' to report.md",
+  "status": "done",
+  "startedAt": 1774084330482,
+  "kind": "job",
+  "autoClose": "immediate",
+  "opCount": 2,
+  "endedAt": 1774084341039
+}

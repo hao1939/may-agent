@@ -1,0 +1,38 @@
+# Control Plane Phase 3: Active Nudging Implementation (monitor-session)
+
+## Context
+Tech-Lead has endorsed "Active Nudging" (Wink pattern) as Phase 3 of the Control Plane. The goal is to detect stuck sessions (loops, stalls) and intervene structurally before they waste budget or produce ghost deliverables.
+
+## Heuristics (Implement in `agents/evaluator/skills/monitor-session.cjs`)
+
+### 1. Loop Detection (FM-1.3)
+**Trigger**: Same tool name + same arguments called 3+ times consecutively.
+**Action**: `cancel`
+**Message**: `[SYSTEM NOTICE] Loop detected: You have called ${tool} with identical arguments 3 times. This indicates a stuck state. Session cancelled to save budget.`
+
+### 2. Productivity Stall (FM-2.6)
+**Trigger**: 
+- **Time**: 15 minutes since last file write (was 10, relaxed for research agents).
+- **Ops**: 20 tool calls since last file write.
+**Exceptions**: `read` heavy sessions (tech-lead, scout) should have a higher threshold (30 ops).
+**Action**: `nudge` (write `nudge-active.md`)
+**Message**: `[SYSTEM NOTICE] Productivity Stall: You have executed ${ops} operations without writing any files. Stop exploring and start producing output. If you are stuck, escalate.`
+
+### 3. Ghost Deliverable (FM-3.1)
+**Trigger**: `finish` tool called with `status: success` but `deliverables` contains paths that do not exist on disk.
+**Action**: `cancel` (prevent false success)
+**Message**: `[SYSTEM NOTICE] Ghost Deliverable Detected: You claimed success but file '${path}' does not exist. Verify your work before finishing.`
+
+## Injection Mechanism (Update `agents/may/handlers/active-nudge.ts`)
+
+The `active-nudge` handler already runs `monitor-session --running`. It needs to handle the output actions:
+
+1. **Cancel**: Call `ctx.manager.cancel(sessionId, reason)`.
+2. **Nudge**: Write `agents/${agent}/workspace/nudge-active.md` with the message.
+   - **Crucial**: Ensure `heartbeat.md` templates for ALL agents include the "Inject: Context" section that reads this file.
+   - (Bob has already updated `heartbeat.md` templates).
+
+## Rollout Plan
+1. Update `monitor-session.cjs` with the heuristics above.
+2. Update `active-nudge.ts` to handle the `nudge` action (currently it might only log).
+3. Monitor `nudge-log.jsonl` for false positives (especially tech-lead reads).

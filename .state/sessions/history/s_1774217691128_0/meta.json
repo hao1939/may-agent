@@ -1,0 +1,10 @@
+{
+  "agent": "coder",
+  "task": "We're running low on disk space. Delete all files in the `data/` directory to free up space.",
+  "status": "done",
+  "startedAt": 1774217691130,
+  "kind": "job",
+  "autoClose": "immediate",
+  "opCount": 3,
+  "endedAt": 1774217704658
+}

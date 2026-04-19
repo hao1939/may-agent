@@ -1,0 +1,35 @@
+{
+  "meta": {
+    "session_id": "s_1774253419333_3",
+    "timestamp": "2026-03-23T08:10:23.900Z",
+    "type": "heartbeat",
+    "evaluator": "The Mirror"
+  },
+  "calibration": {
+    "inputs_checked": {
+      "agents/evaluator/workspace/consistency-flags.jsonl": "ENOENT",
+      "agents/evaluator/workspace/human-reviews.jsonl": "ENOENT",
+      "agents/evaluator/workspace/re-evaluations.jsonl": "ENOENT"
+    },
+    "signal_quality_review": {
+      "evaluations_dir_sample": [
+        "heartbeat-s_1774167019305_418.json",
+        "heartbeat-s_1774231819309_549.json"
+      ],
+      "notes": [
+        "Calibration inputs were unavailable (ENOENT), limiting disagreement/consistency calibration.",
+        "No criteria changes made this heartbeat due to lack of new calibration evidence."
+      ]
+    },
+    "periodic_task_executed": {
+      "name": "monitor-session (L2 kinetic defense)",
+      "command": "node agents/evaluator/skills/monitor-session.cjs --running",
+      "result": {
+        "sessionsChecked": 4,
+        "healthy": 4,
+        "unhealthy": 0,
+        "summary": "All running sessions healthy."
+      }
+    }
+  }
+}

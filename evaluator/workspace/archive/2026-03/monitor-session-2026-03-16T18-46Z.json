@@ -1,0 +1,189 @@
+{
+  "timestamp": "2026-03-16T18:46:31.857Z",
+  "sessionsChecked": 10,
+  "healthy": 5,
+  "unhealthy": 5,
+  "skipped": 0,
+  "results": [
+    {
+      "sessionId": "s_1773455011479_2167",
+      "agent": "tech-lead",
+      "task": "URGENT: P53 Zombie Code is STILL ACTIVE. I have confirmed for the 4th time that `may.ts` (pid 70) has been running since Mar 13th, meaning it does NOT have the P53 patch from Mar 14th. I successfully ",
+      "status": "STALL",
+      "confidence": 0.9,
+      "evidence": "Last activity was 3860 min ago (threshold: 10 min)",
+      "details": {
+        "minutesIdle": 3860,
+        "totalEntries": 40
+      },
+      "recommendedAction": "kill"
+    },
+    {
+      "sessionId": "s_1773669054024_119",
+      "agent": "scout-c40",
+      "task": "[heartbeat] You are Scout. Your files are in agents/scout/. Read agents/scout/heartbeat.md and work through each section top to bottom.",
+      "status": "STALL",
+      "confidence": 0.9,
+      "evidence": "Last activity was 295 min ago (threshold: 10 min)",
+      "details": {
+        "minutesIdle": 295,
+        "totalEntries": 16
+      },
+      "recommendedAction": "kill"
+    },
+    {
+      "sessionId": "s_1773685962735_241",
+      "agent": "coach",
+      "task": "[heartbeat] You are Coach. Your files are in agents/coach/. Read agents/coach/heartbeat.md and work through each section top to bottom.",
+      "status": "STALL",
+      "confidence": 0.7,
+      "evidence": "Last activity was 11 min ago (threshold: 10 min)",
+      "details": {
+        "minutesIdle": 11,
+        "totalEntries": 40
+      },
+      "recommendedAction": "investigate"
+    },
+    {
+      "sessionId": "s_1773686164272_254",
+      "agent": "optimizer-save",
+      "task": "Investigate why many recent agent sessions end with \"empty response (0 output tokens)\" errors. Check meta.json files in .state/sessions/history/ for sessions with error status, look at the session.jso",
+      "status": "HEALTHY",
+      "confidence": 1,
+      "evidence": "Session is active. 22 tool calls in window, 3 errors. Last activity 42s ago.",
+      "details": {
+        "totalToolCalls": 22,
+        "recentErrors": 3,
+        "lastActivitySecondsAgo": 42
+      },
+      "recommendedAction": "none"
+    },
+    {
+      "sessionId": "s_1773686492838_260",
+      "agent": "scout",
+      "task": "[heartbeat] You are Scout. Your files are in agents/scout/. Read agents/scout/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you researched and found.",
+      "status": "PROTOCOL_VIOLATION",
+      "confidence": 0.8,
+      "evidence": "P114 Violation: Complex task attempted without Experience Replay (grep ERROR_LOG).",
+      "details": {
+        "violations": [
+          {
+            "type": "P114",
+            "policy": "Experience Replay",
+            "evidence": "P114 Violation: Complex task attempted without Experience Replay (grep ERROR_LOG).",
+            "position": 38,
+            "path": "agents/scout/workspace/dd349-less-is-more-representational-parsimony-zero-comm-pursuit.md"
+          }
+        ],
+        "totalToolCalls": 24
+      },
+      "recommendedAction": "warn"
+    },
+    {
+      "sessionId": "s_1773686577966_262",
+      "agent": "optimizer",
+      "task": "[heartbeat] You are Optimizer. Your files are in agents/optimizer/. Read agents/optimizer/heartbeat.md and work through each section top to bottom.",
+      "status": "DRIFT",
+      "confidence": 0.6,
+      "evidence": "Very low relevance to task in last 10 tool calls. Path relevance: 0%, Concept relevance: 0%. Task: \"[heartbeat] You are Optimizer. Your files are in agents/optimizer/. Read agents/optimizer/heartbeat.\"",
+      "details": {
+        "totalToolCalls": 21
+      },
+      "recommendedAction": "warn"
+    },
+    {
+      "sessionId": "s_1773686759036_270",
+      "agent": "may",
+      "task": "[heartbeat] Read agents/may/heartbeat.md and work through it. You have full authority to act — dispatch approved work, fix issues, don't wait for permission.",
+      "status": "HEALTHY",
+      "confidence": 1,
+      "evidence": "Session is active. 5 tool calls in window, 1 errors. Last activity 6s ago.",
+      "details": {
+        "totalToolCalls": 5,
+        "recentErrors": 1,
+        "lastActivitySecondsAgo": 6
+      },
+      "recommendedAction": "none"
+    },
+    {
+      "sessionId": "s_1773686768528_271",
+      "agent": "tech-lead",
+      "task": "[heartbeat] Read agents/tech-lead/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you built or reviewed.",
+      "status": "HEALTHY",
+      "confidence": 1,
+      "evidence": "Session is active. 5 tool calls in window, 1 errors. Last activity 0s ago.",
+      "details": {
+        "totalToolCalls": 5,
+        "recentErrors": 1,
+        "lastActivitySecondsAgo": 0
+      },
+      "recommendedAction": "none"
+    },
+    {
+      "sessionId": "s_1773686777263_272",
+      "agent": "evaluator",
+      "task": "[heartbeat] You are Evaluator. Your files are in agents/evaluator/. Read agents/evaluator/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you evaluated ",
+      "status": "HEALTHY",
+      "confidence": 1,
+      "evidence": "Session is active. 3 tool calls in window, 0 errors. Last activity 12s ago.",
+      "details": {
+        "totalToolCalls": 3,
+        "recentErrors": 0,
+        "lastActivitySecondsAgo": 12
+      },
+      "recommendedAction": "none"
+    },
+    {
+      "sessionId": "s_1773686779705_273",
+      "agent": "qa",
+      "task": "[heartbeat] You are QA. Your files are in agents/qa/. Read agents/qa/heartbeat.md and work through each section.",
+      "status": "HEALTHY",
+      "confidence": 1,
+      "evidence": "Session is active. 5 tool calls in window, 0 errors. Last activity 10s ago.",
+      "details": {
+        "totalToolCalls": 5,
+        "recentErrors": 0,
+        "lastActivitySecondsAgo": 10
+      },
+      "recommendedAction": "none"
+    }
+  ],
+  "summary": "⚠️ 5 session(s) need attention: s_1773455011479_2167 (STALL), s_1773669054024_119 (STALL), s_1773685962735_241 (STALL), s_1773686492838_260 (PROTOCOL_VIOLATION), s_1773686577966_262 (DRIFT)",
+  "alerts": [
+    {
+      "sessionId": "s_1773455011479_2167",
+      "agent": "tech-lead",
+      "status": "STALL",
+      "action": "kill",
+      "evidence": "Last activity was 3860 min ago (threshold: 10 min)"
+    },
+    {
+      "sessionId": "s_1773669054024_119",
+      "agent": "scout-c40",
+      "status": "STALL",
+      "action": "kill",
+      "evidence": "Last activity was 295 min ago (threshold: 10 min)"
+    },
+    {
+      "sessionId": "s_1773685962735_241",
+      "agent": "coach",
+      "status": "STALL",
+      "action": "investigate",
+      "evidence": "Last activity was 11 min ago (threshold: 10 min)"
+    },
+    {
+      "sessionId": "s_1773686492838_260",
+      "agent": "scout",
+      "status": "PROTOCOL_VIOLATION",
+      "action": "warn",
+      "evidence": "P114 Violation: Complex task attempted without Experience Replay (grep ERROR_LOG)."
+    },
+    {
+      "sessionId": "s_1773686577966_262",
+      "agent": "optimizer",
+      "status": "DRIFT",
+      "action": "warn",
+      "evidence": "Very low relevance to task in last 10 tool calls. Path relevance: 0%, Concept relevance: 0%. Task: \"[heartbeat] You are Optimizer. Your files are in agents/optimizer/. Read agents/optimizer/heartbeat.\""
+    }
+  ]
+}

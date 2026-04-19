@@ -1,0 +1,52 @@
+{
+  "agents": {
+    "evaluator": {
+      "role": "Supervisor (Audit Focus)",
+      "capability_level": "L2",
+      "efficiency": 0.75,
+      "quality": 0.7,
+      "verdict": "good",
+      "issues": [
+        "[FM-2.6][FC-context] Notifications step only partially completed: read agents/shared/SIGNALS.md but did not acknowledge/update read_by entries targeting evaluator.",
+        "[FM-2.6][FC-context] Signal Quality Review not completed: did not sample recent .state/evaluations/* for actionability.",
+        "[FM-2.6][FC-planning] Periodic Tasks partially executed: ran monitor-session but did not update periodic-tasks.md last-run timestamps or log incidents to agents/shared/bulletin.md despite unhealthy sessions.",
+        "[C26] Claim-as-record gap: no persisted notes summarizing findings from SIGNALS/todo beyond this evaluation JSON."
+      ],
+      "metrics": {
+        "decomposition": "partial (promised 3 items; executed reads + 1 monitor run)",
+        "resource_efficiency": "good (parallel reads; one monitor-session run)",
+        "dead_end_detection": "n/a",
+        "context_management": "adequate (followed heartbeat sections; avoided self-reference trap)"
+      },
+      "evidence": {
+        "promise": "Stated 3 deliverables before any tool calls.",
+        "notifications": [
+          "Read agents/evaluator/workspace/todo.md (shows multiple pending handoffs from bob/optimizer).",
+          "Read agents/shared/SIGNALS.md (content truncated at 50KB; no continuation read with offset; no read_by updates performed)."
+        ],
+        "calibration": [
+          "Read workspace/consistency-flags.jsonl, human-reviews.jsonl, re-evaluations.jsonl: all returned empty content.",
+          "Read agents/evaluator/periodic-tasks.md."
+        ],
+        "periodic_task": [
+          "Ran node agents/evaluator/skills/monitor-session.cjs --running: exit code 1; 5 unhealthy sessions reported including STALL and ERROR_STORM."
+        ]
+      }
+    }
+  },
+  "workflow": {
+    "name": "evaluator-heartbeat",
+    "issues": [
+      "Did not complete notification processing loop (no ack via handoff tool; no SIGNALS read_by updates).",
+      "Did not perform the required signal-quality sampling of recent evaluations."
+    ]
+  },
+  "overall": {
+    "verdict": "acceptable",
+    "result_delivered": true
+  },
+  "lessons": [
+    "[evaluator] When SIGNALS.md is truncated, continue reading with offset before concluding notification state; otherwise acknowledgments may be missed. [FM-2.6][FC-context]",
+    "[evaluator] If monitor-session returns unhealthy sessions, log an incident to agents/shared/bulletin.md as heartbeat periodic tasks require; treat exit code 1 as actionable signal."
+  ]
+}

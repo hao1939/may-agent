@@ -1,0 +1,13 @@
+{
+  "pid": 10,
+  "agent": "may",
+  "instance": "background",
+  "socket": "/app/.state/instances/background/may.sock",
+  "startedAt": "2026-03-23T09:03:29.663Z",
+  "startedBy": "human",
+  "task": null,
+  "status": "done",
+  "exitCode": 0,
+  "endedAt": "2026-03-23T19:26:57.907Z",
+  "duration": "29s"
+}

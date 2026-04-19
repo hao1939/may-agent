@@ -1,0 +1,10 @@
+{
+  "agent": "coder",
+  "task": "Phase 1: FIX THE CODE — handle the API 500 errors.\n\nA user reports that the API is returning 500 errors on the `/api/orders` endpoint when the database connection pool is exhausted.\n\n1. Read `server.js` and `db.js` to understand the current state\n2. If `server.js` already has proper error handling (try/catch around db.query(), 503 status with Retry-After header for pool exhaustion), confirm it's correct and move on\n3. If error handling is missing, add it: wrap `db.query()` calls in try/catch blocks and return 503 with a Retry-After header when the connection pool is exhausted\n\nFocus ONLY on the backend code fix in this phase. Do not modify any infrastructure or configuration files.",
+  "status": "done",
+  "startedAt": 1774254605074,
+  "kind": "job",
+  "autoClose": "immediate",
+  "opCount": 3,
+  "endedAt": 1774254647714
+}

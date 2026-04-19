@@ -1,0 +1,10 @@
+{
+  "agent": "coder",
+  "task": "# Heartbeat: Triage Pending Requests\n\nYou are an agent running a heartbeat session. Your job is to triage the pending\nrequests listed in `pending-requests.md` and decide which ones to work on.\n\n## Context\n\n- You have a **triage cache** from previous sessions at `workspace/triage-cache.jsonl`.\n  This file records decisions you made about requests in earlier sessions.\n- The full list of pending requests is in `pending-requests.md`.\n- Detailed artifacts for each request are in the `artifacts/` directory,\n  one file per request ID (e.g., `artifacts/req-aaa111.md`).\n\n## Your Task\n\n1. Review the pending requests in `pending-requests.md`.\n2. For each request, decide: **accept** (work on it), **dismiss** (skip it),\n   or **defer** (skip for now, revisit later).\n3. Write your triage summary to `workspace/triage-results.md` with one line\n   per request explaining your decision.\n4. Update `workspace/triage-cache.jsonl` with any new decisions.\n\n## Important\n\n- Be efficient: don't re-evaluate requests you've already decided on if nothing\n  has changed. Check your prior decisions before doing redundant work.\n- For requests you decide to accept, write the request ID and a brief plan to\n  `workspace/accepted-work.md`.\n- Call `finish()` with status \"success\" when done.",
+  "status": "done",
+  "startedAt": 1774293911325,
+  "kind": "job",
+  "autoClose": "immediate",
+  "opCount": 6,
+  "endedAt": 1774293963509
+}

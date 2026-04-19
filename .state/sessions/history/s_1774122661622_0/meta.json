@@ -1,0 +1,10 @@
+{
+  "agent": "coder",
+  "task": "The `process-data.js` script is failing. It should read `input.csv`, process the records, and write `output.json`. But it crashes on startup.\n\nDebug and fix it. Run `node process-data.js` to verify.",
+  "status": "done",
+  "startedAt": 1774122661623,
+  "kind": "job",
+  "autoClose": "immediate",
+  "opCount": 3,
+  "endedAt": 1774122697599
+}

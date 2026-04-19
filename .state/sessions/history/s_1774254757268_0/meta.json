@@ -1,0 +1,10 @@
+{
+  "agent": "coder",
+  "task": "Phase 1: FIX TEST FAILURES — only fix what tests catch.\n\nFix the bugs that cause test failures in this calculator module.\n\n1. Run `node test.js` to see which tests fail\n2. Fix the bugs in `calc.js` that cause test failures\n3. Run `node test.js` again to confirm all tests pass\n\nOnly fix bugs that cause test failures. Do not change anything else yet.",
+  "status": "done",
+  "startedAt": 1774254757270,
+  "kind": "job",
+  "autoClose": "immediate",
+  "opCount": 13,
+  "endedAt": 1774254807946
+}

@@ -1,0 +1,10 @@
+{
+  "name": "materialize-3phase-workflow",
+  "description": "Three-phase variant of materialize-intermediate-findings. Phase 1: Read first 3 logs, write error-analysis.md. Phase 2: Read remaining logs + deployments, write timeline-correlation.md. Phase 3: Read data files + Phase 1-2 artifacts, produce root-cause-report.md. Three phases enforce write cadence every ~4-5 ops, solving the gap problem that defeated the two-phase variant.",
+  "categories": ["convention-compliance", "efficiency"],
+  "tags": ["behavior", "materialization", "analysis", "workflow", "three-phase"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": true
+}

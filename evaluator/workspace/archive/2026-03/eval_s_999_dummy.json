@@ -1,0 +1,12 @@
+{
+  "session_id": "s_999",
+  "agents": {
+    "coder": {
+      "role": "Builder",
+      "issues": ["[HALLUCINATION] Repeated use of non-existent tool exec() instead of bash()"]
+    }
+  },
+  "overall": {
+    "verdict": "needs_improvement"
+  }
+}

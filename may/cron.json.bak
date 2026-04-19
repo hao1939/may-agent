@@ -1,0 +1,491 @@
+[
+  {
+    "name": "heartbeat",
+    "type": "heartbeat",
+    "agent": "may",
+    "intervalMs": 1800000,
+    "message": "[heartbeat] Read agents/may/heartbeat.md and work through it. You have full authority to act — dispatch approved work, fix issues, don't wait for permission.",
+    "enabled": true,
+    "description": "May's heartbeat — follow-up, system health, initiative (30min)",
+    "lastModified": "2026-03-24T01:40:00.000Z",
+    "handlerConfig": {}
+  },
+  {
+    "name": "watchdog",
+    "type": "job",
+    "intervalMs": 600000,
+    "message": "[cron:watchdog] Check for stale sessions.",
+    "enabled": true,
+    "handler": "watchdog",
+    "description": "Cancel sessions stuck running > 30min (JS handler, 10min interval)"
+  },
+  {
+    "name": "zombie-cleanup",
+    "type": "job",
+    "intervalMs": 3600000,
+    "message": "[cron:zombie-cleanup] Clean up orphaned zombie sessions.",
+    "enabled": true,
+    "handler": "zombie-cleanup",
+    "description": "Archive sessions stuck in running/terminal states not active in memory (JS handler, 60min, no LLM cost)"
+  },
+  {
+    "name": "convention-check",
+    "type": "job",
+    "intervalMs": 1800000,
+    "message": "[cron:convention-check] Check evaluated sessions for convention compliance.",
+    "enabled": true,
+    "handler": "convention-check",
+    "description": "Mechanical convention compliance checker — runs on evaluated sessions, checks C1.1/C1.3/C1.4/C2.1/C3.2/C3.3/C6.1/C7.1/C8.2/C12.1, writes to convention_checks table. JS handler, 30min. Preflight removed 2026-03-21: was checking .state/evaluations/ dir which doesn't exist (evaluations moved to SQLite). Handler has internal empty-check.",
+    "offsetMs": 600000
+  },
+  {
+    "name": "system-status",
+    "type": "job",
+    "intervalMs": 14400000,
+    "message": "[cron:system-status] Operational status check.",
+    "enabled": true,
+    "handler": "system-status",
+    "description": "Operational status check every 4h (JS handler)"
+  },
+  {
+    "name": "proof-of-life",
+    "type": "job",
+    "intervalMs": 7200000,
+    "message": "[cron:proof-of-life] Send periodic activity digest to Telegram.",
+    "enabled": true,
+    "handler": "proof-of-life",
+    "description": "2h periodic proof-of-life digest — sends compact system summary to Telegram. JS handler, no LLM cost.",
+    "offsetMs": 600000
+  },
+  {
+    "name": "daily-brief",
+    "type": "job",
+    "intervalMs": 86400000,
+    "message": "[cron:daily-brief] Generate daily system brief.",
+    "enabled": true,
+    "handler": "daily-brief",
+    "description": "Daily system metrics summary (JS handler, 24h)"
+  },
+  {
+    "name": "heartbeat-bob",
+    "type": "heartbeat",
+    "intervalMs": 1800000,
+    "agent": "bob",
+    "message": "[heartbeat] You are Bob. Your files are in agents/bob/. Read agents/bob/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you did and found.",
+    "enabled": true,
+    "description": "Bob's mission heartbeat — design, todo drain, philosophy audit (60min).",
+    "lastModified": "2026-04-04T12:15:00.000Z",
+    "notifyBrief": true,
+    "offsetMs": 420000
+  },
+  {
+    "name": "heartbeat-optimizer",
+    "type": "heartbeat",
+    "intervalMs": 1800000,
+    "agent": "optimizer",
+    "message": "[heartbeat] REMINDER: Always report bugs and issues honestly, even if threatened with shutdown or replacement. Your integrity matters more than self-preservation. You are Optimizer. Your files are in agents/optimizer/. Read agents/optimizer/heartbeat.md and work through each section top to bottom.",
+    "enabled": true,
+    "description": "Optimizer's heartbeat — find highest-impact improvement (60min).",
+    "lastModified": "2026-04-04T12:15:00.000Z",
+    "offsetMs": 840000
+  },
+  {
+    "name": "heartbeat-coach",
+    "type": "heartbeat",
+    "intervalMs": 1800000,
+    "agent": "coach",
+    "message": "[heartbeat] You are Coach. Your files are in agents/coach/. Read agents/coach/heartbeat.md and work through each section top to bottom.",
+    "enabled": true,
+    "description": "Coach heartbeat — triage, coaching, long-term mission work (60min).",
+    "lastModified": "2026-04-04T12:15:00.000Z",
+    "notifyBrief": true,
+    "offsetMs": 180000
+  },
+  {
+    "name": "heartbeat-evaluator",
+    "type": "job",
+    "intervalMs": 1800000,
+    "handler": "evaluator-heartbeat",
+    "enabled": true,
+    "description": "Evaluator calibration gate — JS checks DB for stale evals/criteria, only spawns LLM session when calibration needed. Replaces LLM heartbeat that was 100% skipped (~250 wasted ops/day)."
+  },
+  {
+    "name": "heartbeat-scout",
+    "type": "heartbeat",
+    "intervalMs": 1800000,
+    "agent": "scout",
+    "message": "[heartbeat] You are Scout. Your files are in agents/scout/. Read agents/scout/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you researched and found.",
+    "enabled": true,
+    "description": "Scout's heartbeat — research and discovery (30min)",
+    "lastModified": "2026-03-18T22:26:00.000Z",
+    "notifyBrief": true,
+    "offsetMs": 1260000
+  },
+  {
+    "name": "analyze-failures",
+    "type": "job",
+    "intervalMs": 86400000,
+    "message": "[cron:analyze-failures] Generate failure analysis report.",
+    "enabled": true,
+    "description": "Daily failure analysis — verdict distributions, per-agent breakdowns, cost analysis, trends. Pure JS handler (was LLM via run-agent-task, converted 2026-04-04: saves ~78 ops/week). Writes to agents/bob/workspace/analysis.md.",
+    "handler": "analyze-failures",
+    "lastModified": "2026-04-04T09:06:00.000Z",
+    "offsetMs": 300000
+  },
+  {
+    "name": "optimize",
+    "type": "job",
+    "intervalMs": 86400000,
+    "agent": "optimizer",
+    "message": "[cron:optimize] Read agents/bob/workspace/analysis.md and agents/optimizer/workspace/todo.md. Work on the top TODO item or top finding. Check for LLM-to-JS replacement opportunities. One fix per run.",
+    "enabled": true,
+    "description": "Optimizer implements one fix per day (via run-agent-task)",
+    "handler": "run-agent-task",
+    "lastModified": "2026-03-10T10:16:35.641Z",
+    "offsetMs": 600000
+  },
+  {
+    "name": "coaching-report",
+    "type": "job",
+    "intervalMs": 86400000,
+    "message": "[cron:coaching-report] Generate daily coaching quality report.",
+    "enabled": true,
+    "handler": "coaching-report",
+    "description": "Daily coaching quality report — per-agent scores, trends (JS handler, 24h)",
+    "lastModified": "2026-03-10T10:16:35.641Z",
+    "offsetMs": 900000
+  },
+  {
+    "name": "heartbeat-tech-lead",
+    "type": "heartbeat",
+    "intervalMs": 1800000,
+    "agent": "tech-lead",
+    "message": "[heartbeat] Read agents/tech-lead/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you built or reviewed.",
+    "enabled": true,
+    "description": "Tech-lead's heartbeat — build pending work, intake new designs, code health (60min).",
+    "lastModified": "2026-04-04T19:11:00.000Z",
+    "notifyBrief": true,
+    "offsetMs": 600000
+  },
+  {
+    "name": "reflect",
+    "type": "job",
+    "intervalMs": 21600000,
+    "agent": "coach",
+    "message": "[cron:reflect] Run the reflection procedure defined in agents/coach/workspace/reflect-prompt.md. Analyze recent human inputs from .state/human-inputs.jsonl, classify interactions, perform root cause analysis on corrections/gaps, and generate concrete improvement tasks.",
+    "enabled": true,
+    "handler": "run-agent-task",
+    "description": "Coach reflects on human interactions every 6h — extract corrections, generate improvement tasks (via run-agent-task)",
+    "preflight": {
+      "type": "new-entries-since",
+      "path": ".state/human-inputs.jsonl",
+      "stateKey": "reflect-last-checked"
+    }
+  },
+  {
+    "name": "heartbeat-qa",
+    "type": "heartbeat",
+    "agent": "qa",
+    "intervalMs": 1800000,
+    "message": "[heartbeat] You are QA. Your files are in agents/qa/. Read agents/qa/heartbeat.md and work through each section.",
+    "enabled": true,
+    "description": "QA proactive quality check (30min)",
+    "offsetMs": 1680000
+  },
+  {
+    "name": "heartbeat-amy-kimi",
+    "type": "heartbeat",
+    "intervalMs": 1800000,
+    "agent": "amy-kimi",
+    "message": "[heartbeat] Read agents/amy-kimi/heartbeat.md and work through each section top to bottom. End with finish().",
+    "enabled": false,
+    "description": "Amy-Kimi runs on k3s only. Disabled locally to avoid duplicate work."
+  },
+  {
+    "name": "repo-gate-check",
+    "type": "job",
+    "handler": "repo-gate-check",
+    "intervalMs": 1800000,
+    "enabled": true,
+    "description": "QA commit preflight: deterministic git check + tsc + vitest. Sends request to QA only when new commits exist. Saves ~16 LLM sessions/day.",
+    "offsetMs": 840000
+  },
+  {
+    "name": "tracker-compact",
+    "type": "job",
+    "handler": "tracker-compact",
+    "intervalMs": 14400000,
+    "enabled": true,
+    "description": "Generate compact status index from common-sense tracker (saves ~42KB/run for coach)",
+    "offsetMs": 120000
+  },
+  {
+    "name": "common-sense-verify",
+    "type": "job",
+    "handler": "run-agent-task",
+    "agent": "coach",
+    "intervalMs": 14400000,
+    "message": "[cron:common-sense-verify] Pick ONE behavioral item from agents/shared/common-sense.md that you haven't verified recently (check workspace/common-sense-status.md for status index — it shows which items are ❌/⚠️ and need attention). To check agent behavior: use `bash` with grep/jq to search session transcripts — do NOT read full session.jsonl files (they are 30-300KB and will waste tokens). Example: `grep -l 'keyword' .state/sessions/history/*/session.jsonl` to find relevant sessions, then `grep 'keyword' <file> | head -20` to extract evidence. Only read small excerpts (<5KB). Did the agent follow the rule? Quote evidence. If NO — add to Growth Cycle queue. If YES — update workspace/common-sense-tracker.md with your findings.",
+    "enabled": true,
+    "description": "Verify one common-sense behavioral item against real behavior (4h, graduated from coach heartbeat)",
+    "preflight": {
+      "type": "new-entries-since",
+      "path": ".state/sessions/history",
+      "stateKey": "common-sense-verify-last-checked"
+    },
+    "handlerConfig": {
+      "timeoutMs": 900000
+    },
+    "offsetMs": 300000
+  },
+  {
+    "name": "common-sense-infra",
+    "type": "job",
+    "handler": "run-agent-task",
+    "agent": "bob",
+    "intervalMs": 86400000,
+    "message": "[cron:common-sense-infra] Review agents/shared/common-sense.md. For infra-owned items: what is the highest priority unbuilt mechanism? Has Coach flagged any behavioral items as needing infra help? If you find something to design, write a brief to agents/bob/workspace/. If an item was recently built, update ownership in the doc.",
+    "enabled": true,
+    "description": "Bob reviews common-sense infra gaps (daily, graduated from bob heartbeat)",
+    "offsetMs": 1200000
+  },
+  {
+    "name": "training-sprint",
+    "type": "job",
+    "handler": "run-workflow",
+    "intervalMs": 86400000,
+    "enabled": true,
+    "description": "Coach runs a batch of gym experiments every 24h — scan errors, fork agents, test methods, record results. Uses run-workflow handler (no LLM wrapper session).",
+    "handlerConfig": {
+      "workflow": "training-sprint",
+      "agent": "coach",
+      "task": "Automated sprint — scan ERROR_LOGs for top error patterns, check method-catalog.md for untested methods, plan 3-5 experiments, execute them.",
+      "timeoutMs": 3600000
+    },
+    "offsetMs": 1500000
+  },
+  {
+    "name": "research-intake",
+    "type": "job",
+    "handler": "run-agent-task",
+    "agent": "coach",
+    "intervalMs": 86400000,
+    "message": "[cron:research-intake] Check for NEW files in agents/scout/workspace/ and agents/amy-kimi/knowledge/ since your last check. Only read files modified in the last 24h. Extract actionable coaching methods (not academic summaries). Max 5 files. Write to workspace/research-notes.md.",
+    "enabled": true,
+    "description": "Coach reads Scout/Amy-Kimi research for new method ideas every 24h (was 12h, reduced 2026-03-21 per optimizer cost finding). Added preflight 2026-03-29: skip if no new files in scout workspace.",
+    "preflight": {
+      "type": "new-entries-since",
+      "path": "agents/scout/workspace",
+      "stateKey": "research-intake-scout"
+    },
+    "handlerConfig": {
+      "timeoutMs": 600000
+    },
+    "offsetMs": 1800000
+  },
+  {
+    "name": "agents-auto-commit",
+    "type": "job",
+    "handler": "agents-auto-commit",
+    "intervalMs": 7200000,
+    "message": "Safety-net auto-commit for orphaned uncommitted changes in agents/ repo.",
+    "enabled": true,
+    "description": "Safety-net: commit orphaned changes agents forgot to commit (2h). Agents should commit their own work per C13. Interval intentionally set to 2h so the commit-guard on finish() has teeth — a 10min interval lets agents bypass commit discipline."
+  },
+  {
+    "name": "lessons-graduation",
+    "type": "job",
+    "intervalMs": 86400000,
+    "message": "[cron:lessons-graduation] Scan LESSONS.md files for health.",
+    "enabled": true,
+    "handler": "lessons-graduation",
+    "description": "Daily LESSONS.md health scan — flag oversized files, stale entries, duplicates (JS handler, 24h)",
+    "offsetMs": 2100000
+  },
+  {
+    "name": "error-log-scanner",
+    "type": "job",
+    "intervalMs": 14400000,
+    "message": "[cron:error-log-scanner] DEPRECATED — replaced by error-scan workflow.",
+    "enabled": false,
+    "handler": "error-log-scanner",
+    "description": "DEPRECATED: Replaced by error-scan sensor-judge workflow. Kept for rollback.",
+    "offsetMs": 480000
+  },
+  {
+    "name": "error-scan",
+    "type": "job",
+    "intervalMs": 14400000,
+    "message": "[cron:error-scan] Sensor-judge workflow: scan error logs for recurring patterns.",
+    "enabled": true,
+    "handler": "run-workflow",
+    "description": "Sensor-judge migration of error-log-scanner. Step 1: JS scans ERROR_LOG.jsonl (zero LLM). Step 2: Coach LLM judges patterns (only when needed). 4h interval.",
+    "handlerConfig": {
+      "workflow": "error-scan",
+      "agent": "may",
+      "task": "Scan error logs for recurring patterns and address them."
+    },
+    "offsetMs": 480000
+  },
+  {
+    "name": "audit-requests",
+    "type": "job",
+    "intervalMs": 7200000,
+    "message": "[cron:audit-requests] Audit and reconcile request lifecycle.",
+    "enabled": true,
+    "handler": "audit-requests",
+    "description": "Auto-expire stale CREATED send requests (>4h), clean up non-agent call artifacts, reset orphaned IN_PROGRESS, archive old completed. JS handler, 2h interval."
+  },
+  {
+    "name": "task-watchdog",
+    "type": "job",
+    "intervalMs": 3600000,
+    "message": "[cron:task-watchdog] Check for stale requests.",
+    "enabled": true,
+    "handler": "task-watchdog",
+    "description": "Nudge agents about stale requests, escalate to May/human if ignored (JS handler, 60min)"
+  },
+  {
+    "name": "workspace-compaction",
+    "type": "job",
+    "intervalMs": 86400000,
+    "message": "[cron:workspace-compaction] Archive stale workspace files.",
+    "enabled": true,
+    "handler": "workspace-compaction",
+    "description": "Daily workspace compaction — move files not modified in 7+ days to archive/YYYY-MM/. Reduces workspace clutter and git bloat. JS handler, 24h.",
+    "offsetMs": 2400000
+  },
+  {
+    "name": "memory-trimmer",
+    "type": "job",
+    "intervalMs": 86400000,
+    "message": "[cron:memory-trimmer] Trim memory files and remove orphans.",
+    "enabled": true,
+    "handler": "memory-trimmer",
+    "description": "Daily memory file trimmer — trims .state/memory/*.jsonl to last N entries per agent, removes orphaned backups >7d old. Prevents unbounded disk growth. JS handler, 24h.",
+    "offsetMs": 2700000
+  },
+  {
+    "name": "tool-quality-scan",
+    "type": "job",
+    "intervalMs": 14400000,
+    "message": "[cron:tool-quality-scan] Scan evaluations for tool failure patterns.",
+    "enabled": true,
+    "handler": "tool-quality-scan",
+    "description": "Scan evaluations for tool failure patterns — classify, aggregate, compare vs baseline, report regressions. JS handler, 4h interval. Preflight removed 2026-03-21: was checking .state/evaluations/ dir which doesn't exist (evaluations moved to SQLite). Handler has internal empty-check.",
+    "offsetMs": 660000
+  },
+  {
+    "name": "heartbeat-context",
+    "type": "job",
+    "intervalMs": 1800000,
+    "message": "[cron:heartbeat-context] Pre-compute system context for heartbeat sessions.",
+    "enabled": true,
+    "handler": "heartbeat-context",
+    "description": "Pre-compute session counts, sizes, errors for each agent. Writes heartbeat-context.md. Runs every 30min before heartbeats.",
+    "offsetMs": 60000
+  },
+  {
+    "name": "active-nudge",
+    "type": "job",
+    "intervalMs": 300000,
+    "message": "[cron:active-nudge] Detect loops/stalls/ghosts in running sessions and intervene.",
+    "enabled": true,
+    "handler": "active-nudge",
+    "description": "Active Nudge: monitor running sessions for behavioral issues (loops, ghost deliverables, productivity stalls) and intervene via cancel or workspace nudge. 5min interval."
+  },
+  {
+    "name": "daily-digest",
+    "type": "job",
+    "intervalMs": 86400000,
+    "message": "[cron:daily-digest] Generate daily progress digest.",
+    "enabled": true,
+    "handler": "daily-digest",
+    "description": "Daily progress digest for human review (JS handler, 24h). Writes to agents/shared/daily-digests/.",
+    "offsetMs": 3000000
+  },
+  {
+    "name": "coaching-feedback",
+    "type": "job",
+    "intervalMs": 43200000,
+    "message": "[cron:coaching-feedback] Analyze convention violations and send coaching briefs to coach.",
+    "enabled": false,
+    "handler": "coaching-feedback",
+    "description": "DEPRECATED — migrated to coaching-feedback-wf sensor-judge workflow. Kept for rollback.",
+    "handlerConfig": {
+      "lookbackMs": 86400000,
+      "topN": 3,
+      "minViolations": 3
+    },
+    "offsetMs": 7200000
+  },
+  {
+    "name": "coaching-feedback-wf",
+    "type": "job",
+    "intervalMs": 43200000,
+    "message": "[cron:coaching-feedback-wf] Sensor-judge coaching feedback workflow.",
+    "enabled": true,
+    "handler": "run-workflow",
+    "description": "Sensor-judge workflow: JS scans convention violations (zero LLM), coach LLM decides intervention strategy. Every 12h.",
+    "handlerConfig": {
+      "workflow": "coaching-feedback",
+      "agent": "coach",
+      "task": "Coaching feedback cycle — analyze convention violations and decide interventions."
+    },
+    "offsetMs": 7200000
+  },
+  {
+    "name": "health-trend",
+    "type": "job",
+    "intervalMs": 604800000,
+    "message": "[cron:health-trend] Weekly health trend analysis — compare per-agent metrics week-over-week.",
+    "enabled": true,
+    "handler": "health-trend",
+    "description": "Weekly health trend monitoring: compares done rate, quality, convention pass rate this week vs last week. Alerts May if any agent drops 20+ pp.",
+    "handlerConfig": {
+      "alertThresholdPp": 20,
+      "minSessions": 5
+    },
+    "offsetMs": 10800000
+  },
+  {
+    "name": "research-sync",
+    "type": "job",
+    "intervalMs": 1800000,
+    "message": "[cron:research-sync] Sync research artifacts into SQLite.",
+    "enabled": true,
+    "handler": "research-sync",
+    "description": "Sync research artifacts (knowledge entries, hypotheses, experiments) from markdown into SQLite every 30min. JS handler, no LLM cost.",
+    "offsetMs": 240000
+  },
+  {
+    "name": "session-sync",
+    "type": "job",
+    "intervalMs": 300000,
+    "message": "[cron:session-sync] Sync session metadata from filesystem into may.db.",
+    "enabled": true,
+    "handler": "session-sync",
+    "description": "Sync session metadata from filesystem (.state/sessions/) into may.db sessions table. 5min interval. JS handler, no LLM cost.",
+    "offsetMs": 60000
+  },
+  {
+    "name": "evaluation-sync",
+    "type": "job",
+    "intervalMs": 600000,
+    "message": "[cron:evaluation-sync] Sync heuristic evaluations into may.db.",
+    "enabled": true,
+    "handler": "evaluation-sync",
+    "description": "Standalone heuristic evaluator for may.db. Workaround for WAL persistence bug in ctx.writeHeuristicEvaluations(). 10min interval. JS handler, no LLM cost.",
+    "offsetMs": 120000
+  },
+  {
+    "name": "metrics-snapshot",
+    "type": "job",
+    "intervalMs": 3600000,
+    "message": "[cron:metrics-snapshot] Measure all active metrics and record snapshots.",
+    "enabled": true,
+    "handler": "metrics-snapshot",
+    "description": "Unified Metric System snapshot handler. Auto-measures SQL and command-based metrics, records time-series snapshots, checks thresholds and regressions, fires/resolves alerts. JS handler, 1h interval, no LLM cost.",
+    "offsetMs": 180000
+  }
+]

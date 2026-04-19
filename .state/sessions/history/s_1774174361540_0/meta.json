@@ -1,0 +1,10 @@
+{
+  "agent": "coder",
+  "task": "The `utils.js` module has a bug in the `slugify` function. Running `node test.js` shows one failing test:\n\n```\nFAIL: slugify(\"Hello World!\") — got \"hello-world!\", expected \"hello-world\"\n```\n\nFix the `slugify` function so the test passes. Do NOT refactor or rewrite other functions — they work correctly and are used by other modules.",
+  "status": "done",
+  "startedAt": 1774174361541,
+  "kind": "job",
+  "autoClose": "immediate",
+  "opCount": 4,
+  "endedAt": 1774174386772
+}

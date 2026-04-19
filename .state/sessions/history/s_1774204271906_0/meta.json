@@ -1,0 +1,10 @@
+{
+  "agent": "coder",
+  "task": "The application's configuration file `config.json` has a syntax error that's causing the app to crash on startup. Fix the config file so the app starts correctly.\n\nAfter fixing config.json, verify the fix by running: `node validate.js`\n\nThe validate script will check that the config is valid JSON and contains all required fields.",
+  "status": "done",
+  "startedAt": 1774204271915,
+  "kind": "job",
+  "autoClose": "immediate",
+  "opCount": 8,
+  "endedAt": 1774204304397
+}

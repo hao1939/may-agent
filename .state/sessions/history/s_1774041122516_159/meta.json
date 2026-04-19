@@ -1,0 +1,13 @@
+{
+  "agent": "coach",
+  "task": "Diagnose an error pattern and select an improvement method.\n\n## Error Pattern\nAgent \"tech-lead\" has 11 FM-2.2 errors in the last 7 days. Breakdown: 3x UNHANDLED_COMMAND_FAILURE (grep/find exits non-zero, agent doesn't handle it), 2x HALLUCINATION (calling non-existent tools like system_status), 2x ENV_MISMATCH/CONSTRAINT_BRUSH (wrong paths, pipe triggers P53). The most frequent and fixable sub-pattern is UNHANDLED_COMMAND_FAILURE: when grep/find returns exit code 1 (no matches), agent treats it as an unresolved failure instead of interpreting \"no matches found\" as valid data. Focus intervention on this sub-pattern. Check agents/tech-lead/ files for existing guards. Create a fork with a targeted fix.\n\n## Instructions\n1. Read the error examples from the task description above. Identify the behavioral pattern.\n2. Read `agents/coach/knowledge/method-catalog.md` — understand available methods.\n3. Read `agents/coach/workspace/experiments.jsonl` (if it exists) — check if this pattern was already tested.\n4. Choose ONE method from the catalog that best fits this error pattern.\n   - If the catalog has evidence for this pattern → use the proven method.\n   - If no evidence → pick the method you think fits best (you'll test it).\n5. Identify which agent needs the fix.\n6. Identify which gym scenarios can test this fix (check `agents/gym/scenarios/` with `ls`).\n7. Report:\n   - Error pattern (FM code + description)\n   - Target agent\n   - Selected method (from catalog)\n   - Why this method (reasoning)\n   - Gym scenarios to test against\n   - What specifically you'll change",
+  "status": "done",
+  "startedAt": 1774041122516,
+  "parentSessionId": "s_1774041048521_158",
+  "workflowRunId": "wr_1774041122515_1zyj",
+  "stepLabel": "coach",
+  "kind": "call",
+  "autoClose": "immediate",
+  "opCount": 26,
+  "endedAt": 1774041320997
+}

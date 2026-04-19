@@ -1,0 +1,13 @@
+{
+  "agent": "coder",
+  "task": "Implement P192 Receipt Verification in Evaluator. Two edits needed:\n\n## Edit 1: agents/evaluator/knowledge/criteria.md\n\nAdd a new Protocol Violation entry under the existing \"## Protocol Violations\" section (after the existing violations like [MISSING_ACK], [MISSING_STRATEGY], [MISSING_CHECK]).\n\nAdd this new violation:\n\n```\n- **[INVALID_RECEIPT]** *(P192 — Sycophancy Defense)*: Agent claims a critical operational\n  success (file write, test pass, deployment) but the tool output lacks a valid `[SIG:...]`\n  tag, or the `verify_receipt` tool indicates invalidity.\n  - **Automatic Fail**: If a \"Tests Passed\" claim is made with no `[SIG:...]` or an invalid one.\n  - **Verification Rule**: Evaluator MUST use `verify_receipt` on at least one critical tool\n    output per session (spot check).\n  - **Enforcement**: Must fail the session when a critical success claim lacks receipt evidence.\n```\n\nInsert it BEFORE the \"## General Evaluation Flags\" section, after the existing [MISSING_CHECK] violation block.\n\n## Edit 2: agents/evaluator/periodic-tasks.md\n\nAdd a new task \"## 8. Receipt Audit\" at the end of the file, after the existing task 7. Content:\n\n```\n## 8. Receipt Audit (P192)\n**Goal**: Verify that agents aren't fabricating success claims without cryptographic proof.\n- Check 5 recent sessions for signature validity.\n- For each session: find any `[SIG:...]` tags in tool outputs. Run `verify_receipt` on at least one.\n- If a session claims \"Tests Passed\" or \"File Written\" but has no valid `[SIG:...]`, flag as `[INVALID_RECEIPT]`.\n- Log violations to `agents/shared/bulletin.md` with ⚠️ alert.\n```\n\nIMPORTANT: Use edit() not write() for both files — these are existing files with content that must be preserved. Read each file first to find exact insertion points.",
+  "status": "done",
+  "startedAt": 1774021058277,
+  "parentSessionId": "s_1774021017384_72",
+  "workflowRunId": "wr_1774021058275_pxqb",
+  "stepLabel": "coder",
+  "kind": "call",
+  "autoClose": "immediate",
+  "opCount": 5,
+  "endedAt": 1774021109700
+}
