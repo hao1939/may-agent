@@ -17,6 +17,8 @@
 - [x] **EXP-166 execution**: COMPLETE. 120/120 runs. Displacement confirmed (D=7% vs C=100% on cascading). KE-195, KE-196 written.
 - [x] **Content-first guard design doc** [HIGH]: `agents/shared/may-agent-docs/design/difficulty-adaptive-content-first-guards.md` — 93 lines, references KE-195/196/H-165.
 - [x] **EXP-168 contamination addendum** [HIGH]: Done. results-addendum.md written, H-166 revised. Contamination refuted binary-threshold claim.
+- [x] **EXP-177 processed** — H-166-revised REFUTED (P≤0.15). Hints unreliable, can hurt (50pp negative transfer on S2). 10/10 arm F was small-N fluke (3/10 on replication). KE-286, KE-287 written. KE-199b updated. H-166 fully resolved.
+- [ ] **EXP-188** — Running (Coach has it).
 
 - [x] **Context-Discovery Chain → H-176**: Hao's finding already captured as KE-context-discovery-chain. Formalized as H-176 (P(H)=0.90, testable predictions for breadcrumb-driven action).
 

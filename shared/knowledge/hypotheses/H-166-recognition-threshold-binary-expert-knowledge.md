@@ -179,3 +179,4 @@ The original H-166 claimed that expert knowledge has a **high completeness thres
 *Revised 2026-04-16 after EXP-173 results and contamination discovery*
 *Post-contamination reassessment 2026-04-17 — no re-revision warranted; EXP-177 design confirmed as correct next step*
 *H-166-original resolved as REFUTED 2026-04-18*
+*H-166-revised resolved as REFUTED 2026-04-19 — EXP-177 confirmatory test (80 runs): all hint arms 15-30%, far below ≥80% prediction. The 10/10 arm F result was a small-N fluke. See KE-286, KE-287.*

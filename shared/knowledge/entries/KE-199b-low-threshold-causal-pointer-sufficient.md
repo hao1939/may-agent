@@ -26,14 +26,24 @@ After the coder-contamination fix to `cascading-fix-trap-v2` scenario files (gym
 
 The decisive cell is arm F: the *identical* moderate-hint string inverts 0% → 100% in a clean environment. Arm E's stability rules out a "clean env alone" reading at this N, though the small base cell (N=3) is itself not conclusive. Exact source: `experiments/EXP-168/results-addendum.md` (Post-Fix Control Data table).
 
-## What's Still Open (→ EXP-177)
+## ⚠️ EXP-177 RESOLUTION (2026-04-19)
 
-1. **A-ENVCLEAN** — is clean env alone sufficient? Base N=3 is too small; EXP-177 BASE N=20 settles it.
-2. **A-LEXICAL** — does arm F depend on surface-token overlap ("pipeline", "penalty") with scenario source? EXP-177 MOD-PARAPHRASE arm tests this.
-3. **Nudge-level arm** ("Consider processing order") — never re-run in clean env; threshold may sit even lower than "moderate."
-4. **Placebo null** — EXP-177 PLACEBO arm checks whether *any* authoritative text anchors, independent of causal content.
+**All open questions are now RESOLVED. The low-threshold model is REFUTED.**
 
-Until EXP-177 resolves, P(H-166-revised) = 0.75 and KE-199b is marked ★★★ pending-confirmation.
+EXP-177 (80 runs, 4 arms × 2 scenarios × 10 trials) results:
+- Pooled: BASE 30%, LEXICAL 20%, PARAPHRASE 30%, PLACEBO 15%. No arm significantly different from any other.
+- S2 LEXICAL **hurt** performance: 60% base → 10% with hint (50pp negative transfer).
+- S1 LEXICAL replication failure: 10/10 → 3/10 (70pp drop from the arm F result that motivated this KE).
+
+**Open questions resolved:**
+1. **A-ENVCLEAN** — PARTIALLY SUPPORTED for S2 only. S2 BASE=60% (consistent with ≥40%), but S1 BASE=0%. Pooled 30% is ambiguous. Clean env helps for some scenarios but is not a general explanation.
+2. **A-LEXICAL** — REFUTED. LEXICAL at 20% invalidates ≥80% prediction. Keyword match does not reliably help.
+3. **H-166-revised** — REFUTED. P updated from 0.75 → ≤0.15. The "any causal pointer ≥80%" model is wrong.
+4. **Placebo null** — PLACEBO at 15% (lowest arm). Authoritative text without causal content does not help.
+
+**The 10/10 arm F finding that motivated this KE was a small-N fluke** (see KE-287). KE-199b's core claim — that any causal pointer bridges recognition → execution at ceiling — is false.
+
+See KE-286 (hint interventions unreliable) and KE-287 (small-N instability) for the full analysis.
 
 ## What This Invalidates
 
