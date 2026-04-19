@@ -92,6 +92,7 @@ Yu et al. formalize this exact distinction in a controlled setting, demonstratin
 - **consistent with** → KE-007 (structural enforcement is only reliable intervention)
 - **extends** → KE-101 (structure dominates content — tool affordance is a structural variable)
 - **relates to** → DD-725 SentinelAgent (defense-in-depth against circumvention)
+- **synthesized in** → KE-283 (connects DD-784 masking to KE-195/196 displacement → content-first guard design validation)
 
 ## Tags
 `guardrails`, `safety-alignment`, `tool-affordance`, `masking-misalignment`, `structural-enforcement`, `KE-106`, `attempted-vs-realized`
