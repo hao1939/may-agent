@@ -48,6 +48,18 @@ The delivery mechanism is NOT broken — it's working. Evidence:
 - ~~Push via notify()~~: trackRequest already delivers via injection. No need for separate notify.
 - ~~Pull via heartbeat context~~: "Injected: metrics" already shows threshold violations to agents.
 
+## 2026-04-21 — Build Complete (Milestone 3)
+
+### Changes Made
+
+1. **Pull fix — `agents/shared/workflows/agent-heartbeat.ts`**: Added active metric alert query to the `check-health` step prompt. Every agent's heartbeat now instructs them to check for unresolved alerts matching their name prefix (e.g., `evaluator.%` for evaluator). This ensures agents see their alerts every heartbeat, not just on first regression.
+
+2. **Push fix — `agents/may/handlers/metrics-snapshot.ts`**: Added `ctx.notify()` call after `ctx.trackRequest()` in `notifyOwnerOnRegression`. Now when a metric regresses, the owner gets both a tracked request AND a notification.
+
+### Verification Needed
+- Next heartbeat cycle: agents should see their active alerts in check-health step
+- Next metric regression: owner should receive notify() in addition to trackRequest
+
 ## 2026-04-20 — Design Complete (Milestone 2)
 
 ### Decision: Push via `notify()` + Pull via heartbeat context

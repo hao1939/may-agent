@@ -30,7 +30,7 @@ Agents should react to metric alerts. Currently 4 alerts are firing with zero re
 ## Milestones
 - [x] Investigate: why don't agents see alerts? Map the gap between alert creation and agent awareness
 - [x] Design: how should alerts reach the responsible agent? Options: heartbeat injection, notification, handler
-- [~] Build: delivery already works via trackRequest → "Injected: pending tasks". Remaining: re-surface unresolved alerts periodically
+- [x] Build: delivery already works via trackRequest → "Injected: pending tasks". Added: alert injection into heartbeat check-health step + notify() on regression
 - [ ] Verify: trigger a test alert, confirm the responsible agent sees and reacts to it
 - [ ] Measure: track alert-to-reaction time as a metric
 

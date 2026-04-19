@@ -321,6 +321,9 @@ function notifyOwnerOnRegression(
       task,
       source: "metrics-snapshot",
     });
+
+    // Actually deliver the notification to the owning agent
+    ctx.notify(`[metric-alert] ${task}`);
   } catch {
     // Best-effort — don't break snapshot recording
   }
