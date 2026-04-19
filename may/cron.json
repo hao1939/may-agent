@@ -506,5 +506,14 @@
     "enabled": true,
     "message": "[cron:project-resume] Scan active projects and resume.",
     "description": "INFRA \u2014 DO NOT EDIT OR REMOVE. Scans active projects every 5min."
+  },
+  {
+    "name": "standing-orders-check",
+    "type": "job",
+    "intervalMs": 1800000,
+    "handler": "standing-orders-check",
+    "agent": "may",
+    "enabled": true,
+    "description": "Check recent sessions for standing order violations. Reports to May."
   }
 ]
