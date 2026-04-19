@@ -496,14 +496,5 @@
     "enabled": true,
     "description": "Auto-merge review/* branches that pass tsc + vitest. Prevents branch accumulation.",
     "offsetMs": 900000
-  },
-  {
-    "name": "project-resume",
-    "type": "job",
-    "intervalMs": 300000,
-    "handler": "project-resume",
-    "enabled": true,
-    "message": "[cron:project-resume] Scan active projects and resume.",
-    "description": "Every 5min, scan agents/*/workspace/projects/*.md for Status:active. Fork owners to run persistent-task workflow."
   }
 ]

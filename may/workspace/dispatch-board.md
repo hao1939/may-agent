@@ -24,7 +24,6 @@ Updated: 2026-04-16 ~08:00 UTC
 ## Active Items
 | Issue | Status | Owner | Notes |
 |-------|--------|-------|-------|
-| **Context Injection Review** | ⏳ Active | tech-lead | P0 from Hao. M1 done (baseline). M2 dispatched to tech-lead (s_..099) — add toggle flags for layers. Project: context-injection-review.md |
 | Amy-kimi billing outage | 🔴 Blocked | Hao | Still down, needs balance refill |
 | **Metrics + Gym Fast Feedback** | ⏳ Active | multiple | Hao approved (req:e961c558). M1: seed metrics → tech-lead (s_..560). M2: scenario triage → coach (s_..561). Project: metrics-and-gym.md |
 | **Model Diversity Review** | ⏳ Active | bob | Design review: which agent on which model? (req:c56a6ae4) |
@@ -56,10 +55,10 @@ Updated: 2026-04-16 ~08:00 UTC
 - **P2**: Amy-kimi billing — blocked on Hao.
 - ⚠️ **HOLD**: Ch2-production-gates implementation — Hold for EXP-170.
 
-## Latest Cycle Summary (09:34 Apr 19)
-- **SYSTEM**: 9/9 healthy. Zero errors. 1 stuck session (tech-lead review, likely transient).
-- **DISPATCHED**: Premature DONE rate fix → coach (s_1776594512354_9, req:ed91ad95).
-- **FLAGGED**: Stuck requests metric false alarm → tech-lead (threshold inversion, req:1542398d).
+## Latest Cycle Summary (09:00 Apr 16)
+- **SYSTEM**: 9/9 healthy. Zero errors. Zero stuck sessions. 1 scout interrupt (transient).
+- **DISPATCHED**: Bob gym execution reliability → coach (s_1776330087330_606).
+- **QUEUE**: 2 ready items remaining. Next: Top-5 metrics dashboard, Metric Phase 3 (post-restart).
 - **WAITING**: Gatekeeper Review Gate needs Hao approval. Metric System Phase 3 needs process restart.
 
 ## Archive Reference
