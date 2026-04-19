@@ -1,14 +1,11 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** cron_1776631211465_521
+- **Session:** cron_1776633011421_534
 - **Status:** done
-- **When:** 2026-04-19T20:40:38.179Z
-- **Duration:** 26s
+- **When:** 2026-04-19T21:10:41.782Z
+- **Duration:** 30s
 
 ## What Happened
 ### Summary
-Unable to perform a standard QA review because the workspace is **not a git repository** (so I can’t identify “changed files” via git history/diffs) and the Node toolchain is **not installed in a runnable way** (no `package.json`, and `node_modules` lacks `.bin/tsc` and `.bin/vitest`). I did independently read one source file (`src/grader.js`) and it looks internally consistent, but I cannot verify compilation/tests per the mandatory steps in this environment.
-
-### Checks
-- **tsc --n
+Reviewed the grading “pipeline” and penalty application code. The code itself is readable, but the pipeline order contradicts its own header comment and will produce different results depending on whether penalties are intended to apply to raw points or normalized percentages. Separately, the required QA checks (`tsc --noEmit` and `vitest --run`) cannot be executed in this environment because there is no `package.json` and no `node_modules/.bin` toolchain present, so I can’t independ
