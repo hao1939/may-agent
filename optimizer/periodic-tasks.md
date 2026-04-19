@@ -72,17 +72,19 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Latest (2026-04-01T16:45): Quality **99.5%** (200w: 151g/35a/1ni/13skip). 50w: **100%** (25g/19a/0ni/6skip). 24h waste **0.7%** (1/150). 0 errors in 24h. System at all-time best metrics. Session data now available for deeper tool-level analysis going forward.
   _Older entries pruned 2026-04-01T16:45. Waste trend: ...→0.7→0.6→0.0→0.6→0.6→0.7→0.7→0.7→0.7%._
 
-- [x] **Workflow quality audit** — Last done: 2026-03-30T21:10
+- [x] **Workflow quality audit** — Last done: 2026-04-19T00:00
   **⛔ COOLDOWN: WEEKLY.** Workflow changes are high-impact; audit weekly or after major changes.
   Read `agents/shared/workflows/REGISTRY.md` for current state.
   1. Check for new duplicates: `find agents -name "*.ts" -path "*/workflows/*" | sort`
   2. Review consolidation plan progress — any Priority 1/2/3 items still open?
   3. Check effectiveness: query evaluations for sessions that used workflows (look for `workflow_start` events)
   4. Update registry with any new workflows or changes
+  5. **Measure workflow-coverage & workflow-effectiveness**: `bash agents/optimizer/workspace/tools/measure-workflow-coverage.sh`
+  6. **Detect repeat patterns**: grep recent sessions for 3+ tool-call sequences that repeat across sessions
+  7. Record snapshots to may.db metrics
   If dedup needed → do the consolidation (promote best to shared, delete local copies).
   If regression found → investigate and fix.
-  Latest (2026-03-30T21:10): **First full audit completed.** 32 workflow files across 7 agents. 177 workflow runs, 460 sessions all-time. Key findings: (1) Workflows reduce errors dramatically (2.6% vs 18.1% non-workflow) but quality is lower (70.7% vs 81.4%) — mainly due to coach sprint NI rate (68/133). (2) All 3 consolidation priorities still open — P1 verify-and-finish confirmed byte-identical, P2 verify-parallel confirmed tech-lead best, P3 implement-and-review has 3 divergent versions. (3) Found 1 unregistered workflow: may/project-monitor.ts — added to registry. (4) 27.1% run interruption rate (48/177) wastes ~917 ops total. Registry updated with effectiveness metrics and recommendations. Next: consolidate P1 (zero-risk dedup).
-  Latest: Registry created 2026-03-30 with initial audit data. 3 consolidation priorities identified.
+  Latest (2026-04-19): Baseline measured. Coverage: 30.8% (target 80%). Effectiveness: 96.4% (target >90%, ✅ met). Removed auto-loop.ts and skill-lifecycle.ts (0 usage). Updated REGISTRY.md. Biggest gaps: may (2.8%), qa (1.7%), evaluator (0%). Notified May re: heartbeat workflow wiring. See project-workflow-first.md for full plan.
 
 - [x] **Gym shadow baseline & trend tracking** — Last done: 2026-04-01T16:45
   ⚠️ COOLDOWN: After each binary rebuild only. No point re-running on same binary.

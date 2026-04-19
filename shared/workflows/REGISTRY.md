@@ -10,7 +10,6 @@
 | `implement-and-verify` | `shared/workflows/implement-and-verify.ts` | 197 | Lightweight code workflow (H-070 P3): coder Plan → Write → Verify. No QA agent. **Workhorse — 85% of all workflow usage.** | ~79 sessions |
 | `implement-and-review` | `shared/workflows/implement-and-review.ts` | 150 | Code changes: coder implements → QA reviews → one retry → escalate. Phase 1 DIAGNOSE / Phase 2 VERDICT QA prompts. | 0 (but 143 all-time) |
 | `parallel-research` | `shared/workflows/parallel-research.ts` | 184 | Fork N research threads → collect → synthesize. Promise.allSettled for resilience. Max 5 threads. | ~12 sessions |
-| `skill-lifecycle` | `shared/workflows/skill-lifecycle.ts` | 246 | Full lifecycle: Discover → Draft → Test → Deploy. Used by optimizer. | 0 (but 41 all-time) |
 | `verify-wrap` | `shared/workflows/verify-wrap.ts` | 154 | Minimal 2-phase verification wrapper (EXP-138). Phase 1: execute task. Phase 2: separate session reads back all written files. For reliant agents (scout, optimizer, may). | 0 (new — pending production pilot) |
 
 **Note**: `fewshot-inject-helpers.ts` is in this directory but is NOT a workflow (no `execute()` function). It's a keyword-based utility for prepending few-shot examples, excluded by the `-helpers` filename filter.
@@ -19,7 +18,7 @@
 
 12 workflows were previously archived and have now been **deleted from disk** (2026-04-11). All recoverable from git history only.
 
-Deleted workflows (3,480 lines total): `code-review-loop`, `context-learn`, `evidence-gate`, `gated-exploration`, `predict-then-verify`, `reviewed-delivery`, `two-phase`, `verify-and-finish`, `verify-parallel`, `research-to-production`, `auto-loop`, `implement-and-adversarial-review`.
+Deleted workflows (3,480+ lines total): `code-review-loop`, `context-learn`, `evidence-gate`, `gated-exploration`, `predict-then-verify`, `reviewed-delivery`, `two-phase`, `verify-and-finish`, `verify-parallel`, `research-to-production`, `auto-loop`, `implement-and-adversarial-review`, `skill-lifecycle` (removed 2026-04-19, 0 recent usage).
 
 ## Agent-Specific Workflows
 
