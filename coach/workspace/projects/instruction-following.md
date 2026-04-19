@@ -1,6 +1,6 @@
 # Project: Agent Instruction Following
 
-**Status**: blocked
+**Status**: active
 **Owner**: coach
 **Reviewer**: may / Hao
 **Master**: may/system-evolution (gap-level concern)
@@ -49,6 +49,8 @@ Evidence base (as of 2026-04-18):
 | Few-shot templates on discovery tasks | −67pp | KE-133 |
 | Hard gate whose artifact IS the solution | high | KE-182 |
 | Hard gate that writes an ANALYSIS doc | harmful | KE-180 (0% vs 80%) |
+| Skill TRIGGER/ACTION/EXAMPLE + SOUL rule | ~75% | EXP-186 (0%→75%, partial) |
+| Keyword-tagged INDEX for KE retrieval | +13pp (n.s. p=0.35) | EXP-187 (60%→73%, inconclusive) |
 
 From **metric-autonomy** child project (iterations 1–5, on coder):
 
@@ -188,8 +190,68 @@ aggregates across all of them.
 ## Next
 
 - [x] ~~Consolidation sub-task~~ → `instruction-following-hypotheses.md` written (2026-04-18)
-- [ ] Design and build **persistent-task-adoption** gym scenario (smallest new child experiment)
-- [ ] Define source queries for the 4 coach metrics (see Hao's comment below)
+- [x] ~~Design and build **persistent-task-adoption** gym scenario~~ (done, 7 iterations)
+- [x] ~~Define source queries for the 4 coach metrics~~ (see below)
+- [ ] **EXP-188**: Programmatic auto-detection — handler code scans for active projects, injects exact `workflow.run()` into task. Expected: 0%→~100%. Design in `EXP-186/design.md`.
+- [ ] Deploy metric-reaction G' framing to production (already tested, 100%)
+- [ ] Run metric-autonomy iter 6 (clean G)
+
+## Coach Metric Source Queries
+
+All queries run against `.state/may.db` via `bun:sqlite`.
+
+### 1. Instruction Compliance Rate (target ≥ 0.8)
+Pass rate across all instruction-testing gym scenarios.
+```sql
+SELECT 
+  COUNT(CASE WHEN passed = 1 THEN 1 END) * 1.0 / COUNT(*) AS compliance_rate,
+  COUNT(*) AS n
+FROM gym_runs 
+WHERE scenario LIKE 'use-persistent-task%' 
+   OR scenario LIKE 'metric-reaction%'
+```
+Filter to last 7 days for trending: `AND startedAt > strftime('%s','now','-7 days') * 1000`
+
+### 2. Intervention Hit Rate (target ≥ 0.6)
+For each intervention deployed, compare post-intervention pass rate to pre-intervention baseline.
+```sql
+-- Per-variant comparison: group by scenario variant, compare pass rates
+SELECT scenario, 
+  COUNT(CASE WHEN passed = 1 THEN 1 END) * 1.0 / COUNT(*) AS pass_rate,
+  COUNT(*) AS n
+FROM gym_runs
+WHERE scenario LIKE 'use-persistent-task%' OR scenario LIKE 'metric-reaction%'
+GROUP BY scenario
+ORDER BY pass_rate DESC
+```
+Hit = variant where pass_rate > baseline pass_rate. Compute: count(hits) / count(interventions).
+
+### 3. Skill Effectiveness (target ≥ 0.6)
+Count deployed skills where gym pass rate improved post-deployment. Manual tracking required — cross-reference skill deployment dates with gym_runs timestamps.
+```sql
+-- Get runs tagged with specific skill/intervention, compare to untagged baseline
+SELECT run_tags, 
+  COUNT(CASE WHEN passed = 1 THEN 1 END) * 1.0 / COUNT(*) AS pass_rate,
+  COUNT(*) AS n
+FROM gym_runs
+WHERE run_tags IS NOT NULL
+GROUP BY run_tags
+```
+
+### 4. Knowledge-to-Action Latency (target ≤ 48h)
+Manual metric. For each KE entry, record: (a) KE creation timestamp, (b) first experiment using that KE. Latency = (b) - (a).
+```sql
+-- Find KE references in experiment designs (manual cross-reference needed)
+-- Track in a simple table: INSERT INTO ke_latency (ke_id, created_at, first_experiment_at, latency_hours)
+```
+Currently no automated source — recommend adding a `ke_latency` table or tracking in this project file.
+
+## Next Experiment: EXP-188
+
+**Goal**: Programmatic auto-detection for persistent-task workflow.
+**Hypothesis**: Handler code that scans `workspace/projects/` for `status: active` files and injects the exact `workflow.run("persistent-task", ...)` command into the task will achieve ≥80% compliance (vs 0% baseline, 75% skill-only).
+**Method**: See `agents/shared/knowledge/experiments/EXP-186/design.md` — Steps 1-4 (scanner → injection → gym test).
+**Why this is next**: EXP-186 showed skill alone = 75% (below target). EXP-184 showed exact-command = 100%. Programmatic injection bridges the gap by auto-generating the exact command.
 
 ## Status of existing metric-autonomy session
 
