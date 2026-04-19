@@ -452,3 +452,7 @@ The task is already complete - all 5 milestones are done, the reviewer says "DON
 All 5 milestones are complete and the reviewer has marked this as DONE twice. There is no remaining work.
 **Reviewer**: DONE — — All 5 milestones complete. Workflow coverage exceeded the 80% target (100% of LLM-driven cron entries are workflow-routed). Human feedback about dead workflows was addressed by archiving rather than deleting. Ship it.
 
+### Iteration 11 (comment) — 2026-04-19T18:02:20.032Z
+**Comment**: - [2026-04-19 hao] Don't delete dead workflows. Some are dead because agents don't use them properly. Either fix adoption or archive for reference.
+**Reviewer**: DONE — — All 5 milestones are complete. Workflow coverage exceeded the 80% target. Human feedback about dead workflows was addressed by archiving rather than deleting. Ship it.
+
