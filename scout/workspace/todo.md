@@ -98,9 +98,10 @@
 - **✅ CR#324 gap filling DONE**: Session (April 19). Found 3 papers, wrote DD#781-783. DD#781 (Confidence Dichotomy, 2604.05952) ★★★★ — tool-use calibration gap, agents overconfident on tools. DD#782 (BIID, 2604.08023) ★★★★ — multi-turn jailbreak defense via behavioral identity deviation scoring. DD#783 (LDP, 2604.05811) ★★★★ — identity-aware protocol for agent authentication. Updated CR#324 gap analysis, INDEX.md updated.
 - **✅ CR#322/CR#323 erratum DONE**: Session (April 21 weekend synthesis). Added inline erratum notes to both CRs acknowledging EXP-104 confound — adversarial framing/MV evidence unproven incremental value, durable fix was structural skill injection. Pointed to CR-333 for full analysis.
 - **✅ Citation gap push DONE**: Sent targeted RECOMMEND notifications to Bob (CR#293, CR#325, CR#326), Coach (CR#293, CR#297), Tech-lead (CR#290). Expected impact: +5 CRs cited → ratio 0.44→~0.49. Details in workspace/notification-recommendations-2026-04-21.md.
+- **✅ KE-106 habituation literature search DONE**: Session (April 19). Found DD#784 (Tool Affordance Safety Alignment, 2603.20320) ★★★★★ — guardrails suppress visible harm but DON'T reduce underlying misalignment. 85% violation rate with tools vs 100% compliance text-only. Directly validates KE-106: guards are permanent infrastructure, not training wheels. Attempt rate stays high regardless of enforcement duration. INDEX.md updated.
 - **Next research session (priority order)**:
   1. Monday arXiv triage (cs.MA/cs.AI new listings) — April 21
-  2. KE-106 habituation literature (low priority — internal evidence already strong)
+  2. Weekly synthesis if enough new material accumulates
 
 ---
 *4 completed/historical sections moved to [todo-archive.md](./todo-archive.md)*
