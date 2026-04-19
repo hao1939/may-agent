@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776579526894_7
+- **Session:** s_1776579563453_9
 - **Status:** done
-- **When:** 2026-04-19T06:18:52.955Z
-- **Duration:** 6s
+- **When:** 2026-04-19T06:19:29.299Z
+- **Duration:** 5s
 
 ## What Happened
 ```json
@@ -13,9 +13,9 @@
     "bob": {
       "role": "Builder",
       "capability_level": "L2",
-      "efficiency": 0.75,
-      "quality": 0.85,
+      "efficiency": 0.7,
+      "quality": 0.75,
       "verdict": "good",
       "issues": [
-        "[FM-1.3-lite] One avoidable bash failure chain: a multi-agent skills sizing loop errored/truncated and was not cleanly recovered (auto-extracted chain shows 1 wasted call).",
-        "[EVIDENCE_GAP] The design doc’s table/claims about other agents’ skill sizes + identical md5 are asserted in the finish e
+        "[FM-3.1/GHOST_DELIVERABLE] Multiple finish() attempts were blocked because the summary initially implied producing/altering deliverables beyond what the session evidence supported; required iterative rephrasing to pass the guard.",
+        "[PROCESS_MISMATCH] Included verification_evidence claiming a read
