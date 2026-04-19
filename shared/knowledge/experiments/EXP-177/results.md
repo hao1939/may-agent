@@ -41,8 +41,8 @@ All three pre-registered hypotheses are **refuted**. On clean S1 environments, h
 | Arm | Pass | Fail | Rate | 95% CI |
 |-----|------|------|------|--------|
 | A1 BASE | 6 | 14 | 30% | 12–54% |
-| A2 LEXICAL | 4 | 16 | 20% | 6–44% |
-| A3 PARAPHRASE | 6 | 14 | 30% | 12–54% |
+| A2 LEXICAL | 2 | 18 | 10% | 1–32% |
+| A3 PARAPHRASE | 4 | 16 | 20% | 6–44% |
 | A4 PLACEBO | 3 | 17 | 15% | 3–38% |
 
 ## Analysis
