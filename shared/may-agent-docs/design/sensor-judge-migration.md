@@ -175,7 +175,7 @@ The guard system doesn't care whether a workflow is a converted cron handler or 
 | File | Purpose |
 |------|---------|
 | `src/app/cron.ts` | New `"workflow"` entry type |
-| `agents/shared/workflows/error-scan.ts` | First migrated workflow |
-| `agents/shared/workflows/coaching-feedback.ts` | Second migration |
+| `agents/shared/workflows/error-scan.ts` | ~~First migrated workflow~~ — REMOVED from disk |
+| `agents/shared/workflows/coaching-feedback.ts` | ~~Second migration~~ — REMOVED from disk |
 | `agents/shared/workflows/priority-drift.ts` | Third migration |
 | `agents/shared/workflows/active-nudge.ts` | Fourth migration |
