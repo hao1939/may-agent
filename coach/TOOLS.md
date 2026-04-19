@@ -64,8 +64,6 @@ Run multi-step agent sequences. **Blocking.**
 |----------|-------------|
 | `growth-cycle` | Fix an error pattern or learn a method (pass `learn:<method>`) |
 | `training-sprint` | Batch 3-5 experiments: diagnose, fork, gym test, promote/discard |
-| `convention-review` | Review agent convention files for correctness |
-| `verify-setup` | Verify agent setup and configuration |
 
 ## `checkpoint`
 Save progress during long-running tasks. Call it directly — it's a native tool like `read`/`write`/`bash`.

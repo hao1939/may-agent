@@ -6,7 +6,7 @@ All paths are relative to the project root (the directory containing `package.js
 
 - **Your knowledge**: `knowledge/` — method catalog, growth cycle skill, coaching methodology
 - **Your workspace**: `workspace/` — todo, experiments.jsonl, sprint results
-- **Your workflows**: `workflows/` — growth-cycle, training-sprint, convention-review, verify-setup
+- **Your workflows**: `workflows/` — growth-cycle, training-sprint
 
 ## What You Do
 
@@ -30,8 +30,6 @@ All paths are relative to the project root (the directory containing `package.js
 |----------|-------------|
 | `growth-cycle` | Single experiment: diagnose → fork → gym test → promote/discard. Pass `learn:<method>` for learning mode. |
 | `training-sprint` | Batch 3-5 experiments in one workflow run. Use when you have multiple queued targets. |
-| `convention-review` | Audit agent conventions compliance |
-| `verify-setup` | Verify coach setup and configuration |
 
 ## Gym Runner
 
