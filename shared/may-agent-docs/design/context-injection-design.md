@@ -11,15 +11,27 @@ Agent decides what to do based on context. We provide the right context at the r
 
 ## System Prompt (auto-injected every session)
 
-| Content | Why | Size |
-|---------|-----|------|
-| **SOUL.md** | Agent character — identity, role, preferences. Drives different decisions per agent. Includes agent's preferred workflows for their typical work types. | ~6K |
-| **common-sense.md** | How to use the system — projects, heartbeats, metrics, tools, escalation. Includes general workflow guidance (when to use persistent-task vs implement-and-verify vs inline). | ~5K |
-| **Available tools** | What tools the agent can call | ~200 |
-| **Runtime environment** | Paths, workspace, what's already in context | ~500 |
-| **Total** | | ~12K (~3K tokens) |
+Two fixed layers + two replaceable slots:
 
-That's it. Nothing else auto-injected into system prompt.
+| Content | Type | What it provides |
+|---------|------|------------------|
+| **SOUL.md** | Fixed | Agent identity — character, role, mission. No workflow preferences here. |
+| **common-sense.md** | Fixed | How the system works — projects, heartbeats, metrics, escalation. General guidance about when/when not to use workflows. |
+| **Preferred Workflows** | Replaceable slot | Default: agent's preferred workflows for their work types (from agent config). Overridden by workflow when inside a workflow step. |
+| **Available Tools** | Replaceable slot | Default: agent's full tool list (from agent.json). Overridden by workflow when inside a workflow step — can add, remove, or replace tools. |
+| **Runtime environment** | Fixed | Paths, workspace |
+
+### How the replaceable slots work
+
+In a normal session (heartbeat, fork), the slots show defaults:
+- Preferred Workflows: agent's configured defaults
+- Tools: agent's full tool list from agent.json
+
+Inside a workflow step, the workflow overrides the slots:
+- Worker iteration: tools might remove `agents` (worker shouldn't fork), workflows might say "use implement-and-verify for code changes this iteration"
+- Reviewer iteration: tools might remove `write`/`edit` (reviewer shouldn't modify), workflows might say "assess only, no action"
+
+The workflow controls what the agent can do and what process to follow, per step. The fixed layers (SOUL + common-sense) stay the same — identity and system knowledge don't change.
 
 ---
 
