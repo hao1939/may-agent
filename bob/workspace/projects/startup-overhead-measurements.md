@@ -152,4 +152,97 @@ This means Fix A is **not a missing-injection problem, it's a trust/behavior pro
 
 **Decision for iter 3**: sample 5 of the `bun -e "Database ..."` startup calls to see WHAT they fetch beyond what's already injected. Then pick (a) or (b).
 
+## Iter 3 — DB-query content sampling (executed)
+
+**Script**: `agents/bob/workspace/sample-db-queries.ts` — extracts every `bun -e "...Database..."` bash call issued BEFORE the first productive tool in recent heartbeats.
+
+**N=115 startup DB queries across 5 agents over 7d** (may:53, coach:23, tech-lead:19, optimizer:20; bob=0).
+
+### Crucial finding: queries are NOT re-fetching pending tasks
+
+Tables touched:
+| table    | refs |
+|----------|------|
+| sessions | 199  |
+| requests | 29   |
+| gym_runs | 8    |
+
+The dominant query shape, stereotyped across **may / tech-lead / optimizer** (>80% of hits), is essentially one statement copy-pasted:
+```sql
+SELECT agent, COUNT(*) AS n, ROUND(AVG(opCount)) AS ops,
+       SUM(CASE WHEN status='error' THEN 1 ELSE 0 END) AS errs
+FROM sessions WHERE startedAt > ? GROUP BY agent      -- last 6h
+-- optionally followed by:
+SELECT agent,opCount,task FROM sessions WHERE startedAt>? AND opCount>30 ...  -- high-op
+SELECT agent,status,error,task FROM sessions WHERE status IN('error','interrupted') ... -- recent errors
+SELECT agent,sessionId,task FROM sessions WHERE status='running' AND startedAt<? ...    -- stuck
+```
+Coach has its own variant — `SELECT ... FROM sessions WHERE agent='coach' AND status='running' AND task LIKE '%WORK SESSION%'` — a fork-safety gate.
+
+### Implication — Fix A was aimed at the wrong target
+
+The existing `cron.ts:660-680` injection covers **pending request list**. The 115 startup queries are a different workload: **a recent-activity dashboard**. Agents are answering "what's the system doing right now / did anything break?" before planning their heartbeat action.
+
+### Revised Fix A' — inject a "Recent activity (6h)" block
+
+Add to the cron injection block, produced once per heartbeat at near-zero cost:
+```
+## Injected: recent activity (last 6h)
+
+| agent | sessions | avg_ops | errs |
+|-------|---------:|--------:|-----:|
+| may   | 12 | 8 | 0 |
+| coach |  7 | 15| 1 |
+| bob   | 10 | 19| 0 |
+| ...
+
+Stuck sessions (running >30 min): none
+High-op sessions (>30 ops): tech-lead s_..._804 (42 ops, "design brief ...")
+Recent errors (1h): none
+```
+Plus a coach-specific line: `Running WORK SESSION: none` (or the details, if any). This single fact is why coach re-queries the DB every heartbeat.
+
+### Expected impact
+
+- Eliminates ~115 queries/week → for may at 53 calls/week, that's ~2 startup calls × ~26 heartbeats = drops may startup calls from ~4.7 → ~2.7 (from 74% → est. ~40%).
+- Combined with existing pending-tasks injection this should push may to ~25% and bob/optimizer below 10%.
+- **Side benefit**: removes the instruction-overhead risk of each agent keeping its own lightly-drifted version of this query (already see `require('bun:sqlite')` vs `import{Database}` inconsistencies in the samples).
+
+### Risk
+
+KE-119 / KE-011: passive info may be ignored. Mitigation — inject as part of the existing `<retrieved_state>` tag agents already react to, and add one-line steering in `SOUL.md`/`heartbeat.md`: "The recent-activity block above is authoritative — do not re-query `.state/may.db` for agent session stats."
+
+## Milestone status (updated)
+
+- [x] **Milestone 1** (iter 1): measure overhead (42% mean)
+- [x] **Milestone 2** (iter 2): classify and rank
+- [x] **Milestone 3** (iter 3 / this iter): identify actual missing injection — **it's a recent-activity dashboard, NOT pending-tasks**
+- [ ] Milestone 4: propose patch to `src/app/cron.ts` + steering line; validate by re-running `measure-startup-overhead.ts` 3–7 days after deploy.
+
+## Iter 4 prep — concrete patch sketch
+
+Locate injection site in `src/app/cron.ts` (around line 670-680 where pending-tasks block is built). Add after that block:
+```ts
+try {
+  const db = getDb(this.persistDir);
+  const since = Date.now() - 6 * 3600_000;
+  const rows = db.prepare(
+    `SELECT agent, COUNT(*) AS n, ROUND(AVG(opCount)) AS ops,
+            SUM(CASE WHEN status='error' THEN 1 ELSE 0 END) AS errs
+     FROM sessions WHERE startedAt > ? GROUP BY agent ORDER BY n DESC`
+  ).all(since) as Array<{agent:string; n:number; ops:number; errs:number}>;
+  const stuck = db.prepare(
+    `SELECT agent, sessionId, task FROM sessions
+     WHERE status='running' AND startedAt < ? AND startedAt > ?`
+  ).all(Date.now() - 30*60_000, Date.now() - 24*3600_000) as any[];
+  const highOp = db.prepare(
+    `SELECT agent, opCount, task FROM sessions
+     WHERE startedAt > ? AND opCount > 30 ORDER BY opCount DESC LIMIT 3`
+  ).all(since) as any[];
+  // render to markdown table + short lists, push into injections[]
+} catch { /* non-fatal */ }
+```
+Next iter: write the actual patch, open a review branch via `commitAndMerge`.
+
+
 
