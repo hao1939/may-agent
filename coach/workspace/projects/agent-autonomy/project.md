@@ -1,6 +1,6 @@
 # Project: Agent Autonomy — Roles, Responsibilities & Heartbeats
 
-**Status**: active
+**Status**: done
 **Owner**: coach
 **Priority**: P1
 **Iteration**: 7

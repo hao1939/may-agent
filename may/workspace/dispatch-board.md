@@ -55,11 +55,11 @@ Updated: 2026-04-16 ~08:00 UTC
 - **P2**: Amy-kimi billing — blocked on Hao.
 - ⚠️ **HOLD**: Ch2-production-gates implementation — Hold for EXP-170.
 
-## Latest Cycle Summary (19:10 Apr 19)
+## Latest Cycle Summary (19:40 Apr 19)
 - **SYSTEM**: 9/9 active. Zero errors. No stuck sessions. All healthy.
-- **Agent utilization**: 9 agents active (coder still absent from DB — may be using separate tracking).
-- **RED METRICS**: Build health=0 ⚠️, Coverage=74% ⚠️ (both persistent). stuck-requests=0 false alarm continues.
-- **Gatekeeper**: persistent-task workflow updated (d8293227e) — auto-check milestones before DONE, track false-done metric. Low risk.
+- **Agent utilization**: 9 agents active. Evaluator high-throughput (199 sessions/6h).
+- **RED METRICS**: Build health=0 ⚠️, Coverage=71% ⚠️ (both persistent).
+- **Gatekeeper**: Heartbeat redesign landed (d50ff32fe, 8778c51be) — slimmed all 6 agent heartbeats + shared workflow update. Low risk, internal.
 - **WAITING**: Gatekeeper Review Gate needs Hao approval. Metric System Phase 3 needs process restart.
 
 ## Archive Reference
