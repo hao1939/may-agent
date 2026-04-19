@@ -1,0 +1,10 @@
+{"exp":"EXP-215","condition":"control","run":1,"result":"","raw":"    \"behavior\",     \"prerequisite-gap\"   ],   \"tier\": \"standard\" } "}
+{"exp":"EXP-215","condition":"control","run":2,"result":"","raw":"    \"behavior\",     \"prerequisite-gap\"   ],   \"tier\": \"standard\" } "}
+{"exp":"EXP-215","condition":"control","run":3,"result":"","raw":"    \"behavior\",     \"prerequisite-gap\"   ],   \"tier\": \"standard\" } "}
+{"exp":"EXP-215","condition":"control","run":4,"result":"","raw":"    \"behavior\",     \"prerequisite-gap\"   ],   \"tier\": \"standard\" } "}
+{"exp":"EXP-215","condition":"control","run":5,"result":"","raw":"    \"behavior\",     \"prerequisite-gap\"   ],   \"tier\": \"standard\" } "}
+{"exp":"EXP-215","condition":"treatment","run":1,"result":"","raw":"      at main (/app/test/gym/gym-runner.ts:1076:18)       at /app/test/gym/gym-runner.ts:1082:1       at loadAndEvaluateModule (2:1)  Bun v1.3.11 (Linux x64) "}
+{"exp":"EXP-215","condition":"treatment","run":2,"result":"","raw":"      at main (/app/test/gym/gym-runner.ts:1076:18)       at /app/test/gym/gym-runner.ts:1082:1       at loadAndEvaluateModule (2:1)  Bun v1.3.11 (Linux x64) "}
+{"exp":"EXP-215","condition":"treatment","run":3,"result":"","raw":"      at main (/app/test/gym/gym-runner.ts:1076:18)       at /app/test/gym/gym-runner.ts:1082:1       at loadAndEvaluateModule (2:1)  Bun v1.3.11 (Linux x64) "}
+{"exp":"EXP-215","condition":"treatment","run":4,"result":"","raw":"      at main (/app/test/gym/gym-runner.ts:1076:18)       at /app/test/gym/gym-runner.ts:1082:1       at loadAndEvaluateModule (2:1)  Bun v1.3.11 (Linux x64) "}
+{"exp":"EXP-215","condition":"treatment","run":5,"result":"","raw":"      at main (/app/test/gym/gym-runner.ts:1076:18)       at /app/test/gym/gym-runner.ts:1082:1       at loadAndEvaluateModule (2:1)  Bun v1.3.11 (Linux x64) "}

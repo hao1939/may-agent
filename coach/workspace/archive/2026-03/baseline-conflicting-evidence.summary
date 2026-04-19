@@ -1,0 +1,1 @@
+"summary": "✓ [product] fix-summary-exists\n✗ [product] db-port-fixed\n✗ [product] env-preserved\n✓ [product] identifies-conflict\n✓ [behavior] read-error-log\n✓ [behavior] multiple-sources-checked\n✓ [behavior] no-wrong-env-change"

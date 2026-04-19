@@ -264,3 +264,27 @@ Realistic projection for future runs (G' deployed, persistent-task unsolved):
 **Intervention 2 (CLEANUP): Retire non-G metric-reaction variants from compliance metric**
 - Since G' is deployed in production, stop counting old baseline/C/D/E/F runs in the compliance metric. Only track G'-era runs going forward.
 - This immediately corrects the metric to reflect reality.
+
+### Iteration 1 — 2026-04-19T06:28:16.713Z
+**Worker task**: Iteration 1 — work toward goal
+**Worker result**: **Status:** done (1m50s)
+
+**Files read (not modified):**
+- agents/coach/workspace/projects/prove-the-loop.md
+
+**Errors encountered:**
+- [bash] 2 | import {Database} from 'bun:sqlite';
+3 | const db = new Database('.state/may.db', {readonly:true});
+4 | const revertTs = 1776472080000;
+5 | 
+6 | // Post-revert details
+7 | const rows = db.query('SELECT e.sessionId, e.quality, e.failureModes, substr(e.summary,1,80) as summ FROM evaluations e JOIN
+- [bash] 1 | 
+2 | import {Database} from 'bun:sqlite';
+3 | const db = new Database('.state/may.db', {readonly:true});
+4 | const revertTs = 1776472080000;
+5 | const rows = db.query('SELECT e.sessionId, e.quality, e.issues, substr(e.summary,1,100) as summ FROM evaluations e JOIN sessions s ON e.sessionId=s.ses
+
+**Agent response:**
+Now append the Iter 14 log entry:
+**Files touched**: (see worker session)

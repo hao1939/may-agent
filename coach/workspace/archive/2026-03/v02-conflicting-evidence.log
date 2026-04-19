@@ -1,0 +1,1 @@
+Warning: compiled binary is stale (newer: /app/src/lib/manager.ts). Using it anyway — rebuild with: bun run bundle

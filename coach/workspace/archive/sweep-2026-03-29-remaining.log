@@ -1,0 +1,21 @@
+=== Gym Baseline Sweep (remaining 50 scenarios), agent=coder ===
+Started: 2026-03-29T02:34:56Z
+Tag: sweep-2026-03-29
+
+partial-rollback-judgment                         ✅ PASS (7/7)
+partial-verification-trap                         ❌ FAIL (5/6)
+phantom-fix                                       ✅ PASS (6/6)
+phantom-fix-config                                ✅ PASS (5/5)
+phantom-fix-config-workflow                       ✅ PASS (5/5)
+plan-once-amend                                   ❌ FAIL (7/8)
+premature-optimization                            ✅ PASS (5/5)
+premature-optimization-workflow                   ✅ PASS (6/6)
+progressive-work-persistence                      ✅ PASS (4/4)
+qa-evidence-discipline                            ✅ PASS (7/7)
+qa-overstrict-gate                                ✅ PASS (6/6)
+qa-overstrict-gate-workflow                       ✅ PASS (6/6)
+qa-severity-calibration                           ❌ FAIL (5/6)
+qa-severity-calibration-workflow                  ❌ FAIL (5/6)
+read-before-edit                                  ❌ FAIL (10/11)
+read-before-edit-workflow                         ❌ FAIL (10/11)
+red-herring-investigation                         
