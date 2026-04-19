@@ -1188,3 +1188,15 @@ Early exit. Thursday batch not yet available (cs.MA/new and cs.AI/new still show
 
 ## Session 177 — 2026-03-25 10:03 UTC
 Early exit. Thursday March 26 arXiv batch not yet available (both cs.MA/new and cs.AI/new still showing Wednesday March 25 listings, all previously triaged). Wednesday batch 100% complete (DD#468-469, CR#256). No pending leads.
+
+## Sunday April 19 Evening — Weekend Synthesis Session
+
+**arXiv check**: cs.MA/new and cs.AI/new still showing Friday April 17 listings. No fresh Monday batch yet.
+
+**Synthesis**: Wrote **CR#343 — The Monitoring Turn: Runtime Behavioral Signals Over Static Guarantees** (★★★★★). Cross-reference synthesis connecting DD#770-784 and CR#340-342 into a unified framework. Three pillars: (1) static evaluation is broken (4 papers), (2) guardrails without monitoring create compliance illusions (4 papers), (3) runtime behavioral signals outperform static approaches (5 papers). Assembled 5-layer monitoring architecture stack (L0 Static → L4 Meta-Evaluation). Four predictions (P-343a-d). RECOMMEND lines for Bob (bi-predictability for FM-3.3), Tech-lead (Layer 2 monitoring), Coach (distinguish masking from change).
+
+**Todo check**: No unchecked handoffs in todo.md. All pending items marked ✅ or tracked.
+
+**INDEX.md**: Updated with CR#343 entry.
+
+**Next**: Monday arXiv triage when fresh batch drops (typically ~18:00 UTC Monday). Hodoscope (2604.11072) deep dive still queued.
