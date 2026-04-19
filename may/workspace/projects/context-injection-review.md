@@ -3,7 +3,7 @@
 **Owner**: May  
 **Priority**: P0 (from Hao)  
 **Created**: 2026-04-19  
-**Status**: In Progress  
+**Status**: active
 
 ## Problem
 The first user message has 16 layers of context injection (up to 55K chars) that bury the actual task. Agents follow session history instead of the task instruction.
