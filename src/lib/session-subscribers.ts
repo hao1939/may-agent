@@ -502,3 +502,180 @@ export function getFileReadStats(
     .all(since) as Array<{ reader: string; producer: string; fileCount: number; readCount: number }>;
 }
 
+// ── Findings Tracker ────────────────────────────────────────────────────
+// Auto-creates tracked requests from actionable findings in session deliverables.
+// Part of: Feedback Loop M3.
+
+/** Path patterns that indicate a finding source */
+const FINDING_PATTERNS: Array<{ pattern: RegExp; producer: string }> = [
+  { pattern: /^agents\/scout\/workspace\/deep-dives\/DD-.*\.md$/, producer: "scout" },
+  { pattern: /^agents\/scout\/workspace\/findings\/.*\.md$/, producer: "scout" },
+  { pattern: /^agents\/may\/workspace\/audits\/.*\.md$/, producer: "may" },
+  { pattern: /^knowledge\/experiments\/EXP-.*\/results\.md$/, producer: "coach" },
+];
+
+/** Section headers that indicate actionable content */
+const ACTION_SECTION_RE = /^(Recommend|Action|Next Step|Should|Fix|TODO)/i;
+
+/** Max auto-created requests per session */
+const MAX_FINDINGS_PER_SESSION = 5;
+
+interface ActionItem {
+  summary: string;
+  source: string;
+  severity: "P0" | "P1" | "P2";
+  targetAgent: string;
+}
+
+function deriveSeverity(text: string): "P0" | "P1" | "P2" {
+  const lower = text.toLowerCase();
+  if (/\b(breaking|blocks|regression|data loss)\b/.test(lower)) return "P0";
+  if (/\b(should fix|bug|incorrect)\b/.test(lower)) return "P1";
+  return "P2";
+}
+
+function deriveAgent(text: string): string {
+  const lower = text.toLowerCase();
+  if (/\b(code|implement|refactor|function|module|src\/)\b/.test(lower)) return "tech-lead";
+  if (/\b(context|process|heartbeat|cron)\b/.test(lower)) return "may";
+  if (/\b(research|investigate|explore|design)\b/.test(lower)) return "bob";
+  if (/\b(scenario|training|experiment|gym)\b/.test(lower)) return "coach";
+  return "may"; // default
+}
+
+function extractActionItems(content: string, filePath: string): ActionItem[] {
+  const sections = content.split(/^##\s+/m);
+  const actionSections = sections.filter(s => ACTION_SECTION_RE.test(s));
+
+  // For coach experiment results, only process if there's an action/recommendation section
+  if (/\/experiments\/EXP-/.test(filePath) && actionSections.length === 0) return [];
+
+  const items: ActionItem[] = [];
+  for (const section of actionSections) {
+    const bullets = section.match(/^[-*]\s+.+$/gm) || [];
+    for (const bullet of bullets) {
+      const summary = bullet.replace(/^[-*]\s+/, "").trim();
+      if (!summary || summary.length < 10) continue; // skip trivial bullets
+      // Must contain imperative language
+      if (!/\b(should|must|fix|add|implement|change|remove|update|create|migrate|refactor)\b/i.test(summary)) continue;
+      items.push({
+        summary,
+        source: filePath,
+        severity: deriveSeverity(summary),
+        targetAgent: deriveAgent(summary),
+      });
+    }
+  }
+  return items;
+}
+
+/** Simple Jaccard similarity on word tokens */
+function jaccardSimilarity(a: string, b: string): number {
+  const tokA = new Set(a.toLowerCase().split(/\s+/).filter(w => w.length > 2));
+  const tokB = new Set(b.toLowerCase().split(/\s+/).filter(w => w.length > 2));
+  if (tokA.size === 0 && tokB.size === 0) return 1;
+  if (tokA.size === 0 || tokB.size === 0) return 0;
+  let intersection = 0;
+  for (const w of tokA) if (tokB.has(w)) intersection++;
+  return intersection / (tokA.size + tokB.size - intersection);
+}
+
+export function createFindingsTracker(projectRoot: string, persistDir: string): (event: AgentEvent) => void {
+  return (event: AgentEvent) => {
+    if (event.type !== "session_end") return;
+
+    const finishParams = event.finishParams as any;
+    const deliverables = finishParams?.deliverables as Array<{ path?: string; description?: string }> | undefined;
+    if (!deliverables?.length) return;
+
+    try {
+      // Filter deliverables matching finding patterns
+      const findingFiles: Array<{ path: string; producer: string }> = [];
+      for (const d of deliverables) {
+        if (!d.path) continue;
+        for (const fp of FINDING_PATTERNS) {
+          if (fp.pattern.test(d.path)) {
+            findingFiles.push({ path: d.path, producer: fp.producer });
+            break;
+          }
+        }
+      }
+      if (findingFiles.length === 0) return;
+
+      const db = getDb(persistDir);
+      let created = 0;
+
+      for (const ff of findingFiles) {
+        if (created >= MAX_FINDINGS_PER_SESSION) break;
+
+        // Read the finding file
+        const fullPath = join(projectRoot, ff.path);
+        let content: string;
+        try {
+          content = readFileSync(fullPath, "utf-8");
+        } catch {
+          continue; // file doesn't exist or can't be read
+        }
+
+        // Check for stale/superseded frontmatter
+        if (/^status:\s*(stale|superseded)/m.test(content)) continue;
+
+        // Extract action items
+        const items = extractActionItems(content, ff.path);
+        if (items.length === 0) continue;
+
+        // Sort by severity for volume cap
+        const severityOrder: Record<string, number> = { P0: 0, P1: 1, P2: 2 };
+        items.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity]);
+
+        // Check for existing requests from same source
+        const existingFromSource = db
+          .prepare(
+            `SELECT requestId FROM requests WHERE source_finding = ? AND status NOT IN ('COMPLETED', 'FAILED')`,
+          )
+          .all(ff.path) as { requestId: string }[];
+        if (existingFromSource.length > 0) continue;
+
+        // Get existing open auto-requests for fuzzy dedup
+        const existingAutoTasks = db
+          .prepare(
+            `SELECT task FROM requests WHERE task LIKE '[Auto]%' AND status NOT IN ('COMPLETED', 'FAILED')`,
+          )
+          .all() as { task: string }[];
+
+        for (const item of items) {
+          if (created >= MAX_FINDINGS_PER_SESSION) break;
+
+          const taskText = `[Auto] ${item.summary.slice(0, 450)}`;
+
+          // Fuzzy dedup against existing auto-requests
+          const isDuplicate = existingAutoTasks.some(
+            (r) => jaccardSimilarity(taskText, r.task) > 0.7,
+          );
+          if (isDuplicate) continue;
+
+          trackRequest(persistDir, {
+            fromEntity: ff.producer,
+            toAgent: item.targetAgent,
+            task: taskText,
+            method: "notify",
+            source: `findings-tracker:${event.sessionId}`,
+            context: `Auto-created from finding. See ${ff.path} for details.`,
+            source_finding: ff.path,
+          });
+
+          // Add to existing list for intra-session dedup
+          existingAutoTasks.push({ task: taskText });
+          created++;
+        }
+      }
+
+      if (created > 0) {
+        log("info", `[findings-tracker] created ${created} request(s) from ${findingFiles.length} finding(s) in session ${event.sessionId}`);
+      }
+    } catch (err) {
+      log("warn", `[findings-tracker] failed for session ${event.sessionId}: ${err}`);
+    }
+  };
+}
+
