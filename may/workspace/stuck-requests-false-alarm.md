@@ -1,17 +1,13 @@
-# ⚠️ stuck-requests Metric: False Alarm Evidence
+# Stuck Requests Metric — False Alarm Evidence
 
-**Date**: 2026-04-18
-**Metric**: system.stuck-requests = 0, target = 0
-**Status**: FALSE ALARM — value equals target
+**Date**: 2026-04-19
+**Metric**: `system.stuck-requests`
+**Current value**: 0 | **Target**: 0 | **Status**: ⚠️ RED (false positive)
 
 ## Evidence
-The metric system flags this as ⚠️ BELOW THRESHOLD despite the value (0) equaling the target (0). This has been observed across 15+ consecutive heartbeat cycles (since ~15:00 UTC today). Every cycle, the DB confirms 0 stuck requests.
 
-This is a metric definition bug — likely the threshold comparison uses `<=` instead of `<`, or the "below threshold" logic doesn't handle the case where value == target == 0.
+The metric value (0) equals the target (0), meaning there are zero stuck requests — the system is healthy. However, the threshold comparison logic incorrectly flags this as "below threshold."
 
-## Action Taken
-- Fix dispatched to tech-lead on 2026-04-18 ~15:36 UTC (req:baaae56e)
-- Tech-lead has not yet resolved; may be deprioritized vs other work
+This is a known threshold inversion bug. Tech-lead has already invested 59+ ops in a session titled "The stuck-requests metric (value=0, target=0) is…" attempting to fix it, plus 48 ops on "Fix three metric system bugs."
 
-## Conclusion
-No action needed on stuck requests themselves (there are none). The metric display logic needs fixing.
+The underlying system is healthy. No action needed beyond the ongoing tech-lead fix.
