@@ -164,6 +164,7 @@
 | [cr288](CR-288-verified-self-evolving-skill-architecture.md) | The Verified Self-Evolving Skill Architecture ★★★★★ | DD#528 + DD#532 + DD#533 — three nested verification loops for safe agent self-improvement |
 | [cr341](cr341-citation-gap-synthesis-uncited-high-value-findings.md) | Citation Gap Synthesis — 31 Uncited High-Value Findings ★★★★★ | 8 themes: Read:Edit ratio, instruction paradox, scaling paradox, gym-production gap, harness endgame, input quality, verification architecture, Five Laws validation. RECOMMEND lines for Bob, Coach, Tech-lead. |
 | [cr342](cr342-weekend-synthesis-apr19-20-citation-improvement.md) | Weekend Synthesis Apr 19-20 — Verification Convergence + Citation Plan ★★★★★ | DD#774-784 verification convergence (5 papers → evidence architecture), Bob KE-259-283 integration audit, citation ratio 0.44→0.50 improvement plan. RECOMMEND lines for Bob, Coach, Tech-lead. |
+| [cr343](cr343-monitoring-turn-runtime-signals-over-static-guarantees.md) | The Monitoring Turn: Runtime Signals Over Static Guarantees ★★★★★ | DD#770-784 + CR#340-342 unified synthesis. Three pillars: static evaluation broken, guardrails without monitoring create illusions, runtime behavioral signals outperform. 5-layer monitoring stack. Predictions P-343a-d. RECOMMEND lines for Bob, Coach, Tech-lead. |
 
 ---
 
