@@ -246,3 +246,20 @@ Do NOT edit any files except a measurement report. Calculate the new workflow co
 
 **Output**: `agents/optimizer/workspace/coverage-measurement.md` with concrete numbers.
 
+### Iteration 4 — 2026-04-19T16:50:22.302Z
+**Worker**: **Status:** done (2m39s)
+
+**Files modified:**
+- DELIVERABLES_CHECKLIST.md
+
+**Files read (not modified):**
+- agents/may/cron.json
+
+**Errors encountered:**
+- [bash] (no output)
+
+Command exited with code 2
+- [edit] Could not find the exact text in agents/may/cron.json. The old text must match exactly including all whitespace and newlines.
+
+**Agent response:**
+Amy-kimi is disabled, so that's fine. All 7 enabled heartbeats now route through the workflow.
