@@ -276,6 +276,10 @@ function buildReviewPrompt(
   }
 
   if (recentEntries) prompt += `## Recent Progress\n${recentEntries}\n\n`;
+
+  const comments = extractComments(projectContent);
+  if (comments) prompt += `## Comments (from human/agents — address these in your guidance)\n${comments}\n\n`;
+
   prompt += `## Latest Worker Output (Iteration ${iteration})\n${workerSummary}\n\n`;
 
   prompt += `## Your Assessment\n`;
