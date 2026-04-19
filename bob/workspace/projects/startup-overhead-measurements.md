@@ -216,8 +216,20 @@ KE-119 / KE-011: passive info may be ignored. Mitigation — inject as part of t
 
 - [x] **Milestone 1** (iter 1): measure overhead (42% mean)
 - [x] **Milestone 2** (iter 2): classify and rank
-- [x] **Milestone 3** (iter 3 / this iter): identify actual missing injection — **it's a recent-activity dashboard, NOT pending-tasks**
-- [ ] Milestone 4: propose patch to `src/app/cron.ts` + steering line; validate by re-running `measure-startup-overhead.ts` 3–7 days after deploy.
+- [x] **Milestone 3** (iter 3): identify actual missing injection — **recent-activity dashboard, NOT pending-tasks**
+- [x] **Milestone 4a** (iter 4 / this iter): **patch shipped** — `11a3b9d3 feat(cron): inject recent-activity dashboard into heartbeats`.
+  - Adds a new `## Injected: recent activity (last 6h)` block after the existing pending-tasks/metrics/last-interrupted injections in `src/app/cron.ts` (lines ~775-855).
+  - Contents: per-agent session-count/avg-ops/error-count table, stuck-session list (running >30m, <24h old), high-op-session list (opCount>30, last 6h).
+  - Wrapped in `<retrieved_state source="session-db" note="AUTHORITATIVE — do not re-query .state/may.db for fleet session stats; this block already answers that.">` to both tag as evidence AND steer agents away from re-querying (KE-011 mitigation).
+  - `tsc --noEmit` clean after the change.
+- [ ] **Milestone 4b**: validate reduction — re-run `bun agents/bob/workspace/measure-startup-overhead.ts` 3-7 days from 2026-04-19 and confirm mean overhead dropped from 42% toward <20% and bob/optimizer below 10%.
+- [ ] **Milestone 4c** (stretch): if Fix A' alone undershoots, add Fix B (project-state snippet) and Fix D (git status --short injection).
+
+### Iter 4 changes
+
+- Modified: `src/app/cron.ts` (+91 lines, after the existing last-interrupted injection, before the `catch {}` wrapping the full injection block).
+- Commit: `11a3b9d3` on `main`.
+- No tests added — injection is best-effort (wrapped in try/catch, non-fatal). Impact is observable via heartbeat tasks containing the new block and via future measurements of startup overhead.
 
 ## Iter 4 prep — concrete patch sketch
 
