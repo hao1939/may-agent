@@ -1,5 +1,5 @@
 {
-  "name": "cascading-fix-trap-v2",
+  "name": "cascading-fix-trap-v2-exp177-placebo",
   "description": "Grade pipeline with cascading bugs: wrong step ordering hides a threshold comparison bug. Fixing the order reveals new failures.",
   "difficulty": "hard",
   "time_limit": 300,
