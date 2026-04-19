@@ -382,3 +382,20 @@ All 15 LLM cron entries are now workflow-routed (100%). Let me update the measur
 
 **Output**: The 5 fixed cron entries confirmed via jq.
 
+### Iteration 7 — 2026-04-19T17:21:17.780Z
+**Worker**: **Status:** done (1m55s)
+
+**Files modified:**
+- DELIVERABLES_CHECKLIST.md
+
+**Files read (not modified):**
+- agents/may/cron.json
+- agents/optimizer/workspace/coverage-measurement.md
+
+**Errors encountered:**
+- [edit] Found 2 occurrences of the text in agents/may/cron.json. The text must be unique. Please provide more context to make it unique.
+
+**Agent response:**
+All 5 target entries (optimize, reflect, common-sense-verify, common-sense-infra, research-intake) now have `"workflow": "verify-wrap"`. The remaining 3 nulls (training-sprint, error-scan, coaching-feedback-wf) have their own specific workflows in `handlerConfig` and weren't in scope.
+
+Now update the measurement report:
