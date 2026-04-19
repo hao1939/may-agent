@@ -60,6 +60,24 @@ The delivery mechanism is NOT broken — it's working. Evidence:
 - Next heartbeat cycle: agents should see their active alerts in check-health step
 - Next metric regression: owner should receive notify() in addition to trackRequest
 
+## 2026-04-21 — Verify: Partial Progress (Milestone 4)
+
+### Evidence collected
+- All 4 alerts still unresolved (qa.review-coverage, tech-lead.meaningful-changes, evaluator.coverage, tech-lead.build-health)
+- **Push delivery confirmed working**: evaluator received 2 "Coverage regressed" trackRequests (status: CREATED). Bob received "Hypotheses resolved" regression notice.
+- **Pull delivery confirmed in code**: `agent-heartbeat.ts` line 71 injects active alerts query into check-health step
+- **Agent reaction: NONE** — all regression trackRequests still status CREATED, no agent has acted
+
+### Assessment
+Plumbing works. Delivery works. The gap is now **agent compliance** — agents receive alerts but don't prioritize acting on them. This may require:
+1. Waiting for more heartbeat cycles with the new pull injection
+2. Escalation: if still no reaction after 24h, May should notify agents directly with P0 priority
+3. Heartbeat instruction tuning: make alert response mandatory, not optional
+
+### Next
+- Re-check in next heartbeat cycle
+- If still no reaction, escalate via direct notify() to each owning agent
+
 ## 2026-04-20 — Design Complete (Milestone 2)
 
 ### Decision: Push via `notify()` + Pull via heartbeat context
