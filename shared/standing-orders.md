@@ -46,3 +46,8 @@ Before creating any new hypothesis, you must first test or archive one existing 
 - **Applies to**: bob
 - **Reason**: 85% of hypotheses are untested. Stop accumulating, start resolving.
 -->
+
+### [ORDER-010] All src/ code changes require Hao's approval before merge (2026-04-19)
+Do NOT merge review branches to main. Do NOT use batch-merge.sh or review-merge.sh. Do NOT use REVIEW_GATE_BYPASS. Create review branches, commit your code there, and wait for Hao to merge. The review-auto-merge cron handler is disabled. Only Hao merges to main.
+- **Applies to**: all
+- **Reason**: Code changes were being auto-merged without human review. Multiple broken imports, missing files, and unreviewed changes landed on main.

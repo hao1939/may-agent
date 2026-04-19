@@ -493,8 +493,8 @@
     "type": "job",
     "handler": "review-auto-merge",
     "intervalMs": 1800000,
-    "enabled": true,
-    "description": "Auto-merge review/* branches that pass tsc + vitest. Prevents branch accumulation.",
+    "enabled": false,
+    "description": "DISABLED by Hao 2026-04-19: code changes need human review before merge.",
     "offsetMs": 900000
   }
 ]
