@@ -37,6 +37,7 @@ import {
   type AutoPauseStateInfo,
 } from "../lib/auto-pause.js";
 import type { CronEntry } from "../lib/cron-tool.js";
+import { buildProjectInjection } from "../lib/project-scanner.js";
 
 // ── Types ─────────────────────────────────────────────────────────────
 
@@ -766,6 +767,96 @@ export class Cron {
           }
         } catch {
           // Non-fatal
+        }
+
+        // Inject recent-activity dashboard (last 6h) to replace the
+        // ad-hoc `bun -e "...Database..."` queries agents run at
+        // heartbeat startup.  Sampled 115 such queries across may/coach/
+        // tech-lead/optimizer in a 7d window — they all answer the same
+        // question: "what has the fleet been doing & is anything stuck?"
+        // See agents/bob/workspace/projects/startup-overhead-measurements.md
+        try {
+          const db = getDb(this.persistDir);
+          const now = Date.now();
+          const since6h = now - 6 * 3600_000;
+          const since24h = now - 24 * 3600_000;
+          const stuckBefore = now - 30 * 60_000;
+          const activity = db
+            .prepare(
+              `SELECT agent, COUNT(*) AS n,
+                      CAST(ROUND(AVG(COALESCE(opCount,0))) AS INTEGER) AS ops,
+                      SUM(CASE WHEN status='error' THEN 1 ELSE 0 END) AS errs
+               FROM sessions
+               WHERE startedAt > ?
+               GROUP BY agent
+               ORDER BY n DESC`,
+            )
+            .all(since6h) as { agent: string; n: number; ops: number; errs: number }[];
+          const stuck = db
+            .prepare(
+              `SELECT agent, sessionId, task
+               FROM sessions
+               WHERE status='running' AND startedAt < ? AND startedAt > ?
+               ORDER BY startedAt ASC LIMIT 5`,
+            )
+            .all(stuckBefore, since24h) as { agent: string; sessionId: string; task: string | null }[];
+          const highOp = db
+            .prepare(
+              `SELECT agent, opCount, task
+               FROM sessions
+               WHERE startedAt > ? AND opCount > 30
+               ORDER BY opCount DESC LIMIT 3`,
+            )
+            .all(since6h) as { agent: string; opCount: number; task: string | null }[];
+
+          if (activity.length > 0 || stuck.length > 0 || highOp.length > 0) {
+            const parts: string[] = [];
+            if (activity.length > 0) {
+              parts.push("| agent | sessions | avg_ops | errs |");
+              parts.push("|-------|---------:|--------:|-----:|");
+              for (const a of activity) {
+                parts.push(`| ${a.agent} | ${a.n} | ${a.ops} | ${a.errs} |`);
+              }
+            }
+            const trunc = (s: string | null, n: number) =>
+              !s ? "" : s.length > n ? s.slice(0, n) + "…" : s;
+            parts.push("");
+            parts.push(
+              `Stuck sessions (running >30m): ${
+                stuck.length === 0
+                  ? "none"
+                  : stuck
+                      .map((s) => `${s.agent} ${s.sessionId.slice(0, 16)} "${trunc(s.task, 60)}"`)
+                      .join("; ")
+              }`,
+            );
+            parts.push(
+              `High-op sessions (>30 ops, 6h): ${
+                highOp.length === 0
+                  ? "none"
+                  : highOp
+                      .map((h) => `${h.agent} ${h.opCount}ops "${trunc(h.task, 50)}"`)
+                      .join("; ")
+              }`,
+            );
+            injections.push(
+              `## Injected: recent activity (last 6h)\n\n<retrieved_state source="session-db" note="AUTHORITATIVE — do not re-query .state/may.db for fleet session stats; this block already answers that.">\n${parts.join("\n")}\n</retrieved_state>`,
+            );
+          }
+        } catch {
+          // Non-fatal
+        }
+      } catch {
+        // Non-fatal
+      }
+
+      // Inject active project auto-detection (persistent-task workflow)
+      try {
+        const agentDir = resolve(this.projectRoot, "agents", agentName);
+        const projectInjection = buildProjectInjection(agentName, agentDir);
+        if (projectInjection) {
+          // Prepend project injection so it appears first (highest priority)
+          injections.unshift(projectInjection);
         }
       } catch {
         // Non-fatal
