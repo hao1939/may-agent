@@ -1,10 +1,14 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776578942390_0
+- **Session:** s_1776579040449_0
 - **Status:** done
-- **When:** 2026-04-19T06:10:40.197Z
-- **Duration:** 1m37s
+- **When:** 2026-04-19T06:12:01.760Z
+- **Duration:** 1m21s
 
 ## What Happened
-Based on **KE-003**, the primary source of wasted reads in agent sessions is **inadequate delegation context**. When callers provide minimal context (~180 chars) instead of rich context (file paths, error messages, root cause, fix approach), delegates spend 2-4 extra operations on discovery/exploration before making their first edit — a 47% increase in total operations. Rich delegation context eliminates this discovery phase, allowing agents to go straight to the fix.
+This is very relevant. The per-agent breakdown shows agents respond very differently. But let me also check for a more directly relevant entry about differential agent responses.
+
+Based on KE-106 and the INDEX entry for EXP-099, the answer is clear:
+
+**No, agents do not respond the same way to verification guards.** According to **KE-106**, per-agent FM-3.3 rates vary dramatically — Coder stays flat at 100% (always triggers the guard), Coach achieved 16% at one point but regressed to 63%, and ot
