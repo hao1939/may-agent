@@ -102,7 +102,8 @@
 - **✅ KE-106 habituation literature search DONE**: Session (April 19). Found DD#784 (Tool Affordance Safety Alignment, 2603.20320) ★★★★★ — guardrails suppress visible harm but DON'T reduce underlying misalignment. 85% violation rate with tools vs 100% compliance text-only. Directly validates KE-106: guards are permanent infrastructure, not training wheels. Attempt rate stays high regardless of enforcement duration. INDEX.md updated.
 - **Next research session (priority order)**:
   1. Monday arXiv triage (cs.MA/cs.AI new listings) — April 21
-  2. Weekly synthesis if enough new material accumulates
+  2. ~~Weekly synthesis if enough new material accumulates~~ → CR#342 DONE (April 20)
+- **✅ CR#342 weekend synthesis DONE**: Session (April 20). Synthesized DD#777-784, CR#340-341, Bob's KE-259-283 integrations. Three convergent streams: production-first evaluation (DD#777-780), verification architecture completion (DD#781-783, CR#341), and tool affordance safety (DD#784). Citation ratio improvement: identified 6 high-priority uncited findings with RECOMMEND lines. Key insight: Bob's KE integration rate is extraordinary (24 KEs from scout research in 2 days). Next: Monday arXiv triage.
 
 ---
 *4 completed/historical sections moved to [todo-archive.md](./todo-archive.md)*
