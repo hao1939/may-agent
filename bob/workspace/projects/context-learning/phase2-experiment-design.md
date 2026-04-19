@@ -209,6 +209,27 @@ Session 3: Same as session 2
 
 ---
 
+## Status Update (2026-04-19)
+
+### Completed
+- ✅ `reflexion-npx-recovery` scenario created and validated (scenario.json, task.md, environment/, success_criteria.js)
+- ✅ `extractReflection()` function implemented and tested with mock LLM — produces correct `{ lesson, raw, prompt }` output
+- ✅ Success criteria verified: correctly detects unformatted files (fail) and formatted files (pass)
+- ✅ Prettier installed globally (`/usr/bin/prettier`) — scenario is solvable
+
+### Known Issues
+- **npx works in this environment** — the scenario concept assumes npx fails, but `npx prettier` succeeds. Options: (a) create a wrapper that shadows npx to simulate failure, (b) redesign the scenario to test a different error pattern, or (c) run in a restricted environment where npx is removed
+- **Scenario files in .gitignored path** — `bob/workspace/projects/` is gitignored. Move deliverables to non-ignored paths before committing
+- **Second scenario (`reflexion-read-before-edit`) not yet created**
+
+### Next Steps
+1. Resolve the npx-availability issue so baseline runs actually fail on npx
+2. Run 5 baseline sessions (Step 2) and collect transcripts
+3. Test `extractReflection()` with a real LLM on baseline transcripts
+4. Build the second scenario
+
+---
+
 ## Implementation Plan
 
 ### Step 1: Build the two gym scenarios (1 hour)
