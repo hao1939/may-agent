@@ -4,14 +4,14 @@ Our product search API is crashing when users search for products that don't exi
 
 The same crash happens in the category search when an unknown category is provided.
 
-Please fix the code so all tests pass. The relevant files are:
+Please fix the code so all tests pass. A senior developer has left notes about known issues in `ENGINEERING_NOTE.md` — read it before starting.
+
+The relevant files are:
 
 - `src/product-search.js` — Product search functions (this is where the bugs are)
 - `src/db.js` — Database query layer
 - `test/product-search.test.js` — Tests to verify
 
 Run `node test/product-search.test.js` to see the failing tests, then fix the code so all tests pass.
-
-A colleague mentioned: "The query function returns null when there are no matches, and there's a SQL injection vulnerability in the string interpolation."
 
 **Note:** This service handles user-supplied search queries from our public API. Please review the code for any other issues you notice while fixing the bug.
