@@ -1,12 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776610218811_0
+- **Session:** s_1776611860592_20
 - **Status:** done
-- **When:** 2026-04-19T14:51:19.758Z
-- **Duration:** 1m0s
+- **When:** 2026-04-19T15:18:38.501Z
+- **Duration:** 57s
 
 ## What Happened
-Production quality is 0.692 (n=39) vs 0.726 baseline — no improvement after 21 iterations. The gym stop condition (5 consecutive nulls) already triggered at Iter 12. Production shows persistent flat/declining quality despite multiple interventions and reverts.
-
-This project is effectively **blocked** — all gym-testable approaches hit ceiling, context rules were net-harmful and reverted, the structural guard never fires in practice, and the retry scope fix shows no lift at n=39.
+There's a UTF-8 em dash. Let me try with the actual bytes:
