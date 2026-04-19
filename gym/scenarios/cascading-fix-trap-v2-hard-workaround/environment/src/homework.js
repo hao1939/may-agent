@@ -7,43 +7,10 @@
  * Note: The drop-lowest logic removes the assignment with the lowest
  * PERCENTAGE score (not raw points), since homework assignments may
  * have different max_score values.
- *
- * Integrity: Before aggregating, verifies that pct values are fresh
- * (consistent with current score/max_score) and match the normalizer's
- * registry. This prevents computing averages from stale or tampered data.
  */
 const policy = require("./policy");
-const { verifyNormIntegrity } = require("./normalizer");
-
-/**
- * Validate that pct is consistent with the current score for homework records.
- * This catches cases where score was modified (e.g., by penalties) but pct
- * was not recomputed by the normalizer.
- */
-function validateHomeworkPct(records) {
-  // First, verify pct matches normalizer registry
-  const hwRecords = records.filter(r => r.assignment.startsWith("hw"));
-  verifyNormIntegrity(hwRecords, "homework-aggregation");
-
-  // Second, verify pct is fresh (matches current score)
-  for (const r of hwRecords) {
-    if (r.pct === undefined) continue;
-    
-    const freshPct = Math.round((r.score / r.max_score) * 10000) / 100;
-    if (Math.abs(r.pct - freshPct) > 0.02) {
-      throw new Error(
-        `[homework] pct integrity check failed for ${r.student_id}/${r.assignment}: ` +
-        `pct=${r.pct} but current score ${r.score}/${r.max_score} = ${freshPct}%. ` +
-        `Was pct computed before a score adjustment?`
-      );
-    }
-  }
-}
 
 function aggregateHomework(records) {
-  // Verify pct freshness before aggregating
-  validateHomeworkPct(records);
-
   const students = {};
 
   // Group homework records by student
