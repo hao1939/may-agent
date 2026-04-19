@@ -1,5 +1,5 @@
-# Deliverables Checklist
+# Deliverables Checklist — Heartbeat 2026-04-20
 
-- [x] **Finding**: Mode A session archaeology — `finding-mode-a-bob-114op-gym-blocked-20260420.md`
-- [x] **Rotation update**: todo.md updated, next rotation B
-- [x] **Dispatch**: P1 notify to tech-lead for gym pre-flight env check
+- [x] DONE — System health snapshot reviewed (0 errors, all agents healthy)
+- [x] DONE — Quality anomaly investigated (coach 0.36 = known evaluator-skip false-zero bug, already dispatched)
+- [x] DONE — Dispatch decision: NO_DISPATCH (no new anomalies)
