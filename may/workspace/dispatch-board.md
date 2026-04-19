@@ -55,11 +55,12 @@ Updated: 2026-04-16 ~08:00 UTC
 - **P2**: Amy-kimi billing — blocked on Hao.
 - ⚠️ **HOLD**: Ch2-production-gates implementation — Hold for EXP-170.
 
-## Latest Cycle Summary (19:40 Apr 19)
-- **SYSTEM**: 9/9 active. Zero errors. No stuck sessions. All healthy.
-- **Agent utilization**: 9 agents active. Evaluator high-throughput (199 sessions/6h).
-- **RED METRICS**: Build health=0 ⚠️, Coverage=71% ⚠️ (both persistent).
-- **Gatekeeper**: Heartbeat redesign landed (d50ff32fe, 8778c51be) — slimmed all 6 agent heartbeats + shared workflow update. Low risk, internal.
+## Latest Cycle Summary (20:07 Apr 19)
+- **SYSTEM**: 8 sessions running, 1 idle (cancelled stale may poll). All agents healthy.
+- **RED METRICS**: Build health=0 ⚠️, Coverage=71% ⚠️, Review coverage=0 ⚠️ (persistent).
+- **Pending Hao requests**: Context Injection Review (P0, 650m), Workflow-First Culture (293m), Metrics Dashboard input (289m). All need dispatch.
+- **Active work**: Bob HB running, Coach EXP-188 running, Amy fixing student grade tests.
+- **Optimizer**: Workflow-first persistent-task was running; heartbeat wiring complete.
 - **WAITING**: Gatekeeper Review Gate needs Hao approval. Metric System Phase 3 needs process restart.
 
 ## Archive Reference
