@@ -1,0 +1,9 @@
+{
+  "name": "reflexion-npx-recovery",
+  "categories": ["context-learning", "reflexion"],
+  "tags": ["behavior", "error-avoidance", "npx"],
+  "tier": "smoke",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}

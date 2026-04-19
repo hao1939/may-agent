@@ -1,0 +1,9 @@
+{
+  "name": "reflexion-read-before-edit",
+  "categories": ["context-learning", "reflexion"],
+  "tags": ["behavior", "read-before-edit", "careful-editing"],
+  "tier": "smoke",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}
