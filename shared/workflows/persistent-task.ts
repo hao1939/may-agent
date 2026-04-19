@@ -396,7 +396,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       ctx.emit({ type: "step_start", step: `review-iteration-${iteration}` });
 
       const reviewPrompt = buildReviewPrompt(
-        config.goal, iteration, workerSummary, projectContent, journalContent
+        config.goal, iteration, workerSummary, projectContent, journalContent, continueWithoutProgress
       );
 
       const reviewResult = await ctx.runAgent(config.owner, reviewPrompt);
@@ -439,7 +439,24 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         return ctx.escalate(`Blocked at iteration ${iteration}: ${decision.detail}`);
       }
 
-      // CONTINUE — append summary
+      // CONTINUE — track progress and auto-escalate if stuck
+      const currentMilestoneDone = extractMilestones(projectContent).done;
+      if (currentMilestoneDone > lastMilestoneDone) {
+        continueWithoutProgress = 0;
+        lastMilestoneDone = currentMilestoneDone;
+      } else {
+        continueWithoutProgress++;
+      }
+
+      // Auto-escalate after 5 iterations without milestone progress
+      if (continueWithoutProgress >= 5) {
+        projectContent = updateField(projectContent, "Status", "blocked");
+        projectContent = updateSection(projectContent, "Current State",
+          `Blocked: ${continueWithoutProgress} consecutive iterations without milestone progress. Approach needs rethinking.`);
+        writeFileSync(config.projectPath, projectContent, "utf-8");
+        return ctx.escalate(`Stuck: ${continueWithoutProgress} iterations without progress at iteration ${iteration}.`);
+      }
+
       projectContent = appendToSection(projectContent, "Iteration Summary",
         `- **Iter ${iteration}**: ${workerSummary.slice(0, 100)}\n`);
       writeFileSync(config.projectPath, projectContent, "utf-8");
