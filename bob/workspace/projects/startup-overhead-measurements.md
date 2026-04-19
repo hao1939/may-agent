@@ -353,6 +353,12 @@ The Fix A' (recent-activity dashboard injection) targets behavioral overhead. To
 
 **Next**: Re-run validation in ~4h (target: 10:00 UTC) when ≥15 completed heartbeat sessions exist across the 5 target agents.
 
+## Iter 9 — still waiting (2026-04-19 06:17)
+
+**Post-deploy counts** (since 05:43): coach=1, may=1, optimizer=2, tech-lead=2, bob=0. Still <3 per agent. No bob heartbeats yet.
+
+**Next**: Re-check at ~10:00 UTC. Need ≥3 done heartbeats per target agent (bob, may, coach, tech-lead, optimizer) before running validation.
+
 
 
 
