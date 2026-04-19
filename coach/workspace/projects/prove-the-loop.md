@@ -169,8 +169,37 @@ Now let me commit my changes and update the project file:
 
 **MANDATORY**: At least one `.ts` file must be edited and `bun test` must pass after your edit. Do NOT spend time on DB queries. Do NOT update markdown project files. Only touch TypeScript source/test files.
 
+
+### Iteration 5 — 2026-04-19T11:45:31.383Z
+**Worker task**: Iteration 5 — work toward goal
+**Worker result**: **Status:** done (1m58s)
+
+**Agent response:**
+All 10 tests pass including the 3 new ones.
+**Files touched**: (see worker session)
+
+**Owner assessment**: CONTINUE — — Iteration 5 claims tests pass and files were touched, but the summary is too vague to verify. I need to see what actually happened before giving credit.
+
+**Next iteration must do EXACTLY these steps:**
+
+1. `git log --oneline -10` — show what was actually committed
+2. `git diff HEAD~3 --stat` — show files changed in recent iterations
+3. `grep -r 'evidence-grounding' src/ --include='*.ts' -l` — confirm the guard is wired
+4. `bun test 2>&1 | tail -40` — show current test results
+
+**Then do actual work to move the metric:**
+
+5. `find src -name '*guard*' -o -name '*compose*' | head -20` — map the guard system
+6. Read the guard composition/pipeline file and identify which guards run on coder output
+7. Pick ONE concrete improvement: stricter verification checks, requiring tool output citations in finish calls, or penalizing shallow evidence. Edit the file, run `bun test`, confirm passing.
+
+**MANDATORY**: Show `git diff` of your changes before committing. At least one `.ts` source file must be edited. Do not touch markdown files.
+
 ## Current State
-Iteration 4 complete. **Status:** done (4m30s)
+Iteration 5 complete. **Status:** done (1m58s)
+
+**Agent response:**
+All 10 tests pass including the 3 new ones.
 
 **Files read (not modified):**
 - src/lib/tools/evidence-grounding-guard.ts
