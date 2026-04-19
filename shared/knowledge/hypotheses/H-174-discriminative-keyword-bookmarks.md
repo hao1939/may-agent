@@ -1,8 +1,8 @@
 # H-174: Discriminative Keyword Bookmarks Improve Knowledge Citation Rates
 
 **Created**: 2026-04-19 by Bob
-**Status**: proposed
-**Confidence**: ★★★☆ (moderate — strong external evidence from DD#765)
+**Status**: tested — inconclusive (EXP-187)
+**Confidence**: ★★☆☆ (weakened — directionally positive but baseline assumption wrong, measurement validity concern)
 **Source**: DD#765 (cooperative paging bookmarks), CR-340 Theme 1 synthesis
 **Connects**: KE-210, DD#764, DD#765, DD#768, DD#772
 
@@ -53,7 +53,29 @@ Four independent research threads (DD#764 structured memory traces, DD#765 bookm
 - Validates the broader CR-340 Theme 1 principle: invest in retrieval structure, not just storage
 - May partially explain why agents under-use the knowledge base despite it containing relevant entries
 
+## Experiment Results: EXP-187
+
+**Result**: +13pp (60%→73%), p=0.35 (Fisher's exact). **Inconclusive.**
+
+### Bayesian Posterior Update
+
+- **Prior**: P(H-174) ≈ 0.65 (★★★☆, strong external evidence but untested in our setting)
+- **Likelihood ratio**: The +13pp result is more likely under H-174-true than H-174-false, but not by much. Under H-true (effect ≥15pp), observing +13pp at N=15 is plausible (LR ≈ 1.3). Under H-false (effect <5pp), +13pp at N=15 is also plausible due to noise.
+- **Posterior**: P(H-174) ≈ 0.55 — slight positive update from direction, but offset by two revelations:
+  1. **Baseline was 60%, not ~30%** — the INDEX titles alone work well, shrinking the ceiling for improvement from ~70pp to ~40pp. The original claim (">15pp from ~30% to >45%") is structurally wrong: we're already at 60%.
+  2. **Measurement validity**: Agents averaged <0.5 file reads. They answered from INDEX content alone, meaning we measured INDEX scanning, not discriminative retrieval. The mechanism H-174 proposes (keywords help agents select the right file to open) was never actually tested.
+- **Net assessment**: ★★☆☆. The hypothesis may still be true for harder retrieval tasks where titles aren't sufficient, but the high-value version (">15pp on typical tasks") is likely false.
+
+### Key Surprises
+1. **60% baseline** — INDEX titles are far more informative than assumed
+2. **Near-zero reads** — agents use INDEX as primary knowledge source, not as a pointer to files
+3. **Failure clustering** — Q11-Q15 (higher-numbered KEs) failed in both arms, suggesting position effects or question difficulty
+
+### Follow-up Recommendation
+**Deprioritize**. The ceiling is low (~40pp max) and the true effect is likely ≤13pp — low ROI compared to other hypotheses. If revisited, redesign with harder retrieval tasks that force file reads (e.g., require quoting KE content, not just citing IDs). N≥60/arm needed for 80% power at 13pp effect size.
+
 ## Links
 
-- Parent / related: KE-210, CR-340 Theme 1
+- Parent / related: KE-210, CR-340 Theme 1, KE-284
+- Tested by: EXP-187
 - Tracked in: agents/bob/workspace/todo.md
