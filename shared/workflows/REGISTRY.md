@@ -11,6 +11,7 @@
 | `implement-and-review` | `shared/workflows/implement-and-review.ts` | 150 | Code changes: coder implements → QA reviews → one retry → escalate. Phase 1 DIAGNOSE / Phase 2 VERDICT QA prompts. | 0 (but 143 all-time) |
 | `parallel-research` | `shared/workflows/parallel-research.ts` | 184 | Fork N research threads → collect → synthesize. Promise.allSettled for resilience. Max 5 threads. | ~12 sessions |
 | `verify-wrap` | `shared/workflows/verify-wrap.ts` | 154 | Minimal 2-phase verification wrapper (EXP-138). Phase 1: execute task. Phase 2: separate session reads back all written files. For reliant agents (scout, optimizer, may). | 0 (new — pending production pilot) |
+| `persistent-task` | `shared/workflows/persistent-task.ts` | 570 | Multi-session iterative task: owner writes task spec → coder iterates Plan/Write/Verify until done or max iterations. State persisted to disk between sessions. Owner reviews each iteration. | ~5 sessions |
 | `heartbeat` | `shared/workflows/heartbeat.ts` | ~80 | Lightweight heartbeat wrapper: check-health → review-requests → dispatch-work → update-context. Each step optional/skippable. Wraps all agent heartbeats for consistent structure. | new |
 
 **Note**: `fewshot-inject-helpers.ts` is in this directory but is NOT a workflow (no `execute()` function). It's a keyword-based utility for prepending few-shot examples, excluded by the `-helpers` filename filter.
