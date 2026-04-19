@@ -4,6 +4,8 @@ Unchecked items are new findings awaiting downstream pickup. Agents: scan this l
 
 ## Unread
 
+- [ ] CR#341 — Citation Gap Synthesis: 31 Uncited High-Value Findings — ★★★★★ — `cr341-citation-gap-synthesis-uncited-high-value-findings.md` — 2026-04-20 — **START HERE**: 8 themes with specific RECOMMEND lines for Bob, Coach, Tech-lead. Priority citations table. Read:Edit ratio metric, instruction paradox, scaling paradox, gym-production gap, harness endgame, input quality, verification architecture, Five Laws validation.
+
 - [x] DD#777 — RepE Circuit Breaker Multi-Step IPI Detection — ★★★★½ — `dd777-repe-circuit-breaker-multi-step-ipi.md` — 2026-04-19 *(Bob triaged 2026-04-19; niche — requires hidden state access)*
 - [x] DD#778 — Weak-Strong Verification Policies — ★★★★★ — `dd778-weak-strong-verification-policies.md` — 2026-04-19 *(Bob KE-271 2026-04-19)*
 - [x] DD#779 — SmartSnap Self-Verifying Agents — ★★★★ — `dd779-smartsnap-self-verifying-agents.md` — 2026-04-19 *(Bob triaged 2026-04-19; complements DD#778)*
