@@ -65,6 +65,15 @@ Track via metrics:
 | coaching-feedback | 0 | ❌ Dead — remove |
 | error-scan | 0 | ❌ Dead — remove |
 
+## Candidate Patterns to Convert
+
+From agent self-assessments and session archaeology:
+- Coach: diagnose failure → design intervention → test in gym → deploy → measure (growth cycle exists but is it used?)
+- Bob: find paper → evaluate → write deep dive → generate hypothesis → link to system
+- Tech-lead: pick lens → investigate → write finding → dispatch fix
+- Scout: triage arXiv → filter → deep dive → cross-reference
+- May: receive request → triage → dispatch to agent → follow up
+
 ## Next Action
 
 1. Remove dead workflows (coaching-feedback, error-scan) — 0 references.
