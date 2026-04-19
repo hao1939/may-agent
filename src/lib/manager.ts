@@ -444,35 +444,14 @@ export class SubagentManager {
     );
     if (commonSense) sections.push(commonSense);
 
-    // 2a. standing-orders.md — direct orders from Hao that all agents MUST follow
-    const standingOrders = loadFile(
-      def.projectRoot ? join(def.projectRoot, "agents", "shared", "standing-orders.md") : undefined,
-    );
-    if (standingOrders) sections.push(standingOrders);
+    // Standing orders: enforced by standing-orders-check handler, not injected.
+    // See design/context-injection-design.md — structural enforcement > text in prompt.
 
-    // 2b. knowledge-essentials.md — distilled verified findings for all agents (~25 lines)
-    // Tier 1 of 3-tier knowledge sharing: universal essentials always in system prompt.
-    // Tier 2: task-matched knowledge routing (in buildSessionContext).
-    // Tier 3: on-demand deep reads (agent reads knowledge/<file> when needed).
-    const knowledgeEssentials = loadFile(
-      def.projectRoot ? join(def.projectRoot, "agents", "shared", "knowledge-essentials.md") : undefined,
-    );
-    if (knowledgeEssentials) sections.push(knowledgeEssentials);
+    // Knowledge essentials: on-demand per design. Agent reads when needed.
+    // Common-sense.md conventions table points to the file location.
 
-    // 3. Skills — behavioral patches from skills/*.md
-    if (agentDir) {
-      const skillsDir = join(agentDir, "skills");
-      if (existsSync(skillsDir)) {
-        const skillFiles = readdirSync(skillsDir, { recursive: true })
-          .map((f) => String(f))
-          .filter((f) => f.endsWith(".md"))
-          .sort();
-        for (const sf of skillFiles) {
-          const skillContent = loadFile(join(skillsDir, sf));
-          if (skillContent) sections.push(skillContent);
-        }
-      }
-    }
+    // Skills: on-demand per design. Agent reads from agents/<name>/skills/ when needed.
+    // Common-sense.md conventions table points to the directory.
 
     // ── Generated sections (per-agent stable — safe for KV-cache) ──
     // These are deterministic per agent config; same agent produces the
