@@ -11,43 +11,21 @@ Make workflows the default way agents work. When an agent does something repeate
 ## Three Principles
 
 ### 1. Repeat tasks → workflow
-When an agent does the same pattern more than twice (investigate → diagnose → fix, research → synthesize → write), that pattern should become a workflow. The workflow captures the process so it's consistent every time.
+When an agent does the same pattern more than twice, that pattern should become a workflow.
 
 ### 2. Enforcement → workflow or guard
-When something needs to happen reliably (verify after write, check metrics before deciding), it should be structural. If it's per-session process → workflow. If it's a quality check across all sessions → guard.
+When something needs to happen reliably, it should be structural.
 
 ### 3. Stable operations → workflow
-When a process is proven and should be reused (persistent-task for projects, implement-and-verify for code), it's a workflow. Not instructions in a doc — executable process.
+When a process is proven and should be reused, it's a workflow — not instructions in a doc.
 
 ## Metrics
 
-| Metric | Type | What it measures | Target |
-|--------|------|-----------------|--------|
-| `optimizer.workflow-coverage` | continuous | % of multi-step work that uses a workflow | 80% |
-| `optimizer.repeat-task-detection` | continuous | Repeat patterns identified and converted to workflows per week | ≥2 |
-| `optimizer.workflow-effectiveness` | health | % of workflow runs that complete successfully vs freestyle | >90% |
-
-## How to Drive It
-
-### Detection
-Optimizer reviews session transcripts for patterns:
-- Agent does 3+ tool calls in a recognizable sequence → candidate for workflow
-- Same sequence appears in multiple sessions → confirmed repeat task
-- Agent's heartbeat describes a multi-step process in prose → should be a workflow
-
-### Creation
-When a pattern is detected:
-1. Design the workflow (steps, inputs, outputs)
-2. Implement as `agents/<owner>/workflows/<name>.ts` or `agents/shared/workflows/<name>.ts`
-3. Test with gym or direct execution
-4. Add to the agent's preferred workflows section
-5. Monitor adoption
-
-### Monitoring
-Track via metrics:
-- Are agents using the workflow? (tool call data)
-- Does it complete successfully? (workflow run records)
-- Is it better than freestyle? (compare quality/efficiency)
+| Metric | Type | Target |
+|--------|------|--------|
+| `optimizer.workflow-coverage` | continuous | 80% of multi-step work uses workflows |
+| `optimizer.repeat-task-detection` | continuous | ≥2 patterns converted/week |
+| `optimizer.workflow-effectiveness` | health | >90% workflow success rate |
 
 ## Current Workflows (audit)
 
@@ -65,10 +43,16 @@ Track via metrics:
 | coaching-feedback | 0 | ❌ Dead — remove |
 | error-scan | 0 | ❌ Dead — remove |
 
+## Milestones
+
+- [x] Audit all workflows with reference counts
+- [x] Remove dead workflows (coaching-feedback, error-scan) — confirmed: no files exist on disk
+- [x] Review low-usage workflows (auto-loop, skill-lifecycle) — already deleted per REGISTRY.md
+- [ ] Convert 1 candidate pattern into a new workflow
+- [ ] Measure workflow coverage baseline
+
 ## Candidate Patterns to Convert
 
-From agent self-assessments and session archaeology:
-- Coach: diagnose failure → design intervention → test in gym → deploy → measure (growth cycle exists but is it used?)
 - Bob: find paper → evaluate → write deep dive → generate hypothesis → link to system
 - Tech-lead: pick lens → investigate → write finding → dispatch fix
 - Scout: triage arXiv → filter → deep dive → cross-reference
@@ -76,7 +60,6 @@ From agent self-assessments and session archaeology:
 
 ## Next Action
 
-1. Remove dead workflows (coaching-feedback, error-scan) — 0 references.
-2. Review low-usage: auto-loop (5 refs), skill-lifecycle (19 refs).
-3. New workflow candidates: Bob's research cycle, May's dispatch pattern.
-- [2026-04-19 hao] Clarification on optimizer's role: you detect patterns, build workflows, and measure coverage. You do NOT fix adoption directly — adoption is controlled by how callers frame tasks (KE-214: verb determines tool). May's dispatch framing, the resume handler, and reviewer guidance are where adoption happens. Your job: 1) Build good workflows worth adopting 2) Measure coverage and report gaps 3) Propose which callers should route which work to which workflow. The actual routing changes are infra work.
+1. Remove dead workflows (coaching-feedback, error-scan) — 0 references, no files exist on disk.
+2. Review low-usage: auto-loop (5 refs), skill-lifecycle (19 refs) — are they defined anywhere?
+3. Pick highest-value candidate pattern and design a workflow for it.
