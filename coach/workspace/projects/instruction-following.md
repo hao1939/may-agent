@@ -152,10 +152,18 @@ aggregates across all of them.
      2. Skill + SOUL + context.md = ~54% (struct-v2)
      3. Generic procedural step in task = 0% (EXP-185)
      4. Context.md only = 0% (baseline)
-   - **Status**: Active. EXP-186 designed — programmatic auto-detection where
-     the heartbeat HANDLER (code) detects active projects and injects the exact
-     workflow.run() call into the task text before the agent sees it. This converts
-     "generic procedural" (0%) into "exact command" (100%).
+   - **Iter 7 — EXP-186: Skill TRIGGER/ACTION/EXAMPLE + SOUL rule** (2026-04-19):
+     Lab fork `struct-persistent-task-v2` with skill file + SOUL.md critical rule.
+     Baseline: 0/3 (0%). Treatment: **3/4 (75%)**. Major lift but below 80% target.
+     Full results: `agents/shared/knowledge/experiments/EXP-186/results.md`
+   - Updated **intervention hierarchy**:
+     1. Exact command in task = 100% (EXP-184 STEP)
+     2. Skill + SOUL + context.md = **~75%** (EXP-186, up from ~54% in struct-v2)
+     3. Generic procedural step in task = 0% (EXP-185)
+     4. Context.md only = 0% (baseline)
+   - **Status**: Active. Next: programmatic auto-detection (handler code that
+     scans for active projects and injects exact workflow.run() into task).
+     This converts "generic procedural" (0%) into "exact command" (100%).
 
 3. **order-compliance** — NEW. Do standing orders like ORDER-008
    ("may fork, not message") stick once set?
