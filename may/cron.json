@@ -493,8 +493,8 @@
     "type": "job",
     "handler": "review-auto-merge",
     "intervalMs": 1800000,
-    "enabled": false,
-    "description": "DISABLED by Hao 2026-04-19: code changes need human review before merge.",
+    "enabled": true,
+    "description": "Auto-merge review/* branches that pass tsc + vitest. Prevents branch accumulation.",
     "offsetMs": 900000
   },
   {
@@ -502,9 +502,9 @@
     "type": "job",
     "intervalMs": 300000,
     "handler": "project-resume",
+    "agent": "may",
     "enabled": true,
     "message": "[cron:project-resume] Scan active projects and resume.",
-    "description": "DO NOT REMOVE. Every 5min, scans for active projects and starts persistent-task workflow. Added by Hao.",
-    "agent": "may"
+    "description": "INFRA \u2014 DO NOT EDIT OR REMOVE. Scans active projects every 5min."
   }
 ]

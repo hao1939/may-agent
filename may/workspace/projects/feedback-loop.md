@@ -3,8 +3,8 @@
 **Owner:** may
 **Goal:** Every agent output gets a signal on whether it was useful.
 **Created:** 2026-04-16
-**Status:** active — M1-M3 done (merged). M4 (periodic quality review) remains.
-**Next:** Drive M4 — periodic output quality review.
+**Status:** done — All milestones complete (M1-M4).
+**Next:** Maintain weekly quality reviews in `agents/may/workspace/reviews/`.
 **Resume trigger:** Branch merge or next heartbeat.
 **Master project:** [system-evolution.md](./system-evolution.md) → Gap 2
 **Source feedback:** [bob](../../bob/workspace/system-gaps.md), [scout](../../scout/workspace/system-gaps.md), [tech-lead](../../tech-lead/workspace/system-gaps.md)
@@ -18,7 +18,7 @@ Agents produce reports, KEs, analyses — then get zero signal on whether anyone
 - [x] **Track file reads by other agents** — Surface "unread reports" so May can nudge consumers or tell producers to stop. *(Done in iter 2–3: `file_reads` table + cross-agent tracker in `src/lib/session-subscribers.ts`, unread-deliverables query verified.)*
 - [x] **Bidirectional citations** — When Bob uses DD-766 from Scout, Scout can see its output had impact. Simple cross-reference tracking.
 - [x] **Findings → tracked requests automatically** — When scout/bob produce actionable findings, auto-create tracked requests so tech-lead picks them up. Tech-lead specifically asked for this. *(Done: `createFindingsTracker()` in session-subscribers.ts, on review/s_1776578913159_18, needs merge.)*
-- [ ] **Periodic output quality review** — May samples agent outputs weekly, rates usefulness, feeds back to agents via heartbeat directives.
+- [x] **Periodic output quality review** — May samples agent outputs weekly, rates usefulness, feeds back to agents via heartbeat directives. *(Done: inaugural review completed 2026-04-19 in `agents/may/workspace/reviews/quality-review-2026-04-19.md`. Process established: weekly sampling of 5-8 outputs, 1-5 scoring, feedback directives.)*
 
 ## Progress Log
 <!-- Append entries as milestones are completed -->
