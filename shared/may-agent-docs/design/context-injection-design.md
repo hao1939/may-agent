@@ -2,39 +2,69 @@
 
 ## Core Idea
 
-Agents resolve problems through context discovery — they explore, gather related context, and keep digging until they have enough to act. The system prompt gives them enough to START discovering.
+Agents resolve problems through context discovery — they explore, gather related context, and keep digging until they have enough to act. The system prompt gives them enough to START discovering. Common-sense is the map. SOUL is the character. Tools and workflows are the capabilities.
 
-## System Prompt (auto-injected)
+## System Prompt Assembly
 
-Two fixed layers + two replaceable slots:
+In order:
 
-| Content | Type | What it provides |
-|---------|------|-----------------|
-| **SOUL.md** | Fixed | Agent identity — character, role, mission |
-| **common-sense.md** | Fixed | How the system works — projects, heartbeats, metrics, escalation. Pointers to where knowledge, skills, and resources live. The map for context discovery. |
-| **Preferred Workflows** | Evolving, replaceable | Workflows the agent has PROVEN work for their role. Not a generic list — earned experience. Grows as agent discovers what works. Replaced by workflow when inside a workflow step. |
-| **Available Tools** | Replaceable | Tools available NOW. Default from agent.json. Replaced by workflow when inside a step (e.g., reviewer gets read-only tools). |
-| **Runtime environment** | Fixed | Paths, workspace |
+```
+1. SOUL.md                — who you are (fixed)
+2. common-sense.md        — how to think, how the system works, conventions (fixed)
+3. Preferred Workflows    — what works for your role (evolving, replaceable per step)
+4. Available Tools        — what you can do (replaceable per step)
+5. Runtime environment    — paths, workspace (fixed)
+```
+
+### Fixed layers
+
+| Content | Source | Purpose |
+|---------|--------|---------|
+| **SOUL.md** | `agents/<name>/SOUL.md` | Agent identity — character, role, mission. Different per agent. |
+| **common-sense.md** | `agents/shared/common-sense.md` | How to think (context discovery, evidence, breadcrumbs, conventions). Same for all agents. The map for discovering everything else. |
+| **Runtime environment** | Generated | Paths, workspace. |
 
 ### Replaceable slots
 
-- **Preferred Workflows:** Default from agent config. Inside a workflow step, the workflow overrides with step-specific guidance.
-- **Available Tools:** Default from agent.json. Inside a workflow step, the workflow can add/remove/replace tools.
+| Content | Default | Override |
+|---------|---------|---------|
+| **Preferred Workflows** | From agent config — workflows proven useful for this agent's role | Workflow step can replace with step-specific process |
+| **Available Tools** | From agent.json tools list | Workflow step can add/remove/replace tools |
 
-## User Message (the task)
+How override works: the persistent-task workflow (or any workflow) can pass different workflows/tools when calling `ctx.runAgent()`. The worker session gets the overridden versions instead of defaults.
 
-Just the task. What the caller wants the agent to do. The starting breadcrumb for context discovery.
+## User Message
 
-## What's NOT auto-injected
+Just the task. Nothing else injected.
 
-| Content | How agent gets it |
-|---------|-----------------|
-| Skills | On-demand: common-sense points to skills directory. Agent reads when needed. Workflow can inject per step. |
-| Standing orders | Guard on finish() enforces compliance structurally |
-| Knowledge | On-demand: common-sense points to knowledge locations. Agent reads when needed. |
-| Session history | Not injected. Agent queries DB if needed. |
-| Learned experience | Future work — will be an evolving system prompt section once we design the learning process |
+## What Agents Discover On-Demand
 
-## Future: Learned Experience
+Common-sense.md has the conventions table — agents know WHERE things are. They read what they need:
 
-Deferred. When ready, this becomes an additional evolving section in the system prompt — curated, bounded, accumulated knowledge so agents don't start from zero. Design separately.
+| What | Convention location | When to read |
+|------|-------------------|-------------|
+| Skills | `agents/<you>/skills/` | When you need behavioral guidance for a specific situation |
+| Knowledge | `agents/<you>/knowledge/`, `agents/shared/knowledge/` | When you need findings or verified knowledge |
+| Knowledge essentials | `agents/shared/knowledge-essentials.md` | When starting research or brainstorming |
+| Project files | `agents/<you>/workspace/projects/` | When resuming multi-session work |
+| Architecture/design docs | `agents/shared/may-agent-docs/` | When you need to understand how something is built |
+| Metrics | `.state/may.db` | When you need to check system health or progress |
+
+## What Infra Enforces (not in prompt)
+
+| What | Mechanism |
+|------|-----------|
+| Standing orders | Guard on finish() — checks compliance structurally |
+| Verify after write | Finish guard |
+| Commit before finish | Commit guard |
+| Scope compliance | Completeness guard |
+
+## Not Yet Implemented
+
+| Item | Status |
+|------|--------|
+| Preferred Workflows slot | Need to define: where default comes from, how workflow overrides at runtime |
+| Standing orders guard | Need to build: guard that checks finish() output against orders |
+| Skill injection per workflow step | Need to define: how workflow specifies which skills to load |
+| Tool override per workflow step | Need to implement: ctx.runAgent() with custom tool set |
+| Learned experience (future) | Deferred — evolving system prompt section, design separately |
