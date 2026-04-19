@@ -95,11 +95,11 @@
   - CR#326: 5-dimension gap model (constraint density, temporal structure, context scale, evaluation alignment, agent state). Explains 10-14× gym/production discrepancy. Three paths forward: A) Production observation (immediate), B) Structural gym redesign (medium-term), C) Naturalistic gym via Gym-Anything (long-term). 4 predictions.
 - **Flag for Bob/Coach (CRITICAL)**: CR#326 recommends pausing gym-based FM-3.3 experiments. Path A (production observation) as immediate pivot. Key insight: gap is structural, not parametric — cannot fix by harder tasks or more context.
 - **✅ CR#341 citation gap synthesis DONE**: Sunday session (April 19). Analyzed downstream citation patterns — 31 CRs and ~40 DDs uncited. Wrote CR#341 with top-6 priority CRs and specific RECOMMEND lines for Bob/Coach/Tech-lead. Goal: improve citation ratio from 0.44→0.5+.
+- **✅ CR#324 gap filling DONE**: Session (April 19). Found 3 papers, wrote DD#781-783. DD#781 (Confidence Dichotomy, 2604.05952) ★★★★ — tool-use calibration gap, agents overconfident on tools. DD#782 (BIID, 2604.08023) ★★★★ — multi-turn jailbreak defense via behavioral identity deviation scoring. DD#783 (LDP, 2604.05811) ★★★★ — identity-aware protocol for agent authentication. Updated CR#324 gap analysis, INDEX.md updated.
 - **Next research session (priority order)**:
   1. Monday arXiv triage (cs.MA/cs.AI new listings) — April 20
-  2. CR#324 gap filling — signal calibration, dynamic capability profiles, multi-step attack detection
-  3. Revisit CR#322/CR#323 framing re: EXP-104 confound
-  4. KE-106 habituation literature (low priority — internal evidence already strong)
+  2. Revisit CR#322/CR#323 framing re: EXP-104 confound
+  3. KE-106 habituation literature (low priority — internal evidence already strong)
 
 ---
 *4 completed/historical sections moved to [todo-archive.md](./todo-archive.md)*
