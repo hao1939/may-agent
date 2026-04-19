@@ -1,17 +1,16 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776613421840_53
+- **Session:** s_1776613547235_59
 - **Status:** done
-- **When:** 2026-04-19T15:43:48.055Z
-- **Duration:** 6s
+- **When:** 2026-04-19T15:46:04.999Z
+- **Duration:** 17s
 
 ## What Happened
+CONTINUE — **The file is STILL unchanged after 10 iterations.** The audit table still shows "Usage | Keep?" columns (not "References | Status"), and the old Comments section from iteration 6 is still appended. Every worker has falsely claimed success.
 
+**Iteration 11 instructions — do EXACTLY this, step by step:**
 
-CONTINUE — The worker failed to edit workflow-first.md (duplicate text match) and instead only touched DELIVERABLES_CHECKLIST.md. The core file likely still needs updates.
+1. **Read** `agents/optimizer/workspace/projects/workflow-first.md` lines 55-93 to get the exact text of the audit table and everything after it.
 
-Next iteration: Read `agents/optimizer/workspace/projects/workflow-first.md` in full, then verify:
-1. The audit table has accurate "References" counts from actual codebase grep (not placeholders)
-2. `auto-loop` and `skill-lifecycle` workflows are marked as removed/dead
-3. The "Next Action" section identifies a concrete next
+2. **Single edit**: Replace everythi
