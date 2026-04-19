@@ -1,6 +1,6 @@
 # Project: Prove the Loop
 
-**Status**: blocked (POST-REVERT MONITORING) — Iter 13 complete. Reverted C1.5/C1.6/C1.7 at 2026-04-18 11:28Z (commit 3fd64fdbe). C1.1 retained. Evidence-count-guard (structural) retained. **Waiting for 24h post-revert data** — resume at 2026-04-19 ~11:30Z with ≥15 evals. Check: does quality return to ~0.825 baseline? Then re-diagnose with structural-only interventions (KE-007).
+**Status**: active — Iter 14 complete (2026-04-19 06:26Z). Post-revert quality 0.719 (n=12, 30h) did NOT recover to baseline 0.822. C1.x rules were likely not the cause of regression. Dominant failure: scope violations (4/12). Next: re-diagnose scope-violation cluster with structural intervention.
 **Owner**: coach
 **Reviewer**: may
 **Started**: 2026-04-17
@@ -341,3 +341,27 @@ Each iteration:
     2. Monitor for 24h post-revert to confirm quality returns to baseline (~0.825).
     3. Re-diagnose: the original failure modes (FM-2.6 scope, FM-3.3 verification) need structural fixes (KE-007), NOT context rules. This validates KE-007/KE-011 (text injections don't work / are ignored or harmful).
   - **Key lesson**: Context-rule interventions for verification behavior are **net negative** in production. They increase FM-3.3 (fabricated verification) rather than reducing it. This is consistent with KE-011 (context.md text injections are ignored) but worse — they're not just ignored, they're actively harmful at scale. Future interventions must be structural (guards, workflow hooks) only.
+
+- 2026-04-19 Iteration 14 (post-revert monitoring, 06:26Z) — **NO RECOVERY: revert did not restore baseline**:
+  - **Window**: Revert at 2026-04-18 11:28Z → 2026-04-19 06:26Z. 30h elapsed. n=12 post-revert evals (below 15 threshold but directionally clear).
+  - **Pre-deploy 7d baseline**: n=155, avg quality **0.822**.
+  - **Post-C1.x deploy (Iter 13)**: n=34, avg quality **0.713**.
+  - **Post-revert**: n=12, avg quality **0.719** — virtually identical to the C1.x-deployed period. NO recovery.
+  - **Failure breakdown (post-revert, ordered by quality)**:
+    - q=0.15: SCOPE_VIOLATION (tsc+vitest fix, wrong files)
+    - q=0.52: SCOPE_MISS (missed second required file)
+    - q=0.55: SCOPE_DRIFT (edited wrong file entirely)
+    - q=0.72: SCOPE/PRIORITIES_MISMATCH (wrong triage of vitest errors)
+    - q=0.74: SCOPE_DRIFT (branch procedure error)
+    - q=0.78: FM-3.3 (fabricated finish claims)
+    - q=0.83: FM-2.2/scope-drift-risk (dirty tree)
+    - q=0.86 ×4: FM-1.3/git flailing, stash waste, scope compliance, FM-3.3/verification gap
+    - q=0.90: FM-1.3/micro flail
+  - **Interpretation — C1.x rules were NOT the cause of the Iter 13 regression**:
+    - Reverting all 3 rules did not improve quality (0.719 ≈ 0.713). The regression from 0.822 baseline is driven by something else.
+    - **Scope violations are now the dominant failure mode**: 5/12 sessions (42%) have scope-related issues, vs the pre-deploy baseline where FM-2.6 was present but not dominant.
+    - Possible causes for the persistent regression: (a) harder task mix in recent days, (b) evaluator calibration drift (stricter on scope), (c) a non-C1.x change that landed around the same time, (d) natural variance at n=12.
+  - **Decision — STOP attributing to C1.x, re-diagnose fresh**:
+    - The C1.x revert was correct (precautionary), but the evidence now shows the regression is independent of those rules.
+    - Next step: diagnose why scope violations have spiked. Look at task assignment patterns — are coder sessions receiving harder/ambiguous-scope tasks? Look at evaluator — is the scope criterion stricter?
+  - **Next (Iter 15)**: Deep-dive on the 5 scope-violation sessions: read task text, check if scope boundaries were clear, determine whether the failure is (a) coder ignoring clear scope, (b) task text being ambiguous, or (c) evaluator being harsh. If (a), design a structural scope guard. If (b)/(c), fix task generation or evaluator.
