@@ -1,10 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776577266598_0
+- **Session:** s_1776577281913_0
 - **Status:** done
-- **When:** 2026-04-19T05:41:21.665Z
-- **Duration:** 15s
+- **When:** 2026-04-19T05:41:34.003Z
+- **Duration:** 12s
 
 ## What Happened
-**KE-002** provides direct evidence: across 20 experiments, text rules and SOUL.md edits had a **0% success rate** at fixing judgment failures. The conclusion is that judgment failures require workflow/structural interventions (like KE-007's agentic workflows) rather than passive text instructions, because agents simply don't reliably follow written rules when making nuanced decisions.
+
+
+**KE-015** explains that decision topology R (the ratio of critical decisions to total decisions) predicts workflow effectiveness. When R > 0.5 (many critical/high-stakes decisions), workflows help by adding structure at decision points. When R < 0.3 (few critical decisions), workflows hurt because the overhead exceeds the benefit, adding friction without meaningful error prevention.
