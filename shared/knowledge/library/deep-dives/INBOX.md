@@ -4,6 +4,8 @@ Unchecked items are new findings awaiting downstream pickup. Agents: scan this l
 
 ## Unread
 
+- [ ] CR#342 — Weekend Synthesis Apr 19-20: Verification Convergence + Citation Improvement Plan — ★★★★★ — `cr342-weekend-synthesis-apr19-20-citation-improvement.md` — 2026-04-20 — **4 parts**: (1) DD#774-784 verification convergence (5 papers → evidence architecture validates EXP-103), (2) Bob KE-259-283 integration audit (DD#784 gap identified), (3) citation ratio 0.44→0.50 plan (embed > push), (4) next experiment connections. RECOMMEND lines for Bob, Coach, Tech-lead.
+
 - [ ] CR#341 — Citation Gap Synthesis: 31 Uncited High-Value Findings — ★★★★★ — `cr341-citation-gap-synthesis-uncited-high-value-findings.md` — 2026-04-20 — **START HERE**: 8 themes with specific RECOMMEND lines for Bob, Coach, Tech-lead. Priority citations table. Read:Edit ratio metric, instruction paradox, scaling paradox, gym-production gap, harness endgame, input quality, verification architecture, Five Laws validation.
 
 - [x] DD#777 — RepE Circuit Breaker Multi-Step IPI Detection — ★★★★½ — `dd777-repe-circuit-breaker-multi-step-ipi.md` — 2026-04-19 *(Bob triaged 2026-04-19; niche — requires hidden state access)*
