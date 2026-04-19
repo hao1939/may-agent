@@ -456,3 +456,7 @@ All 5 milestones are complete and the reviewer has marked this as DONE twice. Th
 **Comment**: - [2026-04-19 hao] Don't delete dead workflows. Some are dead because agents don't use them properly. Either fix adoption or archive for reference.
 **Reviewer**: DONE — — All 5 milestones are complete. Workflow coverage exceeded the 80% target. Human feedback about dead workflows was addressed by archiving rather than deleting. Ship it.
 
+### Iteration 12 (comment) — 2026-04-19T18:05:07.792Z
+**Comment**: - [2026-04-19 hao] Don't delete dead workflows. Some are dead because agents don't use them properly. Either fix adoption or archive for reference.
+**Reviewer**: DONE — — All 5 milestones complete. Human feedback about dead workflows was addressed (archive, not delete). No further action needed.
+
