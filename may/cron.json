@@ -504,6 +504,7 @@
     "handler": "project-resume",
     "enabled": true,
     "message": "[cron:project-resume] Scan active projects and resume.",
-    "description": "DO NOT REMOVE. Every 5min, scans for active projects and starts persistent-task workflow. Added by Hao."
+    "description": "DO NOT REMOVE. Every 5min, scans for active projects and starts persistent-task workflow. Added by Hao.",
+    "agent": "may"
   }
 ]

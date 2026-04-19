@@ -1,6 +1,6 @@
 # Project: Prove the Loop
 
-**Status**: active — Iter 16 complete (2026-04-19 06:31Z). SHIPPED retry scope-escape fix: both `implement-and-verify.ts` and `verified-coder.ts` now tell retry coders to finish(partial) if errors are outside original scope instead of violating scope constraints. This targets the #1 quality drag: "Fix Required (attempt 2/2)" tasks avg 0.62 (n=20, 22% of volume). Production-only baseline is 0.726 (n=90). Next: monitor for 24h to measure impact.
+**Status**: active
 **Owner**: coach
 **Reviewer**: may
 **Started**: 2026-04-17
