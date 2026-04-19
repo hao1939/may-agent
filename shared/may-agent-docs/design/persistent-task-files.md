@@ -1,84 +1,124 @@
-# Design: Persistent-Task File Structure
+# Design: Persistent-Task File Structure (v2)
 
-## Problem
-
-The project file serves three purposes that conflict:
-1. **Project spec** — goal, milestones, status (needs stability)
-2. **Iteration log** — worker results, reviewer assessments (grows, append-only)
-3. **Comments** — external feedback from human/agents (must not be overwritten)
-
-Workers overwrite the file when editing it, dropping comments and previous content.
-
-## Solution: Three Files
+## Two Files Per Project
 
 ```
 agents/<owner>/workspace/projects/<name>/
-  project.md      — the spec (goal, milestones, status)
-  log.md           — iteration history (append-only)
-  comments.md      — external feedback (append-only)
+  project.md   — the project document (goal, milestones, state, comments)
+  journal.md   — iteration log (raw process history)
 ```
 
-### project.md (the spec)
+### project.md — The Project Document
 
-**Read by:** worker, reviewer, orchestrator, anyone
-**Written by:** orchestrator (status, iteration, current state), owner agent (milestones, goal — during planning), human (goal changes, priority)
-**Append/overwrite:** overwrite by orchestrator for status fields; owner and human edit milestones and goal directly
+Contains everything about WHAT the project is and WHERE it stands:
 
-### log.md (iteration history)
+```markdown
+# Project: Workflow-First Culture
 
-**Read by:** worker (last 3 entries), reviewer, anyone
-**Written by:** orchestrator only (appends after each worker/reviewer phase)
-**Append/overwrite:** append only — never rewrite, only prune old entries by collapsing
+**Status**: active
+**Owner**: optimizer
+**Iteration**: 20
 
-### comments.md (external feedback)
+## Goal
+Make workflows the default way agents work.
 
-**Read by:** worker (at start of each iteration), owner, anyone
-**Written by:** human (Hao), May, other agents — anyone with feedback
-**Append/overwrite:** append only — never delete or rewrite others' comments. Owner reads and uses judgment.
+## Milestones
+- [x] Audit existing workflows
+- [ ] Build review-output workflow  
+- [ ] Increase coverage from 31% to 80%
 
-## Changes to persistent-task.ts
+## Current State
+Audit complete. Freestyle pattern analysis done. Next: build review-output workflow.
 
-### Input format
+## Iteration Summary
+- **Iter 1-8**: Audited workflows, built measurement tool, categorized keep/review/remove
+- **Iter 9-15**: Identified freestyle patterns, created finding doc
+- **Iter 16-20**: Cleaned up project file, removed dead refs
+
+## Comments
+- [2026-04-19 hao] Don't delete dead workflows. Archive or fix adoption.
+- [2026-04-19 hao] Close the loop — measure, identify, fix, measure again.
 ```
-project: agents/optimizer/workspace/projects/workflow-first
+
+**Who reads:** worker, reviewer, orchestrator, anyone
+**Who writes:**
+- Orchestrator: updates `**Status**`, `**Iteration**`, `## Current State`, appends to `## Iteration Summary` — field-level updates only, never rewrites the whole file
+- Owner/human: edits `## Goal`, `## Milestones`, `## Comments`
+- Worker: READS ONLY — never writes to project.md
+
+### journal.md — The Process Log
+
+Raw append-only log of every iteration:
+
+```markdown
+# Journal
+
+### Iteration 20 — 2026-04-19T16:01Z
+**Worker**: Fixed project file. 39 lines clean.
+**Reviewer**: CONTINUE — move to actual work.
+
+### Iteration 19 — 2026-04-19T16:01Z  
+**Worker**: Created freestyle-patterns finding. Identified review-output as top candidate.
+**Reviewer**: CONTINUE — good analysis.
 ```
-Note: directory path, not file path. The workflow reads project.md, log.md, comments.md from this directory.
+
+**Who reads:** worker (last 3 entries for context), reviewer, anyone
+**Who writes:** orchestrator only — appends after each worker/reviewer phase
+**Mode:** append only, never overwrite. Old entries pruned by collapsing.
+
+## Orchestrator Rules (persistent-task.ts)
+
+### Writing to project.md — FIELD-LEVEL UPDATES ONLY
+
+The orchestrator uses targeted updates, not full file rewrites:
+
+```typescript
+// GOOD: update specific fields
+content = updateField(content, "Status", "active");
+content = updateField(content, "Iteration", String(iteration));
+content = updateSection(content, "Current State", newStateSummary);
+content = appendToSection(content, "Iteration Summary", `- **Iter ${iteration}**: ${brief}`);
+
+// BAD: rewrite the whole file
+writeFileSync(path, entireNewContent); // ← NEVER DO THIS
+```
+
+Functions needed:
+- `updateField(content, field, value)` — already exists, replaces `**Field**: value`
+- `updateSection(content, heading, newContent)` — replaces content under `## Heading`
+- `appendToSection(content, heading, line)` — appends a line under `## Heading`
+
+### Writing to journal.md — APPEND ONLY
+
+```typescript
+// Always append, never read-modify-write the whole file
+appendFileSync(journalPath, iterationBlock);
+```
 
 ### Worker prompt includes:
-1. Goal + milestones + current state (from project.md)
-2. Last 3 iteration summaries (from log.md)
-3. Comments (from comments.md)
-4. Owner guidance from last review
-5. "What You Must Produce" expectations
-
-### Worker CANNOT edit:
-- project.md (orchestrator and owner/human manage it)
-- log.md (orchestrator manages it)
-- comments.md (external feedback, append-only by others)
-
-### Worker CAN:
-- Read any file
-- Create/edit files in workspace (deliverables, findings, etc.)
-- Run commands, queries, tools
-- Call finish() with results
-
-### Orchestrator handles:
-- Reads worker result → appends to log.md
-- Reads reviewer assessment → appends to log.md  
-- Updates project.md status, iteration count, current state
-- Prunes old log entries (collapse old iterations)
+1. Goal + milestones from project.md
+2. Current state from project.md
+3. Last 3 iterations from journal.md
+4. Comments from project.md
+5. Owner guidance from last reviewer entry in journal.md
+6. "You CANNOT edit project.md or journal.md. Produce deliverables in workspace."
 
 ## Migration
 
-Existing project files (single .md) continue to work. The workflow detects:
-- If input points to a directory with project.md → new format
-- If input points to a .md file → legacy format (current behavior)
+- If project path is a directory with project.md → new format
+- If project path is a .md file → legacy single-file format
+- New projects use directory format
 
-New projects should use the directory format.
+## No Override Rules
 
-## Benefits
-
-1. **No overwrites** — each file has one writer (or append-only)
-2. **Comments survive** — separate file, nobody rewrites it
-3. **Worker can't corrupt the spec** — project.md is orchestrator-managed
-4. **Clean separation** — spec vs history vs feedback
+| Content | Who can change | How |
+|---------|---------------|-----|
+| Goal | Owner, human | Direct edit |
+| Milestones | Owner, human | Direct edit (check off / add) |
+| Status | Orchestrator | Field-level update |
+| Iteration count | Orchestrator | Field-level update |
+| Current State | Orchestrator | Section replace |
+| Iteration Summary | Orchestrator | Section append |
+| Comments | Human, May, agents | Section append |
+| Journal entries | Orchestrator | File append |
+| Worker | NOTHING in project.md or journal.md | Produces deliverables elsewhere |
