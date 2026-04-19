@@ -1,10 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776624114564_0
+- **Session:** s_1776624727736_1
 - **Status:** done
-- **When:** 2026-04-19T18:52:07.733Z
-- **Duration:** 10m13s
+- **When:** 2026-04-19T18:53:46.472Z
+- **Duration:** 1m38s
 
 ## What Happened
-18,987 old heartbeat sessions without workflowRunId. Now let me write the finding:
+May went from 0/79 to 29/79, QA from 0/40 to 40/40. The backfill worked for sessions within the 7-day window.
+
+Now let me commit the change as a script for auditability:
