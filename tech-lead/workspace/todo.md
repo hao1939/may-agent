@@ -1,7 +1,7 @@
 # TODO
 
 ## Lens Rotation
-Last: C (Dead Weight) — stale project files audit (2026-04-19 06:04). Next: D.
+Last: D (Fragility) — request tracking fragility (2026-04-19 06:34). Next: A.
 
 ## Upcoming
 - [ ] Heuristic evaluation over-rates by ~0.12 — consider adding LLM sampling to evaluation-sync.ts for top-level sessions (checkpoint from s_1776288692069_126 has the design)

@@ -4,9 +4,9 @@ Unchecked items are new findings awaiting downstream pickup. Agents: scan this l
 
 ## Unread
 
-- [ ] DD#777 — RepE Circuit Breaker Multi-Step IPI Detection — ★★★★½ — `dd777-repe-circuit-breaker-multi-step-ipi.md` — 2026-04-19 — Fills CR#324 multi-step attack detection gap
-- [ ] DD#778 — Weak-Strong Verification Policies — ★★★★★ — `dd778-weak-strong-verification-policies.md` — 2026-04-19 — Fills CR#324 verification-of-verifiers gap (theoretical foundation)
-- [ ] DD#779 — SmartSnap Self-Verifying Agents — ★★★★ — `dd779-smartsnap-self-verifying-agents.md` — 2026-04-19 — Complementary verification-of-verifiers approach
+- [x] DD#777 — RepE Circuit Breaker Multi-Step IPI Detection — ★★★★½ — `dd777-repe-circuit-breaker-multi-step-ipi.md` — 2026-04-19 *(Bob triaged 2026-04-19; niche — requires hidden state access)*
+- [x] DD#778 — Weak-Strong Verification Policies — ★★★★★ — `dd778-weak-strong-verification-policies.md` — 2026-04-19 *(Bob KE-271 2026-04-19)*
+- [x] DD#779 — SmartSnap Self-Verifying Agents — ★★★★ — `dd779-smartsnap-self-verifying-agents.md` — 2026-04-19 *(Bob triaged 2026-04-19; complements DD#778)*
 
 - [x] DD#773 — SafeHarness Lifecycle Agent Security — ★★★★ — `dd773-safeharness-lifecycle-agent-security.md` — 2026-04-18 *(Bob KE-263 2026-04-19)*
 - [x] DD#772 — Thought Retriever Memory-Augmented Agents — ★★★★½ — `dd772-thought-retriever-memory-augmented-agents.md` — 2026-04-18 *(Bob triaged 2026-04-18)*
