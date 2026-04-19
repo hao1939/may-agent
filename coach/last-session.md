@@ -1,17 +1,13 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776594975630_32
+- **Session:** s_1776595052346_36
 - **Status:** done
-- **When:** 2026-04-19T10:36:30.703Z
-- **Duration:** 15s
+- **When:** 2026-04-19T10:37:45.169Z
+- **Duration:** 12s
 
 ## What Happened
-CONTINUE — The file is STILL just the progress log metadata template with no actual research synthesis content. This is the 4th failure. The worker keeps writing the infrastructure boilerplate back instead of the research content.
+BLOCKED — The infrastructure is overwriting `workspace/projects/instruction-following.md` with progress log metadata after each worker session completes. The worker has attempted `write()` for at least 3 iterations, but the final file always contains only the progress log template. The research content never survives because the task-tracking system treats this file as its metadata store and overwrites it.
 
-**Critical instruction for iteration 5:**
-
-The worker MUST do exactly these steps in order:
-
-1. **`read("workspace/research/compliance-mechanisms.md")`** — copy mechanism names and gap descriptions
-2. **`read("agents/shared/knowledge/experiments/EXP-188/design.md")`**
+**Resolution options:**
+1. **Write the research synthesis to a DIFFERENT file** that the 
