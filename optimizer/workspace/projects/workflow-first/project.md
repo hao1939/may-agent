@@ -1,9 +1,9 @@
 # Project: Workflow-First Culture
 
-**Status**: active
+**Status**: done
 **Owner**: optimizer
 **Priority**: P0
-**Iteration**: 7
+**Iteration**: 8
 
 ## Goal
 Make workflows the default way agents work. Increase workflow coverage from 31% to 80%.
@@ -16,7 +16,14 @@ Make workflows the default way agents work. Increase workflow coverage from 31% 
 - [ ] Measure coverage improvement
 
 ## Current State
-Iteration 7 complete. **Status:** done (1m55s)
+— All 5 milestones are complete. The measurement report has accurate, verified numbers: 16/16 LLM-driven cron entries are workflow-routed (100%), exceeding the 80% target. The checklist shows 5/5 milestones checked off. The breakdown correctly distinguishes 8 heartbeats, 5 verify-wrap entries, and 3 handlerConfig entries, and properly excludes 31 JS-only entries. Ship it.
+
+**Files modified:**
+- agents/optimizer/workspace/coverage-measurement.md
+- DELIVERABLES_CHECKLIST.md
+
+**Errors encountered:**
+- [bash] fatal: not a git repository (or any of 
 
 **Files modified:**
 - DELIVERABLES_CHECKLIST.md
@@ -126,6 +133,8 @@ Command exited with c
 - DELIVERABLES_CHECKLIST.md
 
 **Files read (not modifie
+
+- **Iter 8**: — All 5 milestones are complete. The measurement report has accurate, verified numbers: 16/16 LLM-dr
 
 
 ## Comments

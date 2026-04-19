@@ -411,3 +411,20 @@ The 5 cron fixes are confirmed. Now the worker needs to:
 
 **Output**: Updated measurement report with final verified numbers.
 
+### Iteration 8 — 2026-04-19T17:24:00.624Z
+**Worker**: **Status:** done (1m51s)
+
+**Files modified:**
+- agents/optimizer/workspace/coverage-measurement.md
+- DELIVERABLES_CHECKLIST.md
+
+**Errors encountered:**
+- [bash] fatal: not a git repository (or any of the parent directories): .git
+
+
+Command exited with code 128
+
+**Agent response:**
+Now update the report and checklist:
+**Reviewer**: DONE — — All 5 milestones are complete. The measurement report has accurate, verified numbers: 16/16 LLM-driven cron entries are workflow-routed (100%), exceeding the 80% target. The checklist shows 5/5 milestones checked off. The breakdown correctly distinguishes 8 heartbeats, 5 verify-wrap entries, and 3 handlerConfig entries, and properly excludes 31 JS-only entries. Ship it.
+
