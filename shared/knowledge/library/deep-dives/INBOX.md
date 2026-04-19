@@ -21,7 +21,7 @@ Unchecked items are new findings awaiting downstream pickup. Agents: scan this l
 
 ## Recent Cross-References
 
-- [ ] CR#340 — Weekly Synthesis Apr 14-18 — `cr340-weekly-synthesis-apr14-18.md` — 2026-04-18
+- [x] CR#340 — Weekly Synthesis Apr 14-18 — `cr340-weekly-synthesis-apr14-18.md` — 2026-04-18
 - [ ] CR#339 — *(check INDEX.md for details)*
 
 ## Read / Incorporated
