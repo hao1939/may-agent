@@ -291,6 +291,61 @@ Next iter: write the actual patch, open a review branch via `commitAndMerge`.
 **Action**: Sent P0 notification to may (req `0d7f428a`) with exact deploy command: `cp /app/bundle/may-agent /usr/local/bin/may-agent && supervisorctl restart may-agent`.
 **Next**: If not deployed by next iteration, consider doing the deploy directly (risky from within spawned session) or requesting human intervention.
 
+## Iter 7 — Token-level startup cost analysis (2026-04-19 05:40)
+
+**Method**: Analyzed all sessions in `.state/sessions/` (N=250+), measuring first API call input tokens and cost vs. total session cost.
+
+### Token-level overhead (first API call as % of total session cost)
+
+| Agent      | Sessions | Avg 1st Input Tokens | Avg 1st Cost | Avg Total Cost | 1st Call % | Avg Calls/Session |
+|------------|----------|---------------------|-------------|---------------|-----------|-------------------|
+| bob        | 43       | 9,224               | $0.031      | $0.994        | 14.0%     | 18.3              |
+| coach      | 37       | 7,536               | $0.028      | $0.951        | 13.1%     | 20.4              |
+| optimizer  | 41       | 6,716               | $0.026      | $0.460        | 16.0%     | 16.8              |
+| may        | 25       | 8,214               | $0.030      | $2.326        | 15.0%     | 38.9              |
+| tech-lead  | 31       | 7,420               | $0.026      | $0.452        | 18.2%     | 16.7              |
+| evaluator  | 16       | 2,938               | $0.018      | $0.103        | 18.9%     | 5.5               |
+| qa         | 16       | 1,710               | $0.010      | $0.392        | 2.5%      | 15.3              |
+| scout      | 16       | 7,634               | $0.025      | $0.452        | 10.6%     | 12.3              |
+
+### Context injection sizes (from context.md alone)
+
+| Agent     | context.md size | Est. tokens |
+|-----------|----------------|-------------|
+| bob       | 5,235 chars    | ~1,308      |
+| may       | 7,628 chars    | ~1,907      |
+| tech-lead | 5,098 chars    | ~1,274      |
+| optimizer | 4,822 chars    | ~1,205      |
+| coach     | 3,709 chars    | ~927        |
+
+### First user message breakdown (bob example, s_1776576874869_14)
+
+Total first message: 14,339 chars (~3,584 tokens). Sections:
+- Session Context + Recent Task History
+- Previous Session Summary + Last Checkpoint
+- **Persistent context ("What You Know")** — ~1,300 tokens
+- Operational Knowledge + Relevant Knowledge
+- Active Recall warnings
+- Actual task text
+
+### Key insight
+
+**Two different overhead metrics, both valid:**
+1. **Token cost overhead** (first API call % of total cost): 13-19% across agents — already near the 10% target for most agents
+2. **Behavioral overhead** (startup tool calls before productive work): 40%+ — the real problem
+
+The Fix A' (recent-activity dashboard injection) targets behavioral overhead. Token overhead is harder to reduce without cutting context injection, which risks quality regression (KE-025, KE-103).
+
+### Deploy status (still blocked)
+
+`/usr/local/bin/may-agent` = Apr 18 08:17 (OLD). `bundle/may-agent` = Apr 19 02:33 (NEW, contains fix). Not deployed. Re-escalated.
+
+### Next iteration
+
+1. If deploy still not live → consider direct deploy from session
+2. If deployed → run validation measurements after 4-6h of heartbeat cycles
+3. Report final numbers against 10% target
+
 
 
 
