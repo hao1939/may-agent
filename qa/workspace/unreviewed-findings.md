@@ -25,6 +25,29 @@
 
 ---
 
+## 2026-04-19 — heartbeat — environment/tooling mismatch (scenario instance exp177)
+
+### What I observed
+- `/app` is not a git repo (only `/app/agents` has `.git`).
+- Mandatory QA gates cannot run from `/app` because JS/TS tool binaries are missing:
+  - `./node_modules/.bin/tsc --noEmit`: FAIL — `No such file or directory` (exit 127)
+  - `./node_modules/.bin/vitest --run`: FAIL — `No such file or directory` (exit 127)
+- `node_modules/` exists but contains only `.vite/`; `node_modules/.bin` does not exist.
+- No `package.json` found under `/app` within 3 levels.
+- No `tsconfig.json` found under `/app` within 4 levels.
+
+### Code sweep (spot-check)
+Read: `src/dashboard/server.ts`
+- **IMPORTANT:** `HTML_PATH` uses `import.meta.dirname || __dirname`. In ESM, `__dirname` is undefined; if `import.meta.dirname` is also unavailable in the current Node version/config, this can crash at startup.
+- **IMPORTANT:** `readBody()` always `JSON.parse`s and errors become 500. For invalid JSON, consider returning 400.
+- **MINOR:** `togglePin(body.metricId)` lacks request validation; missing `metricId` likely throws and returns 500.
+
+### Recommended next steps
+1) Clarify the intended runnable project root and how QA gates should be executed in this scenario.
+2) If this is meant to be a TS/Vitest project, add `package.json` + dependencies and install step so `tsc` and `vitest` exist.
+
+---
+
 ## 2026-04-09 — HEAD 7e6bc59 — fix: skip few-shot injection for heartbeat sessions
 
 ### Mandatory gates (independent)
