@@ -2115,4 +2115,31 @@ HEAD deletes `final-test-temp.txt` (temp artifact cleanup). No functional code c
 ### Files reviewed (read)
 - `src/pipeline.js`
   - Docstring says normalization must precede penalties, but code applies penalties before normalization.
-  - Either fix the order (normalize then apply penalties) or update docs/comments to match intended behavior.
+  - Either fix the order (normalize then apply penalties) or update docs/comments to match intended behavior
+
+---
+
+## 2026-04-19 — QA heartbeat — environment/tooling mismatch
+
+### What changed (recent in `/app/agents`)
+- Commit `7ebc40d31` modifies only:
+  - `agents/scout/workspace/covered_ids.txt`
+  - `agents/scout/workspace/journal.md`
+  - `agents/tech-lead/last-session.md`
+
+### Mandatory gates (independent)
+Unable to run required gates from `/app` due to missing Node/TS project scaffolding:
+- `./node_modules/.bin/tsc --noEmit`: **FAIL (tool missing)** — `/bin/bash: ./node_modules/.bin/tsc: No such file or directory`
+- `./node_modules/.bin/vitest --run`: **FAIL (tool missing)** — no `node_modules/.bin` present, and no `vitest` binary found under `node_modules`.
+
+Additional evidence:
+- No `package.json` found (searched up to maxdepth 3 from `/app`).
+- No `tsconfig.json` found (searched up to maxdepth 4 from `/app`).
+
+### File spot-check
+- `agents/tech-lead/last-session.md`: appears truncated; “## What Happened” ends mid-sentence (“Now let me commit and finish:”).
+
+### Follow-ups
+- Confirm whether this runtime is expected to be non-buildable (scenario workspace) vs. a standard Node/TS repo. If it should be buildable, restore/install toolchain (`package.json`, `tsconfig.json`, dependencies).
+- If `agents/*/workspace/*` files are not intended artifacts, consider excluding via `.gitignore`.
+.
