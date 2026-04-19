@@ -185,7 +185,10 @@ function extractComments(content: string): string {
 
 // Clear the Comments section in project.md after processing
 function clearComments(content: string): string {
-  return content.replace(/^(## Comments)\n[\s\S]*?(?=\n## |$)/m, "$1\n");
+  // Comments is the last section — replace everything after the heading
+  const idx = content.indexOf("## Comments\n");
+  if (idx === -1) return content;
+  return content.slice(0, idx) + "## Comments\n";
 }
 
 // ── Get last reviewer guidance from journal ────────────────────────────
