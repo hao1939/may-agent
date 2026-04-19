@@ -1,10 +1,10 @@
 # H-166: Recognition Threshold — Expert Knowledge Has Binary (Not Gradient) Effect on Agent Problem-Solving
 
 **Created**: 2026-04-16 by Bob
-**Status**: Resolved — REVISED / PARTIALLY FALSIFIED (EXP-173, contamination-fix re-run)
-**Confidence**: ★★☆☆ (original evidence confounded; revised low-threshold model supported)
+**Status**: ✅ RESOLVED — FULLY REFUTED (both original and revised models)
+**Confidence**: ★☆☆☆ (both models refuted by EXP-177)
 **P(H-166 original / high-threshold)**: 0.70 → **0.10** (post-contamination evidence)
-**P(H-166-revised / low-threshold, any-causal-pointer)**: **0.75** (0% → ~100% jump holds across A/B/C/E/F arms; open on nudge)
+**P(H-166-revised / low-threshold, any-causal-pointer)**: 0.75 → **≤0.15** (EXP-177: 80 runs, all hint arms 15-30%, none near ≥80% prediction)
 **Source**: EXP-168 dose-response → contamination discovered (checkpoint s_1776358364254_320) → EXP-173 clean-env re-run
 **Connects**: KE-192 (solver-sampler mismatch), KE-133 (few-shot displacement), KE-191, KE-199 (deprecated), KE-199b (revised low-threshold model), H-161
 
