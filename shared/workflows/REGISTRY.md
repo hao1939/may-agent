@@ -30,11 +30,9 @@ Deleted workflows (3,480+ lines total): `code-review-loop`, `context-learn`, `ev
 ### Coach
 | Name | File | Lines | Purpose |
 |------|------|-------|---------|
-| `convention-review` | `coach/workflows/convention-review.ts` | 50 | Review agent output against conventions |
 | `growth-cycle` | `coach/workflows/growth-cycle.ts` | 318 | Full training cycle: assess → train → measure |
 | `gym-helpers` | `coach/workflows/gym-helpers.ts` | 206 | Helper functions for gym scenarios (not a workflow) |
 | `training-sprint` | `coach/workflows/training-sprint.ts` | 286 | Focused training session on a specific skill |
-| `verify-setup` | `coach/workflows/verify-setup.ts` | 42 | Verify gym/training infrastructure is ready |
 
 ### May
 | Name | File | Lines | Purpose |
