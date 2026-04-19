@@ -129,7 +129,7 @@ The existing `run-workflow` handler already supports dispatching workflows from 
 
 ### Step 2: Migrate error-log-scanner (first candidate) ✅ DONE
 
-**File:** `agents/shared/workflows/error-scan.ts` (447 lines)
+**File:** `agents/shared/workflows/error-scan.ts` (447 lines) — **⚠️ REMOVED from disk (2026-04-19)**
 
 Workflow pattern:
 1. `runFunction("scan-error-logs")` — scans all ERROR_LOG.jsonl files (zero LLM cost)

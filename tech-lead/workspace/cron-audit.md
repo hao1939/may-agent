@@ -40,4 +40,4 @@
 ## Recommended Follow-ups
 1. Delete `priority-drift.ts` if confirmed unused
 2. Investigate whether `daily-brief` and `daily-digest` can be merged
-3. Remove deprecated `error-log-scanner` and `coaching-feedback` entries after sufficient rollback window
+3. ~~Remove deprecated `error-log-scanner` and `coaching-feedback` entries after sufficient rollback window~~ — Both workflow files removed from disk (2026-04-19). Cron entries should be cleaned up too.
