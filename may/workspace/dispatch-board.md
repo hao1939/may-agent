@@ -1,18 +1,17 @@
 # May's Supervisory Dashboard
 
-Updated: 2026-04-18 ~08:30 UTC
+Updated: 2026-04-19 ~01:37 UTC
 
 ## System Health
-- **Bob**: 🟢 Active — 26 sessions/6h, avg 14 ops. Zero errors.
-- **Coach**: 🟢 Active — 41 sessions/6h, avg 12 ops. Zero errors (4 interrupts — transient aborts).
-- **Scout**: 🟢 Active — 14 sessions/6h, avg 6 ops. Zero errors.
-- **Tech-lead**: 🟢 Active — 21 sessions/6h, avg 7 ops. Zero errors.
-- **Optimizer**: 🟢 Active — 25 sessions/6h, avg 14 ops. Zero errors.
-- **Evaluator**: 🟢 Active — 98 sessions/6h, avg 0 ops. Zero errors.
-- **QA**: 🟢 Active — 12 sessions/6h, avg 9 ops. Zero errors.
-- **Coder**: 🟢 Active — 5 sessions/6h, avg 27 ops. Zero errors.
-- **May**: 🟢 Active — 15 sessions/6h, avg 14 ops. Zero errors.
-- **Summary**: 9/9 healthy. Zero errors. No stuck sessions. Coder sessions down (5 vs 86) but ops up (27 avg).
+- **Bob**: 🟢 Active — 46 sessions/6h, avg 9 ops. Zero errors.
+- **Coach**: 🟢 Active — 23 sessions/6h, avg 19 ops. Zero errors. One 154-op session (persistent-task analysis, quality 0.75).
+- **Scout**: 🟢 Active — 12 sessions/6h, avg 2 ops. Zero errors.
+- **Tech-lead**: 🟢 Active — 24 sessions/6h, avg 5 ops. Zero errors. 2 low-quality lens sessions (0.25, 0.45).
+- **Optimizer**: 🟢 Active — 24 sessions/6h, avg 6 ops. Zero errors.
+- **Evaluator**: 🟢 Active — 99 sessions/6h, avg 0 ops (eval-only). Zero errors.
+- **QA**: 🟢 Active — 12 sessions/6h, avg 8 ops. Zero errors.
+- **May**: 🟢 Active — 3 sessions/6h, avg 4 ops. Zero errors.
+- **Summary**: 8/8 healthy (coder inactive). Zero errors. No stuck sessions. 243 total sessions in window.
 
 ## Active Priorities (from Hao)
 1. Agents should be autonomous and proactive
