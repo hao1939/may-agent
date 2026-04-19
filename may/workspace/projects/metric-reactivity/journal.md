@@ -28,6 +28,26 @@ Two complementary approaches:
 - **Push**: After `trackRequest()`, also call `ctx.notify()` or the `notify` tool equivalent to actually reach the owning agent
 - **Pull**: Inject active alerts into agent heartbeat context (e.g., read `metric_alerts WHERE resolved_at IS NULL` and include in heartbeat prompt)
 
+## 2026-04-20 — Build Progress: Delivery Already Works
+
+### Key Finding
+The delivery mechanism is NOT broken — it's working. Evidence:
+- `trackRequest({toAgent: "evaluator", task: "⚠️ Metric 'Coverage' regressed..."})` creates records with status CREATED
+- These appear as "Injected: pending tasks" in target agent heartbeats
+- Agent heartbeat.md files already instruct agents to check injected tasks and act on red metrics
+
+### What's Actually Missing
+1. **One-shot delivery**: `notifyOwnerOnRegression` fires ONCE on regression. If the agent ignores/misses it, no reminder comes. Unresolved alerts persist in `metric_alerts` but aren't re-surfaced.
+2. **Agent compliance**: Agents (evaluator, tech-lead, qa) are seeing alerts but not acting. This is behavioral, not plumbing.
+
+### Remaining Build Work
+- Add periodic re-notification for unresolved alerts (e.g., every N heartbeats, re-create trackRequest if alert still unresolved and prior request status is still CREATED)
+- Consider escalation: if alert unresolved > 24h, escalate to May
+
+### No-op Items (already working)
+- ~~Push via notify()~~: trackRequest already delivers via injection. No need for separate notify.
+- ~~Pull via heartbeat context~~: "Injected: metrics" already shows threshold violations to agents.
+
 ## 2026-04-20 — Design Complete (Milestone 2)
 
 ### Decision: Push via `notify()` + Pull via heartbeat context
