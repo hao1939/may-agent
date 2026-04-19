@@ -1,6 +1,6 @@
 # Project: Workflow-First Culture
 
-**Status**: active
+**Status**: blocked
 **Owner**: optimizer
 **Priority**: P0
 **Iteration**: 5
@@ -16,7 +16,7 @@ Make workflows the default way agents work. Increase workflow coverage from 31% 
 - [ ] Measure coverage improvement
 
 ## Current State
-Iteration 5 complete. **Status:** done (2m23s)
+Blocked: 5 consecutive iterations without milestone progress. Approach needs rethinking.
 
 **Files modified:**
 - agents/optimizer/workspace/coverage-measurement.md
