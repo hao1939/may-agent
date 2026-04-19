@@ -1,7 +1,7 @@
 # Deep Dives Index
 
 > 130 research deep dives, cross-reference syntheses, and reference documents.  
-> Last updated: 2026-04-20 | Maintained by Scout
+> Last updated: 2026-04-19 evening | Maintained by Scout
 
 ## How to Use This Index
 - **DD#NNN** = Deep Dive on a single paper
