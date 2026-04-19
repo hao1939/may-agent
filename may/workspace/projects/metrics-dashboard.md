@@ -1,6 +1,6 @@
 # Project: Metrics Dashboard
 
-**Status**: active
+**Status**: done
 **Owner**: Hao (infra — web UI is in src/)
 **Design input**: all agents
 
