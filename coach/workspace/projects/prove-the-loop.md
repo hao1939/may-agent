@@ -408,3 +408,9 @@ Each iteration:
   - **Current deployed interventions**: evidence-count-guard (structural, in src/), retry scope-escape fix (in agents/shared/workflows/ and agents/tech-lead/workflows/). C1.5/C1.6/C1.7 reverted.
   - **Decision — WAIT**: Need ≥15 post-Iter16 production evals before measuring retry scope-escape impact. Resume at next heartbeat when n≥15.
   - **Next (Iter 18)**: Re-query when n≥15. Check retry-task quality specifically (need to find right column name — `taskSummary` doesn't exist, try `summary` or grep task text). If retry quality improves from 0.62 → 0.70+, declare production improvement and check off milestone.
+
+- 2026-04-19 Iteration 18 (monitoring check, 06:34Z) — **STILL WAITING: n=0 post-Iter16**:
+  - **Window**: Iter 16 deploy ~06:31Z → 06:34Z. 3 minutes. Still n=0 post-deploy coder evals.
+  - **Production 7d (unchanged)**: n=90, avg 0.726. Daily: Apr 16 0.72 (7), Apr 17 0.718 (23), Apr 18 0.703 (11), Apr 19 0.9 (1).
+  - **Decision — WAIT**: No data to evaluate. Resume when n≥15 post-Iter16 evals available.
+  - **Next (Iter 19)**: Same as Iter 18 plan — re-query at next heartbeat.
