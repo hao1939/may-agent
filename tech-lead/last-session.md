@@ -1,14 +1,17 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776557155731_724
+- **Session:** s_1776558975015_747
 - **Status:** done
-- **When:** 2026-04-19T00:07:44.997Z
-- **Duration:** 1m49s
+- **When:** 2026-04-19T00:37:08.394Z
+- **Duration:** 53s
 
 ## What Happened
-No red metrics, no pending tasks, no active projects. Last lens B, next C (Dead Weight).
+I have enough evidence. The pattern is safe:
 
-Delegation quality at 0.80 vs 0.85 target — below but not red. Coach 154-op session is notable but that's coach's domain.
+1. **Line 272-273**: Each run queries `SELECT sessionId FROM evaluations` to build `evaluatedIds` set
+2. **Line 283**: Filters sessions to only those NOT in `evaluatedIds`
+3. **Line 298-380**: The transaction INSERTs evaluations — if it throws mid-batch, the transaction rolls back
+4. **Line 382**: The transaction is atomic — partial completion is impossible
 
-Lens C target: `agents/may/cron.json` — are all registered cron handlers actually deployed and doing useful work? Specific, ≤3 files, 1-sentence objective.
+If it throws on session 25 of 50, the transaction rolls back, zero sessions are marked evalua

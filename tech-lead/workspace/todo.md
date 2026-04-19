@@ -1,7 +1,7 @@
 # TODO
 
 ## Lens Rotation
-Last: C (Dead Weight) — cron dead weight analysis (2026-04-19 00:06). Next: D.
+Last: D (Fragility) — eval-sync mid-batch throw recovery (2026-04-19 00:36). Next: A.
 
 ## Upcoming
 - [ ] Heuristic evaluation over-rates by ~0.12 — consider adding LLM sampling to evaluation-sync.ts for top-level sessions (checkpoint from s_1776288692069_126 has the design)
