@@ -2869,3 +2869,13 @@ src/app/ui/web
 - Bob analysis: fresh (0h ago)
 - No anomalies detected
 
+## 2026-04-19T10:28 — Auto (JS cron handler)
+
+- Sessions (24h): 1004
+- Unevaluated: 7 total, 3 actionable, 4 auto-skippable
+- Running sessions: may (s_1776594485568_0), may (s_1776336175530_25), coach (s_1776594488265_1), tech-lead (s_1776591259066_64)
+- tsc: PASS
+- Lessons: 52 lines total (scout 31, optimizer 21)
+- Bob analysis: fresh (4h ago)
+- ⚠️ tech-lead session s_1776591259066_64 running 54min — may be stuck
+
