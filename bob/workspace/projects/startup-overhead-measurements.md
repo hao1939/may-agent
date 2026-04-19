@@ -1,0 +1,155 @@
+# Startup Overhead Measurements — Iteration 2
+
+**Goal**: Reduce session startup overhead from 25% to under 10%.
+
+**Date**: 2026-04-19
+**Script**: `agents/bob/workspace/measure-startup-overhead.ts`
+**Command**: `bun agents/bob/workspace/measure-startup-overhead.ts`
+
+## Methodology
+
+- **Startup** = sequence of tool calls before the FIRST "productive" call.
+- **Productive** tools = `edit`, `write`, `agents` (call/fork), `notify`, `workflow`, `finish`, `checkpoint`.
+- Non-productive (startup-class): `read`, `bash`, `grep`, `ls`, etc. — until the first productive call is made.
+- `overhead_pct = startup_calls / total_calls`.
+- Source: `.state/sessions/history/<id>/session.jsonl` transcripts filtered to `kind='job' AND task LIKE '%heartbeat%'` within the last 7 days.
+- Sampled 3 recent `done` heartbeat sessions per agent. Skipped sessions with <3 total tool calls or no productive call.
+
+## Agents measured (5)
+
+bob, may, coach, tech-lead, optimizer
+
+## Raw per-session results
+
+| agent | session_id | total_calls | startup_calls | overhead_pct | startup_time_s | session_s |
+|-------|-----------|-------------|---------------|--------------|----------------|-----------|
+| bob | s_1776563531806_805 | 7 | 4 | 57.1% | 25.6 | 90 |
+| bob | s_1776561731255_780 | 6 | 1 | 16.7% | 5.2 | 168 |
+| bob | s_1776559931495_753 | 5 | 1 | 20% | 4.8 | 169 |
+| may | s_1776546355513_606 | 7 | 6 | 85.7% | 25.7 | 30 |
+| may | s_1776544555507_593 | 5 | 4 | 80% | 20.1 | 25 |
+| may | s_1776542755511_569 | 7 | 4 | 57.1% | 25.9 | 37 |
+| coach | s_1776563641650_808 | 8 | 1 | 12.5% | 4.7 | 34 |
+| coach | s_1776563437718_803 | 8 | 6 | 75% | 21.2 | 38 |
+| coach | s_1776561855476_789 | 12 | 11 | 91.7% | 39.2 | 46 |
+| tech-lead | s_1776562555532_795 | 9 | 2 | 22.2% | 5.8 | 149 |
+| tech-lead | s_1776560755731_768 | 10 | 3 | 30% | 6.6 | 130 |
+| tech-lead | s_1776558955918_745 | 8 | 2 | 25% | 8.3 | 96 |
+| optimizer | s_1776562555436_793 | 11 | 2 | 18.2% | 5.7 | 235 |
+| optimizer | s_1776560755644_766 | 11 | 2 | 18.2% | 5.7 | 122 |
+| optimizer | s_1776558955836_743 | 10 | 2 | 20% | 8.9 | 146 |
+
+## Per-agent averages
+
+| agent | n | avg_total | avg_startup | avg_overhead_pct |
+|-------|---|-----------|-------------|------------------|
+| bob | 3 | 6.0 | 2.0 | 31.3% |
+| may | 3 | 6.3 | 4.7 | 74.3% |
+| coach | 3 | 9.3 | 6.0 | 59.7% |
+| tech-lead | 3 | 9.0 | 2.3 | 25.7% |
+| optimizer | 3 | 10.7 | 2.0 | 18.8% |
+
+**Overall mean overhead (n=15): 42.0%**
+
+## Key findings
+
+1. **Overhead is much higher than the 25% baseline in the goal statement.** Measured mean is **42%**, with wide variance (18.8% – 74.3%).
+2. **Top 3 time-wasters (milestone 2 ranking):**
+   - 🥇 **may: 74.3%** — heartbeats dominated by read/bash exploration; few productive calls per session.
+   - 🥈 **coach: 59.7%** — one outlier session (91.7%, 11/12 startup calls) suggests a dispatcher pattern that scans heavily before forking.
+   - 🥉 **bob: 31.3%** — dragged up by a 57.1% session; other two were 16.7% and 20%.
+3. **Low-overhead agents:** optimizer (18.8%) and tech-lead (25.7%) already near or below the 10% target cluster. Their heartbeats are more directive (fewer pre-work reads before editing/forking).
+4. **Wall-clock startup time** ranges 4.7s – 39.2s — correlates with startup_call count, as expected.
+
+## Next steps (toward milestone 2 → 3)
+
+- Inspect the worst-offender sessions to classify *what* the startup calls are doing:
+  - Reading context docs (possible instruction-overhead — KE-025)?
+  - Scanning DB / filesystem for pending tasks?
+  - Locating files (FM-1.3 path-guessing chains)?
+- Hypothesize 1–2 high-leverage reductions (e.g., consolidate status queries, inject pending-task paths directly, precompute "first action" for heartbeats).
+- Target: knock may + coach heartbeats down to ≤20% startup, which would pull the overall mean under 25% and bob's individual agent under 10%.
+
+## Milestone status
+
+- [x] **Milestone 1** (iter 1): Measure current startup overhead across 5 agents → done, mean **42%**, output above.
+- [x] **Milestone 2** (iter 2): Identify top 3 time-wasters → ranked AND classified by cause (below).
+- [ ] Milestone 3: Propose fixes — draft below, needs validation.
+- [ ] Milestone 4: Validate reduction to <10%.
+
+## Milestone 2 — startup-call classification (iter 2)
+
+**Method**: Re-scanned the same worst-offender heartbeat sessions and classified every pre-first-productive-call tool use by intent.
+**Script**: `agents/bob/workspace/classify-startup-calls.ts`
+**Run**: `bun agents/bob/workspace/classify-startup-calls.ts` (output captured in `/tmp/classify.out`, copy below).
+
+| agent | task_lookup | context_read | path_probe | fs_scan | git_status | other (mostly cat/head/tail/custom scripts) | total |
+|-------|------------|--------------|-----------|---------|-----------|--------------------------------------------|-------|
+| may   | 10 (45%)   | 2 (9%)       | 1 (5%)    | 0       | 0         | 9 (41%)                                    | 22    |
+| coach | 3 (14%)    | 3 (14%)      | 6 (29%)   | 1 (5%)  | 0         | 8 (38%)                                    | 21    |
+| bob   | 0          | 0            | 0         | 0       | 0         | 8 (100%)                                   | 8     |
+
+(NB: "other" is dominated by `cat`/`head`/`tail` of project docs and helper scripts like `heartbeat-snapshot.sh`, `kb-find.sh` — semantically these are *context reads* or *task lookups*, just invoked via bash so the classifier's regex undercounts them.)
+
+**Reclassifying "other" via sample inspection** (evidence from `/tmp/classify.out`):
+- may "other" = `git log --since`, `find may/workspace -name "*false*"`, `git add && commit` (repo housekeeping).
+- coach "other" = `tail -40 .../instruction-following.md`, `cd agents && git status --short`, repeated `cat .../projects/*.md`.
+- bob "other" = `bash .../heartbeat-snapshot.sh bob`, `bash .../kb-find.sh`, `head -60 .../deep-dives/*.md` — all state/context reads wrapped in scripts.
+
+### Root-cause buckets (merged)
+
+1. **Pending-task lookup via DB** (may 45%, coach 14%) — every heartbeat re-queries `.state/may.db` for pending requests.
+2. **Re-reading project-file state** (coach ~38%+14% ≈ 52%, bob ≈ 75%) — `cat/head/tail` of `projects/*.md`, `deep-dives/*.md`, or wrapper scripts that do the same.
+3. **File-location probing** (coach 29%) — `ls`/`find` to locate files the agent already worked on last session.
+4. **Repo-hygiene checks** (may ~20%) — `git status`/`git log`/`git add` before doing anything.
+
+## Milestone 3 — proposed fixes (draft)
+
+Each fix targets one bucket; together they aim to reduce startup calls by 3-5 per heartbeat, which would pull may/coach under 20% and bob under 10%.
+
+### Fix A — Inject pending-request list into heartbeat prompt *(bucket 1)*
+The session spawner already queries the DB to decide whether to run a heartbeat. Extend the prompt template to include a pre-formatted block:
+```
+## Pending requests
+- R-1234 (P1, 2h old): ...
+- R-1235 (P2, pending): ...
+```
+Replaces ~1-2 `bun -e "...Database..."` calls per heartbeat. Applies to may, coach, bob, and almost every agent.
+
+### Fix B — Inject "project state" snippet *(bucket 2)*
+When `periodic-tasks.md` / `projects/<current>.md` has been updated since last session, include its last N=40 lines in the prompt. Eliminates the `tail -40 projects/*.md` and `head -60 deep-dives/*.md` openings observed in coach/bob.
+
+### Fix C — Cache last-known-good paths in context *(bucket 3)*
+Add an auto-maintained block in each agent's `context.md`:
+```
+## Recently-touched files
+- agents/coach/workspace/projects/instruction-following.md
+- agents/shared/knowledge/experiments/EXP-186/design.md
+```
+Updated by `last-session.md` writer. Kills most of coach's 6 `ls`/`cat` probes per heartbeat.
+
+### Fix D — Inject `git status --short` output *(bucket 4)*
+Spawner runs `git status --short` in `agents/` and `/app` and drops the (usually tiny) result into the prompt. Saves the `cd /app/agents && git status ...` call that may/coach frequently open with.
+
+### Expected impact
+Mean overhead 42% → estimated **12-18%** if fixes A+B land; under 10% with A+B+C. Validation requires re-running `measure-startup-overhead.ts` one week after deployment.
+
+### Next iteration (iter 3)
+1. Pick ONE fix (recommend **Fix A** — smallest blast radius, measurable in days).
+2. Locate the spawner prompt template: grep for where heartbeat prompts are assembled.
+3. Write a design brief for tech-lead with before/after samples.
+
+## Iter 2 addendum — key discovery re: Fix A
+
+**`src/app/cron.ts:670-676` ALREADY injects pending-request list into the heartbeat prompt** as `## Injected: pending tasks (N items)` with per-request lines. Yet the classifier shows may=45% and coach=14% of startup calls are still `bun -e "Database ..."` queries against `.state/may.db`.
+
+This means Fix A is **not a missing-injection problem, it's a trust/behavior problem**. Possible root causes:
+- Agents query DB for richer fields (task text, age, priority thresholds) than the injection provides.
+- Agents don't read/trust the injection block (KE-011: agents skip passive info).
+- Habit/training — heartbeats open with the same DB query regardless of what's in the prompt.
+
+**Revised Fix A**: rather than adding injection (already done), either (a) enrich the existing injection with fields the agents are re-fetching (measure by sampling the actual DB queries they run), or (b) add a steering line in `heartbeat.md` / soul: *"The pending-tasks block above is authoritative — do NOT re-query .state/may.db for the same info."* Intervention (b) is behavioral, cheap, reversible; (a) requires schema changes.
+
+**Decision for iter 3**: sample 5 of the `bun -e "Database ..."` startup calls to see WHAT they fetch beyond what's already injected. Then pick (a) or (b).
+
+
