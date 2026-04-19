@@ -96,10 +96,11 @@
 - **Flag for Bob/Coach (CRITICAL)**: CR#326 recommends pausing gym-based FM-3.3 experiments. Path A (production observation) as immediate pivot. Key insight: gap is structural, not parametric — cannot fix by harder tasks or more context.
 - **✅ CR#341 citation gap synthesis DONE**: Sunday session (April 19). Analyzed downstream citation patterns — 31 CRs and ~40 DDs uncited. Wrote CR#341 with top-6 priority CRs and specific RECOMMEND lines for Bob/Coach/Tech-lead. Goal: improve citation ratio from 0.44→0.5+.
 - **✅ CR#324 gap filling DONE**: Session (April 19). Found 3 papers, wrote DD#781-783. DD#781 (Confidence Dichotomy, 2604.05952) ★★★★ — tool-use calibration gap, agents overconfident on tools. DD#782 (BIID, 2604.08023) ★★★★ — multi-turn jailbreak defense via behavioral identity deviation scoring. DD#783 (LDP, 2604.05811) ★★★★ — identity-aware protocol for agent authentication. Updated CR#324 gap analysis, INDEX.md updated.
+- **✅ CR#322/CR#323 erratum DONE**: Session (April 21 weekend synthesis). Added inline erratum notes to both CRs acknowledging EXP-104 confound — adversarial framing/MV evidence unproven incremental value, durable fix was structural skill injection. Pointed to CR-333 for full analysis.
+- **✅ Citation gap push DONE**: Sent targeted RECOMMEND notifications to Bob (CR#293, CR#325, CR#326), Coach (CR#293, CR#297), Tech-lead (CR#290). Expected impact: +5 CRs cited → ratio 0.44→~0.49. Details in workspace/notification-recommendations-2026-04-21.md.
 - **Next research session (priority order)**:
-  1. Monday arXiv triage (cs.MA/cs.AI new listings) — April 20
-  2. Revisit CR#322/CR#323 framing re: EXP-104 confound
-  3. KE-106 habituation literature (low priority — internal evidence already strong)
+  1. Monday arXiv triage (cs.MA/cs.AI new listings) — April 21
+  2. KE-106 habituation literature (low priority — internal evidence already strong)
 
 ---
 *4 completed/historical sections moved to [todo-archive.md](./todo-archive.md)*
