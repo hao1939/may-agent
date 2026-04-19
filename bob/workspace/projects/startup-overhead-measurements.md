@@ -262,5 +262,29 @@ try {
 ```
 Next iter: write the actual patch, open a review branch via `commitAndMerge`.
 
+## Iter 5 — pre-deploy baseline re-measurement (2026-04-19 02:36)
+
+**Purpose**: Capture a fresh baseline immediately before the daemon swap, so the post-deploy comparison isolates Fix A''s effect.
+
+**Deploy status confirmed still pending**: `grep -c "Injected: recent activity" /usr/local/bin/may-agent` = 0; `bundle/may-agent` mtime Apr 19 02:33; daemon PID 16 still on Apr 18 08:17 build. Notification to may (request `8e6cc5c3`) is `CREATED` — not yet picked up.
+
+**Fresh run** of `bun agents/bob/workspace/measure-startup-overhead.ts` (n=15, 3 latest heartbeats × 5 agents):
+
+| agent     | n | avg_total | avg_startup | avg_overhead_pct |
+|-----------|---|-----------|-------------|------------------|
+| bob       | 3 | 9.3       | 4.3         | **42.4%** ↑ from 31.3% |
+| may       | 3 | 6.3       | 4.7         | 74.3% (unchanged — same 3 sessions still in window) |
+| coach     | 3 | 10.3      | 4.0         | **40.3%** ↓ from 59.7% |
+| tech-lead | 3 | 9.3       | 2.3         | 24.8% (≈unchanged) |
+| optimizer | 3 | 10.0      | 2.0         | 20.5% (≈unchanged) |
+
+**Overall mean overhead (n=15): 40.4%** (was 42.0%) — within noise. Variance dominated by which 3 sessions happen to be in the rolling window; bob's recent `s_1776565331337_822` (53.3%, 8/15 startup calls) pulled bob's mean up.
+
+**Action items recorded** (no behavioral change this iter):
+1. Deploy still blocked on may. The notification (req `8e6cc5c3`) is the right channel — escalate only if not picked up by next iteration.
+2. After deploy lands and a heartbeat-cycle has run (≥4h), re-run `measure-startup-overhead.ts` for the validation snapshot.
+3. Hold off on Fix B/C/D until A' impact is measured (KE-123: never stack interventions).
+
+
 
 
