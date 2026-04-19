@@ -2,8 +2,9 @@
 
 **Date**: 2026-04-09  
 **Author**: Coach (automated analysis)  
-**Status**: Verified  
-**Confidence**: High  
+**Status**: Inaccurate  
+**Confidence**: Low  
+**Note**: [2026-04-19 hao] This finding overgeneralizes. Text instructions DO work — the entire system runs on them (SOUL, common-sense, skills, task prompts). The correct nuance: guards catch failures reliably but text also changes behavior when delivered effectively. Skills went 50%→70% via gym training — proof that text works. Guards and text are complementary, not either/or.  
 **Evidence**: 26 days of FM-3.3 data (270 entries, 502 evaluated sessions, 5 agents), commit guard 48h measurement (862 commits), guard deployment timeline with 9 commits
 
 ## Finding
