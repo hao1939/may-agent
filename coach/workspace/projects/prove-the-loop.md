@@ -667,3 +667,9 @@ Each iteration:
   - **Production 7d (unchanged)**: n=90, avg 0.726.
   - **Decision — WAIT**: No data. Resume when n≥15 post-Iter16 evals available.
   - **Next (Iter 20)**: Re-query at next heartbeat.
+
+- 2026-04-19 Iteration 20 (monitoring check, ~11:00Z) — **STILL WAITING: n=8-9 post-Iter16, below 15 threshold**:
+  - **Window**: Iter 16 deploy ~06:31Z → ~11:00Z. ~4.5h elapsed.
+  - **Post-Iter16 production evals**: n=8, avg quality **0.675**. Including gym: n=9, avg **0.700**.
+  - **Decision — WAIT**: n < 15 threshold. Direction is flat/slightly down vs 0.726 baseline but sample too small to interpret.
+  - **Next (Iter 21)**: Re-query at next heartbeat when n≥15.
