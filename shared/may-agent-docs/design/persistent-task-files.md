@@ -103,6 +103,16 @@ appendFileSync(journalPath, iterationBlock);
 5. Owner guidance from last reviewer entry in journal.md
 6. "You CANNOT edit project.md or journal.md. Produce deliverables in workspace."
 
+### Reviewer prompt includes:
+1. Goal + milestones from project.md
+2. Recent progress from journal.md
+3. Worker output from current iteration
+4. **Comments from project.md** — reviewer must see human/agent comments to incorporate them into guidance
+5. Stall warning (if applicable)
+
+### Comments flow:
+Comments are added to project.md at any time. Both worker and reviewer re-read project.md each iteration, so new comments appear naturally at the next iteration boundary. The reviewer sees comments and incorporates them into CONTINUE/DONE/BLOCKED guidance. The worker gets corrected instructions without interruption.
+
 ## Migration
 
 - If project path is a directory with project.md → new format
