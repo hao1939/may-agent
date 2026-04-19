@@ -3,7 +3,7 @@
 **Owner**: May  
 **Priority**: P0 (from Hao)  
 **Created**: 2026-04-19  
-**Status**: active
+**Status**: blocked (M5 needs Hao approval)
 
 ## Problem
 The first user message has 16 layers of context injection (up to 55K chars) that bury the actual task. Agents follow session history instead of the task instruction.
@@ -72,8 +72,8 @@ The first user message has 16 layers of context injection (up to 55K chars) that
 - [x] M3: Test moving essential context to system prompt (cacheable)
   - [x] M3a: `contextMdInSystemPrompt` toggle moves context.md to system prompt (4 tests pass)
   - [x] M3b: First user message shrinks by 127 chars when context.md moves to system prompt
-- [ ] M4: Design minimal injection: session ID + task, everything else on-demand
-- [ ] M5: Implement and verify task compliance improves
+- [x] M4: Design minimal injection: session ID + task, everything else on-demand (see design below)
+- [ ] M5: Implement and verify task compliance improves — **BLOCKED: needs Hao approval of M4 design**
 
 ## Alternatives to Removal (don't lose what each layer solved)
 - Cold start → project file IS the context for persistent tasks; heartbeats use single last-session.md
