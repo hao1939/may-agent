@@ -332,6 +332,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   let consecutiveFailures = 0;
   let continueWithoutProgress = 0;
   let lastMilestoneDone = extractMilestones(projectContent).done;
+  let lastSeenComments = extractComments(projectContent) ?? "";
 
   // Mark active (field-level update)
   projectContent = updateField(projectContent, "Status", "active");
