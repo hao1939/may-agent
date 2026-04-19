@@ -1,5 +1,6 @@
 /**
  * project-resume — Simple: scan active projects, fork owners.
+ * Supports both legacy (single .md) and new (directory with project.md) formats.
  */
 import { readdirSync, readFileSync, statSync, existsSync } from "node:fs";
 import { join, resolve } from "node:path";
@@ -12,8 +13,6 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
   const agentsRoot = resolve(ctx.projectRoot, "agents");
 
   return async () => {
-    // Scan for active projects
-    const candidates: Array<{ owner: string; relPath: string }> = [];
     const picked = new Map<string, { relPath: string; mtime: number }>();
 
     try {
@@ -21,33 +20,48 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         if (!dir.isDirectory() || dir.name.startsWith(".")) continue;
         const projDir = join(agentsRoot, dir.name, "workspace", "projects");
         if (!existsSync(projDir)) continue;
-        for (const file of readdirSync(projDir).filter(f => f.endsWith(".md"))) {
+
+        for (const entry of readdirSync(projDir, { withFileTypes: true })) {
+          let projectFile: string;
+          let relPath: string;
+
+          if (entry.isFile() && entry.name.endsWith(".md")) {
+            // Legacy: single .md file
+            projectFile = join(projDir, entry.name);
+            relPath = `agents/${dir.name}/workspace/projects/${entry.name}`;
+          } else if (entry.isDirectory()) {
+            // New: directory with project.md
+            projectFile = join(projDir, entry.name, "project.md");
+            if (!existsSync(projectFile)) continue;
+            relPath = `agents/${dir.name}/workspace/projects/${entry.name}`;
+          } else {
+            continue;
+          }
+
           try {
-            const abs = join(projDir, file);
-            const content = readFileSync(abs, "utf-8");
+            const content = readFileSync(projectFile, "utf-8");
             const m = STATUS_RE.exec(content);
             if (!m) continue;
             const status = m[1].toLowerCase();
             if (status !== "active") continue;
-            const mtime = statSync(abs).mtimeMs;
+            const mtime = statSync(projectFile).mtimeMs;
             const existing = picked.get(dir.name);
             if (!existing || mtime > existing.mtime) {
-              picked.set(dir.name, { relPath: `agents/${dir.name}/workspace/projects/${file}`, mtime });
+              picked.set(dir.name, { relPath, mtime });
             }
-          } catch { /* skip unreadable files */ }
+          } catch { /* skip */ }
         }
       }
     } catch { return; }
 
     if (picked.size === 0) return;
 
-    // Check which agents already have running sessions
     const busy = new Set<string>();
     try {
       const db = ctx.getDb();
       const rows = db.prepare("SELECT DISTINCT agent FROM sessions WHERE status = 'running'").all() as Array<{ agent: string }>;
       for (const r of rows) busy.add(r.agent);
-    } catch { /* skip if DB unavailable */ }
+    } catch { /* skip */ }
 
     let forked = 0;
     for (const [owner, project] of picked) {
@@ -59,7 +73,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       try {
         ctx.manager.run(owner, task, { source: "cron" });
         forked++;
-      } catch { /* skip failed forks */ }
+      } catch { /* skip */ }
     }
 
     if (forked > 0) {
