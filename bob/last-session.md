@@ -1,10 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776559076364_0
+- **Session:** s_1776559109932_0
 - **Status:** done
-- **When:** 2026-04-19T00:38:44.960Z
-- **Duration:** 48s
+- **When:** 2026-04-19T00:39:17.132Z
+- **Duration:** 47s
 
 ## What Happened
-No active projects — the referenced `test-project.md` doesn't exist, and all 4 existing project files have `Status: done` (including `test-persistent-task-experiment.md`, which matches the previous session's "startup overhead" description and was explicitly closed at Iter 24 with a note that project-resume.ts was re-dispatching it in error).
+The referenced project file `agents/bob/workspace/projects/test-project.md` does not exist. The closest match is `test-persistent-task-experiment.md`, which has **Status: done** with all milestones checked off. Iter 27's note explicitly covers this exact scenario ("stale Iter-1 goal-text invocation, confirmed still done, no file changes").
+
+No work needed — this is a stale re-dispatch of a completed project.
