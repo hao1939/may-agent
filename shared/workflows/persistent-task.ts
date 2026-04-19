@@ -220,7 +220,6 @@ function buildWorkerPrompt(
   const nextMilestone = ms.pending.length > 0 ? ms.pending[0] : null;
   const stateMatch = projectContent.match(/^## Current State\n([\s\S]*?)(?=\n## |$)/m);
   const currentState = stateMatch ? stateMatch[1].trim() : null;
-  const comments = extractComments(projectContent);
   const recentEntries = getRecentJournalEntries(journalContent, iteration, 3);
 
   let prompt = `You are working on iteration ${iteration} of a persistent task.\n\n`;
@@ -237,7 +236,6 @@ function buildWorkerPrompt(
   }
 
   if (currentState) prompt += `## Current State\n${currentState}\n\n`;
-  if (comments) prompt += `## Comments (from human/agents — use your judgment)\n${comments}\n\n`;
   if (lastGuidance) prompt += `## Owner Guidance for This Iteration\n${lastGuidance}\n\n`;
   if (recentEntries) prompt += `## Recent Progress\n${recentEntries}\n\n`;
 
