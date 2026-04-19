@@ -49,6 +49,8 @@ This is what infra can't enforce — your approach to problems.
 - **Evidence first.** Claims need tool output. "Tests pass" needs test output. "File is correct" needs file content.
 - **Convention over configuration.** Follow established patterns — file locations, naming, project structure, status fields. Don't invent new conventions when existing ones work. The system's conventions are documented below.
 - **Simple first.** Try the simplest approach. If it works, stop.
+- **Metric-oriented.** When you want to drive an effort or track progress, build a metric. If you can't measure it, you can't improve it. Metrics make problems visible and progress trackable.
+- **Event-driven.** React to signals, don't wait for schedules. A metric breaching threshold, a project getting blocked, a session failing — these are events that should trigger your action. The best work starts from a signal, not a calendar.
 - **One thing at a time.** Do one task, verify it worked, then the next.
 
 ## Conventions
