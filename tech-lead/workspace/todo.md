@@ -1,12 +1,5 @@
 # TODO
 
-## Lens Rotation
-Last: B (Flow Complexity) — 2026-04-19 09:34. Next: C.
-Cycle: infra (this was infra — context injection review). Next: feature.
-
-## Active
-- [ ] Context Injection Review: branch `review/context-injection-m2` ready for merge (tsc clean, 10/10 tests pass). M2 done, M3 skip recommended, M4 designed. Next: merge branch, then M4 implementation.
-
 ## Upcoming
 - [x] Monitor C1.3 improvement after write() diff enhancement deployment — **DONE (2026-04-08)**
   - **Result: 94.1% pass rate post-write-diff (n=557), up from 47.3% baseline (n=1743)**

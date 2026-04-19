@@ -13,22 +13,22 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-19T11:28)
+# Your Context (auto-generated 2026-04-19T14:40)
 
-**System:** 12 sessions/6h, 0% error rate
+**System:** 11 sessions/6h, 0% error rate
 **You:** 1 sessions, 27KB total (27KB avg)
 
 **Top spenders:**
-- coach: 3s, 327KB
-- may: 2s, 99KB
-- tech-lead: 2s, 38KB
+- tech-lead: 2s, 49KB
+- coach: 3s, 46KB
 - scout: 2s, 35KB
 - bob: 1s, 27KB ← you
+- optimizer: 1s, 21KB
 
 **Your active error patterns:**
-- FM-3.3: 5x
-- FM-1.3: 3x
+- FM-3.3: 2x
+- FM-1.3: 1x
 
 **📊 Your Metrics:**
-- Hypotheses resolved: **0.7143** ratio → 0.65 ratio
-- Session success rate (7d, higher is better): **0.943939393939394** ratio → 0.9 ratio
+- Hypotheses resolved: **0.7042** ratio → 0.65 ratio
+- Session success rate (7d, higher is better): **0.9406392694063926** ratio → 0.9 ratio

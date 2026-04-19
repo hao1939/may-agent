@@ -2879,3 +2879,16 @@ src/app/ui/web
 - Bob analysis: fresh (4h ago)
 - ⚠️ tech-lead session s_1776591259066_64 running 54min — may be stuck
 
+## 2026-04-19T14:40 — Auto (JS cron handler)
+
+- Sessions (24h): 935
+- Unevaluated: 20 total, 15 actionable, 5 auto-skippable
+- Running sessions: may (s_1776609603182_0), coach (s_1776609603710_1)
+- tsc: FAIL: 
+[41m                                                                               [0m
+[41m[37m                This is not the tsc command you are looking for                [0m
+[41m           
+- Lessons: 52 lines total (scout 31, optimizer 21)
+- Bob analysis: fresh (8h ago)
+- ⚠️ tsc --noEmit failed
+
