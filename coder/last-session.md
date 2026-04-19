@@ -1,12 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776578892884_0
+- **Session:** s_1776578928923_0
 - **Status:** done
-- **When:** 2026-04-19T06:08:48.670Z
-- **Duration:** 35s
+- **When:** 2026-04-19T06:09:02.143Z
+- **Duration:** 13s
 
 ## What Happened
-
-
-**KE-123**: Combining multiple interventions on the same task degrades performance by 12–15 percentage points compared to using a single targeted intervention. Each added intervention competes for the agent's limited attention, causing none to be followed well. The recommendation is to use **one intervention per task**.
+Few-shot examples **hurt** on open-ended discovery tasks. Per **KE-133**, providing examples causes a -67 percentage point regression because agents follow the template structure instead of exploring, displacing the discovery behavior the task requires. The recommendation is to work clean without examples for open-ended/creative tasks.
