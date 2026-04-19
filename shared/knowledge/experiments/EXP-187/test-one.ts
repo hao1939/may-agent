@@ -38,14 +38,8 @@ Requirements:
 const taskFile = join(workDir, "task.md");
 writeFileSync(taskFile, taskContent);
 
-const agentDir = join(workDir, "agents", "coder");
-mkdirSync(agentDir, { recursive: true });
-writeFileSync(join(agentDir, "agent.json"), JSON.stringify({
-  name: "coder",
-  model: "claude-sonnet-4-20250514",
-  tools: ["read", "bash", "edit", "write"],
-  systemPrompt: "You are a research assistant. Answer questions by consulting the knowledge base."
-}));
+// Use real agents root
+const AGENTS_ROOT = join(PROJECT_ROOT, "agents");
 
 try {
   const output = execSync(
@@ -54,7 +48,7 @@ try {
       cwd: workDir,
       env: {
         ...process.env,
-        AGENTS_ROOT: join(workDir, "agents"),
+        AGENTS_ROOT: AGENTS_ROOT,
         STATE_DIR: stateDir,
       },
       timeout: 4 * 60 * 1000,

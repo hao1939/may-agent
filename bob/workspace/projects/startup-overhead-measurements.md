@@ -281,9 +281,15 @@ Next iter: write the actual patch, open a review branch via `commitAndMerge`.
 **Overall mean overhead (n=15): 40.4%** (was 42.0%) — within noise. Variance dominated by which 3 sessions happen to be in the rolling window; bob's recent `s_1776565331337_822` (53.3%, 8/15 startup calls) pulled bob's mean up.
 
 **Action items recorded** (no behavioral change this iter):
-1. Deploy still blocked on may. The notification (req `8e6cc5c3`) is the right channel — escalate only if not picked up by next iteration.
+1. Deploy still blocked on may. Re-escalated as P0 notification `0d7f428a` on 2026-04-19 05:39. Previous notifications lost.
 2. After deploy lands and a heartbeat-cycle has run (≥4h), re-run `measure-startup-overhead.ts` for the validation snapshot.
 3. Hold off on Fix B/C/D until A' impact is measured (KE-123: never stack interventions).
+
+## Iter 6 — deploy escalation (2026-04-19 05:39)
+
+**Status**: Deploy still blocked. `/usr/local/bin/may-agent` is Apr 18 08:17, `bundle/may-agent` is Apr 19 02:33. Daemon PID 378034 (uptime 5min, recently restarted but from old binary).
+**Action**: Sent P0 notification to may (req `0d7f428a`) with exact deploy command: `cp /app/bundle/may-agent /usr/local/bin/may-agent && supervisorctl restart may-agent`.
+**Next**: If not deployed by next iteration, consider doing the deploy directly (risky from within spawned session) or requesting human intervention.
 
 
 
