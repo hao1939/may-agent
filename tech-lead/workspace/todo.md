@@ -1,7 +1,7 @@
 # TODO
 
 ## Lens Rotation
-Last: D (Fragility) — eval-sync mid-batch throw recovery (2026-04-19 00:36). Next: A.
+Last: A (System Architecture) — evaluator 99 zero-op sessions (expected behavior) (2026-04-19 01:06). Next: B.
 
 ## Upcoming
 - [ ] Heuristic evaluation over-rates by ~0.12 — consider adding LLM sampling to evaluation-sync.ts for top-level sessions (checkpoint from s_1776288692069_126 has the design)
