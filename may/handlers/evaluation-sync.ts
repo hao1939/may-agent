@@ -432,6 +432,29 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
           ctx.log(`[evaluation-sync] Upgraded ${llmEvaluated}/${sampled.length} sessions to LLM evaluation`);
         }
       }
+      // ── Fix evaluator-skip false zeros ─────────────────────────────
+      // When the LLM evaluator can't score a session (e.g., "duplicate agent
+      // name", "did not score this agent"), it writes quality=0 with
+      // skippedByJs=0. These are measurement failures, not quality failures.
+      // Mark them as skipped so they're excluded from metric averages.
+      const falseZeroCount = (db.prepare(
+        `SELECT COUNT(*) as cnt FROM evaluations
+         WHERE quality = 0 AND skippedByJs = 0
+           AND (issues LIKE '%evaluator did not score%'
+                OR issues LIKE '%duplicate agent name%')`,
+      ).get() as { cnt: number }).cnt;
+
+      if (falseZeroCount > 0) {
+        db.prepare(
+          `UPDATE evaluations
+           SET skippedByJs = 1, verdict = 'skipped'
+           WHERE quality = 0 AND skippedByJs = 0
+             AND (issues LIKE '%evaluator did not score%'
+                  OR issues LIKE '%duplicate agent name%')`,
+        ).run();
+        ctx.log(`[evaluation-sync] Fixed ${falseZeroCount} evaluator-skip false-zero sessions (marked as skipped)`);
+      }
+
     } finally {
       db.close();
     }
