@@ -347,6 +347,17 @@ The Fix A' (recent-activity dashboard injection) targets behavioral overhead. To
 3. Compare behavioral overhead (target: mean <25%, bob/optimizer <10%)
 4. If insufficient improvement, consider Fix B (project-state snippet) or Fix C (path cache)
 
+## Iter 8 — waiting for data (2026-04-19 06:06)
+
+**Status**: Deploy confirmed live since 05:43. Only 3 completed post-deploy sessions so far (coach ops=3, tech-lead ops=4+6). Too few for validation — need ≥3 per agent (15 total across 5 agents).
+
+**Post-deploy sessions** (as of 06:06):
+- coach: 1 done (ops=3) — promising low count
+- tech-lead: 2 done (ops=4, ops=6)
+- bob/optimizer/may: 0 done (all still running or just started)
+
+**Next**: Re-run validation in ~4h (target: 10:00 UTC) when ≥15 completed heartbeat sessions exist post-deploy.
+
 
 
 
