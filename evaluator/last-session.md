@@ -1,21 +1,21 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776584265188_12
+- **Session:** s_1776584540562_17
 - **Status:** done
-- **When:** 2026-04-19T07:37:52.138Z
-- **Duration:** 6s
+- **When:** 2026-04-19T07:42:32.025Z
+- **Duration:** 11s
 
 ## What Happened
 ```json
 {
   "agents": {
-    "optimizer": {
-      "role": "Researcher",
+    "coach": {
+      "role": "Builder",
       "capability_level": "L2",
-      "efficiency": 0.72,
-      "quality": 0.83,
-      "verdict": "good",
+      "efficiency": 0.8,
+      "quality": 0.6,
+      "verdict": "acceptable",
       "issues": [
-        "[FM-2.6 risk] One failed bun sqlite query attempt (syntax/quoting broke mid-SQL) that was abandoned rather than corrected; cost impact small (auto-extracted: 1 wasted call).",
-        "[EVIDENCE GAP (minor)] Final finding asserts specific code location `src/lib/evaluator.ts:912` and that an `INS
+        "[FM-3.1 Ghost Deliverable (caught+recovered)] coach attempted finish(success) twice with summaries that the finish-guard interpreted as implying deliverables; then adjusted summary to “read as requested” and succeeded.",
+        "[Goal ambiguity] Worker task/goal was “see project file”; coach compl
