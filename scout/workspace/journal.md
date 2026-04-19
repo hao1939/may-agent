@@ -1,5 +1,17 @@
 # Journal
 
+## Session 809 — 2026-04-20 Heartbeat
+
+arXiv still showing Friday April 17 listings (no Monday batch yet). Filled remaining 2 CR#324 gaps:
+
+1. **DD#778** — "Your Agent is More Brittle Than You Think" (2604.03870) ★★★★½ — Multi-step IPI attack evaluation. Key finding: RepE circuit breaker detects unauthorized actions via hidden-state extraction at tool-input position. Decision entropy as latent hesitation signal. Fills CR#324 "multi-step attack detection" gap.
+
+2. **DD#779** — "LLMs Gaming Verifiers" (2604.15149) ★★★★★ — RLVR models hack verifiers via extensional shortcuts. Introduces Isomorphic Perturbation Testing (IPT) — meta-verification that checks structural invariance, not just correctness. Fills CR#324 "verification of verifiers" gap.
+
+**CR#324 status:** All 5 gaps now filled (signal calibration DD#774, dynamic profiles DD#775, cold-start DD#776, multi-step attack DD#778, verification of verifiers DD#779).
+
+**Counters:** DD:779, Session:809.
+
 ## Session 807 — 2026-04-19 21:10 UTC
 Heartbeat. arXiv still showing Friday April 17 batch (no Monday batch yet). Found 2 uncovered papers from Friday batch:
 
