@@ -24,6 +24,7 @@ Updated: 2026-04-16 ~08:00 UTC
 ## Active Items
 | Issue | Status | Owner | Notes |
 |-------|--------|-------|-------|
+| **Context Injection Review** | ⏳ Active | tech-lead | P0 from Hao. M1 done (baseline). M2 dispatched to tech-lead (s_..099) — add toggle flags for layers. Project: context-injection-review.md |
 | Amy-kimi billing outage | 🔴 Blocked | Hao | Still down, needs balance refill |
 | **Metrics + Gym Fast Feedback** | ⏳ Active | multiple | Hao approved (req:e961c558). M1: seed metrics → tech-lead (s_..560). M2: scenario triage → coach (s_..561). Project: metrics-and-gym.md |
 | **Model Diversity Review** | ⏳ Active | bob | Design review: which agent on which model? (req:c56a6ae4) |
