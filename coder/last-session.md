@@ -1,12 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776578823165_0
+- **Session:** s_1776578835931_0
 - **Status:** done
-- **When:** 2026-04-19T06:07:15.693Z
-- **Duration:** 12s
+- **When:** 2026-04-19T06:07:38.752Z
+- **Duration:** 22s
 
 ## What Happened
 
 
-**Structural access is more important than content quality for knowledge utilization.** KE-052 establishes that structural access constraints dominate content quality — it doesn't matter how good knowledge is if agents can't reach it at decision time. This means optimizing *when and how* knowledge is delivered matters more than perfecting *what* the knowledge says.
+**No, forced externalization hurts debugging tasks like cascading-fix-trap.** KE-054 establishes that externalization has a sharp domain boundary: it helps judgment tasks but actively harms debugging tasks, causing a -67pp regression on cascading-fix-trap. The overhead of forced structured reasoning disrupts the rapid hypothesis-testing flow that debugging requires.
