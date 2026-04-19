@@ -1,7 +1,7 @@
 # TODO
 
 ## Lens Rotation
-Last: C (Dead Weight) — deferred P3 blocker audit + protocols check (2026-04-19 08:04). Next: D.
+Last: D (Fragility) — codebase weight metric has no enforcement/guard (2026-04-19 08:34). Next: A.
 
 ## Upcoming
 - [ ] Heuristic evaluation over-rates by ~0.12 — consider adding LLM sampling to evaluation-sync.ts for top-level sessions (checkpoint from s_1776288692069_126 has the design)
