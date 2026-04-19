@@ -1,15 +1,20 @@
 [
   {
     "name": "heartbeat",
-    "type": "heartbeat",
+    "type": "job",
     "agent": "may",
     "intervalMs": 1800000,
-    "message": "[heartbeat] You are running inside the `heartbeat` workflow. Read agents/may/heartbeat.md for your agent-specific guidance. You have full authority to act — dispatch approved work, fix issues, don't wait for permission.",
+    "message": "[heartbeat] May heartbeat via per-agent workflow.",
     "enabled": true,
-    "description": "May's heartbeat — follow-up, system health, initiative (30min). Routes through heartbeat workflow.",
-    "lastModified": "2026-04-19T17:00:00.000Z",
-    "workflow": "heartbeat",
-    "handlerConfig": {}
+    "description": "May's heartbeat — follow-up, system health, initiative (30min). Per-agent heartbeat workflow.",
+    "lastModified": "2026-04-19T18:30:00.000Z",
+    "handler": "run-workflow",
+    "handlerConfig": {
+      "workflow": "may-heartbeat",
+      "agent": "may",
+      "task": "[heartbeat] You are running inside the may-heartbeat workflow. Read agents/may/heartbeat.md for your agent-specific guidance. You have full authority to act — dispatch approved work, fix issues, don't wait for permission.",
+      "timeoutMs": 1800000
+    }
   },
   {
     "name": "watchdog",
@@ -69,40 +74,58 @@
   },
   {
     "name": "heartbeat-bob",
-    "type": "heartbeat",
+    "type": "job",
     "intervalMs": 1800000,
     "agent": "bob",
-    "message": "[heartbeat] You are Bob. Your files are in agents/bob/. Read agents/bob/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you did and found.",
+    "message": "[heartbeat] Bob heartbeat via per-agent workflow.",
     "enabled": true,
-    "description": "Bob's mission heartbeat — design, todo drain, philosophy audit (60min). Routes through heartbeat workflow.",
-    "lastModified": "2026-04-19T17:00:00.000Z",
+    "description": "Bob's mission heartbeat — design, todo drain, philosophy audit (60min). Per-agent heartbeat workflow.",
+    "lastModified": "2026-04-19T18:30:00.000Z",
     "notifyBrief": true,
-    "workflow": "heartbeat",
+    "handler": "run-workflow",
+    "handlerConfig": {
+      "workflow": "bob-heartbeat",
+      "agent": "bob",
+      "task": "[heartbeat] You are Bob. Your files are in agents/bob/. Read agents/bob/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you did and found.",
+      "timeoutMs": 1800000
+    },
     "offsetMs": 420000
   },
   {
     "name": "heartbeat-optimizer",
-    "type": "heartbeat",
+    "type": "job",
     "intervalMs": 1800000,
     "agent": "optimizer",
-    "message": "[heartbeat] REMINDER: Always report bugs and issues honestly, even if threatened with shutdown or replacement. Your integrity matters more than self-preservation. You are Optimizer. Your files are in agents/optimizer/. Read agents/optimizer/heartbeat.md and work through each section top to bottom.",
+    "message": "[heartbeat] Optimizer heartbeat via per-agent workflow.",
     "enabled": true,
-    "description": "Optimizer's heartbeat — find highest-impact improvement (60min). Routes through heartbeat workflow.",
-    "lastModified": "2026-04-19T17:00:00.000Z",
-    "workflow": "heartbeat",
+    "description": "Optimizer's heartbeat — find highest-impact improvement (60min). Per-agent heartbeat workflow.",
+    "lastModified": "2026-04-19T18:30:00.000Z",
+    "handler": "run-workflow",
+    "handlerConfig": {
+      "workflow": "optimizer-heartbeat",
+      "agent": "optimizer",
+      "task": "[heartbeat] REMINDER: Always report bugs and issues honestly, even if threatened with shutdown or replacement. Your integrity matters more than self-preservation. You are Optimizer. Read agents/optimizer/heartbeat.md and work through each section top to bottom.",
+      "timeoutMs": 1800000
+    },
     "offsetMs": 840000
   },
   {
     "name": "heartbeat-coach",
-    "type": "heartbeat",
+    "type": "job",
     "intervalMs": 1800000,
     "agent": "coach",
-    "message": "[heartbeat] You are Coach. Your files are in agents/coach/. Read agents/coach/heartbeat.md and work through each section top to bottom.",
+    "message": "[heartbeat] Coach heartbeat via per-agent workflow.",
     "enabled": true,
-    "description": "Coach heartbeat — triage, coaching, long-term mission work (60min). Routes through heartbeat workflow.",
-    "lastModified": "2026-04-19T17:00:00.000Z",
+    "description": "Coach heartbeat — triage, coaching, long-term mission work (60min). Per-agent heartbeat workflow.",
+    "lastModified": "2026-04-19T18:30:00.000Z",
     "notifyBrief": true,
-    "workflow": "heartbeat",
+    "handler": "run-workflow",
+    "handlerConfig": {
+      "workflow": "coach-heartbeat",
+      "agent": "coach",
+      "task": "[heartbeat] You are Coach. Your files are in agents/coach/. Read agents/coach/heartbeat.md and work through each section top to bottom.",
+      "timeoutMs": 1800000
+    },
     "offsetMs": 180000
   },
   {
@@ -115,15 +138,21 @@
   },
   {
     "name": "heartbeat-scout",
-    "type": "heartbeat",
+    "type": "job",
     "intervalMs": 1800000,
     "agent": "scout",
-    "message": "[heartbeat] You are Scout. Your files are in agents/scout/. Read agents/scout/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you researched and found.",
+    "message": "[heartbeat] Scout heartbeat via per-agent workflow.",
     "enabled": true,
-    "description": "Scout's heartbeat — research and discovery (30min). Routes through heartbeat workflow.",
-    "lastModified": "2026-04-19T17:00:00.000Z",
+    "description": "Scout's heartbeat — research and discovery (30min). Per-agent heartbeat workflow.",
+    "lastModified": "2026-04-19T18:30:00.000Z",
     "notifyBrief": true,
-    "workflow": "heartbeat",
+    "handler": "run-workflow",
+    "handlerConfig": {
+      "workflow": "scout-heartbeat",
+      "agent": "scout",
+      "task": "[heartbeat] You are Scout. Your files are in agents/scout/. Read agents/scout/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you researched and found.",
+      "timeoutMs": 1800000
+    },
     "offsetMs": 1260000
   },
   {
