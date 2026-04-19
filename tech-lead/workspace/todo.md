@@ -1,6 +1,8 @@
 # TODO
 
 ## Upcoming
+- [ ] Coach EXP-188 persistent-task bugs (e6ac494a) — Reviewed: Bug #1 is by-design (text field parsing), Bug #2 not reproducible (code uses field-level updates). Need to add usage docs to REGISTRY.md.
+- [ ] Build health: package.json missing from /app root — environment issue, not code bug. Investigate deployment.
 - [x] Monitor C1.3 improvement after write() diff enhancement deployment — **DONE (2026-04-08)**
   - **Result: 94.1% pass rate post-write-diff (n=557), up from 47.3% baseline (n=1743)**
   - Three-phase analysis:
