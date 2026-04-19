@@ -1,7 +1,7 @@
 # TODO
 
 ## Upcoming
-- [ ] Coach EXP-188 persistent-task bugs (e6ac494a) — Reviewed: Bug #1 is by-design (text field parsing), Bug #2 not reproducible (code uses field-level updates). Need to add usage docs to REGISTRY.md.
+- [x] Coach EXP-188 persistent-task bugs (e6ac494a) — Reviewed: Bug #1 is by-design (text field parsing), Bug #2 not reproducible (code uses field-level updates). Added usage docs + gotcha note to REGISTRY.md.
 - [ ] Build health: package.json missing from /app root — confirmed still missing (Apr 19). Environment issue, not code bug.
 - [ ] "Stuck requests" metric threshold inversion (1542398d) — May flagged value=0 target=0 showing ⚠️. Likely same inversion pattern as error-rate fix.
 - [ ] Delegation quality gap (FM-3.3, 8 occurrences) — 0.79 vs 0.85 target. Audit recent delegations.
