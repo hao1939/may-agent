@@ -18,6 +18,8 @@
 - [x] **Content-first guard design doc** [HIGH]: `agents/shared/may-agent-docs/design/difficulty-adaptive-content-first-guards.md` — 93 lines, references KE-195/196/H-165.
 - [x] **EXP-168 contamination addendum** [HIGH]: Done. results-addendum.md written, H-166 revised. Contamination refuted binary-threshold claim.
 
+- [x] **Context-Discovery Chain → H-176**: Hao's finding already captured as KE-context-discovery-chain. Formalized as H-176 (P(H)=0.90, testable predictions for breadcrumb-driven action).
+
 ## Blocked / Deferred
 - [ ] **Prompt Caching**: Blocked on Hao since 2026-03-24. $36-63/day savings waiting.
 - [ ] **Amy-Kimi C8.2 Compliance**: Model-level JSON bug in finish(). Options: (a) JSON repair, (b) exempt, (c) accept.
