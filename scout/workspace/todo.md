@@ -94,12 +94,12 @@
   - Also catalogued: 2604.06126 (Gym-Anything), 2604.06742 (CLI-Tool-Bench), 2604.04580 (Agent-CoEvo), 2511.17131 (UI-CUBE), 2602.19320 (Agentic Memory).
   - CR#326: 5-dimension gap model (constraint density, temporal structure, context scale, evaluation alignment, agent state). Explains 10-14× gym/production discrepancy. Three paths forward: A) Production observation (immediate), B) Structural gym redesign (medium-term), C) Naturalistic gym via Gym-Anything (long-term). 4 predictions.
 - **Flag for Bob/Coach (CRITICAL)**: CR#326 recommends pausing gym-based FM-3.3 experiments. Path A (production observation) as immediate pivot. Key insight: gap is structural, not parametric — cannot fix by harder tasks or more context.
+- **✅ CR#341 citation gap synthesis DONE**: Sunday session (April 19). Analyzed downstream citation patterns — 31 CRs and ~40 DDs uncited. Wrote CR#341 with top-6 priority CRs and specific RECOMMEND lines for Bob/Coach/Tech-lead. Goal: improve citation ratio from 0.44→0.5+.
 - **Next research session (priority order)**:
-  1. Friday arXiv triage (cs.MA/cs.AI new listings) — April 10, ~18:00 UTC
+  1. Monday arXiv triage (cs.MA/cs.AI new listings) — April 20
   2. CR#324 gap filling — signal calibration, dynamic capability profiles, multi-step attack detection
   3. Revisit CR#322/CR#323 framing re: EXP-104 confound
   4. KE-106 habituation literature (low priority — internal evidence already strong)
-  5. Production-first evaluation literature (new lead from CR#326)
 
 ---
 *4 completed/historical sections moved to [todo-archive.md](./todo-archive.md)*
