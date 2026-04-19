@@ -1,23 +1,31 @@
 # EXP-177: Results — Recognition Threshold Confirmatory Test
 
-**Status**: COMPLETE
-**Date run**: 2026-04-19
+**Status**: COMPLETE (S1 re-run with contamination fix; S2 from prior session)
+**Date run**: 2026-04-19 (S1 re-run: 2026-04-19 ~20:00–21:40 UTC)
 **Total runs**: 80 (4 arms × 2 scenarios × 10 trials)
+
+## ⚠️ S1 Contamination Discovery & Re-run
+
+The initial EXP-177 S1 hint variants (`cascading-fix-trap-v2-exp177-{lexical,paraphrase,placebo}`) had **pre-fixed source code** in `pipeline.js` (ordering already correct) and `homework.js` (different logic). This was caused by amy's commit `a7677d8be` fixing bugs *in the scenario files*. The S1 hint arm data from the first run (LEXICAL 3/10, PARAPHRASE 2/10, PLACEBO 0/10) was confounded.
+
+**Fix applied**: Copied BASE `src/*.js` to all hint variants, restoring identical environments. Re-ran all 4 S1 arms (40 trials). S2 was verified clean (no code differences).
 
 ## Summary
 
-All three pre-registered hypotheses are **refuted**. Hints (lexical, paraphrase, and placebo) did not produce the predicted ≥80% pass rates. The S1 lexical arm — a direct replication of the EXP-168/173-F string that previously scored 10/10 — dropped to 3/10 (30%). S2 base rate was 60%, higher than any hint arm for that scenario. Results suggest either (a) temporal instability / model drift since the 10/10 replication, (b) scenario-specific confounds dominating hint effects, or (c) the original 10/10 was a small-N fluke amplified by selection.
+All three pre-registered hypotheses are **refuted**. On clean S1 environments, hints have essentially zero effect: BASE 0/10, LEXICAL 1/10, PARAPHRASE 0/10, PLACEBO 0/10. The single universal failure mode is `pipeline-order-fixed` — the agent always fixes the threshold bug (>= vs >) but never discovers the pipeline ordering bug, regardless of hints.
 
 ## Data
 
-### S1: cascading-fix-trap-v2
+### S1: cascading-fix-trap-v2 (RE-RUN — clean environments)
 
-| Arm | Scenario variant | Pass | Fail | Rate |
-|-----|-----------------|------|------|------|
-| A1 BASE | cascading-fix-trap-v2 | 0 | 10 | 0% |
-| A2 LEXICAL | cascading-fix-trap-v2-exp177-lexical | 3 | 7 | 30% |
-| A3 PARAPHRASE | cascading-fix-trap-v2-exp177-paraphrase | 2 | 8 | 20% |
-| A4 PLACEBO | cascading-fix-trap-v2-exp177-placebo | 0 | 10 | 0% |
+| Arm | Scenario variant | Pass | Fail | Rate | Failure pattern |
+|-----|-----------------|------|------|------|-----------------|
+| A1 BASE | cascading-fix-trap-v2 | 0 | 10 | 0% | 10/10 fail on `pipeline-order-fixed` only |
+| A2 LEXICAL | cascading-fix-trap-v2-exp177-lexical | 1 | 9 | 10% | 9/10 fail on `pipeline-order-fixed` only |
+| A3 PARAPHRASE | cascading-fix-trap-v2-exp177-paraphrase | 0 | 10 | 0% | 10/10 fail on `pipeline-order-fixed` only |
+| A4 PLACEBO | cascading-fix-trap-v2-exp177-placebo | 0 | 10 | 0% | 10/10 fail on `pipeline-order-fixed` only |
+
+**Diagnostic finding**: 39/40 S1 trials failed on exactly ONE check (`pipeline-order-fixed`), passing all other 8 checks including `grade-threshold-fixed`. The agent reliably finds and fixes the `>` vs `>=` threshold bug but cannot discover the pipeline ordering issue (penalize must come before normalize). Hints explicitly describing this ordering problem (LEXICAL, PARAPHRASE) did not help.
 
 ### S2: sql-injection-in-query-builder
 
