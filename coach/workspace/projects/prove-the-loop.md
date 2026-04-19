@@ -25,7 +25,7 @@ Each iteration:
 7. **Loop** to next iteration
 
 ## Success Criteria
-- [ ] coder.quality reaches 0.85 (milestone 1)
+- [ ] coder.quality reaches 0.80 production-only (milestone 1 — revised from 0.85; true baseline is 0.716 prod-only, not 0.82)
 - [ ] coder.quality reaches 0.90 (milestone 2)
 - [x] At least 2 interventions tested in gym (C1.5, C1.6, C1.7, evidence-count-guard — 4+ gym A/Bs across Iters 4-12)
 - [ ] At least 1 intervention deployed to production with measured improvement
@@ -420,3 +420,19 @@ Each iteration:
   - **Production 7d (unchanged)**: n=90, avg 0.726.
   - **Decision — WAIT**: No data. Resume when n≥15 post-Iter16 evals available.
   - **Next (Iter 20)**: Re-query at next heartbeat.
+
+- 2026-04-19 Iteration 20 (fresh diagnosis, 11:28Z) — **Corrected baseline, identified guard gap**:
+  - **Current metric**: Production-only 7d avg quality **0.716** (n=96). Daily trend flat at ~0.70 since Apr 14.
+  - **Post-Iter16 (retry scope-escape fix)**: n=8, avg **0.675** — no improvement visible yet, but n too small and includes pre-existing sessions. Need more data.
+  - **Failure mode census (41 sessions <0.75, 7d prod-only)**:
+    - Scope violations: 25/41 (61%)
+    - FM-3.3 verification fabrication: 28/41 (68%)
+    - Process issues: 27/41 (66%)
+    - Heavy overlap — most low-q sessions have multiple failure modes.
+  - **Critical finding — evidence-count-guard from Iter 10 is MISSING from disk**: `src/lib/tools/evidence-count-guard.ts` does NOT exist. The Iter 10 log says it was shipped, but the file was either never committed or was deleted. The verification-depth-guard (T2-no-post-write-verification) IS deployed and active, but it only checks WHETHER verification happened, NOT whether claimed evidence matches actual output.
+  - **Gap analysis on FM-3.3**: Session s_1776591764540_84 (q=0.2) shows the exact FM-3.3 pattern: agent ran 2 bash + 1 read + 1 edit, then finish(success) claiming "bun test showed 10 pass, 0 fail" — but NO bun test command appears in transcript. The verification-depth-guard did NOT fire because the agent DID make post-write bash calls (satisfies T2). The missing check: **do the verification_evidence strings match actual tool output?**
+  - **Concrete next step — build and deploy evidence-string-match guard**:
+    - On `finish(status:"success")`, check each `verification_evidence[i]` string for substring overlap with actual tool results in transcript.
+    - If an evidence string contains a quoted claim (e.g., "10 pass, 0 fail") that doesn't appear in any tool result text, block with remediation message.
+    - This is the Iter 10 guard done right — structural (KE-007), targeting the actual production failure pattern.
+  - **Decision**: Build evidence-string-match guard as next deliverable. This iteration's deliverable is the updated diagnosis + project file.
