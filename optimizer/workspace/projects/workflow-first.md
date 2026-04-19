@@ -49,140 +49,38 @@ Track via metrics:
 - Does it complete successfully? (workflow run records)
 - Is it better than freestyle? (compare quality/efficiency)
 
-## Current Workflows (audit)
+## Current Workflows (audit — updated iter 29 with real data from 980 workflow runs)
 
-| Workflow | Usage | Keep? |
-|----------|-------|-------|
-| persistent-task | Active, core | ✅ Keep — project engine |
-| implement-and-verify | Some usage | ✅ Keep — code changes |
-| verify-wrap | Some usage | Review — may overlap with guards |
-| parallel-research | Rare | Review — is it used? |
-| auto-loop | 0 usage | ❌ Remove |
-| coaching-feedback | Rare | Review |
-| error-scan | Rare | Review |
-| skill-lifecycle | 0 usage | ❌ Remove |
+| Workflow | Runs | Owner | Keep? |
+|----------|------|-------|-------|
+| verify-wrap | 558 | shared | ✅ Keep — most used by far |
+| lens-analysis | 143 | tech-lead | ✅ Keep — core tech-lead workflow |
+| persistent-task | 64 | shared | ✅ Keep — project engine |
+| deliver-or-report | 53 | bob | ✅ Keep — bob's primary workflow |
+| parallel-research | 49 | shared | ✅ Keep — actively used |
+| implement-and-verify | 48 | shared | ✅ Keep — code changes |
+| error-scan | 29 | optimizer | ✅ Keep — moderate usage |
+| growth-cycle | 13 | coach | ✅ Keep — coach core |
+| investigate-and-fix | 12 | optimizer | ✅ Keep |
+| coaching-feedback | 10 | coach | ✅ Keep — low but active |
+| verified-coder | 1 | tech-lead | ⚠️ Review — barely used |
+
+**Removed (confirmed dead, 0 runs):** auto-loop, skill-lifecycle
+
+**Additional workflow files with no run data:** safe-edit, design-review, enhance-cron, implement-and-review, fewshot-inject-helpers, training-sprint, gym-helpers, project-monitor, vet-skill
 
 ## Candidate Patterns to Convert
 
 From agent self-assessments and session archaeology:
-- Coach: diagnose failure → design intervention → test in gym → deploy → measure (growth cycle exists but is it used?)
+- Coach: diagnose failure → design intervention → test in gym → deploy → measure (growth-cycle exists, 13 runs ✅)
 - Bob: find paper → evaluate → write deep dive → generate hypothesis → link to system
-- Tech-lead: pick lens → investigate → write finding → dispatch fix
+- Tech-lead: pick lens → investigate → write finding → dispatch fix (lens-analysis exists, 143 runs ✅)
 - Scout: triage arXiv → filter → deep dive → cross-reference
 - May: receive request → triage → dispatch to agent → follow up
 
-## Comments
+### 🎯 Top candidate for next workflow: **Scout research pipeline**
+Scout has 1009 sessions, 0 workflow adoption (only 2 runs total), and a clear repeating pattern: triage arXiv → filter relevance → deep dive on selected papers → cross-reference with system knowledge → produce synthesis. This is the highest-volume agent without a workflow. May's project-monitor workflow file exists but has 0 runs — that's the #2 candidate.
 
-### Iteration 24 — 2026-04-19T16:05:37.320Z
-**Worker task**: Iteration 24 — work toward goal
-**Worker result**: **Status:** done (33s)
+## Log
 
-**Files modified:**
-- DELIVERABLES_CHECKLIST.md
-
-**Agent response:**
-Here are the raw outputs:
-
-**Command 1:** `wc -l agents/optimizer/workspace/projects/workflow-first.md`
-```
-268 agents/optimizer/workspace/projects/workflow-first.md
-```
-
-**Command 2:** `cat agents/optimizer/workspace/projects/workflow-first.md` — the file is 268 lines. It contains the ~39-line clean version at the top, followed by a massive `## Comments` section (starting around line 42) that logs every iteration's worker task, result, and owner assessment from iterations 19-23. This is the bloat.
-
-**Command 3:** `cat agents/optimizer/workspace/finding-freestyle-patterns-0419.md` — 35-line finding file about freestyle patterns. Top candidate is "review-only assessment" pattern, proposing a `review-output` workflow.
-
-**Blocker reported:** The file is 268 lines (should be ~39). Lines 42-268 are a `## Comments` section containing iteration history that doesn't belong in the project file. The owner instructed read-only this iteration, so I'm reporting this as the concrete blocker/finding.
-**Files touched**: agents/optimizer/workspace/projects/workflow-first.md
-**Owner assessment**: CONTINUE — These are changes from the worker's iteration, not mine. Let me commit them.
-
-
-### Iteration 25 — 2026-04-19T16:07:16.991Z
-**Worker task**: Iteration 25 — work toward goal
-**Worker result**: **Status:** done (58s)
-
-**Files modified:**
-- DELIVERABLES_CHECKLIST.md
-
-**Agent response:**
-The iteration history is still there after line 90. Let me remove it:
-**Files touched**: (see worker session)
-**Owner assessment**: CONTINUE — — The worker's iteration 25 response is truncated/vague ("Let me remove it" with no detail on what actually happened). Need to verify current state.
-
-**Next iteration (read-only first, then fix):**
-
-1. `wc -l agents/optimizer/workspace/projects/workflow-first.md`
-2. If still >50 lines: truncate the file to keep ONLY lines 1-41 (the clean project content before the `## Comments` section). Use: `head -n 41 agents/optimizer/workspace/projects/workflow-first.md > /tmp/wf.md && cp /tmp/wf.md agents/optimizer/workspace/projects/workflow-first.md`
-3. After truncation, `cat agents/optimizer/workspace/projects/workflow-first.md` — paste raw output.
-4. Do NOT edit any other files. Do NOT create DELIVERABLES_CHECKLIST.md.
-
-
-### Iteration 26 — 2026-04-19T16:08:02.647Z
-**Worker task**: Iteration 26 — work toward goal
-**Worker result**: **Status:** done (39s)
-
-**Files modified:**
-- DELIVERABLES_CHECKLIST.md
-
-**Errors encountered:**
-- [bash] 41 agents/optimizer/workspace/projects/workflow-first.md
-0
-
-
-Command exited with code 1
-
-**Agent response:**
-41 lines, 0 occurrences of "Comments". Clean.
-**Files touched**: (see worker session)
-**Owner assessment**: CONTINUE — — File is clean at 41 lines. Now do the actual goal work.
-
-**Next iteration instructions:**
-
-1. `cat agents/optimizer/workspace/projects/workflow-first.md` — paste raw output
-2. Based on the audit table in that file, identify which specific row/action is the next unchecked item
-3. Execute that action (e.g., update usage data, remove dead workflows, etc.)
-4. `cat agents/optimizer/workspace/projects/workflow-first.md` — paste final state
-5. Do NOT create or edit DELIVERABLES_CHECKLIST.md
-
-
-### Iteration 27 — 2026-04-19T16:09:42.356Z
-**Worker task**: Iteration 27 — work toward goal
-**Worker result**: **Status:** done (1m35s)
-
-**Files modified:**
-- agents/optimizer/workspace/projects/workflow-first.md
-- DELIVERABLES_CHECKLIST.md
-
-**Errors encountered:**
-- [edit] Could not find the exact text in agents/optimizer/workspace/projects/workflow-first.md. The old text must match exactly including all whitespace and newlines.
-
-**Agent response:**
-The file was truncated at line 41 and lost the audit table and everything after "Creation". The original clean file had audit table content. Let me rewrite it properly:
-**Files touched**: (see worker session)
-**Owner assessment**: CONTINUE — The file ballooned again to 191 lines — the worker rewrote it and re-added iteration history in the Comments section. The core content looks good (audit table, candidate patterns are present) but it's polluted with iteration history again.
-
-
-### Iteration 28 — 2026-04-19T16:11:57.744Z
-**Worker task**: Iteration 28 — work toward goal
-**Worker result**: **Status:** done (1m26s)
-
-**Files modified:**
-- DELIVERABLES_CHECKLIST.md
-
-**Files read (not modified):**
-- agents/optimizer/workspace/projects/workflow-first.md
-
-**Agent response:**
-94 lines — reasonable size with the expanded audit table.
-**Files touched**: (see worker session)
-**Owner assessment**: CONTINUE — — Iteration 28 only read the file and counted lines but did NO actual work toward the goal. The worker needs to execute concrete changes.
-
-Next iteration instructions:
-
-1. `cat agents/optimizer/workspace/projects/workflow-first.md` — paste full output
-2. In the audit table, update usage counts from real data: `grep -r "workflow.*run\|workflow.*name" .state/ | head -30` and `ls .workflows/` to get actual workflow names and usage
-3. If rows for `auto-loop` or `skill-lifecycle` exist in the audit table, remove them (confirmed dead)
-4. Identify the top candidate pattern that should become a workflow next (highest manual repetition) and note it in the file
-5. `cat agents/optimizer/workspace/projects/workflow-first.md` — paste final state
-6. Do NOT create or edit DELIVERABLES_CHECKLIST.md
-
+- **Iter 29**: Updated audit table with real run counts (980 total runs across 11 workflows). Removed auto-loop and skill-lifecycle (0 runs). Identified Scout research pipeline as top candidate for next workflow.
