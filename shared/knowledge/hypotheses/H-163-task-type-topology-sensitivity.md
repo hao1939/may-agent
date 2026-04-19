@@ -1,9 +1,9 @@
 # H-163: Task-Type Topology Sensitivity — Optimal Communication Graph Varies by Task Category
 
 **Created**: 2026-04-14 by Bob
-**P(H)**: 0.65
+**P(H)**: 0.68 (↑ from 0.65, updated 2026-04-20; was 0.60 on scorecard — reconciled upward)
 **Source**: DD-616 (Agent Q-Mix), DD-617 (Coordination Primacy Hypothesis), KE-086 (Multi-Agent Architecture Scaling)
-**Status**: Proposed — not yet tested
+**Status**: Proposed — strengthened by 4 convergent evidence streams (KE-192, KE-194, KE-269, CR-340)
 
 ## Claim
 
@@ -34,10 +34,25 @@ The key mechanism (from DD-616's L44 — Topology-Coordination Equivalence): top
 - **H-097**: CCC Triad — context isolation requirement implies not all agents should see all communications
 - **KE-086 Pattern 1**: "Produce in parallel, verify at boundary" — the boundary structure (topology) determines quality
 
+### Supporting (New — 2026-04-20 Bayesian Update)
+
+Four convergent evidence streams identified in KE-192 and related entries:
+
+1. **KE-192 (Solver-Sampler Mismatch)** [STRONG]: Provides the *mechanistic explanation* for why task-type determines optimal topology. Recognition tasks need sampler-mode (content injection, flexible reasoning) while execution tasks need solver-mode (process enforcement, checklists). This is exactly H-163's claim that optimal communication graph varies by task category — the "topology" isn't just which agents communicate, but what *mode* of communication dominates. EXP-166's +100pp effect from matching mode to task type is empirical confirmation of mode-topology sensitivity.
+
+2. **KE-194 (Contestation > Override)** [MODERATE]: Multi-agent deliberation structure determines decision quality. The finding that contestation (debate rounds) outperforms override (single-agent veto) implies topology of interaction matters — not just who's in the loop, but how they interact. Supports H-163's core claim that communication graph structure, not just agent selection, drives quality.
+
+3. **KE-269/KE-211 (λ_A Typed Composition)** [MODERATE]: The 54%→96% precision jump when crossing declarative/imperative boundary shows that verification topology (what checks what) has massive task-dependent effects. The 94% structural incompleteness in real configs suggests most agent systems use sub-optimal topologies. While not directly about task-type conditioning, this quantifies the *cost* of topology mismatch — connecting to P-163c's prediction about cross-type mixing penalties.
+
+4. **CR-340 Theme 1 (Memory Architecture Convergence)** [WEAK-MODERATE]: Four independent papers (DD-764, 765, 768, 772) converge on task-type-sensitive memory structures — different retrieval patterns optimal for different cognitive demands. This architectural parallel (memory topology varies by task) supports the broader principle that topology sensitivity is real and task-type-dependent.
+
+**Net update**: These provide mechanistic grounding (KE-192), system-level structural evidence (KE-194, KE-269), and cross-domain convergence (CR-340). The strongest contribution is KE-192 giving H-163 a *why* — solver-sampler mismatch explains the mechanism behind topology sensitivity. However, all evidence remains indirect/analogical; no direct experiment has compared topology configurations across task types in our system.
+
 ### Against
 - Manual dispatch already provides implicit task-type conditioning (Hao selects which agents to involve)
 - System is small (~7 agents); unused communication links have near-zero marginal cost
 - DD-616 was tested at 8-512 agents; effects may not manifest at our scale
+- All new supporting evidence is analogical (mode ≈ topology) rather than direct topology comparison
 
 ## Falsification Criteria
 
