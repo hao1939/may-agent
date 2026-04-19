@@ -49,21 +49,21 @@ All three pre-registered hypotheses are **refuted**. On clean S1 environments, h
 
 ### Hypothesis adjudication
 
-**H-166-revised (any causal pointer ≥80%)**: **REFUTED**. Predicted LEXICAL ≥80% and PARAPHRASE ≥80%. Observed 20% and 30%. The "any causal pointer crosses threshold" model is wrong — knowing the mechanism does not reliably produce a solve.
+**H-166-revised (any causal pointer ≥80%)**: **REFUTED**. Predicted LEXICAL ≥80% and PARAPHRASE ≥80%. Observed 10% and 20% (pooled). On clean S1, hints had zero effect (1/40 total vs 0/10 BASE). The "any causal pointer crosses threshold" model is decisively wrong.
 
-**A-LEXICAL (keyword match — LEXICAL ≥80%, PARAPHRASE ≤40%)**: **REFUTED**. LEXICAL at 20% invalidates the ≥80% prediction. The keyword-match model fails because even exact keyword hints don't reliably help.
+**A-LEXICAL (keyword match — LEXICAL ≥80%, PARAPHRASE ≤40%)**: **REFUTED**. LEXICAL at 10% invalidates the ≥80% prediction. Keywords don't help either.
 
-**A-ENVCLEAN (clean env sufficient — BASE ≥40%)**: **PARTIALLY supported for S2, refuted for S1**. S2 BASE = 60% (consistent with ≥40% prediction), but S1 BASE = 0% (inconsistent). Pooled BASE = 30%, within the ambiguous zone. This suggests scenario difficulty, not environment cleanness, is the primary driver.
+**A-ENVCLEAN (clean env sufficient — BASE ≥40%)**: **PARTIALLY supported for S2, refuted for S1**. S2 BASE = 60% (consistent with ≥40% prediction), but S1 BASE = 0% (inconsistent). Pooled BASE = 30%, within the ambiguous zone. S2 is intrinsically easier; the difference is scenario difficulty, not environment cleanness.
 
 ### Unexpected findings
 
-1. **S2 hints HURT performance**. BASE 60% vs LEXICAL 10% — the lexical hint *reduced* pass rate by 50pp. This is a striking negative transfer effect. The hint may have caused the agent to fixate on the described bugs in a narrow way, missing the broader solution path it finds naturally.
+1. **S1 pipeline-ordering bug is the sole bottleneck**. 39/40 S1 trials fail on exactly one check: the agent never discovers that `normalize` and `applyPenalties` are called in the wrong order. This suggests a specific cognitive blind spot for execution-order bugs, not a general inability to solve hard tasks. The threshold bug (>= vs >) is found every time.
 
-2. **S1 lexical replication failure**. The same hint string that produced 10/10 in post-contamination controls now produces 3/10. This is a 70pp drop. Possible explanations: model version drift, stochastic variation at small N (the 10/10 was never a stable estimate), or subtle environment changes.
+2. **Hints about the ordering bug don't help**. The LEXICAL hint explicitly says "Pipeline ordering is wrong." The PARAPHRASE says "stages run in the wrong sequence." Yet the agent still fails to fix the ordering in 19/20 hint trials. The hint is either not being read, not being applied, or the agent cannot operationalize "ordering is wrong" into a concrete code change.
 
-3. **No arm significantly outperforms any other**. Fisher exact test on pooled LEXICAL vs BASE: p=0.72. PARAPHRASE vs BASE: p=1.0. The hint manipulation has no detectable effect at N=20.
+3. **S2 hints HURT performance**. BASE 60% vs LEXICAL 10% — the lexical hint *reduced* pass rate by 50pp. Negative transfer: the hint may cause fixation on described bugs, missing the broader solution path.
 
-4. **Scenario heterogeneity dominates**. S1 is genuinely hard (5% across all arms), S2 is moderate (35% across all arms). The between-scenario variance dwarfs any within-scenario hint effect.
+4. **S1 lexical replication failure**. The same hint string that produced 10/10 in post-contamination controls now produces 1/10 (clean) or 3/10 (contaminated). The 10/10 was a small-N fluke amplified by selection; prior "10/10 moderate hint" result that motivated H-166-revised was not robust.
 
 ## Conclusion
 
