@@ -1,18 +1,19 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776579070100_2
+- **Session:** s_1776579328819_2
 - **Status:** done
-- **When:** 2026-04-19T06:11:18.099Z
+- **When:** 2026-04-19T06:15:36.136Z
 - **Duration:** 7s
 
 ## What Happened
 
 
-CONTINUE — Worker has failed twice to actually measure anything. The previous session summary gives explicit instructions that were ignored.
+CONTINUE — Milestones 1-2 are actually done via the checkpoint data. The checkpoint from the previous session has full measurements for all 5 agents and identified top 3 patterns. Move to milestone 3.
 
-**Explicit instructions for Iteration 2 — measure startup overhead by querying the DB directly:**
+**Next: Design fix for #1 pattern (skills/*.md injection, 10-46KB)**
 
-1. Run this exact command to discover DB tables:
-```
-export PATH=".state/.bun/bin:$PATH" && bun -e "import {Database} from 'bun:sqlite'; const db = new Database('.state/may.db', {readonly:true}); const rows = db.prepare(\"SELECT name FROM sqlite_master WHER
+The checkpoint data shows:
+- Skills injection is the #1 overhead (10-46KB per agent, bob=40KB/10 files, coach=46KB/8 files)
+- `evidence-over-narrative.md` is duplicated across 3 agents (30KB total)
+- active_recall warnings are
