@@ -29,7 +29,8 @@ for (const agent of agents) {
   let picked = 0;
   for (const s of sessions) {
     if (picked >= 3) break;
-    const path = `.state/sessions/${s.sessionId}/session.jsonl`;
+    let path = `.state/sessions/${s.sessionId}/session.jsonl`;
+    if (!existsSync(path)) path = `.state/sessions/history/${s.sessionId}/session.jsonl`;
     if (!existsSync(path)) continue;
     let text: string;
     try { text = readFileSync(path, "utf8"); } catch { continue; }
