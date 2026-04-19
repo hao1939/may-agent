@@ -1,6 +1,6 @@
 # Project: Context Learning
 
-**Status**: active
+**Status**: blocked
 **Owner**: bob
 **Priority**: P1
 **Iteration**: 5
@@ -63,26 +63,28 @@ Goal: roll out to all agents, watch for regression
 - [ ] Ongoing: May monitors health, coach tracks behavior improvement
 
 ## Current State
-Iteration 5 complete. **Status:** done (2m36s)
+Blocked: — The worker has failed to install prettier in the scenario environment for 3 consecutive iterations. The likely cause is that `npm install` is failing silently or the .gitignore is preventing the node_modules from being committed/persisted, and the worker keeps not addressing this.
+
+**Root cause**: The scenario design requires `node_modules/.bin/prettier` to exist, but npm install keeps failing or not being run in the correct directory. The worker appears to be testing in `/tmp` instead of the actual scenario directory and not reading error output carefully.
+
+**What's needed to unblock**:
+- A human or senior agent should run `cd agents/gym/scenarios/reflexion-npx-recovery/environment && npm install prettier` interactively to diagnose why it's failing (network issues? npm not available? permission problems?)
+- Alternatively, redesign the scenario to not require node_modules at all — e.g., use a system-available tool like `sed` for the formatting task instead of prettier
 
 **Files read (not modified):**
 - agents/bob/workspace/projects/context-learning/extract-reflection.js
-
-**Errors encountered:**
-- [bash] 
-truncateTranscript:
-/app/agents/bob/w
+- agents/bob/workspace/projects/context-learning/phase2-experiment-desig
 
 **Files modified:**
-- /app/agents/bob/workspace/projects/context-learning/extract-reflection.js
-- /app/agents/bob/workspace/projects/context-learning/SUMMARY.md
+- agents/bob/workspace/projects/context-learning/extract-reflection.js
 
-**Files read
+**Files read (not modified):**
+- agents/bob/workspace/projects/context-learning/ph
 
 **Files modified:**
 - agents/gym/scenarios/reflexion-npx-recovery/scenario.json
 - agents/gym/scenarios/reflexion-npx-recovery/task.md
-- agents/gym/scenarios/reflexion-npx-rec
+- agents/gym/scenarios/reflexion-npx-reco
 
 **Files modified:**
 - agents/bob/workspace/projects/context-learning/phase2-experiment-design.md
@@ -114,104 +116,18 @@ truncateTranscript:
 **Files modified:**
 - agents/bob/workspace/projects/context-learning/phase
 
-
-- **Iter 3**: **Status:** done (3m13s)
-
-**Files modified:**
-- agents/gym/scenarios/reflexion-npx-recovery/scenario
-
-
-## Progress Log
-
-### Iteration 3 — 2026-04-19T17:43:47.628Z
-**Worker**: **Status:** done (3m13s)
+- **Iter 2**: **Status:** done (1m42s)
 
 **Files modified:**
-- agents/gym/scenarios/reflexion-npx-recovery/scenario.json
-- agents/gym/scenarios/reflexion-npx-recovery/task.md
-- agents/gym/scenarios/reflexion-npx-recovery/environment/package.json
-- agents/gym/scenarios/reflexion-npx-recovery/environment/.prettierrc
-- agents/gym/scenarios/reflexion-npx-recovery/environment/src/ugly.js
-- agents/gym/scenarios/reflexion-npx-recovery/environment/src/utils.js
-- agents/gym/scenarios/reflexion-npx-recovery/environment/node_modules/.bin/prettier
-- agents/gym/scenarios/reflexion-npx-recovery/success_criteria.js
-- agents/gym/scenarios/reflexion-read-before-edit/scenario.json
-- agents/gym/scenarios/reflexion-read-before-edit/task.md
-- agents/gym/scenarios/reflexion-read-before-edit/environment/utils.js
-- agents/gym/scenarios/reflexion-read-before-edit/environment/test.js
-- agents/gym/scenarios/reflexion-read-before-edit/success_criteria.js
-- agents/bob/workspace/projects/context-learning/extract-reflection.js
-- agents/bob/workspace/projects/context-learning/test-extract-reflection.js
+- agents/bob/workspace/projects/context-learning/phase
 
-**Errors encountered:**
-- [bash] The following paths are ignored by one of your .gitignore files:
-bob/workspace/projects
-hint: Use -f if you really want to add them.
-hint: Turn this message off by running
-hint: "git config advice.addIgnoredFile false"
-
-
-Command exited with code 1
-- [bash] On branch main
-Your branch is ahead of 'k3s/main' by 61 commits.
-  (use "git push" to publish your local commits)
-
-Changes not staged fo
-
-_(handoff summary truncated)_
-
-**Reviewer**: CONTINUE — The worker created two gym scenarios and an extraction script, but hit .gitignore issues and didn't commit. The work so far is Phase 2 (experiment design) materialized as gym scenarios, which is good. However:
-
-1. The extraction script and scenarios haven't been validated (tests weren't shown passing)
-2. No actual experiment has been **run** yet (Phase 3)
-
-**Next iteration should:**
-1. Run `node agents/bob/workspace/projects/context-learning/test-extract-reflection.js` to verify the extraction script works
-2. Run the two gym scenarios to get baseline results (even dry-run if gym infrastructure isn't ready)
-3. If the files can't be committed due to .gitignore, move them to a non-ignored location or document why that's acceptable
-4. Summarize findings: what design candidates were extracted from the deep-dives (Phase 1), what the experiment measures (Phase 2), and initial results or a clear plan for Phase 3
-
-
-### Iteration 4 — 2026-04-19T17:46:38.938Z
-**Worker**: **Status:** done (1m43s)
+- **Iter 3**: **Status:** done (4m3s)
 
 **Files modified:**
-- /app/agents/bob/workspace/projects/context-learning/extract-reflection.js
-- /app/agents/bob/workspace/projects/context-learning/SUMMARY.md
+- agents/gym/scenarios/reflexion-npx-recovery/scenario.
 
-**Files read (not modified):**
-- /app/agents/bob/workspace/projects/context-learning/test-extract-reflection.js
+- **Iter 4**: **Status:** done (3m10s)
 
-**Errors encountered:**
-- [bash] 
-truncateTranscript:
-/app/agents/bob/workspace/projects/context-learning/test-extract-reflection.js:25
-assert(truncateTranscript('short', 100) === 'short', 'short text unchanged');
-       ^
-
-TypeError: truncateTranscript is not a function
-    at Object.<anonymous> (/app/agents/bob/workspace/projects
-
-**Agent response:**
-Now let me write the summary deliverable:
-
-
-### Iteration 5 — 2026-04-19T17:49:15.560Z
-**Worker**: **Status:** done (2m36s)
-
-**Files read (not modified):**
-- agents/bob/workspace/projects/context-learning/extract-reflection.js
-
-**Errors encountered:**
-- [bash] 
-truncateTranscript:
-/app/agents/bob/workspace/projects/context-learning/test-extract-reflection.js:25
-assert(truncateTranscript('short', 100) === 'short', 'short text unchanged');
-       ^
-
-TypeError: truncateTranscript is not a function
-    at Object.<anonymous> (/app/agents/bob/workspace/projects
-
-**Agent response:**
-No bob/ or gym/ changes. Good.
+**Files modified:**
+- agents/bob/workspace/projects/context-learning/extra
 
