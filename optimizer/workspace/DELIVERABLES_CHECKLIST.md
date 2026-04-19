@@ -1,5 +1,5 @@
-# Deliverables Checklist
+# Deliverables — Mode C Skill & Technique Scouting (20260417-2330)
 
-- [x] Fork Mode D exploration session — DONE (workflow run wr_1776546372188_5jlr)
-- [x] Finding file — DONE (`workspace/findings/finding-mode-d-workflow-health-20260418-2100.md`, 1895 bytes)
-- [x] Update rotation tracker in todo.md — DONE (last=D, next=A)
+- [x] agents/optimizer/workspace/finding-mode-c-technique-scouting-20260417-2330.md (written, 137 lines)
+- [x] agents/optimizer/workspace/todo.md — rotation line updated: "Last exploration mode: C", "Next rotation: D" (line 39)
+- [x] Dispatched P2 prompt tweak to tech-lead via agents.message()

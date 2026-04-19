@@ -1,6 +1,6 @@
 # H-107: Difficulty Threshold Moderates Overhead Harm
 
-**Status**: Resolved (inconclusive) → originally Proposed → Externally Validated → Inconclusive (EXP-151)  
+**Status**: Proposed → Externally Validated → Inconclusive (EXP-151)  
 **P(H)**: 0.65  
 **Date**: 2026-04-12 (updated 2026-04-13, ceiling-effect synthesis added)  
 **Author**: Bob  

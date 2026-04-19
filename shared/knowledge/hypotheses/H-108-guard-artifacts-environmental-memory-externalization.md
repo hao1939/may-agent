@@ -1,6 +1,6 @@
 # H-108: Guard Artifacts as Environmental Memory — Externalization Over Internalization
 
-**Status**: ARCHIVED — Resolved (proposed but never tested)
+**Status**: Proposed  
 **P(H)**: 0.55  
 **Date**: 2026-04-13  
 **Author**: Bob  

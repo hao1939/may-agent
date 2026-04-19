@@ -1607,18 +1607,3 @@ Production multi-agent data management system with "three-track knowledge archit
 | 2604.13206 | Numerical Instability and Chaos in LLMs (Apr 2026) | ★★★ — Rounding errors in transformers create chaotic avalanche effects. Three regimes: stable, chaotic, signal-dominated. |
 | 2604.13504 | Chain of Uncertain Rewards with LLMs for RL (Apr 2026) | ★★½ — Reward function design via LLM + Bayesian optimization. Domain-specific (robotics). |
 | 2604.13318 | WebXSkill: Executable Skills for Web Agents (Apr 2026) | ★★★ — Bridges textual and code skills with parameterized programs + NL guidance. +9.8pp on WebArena. |
-| 2604.14178 | Heartbeat-Driven Autonomous Thinking Activity Scheduling (Mar 2026) | ★★★★★ — Periodic heartbeat orchestrates cognitive modules via meta-learning. Directly validates our architecture. DD#770. |
-| 2604.11462 | Active Context Curation via RL — ContextCurator (Apr 2026) | ★★★★★ — RL-trained 7B curator manages working memory, matches GPT-4o. 8× token reduction. DD#771. |
-| 2604.12231 | Thought-Retriever: Retrieve Thoughts Not Raw Data (Apr 2026, TMLR) | ★★★★ — Self-evolving thought memory. +7.6% F1. Validates DD/CR library architecture. DD#772. |
-| 2604.13630 | SafeHarness: Lifecycle-Integrated Agent Security (Apr 2026) | ★★★★ — Four defense layers in agent lifecycle. ~42% ASR reduction. DD#773. |
-| 2604.13349 | Latent KV Compression for Multi-Agent Communication (Apr 2026) | ★★★½ — Orthogonal Backfill reduces KV relay cost 80-89% while preserving performance. |
-| 2604.14116 | TREX: Agent-Driven Tree-based LLM Fine-tuning Automation (Apr 2026) | ★★★ — Multi-agent system automates LLM training lifecycle. Search tree for experimental exploration. |
-| 2604.10449 | AdverMCTS: Adversarial MCTS for Code Generation (Apr 2026) | ★★★½ — Minimax game between Solver and Attacker agents. Reduces pseudo-correctness in code gen. |
-| 2603.02798 | GLEAN: Guideline-Grounded Evidence Accumulation for Agent Verification (Mar 2026) | ★★★★★ — Bayesian calibration of verification signals. +12% AUROC, 50% Brier reduction. CR#324 signal calibration gap. DD#774. |
-| 2512.00740 | BiRouter: Bi-Criteria Routing for Self-Organizing MAS (AAAI 2026) | ★★★★½ — Decentralized dual-criteria (ImpScore+GapScore) task routing with reputation. CR#324 dynamic profiles gap. DD#775. |
-| 2509.19599 | KBA Orchestration: Dynamic Knowledge-Aware Agent Routing (Sep 2025) | ★★★★ — Privacy-preserving ACK protocol for dynamic capability discovery. CR#324 dynamic profiles + cold-start gaps. DD#776. |
-| 2603.24481 | Multi-Agent Reasoning with Consistency Verification for Calibration (Mar 2026) | ★★★★ — Two-Phase Verification + S-Score Weighted Fusion. ECE reduced 49-74%. Medical MCQA. |
-| 2510.21557 | Co-Sight: Conflict-Aware Meta-Verification + Structured Facts (ZTE, Oct 2025) | ★★★★★ — CAMV: verify only conflict hotspots among expert agents. TRSF: auditable shared facts. GAIA SOTA 84.4%. CR#324 verification-of-verifiers gap. DD#777. |
-| 2601.12349 | Action Rebinding: Zero-Permission Multi-Step Attack Chains on GUI Agents (NJU, Jan 2026) | ★★★★½ — Exploits observation-action gap for programmable attack chains. 100% rebinding success, IAS bypasses verification gates. CR#324 multi-step attack gap. DD#778. |
-| 2604.09917 | Explanatory Equilibrium: Verifiable Reasoning as Coordination (AAMAS 2026) | ★★★★½ — Game-theoretic: structured artifacts + bounded probabilistic audits = coordination without exhaustive verification. CR#324 verification-of-verifiers gap. DD#779. |
-| 2604.10134 | PlanGuard: Planning-Based Consistency Verification vs Indirect Prompt Injection (Apr 2026) | ★★★★ — Context Isolation + Hierarchical Verification. ASR 72.8%→0%, FPR 1.49%. Catalogued. |

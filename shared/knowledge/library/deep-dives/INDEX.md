@@ -810,20 +810,3 @@
 4. DD#766 → KE-106 (policy-invisible violations explain why guards don't train behavior — agents find invisible workarounds)
 5. DD#767 → DD-701 Semantic Router DSL (both formalize agent composition — λ_A at type level, Semantic Router at policy level)
 6. DD#764, DD#765, DD#768 → CR-334 Agent Observability (memory architectures support cognitive observability layer)
-
-### Project 2: Existing Agent Systems Survey (Session 794)
-- **DD#769**: Survey of Existing Agent Systems (Claude Skills, Hermes FC, OpenClaw, Evo Harness) — mechanisms for tool enforcement, memory, coordination, behavior testing. ★★★★★
-  - Claude Skills: progressive disclosure (3-tier skill loading), filesystem-as-memory, evaluation-first development
-  - Hermes FC: schema+XML enforcement, Pydantic validation, GOAP scratch pad, recursive depth limits
-  - OpenClaw: NOT ACCESSIBLE (private/local — needs Hao to provide access)
-  - Evo Harness: NOT FOUND on GitHub/arXiv (needs clarification from Hao)
-  - 4 experiment proposals for Bob: progressive disclosure, schema validation, GOAP reasoning, directory-format skills
-
-### Session 794+ (April 18 arXiv triage)
-| DD-770 | 2604.14178 | Heartbeat-Driven Autonomous Thinking Activity Scheduling | ★★★★★ | Architecture — periodic heartbeat orchestrates cognitive modules (Planner, Critic, Recaller, Dreamer); meta-learning scheduler |
-| DD-771 | 2604.11462 | Active Context Curation via RL (ContextCurator) | ★★★★★ | Context — RL-trained lightweight curator manages working memory; 7B matches GPT-4o; 8× token reduction |
-| DD-772 | 2604.12231 | Thought-Retriever: Retrieve Thoughts Not Raw Data | ★★★★ | Memory — self-evolving thought memory; +7.6% F1; TMLR published; validates DD/CR architecture |
-| DD-773 | 2604.13630 | SafeHarness: Lifecycle-Integrated Agent Security | ★★★★ | Safety — four defense layers woven into agent lifecycle; tiered verification; ~42% ASR reduction |
-
-### Weekly Synthesis (Session 796)
-- **[CR-340](cr340-week-apr14-18-synthesis.md)** — ★★★★★ Week of April 14-18 synthesis. 11 DDs (763-773), 5 themes: Memory Architecture Convergence, Architectural Enforcement Non-Negotiable, Context as Managed Resource, Formal Methods Meet Agents, Existing Systems Validate Our Architecture. 5 RECOMMENDs, 3 predictions. Key insight: DD/CR library IS a thought-retrieval system (DD#772); citation ratio is an index/bookmark problem (DD#765).

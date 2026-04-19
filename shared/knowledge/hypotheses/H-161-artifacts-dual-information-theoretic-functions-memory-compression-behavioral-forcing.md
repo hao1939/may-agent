@@ -1,6 +1,6 @@
 # H-161: Artifacts Serve Dual Information-Theoretic Functions — Memory Compression + Behavioral Forcing
 
-**Status**: ✅ CONFIRMED / Resolved (2026-04-18) — EXP-164 confirms both F1 and F2 independently sufficient  
+**Status**: Partially Supported (Modified)  
 **P(H)**: 0.70  
 **Tier**: 1 (Empirically Grounded, High Confidence)  
 **Date**: 2026-04-14  

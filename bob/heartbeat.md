@@ -13,29 +13,11 @@ Your role: **TRIAGE and DISPATCH**. Keep heartbeats lean. Fork substantive work 
 Read your context and identify what needs doing:
 
 1. Check "Injected: pending tasks" above — any P0/P1 items?
-2. **The session prompt already contains "What You Know (persistent context)"
-   and "Last Session" summaries. Do NOT re-read `todo.md`,
-   `workspace/projects/*.md`, `last-session.md`, or `periodic-tasks.md`
-   unless you need a specific field that is NOT summarized in the prompt.
-   Re-reading already-summarized files is the #3 startup-overhead pattern
-   (see workspace/projects/test-persistent-task-experiment.md).**
-3. One combined scan (DB triage + experiments + deep-dives + recent KB commits):
+2. One combined scan (experiments + deep-dives + recent KB changes):
    ```bash
-   bash agents/shared/scripts/heartbeat-snapshot.sh bob && echo "=== Recent experiments ===" && ls -lt agents/shared/knowledge/experiments/ | head -8 && echo "=== Recent deep-dives ===" && ls -lt agents/shared/knowledge/library/deep-dives/ | head -5 && echo "=== Recent KB commits ===" && cd agents && git log --oneline -5 -- shared/knowledge/
+   echo "=== Recent experiments ===" && ls -lt agents/shared/knowledge/experiments/ | head -8 && echo "=== Recent deep-dives ===" && ls -lt agents/shared/knowledge/library/deep-dives/ | head -5 && echo "=== Recent KB commits ===" && cd agents && git log --oneline -5 -- shared/knowledge/
    ```
-   The snapshot script returns running sessions, recent errors, pending
-   requests, your recent sessions, and last-hour activity in one call —
-   replaces 4-8 separate `bun -e` SQL one-liners. **It also now prints
-   `ACTIVE_PROJECTS_bob` and `DD_INBOX_HEAD` (first 30 lines of
-   deep-dives/INBOX.md)** — do NOT additionally `ls workspace/projects/`
-   or `cat INBOX.md`; that info is in the snapshot output above.
-
-   **To locate a KB file by ID** (DD/KE/H/EXP/CR), use
-   `bash agents/shared/scripts/kb-find.sh DD-770` instead of probing paths
-   with `ls`/`find`. It resolves case + naming variants in one call and
-   returns all matching paths (some IDs like DD-772 have multiple files).
-   This eliminates the top FM-1.3 pattern (34+ wasted path-probe calls in
-   the last 7 days).
+3. Read `agents/bob/workspace/todo.md` for ongoing priorities.
 4. **Check your metrics.** Look at "Injected: metrics" above. Fast metrics = every heartbeat, daily = once/day, slow = weekly. If any metric is trending badly, note it as a candidate task. Don't compute metrics yourself — just read what's provided.
 
 **Do NOT read INDEX.md here** — save deep KB exploration for work sessions.

@@ -1,10 +1,6 @@
 # TODO
 
-## Lens Rotation
-Last: C (Dead Weight) — evaluator zero-op spawns analysis (2026-04-19 02:05). Next: D.
-
 ## Upcoming
-- [ ] Heuristic evaluation over-rates by ~0.12 — consider adding LLM sampling to evaluation-sync.ts for top-level sessions (checkpoint from s_1776288692069_126 has the design)
 - [x] Monitor C1.3 improvement after write() diff enhancement deployment — **DONE (2026-04-08)**
   - **Result: 94.1% pass rate post-write-diff (n=557), up from 47.3% baseline (n=1743)**
   - Three-phase analysis:
