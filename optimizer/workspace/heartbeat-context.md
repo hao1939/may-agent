@@ -13,22 +13,23 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-19T14:40)
+# Your Context (auto-generated 2026-04-19T15:10)
 
-**System:** 11 sessions/6h, 0% error rate
+**System:** 10 sessions/6h, 0% error rate
 **You:** 1 sessions, 21KB total (21KB avg)
 
 **Top spenders:**
-- tech-lead: 2s, 49KB
-- coach: 3s, 46KB
+- tech-lead: 2s, 52KB
+- coach: 2s, 49KB
 - scout: 2s, 35KB
 - bob: 1s, 27KB
 - optimizer: 1s, 21KB ← you
 
 **Your active error patterns:**
 - FM-2.6: 1x
+- FM-1.3: 1x
 
 **📊 Your Metrics:**
-- Quality preserved: **0.9041446453407511** ratio → 0.9 ratio
-- Tool adoption: heuristic evaluator (higher is better): **0.9896238651102465** ratio → 0.7 ratio
+- Quality preserved: **0.8974506828528073** ratio → 0.9 ratio
+- Tool adoption: heuristic evaluator (higher is better): **0.9891245241979336** ratio → 0.7 ratio
 - Waste reduction: **unmeasured** ratio → 0.3 ratio

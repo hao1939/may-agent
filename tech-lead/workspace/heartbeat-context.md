@@ -13,26 +13,28 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-19T14:40)
+# Your Context (auto-generated 2026-04-19T15:10)
 
-**System:** 11 sessions/6h, 0% error rate
-**You:** 2 sessions, 49KB total (25KB avg)
+**System:** 10 sessions/6h, 0% error rate
+**You:** 2 sessions, 52KB total (26KB avg)
 
 **Top spenders:**
-- tech-lead: 2s, 49KB ← you
-- coach: 3s, 46KB
+- tech-lead: 2s, 52KB ← you
+- coach: 2s, 49KB
 - scout: 2s, 35KB
 - bob: 1s, 27KB
 - optimizer: 1s, 21KB
 
 **Your active error patterns:**
-- FM-3.3: 4x
-- FM-2.6: 2x
+- FM-3.3: 5x
+- FM-2.6: 1x
 - FM-1.3: 1x
 
 **📊 Your Metrics:**
-- Codebase weight: **31877** lines → 32000 lines
+- Codebase weight: **0** lines → 32000 lines
+  → Quick check: find src -name "*.ts" -not -path "*/node_modules/*" | xargs wc -l | tail -1 | awk "{print }"
 - Delegation quality: **0.79** ratio → 0.85 ratio
-- Meaningful changes: **74** commits/week → 10 commits/week
+- Meaningful changes: **0** commits/week → 10 commits/week
   → Quick check: git log --since='7 days ago' --oneline -- src/ 2>/dev/null | wc -l | tr -d ' '
-- Build health: **1** bool → 1 bool
+- Build health: **0** bool → 1 bool ⚠️ NEEDS ATTENTION
+  → Quick check: npm run check > /dev/null 2>&1 && echo 1 || echo 0
