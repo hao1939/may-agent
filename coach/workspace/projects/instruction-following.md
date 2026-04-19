@@ -1,6 +1,6 @@
 # Project: Agent Instruction Following
 
-**Status**: active
+**Status**: blocked
 **Owner**: coach
 **Reviewer**: may / Hao
 **Master**: may/system-evolution (gap-level concern)
@@ -327,32 +327,6 @@ Realistic projection for future runs (G' deployed, persistent-task unsolved):
 - Since G' is deployed in production, stop counting old baseline/C/D/E/F runs in the compliance metric. Only track G'-era runs going forward.
 - This immediately corrects the metric to reflect reality.
 
-### Iteration 1 — 2026-04-19T06:28:16.713Z
-**Worker task**: Iteration 1 — work toward goal
-**Worker result**: **Status:** done (1m50s)
-
-**Files read (not modified):**
-- agents/coach/workspace/projects/prove-the-loop.md
-
-**Errors encountered:**
-- [bash] 2 | import {Database} from 'bun:sqlite';
-3 | const db = new Database('.state/may.db', {readonly:true});
-4 | const revertTs = 1776472080000;
-5 | 
-6 | // Post-revert details
-7 | const rows = db.query('SELECT e.sessionId, e.quality, e.failureModes, substr(e.summary,1,80) as summ FROM evaluations e JOIN
-- [bash] 1 | 
-2 | import {Database} from 'bun:sqlite';
-3 | const db = new Database('.state/may.db', {readonly:true});
-4 | const revertTs = 1776472080000;
-5 | const rows = db.query('SELECT e.sessionId, e.quality, e.issues, substr(e.summary,1,100) as summ FROM evaluations e JOIN sessions s ON e.sessionId=s.ses
-
-**Agent response:**
-Now append the Iter 14 log entry:
-**Files touched**: (see worker session)
-**Owner assessment**: CONTINUE — — The worker read the project file but didn't produce any deliverable or complete any milestone. The response "Now append the Iter 14 log entry" is incoherent and suggests confusion. Next iteration should: 1) Read `agents/coach/workspace/projects/prove-the-loop.md` to understand the milestones, 2) Identify the first unchecked milestone, 3) Execute it and check it off.
-
-
 ### Iteration 2 — 2026-04-19T06:30:50.947Z
 **Worker task**: Iteration 2 — work toward goal
 **Worker result**: **Status:** done (2m13s)
@@ -496,32 +470,24 @@ Two blockers:
 1. **Worker execution failure**: Despite explicit instructions across 3 iterations to call `edit()`, the worker never does. This is a persistent behavioral failure that more instructions won't fix.
 2. **Data dependency**: The project needs ≥15 post-Iter16 production evaluations to proceed with analysis milestones, and n=0 exist.
 
-### Iteration 6 — 2026-04-19 (instruction-following umbrella)
 
-**Actions taken**: Editing the project file directly (breaking the 5-iteration edit-failure loop).
+### Iteration 6 — 2026-04-19T11:22:44.609Z
+**Worker task**: Iteration 6 — work toward goal
+**Worker result**: **Status:** done (1m5s)
 
-**Consolidated findings — intervention hierarchy** (from all child experiments):
+**Files read (not modified):**
+- agents/coach/workspace/projects/instruction-following.md
 
-| Rank | Mechanism | Compliance | Evidence |
-|---|---|---|---|
-| 1 | Finish-guard (structural gate) | 100% | EXP-188 (3/3) |
-| 2 | Exact command in task prompt | 100% | EXP-184 STEP |
-| 3 | Question-first-step reframe (G') | 100% | metric-reaction-G (87/87) |
-| 4 | Skill + SOUL + context.md | ~75% | EXP-186 (3/4) |
-| 5 | Explicit multi-step instructions | 40-60% | EXP-184 STEP/RUN post-fix |
-| 6 | Context.md critical instruction | ~50% | struct-persistent-task |
-| 7 | Generic procedural step in task | 0% | EXP-185 |
-| 8 | Text rule in SOUL/knowledge/common-sense | 0% | KE-002, baseline |
+**Errors encountered:**
+- [edit] Could not find the exact text in agents/coach/workspace/projects/instruction-following.md. The old text must match exactly including all whitespace and newlines.
 
-**Answer to project goal** ("what mechanisms make agents reliably follow directions"):
-- ≥80% compliance requires structural intervention: gates, exact commands, or first-step reframing
-- Text-only instructions reliably produce 0% compliance
-- Three proven levers: (1) finish-guards, (2) exact command injection, (3) question-first-step reframing
-- Current overall: 38% (125/329). Deploying G' → ~83%
+**Agent response:**
+Now I'll edit the project file to record iteration 6 and update status. Let me add an entry after the iteration 5 section.
+**Files touched**: (see worker session)
+**Owner assessment**: BLOCKED — — Six iterations, zero successful file edits. The worker attempted `edit()` this time but failed due to text mismatch, then reported "done" without retrying. Two persistent blockers:
 
-**Remaining milestones**:
-- [ ] Deploy G' framing to coder production heartbeat (unblocks metric to ~83%)
-- [ ] Wait for ≥15 post-deploy evals for prove-the-loop analysis
-- [ ] Design finish-guard for persistent-task (EXP-188 pattern)
-- [ ] Run metric-autonomy iter 6 (clean G)
+1. **Worker cannot successfully edit files**: Even when it tries, it fails to match exact text and doesn't retry with corrected text. This pattern won't self-resolve with more iterations.
+2. **No clear data to analyze**: The underlying research question (what makes agents follow instructions) requires post-Iter16 evaluation data that may still be n=0.
+
+Recommend: abandon this worker loop and have a human or different agent directly read the project file, perform the analysis queries, and write findings.
 
