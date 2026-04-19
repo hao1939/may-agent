@@ -1,8 +1,8 @@
 # Project: Investigate Session Startup Overhead
 
 **Status**: done
-<!-- Closed at Iter 24 — metric redefined, goal met. Absolute ops 19.2→11.5 (-40%), zero-real eliminated. Ratio target retired. Iter 25 fixed snapshot-regex false-positive. Iter 26 changed Status from "closed (...)" → "done" so project-resume.ts (VALID_STATUSES = {active,paused,blocked,pending-review,done}) stops treating it as garbled and re-dispatching. -->
-**Previously-closed-notes**: Iter 24 metric-redefinition; Iter 25 regex bug fix; Iter 26 status-value normalization.
+<!-- Closed at Iter 24 — metric redefined, goal met. Absolute ops 19.2→11.5 (-40%), zero-real eliminated. Ratio target retired. Iter 25 fixed snapshot-regex false-positive. Iter 26 changed Status from "closed (...)" → "done" so project-resume.ts (VALID_STATUSES = {active,paused,blocked,pending-review,done}) stops treating it as garbled and re-dispatching. Iter 27 no-op: received a stale Iter-1 goal-text invocation, confirmed still done, no file changes. -->
+**Previously-closed-notes**: Iter 24 metric-redefinition; Iter 25 regex bug fix; Iter 26 status-value normalization; Iter 27 stale-invocation no-op.
 **Owner**: bob
 **Previously closed**: 2026-04-18 (Iter 9), reopened Iter 10 on data, re-closed Iter 11
 
