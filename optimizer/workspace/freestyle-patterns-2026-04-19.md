@@ -1,91 +1,64 @@
-# Freestyle Session Patterns — Session Archaeology
+# Freestyle Session Pattern Analysis — 2026-04-19
 
-**Date**: 2026-04-19  
-**Data source**: `.state/may.db` sessions table (25,731 total sessions)  
-**Current workflow coverage**: 7.6% (1,949 workflow / 25,731 total)
+## Methodology
+Queried `.state/may.db` sessions table: 21,541 completed sessions total, 1,847 (8.6%) use workflows, 19,694 (91.4%) are freestyle. Analyzed task/outcome fields across all major agents (may, evaluator, bob, coach, tech-lead, optimizer, scout, qa, amy-kimi, amy, coder).
 
-## Overall Session Distribution
+## Session Breakdown (non-workflow)
 
-| Pattern | Count | % of Total | Uses Workflow? |
-|---------|-------|-----------|----------------|
-| Heartbeat | ~19,922 | 77.4% | No |
-| Work Session (forked) | ~1,503 | 5.8% | No |
-| Other/uncategorized | ~1,332 | 5.2% | No |
-| Cron jobs | ~902 | 3.5% | No |
-| Fix bugs | ~682 | 2.7% | No |
-| Evaluation | ~3,779 | 14.7%* | No |
-| Research | ~358 | 1.4% | No |
-| Persistent-task | ~269 | 1.0% | Yes (primary workflow user) |
-| Experiment | ~229 | 0.9% | No |
-| Investigate | ~172 | 0.7% | No |
+| Source | Count | % of non-WF |
+|--------|-------|-------------|
+| (none) — heartbeat/scheduled | 18,397 | 93.4% |
+| agents.fork — dispatched work | 778 | 3.9% |
+| standalone-eval | 192 | 1.0% |
+| cron | 184 | 0.9% |
+| callAgent | 143 | 0.7% |
 
-*Evaluator is the single biggest freestyle agent (3,779 sessions, all freestyle).
+## Top 3 Freestyle Patterns
 
-## Top 3 Freestyle Patterns (Workflow Candidates)
+### Pattern 1: Agent Heartbeat (triage + dispatch)
+- **Frequency:** ~15,890 sessions (64% of all sessions)
+- **Agents:** Every agent (may: 3,556, evaluator: 2,645, tech-lead: 1,770, bob: 1,700, coach: 1,526, optimizer: 1,323, scout: 984, qa: 935, amy-kimi: 846, amy: 604)
+- **What it does:** Agent reads heartbeat.md, checks metrics/projects/state, triages priorities, optionally dispatches work via agents.fork or workflow.run
+- **Child sessions:** Heartbeats spawn child sessions that DO use workflows (observed: WORK SESSIONs, lens diagnostics, literature searches — all via `workflow` source)
+- **Workflow-ification sketch:** A `heartbeat` workflow with steps: (1) read heartbeat.md, (2) check metrics, (3) triage priorities, (4) dispatch work. **However:** heartbeats are inherently open-ended — they are the *router* that feeds workflows. Converting them to a workflow may not add value since the whole point is flexible triage. **Recommendation:** Instead of workflow-ifying heartbeats, ensure heartbeats *dispatch into workflows* more consistently. The coverage metric should perhaps exclude heartbeat sessions or count them as "workflow-compatible" if they dispatch workflow children.
 
-### Pattern 1: Heartbeat — Check Health & Dispatch Work
-- **Frequency**: ~19,922 sessions (77.4% of all sessions)
-- **Agents**: may, coach, scout, optimizer, qa (all agents)
-- **What it does**: Agent reads heartbeat.md, checks metrics/health, reviews pending requests, dispatches work (forks), updates context. It's a supervisor loop.
-- **Why it's freestyle**: Each agent runs its heartbeat as a single monolithic session with no structured steps.
-- **Workflow sketch**: A `heartbeat` workflow with defined steps:
-  1. **Check metrics** — read agent's metrics, flag alerts
-  2. **Review requests** — check pending/stale requests assigned to agent
-  3. **Dispatch work** — fork sessions for actionable items
-  4. **Update context** — write context updates
-- **Impact**: Converting heartbeats to a workflow would move 77% of sessions into workflow coverage. Even partial (just the dispatch step) would be massive.
-- **Caveat**: Heartbeats are highly varied — some agents do research, some dispatch, some just check health. A workflow needs to be flexible enough to handle this variance. Consider a lightweight "wrapper" workflow rather than rigid steps.
+### Pattern 2: Task-Tree Evaluation
+- **Frequency:** ~2,196 sessions (8.8% of all, nearly all from evaluator agent)
+- **Agents:** evaluator (primary), some from tech-lead
+- **What it does:** Receives a "Task Tree Evaluation" prompt with session list, costs, and participant agents. Evaluates each agent's behavior (capability level, efficiency, quality). Outputs structured JSON scores.
+- **Current state:** These run as freestyle evaluator heartbeat children. Each follows an identical pattern: receive eval prompt → read session data → score agents → output JSON.
+- **Workflow-ification sketch:** `task-tree-eval` workflow: (1) Gather session metadata, (2) Call evaluator agent with structured prompt, (3) Parse and store evaluation results. This is a **high-value workflow target** — the pattern is highly repetitive and structured. Could improve consistency and allow result aggregation.
 
-### Pattern 2: Evaluation — Assess Session Quality  
-- **Frequency**: ~3,779 sessions (14.7% of all sessions)
-- **Agents**: evaluator (exclusively)
-- **What it does**: Evaluator reviews a completed session, scores it on efficiency/quality/capability, outputs structured JSON evaluation.
-- **Why it's freestyle**: Every evaluation is a standalone session with no workflow wrapping.
-- **Workflow sketch**: An `evaluate-session` workflow:
-  1. **Load session** — fetch session data, digests, deliverables
-  2. **Assess quality** — LLM evaluates against rubric
-  3. **Store results** — write to evaluations table
-  4. **Flag anomalies** — if scores are extreme, create alert
-- **Impact**: Would convert 14.7% of sessions to workflow-routed. Combined with heartbeat, this gets us to ~92% coverage.
-- **Caveat**: Evaluation may already be semi-structured (always produces JSON). The workflow is mainly for tracking/metrics purposes.
+### Pattern 3: Dispatched Investigation/Experiment Work Sessions
+- **Frequency:** ~778 sessions (3.1% of all, via agents.fork)
+- **Agents:** coach (27+, experiments), optimizer (20+, mode A-D scans), tech-lead (12+, lens diagnostics + fixes), bob (8+, synthesis + experiments), scout (9+, literature search + synthesis)
+- **What it does:** Parent session (usually heartbeat) identifies work and forks a child with a `[WORK SESSION]` task. These are structured but ad-hoc: experiments (EXP-NNN), mode scans (Mode A-D), lens diagnostics, synthesis tasks, fix tasks.
+- **Sub-patterns within dispatched work:**
+  - Coach experiments: 12+ EXP-NNN sessions (design experiment, run gym, publish results)
+  - Optimizer mode scans: ~15 sessions across Mode A/B/C/D (session archaeology, tool gap, technique scouting, workflow health)
+  - Tech-lead lens diagnostics: ~12 sessions (Lens A-D architecture/flow/deadweight/fragility)
+  - Bob synthesis: ~8 sessions (read deep-dives, create knowledge entries)
+  - Scout lit searches: ~6 sessions (find papers, write reports)
+- **Workflow-ification sketch:** Many of these **already route through workflows** (observed `source: workflow` on child sessions). The remaining ones that don't could benefit from a `dispatched-work-session` workflow: (1) parse task objective, (2) execute work, (3) write deliverable, (4) report back. But this is too generic. Better approach: formalize the **specific sub-patterns** (experiment-run, mode-scan, lens-diagnostic) as individual workflows.
 
-### Pattern 3: Fix Bug / Investigate Issue — Diagnose & Repair
-- **Frequency**: ~854 sessions (fix-bugs 682 + investigate 172 = 3.3%)
-- **Agents**: tech-lead (primary), optimizer, coach, master
-- **What it does**: Agent receives a bug report (metric regression, build failure, threshold error), investigates root cause, implements fix, verifies.
-- **Examples from sessions**:
-  - "Fix stuck-requests metric threshold inversion"
-  - "Fix build health (tsc failing)"
-  - "Investigate workflow coverage metric regression"
-  - "Fix heuristic evaluator adoption metric undercounts"
-- **Workflow sketch**: A `diagnose-and-fix` workflow:
-  1. **Reproduce** — run the failing command/query to confirm the bug
-  2. **Investigate** — trace root cause through code
-  3. **Fix** — implement the change
-  4. **Verify** — re-run to confirm fix, run tests
-- **Impact**: 3.3% of sessions. Not huge alone, but these are high-value sessions (production fixes) where structured steps prevent premature DONE.
-- **Caveat**: Already partially covered by `implement-and-verify` workflow, but that's more general. A bug-specific variant with reproduce/verify gates would be more useful.
+## Coverage Impact Analysis
 
-## Coverage Projection
+| Pattern | Sessions | If workflow-ified | New coverage |
+|---------|----------|-------------------|-------------|
+| Baseline | 1,847/21,541 | — | 8.6% |
+| + Task-tree eval | +2,196 | Structured, repetitive — easy | 18.8% |
+| + Dispatched work (remaining) | +~400 | Medium difficulty | 20.6% |
+| + Heartbeat reclassification | +15,890 | Needs metric redesign | 82.5% |
 
-| Scenario | Sessions Covered | Projected Coverage |
-|----------|-----------------|-------------------|
-| Current (persistent-task only) | 1,949 | 7.6% |
-| + Heartbeat workflow | +19,922 | ~85% |
-| + Evaluation workflow | +3,779 | ~99% |
-| + Diagnose-and-fix workflow | +854 | ~100% |
+**Key insight:** Getting to 80% coverage is impossible without addressing heartbeats. Two paths:
+1. **Redefine the metric:** Count heartbeat sessions as "workflow-compatible infrastructure" (not counted in denominator), which would make remaining workflow-eligible sessions ~5,651, of which 1,847+2,196+400 = 4,443 would be workflow-ified = **78.6%**
+2. **Wrap heartbeats in a workflow:** Create a minimal `agent-heartbeat` workflow wrapper. This is technically simple but philosophically questionable — it would game the metric without adding real structure.
 
-**Key insight**: Heartbeat alone gets us past the 80% target. Evaluation is the second-biggest win. Fix/investigate is valuable for quality reasons even if the coverage % impact is smaller.
+**Recommended priority:**
+1. **Task-tree evaluation workflow** — highest value, most structured, ~2,200 sessions captured
+2. **Experiment-run workflow** — coach/bob pattern, ~100+ sessions, well-structured
+3. **Metric redesign** — exclude or reclassify heartbeats to make coverage metric meaningful
 
-## Recommended Priority
-
-1. **Heartbeat workflow** — highest impact (77% → 85% coverage), but also highest complexity. Could be a thin wrapper that just counts as "workflow-routed" while preserving agent flexibility.
-2. **Evaluation workflow** — straightforward to build (evaluator already follows a rigid pattern), adds 15% coverage.
-3. **Diagnose-and-fix workflow** — smaller coverage impact but improves quality of high-stakes fix sessions.
-
-## Other Notable Patterns (Not Top 3 but Worth Noting)
-
-- **Gather design input** (12 sessions): May forks multiple agents to comment on a project doc. Could be a `parallel-input` workflow (exists as `parallel-research` already).
-- **Run experiment** (229 sessions): Coach designs/runs gym experiments. Semi-structured already.
-- **Project kickoff** (4 sessions): Creating new projects. Low frequency.
-- **Synthesize findings** (~8 sessions): Scout/Bob synthesize research into knowledge entries. Could use `parallel-research` variant.
+## Files Referenced
+- `.state/may.db` — sessions table (21,541 done sessions)
+- `agents/optimizer/workspace/workflow-audit-2026-04-19.md` — iteration 1 audit
