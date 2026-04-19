@@ -3,54 +3,40 @@
 /**
  * persistent-task — Run a task in a loop until done, blocked, or owner intervenes.
  *
- * The project markdown file IS the state, audit log, and human dashboard.
- * Each iteration: worker does a chunk → result appended to file → owner reviews.
- * Owner can steer/pause/cancel by editing the project file's Status field.
+ * File structure (directory per project):
+ *   <project-dir>/project.md   — goal, milestones, state, comments (field-level updates only)
+ *   <project-dir>/journal.md   — iteration log (append-only)
  *
- * Design docs:
- *   - agents/shared/may-agent-docs/design/persistent-task.md (Bob's spec)
- *   - agents/shared/may-agent-docs/design/persistent-task-amendments.md (Hao's overrides)
- *
- * Input format:
- *   project: <path to project markdown file>
- *   owner: <agent name>         — reviews iterations (or use 'agent:' for both)
- *   worker: <agent name>        — does the work
- *   goal: <one-line goal>
- *   maxIterations: 200          — optional, default 200 (emergency brakes)
- *   reviewEvery: 1              — optional, default 1
- *
- * Short form (owner = worker):
- *   project: <path>
- *   agent: <name>
- *   goal: <goal>
+ * Legacy: single .md file still supported (detected by file extension).
  */
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
-import { dirname } from "node:path";
+import { readFileSync, writeFileSync, appendFileSync, existsSync, mkdirSync, statSync } from "node:fs";
+import { dirname, join } from "node:path";
 
 export const name: string = "persistent-task";
 
 export const description: string =
   "Run a task in a persistent loop until done or blocked. " +
-  "Project markdown file is the state and audit log. " +
-  "Owner agent monitors via heartbeat and can steer/pause/cancel.";
+  "Project directory has project.md (spec) + journal.md (log). " +
+  "Owner agent monitors and can steer/pause/cancel.";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
 interface PersistentTaskConfig {
-  projectPath: string;
+  projectDir: string;       // directory containing project.md + journal.md
+  projectPath: string;      // path to project.md
+  journalPath: string;      // path to journal.md
   owner: string;
   worker: string;
   goal: string;
   maxIterations: number;
   reviewEvery: number;
+  isLegacy: boolean;        // true if single-file format
 }
 
 interface ProjectState {
   status: string;
   lastIteration: number;
-  /** true if last iteration has worker result but no assessment */
-  pendingReview: boolean;
 }
 
 // ── Input parsing ──────────────────────────────────────────────────────
@@ -61,218 +47,117 @@ function parseInput(raw: string, callingAgent: string): PersistentTaskConfig {
     return m ? m[1].trim() : undefined;
   };
 
-  const projectPath = field("project");
-  if (!projectPath) throw new Error("Missing required field: project");
+  const projectInput = field("project");
+  if (!projectInput) throw new Error("Missing required field: project");
+
+  // Detect format: directory (new) vs file (legacy)
+  let projectDir: string;
+  let projectPath: string;
+  let journalPath: string;
+  let isLegacy = false;
+
+  if (projectInput.endsWith(".md")) {
+    // Legacy: single file
+    isLegacy = true;
+    projectDir = dirname(projectInput);
+    projectPath = projectInput;
+    journalPath = projectInput; // journal goes in same file for legacy
+  } else {
+    // New: directory format
+    projectDir = projectInput;
+    projectPath = join(projectInput, "project.md");
+    journalPath = join(projectInput, "journal.md");
+  }
 
   let goal = field("goal");
-
-  // If goal is generic/placeholder, try to read it from the project file
+  // Read goal from project file if generic
   if (!goal || goal === "see project file" || goal === "continue the project") {
-    if (projectPath) {
-      try {
-        const projContent = readFileSync(projectPath, "utf-8");
-        const goalMatch = projContent.match(/^## Goal\n([\s\S]*?)(?=\n## |$)/m);
-        if (goalMatch) goal = goalMatch[1].trim().split("\n")[0]; // first line of Goal section
-      } catch { /* file may not exist yet */ }
-    }
+    try {
+      const content = readFileSync(projectPath, "utf-8");
+      const goalMatch = content.match(/^## Goal\n([\s\S]*?)(?=\n## |$)/m);
+      if (goalMatch) goal = goalMatch[1].trim().split("\n")[0];
+    } catch { /* file may not exist yet */ }
   }
   if (!goal) throw new Error("Missing required field: goal");
 
-  // owner/worker or agent (short form)
   const agent = field("agent");
   const owner = field("owner") ?? agent ?? callingAgent;
   const worker = field("worker") ?? agent ?? callingAgent;
-
   const maxIterations = parseInt(field("maxIterations") ?? "200", 10);
   const reviewEvery = parseInt(field("reviewEvery") ?? "1", 10);
 
-  return { projectPath, owner, worker, goal, maxIterations, reviewEvery };
+  return { projectDir, projectPath, journalPath, owner, worker, goal, maxIterations, reviewEvery, isLegacy };
 }
 
-// ── Markdown helpers ───────────────────────────────────────────────────
+// ── File helpers ───────────────────────────────────────────────────────
 
-function readProjectFile(path: string): string | null {
-  try {
-    return readFileSync(path, "utf-8");
-  } catch {
-    return null;
-  }
+function readFile(path: string): string | null {
+  try { return readFileSync(path, "utf-8"); } catch { return null; }
 }
 
-function writeProjectFile(path: string, content: string): void {
-  const dir = dirname(path);
+function ensureDir(dir: string): void {
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-  writeFileSync(path, content, "utf-8");
 }
 
-function parseProjectState(content: string): ProjectState {
-  // Extract Status field
-  const statusMatch = content.match(/^\*\*Status\*\*:\s*(.+)$/m);
-  const status = statusMatch ? statusMatch[1].trim().toLowerCase() : "active";
-
-  // Find highest iteration number
-  const iterHeaders = [...content.matchAll(/^### Iteration (\d+)/gm)];
-  const lastIteration = iterHeaders.length > 0
-    ? Math.max(...iterHeaders.map(m => parseInt(m[1], 10)))
-    : 0;
-
-  // Check if last iteration has a pending review (worker result but no assessment)
-  let pendingReview = false;
-  if (lastIteration > 0) {
-    const lastIterRegex = new RegExp(
-      `### Iteration ${lastIteration}[\\s\\S]*?(?=### Iteration \\d+|## Outcome|$)`
-    );
-    const lastIterBlock = content.match(lastIterRegex);
-    if (lastIterBlock) {
-      const hasWorkerResult = /\*\*Worker result\*\*:/.test(lastIterBlock[0]);
-      const hasAssessment = /\*\*Owner assessment\*\*:/.test(lastIterBlock[0]);
-      pendingReview = hasWorkerResult && !hasAssessment;
-    }
-  }
-
-  return { status, lastIteration, pendingReview };
+function updateField(content: string, field: string, value: string): string {
+  const regex = new RegExp(`^(\\*\\*${field}\\*\\*:\\s*).*$`, "m");
+  if (regex.test(content)) return content.replace(regex, `$1${value}`);
+  return content;
 }
 
-function createProjectFile(config: PersistentTaskConfig): string {
+function updateSection(content: string, heading: string, newContent: string): string {
+  const regex = new RegExp(`^## ${heading}\\n[\\s\\S]*?(?=\\n## |$)`, "m");
+  if (regex.test(content)) return content.replace(regex, `## ${heading}\n${newContent}`);
+  // Section doesn't exist — append it
+  return content + `\n\n## ${heading}\n${newContent}`;
+}
+
+function appendToSection(content: string, heading: string, line: string): string {
+  const idx = content.indexOf(`## ${heading}`);
+  if (idx === -1) return content + `\n\n## ${heading}\n${line}\n`;
+  // Find end of section
+  const afterHeading = content.indexOf("\n", idx) + 1;
+  const nextSection = content.slice(afterHeading).search(/\n## /);
+  const insertAt = nextSection === -1 ? content.length : afterHeading + nextSection;
+  return content.slice(0, insertAt) + line + "\n" + content.slice(insertAt);
+}
+
+function createProjectDir(config: PersistentTaskConfig): void {
+  ensureDir(config.projectDir);
   const now = new Date().toISOString();
-  return `# Task: ${config.goal}
+  const projectContent = `# Project: ${config.goal}
 
 **Status**: active
 **Owner**: ${config.owner}
 **Worker**: ${config.worker}
 **Started**: ${now}
-**Updated**: ${now}
 **Iteration**: 0
 
 ## Goal
 ${config.goal}
 
-## Progress Log
+## Milestones
 
 ## Current State
 Not started.
 
-## Outcome
+## Iteration Summary
+
+## Comments
 `;
+  writeFileSync(config.projectPath, projectContent, "utf-8");
+  writeFileSync(config.journalPath, `# Journal\n\n`, "utf-8");
 }
 
-function updateField(content: string, field: string, value: string): string {
-  const regex = new RegExp(`^(\\*\\*${field}\\*\\*:\\s*).*$`, "m");
-  if (regex.test(content)) {
-    return content.replace(regex, `$1${value}`);
-  }
-  return content;
-}
-
-function appendIterationWorker(
-  content: string,
-  iteration: number,
-  taskSummary: string,
-  workerResult: string,
-  filesTouched: string,
-): string {
-  const now = new Date().toISOString();
-  const block =
-    `\n### Iteration ${iteration} — ${now}\n` +
-    `**Worker task**: ${taskSummary}\n` +
-    `**Worker result**: ${workerResult}\n` +
-    `**Files touched**: ${filesTouched}\n`;
-
-  // Insert before ## Current State or ## Outcome
-  const insertPoint = content.search(/^## (Current State|Outcome)/m);
-  if (insertPoint === -1) {
-    return content + block;
-  }
-  return content.slice(0, insertPoint) + block + "\n" + content.slice(insertPoint);
-}
-
-function appendAssessment(content: string, iteration: number, assessment: string): string {
-  // Find the iteration block and append the assessment
-  const iterHeader = `### Iteration ${iteration}`;
-  const idx = content.indexOf(iterHeader);
-  if (idx === -1) return content + `\n${assessment}\n`;
-
-  // Find the next iteration header or section header after this one
-  const afterHeader = idx + iterHeader.length;
-  const nextSection = content.slice(afterHeader).search(/^### Iteration \d+|^## (Current State|Outcome)/m);
-  const insertAt = nextSection === -1 ? content.length : afterHeader + nextSection;
-
-  return content.slice(0, insertAt) + `**Owner assessment**: ${assessment}\n\n` + content.slice(insertAt);
-}
-
-function updateCurrentState(content: string, state: string): string {
-  const regex = /^## Current State\n[\s\S]*?(?=\n## |\n$)/m;
-  if (regex.test(content)) {
-    return content.replace(regex, `## Current State\n${state}`);
-  }
-  return content;
-}
-
-// ── Prompt builders ────────────────────────────────────────────────────
-
-function buildWorkerPrompt(
-  projectContent: string,
-  projectPath: string,
-  iteration: number,
-  goal: string,
-  lastGuidance: string | null,
-): string {
-  // Extract milestones
-  const ms = extractMilestones(projectContent);
-  const nextMilestone = ms.pending.length > 0 ? ms.pending[0] : null;
-
-  // Extract current state
-  const stateMatch = projectContent.match(/^## Current State\n([\s\S]*?)(?=\n## |$)/m);
-  const currentState = stateMatch ? stateMatch[1].trim() : null;
-
-  // Extract last 3 iterations for context
-  const iterBlocks: string[] = [];
-  for (let i = Math.max(1, iteration - 3); i < iteration; i++) {
-    const regex = new RegExp(
-      `### Iteration ${i}[\\s\\S]*?(?=### Iteration \\d+|## Current State|## Outcome|$)`
-    );
-    const match = projectContent.match(regex);
-    if (match) iterBlocks.push(match[0].trim());
-  }
-
-  let prompt = `You are working on iteration ${iteration} of a persistent task.\n\n`;
-  prompt += `## Goal\n${goal}\n\n`;
-  prompt += `## Project file\n\`${projectPath}\` — edit this file to record your progress.\n\n`;
-
-  // Milestones — what needs to be done
-  if (ms.total > 0) {
-    prompt += `## Milestones (${ms.done}/${ms.total} complete)\n`;
-    if (nextMilestone) {
-      prompt += `**YOUR TASK THIS ITERATION:** ${nextMilestone}\n\n`;
-    }
-    if (ms.pending.length > 1) {
-      prompt += `Remaining:\n`;
-      for (const p of ms.pending.slice(1)) prompt += `- [ ] ${p}\n`;
-      prompt += `\n`;
-    }
-  }
-
-  if (currentState) {
-    prompt += `## Current State\n${currentState}\n\n`;
-  }
-
-  if (lastGuidance) {
-    prompt += `## Owner Guidance for This Iteration\n${lastGuidance}\n\n`;
-  }
-
-  if (iterBlocks.length > 0) {
-    prompt += `## Recent Progress (last ${iterBlocks.length} iterations)\n`;
-    prompt += iterBlocks.join("\n\n") + "\n\n";
-  }
-
-  prompt += `## What You Must Produce\n`;
-  prompt += `This iteration must end with at least one of:\n`;
-  prompt += `1. A milestone checked off (edit the project file: \`- [ ]\` → \`- [x]\`)\n`;
-  prompt += `2. A concrete deliverable (file created or modified)\n`;
-  prompt += `3. A specific blocker reported (what exactly is blocking and why)\n\n`;
-  prompt += `Reading, planning, and querying alone is NOT progress. Produce output.\n`;
-
-  return prompt;
+function parseProjectState(content: string): ProjectState {
+  const statusMatch = content.match(/^\*\*Status\*\*:\s*(.+)$/m);
+  const status = statusMatch ? statusMatch[1].trim().toLowerCase().split(" ")[0] : "active";
+  const iterHeaders = [...content.matchAll(/^### Iteration (\d+)/gm)];
+  // Also check the Iteration field
+  const iterField = content.match(/^\*\*Iteration\*\*:\s*(\d+)/m);
+  const lastIteration = iterField ? parseInt(iterField[1], 10) :
+    (iterHeaders.length > 0 ? Math.max(...iterHeaders.map(m => parseInt(m[1], 10))) : 0);
+  return { status, lastIteration };
 }
 
 function extractMilestones(content: string): { total: number; done: number; pending: string[] } {
@@ -284,9 +169,7 @@ function extractMilestones(content: string): { total: number; done: number; pend
     if (inMilestones && /^##\s/.test(line)) break;
     if (!inMilestones) continue;
     const checkMatch = line.match(/^\s*-\s*\[([ x])\]\s*(.+)/i);
-    if (checkMatch) {
-      milestones.push({ done: checkMatch[1].toLowerCase() === "x", text: checkMatch[2].trim() });
-    }
+    if (checkMatch) milestones.push({ done: checkMatch[1].toLowerCase() === "x", text: checkMatch[2].trim() });
   }
   return {
     total: milestones.length,
@@ -295,356 +178,271 @@ function extractMilestones(content: string): { total: number; done: number; pend
   };
 }
 
+function extractComments(content: string): string {
+  const match = content.match(/^## Comments\n([\s\S]*?)(?=\n## |$)/m);
+  return match ? match[1].trim() : "";
+}
+
+// ── Get last reviewer guidance from journal ────────────────────────────
+
+function getLastGuidance(journalContent: string, iteration: number): string | null {
+  const prevIter = iteration - 1;
+  if (prevIter < 1) return null;
+  const regex = new RegExp(
+    `### Iteration ${prevIter}[\\s\\S]*?\\*\\*Reviewer\\*\\*:\\s*(.+?)(?=\\n### Iteration|$)`, "s"
+  );
+  const match = journalContent.match(regex);
+  if (!match) return null;
+  return match[1].trim().replace(/^CONTINUE[:\s]*/i, "").trim() || null;
+}
+
+function getRecentJournalEntries(journalContent: string, iteration: number, count: number): string {
+  const entries: string[] = [];
+  for (let i = Math.max(1, iteration - count); i < iteration; i++) {
+    const regex = new RegExp(`### Iteration ${i}[\\s\\S]*?(?=### Iteration \\d+|$)`);
+    const match = journalContent.match(regex);
+    if (match) entries.push(match[0].trim());
+  }
+  return entries.join("\n\n");
+}
+
+// ── Prompt builders ────────────────────────────────────────────────────
+
+function buildWorkerPrompt(
+  projectContent: string,
+  journalContent: string,
+  projectPath: string,
+  iteration: number,
+  goal: string,
+  lastGuidance: string | null,
+): string {
+  const ms = extractMilestones(projectContent);
+  const nextMilestone = ms.pending.length > 0 ? ms.pending[0] : null;
+  const stateMatch = projectContent.match(/^## Current State\n([\s\S]*?)(?=\n## |$)/m);
+  const currentState = stateMatch ? stateMatch[1].trim() : null;
+  const comments = extractComments(projectContent);
+  const recentEntries = getRecentJournalEntries(journalContent, iteration, 3);
+
+  let prompt = `You are working on iteration ${iteration} of a persistent task.\n\n`;
+  prompt += `## Goal\n${goal}\n\n`;
+
+  if (ms.total > 0) {
+    prompt += `## Milestones (${ms.done}/${ms.total} complete)\n`;
+    if (nextMilestone) prompt += `**YOUR TASK THIS ITERATION:** ${nextMilestone}\n\n`;
+    if (ms.pending.length > 1) {
+      prompt += `Remaining:\n`;
+      for (const p of ms.pending.slice(1)) prompt += `- [ ] ${p}\n`;
+      prompt += `\n`;
+    }
+  }
+
+  if (currentState) prompt += `## Current State\n${currentState}\n\n`;
+  if (comments) prompt += `## Comments (from human/agents — use your judgment)\n${comments}\n\n`;
+  if (lastGuidance) prompt += `## Owner Guidance for This Iteration\n${lastGuidance}\n\n`;
+  if (recentEntries) prompt += `## Recent Progress\n${recentEntries}\n\n`;
+
+  prompt += `## What You Must Produce\n`;
+  prompt += `This iteration must end with at least one of:\n`;
+  prompt += `1. A milestone completed (create deliverable, verify it works)\n`;
+  prompt += `2. A concrete deliverable (file created or modified in workspace)\n`;
+  prompt += `3. A specific blocker reported (what exactly is blocking and why)\n\n`;
+  prompt += `You CANNOT edit the project file or journal — produce deliverables in your workspace.\n`;
+
+  return prompt;
+}
+
 function buildReviewPrompt(
   goal: string,
   iteration: number,
   workerSummary: string,
-  recentProgress: string,
-  projectContent?: string,
-  ownerAgent?: string,
+  projectContent: string,
+  journalContent: string,
 ): string {
-  let prompt = `[REVIEW ONLY — no file edits expected. You are assessing worker output, not writing code.]\n\n`;
+  const ms = extractMilestones(projectContent);
+  const recentEntries = getRecentJournalEntries(journalContent, iteration, 2);
+
+  let prompt = `[REVIEW ONLY — no file edits expected.]\n\n`;
   prompt += `You are reviewing iteration ${iteration} of a persistent task.\n\n`;
   prompt += `## Goal\n${goal}\n\n`;
 
-  // Include milestone checklist so reviewer knows what's left
-  if (projectContent) {
-    const ms = extractMilestones(projectContent);
-    if (ms.total > 0) {
-      prompt += `## Milestone Progress: ${ms.done}/${ms.total} complete\n`;
-      if (ms.pending.length > 0) {
-        prompt += `**Remaining milestones (NOT done yet):**\n`;
-        for (const p of ms.pending) {
-          prompt += `- [ ] ${p}\n`;
-        }
-      }
-      prompt += `\n⚠️ DONE means ALL milestones complete. If any milestone is still unchecked, respond CONTINUE.\n\n`;
+  if (ms.total > 0) {
+    prompt += `## Milestone Progress: ${ms.done}/${ms.total} complete\n`;
+    if (ms.pending.length > 0) {
+      prompt += `Remaining:\n`;
+      for (const p of ms.pending) prompt += `- [ ] ${p}\n`;
     }
+    prompt += `\n`;
   }
 
-  // Inject owner's review rubric if it exists
-  if (ownerAgent) {
-    try {
-      const rubricPath = `agents/${ownerAgent}/workspace/review-rubric.md`;
-      const fs = require("fs");
-      if (fs.existsSync(rubricPath)) {
-        const rubric = fs.readFileSync(rubricPath, "utf-8").trim();
-        prompt += `## Review Rubric (best practices)\n${rubric}\n\n`;
-        prompt += `In addition to milestone progress, assess whether the worker followed the best practices above. Include specific suggestions in your CONTINUE response.\n\n`;
-      }
-    } catch {
-      // No rubric — that's fine
-    }
-  }
-
-  if (recentProgress) {
-    prompt += `## Recent Progress\n${recentProgress}\n\n`;
-  }
-
+  if (recentEntries) prompt += `## Recent Progress\n${recentEntries}\n\n`;
   prompt += `## Latest Worker Output (Iteration ${iteration})\n${workerSummary}\n\n`;
 
   prompt += `## Your Assessment\n`;
-  prompt += `Assess the current state:\n`;
-  prompt += `1. Are ALL milestones complete? If yes, respond starting with DONE and a summary.\n`;
-  prompt += `2. Is the task blocked on something the worker can't resolve? If yes, respond starting with BLOCKED and the reason.\n`;
-  prompt += `3. Otherwise, respond starting with CONTINUE and specific guidance for the NEXT unchecked milestone.\n\n`;
-  prompt += `Your response MUST start with one of: DONE, BLOCKED, CONTINUE\n\n`;
-  prompt += `If CONTINUE: specify exactly what the next iteration should do, which file(s) to edit, and what output to produce. The worker only knows what you tell it here.`;
+  prompt += `1. Are ALL milestones complete? → DONE with summary.\n`;
+  prompt += `2. Is the task blocked? → BLOCKED with reason.\n`;
+  prompt += `3. Otherwise → CONTINUE with specific guidance for the next iteration.\n\n`;
+  prompt += `If CONTINUE: say exactly what the next iteration should do and what output to produce.\n`;
+  prompt += `Your response MUST start with: DONE, BLOCKED, or CONTINUE`;
 
   return prompt;
 }
 
 function extractDecision(text: string): { status: "done" | "blocked" | "continue"; detail: string } {
   const trimmed = (text ?? "").trim();
-  if (/^DONE\b/i.test(trimmed)) {
-    return { status: "done", detail: trimmed.replace(/^DONE[:\s]*/i, "").trim() };
-  }
-  if (/^BLOCKED\b/i.test(trimmed)) {
-    return { status: "blocked", detail: trimmed.replace(/^BLOCKED[:\s]*/i, "").trim() };
-  }
-  // Default to continue (safest — owner can always pause via Status field)
+  if (/^DONE\b/i.test(trimmed)) return { status: "done", detail: trimmed.replace(/^DONE[:\s]*/i, "").trim() };
+  if (/^BLOCKED\b/i.test(trimmed)) return { status: "blocked", detail: trimmed.replace(/^BLOCKED[:\s]*/i, "").trim() };
   const detail = trimmed.replace(/^CONTINUE[:\s]*/i, "").trim();
   return { status: "continue", detail: detail || "Continue working toward the goal." };
-}
-
-// ── Pruning: collapse old iterations to keep file bounded ──────────────
-
-const KEEP_RECENT = 5; // keep last N iterations in full detail
-
-function pruneOldIterations(content: string, currentIteration: number): string {
-  if (currentIteration <= KEEP_RECENT) return content;
-
-  const cutoff = currentIteration - KEEP_RECENT;
-
-  // Find all iteration blocks to collapse (1..cutoff)
-  const summaryLines: string[] = [];
-  for (let i = 1; i <= cutoff; i++) {
-    // Extract one-line summary from each old iteration
-    const regex = new RegExp(
-      `### Iteration ${i}[\\s\\S]*?(?=### Iteration \\d+|## Current State|## Outcome|$)`
-    );
-    const match = content.match(regex);
-    if (!match) continue;
-
-    // Extract the assessment line (most useful summary)
-    const assessMatch = match[0].match(/\*\*Owner assessment\*\*:\s*(.+)/);
-    const resultMatch = match[0].match(/\*\*Worker result\*\*:\s*(.{0,120})/);
-    const brief = assessMatch
-      ? assessMatch[1].trim().slice(0, 120)
-      : resultMatch
-        ? resultMatch[1].trim().slice(0, 120)
-        : "(no summary)";
-    summaryLines.push(`- **${i}**: ${brief}`);
-  }
-
-  if (summaryLines.length === 0) return content;
-
-  // Remove old iteration blocks from content
-  for (let i = 1; i <= cutoff; i++) {
-    const regex = new RegExp(
-      `### Iteration ${i} —[\\s\\S]*?(?=### Iteration \\d+|## Current State|## Outcome)`,
-    );
-    content = content.replace(regex, "");
-  }
-
-  // Insert or update the collapsed summary section
-  const collapsedHeader = "### Iterations 1–" + cutoff + " (collapsed)\n";
-  const collapsedBlock = collapsedHeader + summaryLines.join("\n") + "\n\n";
-
-  // Replace existing collapsed section if present
-  const existingCollapsed = /### Iterations \d+–\d+ \(collapsed\)\n[\s\S]*?\n\n/;
-  if (existingCollapsed.test(content)) {
-    content = content.replace(existingCollapsed, collapsedBlock);
-  } else {
-    // Insert after ## Progress Log
-    const logIdx = content.indexOf("## Progress Log");
-    if (logIdx !== -1) {
-      const afterLog = content.indexOf("\n", logIdx) + 1;
-      content = content.slice(0, afterLog) + "\n" + collapsedBlock + content.slice(afterLog);
-    }
-  }
-
-  // Clean up excessive blank lines
-  content = content.replace(/\n{4,}/g, "\n\n\n");
-
-  return content;
-}
-
-// ── Extract recent guidance from project content ───────────────────────
-
-function getLastGuidance(content: string, iteration: number): string | null {
-  // Find the assessment from the previous iteration
-  const prevIter = iteration - 1;
-  if (prevIter < 1) return null;
-
-  const regex = new RegExp(
-    `### Iteration ${prevIter}[\\s\\S]*?\\*\\*Owner assessment\\*\\*:\\s*(.+?)(?=\\n### Iteration|\\n## |$)`,
-    "s"
-  );
-  const match = content.match(regex);
-  if (!match) return null;
-
-  const assessment = match[1].trim();
-  // Strip the CONTINUE prefix to get just the guidance
-  return assessment.replace(/^CONTINUE[:\s]*/i, "").trim() || null;
 }
 
 // ── Main workflow ──────────────────────────────────────────────────────
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
-  // Parse input
   const config = parseInput(ctx.task, ctx.agent);
 
-  // Read or create project file
-  let content = readProjectFile(config.projectPath);
-  if (!content) {
-    content = createProjectFile(config);
-    writeProjectFile(config.projectPath, content);
+  // Create project directory if it doesn't exist
+  if (!existsSync(config.projectPath)) {
+    createProjectDir(config);
+  }
+  // Ensure journal exists
+  if (!existsSync(config.journalPath) && !config.isLegacy) {
+    ensureDir(dirname(config.journalPath));
+    writeFileSync(config.journalPath, `# Journal\n\n`, "utf-8");
   }
 
-  let state = parseProjectState(content);
+  let projectContent = readFile(config.projectPath) ?? "";
+  let state = parseProjectState(projectContent);
 
-  // Check for active/stale lock (§4.6 — heuristic, not mutex)
-  if (state.status === "active" && state.lastIteration > 0) {
-    const updatedMatch = content.match(/^\*\*Updated\*\*:\s*(.+)$/m);
-    if (updatedMatch) {
-      const lastUpdated = new Date(updatedMatch[1].trim()).getTime();
-      if (Date.now() - lastUpdated < 30 * 60_000) {
-        return ctx.escalate(
-          `Project appears to be actively running (updated ${updatedMatch[1].trim()}). ` +
-          `Wait 30 minutes or manually set Status to paused.`
-        );
-      }
-    }
-  }
+  // Handle non-active states
+  if (state.status === "paused") return ctx.done(`Task is paused.`);
+  if (state.status === "cancelled") return ctx.done(`Task was cancelled.`);
+  if (state.status === "done") return ctx.done(`Task is already done.`);
 
-  // Handle owner-paused or cancelled
-  if (state.status === "paused") {
-    return ctx.done(`Task is paused. Owner can resume by setting Status back to active.`);
-  }
-  if (state.status === "cancelled") {
-    return ctx.done(`Task was cancelled by owner.`);
-  }
-  if (state.status === "done") {
-    return ctx.done(`Task is already done.`);
-  }
-
-  // Determine starting iteration
   let iteration = state.lastIteration + 1;
-  // If there's a pending review (crash recovery §4.5), start with review
-  let skipWorkerPhase = state.pendingReview;
-  if (skipWorkerPhase) {
-    iteration = state.lastIteration; // re-review this iteration
-  }
-
   let consecutiveFailures = 0;
 
-  // Mark active
-  content = updateField(content, "Status", "active");
-  writeProjectFile(config.projectPath, content);
+  // Mark active (field-level update)
+  projectContent = updateField(projectContent, "Status", "active");
+  writeFileSync(config.projectPath, projectContent, "utf-8");
 
   while (iteration <= config.maxIterations) {
-    // ── Check owner intervention between iterations ──────────────
-    content = readProjectFile(config.projectPath)!;
-    state = parseProjectState(content);
+    // Re-read project file (owner may have changed status/comments)
+    projectContent = readFile(config.projectPath) ?? projectContent;
+    state = parseProjectState(projectContent);
 
-    if (state.status === "paused") {
-      return ctx.done(`Paused by owner at iteration ${iteration}.`);
-    }
-    if (state.status === "cancelled") {
-      return ctx.done(`Cancelled by owner at iteration ${iteration}.`);
-    }
+    if (state.status === "paused") return ctx.done(`Paused by owner at iteration ${iteration}.`);
+    if (state.status === "cancelled") return ctx.done(`Cancelled by owner at iteration ${iteration}.`);
+
+    // Read journal for context
+    const journalContent = config.isLegacy ? projectContent : (readFile(config.journalPath) ?? "");
 
     // ── Worker phase ─────────────────────────────────────────────
-    if (!skipWorkerPhase) {
-      ctx.emit({ type: "step_start", step: `worker-iteration-${iteration}` });
+    ctx.emit({ type: "step_start", step: `worker-iteration-${iteration}` });
 
-      const lastGuidance = getLastGuidance(content, iteration);
-      const workerPrompt = buildWorkerPrompt(content, config.projectPath, iteration, config.goal, lastGuidance);
+    const lastGuidance = getLastGuidance(journalContent, iteration);
+    const workerPrompt = buildWorkerPrompt(
+      projectContent, journalContent, config.projectPath, iteration, config.goal, lastGuidance
+    );
 
-      const workerResult = await ctx.runAgent(config.worker, workerPrompt);
+    const workerResult = await ctx.runAgent(config.worker, workerPrompt);
 
-      if (workerResult.status === "error") {
-        consecutiveFailures++;
-        if (consecutiveFailures >= 2) {
-          // Mark blocked in project file
-          content = updateField(content, "Status", "blocked");
-          content = updateField(content, "Updated", new Date().toISOString());
-          content = updateCurrentState(content, `Blocked: Worker failed ${consecutiveFailures} consecutive times.`);
-          writeProjectFile(config.projectPath, content);
-          return ctx.escalate(`Worker failed ${consecutiveFailures}x consecutively at iteration ${iteration}.`);
-        }
-        // Retry once — don't increment iteration
-        continue;
+    if (workerResult.status === "error") {
+      consecutiveFailures++;
+      if (consecutiveFailures >= 2) {
+        projectContent = updateField(projectContent, "Status", `blocked`);
+        projectContent = updateSection(projectContent, "Current State",
+          `Blocked: Worker failed ${consecutiveFailures} consecutive times.`);
+        writeFileSync(config.projectPath, projectContent, "utf-8");
+        return ctx.escalate(`Worker failed ${consecutiveFailures}x at iteration ${iteration}.`);
       }
-      consecutiveFailures = 0;
-
-      // Persist worker output BEFORE review (crash safety §4.5)
-      const workerSummary = ctx.summarize(workerResult, { maxLength: 3000 });
-      const truncatedResult = ctx.summarize(workerResult, { maxLength: 1500 });
-
-      // Extract file paths from worker result
-      const workerText = workerResult.lastAssistantText ?? "";
-      const fileMatches = workerText.match(/(?:^|\s)((?:[\w./-]+\/)*[\w.-]+\.\w{1,10})(?=[\s,;:)]|$)/gm);
-      const filesTouched = fileMatches
-        ? [...new Set(fileMatches.map((f: string) => f.trim()))].slice(0, 20).join(", ")
-        : "(see worker session)";
-
-      content = appendIterationWorker(
-        content,
-        iteration,
-        `Iteration ${iteration} — work toward goal`,
-        truncatedResult,
-        filesTouched,
-      );
-      content = updateField(content, "Updated", new Date().toISOString());
-      content = updateField(content, "Iteration", String(iteration));
-      content = updateCurrentState(content, `Iteration ${iteration} complete. ${truncatedResult.slice(0, 200)}`);
-      // Prune old iterations to prevent unbounded file growth
-      content = pruneOldIterations(content, iteration);
-      writeProjectFile(config.projectPath, content);
+      continue;
     }
-    skipWorkerPhase = false; // only skip once (crash recovery)
+    consecutiveFailures = 0;
 
-    // ── Owner review phase ───────────────────────────────────────
+    const workerSummary = ctx.summarize(workerResult, { maxLength: 1500 });
+
+    // Append to journal (append-only, never rewrite)
+    const now = new Date().toISOString();
+    const journalEntry = `### Iteration ${iteration} — ${now}\n` +
+      `**Worker**: ${workerSummary}\n`;
+
+    if (config.isLegacy) {
+      // Legacy: append to the single file
+      projectContent = appendToSection(projectContent, "Progress Log",
+        `\n### Iteration ${iteration} — ${now}\n**Worker**: ${workerSummary}\n`);
+      writeFileSync(config.projectPath, projectContent, "utf-8");
+    } else {
+      appendFileSync(config.journalPath, journalEntry);
+    }
+
+    // Update project.md fields (not rewrite)
+    projectContent = updateField(projectContent, "Iteration", String(iteration));
+    projectContent = updateSection(projectContent, "Current State",
+      `Iteration ${iteration} complete. ${workerSummary.slice(0, 200)}`);
+    writeFileSync(config.projectPath, projectContent, "utf-8");
+
+    // ── Reviewer phase ───────────────────────────────────────────
     if (iteration % config.reviewEvery === 0) {
       ctx.emit({ type: "step_start", step: `review-iteration-${iteration}` });
 
-      // Build recent progress for review
-      const recentBlocks: string[] = [];
-      for (let i = Math.max(1, iteration - 2); i <= iteration; i++) {
-        const regex = new RegExp(
-          `### Iteration ${i}[\\s\\S]*?(?=### Iteration \\d+|## Current State|## Outcome|$)`
-        );
-        const match = content.match(regex);
-        if (match) recentBlocks.push(match[0].trim());
-      }
-
-      // Re-read content (worker may have modified project file)
-      content = readProjectFile(config.projectPath)!;
-
       const reviewPrompt = buildReviewPrompt(
-        config.goal,
-        iteration,
-        recentBlocks[recentBlocks.length - 1] ?? "(no worker output)",
-        recentBlocks.join("\n\n"),
-        content,
-        config.owner,
+        config.goal, iteration, workerSummary, projectContent, journalContent
       );
 
       const reviewResult = await ctx.runAgent(config.owner, reviewPrompt);
 
-      // If review errors, treat as CONTINUE (don't let review failures kill the task §4.1)
       if (reviewResult.status === "error") {
-        content = appendAssessment(content, iteration, "CONTINUE — review errored, auto-continuing");
-        content = updateField(content, "Updated", new Date().toISOString());
-        writeProjectFile(config.projectPath, content);
+        const reviewEntry = `**Reviewer**: CONTINUE — review errored, auto-continuing\n\n`;
+        if (config.isLegacy) {
+          projectContent += reviewEntry;
+          writeFileSync(config.projectPath, projectContent, "utf-8");
+        } else {
+          appendFileSync(config.journalPath, reviewEntry);
+        }
         iteration++;
         continue;
       }
 
       const decision = extractDecision(reviewResult.lastAssistantText ?? "");
+      const reviewEntry = `**Reviewer**: ${decision.status.toUpperCase()} — ${decision.detail}\n\n`;
 
-      // Persist assessment
-      content = appendAssessment(content, iteration, `${decision.status.toUpperCase()} — ${decision.detail}`);
-      content = updateField(content, "Updated", new Date().toISOString());
-      writeProjectFile(config.projectPath, content);
+      if (config.isLegacy) {
+        projectContent += reviewEntry;
+        writeFileSync(config.projectPath, projectContent, "utf-8");
+      } else {
+        appendFileSync(config.journalPath, reviewEntry);
+      }
 
       if (decision.status === "done") {
-        content = updateField(content, "Status", "done");
-        content = updateCurrentState(content, decision.detail);
-        writeProjectFile(config.projectPath, content);
+        projectContent = updateField(projectContent, "Status", "done");
+        projectContent = updateSection(projectContent, "Current State", decision.detail);
+        projectContent = appendToSection(projectContent, "Iteration Summary",
+          `- **Iter ${iteration}**: ${decision.detail.slice(0, 100)}\n`);
+        writeFileSync(config.projectPath, projectContent, "utf-8");
         return ctx.done(`Complete after ${iteration} iterations: ${decision.detail}`);
       }
 
       if (decision.status === "blocked") {
-        content = updateField(content, "Status", "blocked");
-        content = updateCurrentState(content, `Blocked: ${decision.detail}`);
-        writeProjectFile(config.projectPath, content);
+        projectContent = updateField(projectContent, "Status", `blocked`);
+        projectContent = updateSection(projectContent, "Current State", `Blocked: ${decision.detail}`);
+        writeFileSync(config.projectPath, projectContent, "utf-8");
         return ctx.escalate(`Blocked at iteration ${iteration}: ${decision.detail}`);
       }
 
-      // CONTINUE — guidance is captured in the assessment for next iteration
-    } else {
-      // Auto-continue (no review this iteration)
-      content = appendAssessment(content, iteration, "CONTINUE — auto (review skipped)");
-      content = updateField(content, "Updated", new Date().toISOString());
-      writeProjectFile(config.projectPath, content);
+      // CONTINUE — append summary
+      projectContent = appendToSection(projectContent, "Iteration Summary",
+        `- **Iter ${iteration}**: ${workerSummary.slice(0, 100)}\n`);
+      writeFileSync(config.projectPath, projectContent, "utf-8");
     }
 
     iteration++;
   }
 
-  // Iteration cap reached — not a failure, just a pause
-  content = updateField(content, "Status", "paused");
-  content = updateCurrentState(
-    content,
-    `Paused: reached ${config.maxIterations} iteration cap. Resume by re-running.`,
-  );
-  writeProjectFile(config.projectPath, content);
+  // Max iterations reached
+  projectContent = updateField(projectContent, "Status", "paused");
+  projectContent = updateSection(projectContent, "Current State",
+    `Paused: reached ${config.maxIterations} iteration cap.`);
+  writeFileSync(config.projectPath, projectContent, "utf-8");
 
-  return ctx.done(
-    `Paused after ${config.maxIterations} iterations (emergency cap). ` +
-    `Project file preserved at ${config.projectPath}. Resume by re-running.`
-  );
+  return ctx.done(`Paused after ${config.maxIterations} iterations (cap). Resume by re-running.`);
 }
