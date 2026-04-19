@@ -167,9 +167,10 @@
     "agent": "tech-lead",
     "message": "[heartbeat] Read agents/tech-lead/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you built or reviewed.",
     "enabled": true,
-    "description": "Tech-lead's heartbeat \u2014 build pending work, intake new designs, code health (60min).",
-    "lastModified": "2026-04-04T19:11:00.000Z",
+    "description": "Tech-lead's heartbeat \u2014 build pending work, intake new designs, code health (60min). Routes through heartbeat workflow.",
+    "lastModified": "2026-04-19T17:00:00.000Z",
     "notifyBrief": true,
+    "workflow": "heartbeat",
     "offsetMs": 600000
   },
   {
