@@ -1093,9 +1093,10 @@ export class SubagentManager {
         }
       }
 
-      const promptText = fewShotBlock
-        ? `${sessionContext}\n\n---\n\n${fewShotBlock}\n\n---\n\n${task}`
-        : `${sessionContext}\n\n---\n\n${task}`;
+      // First user message = the task only. No context injection.
+      // Session context was previously prepended here (~55K), burying the task.
+      // TODO: decide where session context should go (system prompt, on-demand, or dropped).
+      const promptText = task;
 
       session.promise = runAgentWithRetry(
         session,
