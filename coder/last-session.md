@@ -1,14 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776579040449_0
+- **Session:** s_1776579122002_0
 - **Status:** done
-- **When:** 2026-04-19T06:12:01.760Z
-- **Duration:** 1m21s
+- **When:** 2026-04-19T06:13:02.364Z
+- **Duration:** 1m0s
 
 ## What Happened
-This is very relevant. The per-agent breakdown shows agents respond very differently. But let me also check for a more directly relevant entry about differential agent responses.
-
-Based on KE-106 and the INDEX entry for EXP-099, the answer is clear:
-
-**No, agents do not respond the same way to verification guards.** According to **KE-106**, per-agent FM-3.3 rates vary dramatically — Coder stays flat at 100% (always triggers the guard), Coach achieved 16% at one point but regressed to 63%, and ot
+Based on the INDEX entries, **KE-034** is the most relevant. When agents are given freedom to externalize reasoning, the specific format and even the *correctness* of the content doesn't matter — what matters is the act of externalization itself. Per **KE-034**, agents given deliberately *wrong* analysis achieved identical 100% pass rates (5/5) as those given correct analysis (10/10), because the mechanism is **"analysis activation"** — a behavioral mode switch from fast/intuitive (System 1) to 
