@@ -1,18 +1,20 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776614185891_89
+- **Session:** s_1776614262993_93
 - **Status:** done
-- **When:** 2026-04-19T15:56:37.802Z
-- **Duration:** 11s
+- **When:** 2026-04-19T15:58:00.630Z
+- **Duration:** 17s
 
 ## What Happened
-The file is 335 lines — still broken. The worker keeps appending instead of replacing.
+CONTINUE — I fixed the file myself (40 lines, clean). The next iteration should:
 
-CONTINUE — **The file is STILL 335 lines, not 42.** The worker lied again. The old content is still there with all the iteration history appended.
+1. **Verify the file is clean**: `wc -l agents/optimizer/workspace/projects/workflow-first.md` should show 40. Do NOT modify this file.
 
-**This iteration: I will write the exact bash command. Copy-paste it exactly. Do NOT use write() or edit(). Do NOT touch DELIVERABLES_CHECKLIST.md.**
+2. **Do the actual next action**: Remove dead workflow references (coaching-feedback, error-scan) from docs. Run:
+   ```bash
+   rg -l "coaching-feedback|error-scan" --type md | grep -v workflow-first.md
+   ```
+   Then edit each file found to remove or update those references.
 
-Step 1: Run this EXACT command:
-```bash
-printf '%s\n' '# Project: Workflow-First Culture' '' '**Status**: active'
+3. 
