@@ -3,7 +3,7 @@
 **Status**: active
 **Owner**: bob
 **Priority**: P1
-**Iteration**: 10
+**Iteration**: 11
 
 ## Goal
 Agents learn from experience and get better over time:
@@ -63,7 +63,10 @@ Goal: roll out to all agents, watch for regression
 - [ ] Ongoing: May monitors health, coach tracks behavior improvement
 
 ## Current State
-Iteration 10 complete. **Status:** done (42s)
+Iteration 11 complete. **Status:** done (40s)
+
+**Files read (not modified):**
+- agents/bob/workspace/projects/context-learning/SUMMARY.md
 
 **Files read (not modified):**
 - agents/bob/workspace/projects/context-learning/SUMMARY.md
@@ -329,4 +332,11 @@ All 3 phases are complete with passing tests and a summary. This project is done
 
 **Agent response:**
 Commit is there. The dirty files are from other agents, not mine.
+
+
+### Iteration 11 — 2026-04-19T17:56:59.181Z
+**Worker**: **Status:** done (40s)
+
+**Files read (not modified):**
+- agents/bob/workspace/projects/context-learning/SUMMARY.md
 
