@@ -127,9 +127,11 @@ The existing `run-workflow` handler already supports dispatching workflows from 
 
 **Actual implementation:** Uses `handler: "run-workflow"` with `handlerConfig.workflow` in cron.json (no new cron entry type needed — the existing handler mechanism works).
 
-### Step 2: Migrate error-log-scanner (first candidate) ✅ DONE
+### Step 2: Migrate error-log-scanner (first candidate) ❌ REMOVED
 
-**File:** `agents/shared/workflows/error-scan.ts` (447 lines)
+> **Note (2026-04-19):** `error-scan.ts` was removed from disk. The workflow file no longer exists.
+
+**Former file:** `agents/shared/workflows/error-scan.ts` (447 lines)
 
 Workflow pattern:
 1. `runFunction("scan-error-logs")` — scans all ERROR_LOG.jsonl files (zero LLM cost)
@@ -142,7 +144,7 @@ Workflow pattern:
 ### Step 3: Migrate remaining Tier 2 handlers
 
 One at a time, validate each:
-- ✅ `coaching-feedback` → `agents/shared/workflows/coaching-feedback.ts` — sensor queries convention_checks DB, coach LLM decides intervention strategy. Old entry disabled, new `coaching-feedback-wf` entry uses `run-workflow` handler.
+- ❌ `coaching-feedback` → `agents/shared/workflows/coaching-feedback.ts` — **REMOVED from disk (2026-04-19).** Workflow file no longer exists.
 - `priority-drift` → NOT IN CRON (dead code handler file). Skip unless re-activated.
 - `active-nudge` → Pure JS intervention (cancel/nudge). Not a sensor-judge candidate (no LLM needed).
 
@@ -175,7 +177,7 @@ The guard system doesn't care whether a workflow is a converted cron handler or 
 | File | Purpose |
 |------|---------|
 | `src/app/cron.ts` | New `"workflow"` entry type |
-| `agents/shared/workflows/error-scan.ts` | First migrated workflow |
-| `agents/shared/workflows/coaching-feedback.ts` | Second migration |
+| `agents/shared/workflows/error-scan.ts` | ❌ Removed from disk |
+| `agents/shared/workflows/coaching-feedback.ts` | ❌ Removed from disk |
 | `agents/shared/workflows/priority-drift.ts` | Third migration |
 | `agents/shared/workflows/active-nudge.ts` | Fourth migration |
