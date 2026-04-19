@@ -1132,6 +1132,18 @@ if (CRON_ENABLED) {
       type: "info",
       message: `[handlers] ⚠️ ${handlerResult.errors.length} error(s): ${handlerResult.errors.join("; ")}`,
     });
+    // Write failures to request DB so they show in --status process health
+    for (const err of handlerResult.errors) {
+      const handlerName = err.match(/"(\w[\w-]*)\.(js|ts)"/)?.[1] ?? err.match(/"([^"]+)"/)?.[1] ?? "unknown";
+      trackRequest(PERSIST_DIR, {
+        fromEntity: "cron",
+        toAgent: "may",
+        task: `[handler-load-failure] ${err}`,
+        method: "call",
+        artifact: handlerName,
+        context: JSON.stringify({ type: "handler" }),
+      });
+    }
   }
 
   for (const [name, cron] of getAgentCrons()) {
