@@ -183,19 +183,9 @@ function extractComments(content: string): string {
   return match ? match[1].trim() : "";
 }
 
-// Find which comments have already been processed in comment iterations.
-// If no comment iterations exist in journal, return "" so all comments trigger review.
-function getLastSeenComments(journalContent: string, projectContent: string): string {
-  // If journal has any comment iteration, the comments up to that point were processed
-  const commentIterations = journalContent.match(/### Iteration \d+ \(comment\)/g);
-  if (commentIterations && commentIterations.length > 0) {
-    // All comments that existed at the time of the last comment iteration are "seen"
-    // Since we can't know exactly which, use current comments as baseline
-    // (new comments added after will differ)
-    return extractComments(projectContent);
-  }
-  // No comment iterations ever ran — all current comments are unprocessed
-  return "";
+// Clear the Comments section in project.md after processing
+function clearComments(content: string): string {
+  return content.replace(/^(## Comments)\n[\s\S]*?(?=\n## |$)/m, "$1\n");
 }
 
 // ── Get last reviewer guidance from journal ────────────────────────────
@@ -347,8 +337,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   let consecutiveFailures = 0;
   let continueWithoutProgress = 0;
   let lastMilestoneDone = extractMilestones(projectContent).done;
-  // Initialize from journal — comments already processed in comment iterations are "seen"
-  let lastSeenComments = getLastSeenComments(config.isLegacy ? projectContent : (readFile(config.journalPath) ?? ""), projectContent);
 
   // Mark active (field-level update)
   projectContent = updateField(projectContent, "Status", "active");
@@ -366,59 +354,55 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     const journalContent = config.isLegacy ? projectContent : (readFile(config.journalPath) ?? "");
 
     // ── Comment iteration ─────────────────────────────────────────
-    // If new comments arrived since last iteration, run reviewer on them
-    const currentComments = extractComments(projectContent);
-    if (currentComments && currentComments !== lastSeenComments) {
-      const newComments = currentComments.replace(lastSeenComments, "").trim();
-      if (newComments) {
-        ctx.emit({ type: "step_start", step: `comment-iteration-${iteration}` });
+    // Comments in project.md = unprocessed queue. Process then clear.
+    const pendingComments = extractComments(projectContent);
+    if (pendingComments) {
+      ctx.emit({ type: "step_start", step: `comment-iteration-${iteration}` });
 
-        const commentReviewPrompt = buildReviewPrompt(
-          config.goal, iteration,
-          `[COMMENT ITERATION] New comments received:\n${newComments}`,
-          projectContent, journalContent, continueWithoutProgress
-        );
+      const commentReviewPrompt = buildReviewPrompt(
+        config.goal, iteration,
+        `[COMMENT ITERATION] Comments to address:\n${pendingComments}`,
+        projectContent, journalContent, continueWithoutProgress
+      );
 
-        const reviewResult = await ctx.runAgent(config.owner, commentReviewPrompt);
-        const decision = extractDecision(reviewResult.status === "error"
-          ? "CONTINUE — review errored, auto-continuing"
-          : (reviewResult.lastAssistantText ?? ""));
+      const reviewResult = await ctx.runAgent(config.owner, commentReviewPrompt);
+      const decision = extractDecision(reviewResult.status === "error"
+        ? "CONTINUE — review errored, auto-continuing"
+        : (reviewResult.lastAssistantText ?? ""));
 
-        const now = new Date().toISOString();
-        const commentEntry = `### Iteration ${iteration} (comment) — ${now}\n` +
-          `**Comment**: ${newComments}\n` +
-          `**Reviewer**: ${decision.status.toUpperCase()} — ${decision.detail}\n\n`;
+      const now = new Date().toISOString();
+      const commentEntry = `### Iteration ${iteration} (comment) — ${now}\n` +
+        `**Comment**: ${pendingComments}\n` +
+        `**Reviewer**: ${decision.status.toUpperCase()} — ${decision.detail}\n\n`;
 
-        if (config.isLegacy) {
-          projectContent += commentEntry;
-          writeFileSync(config.projectPath, projectContent, "utf-8");
-        } else {
-          appendFileSync(config.journalPath, commentEntry);
-        }
-
-        projectContent = updateField(projectContent, "Iteration", String(iteration));
-        writeFileSync(config.projectPath, projectContent, "utf-8");
-        lastSeenComments = currentComments;
-
-        if (decision.status === "done") {
-          projectContent = updateField(projectContent, "Status", "done");
-          projectContent = updateSection(projectContent, "Current State", decision.detail);
-          writeFileSync(config.projectPath, projectContent, "utf-8");
-          return ctx.done(`Complete after comment at iteration ${iteration}: ${decision.detail}`);
-        }
-        if (decision.status === "blocked") {
-          projectContent = updateField(projectContent, "Status", "blocked");
-          projectContent = updateSection(projectContent, "Current State", `Blocked: ${decision.detail}`);
-          writeFileSync(config.projectPath, projectContent, "utf-8");
-          return ctx.escalate(`Blocked by comment at iteration ${iteration}: ${decision.detail}`);
-        }
-
-        // CONTINUE — increment iteration, worker gets reviewer guidance next
-        iteration++;
-        continue;
+      if (config.isLegacy) {
+        projectContent += commentEntry;
+      } else {
+        appendFileSync(config.journalPath, commentEntry);
       }
+
+      // Clear comments — they're now in the journal
+      projectContent = clearComments(projectContent);
+      projectContent = updateField(projectContent, "Iteration", String(iteration));
+      writeFileSync(config.projectPath, projectContent, "utf-8");
+
+      if (decision.status === "done") {
+        projectContent = updateField(projectContent, "Status", "done");
+        projectContent = updateSection(projectContent, "Current State", decision.detail);
+        writeFileSync(config.projectPath, projectContent, "utf-8");
+        return ctx.done(`Complete after comment at iteration ${iteration}: ${decision.detail}`);
+      }
+      if (decision.status === "blocked") {
+        projectContent = updateField(projectContent, "Status", "blocked");
+        projectContent = updateSection(projectContent, "Current State", `Blocked: ${decision.detail}`);
+        writeFileSync(config.projectPath, projectContent, "utf-8");
+        return ctx.escalate(`Blocked by comment at iteration ${iteration}: ${decision.detail}`);
+      }
+
+      // CONTINUE — increment iteration, worker gets reviewer guidance next
+      iteration++;
+      continue;
     }
-    lastSeenComments = currentComments;
 
     // ── Worker phase ─────────────────────────────────────────────
     ctx.emit({ type: "step_start", step: `worker-iteration-${iteration}` });
