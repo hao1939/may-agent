@@ -47,7 +47,7 @@ const updates: Update[] = [
     unit: "commits/week",
     description: "Commits touching src/ in the last 7 days (higher is better).",
     source: "command",
-    source_command: "git log --since='7 days ago' --oneline -- src/ 2>/dev/null | wc -l | tr -d ' '",
+    source_command: "git log --since='7 days ago' --oneline -- agents/ 2>/dev/null | wc -l | tr -d ' '",
     alert_direction: "below",
     speed: "daily",
   },
