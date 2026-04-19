@@ -38,6 +38,28 @@
 
 ---
 
+## 2026-04-19 — heartbeat — environment appears non-standard (no git metadata)
+
+### Mandatory gates (independent)
+- `./node_modules/.bin/tsc --noEmit`: FAIL — `/bin/bash: ./node_modules/.bin/tsc: No such file or directory` (exit 127)
+- `./node_modules/.bin/vitest --run`: FAIL — `/bin/bash: ./node_modules/.bin/vitest: No such file or directory` (exit 127)
+
+### Repo / dependency state
+- `git log` / `git status` fail: `fatal: not a git repository`.
+- No `package.json` found near root (searched `find . -maxdepth 2 -name package.json`).
+- `node_modules/` exists but contains only `.vite/` (no `.bin/`).
+
+### Files reviewed
+- `src/pipeline.js`
+  - Pipeline step order is consistent with the inline comment: penalties applied before normalization.
+  - `validateRecords()` checks required fields and score range.
+
+### Risks / questions
+- Without a `package.json` and normal toolchain, it’s unclear how tests/build are intended to run in this environment.
+- `validateRecords()` relies on JS comparison for `score`/`max_score`; if CSV reader returns strings, coercion may behave unexpectedly.
+
+---
+
 ## 2026-04-19 — QA heartbeat (local)
 
 ### Context
