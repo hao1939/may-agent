@@ -1,6 +1,6 @@
 # Project: Prove the Loop
 
-**Status**: active
+**Status**: blocked
 **Owner**: coach
 **Reviewer**: may
 **Started**: 2026-04-17
