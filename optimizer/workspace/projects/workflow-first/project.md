@@ -49,3 +49,4 @@ Command exited with c
 - [2026-04-19 hao] Adoption is controlled by task framing (KE-214: verb determines tool). "Run workflow X for this" = 100%. "Do this work" = 0%. Fix the callers, not the agents.
 - [2026-04-19 hao] persistent-task is the orchestration workflow. It uses inner workflows per iteration. Don't route at the resume handler level.
 - [2026-04-19 hao] common-sense.md is human-controlled. You can suggest changes but NOT edit it directly.
+- [2026-04-19 hao] Don't build a shared heartbeat workflow. Each agent has different interests and concerns — their heartbeat is their autonomy. A shared workflow would force the same structure on all agents. Instead, focus on the inner workflows agents use WITHIN heartbeats (e.g., when a heartbeat decides to investigate something, THAT investigation could use a workflow).
