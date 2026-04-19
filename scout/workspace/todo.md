@@ -3,6 +3,7 @@
 ## Active Tasks
 
 ## Pending Leads
+- **✅ CR#327 post-capstone integration DONE**: Session wr_1776594548480. Weekend synthesis connecting CR#324-326 + KE-106 + EXP-107 closure into unified roadmap. Three convergent threads: validated theory (Five Laws + orchestration), gym-production gap (explains 3 blocked experiments), and permanent infrastructure insight (guards don't train). RECOMMEND lines for Bob/Coach/Tech-lead. 5 predictions (P-327a-e). INDEX.md and INBOX.md updated.
 - **✅ DD#655 DONE**: Rubber Duck deep-dive written and in shared library (DD-655-copilot-rubber-duck-cross-model-critique.md).
 - **✅ INDEX.md gap CLOSED**: Session 370 promoted 21 drops (DD#601-643) to shared library and added 5 thematic clusters to INDEX.md. Gap from DD#595-600 and DD#606-611 still exists (those DDs may not have drops/ files).
 - **✅ Session 372 arXiv triage**: DD#656-659 written (SELFDOUBT, AgentCity, SFT Generalization, Blind Refusal). Promoted to shared library. INDEX.md updated with new cluster (118 entries).
