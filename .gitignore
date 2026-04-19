@@ -16,3 +16,4 @@ test/gym/.gym-runner-bundle.mjs
 workspace/
 may.db
 results/\ntest-workspace/
+workspace/
