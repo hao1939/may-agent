@@ -179,8 +179,13 @@ function extractMilestones(content: string): { total: number; done: number; pend
 }
 
 function extractComments(content: string): string {
-  const match = content.match(/^## Comments\n([\s\S]*?)(?=\n## |$)/m);
-  return match ? match[1].trim() : "";
+  const idx = content.indexOf("## Comments\n");
+  if (idx === -1) return "";
+  const after = content.slice(idx + "## Comments\n".length);
+  // Stop at next section heading or end of file
+  const nextSection = after.indexOf("\n## ");
+  const text = nextSection === -1 ? after : after.slice(0, nextSection);
+  return text.trim();
 }
 
 // Clear the Comments section in project.md after processing
