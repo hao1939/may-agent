@@ -257,6 +257,7 @@ function buildReviewPrompt(
   workerSummary: string,
   projectContent: string,
   journalContent: string,
+  continueWithoutProgress: number,
 ): string {
   const ms = extractMilestones(projectContent);
   const recentEntries = getRecentJournalEntries(journalContent, iteration, 2);
@@ -278,8 +279,15 @@ function buildReviewPrompt(
   prompt += `## Latest Worker Output (Iteration ${iteration})\n${workerSummary}\n\n`;
 
   prompt += `## Your Assessment\n`;
+  if (continueWithoutProgress >= 2) {
+    prompt += `\n⚠️ WARNING: ${continueWithoutProgress} consecutive iterations with no milestone progress. `;
+    prompt += `The current approach is not working. You MUST either:\n`;
+    prompt += `- Try a fundamentally different approach (not the same instruction again)\n`;
+    prompt += `- Say BLOCKED and explain what's preventing progress\n`;
+    prompt += `Repeating the same guidance is not acceptable.\n\n`;
+  }
   prompt += `1. Are ALL milestones complete? → DONE with summary.\n`;
-  prompt += `2. Is the task blocked? → BLOCKED with reason.\n`;
+  prompt += `2. Is the task blocked or stuck in a loop? → BLOCKED with reason.\n`;
   prompt += `3. Otherwise → CONTINUE with specific guidance for the next iteration.\n\n`;
   prompt += `If CONTINUE: say exactly what the next iteration should do and what output to produce.\n`;
   prompt += `Your response MUST start with: DONE, BLOCKED, or CONTINUE`;
@@ -320,6 +328,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
   let iteration = state.lastIteration + 1;
   let consecutiveFailures = 0;
+  let continueWithoutProgress = 0;
+  let lastMilestoneDone = extractMilestones(projectContent).done;
 
   // Mark active (field-level update)
   projectContent = updateField(projectContent, "Status", "active");
