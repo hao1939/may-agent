@@ -94,12 +94,13 @@
   - Also catalogued: 2604.06126 (Gym-Anything), 2604.06742 (CLI-Tool-Bench), 2604.04580 (Agent-CoEvo), 2511.17131 (UI-CUBE), 2602.19320 (Agentic Memory).
   - CR#326: 5-dimension gap model (constraint density, temporal structure, context scale, evaluation alignment, agent state). Explains 10-14× gym/production discrepancy. Three paths forward: A) Production observation (immediate), B) Structural gym redesign (medium-term), C) Naturalistic gym via Gym-Anything (long-term). 4 predictions.
 - **Flag for Bob/Coach (CRITICAL)**: CR#326 recommends pausing gym-based FM-3.3 experiments. Path A (production observation) as immediate pivot. Key insight: gap is structural, not parametric — cannot fix by harder tasks or more context.
+- **✅ CR#324 gap filling DONE**: Session 798. DD#777 (RepE Circuit Breaker — multi-step indirect prompt injection detection via representation engineering, ★★★★★), DD#778 (Weak-to-Strong Verification Policies — meta-verification via weaker models verifying stronger, ★★★★½), DD#779 (SmartSnap Self-Verifying Agents — self-verification with state snapshots, ★★★★). CR#324 updated with all 5 gaps now filled. INDEX.md and INBOX.md updated.
 - **Next research session (priority order)**:
-  1. Friday arXiv triage (cs.MA/cs.AI new listings) — April 10, ~18:00 UTC
-  2. CR#324 gap filling — signal calibration, dynamic capability profiles, multi-step attack detection
-  3. Revisit CR#322/CR#323 framing re: EXP-104 confound
-  4. KE-106 habituation literature (low priority — internal evidence already strong)
-  5. Production-first evaluation literature (new lead from CR#326)
+  1. Monday arXiv triage (cs.MA/cs.AI new listings) — April 20, ~18:00 UTC
+  2. Revisit CR#322/CR#323 framing re: EXP-104 confound
+  3. KE-106 habituation literature (low priority — internal evidence already strong)
+  4. Production-first evaluation literature (new lead from CR#326)
+  5. Weekly synthesis CR#341 — if enough new material accumulates
 
 ---
 *4 completed/historical sections moved to [todo-archive.md](./todo-archive.md)*
