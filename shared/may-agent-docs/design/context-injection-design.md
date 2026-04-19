@@ -1,141 +1,104 @@
-# Design: Context Injection — What Goes Where
+# Design: Context Injection v4 — Context Discovery + Learned Experience
 
-## Principle
+## Core Idea
 
-**System prompt = who you are + how the system works (stable)**
-**User message = what you're doing now (changes per session)**
+Agents resolve problems through context discovery — they explore, gather related context, and keep digging until they have enough to act. The system prompt gives them enough to START discovering, plus their accumulated experience so they don't start from zero.
 
-Agent decides what to do based on context. We provide the right context at the right layer.
+## System Prompt (auto-injected)
 
----
-
-## System Prompt (auto-injected every session)
-
-Two fixed layers + two replaceable slots:
+Two fixed layers + three evolving layers:
 
 | Content | Type | What it provides |
-|---------|------|------------------|
-| **SOUL.md** | Fixed | Agent identity — character, role, mission. No workflow preferences here. |
-| **common-sense.md** | Fixed | How the system works — projects, heartbeats, metrics, escalation. General guidance about when/when not to use workflows. |
-| **Preferred Workflows** | Replaceable slot | Default: agent's preferred workflows for their work types (from agent config). Overridden by workflow when inside a workflow step. |
-| **Available Tools** | Replaceable slot | Default: agent's full tool list (from agent.json). Overridden by workflow when inside a workflow step — can add, remove, or replace tools. |
+|---------|------|-----------------|
+| **SOUL.md** | Fixed | Agent identity — character, role, mission |
+| **common-sense.md** | Fixed | How the system works — projects, heartbeats, metrics, escalation. Pointers to where knowledge, skills, and resources live. The map for context discovery. |
+| **Preferred Workflows** | Evolving, replaceable | Workflows the agent has PROVEN work for their role. Not a generic list — earned experience. E.g., Coach: "persistent-task for experiments, growth-cycle for training." Grows as agent discovers what works. Replaced by workflow when inside a workflow step. |
+| **Available Tools** | Evolving, replaceable | Tools available NOW. Default from agent.json. Replaced by workflow when inside a step (e.g., reviewer gets read-only tools). |
+| **Learned Experience** | Evolving | What the agent has discovered works — accumulated project knowledge, patterns, shortcuts. Curated and bounded. Grows over time through context-learning process. NOT the old 55K dump — a focused, refined set of lessons. |
 | **Runtime environment** | Fixed | Paths, workspace |
 
-### How the replaceable slots work
+### Fixed vs Evolving vs Replaceable
 
-In a normal session (heartbeat, fork), the slots show defaults:
-- Preferred Workflows: agent's configured defaults
-- Tools: agent's full tool list from agent.json
+- **Fixed:** Same every session. SOUL doesn't change. Common-sense changes rarely (by Hao).
+- **Evolving:** Grows over time as agent learns. Preferred workflows grow as agent discovers what works. Learned experience grows as agent accumulates knowledge. Curated — not unbounded growth.
+- **Replaceable:** Swapped out per workflow step. Tools and workflows can be overridden when inside a persistent-task iteration or other workflow.
 
-Inside a workflow step, the workflow overrides the slots:
-- Worker iteration: tools might remove `agents` (worker shouldn't fork), workflows might say "use implement-and-verify for code changes this iteration"
-- Reviewer iteration: tools might remove `write`/`edit` (reviewer shouldn't modify), workflows might say "assess only, no action"
+## User Message (the task)
 
-The workflow controls what the agent can do and what process to follow, per step. The fixed layers (SOUL + common-sense) stay the same — identity and system knowledge don't change.
+Just the task. What the caller wants the agent to do. The starting breadcrumb for context discovery.
 
----
+The agent discovers everything else through its own actions — reading project files, querying the DB, checking metrics, loading skills when needed.
 
-## User Message (the task — varies per session)
+## Context-Learning Process
 
-The first user message is ONLY what the caller sends. Examples:
-
-**Heartbeat:** The heartbeat.md content + any injected metrics/pending tasks.
-**Persistent-task worker:** Goal + milestones + current state + owner guidance (from buildWorkerPrompt).
-**Fork from May:** The specific task description.
-
-No session history, no digests, no recalls, no context.md. Just the task.
-
----
-
-## Workflows (process enforcement — not injected, invoked)
-
-Workflows are tools, not context. The agent decides which workflow to use.
-
-**Three layers of workflow selection:**
-
-1. **Task instruction (highest priority):** The task says "Run persistent-task workflow for this project" → agent uses it.
-2. **Agent preference (SOUL.md):** Each agent's SOUL.md includes preferred workflows for their work types. E.g., Coach: "For experiments use persistent-task, for training use growth-cycle."  
-3. **Common-sense default (fallback):** common-sense.md describes when to use which workflow generally. "Multi-session work → persistent-task. Code changes → implement-and-verify."
-
-**Override chain:** task instruction > agent preference > common-sense default
-
-**Reviewer override:** In a persistent-task loop, the reviewer can say "CONTINUE — use implement-and-verify for the next iteration." This overrides the agent's default for that specific step. The override appears in the next worker prompt as owner guidance.
-
----
-
-## Skills (behavioral patches — indexed, loaded on demand)
-
-**NOT fully injected.** System prompt includes a skill index only:
+Agents get smarter over time. The learning loop:
 
 ```
-## Available Skills (read full content when triggered)
-- verify-after-edit: after any edit()/write(), verify the result
-- read-before-edit: before editing, read the file first
-- evidence-over-narrative: back claims with tool output
-For full instructions: read("agents/<you>/skills/<name>.md")
+Agent works on a task
+  → discovers what works (which approach, which workflow, which pattern)
+  → records the learning in their experience
+  → next session starts with that knowledge
+  → agent doesn't repeat the discovery
 ```
 
-**On-demand loading:** Agent reads full skill content when the trigger matches their current action.
+### What gets learned:
 
-**Per-task override:** Caller or reviewer can inject specific skills:
-- Task: "For this task, read skill: agents/coach/skills/gym-execution-checklist.md first"
-- Reviewer: "CONTINUE — before next iteration, load the verify-after-edit skill"
+- **Workflow preferences:** "persistent-task works well for experiments" → added to Preferred Workflows section
+- **Patterns:** "when coder quality drops, check FM-3.3 first" → added to Learned Experience
+- **Shortcuts:** "use bun -e for DB queries, not sqlite3" → added to Learned Experience
+- **What doesn't work:** "text rules don't change tool choice" → added to Learned Experience
 
----
+### How learning happens:
 
-## Standing Orders (constraints — enforced by guard, not prompt)
+1. **End of session:** Agent records what it learned via finish(context_updates)
+2. **Context-learning process:** Accumulated updates get curated into the Learned Experience section
+3. **Review:** May or Hao periodically reviews — prune stale lessons, promote important ones
+4. **Bounded growth:** Learned Experience has a size cap. When full, oldest/least-used lessons get archived.
 
-**NOT in system prompt.** Moved to a guard that checks on finish():
+### What's different from the old context.md:
 
-- Agent works without seeing orders in prompt
-- Guard checks: does the output violate any standing order?
-- If yes → block finish, tell agent which order was violated
-- If no → allow
+| Old (context.md) | New (Learned Experience) |
+|-------------------|------------------------|
+| Grew unbounded | Size-capped, curated |
+| Dumped into first user message (buried) | In system prompt (always visible) |
+| One blob of text | Structured: patterns, shortcuts, preferences |
+| Never pruned | Regularly reviewed and pruned |
+| Mixed with 15 other injection layers | Standalone section, clear purpose |
 
-Structural enforcement (KE-007) > text in prompt (KE-002).
+## Skills (on-demand, not injected)
 
----
+Skills are NOT in the system prompt. Common-sense.md points to where skills live:
+```
+Skills are at agents/<you>/skills/. Read them when you need behavioral guidance for specific situations.
+```
+
+Agent discovers and loads skills through context discovery — same as any other knowledge.
+
+Exception: a workflow step can inject a specific skill: "Before running gym trials, read agents/coach/skills/gym-execution-checklist.md"
+
+## Standing Orders (guard, not prompt)
+
+Not in system prompt. Enforced by guard on finish(). Structural enforcement > text.
 
 ## Knowledge (on-demand discovery)
 
-**NOT in system prompt.** Agent discovers knowledge through:
-
-- Breadcrumbs in common-sense.md: "For verified findings: read agents/shared/knowledge-essentials.md"
-- Task-specific pointers: "Reference: KE-123 says don't stack interventions"
+Not in system prompt. Agent discovers through:
+- Breadcrumbs in common-sense: "For verified findings: agents/shared/knowledge-essentials.md"
+- Task-specific pointers
 - Own exploration during heartbeats
-
----
 
 ## Summary: What's Auto-Injected
 
-| Layer | Content | Auto-injected? |
-|-------|---------|---------------|
-| **System prompt** | SOUL.md | ✅ Yes — agent identity |
-| **System prompt** | common-sense.md | ✅ Yes — system usage + workflow guidance |
-| **System prompt** | Available tools | ✅ Yes — tool list |
-| **System prompt** | Runtime environment | ✅ Yes — paths |
-| **System prompt** | Skill index (names + triggers) | ✅ Yes — ~500 chars |
-| **User message** | The task | ✅ Yes — what the caller sent |
-| **User message** | Session history / digests | ❌ No — removed |
-| **User message** | Active recall / FM warnings | ❌ No — removed |
-| **User message** | context.md | ❌ No — agent reads if needed |
-| **System prompt** | Standing orders | ❌ No — guard enforces |
-| **System prompt** | Knowledge essentials | ❌ No — on-demand |
-| **System prompt** | Full skill content | ❌ No — index only, load on-demand |
-
-## Size Comparison
-
-| | Before | After |
-|-|--------|-------|
-| System prompt | ~51K (13K tokens) | ~12K (3K tokens) |
-| First user message | ~55K (context) + task | Task only |
-| Total per first call | ~106K | ~12K + task |
-
----
-
-## Open Questions
-
-1. Skill index — does the trigger format reliably cause agents to load skills on demand? Test in gym.
-2. Standing-orders guard — design needed. How does the guard check free-form text against orders?
-3. Workflow preference in SOUL.md — what format? Table? Prose?
-4. Per-task skill override — does the persistent-task workflow need a `skills` parameter?
+| Layer | Auto-injected? | Evolves? | Replaceable? |
+|-------|---------------|----------|-------------|
+| SOUL.md | ✅ | No | No |
+| common-sense.md | ✅ | Rarely (by Hao) | No |
+| Preferred Workflows | ✅ | Yes (agent learns) | Yes (per workflow step) |
+| Available Tools | ✅ | Rarely | Yes (per workflow step) |
+| Learned Experience | ✅ | Yes (context-learning) | No |
+| Runtime environment | ✅ | No | No |
+| Skills (full content) | ❌ on-demand | Yes | Injected per step |
+| Standing orders | ❌ guard | Rarely | No |
+| Knowledge | ❌ on-demand | Yes | No |
+| Session history | ❌ removed | N/A | N/A |
+| Task | ✅ (user message) | Per session | N/A |
