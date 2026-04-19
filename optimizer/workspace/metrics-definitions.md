@@ -6,7 +6,7 @@ Pass per `/tmp/own-your-metrics.md`. All three metrics were `current=null, targe
 
 | Metric | Fate | Target | Threshold | Direction | How measured |
 |---|---|---|---|---|---|
-| `optimizer.tool-adoption` | **B** — collector added | 0.7 | 0.5 (health) | below = bad | `SUM(evaluatedByHeuristic) / COUNT(*)` over `evaluations` last 7d |
+| `optimizer.tool-adoption` | **B** — collector added | 0.7 | 0.5 (health) | below = bad | `SUM(CASE WHEN skippedByJs=0 THEN 1 ELSE 0 END) / COUNT(*)` over `evaluations JOIN sessions` last 7d, excluding evaluator/may agents |
 | `optimizer.analysis-accuracy` | **C** — deactivated | — | — | — | No cheap proxy; would need human audit loop |
 | `optimizer.quality-preserved` | **A+B** — defined + collector | 0.9 | 0.85 (health) | below = bad | `AVG(e.quality)` from `evaluations e JOIN sessions s` where `s.agent='optimizer' AND e.skippedByJs=0` last 7d |
 
