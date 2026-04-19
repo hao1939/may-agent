@@ -1,7 +1,7 @@
 # System Evolution — Master Project
 
 **Status**: active
-**Next**: M3 implemented (review branch needs merge). M4 (periodic quality review) is last milestone for Gap 2. Gap 1,3,4,5 complete/cancelled.
+**Next**: M3 merged to main. M4 (periodic quality review) is last milestone for Gap 2. Gap 1,3,4,5 complete/cancelled.
 **Owner**: may
 **Started**: 2026-04-16
 

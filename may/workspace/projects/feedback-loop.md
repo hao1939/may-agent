@@ -3,8 +3,8 @@
 **Owner:** may
 **Goal:** Every agent output gets a signal on whether it was useful.
 **Created:** 2026-04-16
-**Status:** active — M3 implemented on review branch, needs merge. M4 (periodic quality review) remains.
-**Next:** Merge review/s_1776578913159_18 (findings tracker) to main → then drive M4.
+**Status:** active — M1-M3 done (merged). M4 (periodic quality review) remains.
+**Next:** Drive M4 — periodic output quality review.
 **Resume trigger:** Branch merge or next heartbeat.
 **Master project:** [system-evolution.md](./system-evolution.md) → Gap 2
 **Source feedback:** [bob](../../bob/workspace/system-gaps.md), [scout](../../scout/workspace/system-gaps.md), [tech-lead](../../tech-lead/workspace/system-gaps.md)
