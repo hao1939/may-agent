@@ -1,7 +1,7 @@
 # Deep Dives Index
 
-> 127 research deep dives, cross-reference syntheses, and reference documents.  
-> Last updated: 2026-04-09 | Maintained by Scout
+> 130 research deep dives, cross-reference syntheses, and reference documents.  
+> Last updated: 2026-04-20 | Maintained by Scout
 
 ## How to Use This Index
 - **DD#NNN** = Deep Dive on a single paper
@@ -811,3 +811,21 @@
 4. DD#766 → KE-106 (policy-invisible violations explain why guards don't train behavior — agents find invisible workarounds)
 5. DD#767 → DD-701 Semantic Router DSL (both formalize agent composition — λ_A at type level, Semantic Router at policy level)
 6. DD#764, DD#765, DD#768 → CR-334 Agent Observability (memory architectures support cognitive observability layer)
+
+---
+
+### CR#324 Gap Filling — Signal Calibration & Dynamic Profiles (Session 800+, April 20 2026)
+
+| # | Paper | Title | ★ | Theme |
+|---|-------|-------|---|-------|
+| DD-781 | 2601.07264 | The Confidence Dichotomy: Calibration in Tool-Use Agents | ★★★★★ | Signal calibration — evidence tools → overconfidence, verification tools → grounding, RL calibration framework |
+| DD-782 | 2509.22732 | BIID: Bidirectional Intention Inference Defense | ★★★★ | Multi-step attack detection — forward intent inference + backward retrospection for multi-turn jailbreaks |
+| DD-783 | 2603.08852 | LDP: Identity-Aware Protocol with Quality Calibration | ★★★★ | Dynamic profiles — model identity cards, provenance paradox (uncalibrated confidence is net-negative) |
+
+**Cross-references (CR#324 Gap Filling)**:
+1. DD#781 → CR-324 (fills signal calibration gap — tool-type-aware calibration mandatory)
+2. DD#781 → EXP-101 (explains HVR failure — mixed-tool confidence inherently unreliable)
+3. DD#782 → CR-324 (fills multi-step attack detection gap — trajectory-level bidirectional monitoring)
+4. DD#782 → DD-725 SentinelAgent, DD-777 RepE Circuit Breaker (defense-in-depth at 3 levels)
+5. DD#783 → CR-324 (partial fill for dynamic profiles gap + provenance paradox validates calibration need)
+6. DD#783 → DD-701 Semantic Router DSL (protocol-level capability metadata)
