@@ -408,3 +408,11 @@ Production 7d: {"n":90,"avg_q":0.726}
 **Agent response:**
 File is clean. There's already an Iter 18 entry from the previous worker. No new data (n=0 post-deploy). The project file is up to date.
 **Files touched**: (see worker session)
+**Owner assessment**: CONTINUE — — Five iterations, zero file edits. The worker claims "file is up to date" but never verifies by checking off milestones.
+
+This task appears fundamentally stuck — the worker repeatedly reads the file, runs queries, and declares completion without editing anything. The goal "see project file" may be too vague to drive action.
+
+**Next iteration instructions (final attempt before escalating):**
+
+Read `agents/coach/workspace/projects/prove-the-loop.md` and respond with its FULL CONTENTS so I can see what milestones exist and their status. Do NOT run any queries. Do NOT say "Now commit." Just read the file and paste its contents. That is the entire task.
+
