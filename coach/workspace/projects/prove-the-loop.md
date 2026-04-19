@@ -10,38 +10,6 @@
 Improve coder quality metric from current 0.82 toward 0.9+ by systematically diagnosing and fixing failure modes. This proves the full loop: metrics signal → persistent task executes → gym validates → production improves.
 
 
-### Iteration 3 — 2026-04-19T11:38:45.872Z
-**Worker task**: Iteration 3 — work toward goal
-**Worker result**: **Status:** done (3m5s)
-
-**Files read (not modified):**
-- agents/coach/workspace/projects/prove-the-loop.md
-
-**Errors encountered:**
-- [bash] 1 | import { Database } from 'bun:sqlite'; const db = new Database('.state/may.db'); console.log(JSON.stringify(db.query("SELECT name, value, ts FROM metrics WHERE name LIKE '%coder%' OR name LIKE '%quality%' ORDER BY ts DESC LIMIT 20").all(), null, 2))
-                                              
-
-**Agent response:**
-Now update the project file with iteration 20 log:
-**Files touched**: (see worker session)
-
-**Owner assessment**: CONTINUE — — Iteration 3 produced zero file edits and zero meaningful progress. The worker is spinning without making changes. Be extremely prescriptive:
-
-**Next iteration must do exactly these steps in order:**
-
-1. **Run `git log --oneline -5` and `git diff HEAD~2 --stat`** to see what iteration 2 actually committed.
-
-2. **Run `cat src/lib/tools/compose-guards.ts`** to see how guards are composed.
-
-3. **Check if evidence-grounding-guard is imported in compose-guards.ts**. If NOT, add it. This is the critical wiring step.
-
-4. **Run `bun test`** to confirm all tests pass.
-
-5. **Find the metrics DB tables**: `bun -e "import{Database}from'bun:sqlite';const db=new Database('.state/may.db');db.query('SELECT name FROM sqlite_master WHERE type=\"table\"').all().forEach(t=>console.log(t.name))"`
-
-**The minimum acceptable deliverable for this iteration**: Either (a) wire evidence-grounding-guard into compose-guards.ts and show tests passing, OR (b) if it's already wired, make one additional concrete improvement to a guard file based on what you learn from the codebase. At least one file MUST be edited.
-
-
 ### Iteration 4 — 2026-04-19T11:43:24.538Z
 **Worker task**: Iteration 4 — work toward goal
 **Worker result**: **Status:** done (4m30s)
@@ -226,8 +194,28 @@ bun -e "import{Database}from'bun:sqlite';const db=new Database('.state/may.db');
 
 **CRITICAL CONSTRAINT**: Do NOT touch any markdown file. Do NOT update project files. Only edit `.ts` source files. If you cannot find evaluation data, skip to step 4 and implement the `verification_evidence` check in finish-guard.ts.
 
+
+### Iteration 8 — 2026-04-19T11:56:37.331Z
+**Worker task**: Iteration 8 — work toward goal
+**Worker result**: **Status:** done (2m58s)
+
+**Files read (not modified):**
+- src/lib/tools/verification-depth-guard.test.ts
+
+**Agent response:**
+The guard sees my test edits came after the last `bun test`. Let me do a post-edit verification:
+**Files touched**: (see worker session)
+
+**Owner assessment**: CONTINUE — All 26 tests pass. Let me also check the compose.yml change is intentional (security hardening):
+
 ## Current State
-Iteration 7 complete. **Status:** done (2m44s)
+Iteration 8 complete. **Status:** done (2m58s)
+
+**Files read (not modified):**
+- src/lib/tools/verification-depth-guard.test.ts
+
+**Agent response:**
+The guard sees my test edits came after the last `bun test`. Let me do a 
 
 **Files read (not modified):**
 - agents/coach/workspace/projects/prove-the-loop.md
