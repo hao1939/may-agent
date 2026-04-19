@@ -1,10 +1,21 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776632833911_1
+- **Session:** s_1776633180155_1
 - **Status:** done
-- **When:** 2026-04-19T21:07:18.450Z
-- **Duration:** 4s
+- **When:** 2026-04-19T21:13:12.223Z
+- **Duration:** 12s
 
 ## What Happened
-WHAT_HAPPENED: Bob diagnosed why gym criteria execution was failing and found `agents/gym/lib` was a broken symlink pointing one directory too high, causing `success_criteria.js` to miss `gym-score-utils.cjs`; he fixed the symlink to `../test/gym/lib` and confirmed the criteria now run. He then investigated why runs showed `status: skipped`, discovered the runner requires `GYM_AGENT_BIN` (otherwise it runs in stub mode), and verified the correct binary at `/usr/local/bin/may-agent`. Finally, he 
+```json
+{
+  "agents": {
+    "bob": {
+      "role": "Philosopher/Architect",
+      "capability_level": "L2",
+      "efficiency": 0.45,
+      "quality": 0.7,
+      "verdict": "acceptable",
+      "issues": [
+        "Significant commit workflow thrash: attempted commit-and-merge, then manual git commit from wrong repo root (/app), then git commit failed due to unrelated modified file; multiple wasted calls before discovering files already committed.",
+        "Some confusion about PRIORITY-TRACKER 
