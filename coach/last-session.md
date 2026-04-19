@@ -1,18 +1,18 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776598288380_21
+- **Session:** s_1776598531744_27
 - **Status:** done
-- **When:** 2026-04-19T11:31:36.978Z
+- **When:** 2026-04-19T11:35:40.501Z
 - **Duration:** 8s
 
 ## What Happened
 
 
-CONTINUE — Iteration 1 produced no actual changes. The worker spent time exploring but didn't edit any files or improve anything. Here's what iteration 2 must do:
+CONTINUE — Iteration 2 made progress by creating/modifying `evidence-grounding-guard.ts` and its test. However, I need to verify what actually changed and whether it's meaningful before giving credit.
 
-**Next step: Diagnose failure modes from the metrics DB, then make one concrete fix.**
+**Next step for iteration 3:**
 
-1. **Query the metrics DB** to understand what's driving the 0.82 score:
-   ```
-   bun -e "import { Database } from 'bun:sqlite'; const db = new Database('.state/may.db'); console.log(JSON.stringify(db.query('SELECT * FROM sqlite_master').all(), 
+1. **Show the actual diff** of what changed: `git diff HEAD~1 --stat && git diff HEAD~1`
+
+2. **Verify the guard is actually wired in** — check if `evidence-grounding-guard.ts` is imported and used in `compose-guards.ts` or wherever guards are composed. If it's not

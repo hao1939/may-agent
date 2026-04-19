@@ -54,8 +54,64 @@ Now update the success criteria to reflect reality:
 
 4. **Deliverable**: At least one file must be edited with a meaningful change that addresses a specific failure pattern. Report exactly which file was changed and why.
 
+
+### Iteration 2 — 2026-04-19T11:35:31.744Z
+**Worker task**: Iteration 2 — work toward goal
+**Worker result**: **Status:** done (3m54s)
+
+**Files modified:**
+- src/lib/tools/evidence-grounding-guard.ts
+- src/lib/tools/evidence-grounding-guard.test.ts
+
+**Files read (not modified):**
+- agents/coach/workspace/projects/prove-the-loop.md
+- src/lib/tools/evidence-count-guard.ts
+- src/lib/tools/finish-guard.ts
+- src/lib/tools/verification-depth-guard.ts
+- src/lib/manager.ts
+
+**Errors encountered:**
+- [bash] 1 | import { Database } from 'bun:sqlite'; const db = new Database('.state/may.db'); console.log(JSON.stringify(db.query("SELECT name, value, ts FROM metrics WHERE name LIKE '%coder%quality%' ORDER BY ts DESC LIMIT 5").all(), null, 2))
+                                                                
+- [read] ENOENT: no such file or directory, access '/app/src/lib/tools/evidence-count-guard.ts'
+- [bash] On branch main
+Your branch is ahead of 'k3s/main' by 2 commits.
+  (use "git push" to publish your local commits)
+
+nothing to commit, working tree clean
+
+
+Command exited with code 1
+
+**Agent response:**
+All 7 tests pass. Now update the project file:
+**Files touched**: (see worker session)
+
+**Owner assessment**: CONTINUE — — Iteration 2 made progress by creating/modifying `evidence-grounding-guard.ts` and its test. However, I need to verify what actually changed and whether it's meaningful before giving credit.
+
+**Next step for iteration 3:**
+
+1. **Show the actual diff** of what changed: `git diff HEAD~1 --stat && git diff HEAD~1`
+
+2. **Verify the guard is actually wired in** — check if `evidence-grounding-guard.ts` is imported and used in `compose-guards.ts` or wherever guards are composed. If it's not wired in, it has zero production impact.
+
+3. **Run the full test suite** to confirm nothing is broken: `bun test`
+
+4. **Query the metrics DB properly** — the previous attempt errored. Try: `bun -e "import { Database } from 'bun:sqlite'; const db = new Database('.state/may.db'); for (const t of db.query('SELECT name FROM sqlite_master WHERE type=\"table\"').all()) console.log(t.name)"` first to find table names, then query for coder quality data.
+
+5. **If the guard isn't wired in, wire it in** to the guard composition pipeline so it actually affects production behavior.
+
+**Deliverable**: Show the git diff, confirm tests pass, and ensure the new guard is integrated into the active guard pipeline (not just a standalone file).
+
 ## Current State
-Iteration 1 complete. **Status:** done (4m46s)
+Iteration 2 complete. **Status:** done (3m54s)
+
+**Files modified:**
+- src/lib/tools/evidence-grounding-guard.ts
+- src/lib/tools/evidence-grounding-guard.test.ts
+
+**Files read (not modified):**
+- agents/coach/workspace/proj
 
 **Files read (not modified):**
 - agents/coach/workspace/projects/prove-the-loop.md
@@ -467,12 +523,23 @@ Each iteration:
   - **Decision — WAIT**: No data to evaluate. Resume when n≥15 post-Iter16 evals available.
   - **Next (Iter 19)**: Same as Iter 18 plan — re-query at next heartbeat.
 
-- 2026-04-19 Iteration 20 (evidence-grounding guard, 11:34Z):
-  - **Diagnosis**: Queried evaluations DB — top failure mode is FM-3.3 (verification confabulation). Agents claim "all tests pass" or cite fabricated tool output in verification_evidence. Existing guards check verification *happened* but not that evidence *matches actual output*.
-  - **Fix**: Created `src/lib/tools/evidence-grounding-guard.ts` — new beforeToolCall hook that intercepts finish(success) and validates each verification_evidence string against actual toolResult text from session transcript. Uses substring matching with multiple strategies (direct, quoted, 5-gram). Blocks when evidence contains known fabrication patterns ("all tests pass") not found in any tool output.
-  - **Registered**: Added to composeGuards() chain in manager.ts after existing guards.
-  - **Tests**: 7/7 pass in evidence-grounding-guard.test.ts. TSC clean.
-  - **Files modified**: src/lib/tools/evidence-grounding-guard.ts (new), src/lib/tools/evidence-grounding-guard.test.ts (new), src/lib/manager.ts (import + registration).
-  - **Expected impact**: Blocks FM-3.3 confabulation at finish()-time, forcing agents to produce real verification. Should reduce needs_improvement verdicts from fabricated evidence.
-  - **Current metric**: coder.quality = 0.79. Target: 0.9+.
-  - **Next (Iter 21)**: Monitor post-deploy evals. Need n≥15 to measure impact.
+- 2026-04-19 Iteration 19 (monitoring check, 06:36Z) — **STILL WAITING: n=0 post-Iter16**:
+  - **Window**: Iter 16 deploy ~06:31Z → 06:36Z. 5 minutes. Still n=0 post-deploy coder evals.
+  - **Production 7d (unchanged)**: n=90, avg 0.726.
+  - **Decision — WAIT**: No data. Resume when n≥15 post-Iter16 evals available.
+  - **Next (Iter 20)**: Re-query at next heartbeat.
+
+- 2026-04-19 Iteration 20 (verification + commit, 11:31Z) — **Confirmed evidence-grounding-guard integration; committed**:
+  - **Owner's Iter 3 checklist** (all 5 items addressed):
+    1. **Git diff HEAD~1**: Showed unrelated workspace changes (dispatch-board, heartbeat-context, cron.json, etc.) — NOT the guard files. The guard files were untracked (`??` in git status), meaning Iter 2 created them but never committed.
+    2. **Guard wired in**: ✅ Confirmed. `src/lib/manager.ts:25` imports `createEvidenceGroundingGuard`, line 397 passes it into `composeGuards(...)` as the last guard in the chain.
+    3. **Tests**: ✅ 478 tests passed. 1 pre-existing failure (billing.test.js `invoice subtotal — expected 45, got 38` — unrelated gym scenario fixture).
+    4. **Metrics DB**: `metrics` table has columns `name, current, target` (not `value, ts`). Quality metric: current **0.79**, target **0.9**. Note: Iter 15 established production-only baseline is **0.726** (gym inflates the DB number).
+    5. **Committed guard**: `git add + commit` of `evidence-grounding-guard.ts` (8389 bytes) + test (2408 bytes). Commit `3b24db18` on `review/fix-tool-adoption-metric`.
+  - **Guard design (from Iter 2, now verified)**: Intercepts `finish(status: "success")`, extracts all `verification_evidence` strings, checks each against tool result text in the transcript via substring matching. Blocks if evidence strings appear fabricated (no match in any tool output). Fail-open. Kill switch: `DISABLE_EVIDENCE_GROUNDING_GUARD=1`. This is the **substring-matching approach** that Iter 10 deferred and Iter 11 recommended — complementary to the count-based `evidence-count-guard.ts`.
+  - **Deployed interventions summary**:
+    - `evidence-count-guard.ts` (Iter 10, structural, count-based) — blocks when claimed evidence count > post-write tool calls
+    - `evidence-grounding-guard.ts` (Iter 2/20, structural, substring-match) — blocks when evidence strings aren't found in tool output
+    - Retry scope-escape fix (Iter 16, in workflow templates) — gives coders escape hatch for impossible-scope retries
+    - C1.5/C1.6/C1.7 context rules: **REVERTED** (Iter 13, net harmful)
+  - **Next (Iter 21)**: Continue monitoring. Need ≥15 post-Iter16 production evals to measure retry scope-escape impact. Also monitor evidence-grounding-guard fire rate in production (grep for "Evidence-Grounding" in session logs).
