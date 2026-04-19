@@ -1,16 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776579523968_6
+- **Session:** s_1776578661674_8
 - **Status:** done
-- **When:** 2026-04-19T06:19:20.543Z
-- **Duration:** 36s
+- **When:** 2026-04-19T06:26:05.226Z
+- **Duration:** 21m43s
 
 ## What Happened
-The design doc is solid and substantive. Milestones 1-3 are effectively complete. 
-
-CONTINUE — Milestones 1-3 are done (measurements collected, patterns identified, design doc written at `agents/shared/may-agent-docs/design/skills-injection-overhead.md`). 
-
-**Next: Milestone 4 — Implement and verify fix.** Start with Tier 1+2 from the design doc:
-
-1. **Tier 1**: Create `agents/shared/skills/` and move `evidence-over-narrative.md` there. Update `src/lib/manager.ts` (~line 462) to load shared skil
+Now update design.md status and commit:

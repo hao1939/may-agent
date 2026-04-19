@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776579563453_9
+- **Session:** s_1776579968808_27
 - **Status:** done
-- **When:** 2026-04-19T06:19:29.299Z
-- **Duration:** 5s
+- **When:** 2026-04-19T06:26:18.538Z
+- **Duration:** 9s
 
 ## What Happened
 ```json
@@ -13,9 +13,9 @@
     "bob": {
       "role": "Builder",
       "capability_level": "L2",
-      "efficiency": 0.7,
-      "quality": 0.75,
+      "efficiency": 0.72,
+      "quality": 0.84,
       "verdict": "good",
       "issues": [
-        "[FM-3.1/GHOST_DELIVERABLE] Multiple finish() attempts were blocked because the summary initially implied producing/altering deliverables beyond what the session evidence supported; required iterative rephrasing to pass the guard.",
-        "[PROCESS_MISMATCH] Included verification_evidence claiming a read
+        "[FM-TOOLING] edit() failed due to exact-text mismatch; recovery was to overwrite via write() rather than re-read and do a precise edit, increasing risk of accidental loss (mitigated here by small file + diff shown).",
+        "[FM-3.3/VERIFICATION_GAP] Did not read back results.md after overwriting; reli
