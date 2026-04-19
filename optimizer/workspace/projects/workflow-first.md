@@ -84,3 +84,4 @@ From agent self-assessments and session archaeology:
 1. **Remove dead workflows**: Delete `coaching-feedback`, `error-scan`, `convention-review`, and `verify-setup` workflow definitions (0 references).
 2. **Review low-usage workflows**: Evaluate whether `auto-loop` (5 refs), `skill-lifecycle` (19 refs), `design-then-build`, `test-and-fix`, and `research-pipeline` (1 ref each) are worth keeping or should be consolidated.
 3. **Increase coverage**: Bob's research cycle and May's dispatch-and-follow-up pattern are the top candidates for new workflows.
+
