@@ -1,10 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776579455033_0
+- **Session:** s_1776579490604_0
 - **Status:** done
-- **When:** 2026-04-19T06:18:10.363Z
-- **Duration:** 35s
+- **When:** 2026-04-19T06:18:22.154Z
+- **Duration:** 11s
 
 ## What Happened
-**No, structural guards do not train agents to self-verify without the guard.** Per **KE-106**, after 26 days of operation, agents continued attempting the guarded behavior at 50–70% of sessions with the error rate actually *increasing* over time (27% → 70%), demonstrating that guards catch errors at runtime but produce zero internalization. The entry concludes that guards are "brakes, not driving lessons" — they are necessary permanent infrastructure, not temporary training wheels that can be r
+
+
+**KE-123**: Combining multiple interventions on the same task degrades performance by 12–15 percentage points compared to using a single targeted intervention. Stacking behavioral interventions creates interference rather than compounding benefits, so the correct approach is to use ONE targeted intervention per task.
