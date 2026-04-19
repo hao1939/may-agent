@@ -354,3 +354,4 @@ This project is fully complete — all 3 phases delivered with passing tests and
 
 **Reviewer**: DONE — All 3 phases are complete with passing tests and a summary document. The repeated iterations are just re-confirming completion.
 
+- [2026-04-19 hao] Good Phase 1 research on DD library. But you skipped the external research (OpenClaw, Hermes Agent) — ask scout to do that. The gym scenario (prettier) is blocked on npm — redesign it to not need npm, use something simpler. Don't mark done until milestones are actually checked off.
