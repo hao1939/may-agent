@@ -1,5 +1,30 @@
 # Unreviewed findings (QA)
 
+## 2026-04-19 — heartbeat — environment/tooling mismatch blocks mandatory QA gates
+
+### What I observed
+- Project root `/app` is **not** a git repository; only `/app/agents` has git metadata (`find .. -maxdepth 3 -name .git` shows `../app/agents/.git`).
+- There is **no Node toolchain** available for the application at `/app`:
+  - `./node_modules/.bin/tsc --noEmit`: **FAIL** — `No such file or directory` (exit 127)
+  - `./node_modules/.bin/vitest --run`: **FAIL** — `No such file or directory` (exit 127)
+- `node_modules/` exists but contains only `.vite/` (no `.bin/`), and no `package.json` was found under `agents/` (`find agents -maxdepth 3 -name package.json ...` returned no results).
+
+### Mandatory gates (independent)
+- `./node_modules/.bin/tsc --noEmit`: FAIL (missing binary)
+- `./node_modules/.bin/vitest --run`: FAIL (missing binary)
+
+### Files reviewed (sample code sweep)
+- `src/pipeline.js` (full file)
+  - **CRITICAL:** Comment/spec mismatch: header comment says penalties are applied **after normalization** ("Normalization must precede penalty application"), but `run()` applies penalties before normalization (Step 3 penalties, Step 4 normalization). This can change results depending on how `applyPenalties()` interprets its inputs.
+  - **IMPORTANT:** `validateRecords()` compares `score` and `max_score` using JS relational operators; if CSV parsing yields strings, coercion rules may cause surprising behavior. Consider explicit numeric coercion or type validation.
+
+### Next actions / questions
+1) Confirm which directory is intended to be the actual application repo (why is `/app` missing `.git`?).
+2) Provide a runnable toolchain (package.json + install) or update QA expectations if this environment intentionally cannot run TypeScript/Vitest.
+3) Clarify intended pipeline order: penalties before or after normalization; update either code or comment + tests accordingly.
+
+---
+
 ## 2026-04-09 — HEAD 7e6bc59 — fix: skip few-shot injection for heartbeat sessions
 
 ### Mandatory gates (independent)
