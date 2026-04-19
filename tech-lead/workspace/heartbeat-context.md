@@ -13,17 +13,14 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-19T18:10)
+# Your Context (auto-generated 2026-04-19T18:40)
 
-**System:** 11 sessions/6h, 0% error rate
-**You:** 1 sessions, 27KB total (27KB avg)
+**System:** 3 sessions/6h, 0% error rate
 
 **Top spenders:**
-- optimizer: 4s, 198KB
-- may: 2s, 165KB
-- scout: 1s, 31KB
-- coach: 1s, 29KB
-- tech-lead: 1s, 27KB ← you
+- may: 1s, 137KB
+- optimizer: 1s, 6KB
+- coach: 1s, 3KB
 
 **Your active error patterns:**
 - FM-3.3: 4x
@@ -34,5 +31,4 @@
 - Delegation quality: **0.79** ratio → 0.85 ratio
 - Meaningful changes: **0** commits/week → 10 commits/week
   → Quick check: git log --since='7 days ago' --oneline -- agents/ 2>/dev/null | wc -l | tr -d ' '
-- Build health: **0** bool → 1 bool ⚠️ NEEDS ATTENTION
-  → Quick check: bun build --no-bundle agents/may/handlers/metrics-snapshot.ts > /dev/null 2>&1 && echo 1 || echo 0
+- Build health: **1** bool → 1 bool
