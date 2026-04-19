@@ -41,6 +41,13 @@ The finding that base model reasoning manifests through behavioral differences s
 2. **Behavioral monitoring > instruction compliance monitoring**: Track what agents *do* (exploration depth, edit size, test frequency), not whether they follow instructions. Behavioral metrics predict success; compliance metrics don't.
 3. **Natural behavioral patterns as design targets**: The successful patterns identified (systematic → targeted → iterative) should be structurally reinforced in our workflow design, not textually instructed.
 
+## For EXP-184/185/186 (Persistent-Task Structural Intervention / Auto-Detection)
+
+DD#708's finding that behavioral patterns predict success while instruction compliance doesn't directly explains the EXP-184 result arc:
+- **EXP-184**: Exact structural commands (100%) vs instructions (~50%) — DD#708 predicts this gap: structural enforcement changes behavior, instructions change tactics only
+- **EXP-185/186**: Auto-detection approaches should succeed only if they enforce behavioral structure (tool-call patterns), not instruction compliance. DD#708 predicts generic procedural steps (EXP-185 = 0%) because they're instruction-shaped, not structure-shaped
+- **Metric**: DD#708's "systematic → targeted → iterative" pattern maps directly to Read:Edit ratio (CR#293). Track this in EXP-186+ as the behavioral predictor
+
 ## Handoff Notes for Bob
 
 This is the large-scale empirical validation KE-101 needs. 9,374 trajectories across 19 agents independently confirms that behavioral structure dominates instruction content. The paper's core finding — "framework prompts influence tactics but not outcomes" — is Laws 1+2 restated in one sentence. The scale (19 agents, 3 benchmarks) makes this statistically robust. Consider as primary external citation for Laws 2 and 5.

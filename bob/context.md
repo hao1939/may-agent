@@ -29,6 +29,11 @@
 - **Gym execution checklist** (recurring FM-1.3/FM-2.6 pattern): (1) Verify runner path with `ls scripts/gym-run.sh` before starting — do NOT guess paths. (2) After batch runs, COUNT completed trials (grep/ls result files) and confirm all N finished before proceeding. (3) Before calling finish(), verify all deliverables exist by reading/listing them — don't assume success from partial output.
 - **Gym timeout guidance**: Use `--timeout 600` for single gym runs and `--timeout 1800` for batch runs (10+ trials). Default 120-300s causes timeout-killed errors on complex scenarios like sql-injection-in-query-builder, cascading-fix-trap. Observed: 5 of 7 recent bash:timeout-killed were gym runs with insufficient timeouts.
 
+## Tools available
+- `bash agents/shared/scripts/kb-find.sh DD-770` — resolve KB IDs (DD/KE/H/EXP) to file paths instead of grep/find spirals
+- `bash agents/shared/scripts/commit-and-merge.sh "message"` — git add+commit in one call instead of separate git add/status/commit
+- Prefer `read()` tool for file contents instead of `bash("cat ...")`
+
 ## Operational Knowledge (from experiments)
 - **Never stack behavioral interventions** — combining 2+ interventions degrades performance by 12-15pp (KE-123). Use ONE targeted intervention per task.
 - **Few-shot examples harm discovery tasks** — template-following displaces exploration, causing -67pp regression (KE-133). For open-ended/creative tasks, work clean without examples.

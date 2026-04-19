@@ -198,15 +198,21 @@
   },
   {
     "name": "heartbeat-tech-lead",
-    "type": "heartbeat",
+    "type": "job",
     "intervalMs": 1800000,
     "agent": "tech-lead",
-    "message": "[heartbeat] Read agents/tech-lead/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you built or reviewed.",
+    "message": "[heartbeat] Tech-lead heartbeat via per-agent workflow.",
     "enabled": true,
-    "description": "Tech-lead's heartbeat — build pending work, intake new designs, code health (60min). Routes through heartbeat workflow.",
-    "lastModified": "2026-04-19T17:00:00.000Z",
+    "description": "Tech-lead's heartbeat — build pending work, intake new designs, code health (60min). Per-agent heartbeat workflow.",
+    "lastModified": "2026-04-19T18:30:00.000Z",
     "notifyBrief": true,
-    "workflow": "heartbeat",
+    "handler": "run-workflow",
+    "handlerConfig": {
+      "workflow": "tech-lead-heartbeat",
+      "agent": "tech-lead",
+      "task": "[heartbeat] Read agents/tech-lead/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you built or reviewed.",
+      "timeoutMs": 1800000
+    },
     "offsetMs": 600000
   },
   {
@@ -233,13 +239,19 @@
   },
   {
     "name": "heartbeat-qa",
-    "type": "heartbeat",
+    "type": "job",
     "agent": "qa",
     "intervalMs": 1800000,
-    "message": "[heartbeat] You are QA. Your files are in agents/qa/. Read agents/qa/heartbeat.md and work through each section.",
+    "message": "[heartbeat] QA heartbeat via per-agent workflow.",
     "enabled": true,
-    "description": "QA proactive quality check (30min). Routes through heartbeat workflow.",
-    "workflow": "heartbeat",
+    "description": "QA proactive quality check (30min). Per-agent heartbeat workflow.",
+    "handler": "run-workflow",
+    "handlerConfig": {
+      "workflow": "qa-heartbeat",
+      "agent": "qa",
+      "task": "[heartbeat] You are QA. Your files are in agents/qa/. Read agents/qa/heartbeat.md and work through each section.",
+      "timeoutMs": 1800000
+    },
     "offsetMs": 1680000
   },
   {

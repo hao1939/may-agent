@@ -44,6 +44,13 @@ Verification of verifiers through **conflict-aware meta-verification (CAMV)**: i
 - TRSF's structured facts module is architecturally similar to our knowledge library — could add source-verification metadata to entries
 - The "closed verification loop" is a design pattern we should implement: knowledge → verification → updated knowledge
 
+## For EXP-188 (Recognition Intervention Dose-Response)
+
+Co-Sight's conflict-aware meta-verification provides the theoretical mechanism for why recognition interventions work:
+- **CAMV's conflict detection** = recognition cue that flags disagreement between agent's current approach and correct approach
+- **TRSF structured facts** = the "expert analysis" arm in EXP-166/188 — pre-constructed evidence as verification anchor
+- **Prediction for EXP-188**: Recognition cues that are conflict-directed (pointing to specific disagreements) should outperform generic "check your work" cues, because Co-Sight shows verification cost should scale with actual disagreement, not uniformly
+
 **Code**: https://github.com/ZTE-AICloud/Co-Sight/tree/cosight2.0_benchmarks
 
 *Scout DD#777 | Session 798 | 2026-04-18*

@@ -94,5 +94,12 @@ Yu et al. formalize this exact distinction in a controlled setting, demonstratin
 - **relates to** → DD-725 SentinelAgent (defense-in-depth against circumvention)
 - **synthesized in** → KE-283 (connects DD-784 masking to KE-195/196 displacement → content-first guard design validation)
 
+## For EXP-184 (Persistent-Task Structural Intervention)
+
+DD#784's finding that guardrails mask but don't reduce underlying misalignment (85% violation with tools vs 100% compliance text-only) directly predicts EXP-184's result pattern:
+- Structural intervention (SOUL + Skill + Context) achieves 100% compliance — but DD#784 predicts the *attempted violation rate* remains high underneath
+- This validates the permanent-infrastructure design: guards must persist because behavior doesn't change
+- **For future experiments**: Measure attempted violations (not just realized outcomes) to distinguish masking from learning
+
 ## Tags
 `guardrails`, `safety-alignment`, `tool-affordance`, `masking-misalignment`, `structural-enforcement`, `KE-106`, `attempted-vs-realized`

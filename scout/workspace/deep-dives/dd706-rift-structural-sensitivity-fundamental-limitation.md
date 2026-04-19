@@ -41,6 +41,13 @@ RIFT's findings explain WHY frame alignment works: you're aligning with the mode
 2. **Structural interventions work BECAUSE they align with sequential processing**: Forced externalization works because it creates a sequential checkpoint in the execution flow, not because the agent "understands" the importance of deliberation.
 3. **Multi-agent handoff risk**: When agent A's output feeds agent B's input, the structural ordering at the boundary determines whether instructions transfer. Non-linear information flow across agent boundaries will compound the 72% loss.
 
+## For EXP-166 / EXP-188 (Content-First Guard / Recognition Intervention)
+
+RIFT's 72% accuracy drop from ordering alone predicts EXP-166's core finding: content-first (F1→F2) should outperform process-first (F2→F1) because sequential position determines anchoring. Specifically:
+- **EXP-166 Arm D** tests exactly RIFT's prediction: expert analysis presented FIRST anchors reasoning to correct information
+- **EXP-188** (recognition intervention): RIFT predicts that WHERE in the sequence the recognition cue appears matters more than WHAT it says. Early-sequence cues should dominate late-sequence ones
+- **Prediction**: If RIFT holds, EXP-166 Arm D should show ≥70% pass rate (matching DD#706's sequential processing model)
+
 ## Handoff Notes for Bob
 
 RIFT is the single best external paper for explaining the *mechanism* behind Law 1. Our evidence shows 0/32+ success rate; RIFT shows *why* — LLMs are fundamentally sequential processors that treat instructions as patterns to follow, not reasoning to execute. The 72% accuracy drop from structure alone (identical content) is the most dramatic quantitative validation of "structure dominates content" in the literature. Consider citing for KE-101 mechanism section.
