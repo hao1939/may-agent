@@ -2105,76 +2105,134 @@ document.getElementById('req-agent-filter').addEventListener('change', (e) => {
 });
 
 // ── Metrics Tab ───────────────────────────────────────────────────────
+const PINNED_METRICS = ['optimizer.workflow-coverage', 'optimizer.workflow-effectiveness', 'system.handler-health', 'system.stuck-requests', 'coder.quality', 'coach.instruction-compliance'];
+
 async function loadMetricsTab() {
   try {
     const res = await fetch('/api/metrics');
     const data = await res.json();
-    renderMetricsAlerts(data.alerts);
-    renderMetricsByOwner(data.metrics, data.latestSnapshots);
-    renderRecentSnapshots(data.recentSnapshots);
-  } catch (e) {
-    document.getElementById('metrics-by-owner').innerHTML = `<p style="color:var(--red)">Failed to load metrics: ${e.message}</p>`;
-  }
-}
+    const container = document.getElementById('metrics-by-owner');
+    const alertsEl = document.getElementById('metrics-alerts');
+    const recentEl = document.getElementById('metrics-recent');
 
-function renderMetricsAlerts(alerts) {
-  const el = document.getElementById('metrics-alerts');
-  if (!alerts || alerts.length === 0) {
-    el.innerHTML = '<div style="padding:8px 12px;background:rgba(76,175,80,0.1);border:1px solid rgba(76,175,80,0.3);border-radius:6px;color:var(--green);font-size:13px">✓ All metrics within thresholds</div>';
-    return;
-  }
-  el.innerHTML = alerts.map(a => `<div style="padding:8px 12px;background:rgba(244,67,54,0.1);border:1px solid rgba(244,67,54,0.3);border-radius:6px;margin-bottom:6px;font-size:13px;color:var(--red)">⚠ <b>${a.name}</b> (${a.owner}): ${a.current}${a.unit||''} — threshold ${a.alert_direction === 'above' ? '>' : '<'} ${a.threshold}${a.unit||''}</div>`).join('');
-}
-
-function renderMetricsByOwner(metrics, snapshots) {
-  const snapMap = {};
-  for (const s of snapshots) snapMap[s.metric_id] = s;
-  const byOwner = {};
-  for (const m of metrics) {
-    if (!byOwner[m.owner]) byOwner[m.owner] = [];
-    byOwner[m.owner].push(m);
-  }
-  let html = '';
-  for (const [owner, ms] of Object.entries(byOwner).sort()) {
-    html += `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:12px">`;
-    html += `<h3 style="margin:0 0 10px;font-size:14px;color:var(--fg)">${owner} <span style="color:var(--fg2);font-weight:normal;font-size:12px">(${ms.length} metrics)</span></h3>`;
-    html += `<table style="width:100%;border-collapse:collapse;font-size:12px">`;
-    html += `<tr style="border-bottom:1px solid var(--border)"><th style="text-align:left;padding:4px 8px;color:var(--fg2)">Metric</th><th style="padding:4px 8px;color:var(--fg2)">Current</th><th style="padding:4px 8px;color:var(--fg2)">Target</th><th style="padding:4px 8px;color:var(--fg2)">Threshold</th><th style="padding:4px 8px;color:var(--fg2)">Speed</th><th style="padding:4px 8px;color:var(--fg2)">Type</th><th style="padding:4px 8px;color:var(--fg2)">Last Measured</th></tr>`;
-    for (const m of ms) {
-      const snap = snapMap[m.id];
-      const val = m.current != null ? m.current : (snap ? snap.value : '—');
-      const isAlert = m.threshold != null && m.current != null && (m.alert_direction === 'above' ? m.current > m.threshold : m.current < m.threshold);
-      const valStyle = isAlert ? 'color:var(--red);font-weight:bold' : 'color:var(--fg)';
-      const ago = snap ? timeAgo(snap.measured_at) : '—';
-      html += `<tr style="border-bottom:1px solid var(--bg3,#333)">`;
-      html += `<td style="padding:4px 8px" title="${m.description||''}">${m.name}<br><span style="color:var(--fg2);font-size:11px">${m.id}</span></td>`;
-      html += `<td style="padding:4px 8px;text-align:center;${valStyle}">${val}${m.unit||''}</td>`;
-      html += `<td style="padding:4px 8px;text-align:center;color:var(--fg2)">${m.target}${m.unit||''}</td>`;
-      html += `<td style="padding:4px 8px;text-align:center;color:var(--fg2)">${m.threshold != null ? m.threshold + (m.unit||'') : '—'}</td>`;
-      html += `<td style="padding:4px 8px;text-align:center"><span style="padding:1px 6px;border-radius:3px;font-size:11px;background:var(--bg3,#333)">${m.speed||'—'}</span></td>`;
-      html += `<td style="padding:4px 8px;text-align:center;color:var(--fg2)">${m.type}</td>`;
-      html += `<td style="padding:4px 8px;text-align:center;color:var(--fg2);font-size:11px">${ago}</td>`;
-      html += `</tr>`;
+    // Alerts
+    if (!data.alerts || data.alerts.length === 0) {
+      alertsEl.innerHTML = '<div style="padding:8px 12px;background:rgba(76,175,80,0.1);border:1px solid rgba(76,175,80,0.3);border-radius:6px;color:var(--green);font-size:13px">✓ All metrics within thresholds</div>';
+    } else {
+      alertsEl.innerHTML = data.alerts.map(a => `<div style="padding:8px 12px;background:rgba(244,67,54,0.1);border:1px solid rgba(244,67,54,0.3);border-radius:6px;margin-bottom:6px;font-size:13px;color:var(--red)">⚠ <b>${a.name}</b> (${a.owner}): ${a.current}${a.unit||''} — threshold ${a.alert_direction === 'above' ? '>' : '<'} ${a.threshold}${a.unit||''}</div>`).join('');
     }
-    html += `</table></div>`;
-  }
-  document.getElementById('metrics-by-owner').innerHTML = html;
+
+    const snapMap = {};
+    for (const s of data.latestSnapshots) snapMap[s.metric_id] = s;
+
+    const pinned = data.metrics.filter(m => PINNED_METRICS.includes(m.id));
+    const unpinned = data.metrics.filter(m => !PINNED_METRICS.includes(m.id));
+    let html = '';
+
+    // Pinned metrics cards
+    if (pinned.length > 0) {
+      html += `<div style="background:var(--bg2);border:2px solid var(--accent);border-radius:8px;padding:16px;margin-bottom:16px">`;
+      html += `<h3 style="margin:0 0 12px;font-size:14px;color:var(--accent)">⭐ Pinned Metrics</h3>`;
+      html += `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px">`;
+      for (const m of pinned) {
+        const val = m.current != null ? Number(m.current).toFixed(2) : '—';
+        const isAlert = m.threshold != null && m.current != null && (m.alert_direction === 'above' ? m.current > m.threshold : m.current < m.threshold);
+        const border = isAlert ? 'var(--red)' : 'var(--border)';
+        const snap = snapMap[m.id];
+        const ago = snap ? timeAgo(snap.measured_at) : '—';
+        html += `<div style="background:var(--bg);border:1px solid ${border};border-radius:6px;padding:12px;cursor:pointer" onclick="showMetricHistory('${m.id}')">`;
+        html += `<div style="font-size:11px;color:var(--fg2)">${m.owner} · ${m.type}</div>`;
+        html += `<div style="font-size:18px;font-weight:bold;margin:4px 0;${isAlert?'color:var(--red)':''}">${val}${m.unit||''}</div>`;
+        html += `<div style="font-size:12px;color:var(--fg)">${m.name}</div>`;
+        html += `<div style="font-size:11px;color:var(--fg2);margin-top:4px">target: ${m.target}${m.unit||''} · ${ago}</div>`;
+        html += `<div id="spark-${m.id.replace(/\./g,'-')}" style="height:30px;margin-top:6px"></div>`;
+        html += `</div>`;
+      }
+      html += `</div></div>`;
+    }
+
+    // System overview cards
+    const healthy = data.metrics.filter(m => m.threshold != null && m.current != null && (m.alert_direction === 'above' ? m.current <= m.threshold : m.current >= m.threshold)).length;
+    const alerting = data.alerts?.length || 0;
+    html += `<div style="display:flex;gap:12px;margin-bottom:16px">`;
+    html += `<div style="flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:12px;text-align:center"><div style="font-size:24px;font-weight:bold;color:var(--green)">${healthy}</div><div style="font-size:11px;color:var(--fg2)">Healthy</div></div>`;
+    html += `<div style="flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:12px;text-align:center"><div style="font-size:24px;font-weight:bold;color:var(--red)">${alerting}</div><div style="font-size:11px;color:var(--fg2)">Alerting</div></div>`;
+    html += `<div style="flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:12px;text-align:center"><div style="font-size:24px;font-weight:bold">${data.metrics.length}</div><div style="font-size:11px;color:var(--fg2)">Total Active</div></div>`;
+    html += `</div>`;
+
+    // By owner tables
+    const byOwner = {};
+    for (const m of unpinned) { if (!byOwner[m.owner]) byOwner[m.owner] = []; byOwner[m.owner].push(m); }
+    for (const [owner, ms] of Object.entries(byOwner).sort()) {
+      html += `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:12px">`;
+      html += `<h3 style="margin:0 0 10px;font-size:14px;color:var(--fg)">${owner} <span style="color:var(--fg2);font-weight:normal;font-size:12px">(${ms.length})</span></h3>`;
+      html += `<table style="width:100%;border-collapse:collapse;font-size:12px">`;
+      html += `<tr style="border-bottom:1px solid var(--border)"><th style="text-align:left;padding:4px 8px;color:var(--fg2)">Metric</th><th style="padding:4px 8px;color:var(--fg2)">Current</th><th style="padding:4px 8px;color:var(--fg2)">Target</th><th style="padding:4px 8px;color:var(--fg2)">Type</th><th style="padding:4px 8px;color:var(--fg2)">Updated</th></tr>`;
+      for (const m of ms) {
+        const snap = snapMap[m.id]; const val = m.current != null ? m.current : '—';
+        const isAlert = m.threshold != null && m.current != null && (m.alert_direction === 'above' ? m.current > m.threshold : m.current < m.threshold);
+        html += `<tr style="border-bottom:1px solid var(--bg3,#333);cursor:pointer" onclick="showMetricHistory('${m.id}')">`;
+        html += `<td style="padding:4px 8px">${m.name}<br><span style="color:var(--fg2);font-size:11px">${m.id}</span></td>`;
+        html += `<td style="padding:4px 8px;text-align:center;${isAlert?'color:var(--red);font-weight:bold':''}">${val}${m.unit||''}</td>`;
+        html += `<td style="padding:4px 8px;text-align:center;color:var(--fg2)">${m.target}${m.unit||''}</td>`;
+        html += `<td style="padding:4px 8px;text-align:center;color:var(--fg2)">${m.type}</td>`;
+        html += `<td style="padding:4px 8px;text-align:center;color:var(--fg2);font-size:11px">${snap ? timeAgo(snap.measured_at) : '—'}</td></tr>`;
+      }
+      html += `</table></div>`;
+    }
+    container.innerHTML = html;
+    for (const m of pinned) loadSparkline(m.id);
+    renderRecentSnapshots(data.recentSnapshots);
+  } catch (e) { document.getElementById('metrics-by-owner').innerHTML = `<p style="color:var(--red)">Failed: ${e.message}</p>`; }
+}
+
+async function loadSparkline(metricId) {
+  try {
+    const res = await fetch(`/api/metrics/${encodeURIComponent(metricId)}/history?days=7`);
+    const data = await res.json();
+    const el = document.getElementById('spark-' + metricId.replace(/\./g, '-'));
+    if (!el || !data.snapshots || data.snapshots.length < 2) return;
+    const values = data.snapshots.map(s => s.value);
+    const min = Math.min(...values); const max = Math.max(...values); const range = max - min || 1;
+    const w = el.offsetWidth || 250; const h = 30;
+    const step = w / (values.length - 1);
+    const pts = values.map((v, i) => `${i*step},${h-((v-min)/range)*(h-4)-2}`).join(' ');
+    el.innerHTML = `<svg width="${w}" height="${h}"><polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="1.5"/></svg>`;
+  } catch {}
+}
+
+async function showMetricHistory(metricId) {
+  try {
+    const res = await fetch(`/api/metrics/${encodeURIComponent(metricId)}/history?days=14`);
+    const data = await res.json();
+    const el = document.getElementById('metrics-recent');
+    let html = `<div style="background:var(--bg2);border:1px solid var(--accent);border-radius:8px;padding:16px">`;
+    html += `<h3 style="margin:0 0 12px;font-size:14px;color:var(--fg)">📈 ${metricId} — 14d history <button onclick="loadMetricsTab()" style="float:right;background:var(--bg3,#333);border:1px solid var(--border);color:var(--fg);padding:2px 8px;border-radius:4px;cursor:pointer;font-size:11px">Back</button></h3>`;
+    if (!data.snapshots || data.snapshots.length === 0) { html += `<p style="color:var(--fg2)">No snapshots</p>`; }
+    else {
+      const values = data.snapshots.map(s => s.value);
+      const min = Math.min(...values); const max = Math.max(...values); const range = max-min||1;
+      const w=600; const h=120; const step=w/Math.max(values.length-1,1);
+      const pts = values.map((v,i) => `${i*step},${h-((v-min)/range)*(h-10)-5}`).join(' ');
+      html += `<svg width="100%" viewBox="0 0 ${w} ${h}" style="margin-bottom:12px"><polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="2"/></svg>`;
+      html += `<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--fg2);margin-bottom:12px"><span>min: ${min.toFixed(2)}</span><span>max: ${max.toFixed(2)}</span><span>latest: ${values[values.length-1].toFixed(2)}</span><span>${data.snapshots.length} points</span></div>`;
+      html += `<table style="width:100%;border-collapse:collapse;font-size:12px"><tr style="border-bottom:1px solid var(--border)"><th style="text-align:left;padding:4px 8px;color:var(--fg2)">Value</th><th style="padding:4px 8px;color:var(--fg2)">When</th><th style="text-align:left;padding:4px 8px;color:var(--fg2)">Note</th></tr>`;
+      for (const s of data.snapshots.slice().reverse().slice(0,20)) {
+        html += `<tr style="border-bottom:1px solid var(--bg3,#333)"><td style="padding:4px 8px">${s.value}</td><td style="padding:4px 8px;text-align:center;color:var(--fg2);font-size:11px">${timeAgo(s.measured_at)}</td><td style="padding:4px 8px;color:var(--fg2);font-size:11px">${s.note||''}</td></tr>`;
+      }
+      html += `</table>`;
+    }
+    html += `</div>`;
+    el.innerHTML = html;
+  } catch (e) { document.getElementById('metrics-recent').innerHTML = `<p style="color:var(--red)">Failed: ${e.message}</p>`; }
 }
 
 function renderRecentSnapshots(snapshots) {
   let html = `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px">`;
-  html += `<h3 style="margin:0 0 10px;font-size:14px;color:var(--fg)">Recent Snapshots <span style="color:var(--fg2);font-weight:normal;font-size:12px">(last 50)</span></h3>`;
-  html += `<table style="width:100%;border-collapse:collapse;font-size:12px">`;
-  html += `<tr style="border-bottom:1px solid var(--border)"><th style="text-align:left;padding:4px 8px;color:var(--fg2)">Metric</th><th style="padding:4px 8px;color:var(--fg2)">Value</th><th style="padding:4px 8px;color:var(--fg2)">Samples</th><th style="padding:4px 8px;color:var(--fg2)">Measured By</th><th style="padding:4px 8px;color:var(--fg2)">When</th><th style="text-align:left;padding:4px 8px;color:var(--fg2)">Note</th></tr>`;
-  for (const s of snapshots) {
-    html += `<tr style="border-bottom:1px solid var(--bg3,#333)">`;
-    html += `<td style="padding:4px 8px">${s.metric_id}</td>`;
-    html += `<td style="padding:4px 8px;text-align:center">${s.value}</td>`;
-    html += `<td style="padding:4px 8px;text-align:center;color:var(--fg2)">${s.sample_size ?? '—'}</td>`;
-    html += `<td style="padding:4px 8px;text-align:center;color:var(--fg2);font-size:11px">${s.measured_by||'—'}</td>`;
-    html += `<td style="padding:4px 8px;text-align:center;color:var(--fg2);font-size:11px">${timeAgo(s.measured_at)}</td>`;
-    html += `<td style="padding:4px 8px;color:var(--fg2);font-size:11px">${s.note||''}</td>`;
-    html += `</tr>`;
+  html += `<h3 style="margin:0 0 10px;font-size:14px;color:var(--fg)">Recent Snapshots</h3>`;
+  html += `<table style="width:100%;border-collapse:collapse;font-size:12px"><tr style="border-bottom:1px solid var(--border)"><th style="text-align:left;padding:4px 8px;color:var(--fg2)">Metric</th><th style="padding:4px 8px;color:var(--fg2)">Value</th><th style="padding:4px 8px;color:var(--fg2)">When</th><th style="text-align:left;padding:4px 8px;color:var(--fg2)">Note</th></tr>`;
+  for (const s of (snapshots||[]).slice(0,30)) {
+    html += `<tr style="border-bottom:1px solid var(--bg3,#333);cursor:pointer" onclick="showMetricHistory('${s.metric_id}')"><td style="padding:4px 8px">${s.metric_id}</td><td style="padding:4px 8px;text-align:center">${s.value}</td><td style="padding:4px 8px;text-align:center;color:var(--fg2);font-size:11px">${timeAgo(s.measured_at)}</td><td style="padding:4px 8px;color:var(--fg2);font-size:11px">${s.note||''}</td></tr>`;
   }
   html += `</table></div>`;
   document.getElementById('metrics-recent').innerHTML = html;
