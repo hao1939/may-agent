@@ -66,9 +66,9 @@ The first user message has 16 layers of context injection (up to 55K chars) that
 ## Milestones
 
 - [x] M1: Measure current first-user-message size per agent (baseline)
-- [ ] M2: Test removing layers 2-6, 8-9 — does task compliance improve?
+- [x] M2: Test removing layers 2-6, 8-9 — does task compliance improve?
   - [x] M2a: Add `contextLayers` toggles to `SubagentDefinition` (branch `review/context-injection-m2`)
-- [ ] M3: Test moving essential context to system prompt (cacheable)
+- [x] M3: Test moving essential context to system prompt (cacheable)
 - [ ] M4: Design minimal injection: session ID + task, everything else on-demand
 - [ ] M5: Implement and verify task compliance improves
 
