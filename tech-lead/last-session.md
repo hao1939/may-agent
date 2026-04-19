@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776620410041_277
+- **Session:** s_1776620648383_290
 - **Status:** done
-- **When:** 2026-04-19T17:45:39.567Z
-- **Duration:** 5m29s
+- **When:** 2026-04-19T17:48:14.961Z
+- **Duration:** 4m6s
 
 ## What Happened
-No active projects. Delegation quality is 0.79 vs 0.85 target — that's a daily metric trending below target. Let me investigate that via a lens session.
+The evaluator-heartbeat doesn't have its own DB write logic — it delegates to `evaluateStandaloneSession()` which writes directly. The cleanup in `evaluation-sync.ts` runs periodically and will catch any new false zeros from either path. That's sufficient.

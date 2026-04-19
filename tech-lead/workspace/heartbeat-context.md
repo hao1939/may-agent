@@ -13,25 +13,26 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-19T17:40)
+# Your Context (auto-generated 2026-04-19T18:10)
 
-**System:** 12 sessions/6h, 0% error rate
-**You:** 1 sessions, 25KB total (25KB avg)
+**System:** 11 sessions/6h, 0% error rate
+**You:** 1 sessions, 27KB total (27KB avg)
 
 **Top spenders:**
-- may: 2s, 164KB
-- bob: 3s, 100KB
-- coach: 2s, 43KB
+- optimizer: 4s, 198KB
+- may: 2s, 165KB
 - scout: 1s, 31KB
-- optimizer: 2s, 27KB
+- coach: 1s, 29KB
+- tech-lead: 1s, 27KB ← you
 
 **Your active error patterns:**
-- FM-3.3: 3x
+- FM-3.3: 4x
 - FM-1.3: 1x
 
 **📊 Your Metrics:**
-- Codebase weight: **30354** lines → 32000 lines
+- Codebase weight: **30526** lines → 32000 lines
 - Delegation quality: **0.79** ratio → 0.85 ratio
 - Meaningful changes: **0** commits/week → 10 commits/week
   → Quick check: git log --since='7 days ago' --oneline -- agents/ 2>/dev/null | wc -l | tr -d ' '
-- Build health: **1** bool → 1 bool
+- Build health: **0** bool → 1 bool ⚠️ NEEDS ATTENTION
+  → Quick check: bun build --no-bundle agents/may/handlers/metrics-snapshot.ts > /dev/null 2>&1 && echo 1 || echo 0

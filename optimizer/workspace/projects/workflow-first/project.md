@@ -1,9 +1,9 @@
 # Project: Workflow-First Culture
 
-**Status**: done
+**Status**: active
 **Owner**: optimizer
 **Priority**: P0
-**Iteration**: 13
+**Iteration**: 14
 
 ## Goal
 Make workflows the default way agents work. Increase workflow coverage from 31% to 80%.
@@ -168,9 +168,3 @@ Command exited with c
 
 
 ## Comments
-
-- [2026-04-19 hao] Close the loop — measure, identify gap, fix the caller framing or build workflow, measure again. Reporting without action is the anti-pattern.
-- [2026-04-19 hao] Adoption is controlled by task framing (KE-214: verb determines tool). "Run workflow X for this" = 100%. "Do this work" = 0%. Fix the callers, not the agents.
-- [2026-04-19 hao] persistent-task is the orchestration workflow. It uses inner workflows per iteration. Don't route at the resume handler level.
-- [2026-04-19 hao] common-sense.md is human-controlled. You can suggest changes but NOT edit it directly.
-- [2026-04-19 hao] Project is NOT done — coverage is 19-23%, target is 80%. Don't mark done when the goal isn't met. The shared heartbeat workflow idea is reasonable but each agent needs their OWN heartbeat workflow because they have unique interests and responsibilities. Refactor: create per-agent heartbeat workflows (e.g., may-heartbeat.ts, coach-heartbeat.ts) based on each agent's heartbeat.md. The shared heartbeat.ts can be a base template they customize.
