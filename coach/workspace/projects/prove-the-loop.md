@@ -1,6 +1,6 @@
 # Project: Prove the Loop
 
-**Status**: active — Iter 14 complete (2026-04-19 06:26Z). Post-revert quality 0.719 (n=12, 30h) did NOT recover to baseline 0.822. C1.x rules were likely not the cause of regression. Dominant failure: scope violations (4/12). Next: re-diagnose scope-violation cluster with structural intervention.
+**Status**: active — Iter 15 complete (2026-04-19 06:30Z). CRITICAL DISCOVERY: 0.822 "baseline" was gym-contaminated (94 gym sessions on Apr 16 inflated avg). Production-only 7d avg is **0.726** (n=90). C1.x rules caused NO regression — production was already low. Top lever: "Fix Required (attempt 2/2)" retry tasks avg 0.62 (n=20, 22% of volume). Next: improve retry task quality or reduce retry task generation.
 **Owner**: coach
 **Reviewer**: may
 **Started**: 2026-04-17
@@ -365,3 +365,27 @@ Each iteration:
     - The C1.x revert was correct (precautionary), but the evidence now shows the regression is independent of those rules.
     - Next step: diagnose why scope violations have spiked. Look at task assignment patterns — are coder sessions receiving harder/ambiguous-scope tasks? Look at evaluator — is the scope criterion stricter?
   - **Next (Iter 15)**: Deep-dive on the 5 scope-violation sessions: read task text, check if scope boundaries were clear, determine whether the failure is (a) coder ignoring clear scope, (b) task text being ambiguous, or (c) evaluator being harsh. If (a), design a structural scope guard. If (b)/(c), fix task generation or evaluator.
+
+- 2026-04-19 Iteration 15 (baseline re-diagnosis, 06:30Z) — **CRITICAL: baseline was gym-contaminated**:
+  - **Discovery**: The 0.822 "7d baseline" used throughout Iters 1-14 was **inflated by 94 gym sessions on Apr 16** (avg 0.867). When filtering to production-only (source != "gym"):
+    - Production-only 7d avg: **0.726** (n=90).
+    - Apr 14: 0.65 (n=12), Apr 15: 0.653 (n=25), Apr 16: 0.72 (n=7), Apr 17: 0.718 (n=23), Apr 18: 0.703 (n=11), Apr 19: 0.9 (n=1).
+    - Production quality has been flat at ~0.70 since Apr 14, BEFORE any C1.x intervention.
+  - **Implication**: The entire Iter 13 "regression" narrative was wrong. C1.x rules did NOT cause a drop from 0.82 to 0.71 — production was already at 0.71. The revert was harmless but unnecessary.
+  - **Root cause of low production quality — task-shape analysis**:
+    - "Fix Required (attempt 2/2)" retry tasks: avg quality **0.62**, n=20 (22% of volume). These are the #1 drag on quality. Common issue: scope constraint (edit ONLY file X) conflicts with verification command needing changes in multiple files.
+    - "Reference: How a similar task..." (normal tasks with few-shot): avg **0.768**, n=39 (43% of volume). Decent but below target.
+    - Persistent-task iterations: mixed, avg ~0.70, n≈16. Highly variable (0.28–0.86).
+  - **6 low-quality post-revert sessions deep-dive**:
+    - 3/6 are "Fix Required (attempt 2/2)" — scope constraint says "edit ONLY X" but tsc+vitest fail due to issues in OTHER files. Agent can't fix all failures within scope → either violates scope (dinged) or can't satisfy verification (dinged). This is **a task-generation bug**, not a coder behavior issue.
+    - 2/6 are normal tasks with scope drift — coder edited wrong file or missed second required file. Moderate coder error.
+    - 1/6 is FM-3.3 fabricated finish claims.
+  - **Revised strategy — two levers**:
+    1. **FIX RETRY TASK GENERATION** (highest ROI): The verify-wrap workflow's "attempt 2/2" retry generates impossible scope constraints. If verification fails due to errors in file Y but original task said "edit ONLY file X", the retry task should either (a) expand scope to include Y, or (b) not retry at all if the root cause is outside scope. This is a src/ code change in the verify-wrap workflow. Fixing this removes 22% of volume at 0.62 avg → lifting overall production avg from 0.726 to ~0.76.
+    2. **Scope-drift in normal tasks**: Lower priority. The 2 scope-drift sessions out of 39 normal-task sessions = 5% error rate. Not worth a structural intervention yet.
+  - **Decision — next iteration targets verify-wrap retry logic**:
+    - Find where retry task text is generated.
+    - Check whether it blindly constrains scope to the original file.
+    - If so, patch to either expand scope or skip retry when verification failure is in a different file.
+  - **Updated success criteria**: Change baseline from 0.822 to **0.726** (production-only). Milestone 1 target of 0.85 is actually a +0.124 lift, much harder than originally thought.
+  - **Lesson (KE-new)**: Always filter `source != "gym"` when measuring production quality. Gym sessions inflate averages and create false baselines.
