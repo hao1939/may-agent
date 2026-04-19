@@ -192,7 +192,7 @@ aggregates across all of them.
 - [x] ~~Consolidation sub-task~~ → `instruction-following-hypotheses.md` written (2026-04-18)
 - [x] ~~Design and build **persistent-task-adoption** gym scenario~~ (done, 7 iterations)
 - [x] ~~Define source queries for the 4 coach metrics~~ (see below)
-- [ ] **EXP-188**: Programmatic auto-detection — handler code scans for active projects, injects exact `workflow.run()` into task. Expected: 0%→~100%. Design in `EXP-186/design.md`.
+- [x] **EXP-188**: Finish-guard enforcement — blocks `finish(success)` unless `workflow.run("persistent-task")` called when active project detected. Result: 0%→100% (3/3). **PROMOTED** — guard deployed in `finish-guard.ts`.
 - [ ] Deploy metric-reaction G' framing to production (already tested, 100%)
 - [ ] Run metric-autonomy iter 6 (clean G)
 
