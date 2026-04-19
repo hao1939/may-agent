@@ -414,3 +414,9 @@ Each iteration:
   - **Production 7d (unchanged)**: n=90, avg 0.726. Daily: Apr 16 0.72 (7), Apr 17 0.718 (23), Apr 18 0.703 (11), Apr 19 0.9 (1).
   - **Decision — WAIT**: No data to evaluate. Resume when n≥15 post-Iter16 evals available.
   - **Next (Iter 19)**: Same as Iter 18 plan — re-query at next heartbeat.
+
+- 2026-04-19 Iteration 19 (monitoring check, 06:36Z) — **STILL WAITING: n=0 post-Iter16**:
+  - **Window**: Iter 16 deploy ~06:31Z → 06:36Z. 5 minutes. Still n=0 post-deploy coder evals.
+  - **Production 7d (unchanged)**: n=90, avg 0.726.
+  - **Decision — WAIT**: No data. Resume when n≥15 post-Iter16 evals available.
+  - **Next (Iter 20)**: Re-query at next heartbeat.

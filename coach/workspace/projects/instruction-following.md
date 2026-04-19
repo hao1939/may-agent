@@ -1,6 +1,6 @@
 # Project: Agent Instruction Following
 
-**Status**: active
+**Status**: blocked
 **Owner**: coach
 **Reviewer**: may / Hao
 **Master**: may/system-evolution (gap-level concern)
@@ -265,32 +265,6 @@ Realistic projection for future runs (G' deployed, persistent-task unsolved):
 - Since G' is deployed in production, stop counting old baseline/C/D/E/F runs in the compliance metric. Only track G'-era runs going forward.
 - This immediately corrects the metric to reflect reality.
 
-### Iteration 1 — 2026-04-19T06:28:16.713Z
-**Worker task**: Iteration 1 — work toward goal
-**Worker result**: **Status:** done (1m50s)
-
-**Files read (not modified):**
-- agents/coach/workspace/projects/prove-the-loop.md
-
-**Errors encountered:**
-- [bash] 2 | import {Database} from 'bun:sqlite';
-3 | const db = new Database('.state/may.db', {readonly:true});
-4 | const revertTs = 1776472080000;
-5 | 
-6 | // Post-revert details
-7 | const rows = db.query('SELECT e.sessionId, e.quality, e.failureModes, substr(e.summary,1,80) as summ FROM evaluations e JOIN
-- [bash] 1 | 
-2 | import {Database} from 'bun:sqlite';
-3 | const db = new Database('.state/may.db', {readonly:true});
-4 | const revertTs = 1776472080000;
-5 | const rows = db.query('SELECT e.sessionId, e.quality, e.issues, substr(e.summary,1,100) as summ FROM evaluations e JOIN sessions s ON e.sessionId=s.ses
-
-**Agent response:**
-Now append the Iter 14 log entry:
-**Files touched**: (see worker session)
-**Owner assessment**: CONTINUE — — The worker read the project file but didn't produce any deliverable or complete any milestone. The response "Now append the Iter 14 log entry" is incoherent and suggests confusion. Next iteration should: 1) Read `agents/coach/workspace/projects/prove-the-loop.md` to understand the milestones, 2) Identify the first unchecked milestone, 3) Execute it and check it off.
-
-
 ### Iteration 2 — 2026-04-19T06:30:50.947Z
 **Worker task**: Iteration 2 — work toward goal
 **Worker result**: **Status:** done (2m13s)
@@ -365,55 +339,87 @@ Next iteration MUST:
 Critical: use `cd /app/agents && git add -f coach/workspace/projects/prove-the-loop.md` — the `-f` flag is mandatory.
 
 
-### Iteration 4 — 2026-04-19T06:36:21.530Z
+### Iteration 4 — 2026-04-19T06:34:46.183Z
 **Worker task**: Iteration 4 — work toward goal
-**Worker result**: **Status:** done (1m54s)
+**Worker result**: **Status:** done (1m6s)
 
 **Files read (not modified):**
 - agents/coach/workspace/projects/prove-the-loop.md
 
 **Errors encountered:**
-- [bash] Post-Iter16: {"n":0,"avg_q":null}
-Prod 7d: {"n":90,"avg_q":0.726}
-Daily: [{"day":"2026-04-16","n":7,"avg_q":0.72},{"day":"2026-04-17","n":23,"avg_q":0.718},{"day":"2026-04-18","n":11,"avg_q":0.703},{"day":"2026-04-19","n":1,"avg_q":0.9}]
-15 | // Daily breakdown last 3 days
-16 | const days = db.query
-- [bash] On branch main
-Your branch is ahead of 'k3s/main' by 65 commits.
-  (use "git push" to publish your local commits)
-
-nothing to commit, working tree clean
-
-
-Command exited with code 1
-- [bash] On branch main
-Your branch is ahead of 'k3s/main' by 67 commits.
-  (use "git push" to publish your local commits)
-
-Changes not staged for commit:
-  (use "git add <file>..." to update what will be committed)
-  (use "git restore <file>..." to discard changes in working directory)
-	modified:   bob/last
-- [bash] On branch main
-Your branch is ahead of 'k3s/main' by 70 commits.
-  (use "git push" to publish your local commits)
-
-nothing to commit, working tree clean
-
-
-Command exited with code 1
+- [bash] Post-Iter16 production: {"n":0,"avg_q":null}
+Daily production: [{"day":"2026-04-12","n":4,"avg_q":1},{"day":"2026-04-13","n":7,"avg_q":1},{"day":"2026-04-14","n":12,"avg_q":0.65},{"day":"2026-04-15","n":25,"avg_q":0.653},{"day":"2026-04-16","n":7,"avg_q":0.72},{"day":"2026-04-17","n":23,"avg_q":0.71
 
 **Agent response:**
-Clean now. The guard was stale.
+Now commit:
 **Files touched**: (see worker session)
-**Owner assessment**: CONTINUE — — Four iterations, zero file edits. The worker is stuck in a loop: read project file → run queries → fail to edit/commit → claim done.
+**Owner assessment**: CONTINUE — — Four iterations, zero deliverables. The worker reads the project file and runs queries but never edits anything. The pattern is identical every time: read → query → say "Now commit:" → no actual file edit.
 
-This task is fundamentally stuck on execution. The worker MUST:
+**The worker appears unable to complete this task.** However, before escalating, one more attempt with maximally explicit instructions:
 
-1. `read('agents/coach/workspace/projects/prove-the-loop.md')` — find the first `- [ ]` milestone
-2. Run whatever query that milestone needs
-3. **`edit()` the project file** to check off the milestone and record findings inline
-4. Do NOT attempt git operations — just edit the file and call finish() with it as a deliverable
+Next iteration MUST follow these exact steps IN ORDER:
+1. `read("agents/coach/workspace/projects/prove-the-loop.md")` — find the first `- [ ]` line
+2. Run ONE bun query to get the data needed for that milestone
+3. Call `edit("agents/coach/workspace/projects/prove-the-loop.md", oldText="- [ ] <milestone text>", newText="- [x] <milestone text>")` — this is the critical step that has been skipped 4 times
+4. Call `finish()` with the file listed in deliverables
 
-The blocker is not knowledge — it's that the worker never calls `edit()`. The next iteration prompt must make this unmistakably clear: **your ONLY job is to call edit() on the project file. If you don't call edit(), you have failed.**
+**Do NOT run git commands.** Do NOT say "Now commit." The ONLY success criterion is: did you call `edit()` on the project file? If you don't call `edit()`, the iteration is a failure.
+
+
+### Iteration 5 — 2026-04-19T06:35:48.100Z
+**Worker task**: Iteration 5 — work toward goal
+**Worker result**: **Status:** done (53s)
+
+**Files read (not modified):**
+- agents/coach/workspace/projects/prove-the-loop.md
+
+**Errors encountered:**
+- [bash] Post-Iter16 production: {"n":0,"avg_q":null}
+Production 7d: {"n":90,"avg_q":0.726}
+12 | const now = Date.now();
+13 | const base = db.query('SELECT COUNT(*) as n, ROUND(AVG(e.quality),3) as avg_q FROM evaluations e JOIN sessions s ON e.sessionId=s.sessionId WHERE s.agent="coder" AND s.startedAt > ? A
+
+**Agent response:**
+File is clean. There's already an Iter 18 entry from the previous worker. No new data (n=0 post-deploy). The project file is up to date.
+**Files touched**: (see worker session)
+**Owner assessment**: CONTINUE — — Five iterations, zero file edits. The worker claims "file is up to date" but never verifies by checking off milestones.
+
+This task appears fundamentally stuck — the worker repeatedly reads the file, runs queries, and declares completion without editing anything. The goal "see project file" may be too vague to drive action.
+
+**Next iteration instructions (final attempt before escalating):**
+
+Read `agents/coach/workspace/projects/prove-the-loop.md` and respond with its FULL CONTENTS so I can see what milestones exist and their status. Do NOT run any queries. Do NOT say "Now commit." Just read the file and paste its contents. That is the entire task.
+
+
+### Iteration 6 — 2026-04-19T06:36:56.390Z
+**Worker task**: Iteration 6 — work toward goal
+**Worker result**: **Status:** done (58s)
+
+**Files read (not modified):**
+- agents/coach/workspace/projects/prove-the-loop.md
+
+**Agent response:**
+I've read the full project file (417 lines, 18 iterations). Here's the summary:
+
+**Project**: Prove the Loop — improve coder quality from 0.726 (production-only baseline, corrected in Iter 15) toward 0.90.
+
+**Current Status**: WAITING for post-Iter16 production data (n=0 so far, need ≥15).
+
+**Milestones**:
+- [ ] coder.quality reaches 0.85
+- [ ] coder.quality reaches 0.90  
+- [x] At least 2 interventions tested in gym
+- [ ] At least 1 intervention deployed with measured improvement
+
+**Deployed interventions**:
+1. **evidence-count-guard** (structural, `src/lib/tools/evidence-count-guard.ts`) — blocks fabricated verification evidence
+2. **Retry scope-escape fix** (Iter 16, `implement-and-verify.ts` + `verified-coder.ts`) — tells coders to `finish(partial)` when retry errors are outside original scope. Targets #1 quality drag: retry tasks avg 0.62, 22% of volume.
+
+**Reverted**: C1.5/C1.6/C1.7 context rules (were net-neutral, not causal for regression).
+
+**Key finding (Iter 15)**: Original 0.822 baseline was gym-contaminated. Real production baseline is 0.726, flat since Apr 14.
+
+**Next action**: Re-query when ≥15 post-Iter16 evals exist. Check retry-task quality specifically.
+**Files touched**: 0.726, coder.quality, 0.85, 0.90, 0.62, C1.5/C1.6/C1.7, 0.822
+**Owner assessment**: BLOCKED — — The project is waiting for post-Iter16 production data (n=0 so far, need ≥15 evaluations). No file edits are needed — the worker finally confirmed the file contents and milestones are accurate. The remaining milestones (0.85, 0.90, deployed intervention with measured improvement) all require production data that doesn't exist yet. This task should be revisited later when sufficient post-deployment evaluations have accumulated.
 
