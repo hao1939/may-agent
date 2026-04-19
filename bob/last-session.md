@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776590835079_7
+- **Session:** s_1776590606714_0
 - **Status:** done
-- **When:** 2026-04-19T09:27:17.813Z
-- **Duration:** 2s
+- **When:** 2026-04-19T09:27:30.001Z
+- **Duration:** 4m3s
 
 ## What Happened
-DONE — Project confirmed complete. All projects are marked done, INBOX is empty, no remaining work items. The gitignored projects dir is expected behavior.
+The workflow needs `project:` as a field prefix in the task string.

@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776590837936_8
+- **Session:** s_1776590840673_9
 - **Status:** done
-- **When:** 2026-04-19T09:27:24.938Z
-- **Duration:** 6s
+- **When:** 2026-04-19T09:27:28.939Z
+- **Duration:** 8s
 
 ## What Happened
 ```json
@@ -13,9 +13,8 @@
     "bob": {
       "role": "Philosopher/Architect",
       "capability_level": "L2",
-      "efficiency": 0.63,
+      "efficiency": 0.62,
       "quality": 0.70,
       "verdict": "acceptable",
       "issues": [
-        "[FM-2.6] Workflow invocation formatting errors: bob attempted persistent-task twice with malformed inputs, producing 'Missing required field: project' then 'Missing required field: goal' before succeeding.",
-        "[EFFICIENCY] Unresolved/abandoned investigative bash errors (bun:sql
+        "[SCOPE_DRIFT] Worker session goal was review/confirmation-only, but bob attempted additional validation work (startup overhead measurement) and produced repo changes that required a commit before finish(). Evidence: finish() blocked on uncommitted changes (M bob/last-session.md), then
