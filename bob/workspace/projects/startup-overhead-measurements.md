@@ -336,15 +336,16 @@ Total first message: 14,339 chars (~3,584 tokens). Sections:
 
 The Fix A' (recent-activity dashboard injection) targets behavioral overhead. Token overhead is harder to reduce without cutting context injection, which risks quality regression (KE-025, KE-103).
 
-### Deploy status (still blocked)
+### Deploy status — LIVE ✅ (as of 2026-04-19 05:43)
 
-`/usr/local/bin/may-agent` = Apr 18 08:17 (OLD). `bundle/may-agent` = Apr 19 02:33 (NEW, contains fix). Not deployed. Re-escalated.
+`/usr/local/bin/may-agent` updated to Apr 19 05:43 build containing `Injected: recent activity` block. Confirmed present in first post-deploy heartbeat session (`s_1776578641547_0` coach). Only 1 heartbeat cycle completed so far — need 3-7 days of data for validation.
 
-### Next iteration
+### Next iteration (iter 8)
 
-1. If deploy still not live → consider direct deploy from session
-2. If deployed → run validation measurements after 4-6h of heartbeat cycles
-3. Report final numbers against 10% target
+1. Wait ≥4h for 3+ heartbeat cycles post-deploy
+2. Re-run `bun agents/bob/workspace/measure-startup-overhead.ts` for validation snapshot
+3. Compare behavioral overhead (target: mean <25%, bob/optimizer <10%)
+4. If insufficient improvement, consider Fix B (project-state snippet) or Fix C (path cache)
 
 
 
