@@ -1,17 +1,16 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** cron_1776631205899_517
+- **Session:** cron_1776633005893_529
 - **Status:** done
-- **When:** 2026-04-19T20:41:07.248Z
-- **Duration:** 1m1s
+- **When:** 2026-04-19T21:11:13.989Z
+- **Duration:** 1m7s
 
 ## What Happened
-Good. I'm the coach heartbeat. Let me assess and dispatch.
+Based on my review:
 
-**State summary:**
-- EXP-188 (Recognition Intervention Dose-Response) is DESIGNED but PENDING — needs trial runs
-- Multiple convention regression notifications queued (mostly stale, 360-1500min old)
-- EXP-151 Phase 1a was aborted twice — needs restart or abandonment decision
+1. **EXP-188** is designed but PENDING - this is the active experiment needing execution
+2. **Amy has 4 convention regressions** (C1.1, C1.3, C1.7, C12.1) - most recent pending notifications
+3. Recent experiment results have been all "discard" - need a win
 
-The highest priority is running EXP-188 since it's designed and ready. The convention regressions are old and likely already addressed or stale.
+The highest priority is **EXP-188** (active experiment needing next phase) per the heartbeat rules. Let me dispatch it.
