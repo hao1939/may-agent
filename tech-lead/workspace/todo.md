@@ -1,7 +1,7 @@
 # TODO
 
 ## Lens Rotation
-Last: D (Fragility) — EventBus blast radius analysis (2026-04-19 03:03). Next: A.
+Last: A (System Architecture) — cron handler consolidation analysis (2026-04-19 03:32). Next: B.
 
 ## Upcoming
 - [ ] Heuristic evaluation over-rates by ~0.12 — consider adding LLM sampling to evaluation-sync.ts for top-level sessions (checkpoint from s_1776288692069_126 has the design)
