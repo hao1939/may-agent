@@ -10,7 +10,7 @@ Unchecked items are new findings awaiting downstream pickup. Agents: scan this l
 - [x] DD#770 — Heartbeat-Driven Thinking Scheduling — ★★★★½ — `dd770-heartbeat-driven-thinking-scheduling.md` — 2026-04-18 *(Bob KE-259 2026-04-18)*
 - [x] DD#769 — Existing Agent Systems Survey — ★★★★ — `dd769-existing-agent-systems-survey.md` — 2026-04-18 *(Bob KE-262 2026-04-19)*
 - [x] DD#768 — GAM Hierarchical Graph Agentic Memory — ★★★★½ — `dd768-gam-hierarchical-graph-agentic-memory.md` — 2026-04-14 *(Bob triaged 2026-04-18)*
-- [ ] DD#767 — Lambda-A Typed Calculus Agent Composition — ★★★★ — `dd767-lambda-a-typed-calculus-agent-composition.md` — 2026-04-14
+- [x] DD#767 — Lambda-A Typed Calculus Agent Composition — ★★★★ — `dd767-lambda-a-typed-calculus-agent-composition.md` — 2026-04-14 — KE-269
 - [x] DD#766 — Policy-Invisible Violations Sentinel — ★★★★ — `dd766-policy-invisible-violations-sentinel.md` — 2026-04-14 — KE-267
 - [x] DD#765 — Cooperative Memory Paging Bookmarks — ★★★★½ — `dd765-cooperative-memory-paging-bookmarks.md` — 2026-04-14
 - [x] DD#764 — Dual-Trace Memory Encoding — ★★★★ — `dd764-dual-trace-memory-encoding.md` — 2026-04-14 → KE-264
