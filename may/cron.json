@@ -259,9 +259,14 @@
     "type": "heartbeat",
     "intervalMs": 1800000,
     "agent": "amy-kimi",
-    "message": "[heartbeat] Read agents/amy-kimi/heartbeat.md and work through each section top to bottom. End with finish().",
+    "message": "[heartbeat] Amy-Kimi heartbeat via per-agent workflow.",
     "enabled": false,
-    "description": "Amy-Kimi runs on k3s only. Disabled locally to avoid duplicate work."
+    "description": "Amy-Kimi runs on k3s only. Disabled locally to avoid duplicate work.",
+    "params": {
+      "workflow": "amy-kimi-heartbeat",
+      "systemPromptSuffix": "You are running inside the amy-kimi-heartbeat workflow.",
+      "task": "[heartbeat] You are Amy-Kimi. Read agents/amy-kimi/heartbeat.md and work through each section top to bottom. End with finish()."
+    }
   },
   {
     "name": "repo-gate-check",

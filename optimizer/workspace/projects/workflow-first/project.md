@@ -3,7 +3,7 @@
 **Status**: active
 **Owner**: optimizer
 **Priority**: P0
-**Iteration**: 15
+**Iteration**: 16
 
 ## Goal
 Make workflows the default way agents work. Increase workflow coverage from 31% to 80%.
@@ -16,7 +16,15 @@ Make workflows the default way agents work. Increase workflow coverage from 31% 
 - [ ] Measure coverage improvement
 
 ## Current State
-Iteration 15 complete. **Status:** done (6m38s)
+Iteration 16 complete. **Status:** done (2m27s)
+
+**Files modified:**
+- agents/shared/knowledge/library/deep-dives/workflow-audit-iter16.md
+- DELIVERABLES_CHECKLIST.md
+
+**Files read (not modified):**
+- agents/may/cron.json
+-
 
 **Files modified:**
 - agents/shared/workflows/agent-heartbeat.ts
@@ -177,6 +185,11 @@ Command exited with c
 **Files modified:**
 - agents/shared/workflows/agent-heartbeat.ts
 - agents/
+
+- **Iter 16**: **Status:** done (2m27s)
+
+**Files modified:**
+- agents/shared/knowledge/library/deep-dives/workflow-
 
 
 ## Comments
