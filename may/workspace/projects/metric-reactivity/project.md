@@ -29,7 +29,7 @@ Agents should react to metric alerts. Currently 4 alerts are firing with zero re
 
 ## Milestones
 - [x] Investigate: why don't agents see alerts? Map the gap between alert creation and agent awareness
-- [ ] Design: how should alerts reach the responsible agent? Options: heartbeat injection, notification, handler
+- [x] Design: how should alerts reach the responsible agent? Options: heartbeat injection, notification, handler
 - [ ] Build: implement alert delivery mechanism
 - [ ] Verify: trigger a test alert, confirm the responsible agent sees and reacts to it
 - [ ] Measure: track alert-to-reaction time as a metric
