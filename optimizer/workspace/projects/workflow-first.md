@@ -27,15 +27,47 @@ When a process is proven and should be reused (persistent-task for projects, imp
 | `optimizer.repeat-task-detection` | continuous | Repeat patterns identified and converted to workflows per week | ≥2 |
 | `optimizer.workflow-effectiveness` | health | % of workflow runs that complete successfully vs freestyle | >90% |
 
-## How to Drive It
+## Current Workflows (audit — updated iter 27)
 
-### Detection
-Optimizer reviews session transcripts for patterns:
-- Agent does 3+ tool calls in a recognizable sequence → candidate for workflow
-- Same sequence appears in multiple sessions → confirmed repeat task
-- Agent's heartbeat describes a multi-step process in prose → should be a workflow
+| Workflow | Location | Status |
+|----------|----------|--------|
+| persistent-task | shared/workflows/ | ✅ Active, core |
+| implement-and-verify | shared/workflows/ | ✅ Active |
+| implement-and-review | shared/workflows/ | ✅ Active |
+| verify-wrap | shared/workflows/ | ✅ Active |
+| parallel-research | shared/workflows/ | ⚠️ Rare — review |
+| fewshot-inject-helpers | shared/workflows/ | ✅ Active |
+| safe-edit | optimizer/workflows/ | ✅ Active |
+| design-review | optimizer/workflows/ | ✅ Active |
+| investigate-and-fix | optimizer/workflows/ | ✅ Active |
+| enhance-cron | optimizer/workflows/ | ✅ Active |
+| growth-cycle | coach/workflows/ | ✅ Active |
+| training-sprint | coach/workflows/ | ✅ Active |
+| gym-helpers | coach/workflows/ | ✅ Active |
+| verified-coder | tech-lead/workflows/ | ✅ Active |
+| lens-analysis | tech-lead/workflows/ | ✅ Active |
+| project-monitor | may/workflows/ | ✅ Active |
+| vet-skill | qa/workflows/ | ✅ Active |
+| auto-loop | — | ❌ Removed (confirmed not on disk) |
+| skill-lifecycle | — | ❌ Removed (confirmed not on disk) |
+| error-scan | — | ❌ Removed (confirmed not on disk) |
 
-### Creation
-When a pattern is detected:
-1. Design the workflow (steps, inputs, outputs)
-2. Implement as `agents/<owner>/workflows/<name>.ts` or `agents/shared/workflows/<name>.ts`
+**Total**: 17 active workflows across 5 agents + shared.
+
+## Candidate Patterns to Convert
+
+From agent self-assessments and session archaeology:
+- **review-output** — Coach/tech-lead "review-only assessment" freestyle pattern → standardize as workflow
+- Bob: find paper → evaluate → write deep dive → generate hypothesis → link to system
+- Tech-lead: pick lens → investigate → write finding → dispatch fix
+- Scout: triage arXiv → filter → deep dive → cross-reference
+- May: receive request → triage → dispatch to agent → follow up
+
+## Milestones
+
+- [x] Audit table updated with accurate filesystem data (iter 27)
+- [x] Confirmed dead workflows removed: auto-loop, skill-lifecycle, error-scan
+- [x] Discovered 17 actual workflows (was tracking only 8)
+- [ ] Evaluate parallel-research usage — keep or remove?
+- [ ] Design and create review-output workflow from freestyle pattern
+- [ ] Measure workflow-coverage metric baseline
