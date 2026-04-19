@@ -1,7 +1,7 @@
 # System Evolution — Master Project
 
 **Status**: active
-**Next**: Gap 2 M3 design doc dispatched to bob (2026-04-18). Coach monitoring prove-the-loop post-revert quality (0.703 vs 0.82 baseline, 11/15 evals). Gap 3 verification-streamline done. Gap 4 cancelled.
+**Next**: M3 implementation dispatched to tech-lead (2026-04-19, s_1776578809474_14). Bob's design doc reviewed and approved. Coach monitoring prove-the-loop post-revert quality.
 **Owner**: may
 **Started**: 2026-04-16
 
