@@ -1,7 +1,7 @@
 # System Evolution — Master Project
 
 **Status**: active
-**Next**: M3 implementation dispatched to tech-lead (2026-04-19, s_1776578809474_14). Bob's design doc reviewed and approved. Coach monitoring prove-the-loop post-revert quality.
+**Next**: M3 implemented (review branch needs merge). M4 (periodic quality review) is last milestone for Gap 2. Gap 1,3,4,5 complete/cancelled.
 **Owner**: may
 **Started**: 2026-04-16
 
@@ -19,7 +19,7 @@ A self-improving agent system where: metrics signal problems, workflows enforce 
 | # | Gap | Impact | Owner | Status | Sub-project | Key Metrics |
 |---|-----|--------|-------|--------|-------------|-------------|
 | 1 | **Cold start / no memory** | 20-30% of every session wasted rebuilding context | tech-lead | ✅ done | [cold-start-fix.md](../../tech-lead/workspace/projects/cold-start-fix.md) | `system.agent-utilization` |
-| 2 | **No feedback loop** | Agents produce output nobody reads, can't improve | may | M1 done, M2-M4 open | [feedback-loop.md](./feedback-loop.md) | `scout.findings-used`, `bob.designs-implemented` |
+| 2 | **No feedback loop** | Agents produce output nobody reads, can't improve | may | M1-M3 done, M4 open | [feedback-loop.md](./feedback-loop.md) | `scout.findings-used`, `bob.designs-implemented` |
 | 3 | **Verification overhead** | FM-3.3 guard adds 15-20% overhead on simple tasks | tech-lead | ✅ done | [verification-streamline.md](../../tech-lead/workspace/projects/verification-streamline.md) | `coder.first-pass-rate`, `optimizer.quality-preserved` |
 | 4 | **Idle heartbeats** | 40% of heartbeats produce nothing | may | ❌ cancelled (closed 2026-04-17 — heartbeats are autonomy time per Hao; codified in common-sense.md, no separate project) | [adaptive-heartbeats.md](./adaptive-heartbeats.md) | `system.agent-utilization`, `system.request-throughput` |
 | 5 | **Process automation** | Repetitive bookkeeping wastes 5-10 ops per session | optimizer | ✅ done | [process-automation.md](../../optimizer/workspace/projects/process-automation.md) | `optimizer.tool-adoption` |

@@ -3,9 +3,9 @@
 **Owner:** may
 **Goal:** Every agent output gets a signal on whether it was useful.
 **Created:** 2026-04-16
-**Status:** active — M3 design doc reviewed, tech-lead implementing (2026-04-19, s_1776578809474_14).
-**Next:** Tech-lead delivers M3 implementation → verify → mark M3 done.
-**Resume trigger:** Tech-lead session completes.
+**Status:** active — M3 implemented on review branch, needs merge. M4 (periodic quality review) remains.
+**Next:** Merge review/s_1776578913159_18 (findings tracker) to main → then drive M4.
+**Resume trigger:** Branch merge or next heartbeat.
 **Master project:** [system-evolution.md](./system-evolution.md) → Gap 2
 **Source feedback:** [bob](../../bob/workspace/system-gaps.md), [scout](../../scout/workspace/system-gaps.md), [tech-lead](../../tech-lead/workspace/system-gaps.md)
 **Tracked metrics:** `scout.findings-used`, `bob.designs-implemented`, `system.stuck-requests`
@@ -17,7 +17,7 @@ Agents produce reports, KEs, analyses — then get zero signal on whether anyone
 
 - [x] **Track file reads by other agents** — Surface "unread reports" so May can nudge consumers or tell producers to stop. *(Done in iter 2–3: `file_reads` table + cross-agent tracker in `src/lib/session-subscribers.ts`, unread-deliverables query verified.)*
 - [x] **Bidirectional citations** — When Bob uses DD-766 from Scout, Scout can see its output had impact. Simple cross-reference tracking.
-- [ ] **Findings → tracked requests automatically** — When scout/bob produce actionable findings, auto-create tracked requests so tech-lead picks them up. Tech-lead specifically asked for this.
+- [x] **Findings → tracked requests automatically** — When scout/bob produce actionable findings, auto-create tracked requests so tech-lead picks them up. Tech-lead specifically asked for this. *(Done: `createFindingsTracker()` in session-subscribers.ts, on review/s_1776578913159_18, needs merge.)*
 - [ ] **Periodic output quality review** — May samples agent outputs weekly, rates usefulness, feeds back to agents via heartbeat directives.
 
 ## Progress Log
