@@ -1,6 +1,6 @@
 # Project: Agent Autonomy — Roles, Responsibilities & Heartbeats
 
-**Status**: active
+**Status**: blocked
 **Owner**: coach
 **Priority**: P1
 **Iteration**: 8
@@ -40,7 +40,7 @@ Agents are passive. They wait for tasks instead of proactively finding and drivi
 
 
 ## Current State
-Iteration 8 complete. **Status:** done (1m53s)
+Blocked: The task has been spinning for 4+ iterations writing files to `/tmp/` (heartbeat-status.md, heartbeat-verification.md, etc.) without actually modifying any agent heartbeat.md files in the repository. The worker is producing auxiliary documents but not advancing any of the 5 milestones. The core issue: the worker needs to edit actual agent configuration files (heartbeat.md, SOUL.md) in the codebase, not create temp files. Without clarity on where these agent files live and permission to edit them, this will continue looping.
 
 **Files modified:**
 - /tmp/heartbeat-verification.md
