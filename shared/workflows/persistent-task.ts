@@ -183,6 +183,21 @@ function extractComments(content: string): string {
   return match ? match[1].trim() : "";
 }
 
+// Find which comments have already been processed in comment iterations.
+// If no comment iterations exist in journal, return "" so all comments trigger review.
+function getLastSeenComments(journalContent: string, projectContent: string): string {
+  // If journal has any comment iteration, the comments up to that point were processed
+  const commentIterations = journalContent.match(/### Iteration \d+ \(comment\)/g);
+  if (commentIterations && commentIterations.length > 0) {
+    // All comments that existed at the time of the last comment iteration are "seen"
+    // Since we can't know exactly which, use current comments as baseline
+    // (new comments added after will differ)
+    return extractComments(projectContent);
+  }
+  // No comment iterations ever ran — all current comments are unprocessed
+  return "";
+}
+
 // ── Get last reviewer guidance from journal ────────────────────────────
 
 function getLastGuidance(journalContent: string, iteration: number): string | null {
@@ -332,7 +347,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   let consecutiveFailures = 0;
   let continueWithoutProgress = 0;
   let lastMilestoneDone = extractMilestones(projectContent).done;
-  let lastSeenComments = extractComments(projectContent) ?? "";
+  // Initialize from journal — comments already processed in comment iterations are "seen"
+  let lastSeenComments = getLastSeenComments(config.isLegacy ? projectContent : (readFile(config.journalPath) ?? ""), projectContent);
 
   // Mark active (field-level update)
   projectContent = updateField(projectContent, "Status", "active");
