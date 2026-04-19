@@ -3,7 +3,7 @@
 **Status**: active
 **Owner**: optimizer
 **Priority**: P0
-**Iteration**: 5
+**Iteration**: 6
 
 ## Goal
 Make workflows the default way agents work. Increase workflow coverage from 31% to 80%.
@@ -16,7 +16,15 @@ Make workflows the default way agents work. Increase workflow coverage from 31% 
 - [ ] Measure coverage improvement
 
 ## Current State
-— All 5 milestones are complete. The measurement report exists at `agents/optimizer/workspace/coverage-measurement.md` with concrete data.
+Iteration 6 complete. **Status:** done (3m29s)
+
+**Files modified:**
+- agents/optimizer/workspace/coverage-measurement.md
+- DELIVERABLES_CHECKLIST.md
+
+**Files read (not modified):**
+- agents/may/cron.json
+- agents/shared/wo
 
 **Summary of what was accomplished across iterations:**
 1. ✅ Audit existing workflows — categorized keep/archive/investigate
@@ -96,6 +104,12 @@ Command exited with c
 **Files read (not modifie
 
 - **Iter 5**: — All 5 milestones are complete. The measurement report exists at `agents/optimizer/workspace/covera
+
+- **Iter 6**: **Status:** done (3m29s)
+
+**Files modified:**
+- agents/optimizer/workspace/coverage-measurement.md
+-
 
 
 ## Comments

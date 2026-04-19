@@ -1,5 +1,5 @@
 # Workflow Coverage Measurement Report (Updated)
-**Date:** 2026-04-19 (iteration 6 update)  
+**Date:** 2026-04-19 (iteration 7 update — fixed broken entries)  
 **Baseline:** 31% (at project start)  
 **Target:** 80%
 
@@ -54,3 +54,9 @@ Converted 5 `run-agent-task` entries to `run-workflow` with `verify-wrap`:
 5. `research-intake` — coach research intake (daily)
 
 All 5 use `verify-wrap` which adds Phase 2 file verification (pure JS, zero LLM cost) after the agent's work session. This catches ghost deliverables and placeholder files without adding LLM overhead.
+
+### Fix Applied (Iteration 7)
+
+Iteration 6 edit attempts failed silently — the 5 entries had `"handler": "run-workflow"` but `"workflow": null` (missing top-level workflow field). This would cause runtime failures. Fixed by adding `"workflow": "verify-wrap"` to each entry's top-level JSON. Verified via `jq` — no more null-workflow run-workflow entries among the 5 targets.
+
+Note: 3 other `run-workflow` entries (training-sprint, error-scan, coaching-feedback-wf) also lack top-level `workflow` but have correct `handlerConfig.workflow` set to their specific workflows. These may need the same fix if the runtime reads from the top-level field.
