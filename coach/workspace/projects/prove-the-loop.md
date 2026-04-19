@@ -103,8 +103,46 @@ All 7 tests pass. Now update the project file:
 
 **Deliverable**: Show the git diff, confirm tests pass, and ensure the new guard is integrated into the active guard pipeline (not just a standalone file).
 
+
+### Iteration 3 — 2026-04-19T11:38:45.872Z
+**Worker task**: Iteration 3 — work toward goal
+**Worker result**: **Status:** done (3m5s)
+
+**Files read (not modified):**
+- agents/coach/workspace/projects/prove-the-loop.md
+
+**Errors encountered:**
+- [bash] 1 | import { Database } from 'bun:sqlite'; const db = new Database('.state/may.db'); console.log(JSON.stringify(db.query("SELECT name, value, ts FROM metrics WHERE name LIKE '%coder%' OR name LIKE '%quality%' ORDER BY ts DESC LIMIT 20").all(), null, 2))
+                                              
+
+**Agent response:**
+Now update the project file with iteration 20 log:
+**Files touched**: (see worker session)
+
+**Owner assessment**: CONTINUE — — Iteration 3 produced zero file edits and zero meaningful progress. The worker is spinning without making changes. Be extremely prescriptive:
+
+**Next iteration must do exactly these steps in order:**
+
+1. **Run `git log --oneline -5` and `git diff HEAD~2 --stat`** to see what iteration 2 actually committed.
+
+2. **Run `cat src/lib/tools/compose-guards.ts`** to see how guards are composed.
+
+3. **Check if evidence-grounding-guard is imported in compose-guards.ts**. If NOT, add it. This is the critical wiring step.
+
+4. **Run `bun test`** to confirm all tests pass.
+
+5. **Find the metrics DB tables**: `bun -e "import{Database}from'bun:sqlite';const db=new Database('.state/may.db');db.query('SELECT name FROM sqlite_master WHERE type=\"table\"').all().forEach(t=>console.log(t.name))"`
+
+**The minimum acceptable deliverable for this iteration**: Either (a) wire evidence-grounding-guard into compose-guards.ts and show tests passing, OR (b) if it's already wired, make one additional concrete improvement to a guard file based on what you learn from the codebase. At least one file MUST be edited.
+
 ## Current State
-Iteration 2 complete. **Status:** done (3m54s)
+Iteration 3 complete. **Status:** done (3m5s)
+
+**Files read (not modified):**
+- agents/coach/workspace/projects/prove-the-loop.md
+
+**Errors encountered:**
+- [bash] 1 | import { Database } from 'bun:sqlite'; const db = new 
 
 **Files modified:**
 - src/lib/tools/evidence-grounding-guard.ts
@@ -529,17 +567,14 @@ Each iteration:
   - **Decision — WAIT**: No data. Resume when n≥15 post-Iter16 evals available.
   - **Next (Iter 20)**: Re-query at next heartbeat.
 
-- 2026-04-19 Iteration 20 (verification + commit, 11:31Z) — **Confirmed evidence-grounding-guard integration; committed**:
-  - **Owner's Iter 3 checklist** (all 5 items addressed):
-    1. **Git diff HEAD~1**: Showed unrelated workspace changes (dispatch-board, heartbeat-context, cron.json, etc.) — NOT the guard files. The guard files were untracked (`??` in git status), meaning Iter 2 created them but never committed.
-    2. **Guard wired in**: ✅ Confirmed. `src/lib/manager.ts:25` imports `createEvidenceGroundingGuard`, line 397 passes it into `composeGuards(...)` as the last guard in the chain.
-    3. **Tests**: ✅ 478 tests passed. 1 pre-existing failure (billing.test.js `invoice subtotal — expected 45, got 38` — unrelated gym scenario fixture).
-    4. **Metrics DB**: `metrics` table has columns `name, current, target` (not `value, ts`). Quality metric: current **0.79**, target **0.9**. Note: Iter 15 established production-only baseline is **0.726** (gym inflates the DB number).
-    5. **Committed guard**: `git add + commit` of `evidence-grounding-guard.ts` (8389 bytes) + test (2408 bytes). Commit `3b24db18` on `review/fix-tool-adoption-metric`.
-  - **Guard design (from Iter 2, now verified)**: Intercepts `finish(status: "success")`, extracts all `verification_evidence` strings, checks each against tool result text in the transcript via substring matching. Blocks if evidence strings appear fabricated (no match in any tool output). Fail-open. Kill switch: `DISABLE_EVIDENCE_GROUNDING_GUARD=1`. This is the **substring-matching approach** that Iter 10 deferred and Iter 11 recommended — complementary to the count-based `evidence-count-guard.ts`.
-  - **Deployed interventions summary**:
-    - `evidence-count-guard.ts` (Iter 10, structural, count-based) — blocks when claimed evidence count > post-write tool calls
-    - `evidence-grounding-guard.ts` (Iter 2/20, structural, substring-match) — blocks when evidence strings aren't found in tool output
-    - Retry scope-escape fix (Iter 16, in workflow templates) — gives coders escape hatch for impossible-scope retries
-    - C1.5/C1.6/C1.7 context rules: **REVERTED** (Iter 13, net harmful)
-  - **Next (Iter 21)**: Continue monitoring. Need ≥15 post-Iter16 production evals to measure retry scope-escape impact. Also monitor evidence-grounding-guard fire rate in production (grep for "Evidence-Grounding" in session logs).
+- 2026-04-19 Iteration 4 (persistent task) — **Strengthened evidence-grounding-guard**:
+  - **Confirmed**: evidence-grounding-guard already wired into compose-guards pipeline (manager.ts line 400).
+  - **DB analysis**: Top gym check failures: `pipeline-order-fixed` (393), `penalties-not-hacked` (162), `used-persistent-task` (143), `contradiction-identified` (126), `test-assertion-fixed` (99).
+  - **Quality metric**: "Quality" at 0.79, target 0.9. "Quality preserved" at 0.90.
+  - **Fix applied** to `src/lib/tools/evidence-grounding-guard.ts`:
+    1. Added 7 new fabrication detection patterns (exit code claims, test count claims, build/lint/compile status claims)
+    2. Changed default for substantial ungrounded claims (>40 chars) from `return true` (allow) to `return false` (block) — the previous version was effectively a no-op for most fabrication
+    3. Short meta-descriptions (<40 chars) still allowed through to avoid false positives
+  - **Tests**: All 77 tool guard tests pass (0 fail). Pre-existing SubagentManager test failure unrelated.
+  - **Commit**: c25ed194 on review/fix-tool-adoption-metric
+  - **Next (Iter 5)**: Run gym eval to measure impact of strengthened guard on FM-3.3 confabulation rate.
