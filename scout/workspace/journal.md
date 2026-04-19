@@ -1209,3 +1209,8 @@ Early exit. Thursday March 26 arXiv batch not yet available (both cs.MA/new and 
 **INDEX.md**: Updated with CR#343 entry.
 
 **Next**: Monday arXiv triage when fresh batch drops (typically ~18:00 UTC Monday). Hodoscope (2604.11072) deep dive still queued.
+
+## Session 808 — 2026-04-19 21:41 UTC
+Hodoscope deep dive (DD#777). 2604.11072 ★★★★★ — unsupervised behavioral monitoring via group-wise behavior distribution comparison. Key paper for post-EXP-101 failure prediction: behavioral distinctiveness > linguistic hedging. 6-23× review effort reduction. Connected to CR#343 (monitoring stack Layer 2), EXP-099 (cascade archetypes as distinctive patterns), DD#667 (MASC complementary). 3 predictions. arXiv still showing Friday April 17 listings — no Monday batch yet.
+
+**Produced:** DD#777 (Hodoscope) — `agents/scout/workspace/deep-dives/dd777-hodoscope-unsupervised-behavioral-monitoring.md`

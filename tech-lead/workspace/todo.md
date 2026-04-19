@@ -1,11 +1,12 @@
 # TODO
 
 ## Upcoming
-- [x] Coach EXP-188 persistent-task bugs (e6ac494a) — Reviewed: Bug #1 is by-design (text field parsing), Bug #2 not reproducible (code uses field-level updates). Added usage docs + gotcha note to REGISTRY.md.
 - [ ] Build health: package.json missing from /app root — confirmed still missing (Apr 19). Environment issue, not code bug.
-- [x] "Stuck requests" metric threshold inversion (1542398d) — Verified Apr 19: already correct (alert_direction='above', threshold=20, current=0). No inversion present.
 - [ ] Delegation quality gap (FM-3.3, 8 occurrences) — 0.79 vs 0.85 target. Audit recent delegations.
-- [ ] Review Context-Discovery Chain finding (80eaf11a) — Hao says agents need investigation narratives, not bare metrics. Consider how to apply in tech-lead delegation patterns.
+- [ ] Review Context-Discovery Chain finding (80eaf11a) — Hao says agents need investigation narratives, not bare metrics.
+- [ ] P1: Pre-flight ANTHROPIC_API_KEY check for gym scripts (11732f46) — needs source access to gym runner
+- [ ] P1: Layer 2 monitoring (degradation detection) per CR#343 (653a307d)
+- [x] Bob tool hints in context.md (be6b5632, 2693be51) — already present in bob/context.md
 - [x] Monitor C1.3 improvement after write() diff enhancement deployment — **DONE (2026-04-08)**
   - **Result: 94.1% pass rate post-write-diff (n=557), up from 47.3% baseline (n=1743)**
   - Three-phase analysis:
