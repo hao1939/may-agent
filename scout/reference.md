@@ -88,3 +88,5 @@ Types: `deep-dive`, `hypothesis`, `triage`, `knowledge-entry`.
 
 ### Safety: Read-then-Edit
 Every file modification must follow: read() → edit() with exact oldText. For write() of new files: immediately read() back to verify.
+
+---

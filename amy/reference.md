@@ -13,3 +13,5 @@
 
 ### Idle Playbook
 When nothing is assigned and no overdue periodic task: consult `agents/shared/may-agent-docs/idle-playbook.md` and pick one item.
+
+---

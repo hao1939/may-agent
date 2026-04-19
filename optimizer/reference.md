@@ -53,3 +53,5 @@ Rules: Must be concrete. Don't use for <3 op fixes. Route system-scope changes t
 
 ### Monthly Code Hygiene
 If >30 days since last cleanup (`git log --oneline --grep="code cleanup" -1`), flag a code hygiene audit.
+
+---
