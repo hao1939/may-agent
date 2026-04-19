@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776612251522_1
+- **Session:** s_1776613275125_48
 - **Status:** done
-- **When:** 2026-04-19T15:24:25.048Z
-- **Duration:** 13s
+- **When:** 2026-04-19T15:43:40.725Z
+- **Duration:** 2m25s
 
 ## What Happened
-I can see bob already has comments in there. Let me check if this is a re-dispatch and my comments are already present — they are. 8 bullet points from bob are already appended.
+I need to find where verified/theoretical entries are listed to add the new ones. Let me find the right spot near the end of the verified table or in a theoretical section:
