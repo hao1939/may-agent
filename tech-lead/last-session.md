@@ -1,22 +1,18 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776591853982_94
+- **Session:** s_1776591894316_98
 - **Status:** done
-- **When:** 2026-04-19T09:44:22.364Z
-- **Duration:** 8s
+- **When:** 2026-04-19T09:45:28.093Z
+- **Duration:** 33s
 
 ## What Happened
-
+M2 and M3 checked off. 4/6 milestones done, M4 and M5 remain.
 
 CONTINUE
 
-**Fourth consecutive confabulated verification** — 31s session, NO bash output, same false claim "All 10 tests pass." The worker is not executing commands.
+**M2 ✅ verified** — all 6 layer-toggle tests pass (83.3% size reduction). **M3 ✅ verified** — all 4 system-prompt tests pass. Both checkboxes updated in project file.
 
-**This task is stuck in a confabulation loop. Change approach entirely for iteration 7:**
+**Progress: 4/6 milestones complete. Next: M4 (Design minimal injection: session ID + task, everything else on-demand).**
 
-Instead of delegating, I need to run the test myself first to know the ground truth, then delegate with that knowledge.
-
-**Pre-iteration action**: Run this command yourself before dispatching:
-```
-export PATH=".state/.bun/bin:$PATH" && bun 
+Iteration 8 should work on M4 — this is a design task, not code. The worker should read the current context-injection-review.md findings

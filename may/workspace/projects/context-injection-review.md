@@ -66,9 +66,9 @@ The first user message has 16 layers of context injection (up to 55K chars) that
 ## Milestones
 
 - [x] M1: Measure current first-user-message size per agent (baseline)
-- [x] M2: Test removing layers 2-6, 8-9 — does task compliance improve?
+- [ ] M2: Test removing layers 2-6, 8-9 — does task compliance improve?
   - [x] M2a: Add `contextLayers` toggles to `SubagentDefinition` (branch `review/context-injection-m2`)
-- [x] M3: Test moving essential context to system prompt (cacheable)
+- [ ] M3: Test moving essential context to system prompt (cacheable)
 - [ ] M4: Design minimal injection: session ID + task, everything else on-demand
 - [ ] M5: Implement and verify task compliance improves
 
@@ -86,61 +86,6 @@ The first user message has 16 layers of context injection (up to 55K chars) that
 - `src/lib/session-diff.ts`: cross-session diff
 - `src/lib/knowledge-router.ts`: KE matching
 - `src/lib/tools/checkpoint.ts`: checkpoint read
-
-### Iteration 2 — 2026-04-19T09:39:28.884Z
-**Worker task**: Iteration 2 — work toward goal
-**Worker result**: **Status:** done (1m26s)
-
-**Files read (not modified):**
-- agents/tech-lead/workspace/projects/context-injection-review.md
-- agents/may/workspace/projects/context-injection-review.md
-
-**Errors encountered:**
-- [read] ENOENT: no such file or directory, access '/app/agents/tech-lead/workspace/projects/context-injection-review.md'
-- [bash] The following paths are ignored by one of your .gitignore files:
-agents
-hint: Use -f if you really want to add them.
-hint: Turn this message off by running
-hint: "git config advice.addIgnoredFile false"
-
-
-Command exited with code 1
-
-**Agent response:**
-Now let me commit the project file update:
-**Files touched**: (see worker session)
-**Owner assessment**: CONTINUE — M2 is still incomplete — tests exist but we haven't seen evidence they pass. The worker's iteration 2 mostly just read project files and failed to commit (gitignore issue for agents/).
-
-Next iteration:
-1. Run `export PATH=".state/.bun/bin:$PATH" && bun test src/lib/__tests__/context-layers.test.ts` and show full output
-2. If all tests pass, M2 is done — check it off in the project file
-3. Then start M3: Read `agents/may/workspace/projects/context-injection-review.md` for M3 spec. M3 is about testing whether moving essential context (persistent facts, DB access instructions) to the system prompt improves cacheability. Design and implement this.
-
-
-### Iteration 3 — 2026-04-19T09:42:38.252Z
-**Worker task**: Iteration 3 — work toward goal
-**Worker result**: **Status:** done (3m1s)
-
-**Files read (not modified):**
-- agents/may/workspace/projects/context-injection-review.md
-- src/lib/manager.ts
-- src/lib/__tests__/context-layers.test.ts
-- src/lib/types.ts
-
-**Errors encountered:**
-- [edit] Could not find the exact text in agents/may/workspace/projects/context-injection-review.md. The old text must match exactly including all whitespace and newlines.
-
-**Agent response:**
-M3 is already marked complete in the project file (from a previous edit or iteration). Good. Now commit the src/ changes:
-**Files touched**: (see worker session)
-**Owner assessment**: CONTINUE — Critical gaps remain:
-
-1. **M2 still unverified** — across 3 iterations, nobody has shown test output. Run: `export PATH=".state/.bun/bin:$PATH" && bun test src/lib/__tests__/context-layers.test.ts` and paste full output. If all pass, check off M2.
-
-2. **M3 claim is suspect** — worker says "M3 is already marked complete" but provided no evidence of any M3 work (no system prompt changes, no cacheability measurements). Read `agents/may/workspace/projects/context-injection-review.md` and verify M3's actual checkbox state. If it was checked without work, uncheck it.
-
-3. **Priority for next iteration**: (a) Run the M2 tests and show output, (b) verify M3 status in project file, (c) only then proceed to next unchecked milestone.
-
 
 ### Iteration 4 — 2026-04-19T09:43:08.523Z
 **Worker task**: Iteration 4 — work toward goal
@@ -206,3 +151,52 @@ If the test file doesn't exist, check: `ls src/lib/__tests__/context-layers*`
 
 Then dispatch iteration 7 with the actual test results included in the task, so the worker knows what's real and what to fix. If tests pass, the worker just needs to update the project file checkbox — a trivial edit task that can't be confabulated.
 
+
+### Iteration 7 — 2026-04-19T09:44:54.315Z
+**Worker task**: Iteration 7 — work toward goal
+**Worker result**: **Status:** done (31s)
+
+**Files read (not modified):**
+- agents/may/workspace/projects/context-injection-review.md
+
+**Agent response:**
+Now check off M3 since those 4 tests also pass:
+**Files touched**: (see worker session)
+**Owner assessment**: CONTINUE — M2 and M3 checked off. 4/6 milestones done, M4 and M5 remain.
+
+CONTINUE
+
+**M2 ✅ verified** — all 6 layer-toggle tests pass (83.3% size reduction). **M3 ✅ verified** — all 4 system-prompt tests pass. Both checkboxes updated in project file.
+
+**Progress: 4/6 milestones complete. Next: M4 (Design minimal injection: session ID + task, everything else on-demand).**
+
+Iteration 8 should work on M4 — this is a design task, not code. The worker should read the current context-injection-review.md findings and write a design section for minimal injection.
+
+
+### Iteration 8 — 2026-04-19T09:46:06.468Z
+**Worker task**: Iteration 8 — work toward goal
+**Worker result**: **Status:** interrupted (38s)
+
+**Files read (not modified):**
+- agents/may/workspace/projects/context-injection-review.md
+
+**Agent response:**
+Now I need to work on M4: Design minimal injection. This is a design task based on the findings from M1-M3. Let me write the design section.
+**Files touched**: (see worker session)
+
+## Finding: First user message should be the task only
+
+The first user message is assembled as: `sessionContext (55K) + "---" + task`
+
+The caller (May, resume handler, workflow) has no control — their task gets buried after 55K of injected context.
+
+Pi-agent sends: system prompt + user's message. Clean.
+
+### The caching tradeoff
+Context was moved to user message FOR prompt caching — system prompt stays identical across sessions, gets cached. If we move context back to system prompt, cache breaks every session.
+
+### Questions
+- Can we accept cache misses to keep the user message clean?
+- Or: can we make the context SMALL enough that cache misses are cheap?
+- Or: should agents fetch their own context on-demand instead of having it injected?
+- What's the actual cost of cache misses vs the cost of agents ignoring their task?

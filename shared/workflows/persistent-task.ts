@@ -64,7 +64,18 @@ function parseInput(raw: string, callingAgent: string): PersistentTaskConfig {
   const projectPath = field("project");
   if (!projectPath) throw new Error("Missing required field: project");
 
-  const goal = field("goal");
+  let goal = field("goal");
+
+  // If goal is generic/placeholder, try to read it from the project file
+  if (!goal || goal === "see project file" || goal === "continue the project") {
+    if (projectPath) {
+      try {
+        const projContent = readFileSync(projectPath, "utf-8");
+        const goalMatch = projContent.match(/^## Goal\n([\s\S]*?)(?=\n## |$)/m);
+        if (goalMatch) goal = goalMatch[1].trim().split("\n")[0]; // first line of Goal section
+      } catch { /* file may not exist yet */ }
+    }
+  }
   if (!goal) throw new Error("Missing required field: goal");
 
   // owner/worker or agent (short form)
@@ -201,10 +212,19 @@ function updateCurrentState(content: string, state: string): string {
 
 function buildWorkerPrompt(
   projectContent: string,
+  projectPath: string,
   iteration: number,
   goal: string,
   lastGuidance: string | null,
 ): string {
+  // Extract milestones
+  const ms = extractMilestones(projectContent);
+  const nextMilestone = ms.pending.length > 0 ? ms.pending[0] : null;
+
+  // Extract current state
+  const stateMatch = projectContent.match(/^## Current State\n([\s\S]*?)(?=\n## |$)/m);
+  const currentState = stateMatch ? stateMatch[1].trim() : null;
+
   // Extract last 3 iterations for context
   const iterBlocks: string[] = [];
   for (let i = Math.max(1, iteration - 3); i < iteration; i++) {
@@ -217,27 +237,40 @@ function buildWorkerPrompt(
 
   let prompt = `You are working on iteration ${iteration} of a persistent task.\n\n`;
   prompt += `## Goal\n${goal}\n\n`;
+  prompt += `## Project file\n\`${projectPath}\` — edit this file to record your progress.\n\n`;
 
-  if (iterBlocks.length > 0) {
-    prompt += `## Recent Progress (last ${iterBlocks.length} iterations)\n`;
-    prompt += iterBlocks.join("\n\n") + "\n\n";
+  // Milestones — what needs to be done
+  if (ms.total > 0) {
+    prompt += `## Milestones (${ms.done}/${ms.total} complete)\n`;
+    if (nextMilestone) {
+      prompt += `**YOUR TASK THIS ITERATION:** ${nextMilestone}\n\n`;
+    }
+    if (ms.pending.length > 1) {
+      prompt += `Remaining:\n`;
+      for (const p of ms.pending.slice(1)) prompt += `- [ ] ${p}\n`;
+      prompt += `\n`;
+    }
+  }
+
+  if (currentState) {
+    prompt += `## Current State\n${currentState}\n\n`;
   }
 
   if (lastGuidance) {
     prompt += `## Owner Guidance for This Iteration\n${lastGuidance}\n\n`;
   }
 
-  prompt += `## Instructions\n`;
-  prompt += `Do a meaningful chunk of work toward the goal. `;
-  prompt += `When done, summarize what you accomplished and what files you modified.\n\n`;
-  prompt += `### Budget\n`;
-  prompt += `Most iterations should fit in ≤20 tool calls. If your plan needs more, split work across iterations: end this iteration at a clean checkpoint, record progress to the project file, and let the loop pick up next iteration. Exception: iterations that run gym trials or other bulk external commands — those are allowed to exceed the budget.\n\n`;
-  prompt += `### Git: For src/ changes (review-gated repo)\n`;
-  prompt += `If you modify files in the main repo (src/, not agents/), use the commitAndMerge utility instead of raw git:\n`;
-  prompt += `\`\`\`typescript\nimport { commitAndMerge } from "../../shared/lib/git-utils.js";\n`;
-  prompt += `const result = commitAndMerge("feat: description", ["src/path/to/file.ts"], "/app", sessionId);\n`;
-  prompt += `// result.merged === true means it passed tsc and landed on main\n\`\`\`\n`;
-  prompt += `This creates a review branch, runs tsc, and auto-merges if it passes. For agents/ repo changes, commit directly.`;
+  if (iterBlocks.length > 0) {
+    prompt += `## Recent Progress (last ${iterBlocks.length} iterations)\n`;
+    prompt += iterBlocks.join("\n\n") + "\n\n";
+  }
+
+  prompt += `## What You Must Produce\n`;
+  prompt += `This iteration must end with at least one of:\n`;
+  prompt += `1. A milestone checked off (edit the project file: \`- [ ]\` → \`- [x]\`)\n`;
+  prompt += `2. A concrete deliverable (file created or modified)\n`;
+  prompt += `3. A specific blocker reported (what exactly is blocking and why)\n\n`;
+  prompt += `Reading, planning, and querying alone is NOT progress. Produce output.\n`;
 
   return prompt;
 }
@@ -315,7 +348,8 @@ function buildReviewPrompt(
   prompt += `1. Are ALL milestones complete? If yes, respond starting with DONE and a summary.\n`;
   prompt += `2. Is the task blocked on something the worker can't resolve? If yes, respond starting with BLOCKED and the reason.\n`;
   prompt += `3. Otherwise, respond starting with CONTINUE and specific guidance for the NEXT unchecked milestone.\n\n`;
-  prompt += `Your response MUST start with one of: DONE, BLOCKED, CONTINUE`;
+  prompt += `Your response MUST start with one of: DONE, BLOCKED, CONTINUE\n\n`;
+  prompt += `If CONTINUE: specify exactly what the next iteration should do, which file(s) to edit, and what output to produce. The worker only knows what you tell it here.`;
 
   return prompt;
 }
@@ -486,7 +520,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       ctx.emit({ type: "step_start", step: `worker-iteration-${iteration}` });
 
       const lastGuidance = getLastGuidance(content, iteration);
-      const workerPrompt = buildWorkerPrompt(content, iteration, config.goal, lastGuidance);
+      const workerPrompt = buildWorkerPrompt(content, config.projectPath, iteration, config.goal, lastGuidance);
 
       const workerResult = await ctx.runAgent(config.worker, workerPrompt);
 
