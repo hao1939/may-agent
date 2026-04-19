@@ -58,6 +58,20 @@ The original KE-064 finding (chaining causes 0% task completion) came from a dif
 
 ---
 
+## Mechanistic Explanation: CR-338 Cognitive Overhead Budget
+
+CR-338 synthesizes DD-747 (Format Tax), DD-748 (BCR), and DD-671 (Structure Snowballing) to provide the **mechanistic explanation** for this hump curve. Two competing forces:
+
+1. **Reasoning Scaffolding (positive)**: Each related analytical gate structures thinking about a different problem facet. DD-748's implicit budget mechanism shows multiple related tasks in shared context create structural pressure for efficient reasoning.
+2. **Format Tax (negative)**: Each gate imposes structural overhead that consumes reasoning capacity (DD-747). At 4+ gates, format compliance exhausts capacity → DD-671's "structure snowballing" (syntactically perfect, semantically empty output).
+
+The hump peak occurs where **marginal scaffolding benefit = marginal format tax**. This explains:
+- Why 3 gates = 100%: full analytical coverage, format tax still manageable
+- Why 4 gates shifts failure mode to implementation: scaffolding sufficient for judgment, but capacity exhausted for implementation
+- Why KE-135's unrelated gates fail at lower counts: no scaffolding synergy, so format tax dominates earlier
+
+**Citation**: CR-338 (Cognitive Overhead Budget, ★★★★★, 2026-04-11)
+
 ## Open Questions
 
 1. ~~**Unrelated gates**: Would stacking unrelated gates produce the cliff that related gates don't?~~ **ANSWERED by EXP-131**: Yes — 3 unrelated gates pass at 50% vs 86% for 3 related gates (h=0.80). See KE-135 for details. The hump curve requires gate-task synergy.

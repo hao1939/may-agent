@@ -54,6 +54,17 @@ The transition from (2) to (3) happened here within ~24 hours, likely driven by:
 - **Measure baselines before building**: Always re-measure the baseline before investing engineering effort in a guard — the problem may have already resolved
 - **Internalization is the goal, not the guard**: The purpose of an experiment is to improve the agent, not to build permanent infrastructure. If the agent learns the behavior, that's the best outcome
 
+## External Grounding: CR-335 Error Propagation Lifecycle
+
+CR-335 synthesizes DD-740 through DD-743 into a 5-phase Error Propagation Lifecycle (Generation → Commitment → Inheritance → Amplification → Entrenchment) that provides external literature grounding for the internalization mechanism described here. Specifically:
+
+- **Phase 3 (Inheritance)**: Explains *why* internalized behaviors persist — agents treat inherited context as authoritative (DD-742: "chaining propagates fabricated facts faithfully"). The same mechanism that makes error propagation dangerous also makes *positive* internalization durable.
+- **Phase 4 (Amplification)**: Inherited behaviors are treated as more authoritative than in-session reasoning (DD-740). This explains why intervention decay is so complete (100% baselines) — once internalized, the behavior has higher authority than any new intervention would.
+
+This strengthens the Internalization Lifecycle Model: the transition from Guard → Internalization leverages the same context authority mechanism that CR-335 identifies as the error propagation vector. The mechanism is neutral — it amplifies whatever gets committed to persistent state, whether errors or correct behaviors.
+
+**Citation**: CR-335 (Error Propagation Lifecycle, ★★★★★, 2026-04-10)
+
 ## Limitations
 
 - Observed on one agent (coach) that directly participated in the experiment cycle

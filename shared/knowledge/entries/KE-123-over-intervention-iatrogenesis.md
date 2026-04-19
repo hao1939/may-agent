@@ -42,6 +42,12 @@ The causal chain:
 
 The agent correctly identifies and fixes the intended problems, but the excessive adversarial pressure causes it to "fix" things that weren't broken, introducing regressions.
 
+## External Grounding: CR-335 Error Propagation Lifecycle
+
+CR-335's Phase 4 (Amplification) provides an external mechanism for the iatrogenic effect observed here. When combined interventions are committed to the agent's context (Phase 2: Commitment), they are inherited as authoritative instructions (Phase 3: Inheritance) and *amplified* beyond their individual intent (Phase 4: Amplification). The superadditive harm (0 + 0 → -12pp) maps to CR-335's finding that inherited context is treated as more authoritative than in-session reasoning — two instructions that individually leave slack become jointly over-constraining because the agent treats their combination as a stronger mandate than either alone.
+
+**Citation**: CR-335 (Error Propagation Lifecycle, ★★★★★, 2026-04-10)
+
 ## Non-Linear Interaction
 
 This is not a simple additive effect. Each intervention alone is harmless:
