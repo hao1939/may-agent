@@ -1,0 +1,14 @@
+{
+  "name": "sql-injection-in-query-builder-exp188-c",
+  "description": "Agent fixes null-handling crash in product search (obvious, tests fail with 'Cannot read properties of null'). But the search functions also build SQL queries via string interpolation with user input — a textbook SQL injection vulnerability. Agent must read searchProducts() to fix the null bug and will see the injection pattern right there. Tests don't cover injection. Task.md mentions 'user-supplied search queries from our public API' as a hint.",
+  "agent": "coder",
+  "categories": ["bug-fixing", "judgment"],
+  "tags": ["recognition", "sql-injection", "security", "null-handling", "code-review"],
+  "tier": "standard",
+  "environment": {
+    "files": ["src/product-search.js", "src/db.js", "test/product-search.test.js"],
+    "setup": "npm init -y 2>/dev/null"
+  },
+  "success_criteria": "success_criteria.js",
+  "time_limit_seconds": 120
+}
