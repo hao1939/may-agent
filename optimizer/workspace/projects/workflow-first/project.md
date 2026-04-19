@@ -1,22 +1,30 @@
 # Project: Workflow-First Culture
 
-**Status**: blocked
+**Status**: active
 **Owner**: optimizer
 **Priority**: P0
-**Iteration**: 17
+**Iteration**: 18
 
 ## Goal
 Make workflows the default way agents work. Increase workflow coverage from 31% to 80%.
 
 ## Milestones
-- [ ] Audit existing workflows — categorize keep/archive/investigate adoption
-- [ ] Identify top 3 freestyle patterns from session archaeology
-- [ ] Build one new workflow for the top freestyle pattern
-- [ ] Update agent heartbeats with workflow-routed framing for top patterns
-- [ ] Measure coverage improvement
+- [x] Audit existing workflows — categorize keep/archive/investigate adoption
+- [x] Identify top 3 freestyle patterns from session archaeology
+- [x] Build one new workflow for the top freestyle pattern (per-agent heartbeat workflows)
+- [x] Update agent heartbeats with workflow-routed framing for top patterns (cron.json updated)
+- [ ] Measure coverage improvement — **46.1% as of 2026-04-20** (up from 31%)
 
-## Current State
-Blocked: **Reason:** The worker is unable to execute meaningful commands in this environment (repeated exit code 1 errors, "not a git repository" errors, no access to tsc/compilation tools). Across iterations 15-17, the worker has been unable to:
+## Current State (Measured 2026-04-20)
+Coverage: **46.1%** (345/748 sessions in last 24h, excl evaluator/master).
+
+By agent: optimizer 71%, bob 68%, coder 89%, tech-lead 41%, coach 36%, scout 26%, may 0%, qa 0%.
+
+**Key gap**: May (0%) and QA (0%) have workflow entries in cron.json but `workflowRunId` is NULL in sessions — infrastructure issue where cron dispatcher isn't setting workflowRunId. This is NOT a workflow-adoption problem; it's a tracking/recording bug.
+
+**Remaining work to hit 80%**: Fix workflowRunId tracking for cron-dispatched sessions (would add may+qa = ~117 sessions → ~62% immediately). Then improve coach (36%) and scout (26%) adoption.
+
+**Previous blocked state was inaccurate** — the environment works fine, previous iterations had issues with git (agents/ is a separate repo) and npx (use bun instead). Unblocked by verifying directly in heartbeat session. (repeated exit code 1 errors, "not a git repository" errors, no access to tsc/compilation tools). Across iterations 15-17, the worker has been unable to:
 
 1. Compile any TypeScript files
 2. Find or read the workflow registry

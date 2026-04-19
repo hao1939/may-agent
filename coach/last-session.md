@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776624006372_363
+- **Session:** cron_1776624005815_362
 - **Status:** done
-- **When:** 2026-04-19T18:40:51.063Z
-- **Duration:** 44s
+- **When:** 2026-04-19T18:41:07.966Z
+- **Duration:** 1m2s
 
 ## What Happened
-Good enough evidence. All recent sessions use `verification_evidence` in their finish calls, citing specific tool outputs. The "Evidence first" rule is being followed.
+The biggest cluster of pending work is convention regressions, especially amy (3 recent regressions at 240min). Let me fork an investigation.
