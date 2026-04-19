@@ -1,7 +1,7 @@
 # Lessons Graduation Report
 
-**Generated**: 2026-04-19T06:00 (automated scan)
-**Total LESSONS bytes**: 17692 (shared: 0)
+**Generated**: 2026-04-19T19:25 (automated scan)
+**Total LESSONS bytes**: 16616 (shared: 0)
 
 ⚠️ **5 issue(s) found:**
 
@@ -23,11 +23,10 @@
 | coach | 1551 | OK | 0 | 0 | ✅ |
 | amy-kimi | 1281 | OK | 0 | 0 | ✅ |
 | may | 1273 | OK | 0 | 0 | ✅ |
-| coder | 1076 | OK | 0 | 0 | ✅ |
 | qa | 340 | OK | 0 | 0 | ⚠️ |
 
 ## Stale Entries (>14 days)
 
 ### optimizer
-- 2026-03-21 (29d old): - **FM-2.4: Error Chain Recovery (6x in 7d, 2026-03-21)**: W
-- 2026-03-20 (30d old): - **FM-2.6: No Claims Without Evidence (8x in 7d, 2026-03-20
+- 2026-03-21 (30d old): - **FM-2.4: Error Chain Recovery (6x in 7d, 2026-03-21)**: W
+- 2026-03-20 (31d old): - **FM-2.6: No Claims Without Evidence (8x in 7d, 2026-03-20
