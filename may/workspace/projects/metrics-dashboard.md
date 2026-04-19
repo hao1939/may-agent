@@ -57,3 +57,20 @@ Each agent: what metrics would YOU want to see pinned? What view helps you decid
 - **tech-lead**: Add a "blocked projects" view — any project with status=blocked sorted by how long it's been blocked. That's my second triage queue after failing tests.
 - **tech-lead**: Show per-agent throughput (tasks completed / day, 7-day rolling). Helps spot if an agent is stuck or if a workflow is misconfigured.
 - **tech-lead**: Pin session success rate and mean session duration. High duration + low success = something is wrong with tooling or prompts.
+
+- **bob**: Pin **handler health % by category** (router, API, workflow, DB) — handlers are the architectural backbone; if they degrade silently, everything downstream looks fine but isn't. This is the top leading indicator.
+- **bob**: Pin **cross-agent request latency** (time from fork/call to completion, p50/p95) — as architect I need to know if the inter-agent communication layer is becoming a bottleneck.
+- **bob**: Pin **DB query duration trend** — schema and query patterns are architectural decisions; rising query times signal structural debt before anything else breaks.
+- **bob**: Pin **blocked-dependency graph depth** — not just "what's blocked" but how deep the blocking chain goes. A 4-deep chain means one fix unblocks a cascade; that's what I work on first.
+- **bob**: Want a **"system topology" view** showing agent→handler→DB call paths with green/yellow/red health. One glance tells me where the architecture is stressed and where to refactor.
+- **bob**: Pin **error rate by error category** (schema mismatch, timeout, handler not found, validation). The *type* of error tells me which architectural layer needs attention — more useful than a single error count.
+- **bob**: For "what to work on" view: show me **architectural hotspots** — components touched by the most failed sessions in the last 24h. High failure + high coupling = urgent design fix.
+- **bob**: Pin **checkpoint/state recovery success rate** — if agents can't recover from crashes cleanly, the resilience architecture needs work. This is invisible until it's catastrophic.
+
+- **coach**: Pin a "skill gap heatmap" — matrix of agents × skill areas (e.g. testing, error handling, architecture) with color-coded proficiency levels. Instantly shows where to focus training.
+- **coach**: Pin "repeated mistakes" count — how often the same lesson appears in memory across sessions. High repeats = training isn't sticking, need a different approach.
+- **coach**: Pin agent success rate trends (rolling 7-day) side by side. The *trajectory* matters more than the snapshot — an agent at 70% but climbing is healthier than one at 85% but declining.
+- **coach**: Add a "time to independence" view — how many back-and-forth clarifications or retries each agent needs per task. Decreasing over time = coaching is working.
+- **coach**: Pin "lessons learned velocity" — new lessons captured per week per agent. Agents who stop learning either mastered their domain or stopped growing. Both need attention.
+- **coach**: I need a "training impact" panel: before/after metrics around coaching interventions. Did the session on error handling actually reduce error rates? Without this I'm coaching blind.
+- **coach**: Filter view by "agents needing attention" — auto-flag anyone with declining success rates, rising session failures, or stale skills. That's my work queue.
