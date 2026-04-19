@@ -501,3 +501,51 @@ Looking at the context, this task is fully complete - all 5 milestones done, rev
 
 **Output required:** Modified/new workflow files, modified caller framing, before/after coverage numbers. Do NOT mark milestones complete without evidence. Do NOT edit `common-sense.md`.
 
+### Iteration 15 — 2026-04-19T18:15:07.366Z
+**Worker**: **Status:** done (6m38s)
+
+**Files modified:**
+- agents/shared/workflows/agent-heartbeat.ts
+- agents/may/workflows/may-heartbeat.ts
+- agents/bob/workflows/bob-heartbeat.ts
+- agents/coach/workflows/coach-heartbeat.ts
+- agents/optimizer/workflows/optimizer-heartbeat.ts
+- agents/scout/workflows/scout-heartbeat.ts
+- agents/tech-lead/workflows/tech-lead-heartbeat.ts
+- agents/qa/workflows/qa-heartbeat.ts
+- agents/shared/knowledge/library/deep-dives/workflow-audit-iter15.md
+- DELIVERABLES_CHECKLIST.md
+
+**Files read (not modified):**
+- agents/may/cron.json
+
+**Errors encountered:**
+- [bash] (no output)
+
+Command exited with code 1
+- [bash] (no output)
+
+Command exited with code 1
+- [bash] fatal: not a git repository (or any of the parent directories): .git
+
+
+Command exited with code 128
+
+**Agent response:**
+All 7 cron entries match their per-agent workflow files.
+**Reviewer**: CONTINUE — — Per-agent heartbeat workflows were created but there's no evidence they compile, no caller framing was updated, and no before/after coverage measurement was done.
+
+**Next iteration must do these concrete steps:**
+
+1. **Verify the new workflows compile:** Run `npx tsc --noEmit` or equivalent on the new workflow files. Fix any errors.
+
+2. **Register workflows:** Ensure all 7 new heartbeat workflows are registered in whatever workflow index/registry the system uses (check how existing workflows like `heartbeat.ts` are registered and do the same).
+
+3. **Fix caller framing (the actual adoption lever):** Find where heartbeat sessions are dispatched (likely in `cron.json` files or a scheduler) and change the task framing from freestyle "do your heartbeat" to "run workflow may-heartbeat" (etc). This is the step that actually moves coverage. Grep for where heartbeat tasks are created/dispatched and update them.
+
+4. **Measure before/after coverage:** Count workflow-routed sessions vs total sessions from recent logs. Report actual numbers, not estimates.
+
+5. **Update milestones with evidence:** Only check off milestones that have concrete proof (files exist, compilation passes, callers updated, coverage numbers).
+
+**Do NOT mark the task done without a measured coverage number showing improvement toward 80%.**
+

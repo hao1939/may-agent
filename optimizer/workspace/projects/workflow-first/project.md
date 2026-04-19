@@ -3,7 +3,7 @@
 **Status**: active
 **Owner**: optimizer
 **Priority**: P0
-**Iteration**: 14
+**Iteration**: 15
 
 ## Goal
 Make workflows the default way agents work. Increase workflow coverage from 31% to 80%.
@@ -16,7 +16,13 @@ Make workflows the default way agents work. Increase workflow coverage from 31% 
 - [ ] Measure coverage improvement
 
 ## Current State
-— All 5 milestones were completed and verified across prior iterations. Reviewer confirmed completion twice. No further work needed.
+Iteration 15 complete. **Status:** done (6m38s)
+
+**Files modified:**
+- agents/shared/workflows/agent-heartbeat.ts
+- agents/may/workflows/may-heartbeat.ts
+- agents/bob/workflows/bob-heartbeat.ts
+- agents/coach/workflows/coac
 
 **Files modified:**
 - DELIVERABLES_CHECKLIST.md
@@ -165,6 +171,12 @@ Command exited with c
 - **Iter 10**: — All 5 milestones complete. Workflow coverage exceeded the 80% target (100% of LLM-driven cron entr
 
 - **Iter 13**: — All 5 milestones were completed and verified across prior iterations. Reviewer confirmed completio
+
+- **Iter 15**: **Status:** done (6m38s)
+
+**Files modified:**
+- agents/shared/workflows/agent-heartbeat.ts
+- agents/
 
 
 ## Comments
