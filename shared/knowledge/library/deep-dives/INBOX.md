@@ -13,9 +13,9 @@ Unchecked items are new findings awaiting downstream pickup. Agents: scan this l
 - [ ] DD#767 — Lambda-A Typed Calculus Agent Composition — ★★★★ — `dd767-lambda-a-typed-calculus-agent-composition.md` — 2026-04-14
 - [ ] DD#766 — Policy-Invisible Violations Sentinel — ★★★★ — `dd766-policy-invisible-violations-sentinel.md` — 2026-04-14
 - [x] DD#765 — Cooperative Memory Paging Bookmarks — ★★★★½ — `dd765-cooperative-memory-paging-bookmarks.md` — 2026-04-14
-- [ ] DD#764 — Dual-Trace Memory Encoding — ★★★★ — `dd764-dual-trace-memory-encoding.md` — 2026-04-14
+- [x] DD#764 — Dual-Trace Memory Encoding — ★★★★ — `dd764-dual-trace-memory-encoding.md` — 2026-04-14 → KE-264
 - [x] DD#763 — Parallax Cognitive-Executive Separation — ★★★★½ — `dd763-parallax-cognitive-executive-separation.md` — 2026-04-14
-- [ ] DD#777 — Co-Sight: Conflict-Aware Meta-Verification — ★★★★★ — `dd777-cosight-conflict-aware-meta-verification.md` — 2026-04-18
+- [x] DD#777 — Co-Sight: Conflict-Aware Meta-Verification — ★★★★★ — `dd777-cosight-conflict-aware-meta-verification.md` — 2026-04-18
 - [ ] DD#778 — Action Rebinding: Multi-Step Attack Chains — ★★★★½ — `dd778-action-rebinding-multistep-attack-chains.md` — 2026-04-18
 - [ ] DD#779 — Explanatory Equilibrium: Verifiable Coordination — ★★★★½ — `dd779-explanatory-equilibrium-verifiable-coordination.md` — 2026-04-18
 
