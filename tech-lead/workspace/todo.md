@@ -1,7 +1,7 @@
 # TODO
 
 ## Lens Rotation
-Last: C (Dead Weight) — evaluator zero-op spawns analysis (2026-04-19 02:05). Next: D.
+Last: D (Fragility) — EventBus blast radius analysis (2026-04-19 03:03). Next: A.
 
 ## Upcoming
 - [ ] Heuristic evaluation over-rates by ~0.12 — consider adding LLM sampling to evaluation-sync.ts for top-level sessions (checkpoint from s_1776288692069_126 has the design)
