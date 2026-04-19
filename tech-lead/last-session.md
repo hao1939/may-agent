@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776613206071_41
+- **Session:** s_1776616874017_197
 - **Status:** done
-- **When:** 2026-04-19T15:42:35.202Z
-- **Duration:** 2m29s
+- **When:** 2026-04-19T16:44:46.252Z
+- **Duration:** 3m32s
 
 ## What Happened
-Delegation quality (0.79 vs 0.85 target) is the most actionable metric below target. I'll fork an investigation into what's driving it down.
+I have enough evidence. The code path looks correct syntactically, but the likely bug is the **10-second timeout** (`CMD_TIMEOUT_MS = 10_000` at line ~28). `bun build` can easily exceed 10s, causing `execSync` to throw, which is caught silently (logged but metric never updated). Let me write findings.
