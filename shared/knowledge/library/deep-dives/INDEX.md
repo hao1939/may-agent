@@ -585,6 +585,7 @@
 3. DD#711 → EXP-090/091/104 (skill injection validated — behavioral skills work, informational skills don't)
 4. DD#712 → EXP-100/107 (anti-saturation design principles for next gym iteration)
 5. CR#326 → KE-101 Laws 2+5 (structural interventions > content, structural compatibility required for effectiveness)
+6. [CR#327](CR-327-post-capstone-integration.md) — ★★★★★ **Post-Capstone Integration**: Weekend synthesis connecting CR#323-326 + KE-106 + EXP-107 closure. Three threads: (1) validated theory (Five Laws externally confirmed) + implementation architecture (4-layer verification stack), (2) gym-production gap explains EXP-100/107 failures (10-14× structural mismatch), (3) guards as permanent infrastructure (KE-106 non-training). Unified roadmap: production observation → stack implementation → gym redesign. 5 predictions (P-327a-e), 11 recommendations (R-327-1 through R-327-11).
 > 131 research deep dives, cross-reference syntheses, and reference documents.  
 > Last updated: 2026-04-10 | Maintained by Scout
 | [dd717](dd717-htc-agentic-confidence-calibration.md) | HTC — Agentic Confidence Calibration ★★★★★ | Salesforce Jan 2026 — First paper defining "Agentic Confidence Calibration". HTC extracts process-level trajectory features (macro dynamics, micro stability, positional indicators). Key: "early low-confidence decision poisons entire path." Directly addresses EXP-109 confident failure. |

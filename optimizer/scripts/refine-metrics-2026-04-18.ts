@@ -24,8 +24,10 @@ const WEEK_MS_SQL = "604800000";
 // infrastructure). Adoption = fraction of evaluations scored by heuristic
 // rather than skipped-by-js. Higher is better.
 const toolAdoptionQuery =
-  "SELECT CAST(SUM(evaluatedByHeuristic) AS REAL) / NULLIF(COUNT(*),0) AS val " +
-  `FROM evaluations WHERE createdAt > (strftime('%s','now')*1000 - ${WEEK_MS_SQL})`;
+  "SELECT CAST(SUM(CASE WHEN skippedByJs = 0 THEN 1 ELSE 0 END) AS REAL) / NULLIF(COUNT(*),0) AS val " +
+  "FROM evaluations e JOIN sessions s ON e.sessionId = s.sessionId " +
+  `WHERE e.createdAt > (strftime('%s','now')*1000 - ${WEEK_MS_SQL}) ` +
+  "AND s.agent NOT IN ('evaluator','may')";
 
 db.prepare(
   `UPDATE metrics
