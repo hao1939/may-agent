@@ -1,6 +1,16 @@
 # Phase 2: Reflexion-Style Learning Experiment Design
 
-**Author**: bob | **Date**: 2026-04-19 | **Status**: Ready for implementation
+**Author**: bob | **Date**: 2026-04-19 | **Status**: Phase 2 Step 1: COMPLETE
+
+### Implementation Status
+- ✅ **Step 1**: Scenario (`reflexion-npx-recovery`) created and validated; extraction function (`extract-reflection.js`) tested and working
+  - `success_criteria.js` correctly detects formatting state (verified: passes after `prettier --write`, fails before)
+  - `extractReflection()` returns prompt when no llmCall provided, returns lesson when llmCall given
+  - Prettier available globally; scenario is solvable
+- ⬜ **Step 2**: Baseline runs (no lesson)
+- ⬜ **Step 3**: Extract lesson from baseline failure
+- ⬜ **Step 4**: Treatment runs (with lesson)
+- ⬜ **Step 5**: Analyze results
 
 ## Overview
 
