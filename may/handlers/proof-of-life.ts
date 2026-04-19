@@ -49,6 +49,7 @@ interface MetricWithSnapshotRow {
   current: number | null;
   target: number | null;
   threshold: number | null;
+  alert_direction: string | null;
   unit: string | null;
   type: string;
   last_value: number | null;
@@ -78,7 +79,7 @@ function getMetricsSummary(baseDir: string): string {
 
     // All active metrics with latest snapshot
     const metrics = db.prepare(
-      `SELECT m.id, m.name, m.current, m.target, m.threshold, m.unit, m.type,
+      `SELECT m.id, m.name, m.current, m.target, m.threshold, m.alert_direction, m.unit, m.type,
               s.value as last_value, s.measured_at
        FROM metrics m
        LEFT JOIN metric_snapshots s ON m.id = s.metric_id
@@ -113,12 +114,11 @@ function getMetricsSummary(baseDir: string): string {
     const measured = metrics.filter(m => m.current != null || m.last_value != null).length;
 
     // Health metrics breaching thresholds
-    const breaching = metrics.filter(m =>
-      m.type === "health" &&
-      m.threshold != null &&
-      m.current != null &&
-      m.current < m.threshold
-    );
+    const breaching = metrics.filter(m => {
+      if (m.type !== "health" || m.threshold == null || m.current == null) return false;
+      const alertAbove = m.alert_direction === 'above';
+      return alertAbove ? m.current > m.threshold : m.current < m.threshold;
+    });
 
     // Build output lines
     const lines: string[] = [];
