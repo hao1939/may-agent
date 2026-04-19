@@ -86,3 +86,26 @@ The first user message has 16 layers of context injection (up to 55K chars) that
 - `src/lib/session-diff.ts`: cross-session diff
 - `src/lib/knowledge-router.ts`: KE matching
 - `src/lib/tools/checkpoint.ts`: checkpoint read
+
+### Iteration 1 — 2026-04-19T09:37:56.795Z
+**Worker task**: Iteration 1 — work toward goal
+**Worker result**: **Status:** done (3m20s)
+
+**Files modified:**
+- src/lib/__tests__/context-layers.test.ts
+
+**Files read (not modified):**
+- /app/src/lib/manager.ts
+
+**Errors encountered:**
+- [bash] (no output)
+
+Command exited with code 1
+
+**Agent response:**
+tsc clean, all 6 tests pass. Now let me commit this test file to the branch:
+**Files touched**: (see worker session)
+**Owner assessment**: CONTINUE — M2 is partially done — tests exist but we need to verify they actually pass and understand results. M3-M5 remain.
+
+Next iteration: Run the context-layers tests (`bun test src/lib/__tests__/context-layers.test.ts`) and verify all pass. Then move to M3 — test moving essential context to system prompt. Read the project file at `agents/tech-lead/workspace/projects/context-injection-review.md` for M3 details before starting work.
+
