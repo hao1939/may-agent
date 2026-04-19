@@ -30,6 +30,7 @@
 **What remains as refinements (NOT blockers to resolution)**:
 - **L3.5 — Temporal discipline boundary** (EXP-093): Few-shot teaches *what* to validate (C3 +40pp) but not *when* to verify in a tool-call sequence (C2.3 −20pp). Verify-after-edit likely requires L5 workflow enforcement. This narrows scope but does not falsify the hypothesis; it was incorporated into the 0.93 posterior.
 - **Urgency-framing gradient** (EXP-097): System-prompt-end framing shows ~33% activation — the position effect is a steep gradient, not strictly binary. Practically binary for production, but the mechanism admits a small amount of simulation.
+- **TRIGGER/ACTION/EXAMPLE skill files** (EXP-186): Structured skill files with SOUL.md rules achieved 75% adoption (0%→75%) on persistent-task workflow. Places at ~L3.5 — above generic text rules but below programmatic injection (L5). Consistent with hierarchy; see KE-285.
 - **Method composition space**: Only one pair tested (few-shot + checklist synergistic). Full composition lattice (few-shot × checklist × echo-back × urgency) unmapped.
 - **Evidence-type and domain-class taxonomy**: What counts as "structurally matched" vs "same domain class" vs "cross-domain" is currently pattern-matched case-by-case (EXP-086/094). A formal taxonomy would sharpen deployment guidance but does not affect the boundary claim.
 
