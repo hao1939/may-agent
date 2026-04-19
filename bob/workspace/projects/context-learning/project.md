@@ -3,7 +3,7 @@
 **Status**: active
 **Owner**: bob
 **Priority**: P1
-**Iteration**: 6
+**Iteration**: 8
 
 ## Goal
 Agents learn from experience and get better over time:
@@ -63,7 +63,21 @@ Goal: roll out to all agents, watch for regression
 - [ ] Ongoing: May monitors health, coach tracks behavior improvement
 
 ## Current State
-Iteration 6 complete. **Status:** done (1m39s)
+Iteration 8 complete. **Status:** done (40s)
+
+**Files modified:**
+- agents/bob/workspace/projects/context-learning/SUMMARY.md
+
+**Agent response:**
+Both the E2E demo and unit tests pass. The pipeline is fully working. Now l
+
+**Files modified:**
+- agents/bob/workspace/projects/context-learning/demo-e2e.js
+
+**Errors encountered:**
+- [bash] === Context-Learning E2E Demo ===
+
+--- Session: npx-failure
 
 **Files modified:**
 - agents/bob/workspace/projects/context-learning/integration-design.md
@@ -246,4 +260,40 @@ Command exited with code 1
 Good - the success criteria script works correctly (files are unformatted → fails as expected). Now let me address Hao's comment and create the key deliverable: a concrete integration design that addresses format, timing, and delivery.
 
 **Reviewer**: CONTINUE — No bob/ changes remaining. The commit went through fine.
+
+
+### Iteration 7 — 2026-04-19T17:53:59.641Z
+**Worker**: **Status:** done (2m15s)
+
+**Files modified:**
+- agents/bob/workspace/projects/context-learning/demo-e2e.js
+
+**Errors encountered:**
+- [bash] === Context-Learning E2E Demo ===
+
+--- Session: npx-failure ---
+❌ Demo failed: fs.readFile is not a function
+
+
+Command exited with code 1
+- [bash] === Context-Learning E2E Demo ===
+
+--- Session: npx-failure ---
+❌ Demo failed: ENOENT: no such file or directory, open '/app/agents/bob/workspace/projects/context-learning/_demo_workspace/demo-agent/context.md'
+
+
+Command exited with code 1
+
+**Agent response:**
+Pipeline works end-to-end. Let me also confirm unit tests still pass:
+
+
+### Iteration 8 — 2026-04-19T17:54:39.703Z
+**Worker**: **Status:** done (40s)
+
+**Files modified:**
+- agents/bob/workspace/projects/context-learning/SUMMARY.md
+
+**Agent response:**
+Both the E2E demo and unit tests pass. The pipeline is fully working. Now let me create a summary deliverable marking Phase 3 as complete.
 
