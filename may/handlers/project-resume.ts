@@ -56,13 +56,10 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
     if (picked.size === 0) return;
 
-    const busy = new Set<string>();
     const busyProjects = new Set<string>();
     try {
       const db = ctx.getDb();
-      const rows = db.prepare("SELECT DISTINCT agent FROM sessions WHERE status = 'running'").all() as Array<{ agent: string }>;
-      for (const r of rows) busy.add(r.agent);
-      // Also check for running workflow sessions on specific projects
+      // Check for running sessions on specific projects
       const wfRows = db.prepare("SELECT task FROM sessions WHERE status = 'running' AND task LIKE '%persistent-task%'").all() as Array<{ task: string }>;
       for (const r of wfRows) {
         const m = r.task.match(/project:\s*([^\n"]+)/);
@@ -72,7 +69,6 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
     let forked = 0;
     for (const [owner, project] of picked) {
-      if (busy.has(owner)) continue;
       if (busyProjects.has(project.relPath)) continue;
       const task =
         `Run the persistent-task workflow for this project.\n\n` +
