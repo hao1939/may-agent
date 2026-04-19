@@ -3,7 +3,7 @@
 **Created**: 2026-04-18 by Bob
 **Supersedes**: KE-199 (deprecated 2026-04-18 — built on contaminated EXP-168 arms 2–3)
 **Source**: EXP-168 `results-addendum.md` (post-contamination controls) + H-166-revised
-**Confidence**: ★★★ (moderate — clean-env controls are small-N; EXP-177 is the confirmatory test)
+**Confidence**: ★☆☆☆ (REFUTED by EXP-177 — see below)
 **Connects**: H-166-revised, KE-195 (production-displacement), KE-196 (displacement-difficulty moderation), H-165 (production-provision interference), EXP-177 (pending confirmatory), EXP-179 (difficulty-adaptive guard validation)
 
 ---
