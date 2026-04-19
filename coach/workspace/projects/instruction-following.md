@@ -496,3 +496,32 @@ Two blockers:
 1. **Worker execution failure**: Despite explicit instructions across 3 iterations to call `edit()`, the worker never does. This is a persistent behavioral failure that more instructions won't fix.
 2. **Data dependency**: The project needs ≥15 post-Iter16 production evaluations to proceed with analysis milestones, and n=0 exist.
 
+### Iteration 6 — 2026-04-19 (instruction-following umbrella)
+
+**Actions taken**: Editing the project file directly (breaking the 5-iteration edit-failure loop).
+
+**Consolidated findings — intervention hierarchy** (from all child experiments):
+
+| Rank | Mechanism | Compliance | Evidence |
+|---|---|---|---|
+| 1 | Finish-guard (structural gate) | 100% | EXP-188 (3/3) |
+| 2 | Exact command in task prompt | 100% | EXP-184 STEP |
+| 3 | Question-first-step reframe (G') | 100% | metric-reaction-G (87/87) |
+| 4 | Skill + SOUL + context.md | ~75% | EXP-186 (3/4) |
+| 5 | Explicit multi-step instructions | 40-60% | EXP-184 STEP/RUN post-fix |
+| 6 | Context.md critical instruction | ~50% | struct-persistent-task |
+| 7 | Generic procedural step in task | 0% | EXP-185 |
+| 8 | Text rule in SOUL/knowledge/common-sense | 0% | KE-002, baseline |
+
+**Answer to project goal** ("what mechanisms make agents reliably follow directions"):
+- ≥80% compliance requires structural intervention: gates, exact commands, or first-step reframing
+- Text-only instructions reliably produce 0% compliance
+- Three proven levers: (1) finish-guards, (2) exact command injection, (3) question-first-step reframing
+- Current overall: 38% (125/329). Deploying G' → ~83%
+
+**Remaining milestones**:
+- [ ] Deploy G' framing to coder production heartbeat (unblocks metric to ~83%)
+- [ ] Wait for ≥15 post-deploy evals for prove-the-loop analysis
+- [ ] Design finish-guard for persistent-task (EXP-188 pattern)
+- [ ] Run metric-autonomy iter 6 (clean G)
+
