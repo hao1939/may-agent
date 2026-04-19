@@ -1,94 +1,129 @@
 # Design: Context Injection — What Goes Where
 
-## System Prompt (every session, every turn)
+## Principle
 
-Only what the agent needs to BE itself and USE the system:
+**System prompt = who you are + how the system works (stable)**
+**User message = what you're doing now (changes per session)**
+
+Agent decides what to do based on context. We provide the right context at the right layer.
+
+---
+
+## System Prompt (auto-injected every session)
 
 | Content | Why | Size |
 |---------|-----|------|
-| **SOUL.md** | Agent character — drives different decisions per agent | ~6K |
-| **common-sense.md** | How to use the system — tools, workflows, projects, escalation | ~5K |
-| **Available tools** | What tools exist | ~200 |
-| **Runtime environment** | Paths, workspace | ~500 |
-| **Total** | | ~12K |
+| **SOUL.md** | Agent character — identity, role, preferences. Drives different decisions per agent. Includes agent's preferred workflows for their typical work types. | ~6K |
+| **common-sense.md** | How to use the system — projects, heartbeats, metrics, tools, escalation. Includes general workflow guidance (when to use persistent-task vs implement-and-verify vs inline). | ~5K |
+| **Available tools** | What tools the agent can call | ~200 |
+| **Runtime environment** | Paths, workspace, what's already in context | ~500 |
+| **Total** | | ~12K (~3K tokens) |
 
-## NOT in system prompt
+That's it. Nothing else auto-injected into system prompt.
 
-| Content | Where instead | Why |
-|---------|--------------|-----|
-| **standing-orders.md** | Guard that reviews agent output against orders | Orders are constraints, not identity. A guard checks compliance after the fact. |
-| **knowledge-essentials.md** | Available for agent to read on-demand, or injected during brainstorm/research steps | Knowledge is context for specific tasks, not permanent identity. |
-| **skills/*.md (full content)** | Agent indexes preferred skills by name. Full content loaded on-demand when task matches. | 35K of skills bloats every session. Pi's model: descriptions in prompt, full content when needed. |
+---
 
-## Skills: Index + On-Demand
+## User Message (the task — varies per session)
 
-**System prompt includes:** A skill index — name + one-line trigger condition per skill.
+The first user message is ONLY what the caller sends. Examples:
+
+**Heartbeat:** The heartbeat.md content + any injected metrics/pending tasks.
+**Persistent-task worker:** Goal + milestones + current state + owner guidance (from buildWorkerPrompt).
+**Fork from May:** The specific task description.
+
+No session history, no digests, no recalls, no context.md. Just the task.
+
+---
+
+## Workflows (process enforcement — not injected, invoked)
+
+Workflows are tools, not context. The agent decides which workflow to use.
+
+**Three layers of workflow selection:**
+
+1. **Task instruction (highest priority):** The task says "Run persistent-task workflow for this project" → agent uses it.
+2. **Agent preference (SOUL.md):** Each agent's SOUL.md includes preferred workflows for their work types. E.g., Coach: "For experiments use persistent-task, for training use growth-cycle."  
+3. **Common-sense default (fallback):** common-sense.md describes when to use which workflow generally. "Multi-session work → persistent-task. Code changes → implement-and-verify."
+
+**Override chain:** task instruction > agent preference > common-sense default
+
+**Reviewer override:** In a persistent-task loop, the reviewer can say "CONTINUE — use implement-and-verify for the next iteration." This overrides the agent's default for that specific step. The override appears in the next worker prompt as owner guidance.
+
+---
+
+## Skills (behavioral patches — indexed, loaded on demand)
+
+**NOT fully injected.** System prompt includes a skill index only:
 
 ```
-## Available Skills
-- verify-after-edit: TRIGGER: after any edit() or write() call
-- read-before-edit: TRIGGER: before editing a file you haven't read this session
-- evidence-over-narrative: TRIGGER: when making claims about system state
+## Available Skills (read full content when triggered)
+- verify-after-edit: after any edit()/write(), verify the result
+- read-before-edit: before editing, read the file first
+- evidence-over-narrative: back claims with tool output
+For full instructions: read("agents/<you>/skills/<name>.md")
 ```
 
-**Agent loads full skill when triggered:** Uses `read("agents/<me>/skills/<name>.md")` to get the full instructions when the trigger condition matches.
+**On-demand loading:** Agent reads full skill content when the trigger matches their current action.
 
-This is pi's progressive disclosure model. Agent sees ~500 chars of skill index instead of 35K of full content.
+**Per-task override:** Caller or reviewer can inject specific skills:
+- Task: "For this task, read skill: agents/coach/skills/gym-execution-checklist.md first"
+- Reviewer: "CONTINUE — before next iteration, load the verify-after-edit skill"
 
-## Workflow/Tool Override per Context
+---
 
-Skills and tools should be overridable per-session or per-workflow-step:
+## Standing Orders (constraints — enforced by guard, not prompt)
 
-**Per-session override:** When May forks an agent with a specific task, she can specify which skills/tools are relevant:
-```
-workflow.run("persistent-task", "project: X\nagent: bob\nskills: verify-after-edit, evidence-over-narrative")
-```
+**NOT in system prompt.** Moved to a guard that checks on finish():
 
-**Per-workflow-step override:** The persistent-task worker prompt can inject step-specific skills:
-```
-## For this iteration
-Read skill: agents/coach/skills/gym-execution-checklist.md before running gym trials.
-```
+- Agent works without seeing orders in prompt
+- Guard checks: does the output violate any standing order?
+- If yes → block finish, tell agent which order was violated
+- If no → allow
 
-This means skills are contextual — loaded for specific work, not permanently injected.
+Structural enforcement (KE-007) > text in prompt (KE-002).
 
-## Standing Orders as Guard
+---
 
-Standing orders move from system prompt injection to a guard that runs on `finish()`:
+## Knowledge (on-demand discovery)
 
-- Agent does its work normally without seeing orders in prompt
-- When agent calls `finish()`, the guard checks: does the output violate any standing order?
-- If yes: block finish, tell agent which order was violated
-- If no: allow finish
+**NOT in system prompt.** Agent discovers knowledge through:
 
-This is structurally enforced (KE-007 says structural > text). The agent doesn't need to remember orders — the guard enforces them.
+- Breadcrumbs in common-sense.md: "For verified findings: read agents/shared/knowledge-essentials.md"
+- Task-specific pointers: "Reference: KE-123 says don't stack interventions"
+- Own exploration during heartbeats
 
-## Knowledge Essentials as On-Demand
+---
 
-knowledge-essentials.md is available at `agents/shared/knowledge-essentials.md`. Agent reads it when:
-- Starting a brainstorm or research task
-- The task mentions a topic covered in essentials
-- The heartbeat.md says "read knowledge-essentials for reference"
+## Summary: What's Auto-Injected
 
-Not auto-injected. Agent discovers it through breadcrumbs in common-sense.md:
-```
-For verified findings and knowledge: read agents/shared/knowledge-essentials.md
-```
+| Layer | Content | Auto-injected? |
+|-------|---------|---------------|
+| **System prompt** | SOUL.md | ✅ Yes — agent identity |
+| **System prompt** | common-sense.md | ✅ Yes — system usage + workflow guidance |
+| **System prompt** | Available tools | ✅ Yes — tool list |
+| **System prompt** | Runtime environment | ✅ Yes — paths |
+| **System prompt** | Skill index (names + triggers) | ✅ Yes — ~500 chars |
+| **User message** | The task | ✅ Yes — what the caller sent |
+| **User message** | Session history / digests | ❌ No — removed |
+| **User message** | Active recall / FM warnings | ❌ No — removed |
+| **User message** | context.md | ❌ No — agent reads if needed |
+| **System prompt** | Standing orders | ❌ No — guard enforces |
+| **System prompt** | Knowledge essentials | ❌ No — on-demand |
+| **System prompt** | Full skill content | ❌ No — index only, load on-demand |
 
-## Result
+## Size Comparison
 
-| Before | After |
-|--------|-------|
-| System prompt: ~51K (13K tokens) | System prompt: ~12K (3K tokens) |
-| Skills: 35K full content always | Skills: ~500 char index + on-demand |
-| Standing orders: text in prompt (0% compliance) | Standing orders: guard on finish (structural) |
-| Knowledge: always injected | Knowledge: on-demand read |
+| | Before | After |
+|-|--------|-------|
+| System prompt | ~51K (13K tokens) | ~12K (3K tokens) |
+| First user message | ~55K (context) + task | Task only |
+| Total per first call | ~106K | ~12K + task |
 
-4x reduction in system prompt. Closer to pi's ~2K baseline. Agent character (SOUL) and system knowledge (common-sense) stay. Everything else is on-demand or structurally enforced.
+---
 
 ## Open Questions
 
-1. Can the skill index format trigger reliable on-demand loading? Need to test.
-2. Can standing-orders-as-guard catch violations reliably? Need to design the guard.
-3. Does removing knowledge-essentials from prompt hurt agent quality? Need to measure.
-4. How do per-session skill overrides work technically? The workflow passes them, but how does the system prompt change?
+1. Skill index — does the trigger format reliably cause agents to load skills on demand? Test in gym.
+2. Standing-orders guard — design needed. How does the guard check free-form text against orders?
+3. Workflow preference in SOUL.md — what format? Table? Prose?
+4. Per-task skill override — does the persistent-task workflow need a `skills` parameter?
