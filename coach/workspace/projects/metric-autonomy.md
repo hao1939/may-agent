@@ -53,11 +53,11 @@ Checker: `agents/gym/scenarios/metric-autonomy-A/success_criteria.js`
 
 ## Success Criteria
 
-- [ ] All 5 variants (A–E) built as gym scenarios
-- [ ] Each variant run ≥10 trials → pass rate with confidence interval
-- [ ] One finding landed as a KE: "framing X triggers metric reaction" OR "no
+- [x] All 5 variants (A–E) built as gym scenarios
+- [x] Each variant run ≥10 trials → pass rate with confidence interval
+- [x] One finding landed as a KE: "framing X triggers metric reaction" OR "no
       framing triggers metric reaction without mechanical support"
-- [ ] Finding fed back into heartbeat design recommendation for all agents
+- [x] Finding fed back into heartbeat design recommendation for all agents
 
 ## Iteration Log
 

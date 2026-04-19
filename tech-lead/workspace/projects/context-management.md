@@ -26,7 +26,7 @@ Keep orchestrator lean:
 - [x] Prune old iterations in project file
 - [x] Measure current max iterations before overflow → **UNLIMITED** (see analysis below)
 - [x] Test: 50+ iterations without overflow → **PASSED by architecture**
-- [ ] Document the pattern for other workflows
+- [x] Document the pattern for other workflows
 
 ## Progress Log
 
