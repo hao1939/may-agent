@@ -3,9 +3,9 @@
 **Owner:** may
 **Goal:** Every agent output gets a signal on whether it was useful.
 **Created:** 2026-04-16
-**Status:** active — M2 shipped. M3 design doc dispatched to bob (2026-04-18).
-**Next:** Bob delivers M3 design doc → review → fork tech-lead to implement.
-**Resume trigger:** Bob's design doc delivered.
+**Status:** active — M3 design doc reviewed, tech-lead implementing (2026-04-19, s_1776578809474_14).
+**Next:** Tech-lead delivers M3 implementation → verify → mark M3 done.
+**Resume trigger:** Tech-lead session completes.
 **Master project:** [system-evolution.md](./system-evolution.md) → Gap 2
 **Source feedback:** [bob](../../bob/workspace/system-gaps.md), [scout](../../scout/workspace/system-gaps.md), [tech-lead](../../tech-lead/workspace/system-gaps.md)
 **Tracked metrics:** `scout.findings-used`, `bob.designs-implemented`, `system.stuck-requests`
