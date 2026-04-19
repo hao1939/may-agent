@@ -585,7 +585,6 @@
 3. DD#711 → EXP-090/091/104 (skill injection validated — behavioral skills work, informational skills don't)
 4. DD#712 → EXP-100/107 (anti-saturation design principles for next gym iteration)
 5. CR#326 → KE-101 Laws 2+5 (structural interventions > content, structural compatibility required for effectiveness)
-6. [CR#327](CR-327-post-capstone-integration.md) — ★★★★★ **Post-Capstone Integration**: Weekend synthesis connecting CR#323-326 + KE-106 + EXP-107 closure. Three threads: (1) validated theory (Five Laws externally confirmed) + implementation architecture (4-layer verification stack), (2) gym-production gap explains EXP-100/107 failures (10-14× structural mismatch), (3) guards as permanent infrastructure (KE-106 non-training). Unified roadmap: production observation → stack implementation → gym redesign. 5 predictions (P-327a-e), 11 recommendations (R-327-1 through R-327-11).
 > 131 research deep dives, cross-reference syntheses, and reference documents.  
 > Last updated: 2026-04-10 | Maintained by Scout
 | [dd717](dd717-htc-agentic-confidence-calibration.md) | HTC — Agentic Confidence Calibration ★★★★★ | Salesforce Jan 2026 — First paper defining "Agentic Confidence Calibration". HTC extracts process-level trajectory features (macro dynamics, micro stability, positional indicators). Key: "early low-confidence decision poisons entire path." Directly addresses EXP-109 confident failure. |
@@ -811,24 +810,3 @@
 4. DD#766 → KE-106 (policy-invisible violations explain why guards don't train behavior — agents find invisible workarounds)
 5. DD#767 → DD-701 Semantic Router DSL (both formalize agent composition — λ_A at type level, Semantic Router at policy level)
 6. DD#764, DD#765, DD#768 → CR-334 Agent Observability (memory architectures support cognitive observability layer)
-
----
-
-### Production-First Evaluation — CR#326 Path A (Session 629, April 17 2026)
-
-| # | Paper | Title | ★ | Theme |
-|---|-------|-------|---|-------|
-| DD-777 | 2512.04123 | Measuring Agents in Production (MAP) | ★★★★★ | First large-scale practitioner study: 306 surveys, 20 case studies. 68% agents ≤10 steps, 74% rely on human eval, reliability > capability. Empirical ground truth for gym–production gap. |
-| DD-778 | 2411.13768 | EDDOps — Evaluation-Driven Development & Operations | ★★★★ | MLR-based process model + reference architecture for continuous evaluation. Offline/online feedback loop. Evaluation as governing function, not terminal gate. |
-| DD-779 | 2603.11245 | Mind the Sim2Real Gap in User Simulation | ★★★★½ | 451 humans + 31 LLM simulators on τ-bench. LLM users are excessively cooperative, inflating agent scores. Capability ≠ simulation fidelity. Quantifies one mechanism of gym–production gap. |
-| DD-780 | 2503.06745 | Beyond Black-Box Benchmarking — Observability & Analytics | ★★★★ | 79% agree non-determinism defeats benchmarks. Runtime-log-based evaluation. Meta-evaluation: benchmark the evaluator, not the agent. IBM Research. |
-
-**Cross-references (Session 629)**:
-1. DD#777 → CR#326 (MAP provides practitioner-side empirical evidence for the gym–production gap thesis)
-2. DD#777 → KE-112 (74% human eval dependency confirms automated verdicts aren't trusted — "verdicts lie")
-3. DD#778 → H-096 (evaluation architecture ceiling reframed as missing feedback loop between offline/online eval)
-4. DD#779 → DD#777 (MAP shows practitioners use human eval; DD#779 shows why they have to — sim users are too cooperative)
-5. DD#779 → KE-112 (sim2real gap is a specific mechanism for verdict unreliability)
-6. DD#780 → CR#334 (extends 5-layer observability stack, especially L2 structured event logging)
-7. DD#780 → DD#779 (runtime-log evaluation avoids sim2real problem by using actual production data)
-8. Emerging pattern: **Production-First Evaluation Triad** — (a) practitioner evidence shows gym fails (DD#777), (b) specific mechanism identified: sim2real inflation (DD#779), (c) solution architecture: continuous evaluation from runtime logs (DD#778 + DD#780). CR#326 Path A now has external grounding.

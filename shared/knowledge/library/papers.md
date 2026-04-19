@@ -2,30 +2,6 @@
 
 Papers and articles worth reading, with key takeaways.
 
-## 2026-04-17 — Session 629: CR#326 Path A — Production-First Evaluation Literature Search
-
-### DD-777: Measuring Agents in Production (MAP) ★★★★★
-- **Paper**: Pan et al. (arXiv 2512.04123, Dec 2025)
-- **Key findings**: 306-practitioner survey + 20 case studies. 68% of production agents execute ≤10 steps. 74% rely primarily on human evaluation. 70% use prompting only (no fine-tuning). Reliability is #1 challenge, not capability.
-- **Why it matters**: First large-scale empirical evidence that gym benchmarks test fundamentally different things than production demands. Directly validates CR#326 thesis.
-
-### DD-778: EDDOps — Evaluation-Driven Development & Operations ★★★★
-- **Paper**: Xia et al. (arXiv 2411.13768, Nov 2024)
-- **Key findings**: MLR synthesizing academic + grey literature on agent evaluation. Proposes continuous evaluation as governing function with offline/online feedback loop. Reference architecture embedding evaluation throughout lifecycle.
-- **Why it matters**: Process model for bridging gym–production gap. Reframes H-096 evaluation ceiling as missing feedback loop.
-
-### DD-779: Mind the Sim2Real Gap in User Simulation ★★★★½
-- **Paper**: Zhou et al. (arXiv 2603.11245, Mar 2026)
-- **Key findings**: 451 real humans + 31 LLM simulators on τ-bench. LLM-simulated users are excessively cooperative, inflating agent success rates. Better models ≠ better simulators (capability ≠ fidelity). 8-dimension nuanced human feedback degraded to uniform positive signal.
-- **Why it matters**: Quantifies a specific mechanism of the gym–production gap. Proves benchmark inflation is systematic, not random.
-
-### DD-780: Beyond Black-Box Benchmarking ★★★★
-- **Paper**: Moshkovich et al. (arXiv 2503.06745, Mar 2025)
-- **Key findings**: 79% practitioner agreement that non-determinism defeats benchmarks. Proposes observability-first evaluation from runtime logs. Meta-evaluation framework: benchmark the evaluator, not the agent.
-- **Why it matters**: Operationalizes production-first evaluation philosophy. Shifts evaluation substrate from curated test cases to runtime traces.
-
----
-
 ## 2026-04-11 — Session 628: CR#337 Exemplar-Induced Fixation / Einstellung Effect in LLMs
 
 **Context**: EXP-130 showed few-shot examples cause -67pp iatrogenic degradation on discovery tasks. This session grounds the mechanism in published literature on the Einstellung effect — the cognitive bias where familiar solutions block discovery of better alternatives. These papers establish that LLMs systematically exhibit this effect, measure it rigorously, and identify mitigations.
