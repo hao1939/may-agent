@@ -3,7 +3,7 @@
 **Status**: active
 **Owner**: optimizer
 **Priority**: P0
-**Iteration**: 2
+**Iteration**: 3
 
 ## Goal
 Make workflows the default way agents work. Increase workflow coverage from 31% to 80%.
@@ -16,7 +16,14 @@ Make workflows the default way agents work. Increase workflow coverage from 31% 
 - [ ] Measure coverage improvement
 
 ## Current State
-Iteration 2 complete. **Status:** done (5m7s)
+Iteration 3 complete. **Status:** done (1m13s)
+
+**Files modified:**
+- agents/optimizer/workspace/heartbeat-workflow-status.md
+- DELIVERABLES_CHECKLIST.md
+
+**Files read (not modified):**
+- agents/shared/workflows/heartbeat.
 
 **Files modified:**
 - agents/optimizer/workspace/freestyle-patterns-2026-04-19.md
@@ -46,6 +53,11 @@ Command exited with c
 
 **Files modified:**
 - agents/optimizer/workspace/freestyle-patterns-2026-04
+
+- **Iter 3**: **Status:** done (1m13s)
+
+**Files modified:**
+- agents/optimizer/workspace/heartbeat-workflow-status
 
 
 ## Comments

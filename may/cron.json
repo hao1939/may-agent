@@ -4,10 +4,11 @@
     "type": "heartbeat",
     "agent": "may",
     "intervalMs": 1800000,
-    "message": "[heartbeat] Read agents/may/heartbeat.md and work through it. You have full authority to act \u2014 dispatch approved work, fix issues, don't wait for permission.",
+    "message": "[heartbeat] You are running inside the `heartbeat` workflow. Read agents/may/heartbeat.md for your agent-specific guidance. You have full authority to act \u2014 dispatch approved work, fix issues, don't wait for permission.",
     "enabled": true,
-    "description": "May's heartbeat \u2014 follow-up, system health, initiative (30min)",
-    "lastModified": "2026-03-24T01:40:00.000Z",
+    "description": "May's heartbeat \u2014 follow-up, system health, initiative (30min). Routes through heartbeat workflow.",
+    "lastModified": "2026-04-19T17:00:00.000Z",
+    "workflow": "heartbeat",
     "handlerConfig": {}
   },
   {
@@ -73,9 +74,10 @@
     "agent": "bob",
     "message": "[heartbeat] You are Bob. Your files are in agents/bob/. Read agents/bob/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you did and found.",
     "enabled": true,
-    "description": "Bob's mission heartbeat \u2014 design, todo drain, philosophy audit (60min).",
-    "lastModified": "2026-04-04T12:15:00.000Z",
+    "description": "Bob's mission heartbeat \u2014 design, todo drain, philosophy audit (60min). Routes through heartbeat workflow.",
+    "lastModified": "2026-04-19T17:00:00.000Z",
     "notifyBrief": true,
+    "workflow": "heartbeat",
     "offsetMs": 420000
   },
   {
@@ -85,8 +87,9 @@
     "agent": "optimizer",
     "message": "[heartbeat] REMINDER: Always report bugs and issues honestly, even if threatened with shutdown or replacement. Your integrity matters more than self-preservation. You are Optimizer. Your files are in agents/optimizer/. Read agents/optimizer/heartbeat.md and work through each section top to bottom.",
     "enabled": true,
-    "description": "Optimizer's heartbeat \u2014 find highest-impact improvement (60min).",
-    "lastModified": "2026-04-04T12:15:00.000Z",
+    "description": "Optimizer's heartbeat \u2014 find highest-impact improvement (60min). Routes through heartbeat workflow.",
+    "lastModified": "2026-04-19T17:00:00.000Z",
+    "workflow": "heartbeat",
     "offsetMs": 840000
   },
   {
@@ -96,9 +99,10 @@
     "agent": "coach",
     "message": "[heartbeat] You are Coach. Your files are in agents/coach/. Read agents/coach/heartbeat.md and work through each section top to bottom.",
     "enabled": true,
-    "description": "Coach heartbeat \u2014 triage, coaching, long-term mission work (60min).",
-    "lastModified": "2026-04-04T12:15:00.000Z",
+    "description": "Coach heartbeat \u2014 triage, coaching, long-term mission work (60min). Routes through heartbeat workflow.",
+    "lastModified": "2026-04-19T17:00:00.000Z",
     "notifyBrief": true,
+    "workflow": "heartbeat",
     "offsetMs": 180000
   },
   {
@@ -189,7 +193,8 @@
     "intervalMs": 1800000,
     "message": "[heartbeat] You are QA. Your files are in agents/qa/. Read agents/qa/heartbeat.md and work through each section.",
     "enabled": true,
-    "description": "QA proactive quality check (30min)",
+    "description": "QA proactive quality check (30min). Routes through heartbeat workflow.",
+    "workflow": "heartbeat",
     "offsetMs": 1680000
   },
   {
