@@ -1,10 +1,10 @@
 # Project: Context Learning — Design Phase
 
-**Status**: done
+**Status**: active
 **Owner**: bob
 **Priority**: P1
 **Iteration**: 22
-**Health**: 8/10 (PASS)
+**Health**: 0/10 (FAIL)
 
 ## Goal
 Design how agents learn from experience. Deliverable: a concrete design doc proposing the mechanism — not implementation.
@@ -26,14 +26,10 @@ Key question: **what mechanism updates agent behavior based on experience?**
 ## Current State
 Iteration 22. Milestones: 3/4 done. Next: Propose integration points: where in the system does learning happen? (session e
 
-**Milestone: "Include comparison of approaches"** ✅ — The
-
 ## Iteration Summary
 - **Iter 20**: Now commit:
 
-- **Iter 21**: — Both remaining milestones are complete.
-
-**Milestone: "Include comparison of approaches"** ✅ — The
+- **Iter 21**: The design doc already has both sections committed. The "Approach Comparison" section (milestone for
 
 
 ## Comments

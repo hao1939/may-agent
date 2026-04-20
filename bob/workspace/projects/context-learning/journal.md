@@ -514,3 +514,5 @@ The open questions have been cleaned up to three genuinely open items (evaluatio
 
 **Reviewer**: DONE — The design doc at `workspace/agent-learning.md` is complete with all four milestones addressed, including the final one — "Propose integration points" — which is thoroughly covered in the `## Integration Points` section identifying five specific points: session end, session start, heartbeat, workflow step boundaries, and background pruning. Each point includes what happens, why that timing, and what changes are required.
 
+**Evaluator**: FAIL (score=0/10) — I didn't modify any files — I'm a reviewer evaluating work. Let me re-call finish.
+
