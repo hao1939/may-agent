@@ -122,7 +122,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
           };
         },
         runAgent: async (agentName: string, agentTask: string) => {
-          return ctx.manager.callAgent(agentName, agentTask, { source: "workflow" });
+          return ctx.manager.callAgent(agentName, agentTask, { source: "workflow", workflowRunId: runId });
         },
         runWorkflow: async () => ({ type: "escalate" as const, reason: "Sub-workflows not supported" }),
         emit: (event: any) => ctx.log(`[project-resume:${project.relPath}] ${event.type ?? event}`),
