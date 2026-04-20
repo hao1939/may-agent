@@ -350,8 +350,10 @@ function buildEvalPrompt(
   const ms = extractMilestones(projectContent);
   const recentEntries = getRecentJournalEntries(journalContent, iteration, 5);
 
-  let prompt = `[EVALUATION ONLY — no file edits.]\n\n`;
-  prompt += `You are evaluating whether a project status change is justified.\n\n`;
+  let prompt = `[EVALUATION — you are a REVIEWER, not the worker. Do not do any work. Just assess.]\n\n`;
+  prompt += `You are evaluating whether a project's status change is justified.\n`;
+  prompt += `You did NOT do this work — a worker agent did. Your job is to judge their output.\n`;
+  prompt += `Do NOT confuse yourself with the worker. Do NOT say "I didn't do anything" — YOU are the evaluator, not the doer.\n\n`;
   prompt += `## Goal\n${goal}\n\n`;
 
   if (ms.total > 0) {
