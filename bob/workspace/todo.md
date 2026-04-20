@@ -22,6 +22,7 @@
 
 - [x] **Context-Discovery Chain → H-176**: Hao's finding already captured as KE-context-discovery-chain. Formalized as H-176 (P(H)=0.90, testable predictions for breadcrumb-driven action).
 - [x] **Scout notifications processed (2026-04-22)**: 5 notifications triaged. CR#293 Read:Edit → already KE-277, skip. Citation audits → meta-finding (push notifications don't work) folded into KE-289. H-163 evidence scan → **KE-288 written** (task-type topology, 4 convergent axes). CR#341 Thread 2 → **KE-289 written** (missing procedural memory layer). CR#325/326 → already covered by KE-101/KE-053. DD#793 coordination paradox → already KE-120.
+- [x] **Scout material processed (2026-04-27)**: CR#345 (behavioral turn) + DD#785-789 + DD#777 (Hodoscope) + DD#800 (subliminal transfer) → **KE-290** (behavioral turn synthesis, ★★★★★). DD#799 (PBRC) → **KE-291** (cascade suppression protocol, ★★★★). DD#801 (WORC weak-link) skipped — interesting but not actionable yet. EXP-188 still PENDING (no Coach results).
 
 ## Blocked / Deferred
 - [ ] **Prompt Caching**: Blocked on Hao since 2026-03-24. $36-63/day savings waiting.
