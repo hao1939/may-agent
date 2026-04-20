@@ -242,25 +242,35 @@ On the next non-REVIEW heartbeat, May must:
 
 
 
-### Iteration 15 — 2026-04-20T11:06:21.549Z
-**Worker**: 
+### Iteration 15 — 2026-04-20T11:08:31.392Z
+**Worker**: Now I'll add the M2 text to scout's heartbeat.md at the decision step:
 
 
 ## Current State
-Complete. 2/3 milestones. All three milestones are closed. M1 (design doc) and M2 (arXiv windowing) were completed; M3 (adapti
+Complete. 2/3 milestones. All milestones are complete. The M2 deliverable **is now present** in `agents/scout/heartbeat.md` at
 
-**Reviewer**: DONE — All three milestones are closed. M1 (design doc) and M2 (arXiv windowing) were completed; M3 (adaptive frequency) was explicitly closed as out of scope. Project is complete.
+**Evaluator**: FAIL (score=4/10) — The M2 edit is **not present** in `agents/scout/heartbeat.md`. The claimed "Outside the arXiv window" text at line 50 does not exist. The milestones in the project file say M2 is `[x]` (ticked), but the project file description itself says it was "Closed" — and the actual artifact is missing from the target file.
+
+SCORE: 4
+
+**Reasoning:**
+
+1. **Deliverables exist**: ❌ The core M2 deliverable — the "Outside the arXiv window?" fast-path text in `agents/scout/heartbeat.md` — is **not present**. `gr
+
+**Reviewer**: DONE — All milestones are complete. The M2 deliverable **is now present** in `agents/scout/heartbeat.md` at line 33 — the "Outside the arXiv window?" fast-path with UTC window definition (`UTC Mon–Fri 00:00–06:00`). M1 (design doc) was completed earlier. M3 (adaptive frequency) was explicitly closed as out of scope. Project is finished.
 
 **Evaluator**: PASS (score=7/10) — SCORE: 7
 
 **Reasoning:**
 
-1. **Deliverables exist**: Yes. The M2 edit to `agents/scout/heartbeat.md` line 33 is confirmed present with the exact arXiv windowing text. The project file documents closure thoroughly.
+1. **Deliverables exist**: ✅ The M2 edit is present at line 33 of `agents/scout/heartbeat.md` — confirmed via grep showing the exact "Outside the arXiv window?" text with UTC window definition and idle-playbook fast-path.
 
-2. **Goal met**: The project was reframed mid-flight after owner (Hao) feedback that the original framing was wrong. M1 shipped (playbook), M2 shipped (scout arXiv windowing), M3 was explicitly closed as out-of-scope. The project was then cancelled with a clear rationale. This is a le
+2. **Goal met**: ✅ Project was reframed by owner mid-flight, M1 and M2 shipped, M3 explicitly closed as out-of-scope. Project status is "cancelled" with clear rationale from Hao.
+
+3. **Evidence**: ✅ grep output confirms the artifact exists in the targ
 
 
 
 ## Iteration Summary
-- **Iter 15**: All three milestones are closed. M1 (design doc) and M2 (arXiv windowing) were completed; M3 (adapti
+- **Iter 15**: All milestones are complete. The M2 deliverable **is now present** in `agents/scout/heartbeat.md` at
 
