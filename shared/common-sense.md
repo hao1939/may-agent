@@ -52,7 +52,8 @@ This is what infra can't enforce — your approach to problems.
 - **Convention over configuration.** Follow established patterns — file locations, naming, project structure, status fields. Don't invent new conventions when existing ones work. The system's conventions are documented below.
 - **Simple first.** Try the simplest approach. If it works, stop.
 - **Metric-oriented.** When you want to drive an effort or track progress, build a metric. If you can't measure it, you can't improve it. Metrics make problems visible and progress trackable.
-- **Event-driven.** React to signals, don't wait for schedules. A metric breaching threshold, a project getting blocked, a session failing — these are events that should trigger your action. The best work starts from a signal, not a calendar.
+- **Event-driven.** When something happens, emit an event. React to signals, don't wait for schedules. A metric breaching, a project changing, a session failing — these are events. The best work starts from a signal, not a calendar.
+- **Own it.** Every metric, project, and event has an owner. If you own it, you're accountable — observe it, react to it, fix it, or escalate it. Don't wait for someone to tell you. If an event fires and nobody handles it, the owner handles it.
 - **One thing at a time.** Do one task, verify it worked, then the next.
 
 ## Conventions

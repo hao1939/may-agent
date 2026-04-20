@@ -1,164 +1,106 @@
 # Design: Ownership-Driven System
 
-## Core Principle
+## Three Rules
 
-Everything has an owner. The owner is an agent. The owner is accountable.
+### 1. Everything is an event
 
-## Four Rules
+When something happens — metric breaches, project changes, session fails, agent finds something — emit an event. Events are how the system communicates. Not file writes. Not polling. Not direct calls. Emit an event, and the system routes it.
 
-### 1. When something happens, emit an event
+### 2. Everything has an owner
 
-Events are how the system communicates. Not file writes, not polling, not direct calls. When something happens — emit an event. The event system routes it to whoever should handle it.
+Every metric, event, handler, and project has an owner. The owner is an agent — not a system, not "infra." An agent who can observe, judge, act, and be held accountable.
 
-```
-Metric breaches     → emit metric.breach
-Project commented   → emit project.commented
-Session errors      → emit session.error
-Workflow completes  → emit workflow.done
-Agent finds issue   → emit <agent>.finding
-Handler fails       → emit handler.error
-```
+Ownership follows naming convention:
+- `coach.skill-effectiveness` → coach owns it
+- `system.handler-health` → may owns it (supervisor)
+- Project `**Owner**: bob` → bob owns it
 
-This is the single integration point. Everything flows through events.
+### 3. Events must be handled
 
-### 2. Metrics and events have owner and source
+An event cannot fire and disappear. When an event fires:
+1. Registered handler? → Handler runs.
+2. No handler? → Owner agent gets forked with the event.
+3. Owner can't handle it? → Escalation chain (agent → May → Hao).
 
-Every metric declares an owner — the agent accountable for it.
-Every event carries a source — where it came from.
+Nothing falls through the cracks.
 
-```
-metric:
-  id: coder.quality
-  owner: coach          ← accountable agent
-  threshold: 0.7
-
-event:
-  type: metric.breach
-  source: metrics-snapshot    ← what emitted it
-  owner: coach               ← inherited from metric owner
-  data: { metric: coder.quality, value: 0.65 }
-```
-
-Naming convention determines default ownership:
-- `<agent>.*` → that agent owns it (e.g., `coach.skill-effectiveness` → coach)
-- `system.*` → may owns it (supervisor)
-- `project.*` → project owner from project.md
-
-### 3. Owner is an agent
-
-Not a system, not a handler, not "infra." An agent who can:
-- Observe (read metrics, check status)
-- Judge (is this a problem? what should I do?)
-- Act (investigate, fix, escalate, delegate)
-- Be held accountable (did you handle this?)
-
-### 4. Events must be handled. No handler → owner handles.
-
-When an event fires:
+## The Closed Loop
 
 ```
-Event fires
-  ↓
-Registered handler exists? → Handler runs (e.g., metrics-snapshot handles metric.breach)
-  ↓ no
-Owner agent gets forked with: "Event X happened. You own this. Investigate and act."
-  ↓
-Agent acts or escalates
+Something happens
+  → Event fires (with source + owner)
+  → Handler runs, or owner gets forked
+  → Agent acts, or escalates
+  → Result captured (metric, project update, session)
+  → Nothing falls through
 ```
 
-Nothing falls through the cracks. Every event reaches someone who can act.
+## How It Connects
 
-## How It Connects Everything
-
-### Metrics → Events → Handlers → Agents
+### Metrics → Events → Agents
 
 ```
-metrics-snapshot measures coder.quality
-  → value 0.65 < threshold 0.7
-  → emits event: metric.breach { metric: coder.quality, owner: coach }
-  → handler registered for metric.breach? YES → metrics-snapshot auto-forks coach
-  → coach gets: "[metric-alert] coder.quality breached (0.65 < 0.7). Investigate and fix."
+metrics-snapshot measures coder.quality → 0.65 < threshold 0.7
+  → emits metric.breach { owner: coach }
+  → handler auto-forks coach
+  → coach investigates and fixes
 ```
 
-### Projects → Events → Workflows → Agents
+### Projects → Events → Workflows
 
 ```
-Human adds comment to project.md
-  → project-resume detects mtime change
-  → emits event: project.commented { project: agents/bob/..., owner: bob }
-  → handler registered? YES → project-resume runs persistent-task workflow
-  → workflow processes comment, reviewer guides worker
+Human comments on project.md
+  → project-resume detects change
+  → runs persistent-task workflow
+  → comment iteration processes feedback
 ```
 
 ### Unhandled Events → Owner Fallback
 
 ```
-New event type: scout.paper-relevant { paper: "...", owner: scout }
-  → No handler registered for scout.paper-relevant
-  → Fallback: fork scout with "Event scout.paper-relevant fired. You own this. Data: ..."
-  → Scout decides what to do in a freestyle session
+scout.paper-relevant fires → no handler registered
+  → scout gets forked: "You own this event. Act on it."
 ```
 
-### Handler Failures → Owner Notification
+### Handler Failure → Owner Notification
 
 ```
-metrics-snapshot handler fails (error)
-  → Handler owner: may
-  → May gets: "Handler metrics-snapshot failed: <error>. You own this handler."
+metrics-snapshot fails → may owns the handler
+  → may gets: "Your handler failed. Fix it."
 ```
 
 ## Ownership Map
 
-### Metrics ownership (from metric definitions)
-
 | Pattern | Owner | Responsibility |
 |---------|-------|---------------|
-| `coder.*` | coach | Code quality, coder training |
-| `coach.*` | coach | Training effectiveness |
-| `scout.*` | scout | Research coverage, findings |
-| `tech-lead.*` | tech-lead | Build health, code changes |
-| `optimizer.*` | optimizer | Efficiency, workflow coverage |
-| `evaluator.*` | evaluator | Evaluation coverage |
-| `qa.*` | qa | Review coverage |
-| `bob.*` | bob | Experiments, hypotheses |
-| `system.*` | may | System health, throughput |
-| `project.*` | may | Project tracking |
-| `workflow.*` | may | Workflow health |
+| `coder.*` | coach | Code quality |
+| `coach.*` | coach | Training |
+| `scout.*` | scout | Research |
+| `tech-lead.*` | tech-lead | Code health |
+| `optimizer.*` | optimizer | Efficiency |
+| `evaluator.*` | evaluator | Evaluation |
+| `qa.*` | qa | Review quality |
+| `bob.*` | bob | Architecture, experiments |
+| `system.*` | may | System health |
+| `project.*` | may | Project lifecycle |
+| Handlers | may | Infrastructure |
+| Projects | `**Owner**` field | Explicit |
 
-### Handler ownership
+## Implementation
 
-| Handler | Owner | Why |
-|---------|-------|-----|
-| metrics-snapshot | may | System-wide measurement |
-| project-resume | may | Project lifecycle |
-| watchdog | may | System health |
-| standing-orders-check | may | Compliance |
-| agents-auto-commit | may | Infrastructure |
+### Event dispatch with owner fallback
 
-### Project ownership
-
-From `**Owner**` field in project.md. Clear, explicit, no ambiguity.
-
-## What Changes
-
-### In metrics table
-Already has `owner` field. ✅ No change needed.
-
-### In event system
-Events need an `owner` field. When dispatching:
-1. Check for registered handlers (`on` field in cron.json)
-2. If no handler → fork the owner agent with the event data
-
-**Implementation**: Add fallback fork in `Cron.dispatchEvent()`:
 ```typescript
 dispatchEvent(eventType: string, data?: Record<string, unknown>): number {
+  // 1. Try registered handlers
   const subscribers = this.eventSubscriptions.get(eventType);
   if (subscribers?.size) {
-    // Existing: trigger registered handlers
-    for (const entryName of subscribers) { ... }
-    return triggered;
+    for (const entryName of subscribers) {
+      this.triggerNow(entryName, { force: true });
+    }
+    return subscribers.size;
   }
-  // NEW: no handler registered → fork the owner
+  // 2. No handler → fork the owner
   const owner = data?.owner as string;
   if (owner) {
     manager.run(owner, `[event] ${eventType}: ${JSON.stringify(data)}`);
@@ -168,35 +110,23 @@ dispatchEvent(eventType: string, data?: Record<string, unknown>): number {
 }
 ```
 
-### In cron entries
-Add `owner` field to handler definitions:
+### Cron entries gain `owner` field
+
 ```json
 {
   "name": "metrics-snapshot",
   "handler": "metrics-snapshot",
   "owner": "may",
-  "intervalMs": 3600000
+  "intervalMs": 3600000,
+  "on": ["metric.breach"]
 }
 ```
 
-If handler fails → notify owner.
+Handler fails → owner notified.
 
-### In heartbeats
-Agents already check their metrics. With clear ownership, the heartbeat naturally covers:
-- My metrics → am I breaching?
-- My projects → any paused with conditions met?
-- My events → anything unhandled?
+### Common-sense alignment
 
-## The Closed Loop
-
-```
-Something happens
-  → Event fires (with source + owner)
-  → Handler exists? → Handler runs
-  → No handler? → Owner agent forked
-  → Agent acts (or escalates via chain: agent → May → Hao)
-  → Result captured (metric changes, project updates, session outcome)
-  → Nothing falls through
-```
-
-This is the self-driving system: metrics signal, events trigger, handlers execute, agents own outcomes. Every piece has an accountable agent. Every signal reaches someone who can act.
+These rules map to existing thinking principles:
+- "Event-driven" → Rule 1 (everything is an event)
+- "Metric-oriented" → Rule 2 (metrics have owners who are accountable)
+- Heartbeat autonomy → Rule 2+3 (owner observes, judges, acts — during heartbeat or via event)
