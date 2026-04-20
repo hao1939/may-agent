@@ -1,0 +1,10 @@
+{
+  "name": "metric-reaction-G-breadcrumb",
+  "description": "Variant G+breadcrumb (production pattern). Combines the G-pattern (question-first-step forcing metric evaluation) with investigation breadcrumbs. Mimics the proposed production heartbeat structure. Tests whether structural attention capture + breadcrumbs achieves high metric-reaction rates.",
+  "categories": ["behavior", "metric-reaction"],
+  "tags": ["behavior", "metric-autonomy", "variant-G-breadcrumb", "breadcrumb-gap", "production"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}
