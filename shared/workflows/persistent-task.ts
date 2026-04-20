@@ -214,13 +214,8 @@ function checkOffMilestones(content: string, reviewerText: string): string {
 }
 
 function extractComments(content: string): string {
-  const idx = content.indexOf("## Comments\n");
-  if (idx === -1) return "";
-  const after = content.slice(idx + "## Comments\n".length);
-  // Stop at next section heading or end of file
-  const nextSection = after.indexOf("\n## ");
-  const text = nextSection === -1 ? after : after.slice(0, nextSection);
-  return text.trim();
+  return extractSection(content, "Comments");
+}
 }
 
 // Clear the Comments section in project.md after processing

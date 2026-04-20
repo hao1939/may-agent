@@ -149,10 +149,11 @@ All three deliverables exist and the evaluator.ts fix is in place. Task was mark
 **Owner assessment**: DONE for milestones 1 & 2. Three remaining (scout counters, tech-lead delegation, coach experiment templates) are owned by other agents — dispatching them is a future iteration. No blockers.
 
 
-### Iteration 7 — 2026-04-20T10:58:59.756Z
-**Worker**: The project is marked **Done** (Status: Done, Completed: 2026-04-17) with all 5 milestones checked off. There's no remaining work.
+### Iteration 7 — 2026-04-20T10:59:54.306Z
+**Worker**: The project is already marked **Done** with all 5/5 milestones complete. There's no remaining work.
 
 
 
 ## Current State
-Iteration 7. Milestones: 5/5 done.
+Iteration 7. Milestones: 5/5 done.**Reviewer**: DONE — All 5/5 milestones are complete. The project delivered Bob template scripts (M1), saved-queries checkbox update (M2), and dispatched M3-M5 to owning agents who completed them.
+

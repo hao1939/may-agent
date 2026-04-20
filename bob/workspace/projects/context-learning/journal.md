@@ -462,3 +462,13 @@ These three changes complete the remaining milestones. Output: updated `docs/des
 
 The doc also includes a phased implementation plan, an experiment design with concrete metrics, and addresses Hao's guidance about learning vs. injection directly in the design principles.
 
+**Evaluator**: PASS (score=8/10) — SCORE: 8/10
+
+**Reasoning:**
+
+1. **Deliverables exist**: Yes. `docs/designs/agent-learning.md` is a 325-line, comprehensive design document that clearly exists and has real content.
+
+2. **Goal met**: Yes. The goal was "a concrete design doc proposing the mechanism" and the doc thoroughly answers all four required questions: what to extract (Component 1), how to store (JSONL format), when to retrieve (session start via relevance filtering), and how to prune (Component 5 lifecycle).
+
+3. **Evidence*
+

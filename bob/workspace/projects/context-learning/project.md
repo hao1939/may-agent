@@ -1,10 +1,10 @@
 # Project: Context Learning — Design Phase
 
-**Status**: active
+**Status**: done
 **Owner**: bob
 **Priority**: P1
 **Iteration**: 19
-**Health**: 6/10 (BLOCKED)
+**Health**: 8/10 (PASS)
 
 ## Goal
 Design how agents learn from experience. Deliverable: a concrete design doc proposing the mechanism — not implementation.
@@ -24,7 +24,7 @@ Key question: **what mechanism updates agent behavior based on experience?**
 - [ ] Propose integration points: where in the system does learning happen? (session end? heartbeat? workflow step?)
 
 ## Current State
-Iteration 18. Milestones: 1/4 done. Next: Complete the design doc.
+Complete. 1/4 milestones. — The design doc at `docs/designs/agent-learning.md` is complete and comprehensive. All three remain
 
 ## Iteration Summary
 
