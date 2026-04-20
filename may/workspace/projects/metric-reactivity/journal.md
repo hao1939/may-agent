@@ -309,3 +309,5 @@ The milestone "Verify: auto-fork has NEVER fired" observation part is done. The 
 - Already has 1 snapshot from the metrics-snapshot handler
 
 M4 is verified (12+ metric-alert requests in DB, 5 with `source='metric-alert'`). M5 is already done. Let me update the journal and finish.
+### Iteration 4 — 2026-04-20T11:18:17.897Z
+**Worker**: My commit is 576e31ac5 (2 behind HEAD due to another commit). The project file confirms 5/5 milestones done.
