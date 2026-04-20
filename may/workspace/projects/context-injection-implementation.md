@@ -229,3 +229,5 @@ SCORE: 4
 
 2. **Goal met**: No. The goal is "Increase workflow coverage from 31% to 80%." The project's own Current State section says real session-level coverage is **19.9%** (1165/5869 sessions). The claimed 
 
+**Reviewer**: DONE — — This is a read-only informational task ("see project file"). The analysis has been completed across multiple iterations with a consistent finding: the project claims 82.3% workflow coverage but real session-level coverage is 19.9%, achieved through SQL backfill of `workflowRunId` on old sessions. No further action is needed for this read-only review task.
+
