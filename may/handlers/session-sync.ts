@@ -148,10 +148,67 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
       ctx.log(`[session-sync] Synced ${synced} sessions (${skipped} skipped)`);
 
+      // Backfill workflowRunId from .state/workflows/*.json for sessions missing it
+      let backfilled = 0;
+      try {
+        const workflowsDir = join(ctx.projectRoot, ".state", "workflows");
+        if (existsSync(workflowsDir)) {
+          const cutoff = Date.now() - 7 * 86400 * 1000; // only recent runs
+          const updateWfId = db.prepare(
+            `UPDATE sessions SET workflowRunId = ?, source = COALESCE(source, 'workflow')
+             WHERE sessionId = ? AND workflowRunId IS NULL`,
+          );
+          const wfFiles = readdirSync(workflowsDir)
+            .filter((f) => f.startsWith("wr_") && f.endsWith(".json"))
+            .sort()
+            .reverse()
+            .slice(0, 200); // limit scan to most recent 200 runs
+
+          const backfillTxn = db.transaction(() => {
+            for (const file of wfFiles) {
+              try {
+                const raw = readFileSync(join(workflowsDir, file), "utf-8");
+                const run = JSON.parse(raw) as {
+                  runId: string;
+                  startedAt?: number;
+                  parentSessionId?: string;
+                  steps?: Array<{ sessionId: string }>;
+                };
+                if (run.startedAt && run.startedAt < cutoff) continue;
+
+                // Tag step sessions
+                for (const step of run.steps ?? []) {
+                  if (step.sessionId) {
+                    const changes = updateWfId.run(run.runId, step.sessionId);
+                    if (changes.changes > 0) backfilled++;
+                  }
+                }
+
+                // Tag parent session (the cron_ session that spawned the workflow)
+                if (run.parentSessionId) {
+                  const changes = updateWfId.run(run.runId, run.parentSessionId);
+                  if (changes.changes > 0) backfilled++;
+                }
+              } catch {
+                // skip broken workflow files
+              }
+            }
+          });
+          backfillTxn();
+        }
+      } catch (err) {
+        ctx.log(`[session-sync] Workflow backfill error: ${err instanceof Error ? err.message : String(err)}`);
+      }
+
+      if (backfilled > 0) {
+        ctx.log(`[session-sync] Backfilled workflowRunId for ${backfilled} sessions`);
+      }
+
       ctx.emit({
         type: "session_sync",
         synced,
         skipped,
+        backfilled,
         total: metaFiles.length,
       });
     } finally {
