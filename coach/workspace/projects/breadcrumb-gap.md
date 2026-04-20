@@ -5,7 +5,7 @@
 **Started**: 2026-04-18
 **Priority**: P0
 
-**Iteration**: 1
+**Iteration**: 2
 ## Goal
 
 Close the gap: context-discovery breadcrumbs work 100% at raw API level but only ~10% in gym scenarios. Make breadcrumbs effective in production heartbeats.
@@ -137,40 +137,28 @@ All 3 phases complete. Project ready for monitoring — check metric in ~1 week 
 
 
 
+### Iteration 2 — 2026-04-20T19:28:02.347Z
+**Worker**: All agent heartbeats import from the shared module. The fix is live.
+
+
 ## Current State
-Iteration 1. Milestones: 0/0 done.**Reviewer**: CONTINUE — **Assessment**: The implementation is solid — all code artifacts are in place (gym scenarios, heartbeat-context.ts with breadcrumb injection, agent-heartbeat-breadcrumb.ts with G-pattern, measurement script, metric registered). However, the project tracker shows 4/5 milestones checked but the final milestone — "Monitor production breadcrumb-action-rate for 1 week (target ≥0.8)" — is NOT met. The current production metric is **0.32**, far below the 0.8 target and even below the 0.5 alert threshold.
-
-**What the next iteration should do:**
-
-1. **Diagnose why production breadcrumb-action-rate is only 0.32** when gym showed 80%. Run the measurement script (`bash agents/coach/scripts/measure-breadcrumb-action-rate.sh`) and manually examine 3-5 recent heartbeat sessions that had ⚠️ metrics but did NOT react. What went wrong — were breadcrumbs present? Were they actionable? Did the agent ignore them?
-
-2. **Check if the G-pattern heartbeat patch (agent-heartbeat-breadcrumb.ts) is actually being used** in production heartbeat workflows, or if it's just a standalone file in bob's workspace. The patch lives at `agents/bob/workspace/patches/` — verify it's wired into the actual heartbeat workflow execution path. If it's not wired in, that explains the gap (gym used question-framing, production doesn't).
-
-3. **Based on diagnosis, either**: (a) wire in the G-pattern patch if it's not active, or (b) improve breadcrumb content/placement if the patch IS active but agents still ignore breadcrumbs.
-
-4. **Update the breadcrumb-gap.md** project log with findings.
-
-**Key suspicion**: The G-pattern patch (`agent-heartbeat-breadcrumb.ts`) is likely NOT integrated into actual heartbeat execution — it's sitting in bob's workspace as a proposal. Production heartbeats probably use the standard flow without question-framing, getting only the breadcrumb-only path (80% in gym, but apparently much lower in production). The next iteration must verify this wiring gap.
-
-
-
+Iteration 2. Milestones: 0/0 done.
 ## Iteration Summary
 - **Iter 1**: This is a persistent task and a prior iteration already committed these exact files. The content is 
 
-### Iteration 2 — 2026-06-01
+**Reviewer**: CONTINUE — — **Assessment**: The G-pattern integration into `agents/shared/workflows/agent-heartbeat.ts` is confirmed — the shared module now includes question-first metrics framing, and all agent heartbeat workflows (`bob-heartbeat.ts`, `coach-heartbeat.ts`, `optimizer-heartbeat.ts`, etc.) import `buildAgentHeartbeat` from it. This is the correct wiring.
 
-**Diagnosis**: Production breadcrumb-action-rate measured at **0.32** (target 0.8).
+**However, the metric is still at 0.32 and cannot be declared "done" yet.** The metric snapshots show it went from 0 → 0.32 very recently (last ~4 data points). The 7-day measurement window still contains mostly pre-integration heartbeat sessions (all the sessions I see are from 2026-04-19, before the G-pattern was wired in). The metric needs more time with the new code live to show its effect.
 
-**Root cause**: The G-pattern patch (`agents/bob/workspace/patches/agent-heartbeat-breadcrumb.ts`) was **NOT wired into production**. It sat in bob's workspace as a standalone proposal. Production heartbeats used `agents/shared/workflows/agent-heartbeat.ts` which had NO metrics injection or question-framing in the check-health step. Agents only saw breadcrumbs if they happened to read their `heartbeat-context.md` file — passive discovery at ~32% rate.
+**What the next iteration should do:**
 
-**Fix applied**: Integrated the G-pattern directly into `agents/shared/workflows/agent-heartbeat.ts`:
-- Added `loadMetricsBlock()` to read pre-computed metrics from heartbeat-context.md
-- Added `hasAttentionMetrics()` to detect ⚠️ markers
-- Modified check-health step: when ⚠️ metrics exist, prepends a **question-first prompt** that forces the agent to evaluate metrics and follow breadcrumbs BEFORE proceeding to other health checks
-- When metrics are healthy, shows them briefly and moves on
-- When no metrics available, falls back to original behavior (no regression)
+1. **Wait and measure** — The integration is live but the 7-day window hasn't rotated enough. Run `bash agents/coach/scripts/measure-breadcrumb-action-rate.sh` to get current value. If still <0.5, check whether any heartbeat sessions have run AFTER the G-pattern integration and whether those specific sessions show higher action rates.
 
-**Expected impact**: Gym showed 100% action rate with G-pattern + breadcrumbs. Production should move from 0.32 → 0.8+ once agents start getting question-framed metrics in their check-health step.
+2. **Spot-check post-integration sessions** — Query `sessions` table for heartbeats started AFTER the commit that integrated agent-heartbeat.ts. Check if those sessions (specifically ones with ⚠️ metrics) show investigative action in their digests. This gives an early signal on the new code's effectiveness independent of the 7-day aggregate.
 
-**Files changed**: `agents/shared/workflows/agent-heartbeat.ts`
+3. **If post-integration action rate is ≥0.8 in the spot-check**, update breadcrumb-gap.md with the finding and mark that the integration is working — just waiting for the aggregate metric to catch up. If it's still low, diagnose WHY (are the heartbeats actually using the new code path? Is the `loadMetricsBlock` finding metrics? Is the question-framing appearing in the task text?).
+
+4. **Final milestone** remains: "Monitor production breadcrumb-action-rate for 1 week (target ≥0.8)". This can only be checked off when the metric consistently reads ≥0.8 over a meaningful period.
+
+- **Iter 2**: All agent heartbeats import from the shared module. The fix is live.
 
