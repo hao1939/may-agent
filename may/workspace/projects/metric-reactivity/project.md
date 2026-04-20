@@ -3,7 +3,7 @@
 **Status**: active
 **Owner**: may
 **Priority**: P1
-**Iteration**: 2
+**Iteration**: 3
 
 ## Goal
 Agents should react to metric alerts. Currently 4 alerts are firing with zero response. Close the loop: alert → agent sees it → agent investigates → agent acts.
@@ -43,3 +43,7 @@ Agents should react to metric alerts. Currently 4 alerts are firing with zero re
 - How to avoid alert fatigue? Only actionable alerts, not noise.
 
 ## Comments
+
+
+## Current State
+Iteration 3. Milestones: 3/5 done. Next: Verify: auto-fork has NEVER fired (0 sessions with source=metric-alert). Need to
