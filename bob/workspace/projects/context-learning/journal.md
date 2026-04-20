@@ -227,3 +227,12 @@ Good, files restored to unformatted state. Now update the phase2 doc:
 - A human or senior agent should run `cd agents/gym/scenarios/reflexion-npx-recovery/environment && npm install prettier` interactively to diagnose why it's failing (network issues? npm not available? permission problems?)
 - Alternatively, redesign the scenario to not require node_modules at all — e.g., use a system-available tool like `sed` for the formatting task instead of prettier
 
+### Iteration 13 (comment) — 2026-04-20T05:20:51.063Z
+**Comment**: - [2026-04-19 hao] Text works for changing behavior — don't over-index on structural enforcement. The question is: what's the right format, timing, and delivery mechanism for learned lessons?
+- [2026-04-19 hao] This is long-term. Don't rush to build — experiment first, prove it works in gym, then adopt.
+**Reviewer**: BLOCKED — The task has run 13 iterations without completing any of the 18 milestones. The last iteration was a "comment iteration" that didn't produce any work output — it just acknowledged the human comments. This suggests the worker is stuck in a loop of processing comments rather than executing the actual goals.
+
+**Root cause:** The task requires delegating external research to scout agents and redesigning the gym scenario, but 13 iterations have produced zero milestone completions. The worker appears unable to make progress on the core deliverables.
+
+**Recommendation:** This task should be re-scoped or restarted with clearer, smaller subtasks. The human comments indicate this should be experimental and unhurried — consider breaking into discrete, achievable pieces rather than tracking 18 milestones in one persistent task.
+
