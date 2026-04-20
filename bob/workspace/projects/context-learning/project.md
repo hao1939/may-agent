@@ -4,7 +4,7 @@
 **Owner**: bob
 **Priority**: P1
 **Iteration**: 23
-**Health**: 0/10 (FAIL)
+**Health**: 8/10 (PASS)
 
 ## Goal
 Design how agents learn from experience. Deliverable: a concrete design doc proposing the mechanism — not implementation.
@@ -24,7 +24,7 @@ Key question: **what mechanism updates agent behavior based on experience?**
 - [ ] Propose integration points: where in the system does learning happen? (session end? heartbeat? workflow step?)
 
 ## Current State
-Iteration 23. Milestones: 3/4 done. Next: Propose integration points: where in the system does learning happen? (session e
+Complete. 3/4 milestones. All four milestones are complete. The design doc at `agents/docs/designs/agent-learning.md` (325 lin
 
 **Milestone: "Include comparison of approaches"** ✅ — The
 
@@ -34,6 +34,8 @@ Iteration 23. Milestones: 3/4 done. Next: Propose integration points: where in t
 - **Iter 21**: — Both remaining milestones are complete.
 
 **Milestone: "Include comparison of approaches"** ✅ — The
+
+- **Iter 23**: All four milestones are complete. The design doc at `agents/docs/designs/agent-learning.md` (325 lin
 
 
 ## Comments

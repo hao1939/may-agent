@@ -533,3 +533,13 @@ The remaining milestone "Propose integration points" is fully addressed. The doc
 
 **Reviewer**: DONE — All milestones are complete. The design doc at `docs/designs/agent-learning.md` covers integration points (session end, heartbeat, workflow steps) along with problem statement, approach comparison, proposed architecture, and open questions. Previous evaluation scored 8/10 as PASS.
 
+**Evaluator**: PASS (score=8/10) — SCORE: 8
+
+**Reasoning:**
+
+1. **Deliverables exist**: Yes — `docs/designs/agent-learning.md` exists with 325+ lines including a detailed Integration Points section.
+
+2. **Goal met**: Yes. The goal was "a concrete design doc proposing the mechanism." The doc covers approach comparison, 5-component architecture, and integration points — it's genuinely actionable design work.
+
+3. **Evidence**: The file content is verified — the Integration Points section (the unchecked milestone) is clearly present 
+
