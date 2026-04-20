@@ -353,6 +353,7 @@ interface MetricRow {
   type: string;
   threshold: number | null;
   alert_direction: string | null;
+  direction: string | null; // 'higher_is_better' (default) or 'lower_is_better'
   last_value: number | null;
   measured_at: number | null;
   source: string | null;
