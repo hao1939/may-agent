@@ -297,6 +297,21 @@ function buildWorkerPrompt(
   return prompt;
 }
 
+function getAllReviewerGuidance(journalContent: string, iteration: number): string {
+  const entries: string[] = [];
+  for (let i = 1; i < iteration; i++) {
+    const regex = new RegExp(
+      `### Iteration ${i}[\\s\\S]*?\\*\\*Reviewer\\*\\*:\\s*(.+?)(?=\\n### Iteration|$)`, "s"
+    );
+    const match = journalContent.match(regex);
+    if (match) {
+      const guidance = match[1].trim();
+      entries.push(`- **Iteration ${i}**: ${guidance.slice(0, 300)}${guidance.length > 300 ? '...' : ''}`);
+    }
+  }
+  return entries.length > 0 ? entries.join('\n') : '(No previous guidance — this is the first review)';
+}
+
 function buildReviewPrompt(
   goal: string,
   iteration: number,
@@ -307,9 +322,14 @@ function buildReviewPrompt(
 ): string {
   const ms = extractMilestones(projectContent);
   const recentEntries = getRecentJournalEntries(journalContent, iteration, 2);
+  const previousGuidance = getAllReviewerGuidance(journalContent, iteration);
 
   let prompt = `[REVIEW ONLY — no file edits expected. Do NOT use edit(), write(), or bash commands that modify files. Only read and analyze.]\n\n`;
-  prompt += `You are reviewing iteration ${iteration} of a persistent task.\n\n`;
+  prompt += `You are the PROBLEM-SOLVER for iteration ${iteration} of a persistent task.\n`;
+  prompt += `Your job is to unblock the worker and push the project to completion.\n`;
+  prompt += `You are NOT a passive evaluator — you are an active strategist.\n`;
+  prompt += `If something isn't working, propose an alternative approach.\n`;
+  prompt += `Never give the same guidance twice. If previous guidance failed, try a different strategy.\n\n`;
   prompt += `## Goal\n${goal}\n\n`;
 
   if (ms.total > 0) {
@@ -321,27 +341,50 @@ function buildReviewPrompt(
     prompt += `\n`;
   }
 
+  prompt += `## How This System Works (reference)\n`;
+  prompt += `- **Milestone check-off**: When you mention a completed milestone by name, the system matches the first 30 characters (case-insensitive) against your response. Include the exact milestone name to check it off.\n`;
+  prompt += `- **Evaluator gate**: When you say DONE, an evaluator scores the work 1-10. Score ≥7 passes. It checks: deliverables exist, goal met, concrete evidence present, no shortcuts.\n`;
+  prompt += `- **Auto-check override**: If you say DONE but 0 milestones get checked off, the system overrides to CONTINUE. Always mention completed milestone names explicitly.\n`;
+  prompt += `- **Worker capabilities**: The worker can read/write files, run bash commands, call sub-agents. It works in the \`.state/\` directory. It CANNOT edit project.md or journal.md directly.\n`;
+  prompt += `- **Iteration budget**: Iterations are finite and expensive. Don't waste them repeating failed approaches.\n\n`;
+
   if (recentEntries) prompt += `## Recent Progress\n${recentEntries}\n\n`;
+
+  prompt += `## Your Previous Guidance (do NOT repeat these)\n${previousGuidance}\n`;
+  prompt += `↑ If any of the above guidance didn't produce results, you MUST try a fundamentally different approach.\n\n`;
 
   const comments = extractComments(projectContent);
   if (comments) prompt += `## Comments (from human/agents — address these in your guidance)\n${comments}\n\n`;
 
   prompt += `## Latest Worker Output (Iteration ${iteration})\n${workerSummary}\n\n`;
 
-  prompt += `## Your Assessment\n`;
+  prompt += `## Your Decision\n`;
   if (continueWithoutProgress >= 2) {
     prompt += `\n⚠️ WARNING: ${continueWithoutProgress} consecutive iterations with no milestone progress. `;
     prompt += `The current approach is not working. You MUST either:\n`;
-    prompt += `- Try a fundamentally different approach (not the same instruction again)\n`;
-    prompt += `- Say BLOCKED and explain what's preventing progress\n`;
+    prompt += `- PIVOT to a fundamentally different strategy\n`;
+    prompt += `- Say BLOCKED only if there's a specific external dependency that no amount of iteration can resolve\n`;
     prompt += `Repeating the same guidance is not acceptable.\n\n`;
   }
-  prompt += `1. Are ALL milestones complete? → DONE with summary.\n`;
-  prompt += `2. Is the task blocked or stuck in a loop? → BLOCKED with reason.\n`;
-  prompt += `3. Otherwise → CONTINUE with specific guidance for the next iteration.\n\n`;
-  prompt += `If CONTINUE: say exactly what the next iteration should do and what output to produce.\n`;
-  prompt += `When milestones are completed, mention them by name so they can be checked off.\n`;
-  prompt += `Your response MUST start with: DONE, BLOCKED, or CONTINUE`;
+  prompt += `Choose ONE:\n\n`;
+  prompt += `1. **DONE** — All milestones are genuinely complete.\n`;
+  prompt += `   Before saying DONE, verify:\n`;
+  prompt += `   (a) You mention each completed milestone by its exact name (for auto-check-off)\n`;
+  prompt += `   (b) The worker's output confirms deliverable files exist\n`;
+  prompt += `   (c) Quality is sufficient to score ≥7/10 (real artifacts, real evidence, no shortcuts)\n`;
+  prompt += `   If any check fails, say CONTINUE with fix instructions instead.\n\n`;
+  prompt += `2. **PIVOT** — The current approach has failed. Describe a fundamentally different strategy.\n`;
+  prompt += `   Use when: same guidance failed 2+ times, worker is stuck in a loop, the approach has a design flaw.\n`;
+  prompt += `   "This is hard" is NOT blocked — that's PIVOT.\n\n`;
+  prompt += `3. **BLOCKED** — There is a specific external dependency that no amount of worker iteration can resolve.\n`;
+  prompt += `   Examples: missing API key, needs human policy decision, requires access not available.\n\n`;
+  prompt += `4. **CONTINUE** — Progress is being made, guide the next iteration.\n\n`;
+  prompt += `If CONTINUE or PIVOT, your guidance MUST include all three parts:\n`;
+  prompt += `**(a) Concrete output:** What specific file or artifact should the next iteration produce?\n`;
+  prompt += `**(b) What's different:** How is this different from your previous guidance? (Say "First attempt" if iteration 1)\n`;
+  prompt += `**(c) First step:** One specific action to start with (e.g., "Read file X", "Run command Y")\n\n`;
+  prompt += `When milestones are completed, mention them by exact name so they can be checked off.\n`;
+  prompt += `Your response MUST start with: DONE, PIVOT, BLOCKED, or CONTINUE`;
 
   return prompt;
 }
@@ -392,6 +435,7 @@ function extractDecision(text: string): { status: "done" | "blocked" | "continue
   const trimmed = (text ?? "").trim();
   if (/^DONE\b/i.test(trimmed)) return { status: "done", detail: trimmed.replace(/^DONE[:\s]*/i, "").trim() };
   if (/^BLOCKED\b/i.test(trimmed)) return { status: "blocked", detail: trimmed.replace(/^BLOCKED[:\s]*/i, "").trim() };
+  if (/^PIVOT\b/i.test(trimmed)) return { status: "continue", detail: `[PIVOT] ${trimmed.replace(/^PIVOT[:\s]*/i, "").trim()}` };
   const detail = trimmed.replace(/^CONTINUE[:\s]*/i, "").trim();
   return { status: "continue", detail: detail || "Continue working toward the goal." };
 }
