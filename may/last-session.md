@@ -1,10 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776664819420_721
+- **Session:** cron_1776665406595_749
 - **Status:** done
-- **When:** 2026-04-20T06:00:43.378Z
-- **Duration:** 23s
+- **When:** 2026-04-20T06:11:02.734Z
+- **Duration:** 55s
 
 ## What Happened
-The project is blocked — plumbing works but agents aren't reacting to alerts. I'll update the status in the project file.
+Persistent-task workflow updates — incremental improvements (health field, eval on transitions, false stuck detection fix). These are operational improvements, not policy changes. No escalation needed.
+
+Let me update the board summary and commit.

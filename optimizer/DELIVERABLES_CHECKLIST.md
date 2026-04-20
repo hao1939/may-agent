@@ -1,5 +1,5 @@
-# Deliverables Checklist — Heartbeat 2026-04-20 Evening
+# Deliverables Checklist
 
-- [x] System health check — 0 errors, ops normal — via bash query
-- [x] Fork Mode D workflow health investigation — session s_1776642338670_0
-- [x] Update rotation tracker — `workspace/todo.md` updated: last=D, next=A
+- [x] System health check — 0 errors, all agents active — via bash query
+- [x] Dispatch investigation for quality regression — forked session s_1776665471469_0
+- [x] Update rotation tracker — `agents/optimizer/workspace/todo.md` updated to mode C, next D
