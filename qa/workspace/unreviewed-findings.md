@@ -38,6 +38,15 @@ Reviewed recent commits in `/app/agents` (the only git repo available in this ru
 ## 2026-04-20 — heartbeat — environment/tooling mismatch blocks mandatory QA gates
 
 ### Notes (this run)
+
+- This runtime directory `/app` is not a git repository, which prevents the standard "recent commits/diff" heartbeat scan here. Only `/app/agents` appears to be a git repo in previous entries.
+- No `package.json`, `tsconfig.json`, or Vitest config found at `/app` root (searched within maxdepth 2–3).
+- `./node_modules/.bin/tsc --noEmit`: missing (`node_modules/.bin` does not exist at `/app`).
+- `./node_modules/.bin/vitest --run`: missing (`node_modules/.bin` does not exist at `/app`).
+
+- Sampled code for spot-check: `src/lib/manager.ts`.
+  - Swallows all errors from `ensureFileReadsTable()`; if tracking is required, this is silent-failure risk.
+  - Calls `getUnreadDeliverables()` even if table init failed; needs check of that module for safety.
 - `/app` is not a git repository; only `/app/agents` is.
 - Latest commit: `d740ee0d6 may: project-resume scan - no new sessions needed` (changed `may/last-session.md`).
 - Read file in this run: `agents/may/last-session.md`.
