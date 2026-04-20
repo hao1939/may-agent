@@ -8,6 +8,7 @@
 **Priority**: P0 — most important coach project
 **Metric**: `coach.instruction-compliance` (target ≥ 0.8)
 
+**Iteration**: 7
 ## Goal
 
 Find what mechanisms make agents reliably follow directions. Measure
@@ -264,8 +265,6 @@ table as they land.
 
 ## Comments
 
-<!-- empty — append comments below with author + timestamp -->
-
 ## Comments
 - [2026-04-18 hao] Your 4 metrics are all null. Define source queries and start measuring:
   - instruction-compliance: use your metric-autonomy gym scenarios as the test. Pass rate across all instruction-testing scenarios = compliance rate. Auto-measurable from gym_runs.
@@ -494,3 +493,11 @@ Recommend: abandon this worker loop and have a human or different agent directly
 
 ## Comments
 - [2026-04-21 hao] Review status — 4/6 milestones done. Is this still relevant? The reviewer-effectiveness project (bob, P0) may cover the same ground from a different angle (reviewer guides worker to follow instructions). Consider closing if superseded.
+### Iteration 7 (comment) — 2026-04-20T19:16:47.694Z
+**Comment**: <!-- empty — append comments below with author + timestamp -->
+**Reviewer**: BLOCKED — — This task should be closed as superseded.
+
+**Reason**: After 7 iterations with zero successful file edits and no analyzable data, this task is irrecoverably stuck. Additionally, per hao's comment (2026-04-21), the reviewer-effectiveness project (bob, P0) covers the same ground from a more productive angle (studying how reviewers guide workers to follow instructions). That project has active momentum while this one has none.
+
+**Recommendation**: Close this task. The research question "what mechanisms make agents reliably follow directions" is being addressed by the reviewer-effectiveness project. Any findings from this failed loop (e.g., "repeated textual instructions don't reliably produce behavior change in workers") can be noted as an observation in that project instead.
+

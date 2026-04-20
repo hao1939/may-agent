@@ -1,6 +1,6 @@
 # Project: Breadcrumb Gap (API 100% → Gym 10%)
 
-**Status**: monitoring
+**Status**: active
 **Owner**: coach
 **Started**: 2026-04-18
 **Priority**: P0
