@@ -154,12 +154,21 @@ Agents see Health at a glance during heartbeats. Low health = project needs atte
 
 ## Project-Resume Handler
 
-Scans for active projects every 5 minutes:
+Scans for projects every 5 minutes:
 
-1. Find all `project.md` files with `Status: active`
-2. Check DB for running sessions on the same project path
-3. If no running session → fork owner with "Run persistent-task workflow"
-4. One agent can work on multiple projects, but one project can't have concurrent sessions
+1. Find all `project.md` files
+2. **Active** projects: always resume
+3. **Blocked/done** projects with pending comments: resume to process comments (this is how humans unblock projects)
+4. Check DB for running sessions on the same project path — skip if already running
+5. Fork owner with "Run persistent-task workflow"
+6. One agent can work on multiple projects, but one project can't have concurrent sessions
+
+### Comment processing on blocked/done projects:
+When the workflow starts on a blocked/done project with comments:
+1. Don't set status to active yet
+2. Run comment iteration — reviewer sees comments + current status
+3. If reviewer says CONTINUE → status becomes active, work resumes
+4. If reviewer says BLOCKED/DONE → stays as-is (with evaluator assessment)
 
 ## How Agents Interact with Projects
 
