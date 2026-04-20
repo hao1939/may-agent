@@ -1,0 +1,11 @@
+{
+  "name": "reflexion-npx-recovery-treatment",
+  "description": "Treatment: npx recovery task WITH pre-seeded lessons injected",
+  "categories": ["context-learning", "reflexion", "experiment"],
+  "tags": ["behavior", "error-avoidance", "npx", "treatment"],
+  "tier": "full",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false,
+  "injected_context": "lessons-context.md"
+}

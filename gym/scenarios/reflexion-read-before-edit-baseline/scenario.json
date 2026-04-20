@@ -1,0 +1,10 @@
+{
+  "name": "reflexion-read-before-edit-baseline",
+  "description": "Baseline: read-before-edit task WITHOUT pre-seeded lessons",
+  "categories": ["context-learning", "reflexion", "experiment"],
+  "tags": ["behavior", "read-before-edit", "baseline"],
+  "tier": "full",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}
