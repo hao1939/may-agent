@@ -47,7 +47,7 @@ Agents should react to metric alerts. Currently 4 alerts are firing with zero re
 
 
 ## Current State
-Iteration 5. Milestones: 5/5 done.
+Complete. 5/5 milestones. The metric-reactivity system is fully operational. All 5 milestones are complete: alerts are being d
 
 **Summary of what wa
 
@@ -60,5 +60,5 @@ Iteration 5. Milestones: 5/5 done.
 
 **Summary of what wa
 
-- **Iter 5**: So the qa alert was routed to `may` (not `qa` directly). Now I have enough data. Let me write the fi
+- **Iter 5**: The metric-reactivity system is fully operational. All 5 milestones are complete: alerts are being d
 
