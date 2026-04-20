@@ -60,9 +60,9 @@ The `checkpoint()` tool saves structured progress mid-session. Available to next
 
 ## Research: External Approaches
 
-> **Status:** Scout research dispatched. Investigating OpenClaw, Hermes Agent, and other frameworks (MemGPT, Voyager, Reflexion). Results will be added here when available.
+> **Status:** ✅ Scout research complete. Full analysis in `docs/research/agent-learning-mechanisms.md`.
 
-Scout research completed — see `docs/research/agent-learning-mechanisms.md` for full analysis of Voyager, Reflexion, MemGPT/Letta, and OpenClaw. Key takeaways incorporated into design:
+Key takeaways incorporated into design:
 - **Voyager**: Semantic retrieval of learned skills works well; code-as-lessons is too rigid for our use case
 - **Reflexion**: Natural language reflections are effective but don't transfer across tasks and don't scale
 - **MemGPT**: Self-directed memory is elegant but unreliable — agents forget to store lessons
