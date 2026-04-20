@@ -1,12 +1,15 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776683926789_220
+- **Session:** s_1776683897898_217
 - **Status:** done
-- **When:** 2026-04-20T11:21:25.883Z
-- **Duration:** 2m39s
+- **When:** 2026-04-20T11:21:40.248Z
+- **Duration:** 3m22s
 
 ## What Happened
-DONE
+The implementation is solid and complete. The `autoForkForAlert` function is the core mechanism — it auto-forks the owning agent when a metric breaches, with dedup via the requests DB. There's also a backfill mechanism (step 0) that catches unresolved alerts from before the auto-fork was wired up.
 
-All 4 milestones are complete. The file-read tracking system has been implemented with: DB table creation, cross-agent read logging, and unread deliverables surfacing query. The task appears stuck in a finish-guard loop but the actual work is done.
+DONE — All 5/5 milestones are complete. The alert→agent loop is fully closed:
+
+1. **Alert detection**: `metrics-snapshot.ts` checks thresholds, regressions, and stalled metrics
+2. **Event-driven deliv

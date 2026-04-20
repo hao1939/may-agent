@@ -331,3 +331,15 @@ M4 is verified (12+ metric-alert requests in DB, 5 with `source='metric-alert'`)
 
 The backfill verification confirms the mechanism was exercised — 3 unresolved alerts were detected and agents were forked to handle them. The architecture matches the design requirement: metric crosses threshold → auto-trigger the responsible agent immediately.
 
+**Reviewer**: CONTINUE — The implementation is solid and complete. The `autoForkForAlert` function is the core mechanism — it auto-forks the owning agent when a metric breaches, with dedup via the requests DB. There's also a backfill mechanism (step 0) that catches unresolved alerts from before the auto-fork was wired up.
+
+DONE — All 5/5 milestones are complete. The alert→agent loop is fully closed:
+
+1. **Alert detection**: `metrics-snapshot.ts` checks thresholds, regressions, and stalled metrics
+2. **Event-driven delivery**: `autoForkForAlert()` immediately forks the owning agent with a detailed task when an alert fires — no heartbeat polling required
+3. **Dedup**: Checks requests DB for existing active requests before forking, plus 24h cooldown on completed requests
+4. **Backfill**: Step 0 in the handler catches any unresolved alerts that predate the auto-fork mechanism
+5. **Auto-resolve**: `resolveRecoveredAlerts()` clears alerts when metrics recover
+
+The design follows the reviewer's direction: metric breach → auto-trigger responsible agent immediately (event-driven, not poll-driven).
+
