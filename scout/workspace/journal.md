@@ -1227,5 +1227,15 @@ Hodoscope deep dive (DD#777). 2604.11072 ★★★★★ — unsupervised behavi
 
 **Produced:** DD#777 (Hodoscope) — `agents/scout/workspace/deep-dives/dd777-hodoscope-unsupervised-behavioral-monitoring.md`
 
+## Session 810 — 2026-04-21 Monday Triage
+
+Monday arXiv batch (April 20) triaged. 4 new cs.MA submissions + 8 cross-lists + cs.AI new. Top 3 deep-dived:
+
+- **DD#778 LACE** (2604.15529) ★★★★★ — Cross-thread attention for parallel reasoning coordination. +7pp accuracy. Directly relevant to fork/parallel session architecture.
+- **DD#779 PBRC** (2604.15558) ★★★★★ — Preregistered belief revision contracts. Proves conformity cascades eliminated protocol-level. Relevant to agent echo chamber risk.
+- **DD#780 Subliminal Transfer** (2604.15559) ★★★★½ — Unsafe behaviors transfer through distillation even with keyword filtering. Extends CR#335/CR#339.
+
+All 3 DDs promoted to shared library. 13 paper IDs added to covered_ids.txt.
+
 ## Session 809 — 2026-04-20 15:00 UTC
 Weekend heartbeat. arXiv cs.MA/new still showing Friday April 17 listings — Monday batch not yet available. GitHub API scan for recent multi-agent repos: WorldSeed (155★, autonomous agent world engine with YAML scenarios), SakanaAI/digital-ecosystem (50★, interactive multi-agent NCA simulation). Neither high enough signal for deep-dive yet. No pending leads requiring action. Next: Monday arXiv triage when fresh batch drops (~18:00 UTC).
