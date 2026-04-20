@@ -124,6 +124,7 @@ function ensureTables(db: SqliteDb): void {
 /**
  * Insert an alert, but only if there isn't already an unresolved alert for
  * the same metric. Prevents alert fatigue from repeated fires.
+ * Returns true if a NEW alert was inserted (false = already alerting).
  */
 function recordAlertWithDedup(
   db: SqliteDb,
@@ -133,14 +134,63 @@ function recordAlertWithDedup(
   value: number | null,
   threshold: number | null,
   now: number,
-): void {
+): boolean {
   const existing = db.prepare(
     "SELECT id FROM metric_alerts WHERE metric_id = ? AND resolved_at IS NULL",
   ).get(metricId);
-  if (existing) return; // Already alerting on this metric
+  if (existing) return false; // Already alerting on this metric
   db.prepare(
     "INSERT INTO metric_alerts (metric_id, severity, message, value, threshold, created_at) VALUES (?,?,?,?,?,?)",
   ).run(metricId, severity, message, value, threshold, now);
+  return true;
+}
+
+/**
+ * Auto-fork the owning agent when a metric breaches its threshold.
+ * Event-driven: alert firing IS the trigger.
+ *
+ * Dedup: checks the requests DB for any active/pending request with
+ * source=metric-alert for this metric before forking.
+ */
+function autoForkForAlert(
+  ctx: HandlerContext,
+  metric: MetricRow,
+  alertMessage: string,
+): void {
+  try {
+    const task = `⚠️ ${alertMessage}. Investigate the root cause and take corrective action.`;
+
+    // Dedup: check if there's already a pending/active request for this metric alert
+    const db = ctx.getDb();
+    const existingRequest = db.prepare(
+      `SELECT id FROM requests
+       WHERE to_agent = ? AND source = 'metric-alert' AND status IN ('pending','active')
+       AND task LIKE ?`
+    ).get(metric.owner, `%${metric.id}%`) as { id: number } | null;
+
+    if (existingRequest) {
+      ctx.log(`[metrics-snapshot] Skipping fork for ${metric.id} — active request #${existingRequest.id} exists`);
+      return;
+    }
+
+    ctx.trackRequest({
+      fromEntity: "metrics-snapshot",
+      toAgent: metric.owner,
+      method: "fork",
+      task: `[metric-alert][${metric.id}] ${task}`,
+      source: "metric-alert",
+    });
+
+    ctx.manager.run(
+      metric.owner,
+      `[metric-alert][${metric.id}] ${task}\n\nMetric: ${metric.name}\nOwner: ${metric.owner}\nCurrent: ${metric.current}\nThreshold: ${metric.threshold ?? 'N/A'}\nTarget: ${metric.target}\n\nInvestigate why this metric breached, fix the root cause, and report what you did.`,
+      { source: "metric-alert" },
+    );
+    ctx.log(`[metrics-snapshot] Auto-forked ${metric.owner} for metric alert: ${metric.id}`);
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    ctx.log(`[metrics-snapshot] Failed to auto-fork ${metric.owner} for ${metric.id}: ${msg}`);
+  }
 }
 
 /**
@@ -149,6 +199,7 @@ function recordAlertWithDedup(
  */
 function checkRegression(
   db: SqliteDb,
+  ctx: HandlerContext,
   metric: MetricRow,
   currentValue: number,
   now: number,
@@ -160,21 +211,23 @@ function checkRegression(
 
   if (avg7d?.avg_val != null && avg7d.avg_val > 0) {
     const alertAbove = metric.alert_direction === 'above';
-    // For "below" metrics (e.g., quality): regression = value drops below avg
-    // For "above" metrics (e.g., error rate): regression = value rises above avg
     const changeRatio = alertAbove
-      ? (currentValue - avg7d.avg_val) / avg7d.avg_val  // positive when value rises
-      : (avg7d.avg_val - currentValue) / avg7d.avg_val; // positive when value drops
+      ? (currentValue - avg7d.avg_val) / avg7d.avg_val
+      : (avg7d.avg_val - currentValue) / avg7d.avg_val;
     if (changeRatio > sensitivity) {
-      recordAlertWithDedup(
+      const message = `${metric.id} regressed ${(changeRatio * 100).toFixed(1)}% vs 7d avg (${avg7d.avg_val.toFixed(2)} → ${currentValue.toFixed(2)})`;
+      const isNew = recordAlertWithDedup(
         db,
         metric.id,
         "yellow",
-        `${metric.id} regressed ${(changeRatio * 100).toFixed(1)}% vs 7d avg (${avg7d.avg_val.toFixed(2)} → ${currentValue.toFixed(2)})`,
+        message,
         currentValue,
         avg7d.avg_val,
         now,
       );
+      if (isNew) {
+        autoForkForAlert(ctx, metric, message);
+      }
     }
   }
 }
@@ -183,15 +236,17 @@ function checkRegression(
  * Check if a health metric's value breaches its threshold and record an alert.
  * Returns true if an alert was fired.
  */
-function checkThresholdAlert(db: SqliteDb, metric: MetricRow, value: number, now: number): boolean {
+function checkThresholdAlert(db: SqliteDb, ctx: HandlerContext, metric: MetricRow, value: number, now: number): boolean {
   if (metric.type !== "health" || metric.threshold == null) return false;
   const alertAbove = metric.alert_direction === 'above';
   const breaching = alertAbove ? value > metric.threshold : value < metric.threshold;
   if (breaching) {
     const direction = alertAbove ? 'above' : 'below';
-    recordAlertWithDedup(db, metric.id, "yellow",
-      `${metric.id} ${direction} threshold: ${value} ${alertAbove ? '>' : '<'} ${metric.threshold}`,
-      value, metric.threshold, now);
+    const message = `${metric.id} ${direction} threshold: ${value} ${alertAbove ? '>' : '<'} ${metric.threshold}`;
+    const isNew = recordAlertWithDedup(db, metric.id, "yellow", message, value, metric.threshold, now);
+    if (isNew) {
+      autoForkForAlert(ctx, metric, message);
+    }
     return true;
   }
   return false;
@@ -312,24 +367,10 @@ function notifyOwnerOnRegression(
 
     if (!regressed) return;
 
-    const task = `⚠️ Metric '${metric.name}' regressed: ${oldValue} → ${newValue} (${explanation}). Investigate and fix.`;
+    const alertMessage = `Metric '${metric.name}' regressed: ${oldValue} → ${newValue} (${explanation})`;
 
-    ctx.trackRequest({
-      fromEntity: "metrics-snapshot",
-      toAgent: metric.owner,
-      method: "message",
-      task,
-      source: "metrics-snapshot",
-    });
-
-    // Event-driven: auto-fork the owning agent with an investigation task
-    try {
-      ctx.manager.run(metric.owner, `[metric-alert] ${task}\n\nYour metric breached its threshold. Investigate the root cause, take corrective action, and report what you did.`, { source: "metric-alert" });
-      ctx.log(`Forked ${metric.owner} for metric regression: ${metric.name}`);
-    } catch {
-      // Fallback to notification if fork fails
-      ctx.notify(`[metric-alert] ${task}`);
-    }
+    // Use unified auto-fork with dedup
+    autoForkForAlert(ctx, metric, alertMessage);
   } catch {
     // Best-effort — don't break snapshot recording
   }
@@ -387,10 +428,10 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         }
 
         // Check health threshold
-        if (checkThresholdAlert(db, m, value, now)) alertsFired++;
+        if (checkThresholdAlert(db, ctx, m, value, now)) alertsFired++;
 
         // Check regression
-        checkRegression(db, m, value, now);
+        checkRegression(db, ctx, m, value, now);
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : String(e);
         ctx.log(`[metrics-snapshot] Failed to measure ${m.id}: ${msg}`);
@@ -433,10 +474,10 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         notifyOwnerOnRegression(ctx, db, m, value);
 
         // Check health threshold
-        if (checkThresholdAlert(db, m, value, now)) alertsFired++;
+        if (checkThresholdAlert(db, ctx, m, value, now)) alertsFired++;
 
         // Check regression
-        checkRegression(db, m, value, now);
+        checkRegression(db, ctx, m, value, now);
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : String(e);
         ctx.log(`[metrics-snapshot] Failed to measure ${m.id} via command: ${msg.slice(0, 200)}`);
@@ -456,15 +497,19 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         : (m.source === "manual" ? MS_48H : null);
 
       if (interval != null && m.updated_at < now - interval) {
-        recordAlertWithDedup(
+        const stalledMessage = `${m.name} stalled — no update in expected interval (owner: ${m.owner})`;
+        const isNew = recordAlertWithDedup(
           db,
           m.id,
           "yellow",
-          `${m.name} stalled — no update in expected interval (owner: ${m.owner})`,
+          stalledMessage,
           null,
           null,
           now,
         );
+        if (isNew) {
+          autoForkForAlert(ctx, m, stalledMessage);
+        }
         alertsFired++;
       }
     }
