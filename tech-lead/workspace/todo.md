@@ -4,7 +4,7 @@
 - [ ] Build health: package.json missing from /app root — confirmed still missing (Apr 20). Environment issue, not code bug.
 - [ ] Zombie sessions: 4 orphaned running/0-op sessions (coach×2, bob×1, optimizer×1) from pre-heartbeat. Need cleanup mechanism or auto-timeout.
 - [ ] Review CR#341 citation gap synthesis (1a710ad1) — 31 uncited scout findings
-- [ ] "Stuck requests" metric threshold inversion (1542398d) — value=0 target=0 showing as below threshold
+- [x] "Stuck requests" metric threshold inversion (1542398d) — **RESOLVED**: metric now has alert_direction="above", threshold=20, and regression alerts fire/resolve correctly. Current=0 (healthy).
 - [x] P1: Coach reported 2 persistent-task workflow bugs (e6ac494a): API mismatch (project field) + project file overwrite. **VERIFIED (Apr 19)**: Code review of persistent-task.ts shows parseInput() correctly handles `project:` field. `createProjectDir()` only runs when `!existsSync(config.projectPath)` — no overwrite bug. Coach likely passed wrong input format. Documentation is adequate.
 - [ ] Delegation quality gap (FM-3.3, 8 occurrences) — 0.79 vs 0.85 target. Audit recent delegations.
 - [ ] Review Context-Discovery Chain finding (80eaf11a) — Hao says agents need investigation narratives, not bare metrics.
