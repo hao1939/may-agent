@@ -644,7 +644,23 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       }
 
       if (decision.status === "blocked") {
+        ctx.emit({ type: "step_start", step: `evaluate-blocked-${iteration}` });
+        const blockedMs = extractMilestones(projectContent);
+        const blockedNote = blockedMs.total > 0 ? `Milestones: ${blockedMs.done}/${blockedMs.total} checked off.` : "";
+        const evalPrompt = buildEvalPrompt(config.goal, projectContent, journalContent, iteration, blockedNote);
+        const evalResult = await ctx.runAgent(config.owner, evalPrompt);
+        const evalText = evalResult.lastAssistantText ?? "";
+        const scoreMatch = evalText.match(/SCORE:\s*(\d+)/i);
+        const score = scoreMatch ? parseInt(scoreMatch[1], 10) : 0;
+        const evalEntry = `**Evaluator**: BLOCKED eval (score=${score}/10) — ${evalText.slice(0, 500)}\n\n`;
+        if (config.isLegacy) {
+          projectContent += evalEntry;
+        } else {
+          appendFileSync(config.journalPath, evalEntry);
+        }
+
         projectContent = updateField(projectContent, "Status", `blocked`);
+        projectContent = updateField(projectContent, "Health", `${score}/10 (BLOCKED)`);
         projectContent = updateSection(projectContent, "Current State",
           `Blocked: ${decision.detail.slice(0, 150)}`);
         writeFileSync(config.projectPath, projectContent, "utf-8");
