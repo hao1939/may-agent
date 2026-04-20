@@ -160,16 +160,16 @@ function autoForkForAlert(
   try {
     const task = `⚠️ ${alertMessage}. Investigate the root cause and take corrective action.`;
 
-    // Dedup: check if there's already a pending/active request for this metric alert
+    // Dedup: check if there's already an unprocessed request for this metric alert
     const db = ctx.getDb();
     const existingRequest = db.prepare(
-      `SELECT id FROM requests
-       WHERE to_agent = ? AND source = 'metric-alert' AND status IN ('pending','active')
+      `SELECT requestId FROM requests
+       WHERE toAgent = ? AND fromEntity = 'metrics-snapshot' AND status = 'CREATED'
        AND task LIKE ?`
-    ).get(metric.owner, `%${metric.id}%`) as { id: number } | null;
+    ).get(metric.owner, `%${metric.id}%`) as { requestId: string } | null;
 
     if (existingRequest) {
-      ctx.log(`[metrics-snapshot] Skipping fork for ${metric.id} — active request #${existingRequest.id} exists`);
+      ctx.log(`[metrics-snapshot] Skipping fork for ${metric.id} — active request ${existingRequest.requestId} exists`);
       return;
     }
 
@@ -413,9 +413,9 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         // Check if there's already a metric-alert request for this metric
         const existingRequest = db.prepare(
           `SELECT requestId FROM requests
-           WHERE to_agent = ? AND source = 'metric-alert' AND status IN ('pending','active')
+           WHERE toAgent = ? AND fromEntity = 'metrics-snapshot' AND status = 'CREATED'
            AND task LIKE ?`
-        ).get(alert.owner, `%${alert.metric_id}%`) as { requestId: number } | null;
+        ).get(alert.owner, `%${alert.metric_id}%`) as { requestId: string } | null;
 
         if (existingRequest) continue; // Already has an active request
 
