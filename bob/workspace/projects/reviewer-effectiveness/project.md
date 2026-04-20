@@ -3,7 +3,7 @@
 **Status**: active
 **Owner**: bob
 **Priority**: P0
-**Iteration**: 1
+**Iteration**: 2
 **Health**: —
 
 ## Goal
@@ -40,8 +40,7 @@ Evidence from our projects:
 - [ ] Measure: reviewer effectiveness metric — % of iterations where reviewer guidance leads to progress vs stall
 
 ## Current State
-Not started.
-
+Iteration 2. Milestones: 0/4 done. Next: Investigate: analyze 10+ reviewer decisions from recent projects — categorize fa
 ## Iteration Summary
 
 ## Comments
