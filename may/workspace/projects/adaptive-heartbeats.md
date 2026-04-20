@@ -276,3 +276,5 @@ All milestones are complete. The "Outside the arXiv window?" fast-path text is c
 ## Iteration Summary
 - **Iter 16**: The M2 edit IS present at line 33 of `agents/scout/heartbeat.md`. The project is cancelled with all 
 
+**Reviewer**: DONE — All milestones are complete. M1 (arXiv window awareness) and M2 (fast-path in scout heartbeat) are delivered, with M3 (adaptive frequency) explicitly closed as unnecessary. The project is finished.
+
