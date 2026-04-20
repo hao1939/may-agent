@@ -1,10 +1,10 @@
 # Project: Context Learning — Implementation Phase
 
-**Status**: active
+**Status**: blocked
 **Owner**: bob
 **Priority**: P1
-**Iteration**: 3
-**Health**: 7/10
+**Iteration**: 4
+**Health**: 4/10 (BLOCKED)
 
 ## Goal
 Integrate the reflexion-based learning pipeline into the agent infrastructure so agents automatically learn from failed sessions. Design is complete — this is implementation.
@@ -40,7 +40,7 @@ Integrate the reflexion-based learning pipeline into the agent infrastructure so
 - Does the gym runner support automated multi-run experiments?
 
 ## Current State
-Iteration 3. Milestones: 1/5 done. Next: M2: Wire `extractLessons()` into session completion handler (requires `src/lib/m
+Blocked: **M2 and M3** are blocked on an external dependency — `manager.ts` (the session lifecycle code) does not exist in this repository. The integration hoo
 ## Iteration Summary
 - **Iter 1**: Already committed in a prior step. Good.
 

@@ -46,3 +46,32 @@ Mark M2 and M3 as **blocked on external dependency** (`manager.ts` is not in thi
 
 **Key constraint**: Do NOT just write another design doc. Execute commands. The experiment runner and scenarios exist — try to run them.
 
+### Iteration 4 — 2026-04-20T19:31:32.910Z
+**Worker**: As expected — the gym runner uses `agent_status: "skipped"` because there's no live agent adapter. The scenarios and criteria are correctly structured but need a real agent to execute the tasks. Now let me write the results doc.
+**Reviewer**: BLOCKED — **M2 and M3** are blocked on an external dependency — `manager.ts` (the session lifecycle code) does not exist in this repository. The integration hooks are ready in `lessons-hooks.ts`.
+
+**M4** is blocked on infrastructure — the gym runner requires a live agent adapter to actually execute scenarios, which is not available in this execution context. The experiment ran but all arms returned `agent_status: "skipped"`. Without a live agent, we cannot produce real quantitative results.
+
+**M5** is written (`agents/bob/workspace/phase2-results.md`) but documents blockers rather than real data, since M4 couldn't produce actual results.
+
+**What's actually done and deliverable:**
+- ✅ M1: Core lessons pipeline (`lessons.ts`, `lessons-hooks.ts`, 19 passing tests)
+- ✅ M5: Results doc exists (documents the blockers honestly)
+- ✅ Experiment infrastructure built (scenarios, runner script, design doc)
+
+**What cannot be completed in this repo/context:**
+- M2/M3: Require `manager.ts` which lives in the platform repo
+- M4: Requires a live agent adapter for the gym runner
+
+No further iterations will make progress — the remaining work requires capabilities outside this execution environment.
+
+**Evaluator**: BLOCKED eval (score=4/10) — SCORE: 4
+
+**Reasoning:**
+
+1. **Deliverables exist**: Yes — lessons.ts, lessons-hooks.ts, test file, gym scenarios, experiment runner, results doc all exist. Artifacts are real.
+
+2. **Goal met**: No. The goal is "integrate the reflexion-based learning pipeline into the agent infrastructure so agents automatically learn from failed sessions." Nothing is actually integrated — the hooks exist but aren't wired into anything. Agents do not automatically learn from failed sessions.
+
+3. **Evidence**: Te
+
