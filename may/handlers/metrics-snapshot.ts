@@ -322,8 +322,14 @@ function notifyOwnerOnRegression(
       source: "metrics-snapshot",
     });
 
-    // Actually deliver the notification to the owning agent
-    ctx.notify(`[metric-alert] ${task}`);
+    // Event-driven: auto-fork the owning agent with an investigation task
+    try {
+      ctx.manager.run(metric.owner, `[metric-alert] ${task}\n\nYour metric breached its threshold. Investigate the root cause, take corrective action, and report what you did.`, { source: "metric-alert" });
+      ctx.log(`Forked ${metric.owner} for metric regression: ${metric.name}`);
+    } catch {
+      // Fallback to notification if fork fails
+      ctx.notify(`[metric-alert] ${task}`);
+    }
   } catch {
     // Best-effort — don't break snapshot recording
   }

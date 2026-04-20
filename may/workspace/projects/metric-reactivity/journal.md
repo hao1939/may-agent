@@ -95,6 +95,31 @@ Agent compliance was the blocker — alerts were delivered but ignored. Root cau
 ### Status
 Unblocked. Next heartbeat cycle should show whether mandatory framing changes agent behavior. If still no reaction after 1 cycle, will fork agents directly with alert-specific investigation tasks.
 
+## 2026-04-22 — Event-Driven Auto-Fork Implemented
+
+### Problem
+Hao's feedback (April 20): "Don't rely on heartbeats to deliver alerts. Metric breach should auto-fork the responsible agent with a task. Event-driven, not poll-driven."
+
+Despite mandatory heartbeat framing, alerts grew from 4→7. Agents still not acting. `trackRequest` + `notify` are passive — they wait for the agent's next heartbeat to pick up the task.
+
+### Fix
+**`agents/may/handlers/metrics-snapshot.ts`**: Replaced `ctx.notify()` with `ctx.manager.run()` in `notifyOwnerOnRegression`. Now when a metric regresses, the owning agent is **immediately forked** with an investigation task. Falls back to notify() if fork fails.
+
+This is the event-driven model Hao requested: metric crosses threshold → auto-fork responsible agent → agent gets a dedicated session to investigate and fix.
+
+### Alerts Status (7 unresolved)
+- `qa.review-coverage` (51h+) — qa
+- `tech-lead.meaningful-changes` — tech-lead
+- `evaluator.coverage` — evaluator  
+- `tech-lead.build-health` — tech-lead
+- `optimizer.quality-preserved` — optimizer (NEW)
+- `coach.knowledge-to-action-latency` — coach (NEW)
+- `optimizer.waste-reduction` — optimizer (NEW)
+
+### Next
+- Milestone 4 (Verify): Wait for next metrics-snapshot run to trigger auto-fork on regression
+- Consider: should we also auto-fork for EXISTING unresolved alerts (one-time backfill)?
+
 ## 2026-04-20 — Design Complete (Milestone 2)
 
 ### Decision: Push via `notify()` + Pull via heartbeat context

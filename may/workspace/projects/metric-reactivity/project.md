@@ -16,11 +16,13 @@ Agents should react to metric alerts. Currently 4 alerts are firing with zero re
 - Result: alerts accumulate, agents are blind to them
 
 ## Current Active Alerts
-- `evaluator.coverage`: 44 < 80 (yellow) — worsening from 79
+- `evaluator.coverage`: 36 < 80 (yellow) — worsening
 - `tech-lead.build-health`: 0 < 1 (yellow)
 - `tech-lead.meaningful-changes`: regressed 100% (yellow)
-- `qa.review-coverage`: 0 < 1 (yellow)
-- `optimizer.quality-preserved`: 0.85 < 0.85 (yellow) — NEW
+- `qa.review-coverage`: 0 < 1 (yellow) — 51h+ unresolved
+- `optimizer.quality-preserved`: 0.84 < 0.85 (yellow)
+- `coach.knowledge-to-action-latency`: stalled (yellow) — NEW
+- `optimizer.waste-reduction`: stalled (yellow) — NEW
 
 ## Design Principles
 - Metric-oriented: alerts are the signal
@@ -31,8 +33,8 @@ Agents should react to metric alerts. Currently 4 alerts are firing with zero re
 ## Milestones
 - [x] Investigate: why don't agents see alerts? Map the gap between alert creation and agent awareness
 - [x] Design: how should alerts reach the responsible agent? Options: heartbeat injection, notification, handler
-- [x] Build: delivery already works via trackRequest → "Injected: pending tasks". Added: alert injection into heartbeat check-health step + notify() on regression
-- [ ] Verify: trigger a test alert, confirm the responsible agent sees and reacts to it
+- [x] Build: delivery via trackRequest + auto-fork on regression via ctx.manager.run(). Heartbeat pull via alert injection in check-health step.
+- [ ] Verify: trigger a test alert, confirm the responsible agent gets auto-forked and reacts
 - [ ] Measure: track alert-to-reaction time as a metric
 
 ## Open Questions
