@@ -19,7 +19,7 @@
 ### Phase 3: Execute
 For each chunk, choose your approach:
 - **Do it yourself** — read, write, bash, edit. Good for small or tricky changes.
-- **Delegate to coder** — `agents.call("coder", task)`. Good for well-defined work.
+- **Delegate to coder** — `workflow.run("verified-coder", task)` or `workflow.run("implement-and-review", task)`. Good for well-defined work. Prefer workflows over bare `agents.call("coder", task)` for tracking.
 - **Use the workflow** — `workflow.run("implement-and-review", { task })`. Coder → QA pipeline.
 
 After each chunk, **get QA review** — automatic in workflow, manual via `agents.call("qa", ...)` if you coded it yourself. QA is never optional.
