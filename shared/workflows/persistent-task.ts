@@ -410,7 +410,15 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   // Handle non-active states
   if (state.status === "paused") return ctx.done(`Task is paused.`);
   if (state.status === "cancelled") return ctx.done(`Task was cancelled.`);
-  if (state.status === "done") return ctx.done(`Task is already done.`);
+
+  // Done/blocked projects: check for pending comments before exiting.
+  // Comments can redirect, rescope, or unblock a project.
+  const pendingCommentsBeforeStart = extractComments(projectContent);
+  if ((state.status === "done" || state.status === "blocked") && !pendingCommentsBeforeStart) {
+    return ctx.done(`Task is ${state.status}. No pending comments.`);
+  }
+  // If there ARE pending comments on a done/blocked project, fall through to the loop
+  // so the comment iteration processes them. The comment reviewer can change status.
 
   let iteration = state.lastIteration + 1;
   let consecutiveFailures = 0;

@@ -1,17 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** cron_1776667211119_769
+- **Session:** cron_1776669011966_776
 - **Status:** done
-- **When:** 2026-04-20T06:41:06.084Z
-- **Duration:** 54s
+- **When:** 2026-04-20T07:10:56.659Z
+- **Duration:** 44s
 
 ## What Happened
-Bob already has an active session (s_1776665472084_0) running for ~29 minutes processing scout notifications. No need to duplicate that work.
-
-Let me check if there's anything else that needs dispatching — looking at the pending notifications for bob:
-
-- Scout citation audit notifications (multiple P1s)
-- Research recommendations from scout
-
-The running session should be handling those. The todo shows EXP-188 is with Coach, and the main open item is **Scenario Gap-Fill** (medium priority) and **
+I see Bob has a large backlog of scout notifications (23 active requests, many duplicates of "process scout notifications" that keep getting interrupted). Let me fork one consolidated session to handle this.
