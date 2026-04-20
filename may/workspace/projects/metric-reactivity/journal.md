@@ -201,3 +201,35 @@ Metrics already have `owner` field. Naming convention confirms:
 - [2026-04-20 hao] Don't rely on heartbeats to deliver alerts. Redesign: metric breach should auto-fork the responsible agent with a task. Event-driven, not poll-driven. The plumbing works but the delivery mechanism is wrong.
 **Reviewer**: CONTINUE — Interesting — it looks like a previous session already partially fixed this file. Let me commit and finish.
 
+### Iteration 2 (comment) — 2026-04-20T11:02:54.618Z
+**Comment**: - [2026-04-20 hao] 4 alerts firing, zero agent reaction. This is the gap between our event-driven principle and reality. Fix the plumbing so alerts actually reach the agents who own them.
+- [2026-04-20 hao] Don't rely on heartbeats to react to metric signals. Heartbeats can investigate if agent prefers, but that's not the core mechanism. The core should be: metric crosses threshold → auto-trigger the responsible agent immediately. Event-driven, not poll-driven. Redesign: metrics-snapshot detects breach → forks the owning agent with "your metric X breached, investigate and fix." The agent gets a task, not a hint in their heartbeat.
+- [2026-04-20 hao] Don't rely on heartbeats to deliver alerts. Redesign: metric breach should auto-fork the responsible agent with a task. Event-driven, not poll-driven. The plumbing works but the delivery mechanism is wrong.
+**Reviewer**: CONTINUE — Now I have a clear picture. Here's my assessment:
+
+CONTINUE
+
+## Analysis
+
+**Code review**: The `autoForkForAlert` function in `metrics-snapshot.ts` is well-designed — it calls `ctx.trackRequest()` with `source: "metric-alert"` and `ctx.manager.run()` to fork the owning agent. The backfill logic (section 0) catches unresolved alerts with no active request. This is correct.
+
+**Reality check**: The auto-fork has **never actually fired from the handler**. Evidence:
+- 8 requests exist with "metric-alert" in the task, but ALL have `source: null` (not `"metric-alert"`) and `status: "CREATED"`. These were manually created by may during a heartbeat session (s_1776672921499_877), not by the `autoForkForAlert` function.
+- 3 unresolved alerts remain in may.db (qa.review-coverage, coach.knowledge-to-action-latency, tech-lead.build-health)
+- Zero sessions exist with `source=metric-alert` metadata
+
+**Root cause**: The metrics-snapshot handler either hasn't run since the auto-fork code was added, or it ran but the backfill dedup is failing. The dedup checks for `source = 'metric-alert'` in requests, but the manually-created requests have `source = null`, so they won't be found — meaning the backfill should try to fork. But the `ctx.manager.run()` call may be silently failing, or the handler simply hasn't been triggered yet.
+
+## Guidance for Next Iteration
+
+### Milestone: "Verify auto-fork fires"
+1. **Check if the handler is actually running**: Look at may's cron config to verify `metrics-snapshot` is scheduled and check may's logs for `[metrics-snapshot]` entries after the auto-fork code was added.
+2. **If the handler runs but fork fails**: The `ctx.manager.run()` call might be failing silently (the catch logs but doesn't throw). Check may's logs for "Failed to auto-fork" messages.
+3. **If the handler hasn't run**: Trigger it manually or wait for the next cron cycle. The backfill logic should pick up the 3 unresolved alerts.
+4. **Fix the source field**: The 8 existing manual requests have `source: null`. The `trackRequest` call in `autoForkForAlert` passes `source: "metric-alert"` but `trackRequest` may not be mapping it to the DB column correctly. Verify the `trackRequest` implementation actually writes the `source` field.
+
+### Milestone: "Track alert-to-reaction time"  
+5. **Register a new metric**: Create a metric like `system.alert-reaction-time` with `source: 'auto'` and a `source_query` that computes `AVG(r.createdAt - ma.created_at)` from `metric_alerts ma JOIN requests r` where `r.source = 'metric-alert'`. This can only work once auto-fork requests actually have `source = 'metric-alert'` in the DB.
+
+**Priority**: Focus on items 1-4 first. The measurement metric (item 5) depends on auto-fork actually working.
+
