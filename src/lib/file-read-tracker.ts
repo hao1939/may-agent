@@ -178,3 +178,4 @@ export function createFileReadTracker(db?: Database) {
     logFileRead(event.sessionId, event.agent, event.filePath, db);
   };
 }
+
