@@ -484,3 +484,5 @@ DONE — All three remaining milestones are complete:
 
 ### Iteration 21 — 2026-04-20T11:05:41.494Z
 **Worker**: The doc is already committed with the approach comparison and integration points. Both milestones appear to be complete already. Let me verify the milestone status matches what's in the doc.
+### Iteration 21 — 2026-04-20T11:06:11.374Z
+**Worker**: The design doc already has both sections committed. The "Approach Comparison" section (milestone for this iteration) comprehensively compares all three approaches with pros/cons tables and a recommendation. The "Integration Points" section (next milestone) is also already present with all 5 integration points detailed.

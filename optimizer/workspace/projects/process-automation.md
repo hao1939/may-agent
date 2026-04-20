@@ -9,9 +9,8 @@
 **Source feedback:** [bob](../../bob/workspace/system-gaps.md), [optimizer](../system-gaps.md), [scout](../../scout/workspace/system-gaps.md), [tech-lead](../../tech-lead/workspace/system-gaps.md), [coach](../../coach/workspace/system-gaps.md)
 **Tracked metrics:** `optimizer.tool-adoption`
 
-**Status**: done
-**Iteration**: 7
-**Health**: 8/10 (PASS)
+**Status**: active
+**Iteration**: 8
 ## Why
 Agents manually repeat templated work every session: Bob creates hypothesis files by hand, optimizer rewrites the same SQL queries, scout manages counters in prose. Each repetition costs 3-5 ops that a script could do in 1.
 
@@ -155,21 +154,10 @@ All three deliverables exist and the evaluator.ts fix is in place. Task was mark
 
 
 
+### Iteration 8 — 2026-04-20T11:05:55.729Z
+**Worker**: The uncommitted files are in `tech-lead/`, not `optimizer/`. The DELIVERABLES_CHECKLIST.md must be somewhere else. Let me check:
+
+
 ## Current State
-Complete. 5/5 milestones. All 5/5 milestones are complete. The project delivered Bob template scripts (M1), saved-queries chec
-
-**Evaluator**: PASS (score=8/10) — All five milestones have corresponding deliverables on disk.
-
-SCORE: 8
-
-**Reasoning:**
-
-1. **Deliverables exist**: Yes — all files confirmed: Bob's 3 scripts, optimizer's saved-queries.sh, scout's counters.sh, tech-lead's 3 delegation templates, coach's 3 experiment templates, plus the analysis doc and shared script. All present on disk.
-
-2. **Goal met**: The goal was to automate repetitive agent tasks. Five concrete automation sets were delivered covering Bob, optimizer, scout, tech-lead, and c
-
-
-
-## Iteration Summary
-- **Iter 7**: All 5/5 milestones are complete. The project delivered Bob template scripts (M1), saved-queries chec
+Iteration 8. Milestones: 5/5 done.
 
