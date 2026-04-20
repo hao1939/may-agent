@@ -108,4 +108,5 @@ The guard sees `git log` as a git-on-agents command, not verification. Let me us
 
 
 ## Current State
-Iteration 4. Milestones: 5/5 done.
+Iteration 4. Milestones: 5/5 done.**Reviewer**: DONE — — All 5 milestones complete. The deliverable is `agents/may/workspace/guard-friction-analysis.md` with three actionable recommendations (R1: deduplicate guards, R2: orchestration exemption, R3: better errors).
+
