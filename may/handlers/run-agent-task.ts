@@ -26,8 +26,33 @@
  * Exports create() conforming to HandlerModule.
  */
 
-import { existsSync, readFileSync, writeFileSync, statSync, readdirSync, mkdirSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, statSync, readdirSync, mkdirSync, appendFileSync } from "node:fs";
 import { resolve, join } from "node:path";
+
+// ── Workflow run persistence ──────────────────────────────────────────
+// Save a minimal workflow run file so session-sync can backfill workflowRunId
+// into sessions spawned by this handler. Mirrors what run-workflow.ts does.
+
+interface MinimalWorkflowRun {
+  runId: string;
+  workflow: string;
+  parentSessionId: string | null;
+  agent: string;
+  startedAt: number;
+  endedAt?: number;
+  status: "running" | "done" | "error";
+  steps: Array<{ sessionId: string; agent: string; status: string }>;
+}
+
+function saveMinimalWorkflowRun(projectRoot: string, run: MinimalWorkflowRun): void {
+  const dir = join(projectRoot, ".state", "workflows");
+  try {
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, `${run.runId}.json`), JSON.stringify(run, null, 2));
+  } catch {
+    // Non-fatal — coverage tracking is best-effort
+  }
+}
 import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
 import type { CronEntry, PreflightCheck } from "../../../src/lib/cron-tool.js";
 
@@ -211,6 +236,18 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
     });
 
     ctx.log(`[run-agent-task:${entry.name}] Started ${agentName} session: ${sessionId}`);
+
+    // Save workflow run file so session-sync can backfill workflowRunId
+    const wfRun: MinimalWorkflowRun = {
+      runId: workflowRunId,
+      workflow: `run-agent-task:${entry.name}`,
+      parentSessionId: null,
+      agent: agentName,
+      startedAt: Date.now(),
+      status: "running",
+      steps: [{ sessionId, agent: agentName, status: "running" }],
+    };
+    saveMinimalWorkflowRun(ctx.projectRoot, wfRun);
 
     if (!waitForCompletion) {
       // Update preflight state even for fire-and-forget (we fired it)
