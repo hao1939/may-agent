@@ -2,7 +2,7 @@
   "_schema": "Scout counter state. Use scripts/counters.sh (get|bump|set|show). Atomic writes. DD=deep dives, CR=cross references, Session=heartbeat session counter, H=hypothesis counter.",
   "counters": {
     "DD": 811,
-    "CR": 341,
+    "CR": 346,
     "Session": 824,
     "H": 94
   },
