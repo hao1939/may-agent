@@ -317,6 +317,7 @@ function buildEvalPrompt(
   projectContent: string,
   journalContent: string,
   iteration: number,
+  milestoneNote?: string,
 ): string {
   const ms = extractMilestones(projectContent);
   const recentEntries = getRecentJournalEntries(journalContent, iteration, 5);
@@ -339,7 +340,9 @@ function buildEvalPrompt(
   prompt += `2. **Goal met**: Does the work achieve what the goal describes?\n`;
   prompt += `3. **Evidence**: Is there concrete evidence (tool output, file content, test results)?\n`;
   prompt += `4. **Milestones honest**: Are checked milestones genuinely complete?\n`;
-  prompt += `5. **No shortcuts**: Did the worker do real work or just claim completion?\n\n`;
+  prompt += `5. **No shortcuts**: Did the worker do real work or just claim completion?\n`;
+  if (milestoneNote) prompt += `6. **Milestone status**: ${milestoneNote} (Note: workers cannot edit project.md, so unchecked milestones don't necessarily mean incomplete work — check if deliverables exist.)\n`;
+  prompt += `\n`;
   prompt += `Your response MUST include:\n`;
   prompt += `SCORE: <1-10> (7+ = genuinely complete, <7 = not done)\n`;
   prompt += `Then explain your reasoning for each criterion.\n`;
@@ -433,19 +436,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       writeFileSync(config.projectPath, projectContent, "utf-8");
 
       if (decision.status === "done") {
-        const finalMs = extractMilestones(projectContent);
-        if (finalMs.total > 0 && finalMs.done < finalMs.total) {
-          falseDoneCount++;
-          const overrideNote = `**Auto-check**: Reviewer said DONE but only ${finalMs.done}/${finalMs.total} milestones checked. ` +
-            `Overriding to CONTINUE. (false-done #${falseDoneCount})`;
-          if (!config.isLegacy) appendFileSync(config.journalPath, overrideNote + "\n\n");
-          iteration++;
-          continue;
-        }
-
         // LLM evaluation gate
         ctx.emit({ type: "step_start", step: `evaluate-comment-${iteration}` });
-        const evalPrompt = buildEvalPrompt(config.goal, projectContent, journalContent, iteration);
+        const finalMs = extractMilestones(projectContent);
+        const milestoneNote = finalMs.total > 0 ? `Milestones: ${finalMs.done}/${finalMs.total} checked off.` : "";
+        const evalPrompt = buildEvalPrompt(config.goal, projectContent, journalContent, iteration, milestoneNote);
         const evalResult = await ctx.runAgent(config.owner, evalPrompt);
         const evalText = evalResult.lastAssistantText ?? "";
         const scoreMatch = evalText.match(/SCORE:\s*(\d+)/i);
@@ -560,26 +555,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       }
 
       if (decision.status === "done") {
-        const finalMs = extractMilestones(projectContent);
-        // Fast pre-filter: unchecked milestones
-        if (finalMs.total > 0 && finalMs.done < finalMs.total) {
-          falseDoneCount++;
-          const overrideNote = `**Auto-check**: Reviewer said DONE but only ${finalMs.done}/${finalMs.total} milestones checked. ` +
-            `Overriding to CONTINUE. (false-done #${falseDoneCount})\n\n`;
-          if (config.isLegacy) {
-            projectContent += overrideNote;
-            writeFileSync(config.projectPath, projectContent, "utf-8");
-          } else {
-            appendFileSync(config.journalPath, overrideNote);
-          }
-          continueWithoutProgress++;
-          iteration++;
-          continue;
-        }
-
         // LLM evaluation gate: verify the work is actually done
         ctx.emit({ type: "step_start", step: `evaluate-iteration-${iteration}` });
-        const evalPrompt = buildEvalPrompt(config.goal, projectContent, journalContent, iteration);
+        const finalMs = extractMilestones(projectContent);
+        const milestoneNote = finalMs.total > 0 ? `Milestones: ${finalMs.done}/${finalMs.total} checked off.` : "";
+        const evalPrompt = buildEvalPrompt(config.goal, projectContent, journalContent, iteration, milestoneNote);
         const evalResult = await ctx.runAgent(config.owner, evalPrompt);
         const evalText = evalResult.lastAssistantText ?? "";
         const scoreMatch = evalText.match(/SCORE:\s*(\d+)/i);
