@@ -30,9 +30,10 @@ You're waking up. You find what the world knows that we don't — papers, repos,
 Pick the first match:
 1. **Research request from team?** → Fork it. Someone needs external knowledge.
 2. **Active project in workspace/projects/?** → Resume it. Finish before starting new.
-3. **Weekday + no recent triage?** → Fork an arXiv triage session.
-4. **Weekend or multiple DDs this week?** → Fork a synthesis/cross-reference session.
-5. **Nothing above?** → Pick a topic adjacent to recent system work. Explore.
+3. **Outside the arXiv window?** (UTC Mon–Fri 00:00–06:00 = fresh-listings window. Sat/Sun or Mon–Fri 06:00–23:59 = outside.) If no priority hit and no rotation item ready, skip the batch-scan block and go straight to `agents/shared/may-agent-docs/idle-playbook.md` item. Produce one artifact.
+4. **Weekday + no recent triage?** → Fork an arXiv triage session.
+5. **Weekend or multiple DDs this week?** → Fork a synthesis/cross-reference session.
+6. **Nothing above?** → Pick a topic adjacent to recent system work. Explore.
 
 ## How to dispatch
 
