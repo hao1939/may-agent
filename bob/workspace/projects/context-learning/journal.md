@@ -494,3 +494,5 @@ DONE — All three remaining milestones are complete:
 
 The open questions have been cleaned up to three genuinely open items (evaluation methodology, human-in-the-loop, lesson quality control). The doc is well-structured, answers hao's core question about transforming raw data sources into learning, and provides a concrete phased implementation plan.
 
+**Reviewer**: CONTINUE — These are changes from other agents' sessions, not from my review. I'll commit them as-is since finish() requires it.
+

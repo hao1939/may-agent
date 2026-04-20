@@ -13,15 +13,16 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-20T10:40)
+# Your Context (auto-generated 2026-04-20T11:10)
 
-**System:** 14 sessions/6h, 0% error rate
-**You:** 2 sessions, 49KB total (25KB avg)
+**System:** 49 sessions/6h, 0% error rate
+**You:** 3 sessions, 35KB total (12KB avg)
 
 **Top spenders:**
-- coach: 5s, 188KB
-- bob: 6s, 93KB
-- optimizer: 2s, 49KB ← you
+- may: 21s, 443KB
+- tech-lead: 13s, 138KB
+- coach: 4s, 90KB
+- bob: 7s, 69KB
 - evaluator: 1s, 41KB
 
 **📊 Your Metrics:**
@@ -30,5 +31,5 @@
 - Quality preserved: **0.8557901390644753** ratio → 0.9 ratio
 - Tool adoption: heuristic evaluator (higher is better): **0.978494623655914** ratio → 0.7 ratio
 - Workflow effectiveness — % workflow runs completing successfully: **95.2** % → 0.9 %
-- Waste reduction: **0.865** ratio → 0.3 ratio
+- Waste reduction: **0.865** ratio → 0.3 ratio ⚠️ OFF TARGET
   → Quick check: bun -e "import{Database}from'bun:sqlite';const db=new Database('.state/may.db',{readonly:true});console.log(JSON.stringify(db.prepare('SELECT ROUND(CAST(SUM(CASE WHEN e.quality >= 0.7 AND e.efficiency > 0 THEN 1 ELSE 0 END) AS REAL) / NULLIF(COUNT(*), 0), 3) AS val FROM evaluations e JOIN sessions s ON e.sessionId = s.sessionId WHERE s.agent=\'optimizer\' AND e.skippedByJs=0 AND e.quality IS NOT NULL AND e.createdAt > (strftime(\'%s\',\'now\')*1000 - 604800000)').all()))"

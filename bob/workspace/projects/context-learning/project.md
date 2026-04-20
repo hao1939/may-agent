@@ -29,5 +29,7 @@ Iteration 21. Milestones: 2/4 done. Next: Include comparison of approaches: brut
 ## Iteration Summary
 - **Iter 20**: Now commit:
 
+- **Iter 21**: The design doc already has both sections committed. The "Approach Comparison" section (milestone for
+
 
 ## Comments
