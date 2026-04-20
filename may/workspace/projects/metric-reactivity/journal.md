@@ -84,23 +84,16 @@ All 4 alerts still unresolved. qa.review-coverage has been open 51h (well past 2
 
 Milestone 4 (Verify) remains incomplete — waiting for agent responses to escalation.
 
-## 2026-04-21 — Status → Blocked
+## 2026-04-22 — Unblocked: Mandatory Alert Response
 
-### Assessment
-All plumbing works (milestones 1-3 complete). Push delivery (trackRequest + notify) and pull delivery (heartbeat alert injection) both confirmed functional. Escalation P0 notifications sent to all owners.
+### Problem
+Agent compliance was the blocker — alerts were delivered but ignored. Root cause: heartbeat instruction said "investigate and act" but didn't make it mandatory or top-priority.
 
-**Result: Zero agent reaction.** All regression trackRequests remain status CREATED. 5 unresolved alerts now (up from 4 — optimizer.quality-preserved added). evaluator.coverage worsening (79→44).
+### Changes
+1. **`agents/shared/workflows/agent-heartbeat.ts`**: Strengthened alert instruction to MANDATORY. Alerts now explicitly override other work. Agents told to diagnose, act, and report — not defer.
 
-### Blocker
-This is no longer a plumbing problem. It's an agent compliance problem. Agents receive alerts but don't act on them. Possible causes:
-1. Agents deprioritize alerts vs their other tasks
-2. Heartbeat instructions don't make alert response mandatory
-3. Agents may lack the knowledge/tools to fix their metrics
-
-### Unblock Path
-- Make alert response a hard requirement in heartbeat instructions (not just "check for alerts")
-- Add alert-response tracking as its own metric (alert-to-action time)
-- Consider: should May directly fork agents to investigate specific alerts?
+### Status
+Unblocked. Next heartbeat cycle should show whether mandatory framing changes agent behavior. If still no reaction after 1 cycle, will fork agents directly with alert-specific investigation tasks.
 
 ## 2026-04-20 — Design Complete (Milestone 2)
 

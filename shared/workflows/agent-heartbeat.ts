@@ -70,7 +70,10 @@ function buildStepPrompt(
         `${config.observeInstructions}\n\n` +
         `**Active metric alerts**: Check for unresolved alerts owned by you:\n` +
         `\`bun -e "import{Database}from'bun:sqlite';const d=new Database('.state/may.db');console.log(d.query(\\"SELECT metric_id,severity,message,created_at FROM metric_alerts WHERE resolved_at IS NULL AND metric_id LIKE '${config.agent}.%'\\").all())"\`\n` +
-        `If any alerts are firing, investigate and act on them. These are your metrics.\n\n` +
+        `**MANDATORY**: If any alerts are firing, you MUST investigate and act on them before any other work. ` +
+        `These are your metrics — unresolved alerts are your top priority. ` +
+        `For each alert: diagnose the cause, take corrective action, and report what you did. ` +
+        `Do NOT skip alerts or defer them to a later heartbeat.\n\n` +
         `If everything looks fine, just say so. Only flag issues that need attention.`
       );
 
