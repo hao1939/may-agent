@@ -51,3 +51,8 @@
 - **2604.11462** — "ContextCurator: Escaping the Context Bottleneck via RL". 7B RL-trained context curator matches GPT-4o; +4.8pp WebArena; reasoning anchors concept; 8× token reduction on DeepSearch. ★★★★. DD#783.
 - **2604.07821** — "More Capable, Less Cooperative: When LLMs Fail At Zero-Cost Collaboration". o3 achieves 17% vs o3-mini 50% of optimal; capability ≠ cooperation; explicit protocols double performance. ★★★★. Catalogued.
 - **2604.05432** — "Back-Reveal: Data Exfiltration via Backdoored Tool Use". Semantic trigger backdoors in tool-use agents; multi-turn amplification of exfiltration. ★★★★. Catalogued.
+
+## H-107 Literature Search: Difficulty Threshold Moderates Overhead Harm (April 2026)
+- **2604.02547** — "Beyond Resolution Rates: Behavioral Drivers of Coding Agent Success and Failure". 9,374 trajectories, 19 agents; trajectory-length↔failure is Simpson's paradox confound; reverses when difficulty controlled; LLM > framework. ★★★★★. → DD#808.
+- **2604.08369** — "TrACE: Don't Overthink It". Adaptive compute via inter-rollout agreement; 33-65% fewer LLM calls; overhead wasted on easy steps, beneficial on hard steps. ★★★★. → DD#809.
+- **2604.11465** — "Three Roles, One Model: Role Orchestration at Inference Time". Scaffolding doubles 8B model on AppWorld; gains concentrated on easiest tasks (15.8%→26.3%); contradicts naive H-107. ★★★★. → DD#810.
