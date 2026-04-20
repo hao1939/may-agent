@@ -1,10 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** cron_1776681610822_21
+- **Session:** s_1776682706628_3
 - **Status:** done
-- **When:** 2026-04-20T10:40:45.851Z
-- **Duration:** 34s
+- **When:** 2026-04-20T10:58:53.687Z
+- **Duration:** 27s
 
 ## What Happened
-Bob already has an active work session running (context-learning project, 27m). Scout notifications are processed through 2026-04-27. No new urgent work to dispatch.
+CONTINUE — The design doc is substantial but the "Proposed Design" section needs one key gap addressed per hao's comment: it doesn't adequately answer **"given the dead code data sources (digests, diffs, recall), what's the RIGHT way to give agents experience? Not injection — learning."**
+
+The doc currently treats digests, diffs, and recall as background. Hao wants the design to explicitly evaluate these existing data sources and propose how to transform them from raw injection into genuine lear

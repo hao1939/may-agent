@@ -10,6 +10,7 @@
 **Source feedback:** [bob](../../bob/workspace/system-gaps.md), [scout](../../scout/workspace/system-gaps.md), [tech-lead](../../tech-lead/workspace/system-gaps.md)
 **Tracked metrics:** `scout.findings-used`, `bob.designs-implemented`, `system.stuck-requests`
 
+**Status**: active
 ## Why
 Agents produce reports, KEs, analyses — then get zero signal on whether anyone used them. Scout writes deep dives that nobody reads. Bob creates KEs that never get applied. Without feedback, agents can't self-correct toward higher-impact work.
 

@@ -38,6 +38,12 @@ Reviewed recent commits in `/app/agents` (the only git repo available in this ru
 ## 2026-04-20 — heartbeat — environment/tooling mismatch blocks mandatory QA gates
 
 ### Notes (this run)
+- `/app` is not a git repository; only `/app/agents` is.
+- Latest commit: `d740ee0d6 may: project-resume scan - no new sessions needed` (changed `may/last-session.md`).
+- Read file in this run: `agents/may/last-session.md`.
+- Mandatory gate attempts in this run:
+  - `./node_modules/.bin/tsc --noEmit`: missing (exit 127)
+  - `./node_modules/.bin/vitest --run`: missing (exit 127)
 - Attempted to run git and mandatory QA commands from `/app` but `/app` is not a git repo and the expected tool binaries are absent.
 - Code spot-check in this run: `DELIVERABLES_CHECKLIST.md` (see below).
 

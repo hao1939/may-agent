@@ -425,3 +425,28 @@ The core blocker is environmental: the `.gitignore` in `/app/agents` prevents co
 
 2. **Goal met**: Partially. The goal is "agents learn from experience and get better over ti
 
+### Iteration 19 (comment) — 2026-04-20T10:58:53.687Z
+**Comment**: - [2026-04-20 hao] This is design-only. Don't try to build implementation code — agents/ repo can't hold src/test. Write the design doc. The design should answer: given the dead code data sources (digests, diffs, recall), what's the RIGHT way to give agents experience? Not injection — learning.
+**Reviewer**: CONTINUE — — The design doc is substantial but the "Proposed Design" section needs one key gap addressed per hao's comment: it doesn't adequately answer **"given the dead code data sources (digests, diffs, recall), what's the RIGHT way to give agents experience? Not injection — learning."**
+
+The doc currently treats digests, diffs, and recall as background. Hao wants the design to explicitly evaluate these existing data sources and propose how to transform them from raw injection into genuine learning.
+
+### Next iteration should (DESIGN DOC ONLY — no implementation code):
+
+1. **Add a new section "## Approach Comparison"** between Research and Proposed Design that compares three approaches side-by-side:
+   - **Brute-force injection**: current approach — dump digests, diffs, recent task history into context. Pros/cons.
+   - **On-demand retrieval**: agent queries a knowledge base when it needs info (like RAG). Pros/cons.
+   - **Learned lessons**: distill experience into compact, actionable text. Pros/cons.
+   - Include a recommendation with rationale.
+
+2. **Add a "## Integration Points" section** that specifies exactly where in the system learning happens:
+   - At session end (in `finish()` / `appendMemory()`)
+   - At heartbeat (periodic reflection?)
+   - At workflow step boundaries
+   - At session start (in `buildSessionContext()`)
+   - For each, say what happens and why that timing matters.
+
+3. **Clean up Open Questions**: Questions 1 and 3 are already answered in the doc itself. Remove or resolve them. Keep only genuinely open questions.
+
+These three changes complete the remaining milestones. Output: updated `docs/designs/agent-learning.md` committed to the agents repo.
+

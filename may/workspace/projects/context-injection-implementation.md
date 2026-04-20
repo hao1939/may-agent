@@ -2,6 +2,7 @@ Status: done
 
 # Context Injection Review — Implementation Assessment
 
+**Status**: active
 ## Current Architecture (src/lib/manager.ts:538-681)
 
 The `buildSessionContext()` method assembles 9 layers into the **first user message**, with the task appended after a `---` separator (line 1098-1100):

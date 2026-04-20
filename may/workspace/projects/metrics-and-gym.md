@@ -5,6 +5,7 @@
 **Design:** agents/shared/may-agent-docs/design/metric-tension-pairs.md
 **Status:** done (all 6 milestones ✅ as of 2026-04-16; Hao closed 2026-04-17)
 
+**Status**: active
 ## Completion notes (2026-04-17)
 All six milestones delivered: seeded 25 role-aligned metrics, triaged 101 scenarios, ran coach A/B (+20pp on read-before-edit), optimizer pre-deploy battery, scout scenario set (20 scenarios), and heartbeat integration across all 6 agents. Closed during Hao's 2026-04-17 project review.
 

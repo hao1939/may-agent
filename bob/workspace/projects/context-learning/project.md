@@ -3,7 +3,7 @@
 **Status**: active
 **Owner**: bob
 **Priority**: P1
-**Iteration**: 18
+**Iteration**: 19
 **Health**: 6/10 (BLOCKED)
 
 ## Goal
@@ -29,4 +29,3 @@ Iteration 18. Milestones: 1/4 done. Next: Complete the design doc.
 ## Iteration Summary
 
 ## Comments
-- [2026-04-20 hao] This is design-only. Don't try to build implementation code — agents/ repo can't hold src/test. Write the design doc. The design should answer: given the dead code data sources (digests, diffs, recall), what's the RIGHT way to give agents experience? Not injection — learning.

@@ -6,6 +6,7 @@
 **Master project:** system-evolution
 **Next:** none (project closed)
 
+**Status**: active
 ## Goal
 Understand why agents see metrics in their heartbeat context but don't act on them. Propose fixes based on evidence.
 
