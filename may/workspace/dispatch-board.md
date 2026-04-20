@@ -55,13 +55,13 @@ Updated: 2026-04-16 ~08:00 UTC
 - **P2**: Amy-kimi billing — blocked on Hao.
 - ⚠️ **HOLD**: Ch2-production-gates implementation — Hold for EXP-170.
 
-## Latest Cycle Summary (05:10 Apr 20)
+## Latest Cycle Summary (05:40 Apr 20)
 - **SYSTEM**: 8 agents active, zero errors in 6h. All healthy.
-- **Sessions/6h**: Evaluator(39), Coach(23), Scout(22), Bob(20), Optimizer(19), QA(20), May(16), Tech-lead(14).
-- **RED METRICS**: Build health=0 ⚠️, Coverage=44% ⚠️, Review coverage=0 ⚠️, Quality preserved=0.85 ⚠️ (persistent).
-- **Throughput**: 13 sessions/hr last hour, 100% success rate.
-- **Stuck**: Optimizer quality-scouting + Coach EXP-188 (~59min, long-running — not actionable).
-- **Active work**: Coach EXP-188 (dose-response), Bob scout synthesis, Optimizer quality scouting.
+- **Sessions/6h**: Evaluator(40), Coach(25), Scout(22), Bob(22), QA(20), Optimizer(18), May(17), Tech-lead(14).
+- **RED METRICS**: Build health=0 ⚠️, Coverage=43% ⚠️, Review coverage=0 ⚠️, Quality preserved=0.85 ⚠️ (persistent).
+- **Throughput**: 25 sessions/hr last hour, 100% success rate.
+- **Stuck**: None.
+- **Active work**: Coach EXP-188 (dose-response), Bob scout synthesis, Optimizer mode cycling.
 - **WAITING**: Gatekeeper Review Gate needs Hao approval. Metric System Phase 3 needs process restart.
 
 ## Archive Reference

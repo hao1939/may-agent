@@ -13,18 +13,18 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-20T05:10)
+# Your Context (auto-generated 2026-04-20T05:40)
 
-**System:** 19 sessions/6h, 0% error rate
+**System:** 18 sessions/6h, 0% error rate
 
 **Top spenders:**
 - optimizer: 4s, 212KB
-- coach: 8s, 138KB
 - scout: 1s, 125KB
+- coach: 7s, 124KB
 - bob: 6s, 60KB
 
 **📊 Your Metrics:**
-- Codebase weight: **31314** lines → 32000 lines
+- Codebase weight: **31323** lines → 32000 lines
 - Delegation quality: **0.79** ratio → 0.85 ratio
 - Meaningful changes: **0** commits/week → 10 commits/week
   → Quick check: git log --since='7 days ago' --oneline -- agents/ 2>/dev/null | wc -l | tr -d ' '
