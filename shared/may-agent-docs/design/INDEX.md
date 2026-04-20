@@ -49,11 +49,18 @@ Guards, review, escalation.
 | [research-system.md](research-system.md) | Knowledge base, adversarial peers, lab | Building |
 | [skills-injection-overhead.md](skills-injection-overhead.md) | Problem analysis: skills add 8-46KB to prompts | Reference |
 
-## Follow-ups
+## Follow-ups & Open Problems
 
 | Document | What |
 |----------|------|
+| [open-problems.md](open-problems.md) | Unsolved system gaps: session continuity, metric reaction, quality injection, circuit breaker |
 | [common-sense-followups.md](common-sense-followups.md) | Items from 2026-04-19 review that need addressing |
+
+## Reference
+
+| Document | What |
+|----------|------|
+| [logging.md](logging.md) | Logging system reference |
 
 ## Archive
 
