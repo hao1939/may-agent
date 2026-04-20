@@ -1,0 +1,1 @@
+{"id":"d1c4a63a-1622-44ce-802c-eaf0a868a6f1","timestamp":"2026-04-20T19:22:58.185Z","agent":"coder","category":"fix","text":"Always run npm install first","source_task":"fix the build","confidence":1,"validated_count":0,"last_relevant":"2026-04-20T19:22:58.185Z"}

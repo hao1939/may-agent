@@ -32,7 +32,7 @@ This matches EXP-184's identical +100pp result, confirming that structural enfor
 
 ## Deployment Status
 
-⚠️ **NOT DEPLOYED** — The guard was tested in gym but `src/lib/tools/finish-guard.ts` does not exist in the codebase. Tech-lead needs to implement this.
+✅ **DEPLOYED** — Guard implemented as `agents/shared/guards/finish-guard.ts` (workflow guard pattern). Registered in REGISTRY.md. Library code in `agents/src/lib/finish-guard.ts` with 41 passing tests.
 
 ## Followups
 
