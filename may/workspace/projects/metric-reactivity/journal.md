@@ -195,3 +195,9 @@ Metrics already have `owner` field. Naming convention confirms:
 - Implement stale-alert re-fork in `metrics-snapshot.ts` (check unresolved alerts age, re-fork if owner hasn't responded)
 - Add `alert-reaction-time` metric: measure time from `metric_alerts.created_at` to `resolved_at`
 - Once a real regression fires and auto-fork triggers successfully, mark Milestone 4 complete
+### Iteration 2 (comment) — 2026-04-20T11:02:41.351Z
+**Comment**: - [2026-04-20 hao] 4 alerts firing, zero agent reaction. This is the gap between our event-driven principle and reality. Fix the plumbing so alerts actually reach the agents who own them.
+- [2026-04-20 hao] Don't rely on heartbeats to react to metric signals. Heartbeats can investigate if agent prefers, but that's not the core mechanism. The core should be: metric crosses threshold → auto-trigger the responsible agent immediately. Event-driven, not poll-driven. Redesign: metrics-snapshot detects breach → forks the owning agent with "your metric X breached, investigate and fix." The agent gets a task, not a hint in their heartbeat.
+- [2026-04-20 hao] Don't rely on heartbeats to deliver alerts. Redesign: metric breach should auto-fork the responsible agent with a task. Event-driven, not poll-driven. The plumbing works but the delivery mechanism is wrong.
+**Reviewer**: CONTINUE — Interesting — it looks like a previous session already partially fixed this file. Let me commit and finish.
+

@@ -119,6 +119,12 @@ function ensureTables(db: SqliteDb): void {
   } catch {
     // Column already exists — ignore
   }
+  // Migration: add direction column if not present (M5b — metric polarity for continuous metrics)
+  try {
+    db.exec("ALTER TABLE metrics ADD COLUMN direction TEXT DEFAULT 'higher_is_better'");
+  } catch {
+    // Column already exists — ignore
+  }
 }
 
 /**

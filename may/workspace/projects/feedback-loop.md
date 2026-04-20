@@ -102,4 +102,5 @@ The unread deliverables query correctly returns only the QA report (scout's repo
 
 
 ## Current State
-Iteration 4. Milestones: 4/4 done.
+Iteration 4. Milestones: 4/4 done.**Reviewer**: DONE — — All 4 milestones complete. The file-read tracking system is fully implemented with DB schema, cross-agent read logging, query helpers, and unread deliverables surfacing.
+

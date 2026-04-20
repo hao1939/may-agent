@@ -3,7 +3,7 @@
 **Status**: active
 **Owner**: may
 **Priority**: P1
-**Iteration**: 1
+**Iteration**: 2
 
 ## Goal
 Agents should react to metric alerts. Currently 4 alerts are firing with zero response. Close the loop: alert → agent sees it → agent investigates → agent acts.
@@ -43,6 +43,3 @@ Agents should react to metric alerts. Currently 4 alerts are firing with zero re
 - How to avoid alert fatigue? Only actionable alerts, not noise.
 
 ## Comments
-- [2026-04-20 hao] 4 alerts firing, zero agent reaction. This is the gap between our event-driven principle and reality. Fix the plumbing so alerts actually reach the agents who own them.
-- [2026-04-20 hao] Don't rely on heartbeats to react to metric signals. Heartbeats can investigate if agent prefers, but that's not the core mechanism. The core should be: metric crosses threshold → auto-trigger the responsible agent immediately. Event-driven, not poll-driven. Redesign: metrics-snapshot detects breach → forks the owning agent with "your metric X breached, investigate and fix." The agent gets a task, not a hint in their heartbeat.
-- [2026-04-20 hao] Don't rely on heartbeats to deliver alerts. Redesign: metric breach should auto-fork the responsible agent with a task. Event-driven, not poll-driven. The plumbing works but the delivery mechanism is wrong.
