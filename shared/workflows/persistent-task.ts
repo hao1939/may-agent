@@ -566,8 +566,19 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           continue;
         }
 
-        projectContent = updateField(projectContent, "Status", "done");
+        // Hard gate: don't mark done if milestones remain unchecked
         const finalMsDone = extractMilestones(projectContent);
+        if (finalMsDone.total > 0 && finalMsDone.done < finalMsDone.total) {
+          falseDoneCount++;
+          const overrideNote = `**Auto-check**: Evaluator PASSED (score=${score}) but only ${finalMsDone.done}/${finalMsDone.total} milestones checked. ` +
+            `Overriding to CONTINUE. (false-done #${falseDoneCount})\n\n`;
+          if (!config.isLegacy) appendFileSync(config.journalPath, overrideNote);
+          continueWithoutProgress++;
+          iteration++;
+          continue;
+        }
+
+        projectContent = updateField(projectContent, "Status", "done");
         projectContent = updateSection(projectContent, "Current State",
           `Complete. ${finalMsDone.done}/${finalMsDone.total} milestones. ${decision.detail.slice(0, 100)}`);
         writeFileSync(config.projectPath, projectContent, "utf-8");
@@ -733,9 +744,25 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           continue;
         }
 
+        // Hard gate: don't mark done if milestones remain unchecked
+        const finalMsForState = extractMilestones(projectContent);
+        if (finalMsForState.total > 0 && finalMsForState.done < finalMsForState.total) {
+          falseDoneCount++;
+          const overrideNote = `**Auto-check**: Evaluator PASSED (score=${score}) but only ${finalMsForState.done}/${finalMsForState.total} milestones checked. ` +
+            `Overriding to CONTINUE. (false-done #${falseDoneCount})\n\n`;
+          if (config.isLegacy) {
+            projectContent += overrideNote;
+            writeFileSync(config.projectPath, projectContent, "utf-8");
+          } else {
+            appendFileSync(config.journalPath, overrideNote);
+          }
+          continueWithoutProgress++;
+          iteration++;
+          continue;
+        }
+
         projectContent = updateField(projectContent, "Status", "done");
         projectContent = updateField(projectContent, "Health", `${score}/10 (${evalVerdict})`);
-        const finalMsForState = extractMilestones(projectContent);
         projectContent = updateSection(projectContent, "Current State",
           `Complete. ${finalMsForState.done}/${finalMsForState.total} milestones. ${decision.detail.slice(0, 100)}`);
         projectContent = appendToSection(projectContent, "Iteration Summary",
