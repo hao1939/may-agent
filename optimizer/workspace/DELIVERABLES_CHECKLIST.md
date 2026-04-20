@@ -1,5 +1,6 @@
-# Deliverables Checklist
+# Deliverables Checklist — Optimizer Heartbeat
 
-- [x] System snapshot checked — 0 errors, healthy ops — via bash query
-- [x] Mode A investigation forked — session s_1776643859187_0
-- [x] Rotation tracker updated — `agents/optimizer/workspace/todo.md` line 39, A→B
+- [x] DONE: System health check (6h snapshot) — no anomalies, 0 errors
+- [x] DONE: Todo review — no pending requests for optimizer
+- [x] DONE: High-op session scan — no new patterns requiring dispatch
+- [x] DONE: Dispatch decision — NO_DISPATCH (system healthy)
