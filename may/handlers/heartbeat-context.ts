@@ -527,6 +527,18 @@ export const create: HandlerModule["create"] = (
 
         agentContext += formatAgentContext(snap, agentName);
 
+        // Inject pre-computed startup context (cold-start-fix integration)
+        try {
+          const { getStartupContext } = await import("../../../src/lib/index.js");
+          const agentDir = join(baseDir, "agents", agentName);
+          const startupCtx = await getStartupContext(agentDir);
+          if (startupCtx.formattedContext) {
+            agentContext += `\n\n${startupCtx.formattedContext}\n`;
+          }
+        } catch {
+          /* startup context unavailable — non-fatal */
+        }
+
         // Inject owned metrics from may.db
         const metrics = getAgentMetrics(baseDir, agentName);
         if (metrics.length > 0) {
