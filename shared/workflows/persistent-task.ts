@@ -224,7 +224,6 @@ function checkOffMilestones(content: string, reviewerText: string): string {
 function extractComments(content: string): string {
   return extractSection(content, "Comments");
 }
-}
 
 // Clear the Comments section in project.md after processing
 // Track false-done signals for metrics (reset per execute call)

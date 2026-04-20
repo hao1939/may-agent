@@ -91,10 +91,23 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
           }
 
           try {
-            const mtime = statSync(projectFile).mtimeMs;
-            if (mtime <= lastCheck) continue;
-            if (inflight.has(relPath)) continue; // Already in-flight
             const content = readFileSync(projectFile, "utf-8");
+            const mtime = statSync(projectFile).mtimeMs;
+            const statusMatch = content.match(/^\*\*Status\*\*:\s*(\S+)/m);
+            const status = statusMatch ? statusMatch[1].toLowerCase() : "";
+
+            // Pick up if: file changed since last check, OR status is active, OR has pending comments
+            const changed = mtime > lastCheck;
+            const isActive = status === "active";
+            const commentsIdx = content.indexOf("## Comments\n");
+            const hasComments = commentsIdx !== -1 && (() => {
+              const after = content.slice(commentsIdx + 12);
+              const ns = after.indexOf("\n## ");
+              return (ns === -1 ? after : after.slice(0, ns)).trim().length > 0;
+            })();
+            if (!changed && !isActive && !hasComments) continue;
+            if (inflight.has(relPath)) continue;
+
             const m = OWNER_RE.exec(content);
             const owner = m ? m[1] : dir.name;
             projects.push({ owner, relPath });
