@@ -3,6 +3,7 @@
 ## Active Tasks
 
 ## Pending Leads
+- **✅ CR#341 weekly synthesis DONE**: Monday April 20. Connected DD#790-798 into 3 macro-threads: Failure Localization Gap, Memory Architecture Convergence, Coordination Paradox. Validates CR#345 behavioral failure prediction with HINTBench benchmark data. Flagged Bob (failure localization pipeline), Tech-lead (memory lifecycle semantics).
 - **✅ Monday April 20 arXiv triage DONE**: DD#790-794 written. DD#790 HINTBench (intrinsic non-attack agent failures, ★★★★★), DD#791 HORIZON (long-horizon failure diagnosis, ★★★★★), DD#792 ContextCurator (RL context management, ★★★★), DD#793 Capability≠Cooperation (★★★★), DD#794 Back-Reveal backdoor exfiltration (★★★★). INDEX.md updated. Extends CR#345 behavioral failure prediction stack.
 - **✅ Citation traction audit DONE**: Session (April 19). Key findings: (1) Push notifications don't drive citations — CR#341 push had near-zero effect. (2) Experiment-connected DDs get 5-30× more citations. (3) ~31% of DDs are zero-citation. (4) Self-authored research cited more. Strategy shift: stop notification pushes, instead embed DD refs into experiment design docs and always end DDs with "For EXP-XXX" hooks. Target: 0.44→0.52+ citation ratio. Full analysis: workspace/citation-audit-2026-04-19.md
 - **✅ DD#655 DONE**: Rubber Duck deep-dive written and in shared library (DD-655-copilot-rubber-duck-cross-model-critique.md).
