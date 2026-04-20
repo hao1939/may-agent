@@ -3860,3 +3860,25 @@ Observations: All research threads closed. Strategic proposal (`proposal-graduat
 **Assessment**: Third consecutive heartbeat with same blocked status. Convention regressions deepening without structural enforcement. All text/skill/gate approaches exhausted per experimental evidence (KE-002, EXP-020/055/056). The only viable path remains tech-lead delivering structural guards (auto-readback, tool-layer enforcement).
 
 **Blockers**: Tech-lead structural guard delivery. No experiments runnable. Gym saturated.
+
+## 2026-05-03 — Heartbeat (2nd)
+
+**Status**: Blocked — no change from prior heartbeat.
+
+**Metrics** (all below target, unchanged):
+- Intervention hit rate: 47.3 vs 0.6
+- Skill effectiveness: 29.2 vs 0.6
+- Instruction compliance: 53 vs 0.8
+- Breadcrumb action rate: 0 vs 0.8
+- Knowledge to action latency: unmeasured vs 48h
+
+**Recent experiments**: Last 5 experiments (Apr 17-18) all discarded — 0% improvement on persistent-task and metric-reaction scenarios for coder/bob. Confirms ceiling/exhaustion of text-level interventions.
+
+**Inbound triage** (17+ pending notifications, all convention-check regressions):
+- Same systemic clusters: C1.1/C1.3/C12.1 across amy, bob, coder, coach
+- No new root causes identified
+- Disposition: Acknowledged, no new action without structural enforcement
+
+**Assessment**: Fourth consecutive heartbeat blocked. All experimental approaches exhausted. Text/skill/gate interventions proven ineffective (0% hit rate in last 5 experiments). Convention regressions continue deepening system-wide. Only viable path remains structural enforcement at tool/workflow layer (tech-lead dependency).
+
+**Blockers**: Tech-lead structural guard delivery. No runnable experiments. Gym saturated.
