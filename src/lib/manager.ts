@@ -79,18 +79,14 @@ import type { PersistedSession, SessionKind } from "./persistence.js";
 import type { SessionTrace } from "./workflow.js";
 import { join, dirname, relative, resolve } from "node:path";
 import { readIdentity } from "./detached.js";
-import { runActiveRecall, formatRecallWarnings } from "./active-recall.js";
-import { readLatestCheckpointForAgent, cleanupStepCounter } from "./tools/checkpoint.js";
-import { routeKnowledge } from "./knowledge-router.js";
-import { routeFewShotExamples } from "./fewshot-router.js";
+import { cleanupStepCounter } from "./tools/checkpoint.js";
 import { buildTrace } from "./manager-trace.js";
 import { hasFinishToolCall, extractFinishParams, runAgentWithRetry } from "./manager-retry.js";
 import { createAgentsTool as createAgentsToolFn, type CreateAgentsToolOptions } from "./manager-agents-tool.js";
-import { upsertDigest, logShadowComparison, getRecentDigests, formatDigestContext, getCrossAgentDigests, getUnresolvedDigests } from "./session-digest.js";
+import { upsertDigest, logShadowComparison } from "./session-digest.js";
 import { isOverflowError } from "./overflow.js";
 import { summarizeForHandoff } from "./handoff.js";
-import { readLastSession } from "./last-session.js";
-import { getSessionDiff, formatSessionDiff } from "./session-diff.js";
+
 // classifyError is re-exported directly from classify-error.ts (no local import needed)
 
 export { isRetryableInfraError, runAgentWithRetry } from "./manager-retry.js";
@@ -454,10 +450,9 @@ export class SubagentManager {
     // Common-sense.md conventions table points to the directory.
 
     // ── Generated sections (per-agent stable — safe for KV-cache) ──
-    // These are deterministic per agent config; same agent produces the
-    // same output across sessions.  True volatile data (session ID,
-    // time, task history) lives in the first user message — see
-    // buildSessionContext() — so the system prompt stays cache-friendly.
+    // True volatile data (session ID, time) was previously injected via
+    // buildSessionContext() in the first user message. That code was removed
+    // (2026-04-20). User message = task only now.
 
     // 6. Runtime Environment — paths and workspace
     {
@@ -476,7 +471,7 @@ export class SubagentManager {
         envLines.push(`- Knowledge: ${relPath(def.knowledgeDir)}`);
       }
       // List which convention files are already in this prompt
-      envLines.push(`- Already in context (do NOT re-read): SOUL.md, common-sense.md, standing-orders.md, knowledge-essentials.md, skills/*.md`);
+      envLines.push(`- Already in context (do NOT re-read): SOUL.md, common-sense.md`);
       envLines.push(
         `- Knowledge index: knowledge/INDEX.md (read when you need references)`,
         ``,
@@ -485,11 +480,8 @@ export class SubagentManager {
       sections.push(envLines.join("\n"));
     }
 
-    // 7. Session Context is now delivered via the first user message
-    //    (see buildSessionContext) to keep the system prompt stable for
-    //    Anthropic prompt caching.  The system prompt must be identical
-    //    across sessions so the cache_control: ephemeral marker on the
-    //    system block produces cache *reads* instead of only cache writes.
+    // 7. User message = task only. No session context injection.
+    //    See design/open-problems.md #1 for session continuity plans.
 
     // 8. Available Tools (C4.5) — auto-inject tool names so agents
     //    know exactly what they can call without guessing or hallucinating.
@@ -514,150 +506,11 @@ export class SubagentManager {
    * system prompt, so that the system prompt stays identical across sessions
    * and Anthropic prompt caching can produce cache reads (P147 KV-Cache Discipline).
    */
-  private buildSessionContext(
-    def: SubagentDefinition,
-    agentName: string,
-    sessionId: string,
-    persistDir: string,
-    taskText?: string,
-  ): string {
-    const ctxLines = [`# Session Context`, `- Session ID: ${sessionId}`, `- Current Time: ${new Date().toISOString()}`];
-    const memoryLimit = def.memoryLimit ?? 20;
-    if (memoryLimit > 0) {
-      // Phase 5: Digest-based context (what_happened, outcome, files_modified, cross-agent activity)
-      // Memory JSONL fallback removed in Phase 5d — all agents have digest history
-      let historyBlock: string | null = null;
-      try {
-        const digests = getRecentDigests(persistDir, agentName, Math.min(memoryLimit, 10));
-        
-        // Extract files recently touched by this agent (for cross-agent filtering)
-        const recentFiles = new Set<string>();
-        for (const d of digests) {
-          if (d.files_modified) {
-            try {
-              const files = JSON.parse(d.files_modified) as string[];
-              files.forEach((f) => recentFiles.add(f));
-            } catch { /* skip */ }
-          }
-        }
-        
-        // Cross-agent digests: what did other agents change in files I care about?
-        const crossAgentDigests = getCrossAgentDigests(persistDir, agentName, recentFiles);
-        
-        // Unresolved items: sessions that left things open
-        const unresolvedDigests = getUnresolvedDigests(persistDir, agentName);
-        
-        historyBlock = formatDigestContext(digests, crossAgentDigests, unresolvedDigests);
-      } catch {
-        // DB not available (e.g., vitest) — fall through to memory
-      }
-
-      if (historyBlock) {
-        ctxLines.push(``, `## Recent Task History`);
-        ctxLines.push(historyBlock);
-      }
-    }
-
-    // P110 Active Recall: check failure history and inject warnings
-    const recall = runActiveRecall(agentName, this._projectRoot);
-    const recallBlock = formatRecallWarnings(recall);
-    if (recallBlock) {
-      ctxLines.push(``, recallBlock);
-    }
-
-    // Last-session injection: load agents/<name>/last-session.md if it exists.
-    // Written by createLastSessionWriter at session end — gives next session
-    // a structured summary of what happened, what's pending, and what to do next.
-    {
-      const lsAgentDir = getAgentDir(def);
-      if (lsAgentDir) {
-        const lsContent = readLastSession(lsAgentDir);
-        if (lsContent) {
-          ctxLines.push(``, `## Previous Session Summary`, lsContent);
-        }
-      }
-    }
-
-    // Session-diff injection: show what changed since this agent's last session.
-    // Part of cold-start-fix milestone 4.
-    {
-      try {
-        const db = getDb(persistDir);
-        const lastRow = db.prepare(
-          `SELECT startedAt FROM sessions WHERE agent = ? AND status IN ('completed','success','partial') ORDER BY startedAt DESC LIMIT 1`
-        ).get(agentName) as { startedAt: number } | undefined;
-        if (lastRow?.startedAt) {
-          const diff = getSessionDiff(persistDir, lastRow.startedAt, {
-            agent: agentName,
-            limit: 20,
-          });
-          const diffBlock = formatSessionDiff(diff);
-          if (diffBlock) {
-            ctxLines.push(``, diffBlock);
-          }
-        }
-      } catch {
-        // Non-critical — skip silently if DB unavailable
-      }
-    }
-
-    // P3.5 Checkpoint injection: if this agent has a previous checkpoint,
-    // inject it so the agent can resume where it left off.
-    const lastCheckpoint = readLatestCheckpointForAgent(persistDir, agentName);
-    if (lastCheckpoint) {
-      const age = Date.now() - lastCheckpoint.timestamp;
-      const ageStr = age < 3_600_000 ? `${Math.round(age / 60_000)}m ago` : `${Math.round(age / 3_600_000)}h ago`;
-      const dataStr =
-        Object.keys(lastCheckpoint.data).length > 0 ? `\n- Data: ${JSON.stringify(lastCheckpoint.data)}` : "";
-      ctxLines.push(
-        ``,
-        `## Last Checkpoint (from session ${lastCheckpoint.sessionId}, step #${lastCheckpoint.step}, ${ageStr})`,
-        `- Summary: ${lastCheckpoint.summary}${dataStr}`,
-        `- Next steps and context above may help you resume work efficiently.`,
-      );
-    }
-
-    // 5c. context_files — loaded here (not in system prompt) per P147 KV-Cache
-    // Discipline. These files change between sessions, so they must live in the
-    // first user message to keep the system prompt prefix stable for caching.
-    if (def.contextFiles) {
-      for (const cfPath of def.contextFiles) {
-        if (cfPath && existsSync(cfPath)) {
-          const content = readFileSync(cfPath, "utf-8").trim();
-          if (content) ctxLines.push(``, content);
-        }
-      }
-    }
-
-    // Context learning: load agents/<name>/context.md if it exists.
-    // Auto-maintained by finish(context_updates) — accumulated project knowledge.
-    {
-      const ctxAgentDir = getAgentDir(def);
-      if (ctxAgentDir) {
-        const ctxPath = join(ctxAgentDir, "context.md");
-        if (existsSync(ctxPath)) {
-          const ctxContent = readFileSync(ctxPath, "utf-8").trim();
-          if (ctxContent) {
-            ctxLines.push(``, `## What You Know (persistent context)`, ctxContent);
-          }
-        }
-      }
-    }
-
-    // Knowledge routing: inject relevant knowledge entry pointers based on task text.
-    // H-043: raising P(access) by auto-matching task keywords to verified entries.
-    // Inject for ALL sessions — work sessions benefit most because the task text
-    // is specific enough for good keyword matches. Heartbeats also match against
-    // their injected pending tasks. Cost: ~50 tokens (1-3 bullet points).
-    if (taskText && def.projectRoot) {
-      const knowledgeBlock = routeKnowledge(def.projectRoot, taskText, agentName, 3);
-      if (knowledgeBlock) {
-        ctxLines.push(``, knowledgeBlock);
-      }
-    }
-
-    return ctxLines.join("\n");
-  }
+  // Session context injection was removed in the context-learning cleanup (2026-04-20).
+  // The buildSessionContext function computed digests, cross-agent diffs, active recall,
+  // session diffs, checkpoints, last-session summaries, context.md, and knowledge routing
+  // — but the result was never used (promptText = task only). The context-learning project
+  // will design the right approach to session continuity. See design/open-problems.md #1.
 
   /** Clean up step counter and archive session to history on completion. */
   private cleanupSession(session: ActiveSession): void {
@@ -1057,24 +910,8 @@ export class SubagentManager {
       // when agentLoop emits it (before any LLM call). No explicit write here
       // to avoid duplicate JSONL entries.
 
-      // Prepend session context (session ID + task history) to the first user
-      // message.  This keeps the system prompt stable across sessions so that
-      // Anthropic prompt caching produces cache reads.
-      const sessionContext = this.buildSessionContext(def, name, sessionId, persistDir, task);
-
-      // Few-shot example injection (Phase 1: coder + optimizer only)
-      let fewShotBlock: string | null = null;
-      if (!opts?.skipFewShot && def.projectRoot) {
-        const fewShotResult = routeFewShotExamples(task, name, def.projectRoot);
-        if (fewShotResult.content) {
-          fewShotBlock = fewShotResult.content;
-          log("info", `[few-shot] ${name}/${sessionId}: injected ${fewShotResult.matchedFiles.join(", ")} (~${fewShotResult.tokenEstimate} tokens)`);
-        }
-      }
-
-      // First user message = the task only. No context injection.
-      // Session context was previously prepended here (~55K), burying the task.
-      // TODO: decide where session context should go (system prompt, on-demand, or dropped).
+      // User message = task only. Session context injection was removed (2026-04-20).
+      // See design/open-problems.md #1 and context-learning project.
       const promptText = task;
 
       session.promise = runAgentWithRetry(
