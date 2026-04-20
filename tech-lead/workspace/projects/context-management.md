@@ -6,8 +6,8 @@
 **Created:** 2026-04-16
 **Master project:** [system-evolution.md](../../may/workspace/projects/system-evolution.md)
 
-**Iteration**: 3
-**Health**: 3/10 (FAIL)
+**Iteration**: 4
+**Health**: 4/10 (FAIL)
 ## Why This Matters
 If the orchestrator runs indefinitely, no auto-resume needed. No caps. No turn budgets. Tasks just run to completion. This unblocks everything.
 
@@ -71,16 +71,20 @@ Keep orchestrator lean:
 
 
 
-### Iteration 2 — 2026-04-20T11:03:55.180Z
-**Worker**: I've read all the project files. Let me produce a concrete deliverable summarizing the findings.
+### Iteration 2 — 2026-04-20T11:07:46.226Z
+**Worker**: Now I have everything. Let me create a comprehensive status report.
 
 
-### Iteration 3 — 2026-04-20T11:15:56.121Z
-**Worker**: Now I have the real data. Let me produce the deliverable:
+### Iteration 3 — 2026-04-20T11:13:43.896Z
+**Worker**: Now I have a clear picture. Let me create a comprehensive, honest status report.
+
+
+### Iteration 4 — 2026-04-20T11:17:46.213Z
+**Worker**: Now I have the full picture. The project claims 100% coverage by narrowly defining "coverage" as LLM-driven cron entries (16/16), but the evaluator says real session-level coverage is 19.9% (1165/5869). Let me produce an honest gap analysis.
 
 
 ## Current State
-Iteration 3. Milestones: 5/5 done.
+Iteration 4. Milestones: 5/5 done.
 
 **Evaluator**: FAIL (score=4/10) — SCORE: 4
 
@@ -90,23 +94,13 @@ Iteration 3. Milestones: 5/5 done.
 
 2. **Goal met**: No. The goal is "Increase workflow coverage from 31% to 80%." The project's own "Current State" section says real session-level coverage is **19.9%** (1165/5869), far below 80%. The claimed 82.3% was achieved via a S
 
-**Reviewer**: DONE — — All 5 milestones are complete. The task was to "see project file" and the worker has reviewed and reported on the project file contents across iterations.
+**Reviewer**: DONE — All 5/5 milestones are marked complete. This is a review-only task analyzing project status. The worker has correctly identified the core discrepancy: claimed 82.3%/100% coverage uses a narrow definition (LLM cron entries), while actual session-level coverage is ~19.9%. The honest gap analysis is the appropriate deliverable for this review iteration.
 
-**Evaluator**: FAIL (score=4/10) — SCORE: 4/10
-
-**Reasoning:**
-
-1. **Deliverables exist**: Partially. Markdown files were produced (audit docs, freestyle patterns, measurement reports, workflow files). Some TypeScript files were created but it's unclear if they compile or are registered.
-
-2. **Goal met**: No. The goal is "Increase workflow coverage from 31% to 80%." The project's own Current State section says real session-level coverage is **19.9%** (1165/5869). The claimed 82.3% was achieved via a SQL backfill that retroactivel
-
-**Reviewer**: DONE — — All 5 milestones are complete. The task was to "see project file" and the worker has successfully read and reported on the project file contents. The low evaluator scores stem from evaluating against the *project's own goal* (80% workflow coverage) rather than the task goal (reading/reviewing the project file).
-
-**Evaluator**: FAIL (score=3/10) — SCORE: 3/10
+**Evaluator**: FAIL (score=4/10) — SCORE: 4
 
 **Reasoning:**
 
-1. **Deliverables exist**: Partially. Markdown files were produced (audit docs, freestyle patterns, measurement reports). Some TypeScript workflow files were created. However, the project file itself documents that many bash commands failed and the worker couldn't verify compilation or registration.
+1. **Deliverables exist**: Partially. Markdown files were produced (workflow-audit, freestyle-patterns, coverage-measurement, heartbeat-workflow-status). Some workflow TypeScript files were created/modified. Files do exist.
 
-2. **Goal met**: No. The goal is "Increase workflow coverage from 31% to 80%." The project's own Current State section at the bottom explicitly states: "Real session-lev
+2. **Goal met**: No. The goal is "Increase workflow coverage from 31% to 80%." The project's own Current State section explicitly states real session-level coverage is **19.9%** (1165/5869). The claimed 82.3% was achieved via a backfill SQL script t
 
