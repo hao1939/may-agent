@@ -3,7 +3,7 @@
 **Status**: done
 **Owner**: bob
 **Priority**: P1
-**Iteration**: 17
+**Iteration**: 18
 
 **Health**: 7/10 (PASS)
 ## Goal
@@ -64,7 +64,7 @@ Goal: roll out to all agents, watch for regression
 - [ ] Ongoing: May monitors health, coach tracks behavior improvement
 
 ## Current State
-Complete. 0/0 milestones. — The design doc is complete and committed. It contains:
+Iteration 18. Milestones: 0/0 done.
 
 1. ✅ **Current State analysis** — thorough
 

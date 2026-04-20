@@ -389,3 +389,23 @@ The doc is well-structured, addresses the core question of how agents learn from
 
 2. **Goal met**: Partially through iteration 16, but the doc is solid. The "Current State" section is excellent — it correctly identifies that `buildSessionContext()` is NOT dead code (correcting the human's assumption), maps out all data sources, and identifies the real gaps. The Proposed Design section was still a placeholder at iteration 16
 
+### Iteration 18 — 2026-04-20T08:15:37.268Z
+**Worker**: **Status:** done (2m35s)
+
+**Files modified:**
+- /app/agents/src/lib/lessons.ts
+- /app/agents/test/lessons.test.ts
+
+**Errors encountered:**
+- [bash] The following paths are ignored by one of your .gitignore files:
+src
+test
+hint: Use -f if you really want to add them.
+hint: Turn this message off by running
+hint: "git config advice.addIgnoredFile false"
+
+
+Command exited with code 1
+
+**Agent response:**
+The `src/` and `test/` are in .gitignore. Let me put the implementation somewhere that can be committed:
