@@ -1,5 +1,5 @@
-# Deliverables Checklist — Heartbeat 2026-04-20
+# Deliverables Checklist
 
-- [x] DONE — System health snapshot reviewed (0 errors, all agents healthy)
-- [x] DONE — Quality anomaly investigated (coach 0.36 = known evaluator-skip false-zero bug, already dispatched)
-- [x] DONE — Dispatch decision: NO_DISPATCH (no new anomalies)
+- [x] System snapshot checked — 0 errors, healthy ops — via bash query
+- [x] Mode A investigation forked — session s_1776643859187_0
+- [x] Rotation tracker updated — `agents/optimizer/workspace/todo.md` line 39, A→B
