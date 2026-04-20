@@ -7,9 +7,9 @@
 **Status:** cancelled
 **Next:** (closed)
 
-**Status**: active
-**Iteration**: 16
-**Health**: 4/10 (FAIL)
+**Status**: done
+**Iteration**: 15
+**Health**: 7/10 (PASS)
 ## Closure note (2026-04-17)
 
 Closed per Hao: heartbeats are autonomy time, not overhead to minimize. Agents exiting idle heartbeats early = failing to be autonomous, not being efficient. Common-sense.md codifies this ("Heartbeat — exploration. Tokens spent exploring are cheap; missed autonomy is expensive."). No separate adaptive-heartbeats project needed. M2 (scout arXiv windowing) was a correctness concern — if it still matters, scout owns it under their own project, not under an idleness project. M3 (adaptive frequency) is load management and can be re-opened as a separate project if load becomes a problem.
@@ -242,22 +242,25 @@ On the next non-REVIEW heartbeat, May must:
 
 
 
-### Iteration 15 — 2026-04-20T11:08:31.392Z
-**Worker**: Now I'll add the M2 text to scout's heartbeat.md at the decision step:
-
-
-### Iteration 16 — 2026-04-20T11:12:37.944Z
-**Worker**: The M2 edit IS present at line 33 of `agents/scout/heartbeat.md`. The project is cancelled with all milestones closed. The reviewer confirmed "DONE — All milestones are complete."
+### Iteration 15 — 2026-04-20T11:06:21.549Z
+**Worker**: 
 
 
 ## Current State
-Iteration 16. Milestones: 2/3 done. Next: ~~**Adaptive frequency (load management)**~~ — (Closed as part of this project. 
+Complete. 2/3 milestones. All three milestones are closed. M1 (design doc) and M2 (arXiv windowing) were completed; M3 (adapti
 
-**Evaluator**: FAIL (score=4/10) — The M2 edit is **not present** in `agents/scout/heartbeat.md`. The claimed "Outside the arXiv window" text at line 50 does not exist. The milestones in the project file say M2 is `[x]` (ticked), but the project file description itself says it was "Closed" — and the actual artifact is missing from the target file.
+**Reviewer**: DONE — All three milestones are closed. M1 (design doc) and M2 (arXiv windowing) were completed; M3 (adaptive frequency) was explicitly closed as out of scope. Project is complete.
 
-SCORE: 4
+**Evaluator**: PASS (score=7/10) — SCORE: 7
 
 **Reasoning:**
 
-1. **Deliverables exist**: ❌ The core M2 deliverable — the "Outside the arXiv window?" fast-path text in `agents/scout/heartbeat.md` — is **not present**. `gr
+1. **Deliverables exist**: Yes. The M2 edit to `agents/scout/heartbeat.md` line 33 is confirmed present with the exact arXiv windowing text. The project file documents closure thoroughly.
+
+2. **Goal met**: The project was reframed mid-flight after owner (Hao) feedback that the original framing was wrong. M1 shipped (playbook), M2 shipped (scout arXiv windowing), M3 was explicitly closed as out-of-scope. The project was then cancelled with a clear rationale. This is a le
+
+
+
+## Iteration Summary
+- **Iter 15**: All three milestones are closed. M1 (design doc) and M2 (arXiv windowing) were completed; M3 (adapti
 

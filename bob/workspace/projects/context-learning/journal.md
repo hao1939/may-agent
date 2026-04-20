@@ -498,3 +498,13 @@ The open questions have been cleaned up to three genuinely open items (evaluatio
 
 ### Iteration 22 — 2026-04-20T11:11:56.594Z
 **Worker**: The design doc at `agents/docs/designs/agent-learning.md` already contains the complete "Approach Comparison" section. Let me copy it to my workspace as a deliverable:
+**Evaluator**: PASS (score=8/10) — SCORE: 8
+
+**Reasoning:**
+
+1. **Deliverables exist**: Yes — `docs/designs/agent-learning.md` is 325 lines, comprehensive, and committed. It contains all the sections expected of a design doc.
+
+2. **Goal met**: Yes. The goal was "a concrete design doc proposing the mechanism." The doc delivers: problem statement, current state analysis, approach comparison, proposed 5-component architecture, integration points, and open questions. It's genuinely actionable.
+
+3. **Evidence**: The file content is ve
+
