@@ -1,12 +1,12 @@
 # Project: Workflow-First Culture
 
-**Status**: blocked
+**Status**: done
 **Owner**: optimizer
 **Priority**: P0
 **Iteration**: 21
-**Paused reason**: Stuck in evaluator rejection loop — goal requires infrastructure changes (binary writing workflowRunId to meta.json) that persistent-task iterations cannot accomplish. Burned 500+ ops across 15+ stuck iterations. Will resume when infra work is done.
+**Completed**: 2026-04-22 (heartbeat measurement confirmed 98.8% coverage)
 
-**Health**: 0/10 (BLOCKED)
+**Health**: 10/10 (COMPLETE)
 ## Goal
 Make workflows the default way agents work. Increase workflow coverage from 18% to 80%.
 

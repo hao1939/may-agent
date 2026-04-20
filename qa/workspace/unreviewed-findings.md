@@ -1,5 +1,28 @@
 # Unreviewed findings (QA)
 
+## 2026-04-20 — heartbeat — QA verification blocked by missing repo + Node toolchain
+
+### Summary
+This runtime’s project root (`/app`) is **not** a git repository, so the standard “scan recent commits/diffs” heartbeat process cannot run here. Additionally, the mandatory QA gates (`./node_modules/.bin/tsc --noEmit` and `./node_modules/.bin/vitest --run`) cannot be executed because the expected binaries are not present.
+
+### Evidence I observed (this run)
+- `git log --oneline -10` at `/app`: **FAIL** — `fatal: not a git repository` (exit 128). (bash)
+- `git status --porcelain` at `/app`: **FAIL** — `fatal: not a git repository` (exit 128). (bash)
+- `cd agents && ./node_modules/.bin/tsc --noEmit`: **FAIL** — `No such file or directory` (exit 127). (bash)
+- `cd agents && ./node_modules/.bin/vitest --run`: **FAIL** — `No such file or directory` (exit 127). (bash)
+
+### Files reviewed (mandatory step 1)
+- Read: `agents/qa/workspace/heartbeat-context.md`.
+
+### Impact
+- I cannot provide a normal PASS/FAIL QA verdict on any patch because I cannot reliably identify “changed files” (no git metadata) and cannot run the mandatory compile/test gates.
+
+### Recommendations / next steps
+1) Clarify which directory is the actual intended git repo in this environment (why is `/app` missing `.git`?).
+2) If this is intended to be a TS/Vitest project, ensure `node_modules/.bin/tsc` and `node_modules/.bin/vitest` exist (install dependencies or provide a build/test toolchain).
+3) If this environment intentionally lacks Node tooling, update the QA runbook for heartbeats to use alternative verification steps (or explicitly mark as environment-blocked).
+
+
 ## 2026-04-20 — heartbeat — agents repo: project-resume handler + environment gating
 
 ### Summary
