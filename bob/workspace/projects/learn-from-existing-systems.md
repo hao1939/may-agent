@@ -1,6 +1,6 @@
 # Project: Learn from Existing Agent Systems
 
-**Status:** completed  
+**Status**: done
 **Owner:** bob  
 **Team:** scout (research), tech-lead (implementation)  
 **Created:** 2026-04-18  

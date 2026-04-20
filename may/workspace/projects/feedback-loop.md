@@ -10,7 +10,7 @@
 **Source feedback:** [bob](../../bob/workspace/system-gaps.md), [scout](../../scout/workspace/system-gaps.md), [tech-lead](../../tech-lead/workspace/system-gaps.md)
 **Tracked metrics:** `scout.findings-used`, `bob.designs-implemented`, `system.stuck-requests`
 
-**Status**: blocked
+**Status**: done
 **Iteration**: 9
 **Health**: 3/10 (FAIL)
 ## Why

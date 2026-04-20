@@ -17,9 +17,7 @@ These define how the system works.
 | [context-injection-design.md](context-injection-design.md) | System prompt assembly, what agents see, what's on-demand | ✅ Active |
 | [persistent-task-files.md](persistent-task-files.md) | Project system: project.md + journal.md, comment iterations, evaluator gate, health field | ✅ Active (v3) |
 | [metrics-system.md](metrics-system.md) | Unified metric system: per-agent metrics, snapshots, alerts, dashboard | ✅ Implemented |
-| [architecture-redesign.md](architecture-redesign.md) | EventBus, components, event types | ✅ Implemented |
-| [ownership-driven-system.md](ownership-driven-system.md) | Three rules: events, ownership, closed loops | ✅ Active |
-| [runtime-ctx.md](runtime-ctx.md) | Shared infra interface for handlers, workflows, and agent tools | Draft |
+| [runtime-ctx.md](runtime-ctx.md) | Shared infra interface for handlers, workflows, and agent tools | ✅ Implemented |
 | [event-driven-handlers.md](event-driven-handlers.md) | Cron entries gain event triggers, replacing poll-based model | Design |
 
 ## Agent Behavior
@@ -64,7 +62,6 @@ Guards, review, escalation.
 
 | Document | What |
 |----------|------|
-| [open-problems.md](open-problems.md) | Unsolved system gaps: session continuity, metric reaction, quality injection, circuit breaker |
 | [closing-the-loop.md](closing-the-loop.md) | Gap fixes: owner registry, event fallback, metric decoupling, guard escalation |
 | [common-sense-followups.md](common-sense-followups.md) | Items from 2026-04-19 review that need addressing |
 

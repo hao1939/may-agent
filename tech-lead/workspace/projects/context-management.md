@@ -64,7 +64,7 @@ Keep orchestrator lean:
 **Measured**: Longest production run so far: 15 steps (7-8 iterations). All completed successfully.
 
 **Metric**: `context.orchestrator-max-iterations` = **unlimited** (was "unknown")
-**Status**: blocked
+**Status**: done
 
 ### Iteration 1 — 2026-04-20T10:58:46.159Z
 **Worker**: All 5 milestones are complete. The project file shows the metric system persistent task with Phases 1-2 complete and Phase 3 blocked on a process restart.

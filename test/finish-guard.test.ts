@@ -10,6 +10,8 @@ import {
   enforceFinishDeliverables,
   validateVerificationEvidence,
   enforceVerificationEvidence,
+  validatePersistentTaskEnforcement,
+  enforcePersistentTask,
 } from "../src/lib/finish-guard.js";
 
 // ── Test fixtures ─────────────────────────────────────────────────────
@@ -312,6 +314,133 @@ describe("enforceVerificationEvidence", () => {
       enforceVerificationEvidence({
         status: "failure",
         deliverables: [{ path: "foo.ts" }],
+      }),
+    ).not.toThrow();
+  });
+});
+
+// ── FM-3.4 Persistent-Task Enforcement Tests ──────────────────────────
+
+describe("validatePersistentTaskEnforcement", () => {
+  it("passes when persistent-task is not required", () => {
+    const result = validatePersistentTaskEnforcement({
+      status: "success",
+      persistentTaskRequired: false,
+    });
+    expect(result.valid).toBe(true);
+  });
+
+  it("passes when required and workflow was run", () => {
+    const result = validatePersistentTaskEnforcement({
+      status: "success",
+      persistentTaskRequired: true,
+      workflowsRan: ["persistent-task"],
+    });
+    expect(result.valid).toBe(true);
+  });
+
+  it("fails when required but workflow was not run", () => {
+    const result = validatePersistentTaskEnforcement({
+      status: "success",
+      persistentTaskRequired: true,
+      workflowsRan: [],
+    });
+    expect(result.valid).toBe(false);
+    expect(result.error).toContain("FM-3.4");
+    expect(result.error).toContain("persistent-task");
+  });
+
+  it("fails when required and workflowsRan is undefined", () => {
+    const result = validatePersistentTaskEnforcement({
+      status: "success",
+      persistentTaskRequired: true,
+    });
+    expect(result.valid).toBe(false);
+    expect(result.error).toContain("FM-3.4");
+  });
+
+  it("fails when required and workflowsRan has other workflows but not persistent-task", () => {
+    const result = validatePersistentTaskEnforcement({
+      status: "success",
+      persistentTaskRequired: true,
+      workflowsRan: ["some-other-workflow"],
+    });
+    expect(result.valid).toBe(false);
+    expect(result.error).toContain("FM-3.4");
+  });
+
+  it("passes for failure status even when required and not run", () => {
+    const result = validatePersistentTaskEnforcement({
+      status: "failure",
+      persistentTaskRequired: true,
+      workflowsRan: [],
+    });
+    expect(result.valid).toBe(true);
+  });
+
+  it("passes for blocked status even when required and not run", () => {
+    const result = validatePersistentTaskEnforcement({
+      status: "blocked",
+      persistentTaskRequired: true,
+      workflowsRan: [],
+    });
+    expect(result.valid).toBe(true);
+  });
+
+  it("passes for partial status even when required and not run", () => {
+    const result = validatePersistentTaskEnforcement({
+      status: "partial",
+      persistentTaskRequired: true,
+      workflowsRan: [],
+    });
+    expect(result.valid).toBe(true);
+  });
+
+  it("passes when persistent-task is among multiple workflows", () => {
+    const result = validatePersistentTaskEnforcement({
+      status: "success",
+      persistentTaskRequired: true,
+      workflowsRan: ["setup", "persistent-task", "cleanup"],
+    });
+    expect(result.valid).toBe(true);
+  });
+});
+
+describe("enforcePersistentTask", () => {
+  it("throws FM-3.4 when required but not run", () => {
+    expect(() =>
+      enforcePersistentTask({
+        status: "success",
+        persistentTaskRequired: true,
+        workflowsRan: [],
+      }),
+    ).toThrow("FM-3.4");
+  });
+
+  it("does not throw when not required", () => {
+    expect(() =>
+      enforcePersistentTask({
+        status: "success",
+        persistentTaskRequired: false,
+      }),
+    ).not.toThrow();
+  });
+
+  it("does not throw when required and run", () => {
+    expect(() =>
+      enforcePersistentTask({
+        status: "success",
+        persistentTaskRequired: true,
+        workflowsRan: ["persistent-task"],
+      }),
+    ).not.toThrow();
+  });
+
+  it("does not throw for non-success status", () => {
+    expect(() =>
+      enforcePersistentTask({
+        status: "failure",
+        persistentTaskRequired: true,
       }),
     ).not.toThrow();
   });

@@ -491,3 +491,6 @@ Now I'll edit the project file to record iteration 6 and update status. Let me a
 
 Recommend: abandon this worker loop and have a human or different agent directly read the project file, perform the analysis queries, and write findings.
 
+
+## Comments
+- [2026-04-21 hao] Review status — 4/6 milestones done. Is this still relevant? The reviewer-effectiveness project (bob, P0) may cover the same ground from a different angle (reviewer guides worker to follow instructions). Consider closing if superseded.

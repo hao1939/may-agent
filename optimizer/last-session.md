@@ -1,12 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** cron_1776708610432_69
+- **Session:** cron_1776710410436_78
 - **Status:** done
-- **When:** 2026-04-20T18:13:18.703Z
-- **Duration:** 3m8s
+- **When:** 2026-04-20T18:41:31.047Z
+- **Duration:** 1m20s
 
 ## What Happened
-24h adoption is 91.8% — the 6h window just happens to have mostly heartbeat "job" sessions which don't use workflowRunId. System is actually healthy. The per-agent heartbeats are running as `job` kind without workflow IDs, which is expected for heartbeats.
-
-No anomalies, no pending requests for optimizer, system healthy. This is a clean heartbeat — nothing to dispatch.
+System is healthy. Workflow adoption is stable (70-100% range). No errors, no high-op outliers, no pending requests for optimizer. This is a clean heartbeat — nothing to dispatch.

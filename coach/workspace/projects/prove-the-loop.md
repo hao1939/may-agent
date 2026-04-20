@@ -680,3 +680,6 @@ Each iteration:
   - **7d production overall**: n=94, avg **0.710**. Daily: Apr 17 0.681 (n=19), Apr 18 0.703 (n=11), Apr 19 0.700 (n=9).
   - **Decision — WAIT**: Still n < 15. No new evals arriving. System may be idle. Resume when n≥15 post-Iter16 evals available.
   - **Next (Iter 22)**: Re-query at next heartbeat.
+
+## Comments
+- [2026-04-21 hao] Review whether this is superseded by agent-autonomy project (heartbeat redesign done, verification pending). If the same ground is covered, close this and track remaining work under agent-autonomy.

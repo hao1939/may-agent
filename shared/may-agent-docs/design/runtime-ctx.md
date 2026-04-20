@@ -1,6 +1,6 @@
 # Design: RuntimeCtx — Shared Infrastructure Interface
 
-**Status:** Draft
+**Status:** ✅ Implemented
 **Date:** 2026-04-21
 **References:** [core-principles.md](core-principles.md) (P1, P9), [closing-the-loop.md](closing-the-loop.md) (G12)
 
@@ -141,6 +141,31 @@ With RuntimeCtx available in agent tools (future):
 
 ## Implementation
 
-~30 LOC total:
-- ~10 lines: `RuntimeCtx` interface definition
-- ~20 lines: wire infra into WorkflowContext construction in workflow-tool.ts
+Concrete factory in `src/lib/runtime-ctx.ts`:
+
+```typescript
+function buildRuntimeCtx(opts: RuntimeCtxOptions): RuntimeCtx {
+  return {
+    emit: (event) => opts.bus.emit(event),
+    getDb: () => getDb(opts.persistDir),
+    log: (msg) => globalLog("info", `[${opts.agentName}] ${msg}`),
+    notify: (msg) => opts.bus.emit({ type: "notification", agent: opts.agentName, text: msg }),
+    persistDir: opts.persistDir,
+    projectRoot: opts.projectRoot,
+    agentsRoot: opts.agentsRoot,
+  };
+}
+```
+
+Built once per agent, spread into both contexts:
+
+```typescript
+// HandlerContext (agent-loader.ts)
+const rtx = buildRuntimeCtx({ bus, persistDir, projectRoot, agentsRoot, agentName });
+const ctx: HandlerContext = { ...rtx, manager, agentName, ... };
+
+// WorkflowContext (workflow-tool.ts)
+const ctx: WorkflowContext = { task, agent, ...opts.runtimeCtx, ... };
+```
+
+Tests: `test/runtime-ctx.test.ts` (6 tests — factory output, bus routing, spread into both contexts, shared instance).

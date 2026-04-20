@@ -2,7 +2,7 @@
 
 **Status:** Draft
 **Date:** 2026-04-21
-**References:** [core-principles.md](core-principles.md), [ownership-driven-system.md](ownership-driven-system.md), [open-problems.md](open-problems.md), [implementation-audit.md](implementation-audit.md)
+**References:** [core-principles.md](core-principles.md), [archive/open-problems.md](archive/open-problems.md), [archive/ownership-driven-system.md](archive/ownership-driven-system.md)
 
 ---
 
@@ -207,9 +207,10 @@ The reviewer in persistent-task is the weakest link. Tracked by reviewer-effecti
 - **G5** — `metrics-snapshot` emits `metric.breach` instead of calling `autoForkForAlert()`
 - Monitor whether heartbeat-cadence response is fast enough
 
-### Phase 3: Runtime Context (G12)
-- **G12** — Define `RuntimeCtx` interface, wire into WorkflowContext
-- ~30 LOC: interface definition + workflow-tool.ts plumbing
+### Phase 3: Runtime Context (G12) ✅ DONE
+- **G12** — `RuntimeCtx` interface + `buildRuntimeCtx()` concrete factory
+- HandlerContext and WorkflowContext spread the same RuntimeCtx instance
+- 6 tests in `test/runtime-ctx.test.ts`
 
 ### Phase 4: Polish
 - **G3** — Add escalation hint to guard block messages (~5 LOC)
