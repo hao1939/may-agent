@@ -1,12 +1,17 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** cron_1776654605831_651
+- **Session:** cron_1776656405691_659
 - **Status:** done
-- **When:** 2026-04-20T03:11:06.670Z
-- **Duration:** 1m0s
+- **When:** 2026-04-20T03:41:05.654Z
+- **Duration:** 59s
 
 ## What Happened
-Key findings: EXP-188 is designed but PENDING (needs to be run). There are ~15 convention regression notifications queued. The growth-cycle/training-sprint workflows are broken (missing module).
+Based on my review, here's the coach status assessment:
 
-Let me dispatch the EXP-188 experiment run and batch-triage the convention regressions.
+**Both P0 projects remain blocked:**
+- **Instruction-following**: Blocked on tech-lead structural enforcement (text/skill/gate approaches exhausted — 0% across all interventions)
+- **Prove-the-loop**: Blocked on DB query failures preventing coder quality investigation
+- **EXP-188**: Results still PENDING (never completed), handler bugs reported to tech-lead
+
+**Incoming notifications (13+ convention regressions)**: All already triaged as sy
