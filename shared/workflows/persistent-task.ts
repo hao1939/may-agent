@@ -640,9 +640,13 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
       // CONTINUE — track progress and auto-escalate if stuck
       // Re-read from disk — worker or reviewer may have checked off milestones
+      const prevContent = projectContent;
       projectContent = readFile(config.projectPath) ?? projectContent;
       const currentMilestoneDone = extractMilestones(projectContent).done;
-      if (currentMilestoneDone > lastMilestoneDone) {
+      // Progress = milestone checked OR meaningful content change (iteration summaries, state updates)
+      const contentChanged = projectContent.length !== prevContent.length ||
+        projectContent !== prevContent;
+      if (currentMilestoneDone > lastMilestoneDone || contentChanged) {
         continueWithoutProgress = 0;
         lastMilestoneDone = currentMilestoneDone;
       } else {
