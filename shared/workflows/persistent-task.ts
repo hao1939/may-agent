@@ -344,7 +344,7 @@ function buildEvalPrompt(
   const recentEntries = getRecentJournalEntries(journalContent, iteration, 5);
 
   let prompt = `[EVALUATION ONLY — no file edits.]\n\n`;
-  prompt += `You are evaluating whether a project is truly complete.\n\n`;
+  prompt += `You are evaluating whether a project status change is justified.\n\n`;
   prompt += `## Goal\n${goal}\n\n`;
 
   if (ms.total > 0) {
@@ -362,6 +362,7 @@ function buildEvalPrompt(
   prompt += `3. **Evidence**: Is there concrete evidence (tool output, file content, test results)?\n`;
   prompt += `4. **Milestones honest**: Are checked milestones genuinely complete?\n`;
   prompt += `5. **No shortcuts**: Did the worker do real work or just claim completion?\n`;
+  prompt += `6. **If blocked**: Is the blocker real and specific? Did the worker try alternatives? Or did they give up too easily?\n`;
   if (milestoneNote) prompt += `6. **Milestone status**: ${milestoneNote} (Note: workers cannot edit project.md, so unchecked milestones don't necessarily mean incomplete work — check if deliverables exist.)\n`;
   prompt += `\n`;
   prompt += `Your response MUST include:\n`;
@@ -488,8 +489,20 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         return ctx.done(`Complete after comment at iteration ${iteration}: ${decision.detail}`);
       }
       if (decision.status === "blocked") {
+        ctx.emit({ type: "step_start", step: `evaluate-blocked-${iteration}` });
+        const blockedMs = extractMilestones(projectContent);
+        const blockedNote = blockedMs.total > 0 ? `Milestones: ${blockedMs.done}/${blockedMs.total} checked off.` : "";
+        const evalPrompt = buildEvalPrompt(config.goal, projectContent, journalContent, iteration, blockedNote);
+        const evalResult = await ctx.runAgent(config.owner, evalPrompt);
+        const evalText = evalResult.lastAssistantText ?? "";
+        const scoreMatch = evalText.match(/SCORE:\s*(\d+)/i);
+        const score = scoreMatch ? parseInt(scoreMatch[1], 10) : 0;
+        const evalEntry = `**Evaluator**: BLOCKED eval (score=${score}/10) — ${evalText.slice(0, 500)}\n\n`;
+        if (!config.isLegacy) appendFileSync(config.journalPath, evalEntry);
+
         projectContent = updateField(projectContent, "Status", "blocked");
-        projectContent = updateSection(projectContent, "Current State", `Blocked: ${decision.detail}`);
+        projectContent = updateField(projectContent, "Health", `${score}/10 (BLOCKED)`);
+        projectContent = updateSection(projectContent, "Current State", `Blocked: ${decision.detail.slice(0, 150)}`);
         writeFileSync(config.projectPath, projectContent, "utf-8");
         return ctx.escalate(`Blocked by comment at iteration ${iteration}: ${decision.detail}`);
       }
