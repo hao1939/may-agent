@@ -1,63 +1,44 @@
 # Lessons Integration Wiring — Implementation Spec
 
-**Status**: Ready for implementation  
-**Requires**: Access to `src/lib/manager.ts` (outside agents/ workspace)  
-**Module**: `agents/src/lib/lessons.ts` (tested, 9/9 passing)
+**Status**: Hooks ready — 2 lines to add in manager.ts  
+**Module**: `agents/src/lib/lessons-hooks.ts` (tested, 10/10 passing)  
+**Depends on**: `agents/src/lib/lessons.ts` (tested, 9/9 passing)
 
-## What Needs Wiring
+## What Needs Wiring (2 lines in manager.ts)
 
-### 1. Post-Session: Extract Lessons
-
-**Where**: The session completion handler — wherever `finish()` results are processed.
+### Setup
 
 ```typescript
-import { extractLessons } from "../agents/src/lib/lessons.ts";
-
-// After finish() is called and session ends:
-async function onSessionComplete(session: {
-  agent: string;
-  task: string;
-  finishOutput: FinishOutput;
-}) {
-  extractLessons(
-    AGENTS_ROOT,          // e.g., "/app/agents"
-    session.agent,        // e.g., "coder"
-    session.task,         // task description
-    session.finishOutput  // the finish() call data
-  );
-}
+import { onSessionFinish, getLessonsContext } from "../agents/src/lib/lessons-hooks.js";
 ```
 
-**What it does**: Persists lessons from `finish().lessons` and auto-extracts from `finish().blockers` on failure. Deduplicates against existing lessons. Cross-agent shares patterns/insights.
+### 1. Post-Session: Extract Lessons (M2)
 
-### 2. Session Start: Retrieve Lessons
-
-**Where**: `buildSessionContext()` — wherever the session prompt is assembled.
+In the finish() handler, after existing validations (finish-guard, etc.):
 
 ```typescript
-import { retrieveLessons } from "../agents/src/lib/lessons.ts";
-
-// During buildSessionContext():
-const lessonsBlock = retrieveLessons(AGENTS_ROOT, agentName, taskDescription);
-// lessonsBlock is a formatted string like:
-// "## Lessons from Experience\n\n- [fix] Always run npm install before build\n"
-// Append to system/user message
+onSessionFinish({ agent: agentName, task: taskDescription, finishOutput });
 ```
 
-**What it does**: Reads agent-specific + shared lesson pools, scores by relevance to current task, returns top-k within 2KB budget.
+Non-throwing — will never break the finish flow.
 
-### 3. Periodic: Decay Old Lessons
+### 2. Session Start: Retrieve Lessons (M3)
 
-**Where**: Heartbeat or daily cron.
+In `buildSessionContext()`, append to the prompt:
 
 ```typescript
-import { decayLessons } from "../agents/src/lib/lessons.ts";
-
-// During heartbeat or daily maintenance:
-decayLessons(AGENTS_ROOT, agentName);
+const lessonsBlock = getLessonsContext(agentName, taskDescription);
+if (lessonsBlock) systemPrompt += "\n" + lessonsBlock;
 ```
 
-**What it does**: Applies confidence decay (7-day half-life) to old lessons, removes below threshold.
+Non-throwing — returns "" on any error.
+
+### 3. Optional: Decay (heartbeat)
+
+```typescript
+import { runLessonDecay } from "../agents/src/lib/lessons-hooks.js";
+runLessonDecay(agentName);
+```
 
 ## Storage Format
 
