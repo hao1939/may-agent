@@ -62,23 +62,167 @@ The `checkpoint()` tool saves structured progress mid-session. Available to next
 
 > **Status:** Scout research dispatched. Investigating OpenClaw, Hermes Agent, and other frameworks (MemGPT, Voyager, Reflexion). Results will be added here when available.
 
-*Placeholder — see `docs/research/agent-learning-mechanisms.md` when scout completes.*
+Scout research completed — see `docs/research/agent-learning-mechanisms.md` for full analysis of Voyager, Reflexion, MemGPT/Letta, and OpenClaw. Key takeaways incorporated into design:
+- **Voyager**: Semantic retrieval of learned skills works well; code-as-lessons is too rigid for our use case
+- **Reflexion**: Natural language reflections are effective but don't transfer across tasks and don't scale
+- **MemGPT**: Self-directed memory is elegant but unreliable — agents forget to store lessons
+- **OpenClaw**: Skill marketplace shows value of cross-agent sharing
+
+Our design combines: automatic extraction (like Reflexion), relevance-filtered retrieval (like Voyager), bounded context (unlike Reflexion), and cross-agent sharing (like OpenClaw's marketplace).
 
 ## Proposed Design
 
-> To be filled in after research results are available and the dead code has been analyzed directly.
-
-### Design Principles (from human guidance)
+### Design Principles
 1. **Text-based** — lessons are natural language, not structural constraints
 2. **Experiment-driven** — prove mechanisms work before adopting
 3. **Learning, not injection** — agents should develop understanding, not receive data dumps
+4. **Automatic extraction** — don't rely on agents to self-direct memory (MemGPT's weakness); extract from structured `finish()` output
+5. **Bounded retrieval** — inject only relevant lessons, not everything (Reflexion's weakness)
 
-### Open Questions for Design
-- Should lessons be per-agent or shared across agent types?
-- What triggers lesson extraction — every session, only failures, only successes?
-- How do we measure if learning is working? (Need a before/after evaluation)
-- Should lessons have expiry/decay? (Stale lessons may hurt)
-- How do we handle contradictory lessons?
+### Architecture Overview
+
+```
+finish() lessons/context_updates
+        │
+        ▼
+┌─────────────────────┐
+│  Lesson Extraction   │  ← runs after every session
+│  (automatic)         │
+└────────┬────────────┘
+         ▼
+┌─────────────────────┐
+│  Lesson Store        │  ← per-agent + shared pool
+│  (JSONL files)       │
+│  category, text,     │
+│  agent, task-type,   │
+│  confidence, age     │
+└────────┬────────────┘
+         ▼
+┌─────────────────────┐
+│  Relevance Filter    │  ← runs at session start
+│  (in buildSession    │
+│   Context)           │
+└────────┬────────────┘
+         ▼
+   Session prompt with
+   top-k relevant lessons
+```
+
+### Component 1: Lesson Extraction (Post-Session)
+
+**Trigger:** Every `finish()` call, regardless of success/failure.
+
+**What gets extracted:**
+- `finish().lessons[]` — already structured with `fix`/`pattern`/`insight` categories. Currently persisted to memory but **not surfaced back**. This is the #1 gap to fix.
+- `finish().context_updates[]` — already works via `context.md`. Keep as-is for durable facts.
+- **New: auto-extracted lessons from failure patterns.** When status=`failure`, extract the blocker reasons as `fix` lessons automatically. When status=`success` after prior failures on same task, extract the diff as a lesson.
+
+**Storage format (JSONL):**
+```json
+{
+  "id": "uuid",
+  "timestamp": "ISO-8601",
+  "agent": "worker",
+  "category": "fix|pattern|insight",
+  "text": "manager.ts uses lazy DB init — must call getDb() not import db directly",
+  "source_task": "brief task description",
+  "confidence": 1.0,
+  "validated_count": 0,
+  "last_relevant": "ISO-8601"
+}
+```
+
+**Storage location:** `agents/<name>/lessons.jsonl` (per-agent) + `agents/shared/lessons.jsonl` (cross-agent).
+
+### Component 2: Relevance Filtering (Session Start)
+
+**Problem:** Injecting all lessons wastes context budget and dilutes signal (Reflexion's failure mode). Need to select the most relevant subset.
+
+**Algorithm — simple scoring, no embeddings needed initially:**
+
+```
+score(lesson, current_task) =
+    keyword_overlap(lesson.text, current_task) * 0.4
+  + recency_weight(lesson.timestamp) * 0.3
+  + confidence_weight(lesson.confidence, lesson.validated_count) * 0.2
+  + category_boost(lesson.category) * 0.1
+```
+
+Where:
+- `keyword_overlap`: fraction of significant words in the lesson that appear in the task description
+- `recency_weight`: exponential decay, half-life of 7 days
+- `confidence_weight`: starts at 1.0, increases when lesson is validated (agent reports same lesson again), decreases if contradicted
+- `category_boost`: `fix` > `pattern` > `insight` (fixes are most actionable)
+
+**Budget:** Max 10 lessons, max 2KB total. Injected as a `## Lessons from Experience` section in the session context, between task history and the task itself.
+
+**Fallback:** If no lessons score above threshold, include the 3 most recent lessons regardless (bootstrapping).
+
+### Component 3: Cross-Agent Learning
+
+**Mechanism:** When a lesson is marked as `pattern` or `insight` (not `fix`, which tends to be agent-specific), copy it to `agents/shared/lessons.jsonl`. All agents read from both their own file and the shared file during relevance filtering.
+
+**Deduplication:** Before adding to shared pool, check if a semantically similar lesson exists (simple: same category + >60% word overlap). If so, increment `validated_count` on the existing entry rather than adding a duplicate.
+
+**Example flow:**
+1. Worker learns: "Always run tests before committing" (pattern)
+2. Lesson copied to shared pool
+3. Scout picks it up when doing a task that involves code changes
+
+### Component 4: Context Budget Management
+
+Current `buildSessionContext()` already assembles: metadata + task history (20 entries) + active recall + checkpoint + context files.
+
+**Proposed budget allocation (within ~8KB total):**
+
+| Component | Budget | Priority |
+|-----------|--------|----------|
+| Session metadata | 200B | Required |
+| Active recall/warnings | 1KB | High |
+| **Lessons from experience** | **2KB** | **High (new)** |
+| Last checkpoint | 1KB | Medium |
+| Recent task history | 3KB (reduce from current) | Medium |
+| Context files | 1KB | Low |
+
+**Key change:** Reduce task history from 20 raw entries to 5 most recent + summarized patterns. Raw task summaries are low-signal; distilled lessons are higher-signal.
+
+### Component 5: Lesson Lifecycle
+
+- **Creation:** Automatic from `finish()`, as described above
+- **Validation:** When an agent reports a lesson that matches an existing one (same category, >60% overlap), increment `validated_count` and refresh `last_relevant`
+- **Decay:** Lessons not validated or retrieved for 30 days get `confidence` halved. Below 0.1 confidence → archived (moved to `lessons.archive.jsonl`)
+- **Contradiction:** If a new lesson directly contradicts an old one (same topic, opposite advice), flag both for human review via active recall warning. Don't auto-resolve.
+
+### Implementation Plan
+
+**Phase 1 (infra change, ~2 sessions):**
+1. In `appendMemory()`: extract `finish().lessons` and write to `agents/<name>/lessons.jsonl`
+2. In `buildSessionContext()`: read lessons file, apply simple relevance filter, inject top-k into prompt
+
+**Phase 2 (refinement, ~2 sessions):**
+3. Add cross-agent shared lesson pool
+4. Add confidence scoring and decay
+5. Reduce raw task history, increase lesson budget
+
+**Phase 3 (validation, ~2 sessions):**
+6. Run the experiment (below) to measure impact
+7. Tune parameters based on results
+
+### Experiment: Proving It Works
+
+**Setup:** Use the existing agent system running real tasks as the testbed.
+
+**Method — A/B within same agent:**
+1. Pick a task type that recurs (e.g., worker doing code changes with tests)
+2. Measure baseline over 10 sessions: count repeated mistakes, time-to-completion, reviewer rejection rate
+3. Enable lesson injection for next 10 sessions on same task type
+4. Compare: fewer repeated mistakes? Faster completion? Fewer rejections?
+
+**Concrete metric:** Track how often reviewer says "CONTINUE" (meaning rework needed) vs "COMPLETE". If learning works, the CONTINUE rate should decrease over time.
+
+**Simpler smoke test:** Deliberately teach an agent a lesson (e.g., "always commit from /app/agents directory"), then verify in the next session that the lesson appears in context and the agent follows it. This is testable in ~2 sessions.
+
+**Control:** The "always commit from /app/agents" lesson is perfect because it's a real recurring bug in this very project (see iteration 15-16 failures). If the system learns this, it's directly observable.
 
 ## Open Questions
 
