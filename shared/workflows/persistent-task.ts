@@ -83,7 +83,10 @@ function parseInput(raw: string, callingAgent: string): PersistentTaskConfig {
       }
     } catch { /* file may not exist yet */ }
   }
-  if (!goal) throw new Error("Missing required field: goal");
+  if (!goal) {
+    // For legacy projects, use the project name as fallback
+    goal = projectInput.replace(/\.md$/, "").split("/").pop() ?? "unknown project";
+  }
 
   const agent = field("agent");
   const owner = field("owner") ?? agent ?? callingAgent;
