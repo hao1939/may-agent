@@ -10,3 +10,5 @@
 
 Read `src/lib/manager.ts` first to locate the exact insertion points, then implement both integrations.
 
+### Iteration 2 — 2026-04-20T19:24:13.639Z
+**Worker**: All 19 tests pass (9 original + 10 new).
