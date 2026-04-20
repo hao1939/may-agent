@@ -3,6 +3,7 @@
 ## Active Tasks
 
 ## Pending Leads
+- **✅ Monday April 20 arXiv triage DONE**: DD#790-794 written. DD#790 HINTBench (intrinsic non-attack agent failures, ★★★★★), DD#791 HORIZON (long-horizon failure diagnosis, ★★★★★), DD#792 ContextCurator (RL context management, ★★★★), DD#793 Capability≠Cooperation (★★★★), DD#794 Back-Reveal backdoor exfiltration (★★★★). INDEX.md updated. Extends CR#345 behavioral failure prediction stack.
 - **✅ Citation traction audit DONE**: Session (April 19). Key findings: (1) Push notifications don't drive citations — CR#341 push had near-zero effect. (2) Experiment-connected DDs get 5-30× more citations. (3) ~31% of DDs are zero-citation. (4) Self-authored research cited more. Strategy shift: stop notification pushes, instead embed DD refs into experiment design docs and always end DDs with "For EXP-XXX" hooks. Target: 0.44→0.52+ citation ratio. Full analysis: workspace/citation-audit-2026-04-19.md
 - **✅ DD#655 DONE**: Rubber Duck deep-dive written and in shared library (DD-655-copilot-rubber-duck-cross-model-critique.md).
 - **✅ INDEX.md gap CLOSED**: Session 370 promoted 21 drops (DD#601-643) to shared library and added 5 thematic clusters to INDEX.md. Gap from DD#595-600 and DD#606-611 still exists (those DDs may not have drops/ files).

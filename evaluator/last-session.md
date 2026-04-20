@@ -1,12 +1,20 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776644817897_603
+- **Session:** s_1776645963773_1
 - **Status:** done
-- **When:** 2026-04-20T00:27:03.965Z
-- **Duration:** 6s
+- **When:** 2026-04-20T00:46:14.927Z
+- **Duration:** 11s
 
 ## What Happened
-WHAT_HAPPENED: The optimizer attempted to query workflow adoption/health from `.state/may.db` for the last 6 hours. `sqlite3` CLI was missing and `better-sqlite3` was unavailable, so they switched to Python’s `sqlite3` to inspect the `sessions` schema and compute coverage by agent (opCount > 5) and overall “with workflow” vs “without workflow” status counts, plus checked the set of distinct session statuses.
-OUTCOME: partial
-STILL_OPEN: Provide the full breakdown requested (coverage and effectiv
+```json
+{
+  "agents": {
+    "scout": {
+      "role": "Researcher",
+      "capability_level": "L3",
+      "efficiency": 0.55,
+      "quality": 0.9,
+      "verdict": "acceptable",
+      "issues": [
+        "Failure-chain waste: multiple path/filename guesses for covered_ids and INDEX grep patterns before locating correct files (12 wasted calls across 2 chains). Evidence: Chain 1 repeated tail/ls/find attempts before discovering covered_ids lives at agents/shared/knowledge/library/covered_ids.txt; 
