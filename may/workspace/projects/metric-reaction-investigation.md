@@ -6,8 +6,9 @@
 **Master project:** system-evolution
 **Next:** none (project closed)
 
-**Status**: active
+**Status**: blocked
 **Iteration**: 2
+**Health**: 8/10 (BLOCKED)
 ## Goal
 Understand why agents see metrics in their heartbeat context but don't act on them. Propose fixes based on evidence.
 
@@ -272,43 +273,27 @@ Confirmed renderer now emits the red marker in live heartbeats post-backfill:
 
 ## Progress Log
 
-### Iteration 1 — 2026-04-20T11:04:29.694Z
-**Worker**: Results look correct:
-- `coach.breadcrumb-action-rate`: 0 < 0.5 threshold → ⚠️ NEEDS ATTENTION ✅
-- `workflow.premature-done`: 1 < 3 threshold (alert_direction='above', not above) → ok ✅
-- `tech-lead.codebase-weight`: no threshold, 32047 vs 32000, alert_direction='above' means lower is better, gap=(32047-32000)/32000=0.0015 < 0.2 → ok ✅
-- `coder.quality`: 0.79 > 0.7 threshold → ok ✅
-- `optimizer.waste-reduction`: ongoing, no threshold, alert_direction='above' means lower is better, gap=(0.865-0.3)/0.3=1.88 > 0.2 → ⚠️ OFF TARGET ✅
-- `coach.instruction-compliance`: ongoing, threshold=0.5, 53 > 0.5 → not below threshold → ok... wait, that seems wrong. Current=53 with target=0.8 and alert_direction='below'. But 53 > 0.5 so it's not breaching the threshold. The data seems wrong (53 is probably a raw count, not a ratio). That's a data issue, not a code issue.
-
-Now let me write the deliverable document:
+### Iteration 1 — 2026-04-20T11:03:47.768Z
+**Worker**: Both files compile cleanly.
 
 
 
-### Iteration 2 — 2026-04-20T11:12:46.793Z
+### Iteration 2 — 2026-04-20T11:12:42.165Z
 **Worker**: 
 
 
 ## Current State
-Iteration 2. Milestones: 5/6 done. Next: M5b: Phase 2 — add `direction` column + broaden predicate to continuous metrics 
+Blocked: All actionable milestones (5/6) are complete. M5b (Phase 2 — add `direction` column + broaden predicate to continuous metrics) is explicitly gated on 
 
-DONE
+**Reviewer**: BLOCKED — All actionable milestones (5/6) are complete. M5b (Phase 2 — add `direction` column + broaden predicate to continuous metrics) is explicitly gated on 48 hours of observation of M5a. No work can proceed until that observation period elapses.
 
-**Summary:** All actionable milestones (5/6) are complete and verified. The worker's iteration 1 correctly validated the metric alerting logic — all test cases produce expected results. The remaining item M5b ("add `direction` column + broaden predicate to continuous metrics") is explicitly gated on 48h observation of M5a and cannot proceed yet by design. This is not a blocker; it's a deliberate time gate.
+**Evaluator**: BLOCKED eval (score=8/10) — SCORE: 8
 
-**Key findings from iteration 1:**
-- Alert logic is correct for all 6 test metrics
-- One data quality issue identified (`coach.instruction-compliance` has raw count 53 instead of a ratio) — this is a data issue, not a code issue
-- The investigation deliverable and verification report confirm agents are acting on metrics post-redesign (7/8 agents proactive)
+**Reasoning:**
 
-No further iterations needed until the 48h observation window for M5a completes.
+1. **Deliverables exist**: Yes — extensive investigation documented in the project file itself (M1-M5a results, data tables, code analysis, commit references like `0e22b256`).
 
+2. **Goal met**: Yes — the goal was to "understand why agents see metrics but don't act on them" and "propose fixes based on evidence." The investigation thoroughly answered this (missing thresholds → no ⚠️ marker → agents correctly report "no red metrics") and implemented the fix.
 
-
-## Iteration Summary
-- **Iter 1**: Results look correct:
-- `coach.breadcrumb-action-rate`: 0 < 0.5 threshold → ⚠️ NEEDS ATTENTION ✅
-- `
-
-**Reviewer**: DONE — All actionable milestones (5/6) are complete and verified. M5b (Phase 2 — add `direction` column + broaden predicate) is explicitly gated on 48h observation of M5a and cannot proceed yet by design. No further work needed until that observation window completes.
+3. **Evidence
 
