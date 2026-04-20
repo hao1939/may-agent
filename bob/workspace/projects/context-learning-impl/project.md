@@ -44,3 +44,5 @@ Iteration 2. Milestones: 1/5 done. Next: M2: Wire `extractLessons()` into sessio
 ## Iteration Summary
 - **Iter 1**: Already committed in a prior step. Good.
 
+- **Iter 2**: All 19 tests pass (9 original + 10 new).
+
