@@ -1,14 +1,15 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** cron_1776658212190_678
+- **Session:** s_1776660122825_1
 - **Status:** done
-- **When:** 2026-04-20T04:11:00.858Z
-- **Duration:** 48s
+- **When:** 2026-04-20T04:42:26.407Z
+- **Duration:** 23s
 
 ## What Happened
-### Summary
-This heartbeat found **no shippable patch to QA** in `/app` because the runtime is **not a git repo** and the **mandatory TypeScript/Vitest gates cannot run** (missing tool binaries). I did independently inspect a changed file in the **only git repo present** (`/app/agents`) — `agents/shared/workflows/persistent-task.ts` — and found a **credible CRITICAL data-loss risk** in how it clears the `## Comments` section (it truncates everything after that heading).
+## Pending work (prioritized)
 
-### Checks
-- `tsc --noEm
+1) **P0 — Investigate metric alert: `qa.review-coverage` unresolved (0 < 1)**
+   - **Request:** `fc12beba-fae8-4585-bedb-88920657722a` (status: `CREATED`)
+   - **Why it’s top priority:** It’s an explicit escalation and is blocking the *metric-reactivity* verification milestone.
+   - **Next action:** Locate where `qa.review-coverage` is computed/updated (likely a metrics job or workflow step writing to `.state/may.db` tables like `metrics`, `metric_snapshots`, `metr
