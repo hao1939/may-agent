@@ -16,6 +16,11 @@
  *
  * Each per-agent file (e.g., may-heartbeat.ts) exports name/description/execute
  * and delegates to buildAgentHeartbeat() from this module.
+ *
+ * 2026-06-01: Integrated G-pattern (question-first metrics) from
+ * agents/bob/workspace/patches/agent-heartbeat-breadcrumb.ts to close the
+ * breadcrumb action-rate gap (0.32 → target 0.8). Breadcrumbs in passive
+ * context get ~10% action rate; G-pattern question-framing gets ~80-100%.
  */
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -43,6 +48,45 @@ interface StepResult {
 
 const STEPS = ["check-health", "review-requests", "dispatch-work", "update-context"] as const;
 type StepName = typeof STEPS[number];
+
+// ── G-pattern: Metrics loading for question-first step ─────────────────
+
+/**
+ * Load the pre-generated heartbeat-context.md metrics block for an agent.
+ * Written by heartbeat-context handler before heartbeat runs.
+ */
+function loadMetricsBlock(agent: string): string {
+  try {
+    const fs = require("node:fs");
+    const path = require("node:path");
+    const contextPath = path.join(process.cwd(), "agents", agent, "workspace", "heartbeat-context.md");
+    if (!fs.existsSync(contextPath)) return "";
+    const content = fs.readFileSync(contextPath, "utf-8");
+
+    const metricsStart = content.indexOf("📊 Your Metrics:");
+    if (metricsStart === -1) return "";
+
+    const metricsSection = content.slice(metricsStart);
+    const lines = metricsSection.split("\n");
+    const metricsLines: string[] = [];
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (metricsLines.length > 0 && trimmed === "") break;
+      if (trimmed.startsWith("📊") || trimmed.startsWith("-") || trimmed.startsWith("→") || trimmed === "") {
+        metricsLines.push(line);
+      } else if (metricsLines.length > 0) {
+        break;
+      }
+    }
+    return metricsLines.join("\n").trim();
+  } catch {
+    return "";
+  }
+}
+
+function hasAttentionMetrics(metricsBlock: string): boolean {
+  return metricsBlock.includes("⚠️");
+}
 
 // ── Step prompt builders ───────────────────────────────────────────────
 

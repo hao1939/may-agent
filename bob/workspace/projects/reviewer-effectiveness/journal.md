@@ -84,3 +84,12 @@ The deliverables are solid:
 
 ### Iteration 5 — 2026-04-20T19:24:30.302Z
 **Worker**: Now let me compute the baseline numbers from the investigation data.
+**Reviewer**: DONE — — All four milestones are complete. Deliverables:
+
+1. **Investigate** → `.state/reviewer-investigation.md` — 13 categorized failure examples across 6 root causes
+2. **Design** → `.state/reviewer-prompt-design.md` — full new prompt template addressing all root causes
+3. **Experiment** → `.state/reviewer-experiment-results.md` — before/after analysis of 5 failure cases (3 fixed, 2 improved)
+4. **Measure** → `.state/reviewer-effectiveness-metric.md` — metric framework with 27% baseline progress rate (on failure cases), projected improvement to ~70-85%, and tracking methodology
+
+The "no milestone progress" warning was a tracking artifact — iterations 3-5 produced all the deliverables but milestones weren't checked off in the tracker.
+
