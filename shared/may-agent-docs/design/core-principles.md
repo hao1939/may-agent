@@ -26,6 +26,8 @@ Event fires
 
 Owner means: if this falls on the floor, it's your problem. Owners don't do all the work — they guarantee nothing is orphaned.
 
+Agents exist as **accountability boundaries**. We don't have 7 agents because we need 7 workers — any LLM can do anything. We have 7 agents because we need 7 distinct owners who accumulate domain context, watch domain metrics, and are the definitive answer to "who's responsible for this?"
+
 **Elaborated in:** [ownership-driven-system.md](ownership-driven-system.md), [metrics-system.md](metrics-system.md), [infra-metrics.md](infra-metrics.md)
 
 ## 3. Events must be consumed
@@ -48,6 +50,8 @@ Everything else — skills, knowledge, project history, metrics, design docs —
 
 This is deliberately minimal. Dumping context produces agents that skim. Discovery produces agents that understand.
 
+**Known gap:** Session continuity is unsolved — agents start fresh each session with zero memory of prior work. The context-learning project is designing the right approach. See [open-problems.md](open-problems.md) #1.
+
 **Elaborated in:** [context-injection-design.md](context-injection-design.md), [context-learning.md](context-learning.md)
 
 ## 5. Evidence before systems
@@ -68,7 +72,7 @@ When agents make judgment errors, the fix is **workflow structure** — not text
 
 | Problem type | Right mechanism | Wrong mechanism |
 |-------------|----------------|-----------------|
-| Judgment error | Workflow (two-phase, reviewer, evaluator gate) | Text rules (0/18 proven effective) |
+| Judgment error | Workflow (two-phase, reviewer, evaluator gate) | Text rules alone (unreliable across sessions) |
 | Environmental fact | context.md (data) | Code (doesn't adapt) |
 | Mechanical check | Guard or code (tsc, test runner) | Text rules |
 | Process enforcement | Workflow step ordering | Instructions ("remember to verify") |
