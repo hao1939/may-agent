@@ -1,0 +1,7 @@
+{
+  "name": "format-demo",
+  "version": "1.0.0",
+  "devDependencies": {
+    "prettier": "^3.8.3"
+  }
+}
