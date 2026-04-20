@@ -311,3 +311,11 @@ The milestone "Verify: auto-fork has NEVER fired" observation part is done. The 
 M4 is verified (12+ metric-alert requests in DB, 5 with `source='metric-alert'`). M5 is already done. Let me update the journal and finish.
 ### Iteration 4 — 2026-04-20T11:18:17.897Z
 **Worker**: My commit is 576e31ac5 (2 behind HEAD due to another commit). The project file confirms 5/5 milestones done.
+**Evaluator**: PASS (score=7/10) — SCORE: 7
+
+**Reasoning:**
+
+1. **Deliverables exist**: Yes. Real code exists in `metrics-snapshot.ts` implementing auto-fork on metric breach (~lines 159-217, 398-441) and in `agent-heartbeat.ts` injecting alert queries into heartbeat context (lines 71-76). These are substantial, functional implementations.
+
+2. **Goal met**: The goal was "alert → agent sees it → agent investigates → agent acts." The plumbing is built: metrics-snapshot detects breaches and auto-forks the owning agent with a task, p
+

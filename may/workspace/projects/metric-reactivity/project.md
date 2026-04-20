@@ -1,10 +1,11 @@
 # Project: Metric Reactivity
 
-**Status**: active
+**Status**: done
 **Owner**: may
 **Priority**: P1
 **Iteration**: 4
 
+**Health**: 7/10 (PASS)
 ## Goal
 Agents should react to metric alerts. Currently 4 alerts are firing with zero response. Close the loop: alert → agent sees it → agent investigates → agent acts.
 
@@ -46,10 +47,14 @@ Agents should react to metric alerts. Currently 4 alerts are firing with zero re
 
 
 ## Current State
-Iteration 4. Milestones: 5/5 done.
+Complete. 5/5 milestones. — All milestones are complete.
+
+The verification report at `agents/may/workspace/projects/metric-rea
 
 ## Iteration Summary
 - **Iter 3**: Now let me write the verification report:
 
-- **Iter 3**: Auto-committed already. Now commit the other dirty files:
+- **Iter 4**: — All milestones are complete.
+
+The verification report at `agents/may/workspace/projects/metric-rea
 
