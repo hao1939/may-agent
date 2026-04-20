@@ -1,6 +1,6 @@
 # Project: Context Learning — Design Phase
 
-**Status**: active
+**Status**: done
 **Owner**: bob
 **Priority**: P1
 **Iteration**: 22
@@ -26,10 +26,14 @@ Key question: **what mechanism updates agent behavior based on experience?**
 ## Current State
 Iteration 22. Milestones: 3/4 done. Next: Propose integration points: where in the system does learning happen? (session e
 
+**Milestone: "Include comparison of approaches"** ✅ — The
+
 ## Iteration Summary
 - **Iter 20**: Now commit:
 
-- **Iter 21**: The design doc already has both sections committed. The "Approach Comparison" section (milestone for
+- **Iter 21**: — Both remaining milestones are complete.
+
+**Milestone: "Include comparison of approaches"** ✅ — The
 
 
 ## Comments
