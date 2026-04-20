@@ -29,3 +29,23 @@ This is purely a read-and-analyze task. No code changes yet. The output must be 
 
 ### Iteration 2 — 2026-04-20T19:18:48.442Z
 **Worker**: Now I have comprehensive data. Let me write the analysis.
+**Reviewer**: CONTINUE — — The **Investigate** milestone is complete. The analysis in `.state/reviewer-investigation.md` is excellent — 13 categorized examples, clear root causes, and a weakness table. **Check off the Investigate milestone.**
+
+**Next iteration should complete the Design milestone:**
+
+Produce `.state/reviewer-prompt-design.md` with a concrete new `buildReviewPrompt` template. The design must directly address each of the 6 root causes identified:
+
+1. **Problem-solver framing**: Replace the evaluator frame with instructions like "Your job is to unblock the worker. If something isn't working, propose an alternative approach." Add explicit instruction: "Never give the same guidance twice. If your previous guidance failed, try a different strategy."
+
+2. **Show all previous reviewer guidance**: Change from "last 2 journal entries" to showing all previous reviewer CONTINUE messages (or at least a summary). The reviewer must see what it already told the worker.
+
+3. **Infrastructure awareness section**: Add a permanent section explaining: how `checkOffMilestones()` works (text matching on milestone names), what the evaluator checks, what the auto-check override does, and what tools the worker has available.
+
+4. **Fix the DONE trap**: Add guidance like "Before saying DONE, verify: (a) milestone names in your response match exactly, (b) deliverable files exist, (c) quality is sufficient to pass a score ≥7/10 evaluation."
+
+5. **Escalation options**: Add PIVOT as a fourth option — "the current approach isn't working, here's a fundamentally different strategy." Make BLOCKED require a specific unresolvable external dependency, not just "this is hard."
+
+6. **Constrain CONTINUE guidance**: Require the reviewer to state (a) what specific output the next iteration should produce, (b) what's different from previous guidance, (c) a single concrete first step.
+
+The deliverable should include the full new prompt template ready to be implemented, with `{placeholder}` variables matching the current ones. Include a before/after comparison for each weakness.
+

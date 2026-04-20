@@ -42,5 +42,7 @@ Evidence from our projects:
 ## Current State
 Iteration 2. Milestones: 0/4 done. Next: Investigate: analyze 10+ reviewer decisions from recent projects — categorize fa
 ## Iteration Summary
+- **Iter 2**: Now I have comprehensive data. Let me write the analysis.
+
 
 ## Comments
