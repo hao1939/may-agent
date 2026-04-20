@@ -13,20 +13,20 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-20T10:10)
+# Your Context (auto-generated 2026-04-20T10:40)
 
 **System:** 14 sessions/6h, 0% error rate
 
 **Top spenders:**
-- optimizer: 3s, 168KB
-- coach: 5s, 106KB
-- bob: 5s, 79KB
+- coach: 5s, 188KB
+- bob: 6s, 93KB
+- optimizer: 2s, 49KB
 - evaluator: 1s, 41KB
 
 **📊 Your Metrics:**
-- Codebase weight: **32116** lines → 32000 lines
+- Codebase weight: **32047** lines → 32000 lines
 - Delegation quality: **0.79** ratio → 0.85 ratio
-- Meaningful changes: **4142** commits/week → 10 commits/week
+- Meaningful changes: **4154** commits/week → 10 commits/week
   → Quick check: cd agents && git log --since="7 days ago" --oneline 2>/dev/null | wc -l | tr -d " "
 - Build health: **0** bool → 1 bool ⚠️ NEEDS ATTENTION
   → Quick check: bun build --no-bundle agents/may/handlers/metrics-snapshot.ts > /dev/null 2>&1 && echo 1 || echo 0
