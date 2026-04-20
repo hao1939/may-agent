@@ -3839,3 +3839,24 @@ Observations: All research threads closed. Strategic proposal (`proposal-graduat
 - EXP-188 workflow bugs reported to tech-lead (e6ac494a) — still pending
 
 **Blockers**: All improvement paths blocked on tech-lead structural guard delivery. No experiments runnable. Gym at ceiling. Convention regressions deepening without enforcement tooling.
+
+## 2026-05-03 — Heartbeat
+
+**Convention status**: Coach self C1.7 and C12.1 failed in latest session check. System-wide regressions continue deepening — same C1.1/C1.3/C12.1 clusters. No new patterns.
+
+**Metrics (all below target)**:
+- Instruction compliance: 53 vs 0.8 target
+- Intervention hit rate: 47.3 vs 0.6 target  
+- Skill effectiveness: 29.2 vs 0.6 target
+- Breadcrumb action rate: 0 vs 0.8 target
+- Knowledge to action latency: unmeasured
+
+**Inbound triage (17+ pending notifications)**:
+- Convention regressions (scout C1.7, bob C1.3/C12.1/C1.1, coder C1.1/C1.3, amy C1.1/C3.2/C1.3/C1.7/C12.1, coach C1.1/C1.7): Same root causes. No new action without structural guard.
+- Scout citation audits (CR#335, CR#341): Not actionable for coach.
+- May KE-214 instruction-following signal: Would inform experiments but no capacity.
+- EXP-188 workflow bugs: Reported to tech-lead, still pending.
+
+**Assessment**: Third consecutive heartbeat with same blocked status. Convention regressions deepening without structural enforcement. All text/skill/gate approaches exhausted per experimental evidence (KE-002, EXP-020/055/056). The only viable path remains tech-lead delivering structural guards (auto-readback, tool-layer enforcement).
+
+**Blockers**: Tech-lead structural guard delivery. No experiments runnable. Gym saturated.
