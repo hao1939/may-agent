@@ -2,6 +2,10 @@
 
 ## 2026-04-20 — heartbeat — environment/tooling mismatch blocks mandatory QA gates
 
+### Notes (this run)
+- Attempted to run git and mandatory QA commands from `/app` but `/app` is not a git repo and the expected tool binaries are absent.
+- Code spot-check in this run: `src/dashboard/server.ts` (see below).
+
 ### Unreviewed change detected (agents repo)
 - Commit `853a7d978` modifies `agents/shared/workflows/persistent-task.ts` (workflow logic change: re-read project file from disk during loop).
 - Partial read completed (offsets 1-220 and 221-480). Risks noted: `clearComments()` truncates everything after `## Comments` (data loss if users add sections after); legacy path appends to `Progress Log` which is not created in new project template.

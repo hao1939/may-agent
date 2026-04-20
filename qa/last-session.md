@@ -1,14 +1,14 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** cron_1776672612752_852
+- **Session:** cron_1776674412512_898
 - **Status:** done
-- **When:** 2026-04-20T08:11:23.070Z
-- **Duration:** 1m10s
+- **When:** 2026-04-20T08:41:26.280Z
+- **Duration:** 1m13s
 
 ## What Happened
 ### Summary
-This heartbeat environment blocks the mandatory QA gates: `/app` is not a git repo, and the expected Node/TS toolchain (`./node_modules/.bin/tsc`, `./node_modules/.bin/vitest`) is missing. I still did an independent spot-check by fully reading `src/pipeline.js` and found a likely logic/docs mismatch around normalization vs penalty application order.
+This QA heartbeat run is **blocked by environment/tooling issues**: `/app` is not a git repo (so I can’t identify “recent commits/changed files” here), and the **mandatory TypeScript + Vitest binaries are missing**, so I cannot execute the required verification gates. I did complete the minimum file-read requirement by reviewing `src/dashboard/server.ts` and noted a couple runtime/robustness risks.
 
 ### Checks
-- `tsc --noEmit`: **FAIL** — `./node_modules/.bin/tsc` not found (no `node_modules/.bin` in `/app`; `npx tsc` also fails bec
+- `./node_modules/.bin/tsc --noEmit`: **FAIL** — `No such file or director
