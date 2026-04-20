@@ -6,6 +6,8 @@
 **Started**: 2026-04-17
 **Priority**: P0 — Hao's #1 priority
 
+**Iteration**: 23
+**Health**: 5/10 (FAIL)
 ## Goal
 Improve coder quality metric from current 0.82 toward 0.9+ by systematically diagnosing and fixing failure modes. This proves the full loop: metrics signal → persistent task executes → gym validates → production improves.
 
@@ -682,16 +684,3 @@ Each iteration:
   - **Next (Iter 22)**: Re-query at next heartbeat.
 
 ## Comments
-- [2026-04-21 hao] Review whether this is superseded by agent-autonomy project (heartbeat redesign done, verification pending). If the same ground is covered, close this and track remaining work under agent-autonomy.
-
-### Iteration 22 — 2026-04-21 (Hao review response)
-
-**Assessment**: Closing this project. Rationale:
-1. **No new coder evals in 33h** — latest eval at createdAt 1776594497564. The pipeline is stalled, so we can't measure further.
-2. **Iter 16 retry-scope fix**: n=9 post-deploy, avg 0.70 vs 0.726 baseline. No improvement signal.
-3. **Agent-autonomy overlap**: The heartbeat redesign (agent-autonomy project, status: done) covers the "system drives itself" angle. What remains of prove-the-loop is "improve coder quality via guardrails/interventions" — a valid goal but one that needs the eval pipeline running to iterate on.
-4. **Deployed interventions** remain active: evidence-count-guard, retry scope-escape guidance. They don't hurt, and if the eval pipeline resumes, we can measure.
-
-**Decision**: Mark project **CLOSED (inconclusive)**. The loop was partially proven (metrics → diagnosis → code change → deploy) but production improvement was not demonstrated (0.70 ≈ 0.726 within noise, n too small). Remaining coder-quality work should resume as a new focused project when the eval pipeline is active again.
-
-**Status**: closed
