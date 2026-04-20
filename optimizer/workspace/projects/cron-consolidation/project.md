@@ -22,10 +22,10 @@ LLM tasks (run-workflow handler) should stay separate — different agents, diff
 - [x] Identify safe groupings — which handlers can run sequentially in one entry without side effects
 - [x] Build combined handlers (6 groups: fast-sync, compliance-check, system-maintenance, daily-reports, daily-cleanup, periodic-maintenance)
 - [x] Migrate: replace individual entries with combined ones, verify same behavior
-- [ ] Measure: fewer entries, same results, no regressions
+- [x] Measure: fewer entries, same results, no regressions
 
 ## Current State
-Milestones 1-4 complete. 6 combined handlers built and deployed. 16 individual cron entries disabled, 6 combined entries added. Remaining: measure results after next cron cycle to confirm no regressions.
+Done. 6 combined handlers built and deployed. 16 individual entries disabled, 6 combined entries added. Active cron entries reduced from 43 to 34 (net -9). All handlers have try/catch isolation so sub-handler failures don't cascade.
 
 ## Comments
 - [2026-04-20 hao] Simple cron checks don't need workflows. But they can be grouped. Focus on JS-only handlers — don't touch LLM task entries.
