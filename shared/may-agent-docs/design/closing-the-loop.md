@@ -143,6 +143,8 @@ The only action item: ensure events carry `data.owner` when emitted. Everything 
 
 Start simple: emit + persist. Add immediate handling when there's evidence the delay matters.
 
+**Tradeoff:** Today `autoForkForAlert()` reacts instantly. This change means breach response moves to heartbeat cadence (~30min). If that's too slow for critical metrics, add a `metric-alert` handler with `"on": ["metric.breach"]` — but prove the need first.
+
 ### G6: Session Continuity Unsolved (violates P4)
 
 **Status:** Tracked by context-learning project (bob). Not redesigned here.
@@ -169,22 +171,18 @@ Self-evaluation bias risk. Monitor false-done rates before adding independent ev
 
 ## Implementation Sequence
 
-### Phase 1: Foundation
-- **G4** — Ensure events carry `data.owner` when emitted
-- **G2** — On handler failure, notify `entry.agent` (or may) via bus
-- Convention + ~10 LOC
+### Phase 1: Events + Ownership
+- **G4** — Ensure events carry `data.owner` when emitted (convention)
+- **G2** — On handler failure, notify `entry.agent` (or may) via bus (~10 LOC)
+- **G1** — Events table + DB writer subscriber — all events persisted (~15 LOC)
 
-### Phase 2: Event Persistence (the big win)
-- **G1** — Events table + DB writer subscriber — all events persisted, unconsumed events visible to owners
-- **G5** — Decouple metrics: emit `metric.breach`, create `metric-alert` handler
-- This phase implements the closed loop: every event is recorded, consumed or not
+### Phase 2: Decouple Metrics
+- **G5** — `metrics-snapshot` emits `metric.breach` instead of calling `autoForkForAlert()`
+- Monitor whether heartbeat-cadence response is fast enough
 
 ### Phase 3: Polish
-- **G3** — Add escalation hint to guard block messages
-
-### Phase 4: Cleanup
-- **G7** — Remove false preferred-workflows reference from common-sense.md
-- **G8** — Remove stale common-sense references per common-sense-followups.md
+- **G3** — Add escalation hint to guard block messages (~5 LOC)
+- **G8** — Remove false preferred-workflows reference from common-sense.md
 
 ### Not Prioritized
 - **G6** (CLI emit) — nice-to-have

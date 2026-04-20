@@ -102,19 +102,20 @@ Agents don't need to know they're being supervised. The gatekeeper pattern requi
 
 **Elaborated in:** [may-gatekeeper.md](may-gatekeeper.md), [agent-calling-guide.md](agent-calling-guide.md)
 
-## 9. Convention over invention
+## 9. Convention over configuration
 
-Follow established patterns. Don't invent new conventions when existing ones work.
+When behavior can be derived from a naming convention, don't build configuration for it.
 
-- File locations are fixed (see common-sense.md conventions table)
-- Naming follows `<domain>.<action>` for events and metrics
-- Ownership follows naming: `coach.skill-effectiveness` -> coach owns it
-- Project files live at `agents/<owner>/workspace/projects/`
-- Status fields use the same vocabulary everywhere: active/blocked/done/paused
+- Metric `coach.skill-effectiveness` → coach owns it. No registry needed.
+- Event `metric.breach` with `data.owner: "coach"` → coach is accountable. No lookup needed.
+- File at `agents/bob/workspace/projects/X` → bob owns it. No mapping needed.
+- Cron entry with `agent: "scout"` → scout's heartbeat. No routing table needed.
 
-When you need something new, check if a convention already covers it. If not, propose one — don't create a one-off.
+Conventions are self-documenting, zero-maintenance, and enforce consistency. Configuration is a liability — it drifts, requires code to read, and creates a single point of failure.
 
-**Elaborated in:** common-sense.md Conventions section
+**Corollary:** Don't invent new conventions when existing ones work. File locations are fixed (see common-sense.md conventions table). Naming follows `<domain>.<action>` for events and metrics. Status fields use the same vocabulary everywhere: active/blocked/done/paused. Check if a convention already covers your need before creating anything.
+
+**Elaborated in:** common-sense.md Conventions section, [ownership-driven-system.md](ownership-driven-system.md)
 
 ## 10. Simple first, always
 
@@ -143,7 +144,7 @@ Something happens                           (Principle 1: event)
   -> Uses structure for judgment calls      (Principle 6: structure > instructions)
   -> Checks metrics as signals              (Principle 7: Goodhart guardrail)
   -> May reviews async if system-scope      (Principle 8: decoupled supervision)
-  -> Follows established patterns           (Principle 9: convention)
+  -> Follows conventions, not configuration  (Principle 9: convention)
   -> Starts simple                          (Principle 10: simplicity)
 ```
 
