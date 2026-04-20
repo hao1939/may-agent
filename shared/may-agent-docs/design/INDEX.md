@@ -1,8 +1,16 @@
 # Design Documents — Index
 
+## Core Principles
+
+Start here. This governs every design decision.
+
+| Document | What | Status |
+|----------|------|--------|
+| [core-principles.md](core-principles.md) | 10 architecture principles that hold the system together. Read this first. | ✅ Active |
+
 ## Core System Design
 
-These define how the system works. Read these first.
+These define how the system works.
 
 | Document | What | Status |
 |----------|------|--------|
@@ -10,6 +18,8 @@ These define how the system works. Read these first.
 | [persistent-task-files.md](persistent-task-files.md) | Project system: project.md + journal.md, comment iterations, evaluator gate, health field | ✅ Active (v3) |
 | [metrics-system.md](metrics-system.md) | Unified metric system: per-agent metrics, snapshots, alerts, dashboard | ✅ Implemented |
 | [architecture-redesign.md](architecture-redesign.md) | EventBus, components, event types | ✅ Implemented |
+| [ownership-driven-system.md](ownership-driven-system.md) | Three rules: events, ownership, closed loops | ✅ Active |
+| [event-driven-handlers.md](event-driven-handlers.md) | Cron entries gain event triggers, replacing poll-based model | Design |
 
 ## Agent Behavior
 
