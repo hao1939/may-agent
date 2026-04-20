@@ -2,6 +2,11 @@
 
 ## 2026-04-20 — heartbeat — environment/tooling mismatch blocks mandatory QA gates
 
+### Unreviewed change detected (agents repo)
+- Commit `853a7d978` modifies `agents/shared/workflows/persistent-task.ts` (workflow logic change: re-read project file from disk during loop).
+- Partial read completed (offsets 1-220 and 221-480). Risks noted: `clearComments()` truncates everything after `## Comments` (data loss if users add sections after); legacy path appends to `Progress Log` which is not created in new project template.
+- Needs full-file review and any available workflow tests.
+
 ### Additional observations (this heartbeat)
 - Repo is **not a git repository** in this runtime (`git log/status/diff` fail with “not a git repository”).
 - Mandatory commands `./node_modules/.bin/tsc --noEmit` and `./node_modules/.bin/vitest --run` cannot run because `node_modules/.bin` is missing; `node_modules/` only contains `.vite/`.
