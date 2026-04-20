@@ -1,12 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776683516594_154
+- **Session:** s_1776683606525_167
 - **Status:** done
-- **When:** 2026-04-20T11:15:15.858Z
-- **Duration:** 3m19s
+- **When:** 2026-04-20T11:16:42.399Z
+- **Duration:** 3m15s
 
 ## What Happened
 DONE
 
-The design doc at `agents/docs/designs/agent-learning.md` fully covers all four milestones, including the remaining one — **"Propose integration points"** — which is addressed in the "Integration Points" section (lines 275-317) covering: (1) Session End via `finish()`/`appendMemory()`, (2) Heartbeat for periodic consolidation, (3) Workflow Step Boundaries for cross-agent fast-path learning, and (4) Background Maintenance for pruning/decay. The doc is a complete, concrete design proposal as
+The design doc at `workspace/agent-learning.md` is complete with all four milestones addressed, including the final one — "Propose integration points" — which is thoroughly covered in the `## Integration Points` section identifying five specific points: session end, session start, heartbeat, workflow step boundaries, and background pruning. Each point includes what happens, why that timing, and what changes are required.
