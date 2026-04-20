@@ -59,6 +59,11 @@ export interface CronEntry {
    * 18min, 24min fire evenly across the window. Default: 0.
    */
   offsetMs?: number;
+  /**
+   * Event types that trigger this handler immediately (in addition to timer).
+   * E.g., ["project.commented", "workflow.blocked"] fires the handler when these events occur.
+   */
+  on?: string[];
 }
 
 function textResult(text: string): AgentToolResult<string> {

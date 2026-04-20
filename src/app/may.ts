@@ -103,6 +103,13 @@ const CHAT_MODE = process.argv.includes("--chat");
 const ONESHOT_MODE = process.argv.includes("--oneshot");
 const STATUS_MODE = process.argv.includes("--status");
 const MESSAGE_MODE = process.argv.includes("--message");
+const EMIT_MODE = (() => {
+  const idx = process.argv.indexOf("--emit");
+  if (idx !== -1 && process.argv[idx + 1]) {
+    return { event: process.argv[idx + 1], data: process.argv[idx + 2] ? JSON.parse(process.argv[idx + 2]) : undefined };
+  }
+  return null;
+})();
 const INITIAL_TASK = (() => {
   const idx = process.argv.indexOf("--task");
   if (idx !== -1 && process.argv[idx + 1]) return process.argv[idx + 1];
@@ -808,6 +815,18 @@ bus.subscribe((event) => {
     case "reload":
       handleReload();
       break;
+    case "emit": {
+      // Event-driven handler trigger: {"type":"emit","event":"project.commented","data":{...}}
+      const eventType = (event as any).event as string;
+      if (eventType) {
+        let triggered = 0;
+        for (const cron of getAgentCrons().values()) {
+          triggered += cron.dispatchEvent(eventType, (event as any).data);
+        }
+        bus.emit({ type: "log", level: "info", message: `[event] ${eventType} → triggered ${triggered} handler(s)` });
+      }
+      break;
+    }
     case "message":
       if ("from" in event && "to" in event && "task" in event) {
         try {
@@ -937,8 +956,29 @@ if (MESSAGE_MODE) {
   process.exit(0);
 }
 
+if (EMIT_MODE) {
+  // ── Emit mode: send event to running instance via socket ──────────
+  const net = await import("node:net");
+  const socketPath = SOCKET_PATH;
+  const payload = JSON.stringify({ type: "emit", event: EMIT_MODE.event, data: EMIT_MODE.data }) + "\n";
+  const client = net.createConnection(socketPath, () => {
+    client.write(payload);
+    client.end();
+  });
+  client.on("error", (err: Error) => {
+    console.error(`Failed to connect to socket ${socketPath}: ${err.message}`);
+    process.exit(1);
+  });
+  client.on("end", () => {
+    console.log(`Event emitted: ${EMIT_MODE.event}`);
+    process.exit(0);
+  });
+  // Don't fall through
+  await new Promise(() => {}); // keep alive until socket closes
+}
+
 if (!CHAT_MODE && !INITIAL_TASK && !CRON_ENABLED && !ONESHOT_MODE) {
-  console.error("Error: need --chat, --task, --oneshot, --status, --message, or --cron.");
+  console.error("Error: need --chat, --task, --oneshot, --status, --message, --emit, or --cron.");
   process.exit(1);
 }
 

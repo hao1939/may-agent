@@ -58,6 +58,10 @@ export class Cron {
   private handlers = new Map<string, CronHandler>();
   private onJobFire?: CronJobCallback;
   private configWatcher?: StatWatcher;
+  /** Event-to-handler subscriptions: event type → list of entry names. */
+  private eventSubscriptions = new Map<string, Set<string>>();
+  /** Last event-trigger time per entry (for dedup). */
+  private lastEventTrigger = new Map<string, number>();
   /** Dynamic handler resolver — called when reload() finds an entry with `handler` but no registered handler. */
   private handlerResolver?: (entryName: string, entry: CronEntry) => Promise<boolean>;
 
@@ -186,7 +190,36 @@ export class Cron {
     } catch (err) {
       this.onError?.(`Failed to parse cron config: ${err}`);
     }
+    this.buildEventSubscriptions();
     return this.entries;
+  }
+
+  /** Build event-to-handler mapping from `on` fields in cron entries. */
+  private buildEventSubscriptions(): void {
+    this.eventSubscriptions.clear();
+    for (const entry of this.entries) {
+      if (!entry.enabled || !entry.on?.length) continue;
+      for (const eventType of entry.on) {
+        let set = this.eventSubscriptions.get(eventType);
+        if (!set) { set = new Set(); this.eventSubscriptions.set(eventType, set); }
+        set.add(entry.name);
+      }
+    }
+  }
+
+  /** Dispatch a system event — triggers all handlers subscribed to this event type. */
+  dispatchEvent(eventType: string, data?: Record<string, unknown>): number {
+    const subscribers = this.eventSubscriptions.get(eventType);
+    if (!subscribers?.size) return 0;
+    let triggered = 0;
+    for (const entryName of subscribers) {
+      // Dedup: skip if triggered < 5s ago
+      const last = this.lastEventTrigger.get(entryName) || 0;
+      if (Date.now() - last < 5000) continue;
+      this.lastEventTrigger.set(entryName, Date.now());
+      if (this.triggerNow(entryName, { force: true })) triggered++;
+    }
+    return triggered;
   }
 
   start(): void {
