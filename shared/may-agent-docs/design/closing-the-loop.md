@@ -52,8 +52,7 @@ The `case "emit"` handler (line 818) currently:
 
 After unification:
 - **All** `emit` events are persisted to an events table (new DB writer subscriber)
-- Handlers that fire mark the event as handled (`handled_by`)
-- Unconsumed events (`handled_by IS NULL`) are visible to owners in heartbeat via: `SELECT * FROM events WHERE owner = ? AND handled_by IS NULL`
+- Owners see their events in heartbeat via: `SELECT * FROM events WHERE owner = ? ORDER BY timestamp DESC`
 
 The persistence is a **DB writer subscriber** on the bus — same pattern as session events. Not special-case code in `may.ts`. The emit handler just dispatches; the DB subscriber persists everything.
 
@@ -61,26 +60,17 @@ The persistence is a **DB writer subscriber** on the bus — same pattern as ses
 // New bus subscriber (in DB writer or standalone)
 bus.subscribe((event) => {
   if (event.type === "emit") {
-    db.prepare("INSERT INTO events (event_type, data, owner, timestamp) VALUES (?,?,?,?)")
-      .run(event.event, JSON.stringify(event.data), event.data?.owner, Date.now());
+    db.prepare("INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?,?,?,?,?)")
+      .run(event.event, event.data?.source, event.data?.owner, JSON.stringify(event.data), Date.now());
   }
 });
 ```
 
 ~15 LOC for the subscriber + schema.
 
-### Messages become events
+### Messages become events (future)
 
-Today `agents.message("bob", "review this")` goes directly to `trackRequest()`. In the unified model, it emits an event first:
-
-```
-agents.message("bob", task)
-  → bus.emit({ type: "emit", event: "message.received", data: { to: "bob", task, from: "coach" } })
-  → if bob has a handler for "message.received" → immediate
-  → if not → persisted to requests table → heartbeat pickup (today's behavior)
-```
-
-This is a future step — today's `message` path already persists correctly. The unification lets us add immediate handling for messages later without changing the API.
+Today's `message` path already persists correctly via `trackRequest()`. Eventually messages could enter as events too, enabling immediate handling by subscribers. Not in scope — just noting the natural direction.
 
 ## Previously Identified Gaps — Now Fixed
 
@@ -98,15 +88,14 @@ This is a future step — today's `message` path already persists correctly. The
 
 **Fix:** Persist **all** `emit` events to an `events` table via a DB writer subscriber. Columns:
 - `event_type` — `metric.breach`, `project.commented`, etc.
-- `source` — who/what emitted it (handler name, agent name, "human")
-- `owner` — from event data or derived via owner registry
+- `source` — who/what emitted it
+- `owner` — from `data.owner`
 - `data` — JSON payload
-- `handled_by` — NULL if unconsumed, handler name if consumed
 - `timestamp`
 
-Owners query unconsumed events in heartbeat: `SELECT * FROM events WHERE owner = ? AND handled_by IS NULL`.
+Owners query their events in heartbeat: `SELECT * FROM events WHERE owner = ? ORDER BY timestamp DESC`.
 
-This replaces the need for any "fallback" logic. The DB is the safety net.
+No consumption tracking. No `handled_by` column. If an owner needs to know whether an event was acted on, they check whether a follow-up exists (session started, request created) — that's already in the DB.
 
 ### G2: No `owner` Field on Cron Entries (violates P2)
 
@@ -117,18 +106,13 @@ This replaces the need for any "fallback" logic. The DB is the safety net.
 - On handler failure: notify owner via bus
 - ~10 LOC in cron.ts
 
-### G3: Guard Block Messages Lack Escalation Template (violates P3)
+### G3: Guard Block Messages Don't Mention Escalation (violates P3)
 
-**Current:** Guards say "WRITE BLOCKED" but don't tell agents who to escalate to or how.
+**Current:** Guards say "WRITE BLOCKED" but don't hint at escalation.
 
-**Fix:** Block messages include:
-```
-WRITE BLOCKED: [reason]
-To resolve: [specific fix]
-To escalate: agents('message', { agent: '<owner>', message: '...', priority: 'P0' })
-To exit: finish(status: "blocked", blockers: [{ reason: "..." }])
-```
-~20 LOC across `compose-guards.ts` and `cross-edit-guard.ts`.
+**Fix:** Add one line to guard block messages: `"Can't resolve? Escalate to May."`
+
+Agents already know the escalation chain from common-sense.md. They don't need a templated API call — just a reminder that escalation exists. ~5 LOC.
 
 ### G4: Ownership Convention Incomplete (violates P2)
 
@@ -151,14 +135,13 @@ To exit: finish(status: "blocked", blockers: [{ reason: "..." }])
 
 **Current:** `metrics-snapshot.ts` detects breach AND calls `autoForkForAlert()` directly.
 
-**Fix:** Decouple into emit + subscribe:
-1. `metrics-snapshot` emits `metric.breach` event on breach
-2. Remove `autoForkForAlert()` from metrics-snapshot
-3. Create `metric-alert` handler with `"on": ["metric.breach"]`
-4. `metric-alert` routes to best-fit agent. Owner as fallback.
-5. Whether or not `metric-alert` handler exists, the breach event is persisted (G1) and visible to the owner in heartbeat
+**Fix:** Decouple measurement from reaction:
+1. `metrics-snapshot` emits `metric.breach` event on breach instead of calling `autoForkForAlert()`
+2. Remove `autoForkForAlert()` from metrics-snapshot — it only measures and emits
+3. Breach events are persisted (G1) — owner sees them in heartbeat
+4. If heartbeat-based response proves too slow, add a `metric-alert` handler with `"on": ["metric.breach"]` later
 
-This is the unification in action: even if we haven't built the `metric-alert` handler yet, the breach event won't vanish — it persists and the owner sees it.
+Start simple: emit + persist. Add immediate handling when there's evidence the delay matters.
 
 ### G6: Session Continuity Unsolved (violates P4)
 
@@ -196,8 +179,8 @@ Self-evaluation bias risk. Monitor false-done rates before adding independent ev
 - **G5** — Decouple metrics: emit `metric.breach`, create `metric-alert` handler
 - This phase implements the closed loop: every event is recorded, consumed or not
 
-### Phase 3: Escalation
-- **G3** — Guard block messages with escalation template using event `data.owner`
+### Phase 3: Polish
+- **G3** — Add escalation hint to guard block messages
 
 ### Phase 4: Cleanup
 - **G7** — Remove false preferred-workflows reference from common-sense.md
