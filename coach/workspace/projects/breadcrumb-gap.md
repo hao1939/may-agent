@@ -157,3 +157,20 @@ Iteration 1. Milestones: 0/0 done.**Reviewer**: CONTINUE — **Assessment**: The
 ## Iteration Summary
 - **Iter 1**: This is a persistent task and a prior iteration already committed these exact files. The content is 
 
+### Iteration 2 — 2026-06-01
+
+**Diagnosis**: Production breadcrumb-action-rate measured at **0.32** (target 0.8).
+
+**Root cause**: The G-pattern patch (`agents/bob/workspace/patches/agent-heartbeat-breadcrumb.ts`) was **NOT wired into production**. It sat in bob's workspace as a standalone proposal. Production heartbeats used `agents/shared/workflows/agent-heartbeat.ts` which had NO metrics injection or question-framing in the check-health step. Agents only saw breadcrumbs if they happened to read their `heartbeat-context.md` file — passive discovery at ~32% rate.
+
+**Fix applied**: Integrated the G-pattern directly into `agents/shared/workflows/agent-heartbeat.ts`:
+- Added `loadMetricsBlock()` to read pre-computed metrics from heartbeat-context.md
+- Added `hasAttentionMetrics()` to detect ⚠️ markers
+- Modified check-health step: when ⚠️ metrics exist, prepends a **question-first prompt** that forces the agent to evaluate metrics and follow breadcrumbs BEFORE proceeding to other health checks
+- When metrics are healthy, shows them briefly and moves on
+- When no metrics available, falls back to original behavior (no regression)
+
+**Expected impact**: Gym showed 100% action rate with G-pattern + breadcrumbs. Production should move from 0.32 → 0.8+ once agents start getting question-framed metrics in their check-health step.
+
+**Files changed**: `agents/shared/workflows/agent-heartbeat.ts`
+
