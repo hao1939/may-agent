@@ -40,6 +40,18 @@
 
 ---
 
+## 2026-04-20 — heartbeat addendum — additional spot-check
+
+### Environment/tooling evidence (this run)
+- `/app` is not a git repo; `cd agents` is a git repo.
+- `./node_modules/.bin/tsc --noEmit`: FAIL — missing binary
+- `./node_modules/.bin/vitest --run`: FAIL — missing binary
+
+### Additional code spot-check
+- `src/pipeline.js`: header comment says normalization must precede penalty application, but `run()` applies penalties first.
+
+---
+
 ## 2026-04-19 — heartbeat — environment/tooling mismatch (scenario instance exp177)
 
 ### What I observed
