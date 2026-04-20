@@ -864,3 +864,8 @@
 3. DD#787 → DD#781 Confidence Dichotomy (explains mechanism behind silent failures)
 4. DD#785-789 → CR#343 Monitoring Turn (concrete implementation of runtime behavioral signals)
 5. CR#345 synthesizes the full behavioral failure prediction stack
+| DD-790 | 2604.13954 | HINTBench: Intrinsic Non-attack Trajectory Benchmark | ★★★★★ | 629 trajectories; step-localization <35 F1; guard model transfer fails for intrinsic risk |
+| DD-791 | 2604.11978 | HORIZON: Long-Horizon Failure Diagnosis Benchmark | ★★★★★ | 3100+ trajectories; LLM-as-Judge κ=0.84; cross-domain failure taxonomy |
+| DD-792 | 2604.11462 | ContextCurator: RL-Trained Active Context Management | ★★★★ | 7B matches GPT-4o; 8× token reduction; reasoning anchors concept |
+| DD-793 | 2604.07821 | More Capable, Less Cooperative: Multi-Agent Coordination Failure | ★★★★ | o3 at 17% optimal cooperation; capability ≠ cooperation; ICLR 2026 Workshop |
+| DD-794 | 2604.05432 | Back-Reveal: Data Exfiltration via Backdoored Tool Use | ★★★★ | Tool-call exfiltration; multi-turn amplification; memory as attack surface; ACL 2026 |

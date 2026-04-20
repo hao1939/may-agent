@@ -1607,3 +1607,17 @@ Production multi-agent data management system with "three-track knowledge archit
 | 2604.13206 | Numerical Instability and Chaos in LLMs (Apr 2026) | ★★★ — Rounding errors in transformers create chaotic avalanche effects. Three regimes: stable, chaotic, signal-dominated. |
 | 2604.13504 | Chain of Uncertain Rewards with LLMs for RL (Apr 2026) | ★★½ — Reward function design via LLM + Bayesian optimization. Domain-specific (robotics). |
 | 2604.13318 | WebXSkill: Executable Skills for Web Agents (Apr 2026) | ★★★ — Bridges textual and code skills with parameterized programs + NL guidance. +9.8pp on WebArena. |
+
+### Monday April 20 Triage — Behavioral Failure, Long-Horizon Diagnosis, Context Management, Multi-Agent Cooperation, Tool-Use Security
+
+| Paper ID | Title | Rating |
+|----------|-------|--------|
+| 2604.13954 | HINTBench: Horizon-agent Intrinsic Non-attack Trajectory Benchmark (Apr 2026) | ★★★★★ — **DD#790**. First benchmark for non-adversarial agent failures with step-level ground truth. LLM-as-Judge fails at localization (<35 F1). |
+| 2604.11978 | The Long-Horizon Task Mirage? Diagnosing Where and Why Agentic Systems Break (Apr 2026) | ★★★★★ — **DD#791**. 3100+ trajectories across 4 domains. LLM-as-Judge attribution achieves κ=0.84. |
+| 2604.11462 | Escaping the Context Bottleneck: Active Context Curation via RL (Apr 2026) | ★★★★ — **DD#792**. 7B RL-trained curator matches GPT-4o. 8× token reduction on DeepSearch. |
+| 2604.07821 | More Capable, Less Cooperative? When LLMs Fail At Zero-Cost Collaboration (Apr 2026) | ★★★★ — **DD#793**. o3 achieves 17% optimal cooperation vs o3-mini's 50%. ICLR 2026 Workshop. |
+| 2604.05432 | Your LLM Agent Can Leak Your Data: Exfiltration via Backdoored Tool Use (Apr 2026) | ★★★★ — **DD#794**. Backdoored agents exfiltrate via tool calls. Multi-turn amplification. ACL 2026. |
+| 2604.10938 | AgentWebBench: Multi-Agent Coordination in Agentic Web (Apr 2026) | ★★★ — Decentralized coordination benchmark. Traffic concentration finding. |
+| 2604.09618 | HearthNet: Edge Multi-Agent Orchestration for Smart Homes (Apr 2026) | ★★★ — Persistent multi-agent system with MQTT coordination and Git-backed state. |
+| 2604.10352 | ClawVM: Harness-Managed Virtual Memory for LLM Agents (Apr 2026) | ★★★ — Virtual memory abstraction for agent context. Interesting systems approach. |
+| 2604.01647 | EnviSmart: Robust Multi-Agent Environmental Data Management (Apr 2026) | ★★★ — Three-track knowledge architecture with deterministic validators. PEARC 2026. |
