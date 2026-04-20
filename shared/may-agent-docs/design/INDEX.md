@@ -19,6 +19,7 @@ These define how the system works.
 | [metrics-system.md](metrics-system.md) | Unified metric system: per-agent metrics, snapshots, alerts, dashboard | ✅ Implemented |
 | [architecture-redesign.md](architecture-redesign.md) | EventBus, components, event types | ✅ Implemented |
 | [ownership-driven-system.md](ownership-driven-system.md) | Three rules: events, ownership, closed loops | ✅ Active |
+| [runtime-ctx.md](runtime-ctx.md) | Shared infra interface for handlers, workflows, and agent tools | Draft |
 | [event-driven-handlers.md](event-driven-handlers.md) | Cron entries gain event triggers, replacing poll-based model | Design |
 
 ## Agent Behavior

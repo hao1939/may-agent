@@ -1,10 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776706019619_55
+- **Session:** s_1776709619614_73
 - **Status:** done
-- **When:** 2026-04-20T17:27:08.268Z
-- **Duration:** 8s
+- **When:** 2026-04-20T18:27:09.747Z
+- **Duration:** 10s
 
 ## What Happened
-WHAT_HAPPENED: The tech-lead attempted to locate the four failing May handler files and run `tsc --noEmit` to reproduce “Cannot find module” errors. They first ran commands in a non-existent `/home/user` path (triggering a PATH_HALLUCINATION error), then corrected to `/app`, successfully found the handler files and inspected their contents. They also attempted to inspect TypeScript setup (`package.json`, `tsconfig.json`) and referenced expected `src/lib/*` modules, discovering `package.json` is 
+WHAT_HAPPENED: Bob located and reviewed the existing ghost-deliverable finish guard implementation in agents/src/lib/finish-guard.ts, then opened EXP-188’s design and results docs to confirm the experiment’s conclusion and promotion recommendation. The segment establishes that EXP-188 calls for adding a structural finish-guard that blocks finish(success) unless persistent-task workflow.run() was used.
+OUTCOME: in_progress
+STILL_OPEN: Implement and ship the EXP-188 structural finish-guard to prod

@@ -184,9 +184,41 @@ Self-evaluation bias risk. Monitor false-done rates before adding independent ev
 - **G3** — Add escalation hint to guard block messages (~5 LOC)
 - **G8** — Remove false preferred-workflows reference from common-sense.md
 
+### G12: No Shared Runtime Context (violates P1, P9)
+
+**Current:** Three separate contexts (HandlerContext, WorkflowContext, agent tools) with overlapping but inconsistent infra access. Workflows can't emit domain events, query metrics, or access the DB.
+
+**Fix:** Extract a `RuntimeCtx` interface — the shared infra surface. HandlerContext extends it, WorkflowContext gains it, agent tools can opt in. ~30 LOC.
+
+**Full design:** [runtime-ctx.md](runtime-ctx.md)
+
+### G13: Reviewer Quality
+
+The reviewer in persistent-task is the weakest link. Tracked by reviewer-effectiveness project (bob, P0). A bad reviewer wastes all the infrastructure above.
+
+## Implementation Sequence
+
+### Phase 1: Events + Ownership ✅ DONE
+- **G4** — Ensure events carry `data.owner` when emitted (convention)
+- **G2** — On handler failure, notify `entry.agent` (or may) via bus (~10 LOC)
+- **G1** — Events table + DB writer subscriber — all events persisted (~15 LOC)
+
+### Phase 2: Decouple Metrics ✅ DONE
+- **G5** — `metrics-snapshot` emits `metric.breach` instead of calling `autoForkForAlert()`
+- Monitor whether heartbeat-cadence response is fast enough
+
+### Phase 3: Runtime Context (G12)
+- **G12** — Define `RuntimeCtx` interface, wire into WorkflowContext
+- ~30 LOC: interface definition + workflow-tool.ts plumbing
+
+### Phase 4: Polish
+- **G3** — Add escalation hint to guard block messages (~5 LOC)
+- **G8** — Remove false preferred-workflows reference from common-sense.md ✅ DONE
+
 ### Not Prioritized
 - **G6** (CLI emit) — nice-to-have
+- **G7** (No CLI event emit) — socket emit works, CLI flag is convenience
 - **G9** (circuit breaker) — active-nudge covers it
 - **G10** (workflow tracking) — tracking gap, not functional. Note: blocks project-tracking-db queries until fixed.
 - **G11** (evaluator independence) — needs evidence of bias first
-- **G12** (reviewer quality) — the reviewer in persistent-task is the weakest link. Tracked by reviewer-effectiveness project (bob, P0). A bad reviewer wastes all the infrastructure above.
+- **G13** (reviewer quality) — tracked by bob, P0

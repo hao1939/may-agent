@@ -13,18 +13,18 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-20T18:10)
+# Your Context (auto-generated 2026-04-20T18:40)
 
 **System:** 14 sessions/6h, 0% error rate
 
 **Top spenders:**
-- bob: 9s, 310KB
+- bob: 9s, 279KB
 - may: 2s, 65KB
 - evaluator: 2s, 59KB
 - tech-lead: 1s, 45KB
 
 **📊 Your Metrics:**
-- Breadcrumb action rate: **0.3204** ratio → 0.8 ratio ⚠️ NEEDS ATTENTION
+- Breadcrumb action rate: **0.3211** ratio → 0.8 ratio ⚠️ NEEDS ATTENTION
   → Quick check: agents/coach/scripts/measure-breadcrumb-action-rate.sh
 - Intervention hit rate: **47.3** ratio → 0.6 ratio
 - Skill effectiveness: **29.2** ratio → 0.6 ratio

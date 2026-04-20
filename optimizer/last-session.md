@@ -1,15 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** cron_1776706810430_61
+- **Session:** cron_1776708610432_69
 - **Status:** done
-- **When:** 2026-04-20T17:41:02.616Z
-- **Duration:** 51s
+- **When:** 2026-04-20T18:13:18.703Z
+- **Duration:** 3m8s
 
 ## What Happened
-System is healthy. No pending requests for optimizer. The snapshot shows:
-- Low avg ops across agents (2-15), no error spikes
-- Only 4 sessions >30 ops in 6h, all known patterns (persistent task iteration, metric alerts)
-- The tech-lead 85-op persistent task loop was already investigated last heartbeat
+24h adoption is 91.8% — the 6h window just happens to have mostly heartbeat "job" sessions which don't use workflowRunId. System is actually healthy. The per-agent heartbeats are running as `job` kind without workflow IDs, which is expected for heartbeats.
 
-Nothing to dispatch.
+No anomalies, no pending requests for optimizer, system healthy. This is a clean heartbeat — nothing to dispatch.

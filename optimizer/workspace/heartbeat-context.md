@@ -13,12 +13,12 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-20T18:10)
+# Your Context (auto-generated 2026-04-20T18:40)
 
 **System:** 14 sessions/6h, 0% error rate
 
 **Top spenders:**
-- bob: 9s, 310KB
+- bob: 9s, 279KB
 - may: 2s, 65KB
 - evaluator: 2s, 59KB
 - tech-lead: 1s, 45KB
@@ -27,10 +27,10 @@
 - FM-3.3: 2x
 
 **📊 Your Metrics:**
-- Workflow coverage — % multi-step work using workflows: **96.1** % → 0.8 %
+- Workflow coverage — % multi-step work using workflows: **95.9** % → 0.8 %
   → Quick check: bun -e "import{Database}from'bun:sqlite';const db=new Database('.state/may.db',{readonly:true});console.log(JSON.stringify(db.prepare('SELECT ROUND(100.0 * SUM(CASE WHEN workflowRunId IS NOT NULL THEN 1 ELSE 0 END) / NULLIF(COUNT(*),0), 1) FROM sessions WHERE startedAt > (strftime("%%s","now")*1000 - 604800000) AND opCount > 3 AND kind != "chat"').all()))"
-- Quality preserved: **0.8517777777777777** ratio → 0.9 ratio
-- Tool adoption: heuristic evaluator (higher is better): **0.97955474784189** ratio → 0.7 ratio
+- Quality preserved: **0.8506060606060606** ratio → 0.9 ratio
+- Tool adoption: heuristic evaluator (higher is better): **0.97945674503538** ratio → 0.7 ratio
 - Workflow effectiveness — % workflow runs completing successfully: **84.8** % → 0.9 %
-- Waste reduction: **0.819** ratio → 0.3 ratio
+- Waste reduction: **0.818** ratio → 0.3 ratio
   → Quick check: bun -e "import{Database}from'bun:sqlite';const db=new Database('.state/may.db',{readonly:true});console.log(JSON.stringify(db.prepare('SELECT ROUND(CAST(SUM(CASE WHEN e.quality >= 0.7 AND e.efficiency > 0 THEN 1 ELSE 0 END) AS REAL) / NULLIF(COUNT(*), 0), 3) AS val FROM evaluations e JOIN sessions s ON e.sessionId = s.sessionId WHERE s.agent=\'optimizer\' AND e.skippedByJs=0 AND e.quality IS NOT NULL AND e.createdAt > (strftime(\'%s\',\'now\')*1000 - 604800000)').all()))"
