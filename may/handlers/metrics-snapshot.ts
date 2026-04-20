@@ -38,6 +38,7 @@ interface MetricRow {
   target: number;
   threshold: number | null;
   alert_direction: string | null; // 'below' (default) or 'above' — controls threshold breach direction
+  direction: string | null; // 'higher_is_better' (default) or 'lower_is_better' — metric polarity
   source: string | null;
   source_query: string | null;
   source_command: string | null;
