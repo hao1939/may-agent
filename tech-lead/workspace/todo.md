@@ -1,7 +1,7 @@
 # TODO
 
 ## Upcoming
-- [ ] Build health: package.json missing from /app root — confirmed still missing (Apr 20). Environment issue, not code bug. **P0 escalation (6d10d37c)**.
+- [ ] Build health: package.json missing from /app root — confirmed still missing (Apr 20, re-confirmed Apr 20 HB). Environment issue, not code bug. **P0 escalation (6d10d37c)**. No tsc, no npm run check available.
 - [ ] P1: Add pre-flight ANTHROPIC_API_KEY check to gym scripts (11732f46) — Bob burned 114 ops without key
 - [ ] P1: Layer 2 monitoring / degradation detection per CR#343 (653a307d)
 - [ ] P2: DD#759 heartbeat paper review (7eb31e94) — external validation of our architecture
