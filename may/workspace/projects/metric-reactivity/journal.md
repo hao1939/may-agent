@@ -343,3 +343,19 @@ DONE — All 5/5 milestones are complete. The alert→agent loop is fully closed
 
 The design follows the reviewer's direction: metric breach → auto-trigger responsible agent immediately (event-driven, not poll-driven).
 
+**Reviewer**: DONE — — All 5 milestones are complete. The alert→agent reaction loop is fully wired:
+
+**Summary of what was built:**
+
+1. **M1 – Alert detection**: `metrics-snapshot.ts` detects threshold breaches, regressions, and stalled metrics via `checkThresholdAlert()`, `checkRegression()`, and stall detection logic.
+
+2. **M2 – Event-driven delivery**: `autoForkForAlert()` immediately forks the owning agent with a specific task when an alert fires — no polling/heartbeat dependency. Includes dedup (checks for existing CREATED requests before forking) and a CLI fallback.
+
+3. **M3 – Backfill mechanism**: Step 0 in the handler catches unresolved alerts that predate the auto-fork wiring (or whose fork was lost), with 24h cooldown to avoid re-forking too aggressively.
+
+4. **M4 – Evidence of execution**: 13 metric-alert requests in the DB, confirming the pipeline is executing end-to-end.
+
+5. **M5 – Self-measuring metric**: `alert-to-reaction-time` metric exists and is auto-measured, closing the meta-loop.
+
+The architecture is clean: metric breach → `recordAlertWithDedup` → `autoForkForAlert` → agent gets a task with full context. Only 1 unresolved alert remains (down from 4), showing alerts are being acted on and resolved.
+
