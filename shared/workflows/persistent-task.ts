@@ -276,12 +276,7 @@ function buildWorkerPrompt(
 ): string {
   const ms = extractMilestones(projectContent);
   const nextMilestone = ms.pending.length > 0 ? ms.pending[0] : null;
-  const stateIdx = projectContent.indexOf("## Current State\n");
-  const currentState = stateIdx !== -1 ? (() => {
-    const after = projectContent.slice(stateIdx + "## Current State\n".length);
-    const ns = after.indexOf("\n## ");
-    return (ns === -1 ? after : after.slice(0, ns)).trim() || null;
-  })() : null;
+  const currentState = extractSection(projectContent, "Current State") || null;
   const recentEntries = getRecentJournalEntries(journalContent, iteration, 3);
 
   let prompt = `You are working on iteration ${iteration} of a persistent task.\n\n`;
