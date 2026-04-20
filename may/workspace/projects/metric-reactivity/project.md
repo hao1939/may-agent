@@ -60,3 +60,5 @@ Complete. 5/5 milestones. The implementation is complete. The full alert → age
 
 1. **Detection**
 
+- **Iter 4**: Both M4 and M5 are already complete. The metric `may.alert-to-reaction-time` exists with a proper `s
+

@@ -367,3 +367,13 @@ The architecture is clean: metric breach → `recordAlertWithDedup` → `autoFor
 
 2. **Goal met**: Yes. The core loop is closed: metric breach → `autoForkForAlert()` forks the owning agent with a `[metric-alert]` task → agent investigates. Heartbeat also injects active alerts as mandatory priority. This is exactly the event-dr
 
+**Reviewer**: CONTINUE — The implementation is solid. The `metrics-snapshot.ts` handler has the full event-driven alert→fork pipeline:
+
+1. Detects metric threshold breaches
+2. Inserts alerts with dedup
+3. Auto-forks the owning agent with a specific task including metric details
+4. Has dedup against requests DB to prevent alert fatigue
+5. Has CLI fallback if manager.run() fails
+
+DONE — All 5 milestones are complete. The alert-to-reaction loop is fully implemented in `agents/may/handlers/metrics-snapshot.ts`. The core mechanism is event-driven as requested: when `metrics-snapshot` detects a threshold breach, it (1) inserts a deduped alert into `metric_alerts`, (2) checks the requests DB for existing active alerts on the same metric, and (3) auto-forks the owning agent via `ctx.manager.run()` with a specific investigation task (with CLI fallback). The design doc in `agents/shared/may-agent-docs/design/event-driven-handlers.md` documents the `metric.breach` event pattern. This closes the gap: alert → agent sees it → agent investigates → agent acts.
+
