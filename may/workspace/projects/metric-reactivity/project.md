@@ -60,3 +60,5 @@ Iteration 5. Milestones: 5/5 done.
 
 **Summary of what wa
 
+- **Iter 5**: So the qa alert was routed to `may` (not `qa` directly). Now I have enough data. Let me write the fi
+
