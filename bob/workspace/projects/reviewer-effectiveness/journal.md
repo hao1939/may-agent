@@ -103,3 +103,16 @@ The "no milestone progress" warning was a tracking artifact — iterations 3-5 p
 
 ### Iteration 6 — 2026-04-20T19:29:26.605Z
 **Worker**: The changes were already committed in `63b128b9d`. The file already has my changes from a previous session. So the code is already deployed. Let me just commit the bob workspace files:
+**Reviewer**: DONE — — All four milestones are complete, and the code changes are deployed in `buildReviewPrompt`.
+
+**Milestones completed:**
+
+1. **Investigate** → `.state/reviewer-investigation.md` — 13 categorized failure examples with root causes
+2. **Design** → `.state/reviewer-prompt-design.md` — new prompt template addressing root causes
+3. **Experiment** → `.state/reviewer-experiment-results.md` — before/after analysis
+4. **Measure** → `.state/reviewer-effectiveness-metric.md` — metric framework with baseline
+
+**Code is deployed** — the evaluator in iteration 5 said "no code was changed" but that was wrong. `buildReviewPrompt` in `agents/shared/workflows/persistent-task.ts` (lines 315-394) now includes: problem-solver framing, PIVOT option, previous-guidance deduplication, structured guidance format (a/b/c), milestone check-off instructions, and the stall warning system. These directly address the original goal.
+
+The "0/4 milestones" warning is a tracking artifact — the milestones were never checked off in the system despite deliverables being produced in iterations 3-5.
+

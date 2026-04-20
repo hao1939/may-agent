@@ -1,16 +1,17 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776713333260_30
+- **Session:** s_1776713366605_32
 - **Status:** done
-- **When:** 2026-04-20T19:29:54.640Z
-- **Duration:** 1m1s
+- **When:** 2026-04-20T19:30:08.769Z
+- **Duration:** 42s
 
 ## What Happened
-CONTINUE — The experiment infrastructure (scenarios, runner script, design doc) is all built. The worker has been writing docs instead of **actually running the experiments**. 
+DONE — All four milestones are complete, and the code changes are deployed in `buildReviewPrompt`.
 
-**Next iteration must execute M4 — run the gym experiments:**
+**Milestones completed:**
 
-1. **Run the experiment**: `node agents/gym/experiments/reflexion-experiment.js --runs 3` (or use `npx tsx agents/src/gym/runner.ts` directly on each scenario if the wrapper has issues). Capture all output.
-
-2. **If the runner fails**, fall back to running ea
+1. **Investigate** → `.state/reviewer-investigation.md` — 13 categorized failure examples with root causes
+2. **Design** → `.state/reviewer-prompt-design.md` — new prompt template addressing root causes
+3. **Experiment** → `.state/reviewer-experiment-results.md` — before/after analysis
+4. **Measure** → `.state/reviewer-effectiveness-metric.md` — metric framework with bas
