@@ -203,8 +203,10 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
 
     ctx.log(`[run-agent-task:${entry.name}] Starting ${agentName} session...`);
 
+    const workflowRunId = `wr_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
     const sessionId = ctx.manager.run(agentName, message, {
       source: "cron",
+      workflowRunId,
       ...(maxTurns ? { opBudget: maxTurns } : {}),
     });
 
@@ -274,7 +276,8 @@ export async function runAgentTask(
 ): Promise<{ sessionId: string; status: string }> {
   const { agent, message, timeoutMs = 600_000, waitForCompletion = true } = params;
 
-  const sessionId = ctx.manager.run(agent, message, { source: "handler" });
+  const workflowRunId = `wr_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+  const sessionId = ctx.manager.run(agent, message, { source: "handler", workflowRunId });
   ctx.log(`[runAgentTask] Started ${agent} session: ${sessionId}`);
 
   if (!waitForCompletion) {
