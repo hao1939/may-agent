@@ -312,6 +312,41 @@ function buildReviewPrompt(
   return prompt;
 }
 
+function buildEvalPrompt(
+  goal: string,
+  projectContent: string,
+  journalContent: string,
+  iteration: number,
+): string {
+  const ms = extractMilestones(projectContent);
+  const recentEntries = getRecentJournalEntries(journalContent, iteration, 5);
+
+  let prompt = `[EVALUATION ONLY — no file edits.]\n\n`;
+  prompt += `You are evaluating whether a project is truly complete.\n\n`;
+  prompt += `## Goal\n${goal}\n\n`;
+
+  if (ms.total > 0) {
+    prompt += `## Milestones (${ms.done}/${ms.total} checked)\n`;
+    for (const p of ms.pending) prompt += `- [ ] ${p}\n`;
+    prompt += `\n`;
+  }
+
+  if (recentEntries) prompt += `## Recent Work\n${recentEntries}\n\n`;
+
+  prompt += `## Evaluate\n`;
+  prompt += `Check these criteria:\n`;
+  prompt += `1. **Deliverables exist**: Were actual files/artifacts produced? Not just claims.\n`;
+  prompt += `2. **Goal met**: Does the work achieve what the goal describes?\n`;
+  prompt += `3. **Evidence**: Is there concrete evidence (tool output, file content, test results)?\n`;
+  prompt += `4. **Milestones honest**: Are checked milestones genuinely complete?\n`;
+  prompt += `5. **No shortcuts**: Did the worker do real work or just claim completion?\n\n`;
+  prompt += `Your response MUST include:\n`;
+  prompt += `SCORE: <1-10> (7+ = genuinely complete, <7 = not done)\n`;
+  prompt += `Then explain your reasoning for each criterion.\n`;
+
+  return prompt;
+}
+
 function extractDecision(text: string): { status: "done" | "blocked" | "continue"; detail: string } {
   const trimmed = (text ?? "").trim();
   if (/^DONE\b/i.test(trimmed)) return { status: "done", detail: trimmed.replace(/^DONE[:\s]*/i, "").trim() };
@@ -407,6 +442,25 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           iteration++;
           continue;
         }
+
+        // LLM evaluation gate
+        ctx.emit({ type: "step_start", step: `evaluate-comment-${iteration}` });
+        const evalPrompt = buildEvalPrompt(config.goal, projectContent, journalContent, iteration);
+        const evalResult = await ctx.runAgent(config.owner, evalPrompt);
+        const evalText = evalResult.lastAssistantText ?? "";
+        const scoreMatch = evalText.match(/SCORE:\s*(\d+)/i);
+        const score = scoreMatch ? parseInt(scoreMatch[1], 10) : 0;
+        const evalVerdict = score >= 7 ? "PASS" : "FAIL";
+
+        const evalEntry = `**Evaluator**: ${evalVerdict} (score=${score}/10) — ${evalText.slice(0, 500)}\n\n`;
+        if (!config.isLegacy) appendFileSync(config.journalPath, evalEntry);
+
+        if (evalVerdict === "FAIL") {
+          falseDoneCount++;
+          iteration++;
+          continue;
+        }
+
         projectContent = updateField(projectContent, "Status", "done");
         projectContent = updateSection(projectContent, "Current State", decision.detail);
         writeFileSync(config.projectPath, projectContent, "utf-8");
@@ -507,6 +561,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
       if (decision.status === "done") {
         const finalMs = extractMilestones(projectContent);
+        // Fast pre-filter: unchecked milestones
         if (finalMs.total > 0 && finalMs.done < finalMs.total) {
           falseDoneCount++;
           const overrideNote = `**Auto-check**: Reviewer said DONE but only ${finalMs.done}/${finalMs.total} milestones checked. ` +
@@ -521,6 +576,31 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           iteration++;
           continue;
         }
+
+        // LLM evaluation gate: verify the work is actually done
+        ctx.emit({ type: "step_start", step: `evaluate-iteration-${iteration}` });
+        const evalPrompt = buildEvalPrompt(config.goal, projectContent, journalContent, iteration);
+        const evalResult = await ctx.runAgent(config.owner, evalPrompt);
+        const evalText = evalResult.lastAssistantText ?? "";
+        const scoreMatch = evalText.match(/SCORE:\s*(\d+)/i);
+        const score = scoreMatch ? parseInt(scoreMatch[1], 10) : 0;
+        const evalVerdict = score >= 7 ? "PASS" : "FAIL";
+
+        const evalEntry = `**Evaluator**: ${evalVerdict} (score=${score}/10) — ${evalText.slice(0, 500)}\n\n`;
+        if (config.isLegacy) {
+          projectContent += evalEntry;
+          writeFileSync(config.projectPath, projectContent, "utf-8");
+        } else {
+          appendFileSync(config.journalPath, evalEntry);
+        }
+
+        if (evalVerdict === "FAIL") {
+          falseDoneCount++;
+          continueWithoutProgress++;
+          iteration++;
+          continue;
+        }
+
         projectContent = updateField(projectContent, "Status", "done");
         projectContent = updateSection(projectContent, "Current State", decision.detail);
         projectContent = appendToSection(projectContent, "Iteration Summary",
