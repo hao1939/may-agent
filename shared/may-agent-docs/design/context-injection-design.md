@@ -54,10 +54,14 @@ Common-sense.md has the conventions table — agents know WHERE things are. They
 
 | What | Mechanism |
 |------|-----------|
-| Standing orders | Guard on finish() — checks compliance structurally |
+| Standing orders | Handler checks compliance every 30min — not injected into prompt |
 | Verify after write | Finish guard |
 | Commit before finish | Commit guard |
 | Scope compliance | Completeness guard |
+
+**In system prompt:** SOUL.md, common-sense.md, available tools, runtime environment.  
+**NOT in system prompt (on-demand):** standing-orders.md, knowledge-essentials.md, skills/*.md — agents read these when needed, guided by the conventions table.  
+**Note:** `src/lib/manager.ts` line 479 tells agents these are "already in context" — this is wrong and needs fixing in code.
 
 ## Not Yet Implemented
 
