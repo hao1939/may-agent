@@ -4,9 +4,24 @@
 
 Everything has an owner. The owner is an agent. The owner is accountable.
 
-## Three Rules
+## Four Rules
 
-### 1. Metrics and events have owner and source
+### 1. When something happens, emit an event
+
+Events are how the system communicates. Not file writes, not polling, not direct calls. When something happens — emit an event. The event system routes it to whoever should handle it.
+
+```
+Metric breaches     → emit metric.breach
+Project commented   → emit project.commented
+Session errors      → emit session.error
+Workflow completes  → emit workflow.done
+Agent finds issue   → emit <agent>.finding
+Handler fails       → emit handler.error
+```
+
+This is the single integration point. Everything flows through events.
+
+### 2. Metrics and events have owner and source
 
 Every metric declares an owner — the agent accountable for it.
 Every event carries a source — where it came from.
@@ -29,7 +44,7 @@ Naming convention determines default ownership:
 - `system.*` → may owns it (supervisor)
 - `project.*` → project owner from project.md
 
-### 2. Owner is an agent
+### 3. Owner is an agent
 
 Not a system, not a handler, not "infra." An agent who can:
 - Observe (read metrics, check status)
@@ -37,7 +52,7 @@ Not a system, not a handler, not "infra." An agent who can:
 - Act (investigate, fix, escalate, delegate)
 - Be held accountable (did you handle this?)
 
-### 3. Events must be handled. No handler → owner handles.
+### 4. Events must be handled. No handler → owner handles.
 
 When an event fires:
 
