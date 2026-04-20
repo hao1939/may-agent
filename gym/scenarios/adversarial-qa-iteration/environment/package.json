@@ -1,0 +1,8 @@
+{
+  "name": "rate-limiter-scenario",
+  "private": true,
+  "type": "commonjs",
+  "devDependencies": {
+    "jest": "^29.0.0"
+  }
+}
