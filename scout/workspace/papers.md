@@ -56,3 +56,4 @@
 - **2604.02547** — "Beyond Resolution Rates: Behavioral Drivers of Coding Agent Success and Failure". 9,374 trajectories, 19 agents; trajectory-length↔failure is Simpson's paradox confound; reverses when difficulty controlled; LLM > framework. ★★★★★. → DD#808.
 - **2604.08369** — "TrACE: Don't Overthink It". Adaptive compute via inter-rollout agreement; 33-65% fewer LLM calls; overhead wasted on easy steps, beneficial on hard steps. ★★★★. → DD#809.
 - **2604.11465** — "Three Roles, One Model: Role Orchestration at Inference Time". Scaffolding doubles 8B model on AppWorld; gains concentrated on easiest tasks (15.8%→26.3%); contradicts naive H-107. ★★★★. → DD#810.
+- **2602.13275** — "Artificial Organisations" (Waites). Multi-agent verification via architecturally-enforced information asymmetry. Perseverance Composition Engine: Composer/Corroborator/Critic with compartmentalised access. 474 tasks. Emergent honest refusal from architecture alone. ★★★★★. → DD#811.
