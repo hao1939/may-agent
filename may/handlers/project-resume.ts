@@ -1,5 +1,7 @@
 /**
- * project-resume — Simple: scan active projects, fork owners.
+ * project-resume — Scan projects, fork owners.
+ * - Active projects: always resume
+ * - Blocked/done projects with pending comments: resume to process comments
  * Supports both legacy (single .md) and new (directory with project.md) formats.
  */
 import { readdirSync, readFileSync, statSync, existsSync } from "node:fs";
@@ -8,6 +10,15 @@ import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-con
 import type { CronEntry } from "../../../src/lib/cron-tool.js";
 
 const STATUS_RE = /^[\s*]*Status[\s*:]*\s+(\S+)/mi;
+
+function hasPendingComments(content: string): boolean {
+  const idx = content.indexOf("## Comments\n");
+  if (idx === -1) return false;
+  const after = content.slice(idx + "## Comments\n".length);
+  const nextSection = after.indexOf("\n## ");
+  const text = nextSection === -1 ? after : after.slice(0, nextSection);
+  return text.trim().length > 0;
+}
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
   const agentsRoot = resolve(ctx.projectRoot, "agents");
@@ -43,7 +54,11 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
             const m = STATUS_RE.exec(content);
             if (!m) continue;
             const status = m[1].toLowerCase();
-            if (status !== "active") continue;
+            // Active projects: always resume
+            // Blocked/done projects: resume only if they have pending comments
+            const shouldResume = status === "active" ||
+              ((status === "blocked" || status === "done") && hasPendingComments(content));
+            if (!shouldResume) continue;
             const mtime = statSync(projectFile).mtimeMs;
             const existing = picked.get(dir.name);
             if (!existing || mtime > existing.mtime) {
