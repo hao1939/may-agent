@@ -52,11 +52,11 @@ function collectMetaFiles(sessionsDir: string): Array<{ sessionId: string; path:
   const results: Array<{ sessionId: string; path: string }> = [];
   const historyDir = join(sessionsDir, "history");
 
-  // Active sessions: .state/sessions/s_*
+  // Active sessions: .state/sessions/s_* and .state/sessions/cron_*
   if (existsSync(sessionsDir)) {
     try {
       for (const entry of readdirSync(sessionsDir)) {
-        if (!entry.startsWith("s_")) continue;
+        if (!entry.startsWith("s_") && !entry.startsWith("cron_")) continue;
         const metaPath = join(sessionsDir, entry, "meta.json");
         if (existsSync(metaPath)) {
           results.push({ sessionId: entry, path: metaPath });
@@ -65,11 +65,11 @@ function collectMetaFiles(sessionsDir: string): Array<{ sessionId: string; path:
     } catch { /* ignore read errors */ }
   }
 
-  // History sessions: .state/sessions/history/s_*
+  // History sessions: .state/sessions/history/s_* and cron_*
   if (existsSync(historyDir)) {
     try {
       for (const entry of readdirSync(historyDir)) {
-        if (!entry.startsWith("s_")) continue;
+        if (!entry.startsWith("s_") && !entry.startsWith("cron_")) continue;
         const metaPath = join(historyDir, entry, "meta.json");
         if (existsSync(metaPath)) {
           results.push({ sessionId: entry, path: metaPath });
