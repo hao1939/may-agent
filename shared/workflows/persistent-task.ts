@@ -547,7 +547,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
         if (evalVerdict === "FAIL") {
           falseDoneCount++;
-          continueWithoutProgress++;
+          // Check actual milestone progress — don't blindly increment stall counter
+          const evalMsDone = extractMilestones(projectContent).done;
+          if (evalMsDone > lastMilestoneDone) {
+            lastMilestoneDone = evalMsDone;
+            continueWithoutProgress = 0;
+          } else {
+            continueWithoutProgress++;
+          }
           if (falseDoneCount >= 3) {
             projectContent = updateField(projectContent, "Status", "blocked");
             projectContent = updateSection(projectContent, "Current State",
@@ -705,7 +712,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
         if (evalVerdict === "FAIL") {
           falseDoneCount++;
-          continueWithoutProgress++;
+          // Check actual milestone progress — don't blindly increment stall counter
+          const evalMsDoneLegacy = extractMilestones(projectContent).done;
+          if (evalMsDoneLegacy > lastMilestoneDone) {
+            lastMilestoneDone = evalMsDoneLegacy;
+            continueWithoutProgress = 0;
+          } else {
+            continueWithoutProgress++;
+          }
           projectContent = updateField(projectContent, "Health", `${score}/10 (${evalVerdict})`);
           writeFileSync(config.projectPath, projectContent, "utf-8");
           if (falseDoneCount >= 3) {
