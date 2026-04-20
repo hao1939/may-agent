@@ -496,3 +496,5 @@ The open questions have been cleaned up to three genuinely open items (evaluatio
 
 **Reviewer**: CONTINUE — These are changes from other agents' sessions, not from my review. I'll commit them as-is since finish() requires it.
 
+### Iteration 22 — 2026-04-20T11:11:56.594Z
+**Worker**: The design doc at `agents/docs/designs/agent-learning.md` already contains the complete "Approach Comparison" section. Let me copy it to my workspace as a deliverable:

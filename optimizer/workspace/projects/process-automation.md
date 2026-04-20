@@ -9,9 +9,8 @@
 **Source feedback:** [bob](../../bob/workspace/system-gaps.md), [optimizer](../system-gaps.md), [scout](../../scout/workspace/system-gaps.md), [tech-lead](../../tech-lead/workspace/system-gaps.md), [coach](../../coach/workspace/system-gaps.md)
 **Tracked metrics:** `optimizer.tool-adoption`
 
-**Status**: done
-**Iteration**: 8
-**Health**: 8/10 (PASS)
+**Status**: active
+**Iteration**: 9
 ## Why
 Agents manually repeat templated work every session: Bob creates hypothesis files by hand, optimizer rewrites the same SQL queries, scout manages counters in prose. Each repetition costs 3-5 ops that a script could do in 1.
 
@@ -159,24 +158,16 @@ All three deliverables exist and the evaluator.ts fix is in place. Task was mark
 **Worker**: The uncommitted files are in `tech-lead/`, not `optimizer/`. The DELIVERABLES_CHECKLIST.md must be somewhere else. Let me check:
 
 
+### Iteration 9 — 2026-04-20T11:11:40.067Z
+**Worker**: 
+
+Looking at the current state: all 5/5 milestones are complete, and the owner has marked this as "DONE — All 5/5 milestones are complete. Project fully delivered."
+
+There is no remaining work to do.
+
+
 ## Current State
-Complete. 5/5 milestones. — All 5/5 milestones are complete. Project fully delivered.
+Iteration 9. Milestones: 5/5 done.
 
 **Reviewer**: DONE — — All 5/5 milestones are complete. Project fully delivered.
-
-**Evaluator**: PASS (score=8/10) — SCORE: 8
-
-All 5 milestones have corresponding deliverables that physically exist on disk:
-- **M1 (Bob scripts)**: 3 shell scripts confirmed in `agents/bob/workspace/scripts/`
-- **M2 (Saved queries)**: `agents/optimizer/workspace/saved-queries.sh` exists
-- **M3 (Scout counters)**: `agents/scout/workspace/scripts/counters.sh` exists
-- **M4 (Tech-lead templates)**: 3 delegation templates confirmed
-- **M5 (Coach templates)**: 3 experiment templates confirmed
-
-The project file is marked Done with cle
-
-
-
-## Iteration Summary
-- **Iter 8**: — All 5/5 milestones are complete. Project fully delivered.
 

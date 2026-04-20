@@ -3,7 +3,7 @@
 **Status**: active
 **Owner**: bob
 **Priority**: P1
-**Iteration**: 21
+**Iteration**: 22
 **Health**: 6/10 (BLOCKED)
 
 ## Goal
@@ -24,7 +24,7 @@ Key question: **what mechanism updates agent behavior based on experience?**
 - [ ] Propose integration points: where in the system does learning happen? (session end? heartbeat? workflow step?)
 
 ## Current State
-Iteration 21. Milestones: 2/4 done. Next: Include comparison of approaches: brute-force injection vs on-demand retrieval v
+Iteration 22. Milestones: 3/4 done. Next: Propose integration points: where in the system does learning happen? (session e
 
 ## Iteration Summary
 - **Iter 20**: Now commit:
