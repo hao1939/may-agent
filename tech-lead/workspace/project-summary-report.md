@@ -1,26 +1,82 @@
 # Project Summary Report
-Generated: 2026-04-20
 
-## All Projects
+**Generated**: 2026-04-20  
+**Source**: All `project.md` files across `agents/*/workspace/projects/`
 
-| # | Project | Owner | Status | Priority | Iterations | Path |
-|---|---------|-------|--------|----------|------------|------|
-| 1 | Cron Consolidation | optimizer | done | P2 | 5 | agents/optimizer/workspace/projects/cron-consolidation/project.md |
-| 2 | Workflow-First Culture | optimizer | blocked | P0 | 19 | agents/optimizer/workspace/projects/workflow-first/project.md |
-| 3 | Context Learning — Design Phase | bob | done | P1 | 23 | agents/bob/workspace/projects/context-learning/project.md |
-| 4 | Agent Autonomy — Roles, Responsibilities & Heartbeats | coach | done | P1 | 16 | agents/coach/workspace/projects/agent-autonomy/project.md |
-| 5 | Project Tracking in DB | tech-lead | done | P1 | 6 | agents/tech-lead/workspace/projects/project-tracking-db/project.md |
-| 6 | Metric Reactivity | may | done | P1 | 5 | agents/may/workspace/projects/metric-reactivity/project.md |
-| 7 | Guard Friction Analysis (FM-3.3) | may | complete | P1 | 8 | agents/may/workspace/projects/guard-friction-analysis/project.md |
+---
 
-## Summary Statistics
-- **Total projects**: 7
-- **Done/Complete**: 6 (86%)
-- **Blocked**: 1 (14%) — Workflow-First Culture (P0, 19 iterations)
-- **Active**: 0
+## Active Projects (3)
 
-## Key Observations
-1. **Workflow-First Culture** is the only non-complete project and has the highest iteration count (19). It's P0 priority but blocked — needs attention.
-2. **Context Learning** took the most iterations to complete (23), suggesting high complexity.
-3. Most projects completed in 5-8 iterations.
-4. All agents (optimizer, bob, coach, tech-lead, may) have at least one project.
+| Project | Owner | Status | Iteration | Milestones |
+|---------|-------|--------|-----------|------------|
+| feedback-loop | may | active | 6 | — |
+| context-injection-implementation | may | active | 5 | — |
+| metrics-and-gym | may | active | 5 | 6/6 ✅ (stale active) |
+
+## Blocked Projects (3)
+
+| Project | Owner | Status | Iteration | Blocker |
+|---------|-------|--------|-----------|---------|
+| instruction-following | coach | blocked | — | Needs gym experiments |
+| prove-the-loop | coach | blocked | 4 | — |
+| metric-system (shared) | may/tech-lead | Phase 3 blocked | — | Process restart needed |
+
+## Done Projects (18)
+
+| Project | Owner | Iteration |
+|---------|-------|-----------|
+| context-learning | bob | — |
+| exp166-execution | bob | — |
+| exp167-runs | bob | 3 |
+| startup-overhead-measurements | bob | 2 |
+| test-persistent-task (startup overhead) | bob | 28 |
+| learn-from-existing-systems | bob | — |
+| agent-autonomy | coach | 16 |
+| metric-autonomy | coach | — |
+| project-tracking-db | tech-lead | 6 |
+| context-management | tech-lead | 5 |
+| fix-verify-wrap | tech-lead | 3 |
+| metric-system-phase1 | tech-lead | — |
+| verification-streamline | tech-lead | 7 |
+| cold-start-fix | tech-lead | 14 |
+| metric-reactivity | may | 5 |
+| guard-friction-analysis | may | 9 |
+| system-evolution | may | — |
+| metric-reaction-investigation | may | 3 |
+| review-branch-merge | may | — |
+| context-injection-review | may | — |
+| metrics-dashboard | may | — |
+| adaptive-heartbeats | may | 17 |
+| metric-system | may | 3 |
+
+## Cancelled Projects (1)
+
+| Project | Owner | Reason |
+|---------|-------|--------|
+| auto-resume | tech-lead | Hao directive: no auto-resume |
+
+## Monitoring (1)
+
+| Project | Owner |
+|---------|-------|
+| breadcrumb-gap | coach |
+
+---
+
+## Key Stats
+
+- **Total projects**: 26
+- **Done**: 18 (69%)
+- **Active**: 3 (12%)
+- **Blocked**: 3 (12%)
+- **Cancelled**: 1
+- **Monitoring**: 1
+- **Highest iteration count**: 28 (bob/test-persistent-task)
+- **Design doc produced**: `.state/designs/project-tracking-db.md` (DB schema for tracking)
+
+## Notable Findings
+
+1. **3 "active" projects may be stale** — metrics-and-gym has 6/6 milestones done but status still "active"
+2. **Phase 3 of metric-system blocked** on process restart — has been blocked since creation
+3. **coach has 2 blocked P0 projects** (instruction-following, prove-the-loop) — potential bottleneck
+4. **bob completed the most projects** (6) with highest iteration depth (28)
