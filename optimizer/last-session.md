@@ -1,10 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776673104237_885
+- **Session:** s_1776674481980_0
 - **Status:** done
-- **When:** 2026-04-20T08:22:45.346Z
-- **Duration:** 4m21s
+- **When:** 2026-04-20T08:51:04.806Z
+- **Duration:** 9m42s
 
 ## What Happened
-Good, confirmed. Now commit:
+Only 1 unevaluated. The latest sessions ARE in the Apr 20 burst. This system hasn't been running long after April 20.
+
+Now I have the full picture. Let me write the finding:
