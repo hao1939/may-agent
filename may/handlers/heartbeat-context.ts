@@ -375,7 +375,7 @@ function getAgentMetrics(baseDir: string, agentName: string): MetricRow[] {
 
     return db.prepare(
       `SELECT m.id, m.name, m.current, m.target, m.unit, m.type, m.threshold,
-              m.alert_direction, m.source, m.source_query, m.source_command,
+              m.alert_direction, m.direction, m.source, m.source_query, m.source_command,
               s.value as last_value, s.measured_at
        FROM metrics m
        LEFT JOIN metric_snapshots s ON m.id = s.metric_id
