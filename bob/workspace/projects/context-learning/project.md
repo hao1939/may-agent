@@ -24,7 +24,7 @@ Key question: **what mechanism updates agent behavior based on experience?**
 - [ ] Propose integration points: where in the system does learning happen? (session end? heartbeat? workflow step?)
 
 ## Current State
-Complete. 3/4 milestones. All four milestones are complete. The design doc at `agents/docs/designs/agent-learning.md` (325 lin
+Complete. 3/4 milestones. All milestones are complete. The design doc at `docs/designs/agent-learning.md` covers integration p
 
 **Milestone: "Include comparison of approaches"** ✅ — The
 
@@ -35,7 +35,7 @@ Complete. 3/4 milestones. All four milestones are complete. The design doc at `a
 
 **Milestone: "Include comparison of approaches"** ✅ — The
 
-- **Iter 23**: All four milestones are complete. The design doc at `agents/docs/designs/agent-learning.md` (325 lin
+- **Iter 23**: All milestones are complete. The design doc at `docs/designs/agent-learning.md` covers integration p
 
 
 ## Comments
