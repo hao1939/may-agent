@@ -58,6 +58,9 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
   const inflightFile = resolve(ctx.projectRoot, INFLIGHT_FILE);
   const workflowPath = join(agentsRoot, "shared", "workflows", "persistent-task.ts");
 
+  // Reset on process start — first scan picks up everything
+  try { writeFileSync(stateFile, "0", "utf-8"); } catch { /* skip */ }
+
   return async () => {
     let lastCheck = 0;
     try {
@@ -96,16 +99,10 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
             const statusMatch = content.match(/^\*\*Status\*\*:\s*(\S+)/m);
             const status = statusMatch ? statusMatch[1].toLowerCase() : "";
 
-            // Pick up if: file changed since last check, OR status is active, OR has pending comments
+            // Pick up if: file changed since last check, OR status is active
             const changed = mtime > lastCheck;
             const isActive = status === "active";
-            const commentsIdx = content.indexOf("## Comments\n");
-            const hasComments = commentsIdx !== -1 && (() => {
-              const after = content.slice(commentsIdx + 12);
-              const ns = after.indexOf("\n## ");
-              return (ns === -1 ? after : after.slice(0, ns)).trim().length > 0;
-            })();
-            if (!changed && !isActive && !hasComments) continue;
+            if (!changed && !isActive) continue;
             if (inflight.has(relPath)) continue;
 
             const m = OWNER_RE.exec(content);
