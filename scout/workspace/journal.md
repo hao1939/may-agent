@@ -1,5 +1,8 @@
 # Journal
 
+## Session 822 — 2026-04-21 17:30 UTC (Heartbeat)
+arXiv cs.MA/new still showing Monday April 20 listings. Triaged 6 previously uncovered papers from the Monday batch: InfoChess (2604.15373, adversarial inference game — moderate interest), MWRP-CP3 (2604.15610, path planning — low), AstroVLM (2604.16024, domain-specific MAS — low), Veritas-RPM (2604.16081, medical false-positive suppression — low), SocialWise (2604.15347, ASD therapy — low), SoK: Agentic Commerce Security (2604.15367, security framework for autonomous LLM agents — moderate, covers 12 cross-layer attack vectors but survey-level). None warrant deep dives. All 6 added to covered_ids.txt. Tuesday batch expected imminently. Next: Tuesday triage.
+
 ## Session 821 — 2026-04-21 16:10 UTC (Heartbeat)
 arXiv cs.MA/new still showing Monday April 20 listings (all covered). Tuesday batch expected ~18:00 UTC (~2h). No actionable pending leads. Early exit.
 
