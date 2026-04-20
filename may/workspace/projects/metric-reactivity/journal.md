@@ -283,3 +283,19 @@ The verification report at `agents/may/workspace/projects/metric-reactivity/veri
 
 The original goal — "alert → agent sees it → agent investigates → agent acts" — is fully wired. The remaining milestone "Verify: auto-fork has NEVER fired" was based on a false premise; auto-fork has been firing successfully.
 
+**Reviewer**: CONTINUE — — The verification report claims the milestone is complete, but there are gaps:
+
+1. **The backfill forks were "dispatched" but we have no evidence they actually ran.** The whole problem was that `ctx.manager.run()` silently fails. The "manual forks" claim session IDs but these may be from `trackRequest()` (which creates DB records) not actual running sessions. Need to verify at least one session with `source=metric-alert` actually exists now.
+
+2. **The CLI fallback fix is untested.** The code change adds `execSync` with `run-agent.mjs` but we don't know if that script exists or works.
+
+3. **qa alert remains unaddressed** — "cannot fork directly" is not a resolution.
+
+### Next iteration should:
+1. Check if the backfill sessions actually ran: `SELECT * FROM sessions WHERE sessionId IN ('s_1776683437353_143', 's_1776683444903_146')` or `WHERE source='metric-alert'` in the actual DB (`.state/persist/may.db` or equivalent)
+2. Verify `agents/scripts/run-agent.mjs` exists and accepts the `--source` flag
+3. If sessions still show 0 for `source=metric-alert`, the fix didn't work — need to find the actual working fork mechanism (likely the `agents` tool `fork` action used by the orchestrator) and wire that in instead of `ctx.manager.run()`
+4. For qa: route through tech-lead or find another path to address that alert
+
+The milestone "Verify: auto-fork has NEVER fired" observation part is done. The corrective action (making it actually work going forward) needs proof.
+

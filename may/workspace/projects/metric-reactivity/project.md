@@ -3,7 +3,7 @@
 **Status**: active
 **Owner**: may
 **Priority**: P1
-**Iteration**: 4
+**Iteration**: 3
 
 ## Goal
 Agents should react to metric alerts. Currently 4 alerts are firing with zero response. Close the loop: alert → agent sees it → agent investigates → agent acts.
@@ -46,8 +46,10 @@ Agents should react to metric alerts. Currently 4 alerts are firing with zero re
 
 
 ## Current State
-Iteration 4. Milestones: 4/5 done. Next: Verify: auto-fork has NEVER fired (0 sessions with source=metric-alert). Need to
+Iteration 3. Milestones: 4/5 done. Next: Verify: auto-fork has NEVER fired (0 sessions with source=metric-alert). Need to
 
 ## Iteration Summary
 - **Iter 3**: Now let me write the verification report:
+
+- **Iter 3**: Auto-committed already. Now commit the other dirty files:
 
