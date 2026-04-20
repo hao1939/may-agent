@@ -26,12 +26,15 @@ const rows = db.query(`
   FROM sessions s
   LEFT JOIN session_digests d ON d.sessionId = s.sessionId AND d.trigger = "end"
   WHERE s.startedAt > ?
-    AND s.kind = "heartbeat"
+    AND (s.kind = "heartbeat" OR s.task LIKE "[heartbeat]%")
     AND s.task LIKE "%⚠️%"
 `).all(cutoff);
 
-if (rows.length === 0) {
-  // No heartbeat sessions with red metrics in the window — output null sentinel
+// Exclude sessions with no digest (crashed/incomplete - cannot measure action)
+const measurable = rows.filter(r => r.what_happened || r.details);
+
+if (measurable.length === 0) {
+  // No measurable heartbeat sessions with red metrics in the window
   console.log("0");
   process.exit(0);
 }
@@ -40,16 +43,18 @@ let acted = 0;
 const actionPatterns = [
   /bun -e/i, /query/i, /investigat/i, /check.*metric/i, /metric.*check/i,
   /source_query/i, /metric_snapshots/i, /debug/i, /diagnos/i,
-  /read.*log/i, /looked at/i, /examined/i, /ran.*script/i
+  /read.*log/i, /looked at/i, /examined/i, /ran.*script/i,
+  /dispatch/i, /fork/i, /triage/i, /root.cause/i, /fix/i,
+  /measur/i, /analyz/i, /assess/i, /alert/i
 ];
 
-for (const row of rows) {
+for (const row of measurable) {
   const text = [row.what_happened, row.details].filter(Boolean).join(" ");
   if (actionPatterns.some(p => p.test(text))) {
     acted++;
   }
 }
 
-const rate = acted / rows.length;
+const rate = acted / measurable.length;
 console.log(rate.toFixed(4));
 '
