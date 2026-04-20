@@ -4,7 +4,7 @@
 
 ### Notes (this run)
 - Attempted to run git and mandatory QA commands from `/app` but `/app` is not a git repo and the expected tool binaries are absent.
-- Code spot-check in this run: `src/dashboard/server.ts` (see below).
+- Code spot-check in this run: `DELIVERABLES_CHECKLIST.md` (see below).
 
 ### Unreviewed change detected (agents repo)
 - Commit `853a7d978` modifies `agents/shared/workflows/persistent-task.ts` (workflow logic change: re-read project file from disk during loop).
