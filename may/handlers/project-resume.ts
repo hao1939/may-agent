@@ -98,6 +98,8 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     for (const project of projects) {
       const task = `project: ${project.relPath}\nagent: ${project.owner}\ngoal: see project file`;
 
+      const runId = generateRunId();
+
       const workflowCtx = {
         task,
         agent: project.owner,
