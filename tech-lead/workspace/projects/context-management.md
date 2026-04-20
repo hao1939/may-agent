@@ -132,3 +132,5 @@ Iteration 6. Milestones: 5/5 done.
 
 2. **Goal met**: No. The goal is "Increase workflow coverage from 31% to 80%." The project's own Current State at the bottom says: "Real session-level coverage is 19.9% (1165/5869), far below the 80% target." The claimed 
 
+**Reviewer**: DONE — — This is a read-only review task ("see project file"). The project has been analyzed across multiple iterations. The core finding is established: the persistent task "Increase workflow coverage from 31% to 80%" has 5/5 milestones marked complete but actual session-level coverage is 19.9%, not 80%. The claimed 82.3% was achieved via SQL backfill rather than real workflow infrastructure changes. No further iterations will change this assessment since the task goal requires code/infrastructure changes that a review-only session cannot perform.
+
