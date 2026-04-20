@@ -319,3 +319,5 @@ M4 is verified (12+ metric-alert requests in DB, 5 with `source='metric-alert'`)
 
 2. **Goal met**: The goal was "alert → agent sees it → agent investigates → agent acts." The plumbing is built: metrics-snapshot detects breaches and auto-forks the owning agent with a task, p
 
+### Iteration 4 — 2026-04-20T11:20:24.913Z
+**Worker**: Both M4 and M5 are already complete. The metric `may.alert-to-reaction-time` exists with a proper `source_query`, and there are 5+ metric-alert requests in the DB. Let me write the final deliverable.

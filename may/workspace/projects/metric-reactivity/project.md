@@ -47,7 +47,7 @@ Agents should react to metric alerts. Currently 4 alerts are firing with zero re
 
 
 ## Current State
-Complete. 5/5 milestones. — All milestones are complete.
+Iteration 4. Milestones: 5/5 done.
 
 The verification report at `agents/may/workspace/projects/metric-rea
 
