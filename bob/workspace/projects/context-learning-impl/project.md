@@ -3,7 +3,7 @@
 **Status**: active
 **Owner**: bob
 **Priority**: P1
-**Iteration**: 2
+**Iteration**: 3
 **Health**: 7/10
 
 ## Goal
@@ -40,7 +40,7 @@ Integrate the reflexion-based learning pipeline into the agent infrastructure so
 - Does the gym runner support automated multi-run experiments?
 
 ## Current State
-Iteration 2. Milestones: 1/5 done. Next: M2: Wire `extractLessons()` into session completion handler (requires `src/lib/m
+Iteration 3. Milestones: 1/5 done. Next: M2: Wire `extractLessons()` into session completion handler (requires `src/lib/m
 ## Iteration Summary
 - **Iter 1**: Already committed in a prior step. Good.
 

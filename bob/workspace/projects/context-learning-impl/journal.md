@@ -26,3 +26,5 @@ CONTINUE — **M2 and M3 cannot be completed as described** because `src/lib/man
 
 Mark M2 and M3 as **blocked on external dependency** (`manager.ts` is not in this repo; `lessons-hooks.ts` provides the integration surface — wiring must happen in the platform repo).
 
+### Iteration 3 — 2026-04-20T19:28:53.259Z
+**Worker**: Now write the experiment design doc:
