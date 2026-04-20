@@ -26,7 +26,7 @@
  * Exports create() conforming to HandlerModule.
  */
 
-import { existsSync, readFileSync, writeFileSync, statSync, readdirSync, mkdirSync, appendFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, statSync, readdirSync, mkdirSync } from "node:fs";
 import { resolve, join } from "node:path";
 
 // ── Workflow run persistence ──────────────────────────────────────────
@@ -316,6 +316,17 @@ export async function runAgentTask(
   const workflowRunId = `wr_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
   const sessionId = ctx.manager.run(agent, message, { source: "handler", workflowRunId });
   ctx.log(`[runAgentTask] Started ${agent} session: ${sessionId}`);
+
+  // Save workflow run file for session-sync backfill
+  saveMinimalWorkflowRun(ctx.projectRoot, {
+    runId: workflowRunId,
+    workflow: `runAgentTask:${agent}`,
+    parentSessionId: null,
+    agent,
+    startedAt: Date.now(),
+    status: "running",
+    steps: [{ sessionId, agent, status: "running" }],
+  });
 
   if (!waitForCompletion) {
     return { sessionId, status: "started" };

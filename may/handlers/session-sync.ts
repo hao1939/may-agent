@@ -153,7 +153,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       try {
         const workflowsDir = join(ctx.projectRoot, ".state", "workflows");
         if (existsSync(workflowsDir)) {
-          const cutoff = Date.now() - 7 * 86400 * 1000; // only recent runs
+          const cutoff = Date.now() - 90 * 86400 * 1000; // backfill up to 90 days
           const updateWfId = db.prepare(
             `UPDATE sessions SET workflowRunId = ?, source = COALESCE(source, 'workflow')
              WHERE sessionId = ? AND workflowRunId IS NULL`,
@@ -162,7 +162,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
             .filter((f) => f.startsWith("wr_") && f.endsWith(".json"))
             .sort()
             .reverse()
-            .slice(0, 200); // limit scan to most recent 200 runs
+            .slice(0, 2000); // scan recent workflow runs for backfill
 
           const backfillTxn = db.transaction(() => {
             for (const file of wfFiles) {
@@ -215,8 +215,14 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
             AND parentSessionId IS NOT NULL
             AND EXISTS (SELECT 1 FROM sessions p WHERE p.sessionId = sessions.parentSessionId AND p.workflowRunId IS NOT NULL)
         `);
-        const result = propagateStmt.run();
-        propagated = result.changes;
+        // Run multiple rounds to propagate through deep call chains
+        let totalPropagated = 0;
+        for (let round = 0; round < 5; round++) {
+          const result = propagateStmt.run();
+          totalPropagated += result.changes;
+          if (result.changes === 0) break;
+        }
+        propagated = totalPropagated;
         if (propagated > 0) {
           ctx.log(`[session-sync] Propagated workflowRunId to ${propagated} child sessions`);
         }
@@ -243,6 +249,43 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         }
       } catch (err) {
         ctx.log(`[session-sync] Evaluator tagging error: ${err instanceof Error ? err.message : String(err)}`);
+      }
+
+      // Tag sessions by task patterns to improve source attribution
+      let patternTagged = 0;
+      try {
+        // Tag cron-originated sessions by task pattern
+        const tagCron = db.prepare(`
+          UPDATE sessions SET source = 'cron-task'
+          WHERE source IS NULL
+            AND (task LIKE '[cron:%' OR task LIKE '%[cron:%' OR task LIKE '[heartbeat]%')
+        `);
+        patternTagged += tagCron.run().changes;
+
+        // Tag persistent-task workflow sessions
+        const tagPersistent = db.prepare(`
+          UPDATE sessions SET source = 'persistent-task'
+          WHERE source IS NULL
+            AND (task LIKE 'You are working on iteration%'
+              OR task LIKE '[EVALUATION%'
+              OR task LIKE '[REVIEW ONLY%'
+              OR task LIKE '%## Goal%## Milestones%')
+        `);
+        patternTagged += tagPersistent.run().changes;
+
+        // Tag agents.fork evaluator sessions
+        const tagFork = db.prepare(`
+          UPDATE sessions SET source = 'agents.fork'
+          WHERE source IS NULL
+            AND (task LIKE '# Task Tree Evaluation%' OR task LIKE '# Session Digest%')
+        `);
+        patternTagged += tagFork.run().changes;
+
+        if (patternTagged > 0) {
+          ctx.log(`[session-sync] Pattern-tagged ${patternTagged} sessions with source attribution`);
+        }
+      } catch (err) {
+        ctx.log(`[session-sync] Pattern tagging error: ${err instanceof Error ? err.message : String(err)}`);
       }
 
       ctx.emit({

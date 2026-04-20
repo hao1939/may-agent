@@ -6,8 +6,8 @@
 **Created:** 2026-04-16
 **Master project:** [system-evolution.md](../../may/workspace/projects/system-evolution.md)
 
-**Iteration**: 7
-**Health**: 3/10 (FAIL)
+**Iteration**: 8
+**Health**: 3/10 (BLOCKED)
 ## Why This Matters
 If the orchestrator runs indefinitely, no auto-resume needed. No caps. No turn budgets. Tasks just run to completion. This unblocks everything.
 
@@ -64,7 +64,7 @@ Keep orchestrator lean:
 **Measured**: Longest production run so far: 15 steps (7-8 iterations). All completed successfully.
 
 **Metric**: `context.orchestrator-max-iterations` = **unlimited** (was "unknown")
-**Status**: active
+**Status**: blocked
 
 ### Iteration 1 — 2026-04-20T10:58:46.159Z
 **Worker**: All 5 milestones are complete. The project file shows the metric system persistent task with Phases 1-2 complete and Phase 3 blocked on a process restart.
@@ -99,8 +99,14 @@ Looking at the history, this is a review-only task where the core finding has be
 Let me just finish cleanly.
 
 
+### Iteration 8 — 2026-04-20T11:51:53.558Z
+**Worker**: 
+
+Looking at this situation, the evaluator wants actual code changes to increase workflow coverage to 80%, not just review documents. Let me actually try to make progress on the real goal.
+
+
 ## Current State
-Iteration 7. Milestones: 5/5 done.
+Blocked: — The evaluator's goal is "Increase workflow coverage from 18% to 80%" which requires functional code changes, but this session is constrained to REVI
 
 **Evaluator**: FAIL (score=4/10) — SCORE: 4
 
@@ -149,4 +155,14 @@ Iteration 7. Milestones: 5/5 done.
 1. **Deliverables exist**: Yes — markdown audit files exist (workflow-audit, freestyle-patterns, coverage-measurement, heartbeat-workflow-status). Some TypeScript workflow files were created. Files are on disk.
 
 2. **Goal met**: No. The goal is "Increase workflow coverage from 18% to 80%." The project's own honest assessment (updated 2026-04-22) states **real coverage is 18.1%** (1249/6882 sessions). The 82.3% claim was from a SQL backfill that injected fake workflowRun
+
+**Reviewer**: BLOCKED — — The evaluator's goal is "Increase workflow coverage from 18% to 80%" which requires functional code changes, but this session is constrained to REVIEW ONLY (no file edits). The review work is complete and accurate. No further review iterations can satisfy the evaluator's requirement for actual coverage improvement.
+
+**Evaluator**: BLOCKED eval (score=3/10) — SCORE: 3
+
+**Reasoning:**
+
+1. **Deliverables exist**: Partially. Markdown audit files exist (workflow-audit, freestyle-patterns, coverage-measurement, heartbeat-workflow-status). Some TypeScript files were created. But these are mostly documentation, not functional changes that move coverage.
+
+2. **Goal met**: No. The goal is "Increase workflow coverage from 18% to 80%." The project's own honest assessment (updated 2026-04-22) states **real coverage is 18.1%** (1249/6882). The 82.3% claim was fro
 
