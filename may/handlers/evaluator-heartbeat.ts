@@ -154,8 +154,10 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
     // Spawn evaluator LLM session
     try {
+      const workflowRunId = `wr_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
       const result = await ctx.manager.callAgent("evaluator", task, {
         source: "evaluator-heartbeat",
+        workflowRunId,
       });
       ctx.log(
         `[evaluator-heartbeat] Evaluator session completed: ${result.status} ` +
