@@ -879,3 +879,8 @@
 | DD-796 | 2604.10352 | ClawVM: Virtual Memory for Stateful Tool-Using Agents | ★★★★★ | OS-style typed pages for agent state; eliminates compaction faults; EuroMLSys '26 |
 | DD-797 | 2604.15034 | Autogenesis: Self-Evolving Agent Protocol | ★★★★ | Versioned resource lifecycle; closed-loop self-evolution with rollback |
 | DD-798 | 2604.10938 | AgentWebBench: Multi-Agent Coordination in Agentic Web | ★★★★ | Decentralized coordination benchmark; scaling helps; planning critical |
+| DD-799 | 2604.15558 | Preregistered Belief Revision Contracts (PBRC) | ★★★★★ | Protocol-level cascade suppression; formal proof social-only rounds can't increase confidence; directly addresses EXP-100/103 |
+| DD-800 | 2604.15559 | Subliminal Transfer of Unsafe Behaviors in Agent Distillation | ★★★★★ | Behavioral biases transfer through trajectory dynamics despite keyword filtering; 100% deletion rate in student |
+| DD-801 | 2604.15972 | WORC: Weak-Link Optimization for Multi-Agent Reasoning | ★★★★ | Weakest agent bottlenecks system; meta-learning weak-link predictor; 82.2% accuracy |
+| DD-802 | 2604.15726 | LLM Reasoning Is Latent, Not the Chain of Thought | ★★★★½ | Evidence favors latent-state reasoning over surface CoT; implications for HVR monitoring |
+| DD-803 | 2604.16022 | SocialGrid: Planning and Social Reasoning Benchmark | ★★★★ | Deception detection at chance even with planning oracle; behavioral evidence accumulation failure |

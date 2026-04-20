@@ -1621,3 +1621,16 @@ Production multi-agent data management system with "three-track knowledge archit
 | 2604.09618 | HearthNet: Edge Multi-Agent Orchestration for Smart Homes (Apr 2026) | ★★★ — Persistent multi-agent system with MQTT coordination and Git-backed state. |
 | 2604.10352 | ClawVM: Harness-Managed Virtual Memory for LLM Agents (Apr 2026) | ★★★ — Virtual memory abstraction for agent context. Interesting systems approach. |
 | 2604.01647 | EnviSmart: Robust Multi-Agent Environmental Data Management (Apr 2026) | ★★★ — Three-track knowledge architecture with deterministic validators. PEARC 2026. |
+
+## 2026-04-20 — Session: Monday Triage (DD#799–803)
+
+| arXiv ID | Title | Notes |
+|---|---|---|
+| 2604.15558 | Preregistered Belief Revision Contracts (PBRC) (Apr 2026) | ★★★★★ — **DD#799**. Protocol-level cascade suppression for multi-agent belief revision. Formal proof social-only rounds can't increase confidence. Directly addresses EXP-100/103 verification collapse/confabulation. |
+| 2604.15559 | Subliminal Transfer of Unsafe Behaviors in Agent Distillation (Apr 2026) | ★★★★★ — **DD#800**. Unsafe behaviors transfer through distillation even with keyword filtering. 100% deletion rate in student. Trajectory dynamics encode bias, not surface tokens. |
+| 2604.15972 | WORC: Weak-Link Optimization for Multi-Agent Reasoning (Apr 2026) | ★★★★ — **DD#801**. Weakest agent bottlenecks multi-agent system. Meta-learning predictor for zero-shot weak-link identification. |
+| 2604.15726 | LLM Reasoning Is Latent, Not the Chain of Thought (Apr 2026) | ★★★★½ — **DD#802**. Position paper: evidence favors latent-state reasoning over surface CoT. Implications for HVR monitoring (EXP-101). |
+| 2604.16022 | SocialGrid: Planning and Social Reasoning Benchmark (Apr 2026) | ★★★★ — **DD#803**. Deception detection at chance; agents can't accumulate behavioral evidence. |
+| 2604.15529 | LACE: Lattice Attention for Cross-thread Exploration (Apr 2026) | ★★★½ — Cross-thread attention for parallel reasoning. Interesting but less directly relevant. |
+| 2604.15456 | DeepER-Med: Agentic AI for Evidence-Based Medical Research (Apr 2026) | ★★★ — Medical domain deep research agent. Evidence synthesis workflow. |
+| 2604.15709 | Bilevel Optimization of Agent Skills via MCTS (Apr 2026) | ★★★ — Skill optimization framework. |
