@@ -46,3 +46,8 @@
 - **2604.12213** — "MMA2A: Modality-Native Routing in Agent-to-Agent Networks". +20pp from native multimodal routing vs text-bottleneck; routing is first-order design variable in MAS. ★★★★. Catalogued.
 - **2604.11655** — "RPA-Check: Multi-Stage Framework for Evaluating LLM Role-Playing Agents". Smaller 8-9B models outperform larger architectures on procedural consistency; inverse scale→consistency. ★★★½. Catalogued.
 - **2604.12890** — "LMM-Searcher: Long-horizon MultiModal Deep Search". File-based visual representation; scales to 100-turn search horizons; SOTA on MM-BrowseComp. ★★★½. Catalogued.
+- **2604.13954** — "HINTBench: Horizon-agent Intrinsic Non-attack Trajectory Benchmark". 629 trajectories for intrinsic risk auditing; <35 F1 on step-level localization; guard models transfer poorly. ★★★★★. DD#781.
+- **2604.11978** — "HORIZON: The Long-Horizon Task Mirage". 3100+ trajectories across 4 domains; horizon-dependent degradation with structural breakpoints; LLM-as-Judge κ=0.84. ★★★★★. DD#782.
+- **2604.11462** — "ContextCurator: Escaping the Context Bottleneck via RL". 7B RL-trained context curator matches GPT-4o; +4.8pp WebArena; reasoning anchors concept; 8× token reduction on DeepSearch. ★★★★. DD#783.
+- **2604.07821** — "More Capable, Less Cooperative: When LLMs Fail At Zero-Cost Collaboration". o3 achieves 17% vs o3-mini 50% of optimal; capability ≠ cooperation; explicit protocols double performance. ★★★★. Catalogued.
+- **2604.05432** — "Back-Reveal: Data Exfiltration via Backdoored Tool Use". Semantic trigger backdoors in tool-use agents; multi-turn amplification of exfiltration. ★★★★. Catalogued.

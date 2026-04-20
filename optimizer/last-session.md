@@ -1,12 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** cron_1776649211528_627
+- **Session:** cron_1776651012103_634
 - **Status:** done
-- **When:** 2026-04-20T01:41:06.312Z
-- **Duration:** 54s
+- **When:** 2026-04-20T02:11:05.416Z
+- **Duration:** 53s
 
 ## What Happened
-The low quality sessions are all evaluator sessions with 0 ops (skipped) — these are dragging the quality metric down. Not real quality issues. System is genuinely healthy.
-
-No anomalies, no pending requests for optimizer, 0% error rate. This is a clean heartbeat — exit lean.
+System is healthy — 0 errors across all agents in last 6 hours. No pending requests for optimizer. Recent heartbeats confirmed clean. Last 3 heartbeats all exited lean at ~10 ops each.

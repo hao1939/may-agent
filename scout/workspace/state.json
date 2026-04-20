@@ -1,14 +1,14 @@
 {
   "_schema": "Scout counter state. Use scripts/counters.sh (get|bump|set|show). Atomic writes. DD=deep dives, CR=cross references, Session=heartbeat session counter, H=hypothesis counter.",
   "counters": {
-    "DD": 780,
+    "DD": 783,
     "CR": 339,
-    "Session": 810,
+    "Session": 811,
     "H": 94
   },
   "search_state": {
     "last_arxiv_triage_date": "2026-04-20",
     "last_triage_cluster": "cs.AI+cs.MA"
   },
-  "last_updated": "2026-04-20T01:41:06.600987Z"
+  "last_updated": "2026-04-20T02:11:27.713Z"
 }

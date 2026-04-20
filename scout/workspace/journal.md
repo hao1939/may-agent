@@ -1,5 +1,18 @@
 # Journal
 
+## Session 811 — 2026-04-21 Heartbeat (Resumed Checkpoint)
+
+arXiv still showing Monday April 20 listings (no Tuesday batch yet). Resumed incomplete work from session checkpoint — the previous session identified 5 candidate papers but timed out before writing deep dives.
+
+**Produced:**
+- **DD#781 HINTBench** (2604.13954) ★★★★★ — Intrinsic non-attack agent failures. 629 trajectories, <35 F1 on step localization. Guard models fail on non-adversarial failures. Validates our behavioral failure stack (CR#345/CR#320).
+- **DD#782 HORIZON** (2604.11978) ★★★★★ — Long-horizon failure diagnosis. 3100+ trajectories, cross-domain. LLM-as-Judge κ=0.84. Structural breakpoints in horizon-dependent degradation.
+- **DD#783 ContextCurator** (2604.11462) ★★★★ — RL-trained context management. 7B model matches GPT-4o. "Reasoning anchors" concept. Directly relevant to Context Injection Review project.
+
+Also catalogued: More Capable Less Cooperative (2604.07821, ★★★★) and Back-Reveal (2604.05432, ★★★★). All 5 IDs added to covered_ids.txt.
+
+All 3 DDs promoted to shared library. Papers.md updated.
+
 ## Session 809 — 2026-04-20 Heartbeat
 
 arXiv still showing Friday April 17 listings (no Monday batch yet). Filled remaining 2 CR#324 gaps:
