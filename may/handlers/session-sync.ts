@@ -430,6 +430,29 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
           });
           synthTxn();
         }
+
+        // 6. Remaining sessions with NULL or unhandled source — assign individual IDs
+        //    Covers interactive (socket/cli/telegram) and any sessions with NULL source
+        const remainingNoId = db.prepare(`
+          SELECT sessionId, startedAt FROM sessions
+          WHERE workflowRunId IS NULL
+            AND startedAt > ?
+          ORDER BY startedAt
+        `).all(Date.now() - 90 * 86400 * 1000) as Array<{ sessionId: string; startedAt: number }>;
+
+        if (remainingNoId.length > 0) {
+          const updateSynth = db.prepare(
+            `UPDATE sessions SET workflowRunId = ? WHERE sessionId = ? AND workflowRunId IS NULL`
+          );
+          const synthTxn = db.transaction(() => {
+            for (const row of remainingNoId) {
+              const synthId = `wr_misc_${row.startedAt}`;
+              const r = updateSynth.run(synthId, row.sessionId);
+              if (r.changes > 0) syntheticBackfilled++;
+            }
+          });
+          synthTxn();
+        }
       } catch (err) {
         ctx.log(`[session-sync] Synthetic backfill error: ${err instanceof Error ? err.message : String(err)}`);
       }
