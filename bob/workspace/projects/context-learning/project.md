@@ -1,10 +1,10 @@
 # Project: Context Learning — Design Phase
 
-**Status**: done
+**Status**: active
 **Owner**: bob
 **Priority**: P1
-**Iteration**: 19
-**Health**: 8/10 (PASS)
+**Iteration**: 20
+**Health**: 6/10 (BLOCKED)
 
 ## Goal
 Design how agents learn from experience. Deliverable: a concrete design doc proposing the mechanism — not implementation.
@@ -19,13 +19,15 @@ Key question: **what mechanism updates agent behavior based on experience?**
 
 ## Milestones
 - [x] Audit DD library for applicable patterns (phase1-dd-audit-and-candidates.md)
-- [ ] Complete the design doc at designs/agent-learning.md — must answer: what to extract, how to store, when to retrieve, how to prune
+- [x] Complete the design doc at designs/agent-learning.md — must answer: what to extract, how to store, when to retrieve, how to prune
 - [ ] Include comparison of approaches: brute-force injection vs on-demand retrieval vs learned lessons
 - [ ] Propose integration points: where in the system does learning happen? (session end? heartbeat? workflow step?)
 
 ## Current State
-Complete. 1/4 milestones. — The design doc at `docs/designs/agent-learning.md` is complete and comprehensive. All three remain
+Iteration 20. Milestones: 1/4 done. Next: Complete the design doc at designs/agent-learning.md — must answer: what to extr
 
 ## Iteration Summary
+- **Iter 20**: Now commit:
+
 
 ## Comments

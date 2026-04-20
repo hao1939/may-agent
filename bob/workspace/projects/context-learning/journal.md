@@ -472,3 +472,13 @@ The doc also includes a phased implementation plan, an experiment design with co
 
 3. **Evidence*
 
+**Reviewer**: CONTINUE — The design doc is complete and committed. Let me verify all milestones:
+
+DONE — All three remaining milestones are complete:
+
+1. **✅ Complete the design doc at designs/agent-learning.md** — The doc (325 lines, committed as `2c37c701`) answers all four questions: **what to extract** (finish().lessons, auto-extracted failure blockers, context_updates), **how to store** (JSONL with id/timestamp/agent/category/text/confidence/validated_count), **when to retrieve** (session start via buildSessionContext with relevance scoring), **how to prune** (confidence decay after 30 days, archive below 0.1, flag contradictions).
+
+2. **✅ Comparison of approaches** — The "Approach Comparison" section compares brute-force injection (current state, doesn't scale), on-demand retrieval (RAG-style, over-engineered for current scale), and learned lessons (recommended, best fit). Each has pros/cons table and verdict. Recommendation is clearly stated with rationale tied to existing data sources (digests→patterns, diffs→code lessons, recall→keep as-is).
+
+3. **✅ Integration points** — The "Integration Points" section covers all five points: session end (primary extraction via finish()/appendMemory()), session start (relevance-filtered injection via buildSessionContext()), heartbeat (consolidation and cross-agent propagation), workflow step boundaries (cross-agent fast path), and background pruning. Each specifies what happens, why that timing, and what change is required.
+

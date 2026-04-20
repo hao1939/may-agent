@@ -1,18 +1,14 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776682793218_35
+- **Session:** s_1776682931338_47
 - **Status:** done
-- **When:** 2026-04-20T11:03:01.109Z
-- **Duration:** 3m7s
+- **When:** 2026-04-20T11:03:51.723Z
+- **Duration:** 1m40s
 
 ## What Happened
-SCORE: 8/10
+The design doc is complete and committed. Let me verify all milestones:
 
-**Reasoning:**
+DONE — All three remaining milestones are complete:
 
-1. **Deliverables exist**: Yes. `docs/designs/agent-learning.md` is a 325-line, comprehensive design document that clearly exists and has real content.
-
-2. **Goal met**: Yes. The goal was "a concrete design doc proposing the mechanism" and the doc thoroughly answers all four required questions: what to extract (Component 1), how to store (JSONL format), when to retrieve (session start via relevance filtering), and how to prune (Component 5 lifecycle).
-
-3. **Evidence*
+1. **✅ Complete the design doc at designs/agent-learning.md** — The doc (325 lines, committed as `2c37c701`) answers all four questions: **what to extract** (finish().lessons, auto-extracted failure blockers, context_updates), **how to store** (JSONL with id/timestamp/agent/category/text/confidence/validated_count), **when to retrieve** (session start via buildSessionCont
