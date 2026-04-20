@@ -92,6 +92,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       if (busyProjects.has(project.relPath)) continue;
 
       const task = `project: ${project.relPath}\nagent: ${project.owner}\ngoal: see project file`;
+      const workflowRunId = `wr_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
 
       const workflowCtx = {
         task,
@@ -115,7 +116,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
           };
         },
         runAgent: async (agentName: string, agentTask: string) => {
-          return ctx.manager.callAgent(agentName, agentTask, { source: "workflow" });
+          return ctx.manager.callAgent(agentName, agentTask, { source: "workflow", workflowRunId });
         },
         runWorkflow: async () => ({ type: "escalate" as const, reason: "Sub-workflows not supported" }),
         emit: (event: any) => ctx.log(`[project-resume:${project.relPath}] ${event.type ?? event}`),
@@ -127,12 +128,11 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         escalate: (reason: string, context?: unknown) => ({ type: "escalate" as const, reason, context }),
       };
 
-      try {
-        const result = await wfMod.execute(workflowCtx);
+      wfMod.execute(workflowCtx).then((result: any) => {
         ctx.log(`[project-resume] ${project.relPath} → ${result.type}`);
-      } catch (err: any) {
+      }).catch((err: any) => {
         ctx.log(`[project-resume] ${project.relPath} ERROR: ${err}`);
-      }
+      });
 
       launched++;
     }

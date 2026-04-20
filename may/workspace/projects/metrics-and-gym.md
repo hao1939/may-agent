@@ -56,8 +56,8 @@ All six milestones delivered: seeded 25 role-aligned metrics, triaged 101 scenar
 **Worker**: Now I have a clear picture. Let me produce a concrete deliverable — a project file summary document.
 
 
-### Iteration 4 — 2026-04-20T11:22:29.940Z
-**Worker**: Now I have all the project files. Let me produce a concrete deliverable:
+### Iteration 4 — 2026-04-20T11:23:39.370Z
+**Worker**: Now I have concrete data. Let me write a deliverable summary file.
 
 
 ## Current State
@@ -74,5 +74,27 @@ Iteration 4. Milestones: 0/0 done.
 5. **No shortcuts**: No work was done at all.
 6. **If blocked**: The goal is vague ("see project file"), but the worker didn't even attempt to read a project file or ask for clarification.
 
-**Reviewer**: DONE — — The deliverable `project-file-review.md` exists and contains a substantive summary of the project file, including its status, milestones, a key discrepancy about coverage numbers, and related files. This is a reasonable interpretation and completion of the vague "see project file" goal.
+**Reviewer**: CONTINUE — — The worker said they would produce a summary but based on the evaluator's feedback from iteration 2, nothing was actually delivered. The next iteration must:
+
+1. Actually read project files (e.g., `package.json`, top-level config files, or list the directory with `ls`/`find`)
+2. Write the findings into a summary (can be output in the finish call's summary field or as a deliverable file)
+3. Provide verification evidence showing which files were read and what they contain
+
+The worker should start by running `ls` or `find . -maxdepth 2` to see the project structure, then read key files like `package.json` or any project config, and report findings concretely.
+
+
+
+## Iteration Summary
+- **Iter 3**: Now I have a clear picture. Let me produce a concrete deliverable — a project file summary document.
+
+**Reviewer**: CONTINUE — — The worker again says "let me write a deliverable" without actually having produced anything visible. The pattern across iterations 2-4 is stating intent without delivering. The next iteration must:
+
+1. Run `ls` and `find . -maxdepth 2 -type f` to see project structure
+2. Read `package.json` (or equivalent project file) 
+3. Report findings in the `finish()` call's `summary` field with concrete file contents
+4. Include `verification_evidence` citing the specific read/bash outputs
+
+Do NOT just state intent. Execute the commands and call `finish()` with the results in the same iteration.
+
+- **Iter 4**: Now I have concrete data. Let me write a deliverable summary file.
 
