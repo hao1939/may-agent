@@ -16,18 +16,36 @@ const db = new Database(".state/may.db", { readonly: true });
 const MS_7D = 7 * 24 * 60 * 60 * 1000;
 const cutoff = Date.now() - MS_7D;
 
-// Find heartbeat sessions that had red/warning metrics injected (via breadcrumbs).
-// A session "had red metrics" if the task/context mentions "NEEDS ATTENTION" or "⚠️".
-// A session "took action" if what_happened or details mention investigative keywords.
+// Find heartbeat sessions where the agent had below-target metrics.
+// Two detection methods:
+// 1. Pre-integration: task text contains "⚠️" (old heartbeat-context injection)  
+// 2. Post-integration: agent had below-threshold metrics at session time
+//    (G-pattern injects ⚠️ into step prompts, not task text)
+
+// Get agents with currently-below-target metrics (proxy for "had alerts")
+const alertedAgents = new Set(
+  db.query(`
+    SELECT owner FROM metrics
+    WHERE status = "active" 
+      AND current < COALESCE(threshold, target)
+      AND owner != "may"
+  `).all().map(r => r.owner)
+);
 
 const rows = db.query(`
-  SELECT s.sessionId, s.agent, s.task,
+  SELECT s.sessionId, s.agent, s.task, s.startedAt,
          d.what_happened, d.details, d.outcome
   FROM sessions s
   LEFT JOIN session_digests d ON d.sessionId = s.sessionId AND d.trigger = "end"
   WHERE s.startedAt > ?
     AND (s.kind = "heartbeat" OR s.task LIKE "[heartbeat]%")
-    AND s.task LIKE "%⚠️%"
+    AND (
+      s.task LIKE "%⚠️%"
+      OR s.agent IN (SELECT owner FROM metrics 
+                     WHERE status = "active" 
+                       AND current < COALESCE(threshold, target)
+                       AND owner != "may")
+    )
 `).all(cutoff);
 
 // Exclude sessions with no digest (crashed/incomplete - cannot measure action)
