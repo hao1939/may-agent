@@ -527,7 +527,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         return ctx.escalate(`Blocked by comment at iteration ${iteration}: ${decision.detail}`);
       }
 
-      // CONTINUE — increment iteration, worker gets reviewer guidance next
+      // CONTINUE — set active (may have been blocked/done), increment iteration
+      projectContent = updateField(projectContent, "Status", "active");
+      writeFileSync(config.projectPath, projectContent, "utf-8");
       iteration++;
       continue;
     }
