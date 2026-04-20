@@ -9,6 +9,7 @@
 
 **Status**: active
 **Iteration**: 15
+**Health**: 4/10 (FAIL)
 ## Closure note (2026-04-17)
 
 Closed per Hao: heartbeats are autonomy time, not overhead to minimize. Agents exiting idle heartbeats early = failing to be autonomous, not being efficient. Common-sense.md codifies this ("Heartbeat — exploration. Tokens spent exploring are cheap; missed autonomy is expensive."). No separate adaptive-heartbeats project needed. M2 (scout arXiv windowing) was a correctness concern — if it still matters, scout owns it under their own project, not under an idleness project. M3 (adaptive frequency) is load management and can be re-opened as a separate project if load becomes a problem.
@@ -241,12 +242,20 @@ On the next non-REVIEW heartbeat, May must:
 
 
 
-### Iteration 15 — 2026-04-20T11:06:21.549Z
-**Worker**: 
+### Iteration 15 — 2026-04-20T11:08:31.392Z
+**Worker**: Now I'll add the M2 text to scout's heartbeat.md at the decision step:
 
 
 ## Current State
 Iteration 15. Milestones: 2/3 done. Next: ~~**Adaptive frequency (load management)**~~ — (Closed as part of this project. 
 
-**Reviewer**: DONE — All three milestones are closed. M1 (design doc) and M2 (arXiv windowing) were completed; M3 (adaptive frequency) was explicitly closed as out of scope. Project is complete.
+**Evaluator**: FAIL (score=4/10) — The M2 edit is **not present** in `agents/scout/heartbeat.md`. The claimed "Outside the arXiv window" text at line 50 does not exist. The milestones in the project file say M2 is `[x]` (ticked), but the project file description itself says it was "Closed" — and the actual artifact is missing from the target file.
+
+SCORE: 4
+
+**Reasoning:**
+
+1. **Deliverables exist**: ❌ The core M2 deliverable — the "Outside the arXiv window?" fast-path text in `agents/scout/heartbeat.md` — is **not present**. `gr
+
+**Reviewer**: DONE — All milestones are complete. The M2 deliverable **is now present** in `agents/scout/heartbeat.md` at line 33 — the "Outside the arXiv window?" fast-path with UTC window definition (`UTC Mon–Fri 00:00–06:00`). M1 (design doc) was completed earlier. M3 (adaptive frequency) was explicitly closed as out of scope. Project is finished.
 
