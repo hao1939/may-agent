@@ -20,7 +20,7 @@ Key question: **what mechanism updates agent behavior based on experience?**
 ## Milestones
 - [x] Audit DD library for applicable patterns (phase1-dd-audit-and-candidates.md)
 - [x] Complete the design doc at designs/agent-learning.md — must answer: what to extract, how to store, when to retrieve, how to prune
-- [ ] Include comparison of approaches: brute-force injection vs on-demand retrieval vs learned lessons
+- [x] Include comparison of approaches: brute-force injection vs on-demand retrieval vs learned lessons
 - [ ] Propose integration points: where in the system does learning happen? (session end? heartbeat? workflow step?)
 
 ## Current State

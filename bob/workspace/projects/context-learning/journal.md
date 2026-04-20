@@ -486,3 +486,11 @@ DONE — All three remaining milestones are complete:
 **Worker**: The doc is already committed with the approach comparison and integration points. Both milestones appear to be complete already. Let me verify the milestone status matches what's in the doc.
 ### Iteration 21 — 2026-04-20T11:06:11.374Z
 **Worker**: The design doc already has both sections committed. The "Approach Comparison" section (milestone for this iteration) comprehensively compares all three approaches with pros/cons tables and a recommendation. The "Integration Points" section (next milestone) is also already present with all 5 integration points detailed.
+**Reviewer**: DONE — — Both remaining milestones are complete.
+
+**Milestone: "Include comparison of approaches"** ✅ — The "## Approach Comparison" section compares brute-force injection, on-demand retrieval, and learned lessons with pros/cons tables and a clear recommendation.
+
+**Milestone: "Propose integration points"** ✅ — The "## Integration Points" section covers all five timing points (session end, session start, heartbeat, workflow step boundaries, lesson pruning) with what/why/change-required for each.
+
+The open questions have been cleaned up to three genuinely open items (evaluation methodology, human-in-the-loop, lesson quality control). The doc is well-structured, answers hao's core question about transforming raw data sources into learning, and provides a concrete phased implementation plan.
+

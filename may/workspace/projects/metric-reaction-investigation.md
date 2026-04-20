@@ -6,8 +6,9 @@
 **Master project:** system-evolution
 **Next:** none (project closed)
 
-**Status**: active
+**Status**: blocked
 **Iteration**: 1
+**Health**: 8/10 (BLOCKED)
 ## Goal
 Understand why agents see metrics in their heartbeat context but don't act on them. Propose fixes based on evidence.
 
@@ -278,5 +279,13 @@ Confirmed renderer now emits the red marker in live heartbeats post-backfill:
 
 
 ## Current State
-Iteration 1. Milestones: 5/6 done. Next: M5b: Phase 2 — add `direction` column + broaden predicate to continuous metrics **Reviewer**: BLOCKED — M5b is gated on 48h observation of M5a. All actionable milestones are complete. No work can proceed until the observation period elapses.
+Blocked: M5b is gated on 48h observation of M5a. All actionable milestones are complete. No work can proceed until the observation period elapses.
+
+**Evaluator**: BLOCKED eval (score=8/10) — SCORE: 8
+
+**Reasoning:**
+
+1. **Deliverables exist**: Yes. Extensive artifacts: M1 sampling data (25 sessions), M2 classification table, M3 findings report, M4 intervention proposals, M5a threshold backfill (commit `0e22b256`, script `scripts/backfill-metric-thresholds.ts`), verification evidence showing the ⚠️ marker now renders in live heartbeats.
+
+2. **Goal met**: Yes. The goal was "Understand why agents see metrics but don't act on them. Propose fixes based on evidence." The investigation con
 
