@@ -391,10 +391,20 @@ function notifyOwnerOnRegression(
         explanation = `threshold: ${metric.threshold}`;
       }
     } else {
-      // No threshold — regress if moving away from target
-      const oldDist = Math.abs(oldValue - metric.target);
-      const newDist = Math.abs(newValue - metric.target);
-      regressed = newDist > oldDist && newDist > oldDist * 1.05; // 5% tolerance
+      // No threshold — regress if moving away from target in the BAD direction.
+      // For "higher_is_better": regression only if value dropped below target or moved further below.
+      // For "lower_is_better": regression only if value rose above target or moved further above.
+      // Being further from target in the GOOD direction is fine (exceeding target).
+      const higherIsBetter = metric.direction !== "lower_is_better"; // default: higher_is_better
+      const movedBadDirection = higherIsBetter
+        ? newValue < oldValue // value dropped
+        : newValue > oldValue; // value rose
+
+      if (movedBadDirection) {
+        const oldDist = Math.abs(oldValue - metric.target);
+        const newDist = Math.abs(newValue - metric.target);
+        regressed = newDist > oldDist && newDist > oldDist * 1.05; // 5% tolerance
+      }
       explanation = `target: ${metric.target}`;
     }
 
