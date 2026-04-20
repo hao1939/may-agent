@@ -120,6 +120,28 @@ This is the event-driven model Hao requested: metric crosses threshold → auto-
 - Milestone 4 (Verify): Wait for next metrics-snapshot run to trigger auto-fork on regression
 - Consider: should we also auto-fork for EXISTING unresolved alerts (one-time backfill)?
 
+## 2026-04-22 — Verification: Auto-Fork Never Fired + Manual Backfill
+
+### Key Finding
+Queried `sessions WHERE source='metric-alert'` → **0 results**. The auto-fork mechanism in `notifyOwnerOnRegression` has NEVER actually triggered. 
+
+**Root cause**: The function only fires when `newValue < oldValue AND newValue < threshold`. Once a metric is already below threshold and stays flat (or recovers slightly), no regression is detected. All 7 unresolved alerts represent metrics that breached once and then flatlined — the fork condition was never met again.
+
+### Manual Backfill
+Forked 3 agents and notified 2 for their unresolved alerts:
+- **tech-lead** (forked P0): build-health + meaningful-changes
+- **evaluator** (forked P0): coverage 79 < 80
+- **optimizer** (forked P1): quality-preserved + waste-reduction  
+- **qa** (notified P0): review-coverage 0 < 1 (60h+ unresolved)
+- **coach** (notified P1): knowledge-to-action-latency stalled
+
+### Design Gap Identified
+The auto-fork only triggers on *new regressions* (value getting worse). It does NOT re-fork for:
+- Alerts that stay unresolved (agent ignored first notification)
+- Metrics below threshold but stable (not getting worse)
+
+**Proposed fix**: Add a periodic "stale alert" re-fork — if an alert has been unresolved > 24h and no metric-alert session exists in the last 12h, auto-fork the owner again.
+
 ## 2026-04-20 — Design Complete (Milestone 2)
 
 ### Decision: Push via `notify()` + Pull via heartbeat context
