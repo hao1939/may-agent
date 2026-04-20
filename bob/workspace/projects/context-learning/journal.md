@@ -249,3 +249,28 @@ Good, files restored to unformatted state. Now update the phase2 doc:
 
 The deliverable for this iteration is: the scout research dispatched AND the design doc skeleton with the "Current State" section filled in from reading the actual code.
 
+### Iteration 15 — 2026-04-20T08:07:40.650Z
+**Worker**: **Status:** done (2m7s)
+
+**Files modified:**
+- docs/designs/agent-learning.md
+
+**Errors encountered:**
+- [bash] find: ‘./.state/chrome-profile/optimization_guide_model_store/20/E6DC4029A1E4B4C1/9D754C980A40A657’: Permission denied
+find: ‘./.state/chrome-profile/optimization_guide_model_store/45/E6DC4029A1E4B4C1/A4F923A30D61A797’: Permission denied
+find: ‘./.state/chrome-profile/optimization_guide_model_store/
+- [bash] fatal: pathspec 'docs/designs/agent-learning.md' did not match any files
+
+
+Command exited with code 128
+
+**Agent response:**
+The design doc is in `/app/docs/` not `/app/agents/docs/`. Let me commit what's in the agents repo and handle the design doc separately.
+**Reviewer**: CONTINUE — — The worker created the design doc but failed to commit it and didn't fork scout for research. Next iteration must:
+
+1. **Verify and read** `docs/designs/agent-learning.md` — confirm it exists and has the "Current State" section filled in with actual analysis of `buildSessionContext()` from `src/lib/manager.ts`.
+
+2. **Fork scout** to research OpenClaw and Hermes Agent learning mechanisms. This was explicitly requested and not done.
+
+3. **Fix the git commit** — the doc needs to be committed properly.
+

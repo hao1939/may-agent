@@ -1,16 +1,18 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776672324158_837
+- **Session:** s_1776672460651_841
 - **Status:** done
-- **When:** 2026-04-20T08:05:33.443Z
-- **Duration:** 9s
+- **When:** 2026-04-20T08:07:45.574Z
+- **Duration:** 4s
 
 ## What Happened
-CONTINUE
 
-The task has been re-scoped by the human. Stop processing comments and start executing. Next iteration must produce concrete output:
 
-1. **Fork scout** to research OpenClaw and Hermes Agent learning mechanisms (how they persist lessons, what works, what doesn't).
+CONTINUE — The worker created the design doc but failed to commit it and didn't fork scout for research. Next iteration must:
 
-2. **Read the dead code** in `src/lib/manager.ts` — specifically `buildSessionContext()` — and document what data sources it computes (digests, cross-agent context, active recall, session diffs, checkpoints, last-session summ
+1. **Verify and read** `docs/designs/agent-learning.md` — confirm it exists and has the "Current State" section filled in with actual analysis of `buildSessionContext()` from `src/lib/manager.ts`.
+
+2. **Fork scout** to research OpenClaw and Hermes Agent learning mechanisms. This was explicitly requested and not done.
+
+3. **Fix the git commit** — the doc needs to be com
