@@ -178,6 +178,26 @@ function extractMilestones(content: string): { total: number; done: number; pend
   };
 }
 
+// Check off milestones whose text appears in the reviewer's response
+function checkOffMilestones(content: string, reviewerText: string): string {
+  const lines = content.split("\n");
+  let inMilestones = false;
+  for (let i = 0; i < lines.length; i++) {
+    if (/^##\s*Milestones/i.test(lines[i])) { inMilestones = true; continue; }
+    if (inMilestones && /^##\s/.test(lines[i])) break;
+    if (!inMilestones) continue;
+    const m = lines[i].match(/^(\s*-\s*)\[ \]\s*(.+)/i);
+    if (m) {
+      // Check if reviewer text mentions this milestone (fuzzy: first 30 chars)
+      const key = m[2].trim().slice(0, 30).toLowerCase();
+      if (reviewerText.toLowerCase().includes(key)) {
+        lines[i] = lines[i].replace("[ ]", "[x]");
+      }
+    }
+  }
+  return lines.join("\n");
+}
+
 function extractComments(content: string): string {
   const idx = content.indexOf("## Comments\n");
   if (idx === -1) return "";
@@ -307,6 +327,7 @@ function buildReviewPrompt(
   prompt += `2. Is the task blocked or stuck in a loop? → BLOCKED with reason.\n`;
   prompt += `3. Otherwise → CONTINUE with specific guidance for the next iteration.\n\n`;
   prompt += `If CONTINUE: say exactly what the next iteration should do and what output to produce.\n`;
+  prompt += `When milestones are completed, mention them by name so they can be checked off.\n`;
   prompt += `Your response MUST start with: DONE, BLOCKED, or CONTINUE`;
 
   return prompt;
@@ -552,6 +573,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         writeFileSync(config.projectPath, projectContent, "utf-8");
       } else {
         appendFileSync(config.journalPath, reviewEntry);
+      }
+
+      // Update milestone checkboxes based on reviewer's assessment
+      const beforeMs = extractMilestones(projectContent).done;
+      projectContent = checkOffMilestones(projectContent, decision.detail);
+      const afterMs = extractMilestones(projectContent).done;
+      if (afterMs > beforeMs) {
+        writeFileSync(config.projectPath, projectContent, "utf-8");
       }
 
       if (decision.status === "done") {
