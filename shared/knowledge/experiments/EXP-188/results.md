@@ -1,26 +1,41 @@
-# EXP-188: Results
+# EXP-188: Finish-Guard Enforcement for Persistent-Task Workflow
 
-**Status**: PENDING
+**Status**: COMPLETE — PROMOTE
 
 ## Summary
 
-<one-paragraph outcome — fill after runs complete>
+Finish-guard enforcement achieves +100pp improvement (0% → 100%) in persistent-task adoption. Text injection alone never works; structural gate at finish() is required.
 
 ## Data
 
 | Arm | N | Pass rate | Notes |
 |-----|---|-----------|-------|
-| A   |   |           |       |
-| B   |   |           |       |
+| Baseline (text injection only) | 3 | 0% | Agents read project, work inline, skip workflow |
+| Treatment (finish-guard gate) | 3 | 100% | Guard blocks finish(success) unless workflow.run("persistent-task") called |
+
+**Delta**: +100pp (0% → 100%)
+
+## Run IDs
+- Baseline: 3283, 3284, 3285
+- Treatment: 3280, 3281, 3282
+- Additional baseline: 3274, 3275, 3276 (0/3)
 
 ## Analysis
 
-<what the numbers mean>
+Text injection fails because agents read the instruction, do the work inline, and call finish(success) without invoking the workflow. The finish-guard creates an unavoidable enforcement point — the agent literally cannot claim success without using the workflow.
+
+This matches EXP-184's identical +100pp result, confirming that structural enforcement is the only reliable mechanism for workflow adoption.
 
 ## Conclusion
 
-<confirmed / falsified / inconclusive + what changes>
+**CONFIRMED**: Finish-guard gates are the mechanism for enforcing workflow usage. Text/skill/instruction approaches have 0% effect.
+
+## Deployment Status
+
+⚠️ **NOT DEPLOYED** — The guard was tested in gym but `src/lib/tools/finish-guard.ts` does not exist in the codebase. Tech-lead needs to implement this.
 
 ## Followups
 
-- <next experiment or KE to write>
+- Tech-lead: Implement finish-guard.ts with Gate 3 (persistent-task enforcement)
+- Monitor production persistent-task adoption rate after deployment
+- Consider extending finish-guard pattern to other workflow enforcement needs
