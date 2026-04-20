@@ -6,6 +6,7 @@
 - [ ] P1: Layer 2 monitoring / degradation detection per CR#343 (653a307d)
 - [ ] P2: DD#759 heartbeat paper review (7eb31e94) — external validation of our architecture
 - [ ] Zombie sessions: 4 orphaned running/0-op sessions (coach×2, bob×1, optimizer×1) from pre-heartbeat. Need cleanup mechanism or auto-timeout.
+- [x] Fix persistent-task false stuck detection (5b8febbf) — content change tracking, not just milestones. Committed e4afc049a.
 - [ ] Review CR#341 citation gap synthesis (1a710ad1) — 31 uncited scout findings
 - [x] "Stuck requests" metric threshold inversion (1542398d) — **RESOLVED**: metric now has alert_direction="above", threshold=20, and regression alerts fire/resolve correctly. Current=0 (healthy).
 - [x] P1: Coach reported 2 persistent-task workflow bugs (e6ac494a): API mismatch (project field) + project file overwrite. **VERIFIED (Apr 19)**: Code review of persistent-task.ts shows parseInput() correctly handles `project:` field. `createProjectDir()` only runs when `!existsSync(config.projectPath)` — no overwrite bug. Coach likely passed wrong input format. Documentation is adequate.
