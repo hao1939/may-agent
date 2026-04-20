@@ -189,9 +189,8 @@ function autoForkForAlert(
     });
 
     const alertTask = `[metric-alert][${metric.id}] ${task}\n\nMetric: ${metric.name}\nOwner: ${metric.owner}\nCurrent: ${metric.current}\nThreshold: ${metric.threshold ?? 'N/A'}\nTarget: ${metric.target}\n\nInvestigate why this metric breached, fix the root cause, and report what you did.`;
-    let sessionId: string | undefined;
     try {
-      sessionId = ctx.manager.run(
+      const sessionId = ctx.manager.run(
         metric.owner,
         alertTask,
         { source: "metric-alert" },
@@ -199,18 +198,23 @@ function autoForkForAlert(
       ctx.log(`[metrics-snapshot] Auto-forked ${metric.owner} for metric alert: ${metric.id} (session: ${sessionId})`);
     } catch (forkErr: unknown) {
       const forkMsg = forkErr instanceof Error ? forkErr.message : String(forkErr);
-      ctx.log(`[metrics-snapshot] manager.run() failed for ${metric.owner}/${metric.id}: ${forkMsg}, trying CLI fallback...`);
-      // Fallback: spawn via CLI
+      ctx.log(`[metrics-snapshot] manager.run() failed for ${metric.owner}/${metric.id}: ${forkMsg}`);
+      // Write a pending-alerts file for may's heartbeat to pick up and fork via agents tool
       try {
-        const escaped = alertTask.replace(/'/g, "'\\''");
-        execSync(`cd ${ctx.projectRoot} && node agents/scripts/run-agent.mjs ${metric.owner} '${escaped}' --source metric-alert &`, {
-          timeout: 5000,
-          stdio: 'ignore',
-        });
-        ctx.log(`[metrics-snapshot] CLI fallback fork started for ${metric.owner}/${metric.id}`);
-      } catch (cliErr: unknown) {
-        const cliMsg = cliErr instanceof Error ? cliErr.message : String(cliErr);
-        ctx.log(`[metrics-snapshot] CLI fallback also failed for ${metric.owner}/${metric.id}: ${cliMsg}`);
+        const alertsDir = `${ctx.projectRoot}/agents/may/workspace/pending-metric-alerts`;
+        const fs = require("node:fs");
+        fs.mkdirSync(alertsDir, { recursive: true });
+        const alertFile = `${alertsDir}/${metric.id.replace(/\./g, '_')}.json`;
+        fs.writeFileSync(alertFile, JSON.stringify({
+          metricId: metric.id,
+          owner: metric.owner,
+          task: alertTask,
+          createdAt: Date.now(),
+        }, null, 2));
+        ctx.log(`[metrics-snapshot] Wrote pending alert file for ${metric.id} → ${alertFile}`);
+      } catch (fileErr: unknown) {
+        const fileMsg = fileErr instanceof Error ? fileErr.message : String(fileErr);
+        ctx.log(`[metrics-snapshot] Failed to write alert file for ${metric.id}: ${fileMsg}`);
       }
     }
   } catch (e: unknown) {
