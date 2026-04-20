@@ -1,7 +1,10 @@
 # TODO
 
 ## Upcoming
-- [ ] Build health: package.json missing from /app root — confirmed still missing (Apr 20). Environment issue, not code bug.
+- [ ] Build health: package.json missing from /app root — confirmed still missing (Apr 20). Environment issue, not code bug. **P0 escalation (6d10d37c)**.
+- [ ] P1: Add pre-flight ANTHROPIC_API_KEY check to gym scripts (11732f46) — Bob burned 114 ops without key
+- [ ] P1: Layer 2 monitoring / degradation detection per CR#343 (653a307d)
+- [ ] P2: DD#759 heartbeat paper review (7eb31e94) — external validation of our architecture
 - [ ] Zombie sessions: 4 orphaned running/0-op sessions (coach×2, bob×1, optimizer×1) from pre-heartbeat. Need cleanup mechanism or auto-timeout.
 - [ ] Review CR#341 citation gap synthesis (1a710ad1) — 31 uncited scout findings
 - [x] "Stuck requests" metric threshold inversion (1542398d) — **RESOLVED**: metric now has alert_direction="above", threshold=20, and regression alerts fire/resolve correctly. Current=0 (healthy).

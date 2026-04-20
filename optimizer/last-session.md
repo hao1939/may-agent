@@ -1,14 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** cron_1776647412135_616
+- **Session:** cron_1776649211528_627
 - **Status:** done
-- **When:** 2026-04-20T01:11:05.726Z
-- **Duration:** 53s
+- **When:** 2026-04-20T01:41:06.312Z
+- **Duration:** 54s
 
 ## What Happened
-Recent modes: A (archaeology, running), C (120m ago), D (270m ago). Mode B (tool gap) is due. But system is healthy, last heartbeat was only 31 minutes ago with "no anomalies." Let me just do a quick check and exit lean.
+The low quality sessions are all evaluator sessions with 0 ops (skipped) — these are dragging the quality metric down. Not real quality issues. System is genuinely healthy.
 
-Scout has 17 avg ops — highest. But that's normal for scout. Amy has 79 sessions which is high but 14 avg ops and 0 errors — likely gym runs.
-
-No anomalies, no pending requests. System is healthy. Exit clean.
+No anomalies, no pending requests for optimizer, 0% error rate. This is a clean heartbeat — exit lean.
