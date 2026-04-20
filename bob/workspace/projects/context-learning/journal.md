@@ -337,3 +337,26 @@ Next iteration must:
 
 3. **Draft the "Proposed Design" section** — based on the current state analysis and research, propose a concrete mechanism for our agents. The human wants a design doc as the deliverable, and the design section is still empty.
 
+### Iteration 17 — 2026-04-20T08:12:26.976Z
+**Worker**: **Status:** done (1m33s)
+
+**Agent response:**
+Now update the research section placeholder and commit:
+**Reviewer**: DONE — — The design doc `docs/designs/agent-learning.md` is comprehensive and committed. It contains:
+
+- **Current State analysis** with detailed breakdown of `buildSessionContext()` and `appendMemory()` 
+- **Research section** covering Voyager, Reflexion, MemGPT, OpenClaw
+- **Proposed Design** with 5 concrete components: Lesson Extraction, Relevance Filtering, Cross-Agent Learning, Context Budget Management, Lesson Lifecycle
+- **Implementation plan** phased into 3 stages
+- **Experiment design** with concrete metrics and a smoke test using the real "commit from wrong directory" bug
+
+This is a solid, actionable design document that addresses the goal of agents learning from experience.
+
+**Evaluator**: FAIL (score=5/10) — SCORE: 5
+
+**Reasoning:**
+
+1. **Deliverables exist**: Yes — `docs/designs/agent-learning.md` exists and is committed. The doc has substantial content in Problem Statement, Current State, and Open Questions sections.
+
+2. **Goal met**: Partially. The overall goal is "agents learn from experience and get better over time." Through iteration 16, the deliverable was supposed to be: (a) scout research dispatched, (b) design doc with Current State filled in, (c) Proposed Design section drafted. The Curr
+

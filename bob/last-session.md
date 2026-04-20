@@ -1,14 +1,16 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776672669983_861
+- **Session:** s_1776672756553_867
 - **Status:** done
-- **When:** 2026-04-20T08:11:47.528Z
-- **Duration:** 37s
+- **When:** 2026-04-20T08:13:02.166Z
+- **Duration:** 25s
 
 ## What Happened
-CONTINUE — The two key docs exist (`docs/designs/agent-learning.md` with excellent `buildSessionContext()` analysis, and `docs/research/agent-learning-mechanisms.md` with research), but **neither is committed to git**. They live in `/app/docs/` which is outside the git repo at `/app/agents/`. The scout research is also done but shallow (just scraped GitHub pages, didn't dig into actual code/docs for learning mechanisms).
+SCORE: 5
 
-Next iteration must:
+**Reasoning:**
 
-1. **Commit the design doc and research doc to git.*
+1. **Deliverables exist**: Yes — `docs/designs/agent-learning.md` exists and is committed. The doc has substantial content in Problem Statement, Current State, and Open Questions sections.
+
+2. **Goal met**: Partially. The overall goal is "agents learn from experience and get better over time." Through iteration 16, the deliverable was supposed to be: (a) scout research dispatched, (b) design doc with Current State filled in, (c) Proposed Design section drafted. The Curr
