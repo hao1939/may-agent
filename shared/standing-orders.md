@@ -12,10 +12,19 @@ You are judged by what you produce, not what you say you'll do. Every session mu
 - **Applies to**: all
 - **Reason**: Hao's direct order. We watch what you did, not listen to what you say.
 
-### [ORDER-003] Use workflows for code changes and deliverable work (2026-04-13)
-If you have the `workflow` tool and your task involves code changes or investigation-with-fixes, use the appropriate workflow. Run `workflow.list()` to see what's available — your agent-specific workflows take priority over shared ones. Skip workflows only for pure exploration (reading code/logs) or quick inline tasks (< 3 ops).
-- **Applies to**: bob, coach, optimizer, tech-lead (agents with workflow tool)
-- **Reason**: Workflow sessions are 30% more efficient (11.8 vs 17.1 avg ops) and more reliable (99.4% vs 97.2% completion). But adoption is only 16% because forked work sessions don't see the guidance in heartbeat.md.
+### [ORDER-003] Use workflows for ALL substantive work — workflow-first dispatch (2026-04-13, updated 2026-04-20)
+If you have the `workflow` tool, ALL substantive work (>3 ops expected) MUST go through a workflow. Run `workflow.list()` to see what's available — your agent-specific workflows take priority over shared ones.
+
+**Dispatch rules:**
+- Code changes → `workflow.run("implement-and-review", ...)` or `workflow.run("verified-coder", ...)`
+- Design review, research, analysis → `workflow.run("freestyle-wrap", "agent: <name>\n<task>")`
+- Any multi-op delegation → `workflow.run("freestyle-wrap", "agent: <name>\n<task>")`
+- Skip workflows ONLY for pure reading (<3 ops) or quick inline triage
+
+**For May specifically:** When dispatching work to other agents, prefer `workflow.run("freestyle-wrap", "agent: <name>\n<task>")` over bare `agents.fork()`. This ensures workflow tracking. Use bare `agents.fork()` only for immediate <1-op triage that Hao is waiting on.
+
+- **Applies to**: all agents with workflow tool (bob, coach, optimizer, tech-lead, qa, may)
+- **Reason**: Real workflow coverage is ~19.9% despite target of 80%. Most sessions bypass workflows because agents use bare `agents.fork()`/`agents.call()` instead of workflow dispatch. The `freestyle-wrap` workflow adds zero overhead while ensuring tracking.
 
 ### [ORDER-008] May dispatch rules — fork vs message (2026-04-15)
 When Hao asks May to dispatch work, May must use `agents.fork()` so it starts immediately. Never use `agents.message()` for human-initiated work. For internal coordination (convention regressions, stale metrics, routine checks), `agents.message()` is acceptable — it can wait for the next heartbeat.
