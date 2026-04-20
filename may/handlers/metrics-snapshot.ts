@@ -187,12 +187,31 @@ function autoForkForAlert(
       source: "metric-alert",
     });
 
-    ctx.manager.run(
-      metric.owner,
-      `[metric-alert][${metric.id}] ${task}\n\nMetric: ${metric.name}\nOwner: ${metric.owner}\nCurrent: ${metric.current}\nThreshold: ${metric.threshold ?? 'N/A'}\nTarget: ${metric.target}\n\nInvestigate why this metric breached, fix the root cause, and report what you did.`,
-      { source: "metric-alert" },
-    );
-    ctx.log(`[metrics-snapshot] Auto-forked ${metric.owner} for metric alert: ${metric.id}`);
+    const alertTask = `[metric-alert][${metric.id}] ${task}\n\nMetric: ${metric.name}\nOwner: ${metric.owner}\nCurrent: ${metric.current}\nThreshold: ${metric.threshold ?? 'N/A'}\nTarget: ${metric.target}\n\nInvestigate why this metric breached, fix the root cause, and report what you did.`;
+    let sessionId: string | undefined;
+    try {
+      sessionId = ctx.manager.run(
+        metric.owner,
+        alertTask,
+        { source: "metric-alert" },
+      );
+      ctx.log(`[metrics-snapshot] Auto-forked ${metric.owner} for metric alert: ${metric.id} (session: ${sessionId})`);
+    } catch (forkErr: unknown) {
+      const forkMsg = forkErr instanceof Error ? forkErr.message : String(forkErr);
+      ctx.log(`[metrics-snapshot] manager.run() failed for ${metric.owner}/${metric.id}: ${forkMsg}, trying CLI fallback...`);
+      // Fallback: spawn via CLI
+      try {
+        const escaped = alertTask.replace(/'/g, "'\\''");
+        execSync(`cd ${ctx.projectRoot} && node agents/scripts/run-agent.mjs ${metric.owner} '${escaped}' --source metric-alert &`, {
+          timeout: 5000,
+          stdio: 'ignore',
+        });
+        ctx.log(`[metrics-snapshot] CLI fallback fork started for ${metric.owner}/${metric.id}`);
+      } catch (cliErr: unknown) {
+        const cliMsg = cliErr instanceof Error ? cliErr.message : String(cliErr);
+        ctx.log(`[metrics-snapshot] CLI fallback also failed for ${metric.owner}/${metric.id}: ${cliMsg}`);
+      }
+    }
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
     ctx.log(`[metrics-snapshot] Failed to auto-fork ${metric.owner} for ${metric.id}: ${msg}`);
