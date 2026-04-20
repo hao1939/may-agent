@@ -230,10 +230,7 @@ function extractComments(content: string): string {
 // Track false-done signals for metrics (reset per execute call)
 
 function clearComments(content: string): string {
-  // Comments is the last section — replace everything after the heading
-  const idx = content.indexOf("## Comments\n");
-  if (idx === -1) return content;
-  return content.slice(0, idx) + "## Comments\n";
+  return updateSection(content, "Comments", "");
 }
 
 // ── Get last reviewer guidance from journal ────────────────────────────
