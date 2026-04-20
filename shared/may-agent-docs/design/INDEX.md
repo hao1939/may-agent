@@ -64,6 +64,7 @@ Guards, review, escalation.
 | Document | What |
 |----------|------|
 | [open-problems.md](open-problems.md) | Unsolved system gaps: session continuity, metric reaction, quality injection, circuit breaker |
+| [closing-the-loop.md](closing-the-loop.md) | Gap fixes: owner registry, event fallback, metric decoupling, guard escalation |
 | [common-sense-followups.md](common-sense-followups.md) | Items from 2026-04-19 review that need addressing |
 
 ## Reference

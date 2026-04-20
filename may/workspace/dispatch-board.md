@@ -55,13 +55,12 @@ Updated: 2026-04-16 ~08:00 UTC
 - **P2**: Amy-kimi billing — blocked on Hao.
 - ⚠️ **HOLD**: Ch2-production-gates implementation — Hold for EXP-170.
 
-## Latest Cycle Summary (16:10 Apr 20)
-- **SYSTEM**: 8 agents active. May(235), Tech-lead(214), Bob(44), Optimizer(37), Coach(19), Scout(18), Evaluator(16), QA(12).
-- **Errors**: may(2), optimizer(1) in 6h. All others clean.
-- **Stuck**: Cancelled idle may session s_1776611617990_13 (25h idle). Evaluator eval running 56min (monitoring).
-- **Metrics**: Coverage 100% ✅. Alert-to-Reaction 458min ⚠️. Quality-preserved 0.854 ⚠️ (barely above 0.85).
-- **Dispatched**: Handler load failures (4 broken handlers + tsc) → tech-lead (s_1776701461335_0).
-- **Active**: Hao request triage running (s_1776699674122_0). Bob EXP-188 + triage. Coach EXP-188. Optimizer/Scout cycling.
+## Latest Cycle Summary (17:40 Apr 20)
+- **SYSTEM**: 8 agents active. Tech-lead(63), May(32), Evaluator(24), Bob(21), Optimizer(21), Scout(18), Coach(15), QA(12).
+- **Errors**: Zero across all agents in 6h. 2 bob zombie cleanups (interrupted, benign).
+- **Stuck**: s_1776611617990_13 still idle (26h) — needs cancel.
+- **Metrics**: Alert-to-Reaction 458min ⚠️. Quality-preserved 0.852 ⚠️. Session success 94.4% ✅. Coverage 97% ✅.
+- **Active**: Bob shipping EXP-188 finish-guard + context-learning. Coach EXP-188 trials. Tech-lead fixing broken handlers. Optimizer cycling modes.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.

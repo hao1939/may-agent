@@ -2,29 +2,16 @@
 
 ## Gaps Found
 
-### GAP 1: "Already in context" lie (CRITICAL)
-**File**: `src/lib/manager.ts` line 479
-**Issue**: Runtime environment tells agents: "Already in context (do NOT re-read): SOUL.md, common-sense.md, standing-orders.md, knowledge-essentials.md, skills/*.md"
-**Reality**: Only SOUL.md and common-sense.md are actually injected. Standing-orders, knowledge-essentials, and skills are NOT in the prompt.
-**Impact**: Agents think they have context they don't. They won't re-read these files because they're told not to. This means standing orders, knowledge essentials, and skills are effectively invisible.
-**Fix**: Change to: "Already in context (do NOT re-read): SOUL.md, common-sense.md" — Remove the false claims. Or: actually inject them (but that contradicts our on-demand design).
-**Recommendation**: Fix the code to be honest. On-demand is correct per our philosophy. The line should say only what's truly injected.
+### GAP 1: "Already in context" lie (FIXED 2026-04-21)
+**File**: `src/lib/manager.ts` line 474
+**Status**: ✅ FIXED — now correctly says "Already in context (do NOT re-read): SOUL.md, common-sense.md"
 
-### GAP 2: Session context is dead code (NOT A CONFLICT)
-**File**: `src/lib/manager.ts` buildSessionContext()
-**Issue**: `buildSessionContext()` computes session history, cross-agent digests, checkpoints, session diffs, active recall — then the result is NEVER USED. `promptText = task` ignores it completely. Same for `fewShotBlock`.
-**Design says**: "User message = task only" — this is CORRECT and matches the code.
-**Reality**: Session context and few-shot injection are dead code. Computed but discarded.
-**Impact**: Open problem #1 (session continuity) is completely unsolved. Agents truly start fresh every session with zero memory. No digests, no history, no cross-agent context.
-**Recommendation**: Either (a) delete the dead code to reduce confusion, or (b) find a way to make it available on-demand (a tool agents can call to get their recent history). The dead code represents valuable functionality that was disabled when we moved to "task only" — we should decide its fate.
+### GAP 2: Session context is dead code (FIXED 2026-04-21)
+**Status**: ✅ FIXED — `buildSessionContext()` removed. Only comment references remain. Session continuity tracked by context-learning project.
 
-### GAP 3: Metric alerts don't auto-fork (INCOMPLETE)
+### GAP 3: Metric alerts — functional but coupled (NEEDS REFACTORING)
 **File**: `agents/may/handlers/metrics-snapshot.ts`
-**Issue**: On metric regression, the handler calls `ctx.notify()` which sends a message. It does NOT fork the agent with a task.
-**Design says**: metric-reactivity project proposes auto-fork on breach.
-**Reality**: Only notification, no task dispatch.
-**Impact**: Agents get FYI notifications but no actionable task. They may ignore notifications.
-**Recommendation**: Implement auto-fork in metrics-snapshot handler: on threshold breach, fork the metric owner with a task describing the breach and asking for investigation. This is the metric-reactivity project's next milestone.
+**Status**: `autoForkForAlert()` works — agents get forked on breach. But measurement and response are coupled in one handler. Per P1 (everything is an event), metrics-snapshot should emit `metric.breach` events and a separate `metric-alert` handler should subscribe and route the response. See [closing-the-loop.md](closing-the-loop.md) G9.
 
 ### GAP 4: Preferred workflows slot not implemented (MISSING)
 **File**: context-injection-design.md describes "Preferred Workflows" as a replaceable slot in system prompt

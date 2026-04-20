@@ -12,15 +12,13 @@ Unsolved problems identified during doc review (2026-04-20). Each is either trac
 
 **Tracked by**: context-learning project (bob) — this is part of "agents learn from experience"
 
-## 2. Metric Reaction
+## 2. Metric Reaction (PARTIALLY SOLVED)
 
-**Problem**: Metrics alert but no agent reacts. The plumbing works (alerts fire, DB records exist) but there's no mechanism to push alerts to agents as actionable tasks.
+**Problem**: Metrics alert but no agent reacts.
 
-**Prior work**: `metrics-heartbeat-integration.md` (archived) designed heartbeat-based polling. Wrong mechanism — heartbeats are for autonomy, not alert processing.
+**Status**: `autoForkForAlert()` in metrics-snapshot.ts now forks metric owners on breach with dedup. **Functional but coupled** — measurement and response are in the same handler, violating P1 (everything is an event). See [closing-the-loop.md](closing-the-loop.md) G9 for the decoupling design.
 
-**What's needed**: Event-driven metric reaction. Metric crosses threshold → auto-fork the responsible agent with a task: "Your metric X breached. Investigate and fix." The agent gets a task, not a hint.
-
-**Tracked by**: metric-reactivity project (may)
+**Remaining work**: Emit `metric.breach` event, create separate `metric-alert` handler to subscribe and route response.
 
 ## 3. Quality Injection (Few-shot / Context)
 
@@ -55,10 +53,10 @@ Unsolved problems identified during doc review (2026-04-20). Each is either trac
 
 **Tracked by**: Not tracked. Medium priority — check if the existing watchdog handler already covers this.
 
-## 6. No Event Trigger for Workflows
+## 6. No Event Trigger for Workflows (PARTIALLY SOLVED)
 
-**Problem**: No way to immediately trigger a workflow from outside the system. Currently: add comment → wait up to 5 minutes for cron → handler fires → workflow runs. This is poll-based, not event-based. Contradicts our "event-driven" principle.
+**Problem**: No way to immediately trigger a workflow from outside the system.
 
-**What's needed**: `may-agent --run-workflow persistent-task "project: X\nagent: Y"` CLI command that directly executes a workflow without LLM wrapper or cron delay. The socket protocol could also support this: `{"type":"run-workflow","name":"persistent-task","input":"..."}`.
+**Status**: Socket `{"type":"emit"}` works and cron entries support `"on"` fields for event-driven triggering. `project-resume` already uses this pattern. CLI `--emit` flag not yet implemented (see [closing-the-loop.md](closing-the-loop.md) G6).
 
-**Tracked by**: Not tracked. src/ change needed.
+**Remaining work**: CLI emit flag (~10 LOC).
