@@ -153,75 +153,34 @@ function recordAlertWithDedup(
 }
 
 /**
- * Auto-fork the owning agent when a metric breaches its threshold.
- * Event-driven: alert firing IS the trigger.
- *
- * Dedup: checks the requests DB for any active/pending request with
- * source=metric-alert for this metric before forking.
+ * Emit a metric.breach event on the bus.
+ * Decoupled: metrics-snapshot measures and emits. Handlers subscribe and react.
+ * Events are persisted by DbWriter — owner sees them in heartbeat even without a handler.
  */
-function autoForkForAlert(
+function emitMetricBreach(
   ctx: HandlerContext,
   metric: MetricRow,
   alertMessage: string,
 ): void {
   try {
-    const task = `⚠️ ${alertMessage}. Investigate the root cause and take corrective action.`;
-
-    // Dedup: check if there's already an unprocessed request for this metric alert
-    // Only consider requests created in the last 24h — older ones are stale
-    const db = ctx.getDb();
-    const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
-    const existingRequest = db.prepare(
-      `SELECT requestId FROM requests
-       WHERE toAgent = ? AND fromEntity = 'metrics-snapshot' AND status = 'CREATED'
-       AND task LIKE ? AND createdAt > ?`
-    ).get(metric.owner, `%${metric.id}%`, oneDayAgo) as { requestId: string } | null;
-
-    if (existingRequest) {
-      ctx.log(`[metrics-snapshot] Skipping fork for ${metric.id} — active request ${existingRequest.requestId} exists`);
-      return;
-    }
-
-    ctx.trackRequest({
-      fromEntity: "metrics-snapshot",
-      toAgent: metric.owner,
-      method: "fork",
-      task: `[metric-alert][${metric.id}] ${task}`,
-      source: "metric-alert",
+    ctx.emit({
+      type: "emit",
+      event: "metric.breach",
+      data: {
+        owner: metric.owner,
+        source: "metrics-snapshot",
+        metricId: metric.id,
+        metricName: metric.name,
+        current: metric.current,
+        threshold: metric.threshold,
+        target: metric.target,
+        message: alertMessage,
+      },
     });
-
-    const alertTask = `[metric-alert][${metric.id}] ${task}\n\nMetric: ${metric.name}\nOwner: ${metric.owner}\nCurrent: ${metric.current}\nThreshold: ${metric.threshold ?? 'N/A'}\nTarget: ${metric.target}\n\nInvestigate why this metric breached, fix the root cause, and report what you did.`;
-    try {
-      const sessionId = ctx.manager.run(
-        metric.owner,
-        alertTask,
-        { source: "metric-alert" },
-      );
-      ctx.log(`[metrics-snapshot] Auto-forked ${metric.owner} for metric alert: ${metric.id} (session: ${sessionId})`);
-    } catch (forkErr: unknown) {
-      const forkMsg = forkErr instanceof Error ? forkErr.message : String(forkErr);
-      ctx.log(`[metrics-snapshot] manager.run() failed for ${metric.owner}/${metric.id}: ${forkMsg}`);
-      // Write a pending-alerts file for may's heartbeat to pick up and fork via agents tool
-      try {
-        const alertsDir = `${ctx.projectRoot}/agents/may/workspace/pending-metric-alerts`;
-        const fs = require("node:fs");
-        fs.mkdirSync(alertsDir, { recursive: true });
-        const alertFile = `${alertsDir}/${metric.id.replace(/\./g, '_')}.json`;
-        fs.writeFileSync(alertFile, JSON.stringify({
-          metricId: metric.id,
-          owner: metric.owner,
-          task: alertTask,
-          createdAt: Date.now(),
-        }, null, 2));
-        ctx.log(`[metrics-snapshot] Wrote pending alert file for ${metric.id} → ${alertFile}`);
-      } catch (fileErr: unknown) {
-        const fileMsg = fileErr instanceof Error ? fileErr.message : String(fileErr);
-        ctx.log(`[metrics-snapshot] Failed to write alert file for ${metric.id}: ${fileMsg}`);
-      }
-    }
+    ctx.log(`[metrics-snapshot] Emitted metric.breach for ${metric.id} (owner: ${metric.owner})`);
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
-    ctx.log(`[metrics-snapshot] Failed to auto-fork ${metric.owner} for ${metric.id}: ${msg}`);
+    ctx.log(`[metrics-snapshot] Failed to emit metric.breach for ${metric.id}: ${msg}`);
   }
 }
 
@@ -258,7 +217,7 @@ function checkRegression(
         now,
       );
       if (isNew) {
-        autoForkForAlert(ctx, metric, message);
+        emitMetricBreach(ctx, metric, message);
       }
     }
   }
@@ -278,7 +237,7 @@ function checkThresholdAlert(db: SqliteDb, ctx: HandlerContext, metric: MetricRo
     const message = `${metric.id} ${direction} threshold: ${value} ${alertAbove ? '>' : '<'} ${metric.threshold}`;
     const isNew = recordAlertWithDedup(db, metric.id, "yellow", message, value, metric.threshold, now);
     if (isNew) {
-      autoForkForAlert(ctx, metric, message);
+      emitMetricBreach(ctx, metric, message);
     }
     return true;
   }
@@ -413,7 +372,7 @@ function notifyOwnerOnRegression(
     const alertMessage = `Metric '${metric.name}' regressed: ${oldValue} → ${newValue} (${explanation})`;
 
     // Use unified auto-fork with dedup
-    autoForkForAlert(ctx, metric, alertMessage);
+    emitMetricBreach(ctx, metric, alertMessage);
   } catch {
     // Best-effort — don't break snapshot recording
   }
@@ -490,7 +449,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
           measure_interval: null,
           updated_at: now,
         };
-        autoForkForAlert(ctx, metricRow, alert.message);
+        emitMetricBreach(ctx, metricRow, alert.message);
         backfillForked++;
       }
     } catch (e: unknown) {
@@ -615,7 +574,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
           now,
         );
         if (isNew) {
-          autoForkForAlert(ctx, m, stalledMessage);
+          emitMetricBreach(ctx, m, stalledMessage);
         }
         alertsFired++;
       }

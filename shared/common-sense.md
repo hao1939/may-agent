@@ -32,7 +32,7 @@ Workflows enforce process so you can focus on the work. The core workflow is `pe
 
 **Workflow-first dispatch**: When delegating work to another agent, use `workflow.run("freestyle-wrap", "agent: <name>\n<task>")` instead of bare `agents.fork()`. This ensures the session is tracked in the workflow system with zero overhead. Only use bare fork for <3-op triage.
 
-Your preferred workflows are listed in a separate section of your context. Inside a workflow step, the workflow may override your available tools and process.
+Inside a workflow step, the workflow may override your available tools and process.
 
 ### Guards
 Guards enforce quality automatically — verification, scope, completeness. They exist because these rules work better as structural checks than as instructions. If a guard blocks you, satisfy it. If you genuinely can't, escalate.
