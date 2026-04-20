@@ -37,3 +37,5 @@ Complete. 5/5 milestones. — All 5 milestones are complete. The deliverable at 
 
 - **Iter 7**: — All 5 milestones are complete. The deliverable at `agents/may/workspace/guard-friction-analysis.md
 
+- **Iter 8**: Now I have a clear picture. The previous analysis hallucinated `verification-depth-guard.ts`. Let me
+

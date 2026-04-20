@@ -36,3 +36,5 @@ All 5 milestones are complete. No further iterations needed.
 
 2. **Goal met**: Partially with a twist. The analysis correctly identifies that earlier iterations hallucinated a `verification-depth-guard.ts` file. The final deliverable is honest about this correction and analyzes the actual `finish-guard.ts`. It identifies friction points and provides recommendations. The goal is met, though the conclusion is "frictio
 
+**Reviewer**: CONTINUE — The files show as modified in one `git diff` call but not in another — this is a race condition with another process writing to these files concurrently. This literally demonstrates the FM-3.3 friction the analysis describes.
+
