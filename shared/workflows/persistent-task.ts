@@ -426,9 +426,12 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   let lastMilestoneDone = extractMilestones(projectContent).done;
   let falseDoneCount = 0;
 
-  // Mark active (field-level update)
-  projectContent = updateField(projectContent, "Status", "active");
-  writeFileSync(config.projectPath, projectContent, "utf-8");
+  // Mark active only if not already done/blocked with pending comments
+  // (those need comment iteration to decide the new status)
+  if (state.status !== "done" && state.status !== "blocked") {
+    projectContent = updateField(projectContent, "Status", "active");
+    writeFileSync(config.projectPath, projectContent, "utf-8");
+  }
 
   while (iteration <= config.maxIterations) {
     // Re-read project file (owner may have changed status/comments)
