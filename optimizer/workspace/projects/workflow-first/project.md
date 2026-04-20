@@ -1,10 +1,11 @@
 # Project: Workflow-First Culture
 
-**Status**: done
+**Status**: blocked
 **Owner**: optimizer
 **Priority**: P0
 **Iteration**: 19
 
+**Health**: 2/10 (BLOCKED)
 ## Goal
 Make workflows the default way agents work. Increase workflow coverage from 31% to 80%.
 
@@ -220,3 +221,7 @@ Command exited with c
 
 
 ## Comments
+
+
+## Current State
+Blocked: **Reason:** The task's goal (80% workflow coverage) has not been achieved. Real session-level coverage is 19.9% (1165/5869), far below the 80% target.
