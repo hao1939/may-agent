@@ -5,6 +5,7 @@
 **Priority**: P1
 **Iteration**: 12
 
+**Health**: 4/10 (FAIL)
 ## Goal
 Each agent plays their role and takes responsibility autonomously. The system is self-driven because every agent knows what they own, what to watch, and when to act — without being told.
 
