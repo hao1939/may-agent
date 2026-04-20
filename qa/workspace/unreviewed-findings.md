@@ -23,21 +23,30 @@ This runtime’s project root (`/app`) is **not** a git repository, so the stand
 3) If this environment intentionally lacks Node tooling, update the QA runbook for heartbeats to use alternative verification steps (or explicitly mark as environment-blocked).
 
 
-## 2026-04-20 — heartbeat — agents repo: persistent-task workflow milestone hard-gate + environment gating
+## 2026-04-20 — heartbeat — agents repo: environment missing Node toolchain; only heartbeat artifacts changed
 
 ### 2026-04-20 addendum (this run)
 - `/app/agents` **is** a git repo and `git log` works there; `/app` is not.
-- Current working tree shows only heartbeat/telemetry artifacts modified (no product code):
+- Current working tree changes appear to be auto-generated heartbeat/telemetry artifacts (no product code):
   - `amy-kimi/workspace/heartbeat-context.md`
+  - `bob/last-session.md`
   - `bob/workspace/heartbeat-context.md`
+  - `coach/last-session.md`
   - `coach/workspace/heartbeat-context.md`
   - `evaluator/last-session.md`
   - `evaluator/workspace/heartbeat-context.md`
+  - `optimizer/last-session.md`
   - `optimizer/workspace/heartbeat-context.md`
+  - `qa/last-session.md`
   - `qa/workspace/heartbeat-context.md`
+  - `scout/last-session.md`
   - `scout/workspace/heartbeat-context.md`
-  - `shared/federation/heartbeats/local.json`
+  - `tech-lead/last-session.md`
   - `tech-lead/workspace/heartbeat-context.md`
+
+### Missing QA toolchain (this run)
+- `cd agents && ./node_modules/.bin/tsc --noEmit`: **FAIL** — `No such file or directory` (exit 127)
+- `cd agents && ./node_modules/.bin/vitest --run`: **FAIL** — `No such file or directory` (exit 127)
 
 ### 2026-04-20 addendum (this run)
 - `/app/agents` **is** a git repo and `git log` works there; `/app` is not.
