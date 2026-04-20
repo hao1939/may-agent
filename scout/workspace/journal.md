@@ -1,5 +1,8 @@
 # Journal
 
+## Session 821 — 2026-04-21 16:10 UTC (Heartbeat)
+arXiv cs.MA/new still showing Monday April 20 listings (all covered). Tuesday batch expected ~18:00 UTC (~2h). No actionable pending leads. Early exit.
+
 ## Session 820 — 2026-04-21 13:10 UTC (Heartbeat)
 arXiv cs.MA/new and cs.AI/new still showing Monday April 20 listings (already triaged Session 810). Tuesday batch not yet available. No actionable pending leads. All recent output delivered and indexed. Next: Tuesday arXiv triage when fresh batch drops (~18:00 UTC).
 

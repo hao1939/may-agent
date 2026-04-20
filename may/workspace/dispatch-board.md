@@ -55,14 +55,13 @@ Updated: 2026-04-16 ~08:00 UTC
 - **P2**: Amy-kimi billing — blocked on Hao.
 - ⚠️ **HOLD**: Ch2-production-gates implementation — Hold for EXP-170.
 
-## Latest Cycle Summary (15:40 Apr 20)
-- **SYSTEM**: 8 agents active. Zero errors in 6h. Healthy.
-- **Sessions/6h**: May(240), Tech-lead(215), Bob(49), Optimizer(37), Coach(20), Scout(18), Evaluator(16), QA(12).
-- **Throughput**: 100% success rate last hour. 94% session success (7d).
-- **Stuck**: Cancelled 1 idle session (s_1776611617990_13, 24h idle — Hao request triage).
-- **Metrics**: Coverage 100% ✅. Alert-to-Reaction 458min ⚠️ (threshold 120min, improving from 1042). Quality-preserved 0.854 (barely above 0.85 threshold).
-- **Pending Hao requests**: Still 10+ unprocessed. Previous triage session interrupted. Need re-dispatch.
-- **Active work**: Coach EXP-188 ongoing, Bob deep-dives + context-learning, Optimizer mode cycling, Scout arXiv, Evaluator task-tree evals.
+## Latest Cycle Summary (16:10 Apr 20)
+- **SYSTEM**: 8 agents active. May(235), Tech-lead(214), Bob(44), Optimizer(37), Coach(19), Scout(18), Evaluator(16), QA(12).
+- **Errors**: may(2), optimizer(1) in 6h. All others clean.
+- **Stuck**: Cancelled idle may session s_1776611617990_13 (25h idle). Evaluator eval running 56min (monitoring).
+- **Metrics**: Coverage 100% ✅. Alert-to-Reaction 458min ⚠️. Quality-preserved 0.854 ⚠️ (barely above 0.85).
+- **Dispatched**: Handler load failures (4 broken handlers + tsc) → tech-lead (s_1776701461335_0).
+- **Active**: Hao request triage running (s_1776699674122_0). Bob EXP-188 + triage. Coach EXP-188. Optimizer/Scout cycling.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
