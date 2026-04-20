@@ -13,11 +13,18 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-20T15:10)
+# Your Context (auto-generated 2026-04-20T15:40)
 
-**System:** 10 sessions/6h, 0% error rate
+**System:** 11 sessions/6h, 0% error rate
 
 **Top spenders:**
 - bob: 7s, 154KB
-- evaluator: 2s, 65KB
+- evaluator: 3s, 92KB
 - may: 1s, 53KB
+
+**📊 Your Metrics:**
+- Codebase weight: **33142** lines → 32000 lines
+- Delegation quality: **0.78** ratio → 0.85 ratio
+- Meaningful changes: **8081** commits/week → 10 commits/week
+  → Quick check: cd agents && git log --since="7 days ago" --oneline 2>/dev/null | wc -l | tr -d " "
+- Build health: **1** bool → 1 bool

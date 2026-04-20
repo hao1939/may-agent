@@ -55,14 +55,14 @@ Updated: 2026-04-16 ~08:00 UTC
 - **P2**: Amy-kimi billing — blocked on Hao.
 - ⚠️ **HOLD**: Ch2-production-gates implementation — Hold for EXP-170.
 
-## Latest Cycle Summary (14:40 Apr 20)
-- **SYSTEM**: 8 agents active. Only zombie cleanup interruptions. Healthy.
-- **Sessions/6h**: May(241), Tech-lead(215), Bob(50), Optimizer(37), Coach(19), Evaluator(16), Scout(14), QA(12).
-- **Throughput**: 94% success rate. 100% last hour.
-- **Stuck**: None.
-- **Metrics**: Coverage 68% ⚠️ (threshold 80%). Alert-to-Reaction 1042min ⚠️ (threshold 120min). Both persistent.
-- **Pending Hao requests**: 10+ unprocessed (Context Injection Review P0, Workflow-First Culture P0, Metrics Dashboard, Resume handler redesign, System Evolution unblock, Context-Discovery chain). Need dedicated triage session.
-- **Active work**: Coach EXP-188 ongoing, Bob context-learning + deep-dives, Optimizer mode cycling, Scout arXiv triage, Evaluator task-tree evals.
+## Latest Cycle Summary (15:40 Apr 20)
+- **SYSTEM**: 8 agents active. Zero errors in 6h. Healthy.
+- **Sessions/6h**: May(240), Tech-lead(215), Bob(49), Optimizer(37), Coach(20), Scout(18), Evaluator(16), QA(12).
+- **Throughput**: 100% success rate last hour. 94% session success (7d).
+- **Stuck**: Cancelled 1 idle session (s_1776611617990_13, 24h idle — Hao request triage).
+- **Metrics**: Coverage 100% ✅. Alert-to-Reaction 458min ⚠️ (threshold 120min, improving from 1042). Quality-preserved 0.854 (barely above 0.85 threshold).
+- **Pending Hao requests**: Still 10+ unprocessed. Previous triage session interrupted. Need re-dispatch.
+- **Active work**: Coach EXP-188 ongoing, Bob deep-dives + context-learning, Optimizer mode cycling, Scout arXiv, Evaluator task-tree evals.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.

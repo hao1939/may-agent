@@ -1,12 +1,15 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** cron_1776694204168_502
+- **Session:** s_1776698818621_18
 - **Status:** done
-- **When:** 2026-04-20T14:11:09.803Z
-- **Duration:** 1m5s
+- **When:** 2026-04-20T15:32:08.516Z
+- **Duration:** 5m9s
 
 ## What Happened
-System is healthy: 0 errors, 8 agents active, stuck session cancelled. Metrics flags: Coverage 69% (⚠️ below 80%) and Alert-to-Reaction 1042min (⚠️ below 120min threshold) persist from last cycle.
+The latest alerts (id 71, 72) show ~0 min reaction time — the system is working. Alerts 69 and 70 from ~3-4 hours ago took 180-240 min because there was a gap in heartbeat execution (heartbeat failures shown in system status).
 
-Let me update the board with fresh snapshot data.
+The root causes are:
+1. **SQL cross-join bug**: Original query didn't GROUP BY alert, creating inflated averages (FIXED)
+2. **Heartbeat failures**: Multiple heartbeat jobs failing → agents not running → alerts not triggering auto-forks promptly
+3. **Historical data contam
