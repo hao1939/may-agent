@@ -1,8 +1,9 @@
-# Your Context (auto-generated 2026-04-20T14:40)
+# Your Context (auto-generated 2026-04-20T15:10)
 
-**System:** 9 sessions/6h, 0% error rate
-**You:** 3 sessions, 106KB total (35KB avg)
+**System:** 10 sessions/6h, 0% error rate
+**You:** 2 sessions, 65KB total (33KB avg)
 
 **Top spenders:**
-- bob: 6s, 116KB
-- evaluator: 3s, 106KB ← you
+- bob: 7s, 154KB
+- evaluator: 2s, 65KB ← you
+- may: 1s, 53KB
