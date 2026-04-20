@@ -144,6 +144,9 @@ export function enforceFinishDeliverables(
 /** Keywords that suggest fabricated evidence when not from real tool output. */
 const GHOST_KEYWORDS = /\b(SYNTAX OK|TSC OK|ALL TESTS PASS(ED)?|BUILD SUCCEEDED|0 errors?|✓ all|LGTM|no issues found)\b/i;
 
+/** Pattern indicating a grounded evidence reference (e.g., "Step 12: bash showed..." ). */
+const STEP_REFERENCE = /\bStep\s+\d+\b/i;
+
 /** Result of verification_evidence validation. */
 export interface EvidenceValidationResult {
   valid: boolean;
@@ -212,7 +215,18 @@ export function validateVerificationEvidence(
     }
   }
 
-  // Warnings are advisory, not blocking (to avoid false positives on legitimate summaries)
+  // Rule 4: At least one evidence entry must reference a concrete step number
+  const hasGroundedRef = verification_evidence.some(
+    (entry) => typeof entry === "string" && STEP_REFERENCE.test(entry),
+  );
+  if (!hasGroundedRef) {
+    warnings.push(
+      "FM-3.3 Ungrounded evidence: None of the verification_evidence entries " +
+      "reference a specific tool step (e.g., 'Step 12: bun test exit code 0'). " +
+      "Cite the step number where you observed the verification result.",
+    );
+  }
+
   return { valid: true, warnings };
 }
 
