@@ -23,21 +23,22 @@ This runtime’s project root (`/app`) is **not** a git repository, so the stand
 3) If this environment intentionally lacks Node tooling, update the QA runbook for heartbeats to use alternative verification steps (or explicitly mark as environment-blocked).
 
 
-## 2026-04-20 — heartbeat — agents repo: project-resume handler + environment gating
+## 2026-04-20 — heartbeat — agents repo: persistent-task workflow milestone hard-gate + environment gating
 
 ### Summary
-Reviewed recent commits in `/app/agents` (the only git repo available in this runtime). The latest changes touch `agents/may/handlers/project-resume.ts` (project resume scan behavior). Mandatory QA gates (`./node_modules/.bin/tsc`, `./node_modules/.bin/vitest`) cannot run because `agents/node_modules/.bin` is missing (only `.vite/` exists).
-
-### What I verified
-- `agents/` is a git repository; `/app` is not.
-- `agents/node_modules/` exists but contains only `.vite/`; there is no `node_modules/.bin/tsc` or `node_modules/.bin/vitest`.
+Reviewed recent commits in `/app/agents` (the only git repo available in this runtime). The latest commit `b6ff4e714` modifies `shared/workflows/persistent-task.ts` to prevent marking a project DONE when the evaluator passes but milestones remain unchecked.
 
 ### Mandatory gates (independent)
 - `./node_modules/.bin/tsc --noEmit`: **FAIL** — missing binary (exit 127)
 - `./node_modules/.bin/vitest --run`: **FAIL** — missing binary (exit 127)
 
 ### Files reviewed
-- `agents/may/handlers/project-resume.ts` (full file read)
+- `shared/workflows/persistent-task.ts` (partial reads across key sections)
+
+### Findings
+- IMPORTANT: Milestone auto-check matching may be flaky.
+  - Evidence: `checkOffMilestones(projectContent, decision.detail)` (not the full reviewer response) means milestones mentioned outside `decision.detail` may not get checked off, increasing risk of false-done loops even with the new hard gate.
+- MINOR: `const prevContent = projectContent;` appears unused in the CONTINUE path.
 
 ### Findings
 **IMPORTANT — silent failure risk in project scanning**
