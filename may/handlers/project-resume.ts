@@ -52,6 +52,17 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
             const mtime = statSync(projectFile).mtimeMs;
             if (mtime <= lastCheck) continue;
             const content = readFileSync(projectFile, "utf-8");
+
+            // Only resume projects that need work:
+            // - active: always resume
+            // - blocked/done with pending comments: process comments
+            // - anything else: skip
+            const statusMatch = content.match(/^\*\*Status\*\*:\s*(\S+)/m);
+            const status = statusMatch ? statusMatch[1].toLowerCase() : "";
+            const commentsIdx = content.indexOf("## Comments\n");
+            const hasComments = commentsIdx !== -1 && content.slice(commentsIdx + 12).trim().length > 0
+              && content.slice(commentsIdx + 12).search(/\n## /) !== 0;
+            if (status !== "active" && !hasComments) continue;
             const m = OWNER_RE.exec(content);
             const owner = m ? m[1] : dir.name;
             projects.push({ owner, relPath });
