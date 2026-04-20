@@ -118,11 +118,24 @@ function updateField(content: string, field: string, value: string): string {
   return content;
 }
 
+/** Extract text under a ## heading, up to the next ## heading or end of file. */
+function extractSection(content: string, heading: string): string {
+  const marker = `## ${heading}\n`;
+  const idx = content.indexOf(marker);
+  if (idx === -1) return "";
+  const after = content.slice(idx + marker.length);
+  const nextSection = after.indexOf("\n## ");
+  return (nextSection === -1 ? after : after.slice(0, nextSection)).trim();
+}
+
 function updateSection(content: string, heading: string, newContent: string): string {
-  const regex = new RegExp(`^## ${heading}\\n[\\s\\S]*?(?=\\n## |$)`, "m");
-  if (regex.test(content)) return content.replace(regex, `## ${heading}\n${newContent}`);
-  // Section doesn't exist — append it
-  return content + `\n\n## ${heading}\n${newContent}`;
+  const marker = `## ${heading}\n`;
+  const idx = content.indexOf(marker);
+  if (idx === -1) return content + `\n\n## ${heading}\n${newContent}`;
+  const after = content.slice(idx + marker.length);
+  const nextSection = after.indexOf("\n## ");
+  const end = nextSection === -1 ? content.length : idx + marker.length + nextSection;
+  return content.slice(0, idx + marker.length) + newContent + content.slice(end);
 }
 
 function appendToSection(content: string, heading: string, line: string): string {
