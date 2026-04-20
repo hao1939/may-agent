@@ -2936,3 +2936,18 @@ src/app/ui/web
 - ⚠️ 422 actionable unevaluated sessions — evaluation may be falling behind
 - ⚠️ 254 auto-skippable sessions — writeSkippedEvaluations may need to run
 
+## 2026-04-20T06:40 — Auto (JS cron handler)
+
+- Sessions (24h): 1284
+- Unevaluated: 801 total, 508 actionable, 293 auto-skippable
+- Running sessions: bob (s_1776665472084_0), optimizer (s_1776665471469_0), may (s_1776611617990_13)
+- tsc: FAIL: 
+[41m                                                                               [0m
+[41m[37m                This is not the tsc command you are looking for                [0m
+[41m           
+- Lessons: 52 lines total (scout 31, optimizer 21)
+- Bob analysis: fresh (11h ago)
+- ⚠️ tsc --noEmit failed
+- ⚠️ 508 actionable unevaluated sessions — evaluation may be falling behind
+- ⚠️ 293 auto-skippable sessions — writeSkippedEvaluations may need to run
+

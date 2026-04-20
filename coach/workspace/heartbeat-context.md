@@ -13,19 +13,19 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-20T06:10)
+# Your Context (auto-generated 2026-04-20T06:40)
 
-**System:** 18 sessions/6h, 0% error rate
-**You:** 8 sessions, 148KB total (19KB avg)
+**System:** 17 sessions/6h, 0% error rate
+**You:** 6 sessions, 107KB total (18KB avg)
 
 **Top spenders:**
-- optimizer: 3s, 186KB
-- coach: 8s, 148KB ← you
+- optimizer: 3s, 168KB
 - scout: 1s, 125KB
-- bob: 6s, 66KB
+- coach: 6s, 107KB ← you
+- bob: 7s, 90KB
 
 **Your active error patterns:**
-- FM-3.3: 7x
+- FM-3.3: 11x
 
 **📊 Your Metrics:**
 - Breadcrumb action rate: **0** ratio → 0.8 ratio
