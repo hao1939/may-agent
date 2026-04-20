@@ -272,17 +272,54 @@ Current `buildSessionContext()` already assembles: metadata + task history (20 e
 
 **Control:** The "always commit from /app/agents" lesson is perfect because it's a real recurring bug in this very project (see iteration 15-16 failures). If the system learns this, it's directly observable.
 
+## Integration Points
+
+Learning happens at five specific points in the system. Each has a distinct role:
+
+### 1. Session End — `finish()` / `appendMemory()`
+
+**What happens:** Agent reports `lessons[]` and `context_updates[]` in its `finish()` call. The system extracts these and writes to `agents/<name>/lessons.jsonl`. For failures, auto-extract blocker reasons as `fix` lessons. For successes after prior failures on the same task, extract the resolution as a lesson.
+
+**Why this timing:** This is where the agent has maximum self-awareness about what it learned. The structured `finish()` schema already captures this — we just need to persist and surface it. This is the **primary extraction point**.
+
+**Change required:** `appendMemory()` must extract `finish().lessons` (currently ignored) and write to the lesson store. Also: when status=`failure`, auto-generate a `fix` lesson from `blockers[]`.
+
+### 2. Session Start — `buildSessionContext()`
+
+**What happens:** Read `agents/<name>/lessons.jsonl` + `agents/shared/lessons.jsonl`. Score each lesson against the current task description using the relevance algorithm (keyword overlap + recency + confidence + category). Inject top-k (max 10, max 2KB) as a `## Lessons from Experience` section in the prompt.
+
+**Why this timing:** This is the only point where we control what the agent sees. Lessons must be present at session start to influence behavior. Late injection (mid-session) would require tool calls and agent initiative, which is unreliable (MemGPT's lesson).
+
+**Change required:** Add lesson retrieval and formatting to `buildSessionContext()`, between active recall and task history.
+
+### 3. Heartbeat (Periodic Reflection)
+
+**What happens:** During heartbeat, the system can review recent sessions and consolidate lessons. If multiple sessions reported similar lessons, merge them and increment `validated_count`. If a lesson led to repeated failures, flag it as potentially wrong.
+
+**Why this timing:** Heartbeats are low-urgency maintenance windows. Consolidation doesn't need to happen in real-time — it's fine to batch it. This is where **cross-agent lesson propagation** happens: copy validated `pattern`/`insight` lessons to the shared pool.
+
+**Change required:** Add a `consolidateLessons()` step to the heartbeat loop. Not critical for Phase 1.
+
+### 4. Workflow Step Boundaries
+
+**What happens:** When a workflow transitions between steps (e.g., worker → reviewer), the outgoing agent's lessons from that session can be immediately available to the incoming agent. This enables tight feedback loops: reviewer learns "worker tends to skip tests" and can check for it.
+
+**Why this timing:** Workflow steps are where agents hand off to each other. Real-time lesson passing here is more valuable than waiting for the heartbeat consolidation cycle. This is the **cross-agent fast path**.
+
+**Change required:** Workflow orchestrator passes outgoing `finish().lessons` as additional context to the next step. Phase 2.
+
+### 5. Lesson Pruning (Background)
+
+**What happens:** Periodically (daily or at heartbeat), scan all lesson stores. Halve confidence on lessons not retrieved or validated in 30 days. Archive lessons below 0.1 confidence. Flag contradictory lessons for human review.
+
+**Why this timing:** Pruning prevents lesson stores from growing unboundedly. Stale lessons (from deprecated code patterns, old bugs) actively harm performance if they persist. Background timing is fine — staleness is measured in days, not minutes.
+
+**Change required:** Add `pruneLessons()` to heartbeat. Phase 2.
+
 ## Open Questions
 
-1. **Access to dead code**: Need to directly read `buildSessionContext()` to do a proper analysis. Can we get access to the infra repo, or should Hao provide the relevant code?
+1. **Evaluation methodology**: How do we prove a learning mechanism works? The smoke test (teach "always cd /app/agents before git") is concrete but narrow. Need a systematic approach to measuring learning effectiveness across diverse task types.
 
-2. **Evaluation methodology**: How do we prove a learning mechanism works? The gym was planned for this but the prettier scenario is broken. Need an alternative evaluation approach.
+2. **Human-in-the-loop**: Should humans curate/approve learned lessons, or should the system be fully autonomous? Current design flags contradictions for human review but is otherwise autonomous. Is that sufficient?
 
-3. **Scope of "experience"**: Are we focused on:
-   - Within-task learning (session N informs session N+1 of same task)?
-   - Cross-task learning (lessons from task A help with task B)?
-   - Cross-agent learning (worker learns from reviewer's feedback)?
-
-4. **Context budget**: How much of the context window should be allocated to experience/lessons vs. the actual task?
-
-5. **Human-in-the-loop**: Should humans curate/approve learned lessons, or should the system be fully autonomous?
+3. **Lesson quality control**: What happens when an agent learns the wrong lesson from a failure (e.g., "don't use git" instead of "cd to the right directory before git")? The confidence/validation mechanism helps but may not catch subtle mislearning.
