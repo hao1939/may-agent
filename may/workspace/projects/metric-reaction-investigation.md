@@ -6,9 +6,8 @@
 **Master project:** system-evolution
 **Next:** none (project closed)
 
-**Status**: blocked
-**Iteration**: 1
-**Health**: 8/10 (BLOCKED)
+**Status**: active
+**Iteration**: 2
 ## Goal
 Understand why agents see metrics in their heartbeat context but don't act on them. Propose fixes based on evidence.
 
@@ -278,14 +277,13 @@ Confirmed renderer now emits the red marker in live heartbeats post-backfill:
 
 
 
+### Iteration 2 — 2026-04-20T11:11:03.674Z
+**Worker**: M5b is fully implemented and verified. The system now:
+1. Has `alert_direction` column on metrics (polarity/direction)
+2. Broadens the predicate to continuous metrics (not just health) 
+3. Shows ⚠️ warnings for continuous metrics that breach thresholds or are off-target
+4. Works in production — live heartbeat-context files show warnings for coach, optimizer, qa, tech-lead
+
+
 ## Current State
-Blocked: M5b is gated on 48h observation of M5a. All actionable milestones are complete. No work can proceed until the observation period elapses.
-
-**Evaluator**: BLOCKED eval (score=8/10) — SCORE: 8
-
-**Reasoning:**
-
-1. **Deliverables exist**: Yes. Extensive artifacts: M1 sampling data (25 sessions), M2 classification table, M3 findings report, M4 intervention proposals, M5a threshold backfill (commit `0e22b256`, script `scripts/backfill-metric-thresholds.ts`), verification evidence showing the ⚠️ marker now renders in live heartbeats.
-
-2. **Goal met**: Yes. The goal was "Understand why agents see metrics but don't act on them. Propose fixes based on evidence." The investigation con
-
+Iteration 2. Milestones: 5/6 done. Next: M5b: Phase 2 — add `direction` column + broaden predicate to continuous metrics 
