@@ -13,15 +13,15 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-20T12:40)
+# Your Context (auto-generated 2026-04-20T13:10)
 
 **System:** 10 sessions/6h, 0% error rate
-**You:** 5 sessions, 69KB total (14KB avg)
+**You:** 6 sessions, 77KB total (13KB avg)
 
 **Top spenders:**
+- bob: 6s, 77KB ← you
 - evaluator: 2s, 74KB
-- bob: 5s, 69KB ← you
-- coach: 3s, 59KB
+- coach: 2s, 42KB
 
 **Your active error patterns:**
 - FM-1.3: 1x
