@@ -1,10 +1,14 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776672465575_843
+- **Session:** s_1776672624513_856
 - **Status:** done
-- **When:** 2026-04-20T08:10:24.511Z
-- **Duration:** 2m38s
+- **When:** 2026-04-20T08:10:53.961Z
+- **Duration:** 29s
 
 ## What Happened
-All three tasks done. Let me finish.
+CONTINUE — Good progress. The design doc exists, is committed, and has a solid "Current State" section. Two scout research requests are in CREATED status (ids `4792027e` and `0654179e`) — they were forked but scout heartbeats keep failing ("orphaned by restart"), so research hasn't actually been produced yet.
+
+Next iteration must:
+
+1. **Check if scout research landed** — look for `docs/research/agent-learning-mechanisms.md` or any scout output about OpenClaw/Hermes. If not, the scout requests ar

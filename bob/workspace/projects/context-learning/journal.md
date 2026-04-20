@@ -289,3 +289,18 @@ Command exited with code 128
 
 **Agent response:**
 All three tasks done. Let me finish.
+**Reviewer**: CONTINUE — — Good progress. The design doc exists, is committed, and has a solid "Current State" section. Two scout research requests are in CREATED status (ids `4792027e` and `0654179e`) — they were forked but scout heartbeats keep failing ("orphaned by restart"), so research hasn't actually been produced yet.
+
+Next iteration must:
+
+1. **Check if scout research landed** — look for `docs/research/agent-learning-mechanisms.md` or any scout output about OpenClaw/Hermes. If not, the scout requests are stuck (all recent scout heartbeats are failing). Note this as a blocker for the research section.
+
+2. **Fill in the Proposed Design section** of `docs/designs/agent-learning.md` — don't wait for scout. Based on the Current State analysis (which is excellent), draft a concrete proposal covering:
+   - How `finish()` lessons should be distilled and surfaced (the doc already identifies that lessons aren't extracted from `appendMemory`)
+   - A relevance filtering mechanism for memory entries
+   - Cross-agent learning approach
+   - Context budget management
+   - A simple experiment to prove it works
+
+3. **Commit the updated doc** — use `cd /app/agents && git add docs/designs/agent-learning.md && git commit -m "..."`. The worker keeps trying to commit from wrong directories.
+
