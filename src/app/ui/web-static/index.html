@@ -285,11 +285,13 @@
   <h1>may-agent</h1>
   <div class="tabs">
     <div class="tab active" data-tab="dashboard">Dashboard</div>
+    <div class="tab" data-tab="projects">Projects</div>
     <div class="tab" data-tab="chat">Chat</div>
     <div class="tab" data-tab="knowledge">Knowledge</div>
     <div class="tab" data-tab="benchmarks">Benchmarks</div>
     <div class="tab" data-tab="requests">Requests</div>
     <div class="tab" data-tab="metrics">Metrics</div>
+    <div class="tab" data-tab="events">Events</div>
   </div>
 </div>
 
@@ -407,6 +409,19 @@
     <div id="metrics-by-owner"></div>
     <div id="metrics-recent" style="margin-top:20px"></div>
   </div>
+
+  <div id="projects" class="hidden">
+    <div id="projects-content"></div>
+  </div>
+
+  <div id="events" class="hidden">
+    <div style="margin-bottom:12px;display:flex;gap:8px;align-items:center">
+      <select id="events-owner" onchange="loadEvents()"><option value="">All owners</option></select>
+      <select id="events-type" onchange="loadEvents()"><option value="">All types</option></select>
+      <span id="events-count" style="font-size:12px;color:var(--fg2)"></span>
+    </div>
+    <div id="events-content"></div>
+  </div>
 </div>
 
 <script>
@@ -433,16 +448,20 @@ document.querySelectorAll('.tab').forEach(tab => {
     currentTab = tab.dataset.tab;
     location.hash = currentTab;
     document.getElementById('dashboard').classList.toggle('hidden', currentTab !== 'dashboard');
+    document.getElementById('projects').classList.toggle('hidden', currentTab !== 'projects');
     document.getElementById('chat').classList.toggle('hidden', currentTab !== 'chat');
     document.getElementById('benchmarks').classList.toggle('hidden', currentTab !== 'benchmarks');
     document.getElementById('knowledge').classList.toggle('hidden', currentTab !== 'knowledge');
     document.getElementById('requests').classList.toggle('hidden', currentTab !== 'requests');
     document.getElementById('metrics').classList.toggle('hidden', currentTab !== 'metrics');
+    document.getElementById('events').classList.toggle('hidden', currentTab !== 'events');
     if (currentTab === 'chat') initChat();
     if (currentTab === 'benchmarks') loadBenchmarks();
     if (currentTab === 'knowledge') loadKnowledge();
     if (currentTab === 'requests') loadRequestsTab();
     if (currentTab === 'metrics') loadMetricsTab();
+    if (currentTab === 'projects') loadProjects();
+    if (currentTab === 'events') loadEvents();
   });
 });
 
@@ -2245,6 +2264,127 @@ function timeAgo(ts) {
   if (diff < 3600000) return Math.floor(diff/60000) + 'm ago';
   if (diff < 86400000) return Math.floor(diff/3600000) + 'h ago';
   return Math.floor(diff/86400000) + 'd ago';
+}
+
+// ── Projects ──────────────────────────────────────────────────────────
+
+async function loadProjects() {
+  try {
+    const res = await fetch('/api/projects');
+    const projects = await res.json();
+    const el = document.getElementById('projects-content');
+
+    // Sort: active first, then by updatedAt desc
+    const statusOrder = {active:0, blocked:1, paused:2, done:3, complete:4};
+    projects.sort((a,b) => (statusOrder[a.status]??9) - (statusOrder[b.status]??9) || b.updatedAt - a.updatedAt);
+
+    let html = `<table style="width:100%;border-collapse:collapse;font-size:13px">`;
+    html += `<tr style="border-bottom:2px solid var(--border);text-align:left">`;
+    html += `<th style="padding:8px">Project</th><th>Owner</th><th>Status</th><th>Health</th><th>Milestones</th><th>Iter</th><th>Updated</th>`;
+    html += `</tr>`;
+
+    for (const p of projects) {
+      const healthColor = !p.health ? 'var(--fg2)' :
+        p.health.includes('PASS') || p.health.includes('COMPLETE') ? 'var(--green)' :
+        p.health.includes('FAIL') ? 'var(--red)' : 'var(--yellow)';
+      const statusColor = p.status === 'active' ? 'var(--green)' :
+        p.status === 'blocked' ? 'var(--red)' :
+        p.status === 'paused' ? 'var(--yellow)' : 'var(--fg2)';
+      const msBar = p.milestonesTotal > 0
+        ? `<div style="display:flex;align-items:center;gap:4px"><div style="width:60px;height:6px;background:var(--bg3);border-radius:3px"><div style="width:${Math.round(p.milestonesDone/p.milestonesTotal*100)}%;height:100%;background:var(--green);border-radius:3px"></div></div><span>${p.milestonesDone}/${p.milestonesTotal}</span></div>`
+        : '<span style="color:var(--fg2)">—</span>';
+
+      html += `<tr style="border-bottom:1px solid var(--border);cursor:pointer" onclick="showProjectDetail('${esc(p.path)}')">` +
+        `<td style="padding:8px;font-weight:500">${esc(p.name)}</td>` +
+        `<td>${esc(p.owner)}</td>` +
+        `<td><span style="color:${statusColor}">${esc(p.status)}</span></td>` +
+        `<td><span style="color:${healthColor}">${p.health || '—'}</span></td>` +
+        `<td>${msBar}</td>` +
+        `<td>${p.iteration}</td>` +
+        `<td style="color:var(--fg2);font-size:12px">${timeAgo(p.updatedAt)}</td>` +
+        `</tr>`;
+    }
+    html += `</table>`;
+    el.innerHTML = html;
+  } catch(e) {
+    document.getElementById('projects-content').innerHTML = `<div style="color:var(--red)">Failed to load projects: ${e.message}</div>`;
+  }
+}
+
+async function showProjectDetail(path) {
+  try {
+    const res = await fetch(`/api/browse?path=${encodeURIComponent(path + (path.endsWith('.md') ? '' : '/project.md'))}`);
+    const data = await res.json();
+    const el = document.getElementById('projects-content');
+    let html = `<button onclick="loadProjects()" style="margin-bottom:12px;padding:4px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;color:var(--fg);cursor:pointer">← Back</button>`;
+    html += `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px;white-space:pre-wrap;font-family:monospace;font-size:13px;max-height:70vh;overflow-y:auto">`;
+    html += esc(data.content || 'No content');
+    html += `</div>`;
+    el.innerHTML = html;
+  } catch(e) {
+    document.getElementById('projects-content').innerHTML = `<div style="color:var(--red)">Failed: ${e.message}</div>`;
+  }
+}
+
+// ── Events ───────────────────────────────────────────────────────────
+
+async function loadEvents() {
+  try {
+    const owner = document.getElementById('events-owner')?.value || '';
+    const type = document.getElementById('events-type')?.value || '';
+    let url = '/api/events?limit=200';
+    if (owner) url += `&owner=${encodeURIComponent(owner)}`;
+    if (type) url += `&type=${encodeURIComponent(type)}`;
+    const res = await fetch(url);
+    const events = await res.json();
+    const el = document.getElementById('events-content');
+    const countEl = document.getElementById('events-count');
+
+    // Populate filter dropdowns from data
+    const owners = new Set(events.map(e => e.owner).filter(Boolean));
+    const types = new Set(events.map(e => e.event_type).filter(Boolean));
+    const ownerSel = document.getElementById('events-owner');
+    const typeSel = document.getElementById('events-type');
+    if (ownerSel && ownerSel.options.length <= 1) {
+      for (const o of [...owners].sort()) {
+        const opt = document.createElement('option'); opt.value = o; opt.textContent = o;
+        ownerSel.appendChild(opt);
+      }
+    }
+    if (typeSel && typeSel.options.length <= 1) {
+      for (const t of [...types].sort()) {
+        const opt = document.createElement('option'); opt.value = t; opt.textContent = t;
+        typeSel.appendChild(opt);
+      }
+    }
+
+    countEl.textContent = `${events.length} events`;
+
+    if (events.length === 0) {
+      el.innerHTML = '<div style="padding:16px;color:var(--fg2)">No events recorded yet. Events will appear here once the event persistence (G1) is deployed.</div>';
+      return;
+    }
+
+    let html = `<table style="width:100%;border-collapse:collapse;font-size:13px">`;
+    html += `<tr style="border-bottom:2px solid var(--border);text-align:left">`;
+    html += `<th style="padding:6px">Time</th><th>Type</th><th>Owner</th><th>Source</th><th>Data</th>`;
+    html += `</tr>`;
+    for (const e of events) {
+      const data = e.data ? JSON.parse(e.data) : {};
+      const summary = Object.entries(data).filter(([k]) => k !== 'owner' && k !== 'source').map(([k,v]) => `${k}=${typeof v === 'string' ? v.slice(0,30) : v}`).join(', ');
+      html += `<tr style="border-bottom:1px solid var(--border)">` +
+        `<td style="padding:6px;color:var(--fg2);font-size:12px;white-space:nowrap">${timeAgo(e.timestamp)}</td>` +
+        `<td style="font-family:monospace">${esc(e.event_type || '')}</td>` +
+        `<td>${esc(e.owner || '—')}</td>` +
+        `<td style="color:var(--fg2)">${esc(e.source || '—')}</td>` +
+        `<td style="color:var(--fg2);font-size:12px;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(summary)}</td>` +
+        `</tr>`;
+    }
+    html += `</table>`;
+    el.innerHTML = html;
+  } catch(e) {
+    document.getElementById('events-content').innerHTML = `<div style="color:var(--red)">Failed to load events: ${e.message}</div>`;
+  }
 }
 </script>
 </body>

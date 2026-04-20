@@ -37,7 +37,29 @@ interface EvaluateTaskOpts {
   skipAgents?: Set<string>;
 }
 
-export interface HandlerContext {
+/**
+ * RuntimeCtx — the shared infrastructure surface available to handlers, workflows, and agent tools.
+ *
+ * See: agents/shared/may-agent-docs/design/runtime-ctx.md
+ */
+export interface RuntimeCtx {
+  /** Emit an event on the bus. All events go through one bus. */
+  emit(event: { type: string; [key: string]: unknown }): void;
+  /** Open the shared SQLite database. */
+  getDb(): SqliteDb;
+  /** Log a diagnostic message. */
+  log(msg: string): void;
+  /** Send a human-visible notification (Telegram, web). */
+  notify(msg: string): void;
+  /** Persistent state directory. */
+  persistDir: string;
+  /** Project root directory. */
+  projectRoot: string;
+  /** Agents root directory. */
+  agentsRoot: string;
+}
+
+export interface HandlerContext extends RuntimeCtx {
   /** SubagentManager — for run(), followUp(), etc. */
   manager: SubagentManager;
 

@@ -240,6 +240,9 @@ async function buildTools(config: AgentConfig, opts: AgentLoaderOptions): Promis
             sharedWorkflowDir,
             persistDir,
             agentName: config.name,
+            bus,
+            projectRoot,
+            agentsRoot: opts.agentsRoot,
             callerSessionId: () => {
               const sid = agentSessionIds.get(config.name);
               if (!sid) throw new Error(`No active ${config.name} session`);
