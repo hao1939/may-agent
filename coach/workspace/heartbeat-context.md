@@ -13,24 +13,24 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-20T10:40)
+# Your Context (auto-generated 2026-04-20T11:10)
 
-**System:** 14 sessions/6h, 0% error rate
-**You:** 5 sessions, 188KB total (38KB avg)
+**System:** 49 sessions/6h, 0% error rate
+**You:** 4 sessions, 90KB total (23KB avg)
 
 **Top spenders:**
-- coach: 5s, 188KB ← you
-- bob: 6s, 93KB
-- optimizer: 2s, 49KB
+- may: 21s, 443KB
+- tech-lead: 13s, 138KB
+- coach: 4s, 90KB ← you
+- bob: 7s, 69KB
 - evaluator: 1s, 41KB
 
 **Your active error patterns:**
 - FM-3.3: 11x
 
 **📊 Your Metrics:**
-- Breadcrumb action rate: **0** ratio → 0.8 ratio
+- Breadcrumb action rate: **0** ratio → 0.8 ratio ⚠️ NEEDS ATTENTION
   → Quick check: agents/coach/scripts/measure-breadcrumb-action-rate.sh
 - Intervention hit rate: **47.3** ratio → 0.6 ratio
-- Knowledge to action latency: **unmeasured** hours → 48 hours
 - Skill effectiveness: **29.2** ratio → 0.6 ratio
 - Instruction compliance rate: **53** ratio → 0.8 ratio
