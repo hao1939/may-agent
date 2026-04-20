@@ -495,3 +495,18 @@ Now I have everything. Let me create `/app/docs/project.md`:
 
 3. **Evidence**
 
+### Iteration 14 — 2026-04-20T06:06:52.786Z
+**Worker**: **Status:** done (1m20s)
+
+**Errors encountered:**
+- [bash] On branch main
+Your branch is ahead of 'k3s/main' by 20 commits.
+  (use "git push" to publish your local commits)
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   bob/last
+
+**Agent response:**
+Coach files are already committed. The uncommitted changes are in other agents' last-session.md files (not mine).
