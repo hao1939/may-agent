@@ -1,5 +1,40 @@
 # Unreviewed findings (QA)
 
+## 2026-04-20 — heartbeat — agents repo: project-resume handler + environment gating
+
+### Summary
+Reviewed recent commits in `/app/agents` (the only git repo available in this runtime). The latest changes touch `agents/may/handlers/project-resume.ts` (project resume scan behavior). Mandatory QA gates (`./node_modules/.bin/tsc`, `./node_modules/.bin/vitest`) cannot run because `agents/node_modules/.bin` is missing (only `.vite/` exists).
+
+### What I verified
+- `agents/` is a git repository; `/app` is not.
+- `agents/node_modules/` exists but contains only `.vite/`; there is no `node_modules/.bin/tsc` or `node_modules/.bin/vitest`.
+
+### Mandatory gates (independent)
+- `./node_modules/.bin/tsc --noEmit`: **FAIL** — missing binary (exit 127)
+- `./node_modules/.bin/vitest --run`: **FAIL** — missing binary (exit 127)
+
+### Files reviewed
+- `agents/may/handlers/project-resume.ts` (full file read)
+
+### Findings
+**IMPORTANT — silent failure risk in project scanning**
+- `agents/may/handlers/project-resume.ts`: multiple `catch { /* skip */ }` and `catch { return; }` blocks swallow errors without logging.
+  - Example: if `readdirSync(agentsRoot, ...)` fails, handler returns silently; project-resume effectively stops working with no signal.
+  - Example: per-project `statSync/readFileSync` failures are ignored, hiding partial failures.
+
+**IMPORTANT — regex likely misses quoted owners**
+- `OWNER_RE = /^\*\*Owner\*\*:\s*(\S+)/mi` captures only a single non-whitespace token.
+  - If project template uses quoted owners or multi-part names, owner parsing will truncate.
+
+**MINOR — relPath mismatch for directory projects**
+- For directory projects, `relPath` is the directory (`.../projects/<name>`). For file projects, `relPath` includes filename (`.../projects/<name>.md`).
+  - If downstream expects a consistent `project:` format, this may create duplicate/busy detection misses.
+
+### Next steps
+1) Decide whether the environment should ship with a node toolchain for QA gates, or update QA process for this repo.
+2) Consider logging at least one line when the top-level scan fails so failures are visible.
+
+
 ## 2026-04-20 — heartbeat — environment/tooling mismatch blocks mandatory QA gates
 
 ### Notes (this run)
