@@ -1,8 +1,8 @@
 # ⚠️ URGENT — Active Nudge
 
-# Active Nudge — 2026-04-19T09:39
+# Active Nudge — 2026-04-20T19:19
 
-**Session:** s_1776591266858_66
+**Session:** s_1776712640208_11
 **Type:** productivity
 **Confidence:** 0.7
 
@@ -13,18 +13,20 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-20T19:10)
+# Your Context (auto-generated 2026-04-20T19:40)
 
-**System:** 12 sessions/6h, 0% error rate
+**System:** 13 sessions/6h, 0% error rate
+**You:** 1 sessions, 98KB total (98KB avg)
 
 **Top spenders:**
 - bob: 7s, 265KB
+- coach: 1s, 98KB ← you
 - may: 2s, 65KB
 - evaluator: 2s, 59KB
 - tech-lead: 1s, 45KB
 
 **📊 Your Metrics:**
-- Breadcrumb action rate: **0.3211** ratio → 0.8 ratio ⚠️ NEEDS ATTENTION
+- Breadcrumb action rate: **0.3218** ratio → 0.8 ratio ⚠️ NEEDS ATTENTION
   → Quick check: agents/coach/scripts/measure-breadcrumb-action-rate.sh
 - Intervention hit rate: **47.3** ratio → 0.6 ratio
 - Skill effectiveness: **29.2** ratio → 0.6 ratio

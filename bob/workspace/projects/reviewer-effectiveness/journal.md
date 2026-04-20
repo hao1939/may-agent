@@ -140,3 +140,13 @@ The "0/4 milestones" warning is a tracking artifact — the milestones were neve
 
 **Critical evidence the evaluator previously missed**: `buildReviewPrompt` in `agents/shared/workflows/persistent-task.ts` (lines 322-406) **IS modified** and deployed. It now includes: problem-solver framing ("You are the PROBLEM-SOLVER"), PIVOT option, previous-guidance deduplication with "do NOT repeat these", structured guidance format requiring (a/b/c) parts, milestone check-off instructions with auto-check system documentation, stall warning system, and evaluator gate documentation. These are NOT the original defaults — they directly implement the design from `.state/reviewer-prompt-design.md`.
 
+**Evaluator**: PASS (score=7/10) — SCORE: 7
+
+**Reasoning:**
+
+1. **Deliverables exist**: ✅ All 4 `.state/` files exist with substantial content (742 lines total).
+
+2. **Goal met**: ✅ The code IS changed. The previous evaluators (iterations 5-6) were wrong when they said `buildReviewPrompt` was untouched. Lines 332, 365, 376, 378, 382, 384, 387, 438 show problem-solver framing, PIVOT option, dedup guidance, structured (a/b/c) format, and stricter BLOCKED criteria — all directly addressing the goal.
+
+3. **Evidence**: ✅ `persistent-t
+
