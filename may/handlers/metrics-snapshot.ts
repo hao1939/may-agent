@@ -422,9 +422,9 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         // Also check completed requests from last 24h to avoid re-forking too soon
         const recentCompleted = db.prepare(
           `SELECT requestId FROM requests
-           WHERE to_agent = ? AND source = 'metric-alert'
+           WHERE toAgent = ? AND fromEntity = 'metrics-snapshot'
            AND task LIKE ? AND completedAt > ?`
-        ).get(alert.owner, `%${alert.metric_id}%`, now - 24 * 60 * 60 * 1000) as { requestId: number } | null;
+        ).get(alert.owner, `%${alert.metric_id}%`, now - 24 * 60 * 60 * 1000) as { requestId: string } | null;
 
         if (recentCompleted) continue; // Recently handled
 
