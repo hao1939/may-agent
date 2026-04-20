@@ -3,7 +3,7 @@
 **Status**: active
 **Owner**: bob
 **Priority**: P0
-**Iteration**: 5
+**Iteration**: 6
 **Health**: 6/10 (FAIL)
 
 ## Goal
@@ -40,7 +40,7 @@ Evidence from our projects:
 - [ ] Measure: reviewer effectiveness metric — % of iterations where reviewer guidance leads to progress vs stall
 
 ## Current State
-Iteration 5. Milestones: 0/4 done. Next: Investigate: analyze 10+ reviewer decisions from recent projects — categorize fa
+Iteration 6. Milestones: 0/4 done. Next: Investigate: analyze 10+ reviewer decisions from recent projects — categorize fa
 ## Iteration Summary
 - **Iter 2**: Now I have comprehensive data. Let me write the analysis.
 
