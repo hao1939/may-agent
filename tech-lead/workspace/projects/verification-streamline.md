@@ -9,6 +9,7 @@
 **Tracked metrics:** `coder.first-pass-rate`, `optimizer.quality-preserved`
 
 **Status**: active
+**Iteration**: 4
 ## Why
 Guards currently treat all file operations equally. Creating a new file and editing critical infrastructure both require the same verification overhead. Agents spend 15-20% of ops on redundant re-reads within the same session.
 
@@ -100,3 +101,11 @@ The guard sees `git log` as a git-on-agents command, not verification. Let me us
 **Files touched**: (see worker session)
 **Owner assessment**: DONE — — The analysis doc from iteration 2 remains the deliverable. Iteration 3 produced nothing new (just re-read the same files). The goal's analytical phase is complete — `agents/may/workspace/guard-friction-analysis.md` has the three recommendations (R1: deduplicate guards, R2: orchestration exemption, R3: better errors). Implementation should be dispatched to tech-lead as a separate task.
 
+
+### Iteration 4 — 2026-04-20T10:59:09.289Z
+**Worker**: Ironic — the very guard I analyzed is blocking me. Let me verify.
+
+
+
+## Current State
+Iteration 4. Milestones: 5/5 done.
