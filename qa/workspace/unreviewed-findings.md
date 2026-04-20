@@ -1,6 +1,12 @@
 # Unreviewed findings (QA)
 
-## 2026-04-19 — heartbeat — environment/tooling mismatch blocks mandatory QA gates
+## 2026-04-20 — heartbeat — environment/tooling mismatch blocks mandatory QA gates
+
+### Additional observations (this heartbeat)
+- Repo is **not a git repository** in this runtime (`git log/status/diff` fail with “not a git repository”).
+- Mandatory commands `./node_modules/.bin/tsc --noEmit` and `./node_modules/.bin/vitest --run` cannot run because `node_modules/.bin` is missing; `node_modules/` only contains `.vite/`.
+- No `package.json` or `tsconfig.json` found at root (or within a shallow search), so this environment doesn’t look like a standard Node/TS package.
+- Spot-check: `src/pipeline.js` docstring says normalization must precede penalty application, but the implementation applies penalties before normalization.
 
 ### What I observed
 - Project root `/app` is **not** a git repository; only `/app/agents` has git metadata (`find .. -maxdepth 3 -name .git` shows `../app/agents/.git`).

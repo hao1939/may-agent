@@ -1,12 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776647745929_7
+- **Session:** cron_1776647412145_617
 - **Status:** done
-- **When:** 2026-04-20T01:16:00.755Z
-- **Duration:** 14s
+- **When:** 2026-04-20T01:16:22.703Z
+- **Duration:** 6m10s
 
 ## What Happened
-
-
-Looking at the prior steps, nothing meaningful changed this heartbeat - no git repo, no active requests, no work dispatched.
+The heartbeat workflow ran but didn't dispatch research work — the generic heartbeat steps didn't trigger actual arXiv triage. Let me dispatch that directly.

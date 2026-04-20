@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776645963773_1
+- **Session:** s_1776647764335_9
 - **Status:** done
-- **When:** 2026-04-20T00:46:14.927Z
-- **Duration:** 11s
+- **When:** 2026-04-20T01:16:11.988Z
+- **Duration:** 7s
 
 ## What Happened
 ```json
@@ -12,9 +12,11 @@
   "agents": {
     "scout": {
       "role": "Researcher",
-      "capability_level": "L3",
-      "efficiency": 0.55,
-      "quality": 0.9,
-      "verdict": "acceptable",
+      "capability_level": "L2",
+      "efficiency": 0.85,
+      "quality": 0.8,
+      "verdict": "good",
       "issues": [
-        "Failure-chain waste: multiple path/filename guesses for covered_ids and INDEX grep patterns before locating correct files (12 wasted calls across 2 chains). Evidence: Chain 1 repeated tail/ls/find attempts before discovering covered_ids lives at agents/shared/knowledge/library/covered_ids.txt; 
+        "Initial finish() attempt failed due to uncommitted changes (scout/last-session.md), requiring an extra commit cycle.",
+        "Second finish() attempt failed due to another uncommitted file (scout/ERROR_LOG.jsonl), requiring a second commit cycle.",
+        "Minor mismatch between stated reason earl
