@@ -35,7 +35,7 @@ Event fires on bus
       c) triage and dismiss
 ```
 
-The event log is the **single source of truth**. Consumed vs unconsumed is just a column (`handled_by`). No separate fallback logic. No special persistence path for unhandled events. The architecture itself guarantees the closed loop.
+The event log is the **single source of truth**. All events persisted. No separate fallback logic. No special persistence path for unhandled events. The architecture itself guarantees the closed loop.
 
 Benefits:
 - **Complete audit trail** — "what happened and when" is always queryable
@@ -97,13 +97,14 @@ Owners query their events in heartbeat: `SELECT * FROM events WHERE owner = ? OR
 
 No consumption tracking. No `handled_by` column. If an owner needs to know whether an event was acted on, they check whether a follow-up exists (session started, request created) — that's already in the DB.
 
-### G2: No `owner` Field on Cron Entries (violates P2)
+### G2: Handler Failures Are Silent (violates P2)
 
-**Current:** Cron entries have `agent` but not `owner`. Handler failures are logged but nobody is accountable.
+**Current:** Cron handler failures are logged but nobody is notified.
 
 **Fix:**
-- Add `"owner"` to cron.json entries (convention: `"may"` for system handlers, agent name for agent-specific)
-- On handler failure: notify owner via bus
+- On handler failure: notify the owner via bus
+- Owner convention: `entry.agent` if present, otherwise `"may"` (system handlers)
+- No new `owner` field needed — the `agent` field already serves this purpose per P9 (convention over configuration)
 - ~10 LOC in cron.ts
 
 ### G3: Guard Block Messages Don't Mention Escalation (violates P3)
@@ -116,20 +117,19 @@ Agents already know the escalation chain from common-sense.md. They don't need a
 
 ### G4: Ownership Convention Incomplete (violates P2)
 
-**Current:** Metrics, projects, and agent definitions already have explicit owners. Cron entries don't. Events sometimes carry `data.owner`, sometimes don't.
+**Current:** Metrics, projects, and agent definitions already have explicit owners. Events sometimes carry `data.owner`, sometimes don't.
 
-**Fix:** Convention, not code:
-- Add `"owner"` field to cron.json entries
-- Events must carry `data.owner` (emitter's responsibility)
-- No registry. No lookup utility. Owner is always stated explicitly where it's needed.
+**Fix:** Convention, not code. Ownership is always derivable — no registry, no lookup, no new fields:
 
-| Thing | Where owner lives |
-|-------|------------------|
-| Metric | `metrics.owner` column |
-| Project | `**Owner**` field in project.md |
-| Cron entry | `owner` field in cron.json |
-| Event | `data.owner` in payload |
-| Agent | implicit (may is supervisor) |
+| Thing | Owner convention |
+|-------|-----------------|
+| Metric | `metrics.owner` column (explicit) |
+| Project | `**Owner**` field in project.md (explicit) |
+| Cron entry | `entry.agent` if present, else `"may"` (implicit) |
+| Event | `data.owner` in payload (emitter's responsibility) |
+| Agent | may is supervisor (implicit) |
+
+The only action item: ensure events carry `data.owner` when emitted. Everything else already works.
 
 ### G5: Metric Alert Response Coupled to Measurement (violates P1, P2)
 
@@ -170,9 +170,9 @@ Self-evaluation bias risk. Monitor false-done rates before adding independent ev
 ## Implementation Sequence
 
 ### Phase 1: Foundation
-- **G4** — Add `owner` field to cron.json entries, ensure events carry `data.owner`
-- **G2** — On handler failure, notify owner via bus
-- Convention only — no new code files
+- **G4** — Ensure events carry `data.owner` when emitted
+- **G2** — On handler failure, notify `entry.agent` (or may) via bus
+- Convention + ~10 LOC
 
 ### Phase 2: Event Persistence (the big win)
 - **G1** — Events table + DB writer subscriber — all events persisted, unconsumed events visible to owners
