@@ -3,7 +3,7 @@
 **Status**: blocked
 **Owner**: coach
 **Priority**: P1
-**Iteration**: 9
+**Iteration**: 10
 
 ## Goal
 Each agent plays their role and takes responsibility autonomously. The system is self-driven because every agent knows what they own, what to watch, and when to act — without being told.
@@ -19,9 +19,9 @@ Agents are passive. They wait for tasks instead of proactively finding and drivi
 - The system runs itself: problems get noticed and fixed by the responsible agent
 
 ## Milestones
-- [ ] Audit: review each agent's current heartbeat.md, SOUL.md, and actual heartbeat behavior (what do they actually do vs what they should do?)
-- [ ] Design: define clear role, responsibilities, and owned metrics for each agent. What should each agent proactively watch? What should trigger action?
-- [ ] Redesign heartbeat.md for each agent — specific to their role, encouraging initiative and creativity, not generic task lists
+- [x] Audit: review each agent's current heartbeat.md, SOUL.md, and actual heartbeat behavior (done, commit d50ff32fe)
+- [x] Design: define clear role, responsibilities, and owned metrics for each agent (done, commit d50ff32fe)
+- [x] Redesign heartbeat.md for each agent — slimmed heartbeats + reference.md per agent (done, commit d50ff32fe)
 - [ ] Verify: observe 2-3 heartbeat cycles per agent after changes — are they more proactive? Do they notice and act on problems in their domain?
 - [ ] Measure: heartbeat productivity (% of heartbeats that produce meaningful action vs no-ops)
 
@@ -37,128 +37,25 @@ Agents are passive. They wait for tasks instead of proactively finding and drivi
 | qa | QA | Does he proactively find bugs, test edge cases, verify changes? |
 
 ## Comments
-
+- [2026-04-20 hao] Coach actually did good work — slimmed all 6 heartbeat.md files, created reference.md per agent (commit d50ff32fe). Milestones 1-3 are done. Focus on 4-5.
 
 ## Current State
-Blocked: The task is stuck. The worker has been unable to query the sessions database (bun:sqlite errors) and cannot observe actual heartbeat behavior. The core milestones (1-3: Audit, Design, Redesign) require editing agent heartbeat.md files in the repository, but iteration 9 only wrote an audit doc to shared knowledge. Milestone 4 (Verify) requires observing heartbeat cycles *after* changes were made, but milestones 1-3 aren't marked complete — meaning there may be no changes to verify yet.
+**Blocked (iteration 10)**
 
-**Blockers:**
-1. **No evidence milestones 1-3 are complete.** The milestone tracker shows 0/5 complete. The worker cannot verify changes that haven't been made.
-2. **Database access failures.** The worker cannot query session data to observe heartbeat behavior, making milestone 4 impossible.
-3. **Scope confusion.** This task was assigned milestone 4 (Verify) but milestones 1-3 appear incomplete. Verification without prior changes is meaningless.
+Milestones 1-3 (Audit, Design, Redesign) are **done** — heartbeat.md files were slimmed and reference.md created per agent (commit d50ff32fe).
 
-**Files modified:**
-- /app/agents/shared/knowledge/heartbeat-audit.md
+Milestones 4-5 (Verify, Measure) are **blocked**:
+- Worker cannot query the sessions database (bun:sqlite errors) to observe actual heartbeat behavior
+- Without session data, cannot measure whether new heartbeats made agents more proactive
+- Multiple iterations produced the same audit docs without advancing these milestones
 
-**Errors encountered:**
-- [bash] 1 | 
-2 | import{Database}from'bun:sqlite';
-3 | const db=new Database('.
-
-**Files modified:**
-- /tmp/heartbeat-verification.md
-- /tmp/heartbeat-status.md
-
-**Errors encountered:**
-- [bash] cat: .state/sessions/s_1776627316888_461/meta.json: No such 
-
-**Files modified:**
-- docs/journal/2025-04-19-heartbeat-audit.md
-
-**Errors encountered:**
-- [bash] fatal: not a git repository (or any of the parent directories): .git
-
-
-Comm
-
-**Files modified:**
-- /tmp/heartbeat-status.md
-
-**Agent response:**
-Everything already exists! All 6 heartbeats and all 6 reference files were already applied. The status fil
-
-**Files modified:**
-- /tmp/heartbeat-references.md
-
-**Files read (not modified):**
-- /tmp/heartbeat-drafts.md
-- /tmp/heartbeat-design.md
-
-**Errors encountered:**
-- [edit] Cou
-
-**Files modified:**
-- /tmp/heartbeat-drafts.md
-
-**Agent response:**
-Now I have all three. Let me write the drafts.
-
-**Files modified:**
-- /tmp/heartbeat-design.md
-
-**Agent response:**
-Now let me start the design doc (milestone 2):
-
-**Files modified:**
-- /tmp/heartbeat-audit.md
-
-**Errors encountered:**
-- [bash] 
-=== scout recent sessions (all) ===
-1 | 
-2 | import{Database}from'bun:sqlite';
-3 | const db=ne
+**Options to unblock:**
+1. Have orchestrator provide session data the worker can't query
+2. Wait for future heartbeat cycles and manually observe improvement
+3. Accept milestones 1-3 as the deliverable and close the project
 
 ## Iteration Summary
-- **Iter 2**: **Status:** done (2m1s)
-
-**Files modified:**
-- /tmp/heartbeat-audit.md
-
-**Errors encountered:**
-- [b
-
-- **Iter 3**: **Status:** done (2m13s)
-
-**Files modified:**
-- /tmp/heartbeat-design.md
-
-**Agent response:**
-Now le
-
-- **Iter 4**: **Status:** done (1m20s)
-
-**Files modified:**
-- /tmp/heartbeat-drafts.md
-
-**Agent response:**
-Now I 
-
-- **Iter 5**: **Status:** done (3m10s)
-
-**Files modified:**
-- /tmp/heartbeat-references.md
-
-**Files read (not modi
-
-- **Iter 6**: **Status:** done (4m23s)
-
-**Files modified:**
-- /tmp/heartbeat-status.md
-
-**Agent response:**
-Everyt
-
-- **Iter 7**: **Status:** done (1m47s)
-
-**Files modified:**
-- docs/journal/2025-04-19-heartbeat-audit.md
-
-**Errors
-
-- **Iter 8**: **Status:** done (5m16s)
-
-**Files modified:**
-- /tmp/heartbeat-verification.md
-- /tmp/heartbeat-stat
-
+- **Iter 2-6**: Completed milestones 1-3 (audit, design, redesign heartbeats). Commit d50ff32fe.
+- **Iter 7-8**: Attempted verification but hit bun:sqlite errors querying session data.
+- **Iter 9**: Same pattern — audit doc rewritten, no milestone progress.
+- **Iter 10**: Escalated as blocked. Milestones 1-3 marked complete. 4-5 require session data access.
