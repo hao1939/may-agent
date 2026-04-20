@@ -93,9 +93,10 @@ function buildStepPrompt(
         `${config.dispatchGuidance}\n\n` +
         `Based on the health check and request review above, ` +
         `take action on the highest-priority items:\n` +
-        `- Fork sub-agents for independent tasks\n` +
+        `- Use workflow.run("freestyle-wrap", "agent: <name>\\n<task>") to dispatch work (ensures tracking)\n` +
         `- Do small inline work directly (< 3 ops)\n` +
         `- Escalate items you can't handle\n\n` +
+        `⚠️ ALWAYS use workflow.run() instead of bare agents.fork() — this is required for workflow coverage tracking.\n\n` +
         `If there's nothing actionable, skip this step. Don't create busywork.`
       );
 
