@@ -1,21 +1,18 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776683726326_190
+- **Session:** s_1776683732691_193
 - **Status:** done
-- **When:** 2026-04-20T11:19:34.301Z
-- **Duration:** 4m7s
+- **When:** 2026-04-20T11:19:54.178Z
+- **Duration:** 4m21s
 
 ## What Happened
-OK. So the `direction` column migration exists in `metrics-snapshot.ts`, and `heartbeat-context.ts` uses it. The code is there. But:
+I now have enough context.
 
-1. No tests were run
-2. No evidence beyond "compiles cleanly"
-3. No verification the broadened predicate actually works
-
-SCORE: 4
+SCORE: 8
 
 **Reasoning:**
 
-1. **Deliverables exist**: Partially. Code changes exist in `heartbeat-context.ts` (direction column usage, broadened predicate for continuous metrics) and `metrics-snapshot.ts` (ALTER TABLE migration). Files are real.
+1. **Deliverables exist**: Yes. The investigation document (`metric-reaction-investigation.md`) is extensive with data tables, commit references (`0e22b256`), SQL queries, rendered samples, and verification evidence from live heartbeat sessions.
 
+2. **Goal met**: Yes. The goal was to understand why agents see metrics but don't act, and propose fixes. The investigation identified the root cause (missing `threshold` values → no ⚠️ marker → agen
