@@ -13,16 +13,20 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-20T08:10)
+# Your Context (auto-generated 2026-04-20T08:40)
 
-**System:** 17 sessions/6h, 0% error rate
-**You:** 9 sessions, 232KB total (26KB avg)
+**System:** 15 sessions/6h, 0% error rate
+**You:** 6 sessions, 83KB total (14KB avg)
 
 **Top spenders:**
-- bob: 9s, 232KB ← you
 - optimizer: 3s, 168KB
-- coach: 5s, 106KB
+- coach: 6s, 127KB
+- bob: 6s, 83KB ← you
+
+**Your active error patterns:**
+- FM-1.3: 1x
+- FM-3.3: 1x
 
 **📊 Your Metrics:**
 - Hypotheses resolved: **0.6986** ratio → 0.65 ratio
-- Session success rate (7d, higher is better): **0.9420289855072463** ratio → 0.9 ratio
+- Session success rate (7d, higher is better): **0.9440559440559441** ratio → 0.9 ratio

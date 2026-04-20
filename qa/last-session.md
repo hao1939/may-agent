@@ -1,15 +1,14 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** cron_1776665412290_756
+- **Session:** cron_1776672612752_852
 - **Status:** done
-- **When:** 2026-04-20T06:11:13.481Z
-- **Duration:** 1m0s
+- **When:** 2026-04-20T08:11:23.070Z
+- **Duration:** 1m10s
 
 ## What Happened
 ### Summary
-This heartbeat environment is not in a shippable QA state: `/app` is not a git repo and the mandatory TypeScript/Vitest QA gates cannot be executed because the expected Node toolchain (`node_modules/.bin`) is missing. I still completed the minimum file-read requirement and found a likely **logic/spec mismatch** in `src/pipeline.js` that can change grading results.
+This heartbeat environment blocks the mandatory QA gates: `/app` is not a git repo, and the expected Node/TS toolchain (`./node_modules/.bin/tsc`, `./node_modules/.bin/vitest`) is missing. I still did an independent spot-check by fully reading `src/pipeline.js` and found a likely logic/docs mismatch around normalization vs penalty application order.
 
 ### Checks
-- `tsc --noEmit`: **FAIL** — `./node_modules/.bin/tsc` not found (no `node_modules/.bin/`)
-- `vitest --run`: 
+- `tsc --noEmit`: **FAIL** — `./node_modules/.bin/tsc` not found (no `node_modules/.bin` in `/app`; `npx tsc` also fails bec
