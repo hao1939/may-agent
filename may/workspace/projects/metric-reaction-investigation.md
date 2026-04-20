@@ -7,6 +7,7 @@
 **Next:** none (project closed)
 
 **Status**: active
+**Iteration**: 1
 ## Goal
 Understand why agents see metrics in their heartbeat context but don't act on them. Propose fixes based on evidence.
 
@@ -267,3 +268,14 @@ Confirmed renderer now emits the red marker in live heartbeats post-backfill:
 3. Compute real-work ratio; compare to baseline 0/8 = 0%.
 4. Decide: success (close), partial (M4-C action hints), failure (M5b direction column).
 
+
+
+## Progress Log
+
+### Iteration 1 — 2026-04-20T11:03:47.768Z
+**Worker**: Both files compile cleanly.
+
+
+
+## Current State
+Iteration 1. Milestones: 5/6 done. Next: M5b: Phase 2 — add `direction` column + broaden predicate to continuous metrics 
