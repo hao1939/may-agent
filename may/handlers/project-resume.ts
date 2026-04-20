@@ -127,11 +127,12 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         escalate: (reason: string, context?: unknown) => ({ type: "escalate" as const, reason, context }),
       };
 
-      wfMod.execute(workflowCtx).then((result: any) => {
+      try {
+        const result = await wfMod.execute(workflowCtx);
         ctx.log(`[project-resume] ${project.relPath} → ${result.type}`);
-      }).catch((err: any) => {
+      } catch (err: any) {
         ctx.log(`[project-resume] ${project.relPath} ERROR: ${err}`);
-      });
+      }
 
       launched++;
     }
