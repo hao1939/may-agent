@@ -16,10 +16,11 @@ Agents should react to metric alerts. Currently 4 alerts are firing with zero re
 - Result: alerts accumulate, agents are blind to them
 
 ## Current Active Alerts
-- `evaluator.coverage`: 79 < 80 (yellow)
+- `evaluator.coverage`: 44 < 80 (yellow) — worsening from 79
 - `tech-lead.build-health`: 0 < 1 (yellow)
 - `tech-lead.meaningful-changes`: regressed 100% (yellow)
 - `qa.review-coverage`: 0 < 1 (yellow)
+- `optimizer.quality-preserved`: 0.85 < 0.85 (yellow) — NEW
 
 ## Design Principles
 - Metric-oriented: alerts are the signal
