@@ -522,3 +522,12 @@ The open questions have been cleaned up to three genuinely open items (evaluatio
 **Worker**: 
 ### Iteration 23 — 2026-04-20T11:23:07.887Z
 **Worker**: The design doc exists with all milestones complete including Integration Points. The previous iteration scored 8/10. Let me just copy the deliverable to workspace.
+**Reviewer**: DONE — All four milestones are complete. The design doc at `agents/docs/designs/agent-learning.md` (325 lines) contains:
+
+1. ✅ Problem statement and current state analysis
+2. ✅ Approach comparison
+3. ✅ Proposed 5-component architecture
+4. ✅ **Integration points** — Section starting at line 275 details exactly where learning happens: session end (`finish()`), session start (`buildSessionContext()`), heartbeat (consolidation), workflow step boundaries (cross-agent fast path), and background pruning. Each point specifies what happens, why that timing, and what changes are required.
+
+The remaining milestone "Propose integration points" is fully addressed. The doc is a complete, actionable design deliverable.
+
