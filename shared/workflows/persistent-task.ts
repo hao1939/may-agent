@@ -470,6 +470,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
         const evalEntry = `**Evaluator**: ${evalVerdict} (score=${score}/10) — ${evalText.slice(0, 500)}\n\n`;
         if (!config.isLegacy) appendFileSync(config.journalPath, evalEntry);
+        projectContent = updateField(projectContent, "Health", `${score}/10 (${evalVerdict})`);
+        writeFileSync(config.projectPath, projectContent, "utf-8");
 
         if (evalVerdict === "FAIL") {
           falseDoneCount++;
@@ -478,7 +480,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         }
 
         projectContent = updateField(projectContent, "Status", "done");
-        projectContent = updateSection(projectContent, "Current State", decision.detail);
+        const finalMsDone = extractMilestones(projectContent);
+        projectContent = updateSection(projectContent, "Current State",
+          `Complete. ${finalMsDone.done}/${finalMsDone.total} milestones. ${decision.detail.slice(0, 100)}`);
         writeFileSync(config.projectPath, projectContent, "utf-8");
         ctx.emit({ type: "metric", name: "project.false-done", value: falseDoneCount });
         return ctx.done(`Complete after comment at iteration ${iteration}: ${decision.detail}`);
@@ -539,8 +543,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
     // Update project.md fields (not rewrite)
     projectContent = updateField(projectContent, "Iteration", String(iteration));
+    const msAfterWorker = extractMilestones(projectContent);
     projectContent = updateSection(projectContent, "Current State",
-      `Iteration ${iteration} complete. ${workerSummary.slice(0, 200)}`);
+      `Iteration ${iteration}. Milestones: ${msAfterWorker.done}/${msAfterWorker.total} done.` +
+      (msAfterWorker.pending.length > 0 ? ` Next: ${msAfterWorker.pending[0].slice(0, 80)}` : ""));
     writeFileSync(config.projectPath, projectContent, "utf-8");
 
     // ── Reviewer phase ───────────────────────────────────────────
@@ -606,12 +612,17 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         if (evalVerdict === "FAIL") {
           falseDoneCount++;
           continueWithoutProgress++;
+          projectContent = updateField(projectContent, "Health", `${score}/10 (${evalVerdict})`);
+          writeFileSync(config.projectPath, projectContent, "utf-8");
           iteration++;
           continue;
         }
 
         projectContent = updateField(projectContent, "Status", "done");
-        projectContent = updateSection(projectContent, "Current State", decision.detail);
+        projectContent = updateField(projectContent, "Health", `${score}/10 (${evalVerdict})`);
+        const finalMsForState = extractMilestones(projectContent);
+        projectContent = updateSection(projectContent, "Current State",
+          `Complete. ${finalMsForState.done}/${finalMsForState.total} milestones. ${decision.detail.slice(0, 100)}`);
         projectContent = appendToSection(projectContent, "Iteration Summary",
           `- **Iter ${iteration}**: ${decision.detail.slice(0, 100)}\n`);
         writeFileSync(config.projectPath, projectContent, "utf-8");
@@ -621,7 +632,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
       if (decision.status === "blocked") {
         projectContent = updateField(projectContent, "Status", `blocked`);
-        projectContent = updateSection(projectContent, "Current State", `Blocked: ${decision.detail}`);
+        projectContent = updateSection(projectContent, "Current State",
+          `Blocked: ${decision.detail.slice(0, 150)}`);
         writeFileSync(config.projectPath, projectContent, "utf-8");
         return ctx.escalate(`Blocked at iteration ${iteration}: ${decision.detail}`);
       }
