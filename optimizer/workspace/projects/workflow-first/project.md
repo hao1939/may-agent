@@ -1,9 +1,10 @@
 # Project: Workflow-First Culture
 
-**Status**: active
+**Status**: paused
 **Owner**: optimizer
 **Priority**: P0
-**Iteration**: 20
+**Iteration**: 21
+**Paused reason**: Stuck in evaluator rejection loop — goal requires infrastructure changes (binary writing workflowRunId to meta.json) that persistent-task iterations cannot accomplish. Burned 500+ ops across 15+ stuck iterations. Will resume when infra work is done.
 
 **Health**: 3/10 (MAKING PROGRESS)
 ## Goal
