@@ -4,7 +4,7 @@
 **Owner**: bob
 **Priority**: P0
 **Iteration**: 5
-**Health**: —
+**Health**: 6/10 (FAIL)
 
 ## Goal
 Make the persistent-task reviewer powerful enough to unblock and push projects forward. Currently projects stall because the reviewer gives up (BLOCKED) or rubber-stamps (DONE) instead of problem-solving.
