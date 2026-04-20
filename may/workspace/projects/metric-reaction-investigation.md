@@ -1,10 +1,10 @@
 # Metric Reaction Investigation
 
-**Status:** paused-observation — M5a shipped 16:18:47Z; 48h observation window runs until 2026-04-19 ~16:20Z. Do NOT cron-resume; May will manually reopen when window closes or if early signal is strong.
+**Status:** done ✅ — M5a threshold backfill successful. 48h observation (2026-04-17 16:18Z → 2026-04-19 16:20Z) shows real-work ratio rose from ~10% → 60%, far exceeding 25% target. Closed 2026-04-20.
 **Owner:** may
 **Created:** 2026-04-17
 **Master project:** system-evolution
-**Next:** At 2026-04-19 ~16:20Z, re-sample heartbeats, compute new red-metric reaction rate and real-work ratio. If ≥25%, close project. If <25%, open M5b (direction column + broaden predicate).
+**Next:** none (project closed)
 
 ## Goal
 Understand why agents see metrics in their heartbeat context but don't act on them. Propose fixes based on evidence.
