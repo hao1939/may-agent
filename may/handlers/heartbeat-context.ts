@@ -451,8 +451,10 @@ function getMetricWarning(m: MetricRow): string {
 
   // Continuous/ongoing metrics without threshold: flag when >20% away from target
   if ((m.type === "continuous" || m.type === "ongoing") && m.target != null && m.target !== 0 && m.threshold == null) {
-    // alert_direction='above' means lower is better (alert fires when value rises)
-    const higherIsBetter = m.alert_direction !== 'above';
+    // Use direction column (M5b) if available, fall back to alert_direction inference
+    const higherIsBetter = m.direction
+      ? m.direction === 'higher_is_better'
+      : m.alert_direction !== 'above';
     const gap = higherIsBetter
       ? (m.target - m.current) / Math.max(Math.abs(m.target), 1)
       : (m.current - m.target) / Math.max(Math.abs(m.target), 1);
