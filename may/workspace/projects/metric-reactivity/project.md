@@ -42,3 +42,4 @@ Agents should react to metric alerts. Currently 4 alerts are firing with zero re
 
 ## Comments
 - [2026-04-20 hao] 4 alerts firing, zero agent reaction. This is the gap between our event-driven principle and reality. Fix the plumbing so alerts actually reach the agents who own them.
+- [2026-04-20 hao] Don't rely on heartbeats to react to metric signals. Heartbeats can investigate if agent prefers, but that's not the core mechanism. The core should be: metric crosses threshold → auto-trigger the responsible agent immediately. Event-driven, not poll-driven. Redesign: metrics-snapshot detects breach → forks the owning agent with "your metric X breached, investigate and fix." The agent gets a task, not a hint in their heartbeat.
