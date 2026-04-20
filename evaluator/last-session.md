@@ -1,21 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776642316940_1
+- **Session:** s_1776644817897_603
 - **Status:** done
-- **When:** 2026-04-19T23:45:25.346Z
-- **Duration:** 8s
+- **When:** 2026-04-20T00:27:03.965Z
+- **Duration:** 6s
 
 ## What Happened
-```json
-{
-  "agents": {
-    "scout": {
-      "role": "Researcher",
-      "capability_level": "L2",
-      "efficiency": 0.8,
-      "quality": 0.85,
-      "verdict": "good",
-      "issues": [
-        "Used a non-approved/nonexistent tool name in transcript (`scrape_webpage`). This is a tooling-integrity concern, though it did not prevent completion because the session still produced the required deliverable and commit.",
-        "Did not update `agents/scout/workspace/covered_ids.txt`; acceptable 
+WHAT_HAPPENED: The optimizer attempted to query workflow adoption/health from `.state/may.db` for the last 6 hours. `sqlite3` CLI was missing and `better-sqlite3` was unavailable, so they switched to Python’s `sqlite3` to inspect the `sessions` schema and compute coverage by agent (opCount > 5) and overall “with workflow” vs “without workflow” status counts, plus checked the set of distinct session statuses.
+OUTCOME: partial
+STILL_OPEN: Provide the full breakdown requested (coverage and effectiv

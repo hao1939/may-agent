@@ -38,6 +38,8 @@
 
 ### Code sweep (spot-check)
 Read: `src/dashboard/server.ts`
+- Potential runtime incompatibility: `const HTML_PATH = resolve(import.meta.dirname || __dirname, "index.html");` — in Node ESM, `import.meta.dirname` is non-standard and `__dirname` is undefined; this can throw depending on build/runtime.
+- `readBody()` unconditionally `JSON.parse()`; invalid JSON becomes a 500 rather than a 400.
 - **IMPORTANT:** `HTML_PATH` uses `import.meta.dirname || __dirname`. In ESM, `__dirname` is undefined; if `import.meta.dirname` is also unavailable in the current Node version/config, this can crash at startup.
 - **IMPORTANT:** `readBody()` always `JSON.parse`s and errors become 500. For invalid JSON, consider returning 400.
 - **MINOR:** `togglePin(body.metricId)` lacks request validation; missing `metricId` likely throws and returns 500.

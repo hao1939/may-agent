@@ -55,12 +55,13 @@ Updated: 2026-04-16 ~08:00 UTC
 - **P2**: Amy-kimi billing — blocked on Hao.
 - ⚠️ **HOLD**: Ch2-production-gates implementation — Hold for EXP-170.
 
-## Latest Cycle Summary (00:10 Apr 20)
+## Latest Cycle Summary (00:40 Apr 20)
 - **SYSTEM**: 9 agents active, zero errors in 6h. All healthy.
-- **Sessions/6h**: Amy(79), Evaluator(87), Coach(62), May(60), Optimizer(31), Tech-lead(28), Bob(23), Scout(19), QA(13).
-- **RED METRICS**: Build health=0 ⚠️, Coverage=55% ⚠️, Review coverage=0 ⚠️ (persistent).
-- **Throughput**: 10 sessions/hr last hour, 100% success rate.
-- **Stuck sessions**: coach EXP-188 (s_...0265461_0, ~59min) — likely abandoned fork. Monitor.
+- **Sessions/6h**: Amy(79), Evaluator(83), Coach(62), May(55), Optimizer(26), Tech-lead(26), Bob(22), Scout(18), QA(13).
+- **RED METRICS**: Build health=0 ⚠️, Coverage=52% ⚠️, Review coverage=0 ⚠️ (persistent). Workflow coverage=14.7% ⚠️.
+- **Throughput**: 8 sessions/hr last hour, 100% success rate.
+- **Stuck sessions**: None.
+- **STALE HAO REQUESTS**: 10+ pending human requests ages 9-36h. Need triage pass.
 - **WAITING**: Gatekeeper Review Gate needs Hao approval. Metric System Phase 3 needs process restart.
 
 ## Archive Reference
