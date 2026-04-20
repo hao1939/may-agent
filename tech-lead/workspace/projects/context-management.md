@@ -6,6 +6,7 @@
 **Created:** 2026-04-16
 **Master project:** [system-evolution.md](../../may/workspace/projects/system-evolution.md)
 
+**Iteration**: 1
 ## Why This Matters
 If the orchestrator runs indefinitely, no auto-resume needed. No caps. No turn budgets. Tasks just run to completion. This unblocks everything.
 
@@ -63,3 +64,11 @@ Keep orchestrator lean:
 
 **Metric**: `context.orchestrator-max-iterations` = **unlimited** (was "unknown")
 **Status**: active
+
+### Iteration 1 — 2026-04-20T10:58:46.159Z
+**Worker**: All 5 milestones are complete. The project file shows the metric system persistent task with Phases 1-2 complete and Phase 3 blocked on a process restart.
+
+
+
+## Current State
+Iteration 1. Milestones: 5/5 done.
