@@ -25,6 +25,10 @@ This runtime’s project root (`/app`) is **not** a git repository, so the stand
 
 ## 2026-04-20 — heartbeat — agents repo: persistent-task workflow milestone hard-gate + environment gating
 
+### 2026-04-20 addendum (this run)
+- `/app/agents` **is** a git repo and `git log` works there; `/app` is not.
+- Latest commit in `/app/agents` as of this run is `c20ac4018` (optimizer notes only). No code changes reviewed beyond that doc file in this heartbeat.
+
 ### Summary
 Reviewed recent commits in `/app/agents` (the only git repo available in this runtime). The latest commit `b6ff4e714` modifies `shared/workflows/persistent-task.ts` to prevent marking a project DONE when the evaluator passes but milestones remain unchecked.
 
