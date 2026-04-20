@@ -845,3 +845,22 @@
 2. DD#784 → KE-002 (text-only evaluation shows 100% compliance, tool-enabled shows 85% violation — text rules are insufficient)
 3. DD#784 → DD-676 TraceSafe (both show safety evaluation must be structural/agentic, not text-based)
 4. DD#784 → DD-725 SentinelAgent (spontaneous circumvention validates defense-in-depth need)
+
+---
+
+### Post-EXP-101 Behavioral Failure Prediction (Session 800+, April 26 2026)
+
+| # | Paper | Title | ★ | Theme |
+|---|-------|-------|---|-------|
+| DD-785 | 2602.06443 | TrajAD: Trajectory Anomaly Detection for Trustworthy LLM Agents | ★★★★★ | Action trajectory anomaly detection; multi-granularity (step/subsequence/trajectory); unsupervised; direct EXP-101 alternative |
+| DD-786 | 2601.00516 | Trajectory Guard: Lightweight Sequence-Aware Monitoring | ★★★★½ | N-gram tool-call transition models; <5ms/step; AUROC 0.72-0.81; immediately deployable sidecar |
+| DD-787 | 2511.04032 | Detecting Silent Failures in Multi-Agentic AI Trajectories | ★★★★★ | 60-70% of failures are silent; structural trajectory features detect them; explains EXP-101 HVR ceiling |
+| DD-788 | 2509.03312 | AgenTracer: Who Is Inducing Failure in Multi-Agent Systems | ★★★★ | Counterfactual failure attribution; root-cause localization; failure pattern clustering |
+| DD-789 | 2603.29848 | AgentFixer: From Failure Detection to Fix Recommendations | ★★★★ | 15 validation tools; reasoning-action mismatch detector; 38% failures are parsing-related |
+
+**Cross-references (Behavioral Failure Prediction)**:
+1. DD#785-789 → EXP-101 (behavioral signals provide alternative to failed HVR linguistic approach)
+2. DD#785-786 → DD#667 MASC (step-level → trajectory-level anomaly detection)
+3. DD#787 → DD#781 Confidence Dichotomy (explains mechanism behind silent failures)
+4. DD#785-789 → CR#343 Monitoring Turn (concrete implementation of runtime behavioral signals)
+5. CR#345 synthesizes the full behavioral failure prediction stack
