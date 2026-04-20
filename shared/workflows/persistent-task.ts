@@ -774,10 +774,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       const prevContent = projectContent;
       projectContent = readFile(config.projectPath) ?? projectContent;
       const currentMilestoneDone = extractMilestones(projectContent).done;
-      // Progress = milestone checked OR meaningful content change (iteration summaries, state updates)
-      const contentChanged = projectContent.length !== prevContent.length ||
-        projectContent !== prevContent;
-      if (currentMilestoneDone > lastMilestoneDone || contentChanged) {
+      if (currentMilestoneDone > lastMilestoneDone) {
         continueWithoutProgress = 0;
         lastMilestoneDone = currentMilestoneDone;
       } else {
