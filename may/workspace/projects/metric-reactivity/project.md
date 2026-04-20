@@ -64,3 +64,4 @@ Complete. 5/5 milestones. All 5 milestones are complete. The metric-alert reacti
 
 - **Iter 6**: All 5 milestones are complete. The metric-alert reactivity loop is functioning: alerts fire → agents
 
+- [2026-04-20 hao] Paused. Resume condition: observe a REAL metric breach → auto-fork fires → agent gets task → agent investigates → metric recovers → alert resolves. Check during heartbeat: query sessions WHERE task LIKE '%metric-alert%' and verify the full cycle completed. Add a comment with evidence when observed.

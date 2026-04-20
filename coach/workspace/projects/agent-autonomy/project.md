@@ -123,3 +123,4 @@ Blocked: — The remaining milestones require **observing real heartbeat cycles 
 ## Iteration Summary
 - **Iter 13**: — All 5 milestones are complete. The `/app/docs/project.md` file exists with well-structured content
 
+- [2026-04-20 hao] Paused. Resume condition: after 2-3 days of heartbeat cycles with the new heartbeat.md files, check actual heartbeat behavior. Compare before/after: are agents more proactive? Measure HPR. Check during heartbeat: query recent heartbeat sessions, count productive vs no-op. Add a comment with evidence when you have data.

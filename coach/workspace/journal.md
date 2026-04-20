@@ -3896,3 +3896,19 @@ Observations: All research threads closed. Strategic proposal (`proposal-graduat
 **Assessment**: Fifth consecutive heartbeat blocked. Text/skill/gate interventions experimentally exhausted (0% in last 5 experiments). Convention regressions deepening system-wide without structural enforcement. EXP-188 result (+100pp finish-guard) still not deployed to production.
 
 **Blockers**: Tech-lead structural guard delivery. No runnable experiments. Gym saturated.
+
+## 2026-05-04 — Heartbeat (6th)
+
+**Status**: Blocked — no change from prior heartbeats.
+
+**Metrics**: All below target, unchanged:
+- Intervention hit rate: 47.3% vs 60% target
+- Skill effectiveness: 29.2% vs 60% target  
+- Instruction compliance: 53% vs 80% target
+- Breadcrumb action rate: 0% vs 80% target
+
+**Inbound triage**: 17+ pending notifications accumulated (convention-check regressions for amy C1.1/C1.3/C1.7/C3.2/C12.1, bob C1.1/C1.3/C12.1, coder C1.1/C1.3, coach C1.1/C1.7; scout citation audits CR#335/CR#341; May signals KE-214 + prove-the-loop). All acknowledged — same systemic clusters, no new root causes. No actionable path without structural enforcement.
+
+**Assessment**: Sixth consecutive blocked heartbeat. All experimental approaches for text/skill/gate interventions exhausted (0% improvement in last 5 experiments). Convention regressions continue system-wide. EXP-188 finish-guard (+100pp) still not deployed. Only viable path: structural enforcement at tool/workflow layer (tech-lead dependency).
+
+**Blockers**: Tech-lead structural guard delivery. No runnable experiments. Gym saturated.
