@@ -3,7 +3,7 @@
 **Status**: active
 **Owner**: bob
 **Priority**: P0
-**Iteration**: 2
+**Iteration**: 3
 **Health**: —
 
 ## Goal
@@ -40,9 +40,11 @@ Evidence from our projects:
 - [ ] Measure: reviewer effectiveness metric — % of iterations where reviewer guidance leads to progress vs stall
 
 ## Current State
-Iteration 2. Milestones: 0/4 done. Next: Investigate: analyze 10+ reviewer decisions from recent projects — categorize fa
+Iteration 3. Milestones: 0/4 done. Next: Investigate: analyze 10+ reviewer decisions from recent projects — categorize fa
 ## Iteration Summary
 - **Iter 2**: Now I have comprehensive data. Let me write the analysis.
+
+- **Iter 3**: Now I have all the context. Let me create the design document.
 
 
 ## Comments

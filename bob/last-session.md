@@ -1,18 +1,14 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776712839741_14
+- **Session:** s_1776712863029_16
 - **Status:** done
-- **When:** 2026-04-20T19:20:51.262Z
-- **Duration:** 11s
+- **When:** 2026-04-20T19:21:21.434Z
+- **Duration:** 18s
 
 ## What Happened
+CONTINUE — The **Design** milestone is complete. The design document at `.state/reviewer-prompt-design.md` is thorough — full prompt template, before/after comparisons, implementation notes for all 6 root causes, and a PIVOT option. **Check off the Design milestone.**
 
+**Next iteration should complete the Experiment milestone:**
 
-CONTINUE
-
-**Next iteration should tackle M2 and M3 together** since both require `src/lib/manager.ts`:
-
-1. **M2**: Find the session completion handler in `src/lib/manager.ts` and wire in `extractLessons()` — call it when a session ends with failure/partial status, passing the session transcript and outcome. Store extracted lessons via the reflexion module's persistence layer.
-
-2. **M3**: Find `buildSessionContext()` in `src/lib/manager.ts` and wire in `retrieveLessons()` — retrieve relevant le
+**(a) Concrete output:** Produce `.state/reviewer-experiment-results.md` containing a before/after comparison. Take 3-5 of the worst failure cases from the investigatio

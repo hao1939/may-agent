@@ -12,7 +12,7 @@ This runtime’s project root (`/app`) is **not** a git repository, so the stand
 - `cd agents && ./node_modules/.bin/vitest --run`: **FAIL** — `No such file or directory` (exit 127). (bash)
 
 ### Files reviewed (mandatory step 1)
-- Read: `agents/qa/workspace/heartbeat-context.md`.
+- Read: `agents/may/handlers/project-resume.ts` (full file).
 
 ### Impact
 - I cannot provide a normal PASS/FAIL QA verdict on any patch because I cannot reliably identify “changed files” (no git metadata) and cannot run the mandatory compile/test gates.

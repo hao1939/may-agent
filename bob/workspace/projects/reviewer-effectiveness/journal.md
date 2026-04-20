@@ -49,3 +49,15 @@ Produce `.state/reviewer-prompt-design.md` with a concrete new `buildReviewPromp
 
 The deliverable should include the full new prompt template ready to be implemented, with `{placeholder}` variables matching the current ones. Include a before/after comparison for each weakness.
 
+### Iteration 3 — 2026-04-20T19:21:03.029Z
+**Worker**: Now I have all the context. Let me create the design document.
+**Reviewer**: CONTINUE — — The **Design** milestone is complete. The design document at `.state/reviewer-prompt-design.md` is thorough — full prompt template, before/after comparisons, implementation notes for all 6 root causes, and a PIVOT option. **Check off the Design milestone.**
+
+**Next iteration should complete the Experiment milestone:**
+
+**(a) Concrete output:** Produce `.state/reviewer-experiment-results.md` containing a before/after comparison. Take 3-5 of the worst failure cases from the investigation (e.g., a rubber-stamp, a give-up, a repeat loop), and simulate what the new prompt would produce by analyzing whether the new prompt's constraints would have prevented each failure. Include: the original scenario, what the old prompt produced, what the new prompt's guardrails would have caught, and a verdict (fixed/improved/unchanged).
+
+**(b) What's different:** Previous iterations investigated and designed. This iteration validates the design against real data — checking whether the proposed changes actually address the failures found.
+
+**(c) First step:** Re-read `.state/reviewer-investigation.md` to get the specific failure examples, then for each one, walk through the new prompt template's guardrails and assess whether they would have changed the outcome.
+
