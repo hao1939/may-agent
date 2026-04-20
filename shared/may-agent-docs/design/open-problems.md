@@ -54,3 +54,11 @@ Unsolved problems identified during doc review (2026-04-20). Each is either trac
 **What's needed**: A general mechanism to detect and stop runaway sessions. Could be in the cron watchdog or a new handler.
 
 **Tracked by**: Not tracked. Medium priority — check if the existing watchdog handler already covers this.
+
+## 6. No Event Trigger for Workflows
+
+**Problem**: No way to immediately trigger a workflow from outside the system. Currently: add comment → wait up to 5 minutes for cron → handler fires → workflow runs. This is poll-based, not event-based. Contradicts our "event-driven" principle.
+
+**What's needed**: `may-agent --run-workflow persistent-task "project: X\nagent: Y"` CLI command that directly executes a workflow without LLM wrapper or cron delay. The socket protocol could also support this: `{"type":"run-workflow","name":"persistent-task","input":"..."}`.
+
+**Tracked by**: Not tracked. src/ change needed.
