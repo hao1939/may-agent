@@ -464,6 +464,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       appendFileSync(config.journalPath, journalEntry);
     }
 
+    // Re-read project file from disk — worker may have checked off milestones or updated sections
+    projectContent = readFile(config.projectPath) ?? projectContent;
+
     // Update project.md fields (not rewrite)
     projectContent = updateField(projectContent, "Iteration", String(iteration));
     projectContent = updateSection(projectContent, "Current State",
@@ -535,6 +538,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       }
 
       // CONTINUE — track progress and auto-escalate if stuck
+      // Re-read from disk — worker or reviewer may have checked off milestones
+      projectContent = readFile(config.projectPath) ?? projectContent;
       const currentMilestoneDone = extractMilestones(projectContent).done;
       if (currentMilestoneDone > lastMilestoneDone) {
         continueWithoutProgress = 0;
