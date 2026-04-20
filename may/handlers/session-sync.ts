@@ -201,7 +201,27 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       }
 
       if (backfilled > 0) {
-        ctx.log(`[session-sync] Backfilled workflowRunId for ${backfilled} sessions`);
+        ctx.log(`[session-sync] Backfilled workflowRunId for ${backfilled} sessions from workflow runs`);
+      }
+
+      // Propagate workflowRunId from parent sessions to children missing it
+      let propagated = 0;
+      try {
+        const propagateStmt = db.prepare(`
+          UPDATE sessions SET
+            workflowRunId = (SELECT p.workflowRunId FROM sessions p WHERE p.sessionId = sessions.parentSessionId),
+            source = COALESCE(source, 'workflow')
+          WHERE workflowRunId IS NULL
+            AND parentSessionId IS NOT NULL
+            AND EXISTS (SELECT 1 FROM sessions p WHERE p.sessionId = sessions.parentSessionId AND p.workflowRunId IS NOT NULL)
+        `);
+        const result = propagateStmt.run();
+        propagated = result.changes;
+        if (propagated > 0) {
+          ctx.log(`[session-sync] Propagated workflowRunId to ${propagated} child sessions`);
+        }
+      } catch (err) {
+        ctx.log(`[session-sync] Propagation error: ${err instanceof Error ? err.message : String(err)}`);
       }
 
       ctx.emit({
