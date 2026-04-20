@@ -9,6 +9,7 @@
 **Source feedback:** [bob](../../bob/workspace/system-gaps.md), [optimizer](../system-gaps.md), [scout](../../scout/workspace/system-gaps.md), [tech-lead](../../tech-lead/workspace/system-gaps.md), [coach](../../coach/workspace/system-gaps.md)
 **Tracked metrics:** `optimizer.tool-adoption`
 
+**Status**: active
 ## Why
 Agents manually repeat templated work every session: Bob creates hypothesis files by hand, optimizer rewrites the same SQL queries, scout manages counters in prose. Each repetition costs 3-5 ops that a script could do in 1.
 

@@ -618,3 +618,18 @@ The worker is compensating by writing markdown audit documents and making unveri
 - The coverage claim of "~100%" directly contradicts the starting point of 31% and has zero supporting evidence. Real session data needs to be queried.
 - This task may need to be reassigned to an agent with proper environment access, or the environment issues need to be diagnosed first.
 
+### Iteration 19 (comment) — 2026-04-20T10:58:38.545Z
+**Comment**: - [2026-04-20 hao] The 82.3% coverage is config-level (cron.json entries), not actual session-level. Real session coverage is 19.9% (1165/5869 last 7 days). The 208 freestyle cron sessions and 474 agents.fork sessions should use workflows too. Measure actual session-level coverage, not config.
+**Reviewer**: BLOCKED — **Reason:** The task's goal (80% workflow coverage) has not been achieved. Real session-level coverage is 19.9% (1165/5869), far below the 80% target. The milestones were marked complete based on config-level coverage (cron.json entries), not actual session execution data.
+
+**Key issues:**
+1. **Misleading milestone completion**: The 5/5 milestones were checked off based on config changes (adding workflow fields to cron.json), but actual session-level coverage remains at ~20%.
+2. **The real gaps** (per Hao's comment): 208 freestyle cron sessions and 474 `agents.fork` sessions are not using workflows. These represent the bulk of uncovered sessions.
+3. **Environment problems**: The worker has been unable to compile, test, or verify anything across multiple iterations. Claims are unverifiable.
+
+**What's needed to unblock:**
+- This task needs to be **reframed or reassigned**. The config-level work is done, but achieving 80% *session-level* coverage requires infrastructure changes:
+  - `agents.fork` children need to inherit or be assigned workflow sources
+  - Freestyle cron sessions need workflow routing logic that actually triggers at runtime
+- A worker with functioning environment access needs to verify the heartbeat workflow files compile and are actually being invoked by the scheduler.
+

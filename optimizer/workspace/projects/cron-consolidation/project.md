@@ -3,7 +3,7 @@
 **Status**: done
 **Owner**: optimizer
 **Priority**: P2
-**Iteration**: 4
+**Iteration**: 5
 
 ## Goal
 Reduce cron entry count by grouping related JS handlers. Fewer entries, same work, less overhead.
@@ -28,4 +28,3 @@ LLM tasks (run-workflow handler) should stay separate — different agents, diff
 Done. 6 combined handlers built and deployed. 16 individual entries disabled, 6 combined entries added. Active cron entries reduced from 43 to 34 (net -9). All handlers have try/catch isolation so sub-handler failures don't cascade.
 
 ## Comments
-- [2026-04-20 hao] Simple cron checks don't need workflows. But they can be grouped. Focus on JS-only handlers — don't touch LLM task entries.

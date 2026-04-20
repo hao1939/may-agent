@@ -3,7 +3,7 @@
 **Status**: done
 **Owner**: optimizer
 **Priority**: P0
-**Iteration**: 18
+**Iteration**: 19
 
 ## Goal
 Make workflows the default way agents work. Increase workflow coverage from 31% to 80%.
@@ -220,4 +220,3 @@ Command exited with c
 
 
 ## Comments
-- [2026-04-20 hao] The 82.3% coverage is config-level (cron.json entries), not actual session-level. Real session coverage is 19.9% (1165/5869 last 7 days). The 208 freestyle cron sessions and 474 agents.fork sessions should use workflows too. Measure actual session-level coverage, not config.
