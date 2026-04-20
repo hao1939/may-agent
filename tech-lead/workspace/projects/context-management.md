@@ -6,7 +6,7 @@
 **Created:** 2026-04-16
 **Master project:** [system-evolution.md](../../may/workspace/projects/system-evolution.md)
 
-**Iteration**: 1
+**Iteration**: 2
 ## Why This Matters
 If the orchestrator runs indefinitely, no auto-resume needed. No caps. No turn budgets. Tasks just run to completion. This unblocks everything.
 
@@ -70,6 +70,9 @@ Keep orchestrator lean:
 
 
 
-## Current State
-Iteration 1. Milestones: 5/5 done.**Reviewer**: DONE — All 5 milestones are complete. The worker successfully reviewed the project file and reported its contents, showing the metric system persistent task with Phases 1-2 complete and Phase 3 blocked on a process restart.
+### Iteration 2 — 2026-04-20T11:00:42.983Z
+**Worker**: The tech-lead files are already clean. The uncommitted files are in other agents' directories.
 
+
+## Current State
+Iteration 2. Milestones: 5/5 done.

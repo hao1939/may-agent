@@ -450,3 +450,15 @@ The doc currently treats digests, diffs, and recall as background. Hao wants the
 
 These three changes complete the remaining milestones. Output: updated `docs/designs/agent-learning.md` committed to the agents repo.
 
+### Iteration 19 (comment) — 2026-04-20T10:59:53.217Z
+**Comment**: - [2026-04-20 hao] This is design-only. Don't try to build implementation code — agents/ repo can't hold src/test. Write the design doc. The design should answer: given the dead code data sources (digests, diffs, recall), what's the RIGHT way to give agents experience? Not injection — learning.
+**Reviewer**: DONE — — The design doc at `docs/designs/agent-learning.md` is complete and comprehensive. All three remaining milestones are satisfied:
+
+1. **Complete the design doc** — answers all four questions: what to extract (finish().lessons, auto-extracted failure patterns), how to store (JSONL with confidence/category/agent metadata), when to retrieve (session start via relevance filter in buildSessionContext), how to prune (30-day decay, confidence halving, archive below 0.1).
+
+2. **Comparison of approaches** — Section covers brute-force injection (current raw task history = low signal), on-demand retrieval (Voyager-style keyword scoring), and learned lessons (Reflexion-style extraction). The design explicitly chooses bounded relevance-filtered retrieval over injection, citing Reflexion's failure mode of unbounded context.
+
+3. **Integration points** — Clearly specified: lesson extraction at `finish()` (session end), relevance filtering at `buildSessionContext()` (session start), cross-agent sharing via shared JSONL pool. The architecture diagram makes the flow concrete.
+
+The doc also includes a phased implementation plan, an experiment design with concrete metrics, and addresses Hao's guidance about learning vs. injection directly in the design principles.
+

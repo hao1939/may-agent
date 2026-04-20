@@ -1,12 +1,14 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776682706628_3
+- **Session:** s_1776682732906_18
 - **Status:** done
-- **When:** 2026-04-20T10:58:53.687Z
-- **Duration:** 27s
+- **When:** 2026-04-20T10:59:53.217Z
+- **Duration:** 1m0s
 
 ## What Happened
-CONTINUE — The design doc is substantial but the "Proposed Design" section needs one key gap addressed per hao's comment: it doesn't adequately answer **"given the dead code data sources (digests, diffs, recall), what's the RIGHT way to give agents experience? Not injection — learning."**
+DONE — The design doc at `docs/designs/agent-learning.md` is complete and comprehensive. All three remaining milestones are satisfied:
 
-The doc currently treats digests, diffs, and recall as background. Hao wants the design to explicitly evaluate these existing data sources and propose how to transform them from raw injection into genuine lear
+1. **Complete the design doc** — answers all four questions: what to extract (finish().lessons, auto-extracted failure patterns), how to store (JSONL with confidence/category/agent metadata), when to retrieve (session start via relevance filter in buildSessionContext), how to prune (30-day decay, confidence halving, archive below 0.1).
+
+2. **Comparison of approa

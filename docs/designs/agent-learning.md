@@ -70,6 +70,54 @@ Key takeaways incorporated into design:
 
 Our design combines: automatic extraction (like Reflexion), relevance-filtered retrieval (like Voyager), bounded context (unlike Reflexion), and cross-agent sharing (like OpenClaw's marketplace).
 
+## Approach Comparison
+
+The system currently has three data sources that could feed agent learning: **digests** (summaries of recent activity), **diffs** (code changes from recent sessions), and **recall** (active warnings/alerts). All three are currently injected as raw context. The question is: what's the right way to transform these into genuine learning?
+
+### Approach 1: Brute-Force Injection (Current State)
+
+Dump raw data into the agent's context window at session start. This is what `buildSessionContext()` does today — task history summaries, active recall warnings, checkpoint data, and context files are concatenated into the prompt.
+
+| | |
+|---|---|
+| **Pros** | Zero processing cost. Agents get full fidelity of original data. Simple to implement and debug. No information loss from summarization. |
+| **Cons** | Scales poorly — 20 task summaries × 100 words = 2KB of low-signal text. No relevance filtering: an agent doing a new task type gets lessons from unrelated past work. Raw diffs and digests are noisy; agents must do their own extraction every session, wasting reasoning budget. Violates the "learning not injection" principle — agents process the same raw data repeatedly instead of building on distilled understanding. |
+| **When it works** | Small number of sessions, consistent task types, generous context budgets. |
+| **Verdict** | Adequate for bootstrapping but doesn't scale. The current system is already showing symptoms: agents repeat mistakes because the raw history doesn't highlight what matters. |
+
+### Approach 2: On-Demand Retrieval (RAG-Style)
+
+Store all experience data in a searchable knowledge base (vector DB or keyword index). Agents query it when they need information, rather than receiving it upfront.
+
+| | |
+|---|---|
+| **Pros** | Scales to unlimited history. Only retrieves what's relevant to the current problem. Agents can pull context mid-session when they hit a specific issue, not just at start. |
+| **Cons** | Requires embedding infrastructure or a retrieval API — significant new complexity. Agents must know *when* to query and *what* to ask for, which is itself a skill they may lack (MemGPT's problem). Retrieval quality depends on query formulation. Adds latency to every retrieval call. For our agent count (~5 agents, ~50 sessions/day), the volume doesn't justify the infrastructure. |
+| **When it works** | Large-scale systems with thousands of agents and massive experience corpora where upfront injection is impossible. |
+| **Verdict** | Over-engineered for our scale. The infrastructure cost isn't justified when the total lesson corpus fits in a few KB. Worth revisiting if we 10x agent count. |
+
+### Approach 3: Learned Lessons (Distilled Experience)
+
+After each session, automatically extract compact, actionable lessons from the agent's experience. Store them as structured text. At session start, inject only the most relevant lessons — not raw data, but distilled knowledge.
+
+| | |
+|---|---|
+| **Pros** | Compact — a lesson is 1-2 sentences vs. a full task summary. High signal-to-noise: "always run `cd /app/agents` before git commands" is more actionable than a raw session log showing a git failure. Scales well: lessons deduplicate and consolidate over time. Transforms data sources (digests, diffs, recall) from raw context into accumulated understanding. Directly uses existing `finish().lessons` field that agents already populate. |
+| **Cons** | Extraction quality matters — bad distillation loses important nuance. Requires a relevance filter to avoid injecting irrelevant lessons. Some lessons may be wrong (agent learns the wrong conclusion from a failure). Needs a lifecycle mechanism to prune stale lessons. |
+| **When it works** | Small-to-medium agent populations with recurring task patterns. Our exact situation. |
+| **Verdict** | **Recommended.** Best fit for our scale, existing infrastructure, and the "learning not injection" principle. |
+
+### Recommendation
+
+**Use Learned Lessons as the primary mechanism**, with brute-force injection retained for short-term context (last 3-5 task summaries) and on-demand retrieval deferred as a future enhancement.
+
+The key insight: digests, diffs, and recall are *raw experience*. Learning means transforming them:
+- **Digests** → extract patterns ("worker sessions that modify tests tend to fail when they skip type-checking")
+- **Diffs** → extract code-level lessons ("the config file at X needs Y when doing Z")  
+- **Recall warnings** → already distilled; keep as-is but integrate into the lesson scoring pipeline
+
+This transforms the existing dead-code data sources from "things dumped into context" into "inputs to a learning pipeline that produces compact, relevant, actionable lessons."
+
 ## Proposed Design
 
 ### Design Principles
