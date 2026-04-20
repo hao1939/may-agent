@@ -299,3 +299,5 @@ The original goal — "alert → agent sees it → agent investigates → agent 
 
 The milestone "Verify: auto-fork has NEVER fired" observation part is done. The corrective action (making it actually work going forward) needs proof.
 
+### Iteration 4 — 2026-04-20T11:16:18.469Z
+**Worker**: Now let me write a verification report:
