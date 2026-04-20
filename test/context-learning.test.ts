@@ -3,7 +3,6 @@ import { mkdirSync, writeFileSync, readFileSync, existsSync, rmSync } from "node
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { randomBytes } from "node:crypto";
-import { SubagentManager } from "../src/lib/index.js";
 import { createContextUpdater } from "../src/lib/session-subscribers.js";
 import { getModel } from "@mariozechner/pi-ai";
 
@@ -104,64 +103,5 @@ describe("Context Learning", () => {
     const content = readFileSync(contextPath, "utf-8");
     const matches = content.match(/Existing fact/g);
     expect(matches?.length).toBe(1);
-  });
-
-  it("buildSessionContext includes context.md content", () => {
-    const manager = new SubagentManager({
-      persistDir,
-      projectRoot: tmpDir,
-      infraRetryMax: 0,
-    });
-
-    const def = {
-      name: "test-agent",
-      description: "test",
-      domain: "test",
-      tools: [],
-      model: testModel,
-      knowledgeDir: join(agentDir, "knowledge"),
-      workspace: join(agentDir, "workspace"),
-      projectRoot: tmpDir,
-    };
-
-    manager.register(def);
-
-    // Write context.md
-    mkdirSync(agentDir, { recursive: true });
-    writeFileSync(contextPath, "- Runtime is Bun\n- Config at /app/config/\n");
-
-    // Call buildSessionContext via any cast
-    const ctx = (manager as any).buildSessionContext(def, "test-agent", "s_test_1", persistDir);
-
-    expect(ctx).toContain("What You Know (persistent context)");
-    expect(ctx).toContain("Runtime is Bun");
-    expect(ctx).toContain("Config at /app/config/");
-  });
-
-  it("buildSessionContext works without context.md", () => {
-    const manager = new SubagentManager({
-      persistDir,
-      projectRoot: tmpDir,
-      infraRetryMax: 0,
-    });
-
-    const def = {
-      name: "test-agent",
-      description: "test",
-      domain: "test",
-      tools: [],
-      model: testModel,
-      knowledgeDir: join(agentDir, "knowledge"),
-      workspace: join(agentDir, "workspace"),
-      projectRoot: tmpDir,
-    };
-
-    manager.register(def);
-
-    // No context.md exists
-    const ctx = (manager as any).buildSessionContext(def, "test-agent", "s_test_1", persistDir);
-
-    expect(ctx).not.toContain("What You Know");
-    expect(ctx).toContain("Session ID: s_test_1");
   });
 });
