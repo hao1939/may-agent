@@ -1,7 +1,7 @@
 /**
  * project-resume — Scan modified projects, run persistent-task workflow directly.
- * Uses dynamic import of the workflow .ts file (same as run-workflow handler).
- * Does NOT import from src/ — uses only HandlerContext APIs.
+ * Simple: if project.md changed since last check and no workflow is running for it, launch one.
+ * The workflow handles all logic (status checks, comments, evaluation).
  */
 import { readdirSync, readFileSync, statSync, existsSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
@@ -27,6 +27,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     const now = Date.now();
     const projects: Array<{ owner: string; relPath: string }> = [];
 
+    // Scan all project directories for modified files
     try {
       for (const dir of readdirSync(agentsRoot, { withFileTypes: true })) {
         if (!dir.isDirectory() || dir.name.startsWith(".")) continue;
@@ -52,17 +53,6 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
             const mtime = statSync(projectFile).mtimeMs;
             if (mtime <= lastCheck) continue;
             const content = readFileSync(projectFile, "utf-8");
-
-            // Only resume projects that need work:
-            // - active: always resume
-            // - blocked/done with pending comments: process comments
-            // - anything else: skip
-            const statusMatch = content.match(/^\*\*Status\*\*:\s*(\S+)/m);
-            const status = statusMatch ? statusMatch[1].toLowerCase() : "";
-            const commentsIdx = content.indexOf("## Comments\n");
-            const hasComments = commentsIdx !== -1 && content.slice(commentsIdx + 12).trim().length > 0
-              && content.slice(commentsIdx + 12).search(/\n## /) !== 0;
-            if (status !== "active" && !hasComments) continue;
             const m = OWNER_RE.exec(content);
             const owner = m ? m[1] : dir.name;
             projects.push({ owner, relPath });
@@ -74,7 +64,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     try { writeFileSync(stateFile, String(now), "utf-8"); } catch { /* skip */ }
     if (projects.length === 0) return;
 
-    // Skip projects already running
+    // Skip projects that already have a running workflow
     const busyProjects = new Set<string>();
     try {
       const db = ctx.getDb();
@@ -87,7 +77,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       }
     } catch { /* skip */ }
 
-    // Load workflow module dynamically (no src/ imports needed)
+    // Load workflow module
     let wfMod: any;
     try {
       wfMod = await import(workflowPath + "?t=" + ++importCounter);
@@ -98,17 +88,11 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     }
 
     let launched = 0;
-    const MAX_CONCURRENT = 3;
     for (const project of projects) {
-      if (launched >= MAX_CONCURRENT) {
-        ctx.log(`[project-resume] hit concurrency limit (${MAX_CONCURRENT}), deferring remaining`);
-        break;
-      }
       if (busyProjects.has(project.relPath)) continue;
 
       const task = `project: ${project.relPath}\nagent: ${project.owner}\ngoal: see project file`;
 
-      // Build minimal WorkflowContext using only HandlerContext APIs
       const workflowCtx = {
         task,
         agent: project.owner,
@@ -136,7 +120,6 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         runWorkflow: async () => ({ type: "escalate" as const, reason: "Sub-workflows not supported" }),
         emit: (event: any) => ctx.log(`[project-resume:${project.relPath}] ${event.type ?? event}`),
         summarize: (result: any, _opts?: any) => {
-          // Simple summarizer — just return lastAssistantText truncated
           const text = result?.lastAssistantText ?? result?.summary ?? "";
           return text.length > 1500 ? text.slice(0, 1500) + "…" : text;
         },
@@ -144,9 +127,8 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         escalate: (reason: string, context?: unknown) => ({ type: "escalate" as const, reason, context }),
       };
 
-      // Run in background
       wfMod.execute(workflowCtx).then((result: any) => {
-        ctx.log(`[project-resume] ${project.relPath} → ${result.type} (${result.summary?.slice(0, 80) ?? result.reason?.slice(0, 80)})`);
+        ctx.log(`[project-resume] ${project.relPath} → ${result.type}`);
       }).catch((err: any) => {
         ctx.log(`[project-resume] ${project.relPath} ERROR: ${err}`);
       });
