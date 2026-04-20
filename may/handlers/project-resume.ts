@@ -83,8 +83,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       if (busyProjects.has(project.relPath)) continue;
       const task =
         `Run the persistent-task workflow for this project.\n\n` +
-        `workflow.run("persistent-task", "project: ${project.relPath}\\nagent: ${project.owner}\\ngoal: see project file")\n\n` +
-        `If the project is blocked or done, update Status in the file and call finish().`;
+        `workflow.run("persistent-task", "project: ${project.relPath}\\nagent: ${project.owner}\\ngoal: see project file")`;
       try {
         ctx.manager.run(project.owner, task, { source: "cron" });
         forked++;
