@@ -1,10 +1,17 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776683771901_199
+- **Session:** s_1776683778470_200
 - **Status:** done
-- **When:** 2026-04-20T11:20:24.913Z
-- **Duration:** 4m13s
+- **When:** 2026-04-20T11:20:30.230Z
+- **Duration:** 4m11s
 
 ## What Happened
-Both M4 and M5 are already complete. The metric `may.alert-to-reaction-time` exists with a proper `source_query`, and there are 5+ metric-alert requests in the DB. Let me write the final deliverable.
+DONE
+
+The implementation is complete. The full alert → agent reaction loop is now wired:
+
+1. **Detection**: `metrics-snapshot.ts` detects threshold breaches, regressions, and stalled metrics
+2. **Alert recording**: `recordAlertWithDedup()` creates alerts in `metric_alerts` table
+3. **Auto-fork**: `autoForkForAlert()` immediately forks the owning agent with a task describing the breach — event-driven, not poll-driven
+4. **Backfill**: Step 0 in the handler catches any unresolved alerts that were c

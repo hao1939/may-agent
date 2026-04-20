@@ -321,3 +321,13 @@ M4 is verified (12+ metric-alert requests in DB, 5 with `source='metric-alert'`)
 
 ### Iteration 4 — 2026-04-20T11:20:24.913Z
 **Worker**: Both M4 and M5 are already complete. The metric `may.alert-to-reaction-time` exists with a proper `source_query`, and there are 5+ metric-alert requests in the DB. Let me write the final deliverable.
+**Reviewer**: DONE — The implementation is complete. The full alert → agent reaction loop is now wired:
+
+1. **Detection**: `metrics-snapshot.ts` detects threshold breaches, regressions, and stalled metrics
+2. **Alert recording**: `recordAlertWithDedup()` creates alerts in `metric_alerts` table
+3. **Auto-fork**: `autoForkForAlert()` immediately forks the owning agent with a task describing the breach — event-driven, not poll-driven
+4. **Backfill**: Step 0 in the handler catches any unresolved alerts that were created before the auto-fork mechanism existed and dispatches forks for them
+5. **Auto-resolve**: `resolveRecoveredAlerts()` closes alerts when metrics recover
+
+The backfill verification confirms the mechanism was exercised — 3 unresolved alerts were detected and agents were forked to handle them. The architecture matches the design requirement: metric crosses threshold → auto-trigger the responsible agent immediately.
+
