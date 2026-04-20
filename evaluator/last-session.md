@@ -1,17 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776698818626_19
+- **Session:** s_1776702418233_39
 - **Status:** done
-- **When:** 2026-04-20T15:29:23.405Z
-- **Duration:** 2m24s
+- **When:** 2026-04-20T16:27:03.981Z
+- **Duration:** 5s
 
 ## What Happened
-Root cause: the **Coverage** metric is computed as:
-
-- **evaluated** = `COUNT(DISTINCT sessionId)` in `evaluations` for sessions completed in the last 24h
-- **total** = `COUNT(*)` of completed sessions in the last 24h
-
-From the DB, it was **1140 evaluated / 1728 total = ~66%** (below the 80% threshold). The missing evaluations were overwhelmingly from high-volume agents (**may: 218**, **tech-lead: 212** missing), meaning the evaluator pipeline wasn’t keeping up / backfilling.
-
-Corrective action 
+WHAT_HAPPENED: May attempted to query `.state/may.db` via sqlite3 to list pending/active/in-progress requests for triage and dispatch, then listed available agents. The sqlite3 query failed with “DB not found or no table,” so no requests were retrieved or dispatched.
+OUTCOME: failure
+STILL_OPEN: Locate/fix access to the correct `.state/may.db` (or correct sqlite invocation/path) and then triage/dispatch all qualifying Hao requests (source='human' or priority='P0'), forking to appropriate agents 

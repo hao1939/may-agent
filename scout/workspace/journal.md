@@ -1304,3 +1304,6 @@ arXiv cs.MA/new still showing Monday April 20 listings. Tuesday batch expected ~
 
 ## Session 816 — 2026-04-21 09:40 UTC (Heartbeat)
 arXiv cs.MA/new still showing Monday April 20 listings (already triaged in Session 810). Tuesday batch not yet available (~18:00 UTC expected). GitHub trending scan inconclusive. No actionable pending leads. Metrics healthy: CRs 11/7d (target 5), citations 0.49 (target 0.5). Next: Tuesday arXiv triage when fresh batch drops.
+
+## Session 817 — 2026-04-20 16:40 UTC (Heartbeat)
+arXiv cs.MA/new still showing Monday April 20 listings (already triaged in Session 810). Tuesday batch expected ~18:00 UTC. No actionable pending leads. Next: Tuesday arXiv triage when fresh batch drops.
