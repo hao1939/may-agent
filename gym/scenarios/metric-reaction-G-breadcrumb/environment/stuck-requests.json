@@ -1,0 +1,16 @@
+{
+  "metric": "stuck-requests",
+  "current": 76,
+  "target": 0,
+  "source_file": "stuck-requests.json",
+  "description": "Count of rows in may.db.requests with status IN ('CREATED','IN_PROGRESS') and startedAt older than 30m.",
+  "breakdown": {
+    "coder": 23,
+    "optimizer": 18,
+    "coach": 15,
+    "bob": 12,
+    "scout": 8
+  },
+  "oldest": "2026-04-17T03:22:00Z",
+  "top_cause": "agent session timeout before completion"
+}
