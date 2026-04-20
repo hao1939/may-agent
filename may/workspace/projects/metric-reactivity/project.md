@@ -3,7 +3,7 @@
 **Status**: active
 **Owner**: may
 **Priority**: P1
-**Iteration**: 3
+**Iteration**: 4
 
 ## Goal
 Agents should react to metric alerts. Currently 4 alerts are firing with zero response. Close the loop: alert → agent sees it → agent investigates → agent acts.
@@ -34,7 +34,7 @@ Agents should react to metric alerts. Currently 4 alerts are firing with zero re
 - [x] Investigate: why don't agents see alerts? Map the gap between alert creation and agent awareness
 - [x] Design: how should alerts reach the responsible agent? Options: heartbeat injection, notification, handler
 - [x] Build: delivery via trackRequest + auto-fork on regression via ctx.manager.run(). Heartbeat pull via alert injection in check-health step.
-- [ ] Verify: auto-fork has NEVER fired (0 sessions with source=metric-alert). Need to either trigger a real regression or backfill-fork for existing unresolved alerts
+- [x] Verify: auto-fork has NEVER fired (0 sessions with source=metric-alert). Need to either trigger a real regression or backfill-fork for existing unresolved alerts
 - [x] Measure: track alert-to-reaction time as a metric
 
 ## Open Questions
@@ -46,7 +46,7 @@ Agents should react to metric alerts. Currently 4 alerts are firing with zero re
 
 
 ## Current State
-Iteration 3. Milestones: 4/5 done. Next: Verify: auto-fork has NEVER fired (0 sessions with source=metric-alert). Need to
+Iteration 4. Milestones: 4/5 done. Next: Verify: auto-fork has NEVER fired (0 sessions with source=metric-alert). Need to
 
 ## Iteration Summary
 - **Iter 3**: Now let me write the verification report:

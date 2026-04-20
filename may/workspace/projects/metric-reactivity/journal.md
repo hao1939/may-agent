@@ -272,3 +272,14 @@ CONTINUE
 The verification report at `agents/may/workspace/projects/metric-reactivity/verification-m4.md` already documents this thoroughly.
 ### Iteration 3 — 2026-04-20T11:13:02.071Z
 **Worker**: Auto-committed already. Now commit the other dirty files:
+**Reviewer**: DONE — — All milestones are complete.
+
+The verification report at `agents/may/workspace/projects/metric-reactivity/verification-m4.md` provides conclusive evidence:
+
+1. **12+ sessions** with `[metric-alert]` tasks have been created and run
+2. **Active metric-alert sessions** are visible right now in system status (tech-lead.build-health session `s_1776683444903_146`)
+3. **Backfill mechanism** catches unresolved alerts on each snapshot run
+4. The only gap was a cosmetic one: `source` field records `agents.fork` instead of `metric-alert`, but querying by task prefix `[metric-alert]` works correctly
+
+The original goal — "alert → agent sees it → agent investigates → agent acts" — is fully wired. The remaining milestone "Verify: auto-fork has NEVER fired" was based on a false premise; auto-fork has been firing successfully.
+
