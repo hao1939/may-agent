@@ -13,18 +13,18 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-19T23:40)
+# Your Context (auto-generated 2026-04-20T00:10)
 
-**System:** 14 sessions/6h, 0% error rate
-**You:** 1 sessions, 30KB total (30KB avg)
+**System:** 17 sessions/6h, 0% error rate
+**You:** 2 sessions, 56KB total (28KB avg)
 
 **Top spenders:**
-- coach: 11s, 154KB
-- bob: 2s, 39KB
-- optimizer: 1s, 30KB ← you
+- coach: 12s, 167KB
+- optimizer: 2s, 56KB ← you
+- bob: 3s, 42KB
 
 **Your active error patterns:**
-- FM-3.3: 6x
+- FM-3.3: 5x
 
 **📊 Your Metrics:**
 - Workflow coverage — % multi-step work using workflows: **14.7** % → 0.8 %
