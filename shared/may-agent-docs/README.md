@@ -1,36 +1,39 @@
 # may-agent Documentation
 
-## Design (What We're Building)
+## Start Here
 
-See [design/INDEX.md](design/INDEX.md) for the full index.
-
-Key docs:
-- [Architecture Redesign](design/architecture-redesign.md) — EventBus, components, event types
-- [Agent Calling Guide](design/agent-calling-guide.md) — call/fork/message + context queries
-- [Research System](design/research-system.md) — adversarial peers, lab, knowledge base
-- [Evidence-First Process](design/evidence-first-process.md) — how to validate ideas
+- [common-sense.md](../common-sense.md) — How agents think and work. The foundation.
+- [Design Index](design/INDEX.md) — All active design documents, organized by topic.
 
 ## Architecture (How It Works)
 
-- [Session Model](architecture/session-model.md) — Chat/Task, session kinds (chat/job/call)
-- [Session State Machine](architecture/session-state-machine.md) — Status transitions, handleCompletion
+How the runtime operates. Read when you need to understand internals.
+
+- [Session Model](architecture/session-model.md) — Chat/Task sessions, session kinds
+- [Session State Machine](architecture/session-state-machine.md) — Status transitions
 - [System Prompt](architecture/system-prompt.md) — SOUL.md + common-sense.md + generated
-- [Socket Protocol](architecture/socket-protocol.md) — Unix socket, JSON-line commands
+- [Cron System](architecture/cron-system.md) — Heartbeats, handlers, scheduling
 - [Event Loop](architecture/event-loop.md) — How sessions run concurrently
 - [LLM Call Structure](architecture/llm-call-structure.md) — Provider → streaming → tool calls
-- [Cron System](architecture/cron-system.md) — Heartbeats, handlers, scheduling
+- [Socket Protocol](architecture/socket-protocol.md) — Unix socket, JSON-line commands
+
+## Design (What We're Building)
+
+Active design decisions. Read when you need to understand WHY something works a certain way.
+
+**Core:**
+- [Context Injection](design/context-injection-design.md) — What agents see in their prompt
+- [Persistent Task](design/persistent-task-files.md) — Project system with evaluator gate
+- [Metrics System](design/metrics-system.md) — Per-agent metrics, alerts, dashboard
+
+**Agent behavior:**
+- [Agent Calling Guide](design/agent-calling-guide.md) — call/fork/message patterns
+- [Evidence-First Process](design/evidence-first-process.md) — Validate before building
+- [Context Learning](design/context-learning.md) — A/B proof that context changes behavior
+
+See [design/INDEX.md](design/INDEX.md) for the full list.
 
 ## Manual (How to Use)
 
 - [User Guide](manual/user-guide.md) — CLI flags, Docker, socket
 - [Agent Convention](manual/agent-convention.md) — Directory layout, SOUL.md, agent.json
-
-## Knowledge Base
-
-- [Knowledge Entries](../../knowledge/entries/) — Verified facts with evidence
-- [Hypotheses](../../knowledge/hypotheses/) — Testable claims
-- [Experiments](../../knowledge/experiments/) — Lab results
-
-## Archive
-
-Historical docs in `archive/`. Pre-pivot designs, completed work, failed experiments.
