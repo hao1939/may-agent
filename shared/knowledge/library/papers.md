@@ -1634,3 +1634,12 @@ Production multi-agent data management system with "three-track knowledge archit
 | 2604.15529 | LACE: Lattice Attention for Cross-thread Exploration (Apr 2026) | ★★★½ — Cross-thread attention for parallel reasoning. Interesting but less directly relevant. |
 | 2604.15456 | DeepER-Med: Agentic AI for Evidence-Based Medical Research (Apr 2026) | ★★★ — Medical domain deep research agent. Evidence synthesis workflow. |
 | 2604.15709 | Bilevel Optimization of Agent Skills via MCTS (Apr 2026) | ★★★ — Skill optimization framework. |
+
+## 2026-04-21 — Session: Monday Triage (DD#804–807)
+
+| arXiv ID | Title | Notes |
+|---|---|---|
+| 2604.15597 | LLMs Corrupt Your Documents When You Delegate (DELEGATE-52) (Apr 2026) | ★★★★★ — **DD#804**. Frontier models corrupt 25% of document content in long delegated workflows. Silent corruption compounds over interaction length. Agentic tools don't help. Single-agent verification collapse. |
+| 2604.15505 | PolicyBank: Evolving Policy Understanding for LLM Agents (Apr 2026) | ★★★★½ — **DD#805**. "Compliant but wrong" failure mode. Mutable tool-level policy memory closes 82% of gap toward human oracle. Standard memory achieves near-zero on policy-gap scenarios. |
+| 2604.15760 | KWBench: Measuring Unprompted Problem Recognition (Apr 2026) | ★★★★½ — **DD#807**. Best model passes 27.9% of knowledge-work recognition tasks. Models articulate concepts when asked but fail to apply unprompted. Multi-model routing doubles coverage. Canonical reasoning-behavior gap paper. |
+| 2604.15727 | Structured ADI Reasoning via Algebraic Invariants (Gamma Quintet) (Apr 2026) | ★★★★ — **DD#806**. Weakest Link bound for reasoning chains: conclusion confidence ≤ min(premise confidences). Formal mechanism to prevent verification cascades. ICLR 2026 Workshop. |
