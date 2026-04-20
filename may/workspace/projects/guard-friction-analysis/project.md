@@ -3,7 +3,7 @@
 **Status**: complete
 **Owner**: may
 **Priority**: P1
-**Iteration**: 5
+**Iteration**: 6
 
 ## Goal
 Analyze guard friction (FM-3.3) — understand why finish-guard and verification-depth-guard cause unnecessary friction, identify redundancies, and produce actionable recommendations.
@@ -28,4 +28,4 @@ Analyze guard friction (FM-3.3) — understand why finish-guard and verification
   - **R3**: Improve error message specificity
 
 ## Current State
-Complete. All 5 milestones done. Analysis delivered. Implementation should be dispatched to tech-lead as a separate task.
+Iteration 6. Milestones: 5/5 done.
