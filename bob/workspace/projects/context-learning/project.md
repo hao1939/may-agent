@@ -1,11 +1,11 @@
 # Project: Context Learning
 
-**Status**: done
+**Status**: blocked
 **Owner**: bob
 **Priority**: P1
 **Iteration**: 18
 
-**Health**: 7/10 (PASS)
+**Health**: 6/10 (BLOCKED)
 ## Goal
 Agents learn from experience and get better over time:
 1. Agent learns from successes and failures
@@ -64,7 +64,9 @@ Goal: roll out to all agents, watch for regression
 - [ ] Ongoing: May monitors health, coach tracks behavior improvement
 
 ## Current State
-Iteration 18. Milestones: 0/0 done.
+Blocked: — The worker cannot make meaningful progress because:
+
+1. **Git commits fail**: The `/app/agents` repo has a `.gitignore` that excludes `src/` and `te
 
 1. ✅ **Current State analysis** — thorough
 
