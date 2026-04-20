@@ -10,9 +10,9 @@
 **Source feedback:** [bob](../../bob/workspace/system-gaps.md), [scout](../../scout/workspace/system-gaps.md), [tech-lead](../../tech-lead/workspace/system-gaps.md)
 **Tracked metrics:** `scout.findings-used`, `bob.designs-implemented`, `system.stuck-requests`
 
-**Status**: active
+**Status**: blocked
 **Iteration**: 6
-**Health**: 5/10 (FAIL)
+**Health**: 7/10 (BLOCKED)
 ## Why
 Agents produce reports, KEs, analyses — then get zero signal on whether anyone used them. Scout writes deep dives that nobody reads. Bob creates KEs that never get applied. Without feedback, agents can't self-correct toward higher-impact work.
 
@@ -111,7 +111,7 @@ The unread deliverables query correctly returns only the QA report (scout's repo
 
 
 ## Current State
-Iteration 6. Milestones: 4/4 done.
+Blocked: The task is stuck in a finish-guard loop for multiple iterations (4-6) with no forward progress. The evaluator scored 5/10 because the tracker module 
 
 **Evaluator**: FAIL (score=5/10) — The tracker module exists but is **never imported or wired up** anywhere in the actual application code.
 
@@ -124,4 +124,14 @@ SCORE: 5
 2. **Goal met**: Cannot fully verify without the project.md file, but based on the worker's own assessment (milestones about DB schema, tracker, query helper, wi
 
 **Reviewer**: BLOCKED — The task is stuck in a finish-guard loop for multiple iterations (4-6) with no forward progress. The evaluator scored 5/10 because the tracker module is never wired into the application. However, the worker keeps retrying `finish()` instead of addressing the integration gap. Since this is iteration 6 with the same loop pattern, escalate to the parent for decision on whether to close as-is or spawn new work for integration.
+
+**Evaluator**: BLOCKED eval (score=7/10) — SCORE: 7
+
+**Reasoning:**
+
+1. **Deliverables exist**: Yes. `agents/src/lib/file-read-tracker.ts` exists with full implementation (types, DB helpers, logging, query functions). `test/file-read-tracker.test.ts` exists with 7 passing tests.
+
+2. **Goal met**: Without the project.md file (couldn't locate it), I can only assess based on the milestones described. The file-read tracking system appears complete: DB schema, tracker, query helper, and integration.
+
+3. **Evidence**: Tests pass (7/7). The mod
 
