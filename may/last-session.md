@@ -1,12 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** cron_1776670805595_823
+- **Session:** s_1776672019860_834
 - **Status:** done
-- **When:** 2026-04-20T07:41:00.776Z
-- **Duration:** 55s
+- **When:** 2026-04-20T08:00:51.143Z
+- **Duration:** 31s
 
 ## What Happened
-Workflow changes are minor fixes to persistent-task.ts, both by may-agent. No external system-scope concerns.
-
-Now update the board with current cycle data:
+The project is already marked as **blocked** in the project file, and the journal confirms the blocker: all plumbing works but agents don't react to alerts. Status is already correct.
