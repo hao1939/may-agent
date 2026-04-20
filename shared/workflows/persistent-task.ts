@@ -302,7 +302,7 @@ function buildReviewPrompt(
   const ms = extractMilestones(projectContent);
   const recentEntries = getRecentJournalEntries(journalContent, iteration, 2);
 
-  let prompt = `[REVIEW ONLY — no file edits expected.]\n\n`;
+  let prompt = `[REVIEW ONLY — no file edits expected. Do NOT use edit(), write(), or bash commands that modify files. Only read and analyze.]\n\n`;
   prompt += `You are reviewing iteration ${iteration} of a persistent task.\n\n`;
   prompt += `## Goal\n${goal}\n\n`;
 
