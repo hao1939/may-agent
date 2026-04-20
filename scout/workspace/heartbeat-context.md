@@ -13,15 +13,17 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-20T21:40)
+# Your Context (auto-generated 2026-04-20T22:10)
 
 **System:** 11 sessions/6h, 0% error rate
 
 **Top spenders:**
-- bob: 8s, 221KB
+- bob: 9s, 284KB
 - coach: 1s, 98KB
 - tech-lead: 1s, 45KB
-- may: 1s, 12KB
+
+**Your active error patterns:**
+- FM-3.3: 1x
 
 **📊 Your Metrics:**
 - Findings cited downstream (ratio, higher is better): **0.6136** ratio → 0.5 ratio
