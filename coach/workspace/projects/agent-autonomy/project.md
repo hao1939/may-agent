@@ -5,7 +5,7 @@
 **Priority**: P1
 **Iteration**: 16
 
-**Health**: 0/10 (FAIL)
+**Health**: 7/10 (BLOCKED)
 ## Goal
 Each agent plays their role and takes responsibility autonomously. The system is self-driven because every agent knows what they own, what to watch, and when to act — without being told.
 
@@ -118,7 +118,7 @@ From artifacts (DB-free fallback):
 
 
 ## Current State
-Iteration 16. Milestones: 3/5 done. Next: Verify: observe 2-3 heartbeat cycles per agent after changes — are they more pro
+Blocked: — The remaining milestones require **observing real heartbeat cycles over time**, which cannot be accomplished by a worker agent writing reports in a 
 
 ## Iteration Summary
 - **Iter 13**: — All 5 milestones are complete. The `/app/docs/project.md` file exists with well-structured content
