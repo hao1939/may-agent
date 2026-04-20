@@ -22,19 +22,26 @@ Today the system has three separate routing mechanisms:
 
 **The gap:** Events are ephemeral. If no handler subscribes, the event vanishes. Messages and forks are durable. This violates P3 (events must be consumed).
 
-**The fix:** Unify them. Everything enters through the bus. The requests table catches what isn't consumed in real-time:
+**The fix:** Unify them. Everything enters through the bus. **All events are persisted.** The DB is the complete record of everything that happened:
 
 ```
 Event fires on bus
-  → Handler registered?        → runs immediately (existing behavior)
-  → Nobody subscribes?         → persisted to requests table as unconsumed event
-  → Owner picks up in heartbeat, decides:
+  → DB persists it (always — complete event log)
+  → Handler registered? → runs immediately
+  → Nobody subscribes? → owner sees it in heartbeat via DB query
+      Owner decides:
       a) handle it now
       b) register a handler so next time it's automatic
       c) triage and dismiss
 ```
 
-The requests table becomes the **durable event queue**. No separate fallback logic. No auto-forking on unhandled events. The architecture itself guarantees the closed loop — an event is either handled in real-time or queued for the owner's next heartbeat.
+The event log is the **single source of truth**. Consumed vs unconsumed is just a column (`handled_by`). No separate fallback logic. No special persistence path for unhandled events. The architecture itself guarantees the closed loop.
+
+Benefits:
+- **Complete audit trail** — "what happened and when" is always queryable
+- **New handlers can catch up** — register a handler for `metric.breach` today, query the DB for past breaches to backfill
+- **Observability** — "how many unhandled events per day?" is a trivial SQL query
+- **Graceful degradation** — even before building a handler, events are captured and visible to owners
 
 ### What changes in `may.ts`
 
@@ -43,20 +50,24 @@ The `case "emit"` handler (line 818) currently:
 2. Logs how many handlers triggered
 3. **If 0 triggered — does nothing** (the gap)
 
-After unification, step 3 becomes:
+After unification:
+- **All** `emit` events are persisted to an events table (new DB writer subscriber)
+- Handlers that fire mark the event as handled (`handled_by`)
+- Unconsumed events (`handled_by IS NULL`) are visible to owners in heartbeat via: `SELECT * FROM events WHERE owner = ? AND handled_by IS NULL`
+
+The persistence is a **DB writer subscriber** on the bus — same pattern as session events. Not special-case code in `may.ts`. The emit handler just dispatches; the DB subscriber persists everything.
+
 ```typescript
-if (triggered === 0 && eventData?.owner) {
-  trackRequest(PERSIST_DIR, {
-    fromEntity: "system",
-    toAgent: eventData.owner,
-    task: `[unhandled-event] ${eventType}: ${JSON.stringify(eventData)}`,
-    method: "notify",
-    source: "event-fallback",
-  });
-}
+// New bus subscriber (in DB writer or standalone)
+bus.subscribe((event) => {
+  if (event.type === "emit") {
+    db.prepare("INSERT INTO events (event_type, data, owner, timestamp) VALUES (?,?,?,?)")
+      .run(event.event, JSON.stringify(event.data), event.data?.owner, Date.now());
+  }
+});
 ```
 
-~10 LOC. The owner sees it in their heartbeat request scan. They decide what to do. No fork storm. No immediate reaction required.
+~15 LOC for the subscriber + schema.
 
 ### Messages become events
 
@@ -81,13 +92,21 @@ This is a future step — today's `message` path already persists correctly. The
 
 ## Remaining Gaps
 
-### G1: Unconsumed Events Vanish (violates P1, P3)
+### G1: Events Are Ephemeral (violates P1, P3)
 
-**Current:** `dispatchEvent()` returns 0 silently. Event gone.
+**Current:** `emit` events live only on the bus. If no handler subscribes, gone. Even consumed events have no record.
 
-**Fix:** Persist unconsumed events to requests table with owner as the recipient. Owner reviews in heartbeat. ~10 LOC in `may.ts`.
+**Fix:** Persist **all** `emit` events to an `events` table via a DB writer subscriber. Columns:
+- `event_type` — `metric.breach`, `project.commented`, etc.
+- `source` — who/what emitted it (handler name, agent name, "human")
+- `owner` — from event data or derived via owner registry
+- `data` — JSON payload
+- `handled_by` — NULL if unconsumed, handler name if consumed
+- `timestamp`
 
-This is the core of the unification — the requests table is the durable event queue.
+Owners query unconsumed events in heartbeat: `SELECT * FROM events WHERE owner = ? AND handled_by IS NULL`.
+
+This replaces the need for any "fallback" logic. The DB is the safety net.
 
 ### G2: No `owner` Field on Cron Entries (violates P2)
 
@@ -134,7 +153,7 @@ function getOwner(entity: string): string {
 2. Remove `autoForkForAlert()` from metrics-snapshot
 3. Create `metric-alert` handler with `"on": ["metric.breach"]`
 4. `metric-alert` routes to best-fit agent. Owner as fallback.
-5. If no `metric-alert` handler registered → event persists to requests table (G1) → owner picks up in heartbeat
+5. Whether or not `metric-alert` handler exists, the breach event is persisted (G1) and visible to the owner in heartbeat
 
 This is the unification in action: even if we haven't built the `metric-alert` handler yet, the breach event won't vanish — it persists and the owner sees it.
 
@@ -169,10 +188,10 @@ Self-evaluation bias risk. Monitor false-done rates before adding independent ev
 - **G2** — Add `owner` field to cron.json entries
 - Prerequisite for everything else
 
-### Phase 2: Unified Event Persistence (the big win)
-- **G1** — Persist unconsumed events to requests table
+### Phase 2: Event Persistence (the big win)
+- **G1** — Events table + DB writer subscriber — all events persisted, unconsumed events visible to owners
 - **G5** — Decouple metrics: emit `metric.breach`, create `metric-alert` handler
-- This phase implements the closed loop: every event either handled immediately or queued for owner
+- This phase implements the closed loop: every event is recorded, consumed or not
 
 ### Phase 3: Escalation
 - **G3** — Guard block messages with escalation template using owner registry
