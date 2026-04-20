@@ -82,3 +82,5 @@ The deliverables are solid:
 
 **(c) First step:** Re-read `.state/reviewer-investigation.md` and count total iterations vs wasted iterations across all 13 examples to compute the baseline.
 
+### Iteration 5 — 2026-04-20T19:24:30.302Z
+**Worker**: Now let me compute the baseline numbers from the investigation data.
