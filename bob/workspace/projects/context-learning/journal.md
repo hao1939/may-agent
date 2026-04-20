@@ -531,3 +531,5 @@ The open questions have been cleaned up to three genuinely open items (evaluatio
 
 The remaining milestone "Propose integration points" is fully addressed. The doc is a complete, actionable design deliverable.
 
+**Reviewer**: DONE — All milestones are complete. The design doc at `docs/designs/agent-learning.md` covers integration points (session end, heartbeat, workflow steps) along with problem statement, approach comparison, proposed architecture, and open questions. Previous evaluation scored 8/10 as PASS.
+
