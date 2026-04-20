@@ -1,6 +1,6 @@
 # Project: Guard Friction Analysis (FM-3.3)
 
-**Status**: complete
+**Status**: active
 **Owner**: may
 **Priority**: P1
 **Iteration**: 6
