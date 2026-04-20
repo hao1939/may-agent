@@ -74,8 +74,13 @@ function parseInput(raw: string, callingAgent: string): PersistentTaskConfig {
   if (!goal || goal === "see project file" || goal === "continue the project") {
     try {
       const content = readFileSync(projectPath, "utf-8");
-      const goalMatch = content.match(/^## Goal\n([\s\S]*?)(?=\n## |$)/m);
-      if (goalMatch) goal = goalMatch[1].trim().split("\n")[0];
+      const idx = content.indexOf("## Goal\n");
+      if (idx !== -1) {
+        const after = content.slice(idx + "## Goal\n".length);
+        const nextSection = after.indexOf("\n## ");
+        const goalText = (nextSection === -1 ? after : after.slice(0, nextSection)).trim();
+        if (goalText) goal = goalText.split("\n")[0];
+      }
     } catch { /* file may not exist yet */ }
   }
   if (!goal) throw new Error("Missing required field: goal");
