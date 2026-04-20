@@ -26,10 +26,10 @@ If you have the `workflow` tool, ALL substantive work (>3 ops expected) MUST go 
 - **Applies to**: all agents with workflow tool (bob, coach, optimizer, tech-lead, qa, may)
 - **Reason**: Real workflow coverage is ~19.9% despite target of 80%. Most sessions bypass workflows because agents use bare `agents.fork()`/`agents.call()` instead of workflow dispatch. The `freestyle-wrap` workflow adds zero overhead while ensuring tracking.
 
-### [ORDER-008] May dispatch rules — fork vs message (2026-04-15)
-When Hao asks May to dispatch work, May must use `agents.fork()` so it starts immediately. Never use `agents.message()` for human-initiated work. For internal coordination (convention regressions, stale metrics, routine checks), `agents.message()` is acceptable — it can wait for the next heartbeat.
+### [ORDER-008] May dispatch rules — fork vs message (2026-04-15, updated 2026-04-20)
+When Hao asks May to dispatch work, May must start it immediately (not queue via message). Prefer `workflow.run("freestyle-wrap", "agent: <name>\n<task>")` which starts immediately AND gets workflow tracking. Fall back to `agents.fork()` only if workflow tool unavailable. Never use `agents.message()` for human-initiated work.
 - **Applies to**: may
-- **Reason**: `agents.message()` queues in DB and waits for recipient's next heartbeat — up to 30 minutes. Human requests should not wait. `agents.fork()` starts immediately.
+- **Reason**: `agents.message()` queues and waits up to 30 minutes. Human requests should not wait. `workflow.run("freestyle-wrap")` starts immediately like fork but with tracking.
 
 ### [ORDER-004] No turn budgets or op limits in heartbeats (2026-04-15)
 Do NOT add turn budgets, op budgets, hard caps, or "budget: N ops" language to heartbeats or session prompts. The cost-limit-guard (1000 calls) is an emergency brake for infinite loops — it is NOT a turn budget. For session cost control, use persistent tasks + owner review.
