@@ -47,3 +47,7 @@ Agents should react to metric alerts. Currently 4 alerts are firing with zero re
 
 ## Current State
 Iteration 3. Milestones: 3/5 done. Next: Verify: auto-fork has NEVER fired (0 sessions with source=metric-alert). Need to
+
+## Iteration Summary
+- **Iter 3**: Now I have a clear picture. Let me write a verification report:
+
