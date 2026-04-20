@@ -1,7 +1,7 @@
 # Deep Dives Index
 
 > 130 research deep dives, cross-reference syntheses, and reference documents.  
-> Last updated: 2026-04-19 evening | Maintained by Scout
+> Last updated: 2026-04-21 morning | Maintained by Scout
 
 ## How to Use This Index
 - **DD#NNN** = Deep Dive on a single paper
@@ -869,3 +869,12 @@
 | DD-792 | 2604.11462 | ContextCurator: RL-Trained Active Context Management | ★★★★ | 7B matches GPT-4o; 8× token reduction; reasoning anchors concept |
 | DD-793 | 2604.07821 | More Capable, Less Cooperative: Multi-Agent Coordination Failure | ★★★★ | o3 at 17% optimal cooperation; capability ≠ cooperation; ICLR 2026 Workshop |
 | DD-794 | 2604.05432 | Back-Reveal: Data Exfiltration via Backdoored Tool Use | ★★★★ | Tool-call exfiltration; multi-turn amplification; memory as attack surface; ACL 2026 |
+
+### Monday April 21 2026 Triage (DD#795-798)
+
+| # | Paper | Title | ★ | Theme |
+|---|-------|-------|---|-------|
+| DD-795 | 2604.15877 | Experience Compression Spectrum: Unifying Memory, Skills, Rules | ★★★★★ | Memory/skills/rules as compression axis; "missing diagonal"; <1% cross-community citation |
+| DD-796 | 2604.10352 | ClawVM: Virtual Memory for Stateful Tool-Using Agents | ★★★★★ | OS-style typed pages for agent state; eliminates compaction faults; EuroMLSys '26 |
+| DD-797 | 2604.15034 | Autogenesis: Self-Evolving Agent Protocol | ★★★★ | Versioned resource lifecycle; closed-loop self-evolution with rollback |
+| DD-798 | 2604.10938 | AgentWebBench: Multi-Agent Coordination in Agentic Web | ★★★★ | Decentralized coordination benchmark; scaling helps; planning critical |
