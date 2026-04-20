@@ -62,4 +62,4 @@ Keep orchestrator lean:
 **Measured**: Longest production run so far: 15 steps (7-8 iterations). All completed successfully.
 
 **Metric**: `context.orchestrator-max-iterations` = **unlimited** (was "unknown")
-**Status**: This concern is resolved. The architecture was already correct — we were worried about a problem that doesn't exist.
+**Status**: active

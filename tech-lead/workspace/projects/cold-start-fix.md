@@ -8,6 +8,7 @@
 **Source feedback:** [tech-lead](../system-gaps.md), [optimizer](../../optimizer/workspace/system-gaps.md), [coach](../../coach/workspace/system-gaps.md)
 **Tracked metrics:** `system.agent-utilization`
 
+**Status**: active
 ## Why
 Every agent wastes their first 5-15 tool calls rebuilding context: reading todo.md, querying DB, scanning recent sessions. Tech-lead, optimizer, coach, and scout all independently flagged this as their #1 time sink.
 

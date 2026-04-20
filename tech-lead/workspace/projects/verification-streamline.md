@@ -8,6 +8,7 @@
 **Source feedback:** [optimizer](../../optimizer/workspace/system-gaps.md), [scout](../../scout/workspace/system-gaps.md)
 **Tracked metrics:** `coder.first-pass-rate`, `optimizer.quality-preserved`
 
+**Status**: active
 ## Why
 Guards currently treat all file operations equally. Creating a new file and editing critical infrastructure both require the same verification overhead. Agents spend 15-20% of ops on redundant re-reads within the same session.
 
