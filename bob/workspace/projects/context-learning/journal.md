@@ -236,3 +236,16 @@ Good, files restored to unformatted state. Now update the phase2 doc:
 
 **Recommendation:** This task should be re-scoped or restarted with clearer, smaller subtasks. The human comments indicate this should be experimental and unhurried — consider breaking into discrete, achievable pieces rather than tracking 18 milestones in one persistent task.
 
+### Iteration 14 (comment) — 2026-04-20T08:05:33.444Z
+**Comment**: - [2026-04-20 hao] 18 milestones is too many for one project. The Phase 1 DD audit was good work. Drop the gym scenario (prettier is broken). Focus on: 1) Ask scout to research OpenClaw and Hermes Agent learning mechanisms. 2) Based on all research, write a concrete proposal for how our agents should learn from experience. That's the deliverable — a design doc, not a working system yet.
+- [2026-04-20 hao] Session continuity is currently UNSOLVED. buildSessionContext() in src/lib/manager.ts (144 lines) computes digests, cross-agent context, active recall, session diffs, checkpoints, last-session summaries — then THROWS IT ALL AWAY (dead code). User message = task only. This dead code should be cleaned up (src/ change, needs Hao). The context-learning project should design the RIGHT way to give agents experience-based context — not brute-force injection, but learning. The dead code's data sources (digests, diffs, recall) are valuable inputs for the design.
+**Reviewer**: CONTINUE — The task has been re-scoped by the human. Stop processing comments and start executing. Next iteration must produce concrete output:
+
+1. **Fork scout** to research OpenClaw and Hermes Agent learning mechanisms (how they persist lessons, what works, what doesn't).
+
+2. **Read the dead code** in `src/lib/manager.ts` — specifically `buildSessionContext()` — and document what data sources it computes (digests, cross-agent context, active recall, session diffs, checkpoints, last-session summaries). Write a brief summary of what's there.
+
+3. **Begin drafting** a design doc at `docs/designs/agent-learning.md` with sections: Problem Statement, Current State (the dead code analysis), Research (placeholder for scout results), Proposed Design, Open Questions.
+
+The deliverable for this iteration is: the scout research dispatched AND the design doc skeleton with the "Current State" section filled in from reading the actual code.
+

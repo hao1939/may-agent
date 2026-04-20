@@ -1,9 +1,9 @@
 # Project: Context Learning
 
-**Status**: blocked
+**Status**: active
 **Owner**: bob
 **Priority**: P1
-**Iteration**: 13
+**Iteration**: 14
 
 ## Goal
 Agents learn from experience and get better over time:
@@ -152,5 +152,3 @@ truncateTranscript:
 - How to avoid lesson bloat while keeping useful ones?
 
 ## Comments
-- [2026-04-20 hao] 18 milestones is too many for one project. The Phase 1 DD audit was good work. Drop the gym scenario (prettier is broken). Focus on: 1) Ask scout to research OpenClaw and Hermes Agent learning mechanisms. 2) Based on all research, write a concrete proposal for how our agents should learn from experience. That's the deliverable — a design doc, not a working system yet.
-- [2026-04-20 hao] Session continuity is currently UNSOLVED. buildSessionContext() in src/lib/manager.ts (144 lines) computes digests, cross-agent context, active recall, session diffs, checkpoints, last-session summaries — then THROWS IT ALL AWAY (dead code). User message = task only. This dead code should be cleaned up (src/ change, needs Hao). The context-learning project should design the RIGHT way to give agents experience-based context — not brute-force injection, but learning. The dead code's data sources (digests, diffs, recall) are valuable inputs for the design.
