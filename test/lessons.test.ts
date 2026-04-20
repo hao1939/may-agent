@@ -4,7 +4,7 @@
 
 import { describe, it, beforeEach, afterEach } from "node:test";
 import assert from "node:assert";
-import { mkdtempSync, rmSync, readFileSync, existsSync } from "node:fs";
+import { mkdtempSync, rmSync, readFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { extractLessons, retrieveLessons, decayLessons } from "../src/lib/lessons.ts";
@@ -167,10 +167,8 @@ describe("lessons module", () => {
 
   describe("decayLessons", () => {
     it("decays old lessons", () => {
-      // Manually create an old lesson
-      const { mkdirSync: mkd, writeFileSync: wf } = require("node:fs");
       const lessonsPath = join(agentsRoot, "worker", "lessons.jsonl");
-      mkd(join(agentsRoot, "worker"), { recursive: true });
+      mkdirSync(join(agentsRoot, "worker"), { recursive: true });
       const oldLesson = {
         id: "test-id",
         timestamp: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
@@ -182,7 +180,7 @@ describe("lessons module", () => {
         validated_count: 0,
         last_relevant: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
       };
-      wf(lessonsPath, JSON.stringify(oldLesson) + "\n");
+      writeFileSync(lessonsPath, JSON.stringify(oldLesson) + "\n");
 
       const decayed = decayLessons(agentsRoot, "worker");
       assert.ok(decayed > 0);
