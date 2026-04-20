@@ -976,6 +976,7 @@ export class Cron {
         .catch((err) => {
           const errMsg = err instanceof Error ? err.message : String(err);
           this.onError?.(`Cron heartbeat "${entry.name}" failed — resetting session for next fire`);
+          this.notify?.(`⚠️ Heartbeat "${entry.name}" failed: ${errMsg}`);
           updateRequest(this.persistDir, requestId, {
             status: "FAILED",
             completedAt: Date.now(),
@@ -1052,6 +1053,7 @@ export class Cron {
           error: errMsg,
         });
         this.onError?.(`Cron handler "${entry.name}" failed: ${errMsg}`);
+        this.notify?.(`⚠️ Handler "${entry.name}" failed: ${errMsg}`);
       });
   }
 

@@ -300,6 +300,17 @@ CREATE TABLE IF NOT EXISTS file_reads (
 );
 CREATE INDEX IF NOT EXISTS idx_file_reads_agent ON file_reads(agent);
 CREATE INDEX IF NOT EXISTS idx_file_reads_path  ON file_reads(filePath);
+
+CREATE TABLE IF NOT EXISTS events (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  event_type      TEXT NOT NULL,
+  source          TEXT,
+  owner           TEXT,
+  data            TEXT,
+  timestamp       INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_events_owner ON events(owner, timestamp);
+CREATE INDEX IF NOT EXISTS idx_events_type  ON events(event_type, timestamp);
 `;
 
 // ── Database Management ────────────────────────────────────────────────
