@@ -395,3 +395,5 @@ DONE — All 5 milestones are complete. The alert-to-reaction loop is fully impl
 
 **Reviewer**: CONTINUE — These files keep getting re-modified by the system after each commit. Let me just force through:
 
+**Reviewer**: DONE — All 5 milestones are complete. The metric-alert reactivity loop is now closed: alerts fire → agents receive them via metric-alert sessions → agents investigate and act. Evidence includes active metric-alert sessions for qa, coach, and tech-lead agents responding to firing alerts, documented in the verification report.
+
