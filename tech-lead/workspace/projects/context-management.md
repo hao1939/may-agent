@@ -135,3 +135,5 @@ SCORE: 4
 
 2. **Goal met**: The goal "see project file" is extremely vague and barely evaluable. If the intent was simply to review a project file, that could be done in one iteration with a single `read` call. Instea
 
+**Reviewer**: BLOCKED — — This task is stuck in an infinite loop. The goal "see project file" is too vague to produce a meaningful deliverable, and the constraint is read-only (no file edits allowed), so the worker cannot create the "concrete deliverable artifact" the evaluator keeps requesting. These two requirements are contradictory. No further iterations will change the outcome.
+
