@@ -5596,3 +5596,9 @@ Findings:
 
 2026-04-19T18:20Z — Heartbeat QA run: No pending review tasks detected. Unreviewed-commit scan blocked because `/app` is not a git repo (`git log`/`git status` both fail: not a git repository). Mandatory verification steps could not run because JS toolchain artifacts are missing: `./node_modules/.bin/tsc` not present (and no `tsconfig.json` found), `./node_modules/.bin/vitest` not present. Proactive code read: `src/dashboard/server.ts` — IMPORTANT: `readBody()` always `JSON.parse`s and will throw on invalid JSON, returning 500 instead of 400 for bad request bodies (e.g. `/api/pin`).
 
+2026-04-20 — Heartbeat: `qa.review-coverage` metric alert still firing (yellow): below threshold 0 < 1 (query against `.state/may.db`).
+- Repo health: `/app` is not a git repo; the git repo is `/app/agents`.
+- Reviewed latest unreviewed commit in agents repo: `853a7d978` (`shared/workflows/persistent-task.ts`). Confirmed it now re-reads `project.md` from disk inside the loop (start of each iteration), after worker phase, and again after reviewer phase to reduce false stuck detection.
+- Potential behavior edge: legacy mode uses `appendToSection(..., "Progress Log", ...)`; if a legacy file doesn’t contain `## Progress Log`, `appendToSection` will create it at EOF. That’s probably acceptable but is a behavior change to be aware of.
+- Tooling limitation: mandatory QA verification commands could not be run in this environment (`./node_modules/.bin/tsc --noEmit` and `./node_modules/.bin/vitest --run` both fail because `node_modules/.bin` is absent; `tsc`/`vitest` not on PATH). No package.json/tsconfig found at `/app` or `/app/agents`.
+
