@@ -3,7 +3,7 @@
 **Status**: done
 **Owner**: may
 **Priority**: P1
-**Iteration**: 5
+**Iteration**: 6
 
 **Health**: 7/10 (PASS)
 ## Goal
@@ -47,7 +47,7 @@ Agents should react to metric alerts. Currently 4 alerts are firing with zero re
 
 
 ## Current State
-Complete. 5/5 milestones. The metric-reactivity system is fully operational. All 5 milestones are complete: alerts are being d
+Iteration 6. Milestones: 5/5 done.
 
 **Summary of what wa
 
