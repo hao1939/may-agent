@@ -25,6 +25,12 @@ This runtime’s project root (`/app`) is **not** a git repository, so the stand
 
 ## 2026-04-20 — heartbeat — agents repo: environment missing Node toolchain; only heartbeat artifacts changed
 
+### Addendum (QA sweep)
+- Mandatory gates in `/app` failed because `./node_modules/.bin/tsc` and `./node_modules/.bin/vitest` are missing.
+- Sample file reviewed (for basic code health): `agents/src/lib/ops-gate.ts`
+  - Behavior: JSONL receipts appended to `.state/ops-receipts.jsonl`; corrupt lines are silently skipped on read.
+  - Note: `getReceipts({ since })` does lexicographic compare on timestamps; safe for ISO 8601 strings, unsafe for arbitrary caller-provided formats.
+
 ### 2026-04-20 addendum (this run)
 - `/app/agents` **is** a git repo and `git log` works there; `/app` is not.
 - Current working tree changes appear to be auto-generated heartbeat/telemetry artifacts (no product code):
