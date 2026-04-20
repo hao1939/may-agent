@@ -38,6 +38,9 @@ Reviewed recent commits in `/app/agents` (the only git repo available in this ru
 ## 2026-04-20 — heartbeat — environment/tooling mismatch blocks mandatory QA gates
 
 ### Notes (this run)
+- `/app` is **not** a git repository in this runtime; only `/app/agents` is (`../app/agents/.git` exists).
+- `/app` has no `package.json`; Node toolchain is not installed at root.
+- `/app/node_modules` exists but only contains `.vite/` cache; no `.bin/tsc` or `.bin/vitest`.
 
 - This runtime directory `/app` is not a git repository, which prevents the standard "recent commits/diff" heartbeat scan here. Only `/app/agents` appears to be a git repo in previous entries.
 - No `package.json`, `tsconfig.json`, or Vitest config found at `/app` root (searched within maxdepth 2–3).
