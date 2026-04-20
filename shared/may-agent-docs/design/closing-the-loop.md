@@ -10,155 +10,180 @@
 
 Map every gap between our core principles and the actual implementation. For each gap: what's violated, the minimal fix, and the sequence.
 
-## Previously Identified Gaps — Now Fixed
+## The Unifying Insight: Events + Persistence = Closed Loop
 
-These were flagged in `implementation-audit.md` (2026-04-20). Verified against current code:
+Today the system has three separate routing mechanisms:
+
+| Mechanism | Path | Storage |
+|-----------|------|---------|
+| Events (`emit`) | Bus → handler subscribes → immediate | In-memory only — lost if no subscriber |
+| Messages (`message`) | Bus → requests DB → heartbeat pickup | Persisted |
+| Fork (`fork`) | Bus → manager.run() → immediate session | Persisted (session) |
+
+**The gap:** Events are ephemeral. If no handler subscribes, the event vanishes. Messages and forks are durable. This violates P3 (events must be consumed).
+
+**The fix:** Unify them. Everything enters through the bus. The requests table catches what isn't consumed in real-time:
+
+```
+Event fires on bus
+  → Handler registered?        → runs immediately (existing behavior)
+  → Nobody subscribes?         → persisted to requests table as unconsumed event
+  → Owner picks up in heartbeat, decides:
+      a) handle it now
+      b) register a handler so next time it's automatic
+      c) triage and dismiss
+```
+
+The requests table becomes the **durable event queue**. No separate fallback logic. No auto-forking on unhandled events. The architecture itself guarantees the closed loop — an event is either handled in real-time or queued for the owner's next heartbeat.
+
+### What changes in `may.ts`
+
+The `case "emit"` handler (line 818) currently:
+1. Dispatches to subscribed cron handlers
+2. Logs how many handlers triggered
+3. **If 0 triggered — does nothing** (the gap)
+
+After unification, step 3 becomes:
+```typescript
+if (triggered === 0 && eventData?.owner) {
+  trackRequest(PERSIST_DIR, {
+    fromEntity: "system",
+    toAgent: eventData.owner,
+    task: `[unhandled-event] ${eventType}: ${JSON.stringify(eventData)}`,
+    method: "notify",
+    source: "event-fallback",
+  });
+}
+```
+
+~10 LOC. The owner sees it in their heartbeat request scan. They decide what to do. No fork storm. No immediate reaction required.
+
+### Messages become events
+
+Today `agents.message("bob", "review this")` goes directly to `trackRequest()`. In the unified model, it emits an event first:
+
+```
+agents.message("bob", task)
+  → bus.emit({ type: "emit", event: "message.received", data: { to: "bob", task, from: "coach" } })
+  → if bob has a handler for "message.received" → immediate
+  → if not → persisted to requests table → heartbeat pickup (today's behavior)
+```
+
+This is a future step — today's `message` path already persists correctly. The unification lets us add immediate handling for messages later without changing the API.
+
+## Previously Identified Gaps — Now Fixed
 
 | Audit GAP | Issue | Status |
 |-----------|-------|--------|
-| GAP 1 | "Already in context" lie — listed files not actually injected | **FIXED** — `manager.ts:474` now says only SOUL.md + common-sense.md |
-| GAP 2 | `buildSessionContext()` dead code | **FIXED** — removed, only comment references remain |
-| GAP 3 | Metric alerts don't auto-fork | **Functional but needs refactoring** — `autoForkForAlert()` works but is coupled (see G9 below) |
+| GAP 1 | "Already in context" lie | **FIXED** — `manager.ts:474` now says only SOUL.md + common-sense.md |
+| GAP 2 | `buildSessionContext()` dead code | **FIXED** — removed |
+| GAP 3 | Metric alerts don't auto-fork | **Functional but coupled** — see G5 below |
 
 ## Remaining Gaps
 
-### G1: No Owner Fallback on Events (violates P2, P3)
+### G1: Unconsumed Events Vanish (violates P1, P3)
 
-**Current:** `dispatchEvent()` in `src/app/cron.ts:211` checks for registered handler subscriptions. If none found, returns 0 silently. Event disappears.
+**Current:** `dispatchEvent()` returns 0 silently. Event gone.
 
-**Principle says:** P3 — Events must be consumed. If no handler, owner picks it up.
+**Fix:** Persist unconsumed events to requests table with owner as the recipient. Owner reviews in heartbeat. ~10 LOC in `may.ts`.
 
-**Fix:** In `src/app/may.ts:826`, after `dispatchEvent` returns 0:
-- Extract owner from event data (events should carry `data.owner`)
-- Fork owner with event context: `bus.emit({ type: "fork", agent: owner, task: "[event] ..." })`
-- If no owner in data, default to "may"
-- ~15 LOC
+This is the core of the unification — the requests table is the durable event queue.
 
 ### G2: No `owner` Field on Cron Entries (violates P2)
 
-**Current:** Cron entries in `agents/may/cron.json` have no `owner` field. When a handler fails, error is logged but nobody is accountable.
-
-**Principle says:** P2 — Everything has an owner. Owner investigates when things go wrong.
+**Current:** Cron entries have `agent` but not `owner`. Handler failures are logged but nobody is accountable.
 
 **Fix:**
-- Add `"owner"` field to cron.json entries (convention: `"may"` for system handlers, agent name for agent-specific handlers)
-- In `src/app/cron.ts` error handling: on handler failure, `bus.emit({ type: "notification", agent: entry.owner, text: "Your handler failed: ..." })`
+- Add `"owner"` to cron.json entries (convention: `"may"` for system handlers, agent name for agent-specific)
+- On handler failure: notify owner via bus
 - ~10 LOC in cron.ts
 
 ### G3: Guard Block Messages Lack Escalation Template (violates P3)
 
-**Current:** Guards emit messages like `"WRITE BLOCKED: Agent 'X' cannot modify Y"`. No indication of who to escalate to or how.
+**Current:** Guards say "WRITE BLOCKED" but don't tell agents who to escalate to or how.
 
-**Principle says:** P3 — Escalation chain is: agent -> session owner -> May -> Hao.
-
-**Fix:** Update guard block messages to include:
-1. What failed
-2. How to fix it
-3. Who to escalate to (use owner registry or default to May)
-4. How to exit cleanly (`finish(status: "blocked")`)
-
-Template per `guard-escalation.md`:
+**Fix:** Block messages include:
 ```
 WRITE BLOCKED: [reason]
 To resolve: [specific fix]
 To escalate: agents('message', { agent: '<owner>', message: '...', priority: 'P0' })
 To exit: finish(status: "blocked", blockers: [{ reason: "..." }])
 ```
-
 ~20 LOC across `compose-guards.ts` and `cross-edit-guard.ts`.
 
-### G4: No Owner Registry (violates P2 — prerequisite for G1, G2, G3)
+### G4: No Owner Registry (violates P2 — prerequisite)
 
-**Current:** Ownership is scattered:
-- Metrics: `owner` column in `metrics` table
-- Projects: `**Owner**` field in project.md
-- Cron entries: `agent` field (not `owner`)
-- Agents: implicit (may is supervisor)
+**Current:** Ownership scattered across metrics DB, project.md, cron agent field, implicit convention.
 
-No unified `getOwner(entity)` function.
-
-**Principle says:** P2 — Everything has an owner.
-
-**Fix:** Create `src/lib/owner-registry.ts` (~30 LOC):
+**Fix:** `src/lib/owner-registry.ts` (~30 LOC):
 ```typescript
 function getOwner(entity: string): string {
-  // 1. Check cron entry owner field
-  // 2. Check agent definitions (agent → supervisor mapping)
-  // 3. Check metric DB (metric_id → owner)
+  // 1. Cron entry owner field
+  // 2. Agent definitions (agent → supervisor mapping)
+  // 3. Metric DB (metric_id → owner)
   // 4. Default: "may"
 }
 ```
 
-Used by: event fallback (G1), cron error handling (G2), guard escalation template (G3).
+### G5: Metric Alert Response Coupled to Measurement (violates P1, P2)
 
-### G5: Session Continuity Unsolved (violates P4)
+**Current:** `metrics-snapshot.ts` detects breach AND calls `autoForkForAlert()` directly.
 
-**Current:** Agents start fresh each session. For project work, journal.md helps. For heartbeats and ad-hoc tasks — zero memory.
+**Fix:** Decouple into emit + subscribe:
+1. `metrics-snapshot` emits `metric.breach` event on breach
+2. Remove `autoForkForAlert()` from metrics-snapshot
+3. Create `metric-alert` handler with `"on": ["metric.breach"]`
+4. `metric-alert` routes to best-fit agent. Owner as fallback.
+5. If no `metric-alert` handler registered → event persists to requests table (G1) → owner picks up in heartbeat
 
-**Principle says:** P4 — Context is discovered, not dumped. But there's nothing to discover.
+This is the unification in action: even if we haven't built the `metric-alert` handler yet, the breach event won't vanish — it persists and the owner sees it.
 
-**Status:** Tracked by context-learning project (bob). Not redesigned here. The principle doc notes this as a known gap.
+### G6: Session Continuity Unsolved (violates P4)
 
-### G6: No CLI Event Emit (violates P1)
+**Status:** Tracked by context-learning project (bob). Not redesigned here.
 
-**Current:** Socket `{"type":"emit"}` works. No `may-agent --emit` CLI flag.
+### G7: No CLI Event Emit (violates P1)
 
-**Fix:** ~10 LOC — CLI flag sends emit command to socket. Low priority.
+**Fix:** `may-agent --emit <event> [json]` → socket. ~10 LOC. Low priority.
 
-### G7: Preferred Workflows Slot Not Implemented (violates P4)
+### G8: Preferred Workflows Slot (violates P4)
 
-**Current:** `context-injection-design.md` describes a "Preferred Workflows" replaceable slot. `common-sense.md` references it: "Your preferred workflows are listed in a separate section of your context." It doesn't exist.
+**Recommend:** Remove false reference from common-sense.md. Implement when evidence shows agents freestyle when they shouldn't.
 
-**Fix options:**
-- A) Implement the slot
-- B) Remove the reference from common-sense.md until evidence shows the slot helps
+### G9: No General Circuit Breaker (violates P2)
 
-**Recommend:** B — per P5 (evidence first), remove the false reference. Implement when there's evidence agents freestyle when they shouldn't.
+**Status:** Partially solved by `active-nudge` (5min scan for loops/stalls/ghosts). Monitor coverage before building more.
 
-### G8: No General Circuit Breaker (violates P2)
+### G10: project-resume WorkflowContext is Minimal
 
-**Current:** `active-nudge` handler runs every 5min, detects loops/stalls/ghost deliverables, cancels or nudges. Persistent-task has 5-iteration stall detection.
+No workflow run records saved, child sessions lack `workflowRunId`. Tracking gap, not functional.
 
-**Status:** Partially solved. Monitor whether active-nudge coverage is sufficient before building more.
+### G11: Evaluator Runs as Project Owner
 
-### G9: Metric Alert Response Coupled to Measurement (violates P1, P2)
-
-**Current:** `metrics-snapshot.ts` detects breach AND calls `autoForkForAlert()` directly. Measurement and response are the same handler.
-
-**Principle says:** P1 — Everything is an event. P2 — Route to best-fit, not hardcoded.
-
-**Fix:**
-1. `metrics-snapshot` emits `{ type: "emit", event: "metric.breach", data: { metricId, value, threshold, owner } }` on breach
-2. Remove `autoForkForAlert()` from metrics-snapshot — it only measures and emits
-3. Create `metric-alert` handler in cron.json with `"on": ["metric.breach"]`
-4. `metric-alert` handler does the routing: look up best-fit agent for the metric domain, fork them. Owner as fallback. Dedup via requests DB.
-5. Same pattern as `project-resume` subscribing to `project.commented`
-
-**Benefit:** Multiple handlers can subscribe to `metric.breach`. Telegram notifier, alert handler, dashboard updater — all independent subscribers. Measurement is decoupled from reaction.
+Self-evaluation bias risk. Monitor false-done rates before adding independent evaluator agent.
 
 ## Implementation Sequence
 
-### Phase 1: Foundation — Owner Registry (G4)
-- Create `src/lib/owner-registry.ts`
-- Add `owner` field to cron.json entries
+### Phase 1: Foundation
+- **G4** — Owner registry (`src/lib/owner-registry.ts`)
+- **G2** — Add `owner` field to cron.json entries
 - Prerequisite for everything else
 
-### Phase 2: Closed Loop (G1 + G2 + G9)
-- Owner fallback on event dispatch
-- Cron handler error notification to owner
-- Decouple metric alert: emit → subscribe → route
-- This phase implements the core of P1 + P2 + P3
+### Phase 2: Unified Event Persistence (the big win)
+- **G1** — Persist unconsumed events to requests table
+- **G5** — Decouple metrics: emit `metric.breach`, create `metric-alert` handler
+- This phase implements the closed loop: every event either handled immediately or queued for owner
 
-### Phase 3: Escalation (G3)
-- Guard block messages with escalation template
-- Uses owner registry from Phase 1
+### Phase 3: Escalation
+- **G3** — Guard block messages with escalation template using owner registry
 
-### Phase 4: Cleanup (G6 + G7)
-- CLI emit flag (nice-to-have)
-- Remove preferred workflows false reference from common-sense.md
+### Phase 4: Cleanup
+- **G7** — Remove false preferred-workflows reference from common-sense.md
+- **G8** — Remove stale common-sense references per common-sense-followups.md
 
-### Not Addressed Here
-- **G5** (session continuity) — context-learning project
-- **G8** (circuit breaker) — monitor active-nudge first
-- **G10** (project-resume WorkflowContext is minimal) — no workflow run records saved, child sessions lack `workflowRunId`. Tracking gap, not functional.
-- **G11** (evaluator runs as project owner) — self-evaluation bias risk. Monitor false-done rates before adding independent evaluator agent.
+### Not Prioritized
+- **G6** (CLI emit) — nice-to-have
+- **G9** (circuit breaker) — active-nudge covers it
+- **G10** (workflow tracking) — tracking gap, not functional. Note: blocks project-tracking-db queries until fixed.
+- **G11** (evaluator independence) — needs evidence of bias first
+- **G12** (reviewer quality) — the reviewer in persistent-task is the weakest link. Tracked by reviewer-effectiveness project (bob, P0). A bad reviewer wastes all the infrastructure above.
