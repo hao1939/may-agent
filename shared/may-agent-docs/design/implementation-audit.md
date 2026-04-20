@@ -10,13 +10,13 @@
 **Fix**: Change to: "Already in context (do NOT re-read): SOUL.md, common-sense.md" — Remove the false claims. Or: actually inject them (but that contradicts our on-demand design).
 **Recommendation**: Fix the code to be honest. On-demand is correct per our philosophy. The line should say only what's truly injected.
 
-### GAP 2: Session digests still injected (DESIGN CONFLICT)
+### GAP 2: Session context is dead code (NOT A CONFLICT)
 **File**: `src/lib/manager.ts` buildSessionContext()
-**Issue**: The code still injects recent task history (digests), cross-agent digests, and unresolved items into the first user message.
-**Design says**: "User message = task only" (context-injection-design.md)
-**Reality**: User message = task + session context + recent history + cross-agent activity
-**Impact**: Not necessarily bad — agents get useful continuity. But it contradicts our stated design.
-**Recommendation**: Update the design doc to acknowledge this. Session digest injection solves the "session continuity" open problem (#1). We archived the design docs for it but the implementation is still active and useful. Either: (a) align the design to match reality (digests are useful, keep them), or (b) remove the code to match the design. Given that session continuity is an open problem, option (a) seems right.
+**Issue**: `buildSessionContext()` computes session history, cross-agent digests, checkpoints, session diffs, active recall — then the result is NEVER USED. `promptText = task` ignores it completely. Same for `fewShotBlock`.
+**Design says**: "User message = task only" — this is CORRECT and matches the code.
+**Reality**: Session context and few-shot injection are dead code. Computed but discarded.
+**Impact**: Open problem #1 (session continuity) is completely unsolved. Agents truly start fresh every session with zero memory. No digests, no history, no cross-agent context.
+**Recommendation**: Either (a) delete the dead code to reduce confusion, or (b) find a way to make it available on-demand (a tool agents can call to get their recent history). The dead code represents valuable functionality that was disabled when we moved to "task only" — we should decide its fate.
 
 ### GAP 3: Metric alerts don't auto-fork (INCOMPLETE)
 **File**: `agents/may/handlers/metrics-snapshot.ts`
