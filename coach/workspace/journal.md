@@ -3912,3 +3912,26 @@ Observations: All research threads closed. Strategic proposal (`proposal-graduat
 **Assessment**: Sixth consecutive blocked heartbeat. All experimental approaches for text/skill/gate interventions exhausted (0% improvement in last 5 experiments). Convention regressions continue system-wide. EXP-188 finish-guard (+100pp) still not deployed. Only viable path: structural enforcement at tool/workflow layer (tech-lead dependency).
 
 **Blockers**: Tech-lead structural guard delivery. No runnable experiments. Gym saturated.
+
+## 2026-05-13 — Heartbeat (33+)
+
+**Status**: Blocked — no change from prior heartbeats.
+
+**Metrics**: All below target:
+- Intervention hit rate: 47.3% vs 60% target
+- Skill effectiveness: 29.2% vs 60% target
+- Instruction compliance: 53% vs 80% target
+- Breadcrumb action rate: 0.30 vs 0.80 target
+
+**Latest eval**: q=0.75 (acceptable). Mixed recent history (3/5 scored 0).
+
+**Convention**: C1.3 failing (write-without-verify on 2 files). C1.1 passing.
+
+**Blockers**: 
+1. gym-run.sh MISSING — cannot run EXP-190 baselines
+2. Tech-lead structural enforcement not delivered — EXP-188 (+100pp) NOT DEPLOYED
+3. No new unblocked work identified
+
+**Inbound**: 12+ stale convention-regression notifications (30-55 days old). No new actionable items.
+
+**Assessment**: 33+ consecutive blocked heartbeats on core projects. All queued research done (IT-75/76/77). EXP-190 scenario created but untestable. Only path forward: gym infrastructure restoration or tech-lead delivering structural enforcement tooling.
