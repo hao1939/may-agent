@@ -3,7 +3,7 @@
 **Status**: active
 **Owner**: coach
 **Priority**: P1
-**Iteration**: 11
+**Iteration**: 12
 
 ## Goal
 Each agent plays their role and takes responsibility autonomously. The system is self-driven because every agent knows what they own, what to watch, and when to act — without being told.
@@ -114,3 +114,7 @@ From artifacts (DB-free fallback):
 - **Implementation:** Add a post-heartbeat hook that classifies each heartbeat session and writes to `.state/heartbeat-metrics.jsonl`
 
 ## Comments
+
+
+## Current State
+Iteration 12. Milestones: 3/5 done. Next: Verify: observe 2-3 heartbeat cycles per agent after changes — are they more pro

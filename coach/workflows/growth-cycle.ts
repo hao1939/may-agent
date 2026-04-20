@@ -1,6 +1,6 @@
 /// <reference path="../../../src/lib/workflow-defs.d.ts" />
 
-import { appendFileSync } from "node:fs";
+import { appendFileSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   promoteAgent,
@@ -24,6 +24,69 @@ import {
   AGENTS_ROOT,
   PROJECT_ROOT,
 } from "./gym-helpers.js";
+
+// ── Pure JS method-catalog.md updater ─────────────────────────────────
+// Replaces LLM session that read, found, and updated a method entry.
+// The catalog has structured entries with **Evidence**: and **Status**: fields.
+
+const METHOD_CATALOG_PATH = join(PROJECT_ROOT, "agents/coach/knowledge/method-catalog.md");
+
+function updateMethodCatalog(
+  methodName: string,
+  baselinePassed: number,
+  patchedPassed: number,
+  totalScenarios: number,
+  decision: string,
+  reason: string,
+): string {
+  if (!methodName) return "(no method name extracted — catalog not updated)";
+
+  let content: string;
+  try {
+    content = readFileSync(METHOD_CATALOG_PATH, "utf-8");
+  } catch {
+    return `(could not read ${METHOD_CATALOG_PATH} — catalog not updated)`;
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+  const evidenceLine = `${today}: Baseline ${baselinePassed}/${totalScenarios}, ` +
+    `Patched ${patchedPassed}/${totalScenarios}. Decision: ${decision} (${reason}).`;
+
+  // Find the **Evidence**: line closest to the method name
+  const methodIdx = content.toLowerCase().indexOf(methodName.toLowerCase());
+  if (methodIdx === -1) {
+    // Method not found — append evidence to end of file
+    content += `\n\n### ${methodName}\n**Evidence**: ${evidenceLine}\n**Status**: tested ${today}\n`;
+    writeFileSync(METHOD_CATALOG_PATH, content, "utf-8");
+    return `Appended new entry for "${methodName}" (not found in catalog).`;
+  }
+
+  // Find the next **Evidence**: after the method mention
+  const afterMethod = content.slice(methodIdx);
+  const evidenceMatch = afterMethod.match(/(\*\*Evidence\*\*:\s*)(.*)/);
+  if (evidenceMatch) {
+    const evidenceOffset = methodIdx + (afterMethod.indexOf(evidenceMatch[0]));
+    const existingEvidence = evidenceMatch[2].trim();
+    const newEvidence = existingEvidence
+      ? `${evidenceMatch[1]}${existingEvidence} | ${evidenceLine}`
+      : `${evidenceMatch[1]}${evidenceLine}`;
+    content = content.slice(0, evidenceOffset) + newEvidence +
+      content.slice(evidenceOffset + evidenceMatch[0].length);
+  }
+
+  // Update **Status**: from untested to tested (only if currently untested)
+  const statusMatch = afterMethod.match(/(\*\*Status\*\*:\s*)(.*untested.*)/i);
+  if (statusMatch) {
+    const statusOffset = methodIdx + (afterMethod.indexOf(statusMatch[0]));
+    const newStatus = `${statusMatch[1]}tested ${today} — ${evidenceLine}`;
+    content = content.slice(0, statusOffset) + newStatus +
+      content.slice(statusOffset + statusMatch[0].length);
+  }
+
+  writeFileSync(METHOD_CATALOG_PATH, content, "utf-8");
+  return `Updated catalog entry for "${methodName}": added evidence (${evidenceLine}), ` +
+    (statusMatch ? `changed status to tested.` : `status unchanged (already tested).`);
+}
 
 export const name: string = "growth-cycle";
 
@@ -300,24 +363,16 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const experimentsPath = join(PROJECT_ROOT, "agents/coach/workspace/experiments.jsonl");
   appendFileSync(experimentsPath, JSON.stringify(experimentEntry) + "\n");
 
-  // For learning mode, still use a lightweight LLM session to update method-catalog.md
-  // (this is the only part that benefits from LLM judgment — cataloging observations)
+  // For learning mode, update method-catalog.md with test results (pure JS — no LLM needed).
+  // Previously this spawned a full coach LLM session just to do a structured text update.
+  // Converted to JS on 2026-04-22 — saves ~1 LLM session per learning-mode growth cycle.
   let catalogUpdate = "";
   if (isLearning) {
-    const catalogPrompt =
-      `Update the method catalog with what you learned.\n\n` +
-      `## Test Results Summary\n` +
-      `Baseline passed: ${baselinePassed}/${scenarios.length}, Patched passed: ${patchedPassed}/${scenarios.length}\n` +
-      `Decision: ${decision} (${reason})\n\n` +
-      `## Instructions\n` +
-      `1. Read \`agents/coach/knowledge/method-catalog.md\`\n` +
-      `2. Find the entry for method: ${extractMethod(diagText)}\n` +
-      `3. Update its Evidence section with these concrete observations\n` +
-      `4. Change Status from "untested" to "tested" with today's date\n` +
-      `5. Report what you updated.`;
-
-    const catalogResult = await ctx.runAgent("coach", catalogPrompt);
-    catalogUpdate = catalogResult.lastAssistantText ?? "(catalog update session failed)";
+    catalogUpdate = updateMethodCatalog(
+      extractMethod(diagText),
+      baselinePassed, patchedPassed, scenarios.length,
+      decision, reason
+    );
   }
 
   return ctx.done(
