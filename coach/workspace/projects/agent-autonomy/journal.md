@@ -399,3 +399,30 @@ Now I have real data. Let me write the comprehensive audit.
 
 **Recommendation:** Mark milestones 1-3 as complete per the Goal statement (they were done in a prior commit). For milestones 4-5, either: (a) have a human or the orchestrator provide session data the worker can't query, or (b) use `agents list` to check recent session activity instead of direct DB queries, or (c) accept that verification requires waiting for future heartbeat cycles and close this task as milestones 1-3 complete with 4-5 deferred.
 
+### Iteration 11 (comment) — 2026-04-20T06:00:45.933Z
+**Comment**: - [2026-04-20 hao] Coach actually did good work — slimmed all 6 heartbeat.md files, created reference.md per agent (commit d50ff32fe). Milestones 1-3 are done. Focus on 4-5.
+**Reviewer**: CONTINUE — — Milestones 1-3 are confirmed complete. Next iteration should focus on 4-5 using available artifacts (not database queries).
+
+**Specific instructions for iteration 12:**
+
+1. **Do NOT attempt bun:sqlite database queries.** They have failed every iteration.
+
+2. **For Milestone 4 (Verify):** Read journal files and workspace artifacts to assess proactivity:
+   - `ls .state/` to see what's available
+   - Read files matching `.state/*/journal*.md` or `.state/*/log*` patterns
+   - Use `agents list` to see recent session activity
+   - Read the actual heartbeat.md files that were changed: `find /app/agents -name heartbeat.md` and compare them to reference.md files
+   - Look for any `.state/checkpoints/` data from recent agent sessions
+   - If insufficient post-change heartbeat data exists, say so honestly — it's valid to note "insufficient cycles observed yet"
+
+3. **For Milestone 5 (Measure):** Propose a metric definition for heartbeat productivity. This is a *design* task, not a measurement task. Write a concrete definition:
+   - What counts as "meaningful action" vs "no-op"
+   - How to measure it (e.g., opCount > 0, files modified, requests created)
+   - Proposed threshold for "productive" heartbeat
+   - Where/how this metric should be tracked going forward
+
+4. **Output:** Update `/app/docs/project.md` with:
+   - Milestones 1-3 marked complete
+   - Milestone 4 findings (even if "insufficient data yet")
+   - Milestone 5 metric definition
+
