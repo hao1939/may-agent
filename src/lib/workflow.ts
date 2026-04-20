@@ -70,6 +70,31 @@ export interface WorkflowContext {
    *  Use this instead of hardcoding agent names in shared workflows. */
   agent: string;
 
+  // ── RuntimeCtx (shared infra) ──────────────────────────────────────
+
+  /** Emit an event on the bus. All events — workflow, domain, system — go through one bus. */
+  emit(event: { type: string; [key: string]: unknown }): void;
+
+  /** Open the shared SQLite database. */
+  getDb(): unknown;
+
+  /** Log a diagnostic message. */
+  log(msg: string): void;
+
+  /** Send a human-visible notification (Telegram, web). */
+  notify(msg: string): void;
+
+  /** Persistent state directory. */
+  persistDir: string;
+
+  /** Project root directory. */
+  projectRoot: string;
+
+  /** Agents root directory. */
+  agentsRoot: string;
+
+  // ── Workflow-specific ──────────────────────────────────────────────
+
   /** Run a sub-agent, wait for it to finish, return result.
    *  Checks the steering queue before each step — if a steering signal
    *  is pending, throws WorkflowInterrupted.
@@ -84,9 +109,6 @@ export interface WorkflowContext {
    *  Returns a TaskResult-like object with the function's output.
    *  Timeout: 30s. Output truncated to 50KB. */
   runFunction(label: string, fn: () => Promise<string>): Promise<TaskResult>;
-
-  /** Emit a workflow event (observable by subscribers). */
-  emit(event: WorkflowEvent): void;
 
   /**
    * Build a rich context summary from a completed TaskResult for step handoff.

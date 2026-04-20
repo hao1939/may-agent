@@ -151,7 +151,7 @@ export type {
   WorkflowStep,
 } from "./persistence.js";
 
-export type { HandlerContext, HandlerModule } from "./handler-context.js";
+export type { RuntimeCtx, HandlerContext, HandlerModule } from "./handler-context.js";
 export { retryWithBackoff } from "./retry-with-backoff.js";
 export type { RetryWithBackoffOptions } from "./retry-with-backoff.js";
 export {

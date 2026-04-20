@@ -32,6 +32,8 @@ export interface WebUIOptions {
 export function startWebUI(opts: WebUIOptions): { port: number } {
   const STATE_DIR = opts.stateDir;
   const PORT = opts.port;
+  const PROJECT_ROOT = process.env.PROJECT_ROOT || resolve(STATE_DIR, "..");
+  const AGENTS_ROOT = process.env.AGENTS_ROOT || resolve(PROJECT_ROOT, "agents");
 
   function _db(): SqliteDb {
     return getDb(STATE_DIR);
@@ -637,6 +639,72 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     return new Response("index.html not found", { status: 404 });
   }
 
+  function handleProjects(): Response {
+    const projects: Array<Record<string, unknown>> = [];
+    try {
+      for (const dir of readdirSync(AGENTS_ROOT, { withFileTypes: true })) {
+        if (!dir.isDirectory() || dir.name.startsWith(".")) continue;
+        const projDir = join(AGENTS_ROOT, dir.name, "workspace", "projects");
+        if (!existsSync(projDir)) continue;
+        for (const entry of readdirSync(projDir, { withFileTypes: true })) {
+          let projectFile: string;
+          let relPath: string;
+          if (entry.isDirectory()) {
+            projectFile = join(projDir, entry.name, "project.md");
+            if (!existsSync(projectFile)) continue;
+            relPath = `agents/${dir.name}/workspace/projects/${entry.name}`;
+          } else if (entry.isFile() && entry.name.endsWith(".md")) {
+            projectFile = join(projDir, entry.name);
+            relPath = `agents/${dir.name}/workspace/projects/${entry.name}`;
+          } else continue;
+          try {
+            const content = readFileSync(projectFile, "utf-8");
+            const field = (name: string) => {
+              const m = content.match(new RegExp(`^\\*\\*${name}\\*\\*:\\s*(.+)$`, "m"));
+              return m ? m[1].trim() : null;
+            };
+            const msX = (content.match(/^- \[x\]/gim) || []).length;
+            const msO = (content.match(/^- \[ \]/gm) || []).length;
+            projects.push({
+              name: entry.name.replace(/\.md$/, ""),
+              path: relPath,
+              owner: field("Owner") || dir.name,
+              status: field("Status") || "unknown",
+              priority: field("Priority"),
+              iteration: parseInt(field("Iteration") || "0", 10),
+              health: field("Health"),
+              milestonesDone: msX,
+              milestonesTotal: msX + msO,
+              updatedAt: statSync(projectFile).mtimeMs,
+            });
+          } catch { /* skip */ }
+        }
+      }
+    } catch { /* skip */ }
+    return json(projects);
+  }
+
+  function handleEvents(url: URL): Response {
+    const db = _db();
+    const limit = parseInt(url.searchParams.get("limit") || "100", 10);
+    const owner = url.searchParams.get("owner");
+    const eventType = url.searchParams.get("type");
+    let query = "SELECT * FROM events";
+    const conditions: string[] = [];
+    const params: unknown[] = [];
+    if (owner) { conditions.push("owner = ?"); params.push(owner); }
+    if (eventType) { conditions.push("event_type = ?"); params.push(eventType); }
+    if (conditions.length) query += " WHERE " + conditions.join(" AND ");
+    query += " ORDER BY timestamp DESC LIMIT ?";
+    params.push(limit);
+    try {
+      const rows = db.prepare(query).all(...params);
+      return json(rows);
+    } catch {
+      return json([]); // table may not exist yet
+    }
+  }
+
   function json(data: unknown, status = 200): Response {
     return new Response(JSON.stringify(data), {
       status,
@@ -716,6 +784,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (url.pathname === "/api/benchmarks/compare") return handleBenchmarkCompare(url);
       if (url.pathname === "/api/browse") return handleBrowse(url);
       if (url.pathname === "/api/metrics") return handleMetrics(url);
+      if (url.pathname === "/api/projects") return handleProjects();
+      if (url.pathname === "/api/events") return handleEvents(url);
       const metricHistoryMatch = url.pathname.match(/^\/api\/metrics\/([^/]+)\/history$/);
       if (metricHistoryMatch) {
         const metricId = decodeURIComponent(metricHistoryMatch[1]);

@@ -22,6 +22,8 @@ import type { WorkflowRun, WorkflowStep } from "./persistence.js";
 import { saveWorkflowRun, readWorkflowRun } from "./persistence.js";
 import { summarizeForHandoff } from "./handoff.js";
 import { log } from "./log.js";
+import { getDb } from "./requests.js";
+import type { EventBus } from "../app/event-bus.js";
 
 // ── Tool schema ────────────────────────────────────────────────────────
 
@@ -361,6 +363,12 @@ export interface WorkflowToolOptions {
   /** Maximum guard-injected steps per workflow run (default: 5). */
   maxInjectedSteps?: number;
   onEvent?: (event: WorkflowEvent) => void;
+  /** EventBus for emitting events. When provided, workflow events go through the bus. */
+  bus?: EventBus;
+  /** Project root directory. */
+  projectRoot?: string;
+  /** Agents root directory. */
+  agentsRoot?: string;
 }
 
 export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
@@ -429,6 +437,29 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
     const ctx: WorkflowContext = {
       task,
       agent: (opts.agentName && opts.agentName !== "undefined") ? opts.agentName : "unknown",
+
+      // ── RuntimeCtx (shared infra) ──────────────────────────────────
+      emit: (event: { type: string; [key: string]: unknown }) => {
+        if (opts.bus) {
+          opts.bus.emit(event as any);
+        }
+        onEvent?.(event as WorkflowEvent);
+      },
+      getDb: () => persistDir ? getDb(persistDir) : (() => { throw new Error("No persistDir — getDb unavailable"); })(),
+      log: (msg: string) => {
+        const label = `workflow:${opts.agentName ?? "unknown"}`;
+        if (opts.bus) {
+          opts.bus.emit({ type: "info", message: `[${label}] ${msg}` });
+        }
+      },
+      notify: (msg: string) => {
+        if (opts.bus) {
+          opts.bus.emit({ type: "notification", agent: opts.agentName ?? "unknown", text: msg });
+        }
+      },
+      persistDir: persistDir ?? "",
+      projectRoot: opts.projectRoot ?? "",
+      agentsRoot: opts.agentsRoot ?? "",
 
       runAgent: async (agentName: string, agentTask: string): Promise<TaskResult> => {
         // Defensive guard: catch undefined/null agent names before they reach manager.callAgent()
@@ -612,10 +643,6 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
         }
 
         return taskResult;
-      },
-
-      emit: (event: WorkflowEvent) => {
-        onEvent?.(event);
       },
 
       summarize: (result: TaskResult, handoffOpts?) => {
