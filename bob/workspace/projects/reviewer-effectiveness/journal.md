@@ -63,3 +63,22 @@ The deliverable should include the full new prompt template ready to be implemen
 
 ### Iteration 4 — 2026-04-20T19:22:34.933Z
 **Worker**: Now I have both documents. Let me create the experiment results.
+**Reviewer**: CONTINUE — — The **Investigate**, **Design**, and **Experiment** milestones are all complete. Check off **Investigate**, **Design**, and **Experiment**.
+
+The deliverables are solid:
+- `.state/reviewer-investigation.md` — 13 categorized failure examples with root causes
+- `.state/reviewer-prompt-design.md` — full new prompt template addressing all 6 root causes
+- `.state/reviewer-experiment-results.md` — before/after analysis of 5 failure cases (3 fixed, 2 improved)
+
+**Next iteration should complete the Measure milestone:**
+
+**(a) Concrete output:** Produce `.state/reviewer-effectiveness-metric.md` defining the measurement framework. This is a *design* for a metric, not a live measurement (we can't measure real-world effectiveness until the prompt is deployed). Include:
+1. **Metric definition**: "Progress rate" = % of iterations where the worker made meaningful progress toward a milestone (vs stall/repeat/wasted). Define what counts as progress vs stall with concrete criteria.
+2. **Baseline measurement**: Using the 13 examples from the investigation, calculate the current progress rate (e.g., "of 30 iterations examined, 18 made progress, 12 were wasted → 60% progress rate").
+3. **Projected improvement**: Based on the experiment results, project the new progress rate ("the new prompt would save ~15-20 wasted iterations → projected 85% progress rate").
+4. **Tracking method**: How to measure this going forward — what to log, where, and how to compute the metric from journal entries.
+
+**(b) What's different:** Previous iterations produced investigation, design, and experiment docs. This iteration produces a quantitative metric framework with baseline numbers.
+
+**(c) First step:** Re-read `.state/reviewer-investigation.md` and count total iterations vs wasted iterations across all 13 examples to compute the baseline.
+
