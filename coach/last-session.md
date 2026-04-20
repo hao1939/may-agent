@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** cron_1776683406532_133
+- **Session:** s_1776683437353_143
 - **Status:** done
-- **When:** 2026-04-20T11:11:00.776Z
-- **Duration:** 54s
+- **When:** 2026-04-20T11:14:58.509Z
+- **Duration:** 4m21s
 
 ## What Happened
-Status is clear. Coach is largely blocked, repeating the same heartbeat. Let me log the heartbeat and check for anything new to action.
+The metric `coach.knowledge-to-action-latency` has `status: "inactive"`, `current: null`, no real collector (`source_command: "echo manual"`), and the coach's own metrics review says to **deactivate** it because "Action" is ambiguous and it needs a definition pass first. The alert fires because nothing ever updates it. Let me properly close it.

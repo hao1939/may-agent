@@ -98,7 +98,12 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     }
 
     let launched = 0;
+    const MAX_CONCURRENT = 3;
     for (const project of projects) {
+      if (launched >= MAX_CONCURRENT) {
+        ctx.log(`[project-resume] hit concurrency limit (${MAX_CONCURRENT}), deferring remaining`);
+        break;
+      }
       if (busyProjects.has(project.relPath)) continue;
 
       const task = `project: ${project.relPath}\nagent: ${project.owner}\ngoal: see project file`;
