@@ -391,6 +391,68 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     let oneOffsClosed = 0;
     let errors = 0;
 
+    // ── 0. Backfill: fork for unresolved alerts with no active request ─
+    //    Catches alerts created before auto-fork was wired up,
+    //    or alerts whose fork request was lost/never created.
+
+    let backfillForked = 0;
+    try {
+      const unresolvedAlerts = db.prepare(`
+        SELECT ma.metric_id, ma.message, m.owner, m.name, m.current, m.threshold, m.target, m.type,
+               m.source as metric_source, m.alert_direction
+        FROM metric_alerts ma
+        JOIN metrics m ON m.id = ma.metric_id
+        WHERE ma.resolved_at IS NULL
+      `).all() as Array<{
+        metric_id: string; message: string; owner: string; name: string;
+        current: number | null; threshold: number | null; target: number;
+        type: string; metric_source: string | null; alert_direction: string | null;
+      }>;
+
+      for (const alert of unresolvedAlerts) {
+        // Check if there's already a metric-alert request for this metric
+        const existingRequest = db.prepare(
+          `SELECT requestId FROM requests
+           WHERE to_agent = ? AND source = 'metric-alert' AND status IN ('pending','active')
+           AND task LIKE ?`
+        ).get(alert.owner, `%${alert.metric_id}%`) as { requestId: number } | null;
+
+        if (existingRequest) continue; // Already has an active request
+
+        // Also check completed requests from last 24h to avoid re-forking too soon
+        const recentCompleted = db.prepare(
+          `SELECT requestId FROM requests
+           WHERE to_agent = ? AND source = 'metric-alert'
+           AND task LIKE ? AND completedAt > ?`
+        ).get(alert.owner, `%${alert.metric_id}%`, now - 24 * 60 * 60 * 1000) as { requestId: number } | null;
+
+        if (recentCompleted) continue; // Recently handled
+
+        // Fork for this unresolved alert
+        const metricRow: MetricRow = {
+          id: alert.metric_id,
+          name: alert.name,
+          type: alert.type,
+          owner: alert.owner,
+          current: alert.current,
+          target: alert.target,
+          threshold: alert.threshold,
+          alert_direction: alert.alert_direction,
+          source: alert.metric_source,
+          source_query: null,
+          source_command: null,
+          sensitivity: null,
+          measure_interval: null,
+          updated_at: now,
+        };
+        autoForkForAlert(ctx, metricRow, alert.message);
+        backfillForked++;
+      }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      ctx.log(`[metrics-snapshot] Backfill fork error: ${msg}`);
+    }
+
     // ── 1. Auto-measure SQL-based metrics ───────────────────────────
 
     const autoMetrics = db.prepare(
@@ -536,6 +598,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     if (oneOffsClosed > 0) parts.push(`${oneOffsClosed} closed`);
     if (alertsFired > 0) parts.push(`${alertsFired} alerts`);
     if (alertsResolved > 0) parts.push(`${alertsResolved} resolved`);
+    if (backfillForked > 0) parts.push(`${backfillForked} backfill-forked`);
     if (errors > 0) parts.push(`${errors} errors`);
 
     const summary = parts.length > 0 ? parts.join(", ") : "no active metrics";
