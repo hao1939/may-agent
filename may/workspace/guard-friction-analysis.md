@@ -1,47 +1,58 @@
-# FM-3.3 Guard Friction Analysis
+# FM-3.3 Guard Friction Analysis (Corrected)
 
-## Guard Architecture
+## Summary
 
-Two guards intercept `finish(status: "success")`:
+The **only** guard file in the codebase is `agents/src/lib/finish-guard.ts` (235 lines). There is **no** separate `verification-depth-guard.ts` — previous iterations hallucinated that file.
 
-### 1. `finish-guard.ts` — 3 gates
-| Gate | Trigger | False Positive Risk |
-|------|---------|-------------------|
-| Gate 0: Ghost Deliverable | Summary has action keywords ("Fixed", "Implemented") + no write evidence + no deliverables | **Low** — legitimate |
-| Gate 1: No Write Evidence | Deliverables listed but no write/edit/bash-write in transcript | **Low** — legitimate |
-| Gate 2: No Verification | Writes exist but no verification after last write (bash-writes only; write()/edit() exempt) | **Medium** — overlaps with verification-depth-guard |
+## What finish-guard.ts Actually Does
 
-### 2. `verification-depth-guard.ts` — 2 rules
-| Rule | Trigger | False Positive Risk |
-|------|---------|-------------------|
-| T1: Git on Gitignored | Git commands on agents/ as sole verification | **Low** — rare |
-| T2: No Post-Write Verification | Writes exist, no verification after last write (write()/edit() exempt) | **Medium** — same check as Gate 2 |
+Two exported validators, both called on `finish(status: "success")`:
 
-## Key Finding: Redundancy
+### 1. `validateFinishDeliverables` (FM-3.1 — Ghost Deliverables)
+- Checks that every path in `deliverables[]` exists on disk via `existsSync()`
+- Only fires for status "success" or "partial"
+- **False positive risk: Very low** — if you declare a file, it must exist
 
-**finish-guard Gate 2** and **verification-depth-guard T2** check the same condition: "bash-based writes with no post-write verification." Both exempt write()/edit(). An agent blocked by one is almost always blocked by the other → **double error messages, double confusion**.
+### 2. `validateVerificationEvidence` (FM-3.3 — Verification Evidence)
+- **Rule 1 (blocking):** `finish(success)` with deliverables MUST have ≥1 `verification_evidence` entry
+- **Rule 2 (warning only):** Entries shorter than 15 chars flagged as suspicious
+- **Rule 3 (warning only):** Entries matching ghost keywords (e.g. "SYNTAX OK", "ALL TESTS PASS") flagged
 
-## Why FM-3.3 Keeps Appearing
+### Key Observation
+Rules 2 and 3 are **advisory only** — they return warnings but do NOT block the finish call. Only Rule 1 (missing evidence entirely) actually blocks.
 
-The guards work correctly. The friction comes from:
+## Sources of Friction
 
-1. **Retry cost**: Agent calls finish(), gets blocked, runs a read/test, calls finish() again → 2-3 extra tool calls per session. This is by design but accounts for most FM-3.3 mentions in evaluations.
-2. **Double-blocking**: Both guards fire on the same condition → agent sees two error messages.
-3. **agents.call() not recognized**: When an agent delegates work via `agents.call()` and the child succeeds, the parent has no "write" in its own transcript but `hasWriteEvidence` correctly detects the `agents` tool. However, verification-depth-guard does NOT check for `agents`/`workflow` tool usage — it could false-positive on orchestration sessions.
+### Friction Point 1: Rule 1 Forces Extra Tool Call
+When an agent finishes without `verification_evidence`, it gets blocked and must:
+1. Run a verification step (read/bash/test)
+2. Call finish() again with the evidence
 
-## Concrete Recommendations
+This adds 2-3 tool calls per session. **This is by design** — it ensures agents verify work. The friction is intentional.
 
-### R1: Remove finish-guard Gate 2 (deduplicate)
-**Risk: Low.** verification-depth-guard T2 covers the same case with better logic (tracks per-call indices, not message indices). Remove Gate 2 from finish-guard to eliminate double-blocking.
+### Friction Point 2: Orchestration Sessions
+When an agent delegates via `agents.call()` and the child produces deliverables, the parent agent may list those as deliverables. The parent needs to provide verification evidence, but the verification happened in the child session. The parent must redundantly re-verify (e.g., `read()` the file) to satisfy the guard.
 
-### R2: Add orchestration exemption to verification-depth-guard
-**Risk: Low.** If the session used `agents` or `workflow` tools, writes happened in child sessions. The verification-depth-guard should skip or soften its check, matching finish-guard's existing logic.
+### Friction Point 3: No Integration Point Found
+Neither `enforceFinishDeliverables` nor `enforceVerificationEvidence` is imported anywhere in the main agent runtime (`agents/src/`). The guard exists as a library but **its integration point is unclear** — it may be integrated via the tool schema/harness layer not visible in this codebase, or it may not be active yet.
 
-### R3: Improve error message specificity  
-**Risk: None.** T2's message says "verify your work" generically. It should name the specific bash command that triggered the write detection, so the agent knows exactly what to verify.
+## Recommendations
 
-## Implementation Priority
+### R1: Add orchestration exemption (Medium priority)
+If the session used `agents.call()` or `agents.fork()` tools, the verification evidence requirement should be relaxed — allow citing child session success as evidence.
 
-1. **R1** — highest impact, simplest change (delete ~15 lines)
-2. **R2** — prevents false positives on orchestration sessions
-3. **R3** — nice-to-have, lower priority
+**Implementation:** In `validateVerificationEvidence`, accept evidence entries that reference child agent results (e.g., pattern matching "agents.call" or "child session").
+
+### R2: Improve error message specificity (Low priority)  
+The FM-3.3 error message says "citing a real tool output (e.g., 'Step 12: bun test exit code 0')". This is good guidance but could also suggest `read()` as verification for non-code deliverables (docs, configs).
+
+### R3: Clarify integration status (High priority)
+The guard functions are not visibly imported in the main codebase. Either:
+- They're integrated via a layer not in this repo (e.g., injected by the harness)
+- They're not yet active
+
+If not active, the FM-3.3 friction agents experience may come from **prompt instructions** rather than code enforcement. This distinction matters for any fix.
+
+## Conclusion
+
+The previous analysis was inaccurate — it described a non-existent `verification-depth-guard.ts` with fabricated "Gate 2" and "T2" rules. The actual guard is simpler: one file, two validators, one blocking rule (must provide evidence). The real friction is modest and largely intentional. The main actionable improvement is the orchestration exemption (R1).
