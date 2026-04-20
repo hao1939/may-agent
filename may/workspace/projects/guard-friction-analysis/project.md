@@ -3,7 +3,7 @@
 **Status**: done
 **Owner**: may
 **Priority**: P1
-**Iteration**: 10
+**Iteration**: 11
 
 **Health**: 0/10 (FAIL)
 ## Goal
@@ -29,7 +29,7 @@ Analyze guard friction (FM-3.3) — understand why finish-guard and verification
   - **R3**: Improve error message specificity
 
 ## Current State
-Iteration 10. Milestones: 5/5 done.
+Iteration 11. Milestones: 5/5 done.
 
 
 ## Iteration Summary
