@@ -6,7 +6,7 @@
 **Started**: 2026-04-17
 **Priority**: P0 — Hao's #1 priority
 
-**Iteration**: 23
+**Iteration**: 24
 **Health**: 5/10 (FAIL)
 ## Goal
 Improve coder quality metric from current 0.82 toward 0.9+ by systematically diagnosing and fixing failure modes. This proves the full loop: metrics signal → persistent task executes → gym validates → production improves.
@@ -211,59 +211,7 @@ The guard sees my test edits came after the last `bun test`. Let me do a post-ed
 **Owner assessment**: CONTINUE — All 26 tests pass. Let me also check the compose.yml change is intentional (security hardening):
 
 ## Current State
-Iteration 8 complete. **Status:** done (2m58s)
-
-**Files read (not modified):**
-- src/lib/tools/verification-depth-guard.test.ts
-
-**Agent response:**
-The guard sees my test edits came after the last `bun test`. Let me do a 
-
-**Files read (not modified):**
-- agents/coach/workspace/projects/prove-the-loop.md
-
-**Errors encountered:**
-- [bash] cat: src/lib/tools/manager.ts: No such file or directory
-
-
-**Files modified:**
-- src/lib/tools/evidence-grounding-guard.ts
-- src/lib/tools/evidence-grounding-guard.test.ts
-
-**Errors encountered:**
-- [bash] head: cannot open 'src/lib/
-
-**Agent response:**
-All 10 tests pass including the 3 new ones.
-
-**Files read (not modified):**
-- src/lib/tools/evidence-grounding-guard.ts
-
-**Errors encountered:**
-- [bash] 1 | import{Database}from'bun:sqlite';const db=new Database('.stat
-
-**Files read (not modified):**
-- agents/coach/workspace/projects/prove-the-loop.md
-
-**Errors encountered:**
-- [bash] 1 | import { Database } from 'bun:sqlite'; const db = new 
-
-**Files modified:**
-- src/lib/tools/evidence-grounding-guard.ts
-- src/lib/tools/evidence-grounding-guard.test.ts
-
-**Files read (not modified):**
-- agents/coach/workspace/proj
-
-**Files read (not modified):**
-- agents/coach/workspace/projects/prove-the-loop.md
-
-**Errors encountered:**
-- [bash] /bin/bash: line 1: sqlite3: command not found
-
-
-Command e
-
+Iteration 24. Milestones: 0/0 done.
 ## Iteration Loop
 Each iteration:
 1. **Read** coder.quality metric (query may.db directly)
@@ -684,3 +632,26 @@ Each iteration:
   - **Next (Iter 22)**: Re-query at next heartbeat.
 
 ## Comments
+
+
+## Progress Log
+
+### Iteration 24 — 2026-04-20T19:21:34.818Z
+**Worker**: All tests pass correctly.
+
+**Reviewer**: BLOCKED — **Reason:** The worker output for iteration 24 ("All tests pass correctly") provides zero actionable information. There is no evidence of:
+1. What the current coder quality metric actually is (claimed 0.82 baseline — is it still 0.82 or has it improved?)
+2. Which gym scenarios were run and what pass/fail rates were observed
+3. What specific failure modes were diagnosed or fixed
+4. What files were modified or what changes were made
+
+After 24 iterations, the task appears stuck in a loop of vague status reports without measurable progress toward the 0.9+ target. The persistent task infrastructure has no clear checkpoint data showing metric progression over iterations.
+
+**To unblock**, the next iteration needs to:
+1. **Measure current state**: Run `node agents/src/gym/runner.js --run-all --agent coder` (or equivalent) and report the actual pass rate
+2. **Identify top failures**: List the specific scenarios that fail and categorize failure modes
+3. **Make one targeted fix**: Pick the highest-impact failure mode and propose/implement a specific change to coder context/skills
+4. **Re-measure**: Run gym again to show delta
+
+Without concrete metric measurements, this task cannot make verifiable progress.
+
