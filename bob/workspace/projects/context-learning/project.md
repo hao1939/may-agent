@@ -3,7 +3,7 @@
 **Status**: active
 **Owner**: bob
 **Priority**: P1
-**Iteration**: 15
+**Iteration**: 16
 
 ## Goal
 Agents learn from experience and get better over time:
@@ -63,7 +63,7 @@ Goal: roll out to all agents, watch for regression
 - [ ] Ongoing: May monitors health, coach tracks behavior improvement
 
 ## Current State
-Iteration 15. Milestones: 0/0 done.
+Iteration 16. Milestones: 0/0 done.
 
 **Root cause:** The task requires delegating external research to scout agents and redesigning the gym scenario, but 13 iterations have produced zero milestone completions. The worker appears unable to make progress on the core deliverables.
 
