@@ -1,12 +1,12 @@
-# Your Context (auto-generated 2026-04-20T06:40)
+# Your Context (auto-generated 2026-04-20T07:10)
 
-**System:** 17 sessions/6h, 0% error rate
+**System:** 15 sessions/6h, 0% error rate
 
 **Top spenders:**
 - optimizer: 3s, 168KB
 - scout: 1s, 125KB
-- coach: 6s, 107KB
-- bob: 7s, 90KB
+- coach: 5s, 100KB
+- bob: 6s, 81KB
 
 **📊 Your Metrics:**
 - Coverage: **40** % → 90 % ⚠️ NEEDS ATTENTION
