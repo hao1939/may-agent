@@ -22,8 +22,7 @@ import type { WorkflowRun, WorkflowStep } from "./persistence.js";
 import { saveWorkflowRun, readWorkflowRun } from "./persistence.js";
 import { summarizeForHandoff } from "./handoff.js";
 import { log } from "./log.js";
-import { getDb } from "./requests.js";
-import type { EventBus } from "../app/event-bus.js";
+import type { RuntimeCtx } from "./handler-context.js";
 
 // ── Tool schema ────────────────────────────────────────────────────────
 
@@ -363,12 +362,8 @@ export interface WorkflowToolOptions {
   /** Maximum guard-injected steps per workflow run (default: 5). */
   maxInjectedSteps?: number;
   onEvent?: (event: WorkflowEvent) => void;
-  /** EventBus for emitting events. When provided, workflow events go through the bus. */
-  bus?: EventBus;
-  /** Project root directory. */
-  projectRoot?: string;
-  /** Agents root directory. */
-  agentsRoot?: string;
+  /** Pre-built RuntimeCtx — shared infra (emit, getDb, log, notify, paths). */
+  runtimeCtx?: RuntimeCtx;
 }
 
 export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
@@ -438,28 +433,21 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
       task,
       agent: (opts.agentName && opts.agentName !== "undefined") ? opts.agentName : "unknown",
 
-      // ── RuntimeCtx (shared infra) ──────────────────────────────────
+      // ── RuntimeCtx (shared infra) — spread pre-built or fallback ──
+      ...(opts.runtimeCtx ?? {
+        emit: (event: { type: string; [key: string]: unknown }) => { onEvent?.(event as WorkflowEvent); },
+        getDb: () => { throw new Error("No runtimeCtx — getDb unavailable"); },
+        log: (_msg: string) => {},
+        notify: (_msg: string) => {},
+        persistDir: persistDir ?? "",
+        projectRoot: "",
+        agentsRoot: "",
+      }),
+      // Overlay emit to also call onEvent for workflow lifecycle logging
       emit: (event: { type: string; [key: string]: unknown }) => {
-        if (opts.bus) {
-          opts.bus.emit(event as any);
-        }
+        opts.runtimeCtx?.emit(event);
         onEvent?.(event as WorkflowEvent);
       },
-      getDb: () => persistDir ? getDb(persistDir) : (() => { throw new Error("No persistDir — getDb unavailable"); })(),
-      log: (msg: string) => {
-        const label = `workflow:${opts.agentName ?? "unknown"}`;
-        if (opts.bus) {
-          opts.bus.emit({ type: "info", message: `[${label}] ${msg}` });
-        }
-      },
-      notify: (msg: string) => {
-        if (opts.bus) {
-          opts.bus.emit({ type: "notification", agent: opts.agentName ?? "unknown", text: msg });
-        }
-      },
-      persistDir: persistDir ?? "",
-      projectRoot: opts.projectRoot ?? "",
-      agentsRoot: opts.agentsRoot ?? "",
 
       runAgent: async (agentName: string, agentTask: string): Promise<TaskResult> => {
         // Defensive guard: catch undefined/null agent names before they reach manager.callAgent()
