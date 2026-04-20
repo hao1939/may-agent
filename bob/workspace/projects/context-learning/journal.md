@@ -482,3 +482,5 @@ DONE — All three remaining milestones are complete:
 
 3. **✅ Integration points** — The "Integration Points" section covers all five points: session end (primary extraction via finish()/appendMemory()), session start (relevance-filtered injection via buildSessionContext()), heartbeat (consolidation and cross-agent propagation), workflow step boundaries (cross-agent fast path), and background pruning. Each specifies what happens, why that timing, and what change is required.
 
+### Iteration 21 — 2026-04-20T11:05:41.494Z
+**Worker**: The doc is already committed with the approach comparison and integration points. Both milestones appear to be complete already. Let me verify the milestone status matches what's in the doc.
