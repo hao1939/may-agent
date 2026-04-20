@@ -272,18 +272,11 @@ Confirmed renderer now emits the red marker in live heartbeats post-backfill:
 
 ## Progress Log
 
-### Iteration 1 — 2026-04-20T11:04:29.694Z
-**Worker**: Results look correct:
-- `coach.breadcrumb-action-rate`: 0 < 0.5 threshold → ⚠️ NEEDS ATTENTION ✅
-- `workflow.premature-done`: 1 < 3 threshold (alert_direction='above', not above) → ok ✅
-- `tech-lead.codebase-weight`: no threshold, 32047 vs 32000, alert_direction='above' means lower is better, gap=(32047-32000)/32000=0.0015 < 0.2 → ok ✅
-- `coder.quality`: 0.79 > 0.7 threshold → ok ✅
-- `optimizer.waste-reduction`: ongoing, no threshold, alert_direction='above' means lower is better, gap=(0.865-0.3)/0.3=1.88 > 0.2 → ⚠️ OFF TARGET ✅
-- `coach.instruction-compliance`: ongoing, threshold=0.5, 53 > 0.5 → not below threshold → ok... wait, that seems wrong. Current=53 with target=0.8 and alert_direction='below'. But 53 > 0.5 so it's not breaching the threshold. The data seems wrong (53 is probably a raw count, not a ratio). That's a data issue, not a code issue.
-
-Now let me write the deliverable document:
+### Iteration 1 — 2026-04-20T11:03:47.768Z
+**Worker**: Both files compile cleanly.
 
 
 
 ## Current State
-Iteration 1. Milestones: 5/6 done. Next: M5b: Phase 2 — add `direction` column + broaden predicate to continuous metrics 
+Iteration 1. Milestones: 5/6 done. Next: M5b: Phase 2 — add `direction` column + broaden predicate to continuous metrics **Reviewer**: BLOCKED — M5b is gated on 48h observation of M5a. All actionable milestones are complete. No work can proceed until the observation period elapses.
+

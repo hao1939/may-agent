@@ -417,6 +417,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         type: string; metric_source: string | null; alert_direction: string | null;
       }>;
 
+      ctx.log(`[metrics-snapshot] Found ${unresolvedAlerts.length} unresolved alerts for backfill`);
       for (const alert of unresolvedAlerts) {
         // Check if there's already a metric-alert request for this metric
         const existingRequest = db.prepare(
