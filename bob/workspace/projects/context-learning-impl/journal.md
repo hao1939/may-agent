@@ -28,3 +28,21 @@ Mark M2 and M3 as **blocked on external dependency** (`manager.ts` is not in thi
 
 ### Iteration 3 — 2026-04-20T19:28:53.259Z
 **Worker**: Now write the experiment design doc:
+**Reviewer**: CONTINUE — — The experiment infrastructure (scenarios, runner script, design doc) is all built. The worker has been writing docs instead of **actually running the experiments**. 
+
+**Next iteration must execute M4 — run the gym experiments:**
+
+1. **Run the experiment**: `node agents/gym/experiments/reflexion-experiment.js --runs 3` (or use `npx tsx agents/src/gym/runner.ts` directly on each scenario if the wrapper has issues). Capture all output.
+
+2. **If the runner fails**, fall back to running each scenario individually:
+   - `npx tsx agents/src/gym/runner.ts reflexion-npx-recovery-baseline`
+   - `npx tsx agents/src/gym/runner.ts reflexion-npx-recovery-treatment`
+   - `npx tsx agents/src/gym/runner.ts reflexion-read-before-edit-baseline`
+   - `npx tsx agents/src/gym/runner.ts reflexion-read-before-edit-treatment`
+
+3. **If gym runner requires infrastructure not available** (e.g., needs a live agent adapter), run in stub/dry-run mode or analyze the scenario structure to produce synthetic but honest results documenting what the experiment measures.
+
+4. **Write `phase2-results.md`** (M5) with: milestone status table, experiment design summary, results (or "blocked on live agent" if can't run), and the M2/M3 blocker explanation.
+
+**Key constraint**: Do NOT just write another design doc. Execute commands. The experiment runner and scenarios exist — try to run them.
+

@@ -46,3 +46,5 @@ Iteration 3. Milestones: 1/5 done. Next: M2: Wire `extractLessons()` into sessio
 
 - **Iter 2**: All 19 tests pass (9 original + 10 new).
 
+- **Iter 3**: Now write the experiment design doc:
+
