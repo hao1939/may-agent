@@ -3,7 +3,7 @@
 **Status**: active
 **Owner**: bob
 **Priority**: P0
-**Iteration**: 0
+**Iteration**: 1
 **Health**: —
 
 ## Goal
@@ -45,4 +45,3 @@ Not started.
 ## Iteration Summary
 
 ## Comments
-- [2026-04-20 hao] This is P0 — the reviewer is the critical control point for project success. A bad reviewer means projects stall, waste iterations, and need human intervention. Investigate deeply: read the actual reviewer prompts, read the reviewer responses that led to stalls, understand WHY the reviewer fails. Then fix the prompt.
