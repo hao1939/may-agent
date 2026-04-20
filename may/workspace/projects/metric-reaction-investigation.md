@@ -314,3 +314,5 @@ No further iterations needed until the 48h observation window for M5a completes.
 - `coach.breadcrumb-action-rate`: 0 < 0.5 threshold → ⚠️ NEEDS ATTENTION ✅
 - `
 
+**Reviewer**: DONE — All 6/6 milestones are complete. The worker confirmed in iteration 3 that M5b (Phase 2 — add `direction` column + broaden predicate to continuous metrics) was already committed in prior commits (`a3b9f1d9d` and `14a9f9ef4`). No further iterations needed.
+
