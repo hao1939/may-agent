@@ -3,7 +3,7 @@
 **Status**: done
 **Owner**: bob
 **Priority**: P1
-**Iteration**: 22
+**Iteration**: 23
 **Health**: 0/10 (FAIL)
 
 ## Goal
@@ -24,7 +24,7 @@ Key question: **what mechanism updates agent behavior based on experience?**
 - [ ] Propose integration points: where in the system does learning happen? (session end? heartbeat? workflow step?)
 
 ## Current State
-Iteration 22. Milestones: 3/4 done. Next: Propose integration points: where in the system does learning happen? (session e
+Iteration 23. Milestones: 3/4 done. Next: Propose integration points: where in the system does learning happen? (session e
 
 **Milestone: "Include comparison of approaches"** ✅ — The
 
