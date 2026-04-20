@@ -6,12 +6,9 @@ Unsolved problems identified during doc review (2026-04-20). Each is either trac
 
 **Problem**: Agents start fresh each session. For project work, journal.md provides context. But heartbeats, ad-hoc tasks, and non-project work have zero memory of what happened before. An agent might investigate a metric breach, find something, then next heartbeat starts from scratch.
 
-**Prior work**: `session-digest.md` and `phase5-digest-context-injection.md` (archived) designed a digest system that injected recent session history into the user message. This was implemented but later removed because we moved to "user message = task only."
+**Prior work**: `session-digest.md` and `phase5-digest-context-injection.md` (archived) designed a digest system. The code was implemented in `src/lib/manager.ts` (`buildSessionContext`, 144 lines) — it computes digests, cross-agent context, active recall, session diffs, checkpoints, last-session summaries. But it's **dead code**: the result is computed then discarded. `promptText = task` ignores it. The injection was intentionally disabled when we moved to "user message = task only."
 
-**What's needed**: A mechanism for agents to know what they did recently — without bloating the prompt. Options:
-- On-demand tool: agent queries "what did I do in the last 3 sessions?"
-- Per-agent summary file: updated after each session, read on demand
-- Journal-based: extend journal.md pattern beyond projects
+**What's needed**: NOT re-enabling brute-force injection. The context-learning project should design how agents learn from experience and retrieve relevant context when needed — by learning, not by dump. The dead code's data sources (digests, diffs, recall) are valuable inputs for the design. The dead code itself should be cleaned up (src/ change).
 
 **Tracked by**: context-learning project (bob) — this is part of "agents learn from experience"
 
