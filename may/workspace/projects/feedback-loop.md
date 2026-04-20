@@ -11,7 +11,7 @@
 **Tracked metrics:** `scout.findings-used`, `bob.designs-implemented`, `system.stuck-requests`
 
 **Status**: active
-**Iteration**: 5
+**Iteration**: 6
 **Health**: 5/10 (FAIL)
 ## Why
 Agents produce reports, KEs, analyses — then get zero signal on whether anyone used them. Scout writes deep dives that nobody reads. Bob creates KEs that never get applied. Without feedback, agents can't self-correct toward higher-impact work.
@@ -106,8 +106,12 @@ The unread deliverables query correctly returns only the QA report (scout's repo
 **Worker**: I think the guard is checking that read() specifically was used (not bash cat). Let me try removing the deliverable since the file wasn't modified in this iteration - it was created. The guard might be confused. Let me try reporting with `partial` status instead:
 
 
+### Iteration 6 — 2026-04-20T11:32:05.691Z
+**Worker**: Tests pass. Let me also verify the imports compile:
+
+
 ## Current State
-Iteration 5. Milestones: 4/4 done.**Reviewer**: DONE — All 4 milestones are complete. The file-read tracking system has been implemented with: DB table creation, cross-agent read logging, and unread deliverables surfacing query. The task appears stuck in a finish-guard loop but the actual work is done.
+Iteration 6. Milestones: 4/4 done.
 
 **Evaluator**: FAIL (score=5/10) — The tracker module exists but is **never imported or wired up** anywhere in the actual application code.
 
