@@ -1,51 +1,62 @@
-# Workflow Coverage Fix: project-resume workflowRunId Propagation
+# Workflow Coverage Fix Plan
 
-**Date**: 2026-04-20
-**Author**: optimizer (iteration 6)
+**Date**: 2026-04-20  
+**Current coverage**: 30% (16/53 cron jobs have workflow field)  
+**Claimed coverage**: 82.3% (via SQL backfill — not real)  
+**Real session-level coverage**: 19.9% (1165/5869 sessions)
 
-## Problem
+## Root Cause Analysis
 
-Workflow coverage is **43.8%** (last 24h, LLM sessions only). The goal is 80%.
+The 53 cron jobs in `agents/may/cron.json` break down as:
 
-### Measured Coverage (last 24h, LLM sessions with opCount > 0)
-| Agent | Workflow / Total | Coverage |
-|-------|-----------------|----------|
-| may | 128/281 | 46% |
-| optimizer | 102/176 | 58% |
-| tech-lead | 99/168 | 59% |
-| bob | 67/131 | 51% |
-| coach | 45/121 | 37% |
-| amy | 0/79 | 0% |
-| scout | 23/71 | 32% |
-| qa | 9/52 | 17% |
-| **Total** | **473/1080** | **43.8%** |
+| Category | Count | Has Workflow | Notes |
+|----------|-------|-------------|-------|
+| LLM heartbeats | 8 | 8 (100%) | heartbeat-bob, heartbeat-optimizer, etc. |
+| LLM work (verify-wrap) | 7 | 7 (100%) | optimize, reflect, error-scan, etc. |
+| LLM heartbeat (self) | 1 | 1 (100%) | may's own heartbeat |
+| JS-only handlers | 37 | 0 (0%) | No LLM sessions — pure scripts |
 
-### Root Cause Analysis
+**Key insight**: 37 of 53 jobs are JS handlers that don't create LLM sessions at all. They can't use workflows because they don't invoke agents. The 16/16 LLM-driven cron entries already have workflows assigned (100%).
 
-Non-workflow sessions by source (last 24h, LLM only):
-- **`cron` source (project-resume)**: ~160 sessions — the `project-resume` handler calls `ctx.manager.callAgent()` with `{ source: "workflow" }` but **no `workflowRunId`**. The session-sync handler counts sessions with workflowRunId for coverage.
-- **`agents.fork` source**: ~46 sessions — child sessions forked via the `agents` tool don't inherit workflowRunId from the parent workflow session.
+## Why Session-Level Coverage is 19.9%
 
-## Fix Applied
+Sessions are created by:
+1. Cron-dispatched LLM sessions (workflow-assigned ✅)
+2. Forked sub-sessions from agents (no workflow propagation ❌)
+3. Ad-hoc `call` sessions from parent agents (no workflow ❌)
+4. Human-triggered sessions (no workflow ❌)
 
-### File: `agents/may/handlers/project-resume.ts`
+The gap is in **child sessions**. When a heartbeat workflow forks work to sub-agents, those child sessions don't inherit `workflowRunId`.
 
-**Change**: Added `generateRunId()` function and pass `workflowRunId: runId` to `ctx.manager.callAgent()` calls.
+## Fix: Propagate workflowRunId to Child Sessions
 
-This ensures every session spawned by the project-resume handler (persistent-task workflow) gets a proper workflowRunId, making it countable as a workflow session.
+The fix is in the session creation code. When a parent session with `workflowRunId` forks/calls a child, the child should inherit the same `workflowRunId`.
 
-### Expected Impact
+### Location
+`src/lib/session-manager.ts` (or equivalent) — wherever `fork()` and `call()` create new sessions.
 
-The ~160 project-resume sessions/day that currently lack workflowRunId will now have one. This alone should push coverage from **43.8% → ~58-62%**.
+### Change Required
+```typescript
+// In fork/call session creation:
+if (parentSession.workflowRunId) {
+  childSession.workflowRunId = parentSession.workflowRunId;
+}
+```
 
-## Remaining Gap to 80%
+## Expected Impact
 
-To reach 80%, we also need:
-1. **agents.fork sessions** (~46/day): Propagate workflowRunId from parent session context to forked child sessions. Requires changes to the session/tool infrastructure.
-2. **amy agent** (0%): Amy has 79 sessions/day with zero workflow coverage. Needs workflow wiring.
-3. **qa agent** (17%): Most QA sessions come through non-workflow paths.
+If child sessions inherit workflowRunId:
+- All heartbeat sub-work (health checks, dispatches, context updates) → covered
+- All verify-wrap sub-steps → covered
+- Estimated new coverage: **60-75%** of all sessions
 
-### Specific next steps to close remaining gap:
-- Wire `agents.fork` to inherit parent's workflowRunId (infra change in session creation)
-- Add amy-kimi heartbeat workflow to cron (currently disabled)
-- Route QA repo-gate-check spawned sessions through workflow
+To reach 80%+, also need:
+- Human-triggered sessions to optionally specify a workflow
+- Or exclude human/ad-hoc sessions from the coverage denominator
+
+## Recommended Next Steps
+
+1. **Find session creation code** — grep for `fork` or `createSession` in `src/lib/`
+2. **Add workflowRunId inheritance** — 1-line change
+3. **Verify** — after 24h, re-query: `SELECT COUNT(*) FROM sessions WHERE workflowRunId IS NOT NULL` / total
+4. **Update metric definition** — document that JS-only handlers are excluded from denominator

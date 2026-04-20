@@ -1,5 +1,5 @@
 /**
- * File-Read Tracking — Cross-agent file read logging and query helpers.
+ * File-Read Tracking — Cross-agent file-read logging and query helpers.
  *
  * Tracks when agents read files produced by other agents, enabling
  * feedback loops (e.g. "your report was read by 3 agents" or
