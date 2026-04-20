@@ -107,9 +107,32 @@ function buildStepPrompt(
     : "";
 
   switch (step) {
-    case "check-health":
+    case "check-health": {
+      // G-pattern: inject metrics with question-framing to force engagement
+      const metricsBlock = loadMetricsBlock(config.agent);
+      const hasAlerts = hasAttentionMetrics(metricsBlock);
+
+      let metricsPrompt: string;
+      if (metricsBlock && hasAlerts) {
+        metricsPrompt =
+          `**⚡ FIRST — evaluate your metrics before anything else:**\n\n` +
+          `${metricsBlock}\n\n` +
+          `**Question**: Which metric above is furthest from its target? ` +
+          `Follow the "→ Quick check" breadcrumb for that metric NOW — run the command, ` +
+          `read the file, or execute the query. Then decide: is this urgent enough to act on ` +
+          `this heartbeat, or can it wait?\n\n` +
+          `Only after evaluating your metrics, proceed to the steps below.\n\n---\n\n`;
+      } else if (metricsBlock) {
+        metricsPrompt =
+          `**Your metrics** (all healthy):\n\n${metricsBlock}\n\n` +
+          `Metrics look good — proceed to regular health checks below.\n\n---\n\n`;
+      } else {
+        metricsPrompt = "";
+      }
+
       return (
-        `## Heartbeat: Check Health\n\n${roleNote}${budgetNote}${extraNote}\n\n` +
+        `## Heartbeat: Check Health\n\n${metricsPrompt}` +
+        `${roleNote}${budgetNote}${extraNote}\n\n` +
         `Read agents/${config.agent}/heartbeat.md for your full guidance.\n\n` +
         `${config.observeInstructions}\n\n` +
         `**Active metric alerts**: Check for unresolved alerts owned by you:\n` +
@@ -120,6 +143,7 @@ function buildStepPrompt(
         `Do NOT skip alerts or defer them to a later heartbeat.\n\n` +
         `If everything looks fine, just say so. Only flag issues that need attention.`
       );
+    }
 
     case "review-requests":
       return (
