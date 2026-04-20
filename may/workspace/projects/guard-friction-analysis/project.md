@@ -1,11 +1,11 @@
 # Project: Guard Friction Analysis (FM-3.3)
 
-**Status**: complete
+**Status**: done
 **Owner**: may
 **Priority**: P1
-**Iteration**: 8
+**Iteration**: 7
 
-**Health**: 6/10 (FAIL)
+**Health**: 7/10 (PASS)
 ## Goal
 Analyze guard friction (FM-3.3) — understand why finish-guard and verification-depth-guard cause unnecessary friction, identify redundancies, and produce actionable recommendations.
 
@@ -29,9 +29,11 @@ Analyze guard friction (FM-3.3) — understand why finish-guard and verification
   - **R3**: Improve error message specificity
 
 ## Current State
-Iteration 8. Milestones: 5/5 done.
+Complete. 5/5 milestones. — All 5 milestones are complete. The deliverable at `agents/may/workspace/guard-friction-analysis.md
 
 
 ## Iteration Summary
 - **Iter 7**: The analysis is complete and comprehensive. All 5 milestones are done and the deliverable exists.
+
+- **Iter 7**: — All 5 milestones are complete. The deliverable at `agents/may/workspace/guard-friction-analysis.md
 
