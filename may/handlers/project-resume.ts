@@ -1,21 +1,41 @@
 /**
- * project-resume — Scan projects modified since last check, fork owners to run workflow.
- * Uses event system: subscribes to project.commented, workflow.done, workflow.blocked.
+ * project-resume — Scan modified projects, run persistent-task workflow directly.
+ * No LLM wrapper — the workflow handles everything (evaluator, milestones, comments).
+ * Uses run-workflow pattern for direct workflow execution.
  */
 import { readdirSync, readFileSync, statSync, existsSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
 import type { CronEntry } from "../../../src/lib/cron-tool.js";
+import type {
+  WorkflowContext,
+  WorkflowModule,
+  WorkflowEvent,
+} from "../../../src/lib/workflow.js";
+import type { WorkflowRun, WorkflowStep } from "../../../src/lib/persistence.js";
+import { saveWorkflowRun } from "../../../src/lib/persistence.js";
+import { summarizeForHandoff } from "../../../src/lib/handoff.js";
 
 const OWNER_RE = /^\*\*Owner\*\*:\s*(\S+)/mi;
 const STATE_FILE = ".state/project-resume-last-check";
 
+let importCounter = 0;
+
+function generateRunId(): string {
+  return `wr_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+}
+
+async function loadWorkflow(filePath: string): Promise<WorkflowModule> {
+  const mod = await import(filePath + "?t=" + ++importCounter);
+  return { name: mod.name, description: mod.description ?? "", execute: mod.execute };
+}
+
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
   const agentsRoot = resolve(ctx.projectRoot, "agents");
   const stateFile = resolve(ctx.projectRoot, STATE_FILE);
+  const workflowPath = join(agentsRoot, "shared", "workflows", "persistent-task.ts");
 
   return async () => {
-    // Read last check time
     let lastCheck = 0;
     try {
       lastCheck = parseInt(readFileSync(stateFile, "utf-8").trim(), 10) || 0;
@@ -24,7 +44,6 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     const now = Date.now();
     const projects: Array<{ owner: string; relPath: string }> = [];
 
-    // Scan all project directories
     try {
       for (const dir of readdirSync(agentsRoot, { withFileTypes: true })) {
         if (!dir.isDirectory() || dir.name.startsWith(".")) continue;
@@ -49,7 +68,6 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
           try {
             const mtime = statSync(projectFile).mtimeMs;
             if (mtime <= lastCheck) continue;
-
             const content = readFileSync(projectFile, "utf-8");
             const m = OWNER_RE.exec(content);
             const owner = m ? m[1] : dir.name;
@@ -59,12 +77,11 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       }
     } catch { return; }
 
-    // Save check time
     try { writeFileSync(stateFile, String(now), "utf-8"); } catch { /* skip */ }
 
     if (projects.length === 0) return;
 
-    // Find projects already being worked on
+    // Skip projects already running
     const busyProjects = new Set<string>();
     try {
       const db = ctx.getDb();
@@ -77,20 +94,101 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       }
     } catch { /* skip */ }
 
-    let forked = 0;
-    for (const project of projects) {
-      if (busyProjects.has(project.relPath)) continue;
-      const task =
-        `Run the persistent-task workflow for this project.\n\n` +
-        `workflow.run("persistent-task", "project: ${project.relPath}\\nagent: ${project.owner}\\ngoal: see project file")`;
-      try {
-        ctx.manager.run(project.owner, task, { source: "cron" });
-        forked++;
-      } catch { /* skip */ }
+    // Load workflow once
+    let wf: WorkflowModule;
+    try {
+      wf = await loadWorkflow(workflowPath);
+    } catch (err) {
+      ctx.log(`[project-resume] ERROR loading workflow: ${err}`);
+      return;
     }
 
-    if (forked > 0) {
-      ctx.log(`[project-resume] forked ${forked} agent(s) for modified projects`);
+    let launched = 0;
+    for (const project of projects) {
+      if (busyProjects.has(project.relPath)) continue;
+
+      const task = `project: ${project.relPath}\nagent: ${project.owner}\ngoal: see project file`;
+      const runId = generateRunId();
+      const run: WorkflowRun = {
+        runId, workflow: "persistent-task", task,
+        parentSessionId: `cron:project-resume`,
+        depth: 1, startedAt: Date.now(), status: "running", steps: [],
+      };
+      saveWorkflowRun(ctx.persistDir, run);
+
+      const workflowCtx: WorkflowContext = {
+        task,
+        agent: project.owner,
+
+        runFunction: async (label, fn) => {
+          const start = Date.now();
+          let output: string; let hadError = false; let errorMsg: string | undefined;
+          try {
+            output = await Promise.race([
+              fn(),
+              new Promise<never>((_, rej) => setTimeout(() => rej(new Error("timeout")), 30_000)),
+            ]);
+            if (output.length > 50_000) output = output.slice(0, 50_000) + "\n…(truncated)";
+          } catch (err) {
+            hadError = true;
+            errorMsg = err instanceof Error ? err.message : String(err);
+            output = `ERROR: ${errorMsg}`;
+          }
+          const step: WorkflowStep = {
+            sessionId: `fn_${label}_${Date.now()}`, agent: `fn:${label}`, task: label,
+            status: hadError ? "error" : "done",
+            startedAt: start, endedAt: Date.now(), lastAssistantText: output,
+          };
+          run.steps.push(step);
+          saveWorkflowRun(ctx.persistDir, run);
+          return {
+            sessionId: step.sessionId, status: step.status,
+            lastAssistantText: output, messages: [],
+            duration: `${((Date.now() - start) / 1000).toFixed(1)}s`,
+            outputDir: "", turnsUsed: 0,
+            ...(hadError && errorMsg ? { error: errorMsg } : {}),
+          };
+        },
+
+        runAgent: async (agentName, agentTask) => {
+          const result = await ctx.manager.callAgent(agentName, agentTask, {
+            workflowRunId: runId, stepLabel: agentName, source: "workflow",
+          });
+          const step: WorkflowStep = {
+            sessionId: result.sessionId, agent: agentName, task: agentTask,
+            status: result.status as "done" | "error" | "interrupted",
+            startedAt: result.messages[0]?.timestamp ?? Date.now(),
+            endedAt: Date.now(), lastAssistantText: result.lastAssistantText,
+          };
+          run.steps.push(step);
+          saveWorkflowRun(ctx.persistDir, run);
+          return result;
+        },
+
+        runWorkflow: async () => ({ type: "escalate" as const, reason: "Sub-workflows not supported" }),
+        emit: (event: WorkflowEvent) => ctx.log(`[project-resume:${project.relPath}] ${event.type}`),
+        summarize: (result, opts?) => summarizeForHandoff(result, opts),
+        done: (summary) => ({ type: "done" as const, summary }),
+        escalate: (reason, context?) => ({ type: "escalate" as const, reason, context }),
+      };
+
+      // Run in background — don't block other projects
+      wf.execute(workflowCtx).then((result) => {
+        run.endedAt = Date.now();
+        run.status = result.type === "done" ? "done" : "escalated";
+        run.result = result.type === "done" ? { summary: result.summary } : { reason: result.reason };
+        saveWorkflowRun(ctx.persistDir, run);
+        ctx.log(`[project-resume] ${project.relPath} → ${result.type} (${run.steps.length} steps)`);
+      }).catch((err) => {
+        run.endedAt = Date.now(); run.status = "error";
+        run.result = { reason: err instanceof Error ? err.message : String(err) };
+        saveWorkflowRun(ctx.persistDir, run);
+        ctx.log(`[project-resume] ${project.relPath} ERROR: ${err}`);
+      });
+
+      launched++;
     }
+
+    if (launched > 0) ctx.log(`[project-resume] launched ${launched} workflow(s)`);
   };
 };
