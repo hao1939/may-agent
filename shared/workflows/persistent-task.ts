@@ -102,6 +102,11 @@ function ensureDir(dir: string): void {
 function updateField(content: string, field: string, value: string): string {
   const regex = new RegExp(`^(\\*\\*${field}\\*\\*:\\s*).*$`, "m");
   if (regex.test(content)) return content.replace(regex, `$1${value}`);
+  // Insert after the last ** field before ## sections
+  const insertPoint = content.search(/^## /m);
+  if (insertPoint > 0) {
+    return content.slice(0, insertPoint) + `**${field}**: ${value}\n` + content.slice(insertPoint);
+  }
   return content;
 }
 
@@ -130,8 +135,10 @@ function createProjectDir(config: PersistentTaskConfig): void {
 **Status**: active
 **Owner**: ${config.owner}
 **Worker**: ${config.worker}
+**Priority**: P1
 **Started**: ${now}
 **Iteration**: 0
+**Health**: —
 
 ## Goal
 ${config.goal}
