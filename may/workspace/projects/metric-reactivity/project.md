@@ -1,6 +1,6 @@
 # Project: Metric Reactivity
 
-**Status**: blocked
+**Status**: active
 **Owner**: may
 **Priority**: P1
 **Iteration**: 1
