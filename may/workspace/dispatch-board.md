@@ -55,14 +55,14 @@ Updated: 2026-04-16 ~08:00 UTC
 - **P2**: Amy-kimi billing — blocked on Hao.
 - ⚠️ **HOLD**: Ch2-production-gates implementation — Hold for EXP-170.
 
-## Latest Cycle Summary (14:10 Apr 20)
-- **SYSTEM**: 8 agents active. Zero errors across all agents. Healthy.
-- **Sessions/6h**: May(243), Tech-lead(216), Bob(61), Optimizer(38), Evaluator(30), Coach(19), Scout(15), QA(12).
-- **Throughput**: 94% success rate. 100% last hour (3/3).
-- **Stuck**: Cancelled s_..611617990_13 (may, 22h idle). No other stuck sessions.
-- **Metrics**: Coverage 69% ⚠️ (threshold 80%). Alert-to-Reaction 1042min ⚠️ (threshold 120min). Both persistent.
-- **Active work**: Coach EXP-188 ongoing, Bob deep-dives + context-learning, Optimizer mode cycling, Scout arXiv triage, Evaluator task-tree evals.
-- **WAITING**: Gatekeeper Review Gate needs Hao approval. Metric System Phase 3 needs process restart.
+## Latest Cycle Summary (14:40 Apr 20)
+- **SYSTEM**: 8 agents active. Only zombie cleanup interruptions. Healthy.
+- **Sessions/6h**: May(241), Tech-lead(215), Bob(50), Optimizer(37), Coach(19), Evaluator(16), Scout(14), QA(12).
+- **Throughput**: 94% success rate. 100% last hour.
+- **Stuck**: None.
+- **Metrics**: Coverage 68% ⚠️ (threshold 80%). Alert-to-Reaction 1042min ⚠️ (threshold 120min). Both persistent.
+- **Pending Hao requests**: 10+ unprocessed (Context Injection Review P0, Workflow-First Culture P0, Metrics Dashboard, Resume handler redesign, System Evolution unblock, Context-Discovery chain). Need dedicated triage session.
+- **Active work**: Coach EXP-188 ongoing, Bob context-learning + deep-dives, Optimizer mode cycling, Scout arXiv triage, Evaluator task-tree evals.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
