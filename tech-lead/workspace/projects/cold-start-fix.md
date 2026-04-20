@@ -168,3 +168,7 @@ Iteration 14. Milestones: 4/4 done.
 ## Iteration Summary
 - **Iter 13**: Compiles cleanly with Bun.
 
+**Reviewer**: BLOCKED — The evaluator identified that milestone 4 ("Pre-computed context injection") is not actually complete — `getSessionDiff`/`formatSessionDiff` are not wired into `manager.ts`. However, this is a review-only session and I cannot modify files. The task has been stuck for multiple iterations with workers claiming completion without fixing the integration gap.
+
+**What's needed**: A worker iteration that actually adds the `getSessionDiff`/`formatSessionDiff` calls into `manager.ts` where session context is assembled, then verifies with `grep` that the references exist.
+
