@@ -1,6 +1,6 @@
 /**
  * project-resume — Scan modified projects, run persistent-task workflow directly.
- * Simple: if project.md changed since last check and no workflow is running for it, launch one.
+ * Simple: if project.md changed since last check and no workflow is in-flight, launch one.
  * The workflow handles all logic (status checks, comments, evaluation).
  */
 import { readdirSync, readFileSync, statSync, existsSync, writeFileSync } from "node:fs";
@@ -10,12 +10,26 @@ import type { CronEntry } from "../../../src/lib/cron-tool.js";
 
 const OWNER_RE = /^\*\*Owner\*\*:\s*(\S+)/mi;
 const STATE_FILE = ".state/project-resume-last-check";
+const INFLIGHT_FILE = ".state/project-resume-inflight";
 
 let importCounter = 0;
+
+/** Read the set of projects currently being worked on. */
+function readInflight(path: string): Set<string> {
+  try {
+    const data = readFileSync(path, "utf-8").trim();
+    return new Set(data ? data.split("\n") : []);
+  } catch { return new Set(); }
+}
+
+function writeInflight(path: string, inflight: Set<string>): void {
+  try { writeFileSync(path, [...inflight].join("\n"), "utf-8"); } catch { /* skip */ }
+}
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
   const agentsRoot = resolve(ctx.projectRoot, "agents");
   const stateFile = resolve(ctx.projectRoot, STATE_FILE);
+  const inflightFile = resolve(ctx.projectRoot, INFLIGHT_FILE);
   const workflowPath = join(agentsRoot, "shared", "workflows", "persistent-task.ts");
 
   return async () => {
@@ -25,6 +39,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     } catch { /* first run */ }
 
     const now = Date.now();
+    const inflight = readInflight(inflightFile);
     const projects: Array<{ owner: string; relPath: string }> = [];
 
     // Scan all project directories for modified files
@@ -52,6 +67,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
           try {
             const mtime = statSync(projectFile).mtimeMs;
             if (mtime <= lastCheck) continue;
+            if (inflight.has(relPath)) continue; // Already in-flight
             const content = readFileSync(projectFile, "utf-8");
             const m = OWNER_RE.exec(content);
             const owner = m ? m[1] : dir.name;
@@ -63,19 +79,6 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
     try { writeFileSync(stateFile, String(now), "utf-8"); } catch { /* skip */ }
     if (projects.length === 0) return;
-
-    // Skip projects that already have a running workflow
-    const busyProjects = new Set<string>();
-    try {
-      const db = ctx.getDb();
-      const wfRows = db.prepare(
-        "SELECT task FROM sessions WHERE status = 'running' AND task LIKE '%persistent-task%'"
-      ).all() as Array<{ task: string }>;
-      for (const r of wfRows) {
-        const m = r.task.match(/project:\s*([^\n"]+)/);
-        if (m) busyProjects.add(m[1].trim());
-      }
-    } catch { /* skip */ }
 
     // Load workflow module
     let wfMod: any;
@@ -89,10 +92,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
     let launched = 0;
     for (const project of projects) {
-      if (busyProjects.has(project.relPath)) continue;
-
       const task = `project: ${project.relPath}\nagent: ${project.owner}\ngoal: see project file`;
-      const workflowRunId = `wr_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
 
       const workflowCtx = {
         task,
@@ -116,7 +116,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
           };
         },
         runAgent: async (agentName: string, agentTask: string) => {
-          return ctx.manager.callAgent(agentName, agentTask, { source: "workflow", workflowRunId });
+          return ctx.manager.callAgent(agentName, agentTask, { source: "workflow" });
         },
         runWorkflow: async () => ({ type: "escalate" as const, reason: "Sub-workflows not supported" }),
         emit: (event: any) => ctx.log(`[project-resume:${project.relPath}] ${event.type ?? event}`),
@@ -128,10 +128,18 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         escalate: (reason: string, context?: unknown) => ({ type: "escalate" as const, reason, context }),
       };
 
+      // Mark in-flight before launching
+      inflight.add(project.relPath);
+      writeInflight(inflightFile, inflight);
+
       wfMod.execute(workflowCtx).then((result: any) => {
         ctx.log(`[project-resume] ${project.relPath} → ${result.type}`);
       }).catch((err: any) => {
         ctx.log(`[project-resume] ${project.relPath} ERROR: ${err}`);
+      }).finally(() => {
+        // Remove from in-flight when done
+        inflight.delete(project.relPath);
+        writeInflight(inflightFile, inflight);
       });
 
       launched++;

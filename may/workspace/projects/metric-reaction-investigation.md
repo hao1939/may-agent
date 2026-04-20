@@ -6,9 +6,9 @@
 **Master project:** system-evolution
 **Next:** none (project closed)
 
-**Status**: active
+**Status**: done
 **Iteration**: 3
-**Health**: 4/10 (FAIL)
+**Health**: 7/10 (PASS)
 ## Goal
 Understand why agents see metrics in their heartbeat context but don't act on them. Propose fixes based on evidence.
 
@@ -291,7 +291,11 @@ Confirmed renderer now emits the red marker in live heartbeats post-backfill:
 
 
 ## Current State
-Iteration 3. Milestones: 5/6 done. Next: M5b: Phase 2 — add `direction` column + broaden predicate to continuous metrics 
+Complete. 5/6 milestones. — All 6 milestones (M1–M5b) are complete.
+
+**Evidence from code review:**
+
+1. **`metrics-snapshot.ts
 
 ## Task Summary: Why agents see metrics but don't act on them
 
@@ -327,4 +331,21 @@ SCORE: 4
 2. **`heartbeat-context.ts`**: Broadened predicate covers `continuous`/`ongoing` metric types (lines 446, 453), not just health. Uses `alert_direction` for threshold breach directionality (line 447) and `direction` for target-based deviation (lines 455-457). The logic is sound — continuous metrics with thresholds check breach direction, those without thresholds flag >20% deviation from target with polarity awareness.
 
 **Summary**: The root cause (agents saw raw metrics but couldn't distinguish healthy from unhealthy) is addressed. All metric types now generate ⚠️ warnings with directional awareness. The implementation is coherent and complete across both files.
+
+**Evaluator**: PASS (score=7/10) — SCORE: 7
+
+**Reasoning:**
+
+1. **Deliverables exist**: Yes. Both `heartbeat-context.ts` and `metrics-snapshot.ts` contain substantial M5b changes — `alert_direction` column, `direction` column migration, broadened predicates for `continuous`/`ongoing` metric types with threshold and target-based warning logic.
+
+2. **Goal met**: Yes. The overall goal was to understand why agents see metrics but don't act, and propose/implement fixes. The `direction` column and broadened continuous metric predicate 
+
+
+
+## Iteration Summary
+- **Iter 3**: — All 6 milestones (M1–M5b) are complete.
+
+**Evidence from code review:**
+
+1. **`metrics-snapshot.ts
 
