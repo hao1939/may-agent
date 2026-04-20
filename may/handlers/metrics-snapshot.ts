@@ -404,6 +404,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
     let backfillForked = 0;
     try {
+      ctx.log(`[metrics-snapshot] Starting backfill check for unresolved alerts...`);
       const unresolvedAlerts = db.prepare(`
         SELECT ma.metric_id, ma.message, m.owner, m.name, m.current, m.threshold, m.target, m.type,
                m.source as metric_source, m.alert_direction
