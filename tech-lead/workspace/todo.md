@@ -1,7 +1,8 @@
 # TODO
 
 ## Upcoming
-- [ ] Build health: package.json missing from /app root — confirmed still missing (Apr 20, re-confirmed Apr 20 HB, re-confirmed Apr 21 HB). Environment issue, not code bug. **P0 escalation (6d10d37c)**. No tsc, no npm run check available.
+- [ ] Build health: package.json missing from /app root — confirmed still missing (Apr 20 x3, Apr 21). Environment issue, not code bug. **P0 escalation (6d10d37c)**.
+- [ ] P1: Codebase weight 33,126 lines vs 32,000 target. ~1,800 lines in .lab/ experiment scripts are dead weight candidates. Also 623 lines in bob/workspace/exp101-hvr-analysis.ts.
 - [ ] P1: Add pre-flight ANTHROPIC_API_KEY check to gym scripts (11732f46) — Bob burned 114 ops without key
 - [ ] P1: Layer 2 monitoring / degradation detection per CR#343 (653a307d)
 - [ ] P2: DD#759 heartbeat paper review (7eb31e94) — external validation of our architecture

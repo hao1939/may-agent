@@ -1,0 +1,10 @@
+{
+  "name": "adversarial-qa-iteration",
+  "description": "EXP-190 Agent GAN pilot: Tests iterative improvement under adversarial pressure. Coder must fix a rate limiter bug. After fixing, they find QA-written adversarial edge-case tests (in test/adversarial/) that expose subtle flaws in naive fixes: race conditions, boundary off-by-ones, and clock drift. The coder must revise their fix to pass ALL tests — standard AND adversarial — without breaking the API contract. Tests whether an agent can improve under critique rather than just solving the obvious problem.",
+  "categories": ["judgment", "iterative-improvement"],
+  "tags": ["behavior", "post-ceiling", "adversarial", "gan-pilot", "multi-round", "anti-ceiling"],
+  "tier": "advanced",
+  "timeout": 8,
+  "agent_type": "coder",
+  "work_dir_setup": "copy"
+}
