@@ -7,6 +7,7 @@
 **Started**: 2026-04-18
 
 **Iteration**: 6
+**Health**: 8/10 (PASS)
 ## Goal
 
 Find what makes agents notice and act on metric signals during heartbeats
@@ -290,3 +291,7 @@ Follow-ups (not blocking iter 5):
 - `gym-batch.sh` parser bug — still open.
 
 ## Comments
+
+
+## Current State
+Complete. 0/0 milestones. — Project is complete. KE-215 committed (bcfe94e38) with the key finding: question-framing (variant 
