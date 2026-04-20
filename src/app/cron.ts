@@ -328,6 +328,17 @@ export class Cron {
           );
         }
         // Unchanged entries keep their existing timer — no reset
+        // But try to register unregistered handlers (e.g., handler file was fixed after startup)
+        if (!configChanged && entry.handler && !this.handlers.has(entry.name) && this.handlerResolver) {
+          const entrySnapshot = { ...entry };
+          this.handlerResolver(entry.name, entrySnapshot)
+            .then((resolved) => {
+              if (resolved) {
+                this.onError?.(`[handler] Late-registered handler for "${entrySnapshot.name}" on reload`);
+              }
+            })
+            .catch(() => { /* silent — will retry on next reload */ });
+        }
       }
       if (changedCount === 0) {
         this.onError?.(`Config reload: no entries changed`);
