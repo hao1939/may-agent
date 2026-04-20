@@ -3,7 +3,7 @@
 **Status**: active
 **Owner**: bob
 **Priority**: P1
-**Iteration**: current
+**Iteration**: 1
 **Health**: 7/10
 
 ## Goal
@@ -40,5 +40,8 @@ Integrate the reflexion-based learning pipeline into the agent infrastructure so
 - Does the gym runner support automated multi-run experiments?
 
 ## Current State
-Starting M1. Need to locate the infrastructure integration point.
-- [2026-04-21 hao] The buildSessionContext() dead code has been removed from manager.ts. The integration points changed: RuntimeCtx is now available in workflows (emit, getDb, log, notify, paths). Events are persisted to an events table. Design your integration around RuntimeCtx and events, not the old session context injection.
+Iteration 1. Milestones: 1/5 done. Next: M2: Wire `extractLessons()` into session completion handler (requires `src/lib/m
+
+## Iteration Summary
+- **Iter 1**: Already committed in a prior step. Good.
+

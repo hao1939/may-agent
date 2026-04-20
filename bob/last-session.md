@@ -1,16 +1,18 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776712728442_12
+- **Session:** s_1776712839741_14
 - **Status:** done
-- **When:** 2026-04-20T19:19:29.504Z
-- **Duration:** 41s
+- **When:** 2026-04-20T19:20:51.262Z
+- **Duration:** 11s
 
 ## What Happened
-CONTINUE — The **Investigate** milestone is complete. The analysis in `.state/reviewer-investigation.md` is excellent — 13 categorized examples, clear root causes, and a weakness table. **Check off the Investigate milestone.**
 
-**Next iteration should complete the Design milestone:**
 
-Produce `.state/reviewer-prompt-design.md` with a concrete new `buildReviewPrompt` template. The design must directly address each of the 6 root causes identified:
+CONTINUE
 
-1. **Problem-solver framing**: Replace the evalua
+**Next iteration should tackle M2 and M3 together** since both require `src/lib/manager.ts`:
+
+1. **M2**: Find the session completion handler in `src/lib/manager.ts` and wire in `extractLessons()` — call it when a session ends with failure/partial status, passing the session transcript and outcome. Store extracted lessons via the reflexion module's persistence layer.
+
+2. **M3**: Find `buildSessionContext()` in `src/lib/manager.ts` and wire in `retrieveLessons()` — retrieve relevant le
