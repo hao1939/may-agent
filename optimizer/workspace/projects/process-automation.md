@@ -9,8 +9,9 @@
 **Source feedback:** [bob](../../bob/workspace/system-gaps.md), [optimizer](../system-gaps.md), [scout](../../scout/workspace/system-gaps.md), [tech-lead](../../tech-lead/workspace/system-gaps.md), [coach](../../coach/workspace/system-gaps.md)
 **Tracked metrics:** `optimizer.tool-adoption`
 
-**Status**: active
+**Status**: done
 **Iteration**: 8
+**Health**: 8/10 (PASS)
 ## Why
 Agents manually repeat templated work every session: Bob creates hypothesis files by hand, optimizer rewrites the same SQL queries, scout manages counters in prose. Each repetition costs 3-5 ops that a script could do in 1.
 
@@ -159,5 +160,23 @@ All three deliverables exist and the evaluator.ts fix is in place. Task was mark
 
 
 ## Current State
-Iteration 8. Milestones: 5/5 done.
+Complete. 5/5 milestones. — All 5/5 milestones are complete. Project fully delivered.
+
+**Reviewer**: DONE — — All 5/5 milestones are complete. Project fully delivered.
+
+**Evaluator**: PASS (score=8/10) — SCORE: 8
+
+All 5 milestones have corresponding deliverables that physically exist on disk:
+- **M1 (Bob scripts)**: 3 shell scripts confirmed in `agents/bob/workspace/scripts/`
+- **M2 (Saved queries)**: `agents/optimizer/workspace/saved-queries.sh` exists
+- **M3 (Scout counters)**: `agents/scout/workspace/scripts/counters.sh` exists
+- **M4 (Tech-lead templates)**: 3 delegation templates confirmed
+- **M5 (Coach templates)**: 3 experiment templates confirmed
+
+The project file is marked Done with cle
+
+
+
+## Iteration Summary
+- **Iter 8**: — All 5/5 milestones are complete. Project fully delivered.
 
