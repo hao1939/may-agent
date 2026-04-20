@@ -1,43 +1,60 @@
 # Design Documents — Index
 
-## Active
+## Core System Design
+
+These define how the system works. Read these first.
 
 | Document | What | Status |
 |----------|------|--------|
-| [architecture-redesign.md](architecture-redesign.md) | System architecture: EventBus, components, event types | Implementing (Phase 1-3 done) |
-| [agent-calling-guide.md](agent-calling-guide.md) | Agent cooperation: call/fork/message + context queries | Implemented |
-| [research-system.md](research-system.md) | Research system: adversarial peers, lab, knowledge base | Building |
-| [evidence-first-process.md](evidence-first-process.md) | How to validate ideas before building | Active methodology |
-| [code-vs-data-decisions.md](code-vs-data-decisions.md) | When to use context.md vs guards vs workflows | Active guideline |
-| [context-learning.md](context-learning.md) | Context learning system: extraction, merge, injection | Deployed, proven |
-| [session-digest.md](session-digest.md) | Session digest system: phases 1-5, summarization, classification | ✅ Fully implemented |
-| [phase5-digest-context-injection.md](phase5-digest-context-injection.md) | Digest-based context injection replacing memory JSONL | ✅ Fully implemented |
+| [context-injection-design.md](context-injection-design.md) | System prompt assembly, what agents see, what's on-demand | ✅ Active |
+| [persistent-task-files.md](persistent-task-files.md) | Project system: project.md + journal.md, comment iterations, evaluator gate, health field | ✅ Active (v3) |
+| [metrics-system.md](metrics-system.md) | Unified metric system: per-agent metrics, snapshots, alerts, dashboard | ✅ Implemented |
+| [architecture-redesign.md](architecture-redesign.md) | EventBus, components, event types | ✅ Implemented |
 
-## Reference (still valid, low-change)
+## Agent Behavior
+
+How agents cooperate, make decisions, and improve.
+
+| Document | What | Status |
+|----------|------|--------|
+| [agent-calling-guide.md](agent-calling-guide.md) | call/fork/message patterns, when to use each | ✅ Active |
+| [may-gatekeeper.md](may-gatekeeper.md) | May's supervisor role: decoupled async review | ✅ Implemented |
+| [evidence-first-process.md](evidence-first-process.md) | How to validate ideas: hypothesis → evidence → build | ✅ Active methodology |
+| [code-vs-data-decisions.md](code-vs-data-decisions.md) | When to use guards vs context.md vs workflows | ✅ Active guideline |
+| [context-learning.md](context-learning.md) | A/B test results: context.md changes behavior for environmental knowledge | ✅ Validated finding |
+| [idle-heartbeat-playbook.md](idle-heartbeat-playbook.md) | What to do when heartbeat has no priority work | ✅ Active |
+
+## Quality & Safety
+
+Guards, review, escalation.
+
+| Document | What | Status |
+|----------|------|--------|
+| [guard-escalation.md](guard-escalation.md) | When guards block: ask owner, don't self-bypass | ✅ Approved |
+| [review-gate.md](review-gate.md) | Code merge requires QA review | Draft |
+| [workflow-guards.md](workflow-guards.md) | Reactive demand system for workflow quality | Reference |
+
+## Metrics & Observability
+
+| Document | What | Status |
+|----------|------|--------|
+| [infra-metrics.md](infra-metrics.md) | Infrastructure metrics: handler-health, stuck-requests, throughput | ✅ Active |
+| [metrics-evolution-roadmap.md](metrics-evolution-roadmap.md) | Hao's vision: where metrics system should go | Vision |
+| [output-channels.md](output-channels.md) | Telegram & web console notification design | ✅ Implemented |
+
+## Research & Knowledge
+
+| Document | What | Status |
+|----------|------|--------|
+| [research-system.md](research-system.md) | Knowledge base, adversarial peers, lab | Building |
+| [skills-injection-overhead.md](skills-injection-overhead.md) | Problem analysis: skills add 8-46KB to prompts | Reference |
+
+## Follow-ups
 
 | Document | What |
 |----------|------|
-| [event-system.md](event-system.md) | Socket protocol, event routing (needs EventBus type update) |
-| [gym-benchmarks.md](gym-benchmarks.md) | Gym infrastructure (lab extends this) |
-| [cron-sqlite.md](cron-sqlite.md) | Cron state persistence |
-| [logging.md](logging.md) | Logging system |
-| [progress-tracking.md](progress-tracking.md) | Human review workflow |
-| [project-deployment.md](project-deployment.md) | External project management |
-| [cron-graduation.md](cron-graduation.md) | Cron job lifecycle |
-| [gym-snapshots.md](gym-snapshots.md) | Benchmark tracking |
+| [common-sense-followups.md](common-sense-followups.md) | Items from 2026-04-19 review that need addressing |
 
-## Superseded
+## Archive
 
-| Document | Replaced by |
-|----------|-------------|
-| [delegation-design.md](delegation-design.md) | agent-calling-guide.md |
-| [delegation-quality.md](delegation-quality.md) | agent-calling-guide.md |
-
-## Archived (pre-pivot, historical)
-
-Moved to `archive/`. These documents describe designs that were either:
-- Replaced by the research system pivot
-- Experiments that failed (auto-evolve 0/5)
-- Completed work (prompt simplification, team archetypes)
-
-See `archive/` directory for historical reference.
+Superseded, completed, or historical docs in [archive/](archive/). These are kept for reference but no longer active design guidance.
