@@ -63,44 +63,18 @@ export interface HandlerContext extends RuntimeCtx {
   /** SubagentManager — for run(), followUp(), etc. */
   manager: SubagentManager;
 
-  /** Persistent state directory (e.g., .state/) */
-  persistDir: string;
-
-  /** Project root (e.g., /home/hao/may-agent) */
-  projectRoot: string;
-
-  /** Agents directory (e.g., /home/hao/may-agent/agents) */
-  agentsRoot: string;
-
   /** Name of the agent that owns this handler (e.g., "may") */
   agentName: string;
 
   /** Agent's persistent session ID getter (for followUp). Returns null if no active session. */
   getSessionId: () => string | null;
 
-  /** Log a diagnostic message (routed through EventBus as info). */
-  log: (msg: string) => void;
-
-  /** Send a message to the human (routed through EventBus on the chat channel, visible in Telegram). */
-  notify: (msg: string) => void;
-
   /** Trigger a cron entry immediately (reactive trigger). Returns true if fired/latched. */
   triggerNow: (entryName: string) => boolean;
-
-  // ── Runtime APIs ──────────────────────────────────────────────────
-  // These are provided by the binary so handlers don't need to import
-  // from src/lib/ (which may not exist on disk in compiled deployments).
-
-  /** Open (or return cached) SQLite database for the persist directory. */
-  getDb: () => SqliteDb;
 
   /** Track a request in the requests table. Returns the request ID.
    * @deprecated Use ctx.emit({ type: "message_created", ... }) instead. */
   trackRequest: (opts: TrackRequestOpts) => string;
-
-  /** Emit an event on the EventBus. Handlers use this to send findings to agents
-   * instead of writing to files. The event flows through subscribers (DbWriter, etc). */
-  emit: (event: { type: string; [key: string]: unknown }) => void;
 
   /** Load all session metadata (active + archived). */
   loadAllSessionMetas: () => Record<string, PersistedSession>;

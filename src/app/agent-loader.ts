@@ -240,9 +240,7 @@ async function buildTools(config: AgentConfig, opts: AgentLoaderOptions): Promis
             sharedWorkflowDir,
             persistDir,
             agentName: config.name,
-            bus,
-            projectRoot,
-            agentsRoot: opts.agentsRoot,
+            runtimeCtx: buildRuntimeCtx({ bus, persistDir, projectRoot, agentsRoot: opts.agentsRoot, agentName: config.name }),
             callerSessionId: () => {
               const sid = agentSessionIds.get(config.name);
               if (!sid) throw new Error(`No active ${config.name} session`);
@@ -673,10 +671,10 @@ export async function reloadAgents(
 
 import type { HandlerContext, HandlerModule } from "../lib/handler-context.js";
 import type { CronEntry } from "../lib/cron-tool.js";
-import { getDb, trackRequest } from "../lib/requests.js";
+import { trackRequest } from "../lib/requests.js";
 import { loadAllSessionMetas } from "../lib/persistence.js";
 import { evaluateTask } from "../lib/evaluator.js";
-import { log as globalLog } from "../lib/log.js";
+import { buildRuntimeCtx } from "../lib/runtime-ctx.js";
 
 /**
  * Auto-discover and register JS handlers for cron entries.
@@ -704,21 +702,13 @@ export async function loadAgentHandlers(
     if (handlersNeeded.length === 0) continue;
 
     // Build a HandlerContext for this agent
+    const rtx = buildRuntimeCtx({ bus, persistDir, projectRoot, agentsRoot, agentName });
     const ctx: HandlerContext = {
+      ...rtx,
       manager,
-      persistDir,
-      projectRoot,
-      agentsRoot,
       agentName,
       getSessionId: () => opts.getSessionId(agentName),
-      log: (msg) => globalLog("info", msg),
-      notify: (msg) => {
-        bus.emit({ type: "notification", agent: agentName, text: msg });
-      },
       triggerNow: (entryName: string) => cron.triggerNow(entryName),
-      emit: (event) => bus.emit(event as any),
-      // Runtime APIs — provided by the binary so handlers don't import src/lib/
-      getDb: () => getDb(persistDir),
       trackRequest: (reqOpts) => trackRequest(persistDir, reqOpts),
       loadAllSessionMetas: () => loadAllSessionMetas(persistDir),
       evaluateTask: (evalOpts) => evaluateTask(evalOpts),
