@@ -8,6 +8,8 @@ import { join } from "node:path";
 import {
   validateFinishDeliverables,
   enforceFinishDeliverables,
+  validateVerificationEvidence,
+  enforceVerificationEvidence,
 } from "../src/lib/finish-guard.js";
 
 // ── Test fixtures ─────────────────────────────────────────────────────
@@ -202,5 +204,115 @@ describe("enforceFinishDeliverables", () => {
         TEST_ROOT,
       ),
     ).toThrow("FM-3.1 Ghost Deliverable");
+  });
+});
+
+// ── FM-3.3 Verification Evidence Tests ────────────────────────────────
+
+describe("validateVerificationEvidence", () => {
+  it("passes for non-success status without evidence", () => {
+    const result = validateVerificationEvidence({
+      status: "failure",
+      deliverables: [{ path: "foo.ts" }],
+    });
+    expect(result.valid).toBe(true);
+  });
+
+  it("passes for success without deliverables", () => {
+    const result = validateVerificationEvidence({
+      status: "success",
+      deliverables: [],
+    });
+    expect(result.valid).toBe(true);
+  });
+
+  it("fails for success with deliverables but no evidence", () => {
+    const result = validateVerificationEvidence({
+      status: "success",
+      deliverables: [{ path: "foo.ts" }],
+    });
+    expect(result.valid).toBe(false);
+    expect(result.error).toContain("FM-3.3");
+  });
+
+  it("fails for success with deliverables and empty evidence array", () => {
+    const result = validateVerificationEvidence({
+      status: "success",
+      deliverables: [{ path: "foo.ts" }],
+      verification_evidence: [],
+    });
+    expect(result.valid).toBe(false);
+    expect(result.error).toContain("FM-3.3");
+  });
+
+  it("passes with valid evidence entries", () => {
+    const result = validateVerificationEvidence({
+      status: "success",
+      deliverables: [{ path: "foo.ts" }],
+      verification_evidence: ["Step 12: bun test exit code 0, all 15 tests passed"],
+    });
+    expect(result.valid).toBe(true);
+    expect(result.warnings).toEqual([]);
+  });
+
+  it("warns on suspiciously short evidence", () => {
+    const result = validateVerificationEvidence({
+      status: "success",
+      deliverables: [{ path: "foo.ts" }],
+      verification_evidence: ["tests pass"],
+    });
+    expect(result.valid).toBe(true);
+    expect(result.warnings.length).toBeGreaterThan(0);
+    expect(result.warnings[0]).toContain("Suspiciously short");
+  });
+
+  it("warns on ghost keyword patterns", () => {
+    const result = validateVerificationEvidence({
+      status: "success",
+      deliverables: [{ path: "foo.ts" }],
+      verification_evidence: ["TSC OK — no type errors found"],
+    });
+    expect(result.valid).toBe(true);
+    expect(result.warnings.length).toBeGreaterThan(0);
+    expect(result.warnings[0]).toContain("FM-3.3");
+  });
+
+  it("warns on ALL TESTS PASSED ghost keyword", () => {
+    const result = validateVerificationEvidence({
+      status: "success",
+      deliverables: [{ path: "foo.ts" }],
+      verification_evidence: ["ALL TESTS PASSED without errors"],
+    });
+    expect(result.valid).toBe(true);
+    expect(result.warnings[0]).toContain("FM-3.3");
+  });
+});
+
+describe("enforceVerificationEvidence", () => {
+  it("throws when evidence is missing for success with deliverables", () => {
+    expect(() =>
+      enforceVerificationEvidence({
+        status: "success",
+        deliverables: [{ path: "foo.ts" }],
+      }),
+    ).toThrow("FM-3.3");
+  });
+
+  it("returns warnings without throwing for valid but suspicious evidence", () => {
+    const warnings = enforceVerificationEvidence({
+      status: "success",
+      deliverables: [{ path: "foo.ts" }],
+      verification_evidence: ["SYNTAX OK confirmed in output"],
+    });
+    expect(warnings.length).toBeGreaterThan(0);
+  });
+
+  it("does not throw for failure status", () => {
+    expect(() =>
+      enforceVerificationEvidence({
+        status: "failure",
+        deliverables: [{ path: "foo.ts" }],
+      }),
+    ).not.toThrow();
   });
 });

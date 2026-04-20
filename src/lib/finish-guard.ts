@@ -22,6 +22,14 @@ export interface FinishDeliverable {
   description?: string;
 }
 
+/** Parameters for finish() call validation. */
+export interface FinishCallParams {
+  status: string;
+  deliverables?: FinishDeliverable[] | null;
+  verification_evidence?: string[] | null;
+  summary?: string;
+}
+
 /** Result of the ghost-deliverable validation. */
 export interface FinishValidationResult {
   /** `true` when all deliverables exist on disk. */
@@ -129,4 +137,99 @@ export function enforceFinishDeliverables(
   if (!result.valid) {
     throw new Error(result.error);
   }
+}
+
+// ── FM-3.3 Verification Evidence Validation ───────────────────────────
+
+/** Keywords that suggest fabricated evidence when not from real tool output. */
+const GHOST_KEYWORDS = /\b(SYNTAX OK|TSC OK|ALL TESTS PASS(ED)?|BUILD SUCCEEDED|0 errors?|✓ all|LGTM|no issues found)\b/i;
+
+/** Result of verification_evidence validation. */
+export interface EvidenceValidationResult {
+  valid: boolean;
+  warnings: string[];
+  error?: string;
+}
+
+/**
+ * Validate that finish(success) includes verification_evidence and that
+ * entries don't contain known fabrication patterns.
+ *
+ * Rules:
+ * 1. finish(success) with deliverables MUST include at least one verification_evidence entry.
+ * 2. Evidence entries must not be suspiciously short (< 15 chars).
+ * 3. Evidence entries must not match known ghost-keyword patterns (FM-3.3).
+ *
+ * @param params  The finish() call parameters.
+ * @returns An {@link EvidenceValidationResult}.
+ */
+export function validateVerificationEvidence(
+  params: FinishCallParams,
+): EvidenceValidationResult {
+  const { status, deliverables, verification_evidence } = params;
+  const warnings: string[] = [];
+
+  // Only validate success status with deliverables
+  if (status !== "success") {
+    return { valid: true, warnings };
+  }
+
+  const hasDeliverables = deliverables && deliverables.length > 0;
+  if (!hasDeliverables) {
+    return { valid: true, warnings };
+  }
+
+  // Rule 1: Must have verification_evidence
+  if (!verification_evidence || verification_evidence.length === 0) {
+    return {
+      valid: false,
+      warnings,
+      error:
+        "FM-3.3 Missing Verification Evidence: finish(success) with deliverables " +
+        "must include at least one verification_evidence entry citing a real tool " +
+        "output (e.g., 'Step 12: bun test exit code 0'). Add verification_evidence " +
+        "or change status to partial.",
+    };
+  }
+
+  // Rule 2 & 3: Check each entry for quality
+  for (const entry of verification_evidence) {
+    if (typeof entry !== "string") continue;
+
+    if (entry.trim().length < 15) {
+      warnings.push(
+        `Suspiciously short evidence entry: '${entry}'. ` +
+        `Evidence should reference specific tool output.`,
+      );
+    }
+
+    const ghostMatch = entry.match(GHOST_KEYWORDS);
+    if (ghostMatch) {
+      warnings.push(
+        `FM-3.3 Possible fabricated evidence: '${ghostMatch[0]}' in entry '${entry}'. ` +
+        `Cite the actual tool output verbatim instead of summarizing.`,
+      );
+    }
+  }
+
+  // Warnings are advisory, not blocking (to avoid false positives on legitimate summaries)
+  return { valid: true, warnings };
+}
+
+/**
+ * Convenience wrapper that throws when verification evidence is missing.
+ * Warnings are returned but do not cause a throw.
+ *
+ * @param params  The finish() call parameters.
+ * @returns Array of warning strings (may be empty).
+ * @throws Error with FM-3.3 message if evidence is required but missing.
+ */
+export function enforceVerificationEvidence(
+  params: FinishCallParams,
+): string[] {
+  const result = validateVerificationEvidence(params);
+  if (!result.valid) {
+    throw new Error(result.error);
+  }
+  return result.warnings;
 }
