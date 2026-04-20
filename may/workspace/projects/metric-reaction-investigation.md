@@ -6,9 +6,8 @@
 **Master project:** system-evolution
 **Next:** none (project closed)
 
-**Status**: done
-**Iteration**: 2
-**Health**: 8/10 (PASS)
+**Status**: active
+**Iteration**: 3
 ## Goal
 Understand why agents see metrics in their heartbeat context but don't act on them. Propose fixes based on evidence.
 
@@ -290,8 +289,12 @@ Now let me write the deliverable document:
 **Worker**: 
 
 
+### Iteration 3 — 2026-04-20T11:21:09.582Z
+**Worker**: The changes were already committed as `a3b9f1d9d` — M5b was already done in a prior commit! And then `14a9f9ef4` updated it further. My edits were on top of already-committed content. Since git shows no diff, the files already contain what I wrote. Good — the files are already committed.
+
+
 ## Current State
-Complete. 5/6 milestones. All actionable milestones (5/6) are complete and verified. M5b (Phase 2 — add `direction` column + b
+Iteration 3. Milestones: 5/6 done. Next: M5b: Phase 2 — add `direction` column + broaden predicate to continuous metrics 
 
 DONE
 
@@ -310,18 +313,4 @@ No further iterations needed until the 48h observation window for M5a completes.
 - **Iter 1**: Results look correct:
 - `coach.breadcrumb-action-rate`: 0 < 0.5 threshold → ⚠️ NEEDS ATTENTION ✅
 - `
-
-**Reviewer**: DONE — All actionable milestones (5/6) are complete and verified. M5b (Phase 2 — add `direction` column + broaden predicate) is explicitly gated on 48h observation of M5a and cannot proceed yet by design. No further work needed until that observation window completes.
-
-**Evaluator**: PASS (score=8/10) — I now have enough context.
-
-SCORE: 8
-
-**Reasoning:**
-
-1. **Deliverables exist**: Yes. The investigation document (`metric-reaction-investigation.md`) is extensive with data tables, commit references (`0e22b256`), SQL queries, rendered samples, and verification evidence from live heartbeat sessions.
-
-2. **Goal met**: Yes. The goal was to understand why agents see metrics but don't act, and propose fixes. The investigation identified the root cause (missing `threshold` values → no ⚠️ marker → agen
-
-- **Iter 2**: All actionable milestones (5/6) are complete and verified. M5b (Phase 2 — add `direction` column + b
 
