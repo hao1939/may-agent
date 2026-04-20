@@ -8,6 +8,7 @@
 **Next:** (closed)
 
 **Status**: active
+**Iteration**: 14
 ## Closure note (2026-04-17)
 
 Closed per Hao: heartbeats are autonomy time, not overhead to minimize. Agents exiting idle heartbeats early = failing to be autonomous, not being efficient. Common-sense.md codifies this ("Heartbeat — exploration. Tokens spent exploring are cheap; missed autonomy is expensive."). No separate adaptive-heartbeats project needed. M2 (scout arXiv windowing) was a correctness concern — if it still matters, scout owns it under their own project, not under an idleness project. M3 (adaptive frequency) is load management and can be re-opened as a separate project if load becomes a problem.
@@ -234,3 +235,11 @@ On the next non-REVIEW heartbeat, May must:
 **Pre-deploy baseline for M2 success metric (from design doc):** Thu 36% no-op (37/104), Fri 29% (23/80), Wed 12% (9/77). Re-check in 2 weeks.
 
 **Remaining:** M3 (adaptive frequency) — separate effort, not blocking.
+
+### Iteration 14 — 2026-04-20T10:59:08.387Z
+**Worker**: No uncommitted changes in may/. The finish blocker was stale.
+
+
+
+## Current State
+Iteration 14. Milestones: 2/3 done. Next: ~~**Adaptive frequency (load management)**~~ — (Closed as part of this project. 
