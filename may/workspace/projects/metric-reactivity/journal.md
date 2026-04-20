@@ -251,3 +251,15 @@ CONTINUE
 
 **Key insight**: Three iterations have analyzed the code without producing DB evidence that the loop actually closes. Stop analyzing, start executing.
 
+**Reviewer**: CONTINUE — — The worker verified M4 (auto-fork is working) but the remaining milestone "Measure: track alert-to-reaction time as a metric" is not done yet.
+
+**Next iteration should:**
+
+1. **Complete milestone M5: "Measure: track alert-to-reaction time as a metric"** — Create a new metric (e.g., `may.alert-reaction-time`) that measures the time between `metric_alerts.created_at` and the first agent session responding to it. This could be:
+   - A SQL-based auto metric with `source_query` that computes the average time from alert creation to the corresponding request being completed (join `metric_alerts` with `requests` on the metric ID pattern)
+   - Or add a `reacted_at` column to `metric_alerts` that gets set when the auto-forked session starts, then measure `reacted_at - created_at`
+
+2. **Check off M4** — The verification report at `agents/may/workspace/projects/metric-reactivity/verification-m4.md` proves auto-fork has fired (12+ sessions). Mark M4 complete.
+
+3. **Deliverable**: Write the metric definition (SQL or code change) and update the project journal.
+

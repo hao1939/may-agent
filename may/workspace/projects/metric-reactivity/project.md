@@ -35,7 +35,7 @@ Agents should react to metric alerts. Currently 4 alerts are firing with zero re
 - [x] Design: how should alerts reach the responsible agent? Options: heartbeat injection, notification, handler
 - [x] Build: delivery via trackRequest + auto-fork on regression via ctx.manager.run(). Heartbeat pull via alert injection in check-health step.
 - [ ] Verify: auto-fork has NEVER fired (0 sessions with source=metric-alert). Need to either trigger a real regression or backfill-fork for existing unresolved alerts
-- [ ] Measure: track alert-to-reaction time as a metric
+- [x] Measure: track alert-to-reaction time as a metric
 
 ## Open Questions
 - Who owns each metric? Is it documented?
@@ -49,5 +49,5 @@ Agents should react to metric alerts. Currently 4 alerts are firing with zero re
 Iteration 3. Milestones: 3/5 done. Next: Verify: auto-fork has NEVER fired (0 sessions with source=metric-alert). Need to
 
 ## Iteration Summary
-- **Iter 3**: Now I have a clear picture. Let me write a verification report:
+- **Iter 3**: Now let me write the verification report:
 
