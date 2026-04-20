@@ -504,6 +504,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
         if (evalVerdict === "FAIL") {
           falseDoneCount++;
+          continueWithoutProgress++;
+          if (falseDoneCount >= 3) {
+            projectContent = updateField(projectContent, "Status", "blocked");
+            projectContent = updateSection(projectContent, "Current State",
+              `Blocked: Reviewer marked DONE ${falseDoneCount} times but evaluator scored <7 each time. Goal may be unachievable or misscoped.`);
+            writeFileSync(config.projectPath, projectContent, "utf-8");
+            return ctx.escalate(`False-done loop: reviewer said DONE ${falseDoneCount}x but evaluator rejected each time at iteration ${iteration}.`);
+          }
           iteration++;
           continue;
         }
@@ -657,6 +665,13 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           continueWithoutProgress++;
           projectContent = updateField(projectContent, "Health", `${score}/10 (${evalVerdict})`);
           writeFileSync(config.projectPath, projectContent, "utf-8");
+          if (falseDoneCount >= 3) {
+            projectContent = updateField(projectContent, "Status", "blocked");
+            projectContent = updateSection(projectContent, "Current State",
+              `Blocked: Reviewer marked DONE ${falseDoneCount} times but evaluator scored <7 each time. Goal may be unachievable or misscoped.`);
+            writeFileSync(config.projectPath, projectContent, "utf-8");
+            return ctx.escalate(`False-done loop: reviewer said DONE ${falseDoneCount}x but evaluator rejected each time at iteration ${iteration}.`);
+          }
           iteration++;
           continue;
         }
