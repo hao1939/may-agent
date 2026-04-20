@@ -2191,3 +2191,16 @@ Additional evidence:
 - Confirm whether this runtime is expected to be non-buildable (scenario workspace) vs. a standard Node/TS repo. If it should be buildable, restore/install toolchain (`package.json`, `tsconfig.json`, dependencies).
 - If `agents/*/workspace/*` files are not intended artifacts, consider excluding via `.gitignore`.
 .
+
+## 2026-04-20 — heartbeat — repeated verification
+
+### What I observed
+- `/app` is still **not** a git repository (git commands fail with: `fatal: not a git repository`).
+- `node_modules/.bin` is still missing (only `node_modules/.vite/` exists), so mandatory QA commands cannot run.
+
+### Mandatory gates (independent)
+- `./node_modules/.bin/tsc --noEmit`: FAIL — `No such file or directory` (exit 127)
+- `./node_modules/.bin/vitest --run`: FAIL — `No such file or directory` (exit 127)
+
+### Files reviewed
+- `src/pipeline.js` (read in full) — same finding persists: header note says normalize before penalties, but code applies penalties then normalizes.
