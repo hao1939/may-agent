@@ -70,6 +70,24 @@ export class DbWriter {
             /* table may not exist yet */
           }
           break;
+
+        case "emit":
+          // Persist all domain events — complete audit trail
+          try {
+            this.db.run(
+              "INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
+              [
+                event.event,
+                (event.data as Record<string, unknown>)?.source as string ?? null,
+                (event.data as Record<string, unknown>)?.owner as string ?? null,
+                event.data ? JSON.stringify(event.data) : null,
+                Date.now(),
+              ],
+            );
+          } catch {
+            /* table may not exist on first run */
+          }
+          break;
       }
     } catch (err) {
       // DB errors are operational — log but don't break the bus
