@@ -3,7 +3,7 @@
 **Status**: done
 **Owner**: may
 **Priority**: P1
-**Iteration**: 7
+**Iteration**: 9
 
 **Health**: 7/10 (PASS)
 ## Goal
@@ -29,7 +29,7 @@ Analyze guard friction (FM-3.3) — understand why finish-guard and verification
   - **R3**: Improve error message specificity
 
 ## Current State
-Complete. 5/5 milestones. — All 5 milestones are complete. The deliverable at `agents/may/workspace/guard-friction-analysis.md
+Iteration 9. Milestones: 5/5 done.
 
 
 ## Iteration Summary
