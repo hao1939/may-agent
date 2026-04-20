@@ -13,15 +13,15 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-20T01:40)
+# Your Context (auto-generated 2026-04-20T02:10)
 
 **System:** 22 sessions/6h, 0% error rate
 
 **Top spenders:**
-- coach: 14s, 196KB
+- coach: 13s, 181KB
 - scout: 1s, 125KB
 - optimizer: 3s, 99KB
-- bob: 4s, 51KB
+- bob: 5s, 60KB
 
 **📊 Your Metrics:**
 - Codebase weight: **31229** lines → 32000 lines
