@@ -5,7 +5,7 @@
 **Priority**: P1
 **Iteration**: 4
 
-**Health**: 8/10 (PASS)
+**Health**: 7/10 (PASS)
 ## Goal
 Agents should react to metric alerts. Currently 4 alerts are firing with zero response. Close the loop: alert → agent sees it → agent investigates → agent acts.
 
@@ -47,18 +47,16 @@ Agents should react to metric alerts. Currently 4 alerts are firing with zero re
 
 
 ## Current State
-Complete. 5/5 milestones. The implementation is complete. The full alert → agent reaction loop is now wired:
+Complete. 5/5 milestones. — All 5 milestones are complete. The alert→agent reaction loop is fully wired:
 
-1. **Detection**
+**Summary of what wa
 
 ## Iteration Summary
 - **Iter 3**: Now let me write the verification report:
 
 - **Iter 3**: Auto-committed already. Now commit the other dirty files:
 
-- **Iter 4**: The implementation is complete. The full alert → agent reaction loop is now wired:
+- **Iter 4**: — All 5 milestones are complete. The alert→agent reaction loop is fully wired:
 
-1. **Detection**
-
-- **Iter 4**: Both M4 and M5 are already complete. The metric `may.alert-to-reaction-time` exists with a proper `s
+**Summary of what wa
 
