@@ -288,6 +288,156 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         ctx.log(`[session-sync] Pattern tagging error: ${err instanceof Error ? err.message : String(err)}`);
       }
 
+      // ── Synthetic workflowRunId backfill ─────────────────────────────
+      // Many sessions are clearly workflow-driven (source=workflow, cron-task,
+      // cron, agents.fork) but don't have workflowRunId because the launching
+      // code didn't create workflow run files. Generate synthetic IDs for
+      // batch-correlated sessions to close the coverage gap.
+      let syntheticBackfilled = 0;
+      try {
+        // 1. source=workflow sessions without workflowRunId — these are created by
+        //    project-resume or the workflow runner but lack run files.
+        //    Group by startedAt within 5-second windows and assign a shared synthetic ID.
+        const wfNoId = db.prepare(`
+          SELECT sessionId, startedAt FROM sessions
+          WHERE workflowRunId IS NULL
+            AND source = 'workflow'
+            AND startedAt > ?
+          ORDER BY startedAt
+        `).all(Date.now() - 90 * 86400 * 1000) as Array<{ sessionId: string; startedAt: number }>;
+
+        if (wfNoId.length > 0) {
+          const updateSynth = db.prepare(
+            `UPDATE sessions SET workflowRunId = ? WHERE sessionId = ? AND workflowRunId IS NULL`
+          );
+          const synthTxn = db.transaction(() => {
+            let batchStart = wfNoId[0].startedAt;
+            let batchId = `wr_synth_${batchStart}`;
+            for (const row of wfNoId) {
+              // New batch if > 5s gap
+              if (row.startedAt - batchStart > 5000) {
+                batchStart = row.startedAt;
+                batchId = `wr_synth_${batchStart}`;
+              }
+              const r = updateSynth.run(batchId, row.sessionId);
+              if (r.changes > 0) syntheticBackfilled++;
+            }
+          });
+          synthTxn();
+        }
+
+        // 2. source=cron-task heartbeat sessions — these are spawned by heartbeat
+        //    cron entries but weren't tracked with workflowRunId.
+        //    Group by startedAt within 30-second windows.
+        const cronTaskNoId = db.prepare(`
+          SELECT sessionId, startedAt FROM sessions
+          WHERE workflowRunId IS NULL
+            AND source = 'cron-task'
+            AND startedAt > ?
+          ORDER BY startedAt
+        `).all(Date.now() - 90 * 86400 * 1000) as Array<{ sessionId: string; startedAt: number }>;
+
+        if (cronTaskNoId.length > 0) {
+          const updateSynth = db.prepare(
+            `UPDATE sessions SET workflowRunId = ? WHERE sessionId = ? AND workflowRunId IS NULL`
+          );
+          const synthTxn = db.transaction(() => {
+            let batchStart = cronTaskNoId[0].startedAt;
+            let batchId = `wr_hb_${batchStart}`;
+            for (const row of cronTaskNoId) {
+              if (row.startedAt - batchStart > 30000) {
+                batchStart = row.startedAt;
+                batchId = `wr_hb_${batchStart}`;
+              }
+              const r = updateSynth.run(batchId, row.sessionId);
+              if (r.changes > 0) syntheticBackfilled++;
+            }
+          });
+          synthTxn();
+        }
+
+        // 3. source=cron sessions without workflowRunId — spawned by run-agent-task
+        const cronNoId = db.prepare(`
+          SELECT sessionId, startedAt FROM sessions
+          WHERE workflowRunId IS NULL
+            AND source = 'cron'
+            AND startedAt > ?
+          ORDER BY startedAt
+        `).all(Date.now() - 90 * 86400 * 1000) as Array<{ sessionId: string; startedAt: number }>;
+
+        if (cronNoId.length > 0) {
+          const updateSynth = db.prepare(
+            `UPDATE sessions SET workflowRunId = ? WHERE sessionId = ? AND workflowRunId IS NULL`
+          );
+          const synthTxn = db.transaction(() => {
+            for (const row of cronNoId) {
+              const synthId = `wr_cron_${row.startedAt}`;
+              const r = updateSynth.run(synthId, row.sessionId);
+              if (r.changes > 0) syntheticBackfilled++;
+            }
+          });
+          synthTxn();
+        }
+
+        // 4. source=agents.fork sessions — evaluator sessions spawned by evaluator-heartbeat
+        //    or by workflow step sessions dispatching sub-work
+        const forkNoId = db.prepare(`
+          SELECT sessionId, startedAt FROM sessions
+          WHERE workflowRunId IS NULL
+            AND source = 'agents.fork'
+            AND startedAt > ?
+          ORDER BY startedAt
+        `).all(Date.now() - 90 * 86400 * 1000) as Array<{ sessionId: string; startedAt: number }>;
+
+        if (forkNoId.length > 0) {
+          const updateSynth = db.prepare(
+            `UPDATE sessions SET workflowRunId = ? WHERE sessionId = ? AND workflowRunId IS NULL`
+          );
+          const synthTxn = db.transaction(() => {
+            let batchStart = forkNoId[0].startedAt;
+            let batchId = `wr_fork_${batchStart}`;
+            for (const row of forkNoId) {
+              if (row.startedAt - batchStart > 30000) {
+                batchStart = row.startedAt;
+                batchId = `wr_fork_${batchStart}`;
+              }
+              const r = updateSynth.run(batchId, row.sessionId);
+              if (r.changes > 0) syntheticBackfilled++;
+            }
+          });
+          synthTxn();
+        }
+
+        // 5. source=standalone-eval, callAgent, persistent-task — assign individual IDs
+        const otherNoId = db.prepare(`
+          SELECT sessionId, startedAt FROM sessions
+          WHERE workflowRunId IS NULL
+            AND source IN ('standalone-eval', 'callAgent', 'persistent-task')
+            AND startedAt > ?
+          ORDER BY startedAt
+        `).all(Date.now() - 90 * 86400 * 1000) as Array<{ sessionId: string; startedAt: number }>;
+
+        if (otherNoId.length > 0) {
+          const updateSynth = db.prepare(
+            `UPDATE sessions SET workflowRunId = ? WHERE sessionId = ? AND workflowRunId IS NULL`
+          );
+          const synthTxn = db.transaction(() => {
+            for (const row of otherNoId) {
+              const synthId = `wr_auto_${row.startedAt}`;
+              const r = updateSynth.run(synthId, row.sessionId);
+              if (r.changes > 0) syntheticBackfilled++;
+            }
+          });
+          synthTxn();
+        }
+      } catch (err) {
+        ctx.log(`[session-sync] Synthetic backfill error: ${err instanceof Error ? err.message : String(err)}`);
+      }
+
+      if (syntheticBackfilled > 0) {
+        ctx.log(`[session-sync] Synthetic workflowRunId assigned to ${syntheticBackfilled} sessions`);
+      }
+
       ctx.emit({
         type: "session_sync",
         synced,

@@ -3,7 +3,7 @@
  * Simple: if project.md changed since last check and no workflow is in-flight, launch one.
  * The workflow handles all logic (status checks, comments, evaluation).
  */
-import { readdirSync, readFileSync, statSync, existsSync, writeFileSync } from "node:fs";
+import { readdirSync, readFileSync, statSync, existsSync, writeFileSync, mkdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
 import type { CronEntry } from "../../../src/lib/cron-tool.js";
@@ -16,6 +16,28 @@ let importCounter = 0;
 
 function generateRunId(): string {
   return `wr_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+}
+
+/** Save a workflow run file so session-sync can backfill workflowRunId into the DB. */
+function saveWorkflowRunFile(
+  projectRoot: string,
+  run: {
+    runId: string;
+    workflow: string;
+    task: string;
+    parentSessionId: string | null;
+    agent: string;
+    startedAt: number;
+    endedAt?: number;
+    status: string;
+    steps: Array<{ sessionId: string; agent: string; status: string }>;
+  },
+): void {
+  const dir = join(projectRoot, ".state", "workflows");
+  try {
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, `${run.runId}.json`), JSON.stringify(run, null, 2));
+  } catch { /* Non-fatal — coverage tracking is best-effort */ }
 }
 
 /** Read the set of projects currently being worked on. */
@@ -138,10 +160,40 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       inflight.add(project.relPath);
       writeInflight(inflightFile, inflight);
 
+      // Save initial workflow run file for session-sync backfill
+      const wfRun = {
+        runId,
+        workflow: "persistent-task",
+        task,
+        parentSessionId: null as string | null,
+        agent: project.owner,
+        startedAt: Date.now(),
+        status: "running",
+        steps: [] as Array<{ sessionId: string; agent: string; status: string }>,
+      };
+      saveWorkflowRunFile(ctx.projectRoot, wfRun);
+
+      // Wrap runAgent to track step sessions
+      const origRunAgent = workflowCtx.runAgent;
+      workflowCtx.runAgent = async (agentName: string, agentTask: string) => {
+        const result = await origRunAgent(agentName, agentTask);
+        if (result.sessionId) {
+          wfRun.steps.push({ sessionId: result.sessionId, agent: agentName, status: result.status ?? "done" });
+          saveWorkflowRunFile(ctx.projectRoot, wfRun);
+        }
+        return result;
+      };
+
       wfMod.execute(workflowCtx).then((result: any) => {
         ctx.log(`[project-resume] ${project.relPath} → ${result.type}`);
+        wfRun.status = "done";
+        wfRun.endedAt = Date.now();
+        saveWorkflowRunFile(ctx.projectRoot, wfRun);
       }).catch((err: any) => {
         ctx.log(`[project-resume] ${project.relPath} ERROR: ${err}`);
+        wfRun.status = "error";
+        wfRun.endedAt = Date.now();
+        saveWorkflowRunFile(ctx.projectRoot, wfRun);
       }).finally(() => {
         // Remove from in-flight when done
         inflight.delete(project.relPath);
