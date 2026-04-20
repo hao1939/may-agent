@@ -14,6 +14,10 @@ const INFLIGHT_FILE = ".state/project-resume-inflight";
 
 let importCounter = 0;
 
+function generateRunId(): string {
+  return `wr_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+}
+
 /** Read the set of projects currently being worked on. */
 function readInflight(path: string): Set<string> {
   try {
