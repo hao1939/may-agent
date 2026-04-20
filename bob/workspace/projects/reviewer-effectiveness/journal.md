@@ -61,3 +61,5 @@ The deliverable should include the full new prompt template ready to be implemen
 
 **(c) First step:** Re-read `.state/reviewer-investigation.md` to get the specific failure examples, then for each one, walk through the new prompt template's guardrails and assess whether they would have changed the outcome.
 
+### Iteration 4 — 2026-04-20T19:22:34.933Z
+**Worker**: Now I have both documents. Let me create the experiment results.
