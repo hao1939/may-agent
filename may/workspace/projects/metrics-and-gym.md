@@ -6,6 +6,7 @@
 **Status:** done (all 6 milestones ✅ as of 2026-04-16; Hao closed 2026-04-17)
 
 **Status**: active
+**Iteration**: 1
 ## Completion notes (2026-04-17)
 All six milestones delivered: seeded 25 role-aligned metrics, triaged 101 scenarios, ran coach A/B (+20pp on read-before-edit), optimizer pre-deploy battery, scout scenario set (20 scenarios), and heartbeat integration across all 6 agents. Closed during Hao's 2026-04-17 project review.
 
@@ -37,3 +38,14 @@ All six milestones delivered: seeded 25 role-aligned metrics, triaged 101 scenar
 ### M6: Agent Heartbeat Integration — all
 - **Status:** ✅ Done (2026-04-16)
 - **Result:** All 6 agent heartbeats (bob, coach, optimizer, scout, tech-lead, may) updated with metric observation step.
+
+
+## Progress Log
+
+### Iteration 1 — 2026-04-20T11:02:30.116Z
+**Worker**: All consistent. The fix addresses the dedup query mismatches.
+
+
+
+## Current State
+Iteration 1. Milestones: 0/0 done.

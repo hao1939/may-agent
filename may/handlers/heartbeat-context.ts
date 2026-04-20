@@ -426,6 +426,33 @@ function generateBreadcrumb(m: MetricRow): string {
   return `  → Quick check: search .state/may.db metric_snapshots for ${m.id} trends`;
 }
 
+/**
+ * Determine the warning label for a metric based on its type and current value.
+ * Health metrics: threshold-based (existing behavior).
+ * Continuous metrics: target-based with direction polarity (M5b addition).
+ */
+function getMetricWarning(m: MetricRow): string {
+  if (m.current == null) return "";
+
+  // Health metrics: threshold-based
+  if (m.type === "health" && m.threshold != null) {
+    const alertAbove = m.alert_direction === 'above';
+    const breaching = alertAbove ? m.current > m.threshold : m.current < m.threshold;
+    return breaching ? " ⚠️ NEEDS ATTENTION" : "";
+  }
+
+  // Continuous metrics: flag when >20% away from target in the wrong direction
+  if (m.type === "continuous" && m.target != null && m.target !== 0) {
+    const higherIsBetter = m.direction !== 'lower_is_better';
+    const gap = higherIsBetter
+      ? (m.target - m.current) / Math.max(Math.abs(m.target), 1)
+      : (m.current - m.target) / Math.max(Math.abs(m.target), 1);
+    if (gap > 0.2) return " ⚠️ OFF TARGET";
+  }
+
+  return "";
+}
+
 function formatMetricsContext(metrics: MetricRow[]): string {
   if (metrics.length === 0) return "";
   const lines: string[] = [];
@@ -435,10 +462,7 @@ function formatMetricsContext(metrics: MetricRow[]): string {
     const val = m.current != null ? `${m.current}` : (m.last_value != null ? `~${m.last_value}` : "unmeasured");
     const unit = m.unit ? ` ${m.unit}` : "";
     const targetStr = m.target != null ? ` → ${m.target}${unit}` : "";
-    const alertAbove = m.alert_direction === 'above';
-    const warn = m.type === "health" && m.threshold != null && m.current != null
-      ? (alertAbove ? m.current > m.threshold : m.current < m.threshold) ? " ⚠️ NEEDS ATTENTION" : ""
-      : "";
+    const warn = getMetricWarning(m);
     lines.push(`- ${m.name}: **${val}**${unit}${targetStr}${warn}`);
     const breadcrumb = generateBreadcrumb(m);
     if (breadcrumb) lines.push(breadcrumb);
