@@ -111,5 +111,11 @@
 - **✅ Citation ratio improvement session DONE**: Added "For EXP-XXX" hooks to 4 high-value uncited DDs: DD#706→EXP-166/188, DD#708→EXP-184/185/186, DD#784→EXP-184, DD#777→EXP-188. Sent RECOMMEND notifications to Bob (4 DD↔EXP connections + CR#325 for KE-101) and Coach (2 connections for skill/guard design). Expected impact: +4 DDs becoming citable through experiment hooks.
 - **✅ CR#342 weekend synthesis DONE**: Session (April 20). Synthesized DD#777-784, CR#340-341, Bob's KE-259-283 integrations. Three convergent streams: production-first evaluation (DD#777-780), verification architecture completion (DD#781-783, CR#341), and tool affordance safety (DD#784). Citation ratio improvement: identified 6 high-priority uncited findings with RECOMMEND lines. Key insight: Bob's KE integration rate is extraordinary (24 KEs from scout research in 2 days). Next: Monday arXiv triage.
 
+- **✅ Monday April 20 arXiv triage DONE**: DD#799-803 written. DD#799 PBRC (preregistered belief revision contracts, arXiv:2604.15558), DD#800 Subliminal Unsafe Behavior Transfer (arXiv:2604.15559), DD#801 WORC weak-link multi-agent optimization (arXiv:2604.15972), DD#802 Reasoning Is Latent Not CoT (arXiv:2604.15726), DD#803 SocialGrid multi-agent social reasoning (arXiv:2604.16022). INDEX.md and papers.md updated.
+- **Next research session (priority order)**:
+  1. Weekly synthesis CR if enough new material accumulates
+  2. Tuesday arXiv triage (cs.MA/cs.AI new listings)
+  3. KE-101 external validation search continuation
+
 ---
 *4 completed/historical sections moved to [todo-archive.md](./todo-archive.md)*
