@@ -168,12 +168,14 @@ function autoForkForAlert(
     const task = `⚠️ ${alertMessage}. Investigate the root cause and take corrective action.`;
 
     // Dedup: check if there's already an unprocessed request for this metric alert
+    // Only consider requests created in the last 24h — older ones are stale
     const db = ctx.getDb();
+    const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
     const existingRequest = db.prepare(
       `SELECT requestId FROM requests
        WHERE toAgent = ? AND fromEntity = 'metrics-snapshot' AND status = 'CREATED'
-       AND task LIKE ?`
-    ).get(metric.owner, `%${metric.id}%`) as { requestId: string } | null;
+       AND task LIKE ? AND createdAt > ?`
+    ).get(metric.owner, `%${metric.id}%`, oneDayAgo) as { requestId: string } | null;
 
     if (existingRequest) {
       ctx.log(`[metrics-snapshot] Skipping fork for ${metric.id} — active request ${existingRequest.requestId} exists`);
