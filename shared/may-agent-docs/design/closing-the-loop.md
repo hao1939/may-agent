@@ -130,19 +130,22 @@ To exit: finish(status: "blocked", blockers: [{ reason: "..." }])
 ```
 ~20 LOC across `compose-guards.ts` and `cross-edit-guard.ts`.
 
-### G4: No Owner Registry (violates P2 — prerequisite)
+### G4: Ownership Convention Incomplete (violates P2)
 
-**Current:** Ownership scattered across metrics DB, project.md, cron agent field, implicit convention.
+**Current:** Metrics, projects, and agent definitions already have explicit owners. Cron entries don't. Events sometimes carry `data.owner`, sometimes don't.
 
-**Fix:** `src/lib/owner-registry.ts` (~30 LOC):
-```typescript
-function getOwner(entity: string): string {
-  // 1. Cron entry owner field
-  // 2. Agent definitions (agent → supervisor mapping)
-  // 3. Metric DB (metric_id → owner)
-  // 4. Default: "may"
-}
-```
+**Fix:** Convention, not code:
+- Add `"owner"` field to cron.json entries
+- Events must carry `data.owner` (emitter's responsibility)
+- No registry. No lookup utility. Owner is always stated explicitly where it's needed.
+
+| Thing | Where owner lives |
+|-------|------------------|
+| Metric | `metrics.owner` column |
+| Project | `**Owner**` field in project.md |
+| Cron entry | `owner` field in cron.json |
+| Event | `data.owner` in payload |
+| Agent | implicit (may is supervisor) |
 
 ### G5: Metric Alert Response Coupled to Measurement (violates P1, P2)
 
@@ -184,9 +187,9 @@ Self-evaluation bias risk. Monitor false-done rates before adding independent ev
 ## Implementation Sequence
 
 ### Phase 1: Foundation
-- **G4** — Owner registry (`src/lib/owner-registry.ts`)
-- **G2** — Add `owner` field to cron.json entries
-- Prerequisite for everything else
+- **G4** — Add `owner` field to cron.json entries, ensure events carry `data.owner`
+- **G2** — On handler failure, notify owner via bus
+- Convention only — no new code files
 
 ### Phase 2: Event Persistence (the big win)
 - **G1** — Events table + DB writer subscriber — all events persisted, unconsumed events visible to owners
@@ -194,7 +197,7 @@ Self-evaluation bias risk. Monitor false-done rates before adding independent ev
 - This phase implements the closed loop: every event is recorded, consumed or not
 
 ### Phase 3: Escalation
-- **G3** — Guard block messages with escalation template using owner registry
+- **G3** — Guard block messages with escalation template using event `data.owner`
 
 ### Phase 4: Cleanup
 - **G7** — Remove false preferred-workflows reference from common-sense.md
