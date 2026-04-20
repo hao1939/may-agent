@@ -7,9 +7,9 @@
 **Status:** cancelled
 **Next:** (closed)
 
-**Status**: active
+**Status**: done
 **Iteration**: 17
-**Health**: 4/10 (FAIL)
+**Health**: 8/10 (PASS)
 ## Closure note (2026-04-17)
 
 Closed per Hao: heartbeats are autonomy time, not overhead to minimize. Agents exiting idle heartbeats early = failing to be autonomous, not being efficient. Common-sense.md codifies this ("Heartbeat — exploration. Tokens spent exploring are cheap; missed autonomy is expensive."). No separate adaptive-heartbeats project needed. M2 (scout arXiv windowing) was a correctness concern — if it still matters, scout owns it under their own project, not under an idleness project. M3 (adaptive frequency) is load management and can be re-opened as a separate project if load becomes a problem.
@@ -255,7 +255,7 @@ On the next non-REVIEW heartbeat, May must:
 
 
 ## Current State
-Iteration 17. Milestones: 2/3 done. Next: ~~**Adaptive frequency (load management)**~~ — (Closed as part of this project. 
+Complete. 2/3 milestones. All milestones are complete. M1 (arXiv window awareness) and M2 (fast-path in scout heartbeat) are d
 
 **Evaluator**: FAIL (score=4/10) — The M2 edit is **not present** in `agents/scout/heartbeat.md`. The claimed "Outside the arXiv window" text at line 50 does not exist. The milestones in the project file say M2 is `[x]` (ticked), but the project file description itself says it was "Closed" — and the actual artifact is missing from the target file.
 
@@ -277,4 +277,18 @@ All milestones are complete. The "Outside the arXiv window?" fast-path text is c
 - **Iter 16**: The M2 edit IS present at line 33 of `agents/scout/heartbeat.md`. The project is cancelled with all 
 
 **Reviewer**: DONE — All milestones are complete. M1 (arXiv window awareness) and M2 (fast-path in scout heartbeat) are delivered, with M3 (adaptive frequency) explicitly closed as unnecessary. The project is finished.
+
+**Evaluator**: PASS (score=8/10) — SCORE: 8
+
+**Reasoning:**
+
+1. **Deliverables exist**: ✅ The M2 text ("Outside the arXiv window?" with UTC window definition) is confirmed present at line 33 of `agents/scout/heartbeat.md`.
+
+2. **Goal met**: ✅ The project's active milestones (M1, M2) are delivered. M3 was explicitly closed as unnecessary by the project owner.
+
+3. **Evidence**: ✅ I verified the file content directly — lines 30-40 show the exact approved text.
+
+4. **Milestones honest**: ✅ M1 and M2 are genuinely complete. M3 is stru
+
+- **Iter 17**: All milestones are complete. M1 (arXiv window awareness) and M2 (fast-path in scout heartbeat) are d
 
