@@ -249,3 +249,4 @@
 {"ts":1776058183381,"event":"done","sid":"s_1776057722653_28","agent":"coach","turns":42,"duration":"7m40s","summary":"Both files are in good shape. Let me finish:","files":[]}
 {"ts":1776058868606,"event":"error","sid":"s_1776055990460_14","agent":"coach","turns":21,"duration":"47m58s","summary":"Hard bucket full overhead: all 0/9 (3 per scenario). Now run Hard minimal:","error":"Request was aborted."}
 {"ts":"2026-04-20T01:41:34Z","type":"heartbeat","summary":"Assessed convention regressions. C1.1 edit-without-read is systemic across 5+ agents. Wrote brief, notified tech-lead for structural guard. Triaged 13 convention regression notifications — all stem from same root cause."}
+{"ts":"2026-04-21T10:30:00Z","type":"heartbeat","summary":"Triaged 13 convention regression notifications — all covered by existing systemic C1.1 brief. No new actionable work. Blocked on tech-lead structural guard for C1.1. Gym still at ceiling."}

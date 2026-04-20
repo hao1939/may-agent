@@ -3794,3 +3794,24 @@ Observations: All research threads closed. Strategic proposal (`proposal-graduat
 **Fix**: Messaged tech-lead (P1) to rewrite SOUL.md's Output Format section to redirect the verdict INTO the finish() call instead of as standalone text. The prior heartbeat fix (separate EXIT step, Apr 12) was insufficient because SOUL.md has higher cognitive authority.
 
 **Full analysis**: `agents/coach/workspace/qa-c14-finish-analysis.md`
+
+## 2026-04-21 — Heartbeat
+
+**Convention status (7-day)**:
+- Worst: coder C1.1 (82%), optimizer C1.1 (85%), coder C12.1 (84.3%)
+- Amy: C7.1 at 82.7% (uses invalid paths), C3.2 at 86.5% (writes outside workspace) — gym-only issue
+- Coach self: C1.1 at 87.9%, C1.3 at 90.1%
+- Systemic C1.1 brief already written and tech-lead notified for structural guard
+
+**Inbound triage (13 convention regression notifications)**:
+- All stem from same root causes already analyzed in systemic-c11-edit-without-read brief
+- Amy regressions are gym artifacts (gym workspace paths differ from production)
+- Bob C1.3/C12.1 — same pattern, text interventions won't work (KE-002)
+- DISPOSITION: No new action needed. Structural guard from tech-lead remains the blocker.
+
+**Other inbound**:
+- Scout citation audit (CR#335, CR#341) — low priority, not actionable for coach
+- May prove-the-loop quality signal — already captured in prior sprint
+- KE-214 from May — instruction-following related, will review if experiment capacity opens
+
+**Active work**: None actionable. All convention improvements blocked on tech-lead structural guard. Gym saturated at ceiling. Research threads paused awaiting capacity.
