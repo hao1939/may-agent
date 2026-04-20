@@ -3,7 +3,7 @@
 **Status**: done
 **Owner**: coach
 **Priority**: P1
-**Iteration**: 14
+**Iteration**: 15
 
 **Health**: 0/10 (FAIL)
 ## Goal
@@ -118,7 +118,7 @@ From artifacts (DB-free fallback):
 
 
 ## Current State
-Iteration 14. Milestones: 3/5 done. Next: Verify: observe 2-3 heartbeat cycles per agent after changes — are they more pro
+Iteration 15. Milestones: 3/5 done. Next: Verify: observe 2-3 heartbeat cycles per agent after changes — are they more pro
 
 ## Iteration Summary
 - **Iter 13**: — All 5 milestones are complete. The `/app/docs/project.md` file exists with well-structured content
