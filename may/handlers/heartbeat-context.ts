@@ -441,9 +441,17 @@ function getMetricWarning(m: MetricRow): string {
     return breaching ? " ⚠️ NEEDS ATTENTION" : "";
   }
 
-  // Continuous metrics: flag when >20% away from target in the wrong direction
-  if (m.type === "continuous" && m.target != null && m.target !== 0) {
-    const higherIsBetter = m.direction !== 'lower_is_better';
+  // Continuous/ongoing metrics with threshold: use threshold + alert_direction
+  if ((m.type === "continuous" || m.type === "ongoing") && m.threshold != null) {
+    const alertAbove = m.alert_direction === 'above';
+    const breaching = alertAbove ? m.current > m.threshold : m.current < m.threshold;
+    if (breaching) return " ⚠️ NEEDS ATTENTION";
+  }
+
+  // Continuous/ongoing metrics without threshold: flag when >20% away from target
+  if ((m.type === "continuous" || m.type === "ongoing") && m.target != null && m.target !== 0 && m.threshold == null) {
+    // alert_direction='above' means lower is better (alert fires when value rises)
+    const higherIsBetter = m.alert_direction !== 'above';
     const gap = higherIsBetter
       ? (m.target - m.current) / Math.max(Math.abs(m.target), 1)
       : (m.current - m.target) / Math.max(Math.abs(m.target), 1);

@@ -243,7 +243,8 @@ function checkRegression(
  * Returns true if an alert was fired.
  */
 function checkThresholdAlert(db: SqliteDb, ctx: HandlerContext, metric: MetricRow, value: number, now: number): boolean {
-  if (metric.type !== "health" || metric.threshold == null) return false;
+  if (metric.threshold == null) return false;
+  // M5b: broaden from health-only to all metric types with thresholds
   const alertAbove = metric.alert_direction === 'above';
   const breaching = alertAbove ? value > metric.threshold : value < metric.threshold;
   if (breaching) {
