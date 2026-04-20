@@ -1,12 +1,12 @@
 # Project: Workflow-First Culture
 
-**Status**: paused
+**Status**: blocked
 **Owner**: optimizer
 **Priority**: P0
 **Iteration**: 21
 **Paused reason**: Stuck in evaluator rejection loop — goal requires infrastructure changes (binary writing workflowRunId to meta.json) that persistent-task iterations cannot accomplish. Burned 500+ ops across 15+ stuck iterations. Will resume when infra work is done.
 
-**Health**: 3/10 (MAKING PROGRESS)
+**Health**: 0/10 (BLOCKED)
 ## Goal
 Make workflows the default way agents work. Increase workflow coverage from 18% to 80%.
 
@@ -252,4 +252,4 @@ Command exited with c
 
 
 ## Current State
-Blocked: **Reason:** The task's goal (80% workflow coverage) has not been achieved. Real session-level coverage is 19.9% (1165/5869), far below the 80% target.
+Blocked: **Reason:** The worker's claim of "100% coverage after synthetic backfill" is unverifiable and likely incorrect. The core problem remains unchanged fr

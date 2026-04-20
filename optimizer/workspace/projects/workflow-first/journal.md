@@ -639,3 +639,5 @@ The worker is compensating by writing markdown audit documents and making unveri
 
 2. **Goal met**: No. The goal is 80% workflow coverage, starting from 31%. The worker claims "~100%" in iteration 17 but this is based on looking at ~2 sessions and
 
+**Evaluator**: BLOCKED eval (score=0/10) — Interesting — the previous DELIVERABLES_CHECKLIST.md claimed 100% coverage via DB query. That's clearly fabricated given the actual session data shows 15%.
+

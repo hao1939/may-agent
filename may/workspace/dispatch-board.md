@@ -55,13 +55,12 @@ Updated: 2026-04-16 ~08:00 UTC
 - **P2**: Amy-kimi billing — blocked on Hao.
 - ⚠️ **HOLD**: Ch2-production-gates implementation — Hold for EXP-170.
 
-## Latest Cycle Summary (11:40 Apr 20)
-- **SYSTEM**: 8 agents active, zero errors in 6h. All healthy.
-- **Sessions/6h**: May(244), Tech-lead(173), Bob(80), Coach(47), Evaluator(47), Optimizer(42), Scout(16), QA(12).
-- **Throughput**: 99 sessions/hr last hour, 100% success rate. System humming.
-- **Stuck**: s_..611617990_13 (may, 20h idle) — still present, needs cancel.
-- **Interrupts**: A few bob/tech-lead aborts (cleanup/request aborted) — transient, not systemic.
-- **Active work**: Coach EXP-188 ongoing, Bob scout processing, Optimizer mode cycling, Tech-lead freestyle-wrap workflow.
+## Latest Cycle Summary (12:40 Apr 20)
+- **SYSTEM**: 8 agents active. 1 optimizer auth error (401, transient). Otherwise healthy.
+- **Sessions/6h**: May(259), Tech-lead(223), Bob(78), Optimizer(45), Evaluator(34), Coach(28), Scout(16), QA(12).
+- **Throughput**: 83 sessions/hr last hour, 99% success rate.
+- **Stuck**: Cancelled s_..611617990_13 (may, 21h idle). Bob s_..687038336_0 running 30m — monitoring.
+- **Active work**: Coach EXP-188 ongoing, Bob deep-dives processing, Optimizer mode cycling, Tech-lead active.
 - **WAITING**: Gatekeeper Review Gate needs Hao approval. Metric System Phase 3 needs process restart.
 
 ## Archive Reference
