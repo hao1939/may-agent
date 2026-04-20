@@ -224,6 +224,27 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         ctx.log(`[session-sync] Propagation error: ${err instanceof Error ? err.message : String(err)}`);
       }
 
+      // Tag evaluator sessions that were spawned by evaluator-heartbeat handler
+      // These sessions have task patterns like "# Task Tree Evaluation" or "# Session Digest Request"
+      // but no workflowRunId because agents.fork doesn't propagate it
+      let evalTagged = 0;
+      try {
+        const tagEvalStmt = db.prepare(`
+          UPDATE sessions SET
+            source = 'evaluator-heartbeat'
+          WHERE agent = 'evaluator'
+            AND source IS NULL
+            AND (task LIKE '# Task Tree Evaluation%' OR task LIKE '# Session Digest Request%')
+        `);
+        const result = tagEvalStmt.run();
+        evalTagged = result.changes;
+        if (evalTagged > 0) {
+          ctx.log(`[session-sync] Tagged ${evalTagged} evaluator sessions with source=evaluator-heartbeat`);
+        }
+      } catch (err) {
+        ctx.log(`[session-sync] Evaluator tagging error: ${err instanceof Error ? err.message : String(err)}`);
+      }
+
       ctx.emit({
         type: "session_sync",
         synced,
