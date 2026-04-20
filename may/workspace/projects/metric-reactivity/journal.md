@@ -178,3 +178,20 @@ Metrics already have `owner` field. Naming convention confirms:
 #### Resolved questions
 - **Interrupt vs wait?** → Push (notify) for new regressions, Pull (heartbeat) for ongoing awareness. Both needed.
 - **Alert fatigue?** → Dedup already exists in `fireAlert()`. Push only on NEW regressions. Heartbeat shows count summary.
+
+## 2026-04-23 — Status Review (Persistent Task)
+
+### Current State
+- **Build (Milestone 3)**: Complete. Auto-fork on regression + mandatory heartbeat alerts both implemented.
+- **Verify (Milestone 4)**: Partially complete. Auto-fork confirmed to never have fired (no `source=metric-alert` sessions exist in any accessible DB). Manual backfill was done. Waiting for a real regression event to validate the auto-fork path end-to-end.
+- **Measure (Milestone 5)**: Not started.
+
+### Remaining Gaps
+1. **Stale alert re-fork**: Identified in April 22 journal but never implemented. If an alert stays unresolved >24h and no metric-alert session exists in last 12h, the owner should be re-forked. Without this, a single missed fork = permanent silence.
+2. **No metrics DB accessible**: Cannot verify current alert state (no `.state/may.db` or `data/metrics.db` found at expected paths). Need to confirm DB location.
+3. **Milestone 5 (Measure)**: Need to define and register an `alert-to-reaction-time` metric in the metrics system.
+
+### Recommendations
+- Implement stale-alert re-fork in `metrics-snapshot.ts` (check unresolved alerts age, re-fork if owner hasn't responded)
+- Add `alert-reaction-time` metric: measure time from `metric_alerts.created_at` to `resolved_at`
+- Once a real regression fires and auto-fork triggers successfully, mark Milestone 4 complete
