@@ -27,6 +27,20 @@ This runtime’s project root (`/app`) is **not** a git repository, so the stand
 
 ### 2026-04-20 addendum (this run)
 - `/app/agents` **is** a git repo and `git log` works there; `/app` is not.
+- Current working tree shows only heartbeat/telemetry artifacts modified (no product code):
+  - `amy-kimi/workspace/heartbeat-context.md`
+  - `bob/workspace/heartbeat-context.md`
+  - `coach/workspace/heartbeat-context.md`
+  - `evaluator/last-session.md`
+  - `evaluator/workspace/heartbeat-context.md`
+  - `optimizer/workspace/heartbeat-context.md`
+  - `qa/workspace/heartbeat-context.md`
+  - `scout/workspace/heartbeat-context.md`
+  - `shared/federation/heartbeats/local.json`
+  - `tech-lead/workspace/heartbeat-context.md`
+
+### 2026-04-20 addendum (this run)
+- `/app/agents` **is** a git repo and `git log` works there; `/app` is not.
 - Latest commit in `/app/agents` as of this run is `c20ac4018` (optimizer notes only). No code changes reviewed beyond that doc file in this heartbeat.
 
 ### Summary
