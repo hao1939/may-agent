@@ -445,12 +445,12 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
       ctx.log(`[metrics-snapshot] Found ${unresolvedAlerts.length} unresolved alerts for backfill`);
       for (const alert of unresolvedAlerts) {
-        // Check if there's already a metric-alert request for this metric
+        // Check if there's already a metric-alert request for this metric (within last 24h)
         const existingRequest = db.prepare(
           `SELECT requestId FROM requests
            WHERE toAgent = ? AND fromEntity = 'metrics-snapshot' AND status = 'CREATED'
-           AND task LIKE ?`
-        ).get(alert.owner, `%${alert.metric_id}%`) as { requestId: string } | null;
+           AND task LIKE ? AND createdAt > ?`
+        ).get(alert.owner, `%${alert.metric_id}%`, now - 24 * 60 * 60 * 1000) as { requestId: string } | null;
 
         if (existingRequest) continue; // Already has an active request
 
