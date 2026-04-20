@@ -380,7 +380,7 @@ function buildEvalPrompt(
   prompt += `5. **No shortcuts**: Did the worker do real work or just claim completion?\n`;
   prompt += `6. **Verification milestones**: If any milestone requires observing, measuring, or verifying something works in production — was it actually observed over time? Building code is not the same as verifying it works. "Implemented auto-fork" ≠ "observed auto-fork fire and agent respond." Score low if verification milestones are claimed done without real observation evidence.\n`;
   prompt += `7. **If blocked**: Is the blocker real and specific? Did the worker try alternatives? Or did they give up too easily?\n`;
-  if (milestoneNote) prompt += `6. **Milestone status**: ${milestoneNote} (Note: workers cannot edit project.md, so unchecked milestones don't necessarily mean incomplete work — check if deliverables exist.)\n`;
+  prompt += `8. **Milestone status**: ${milestoneNote || "No milestones defined."}\n`;
   prompt += `\n`;
   prompt += `Your response MUST include:\n`;
   prompt += `SCORE: <1-10> (7+ = genuinely complete, <7 = not done)\n`;
