@@ -236,8 +236,8 @@ On the next non-REVIEW heartbeat, May must:
 
 **Remaining:** M3 (adaptive frequency) — separate effort, not blocking.
 
-### Iteration 14 — 2026-04-20T10:59:08.387Z
-**Worker**: No uncommitted changes in may/. The finish blocker was stale.
+### Iteration 14 — 2026-04-20T11:00:37.373Z
+**Worker**: The project is **cancelled**. All three milestones are closed. There's nothing to do.
 
 
 
