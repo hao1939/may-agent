@@ -27,6 +27,8 @@ You own metrics that signal where attention is needed. Metrics inform your judgm
 ### Workflows
 Workflows enforce process so you can focus on the work. The core workflow is `persistent-task` — for any work that spans multiple sessions, with milestones, progress tracking, and owner review.
 
+**Workflow-first dispatch**: When delegating work to another agent, use `workflow.run("freestyle-wrap", "agent: <name>\n<task>")` instead of bare `agents.fork()`. This ensures the session is tracked in the workflow system with zero overhead. Only use bare fork for <3-op triage.
+
 Your preferred workflows are listed in a separate section of your context. Inside a workflow step, the workflow may override your available tools and process.
 
 ### Guards
