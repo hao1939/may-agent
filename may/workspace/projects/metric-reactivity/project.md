@@ -3,9 +3,9 @@
 **Status**: done
 **Owner**: may
 **Priority**: P1
-**Iteration**: 6
+**Iteration**: 5
 
-**Health**: 7/10 (PASS)
+**Health**: 8/10 (PASS)
 ## Goal
 Agents should react to metric alerts. Currently 4 alerts are firing with zero response. Close the loop: alert → agent sees it → agent investigates → agent acts.
 
@@ -47,7 +47,7 @@ Agents should react to metric alerts. Currently 4 alerts are firing with zero re
 
 
 ## Current State
-Iteration 6. Milestones: 5/5 done.
+Complete. 5/5 milestones. All 5 milestones are complete. The metric-alert reactivity loop is now closed: alerts fire → agents 
 
 **Summary of what wa
 
@@ -60,5 +60,5 @@ Iteration 6. Milestones: 5/5 done.
 
 **Summary of what wa
 
-- **Iter 5**: The metric-reactivity system is fully operational. All 5 milestones are complete: alerts are being d
+- **Iter 5**: All 5 milestones are complete. The metric-alert reactivity loop is now closed: alerts fire → agents 
 
