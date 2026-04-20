@@ -95,6 +95,11 @@ export type SystemEvent =
       turns?: number;
       failureChains?: number;
       wastedCalls?: number;
+    }
+  | {
+      type: "emit";
+      event: string;
+      data?: Record<string, unknown>;
     };
 
 /** All event types — commands + observations + system */

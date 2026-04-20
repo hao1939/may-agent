@@ -35,6 +35,7 @@ const VALID_COMMAND_TYPES = new Set([
   "reload_agents",
   "restart",
   "resume",
+  "emit",
 ]);
 
 export interface SocketUIOptions {
