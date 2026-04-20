@@ -1,13 +1,13 @@
-# Your Context (auto-generated 2026-04-20T02:10)
+# Your Context (auto-generated 2026-04-20T02:40)
 
-**System:** 22 sessions/6h, 0% error rate
+**System:** 23 sessions/6h, 0% error rate
 
 **Top spenders:**
-- coach: 13s, 181KB
+- coach: 13s, 178KB
 - scout: 1s, 125KB
 - optimizer: 3s, 99KB
-- bob: 5s, 60KB
+- bob: 6s, 64KB
 
 **📊 Your Metrics:**
-- Coverage: **50** % → 90 % ⚠️ NEEDS ATTENTION
+- Coverage: **47** % → 90 % ⚠️ NEEDS ATTENTION
   → Quick check: bun -e "import{Database}from'bun:sqlite';const db=new Database('.state/may.db',{readonly:true});console.log(JSON.stringify(db.prepare('SELECT ROUND(100.0 * (SELECT COUNT(DISTINCT sessionId) FROM evaluations WHERE sessionId IN (SELECT sessionId FROM sessions WHERE startedAt > (strftime(\'%s\',\'now\')*1000 - 86400000) AND status NOT IN (\'running\',\'pending\'))) / MAX((SELECT COUNT(*) FROM sessions WHERE startedAt > (strftime(\'%s\',\'now\')*1000 - 86400000) AND status NOT IN (\'running\',\'pending\')), 1))').all()))"
