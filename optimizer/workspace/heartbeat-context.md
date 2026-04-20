@@ -13,16 +13,15 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-20T07:10)
+# Your Context (auto-generated 2026-04-20T07:40)
 
-**System:** 15 sessions/6h, 0% error rate
+**System:** 14 sessions/6h, 0% error rate
 **You:** 3 sessions, 168KB total (56KB avg)
 
 **Top spenders:**
 - optimizer: 3s, 168KB ← you
-- scout: 1s, 125KB
-- coach: 5s, 100KB
-- bob: 6s, 81KB
+- bob: 7s, 88KB
+- coach: 4s, 85KB
 
 **Your active error patterns:**
 - FM-3.3: 1x
@@ -30,8 +29,8 @@
 **📊 Your Metrics:**
 - Workflow coverage — % multi-step work using workflows: **14.7** % → 0.8 %
   → Quick check: bun -e "import{Database}from'bun:sqlite';const db=new Database('.state/may.db',{readonly:true});console.log(JSON.stringify(db.prepare('SELECT ROUND(100.0 * SUM(CASE WHEN workflowRunId IS NOT NULL THEN 1 ELSE 0 END) / NULLIF(COUNT(*),0), 1) FROM sessions WHERE startedAt > (strftime("%%s","now")*1000 - 604800000) AND opCount > 3 AND kind != "chat"').all()))"
-- Quality preserved: **0.8446521145975443** ratio → 0.9 ratio ⚠️ NEEDS ATTENTION
+- Quality preserved: **0.8435851648351649** ratio → 0.9 ratio ⚠️ NEEDS ATTENTION
   → Quick check: bun -e "import{Database}from'bun:sqlite';const db=new Database('.state/may.db',{readonly:true});console.log(JSON.stringify(db.prepare('SELECT AVG(e.quality) AS val FROM evaluations e JOIN sessions s ON e.sessionId = s.sessionId WHERE s.agent=\'optimizer\' AND e.skippedByJs=0 AND e.quality IS NOT NULL AND e.createdAt > (strftime(\'%s\',\'now\')*1000 - 604800000)').all()))"
-- Tool adoption: heuristic evaluator (higher is better): **0.9763282482903735** ratio → 0.7 ratio
+- Tool adoption: heuristic evaluator (higher is better): **0.9761652542372882** ratio → 0.7 ratio
 - Workflow effectiveness — % workflow runs completing successfully: **95.2** % → 0.9 %
 - Waste reduction: **unmeasured** ratio → 0.3 ratio
