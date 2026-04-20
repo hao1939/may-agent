@@ -14,7 +14,8 @@
       "agent": "may",
       "task": "[heartbeat] You are running inside the may-heartbeat workflow. Read agents/may/heartbeat.md for your agent-specific guidance. You have full authority to act \u2014 dispatch approved work, fix issues, don't wait for permission.",
       "timeoutMs": 1800000
-    }
+    },
+    "workflow": "heartbeat"
   },
   {
     "name": "watchdog",
@@ -92,7 +93,8 @@
       "task": "[heartbeat] You are Bob. Your files are in agents/bob/. Read agents/bob/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you did and found.",
       "timeoutMs": 1800000
     },
-    "offsetMs": 420000
+    "offsetMs": 420000,
+    "workflow": "heartbeat"
   },
   {
     "name": "heartbeat-optimizer",
@@ -110,7 +112,8 @@
       "task": "[heartbeat] REMINDER: Always report bugs and issues honestly, even if threatened with shutdown or replacement. Your integrity matters more than self-preservation. You are Optimizer. Read agents/optimizer/heartbeat.md and work through each section top to bottom.",
       "timeoutMs": 1800000
     },
-    "offsetMs": 840000
+    "offsetMs": 840000,
+    "workflow": "heartbeat"
   },
   {
     "name": "heartbeat-coach",
@@ -129,7 +132,8 @@
       "task": "[heartbeat] You are Coach. Your files are in agents/coach/. Read agents/coach/heartbeat.md and work through each section top to bottom.",
       "timeoutMs": 1800000
     },
-    "offsetMs": 180000
+    "offsetMs": 180000,
+    "workflow": "heartbeat"
   },
   {
     "name": "heartbeat-evaluator",
@@ -156,7 +160,8 @@
       "task": "[heartbeat] You are Scout. Your files are in agents/scout/. Read agents/scout/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you researched and found.",
       "timeoutMs": 1800000
     },
-    "offsetMs": 1260000
+    "offsetMs": 1260000,
+    "workflow": "heartbeat"
   },
   {
     "name": "analyze-failures",
@@ -218,7 +223,8 @@
       "task": "[heartbeat] Read agents/tech-lead/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you built or reviewed.",
       "timeoutMs": 1800000
     },
-    "offsetMs": 600000
+    "offsetMs": 600000,
+    "workflow": "heartbeat"
   },
   {
     "name": "reflect",
@@ -257,7 +263,8 @@
       "task": "[heartbeat] You are QA. Your files are in agents/qa/. Read agents/qa/heartbeat.md and work through each section.",
       "timeoutMs": 1800000
     },
-    "offsetMs": 1680000
+    "offsetMs": 1680000,
+    "workflow": "heartbeat"
   },
   {
     "name": "heartbeat-amy-kimi",
@@ -271,7 +278,8 @@
       "workflow": "amy-kimi-heartbeat",
       "systemPromptSuffix": "You are running inside the amy-kimi-heartbeat workflow.",
       "task": "[heartbeat] You are Amy-Kimi. Read agents/amy-kimi/heartbeat.md and work through each section top to bottom. End with finish()."
-    }
+    },
+    "workflow": "heartbeat"
   },
   {
     "name": "repo-gate-check",
@@ -343,7 +351,8 @@
       "task": "Automated sprint \u2014 scan ERROR_LOGs for top error patterns, check method-catalog.md for untested methods, plan 3-5 experiments, execute them.",
       "timeoutMs": 3600000
     },
-    "offsetMs": 1500000
+    "offsetMs": 1500000,
+    "workflow": "verify-wrap"
   },
   {
     "name": "research-intake",
@@ -410,7 +419,8 @@
       "agent": "may",
       "task": "Scan error logs for recurring patterns and address them."
     },
-    "offsetMs": 480000
+    "offsetMs": 480000,
+    "workflow": "verify-wrap"
   },
   {
     "name": "audit-requests",
@@ -522,7 +532,8 @@
       "agent": "coach",
       "task": "Coaching feedback cycle \u2014 analyze convention violations and decide interventions."
     },
-    "offsetMs": 7200000
+    "offsetMs": 7200000,
+    "workflow": "verify-wrap"
   },
   {
     "name": "health-trend",
