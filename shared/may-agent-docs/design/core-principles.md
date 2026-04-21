@@ -79,7 +79,7 @@ When agents make judgment errors, the fix is **workflow structure** — not text
 
 Guards are for things a regex can check reliably. context.md is for facts that change with the environment. Workflows are for everything that requires judgment.
 
-**Elaborated in:** [code-vs-data-decisions.md](code-vs-data-decisions.md), [guard-escalation.md](guard-escalation.md), [persistent-task-files.md](persistent-task-files.md)
+**Elaborated in:** [code-vs-data-decisions.md](code-vs-data-decisions.md), [guard-escalation.md](guard-escalation.md), [project-system.md](project-system.md)
 
 ## 7. Metrics are signals, not targets
 

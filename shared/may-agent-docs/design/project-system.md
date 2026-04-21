@@ -1,8 +1,8 @@
 # Design: Project System
 
-**Status:** Approved
+**Status:** Implemented (core), In Progress (projectId DB column)
 **Date:** 2026-04-21
-**Supersedes:** [persistent-task-files.md](persistent-task-files.md)
+**Supersedes:** [persistent-task-files.md](archive/persistent-task-files.md), [project-lifecycle.md](archive/project-lifecycle.md)
 **References:** [core-principles.md](core-principles.md), [closing-the-loop.md](closing-the-loop.md), [runtime-ctx.md](runtime-ctx.md)
 
 ## What is a Project?
@@ -45,6 +45,12 @@ Both use the same project.md format, same workflow, same handler. The difference
 
 ## Project File
 
+```
+agents/<owner>/workspace/projects/<name>/
+  project.md   — the project document (goal, milestones, state, health)
+  journal.md   — iteration log (append-only)
+```
+
 ```markdown
 # Project: Reviewer Effectiveness
 
@@ -84,7 +90,7 @@ Iteration 3. Milestones: 1/4 done. Next: Redesign reviewer prompt.
 | Iteration | Workflow | Incremented each iteration |
 | Health | Workflow | From evaluator score on status transitions |
 | Goal | Human | Direct edit |
-| Milestones | Workflow | Checks off based on reviewer assessment |
+| Milestones | Workflow | Checks off based on reviewer assessment (first 30 chars match) |
 | Metrics | Human | Declares targets, workflow reads them |
 | Current State | Workflow | Structured: iteration + milestones + next |
 | Comments | Human, agents | Queue — processed then cleared by workflow |
@@ -93,7 +99,7 @@ Worker CANNOT edit project.md or journal.md. Produces deliverables in workspace 
 
 ## Three Components
 
-### 1. Project Handler
+### 1. Project Handler (`agents/may/handlers/project.ts`)
 
 One handler. Detects projects needing attention. Launches the project workflow.
 
@@ -117,7 +123,7 @@ One handler. Detects projects needing attention. Launches the project workflow.
 
 **What it does NOT do:** Parse project logic, decide continue/block/done. The workflow handles all project decisions.
 
-### 2. Project Workflow
+### 2. Project Workflow (`agents/shared/workflows/project.ts`)
 
 Drives a project forward. Reads project.md, runs iterations, evaluates transitions, emits events.
 
@@ -144,6 +150,13 @@ Read project.md + journal.md
   │       └─ Score ≥ 7: accept transition
   │       └─ Score < 7: override to CONTINUE
   │
+  ├─ False-done protection
+  │   └─ 3 consecutive false-done → auto-block and escalate
+  │   └─ Milestones not all checked + evaluator PASS → override to CONTINUE
+  │
+  ├─ Stall detection
+  │   └─ 5 iterations without milestone progress → auto-block and escalate
+  │
   ├─ Update project.md (Status, Iteration, Current State, Health)
   │
   └─ Emit events (project.iteration, project.status-changed, etc.)
@@ -156,6 +169,12 @@ Standard checks (deliverables, milestones, evidence, building ≠ verifying)
   + Compare current values to targets and baselines
   + Can't PASS if target metrics haven't improved
 ```
+
+**Why separate sessions per step (not one long session):**
+- Worker and reviewer need different prompts (different system instructions)
+- Evaluator should be independent of the worker
+- Each iteration is a clean context — no accumulated hallucinations
+- Sessions are the unit of tracking (opCount, cost, outcome)
 
 ### 3. Journal (journal.md)
 
@@ -178,17 +197,39 @@ Append-only log. One entry per iteration.
 
 Entry types: regular (worker + reviewer), comment (comment + reviewer), evaluator (on transitions).
 
+## How Agents Interact with Projects
+
+### During heartbeat (autonomous):
+- Agent sees their project, reads Status + Health + Current State
+- **Health 7+**: project is healthy, no action needed
+- **Health < 7 or BLOCKED**: investigate — read journal, check deliverables, decide action
+- Agent can: add a comment, try to unblock, or leave for next workflow run
+
+### During workflow (structured):
+- Worker gets goal + milestones + guidance, produces deliverables
+- Reviewer evaluates, guides next iteration
+- Evaluator gates transitions
+- All updates go through the workflow orchestrator
+
+### Commenting:
+- Anyone (human, agent) can add to `## Comments` at any time
+- Next workflow run processes comments as a comment iteration
+- Comments are cleared after processing (now in journal)
+
 ## Session Tracking
 
 Every session carries `projectId`:
 
 ```sql
--- Schema change
+-- Schema change (not yet applied to DB)
 ALTER TABLE sessions ADD COLUMN projectId TEXT;
 CREATE INDEX idx_sessions_project ON sessions(projectId);
 ```
 
-Flows through: handler → workflow → ctx.runAgent(agent, task, { projectId }) → session record.
+Handler derives projectId and passes through callAgent:
+```
+handler → workflow → ctx.runAgent(agent, task, { projectId }) → session record
+```
 
 ```
 sessions table:
@@ -241,90 +282,50 @@ All events persisted in events table. Queryable in Events tab.
 7. Metric recovers → paused again
 ```
 
+## Project Metrics
+
+| Metric | Source | Meaning |
+|--------|--------|---------|
+| project.false-done | Evaluator FAIL count per run | How often reviewer falsely claims done |
+| project.health | Health field in project.md | Per-project quality score |
+| project.velocity | Iterations to complete | How fast projects finish |
+| project.stall-rate | continueWithoutProgress counter | How often projects get stuck |
+
 ## Dashboard
 
-Projects tab:
+See [webui-improvements.md](webui-improvements.md) for full UI design.
+
+Projects tab (✅ implemented):
 
 | Project | Owner | Status | Health | Milestones | Metrics | Updated |
 |---------|-------|--------|--------|-----------|---------|---------|
 | reviewer-effectiveness | bob | active | 7/10 | 1/4 ████░░ | — | 2m ago |
 | coder-quality | coach | paused | 8/10 | 4/4 ████████ | 0.72 ✅ | 1d ago |
 
-Click → project.md content, journal, session list (by projectId), metric chart.
+Click → project.md content. Journal, session list, and metric chart are planned enhancements.
 
-## Implementation
+## Implementation Status
 
-### Schema (src/lib/requests.ts)
-```sql
-ALTER TABLE sessions ADD COLUMN projectId TEXT;
-CREATE INDEX idx_sessions_project ON sessions(projectId);
-```
+| Change | Status |
+|--------|--------|
+| Rename workflow → `project.ts` | ✅ Done |
+| Rename handler → `project.ts` | ✅ Done |
+| Event emission (4 event types) | ✅ Done |
+| Metric parsing in workflow | ✅ Done |
+| Metric breach → reactivate in handler | ✅ Done |
+| Evaluator metric check | ✅ Done |
+| projectId threading via callAgent | ✅ Done (handler passes projectId) |
+| projectId DB column on sessions | ❌ Not yet — DB schema change pending |
+| Dashboard projects tab | ✅ Done (basic list + detail view) |
+| Dashboard metric values | ❌ Not yet |
 
-### callAgent / manager.run gains projectId
-```typescript
-// In manager.ts
-callAgent(agent, task, { projectId, workflowRunId, source })
-// projectId flows to session creation → stored in DB
-```
+## Design Decisions
 
-### Rename workflow
-- `agents/shared/workflows/persistent-task.ts` → `agents/shared/workflows/project.ts`
-- Export `name = "project"` (also export alias `"persistent-task"` for transition)
+### Why file-based state, not DB?
+Project.md + journal.md are the source of truth. Readable by humans and agents. Editable with any text editor. No migration needed. The workflow reads state from files, does work, writes state back. Each workflow run is independent.
 
-### Rename handler  
-- `agents/may/handlers/project-resume.ts` → `agents/may/handlers/project.ts`
-- Cron entry: `"name": "project", "handler": "project"`
+### Why not resume old sessions?
+Sessions are stateless — they start, run, finish. Project.md + journal.md carry all state between runs. Resuming a session means replaying message history — expensive and fragile. Clean starts are simpler and more reliable.
 
-### Metric section parsing (~20 LOC in workflow)
-```typescript
-function parseMetrics(content: string): Array<{ id: string; target: string; baseline: string }> {
-  const section = extractSection(content, "Metrics");
-  if (!section) return [];
-  return section.split("\n").filter(l => l.startsWith("- ")).map(line => {
-    const m = line.match(/^- (\S+):\s*target\s*([<>]=?\s*[\d.]+%?),?\s*baseline\s*([\d.]+%?)/);
-    return m ? { id: m[1], target: m[2].trim(), baseline: m[3].trim() } : null;
-  }).filter(Boolean);
-}
-```
-
-### Event emission (~15 LOC in workflow)
-```typescript
-// After each iteration
-ctx.emit({ type: "emit", event: "project.iteration", data: {
-  projectId, owner: config.owner, iteration,
-  milestonesDone: ms.done, milestonesTotal: ms.total,
-}});
-
-// On status change
-ctx.emit({ type: "emit", event: "project.status-changed", data: {
-  projectId, owner: config.owner, from: oldStatus, to: newStatus,
-}});
-```
-
-### Metric breach → reactivate (~15 LOC in handler)
-```typescript
-// In project handler, when metric.breach event arrives:
-const metric = eventData.metric;
-for (const project of pausedProjects) {
-  const declaredMetrics = parseMetrics(projectContent);
-  if (declaredMetrics.some(m => m.id === metric)) {
-    updateField(projectContent, "Status", "active");
-    // Will be picked up on next scan
-  }
-}
-```
-
-### Dashboard metric column (~10 LOC in web UI)
-Query metric values for projects with `## Metrics` section. Show current vs target.
-
-## Total: ~100 LOC across 6 files
-
-| Change | LOC | Files |
-|--------|-----|-------|
-| projectId schema + threading | 20 | requests.ts, manager.ts |
-| Rename workflow + handler | 10 | persistent-task.ts → project.ts, project-resume.ts → project.ts, cron.json |
-| Event emission | 15 | project.ts (workflow) |
-| Metric parsing | 20 | project.ts (workflow) |
-| Metric breach reactivation | 15 | project.ts (handler) |
-| Dashboard metric column | 10 | web.ts, index.html |
-| Evaluator metric check | 10 | project.ts (workflow) |
+### Why evaluator runs as project owner? (G11)
+Self-evaluation bias risk. But adding an independent evaluator agent adds complexity. Monitor false-done rates first — if self-evaluation works, keep it simple.

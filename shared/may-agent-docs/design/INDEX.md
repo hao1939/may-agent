@@ -15,11 +15,10 @@ These define how the system works.
 | Document | What | Status |
 |----------|------|--------|
 | [context-injection-design.md](context-injection-design.md) | System prompt assembly, what agents see, what's on-demand | ✅ Active |
-| [persistent-task-files.md](persistent-task-files.md) | Project system: project.md + journal.md, comment iterations, evaluator gate, health field | Superseded by project-system.md |
-| [project-system.md](project-system.md) | Upgraded project system: projectId tracking, metric projects, project events, rename persistent-task → project | Design |
+| [project-system.md](project-system.md) | Project system: project.md + journal.md, worker/reviewer/evaluator, metric projects, events | ✅ Implemented (core) |
 | [metrics-system.md](metrics-system.md) | Unified metric system: per-agent metrics, snapshots, alerts, dashboard | ✅ Implemented |
 | [runtime-ctx.md](runtime-ctx.md) | Shared infra interface for handlers, workflows, and agent tools | ✅ Implemented |
-| [event-driven-handlers.md](event-driven-handlers.md) | Cron entries gain event triggers, replacing poll-based model | Partial (project-resume uses `on` field) |
+| [event-driven-handlers.md](event-driven-handlers.md) | Cron entries gain event triggers, replacing poll-based model | Partial (project handler uses `on` field) |
 
 ## Agent Behavior
 
@@ -51,6 +50,7 @@ Guards, review, escalation.
 | [infra-metrics.md](infra-metrics.md) | Infrastructure metrics: handler-health, stuck-requests, throughput | ✅ Active |
 | [metrics-evolution-roadmap.md](metrics-evolution-roadmap.md) | Hao's vision: where metrics system should go | Vision |
 | [output-channels.md](output-channels.md) | Telegram & web console notification design | ✅ Implemented |
+| [webui-improvements.md](webui-improvements.md) | Web UI: projects tab (done), events view, dashboard cleanup | Partially implemented |
 
 ## Research & Knowledge
 
@@ -63,7 +63,7 @@ Guards, review, escalation.
 
 | Document | What |
 |----------|------|
-| [closing-the-loop.md](closing-the-loop.md) | Gap fixes: owner registry, event fallback, metric decoupling, guard escalation |
+| [closing-the-loop.md](closing-the-loop.md) | Gap fixes: events persistence, metric decoupling, guard escalation, projectId tracking |
 | [common-sense-followups.md](common-sense-followups.md) | Items from 2026-04-19 review that need addressing |
 
 ## Reference
@@ -75,3 +75,9 @@ Guards, review, escalation.
 ## Archive
 
 Superseded, completed, or historical docs in [archive/](archive/). These are kept for reference but no longer active design guidance.
+
+| Document | Superseded by |
+|----------|--------------|
+| [persistent-task-files.md](archive/persistent-task-files.md) | [project-system.md](project-system.md) |
+| [project-lifecycle.md](archive/project-lifecycle.md) | [project-system.md](project-system.md) |
+| [implementation-audit.md](archive/implementation-audit.md) | [closing-the-loop.md](closing-the-loop.md) |

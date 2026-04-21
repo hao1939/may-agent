@@ -23,7 +23,7 @@ Active design decisions. Read when you need to understand WHY something works a 
 
 **Core:**
 - [Context Injection](design/context-injection-design.md) — What agents see in their prompt
-- [Persistent Task](design/persistent-task-files.md) — Project system with evaluator gate
+- [Project System](design/project-system.md) — Projects with evaluator gate, metric lifecycle, events
 - [Metrics System](design/metrics-system.md) — Per-agent metrics, alerts, dashboard
 
 **Agent behavior:**

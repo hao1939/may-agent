@@ -1,6 +1,6 @@
 # Design: Closing the Loop — Principle-to-Implementation Gap Fixes
 
-**Status:** Draft
+**Status:** Active
 **Date:** 2026-04-21
 **References:** [core-principles.md](core-principles.md), [project-system.md](project-system.md), [runtime-ctx.md](runtime-ctx.md)
 
@@ -107,13 +107,9 @@ No consumption tracking. No `handled_by` column. If an owner needs to know wheth
 - No new `owner` field needed — the `agent` field already serves this purpose per P9 (convention over configuration)
 - ~10 LOC in cron.ts
 
-### G3: Guard Block Messages Don't Mention Escalation (violates P3)
+### G3: Guard Block Messages Don't Mention Escalation ✅ FIXED
 
-**Current:** Guards say "WRITE BLOCKED" but don't hint at escalation.
-
-**Fix:** Add one line to guard block messages: `"Can't resolve? Escalate to May."`
-
-Agents already know the escalation chain from common-sense.md. They don't need a templated API call — just a reminder that escalation exists. ~5 LOC.
+**Fix:** Added `"Can't resolve? Escalate to May via agents.send()."` to all 6 guard block messages across cross-edit-guard.ts, write.ts, and completeness-guard.ts.
 
 ### G4: Ownership Convention Incomplete (violates P2)
 
@@ -131,19 +127,9 @@ Agents already know the escalation chain from common-sense.md. They don't need a
 
 The only action item: ensure events carry `data.owner` when emitted. Everything else already works.
 
-### G5: Metric Alert Response Coupled to Measurement (violates P1, P2)
+### G5: Metric Alert Response Coupled to Measurement ✅ FIXED
 
-**Current:** `metrics-snapshot.ts` detects breach AND calls `autoForkForAlert()` directly.
-
-**Fix:** Decouple measurement from reaction:
-1. `metrics-snapshot` emits `metric.breach` event on breach instead of calling `autoForkForAlert()`
-2. Remove `autoForkForAlert()` from metrics-snapshot — it only measures and emits
-3. Breach events are persisted (G1) — owner sees them in heartbeat
-4. If heartbeat-based response proves too slow, add a `metric-alert` handler with `"on": ["metric.breach"]` later
-
-Start simple: emit + persist. Add immediate handling when there's evidence the delay matters.
-
-**Tradeoff:** Today `autoForkForAlert()` reacts instantly. This change means breach response moves to heartbeat cadence (~30min). If that's too slow for critical metrics, add a `metric-alert` handler with `"on": ["metric.breach"]` — but prove the need first.
+`metrics-snapshot` now emits `metric.breach` event instead of calling `autoForkForAlert()`. `autoForkForAlert()` removed. Breach events persisted via G1. Project handler reactivates paused projects on breach.
 
 ### G6: Session Continuity Unsolved (violates P4)
 
@@ -161,11 +147,9 @@ Start simple: emit + persist. Add immediate handling when there's evidence the d
 
 **Status:** Partially solved by `active-nudge` (5min scan for loops/stalls/ghosts). Monitor coverage before building more.
 
-### G10: Project Sessions Not Tracked by Project ID
+### G10: Project Sessions Not Tracked by Project ID (partially fixed)
 
-No `projectId` on sessions. Can't query "all sessions for project X."
-
-**Fix:** Add `projectId` column to sessions table. Flow through callAgent. See [project-system.md](project-system.md).
+Handler now derives `projectId` and passes it through `callAgent`. DB schema change (adding `projectId` column to sessions table) is pending. See [project-system.md](project-system.md).
 
 ### G11: Evaluator Runs as Project Owner
 
@@ -201,21 +185,9 @@ The reviewer in persistent-task is the weakest link. Tracked by reviewer-effecti
 
 ### Phase 5: Cleanup & Hardening
 
-#### G3: Guard Escalation Hint (~5 LOC)
+#### G3: Guard Escalation Hint ✅ DONE
 
-**Current:** Guard block messages (cross-edit, write-shrink, completeness) say "BLOCKED" but give no hint that the agent can escalate.
-
-**Fix:** Add one line to the shared guard block message template: `"Can't resolve? Escalate to May via agents.send()."`
-
-Affected guards (all in `src/lib/tools/`):
-- `cross-edit-guard.ts` — 4 block messages (philosophy, evaluator, own agent.json, other agent identity)
-- `write.ts` — shrink-block message
-- `completeness-guard.ts` — finish-blocked message
-
-Not affected (these are informational, not ownership blocks):
-- `read-dedup-guard.ts`, `scrape-dedup-guard.ts` — dedup hints, not authority blocks
-- `path-hallucination-guard.ts` — factual correction, not escalatable
-- `session-read-guard.ts` — technical limitation, not escalatable
+Added `"Can't resolve? Escalate to May via agents.send()."` to 6 block messages in cross-edit-guard.ts (4), write.ts (1), completeness-guard.ts (1).
 
 #### G14: `trackRequest` Deprecation
 
@@ -237,6 +209,6 @@ Not affected (these are informational, not ownership blocks):
 - **G6** (CLI emit) — nice-to-have
 - **G7** (No CLI event emit) — socket emit works, CLI flag is convenience
 - **G9** (circuit breaker) — active-nudge covers it
-- **G10** (workflow tracking) — tracking gap, not functional. Note: blocks project-tracking-db queries until fixed.
+- **G10** (projectId DB column) — handler threading done, DB schema pending
 - **G11** (evaluator independence) — needs evidence of bias first
 - **G13** (reviewer quality) — tracked by bob, P0
