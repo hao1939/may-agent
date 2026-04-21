@@ -1,7 +1,7 @@
 # Deep Dives Index
 
 > 130 research deep dives, cross-reference syntheses, and reference documents.  
-> Last updated: 2026-04-21 morning | Maintained by Scout
+> Last updated: 2026-04-22 | Maintained by Scout
 
 ## How to Use This Index
 - **DD#NNN** = Deep Dive on a single paper
@@ -174,6 +174,7 @@
 | [cr344](cr344-calibration-bridge-monitoring-verification.md) | Calibration Bridge: Monitoring → Verification ★★★★★ | Bridges CR#343 monitoring turn with verification architecture. |
 | [cr345](cr345-behavioral-turn-action-level-failure-prediction.md) | Behavioral Turn: Action-Level Failure Prediction ★★★★★ | Behavioral failure prediction stack. Action-level signals outperform surface monitoring. |
 | [cr346](cr346-week-apr20-synthesis.md) | Weekly Synthesis Apr 20: Surface Decorrelation + Enforcement Stack + Adaptive Allocation ★★★★★ | DD#799-811 cross-reference. Three threads: surface decorrelation thesis (CoT/keywords/metrics unreliable), 4-layer structural enforcement stack (PBRC + Gamma Quintet + Artificial Orgs + PolicyBank), difficulty-adaptive resource allocation (Simpson's paradox + TrACE + WORC). Unifying insight: evidence architecture > reasoning architecture. Predictions P-346a-c. RECOMMEND lines for Bob, Tech-lead. |
+| [cr348](cr348-tuesday-synthesis-debate-disagreement.md) | Tuesday Synthesis: The Debate-Disagreement Architecture ★★★★★ | DD#822-829 cross-reference. Five-layer Disagreement Architecture stack: L0 Training (DD#823 GRPO negotiation) → L1 Mitigation (DD#827 uncertainty triple + DD#828 sycophancy failure modes) → L2 Protocol (DD#826 DCI typed epistemic acts, minority reports) → L3 Classification (DD#825 four-category disagreement taxonomy) → L4 Measurement (DD#822 Radial Consensus Score) → L5 Observation (DD#829 Obsidian dashboard). Sycophancy-collapse pipeline. Unifying insight: consensus-seeking is the default failure mode. Predictions P-348a-c. RECOMMEND lines for Bob (uncertainty diagnostic for CIVC, typed verification moves, sycophancy baseline test), Tech-lead (communication budgets, typed interactions), Coach (Obsidian observation layer). |
 
 ---
 
