@@ -9,7 +9,7 @@
 **Metric**: `coach.instruction-compliance` (target ≥ 0.8)
 
 **Iteration**: 10
-**Health**: 5/10 (RESTARTED — rich data from iters 1-9, clear next steps)
+**Health**: 6/10 (RESTARTED iter 10 — EXP-189/190 designed, lab fork ready, awaiting live gym trials)
 ## Goal
 
 Find what mechanisms make agents reliably follow directions. Measure
@@ -357,3 +357,31 @@ This project has the richest intervention data in the system. The problem was wo
 2. Run 5 gym trials of `metric-reaction` with current production config as baseline measurement.
 3. Create experiment doc: `agents/shared/knowledge/experiments/EXP-189/design.md` for production deployment of G'.
 4. Test whether skill+SOUL intervention (EXP-186 pattern, 75%) generalizes to a NEW scenario beyond persistent-task. Pick `order-compliance` or `turn-budget-removal` from the child experiment list above.
+
+### Iteration 10 — 2026-04-22
+**Worker**:
+
+Findings and deliverables:
+
+1. **G' already deployed** to may, bob, and coach heartbeat workflows. All three
+   `*-heartbeat.ts` files contain the G' question-first-step block that fires when
+   `⚠️ BELOW TARGET` is detected. Coder has no heartbeat workflow file.
+   → Created **EXP-189** (`agents/shared/knowledge/experiments/EXP-189/design.md`)
+   as an observational study tracking production metric-reaction rate.
+   → Created observation tracker: `agents/coach/workspace/experiments/EXP-189-observations.md`
+
+2. **Gym baseline trials**: Gym runner validates scenario structure but returns
+   `agent_status: "skipped"` — no live LLM invocation available. Baseline measurement
+   requires live agent sessions. `metric-reaction` and `order-compliance` confirmed valid.
+
+3. **EXP-190 designed**: Skill+SOUL generalization to order-compliance scenario.
+   Design doc: `agents/shared/knowledge/experiments/EXP-190/design.md`
+   Lab fork: `agents/.lab/bob-order-compliance/` with skill + SOUL files ready.
+
+4. **Confirmed intervention hierarchy** (unchanged from iter 9 data).
+
+**Next (iteration 11)**:
+- Run EXP-190 gym trials (baseline + treatment) with live agent
+- Collect EXP-189 production observations (≥10 heartbeats with red metrics)
+- Run metric-reaction baseline gym trials (5 trials, live agent)
+- If EXP-190 confirms generalization, promote skill+SOUL as standard pattern
