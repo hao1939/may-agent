@@ -140,3 +140,5 @@ PIVOT
 
 This produces a valid experiment result showing the reflexion pipeline's impact mechanism.
 
+### Iteration 11 — 2026-04-21T15:30:38.830Z
+**Worker**: The npx-recovery results are excellent: baseline 0% → treatment 100% on both checks. The read-before-edit has issues due to missing Score class methods. Let me add a note about that and improve the interpretation:

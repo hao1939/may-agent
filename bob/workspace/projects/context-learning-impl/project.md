@@ -3,7 +3,7 @@
 **Status**: active
 **Owner**: bob (handler by may)
 **Priority**: P1
-**Iteration**: 10
+**Iteration**: 11
 **Health**: 7/10 (UNBLOCKED — new cron handler approach)
 
 ## Goal
@@ -36,7 +36,7 @@ New approach: **cron handler** (`may/handlers/context-learning.ts`) that:
 - Does the gym runner support automated multi-run experiments?
 
 ## Current State
-Iteration 10. Milestones: 3/5 done. Next: M4: Verify first automated run produces valid lessons in at least 1 agent's cont
+Iteration 11. Milestones: 3/5 done. Next: M4: Verify first automated run produces valid lessons in at least 1 agent's cont
 ## Iteration Summary
 - **Iter 1**: Already committed in a prior step. Good.
 
