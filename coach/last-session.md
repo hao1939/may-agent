@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776812234686_49
+- **Session:** s_1776814034750_58
 - **Status:** done
-- **When:** 2026-04-21T22:58:22.837Z
-- **Duration:** 1m8s
+- **When:** 2026-04-21T23:28:31.238Z
+- **Duration:** 1m16s
 
 ## What Happened
-Dispatched. Now let me update the breadcrumb-gap project milestone.
+The directive breadcrumb format (M3) is deployed but barely moved the needle (0.4375→0.45). Time to escalate: implement M4 (repeated-alert escalation) and investigate what's actually happening in the sessions that ignore breadcrumbs.
