@@ -143,7 +143,7 @@ The only action item: ensure events carry `data.owner` when emitted. Everything 
 
 Start simple: emit + persist. Add immediate handling when there's evidence the delay matters.
 
-**Tradeoff:** Today `autoForkForAlert()` reacts instantly. This change means breach response moves to heartbeat cadence (~30min). Evidence from metric-reactivity project shows agents DON'T react to heartbeat alerts — auto-fork was the mechanism that actually worked. **Keep auto-fork for now.** Decouple later only when event-based handler with `on: ["metric.breach"]` is proven to respond fast enough.
+**Tradeoff:** Today `autoForkForAlert()` reacts instantly. This change means breach response moves to heartbeat cadence (~30min). If that's too slow for critical metrics, add a `metric-alert` handler with `"on": ["metric.breach"]` — but prove the need first.
 
 ### G6: Session Continuity Unsolved (violates P4)
 

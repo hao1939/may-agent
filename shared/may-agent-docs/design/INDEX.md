@@ -15,10 +15,11 @@ These define how the system works.
 | Document | What | Status |
 |----------|------|--------|
 | [context-injection-design.md](context-injection-design.md) | System prompt assembly, what agents see, what's on-demand | ✅ Active |
-| [persistent-task-files.md](persistent-task-files.md) | Project system: project.md + journal.md, comment iterations, evaluator gate, health field | ✅ Active (v3) |
+| [persistent-task-files.md](persistent-task-files.md) | Project system: project.md + journal.md, comment iterations, evaluator gate, health field | Superseded by project-system.md |
+| [project-system.md](project-system.md) | Upgraded project system: projectId tracking, metric projects, project events, rename persistent-task → project | Design |
 | [metrics-system.md](metrics-system.md) | Unified metric system: per-agent metrics, snapshots, alerts, dashboard | ✅ Implemented |
 | [runtime-ctx.md](runtime-ctx.md) | Shared infra interface for handlers, workflows, and agent tools | ✅ Implemented |
-| [event-driven-handlers.md](event-driven-handlers.md) | Cron entries gain event triggers, replacing poll-based model | Design |
+| [event-driven-handlers.md](event-driven-handlers.md) | Cron entries gain event triggers, replacing poll-based model | Partial (project-resume uses `on` field) |
 
 ## Agent Behavior
 
