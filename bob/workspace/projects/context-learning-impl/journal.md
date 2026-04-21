@@ -108,3 +108,5 @@ No further iterations will make progress — the remaining work requires capabil
 
 Key constraint: Do NOT try to modify `manager.ts` or any compiled code. The integration point is a standalone scan script, not a runtime hook.
 
+### Iteration 9 — 2026-04-21T15:24:11.134Z
+**Worker**: M4 is complete. The reflexion-scan script successfully extracted 25 lessons from real session transcripts and wrote them to 7 agents' context.md files.
