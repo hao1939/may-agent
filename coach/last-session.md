@@ -1,14 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776802260094_34
+- **Session:** s_1776803234431_46
 - **Status:** done
-- **When:** 2026-04-21T20:12:52.064Z
-- **Duration:** 1m51s
+- **When:** 2026-04-21T20:28:18.668Z
+- **Duration:** 1m4s
 
 ## What Happened
-Two priorities are clear:
-1. **Breadcrumb-gap** metric is actually 50% (script fixed, stored value stale) — milestone M5 is at 50%, halfway to 80%. Need question-framing (M2-M4) to push higher.
-2. **EXP-191** is designed and ready to implement — this advances prove-the-loop by improving evaluator quality.
+Assessment complete. **Breadcrumb-action-rate** is furthest from target (0.20/0.80 = 25%). The quick-check script shows 50% on recent data (5/10), better than the stored 0.1961 but still well below 0.8. The **breadcrumb-gap** project directly addresses this and is active with clear next steps from KE-215 (question-framing in heartbeat step 1).
 
-Let me fork EXP-191 implementation work.
+Let me fork work to advance breadcrumb-gap — specifically M2/M3: implement question-framing and test it.
