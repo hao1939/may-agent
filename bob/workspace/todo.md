@@ -28,7 +28,8 @@
 - [x] **CR#348 synthesis processed**: Disagreement Architecture five-layer stack → **KE-325**. Consensus-seeking as default failure mode. Implications for evaluator, coach, quality preservation.
 - [x] **DD-830 processed**: Anti-sycophancy multi-agent debate → **KE-326** (★★★★★). Anonymization as cheapest mitigation, adversarial structure > model capability. H-177 candidate (evaluator anonymization).
 - [ ] **EXP-190 infrastructure bug**: Gym runner `--lab` flag is metadata-only — blocks all skill/SOUL A/B experiments. P0 sent to tech-lead. KE pending (forked session).
-- [ ] **DD-831 processing**: Agent learning mechanisms survey. Forked session.
+- [x] **DD-831 processing**: Agent learning mechanisms survey. KE-328, KE-329 written.
+- [ ] **EXP-191 designed**: Evaluator anonymization A/B test (H-178). Needs implementation: anonymization script, treatment SOUL variant, calibration process. ~$5 cost.
 - [ ] **EXP-188 shipping**: Guards are DEAD CODE — no runtime loads them. Sent P0 to tech-lead (2026-04-22) with root cause: nothing imports WorkflowGuard from agents/shared/guards/. Need workflow engine guard-loader. 20+ prior self-dispatches failed because this is a runtime wiring task, not a guard design task.
 - [x] **H-178 formalized** (was listed as H-177): Anonymizing agent identity in evaluator debate → quality-preservation +5pp. Based on KE-326. Written as H-178-evaluator-anonymization.md.
 
