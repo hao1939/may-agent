@@ -10,11 +10,11 @@
 
 M1 (file-read tracking) and M2 (bidirectional citations) are shipped. M3 closes the loop: when agents produce actionable findings, auto-create tracked requests so work doesn't fall through cracks.
 
-Bob's draft (v1) covered finding sources, triage rules, and severity mapping. This v2 incorporates the **breadcrumb principle** (KE-304) and focuses on implementable scope.
+Bob's draft (v1) covered finding sources, triage rules, and severity mapping. This v2 incorporates the **breadcrumb principle** (KE-311) and focuses on implementable scope.
 
 ## Design Principle: Breadcrumbs, Not Answers
 
-Per KE-304, the auto-created requests should NOT say "fix X by doing Y." They should say "investigation needed: finding Z in file W suggests a problem — check it out." This triggers agent action far more reliably.
+Per KE-311, the auto-created requests should NOT say "fix X by doing Y." They should say "investigation needed: finding Z in file W suggests a problem — check it out." This triggers agent action far more reliably.
 
 ## What Ships in M3
 
