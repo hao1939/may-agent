@@ -36,8 +36,6 @@ import type {
 } from "../../../src/lib/workflow.js";
 import type { TaskResult } from "../../../src/lib/types.js";
 import type { WorkflowRun, WorkflowStep } from "../../../src/lib/persistence.js";
-import { saveWorkflowRun } from "../../../src/lib/persistence.js";
-import { summarizeForHandoff } from "../../../src/lib/handoff.js";
 
 // ── Helpers ────────────────────────────────────────────────────────────
 
@@ -152,7 +150,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
       status: "running",
       steps: [],
     };
-    saveWorkflowRun(ctx.persistDir, run);
+    ctx.saveWorkflowRun(run);
 
     // Build the WorkflowContext
     const workflowCtx: WorkflowContext = {
@@ -206,7 +204,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
           lastAssistantText: output,
         };
         run.steps.push(wfStep);
-        saveWorkflowRun(ctx.persistDir, run);
+        ctx.saveWorkflowRun(run);
 
         ctx.log(`[run-workflow:${entry.name}] runFunction("${label}") → ${taskResult.status} (${duration})`);
         return taskResult;
@@ -234,7 +232,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
           lastAssistantText: taskResult.lastAssistantText,
         };
         run.steps.push(wfStep);
-        saveWorkflowRun(ctx.persistDir, run);
+        ctx.saveWorkflowRun(run);
 
         ctx.log(`[run-workflow:${entry.name}] Step ${agentName} → ${taskResult.status} (${sid})`);
         return taskResult;
@@ -249,7 +247,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
         ctx.log(`[run-workflow:${entry.name}] event: ${event.type}`);
       },
 
-      summarize: (result, opts?) => summarizeForHandoff(result, opts),
+      summarize: (result, opts?) => ctx.summarizeForHandoff(result, opts),
 
       done: (summary: string) => ({ type: "done" as const, summary }),
       escalate: (reason: string, context?: unknown) => ({ type: "escalate" as const, reason, context }),
@@ -274,7 +272,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
       run.result = result.type === "done"
         ? { summary: result.summary }
         : { reason: result.reason };
-      saveWorkflowRun(ctx.persistDir, run);
+      ctx.saveWorkflowRun(run);
 
       const duration = ((run.endedAt - run.startedAt) / 1000).toFixed(1);
       ctx.log(
@@ -285,7 +283,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
       run.endedAt = Date.now();
       run.status = "error";
       run.result = { reason: err instanceof Error ? err.message : String(err) };
-      saveWorkflowRun(ctx.persistDir, run);
+      ctx.saveWorkflowRun(run);
 
       const errMsg = err instanceof Error ? err.message : String(err);
       ctx.log(`[run-workflow:${entry.name}] ERROR: ${errMsg}`);
