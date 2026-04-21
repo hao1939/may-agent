@@ -762,7 +762,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         for (const f of readdirSync(wfDir)) {
           try {
             const run = JSON.parse(readFileSync(join(wfDir, f), "utf-8"));
-            if (run.task?.includes(path)) {
+            if (run.task?.includes(path) || run.task?.includes(path + ".md")) {
               for (const step of run.steps ?? []) {
                 sessions.push({ sessionId: step.sessionId, agent: step.agent, status: step.status, startedAt: step.startedAt, task: step.task?.slice(0, 80) });
               }
