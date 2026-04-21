@@ -24,7 +24,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const gPatternBlock = hasRedMetrics ? `
 ## ⚡ FIRST — evaluate your red metrics before anything else
 
-**Question**: Which metric above is furthest from its target? Follow the "→ Quick check" breadcrumb for that metric NOW — run the command or query. Then decide: is this urgent enough to act on this heartbeat, or can it wait?
+**Question**: Which metric above is furthest from its target? For each red metric, decide: does the metric owner need a nudge, or should you dispatch an investigation? Use "→ Quick check" to verify the severity, then fork work to the responsible agent if action is needed.
 
 ---
 ` : "";
