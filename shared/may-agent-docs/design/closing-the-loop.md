@@ -195,8 +195,8 @@ The reviewer in persistent-task is the weakest link. Tracked by reviewer-effecti
 - HandlerContext and WorkflowContext spread the same RuntimeCtx instance
 - 6 tests in `test/runtime-ctx.test.ts`
 
-### Phase 4: Polish
-- **G3** — Add escalation hint to guard block messages (~5 LOC)
+### Phase 4: Polish ✅ DONE
+- **G3** — Add escalation hint to guard block messages ✅ DONE
 - **G8** — Remove false preferred-workflows reference from common-sense.md ✅ DONE
 
 ### Phase 5: Cleanup & Hardening
