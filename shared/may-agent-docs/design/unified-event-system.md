@@ -167,16 +167,6 @@ The same applies to any handler that currently calls `ctx.notify()` as a reactio
 
 ### Step 3: Informational events — persist only, no handler needed
 
-Some events are purely informational audit trail:
-
-- `project.status-changed` — emitted 6× per project run
-- `project.iteration` — emitted every loop
-
-These are persisted to the events table by DbWriter. No handler needs to subscribe. They're not "orphaned" — they're audit data. This is fine. Not every event needs a handler. The distinction:
-
-- **Actionable events** → need a handler (or owner fallback)
-- **Informational events** → persisted to DB, visible in dashboards/heartbeat context
-
 ### Step 3: Remove unhandled events (done)
 
 `project.status-changed` (emitted 6×) and `project.iteration` (emitted every loop) had zero subscribers. Removed from `agents/shared/workflows/project.ts`. Events that nobody handles shouldn't be emitted — every event should have a handler.
@@ -202,6 +192,8 @@ These are **not** agent events. They don't go through `dispatchEvent()`. The bus
 4. Add cron.json entries with `on` subscriptions
 5. Delete the inline logic from may.ts
 
+**RuntimeCtx surface audit:** The moved logic needs `manager.resumeInterrupted()`, evaluator access, and `ctx.notify()`. All three are already on `HandlerContext` (`manager`, `evaluateTask`, `notify`). Verify before implementation that no additional src/ imports are needed — avoid the same coupling trap we hit with run-workflow and project-resume. If a handler needs something not on HandlerContext, expose it on RuntimeCtx rather than importing from src/ directly.
+
 **Validation:** Same behavior, but now visible in cron.json and testable as handler modules.
 
 ### Phase 2: Detection/reaction separation (medium impact)
@@ -210,7 +202,32 @@ These are **not** agent events. They don't go through `dispatchEvent()`. The bus
 2. Create `metric-alert` handler subscribing to `metric.regression` + `metric.breach`
 3. Other handlers that call `ctx.notify()` as a reaction: audit and migrate as needed
 
-### Phase 3: Cleanup
+### Phase 3: Retire request tracking (high impact, ~30 call sites)
+
+The `requests` table is a hand-maintained state machine that duplicates what the event stream already captures:
+
+| requests table | events equivalent |
+|---------------|-------------------|
+| `trackRequest(from, to, task, method)` → CREATED | `session_start` event (has from, to, task) |
+| `updateRequest(id, status: IN_PROGRESS)` | `session_start` with sessionId |
+| `updateRequest(id, status: COMPLETED)` | `session_end` with outcome |
+| `updateRequest(id, status: FAILED)` | `session_end` with error |
+| `getStaleRequests()` | Query events table: `session_start` without matching `session_end` after threshold |
+
+Every `trackRequest()` call should become a bus event emission. The events table (already populated by DbWriter) replaces the requests table. The Requests UI tab becomes an events query.
+
+**Migration:**
+
+1. Audit all 30+ `trackRequest()` call sites — each is really "something happened, record it"
+2. Replace with `bus.emit({ type: "emit", event: "request.created", data: { from, to, task, method } })` or equivalent agent event
+3. Replace `updateRequest()` calls — most are redundant with `session_end` events
+4. Migrate Requests UI tab to query events table
+5. Deprecate `requests` table (keep read-only for historical data)
+6. Remove `src/lib/requests.ts` trackRequest/updateRequest exports
+
+**Why not Phase 1:** 30+ call sites across may.ts, chat-session.ts, cron.ts, manager.ts, agent-loader.ts, cli-send.ts, session-subscribers.ts, manager-agents-tool.ts, db-writer.ts, lifecycle.ts. Needs careful migration.
+
+### Phase 4: Cleanup
 
 1. Archive `event-driven-handlers.md` (superseded by this doc + unified-handler-events.md)
 2. Update event table in `event-driven-handlers.md` (remove stale entries like `project.commented`)
@@ -256,7 +273,12 @@ These are **not** agent events. They don't go through `dispatchEvent()`. The bus
 | `agents/may/cron.json` | Add 3 new entries with `on` subscriptions | 1 |
 | `agents/may/handlers/health-trend.ts` | Emit event instead of direct notify | 2 |
 | `agents/may/handlers/metric-alert.ts` | New handler for metric reactions | 2 |
-| Design docs | Archive event-driven-handlers.md, update INDEX | 3 |
+| `src/lib/requests.ts` | Deprecate trackRequest/updateRequest | 3 |
+| `src/app/may.ts` | Remove trackRequest calls, emit events instead | 3 |
+| `src/app/chat-session.ts` | Remove trackRequest calls | 3 |
+| `src/app/cron.ts` | Remove trackRequest calls | 3 |
+| `src/app/ui/web.ts` | Requests tab → events query | 3 |
+| Design docs | Archive event-driven-handlers.md, update INDEX | 4 |
 
 ## Success criteria
 
@@ -264,3 +286,5 @@ These are **not** agent events. They don't go through `dispatchEvent()`. The bus
 2. All agent-level event reactions are visible in cron.json `on` fields
 3. Zero agent-level decisions in inline bus subscribers
 4. `grep -c 'bus.subscribe' src/app/may.ts` drops from ~10 to ~4-5
+5. Events table shows `session.failed`, `session.completed`, `session.escalated` events — verifiable in Events tab
+6. Zero `trackRequest()` calls remain — all request-like bookkeeping flows through events
