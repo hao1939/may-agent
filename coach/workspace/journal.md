@@ -4013,3 +4013,15 @@ Observations: All research threads closed. Strategic proposal (`proposal-graduat
 **Inbound notifications**: 12+ convention regressions (stale, 30-67d), scout citations, May signals. All previously acknowledged.
 
 **Possible unblock**: Could attempt production observation analysis (option c from HB38) — analyze existing eval data without gym. But no clear experiment design yet.
+
+## 2026-04-21 — Heartbeat (45)
+
+**Status**: Unblocked! Gym runner works at `agents/test/gym/run-gym.sh`.
+
+**Key finding**: QA agent is the worst performer — scores 0–0.62 in last 5 scored sessions. Root cause is env/tooling friction (wrong git dir, workflow `raw.match` bug), NOT a skill gap. Wrote `brief-qa-operational-failures.md`.
+
+**Stale blockers cleared**: Gym is functional. Previous "blocked" status was incorrect — gym runner at `agents/test/gym/run-gym.sh` works fine.
+
+**12+ convention regression notifications**: All 30-67 days old. Not actionable without fresh data.
+
+**Next**: Design new experiment leveraging working gym. Could target production failure patterns or verify skill effectiveness on harder scenarios.
