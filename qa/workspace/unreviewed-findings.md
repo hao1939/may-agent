@@ -4,13 +4,13 @@
 This heartbeat reviewed the current working tree in `/app/agents`.
 
 ## What I observed
-The repo has **many modified files** but they appear to be auto-generated session/heartbeat artifacts rather than product code changes:
-- `*/last-session.md`
-- `*/workspace/heartbeat-context.md`
-- `may/workspace/health-log.md`
+- Repo root `/app` is **not** a git repository; the git repo is `/app/agents`.
+- Recent commit reviewed: `0a546befc` (doc-only change: `shared/knowledge/experiments/EXP-190/results.md`).
+- The EXP-190 results document asserts an infrastructure issue: gym runner `--lab` is metadata-only and does not overlay lab fork files.
 
 Evidence:
-- `git status --porcelain` showed 14 modified files (all in the above categories).
+- `git log --oneline -10` in `/app/agents` shows `0a546befc`.
+- Read `shared/knowledge/experiments/EXP-190/results.md`.
 
 ## Findings
 ### IMPORTANT — Standard QA TS/Vitest checks cannot run in this repo layout
