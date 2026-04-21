@@ -145,7 +145,7 @@ export function determineOutcome(session: ActiveSession): SessionOutcome {
         .filter((c) => c.type === "text" && c.text)
         .map((c) => c.text!);
       if (textParts.length > 0) {
-        outcome = textParts.join(" ").slice(0, 500);
+        outcome = textParts.join(" ");
         break;
       }
     }

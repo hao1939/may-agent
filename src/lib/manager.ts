@@ -1809,7 +1809,7 @@ export class SubagentManager {
       outcome = (finishParams as any)?.summary;
     }
     if (!outcome) {
-      outcome = extractLastAssistantText(session.agent.state.messages)?.slice(0, 500) ?? undefined;
+      outcome = extractLastAssistantText(session.agent.state.messages) ?? undefined;
     }
 
     this.cleanupSession(session);
