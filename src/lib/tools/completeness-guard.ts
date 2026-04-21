@@ -179,7 +179,8 @@ export function createCompletenessGuard(
         `2. States the status of each (DONE / NOT DONE / BLOCKED)\n` +
         `3. For each DONE item, cites the file path and what you changed\n\n` +
         `Use: write({ path: "${checklistFileName}.md", content: "..." })\n` +
-        `Then call finish() again.`;
+        `Then call finish() again.\n\n` +
+        `Can't resolve? Escalate to May via agents.send().`;
 
       return {
         block: shouldBlock,

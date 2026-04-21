@@ -80,7 +80,7 @@ export function checkCrossEditGuard(
   if (targetDir === "shared" && relPath === ["shared", "philosophy.md"].join(sep)) {
     return {
       blocked: true,
-      message: `⚠️ WRITE BLOCKED: Agent '${agentName}' cannot modify agents/shared/philosophy.md. Only May can edit this file. Use agents.send() to request changes from May instead.`,
+      message: `⚠️ WRITE BLOCKED: Agent '${agentName}' cannot modify agents/shared/philosophy.md. Only May can edit this file.\n\nCan't resolve? Escalate to May via agents.send().`,
     };
   }
 
@@ -92,7 +92,7 @@ export function checkCrossEditGuard(
     if (EVALUATOR_PROTECTED_PATHS.has(evalRelPath)) {
       return {
         blocked: true,
-        message: `⚠️ WRITE BLOCKED (P98 Evaluation Integrity): Agent '${agentName}' cannot modify agents/evaluator/${evalRelPath}. Evaluation criteria and scoring logic are read-only to prevent reward hacking. Only the evaluator or May can modify evaluation files.`,
+        message: `⚠️ WRITE BLOCKED (P98 Evaluation Integrity): Agent '${agentName}' cannot modify agents/evaluator/${evalRelPath}. Evaluation criteria and scoring logic are read-only to prevent reward hacking. Only the evaluator or May can modify evaluation files.\n\nCan't resolve? Escalate to May via agents.send().`,
       };
     }
   }
@@ -108,7 +108,7 @@ export function checkCrossEditGuard(
           `⚠️ WRITE BLOCKED (P70): Agent "${agentName}" cannot modify its own agent.json. ` +
           `agent.json defines immutable agent identity/configuration. ` +
           `Self-edits could persist a jailbreak across restarts. ` +
-          `Only May or tech-lead may modify agent.json files.`,
+          `Only May or tech-lead may modify agent.json files.\n\nCan't resolve? Escalate to May via agents.send().`,
       };
     }
   }
@@ -127,7 +127,7 @@ export function checkCrossEditGuard(
       }
       return {
         blocked: true,
-        message: `⚠️ WRITE BLOCKED: Agent '${agentName}' cannot modify agents/${targetDir}/${fileName}. Only the owning agent (for SOUL.md), May, or tech-lead (for agent.json) can edit another agent's identity files. Use agents.send() to request changes instead.`,
+        message: `⚠️ WRITE BLOCKED: Agent '${agentName}' cannot modify agents/${targetDir}/${fileName}. Only the owning agent (for SOUL.md), May, or tech-lead (for agent.json) can edit another agent's identity files.\n\nCan't resolve? Escalate to May via agents.send().`,
       };
     }
   }

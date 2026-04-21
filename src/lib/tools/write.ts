@@ -145,7 +145,7 @@ export function createWriteTool(cwd: string, options?: WriteToolOptions): AgentT
 						const ratio = newSize / existingSize;
 						if (ratio < SHRINK_BLOCK_RATIO) {
 							return {
-								content: [{ type: "text" as const, text: `⚠️ WRITE BLOCKED: New content (${newSize} bytes) is ${Math.round(ratio * 100)}% of existing file (${existingSize} bytes). This looks like a truncated rewrite that would lose data. Use edit() for surgical changes, or read the full file first to ensure you have all content. If you're sure, use bash to write directly.` }],
+								content: [{ type: "text" as const, text: `⚠️ WRITE BLOCKED: New content (${newSize} bytes) is ${Math.round(ratio * 100)}% of existing file (${existingSize} bytes). This looks like a truncated rewrite that would lose data. Use edit() for surgical changes, or read the full file first to ensure you have all content. If you're sure, use bash to write directly.\n\nCan't resolve? Escalate to May via agents.send().` }],
 								details: undefined,
 							};
 						} else if (ratio < SHRINK_WARN_RATIO) {
