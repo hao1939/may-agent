@@ -675,6 +675,17 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
               health: field("Health"),
               milestonesDone: msX,
               milestonesTotal: msX + msO,
+              metrics: (() => {
+                const mIdx = content.indexOf("## Metrics\n");
+                if (mIdx === -1) return [];
+                const after = content.slice(mIdx + 12);
+                const ns = after.indexOf("\n## ");
+                const section = (ns === -1 ? after : after.slice(0, ns)).trim();
+                return section.split("\n").filter((l: string) => l.startsWith("- ")).map((l: string) => {
+                  const m = l.match(/^- (\S+):/);
+                  return m ? m[1] : null;
+                }).filter(Boolean);
+              })(),
               updatedAt: statSync(projectFile).mtimeMs,
             });
           } catch { /* skip */ }
