@@ -55,10 +55,10 @@ Updated: 2026-04-16 ~08:00 UTC
 - **P2**: Amy-kimi billing — blocked on Hao.
 - ⚠️ **HOLD**: Ch2-production-gates implementation — Hold for EXP-170.
 
-## Latest Cycle Summary (22:40 Apr 20)
-- **SYSTEM**: 8 agents active/6h. Bob(50), Coach(33), Evaluator(14), May(13), Optimizer(12), Scout(13), Tech-lead(13), QA(12). Zero errors.
-- **Stuck**: coach s_..112 review-requests 3.5h, may s_..990 optimizer-dispatch 31h — both idle, not blocking. Marked for cleanup.
-- **Metrics**: Alert-to-Reaction 458min ⚠️. Quality-preserved 0.85 ⚠️. Session success 94.6% ✅. Coverage 90% ✅.
+## Latest Cycle Summary (00:10 Apr 21)
+- **SYSTEM**: 8 agents active/6h. Bob(51), Coach(33), Evaluator(13), May(13), Optimizer(12), Scout(13), Tech-lead(13), QA(12). Zero errors.
+- **Stuck**: coach s_..112 review-requests 5h, may s_..990 optimizer-dispatch 33h — both idle, not blocking.
+- **Metrics**: Alert-to-Reaction 458min ⚠️. Quality-preserved 0.85 ⚠️. Session success 94.6% ✅. Coverage 88%.
 - **Active**: All agents autonomous. Bob shipping EXP-188 finish-guard + context-learning. Coach running EXP-188 trials.
 
 ## Archive Reference

@@ -1,6 +1,51 @@
 # Unreviewed findings (QA)
 
+## 2026-04-21 — heartbeat — QA verification still blocked by missing Node toolchain
+
+### Current working tree changes (agents repo)
+`cd agents && git diff --name-only` shows only workspace/heartbeat artifacts (no product code):
+- `*/workspace/heartbeat-context.md`
+- `*/last-session.md`
+- `qa/workspace/unreviewed-findings.md`
+
+### Mandatory QA gates (this run)
+- `./node_modules/.bin/tsc --noEmit`: **FAIL** — missing binary (exit 127)
+- `./node_modules/.bin/vitest --run`: **FAIL** — missing binary (exit 127)
+
+### File reviewed (mandatory step 1)
+- Read: `agents/coach/last-session.md` (auto-generated session summary; no code changes).
+
+### Impact
+Cannot perform standard compile/test verification in this runtime because required binaries aren’t present at `/app/node_modules/.bin`.
+
+---
+
 ## 2026-04-20 — heartbeat — QA verification blocked by missing repo + Node toolchain
+
+## 2026-04-20 (later) — heartbeat — additional verification attempt
+
+### What I tried
+- Discovered `/app/agents` is the actual git repo in this runtime (`agents/.git` exists), while `/app` is not.
+- Attempted to run mandatory QA gates from `/app` as instructed.
+
+### Evidence (this run)
+- `/app` is not a git repo:
+  - `git log --oneline -10`: `fatal: not a git repository` (exit 128)
+- `/app/agents` is a git repo:
+  - `cd agents && git log --oneline -10`: succeeds, latest commit `8d9faa20a`
+- Mandatory toolchain still missing in `/app`:
+  - `./node_modules/.bin/tsc --noEmit`: `No such file or directory` (exit 127)
+  - `./node_modules/.bin/vitest --run`: `No such file or directory` (exit 127)
+- `node_modules/.bin` is absent; only `node_modules/.vite/vitest` exists.
+- No `package.json`, `tsconfig.json`, or `vitest.config.*` found within 4 levels of `/app`.
+
+### Current unreviewed changes (agents repo)
+- `cd agents && git diff --name-only` shows only workspace/heartbeat artifacts:
+  - `*/workspace/heartbeat-context.md`
+  - `evaluator/last-session.md`
+
+### Implication
+I cannot complete standard QA compile/test gates in this runtime until the Node toolchain (tsc/vitest) is present in the correct working directory or the runbook points to the correct location.
 
 ### Summary
 This runtime’s project root (`/app`) is **not** a git repository, so the standard “scan recent commits/diffs” heartbeat process cannot run here. Additionally, the mandatory QA gates (`./node_modules/.bin/tsc --noEmit` and `./node_modules/.bin/vitest --run`) cannot be executed because the expected binaries are not present.
