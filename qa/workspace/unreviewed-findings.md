@@ -1,26 +1,34 @@
-# Unreviewed Findings (QA heartbeat)
+# Unreviewed findings (QA heartbeat)
 
-## Context
-- Repo root (`/app`) is **not** a git repository; `agents/` is.
-- Latest commit reviewed: `ecd98823d` — `migrate legacy projects to directory format, remove legacy .md scanning from handler`
-- Changed file: `may/handlers/project.ts`
+## Repo status
+- Running from `/app`, the top-level directory is **not** a git repo.
+- The git repo appears to be `/app/agents`.
 
-## Verification gaps (environment)
-- Could not run mandatory checks:
-  - `./node_modules/.bin/tsc --noEmit` failed: `.bin/tsc` missing (node_modules appears incomplete: only `.vite/` present).
-  - `./node_modules/.bin/vitest --run` not runnable for same reason.
-  - No `package.json` found under `agents/` (searched up to depth 3), so npm scripts/tooling cannot be verified.
+## Recent commits (last 10)
+From `/app/agents`:
+- 7487ee26c tech-lead: update last-session after alert flood and stuck detection fix
+- f83536409 tech-lead: fix alert flood and false stuck detection in persistent-task workflow
+- 54e68e20c tech-lead: update todo - mark implement-and-review archival done
+- eb6341efe cleanup: archive implement-and-review.ts (0 recent usage, superseded by implement-and-verify)
+- 1a2ed4e51 cleanup: archive implement-and-review workflow (0 recent usage), update may agent.json hints to reflect current workflows
+- 1c8b5d540 coach: HB45 session state
+- 5198b067a coach: HB45 - unblocked, QA analysis
+- 88857123b coach: QA operational failures brief
+- 1c1b25813 fix: breadcrumb gap - add G-pattern + trails to all heartbeat workflows, fix measurement script
+- 8767c510e tech-lead: redesign project handler from dumb resume to intelligent health monitor
 
-## Code review notes (partial)
-- Read `may/handlers/project.ts` lines 1–200.
-- Observed substantial logic: project scanning, state persistence, inflight control, workflow run file writing.
-- Potential risk areas to verify once tooling is available:
-  - `appendComment()` uses regex replacement on `## Comments` section; ensure it preserves existing content and doesn’t duplicate/strip when `## Comments` exists with trailing sections.
-  - `extractSection()` uses exact marker `## ${heading}\n` (requires newline); may fail if headings use `\r\n` or trailing spaces.
-  - Best-effort `try/catch {}` blocks suppress errors (intended) — ensure failures don’t lead to silent data loss.
+## Working tree changes
+Uncommitted modifications exist in multiple `*/workspace/heartbeat-context.md` files and `tech-lead/last-session.md`.
+These look like auto-generated heartbeat artifacts; consider excluding them from commits (or ensuring they’re intentionally tracked).
 
-## Next steps
-1. Ensure dependency install / workspace has `package.json` and `node_modules/.bin` populated, then re-run:
-   - `./node_modules/.bin/tsc --noEmit`
-   - `./node_modules/.bin/vitest --run`
-2. Continue file read of `may/handlers/project.ts` (offset 201+) to assess the actual migration change and any edge cases.
+## Tooling gaps (blocks mandatory QA checks)
+Mandatory steps require:
+- `./node_modules/.bin/tsc --noEmit`
+- `./node_modules/.bin/vitest --run`
+
+In `/app/agents`, `node_modules/.bin` does not exist and no `package.json` was found, so those commands cannot currently be run.
+Action needed: clarify where the TypeScript/Vitest project lives (maybe `/app` instead of `/app/agents`), or add/install the toolchain.
+
+## Files spot-checked
+- `agents/qa/workspace/heartbeat-context.md` contains an auto-generated active nudge + context block.
+- `agents/tech-lead/last-session.md` is present and appears auto-generated.
