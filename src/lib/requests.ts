@@ -457,7 +457,7 @@ export function trackRequest(persistDir: string, opts: TrackRequestOpts): string
       opts.fromEntity,
       opts.toAgent,
       opts.method,
-      opts.task.slice(0, 500),
+      opts.task,
       opts.sessionId ?? null,
       opts.source ?? null,
       now,
@@ -861,7 +861,7 @@ export function upsertSession(persistDir: string, entry: SessionDbEntry): void {
     [
       entry.sessionId,
       entry.agent,
-      entry.task?.slice(0, 500) ?? "",
+      entry.task ?? "",
       entry.status,
       entry.kind ?? "job",
       entry.source ?? null,
