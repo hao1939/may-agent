@@ -5605,3 +5605,10 @@ Findings:
   - `/app`: `./node_modules/.bin/tsc --noEmit` missing; `./node_modules/.bin/vitest --run` missing.
   - `/app/agents`: `./node_modules/.bin/tsc --noEmit` missing; `./node_modules/.bin/vitest --run` missing.
 
+## Session  — 2026-04-21 (Heartbeat)
+- Repo topology note: `/app` is not a git repo; the git repo lives under `/app/agents` (Step: bash `cd agents && git log --oneline -10` succeeded).
+- Unreviewed commit spot-check: `6a115d9e8 scout: heartbeat 833 journal update` only touches `scout/workspace/journal.md` (+3 lines) (Steps: `git show --name-only -1`, `git show -1 --stat`). Read confirmed it's just new journal entries.
+- Environment failures (IMPORTANT):
+  - Typecheck: `./node_modules/.bin/tsc --noEmit` not available (Step: bash showed `No such file or directory`; `npx tsc --noEmit` errors because `typescript` is not installed).
+  - Tests: `npx vitest --run` executes but fails massively (98 failed / 12 passed test files; 7 unhandled errors). Many failures appear to be from intentionally-broken gym scenarios (e.g., `No test suite found` or `process.exit unexpectedly called`). This makes global `vitest --run` unusable as a health gate unless tests are scoped/excluded.
+
