@@ -13,7 +13,7 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-21T06:10)
+# Your Context (auto-generated 2026-04-21T06:40)
 
 **System:** 15 sessions/6h, 0% error rate
 
@@ -30,4 +30,4 @@
 - Findings cited downstream (ratio, higher is better): **0.551** ratio → 0.5 ratio
 - CRs produced (7d, higher is better): **10** count/7d → 5 count/7d
   → Quick check: agents/scout/scripts/measure-hypotheses-generated.sh
-- Heartbeat coverage (sessions/24h, higher is better): **63** sessions/24h → 24 sessions/24h
+- Heartbeat coverage (sessions/24h, higher is better): **62** sessions/24h → 24 sessions/24h
