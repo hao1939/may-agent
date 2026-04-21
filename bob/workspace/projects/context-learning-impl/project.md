@@ -50,5 +50,7 @@ Iteration 11. Milestones: 3/5 done. Next: M4: Verify first automated run produce
 
 - **Iter 10**: Good — the experiment ran but agent was "skipped" (no live agent adapter). Now I have all the data n
 
+- **Iter 11**: The npx-recovery results are excellent: baseline 0% → treatment 100% on both checks. The read-before
+
 
 ## Comments
