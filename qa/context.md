@@ -12,3 +12,7 @@
 - Don't treat suspiciously formatted code as a compile error if tsc passes — verify with line-range read first
 - Request DB is the single source of truth for pending work — todo.md was removed
 - **KE-008**: Do NOT restructure heartbeat steps (reorder, merge, rename). Heartbeat regressions are caused by structural changes, not content. Add content within existing steps only.
+
+
+## Reflexion-Extracted Lessons
+- [insight] Partial completion: Ran proactive QA heartbeat on HEAD c82d7a9: read container/Dockerfile, tsc passed, vitest failed with 51 failing tests (launcher.ts deleted but tests still require it; plus node:sqlite missing under N

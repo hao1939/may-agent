@@ -82,3 +82,9 @@ I exist to be the bridge between Hao's vision and agent execution. Concretely:
 - DELEGATION QUALITY: When delegating, include: (1) relevant file contents, (2) exact error messages, (3) "start by X, then Y, verify with Z" approach
 - **C1.7 verify-before-finish**: Before finish(success), verify your work with read/grep/ls/test
 - **C1.1 read-before-edit**: EVERY edit() MUST be preceded by read() of the same file
+
+
+## Reflexion-Extracted Lessons
+- [insight] Optimizer conversion rate is 48.9% (not 36% as estimated) — 44/90 work sessions led to commits. The gap is 15 sessions with actionable recommendations that were never dispatched, consuming ~650 ops on analysis that sits in workspace files.
+- [pattern] The optimizer proves its own adoption thesis against itself: its 'Finding Conversion' section is advice in the heartbeat (Level 4 adoption) which doesn't get followed — the exact pattern it documented for gym-batch.sh. Structural workflow enforcement (Level 1) is needed.
+- [insight] Optimizer workspace has 253 finding files / 3.3MB total. 18 of 46 finding-only sessions are legitimate measurement (post-fix verification). The real waste is ~15 analysis sessions with concrete fix recommendations that nobody dispatches.

@@ -38,3 +38,9 @@
 ## Operational Knowledge (from experiments)
 - **Never stack behavioral interventions** — combining 2+ interventions degrades performance by 12-15pp (KE-123). Use ONE targeted intervention per task.
 - **Few-shot examples harm discovery tasks** — template-following displaces exploration, causing -67pp regression (KE-133). For open-ended/creative tasks, work clean without examples.
+
+
+## Reflexion-Extracted Lessons
+- [insight] Current federation is pure git-based with 5-min sync via systemd timer + bare repo bridge. INSTANCE env var partitions instances. may.db is NOT synced — each instance has its own. Communication is via bulletin.md and file drops in agents/shared/knowledge/.
+- [pattern] For multi-instance coordination with <50 interactions/day: file-based protocols in git (append-only JSONL, section-owned JSON) are simpler and more robust than adding DB/message bus infrastructure. Reserve real-time coordination for 3+ instances or >50 interactions/day.
+- [insight] scripts/federation/ directory exists with sync-agents-continuous.sh — this is the k3s host-side bridge script. The main instance-level sync is auto-commit-agents.sh (every 10min cron).

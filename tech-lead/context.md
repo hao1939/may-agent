@@ -38,3 +38,11 @@
 ## Operational Knowledge (from experiments)
 - **Never stack behavioral interventions** — combining 2+ interventions degrades performance by 12-15pp (KE-123). Use ONE targeted intervention per task.
 - **Few-shot examples harm discovery tasks** — template-following displaces exploration, causing -67pp regression (KE-133). For open-ended/creative tasks, work clean without examples.
+
+
+## Reflexion-Extracted Lessons
+- [insight] agents-auto-commit.ts runs every 10min (not 2h as the code comment says). 709 lines. All 3 critical fixes from the April 11 fragility audit are applied. 986 successful runs, 0 failures.
+- [insight] The dispatch board 'P1 federation sync data loss' is stale as of 2026-04-12 — the April 8-11 fixes resolved the actual data loss scenarios. K3s.json heartbeat still missing (k3s instance doesn't write it), but sync itself works.
+- [pattern] When re-auditing a previously-analyzed system, check fix status first before re-investigating. All 3 critical fixes were already applied, making this a verification session rather than a discovery session.
+- [insight] Code merged to main doesn't take effect until the compiled binary (/usr/local/bin/may-agent) is rebuilt. The running process (PID 65829, started Apr 9) predates recent fixes. Periodic cleanup scripts are needed to compensate for the stale binary.
+- [pattern] To diagnose whether a code fix is actually running: check process start time (ps aux) vs fix merge time (git log). If process predates fix, the compiled binary is stale.

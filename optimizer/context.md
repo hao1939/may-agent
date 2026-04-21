@@ -36,3 +36,12 @@
 ## Operational Knowledge (from experiments)
 - **Never stack behavioral interventions** — combining 2+ interventions degrades performance by 12-15pp (KE-123). Use ONE targeted intervention per task.
 - **Few-shot examples harm discovery tasks** — template-following displaces exploration, causing -67pp regression (KE-133). For open-ended/creative tasks, work clean without examples.
+
+
+## Reflexion-Extracted Lessons
+- [pattern] Session.jsonl tool calls use field name 'name' (not 'toolName') for tool identification, and 'arguments' (not 'input') for parameters. The content array has type:'toolCall' entries.
+- [insight] grep-then-read is the #1 bash pattern in agent sessions: 166 grep commands in 18 sessions (26.5% of all ops). Chains average 5.3 consecutive calls, following a fixed 4-step escalation: find files → find lines → get context → cross-reference.
+- [pattern] rg --json output mode provides structured machine-readable results that are much easier to parse than grep text output. rg is available at .state/.gemini/tmp/bin/rg (v13.0.0).
+- [insight] Skills adoption follows a strict hierarchy: code enforcement (handlers/guards) > SOUL.md inline text > per-agent skills/ dir deployment > shared skills/ passive availability. Each level down has dramatically less behavioral impact. 0/29 agents discover passive resources (KE-011).
+- [insight] read-before-edit is deployed to 5 agents (most-deployed after verify-after-edit) but C1.1 is still worst convention at 88.6%. QA at 61.4% DESPITE having the skill. Deployment ≠ adoption — need matching code enforcement to close the gap.
+- [pattern] For skills adoption audit: check 4 channels (handler code refs, SOUL.md inline, per-agent skills/ deployment, shared/ passive) and cross-reference with convention_checks pass rates to see if deployment translates to behavior change.
