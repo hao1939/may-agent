@@ -80,10 +80,11 @@ function hadBelowTargetMetric(agent, sessionTime) {
     // Only consider snapshots from within 24h (stale data = no breadcrumb)
     if (sessionTime - latest.measured_at > 24 * 60 * 60 * 1000) continue;
     
-    const target = m.threshold ?? m.target;
+    // Must match loadMetrics logic: only trigger when threshold is non-null
+    if (m.threshold == null) continue;
     const isBelow = m.direction === "lower_is_better" 
-      ? latest.value > target 
-      : latest.value < target;
+      ? latest.value > m.threshold 
+      : latest.value < m.threshold;
     if (isBelow) return true;
   }
   return false;
