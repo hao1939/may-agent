@@ -71,6 +71,7 @@ function loadMetrics(ctx: WorkflowContext, agent: string): string {
   → Quick check: bash ${r.source_command}`;
         else if (r.source_query) line += `
   → Quick check: run SQL — ${r.source_query.substring(0, 120)}`;
+        line += \`\n  → ACTION REQUIRED: Investigate this metric NOW or explain in your session summary why you deferred it.\`;
       }
       return line;
     }).join("\n");
