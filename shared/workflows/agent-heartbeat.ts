@@ -124,6 +124,29 @@ function loadMetricsBlock(agent: string): string {
   }
 }
 
+function loadProjects(agent: string): string {
+  try {
+    const fs = require("node:fs");
+    const path = require("node:path");
+    const projDir = path.join(process.cwd(), "agents", agent, "workspace", "projects");
+    if (!fs.existsSync(projDir)) return "";
+    const lines: string[] = [];
+    for (const entry of fs.readdirSync(projDir, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue;
+      const pFile = path.join(projDir, entry.name, "project.md");
+      if (!fs.existsSync(pFile)) continue;
+      const content = fs.readFileSync(pFile, "utf-8");
+      const status = content.match(/^\*\*Status\*\*:\s*(\S+)/m)?.[1] ?? "?";
+      if (status === "done" || status === "complete") continue;
+      const health = content.match(/^\*\*Health\*\*:\s*(.+)/m)?.[1] ?? "";
+      const msX = (content.match(/^- \[x\]/gim) || []).length;
+      const msT = msX + (content.match(/^- \[ \]/gm) || []).length;
+      lines.push(`- **${entry.name}**: ${status} | health: ${health || "—"} | milestones: ${msX}/${msT}`);
+    }
+    return lines.length > 0 ? lines.join("\n") : "";
+  } catch { return ""; }
+}
+
 function hasAttentionMetrics(metricsBlock: string): boolean {
   return metricsBlock.includes("⚠️");
 }
@@ -180,12 +203,18 @@ function buildStepPrompt(
           `Do NOT skip alerts or defer them to a later heartbeat.`
         : `**Active metric alerts**: None — all clear.`;
 
+      const projectsBlock = loadProjects(config.agent);
+      const projectsSection = projectsBlock
+        ? `**Your Projects** (non-done):\n${projectsBlock}`
+        : `**Your Projects**: No active projects.`;
+
       return (
         `## Heartbeat: Check Health\n\n${metricsPrompt}` +
         `${roleNote}${budgetNote}${extraNote}\n\n` +
         `Read agents/${config.agent}/heartbeat.md for your full guidance.\n\n` +
         `${config.observeInstructions}\n\n` +
         `${alertsSection}\n\n` +
+        `${projectsSection}\n\n` +
         `If everything looks fine, just say so. Only flag issues that need attention.`
       );
     }
