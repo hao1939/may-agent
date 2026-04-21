@@ -109,5 +109,13 @@ Master-level coordination: 2 of 5 gaps delivered, 3 partial. Next human decision
 - ~~Gap 4: ship adaptive-heartbeats Phase 1 (prompt-only fast-exit gate) — safe to deploy~~ ❌ cancelled 2026-04-17 per Hao
 - Gap 2 M3 (findings → auto-tracked-requests) is tech-lead's explicit ask — highest remaining ROI
 
+### 2026-04-20 — Hao P0 directives
+- Status flipped `done` → `active` per Hao directive.
+- Created KE-303 (Bottom-Up Isolation debugging method) and KE-304 (Breadcrumbs Not Answers principle).
+- KE-304 is "the most important finding for the system" per Hao — governs how all context injection should work.
+- Existing KE-context-discovery-chain.md contains the experimental data; KE-304 distills the architectural principle.
+- Feedback loop M3 v2 design started (`agents/bob/workspace/designs/feedback-loop-m3-v2-design.md`), incorporating breadcrumb principle.
+- Gap 2 (feedback loop) status: M1-M2 done, M3 in active design, M4 deferred.
+
 ## Outcome
 (pending)

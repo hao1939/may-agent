@@ -3,10 +3,10 @@
 **Status**: done
 **Owner**: optimizer
 **Priority**: P0
-**Iteration**: 21
-**Completed**: 2026-04-22 (heartbeat measurement confirmed 98.8% coverage)
+**Iteration**: 22
+**Completed**: 2026-04-22 (DB measurement confirmed 93.8% coverage)
 
-**Health**: 10/10 (COMPLETE)
+**Health**: 9/10 (TARGET MET — monitoring for sustainability)
 ## Goal
 Make workflows the default way agents work. Increase workflow coverage from 18% to 80%.
 
