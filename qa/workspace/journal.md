@@ -5671,3 +5671,12 @@ Findings:
 - Environment finding (IMPORTANT): /app is not a git repo and has no Node toolchain installed (no node_modules). This prevents mandatory verification steps (tsc/vitest) and unreviewed-commit scanning. Recommendation: ensure heartbeat runtime mounts the correct repo root and installs deps, or adjust QA instructions to point at the actual repo location.
 - Evidence: `ls -la` at /app shows only `.state`, `agents/`, and `DELIVERABLES_CHECKLIST.md`.
 
+## QA Heartbeat — 2026-04-21 (third run)
+- Reviewed recent unreviewed commit: `4bad7c56c M4: Add escalation language for repeated breadcrumb alerts` affecting multiple agents’ heartbeat workflows (including `agents/qa/workflows/qa-heartbeat.ts`).
+- Code read (qa-heartbeat.ts): escalation text is appended when `consecutiveBreaches >= 3` and includes “⛔ REPEATED ALERT … Continuing to ignore it is not acceptable.” This is a behavior change in user-facing heartbeat prompts; no obvious logic bug found, but verify tone aligns with product intent.
+- Environment finding (IMPORTANT): Mandatory verification commands are blocked in this runtime.
+  - Evidence: `./node_modules/.bin/tsc --noEmit` at `/app` fails with “No such file or directory” (exit 127).
+  - Evidence: repo root appears to be `/app/agents`; `node_modules` exists but only contains `.vite` (no `node_modules/.bin`), so local `tsc`/`vitest` are not runnable.
+- Repo-structure finding (MINOR): `/app` is not a git repo; `/app/agents` is.
+  - Evidence: `git log` at `/app` fails “not a git repository”, while `cd agents && git log --oneline -10` succeeds.
+
