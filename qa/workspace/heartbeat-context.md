@@ -13,17 +13,17 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-21T13:40)
+# Your Context (auto-generated 2026-04-21T14:40)
 
-**System:** 21 sessions/6h, 0% error rate
+**System:** 18 sessions/6h, 0% error rate
 **You:** 1 sessions, 3KB total (3KB avg)
 
 **Top spenders:**
-- bob: 9s, 640KB
-- may: 4s, 252KB
+- bob: 7s, 386KB
+- may: 3s, 156KB
 - coach: 3s, 41KB
 - tech-lead: 2s, 15KB
 - qa: 1s, 3KB ← you
 
 **📊 Your Metrics:**
-- Review coverage: **304** → 0
+- Review coverage: **306** → 0

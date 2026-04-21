@@ -3046,3 +3046,13 @@ src/app/ui/web
 - ⚠️ tsc --noEmit failed
 - ⚠️ 339 actionable unevaluated sessions — evaluation may be falling behind
 
+## 2026-04-21T14:40 — Auto (JS cron handler)
+
+- Sessions (24h): 609
+- Unevaluated: 507 total, 427 actionable, 80 auto-skippable
+- Running sessions: may (s_1776782368539_42), may (s_1776611617990_13)
+- tsc: SKIP (no tsconfig.json)
+- Lessons: 52 lines total (scout 31, optimizer 21)
+- Bob analysis: fresh (19h ago)
+- ⚠️ 427 actionable unevaluated sessions — evaluation may be falling behind
+

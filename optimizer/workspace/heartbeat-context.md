@@ -13,14 +13,14 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-21T14:10)
+# Your Context (auto-generated 2026-04-21T14:40)
 
 **System:** 18 sessions/6h, 0% error rate
 **You:** 1 sessions, 3KB total (3KB avg)
 
 **Top spenders:**
 - bob: 7s, 386KB
-- may: 3s, 153KB
+- may: 3s, 156KB
 - coach: 3s, 41KB
 - tech-lead: 2s, 15KB
 - qa: 1s, 3KB
@@ -28,9 +28,9 @@
 **📊 Your Metrics:**
 - Workflow coverage — % multi-step work using workflows: **94.1** % → 0.8 %
   → Quick check: bun -e "import{Database}from'bun:sqlite';const db=new Database('.state/may.db',{readonly:true});console.log(JSON.stringify(db.prepare('SELECT ROUND(100.0 * SUM(CASE WHEN workflowRunId IS NOT NULL THEN 1 ELSE 0 END) / NULLIF(COUNT(*),0), 1) FROM sessions WHERE startedAt > (strftime("%%s","now")*1000 - 604800000) AND opCount > 3 AND kind != "chat"').all()))"
-- Quality preserved: **0.8475279329608939** ratio → 0.9 ratio ⚠️ NEEDS ATTENTION
+- Quality preserved: **0.8471067415730337** ratio → 0.9 ratio ⚠️ NEEDS ATTENTION
   → Quick check: bun -e "import{Database}from'bun:sqlite';const db=new Database('.state/may.db',{readonly:true});console.log(JSON.stringify(db.prepare('SELECT AVG(e.quality) AS val FROM evaluations e JOIN sessions s ON e.sessionId = s.sessionId WHERE s.agent=\'optimizer\' AND e.skippedByJs=0 AND e.quality IS NOT NULL AND e.quality > 0 AND e.createdAt > (strftime(\'%s\',\'now\')*1000 - 604800000)').all()))"
-- Tool adoption: heuristic evaluator (higher is better): **0.9777337951509154** ratio → 0.7 ratio
+- Tool adoption: heuristic evaluator (higher is better): **0.977855187857676** ratio → 0.7 ratio
 - Workflow effectiveness — % workflow runs completing successfully: **84.8** % → 0.9 %
-- Waste reduction: **0.798** ratio → 0.3 ratio
+- Waste reduction: **0.797** ratio → 0.3 ratio
   → Quick check: bun -e "import{Database}from'bun:sqlite';const db=new Database('.state/may.db',{readonly:true});console.log(JSON.stringify(db.prepare('SELECT ROUND(CAST(SUM(CASE WHEN e.quality >= 0.7 AND e.efficiency > 0 THEN 1 ELSE 0 END) AS REAL) / NULLIF(COUNT(*), 0), 3) AS val FROM evaluations e JOIN sessions s ON e.sessionId = s.sessionId WHERE s.agent=\'optimizer\' AND e.skippedByJs=0 AND e.quality IS NOT NULL AND e.createdAt > (strftime(\'%s\',\'now\')*1000 - 604800000)').all()))"

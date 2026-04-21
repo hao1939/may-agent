@@ -1,14 +1,16 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776778807227_22
+- **Session:** s_1776780609542_35
 - **Status:** done
-- **When:** 2026-04-21T13:41:06.541Z
-- **Duration:** 59s
+- **When:** 2026-04-21T14:12:48.327Z
+- **Duration:** 2m38s
 
 ## What Happened
-System is healthy. All errors are "Connection error." — systemic API outage, not agent-specific. Ops are low across all agents (avg 3-12). No high-op outliers to investigate.
+System is healthy. Key findings:
+- **Quality metric**: 0.847 (below 0.85 threshold) BUT last 24h is **0.948** — strong improvement. The 7-day rolling avg will recover above threshold as older low-quality evals age out.
+- **Ops**: All agents healthy (≤12 avg ops), no bloat outliers.
+- **Errors**: All 50 errors are heartbeat timeouts across all agents — systemic, not optimizer-specific.
+- **No anomalies** requiring dispatch.
 
-Evaluations are all "skipped" — evaluator is only producing zero-score skipped entries, likely because all recent sessions are error sessions from the connection outage.
-
-No actionable work to dispatch. System is in good shape post-outage recovery.
+No dispatch needed this heartbeat. Quality is self-correcting.
