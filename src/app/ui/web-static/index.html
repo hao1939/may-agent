@@ -1901,14 +1901,20 @@ if (currentTab && currentTab !== 'dashboard') {
   const activeTab = document.querySelector(`[data-tab="${currentTab}"]`);
   if (activeTab) activeTab.classList.add('active');
   document.getElementById('dashboard').classList.add('hidden');
+  document.getElementById('projects').classList.toggle('hidden', currentTab !== 'projects');
   document.getElementById('chat').classList.toggle('hidden', currentTab !== 'chat');
   document.getElementById('benchmarks').classList.toggle('hidden', currentTab !== 'benchmarks');
   document.getElementById('knowledge').classList.toggle('hidden', currentTab !== 'knowledge');
   document.getElementById('requests').classList.toggle('hidden', currentTab !== 'requests');
+  document.getElementById('metrics').classList.toggle('hidden', currentTab !== 'metrics');
+  document.getElementById('events').classList.toggle('hidden', currentTab !== 'events');
   if (currentTab === 'chat') initChat();
   if (currentTab === 'benchmarks') loadBenchmarks();
   if (currentTab === 'knowledge') loadKnowledge();
   if (currentTab === 'requests') loadRequestsTab();
+  if (currentTab === 'metrics') loadMetricsTab();
+  if (currentTab === 'projects') loadProjects();
+  if (currentTab === 'events') loadEvents();
 }
 
 // ── Knowledge Browser ─────────────────────────────────────────────────
@@ -2278,12 +2284,17 @@ async function loadProjects() {
     const statusOrder = {active:0, blocked:1, paused:2, done:3, complete:4};
     projects.sort((a,b) => (statusOrder[a.status]??9) - (statusOrder[b.status]??9) || b.updatedAt - a.updatedAt);
 
-    let html = `<table style="width:100%;border-collapse:collapse;font-size:13px">`;
+    const doneCount = projects.filter(p => p.status === 'done' || p.status === 'complete').length;
+    const showDone = document.getElementById('show-done-toggle')?.checked ?? false;
+    const visible = showDone ? projects : projects.filter(p => p.status !== 'done' && p.status !== 'complete');
+
+    let html = `<div style="margin-bottom:12px;display:flex;align-items:center;gap:8px"><label style="font-size:12px;color:var(--fg2);cursor:pointer"><input type="checkbox" id="show-done-toggle" onchange="loadProjects()" ${showDone ? 'checked' : ''}> Show done (${doneCount})</label></div>`;
+    html += `<table style="width:100%;border-collapse:collapse;font-size:13px">`;
     html += `<tr style="border-bottom:2px solid var(--border);text-align:left">`;
     html += `<th style="padding:8px">Project</th><th>Owner</th><th>Status</th><th>Health</th><th>Milestones</th><th>Metrics</th><th>Iter</th><th>Updated</th>`;
     html += `</tr>`;
 
-    for (const p of projects) {
+    for (const p of visible) {
       const healthColor = !p.health ? 'var(--fg2)' :
         p.health.includes('PASS') || p.health.includes('COMPLETE') ? 'var(--green)' :
         p.health.includes('FAIL') ? 'var(--red)' : 'var(--yellow)';
