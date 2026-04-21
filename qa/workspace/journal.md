@@ -5662,3 +5662,8 @@ Findings:
   - IMPORTANT (test harness): Default `vitest --run` across repo appears to include `gym/scenarios/**` environments that are not vitest-compatible (process.exit / no suites). Consider excluding gym scenario fixtures from top-level vitest run, or move them outside vitest globs.
   - MINOR (code): `agents/src/lib/finish-guard.ts` hardcodes DEFAULT_PROJECT_ROOT = "/app". If this code is ever reused outside this runtime layout, relative deliverable resolution will break; consider passing project root from caller.
 
+## QA Heartbeat — 2026-04-21
+- Proactive scan: /app is not a git repo; only /app/agents is. Latest commit in agents (dcf3005cd) only changes docs: shared/knowledge/experiments/EXP-192/phase1-results.md.
+- Mandatory gates: BLOCKED in this runtime because ./node_modules/.bin/{tsc,vitest} do not exist at /app; cannot run required compile/test commands as specified.
+- Reviewed file: agents/shared/knowledge/experiments/EXP-192/phase1-results.md — no code issues (documentation only). Noted minor doc concern: Date header says 2026-04-27 but commit is in 2026-04-21 log; possible timestamp mismatch.
+
