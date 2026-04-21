@@ -165,10 +165,13 @@ export function runSystemStatus(opts: SystemStatusOptions): SystemStatusResult {
     } catch { analysisAge = "unreadable"; }
   } else { analysisAge = "missing"; anomalies.push("Bob analysis file missing"); }
 
-  let tscResult = "PASS";
+  let tscResult = "SKIP (no tsconfig.json)";
   if (!opts.skipBuildChecks) {
-    try { execSync("npx tsc --noEmit", { cwd: projectRoot, timeout: 60_000, stdio: "pipe" }); }
-    catch (err: any) { const output = err.stderr?.toString() || err.stdout?.toString() || "unknown error"; tscResult = `FAIL: ${output.slice(0, 200)}`; anomalies.push("tsc --noEmit failed"); }
+    const tsconfigPath = join(projectRoot, "tsconfig.json");
+    if (existsSync(tsconfigPath)) {
+      try { execSync("npx tsc --noEmit", { cwd: projectRoot, timeout: 60_000, stdio: "pipe" }); tscResult = "PASS"; }
+      catch (err: any) { const output = err.stderr?.toString() || err.stdout?.toString() || "unknown error"; tscResult = `FAIL: ${output.slice(0, 200)}`; anomalies.push("tsc --noEmit failed"); }
+    }
   }
 
   // vitest intentionally removed — spawns 15+ worker processes that orphan
