@@ -5612,3 +5612,9 @@ Findings:
   - Typecheck: `./node_modules/.bin/tsc --noEmit` not available (Step: bash showed `No such file or directory`; `npx tsc --noEmit` errors because `typescript` is not installed).
   - Tests: `npx vitest --run` executes but fails massively (98 failed / 12 passed test files; 7 unhandled errors). Many failures appear to be from intentionally-broken gym scenarios (e.g., `No test suite found` or `process.exit unexpectedly called`). This makes global `vitest --run` unusable as a health gate unless tests are scoped/excluded.
 
+# QA Heartbeat — 2026-04-21
+- Metrics: user reports `qa.review-coverage` healthy (290 → 0); no active alerts in this heartbeat prompt.
+- Injected pending tasks: none provided in prompt.
+- Unreviewed commits scan: `/app` is not a git repo (Step: `git log --oneline -10` failed). Confirmed `/app/agents` is the git repo (Step: `cd agents && git log --oneline -10` succeeded) and working tree changes are only auto-generated `*/last-session.md` (Step: `cd agents && git diff --name-only`). Spot-check: commit `70599f6a0` also touched a large file under `node_modules/.vite/vitest/.../results.json` (Step: `git show --name-only -1 70599f6a0`).
+- Mandatory QA gates (environment): `./node_modules/.bin/tsc --noEmit` FAIL (missing binary, exit 127). `./node_modules/.bin/vitest --run` FAIL (missing binary, exit 127).
+
