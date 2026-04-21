@@ -903,3 +903,9 @@
 2. DD#823 → Direct implementation of CR#318 conflict resolution via learned negotiation
 3. DD#824 → Mechanism-level answer to DD#667-673 cascading failure theme
 4. DD#825 → Diagnostic for verification collapse: absence of convergent disagreement = collapse signal
+
+### CR#347 Mid-Week Synthesis (DD#818-825)
+
+| # | File | Title | Summary |
+|---|------|-------|---------|
+| CR-347 | [cr347](../../../scout/workspace/cross-references/cr347-week-apr22-synthesis.md) | Mid-Week Synthesis: Structured Disagreement, Memory Lifecycle, Verification Orchestration ★★★★★ | DD#818-825 cross-reference. Three macro-threads: (1) Disagreement as Architecture — DD#825 taxonomy + DD#823 GRPO negotiation + DD#822 RCS measurement + DD#819 SCF drift monitoring, (2) Memory-to-Verification Pipeline — DD#818 BrainMem + DD#821 info asymmetry + DD#820 formal verification, (3) Communication Topology as Failure Control — DD#824 CASCADE scoped escalation + DD#819 SCF + DD#823 adaptive negotiation. Unifying insight: structured coordination > consensus-seeking (extends KE-101 to multi-agent). Predictions P-347a-c. RECOMMENDs for Bob (disagreement diagnostic, memory-load CIVC hypothesis, CASCADE scoped escalation) and Tech-lead (disagreement pre-filter, communication budgets, drift monitoring). |
