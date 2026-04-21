@@ -3,6 +3,10 @@
 export const name = "qa-heartbeat";
 export const description = "qa's heartbeat.";
 
+function getAgentsRoot(ctx: WorkflowContext): string {
+  return ctx.agentsRoot || require("node:path").join(process.cwd(), "agents");
+}
+
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const agent = "qa";
 
@@ -74,7 +78,7 @@ function loadProjects(ctx: WorkflowContext, agent: string): string {
   try {
     const fs = require("node:fs");
     const path = require("node:path");
-    const projDir = path.join(ctx.agentsRoot, agent, "workspace", "projects");
+    const projDir = path.join(getAgentsRoot(ctx), agent, "workspace", "projects");
     if (!fs.existsSync(projDir)) return "";
     const lines: string[] = [];
     for (const entry of fs.readdirSync(projDir, { withFileTypes: true })) {
@@ -109,6 +113,6 @@ function loadHeartbeatMd(ctx: WorkflowContext, agent: string): string {
   try {
     const fs = require("node:fs");
     const path = require("node:path");
-    return fs.readFileSync(path.join(ctx.agentsRoot, agent, "heartbeat.md"), "utf-8");
+    return fs.readFileSync(path.join(getAgentsRoot(ctx), agent, "heartbeat.md"), "utf-8");
   } catch { return "(No heartbeat.md found)"; }
 }
