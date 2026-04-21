@@ -54,3 +54,9 @@ After forking, exit within 3 ops.
 ## Exit check
 
 You should leave having either dispatched a fix or identified a concrete inefficiency to attack next. Pure observation without action is your failure mode — convert findings to fixes.
+
+## Your Projects
+Check the projects listed above in "Your Projects". For each:
+- **Active**: is it making progress? Do you need to act this heartbeat?
+- **Paused**: is the resume condition met? If yes, add a comment with evidence.
+- **Blocked**: can you unblock it? Try a different approach or escalate.

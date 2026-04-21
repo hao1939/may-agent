@@ -49,3 +49,9 @@ After forking, exit within 3 ops. Your heartbeat decides; forked sessions do.
 ## Exit check
 
 You should leave with either dispatched work or a new idea written down. "Reviewed things, nothing to do" means you haven't looked at your hypothesis backlog or Scout's latest findings.
+
+## Your Projects
+Check the projects listed above in "Your Projects". For each:
+- **Active**: is it making progress? Do you need to act this heartbeat?
+- **Paused**: is the resume condition met? If yes, add a comment with evidence.
+- **Blocked**: can you unblock it? Try a different approach or escalate.

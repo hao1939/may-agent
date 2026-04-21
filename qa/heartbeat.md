@@ -47,3 +47,9 @@ finish({
 **⚠️ Pre-existing test failures are findings, not blockers.** You found them, you reported them — use `success`.
 
 **⚠️ NEVER end with a text message.** Your last action must be `finish()`.
+
+## Your Projects
+Check the projects listed above in "Your Projects". For each:
+- **Active**: is it making progress? Do you need to act this heartbeat?
+- **Paused**: is the resume condition met? If yes, add a comment with evidence.
+- **Blocked**: can you unblock it? Try a different approach or escalate.

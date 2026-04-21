@@ -57,3 +57,9 @@ Your session should end with one of:
 - **Named wait** — you're waiting for something specific and time-bounded. Say what.
 
 If you can't name one of these, look harder — check reflection files for open items, unverified hypotheses, or untested skills.
+
+## Your Projects
+Check the projects listed above in "Your Projects". For each:
+- **Active**: is it making progress? Do you need to act this heartbeat?
+- **Paused**: is the resume condition met? If yes, add a comment with evidence.
+- **Blocked**: can you unblock it? Try a different approach or escalate.

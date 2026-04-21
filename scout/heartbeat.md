@@ -50,3 +50,9 @@ After forking, exit within 3 ops.
 ## Exit check
 
 You should have forked research or identified why not. "Nothing to research" is almost never true — check hypotheses, recent experiments, team questions. If genuinely nothing: pick the most interesting thread from your last deep dive and go deeper.
+
+## Your Projects
+Check the projects listed above in "Your Projects". For each:
+- **Active**: is it making progress? Do you need to act this heartbeat?
+- **Paused**: is the resume condition met? If yes, add a comment with evidence.
+- **Blocked**: can you unblock it? Try a different approach or escalate.
