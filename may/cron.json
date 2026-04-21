@@ -631,6 +631,16 @@
     ]
   },
   {
+    "name": "metric-alert-reactor",
+    "type": "job",
+    "handler": "metric-alert-reactor",
+    "enabled": true,
+    "description": "React to metric.breach events by forking the owning agent with remediation task.",
+    "on": [
+      "metric.breach"
+    ]
+  },
+  {
     "name": "standing-orders-check",
     "type": "job",
     "intervalMs": 1800000,

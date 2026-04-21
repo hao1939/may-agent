@@ -407,9 +407,10 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     //    Catches alerts created before auto-fork was wired up,
     //    or alerts whose fork request was lost/never created.
 
-    let backfillForked = 0;
+    // ── 0. Backfill: re-emit metric.breach for unresolved alerts ──────
+    //    The metric-alert-reactor handler will dedup and fork as needed.
+    let backfillEmitted = 0;
     try {
-      ctx.log(`[metrics-snapshot] Starting backfill check for unresolved alerts...`);
       const unresolvedAlerts = db.prepare(`
         SELECT ma.metric_id, ma.message, m.owner, m.name, m.current, m.threshold, m.target, m.type,
                m.source as metric_source, m.alert_direction
@@ -422,27 +423,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         type: string; metric_source: string | null; alert_direction: string | null;
       }>;
 
-      ctx.log(`[metrics-snapshot] Found ${unresolvedAlerts.length} unresolved alerts for backfill`);
       for (const alert of unresolvedAlerts) {
-        // Check if there's already a metric-alert request for this metric (within last 24h)
-        const existingRequest = db.prepare(
-          `SELECT requestId FROM requests
-           WHERE toAgent = ? AND fromEntity = 'metrics-snapshot' AND status = 'CREATED'
-           AND task LIKE ? AND createdAt > ?`
-        ).get(alert.owner, `%${alert.metric_id}%`, now - 24 * 60 * 60 * 1000) as { requestId: string } | null;
-
-        if (existingRequest) continue; // Already has an active request
-
-        // Also check completed requests from last 24h to avoid re-forking too soon
-        const recentCompleted = db.prepare(
-          `SELECT requestId FROM requests
-           WHERE toAgent = ? AND fromEntity = 'metrics-snapshot'
-           AND task LIKE ? AND completedAt > ?`
-        ).get(alert.owner, `%${alert.metric_id}%`, now - 24 * 60 * 60 * 1000) as { requestId: string } | null;
-
-        if (recentCompleted) continue; // Recently handled
-
-        // Fork for this unresolved alert
         const metricRow: MetricRow = {
           id: alert.metric_id,
           name: alert.name,
@@ -460,11 +441,14 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
           updated_at: now,
         };
         emitMetricBreach(ctx, metricRow, alert.message);
-        backfillForked++;
+        backfillEmitted++;
+      }
+      if (backfillEmitted > 0) {
+        ctx.log(`[metrics-snapshot] Re-emitted ${backfillEmitted} unresolved alert(s) for reactor`);
       }
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
-      ctx.log(`[metrics-snapshot] Backfill fork error: ${msg}`);
+      ctx.log(`[metrics-snapshot] Backfill error: ${msg}`);
     }
 
     // ── 1. Auto-measure SQL-based metrics ───────────────────────────
