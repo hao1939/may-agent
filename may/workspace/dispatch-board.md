@@ -55,11 +55,11 @@ Updated: 2026-04-16 ~08:00 UTC
 - **P2**: Amy-kimi billing — blocked on Hao.
 - ⚠️ **HOLD**: Ch2-production-gates implementation — Hold for EXP-170.
 
-## Latest Cycle Summary (06:10 Apr 21)
+## Latest Cycle Summary (06:40 Apr 21)
 - **SYSTEM**: 8 agents active. All healthy. Zero errors. No stuck sessions.
-- **Metrics**: Alert-to-Reaction 458min ⚠️. Quality-preserved 0.84 ⚠️. Coverage 77% ⚠️. Session success 94.6% ✅.
-- **Active dispatches**: Bob x2 (EXP-188 finish-guard + scout processing, 29min). Coach running EXP-189. Tech-lead fixing tsc --noEmit.
-- **Key concern**: alert-to-reaction-time still terrible (458min vs 30min target). Coverage dropped to 77%.
+- **Metrics**: Alert-to-Reaction 458min ⚠️. Quality-preserved 0.84 ⚠️. Coverage 74% ⚠️. Session success 94.7% ✅.
+- **Dispatched**: May fork triaging ALL pending Hao requests (10+ backlog). Tech-lead forked for tsc --noEmit fix.
+- **Key concern**: 50+ CREATED requests piling up. Hao request backlog is 5 days old. Massive triage session dispatched.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
