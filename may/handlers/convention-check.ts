@@ -213,51 +213,32 @@ export function runConventionChecks(opts: {
     errors: [],
   };
 
-  // Retroactive fix: correct finish-dependent check failures for sessions
-  // that were later marked as "interrupted" (race condition: convention checks
-  // can run before session status is updated after a restart)
+  // Retroactive fix: correct finish-dependent check failures for interrupted/error
+  // sessions (race condition) and orphan sessions (no session record at all).
   const FINISH_DEPENDENT = ['C1.4', 'C8.2', 'C1.5', 'C1.7'];
   const placeholders = FINISH_DEPENDENT.map(() => '?').join(',');
-  const staleFailures = db.prepare(`
-    SELECT cc.rowid, cc.session_id, cc.convention
-    FROM convention_checks cc
-    JOIN sessions s ON cc.session_id = s.sessionId
-    WHERE cc.passed = 0
-      AND cc.convention IN (${placeholders})
-      AND s.status IN ('interrupted', 'error')
-  `).all(...FINISH_DEPENDENT) as { rowid: number; session_id: string; convention: string }[];
-
-  if (staleFailures.length > 0) {
-    const updateStmt = db.prepare(
-      `UPDATE convention_checks SET passed = 1, violations = '["retroactive: session was interrupted/errored"]' WHERE rowid = ?`
-    );
-    for (const sf of staleFailures) {
-      updateStmt.run(sf.rowid);
+  const retroQueries: { sql: string; params: string[]; reason: string }[] = [
+    {
+      sql: `SELECT cc.rowid FROM convention_checks cc JOIN sessions s ON cc.session_id = s.sessionId
+            WHERE cc.passed = 0 AND cc.convention IN (${placeholders}) AND s.status IN ('interrupted', 'error')`,
+      params: FINISH_DEPENDENT,
+      reason: 'session was interrupted/errored',
+    },
+    {
+      sql: `SELECT cc.rowid FROM convention_checks cc LEFT JOIN sessions s ON cc.session_id = s.sessionId
+            WHERE cc.passed = 0 AND cc.convention IN (${placeholders}) AND s.sessionId IS NULL`,
+      params: FINISH_DEPENDENT,
+      reason: 'orphan session (no session record)',
+    },
+  ];
+  for (const { sql, params, reason } of retroQueries) {
+    const rows = db.prepare(sql).all(...params) as { rowid: number }[];
+    if (rows.length > 0) {
+      const stmt = db.prepare(`UPDATE convention_checks SET passed = 1, violations = ? WHERE rowid = ?`);
+      const violationJson = JSON.stringify([`retroactive: ${reason}`]);
+      for (const r of rows) stmt.run(violationJson, r.rowid);
+      log(`[convention-check] Retroactively corrected ${rows.length} false positives: ${reason}`);
     }
-    log(`[convention-check] Retroactively corrected ${staleFailures.length} false positives on interrupted/error sessions`);
-  }
-
-  // Retroactive fix #2: correct finish-dependent check failures for orphan sessions
-  // (sessions that have convention_check records but no sessions table entry at all).
-  // These are typically gym runs or sessions that died before session creation.
-  // Can't penalize for missing finish() if the session never registered.
-  const orphanFailures = db.prepare(`
-    SELECT cc.rowid, cc.session_id, cc.convention
-    FROM convention_checks cc
-    LEFT JOIN sessions s ON cc.session_id = s.sessionId
-    WHERE cc.passed = 0
-      AND cc.convention IN (${placeholders})
-      AND s.sessionId IS NULL
-  `).all() as { rowid: number; session_id: string; convention: string }[];
-
-  if (orphanFailures.length > 0) {
-    const updateOrphanStmt = db.prepare(
-      `UPDATE convention_checks SET passed = 1, violations = '["retroactive: orphan session (no session record)"]' WHERE rowid = ?`
-    );
-    for (const orphan of orphanFailures) {
-      updateOrphanStmt.run(orphan.rowid);
-    }
-    log(`[convention-check] Retroactively corrected ${orphanFailures.length} false positives on orphan sessions (no session record)`);
   }
 
   // Find evaluated sessions not yet convention-checked
