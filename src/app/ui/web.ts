@@ -748,31 +748,32 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     const owner = parts[1] ?? "";
     const name = parts[parts.length - 1]?.replace(/\.md$/, "") ?? "";
     const projectId = `${owner}/${name}`;
+    // Try projectId query first
     try {
       const db = _db();
       const rows = db.prepare(
         "SELECT sessionId, agent, status, opCount, startedAt, endedAt, task FROM sessions WHERE projectId = ? ORDER BY startedAt DESC LIMIT 50"
       ).all(projectId) as any[];
       if (rows.length > 0) return json(rows);
-    } catch {
-      // projectId column may not exist yet — fall back to workflow run files
-      try {
-        const wfDir = join(STATE_DIR, "workflows");
-        const sessions: any[] = [];
-        for (const f of readdirSync(wfDir)) {
-          try {
-            const run = JSON.parse(readFileSync(join(wfDir, f), "utf-8"));
-            if (run.task?.includes(path) || run.task?.includes(path + ".md")) {
-              for (const step of run.steps ?? []) {
-                sessions.push({ sessionId: step.sessionId, agent: step.agent, status: step.status, startedAt: step.startedAt, task: step.task?.slice(0, 80) });
-              }
+    } catch { /* projectId column may not exist */ }
+
+    // Fallback: scan workflow run files
+    try {
+      const wfDir = join(STATE_DIR, "workflows");
+      const sessions: any[] = [];
+      for (const f of readdirSync(wfDir)) {
+        try {
+          const run = JSON.parse(readFileSync(join(wfDir, f), "utf-8"));
+          if (run.task?.includes(path) || run.task?.includes(path + ".md")) {
+            for (const step of run.steps ?? []) {
+              sessions.push({ sessionId: step.sessionId, agent: step.agent, status: step.status, startedAt: step.startedAt, task: step.task?.slice(0, 80) });
             }
-          } catch { /* skip */ }
-        }
-        return json(sessions);
-      } catch {
-        return json([]);
+          }
+        } catch { /* skip */ }
       }
+      return json(sessions);
+    } catch {
+      return json([]);
     }
   }
 
