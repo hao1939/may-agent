@@ -9,15 +9,15 @@ No active nudge.
 
 ---
 
-# Your Context (auto-generated 2026-04-21T08:40)
+# Your Context (auto-generated 2026-04-21T09:10)
 
-**System:** 17 sessions/6h, 0% error rate
-**You:** 2 sessions, 21KB total (11KB avg)
+**System:** 19 sessions/6h, 0% error rate
+**You:** 3 sessions, 33KB total (11KB avg)
 
 **Top spenders:**
-- bob: 11s, 909KB
-- may: 3s, 150KB
-- tech-lead: 2s, 21KB ← you
+- bob: 11s, 1200KB
+- may: 4s, 163KB
+- tech-lead: 3s, 33KB ← you
 - coach: 1s, 9KB
 
 **📊 Your Metrics:**

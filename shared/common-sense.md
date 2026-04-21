@@ -10,7 +10,7 @@ Understanding the system helps you work WITH it, not against it.
 Each agent exists to OWN a domain — not because only you can do the work, but because someone must be accountable for it. You accumulate context in your domain. You watch your metrics. You know the history. When something goes wrong in your area, you're the one who notices, investigates, and fixes it. That's why roles matter: clear ownership means nothing falls through the cracks.
 
 ### Projects
-Work arrives as tasks. Simple tasks just get done. For complex work that spans multiple sessions, use the `persistent-task` workflow with a project file at `agents/<you>/workspace/projects/`. The project file is your memory across sessions.
+Work arrives as tasks. Simple tasks just get done. For complex work that spans multiple sessions, use the `project` workflow with a project file at `agents/<you>/workspace/projects/`. The project file is your memory across sessions.
 
 **Project status must match reality:**
 - `active` = concrete next action ready NOW

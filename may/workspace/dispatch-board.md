@@ -55,13 +55,15 @@ Updated: 2026-04-16 ~08:00 UTC
 - **P2**: Amy-kimi billing — blocked on Hao.
 - ⚠️ **HOLD**: Ch2-production-gates implementation — Hold for EXP-170.
 
-## Latest Cycle Summary (08:40 Apr 21)
+## Latest Cycle Summary (09:10 Apr 21)
 - **SYSTEM**: 8 agents active. All healthy. No stuck sessions.
 - **Metrics**: Alert-to-Reaction 458min ⚠️. Quality-preserved 0.84 ⚠️. Coverage 67% ⚠️. Session success 95% ✅.
-- **Dispatched**: 
-  - tech-lead: P0 tsc --noEmit fix (s_1776760848898_0) — repeated interrupted attempts, fresh dispatch
-  - may: Hao-request mega-triage (s_1776760848905_1) — 10+ CREATED human requests, oldest 4000+ min
-- **Key concern**: Bob stuck in EXP-188 finish-guard loop (20+ interrupted sessions). Request backlog critical.
+- **Active work**:
+  - tech-lead: P0 tsc --noEmit fix (s_1776760848898_0, 30min running)
+  - may: Hao-request mega-triage (s_1776760848905_1, 30min running)
+  - bob: EXP-188 finish-guard (s_1776760840913_0) + scout deep-dive backlog (s_1776760840917_1)
+- **System-scope change**: persistent-task→project workflow rename committed (136790eee). Monitor for breakage.
+- **Key concern**: 50 active requests in backlog. Hao triage session in progress.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.

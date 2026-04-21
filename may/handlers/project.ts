@@ -71,6 +71,16 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     const inflight = readInflight(inflightFile);
     const projects: Array<{ owner: string; relPath: string }> = [];
 
+    // Check for recently breached metrics (for reactivating paused metric projects)
+    let breachedMetric: string | null = null;
+    try {
+      const db = ctx.getDb();
+      const alert = db.prepare(
+        "SELECT metric_id FROM metric_alerts WHERE resolved_at IS NULL ORDER BY created_at DESC LIMIT 1"
+      ).get() as { metric_id: string } | undefined;
+      if (alert) breachedMetric = alert.metric_id;
+    } catch { /* skip */ }
+
     // Scan all project directories for modified files
     try {
       for (const dir of readdirSync(agentsRoot, { withFileTypes: true })) {
@@ -99,10 +109,23 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
             const statusMatch = content.match(/^\*\*Status\*\*:\s*(\S+)/m);
             const status = statusMatch ? statusMatch[1].toLowerCase() : "";
 
-            // Pick up if: file changed since last check, OR status is active
+            // Pick up if: file changed since last check, OR status is active,
+            // OR paused project declares a metric that just breached
             const changed = mtime > lastCheck;
             const isActive = status === "active";
-            if (!changed && !isActive) continue;
+            let metricReactivated = false;
+            if (status === "paused" && breachedMetric) {
+              // Check if this project declares the breached metric
+              const metricsSection = content.match(/## Metrics\n([\s\S]*?)(?=\n## |$)/)?.[1] ?? "";
+              if (metricsSection.includes(breachedMetric)) {
+                metricReactivated = true;
+                // Reactivate: set status to active
+                const updated = content.replace(/^\*\*Status\*\*:\s*\S+/m, "**Status**: active");
+                writeFileSync(projectFile, updated, "utf-8");
+                ctx.log(`[project] Reactivated ${relPath} — metric ${breachedMetric} breached`);
+              }
+            }
+            if (!changed && !isActive && !metricReactivated) continue;
             if (inflight.has(relPath)) continue;
 
             const m = OWNER_RE.exec(content);

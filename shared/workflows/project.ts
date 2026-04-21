@@ -225,6 +225,15 @@ function extractComments(content: string): string {
   return extractSection(content, "Comments");
 }
 
+function parseMetrics(content: string): Array<{ id: string; target: string; baseline: string }> {
+  const section = extractSection(content, "Metrics");
+  if (!section) return [];
+  return section.split("\n").filter(l => l.startsWith("- ")).map(line => {
+    const m = line.match(/^- (\S+):\s*target\s*([<>]=?\s*[\d.]+%?),?\s*baseline\s*([\d.]+%?)/);
+    return m ? { id: m[1], target: m[2].trim(), baseline: m[3].trim() } : null;
+  }).filter(Boolean) as Array<{ id: string; target: string; baseline: string }>;
+}
+
 // Clear the Comments section in project.md after processing
 // Track false-done signals for metrics (reset per execute call)
 
@@ -420,9 +429,16 @@ function buildEvalPrompt(
   prompt += `3. **Evidence**: Is there concrete evidence (tool output, file content, test results)?\n`;
   prompt += `4. **Milestones honest**: Are checked milestones genuinely complete?\n`;
   prompt += `5. **No shortcuts**: Did the worker do real work or just claim completion?\n`;
-  prompt += `6. **Verification milestones**: If any milestone requires observing, measuring, or verifying something works in production — was it actually observed over time? Building code is not the same as verifying it works. "Implemented auto-fork" ≠ "observed auto-fork fire and agent respond." Score low if verification milestones are claimed done without real observation evidence.\n`;
+  prompt += `6. **Building != verifying**: Building code is not the same as verifying it works. Score low if the project claims done but nobody observed the result working in practice.\n`;
   prompt += `7. **If blocked**: Is the blocker real and specific? Did the worker try alternatives? Or did they give up too easily?\n`;
-  prompt += `8. **Milestone status**: ${milestoneNote || "No milestones defined."}\n`;
+  if (milestoneNote) prompt += `8. **Milestone status**: ${milestoneNote}\n`;
+
+  const metrics = parseMetrics(projectContent);
+  if (metrics.length > 0) {
+    prompt += `9. **Metrics**: This project declares target metrics. Check whether they improved:\n`;
+    for (const m of metrics) prompt += `   - ${m.id}: target ${m.target}, baseline ${m.baseline}\n`;
+    prompt += `   Score low if milestones are done but metrics have not moved toward targets.\n`;
+  }
   prompt += `\n`;
   prompt += `Your response MUST include:\n`;
   prompt += `SCORE: <1-10> (7+ = genuinely complete, <7 = not done)\n`;

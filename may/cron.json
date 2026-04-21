@@ -614,7 +614,8 @@
       "project.commented",
       "project.changed",
       "workflow.done",
-      "workflow.blocked"
+      "workflow.blocked",
+      "metric.breach"
     ]
   },
   {
