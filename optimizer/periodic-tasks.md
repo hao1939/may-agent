@@ -10,12 +10,12 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Latest (2025-07-11): System healthy. 187 sessions in ~6h across 8 agents. Avg ops: tech-lead 12.4, coach 10.3, bob 7.9, optimizer 7.9, scout 7.4, qa 4.6, may 3.8. 0 errors. Coach waste rate 20.5% (top system-wide), coder 24.6% (lower volume). Coach high-waste sessions driven by `multiple_tool_errors` + `no_finish_call` (75-106 wasted calls). Persistent-task loop fix already dispatched. No new action needed.
   _Older entries pruned 2025-07-11._
 
-- [x] **Cost outlier scan** — Last done: 2026-04-01T16:45
+- [x] **Cost outlier scan** — Last done: 2026-04-21T15:40
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-04-01T16:45): Session data now available again (bf34041 fix). 117 sessions in 24h by 9 agents. No cost column in DB (meta.json tracking still broken — escalated Mar 18). Verdict distribution healthy: 0 errors in 24h, 0.7% waste. Coach leads session count (18), may (21). No outlier pattern.
-  _Older entries pruned 2026-04-01T16:45._
+  Latest (2026-04-21T15:40): **CRITICAL FINDING**: 614 sessions in 7 days failing with "LLM returned stopReason toolUse but no tool call content blocks" (truncated streaming response). Coach (151), may (128), tech-lead (122) worst hit. Coach has 17,295 total wasted calls in 24h — top waste source. High-waste coach sessions (75-106 wasted calls each) all heartbeats hitting `multiple_tool_errors` + `no_finish_call`. This is infrastructure-level (binary, not editable source). Notified tech-lead. System-wide quality: qa 0.79 (best), tech-lead 0.77, optimizer 0.75, amy 0.67 (worst). Amy also lowest efficiency at 0.62.
+  _Older entries pruned 2026-04-21._
 
 - [x] **Tool development & LLM-call reduction** — Last done: 2026-04-01T16:45
   **This is your HIGHEST-LEVERAGE periodic task.** Every tool you build saves LLM calls permanently.
