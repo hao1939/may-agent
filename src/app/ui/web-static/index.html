@@ -2340,13 +2340,15 @@ async function loadProjectTab(tab) {
     if (tab === 'project') {
       const res = await fetch(`/api/projects/content?path=${encodeURIComponent(_projectDetailPath)}`);
       const data = await res.json();
-      el.style.whiteSpace = 'pre-wrap'; el.style.fontFamily = 'monospace'; el.style.fontSize = '13px';
-      el.textContent = data.content || 'No content';
+      el.style.whiteSpace = 'normal'; el.style.fontFamily = 'inherit'; el.style.fontSize = '13px';
+      if (window.marked?.parse) { el.innerHTML = window.marked.parse(data.content || 'No content'); el.classList.add('md-rendered'); }
+      else { el.style.whiteSpace = 'pre-wrap'; el.style.fontFamily = 'monospace'; el.textContent = data.content || 'No content'; }
     } else if (tab === 'journal') {
       const res = await fetch(`/api/projects/journal?path=${encodeURIComponent(_projectDetailPath)}`);
       const data = await res.json();
-      el.style.whiteSpace = 'pre-wrap'; el.style.fontFamily = 'monospace'; el.style.fontSize = '13px';
-      el.textContent = data.content || 'No journal';
+      el.style.whiteSpace = 'normal'; el.style.fontFamily = 'inherit'; el.style.fontSize = '13px';
+      if (window.marked?.parse) { el.innerHTML = window.marked.parse(data.content || 'No journal'); el.classList.add('md-rendered'); }
+      else { el.style.whiteSpace = 'pre-wrap'; el.style.fontFamily = 'monospace'; el.textContent = data.content || 'No journal'; }
     } else if (tab === 'sessions') {
       const res = await fetch(`/api/projects/sessions?path=${encodeURIComponent(_projectDetailPath)}`);
       const rows = await res.json();
