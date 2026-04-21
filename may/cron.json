@@ -703,5 +703,29 @@
     "handler": "context-learning",
     "description": "Queries failed/low-quality sessions, dispatches bob to extract actionable lessons ('When X, do Y') and append to agent context.md. Replaces blocked M2/M3 of context-learning-impl project.",
     "offsetMs": 1800000
+  },
+  {
+    "name": "session-recovery",
+    "type": "job",
+    "handler": "session-recovery",
+    "on": ["session.failed"],
+    "enabled": true,
+    "description": "Auto-resume failed sessions (Ambulance Protocol). Two-tier: digest classifier → classifyError fallback. Event-only handler (no timer)."
+  },
+  {
+    "name": "session-eval",
+    "type": "job",
+    "handler": "session-eval",
+    "on": ["session.completed"],
+    "enabled": true,
+    "description": "Auto-evaluate completed task trees and emit context-learn events. Event-only handler (no timer)."
+  },
+  {
+    "name": "escalation",
+    "type": "job",
+    "handler": "escalation",
+    "on": ["session.escalated"],
+    "enabled": true,
+    "description": "Route blocked/failed session escalations to human via digest classifier. Event-only handler (no timer)."
   }
 ]
