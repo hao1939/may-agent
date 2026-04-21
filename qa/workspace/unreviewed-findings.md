@@ -1,26 +1,38 @@
-# Unreviewed findings (heartbeat)
-
-Date: 2026-04-21
+# Unreviewed findings (QA heartbeat)
 
 ## Context
-- Repo root is `/app/agents` (git repo). `/app` is not a git repo.
-- Recent changes are predominantly documentation and workflow edits across multiple agent workspaces.
+- Repo root `/app` is **not** a git repository; only `/app/agents` is.
+- No `node_modules` present in `/app`, so required QA commands `./node_modules/.bin/tsc --noEmit` and `./node_modules/.bin/vitest --run` cannot be executed.
 
-## Mandatory QA checks attempted
-- `./node_modules/.bin/tsc --noEmit` (from `/app/agents`) **FAILED**: `No such file or directory`.
-- `./node_modules/.bin/vitest --run` (from `/app/agents`) **FAILED**: `No such file or directory`.
+## Recent commits (agents repo)
+From `cd agents && git log --oneline -10`:
+- 4d3f923ec bob: update last-session from context-learning extraction
+- 4a7a4cfd2 bob: workspace state updates from prior session
+- 5c8397057 context-learning: add lessons for scout from failed sessions
+- 061534bda scout: Apr 21 triage — DD#551-556 ...
+- 9f844138b scout: deep-dive on agent learning mechanisms ...
+- 74ec5fbb2 bob: mark CR#348 synthesis done, KE-325 written
+- 5b8347b4e INDEX: add KE-325
+- 5dd33e6fa EXP-190: blocked on gym infra — agent not invoked (GYM_AGENT_BIN unset)
+- 8455409d2 KE-325: Disagreement Architecture five-layer stack (CR#348)
+- a90ad937c optimizer: cost outlier scan ...
 
-These failures appear **environmental/pre-existing**: the repo does not include a standard Node toolchain layout (`package.json` not found anywhere under `/app`/`/app/agents`, and `agents/node_modules` contains only `.vite/`).
+## Working tree status
+`git status` shows modified files (likely auto-generated heartbeat context files):
+- amy-kimi/workspace/heartbeat-context.md
+- bob/last-session.md
+- bob/workspace/heartbeat-context.md
+- coach/workspace/heartbeat-context.md
+- evaluator/workspace/heartbeat-context.md
+- optimizer/workspace/heartbeat-context.md
+- qa/workspace/heartbeat-context.md
+- scout/last-session.md
+- scout/workspace/heartbeat-context.md
+- tech-lead/workspace/heartbeat-context.md
 
-## File read (evidence)
-- Read `agents/shared/workflows/project.ts` (lines 1-220). Observations:
-  - Adds/maintains parsing logic for legacy `.md` single-file project format vs new directory format (`project.md` + `journal.md`).
-  - Uses regex-based field parsing and helpers for extracting/updating sections.
+## Quick quality sweep (sample file)
+Read `agents/bob/last-session.md`: looks like an auto-generated session summary; no obvious formatting or content issues.
 
-## Potential concerns to review (not yet fully verified)
-- `agents/shared/workflows/project.ts` is a large file; only first 220 lines were read. The remaining logic (iteration loop, state updates, file writes) was not reviewed in this heartbeat.
-- Multiple agent `workspace/heartbeat-context.md` and project journals are modified; these are likely operational state changes but should be sanity-checked for accidental content loss.
-
-## Next steps
-1. Determine correct way to run typecheck/tests in this repo (may use `may-agent-bin`, `bun`, `deno`, or a custom runner). Document it in QA knowledge.
-2. Continue reading the rest of `agents/shared/workflows/project.ts` to assess correctness of workflow loop and file I/O safety.
+## Issues / Risks
+1) **Environment gap:** missing project root with `package.json`/`node_modules` prevents mandated TypeScript + Vitest verification.
+2) **Noise changes:** multiple `workspace/heartbeat-context.md` and `last-session.md` files are modified; these can create churn if committed unintentionally.
