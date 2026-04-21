@@ -21,3 +21,7 @@ The deliverable `.state/findings.md` is complete with:
 
 Completed milestones: **Research mechanisms for agent direction-following**, **Measure mechanism effectiveness**, **Produce findings deliverable**.
 
+### Iteration 13 — 2026-04-21T15:21:58.386Z
+**Worker**: 
+
+The reviewer has marked this task as DONE. Let me verify the deliverable exists and is complete.

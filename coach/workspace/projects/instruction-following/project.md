@@ -8,7 +8,7 @@
 **Priority**: P0 — most important coach project
 **Metric**: `coach.instruction-compliance` (target ≥ 0.8)
 
-**Iteration**: 12
+**Iteration**: 13
 **Health**: 6/10 (RESTARTED iter 10 — EXP-189/190 designed, lab fork ready, awaiting live gym trials)
 ## Goal
 
@@ -277,7 +277,7 @@ table as they land.
 ## Deep Dive: Instruction-Compliance at 38% (2026-04-18)
 
 ### Current State
-Iteration 12. Milestones: 0/0 done.
+Iteration 13. Milestones: 0/0 done.
 ## Comments
 - [2026-04-21 hao] Review status — 4/6 milestones done. Is this still relevant? The reviewer-effectiveness project (bob, P0) may cover the same ground from a different angle (reviewer guides worker to follow instructions). Consider closing if superseded.
 ### Iteration 7 (comment) — 2026-04-20T19:16:47.694Z
