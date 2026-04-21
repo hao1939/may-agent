@@ -1,37 +1,26 @@
-# QA Heartbeat — Unreviewed Findings (2026-04-21)
+# Unreviewed findings (heartbeat)
 
-## Summary
-Repository review is possible in `/app/agents` (git repo), but standard QA “mandatory steps” (read changed file + `./node_modules/.bin/tsc --noEmit` + `./node_modules/.bin/vitest --run`) are **not executable in this environment** as written. This heartbeat therefore records blockers and a minimal change review of the latest commit.
+Date: 2026-04-21
 
-## What I checked (evidence)
-- `git` at `/app` fails (not a repo). `git` at `/app/agents` works.
-- Latest commit in `/app/agents`: `17d9fda56` (only file: `coach/workspace/projects/instruction-following/project.md`).
-- Working tree has local modifications to various `*/workspace/heartbeat-context.md` files and deletions under `tech-lead/workspace/projects/auto-resume/`.
+## Context
+- Repo root is `/app/agents` (git repo). `/app` is not a git repo.
+- Recent changes are predominantly documentation and workflow edits across multiple agent workspaces.
 
-## Changed file reviewed
-- `agents/coach/workspace/projects/instruction-following/project.md`
-  - This is a project-management document (not product/runtime code). It contains extensive experiment history and next steps.
-  - No obvious data-loss or malformed markdown issues seen; content is long but coherent.
+## Mandatory QA checks attempted
+- `./node_modules/.bin/tsc --noEmit` (from `/app/agents`) **FAILED**: `No such file or directory`.
+- `./node_modules/.bin/vitest --run` (from `/app/agents`) **FAILED**: `No such file or directory`.
 
-## Mandatory QA gates (blocked)
-### 1) Read at least one changed file: DONE
-- Read: `agents/coach/workspace/projects/instruction-following/project.md`
+These failures appear **environmental/pre-existing**: the repo does not include a standard Node toolchain layout (`package.json` not found anywhere under `/app`/`/app/agents`, and `agents/node_modules` contains only `.vite/`).
 
-### 2) `./node_modules/.bin/tsc --noEmit`: BLOCKED
-- In `/app` there is no `.git` and also no `./node_modules/.bin/tsc` present.
-- The mandated invocation path appears incompatible with this repo layout.
+## File read (evidence)
+- Read `agents/shared/workflows/project.ts` (lines 1-220). Observations:
+  - Adds/maintains parsing logic for legacy `.md` single-file project format vs new directory format (`project.md` + `journal.md`).
+  - Uses regex-based field parsing and helpers for extracting/updating sections.
 
-### 3) `./node_modules/.bin/vitest --run`: BLOCKED
-- No `./node_modules/.bin/vitest` present.
+## Potential concerns to review (not yet fully verified)
+- `agents/shared/workflows/project.ts` is a large file; only first 220 lines were read. The remaining logic (iteration loop, state updates, file writes) was not reviewed in this heartbeat.
+- Multiple agent `workspace/heartbeat-context.md` and project journals are modified; these are likely operational state changes but should be sanity-checked for accidental content loss.
 
-## Issues
-### IMPORTANT — QA environment/tooling mismatch
-The QA process requires running `./node_modules/.bin/tsc` and `./node_modules/.bin/vitest`, but the repository available in this environment (`/app/agents`) is not a typical Node package with those binaries.
-
-Consequence: future heartbeats cannot independently verify TS/type or test health unless the tooling requirement is updated or the environment is fixed.
-
-### MINOR — Workspace files tracked by git status
-Current `git status` shows many modified/deleted workspace files. These likely should not be committed as part of unrelated changes. Consider resetting or adding to `.gitignore` if appropriate.
-
-## Verdict
-**CONDITIONAL** — Latest commit is documentation-only and appears fine, but I cannot execute the mandated `tsc`/`vitest` gates due to missing binaries and ambiguous repo root.
+## Next steps
+1. Determine correct way to run typecheck/tests in this repo (may use `may-agent-bin`, `bun`, `deno`, or a custom runner). Document it in QA knowledge.
+2. Continue reading the rest of `agents/shared/workflows/project.ts` to assess correctness of workflow loop and file I/O safety.
