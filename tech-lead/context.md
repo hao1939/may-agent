@@ -3,7 +3,8 @@
 - npx is not available in this environment — use ./node_modules/.bin/<tool> or bun x <tool>
 - sudo is not available
 - sqlite3 CLI and node:sqlite are NOT available — see **Database Access** section below
-- Build check: npm run check (runs tsc --noEmit) — run after every code change
+- There is NO src/ directory or package.json in /app root. The runtime is pre-compiled. Your codebase is agents/ — workflows, handlers, skills, heartbeats, context files
+- Build check: cd agents && npx tsc --noEmit — run after every code change to agents/ TypeScript files
 - agents/ is a separate git repo (gitignored from main) — commit agent changes from agents/ dir
 - When delegating to coder: add explicit file scope boundaries ("ONLY modify X, do NOT touch Y")
 - Coder has SPEC_NONCOMPLIANCE pattern — always include verification step in delegated tasks

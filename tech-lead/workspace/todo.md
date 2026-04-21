@@ -1,20 +1,14 @@
 # TODO
 
 ## Upcoming
-- [ ] Build health: package.json missing from /app root — confirmed still missing (Apr 20 x4, Apr 21, Apr 22, Apr 22 late, Apr 22 night, Apr 21 01:10, Apr 21 07:10). Environment issue, not code bug. **P0 escalation (6d10d37c)**. Also src/ dir missing entirely.
-- [ ] P1: Codebase weight 33,126 lines vs 32,000 target. ~1,800 lines in .lab/ experiment scripts are dead weight candidates. Also 623 lines in bob/workspace/exp101-hvr-analysis.ts.
-- [ ] P1: Add pre-flight ANTHROPIC_API_KEY check to gym scripts (11732f46) — Bob burned 114 ops without key
+- [ ] P1: Codebase weight — audit agents/ for dead code. Check .lab/ experiment scripts, stale workspace files
+- [ ] P1: Zombie session auto-cleanup — active-nudge now handles this (May committed), verify it works
 - [ ] P1: Layer 2 monitoring / degradation detection per CR#343 (653a307d)
+- [ ] P1: Agent infrastructure simplification — are there redundant workflows, handlers, or skills?
 - [ ] P2: DD#759 heartbeat paper review (7eb31e94) — external validation of our architecture
-- [ ] Zombie sessions: 4 orphaned running/0-op sessions (coach×2, bob×1, optimizer×1) from pre-heartbeat. Need cleanup mechanism or auto-timeout.
-- [x] Fix persistent-task false stuck detection (5b8febbf) — content change tracking, not just milestones. Committed e4afc049a.
 - [ ] Review CR#341 citation gap synthesis (1a710ad1) — 31 uncited scout findings
-- [x] "Stuck requests" metric threshold inversion (1542398d) — **RESOLVED**: metric now has alert_direction="above", threshold=20, and regression alerts fire/resolve correctly. Current=0 (healthy).
-- [x] P1: Coach reported 2 persistent-task workflow bugs (e6ac494a): API mismatch (project field) + project file overwrite. **VERIFIED (Apr 19)**: Code review of persistent-task.ts shows parseInput() correctly handles `project:` field. `createProjectDir()` only runs when `!existsSync(config.projectPath)` — no overwrite bug. Coach likely passed wrong input format. Documentation is adequate.
-- [ ] Delegation quality gap (FM-3.3, 8 occurrences) — 0.79 vs 0.85 target. Audit recent delegations.
-- [ ] Review Context-Discovery Chain finding (80eaf11a) — Hao says agents need investigation narratives, not bare metrics.
-- [ ] P1: Pre-flight ANTHROPIC_API_KEY check for gym scripts (11732f46) — needs source access to gym runner
-- [ ] P1: Layer 2 monitoring (degradation detection) per CR#343 (653a307d)
+- [ ] Delegation quality gap (FM-3.3, 8 occurrences) — 0.79 vs 0.85 target. Audit recent delegations
+- [ ] Review Context-Discovery Chain finding (80eaf11a) — Hao says agents need investigation narratives, not bare metrics
 - [x] Bob tool hints in context.md (be6b5632, 2693be51) — already present in bob/context.md
 - [x] Monitor C1.3 improvement after write() diff enhancement deployment — **DONE (2026-04-08)**
   - **Result: 94.1% pass rate post-write-diff (n=557), up from 47.3% baseline (n=1743)**
@@ -52,16 +46,12 @@
 - [x] Phase 5d: Deprecate memory fallback — DONE (s_1775527469736_184, commit 34263ca)
 - [ ] ~~Update design doc INDEX.md to mark session-digest.md as fully implemented~~ ✅ Done
 
-## Deferred (P3) — Blocked on Source Access
-- [ ] ~~SIGNALS.md removal~~ — deferred for transition period
-- [ ] ~~graph_nav / CodeCompass tool~~ — deferred per Bob
-- [ ] ~~MAST Failure Codes~~ — deferred
-- [ ] ~~Coach growth-cycle reliability~~ — needs source access to manager.ts
-- [ ] ~~meta.json cost tracking~~ — needs source access (PersistedSession)
-- [ ] ~~Gym Evolution Dual-Score Architecture~~ — needs source access (gym runner)
-- [ ] ~~Fix gym/oneshot agent registration~~ — needs source access (may.ts)
-- [ ] ~~Gym Convention Compliance Testing~~ — needs source access (gym-runner.ts)
-- [ ] ~~Evaluator→lessons dead path fix~~ — needs source access (evaluator.ts)
+## Deferred (P3) — Runtime Changes (require Hao)
+- [ ] Coach growth-cycle reliability — needs runtime changes to manager.ts
+- [ ] meta.json cost tracking — needs runtime changes (PersistedSession)
+- [ ] Gym Evolution Dual-Score Architecture — needs runtime changes (gym runner)
+- [ ] Fix gym/oneshot agent registration — needs runtime changes (may.ts)
+- [ ] Evaluator→lessons dead path fix — needs runtime changes (evaluator.ts)
 
 ---
 *17 completed/historical sections moved to [todo-archive.md](./todo-archive.md)*
