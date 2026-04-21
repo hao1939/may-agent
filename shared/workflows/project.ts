@@ -607,6 +607,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           `Complete. ${finalMsDone.done}/${finalMsDone.total} milestones. ${decision.detail.slice(0, 100)}`);
         writeFileSync(config.projectPath, projectContent, "utf-8");
         ctx.emit({ type: "metric", name: "project.false-done", value: falseDoneCount });
+        emitProjectEvent(ctx, config, "project.status-changed", { from: "active", to: "done" });
         emitProjectEvent(ctx, config, "project.completed", { iteration, health: score });
         return ctx.done(`Complete after comment at iteration ${iteration}: ${decision.detail}`);
       }
@@ -626,6 +627,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         projectContent = updateField(projectContent, "Health", `${score}/10 (BLOCKED)`);
         projectContent = updateSection(projectContent, "Current State", `Blocked: ${decision.detail.slice(0, 150)}`);
         writeFileSync(config.projectPath, projectContent, "utf-8");
+        emitProjectEvent(ctx, config, "project.status-changed", { from: "active", to: "blocked" });
         emitProjectEvent(ctx, config, "project.blocked", { iteration, health: score, reason: decision.detail.slice(0, 100) });
         return ctx.escalate(`Blocked by comment at iteration ${iteration}: ${decision.detail}`);
       }
@@ -690,11 +692,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     writeFileSync(config.projectPath, projectContent, "utf-8");
 
     // Emit iteration event
-    ctx.emit({ type: "emit", event: "project.iteration", data: {
-      projectId: `${config.owner}/${config.projectDir.split("/").pop()}`,
-      owner: config.owner, iteration,
-      milestonesDone: msAfterWorker.done, milestonesTotal: msAfterWorker.total,
-    }});
+    emitProjectEvent(ctx, config, "project.iteration", {
+      iteration, milestonesDone: msAfterWorker.done, milestonesTotal: msAfterWorker.total,
+    });
 
     // ── Reviewer phase ───────────────────────────────────────────
     if (iteration % config.reviewEvery === 0) {
@@ -804,6 +804,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           `- **Iter ${iteration}**: ${decision.detail.slice(0, 100)}\n`);
         writeFileSync(config.projectPath, projectContent, "utf-8");
         ctx.emit({ type: "metric", name: "project.false-done", value: falseDoneCount });
+        emitProjectEvent(ctx, config, "project.status-changed", { from: "active", to: "done" });
         emitProjectEvent(ctx, config, "project.completed", { iteration, health: score });
         return ctx.done(`Complete after ${iteration} iterations: ${decision.detail}`);
       }
@@ -829,6 +830,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         projectContent = updateSection(projectContent, "Current State",
           `Blocked: ${decision.detail.slice(0, 150)}`);
         writeFileSync(config.projectPath, projectContent, "utf-8");
+        emitProjectEvent(ctx, config, "project.status-changed", { from: "active", to: "blocked" });
         emitProjectEvent(ctx, config, "project.blocked", { iteration, health: score, reason: decision.detail.slice(0, 100) });
         return ctx.escalate(`Blocked at iteration ${iteration}: ${decision.detail}`);
       }
@@ -850,6 +852,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         projectContent = updateField(projectContent, "Status", "blocked");
         projectContent = updateSection(projectContent, "Current State",
           `Blocked: ${continueWithoutProgress} consecutive iterations without milestone progress. Approach needs rethinking.`);
+        emitProjectEvent(ctx, config, "project.status-changed", { from: "active", to: "blocked", reason: "stall" });
         writeFileSync(config.projectPath, projectContent, "utf-8");
         return ctx.escalate(`Stuck: ${continueWithoutProgress} iterations without progress at iteration ${iteration}.`);
       }
@@ -867,6 +870,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   projectContent = updateSection(projectContent, "Current State",
     `Paused: reached ${config.maxIterations} iteration cap.`);
   writeFileSync(config.projectPath, projectContent, "utf-8");
+  emitProjectEvent(ctx, config, "project.status-changed", { from: "active", to: "paused", reason: "max iterations" });
 
   return ctx.done(`Paused after ${config.maxIterations} iterations (cap). Resume by re-running.`);
 }
