@@ -49,7 +49,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     // Diagnose each project
     const actions: Array<{ project: ProjectInfo; action: HealthAction }> = [];
     for (const project of projects) {
-      actions.push({ project, action: diagnoseProject(project, healthState, breachedMetrics, runningAgents, inflight, now) });
+      actions.push({ project, action: diagnoseProject(project, healthState, breachedMetrics, runningAgents, inflight, now, projects) });
     }
 
     // Log non-trivial actions

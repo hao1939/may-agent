@@ -28,6 +28,19 @@ export interface ProjectInfo {
   milestonesTotal: number;
   metrics: string[];
   lastUpdatedAgo: number; // ms since last modification
+  pauseConditions: PauseCondition[]; // extracted resume conditions
+}
+
+export interface PauseCondition {
+  type: "time-elapsed" | "metric-breach" | "dependency" | "evidence-needed" | "unknown";
+  raw: string;           // original text
+  evaluable: boolean;    // can we auto-check this?
+  /** For time-elapsed: ms that must pass since pause */
+  waitMs?: number;
+  /** For dependency: project path or name */
+  dependsOn?: string;
+  /** For metric-breach: metric id */
+  metricId?: string;
 }
 
 export type HealthAction =
@@ -63,6 +76,68 @@ const OWNER_RE = /^\*\*Owner\*\*:\s*(\S+)/mi;
 const STATUS_RE = /^\*\*Status\*\*:\s*(.+)$/mi;
 const HEALTH_RE = /^\*\*Health\*\*:\s*(.+)$/mi;
 const ITERATION_RE = /^\*\*Iteration\*\*:\s*(\d+)/mi;
+
+// ── Pause condition parsing ────────────────────────────────────────────
+
+const TIME_PATTERNS = [
+  { re: /after\s+(\d+)\s*-?\s*\d*\s*days?/i, unit: 24 * 60 * 60 * 1000 },
+  { re: /(\d+)\s*h(?:ours?)?/i, unit: 60 * 60 * 1000 },
+  { re: /wait\s+(\d+)\s*-?\s*\d*\s*days?/i, unit: 24 * 60 * 60 * 1000 },
+];
+
+export function parsePauseConditions(content: string): PauseCondition[] {
+  const conditions: PauseCondition[] = [];
+
+  // Look for "Resume condition:" patterns in Comments and Current State
+  const resumeConditionRe = /[Rr]esume\s+condition[:\s]+(.+?)(?:\n(?=[A-Z\-\[])|$)/gs;
+  const fullText = extractSection(content, "Comments") + "\n" + extractSection(content, "Current State");
+
+  for (const match of fullText.matchAll(resumeConditionRe)) {
+    const raw = match[1].trim();
+    const parsed = classifyCondition(raw);
+    conditions.push(parsed);
+  }
+
+  // Also check for "Paused. Resume condition:" inline
+  const pausedResumeRe = /[Pp]aused\.?\s+[Rr]esume\s+condition[:\s]+(.+?)(?:\n(?=[A-Z\-\[])|$)/gs;
+  for (const match of content.matchAll(pausedResumeRe)) {
+    const raw = match[1].trim();
+    if (!conditions.some(c => c.raw === raw)) {
+      conditions.push(classifyCondition(raw));
+    }
+  }
+
+  return conditions;
+}
+
+export function classifyCondition(raw: string): PauseCondition {
+  // Time-based: "after 2-3 days", "wait 24h"
+  for (const { re, unit } of TIME_PATTERNS) {
+    const m = raw.match(re);
+    if (m) {
+      return { type: "time-elapsed", raw, evaluable: true, waitMs: parseInt(m[1], 10) * unit };
+    }
+  }
+
+  // Metric breach: "observe a ... metric breach", "metric ... breached"
+  const metricMatch = raw.match(/metric[_\s]+(\S+)\s+breach/i) ?? raw.match(/observe\s+.*breach/i);
+  if (metricMatch) {
+    return { type: "metric-breach", raw, evaluable: true, metricId: metricMatch[1] ?? undefined };
+  }
+
+  // Dependency: "after X project completes", "when X is done"
+  const depMatch = raw.match(/(?:after|when)\s+(\S+)\s+(?:project\s+)?(?:completes?|is\s+done|finishes)/i);
+  if (depMatch) {
+    return { type: "dependency", raw, evaluable: true, dependsOn: depMatch[1] };
+  }
+
+  // Evidence-needed: "check ...", "verify ...", "measure ..."
+  if (/\b(?:check|verify|measure|observe|compare|query)\b/i.test(raw)) {
+    return { type: "evidence-needed", raw, evaluable: false };
+  }
+
+  return { type: "unknown", raw, evaluable: false };
+}
 
 // ── Helpers ────────────────────────────────────────────────────────────
 
@@ -206,6 +281,7 @@ export function scanAllProjects(agentsRoot: string): ProjectInfo[] {
             blockerReason, health, iteration,
             milestonesDone: ms.done, milestonesTotal: ms.total,
             metrics, lastUpdatedAgo: now - mtime,
+            pauseConditions: status === "paused" ? parsePauseConditions(content) : [],
           });
         } catch { /* skip unreadable */ }
       }
@@ -231,6 +307,7 @@ export function diagnoseProject(
   runningAgents: Set<string>,
   inflight: Set<string>,
   now: number,
+  allProjects?: ProjectInfo[],
 ): HealthAction {
   const pState = healthState.projects[project.relPath] ?? newProjectHealthEntry();
 
@@ -331,8 +408,9 @@ export function diagnoseProject(
     return { type: "skip", reason: "Blocked — no auto-resolution strategy available" };
   }
 
-  // PAUSED projects
+  // PAUSED projects — full health check with condition evaluation
   if (project.status === "paused") {
+    // Check 1: Explicit metric triggers (from project Metrics section)
     if (project.metrics.length > 0 && breachedMetrics.size > 0) {
       for (const metric of project.metrics) {
         if (breachedMetrics.has(metric)) {
@@ -341,13 +419,146 @@ export function diagnoseProject(
       }
     }
 
-    const comments = extractSection(project.content, "Comments");
-    if (comments) {
-      return { type: "launch-workflow", reason: "Paused project has pending comments" };
+    // Check 2: Evaluate parsed pause conditions
+    const conditions = project.pauseConditions;
+    if (conditions.length > 0) {
+      const evaluation = evaluatePauseConditions(conditions, project, breachedMetrics, allProjects ?? [], now);
+
+      if (evaluation.allMet) {
+        return {
+          type: "reactivate",
+          reason: `Resume conditions met: ${evaluation.metReasons.join("; ")}`,
+        };
+      }
+
+      if (evaluation.someEvaluable && evaluation.metReasons.length > 0 && evaluation.unevaluable.length > 0) {
+        // Some conditions met, some need agent evaluation — launch workflow to check
+        return {
+          type: "launch-workflow",
+          reason: `Partial resume conditions met (${evaluation.metReasons.join("; ")}). Agent should evaluate: ${evaluation.unevaluable.map(c => c.raw.slice(0, 80)).join("; ")}`,
+        };
+      }
+
+      if (evaluation.unevaluable.length > 0 && evaluation.unevaluable.every(c => c.type === "evidence-needed")) {
+        // All conditions need evidence gathering — launch the owner to check
+        // But only if enough time has passed (don't spam)
+        const CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000; // check every 4h
+        if (project.lastUpdatedAgo > CHECK_INTERVAL_MS) {
+          return {
+            type: "launch-workflow",
+            reason: `Paused project needs evidence check (${Math.round(project.lastUpdatedAgo / 3600000)}h since update). Conditions: ${conditions.map(c => c.raw.slice(0, 60)).join("; ")}`,
+          };
+        }
+      }
+
+      // Conditions exist but none met — skip with informative reason
+      return { type: "skip", reason: `Paused — conditions not yet met: ${evaluation.pendingReasons.join("; ").slice(0, 120)}` };
+    }
+
+    // Check 3: No explicit conditions — check for stale pause (>48h with no conditions = likely forgotten)
+    const STALE_PAUSE_MS = 48 * 60 * 60 * 1000;
+    if (project.lastUpdatedAgo > STALE_PAUSE_MS) {
+      if (pState.reactivationAttempts < 1) {
+        return {
+          type: "add-comment",
+          comment: `This project has been paused for ${Math.round(project.lastUpdatedAgo / 3600000)}h with no explicit resume conditions. Consider: (1) adding a concrete resume condition, (2) resuming if the pause reason no longer applies, (3) cancelling if no longer needed.`,
+          reason: `Stale pause (${Math.round(project.lastUpdatedAgo / 3600000)}h) — no resume conditions found`,
+        };
+      }
+      // Already commented once — escalate if very stale
+      const VERY_STALE_PAUSE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+      if (project.lastUpdatedAgo > VERY_STALE_PAUSE_MS && now - pState.lastEscalation > ESCALATION_COOLDOWN_MS) {
+        return { type: "escalate", reason: `Project paused ${Math.round(project.lastUpdatedAgo / 86400000)}d with no resume conditions — needs human decision` };
+      }
     }
 
     return { type: "skip", reason: "Paused — no reactivation trigger" };
   }
 
   return { type: "skip", reason: `Unknown status: ${project.status}` };
+}
+
+// ── Pause condition evaluation ─────────────────────────────────────────
+
+export interface PauseEvaluation {
+  allMet: boolean;
+  someEvaluable: boolean;
+  metReasons: string[];
+  pendingReasons: string[];
+  unevaluable: PauseCondition[];
+}
+
+export function evaluatePauseConditions(
+  conditions: PauseCondition[],
+  project: ProjectInfo,
+  breachedMetrics: Set<string>,
+  allProjects: ProjectInfo[],
+  now: number,
+): PauseEvaluation {
+  const metReasons: string[] = [];
+  const pendingReasons: string[] = [];
+  const unevaluable: PauseCondition[] = [];
+  let evaluableCount = 0;
+
+  for (const cond of conditions) {
+    if (!cond.evaluable) {
+      unevaluable.push(cond);
+      continue;
+    }
+    evaluableCount++;
+
+    switch (cond.type) {
+      case "time-elapsed": {
+        if (cond.waitMs && project.lastUpdatedAgo >= cond.waitMs) {
+          metReasons.push(`Time elapsed (${Math.round(project.lastUpdatedAgo / 3600000)}h >= ${Math.round(cond.waitMs / 3600000)}h)`);
+        } else {
+          const remaining = cond.waitMs ? cond.waitMs - project.lastUpdatedAgo : 0;
+          pendingReasons.push(`Wait ${Math.round(remaining / 3600000)}h more`);
+        }
+        break;
+      }
+      case "metric-breach": {
+        if (cond.metricId && breachedMetrics.has(cond.metricId)) {
+          metReasons.push(`Metric ${cond.metricId} breached`);
+        } else if (cond.metricId) {
+          pendingReasons.push(`Waiting for metric ${cond.metricId} breach`);
+        } else if (breachedMetrics.size > 0) {
+          // Generic "observe a metric breach" — any breach counts
+          metReasons.push(`Metric breach observed (${[...breachedMetrics].join(", ")})`);
+        } else {
+          pendingReasons.push("Waiting for any metric breach");
+        }
+        break;
+      }
+      case "dependency": {
+        const depName = cond.dependsOn?.toLowerCase() ?? "";
+        const depProject = allProjects.find(p =>
+          p.relPath.toLowerCase().includes(depName) ||
+          p.projectFile.toLowerCase().includes(depName)
+        );
+        if (depProject && depProject.status === "done") {
+          metReasons.push(`Dependency ${cond.dependsOn} completed`);
+        } else if (depProject) {
+          pendingReasons.push(`Dependency ${cond.dependsOn} is ${depProject.status}`);
+        } else {
+          pendingReasons.push(`Dependency ${cond.dependsOn} not found`);
+        }
+        break;
+      }
+      default:
+        unevaluable.push(cond);
+    }
+  }
+
+  const evaluableMet = metReasons.length;
+  const evaluableTotal = evaluableCount;
+  const allEvaluableMet = evaluableTotal > 0 && evaluableMet === evaluableTotal;
+
+  return {
+    allMet: allEvaluableMet && unevaluable.length === 0,
+    someEvaluable: evaluableCount > 0,
+    metReasons,
+    pendingReasons,
+    unevaluable,
+  };
 }
