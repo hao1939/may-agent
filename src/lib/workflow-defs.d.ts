@@ -64,6 +64,9 @@ interface WorkflowContext {
   /** Emit an event on the bus. All events — workflow, domain, system — go through one bus. */
   emit(event: { type: string; [key: string]: unknown }): void;
 
+  /** Dispatch an agent-level event to handlers subscribed via cron.json `on` field. */
+  dispatchEvent(eventType: string, data?: Record<string, unknown>): void;
+
   /** Open the shared SQLite database. */
   getDb(): unknown;
 

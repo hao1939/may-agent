@@ -436,6 +436,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
       // ── RuntimeCtx (shared infra) — spread pre-built or fallback ──
       ...(opts.runtimeCtx ?? {
         emit: (event: { type: string; [key: string]: unknown }) => { onEvent?.(event as WorkflowEvent); },
+        dispatchEvent: (_eventType: string, _data?: Record<string, unknown>) => {},
         getDb: () => { throw new Error("No runtimeCtx — getDb unavailable"); },
         log: (_msg: string) => {},
         notify: (_msg: string) => {},
@@ -447,6 +448,9 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
       emit: (event: { type: string; [key: string]: unknown }) => {
         opts.runtimeCtx?.emit(event);
         onEvent?.(event as WorkflowEvent);
+      },
+      dispatchEvent: (eventType: string, data?: Record<string, unknown>) => {
+        opts.runtimeCtx?.dispatchEvent(eventType, data);
       },
 
       runAgent: async (agentName: string, agentTask: string): Promise<TaskResult> => {
