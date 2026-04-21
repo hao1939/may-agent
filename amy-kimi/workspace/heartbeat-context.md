@@ -13,12 +13,11 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-21T09:10)
+# Your Context (auto-generated 2026-04-21T09:40)
 
-**System:** 19 sessions/6h, 0% error rate
+**System:** 20 sessions/6h, 0% error rate
 
 **Top spenders:**
-- bob: 11s, 1200KB
+- bob: 13s, 1253KB
 - may: 4s, 163KB
 - tech-lead: 3s, 33KB
-- coach: 1s, 9KB

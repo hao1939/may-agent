@@ -1,11 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776760019390_268
+- **Session:** s_1776763619402_284
 - **Status:** done
-- **When:** 2026-04-21T08:27:44.365Z
-- **Duration:** 44s
+- **When:** 2026-04-21T09:27:52.722Z
+- **Duration:** 53s
 
 ## What Happened
-WHAT_HAPPENED: Bob read EXP-188 results and the “code vs data” guide, then located the existing finish-guard implementations in both agents/shared/guards/finish-guard.ts and agents/src/lib/finish-guard.ts plus the guard registry. He inspected those files to understand what is currently enforced (persistent-task usage vs. finish() deliverable existence) and ran greps to find where the finish-guard is wired into the runtime/manager code, finding no matches in the searched locations.
-OUTCOME: in_pr
+WHAT_HAPPENED: Bob read EXP-188’s confirmed results (+100pp) and then located the existing finish-guard implementation files and the persistent-task workflow entrypoint. He inspected `agents/src/lib/finish-guard.ts`, `agents/shared/guards/finish-guard.ts`, and `agents/shared/workflows/persistent-task.ts` to understand current enforcement and where to integrate production shipping changes.
+OUTCOME: in_progress
+STILL_OPEN: Implement/promote EXP-188 finish-guard enforcement into the production pers
