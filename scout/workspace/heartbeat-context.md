@@ -13,21 +13,18 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-21T11:10)
+# Your Context (auto-generated 2026-04-21T12:10)
 
-**System:** 20 sessions/6h, 0% error rate
+**System:** 19 sessions/6h, 0% error rate
 
 **Top spenders:**
-- bob: 12s, 1168KB
-- may: 4s, 157KB
+- bob: 10s, 945KB
+- may: 5s, 256KB
 - coach: 2s, 38KB
 - tech-lead: 2s, 21KB
-
-**Your active error patterns:**
-- FM-3.3: 1x
 
 **📊 Your Metrics:**
 - Findings cited downstream (ratio, higher is better): **0.56** ratio → 0.5 ratio
 - CRs produced (7d, higher is better): **11** count/7d → 5 count/7d
   → Quick check: agents/scout/scripts/measure-hypotheses-generated.sh
-- Heartbeat coverage (sessions/24h, higher is better): **60** sessions/24h → 24 sessions/24h
+- Heartbeat coverage (sessions/24h, higher is better): **62** sessions/24h → 24 sessions/24h

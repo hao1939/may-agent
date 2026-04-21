@@ -12,11 +12,21 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const alerts = loadAlerts(ctx, agent);
   const guidance = loadHeartbeatMd(ctx, agent);
 
+  // Detect if there are below-target metrics for G-pattern injection
+  const hasRedMetrics = metrics.includes("⚠️ BELOW TARGET");
+  const gPatternBlock = hasRedMetrics ? `
+## ⚡ FIRST — evaluate your red metrics before anything else
+
+**Question**: Which metric above is furthest from its target? Follow the "→ Quick check" breadcrumb for that metric NOW — run the command or query. Then decide: is this urgent enough to act on this heartbeat, or can it wait?
+
+---
+` : "";
+
   const prompt = `You are **amy-kimi** waking up for your heartbeat.
 
 ## Your Metrics
 ${metrics || "No metrics data available."}
-
+${gPatternBlock}
 ## Active Alerts
 ${alerts || "None — all clear."}
 
@@ -41,13 +51,21 @@ function loadMetrics(ctx: WorkflowContext, agent: string): string {
   try {
     const db = ctx.getDb() as any;
     const rows = db.prepare(
-      "SELECT id, current, target, threshold, alert_direction FROM metrics WHERE owner = ? AND status = 'active'"
+      "SELECT id, current, target, threshold, alert_direction, source_query, source_command FROM metrics WHERE owner = ? AND status = 'active'"
     ).all(agent) as any[];
     if (!rows.length) return "";
     return rows.map((r: any) => {
       const breached = r.threshold != null && r.current != null &&
         (r.alert_direction === "above" ? r.current > r.threshold : r.current < r.threshold);
-      return `📊 ${r.id}: ${r.current ?? "?"} (target ${r.target ?? "?"}) ${breached ? "⚠️ BELOW TARGET" : "✅"}`;
+      let line = `📊 ${r.id}: ${r.current ?? "?"} (target ${r.target ?? "?"}) ${breached ? "⚠️ BELOW TARGET" : "✅"}`;
+      // Add actionable breadcrumb for below-target metrics
+      if (breached) {
+        if (r.source_command) line += `
+  → Quick check: bash ${r.source_command}`;
+        else if (r.source_query) line += `
+  → Quick check: run SQL — ${r.source_query.substring(0, 120)}`;
+      }
+      return line;
     }).join("\n");
   } catch { return ""; }
 }
