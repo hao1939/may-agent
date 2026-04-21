@@ -123,3 +123,4 @@
 
 ---
 *4 completed/historical sections moved to [todo-archive.md](./todo-archive.md)*
+- **✅ Verification collapse literature search DONE**: Tuesday April 21 evening. Searched arXiv for "verification collapse", "error cascade" + agents, "failure cascade" + LLM, "error propagation" + multi-agent. No direct matches for EXP-099's "verification gravity well" concept. Found 2603.03233 (Bayesian adversarial framework addressing error propagation) but it's code-gen focused, not about attractor states in verification. **Conclusion**: EXP-099's verification gravity well finding appears genuinely novel — no existing literature directly addresses error cascade attractors in LLM agent verification. This strengthens the case for publishing/formalizing it.
