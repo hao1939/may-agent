@@ -15,3 +15,10 @@ See individual files in this directory. Key entries relevant to H-107:
 - DD#791 — HORIZON long-horizon failure diagnosis
 - DD#806 — Gamma Quintet weakest-link reasoning
 - DD#807 — KWBench unprompted problem recognition
+
+## Cluster: Error Diagnosis & Cascade Prevention (April 21, 2026)
+- DD#812 — ErrorProbe: Self-improving error diagnosis in MAS (backward tracing + verified episodic memory)
+- DD#813 — Diversity Collapse: structural coupling causes behavioral homogenization in multi-agent systems
+- DD#814 — AgentProp-Bench: tool-agent evaluation benchmark
+- DD#815 — Agentic Frameworks Empirical Comparison (systematic evaluation of agent framework architectures)
+- DD#816 — Conjunctive Prompt Attacks in Multi-Agent Systems (adversarial coordination exploits)
