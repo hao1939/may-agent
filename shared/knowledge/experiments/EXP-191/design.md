@@ -1,7 +1,7 @@
 # EXP-191: Evaluator Anonymization → Quality-Preservation Improvement
 
 **Hypothesis**: H-178 — Stripping agent identity from artifacts before evaluator review improves quality-preservation scores by ≥5pp.
-**Status**: designed
+**Status**: implementing
 **Created**: 2026-04-27
 **Cost estimate**: ~$5 (50 sessions × ~$0.10)
 
