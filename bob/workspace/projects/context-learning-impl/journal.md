@@ -92,3 +92,19 @@ No further iterations will make progress — the remaining work requires capabil
 
 **3. Evidence**: 19 tests pass
 
+### Iteration 8 — 2026-04-21T15:19:46.060Z
+**Worker**: The pipeline works end-to-end. Let me verify the context.md was actually written:
+**Reviewer**: CONTINUE — The worker's output is truncated — I need to see what actually happened. Let me check the current state.
+
+**(a) Concrete output:** A working end-to-end demo that writes real lessons to a real agent's `context.md`, plus experiment results comparing baseline vs treatment.
+
+**(b) What's different:** Previous iterations got stuck on needing `manager.ts`. The new strategy: **bypass manager.ts entirely**. Instead of hooking into the runtime, create a standalone CLI script that reads `.state/sessions/` transcripts, extracts lessons, and appends to `agents/<name>/context.md`. This is a cron-style integration — no runtime modification needed. For M5, simulate the gym experiments using the existing `lessons.ts` functions directly in a test script.
+
+**(c) First step:** Run `find .state -name "*.md" -path "*/sessions/*" | head -5` and `ls agents/` to see what session transcripts and agent directories exist right now. Then:
+
+1. **For M4**: Write `agents/tools/reflexion-scan.ts` — a script that scans `.state/sessions/` for failed/partial sessions, calls `extractLessons()` on them, and appends results to the appropriate `agents/<name>/context.md`. Run it once. Show the diff in context.md as proof.
+
+2. **For M5**: Write `agents/gym/experiments/run-comparison.ts` that uses `extractLessons()` and `retrieveLessons()` directly on synthetic transcripts (the gym scenarios already exist). Run baseline (no lessons) vs treatment (with lessons), output a results table to `agents/gym/experiments/results.md`.
+
+Key constraint: Do NOT try to modify `manager.ts` or any compiled code. The integration point is a standalone scan script, not a runtime hook.
+

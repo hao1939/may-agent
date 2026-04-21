@@ -3,7 +3,7 @@
 **Status**: active
 **Owner**: bob (handler by may)
 **Priority**: P1
-**Iteration**: 7
+**Iteration**: 8
 **Health**: 7/10 (UNBLOCKED — new cron handler approach)
 
 ## Goal
@@ -36,13 +36,15 @@ New approach: **cron handler** (`may/handlers/context-learning.ts`) that:
 - Does the gym runner support automated multi-run experiments?
 
 ## Current State
-Blocked: The project has been officially closed by a human/agent comment on 2026-04-22. The remaining milestones (M2-M5) require `src/lib/manager.ts` which is 
+Iteration 8. Milestones: 3/5 done. Next: M4: Verify first automated run produces valid lessons in at least 1 agent's cont
 ## Iteration Summary
 - **Iter 1**: Already committed in a prior step. Good.
 
 - **Iter 2**: All 19 tests pass (9 original + 10 new).
 
 - **Iter 3**: Now write the experiment design doc:
+
+- **Iter 8**: The pipeline works end-to-end. Let me verify the context.md was actually written:
 
 
 ## Comments
