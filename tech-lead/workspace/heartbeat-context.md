@@ -9,18 +9,18 @@ No active nudge.
 
 ---
 
-# Your Context (auto-generated 2026-04-21T15:10)
+# Your Context (auto-generated 2026-04-21T16:10)
 
 **System:** 8 sessions/6h, 0% error rate
 
 **Top spenders:**
-- coach: 3s, 108KB
 - bob: 4s, 50KB
 - may: 1s, 46KB
+- coach: 3s, 42KB
 
 **📊 Your Metrics:**
-- Codebase weight: **35100** lines → 32000 lines
+- Codebase weight: **35554** lines → 32000 lines
 - Delegation quality: **0.79** ratio → 0.85 ratio
-- Meaningful changes: **8070** commits/week → 10 commits/week
+- Meaningful changes: **8095** commits/week → 10 commits/week
   → Quick check: cd agents && git log --since="7 days ago" --oneline 2>/dev/null | wc -l | tr -d " "
 - Build health: **1** bool → 1 bool
