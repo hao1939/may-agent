@@ -5635,6 +5635,7 @@ Findings:
 - Mandatory QA gates (required): `cd agents && ./node_modules/.bin/tsc --noEmit` failed (exit 127, missing binary). `cd agents && ./node_modules/.bin/vitest --run` failed (exit 127, missing binary). Environment prevents compilation/test verification this heartbeat.
 
 2026-04-21 heartbeat (QA):
-- Proactive scan (repo: `/app/agents`): reviewed latest commit `19418ff63` (files: `shared/knowledge/experiments/EXP-191/design.md`, `tech-lead/last-session.md`). Read `EXP-191/design.md` (offset 1). No code execution changes; doc proposes evaluator transcript anonymization experiment.
-- Mandatory QA gates (required): `cd /app && ./node_modules/.bin/tsc --noEmit` failed (exit 127, missing). `cd /app && ./node_modules/.bin/vitest --run` failed (exit 127, missing). Re-tried within `/app/agents` and same failure; `agents/node_modules` contains only `.vite/` (no `.bin`). Environment/toolchain incomplete; compilation/tests cannot be verified.
+- Proactive scan (repo: `/app/agents`): reviewed commit `d100c565d` ("heartbeat: use top-level imports instead of require()") and read `qa/workflows/qa-heartbeat.ts`. Change appears safe: replaces dynamic require with top-level ESM imports for fs/path.
+- IMPORTANT: `loadProjects()` has stray blank lines and unused import `existsSync` is used; OK. But status regex `^\*\*Status\*\*:\s*(\S+)` will ignore multi-word statuses (if any); likely fine but worth noting.
+- Mandatory QA gates (required): `./node_modules/.bin/tsc --noEmit` failed (exit 127, missing). `./node_modules/.bin/vitest --run` failed (exit 127, missing). Confirmed `agents/node_modules` exists but contains only `.vite/` (no `.bin`), and repo has no `package.json`/`tsconfig.json` to run these scripts directly. Environment/toolchain incomplete; compilation/tests cannot be verified.
 
