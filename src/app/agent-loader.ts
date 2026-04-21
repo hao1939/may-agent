@@ -669,7 +669,7 @@ export async function reloadAgents(
 
 // ── Agent handler auto-discovery ──────────────────────────────────────────
 
-import type { HandlerContext, HandlerModule } from "../lib/handler-context.js";
+import type { HandlerContext, HandlerModule, TriggerEvent } from "../lib/handler-context.js";
 import type { CronEntry } from "../lib/cron-tool.js";
 import { trackRequest } from "../lib/requests.js";
 import { loadAllSessionMetas } from "../lib/persistence.js";
@@ -760,13 +760,13 @@ export async function loadAgentHandlers(
           const _modulePath = modulePath; // capture for closure
           const _ctx = ctx; // capture for closure
           const _entry = { ...entry }; // snapshot
-          const hotHandler = async () => {
+          const hotHandler = async (event?: TriggerEvent) => {
             const freshMod: HandlerModule = await import(`${_modulePath}?t=${Date.now()}`);
             if (typeof freshMod.create !== "function") {
               throw new Error(`Handler ${_modulePath} no longer exports create()`);
             }
             const fn = freshMod.create(_ctx, _entry);
-            return fn();
+            return fn(event);
           };
           cron.registerHandler(entry.name, hotHandler);
           registered.push(`${agentName}:${entry.name}`);
@@ -821,13 +821,13 @@ export async function loadAgentHandlers(
 
         const _modulePath = modulePath;
         const _entry = { ...entry };
-        const hotHandler = async () => {
+        const hotHandler = async (event?: TriggerEvent) => {
           const freshMod: HandlerModule = await import(`${_modulePath}?t=${Date.now()}`);
           if (typeof freshMod.create !== "function") {
             throw new Error(`Handler ${_modulePath} no longer exports create()`);
           }
           const fn = freshMod.create(_ctx, _entry);
-          return fn();
+          return fn(event);
         };
 
         _cron.registerHandler(entryName, hotHandler);

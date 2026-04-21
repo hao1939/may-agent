@@ -63,6 +63,18 @@ export interface RuntimeCtx {
   agentsRoot: string;
 }
 
+/**
+ * TriggerEvent — passed to handlers on every invocation.
+ * Timer ticks, bus events, and manual triggers are all events.
+ */
+export interface TriggerEvent {
+  type: string;                           // "timer.tick" | "metric.breach" | etc.
+  source: "timer" | "event" | "manual";   // how it was triggered
+  entry: string;                          // cron entry name
+  data?: Record<string, unknown>;         // event payload (for bus events)
+  timestamp: number;
+}
+
 export interface HandlerContext extends RuntimeCtx {
   /** SubagentManager — for run(), followUp(), etc. */
   manager: SubagentManager;
@@ -95,5 +107,5 @@ export interface HandlerContext extends RuntimeCtx {
  * Returns the async function that runs on each cron fire.
  */
 export interface HandlerModule {
-  create: (ctx: HandlerContext, entry: CronEntry) => () => Promise<void>;
+  create: (ctx: HandlerContext, entry: CronEntry) => (event?: TriggerEvent) => Promise<void>;
 }

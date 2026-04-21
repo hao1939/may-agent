@@ -37,12 +37,13 @@ import {
   type AutoPauseStateInfo,
 } from "../lib/auto-pause.js";
 import type { CronEntry } from "../lib/cron-tool.js";
+import type { TriggerEvent } from "../lib/handler-context.js";
 import { buildProjectInjection } from "../lib/project-scanner.js";
 
 // ── Types ─────────────────────────────────────────────────────────────
 
 /** A JS function that replaces the LLM for a specific cron job. */
-type CronHandler = () => Promise<void>;
+type CronHandler = (event?: TriggerEvent) => Promise<void>;
 
 /** Callback when a job fires (for notifications). */
 type CronJobCallback = (entry: CronEntry, type: "js" | "heartbeat" | "detached") => void;
@@ -217,7 +218,11 @@ export class Cron {
       const last = this.lastEventTrigger.get(entryName) || 0;
       if (Date.now() - last < 5000) continue;
       this.lastEventTrigger.set(entryName, Date.now());
-      if (this.triggerNow(entryName, { force: true })) triggered++;
+      const triggerEvent: TriggerEvent = {
+        type: eventType, source: "event", entry: entryName,
+        data, timestamp: Date.now(),
+      };
+      if (this.triggerNow(entryName, { force: true, triggerEvent })) triggered++;
     }
     return triggered;
   }
@@ -352,7 +357,7 @@ export class Cron {
 
   /** Trigger a cron entry immediately. Always fires (no overlap check).
    *  Returns false only if entry not found or debounced. */
-  triggerNow(entryName: string, opts?: { force?: boolean }): boolean {
+  triggerNow(entryName: string, opts?: { force?: boolean; triggerEvent?: TriggerEvent }): boolean {
     const entry = this.entries.find((e) => e.name === entryName);
     if (!entry) return false;
 
@@ -376,7 +381,7 @@ export class Cron {
         this.fireHeartbeat(entry);
         break;
       case "job-handler":
-        this.fireHandler(entry);
+        this.fireHandler(entry, opts?.triggerEvent ?? { type: "manual.trigger", source: "manual", entry: entry.name, timestamp: Date.now() });
         break;
       case "job-detached":
         this.fireDetachedJob(entry);
@@ -589,7 +594,7 @@ export class Cron {
           this.fireHeartbeat(entry);
           break;
         case "job-handler":
-          this.fireHandler(entry);
+          this.fireHandler(entry, { type: "timer.tick", source: "timer", entry: entry.name, timestamp: Date.now() });
           break;
         case "job-detached":
           this.fireDetachedJob(entry);
@@ -1014,7 +1019,7 @@ export class Cron {
 
   // ── Job with JS handler: run in-process ─────────────────────────────
 
-  private fireHandler(entry: CronEntry): void {
+  private fireHandler(entry: CronEntry, triggerEvent?: TriggerEvent): void {
     const handler = this.handlers.get(entry.name);
     if (!handler) {
       this.onError?.(`Cron job "${entry.name}" has no registered handler`);
@@ -1035,7 +1040,7 @@ export class Cron {
     updateRequest(this.persistDir, requestId, { status: "IN_PROGRESS" });
     const startMs = Date.now();
 
-    handler()
+    handler(triggerEvent)
       .then(() => {
         updateRequest(this.persistDir, requestId, {
           status: "COMPLETED",
