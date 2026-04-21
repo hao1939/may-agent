@@ -3004,3 +3004,17 @@ src/app/ui/web
 - Bob analysis: fresh (3h ago)
 - ⚠️ tsc --noEmit failed
 
+## 2026-04-21T02:40 — Auto (JS cron handler)
+
+- Sessions (24h): 1177
+- Unevaluated: 205 total, 174 actionable, 31 auto-skippable
+- Running sessions: may (s_1776611617990_13)
+- tsc: FAIL: 
+[41m                                                                               [0m
+[41m[37m                This is not the tsc command you are looking for                [0m
+[41m           
+- Lessons: 52 lines total (scout 31, optimizer 21)
+- Bob analysis: fresh (7h ago)
+- ⚠️ tsc --noEmit failed
+- ⚠️ 174 actionable unevaluated sessions — evaluation may be falling behind
+
