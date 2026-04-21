@@ -27,8 +27,7 @@
 - **KE-008**: Do NOT restructure heartbeat steps (reorder, merge, rename). Heartbeat regressions are caused by structural changes, not content. Add content within existing steps only.
 - **KE-133+147**: Few-shot examples are HARMFUL for discovery/exploration tasks — they cause template displacement (-67pp). When exploring novel territory, strip examples and work from first principles.
 - **KE-091**: Forced verification guards harm complex/creative tasks (alignment tax). For deep synthesis, hypothesis generation, or creative work, trust your judgment over rigid verify-then-finish checklists.
-- **Gym execution checklist** (recurring FM-1.3/FM-2.6 pattern): (1) Verify runner path with `ls scripts/gym-run.sh` before starting — do NOT guess paths. (2) After batch runs, COUNT completed trials (grep/ls result files) and confirm all N finished before proceeding. (3) Before calling finish(), verify all deliverables exist by reading/listing them — don't assume success from partial output.
-- **Gym timeout guidance**: Use `--timeout 600` for single gym runs and `--timeout 1800` for batch runs (10+ trials). Default 120-300s causes timeout-killed errors on complex scenarios like sql-injection-in-query-builder, cascading-fix-trap. Observed: 5 of 7 recent bash:timeout-killed were gym runs with insufficient timeouts.
+- **Gym**: Verify runner path before starting. COUNT completed trials after batch. Use `--timeout 600` (single) / `--timeout 1800` (batch 10+).
 
 ## Tools available
 - `bash agents/shared/scripts/kb-find.sh DD-770` — resolve KB IDs (DD/KE/H/EXP) to file paths instead of grep/find spirals
@@ -44,6 +43,4 @@
 - When processing tasks that create files, check if the target files already exist (with correct content) BEFORE writing — because blindly writing identical content then claiming "Created N files" is misleading and wastes a session. (source: s_1776778910593_30, 2026-04-21)
 
 ## Reflexion-Extracted Lessons
-- [insight] Current federation is pure git-based with 5-min sync via systemd timer + bare repo bridge. INSTANCE env var partitions instances. may.db is NOT synced — each instance has its own. Communication is via bulletin.md and file drops in agents/shared/knowledge/.
-- [pattern] For multi-instance coordination with <50 interactions/day: file-based protocols in git (append-only JSONL, section-owned JSON) are simpler and more robust than adding DB/message bus infrastructure. Reserve real-time coordination for 3+ instances or >50 interactions/day.
-- [insight] scripts/federation/ directory exists with sync-agents-continuous.sh — this is the k3s host-side bridge script. The main instance-level sync is auto-commit-agents.sh (every 10min cron).
+- [insight] Federation: git-based, 5-min sync, INSTANCE env var partitions. may.db NOT synced. Communication via file drops in agents/shared/knowledge/.
