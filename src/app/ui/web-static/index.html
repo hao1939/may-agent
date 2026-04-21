@@ -2338,7 +2338,7 @@ async function loadProjectTab(tab) {
   if (!el) return;
   try {
     if (tab === 'project') {
-      const res = await fetch(`/api/browse?path=${encodeURIComponent(_projectDetailPath + (_projectDetailPath.endsWith('.md') ? '' : '/project.md'))}`);
+      const res = await fetch(`/api/projects/content?path=${encodeURIComponent(_projectDetailPath)}`);
       const data = await res.json();
       el.style.whiteSpace = 'pre-wrap'; el.style.fontFamily = 'monospace'; el.style.fontSize = '13px';
       el.textContent = data.content || 'No content';

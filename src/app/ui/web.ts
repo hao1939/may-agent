@@ -727,6 +727,19 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     }
   }
 
+  function handleProjectContent(url: URL): Response {
+    const path = url.searchParams.get("path");
+    if (!path) return json({ error: "path required" }, 400);
+    if (!path.match(/^agents\/[^/]+\/workspace\/projects\//)) return json({ error: "Access denied" }, 403);
+    const filePath = path.endsWith(".md") ? join(PROJECT_ROOT, path) : join(PROJECT_ROOT, path, "project.md");
+    try {
+      const content = readFileSync(filePath, "utf-8");
+      return json({ content });
+    } catch {
+      return json({ content: "(No project file found)" });
+    }
+  }
+
   function handleProjectSessions(url: URL): Response {
     const path = url.searchParams.get("path");
     if (!path) return json({ error: "path required" }, 400);
@@ -864,6 +877,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (url.pathname === "/api/browse") return handleBrowse(url);
       if (url.pathname === "/api/metrics") return handleMetrics(url);
       if (url.pathname === "/api/projects") return handleProjects();
+      if (url.pathname === "/api/projects/content") return handleProjectContent(url);
       if (url.pathname === "/api/projects/journal") return handleProjectJournal(url);
       if (url.pathname === "/api/projects/sessions") return handleProjectSessions(url);
       if (url.pathname === "/api/events") return handleEvents(url);
