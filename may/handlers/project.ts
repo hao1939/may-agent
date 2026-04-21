@@ -168,6 +168,14 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       const runId = generateRunId();
 
       const workflowCtx = {
+        // Spread RuntimeCtx from HandlerContext (emit, getDb, log, notify, paths)
+        emit: (event: any) => { ctx.emit(event); ctx.log(`[project:${project.relPath}] ${event.type ?? event}`); },
+        getDb: () => ctx.getDb(),
+        log: (msg: string) => ctx.log(msg),
+        notify: (msg: string) => ctx.notify(msg),
+        persistDir: ctx.persistDir,
+        projectRoot: ctx.projectRoot,
+        agentsRoot: ctx.agentsRoot,
         task,
         agent: project.owner,
         runFunction: async (label: string, fn: () => Promise<string>) => {
@@ -192,10 +200,6 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
           return ctx.manager.callAgent(agentName, agentTask, { source: "workflow", workflowRunId: runId, projectId });
         },
         runWorkflow: async () => ({ type: "escalate" as const, reason: "Sub-workflows not supported" }),
-        emit: (event: any) => {
-          ctx.emit(event);
-          ctx.log(`[project:${project.relPath}] ${event.type ?? event}`);
-        },
         summarize: (result: any, _opts?: any) => {
           const text = result?.lastAssistantText ?? result?.summary ?? "";
           return text.length > 1500 ? text.slice(0, 1500) + "…" : text;
