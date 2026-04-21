@@ -1,14 +1,15 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** cron_1776757211788_259
+- **Session:** cron_1776759010830_266
 - **Status:** done
-- **When:** 2026-04-21T07:41:42.008Z
-- **Duration:** 1m30s
+- **When:** 2026-04-21T08:10:44.404Z
+- **Duration:** 33s
 
 ## What Happened
 ### Summary
-QA heartbeat could not perform a normal code review because the runtime is missing the expected Node/TS toolchain (`node_modules/.bin/tsc` and `node_modules/.bin/vitest` don’t exist). I did complete the mandatory “read at least one file” step by inspecting `agents/src/validator.js` and logged the environment blockers into `agents/qa/workspace/unreviewed-findings.md`.
+Heartbeat QA run against the **`/app/agents`** repo (since `/app` is not a git repo). The only detected modifications are auto-generated heartbeat artifacts (no product code changes). Mandatory typecheck/test gates could not be executed because `tsc` and `vitest` binaries are missing in `agents/node_modules/.bin`.
 
 ### Checks
-- `tsc --noEmit`: **FAIL** — `./node_modules/.bin/tsc: No such file or directory` (exit 127), also fails f
+- `tsc --noEmit`: **FAIL** — `/bin/bash: ./node_modules/.bin/tsc: No such file or directory` (exit 127)  
+  Evidence: `cd agents && ./node_modules/.bin/tsc --no

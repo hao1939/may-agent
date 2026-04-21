@@ -1,14 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** cron_1776757211743_256
+- **Session:** cron_1776759010791_263
 - **Status:** done
-- **When:** 2026-04-21T07:41:23.891Z
-- **Duration:** 1m11s
+- **When:** 2026-04-21T08:11:33.020Z
+- **Duration:** 1m22s
 
 ## What Happened
-Good data. `call` sessions have high workflow coverage (mostly 100% since they're dispatched by workflows). `job` sessions (heartbeats, crons) are lower — that's expected since heartbeats themselves aren't workflows but should dispatch work via workflows.
+System looks healthy. Workflow adoption for `call` kind is near 100% for all agents. For `job` kind (heartbeats/cron): bob 21%, coach 23%, optimizer 18%, scout 16%, qa 17%. These are expected since heartbeats themselves aren't workflows but they dispatch workflow-based work.
 
-System is healthy. No anomalies, no errors, reasonable ops. Workflow adoption looks solid for `call` sessions. The `job` sessions with partial wf coverage is expected (heartbeats + crons that dispatch workflow work).
-
-No actionable dispatch ne
+No anomalies, no pending requests, system healthy. This is a NO_DISPATCH heartbeat. Updating rotation tracker.
