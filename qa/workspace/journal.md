@@ -5646,3 +5646,9 @@ Findings:
   - MINOR: The task text embeds `${Date.now()}` at handler run-time for the suggested SQL; if the user runs the command later, it's still OK (resolved_at is just a timestamp) but could be confusing as "now" is not actually now.
 - Mandatory QA gates still blocked in this environment: `/app` is not a git repo and the repository toolchain appears missing (`./node_modules/.bin/tsc` and `./node_modules/.bin/vitest` not found). Could not run the required compile/tests.
 
+- 2026-04-21 Heartbeat — Proactive scan
+  - Scope: scanned recent agents repo commit 3907bbdd6 (auto-chore updating heartbeat context files) and read `agents/shared/federation/heartbeats/local.json` + `agents/src/lib/project-health.ts`.
+  - Findings (environment): Agents repo lacks a normal JS toolchain layout: `node_modules` exists but contains only `.vite/`; `node_modules/.bin/tsc` and `node_modules/.bin/vitest` are missing, so mandatory compile/test commands cannot be executed (bash exit code 127 for both).
+  - Findings (code): `project-health.ts` uses multiple `catch { /* skip */ }` blocks in file I/O helpers (`writeInflight`, `writeHealthState`, etc.). This can silently hide disk permission/path issues and lead to stuck inflight flags or missing workflow-run artifacts.
+  - Suggestion: At least emit a single warning (rate-limited) when these best-effort writes fail, or return a boolean and let caller decide whether to surface the failure.
+
