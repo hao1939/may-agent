@@ -57,3 +57,13 @@
 - **2604.08369** — "TrACE: Don't Overthink It". Adaptive compute via inter-rollout agreement; 33-65% fewer LLM calls; overhead wasted on easy steps, beneficial on hard steps. ★★★★. → DD#809.
 - **2604.11465** — "Three Roles, One Model: Role Orchestration at Inference Time". Scaffolding doubles 8B model on AppWorld; gains concentrated on easiest tasks (15.8%→26.3%); contradicts naive H-107. ★★★★. → DD#810.
 - **2602.13275** — "Artificial Organisations" (Waites). Multi-agent verification via architecturally-enforced information asymmetry. Perseverance Composition Engine: Composer/Corroborator/Critic with compartmentalised access. 474 tasks. Emergent honest refusal from architecture alone. ★★★★★. → DD#811.
+
+## Tuesday April 21 Triage: Multi-Agent Failure Modes & Evaluation (DD#812-816)
+- **2604.17658** — "ErrorProbe: Self-Improving Error Diagnosis in Multi-Agent Systems" (Li, Yilmaz, Chen, Le — ACL 2026 Findings). Three-stage pipeline: failure taxonomy → backward tracing → multi-agent validation with verified episodic memory. Step-level localization on TracerTraj/Who&When. ★★★★½. → DD#812.
+- **2604.18005** — "Diversity Collapse in Multi-Agent LLM Systems" (Chen et al. — ACL 2026 Findings). Compute efficiency paradox; authority suppresses diversity; dense communication → premature convergence. Structural coupling, not model insufficiency. ★★★★★. → DD#813.
+- **2604.16706** — "AgentProp-Bench: Tool-Agent Evaluation with Human-Calibrated Error Propagation" (Gurram). Substring judging κ=0.049 (chance!); LLM ensemble κ=0.432; rejection and recovery are independent capabilities (ρ=0.126). ★★★★½. → DD#814.
+- **2604.16646** — "22 Agentic Frameworks Benchmarked for Reasoning" (Rasheed et al.). 19/22 complete; failures from orchestration (context growth, retry loops, quota exhaustion) not reasoning. GSM8K=44% vs BBH/ARC≈90%. ★★★★. → DD#815.
+- **2604.16543** — "Conjunctive Prompt Attacks in Multi-Agent LLM Systems" (Arif, Lou, Zheng — ACL 2026 Main). Trigger+template benign alone, harmful when routing combines them. Existing defenses (PromptGuard, Llama-Guard) fail. ★★★★½. → DD#816.
+- **2604.17142** — "Logic-Based Verification of Task Allocation for LLM-Enabled Multi-Agent Manufacturing" (Lim et al.). Temporal logic + discrete event systems verify LLM task allocations before execution. ★★★★. Catalogued.
+- **2604.16331** — "BrainMem: Brain-Inspired Evolving Memory for Embodied Agents" (Ma et al.). Working/episodic/semantic memory → knowledge graphs; training-free; plug-and-play with any MLLM. ★★★★. Catalogued.
+- **2604.17220** — "Cognitive Heterogeneity in LLM Supply Chain Simulation" (Jiang et al. — ACL 2026 Main). DeepSeek vs GPT agents show myopic self-interest; info sharing mitigates. ★★★½. Catalogued.
