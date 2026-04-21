@@ -76,21 +76,14 @@ const C1_3_EXEMPT_PATTERNS = [
   /knowledge\/.*\.md$/,
   /reflections\/.*\.md$/,
   /bulletin\.md$/,
-  // Gym scenario scaffolding — creating test environments, not deliverables
-  /agents\/gym\/scenarios\//,
-  // Lab experiment files — exploratory, not production
-  /agents\/\.lab\//,
   // Shared registries — append-only catalogs, low-risk
   /LIBRARY\.md$/,
   /REGISTRY\.md$/,
-  // Workspace logs — append-only bookkeeping
   /graduation-log\.md$/,
-  // Temp files — not worth verifying
-  /^\/tmp\//,
-  // Deliverable checklists — planning/tracking files, read back when edited later
   /DELIVERABLES_CHECKLIST\.md$/,
-  // Workspace findings — investigation artifacts, new file creation (low-risk)
   /finding-.*\.md$/,
+  // Note: agents/gym/, agents/.lab/, /tmp/ are already in ALLOWED_WRITE_PREFIXES
+  // and handled by C3.2, not duplicated here.
 ];
 
 /** Lookback for regression detection (7 days in ms). */
@@ -213,33 +206,9 @@ export function runConventionChecks(opts: {
     errors: [],
   };
 
-  // Retroactive fix: correct finish-dependent check failures for interrupted/error
-  // sessions (race condition) and orphan sessions (no session record at all).
-  const FINISH_DEPENDENT = ['C1.4', 'C8.2', 'C1.5', 'C1.7'];
-  const placeholders = FINISH_DEPENDENT.map(() => '?').join(',');
-  const retroQueries: { sql: string; params: string[]; reason: string }[] = [
-    {
-      sql: `SELECT cc.rowid FROM convention_checks cc JOIN sessions s ON cc.session_id = s.sessionId
-            WHERE cc.passed = 0 AND cc.convention IN (${placeholders}) AND s.status IN ('interrupted', 'error')`,
-      params: FINISH_DEPENDENT,
-      reason: 'session was interrupted/errored',
-    },
-    {
-      sql: `SELECT cc.rowid FROM convention_checks cc LEFT JOIN sessions s ON cc.session_id = s.sessionId
-            WHERE cc.passed = 0 AND cc.convention IN (${placeholders}) AND s.sessionId IS NULL`,
-      params: FINISH_DEPENDENT,
-      reason: 'orphan session (no session record)',
-    },
-  ];
-  for (const { sql, params, reason } of retroQueries) {
-    const rows = db.prepare(sql).all(...params) as { rowid: number }[];
-    if (rows.length > 0) {
-      const stmt = db.prepare(`UPDATE convention_checks SET passed = 1, violations = ? WHERE rowid = ?`);
-      const violationJson = JSON.stringify([`retroactive: ${reason}`]);
-      for (const r of rows) stmt.run(violationJson, r.rowid);
-      log(`[convention-check] Retroactively corrected ${rows.length} false positives: ${reason}`);
-    }
-  }
+  // One-time retroactive fix: correct finish-dependent check failures for
+  // interrupted/error/orphan sessions. Gated so it only runs once.
+  applyRetroactiveFix(db, persistDir, log);
 
   // Find evaluated sessions not yet convention-checked
   const uncheckedSessions = findUncheckedSessions(persistDir, db);
