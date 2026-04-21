@@ -28,3 +28,5 @@ find . -path ./node_modules -prune -o -name "*.json" -print 2>/dev/null | grep -
 
 Then based on what's found, query any database with `sqlite3 <db> ".tables"` and write findings to `.state/coder_diagnosis.md`. If no gym database exists, check if there's an API or CLI tool (`which gym` or `grep -r "gym" package.json`).
 
+### Iteration 28 — 2026-04-21T15:22:12.049Z
+**Worker**: The files exist from prior iterations. M1 is done - I just need to frame this correctly.
