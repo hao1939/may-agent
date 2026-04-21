@@ -693,5 +693,15 @@
     "enabled": true,
     "handler": "periodic-maintenance",
     "description": "Combined handler running agents-auto-commit, audit-requests sequentially. JS handler, no LLM cost."
+  },
+  {
+    "name": "context-learning",
+    "type": "job",
+    "intervalMs": 7200000,
+    "message": "[cron:context-learning] Extract lessons from recent failed sessions and persist to agent context.md files.",
+    "enabled": true,
+    "handler": "context-learning",
+    "description": "Queries failed/low-quality sessions, dispatches bob to extract actionable lessons ('When X, do Y') and append to agent context.md. Replaces blocked M2/M3 of context-learning-impl project.",
+    "offsetMs": 1800000
   }
 ]

@@ -1,32 +1,28 @@
 # Project: Context Learning — Implementation Phase
 
-**Status**: blocked
-**Owner**: bob
+**Status**: active
+**Owner**: bob (handler by may)
 **Priority**: P1
-**Iteration**: 6
-**Health**: 4/10 (BLOCKED)
+**Iteration**: 7
+**Health**: 7/10 (UNBLOCKED — new cron handler approach)
 
 ## Goal
-Integrate the reflexion-based learning pipeline into the agent infrastructure so agents automatically learn from failed sessions. Design is complete — this is implementation.
+Integrate the reflexion-based learning pipeline into the agent infrastructure so agents automatically learn from failed sessions.
 
-## Background
-- Design phase complete: `agents/bob/workspace/projects/context-learning/`
-- Core pipeline implemented and tested: `extract-reflection.js` (17/17 tests passing)
-- Integration design doc: `integration-design.md`
-- Two gym scenarios ready: `reflexion-npx-recovery`, `reflexion-read-before-edit`
-- Key blocker from design phase: npx actually works in this environment (need to handle in scenario design)
-
-## Dependencies
-- Design docs: `agents/bob/workspace/projects/context-learning/integration-design.md`
-- Core module: `agents/bob/workspace/projects/context-learning/extract-reflection.js`
-- Gym scenarios: `agents/gym/scenarios/reflexion-npx-recovery/`, `reflexion-read-before-edit/`
+## Approach (revised 2026-04-22)
+Original plan needed `src/lib/manager.ts` runtime hooks (impossible — no src/).
+New approach: **cron handler** (`may/handlers/context-learning.ts`) that:
+1. Runs every 2h, queries DB for recent failed/low-quality sessions
+2. Dispatches bob to extract "When X, do Y" lessons using LLM
+3. Bob appends lessons to `agents/<name>/context.md` under "## Learned from experience"
+4. Auto-prunes to 15 lessons max per agent
 
 ## Milestones
-- [x] M1: Fix test suite (9/9 passing) and write integration wiring spec → `agents/src/lib/LESSONS-WIRING-SPEC.md`
-- [ ] M2: Wire `extractLessons()` into session completion handler (requires `src/lib/manager.ts` access)
-- [ ] M3: Wire `retrieveLessons()` into `buildSessionContext()` (requires `src/lib/manager.ts` access)
-- [ ] M4: Run reflexion gym experiments — baseline + treatment comparison
-- [ ] M5: Write results doc with quantitative comparison (phase2-results.md)
+- [x] M1: Core pipeline implemented and tested (17/17 tests) — `extract-reflection.js`
+- [x] M2: Cron handler built — `may/handlers/context-learning.ts` (replaces runtime hook)
+- [x] M3: Cron entry added — `may/cron.json` (every 2h, offset 30min)
+- [ ] M4: Verify first automated run produces valid lessons in at least 1 agent's context.md
+- [ ] M5: Run reflexion gym experiments — baseline + treatment comparison
 
 ## Key Decisions
 - Pipeline triggers on session failure/error only (not clean sessions)
