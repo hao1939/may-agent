@@ -1,31 +1,37 @@
-# Unreviewed findings (QA heartbeat)
+# QA Heartbeat — Unreviewed Findings (2026-04-21)
 
-Date: 2026-04-21
+## Summary
+Repository review is possible in `/app/agents` (git repo), but standard QA “mandatory steps” (read changed file + `./node_modules/.bin/tsc --noEmit` + `./node_modules/.bin/vitest --run`) are **not executable in this environment** as written. This heartbeat therefore records blockers and a minimal change review of the latest commit.
 
-## Scope
+## What I checked (evidence)
+- `git` at `/app` fails (not a repo). `git` at `/app/agents` works.
+- Latest commit in `/app/agents`: `17d9fda56` (only file: `coach/workspace/projects/instruction-following/project.md`).
+- Working tree has local modifications to various `*/workspace/heartbeat-context.md` files and deletions under `tech-lead/workspace/projects/auto-resume/`.
 
-Heartbeat review of most recent changes in the `agents/` repo.
+## Changed file reviewed
+- `agents/coach/workspace/projects/instruction-following/project.md`
+  - This is a project-management document (not product/runtime code). It contains extensive experiment history and next steps.
+  - No obvious data-loss or malformed markdown issues seen; content is long but coherent.
 
-## Checks
+## Mandatory QA gates (blocked)
+### 1) Read at least one changed file: DONE
+- Read: `agents/coach/workspace/projects/instruction-following/project.md`
 
-- `tsc --noEmit`: **FAIL** (cannot run) — `./node_modules/.bin/tsc: No such file or directory` when executed from `agents/`.
-- `vitest --run`: **FAIL** (cannot run) — `./node_modules/.bin/vitest: No such file or directory` when executed from `agents/`.
+### 2) `./node_modules/.bin/tsc --noEmit`: BLOCKED
+- In `/app` there is no `.git` and also no `./node_modules/.bin/tsc` present.
+- The mandated invocation path appears incompatible with this repo layout.
 
-These failures appear environment-related (dependencies not installed in this repo), not a code regression.
-
-## Recent change sampled
-
-Commit: `182a59568` — chore: heartbeat context refresh
-
-File reviewed:
-- `qa/workspace/heartbeat-context.md`
-
-Observed content: auto-generated “Active Nudge” + system usage stats (no executable logic).
+### 3) `./node_modules/.bin/vitest --run`: BLOCKED
+- No `./node_modules/.bin/vitest` present.
 
 ## Issues
+### IMPORTANT — QA environment/tooling mismatch
+The QA process requires running `./node_modules/.bin/tsc` and `./node_modules/.bin/vitest`, but the repository available in this environment (`/app/agents`) is not a typical Node package with those binaries.
 
-- **IMPORTANT (process/env):** QA mandatory checks cannot be executed in this environment due to missing `node_modules` in `agents/`. If this is expected, update QA SOP to run checks via the appropriate workspace (or ensure deps are installed in CI/runner).
+Consequence: future heartbeats cannot independently verify TS/type or test health unless the tooling requirement is updated or the environment is fixed.
+
+### MINOR — Workspace files tracked by git status
+Current `git status` shows many modified/deleted workspace files. These likely should not be committed as part of unrelated changes. Consider resetting or adding to `.gitignore` if appropriate.
 
 ## Verdict
-
-**CONDITIONAL** — change appears non-code (safe), but cannot independently verify with required `tsc`/`vitest` commands due to missing dependencies.
+**CONDITIONAL** — Latest commit is documentation-only and appears fine, but I cannot execute the mandated `tsc`/`vitest` gates due to missing binaries and ambiguous repo root.
