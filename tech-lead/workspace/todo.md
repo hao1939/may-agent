@@ -1,7 +1,8 @@
 # TODO
 
 ## Upcoming
-- [ ] P1: Codebase weight — audit agents/ for dead code. Check .lab/ experiment scripts, stale workspace files
+- [x] P1: Codebase weight — audit agents/ for dead code. **Workflow dead-weight audit done** (finding-dead-weight-lens-audit-agents-shared-wo.md). Found 571 removable lines (25% of workflows/). Next: delete persistent-task.ts alias, archive implement-and-review.ts.
+- [ ] P1: Delete persistent-task.ts alias + archive implement-and-review.ts (from workflow dead-weight audit)
 - [ ] P1: Zombie session auto-cleanup — active-nudge now handles this (May committed), verify it works
 - [ ] P1: Layer 2 monitoring / degradation detection per CR#343 (653a307d)
 - [ ] P1: Agent infrastructure simplification — are there redundant workflows, handlers, or skills?
