@@ -106,6 +106,14 @@ const EMIT_MODE = (() => {
   }
   return null;
 })();
+const RUN_WORKFLOW = (() => {
+  const idx = process.argv.indexOf("--run-workflow");
+  if (idx !== -1 && process.argv[idx + 1]) {
+    return { name: process.argv[idx + 1], input: process.argv[idx + 2] || "" };
+  }
+  return null;
+})();
+const DRY_RUN = process.argv.includes("--dry-run");
 const INITIAL_TASK = (() => {
   const idx = process.argv.indexOf("--task");
   if (idx !== -1 && process.argv[idx + 1]) return process.argv[idx + 1];
@@ -807,6 +815,78 @@ if (EMIT_MODE) {
   });
   // Don't fall through
   await new Promise(() => {}); // keep alive until socket closes
+}
+
+if (RUN_WORKFLOW) {
+  // ── Run workflow mode: load and execute a workflow directly ───────
+  const { readdirSync } = await import("node:fs");
+  const { join: pathJoin } = await import("node:path");
+  const { buildRuntimeCtx } = await import("../lib/runtime-ctx.js");
+
+  // Find the workflow file
+  let wfPath: string | null = null;
+  const searchDirs = [
+    ...readdirSync(AGENTS_ROOT, { withFileTypes: true })
+      .filter(d => d.isDirectory() && !d.name.startsWith("."))
+      .map(d => pathJoin(AGENTS_ROOT, d.name, "workflows")),
+    pathJoin(AGENTS_ROOT, "shared", "workflows"),
+  ];
+  for (const dir of searchDirs) {
+    try {
+      for (const f of readdirSync(dir)) {
+        if (!f.endsWith(".ts")) continue;
+        try {
+          const mod = await import(pathJoin(dir, f) + "?t=" + Date.now());
+          if (mod.name === RUN_WORKFLOW.name) { wfPath = pathJoin(dir, f); break; }
+        } catch { /* skip */ }
+      }
+    } catch { /* dir doesn't exist */ }
+    if (wfPath) break;
+  }
+
+  if (!wfPath) {
+    console.error(`Workflow "${RUN_WORKFLOW.name}" not found`);
+    process.exit(1);
+  }
+
+  console.log(`Loading workflow: ${wfPath}`);
+  const wfMod = await import(wfPath + "?t=" + Date.now());
+
+  const rtx = buildRuntimeCtx({ bus, persistDir: PERSIST_DIR, projectRoot: PROJECT_ROOT, agentsRoot: AGENTS_ROOT, agentName: "cli" });
+
+  // Extract agent from workflow name or input
+  const agentMatch = RUN_WORKFLOW.input?.match(/agent:\s*(\S+)/) || RUN_WORKFLOW.name.match(/^(\w+)-heartbeat$/);
+  const agent = agentMatch ? agentMatch[1] : "may";
+
+  const ctx = {
+    ...rtx,
+    task: RUN_WORKFLOW.input,
+    agent,
+    runAgent: DRY_RUN
+      ? async (agentName: string, prompt: string) => {
+          console.log(`\n${'='.repeat(60)}\nDRY RUN: ${agentName}\n${'='.repeat(60)}\n${prompt}\n${'='.repeat(60)}\n`);
+          return { sessionId: "dry-run", status: "done" as const, lastAssistantText: "(dry run)", messages: [] as any[], duration: "0s", outputDir: "", turnsUsed: 0 };
+        }
+      : async (agentName: string, prompt: string) => {
+          console.log(`Running agent: ${agentName} (${prompt.length} chars)...`);
+          return manager.callAgent(agentName, prompt, { source: "cli" });
+        },
+    runFunction: async (label: string, fn: () => Promise<string>) => {
+      const output = await fn();
+      return { sessionId: `fn_${label}`, status: "done" as const, lastAssistantText: output, messages: [] as any[], duration: "0s", outputDir: "", turnsUsed: 0 };
+    },
+    runWorkflow: async () => ({ type: "escalate" as const, reason: "Sub-workflows not supported in CLI mode" }),
+    summarize: (r: any) => r?.lastAssistantText?.slice(0, 500) ?? "",
+    done: (s: string) => ({ type: "done" as const, summary: s }),
+    escalate: (r: string, c?: unknown) => ({ type: "escalate" as const, reason: r, context: c }),
+  };
+
+  console.log(`Executing workflow: ${wfMod.name} (agent: ${agent}, dry-run: ${DRY_RUN})\n`);
+  const result = await wfMod.execute(ctx);
+  console.log(`\nResult: ${result.type}`);
+  if (result.type === "done") console.log(result.summary);
+  if (result.type === "escalate") console.log("Reason:", result.reason);
+  process.exit(0);
 }
 
 if (!CHAT_MODE && !INITIAL_TASK && !CRON_ENABLED && !ONESHOT_MODE) {
