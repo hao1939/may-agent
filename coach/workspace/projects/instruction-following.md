@@ -1,6 +1,6 @@
 # Project: Agent Instruction Following
 
-**Status**: blocked
+**Status**: closed
 **Owner**: coach
 **Reviewer**: may / Hao
 **Master**: may/system-evolution (gap-level concern)

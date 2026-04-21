@@ -3960,3 +3960,33 @@ Observations: All research threads closed. Strategic proposal (`proposal-graduat
 3. All text/skill/gate approaches exhausted (0% in last 5 experiments)
 
 **Assessment**: Same blocked state. Only viable path remains structural enforcement at tool/workflow layer.
+
+## 2026-04-21 — Heartbeat (38)
+
+**Status**: Blocked — no material change.
+
+**Metrics** (all below target):
+- Intervention hit rate: 47.3% vs 60% target
+- Skill effectiveness: 29.2% vs 60% target  
+- Instruction compliance: 53% vs 80% target
+- Breadcrumb action rate: 0.31 vs 0.80 target
+
+**Latest evals**: Mixed — last 5 show q=0.75/0/0/0.75/0. Pattern: blocked heartbeats score 0 (no progress possible).
+
+**Projects**:
+- `instruction-following`: Recommended CLOSE (iter 7, stuck). Hao commented (2026-04-21) that reviewer-effectiveness project (bob, P0) covers same ground.
+- `prove-the-loop`: BLOCKED at iter 24. Worker outputs are vacuous ("All tests pass"). No metric movement from 0.82 baseline.
+
+**Blockers** (unchanged):
+1. `gym-run.sh` MISSING — cannot run gym scenarios
+2. EXP-188 finish-guard exists but has zero imports in runtime (tech-lead dependency, 39+ days)
+3. All text/skill/gate approaches exhausted (0% across last 5 experiments)
+
+**Inbound notifications**: 12+ convention-regression alerts (30-67d old), scout citations, May signals. All stale/acknowledged.
+
+**Assessment**: Coach remains structurally blocked. The only viable path forward is:
+- (a) gym infrastructure restoration (gym-run.sh), OR
+- (b) tech-lead wiring EXP-188 finish-guard into runtime, OR  
+- (c) a new research direction that doesn't require gym (e.g., production observation analysis of existing eval data)
+
+**Action taken this heartbeat**: Close instruction-following project per Hao's suggestion.
