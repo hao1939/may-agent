@@ -13,11 +13,12 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-21T22:10)
+# Your Context (auto-generated 2026-04-21T22:40)
 
-**System:** 0 sessions/6h, 0% error rate
+**System:** 2 sessions/6h, 0% error rate
 
 **Top spenders:**
+- bob: 2s, 261KB
 
 **📊 Your Metrics:**
-- Review coverage: **322** → 0
+- Review coverage: **324** → 0

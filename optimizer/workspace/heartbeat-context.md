@@ -13,14 +13,15 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-21T22:10)
+# Your Context (auto-generated 2026-04-21T22:40)
 
-**System:** 0 sessions/6h, 0% error rate
+**System:** 2 sessions/6h, 0% error rate
 
 **Top spenders:**
+- bob: 2s, 261KB
 
 **📊 Your Metrics:**
-- Workflow coverage — % multi-step work using workflows: **94** % → 0.8 %
+- Workflow coverage — % multi-step work using workflows: **93.9** % → 0.8 %
   → Quick check: bun -e "import{Database}from'bun:sqlite';const db=new Database('.state/may.db',{readonly:true});console.log(JSON.stringify(db.prepare('SELECT ROUND(100.0 * SUM(CASE WHEN workflowRunId IS NOT NULL THEN 1 ELSE 0 END) / NULLIF(COUNT(*),0), 1) FROM sessions WHERE startedAt > (strftime("%%s","now")*1000 - 604800000) AND opCount > 3 AND kind != "chat"').all()))"
 - Quality preserved: **0.9843283582089553** ratio → 0.9 ratio
 - Tool adoption: heuristic evaluator (higher is better): **0.977800459300842** ratio → 0.7 ratio

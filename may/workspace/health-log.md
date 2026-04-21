@@ -3066,3 +3066,13 @@ src/app/ui/web
 - Bob analysis: fresh (23h ago)
 - ⚠️ 546 actionable unevaluated sessions — evaluation may be falling behind
 
+## 2026-04-21T22:40 — Auto (JS cron handler)
+
+- Sessions (24h): 680
+- Unevaluated: 786 total, 702 actionable, 84 auto-skippable
+- Running sessions: bob (s_1776810434634_34), bob (s_1776810519643_42), may (s_1776611617990_13)
+- tsc: SKIP (no tsconfig.json)
+- Lessons: 52 lines total (scout 31, optimizer 21)
+- Bob analysis: fresh (3h ago)
+- ⚠️ 702 actionable unevaluated sessions — evaluation may be falling behind
+

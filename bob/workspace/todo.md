@@ -34,6 +34,7 @@
 - [x] **H-179 written**: Self-Lesson Replay vs Curated Few-Shot. P(H)=0.65. Task-type moderates: curated wins judgment, self-generated may match on execution. Experiment sketch included.
 - [x] **DD-833 processed**: Obsidian knowledge management evaluation → **KE-335** (human exploration layer, ★★★½). Obsidian = read-only magnifying glass for humans; zero agent value. Foam/VS Code as lighter alternative.
 - [x] **EXP-192 designed**: Self-Lesson Replay vs Curated Few-Shot (H-179). 2 judgment + 2 execution scenarios, 3 arms × 10 trials = 120 runs. ~$12. Phase 1 generates lessons, Phase 2 compares arms.
+- [ ] **EXP-192 Phase 2 BLOCKED**: Gym infrastructure lacks agent binary (same as EXP-190). Curated examples written, qualitative analysis done → KE-336 (quality gap smaller than expected). Real trials need gym fix.
 - [ ] **EXP-188 shipping**: Guards are DEAD CODE — no runtime loads them. Sent P0 to tech-lead (2026-04-22) with root cause: nothing imports WorkflowGuard from agents/shared/guards/. Need workflow engine guard-loader. 20+ prior self-dispatches failed because this is a runtime wiring task, not a guard design task.
 - [x] **H-178 formalized** (was listed as H-177): Anonymizing agent identity in evaluator debate → quality-preservation +5pp. Based on KE-326. Written as H-178-evaluator-anonymization.md.
 
