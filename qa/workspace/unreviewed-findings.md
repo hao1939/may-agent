@@ -4,19 +4,10 @@
 This heartbeat reviewed the latest repo changes in `/app/agents` (an agents/docs repository).
 
 ## Latest commit checked
-- `b6cd2cbb8 chore(auto): 9 agents, 10 files: doc updates, workspace updates, update`
+- `df00f36ed` — `bob: update last-session.md`
 
-Files touched (per `git show --name-only b6cd2cbb8`):
-- `amy-kimi/workspace/heartbeat-context.md`
+Files touched (per `git show --name-only df00f36ed`):
 - `bob/last-session.md`
-- `coach/last-session.md`
-- `coach/workspace/heartbeat-context.md`
-- `evaluator/workspace/heartbeat-context.md`
-- `may/last-session.md`
-- `optimizer/last-session.md`
-- `scout/last-session.md`
-- `shared/federation/heartbeats/local.json`
-- `tech-lead/last-session.md`
 
 ## Evidence read
 - `agents/qa/workspace/heartbeat-context.md` (contains an old “Active Nudge” section + an auto-generated context block)
