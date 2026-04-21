@@ -273,14 +273,28 @@ function resolveRecoveredAlerts(db: SqliteDb, now: number): void {
         ? alert.current <= alert.threshold  // Was above, now at or below
         : alert.current >= alert.threshold; // Was below, now at or above
     } else if (alert.current != null) {
-      // Regression alert: resolve if current is back within 7d average range
-      // (simplified: just check if current is no longer below threshold)
-      const avg7d = db.prepare(
-        "SELECT avg(value) as avg_val FROM metric_snapshots WHERE metric_id = ? AND measured_at > ?",
-      ).get(alert.metric_id, now - MS_7D) as { avg_val: number | null } | null;
-      if (avg7d?.avg_val != null && avg7d.avg_val > 0) {
-        const changeRatio = (avg7d.avg_val - alert.current) / avg7d.avg_val;
-        resolved = changeRatio <= DEFAULT_SENSITIVITY;
+      // Regression alert: resolve if current is back within acceptable range.
+      // First check: if the metric has a threshold, don't resolve while still breaching it.
+      if (alert.threshold != null) {
+        const alertAbove = alert.alert_direction === 'above';
+        const stillBreaching = alertAbove
+          ? alert.current > alert.threshold
+          : alert.current < alert.threshold;
+        if (stillBreaching) {
+          // Still below/above threshold — do NOT resolve even if close to 7d average
+          resolved = false;
+        } else {
+          resolved = true; // Back within threshold
+        }
+      } else {
+        // No threshold — use 7d average regression check
+        const avg7d = db.prepare(
+          "SELECT avg(value) as avg_val FROM metric_snapshots WHERE metric_id = ? AND measured_at > ?",
+        ).get(alert.metric_id, now - MS_7D) as { avg_val: number | null } | null;
+        if (avg7d?.avg_val != null && avg7d.avg_val > 0) {
+          const changeRatio = (avg7d.avg_val - alert.current) / avg7d.avg_val;
+          resolved = changeRatio <= DEFAULT_SENSITIVITY;
+        }
       }
     }
 

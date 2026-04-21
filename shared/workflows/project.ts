@@ -597,7 +597,13 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           const overrideNote = `**Auto-check**: Evaluator PASSED (score=${score}) but only ${finalMsDone.done}/${finalMsDone.total} milestones checked. ` +
             `Overriding to CONTINUE. (false-done #${falseDoneCount})\n\n`;
           if (!config.isLegacy) appendFileSync(config.journalPath, overrideNote);
-          continueWithoutProgress++;
+          // Check milestone progress before incrementing stall counter
+          if (finalMsDone.done > lastMilestoneDone) {
+            lastMilestoneDone = finalMsDone.done;
+            continueWithoutProgress = 0;
+          } else {
+            continueWithoutProgress++;
+          }
           iteration++;
           continue;
         }
@@ -791,7 +797,13 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           } else {
             appendFileSync(config.journalPath, overrideNote);
           }
-          continueWithoutProgress++;
+          // Check milestone progress before incrementing stall counter
+          if (finalMsForState.done > lastMilestoneDone) {
+            lastMilestoneDone = finalMsForState.done;
+            continueWithoutProgress = 0;
+          } else {
+            continueWithoutProgress++;
+          }
           iteration++;
           continue;
         }
