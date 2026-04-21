@@ -13,12 +13,12 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-21T23:10)
+# Your Context (auto-generated 2026-04-21T23:40)
 
 **System:** 0 sessions/6h, 0% error rate
 
 **Top spenders:**
 
 **📊 Your Metrics:**
-- Hypotheses resolved: **0.68** ratio → 0.65 ratio
-- Session success rate (7d, higher is better): **0.942381562099872** ratio → 0.9 ratio
+- Hypotheses resolved: **0.6711** ratio → 0.65 ratio
+- Session success rate (7d, higher is better): **0.9426751592356688** ratio → 0.9 ratio
