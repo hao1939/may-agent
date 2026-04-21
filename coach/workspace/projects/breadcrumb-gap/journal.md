@@ -45,3 +45,21 @@ Manual inspection confirms the agent DID react to stuck-requests (wrote triage n
 
 ### Decision
 Proceed to M4 based on KE-215 evidence (100% vs 10%). Gym validation deferred to M3b after infra fix.
+
+## 2026-06-27 — M4 analysis: G-pattern is deployed, gap is agent-specific
+
+### Measurement update
+v3 script: 14 measurable sessions, 6 acted (42.9%). Down from 50% (8 sessions) on 06-20.
+
+### Root cause analysis of non-acting sessions (8/14)
+Investigated all 8 non-acting sessions:
+- **6/8 are `may`** — doing "read-only monitoring heartbeats" despite having `may.alert-to-reaction-time` BELOW TARGET. May sees the G-pattern question AND the breadcrumb but consistently ignores it.
+- **2/8 are `coach`** — sessions that were interrupted or doing unrelated work.
+
+### Key insight
+The G-pattern question-framing IS deployed to all agents (all heartbeat.ts files have it). The remaining gap is NOT a design issue — it's a **may-specific compliance issue**. May's heartbeat.md likely has competing priorities that override the G-pattern question.
+
+### Next steps
+1. Investigate may's heartbeat.md — does it have strong step-1 instructions that override the G-pattern?
+2. Consider may-specific intervention: strengthen the alert-to-reaction guidance
+3. The breadcrumb-gap project goal (>50% action rate) requires fixing may's compliance specifically
