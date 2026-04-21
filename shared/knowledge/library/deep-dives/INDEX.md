@@ -45,6 +45,10 @@
 | [dd230](dd230-epistemic-gain-aleatoric-cost-mad.md) | Epistemic Gain, Aleatoric Cost in Multi-Agent Debate | Uncertainty decomposition reveals when debate helps vs. hurts |
 | [dd473](dd473-memetic-drift-qsg-scaling-laws.md) | Memetic Drift Scaling Laws for LLM Populations | When collective intelligence becomes a lottery |
 | [dd489](dd489-free-information-disrupts-bayesian-crowds.md) | Free Information Disrupts Bayesian Crowds ★★★★★ | Information capacity × homophily determines convergence; unconstrained info sharing harms groups |
+| [dd825](dd825-agent-disagreement-structure-signal.md) | When AI Agents Disagree Like Humans ★★★★ | Disagreement *structure* (not magnitude) predicts when human judgment is needed; four-category taxonomy |
+| [dd826](dd826-deliberative-collective-intelligence-typed-epistemic-acts.md) | From Debate to Deliberation: DCI ★★★★★ | 14 typed epistemic acts + convergent flow; +0.95 on non-routine tasks; 98% minority reports; 62x cost |
+| [dd827](dd827-value-of-variance-debate-collapse-mitigation.md) | Value of Variance: Debate Collapse Mitigation ★★★★ | Three-level uncertainty hierarchy detects debate collapse before it manifests; uncertainty-driven policy optimization |
+| [dd828](dd828-sycophancy-shapes-multi-agent-debate.md) | Sycophancy Shapes Multi-Agent Debate ★★★★ | Inter-agent sycophancy collapses debate below single-agent baseline; debater-driven vs. judge-driven failure modes |
 
 ### Self-Evolving & Self-Improving Systems
 | File | Title | Key Finding |
