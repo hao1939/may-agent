@@ -66,6 +66,11 @@ const actionPatterns = [
   /metric.*improv/i,
   /diagnos.*metric/i,           // diagnosed metric issue
   /root.caus/i,                 // root cause analysis
+  /dispatch/i,                  // dispatched work (may pattern)
+  /fork/i,                      // forked investigation
+  /nudge/i,                     // nudged metric owner
+  /freestyle-wrap/i,            // used dispatch workflow
+  /runAgent/i,                  // delegated to agent
 ];
 
 for (const row of measurable) {
