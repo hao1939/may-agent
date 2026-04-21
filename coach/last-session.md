@@ -1,24 +1,20 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776784877216_22
+- **Session:** s_1776784866866_21
 - **Status:** done
-- **When:** 2026-04-21T15:21:29.666Z
-- **Duration:** 12s
+- **When:** 2026-04-21T15:21:43.257Z
+- **Duration:** 36s
 
 ## What Happened
+The file exists and is comprehensive with 10 mechanisms, evidence, and measurements.
 
+DONE
 
-CONTINUE
+The deliverable `.state/findings.md` is complete with:
+1. **10 specific mechanisms** that make agents reliably follow directions
+2. **Concrete codebase evidence** for each (file paths, function names)
+3. **Effectiveness scoring** (1-5 stars) with tiered summary
+4. **Key insight** about the reliability pattern
 
-**(a) Concrete output:** `.state/coder_diagnosis.md` with concrete findings from gym data.
-
-**(b) What's different:** Previous guidance gave the same instructions twice. This time I'm providing the exact commands to run sequentially — no exploration needed.
-
-**(c) First step:** Run this exact sequence:
-```bash
-# 1. Find all databases
-find /home -name "*.db" -o -name "*.sqlite" 2>/dev/null | head -20
-# 2. Check .state contents
-ls -laR .state/ 2>/dev/null | head -50
-# 3. Check if there
+Completed milestones: **Research mechanisms for agent direction-following**, **Measure mechanism

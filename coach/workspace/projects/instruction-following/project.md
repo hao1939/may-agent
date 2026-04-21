@@ -390,3 +390,5 @@ Findings and deliverables:
 ## Iteration Summary
 - **Iter 11**: Now I have a clear picture. The research exists across multiple files but hasn't been synthesized in
 
+- **Iter 12**: Now I have enough evidence. Let me create the findings file.
+
