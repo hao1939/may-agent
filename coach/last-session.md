@@ -1,10 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** cron_1776729640826_114
+- **Session:** cron_1776730208030_116
 - **Status:** done
-- **When:** 2026-04-21T00:02:13.283Z
-- **Duration:** 1m32s
+- **When:** 2026-04-21T00:11:31.158Z
+- **Duration:** 1m22s
 
 ## What Happened
-Now I have the data. One new human input since the last reflection (ts: 1776713457801), plus I need to do follow-up tracking. Let me write the reflection.
+Key finding: gym runner exists at `agents/test/gym/run-gym.sh` and `agents/src/gym/runner.ts` — coach has been blocked for 35+ heartbeats thinking `scripts/gym-run.sh` is missing, but the scripts are at different paths.
+
+Let me update the activity log and unblock:
