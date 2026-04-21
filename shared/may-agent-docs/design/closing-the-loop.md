@@ -2,7 +2,7 @@
 
 **Status:** Draft
 **Date:** 2026-04-21
-**References:** [core-principles.md](core-principles.md), [archive/open-problems.md](archive/open-problems.md), [archive/ownership-driven-system.md](archive/ownership-driven-system.md)
+**References:** [core-principles.md](core-principles.md), [project-system.md](project-system.md), [runtime-ctx.md](runtime-ctx.md)
 
 ---
 
@@ -143,7 +143,7 @@ The only action item: ensure events carry `data.owner` when emitted. Everything 
 
 Start simple: emit + persist. Add immediate handling when there's evidence the delay matters.
 
-**Tradeoff:** Today `autoForkForAlert()` reacts instantly. This change means breach response moves to heartbeat cadence (~30min). If that's too slow for critical metrics, add a `metric-alert` handler with `"on": ["metric.breach"]` — but prove the need first.
+**Tradeoff:** Today `autoForkForAlert()` reacts instantly. This change means breach response moves to heartbeat cadence (~30min). Evidence from metric-reactivity project shows agents DON'T react to heartbeat alerts — auto-fork was the mechanism that actually worked. **Keep auto-fork for now.** Decouple later only when event-based handler with `on: ["metric.breach"]` is proven to respond fast enough.
 
 ### G6: Session Continuity Unsolved (violates P4)
 
@@ -161,40 +161,23 @@ Start simple: emit + persist. Add immediate handling when there's evidence the d
 
 **Status:** Partially solved by `active-nudge` (5min scan for loops/stalls/ghosts). Monitor coverage before building more.
 
-### G10: project-resume WorkflowContext is Minimal
+### G10: Project Sessions Not Tracked by Project ID
 
-No workflow run records saved, child sessions lack `workflowRunId`. Tracking gap, not functional.
+No `projectId` on sessions. Can't query "all sessions for project X."
+
+**Fix:** Add `projectId` column to sessions table. Flow through callAgent. See [project-system.md](project-system.md).
 
 ### G11: Evaluator Runs as Project Owner
 
 Self-evaluation bias risk. Monitor false-done rates before adding independent evaluator agent.
 
-## Implementation Sequence
+### G12: No Shared Runtime Context (violates P1, P9) ✅ FIXED
 
-### Phase 1: Events + Ownership
-- **G4** — Ensure events carry `data.owner` when emitted (convention)
-- **G2** — On handler failure, notify `entry.agent` (or may) via bus (~10 LOC)
-- **G1** — Events table + DB writer subscriber — all events persisted (~15 LOC)
-
-### Phase 2: Decouple Metrics
-- **G5** — `metrics-snapshot` emits `metric.breach` instead of calling `autoForkForAlert()`
-- Monitor whether heartbeat-cadence response is fast enough
-
-### Phase 3: Polish
-- **G3** — Add escalation hint to guard block messages (~5 LOC)
-- **G8** — Remove false preferred-workflows reference from common-sense.md
-
-### G12: No Shared Runtime Context (violates P1, P9)
-
-**Current:** Three separate contexts (HandlerContext, WorkflowContext, agent tools) with overlapping but inconsistent infra access. Workflows can't emit domain events, query metrics, or access the DB.
-
-**Fix:** Extract a `RuntimeCtx` interface — the shared infra surface. HandlerContext extends it, WorkflowContext gains it, agent tools can opt in. ~30 LOC.
-
-**Full design:** [runtime-ctx.md](runtime-ctx.md)
+Three separate contexts with inconsistent infra access. Fixed: `RuntimeCtx` interface + `buildRuntimeCtx()`. HandlerContext and WorkflowContext share the same RuntimeCtx. See [runtime-ctx.md](runtime-ctx.md).
 
 ### G13: Reviewer Quality
 
-The reviewer in persistent-task is the weakest link. Tracked by reviewer-effectiveness project (bob, P0). A bad reviewer wastes all the infrastructure above.
+The reviewer in persistent-task is the weakest link. Tracked by reviewer-effectiveness project (bob, P0).
 
 ## Implementation Sequence
 
@@ -215,6 +198,40 @@ The reviewer in persistent-task is the weakest link. Tracked by reviewer-effecti
 ### Phase 4: Polish
 - **G3** — Add escalation hint to guard block messages (~5 LOC)
 - **G8** — Remove false preferred-workflows reference from common-sense.md ✅ DONE
+
+### Phase 5: Cleanup & Hardening
+
+#### G3: Guard Escalation Hint (~5 LOC)
+
+**Current:** Guard block messages (cross-edit, write-shrink, completeness) say "BLOCKED" but give no hint that the agent can escalate.
+
+**Fix:** Add one line to the shared guard block message template: `"Can't resolve? Escalate to May via agents.send()."`
+
+Affected guards (all in `src/lib/tools/`):
+- `cross-edit-guard.ts` — 4 block messages (philosophy, evaluator, own agent.json, other agent identity)
+- `write.ts` — shrink-block message
+- `completeness-guard.ts` — finish-blocked message
+
+Not affected (these are informational, not ownership blocks):
+- `read-dedup-guard.ts`, `scrape-dedup-guard.ts` — dedup hints, not authority blocks
+- `path-hallucination-guard.ts` — factual correction, not escalatable
+- `session-read-guard.ts` — technical limitation, not escalatable
+
+#### G14: `trackRequest` Deprecation
+
+**Current:** `trackRequest` on HandlerContext is marked `@deprecated` but still in the interface, still used by cron.ts and several callers. It predates the event-based routing.
+
+**Fix:** Not urgent — it still works. Track for removal when all callers migrate to event-based request handling. Remove from HandlerContext interface once zero callers remain.
+
+#### G15: `onEvent` Redundancy in workflow-tool.ts
+
+**Current:** `onEvent` callback fires for workflow lifecycle events (step_start, step_done, workflow_start, workflow_done, workflow_escalate). With RuntimeCtx, all events already go through the bus via `emit()`. `onEvent` is a parallel path used only by `db-writer.ts` to persist workflow steps.
+
+**Fix:** Migrate db-writer to subscribe to lifecycle events on the bus (same pattern as other event persistence). Then remove `onEvent` from WorkflowToolOptions. Low priority — functionally correct as-is, just architecturally redundant.
+
+#### G16: Project-Resume After System Restart ✅ FIXED
+
+**Fix:** Handler resets `lastCheck` to 0 on startup. First scan picks up everything. Active projects always picked up regardless of mtime.
 
 ### Not Prioritized
 - **G6** (CLI emit) — nice-to-have
