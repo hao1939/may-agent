@@ -13,12 +13,12 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-21T21:10)
+# Your Context (auto-generated 2026-04-21T21:40)
 
 **System:** 1 sessions/6h, 0% error rate
 
 **Top spenders:**
-- coach: 1s, 4KB
+- coach: 1s, 220KB
 
 **📊 Your Metrics:**
 - Workflow coverage — % multi-step work using workflows: **94** % → 0.8 %
