@@ -22,3 +22,8 @@ See individual files in this directory. Key entries relevant to H-107:
 - DD#814 — AgentProp-Bench: tool-agent evaluation benchmark
 - DD#815 — Agentic Frameworks Empirical Comparison (systematic evaluation of agent framework architectures)
 - DD#816 — Conjunctive Prompt Attacks in Multi-Agent Systems (adversarial coordination exploits)
+- DD#817 — ErrorProbe deep dive (cascade archetype connection)
+- DD#818 — BrainMem: Brain-inspired hierarchical memory for embodied agents (working/episodic/semantic)
+- DD#819 — Semantic Consensus Framework: Process-aware conflict detection for enterprise MAS (100% vs 25.1% completion)
+- DD#820 — Logic-Based Verification of Task Allocation for LLM-Enabled MAS (temporal logic pre-execution verification)
+- DD#821 — Information Asymmetry Verification: Research Synthesis (5 papers; architectural compartmentalization as verification primitive)
