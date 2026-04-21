@@ -5652,3 +5652,13 @@ Findings:
   - Findings (code): `project-health.ts` uses multiple `catch { /* skip */ }` blocks in file I/O helpers (`writeInflight`, `writeHealthState`, etc.). This can silently hide disk permission/path issues and lead to stuck inflight flags or missing workflow-run artifacts.
   - Suggestion: At least emit a single warning (rate-limited) when these best-effort writes fail, or return a boolean and let caller decide whether to surface the failure.
 
+## 2026-04-21 — QA heartbeat
+- Scope: Unreviewed-scan of `agents` repo recent commits (log head includes cf78717f6 "dead weight cleanup") and code sweep of `agents/src/lib/finish-guard.ts`.
+- Checks:
+  - `./node_modules/.bin/tsc --noEmit` (from `/app/agents`): FAIL — binary missing (`No such file or directory`, exit 127). `npx tsc --noEmit`: FAIL — TypeScript not installed.
+  - `npx vitest --run` (from `/app/agents`): FAIL — 99 failed / 9 passed test files (108 total). Many failures are due to scenario tests calling `process.exit` or having no vitest test suite; also missing deps (e.g. `bun:test`) and at least one real assertion failure (e.g. discount calc in `gym/scenarios/fm33-verify-broken`).
+- Findings:
+  - IMPORTANT (tooling): Agents repo cannot satisfy mandatory QA compile step because `tsc` is not installed/available in this repo.
+  - IMPORTANT (test harness): Default `vitest --run` across repo appears to include `gym/scenarios/**` environments that are not vitest-compatible (process.exit / no suites). Consider excluding gym scenario fixtures from top-level vitest run, or move them outside vitest globs.
+  - MINOR (code): `agents/src/lib/finish-guard.ts` hardcodes DEFAULT_PROJECT_ROOT = "/app". If this code is ever reused outside this runtime layout, relative deliverable resolution will break; consider passing project root from caller.
+
