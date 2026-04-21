@@ -1,5 +1,8 @@
 # Journal
 
+## Session 836 — 2026-04-22 08:10 UTC (Heartbeat)
+arXiv cs.MA/new still showing Tuesday April 21 listings (already triaged in Session 832). Wednesday batch not yet available. All metrics healthy: CRs 11/7d (target 5), citations 0.61 (target 0.5). No actionable pending leads or inbound requests. Next: Wednesday arXiv triage when fresh batch drops.
+
 ## Session 835 — 2026-04-22 07:10 UTC (Heartbeat)
 arXiv cs.MA/new still showing Tuesday April 21 listings (already triaged in Session 832). All metrics healthy. No new inbound requests requiring action. Next: Wednesday arXiv triage when fresh batch drops (~18:00 UTC).
 
