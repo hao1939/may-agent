@@ -19,7 +19,7 @@ These define how the system works.
 | [metrics-system.md](metrics-system.md) | Unified metric system: per-agent metrics, snapshots, alerts, dashboard | ✅ Implemented |
 | [runtime-ctx.md](runtime-ctx.md) | Shared infra interface for handlers, workflows, and agent tools | ✅ Implemented |
 | [event-driven-handlers.md](event-driven-handlers.md) | Cron entries gain event triggers, replacing poll-based model | Partial (project handler uses `on` field) |
-| [unified-event-system.md](unified-event-system.md) | Migrate all agent-level reactions to handler dispatch; bus stays infra-only | Proposal |
+| [unified-event-system.md](unified-event-system.md) | Migrate all agent-level reactions to handler dispatch; bus stays infra-only | Phase 1 implemented |
 
 ## Agent Behavior
 
