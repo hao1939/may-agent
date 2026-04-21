@@ -2388,3 +2388,18 @@ Additional evidence:
 
 ### Files reviewed
 - `src/pipeline.js` (read in full) — same finding persists: header note says normalize before penalties, but code applies penalties then normalizes.
+
+## 2026-04-21 — heartbeat — agents repo change only
+
+### Recent commit reviewed
+- `b10d2ef01` changed `agents/coach/workspace/activity.jsonl` only.
+
+### File spot-check
+- `agents/coach/workspace/activity.jsonl`: appended JSONL activity events; no runtime/production logic.
+
+### Mandatory gates (independent)
+- `./node_modules/.bin/tsc --noEmit`: FAIL — `No such file or directory` (exit 127)
+- `./node_modules/.bin/vitest --run`: FAIL — `No such file or directory` (exit 127)
+
+### Notes
+- `/app` has no `package.json` and `node_modules/.bin` is absent (only `node_modules/.vite/` exists), so standard TS/Vitest checks cannot execute in this environment.
