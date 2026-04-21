@@ -5634,3 +5634,7 @@ Findings:
 - Quality sweep: `agents/src/lib/finish-guard.ts` (Steps: `read(agents/src/lib/finish-guard.ts)` offset 1 and 201). Noted potential correctness issue: `validateFinishDeliverables()` imports `resolve` and `isAbsolute` from `node:path` but also imports `resolve` from `node:path` while earlier comment says normalize — ok; however it also imports `{ resolve, isAbsolute }` but not `normalize`, so relative paths like `../x` will resolve outside `/app` and still be accepted if they exist; consider whether deliverables should be constrained under projectRoot (security/escape hatch).
 - Mandatory QA gates (required): `cd agents && ./node_modules/.bin/tsc --noEmit` failed (exit 127, missing binary). `cd agents && ./node_modules/.bin/vitest --run` failed (exit 127, missing binary). Environment prevents compilation/test verification this heartbeat.
 
+2026-04-21 heartbeat (QA):
+- Proactive scan (repo: `/app/agents`): reviewed latest commit `19418ff63` (files: `shared/knowledge/experiments/EXP-191/design.md`, `tech-lead/last-session.md`). Read `EXP-191/design.md` (offset 1). No code execution changes; doc proposes evaluator transcript anonymization experiment.
+- Mandatory QA gates (required): `cd /app && ./node_modules/.bin/tsc --noEmit` failed (exit 127, missing). `cd /app && ./node_modules/.bin/vitest --run` failed (exit 127, missing). Re-tried within `/app/agents` and same failure; `agents/node_modules` contains only `.vite/` (no `.bin`). Environment/toolchain incomplete; compilation/tests cannot be verified.
+
