@@ -5,6 +5,7 @@
 import { describe, it, expect } from "vitest";
 import { runWatchdog } from "../../agents/may/handlers/watchdog.js";
 import type { HandlerContext } from "../../src/lib/handler-context.js";
+import { mockHandlerCtx } from "../helpers/mock-runtime-ctx.js";
 
 function makeContext(
   sessions: Array<{
@@ -17,7 +18,7 @@ function makeContext(
   }>,
 ): HandlerContext {
   const cancelled: string[] = [];
-  return {
+  return mockHandlerCtx({
     manager: {
       status: () =>
         sessions.map((s) => ({
@@ -35,14 +36,8 @@ function makeContext(
       },
       _cancelled: cancelled,
     } as any,
-    persistDir: "/tmp/test",
-    projectRoot: "/tmp/test",
-    agentsRoot: "/tmp/test/agents",
     agentName: "may",
-    getSessionId: () => null,
-    log: () => {},
-    triggerNow: () => false,
-  };
+  });
 }
 
 describe("runWatchdog", () => {

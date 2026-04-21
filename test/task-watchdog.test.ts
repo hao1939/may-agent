@@ -18,6 +18,7 @@ import {
   type TaskWatchdogResult,
 } from "../agents/may/handlers/task-watchdog.js";
 import type { HandlerContext } from "../src/lib/handler-context.js";
+import { mockHandlerCtx } from "./helpers/mock-runtime-ctx.js";
 
 // ── Helpers ───────────────────────────────────────────────────────────
 
@@ -62,44 +63,28 @@ function makeContext(tmpDir: string, opts: MockCtxOpts = {}): {
     writeFileSync(logPath, logEntries.map((e) => JSON.stringify(e)).join("\n") + "\n");
   }
 
-  const emitted: Array<Record<string, unknown>> = [];
-  const logged: string[] = [];
-  const notified: string[] = [];
-
   // Mock DB that returns our requests
-  // The handler now runs two queries:
-  //   1. Age-filtered: `... AND createdAt < ?` → returns requests older than threshold
-  //   2. All open: no age filter → returns all requests
   const mockDb = {
     prepare: (sql: string) => ({
       all: (...args: any[]) => {
         if (args.length > 0) {
-          // Age-filtered query: createdAt < threshold
           const threshold = args[0] as number;
           return requests.filter(r => r.createdAt < threshold);
         }
-        // All-open query (no args)
         return requests;
       },
     }),
   };
 
-  const ctx: HandlerContext = {
-    manager: {} as any,
+  const rtxOverrides = {
     persistDir: tmpDir,
     projectRoot: tmpDir,
     agentsRoot: join(tmpDir, "agents"),
-    agentName: "may",
-    getSessionId: () => null,
-    log: (msg: string) => logged.push(msg),
-    notify: (msg: string) => notified.push(msg),
-    triggerNow: () => false,
     getDb: () => mockDb as any,
-    trackRequest: () => "",
-    emit: (event: Record<string, unknown>) => emitted.push(event),
-    loadAllSessionMetas: () => ({}),
-    evaluateTask: async () => null,
   };
+
+  const ctx = mockHandlerCtx(rtxOverrides);
+  const { emitted, logged, notified } = ctx;
 
   return { ctx, emitted, logged, notified };
 }
@@ -664,24 +649,12 @@ describe("task-watchdog", () => {
   // Additional edge cases
 
   it("handles DB failure gracefully", () => {
-    const ctx: HandlerContext = {
-      manager: {} as any,
+    const ctx = mockHandlerCtx({
       persistDir: tmpDir,
       projectRoot: tmpDir,
       agentsRoot: join(tmpDir, "agents"),
-      agentName: "may",
-      getSessionId: () => null,
-      log: () => {},
-      notify: () => {},
-      triggerNow: () => false,
-      getDb: () => {
-        throw new Error("DB unavailable");
-      },
-      trackRequest: () => "",
-      emit: () => {},
-      loadAllSessionMetas: () => ({}),
-      evaluateTask: async () => null,
-    };
+      getDb: () => { throw new Error("DB unavailable"); },
+    });
 
     const result = runTaskWatchdog(ctx);
 
