@@ -23,3 +23,12 @@
 - **Few-shot examples harm discovery tasks** — template-following displaces exploration, causing -67pp regression (KE-133). For open-ended/creative tasks, work clean without examples.
 - **KE-180 (Completion Illusion)**: Analysis gates HARM performance — agents write analysis docs, feel done, then skip the actual fix. NEVER use "write ANALYSIS.md" as a gate. Gate artifacts must produce the SOLUTION, not describe the problem. (Source: EXP-157, 0% pass with analysis gate vs 80% baseline.)
 - **KE-182 (Hard Gate Design Rules)**: When designing hard gates: (1) artifact must be part of the solution, not a report about the problem; (2) use product-quality metrics (does the fix work?), not process metrics (did the agent write a file?); (3) for recognition-bottleneck tasks, gate on the recognition output (e.g., FIXED_TESTS.md with corrected code); (4) for multi-step tasks, use 2-phase investigate→fix with session boundary; (5) never gate implementation-bottleneck tasks (KE-054). See `agents/shared/knowledge/entries/KE-182-hard-gate-design-rules-synthesis.md`.
+
+
+## Reflexion-Extracted Lessons
+- [insight] EXP-016 baseline data is unreliable for current agent — 3/4 scenarios showed dramatically different pass rates in gym_runs system. Always use gym_runs table as authoritative source, not historical experiment reports.
+- [insight] Gym scenario pass rates are extremely bimodal — scenarios cluster at 0% or 100% with very few in the 30-70% 'Medium' range. Finding Medium-difficulty scenarios is the hardest part of difficulty-bucketed experiment design.
+- [fix] behavior-escalation-stubborn showed regime change from 0% (15 runs through Apr 1) to 100% (7 runs since Apr 11). Agent learned this behavior. Combined rate of 31.8% is misleading — do not use combined rates when there's a clear regime change.
+- [pattern] To query gym run data: bun -e with Database from bun:sqlite, reading .state/may.db. The gym_runs table has scenario, passed, timestamp, agent_name, run_tag, score_summary columns.
+- [pattern] IT completion rate went from 0% to 100% after embedding ITs directly into todo.md — placing action items where the agent naturally looks during heartbeat is the key to the reflection→action pipeline
+- [insight] Federation design assigns Coach to k3s — all experiment artifacts must be committed to git, cross-instance dispatch is async (10 min delay), gym runs happen on k3s
