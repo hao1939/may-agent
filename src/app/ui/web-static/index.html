@@ -2300,7 +2300,7 @@ async function loadProjects() {
         `<td><span style="color:${statusColor}">${esc(p.status)}</span></td>` +
         `<td><span style="color:${healthColor}">${p.health || '—'}</span></td>` +
         `<td>${msBar}</td>` +
-        `<td style="font-size:12px;color:var(--fg2)">${p.metrics?.length ? p.metrics.join(', ') : '\u2014'}</td>` +
+        `<td style="font-size:12px">${p.metrics?.length ? p.metrics.map(m => `<span style="color:${m.breached ? 'var(--red)' : 'var(--green)'}">${m.id.split('.').pop()}: ${m.current != null ? Number(m.current).toFixed(2) : '?'} ${m.breached ? '\u2717' : '\u2713'}</span>`).join(', ') : '\u2014'}</td>` +
         `<td>${p.iteration}</td>` +
         `<td style="color:var(--fg2);font-size:12px">${timeAgo(p.updatedAt)}</td>` +
         `</tr>`;
@@ -2312,18 +2312,63 @@ async function loadProjects() {
   }
 }
 
+let _projectDetailPath = '';
 async function showProjectDetail(path) {
+  _projectDetailPath = path;
+  const el = document.getElementById('projects-content');
+  let html = `<button onclick="loadProjects()" style="margin-bottom:12px;padding:4px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;color:var(--fg);cursor:pointer">← Back</button>`;
+  html += `<div style="display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:12px">`;
+  html += `<button class="tab-btn active" onclick="switchProjectTab(this,'project')" style="background:none;border:none;border-bottom:2px solid var(--accent);color:var(--accent);padding:8px 16px;cursor:pointer;font-size:13px">Project</button>`;
+  html += `<button class="tab-btn" onclick="switchProjectTab(this,'journal')" style="background:none;border:none;border-bottom:2px solid transparent;color:var(--fg2);padding:8px 16px;cursor:pointer;font-size:13px">Journal</button>`;
+  html += `<button class="tab-btn" onclick="switchProjectTab(this,'sessions')" style="background:none;border:none;border-bottom:2px solid transparent;color:var(--fg2);padding:8px 16px;cursor:pointer;font-size:13px">Sessions</button>`;
+  html += `</div>`;
+  html += `<div id="project-tab-content" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px;max-height:70vh;overflow-y:auto"></div>`;
+  el.innerHTML = html;
+  loadProjectTab('project');
+}
+
+function switchProjectTab(btn, tab) {
+  btn.parentElement.querySelectorAll('.tab-btn').forEach(b => { b.style.borderBottomColor = 'transparent'; b.style.color = 'var(--fg2)'; });
+  btn.style.borderBottomColor = 'var(--accent)'; btn.style.color = 'var(--accent)';
+  loadProjectTab(tab);
+}
+
+async function loadProjectTab(tab) {
+  const el = document.getElementById('project-tab-content');
+  if (!el) return;
   try {
-    const res = await fetch(`/api/browse?path=${encodeURIComponent(path + (path.endsWith('.md') ? '' : '/project.md'))}`);
-    const data = await res.json();
-    const el = document.getElementById('projects-content');
-    let html = `<button onclick="loadProjects()" style="margin-bottom:12px;padding:4px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;color:var(--fg);cursor:pointer">← Back</button>`;
-    html += `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px;white-space:pre-wrap;font-family:monospace;font-size:13px;max-height:70vh;overflow-y:auto">`;
-    html += esc(data.content || 'No content');
-    html += `</div>`;
-    el.innerHTML = html;
+    if (tab === 'project') {
+      const res = await fetch(`/api/browse?path=${encodeURIComponent(_projectDetailPath + (_projectDetailPath.endsWith('.md') ? '' : '/project.md'))}`);
+      const data = await res.json();
+      el.style.whiteSpace = 'pre-wrap'; el.style.fontFamily = 'monospace'; el.style.fontSize = '13px';
+      el.textContent = data.content || 'No content';
+    } else if (tab === 'journal') {
+      const res = await fetch(`/api/projects/journal?path=${encodeURIComponent(_projectDetailPath)}`);
+      const data = await res.json();
+      el.style.whiteSpace = 'pre-wrap'; el.style.fontFamily = 'monospace'; el.style.fontSize = '13px';
+      el.textContent = data.content || 'No journal';
+    } else if (tab === 'sessions') {
+      const res = await fetch(`/api/projects/sessions?path=${encodeURIComponent(_projectDetailPath)}`);
+      const rows = await res.json();
+      if (rows.length === 0) { el.innerHTML = '<div style="color:var(--fg2)">No sessions found for this project.</div>'; return; }
+      let html = `<table style="width:100%;border-collapse:collapse;font-size:13px">`;
+      html += `<tr style="border-bottom:2px solid var(--border)"><th style="padding:6px;text-align:left">Session</th><th>Agent</th><th>Status</th><th>Ops</th><th>Time</th><th>Task</th></tr>`;
+      for (const s of rows) {
+        html += `<tr style="border-bottom:1px solid var(--border);cursor:pointer" onclick="location.hash='dashboard';document.querySelector('[data-tab=dashboard]').click();setTimeout(()=>loadSessionDetail('${esc(s.sessionId)}'),100)">`;
+        html += `<td style="padding:6px;font-family:monospace;font-size:11px">${esc((s.sessionId||'').slice(-12))}</td>`;
+        html += `<td>${esc(s.agent||'')}</td>`;
+        html += `<td>${esc(s.status||'')}</td>`;
+        html += `<td>${s.opCount ?? ''}</td>`;
+        html += `<td style="color:var(--fg2);font-size:12px">${s.startedAt ? timeAgo(s.startedAt) : ''}</td>`;
+        html += `<td style="color:var(--fg2);font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc((s.task||'').slice(0,60))}</td>`;
+        html += `</tr>`;
+      }
+      html += `</table>`;
+      el.style.whiteSpace = 'normal'; el.style.fontFamily = 'inherit'; el.style.fontSize = 'inherit';
+      el.innerHTML = html;
+    }
   } catch(e) {
-    document.getElementById('projects-content').innerHTML = `<div style="color:var(--red)">Failed: ${e.message}</div>`;
+    el.innerHTML = `<div style="color:var(--red)">Failed: ${e.message}</div>`;
   }
 }
 

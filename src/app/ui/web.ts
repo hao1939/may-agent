@@ -681,10 +681,23 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
                 const after = content.slice(mIdx + 12);
                 const ns = after.indexOf("\n## ");
                 const section = (ns === -1 ? after : after.slice(0, ns)).trim();
-                return section.split("\n").filter((l: string) => l.startsWith("- ")).map((l: string) => {
+                const ids = section.split("\n").filter((l: string) => l.startsWith("- ")).map((l: string) => {
                   const m = l.match(/^- (\S+):/);
-                  return m ? m[1] : null;
-                }).filter(Boolean);
+                  const t = l.match(/target\s*([<>]=?\s*[\d.]+%?)/);
+                  return m ? { id: m[1], target: t ? t[1].trim() : null } : null;
+                }).filter(Boolean) as Array<{id: string; target: string | null}>;
+                if (ids.length === 0) return [];
+                try {
+                  const db = _db();
+                  return ids.map(({ id, target }) => {
+                    const row = db.prepare("SELECT current, threshold, alert_direction FROM metrics WHERE id = ?").get(id) as any;
+                    const current = row?.current ?? null;
+                    const threshold = row?.threshold;
+                    const above = row?.alert_direction === "above";
+                    const breached = threshold != null && current != null && (above ? current > threshold : current < threshold);
+                    return { id, current, target, breached };
+                  });
+                } catch { return ids.map(({ id, target }) => ({ id, current: null, target, breached: false })); }
               })(),
               updatedAt: statSync(projectFile).mtimeMs,
             });
@@ -693,6 +706,61 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       }
     } catch { /* skip */ }
     return json(projects);
+  }
+
+  function handleProjectJournal(url: URL): Response {
+    const path = url.searchParams.get("path");
+    if (!path) return json({ error: "path required" }, 400);
+    // Derive journal path from project path
+    let journalPath: string;
+    if (path.endsWith(".md")) {
+      // Legacy single-file — no separate journal
+      return json({ content: "(Legacy project — journal is in the project file)" });
+    } else {
+      journalPath = join(PROJECT_ROOT, path, "journal.md");
+    }
+    try {
+      const content = readFileSync(journalPath, "utf-8");
+      return json({ content });
+    } catch {
+      return json({ content: "(No journal found)" });
+    }
+  }
+
+  function handleProjectSessions(url: URL): Response {
+    const path = url.searchParams.get("path");
+    if (!path) return json({ error: "path required" }, 400);
+    // Derive projectId from path: agents/<owner>/workspace/projects/<name> → <owner>/<name>
+    const parts = path.split("/");
+    const owner = parts[1] ?? "";
+    const name = parts[parts.length - 1]?.replace(/\.md$/, "") ?? "";
+    const projectId = `${owner}/${name}`;
+    try {
+      const db = _db();
+      const rows = db.prepare(
+        "SELECT sessionId, agent, status, opCount, startedAt, endedAt, task FROM sessions WHERE projectId = ? ORDER BY startedAt DESC LIMIT 50"
+      ).all(projectId) as any[];
+      return json(rows);
+    } catch {
+      // projectId column may not exist yet — fall back to workflow run files
+      try {
+        const wfDir = join(STATE_DIR, "workflows");
+        const sessions: any[] = [];
+        for (const f of readdirSync(wfDir)) {
+          try {
+            const run = JSON.parse(readFileSync(join(wfDir, f), "utf-8"));
+            if (run.task?.includes(path)) {
+              for (const step of run.steps ?? []) {
+                sessions.push({ sessionId: step.sessionId, agent: step.agent, status: step.status, startedAt: step.startedAt, task: step.task?.slice(0, 80) });
+              }
+            }
+          } catch { /* skip */ }
+        }
+        return json(sessions);
+      } catch {
+        return json([]);
+      }
+    }
   }
 
   function handleEvents(url: URL): Response {
@@ -796,6 +864,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (url.pathname === "/api/browse") return handleBrowse(url);
       if (url.pathname === "/api/metrics") return handleMetrics(url);
       if (url.pathname === "/api/projects") return handleProjects();
+      if (url.pathname === "/api/projects/journal") return handleProjectJournal(url);
+      if (url.pathname === "/api/projects/sessions") return handleProjectSessions(url);
       if (url.pathname === "/api/events") return handleEvents(url);
       const metricHistoryMatch = url.pathname.match(/^\/api\/metrics\/([^/]+)\/history$/);
       if (metricHistoryMatch) {
