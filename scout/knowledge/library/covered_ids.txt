@@ -1,0 +1,9 @@
+# Covered arXiv IDs — Scout Triage Log
+# Format: arXiv_ID | DD# | Date Covered | Title (short)
+
+2604.17658 | DD#551 | 2026-04-21 | ErrorProbe: Self-Improving MAS Error Diagnosis
+2604.16706 | DD#552 | 2026-04-21 | AgentProp-Bench: Tool-Use Eval Reliability
+2604.16331 | DD#553 | 2026-04-21 | BrainMem: Hierarchical Agent Memory
+2604.16543 | DD#554 | 2026-04-21 | Conjunctive Prompt Attacks in MAS
+2604.18005 | DD#555 | 2026-04-21 | Diversity Collapse in MAS
+2604.16339 | DD#556 | 2026-04-21 | Semantic Consensus Framework
