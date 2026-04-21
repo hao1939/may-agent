@@ -1,6 +1,6 @@
 # Project: Agent Instruction Following
 
-**Status**: closed
+**Status**: blocked
 **Owner**: coach
 **Reviewer**: may / Hao
 **Master**: may/system-evolution (gap-level concern)
@@ -8,8 +8,8 @@
 **Priority**: P0 — most important coach project
 **Metric**: `coach.instruction-compliance` (target ≥ 0.8)
 
-**Iteration**: 7
-**Health**: 3/10 (BLOCKED)
+**Iteration**: 9
+**Health**: 2/10 (BLOCKED)
 ## Goal
 
 Find what mechanisms make agents reliably follow directions. Measure
@@ -277,9 +277,7 @@ table as they land.
 ## Deep Dive: Instruction-Compliance at 38% (2026-04-18)
 
 ### Current State
-Blocked: — This task should be closed as superseded.
-
-**Reason**: After 7 iterations with zero successful file edits and no analyzable data, this task is irrec
+Blocked: — This task has no progress after 9 iterations, no worker output in the latest iteration, and has been identified as superseded by the reviewer-effect
 ## Comments
 - [2026-04-21 hao] Review status — 4/6 milestones done. Is this still relevant? The reviewer-effectiveness project (bob, P0) may cover the same ground from a different angle (reviewer guides worker to follow instructions). Consider closing if superseded.
 ### Iteration 7 (comment) — 2026-04-20T19:16:47.694Z
@@ -289,4 +287,43 @@ Blocked: — This task should be closed as superseded.
 **Reason**: After 7 iterations with zero successful file edits and no analyzable data, this task is irrecoverably stuck. Additionally, per hao's comment (2026-04-21), the reviewer-effectiveness project (bob, P0) covers the same ground from a more productive angle (studying how reviewers guide workers to follow instructions). That project has active momentum while this one has none.
 
 **Recommendation**: Close this task. The research question "what mechanisms make agents reliably follow directions" is being addressed by the reviewer-effectiveness project. Any findings from this failed loop (e.g., "repeated textual instructions don't reliably produce behavior change in workers") can be noted as an observation in that project instead.
+
+
+
+## Progress Log
+
+### Iteration 8 — 2026-04-21T06:46:46.957Z
+**Worker**: 
+
+Looking at this task, it's clear from 7 iterations of history and explicit owner/reviewer guidance that this should be closed as superseded by the reviewer-effectiveness project.
+
+**Reviewer**: DONE — This task should be closed as superseded. After 8 iterations with no progress, the research question is being addressed by the reviewer-effectiveness project (bob, P0). The only actionable finding from this loop: repeated textual instructions alone don't reliably produce behavior change in worker agents — worth noting in the reviewer-effectiveness project.
+
+**Evaluator**: FAIL (score=2/10) — 
+
+SCORE: 2
+
+1. **Deliverables exist**: No. Zero files or artifacts were produced across 7 iterations.
+2. **Goal met**: No. The goal was to find mechanisms that make agents reliably follow directions and measure them. Nothing was found or measured.
+3. **Evidence**: No concrete evidence of any work product.
+4. **Milestones honest**: No milestones defined, so N/A.
+5. **No shortcuts**: No real work was done at all.
+6. **Verification milestones**: N/A.
+7. **If blocked**: The blocker assessment is rea
+
+
+### Iteration 9 — 2026-04-21T06:47:34.791Z
+**Worker**: 
+
+**Reviewer**: BLOCKED — — This task has no progress after 9 iterations, no worker output in the latest iteration, and has been identified as superseded by the reviewer-effectiveness project (bob, P0). It should be closed.
+
+**Evaluator**: BLOCKED eval (score=2/10) — SCORE: 2
+
+1. **Deliverables exist**: No. Zero files or artifacts produced across 8 iterations.
+2. **Goal met**: No. Nothing was found or measured about agent direction-following mechanisms.
+3. **Evidence**: None.
+4. **Milestones honest**: N/A — none defined.
+5. **No shortcuts**: No real work was ever attempted.
+6. **Verification milestones**: N/A.
+7. **If blocked**: The supersession rationale is reasonable, but 8 iterations of zero output before reaching that conclusion is a failure regardless. 
 
