@@ -5639,3 +5639,10 @@ Findings:
 - Findings: Design doc is internally coherent; however, the suggested CLI parsing via `process.argv.indexOf("--run-handler")` etc. has an edge-case: if flag is last argument, `process.argv[idx + 1]` becomes `undefined` but truthy-checks like `if (RUN_HANDLER)` will treat it as falsy; unclear error message behavior (spec doesn’t mention validation/help output). Also, `--run-workflow <name> [input]` will truncate multi-line/space-separated inputs unless users quote correctly; doc examples do quote, so OK.
 - Mandatory QA gates: Unable to execute required commands in this repo snapshot. `./node_modules/.bin/tsc --noEmit` missing (exit 127), `./node_modules/.bin/vitest --run` missing (exit 127). Verified there is no `package.json` under `/app/agents` (find returned none), and `agents/node_modules` has no `.bin` directory.
 
+2026-04-21 heartbeat (QA):
+- Proactive scan (repo: `/app/agents`): inspected recent commit `53085b9fe` ("fix: add metric-alert-reactor handler to close alert→action gap") and read `may/handlers/metric-alert-reactor.ts`.
+- Findings (code): Handler logic is broadly reasonable (guards on missing event data, dedup via sessions table, forks owner with actionable message). However:
+  - IMPORTANT: It swallows all DB dedup errors (`catch {}`) and proceeds. This is intentional per comment, but it risks noisy duplicate forks if DB schema/availability breaks; consider logging the DB failure at least once (rate-limited) so infra issues surface.
+  - MINOR: The task text embeds `${Date.now()}` at handler run-time for the suggested SQL; if the user runs the command later, it's still OK (resolved_at is just a timestamp) but could be confusing as "now" is not actually now.
+- Mandatory QA gates still blocked in this environment: `/app` is not a git repo and the repository toolchain appears missing (`./node_modules/.bin/tsc` and `./node_modules/.bin/vitest` not found). Could not run the required compile/tests.
+
