@@ -2,6 +2,20 @@
 
 ## 2026-04-21 — heartbeat — QA verification still blocked by missing Node toolchain
 
+### New review notes (2026-04-21)
+- In `/app/agents` repo, latest commit is `136790eee` (project workflow/handler rename and changes).
+- Read code: `agents/may/handlers/project.ts`.
+
+#### Findings: `agents/may/handlers/project.ts`
+- **CRITICAL:** references `breachedMetric` but it is not defined/imported in the file. This should be a TypeScript compile error.
+- Handler writes `.state/project-last-check`/`.state/project-inflight` and launches `agents/shared/workflows/project.ts` with an ad-hoc workflow context.
+- Writes best-effort workflow run files to `.state/workflows/<runId>.json` for later DB backfill.
+
+### Mandatory QA gates (this run)
+- `./node_modules/.bin/tsc --noEmit`: **FAIL** — missing binary (exit 127)
+- `./node_modules/.bin/vitest --run`: **FAIL** — missing binary (exit 127)
+
+
 ### Additional notes (this heartbeat run)
 - `/app` is **not** a git repo (confirmed again via `git log/status` failing). Prior entries note `agents/` is the git repo.
 - Spot-checked code file `agents/src/validator.js` (see below).
