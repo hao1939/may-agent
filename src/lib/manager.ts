@@ -1135,6 +1135,20 @@ export class SubagentManager {
       }
     }
 
+    // Phase 1b: Cancel in-memory sessions stuck at 0 ops for > 30 min
+    // These are sessions the manager tracks as "active" but the LLM never responded.
+    for (const [sessionId, session] of this.activeSessions) {
+      if (session.opCount > 0) continue; // making progress
+      if (session.kind === "chat") continue; // chat sessions wait for human input
+      const age = Date.now() - session.startedAt;
+      if (age < staleThresholdMs) continue;
+      try {
+        this.cancel(sessionId);
+        log("info", `[zombie-cleanup] Cancelled stuck session ${sessionId} (${session.agentName}, 0 ops, ${Math.round(age / 60000)}m old)`);
+        cleaned++;
+      } catch { /* best-effort */ }
+    }
+
     // Phase 2: Count terminal sessions still in the active directory.
     // These are completed sessions that stay in sessions/<id>/ (no archiving).
     for (const sessionId of activeIds) {
