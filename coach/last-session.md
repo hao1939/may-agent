@@ -1,12 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776807041424_0
+- **Session:** s_1776807088530_0
 - **Status:** done
-- **When:** 2026-04-21T21:30:59.618Z
-- **Duration:** 18s
+- **When:** 2026-04-21T21:32:18.911Z
+- **Duration:** 50s
 
 ## What Happened
-
-
-Let me check the stuck requests breakdown first since that's the most impactful issue.
+The triage-note.md is outside the git repo. The uncommitted file is `tech-lead/last-session.md` — not mine.
