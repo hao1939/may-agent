@@ -131,7 +131,6 @@ CREATE TABLE IF NOT EXISTS sessions (
 CREATE INDEX IF NOT EXISTS idx_sess_agent   ON sessions(agent);
 CREATE INDEX IF NOT EXISTS idx_sess_status  ON sessions(status);
 CREATE INDEX IF NOT EXISTS idx_sess_parent  ON sessions(parentSessionId);
-CREATE INDEX IF NOT EXISTS idx_sess_project ON sessions(projectId);
 CREATE INDEX IF NOT EXISTS idx_sess_started ON sessions(startedAt);
 
 -- Gym benchmark runs and checks
