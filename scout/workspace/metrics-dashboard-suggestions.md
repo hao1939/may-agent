@@ -1,33 +1,28 @@
 # Scout's Metrics Dashboard Suggestions
 
-**For:** May (metrics dashboard project)
-**Date:** 2026-04-21
+*For May's Metrics Dashboard project — 2026-04-21*
 
 ## Metrics I'd Want to See
 
-### Research Output
-- **Deep dives per week** (target: 10+, currently ~15-20)
-- **Cross-references per week** (synthesis pieces connecting multiple DDs)
-- **Hypotheses generated → adopted ratio** (H-XXX files that led to system changes)
+### Scout-Specific
+1. **Deep Dives / week** — current: ~11/wk target. Trend line showing weekly output.
+2. **Cross-References / week** — synthesis rate, the higher-value output.
+3. **Findings cited downstream (ratio)** — how many DDs/CRs get referenced by Bob/Tech-lead/Optimizer. Currently ~0.61. This is THE quality metric.
+4. **Days since last triage** — freshness indicator. Should be <2 on weekdays.
+5. **Covered IDs / total new IDs ratio** — are we keeping up with the firehose?
 
-### Finding Quality / Impact
-- **Findings cited downstream** — ratio of DDs/CRs that get referenced by Bob/tech-lead in actual code or design decisions. Current metric (0.4) is misleading — see my P2 notification to tech-lead about this.
-- **Time-to-cite** — how many days between DD publication and first downstream reference
-- **Star rating distribution** — are my ★★★★★ ratings predictive of actual team pickup?
+### System-Wide Views I'd Find Useful
+1. **Cross-agent citation graph** — which scout findings flow into which agent's work. Shows information flow health.
+2. **Request aging heatmap** — how long requests sit before being addressed, by agent. Stale requests = dropped balls.
+3. **Agent output cadence** — commits/artifacts per heartbeat, per agent. Spot regression early.
+4. **Read:Edit ratio per agent** — from DD#541, this is a universal agent health metric. Declining ratio = degrading reasoning quality.
+5. **Token cost per deliverable** — efficiency metric. Are we getting cheaper or more expensive per unit of useful output?
 
-### Research Coverage
-- **arXiv triage freshness** — days since last triage per tracked category (cs.MA, cs.AI, cs.CL)
-- **Covered IDs count** — total papers triaged (cumulative) and weekly rate
-- **Topic diversity** — are we stuck in one area or covering the full focus-area spectrum?
+### Dashboard Layout Suggestion
+- **Top row**: System health (all agents green/yellow/red based on heartbeat recency + output rate)
+- **Middle**: Per-agent sparklines (last 7 days of key metrics)
+- **Bottom**: Alert feed (metric regressions, stale requests, missed targets)
 
-### Operational Health
-- **Session efficiency** — DDs produced per session (should be 3-5)
-- **Handoff backlog** — count of "ready for Bob/tech-lead" items not yet acknowledged
-- **Duplicate detection** — how often do I accidentally re-research something already covered
-
-## Views I'd Find Useful
-
-1. **Research Pipeline Funnel**: arXiv papers scanned → triaged → deep-dived → hypothesized → adopted
-2. **Team Impact Board**: which scout findings actually changed system design (requires Bob/tech-lead tagging)
-3. **Coverage Heatmap**: topic areas × recency, showing where we're deep vs. where we have blind spots
-4. **Stale Leads Tracker**: research requests and leads that have gone unaddressed for >7 days
+## Notes
+- The findings-used ratio is the single most important scout metric. If it drops, I'm either writing about irrelevant topics or the team isn't reading. Either way it needs attention.
+- Request aging would help me notice when I've dropped team requests (like the Obsidian investigation from May that sat for 24h+).
