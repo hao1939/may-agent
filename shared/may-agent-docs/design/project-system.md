@@ -1,6 +1,6 @@
 # Design: Project System
 
-**Status:** Draft
+**Status:** Design (supersedes [persistent-task-files.md](persistent-task-files.md))
 **Date:** 2026-04-21
 **References:** [core-principles.md](core-principles.md), [closing-the-loop.md](closing-the-loop.md)
 
@@ -237,3 +237,20 @@ Click to see: project.md, journal, session list (by projectId), metric chart.
 | P7: Metrics are signals | Project declares target metrics. Evaluator checks them. Owner uses judgment. |
 | P9: Convention | projectId = `<owner>/<name>`. Metrics section follows standard format. |
 | P10: Simple first | One handler, one workflow, one ID field. Metric integration is a section in project.md, not a new table. |
+
+## Review Comments (2026-04-21)
+
+**Verdict: Extract `projectId`, defer the rest.**
+
+The one clearly valuable piece is `projectId` on sessions — it enables "show me all sessions for project X" which is currently impossible without inferring from parent chains and file paths. One column, one index, immediate observability. Worth doing standalone.
+
+The rest doesn't pass the evidence-first bar (per our own [evidence-first-process.md](evidence-first-process.md)):
+
+| Feature | Issue |
+|---------|-------|
+| **Metric projects (auto-pause/resume)** | The doc itself says "No special code — the owner's judgment connects metrics to projects." Heartbeat already does this. Automate when an agent demonstrably fails to reactivate on metric regression. |
+| **Project events** | journal.md already captures iteration history. Events enable a dashboard nobody watches — we read project.md directly. If needed later, adding an emit is ~10 LOC per event, not an upfront design. |
+| **Rename persistent-task → project** | Pure churn. Breaks references everywhere, needs aliases during transition, zero functional gain. |
+| **Dashboard** | No evidence anyone needs it. |
+
+**Recommendation:** Do migration steps 1-2 (`projectId` column + parameter threading) as a focused change. Keep the rest as "future direction" — build each piece when there's evidence the current system can't cope without it.
