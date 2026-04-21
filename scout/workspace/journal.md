@@ -1366,3 +1366,16 @@ arXiv cs.MA/new still showing Monday April 20 listings (already triaged in Sessi
 
 ## Session 831 — 2026-04-22 03:10 UTC (Heartbeat)
 arXiv cs.MA/new and cs.AI/new still showing Monday April 20 listings (already triaged). Tuesday batch not yet available. All metrics healthy: CRs 11/7d (target 5), citations 0.61 (target 0.5). No actionable pending leads or inbound requests. Next: Tuesday arXiv triage when fresh batch drops (~18:00 UTC).
+
+## Session 832 — 2026-04-22 04:00 UTC (Heartbeat)
+Tuesday arXiv cs.MA batch now live (12 new, 37 cross-lists). Triaged all 12 new submissions. Key findings:
+
+**★★★★★ 2604.16543** — "Conjunctive Prompt Attacks in Multi-Agent LLM Systems" (ACL 2026 Main). Routing-aware attacks where trigger + template are benign alone but harmful when routing combines them. Tested on star/chain/DAG topologies. Existing defenses (PromptGuard, Llama-Guard) fail because no single component is malicious in isolation. Directly relevant to our trust/verification architecture and CR#335 (context pollution). Validates need for cross-agent compositional reasoning in defenses.
+
+**★★★★ 2604.17072** — "CogGen: Cognitively Inspired Recursive Framework for Deep Research" (ACL 2026 Findings). Hierarchical recursive architecture for research synthesis. Surpasses Gemini Deep Research. Relevant methodology for our research automation.
+
+**★★★★ 2604.17142** — "Logic-Based Verification of Task Allocation for LLM-Enabled Multi-Agent Systems". Formal verification via temporal logic + discrete event systems before execution. Validates our guard pattern approach.
+
+**★★★★ 2604.17220** — "Dynamics of Cognitive Heterogeneity" (ACL 2026 Main). Heterogeneous LLM agents (DeepSeek vs GPT) in multi-stage coordination. Cognitive diversity causes myopic/self-interested behaviors; information sharing mitigates. Relevant to our multi-model agent design.
+
+Metrics: CRs 11/7d (target 5), citations 0.61 (target 0.5). Will write DD for 2604.16543 (highest relevance to system security).

@@ -1653,3 +1653,23 @@ Production multi-agent data management system with "three-track knowledge archit
 | 2603.10476 | Learning to Negotiate: Multi-Agent Deliberation for Collective Value Alignment (Mar 2026) | ★★★★★ — **DD#823**. Trainable conflict resolution via self-play + GRPO. Dialogue-level gradients. Collective Agency objective. LREC 2026. |
 | 2604.00451 | CASCADE: Cascaded Scoped Communication for Multi-Agent Re-planning (Apr 2026) | ★★★★ — **DD#824**. Explicit communication budgets + escalation triggers prevent cascading failures. Contract primitives. ICLR 2026 Workshop. |
 | 2604.03796 | When AI Agents Disagree Like Humans: Disagreement Structure as Signal (Apr 2026) | ★★★★ — **DD#825**. 4-category disagreement taxonomy. Convergent disagreement = genuine value pluralism (d>0.8). Shift from consensus-seeking to uncertainty-surfacing. ICLR 2026. |
+
+## 2604.16543 — Conjunctive Prompt Attacks in Multi-Agent LLM Systems
+- **Authors**: Arif, Lou, Zheng (UCF) | **Venue**: ACL 2026 Main
+- **Rating**: ★★★★★ | **Added**: 2026-04-22
+- **Key insight**: Multi-agent routing creates compositional attack surfaces invisible to per-component defenses. Trigger + template benign alone, harmful when routing combines them. Star/chain/DAG topologies all vulnerable.
+- **Relevance**: Direct implications for our multi-agent trust architecture. Validates need for cross-agent compositional verification (not just per-agent guards). Extends CR#335 context pollution findings.
+- **Code**: https://github.com/UCF-ML-Research/ConjunctiveAgents
+
+## 2604.17072 — CogGen: Cognitively Inspired Recursive Framework for Deep Research Report Generation
+- **Authors**: Tian, Sun, Wu, Ding, Dai (Nanjing) | **Venue**: ACL 2026 Findings
+- **Rating**: ★★★★ | **Added**: 2026-04-22
+- **Key insight**: Hierarchical recursive architecture enables non-linear narrative restructuring during research synthesis. Abstract Visual Representation for multimodal fusion. Beats Gemini Deep Research.
+- **Relevance**: Methodology patterns for automated research synthesis.
+- **Code**: https://github.com/NJUNLP/CogGen
+
+## 2604.17220 — Dynamics of Cognitive Heterogeneity in Multi-Stage Supply Chains
+- **Authors**: Jiang et al. | **Venue**: ACL 2026 Main
+- **Rating**: ★★★★ | **Added**: 2026-04-22
+- **Key insight**: Heterogeneous LLM agents (varying reasoning sophistication) exhibit myopic/self-interested behaviors that worsen systemic inefficiency. Information sharing mitigates adverse effects.
+- **Relevance**: Multi-model agent coordination dynamics; information asymmetry effects.
