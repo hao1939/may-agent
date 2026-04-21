@@ -18,6 +18,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
   // Detect if there are below-target metrics for G-pattern injection
   const hasRedMetrics = metrics.includes("⚠️ BELOW TARGET");
+  if (hasRedMetrics) ctx.emit({ type: "breadcrumb_shown", step: "metrics" });
   const gPatternBlock = hasRedMetrics ? `
 ## ⚡ FIRST — evaluate your red metrics before anything else
 
