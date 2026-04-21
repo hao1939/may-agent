@@ -1,10 +1,12 @@
 /// <reference path="../../../src/lib/workflow-defs.d.ts" />
+import { readFileSync, readdirSync, existsSync } from "node:fs";
+import { join } from "node:path";
 
 export const name = "qa-heartbeat";
 export const description = "qa's heartbeat.";
 
 function getAgentsRoot(ctx: WorkflowContext): string {
-  return ctx.agentsRoot || require("node:path").join(process.cwd(), "agents");
+  return ctx.agentsRoot || join(process.cwd(), "agents");
 }
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
@@ -77,16 +79,16 @@ function loadMetrics(ctx: WorkflowContext, agent: string): string {
 
 function loadProjects(ctx: WorkflowContext, agent: string): string {
   try {
-    const fs = require("node:fs");
-    const path = require("node:path");
-    const projDir = path.join(getAgentsRoot(ctx), agent, "workspace", "projects");
-    if (!fs.existsSync(projDir)) return "";
+    
+    
+    const projDir = join(getAgentsRoot(ctx), agent, "workspace", "projects");
+    if (!existsSync(projDir)) return "";
     const lines: string[] = [];
-    for (const entry of fs.readdirSync(projDir, { withFileTypes: true })) {
+    for (const entry of readdirSync(projDir, { withFileTypes: true })) {
       if (!entry.isDirectory()) continue;
-      const pFile = path.join(projDir, entry.name, "project.md");
-      if (!fs.existsSync(pFile)) continue;
-      const content = fs.readFileSync(pFile, "utf-8");
+      const pFile = join(projDir, entry.name, "project.md");
+      if (!existsSync(pFile)) continue;
+      const content = readFileSync(pFile, "utf-8");
       const status = content.match(/^\*\*Status\*\*:\s*(\S+)/m)?.[1] ?? "?";
       if (status === "done" || status === "complete") continue;
       const health = content.match(/^\*\*Health\*\*:\s*(.+)/m)?.[1] ?? "";
@@ -112,8 +114,8 @@ function loadAlerts(ctx: WorkflowContext, agent: string): string {
 
 function loadHeartbeatMd(ctx: WorkflowContext, agent: string): string {
   try {
-    const fs = require("node:fs");
-    const path = require("node:path");
-    return fs.readFileSync(path.join(getAgentsRoot(ctx), agent, "heartbeat.md"), "utf-8");
+    
+    
+    return readFileSync(join(getAgentsRoot(ctx), agent, "heartbeat.md"), "utf-8");
   } catch { return "(No heartbeat.md found)"; }
 }
