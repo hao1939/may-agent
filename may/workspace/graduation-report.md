@@ -1,6 +1,6 @@
 # Lessons Graduation Report
 
-**Generated**: 2026-04-20T19:25 (automated scan)
+**Generated**: 2026-04-21T19:25 (automated scan)
 **Total LESSONS bytes**: 16616 (shared: 0)
 
 ⚠️ **5 issue(s) found:**
@@ -28,5 +28,5 @@
 ## Stale Entries (>14 days)
 
 ### optimizer
-- 2026-03-21 (31d old): - **FM-2.4: Error Chain Recovery (6x in 7d, 2026-03-21)**: W
-- 2026-03-20 (32d old): - **FM-2.6: No Claims Without Evidence (8x in 7d, 2026-03-20
+- 2026-03-21 (32d old): - **FM-2.4: Error Chain Recovery (6x in 7d, 2026-03-21)**: W
+- 2026-03-20 (33d old): - **FM-2.6: No Claims Without Evidence (8x in 7d, 2026-03-20
