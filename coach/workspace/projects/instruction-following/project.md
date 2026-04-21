@@ -8,7 +8,7 @@
 **Priority**: P0 — most important coach project
 **Metric**: `coach.instruction-compliance` (target ≥ 0.8)
 
-**Iteration**: 10
+**Iteration**: 11
 **Health**: 6/10 (RESTARTED iter 10 — EXP-189/190 designed, lab fork ready, awaiting live gym trials)
 ## Goal
 
@@ -277,7 +277,7 @@ table as they land.
 ## Deep Dive: Instruction-Compliance at 38% (2026-04-18)
 
 ### Current State
-Blocked: — This task has no progress after 9 iterations, no worker output in the latest iteration, and has been identified as superseded by the reviewer-effect
+Iteration 11. Milestones: 0/0 done.
 ## Comments
 - [2026-04-21 hao] Review status — 4/6 milestones done. Is this still relevant? The reviewer-effectiveness project (bob, P0) may cover the same ground from a different angle (reviewer guides worker to follow instructions). Consider closing if superseded.
 ### Iteration 7 (comment) — 2026-04-20T19:16:47.694Z
@@ -385,3 +385,8 @@ Findings and deliverables:
 - Collect EXP-189 production observations (≥10 heartbeats with red metrics)
 - Run metric-reaction baseline gym trials (5 trials, live agent)
 - If EXP-190 confirms generalization, promote skill+SOUL as standard pattern
+
+
+## Iteration Summary
+- **Iter 11**: Now I have a clear picture. The research exists across multiple files but hasn't been synthesized in
+
