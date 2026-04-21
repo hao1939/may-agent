@@ -49,6 +49,46 @@ interface StepResult {
 const STEPS = ["check-health", "review-requests", "dispatch-work", "update-context"] as const;
 type StepName = typeof STEPS[number];
 
+// ── JS-side metric alert query (replaces LLM bash call) ────────────────
+
+/**
+ * Query unresolved metric alerts for an agent directly from may.db.
+ * Previously this was a bash command in the prompt that the LLM had to execute,
+ * costing 1 tool call per heartbeat. Now done in JS at prompt-build time.
+ *
+ * Optimization: 2026-07-12. Saves ~1 op per agent heartbeat.
+ */
+function loadActiveAlerts(agent: string): string {
+  try {
+    const { Database } = require("bun:sqlite");
+    const path = require("node:path");
+    const dbPath = path.join(process.cwd(), ".state", "may.db");
+    const fs = require("node:fs");
+    if (!fs.existsSync(dbPath)) return "";
+
+    const db = new Database(dbPath, { readonly: true });
+    // Check if table exists first
+    const tableCheck = db.query(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='metric_alerts'"
+    ).get();
+    if (!tableCheck) { db.close(); return ""; }
+
+    const alerts = db.query(
+      "SELECT metric_id, severity, message, created_at FROM metric_alerts WHERE resolved_at IS NULL AND metric_id LIKE ?"
+    ).all(`${agent}.%`);
+    db.close();
+
+    if (!alerts || alerts.length === 0) return "";
+
+    const lines = (alerts as any[]).map((a: any) =>
+      `- **[${a.severity}]** ${a.metric_id}: ${a.message} (since ${a.created_at})`
+    );
+    return lines.join("\n");
+  } catch {
+    return "";
+  }
+}
+
 // ── G-pattern: Metrics loading for question-first step ─────────────────
 
 /**
@@ -130,17 +170,22 @@ function buildStepPrompt(
         metricsPrompt = "";
       }
 
+      // Query alerts in JS instead of asking LLM to run bash
+      const alertsBlock = loadActiveAlerts(config.agent);
+      const alertsSection = alertsBlock
+        ? `**Active metric alerts** (${alertsBlock.split("\n").length} unresolved):\n${alertsBlock}\n\n` +
+          `**MANDATORY**: These alerts are firing. You MUST investigate and act on them before any other work. ` +
+          `These are your metrics — unresolved alerts are your top priority. ` +
+          `For each alert: diagnose the cause, take corrective action, and report what you did. ` +
+          `Do NOT skip alerts or defer them to a later heartbeat.`
+        : `**Active metric alerts**: None — all clear.`;
+
       return (
         `## Heartbeat: Check Health\n\n${metricsPrompt}` +
         `${roleNote}${budgetNote}${extraNote}\n\n` +
         `Read agents/${config.agent}/heartbeat.md for your full guidance.\n\n` +
         `${config.observeInstructions}\n\n` +
-        `**Active metric alerts**: Check for unresolved alerts owned by you:\n` +
-        `\`bun -e "import{Database}from'bun:sqlite';const d=new Database('.state/may.db');console.log(d.query(\\"SELECT metric_id,severity,message,created_at FROM metric_alerts WHERE resolved_at IS NULL AND metric_id LIKE '${config.agent}.%'\\").all())"\`\n` +
-        `**MANDATORY**: If any alerts are firing, you MUST investigate and act on them before any other work. ` +
-        `These are your metrics — unresolved alerts are your top priority. ` +
-        `For each alert: diagnose the cause, take corrective action, and report what you did. ` +
-        `Do NOT skip alerts or defer them to a later heartbeat.\n\n` +
+        `${alertsSection}\n\n` +
         `If everything looks fine, just say so. Only flag issues that need attention.`
       );
     }
