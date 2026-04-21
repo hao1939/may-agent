@@ -39,10 +39,10 @@ Key changes:
 - 7/9 failures are may read-only sessions ignoring passive breadcrumbs
 - Completed: 2026-04-21
 
-### M3: Implement directive breadcrumb format
-- Modify heartbeat workflow breadcrumb injection to use new format
-- File: likely in `src/lib/workflows/heartbeat.ts` or wherever breadcrumbs are templated
-- ETA: Next coach session
+### M3: Implement directive breadcrumb format ⏳
+- Forked to tech-lead session s_1776812289806_53 (2026-04-28)
+- All 8 `agents/*/workflows/*-heartbeat.ts` loadMetrics functions getting ACTION REQUIRED line
+- ETA: This heartbeat cycle
 
 ### M4: Reduce breadcrumb repetition
 - If same breadcrumb appeared 3+ times with no action, escalate language:
