@@ -62,6 +62,30 @@ Specifically:
 
 Everything agent-level should flow through this. Nothing else.
 
+### Two methods, two purposes (implemented)
+
+RuntimeCtx exposes two distinct emit methods:
+
+```typescript
+interface RuntimeCtx {
+  /** Emit an infrastructure/workflow event on the bus. UI, DB, logging consume these. */
+  emit(event: { type: string; [key: string]: unknown }): void;
+
+  /** Dispatch an agent-level event to handlers subscribed via cron.json `on` field. */
+  dispatchEvent(eventType: string, data?: Record<string, unknown>): void;
+}
+```
+
+`dispatchEvent()` wraps the `{ type: "emit" }` envelope internally — callers don't need to know about it:
+
+```typescript
+// Before (handler author needed to know the envelope trick)
+ctx.emit({ type: "emit", event: "metric.breach", data: { metricId, ... } });
+
+// After (intent is clear)
+ctx.dispatchEvent("metric.breach", { metricId, ... });
+```
+
 ## Design
 
 ### Step 1: Session lifecycle → agent events
