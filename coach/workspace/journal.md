@@ -3990,3 +3990,26 @@ Observations: All research threads closed. Strategic proposal (`proposal-graduat
 - (c) a new research direction that doesn't require gym (e.g., production observation analysis of existing eval data)
 
 **Action taken this heartbeat**: Close instruction-following project per Hao's suggestion.
+
+## 2026-04-21 — Heartbeat (44)
+
+**Status**: Blocked — no material change from HB43.
+
+**Metrics** (all below target, stale):
+- Intervention hit rate: 47.3% vs 60% target
+- Skill effectiveness: 29.2% vs 60% target  
+- Instruction compliance: 53% vs 80% target
+- Breadcrumb action rate: 0.32 vs 0.80 target
+
+**Evals**: 2/5 recent scored 0.75, 3/5 scored 0 (unscored/duplicate sessions).
+
+**Correction**: Gym runner exists at `agents/test/gym/run-gym.sh`, NOT `scripts/gym-run.sh`. Context.md has wrong path.
+
+**Blockers** (unchanged):
+1. EXP-188 finish-guard code exists but NOT wired into runtime (tech-lead dependency, 40+ days)
+2. All text/skill/gate approaches exhausted (0% across last 5 experiments)
+3. Both P0 projects blocked on structural enforcement
+
+**Inbound notifications**: 12+ convention regressions (stale, 30-67d), scout citations, May signals. All previously acknowledged.
+
+**Possible unblock**: Could attempt production observation analysis (option c from HB38) — analyze existing eval data without gym. But no clear experiment design yet.
