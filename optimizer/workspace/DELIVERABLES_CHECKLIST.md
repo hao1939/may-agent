@@ -1,6 +1,4 @@
 # Deliverables Checklist — Optimizer Heartbeat
 
-- [x] System health check — all agents running current heartbeat, no anomalies
-- [x] Evaluation scoring gap: recent optimizer sessions get 0/0 due to "duplicate agent name" evaluator bug
-- [x] Quality metrics review — optimizer leads at 0.746 avg quality (7-day)
-- [x] Dispatch decision: none needed — system stable, all heartbeats active
+- [x] DONE: System health check (0 errors, 1 mild high-op session) — no file output needed, monitoring only
+- [x] DONE: Dispatch decision: NO_DISPATCH — system is healthy
