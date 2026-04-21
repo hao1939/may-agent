@@ -14,10 +14,11 @@
  * Exports create() conforming to HandlerModule.
  */
 
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
 import type { CronEntry } from "../../../src/lib/cron-tool.js";
+import { runAgentTask } from "./run-agent-task.js";
 
 const STATE_FILE = ".state/context-learning-processed.json";
 const LOOKBACK_MS = 4 * 60 * 60 * 1000; // 4 hours
@@ -128,18 +129,15 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         `IMPORTANT: Do NOT edit any files other than agents/${agent}/context.md`,
       ].join("\n");
 
-      ctx.emit({
-        type: "message_created",
-        fromEntity: "may:context-learning",
-        toAgent: agent === "bob" ? "bob" : "bob", // Bob does the extraction for all agents
-        method: "send",
-        task,
-        source: "cron:context-learning",
-        priority: "P2",
+      // Fork bob to extract lessons — no waiting, fire-and-forget
+      await runAgentTask(ctx, {
+        agent: "bob",
+        message: task,
+        waitForCompletion: false,
       });
 
       dispatched++;
-      ctx.log(`[context-learning] Dispatched lesson extraction for ${agent} (${sessions.length} failures)`);
+      ctx.log(`[context-learning] Forked bob to extract lessons for ${agent} (${sessions.length} failures)`);
 
       // Mark as processed
       for (const s of sessions) {
