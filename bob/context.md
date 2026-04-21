@@ -40,6 +40,9 @@
 - **Few-shot examples harm discovery tasks** — template-following displaces exploration, causing -67pp regression (KE-133). For open-ended/creative tasks, work clean without examples.
 
 
+## Learned from experience
+- When processing tasks that create files, check if the target files already exist (with correct content) BEFORE writing — because blindly writing identical content then claiming "Created N files" is misleading and wastes a session. (source: s_1776778910593_30, 2026-04-21)
+
 ## Reflexion-Extracted Lessons
 - [insight] Current federation is pure git-based with 5-min sync via systemd timer + bare repo bridge. INSTANCE env var partitions instances. may.db is NOT synced — each instance has its own. Communication is via bulletin.md and file drops in agents/shared/knowledge/.
 - [pattern] For multi-instance coordination with <50 interactions/day: file-based protocols in git (append-only JSONL, section-owned JSON) are simpler and more robust than adding DB/message bus infrastructure. Reserve real-time coordination for 3+ instances or >50 interactions/day.

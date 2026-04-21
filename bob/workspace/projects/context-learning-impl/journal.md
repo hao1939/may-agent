@@ -144,3 +144,24 @@ This produces a valid experiment result showing the reflexion pipeline's impact 
 **Worker**: The npx-recovery results are excellent: baseline 0% → treatment 100% on both checks. The read-before-edit has issues due to missing Score class methods. Let me add a note about that and improve the interpretation:
 **Reviewer**: CONTINUE — Good — 8 agents have reflexion lessons. Now verify results.md has real data:
 
+### Iteration 12 — 2026-04-21T15:48:05.429Z
+**Worker**: M4 is verified. Results.md has real data (npx-recovery: 0%→100% on both checks), and 8+ agents have reflexion lessons in their context.md files.
+**Reviewer**: DONE — All milestones are complete:
+
+**M4: Verify first automated run produces valid lessons in at least 1 agent's context.md** — Verified. 8 agents (bob, coach, coder, may, optimizer, qa, scout, tech-lead) have reflexion-generated lessons in their context.md files. Example: `agents/coder/context.md` contains `[fix] vitest needs --run flag in CI/automated contexts`.
+
+**M5: Run reflexion gym experiments — baseline + treatment comparison** — Complete. `agents/gym/experiments/results.md` contains real synthetic experiment data. The npx-recovery scenario shows a clear 0% → 100% improvement on both `formatting-applied` and `npx-avoided` checks between baseline and treatment conditions. The read-before-edit scenario is documented as invalid due to missing gym-score-utils methods (pre-existing infrastructure gap, not a reflexion issue). The methodology and interpretation are well-documented.
+
+Evidence summary:
+- 8 agents with lessons in context.md
+- results.md with real pass/fail data from synthetic transcript evaluation
+- Clear 0%→100% behavioral swing demonstrating the reflexion pipeline's mechanism
+
+**Evaluator**: PASS (score=7/10) — SCORE: 7
+
+**Reasoning:**
+
+1. **Deliverables exist**: Yes — `reflexion-scan.ts` (200 lines), `run-synthetic.js` (291 lines), `results.md` with structured data. 8 agents have lessons in their context.md files. Real files, real content.
+
+2. **Goal met**: Partially. The goal is "agents automatically learn from failed sessions." What was built is a CLI scan script (cron-style), not a runtime hook. This is a reasonable integration approach but requires manual/cron execution rather than being truly aut
+

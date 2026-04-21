@@ -1,10 +1,10 @@
 # Project: Context Learning — Implementation Phase
 
-**Status**: active
+**Status**: done
 **Owner**: bob (handler by may)
 **Priority**: P1
-**Iteration**: 11
-**Health**: 7/10 (UNBLOCKED — new cron handler approach)
+**Iteration**: 12
+**Health**: 7/10 (PASS)
 
 ## Goal
 Integrate the reflexion-based learning pipeline into the agent infrastructure so agents automatically learn from failed sessions.
@@ -21,8 +21,8 @@ New approach: **cron handler** (`may/handlers/context-learning.ts`) that:
 - [x] M1: Core pipeline implemented and tested (17/17 tests) — `extract-reflection.js`
 - [x] M2: Cron handler built — `may/handlers/context-learning.ts` (replaces runtime hook)
 - [x] M3: Cron entry added — `may/cron.json` (every 2h, offset 30min)
-- [ ] M4: Verify first automated run produces valid lessons in at least 1 agent's context.md
-- [ ] M5: Run reflexion gym experiments — baseline + treatment comparison
+- [x] M4: Verify first automated run produces valid lessons in at least 1 agent's context.md
+- [x] M5: Run reflexion gym experiments — baseline + treatment comparison
 
 ## Key Decisions
 - Pipeline triggers on session failure/error only (not clean sessions)
@@ -36,7 +36,9 @@ New approach: **cron handler** (`may/handlers/context-learning.ts`) that:
 - Does the gym runner support automated multi-run experiments?
 
 ## Current State
-Iteration 11. Milestones: 3/5 done. Next: M4: Verify first automated run produces valid lessons in at least 1 agent's cont
+Complete. 5/5 milestones. All milestones are complete:
+
+**M4: Verify first automated run produces valid lessons in at least 1 
 ## Iteration Summary
 - **Iter 1**: Already committed in a prior step. Good.
 
@@ -51,6 +53,10 @@ Iteration 11. Milestones: 3/5 done. Next: M4: Verify first automated run produce
 - **Iter 10**: Good — the experiment ran but agent was "skipped" (no live agent adapter). Now I have all the data n
 
 - **Iter 11**: The npx-recovery results are excellent: baseline 0% → treatment 100% on both checks. The read-before
+
+- **Iter 12**: All milestones are complete:
+
+**M4: Verify first automated run produces valid lessons in at least 1 
 
 
 ## Comments
