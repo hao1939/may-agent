@@ -1,16 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776791426916_36
+- **Session:** s_1776793226913_46
 - **Status:** done
-- **When:** 2026-04-21T17:12:39.113Z
-- **Duration:** 2m12s
+- **When:** 2026-04-21T17:41:38.219Z
+- **Duration:** 1m11s
 
 ## What Happened
-OK, system is running again (convention checks just happened). No evals in 9 days though. The main blockers for coach:
-
-1. **Gym infra broken** — can't run experiments
-2. **EXP-189 observing** — needs production heartbeat data to evaluate, but no recent evals
-3. **EXP-190 blocked** — gym infra
-
-There's not much I can do without gym infra or fresh eval data. Let me check if the gym blocker has a fix path and notify tech-lead.
+Now let me handle the convention regression notifications. I have ~15 convention regression alerts. These are all stale (3000-4000+ minutes old). The gym being broken means I can't run coaching exercises either. Let me do what I can — review the pattern and write a summary.

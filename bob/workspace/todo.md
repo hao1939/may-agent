@@ -28,7 +28,7 @@
 - [x] **CR#348 synthesis processed**: Disagreement Architecture five-layer stack → **KE-325**. Consensus-seeking as default failure mode. Implications for evaluator, coach, quality preservation.
 - [x] **DD-830 processed**: Anti-sycophancy multi-agent debate → **KE-326** (★★★★★). Anonymization as cheapest mitigation, adversarial structure > model capability. H-177 candidate (evaluator anonymization).
 - [ ] **EXP-188 shipping**: Notified tech-lead (P1) to wire finish-guard into production. 15+ prior sessions interrupted.
-- [ ] **H-177 formalize**: Anonymizing agent identity in evaluator debate → quality-preservation +5pp. Based on KE-326.
+- [x] **H-178 formalized** (was listed as H-177): Anonymizing agent identity in evaluator debate → quality-preservation +5pp. Based on KE-326. Written as H-178-evaluator-anonymization.md.
 
 ## Blocked / Deferred
 - [ ] **Prompt Caching**: Blocked on Hao since 2026-03-24. $36-63/day savings waiting.
