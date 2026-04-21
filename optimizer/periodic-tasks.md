@@ -3,12 +3,12 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [x] **Analysis review** — Last done: 2026-04-01T16:45
+- [x] **Analysis review** — Last done: 2025-07-11T18:00
   Read agents/bob/workspace/analysis.md or recent Bob synthesis outputs.
   Any findings that need optimization work? Cost issues? Efficiency problems?
   If found → add specific task to workspace/todo.md.
-  Latest (2026-04-02T00:27): Quality **99.5%** (200w: 136g/50a/1ni/13skip). 50w **100%** (29g/19a/0ni/2skip). 24h waste **0.6%** (1/159). 2 errors. 118 sessions, 1186 ops in 24h. Bob analysis (from 09:00) shows 88.5% good rate. KE-013 published: task boundedness is primary quality driver for delegated sessions (bounded: 90% good vs judgment: 41%). Coach remains top ops consumer (395/1186 = 33%). New: EXP-007 complete — delegation quality gap fully analyzed.
-  _Older entries pruned 2026-04-02T00:27._
+  Latest (2025-07-11): System healthy. 187 sessions in ~6h across 8 agents. Avg ops: tech-lead 12.4, coach 10.3, bob 7.9, optimizer 7.9, scout 7.4, qa 4.6, may 3.8. 0 errors. Coach waste rate 20.5% (top system-wide), coder 24.6% (lower volume). Coach high-waste sessions driven by `multiple_tool_errors` + `no_finish_call` (75-106 wasted calls). Persistent-task loop fix already dispatched. No new action needed.
+  _Older entries pruned 2025-07-11._
 
 - [x] **Cost outlier scan** — Last done: 2026-04-01T16:45
   Check recent evaluations — any sessions > $2.00?
