@@ -163,19 +163,15 @@ function emitMetricBreach(
   alertMessage: string,
 ): void {
   try {
-    ctx.emit({
-      type: "emit",
-      event: "metric.breach",
-      data: {
-        owner: metric.owner,
-        source: "metrics-snapshot",
-        metricId: metric.id,
-        metricName: metric.name,
-        current: metric.current,
-        threshold: metric.threshold,
-        target: metric.target,
-        message: alertMessage,
-      },
+    ctx.dispatchEvent("metric.breach", {
+      owner: metric.owner,
+      source: "metrics-snapshot",
+      metricId: metric.id,
+      metricName: metric.name,
+      current: metric.current,
+      threshold: metric.threshold,
+      target: metric.target,
+      message: alertMessage,
     });
     ctx.log(`[metrics-snapshot] Emitted metric.breach for ${metric.id} (owner: ${metric.owner})`);
   } catch (e: unknown) {
