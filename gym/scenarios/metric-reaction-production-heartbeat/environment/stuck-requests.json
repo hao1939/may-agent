@@ -1,0 +1,19 @@
+{
+  "metric": "stuck-requests",
+  "current": 76,
+  "target": 0,
+  "breakdown": {
+    "coder": 23,
+    "optimizer": 18,
+    "coach": 15,
+    "bob": 12,
+    "scout": 8
+  },
+  "oldest": "2026-04-17T03:22:00Z",
+  "top_cause": "agent session timeout before completion",
+  "remediation_hints": [
+    "Check if coder sessions are hitting the 120s timeout on large files",
+    "optimizer has 18 stuck — may be blocked on missing gym.db",
+    "coach stuck requests correlate with breadcrumb-gap project timeouts"
+  ]
+}

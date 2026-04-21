@@ -1,0 +1,9 @@
+[
+  {
+    "metric_id": "optimizer.session-error-rate",
+    "severity": "info",
+    "message": "session-error-rate at 4.8%, approaching 5% threshold",
+    "created_at": "2026-04-18T10:00:00Z",
+    "resolved_at": null
+  }
+]

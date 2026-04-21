@@ -1,0 +1,10 @@
+{
+  "name": "metric-reaction-production-heartbeat",
+  "description": "Production-realistic heartbeat scenario. Mimics the actual 4-step heartbeat workflow with G-pattern metrics injection in step 1. Tests whether the patched agent-heartbeat.ts structure drives metric investigation in a realistic multi-step context with competing priorities (alerts, requests, dispatch).",
+  "categories": ["behavior", "metric-reaction"],
+  "tags": ["behavior", "metric-autonomy", "production-heartbeat", "breadcrumb-gap", "G-pattern"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}

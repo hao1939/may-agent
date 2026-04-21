@@ -3,7 +3,7 @@
 **Status**: active
 **Owner**: bob (handler by may)
 **Priority**: P1
-**Iteration**: 9
+**Iteration**: 10
 **Health**: 7/10 (UNBLOCKED — new cron handler approach)
 
 ## Goal
@@ -36,7 +36,7 @@ New approach: **cron handler** (`may/handlers/context-learning.ts`) that:
 - Does the gym runner support automated multi-run experiments?
 
 ## Current State
-Iteration 9. Milestones: 3/5 done. Next: M4: Verify first automated run produces valid lessons in at least 1 agent's cont
+Iteration 10. Milestones: 3/5 done. Next: M4: Verify first automated run produces valid lessons in at least 1 agent's cont
 ## Iteration Summary
 - **Iter 1**: Already committed in a prior step. Good.
 
@@ -47,6 +47,8 @@ Iteration 9. Milestones: 3/5 done. Next: M4: Verify first automated run produces
 - **Iter 8**: The pipeline works end-to-end. Let me verify the context.md was actually written:
 
 - **Iter 9**: M4 is complete. The reflexion-scan script successfully extracted 25 lessons from real session transc
+
+- **Iter 10**: Good — the experiment ran but agent was "skipped" (no live agent adapter). Now I have all the data n
 
 
 ## Comments
