@@ -1673,3 +1673,15 @@ Production multi-agent data management system with "three-track knowledge archit
 - **Rating**: ★★★★ | **Added**: 2026-04-22
 - **Key insight**: Heterogeneous LLM agents (varying reasoning sophistication) exhibit myopic/self-interested behaviors that worsen systemic inefficiency. Information sharing mitigates adverse effects.
 - **Relevance**: Multi-model agent coordination dynamics; information asymmetry effects.
+
+## 2310.08560 — MemGPT: Towards LLMs as Operating Systems
+- **Authors**: Packer, Wooders, Lin, Fang, Patil, Stoica, Gonzalez | **Venue**: arXiv 2023
+- **Rating**: ★★★★★ | **Added**: 2026-04-22
+- **Key insight**: OS-inspired virtual context management with hierarchical memory tiers (core/archival). Agent self-manages memory via tool calls. Interrupt-driven control flow.
+- **Relevance**: Agent memory architecture; self-directed memory management. Now Letta platform (22k★). See DD#831.
+
+## 2305.16291 — Voyager: An Open-Ended Embodied Agent with LLMs
+- **Authors**: Wang, Xie, Jiang, Mandlekar, Xiao, Zhu, Fan, Anandkumar | **Venue**: arXiv 2023
+- **Rating**: ★★★★½ | **Added**: 2026-04-22
+- **Key insight**: Lifelong learning via executable skill library (code-as-skills) + automatic curriculum + iterative self-verification. No weight updates. 3.3× more unique items than prior SOTA in Minecraft.
+- **Relevance**: Skill library design; curriculum-driven exploration; compositional skill reuse. See DD#831.

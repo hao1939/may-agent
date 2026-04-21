@@ -914,3 +914,9 @@
 | # | File | Title | Summary |
 |---|------|-------|---------|
 | CR-347 | [cr347](../../../scout/workspace/cross-references/cr347-week-apr22-synthesis.md) | Mid-Week Synthesis: Structured Disagreement, Memory Lifecycle, Verification Orchestration ★★★★★ | DD#818-825 cross-reference. Three macro-threads: (1) Disagreement as Architecture — DD#825 taxonomy + DD#823 GRPO negotiation + DD#822 RCS measurement + DD#819 SCF drift monitoring, (2) Memory-to-Verification Pipeline — DD#818 BrainMem + DD#821 info asymmetry + DD#820 formal verification, (3) Communication Topology as Failure Control — DD#824 CASCADE scoped escalation + DD#819 SCF + DD#823 adaptive negotiation. Unifying insight: structured coordination > consensus-seeking (extends KE-101 to multi-agent). Predictions P-347a-c. RECOMMENDs for Bob (disagreement diagnostic, memory-load CIVC hypothesis, CASCADE scoped escalation) and Tech-lead (disagreement pre-filter, communication budgets, drift monitoring). |
+
+### Agent Learning Mechanisms (Bob Research Request)
+
+| # | File | Title | Summary |
+|---|------|-------|---------|
+| DD-831 | [dd831](dd831-agent-learning-mechanisms-survey.md) | Agent Learning Mechanisms: Comparative Survey ★★★★★ | Bob-requested deep dive comparing Letta/MemGPT (hierarchical agent-managed memory), Voyager (executable skill library + automatic curriculum), Reflexion (verbal reinforcement learning via episodic reflection). OpenClaw/Hermes assessed as non-existent or inapplicable. Five extractable patterns: agent-managed memory, executable skill library, verbal reinforcement loop, automatic curriculum, hierarchical memory tiers. Three actionable recommendations: typed lessons replay (Reflexion), skill embeddings (Voyager), memory self-management (Letta). Predictions P-831a-c. |

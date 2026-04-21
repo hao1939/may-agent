@@ -1,10 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776798626902_73
+- **Session:** s_1776800426981_80
 - **Status:** done
-- **When:** 2026-04-21T19:12:01.349Z
-- **Duration:** 1m34s
+- **When:** 2026-04-21T19:42:34.396Z
+- **Duration:** 2m7s
 
 ## What Happened
-Now let me check what convention regressions I should address — I have many pending notifications about convention drops:
+QA already has finish() guidance. The violations are persistent — QA keeps writing to `workspace/unreviewed-findings.md` (relative path, not `agents/qa/workspace/...`) and not calling finish() last. This seems like a heartbeat/workflow issue rather than a context.md issue.
+
+Let me write a brief coaching note and move on — the system is stable, no urgent fires.

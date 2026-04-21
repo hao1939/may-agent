@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776788010582_23
+- **Session:** s_1776800599907_85
 - **Status:** done
-- **When:** 2026-04-21T16:13:55.496Z
-- **Duration:** 24s
+- **When:** 2026-04-21T19:43:36.384Z
+- **Duration:** 16s
 
 ## What Happened
 ```json
@@ -13,8 +13,8 @@
     "scout": {
       "role": "Researcher",
       "capability_level": "L2",
-      "efficiency": 0.75,
-      "quality": 0.7,
-      "verdict": "good",
+      "efficiency": 0.72,
+      "quality": 0.62,
+      "verdict": "acceptable",
       "issues": [
-        "Minor tool/command error: attempted to append IDs and then grep in one bash command, which exited code 1; the root cause appears to be grep returning 1 (no matches) combined with chained commands, and the session moved on rather than correcting the combined command pattern. Evidence: bash command ret
+        "Did not complete two explicitly requested investigations (OpenClaw, Hermes Agent) beyond attempting one GitHub URL each; concluded they 'do not exist' based only on 404s, which is weak evidence and risks false negatives (should have tried alternative repo names, orgs, paper references, or broa
