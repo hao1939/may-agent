@@ -46,5 +46,7 @@ Iteration 9. Milestones: 3/5 done. Next: M4: Verify first automated run produces
 
 - **Iter 8**: The pipeline works end-to-end. Let me verify the context.md was actually written:
 
+- **Iter 9**: M4 is complete. The reflexion-scan script successfully extracted 25 lessons from real session transc
+
 
 ## Comments
