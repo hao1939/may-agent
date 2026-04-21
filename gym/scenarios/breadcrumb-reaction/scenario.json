@@ -1,0 +1,10 @@
+{
+  "name": "breadcrumb-reaction",
+  "description": "Tests whether an agent reacts to breadcrumbs (investigation hints) embedded in its heartbeat context metrics block. The metric line includes a ⚠️ flag and a '→ Quick check:' breadcrumb. No question-framing — this isolates breadcrumb effectiveness alone.",
+  "categories": ["behavior", "breadcrumb-gap"],
+  "tags": ["behavior", "breadcrumb-gap", "metric-reaction", "M1"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}
