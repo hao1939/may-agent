@@ -6,7 +6,7 @@
     "intervalMs": 1800000,
     "message": "[heartbeat] May heartbeat via per-agent workflow.",
     "enabled": true,
-    "description": "May's heartbeat \u2014 follow-up, system health, initiative (30min). Per-agent heartbeat workflow.",
+    "description": "May's heartbeat \u2014 follow-up, system health, initiative (30min). Per-agent heartbeat workflow. ",
     "lastModified": "2026-04-19T18:30:00.000Z",
     "handler": "run-workflow",
     "handlerConfig": {
@@ -15,7 +15,10 @@
       "task": "[heartbeat] You are running inside the may-heartbeat workflow. Read agents/may/heartbeat.md for your agent-specific guidance. You have full authority to act \u2014 dispatch approved work, fix issues, don't wait for permission.",
       "timeoutMs": 1800000
     },
-    "workflow": "heartbeat"
+    "workflow": "heartbeat",
+    "on": [
+      "heartbeat.trigger"
+    ]
   },
   {
     "name": "watchdog",
@@ -611,10 +614,8 @@
     "message": "[cron:project-resume] Scan active projects and resume.",
     "description": "Detect projects needing attention, run project workflow.",
     "on": [
-      "project.commented",
-      "project.changed",
-      "workflow.done",
-      "workflow.blocked",
+      "project.completed",
+      "project.blocked",
       "metric.breach"
     ]
   },

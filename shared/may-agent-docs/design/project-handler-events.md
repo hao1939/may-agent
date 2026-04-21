@@ -1,6 +1,6 @@
 # Design: Project Handler — Event-Driven Triggers & Health Metrics
 
-**Status:** Proposal
+**Status:** Reviewed — ready to implement
 **Date:** 2026-04-21
 **References:** [project-system.md](project-system.md), [event-driven-handlers.md](event-driven-handlers.md)
 
@@ -74,7 +74,13 @@ ratio = event-triggers / (event-triggers + timer-catches)
 
 ### Implementation
 
-In the handler, track whether the current invocation was from a timer tick or a bus event. The cron system already passes this information (handler receives the triggering event).
+In the handler, track whether the current invocation was from a timer tick or a bus event.
+
+**Note:** The handler signature today is `() => Promise<void>` — there's no trigger source argument. The cron system would need a small change to pass trigger context. Options:
+- **Simple (no src/ change):** Count total handler invocations vs events received on the bus. If handler fires exceed events, the difference is timer-triggered.
+- **Proper (src/ change):** Add trigger source to handler invocation — cron system sets a flag before calling the handler. ~5 LOC in cron.ts.
+
+The `on` list fix and the concept of the metric are the core value. Trigger source tracking can come later.
 
 ```typescript
 // On event-triggered invocation:

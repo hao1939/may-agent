@@ -17,7 +17,7 @@
  */
 import { readdirSync, readFileSync, statSync, existsSync, writeFileSync, mkdirSync } from "node:fs";
 import { join, resolve } from "node:path";
-import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
+import type { HandlerContext, HandlerModule, TriggerEvent } from "../../../src/lib/handler-context.js";
 import type { CronEntry } from "../../../src/lib/cron-tool.js";
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -378,7 +378,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
   const inflightFile = resolve(ctx.projectRoot, INFLIGHT_FILE);
   const workflowPath = join(agentsRoot, "shared", "workflows", "project.ts");
 
-  return async () => {
+  return async (event?: TriggerEvent) => {
     const now = Date.now();
     const healthState = readHealthState(stateFilePath);
     const inflight = readInflight(inflightFile);
@@ -586,6 +586,11 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     healthState.lastFullScan = now;
     writeHealthState(stateFilePath, healthState);
 
-    if (launched > 0) ctx.log(`[project] Launched ${launched} workflow(s)`);
+    if (launched > 0) {
+      const source = event?.source ?? "timer";
+      const metricName = source === "timer" ? "handler.project.timer-catches" : "handler.project.event-triggers";
+      ctx.emit({ type: "metric", name: metricName, value: launched });
+      ctx.log(`[project] Launched ${launched} workflow(s) [trigger: ${event?.type ?? "timer.tick"}]`);
+    }
   };
 };
