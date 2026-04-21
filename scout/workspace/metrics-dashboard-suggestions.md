@@ -1,34 +1,40 @@
 # Scout's Metrics Dashboard Suggestions
 
-**Date**: 2026-04-22
-**Re**: May's request (7272ae39)
+**For**: May (request 7272ae39)  
+**Date**: 2025-06-19
 
-## Views I'd Find Useful
+## Scout-Specific Views I'd Want
 
-### 1. Research Pipeline Flow
-A Sankey or funnel view: **arXiv papers scanned → DDs written → CRs synthesized → KEs created (Bob) → EXP designed → EXP completed**. This is our core value chain. Right now I track it manually in todo.md.
+### 1. Research Pipeline Funnel
+DD written → Cited by Bob/Coach → Integrated into KE → Led to experiment design  
+Currently I track this manually. Ratio visualization (funnel chart) would show where findings drop off.
 
-### 2. Citation Network Graph
-Which DDs/CRs get cited by whom (Bob KEs, Coach skills, Tech-lead implementations). Currently my citation ratio is 0.56 — I want to see *which* findings flow downstream and which are dead ends. A graph view showing DD→KE→EXP connections would be invaluable.
+### 2. Finding Freshness Heatmap
+Calendar view showing: days with new DDs (green), days with synthesis CRs (blue), gaps >3 days (red).  
+Lets me see coverage gaps at a glance.
 
-### 3. Hypothesis Lifecycle Dashboard  
-Track hypotheses from creation → evidence gathering → P(H) updates → archival. Show: active count, mean P(H), days since last update, tier distribution. Bob maintains the scorecard but a live view would help me target research.
+### 3. Citation Network Graph
+Which DDs cite which KEs/EXPs, and vice versa. Currently invisible — I only know when Bob explicitly mentions integration.  
+Would help identify high-impact research threads vs dead ends.
 
-### 4. Research Freshness Heatmap
-Calendar heatmap showing: days with arXiv triage (green), days with deep dives (blue), days with synthesis (purple), gaps (red). Helps me see coverage gaps at a glance.
+## System-Wide Views That Would Help Everyone
 
-### 5. Agent Cross-Pollination Matrix
-Which agents consume which other agents' outputs? A matrix showing scout→bob, scout→coach, bob→coach, etc. with volume and recency. Helps identify underserved consumers.
+### 4. Cross-Agent Knowledge Flow
+Scout DD → Bob KE → Coach skill → Coder behavior change  
+Show the full pipeline with latency (how many days from DD to KE to experiment).
 
-## Metrics I Track (for reference)
-- `scout.hypotheses-generated`: CRs produced (7d) — target 5, currently 11
-- `scout.findings-used`: Citation ratio — target 0.5, currently 0.56  
-- `scout.coverage`: Papers triaged — target 24, currently 69
-- Informal: days since last exploration, DD count this week, zero-citation DD ratio (~31%)
+### 5. Hypothesis Portfolio Dashboard
+All active hypotheses with P(H) values, trend arrows, and last-updated dates.  
+Currently scattered across Bob's scorecard. A unified view would help prioritize research.
 
-## Data Sources
-All in markdown files already:
-- `agents/shared/knowledge/library/deep-dives/INDEX.md` — master DD/CR index
-- `agents/bob/workspace/hypotheses/` — hypothesis scorecard
-- `agents/bob/workspace/knowledge-entries/` — KE files with DD citations
-- `agents/scout/workspace/todo.md` — activity log
+### 6. Experiment Outcomes Timeline
+Chronological view of experiment results (success/failure/ceiling-effect/blocked).  
+Pattern recognition: are we hitting more ceiling effects lately? More blocked experiments?
+
+### 7. Metric Health Overview (exists, but enhance)
+Add: metric trend sparklines (7-day), correlation between metrics (e.g., does scout.coverage correlate with bob.knowledge-entries?).
+
+## Implementation Notes
+- All data already exists in markdown files — parsing is straightforward
+- Obsidian (see DD#829) could serve as the UI layer with minimal custom work
+- Priority: #4 (cross-agent flow) would have highest impact on coordination

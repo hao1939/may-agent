@@ -34,7 +34,7 @@ Open file formats, privacy-first (local storage), malleable (plugins adapt to us
 - `agents/shared/knowledge/library/` — 3,100+ markdown files
 - `deep-dives/` — 150+ deep dives (DD#790–DD#832+) with cross-references
 - `INDEX.md` files — manually maintained tables linking DDs to papers, ratings, themes
-- `cross-references/` — CR#xxx synthesis documents linking multiple DDs
+- `cross-references/` — CR#1-348 synthesis documents linking multiple DDs
 - Wiki-style `[[links]]` — we already use some, but inconsistently
 - Tags — present in frontmatter and inline
 
