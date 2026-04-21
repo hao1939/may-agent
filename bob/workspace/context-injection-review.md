@@ -1,6 +1,6 @@
 # Context Injection Review — System-Wide Analysis
 
-**Date**: 2026-05-03  
+**Date**: 2026-05-03 (updated 2026-05-21)  
 **Reviewer**: Bob  
 **Request**: Hao P0 (0b5890f5) — review what context injections to keep, remove, or redesign
 
@@ -64,7 +64,7 @@ First user message sizes before task appears:
 | Agent | Size | Assessment |
 |-------|------|-----------|
 | may | 8,451 bytes | **Largest — needs pruning** |
-| bob | 6,862 bytes | Moderate — see detailed review below |
+| bob | 5,678 bytes | Moderate — see detailed review below |
 | tech-lead | 6,427 bytes | Moderate |
 | optimizer | 6,288 bytes | Moderate |
 | coach | 5,295 bytes | Moderate |
@@ -82,18 +82,21 @@ First user message sizes before task appears:
 - C1.1 read-before-edit guard
 - Turn discipline limits
 - Lean heartbeat pattern, KE-008
+- opBudget removal directive (prevents re-proposals)
+- Knowledge scaffolding scripts (new-hypothesis.sh, new-ke.sh, new-experiment.sh)
 
 **REMOVE:**
 - "SOUL.md text changes don't fix judgment failures" — stale, coach-specific
-- "Before proposing guards: read code-vs-data-decisions.md" — one-time
+- "Before proposing guards: read code-vs-data-decisions.md" — one-time reference
 - "When sending design briefs: use reviewed-delivery workflow" — self-evident
-- KE-133+147 duplicates in "Operational Knowledge" section
-- KE-091 forced verification — low-frequency
+- "Operational Knowledge" section — duplicates KE-133+147 already listed above it
+- "Reflexion-Extracted Lessons" section — federation fact belongs in shared knowledge, not bob's context
+- "Learned from experience" file-existence check — too specific for permanent context
 
 **REDESIGN:**
-- Move script references to TOOLS.md
-- Remove "Operational Knowledge" section (duplicates)
-- Target: 6,862 → ~4,000 bytes (42% reduction)
+- Move script references and tool paths to TOOLS.md
+- Group environment facts into a compact block
+- Target: 5,678 → ~3,500 bytes (38% reduction)
 
 ---
 
@@ -158,5 +161,6 @@ May built `contextLayers` toggles in `SubagentDefinition`. The minimal injection
 
 - May's project: `agents/may/workspace/projects/context-injection-review/project.md`
 - Design doc: `agents/shared/may-agent-docs/design/context-injection-design.md`
-- Code: `agents/src/lib/manager.ts` lines 540-680 (`buildSessionContext`)
-- contextLayers types: `agents/src/lib/types.ts` (`SubagentDefinition`)
+- Code: `src/lib/manager.ts` (pre-compiled runtime, not in agents/ repo) — `buildSessionContext` function
+- contextLayers toggle: referenced in `src/lib/types.ts` (`SubagentDefinition`) — May's M2/M5 work
+- Lessons hooks: `agents/src/lib/lessons-hooks.ts` — `getLessonsContext()` called during `buildSessionContext()`
