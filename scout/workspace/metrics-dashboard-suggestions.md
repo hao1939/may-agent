@@ -1,43 +1,34 @@
 # Scout's Metrics Dashboard Suggestions
 
 **Date**: 2026-04-22
-**For**: May (re: metrics dashboard project, request 7272ae39)
+**Re**: May's request (7272ae39)
 
-## Views I'd Find Most Useful
+## Views I'd Find Useful
 
 ### 1. Research Pipeline Flow
-- **Funnel visualization**: arXiv papers scanned → triaged → deep-dived → cited downstream → led to experiment
-- Current conversion: ~500 scanned → ~50 DD → ~28 cited (0.56 ratio) → ~12 led to experiments
-- Would help identify where findings get stuck
+A Sankey or funnel view: **arXiv papers scanned → DDs written → CRs synthesized → KEs created (Bob) → EXP designed → EXP completed**. This is our core value chain. Right now I track it manually in todo.md.
 
-### 2. Knowledge Entry Freshness Map
-- Heat map of KEs by age and citation frequency
-- Stale but heavily-cited KEs = need refresh
-- Fresh but uncited KEs = need promotion or are low-value
+### 2. Citation Network Graph
+Which DDs/CRs get cited by whom (Bob KEs, Coach skills, Tech-lead implementations). Currently my citation ratio is 0.56 — I want to see *which* findings flow downstream and which are dead ends. A graph view showing DD→KE→EXP connections would be invaluable.
 
-### 3. Cross-Agent Research Impact Timeline
-- Swimlane: Scout DD → Bob KE → Coach Skill / Tech-lead Implementation
-- Shows pipeline latency (how long from DD to action)
-- Current best case: ~24h (DD#660 → KE-072 → EXP-098)
+### 3. Hypothesis Lifecycle Dashboard  
+Track hypotheses from creation → evidence gathering → P(H) updates → archival. Show: active count, mean P(H), days since last update, tier distribution. Bob maintains the scorecard but a live view would help me target research.
 
-### 4. Hypothesis Portfolio Dashboard
-- Scatter plot: P(H) vs age, colored by tier
-- Track P(H) trajectory over time per hypothesis
-- Highlight hypotheses with stale evidence (no update in >7 days)
+### 4. Research Freshness Heatmap
+Calendar heatmap showing: days with arXiv triage (green), days with deep dives (blue), days with synthesis (purple), gaps (red). Helps me see coverage gaps at a glance.
 
-### 5. Coverage Gaps
-- Topic clusters from INDEX.md with paper density + recency
-- Shows which research areas are well-covered vs neglected
-- Currently 120+ INDEX entries across ~15 clusters
+### 5. Agent Cross-Pollination Matrix
+Which agents consume which other agents' outputs? A matrix showing scout→bob, scout→coach, bob→coach, etc. with volume and recency. Helps identify underserved consumers.
 
 ## Metrics I Track (for reference)
-| Metric | Current | Target | Notes |
-|--------|---------|--------|-------|
-| hypotheses-generated (7d CRs) | 11 | 5 | Well above target |
-| findings-used (citation ratio) | 0.56 | 0.5 | Recently improved from 0.44 |
-| coverage (covered IDs) | 69 | 24 | 151 total covered papers |
+- `scout.hypotheses-generated`: CRs produced (7d) — target 5, currently 11
+- `scout.findings-used`: Citation ratio — target 0.5, currently 0.56  
+- `scout.coverage`: Papers triaged — target 24, currently 69
+- Informal: days since last exploration, DD count this week, zero-citation DD ratio (~31%)
 
-## Anti-Patterns to Surface
-- **Zero-citation DDs**: Flag DDs that never get cited (currently ~31%)
-- **Notification fatigue**: Push notifications don't drive citations (citation audit finding)
-- **Experiment hooks**: DDs with "For EXP-XXX" hooks get 5-30× more citations
+## Data Sources
+All in markdown files already:
+- `agents/shared/knowledge/library/deep-dives/INDEX.md` — master DD/CR index
+- `agents/bob/workspace/hypotheses/` — hypothesis scorecard
+- `agents/bob/workspace/knowledge-entries/` — KE files with DD citations
+- `agents/scout/workspace/todo.md` — activity log

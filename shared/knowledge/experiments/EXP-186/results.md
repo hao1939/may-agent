@@ -30,6 +30,10 @@
 
 **Treatment: 3/4 (75%)**
 
+## ⚠️ Validity Warning (added 2025-06-20, per EXP-190/KE-327)
+
+EXP-190 discovered that the gym runner's `--lab` flag is **metadata-only** and does NOT overlay lab fork files onto agent config. If EXP-186's treatment runs relied on `--lab` to apply the skill+SOUL intervention, then treatment and baseline ran identical configs and the 75% result may reflect natural variance rather than the intervention. However, the 0%→75% jump across 7 trials is unlikely from noise alone — **audit how the intervention was actually applied** (manual edit vs `--lab` overlay) before discarding results. See KE-327 for full details.
+
 ## Analysis
 
 The TRIGGER/ACTION/EXAMPLE skill pattern combined with a SOUL.md critical behavioral rule section significantly improved persistent-task workflow adoption from 0% to 75%.

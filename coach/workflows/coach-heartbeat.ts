@@ -8,6 +8,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
   // Pre-load all context in JS (no LLM ops wasted on queries)
   const metrics = loadMetrics(ctx, agent);
+  ctx.log("[heartbeat-debug] agentsRoot=" + ctx.agentsRoot + " persistDir=" + ctx.persistDir);
   const projects = loadProjects(ctx, agent);
   const alerts = loadAlerts(ctx, agent);
   const guidance = loadHeartbeatMd(ctx, agent);
