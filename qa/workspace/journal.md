@@ -5624,3 +5624,8 @@ Findings:
 - Code read: `agents/may/handlers/project.ts` (Step: `read` offset 1). Observed handler now imports `../../src/lib/project-health.ts` (agents/src) rather than main src; aligns with comment.
 - Mandatory QA gates: unable to run `./node_modules/.bin/tsc --noEmit` or `./node_modules/.bin/vitest --run` in this environment because `node_modules/.bin` missing in `/app/agents` and there is no top-level `package.json` to install from (Steps: `cd agents && ls node_modules`, `find .. -name package.json`). This is an environment/tooling issue blocking independent compile/test verification.
 
+2026-04-21 heartbeat:
+- Repo topology sanity: `/app` is not a git repo; the git repo root is `/app/agents` (Step: `git log --oneline -10` failed at `/app`; succeeded at `/app/agents`).
+- Reviewed latest commit `2e1e737ba` touching `bob/last-session.md` (Step: `cd agents && git show -1 --name-only --oneline 2e1e737ba`; `read(agents/bob/last-session.md)`). No functional code change; file is auto-generated status note.
+- Mandatory QA gates still blocked in `/app/agents`: `./node_modules/.bin/tsc --noEmit` missing (exit 127) and `./node_modules/.bin/vitest --run` missing (exit 127). `node_modules/.bin` directory does not exist, and there is no `package.json` in repo root (Steps: `cd agents && ./node_modules/.bin/tsc --noEmit`; `cd agents && ./node_modules/.bin/vitest --run`; `cd agents && ls -la node_modules/.bin`; `cd agents && find .. -maxdepth 2 -name package.json`). This appears to be an environment packaging issue preventing compile/test verification.
+
