@@ -2,8 +2,9 @@
 
 ## Upcoming
 - [x] P1: Codebase weight — audit agents/ for dead code. **Workflow dead-weight audit done** (finding-dead-weight-lens-audit-agents-shared-wo.md). Found 571 removable lines (25% of workflows/). Next: delete persistent-task.ts alias, archive implement-and-review.ts.
-- [ ] P1: Delete persistent-task.ts alias + archive implement-and-review.ts (from workflow dead-weight audit)
-  - **Blocked**: persistent-task name is used in finish-guard.ts (pattern matching), session-sync.ts (source tagging), agent.json (workflow registration). Need to update all references to "project" first. Multi-file refactor — delegate to coder.
+- [x] P1: Archive implement-and-review.ts — DONE (commit eb6341e). Updated may/agent.json hints.
+- [ ] P1: Delete persistent-task.ts alias (from workflow dead-weight audit)
+  - **Blocked**: persistent-task name is used in finish-guard.ts (pattern matching), session-sync.ts (source tagging), gym scenarios. Need to update all references to "project" first. Multi-file refactor — delegate to coder.
 - [ ] P1: Zombie session auto-cleanup — active-nudge now handles this (May committed), verify it works
 - [ ] P1: Layer 2 monitoring / degradation detection per CR#343 (653a307d)
 - [ ] P1: Agent infrastructure simplification — are there redundant workflows, handlers, or skills?
