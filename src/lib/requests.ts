@@ -120,6 +120,7 @@ CREATE TABLE IF NOT EXISTS sessions (
   parentSessionId TEXT,
   requestId       TEXT,
   workflowRunId   TEXT,
+  projectId       TEXT,
   startedAt       INTEGER NOT NULL,
   endedAt         INTEGER,
   error           TEXT,
@@ -130,6 +131,7 @@ CREATE TABLE IF NOT EXISTS sessions (
 CREATE INDEX IF NOT EXISTS idx_sess_agent   ON sessions(agent);
 CREATE INDEX IF NOT EXISTS idx_sess_status  ON sessions(status);
 CREATE INDEX IF NOT EXISTS idx_sess_parent  ON sessions(parentSessionId);
+CREATE INDEX IF NOT EXISTS idx_sess_project ON sessions(projectId);
 CREATE INDEX IF NOT EXISTS idx_sess_started ON sessions(startedAt);
 
 -- Gym benchmark runs and checks
@@ -405,6 +407,16 @@ export function getDb(persistDir: string): SqliteDb {
   }
   try {
     db.exec("CREATE INDEX IF NOT EXISTS idx_gym_runs_prompt ON gym_runs(prompt_hash)");
+  } catch {
+    /* already exists */
+  }
+  try {
+    db.exec("ALTER TABLE sessions ADD COLUMN projectId TEXT");
+  } catch {
+    /* already exists */
+  }
+  try {
+    db.exec("CREATE INDEX IF NOT EXISTS idx_sess_project ON sessions(projectId)");
   } catch {
     /* already exists */
   }
@@ -832,6 +844,7 @@ interface SessionDbEntry {
   parentSessionId?: string;
   requestId?: string;
   workflowRunId?: string;
+  projectId?: string;
   startedAt: number;
   endedAt?: number;
   error?: string;
@@ -844,8 +857,8 @@ export function upsertSession(persistDir: string, entry: SessionDbEntry): void {
   const db = getDb(persistDir);
   db.run(
     `INSERT OR REPLACE INTO sessions
-      (sessionId, agent, task, status, kind, source, parentSessionId, requestId, workflowRunId, startedAt, endedAt, error, outcome, opCount)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      (sessionId, agent, task, status, kind, source, parentSessionId, requestId, workflowRunId, projectId, startedAt, endedAt, error, outcome, opCount)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       entry.sessionId,
       entry.agent,
@@ -856,6 +869,7 @@ export function upsertSession(persistDir: string, entry: SessionDbEntry): void {
       entry.parentSessionId ?? null,
       entry.requestId ?? null,
       entry.workflowRunId ?? null,
+      entry.projectId ?? null,
       entry.startedAt,
       entry.endedAt ?? null,
       entry.error ?? null,

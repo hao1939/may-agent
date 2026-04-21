@@ -51,6 +51,10 @@ export interface RuntimeCtx {
   log(msg: string): void;
   /** Send a human-visible notification (Telegram, web). */
   notify(msg: string): void;
+  /** Save a workflow run record to .state/workflows/. */
+  saveWorkflowRun(run: Record<string, unknown>): void;
+  /** Summarize a task result for handoff. */
+  summarizeForHandoff(result: Record<string, unknown>, opts?: Record<string, unknown>): string;
   /** Persistent state directory. */
   persistDir: string;
   /** Project root directory. */

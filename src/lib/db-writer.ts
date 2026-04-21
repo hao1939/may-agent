@@ -34,6 +34,7 @@ export class DbWriter {
             source: event.source,
             parentSessionId: event.parentSessionId,
             workflowRunId: event.workflowRunId,
+            projectId: (event as any).projectId,
             requestId: event.requestId,
             startedAt: Date.now(),
           });
