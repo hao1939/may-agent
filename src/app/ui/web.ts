@@ -647,16 +647,10 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         const projDir = join(AGENTS_ROOT, dir.name, "workspace", "projects");
         if (!existsSync(projDir)) continue;
         for (const entry of readdirSync(projDir, { withFileTypes: true })) {
-          let projectFile: string;
-          let relPath: string;
-          if (entry.isDirectory()) {
-            projectFile = join(projDir, entry.name, "project.md");
-            if (!existsSync(projectFile)) continue;
-            relPath = `agents/${dir.name}/workspace/projects/${entry.name}`;
-          } else if (entry.isFile() && entry.name.endsWith(".md")) {
-            projectFile = join(projDir, entry.name);
-            relPath = `agents/${dir.name}/workspace/projects/${entry.name}`;
-          } else continue;
+          if (!entry.isDirectory()) continue;
+          const projectFile = join(projDir, entry.name, "project.md");
+          if (!existsSync(projectFile)) continue;
+          const relPath = `agents/${dir.name}/workspace/projects/${entry.name}`;
           try {
             const content = readFileSync(projectFile, "utf-8");
             const field = (name: string) => {
