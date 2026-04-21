@@ -2,22 +2,30 @@
 
 Date: 2026-04-21
 
-## Environment checks
+## Scope
 
-- Attempted to run `./node_modules/.bin/tsc --noEmit` from `agents/` per QA SOP.
-  - Result: **FAIL** — `./node_modules/.bin/tsc: No such file or directory`.
-  - Likely cause: dependencies not installed in `agents/` workspace (no `node_modules`).
+Heartbeat review of most recent changes in the `agents/` repo.
 
-- Attempted to run `./node_modules/.bin/vitest --run` from `agents/` per QA SOP.
-  - Result: **FAIL** — `./node_modules/.bin/vitest: No such file or directory`.
-  - Likely cause: dependencies not installed in `agents/` workspace.
+## Checks
+
+- `tsc --noEmit`: **FAIL** (cannot run) — `./node_modules/.bin/tsc: No such file or directory` when executed from `agents/`.
+- `vitest --run`: **FAIL** (cannot run) — `./node_modules/.bin/vitest: No such file or directory` when executed from `agents/`.
+
+These failures appear environment-related (dependencies not installed in this repo), not a code regression.
 
 ## Recent change sampled
 
-- Commit `3c7fa364b` (qa: update heartbeat context)
-  - File: `qa/workspace/heartbeat-context.md`
-  - Change appears to be an auto-generated context/status note (no executable code).
+Commit: `182a59568` — chore: heartbeat context refresh
 
-## Findings
+File reviewed:
+- `qa/workspace/heartbeat-context.md`
 
-- **IMPORTANT:** QA required checks (tsc/vitest) cannot be executed in this environment because `node_modules` is missing in the `agents` repo. If this is expected, QA SOP/tooling should be updated to run via package manager (e.g., `pnpm -C agents test`) or to install deps in CI/runner.
+Observed content: auto-generated “Active Nudge” + system usage stats (no executable logic).
+
+## Issues
+
+- **IMPORTANT (process/env):** QA mandatory checks cannot be executed in this environment due to missing `node_modules` in `agents/`. If this is expected, update QA SOP to run checks via the appropriate workspace (or ensure deps are installed in CI/runner).
+
+## Verdict
+
+**CONDITIONAL** — change appears non-code (safe), but cannot independently verify with required `tsc`/`vitest` commands due to missing dependencies.
