@@ -1,6 +1,6 @@
 # Project: Agent Instruction Following
 
-**Status**: blocked
+**Status**: done (closed)
 **Owner**: coach
 **Reviewer**: may / Hao
 **Master**: may/system-evolution (gap-level concern)
@@ -327,3 +327,6 @@ SCORE: 2
 6. **Verification milestones**: N/A.
 7. **If blocked**: The supersession rationale is reasonable, but 8 iterations of zero output before reaching that conclusion is a failure regardless. 
 
+
+### Closed — 2026-04-22
+**Reason**: 9 iterations with zero successful file edits. The research question "what makes agents follow instructions" is being addressed more productively by bob's reviewer-effectiveness project. Observations from this failed loop: repeated textual instructions don't reliably produce behavior change in workers — structural/workflow changes are more effective.

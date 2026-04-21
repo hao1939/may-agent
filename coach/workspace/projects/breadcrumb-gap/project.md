@@ -5,11 +5,25 @@
 **Started**: 2026-04-18
 **Priority**: P0
 
-**Iteration**: 4
-**Health**: 4/10 (BLOCKED)
+**Iteration**: 5
+**Health**: 4/10 (RESET — rewritten with actionable scope)
 ## Goal
 
 Close the gap: context-discovery breadcrumbs work 100% at raw API level but only ~10% in gym scenarios. Make breadcrumbs effective in production heartbeats.
+
+**Your levers** (no `src/` exists — runtime is pre-compiled):
+- **Heartbeat workflow prompts** (`agents/shared/workflows/agent-heartbeat.ts`) — change step ordering, add question-framing
+- **Per-agent heartbeat configs** (`agents/*/workflows/*-heartbeat.ts`) — customize observeInstructions
+- **Agent heartbeat.md** files — restructure what agents see first
+- **Gym scenarios** (`agents/gym/scenarios/`) — test breadcrumb variants
+- **Context injection** — the metrics/breadcrumbs agents see are in their injected context
+
+## Revised Milestones
+- [ ] M1: Create a gym scenario that tests breadcrumb reaction (agent sees metric + breadcrumb, does it act?)
+- [ ] M2: Implement question-framing in heartbeat step 1 (from KE-215: step-1 question → 100% reaction)
+- [ ] M3: Run gym A/B: question-framing vs current heartbeat structure
+- [ ] M4: If validated, deploy question-framing to production heartbeats for 1 agent
+- [ ] M5: Measure production breadcrumb reaction rate >50%
 
 ## Prior Art (KE-215)
 

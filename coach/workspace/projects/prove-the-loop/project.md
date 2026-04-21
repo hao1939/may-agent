@@ -6,10 +6,27 @@
 **Started**: 2026-04-17
 **Priority**: P0 — Hao's #1 priority
 
-**Iteration**: 24
-**Health**: 2/10 (BLOCKED)
+**Iteration**: 25
+**Health**: 3/10 (RESET — rewritten to remove src/ dependency)
 ## Goal
 Improve coder quality metric from current 0.82 toward 0.9+ by systematically diagnosing and fixing failure modes. This proves the full loop: metrics signal → persistent task executes → gym validates → production improves.
+
+**IMPORTANT**: There is NO `src/` directory. The runtime is pre-compiled. Your levers are:
+- **Agent context files** (`agents/*/context.md`) — behavioral nudges, conventions, instructions
+- **Heartbeat prompts** (`agents/*/heartbeat.md`, `agents/*/workflows/*-heartbeat.ts`)
+- **Workflow improvements** (`agents/shared/workflows/*.ts`)
+- **Gym scenarios** (`agents/gym/scenarios/`) — create new scenarios, improve prompts
+- **Skills** (`agents/shared/skills/`) — reusable prompt patterns
+- **Cron/handler config** (`agents/may/cron.json`, `agents/*/handlers/`)
+
+Do NOT attempt to edit files in `src/`. They don't exist.
+
+## Milestones
+- [ ] M1: Diagnose top 3 coder failure modes from gym_checks data (just DB queries)
+- [ ] M2: For each failure mode, implement a fix using available levers (context.md, skills, workflows)
+- [ ] M3: Run gym experiments to validate each fix (before/after comparison)
+- [ ] M4: coder.quality reaches 0.85
+- [x] At least 2 interventions tested in gym (C1.5, C1.6, C1.7, evidence-count-guard — 4+ gym A/Bs across Iters 4-12)
 
 
 ### Iteration 4 — 2026-04-19T11:43:24.538Z

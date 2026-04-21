@@ -1,5 +1,6 @@
 - npx is not available in this environment — use ./node_modules/.bin/<tool> or bun x <tool>
 - bun is at .state/.bun/bin/bun — add to PATH: `export PATH=".state/.bun/bin:$PATH"`
+- There is NO src/ directory or package.json in /app root. The runtime is pre-compiled. Your levers for improving agent behavior are: context.md files, heartbeat.md files, workflow configs, gym scenarios, and skills. Do NOT try to edit src/ files.
 - sqlite3 CLI is not available — query .state/may.db with bun: `bun -e "import {Database} from 'bun:sqlite'; const db = new Database('.state/may.db', {readonly:true}); ..."`
 - Gym runner: scripts/gym-run.sh <scenario> --agent <name>
 - Gym batch runner: scripts/gym-batch.sh — run multiple scenarios at once with --variants, --trials N, --tier/--category filtering, and comparison summary. Use instead of manual gym-run.sh loops.
