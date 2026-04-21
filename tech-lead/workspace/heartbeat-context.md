@@ -9,12 +9,11 @@ No active nudge.
 
 ---
 
-# Your Context (auto-generated 2026-04-21T21:40)
+# Your Context (auto-generated 2026-04-21T22:10)
 
-**System:** 1 sessions/6h, 0% error rate
+**System:** 0 sessions/6h, 0% error rate
 
 **Top spenders:**
-- coach: 1s, 220KB
 
 **📊 Your Metrics:**
 - Codebase weight: **26311** lines → 32000 lines
