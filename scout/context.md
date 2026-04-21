@@ -25,5 +25,8 @@
 - **Few-shot examples harm discovery tasks** — template-following displaces exploration, causing -67pp regression (KE-133). For open-ended/creative tasks, work clean without examples.
 
 
+## Learned from experience
+- When a task specifies a future date, check today's actual date and refuse with 'blocked' status instead of claiming the work is already done — because mismatched dates mean the requested deliverables don't exist yet, and declaring 'success' with zero outputs is a critical false-positive (source: s_1776784273721_10, 2026-04-21)
+
 ## Reflexion-Extracted Lessons
 - [insight] EXP-084/085 together establish that few-shot worked examples produce the strongest behavior change among lightweight (non-workflow) skill delivery methods. Key distinction: declaring an outcome (0% effect) vs structuring a process (33-100% effect). The closer the worked example matches the task structure, the stronger the effect (87.5pp for structurally-matched escalation-judgment vs 33pp for abstract contradictory-requirements).
