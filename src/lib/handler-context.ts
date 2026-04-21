@@ -4,7 +4,7 @@
  * Each handler's create(ctx, entry) factory receives this context,
  * which provides everything the handler needs from the runtime.
  *
- * Runtime APIs (getDb, trackRequest, etc.) are provided here so that
+ * Runtime APIs (getDb, evaluateTask, etc.) are provided here so that
  * handlers don't need to import from src/lib/ directly. This allows
  * handlers to work in binary-only deployments where source files are
  * not present on disk.
@@ -15,6 +15,8 @@ import type { CronEntry } from "./cron-tool.js";
 import type { SqliteDb } from "./db.js";
 import type { PersistedSession } from "./persistence.js";
 import type { TaskEvaluationResult } from "./evaluator.js";
+import type { DigestRow, DigestInput, DigestAction } from "./session-digest.js";
+import type { ErrorClass } from "./classify-error.js";
 
 export interface TrackRequestOpts {
   fromEntity: string;
@@ -45,6 +47,8 @@ interface EvaluateTaskOpts {
 export interface RuntimeCtx {
   /** Emit an event on the bus. All events go through one bus. */
   emit(event: { type: string; [key: string]: unknown }): void;
+  /** Dispatch an agent-level event to handlers subscribed via cron.json `on` field. */
+  dispatchEvent(eventType: string, data?: Record<string, unknown>): void;
   /** Open the shared SQLite database. */
   getDb(): SqliteDb;
   /** Log a diagnostic message. */
@@ -61,6 +65,20 @@ export interface RuntimeCtx {
   projectRoot: string;
   /** Agents root directory. */
   agentsRoot: string;
+
+  // ── Session digest & error classification ─────────────────────────
+  /** Classify an error string into a category (infra/logic/abort/overflow). */
+  classifyError(error: string | undefined | null): ErrorClass;
+  /** Get the latest digest row for a session. */
+  getLastDigest(sessionId: string): DigestRow | null;
+  /** Upsert a digest record (create or update). */
+  upsertDigest(input: DigestInput): Promise<DigestRow | null>;
+  /** Classify a digest to determine action (resume/requeue/escalate/kill/nothing). */
+  classifyDigest(digest: { outcome: string; still_open: string | null; what_happened: string }, trigger: string): { action: DigestAction; reason: string };
+  /** Persist an escalation event and push to Telegram. */
+  escalate(agent: string, reason: string): void;
+  /** Read session metadata by sessionId. */
+  readSessionMeta(sessionId: string): PersistedSession | null;
 }
 
 /**

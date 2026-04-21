@@ -6,9 +6,6 @@ import { getModel } from "@mariozechner/pi-ai";
 import type { ModelWithApiKey } from "../lib/types.js";
 import {
   SubagentManager,
-  evaluateTask,
-  classifyError,
-  readSessionMeta,
   learnFromSession,
   learnFromSessionLLM,
 } from "../lib/index.js";
@@ -30,7 +27,6 @@ import {
 import { resolveProjectRoot } from "./bundle-mode.js";
 import { trackRequest } from "../lib/requests.js";
 import { setLogHandler } from "../lib/log.js";
-import { upsertDigest, getLastDigest, classifyDigest } from "../lib/session-digest.js";
 
 // ── --version / -v: print version + git SHA and exit immediately ────────
 if (process.argv.includes("--version") || process.argv.includes("-v")) {
@@ -236,9 +232,14 @@ bus.subscribe(createAutoResume(
       bus.emit({ type: "log", level: "warn", message: `[resume] Failed to resume ${sessionId}` });
     }
   },
-  (agent, sessionId, reason) => {
+  (agent, _sessionId, reason) => {
     bus.emit({ type: "log", level: "warn", message: `[resume] ${agent} exhausted resume attempts — escalating` });
-    escalateToHuman(agent, reason);
+    // Persist + notify (same as RuntimeCtx.escalate)
+    try {
+      const escalationPath = resolve(PERSIST_DIR, "escalations.jsonl");
+      appendFileSync(escalationPath, JSON.stringify({ ts: new Date().toISOString(), agent, reason, notified: true }) + "\n", "utf-8");
+    } catch { /* best-effort */ }
+    bus.emit({ type: "notification", agent: "may", text: `⚠️ *Agent Blocked*\n${agent} — ${reason}` });
   },
   PERSIST_DIR,
   () => manager,
@@ -273,41 +274,6 @@ if (process.env.ANTHROPIC_API_KEY) {
     type: "info",
     message: `[may.ts] LiteLLM proxy mode: all models via ${MODEL_BASE_URL} (prompt caching may be limited)`,
   });
-}
-
-// ── Session Recovery Tracking (Ambulance Protocol — P62) ────────────────
-// Track how many times a task has been auto-recovered to prevent infinite loops.
-// Key: "agent:taskHash", Value: recovery attempt count.
-const recoveryAttempts = new Map<string, number>();
-const MAX_RECOVERY_ATTEMPTS = 2;
-
-function recoveryKey(agent: string, task: string): string {
-  // Use first 100 chars of task to create a stable key
-  return `${agent}:${task.slice(0, 100)}`;
-}
-
-// Late-bound Telegram alert function — set after telegramBot is created (line order constraint).
-// When Telegram is absent, alerts are still persisted to escalations.jsonl (see below).
-let telegramAlert: (text: string) => void = () => {};
-
-/** Persist an escalation event and push to Telegram if available. */
-function escalateToHuman(agent: string, reason: string): void {
-  // 1. Always persist — survives restarts, Telegram outages, etc.
-  const escalationPath = resolve(PERSIST_DIR, "escalations.jsonl");
-  const entry = JSON.stringify({
-    ts: new Date().toISOString(),
-    agent,
-    reason,
-    notified: TELEGRAM_ENABLED,
-  });
-  try {
-    appendFileSync(escalationPath, entry + "\n", "utf-8");
-  } catch {
-    /* best-effort */
-  }
-
-  // 2. Push to Telegram if available (best-effort, non-blocking)
-  telegramAlert(`⚠️ *Agent Blocked*\n${agent} — ${reason}`);
 }
 
 // ── API concurrency gate ───────────────────────────────────────────────
@@ -354,168 +320,34 @@ bus.subscribe((event) => {
   }
 });
 
-// ── Bus subscribers for session lifecycle (recovery, eval, escalation) ──
-
-// Session Drop Recovery (Ambulance Protocol — P62)
-// Two-tier: digest classifier (structured understanding) → classifyError fallback (string matching)
+// ── Session lifecycle → agent events (thin translator) ────────────────
+// Classifies session_end bus events and emits agent-level events for handlers.
+// Actual decision logic lives in handlers: session-recovery, session-eval, escalation.
 bus.subscribe((event) => {
   if (event.type !== "session_end") return;
   const info = event as any;
-  if (!info.error || info.status !== "error") return;
 
-  // ── Tier 1: Check digest classification ──────────────────────────
-  let action: string | null = null;
-  let source = "fallback";
-  try {
-    const digest = getLastDigest(PERSIST_DIR, info.sessionId);
-    if (digest?.action) {
-      action = digest.action;
-      source = "digest";
-    }
-  } catch { /* best-effort — digest system shouldn't break recovery */ }
-
-  // ── Tier 2: Fall back to classifyError (backward compat) ─────────
-  if (!action) {
-    const errorClass = classifyError(info.error);
-    if (errorClass === "infra") action = "requeue";
-    else action = "nothing";
-  }
-
-  bus.emit({
-    type: "info",
-    message: `[recovery] decision=${action} source=${source} session=${info.sessionId} agent=${info.agent}`,
-  });
-
-  // ── Act on the decision ──────────────────────────────────────────
-  if (action === "resume" || action === "requeue") {
-    const rKey = recoveryKey(info.agent, info.task ?? "");
-    const attempts = recoveryAttempts.get(rKey) || 0;
-    if (attempts < MAX_RECOVERY_ATTEMPTS) {
-      try {
-        recoveryAttempts.set(rKey, attempts + 1);
-        const newSessionId = manager.run(info.agent, info.task, { kind: "job" });
-        // Digest: recovery_requeue
-        upsertDigest(PERSIST_DIR, {
-          sessionId: info.sessionId,
-          agent: info.agent,
-          trigger: "recovery_requeue",
-          what_happened: `Recovery requeue attempt ${attempts + 1}/${MAX_RECOVERY_ATTEMPTS} (${source}): ${(info.error ?? "unknown error").slice(0, 200)}`,
-          details: { attempt: attempts + 1, maxAttempts: MAX_RECOVERY_ATTEMPTS, newSessionId, error: (info.error ?? "").slice(0, 300), decisionSource: source },
-        }).catch(() => { /* best-effort */ });
-        bus.emit({
-          type: "info",
-          message: `[recovery] Requeued ${info.agent} session ${info.sessionId} → ${newSessionId} (${source}, attempt ${attempts + 1}/${MAX_RECOVERY_ATTEMPTS})`,
-        });
-      } catch (requeueErr) {
-        const msg = requeueErr instanceof Error ? requeueErr.message : String(requeueErr);
-        bus.emit({ type: "info", message: `[recovery] Failed to requeue ${info.agent}: ${msg}` });
-      }
-    } else {
-      bus.emit({
-        type: "info",
-        message: `[recovery] ${info.agent} exhausted ${MAX_RECOVERY_ATTEMPTS} recovery attempts for task — escalating`,
-      });
-      escalateToHuman(info.agent, `exhausted ${MAX_RECOVERY_ATTEMPTS} recovery retries`);
-    }
-  } else if (action === "escalate") {
-    escalateToHuman(info.agent, `digest classifier recommended escalation for session ${info.sessionId}`);
-  }
-  // "kill" and "nothing" → do nothing (session is dead or non-recoverable)
-});
-
-// Auto-evaluate completed task trees
-bus.subscribe((event) => {
-  if (event.type !== "session_end") return;
-  const info = event as any;
-  // Fire for any session with a parent. In task/oneshot mode, this covers taskSessionId children.
-  // In cron mode, this covers children forked by heartbeat sessions (agents calling other agents).
-  if (!info.parentSessionId) return;
-  // Skip evaluator children to prevent infinite evaluation loops
-  if (info.agent === "evaluator") return;
-
-  setTimeout(async () => {
-    try {
-      const result = await evaluateTask({
-        manager,
-        persistDir: PERSIST_DIR,
-        parentSessionId: info.parentSessionId,
-      });
-      if (result) {
-        const agentNames = Object.keys(result.agents).join(", ");
-        const verdict = result.overall.verdict;
-        bus.emit({
-          type: "info",
-          message: `[eval] Auto-evaluated ${result.sessionIds.length} session(s) (${agentNames}): ${verdict}`,
-        });
-
-        for (const sessionId of result.sessionIds) {
-          const meta = readSessionMeta(PERSIST_DIR, sessionId);
-          if (meta && meta.agent) {
-            bus.emit({ type: "context-learn", agentName: meta.agent, sessionId, persistDir: PERSIST_DIR });
-          }
-        }
-      }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      bus.emit({ type: "info", message: `[eval] Auto-evaluation failed: ${msg}` });
-    }
-  }, 3000);
-});
-
-// Escalation: blocked/failure sessions → digest classifier decides whether to escalate
-bus.subscribe((event) => {
-  if (event.type !== "session_end") return;
-  const info = event as any;
-  const fp = info.finishParams;
-  if (!fp || (fp.status !== "blocked" && fp.status !== "failure")) return;
-
-  // ── Consult digest classifier ──────────────────────────────────────
-  const trigger = fp.status === "blocked" ? "session_end_blocked" : "session_end_failure";
-  let action = "escalate"; // fallback: always escalate (backward compat)
-  let reason = `${fp.status}: ${fp.summary}`;
-  let source = "fallback";
-
-  try {
-    const digest = getLastDigest(PERSIST_DIR, info.sessionId);
-    if (digest?.what_happened) {
-      const classification = classifyDigest(
-        { outcome: digest.outcome ?? fp.status, still_open: digest.still_open ?? null, what_happened: digest.what_happened },
-        trigger,
-      );
-      action = classification.action;
-      reason = classification.reason;
-      source = "digest";
-    }
-  } catch { /* best-effort — classifier failure falls through to escalate */ }
-
-  bus.emit({
-    type: "info",
-    message: `[escalation] decision=${action} source=${source} session=${info.sessionId} agent=${info.agent} status=${fp.status}`,
-  });
-
-  if (action === "escalate") {
-    try {
-      trackRequest(PERSIST_DIR, {
-        fromEntity: info.agent,
-        toAgent: "may",
-        task: `[escalation] ${info.agent} session ${info.sessionId} — ${fp.status}: ${fp.summary}`,
-        method: "notify",
-        sessionId: info.sessionId,
-      });
-    } catch {
-      /* best-effort */
-    }
-    escalateToHuman(info.agent, `${fp.status}: ${fp.summary}`);
-  }
-  // "nothing" / other → session ended cleanly enough, no escalation needed
-});
-
-// Surface errors for completed task sessions
-bus.subscribe((event) => {
-  if (event.type !== "session_end") return;
-  const info = event as any;
+  // Translate → session.failed (for recovery handler)
   if (info.error && info.status === "error") {
-    bus.emit({ type: "info", message: `[${info.agent}] Session ${info.status}: ${info.error}` });
+    bus.emit({ type: "emit", event: "session.failed", data: {
+      sessionId: info.sessionId, agent: info.agent, error: info.error, task: info.task,
+    }} as any);
+  }
+
+  // Translate → session.escalated (for escalation handler)
+  const fp = info.finishParams;
+  if (fp && (fp.status === "blocked" || fp.status === "failure")) {
+    bus.emit({ type: "emit", event: "session.escalated", data: {
+      sessionId: info.sessionId, agent: info.agent, finishParams: fp,
+    }} as any);
+  }
+
+  // Translate → session.completed (for eval handler)
+  if (info.parentSessionId && info.agent !== "evaluator") {
+    bus.emit({ type: "emit", event: "session.completed", data: {
+      sessionId: info.sessionId, agent: info.agent,
+      parentSessionId: info.parentSessionId, outcome: info.outcome,
+    }} as any);
   }
 });
 
@@ -1213,9 +1045,6 @@ const telegramBot = TELEGRAM_ENABLED
       interfaceAgent,
     })
   : { close: () => {}, sendAlert: () => {} };
-
-// Wire late-bound Telegram alert now that telegramBot is initialized
-telegramAlert = (text: string) => telegramBot.sendAlert(text);
 
 // ── Main loop ──────────────────────────────────────────────────────────
 
