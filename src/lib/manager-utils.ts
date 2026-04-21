@@ -221,6 +221,8 @@ export interface ActiveSession {
   orderId?: string;
   /** Request ID linking this session to the unified request tracker. */
   requestId?: string;
+  /** Project ID for session tracking. */
+  projectId?: string;
   /** Structured finish() data extracted from the agent's completion. */
   finishResult?: import("./types.js").FinishResult;
   /** Number of consecutive turns where every tool call errored (Stuck Detection). */
@@ -268,6 +270,8 @@ export interface RunOptions {
   /** Skip few-shot example injection for this session.
    *  Useful for gym baselines and A/B testing. */
   skipFewShot?: boolean;
+  /** Project ID for session tracking. */
+  projectId?: string;
 }
 
 export interface SubagentManagerOptions {

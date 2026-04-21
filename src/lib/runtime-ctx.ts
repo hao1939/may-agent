@@ -9,6 +9,8 @@ import type { RuntimeCtx } from "./handler-context.js";
 import type { EventBus } from "../app/event-bus.js";
 import { getDb } from "./requests.js";
 import { log as globalLog } from "./log.js";
+import { saveWorkflowRun as _saveWorkflowRun } from "./persistence.js";
+import { summarizeForHandoff as _summarizeForHandoff } from "./handoff.js";
 
 export interface RuntimeCtxOptions {
   bus: EventBus;
@@ -25,6 +27,8 @@ export function buildRuntimeCtx(opts: RuntimeCtxOptions): RuntimeCtx {
     getDb: () => getDb(opts.persistDir),
     log: (msg) => globalLog("info", `[${opts.agentName}] ${msg}`),
     notify: (msg) => opts.bus.emit({ type: "notification", agent: opts.agentName, text: msg }),
+    saveWorkflowRun: (run) => _saveWorkflowRun(opts.persistDir, run as any),
+    summarizeForHandoff: (result, handoffOpts?) => _summarizeForHandoff(result as any, handoffOpts as any),
     persistDir: opts.persistDir,
     projectRoot: opts.projectRoot,
     agentsRoot: opts.agentsRoot,

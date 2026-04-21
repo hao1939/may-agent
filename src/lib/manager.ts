@@ -845,6 +845,7 @@ export class SubagentManager {
       filesModified: new Set(),
       orderId: opts?.orderId,
       requestId: opts?.requestId,
+      projectId: opts?.projectId,
       consecutiveErrorTurns: 0,
       stuckWarningInjected: false,
       currentTurnErrors: 0,
@@ -899,6 +900,7 @@ export class SubagentManager {
         task: meta?.task ?? task,
         parentSessionId: opts?.parentSessionId,
         workflowRunId: opts?.workflowRunId,
+        projectId: opts?.projectId,
         source: opts?.source,
         kind: session.kind,
         requestId: opts?.requestId,
@@ -2165,6 +2167,8 @@ export class SubagentManager {
       stepLabel?: string;
       /** Message source tag (default: "callAgent"). */
       source?: string;
+      /** Project ID for session tracking. */
+      projectId?: string;
     },
   ): Promise<TaskResult> {
     // ── Depth check ────────────────────────────────────────────────────
@@ -2196,6 +2200,7 @@ export class SubagentManager {
         workflowRunId: opts?.workflowRunId,
         stepLabel: opts?.stepLabel,
         source: opts?.source ?? "callAgent",
+        projectId: opts?.projectId,
         kind: "call",
       });
 
