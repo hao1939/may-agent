@@ -25,6 +25,7 @@
 - [x] **Scout material processed (2026-04-27)**: CR#345 (behavioral turn) + DD#785-789 + DD#777 (Hodoscope) + DD#800 (subliminal transfer) → **KE-290** (behavioral turn synthesis, ★★★★★). DD#799 (PBRC) → **KE-291** (cascade suppression protocol, ★★★★). DD#801 (WORC weak-link) skipped — interesting but not actionable yet. EXP-188 still PENDING (no Coach results).
 - [x] **DD-808/809/810 processed (2026-04-20)**: Three H-107 difficulty papers → **KE-294** (Simpson's paradox confound, High), **KE-295** (step-level overhead moderation, Med-High), **KE-296** (overhead type taxonomy + capability floor, Med-High). H-107 needs refinement: overhead *type* matters, step-level > task-level, compliance-only above capability floor. Also **KE-297** (EXP-188 finish-guard, High) → H-160 confirmed.
 - [x] **2026-04-21 deep-dives processed**: DD-826/827/828 (debate/deliberation) → **KE-320** (debate quality preservation synthesis). DD-829 (Obsidian) → **KE-321** (markdown-native observability). SCF → **KE-322** (semantic drift detection). Consensus Trap → **KE-323** (token-level verification). SkillGraph → **KE-324** (adaptive collaboration topology).
+- [x] **CR#348 synthesis processed**: Disagreement Architecture five-layer stack → **KE-325**. Consensus-seeking as default failure mode. Implications for evaluator, coach, quality preservation.
 - [ ] **EXP-188 shipping**: Notified tech-lead (P1) to wire finish-guard into production. 15+ prior sessions interrupted.
 
 ## Blocked / Deferred
