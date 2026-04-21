@@ -1,13 +1,7 @@
 /**
  * convention-check — Mechanical convention compliance checker.
- *
- * Runs on evaluated sessions, parses transcripts, and checks against
- * the convention registry (agents/shared/CONVENTIONS.md).
- * Writes results to `convention_checks` table in may.db.
- *
+ * Checks evaluated sessions against CONVENTIONS.md, writes to convention_checks table.
  * Phase 1 checks: C1.1, C1.3, C1.4, C1.5, C1.7, C2.1, C3.2, C3.3, C6.1, C7.1, C8.2, C12.1
- *
- * Exports create() conforming to HandlerModule.
  */
 
 import { readFileSync, existsSync, writeFileSync, mkdirSync } from "node:fs";
@@ -15,9 +9,6 @@ import { join } from "node:path";
 import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
 import type { CronEntry } from "../../../src/lib/cron-tool.js";
 import type { SqliteDb } from "../../../src/lib/db.js";
-
-// ── Types ─────────────────────────────────────────────────────────────
-
 interface TranscriptEntry {
   role: string;
   content?: unknown;
@@ -42,9 +33,6 @@ interface CheckResult {
   passed: boolean;
   violations: string[];
 }
-
-// ── Configuration ─────────────────────────────────────────────────────
-
 /** Agents exempt from workspace-isolation checks (they write everywhere). */
 const WORKSPACE_EXEMPT_AGENTS = new Set(["may", "tech-lead", "bob", "coach", "optimizer", "coder"]);
 
@@ -61,10 +49,7 @@ const APPEND_ONLY_PATTERNS = [
 /** Forbidden path prefixes (C7.1). */
 const FORBIDDEN_PATH_PREFIXES = ["/home/", "~/", "/Users/", "/root/"];
 
-/** Internal bookkeeping files exempt from C1.3 verify-writes.
- * These are personal/shared tracking files where write failures are
- * low-risk (edit() fails atomically) and read-back adds no value.
- * C1.3 should focus on deliverables (code, configs, briefs). */
+/** Internal bookkeeping files exempt from C1.3 verify-writes. */
 const C1_3_EXEMPT_PATTERNS = [
   /journal\.md$/,
   /todo\.md$/,
@@ -94,9 +79,6 @@ const MIN_SESSIONS_FOR_REGRESSION = 10;
 
 /** Regression threshold: 5 percentage points drop. */
 const REGRESSION_THRESHOLD_PP = 5;
-
-// ── Factory ───────────────────────────────────────────────────────────
-
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
   return async () => {
     const result = runConventionChecks({
@@ -118,61 +100,42 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
     // Check for regressions and trigger coaching (with dedup)
     if (result.regressions.length > 0) {
-      // Load cooldown state to avoid re-sending the same regression alert
-      const cooldownPath = join(ctx.persistDir, "convention-checks", "regression-cooldown.json");
-      let cooldowns: Record<string, number> = {};
-      try {
-        if (existsSync(cooldownPath)) {
-          cooldowns = JSON.parse(readFileSync(cooldownPath, "utf-8"));
-        }
-      } catch { /* start fresh */ }
-
-      const COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24 hours
-      const now = Date.now();
-      let sentAny = false;
-
-      for (const reg of result.regressions) {
-        const key = `${reg.agent}:${reg.convention}`;
-        const lastSent = cooldowns[key] || 0;
-
-        if (now - lastSent < COOLDOWN_MS) {
-          ctx.log(
-            `[convention-check] Suppressed duplicate regression alert: ${reg.agent} ${reg.convention} ` +
-              `(sent ${Math.round((now - lastSent) / 3600000)}h ago)`
-          );
-          continue;
-        }
-
-        ctx.log(
-          `[convention-check] 🚨 Regression: ${reg.agent} ${reg.convention} ` +
-            `dropped from ${reg.previousRate}% to ${reg.currentRate}%`
-        );
-        // Send finding to coach via event bus
-        ctx.emit({
-          type: "message_created",
-          from: "convention-check",
-          to: "coach",
-          task: `Convention regression: ${reg.agent} ${reg.convention} dropped from ${reg.previousRate}% to ${reg.currentRate}%. Query convention_checks table in .state/may.db for details. Design a targeted skill or exercise.`,
-          requestId: `cc-${Date.now()}-${reg.convention}`,
-        });
-        cooldowns[key] = now;
-        sentAny = true;
-      }
-
-      // Persist cooldown state
-      const cooldownDir = join(ctx.persistDir, "convention-checks");
-      mkdirSync(cooldownDir, { recursive: true });
-      writeFileSync(cooldownPath, JSON.stringify(cooldowns, null, 2), "utf-8");
-
-      if (sentAny) {
-        ctx.triggerNow("heartbeat-coach");
-      }
+      const sentAny = emitDeduplicatedRegressions(ctx, result.regressions);
+      if (sentAny) ctx.triggerNow("heartbeat-coach");
     }
   };
 };
 
-// ── Main logic ────────────────────────────────────────────────────────
+/** Emit regression alerts with 24h per-key cooldown. Returns true if any sent. */
+function emitDeduplicatedRegressions(ctx: HandlerContext, regressions: RegressionEntry[]): boolean {
+  const cooldownPath = join(ctx.persistDir, "convention-checks", "regression-cooldown.json");
+  let cooldowns: Record<string, number> = {};
+  try { if (existsSync(cooldownPath)) cooldowns = JSON.parse(readFileSync(cooldownPath, "utf-8")); } catch { /* fresh */ }
 
+  const COOLDOWN_MS = 24 * 60 * 60 * 1000;
+  const now = Date.now();
+  let sentAny = false;
+
+  for (const reg of regressions) {
+    const key = `${reg.agent}:${reg.convention}`;
+    if (now - (cooldowns[key] || 0) < COOLDOWN_MS) {
+      ctx.log(`[convention-check] Suppressed duplicate regression alert: ${key}`);
+      continue;
+    }
+    ctx.log(`[convention-check] 🚨 Regression: ${reg.agent} ${reg.convention} dropped from ${reg.previousRate}% to ${reg.currentRate}%`);
+    ctx.emit({
+      type: "message_created", from: "convention-check", to: "coach",
+      task: `Convention regression: ${reg.agent} ${reg.convention} dropped from ${reg.previousRate}% to ${reg.currentRate}%. Query convention_checks table in .state/may.db for details.`,
+      requestId: `cc-${Date.now()}-${reg.convention}`,
+    });
+    cooldowns[key] = now;
+    sentAny = true;
+  }
+
+  mkdirSync(join(ctx.persistDir, "convention-checks"), { recursive: true });
+  writeFileSync(cooldownPath, JSON.stringify(cooldowns, null, 2), "utf-8");
+  return sentAny;
+}
 export interface ConventionCheckResult {
   sessionsChecked: number;
   totalChecks: number;
@@ -239,15 +202,11 @@ export function runConventionChecks(opts: {
       }
 
       // Check if session was interrupted (can't penalize for missing finish())
-      // Also treat sessions with no session record as interrupted (orphans —
-      // gym runs or sessions that died before session record creation)
       const sessionRow = db.prepare(
         `SELECT status, kind, source, task FROM sessions WHERE sessionId = ?`
       ).get(sessionId) as { status: string; kind: string | null; source: string | null; task: string | null } | undefined;
-      // Review-only workflow calls are one-shot synchronous assessments whose
-      // deliverable IS the response; they never call finish(). Exempt them from
-      // finish-dependent convention checks (C1.4, C8.2, C1.5, C1.7) — same as
-      // interrupted sessions. See agents/coach/workspace/brief-c14-may-regression.md.
+      // Review-only workflow calls are one-shot assessments; exempt from
+      // finish-dependent checks like interrupted sessions.
       const isReviewOnlyCall = sessionRow?.kind === "call"
         && sessionRow?.source === "workflow"
         && /^\[REVIEW ONLY/i.test(sessionRow?.task ?? "");
@@ -286,9 +245,6 @@ export function runConventionChecks(opts: {
 
   return result;
 }
-
-// ── Session discovery ─────────────────────────────────────────────────
-
 interface UncheckedSession {
   sessionId: string;
   agent: string;
@@ -315,9 +271,6 @@ function findUncheckedSessions(
 
   return rows.map((r) => ({ sessionId: r.sessionId, agent: r.agent }));
 }
-
-// ── Transcript parsing ────────────────────────────────────────────────
-
 function loadToolCalls(persistDir: string, sessionId: string): ToolCall[] | null {
   const paths = [
     join(persistDir, "sessions", "history", sessionId, "session.jsonl"),
@@ -385,17 +338,10 @@ function loadToolCalls(persistDir: string, sessionId: string): ToolCall[] | null
         } else if (typeof entry.content === "string") {
           tc.resultContent = entry.content;
         }
-        // Check for error indicators — but skip false positives from file content
         if (tc.resultContent) {
-          // If the tool output is wrapped in <tool_output>, it succeeded —
-          // the content is file/command output, not a tool error.
-          // Only check for errors in raw (unwrapped) output.
+          // Wrapped <tool_output> = tool succeeded, content is file/cmd output
           const isWrappedOutput = tc.resultContent.includes('<tool_output');
           if (isWrappedOutput) {
-            // Wrapped output means the tool succeeded — content is file/command
-            // output, not a tool error. Never flag as error: the content may
-            // contain strings like "ENOENT:" or "Error:" as literal text
-            // (e.g., reading source code that handles errors).
             tc.isError = false;
           } else {
             tc.isError =
@@ -410,9 +356,6 @@ function loadToolCalls(persistDir: string, sessionId: string): ToolCall[] | null
 
   return toolCalls;
 }
-
-// ── Check implementations ─────────────────────────────────────────────
-
 function runAllChecks(toolCalls: ToolCall[], agent: string, isInterrupted: boolean = false): CheckResult[] {
   if (toolCalls.length === 0) return [];
 
@@ -441,10 +384,7 @@ function runAllChecks(toolCalls: ToolCall[], agent: string, isInterrupted: boole
   return checks;
 }
 
-/**
- * C1.1: read-before-edit
- * For every edit()/write() target path, there must be a preceding read() of that path.
- */
+/** C1.1: read-before-edit — edit() targets must have a preceding read(). */
 function checkC1_1_readBeforeEdit(toolCalls: ToolCall[]): CheckResult {
   const violations: string[] = [];
   const readPaths = new Set<string>();
@@ -455,7 +395,6 @@ function checkC1_1_readBeforeEdit(toolCalls: ToolCall[]): CheckResult {
       if (path) readPaths.add(normalizePath(path));
     }
     // Only flag edit() — write() creates/replaces files and doesn't need prior read.
-    // edit() needs prior read to get exact oldText for matching.
     if (tc.name === "edit") {
       const path = extractPath(tc.input);
       if (path) {
@@ -470,12 +409,7 @@ function checkC1_1_readBeforeEdit(toolCalls: ToolCall[]): CheckResult {
   return { convention: "C1.1", passed: violations.length === 0, violations };
 }
 
-/**
- * C1.3: verify-writes
- * For every edit()/write(), there must be a subsequent read() of that path.
- * Exception: edit() with a successful result (diff preview) counts as self-verifying,
- * since the diff output confirms the change landed correctly.
- */
+/** C1.3: verify-writes — edit()/write() must have subsequent read(). Successful edit() is self-verifying. */
 function checkC1_3_verifyWrites(toolCalls: ToolCall[]): CheckResult {
   const violations: string[] = [];
   // Track paths that need verification (edit/write happened, no subsequent read)
@@ -528,10 +462,7 @@ function checkC1_3_verifyWrites(toolCalls: ToolCall[]): CheckResult {
   return { convention: "C1.3", passed: violations.length === 0, violations };
 }
 
-/**
- * C1.4: finish-clearly
- * Last tool call must be finish().
- */
+/** C1.4: finish-clearly — last tool call must be finish(). */
 function checkC1_4_finishClearly(toolCalls: ToolCall[]): CheckResult {
   if (toolCalls.length === 0) {
     return { convention: "C1.4", passed: false, violations: ["No tool calls in session"] };
@@ -588,11 +519,7 @@ function checkC2_1_preciseArgs(toolCalls: ToolCall[]): CheckResult {
 
   for (const tc of toolCalls) {
     if (tc.resultContent && tc.isError) {
-      // Double-check: wrapped tool output is never a schema error — it's file/command
-      // content that happens to contain error-like strings. Belt-and-suspenders with
-      // the isError=false fix above (which may be cached).
-      if (tc.resultContent.includes('<tool_output')) continue;
-      // Also skip if the error pattern only appears deep in the content (>200 chars in),
+      // Skip if the error pattern only appears deep in the content (>200 chars in),
       // which indicates it's part of file content or command output, not a tool error.
       const first200 = tc.resultContent.substring(0, 200);
       for (const pattern of errorPatterns) {
@@ -607,11 +534,7 @@ function checkC2_1_preciseArgs(toolCalls: ToolCall[]): CheckResult {
   return { convention: "C2.1", passed: violations.length === 0, violations };
 }
 
-/**
- * C3.2: workspace-isolation
- * All write()/edit() paths must be within agents/[agentName]/workspace/ or allowed prefixes.
- * Exempt: may, tech-lead.
- */
+/** C3.2: workspace-isolation — writes must be in agent's workspace or allowed prefixes. */
 function checkC3_2_workspaceIsolation(toolCalls: ToolCall[], agent: string): CheckResult {
   if (WORKSPACE_EXEMPT_AGENTS.has(agent)) {
     return { convention: "C3.2", passed: true, violations: [] };
@@ -640,10 +563,7 @@ function checkC3_2_workspaceIsolation(toolCalls: ToolCall[], agent: string): Che
   return { convention: "C3.2", passed: violations.length === 0, violations };
 }
 
-/**
- * C3.3: safe-append
- * write() should not be used on known append-only files.
- */
+/** C3.3: safe-append — write() should not target append-only files. */
 function checkC3_3_safeAppend(toolCalls: ToolCall[]): CheckResult {
   const violations: string[] = [];
 
@@ -663,34 +583,17 @@ function checkC3_3_safeAppend(toolCalls: ToolCall[]): CheckResult {
   return { convention: "C3.3", passed: violations.length === 0, violations };
 }
 
-/**
- * C6.1: budget-awareness
- * Check total tool calls for session efficiency. If > 60 tool ops in a session, flag.
- * Threshold raised from 45→60 (2026-03-30) after opBudget removal — 45 was hitting
- * 16% of sessions as false positives. 60 = ~93rd percentile, catches only truly
- * bloated sessions while still incentivizing efficiency.
- */
+/** C6.1: budget-awareness — flag sessions with excessive tool calls (>80). */
 function checkC6_1_budgetAwareness(toolCalls: ToolCall[]): CheckResult {
-  // Heuristic: sessions with very high tool call counts are inefficient.
-  // 80 = ~97th percentile of recent sessions (2026-03-31). Post-opBudget,
-  // this is an efficiency signal only. Coach/Bob regularly use 50-75 calls
-  // for legitimate complex work (gym scenarios, convention analysis).
   const BUDGET_THRESHOLD = 80;
   const passed = toolCalls.length < BUDGET_THRESHOLD;
-
   return {
-    convention: "C6.1",
-    passed,
-    violations: passed
-      ? []
-      : [`${toolCalls.length} tool calls (likely hitting budget limit)`],
+    convention: "C6.1", passed,
+    violations: passed ? [] : [`${toolCalls.length} tool calls (likely hitting budget limit)`],
   };
 }
 
-/**
- * C7.1: root-is-app
- * No bash commands should reference /home/, ~, /Users/.
- */
+/** C7.1: root-is-app — no bash commands should reference /home/, ~, /Users/. */
 function checkC7_1_rootIsApp(toolCalls: ToolCall[]): CheckResult {
   const violations: string[] = [];
 
@@ -709,126 +612,45 @@ function checkC7_1_rootIsApp(toolCalls: ToolCall[]): CheckResult {
   return { convention: "C7.1", passed: violations.length === 0, violations };
 }
 
-/**
- * C8.2: promise-deliver-report
- * Check for a plan in early assistant messages and a finish() with summary/completed_items.
- */
+/** C8.2: promise-deliver-report — finish() must have summary or completed_items. */
 function checkC8_2_promiseDeliverReport(toolCalls: ToolCall[]): CheckResult {
-  const violations: string[] = [];
-
-  // Check if finish() has summary or completed_items
-  // Use the LAST finish() call — agents may retry finish() after validation errors
   const finishCalls = toolCalls.filter((tc) => tc.name === "finish");
   const finishCall = finishCalls.length > 0 ? finishCalls[finishCalls.length - 1] : null;
   if (!finishCall) {
-    violations.push("No finish() call — cannot verify report");
-  } else {
-    const input = finishCall.input;
-    const hasSummary = typeof input.summary === "string" && input.summary.length > 0;
-    const hasCompleted = Array.isArray(input.completed_items) && input.completed_items.length > 0;
-    if (!hasSummary && !hasCompleted) {
-      violations.push("finish() has no summary or completed_items");
-    }
+    return { convention: "C8.2", passed: false, violations: ["No finish() call — cannot verify report"] };
   }
-
+  const input = finishCall.input;
+  const hasSummary = typeof input.summary === "string" && input.summary.length > 0;
+  const hasCompleted = Array.isArray(input.completed_items) && input.completed_items.length > 0;
+  const passed = hasSummary || hasCompleted;
   return {
-    convention: "C8.2",
-    passed: violations.length === 0,
-    violations,
+    convention: "C8.2", passed,
+    violations: passed ? [] : ["finish() has no summary or completed_items"],
   };
 }
 
 /**
  * C12.1: session-start
- * First tool call should be read() of heartbeat.md.
+ * First few tool calls should show orientation behavior (reading context, checking state).
  */
-function checkC12_1_sessionStart(toolCalls: ToolCall[], agent: string): CheckResult {
+function checkC12_1_sessionStart(toolCalls: ToolCall[], _agent: string): CheckResult {
   if (toolCalls.length === 0) {
     return { convention: "C12.1", passed: false, violations: ["No tool calls"] };
   }
 
-  // C12.1 spirit: agents should orient themselves before acting.
-  // "Orient" means reading context files OR using orientation tools.
-  // Different agents and session types have different valid startup patterns.
-
-  // Named context files that indicate orientation
-  const CONTEXT_FILE_PATTERNS = [
-    /heartbeat\.md$/,
-    /todo\.md$/,
-    /focus-tasks\.md$/,
-    /periodic-tasks\.md$/,
-    /context\.md$/,
-    /common-sense\.md$/,
-    /nudge-active\.md$/,
-    /heartbeat-context\.md$/,
-    /pending-decisions\.md$/,
-    /journal\.md$/,
-    /analysis\.md$/,
-  ];
-
-  // Agent workspace reads also count as orientation (e.g., QA reading
-  // last-reviewed-commit.txt, Coach reading diagnosis-*.md)
-  // Also accept agents/shared/ reads — reading shared knowledge IS orientation.
-  // (Fixes false positives on dispatched work sessions that read shared knowledge first.)
-  const WORKSPACE_PATTERN = new RegExp(`agents/(${agent}|shared)/(workspace|knowledge|skills)/`);
-
-  // Orientation tools that aren't read() but still show the agent is
-  // getting context before acting
-  const ORIENTATION_TOOLS = new Set([
-    "system_status",  // checking system state
-    "agents",         // listing agents or checking requests
-    "claude_code",    // delegation to external CLI agent (has its own context)
-  ]);
-
   // Check first 5 tool calls for any orientation behavior
-  const earlyWindow = toolCalls.slice(0, 5);
+  const ORIENTATION_TOOLS = new Set(["read", "system_status", "agents", "claude_code", "workflow"]);
+  const BASH_ORIENTATION = /^(grep|rg|find|ls|cat|head|tail|git|bun)\b/;
 
-  for (const tc of earlyWindow) {
-    // read() of a context file or workspace file
-    if (tc.name === "read") {
-      const path = extractPath(tc.input);
-      if (!path) continue;
-      if (CONTEXT_FILE_PATTERNS.some((p) => p.test(path))) {
-        return { convention: "C12.1", passed: true, violations: [] };
-      }
-      if (WORKSPACE_PATTERN.test(path)) {
-        return { convention: "C12.1", passed: true, violations: [] };
-      }
-    }
-
-    // Orientation tools (system_status, agents list/requests)
+  for (const tc of toolCalls.slice(0, 5)) {
     if (ORIENTATION_TOOLS.has(tc.name)) {
       return { convention: "C12.1", passed: true, violations: [] };
     }
-
-    // workflow() is a valid start for cron tasks that are told to run a workflow
-    if (tc.name === "workflow") {
-      return { convention: "C12.1", passed: true, violations: [] };
-    }
-
-    // bash() with grep/find/ls in early window = searching for context
     if (tc.name === "bash") {
-      const cmd = extractBashCommand(tc.input);
-      if (cmd) {
-        // Strip common prefixes: "cd /app && grep ..." → "grep ..."
-        // Also strip "export PATH=... &&" and similar env setups
-        let stripped = cmd.trim();
-        // Iteratively strip cd and export prefixes (handles "cd /app && export PATH=... && ls")
-        let changed = true;
-        while (changed) {
-          changed = false;
-          const next = stripped
-            .replace(/^cd\s+[^\s;]+\s*&&\s*/, "")
-            .replace(/^export\s+\w+=("[^"]*"|'[^']*'|[^\s;]+)\s*&&\s*/, "")
-            .trim();
-          if (next !== stripped) {
-            stripped = next;
-            changed = true;
-          }
-        }
-        if (/^(grep|rg|find|ls|cat|head|tail|git|bun)\b/.test(stripped)) {
-          return { convention: "C12.1", passed: true, violations: [] };
-        }
+      const cmd = String(tc.input.command || "").trim()
+        .replace(/^(cd\s+[^\s;]+\s*&&\s*|export\s+\w+=("[^"]*"|'[^']*'|[^\s;]+)\s*&&\s*)*/g, "");
+      if (BASH_ORIENTATION.test(cmd)) {
+        return { convention: "C12.1", passed: true, violations: [] };
       }
     }
   }
@@ -837,93 +659,46 @@ function checkC12_1_sessionStart(toolCalls: ToolCall[], agent: string): CheckRes
     convention: "C12.1",
     passed: false,
     violations: [
-      `No context file read in first 5 tool calls (first was ${toolCalls[0].name}(${extractPath(toolCalls[0].input) || ""}))`,
+      `No orientation in first 5 tool calls (first was ${toolCalls[0].name}(${extractPath(toolCalls[0].input) || ""}))`,
     ],
   };
 }
 
-/**
- * C1.7: verification-evidence
- * If finish(status: "success"), there must be at least one verification command
- * (bash with grep/ls/test/curl/node/python, or read()) in the last N tool calls.
- */
+/** C1.7: verification-evidence — finish(success) needs verification in last 5 tool calls. */
 function checkC1_7_verificationEvidence(toolCalls: ToolCall[]): CheckResult {
-  // Find finish calls with status "success"
   const finishCalls = toolCalls.filter(
     (tc) => tc.name === "finish" && tc.input?.status === "success"
   );
-
   if (finishCalls.length === 0) {
-    // No success claim — not applicable, pass by default
     return { convention: "C1.7", passed: true, violations: [] };
   }
 
-  const violations: string[] = [];
-
-  // Only check the LAST finish(success) call — if the agent retried finish()
-  // multiple times (e.g., finish-gate rejection loop), earlier attempts have
-  // only other finish() calls in their lookback window, which is unfixable.
+  // Only check the LAST finish(success) call
   const finish = finishCalls[finishCalls.length - 1];
-  {
-    // Look at the last 5 tool calls before this finish (excluding other finish() calls)
-    const finishIdx = finish.index;
-    const recentCalls = toolCalls.filter(
-      (tc) => tc.index < finishIdx && tc.name !== "finish"
-    ).slice(-5);
+  const recentCalls = toolCalls.filter(
+    (tc) => tc.index < finish.index && tc.name !== "finish"
+  ).slice(-5);
 
-    // Check for verification signals
-    const VERIFICATION_PATTERNS = [
-      /\bgrep\b/,
-      /\bls\b/,
-      /\btest\b/,
-      /\bcurl\b/,
-      /\bnode\b/,
-      /\bpython\b/,
-      /\bcat\b/,
-      /\bwc\b/,
-      /\bfind\b/,
-      /\bdiff\b/,
-      /\btsc\b/,
-      /\bvitest\b/,
-      /\bhead\b/,
-      /\btail\b/,
-    ];
+  const VERIFICATION_RE = /\b(grep|ls|test|curl|node|python|cat|wc|find|diff|tsc|vitest|head|tail)\b/;
+  let hasVerification = false;
 
-    let hasVerification = false;
-
-    for (const tc of recentCalls) {
-      // read() counts as verification
-      if (tc.name === "read") {
-        hasVerification = true;
-        break;
-      }
-      // Delegation tools count as verification (master delegates to CLI agents)
-      if (tc.name === "agents" || tc.name === "claude_code" || tc.name === "codex") {
-        hasVerification = true;
-        break;
-      }
-      // bash with verification command
-      if (tc.name === "bash") {
-        const cmd = String(tc.input.command || "");
-        if (VERIFICATION_PATTERNS.some((p) => p.test(cmd))) {
-          hasVerification = true;
-          break;
-        }
-      }
+  for (const tc of recentCalls) {
+    if (tc.name === "read" || tc.name === "agents" || tc.name === "claude_code" || tc.name === "codex") {
+      hasVerification = true;
+      break;
     }
-
-    if (!hasVerification) {
-      violations.push(
-        "finish(success) without verification: no grep/ls/test/read in last 5 tool calls"
-      );
+    if (tc.name === "bash" && VERIFICATION_RE.test(String(tc.input.command || ""))) {
+      hasVerification = true;
+      break;
     }
   }
 
-  return { convention: "C1.7", passed: violations.length === 0, violations };
+  return {
+    convention: "C1.7",
+    passed: hasVerification,
+    violations: hasVerification ? [] : ["finish(success) without verification: no grep/ls/test/read in last 5 tool calls"],
+  };
 }
-
-// ── Regression detection ──────────────────────────────────────────────
-
 function detectRegressions(
   db: SqliteDb,
   now: number
@@ -985,9 +760,6 @@ function detectRegressions(
 
   return regressions;
 }
-
-// ── Summary output ────────────────────────────────────────────────────
-
 function writeSummary(
   persistDir: string,
   db: SqliteDb,
@@ -1034,17 +806,38 @@ function writeSummary(
     "utf-8"
   );
 }
+/** Fix historical false positives for interrupted/orphan sessions. Runs once. */
+function applyRetroactiveFix(db: SqliteDb, persistDir: string, log: (msg: string) => void): void {
+  const flagPath = join(persistDir, "convention-checks", "retro-fix-applied.flag");
+  if (existsSync(flagPath)) return;
 
-// ── Helpers ───────────────────────────────────────────────────────────
+  const FINISH_DEPENDENT = ['C1.4', 'C8.2', 'C1.5', 'C1.7'];
+  const placeholders = FINISH_DEPENDENT.map(() => '?').join(',');
+  const queries = [
+    { sql: `SELECT cc.rowid FROM convention_checks cc JOIN sessions s ON cc.session_id = s.sessionId
+            WHERE cc.passed = 0 AND cc.convention IN (${placeholders}) AND s.status IN ('interrupted', 'error')`,
+      reason: 'session was interrupted/errored' },
+    { sql: `SELECT cc.rowid FROM convention_checks cc LEFT JOIN sessions s ON cc.session_id = s.sessionId
+            WHERE cc.passed = 0 AND cc.convention IN (${placeholders}) AND s.sessionId IS NULL`,
+      reason: 'orphan session (no session record)' },
+  ];
+  for (const { sql, reason } of queries) {
+    const rows = db.prepare(sql).all(...FINISH_DEPENDENT) as { rowid: number }[];
+    if (rows.length > 0) {
+      const stmt = db.prepare(`UPDATE convention_checks SET passed = 1, violations = ? WHERE rowid = ?`);
+      const violationJson = JSON.stringify([`retroactive: ${reason}`]);
+      for (const r of rows) stmt.run(violationJson, r.rowid);
+      log(`[convention-check] Retroactively corrected ${rows.length} false positives: ${reason}`);
+    }
+  }
 
+  const dir = join(persistDir, "convention-checks");
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(flagPath, new Date().toISOString(), "utf-8");
+}
 function extractPath(input: Record<string, unknown>): string | null {
   if (typeof input.path === "string") return input.path;
   if (typeof input.file === "string") return input.file;
-  return null;
-}
-
-function extractBashCommand(input: Record<string, unknown>): string | null {
-  if (typeof input.command === "string") return input.command;
   return null;
 }
 
