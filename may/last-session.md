@@ -1,17 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776796805979_62
+- **Session:** s_1776798626803_70
 - **Status:** done
-- **When:** 2026-04-21T18:40:48.629Z
-- **Duration:** 42s
+- **When:** 2026-04-21T19:10:54.919Z
+- **Duration:** 28s
 
 ## What Happened
-System is healthy — 0 errors across all agents in last 6h, all 8 agents active. No red metrics needing immediate action.
+System is healthy — 0 errors across all agents in last 6h, all agents active. No alerts, no red metrics requiring immediate dispatch.
 
-Key observations:
-- **Alert-to-Reaction Time** at 137min (threshold 120) — slightly over but not critical
-- **Coverage** metric at 6% (target 90) — this is a known issue
-- Massive backlog of 50 CREATED notifications aging 2-5 days — mostly convention regressions to coach and scout findings to bob
-
-The notification backlog is concerning but these are all notifications (not blo
+The 50 active requests are all stale notifications (2-4 days old) — they'll be picked up by agents in their own heartbeats. No new Hao requests to triage.
