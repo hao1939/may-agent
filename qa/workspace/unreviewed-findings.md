@@ -1,32 +1,27 @@
 # Unreviewed findings (heartbeat)
 
 ## Scope
-This heartbeat reviewed the current working tree in `/app/agents`.
+This heartbeat reviewed the current working tree and recent commits in `/app/agents`.
 
-## What I observed
-- Repo root `/app` is **not** a git repository; the git repo is `/app/agents`.
-- Recent commit reviewed: `0a546befc` (doc-only change: `shared/knowledge/experiments/EXP-190/results.md`).
-- The EXP-190 results document asserts an infrastructure issue: gym runner `--lab` is metadata-only and does not overlay lab fork files.
-
-Evidence:
-- `git log --oneline -10` in `/app/agents` shows `0a546befc`.
-- Read `shared/knowledge/experiments/EXP-190/results.md`.
+## What I observed (evidence-based)
+- `/app` is not a git repository; the git repo is `/app/agents`.
+  - Evidence: `git log` at `/app` fails; `git log` at `/app/agents` works.
+- Recent commit at repo tip: `da4d41f3c chore(auto): 5 agents, 5 files: doc updates, update`.
+  - Evidence: `git log --oneline -10` in `/app/agents`.
+- Working tree currently has many modified/deleted workspace artifacts plus an untracked daily digest.
+  - Evidence: `git status --porcelain` in `/app/agents`.
 
 ## Findings
-### IMPORTANT — Standard QA TS/Vitest checks cannot run in this repo layout
-Per QA SOP, I ran the mandatory commands at `/app`:
-- `./node_modules/.bin/tsc --noEmit` → **No such file or directory** (exit 127)
-- `./node_modules/.bin/vitest --run` → **No such file or directory** (exit 127)
+### IMPORTANT — Mandatory TS/Vitest checks are currently blocked by missing toolchain entrypoints
+Per QA SOP, I attempted the mandatory commands:
+- `/app/tsc --noEmit` via `./node_modules/.bin/tsc` → **missing** (exit 127)
+- `/app/agents/tsc --noEmit` via `./node_modules/.bin/tsc` → **missing** (exit 127)
 
-This looks like an environment/repo mismatch (agents/docs repo without Node toolchain) rather than a patch defect, but it blocks standard verification.
+Additionally, `/app/agents/node_modules` exists but appears incomplete (no `node_modules/.bin`). This looks like an environment/repo setup issue rather than a code defect, but it prevents independent verification.
 
-### MINOR — Working tree is dirty with what looks like generated artifacts
-Having these heartbeat/session files modified in the working tree suggests either:
-- another process is updating them continuously, or
-- sessions are ending without committing these changes.
+### MINOR — Repo noise from generated/ephemeral workspace files
+The repo has many modified workspace context files and some deleted deep-dive docs, plus an untracked daily digest. This makes it difficult to identify what changes are intended to be shipped.
 
-This makes it harder to identify “real” changes needing QA review.
-
-## Recommendation
-- Clarify QA entrypoints for this repo (where typecheck/tests should be run, or whether they should be skipped for docs-only repos).
-- Consider `.gitignore` for purely ephemeral heartbeat-context files if they’re not intended to be committed.
+## Recommendation / next steps
+- Define the correct QA verification entrypoints for this repository (where `tsc` and `vitest` live, or whether a different verification suite applies).
+- Consider ignoring purely-ephemeral `*/workspace/heartbeat-context.md` files if they are not meant to be committed.
