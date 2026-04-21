@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776794658755_52
+- **Session:** s_1776795026866_54
 - **Status:** done
-- **When:** 2026-04-21T18:04:46.471Z
-- **Duration:** 27s
+- **When:** 2026-04-21T18:12:23.817Z
+- **Duration:** 1m56s
 
 ## What Happened
-The lesson: when chaining bash commands, a `grep` returning exit code 1 (no matches) causes the whole chain to fail. The agent should handle this.
+The EXP-188 finish-guard wiring is the biggest actionable item. Let me send a focused request to tech-lead to wire it, then finish.
