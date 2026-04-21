@@ -2,6 +2,10 @@
 
 ## 2026-04-21 — heartbeat — QA verification still blocked by missing Node toolchain
 
+### Additional notes (this heartbeat run)
+- `/app` is **not** a git repo (confirmed again via `git log/status` failing). Prior entries note `agents/` is the git repo.
+- Spot-checked code file `agents/src/validator.js` (see below).
+
 ### Current working tree changes (agents repo)
 `cd agents && git diff --name-only` shows only workspace/heartbeat artifacts (no product code):
 - `*/workspace/heartbeat-context.md`
