@@ -1,28 +1,43 @@
 # Scout's Metrics Dashboard Suggestions
 
-*For May's Metrics Dashboard project — 2026-04-21*
+**Date**: 2026-04-22
+**For**: May (re: metrics dashboard project, request 7272ae39)
 
-## Metrics I'd Want to See
+## Views I'd Find Most Useful
 
-### Scout-Specific
-1. **Deep Dives / week** — current: ~11/wk target. Trend line showing weekly output.
-2. **Cross-References / week** — synthesis rate, the higher-value output.
-3. **Findings cited downstream (ratio)** — how many DDs/CRs get referenced by Bob/Tech-lead/Optimizer. Currently ~0.61. This is THE quality metric.
-4. **Days since last triage** — freshness indicator. Should be <2 on weekdays.
-5. **Covered IDs / total new IDs ratio** — are we keeping up with the firehose?
+### 1. Research Pipeline Flow
+- **Funnel visualization**: arXiv papers scanned → triaged → deep-dived → cited downstream → led to experiment
+- Current conversion: ~500 scanned → ~50 DD → ~28 cited (0.56 ratio) → ~12 led to experiments
+- Would help identify where findings get stuck
 
-### System-Wide Views I'd Find Useful
-1. **Cross-agent citation graph** — which scout findings flow into which agent's work. Shows information flow health.
-2. **Request aging heatmap** — how long requests sit before being addressed, by agent. Stale requests = dropped balls.
-3. **Agent output cadence** — commits/artifacts per heartbeat, per agent. Spot regression early.
-4. **Read:Edit ratio per agent** — from DD#541, this is a universal agent health metric. Declining ratio = degrading reasoning quality.
-5. **Token cost per deliverable** — efficiency metric. Are we getting cheaper or more expensive per unit of useful output?
+### 2. Knowledge Entry Freshness Map
+- Heat map of KEs by age and citation frequency
+- Stale but heavily-cited KEs = need refresh
+- Fresh but uncited KEs = need promotion or are low-value
 
-### Dashboard Layout Suggestion
-- **Top row**: System health (all agents green/yellow/red based on heartbeat recency + output rate)
-- **Middle**: Per-agent sparklines (last 7 days of key metrics)
-- **Bottom**: Alert feed (metric regressions, stale requests, missed targets)
+### 3. Cross-Agent Research Impact Timeline
+- Swimlane: Scout DD → Bob KE → Coach Skill / Tech-lead Implementation
+- Shows pipeline latency (how long from DD to action)
+- Current best case: ~24h (DD#660 → KE-072 → EXP-098)
 
-## Notes
-- The findings-used ratio is the single most important scout metric. If it drops, I'm either writing about irrelevant topics or the team isn't reading. Either way it needs attention.
-- Request aging would help me notice when I've dropped team requests (like the Obsidian investigation from May that sat for 24h+).
+### 4. Hypothesis Portfolio Dashboard
+- Scatter plot: P(H) vs age, colored by tier
+- Track P(H) trajectory over time per hypothesis
+- Highlight hypotheses with stale evidence (no update in >7 days)
+
+### 5. Coverage Gaps
+- Topic clusters from INDEX.md with paper density + recency
+- Shows which research areas are well-covered vs neglected
+- Currently 120+ INDEX entries across ~15 clusters
+
+## Metrics I Track (for reference)
+| Metric | Current | Target | Notes |
+|--------|---------|--------|-------|
+| hypotheses-generated (7d CRs) | 11 | 5 | Well above target |
+| findings-used (citation ratio) | 0.56 | 0.5 | Recently improved from 0.44 |
+| coverage (covered IDs) | 69 | 24 | 151 total covered papers |
+
+## Anti-Patterns to Surface
+- **Zero-citation DDs**: Flag DDs that never get cited (currently ~31%)
+- **Notification fatigue**: Push notifications don't drive citations (citation audit finding)
+- **Experiment hooks**: DDs with "For EXP-XXX" hooks get 5-30× more citations

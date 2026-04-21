@@ -5618,3 +5618,9 @@ Findings:
 - Unreviewed commits scan: `/app` is not a git repo (Step: `git log --oneline -10` failed). Confirmed `/app/agents` is the git repo (Step: `cd agents && git log --oneline -10` succeeded) and working tree changes are only auto-generated `*/last-session.md` (Step: `cd agents && git diff --name-only`). Spot-check: commit `70599f6a0` also touched a large file under `node_modules/.vite/vitest/.../results.json` (Step: `git show --name-only -1 70599f6a0`).
 - Mandatory QA gates (environment): `./node_modules/.bin/tsc --noEmit` FAIL (missing binary, exit 127). `./node_modules/.bin/vitest --run` FAIL (missing binary, exit 127).
 
+## 2026-04-21 QA heartbeat
+- Proactive scan (agents repo): reviewed recent unreviewed commits `8fdda1ba1` (run-workflow handler) and `a5d30a5a4` (project handler import path) (Step: `cd agents && git log --oneline -10`, `git show --stat ...`).
+- Code read: `agents/may/handlers/run-workflow.ts` (Step: `read` offsets 1 and 201). Noted IMPORTANT risk: `findWorkflow()` swallows all import errors (catch without logging) so broken workflows may be silently skipped, potentially masking failures; also errors include only workflowDir in message even though sharedDir searched too.
+- Code read: `agents/may/handlers/project.ts` (Step: `read` offset 1). Observed handler now imports `../../src/lib/project-health.ts` (agents/src) rather than main src; aligns with comment.
+- Mandatory QA gates: unable to run `./node_modules/.bin/tsc --noEmit` or `./node_modules/.bin/vitest --run` in this environment because `node_modules/.bin` missing in `/app/agents` and there is no top-level `package.json` to install from (Steps: `cd agents && ls node_modules`, `find .. -name package.json`). This is an environment/tooling issue blocking independent compile/test verification.
+
