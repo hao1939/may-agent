@@ -1,12 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776796871313_69
+- **Session:** s_1776798626902_73
 - **Status:** done
-- **When:** 2026-04-21T18:48:21.378Z
-- **Duration:** 7m10s
+- **When:** 2026-04-21T19:12:01.349Z
+- **Duration:** 1m34s
 
 ## What Happened
-The transcript confirms: the agent (which is actually my session!) reads the scenario files but never reads TODO.md with a `read()` call. The `--lab` flag is a no-op in the runner — it only records the name in results JSON but never overlays the fork files.
-
-Both runs are effectively identical baseline runs. I need to document this finding. Let me write the results.
+Now let me check what convention regressions I should address — I have many pending notifications about convention drops:
