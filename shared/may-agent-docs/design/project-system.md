@@ -1,8 +1,9 @@
 # Design: Project System
 
-**Status:** Design (supersedes [persistent-task-files.md](persistent-task-files.md))
+**Status:** Approved
 **Date:** 2026-04-21
-**References:** [core-principles.md](core-principles.md), [closing-the-loop.md](closing-the-loop.md)
+**Supersedes:** [persistent-task-files.md](persistent-task-files.md)
+**References:** [core-principles.md](core-principles.md), [closing-the-loop.md](closing-the-loop.md), [runtime-ctx.md](runtime-ctx.md)
 
 ## What is a Project?
 
@@ -10,14 +11,15 @@ Work that spans multiple sessions. A project has:
 - **Goal** — what we're trying to achieve
 - **Owner** — the accountable agent
 - **Milestones** — concrete steps toward the goal
-- **Metrics** — how we measure success (optional, for metric-driven projects)
+- **Metrics** — how we measure success (optional)
 - **Health** — evaluator score reflecting real state
+- **Project ID** — `<owner>/<name>`, on every session and event
 
 ## Project ID
 
-`<owner>/<name>`. E.g., `bob/reviewer-effectiveness`.
+`<owner>/<name>`. Derived from path. E.g., `bob/reviewer-effectiveness`.
 
-Goes on every session, workflow run, and event related to this project. One field, one query.
+One field. One query. Goes on every session, workflow run, and event.
 
 ```sql
 SELECT * FROM sessions WHERE projectId = 'bob/reviewer-effectiveness' ORDER BY startedAt
@@ -25,51 +27,23 @@ SELECT * FROM sessions WHERE projectId = 'bob/reviewer-effectiveness' ORDER BY s
 
 ## Two Kinds of Projects
 
-### Milestone projects (short-term)
-Have a defined end state. Done when milestones are complete.
-
-```markdown
-## Goal
-Design how agents learn from experience.
-
-## Milestones
-- [x] Audit DD library
-- [ ] Complete design doc
-- [ ] Propose integration points
-```
-
-Evaluator checks: are milestones genuinely done? Health reflects milestone completion.
-
-### Metric projects (long-term)
-Pursue a metric. Never truly "done" — paused when metric is healthy, resumed when it regresses.
-
-```markdown
-## Goal
-Keep coder quality above 0.7.
-
-## Metrics
-- coder.quality: target > 0.7, baseline 0.29 (at project start)
-- coach.skill-effectiveness: target > 60%, baseline 29%
-
-## Milestones
-- [x] Investigate root cause of quality drop
-- [x] Design intervention (read-before-edit skill)
-- [ ] Deploy and verify skill improves metric
-- [ ] Monitor for 1 week — no regression
-```
-
-Evaluator checks: did the metric actually move? Health factors in both milestones AND metric values. A project can't score PASS if its target metrics haven't improved.
-
-### Lifecycle
+### Milestone projects
+Defined end state. Done when milestones complete and evaluator passes.
 
 ```
-Milestone project:  active → done (milestones complete, evaluator PASS)
-Metric project:     active → paused (metric healthy) → active (metric regresses) → paused ...
+active → done
 ```
 
-For metric projects, the project handler watches the declared metrics. When a metric regresses below target, the project reactivates. The owner's heartbeat is the natural check: "is my metric still healthy?"
+### Metric projects
+Pursue a metric target. Pause when healthy, reactivate when metric regresses.
 
-## Project File (project.md)
+```
+active → paused (metric healthy) → active (metric breaches) → paused → ...
+```
+
+Both use the same project.md format, same workflow, same handler. The difference is the `## Metrics` section and the lifecycle.
+
+## Project File
 
 ```markdown
 # Project: Reviewer Effectiveness
@@ -81,7 +55,7 @@ For metric projects, the project handler watches the declared metrics. When a me
 **Health**: 7/10 (PASS)
 
 ## Goal
-Make the persistent-task reviewer powerful enough to push projects forward.
+Make the project reviewer powerful enough to push projects forward.
 
 ## Metrics
 - workflow.false-done: target < 5%, baseline 40%
@@ -101,156 +75,256 @@ Iteration 3. Milestones: 1/4 done. Next: Redesign reviewer prompt.
 ## Comments
 ```
 
-## Components
+### Fields
 
-### Project Handler
+| Field | Updated by | How |
+|-------|-----------|-----|
+| Status | Workflow | On transitions (active/done/blocked/paused) |
+| Owner, Priority | Human | Direct edit |
+| Iteration | Workflow | Incremented each iteration |
+| Health | Workflow | From evaluator score on status transitions |
+| Goal | Human | Direct edit |
+| Milestones | Workflow | Checks off based on reviewer assessment |
+| Metrics | Human | Declares targets, workflow reads them |
+| Current State | Workflow | Structured: iteration + milestones + next |
+| Comments | Human, agents | Queue — processed then cleared by workflow |
 
-One handler. Reacts to events + timer. Launches the project workflow.
+Worker CANNOT edit project.md or journal.md. Produces deliverables in workspace only.
+
+## Three Components
+
+### 1. Project Handler
+
+One handler. Detects projects needing attention. Launches the project workflow.
 
 ```json
 {
   "name": "project",
   "handler": "project",
   "intervalMs": 300000,
-  "on": ["project.changed", "project.commented"],
+  "on": ["project.changed", "project.commented", "metric.breach"],
   "description": "Detect projects needing attention, run project workflow."
 }
 ```
 
-What it does:
-1. Scan for projects: status=active OR file changed since last check
-2. Skip projects already in-flight
-3. Load and execute project workflow with projectId
-4. Track in-flight state
+**Detection rules:**
+- Status = active → always launch
+- File mtime changed since last check → launch (picks up comments, status changes)
+- `metric.breach` event → check if any paused project declares that metric → reactivate and launch
+- Skip if project already has a running workflow (inflight tracking)
 
-What it does NOT do:
-- Parse project logic (workflow does that)
-- Decide continue/block/done (workflow does that)
+**On startup:** Reset lastCheck to 0. First scan picks up everything.
 
-### Project Workflow
+**What it does NOT do:** Parse project logic, decide continue/block/done. The workflow handles all project decisions.
 
-Drives a project forward. Reads project.md, runs iterations, evaluates transitions.
+### 2. Project Workflow
+
+Drives a project forward. Reads project.md, runs iterations, evaluates transitions, emits events.
 
 ```
-Read project.md
-  → Check for pending comments → comment iteration (reviewer only)
-  → Check status (done/blocked with no comments → exit)
-  → Run worker iteration → run reviewer → update milestones
-  → If DONE/BLOCKED → run evaluator (checks milestones + metrics)
-  → Update Health, Current State
-  → Emit project events
+Read project.md + journal.md
+  │
+  ├─ Pending comments? → Comment iteration (reviewer only, clear comments)
+  │
+  ├─ Status done/blocked, no comments? → Exit
+  │
+  ├─ Worker iteration
+  │   └─ ctx.runAgent(worker, prompt, { projectId })
+  │
+  ├─ Reviewer iteration
+  │   └─ ctx.runAgent(owner, prompt, { projectId })
+  │   └─ Update milestones from reviewer text
+  │
+  ├─ Status transition (DONE/BLOCKED)?
+  │   └─ Evaluator
+  │       └─ ctx.runAgent(owner, evalPrompt, { projectId })
+  │       └─ Checks: deliverables, milestones, evidence, verification
+  │       └─ For metric projects: query declared metrics, compare to targets
+  │       └─ Update Health field
+  │       └─ Score ≥ 7: accept transition
+  │       └─ Score < 7: override to CONTINUE
+  │
+  ├─ Update project.md (Status, Iteration, Current State, Health)
+  │
+  └─ Emit events (project.iteration, project.status-changed, etc.)
 ```
 
-The evaluator for metric projects:
+**Evaluator for metric projects:**
 ```
-Standard checks (deliverables, milestones, evidence, verification)
-  + Metric check: query declared metrics from DB
+Standard checks (deliverables, milestones, evidence, building ≠ verifying)
+  + Query declared metrics from DB via ctx.getDb()
   + Compare current values to targets and baselines
-  + Score low if metrics haven't moved despite milestones being "done"
+  + Can't PASS if target metrics haven't improved
 ```
 
-### Session Tracking
+### 3. Journal (journal.md)
+
+Append-only log. One entry per iteration.
+
+```markdown
+### Iteration 6 — 2026-04-21T10:30:00Z
+**Worker**: Created reviewer prompt redesign at workspace/reviewer-v2.md
+**Reviewer**: CONTINUE — Good design. Milestone 2 complete. Next: A/B test.
+
+### Iteration 5 (comment) — 2026-04-21T09:15:00Z
+**Comment**: Focus on false-done rate, not just rubber-stamping.
+**Reviewer**: CONTINUE — Acknowledged. Adjusted approach.
+
+### Iteration 4 — 2026-04-21T08:00:00Z
+**Worker**: Analyzed 12 reviewer decisions from recent projects.
+**Reviewer**: CONTINUE — Good investigation. Milestone 1 complete.
+**Evaluator**: BLOCKED eval (score=6/10) — ...
+```
+
+Entry types: regular (worker + reviewer), comment (comment + reviewer), evaluator (on transitions).
+
+## Session Tracking
 
 Every session carries `projectId`:
 
-```
-sessions table:
-  sessionId | agent | projectId                  | workflowRunId | ...
-  s_001     | bob   | bob/reviewer-effectiveness | wr_001        | ...
-  s_002     | bob   | bob/reviewer-effectiveness | wr_001        | ...
-```
-
-Add to sessions table:
 ```sql
+-- Schema change
 ALTER TABLE sessions ADD COLUMN projectId TEXT;
 CREATE INDEX idx_sessions_project ON sessions(projectId);
 ```
 
 Flows through: handler → workflow → ctx.runAgent(agent, task, { projectId }) → session record.
 
-### Events
+```
+sessions table:
+  sessionId | agent | projectId                  | workflowRunId | source   | task
+  s_001     | bob   | bob/reviewer-effectiveness | wr_001        | workflow | iteration 6...
+  s_002     | bob   | bob/reviewer-effectiveness | wr_001        | workflow | [REVIEW]...
+  s_003     | bob   | bob/reviewer-effectiveness | wr_001        | workflow | [EVALUATION]...
+```
 
-The workflow emits at key points:
+Query all project sessions: `WHERE projectId = 'bob/reviewer-effectiveness'`
+Query project cost: `SELECT SUM(opCount) FROM sessions WHERE projectId = ?`
+
+## Events
+
+The workflow emits at key points via `ctx.emit()`:
 
 | Event | When | Data |
 |-------|------|------|
 | `project.iteration` | After each iteration | projectId, owner, iteration, milestonesDone/Total |
 | `project.status-changed` | Status transitions | projectId, owner, from, to |
-| `project.completed` | Evaluator PASS | projectId, owner, health, iterations, metricDeltas |
+| `project.completed` | Evaluator PASS on done | projectId, owner, health, iterations |
 | `project.blocked` | Evaluator assessed blocker | projectId, owner, health, reason |
 
-Events persisted in events table. Dashboard shows real-time project progress.
+All events persisted in events table. Queryable in Events tab.
 
-### Metric Integration
+## Metric Project Lifecycle
 
-The `## Metrics` section in project.md declares target metrics:
-```markdown
-## Metrics
-- coder.quality: target > 0.7, baseline 0.29
+```
+1. Human creates project with ## Metrics section
+   - coder.quality: target > 0.7, baseline 0.29
+
+2. Project works toward milestones (same as milestone project)
+
+3. Evaluator checks metrics on DONE transition
+   - Query: SELECT current FROM metrics WHERE id = 'coder.quality'
+   - Compare to target: 0.72 > 0.7 ✅
+   - Factor into health score
+
+4. Project status → paused (metric healthy, milestones done)
+
+5. Later: metric regresses
+   - metrics-snapshot detects: coder.quality = 0.65 < 0.7
+   - Emits: metric.breach { metric: coder.quality, owner: coach }
+   - Project handler receives event
+   - Checks paused projects: does any declare coder.quality?
+   - Yes → set status to active, launch workflow
+
+6. Project resumes, works on new fix
+
+7. Metric recovers → paused again
 ```
 
-The workflow reads this section and:
-1. **During evaluation**: queries metric values from DB, compares to targets and baselines
-2. **On completion**: includes metric deltas in the `project.completed` event
-3. **Health scoring**: evaluator factors in metric movement — can't PASS if metrics didn't improve
+## Dashboard
 
-The metric-breach event system (from metric-reactivity) naturally connects:
-```
-coder.quality drops below 0.7
-  → metric.breach event
-  → coach sees it in heartbeat
-  → coach checks: do I have a project for this metric?
-  → if yes: adds comment to reactivate
-  → if no: creates a new metric project
-```
-
-No special code for this — the owner's judgment connects metrics to projects.
-
-## Dashboard (Web UI)
-
-Projects tab shows:
+Projects tab:
 
 | Project | Owner | Status | Health | Milestones | Metrics | Updated |
 |---------|-------|--------|--------|-----------|---------|---------|
 | reviewer-effectiveness | bob | active | 7/10 | 1/4 ████░░ | — | 2m ago |
-| agent-autonomy | coach | paused | 7/10 | 3/5 ██████░ | HPR: 60% | 2h ago |
-| coder-quality | coach | paused | 8/10 | 4/4 ████████ | quality: 0.72 ✅ | 1d ago |
+| coder-quality | coach | paused | 8/10 | 4/4 ████████ | 0.72 ✅ | 1d ago |
 
-Click to see: project.md, journal, session list (by projectId), metric chart.
+Click → project.md content, journal, session list (by projectId), metric chart.
 
-## Migration
+## Implementation
 
-1. Add `projectId` column to sessions table
-2. Add `projectId` parameter to `callAgent` / `manager.run` API
-3. Rename workflow: `persistent-task` → `project` (keep old name as alias during transition)
-4. Rename handler: `project-resume` → `project` (keep old handler during transition)
-5. Parse `## Metrics` section in project workflow for evaluator
-6. Update web UI to query by projectId
+### Schema (src/lib/requests.ts)
+```sql
+ALTER TABLE sessions ADD COLUMN projectId TEXT;
+CREATE INDEX idx_sessions_project ON sessions(projectId);
+```
 
-## Alignment
+### callAgent / manager.run gains projectId
+```typescript
+// In manager.ts
+callAgent(agent, task, { projectId, workflowRunId, source })
+// projectId flows to session creation → stored in DB
+```
 
-| Principle | How |
-|-----------|-----|
-| P1: Everything is an event | Handler reacts to events. Workflow emits events. Metric breach → project reactivation. |
-| P2: Everything has an owner | projectId includes owner. Metrics have owners. Owner connects them. |
-| P3: Events must be consumed | project.changed → handler fires. metric.breach → owner checks projects. |
-| P7: Metrics are signals | Project declares target metrics. Evaluator checks them. Owner uses judgment. |
-| P9: Convention | projectId = `<owner>/<name>`. Metrics section follows standard format. |
-| P10: Simple first | One handler, one workflow, one ID field. Metric integration is a section in project.md, not a new table. |
+### Rename workflow
+- `agents/shared/workflows/persistent-task.ts` → `agents/shared/workflows/project.ts`
+- Export `name = "project"` (also export alias `"persistent-task"` for transition)
 
-## Review Comments (2026-04-21)
+### Rename handler  
+- `agents/may/handlers/project-resume.ts` → `agents/may/handlers/project.ts`
+- Cron entry: `"name": "project", "handler": "project"`
 
-**Verdict: Extract `projectId`, defer the rest.**
+### Metric section parsing (~20 LOC in workflow)
+```typescript
+function parseMetrics(content: string): Array<{ id: string; target: string; baseline: string }> {
+  const section = extractSection(content, "Metrics");
+  if (!section) return [];
+  return section.split("\n").filter(l => l.startsWith("- ")).map(line => {
+    const m = line.match(/^- (\S+):\s*target\s*([<>]=?\s*[\d.]+%?),?\s*baseline\s*([\d.]+%?)/);
+    return m ? { id: m[1], target: m[2].trim(), baseline: m[3].trim() } : null;
+  }).filter(Boolean);
+}
+```
 
-The one clearly valuable piece is `projectId` on sessions — it enables "show me all sessions for project X" which is currently impossible without inferring from parent chains and file paths. One column, one index, immediate observability. Worth doing standalone.
+### Event emission (~15 LOC in workflow)
+```typescript
+// After each iteration
+ctx.emit({ type: "emit", event: "project.iteration", data: {
+  projectId, owner: config.owner, iteration,
+  milestonesDone: ms.done, milestonesTotal: ms.total,
+}});
 
-The rest doesn't pass the evidence-first bar (per our own [evidence-first-process.md](evidence-first-process.md)):
+// On status change
+ctx.emit({ type: "emit", event: "project.status-changed", data: {
+  projectId, owner: config.owner, from: oldStatus, to: newStatus,
+}});
+```
 
-| Feature | Issue |
-|---------|-------|
-| **Metric projects (auto-pause/resume)** | The doc itself says "No special code — the owner's judgment connects metrics to projects." Heartbeat already does this. Automate when an agent demonstrably fails to reactivate on metric regression. |
-| **Project events** | journal.md already captures iteration history. Events enable a dashboard nobody watches — we read project.md directly. If needed later, adding an emit is ~10 LOC per event, not an upfront design. |
-| **Rename persistent-task → project** | Pure churn. Breaks references everywhere, needs aliases during transition, zero functional gain. |
-| **Dashboard** | No evidence anyone needs it. |
+### Metric breach → reactivate (~15 LOC in handler)
+```typescript
+// In project handler, when metric.breach event arrives:
+const metric = eventData.metric;
+for (const project of pausedProjects) {
+  const declaredMetrics = parseMetrics(projectContent);
+  if (declaredMetrics.some(m => m.id === metric)) {
+    updateField(projectContent, "Status", "active");
+    // Will be picked up on next scan
+  }
+}
+```
 
-**Recommendation:** Do migration steps 1-2 (`projectId` column + parameter threading) as a focused change. Keep the rest as "future direction" — build each piece when there's evidence the current system can't cope without it.
+### Dashboard metric column (~10 LOC in web UI)
+Query metric values for projects with `## Metrics` section. Show current vs target.
+
+## Total: ~100 LOC across 6 files
+
+| Change | LOC | Files |
+|--------|-----|-------|
+| projectId schema + threading | 20 | requests.ts, manager.ts |
+| Rename workflow + handler | 10 | persistent-task.ts → project.ts, project-resume.ts → project.ts, cron.json |
+| Event emission | 15 | project.ts (workflow) |
+| Metric parsing | 20 | project.ts (workflow) |
+| Metric breach reactivation | 15 | project.ts (handler) |
+| Dashboard metric column | 10 | web.ts, index.html |
+| Evaluator metric check | 10 | project.ts (workflow) |
