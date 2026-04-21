@@ -5663,7 +5663,7 @@ Findings:
   - MINOR (code): `agents/src/lib/finish-guard.ts` hardcodes DEFAULT_PROJECT_ROOT = "/app". If this code is ever reused outside this runtime layout, relative deliverable resolution will break; consider passing project root from caller.
 
 ## QA Heartbeat — 2026-04-21
-- Proactive scan: /app is not a git repo; only /app/agents is. Latest commit in agents (dcf3005cd) only changes docs: shared/knowledge/experiments/EXP-192/phase1-results.md.
-- Mandatory gates: BLOCKED in this runtime because ./node_modules/.bin/{tsc,vitest} do not exist at /app; cannot run required compile/test commands as specified.
-- Reviewed file: agents/shared/knowledge/experiments/EXP-192/phase1-results.md — no code issues (documentation only). Noted minor doc concern: Date header says 2026-04-27 but commit is in 2026-04-21 log; possible timestamp mismatch.
+- Proactive scan: /app is not a git repo; only /app/agents is.
+- Unreviewed changes: read agents/src/lib/finish-guard.ts (ghost deliverable + verification_evidence enforcement). Code appears reasonable and uses only Node built-ins. Potential IMPORTANT gap: DEFAULT_PROJECT_ROOT is hard-coded to /app; if runtime differs, relative-path deliverable validation could false-fail.
+- Mandatory gates: FAIL in this runtime because ./node_modules/.bin/tsc and ./node_modules/.bin/vitest are missing (both at /app and /app/agents). Attempted to locate vitest under node_modules/.vite but invocation failed (module not found). This appears to be an environment/install issue, not attributable to finish-guard.ts itself.
 
