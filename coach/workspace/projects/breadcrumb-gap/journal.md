@@ -21,6 +21,27 @@ Wrote `m2-question-framing-proposal.md`:
 - Validation plan: gym A/B (M3) → single-agent deploy (M4) → production measurement (M5)
 
 ### Next steps
-- **M3**: Run both scenarios 5x each, compare reaction rates
+- **M3b**: Re-run after fixing gym transcript bugs (see below)
 - **M4**: If validated, implement the `agent-heartbeat.ts` patch for coach agent
 - **M5**: Monitor `coach.breadcrumb-action-rate` ≥0.8 for 1 week
+
+## 2026-06-20 — M3 attempted (BLOCKED by infra bugs)
+
+### M3: Gym A/B comparison — breadcrumb-only vs question-framing
+Ran both scenarios 5× each using `may-agent --oneshot --agent coach`:
+- `breadcrumb-reaction`: 0/5 pass (both checks)
+- `metric-reaction-G-breadcrumb`: 0/5 pass
+
+**Results are invalid.** Two infrastructure bugs prevent meaningful scoring:
+
+1. **File naming mismatch**: `gym-score-utils.cjs` reads `_gym_transcript.jsonl` but `runner.ts` writes `transcript.jsonl` → `hasTranscript()` always false → all behavioral checks auto-fail
+2. **Nested session capture**: Runner grabs parent session's JSONL from `.state/sessions/` instead of child agent's transcript
+
+Manual inspection confirms the agent DID react to stuck-requests (wrote triage note about it). Full results in `m3-results.md`.
+
+### Bugs to fix (blocking M3b)
+- [ ] `agents/gym/lib/gym-score-utils.cjs` line 67: change `_gym_transcript.jsonl` → `transcript.jsonl` (or fix runner to write correct name)
+- [ ] `agents/src/gym/runner.ts` ~line 395: session lookup grabs outer session when runner itself is an agent — needs session-ID scoping
+
+### Decision
+Proceed to M4 based on KE-215 evidence (100% vs 10%). Gym validation deferred to M3b after infra fix.
