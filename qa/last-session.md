@@ -1,14 +1,14 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** cron_1776744610159_187
+- **Session:** cron_1776748210363_203
 - **Status:** done
-- **When:** 2026-04-21T04:10:41.865Z
-- **Duration:** 31s
+- **When:** 2026-04-21T05:10:39.305Z
+- **Duration:** 28s
 
 ## What Happened
 ### Summary
-This heartbeat environment doesn’t have a runnable TS/Vitest toolchain at `/app` (no `package.json`, no `node_modules/.bin`), so I can’t execute the mandatory `tsc --noEmit` / `vitest --run` checks. I *did* independently read a concrete source file (`agents/scripts/sync-tools-md.ts`) and it looks functionally reasonable in the reviewed portion (preset expansion + TOOLS.md marker replacement/insert), but without typecheck/tests this can’t be fully QA-verified.
+QA heartbeat review is blocked by the environment: `/app` is not a git checkout here (no `.git`), and the standard toolchain entrypoints required by the QA protocol (`./node_modules/.bin/tsc` and `./node_modules/.bin/vitest`) are missing, so I cannot independently verify typecheck/tests. I did, however, read one concrete source file (`agents/scripts/sync-tools-md.ts`) and did not spot an obvious functional issue in the reviewed section.
 
 ### Checks
-- `tsc --noE
+- **tsc --noEmit**: **FAIL** — `./n
