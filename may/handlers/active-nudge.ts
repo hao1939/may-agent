@@ -65,6 +65,26 @@ export function runActiveNudge(ctx: HandlerContext): ActiveNudgeResult {
     details: [],
   };
 
+  // 0. Kill zombie sessions (running but 0 ops after 15min)
+  try {
+    const { DatabaseSync } = require("node:sqlite");
+    const dbPath = join(ctx.projectRoot, ".state", "may.db");
+    const db = new DatabaseSync(dbPath);
+    const cutoff = Date.now() - 15 * 60 * 1000; // 15 minutes
+    const zombies = db.prepare(
+      "SELECT sessionId, agent, task FROM sessions WHERE status='running' AND opCount=0 AND startedAt < ?"
+    ).all(cutoff) as Array<{ sessionId: string; agent: string; task: string }>;
+    if (zombies.length > 0) {
+      const fixed = db.prepare(
+        "UPDATE sessions SET status='interrupted', error='zombie: 0 ops after 15min' WHERE status='running' AND opCount=0 AND startedAt < ?"
+      ).run(cutoff);
+      ctx.log(`[active-nudge] 🧟 Cleaned ${fixed.changes} zombie session(s): ${zombies.map(z => z.agent + '/' + z.sessionId).join(', ')}`);
+    }
+    db.close();
+  } catch (err: any) {
+    ctx.log(`[active-nudge] zombie cleanup error: ${err.message?.slice(0, 100)}`);
+  }
+
   // 1. Run monitor-session.cjs --running
   let monitorOutput: any;
   try {
