@@ -13,22 +13,22 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-21T07:10)
+# Your Context (auto-generated 2026-04-21T07:40)
 
-**System:** 18 sessions/6h, 0% error rate
+**System:** 16 sessions/6h, 0% error rate
 
 **Top spenders:**
-- bob: 11s, 707KB
-- may: 3s, 102KB
+- bob: 9s, 655KB
+- may: 3s, 103KB
 - tech-lead: 3s, 31KB
 - coach: 1s, 9KB
 
 **📊 Your Metrics:**
-- Workflow coverage — % multi-step work using workflows: **94.7** % → 0.8 %
+- Workflow coverage — % multi-step work using workflows: **94.6** % → 0.8 %
   → Quick check: bun -e "import{Database}from'bun:sqlite';const db=new Database('.state/may.db',{readonly:true});console.log(JSON.stringify(db.prepare('SELECT ROUND(100.0 * SUM(CASE WHEN workflowRunId IS NOT NULL THEN 1 ELSE 0 END) / NULLIF(COUNT(*),0), 1) FROM sessions WHERE startedAt > (strftime("%%s","now")*1000 - 604800000) AND opCount > 3 AND kind != "chat"').all()))"
-- Quality preserved: **0.842398316970547** ratio → 0.9 ratio ⚠️ NEEDS ATTENTION
+- Quality preserved: **0.8421861777150917** ratio → 0.9 ratio ⚠️ NEEDS ATTENTION
   → Quick check: bun -e "import{Database}from'bun:sqlite';const db=new Database('.state/may.db',{readonly:true});console.log(JSON.stringify(db.prepare('SELECT AVG(e.quality) AS val FROM evaluations e JOIN sessions s ON e.sessionId = s.sessionId WHERE s.agent=\'optimizer\' AND e.skippedByJs=0 AND e.quality IS NOT NULL AND NOT (e.quality = 0 AND e.issues LIKE \'%evaluator did not score%\') AND e.createdAt > (strftime(\'%s\',\'now\')*1000 - 604800000)').all()))"
-- Tool adoption: heuristic evaluator (higher is better): **0.9784843413817834** ratio → 0.7 ratio
+- Tool adoption: heuristic evaluator (higher is better): **0.9784431137724551** ratio → 0.7 ratio
 - Workflow effectiveness — % workflow runs completing successfully: **84.8** % → 0.9 %
-- Waste reduction: **0.802** ratio → 0.3 ratio
+- Waste reduction: **0.801** ratio → 0.3 ratio
   → Quick check: bun -e "import{Database}from'bun:sqlite';const db=new Database('.state/may.db',{readonly:true});console.log(JSON.stringify(db.prepare('SELECT ROUND(CAST(SUM(CASE WHEN e.quality >= 0.7 AND e.efficiency > 0 THEN 1 ELSE 0 END) AS REAL) / NULLIF(COUNT(*), 0), 3) AS val FROM evaluations e JOIN sessions s ON e.sessionId = s.sessionId WHERE s.agent=\'optimizer\' AND e.skippedByJs=0 AND e.quality IS NOT NULL AND e.createdAt > (strftime(\'%s\',\'now\')*1000 - 604800000)').all()))"
