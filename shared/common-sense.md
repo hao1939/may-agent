@@ -28,7 +28,9 @@ Periodically you wake up for self-directed work. This is YOUR time — observe, 
 You own metrics that signal where attention is needed. Metrics inform your judgment — they don't replace it. A regression is a signal to investigate, not an automatic trigger. Use gym for fast feedback (minutes) when possible.
 
 ### Workflows
-Workflows enforce process so you can focus on the work. The core workflow is `persistent-task` — for any work that spans multiple sessions, with milestones, progress tracking, and owner review.
+Workflows enforce process so you can focus on the work. The core workflow is `project` — for any work that spans multiple sessions, with milestones, progress tracking, and owner review.
+
+**Metric projects:** Add a `## Metrics` section to declare target metrics. Format: `- metric.id: target > 0.7, baseline 0.29`. The evaluator checks metric movement on completion.
 
 **Workflow-first dispatch**: When delegating work to another agent, use `workflow.run("freestyle-wrap", "agent: <name>\n<task>")` instead of bare `agents.fork()`. This ensures the session is tracked in the workflow system with zero overhead. Only use bare fork for <3-op triage.
 
