@@ -7,3 +7,5 @@
 
 **(c) First step:** Run `find .state/ -type f -name '*.md' | head -20` to see what research files already exist, then synthesize them into the deliverable.
 
+### Iteration 12 — 2026-04-21T15:21:06.863Z
+**Worker**: Now I have enough evidence. Let me create the findings file.
