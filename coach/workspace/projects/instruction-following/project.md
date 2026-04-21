@@ -1,15 +1,15 @@
 # Project: Agent Instruction Following
 
-**Status**: done (closed)
+**Status**: active
 **Owner**: coach
 **Reviewer**: may / Hao
 **Master**: may/system-evolution (gap-level concern)
-**Started**: 2026-04-18
+**Started**: 2026-04-18 (restarted 2026-04-22)
 **Priority**: P0 — most important coach project
 **Metric**: `coach.instruction-compliance` (target ≥ 0.8)
 
-**Iteration**: 9
-**Health**: 2/10 (BLOCKED)
+**Iteration**: 10
+**Health**: 5/10 (RESTARTED — rich data from iters 1-9, clear next steps)
 ## Goal
 
 Find what mechanisms make agents reliably follow directions. Measure
@@ -330,3 +330,30 @@ SCORE: 2
 
 ### Closed — 2026-04-22
 **Reason**: 9 iterations with zero successful file edits. The research question "what makes agents follow instructions" is being addressed more productively by bob's reviewer-effectiveness project. Observations from this failed loop: repeated textual instructions don't reliably produce behavior change in workers — structural/workflow changes are more effective.
+
+### RESTARTED — 2026-04-22 (by Hao)
+This project has the richest intervention data in the system. The problem was worker execution, not research quality.
+
+**IMPORTANT**: There is NO `src/` directory. The runtime is pre-compiled. Do NOT try to edit files in `src/`.
+
+**Available levers for interventions:**
+- Agent context files (`agents/*/context.md`) — instructions, rules
+- Heartbeat configs (`agents/*/heartbeat.md`, `agents/*/workflows/*-heartbeat.ts`)
+- Skills (`agents/shared/skills/`) — TRIGGER/ACTION/EXAMPLE patterns
+- Gym scenarios (`agents/gym/scenarios/`) — test interventions
+- Workflow configs (`agents/shared/workflows/`)
+
+**Established Intervention Hierarchy (from experiments 1-9):**
+1. Exact command in task = **100%** (EXP-184 STEP)
+2. Skill + SOUL + context.md = **~75%** (EXP-186)
+3. EXP-188 finish-guard (structural gate) = **100%** (PROMOTED)
+4. Question-first-step reframe = **100%** in metric-reaction (variant G)
+5. Generic procedural step in task = **0%** (EXP-185)
+6. Context.md only = **0%** (baseline)
+7. Text rules in knowledge files = **≈0%** (KE-002)
+
+**Next actions for iteration 10:**
+1. Deploy variant G' question-framing to ONE production agent heartbeat (already tested 30/30). Edit `agents/<agent>/workflows/<agent>-heartbeat.ts` to add question-first step.
+2. Run 5 gym trials of `metric-reaction` with current production config as baseline measurement.
+3. Create experiment doc: `agents/shared/knowledge/experiments/EXP-189/design.md` for production deployment of G'.
+4. Test whether skill+SOUL intervention (EXP-186 pattern, 75%) generalizes to a NEW scenario beyond persistent-task. Pick `order-compliance` or `turn-budget-removal` from the child experiment list above.
