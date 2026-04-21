@@ -13,13 +13,13 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-21T00:40)
+# Your Context (auto-generated 2026-04-21T01:10)
 
-**System:** 11 sessions/6h, 0% error rate
-**You:** 10 sessions, 249KB total (25KB avg)
+**System:** 12 sessions/6h, 0% error rate
+**You:** 11 sessions, 256KB total (23KB avg)
 
 **Top spenders:**
-- bob: 10s, 249KB ← you
+- bob: 11s, 256KB ← you
 - coach: 1s, 98KB
 
 **📊 Your Metrics:**
