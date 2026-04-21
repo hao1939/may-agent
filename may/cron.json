@@ -602,14 +602,14 @@
     "offsetMs": 900000
   },
   {
-    "name": "project-resume",
+    "name": "project",
     "type": "job",
     "intervalMs": 300000,
-    "handler": "project-resume",
+    "handler": "project",
     "agent": "may",
     "enabled": true,
     "message": "[cron:project-resume] Scan active projects and resume.",
-    "description": "INFRA \u2014 DO NOT EDIT OR REMOVE. Scans active projects every 5min.",
+    "description": "Detect projects needing attention, run project workflow.",
     "on": [
       "project.commented",
       "project.changed",
