@@ -154,6 +154,16 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
 
     // Build the WorkflowContext
     const workflowCtx: WorkflowContext = {
+      // RuntimeCtx from HandlerContext
+      emit: (event: any) => { ctx.emit(event); },
+      getDb: () => ctx.getDb(),
+      log: (msg: string) => ctx.log(msg),
+      notify: (msg: string) => ctx.notify(msg),
+      persistDir: ctx.persistDir,
+      projectRoot: ctx.projectRoot,
+      agentsRoot: ctx.agentsRoot,
+      saveWorkflowRun: (run: any) => ctx.saveWorkflowRun(run),
+      summarizeForHandoff: (result: any, opts?: any) => ctx.summarizeForHandoff(result, opts),
       task,
       agent,
 
@@ -241,10 +251,6 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
       runWorkflow: async (_name: string, _task: string) => {
         // Sub-workflow not supported in this handler (keep it simple)
         return { type: "escalate" as const, reason: "Sub-workflows not supported in run-workflow handler" };
-      },
-
-      emit: (event: WorkflowEvent) => {
-        ctx.log(`[run-workflow:${entry.name}] event: ${event.type}`);
       },
 
       summarize: (result, opts?) => ctx.summarizeForHandoff(result, opts),
