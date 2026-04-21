@@ -1,44 +1,51 @@
-# Context Injection Review — agents/bob/context.md
+# Context Injection Review: agents/bob/context.md
 
 **Date**: 2026-04-21
-**Lines**: 39 (moderate size)
+**Reviewer**: Bob
+**File size**: 5,772 bytes (~1,500 tokens)
 
-## Overall Assessment
+## Assessment
 
-The file is reasonably well-organized with a mix of environment facts, behavioral rules, and experimental findings. It's grown organically and has some redundancy and potentially stale items. Token cost per session is non-trivial (~1.5K tokens injected every session).
+The file has grown organically into 4 distinct categories mixed together. It's not catastrophically large but has redundancy and staleness.
 
-## (1) Potentially Outdated Facts
+## Category Breakdown
 
-- **"Priority: skills with matching gym scenarios (verification, stale-approach-fixation, plan-once-amend)"** — This looks like it was set weeks ago. May no longer reflect current priorities. Need confirmation from Hao whether this is still the focus.
-- **"SOUL.md text changes don't fix judgment failures — coach proved 0/18"** — Historical fact from a specific experiment. Still true but reads as an event log entry rather than actionable guidance. Could be condensed.
-- **"Briefs go in agents/bob/workspace/sent/ after delivery"** — Worth verifying this workflow is still active. The workspace has a `sent/` dir so probably still valid.
-- **"opBudget has been removed entirely (Hao directive 2026-03-30)"** — This is a month old "don't do X" guard. Unclear if anyone would still propose reintroducing it. Low value to keep injecting every session.
+### KEEP — Essential Environment Facts (should stay)
+- bun path, npx unavailability, sqlite CLI workaround
+- Project root is /app, agents/ is separate git repo
+- Design docs path, briefs path
+- opBudget removal directive
+- Knowledge base paths warning (ls before reading)
+- Tools available section
+- commit-and-merge.sh reference
 
-## (2) Critical Knowledge That's Missing
+### KEEP — High-Value Behavioral Guards
+- C1.1 read-before-edit (most-violated pattern, data-backed)
+- Turn discipline (turn ~20/~25/~30 limits)
+- Lean heartbeat pattern
+- KE-008: don't restructure heartbeat steps
+- Gym execution checklist + timeout guidance
 
-- **No mention of the knowledge base structure/conventions** — I work with `agents/shared/knowledge/` constantly. The file says "ls before reading" but doesn't describe the actual structure (hypotheses/, experiments/, entries/ subdirs and their ID schemes).
-- **No mention of journal.md** — I maintain a journal at `agents/bob/workspace/journal.md`. New sessions don't know this exists.
-- **No mention of PRIORITY-TRACKER.md** — If one exists, its location should be here.
-- **No mention of how to coordinate with other agents** — Who are the other agents? What are their roles? What shared protocols exist?
-- **No summary of key experimental findings** — The file has a few KE references but doesn't capture the most important research conclusions. A "top 5 findings" section would help new sessions orient.
-- **No mention of the workspace file organization** — The workspace has 100+ files. Some orientation ("syntheses go in workspace/, designs in workspace/designs/") would reduce path-guessing.
+### REMOVE — Stale or Redundant
+- "SOUL.md text changes don't fix judgment failures" — very old finding, coach-specific
+- "Before proposing guards: read code-vs-data-decisions.md" — one-time lesson, not recurring
+- "When sending design briefs to tech-lead: use workflow reviewed-delivery" — workflow exists, no need to remind every session
+- KE-133+147 (few-shot harm) — duplicated in "Operational Knowledge" section at bottom
+- KE-091 (forced verification harms creative tasks) — low-frequency scenario
 
-## (3) Recommended Changes
+### REDESIGN — Should Be Structured Differently
+- "Operational Knowledge" section at bottom duplicates items already mentioned above
+- Script references (new-hypothesis.sh, new-ke.sh, etc.) could be in a TOOLS.md reference instead of context
+- Priority/research preference section is project-level, not session-level context
 
-### Remove or condense
-1. **Merge the two "few-shot examples are harmful" entries** — appears in both the bullet list (KE-133+147) and the "Operational Knowledge" section. Pure duplication.
-2. **Condense opBudget removal note** — Shorten to "opBudget is removed; opCount is observational only" (one line, not three).
-3. **Remove SOUL.md coaching note** — Too specific to one past event. The lesson is already embedded in the workflow preference.
+## Recommendations
 
-### Add
-4. **Agent landscape** — Brief note on who the other agents are (tech-lead, etc.) and how to interact.
-5. **Journal location** — "Session journal: agents/bob/workspace/journal.md"
-6. **Key workspace paths** — Brief map of where different artifact types live.
-7. **Current research focus** — What am I actually working on right now? This changes but a "last updated" current-focus line would help.
+1. **Remove 5 items** (~800 bytes): stale lessons, duplicates, one-time reminders
+2. **Move script references** to agents/bob/TOOLS.md (already exists)
+3. **Group remaining items** under clear headers: Environment, Rules, Guards
+4. **Target size**: ~4,000 bytes (30% reduction)
 
-### Restructure (minor)
-8. **Group by category** — Currently it's a flat bullet list mixing environment setup, behavioral rules, experimental findings, and tool tips. Even simple `##` headers would improve scanability and reduce re-reading cost per session.
-
-## Token Budget Estimate
-
-Current: ~1,500 tokens. With recommended changes (remove dupes, add missing): ~1,400 tokens (net neutral). Restructuring with headers adds ~50 tokens but saves cognitive parsing time.
+## Token Impact Estimate
+Current: ~1,500 tokens injected per session
+After cleanup: ~1,000 tokens per session
+Savings: ~500 tokens/session × ~50 sessions/day = 25,000 tokens/day
