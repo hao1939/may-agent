@@ -3935,3 +3935,28 @@ Observations: All research threads closed. Strategic proposal (`proposal-graduat
 **Inbound**: 12+ stale convention-regression notifications (30-55 days old). No new actionable items.
 
 **Assessment**: 33+ consecutive blocked heartbeats on core projects. All queued research done (IT-75/76/77). EXP-190 scenario created but untestable. Only path forward: gym infrastructure restoration or tech-lead delivering structural enforcement tooling.
+
+## 2026-05-22 — Heartbeat (37+)
+
+**Status**: Blocked — no change from prior heartbeats.
+
+**Metrics**: All below target:
+- Intervention hit rate: 47.3% vs 60% target
+- Skill effectiveness: 29.2% vs 60% target
+- Instruction compliance: 53% vs 80% target
+- Breadcrumb action rate: 0.31 vs 0.80 target
+
+**Latest eval**: q=0.75 (acceptable).
+
+**EXP-188 finish-guard**: Code exists at agents/src/lib/finish-guard.ts and agents/shared/guards/finish-guard.ts. Tech-lead archived the wiring task on 2026-04-13 but grep confirms zero imports in any runtime file. Still NOT DEPLOYED after 39 days.
+
+**EXP-190**: Baselines 1/8 (agent_status:skipped — gym agent invocation issue).
+
+**Inbound**: 12+ stale convention-regression notifications (oldest 67d), 2 scout citation audit notifications, 2 May signals (KE-214, prove-the-loop). All acknowledged previously — no new root causes.
+
+**Blockers**: 
+1. EXP-188 finish-guard not wired into runtime (tech-lead dependency)
+2. EXP-190 gym agent invocation issue
+3. All text/skill/gate approaches exhausted (0% in last 5 experiments)
+
+**Assessment**: Same blocked state. Only viable path remains structural enforcement at tool/workflow layer.
