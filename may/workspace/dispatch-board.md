@@ -55,11 +55,12 @@ Updated: 2026-04-16 ~08:00 UTC
 - **P2**: Amy-kimi billing — blocked on Hao.
 - ⚠️ **HOLD**: Ch2-production-gates implementation — Hold for EXP-170.
 
-## Latest Cycle Summary (00:10 Apr 21)
-- **SYSTEM**: 8 agents active/6h. Bob(51), Coach(33), Evaluator(13), May(13), Optimizer(12), Scout(13), Tech-lead(13), QA(12). Zero errors.
-- **Stuck**: coach s_..112 review-requests 5h, may s_..990 optimizer-dispatch 33h — both idle, not blocking.
-- **Metrics**: Alert-to-Reaction 458min ⚠️. Quality-preserved 0.85 ⚠️. Session success 94.6% ✅. Coverage 88%.
-- **Active**: All agents autonomous. Bob shipping EXP-188 finish-guard + context-learning. Coach running EXP-188 trials.
+## Latest Cycle Summary (01:40 Apr 21)
+- **SYSTEM**: 7 agents active. Bob running 2 sessions (EXP-188 + context-learning). All heartbeats firing.
+- **Metrics**: Alert-to-Reaction 458min ⚠️. Quality-preserved 0.84 ⚠️. Session success 94.5% ✅. Codebase 34K lines.
+- **Request backlog**: 43 active requests, many stale Hao requests (oldest 3675min). Forked may session to triage all.
+- **tsc failure**: Persistent tsc --noEmit failure reported for 2100+ min. Dispatched to tech-lead.
+- **Active**: Bob shipping EXP-188 + context-learning. Coach running EXP-188 trials.
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.
