@@ -458,7 +458,10 @@ function extractDecision(text: string): { status: "done" | "blocked" | "continue
 
 
 function emitProjectEvent(ctx: WorkflowContext, config: PersistentTaskConfig, event: string, extra?: Record<string, unknown>): void {
-  const projectId = `${config.owner}/${config.projectDir.split("/").pop()}`;
+  const name = config.isLegacy
+    ? config.projectPath.split("/").pop()?.replace(/\.md$/, "") ?? "unknown"
+    : config.projectDir.split("/").pop() ?? "unknown";
+  const projectId = `${config.owner}/${name}`;
   ctx.emit({ type: "emit", event, data: { projectId, owner: config.owner, ...extra } });
 }
 // ── Main workflow ──────────────────────────────────────────────────────
@@ -604,6 +607,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           `Complete. ${finalMsDone.done}/${finalMsDone.total} milestones. ${decision.detail.slice(0, 100)}`);
         writeFileSync(config.projectPath, projectContent, "utf-8");
         ctx.emit({ type: "metric", name: "project.false-done", value: falseDoneCount });
+        emitProjectEvent(ctx, config, "project.completed", { iteration, health: score });
         return ctx.done(`Complete after comment at iteration ${iteration}: ${decision.detail}`);
       }
       if (decision.status === "blocked") {
@@ -622,12 +626,15 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         projectContent = updateField(projectContent, "Health", `${score}/10 (BLOCKED)`);
         projectContent = updateSection(projectContent, "Current State", `Blocked: ${decision.detail.slice(0, 150)}`);
         writeFileSync(config.projectPath, projectContent, "utf-8");
+        emitProjectEvent(ctx, config, "project.blocked", { iteration, health: score, reason: decision.detail.slice(0, 100) });
         return ctx.escalate(`Blocked by comment at iteration ${iteration}: ${decision.detail}`);
       }
 
       // CONTINUE — set active (may have been blocked/done), increment iteration
+      const oldStatus = state.status;
       projectContent = updateField(projectContent, "Status", "active");
       writeFileSync(config.projectPath, projectContent, "utf-8");
+      if (oldStatus !== "active") emitProjectEvent(ctx, config, "project.status-changed", { from: oldStatus, to: "active" });
       iteration++;
       continue;
     }
@@ -797,6 +804,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           `- **Iter ${iteration}**: ${decision.detail.slice(0, 100)}\n`);
         writeFileSync(config.projectPath, projectContent, "utf-8");
         ctx.emit({ type: "metric", name: "project.false-done", value: falseDoneCount });
+        emitProjectEvent(ctx, config, "project.completed", { iteration, health: score });
         return ctx.done(`Complete after ${iteration} iterations: ${decision.detail}`);
       }
 
@@ -821,6 +829,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         projectContent = updateSection(projectContent, "Current State",
           `Blocked: ${decision.detail.slice(0, 150)}`);
         writeFileSync(config.projectPath, projectContent, "utf-8");
+        emitProjectEvent(ctx, config, "project.blocked", { iteration, health: score, reason: decision.detail.slice(0, 100) });
         return ctx.escalate(`Blocked at iteration ${iteration}: ${decision.detail}`);
       }
 

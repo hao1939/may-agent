@@ -9,6 +9,15 @@ import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-con
 import type { CronEntry } from "../../../src/lib/cron-tool.js";
 
 const OWNER_RE = /^\*\*Owner\*\*:\s*(\S+)/mi;
+
+function extractSection(content: string, heading: string): string {
+  const marker = `## ${heading}\n`;
+  const idx = content.indexOf(marker);
+  if (idx === -1) return "";
+  const after = content.slice(idx + marker.length);
+  const nextSection = after.indexOf("\n## ");
+  return (nextSection === -1 ? after : after.slice(0, nextSection)).trim();
+}
 const STATE_FILE = ".state/project-last-check";
 const INFLIGHT_FILE = ".state/project-inflight";
 
@@ -72,13 +81,13 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     const projects: Array<{ owner: string; relPath: string }> = [];
 
     // Check for recently breached metrics (for reactivating paused metric projects)
-    let breachedMetric: string | null = null;
+    let breachedMetrics: Set<string> = new Set();
     try {
       const db = ctx.getDb();
-      const alert = db.prepare(
-        "SELECT metric_id FROM metric_alerts WHERE resolved_at IS NULL ORDER BY created_at DESC LIMIT 1"
-      ).get() as { metric_id: string } | undefined;
-      if (alert) breachedMetric = alert.metric_id;
+      const alerts = db.prepare(
+        "SELECT metric_id FROM metric_alerts WHERE resolved_at IS NULL"
+      ).all() as Array<{ metric_id: string }>;
+      for (const a of alerts) breachedMetrics.add(a.metric_id);
     } catch { /* skip */ }
 
     // Scan all project directories for modified files
@@ -114,15 +123,16 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
             const changed = mtime > lastCheck;
             const isActive = status === "active";
             let metricReactivated = false;
-            if (status === "paused" && breachedMetric) {
-              // Check if this project declares the breached metric
-              const metricsSection = content.match(/## Metrics\n([\s\S]*?)(?=\n## |$)/)?.[1] ?? "";
-              if (metricsSection.includes(breachedMetric)) {
-                metricReactivated = true;
-                // Reactivate: set status to active
-                const updated = content.replace(/^\*\*Status\*\*:\s*\S+/m, "**Status**: active");
-                writeFileSync(projectFile, updated, "utf-8");
-                ctx.log(`[project] Reactivated ${relPath} — metric ${breachedMetric} breached`);
+            if (status === "paused" && breachedMetrics.size > 0) {
+              const metricsSection = extractSection(content, "Metrics");
+              for (const metric of breachedMetrics) {
+                if (metricsSection.includes(metric)) {
+                  metricReactivated = true;
+                  const updated = content.replace(/^\*\*Status\*\*:\s*\S+/m, "**Status**: active");
+                  writeFileSync(projectFile, updated, "utf-8");
+                  ctx.log(`[project] Reactivated ${relPath} — metric ${metric} breached`);
+                  break;
+                }
               }
             }
             if (!changed && !isActive && !metricReactivated) continue;
@@ -151,6 +161,8 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
     let launched = 0;
     for (const project of projects) {
+      const projectName = project.relPath.split("/").pop() ?? "";
+      const projectId = `${project.owner}/${projectName}`;
       const task = `project: ${project.relPath}\nagent: ${project.owner}\ngoal: see project file`;
 
       const runId = generateRunId();
@@ -177,10 +189,13 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
           };
         },
         runAgent: async (agentName: string, agentTask: string) => {
-          return ctx.manager.callAgent(agentName, agentTask, { source: "workflow", workflowRunId: runId });
+          return ctx.manager.callAgent(agentName, agentTask, { source: "workflow", workflowRunId: runId, projectId });
         },
         runWorkflow: async () => ({ type: "escalate" as const, reason: "Sub-workflows not supported" }),
-        emit: (event: any) => ctx.log(`[project:${project.relPath}] ${event.type ?? event}`),
+        emit: (event: any) => {
+          ctx.emit(event);
+          ctx.log(`[project:${project.relPath}] ${event.type ?? event}`);
+        },
         summarize: (result: any, _opts?: any) => {
           const text = result?.lastAssistantText ?? result?.summary ?? "";
           return text.length > 1500 ? text.slice(0, 1500) + "…" : text;
