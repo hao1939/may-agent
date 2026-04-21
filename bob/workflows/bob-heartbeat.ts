@@ -67,6 +67,23 @@ function loadMetrics(ctx: WorkflowContext, agent: string): string {
       let line = `📊 ${r.id}: ${r.current ?? "?"} (target ${r.target ?? "?"}) ${breached ? "⚠️ BELOW TARGET" : "✅"}`;
       // Add actionable breadcrumb for below-target metrics
       if (breached) {
+        // M4: Count consecutive breached snapshots for escalation
+        let consecutiveBreaches = 0;
+        try {
+          const snapshots = db.prepare(
+            "SELECT value FROM metric_snapshots WHERE metric_id = ? ORDER BY measured_at DESC LIMIT 10"
+          ).all(r.id) as any[];
+          for (const s of snapshots) {
+            const sBreach = r.alert_direction === "above" ? s.value > r.threshold : s.value < r.threshold;
+            if (sBreach) consecutiveBreaches++;
+            else break;
+          }
+        } catch {}
+
+        if (consecutiveBreaches >= 3) {
+          line += `\n  ⛔ REPEATED ALERT (seen ${consecutiveBreaches}x): This metric has been failing for ${consecutiveBreaches} consecutive checks with NO action taken.`;
+          line += `\n  → You MUST act on this NOW. Continuing to ignore it is not acceptable.`;
+        }
         if (r.source_command) line += `\n  → Quick check: bash ${r.source_command}`;
         else if (r.source_query) line += `\n  → Quick check: run SQL — ${r.source_query.substring(0, 120)}`;
       line += `\n  → ACTION REQUIRED: Investigate this metric NOW or explain in your session summary why you deferred it.`;

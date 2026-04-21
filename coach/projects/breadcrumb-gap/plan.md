@@ -44,10 +44,12 @@ Key changes:
 - All 8 `agents/*/workflows/*-heartbeat.ts` loadMetrics functions getting ACTION REQUIRED line
 - ETA: This heartbeat cycle
 
-### M4: Reduce breadcrumb repetition
-- If same breadcrumb appeared 3+ times with no action, escalate language:
-  "⛔ REPEATED ALERT (seen 4x): you have not acted on this in 3 sessions"
-- Prevents habituation (agent learns to tune out the same message)
+### M4: Reduce breadcrumb repetition ✅
+- Implemented: 2026-06-20
+- All 8 heartbeat workflows now count consecutive breached snapshots
+- If same metric breached 3+ consecutive times, escalates to "⛔ REPEATED ALERT (seen Nx)"
+- Investigation: agents/coach/projects/breadcrumb-gap/m4-investigation.md
+- Root cause: habituation — may.alert-to-reaction-time stuck at 136.8 for 5+ checks, same text becomes invisible
 
 ### M5: Add "breadcrumb acknowledgment" to finish() schema
 - Require agents to explicitly state what they did about each breadcrumb
