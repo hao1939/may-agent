@@ -753,7 +753,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       const rows = db.prepare(
         "SELECT sessionId, agent, status, opCount, startedAt, endedAt, task FROM sessions WHERE projectId = ? ORDER BY startedAt DESC LIMIT 50"
       ).all(projectId) as any[];
-      return json(rows);
+      if (rows.length > 0) return json(rows);
     } catch {
       // projectId column may not exist yet — fall back to workflow run files
       try {
