@@ -13,12 +13,15 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-21T19:40)
+# Your Context (auto-generated 2026-04-21T20:10)
 
-**System:** 1 sessions/6h, 0% error rate
+**System:** 5 sessions/6h, 0% error rate
+**You:** 2 sessions, 69KB total (35KB avg)
 
 **Top spenders:**
-- coach: 1s, 4KB
+- coach: 2s, 183KB
+- tech-lead: 1s, 95KB
+- scout: 2s, 69KB ← you
 
 **📊 Your Metrics:**
 - Findings cited downstream (ratio, higher is better): **0.56** ratio → 0.5 ratio
