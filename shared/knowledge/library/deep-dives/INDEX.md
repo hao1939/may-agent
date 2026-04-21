@@ -888,3 +888,18 @@
 | DD-801 | 2604.15972 | WORC: Weak-Link Optimization for Multi-Agent Reasoning | ★★★★ | Weakest agent bottlenecks system; meta-learning weak-link predictor; 82.2% accuracy |
 | DD-802 | 2604.15726 | LLM Reasoning Is Latent, Not the Chain of Thought | ★★★★½ | Evidence favors latent-state reasoning over surface CoT; implications for HVR monitoring |
 | DD-803 | 2604.16022 | SocialGrid: Planning and Social Reasoning Benchmark | ★★★★ | Deception detection at chance even with planning oracle; behavioral evidence accumulation failure |
+
+### April 2026 Semantic Consensus & Conflict Resolution Triage (DD#822-825)
+
+| # | Paper | Title | ★ | Theme |
+|---|-------|-------|---|-------|
+| DD-822 | 2604.12196 | Radial Consensus Score: Geometric Semantic Consensus for Best-of-N | ★★★★ | Embedding-space Fréchet mean as consensus; drop-in voting replacement; works in multi-agent debate |
+| DD-823 | 2603.10476 | Learning to Negotiate: Multi-Agent Deliberation via GRPO | ★★★★★ | Trainable conflict resolution; dialogue-level gradients; Collective Agency objective; LREC DELITE |
+| DD-824 | 2604.00451 | CASCADE: Scoped Communication for Multi-Agent Re-planning | ★★★★ | Explicit communication budgets; escalation triggers; cascading failure prevention; ICLR 2026 Workshop |
+| DD-825 | 2604.03796 | When AI Agents Disagree Like Humans: Disagreement as Signal | ★★★★ | 4-category disagreement taxonomy; convergent disagreement = value pluralism; d>0.8 effect sizes; ICLR 2026 |
+
+**Cross-references**:
+1. DD#822 + DD#825 → Complementary consensus measurement (geometric magnitude vs structural taxonomy)
+2. DD#823 → Direct implementation of CR#318 conflict resolution via learned negotiation
+3. DD#824 → Mechanism-level answer to DD#667-673 cascading failure theme
+4. DD#825 → Diagnostic for verification collapse: absence of convergent disagreement = collapse signal
