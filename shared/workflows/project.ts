@@ -462,7 +462,7 @@ function emitProjectEvent(ctx: WorkflowContext, config: PersistentTaskConfig, ev
     ? config.projectPath.split("/").pop()?.replace(/\.md$/, "") ?? "unknown"
     : config.projectDir.split("/").pop() ?? "unknown";
   const projectId = `${config.owner}/${name}`;
-  ctx.emit({ type: "emit", event, data: { projectId, owner: config.owner, ...extra } });
+  ctx.dispatchEvent(event, { projectId, owner: config.owner, ...extra });
 }
 // ── Main workflow ──────────────────────────────────────────────────────
 

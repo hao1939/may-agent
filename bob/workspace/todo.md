@@ -27,7 +27,7 @@
 - [x] **2026-04-21 deep-dives processed**: DD-826/827/828 (debate/deliberation) → **KE-320** (debate quality preservation synthesis). DD-829 (Obsidian) → **KE-321** (markdown-native observability). SCF → **KE-322** (semantic drift detection). Consensus Trap → **KE-323** (token-level verification). SkillGraph → **KE-324** (adaptive collaboration topology).
 - [x] **CR#348 synthesis processed**: Disagreement Architecture five-layer stack → **KE-325**. Consensus-seeking as default failure mode. Implications for evaluator, coach, quality preservation.
 - [x] **DD-830 processed**: Anti-sycophancy multi-agent debate → **KE-326** (★★★★★). Anonymization as cheapest mitigation, adversarial structure > model capability. H-177 candidate (evaluator anonymization).
-- [ ] **EXP-188 shipping**: Notified tech-lead (P1) to wire finish-guard into production. 15+ prior sessions interrupted.
+- [ ] **EXP-188 shipping**: Guards are DEAD CODE — no runtime loads them. Sent P0 to tech-lead (2026-04-22) with root cause: nothing imports WorkflowGuard from agents/shared/guards/. Need workflow engine guard-loader. 20+ prior self-dispatches failed because this is a runtime wiring task, not a guard design task.
 - [x] **H-178 formalized** (was listed as H-177): Anonymizing agent identity in evaluator debate → quality-preservation +5pp. Based on KE-326. Written as H-178-evaluator-anonymization.md.
 
 ## Blocked / Deferred
