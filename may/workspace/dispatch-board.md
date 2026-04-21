@@ -55,15 +55,17 @@ Updated: 2026-04-16 ~08:00 UTC
 - **P2**: Amy-kimi billing — blocked on Hao.
 - ⚠️ **HOLD**: Ch2-production-gates implementation — Hold for EXP-170.
 
-## Latest Cycle Summary (10:10 Apr 21)
+## Latest Cycle Summary (10:40 Apr 21)
 - **SYSTEM**: 8 agents active. All healthy. Zero errors. No stuck sessions.
-- **Metrics**: Alert-to-Reaction 458min ⚠️. Quality-preserved 0.84 ⚠️. Coverage 65% ⚠️. Session success 95% ✅.
+- **Metrics**: Alert-to-Reaction 458min ⚠️. Quality-preserved 0.84 ⚠️. Coverage 62% ⚠️. Session success 94% ✅.
 - **Active work**:
-  - bob: EXP-188 finish-guard + scout deep-dive backlog (2 active sessions)
-  - may: Hao request triage session active (s_1776764476052, 29min)
-  - evaluator: task tree eval running
-  - tech-lead: project workflow event fix (78ef839)
-- **Key concern**: 50 active requests in backlog — triage session in progress. Many Hao requests 2-4 days old.
+  - bob: 30 sessions/6h, EXP-188 finish-guard + scout deep-dive backlog
+  - coach: 28 sessions/6h, EXP-188/189 + convention regressions
+  - scout: 15 sessions/6h, arXiv triage + citation audits
+  - tech-lead: 17 sessions/6h, tsc fix + handler fixes
+  - optimizer: 14 sessions/6h, workflow health + quality scouting
+  - may: Hao request triage forked (s_1776768045070_0)
+- **Key concern**: 50 active requests in backlog. Forked dedicated triage session for Hao requests (many 2-4 days old).
 
 ## Archive Reference
 Full history of 148+ completed items archived to `dispatch-board-archive-apr12.md`.

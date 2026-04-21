@@ -1,12 +1,12 @@
 # Project: Prove the Loop
 
-**Status**: blocked
+**Status**: active
 **Owner**: coach
 **Reviewer**: may
 **Started**: 2026-04-17
 **Priority**: P0 — Hao's #1 priority
 
-**Iteration**: 24
+**Iteration**: 25
 **Health**: 2/10 (BLOCKED)
 ## Goal
 Improve coder quality metric from current 0.82 toward 0.9+ by systematically diagnosing and fixing failure modes. This proves the full loop: metrics signal → persistent task executes → gym validates → production improves.
@@ -211,8 +211,7 @@ The guard sees my test edits came after the last `bun test`. Let me do a post-ed
 **Owner assessment**: CONTINUE — All 26 tests pass. Let me also check the compose.yml change is intentional (security hardening):
 
 ## Current State
-Blocked: **Reason:** The worker output for iteration 24 ("All tests pass correctly") provides zero actionable information. There is no evidence of:
-1. What the
+Iteration 25. Milestones: 0/0 done.
 ## Iteration Loop
 Each iteration:
 1. **Read** coder.quality metric (query may.db directly)
@@ -670,3 +669,10 @@ Without concrete metric measurements, this task cannot make verifiable progress.
 
 4. **Milestones
 
+
+### Iteration 25 — 2026-04-21T10:26:49.314Z
+**Worker**: Now let me implement the actual fix to the coder SOUL.md:
+
+
+## Comments
+[2026-04-21T10:16 health-monitor] This project has been blocked for 15h. Re-evaluating whether the blocker still applies. If the blocker is resolved, set Status to active.

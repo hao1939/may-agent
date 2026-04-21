@@ -9,20 +9,20 @@ No active nudge.
 
 ---
 
-# Your Context (auto-generated 2026-04-21T10:10)
+# Your Context (auto-generated 2026-04-21T10:40)
 
-**System:** 21 sessions/6h, 0% error rate
-**You:** 3 sessions, 33KB total (11KB avg)
+**System:** 16 sessions/6h, 0% error rate
+**You:** 2 sessions, 21KB total (11KB avg)
 
 **Top spenders:**
-- bob: 12s, 1247KB
-- may: 5s, 232KB
-- tech-lead: 3s, 33KB ← you
-- evaluator: 1s, 32KB
+- bob: 9s, 1130KB
+- may: 3s, 111KB
+- coach: 2s, 38KB
+- tech-lead: 2s, 21KB ← you
 
 **📊 Your Metrics:**
-- Codebase weight: **34592** lines → 32000 lines
+- Codebase weight: **34747** lines → 32000 lines
 - Delegation quality: **0.78** ratio → 0.85 ratio
-- Meaningful changes: **8084** commits/week → 10 commits/week
+- Meaningful changes: **8085** commits/week → 10 commits/week
   → Quick check: cd agents && git log --since="7 days ago" --oneline 2>/dev/null | wc -l | tr -d " "
 - Build health: **1** bool → 1 bool

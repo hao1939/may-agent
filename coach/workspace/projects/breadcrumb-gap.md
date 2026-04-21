@@ -1,11 +1,11 @@
 # Project: Breadcrumb Gap (API 100% → Gym 10%)
 
-**Status**: blocked
+**Status**: active
 **Owner**: coach
 **Started**: 2026-04-18
 **Priority**: P0
 
-**Iteration**: 3
+**Iteration**: 5
 **Health**: 4/10 (BLOCKED)
 ## Goal
 
@@ -155,8 +155,16 @@ The measurement denominator is too small post-integration. The real question: **
 Let me write up the findings:
 
 
+### Iteration 5 — 2026-04-21T10:26:49.278Z
+**Worker**: Now I see the problems clearly. Let me fix both the G-pattern effectiveness AND the measurement accuracy.
+
+**Problem 1**: The G-pattern asks a question but agents skip it — digests show "clear picture, logging" with no metric investigation.
+
+**Problem 2**: The measurement script uses `s.agent IN (agents with currently below-target metrics)` which retroactively matches ALL sessions from those agents, massively inflating the denominator with sessions
+
+
 ## Current State
-Blocked: **Reason**: The integration is live and working as designed, but the metric cannot improve because there are insufficient post-integration heartbeat s
+Iteration 5. Milestones: 0/0 done.
 ## Iteration Summary
 - **Iter 1**: This is a persistent task and a prior iteration already committed these exact files. The content is 
 
@@ -195,3 +203,5 @@ Blocked: **Reason**: The integration is live and working as designed, but the me
 
 3. **Evidence**: No new measurements were taken. The worker didn't run the measurement script or spot-check post-integration sess
 
+
+## Comments

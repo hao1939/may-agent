@@ -1,9 +1,9 @@
 # Project: Context Learning — Implementation Phase
 
-**Status**: blocked
+**Status**: active
 **Owner**: bob
 **Priority**: P1
-**Iteration**: 4
+**Iteration**: 5
 **Health**: 4/10 (BLOCKED)
 
 ## Goal
@@ -48,3 +48,5 @@ Blocked: **M2 and M3** are blocked on an external dependency — `manager.ts` (t
 
 - **Iter 3**: Now write the experiment design doc:
 
+
+## Comments

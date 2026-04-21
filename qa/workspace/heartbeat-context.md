@@ -13,18 +13,18 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-21T10:10)
+# Your Context (auto-generated 2026-04-21T10:40)
 
-**System:** 21 sessions/6h, 0% error rate
+**System:** 16 sessions/6h, 0% error rate
 
 **Top spenders:**
-- bob: 12s, 1247KB
-- may: 5s, 232KB
-- tech-lead: 3s, 33KB
-- evaluator: 1s, 32KB
+- bob: 9s, 1130KB
+- may: 3s, 111KB
+- coach: 2s, 38KB
+- tech-lead: 2s, 21KB
 
 **Your active error patterns:**
 - FM-3.3: 3x
 
 **📊 Your Metrics:**
-- Review coverage: **302** → 0
+- Review coverage: **304** → 0
