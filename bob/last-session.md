@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776793277699_50
+- **Session:** s_1776794658755_52
 - **Status:** done
-- **When:** 2026-04-21T17:42:49.704Z
-- **Duration:** 1m32s
+- **When:** 2026-04-21T18:04:46.471Z
+- **Duration:** 27s
 
 ## What Happened
-Now let me also verify the `manager.ts` reference. Since it doesn't exist as a file we can see, it's likely part of the pre-compiled runtime. Let me add a note about that.
+The lesson: when chaining bash commands, a `grep` returning exit code 1 (no matches) causes the whole chain to fail. The agent should handle this.
