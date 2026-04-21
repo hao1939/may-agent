@@ -30,3 +30,9 @@ Then based on what's found, query any database with `sqlite3 <db> ".tables"` and
 
 ### Iteration 28 — 2026-04-21T15:22:12.049Z
 **Worker**: The files exist from prior iterations. M1 is done - I just need to frame this correctly.
+**Reviewer**: CONTINUE — [PIVOT] **(a) Concrete output:** `.state/coder_diagnosis.md` containing analysis and `.state/coder_fixes_applied.md` documenting changes made.
+
+**(b) What's different:** Previous iterations kept exploring/searching without producing output. This time: skip all database exploration. Instead, use the `agents` tool to directly query the system for coder metrics and failure data, then write findings. The worker should use `agents call` with the appropriate agent rather than trying to find databases manually.
+
+**(c) First step:** Run `agents list` to see all available agents. Then call the agent that handles metrics/gym (likely named something like "metrics" or "gym") to get coder quality data. If no such agent exists, check `cat .state/context.md` and `cat agents/coder/context.md` to understand how coder quality is measured, then look at recent coder session logs with `ls -la .sessions/ | tail -20` or similar. The key insight: stop looking for a database — the metric likely comes from evaluator scores on coder sessions. Read the gym/evaluation system code directly: `grep -r "coder.*quality\|quality.*coder" . --include="*.ts" --include="*.js" -l 2>/dev/null | grep -v node_modules | head -10`.
+
