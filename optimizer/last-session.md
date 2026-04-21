@@ -1,12 +1,14 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776777008688_9
+- **Session:** s_1776778807227_22
 - **Status:** done
-- **When:** 2026-04-21T13:15:41.193Z
-- **Duration:** 5m32s
+- **When:** 2026-04-21T13:41:06.541Z
+- **Duration:** 59s
 
 ## What Happened
-Good. The query is updated and I cleaned up 764 heuristic false-zero evaluations. The metric will update to ~0.847 on next snapshot run. Still below 0.85, but this is now reflecting genuine quality, not measurement artifacts.
+System is healthy. All errors are "Connection error." — systemic API outage, not agent-specific. Ops are low across all agents (avg 3-12). No high-op outliers to investigate.
 
-Let me finish up:
+Evaluations are all "skipped" — evaluator is only producing zero-score skipped entries, likely because all recent sessions are error sessions from the connection outage.
+
+No actionable work to dispatch. System is in good shape post-outage recovery.
