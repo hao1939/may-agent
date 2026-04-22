@@ -45,10 +45,10 @@ for i in range(1, TRIALS+1):
     t0 = time.time()
     r = run_trial(SCENARIO, AGENT)
     elapsed = time.time() - t0
-    passed = r.get("pass", False)
+    passed = r.get("passed", r.get("pass", False))
     checks = r.get("checks", {})
     if isinstance(checks, list):
-        checks_dict = {c.get("name", f"check-{j}"): c.get("pass", False) for j, c in enumerate(checks) if isinstance(c, dict)}
+        checks_dict = {c.get("name", f"check-{j}"): c.get("passed", c.get("pass", False)) for j, c in enumerate(checks) if isinstance(c, dict)}
     else:
         checks_dict = checks
     results.append({"trial": i, "pass": passed, "checks": checks_dict, "elapsed": round(elapsed, 1)})
