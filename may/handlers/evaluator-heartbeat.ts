@@ -22,7 +22,7 @@ import { existsSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import type { HandlerContext, HandlerModule } from "../../shared/agent-sdk.js";
 import type { CronEntry } from "../../shared/agent-sdk.js";
-import { evaluateStandaloneSession } from "../../../src/lib/evaluator.js";
+import { evaluateStandaloneSession } from "../../shared/evaluation/evaluator.js";
 
 // ── Constants ─────────────────────────────────────────────────────────
 
@@ -287,7 +287,7 @@ async function sampleAndEvaluateTopLevel(
     try {
       const result = await evaluateStandaloneSession({
         manager: ctx.manager,
-        persistDir: ctx.persistDir,
+        ctx,
         sessionId: session.sessionId,
         agent: session.agent,
         task: session.task,

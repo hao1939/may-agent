@@ -1,7 +1,7 @@
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { AssistantMessage } from "@mariozechner/pi-ai";
 
-import type { SubagentManager, PersistedSession, RuntimeCtx } from "../agent-sdk.js";
+import type { SubagentManager, PersistedSession } from "../agent-sdk.js";
 import { appendErrorLogs } from "./error-log.js";
 
 /**

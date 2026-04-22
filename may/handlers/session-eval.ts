@@ -27,7 +27,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     try {
       const result = await evaluateTask({
         manager: ctx.manager,
-        persistDir: ctx.persistDir,
+        ctx,
         parentSessionId,
       });
 

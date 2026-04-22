@@ -37,7 +37,7 @@ import { readdirSync, readFileSync, existsSync, statSync } from "node:fs";
 import { join } from "node:path";
 import type { HandlerContext, HandlerModule } from "../../shared/agent-sdk.js";
 import type { CronEntry } from "../../shared/agent-sdk.js";
-import { evaluateStandaloneSession } from "../../../src/lib/evaluator.js";
+import { evaluateStandaloneSession } from "../../shared/evaluation/evaluator.js";
 
 // Keep in sync with evaluator-heartbeat.ts: meta agents must never be
 // upgraded to LLM evaluation (they produce low-quality scored rows).
@@ -408,7 +408,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
           try {
             const result = await evaluateStandaloneSession({
               manager: ctx.manager,
-              persistDir: join(ctx.projectRoot, ".state"),
+              ctx,
               sessionId: session.sessionId,
               agent: session.agent,
               task: session.task,
