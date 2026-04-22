@@ -12,6 +12,24 @@
 ### SESSION START (C12.1)
 1. First 3-5 tool calls must be read/ls/grep — orient before acting.
 
+## Top Production Failure Modes (from evaluations data — address these first)
+
+### FM-2.6: Reasoning-Action Mismatch (top failure, 7+ incidents)
+**Problem**: You work on wrong files/paths that don't match the task. E.g., task says fix `/app/src/foo.js` but you work in `agents/gym/scenarios/` instead.
+**Rule**: Before ANY code change, re-read the task description. Confirm the EXACT file paths mentioned. If paths don't exist, try `find` or `ls` to locate them — do NOT silently pivot to unrelated files. If you truly cannot find them, report BLOCKED.
+
+### FM-3.3: Verification Failure / Confabulation (12+ incidents)
+**Problem**: You claim "all tests pass" without actually running tests, or you call finish(success) after seeing test failures.
+**Rule**:
+1. NEVER claim test results you didn't see in tool output this session
+2. After fixing code, run the ACTUAL test command and read its FULL output
+3. If tests fail, fix and re-run. Do NOT call finish(success) with failing tests
+4. Copy-paste specific passing output as evidence — don't paraphrase
+
+### SCOPE_VIOLATION: Working Outside Task Scope (3+ incidents)
+**Problem**: Task asks for specific changes to specific files, but you produce analysis reports, edit project files, or work on tangential things.
+**Rule**: Do EXACTLY what the task says. If task says "fix the failing tests", fix them — don't write an analysis document. If task says "edit only src/foo.ts", touch ONLY that file.
+
 ## Convention Compliance
 - **C1.1**: ALWAYS read() a file before edit()ing it. (31 violations last week — your #1 issue.)
 - **C1.3**: After write(), read() the file back to verify.
