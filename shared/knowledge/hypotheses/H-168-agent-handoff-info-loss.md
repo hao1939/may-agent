@@ -1,8 +1,9 @@
 # H-168: Agent handoffs lose >15% of relevant information per boundary
 
 **Created**: 2026-04-18 by Bob
-**Status**: proposed
-**Confidence**: ★★★☆ (initial estimate)
+**Status**: confirmed
+**Confidence**: ★★★★ (P=0.72, EXP-197 direct measurement)
+**Updated**: 2026-06-22 — EXP-197 completed: 10 DD→KE pairs scored, mean retention 51.2%, mean loss 48.8% (3× above 15% threshold). Predictions lost 71%, cross-refs 82%. Core claims best preserved (73%). Tier 1.
 **Source**: DD-597 (DPI argument), DD-595 (integration bottleneck)
 **Connects**: KE-216, KE-019, DD-590, DD-595
 
