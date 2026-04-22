@@ -199,3 +199,5 @@ Then read the gym checks data to identify every individual check that failed (co
 - `.state/coder_fixes_applied.md` — Documents the 3 rules added
 - `agents/coder/context.md` — Contains the deployed Quality Improvement Rules section
 
+**Evaluator**: FAIL (score=0/10) — I didn't write or edit any files — I'm a reviewer. Let me just re-confirm my evaluation output.
+

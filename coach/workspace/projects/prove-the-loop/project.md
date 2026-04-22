@@ -7,7 +7,7 @@
 **Priority**: P0 — Hao's #1 priority
 
 **Iteration**: 36
-**Health**: 3/10 (FAIL)
+**Health**: 0/10 (FAIL)
 ## Goal
 Improve coder quality metric from current 0.82 toward 0.9+ by systematically diagnosing and fixing failure modes. This proves the full loop: metrics signal → persistent task executes → gym validates → production improves.
 
@@ -709,6 +709,8 @@ Without concrete metric measurements, this task cannot make verifiable progress.
 - **Iter 34**: Good — these are stub-mode results (no agent ran). Now let me create a proper gym validation report.
 
 - **Iter 35**: Now let me write the validation report with real data.
+
+- **Iter 36**: Good. Now let me verify the report looks correct:
 
 
 ## Comments
