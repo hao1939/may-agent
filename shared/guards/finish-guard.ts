@@ -86,6 +86,20 @@ function wasPersistentTaskRun(result: any): boolean {
   return false;
 }
 
+// Re-export validation functions from src/lib/finish-guard for agent-sdk consumers
+export {
+  validateFinishDeliverables,
+  enforceFinishDeliverables,
+  validateVerificationEvidence,
+  enforceVerificationEvidence,
+} from "../../src/lib/finish-guard.js";
+export type {
+  FinishDeliverable,
+  FinishCallParams,
+  FinishValidationResult,
+  EvidenceValidationResult,
+} from "../../src/lib/finish-guard.js";
+
 export const guard: WorkflowGuard = {
   name: "finish-guard",
   events: ["step_done"],
