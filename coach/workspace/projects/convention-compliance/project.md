@@ -7,7 +7,7 @@
 **Started**: 2026-04-22
 **Metric**: convention-compliance-rate (currently ~97%, target ≥ 99%)
 
-**Iteration**: 16
+**Iteration**: 17
 **Health**: 6/10 (FAIL)
 ## Milestones
 - [x] M1: Gym scenarios for top 4 violations
@@ -144,7 +144,7 @@ Based on Phase 1 findings, design interventions. Start with what we know works:
 
 
 ## Current State
-Iteration 16. Milestones: 6/6 done.
+Iteration 17. Milestones: 6/6 done.
 ## Iteration Summary
 - **Iter 1**: All 15 tests pass. Now let me update the project progress log:
 
@@ -174,4 +174,6 @@ The reviewer marked this as DONE in iteration 7. All 6 milestones are complete w
 - **Iter 15**: Now I see the core problem. The guards are only used in `compliance-check.ts` as **smoke tests** — t
 
 - **Iter 16**: Now update the violation-recount to be honest:
+
+- **Iter 17**: Now let me write the actual measured results document with real data.
 

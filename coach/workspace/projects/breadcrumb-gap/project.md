@@ -1,11 +1,11 @@
 # Project: Breadcrumb Gap (API 100% → Gym 10%)
 
-**Status**: done
+**Status**: blocked
 **Owner**: coach
 **Started**: 2026-04-18
 **Priority**: P0
 
-**Iteration**: 17
+**Iteration**: 27
 **Health**: 7/10 (PASS)
 ## Goal
 
@@ -170,9 +170,7 @@ Let me write up the findings:
 
 
 ## Current State
-Complete. 0/0 milestones. The work is complete. Evidence:
-
-1. **All 8 agent heartbeats** have `formatMetricsBlock` + RED METRI
+Blocked: 5 consecutive iterations without milestone progress. Approach needs rethinking.
 ## Iteration Summary
 - **Iter 1**: This is a persistent task and a prior iteration already committed these exact files. The content is 
 
@@ -232,6 +230,22 @@ Complete. 0/0 milestones. The work is complete. Evidence:
 - **Iter 17**: The work is complete. Evidence:
 
 1. **All 8 agent heartbeats** have `formatMetricsBlock` + RED METRI
+
+- **Iter 18**: (dry run)
+
+- **Iter 19**: (dry run)
+
+- **Iter 20**: (dry run)
+
+- **Iter 21**: (dry run)
+
+- **Iter 23**: (dry run)
+
+- **Iter 24**: (dry run)
+
+- **Iter 25**: (dry run)
+
+- **Iter 26**: (dry run)
 
 
 ## Comments
