@@ -6,7 +6,7 @@
  * heartbeat.md for any agent's heartbeat workflow. Zero LLM cost.
  *
  * Usage in per-agent heartbeat workflows:
- *   import { loadMetrics, loadProjects, loadAlerts, loadHeartbeatMd, loadInbox } from "../../shared/workflows/heartbeat-data.js";
+ *   import { loadMetrics, loadProjects, loadAlerts, loadHeartbeatMd, loadInbox, formatMetricsBlock } from "../../shared/workflows/heartbeat-data.js";
  */
 
 import { readFileSync, readdirSync, existsSync } from "node:fs";
@@ -116,4 +116,34 @@ export function loadInbox(ctx: WorkflowContext, agent: string): string {
       return `- [${ageStr}] **${r.event_type}**${retry} — ${summary}`.slice(0, 120);
     }).join("\n");
   } catch { return ""; }
+}
+
+/**
+ * Format a G-pattern metrics block for direct prompt injection.
+ *
+ * Returns a self-contained string that forces metric engagement (the "G pattern"):
+ * - If any metrics are breaching: presents them with breadcrumbs and asks
+ *   "which is furthest from target?"
+ * - If all healthy: returns a short "all clear" line.
+ *
+ * Use this to inject metrics into any prompt context (not just heartbeats).
+ * The returned block includes breadcrumbs (Quick check commands/queries).
+ */
+export function formatMetricsBlock(ctx: WorkflowContext, agent: string): string {
+  const metrics = loadMetrics(ctx, agent);
+  if (!metrics) return "📊 No metrics configured.\n";
+
+  const hasRed = metrics.includes("⚠️ BELOW TARGET");
+  if (!hasRed) {
+    return `📊 All metrics healthy — no action needed.\n${metrics}\n`;
+  }
+
+  return `**⚡ FIRST — evaluate your metrics before anything else:**
+
+${metrics}
+
+**Question**: Which metric above is furthest from its target? Follow the "→ Quick check" breadcrumb for that metric NOW — run the command, read the file, or execute the query. Then decide: is this urgent enough to act on immediately, or can it wait?
+
+---
+`;
 }
