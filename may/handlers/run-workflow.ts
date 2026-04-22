@@ -24,8 +24,9 @@
  *   - timeoutMs: max time to wait (default: 60 min)
  */
 
-import { readdirSync } from "node:fs";
+import { readdirSync, copyFileSync, unlinkSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
+import { tmpdir } from "node:os";
 import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
 import type { CronEntry } from "../../../src/lib/cron-tool.js";
 import type {
@@ -46,7 +47,18 @@ function generateRunId(): string {
 }
 
 async function loadWorkflow(filePath: string): Promise<WorkflowModule> {
-  const mod = await import(filePath + "?t=" + ++importCounter);
+  // Bun compiled binaries cache dynamic imports even with ?t= query params.
+  // Copy the file to a unique temp path to guarantee fresh code is loaded.
+  const cacheDir = join(tmpdir(), "may-workflow-cache");
+  mkdirSync(cacheDir, { recursive: true });
+  const tempPath = join(cacheDir, `wf_${++importCounter}_${Date.now()}.ts`);
+  copyFileSync(filePath, tempPath);
+  let mod: any;
+  try {
+    mod = await import(tempPath);
+  } finally {
+    try { unlinkSync(tempPath); } catch {}
+  }
   if (typeof mod.name !== "string") {
     throw new Error(`Workflow file ${filePath} must export a 'name' string`);
   }
