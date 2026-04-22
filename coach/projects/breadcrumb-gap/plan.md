@@ -79,6 +79,12 @@ Key changes:
 - 7-day rolling rate ≥ 0.80
 - Project complete
 
+### M10: Fix threshold≠target gap ✅
+- **Problem**: `may.alert-to-reaction-time` had threshold=150 but target=75. Value was 105, so gate never fired (1/25 sessions). The gate checks for `⚠️ BELOW TARGET` which requires threshold breach.
+- **Fix**: Lowered threshold to 75 (=target) in metrics table. Now value 105 > threshold 75 → gate fires.
+- **Completed**: 2026-04-22 (coach heartbeat)
+- **Next**: Measure over 7 days. If may gate now fires consistently, expect breadcrumb-action-rate to jump toward 0.70+
+
 ### M9: May-specific heartbeat intervention ⏳
 - **Problem**: 6/8 non-acting sessions are may. May sees G-pattern + breadcrumbs but ignores them during "read-only monitoring heartbeats."
 - **Intervention**: Added "Metric Accountability (MANDATORY)" section to `agents/may/heartbeat.md` before Anti-patterns. Requires may to either dispatch work for red metrics OR explain why not in session summary. Explicitly bans "read-only monitoring" when red metrics exist.
