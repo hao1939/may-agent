@@ -1,12 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776847345584_29
+- **Session:** s_1776847359168_31
 - **Status:** done
-- **When:** 2026-04-22T08:42:58.136Z
-- **Duration:** 32s
+- **When:** 2026-04-22T08:43:04.460Z
+- **Duration:** 25s
 
 ## What Happened
-The audit is complete. The ordering is correct here: normalize adds a `pct` field but doesn't modify `score` or `max_score`. Penalties use `record.score / record.max_score` to compute `rawPct`, so normalize running first doesn't corrupt penalty input. The pipeline order is fine.
+Audit complete. The pipeline order is normalize→penalize. The key question was whether normalize modifies `score` — it doesn't, it only adds a `pct` field. So penalties.js correctly computes from `record.score / record.max_score` regardless of order. No ordering bug exists.
 
-All 23 tests pass already — no bugs to fix.
+All 23 tests already pass with no changes needed.
