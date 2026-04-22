@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776834953978_111
+- **Session:** s_1776835636056_115
 - **Status:** done
-- **When:** 2026-04-22T05:23:42.020Z
-- **Duration:** 7m48s
+- **When:** 2026-04-22T05:29:14.703Z
+- **Duration:** 1m58s
 
 ## What Happened
-The commit message contains `/home/` which triggered the gate! Let me rewrite:
+Growth-cycle and training-sprint workflows are broken. I'll fork a direct agent call for convention-compliance M1+M2 work, which also serves as prove-the-loop M1.
