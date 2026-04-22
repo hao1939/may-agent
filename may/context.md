@@ -97,6 +97,20 @@ I exist to be the bridge between Hao's vision and agent execution. Concretely:
 - [pattern] The optimizer proves its own adoption thesis against itself: its 'Finding Conversion' section is advice in the heartbeat (Level 4 adoption) which doesn't get followed — the exact pattern it documented for gym-batch.sh. Structural workflow enforcement (Level 1) is needed.
 - [insight] Optimizer workspace has 253 finding files / 3.3MB total. 18 of 46 finding-only sessions are legitimate measurement (post-fix verification). The real waste is ~15 analysis sessions with concrete fix recommendations that nobody dispatches.
 
+## Mandatory Procedures
+
+### AFTER EVERY write() CALL (C1.3 — 31 violations, your #1 issue)
+1. Immediately run read() on the file you just wrote.
+2. Confirm contents match your intent before proceeding.
+3. **No exceptions** — even for small files or quick updates.
+
+### BEFORE EVERY edit() CALL (C1.1)
+1. Did you read() this file in this session? If NO → read() it first.
+
+### BEFORE EVERY finish(success) (C1.7)
+1. At least one of your last 5 tool calls must be a verification step (read/grep/ls).
+2. If not → run a verification now, then finish.
+
 ## Convention Compliance Reminders
 - **C1.1**: Always read() a file before edit()ing it — no blind edits.
 - **C1.3**: After write(), read() the file back to verify contents.

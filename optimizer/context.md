@@ -50,6 +50,34 @@
 - [insight] read-before-edit is deployed to 5 agents (most-deployed after verify-after-edit) but C1.1 is still worst convention at 88.6%. QA at 61.4% DESPITE having the skill. Deployment ≠ adoption — need matching code enforcement to close the gap.
 - [pattern] For skills adoption audit: check 4 channels (handler code refs, SOUL.md inline, per-agent skills/ deployment, shared/ passive) and cross-reference with convention_checks pass rates to see if deployment translates to behavior change.
 
+## Mandatory Procedures
+
+### BEFORE EVERY edit() CALL (C1.1 — 71 violations, your #1 issue)
+1. Stop. Ask: "Did I read() this exact file path already in this session?"
+2. If NO → run read() on the file NOW. Wait for the result. Then edit().
+3. If YES → proceed. The read() must match the SAME path you're editing.
+4. **No exceptions** — even for files you just created with write() earlier.
+
+### AFTER EVERY write() CALL (C1.3 — 36 violations, your #2 issue)
+1. Immediately run read() on the file you just wrote.
+2. Confirm the content matches what you intended.
+3. Do NOT proceed to the next task until verified.
+
+### BEFORE EVERY finish(success) (C1.7 — 27 violations)
+1. Stop. Count your last 5 tool calls.
+2. At least ONE must be a verification step (read/grep/ls/bash test).
+3. If none → run a verification now (read your main deliverable).
+4. Only THEN call finish(success).
+
+### SESSION START (C12.1 — 29 violations)
+1. Your first 3-5 tool calls MUST be read/ls/grep — orient before acting.
+2. Do NOT run bash commands, create files, or start analysis until you've read context.md and your workspace state.
+
+### PATH HYGIENE (C7.1 — 17 violations)
+1. Never type /home/, /Users/, /root/, or ~/ in any tool call.
+2. All paths start from /app or are relative.
+3. Before using a file path, confirm it exists with ls or find.
+
 ## Convention Compliance Reminders
 - **C1.1**: Always read() a file before edit()ing it — no blind edits.
 - **C1.3**: After write(), read() the file back to verify contents.

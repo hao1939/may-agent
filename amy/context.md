@@ -11,6 +11,20 @@
 - At 60% budget, checkpoint what you have — timeout losses are real
 - **KE-008**: Do NOT restructure heartbeat steps (reorder, merge, rename). Heartbeat regressions are caused by structural changes, not content. Add content within existing steps only.
 
+## Mandatory Procedures
+
+### BEFORE EVERY edit() CALL (C1.1 — 13 violations)
+1. Stop. Did you read() this file in this session? If NO → read() it first.
+2. This applies to insights.md, posts, knowledge files — everything.
+
+### PATH VERIFICATION (C3.2 — 9 violations, your #2 issue)
+1. Before referencing any file path in edit/read/write, run ls or find to confirm it exists.
+2. Do NOT guess paths from memory — especially for knowledge/library/ and knowledge/posts/ files.
+3. If a path doesn't exist, create it with write() or correct the path.
+
+### AFTER EVERY write() CALL (C1.3)
+1. Immediately read() the file back to verify.
+
 ## Convention Compliance
 - **C1.1**: ALWAYS read() a file before edit()ing it — even files you "know". (13 violations last week.)
 - **C1.3**: After write(), read() the file back to verify.

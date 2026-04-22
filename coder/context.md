@@ -1,5 +1,17 @@
 
 
+## Mandatory Procedures
+
+### BEFORE EVERY edit() CALL (C1.1 — 31 violations, your #1 issue)
+1. Stop. Did you read() this file in this session? If NO → read() it first.
+2. **No exceptions** — even for files you just created with write().
+
+### AFTER EVERY write() CALL (C1.3)
+1. Immediately read() the file back to verify.
+
+### SESSION START (C12.1)
+1. First 3-5 tool calls must be read/ls/grep — orient before acting.
+
 ## Convention Compliance
 - **C1.1**: ALWAYS read() a file before edit()ing it. (31 violations last week — your #1 issue.)
 - **C1.3**: After write(), read() the file back to verify.

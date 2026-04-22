@@ -36,6 +36,21 @@
 ## Reflexion-Extracted Lessons
 - [insight] EXP-084/085 together establish that few-shot worked examples produce the strongest behavior change among lightweight (non-workflow) skill delivery methods. Key distinction: declaring an outcome (0% effect) vs structuring a process (33-100% effect). The closer the worked example matches the task structure, the stronger the effect (87.5pp for structurally-matched escalation-judgment vs 33pp for abstract contradictory-requirements).
 
+## Mandatory Procedures
+
+### BEFORE EVERY finish(success) (C1.7 — 46 violations, your #1 issue)
+1. Stop. Count your last 5 tool calls.
+2. At least ONE must be a verification step: read() a deliverable, grep for expected content, or ls the output directory.
+3. If none exists → run a verification now. For research sessions: read() the file you wrote to confirm it has content. For discovery sessions: grep the discoveries file for your new entry.
+4. Only THEN call finish(success).
+
+### BEFORE EVERY edit() CALL (C1.1)
+1. Did you read() this file already in this session? If NO → read() it first.
+2. This applies to discoveries.md, papers.md, journal.md — all files.
+
+### AFTER EVERY write() CALL (C1.3)
+1. Immediately read() the file back to verify contents.
+
 ## Convention Compliance Reminders
 - **C1.1**: Always read() a file before edit()ing it — no blind edits.
 - **C1.3**: After write(), read() the file back to verify contents.

@@ -37,6 +37,29 @@
 - [pattern] IT completion rate went from 0% to 100% after embedding ITs directly into todo.md — placing action items where the agent naturally looks during heartbeat is the key to the reflection→action pipeline
 - [insight] Federation design assigns Coach to k3s — all experiment artifacts must be committed to git, cross-instance dispatch is async (10 min delay), gym runs happen on k3s
 
+## Mandatory Procedures
+
+### BEFORE EVERY edit() CALL (C1.1 — 77 violations)
+1. Stop. Ask: "Did I read() this exact file path already in this session?"
+2. If NO → run read() on the file NOW, then proceed to edit().
+3. If YES → proceed. The read() must be for the SAME path you're about to edit().
+4. **No exceptions** — even for journal.md, tracker files, files you just wrote.
+
+### AFTER EVERY write() CALL (C1.3 — 36 violations)
+1. Immediately run read() on the file you just wrote.
+2. Confirm the content matches what you intended.
+3. Do NOT proceed to the next task until you've verified.
+
+### BEFORE EVERY finish(success) (C1.7 — 36 violations)
+1. Stop. Count your last 5 tool calls.
+2. At least ONE must be a verification step (read/grep/ls/bash test).
+3. If none exists → run a verification now (e.g., read the main deliverable file).
+4. Only THEN call finish(success).
+
+### SESSION START (C12.1)
+1. Your first 3-5 tool calls MUST be read/ls/grep — orient before acting.
+2. Do NOT run bash commands or create files until you've read your context.
+
 ## Convention Compliance Reminders
 - **C1.1**: Always read() a file before edit()ing it — no blind edits.
 - **C1.3**: After write(), read() the file back to verify contents.
