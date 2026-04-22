@@ -544,13 +544,7 @@ async function handleDoneDecision(
   if (evalVerdict === "FAIL") {
     ls.falseDoneCount++;
     // Check actual milestone progress — don't blindly increment stall counter
-    const evalMsDone = extractMilestones(ls.projectContent).done;
-    if (evalMsDone > ls.lastMilestoneDone) {
-      ls.lastMilestoneDone = evalMsDone;
-      ls.continueWithoutProgress = 0;
-    } else {
-      ls.continueWithoutProgress++;
-    }
+    trackMilestoneProgress(ls);
     if (!isCommentIteration) {
       ls.projectContent = updateField(ls.projectContent, "Health", `${score}/10 (${evalVerdict})`);
       writeFileSync(config.projectPath, ls.projectContent, "utf-8");
@@ -573,12 +567,7 @@ async function handleDoneDecision(
       `Overriding to CONTINUE. (false-done #${ls.falseDoneCount})\n\n`;
     ls.projectContent = appendJournalEntry(config, ls.projectContent, overrideNote, isCommentIteration);
     // Check milestone progress before incrementing stall counter
-    if (finalMsForState.done > ls.lastMilestoneDone) {
-      ls.lastMilestoneDone = finalMsForState.done;
-      ls.continueWithoutProgress = 0;
-    } else {
-      ls.continueWithoutProgress++;
-    }
+    trackMilestoneProgress(ls);
     return { outcome: "continue" };
   }
 
