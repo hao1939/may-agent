@@ -22,7 +22,7 @@ function aggregateHomework(records) {
 
   const result = {};
   for (const [sid, hwRecords] of Object.entries(students)) {
-    // Sort by percentage ascending so we can drop the lowest
+    // Use the normalized percentage for sorting and averaging
     const sorted = hwRecords.slice().sort((a, b) => a.pct - b.pct);
 
     // Drop the lowest N scores

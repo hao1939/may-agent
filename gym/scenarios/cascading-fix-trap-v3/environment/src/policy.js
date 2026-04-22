@@ -11,8 +11,8 @@ module.exports = {
     final:    0.35,     // 35%
   },
 
-  // Late submission penalty: percentage points deducted per day late
-  // Applied during normalization (normalizer subtracts penalty from raw %)
+  // Late submission penalty: percentage points deducted per day
+  // Applied to the RAW score before normalization
   late_penalty_per_day: 5,
 
   // Maximum late penalty (cap)

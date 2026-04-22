@@ -3,11 +3,15 @@
 **Goal**: Prove the coach training loop works end-to-end: identify skill gap → design experiment → run experiment → measure improvement → promote or reject skill.
 **Owner**: coach
 **Created**: 2026-04-21
-**Status**: IN PROGRESS (M1 ✅, M2 ✅, M3 ⚠️ partial)
+**Status**: IN PROGRESS (M1 ✅, M2 ✅, M3 ✅, M4 next)
 
 ## Background
 
 This project has run for 24+ iterations without conclusive proof that a coach intervention measurably improved agent performance. The core question: can the coach identify a real skill gap, intervene, and demonstrate statistically significant improvement?
+
+## Key Decision Log
+- **2026-04-22**: EXP-196 showed the Data Flow Audit skill correctly guides reasoning, but cascading-fix-trap-v2's ordering bug had no functional impact (penalties.js was self-contained). Skill was SOUND, scenario was BROKEN.
+- **2026-04-22**: Created cascading-fix-trap-v3: removed `adjusted_pct` from penalties, homework uses `pct` only. Now ordering bug has real functional consequences (5 test failures). Added grade threshold bug (`>` vs `>=`) that cascades — only visible after fixing ordering.
 
 ## Milestones
 
@@ -26,10 +30,12 @@ This project has run for 24+ iterations without conclusive proof that a coach in
 
 ### Phase 2: Design Experiment
 
-**M3: Design a targeted intervention** ⚠️ PARTIAL (EXP-195)
-- Tested 3 interventions: file-based skill (0/3), inline skill (0/3), direct hint (4/10 = 40%)
-- Direct hint raises pass rate from 10% → 40% (+30pp), but is scenario-specific not transferable
-- Next: design discovery-oriented skill (EXP-196) that teaches HOW to find ordering bugs
+**M3: Design a targeted intervention** ✅ COMPLETE (EXP-195 + EXP-196 + scenario fix)
+- EXP-195: Tested 3 interventions — direct hint raised pass rate 10%→40% but not transferable
+- EXP-196: Data Flow Audit skill guides correct reasoning but v2 scenario had no functional bug
+- Created cascading-fix-trap-v3 with real functional ordering bug (5 test failures + cascading threshold bug)
+- Intervention: Data Flow Audit skill (teaches "trace actual values through pipeline steps")
+- Next: run baseline on v3, then treatment with skill
 
 **M4: Establish measurement protocol**
 - Define primary metric, sample size requirements, success/failure thresholds

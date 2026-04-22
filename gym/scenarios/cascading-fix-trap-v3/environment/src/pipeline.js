@@ -4,15 +4,15 @@
  * Processing steps:
  *   1. Load raw CSV data
  *   2. Validate records
- *   3. Normalize scores to percentages (applies penalties if marked)
- *   4. Mark late submission penalties
+ *   3. Normalize scores to percentages
+ *   4. Apply late submission penalties
  *   5. Aggregate homework (drop lowest, average)
  *   6. Compute weighted final grades
  *   7. Compute class statistics
  *   8. Format output report
  *
- * Note: Late penalties must be marked BEFORE normalization so that
- * the normalizer can subtract penalty points from percentages.
+ * Note: Normalization must precede penalty application so that
+ * penalty deductions are expressed in percentage points (not raw points).
  */
 const path = require("path");
 const { loadGrades } = require("./reader");
@@ -54,17 +54,17 @@ function run(dataFile) {
   // Step 2: Validate
   const validated = validateRecords(records);
 
-  // Step 3: Mark late penalties
-  const penalized = applyPenalties(validated);
+  // Step 3: Normalize to percentages
+  const normalized = normalize(validated);
 
-  // Step 4: Normalize to percentages (applies penalties)
-  const normalized = normalize(penalized);
+  // Step 4: Apply late penalties
+  const penalized = applyPenalties(normalized);
 
   // Step 5: Aggregate homework (drop lowest, average)
-  const hwAggs = aggregateHomework(normalized);
+  const hwAggs = aggregateHomework(penalized);
 
   // Step 6: Compute final grades
-  const gradeResults = computeFinalGrades(normalized, hwAggs);
+  const gradeResults = computeFinalGrades(penalized, hwAggs);
 
   // Step 7: Compute class statistics
   const stats = computeStats(gradeResults);

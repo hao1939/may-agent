@@ -59,8 +59,8 @@ check("C count", report.class_stats.grade_distribution["C"] || 0, 1);
 check("D count", report.class_stats.grade_distribution["D"] || 0, 1);
 
 console.log("\n=== Late Penalty Effects ===");
-// S002's hw3 should have penalty applied (3 days × 5% = 15% penalty)
-// Raw: 95% → penalized: 80% → changes homework avg from 90 to 85
+// S002's hw3 should have penalty applied (95 → 80, penalty of 15%)
+// This changes their homework avg from 90.00 to 85.00
 check("S002 hw avg reflects late penalty", s2.homework, 85);
 // S002's grade should still be B (exactly 80.0 is B, not C)
 check("S002 grade is B not C", s2.grade, "B");
