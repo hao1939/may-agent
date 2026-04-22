@@ -1,10 +1,11 @@
 # H-181: Relational Bug Blindness — LLM Agents Systematically Fail on Ordering/Relational Bugs
 
 **Created**: 2026-04-19 by Bob
-**Status**: PROPOSED
-**Confidence**: ★★★☆ (strong empirical signal from EXP-177, mechanistic grounding in H-098)
-**P(H)**: **0.70**
+**Status**: CONFIRMED (core claim validated across 3 experiments)
+**Confidence**: ★★★★ (replicated across EXP-177 N=40, EXP-194 classification, EXP-195 N=30)
+**P(H)**: **0.85**
 **Source**: EXP-177 S1 diagnostic finding (39/40 fail on exactly `pipeline-order-fixed`), S2 negative transfer
+**Updated**: 2026-04-22 — incorporated EXP-194 (bug-type classification) and EXP-195 (skill intervention) results
 **Connects**: H-098 (Attention Channel Theory — Ch1/Ch2 distinction), H-099 (Discovery Task Boundary), H-085 (Forced Externalization boundaries), H-166 (Recognition Threshold — refuted, but root finding feeds this)
 
 ---
