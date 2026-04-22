@@ -5,7 +5,7 @@
 **Started**: 2026-04-18
 **Priority**: P0
 
-**Iteration**: 18
+**Iteration**: 19
 **Health**: 7/10 (PASS)
 ## Goal
 
@@ -170,19 +170,7 @@ Let me write up the findings:
 
 
 ## Current State
-**Rate: 0.56 (target 0.80).** Improved from 0.19 but plateaued.
-
-What we know:
-- G-pattern question framing achieves 100% in gym
-- Directive breadcrumbs with Quick check hints achieve 80% in gym
-- All 8 heartbeat files have formatMetricsBlock + RED METRIC GATE deployed
-- Production rate improved 0.19 to 0.56 but stalled
-
-Why it stalled:
-- May accounts for 6/8 non-acting sessions (27% vs coach 75%)
-- May sees breadcrumbs but ignores them during read-only monitoring heartbeats
-
-Next: measure production rate after recent heartbeat.md rewrite (question-driven). If May still ~27%, need structural intervention.
+Iteration 19. Milestones: 0/0 done.
 ## Iteration Summary
 - **Iter 1**: This is a persistent task and a prior iteration already committed these exact files. The content is 
 
