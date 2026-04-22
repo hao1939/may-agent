@@ -41,6 +41,18 @@
 | cascading-fix-trap-v3.5 | 0 | — | READY |
 
 ## Next action
-**WAITING**: EXP-198 gym runs IN PROGRESS (session s_1776863360937_479, started 2026-06-22).
-Tech-lead running all 30 trials (3 arms × 10). First baseline trial completed (~3 min/trial, ~90 min total).
-When complete: analyze results, write KE, promote or reject skill → M5-M6 done.
+**EXP-198 COMPLETE — NEGATIVE RESULT**. All arms failed (0/10 procedural, 0/5 example). 
+Procedural discovery skill REJECTED. KE-338 written.
+
+**M5 conclusion**: The skill intervention failed. Text-based skills cannot teach relational bug discovery.
+The only thing that worked was direct hints (EXP-195: 40%), confirming recognition is the bottleneck.
+
+**M6 next step**: To complete prove-the-loop, need a STRUCTURAL intervention (workflow/tool-based) 
+that forces dependency enumeration. Options:
+1. Workflow step: "before fixing, run grep to find all files importing the changed module"
+2. Tool augmentation: auto-surface related files when a bug is detected
+3. Accept that text skills have a ceiling and close the project with that finding
+
+**Recommendation**: Close prove-the-loop with the meta-finding: "The loop works for implementation 
+skills (verify-after-edit etc.) but NOT for recognition/discovery tasks. Discovery requires structural 
+interventions, not skill text." This IS the proof — the loop has a boundary.
