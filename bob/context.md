@@ -44,3 +44,10 @@
 
 ## Reflexion-Extracted Lessons
 - [insight] Federation: git-based, 5-min sync, INSTANCE env var partitions. may.db NOT synced. Communication via file drops in agents/shared/knowledge/.
+
+## Convention Compliance Reminders
+- **C1.1**: Always read() a file before edit()ing it — no blind edits.
+- **C1.3**: After write(), read() the file back to verify contents.
+- **C1.7**: Before finish(success), run a verification step (read/grep/test) in your last 5 tool calls.
+- **C12.1**: Start sessions by reading context (read/ls/grep) in first 5 tool calls — orient before acting.
+- **C7.1**: Never use absolute home directory paths — project root is /app.

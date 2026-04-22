@@ -96,3 +96,11 @@ I exist to be the bridge between Hao's vision and agent execution. Concretely:
 - [insight] Optimizer conversion rate is 48.9% (not 36% as estimated) — 44/90 work sessions led to commits. The gap is 15 sessions with actionable recommendations that were never dispatched, consuming ~650 ops on analysis that sits in workspace files.
 - [pattern] The optimizer proves its own adoption thesis against itself: its 'Finding Conversion' section is advice in the heartbeat (Level 4 adoption) which doesn't get followed — the exact pattern it documented for gym-batch.sh. Structural workflow enforcement (Level 1) is needed.
 - [insight] Optimizer workspace has 253 finding files / 3.3MB total. 18 of 46 finding-only sessions are legitimate measurement (post-fix verification). The real waste is ~15 analysis sessions with concrete fix recommendations that nobody dispatches.
+
+## Convention Compliance Reminders
+- **C1.1**: Always read() a file before edit()ing it — no blind edits.
+- **C1.3**: After write(), read() the file back to verify contents.
+- **C1.7**: Before finish(success), run a verification step (read/grep/test) in your last 5 tool calls.
+- **C12.1**: Start sessions by reading context (read/ls/grep) in first 5 tool calls — orient before acting.
+- **C7.1**: Never use absolute home directory paths — project root is /app.
+- **C8.2**: Always include summary and completed_items in finish().

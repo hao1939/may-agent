@@ -6,7 +6,7 @@
 **Priority**: P0
 
 **Iteration**: 8
-**Health**: 4/10 (RESET — rewritten with actionable scope)
+**Health**: 5/10 (FAIL)
 ## Goal
 
 Close the gap: context-discovery breadcrumbs work 100% at raw API level but only ~10% in gym scenarios. Make breadcrumbs effective in production heartbeats.
@@ -212,6 +212,8 @@ Iteration 8. Milestones: 0/0 done.
 - **Iter 6**: Both files compile. Let me checkpoint and finish.
 
 - **Iter 7**: Now I have the full picture. Let me write the diagnostic report.
+
+- **Iter 8**: All 8 heartbeat files are updated correctly.
 
 
 ## Comments

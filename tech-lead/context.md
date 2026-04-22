@@ -46,3 +46,11 @@
 - [pattern] When re-auditing a previously-analyzed system, check fix status first before re-investigating. All 3 critical fixes were already applied, making this a verification session rather than a discovery session.
 - [insight] Code merged to main doesn't take effect until the compiled binary (/usr/local/bin/may-agent) is rebuilt. The running process (PID 65829, started Apr 9) predates recent fixes. Periodic cleanup scripts are needed to compensate for the stale binary.
 - [pattern] To diagnose whether a code fix is actually running: check process start time (ps aux) vs fix merge time (git log). If process predates fix, the compiled binary is stale.
+
+## Convention Compliance Reminders
+- **C1.1**: Always read() a file before edit()ing it — no blind edits.
+- **C1.3**: After write(), read() the file back to verify contents.
+- **C1.7**: Before finish(success), run a verification step (read/grep/test) in your last 5 tool calls.
+- **C12.1**: Start sessions by reading context (read/ls/grep) in first 5 tool calls — orient before acting.
+- **C7.1**: Never use absolute home directory paths — project root is /app.
+- **C6.1**: Stay under 80 tool calls per session — budget awareness.

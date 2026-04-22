@@ -49,3 +49,10 @@
 - [insight] Skills adoption follows a strict hierarchy: code enforcement (handlers/guards) > SOUL.md inline text > per-agent skills/ dir deployment > shared skills/ passive availability. Each level down has dramatically less behavioral impact. 0/29 agents discover passive resources (KE-011).
 - [insight] read-before-edit is deployed to 5 agents (most-deployed after verify-after-edit) but C1.1 is still worst convention at 88.6%. QA at 61.4% DESPITE having the skill. Deployment ≠ adoption — need matching code enforcement to close the gap.
 - [pattern] For skills adoption audit: check 4 channels (handler code refs, SOUL.md inline, per-agent skills/ deployment, shared/ passive) and cross-reference with convention_checks pass rates to see if deployment translates to behavior change.
+
+## Convention Compliance Reminders
+- **C1.1**: Always read() a file before edit()ing it — no blind edits.
+- **C1.3**: After write(), read() the file back to verify contents.
+- **C1.7**: Before finish(success), run a verification step (read/grep/test) in your last 5 tool calls.
+- **C12.1**: Start sessions by reading context (read/ls/grep) in first 5 tool calls — orient before acting.
+- **C7.1**: Never use absolute home directory paths — project root is /app.

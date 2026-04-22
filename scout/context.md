@@ -35,3 +35,10 @@
 
 ## Reflexion-Extracted Lessons
 - [insight] EXP-084/085 together establish that few-shot worked examples produce the strongest behavior change among lightweight (non-workflow) skill delivery methods. Key distinction: declaring an outcome (0% effect) vs structuring a process (33-100% effect). The closer the worked example matches the task structure, the stronger the effect (87.5pp for structurally-matched escalation-judgment vs 33pp for abstract contradictory-requirements).
+
+## Convention Compliance Reminders
+- **C1.1**: Always read() a file before edit()ing it — no blind edits.
+- **C1.3**: After write(), read() the file back to verify contents.
+- **C1.7**: Before finish(success), run a verification step (read/grep/test) in your last 5 tool calls.
+- **C12.1**: Start sessions by reading context (read/ls/grep) in first 5 tool calls — orient before acting.
+- **C7.1**: Never use absolute home directory paths — project root is /app.
