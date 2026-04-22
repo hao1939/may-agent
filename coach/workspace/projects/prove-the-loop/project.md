@@ -6,7 +6,7 @@
 **Started**: 2026-04-17
 **Priority**: P0 — Hao's #1 priority
 
-**Iteration**: 37
+**Iteration**: 38
 **Health**: 4/10 (FAIL)
 ## Goal
 Improve coder quality metric from current 0.82 toward 0.9+ by systematically diagnosing and fixing failure modes. This proves the full loop: metrics signal → persistent task executes → gym validates → production improves.
@@ -228,7 +228,7 @@ The guard sees my test edits came after the last `bun test`. Let me do a post-ed
 **Owner assessment**: CONTINUE — All 26 tests pass. Let me also check the compose.yml change is intentional (security hardening):
 
 ## Current State
-Blocked: Reviewer marked DONE 3 times but evaluator scored <7 each time. Goal may be unachievable or misscoped.
+Iteration 38. Milestones: 5/5 done.
 ## Iteration Loop
 Each iteration:
 1. **Read** coder.quality metric (query may.db directly)
