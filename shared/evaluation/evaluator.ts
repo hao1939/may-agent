@@ -887,8 +887,8 @@ export async function evaluateStandaloneSession(
   };
 }
 
-export function getAgentScoreSummary(persistDir: string): Record<string, AgentScoreSummary> {
-  const evals = getAllEvaluations(persistDir);
+export function getAgentScoreSummary(ctx: EvalCtx): Record<string, AgentScoreSummary> {
+  const evals = ctx.getAllEvaluations();
   const accum: Record<
     string,
     {
