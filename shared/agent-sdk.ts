@@ -51,3 +51,26 @@ export {
   listLabAgents,
 } from "../../src/lib/growth.js";
 export type { GrowthConfig } from "../../src/lib/growth.js";
+
+// ── Convention Guards (violation prevention) ──────────────────────────
+export { EditGuard } from "../src/lib/edit-guard.js";
+export type { EditValidationResult } from "../src/lib/edit-guard.js";
+
+export {
+  validateBashCommand,
+  enforceNoHallucinatedPaths,
+} from "../src/lib/path-guard.js";
+export type { PathValidationResult } from "../src/lib/path-guard.js";
+
+export {
+  validateFinishDeliverables,
+  enforceFinishDeliverables,
+  validateVerificationEvidence,
+  enforceVerificationEvidence,
+} from "../src/lib/finish-guard.js";
+export type {
+  FinishDeliverable,
+  FinishCallParams,
+  FinishValidationResult,
+  EvidenceValidationResult,
+} from "../src/lib/finish-guard.js";

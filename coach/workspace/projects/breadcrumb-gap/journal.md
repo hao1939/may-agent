@@ -193,3 +193,5 @@ WORKDIR=$(mktemp -d) && mkdir -p "$WORKDIR" && printf '{"role":"assistant","tool
 ```
 Then copy that EXACT terminal output into the evidence doc section 8. Then do the same for a failing case (transcript without stuck-requests mention). Then run `node -e "const {formatMetricsBlock} = require('./agents/shared/workflows/heartbeat-data.ts')"` or equivalent to show real output from the formatting function. If TypeScript import fails, just `grep -A30 'function formatMetricsBlock' agents/shared/workflows/heartbeat-data.ts` and show the source alongside the success_criteria.js pass/fail proof.
 
+### Iteration 13 — 2026-04-22T10:35:47.457Z
+**Worker**: Now I have all three pieces of real terminal output. Let me create the evidence doc.
