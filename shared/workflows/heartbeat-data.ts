@@ -45,9 +45,9 @@ export function loadMetrics(ctx: WorkflowContext, agent: string): string {
           line += `\n  ⛔ REPEATED ALERT (seen ${consecutiveBreaches}x): This metric has been failing for ${consecutiveBreaches} consecutive checks with NO action taken.`;
           line += `\n  → You MUST act on this NOW. Continuing to ignore it is not acceptable.`;
         }
-        if (r.source_command) line += `\n  → Quick check: bash ${r.source_command}`;
-        else if (r.source_query) line += `\n  → Quick check: run SQL — ${r.source_query.substring(0, 120)}`;
-        line += `\n  → ACTION REQUIRED: Investigate this metric NOW or explain in your session summary why you deferred it.`;
+        if (r.source_command) line += `\n  → MANDATORY: Run this command NOW → bash("${r.source_command}")`;
+        else if (r.source_query) line += `\n  → MANDATORY: Run this query NOW → ${r.source_query.substring(0, 120)}`;
+        line += `\n  → You MUST call a tool (bash/read/agents) for this metric. Do NOT just acknowledge it — execute.`;
       }
       return line;
     }).join("\n");
@@ -142,7 +142,7 @@ export function formatMetricsBlock(ctx: WorkflowContext, agent: string): string 
 
 ${metrics}
 
-**Question**: Which metric above is furthest from its target? Follow the "→ Quick check" breadcrumb for that metric NOW — run the command, read the file, or execute the query. Then decide: is this urgent enough to act on immediately, or can it wait?
+**STOP. Your FIRST tool call must be one of the "→ MANDATORY" commands above.** Do not plan, do not summarize — execute the command for the worst metric RIGHT NOW. After you see the result, decide what to do about it.
 
 ---
 `;
