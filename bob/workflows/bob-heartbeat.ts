@@ -18,22 +18,49 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const alerts = loadAlerts(ctx, agent);
   const guidance = loadHeartbeatMd(ctx, agent);
 
-  // Detect if there are below-target metrics for G-pattern injection
+  // ── RED METRIC GATE ──────────────────────────────────────────
+  // Structural workflow gate: if ANY metric is below target, the agent
+  // MUST address them in a dedicated step BEFORE the normal heartbeat.
+  // This is not a prompt hint — it's a separate runAgent call that blocks.
   const hasRedMetrics = metrics.includes("⚠️ BELOW TARGET");
-  if (hasRedMetrics) ctx.emit({ type: "breadcrumb_shown", step: "metrics" });
-  const gPatternBlock = hasRedMetrics ? `
-## ⚡ FIRST — evaluate your red metrics before anything else
+  let redMetricActions = "";
 
-**Question**: Which metric above is furthest from its target? Follow the "→ Quick check" breadcrumb for that metric NOW — run the command or query. Then decide: is this urgent enough to act on this heartbeat, or can it wait?
+  if (hasRedMetrics) {
+    ctx.emit({ type: "red_metric_gate_start", step: "metrics" });
+    const gatePrompt = `You are **${agent}**. You have RED METRICS that must be addressed before your normal heartbeat can proceed.
 
----
+## ⚠️ RED METRIC GATE — MANDATORY
+Your metrics:
+${metrics}
+
+## Instructions
+You CANNOT skip this step. For EACH metric marked "⚠️ BELOW TARGET" above, you must:
+1. Run the "→ Quick check" command/query to get current data
+2. Investigate WHY it is red (check recent sessions, code changes, etc.)
+3. Take ONE of these actions:
+   a. **Fix it now** — fork/dispatch work to address the root cause
+   b. **Escalate** — notify the responsible agent or may with specifics
+   c. **Defer with reason** — explain concretely why you cannot act now (not just "will look later")
+
+Output a section for EACH red metric with your findings and action taken.
+Do NOT do any other heartbeat work — ONLY address red metrics.`;
+
+    const gateResult = await ctx.runAgent(agent, gatePrompt);
+    redMetricActions = ctx.summarize(gateResult, { maxLength: 800 });
+    ctx.emit({ type: "red_metric_gate_done", step: "metrics", summary: redMetricActions });
+  }
+
+  // ── MAIN HEARTBEAT ─────────────────────────────────────────
+  const redMetricContext = redMetricActions ? `
+## Red Metric Actions (completed in gate step)
+${redMetricActions}
 ` : "";
 
-  const prompt = `You are **bob** waking up for your heartbeat.
+  const prompt = `You are **${agent}** waking up for your heartbeat.
 
 ## Your Metrics
 ${metrics || "No metrics data available."}
-${gPatternBlock}
+${redMetricContext}
 ## Active Alerts
 ${alerts || "None — all clear."}
 
@@ -45,7 +72,7 @@ ${guidance}
 
 ---
 
-Review your metrics, check your projects, do your job. Act on what matters. Commit and finish.`;
+${redMetricActions ? "Your red metrics have been addressed above. Now proceed with your normal heartbeat work." : "Review your metrics, check your projects, do your job. Act on what matters."} Commit and finish.`;
 
   ctx.emit({ type: "step_start", step: "heartbeat" });
   const result = await ctx.runAgent(agent, prompt);
