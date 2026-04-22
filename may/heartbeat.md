@@ -34,6 +34,15 @@ if(errs.length){console.log('Errors:');for(const e of errs)console.log(e.agent+'
 "
 ```
 
+## Metric Accountability (MANDATORY)
+After running your System Snapshot, check the G-pattern question and metric annotations.
+**If any metric shows ACTION REQUIRED or ⚠️ BELOW TARGET, you MUST either:**
+1. Dispatch work to address it (fork to the right agent), OR
+2. Explain in your session summary why you chose not to act this session.
+
+"Read-only monitoring" is NOT acceptable when red metrics exist. Your #1 priority above says
+"Red metrics / alerts → dispatch fix immediately" — enforce it on yourself.
+
 ## Anti-patterns
 - Don't read other agents' workspace files
 - Don't run multiple DB queries (use the snapshot once)
