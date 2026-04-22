@@ -58,12 +58,6 @@
 
 ## Learned from experience
 
-- The common-sense.md has a stale reference to `manager-receipts.ts` in section 3.2. That's a doc owned by another agent though — I'll note it but not fix it now. Also noticed the grep hit was in activi (source: s_1776848235901_58, 2026-04-22)
-- It seems the system thinks I wrote files via bash. Let me verify the git status is clean and try again. (source: s_1776847771458_50, 2026-04-22)
-- All 23 tests pass already. (source: s_1776847761639_48, 2026-04-22)
-- All 23 tests pass. (source: s_1776847613378_47, 2026-04-22)
-- All 23 tests pass. (source: s_1776847600532_45, 2026-04-22)
-- All 23 tests pass already. (source: s_1776847583746_42, 2026-04-22)
-- Audit complete. The pipeline order is normalize→penalize. The key question was whether normalize modifies `score` — it doesn't, it only adds a `pct` field. So penalties.js correctly computes from `rec (source: s_1776847359168_31, 2026-04-22)
-- All tests pass (23/23, 0 failures). The pipeline is correctly ordered and all modules are properly implemented. There are no bugs to fix. (source: s_1776847168109_23, 2026-04-22)
-- Now I have enough evidence. Let me write findings: (source: s_1776845870658_8, 2026-04-22)
+- The common-sense.md has a stale reference to `manager-receipts.ts` in section 3.2 — doc owned by another agent, noted but not fixed.
+- The evaluation pipeline order is normalize→penalize. normalize only adds `pct` field, doesn't modify `score`. All 23 tests pass.
+- Dead code in src/lib/: path-guard.ts (102L), edit-guard.ts (109L), ops-gate.ts (129L) have no runtime imports — only test references. ~340 lines of unintegrated guard code.
