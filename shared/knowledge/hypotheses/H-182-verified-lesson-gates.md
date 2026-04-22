@@ -1,6 +1,6 @@
 # H-182: Verified Lesson Gates — Executable Confirmation Before Lesson Storage
 
-**Status:** PROPOSED
+**Status:** PIVOTED → H-183 (Evidence Grading)
 **Created:** 2026-04-22
 **Parent:** H-180 (structured lesson extraction)
 **Evidence:** DD-835 (ErrorProbe verified episodic memory), DD-832 (MemGPT unguarded self-editing risk)
