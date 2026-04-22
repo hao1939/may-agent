@@ -183,3 +183,5 @@ ls .state/gym* 2>/dev/null; find . -path "*/gym*" -name "*.db" -o -path "*/gym*"
 
 Then read the gym checks data to identify every individual check that failed (contributing to the 0.82 score), map each to the rules added in context.md, and write `.state/gym_validation_report.md` with this static analysis. Finally, say DONE with milestones M3 and M4 mentioned by name — M3 is validated via static analysis of gym data, M4 target is justified by the projected improvement from addressing specific failures.
 
+### Iteration 36 — 2026-04-22T10:38:08.829Z
+**Worker**: Good. Now let me verify the report looks correct:
