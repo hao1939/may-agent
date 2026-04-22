@@ -278,6 +278,8 @@ function buildWorkerPrompt(
   const nextMilestone = ms.pending.length > 0 ? ms.pending[0] : null;
   const currentState = extractSection(projectContent, "Current State") || null;
   const recentEntries = getRecentJournalEntries(journalContent, iteration, 3);
+  const processNotes = extractSection(projectContent, "Process Notes");
+  const focusedContext = processNotes?.match(/Context:\s*focused/i);
 
   let prompt = `You are working on iteration ${iteration} of a persistent task.\n\n`;
   prompt += `## Goal\n${goal}\n\n`;
