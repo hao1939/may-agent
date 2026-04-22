@@ -21,20 +21,25 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
   if (hasRedMetrics) {
     ctx.emit({ type: "red_metric_gate_start", step: "metrics" });
-    const gatePrompt = `You are **${agent}**. You have RED METRICS that must be addressed before your normal heartbeat can proceed.
+    // Extract MANDATORY commands from metrics block for explicit instruction
+    const mandatoryCmds = [...metricsBlock.matchAll(/→ MANDATORY[:\s]*`([^`]+)`/g)].map(m => m[1]);
+    const cmdInstruction = mandatoryCmds.length > 0
+      ? `\n\n## ⛔ STOP AND ACT — YOUR FIRST TOOL CALLS:\n${mandatoryCmds.map((c, i) => `${i + 1}. Run: \`bash\` with command: \`${c}\``).join("\n")}\nDo these IMMEDIATELY. Do NOT plan or summarize first.\n`
+      : "";
+
+    const gatePrompt = `You are **${agent}**. You have RED METRICS that must be addressed RIGHT NOW.
 
 ## ⚠️ RED METRIC GATE — MANDATORY
 ${metricsBlock}
-## Instructions
-You CANNOT skip this step. For EACH metric marked "⚠️ BELOW TARGET" above, you must:
-1. Execute the "→ MANDATORY" command — your FIRST tool call must be this command
-2. Investigate WHY it is red (check recent sessions, code changes, etc.)
-3. Take ONE of these actions:
-   a. **Fix it now** — fork/dispatch work to fix the root cause immediately
-   b. **Escalate** — notify the responsible agent or may with specifics
-   c. **Defer with reason** — explain concretely why you cannot act now (not just "will look later")
+${cmdInstruction}
+## Instructions — READ CAREFULLY
+You CANNOT skip this. Your VERY FIRST action must be a tool call (bash, read, or agents.fork).
+For EACH metric marked "⚠️ BELOW TARGET":
+1. **Execute the MANDATORY command NOW** — literally call the bash tool with that command
+2. Read the output and investigate WHY it is red
+3. Take action: fix it, escalate it, or fork work to address it
 
-Output a section for EACH red metric with your findings and action taken.
+⛔ DO NOT output text first. DO NOT say "let me check". Just make the tool call.
 Do NOT do any other heartbeat work — ONLY address red metrics.`;
 
     const gateResult = await ctx.runAgent(agent, gatePrompt);
@@ -58,7 +63,7 @@ Do NOT do any other heartbeat work — ONLY address red metrics.`;
 ${redMetricActions}
 ` : "";
 
-  const mainMetrics = redMetricActions ? `📊 Metrics summary:\n${metrics}` : metricsBlock;
+  const mainMetrics = redMetricActions ? `📊 Metrics summary (red metrics addressed in gate step above):\n${metrics}\n\n⚡ If any red metric action is still incomplete, address it NOW before other work.` : metricsBlock;
 
   const prompt = `You are **${agent}** waking up for your heartbeat.
 
