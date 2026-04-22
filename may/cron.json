@@ -330,7 +330,9 @@
     },
     "handlerConfig": {
       "timeoutMs": 900000,
-      "workflow": "verify-wrap"
+      "workflow": "verify-wrap",
+      "agent": "coach",
+      "task": "[cron:common-sense-verify] Pick ONE behavioral item from agents/shared/common-sense.md that you haven't verified recently (check workspace/common-sense-status.md for status index). To check agent behavior: use `bash` with grep/jq to search session transcripts — do NOT read full session.jsonl files. Did the agent follow the rule? Quote evidence. If NO — add to Growth Cycle queue. If YES — update workspace/common-sense-tracker.md with your findings."
     },
     "offsetMs": 300000
   },
@@ -385,7 +387,9 @@
     },
     "handlerConfig": {
       "timeoutMs": 600000,
-      "workflow": "verify-wrap"
+      "workflow": "verify-wrap",
+      "agent": "coach",
+      "task": "[cron:research-intake] Check for NEW files in agents/scout/workspace/ and agents/amy-kimi/knowledge/ since your last check. Only read files modified in the last 24h. Extract actionable coaching methods (not academic summaries). Max 5 files. Write to workspace/research-notes.md."
     },
     "offsetMs": 1800000
   },
