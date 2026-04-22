@@ -5793,3 +5793,20 @@ Reviewed latest commit `d6746d2` (repo root `/app`): updates `DELIVERABLES_CHECK
 ### Verdict
 CONDITIONAL — `DELIVERABLES_CHECKLIST.md` edit OK, but must run `tsc`/`vitest` and review the submodule commit in an environment where dependencies exist.
 
+---
+## 2026-04-22 QA Heartbeat
+
+### Proactive scan
+- Reviewed latest commit `0fe136c` (DD#855). Changes: `DELIVERABLES_CHECKLIST.md` small checklist edit + `agents` submodule pointer bump (98c912a → 7a46e94).
+
+### Checks
+- `tsc --noEmit`: FAIL to execute (`./node_modules/.bin/tsc` missing; `node_modules` contains only `.vite`; no `package.json` found in repo root or within depth 3).
+- `vitest --run`: FAIL to execute (`./node_modules/.bin/vitest` missing).
+
+### Issues
+- IMPORTANT (environment): This repo as checked out appears to be missing the JS/TS project scaffolding/deps required for mandatory QA checks (no `package.json`, no `node_modules/.bin`). Cannot verify typecheck/tests in this environment.
+- IMPORTANT (reviewability): `agents` is a git submodule pointer bump. The actual code changes in that submodule commit are not visible/reviewable from this repo without initializing/updating the submodule and reviewing its diff.
+
+### Verdict
+CONDITIONAL — checklist change is trivial, but cannot independently verify `tsc`/`vitest` or review submodule contents in current environment.
+
