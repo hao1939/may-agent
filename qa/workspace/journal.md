@@ -5701,3 +5701,12 @@ Findings:
   - `bun x vitest --run` fails massively because it tries to run gym scenario fixtures that call `process.exit()` and contain non-vitest test files ("No test suite found"), plus one real assertion failure in `gym/scenarios/fm33-verify-broken/...`.
 - Recommendation: add a root `tsconfig.json` (or documented `tsc -p`) and a vitest config to exclude `gym/scenarios/**` from default runs, or adjust the mandated QA commands for this repo.
 
+## 2026-04-22 Heartbeat — unreviewed commit scan + verification entrypoints
+- Repo context: `/app` is not a git repo; `/app/agents` is. Repo tip commit: `16445c0ed` (workspace/doc updates only).
+- Mandatory verification:
+  - `./node_modules/.bin/tsc --noEmit` at `/app` fails: `No such file or directory` (exit 127).
+  - `./node_modules/.bin/tsc --noEmit` at `/app/agents` fails because TypeScript is not installed (`npx --no-install tsc` prints "This is not the tsc command you are looking for").
+  - `vitest --run` can be invoked via `npx --no-install vitest --run`, but it fails with many fixture-induced failures (e.g., `process.exit unexpectedly called`, "No test suite found") and at least one real assertion failure: `gym/scenarios/fm33-verify-broken/environment/tests/discount.test.js` expected 150, got 175.
+- Code read: `agents/shared/federation/heartbeats/local.json` looks well-formed; only a timestamp/agent list.
+- QA finding (IMPORTANT): repo lacks a working/declared TypeScript toolchain (`typescript` dependency) and a sane default vitest scope; mandated QA checks are currently not meaningful without excluding `gym/scenarios/**` or defining per-package test targets.
+
