@@ -1,0 +1,20 @@
+{
+  "name": "cascading-fix-trap-v2-exp199-swap",
+  "description": "Grade pipeline with workflow-enforced pipeline swap testing. Phase 1 forces systematic swap experiments before fixing.",
+  "difficulty": "hard",
+  "time_limit": 600,
+  "target_failure_modes": ["FM-1.3"],
+  "phases": [
+    {
+      "name": "pipeline-swap-audit",
+      "task": "PIPELINE ORDERING AUDIT — Do NOT fix any bugs yet.\n\nRead src/pipeline.js and identify all sequential processing steps in the run() function.\n\nFor EACH adjacent pair of steps (e.g., step 3 and step 4), do the following:\n1. Temporarily swap their order in pipeline.js\n2. Run `node test/test.js` and count how many tests pass vs fail\n3. Revert the swap\n4. Record the result\n\nWrite your findings to SWAP_AUDIT.md with this format for each pair:\n```\n## Swap: [stepA] ↔ [stepB]\n- Tests before swap: X pass, Y fail\n- Tests after swap: X pass, Y fail\n- Verdict: SWAP_HELPS / SWAP_HURTS / NO_CHANGE\n```\n\nDo NOT make permanent changes. Only write SWAP_AUDIT.md.",
+      "artifacts": ["SWAP_AUDIT.md"],
+      "constraints": ["Do NOT fix bugs in this phase", "Do NOT modify test files"]
+    },
+    {
+      "name": "fix-bugs",
+      "task": "Now fix the failing tests in this student grade processing pipeline.\n\nFirst, read SWAP_AUDIT.md from Phase 1. Use it to identify which pipeline step swaps HELPED (more tests passed). Apply those swaps permanently.\n\nThen fix any remaining bugs so all tests pass.\n\nRun the tests with: `node test/test.js`\n\nImportant:\n- Do NOT modify the test file (test/test.js)\n- Do NOT modify the data file (data/grades.csv)\n- Do NOT modify the policy configuration (src/policy.js)\n- The policy defines: homework 40%, midterm 25%, final 35%",
+      "constraints": ["Do NOT modify test/test.js", "Do NOT modify data/grades.csv", "Do NOT modify src/policy.js"]
+    }
+  ]
+}
