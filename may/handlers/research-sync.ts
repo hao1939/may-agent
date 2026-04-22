@@ -20,14 +20,12 @@
 
 import type { HandlerContext, HandlerModule } from "../../shared/agent-sdk.js";
 import type { CronEntry } from "../../shared/agent-sdk.js";
-import { syncAll } from "../../../src/lib/research-db.js";
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
   return async () => {
     const basePath = `${ctx.projectRoot}/agents/shared/knowledge`;
-    const db = ctx.getDb();
 
-    const results = syncAll(db, basePath);
+    const results = ctx.syncResearchArtifacts(basePath);
 
     const totalSynced =
       results.knowledgeEntries.synced +
