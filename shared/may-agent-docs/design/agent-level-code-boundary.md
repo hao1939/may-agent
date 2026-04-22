@@ -1,6 +1,6 @@
 # Design: Move Agent-Level Logic from src/lib to agents/
 
-**Status:** Proposal  
+**Status:** Implemented  
 **Date:** 2026-04-22  
 **References:** [unified-event-system.md](unified-event-system.md), [runtime-ctx.md](runtime-ctx.md)
 
