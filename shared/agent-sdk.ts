@@ -67,10 +67,10 @@ export {
   enforceFinishDeliverables,
   validateVerificationEvidence,
   enforceVerificationEvidence,
-} from "../src/lib/finish-guard.js";
+} from "./guards/finish-guard.js";
 export type {
   FinishDeliverable,
   FinishCallParams,
   FinishValidationResult,
   EvidenceValidationResult,
-} from "../src/lib/finish-guard.js";
+} from "./guards/finish-guard.js";
