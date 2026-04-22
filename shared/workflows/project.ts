@@ -413,7 +413,12 @@ function buildReviewPrompt(
   prompt += `**(a) Concrete output:** What specific file or artifact should the next iteration produce?\n`;
   prompt += `**(b) What's different:** How is this different from your previous guidance? (Say "First attempt" if iteration 1)\n`;
   prompt += `**(c) First step:** One specific action to start with (e.g., "Read file X", "Run command Y")\n\n`;
-  prompt += `When milestones are completed, mention them by exact name so they can be checked off.\n`;
+  prompt += `When milestones are completed, mention them by exact name so they can be checked off.\n\n`;
+  prompt += `**Before deciding**, briefly state:\n`;
+  prompt += `- BELIEVE: What is true about the current project state (2-3 bullets)\n`;
+  prompt += `- UNCERTAIN: What you're unsure about (1-2 bullets)\n`;
+  prompt += `- FALSIFY: What evidence would change your current assessment\n`;
+  prompt += `Then give your verdict.\n\n`;
   prompt += `Your response MUST start with: DONE, PIVOT, BLOCKED, or CONTINUE`;
 
   return prompt;

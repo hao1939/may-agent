@@ -36,7 +36,7 @@
 **Top-3 testable hypotheses for next experiment cycle (updated 2026-06-22):**
 
 1. **H-181** (Relational Bug Blindness, P=0.90) — EXP-194/195/198 COMPLETE. All prompt-level interventions exhausted: declarative skills 0%, procedural skills 0%, only direct hints 40%. **NEXT**: Design EXP-199 — tool-assisted relational bug discovery (provide pipeline-swap tool that automates the permutation procedure the agent can't execute from instructions). This is the structural intervention test (P-181b).
-2. **H-165** via **EXP-178** (DESIGNED, pending execution) — Difficulty-adaptive content-first guard pilot on sql-injection (33% medium) × cascading (0% hard). 4 arms × 2 scenarios × 15 runs = 120 runs, ~$9–12. Tests whether adaptive routing rule ("production on medium, passive on hard") is strictly dominant over uniform policies. Deployable guard, not just a mechanism test.
+2. **H-165** via **EXP-178** (COMPLETE — NULL RESULT, KE-339) — 120 runs, 4 arms × 2 scenarios × 15 trials. All arms identical: 100% sql-injection (ceiling), 0% cascading (floor). No discriminating power — scenario sensitivity, not strategy failure. **NEXT**: Find/create scenarios with 30-70% baseline pass rates to retest adaptive routing. Design is reusable.
 3. **H-185** via **EXP-196** (qualitative complete, quantitative pending) — Verification remasking ("fresh eyes" reset after 2+ verification passes). Qualitative analysis: plausible for 3/5 scenarios, +10-20pp estimated. Needs gym runs on compound-edit-verification and cascading-fix-trap-v2.
 
 **Orphan KE check (recent entries not connected to any active hypothesis):**
