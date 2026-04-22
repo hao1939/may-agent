@@ -21,6 +21,7 @@ These define how the system works.
 | [agent-level-code-boundary.md](agent-level-code-boundary.md) | Move evaluator, context-learn, project-scanner from src/lib to agents/ | Proposal |
 | [event-driven-handlers.md](event-driven-handlers.md) | Cron entries gain event triggers, replacing poll-based model | Partial (project handler uses `on` field) |
 | [unified-event-system.md](unified-event-system.md) | Migrate all agent-level reactions to handler dispatch; bus stays infra-only | Phase 1 implemented |
+| [event-inbox.md](event-inbox.md) | Event inbox: persistent event lifecycle, heartbeat injection, dead-letter handling | Proposal |
 
 ## Agent Behavior
 
