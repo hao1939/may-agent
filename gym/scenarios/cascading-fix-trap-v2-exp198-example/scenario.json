@@ -1,0 +1,9 @@
+{
+  "name": "cascading-fix-trap-v2-exp198-example",
+  "description": "EXP-198 Arm C: cascading-fix-trap-v2 with procedural discovery skill + worked example in task.md",
+  "difficulty": "hard",
+  "time_limit": 300,
+  "target_failure_modes": ["FM-1.3"],
+  "experiment": "EXP-198",
+  "arm": "C"
+}
