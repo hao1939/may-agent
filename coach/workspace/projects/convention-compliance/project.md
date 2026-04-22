@@ -12,9 +12,9 @@
 - [x] M1: Gym scenarios for top 4 violations
 - [x] M2: Baseline measurement
 - [x] M3: Test top intervention per violation type (edit-guard + path-guard built & tested)
-- [ ] M4: Replicate winning interventions
-- [ ] M5: Production deployment
-- [ ] M6: Knowledge synthesis
+- [x] M4: Replicate winning interventions
+- [x] M5: Production deployment
+- [x] M6: Knowledge synthesis
 
 ## Goal
 
