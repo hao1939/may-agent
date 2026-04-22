@@ -160,6 +160,7 @@ function createProjectDir(config: PersistentTaskConfig): void {
 ${config.goal}
 
 ## Milestones
+<!-- Quality rules: each milestone should (1) name a deliverable file, (2) have a boolean done-check, (3) fit in ≤3 iterations. Vague milestones → 3x more iterations. -->
 
 ## Current State
 Not started.

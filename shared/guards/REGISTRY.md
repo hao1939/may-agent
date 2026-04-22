@@ -15,6 +15,7 @@ Each guard file must export a `guard` object matching the `WorkflowGuard` interf
 | finish-guard | finish-guard.ts | FM-3.4: Blocks finish(success) when persistent-task workflow was required but not invoked (EXP-188: +100pp) |
 | read-before-edit | read-before-edit.ts | C1.1: Warns when edit() is called on a file not read() in the same step (targets #1 violation type, 37% of baseline) |
 | hallucinated-path | hallucinated-path.ts | C7.1: Warns when bash commands reference /home/, /Users/, /root/ paths that don't exist in the container environment |
+| milestone-quality | milestone-quality.ts | Warns on first iteration when milestones have low specificity (no file path, no done-check, unbounded scope). Specificity <4.0 correlates with 3x iterations and 30% stall rate. |
 
 ## Writing Guards
 

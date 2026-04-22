@@ -47,11 +47,11 @@ Our agents orchestrate work but struggle with complex code changes (can't access
 - [ ] Document the UX and architecture differences
 
 ## Milestones
-- [ ] Research: how each CLI works, invocation patterns, input/output formats
-- [ ] Install: get at least one CLI working locally in the container
-- [ ] Integrate: our agent successfully calls a CLI via bash to solve a coding task
-- [ ] Evaluate: compare CLI-assisted vs agent-only for a real task (speed, quality)
-- [ ] Adopt: document best practices, add to agent skills
+- [ ] Research: write `.state/cli-research.md` listing how each CLI works (Claude Code, Gemini CLI, OpenAI Codex) with invocation patterns, input/output formats, and install requirements
+- [ ] Install: get at least one CLI working locally — verify with `which <cli>` and a hello-world invocation captured in `.state/cli-install-log.md`
+- [ ] Integrate: write `.state/cli-integration-test.md` showing our agent calling a CLI via bash to solve a coding task, with before/after comparison
+- [ ] Evaluate: write `.state/cli-evaluation.md` comparing CLI-assisted vs agent-only for ≥2 real tasks (speed, quality metrics)
+- [ ] Adopt: write `agents/shared/skills/cli-coding/SKILL.md` documenting best practices
 
 ## Current State
 Blocked: The worker has confirmed across multiple iterations that no API keys are configured for any of the CLIs (Claude Code, Gemini CLI, OpenAI Codex). These
