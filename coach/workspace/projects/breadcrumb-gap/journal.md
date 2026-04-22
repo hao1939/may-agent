@@ -161,3 +161,9 @@ PIVOT — The previous approach (just wiring `formatMetricsBlock`) was necessary
 
 ### Iteration 10 — 2026-04-22T10:23:57.618Z
 **Worker**: Now I have all the data. Let me create the comprehensive evidence document.
+**Reviewer**: CONTINUE — **(a) Concrete output:** The evidence document exists and is good, but the evaluator scored 5/10 last time because there was no **running proof**. The next iteration must: (1) Actually run a gym scenario (`npx vitest` or whatever the gym runner is) to produce concrete pass/fail output, and (2) append that output to the evidence doc. The deliverable is `.state/breadcrumb-effectiveness-evidence.md` updated with a "## 6. Gym Run Results" section containing actual terminal output.
+
+**(b) What's different:** Previous iterations documented what *should* work but never actually executed a test. This time the worker must find and run the gym test, capturing stdout as proof. No more documentation-only — we need execution evidence.
+
+**(c) First step:** `find . -path '*/gym/*breadcrumb*' -o -path '*/gym/*metric-reaction*' 2>/dev/null | head -20` then `grep -r 'breadcrumb' package.json scripts/ Makefile 2>/dev/null` to find how to actually run gym scenarios, then run one.
+
