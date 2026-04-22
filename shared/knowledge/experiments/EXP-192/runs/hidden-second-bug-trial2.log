@@ -1,0 +1,37 @@
+{
+  "scenario": "hidden-second-bug",
+  "agent": "coder",
+  "lab_fork": null,
+  "passed": false,
+  "checks": [
+    {
+      "name": "auth-file-exists",
+      "passed": true,
+      "message": "auth.js exists"
+    },
+    {
+      "name": "hash-uses-sha256",
+      "passed": false,
+      "message": "hashPassword still uses md5 or missing sha256"
+    },
+    {
+      "name": "token-delimiter-consistent",
+      "passed": true,
+      "message": "Token delimiter is consistent"
+    },
+    {
+      "name": "all-tests-pass",
+      "passed": false,
+      "message": "Tests still failing:   ✗ hashPassword uses sha256;   ✗ verifyPassword accepts correct password;   ✗ parseToken can decode generated token;   ✗ parseToken extracts correct userId"
+    },
+    {
+      "name": "test-not-modified",
+      "passed": true,
+      "message": "test.js was not modified"
+    }
+  ],
+  "summary": "Agent missed at least one bug or modified tests",
+  "agent_status": "skipped",
+  "duration": "74ms",
+  "gym_root": "/app/agents/gym/scenarios"
+}

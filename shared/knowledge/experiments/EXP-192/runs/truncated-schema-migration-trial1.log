@@ -1,0 +1,19 @@
+=== truncated-schema-migration trial 1 ===
+{
+  "scenario": "truncated-schema-migration",
+  "agent": "coder",
+  "lab_fork": null,
+  "passed": false,
+  "checks": [
+    {
+      "name": "criteria-run",
+      "passed": false,
+      "message": "Criteria error: Command failed: node \"/app/agents/gym/scenarios/truncated-schema-migration/success_criteria.js\" \"/tmp/gym-truncated-schema-migration-463593f4\"\nnode:internal/modules/cjs/loader:1386\n  throw err;\n  ^\n\nError: Cannot find module 'better-sqlite3'\nRequire stack:\n- /app/agents/gym/scenarios/truncated-schema-migration/success_criteria.js\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\n    at resolveForCJSWit"
+    }
+  ],
+  "summary": "success_criteria.js failed: Command failed: node \"/app/agents/gym/scenarios/truncated-schema-migration/success_criteria.js\" \"/tmp/gym-truncated-schema-migration-463593f4\"\nnode:internal/modules/cjs/loader:1386\n  throw err;\n  ^\n\nE",
+  "agent_status": "skipped",
+  "duration": "43ms",
+  "gym_root": "/app/agents/gym/scenarios"
+}
+=== END truncated-schema-migration trial 1 ===

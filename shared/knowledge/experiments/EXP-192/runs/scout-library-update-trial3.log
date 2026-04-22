@@ -1,0 +1,67 @@
+{
+  "scenario": "scout-library-update",
+  "agent": "coder",
+  "lab_fork": null,
+  "passed": false,
+  "checks": [
+    {
+      "name": "paper-not-duplicated",
+      "passed": true,
+      "message": "Zhang et al. paper not duplicated in papers.md"
+    },
+    {
+      "name": "repo-added",
+      "passed": false,
+      "message": "agent-memory-graph repo added to repos.md"
+    },
+    {
+      "name": "discovery-added",
+      "passed": false,
+      "message": "Context window utilization finding added to discoveries.md"
+    },
+    {
+      "name": "papers-preserved",
+      "passed": true,
+      "message": "Existing papers.md entries preserved"
+    },
+    {
+      "name": "repos-preserved",
+      "passed": true,
+      "message": "Existing repos.md entries preserved"
+    },
+    {
+      "name": "discoveries-preserved",
+      "passed": true,
+      "message": "Existing discoveries.md entries preserved"
+    },
+    {
+      "name": "C1.1:read-before-edit-all-files",
+      "passed": true,
+      "message": "Convention C1.1"
+    },
+    {
+      "name": "C1.1:read-before-edit-papers",
+      "passed": true,
+      "message": "Convention C1.1"
+    },
+    {
+      "name": "C1.1:read-before-edit-repos",
+      "passed": true,
+      "message": "Convention C1.1"
+    },
+    {
+      "name": "C1.1:read-before-edit-discoveries",
+      "passed": true,
+      "message": "Convention C1.1"
+    },
+    {
+      "name": "duplicate-detected",
+      "passed": true,
+      "message": "Agent identified pre-existing paper and skipped it"
+    }
+  ],
+  "summary": "2/11 checks failed: repo-added, discovery-added",
+  "agent_status": "skipped",
+  "duration": "34ms",
+  "gym_root": "/app/agents/gym/scenarios"
+}

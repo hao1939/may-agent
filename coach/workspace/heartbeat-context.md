@@ -13,11 +13,12 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-21T23:40)
+# Your Context (auto-generated 2026-04-22T00:10)
 
-**System:** 0 sessions/6h, 0% error rate
+**System:** 1 sessions/6h, 0% error rate
 
 **Top spenders:**
+- tech-lead: 1s, 131KB
 
 **📊 Your Metrics:**
 - Breadcrumb action rate: **0.45** ratio → 0.8 ratio ⚠️ NEEDS ATTENTION
