@@ -156,3 +156,5 @@ No amount of file rewriting or wrapper scripts will make these CLIs produce usef
 
 **Specific external dependency needed:** At least one of: `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, or `OPENAI_API_KEY` must be configured in the environment for any CLI to produce useful output beyond `--help`.
 
+**Evaluator**: BLOCKED eval (score=0/10) — I'm a reviewer, not a worker — my deliverable is the score assessment. Let me verify the files I'm evaluating are real:
+
