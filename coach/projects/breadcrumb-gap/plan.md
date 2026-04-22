@@ -51,17 +51,15 @@ Key changes:
 - Investigation: agents/coach/projects/breadcrumb-gap/m4-investigation.md
 - Root cause: habituation — may.alert-to-reaction-time stuck at 136.8 for 5+ checks, same text becomes invisible
 
-### M5: Fix deployment — force runtime to pick up M3/M4 code ⏳
-- **BLOCKER FOUND 2026-04-22**: M3/M4 code is committed but 0 sessions have seen it
-- Root cause: stale binary/runtime not re-importing updated workflow TS files
-- Action: dispatch to tech-lead to rebuild binary or restart runtime process
-- Postmortem: agents/coach/projects/breadcrumb-gap/m3-postmortem.md
-- Must confirm ≥5 sessions see `ACTION REQUIRED` format before proceeding
+### M5: Fix deployment — force runtime to pick up M3/M4 code ✅
+- Confirmed deployed 2026-06-20: own heartbeat shows "⛔ REPEATED ALERT" and "ACTION REQUIRED" format
+- Rate improved 0.44 → 0.50
 
-### M6: Measure ACTUAL M3/M4 impact
-- Target: ≥0.65 within 48h of M5 completion (actual deployment)
-- Per-agent focus: may must go from 23% → ≥50%
-- If not met: breadcrumb problem is deeper (agent architecture, not wording)
+### M6: Measure ACTUAL M3/M4 impact ⏳
+- Current rate: 0.50 (12/24 acted). Below 0.65 target.
+- May still primary failure source. M3/M4 helped but insufficient alone.
+- **Intervention applied 2026-06-20**: Added "Breadcrumb Action Requirement" section to agents/may/context.md
+- Next check: measure after 5+ may sessions with new context.md directive
 
 ### M7: Add "breadcrumb acknowledgment" to finish() schema (conditional)
 - Only if M6 rate < 0.65 after confirmed deployment

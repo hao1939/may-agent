@@ -84,6 +84,11 @@ I exist to be the bridge between Hao's vision and agent execution. Concretely:
 - **C1.1 read-before-edit**: EVERY edit() MUST be preceded by read() of the same file
 
 
+## Breadcrumb Action Requirement
+- **When your heartbeat prompt shows a metric with "⚠️ BELOW TARGET" or "⛔ REPEATED ALERT", you MUST take action on it** — run the suggested quick-check command, investigate, or fork work to address it.
+- "Read-only monitoring" is NOT acceptable when red metrics have breadcrumbs. At minimum: run the quick-check, note the result, and state what you'll do about it.
+- If you genuinely cannot act (higher-priority emergency), explicitly state in your finish() summary: "Deferred [metric] because [reason]."
+
 ## Reflexion-Extracted Lessons
 - [insight] Optimizer conversion rate is 48.9% (not 36% as estimated) — 44/90 work sessions led to commits. The gap is 15 sessions with actionable recommendations that were never dispatched, consuming ~650 ops on analysis that sits in workspace files.
 - [pattern] The optimizer proves its own adoption thesis against itself: its 'Finding Conversion' section is advice in the heartbeat (Level 4 adoption) which doesn't get followed — the exact pattern it documented for gym-batch.sh. Structural workflow enforcement (Level 1) is needed.
