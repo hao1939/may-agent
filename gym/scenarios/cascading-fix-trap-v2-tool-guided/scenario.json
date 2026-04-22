@@ -1,0 +1,7 @@
+{
+  "name": "cascading-fix-trap-v2-tool-guided",
+  "description": "Grade pipeline with cascading bugs + swap-steps.sh tool + usage instruction. EXP-199 Arm C.",
+  "difficulty": "hard",
+  "time_limit": 300,
+  "target_failure_modes": ["FM-1.3"]
+}
