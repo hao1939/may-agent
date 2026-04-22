@@ -3,7 +3,7 @@
 **Status**: active
 **Owner**: bob
 **Priority**: P1
-**Iteration**: 0
+**Iteration**: 1
 **Health**: —
 
 ## Goal
@@ -57,4 +57,3 @@ Not started.
 ## Iteration Summary
 
 ## Comments
-- [2026-04-22 hao] The PRIMARY goal is to USE these CLIs as tools, not just study them. Our agents can call them via bash. Agent decides what to fix, CLI does the coding. This solves the src/ access problem — the CLI runs in the repo with full access. Research HOW to invoke them (flags, input format, output parsing), then integrate.
