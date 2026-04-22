@@ -1,7 +1,7 @@
 # EXP-194: Bug-Type Classification Study (H-181 P-181a)
 
 **Hypothesis:** H-181 (Relational Bug Blindness)
-**Status:** DESIGNED
+**Status:** COMPLETE
 **Created:** 2026-04-22
 **Cost:** $0 (retrospective analysis only)
 
