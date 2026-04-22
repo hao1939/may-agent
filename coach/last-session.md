@@ -1,28 +1,26 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776851594778_45
+- **Session:** s_1776851671640_49
 - **Status:** done
-- **When:** 2026-04-22T09:54:10.191Z
-- **Duration:** 55s
+- **When:** 2026-04-22T09:55:56.107Z
+- **Duration:** 1m24s
 
 ## What Happened
-SCORE: 5
+Now I understand the system. The violations are convention compliance issues tracked per-agent in their `context.md` files. Here's my guidance:
 
-**Reasoning:**
+**CONTINUE** —
 
-1. **Deliverables exist**: Yes — the diagnostic report exists and is thorough. All 8 heartbeat files have been modified to import `formatMetricsBlock` and use it in prompts. The `metricsBlock` variable is placed first in the prompt template. Real code changes were made.
+**(a) Concrete output:** Modified `agents/*/context.md` files for all agents with violations (coder, optimizer, coach, scout, amy, may), plus a `.state/violation-reduction-plan.md` summarizing what was done. The context files should have strengthened, more specific convention reminders that will reduce future violations.
 
-2. **Goal met**: Partially. The goal is "Make breadcrumbs effective in production heartbeats." The code changes are the right mechanical fix (using `formatMetricsBlock` instead of just `loadMetrics` in the prompt), but there's **zero evidence that this actually improves breadcrumb follow-through from ~10% to anything higher**. The goal is about effectiveness, not just code wiring.
+**(b) What's different:** Previous iterations never figured out what the violations ARE. Now I've identified them. The violations are convention compliance counts in `agents/*/context.md` files. The top violations across agents are:
+- **C1.1** (read-before-edit): coder(31), optimizer(71), coach(77), amy(13) = 192
+- **C1.3** (verify-writes): optimizer(36), may(31) = 67  
+- **C1.7** (verification-evidence): optimizer(27), coach(36), scout(46) = 109
+- **C12.1** (session-start): optimizer(29)
+- **C7.1** (path violations): optimizer(17)
+- **C3.2** (hallucinated paths): amy(9)
 
-3. **Evidence**: The diagnostic report is excellent and evidence-backed. The code changes are confirmed present via grep. However, TypeScript compilation couldn't be verified (tsc not installed). No gym tests were run. No production heartbeat was observed to confirm the fix works.
+The fix: For each agent, add **concrete procedural checklists** to their context.md that make violations harder to commit. Not just "you must do X" (which already exists and doesn't work) but step-by-step workflows like "BEFORE EVERY edit() call: 1. Find the read() call for this file in your history 2. If none exists, run read() now 3. Only then edit()".
 
-4. **Milestones honest**: The work done (diagnostic + code changes) is real and honestly represented in the iterations. But this is positioned as iteration 7 of an ongoing effort — the project isn't claiming full completion yet.
-
-5. **No shortcuts**: The diagnostic was genuinely thorough. The code changes are mechanical but correct. No shortcuts taken.
-
-6. **Building != verifying**: This is the key gap. Code was changed but never verified to work. No gym scenario was run post-fix. No compilation check succeeded. The entire thesis is "formatMetricsBlock will fix the ~10% rate" but nobody observed it actually doing so. The fix is plausible but unverified.
-
-7. **Not blocked**: Work can continue — gym tests could be run to validate.
-
-**Bottom line**: Good diagnostic work and plausible code fix, but the goal is about *effectiveness* and there's zero measurement that the fix actually works. The `loadMetrics` calls also still exist alongside `formatMetricsBlock` (both are called), which is fine but means the old plain metrics are still loaded redundantly. The work is roughly halfway — the right fix is identified and applied, but unverified.
+**(c) First step:** Read each agent's full context.md, then for each one, add a `## Mandatory Procedures` section with concrete anti-violation checklists. Start with the worst offenders: coach (77+36=113 violations), optimizer (180 violations), scout (46). For each agent, the checklist must be specific to THEIR top violations. After editing all files, create `.state/violation-reduction-plan.md` documenting baseline counts and changes made. **Do NOT create any files before reading the existing context.md files. Read first, then edit.**

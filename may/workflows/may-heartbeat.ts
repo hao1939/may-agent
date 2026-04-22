@@ -24,9 +24,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     const gatePrompt = `You are **${agent}**. You have RED METRICS that must be addressed before your normal heartbeat can proceed.
 
 ## ⚠️ RED METRIC GATE — MANDATORY
-Your metrics:
-${metrics}
-
+${metricsBlock}
 ## Instructions
 You CANNOT skip this step. For EACH metric marked "⚠️ BELOW TARGET" above, you must:
 1. Run the "→ Quick check" command/query to get current data
@@ -60,9 +58,11 @@ Do NOT do any other heartbeat work — ONLY address red metrics.`;
 ${redMetricActions}
 ` : "";
 
+  const mainMetrics = redMetricActions ? `📊 Metrics summary:\n${metrics}` : metricsBlock;
+
   const prompt = `You are **${agent}** waking up for your heartbeat.
 
-${metricsBlock}
+${mainMetrics}
 ${redMetricContext}
 ## Active Alerts
 ${alerts || "None — all clear."}
