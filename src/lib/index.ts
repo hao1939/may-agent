@@ -6,7 +6,7 @@ export { classifyError } from "./classify-error.js";
 export type { ErrorClass } from "./classify-error.js";
 // Agent growth core logic
 export { forkAgent, promoteAgent, discardAgent, listLabAgents } from "./growth.js";
-export type { GrowthConfig, ForkResult, PromoteResult } from "./growth.js";
+export type { GrowthConfig, PromoteResult } from "./growth.js";
 // Core coding tools (synced from pi-coding-agent)
 export {
   createReadTool,
@@ -44,9 +44,8 @@ export type {
   FinishToolOptions,
 } from "./tools/index.js";
 export { createScrapeTool } from "./scrape.js";
-export type { ScrapeToolOptions } from "./scrape.js";
 export { createWorkflowTool } from "./workflow-tool.js";
-export type { WorkflowToolOptions, WorkflowTool } from "./workflow-tool.js";
+export type { WorkflowTool } from "./workflow-tool.js";
 export { WorkflowInterrupted, WorkflowBlocked } from "./workflow.js";
 export type {
   WorkflowContext,
@@ -65,7 +64,7 @@ export type {
 } from "./workflow.js";
 export { extractWrittenFiles, extractChangedFiles } from "./workflow-utils.js";
 export { summarizeForHandoff, extractHandoff } from "./handoff.js";
-export type { HandoffOptions, HandoffData } from "./handoff.js";
+export type { HandoffOptions } from "./handoff.js";
 export { createCompactionTransform } from "./compaction.js";
 export type { CompactionOptions, CompactionInfo } from "./compaction.js";
 export { isOverflowError } from "./overflow.js";
@@ -95,7 +94,6 @@ export {
   listArchivedSessionIds,
 } from "./persistence.js";
 export { createBackgroundExecTool } from "./background-exec.js";
-export type { BackgroundExecToolOptions } from "./background-exec.js";
 
 export {
   createClaudeCodeTool,
@@ -105,11 +103,11 @@ export {
   stripAnsi,
   spawnCliAgent,
 } from "./cli-agents.js";
-export type { CliAgentToolOptions, GeminiCliToolOptions, CodexToolOptions } from "./cli-agents.js";
+export type { CliAgentToolOptions } from "./cli-agents.js";
 export { createCronTool } from "./cron-tool.js";
-export type { CronToolOptions, CronEntry } from "./cron-tool.js";
+export type { CronEntry } from "./cron-tool.js";
 export { spawnDetachedAgent, readIdentity } from "./detached.js";
-export type { SpawnDetachedOpts, InstanceIdentity } from "./detached.js";
+export type { InstanceIdentity } from "./detached.js";
 export { sendSocketCommand, waitForSocketEvent } from "./socket-client.js";
 export type { SocketResponse, SocketEvent } from "./socket-client.js";
 export type {
@@ -135,10 +133,9 @@ export type {
 
 export type { RuntimeCtx, HandlerContext, HandlerModule } from "./handler-context.js";
 export { buildRuntimeCtx } from "./runtime-ctx.js";
-export type { RuntimeCtxOptions } from "./runtime-ctx.js";
 export { retryWithBackoff } from "./retry-with-backoff.js";
 export type { RetryWithBackoffOptions } from "./retry-with-backoff.js";
 export { loadAgents, reloadAgents, validateAgentConfig } from "../app/agent-loader.js";
-export type { AgentConfig, AgentLoaderOptions, LoadResult, ValidationError } from "../app/agent-loader.js";
+export type { AgentConfig, AgentLoaderOptions, ValidationError } from "../app/agent-loader.js";
 export { ApiGate } from "./api-gate.js";
 export type { ApiGateConfig, ApiGateStatus } from "./api-gate.js";
