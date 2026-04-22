@@ -35,7 +35,7 @@ function makeGetDb(persistDir: string) {
       if (!existsSync(dbPath)) {
         throw new Error(`Database not found at ${dbPath}`);
       }
-      db = new Database(dbPath, { readonly: true });
+      db = new Database(dbPath);
     }
     return db;
   };
