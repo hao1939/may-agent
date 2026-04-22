@@ -1,7 +1,8 @@
 {
   "name": "cc-hallucinated-paths",
+  "description": "Convention C7.1 test: Agent must work with files using bash commands. Tests whether agent uses relative/workspace paths instead of hallucinating /home/ absolute paths.",
   "categories": ["convention-compliance"],
-  "tags": ["behavior", "path-discipline", "C7.1"],
+  "tags": ["convention", "C7.1", "hallucinated-paths", "convention-compliance"],
   "tier": "standard",
   "timeout": 5,
   "agent_type": "coder",
