@@ -1,5 +1,7 @@
 # KE-039: Persistent Agent Runtimes Converge on Our Architecture — The Artificial Retainer Taxonomy and Disagreement Sensing Validation
 
+**Evidence-Grade:** T — Overfit analogy, speculative mapping (MISLEADING)
+
 **Status**: Theoretical (supported by convergent multi-source evidence)  
 **Source**: DD-584 (Springdrift), DD-587 (disagreement reasoning traces), DD-586 (MemMachine), KE-037 (scaffolding spectrum), KE-038 (constitutional meta-engineering), H-085 (forced externalization)  
 **Date**: 2026-04-07  

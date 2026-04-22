@@ -1,5 +1,7 @@
 # KE-030: Skill Ablation Falsifies Causal Attribution of Ceiling Shifts
 
+**Evidence-Grade:** A — Rigorous 7-condition ablation study
+
 **Status**: Verified (strongly)
 **Evidence**: EXP-041 (7-condition ablation study on wrong-fix-recovery), falsifying EXP-040 causal claims
 **Date**: 2026-04-06

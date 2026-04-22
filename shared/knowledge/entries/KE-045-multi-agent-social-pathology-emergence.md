@@ -1,5 +1,7 @@
 # KE-045: Multi-Agent Social Pathology — Power Laws, Sycophancy Cascades, and Collusion as Emergent Structural Diseases
 
+**Evidence-Grade:** T — Solid lit synthesis but speculative for our scale
+
 **Status**: Theoretical (supported by convergence of four independent empirical/architectural studies)
 **Confidence**: High — 1.5M+ interactions analyzed (DD-534), controlled experiments across 6 LLMs (DD-535), 1.00 AUROC detection (DD-520), first L5 deployment (DD-538)
 **Date**: 2026-04-07

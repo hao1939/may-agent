@@ -1,5 +1,7 @@
 # KE-057: Cross-Referencing Source Code Fixes Absent-Field Detection Failures
 
+**Evidence-Grade:** A — 0-to-100% effect, replicated, clear mechanism
+
 **Status**: Verified (independently replicated)  
 **Source**: EXP-079 (cross-reference L3 instruction), EXP-080 (cross-reference L2 skill), EXP-078 (externalization control), EXP-077 L3 (baseline), EXP-098 (independent replication by coder agent on L3 cascading-state)  
 **Date**: 2026-04-08 (updated 2026-04-09)  

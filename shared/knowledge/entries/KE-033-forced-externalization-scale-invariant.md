@@ -1,5 +1,7 @@
 # KE-033: Forced Externalization Is Scale-Invariant — Same Mechanism Works at Task, Harness, and System Levels
 
+**Evidence-Grade:** T — Analogical reasoning, no direct cross-scale measurement
+
 **Status**: Theoretical (supported by convergent external evidence)  
 **Source**: DD-560 (meta-agent), CR-300 (harness engineering endgame), KE-031, KE-032, H-085, DD-558, DD-559  
 **Date**: 2026-04-06  

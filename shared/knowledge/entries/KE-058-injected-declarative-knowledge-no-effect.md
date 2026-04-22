@@ -1,5 +1,7 @@
 # KE-058: Injected Declarative Knowledge Has No Effect on Agent Behavior
 
+**Evidence-Grade:** A — 3/3 runs, 0% application rate, clear mechanism
+
 **Status**: Observed  
 **Source**: EXP-082 (knowledge application pipeline)  
 **Date**: 2026-04-08  

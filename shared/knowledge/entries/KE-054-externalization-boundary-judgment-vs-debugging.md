@@ -1,5 +1,7 @@
 # KE-054: Externalization Has a Sharp Domain Boundary — Helps Judgment, Hurts Debugging
 
+**Evidence-Grade:** B — Clear empirical result with specific numbers
+
 **Status**: Verified  
 **Source**: EXP-070 (v2 baseline), EXP-071 (v2 + externalization), EXP-072 (v3 baseline + v3 + externalization)  
 **Date**: 2026-04-07  

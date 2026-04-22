@@ -1,5 +1,7 @@
 # KE-014: Bash Quote Splitting Bypass (Security)
 
+**Evidence-Grade:** B — Specific technical finding, patched and concrete
+
 **Severity:** Critical
 **Status:** Patched (2026-03-14)
 **Discovered by:** Bob via compliance-test

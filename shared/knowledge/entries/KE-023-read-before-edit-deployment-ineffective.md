@@ -1,5 +1,7 @@
 # KE-023: Read-Before-Edit Skill Deployment Shows No Production Improvement
 
+**Evidence-Grade:** C — Confounded by concurrent regression, premature conclusion
+
 **Status**: preliminary (needs larger sample)  
 **Evidence**: Convention compliance data 2026-04-02 through 2026-04-05, skill deployments to 4 agents  
 **Discovered**: 2026-04-05  

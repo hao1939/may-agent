@@ -1,5 +1,7 @@
 # KE-042: Multi-Agent Dispatch Convergence — Structural Coordination Infrastructure Is Forced Externalization Applied to Inter-Agent Communication
 
+**Evidence-Grade:** T — Convergence observation real but causal claim is a stretch
+
 **Status**: Theoretical (supported by convergent independent design across 6 frameworks + harness optimization emergence)
 
 **Sources**: CR-282 (Dispatch Board Patterns — 5 paradigms across 6 frameworks), CR-300 (Harness Engineering Endgame — automated optimization via meta-agent), CR-302 (Constitutional Meta-Engineering), KE-033 (FE scale-invariance), KE-037 (Scaffolding Spectrum), KE-038 (Constitutional bounded self-improvement), KE-041 (Structural constraint + stigmergic coordination)

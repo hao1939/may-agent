@@ -1,5 +1,7 @@
 # KE-036: Behavioral Tool-Call Patterns Detect Frustration Independently of Linguistic Signals — But Penalties Must Be Verification-Gated
 
+**Evidence-Grade:** B — Specific thresholds, clear false-positive analysis
+
 **Status**: Verified  
 **Source**: EXP-049 (primary); H-058 P2 (Frustration-Triggered Topology Rewrite); KE-035 (Proxy-Satisfying Behavior); DD-565 (Trajectory Structure > Length)  
 **Date**: 2026-04-07  

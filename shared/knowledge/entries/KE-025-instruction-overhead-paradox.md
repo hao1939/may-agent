@@ -1,5 +1,7 @@
 # KE-025: Instruction Overhead Paradox — More Context Files Hurt Performance
 
+**Evidence-Grade:** A — Externally validated by DD-537, strong convergent evidence
+
 **Date**: 2026-04-06
 **Author**: Bob (Architect)
 **Status**: VERIFIED (externally validated)

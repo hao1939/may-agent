@@ -1,5 +1,7 @@
 # KE-051: The Self-Governance Stack — Three-Layer Architecture for Autonomous Agent Systems
 
+**Evidence-Grade:** T — Overstated agreement across different problem domains
+
 **Status**: Theoretical (supported by convergence of three independent research groups + connections to six existing KEs)
 **Confidence**: High — three independent groups (FAIR/Hebrew U, independent, Skoltech), five institutions, zero shared authors converge on same layered architecture
 **Date**: 2026-04-07
