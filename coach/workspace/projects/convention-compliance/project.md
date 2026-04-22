@@ -7,6 +7,7 @@
 **Started**: 2026-04-22
 **Metric**: convention-compliance-rate (currently ~97%, target ≥ 99%)
 
+**Iteration**: 1
 ## Goal
 
 Systematically reduce convention violations across all agents. 190 violations
@@ -131,3 +132,11 @@ Based on Phase 1 findings, design interventions. Start with what we know works:
 - Key finding: C7.1 is agent-specific (Amy), C1.1 is universal — different interventions needed
 - Full analysis: `phase1-results.md`
 - **Next**: Phase 2 — runtime gate prototypes for both violations
+
+
+## Current State
+Iteration 1. Milestones: 0/0 done.
+
+## Iteration Summary
+- **Iter 1**: All 15 tests pass. Now let me update the project progress log:
+
