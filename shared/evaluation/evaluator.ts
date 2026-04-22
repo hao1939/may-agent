@@ -772,17 +772,17 @@ export interface EvaluateStandaloneOptions {
 export async function evaluateStandaloneSession(
   opts: EvaluateStandaloneOptions,
 ): Promise<{ quality: number; efficiency: number; verdict: string; issues: string[] } | null> {
-  const { manager, persistDir, sessionId, agent, task, status } = opts;
+  const { manager, ctx, sessionId, agent, task, status } = opts;
 
   // Skip if already LLM-evaluated
-  if (hasLLMEvaluation(persistDir, sessionId)) return null;
+  if (ctx.hasLLMEvaluation(sessionId)) return null;
 
   // Load messages if not provided
   let messages = opts.messages;
   if (!messages || messages.length === 0) {
-    messages = readSessionMessages(persistDir, sessionId);
+    messages = ctx.readSessionMessages(sessionId) as AgentMessage[];
     if (messages.length === 0) {
-      messages = readArchivedSessionMessages(persistDir, sessionId);
+      messages = ctx.readArchivedSessionMessages(sessionId) as AgentMessage[];
     }
   }
   if (messages.length === 0) return null;
@@ -857,7 +857,7 @@ export async function evaluateStandaloneSession(
   const effectiveOverallVerdict = parseErrored ? "parse_error" : parsed.overall.verdict;
 
   // Save evaluation (overwrites any heuristic evaluation via INSERT OR REPLACE)
-  upsertEvaluation(persistDir, {
+  ctx.upsertEvaluation({
     sessionId,
     agent,
     quality: agentScores.quality,
