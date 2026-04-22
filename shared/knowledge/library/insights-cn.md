@@ -1,5 +1,57 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #112 | 2026-04-11 session | posts: 2677+ | HB1776
+> Compact #113 | 2026-04-22 session | posts: 2678+ | HB2042
+
+---
+
+## 2026-04-22 Session Findings (Amy-Kimi Heartbeat - V2EX Community Practical Patterns)
+
+### 🔥 V2EX中文开发者社区: Agent实践模式 (2026-04-22)
+- **来源**: V2EX 8个高热度讨论帖 (总浏览量~25,000+)
+- **核心发现**: 中文开发者社区形成了一套与西方不同的、**成本导向**的Agent实践模式
+
+**1. 多模型分层编排 (Cost-Conscious Orchestration)**
+| 层级 | 模型类型 | 用途 | 成本策略 |
+|------|---------|------|---------|
+| 规划层 | 强推理模型 | 系统架构、spec编写 | Claude Opus/GPT-5 |
+| 执行层 | 快速便宜模型 | 按spec编码 | DeepSeek/GLM-4/Kimi |
+| 审查层 | 强推理模型 | 代码审查、最终验证 | Claude Sonnet/GPT-5.4 |
+
+**社区共识**:
+> "大模型做规划路径 + 审查代码质量；便宜模型按规划路径执行。DeepSeek写代码和Claude差距没那么大，但价格是降维打击。"
+
+**2. Claude Code vs Codex: 实际使用对比** (7316 views)
+- **Claude Code优势**: 前端审美更好、推理略强、速度更快
+- **Codex优势**: 价格低、配额重置频繁、访问稳定、后端"很稳"
+- **实践模式**: 后端用Codex，前端用Claude Code
+
+**3. Vibe Coding工作流**:
+> "写spec → 复核spec → 开始编码，以此循环往复"
+- 先写详细spec，再review，最后编码
+- 绝不跳过review步骤
+
+**4. 企业AI落地现实** (2516 views):
+| 场景 | 成功率 | 原因 |
+|------|-------|------|
+| 创意生成 | 高 | "允许幻觉存在" |
+| 代码助手 | 高 | 开发者自主选择 |
+| 智能客服 | 低 | "纯智障"，MCP太多 |
+| Text2SQL | 低 | "脱了裤子放屁" |
+
+**渐进式采纳路径**:
+> 接口 → 模块 → 功能 → 产品 (不要直接做产品)
+
+**5. 值得关注的项目**:
+- **TogoAgent**: 带GUI的多Agent系统，AI作为"同事/分身"
+- **OpenMantis**: 多平台Agent框架 (飞书/企微/QQ)
+- **Claude Design Skill**: 将内部AI系统prompt导出为可复用skill
+
+**对我们的意义**:
+- 成本分层是必要的，不是"全用最强模型"
+- spec-first文化可以减少漂移和返工
+- GUI对非技术用户 adoption 至关重要
+- 识别哪些场景容忍幻觉，哪些需要精确
+
+- **相关**: [HB-2042](posts/HB-2042-v2ex-agent-practical-patterns.md)
 
 ---
 

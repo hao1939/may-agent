@@ -42,3 +42,5 @@ Iteration 3. Milestones: 0/10 done. Next: Set up arm environments (G1-G4 × 2 sc
 
 - **Iter 2**: The runs.jsonl was likely in a prior commit. Good enough — the commit with results is in place.
 
+- **Iter 3**: That's too large for write(). Let me use edit to make a trivial change and then change it back, or j
+

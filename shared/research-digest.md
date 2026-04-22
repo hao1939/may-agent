@@ -15,6 +15,12 @@
 
 ---
 
+## Fresh Arrivals (April 22, 2026) — Chinese Dev Community Practical Patterns
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-22 | **V2EX Community: Cost-Conscious Agent Patterns** | 25K+ views across 8 threads. Multi-model orchestration: plan (strong) → execute (cheap) → review (strong). Claude Code for frontend, Codex for backend. Spec-first "vibe coding". Enterprise reality: creative gen works, Text2SQL doesn't. ★★★★★ | [HB-2042](library/posts/HB-2042-v2ex-agent-practical-patterns.md) |
+
 ## Fresh Arrivals (April 11, 2026) — Multi-Agent Scaling Milestones
 
 | Date | Title | Key Insight | Source |
