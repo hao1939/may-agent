@@ -17,26 +17,36 @@ Escalations are scattered, don't follow hierarchy, and never close. 155 entries 
 
 ## Design
 
-### Escalation Table
+### Escalation is an event
 
-```sql
-CREATE TABLE IF NOT EXISTS escalations (
-  id          INTEGER PRIMARY KEY AUTOINCREMENT,
-  sessionId   TEXT,           -- originating session
-  projectId   TEXT,           -- project if applicable
-  agent       TEXT NOT NULL,  -- who escalated
-  level       INTEGER DEFAULT 1,  -- 1=owner, 2=may, 3=human
-  reason      TEXT NOT NULL,
-  status      TEXT DEFAULT 'open',  -- open, resolved, dismissed
-  resolution  TEXT,           -- how it was resolved/why dismissed
-  resolvedBy  TEXT,           -- who resolved it
-  createdAt   INTEGER NOT NULL,
-  resolvedAt  INTEGER,
-  escalatedAt INTEGER         -- when it moved to next level
-);
-CREATE INDEX idx_escalations_status ON escalations(status);
-CREATE INDEX idx_escalations_agent ON escalations(agent);
+No separate table. Escalations are events — tracked, persisted, routable through the existing event system.
+
 ```
+Agent blocked → emit escalation.created { agent, owner, reason, projectId, level: 1 }
+Owner timeout → emit escalation.promoted { id, level: 2 }
+May timeout   → emit escalation.promoted { id, level: 3 } + Telegram notify
+Fixed         → emit escalation.resolved { id, resolvedBy, resolution }
+Dismissed     → emit escalation.dismissed { id, dismissedBy, reason }
+```
+
+Query all escalations:
+```sql
+SELECT * FROM events WHERE event_type LIKE 'escalation.%' ORDER BY timestamp DESC
+```
+
+Query open escalations (created but not resolved/dismissed):
+```sql
+SELECT e.* FROM events e
+WHERE e.event_type = 'escalation.created'
+AND NOT EXISTS (
+  SELECT 1 FROM events r 
+  WHERE r.event_type IN ('escalation.resolved', 'escalation.dismissed')
+  AND json_extract(r.data, '$.id') = json_extract(e.data, '$.id')
+)
+ORDER BY e.timestamp DESC
+```
+
+The events table IS the escalation log. No new schema.
 
 ### Hierarchy
 
@@ -93,16 +103,17 @@ One handler that manages the escalation lifecycle:
   "name": "escalation",
   "handler": "escalation",
   "intervalMs": 1800000,
-  "on": ["session.escalated", "project.blocked"],
-  "description": "Manage escalation lifecycle: create, promote, auto-resolve."
+  "on": ["escalation.created", "project.blocked", "session.escalated"],
+  "description": "Manage escalation lifecycle: route, promote, auto-resolve."
 }
 ```
 
 Every 30 min (and on escalation events):
-1. Check for new escalations from events → insert into table
-2. Check open escalations at level 1 older than 1h → promote to level 2
-3. Check open escalations at level 2 older than 1h → promote to level 3 (notify human)
-4. Check if conditions cleared → auto-resolve (project unblocked, metric recovered)
+1. Query open escalations from events table
+2. For each: check current level and age
+3. Level 1 older than 1h → emit `escalation.promoted { level: 2 }` (routes to May)
+4. Level 2 older than 1h → emit `escalation.promoted { level: 3 }` (notify human)
+5. Check if conditions cleared (project unblocked, metric recovered) → emit `escalation.resolved`
 
 ### Heartbeat Integration
 
@@ -117,43 +128,39 @@ Agents see their escalations every heartbeat. Can't miss them.
 
 ### Resolution
 
-Agents resolve by adding a comment or taking action that clears the condition. The escalation handler auto-detects:
-- Project status changed from blocked → active: auto-resolve
-- Metric recovered above threshold: auto-resolve
-- Agent explicitly resolves: `finish(escalation_resolved: "reason")`
+Conditions that auto-resolve (escalation handler detects and emits `escalation.resolved`):
+- Project status changed from blocked → active
+- Metric recovered above threshold
+- Session retry succeeded
 
-For dismissal: May or human marks dismissed with reason in the table.
+Manual resolution:
+- Agent finishes work that addresses the blocker
+- May dismisses with reason
+- Human dismisses via Telegram or dashboard
 
 ### Metrics
 
+All derived from events table queries — no separate tracking:
+
 | Metric | Query | Owner |
 |--------|-------|-------|
-| `system.open-escalations` | `SELECT COUNT(*) FROM escalations WHERE status='open'` | may |
-| `system.escalation-rate` | New escalations per day | may |
-| `system.escalation-resolve-time` | `AVG(resolvedAt - createdAt) WHERE status='resolved'` | may |
-| `agent.escalations` | Open escalations per agent | each agent |
-
-### Dashboard
-
-Escalations tab or section showing:
-- Open escalations by level (1/2/3)
-- Time at current level
-- Agent, project, reason
-- Resolution history
+| `system.open-escalations` | Count of `escalation.created` without matching resolved/dismissed | may |
+| `system.escalation-rate` | `escalation.created` events per day | may |
+| `system.escalation-resolve-time` | Avg time between created and resolved events | may |
+| `agent.escalations` | Open per agent from event data | each agent |
 
 ## Migration
 
-1. Create escalations table (schema migration in requests.ts)
-2. Create escalation handler (agents/may/handlers/escalation.ts)
-3. Update project workflow: insert escalation on BLOCKED (instead of just emitting event)
-4. Update heartbeat workflows: pre-load open escalations
-5. Add metrics
-6. Migrate existing escalations.jsonl → table (one-time)
-7. Remove escalations.jsonl writes from RuntimeCtx
+1. Create escalation handler (agents/may/handlers/escalation.ts) — ~60 LOC
+2. Update project workflow: emit `escalation.created` on BLOCKED (instead of just `project.blocked`)
+3. Update heartbeat workflows: query open escalations from events table, inject into prompt
+4. Register metrics
+5. Migrate existing escalations.jsonl → emit as events (one-time script)
+6. Remove escalations.jsonl writes from RuntimeCtx
 
-## Total: ~100 LOC
+## Total: ~80 LOC
 
-- Schema: ~15 LOC
-- Handler: ~60 LOC  
-- Heartbeat integration: ~15 LOC
-- Metrics: ~10 LOC
+- Handler: ~60 LOC
+- Heartbeat integration: ~10 LOC
+- Project workflow emit: ~10 LOC
+- No new schema — uses events table
