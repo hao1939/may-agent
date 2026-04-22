@@ -19,9 +19,9 @@ Continuously improve the project workflow. This is a TRACKER — each experiment
 | Experiment | Project | Status | Result |
 |-----------|---------|--------|--------|
 | Rich Current State | (tested manually) | adopted ✅ | 1 focused iter vs 6 confused |
-| Smart context generation | pwi-smart-context | active | — |
+| Smart context generation | pwi-smart-context | done | TRIAL: -56% iters/ms but N=1 |
 | Milestone auto-scope | — | idea | — |
-| Evaluator tuning | — | idea | — |
+| Evaluator tuning | pwi-evaluator-tuning | active | — |
 
 ## How to Add an Experiment
 
@@ -47,7 +47,7 @@ Continuously improve the project workflow. This is a TRACKER — each experiment
 - **Evidence**: breadcrumb-gap manual test (rich context: 1 iter vs 6)
 
 ## Current State
-Baseline measured (iter 1). Worst metric: iterations-to-complete (14 avg vs 10 target). Next: design experiment to reduce iteration count.
+Smart context experiment complete (TRIAL verdict). 3/6 milestones done. Next: design second experiment. Top candidate: evaluator tuning — pwi-smart-context got stuck in evaluator rejection loops (scored <7 three times). Also stall-rate (30% vs 20% target) still needs addressing — root cause is unclear milestones causing drift (milestone auto-scope experiment).
 
 ## Baseline Measurement (2026-04-22)
 
