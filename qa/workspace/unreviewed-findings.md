@@ -1,33 +1,24 @@
 # QA Heartbeat — Unreviewed Findings (2026-04-22)
 
-## Scope
-- Repo: `/app/agents` (this is where `.git` lives; `/app` is not a git repo)
-- Recent commits scanned: last ~6h via `git log --since '6 hours ago'`
+## Scope checked
+- Repository root `/app` is **not** a git repo. The actual git repo is `/app/agents`.
+- Latest commit in `/app/agents`: `2041a565d` (chore(auto) doc/workspace/heartbeat json updates).
 
 ## Findings
 
-### IMPORTANT — Toolchain missing in `agents/` repo blocks mandatory verification
+### IMPORTANT — Cannot perform mandatory verification (tsc/vitest) due to missing node_modules/tooling
+Evidence:
+- `cd agents && ./node_modules/.bin/tsc --noEmit` fails: `No such file or directory`.
+- `cd agents && ./node_modules/.bin/vitest --run` fails: `No such file or directory`.
+- `cd agents && ls node_modules/.bin` fails because `node_modules` directory does not exist.
 
-**Evidence**
-- `cd agents && ./node_modules/.bin/tsc --noEmit` → `No such file or directory` (exit 127)
-- `cd agents && ./node_modules/.bin/vitest --run` → `No such file or directory` (exit 127)
+Impact:
+- Mandatory QA steps (typecheck + tests) are **blocked by environment/tooling**. This is a pre-existing repo setup issue in this runtime.
 
-**Impact**
-- QA cannot complete the required heartbeat verification steps (tsc + vitest) for any recent changes.
+### MINOR — Latest change is non-code operational metadata
+Evidence:
+- `git show --name-only -1 2041a565d` lists only `last-session.md`, project journals, and `shared/federation/heartbeats/local.json`.
+- `agents/shared/federation/heartbeats/local.json` contains heartbeat instance metadata; no code paths affected.
 
-**Likely cause**
-- Dependencies not installed in `/app/agents` (no `node_modules/.bin`), or this repo does not vendor dev dependencies.
-
-**Suggested resolution**
-- Confirm expected workflow for installing deps (e.g., `pnpm i` / `npm ci`) inside `/app/agents`.
-- If CI is the intended verifier, document that and adjust QA mandatory steps to run in the correct package directory.
-
-### MINOR — Latest commit is documentation-only; no runtime verification performed
-
-**Evidence**
-- Latest commit `de8068751` only touched:
-  - `gym/experiments/results.md` (and some project journals)
-- I read `agents/gym/experiments/results.md` and it is consistent as documentation output.
-
-## Notes
-- The `gym/experiments/results.md` file includes a table where `read-before-edit` shows 0% improvement for `tests-pass`, `read-before-edit`, and `ops-budget`, which may indicate that scenario evaluator(s) are not detecting behavior in the synthetic transcripts or the fabricated transcript format doesn't match the evaluator expectations. This is not necessarily a code bug (could be experiment design), but worth a follow-up.
+## Recommendation
+- Ensure the runtime populates `agents/node_modules` (or provides a supported test runner entrypoint) so QA can run `tsc` and `vitest` as required.

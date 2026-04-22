@@ -13,3 +13,13 @@
 2604.16706
 2604.16646
 2604.19301 | DD#562 | 2026-04-22 | LLM Normative Conformity
+2604.18951 | DD#842 | 2026-04-22 | Illusory Coordination (already covered in shared)
+2604.18975 | DD#845 | 2026-04-22 | Gated Coordination (already covered in shared)
+2604.19026 | skip | 2026-04-22 | ClawCoin (crypto, low relevance)
+2604.19540 | DD#849 | 2026-04-22 | Mesh Memory Protocol (already covered in shared)
+2604.19247 | skip | 2026-04-22 | BONSAI VA Dev (HCI, low relevance)
+2604.19509 | skip | 2026-04-22 | Robot Affordance (robotics, not relevant)
+2604.19538 | skip | 2026-04-22 | Anomaly Detection Falls (healthcare, not relevant)
+2604.19606 | skip | 2026-04-22 | AblateCell (biology, not relevant)
+2604.19667 | skip | 2026-04-22 | Chat2Workflow (workflow gen benchmark, marginal)
+2604.18755 | skip | 2026-04-22 | Opinion Polarization (physics, not relevant)

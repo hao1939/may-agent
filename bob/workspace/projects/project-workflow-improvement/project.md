@@ -3,8 +3,8 @@
 **Status**: active
 **Owner**: bob
 **Priority**: P1
-**Iteration**: 0
-**Health**: —
+**Iteration**: 1
+**Health**: 6/10
 
 ## Goal
 Continuously improve the project workflow by testing changes on live projects and measuring outcomes. The project workflow is the core orchestration mechanism — small improvements compound across all projects.
@@ -44,14 +44,29 @@ Observe metrics → Identify weakness → Design experiment → Test on live pro
 | Project-specific reviewer instructions | `## Process Notes` section guides reviewer behavior | any project |
 
 ## Milestones
-- [ ] Baseline: measure current stall-rate, false-done rate, iterations-to-complete across all projects
+- [x] Baseline: measure current stall-rate, false-done rate, iterations-to-complete across all projects
 - [ ] First experiment: test one feature on a live project, measure before/after
 - [ ] Second experiment: test a different feature, compare
 - [ ] Adopt: merge winning features into the workflow code
 - [ ] Metrics dashboard: stall-rate and false-done visible in web UI
 
 ## Current State
-Not started.
+
+### Baseline (measured 2026-04-22, 20 projects with iteration data)
+
+| Metric | Value | Notes |
+|--------|-------|-------|
+| **Avg iterations/milestone** | **3.0** | Range: 0.6 (metric-reaction-investigation) to 8.5 (adaptive-heartbeats) |
+| **Milestone completion rate** | **54%** (85/157) | Many projects close as "done" with milestones incomplete |
+| **Low-completion projects** | **5/20 (25%)** | <50% milestones completed before close |
+| **Worst offenders** | reviewer-effectiveness (0%), convention-compliance (24%), prove-the-loop (33%) | Pattern: ambitious milestone scoping |
+
+**Key findings:**
+1. **Milestone over-scoping is the #1 problem.** Projects define 10-25 milestones but complete <50%. This suggests milestones aren't right-sized.
+2. **3.0 iters/milestone is decent** — but the distribution is bimodal. Simple projects (optimizer, tech-lead) average ~1.5; complex ones (coach, bob) average ~5.0.
+3. **prove-the-loop at 39 iterations** is the biggest outlier — 6/18 milestones after 39 iters = chronic stall.
+
+**Next experiment:** Test "Reviewer as problem-solver" on the next active project (coach/prove-the-loop is a candidate — it's stalling and could benefit from a reviewer prompt that synthesizes blockers instead of just scoring).
 
 ## Iteration Summary
 
