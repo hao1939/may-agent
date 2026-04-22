@@ -5725,3 +5725,9 @@ Findings:
 - Potential issue (IMPORTANT): `loadMetrics()` labels any breached metric as `⚠️ BELOW TARGET` even when `alert_direction` is `"above"` (i.e., a metric being too high). This is confusing/misleading wording for above-threshold alerts; consider changing label to something direction-agnostic like `⚠️ BREACHED`.
 - Environment verification still blocked here: `./node_modules/.bin/tsc` and `./node_modules/.bin/vitest` are missing in this runtime, so independent compile/test verification cannot be performed.
 
+- **2026-04-22 heartbeat:** Proactive scan of `/app/agents` repo.
+  - Read changed file: `agents/src/lib/finish-guard.ts` (ghost deliverable + evidence validation).
+  - Ran mandatory checks (blocked by environment): `./node_modules/.bin/tsc --noEmit` (exit 127), `./node_modules/.bin/vitest --run` (exit 127) because `node_modules/.bin` does not exist in this repo snapshot.
+  - Finding (IMPORTANT): `validateFinishDeliverables()` resolves relative paths against hardcoded `DEFAULT_PROJECT_ROOT = "/app"`. This will mis-validate deliverables when the project root differs (e.g., running in `/app/agents` or other roots), and can yield false positives/negatives. Consider injecting repo root from the manager/tool runtime rather than hardcoding.
+  - Finding (MINOR): `validateFinishDeliverables()` collects `existingPaths` as the *raw path* rather than the resolved path; this reduces debugging clarity when relative paths are used.
+
