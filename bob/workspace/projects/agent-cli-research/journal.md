@@ -57,3 +57,13 @@ If the files don't exist or are empty, create them NOW in the same step. The res
 
 No amount of iteration will resolve this without a human providing at least one valid API key as an environment variable.
 
+**Evaluator**: BLOCKED eval (score=3/10) — SCORE: 3
+
+**Reasoning:**
+
+1. **Deliverables exist**: Yes — `.state/cli-integration-research.md` (157 lines) and `.state/cli-invoke.sh` both exist with real content. ✓
+
+2. **Goal met**: No. The goal is to "USE these CLIs as tools our agents can invoke." None of the CLIs were actually invoked successfully. Research was done but no integration was demonstrated.
+
+3. **Evidence**: The worker documented that `claude -p "hello"` times out because no API keys are set. There is zero evidence of any CLI a
+

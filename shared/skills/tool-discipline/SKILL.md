@@ -161,3 +161,34 @@ including 10 double-reads (`bash("read")` → `bash("cat")`). Coach = 14 calls. 
 
 **Evidence**: Cost scan 2026-03-22T07:39. Bob session s_1774163223624_405 ($5.26, 19 bash-as-cat).
 Coach session s_1774163513216_408 (6 bash-as-cat).
+
+## Programmatic Guards
+
+The `agents/shared/agent-sdk.js` exports three guard modules that automate
+violation prevention. **Use them in handlers and workflows:**
+
+### EditGuard (edit-guard)
+```typescript
+import { EditGuard } from "../../shared/agent-sdk.js";
+const guard = new EditGuard();
+guard.recordRead("file.ts");          // call after every read()
+const result = guard.validateEdit("file.ts"); // call before every edit()
+if (!result.valid) { /* abort — file wasn't read first */ }
+```
+
+### validateBashCommand (path-guard)
+```typescript
+import { validateBashCommand } from "../../shared/agent-sdk.js";
+const result = validateBashCommand("cat /home/user/.bashrc");
+if (!result.valid) { /* abort — uses forbidden /home/ path */ }
+```
+
+### enforceNoHallucinatedPaths (path-guard)
+```typescript
+import { enforceNoHallucinatedPaths } from "../../shared/agent-sdk.js";
+const result = enforceNoHallucinatedPaths(["/home/agent/file.txt"]);
+if (!result.valid) { /* abort — hallucinated absolute path */ }
+```
+
+These guards are invoked automatically by `compliance-check.ts` every 30 minutes
+as smoke tests. Integrate them into your own handlers for real-time prevention.
