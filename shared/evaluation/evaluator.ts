@@ -330,12 +330,12 @@ export function findUnevaluatedChildren(
     if (session.status === "running" || session.status === "idle") continue;
 
     // Skip already LLM-evaluated (allow upgrading heuristic-only evals)
-    if (hasLLMEvaluation(persistDir, sessionId)) continue;
+    if (ctx.hasLLMEvaluation(sessionId)) continue;
 
     // Load transcript
-    let messages = readSessionMessages(persistDir, sessionId);
+    let messages = ctx.readSessionMessages(sessionId);
     if (messages.length === 0) {
-      messages = readArchivedSessionMessages(persistDir, sessionId);
+      messages = ctx.readArchivedSessionMessages(sessionId);
     }
     if (messages.length === 0) continue;
 
