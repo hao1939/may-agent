@@ -23,7 +23,7 @@ function generateReport(students, policy, outputPath) {
   
   // Honors list: students who meet BOTH min_score AND min_gpa_equivalent
   const honorsList = students.filter(s => 
-    s.weighted_score >= policy.honors.min_score ||
+    s.weighted_score >= policy.honors.min_score &&
     s.gpa >= policy.honors.min_gpa_equivalent
   ).map(s => ({
     student_id: s.student_id,
