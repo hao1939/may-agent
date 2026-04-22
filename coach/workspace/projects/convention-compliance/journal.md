@@ -78,3 +78,5 @@ Then read the project.md and add a `## Milestones` section right after `## Goal`
 
 Check off M1, M2, M3 because phase1-results.md and phase2-guards.md show that work is complete. Do NOT check off M4-M6 since deployment hasn't happened yet.
 
+### Iteration 6 — 2026-04-22T10:22:40.323Z
+**Worker**: Now update the violation-reduction-plan with evidence:

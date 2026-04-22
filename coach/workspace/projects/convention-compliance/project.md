@@ -7,7 +7,7 @@
 **Started**: 2026-04-22
 **Metric**: convention-compliance-rate (currently ~97%, target ≥ 99%)
 
-**Iteration**: 5
+**Iteration**: 6
 ## Milestones
 - [x] M1: Gym scenarios for top 4 violations
 - [x] M2: Baseline measurement
@@ -143,7 +143,7 @@ Based on Phase 1 findings, design interventions. Start with what we know works:
 
 
 ## Current State
-Iteration 5. Milestones: 0/0 done.
+Iteration 6. Milestones: 3/6 done. Next: M4: Replicate winning interventions
 ## Iteration Summary
 - **Iter 1**: All 15 tests pass. Now let me update the project progress log:
 
