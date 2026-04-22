@@ -42,3 +42,12 @@ export type {
 
 // ── Misc ──────────────────────────────────────────────────────────────
 export type { TaskResult } from "../../src/lib/types.js";
+
+// ── Growth (agent forking/promotion) ─────────────────────────────────
+export {
+  forkAgent,
+  promoteAgent,
+  discardAgent,
+  listLabAgents,
+} from "../../src/lib/growth.js";
+export type { GrowthConfig } from "../../src/lib/growth.js";

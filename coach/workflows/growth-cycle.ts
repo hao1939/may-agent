@@ -6,7 +6,7 @@ import {
   promoteAgent,
   discardAgent,
   type GrowthConfig,
-} from "../../../src/lib/growth.js";
+} from "../../shared/agent-sdk.js";
 import {
   runGym,
   runGymBatch,
