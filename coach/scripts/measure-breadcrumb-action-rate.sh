@@ -108,7 +108,7 @@ for (const row of measurable) {
 const rate = acted / measurable.length;
 
 // Debug info to stderr
-console.error(`Breadcrumb measurement (v4): ${allRows.length} total (${gateRows.length} gate + ${mainRows.length} main), ${rows.length} deduplicated, ${measurable.length} measurable, ${acted} acted (${(rate * 100).toFixed(1)}%)`);
+console.error(`Breadcrumb measurement (v5): ${allRows.length} total (${gateRows.length} gate + ${mainRows.length} main), ${rows.length} deduplicated, ${measurable.length} measurable, ${acted} acted (${(rate * 100).toFixed(1)}%)`);
 
 console.log(rate.toFixed(4));
 '
