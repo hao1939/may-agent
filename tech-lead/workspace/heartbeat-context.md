@@ -9,16 +9,16 @@ No active nudge.
 
 ---
 
-# Your Context (auto-generated 2026-04-22T01:10)
+# Your Context (auto-generated 2026-04-22T01:40)
 
 **System:** 0 sessions/6h, 0% error rate
 
 **Top spenders:**
 
 **📊 Your Metrics:**
-- Codebase weight: **25039** lines → 32000 lines ⚠️ OFF TARGET
+- Codebase weight: **25059** lines → 32000 lines ⚠️ OFF TARGET
   → Quick check: find agents -name '*.ts' -not -path '*/node_modules/*' -not -path '*/.state/*' -not -path '*/.bun/*' | xargs wc -l 2>/dev/null | tail -1 | awk '{print $1}'
 - Delegation quality: **0.79** ratio → 0.85 ratio
-- Meaningful changes: **8259** commits/week → 10 commits/week
+- Meaningful changes: **8286** commits/week → 10 commits/week
   → Quick check: cd agents && git log --since="7 days ago" --oneline 2>/dev/null | wc -l | tr -d " "
 - Build health: **1** bool → 1 bool
