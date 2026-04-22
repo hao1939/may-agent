@@ -3118,3 +3118,16 @@ src/app/ui/web
 - ⚠️ Event "metric.breach" — 4 pending > 2h
 - ⚠️ Event "session.completed" — 4 pending > 2h
 
+## 2026-04-22T18:40 — Auto (JS cron handler)
+
+- Sessions (24h): 1269
+- Unevaluated: 5 total, 5 actionable, 0 auto-skippable
+- Running sessions: bob (s_1776883003215_752), tech-lead (s_1776883084265_758), may (s_1776611617990_13), coach (s_1776883003266_754)
+- tsc: SKIP (no tsconfig.json)
+- Lessons: 52 lines total (scout 31, optimizer 21)
+- Bob analysis: fresh (23h ago)
+- ⚠️ Event "escalation.created" — 1 pending > 2h
+- ⚠️ Event "metric.breach" — 4 pending > 2h
+- ⚠️ Event "session.completed" — 19 pending > 2h
+- ⚠️ Event "session.failed" — 2 pending > 2h
+
