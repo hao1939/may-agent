@@ -149,3 +149,5 @@ The evaluator failed us because guards are dead code and there's no evidence vio
 
 **(c) First step:** Run `grep -r "import.*from" agents/src/lib/edit-guard agents/src/lib/path-guard` to see if guards are imported anywhere. Then run `grep -rn "function.*edit\|function.*write\|tool.*handler\|execute.*tool" agents/src/ --include="*.ts" -l` to find the tool execution entry points where guards should be integrated. Then wire the guards in and recount violations.
 
+### Iteration 10 — 2026-04-22T10:37:31.097Z
+**Worker**: Now verify the guard integration compiles:
