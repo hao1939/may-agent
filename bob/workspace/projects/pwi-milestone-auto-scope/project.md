@@ -3,7 +3,7 @@
 **Status**: active
 **Owner**: bob
 **Priority**: P1
-**Iteration**: 0
+**Iteration**: 1
 **Health**: 9/10
 
 ## Goal
@@ -58,3 +58,11 @@ These blocked projects could serve as test beds (zero downside per Hao's guidanc
 - Parent tracker: agents/bob/workspace/projects/project-workflow-improvement/project.md
 - Baseline data: PWI project baseline measurement (2026-04-22)
 - Smart context results: .state/pwi-smart-context-results.md
+
+
+## Current State
+Iteration 1. Milestones: 2/4 done. Next: Design intervention: pick approach, write implementation plan
+
+## Iteration Summary
+- **Iter 1**: I'll design the intervention and write an implementation plan as a concrete deliverable.
+
