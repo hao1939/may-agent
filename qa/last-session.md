@@ -1,34 +1,31 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776892003292_826
+- **Session:** s_1776893803121_855
 - **Status:** done
-- **When:** 2026-04-22T21:07:18.133Z
-- **Duration:** 34s
+- **When:** 2026-04-22T21:37:18.650Z
+- **Duration:** 35s
 
 ## What Happened
 ### Summary
-No pending QA events/projects. I attempted to do the standard “what changed in the last 6h” scan, but **/app is not a git repo**; only **/app/agents** is. In that repo, there *was* a recent functional change to `agents/may/handlers/compliance-check.ts` (combined compliance handler + DB access pattern). I reviewed that file directly and found a **CRITICAL correctness issue in logging** (it claims guard smoke tests passed even when warnings occurred). I could not run the mandatory `tsc`/`vitest` checks because **`node_modules` is not present in this environment**, so those tool paths do not exist.
+Recent unverified functional change found in the **agents** repo: `agents/may/handlers/compliance-check.ts` (commit `700e41917`) adjusts the fallback DB connection to open read-write. I independently read the handler file and found two quality issues (both IMPORTANT). I could not run the mandatory `tsc`/`vitest` checks because `node_modules/.bin/{tsc,vitest}` are not present in this environment, which looks like an environment/deps issue rather than a regression from the change.
 
 ### Checks
-- `tsc --noEmit`: **FAIL (environment)** — `./node_modules/.bin/tsc: No such file or directory` (bash output)
-- `vitest --run`: **FAIL (environment)** — `./node_modules/.bin/vitest: No such file or directory` (bash output)
+- `tsc --noEmit`: **FAIL** — `./node_modules/.bin/tsc: No such file or directory`
+- `vitest --run`: **FAIL** — `./node_modules/.bin/vitest: No such file or directory` (test count N/A)
 
 ### Issues
-1. **CRITICAL — False “passed” log even when smoke tests warn**
-   - **Evidence:** `agents/may/handlers/compliance-check.ts` in `runGuardSmokeTests()` logs multiple `WARN:` messages if validations fail, but **always logs** `"[compliance-check] Guard smoke tests passed"` at the end regardless. (See read output lines ~46–86; final unconditional `ctx.log("[compliance-check] Guard smoke tests passed");`).
-   - **Impact:** This is a silent false-positive signal: monitoring/log readers will believe guards passed even if the function emitted warnings indicating they didn’t.
-   - **Expected:** Track whether any WARN happened (or throw on failure), and only log “passed” when all checks succeed.
+1) **IMPORTANT — Misleading “passed” log even on partial smoke-test failure**  
+   **File:** `agents/may/handlers/compliance-check.ts`  
+   **Evidence:** In `runGuardSmokeTests()`, the final line logs `"[compliance-check] Guard smoke tests passed"` unconditionally, even if earlier checks already emitted `WARN:` logs. This can mislead monitoring/ops. (Seen directly in the file read.)
 
-2. **IMPORTANT — SQLite DB open mode not explicitly readonly**
-   - **Evidence:** `makeGetDb()` uses `new Database(dbPath)` with no explicit readonly/open flags. (Same file, lines ~23–41.)
-   - **Impact:** The commit message implies readonly intent (“opens DB read-write instead of readonly”), but this implementation does not demonstrate/guarantee readonly. If bun:sqlite defaults to read-write, this regresses the stated goal.
-   - **Note:** I did not verify bun:sqlite defaults here (needs runtime/docs), but **the code does not make the mode explicit**, so the safety property is unclear.
+2) **IMPORTANT — Compliance run swallows failures (may hide regressions)**  
+   **File:** `agents/may/handlers/compliance-check.ts`  
+   **Evidence:** The returned async function wraps guard smoke tests, convention-check, and standing-orders-check each in `try/catch` that only logs errors and continues. If intended to be non-blocking, it’s fine, but it risks silent degradation without an event/notify/escalation path. (Seen directly in the file read.)
 
 ### Verdict
-**CONDITIONAL**
+**CONDITIONAL** — The core change (read-write DB fallback) seems reasonable, but:
+- Mandatory repo checks couldn’t be executed due to missing tooling in this runtime (`node_modules/.bin` absent).
+- The two IMPORTANT logging/error-handling issues in `compliance-check.ts` should be addressed to avoid false “passed” signals and silent failures.
 
-- **Conditional on fixing the CRITICAL logging correctness bug** (don’t claim “passed” when warnings happened).
-- The test failures are **environmental** (missing `node_modules/.bin/tsc` and `node_modules/.bin/vitest`), so I’m not failing the patch solely for that; however, I also cannot independently verify compilation/tests in this heartbeat environment.
-
-If you want, I can also write up these findings to `agents/qa/workspace/unreviewed-findings.md` as a persistent note for the team.
+**Deliverable:** wrote findings to `agents/qa/workspace/unreviewed-findings.md`.
