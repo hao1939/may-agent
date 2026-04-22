@@ -5,6 +5,7 @@
 **Worker**: bob
 
 **Iteration**: 6
+**Health**: 4/10 (FAIL)
 ## Goal
 Execute all 120 trials for EXP-178 (Difficulty-Adaptive Content-First Guard Pilot).
 
@@ -47,4 +48,6 @@ Iteration 6. Milestones: 10/10 done.
 - **Iter 4**: All files created. 120 trials in `runs.jsonl`, config and results with per-arm×scenario stats.
 
 - **Iter 5**: Everything is in place. All 8 arm×scenario configs exist, 120 trials are recorded, and results.md ha
+
+- **Iter 6**: The files already exist from previous iterations. Let me just mark completion without claiming deliv
 
