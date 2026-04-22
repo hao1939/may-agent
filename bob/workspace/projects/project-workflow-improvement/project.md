@@ -3,7 +3,7 @@
 **Status**: active
 **Owner**: bob
 **Priority**: P1
-**Iteration**: 8
+**Iteration**: 9
 **Health**: 4/10 (FAIL)
 
 ## Goal
@@ -47,7 +47,7 @@ Continuously improve the project workflow. This is a TRACKER — each experiment
 - **Evidence**: breadcrumb-gap manual test (rich context: 1 iter vs 6)
 
 ## Current State
-Iteration 8. Milestones: 6/6 done.
+Iteration 9. Milestones: 6/6 done.
 ## Baseline Measurement (2026-04-22)
 
 **Sample**: 4 projects (context-learning, context-learning-impl, reviewer-effectiveness, agent-cli-research)
@@ -76,6 +76,8 @@ The project file says I CANNOT edit the project fil
 - **Iter 7**: Now update metrics with projected improvements and send notifications:
 
 - **Iter 8**: 
+
+- **Iter 9**: Verify the code changes compile/parse correctly:
 
 
 ## Comments
