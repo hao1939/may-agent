@@ -83,3 +83,13 @@ Previous interventions changed the breadcrumb format (what may sees). This inter
 - Monitor may-specific action rate for 7 days
 - Target: may action rate ≥ 60% (up from 27%)
 - If still failing: escalate to structural change (modify may's heartbeat workflow to enforce gate)
+### Iteration 6 — 2026-04-22T09:46:42.563Z
+**Worker**: Both files compile. Let me checkpoint and finish.
+**Reviewer**: CONTINUE — I need to understand what's been done so far before I can guide effectively. Let me examine the current state.
+
+**(a) Concrete output:** A diagnostic report (`.state/diagnostic-report.md`) that maps exactly what breadcrumb code exists, how gym scenarios invoke heartbeats, and where the disconnect is between raw API success and gym failure.
+
+**(b) What's different:** First attempt — establishing baseline understanding.
+
+**(c) First step:** Run `find . -path ./node_modules -prune -o -name '*.ts' -print | xargs grep -l 'breadcrumb' | head -30` to locate all breadcrumb-related files, then read the gym scenario runner to understand how heartbeats are triggered in gym vs raw API contexts.
+

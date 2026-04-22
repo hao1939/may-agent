@@ -140,3 +140,4 @@ Iteration 1. Milestones: 0/0 done.
 ## Iteration Summary
 - **Iter 1**: All 15 tests pass. Now let me update the project progress log:
 
+- [2026-04-22 hao] Add a flat ## Milestones section with checkboxes — the project workflow can only track milestones under ## Milestones heading, not inside Phase sections.

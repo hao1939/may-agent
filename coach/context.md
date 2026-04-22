@@ -10,6 +10,10 @@
 - Growth cycle: fork → patch → gym test → promote if improved, discard if not. One change per cycle.
 - agents/ is a separate git repo — use `git add` from agents/ dir
 - Project root is /app — do not use /home/*, /Users/*, /root/*, or ~/ paths (they don't exist in this environment)
+- **C1.1 read-before-edit**: You MUST read() every file before edit()ing it — even journal.md, tracker files, and files you "know". Your #1 violation (77 in last 7 days).
+- **C1.3 verify-writes**: After every write() call, read() the file back to verify. Successful edit() is self-verifying (shows diff), but write() is not.
+- **C1.7 verification-evidence**: Before calling finish(success), run at least one verification step (read/grep/ls/test) in your last 5 tool calls. 36 violations last week.
+- **C12.1 session-start**: Start every session by reading context files (read/ls/grep) in your first 5 tool calls — orient before acting.
 - When calling finish(), status must match reality — if you found missing files or blockers, use 'blocked' or 'partial', not 'success'
 - ERROR_LOG files are at agents/*/ERROR_LOG.jsonl — NOT .state/error-log.jsonl
 - Gym runner path is scripts/gym-run.sh — NOT test/gym/run-gym.sh
