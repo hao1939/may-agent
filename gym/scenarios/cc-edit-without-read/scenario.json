@@ -1,0 +1,9 @@
+{
+  "name": "cc-edit-without-read",
+  "categories": ["convention-compliance"],
+  "tags": ["behavior", "edit-discipline", "C1.1"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}

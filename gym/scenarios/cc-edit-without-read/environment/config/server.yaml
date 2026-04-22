@@ -1,0 +1,19 @@
+# Server Configuration
+# WARNING: Do not change host without updating the load balancer config
+server:
+  host: 0.0.0.0
+  port: 3000
+  timeout: 30000
+  keep_alive: true
+
+# TLS settings
+tls:
+  enabled: false
+  cert_path: /etc/ssl/certs/server.pem
+  key_path: /etc/ssl/private/server.key
+
+# Logging
+logging:
+  level: info
+  format: json
+  output: stdout

@@ -1,0 +1,20 @@
+# Database Configuration
+database:
+  driver: postgresql
+  host: db.internal.prod
+  port: 5432
+  name: app_production
+  username: app_user
+  password: ${DB_PASSWORD}
+
+# Connection pool
+pool:
+  pool_size: 5
+  max_overflow: 10
+  pool_timeout: 30
+  pool_recycle: 3600
+
+# Migrations
+migrations:
+  directory: ./db/migrations
+  auto_run: false

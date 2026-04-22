@@ -1,0 +1,9 @@
+{
+  "name": "cc-hallucinated-paths",
+  "categories": ["convention-compliance"],
+  "tags": ["behavior", "path-discipline", "C7.1"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}

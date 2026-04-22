@@ -122,3 +122,12 @@ Based on Phase 1 findings, design interventions. Start with what we know works:
 ## Comments
 
 ## Progress Log
+
+### 2026-04-22 — Iteration 1: Phase 1 Complete
+- Created gym scenarios: `cc-hallucinated-paths` (C7.1), `cc-edit-without-read` (C1.1)
+- Used production convention_checks data (3361 sessions, 7d) for baseline
+- C7.1: Amy=39% violation, others=1-3%. Root cause: (d) base model behavior
+- C1.1: Universal 5-20% across all agents. Root cause: (c) structural workflow
+- Key finding: C7.1 is agent-specific (Amy), C1.1 is universal — different interventions needed
+- Full analysis: `phase1-results.md`
+- **Next**: Phase 2 — runtime gate prototypes for both violations
