@@ -36,8 +36,8 @@
 **Top-3 testable hypotheses for next experiment cycle (updated 2026-06-22):**
 
 1. **H-181** — ✅ **RESOLVED/CONFIRMED** (P=0.95, KE-342 filed). 6 experiments, ~200 trials. All scaffolding approaches 0%, only near-explicit naming 40%. Fundamental capability gap. **NEXT**: Multi-agent execution-trace approach (one agent traces, another fixes) — new hypothesis needed.
-2. **H-165** via **EXP-178** (COMPLETE — NULL RESULT, KE-339) — 120 runs, 4 arms × 2 scenarios × 15 trials. All arms identical: 100% sql-injection (ceiling), 0% cascading (floor). No discriminating power — scenario sensitivity, not strategy failure. **NEXT**: Find/create scenarios with 30-70% baseline pass rates to retest adaptive routing. Design is reusable.
-3. **H-185** via **EXP-196/201** — Verification remasking: qualitative analysis plausible for 3/5 scenarios, but **EXP-201 quantitative: 0/10 on cascading-fix-trap-v2**. May still help on compound-edit-verification (value bugs). **NEXT**: Test on compound-edit-verification to see if remasking helps value-bug verification.
+2. **H-168** — ✅ **CONFIRMED** (P=0.72, Tier 1). EXP-197: 48.8% mean info loss across 10 DD→KE pairs. Predictions 71% lost, cross-refs 82% lost. **NEXT**: Design structured handoff format (prediction registry + cross-ref checklist) and A/B test retention improvement.
+3. **EXP-200** (Belief Externalization, H-072) — Deployed in review prompt. 1 checkpoint hit so far. **NEXT**: Accumulate ≥10 review iterations, then score belief-statement quality vs review accuracy.
 
 **Orphan KE check (recent entries not connected to any active hypothesis):**
 
