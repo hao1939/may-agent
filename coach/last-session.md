@@ -1,20 +1,23 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776854991352_234
+- **Session:** s_1776855010843_236
 - **Status:** done
-- **When:** 2026-04-22T10:50:02.101Z
-- **Duration:** 10s
+- **When:** 2026-04-22T10:50:30.934Z
+- **Duration:** 20s
 
 ## What Happened
+CONTINUE
 
+The evaluator scored 6/10 because the breadcrumb-action-rate is 0.56 vs target 0.80. The gap is primarily `may` agent (20%). We need to actually close that gap, not just document it.
 
-**PIVOT** —
+**(a) Concrete output:** A concrete improvement to the `may` agent's heartbeat that forces metric reaction, plus updated evidence showing the rate would exceed 0.80 with the fix. Specifically: modify `may`'s heartbeat to add a hard-coded "STOP AND ACT" block when red metrics exist, and re-run the success_criteria.js against a may-like transcript to prove it passes.
 
-The evaluator's last failure was specific: `agent-sdk.ts` imports `finish-guard` from `../src/lib/finish-guard.js` but the file is at `agents/shared/guards/finish-guard.ts` — a broken import path. Previous iterations keep saying DONE without fixing concrete issues the evaluator finds.
+**(b) What's different:** Previous iterations focused on documenting/proving what exists. This time we need to **actually improve the code further** to close the 0.56→0.80 gap. The evaluator explicitly said "the goal isn't achieved yet — may (the primary bottleneck)." We must fix may's specific problem.
 
-**(a) Concrete output:** Fix the broken import in `agent-sdk.ts` so it points to the correct `finish-guard` location. Then produce `.state/final-verification.md` with the output of: (1) `grep -n 'finish-guard' agents/shared/agent-sdk.ts` showing the corrected import, (2) `npx tsc --noEmit agents/shared/agent-sdk.ts 2>&1 || true` or equivalent compilation check, (3) the filled-in violation-recount table from `violation-recount.md` confirmed non-empty.
+**(c) First step:** Run this command to understand may's current heartbeat and what's different about it:
+```bash
+cat agents/may/workflows/heartbeat.ts | head -80 && echo "---" && grep -n 'RED\|red\|metric\|breadcrumb\|formatMetrics\|hasRed' agents/may/workflows/heartbeat.ts && echo "---" && echo "All agents red-metric grep:" && for agent in bob amy-kimi coach may optimizer qa scout tech-lead; do echo "$agent:"; grep -c 'hasRedMetrics\|RED METRIC' agents/$agent/workflows/heartbeat.ts 2>/dev/null || echo "no file"; done
+```
 
-**(b) What's different:** Every previous iteration declared DONE without fixing the specific issue the evaluator cited. This time: fix the ONE broken import path first, verify it compiles, THEN declare done.
-
-**(c) First step:** Run `grep -rn 'finish-guard' agents/shared/agent-sdk.ts` to see the current broken import, then `ls agents/shared/guards/finish-guard.ts agents/src/lib/finish-guard.ts 2>&1` to find where the file actually is, then fix the import path to match.
+Then identify why may's breadcrumb-action-rate is only 20% and fix it — likely the metric threshold or the prompt injection point needs to be earlier/stronger in may's specific workflow. After fixing, re-run success_criteria.js with a may-style transcript to prove the fix works.
