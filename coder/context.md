@@ -35,6 +35,15 @@
 - **C1.3**: After write(), read() the file back to verify.
 - **C12.1**: Start sessions by reading context (read/ls/grep) in first 5 tool calls.
 
+### FM-DIAG: Root-Cause Misidentification (EXP-164, 0% baseline → 100% with fix)
+**Problem**: When tests and production code disagree, you default to modifying production code to match the test — even when the test assertion is wrong.
+**Rule**:
+1. When test and code disagree, STOP and determine WHICH is correct before editing either
+2. Read the test assertion carefully — does the expected value match the business requirement?
+3. Read the production logic — does it implement the specification correctly?
+4. If the test expectation is wrong, fix the TEST, not the production code
+5. If unsure, check for a DIAGNOSIS.md or specification doc in the environment first
+
 ## Lessons from Experience
 
 - [fix] vitest needs --run flag in CI/automated contexts to avoid interactive watch mode
