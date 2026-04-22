@@ -64,14 +64,16 @@ Key changes:
 - **Diagnosis**: Wording interventions (M3 directive format, M4 escalation, context.md directive) are insufficient for may. May's heartbeat loop is too ingrained — it reads metrics, reports "healthy", and exits without investigating red items. This is a **structural** problem, not a wording problem.
 - Trend: 0.19 → 0.31 → 0.44 → 0.50 → 0.48 (plateaued)
 
-### M7: Structural enforcement — workflow-level breadcrumb gate ⏳
-- Wording approaches exhausted. Need **architectural** fix.
-- Options (pick one or combine):
-  1. **Heartbeat workflow gate**: After metrics load, if any metric is BELOW TARGET, inject a mandatory "investigate" step before the agent can proceed to other work. The workflow itself forces investigation.
-  2. **finish() breadcrumb acknowledgment**: Require agents to list each red metric and what they did. Workflow rejects finish() without acknowledgment.
-  3. **Separate "metric triage" session**: When breadcrumbs fire, spawn a dedicated short session for that agent focused ONLY on the red metric (not mixed with other heartbeat work).
-- Recommendation: Option 1 (workflow gate) — lowest friction, highest reliability
-- **Next action**: Implement workflow gate in may's heartbeat workflow
+### M7: Structural enforcement — workflow-level breadcrumb gate ✅
+- Implemented Option 1 (workflow gate) across ALL 8 heartbeat workflows
+- **What it does**: After metrics load, if any metric has "⚠️ BELOW TARGET":
+  1. A dedicated `runAgent` gate step fires BEFORE normal heartbeat work
+  2. Agent must investigate/fix/escalate/defer each red metric
+  3. Workflow extracts red metric IDs and verifies the agent's response mentions each one
+  4. If any metrics are missed, a retry prompt forces the agent to address them
+  5. Only after gate completes does the main heartbeat proceed
+- Files changed: all `agents/*/workflows/*-heartbeat.ts` (8 files)
+- **Next**: Measure impact over 7 days → M8
 
 ### M8: Sustained 0.80
 - 7-day rolling rate ≥ 0.80

@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776823082218_40
+- **Session:** s_1776823034809_34
 - **Status:** done
-- **When:** 2026-04-22T01:59:43.572Z
-- **Duration:** 1m41s
+- **When:** 2026-04-22T02:00:40.509Z
+- **Duration:** 3m25s
 
 ## What Happened
-The audit found 8.3% false-positive rate — right at the refutation boundary. Per step 6, since the signal is borderline rather than clearly actionable, I won't update H-182's status to TESTING. But the 42% partial-correctness finding is a useful signal worth noting.
+Good audit. The finding pivots H-182 from binary gates to evidence grading — a lighter, more practical intervention. Let me update H-182 with this finding.

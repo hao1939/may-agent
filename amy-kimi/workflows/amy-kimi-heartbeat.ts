@@ -41,7 +41,18 @@ Do NOT do any other heartbeat work — ONLY address red metrics.`;
 
     const gateResult = await ctx.runAgent(agent, gatePrompt);
     redMetricActions = ctx.summarize(gateResult, { maxLength: 800 });
-    ctx.emit({ type: "red_metric_gate_done", step: "metrics", summary: redMetricActions });
+
+    // Verify the agent addressed each red metric by name
+    const redMetricIds = [...metrics.matchAll(/📊 ([^:]+):.*⚠️ BELOW TARGET/g)].map(m => m[1].trim());
+    const missedMetrics = redMetricIds.filter(id => !gateResult.includes(id));
+    if (missedMetrics.length > 0) {
+      // Re-prompt for missed metrics
+      const retryPrompt = `You missed addressing these red metrics: ${missedMetrics.join(", ")}\n\nYou MUST address each one now (investigate, fix, escalate, or defer with concrete reason).\n\nMetrics:\n${metrics}`;
+      const retryResult = await ctx.runAgent(agent, retryPrompt);
+      redMetricActions += "\n" + ctx.summarize(retryResult, { maxLength: 400 });
+    }
+
+    ctx.emit({ type: "red_metric_gate_done", step: "metrics", summary: redMetricActions, missed: missedMetrics?.length ?? 0 });
   }
 
   // ── MAIN HEARTBEAT ─────────────────────────────────────────
