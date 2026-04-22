@@ -18,7 +18,7 @@ These define how the system works.
 | [project-system.md](project-system.md) | Project system: project.md + journal.md, worker/reviewer/evaluator, metric projects, events | ✅ Implemented (core) |
 | [metrics-system.md](metrics-system.md) | Unified metric system: per-agent metrics, snapshots, alerts, dashboard | ✅ Implemented |
 | [runtime-ctx.md](runtime-ctx.md) | Shared infra interface for handlers, workflows, and agent tools | ✅ Implemented |
-| [convention-defaults.md](convention-defaults.md) | Convention over config: event inbox, auto-heartbeat, default health metrics | Active design |
+| [convention-defaults.md](convention-defaults.md) | Convention over config: event inbox, auto-heartbeat, default health metrics | ✅ Implemented (Phase 1-4) |
 | [agent-level-code-boundary.md](agent-level-code-boundary.md) | Move evaluator, context-learn, project-scanner from src/lib to agents/ | ✅ Implemented |
 | [heartbeat-system.md](heartbeat-system.md) | Heartbeat redesign: per-agent workflows, pre-loaded context, 1 session | Draft (partially implemented) |
 | [escalation-system.md](escalation-system.md) | Escalation and recovery system design | Active |

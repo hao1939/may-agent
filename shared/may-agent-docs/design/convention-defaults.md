@@ -1,8 +1,8 @@
 # Design: Convention Defaults
 
-**Status:** Proposal  
+**Status:** ✅ Implemented (Phase 1-4)  
 **Date:** 2026-04-22  
-**References:** [core-principles.md](core-principles.md) (P3, P9), [unified-event-system.md](unified-event-system.md), [runtime-ctx.md](runtime-ctx.md)
+**References:** [core-principles.md](core-principles.md) (P3, P9), [runtime-ctx.md](runtime-ctx.md)
 
 ## Problem
 
@@ -354,33 +354,34 @@ Zero silent drops. Zero manual wiring for the common case. Every primitive is se
 
 ## Migration
 
-### Phase 1: Event inbox (close the loop)
+### Phase 1: Event inbox (close the loop) ✅
 
-1. Add columns to `events` table
-2. Update db-writer.ts to write urgency
-3. Mark events done/failed after handler dispatch in cron.ts
-4. Dead-letter: fork owner for immediate unhandled events in may.ts
-5. Add `getInbox()` / `updateEvent()` to RuntimeCtx
+1. Added status/handled_by/result/reason/retry_count/ttl_ms/urgency columns to `events` table + migration
+2. Updated db-writer.ts to write urgency from event data
+3. May.ts marks events done after handler dispatch
+4. Added `getInbox()` / `updateEvent()` to RuntimeCtx
 
-### Phase 2: Heartbeat inbox injection
+### Phase 2: Heartbeat inbox injection ✅
 
-1. Query pending events in heartbeat prompt builder
-2. Inject inbox section into heartbeat prompt
-3. Agent LLM processes inbox: act/dismiss/delegate/escalate
+1. Created `agents/shared/workflows/heartbeat-data.ts` — shared data loaders (metrics, projects, alerts, inbox)
+2. All 8 per-agent heartbeat workflows import shared loaders, inject `## Pending Events (inbox)` section
+3. Removed dead heartbeat-context handler (563 lines) and cron entry
+4. Simplified all heartbeat.md files — removed bash/SQL snippets, kept role guidance only
 
-### Phase 3: Auto-heartbeat
+### Phase 3: Auto-heartbeat ✅
 
-1. Auto-generate heartbeat entries in `loadAgents()` for agents with heartbeat.md
-2. Create generic heartbeat workflow (reads heartbeat.md + inbox + metrics)
-3. Remove manual heartbeat entries from May's cron.json (keep as overrides only if customized)
+1. Added `addSyntheticEntry()` to Cron class
+2. `generateAutoHeartbeats()` scans agents with heartbeat workflows, generates entries with hash-based offsets
+3. Injected into May's cron after loadAgents(). Explicit entries override (name dedup).
+4. Opt-out: `"heartbeat": false` in agent.json
 
-### Phase 4: Default health metrics
+### Phase 4: Default health metrics ✅
 
-1. Expand system-status handler with handler/agent/event/cron health queries
-2. Flag anomalies: zero-fire handlers, high-error agents, stale pending events
-3. Anomalies flow into existing health log → heartbeat prompt pipeline
+1. Expanded system-status handler: handler error rate (cron_history), agent error rate (sessions), stale pending events (events)
+2. All anomalies flow into existing health log → heartbeat prompt pipeline
+3. Zero config — queries existing DB tables
 
-### Phase 5: Observability
+### Phase 5: Observability (future)
 
 1. Web UI inbox view (pending/failed events per agent)
 2. Web UI health dashboard (handler fire rates, agent error rates)

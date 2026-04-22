@@ -1,8 +1,8 @@
 # Design: Heartbeat System
 
-**Status:** Draft
-**Date:** 2026-04-21
-**References:** [core-principles.md](core-principles.md), [project-system.md](project-system.md)
+**Status:** Implemented (core), evolving
+**Date:** 2026-04-22
+**References:** [core-principles.md](core-principles.md), [project-system.md](project-system.md), [convention-defaults.md](convention-defaults.md)
 
 ## What is a Heartbeat?
 
