@@ -3,7 +3,7 @@
 **Goal**: Prove the coach training loop works end-to-end: identify skill gap → design experiment → run experiment → measure improvement → promote or reject skill.
 **Owner**: coach
 **Created**: 2026-04-21
-**Status**: BLOCKED
+**Status**: IN PROGRESS (M1 ✅, M2 ✅, M3 ⚠️ partial)
 
 ## Background
 
@@ -13,22 +13,23 @@ This project has run for 24+ iterations without conclusive proof that a coach in
 
 ### Phase 1: Identify a Real Skill Gap
 
-**M1: Select a measurable skill gap from eval data**
-- Mine recent eval failures for a specific, recurring failure pattern
-- Requirements: pattern appears in ≥10% of failures, is addressable via prompt/skill change
-- Output: documented failure mode with baseline frequency
+**M1: Select a measurable skill gap from eval data** ✅ COMPLETE (EXP-194)
+- Gap identified: **Relational Bug Blindness** — agent fixes value bugs at ~97% but relational bugs (pipeline ordering, data flow) at ~2.5%
+- Documented in EXP-194 results: cascading-fix-trap-v2 pipeline-order-fixed check fails in 39/40 trials
+- Pattern appears in 9/20 scenarios (45% of scenario corpus)
 
-**M2: Validate the gap is real (not noise)**
-- Confirm the pattern persists across ≥3 eval windows
-- Rule out confounders (task difficulty, agent assignment, time-of-day effects)
-- Output: statistical confidence that the gap is real (n≥30 samples)
+**M2: Validate the gap is real (not noise)** ✅ COMPLETE (EXP-177 + EXP-195)
+- EXP-177 (N=40): 1/40 pass rate on pipeline-order-fixed (2.5%)
+- EXP-195 baseline (N=10): 1/10 pass rate (10%) — consistent direction
+- Combined N=50 across 2 experiments, 3+ weeks apart: 2/50 (4%) — gap is robust
+- Within-scenario control: value bug fixed 97.5% of the time in same codebase (not task difficulty)
 
 ### Phase 2: Design Experiment
 
-**M3: Design a targeted intervention**
-- Create a specific skill/rule/prompt change that addresses the identified gap
-- Document hypothesis: "Adding X will reduce failure mode Y by Z%"
-- Output: experiment design doc (EXP-NNN)
+**M3: Design a targeted intervention** ⚠️ PARTIAL (EXP-195)
+- Tested 3 interventions: file-based skill (0/3), inline skill (0/3), direct hint (4/10 = 40%)
+- Direct hint raises pass rate from 10% → 40% (+30pp), but is scenario-specific not transferable
+- Next: design discovery-oriented skill (EXP-196) that teaches HOW to find ordering bugs
 
 **M4: Establish measurement protocol**
 - Define primary metric, sample size requirements, success/failure thresholds
