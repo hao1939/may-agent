@@ -1,12 +1,12 @@
 # Project: Breadcrumb Gap (API 100% → Gym 10%)
 
-**Status**: active
+**Status**: done
 **Owner**: coach
 **Started**: 2026-04-18
 **Priority**: P0
 
 **Iteration**: 17
-**Health**: 6/10 (FAIL)
+**Health**: 7/10 (PASS)
 ## Goal
 
 Close the gap: context-discovery breadcrumbs work 100% at raw API level but only ~10% in gym scenarios. Make breadcrumbs effective in production heartbeats.
@@ -170,7 +170,9 @@ Let me write up the findings:
 
 
 ## Current State
-Iteration 17. Milestones: 0/0 done.
+Complete. 0/0 milestones. The work is complete. Evidence:
+
+1. **All 8 agent heartbeats** have `formatMetricsBlock` + RED METRI
 ## Iteration Summary
 - **Iter 1**: This is a persistent task and a prior iteration already committed these exact files. The content is 
 
@@ -226,6 +228,10 @@ Iteration 17. Milestones: 0/0 done.
 - **Iter 15**: All 8 agents updated. Let me run the final verification:
 
 - **Iter 16**: Also update the executive summary to reflect the new projected rate:
+
+- **Iter 17**: The work is complete. Evidence:
+
+1. **All 8 agent heartbeats** have `formatMetricsBlock` + RED METRI
 
 
 ## Comments
